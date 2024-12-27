@@ -1,0 +1,15 @@
+.text-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+each(range(2, 3, 1), {
+  .text-ellipsis-@{value} {
+       overflow: hidden;
+       text-overflow: ellipsis;
+       display:-webkit-box;
+       -webkit-line-clamp: @value;
+       -webkit-box-orient: vertical;
+  }
+});
