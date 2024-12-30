@@ -5,5 +5,5 @@ export interface UserOperateAreaType {
 }
 
 export interface TabsType {
-  onClick:  (type: TabsEnum) => void;
+  onClick: (type: TabsEnum) => void;
 }

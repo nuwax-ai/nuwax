@@ -1,6 +1,7 @@
-import type { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
+import HomeSection from '@/components/MenusLayout/HomeSection';
+import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useState } from 'react';
 import Header from './Header';
 import styles from './index.less';
 import Tabs from './Tabs';
@@ -10,10 +11,12 @@ import UserOperateArea from './UserOperateArea';
 const cx = classNames.bind(styles);
 
 const MenusLayout: React.FC = () => {
+  const [tabType, setTabType] = useState<TabsEnum>(TabsEnum.Home);
   // 切换tab
-  const handleClick = (type: TabsEnum) => {
+  const handleTabsClick = (type: TabsEnum) => {
     // todo
     console.log(type);
+    setTabType(type);
   };
 
   // 用户区域操作
@@ -34,11 +37,13 @@ const MenusLayout: React.FC = () => {
         )}
       >
         <Header />
-        <Tabs onClick={handleClick} />
+        <Tabs onClick={handleTabsClick} />
         <UserOperateArea onClick={handleUserClick} />
         <User />
       </div>
-      <div className={cx(styles['nav-menus'])}>二级菜单</div>
+      <div className={cx(styles['nav-menus'])}>
+        {tabType === TabsEnum.Home ? <HomeSection /> : null}
+      </div>
     </div>
   );
 };

@@ -1,10 +1,9 @@
 import { USER_OPERATE_AREA } from '@/constants/menus.constants';
-import type { UserOperatorAreaEnum } from '@/types/enums/menus';
+import type { UserOperateAreaType } from '@/types/interfaces/menus';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
-import type { UserOperateAreaType } from '@/types/interfaces/menus';
 
 const cx = classNames.bind(styles);
 const UserOperateArea: React.FC<UserOperateAreaType> = ({ onClick }) => {

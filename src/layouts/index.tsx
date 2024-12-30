@@ -14,7 +14,7 @@ export default function Layout() {
   return (
     <div className={cx('flex', 'h-full', styles.container)}>
       <MenusLayout />
-      <div className={cx(styles['main-container'])}>
+      <div className={cx('flex-1')}>
         <Outlet />
       </div>
     </div>
