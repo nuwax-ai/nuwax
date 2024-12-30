@@ -1,0 +1,99 @@
+.absolute-box {
+  position: absolute;
+  width: 300px;
+  height: 60px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  bottom: 10px;
+  left: 50%;
+  transform: translate(-40%, 0);
+  background: #fff;
+  padding: 0 20px;
+  z-index: 99;
+}
+
+// 添加节点的样式
+.stencil-content {
+  width: 240px;
+
+  .stencil-list-style {
+    width: 100%;
+
+    .stencil-list-item {
+      margin-top: 10px;
+
+      .stencil-list-title {
+        margin-bottom: 6px;
+        font-family: 'Alimama Agile VF';
+        font-size: 14px;
+        font-weight: normal;
+        line-height: 22px;
+        letter-spacing: 0;
+        color: #979797;
+      }
+
+      .stencil-list-content {
+        display: flex;
+        justify-content: space-around;
+        flex-wrap: wrap;
+
+        img {
+          width: 20px;
+          height: 20px;
+          margin-right: 6px;
+        }
+
+        .child-content {
+          width: 50%;
+          margin-top: 4px;
+          cursor: pointer;
+        }
+      }
+    }
+  }
+}
+
+#container {
+  display: flex;
+  border: 1px solid #dfe3e8;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+#graph-container {
+  width: 100%;
+  height: 100%;
+}
+
+.x6-widget-transform {
+  margin: -1px 0 0 -1px;
+  padding: 0;
+  border: 1px solid #239edd;
+}
+
+.x6-widget-transform > div {
+  border: 1px solid #239edd;
+}
+
+.x6-widget-transform > div:hover {
+  background-color: #3dafe4;
+}
+
+.x6-widget-transform-active-handle {
+  background-color: #3dafe4;
+}
+
+.x6-widget-transform-resize {
+  border-radius: 0;
+}
+
+.x6-widget-selection-inner {
+  border: 1px solid #239edd;
+}
+
+.x6-widget-selection-box {
+  opacity: 0;
+}

@@ -8,7 +8,11 @@ const routes = [
     path: '',
     component: '@/layouts/index',
     layout: false,
-    routes: [{ path: '/', component: '@/pages/Home' }, { path: '/space', component: '@/pages/Space' }],
+    routes: [
+      { path: '/', component: '@/pages/Home' },
+      { path: '/space', component: '@/pages/Space' },
+      { path: '/antv', component: '@/pages/Antv-X6' },
+    ],
   },
   {
     path: '/*',
