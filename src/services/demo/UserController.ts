@@ -25,17 +25,10 @@ export async function queryUserList(
 }
 
 /** 此处后端没有提供注释 POST /api/v1/user */
-export async function addUser(
-  body?: API.UserInfoVO,
-  options?: { [key: string]: any },
-) {
+export async function addUser(body?: API.UserInfoVO) {
   return request<API.Result_UserInfo_>('/api/v1/user', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     data: body,
-    ...(options || {}),
   });
 }
 

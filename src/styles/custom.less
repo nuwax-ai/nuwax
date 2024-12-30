@@ -1,3 +1,5 @@
+@import 'src/styles/color';
+
 .text-ellipsis {
   white-space: nowrap;
   overflow: hidden;
@@ -13,3 +15,85 @@ each(range(2, 3, 1), {
        -webkit-box-orient: vertical;
   }
 });
+
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.fixed {
+  position: fixed;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.flex-row {
+  flex-direction: row;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.content-center {
+  justify-content: center;
+}
+
+.px-6 {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.px-16 {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.py-16 {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.radius-6 {
+  border-radius: 6px;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.overflow-y {
+  overflow: auto;
+}
+
+.hover-box {
+  border-radius: 6px;
+  border-width: 0;
+  background-color: transparent;
+  transition: background-color ease-in-out 0.15s;
+
+  &:hover {
+    background-color: @WHITE01;
+  }
+}

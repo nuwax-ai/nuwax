@@ -1,7 +1,5 @@
-/**
- * import {ReactComponent as ICON_LANGUAGE} from '@/assets/svg/icon _language.svg';
- *
- * export {
- *   ICON_LANGUAGE,
- * };
- */
+import { ReactComponent as ICON_HOME } from '@/assets/svg/home.svg';
+import { ReactComponent as ICON_LOGO } from '@/assets/svg/logo.svg';
+import { ReactComponent as ICON_NEW_AGENT } from '@/assets/svg/new-agent.svg';
+
+export { ICON_HOME, ICON_LOGO, ICON_NEW_AGENT };

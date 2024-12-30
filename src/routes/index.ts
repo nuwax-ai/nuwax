@@ -8,7 +8,10 @@ const routes = [
     path: '',
     component: '@/layouts/index',
     layout: false,
-    routes: [{ path: '/', component: '@/pages/Home' }, { path: '/space', component: '@/pages/Space' }],
+    routes: [
+      { path: '/', component: '@/pages/Home' },
+      { path: '/space', component: '@/pages/Space' },
+    ],
   },
   {
     path: '/*',
