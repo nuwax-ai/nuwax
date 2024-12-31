@@ -6,11 +6,13 @@ import styles from './index.less';
 // import { RequestResponse } from '@/types/interfaces/request';
 import FoldWrap from '@/components/FoldWrap';
 import { ICON_FOLD } from '@/constants/images.constants';
+import Card from '@/components/Card';
 
 const cx = classNames.bind(styles);
 
 const ShowArea: React.FC = () => {
   const [visible, setVisible] = useState<boolean>(true);
+  const [checked, setChecked] = useState<boolean>(false);
   // const [contents, setContents] = useState<[]>([]);
 
   // const { run, loading } = useRequest(apiHome, {
@@ -38,8 +40,11 @@ const ShowArea: React.FC = () => {
         lineMargin
         title={'展示台'}
         visible={visible}
-        onClose={() => setVisible(false)}
-      />
+        onClose={() => setVisible(false)}>
+        <div className={cx(styles['main-wrap'])}>
+          <Card type={'1'} checked={checked} onClick={setChecked} />
+        </div>
+      </FoldWrap>
     </div>
   );
 };

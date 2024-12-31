@@ -3,15 +3,13 @@
 .show-stand {
   width: 360px;
   margin-top: 30px;
-  box-sizing: border-box;
   border-radius: 15px;
   background: @WHITE;
   box-shadow: 0 0 5px 0 @BLANK05;
-  transition: width ease-in-out 0.3s, padding ease-in-out 0.3s;
+  transition: display ease-in-out 0.3s;
 
   &.hidden {
-    width: 0;
-    padding: 0;
+    display: none;
   }
 }
 
