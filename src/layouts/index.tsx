@@ -1,23 +1,20 @@
-import { Link, Outlet } from 'umi';
-import styles from './index.less';
-import { useEffect } from 'react';
+import MenusLayout from '@/components/MenusLayout';
 import { BASE_URL } from '@/constants/common.constants';
+import classNames from 'classnames';
+import { useEffect } from 'react';
+import { Outlet } from 'umi';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 export default function Layout() {
   useEffect(() => {
-    console.log("process.env.BASE_URL: " + BASE_URL)
+    console.log('process.env.BASE_URL: ' + BASE_URL);
   }, []);
   return (
-    <div className={styles['layout-container']}>
-      <div>左侧导航栏</div>
-      <div>
-        <Link to={'/'}>主页</Link>
-        <br/>
-        <Link to={'/space'}>工作空间</Link>
-        <br/>
-        <Link to={'/404'}>404</Link>
-      </div>
-      <div className={styles['main-container']}>
+    <div className={cx('flex', 'h-full', styles.container)}>
+      <MenusLayout />
+      <div className={cx('flex-1')}>
         <Outlet />
       </div>
     </div>
