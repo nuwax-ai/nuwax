@@ -10,6 +10,7 @@ const routes = [
     layout: false,
     routes: [
       { path: '/', component: '@/pages/Home' },
+      { path: '/home/chat', component: '@/pages/Chat' },
       { path: '/space', component: '@/pages/Space' },
     ],
   },

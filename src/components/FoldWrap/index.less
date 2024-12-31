@@ -1,0 +1,56 @@
+@import '@/styles/color';
+
+.show-stand {
+  width: 360px;
+  margin-top: 30px;
+  box-sizing: border-box;
+  border-radius: 15px;
+  background: @WHITE;
+  box-shadow: 0 0 5px 0 @BLANK05;
+  transition: width ease-in-out 0.3s, padding ease-in-out 0.3s;
+
+  &.hidden {
+    width: 0;
+    padding: 0;
+  }
+}
+
+.stand-header {
+  height: 50px;
+  padding: 0 12px;
+
+  span {
+    font-size: 18px;
+    font-weight: bold;
+    color: @BLANK04;
+  }
+
+  .close {
+    margin-left: 8px;
+    font-size: 14px;
+    transition: opacity ease-in-out 0.2s;
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+}
+
+.desc {
+  padding: 0 12px;
+  line-height: 22px;
+  color: @GRAY07;
+  font-size: 12px;
+}
+
+.divider-horizontal {
+  border-bottom: 1px solid @GRAY06;
+
+  &.margin {
+    margin: 0 12px;
+  }
+}
+
+.empty {
+  margin-top: 200px;
+}

@@ -1,0 +1,47 @@
+// import { apiHome } from '@/services/Demo';
+import classNames from 'classnames';
+import React, { useEffect, useState } from 'react';
+// import { useRequest } from 'umi';
+import styles from './index.less';
+// import { RequestResponse } from '@/types/interfaces/request';
+import FoldWrap from '@/components/FoldWrap';
+import { ICON_FOLD } from '@/constants/images.constants';
+
+const cx = classNames.bind(styles);
+
+const ShowArea: React.FC = () => {
+  const [visible, setVisible] = useState<boolean>(true);
+  // const [contents, setContents] = useState<[]>([]);
+
+  // const { run, loading } = useRequest(apiHome, {
+  //   manual: true,
+  //   debounceWait: 300,
+  //   onSuccess: (res: RequestResponse<null>) => {
+  //     const { data } = res;
+  //     if (data) {
+  //     }
+  //   },
+  // });
+
+  useEffect(() => {
+    // run();
+  }, []);
+
+  const handlerVisible = () => {
+    setVisible(!visible);
+  };
+
+  return (
+    <div className={cx(styles.container, 'flex', 'flex-col', 'items-end')}>
+      <ICON_FOLD onClick={handlerVisible} />
+      <FoldWrap
+        lineMargin
+        title={'展示台'}
+        visible={visible}
+        onClose={() => setVisible(false)}
+      />
+    </div>
+  );
+};
+
+export default ShowArea;
