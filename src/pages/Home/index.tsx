@@ -2,6 +2,7 @@ import { RECOMMEND_TEXT } from '@/constants/home.constants';
 import { useModel } from '@umijs/max';
 import classNames from 'classnames';
 import React from 'react';
+import { history } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -9,8 +10,10 @@ const cx = classNames.bind(styles);
 const Home: React.FC = () => {
   const { name } = useModel('global');
   console.log(name);
-  const handlerClick = (text: string) => {
-    console.log(text);
+  // 跳转页面
+  const handlerClick = (question: string) => {
+    history.push('/home/chat', { question });
+    console.log(question);
   };
 
   return (
