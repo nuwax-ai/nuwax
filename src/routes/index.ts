@@ -11,9 +11,9 @@ const routes = [
     routes: [
       { path: '/', component: '@/pages/Home' },
       { path: '/space', component: '@/pages/Space' },
-      { path: '/antv', component: '@/pages/Antv-X6' },
     ],
   },
+  { path: '/antv', component: '@/pages/Antv-X6', layout: false },
   {
     path: '/*',
     component: '@/pages/404',

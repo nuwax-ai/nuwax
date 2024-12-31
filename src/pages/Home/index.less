@@ -1,28 +1,44 @@
+@import '@/styles/color';
+
 .container {
   padding-top: 160px;
 
   .title {
     font-size: 36px;
     font-weight: bold;
-    line-height: 22px;
-    color: #3d3d3d;
+    color: @BLANK04;
   }
 
   .tips {
     margin-top: 30px;
     font-size: 24px;
-    line-height: 22px;
-    color: #95979c;
+    color: @GRAY05;
   }
 
   .textarea {
     width: 600px;
     margin-top: 80px;
+    padding: 30px 20px;
+    box-sizing: border-box;
     border-radius: 14px;
-    border-color: #95979c;
+    border-color: @GRAY05;
   }
 
   .recommend {
     width: 600px;
+    padding: 35px 0;
+    gap: 30px;
+
+    .recommend-item {
+      height: 42px;
+      line-height: 42px;
+      padding: 0 18px;
+      border-radius: 10px;
+      box-sizing: border-box;
+      border: 1px solid @GRAY04;
+      font-size: 14px;
+      font-weight: normal;
+      color: @BLANK04;
+    }
   }
 }
