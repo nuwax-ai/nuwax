@@ -1,19 +1,48 @@
+import { RECOMMEND_TEXT } from '@/constants/home.constants';
 import { useModel } from '@umijs/max';
+import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
-import classNames from 'classnames';
 
 const cx = classNames.bind(styles);
 
 const Home: React.FC = () => {
   const { name } = useModel('global');
+
+  const handlerClick = (text: string) => {
+    console.log(text);
+  };
+
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'items-center')}>
       <h2 className={cx(styles.title)}>嗨，我能帮什么忙吗？</h2>
       <p className={cx(styles.tips)}>请输入您的问题，我会尽力为您解答。</p>
-      <textarea className={cx(styles.textarea)} placeholder={'待替换'} name="" id="" cols="30" rows="10"></textarea>
-      <div className={cx(styles.recommend)}>
-
+      <textarea
+        className={cx(styles.textarea)}
+        placeholder={'待替换, 直接输入指令；可通过cmd+回车换行'}
+        name=""
+        id=""
+        cols="30"
+        rows="10"
+      ></textarea>
+      <div
+        className={cx(styles.recommend, 'flex', 'content-center', 'flex-wrap')}
+      >
+        {RECOMMEND_TEXT.map((item, index) => {
+          return (
+            <div
+              key={index}
+              className={cx(
+                styles['recommend-item'],
+                'cursor-pointer',
+                'hover-box',
+              )}
+              onClick={() => handlerClick(item)}
+            >
+              {item}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
