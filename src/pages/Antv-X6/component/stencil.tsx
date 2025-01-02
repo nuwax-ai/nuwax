@@ -48,7 +48,7 @@ const StencilContent = ({ dragChild }: Prop) => {
                   // 确保元素是可拖拽的
                   onDragEnd={(e) => handleDragStart(e, child)}
                 >
-                  <img src={child.image} alt="" />
+                  {child.icon}
                   <span key={child.key}>{child.title}</span>
                 </div>
               ))}
