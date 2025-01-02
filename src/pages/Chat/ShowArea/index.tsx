@@ -7,6 +7,7 @@ import styles from './index.less';
 import Card from '@/components/Card';
 import FoldWrap from '@/components/FoldWrap';
 import { ICON_FOLD } from '@/constants/images.constants';
+import { CardStyleEnum } from '@/types/enums/common';
 
 const cx = classNames.bind(styles);
 
@@ -37,13 +38,18 @@ const ShowArea: React.FC = () => {
     <div className={`flex flex-col items-end ${styles.container}`}>
       <ICON_FOLD onClick={handlerVisible} />
       <FoldWrap
+        className={styles.box}
         lineMargin
         title={'展示台'}
         visible={visible}
         onClose={() => setVisible(false)}
       >
         <div className={cx(styles['main-wrap'])}>
-          <Card type={'1'} checked={checked} onClick={setChecked} />
+          <Card
+            type={CardStyleEnum.ONE}
+            checked={checked}
+            onClick={setChecked}
+          />
         </div>
       </FoldWrap>
     </div>

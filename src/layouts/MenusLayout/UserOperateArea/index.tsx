@@ -6,6 +6,10 @@ import React from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+/**
+ * 一级菜单栏底部的用户操作区域组件
+ */
 const UserOperateArea: React.FC<UserOperateAreaType> = ({ onClick }) => {
   return (
     <>

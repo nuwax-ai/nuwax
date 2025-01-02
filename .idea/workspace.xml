@@ -5,27 +5,33 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7c8116f3-340f-4d34-89a1-e0506d96945e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/components/Card/CardStyleFour/index.less" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/components/Card/CardStyleFour/index.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/components/Card/CardStyleOne/index.less" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/components/Card/CardStyleOne/index.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/components/Card/CardStyleThree/index.less" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/components/Card/CardStyleThree/index.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/components/Card/CardStyleTwo/index.less" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/components/Card/CardStyleTwo/index.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/types/enums/common.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/agent-platform-front.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.prettierrc" beforeDir="false" afterPath="$PROJECT_DIR$/.prettierrc" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/layouts/HistoryConversation/index.less" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/layouts/HistoryConversation/index.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/layouts/MenusLayout/index.less" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/layouts/MenusLayout/index.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/models/layout.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pnpm-lock.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/pnpm-lock.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/Card/index.less" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/Card/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Card/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/FoldWrap/index.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/FoldWrap/index.less" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/FoldWrap/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/FoldWrap/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/MenusLayout/Header/index.less" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/MenusLayout/Header/index.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/MenusLayout/HomeSection/index.less" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/MenusLayout/HomeSection/index.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/MenusLayout/Tabs/index.less" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/MenusLayout/Tabs/index.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/MenusLayout/User/index.less" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/MenusLayout/User/index.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/MenusLayout/UserOperateArea/index.less" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/MenusLayout/UserOperateArea/index.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/MenusLayout/index.less" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/MenusLayout/index.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/layouts/index.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/layouts/index.less" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/layouts/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/layouts/index.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/Chat/ShowArea/index.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Chat/ShowArea/index.less" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/Chat/ShowArea/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Chat/ShowArea/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/styles/color.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/styles/color.less" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/types/interfaces/common.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/interfaces/common.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -79,7 +85,7 @@
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "prettierjs.PrettierConfiguration.Package": "I:\\agent-platform-front\\node_modules\\prettier",
-    "settings.editor.selected.configurable": "settings.javascript.prettier",
+    "settings.editor.selected.configurable": "settings.javascript.linters.eslint",
     "ts.external.directory.path": "I:\\agent-platform-front\\node_modules\\typescript\\lib",
     "vue.rearranger.settings.migration": "true"
   }
@@ -90,6 +96,10 @@
       <recent name="I:\agent-platform-front\src\assets\svg" />
       <recent name="I:\agent-platform-front" />
       <recent name="I:\agent-platform-front\src" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="I:\agent-platform-front\src\layouts" />
+      <recent name="I:\agent-platform-front\src\layouts\MenusLayout" />
     </key>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
@@ -108,22 +118,11 @@
       <workItem from="1735526453120" duration="21257000" />
       <workItem from="1735608064895" duration="23226000" />
       <workItem from="1735781245229" duration="6168000" />
-      <workItem from="1735787458965" duration="3401000" />
+      <workItem from="1735787458965" duration="12088000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="javascript">
-          <url>file://$PROJECT_DIR$/src/components/Card/index.tsx</url>
-          <properties lambdaOrdinal="-1" />
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
 </project>

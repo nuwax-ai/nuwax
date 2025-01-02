@@ -7,6 +7,9 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 折叠容器组件
+ */
 const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
   const {
     className,

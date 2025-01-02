@@ -4,6 +4,9 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 主页二级菜单栏
+ */
 const HomeSection: React.FC = () => {
   return (
     <div className={cx('px-6', 'py-16')}>

@@ -5,6 +5,9 @@ import CardStyleOne from './CardStyleOne';
 import CardStyleThree from './CardStyleThree';
 import CardStyleTwo from './CardStyleTwo';
 
+/**
+ * 卡片
+ */
 const Card: React.FC = () => {
   const [type, setType] = useState<CardStyleEnum>(CardStyleEnum.ONE);
   return (
