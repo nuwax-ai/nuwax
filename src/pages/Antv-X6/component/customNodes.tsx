@@ -81,7 +81,7 @@ const ports = {
     },
   ],
 };
-export const registerCustomNodes = () => {
+const registerCustomNodes = () => {
   // 注册 general-Node 节点
   Graph.registerNode(
     'general-Node',

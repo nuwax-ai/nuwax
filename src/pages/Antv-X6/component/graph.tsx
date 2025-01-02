@@ -6,8 +6,9 @@ import { Keyboard } from '@antv/x6-plugin-keyboard';
 import { Selection } from '@antv/x6-plugin-selection';
 import { Snapline } from '@antv/x6-plugin-snapline';
 import { Transform } from '@antv/x6-plugin-transform';
+import { GraphProp } from '../type';
 
-const initGraph = (containerId: string) => {
+const initGraph = ({ containerId, changeDrawer }: GraphProp) => {
   const graphContainer = document.getElementById(containerId);
   if (!graphContainer) throw new Error('Container not found');
 
@@ -98,6 +99,12 @@ const initGraph = (containerId: string) => {
       '.x6-port-body',
     ) as NodeListOf<SVGElement>;
     showPorts(ports, false);
+  });
+
+  graph.on('node:click', ({ node }) => {
+    // 尝试使用 get 方法来获取 data 属性
+    const data = node.getData();
+    changeDrawer(data);
   });
 
   return graph;
