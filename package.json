@@ -25,7 +25,7 @@
     "@antv/x6-plugin-transform": "^2.1.8",
     "@umijs/max": "^4.4.2",
     "antd": "^5.4.0",
-    "classnames": "^2.5.1",
+    "classnames": "2.0.0",
     "insert-css": "^2.0.0"
   },
   "devDependencies": {

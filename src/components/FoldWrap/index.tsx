@@ -20,22 +20,21 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
     children,
   } = props;
 
+  const styleHide = !visible ? styles.hidden : '';
+  const styleMargin = lineMargin ? styles.margin : '';
+
   return (
     <div
       className={cx(
-        'flex',
-        'flex-col',
-        'flex-1',
-        'w-full',
-        'overflow-hide',
+        'flex flex-col flex-1 w-full overflow-hide',
         styles['show-stand'],
-        { [styles.hidden]: !visible },
+        styleHide,
         className,
       )}
     >
       <div className={cx(styles['stand-header'], 'flex', 'items-center')}>
         {icon}
-        <span className={cx('flex-1', 'text-ellipsis')}>{title}</span>
+        <span className={'flex-1 text-ellipsis'}>{title}</span>
         {otherAction}
         <CloseOutlined
           className={cx(styles.close, 'cursor-pointer')}
@@ -43,12 +42,8 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
         />
       </div>
       <div className={cx(styles.desc, 'text-ellipsis-3')}>{desc}</div>
-      <div
-        className={cx(styles['divider-horizontal'], {
-          [styles.margin]: lineMargin,
-        })}
-      />
-      <div className={cx('flex-1', 'overflow-y')}>
+      <div className={cx(styles['divider-horizontal'], styleMargin)} />
+      <div className={'flex-1 overflow-y'}>
         {children || (
           <Empty className={cx(styles.empty)} description="暂无内容" />
         )}

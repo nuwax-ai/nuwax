@@ -1,19 +1,19 @@
-@import "@/styles/color";
+@import '@/styles/color';
 
 .container {
   position: relative;
-  padding: 6px 20px;
+  padding: 16px 20px;
   border: 1px solid @GRAY06;
   border-radius: 6px;
 
   img {
     width: 60px;
     height: 60px;
+    object-fit: cover;
   }
 
-  .center {
+  .box {
     margin-left: 10px;
-    overflow: hidden;
 
     h3 {
       margin-bottom: 6px;
@@ -22,6 +22,7 @@
     }
 
     p {
+      line-height: 20px;
       color: @GRAY05;
       font-size: 14px;
     }
