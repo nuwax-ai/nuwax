@@ -17,6 +17,7 @@ export class GeneralNode extends React.Component<NodeProps> {
       <p onClick={() => this.changeNode('Delete')}>删除</p>
     </>
   );
+
   render() {
     const { node } = this.props;
     const data = node.getData<Child>(); // 明确告诉 getData 返回的数据类型
@@ -25,15 +26,26 @@ export class GeneralNode extends React.Component<NodeProps> {
       return null; // 或者返回一个默认的内容，以防止渲染错误
     }
 
+    // 确保宽度和高度是有效的数字
+    const width = typeof data.width === 'number' ? data.width : 304;
+    const height = typeof data.height === 'number' ? data.height : 83;
+    // 构造渐变背景字符串
+    const gradientBackground = data.backgroundColor
+      ? `linear-gradient(to bottom, ${data.backgroundColor} 0%, white 45%)`
+      : 'white'; // 如果没有提供 backgroundColor，则默认为白色
+
     return (
       <div
         className="general-node"
         style={{
-          width: data.width ? data.width : 304,
-          height: data.height ? data.height : 83,
+          width: width,
+          height: height,
         }}
       >
-        <div className="general-node-header">
+        <div
+          className="general-node-header"
+          style={{ background: gradientBackground }}
+        >
           <div className="general-node-header-image">
             <img src={data.image} alt="" />
             <span>{data.title}</span>
@@ -63,55 +75,82 @@ export class GeneralNode extends React.Component<NodeProps> {
   }
 }
 
-export class ParentNode extends React.Component<NodeProps> {
-  render() {
-    const { node } = this.props;
-    const data = node.getData<Child>(); // 明确告诉 getData 返回的数据类型
-
-    if (!data) {
-      return null; // 或者返回一个默认的内容，以防止渲染错误
-    }
-
-    return <div className="parent-Node" style={{}}></div>;
-  }
-}
-
 // 连接桩的样式
 const ports = {
   groups: {
-    in: {
-      position: { name: 'top' },
+    top: {
+      position: 'top',
       attrs: {
-        fo: {
-          width: 12,
-          height: 12,
-          x: -6,
-          y: -6,
-          magnet: 'true',
+        circle: {
+          r: 4,
+          magnet: true,
+          stroke: '#5F95FF',
+          strokeWidth: 1,
+          fill: '#fff',
+          style: {
+            visibility: 'hidden',
+          },
         },
       },
-      zIndex: 1,
     },
-
-    out: {
-      position: { name: 'bottom' },
+    right: {
+      position: 'right',
       attrs: {
-        fo: {
-          width: 12,
-          height: 12,
-          x: -6,
-          y: -6,
+        circle: {
+          r: 4,
+          magnet: true,
+          stroke: '#5F95FF',
+          strokeWidth: 1,
+          fill: '#fff',
+          style: {
+            visibility: 'hidden',
+          },
         },
       },
-      zIndex: 1,
+    },
+    bottom: {
+      position: 'bottom',
+      attrs: {
+        circle: {
+          r: 4,
+          magnet: true,
+          stroke: '#5F95FF',
+          strokeWidth: 1,
+          fill: '#fff',
+          style: {
+            visibility: 'hidden',
+          },
+        },
+      },
+    },
+    left: {
+      position: 'left',
+      attrs: {
+        circle: {
+          r: 4,
+          magnet: true,
+          stroke: '#5F95FF',
+          strokeWidth: 1,
+          fill: '#fff',
+          style: {
+            visibility: 'hidden',
+          },
+        },
+      },
     },
   },
   items: [
     {
-      group: 'in',
+      group: 'top',
     },
     {
-      group: 'out',
+      group: 'right',
+    },
+    {
+      group: 'bottom',
+    },
+    {
+      group: 'left',
     },
   ],
 };

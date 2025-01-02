@@ -105,7 +105,8 @@
     /* 上方阴影 */ -4px 0 8px rgba(0, 0, 0, 10%),
     /* 左侧阴影 */ 4px 0 8px rgba(0, 0, 0, 10%); /* 右侧阴影 */
 
-  padding: 10px 16px;
+  overflow: hidden; /* 确保子元素不会溢出父元素的边界 */
+  padding-bottom: 10px;
   border-radius: 10px;
 
   .general-node-header {
@@ -114,6 +115,7 @@
     margin-bottom: 10px;
     align-items: center;
     line-height: 22px;
+    padding: 10px 16px 0;
 
     .general-node-header-image {
       font-family: 'Alimama Agile VF';
@@ -133,6 +135,7 @@
     font-size: 12px;
     font-weight: normal;
     line-height: 22px;
+    padding: 0 16px;
 
     .general-node-content-item {
       display: flex;

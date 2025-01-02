@@ -16,6 +16,7 @@ export const asideList: StencilList[] = [
         key: 'aiModel',
         type: 'general-Node',
         content: [{ label: '模型', value: 'gpt-o1-mini' }],
+        backgroundColor: 'red',
       },
       {
         title: '插件',
@@ -83,6 +84,7 @@ export const asideList: StencilList[] = [
         content: '',
         width: 760,
         height: 200,
+        isParent: true,
       },
     ],
   },

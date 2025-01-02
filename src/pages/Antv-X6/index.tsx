@@ -6,6 +6,7 @@ import { registerCustomNodes } from './component/registerCustomNodes'; // 引入
 import StencilContent from './component/stencil';
 // 引入一些图标
 import { HomeOutlined, PlusOutlined } from '@ant-design/icons';
+import { Node } from '@antv/x6';
 import './index.less';
 import { Child } from './type';
 
@@ -42,32 +43,41 @@ const AntvX6 = () => {
 
   // 子组件新增节点
   const dragChild = (e: React.DragEvent<HTMLDivElement>, child: Child) => {
-    // 阻止默认行为以防止页面跳转等意外情况
     e.preventDefault();
-    // 计算相对于画布的鼠标位置
+
+    // 将鼠标位置转换为画布坐标系中的位置
     const point = graph.clientToGraph(e.clientX, e.clientY);
-    console.log(graph);
 
-    // 使用 getCellAt 方法获取鼠标指针下的单元
-    const targetNode = graph.getCellAt(point.x, point.y);
-
-    // 根据子组件传递过来的数据，创建节点
+    // 获取所有节点，并尝试找到位于拖拽位置的目标父节点
+    let targetNode: Node | null = null;
+    graph.getNodes().some((node: Node) => {
+      if (node.getData<Child>()?.isParent) {
+        const bbox = node.getBBox();
+        if (bbox.containsPoint(point)) {
+          targetNode = node as Node; // 类型断言;
+          return true; // 退出循环
+        }
+      }
+      return false;
+    });
+    // 创建新节点
     const newNode = graph.addNode({
       shape: child.type,
-      x: e.clientX - 310,
-      y: e.clientY,
-      data: child, // 确保这样设置了数据
+      x: point.x, // 使用转换后的坐标
+      y: point.y,
+      width: child.width ? child.width : 304,
+      height: child.height ? child.height : 83,
+      data: child,
     });
 
-    // 如果有目标节点，并且它允许嵌套子节点，则将新节点添加到目标节点内
-    if (targetNode && targetNode.isNode() && targetNode.canHaveChildren()) {
-      targetNode.addChild(newNode);
-    } else {
-      // 否则直接添加到画布上
+    // 如果找到了允许嵌套子节点的目标节点，则添加新节点为子节点
+    if (targetNode === null) {
       graph.addCell(newNode);
+    } else {
+      targetNode.addChild(newNode);
+      // 否则直接添加到画布上
     }
   };
-
   // 点击组件，显示抽屉
   const changeDrawer = (child: Child) => {
     console.log(child);

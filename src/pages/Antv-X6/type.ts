@@ -19,6 +19,7 @@ export interface Child {
   width?: number;
   height?: number;
   isParent?: boolean;
+  backgroundColor?: string;
 }
 
 export interface StencilList {
