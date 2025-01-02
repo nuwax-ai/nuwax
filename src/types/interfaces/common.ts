@@ -8,8 +8,10 @@ export interface FoldWrapType {
   title: string;
   desc?: string;
   visible?: boolean;
+  // 关闭按钮左侧操作区域，可选
   otherAction?: React.ReactNode;
   onClose: () => void;
+  // 顶部线条是否有margin样式
   lineMargin?: boolean;
 }
 

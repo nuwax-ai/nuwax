@@ -7,6 +7,9 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 折叠容器组件
+ */
 const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
   const {
     className,
@@ -22,6 +25,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
 
   const styleHide = !visible ? styles.hidden : '';
   const styleMargin = lineMargin ? styles.margin : '';
+  const iconMargin = icon ? styles['icon-margin'] : '';
 
   return (
     <div
@@ -34,7 +38,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
     >
       <div className={cx(styles['stand-header'], 'flex', 'items-center')}>
         {icon}
-        <span className={'flex-1 text-ellipsis'}>{title}</span>
+        <span className={cx('flex-1 text-ellipsis', iconMargin)}>{title}</span>
         {otherAction}
         <CloseOutlined
           className={cx(styles.close, 'cursor-pointer')}
