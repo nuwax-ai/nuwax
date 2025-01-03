@@ -1,10 +1,18 @@
 @import '@/styles/color';
 
-.user {
-  width: 40px;
-  height: 40px;
-  margin-top: 6px;
-  border-radius: 50%;
-  color: @WHITE;
-  background-color: @BLUE01;
+.container {
+  width: 140px;
+  padding-top: 6px;
+
+  .divider-horizontal {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 50px;
+    border-bottom: 1px solid @GRAY02;
+  }
+
+  .log-out {
+    height: 51px;
+  }
 }
