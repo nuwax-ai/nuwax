@@ -13,6 +13,7 @@ export interface FoldWrapType {
   onClose: () => void;
   // 顶部线条是否有margin样式
   lineMargin?: boolean;
+  key?: string;
 }
 
 // 卡片样式类型
