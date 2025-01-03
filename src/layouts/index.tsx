@@ -5,6 +5,7 @@ import { Outlet } from 'umi';
 import HistoryConversation from './HistoryConversation';
 import styles from './index.less';
 import MenusLayout from './MenusLayout';
+import Message from './Message';
 
 const cx = classNames.bind(styles);
 
@@ -16,6 +17,7 @@ export default function Layout() {
     <div className={cx('flex', 'h-full', styles.container)}>
       <MenusLayout />
       <HistoryConversation />
+      <Message />
       <div className={cx('flex-1')}>
         <Outlet />
       </div>

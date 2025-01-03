@@ -5,9 +5,20 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7c8116f3-340f-4d34-89a1-e0506d96945e" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/layouts/MenusLayout/User/UserAction/index.less" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/layouts/MenusLayout/User/UserAction/index.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/layouts/MenusLayout/User/UserAvatar/index.less" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/layouts/MenusLayout/User/UserAvatar/index.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/layouts/Message/index.less" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/layouts/Message/index.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/FoldWrap/index.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/FoldWrap/index.less" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/FoldWrap/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/FoldWrap/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/constants/menus.constants.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/constants/menus.constants.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/layouts/MenusLayout/User/index.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/layouts/MenusLayout/User/index.less" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/layouts/MenusLayout/User/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/layouts/MenusLayout/User/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/layouts/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/layouts/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/models/layout.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/layout.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/types/enums/menus.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/enums/menus.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/types/interfaces/menus.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/interfaces/menus.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,31 +51,31 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_ADD_EXTERNAL_FILES": "true",
-    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
-    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "dev",
-    "last_opened_file_path": "I:/agent-platform-front/src/components/Card/CardStyleFour",
-    "list.type.of.created.stylesheet": "Less",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.standard": "true",
-    "node.js.detected.package.stylelint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.standard": "",
-    "node.js.selected.package.stylelint": "I:\\agent-platform-front\\node_modules\\stylelint",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "prettierjs.PrettierConfiguration.Package": "I:\\agent-platform-front\\node_modules\\prettier",
-    "settings.editor.selected.configurable": "settings.javascript.linters.eslint",
-    "ts.external.directory.path": "I:\\agent-platform-front\\node_modules\\typescript\\lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
+    &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
+    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;dev&quot;,
+    &quot;last_opened_file_path&quot;: &quot;I:/agent-platform-front/src/components/Card/CardStyleFour&quot;,
+    &quot;list.type.of.created.stylesheet&quot;: &quot;Less&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.standard&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.stylelint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.standard&quot;: &quot;&quot;,
+    &quot;node.js.selected.package.stylelint&quot;: &quot;I:\\agent-platform-front\\node_modules\\stylelint&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;prettierjs.PrettierConfiguration.Package&quot;: &quot;I:\\agent-platform-front\\node_modules\\prettier&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;settings.javascript.linters.eslint&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;I:\\agent-platform-front\\node_modules\\typescript\\lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="I:\agent-platform-front\src\components\Card\CardStyleFour" />
@@ -93,7 +104,8 @@
       <workItem from="1735526453120" duration="21257000" />
       <workItem from="1735608064895" duration="23226000" />
       <workItem from="1735781245229" duration="6168000" />
-      <workItem from="1735787458965" duration="14102000" />
+      <workItem from="1735787458965" duration="21705000" />
+      <workItem from="1735867839063" duration="4829000" />
     </task>
     <servers />
   </component>

@@ -1,4 +1,8 @@
-import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
+import {
+  TabsEnum,
+  UserAvatarEnum,
+  UserOperatorAreaEnum,
+} from '@/types/enums/menus';
 import {
   CommentOutlined,
   CopyOutlined,
@@ -6,6 +10,9 @@ import {
   HomeOutlined,
   InboxOutlined,
   MessageOutlined,
+  PoweroffOutlined,
+  SettingOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 
 // tabs
@@ -43,5 +50,24 @@ export const USER_OPERATE_AREA = [
     title: '消息',
     icon: <MessageOutlined />,
     type: UserOperatorAreaEnum.Message,
+  },
+];
+
+// 用户头像操作列表
+export const USER_AVATAR_LIST = [
+  {
+    type: UserAvatarEnum.User_Name,
+    icon: <UserOutlined />,
+    text: '用户名称',
+  },
+  {
+    type: UserAvatarEnum.Setting,
+    icon: <SettingOutlined />,
+    text: '设置',
+  },
+  {
+    type: UserAvatarEnum.Log_Out,
+    icon: <PoweroffOutlined />,
+    text: '退出登录',
   },
 ];
