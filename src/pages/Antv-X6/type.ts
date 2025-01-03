@@ -36,6 +36,8 @@ export interface Child {
   type: string;
   // 节点的内容，可能是纯文本或键值对数组
   content: string | KeyValuePairs[];
+  // 描述
+  desc?: string;
   // 节点宽度，可选
   width?: number;
   // 节点高度，可选
@@ -68,4 +70,41 @@ export interface GraphProp {
   containerId: string;
   // 改变抽屉内容的回调函数，接收一个 Child 类型的参数
   changeDrawer: (item: Child) => void;
+}
+
+/**
+ * 定义 右侧节点数组设置。
+ */
+// 使用 antd 内置的 FormListFieldData 类型
+export type FormListFieldData = {
+  key: string | number;
+  name: string | number;
+  fieldKey?: string | number;
+};
+
+// 定义输入项配置类型
+export interface FieldConfig {
+  name: string;
+  placeholder?: string;
+  rules?: any[];
+  component: React.ComponentType<any>;
+  style?: React.CSSProperties;
+  props?: Record<string, any>; // 用于传递特定组件的属性
+  label: string;
+}
+
+// 定义传递给 renderItem 的参数类型
+export interface RenderItemProps {
+  field: FormListFieldData;
+  onRemove: () => void;
+  fieldConfigs: FieldConfig[];
+  rowIndex: number;
+}
+
+// 定义通用节点渲染逻辑的props类型
+export interface NodeRenderProps {
+  title: string;
+  fieldConfigs: FieldConfig[];
+  renderItem?: (props: RenderItemProps) => JSX.Element; // 可选，允许自定义renderItem
+  initialValues: object;
 }

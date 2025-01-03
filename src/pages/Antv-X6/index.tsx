@@ -2,6 +2,7 @@ import FoldWrap from '@/components/FoldWrap';
 import { Button, Popover, Select } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import EventHandlers from './component/eventHandlers';
+import FoldWarpNode from './component/foldWarpNode';
 import InitGraph from './component/graph';
 import { registerCustomNodes } from './component/registerCustomNodes'; // 引入自定义节点注册函数
 import StencilContent from './component/stencil';
@@ -25,6 +26,7 @@ const AntvX6 = () => {
     desc: '',
     visible: false,
     icon: null,
+    key: '',
     onClose: () => {},
   });
 
@@ -84,13 +86,14 @@ const AntvX6 = () => {
   };
   // 点击组件，显示抽屉
   const changeDrawer = (child: Child) => {
-    console.log('abcdefg', graphRef.current);
+    console.log(child);
     setFoldWrapItem({
       ...foldWrapItem,
       title: child.title,
       visible: true,
-      desc: typeof child.content === 'string' ? child.content : '',
+      desc: child.desc,
       icon: child.icon,
+      key: child.key,
     });
   };
 
@@ -121,9 +124,10 @@ const AntvX6 = () => {
       data: {
         title: '开始',
         icon: <ICON_START />,
-        key: 'start',
+        key: 'startNode',
         type: 'general-Node',
         content: '工作流起始节点，用于设定启动工作流需要的信息',
+        desc: '工作流起始节点，用于设定启动工作流需要的信息',
         backgroundColor: '#EEEEFF',
         noPopover: true,
         width: 304,
@@ -136,17 +140,18 @@ const AntvX6 = () => {
       shape: 'general-Node',
       x: 1000, // 使用转换后的坐标
       y: 200,
-      width: 344,
+      width: 324,
       height: 83,
       data: {
         title: '结束',
         icon: <ICON_END />,
-        key: 'start',
+        key: 'endNode',
         type: 'general-Node',
         content: '工作流的最终节点，用于返回工作流运行后的结果信息',
+        desc: '工作流的最终节点，用于返回工作流运行后的结果信息',
         backgroundColor: '#EEEEFF',
         noPopover: true,
-        width: 384,
+        width: 324,
         height: 83,
       },
       zIndex: 2, // 新节点的层级设置为2
@@ -156,7 +161,6 @@ const AntvX6 = () => {
     const cleanup = EventHandlers(graphRef.current);
     // 在这里可以放置任何需要在组件卸载时清理的代码
     return () => {
-      console.log('12312412', graphRef.current);
       cleanup();
       // 确保释放资源
       graphRef.current.dispose();
@@ -194,14 +198,17 @@ const AntvX6 = () => {
       </div>
       {/* 右侧的操作栏 */}
       <FoldWrap
-        className="foldWrapStyle"
+        className="fold-wrap-style"
         lineMargin
         title={foldWrapItem.title}
         visible={foldWrapItem.visible}
         onClose={closeDrawer}
+        desc={foldWrapItem.desc}
         icon={foldWrapItem.icon}
       >
-        123
+        <div className="foldWarp-content-style">
+          <FoldWarpNode type={foldWrapItem.key as string} />
+        </div>
       </FoldWrap>
     </div>
   );
