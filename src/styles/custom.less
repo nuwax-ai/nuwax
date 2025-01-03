@@ -39,7 +39,7 @@ each(range(2, 3, 1), {
 .flex {
   display: flex;
 }
-
+// 获取剩余的空间
 .flex-1 {
   flex: 1;
 }
@@ -116,4 +116,67 @@ each(range(2, 3, 1), {
   &:hover {
     background-color: @WHITE01;
   }
+}
+
+// felx 布局
+// 两端对齐且居中
+.dis-sb {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+// 两端对齐不居中
+.dis-sb-start {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+}
+
+// 自适应对其
+.dis-sa {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+// 依次排序
+.dis-left {
+  display: flex;
+  justify-content: left;
+  align-items: center;
+}
+// 从右往左
+.dis-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+// 上下排列
+.dis-col {
+  display: flex;
+  flex-direction: column;
+}
+
+// 自动换行
+.dis-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-content: flex-start;
+}
+
+// 自动换行
+.dis-wrap-sa {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  box-sizing: border-box;
+}
+
+// 居中对齐
+.dis-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }

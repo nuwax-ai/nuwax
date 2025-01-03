@@ -1,34 +1,71 @@
+// 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
 import { Graph, Node } from '@antv/x6';
-
+/**
+ * 定义键值对接口，用于表示具有标签和值的对象。
+ */
 interface KeyValuePairs {
+  // 键值对的标签
   label: string;
+  // 键值对对应的值
   value: string;
 }
 
+/**
+ * 定义 NodeProps 接口，用于定义传递给自定义节点组件的属性。
+ */
 export interface NodeProps {
+  // 节点实例，类型为 AntV X6 的 Node 类型，泛型参数可以是任何类型
   node: Node<any>;
+  // 图实例，类型为 AntV X6 的 Graph 类型
   graph: Graph;
+  // 操作节点
+  onChange?: (action: string, nodeData: Child) => void;
 }
 
+/**
+ * 定义 Child 接口，用于描述子节点的数据结构。
+ */
 export interface Child {
+  // 子节点标题
   title: string;
-  image: string;
+  // 子节点显示的图像路径
+  icon: string | React.ReactNode; // 直接使用 SVGProps
+  // 唯一标识符
   key: string;
+  // 子节点的类型，可能用于区分不同种类的节点
   type: string;
+  // 节点的内容，可能是纯文本或键值对数组
   content: string | KeyValuePairs[];
+  // 节点宽度，可选
   width?: number;
+  // 节点高度，可选
   height?: number;
+  // 标记该节点是否可以作为父节点嵌套其他节点，可选
   isParent?: boolean;
+  // 节点背景颜色，可选
   backgroundColor?: string;
+  // 没有操作栏
+  noPopover?: boolean;
 }
 
+/**
+ * 定义 StencilList 接口，用于描述模板列表的数据结构。
+ */
 export interface StencilList {
+  // 模板列表名称
   name: string;
+  // 模板列表的唯一标识符
   key: string;
+  // 模板列表中的子节点集合，遵循 Child 接口定义
   children: Child[];
 }
 
+/**
+ * 定义 GraphProp 接口，用于描述图组件的属性。
+ */
 export interface GraphProp {
+  // 包含图的 DOM 容器的 ID
   containerId: string;
+  // 改变抽屉内容的回调函数，接收一个 Child 类型的参数
   changeDrawer: (item: Child) => void;
 }
