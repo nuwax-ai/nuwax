@@ -4,6 +4,7 @@ const useLayout = () => {
   const [openHistoryModal, setOpenHistoryModal] = useState<boolean>(false);
   const [openMessage, setOpenMessage] = useState<boolean>(false);
   const [openAdmin, setOpenAdmin] = useState<boolean>(false);
+  const [openSetting, setOpenSetting] = useState<boolean>(false);
   return {
     openHistoryModal,
     setOpenHistoryModal,
@@ -11,6 +12,8 @@ const useLayout = () => {
     setOpenMessage,
     openAdmin,
     setOpenAdmin,
+    openSetting,
+    setOpenSetting,
   };
 };
 

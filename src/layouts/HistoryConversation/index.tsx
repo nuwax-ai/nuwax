@@ -1,7 +1,7 @@
-import { useModel } from '@umijs/max';
 import { Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

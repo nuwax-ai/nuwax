@@ -1,19 +1,19 @@
-@import '@/styles/color';
+@import "@/styles/color";
 
 .container {
   position: absolute;
-  left: 70px;
-  bottom: 20px;
-  width: 113px;
-  height: 110px;
-  z-index: 1000;
-  border: 1px solid @BLANK01;
-  visibility: hidden;
-  transition: visibility 0.3s;
-  border-radius: 8px;
-  background-color: @WHITE;
+  left: 70px !important;
+
+  .segment {
+    width: 50%;
+  }
+
+  .del-disabled {
+    color: @GRAY04;
+  }
 }
 
-.visible {
-  visibility: visible;
+.message-list {
+  width: 500px;
+  height: 500px;
 }

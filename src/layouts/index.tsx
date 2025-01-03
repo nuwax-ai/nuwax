@@ -1,4 +1,5 @@
 import { BASE_URL } from '@/constants/common.constants';
+import Setting from '@/layouts/Setting';
 import classNames from 'classnames';
 import { useEffect } from 'react';
 import { Outlet } from 'umi';
@@ -15,9 +16,14 @@ export default function Layout() {
   }, []);
   return (
     <div className={cx('flex', 'h-full', styles.container)}>
+      {/*菜单栏*/}
       <MenusLayout />
+      {/*历史记录弹窗*/}
       <HistoryConversation />
+      {/*消息弹窗*/}
       <Message />
+      {/*设置弹窗*/}
+      <Setting />
       <div className={cx('flex-1')}>
         <Outlet />
       </div>

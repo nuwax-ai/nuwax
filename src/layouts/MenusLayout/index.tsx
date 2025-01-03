@@ -15,7 +15,7 @@ const cx = classNames.bind(styles);
  * 菜单布局组件
  */
 const MenusLayout: React.FC = () => {
-  const { setOpenHistoryModal } = useModel('layout');
+  const { setOpenHistoryModal, setOpenMessage } = useModel('layout');
   const [tabType, setTabType] = useState<TabsEnum>(TabsEnum.Home);
   const [loading, setLoading] = useState<boolean>(false);
   // 切换tab
@@ -28,9 +28,17 @@ const MenusLayout: React.FC = () => {
   // 用户区域操作
   const handleUserClick = (type: UserOperatorAreaEnum) => {
     console.log(type);
-    // 会话记录
-    if (type === UserOperatorAreaEnum.History_Conversation) {
-      setOpenHistoryModal(true);
+    switch (type) {
+      case UserOperatorAreaEnum.Document:
+        // todo 打开文档链接
+        break;
+      // 会话记录
+      case UserOperatorAreaEnum.History_Conversation:
+        setOpenHistoryModal(true);
+        break;
+      case UserOperatorAreaEnum.Message:
+        setOpenMessage(true);
+        break;
     }
   };
 

@@ -1,4 +1,6 @@
 import {
+  MessageOptionEnum,
+  SettingActionEnum,
   TabsEnum,
   UserAvatarEnum,
   UserOperatorAreaEnum,
@@ -69,5 +71,31 @@ export const USER_AVATAR_LIST = [
     type: UserAvatarEnum.Log_Out,
     icon: <PoweroffOutlined />,
     text: '退出登录',
+  },
+];
+
+export const MESSAGE_OPTIONS = [
+  {
+    label: '全部',
+    value: MessageOptionEnum.All,
+  },
+  {
+    label: '未读',
+    value: MessageOptionEnum.Unread,
+  },
+];
+
+export const SETTING_ACTIONS = [
+  {
+    type: SettingActionEnum.Account,
+    label: '账号',
+  },
+  {
+    type: SettingActionEnum.Email_Bind,
+    label: '邮箱绑定',
+  },
+  {
+    type: SettingActionEnum.Reset_Password,
+    label: '重置密码',
   },
 ];
