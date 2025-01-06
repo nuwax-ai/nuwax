@@ -5,7 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7c8116f3-340f-4d34-89a1-e0506d96945e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/src/pages/Antv-X6/params.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Antv-X6/params.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/Login/index.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Login/index.less" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/Login/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Login/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/styles/color.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/styles/color.less" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,7 +48,7 @@
     "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "Merging dev",
+    "git-widget-placeholder": "dev",
     "last_opened_file_path": "I:/agent-platform-front/src/components/Card/CardStyleFour",
     "list.type.of.created.stylesheet": "Less",
     "node.js.detected.package.eslint": "true",
@@ -93,7 +96,7 @@
       <workItem from="1735781245229" duration="6168000" />
       <workItem from="1735787458965" duration="21705000" />
       <workItem from="1735867839063" duration="25907000" />
-      <workItem from="1736127134023" duration="1011000" />
+      <workItem from="1736127134023" duration="3163000" />
     </task>
     <servers />
   </component>
