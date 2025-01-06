@@ -8,4 +8,9 @@ function isValidEmail(email: string) {
   return reg.test(email);
 }
 
-export { getNumbersOnly, isValidEmail };
+function validatePassword(password: string) {
+  const reg = /^(?=.*\d)(?=.*[a-zA-Z])[\da-zA-Z~!@#$%^&*]{8,16}$/;
+  return reg.test(password);
+}
+
+export { getNumbersOnly, isValidEmail, validatePassword };

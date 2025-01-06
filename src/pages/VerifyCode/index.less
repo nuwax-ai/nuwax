@@ -1,0 +1,81 @@
+@import "@/styles/color";
+
+.container {
+  background-color: @WHITE06;
+
+  .inner {
+    width: 480px;
+    height: 642px;
+    padding: 60px 40px;
+    border-radius: 10px;
+    background-color: @WHITE;
+
+    h3 {
+      margin-bottom: 40px;
+      font-size: 28px;
+      font-weight: 600;
+    }
+
+    p {
+      color: @BLANK03;
+    }
+
+    .phone {
+      margin-top: 4px;
+      margin-bottom: 40px;
+      color: @BLANK;
+      font-weight: 600;
+    }
+
+    .code-container {
+      width: 100%;
+      display: flex;
+      margin-top: 50px;
+      margin-bottom: 12px;
+    }
+
+    .code-item {
+      flex: 1;
+      height: 56px;
+      line-height: 56px;
+      text-align: center;
+      border-radius: 10px;
+      background: @WHITE01;
+      border: 1px solid transparent;
+      margin-right: 7px;
+      color: @BLANK;
+      font-size: 18px;
+
+      &.error {
+        border-color: red;
+      }
+
+      &.active {
+        border-color: @BLANK01;
+      }
+
+      &:last-child {
+        margin-right: 0;
+      }
+    }
+
+    .count-down {
+      margin-bottom: 120px;
+      color: @BLANK04;
+
+      .time {
+        color: @GRAY07;
+      }
+    }
+
+    .footer {
+      gap: 20px;
+    }
+  }
+}
+
+.input {
+  position: absolute;
+  opacity: 0;
+  z-index: -1;
+}
