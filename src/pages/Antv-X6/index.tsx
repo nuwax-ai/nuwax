@@ -4,12 +4,18 @@ import { useEffect, useRef, useState } from 'react';
 import FoldWarpNode from './component/disposeNode';
 import EventHandlers from './component/eventHandlers';
 import InitGraph from './component/graph';
+import Monaco from './component/monaco';
 import { registerCustomNodes } from './component/registerCustomNodes'; // 引入自定义节点注册函数
 import StencilContent from './component/stencil';
 // 引入一些图标
 import { ICON_END, ICON_START } from '@/constants/images.constants';
 import { FoldWrapType } from '@/types/interfaces/common';
-import { HomeOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  CaretRightOutlined,
+  HomeOutlined,
+  PlusOutlined,
+  ToolOutlined,
+} from '@ant-design/icons';
 import { Node } from '@antv/x6';
 import './index.less';
 import { Child } from './type';
@@ -86,7 +92,6 @@ const AntvX6 = () => {
   };
   // 点击组件，显示抽屉
   const changeDrawer = (child: Child) => {
-    console.log(child);
     setFoldWrapItem({
       ...foldWrapItem,
       title: child.title,
@@ -97,6 +102,10 @@ const AntvX6 = () => {
     });
   };
 
+  // 节点中触发了事件
+  // const handleTriggerEvent = (e: any) => {
+  //   console.log(e);
+  // };
   // 关闭抽屉
   const closeDrawer = () => {
     setFoldWrapItem({ ...foldWrapItem, visible: false });
@@ -174,6 +183,7 @@ const AntvX6 = () => {
       style={{ width: '100%', height: '100%' }}
       id="container"
     >
+      <Monaco />
       {/* 绝对定位的容器，用以添加节点等 */}
       <div className="absolute-box">
         <Select
@@ -196,6 +206,27 @@ const AntvX6 = () => {
           </Button>
         </Popover>
       </div>
+      {/* 绝对定位的容器，用以试运行 */}
+      <div className="absolute-test">
+        <ToolOutlined />
+        <Button
+          icon={<CaretRightOutlined />}
+          type="primary"
+          onClick={() =>
+            changeDrawer({
+              ...foldWrapItem,
+              title: '试运行',
+              desc: '',
+              icon: null,
+              key: 'testNode',
+              type: '',
+              content: '',
+            })
+          }
+        >
+          试运行
+        </Button>
+      </div>
       {/* 右侧的操作栏 */}
       <FoldWrap
         className="fold-wrap-style"
@@ -206,7 +237,7 @@ const AntvX6 = () => {
         desc={foldWrapItem.desc}
         icon={foldWrapItem.icon}
       >
-        <div className="foldWarp-content-style">
+        <div className="dispose-node-style">
           <FoldWarpNode type={foldWrapItem.key as string} />
         </div>
       </FoldWrap>

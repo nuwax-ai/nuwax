@@ -24,10 +24,12 @@
     "@antv/x6-plugin-stencil": "^2.1.5",
     "@antv/x6-plugin-transform": "^2.1.8",
     "@antv/x6-react-shape": "^2.2.3",
+    "@monaco-editor/react": "^4.6.0",
     "@umijs/max": "^4.4.2",
     "antd": "^5.4.0",
     "classnames": "2.0.0",
-    "insert-css": "^2.0.0"
+    "insert-css": "^2.0.0",
+    "monaco-editor": "^0.52.2"
   },
   "devDependencies": {
     "@types/react": "^18.0.33",

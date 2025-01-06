@@ -21,3 +21,8 @@ export interface CardStyleType {
   type: string;
   onClick: (type: CardStyleEnum) => void;
 }
+
+// 默认的object
+export interface DefaultObjectType {
+  [key: string]: any;
+}

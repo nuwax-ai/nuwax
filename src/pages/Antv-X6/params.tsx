@@ -3,6 +3,7 @@ import {
   ICON_HOME,
   ICON_LOGO,
   ICON_NEW_AGENT,
+  ICON_START,
 } from '@/constants/images.constants';
 import { StencilList } from './type';
 
@@ -41,7 +42,7 @@ export const asideList: StencilList[] = [
       {
         title: '过程输出',
         icon: <ICON_NEW_AGENT />,
-        key: 'dd',
+        key: 'processNode',
         type: 'general-Node',
         content: '支持中间过程的消息输出，支持流式和非流式两种方式',
         desc: '支持中间过程的消息输出，支持流式和非流式两种方式',
@@ -55,7 +56,7 @@ export const asideList: StencilList[] = [
       {
         title: '代码',
         icon: <ICON_LOGO />,
-        key: 'ee',
+        key: 'codeNode',
         type: 'general-Node',
         content: '代码处理xxxx',
         desc: '编写代码，处理输入变量来生成返回值',
@@ -309,4 +310,21 @@ export const dataTypes = [
   },
 ];
 
-// 开始的
+// 模拟模型的输入参数
+export const modelTypes = [
+  {
+    label: '输入',
+    icon: <ICON_START />,
+    value: 'start',
+    children: [
+      {
+        label: 'input',
+        key: 'String-input',
+      },
+      {
+        label: 'd',
+        key: 'String-d',
+      },
+    ],
+  },
+];
