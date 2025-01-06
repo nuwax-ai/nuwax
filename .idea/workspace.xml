@@ -5,20 +5,21 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7c8116f3-340f-4d34-89a1-e0506d96945e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/layouts/MenusLayout/User/UserAction/index.less" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/layouts/MenusLayout/User/UserAction/index.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/layouts/MenusLayout/User/UserAvatar/index.less" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/layouts/MenusLayout/User/UserAvatar/index.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/layouts/Message/index.less" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/layouts/Message/index.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/layouts/Setting/index.less" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/layouts/Setting/index.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/overrides.less" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/constants/menus.constants.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/constants/menus.constants.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/layouts/MenusLayout/User/index.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/layouts/MenusLayout/User/index.less" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/layouts/HistoryConversation/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/layouts/HistoryConversation/index.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/layouts/MenusLayout/User/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/layouts/MenusLayout/User/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/layouts/MenusLayout/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/layouts/MenusLayout/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/layouts/Message/index.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/layouts/Message/index.less" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/layouts/Message/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/layouts/Message/index.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/layouts/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/layouts/index.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/models/layout.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/layout.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/styles/color.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/styles/color.less" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/styles/custom.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/styles/custom.less" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/types/enums/menus.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/enums/menus.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/types/interfaces/menus.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/interfaces/menus.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,11 +30,11 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="TypeScript JSX File" />
-        <option value="Less File" />
         <option value="tsx" />
         <option value="TypeScript File" />
-        <option value="less File Template" />
         <option value="tsx File Template" />
+        <option value="less File Template" />
+        <option value="Less File" />
       </list>
     </option>
   </component>
@@ -105,7 +106,7 @@
       <workItem from="1735608064895" duration="23226000" />
       <workItem from="1735781245229" duration="6168000" />
       <workItem from="1735787458965" duration="21705000" />
-      <workItem from="1735867839063" duration="4829000" />
+      <workItem from="1735867839063" duration="25785000" />
     </task>
     <servers />
   </component>

@@ -1,4 +1,5 @@
 // 菜单栏~tabs切换事件枚举
+
 export enum TabsEnum {
   Home = 'home',
   // 工作空间
@@ -20,4 +21,17 @@ export enum UserAvatarEnum {
   User_Name = 'username',
   Setting = 'setting',
   Log_Out = 'log_out',
+}
+
+// 消息选项：全部、未读
+export enum MessageOptionEnum {
+  All,
+  Unread,
+}
+
+// 设置选项
+export enum SettingActionEnum {
+  Account,
+  Email_Bind,
+  Reset_Password,
 }

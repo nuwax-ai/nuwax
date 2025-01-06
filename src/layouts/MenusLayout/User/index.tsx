@@ -11,7 +11,7 @@ import UserAvatar from './UserAvatar';
 const cx = classNames.bind(styles);
 
 const User: React.FC = () => {
-  const { openAdmin, setOpenAdmin } = useModel('layout');
+  const { openAdmin, setOpenAdmin, setOpenSetting } = useModel('layout');
   const handlerClick = (type: UserAvatarEnum) => {
     console.log(type);
     switch (type) {
@@ -19,6 +19,8 @@ const User: React.FC = () => {
       case UserAvatarEnum.User_Name:
         break;
       case UserAvatarEnum.Setting:
+        setOpenAdmin(false);
+        setOpenSetting(true);
         break;
       case UserAvatarEnum.Log_Out:
         // todo 退出登录，清除缓存
