@@ -19,7 +19,7 @@ export const asideList: StencilList[] = [
         type: 'general-Node',
         content: [{ label: '模型', value: 'gpt-o1-mini' }],
         desc: '调用大语言模型，使用变量和提示词生成回复',
-        backgroundColor: 'red',
+        backgroundColor: '#EEEEFF',
       },
       {
         title: '插件',
@@ -28,6 +28,7 @@ export const asideList: StencilList[] = [
         type: 'general-Node',
         content: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气...',
         desc: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气...',
+        backgroundColor: '#EEEEFF',
       },
       {
         title: '工作流',
