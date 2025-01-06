@@ -1,8 +1,8 @@
 import FoldWrap from '@/components/FoldWrap';
 import { Button, Popover, Select } from 'antd';
 import { useEffect, useRef, useState } from 'react';
+import FoldWarpNode from './component/disposeNode';
 import EventHandlers from './component/eventHandlers';
-import FoldWarpNode from './component/foldWarpNode';
 import InitGraph from './component/graph';
 import { registerCustomNodes } from './component/registerCustomNodes'; // 引入自定义节点注册函数
 import StencilContent from './component/stencil';
