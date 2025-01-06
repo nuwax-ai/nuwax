@@ -3,7 +3,7 @@ import { UserAvatarEnum } from '@/types/enums/menus';
 import { Popover } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { useModel } from 'umi';
+import { useModel, useNavigate } from 'umi';
 import styles from './index.less';
 import UserActionItem from './UserAction';
 import UserAvatar from './UserAvatar';
@@ -12,6 +12,7 @@ const cx = classNames.bind(styles);
 
 const User: React.FC = () => {
   const { openAdmin, setOpenAdmin, setOpenSetting } = useModel('layout');
+  let navigate = useNavigate();
   const handlerClick = (type: UserAvatarEnum) => {
     console.log(type);
     switch (type) {
@@ -24,6 +25,7 @@ const User: React.FC = () => {
         break;
       case UserAvatarEnum.Log_Out:
         // todo 退出登录，清除缓存
+        navigate('/login', { replace: true });
         break;
     }
   };

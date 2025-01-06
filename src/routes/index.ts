@@ -5,6 +5,11 @@ const routes = [
     layout: false,
   },
   {
+    path: '/verify-code',
+    component: '@/pages/VerifyCode',
+    layout: false,
+  },
+  {
     path: '',
     component: '@/layouts/index',
     layout: false,
