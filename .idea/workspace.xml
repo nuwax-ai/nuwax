@@ -5,16 +5,21 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7c8116f3-340f-4d34-89a1-e0506d96945e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/pages/VerifyCode/index.less" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/pages/VerifyCode/index.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/types/enums/login.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/assets/images/pic.jpeg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/pages/Login/ModalSliderCaptcha/index.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/pages/SetPassword/index.less" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/pages/SetPassword/index.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/types/interfaces/login.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/layouts/MenusLayout/User/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/layouts/MenusLayout/User/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pnpm-lock.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/pnpm-lock.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/constants/common.constants.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/constants/common.constants.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/constants/home.constants.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/constants/home.constants.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/Login/index.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Login/index.less" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/Login/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Login/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/VerifyCode/index.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/VerifyCode/index.less" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/VerifyCode/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/VerifyCode/index.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/routes/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/styles/color.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/styles/color.less" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/common.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/common.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,7 +60,7 @@
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "dev",
-    "last_opened_file_path": "I:/agent-platform-front/src/components/Card/CardStyleFour",
+    "last_opened_file_path": "I:/agent-platform-front/src/assets/images",
     "list.type.of.created.stylesheet": "Less",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.standard": "true",
@@ -74,6 +79,7 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="I:\agent-platform-front\src\assets\images" />
       <recent name="I:\agent-platform-front\src\components\Card\CardStyleFour" />
       <recent name="I:\agent-platform-front\src\assets\svg" />
       <recent name="I:\agent-platform-front" />

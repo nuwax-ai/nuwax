@@ -1,3 +1,7 @@
+import {
+  COUNT_DOWN_LEN,
+  VERIFICATION_CODE_LEN,
+} from '@/constants/common.constants';
 import { getNumbersOnly } from '@/utils/common';
 import type { InputRef } from 'antd';
 import { Button, Input } from 'antd';
@@ -9,23 +13,20 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useLocation } from 'umi';
+import { history, useLocation, useNavigate } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const VERIFICATION_CODE_LEN = 6;
-const COUNT_DOWN_LEN = 60;
-
 const DefaultCode = Array(VERIFICATION_CODE_LEN).fill(null);
 const VerifyCode: React.FC = () => {
   const location = useLocation();
+  let navigate = useNavigate();
   const [countDown, setCountDown] = useState<number>(COUNT_DOWN_LEN);
   const [codeString, setCodeString] = useState<string>('');
   const [errorString, setErrorString] = useState<string>('');
   const inputRef = useRef<InputRef | null>(null);
   const timer = useRef<ReturnType<typeof setInterval>>();
-  console.log(location);
   const { phoneNumber, areaCode } = location.state;
 
   const handleClick = () => {
@@ -118,10 +119,14 @@ const VerifyCode: React.FC = () => {
     //   type,
     // };
     // run(data);
+    // todo 用户是否是第一次登录需要跳转到设置密码页
+    // navigate('/', { replace: true });
+    history.push('/set-password');
   };
 
   const handleEnter = useCallback(
     (e) => {
+      console.log(111);
       if (e.keyCode === 13 || e.which === 13) {
         if (codeString?.length !== VERIFICATION_CODE_LEN || loading) {
           return;
@@ -180,8 +185,14 @@ const VerifyCode: React.FC = () => {
           </span>
         )}
         <div className={cx('flex', 'content-between', 'w-full', styles.footer)}>
-          <Button className={cx('flex-1')}>上一步</Button>
-          <Button className={cx('flex-1')} type="primary">
+          <Button className={cx('flex-1')} onClick={() => history.back()}>
+            上一步
+          </Button>
+          <Button
+            className={cx('flex-1')}
+            type="primary"
+            onClick={handleVerify}
+          >
             下一步
           </Button>
         </div>

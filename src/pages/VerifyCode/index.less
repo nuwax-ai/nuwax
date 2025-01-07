@@ -3,6 +3,12 @@
 .container {
   background-color: @WHITE06;
 
+  .input {
+    position: absolute;
+    opacity: 0;
+    z-index: -1;
+  }
+
   .inner {
     width: 480px;
     height: 642px;
@@ -32,30 +38,30 @@
       display: flex;
       margin-top: 50px;
       margin-bottom: 12px;
-    }
 
-    .code-item {
-      flex: 1;
-      height: 56px;
-      line-height: 56px;
-      text-align: center;
-      border-radius: 10px;
-      background: @WHITE01;
-      border: 1px solid transparent;
-      margin-right: 7px;
-      color: @BLANK;
-      font-size: 18px;
+      .code-item {
+        flex: 1;
+        height: 56px;
+        line-height: 56px;
+        text-align: center;
+        border-radius: 10px;
+        background: @WHITE01;
+        border: 1px solid transparent;
+        margin-right: 7px;
+        color: @BLANK;
+        font-size: 18px;
 
-      &.error {
-        border-color: red;
-      }
+        &.error {
+          border-color: red;
+        }
 
-      &.active {
-        border-color: @BLANK01;
-      }
+        &.active {
+          border-color: @BLANK01;
+        }
 
-      &:last-child {
-        margin-right: 0;
+        &:last-child {
+          margin-right: 0;
+        }
       }
     }
 
@@ -72,10 +78,4 @@
       gap: 20px;
     }
   }
-}
-
-.input {
-  position: absolute;
-  opacity: 0;
-  z-index: -1;
 }
