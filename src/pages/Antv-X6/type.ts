@@ -1,5 +1,6 @@
 // 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
 import { Graph, Node } from '@antv/x6';
+import { FormInstance } from 'antd';
 /**
  * 定义键值对接口，用于表示具有标签和值的对象。
  */
@@ -72,17 +73,6 @@ export interface GraphProp {
   changeDrawer: (item: Child) => void;
 }
 
-export interface OptionItem {
-  value: string;
-  label: string;
-  icon?: React.ReactNode; // 图标组件
-  children?: OptionItem[]; // 子选项
-}
-// 定义 CommonInputProp 接口，继承自 CascaderProps 并覆盖 options 属性
-export interface CommonInputProp {
-  options: OptionItem[];
-}
-
 /**
  * 定义 右侧节点数组设置。
  */
@@ -92,6 +82,26 @@ export type FormListFieldData = {
   name: string | number;
   fieldKey?: string | number;
 };
+
+/**
+ * 定义节点
+ */
+export interface NodeDisposeProps {
+  type?: string;
+}
+
+// 定义输入或引用参数
+export interface InputOrReferenceProps {
+  referenceList: Array<{
+    label: string;
+    key: string;
+    icon?: React.ReactNode;
+    children?: Array<{ label: string; key: string; tag: string }>;
+  }>;
+  placeholder: string;
+  value: string; // 新增：接受当前值
+  onChange: (value: string) => void; // 新增：接受值变化的回调
+}
 
 // 定义输入项配置类型
 export interface FieldConfig {
@@ -110,6 +120,7 @@ export interface RenderItemProps {
   onRemove: () => void;
   fieldConfigs: FieldConfig[];
   rowIndex: number;
+  form: FormInstance;
   showCheckbox?: boolean;
   showCopy?: boolean;
   showAssociation?: boolean;
@@ -131,4 +142,20 @@ export interface SkillProps {
   title: string;
   icon: React.ReactNode;
   desc: string;
+}
+
+// 定义模型列表
+export interface ModelListItemProps {
+  // 模型的图标
+  icon: React.ReactNode;
+  // 模型的名称
+  label: string;
+  // 模型的大小
+  size: string | number;
+  // 模型的id
+  modelName: string;
+  // 模型的简介
+  desc: string;
+  // 模型的标签
+  tagList?: string[];
 }

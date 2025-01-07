@@ -21,7 +21,6 @@ import {
   Select,
   Slider,
   Space,
-  Switch,
   Typography,
 } from 'antd';
 import React, { useState } from 'react';
@@ -114,6 +113,7 @@ const CommonNode: React.FC<NodeRenderProps> = ({
                     onRemove: () => remove(field.name),
                     fieldConfigs,
                     rowIndex: index, // 新增传递索引信息
+                    form,
                   })}
                 </Form.Item>
               ))}
@@ -127,66 +127,6 @@ const CommonNode: React.FC<NodeRenderProps> = ({
     </div>
   );
 };
-
-// // 定义开始节点的渲染逻辑
-// const StartNode: React.FC = () => {
-//   const fieldConfigs = [
-//     {
-//       name: 'name',
-//       placeholder: '变量名',
-//       label: '变量名',
-//       rules: [{ required: true, message: '请输入变量名' }],
-//       component: Input,
-//       style: { width: '165px' },
-//     },
-//     {
-//       name: 'type',
-//       placeholder: '选择类型',
-//       label: '变量类型',
-//       rules: [{ required: true, message: '请选择变量类型' }],
-//       component: Cascader,
-//       style: { width: '113px' },
-//       props: { options: dataTypes }, // 传递特定于 Cascader 的属性
-//     },
-//   ];
-
-//   return (
-//     <CommonNode
-//       title="输入"
-//       fieldConfigs={fieldConfigs}
-//       initialValues={{ inputItems: [{ name: '', type: '', isSelect: true }] }}
-//     />
-//   );
-// };
-
-// // 定义结束节点的渲染
-// const EndNode: React.FC = () => {
-//   const fieldConfigs = [
-//     {
-//       name: 'name',
-//       placeholder: '参数名',
-//       label: '参数名',
-//       rules: [{ required: true, message: '请输入参数名' }],
-//       component: Input,
-//     },
-//     {
-//       name: 'value',
-//       placeholder: '参数值',
-//       label: '参数值',
-//       rules: [{ required: true, message: '请输入参数值' }],
-//       component: Input,
-//       style: { flex: '0 0 50%' },
-//     },
-//   ];
-
-//   return (
-//     <CommonNode
-//       title="输出变量"
-//       fieldConfigs={fieldConfigs}
-//       initialValues={{ inputItems: [{ name: '', value: '', isSelect: true }] }}
-//     />
-//   );
-// };
 
 // 定义大模型的节点的渲染
 const ModelNode: React.FC = () => {
@@ -431,63 +371,6 @@ const SearchNode: React.FC = () => {
   return <div className="node-title-style">搜索引擎</div>;
 };
 
-// 定义过程输出
-const ProcessNode: React.FC = () => {
-  // 开关的状态
-  const [checked, setChecked] = useState(true);
-  // 上方的输出变量的config
-  const fieldConfigs = [
-    {
-      name: 'name',
-      placeholder: '参数名',
-      label: '参数名',
-      rules: [{ required: true, message: '请输入参数名' }],
-      component: Input,
-    },
-    {
-      name: 'value',
-      placeholder: '参数值',
-      label: '参数值',
-      rules: [{ required: true, message: '请输入参数值' }],
-      component: Input,
-      style: { flex: '0 0 50%' },
-    },
-  ];
-
-  return (
-    <div>
-      <CommonNode
-        title="输出变量"
-        fieldConfigs={fieldConfigs}
-        initialValues={{
-          inputItems: [{ name: '', value: '', isSelect: true }],
-        }}
-      />
-      <div className="margin-bottom">
-        <div className="dis-sb margin-bottom">
-          <span className="node-title-style">输出内容</span>
-          <div>
-            <span className="node-title-grey-style">
-              {checked ? '流式输出' : '非流式输出'}
-            </span>
-            <Switch
-              defaultChecked
-              onChange={() => setChecked(!checked)}
-              size="small"
-            />
-          </div>
-        </div>
-        <Input.TextArea
-          placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
-          autoSize={{ minRows: 3, maxRows: 5 }}
-          style={{ marginBottom: '10px' }}
-        />
-      </div>
-      <div></div>
-    </div>
-  );
-};
-
 // 定义代码节点
 const CodeNode: React.FC = () => {
   const { setIsShow } = useModel('monaco');
@@ -579,12 +462,13 @@ const FoldWarpNode: React.FC<FoldWarpNodeProps> = ({ type }) => {
       return <StartNode />;
     case 'endNode':
       return <EndNode />;
+    case 'processNode':
+      return <EndNode type="processNode" />;
     case 'modelNode':
       return <ModelNode />;
     case 'searchNode':
       return <SearchNode />;
-    case 'processNode':
-      return <ProcessNode />;
+
     case 'codeNode':
       return <CodeNode />;
     default:

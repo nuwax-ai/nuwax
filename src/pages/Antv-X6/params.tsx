@@ -315,15 +315,17 @@ export const modelTypes = [
   {
     label: '输入',
     icon: <ICON_START />,
-    value: 'start',
+    key: 'start',
     children: [
       {
-        label: 'input',
-        key: 'String-input',
+        key: 'output',
+        label: 'output',
+        tag: 'String',
       },
       {
-        label: 'd',
-        key: 'String-d',
+        key: 'setting',
+        label: 'Setting',
+        tag: 'Number',
       },
     ],
   },

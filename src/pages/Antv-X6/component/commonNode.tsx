@@ -10,74 +10,83 @@ import {
 } from '@ant-design/icons';
 import {
   Button,
-  Cascader,
   Checkbox,
+  Divider,
+  Dropdown,
   Form,
   Input,
   InputNumber,
   Segmented,
   Slider,
   Space,
+  Tag,
   Typography,
 } from 'antd';
 import React, { useState } from 'react';
 import '../index.less';
 import {
-  CommonInputProp,
   FieldConfig,
+  InputOrReferenceProps,
+  ModelListItemProps,
   NodeRenderProps,
-  OptionItem,
   RenderItemProps,
   SkillProps,
 } from '../type';
+import './commonNode.less';
 
-// 通用输入或引用参考值的input
-export const CommonInput: React.FC<CommonInputProp> = ({ options }) => {
-  // 自定义菜单项模板，用于添加图标
-  const optionRender = (labels: string[], selectedOptions?: OptionItem[]) => {
-    if (!selectedOptions || selectedOptions.length === 0) return null;
-    console.log(selectedOptions);
-    // 将选中的选项转换为带有图标和标签的 JSX.Element 数组
-    const elements = selectedOptions.map((option, index) => (
-      <span key={index}>
-        {option.icon && <span className="icon">{option.icon}</span>}
-        {option.label}
-      </span>
-    ));
-
-    // 如果有层级关系，可以使用分隔符，并且确保所有的项都是 ReactNode 类型
-    return elements
-      .reduce<React.ReactNode[]>((prev, curr, index) => {
-        prev.push(curr);
-        if (index < elements.length - 1) {
-          prev.push(' / '); // 分隔符
-        }
-        return prev;
-      }, [])
-      .reduce((prev, curr) => [prev, curr], []); // 确保最终结果是单一的 ReactElement 数组
-  };
-  // 处理变更事件
-  const onChange = (value: any) => {
-    console.log(value);
+// 输入或引用参数
+export const InputOrReference: React.FC<InputOrReferenceProps> = ({
+  referenceList,
+  placeholder,
+  value, // 使用新增的 value 属性
+  onChange, // 使用新增的 onChange 回调
+}) => {
+  const handleSelect = (parentKey: string, childKey: string) => {
+    // 将选中的父选项和子选项作为字符串集合添加到 selected 数组中
+    const selectedItem = `${parentKey}-${childKey}`;
+    // 调用 onChange 更新值
+    onChange(selectedItem);
   };
 
   return (
-    <Space direction="vertical" style={{ width: '100%' }}>
-      <Input
-        placeholder="输入或引用参考值"
-        suffix={
-          <Cascader
-            options={options}
-            displayRender={optionRender}
-            onChange={onChange}
-          >
-            <SettingOutlined />
-          </Cascader>
-        }
-      />
-    </Space>
+    <Input
+      value={value} // 设置当前值
+      placeholder={placeholder}
+      suffix={
+        <Dropdown
+          overlayStyle={{ width: '200px' }}
+          menu={{
+            items: referenceList.map((item) => ({
+              key: item.key,
+              label: item.label,
+              icon: item.icon,
+              children: item.children?.map((subItem) => ({
+                key: subItem.key,
+                label: (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      width: '300px',
+                    }}
+                  >
+                    {subItem.label}
+                    <Tag style={{ marginLeft: 20 }}>{subItem.tag}</Tag>
+                  </div>
+                ),
+                onClick: () => handleSelect(item.key, subItem.key),
+              })),
+            })),
+          }}
+          trigger={['click']}
+        >
+          <SettingOutlined style={{ cursor: 'pointer' }} />
+        </Dropdown>
+      }
+    />
   );
 };
+
 // 默认的变量输入输出方法
 const defaultRenderItem: React.FC<RenderItemProps> = ({
   field,
@@ -87,32 +96,46 @@ const defaultRenderItem: React.FC<RenderItemProps> = ({
   showCheckbox,
   showCopy,
   showAssociation,
+  form,
 }) => {
   return (
     <Space className="dis-sb" style={{ width: '100%' }}>
-      {fieldConfigs.map((config, index) => (
-        <div key={index}>
-          {rowIndex === 0 && <Typography.Text>{config.label}</Typography.Text>}
-          <Form.Item
-            name={[field.name, config.name]}
-            rules={config.rules}
-            style={config.style}
-          >
-            {/* 使用 ...config.props 来传递特定组件的属性 */}
-            <config.component
-              {...config.props}
-              placeholder={config.placeholder}
-            />
-          </Form.Item>
-        </div>
-      ))}
+      {fieldConfigs.map((config, index) => {
+        const fieldValue = form.getFieldValue([field.name, config.name]);
+        return (
+          <div key={index}>
+            {rowIndex === 0 && (
+              <Typography.Text>{config.label}</Typography.Text>
+            )}
+            <Form.Item
+              name={[field.name, config.name]}
+              rules={config.rules}
+              style={config.style}
+            >
+              {/* 使用 ...config.props 来传递特定组件的属性 */}
+              <config.component
+                {...config.props}
+                placeholder={config.placeholder}
+                form={form} // 将 form 传递给 CommonInput
+                index={rowIndex} // 传递索引
+                value={fieldValue} // 传递当前字段的值
+                onChange={(value: string) =>
+                  form.setFieldsValue({
+                    [`${field.name}.${config.name}`]: value,
+                  })
+                } // 设置变更时更新表单值
+              />
+            </Form.Item>
+          </div>
+        );
+      })}
       <Form.Item
         name={[field.name, 'isSelect']}
         valuePropName="checked"
         initialValue={true}
       >
         {/* 根据节点的需求，动态赋予右侧图标 */}
-        <div className={`dis-sa  ${rowIndex === 0 ? 'right-icon-style' : ''}`}>
+        <div className={`dis-sa  ${rowIndex === 0 ? 'margin-bottom-20' : ''}`}>
           {showCopy && <FileDoneOutlined className="margin-right" />}
           {showCheckbox && <Checkbox className="margin-right"></Checkbox>}
           {showAssociation && <ICON_ASSOCIATION className="margin-right" />}
@@ -149,6 +172,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   };
   // 提交form表单
   const submitForm = (values: any) => {
+    // form.getFieldsValue()
     console.log('Received values of form:', values);
   };
 
@@ -166,19 +190,22 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
         <Form.List name="inputItems">
           {(fields, { remove }, { errors }) => (
             <>
-              {fields.map((field, index) => (
-                <Form.Item key={field.key} noStyle>
-                  {renderItem({
-                    field,
-                    onRemove: () => remove(field.name),
-                    fieldConfigs,
-                    rowIndex: index, // 新增传递索引信息
-                    showCheckbox,
-                    showCopy,
-                    showAssociation,
-                  })}
-                </Form.Item>
-              ))}
+              {fields.map((field, index) => {
+                return (
+                  <Form.Item key={field.key} noStyle>
+                    {renderItem({
+                      field,
+                      onRemove: () => remove(field.name),
+                      fieldConfigs,
+                      rowIndex: index, // 新增传递索引信息
+                      form,
+                      showCheckbox,
+                      showCopy,
+                      showAssociation,
+                    })}
+                  </Form.Item>
+                );
+              })}
               {errors.length > 0 && (
                 <div style={{ color: 'red' }}>{errors.join(', ')}</div>
               )}
@@ -310,5 +337,51 @@ export const ModelSetting: React.FC = () => {
         </div>
       </div>
     </>
+  );
+};
+
+// 定义模型列表类
+export const ModelListItem: React.FC<ModelListItemProps> = ({
+  icon,
+  label,
+  size,
+  modelName,
+  desc,
+  tagList,
+}) => {
+  let _arr: string[] = [];
+  // 如果tagList的长度超过2个,那么获取第三个及以后的标签
+  if (tagList && tagList.length > 2) {
+    _arr = tagList.slice(2, tagList.length);
+  }
+
+  return (
+    <div className="dis-sb model-list-item-style">
+      {/* 图片 */}
+      {icon}
+      {/* 右侧内容 */}
+      <div className="dis-col">
+        <div className="dis-left">
+          <span className="model-list-item-label">{label}</span>
+          {tagList && tagList[0] && <Tag>{tagList[0]}</Tag>}
+          {tagList && tagList[1] && <Tag>{tagList[1]}</Tag>}
+        </div>
+        <div className="dis-left divider-text">
+          <span>{size}</span>
+          <Divider type="vertical" />
+          <span>{modelName}</span>
+          {/* 根据标签来确定后续的显示 */}
+          {_arr.length &&
+            _arr.map((item: string) => (
+              <div key={item}>
+                <Divider type="vertical" />
+                <Tag>{item}</Tag>
+              </div>
+            ))}
+        </div>
+        {/* 描述 */}
+        <span className="model-list-item-desc">{desc}</span>
+      </div>
+    </div>
   );
 };
