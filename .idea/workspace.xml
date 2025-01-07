@@ -5,21 +5,25 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7c8116f3-340f-4d34-89a1-e0506d96945e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/assets/images/pic.jpeg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/pages/Login/ModalSliderCaptcha/index.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/pages/SetPassword/index.less" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/pages/SetPassword/index.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/types/interfaces/login.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/assets/svg/association.svg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/assets/svg/optimize.svg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/components/CodeEditor/index.less" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/components/CodeEditor/index.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/models/monaco.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/pages/Antv-X6/component/commonNode.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/pages/Antv-X6/component/monaco.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/pages/Antv-X6/component/nodeItem.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pnpm-lock.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/pnpm-lock.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/constants/common.constants.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/constants/common.constants.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/constants/home.constants.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/constants/home.constants.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/Login/index.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Login/index.less" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/Login/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Login/index.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/VerifyCode/index.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/VerifyCode/index.less" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/VerifyCode/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/VerifyCode/index.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/routes/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/routes/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/constants/images.constants.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/constants/images.constants.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/Antv-X6/component/disposeNode.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Antv-X6/component/disposeNode.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/Antv-X6/index.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Antv-X6/index.less" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/Antv-X6/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Antv-X6/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/Antv-X6/params.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Antv-X6/params.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/Antv-X6/type.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Antv-X6/type.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/styles/custom.less" beforeDir="false" afterPath="$PROJECT_DIR$/src/styles/custom.less" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/types/interfaces/common.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/interfaces/common.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -59,7 +63,7 @@
     "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "dev",
+    "git-widget-placeholder": "Merging dev",
     "last_opened_file_path": "I:/agent-platform-front/src/assets/images",
     "list.type.of.created.stylesheet": "Less",
     "node.js.detected.package.eslint": "true",

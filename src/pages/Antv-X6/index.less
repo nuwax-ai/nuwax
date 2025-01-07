@@ -3,19 +3,34 @@
 .absolute-box {
   position: absolute;
   width: 300px;
-  height: 60px;
+  height: 50px;
   border-radius: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   bottom: 10px;
-  left: 50%;
-  transform: translate(-40%, 0);
+  left: 10px;
   background: #fff;
   padding: 0 20px;
   z-index: 99;
+  border: 1px solid #969799;
 }
 
+.absolute-test {
+  position: absolute;
+  width: 170px;
+  height: 50px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  bottom: 10px;
+  left: 330px;
+  background: #fff;
+  padding: 0 20px;
+  z-index: 99;
+  border: 1px solid #969799;
+}
 // 添加节点的样式
 .stencil-content {
   width: 240px;
@@ -169,7 +184,7 @@
   z-index: 99;
 }
 
-.fold-warp-content-style {
+.dispose-node-style {
   padding: 20px;
 
   // 右侧的foldWrap里面的内容
@@ -180,6 +195,15 @@
     line-height: 22px;
     color: @BLANK04;
   }
+
+  .node-title-grey-style {
+    font-family: 'Alimama Agile VF';
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 22px;
+    color: @GRAY04;
+    margin-right: 16px;
+  }
 }
 
 .node-item-style {
@@ -187,12 +211,12 @@
   margin-bottom: 16px;
 }
 
+.margin-bottom {
+  margin-bottom: 10px;
+}
+
 // 开始节点
 .start-node-style {
-  .margin-bottom {
-    margin-bottom: 10px;
-  }
-
   .margin-right {
     margin-right: 6px;
   }
@@ -207,7 +231,48 @@
   }
 }
 
-// // 大模型节点
-// .model-node-style{
+// 大模型节点
+.model-dispose-mode-style {
+  display: flex;
+  flex-direction: column;
 
-// }
+  .label-style {
+    width: 120px;
+  }
+
+  .slider-style {
+    flex: 1;
+  }
+
+  .input-style {
+    width: 100px;
+    margin-left: 30px;
+  }
+}
+
+// 代码编辑器的样式
+.monaco-container {
+  position: absolute;
+  right: 382px;
+  top: 10px;
+  left: 10px;
+  bottom: 10px;
+  background-color: #fff;
+  z-index: 101;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 16px;
+  border-radius: 15px;
+  box-shadow: 0 0 5px 0 @BLANK05;
+
+  .monaco-editor-content {
+    position: absolute;
+    right: 10px;
+    top: 60px;
+    bottom: 20px;
+    left: 10px;
+    padding: 10px 0;
+    background-color: #1e1e1e;
+    border-radius: 15px;
+  }
+}

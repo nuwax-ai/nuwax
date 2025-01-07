@@ -72,6 +72,17 @@ export interface GraphProp {
   changeDrawer: (item: Child) => void;
 }
 
+export interface OptionItem {
+  value: string;
+  label: string;
+  icon?: React.ReactNode; // 图标组件
+  children?: OptionItem[]; // 子选项
+}
+// 定义 CommonInputProp 接口，继承自 CascaderProps 并覆盖 options 属性
+export interface CommonInputProp {
+  options: OptionItem[];
+}
+
 /**
  * 定义 右侧节点数组设置。
  */
@@ -99,6 +110,9 @@ export interface RenderItemProps {
   onRemove: () => void;
   fieldConfigs: FieldConfig[];
   rowIndex: number;
+  showCheckbox?: boolean;
+  showCopy?: boolean;
+  showAssociation?: boolean;
 }
 
 // 定义通用节点渲染逻辑的props类型
@@ -107,4 +121,14 @@ export interface NodeRenderProps {
   fieldConfigs: FieldConfig[];
   renderItem?: (props: RenderItemProps) => JSX.Element; // 可选，允许自定义renderItem
   initialValues: object;
+  showCheckbox?: boolean;
+  showCopy?: boolean;
+  showAssociation?: boolean;
+}
+
+// 定义技能
+export interface SkillProps {
+  title: string;
+  icon: React.ReactNode;
+  desc: string;
 }
