@@ -24,6 +24,7 @@ const User: React.FC = () => {
         setOpenSetting(true);
         break;
       case UserAvatarEnum.Log_Out:
+        setOpenAdmin(false);
         // todo 退出登录，清除缓存
         navigate('/login', { replace: true });
         break;

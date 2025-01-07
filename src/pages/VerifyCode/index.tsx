@@ -126,7 +126,6 @@ const VerifyCode: React.FC = () => {
 
   const handleEnter = useCallback(
     (e) => {
-      console.log(111);
       if (e.keyCode === 13 || e.which === 13) {
         if (codeString?.length !== VERIFICATION_CODE_LEN || loading) {
           return;

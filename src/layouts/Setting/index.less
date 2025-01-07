@@ -34,17 +34,23 @@
         transition: background-color 0.3s;
 
         &:hover:not(.checked) {
-          background-color: #E7E6EC;
+          background-color: @WHITE07;
         }
 
         &.checked {
-          background-color: #E7E6EC;
+          background-color: @WHITE07;
         }
       }
     }
   }
 
   .right {
+    background-color: @WHITE;
+  }
 
+  .close {
+    position: absolute;
+    right: 20px;
+    top: 20px;
   }
 }
