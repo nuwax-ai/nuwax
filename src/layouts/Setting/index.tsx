@@ -1,10 +1,14 @@
 import { SETTING_ACTIONS } from '@/constants/menus.constants';
 import { SettingActionEnum } from '@/types/enums/menus';
+import { CloseOutlined } from '@ant-design/icons';
 import { Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
+import ResetPassword from './ResetPassword';
+import SettingAccount from './SettingAccount';
+import SettingEmail from './SettingEmail';
 
 const cx = classNames.bind(styles);
 
@@ -17,6 +21,18 @@ const Setting: React.FC = () => {
   const handlerClick = (type: SettingActionEnum) => {
     setAction(type);
   };
+
+  const Content: React.FC = () => {
+    switch (action) {
+      case SettingActionEnum.Account:
+        return <SettingAccount />;
+      case SettingActionEnum.Email_Bind:
+        return <SettingEmail />;
+      case SettingActionEnum.Reset_Password:
+        return <ResetPassword />;
+    }
+  };
+
   return (
     <Modal
       centered
@@ -42,7 +58,13 @@ const Setting: React.FC = () => {
               ))}
             </ul>
           </div>
-          <div className={cx('flex-1')}></div>
+          <div className={cx('flex-1', styles.right)}>
+            <Content />
+          </div>
+          <CloseOutlined
+            className={cx(styles.close, 'cursor-pointer')}
+            onClick={() => setOpenSetting(false)}
+          />
         </div>
       )}
     ></Modal>

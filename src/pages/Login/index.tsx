@@ -1,7 +1,9 @@
 import { ICON_LOGO } from '@/constants/images.constants';
+import ModalSliderCaptcha from '@/pages/Login/ModalSliderCaptcha';
 import { LoginTypeEnum } from '@/types/enums/login';
+import type { LoginFieldType } from '@/types/interfaces/login';
 import { ExclamationCircleFilled } from '@ant-design/icons';
-import { Button, Checkbox, Form, Input, Modal, Select } from 'antd';
+import { Button, Checkbox, Form, FormProps, Input, Modal, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { history } from 'umi';
@@ -12,13 +14,41 @@ const cx = classNames.bind(styles);
 const { confirm } = Modal;
 
 const Login: React.FC = () => {
+  const [open, setOpen] = useState<boolean>(false);
   const [loginType, setLoginType] = useState<LoginTypeEnum>(
     LoginTypeEnum.Password,
   );
-  const [checked, setChecked] = useState(false);
+  const [checked, setChecked] = useState<boolean>(false);
   const [form] = Form.useForm();
-  const onFinish = (values) => {
-    console.log(values);
+  const [formValues, setFormValues] = useState<LoginFieldType>();
+
+  // 账号密码登录
+  const handlerPasswordLogin = () => {
+    const { username, areaCode, password } = formValues;
+    // todo
+    console.log(username, areaCode, password);
+  };
+
+  // 验证码登录
+  const handlerCodeLogin = () => {
+    const { username, areaCode } = formValues;
+    history.push('/verify-code', {
+      phoneNumber: username,
+      areaCode,
+    });
+  };
+
+  const handlerSuccess = () => {
+    setOpen(false);
+    if (loginType === LoginTypeEnum.Password) {
+      handlerPasswordLogin();
+    } else {
+      handlerCodeLogin();
+    }
+  };
+
+  const onFinish: FormProps<LoginFieldType>['onFinish'] = (values) => {
+    setFormValues(values);
     if (!checked) {
       confirm({
         title: '服务协议及隐私保护',
@@ -33,20 +63,20 @@ const Login: React.FC = () => {
         cancelText: '不同意',
         onOk() {
           setChecked(true);
+          setOpen(true);
         },
       });
-      return;
+    } else {
+      setOpen(true);
     }
-    if (loginType === LoginTypeEnum.Password) {
-      const { username, password, areaCode } = values;
-      // todo 登录操作
-      return;
-    }
-    const { username, areaCode } = values;
-    history.push('/verify-code', {
-      phoneNumber: username,
-      areaCode,
-    });
+  };
+
+  const handlerLink = () => {
+    const type =
+      loginType === LoginTypeEnum.Password
+        ? LoginTypeEnum.Code
+        : LoginTypeEnum.Password;
+    setLoginType(type);
   };
 
   return (
@@ -92,59 +122,35 @@ const Login: React.FC = () => {
           />
         </Form.Item>
         <Form.Item className={'flex-1'}>
-          {loginType === LoginTypeEnum.Password ? (
-            <>
-              <Form.Item
-                name="password"
-                rules={[{ required: true, message: '请输入密码!' }]}
-              >
-                <Input
-                  rootClassName={styles.input}
-                  type="password"
-                  placeholder="请输入密码"
-                />
-              </Form.Item>
-              <Form.Item className={cx(styles.login)}>
-                <Button
-                  className={cx(styles.btn)}
-                  block
-                  type="primary"
-                  htmlType="submit"
-                >
-                  登录
-                </Button>
-              </Form.Item>
-              <Form.Item className={cx(styles['code-login'])}>
-                <span
-                  className={'cursor-pointer'}
-                  onClick={() => setLoginType(LoginTypeEnum.Code)}
-                >
-                  验证码登录/注册
-                </span>
-              </Form.Item>
-            </>
-          ) : (
-            <>
-              <Form.Item className={cx(styles.login)}>
-                <Button
-                  className={cx(styles.btn)}
-                  block
-                  type="primary"
-                  htmlType="submit"
-                >
-                  下一步
-                </Button>
-              </Form.Item>
-              <Form.Item className={cx(styles['code-login'])}>
-                <span
-                  className={'cursor-pointer'}
-                  onClick={() => setLoginType(LoginTypeEnum.Password)}
-                >
-                  密码登录
-                </span>
-              </Form.Item>
-            </>
+          {loginType === LoginTypeEnum.Password && (
+            <Form.Item
+              name="password"
+              rules={[{ required: true, message: '请输入密码!' }]}
+            >
+              <Input
+                rootClassName={styles.input}
+                type="password"
+                placeholder="请输入密码"
+              />
+            </Form.Item>
           )}
+          <Form.Item className={cx(styles.login)}>
+            <Button
+              className={cx(styles.btn)}
+              block
+              type="primary"
+              htmlType="submit"
+            >
+              {loginType === LoginTypeEnum.Password ? '登录' : '下一步'}
+            </Button>
+          </Form.Item>
+          <Form.Item className={cx(styles['code-login'])}>
+            <span className={'cursor-pointer'} onClick={handlerLink}>
+              {loginType === LoginTypeEnum.Password
+                ? '验证码登录/注册'
+                : '密码登录'}
+            </span>
+          </Form.Item>
         </Form.Item>
         <Form.Item noStyle>
           <Checkbox
@@ -156,6 +162,11 @@ const Login: React.FC = () => {
           </Checkbox>
         </Form.Item>
       </Form>
+      <ModalSliderCaptcha
+        open={open}
+        onCancel={setOpen}
+        onSuccess={handlerSuccess}
+      />
     </div>
   );
 };

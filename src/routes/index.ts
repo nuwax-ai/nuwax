@@ -10,6 +10,11 @@ const routes = [
     layout: false,
   },
   {
+    path: '/set-password',
+    component: '@/pages/SetPassword',
+    layout: false,
+  },
+  {
     path: '',
     component: '@/layouts/index',
     layout: false,
