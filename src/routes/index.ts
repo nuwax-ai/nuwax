@@ -14,14 +14,16 @@ const routes = [
     component: '@/pages/SetPassword',
     layout: false,
   },
+  { path: '/', redirect: '/home' },
   {
     path: '',
     component: '@/layouts/index',
     layout: false,
     routes: [
-      { path: '/', component: '@/pages/Home' },
+      { path: '/home', component: '@/pages/Home' },
       { path: '/home/chat', component: '@/pages/Chat' },
       { path: '/space', component: '@/pages/Space' },
+      { path: '/square', component: '@/pages/Square' },
     ],
   },
   { path: '/antv', component: '@/pages/Antv-X6', layout: false },

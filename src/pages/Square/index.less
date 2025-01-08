@@ -1,0 +1,60 @@
+@import '@/styles/color';
+
+.container {
+  padding: 20px 30px;
+
+  .header {
+    height: 220px;
+    margin-bottom: 30px;
+
+    img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      border-radius: 20px;
+    }
+
+    .cover-box {
+      height: 220px;
+      padding: 40px 60px 0;
+      z-index: 1000;
+
+      h3 {
+        margin-bottom: 30px;
+        font-size: 32px;
+        font-weight: bold;
+        color: @WHITE;
+      }
+
+      p {
+        margin-bottom: 20px;
+        font-size: 24px;
+        color: @GRAY05;
+      }
+    }
+  }
+
+  .theme-title {
+    margin-bottom: 20px;
+    font-size: 18px;
+    color: @BLANK04;
+  }
+
+  .list-section {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  @media (min-width: 1200px) {
+    .list-section {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .list-section {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+}

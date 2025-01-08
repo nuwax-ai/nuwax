@@ -30,9 +30,9 @@
     "classnames": "2.0.0",
     "create-puzzle": "^3.0.2",
     "insert-css": "^2.0.0",
+    "monaco-editor": "^0.52.2",
     "rc-slider-captcha": "^1.7.1",
-    "ut2": "^1.15.0",
-    "monaco-editor": "^0.52.2"
+    "ut2": "^1.15.0"
   },
   "devDependencies": {
     "@types/react": "^18.0.33",
