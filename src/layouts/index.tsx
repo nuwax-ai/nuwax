@@ -1,5 +1,4 @@
 import { BASE_URL } from '@/constants/common.constants';
-import Setting from '@/layouts/Setting';
 import classNames from 'classnames';
 import { useEffect } from 'react';
 import { Outlet } from 'umi';
@@ -7,6 +6,7 @@ import HistoryConversation from './HistoryConversation';
 import styles from './index.less';
 import MenusLayout from './MenusLayout';
 import Message from './Message';
+import Setting from './Setting';
 
 const cx = classNames.bind(styles);
 

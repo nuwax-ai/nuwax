@@ -1,7 +1,7 @@
 import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
 import classNames from 'classnames';
-import React, { useState } from 'react';
-import { useModel } from 'umi';
+import React, { useEffect, useState } from 'react';
+import { history, useModel } from 'umi';
 import Header from './Header';
 import HomeSection from './HomeSection';
 import styles from './index.less';
@@ -19,13 +19,24 @@ const cx = classNames.bind(styles);
 const MenusLayout: React.FC = () => {
   const { setOpenHistoryModal, setOpenMessage } = useModel('layout');
   const [tabType, setTabType] = useState<TabsEnum>(TabsEnum.Home);
-  const [loading, setLoading] = useState<boolean>(false);
   // 切换tab
   const handleTabsClick = (type: TabsEnum) => {
-    // todo
-    console.log(type);
     setTabType(type);
   };
+
+  useEffect(() => {
+    switch (tabType) {
+      case TabsEnum.Home:
+        history.push('/home');
+        break;
+      case TabsEnum.Space:
+        history.push('/space');
+        break;
+      case TabsEnum.Square:
+        history.push('/square');
+        break;
+    }
+  }, [tabType]);
 
   // 用户区域操作
   const handleUserClick = (type: UserOperatorAreaEnum) => {
