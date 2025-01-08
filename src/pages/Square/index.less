@@ -5,6 +5,7 @@
 
   .header {
     height: 220px;
+    margin-bottom: 30px;
 
     img {
       width: 100%;
@@ -28,8 +29,32 @@
       p {
         margin-bottom: 20px;
         font-size: 24px;
-        color: #95979c;
+        color: @GRAY05;
       }
+    }
+  }
+
+  .theme-title {
+    margin-bottom: 20px;
+    font-size: 18px;
+    color: @BLANK04;
+  }
+
+  .list-section {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  @media (min-width: 1200px) {
+    .list-section {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .list-section {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 }
