@@ -4,7 +4,7 @@ import { FormInstance } from 'antd';
 /**
  * 定义键值对接口，用于表示具有标签和值的对象。
  */
-interface KeyValuePairs {
+export interface KeyValuePairs {
   // 键值对的标签
   label: string;
   // 键值对对应的值
@@ -88,6 +88,16 @@ export type FormListFieldData = {
  */
 export interface NodeDisposeProps {
   type?: string;
+  options?: ModelListItemProps[];
+  groupedOptionsData?: GroupModelItem[];
+}
+/**
+ * 定义带勾选框的select
+ */
+export interface MultiSelectWithCheckboxProps {
+  options: KeyValuePairs[];
+  onChange?: (selectedOptions: string[]) => void;
+  placeholder?: string;
 }
 
 // 定义输入或引用参数
@@ -132,6 +142,7 @@ export interface NodeRenderProps {
   fieldConfigs: FieldConfig[];
   renderItem?: (props: RenderItemProps) => JSX.Element; // 可选，允许自定义renderItem
   initialValues: object;
+  inputItemName?: string;
   showCheckbox?: boolean;
   showCopy?: boolean;
   showAssociation?: boolean;
@@ -156,6 +167,39 @@ export interface ModelListItemProps {
   modelName: string;
   // 模型的简介
   desc: string;
+  // 值
+  value: string;
   // 模型的标签
   tagList?: string[];
+}
+
+interface GroupModelItem {
+  // 分组的名称
+  label: string;
+  options: ModelListItemProps[];
+}
+
+// 定义分组的模型列表
+export interface GroupModelListItemProps {
+  groupedOptionsData?: GroupModelItem[];
+  onChange: (value: string) => void;
+  value?: string;
+}
+
+export interface ModelSettingProp {
+  value: {
+    top: number;
+    reply: number;
+    random: number;
+  };
+  onChange: (newSettings: {
+    top: number;
+    reply: number;
+    random: number;
+  }) => void;
+}
+
+export interface ModelSelectProp {
+  settings: ModelSettingProp;
+  groupModelList: GroupModelListItemProps;
 }

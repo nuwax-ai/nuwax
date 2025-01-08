@@ -1,36 +1,27 @@
 import CodeEditor from '@/components/CodeEditor';
-import { ICON_OPTIMIZE } from '@/constants/images.constants';
 import {
-  CaretDownOutlined,
-  CaretUpOutlined,
   DeleteOutlined,
   ExpandAltOutlined,
   PlusOutlined,
-  SettingOutlined,
 } from '@ant-design/icons';
 import {
   Button,
   Cascader,
   Checkbox,
-  Empty,
   Form,
   Input,
-  InputNumber,
-  Popover,
-  Segmented,
-  Select,
-  Slider,
   Space,
   Typography,
 } from 'antd';
-import React, { useState } from 'react';
+import React from 'react';
 import { useModel } from 'umi';
 import '../index.less';
 import { dataTypes } from '../params';
 import { NodeRenderProps, RenderItemProps } from '../type';
+import { default as ComplexNode } from './complexNode';
 import { default as NodeItem } from './nodeItem';
-
-const { StartNode, EndNode } = NodeItem;
+const { StartNode, EndNode, CycleNode, VariableNode } = NodeItem;
+const { ModelNode } = ComplexNode;
 
 // 默认的renderItem方法
 const defaultRenderItem: React.FC<RenderItemProps> = ({
@@ -124,239 +115,6 @@ const CommonNode: React.FC<NodeRenderProps> = ({
           )}
         </Form.List>
       </Form>
-    </div>
-  );
-};
-
-// 定义大模型的节点的渲染
-const ModelNode: React.FC = () => {
-  // 默认显示高级设置
-  const [showDispose, setShowDispose] = useState<boolean>(true);
-  // 随机性的值
-  const [inputValue, setInputValue] = useState(0);
-  //   top的值
-  const [topValue, setTopValue] = useState(0);
-  //   回复长度
-  const [replyValue, setReplyValue] = useState(0);
-
-  // 大模型列表
-  const modelListOption = [
-    { label: 'gpt-3.5-turbo', value: 'gpt-3.5-turbo' },
-    { label: 'gpt-4', value: 'gpt-4' },
-  ];
-  const fieldConfigs = [
-    {
-      name: 'name',
-      placeholder: '变量名',
-      label: '变量名',
-      rules: [{ required: true, message: '请输入变量名' }],
-      component: Input,
-      style: { width: '165px' },
-    },
-    {
-      name: 'type',
-      placeholder: '选择类型',
-      label: '变量类型',
-      rules: [{ required: true, message: '请选择变量类型' }],
-      component: Cascader,
-      style: { width: '113px' },
-      props: { options: dataTypes }, // 传递特定于 Cascader 的属性
-    },
-  ];
-
-  const inputfieldConfigs = [
-    {
-      name: 'name',
-      placeholder: '输入参数名',
-      label: '参数名',
-      rules: [{ required: true, message: '请输入变量名' }],
-      component: Input,
-      style: { width: '165px' },
-    },
-    {
-      name: 'type',
-      placeholder: '输入或引用参数值',
-      label: '参数值',
-      rules: [{ required: true, message: '请选择变量类型' }],
-      component: Input,
-      style: { width: '113px' },
-    },
-  ];
-  //   显示新增技能
-  const showAdd = () => {
-    console.log('showAdd');
-  };
-  // 改变模式
-  const changeSegmented = (value: string) => {
-    console.log('changeSegmented', value);
-  };
-
-  const content = (
-    <>
-      <div className="model-dispose-mode-style">
-        <div className="dis-sb">
-          <span className="label-style">生成多样性</span>
-          <Segmented<string>
-            options={['精确模式', '平衡模式', '创意模式', '自定义']}
-            onChange={(value) => changeSegmented(value)}
-            className="slider-style"
-          />
-          <span
-            onClick={() => setShowDispose(!showDispose)}
-            className="input-style"
-          >
-            高级设置 {showDispose ? <CaretUpOutlined /> : <CaretDownOutlined />}
-          </span>
-        </div>
-        <div className="dis-sb">
-          <span className="label-style">生成随机性</span>
-          <Slider
-            min={0}
-            max={100}
-            onChange={(value: number) => setInputValue(value)}
-            value={typeof inputValue === 'number' ? inputValue : 0}
-            className="slider-style"
-          />
-          <InputNumber
-            min={1}
-            max={20}
-            size="small"
-            style={{ margin: '0 16px' }}
-            value={inputValue}
-            onChange={(value: number | string | null) =>
-              setInputValue(Number(value))
-            }
-            className="input-style"
-          />
-        </div>
-        <div className="dis-sb">
-          <span className="label-style">top P</span>
-          <Slider
-            min={0}
-            max={100}
-            onChange={(value: number) => setTopValue(value)}
-            value={typeof topValue === 'number' ? topValue : 0}
-            className="slider-style"
-          />
-          <InputNumber
-            min={1}
-            max={20}
-            style={{ margin: '0 16px' }}
-            size="small"
-            value={topValue}
-            onChange={(value: number | string | null) =>
-              setTopValue(Number(value))
-            }
-            className="input-style"
-          />
-        </div>
-      </div>
-      <div className="model-dispose-mode-style">
-        <p className="node-title-style">输入及输出设置</p>
-        <div className="dis-sb">
-          <span className="label-style">最大回复长度</span>
-          <Slider
-            min={0}
-            max={100}
-            onChange={(value: number) => setReplyValue(value)}
-            value={typeof replyValue === 'number' ? topValue : 0}
-            className="slider-style"
-          />
-          <InputNumber
-            min={1}
-            max={20}
-            size="small"
-            style={{ margin: '0 16px' }}
-            value={replyValue}
-            onChange={(value: number | string | null) =>
-              setReplyValue(Number(value))
-            }
-            className="input-style"
-          />
-        </div>
-      </div>
-    </>
-  );
-
-  return (
-    <div className="model-node-style">
-      {/* 模型模块 */}
-      <div className="node-item-style">
-        <div className="dis-sb margin-bottom">
-          <span className="node-title-style">模型</span>
-          <Popover
-            content={content}
-            title="模型"
-            trigger="click"
-            placement="left"
-          >
-            <SettingOutlined />
-          </Popover>
-        </div>
-        <Select
-          placeholder="请选择模型"
-          style={{ width: '100%', marginTop: '10px' }}
-          options={modelListOption}
-          className="input-style"
-        />
-      </div>
-      {/* 技能模块 */}
-      <div className="node-item-style">
-        <div className="dis-sb margin-bottom">
-          <span className="node-title-style">技能</span>
-          <Button
-            icon={<PlusOutlined />}
-            size={'small'}
-            onClick={showAdd}
-          ></Button>
-        </div>
-        <Empty />
-      </div>
-      <div className="node-item-style">
-        <CommonNode
-          title="输入"
-          fieldConfigs={inputfieldConfigs}
-          initialValues={{
-            inputItems: [{ name: '', type: '', isSelect: true }],
-          }}
-        />
-      </div>
-      <div className="node-item-style">
-        <div className="dis-sb margin-bottom">
-          <span className="node-title-style">系统提示词</span>
-          <div>
-            <ExpandAltOutlined />
-            <ICON_OPTIMIZE style={{ marginLeft: '10px' }} />
-          </div>
-        </div>
-        <Input.TextArea
-          placeholder="系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
-          autoSize={{ minRows: 3, maxRows: 5 }}
-          style={{ marginBottom: '10px' }}
-        />
-      </div>
-      <div className="node-item-style">
-        <div className="dis-sb margin-bottom">
-          <span className="node-title-style">用户提示词</span>
-          <div>
-            <ExpandAltOutlined />
-          </div>
-        </div>
-        <Input.TextArea
-          placeholder="系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
-          autoSize={{ minRows: 3, maxRows: 5 }}
-          style={{ marginBottom: '10px' }}
-        />
-      </div>
-      <div className="node-item-style">
-        <CommonNode
-          title="输出"
-          fieldConfigs={fieldConfigs}
-          initialValues={{
-            inputItems: [{ name: '', type: '', isSelect: true }],
-          }}
-        />
-      </div>
     </div>
   );
 };
@@ -460,15 +218,70 @@ const FoldWarpNode: React.FC<FoldWarpNodeProps> = ({ type }) => {
   switch (type) {
     case 'startNode':
       return <StartNode />;
+    case 'documentNode':
+      return <StartNode type="document" />;
     case 'endNode':
       return <EndNode />;
     case 'processNode':
       return <EndNode type="processNode" />;
-    case 'modelNode':
-      return <ModelNode />;
+    case 'cycleNode':
+      return <CycleNode />;
+    case 'variableNode':
+      return <VariableNode />;
+    case 'textNode':
+      return <VariableNode type="textNode" />;
+    case 'modelNode': {
+      // 分组的数据源
+      const groupedOptionsData = [
+        {
+          label: 'Image Models',
+          options: [
+            {
+              icon: <PlusOutlined />,
+              label: 'Image Processing',
+              value: 'ImageProcessing',
+              size: '10MB',
+              modelName: 'VGG16',
+              desc: 'A popular convolutional neural network for image recognition.',
+              tagList: ['CNN', 'Image Recognition', 'Transfer Learning'],
+            },
+            // 更多图像模型...
+          ],
+        },
+        {
+          label: 'Text Models',
+          options: [
+            {
+              icon: <PlusOutlined />,
+              label: 'Text Analysis',
+              value: 'textAnalysis',
+              size: '5MB',
+              modelName: 'BERT',
+              desc: 'Bidirectional Encoder Representations from Transformers for NLP tasks.',
+              tagList: ['NLP', 'Text Classification', 'Pre-trained'],
+            },
+            // 更多文本模型...
+          ],
+        },
+        {
+          label: 'Audio Models',
+          options: [
+            {
+              icon: <PlusOutlined />,
+              label: 'Audio Detection',
+              value: 'AudioDetection',
+              size: '8MB',
+              modelName: 'WaveNet',
+              desc: 'Generative model for raw audio waveforms.',
+              tagList: ['Audio', 'Waveform Generation', 'Deep Learning'],
+            },
+          ],
+        },
+      ];
+      return <ModelNode groupedOptionsData={groupedOptionsData} />;
+    }
     case 'searchNode':
       return <SearchNode />;
-
     case 'codeNode':
       return <CodeNode />;
     default:

@@ -5,6 +5,8 @@ import {
   ICON_NEW_AGENT,
   ICON_START,
 } from '@/constants/images.constants';
+import { Cascader, Input } from 'antd';
+import { InputOrReference } from './component/commonNode';
 import { StencilList } from './type';
 
 // 定义左侧栏目的数据
@@ -90,7 +92,7 @@ export const asideList: StencilList[] = [
       {
         title: '循环',
         icon: <ICON_LOGO />,
-        key: 'hh',
+        key: 'cycleNode',
         type: 'general-Node',
         content: '',
         width: 760,
@@ -153,7 +155,7 @@ export const asideList: StencilList[] = [
       {
         title: '文本处理',
         icon: <ICON_FOLD />,
-        key: 'nn',
+        key: 'textNode',
         type: 'general-Node',
         content: '文本处理',
         desc: '用于处理多个字符串类型变量的格式',
@@ -161,7 +163,7 @@ export const asideList: StencilList[] = [
       {
         title: '文档提取',
         icon: <ICON_FOLD />,
-        key: 'oo',
+        key: 'documentNode',
         type: 'general-Node',
         content: '文档提取',
         desc: '用于提取文档内容，支持的文件类型: txt、 markdown、pdf、 html、 xlsx、 xls、 docx、 csv、 md、 htm',
@@ -313,9 +315,9 @@ export const dataTypes = [
 // 模拟模型的输入参数
 export const modelTypes = [
   {
-    label: '输入',
+    label: '标题生成',
     icon: <ICON_START />,
-    key: 'start',
+    key: '标题生成',
     children: [
       {
         key: 'output',
@@ -328,5 +330,69 @@ export const modelTypes = [
         tag: 'Number',
       },
     ],
+  },
+];
+
+// 循环的option
+export const cycleOption = [
+  { label: '使用数组循环', value: 1 },
+  { label: '指定次数循环', value: 2 },
+  { label: '无限循环', value: 3 },
+];
+export const InputConfigs = [
+  {
+    name: 'name',
+    placeholder: '变量名',
+    label: '变量名',
+    rules: [{ required: true, message: '请输入变量名' }],
+    component: Input,
+    style: { width: '140px' },
+  },
+  {
+    name: 'type',
+    placeholder: '选择类型',
+    label: '变量类型',
+    rules: [{ required: true, message: '请选择变量类型' }],
+    component: Cascader,
+    style: { width: '100px' },
+    props: { options: dataTypes }, // 传递特定于 Cascader 的属性
+  },
+];
+
+export const outPutConfigs = [
+  {
+    name: 'name',
+    placeholder: '参数名',
+    label: '参数名',
+    rules: [{ required: true, message: '请输入参数名' }],
+    component: Input,
+  },
+  {
+    name: 'paramsValue',
+    placeholder: '输入或引用参数值',
+    label: '参数值',
+    rules: [{ required: true, message: '请输入参数值' }],
+    component: InputOrReference,
+    style: { flex: '0 0 50%' },
+    props: { referenceList: modelTypes, fieldName: 'paramsValue' },
+  },
+];
+
+export const modelConfigs = [
+  {
+    name: 'name',
+    placeholder: '参数名',
+    label: '参数名',
+    rules: [{ required: true, message: '请输入参数名' }],
+    component: Input,
+  },
+  {
+    name: 'paramsValue',
+    placeholder: '输入或引用变量值',
+    label: '变量值',
+    rules: [{ required: true, message: '请输入变量值' }],
+    component: InputOrReference,
+    style: { flex: '0 0 50%' },
+    props: { referenceList: modelTypes, fieldName: 'paramsValue' },
   },
 ];

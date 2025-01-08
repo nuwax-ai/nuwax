@@ -43,10 +43,19 @@
 
 // 模型列表
 .model-list-item-style {
+  padding: 0;
+
+  svg {
+    width: 48px;
+    height: 48px;
+    align-items: center;
+  }
+
   .model-list-item-label {
     font-weight: 500;
     font-size: 14px;
     line-height: 20px;
+    margin-right: 10px;
   }
 
   .divider-text {
@@ -56,4 +65,30 @@
   .model-list-item-desc {
     color: @GRAY05;
   }
+}
+
+.option-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  /* 调整复选框和文本之间的间距 */
+}
+
+.custom-dropdown .ant-select-item-option-content {
+  padding-left: 24px;
+
+  /* 调整左侧内边距以对齐文本 */
+}
+
+.custom-dropdown .ant-select-item-option-active {
+  background-color: #e6f7ff;
+
+  /* 当前激活项背景色 */
+}
+
+.custom-dropdown .ant-select-item-option-selected {
+  background-color: #b3d8ff;
+
+  /* 已选项背景色 */
 }
