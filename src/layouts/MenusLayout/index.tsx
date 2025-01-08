@@ -1,10 +1,12 @@
 import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
-import { useModel } from '@umijs/max';
 import classNames from 'classnames';
 import React, { useState } from 'react';
+import { useModel } from 'umi';
 import Header from './Header';
 import HomeSection from './HomeSection';
 import styles from './index.less';
+import SpaceSection from './SpaceSection';
+import SquareSection from './SquareSection';
 import Tabs from './Tabs';
 import User from './User';
 import UserOperateArea from './UserOperateArea';
@@ -42,6 +44,17 @@ const MenusLayout: React.FC = () => {
     }
   };
 
+  const Content: React.FC = () => {
+    switch (tabType) {
+      case TabsEnum.Home:
+        return <HomeSection />;
+      case TabsEnum.Space:
+        return <SpaceSection />;
+      case TabsEnum.Square:
+        return <SquareSection />;
+    }
+  };
+
   return (
     <div className={cx(styles.container, 'flex')}>
       {/*一级导航菜单栏*/}
@@ -62,7 +75,7 @@ const MenusLayout: React.FC = () => {
       </div>
       {/*二级导航菜单栏*/}
       <div className={cx(styles['nav-menus'])}>
-        {tabType === TabsEnum.Home ? <HomeSection /> : null}
+        <Content />
       </div>
     </div>
   );

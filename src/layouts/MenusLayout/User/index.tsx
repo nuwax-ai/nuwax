@@ -10,6 +10,9 @@ import UserAvatar from './UserAvatar';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 用户头像以及用户操作列表（包含用户名称、设置、退出登录）
+ */
 const User: React.FC = () => {
   const { openAdmin, setOpenAdmin, setOpenSetting } = useModel('layout');
   let navigate = useNavigate();
