@@ -8,4 +8,33 @@
     font-weight: bold;
     color: @BLANK04;
   }
+
+  .select-search-area {
+    gap: 20px;
+    margin-top: 20px;
+    margin-bottom: 30px;
+
+    .input {
+      margin-left: auto;
+      width: 200px;
+    }
+  }
+
+  .main-container {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  @media (min-width: 1200px) {
+    .main-container {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .main-container {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
 }

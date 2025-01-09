@@ -37,7 +37,7 @@ export interface SelectListType {
   selectIcon?: React.ReactNode;
   // label文本前的图片
   img?: string;
-  onChange: (value: string) => void;
+  onChange: (value: React.Key) => void;
 }
 
 // 默认的object
