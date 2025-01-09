@@ -1,3 +1,4 @@
+import type { SelectListType } from '@/types/interfaces/common';
 import { CheckOutlined } from '@ant-design/icons';
 import { Flex, Select } from 'antd';
 import classNames from 'classnames';
@@ -5,23 +6,6 @@ import React from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-interface SelectListType {
-  className?: string;
-  value: string | number;
-  // 自定义前缀
-  prefix?: React.ReactNode;
-  // 自定义的选择框后缀图标
-  suffixIcon?: React.ReactNode;
-  dropdownRenderComponent?: React.ReactNode;
-  placeholder?: string;
-  options: { label; value }[];
-  // 是否选中的图标或者图片
-  selectIcon?: React.ReactNode;
-  // label文本前的图片
-  img?: string;
-  onChange: (value: string) => void;
-}
 
 const SelectList: React.FC<SelectListType> = (props) => {
   const {
@@ -40,7 +24,6 @@ const SelectList: React.FC<SelectListType> = (props) => {
       value={value}
       placeholder={placeholder}
       onChange={onChange}
-      open
       options={options}
       dropdownRender={(menu) => (
         <>

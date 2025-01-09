@@ -8,7 +8,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 const Space: React.FC = () => {
-  const [selectedItem, setSelectedItem] = useState<string>('0');
+  const [selectedItem, setSelectedItem] = useState<number>(0);
   const handleChange = (value: string) => {
     setSelectedItem(value);
   };
@@ -25,9 +25,9 @@ const Space: React.FC = () => {
         <SelectList
           value={selectedItem}
           options={[
-            { value: '0', label: '全部' },
-            { value: '1', label: '已发布' },
-            { value: '2', label: '法师法师' },
+            { value: 0, label: '全部' },
+            { value: 1, label: '已发布' },
+            { value: 2, label: '法师法师' },
           ]}
           onChange={handleChange}
         />
