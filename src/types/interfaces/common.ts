@@ -44,3 +44,33 @@ export interface SelectListType {
 export interface DefaultObjectType {
   [key: string]: any;
 }
+
+export interface LeftMenu {
+  // 图标
+  icon: React.ReactNode;
+  // 名称
+  name: string;
+  // key
+  key: string;
+}
+
+export interface LeftGroup {
+  key: string;
+  children: LeftMenu[];
+  label?: string;
+}
+
+// 定义没有 searchBar 和 onSearch 的基础属性
+export interface ModelBoxProps {
+  // 标题
+  title: string;
+  // 左侧展示的列表
+  leftMenuList: LeftMenu[] | LeftGroup[];
+  // 右侧主体内容
+  Content: React.ComponentType<any>;
+  // 创建的按钮或下拉菜单
+  createNode?: React.ReactNode;
+  width?: number;
+  searchBar?: boolean;
+  onSearch?: (value: string) => void;
+}

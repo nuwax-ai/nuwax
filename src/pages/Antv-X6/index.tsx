@@ -7,6 +7,7 @@ import InitGraph from './component/graph';
 import Monaco from './component/monaco';
 import { registerCustomNodes } from './component/registerCustomNodes'; // 引入自定义节点注册函数
 import StencilContent from './component/stencil';
+import WorkFlowModel from './component/workFlowModel';
 // 引入一些图标
 import { ICON_END, ICON_START } from '@/constants/images.constants';
 import { FoldWrapType } from '@/types/interfaces/common';
@@ -17,6 +18,7 @@ import {
   ToolOutlined,
 } from '@ant-design/icons';
 import { Node } from '@antv/x6';
+import { useModel } from 'umi';
 import './index.less';
 import { Child } from './type';
 
@@ -36,6 +38,15 @@ const AntvX6 = () => {
     onClose: () => {},
   });
 
+  // 当前被拖拽节点的x和y
+  const [dragEvent, setDragEvent] = useState({
+    x: 0,
+    y: 0,
+  }); // 拖拽子节点到画布中
+
+  // 打开或者关闭添加工作流或者插件
+  const { setOpen } = useModel('model');
+
   // 使用 useRef 来保持 graph 实例在整个组件生命周期内的引用
   const graphRef = useRef<any>(null);
   function preWork() {
@@ -50,12 +61,10 @@ const AntvX6 = () => {
     container?.appendChild(graphContainer);
   }
 
-  // 子组件新增节点
-  const dragChild = (e: React.DragEvent<HTMLDivElement>, child: Child) => {
-    e.preventDefault();
-
+  // 创建子节点
+  const addNode = (e: { x: number; y: number }, child: Child) => {
     // 将鼠标位置转换为画布坐标系中的位置
-    const point = graphRef.current.clientToGraph(e.clientX, e.clientY);
+    const point = graphRef.current.clientToGraph(e.x, e.y);
 
     // 获取所有节点，并尝试找到位于拖拽位置的目标父节点
     let targetNode: Node | null = null;
@@ -88,6 +97,29 @@ const AntvX6 = () => {
       // 如果找到了允许嵌套子节点的目标节点，则添加新节点为子节点
       (targetNode as Node<Node.Properties>).setZIndex(1); // 降低父节点层级
       (targetNode as Node<Node.Properties>).addChild(newNode);
+    }
+  };
+
+  // 拖拽子节点到画布中
+  const dragChild = (e: React.DragEvent<HTMLDivElement>, child: Child) => {
+    e.preventDefault();
+
+    // 这里要区分创建的节点是插件和工作流还是其他，如果是插件和工作流，就要先展示弹窗，待用户选中后再添加节点
+    if (child.key === 'plugInNode' || child.key === 'workflowNode') {
+      // 展示可以选择的选项蒙版层
+      setOpen(true);
+      setDragEvent({
+        x: e.clientX,
+        y: e.clientY,
+      });
+    } else {
+      addNode(
+        {
+          x: e.clientX,
+          y: e.clientY,
+        },
+        child,
+      );
     }
   };
   // 点击组件，显示抽屉
@@ -241,6 +273,16 @@ const AntvX6 = () => {
           <FoldWarpNode type={foldWrapItem.key as string} />
         </div>
       </FoldWrap>
+
+      {/* 添加工作流 */}
+      <WorkFlowModel
+        onAdd={(child) => {
+          if (dragEvent) {
+            addNode(dragEvent, child);
+            setOpen(false);
+          }
+        }}
+      />
     </div>
   );
 };

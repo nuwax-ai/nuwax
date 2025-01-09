@@ -5,6 +5,7 @@ import {
   ICON_NEW_AGENT,
   ICON_START,
 } from '@/constants/images.constants';
+import { SwitcherFilled } from '@ant-design/icons';
 import { Cascader, Input } from 'antd';
 import { InputOrReference } from './component/commonNode';
 import { StencilList } from './type';
@@ -27,7 +28,7 @@ export const asideList: StencilList[] = [
       {
         title: '插件',
         icon: <ICON_NEW_AGENT />,
-        key: 'bb',
+        key: 'plugInNode',
         type: 'general-Node',
         content: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气...',
         desc: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气...',
@@ -36,7 +37,7 @@ export const asideList: StencilList[] = [
       {
         title: '工作流',
         icon: <ICON_NEW_AGENT />,
-        key: 'cc',
+        key: 'workflowNode',
         type: 'general-Node',
         content: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气...',
         desc: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气...',
@@ -394,5 +395,30 @@ export const modelConfigs = [
     component: InputOrReference,
     style: { flex: '0 0 50%' },
     props: { referenceList: modelTypes, fieldName: 'paramsValue' },
+  },
+];
+
+// 工作流的左侧菜单
+export const leftMenuList = [
+  {
+    icon: <SwitcherFilled />,
+    name: '资源库工作流',
+    key: 'resources',
+  },
+  {
+    icon: <SwitcherFilled />,
+    name: '官方示例',
+    key: 'example',
+  },
+];
+
+// 工作流右侧的mock数据
+export const rightContent = [
+  {
+    icon: <SwitcherFilled />,
+    label: 'summarize_article_1',
+    desc: '示例：总结提炼文章中的要点',
+    tag: 'article_url',
+    time: '2025-01-09',
   },
 ];

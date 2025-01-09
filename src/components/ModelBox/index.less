@@ -1,0 +1,71 @@
+@import '@/styles/color';
+
+.container {
+  height: 750px;
+  border-radius: 10px;
+  background: @WHITE04;
+  pointer-events: auto;
+
+  .left {
+    width: 240px;
+    padding: 20px;
+    background-color: @WHITE05;
+
+    h3 {
+      margin-bottom: 50px;
+      font-size: 22px;
+      font-weight: bold;
+      color: @BLANK04;
+    }
+
+    .search {
+      margin-bottom: 16px;
+    }
+
+    .create {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    .item {
+      font-size: 14px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 6px;
+      margin-bottom: 2px;
+
+      .label {
+        margin-left: 10px;
+      }
+
+      &:hover:not(.checked) {
+        background-color: @WHITE07;
+      }
+
+      &.checked {
+        background-color: @WHITE07;
+      }
+    }
+  }
+
+  .right {
+    background-color: @WHITE;
+    padding: 40px 10px;
+  }
+
+  .close {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+  }
+}
+
+.divider {
+  height: 1px;
+  background-color: #e8e8e8;
+
+  /* 可以根据设计需求调整颜色 */
+  margin: 8px 0;
+
+  /* 根据需要调整上下边距 */
+}

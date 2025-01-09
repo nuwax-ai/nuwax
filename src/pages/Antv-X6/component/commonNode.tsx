@@ -385,7 +385,7 @@ export const ModelListItem: React.FC<ModelListItemProps> = ({
   }
 
   return (
-    <div className="dis-sb model-list-item-style">
+    <div className="dis-left model-list-item-style">
       {/* 图片 */}
       {icon}
       {/* 右侧内容 */}
@@ -488,6 +488,8 @@ export const GroupedOptionSelect: React.FC<GroupModelListItemProps> = ({
       value={value}
       onChange={onChange}
       labelRender={labelRender} // 使用 tagRender 来自定义已选中项的渲染
+      placement={'bottomLeft'}
+      popupMatchSelectWidth={false}
     >
       {groupedOptionsData?.map((group, groupIndex) => (
         <Select.OptGroup key={groupIndex} label={group.label}>
