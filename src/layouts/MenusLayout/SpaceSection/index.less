@@ -3,15 +3,20 @@
 .header {
   height: 48px;
   gap: 8px;
+  font-size: 14px;
 
   .img {
     width: 32px;
     height: 32px;
+    border-radius: 10px;
   }
 
   .title {
-    font-size: 14px;
     color: @BLANK04;
+  }
+
+  .icon-down {
+    color: @GRAY05;
   }
 }
 
@@ -21,7 +26,7 @@
   margin-bottom: 8px;
   border-radius: 8px;
   opacity: 1;
-  gap: 12px;
+  gap: 10px;
 
   &.active {
     background: @WHITE03;
@@ -35,6 +40,7 @@
 }
 
 .collection-title {
+  margin-top: 40px;
   padding-left: 8px;
   font-size: 14px;
   line-height: 22px;

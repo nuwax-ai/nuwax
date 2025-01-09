@@ -14,6 +14,7 @@ export enum CreateListEnum {
   Me,
 }
 
+// 应用开发更多操作枚举
 export enum ApplicationMoreActionEnum {
   // 分析
   Analyze,
@@ -23,4 +24,14 @@ export enum ApplicationMoreActionEnum {
   Move,
   // 删除
   Del,
+}
+
+// 工作空间应用列表枚举
+export enum SpaceApplicationListEnum {
+  // 应用开发
+  Application_Develop,
+  // 组件库
+  Component_Library,
+  // 团队设置
+  Team_Setting,
 }

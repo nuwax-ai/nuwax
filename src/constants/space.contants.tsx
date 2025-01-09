@@ -2,7 +2,13 @@ import {
   ApplicationMoreActionEnum,
   CreateListEnum,
   FilterStatusEnum,
+  SpaceApplicationListEnum,
 } from '@/types/enums/space';
+import {
+  BorderVerticleOutlined,
+  HddOutlined,
+  RadarChartOutlined,
+} from '@ant-design/icons';
 
 // 过滤状态
 export const FILTER_STATUS = [
@@ -23,4 +29,23 @@ export const APPLICATION_MORE_ACTION = [
   { type: ApplicationMoreActionEnum.Create_Copy, label: '创建副本' },
   { type: ApplicationMoreActionEnum.Move, label: '迁移' },
   { type: ApplicationMoreActionEnum.Del, label: '删除' },
+];
+
+// 工作空间应用列表（layout二级菜单）
+export const SPACE_APPLICATION_LIST = [
+  {
+    type: SpaceApplicationListEnum.Application_Develop,
+    icon: <BorderVerticleOutlined />,
+    text: '应用开发',
+  },
+  {
+    type: SpaceApplicationListEnum.Component_Library,
+    icon: <HddOutlined />,
+    text: '组件库',
+  },
+  {
+    type: SpaceApplicationListEnum.Team_Setting,
+    icon: <RadarChartOutlined />,
+    text: '团队设置',
+  },
 ];
