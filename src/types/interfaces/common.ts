@@ -1,6 +1,14 @@
 import type { CardStyleEnum } from '@/types/enums/common';
 import React from 'react';
-
+/**
+ * 定义键值对接口，用于表示具有标签和值的对象。
+ */
+export interface KeyValuePairs {
+  // 键值对的标签
+  label: string;
+  // 键值对对应的值
+  value: string;
+}
 // 折叠容器
 export interface FoldWrapType {
   className?: string;
@@ -47,7 +55,7 @@ export interface DefaultObjectType {
 
 export interface LeftMenu {
   // 图标
-  icon: React.ReactNode;
+  icon: React.ReactNode | JSX.Element;
   // 名称
   name: string;
   // key
@@ -68,9 +76,110 @@ export interface ModelBoxProps {
   leftMenuList: LeftMenu[] | LeftGroup[];
   // 右侧主体内容
   Content: React.ComponentType<any>;
+  // 切换左侧菜单
+  changeMenu: (key: string) => void;
   // 创建的按钮或下拉菜单
   createNode?: React.ReactNode;
+  // 宽度
   width?: number;
+  // 是否显示搜索的input
   searchBar?: boolean;
+  // 点击搜索
   onSearch?: (value: string) => void;
+}
+/**
+ * 定义 Child 接口，用于描述子节点的数据结构。
+ */
+export interface Child {
+  // 子节点标题
+  title: string;
+  // 子节点显示的图像路径
+  icon: string | React.ReactNode; // 直接使用 SVGProps
+  // 唯一标识符
+  key: string;
+  // 子节点的类型，可能用于区分不同种类的节点
+  type: string;
+  // 节点的内容，可能是纯文本或键值对数组
+  content: string | KeyValuePairs[];
+  // 描述
+  desc?: string;
+  // 节点宽度，可选
+  width?: number;
+  // 节点高度，可选
+  height?: number;
+  // 标记该节点是否可以作为父节点嵌套其他节点，可选
+  isParent?: boolean;
+  // 节点背景颜色，可选
+  backgroundColor?: string;
+  // 没有操作栏
+  noPopover?: boolean;
+}
+
+// 使用Model的子组件
+export interface UseModelBoxProps {
+  // 标题
+  title: string;
+  // 新增的方法
+  onAdd: (item: Child) => void;
+}
+
+interface TagProps {
+  name: string;
+  desc: string;
+  type: string;
+}
+// 插件的单个内容
+export interface PlugInItem {
+  // 图标
+  icon?: JSX.Element;
+  //   名称
+  label: string;
+  //   简介
+  desc: string;
+  //   标签列表
+  tag: TagProps[];
+  //   发布时间
+  releaseTime?: string;
+  //   点赞数量
+  stat: string;
+  //   大小
+  size: string;
+  //   耗时
+  time: string;
+  //   成功率
+  successRate?: string;
+  //  引用量
+  cites?: string;
+  //   来源
+  source: string;
+  // id
+  id: string;
+  //   子选项
+  children: PlugInItem[];
+}
+// 工作流的单个内容
+export interface WorkFlowItem {
+  icon: JSX.Element;
+  label: string;
+  desc: string;
+  tag: string;
+  time: string;
+}
+
+// 工作流的右侧内容
+export interface WorkFlowContent {
+  props: WorkFlowItem;
+  onAdd: (item: WorkFlowItem) => void;
+}
+// 插件的右侧内容
+export interface PlugInNodeContent {
+  props: PlugInItem;
+  onAdd: (item: PlugInItem) => void;
+}
+
+export type RightContent = WorkFlowItem | PlugInItem;
+
+export interface ContentProps {
+  rightContent: RightContent[];
+  onAdd: (item: RightContent) => void;
 }

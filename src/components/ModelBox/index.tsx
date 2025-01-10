@@ -12,6 +12,7 @@ const ModelBox: React.FC<ModelBoxProps> = ({
   title,
   leftMenuList,
   Content,
+  changeMenu,
   searchBar,
   createNode,
   width,
@@ -29,7 +30,10 @@ const ModelBox: React.FC<ModelBoxProps> = ({
         [styles.checked]: action === item.key,
       })}
       key={item.key}
-      onClick={() => setAction(item.key)}
+      onClick={() => {
+        setAction(item.key);
+        changeMenu(item.key);
+      }}
     >
       {item.icon}
       <span className={cx(styles.label)}>{item.name}</span>
