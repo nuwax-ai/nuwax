@@ -7,7 +7,13 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const PersonalSpaceContent: React.FC = () => {
+interface PersonalSpaceContentType {
+  onCreateTeam: () => void;
+}
+
+const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
+  onCreateTeam,
+}) => {
   return (
     <div className={styles.container}>
       <div className={cx(styles['p-header'], 'flex')}>
@@ -48,7 +54,10 @@ const PersonalSpaceContent: React.FC = () => {
             <span className={cx('text-ellipsis')}>成都花舞人间</span>
           </li>
         </ul>
-        <div className={cx(styles['create-team'], 'flex', 'cursor-pointer')}>
+        <div
+          className={cx(styles['create-team'], 'flex', 'cursor-pointer')}
+          onClick={onCreateTeam}
+        >
           <PlusCircleOutlined />
           <span className={cx('flex-1', 'text-ellipsis')}>创建新团队</span>
         </div>

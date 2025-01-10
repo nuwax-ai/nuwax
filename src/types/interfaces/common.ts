@@ -1,5 +1,9 @@
 import type { CardStyleEnum } from '@/types/enums/common';
+import type { GetProp, UploadProps } from 'antd';
 import React from 'react';
+import { FormInstance } from 'antd';
+
+export type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
 
 // 折叠容器
 export interface FoldWrapType {
@@ -73,4 +77,28 @@ export interface ModelBoxProps {
   width?: number;
   searchBar?: boolean;
   onSearch?: (value: string) => void;
+}
+
+// 封装带Form的Modal弹窗
+export interface CustomFormModalProps {
+  form: FormInstance;
+  title: string;
+  open: boolean;
+  loading: boolean;
+  // 确定按钮前缀icon
+  okPrefixIcon?: React.ReactNode;
+  // 确定按钮文本
+  okText?: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+// 重写TextArea
+export interface OverrideTextAreaProps {
+  placeholder?: string;
+  name: string;
+  label: string;
+  maxLength?: number;
+  minRows?: number;
+  maxRows?: number;
 }
