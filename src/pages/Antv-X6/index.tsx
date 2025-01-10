@@ -38,6 +38,9 @@ const AntvX6 = () => {
     onClose: () => {},
   });
 
+  // 创建工作流或者插件的
+  const [title, setTitle] = useState<string>('添加工作流');
+
   // 当前被拖拽节点的x和y
   const [dragEvent, setDragEvent] = useState({
     x: 0,
@@ -106,6 +109,12 @@ const AntvX6 = () => {
 
     // 这里要区分创建的节点是插件和工作流还是其他，如果是插件和工作流，就要先展示弹窗，待用户选中后再添加节点
     if (child.key === 'plugInNode' || child.key === 'workflowNode') {
+      if (child.key === 'plugInNode') {
+        setTitle('添加插件');
+      } else {
+        setTitle('添加工作流');
+      }
+
       // 展示可以选择的选项蒙版层
       setOpen(true);
       setDragEvent({
@@ -134,10 +143,6 @@ const AntvX6 = () => {
     });
   };
 
-  // 节点中触发了事件
-  // const handleTriggerEvent = (e: any) => {
-  //   console.log(e);
-  // };
   // 关闭抽屉
   const closeDrawer = () => {
     setFoldWrapItem({ ...foldWrapItem, visible: false });
@@ -276,6 +281,7 @@ const AntvX6 = () => {
 
       {/* 添加工作流 */}
       <WorkFlowModel
+        title={title}
         onAdd={(child) => {
           if (dragEvent) {
             addNode(dragEvent, child);

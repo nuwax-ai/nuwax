@@ -6,6 +6,8 @@ import { ReactComponent as ICON_LOGO } from '@/assets/svg/logo.svg';
 import { ReactComponent as ICON_NEW_AGENT } from '@/assets/svg/new-agent.svg';
 import { ReactComponent as ICON_OPTIMIZE } from '@/assets/svg/optimize.svg';
 import { ReactComponent as ICON_START } from '@/assets/svg/start.svg';
+import { ReactComponent as ICON_ADJUSTMENT } from '@/assets/svg/adjustment-amount.svg';
+import { ReactComponent as ICON_SUCCESS } from '@/assets/svg/successRate.svg';
 export {
   ICON_ASSOCIATION,
   ICON_END,
@@ -15,4 +17,6 @@ export {
   ICON_NEW_AGENT,
   ICON_OPTIMIZE,
   ICON_START,
+  ICON_ADJUSTMENT,
+  ICON_SUCCESS
 };

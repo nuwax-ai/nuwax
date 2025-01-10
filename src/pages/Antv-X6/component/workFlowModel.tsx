@@ -1,42 +1,22 @@
+import Content from '@/components/Content';
 import ModelBox from '@/components/ModelBox';
+import { UseModelBoxProps } from '@/types/interfaces/common';
 import {
   DownOutlined,
   MessageOutlined,
   ShareAltOutlined,
 } from '@ant-design/icons';
-import { Button, Dropdown, Tag } from 'antd';
+import { Button, Dropdown } from 'antd';
 import React from 'react';
-import { leftMenuList, rightContent } from '../params';
-import { Child } from '../type';
+import {
+  leftMenuList,
+  pluginNodeContentExample,
+  pluginNodeLeftMenu,
+  rightContent,
+} from '../params';
 import './workFlowModel.less';
-// 每个选项的样式
 
-const OptionItem: React.FC<{
-  icon: JSX.Element;
-  label: string;
-  desc: string;
-  tag: string;
-  time: string;
-  onAdd: () => void; // 接收来自 Content 的回调函数
-}> = ({ icon, label, desc, tag, time, onAdd }) => {
-  return (
-    <div className="dis-sb item-style">
-      <div className="dis-left ">
-        {/* 左侧的图片 */}
-        {icon}
-        {/* 具体的内容 */}
-        <div className="dis-col">
-          <p className="label-style">{label}</p>
-          <p className="desc-style">{desc}</p>
-          <Tag className="tag-style">{tag}</Tag>
-          <p className="desc-style">发布于 {time}</p>
-        </div>
-      </div>
-      <Button onClick={onAdd}>复制并添加</Button>
-    </div>
-  );
-};
-
+import {PlugInItem,WorkFlowItem} from '@/types/interfaces/common'
 const items = [
   {
     label: '创建工作流',
@@ -50,29 +30,9 @@ const items = [
   },
 ];
 
-const Content: React.FC<{
-  onAdd: (item: (typeof rightContent)[number]) => void;
-}> = ({ onAdd }) => {
-  return (
-    <div className="dis-col">
-      {rightContent.map((item, index) => (
-        <OptionItem
-          icon={item.icon}
-          label={item.label}
-          desc={item.desc}
-          tag={item.tag}
-          time={item.time}
-          key={index}
-          onAdd={() => onAdd(item)} // 将回调函数传递给 OptionItem
-        />
-      ))}
-    </div>
-  );
-};
-
-const WorkflowAdd: React.FC<{ onAdd: (item: Child) => void }> = ({ onAdd }) => {
-  // 定义一个回调函数，它将在 OptionItem 中被调用
-  const handleAddClick = (item: (typeof rightContent)[number]) => {
+const WorkflowAdd: React.FC<UseModelBoxProps> = ({ title, onAdd }) => {
+  // 定义一个回调函数，它将在 OptionItem 中被调用，这里主要是创建工作流
+  const handleAddClick = (item: WorkFlowItem|PlugInItem) => {
     const _child = {
       // 子节点标题
       title: item.label,
@@ -82,12 +42,13 @@ const WorkflowAdd: React.FC<{ onAdd: (item: Child) => void }> = ({ onAdd }) => {
       content: item.desc,
       // 描述
       desc: item.desc,
+      other: item,
     };
     onAdd(_child);
     // 在这里执行你想要的操作，比如调用父组件的父组件事件
   };
 
-  // 创建的按钮
+  // 创建工作流的按钮
   const createNode = (
     <Dropdown menu={{ items }}>
       <Button style={{ width: '100%' }}>
@@ -96,13 +57,30 @@ const WorkflowAdd: React.FC<{ onAdd: (item: Child) => void }> = ({ onAdd }) => {
     </Dropdown>
   );
 
+  //   创建插件的按钮
+  const createPlugin = <Button style={{ width: '100%' }}>创建插件</Button>;
+
+  //  点击了左侧菜单，需要 切换右侧的选项
+  const changeMenu = (key: string) => {
+    // 在这里执行你想要的操作，比如调用父组件的父组件事件
+    console.log(key);
+  };
+
   return (
     <ModelBox
-      title="添加工作流"
-      leftMenuList={leftMenuList}
-      createNode={createNode}
+      title={title}
+      leftMenuList={title === '添加工作流' ? leftMenuList : pluginNodeLeftMenu}
+      createNode={title === '添加工作流' ? createNode : createPlugin}
       searchBar={true}
-      Content={() => <Content onAdd={handleAddClick} />} // 传递回调函数给 Content
+      changeMenu={changeMenu}
+      Content={() => (
+        <Content
+          rightContent={
+            title === '添加工作流' ? (rightContent as WorkFlowItem[])  : (pluginNodeContentExample as PlugInItem[])
+          }
+          onAdd={handleAddClick}
+        />
+      )} // 传递回调函数给 Content
       width={1000}
     ></ModelBox>
   );

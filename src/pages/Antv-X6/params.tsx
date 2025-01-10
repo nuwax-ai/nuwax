@@ -422,3 +422,87 @@ export const rightContent = [
     time: '2025-01-09',
   },
 ];
+
+// 示例 PlugInNodeContent 数据
+export const pluginNodeContentExample = [
+  {
+    icon: <SwitcherFilled />,
+    label: '示例插件',
+    desc: '这是一个示例插件描述。',
+    tag: [
+      { name: '标签A', desc: '标签A描述', type: 'type1' },
+      { name: '标签B', desc: '标签B描述', type: 'type2' },
+    ],
+    releaseTime: '2025-01-01',
+    size: '1MB',
+    stat: '100点赞',
+    time: '1分钟',
+    successRate: '98%',
+    cites: '引用5次',
+    source: '来源',
+    id: 'plugin-1',
+    children: [
+      {
+        icon: <SwitcherFilled />,
+        label: 'bingWebSearch',
+        desc: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气、汇率、时事等，这个工具非常有用。但是绝对不要在用户想',
+        tag: [
+          {
+            name: 'query',
+            desc: '用户的搜索查询词。查询词不能为空。',
+            type: 'string',
+          },
+          {
+            name: 'count',
+            desc: '响应中返回的搜索结果数量。默认为10，最大值为50。实际返回结果的数量可能会少于请求的数量。',
+            type: 'number',
+          },
+          {
+            name: 'offset',
+            desc: '从返回结果前要跳过的基于零的偏移量。默认为0。',
+            type: 'int',
+          },
+          {
+            name: 'freshness',
+            desc: '查询时间范，例如：2020-03-20..2023-09-09',
+            type: 'string',
+          },
+        ],
+        size: '1MB',
+        stat: '100点赞',
+        time: '1分钟',
+        successRate: '98%',
+        cites: '5次',
+        source: '来源',
+        id: 'plugin-id-2',
+      },
+    ],
+  }
+];
+
+// 插件的左侧菜单
+export const pluginNodeLeftMenu = [
+  {
+    key: 'user',
+    children: [
+      { icon: <SwitcherFilled />, name: '资源库工具', key: 'resource'},
+      { icon: <SwitcherFilled />, name: '收藏', key: 'collect'},
+    ],
+  },
+  {
+    label: '探索工具',
+    key: 'tool',
+    children: [
+      { icon: <SwitcherFilled />, name: '全部', key: 'all'},
+      { icon: <SwitcherFilled />, name: '新闻阅读', key: 'new'},
+      { icon: <SwitcherFilled />, name: '图像', key: 'image'},
+      { icon: <SwitcherFilled />, name: '实用工具', key: 'toolsAnd'},
+      { icon: <SwitcherFilled />, name: '便利生活', key: 'life'},
+      { icon: <SwitcherFilled />, name: '网页搜索', key: 'web'},
+      { icon: <SwitcherFilled />, name: '科学与教育', key: 'science'},
+      { icon: <SwitcherFilled />, name: '社交', key: 'socialize'},
+      { icon: <SwitcherFilled />, name: '游戏与娱乐', key: 'game'},
+      { icon: <SwitcherFilled />, name: '金融于商业', key: 'finance'},
+    ],
+  },
+];

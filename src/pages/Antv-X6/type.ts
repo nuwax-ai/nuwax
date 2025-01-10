@@ -1,6 +1,13 @@
 // 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
+import {
+  LeftGroup,
+  LeftMenu,
+  PlugInItem,
+  WorkFlowItem,
+} from '@/types/interfaces/common';
 import { Graph, Node } from '@antv/x6';
 import { FormInstance } from 'antd';
+
 /**
  * 定义键值对接口，用于表示具有标签和值的对象。
  */
@@ -202,4 +209,10 @@ export interface ModelSettingProp {
 export interface ModelSelectProp {
   settings: ModelSettingProp;
   groupModelList: GroupModelListItemProps;
+}
+
+export interface WorkFlowModelValue {
+  title: string;
+  leftMenuList: LeftGroup[] | LeftMenu[];
+  rightContent: PlugInItem[] | WorkFlowItem[];
 }
