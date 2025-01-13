@@ -1,33 +1,80 @@
 import SelectList from '@/components/SelectList';
 import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.contants';
-import ApplicationItem from '@/pages/Space/ApplicationItem';
-import { CreateListEnum, FilterStatusEnum } from '@/types/enums/space';
+import {
+  ApplicationMoreActionEnum,
+  CreateListEnum,
+  FilterStatusEnum,
+} from '@/types/enums/space';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Input } from 'antd';
+import { Button, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
+import { history } from 'umi';
+import AgentAnalyze from './AgentAnalyze';
+import AgentMove from './AgentMove';
+import ApplicationItem from './ApplicationItem';
+import CreateAgent from './CreateAgent';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 const Space: React.FC = () => {
+  // 打开分析弹窗
+  const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
+  // 迁移弹窗
+  const [openMove, setOpenMove] = useState<boolean>(false);
+  const [openCreateAgent, setOpenCreateAgent] = useState<boolean>(false);
   const [status, setStatus] = useState<FilterStatusEnum>(FilterStatusEnum.All);
   const [create, setCreate] = useState<CreateListEnum>(
     CreateListEnum.All_Person,
   );
-  const handleChangeStatus = (value: FilterStatusEnum) => {
+
+  const handlerChangeStatus = (value: FilterStatusEnum) => {
     setStatus(value);
   };
 
-  const handleChangeCreate = (value: CreateListEnum) => {
+  const handlerChangeCreate = (value: CreateListEnum) => {
     setCreate(value);
+  };
+
+  const handlerConfirmMove = () => {
+    setOpenMove(false);
+  };
+
+  // 点击更多操作
+  const handlerClickMore = (type: ApplicationMoreActionEnum) => {
+    console.log(type);
+    switch (type) {
+      case ApplicationMoreActionEnum.Analyze:
+        setOpenAnalyze(true);
+        break;
+      // 创建副本
+      case ApplicationMoreActionEnum.Create_Copy:
+        message.success('智能体已复制');
+        break;
+      case ApplicationMoreActionEnum.Move:
+        setOpenMove(true);
+        break;
+      case ApplicationMoreActionEnum.Del:
+        break;
+    }
+  };
+
+  const handlerConfirmCreateAgent = () => {
+    setOpenCreateAgent(false);
+    const agentId = '10101010';
+    history.push(`/edit-agent?agent_id=${agentId}`);
   };
 
   return (
     <div className={cx(styles.container, 'h-full')}>
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>应用开发</h3>
-        <Button type="primary" icon={<PlusOutlined />}>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => setOpenCreateAgent(true)}
+        >
           创建智能体
         </Button>
       </div>
@@ -35,12 +82,12 @@ const Space: React.FC = () => {
         <SelectList
           value={status}
           options={FILTER_STATUS}
-          onChange={handleChangeStatus}
+          onChange={handlerChangeStatus}
         />
         <SelectList
           value={create}
           options={CREATE_LIST}
-          onChange={handleChangeCreate}
+          onChange={handlerChangeCreate}
         />
         <Input
           rootClassName={cx(styles.input)}
@@ -49,17 +96,29 @@ const Space: React.FC = () => {
         />
       </div>
       <div className={cx(styles['main-container'])}>
-        <ApplicationItem />
-        <ApplicationItem />
-        <ApplicationItem />
-        <ApplicationItem />
-        <ApplicationItem />
-        <ApplicationItem />
-        <ApplicationItem />
-        <ApplicationItem />
-        <ApplicationItem />
-        <ApplicationItem />
+        <ApplicationItem onClickMore={handlerClickMore} />
+        <ApplicationItem onClickMore={handlerClickMore} />
+        <ApplicationItem onClickMore={handlerClickMore} />
+        <ApplicationItem onClickMore={handlerClickMore} />
+        <ApplicationItem onClickMore={handlerClickMore} />
+        <ApplicationItem onClickMore={handlerClickMore} />
+        <ApplicationItem onClickMore={handlerClickMore} />
+        <ApplicationItem onClickMore={handlerClickMore} />
+        <ApplicationItem onClickMore={handlerClickMore} />
+        <ApplicationItem onClickMore={handlerClickMore} />
       </div>
+      <AgentAnalyze open={openAnalyze} onCancel={() => setOpenAnalyze(false)} />
+      <AgentMove
+        open={openMove}
+        title={'智能体名称'}
+        onCancel={() => setOpenMove(false)}
+        onConfirm={handlerConfirmMove}
+      />
+      <CreateAgent
+        open={openCreateAgent}
+        onCancel={() => setOpenCreateAgent(false)}
+        onConfirm={handlerConfirmCreateAgent}
+      />
     </div>
   );
 };

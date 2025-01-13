@@ -52,8 +52,6 @@ export interface PlugInNodeContent {
   onAdd: (item: PlugInItem) => void;
 }
 
-
-
 export type RightContent = WorkFlowContent | PlugInItem;
 
 export interface ContentProps {

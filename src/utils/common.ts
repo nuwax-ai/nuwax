@@ -1,3 +1,5 @@
+import type { FileType } from '@/types/interfaces/common';
+
 // 过滤非数字
 const getNumbersOnly = (text: string) => {
   return text?.replace(/[^0-9]/g, '');
@@ -13,4 +15,10 @@ function validatePassword(password: string) {
   return reg.test(password);
 }
 
-export { getNumbersOnly, isValidEmail, validatePassword };
+const getBase64 = (img: FileType, callback: (url: string) => void) => {
+  const reader = new FileReader();
+  reader.addEventListener('load', () => callback(reader.result as string));
+  reader.readAsDataURL(img as Blob);
+};
+
+export { getBase64, getNumbersOnly, isValidEmail, validatePassword };

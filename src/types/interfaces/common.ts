@@ -1,5 +1,9 @@
 import type { CardStyleEnum } from '@/types/enums/common';
+import type { FormInstance, GetProp, UploadProps } from 'antd';
 import React from 'react';
+
+export type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
+
 /**
  * 定义键值对接口，用于表示具有标签和值的对象。
  */
@@ -9,6 +13,7 @@ export interface KeyValuePairs {
   // 键值对对应的值
   value: string;
 }
+
 // 折叠容器
 export interface FoldWrapType {
   className?: string;
@@ -55,7 +60,7 @@ export interface DefaultObjectType {
 
 export interface LeftMenu {
   // 图标
-  icon: React.ReactNode | JSX.Element;
+  icon: React.ReactNode;
   // 名称
   name: string;
   // key
@@ -87,6 +92,31 @@ export interface ModelBoxProps {
   // 点击搜索
   onSearch?: (value: string) => void;
 }
+
+// 封装带Form的Modal弹窗
+export interface CustomFormModalProps {
+  form: FormInstance;
+  title: string;
+  open: boolean;
+  loading: boolean;
+  // 确定按钮前缀icon
+  okPrefixIcon?: React.ReactNode;
+  // 确定按钮文本
+  okText?: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+// 重写TextArea
+export interface OverrideTextAreaProps {
+  placeholder?: string;
+  name: string;
+  label?: string;
+  maxLength?: number;
+  minRows?: number;
+  maxRows?: number;
+}
+
 /**
  * 定义 Child 接口，用于描述子节点的数据结构。
  */
@@ -123,13 +153,23 @@ export interface UseModelBoxProps {
   onAdd: (item: Child) => void;
 }
 
-export interface CreatedNodeItem {
-  icon: React.ReactNode;
+// 插件的单个内容
+export interface PlugInItem {
+  // 图标
+  icon?: React.ReactNode;
+  //   名称
   label: string;
   desc: string;
   id: string;
-  source: string;
+  //   子选项
+  children: PlugInItem[];
+}
+// 工作流的单个内容
+export interface WorkFlowItem {
+  icon: React.ReactNode;
+  label: string;
+  desc: string;
+  tag: string;
   time: string;
   image: React.ReactNode;
-  tag: string;
 }

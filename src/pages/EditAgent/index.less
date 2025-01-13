@@ -1,0 +1,47 @@
+@import '@/styles/color';
+
+.container {
+  background-color: @WHITE03;
+
+  .edit-info {
+    width: 935px;
+    background-color: @WHITE10;
+
+    .edit-header {
+      height: 60px;
+      border-bottom: 1px solid @GRAY06;
+
+      h3 {
+        font-size: 18px;
+        font-weight: bold;
+        color: @BLANK04;
+      }
+
+      .drop-box {
+        gap: 8px;
+        color: @GRAY07;
+        font-size: 14px;
+      }
+    }
+
+    .system-tips {
+      font-size: 14px;
+      font-weight: bold;
+      color: @BLANK04;
+    }
+
+    .optimize-btn {
+      height: 30px;
+      background-color: rgba(180, 186, 246, 100%); /* 修改背景颜色 */
+      color: @BLUE01; /* 修改文本颜色 */
+      border: none;
+    }
+
+    .h-line {
+      width: 1px;
+      height: calc(100% - 20px);
+      margin-top: 10px;
+      background-color: @GRAY06;
+    }
+  }
+}

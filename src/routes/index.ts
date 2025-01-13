@@ -28,6 +28,11 @@ const routes = [
   },
   { path: '/antv', component: '@/pages/Antv-X6', layout: false },
   {
+    path: '/edit-agent',
+    component: '@/pages/EditAgent',
+    layout: false,
+  },
+  {
     path: '/*',
     component: '@/pages/404',
     layout: false,
