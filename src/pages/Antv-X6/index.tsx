@@ -7,10 +7,10 @@ import InitGraph from './component/graph';
 import Monaco from './component/monaco';
 import { registerCustomNodes } from './component/registerCustomNodes'; // 引入自定义节点注册函数
 import StencilContent from './component/stencil';
-import WorkFlowModel from './component/workFlowModel';
 // 引入一些图标
+import Created from '@/components/Created';
 import { ICON_END, ICON_START } from '@/constants/images.constants';
-import { FoldWrapType } from '@/types/interfaces/common';
+import { CreatedNodeItem, FoldWrapType } from '@/types/interfaces/common';
 import {
   CaretRightOutlined,
   HomeOutlined,
@@ -21,7 +21,6 @@ import { Node } from '@antv/x6';
 import { useModel } from 'umi';
 import './index.less';
 import { Child } from './type';
-
 // 确保在应用启动时就注册所有自定义节点
 registerCustomNodes();
 
@@ -37,9 +36,10 @@ const AntvX6 = () => {
     key: '',
     onClose: () => {},
   });
-
-  // 创建工作流或者插件的
-  const [title, setTitle] = useState<string>('添加工作流');
+  // 创建插件、工作流、知识库、数据库所需的参数
+  const [createdItem, setCreatedItem] = useState({
+    checkTag: '',
+  });
 
   // 当前被拖拽节点的x和y
   const [dragEvent, setDragEvent] = useState({
@@ -48,7 +48,7 @@ const AntvX6 = () => {
   }); // 拖拽子节点到画布中
 
   // 打开或者关闭添加工作流或者插件
-  const { setOpen } = useModel('model');
+  const { setShow } = useModel('model');
 
   // 使用 useRef 来保持 graph 实例在整个组件生命周期内的引用
   const graphRef = useRef<any>(null);
@@ -108,15 +108,15 @@ const AntvX6 = () => {
     e.preventDefault();
 
     // 这里要区分创建的节点是插件和工作流还是其他，如果是插件和工作流，就要先展示弹窗，待用户选中后再添加节点
-    if (child.key === 'plugInNode' || child.key === 'workflowNode') {
-      if (child.key === 'plugInNode') {
-        setTitle('添加插件');
-      } else {
-        setTitle('添加工作流');
-      }
-
+    if (
+      child.key === 'plugInNode' ||
+      child.key === 'workflowNode' ||
+      child.key === 'knowledgeNode' ||
+      child.key === 'databaseNode'
+    ) {
+      setCreatedItem({ ...createdItem, checkTag: child.key });
       // 展示可以选择的选项蒙版层
-      setOpen(true);
+      setShow(true);
       setDragEvent({
         x: e.clientX,
         y: e.clientY,
@@ -130,6 +130,23 @@ const AntvX6 = () => {
         child,
       );
     }
+  };
+
+  // 添加插件,工作流,知识库,数据库
+  const onAdded = (val: CreatedNodeItem) => {
+    // 组装数据
+    const _child = {
+      title: val.label,
+      icon: val.image,
+      type: 'general-Node',
+      content: val.desc,
+      desc: val.desc,
+      key: createdItem.checkTag,
+    };
+    // 添加节点
+    addNode(dragEvent, _child);
+    // 关闭新增差价工作流,知识库,数据库的弹窗
+    setShow(false);
   };
   // 点击组件，显示抽屉
   const changeDrawer = (child: Child) => {
@@ -246,6 +263,7 @@ const AntvX6 = () => {
       {/* 绝对定位的容器，用以试运行 */}
       <div className="absolute-test">
         <ToolOutlined />
+
         <Button
           icon={<CaretRightOutlined />}
           type="primary"
@@ -279,16 +297,8 @@ const AntvX6 = () => {
         </div>
       </FoldWrap>
 
-      {/* 添加工作流 */}
-      <WorkFlowModel
-        title={title}
-        onAdd={(child) => {
-          if (dragEvent) {
-            addNode(dragEvent, child);
-            setOpen(false);
-          }
-        }}
-      />
+      {/* 添加工作流,节点等 */}
+      <Created checkTag={createdItem.checkTag} onAdded={onAdded} />
     </div>
   );
 };

@@ -14,6 +14,7 @@ import React, { useRef, useState } from 'react';
 import { cycleOption, InputConfigs, outPutConfigs } from '../params';
 import { NodeDisposeProps } from '../type';
 import { InputAndOut } from './commonNode';
+
 // 定义一些公共的数组
 
 // 定义开始节点

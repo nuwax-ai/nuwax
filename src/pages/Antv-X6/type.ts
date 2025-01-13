@@ -1,10 +1,4 @@
 // 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
-import {
-  LeftGroup,
-  LeftMenu,
-  PlugInItem,
-  WorkFlowItem,
-} from '@/types/interfaces/common';
 import { Graph, Node } from '@antv/x6';
 import { FormInstance } from 'antd';
 
@@ -97,6 +91,7 @@ export interface NodeDisposeProps {
   type?: string;
   options?: ModelListItemProps[];
   groupedOptionsData?: GroupModelItem[];
+  initialValues?: object;
 }
 /**
  * 定义带勾选框的select
@@ -107,15 +102,17 @@ export interface MultiSelectWithCheckboxProps {
   placeholder?: string;
 }
 
+export interface ReferenceList {
+  label: string;
+  key: string;
+  icon?: React.ReactNode;
+  children?: Array<{ label: string; key: string; tag: string }>;
+}
+
 // 定义输入或引用参数
 export interface InputOrReferenceProps {
-  referenceList: Array<{
-    label: string;
-    key: string;
-    icon?: React.ReactNode;
-    children?: Array<{ label: string; key: string; tag: string }>;
-  }>;
-  placeholder: string;
+  referenceList: ReferenceList[];
+  placeholder?: string;
   value: string; // 新增：接受当前值
   onChange: (value: string) => void; // 新增：接受值变化的回调
 }
@@ -211,8 +208,15 @@ export interface ModelSelectProp {
   groupModelList: GroupModelListItemProps;
 }
 
-export interface WorkFlowModelValue {
+// 定义树节点的数据类型
+export interface TreeNodeData {
   title: string;
-  leftMenuList: LeftGroup[] | LeftMenu[];
-  rightContent: PlugInItem[] | WorkFlowItem[];
+  key: string;
+  tag?: string; // 可选的标签属性
+  children?: TreeNodeData[]; // 子节点数组，可选
+}
+
+// 定义树结构的输出
+export interface TreeOutputProps {
+  treeData: TreeNodeData[];
 }

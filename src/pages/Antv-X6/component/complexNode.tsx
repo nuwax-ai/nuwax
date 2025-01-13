@@ -1,3 +1,4 @@
+import { ModelSelected } from '@/components/ModelSetting';
 import { ICON_OPTIMIZE } from '@/constants/images.constants';
 import { ExpandAltOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Empty, Input } from 'antd';
@@ -6,7 +7,6 @@ import '../index.less';
 import { InputConfigs, outPutConfigs } from '../params';
 import { NodeDisposeProps } from '../type';
 import { InputAndOut, ModelSelect } from './commonNode';
-
 // 定义大模型节点
 const ModelNode: React.FC<NodeDisposeProps> = ({ groupedOptionsData }) => {
   // 三个值(随机性，top，最大回复长度)
@@ -31,7 +31,6 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ groupedOptionsData }) => {
   const changeModel = (newModel: typeof selectModel) => {
     setSelectModel(newModel);
   };
-  console.log(groupedOptionsData);
   const groupModelList = {
     value: selectModel,
     onChange: changeModel,
@@ -113,5 +112,23 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ groupedOptionsData }) => {
 };
 
 // 定义意图识别
+const IntentionNode: React.FC<NodeDisposeProps> = ({
+  groupedOptionsData = [],
+}) => {
+  return (
+    <div className="model-node-style">
+      {/* 模型模块 */}
+      <ModelSelected
+        onSettingsChange={(newSettings) =>
+          console.log('New settings:', newSettings)
+        }
+        defaultSettings={{ top: 0, reply: 0, random: 0 }}
+        onModelChange={(newModel) => console.log('New model:', newModel)}
+        defaultModel=""
+        groupedOptionsData={groupedOptionsData}
+      />
+    </div>
+  );
+};
 
-export default { ModelNode };
+export default { ModelNode, IntentionNode };

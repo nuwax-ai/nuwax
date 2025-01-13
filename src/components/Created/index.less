@@ -1,0 +1,114 @@
+@import '@/styles/color';
+// 去除当前model的padding
+.created-modal-style {
+  .ant-modal-header {
+    margin-bottom: 0;
+  }
+
+  .ant-modal-content {
+    padding: 0;
+  }
+
+  .margin-bottom {
+    margin-bottom: 16px;
+  }
+
+  .margin-right-6 {
+    margin-right: 6px;
+    margin-left: 6px;
+  }
+}
+
+// 头部样式
+.created-title {
+  height: 75px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  background-color: @WHITE04;
+  padding-left: 24px;
+
+  .radio-title-style {
+    .ant-radio-button-wrapper {
+      border: none;
+      transition: none;
+    }
+
+    .radio-button-style {
+      background-color: @WHITE04;
+      font-size: 18px;
+      border-radius: 0;
+      box-shadow: 1px 0 0 0 @GRAY06 inset;
+      padding: 0 20px;
+      margin: 2px 0;
+    }
+
+    // 移除第一个单选按钮的box-shadow
+    .first-radio-style {
+      box-shadow: none;
+    }
+  }
+}
+
+// 内容部分
+.created-container {
+  height: 680px;
+  border-top: 1px solid @GRAY06;
+
+  // 侧边栏样式
+  .aside-style {
+    box-sizing: border-box;
+    padding: 0 20px;
+    background-color: @GRAY06;
+    height: 100%;
+    padding-top: 20px;
+    width: 270px;
+
+    // 替换menu的默认选中样式
+    .ant-menu-item-selected {
+      color: @BLANK04;
+      background-color: @BLANK06;
+    }
+  }
+  // 消除右侧的边框
+  .ant-menu-light.ant-menu-root.ant-menu-inline {
+    border-inline-end: none;
+    background-color: @GRAY06;
+  }
+  // 右侧主题内容
+  .main-style {
+    background-color: @WHITE04;
+    // 每一个样式
+    .list-item-style {
+      height: 120px;
+      padding: 13px 23px;
+      box-sizing: border-box;
+      border-bottom: 1px solid @GRAY06;
+
+      .left-image-style {
+        width: 40px;
+        height: 40px;
+        margin-right: 13px;
+
+        svg {
+          width: 40px;
+          height: 40px;
+        }
+      }
+
+      .content-font {
+        font-family: 'Alimama Agile VF';
+        font-size: 12px;
+        font-weight: normal;
+        line-height: 22px;
+        letter-spacing: 0;
+        color: @GRAY05;
+      }
+
+      .label-font-style {
+        font-size: 14px;
+        font-weight: bold;
+        color: @BLANK04;
+      }
+    }
+  }
+}

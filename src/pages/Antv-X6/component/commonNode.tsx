@@ -4,6 +4,7 @@ import {
   CaretDownOutlined,
   CaretUpOutlined,
   DeleteOutlined,
+  DownOutlined,
   FileDoneOutlined,
   PlusOutlined,
   SettingOutlined,
@@ -22,6 +23,7 @@ import {
   Slider,
   Space,
   Tag,
+  Tree,
   Typography,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
@@ -38,6 +40,8 @@ import {
   NodeRenderProps,
   RenderItemProps,
   SkillProps,
+  TreeNodeData,
+  TreeOutputProps,
 } from '../type';
 import './commonNode.less';
 
@@ -65,7 +69,7 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
   return (
     <Input
       value={value && !value.includes('-') ? value : ''} // 如果有选中项，则清空输入框文本
-      placeholder={placeholder}
+      placeholder={placeholder ? placeholder : '请输入或引用参数'}
       onChange={handleInputChange}
       addonBefore={
         value &&
@@ -256,6 +260,46 @@ export const Skill: React.FC<SkillProps> = ({ title, icon, desc }) => {
         <div className="skill-item-desc-style">{desc}</div>
       </div>
     </div>
+  );
+};
+
+// 定义树结构的输出
+export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
+  const { TreeNode } = Tree;
+  // 定义一个函数来递归生成带有标签的树节点
+  const renderTreeNode = (data: TreeNodeData[]) => {
+    return data.map((item) => {
+      if (item.children) {
+        return (
+          <TreeNode
+            title={
+              <span>
+                {item.title} <Tag style={{ marginLeft: '5px' }}>{item.tag}</Tag>
+              </span>
+            }
+            key={item.key}
+          >
+            {renderTreeNode(item.children)}
+          </TreeNode>
+        );
+      }
+      return (
+        <TreeNode
+          title={
+            <span>
+              {item.title} <Tag style={{ marginLeft: '5px' }}>{item.tag}</Tag>
+            </span>
+          }
+          key={item.key}
+        />
+      );
+    });
+  };
+
+  return (
+    <Tree showLine switcherIcon={<DownOutlined />}>
+      {renderTreeNode(treeData)}
+    </Tree>
   );
 };
 
