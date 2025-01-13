@@ -1,5 +1,6 @@
 import {
   ApplicationMoreActionEnum,
+  CreateAgentEnum,
   CreateListEnum,
   FilterStatusEnum,
   SpaceApplicationListEnum,
@@ -47,5 +48,17 @@ export const SPACE_APPLICATION_LIST = [
     type: SpaceApplicationListEnum.Team_Setting,
     icon: <RadarChartOutlined />,
     text: '团队设置',
+  },
+];
+
+// 创建智能体列表
+export const CREATE_AGENT_LIST = [
+  {
+    label: '标准创建',
+    value: CreateAgentEnum.Standard,
+  },
+  {
+    label: 'AI 创建',
+    value: CreateAgentEnum.AI,
   },
 ];

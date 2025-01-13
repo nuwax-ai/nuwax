@@ -1,7 +1,6 @@
 import type { CardStyleEnum } from '@/types/enums/common';
-import type { GetProp, UploadProps } from 'antd';
+import type { FormInstance, GetProp, UploadProps } from 'antd';
 import React from 'react';
-import { FormInstance } from 'antd';
 
 export type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
 
@@ -112,7 +111,7 @@ export interface CustomFormModalProps {
 export interface OverrideTextAreaProps {
   placeholder?: string;
   name: string;
-  label: string;
+  label?: string;
   maxLength?: number;
   minRows?: number;
   maxRows?: number;

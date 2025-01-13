@@ -87,7 +87,7 @@ export class GeneralNode extends React.Component<NodeProps> {
         {/* 节点内容区，根据 data.content 的类型显示不同的内容 */}
         <div className="general-node-content">
           {typeof data.content === 'string' ? (
-            <div className='text-ellipsis'>{data.content}</div>
+            <div className="text-ellipsis">{data.content}</div>
           ) : (
             <div className="general-node-content-list">
               {data.content.map((item) => (
@@ -130,7 +130,6 @@ const portItemStyle = {
     },
   },
 };
-
 
 /**
  * 定义 插件和工作流的节点

@@ -1,8 +1,8 @@
+import type { OverrideTextAreaProps } from '@/types/interfaces/common';
 import { Form, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './index.less';
-import type { OverrideTextAreaProps } from '@/types/interfaces/common';
 
 const cx = classNames.bind(styles);
 
@@ -18,10 +18,10 @@ const OverrideTextArea: React.FC<OverrideTextAreaProps> = (props) => {
     maxRows = 6,
   } = props;
 
-  const [value, setValue] = useState<string>('')
+  const [value, setValue] = useState<string>('');
   return (
     <Form.Item className={cx('relative')}>
-      <Form.Item name={name} label={label}>
+      <Form.Item className={cx(styles['text-area'])} name={name} label={label}>
         <TextArea
           rootClassName={styles.input}
           placeholder={placeholder}

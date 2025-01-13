@@ -35,3 +35,9 @@ export enum SpaceApplicationListEnum {
   // 团队设置
   Team_Setting,
 }
+
+// 创建智能体枚举
+export enum CreateAgentEnum {
+  Standard,
+  AI,
+}

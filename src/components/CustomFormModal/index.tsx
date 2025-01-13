@@ -1,9 +1,9 @@
+import SubmitButton from '@/components/SubmitButton';
+import type { CustomFormModalProps } from '@/types/interfaces/common';
 import { Button, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { PropsWithChildren } from 'react';
 import styles from './index.less';
-import type { CustomFormModalProps } from '@/types/interfaces/common';
-import SubmitButton from '@/components/SubmitButton';
 
 const cx = classNames.bind(styles);
 
@@ -29,7 +29,13 @@ const CustomFormModal: React.FC<PropsWithChildren<CustomFormModalProps>> = ({
           <Button className={cx(styles.btn)} type="default" onClick={onCancel}>
             取消
           </Button>
-          <SubmitButton okPrefixIcon={okPrefixIcon} loading={loading} onConfirm={onConfirm} form={form} okText={okText}  />
+          <SubmitButton
+            okPrefixIcon={okPrefixIcon}
+            loading={loading}
+            onConfirm={onConfirm}
+            form={form}
+            okText={okText}
+          />
         </>
       }
       onCancel={onCancel}

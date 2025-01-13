@@ -1,6 +1,6 @@
-import React from 'react';
 import { Button, Form, FormInstance } from 'antd';
 import classNames from 'classnames';
+import React from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -15,14 +15,21 @@ interface SubmitButtonProps {
   onConfirm: () => void;
 }
 
-const SubmitButton: React.FC<SubmitButtonProps> = ({ form, loading, okPrefixIcon, okText, onConfirm }) => {
+const SubmitButton: React.FC<SubmitButtonProps> = ({
+  form,
+  loading,
+  okPrefixIcon,
+  okText,
+  onConfirm,
+}) => {
   const [submittable, setSubmittable] = React.useState<boolean>(false);
 
   // Watch all values
   const values = Form.useWatch([], form);
 
   React.useEffect(() => {
-    form?.validateFields({ validateOnly: true })
+    form
+      ?.validateFields({ validateOnly: true })
       .then(() => setSubmittable(true))
       .catch(() => setSubmittable(false));
   }, [form, values]);

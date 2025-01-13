@@ -1,5 +1,6 @@
 import { APPLICATION_MORE_ACTION } from '@/constants/space.contants';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
+import type { ApplicationItemProps } from '@/types/interfaces/space';
 import {
   CheckCircleTwoTone,
   MoreOutlined,
@@ -13,14 +14,10 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const ApplicationItem: React.FC = () => {
+const ApplicationItem: React.FC<ApplicationItemProps> = ({ onClickMore }) => {
   const handlerCollect = (e) => {
     e.preventDefault();
     console.log('收藏');
-  };
-
-  const handlerClickMore = (type: ApplicationMoreActionEnum) => {
-    console.log(type);
   };
 
   return (
@@ -93,7 +90,7 @@ const ApplicationItem: React.FC = () => {
                       [styles.del]: item.type === ApplicationMoreActionEnum.Del,
                     },
                   )}
-                  onClick={() => handlerClickMore(item.type)}
+                  onClick={() => onClickMore(item.type)}
                 >
                   {item.label}
                 </li>

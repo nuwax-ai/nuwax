@@ -1,16 +1,16 @@
 import personal from '@/assets/images/personal.png';
+import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { SPACE_APPLICATION_LIST } from '@/constants/space.contants';
 import { SpaceApplicationListEnum } from '@/types/enums/space';
+import { customizeRequiredMark } from '@/utils/form';
 import { DownOutlined } from '@ant-design/icons';
 import { Form, Input, Popover } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './index.less';
 import PersonalSpaceContent from './PersonalSpaceContent';
-import { customizeRequiredMark } from '@/utils/form';
-import CustomFormModal from '@/components/CustomFormModal';
 
 const cx = classNames.bind(styles);
 
@@ -18,7 +18,7 @@ const SpaceSection: React.FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   const [openModal, setOpenModal] = useState<boolean>(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string>();
+  const [imageUrl, setImageUrl] = useState<string>('');
   const [form] = Form.useForm();
 
   const handlerApplication = (type: SpaceApplicationListEnum) => {
@@ -177,7 +177,11 @@ const SpaceSection: React.FC = () => {
             rootClassName={cx(styles['create-team-form'])}
             autoComplete="off"
           >
-            <Form.Item name="teamName" label="团队名称" rules={[{ required: true, message: '请输入团队名称' }]}>
+            <Form.Item
+              name="teamName"
+              label="团队名称"
+              rules={[{ required: true, message: '请输入团队名称' }]}
+            >
               <Input placeholder="请输入团队名称" showCount maxLength={50} />
             </Form.Item>
             <OverrideTextArea name="desc" label="描述" />

@@ -119,27 +119,37 @@ const PlugInOption = ({ props, onAdd }: PlugInNodeContent) => {
               ))}
               <Popover
                 placement="right"
-
                 content={
                   <>
-                    <div className='margin-bottom-6'>
-                      <p className='margin-bottom-6'>{item.label}</p>
-                      <p className='plugin-header-content-style' style={{ maxWidth: '400px'}}>{item.desc}</p>
+                    <div className="margin-bottom-6">
+                      <p className="margin-bottom-6">{item.label}</p>
+                      <p
+                        className="plugin-header-content-style"
+                        style={{ maxWidth: '400px' }}
+                      >
+                        {item.desc}
+                      </p>
                     </div>
                     {tag.map((child) => (
-                      <div key={child.name} className='margin-bottom-6'>
+                      <div key={child.name} className="margin-bottom-6">
                         <p className="dis-left margin-bottom-6">
                           <span>{child.name}</span>
-                          <span className='plugin-header-content-style margin-left-6'>{child.type}</span>
+                          <span className="plugin-header-content-style margin-left-6">
+                            {child.type}
+                          </span>
                         </p>
-                        <p className='plugin-header-content-style'>{child.desc}</p>
+                        <p className="plugin-header-content-style">
+                          {child.desc}
+                        </p>
                       </div>
                     ))}
                   </>
                 }
                 trigger="hover"
               >
-                <Button variant="text" color="primary">参数</Button>
+                <Button variant="text" color="primary">
+                  参数
+                </Button>
               </Popover>
             </p>
             <div className="dis-left">

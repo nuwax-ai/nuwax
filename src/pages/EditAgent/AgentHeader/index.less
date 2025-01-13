@@ -1,0 +1,63 @@
+@import '@/styles/color';
+
+.header {
+  gap: 10px;
+  border-bottom: 1px solid @BLANK01;
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .header-info {
+    gap: 6px;
+
+    .h-title {
+      margin-right: 30px;
+      font-size: 14px;
+      font-weight: bold;
+      color: @BLANK04;
+    }
+
+    .edit-ico {
+      color: @GRAY05;
+    }
+
+    .agent-rel-info {
+      gap: 6px;
+      color: @BLANK04;
+      font-size: 12px;
+
+      .space-name {
+        max-width: 200px;
+      }
+
+      .save-time {
+        color: @GRAY05;
+      }
+    }
+  }
+
+  .header-title {
+    top: 50%;
+    left: 50%;
+    transform: translate3d(-50%, -50%, 0);
+    font-size: 18px;
+    font-weight: bold;
+    color: @BLANK04;
+  }
+
+  .right-box {
+    margin-left: auto;
+    gap: 8px;
+
+    .ico {
+      color: @BLANK09;
+      font-size: 20px;
+    }
+
+    .publish-btn {
+      margin-left: 30px;
+    }
+  }
+}

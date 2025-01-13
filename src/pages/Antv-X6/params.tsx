@@ -477,7 +477,7 @@ export const pluginNodeContentExample = [
         id: 'plugin-id-2',
       },
     ],
-  }
+  },
 ];
 
 // 插件的左侧菜单
@@ -485,24 +485,24 @@ export const pluginNodeLeftMenu = [
   {
     key: 'user',
     children: [
-      { icon: <SwitcherFilled />, name: '资源库工具', key: 'resource'},
-      { icon: <SwitcherFilled />, name: '收藏', key: 'collect'},
+      { icon: <SwitcherFilled />, name: '资源库工具', key: 'resource' },
+      { icon: <SwitcherFilled />, name: '收藏', key: 'collect' },
     ],
   },
   {
     label: '探索工具',
     key: 'tool',
     children: [
-      { icon: <SwitcherFilled />, name: '全部', key: 'all'},
-      { icon: <SwitcherFilled />, name: '新闻阅读', key: 'new'},
-      { icon: <SwitcherFilled />, name: '图像', key: 'image'},
-      { icon: <SwitcherFilled />, name: '实用工具', key: 'toolsAnd'},
-      { icon: <SwitcherFilled />, name: '便利生活', key: 'life'},
-      { icon: <SwitcherFilled />, name: '网页搜索', key: 'web'},
-      { icon: <SwitcherFilled />, name: '科学与教育', key: 'science'},
-      { icon: <SwitcherFilled />, name: '社交', key: 'socialize'},
-      { icon: <SwitcherFilled />, name: '游戏与娱乐', key: 'game'},
-      { icon: <SwitcherFilled />, name: '金融于商业', key: 'finance'},
+      { icon: <SwitcherFilled />, name: '全部', key: 'all' },
+      { icon: <SwitcherFilled />, name: '新闻阅读', key: 'new' },
+      { icon: <SwitcherFilled />, name: '图像', key: 'image' },
+      { icon: <SwitcherFilled />, name: '实用工具', key: 'toolsAnd' },
+      { icon: <SwitcherFilled />, name: '便利生活', key: 'life' },
+      { icon: <SwitcherFilled />, name: '网页搜索', key: 'web' },
+      { icon: <SwitcherFilled />, name: '科学与教育', key: 'science' },
+      { icon: <SwitcherFilled />, name: '社交', key: 'socialize' },
+      { icon: <SwitcherFilled />, name: '游戏与娱乐', key: 'game' },
+      { icon: <SwitcherFilled />, name: '金融于商业', key: 'finance' },
     ],
   },
 ];

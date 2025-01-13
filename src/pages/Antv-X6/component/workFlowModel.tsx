@@ -16,7 +16,7 @@ import {
 } from '../params';
 import './workFlowModel.less';
 
-import {PlugInItem,WorkFlowItem} from '@/types/interfaces/common'
+import { PlugInItem, WorkFlowItem } from '@/types/interfaces/common';
 const items = [
   {
     label: '创建工作流',
@@ -32,7 +32,7 @@ const items = [
 
 const WorkflowAdd: React.FC<UseModelBoxProps> = ({ title, onAdd }) => {
   // 定义一个回调函数，它将在 OptionItem 中被调用，这里主要是创建工作流
-  const handleAddClick = (item: WorkFlowItem|PlugInItem) => {
+  const handleAddClick = (item: WorkFlowItem | PlugInItem) => {
     const _child = {
       // 子节点标题
       title: item.label,
@@ -76,7 +76,9 @@ const WorkflowAdd: React.FC<UseModelBoxProps> = ({ title, onAdd }) => {
       Content={() => (
         <Content
           rightContent={
-            title === '添加工作流' ? (rightContent as WorkFlowItem[])  : (pluginNodeContentExample as PlugInItem[])
+            title === '添加工作流'
+              ? (rightContent as WorkFlowItem[])
+              : (pluginNodeContentExample as PlugInItem[])
           }
           onAdd={handleAddClick}
         />
