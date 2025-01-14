@@ -12,6 +12,9 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 编辑智能体顶部header
+ */
 const AgentHeader: React.FC = () => {
   return (
     <header
