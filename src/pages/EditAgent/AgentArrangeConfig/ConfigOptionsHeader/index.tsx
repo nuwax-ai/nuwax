@@ -1,12 +1,9 @@
+import type { ConfigOptionsHeaderProps } from '@/types/interfaces/space';
 import classNames from 'classnames';
 import React, { PropsWithChildren } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-interface ConfigOptionsHeaderProps {
-  title: string;
-}
 
 /**
  * 智能体配置项header

@@ -35,6 +35,11 @@ export interface CardStyleType {
   onClick: (type: CardStyleEnum) => void;
 }
 
+interface option {
+  label: React.ReactNode;
+  value: string | number;
+}
+
 // 下拉选择框组件
 export interface SelectListType {
   className?: string;
@@ -43,9 +48,10 @@ export interface SelectListType {
   prefix?: React.ReactNode;
   // 自定义的选择框后缀图标
   suffixIcon?: React.ReactNode;
+  // 自定义底部
   dropdownRenderComponent?: React.ReactNode;
   placeholder?: string;
-  options: { label; value }[];
+  options: option[];
   // 是否选中的图标或者图片
   selectIcon?: React.ReactNode;
   // label文本前的图片

@@ -2,8 +2,11 @@ import {
   ApplicationMoreActionEnum,
   CreateAgentEnum,
   CreateListEnum,
+  FileBoxEnum,
   FilterStatusEnum,
+  LongMemberEnum,
   SpaceApplicationListEnum,
+  UserProblemSuggestEnum,
 } from '@/types/enums/space';
 import {
   BorderVerticleOutlined,
@@ -60,5 +63,41 @@ export const CREATE_AGENT_LIST = [
   {
     label: 'AI 创建',
     value: CreateAgentEnum.AI,
+  },
+];
+
+// 长期记忆选择列表
+export const LONG_MEMORY_LIST = [
+  {
+    label: '开启',
+    value: LongMemberEnum.Start_Use,
+  },
+  {
+    label: '关闭',
+    value: LongMemberEnum.Close,
+  },
+];
+
+// 文件盒子选择列表
+export const FILE_BOX_LIST = [
+  {
+    label: '开启',
+    value: FileBoxEnum.Start_Use,
+  },
+  {
+    label: '关闭',
+    value: FileBoxEnum.Close,
+  },
+];
+
+// 用户问题建议选择列表
+export const USER_PROBLEM_SUGGEST_LIST = [
+  {
+    label: '开启',
+    value: UserProblemSuggestEnum.Start_Use,
+  },
+  {
+    label: '关闭',
+    value: UserProblemSuggestEnum.Close,
   },
 ];

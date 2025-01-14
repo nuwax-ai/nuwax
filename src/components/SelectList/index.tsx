@@ -24,6 +24,10 @@ const SelectList: React.FC<SelectListType> = (props) => {
       value={value}
       placeholder={placeholder}
       onChange={onChange}
+      // 阻止冒泡事件
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
       options={options}
       dropdownRender={(menu) => (
         <>

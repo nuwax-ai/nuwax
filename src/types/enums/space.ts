@@ -41,3 +41,61 @@ export enum CreateAgentEnum {
   Standard,
   AI,
 }
+
+// 智能体配置技能枚举
+export enum AgentConfigSkillEnum {
+  Plugin,
+  Workflow,
+  // 触发器
+  Trigger,
+}
+
+// 智能体配置知识枚举
+export enum AgentConfigKnowledgeEnum {
+  Text,
+  Table,
+}
+
+// 智能体配置记忆枚举
+export enum AgentConfigMemoryEnum {
+  Variable,
+  Data_Base,
+  // 长期记忆
+  Long_Memory,
+  // 文件盒子
+  File_Box,
+}
+
+// 智能体配置对话体验枚举
+export enum ConversationalExperienceEnum {
+  // 开场白
+  Opening_Remarks,
+  // 用户问题建议
+  User_Problem_Suggestion,
+  // 快捷指令
+  Shortcut_Instruction,
+}
+
+// 长期记忆枚举
+export enum LongMemberEnum {
+  // 启用
+  Start_Use,
+  // 关闭
+  Close,
+}
+
+// 文件盒子枚举
+export enum FileBoxEnum {
+  // 启用
+  Start_Use,
+  // 关闭
+  Close,
+}
+
+// 用户问题建议枚举
+export enum UserProblemSuggestEnum {
+  // 启用
+  Start_Use,
+  // 关闭
+  Close,
+}
