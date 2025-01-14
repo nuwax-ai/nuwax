@@ -123,6 +123,7 @@ const initGraph = ({ containerId, changeDrawer }: GraphProp) => {
   // 监听节点点击事件，调用 changeDrawer 函数更新右侧抽屉的内容
   graph.on('node:click', ({ node }) => {
     const data = node.getData(); // 获取被点击节点的数据
+    data.id = node.id;
     changeDrawer(data); // 调用回调函数以更新抽屉内容
   });
 

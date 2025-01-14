@@ -1,4 +1,6 @@
 // 这个页面定义普通的节点，如输入，输出，等
+import CodeEditor from '@/components/CodeEditor';
+import { ExpandAltOutlined } from '@ant-design/icons';
 import type { InputRef } from 'antd';
 import {
   Button,
@@ -11,10 +13,10 @@ import {
   Switch,
 } from 'antd';
 import React, { useRef, useState } from 'react';
+import { useModel } from 'umi';
 import { cycleOption, InputConfigs, outPutConfigs } from '../params';
 import { NodeDisposeProps } from '../type';
 import { InputAndOut } from './commonNode';
-
 // 定义一些公共的数组
 
 // 定义开始节点
@@ -60,12 +62,13 @@ const EndNode: React.FC<NodeDisposeProps> = ({ type }) => {
         title="输出变量"
         fieldConfigs={outPutConfigs}
         showCopy={true}
-        initialValues={{ inputItems: [{ name: '123', paramsValue: '123' }] }}
+        initialValues={{ inputItems: [{ name: '', paramsValue: '' }] }}
       />
-      <div className="margin-bottom">
-        <div className="dis-sb margin-bottom">
-          <span className="node-title-style">输出内容</span>
-          {type && (
+      {type && (
+        <div className="margin-bottom">
+          <div className="dis-sb margin-bottom">
+            <span className="node-title-style">输出内容</span>
+
             <div>
               <span className="node-title-grey-style">
                 {checked ? '流式输出' : '非流式输出'}
@@ -76,14 +79,14 @@ const EndNode: React.FC<NodeDisposeProps> = ({ type }) => {
                 size="small"
               />
             </div>
-          )}
+          </div>
+          <Input.TextArea
+            placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
+            autoSize={{ minRows: 3, maxRows: 5 }}
+            style={{ marginBottom: '10px' }}
+          />
         </div>
-        <Input.TextArea
-          placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
-          autoSize={{ minRows: 3, maxRows: 5 }}
-          style={{ marginBottom: '10px' }}
-        />
-      </div>
+      )}
     </>
   );
 };
@@ -242,4 +245,34 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ type }) => {
   );
 };
 
-export default { StartNode, EndNode, CycleNode, VariableNode };
+// 定义代码节点
+const CodeNode: React.FC<NodeDisposeProps> = () => {
+  const { setIsShow } = useModel('monaco');
+  return (
+    <>
+      <InputAndOut
+        title="输入"
+        fieldConfigs={InputConfigs}
+        initialValues={{ inputItems: [{ name: '', type: '' }] }}
+        showCheckbox={true}
+        showCopy={true}
+        showAssociation={true}
+      />
+      <div className="node-item-style">
+        <div className="dis-sb margin-bottom">
+          <span className="node-title-style ">代码</span>
+          <ExpandAltOutlined onClick={() => setIsShow(true)} />
+        </div>
+        <CodeEditor height="180px" />
+      </div>
+      <InputAndOut
+        title="输出变量"
+        fieldConfigs={outPutConfigs}
+        showCopy={true}
+        initialValues={{ inputItems: [{ name: '123', paramsValue: '123' }] }}
+      />
+    </>
+  );
+};
+
+export default { StartNode, EndNode, CycleNode, VariableNode, CodeNode };

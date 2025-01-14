@@ -48,8 +48,11 @@ export interface Child {
   isParent?: boolean;
   // 节点背景颜色，可选
   backgroundColor?: string;
-  // 没有操作栏
-  noPopover?: boolean;
+  // 是否有操作栏
+  operations?: boolean;
+  // 是否有试运行
+  testRun?: boolean;
+  id?: string;
 }
 
 /**
@@ -219,4 +222,14 @@ export interface TreeNodeData {
 // 定义树结构的输出
 export interface TreeOutputProps {
   treeData: TreeNodeData[];
+}
+
+// 定义可以展开的inputTextarea
+export interface ExpandableInputTextareaProps {
+  title: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  rows?: number;
+  onExpand?: () => void;
 }

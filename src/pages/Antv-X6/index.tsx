@@ -1,4 +1,5 @@
 import FoldWrap from '@/components/FoldWrap';
+import OtherOperations from '@/components/OtherAction';
 import { Button, Popover, Select } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import FoldWarpNode from './component/disposeNode';
@@ -10,7 +11,7 @@ import StencilContent from './component/stencil';
 // 引入一些图标
 import Created from '@/components/Created';
 import { ICON_END, ICON_START } from '@/constants/images.constants';
-import { CreatedNodeItem, FoldWrapType } from '@/types/interfaces/common';
+import { CreatedNodeItem, NodeFoldWrapType } from '@/types/interfaces/common';
 import {
   CaretRightOutlined,
   HomeOutlined,
@@ -28,13 +29,14 @@ const AntvX6 = () => {
   // 画布的ref
   const containerRef = useRef<HTMLDivElement>(null);
   // 抽屉的title
-  const [foldWrapItem, setFoldWrapItem] = useState<FoldWrapType>({
+  const [foldWrapItem, setFoldWrapItem] = useState<NodeFoldWrapType>({
     title: '',
     desc: '',
     visible: false,
     icon: null,
     key: '',
     onClose: () => {},
+    testRun: false,
   });
   // 创建插件、工作流、知识库、数据库所需的参数
   const [createdItem, setCreatedItem] = useState({
@@ -49,7 +51,25 @@ const AntvX6 = () => {
 
   // 打开或者关闭添加工作流或者插件
   const { setShow } = useModel('model');
+  // 点击组件，显示抽屉
+  const changeDrawer = (child: Child) => {
+    console.log(child);
+    setFoldWrapItem({
+      ...foldWrapItem,
+      title: child.title,
+      visible: true,
+      desc: child.desc,
+      icon: child.icon,
+      key: child.key,
+      id: child.id,
+      testRun: child.testRun ? child.testRun : false,
+    });
+  };
 
+  // 关闭抽屉
+  const closeDrawer = () => {
+    setFoldWrapItem({ ...foldWrapItem, visible: false });
+  };
   // 使用 useRef 来保持 graph 实例在整个组件生命周期内的引用
   const graphRef = useRef<any>(null);
   function preWork() {
@@ -63,7 +83,28 @@ const AntvX6 = () => {
     // 使用可选链操作符确保容器存在
     container?.appendChild(graphContainer);
   }
-
+  // 子节点如果有要发生改变的地方
+  const handleNodeChange = (action: string, data?: any) => {
+    // 处理节点变化逻辑，例如：重命名、创建副本、删除等
+    switch (action) {
+      case 'TestRun':
+        // 运行测试
+        console.log('TestRun');
+        break;
+      case 'Duplicate':
+        // 创建副本
+        break;
+      case 'Delete':
+        // 删除节点
+        {
+          graphRef.current?.removeNode(data ? data.id : foldWrapItem.id);
+          closeDrawer();
+        }
+        break;
+      default:
+        break;
+    }
+  };
   // 创建子节点
   const addNode = (e: { x: number; y: number }, child: Child) => {
     // 将鼠标位置转换为画布坐标系中的位置
@@ -82,6 +123,8 @@ const AntvX6 = () => {
       }
       return false;
     });
+    console.log('aaa', child);
+
     // 创建新节点
     const newNode = graphRef.current.addNode({
       shape: child.type,
@@ -89,7 +132,11 @@ const AntvX6 = () => {
       y: point.y,
       width: child.width ? child.width : 304,
       height: child.height ? child.height : 83,
-      data: child,
+      data: {
+        ...child,
+        // 将父组件的方法作为属性传递给子组件
+        onChange: handleNodeChange,
+      },
       zIndex: 2, // 新节点的层级设置为2
     });
 
@@ -142,27 +189,13 @@ const AntvX6 = () => {
       content: val.desc,
       desc: val.desc,
       key: createdItem.checkTag,
+      testRun: true,
+      otherAction: true,
     };
     // 添加节点
     addNode(dragEvent, _child);
     // 关闭新增差价工作流,知识库,数据库的弹窗
     setShow(false);
-  };
-  // 点击组件，显示抽屉
-  const changeDrawer = (child: Child) => {
-    setFoldWrapItem({
-      ...foldWrapItem,
-      title: child.title,
-      visible: true,
-      desc: child.desc,
-      icon: child.icon,
-      key: child.key,
-    });
-  };
-
-  // 关闭抽屉
-  const closeDrawer = () => {
-    setFoldWrapItem({ ...foldWrapItem, visible: false });
   };
 
   // 创建一个用于存放图形的容器
@@ -291,6 +324,12 @@ const AntvX6 = () => {
         onClose={closeDrawer}
         desc={foldWrapItem.desc}
         icon={foldWrapItem.icon}
+        otherAction={
+          <OtherOperations
+            onChange={(val: string) => handleNodeChange(val)}
+            testRun={foldWrapItem.testRun}
+          />
+        }
       >
         <div className="dispose-node-style">
           <FoldWarpNode type={foldWrapItem.key as string} />
