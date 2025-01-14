@@ -4,6 +4,7 @@ import {
   LONG_MEMORY_LIST,
   USER_PROBLEM_SUGGEST_LIST,
 } from '@/constants/space.contants';
+import TriggerContent from '@/pages/EditAgent/AgentArrangeConfig/TriggerContent';
 import {
   AgentConfigKnowledgeEnum,
   AgentConfigMemoryEnum,
@@ -14,7 +15,7 @@ import {
   UserProblemSuggestEnum,
 } from '@/types/enums/space';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { Checkbox, CollapseProps, Switch, Tooltip } from 'antd';
+import { Checkbox, CollapseProps, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import ConfigOption from './ConfigOptionCollapse';
@@ -39,6 +40,8 @@ const AgentArrangeConfig: React.FC = () => {
   );
   const [userProblemSuggestValue, setUserProblemSuggestValue] =
     useState<UserProblemSuggestEnum>(UserProblemSuggestEnum.Start_Use);
+  const [triggerChecked, setTriggerChecked] = useState<boolean>(false);
+
   // 添加插件
   const handlerPluginPlus = (e) => {
     e.stopPropagation();
@@ -87,6 +90,10 @@ const AgentArrangeConfig: React.FC = () => {
     console.log('handlerDirectivePlus');
   };
 
+  const handlerChangeTrigger = (checked: boolean) => {
+    setTriggerChecked(checked);
+  };
+
   const SkillList: CollapseProps['items'] = [
     {
       key: AgentConfigSkillEnum.Plugin,
@@ -108,15 +115,10 @@ const AgentArrangeConfig: React.FC = () => {
       key: AgentConfigSkillEnum.Trigger,
       label: '触发器',
       children: (
-        <div className={cx('flex', 'items-center')}>
-          <p className={cx(styles['trigger-text'])}>
-            允许用户在对话中创建定时任务
-          </p>
-          <Tooltip title="允许用户在与智能体对话过程中，根据用户所在时区创建定时任务。例如“每天早上八点推送新闻”。每个对话中最多创建 3 条定时任务。">
-            <InfoCircleOutlined />
-          </Tooltip>
-          <Switch size="small" style={{ marginLeft: 'auto' }} defaultChecked />
-        </div>
+        <TriggerContent
+          checked={triggerChecked}
+          onChange={handlerChangeTrigger}
+        />
       ),
       extra: <PlusIcon title="添加触发器" onClick={handlerTriggerPlus} />,
     },
