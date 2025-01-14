@@ -1,48 +1,54 @@
 // type.ts 或 types/index.ts
-
-export interface ModelListItemProps {
-  icon: React.ReactNode;
+interface GroupModelItem {
+  // 分组的名称
   label: string;
-  size: string | number;
-  modelName?: string;
-  desc?: string;
-  tagList?: string[];
+  options: ModelListItemProps[];
 }
 
-export interface GroupModelOption {
+// 定义模型列表
+export interface ModelListItemProps {
+  // 模型的图标
   icon: React.ReactNode;
+  // 模型的名称
   label: string;
+  // 模型的大小
   size: string | number;
+  // 模型的id
   modelName: string;
+  // 模型的简介
   desc: string;
+  // 值
   value: string;
+  // 模型的标签
   tagList?: string[];
 }
 
 export interface GroupModel {
   label: string;
-  options: GroupModelOption[];
+  options: ModelListItemProps[];
 }
 
+// 定义分组的模型列表
 export interface GroupModelListItemProps {
-  groupedOptionsData: GroupModel[];
+  groupedOptionsData?: GroupModelItem[];
   onChange: (value: string) => void;
-  value: string;
+  value?: string;
 }
 
 export interface ModelSettingProp {
-  value: { top: number; reply: number; random: number };
-  onChange: (newValue: { top: number; reply: number; random: number }) => void;
-}
-
-export interface ModelSelectProp {
-  onSettingsChange?: (newSettings: {
+  value: {
+    top: number;
+    reply: number;
+    random: number;
+  };
+  onChange: (newSettings: {
     top: number;
     reply: number;
     random: number;
   }) => void;
-  defaultSettings?: { top: number; reply: number; random: number };
-  onModelChange?: (newModel: string) => void;
-  defaultModel?: string;
-  groupedOptionsData: GroupModel[];
+}
+
+export interface ModelSelectProp {
+  settings: ModelSettingProp;
+  groupModelList: GroupModelListItemProps;
 }

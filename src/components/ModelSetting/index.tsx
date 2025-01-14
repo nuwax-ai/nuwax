@@ -11,19 +11,24 @@ import {
   ModelSelectProp,
   ModelSettingProp,
 } from './type';
+
 // 定义带图标的模型选择select
 export const GroupedOptionSelect: React.FC<GroupModelListItemProps> = ({
   groupedOptionsData,
   onChange,
   value,
 }) => {
-  // 修改 labelRender 函数以匹配 LabelInValueType 类型
-  const labelRender = (props: any) => (
-    <div style={{ display: 'flex', alignItems: 'center' }}>
-      {props.icon && props.icon}
-      <span style={{ marginLeft: '8px' }}>{props.label}</span>
-    </div>
-  );
+  // 自定义渲染函数用于已选中的项
+  const labelRender = (props: any) => {
+    if (value === '') return null;
+    // const { label } = props; // 假设 props 中包含了 label 和 icon
+    return (
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        {props.label.props.icon}
+        <span style={{ marginLeft: '8px' }}>{props.label.props.label}</span>
+      </div>
+    );
+  };
 
   return (
     <Select
@@ -32,8 +37,7 @@ export const GroupedOptionSelect: React.FC<GroupModelListItemProps> = ({
       className="input-style"
       value={value}
       onChange={onChange}
-      labelInValue // 确保 Select 返回完整的 option 对象
-      labelRender={labelRender} // 使用自定义的渲染函数
+      labelRender={labelRender} // 使用 tagRender 来自定义已选中项的渲染
       placement={'bottomLeft'}
       popupMatchSelectWidth={false}
     >
@@ -52,6 +56,7 @@ export const GroupedOptionSelect: React.FC<GroupModelListItemProps> = ({
                 modelName={opt.modelName}
                 desc={opt.desc}
                 tagList={opt.tagList}
+                value={opt.value}
               />
             </Select.Option>
           ))}
@@ -75,13 +80,14 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({
     console.log('changeSegmented', value);
   };
   useEffect(() => {
-    setSetting(value);
-  }, [value]);
+    // 当父组件传递新的 settings 时，更新本地状态
+    setSetting(setting);
+  }, [setting]);
 
   // 更新值的辅助函数
-  const updateValue = (key: keyof typeof setting, val: number | null) => {
+  const updateValue = (key: 'top' | 'reply' | 'random', val: number | null) => {
     const newValue = {
-      ...setting,
+      ...value,
       [key]: val || 0,
     };
     setSetting(newValue);
@@ -172,22 +178,16 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({
 
 // 定义模型模块
 export const ModelSelected: React.FC<ModelSelectProp> = ({
-  onSettingsChange,
-  defaultSettings,
-  onModelChange,
-  defaultModel,
-  groupedOptionsData,
+  settings,
+  groupModelList,
 }) => {
   return (
     <div className="node-item-style">
-      <div className="dis-sb margin-bottom">
+      <div className="dis-sb">
         <span className="node-title-style">模型</span>
         <Popover
           content={
-            <ModelSetting
-              value={defaultSettings || { top: 0, reply: 0, random: 0 }}
-              onChange={onSettingsChange || (() => {})}
-            />
+            <ModelSetting value={settings.value} onChange={settings.onChange} />
           }
           title="模型"
           trigger="click"
@@ -196,11 +196,11 @@ export const ModelSelected: React.FC<ModelSelectProp> = ({
           <SettingOutlined />
         </Popover>
       </div>
-      {groupedOptionsData && (
+      {groupModelList.groupedOptionsData && (
         <GroupedOptionSelect
-          groupedOptionsData={groupedOptionsData}
-          onChange={onModelChange || (() => {})}
-          value={defaultModel || ''}
+          groupedOptionsData={groupModelList.groupedOptionsData}
+          onChange={groupModelList.onChange}
+          value={groupModelList.value}
         />
       )}
     </div>

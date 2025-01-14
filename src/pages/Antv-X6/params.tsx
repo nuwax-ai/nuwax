@@ -24,7 +24,10 @@ export const asideList: StencilList[] = [
         content: [{ label: '模型', value: 'gpt-o1-mini' }],
         desc: '调用大语言模型，使用变量和提示词生成回复',
         backgroundColor: '#EEEEFF',
+        testRun: true,
+        operations: true,
       },
+
       {
         title: '插件',
         icon: <ICON_NEW_AGENT />,
@@ -126,7 +129,7 @@ export const asideList: StencilList[] = [
       {
         title: '变量',
         icon: <ICON_HOME />,
-        key: 'kk',
+        key: 'variableNode',
         type: 'general-Node',
         content: [{ label: '变量名', value: '变量值' }],
         desc: '用于读取和写入项目中的变量，变量名须与项目中的变量名相匹配',
@@ -376,6 +379,17 @@ export const outPutConfigs = [
     component: InputOrReference,
     style: { flex: '0 0 50%' },
     props: { referenceList: modelTypes, fieldName: 'paramsValue' },
+  },
+];
+
+// 意图识别的参数配置
+export const intentionConfigs = [
+  {
+    name: 'paramsValue',
+    placeholder: '输入或引用参数值',
+    label: '',
+    rules: [{ required: true, message: '请输入用户的意图描述' }],
+    component: Input,
   },
 ];
 

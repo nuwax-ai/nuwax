@@ -173,3 +173,34 @@ export interface WorkFlowItem {
   time: string;
   image: React.ReactNode;
 }
+
+export interface CreatedNodeItem {
+  icon: React.ReactNode;
+  label: string;
+  desc: string;
+  id: string;
+  source: string;
+  time: string;
+  image: React.ReactNode;
+  tag: string;
+  // 是否又操作的按钮
+  otherAction?: boolean;
+  // 是否有试运行的按钮
+  testRun?: boolean;
+}
+
+export interface NodeFoldWrapType {
+  className?: string;
+  icon?: React.ReactNode;
+  title: string;
+  desc?: string;
+  visible?: boolean;
+  // 关闭按钮左侧操作区域，可选
+  testRun?: boolean;
+  otherAction?: boolean;
+  onClose: () => void;
+  // 顶部线条是否有margin样式
+  lineMargin?: boolean;
+  key?: string;
+  id?: string;
+}
