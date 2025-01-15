@@ -1,5 +1,6 @@
 import FoldWrap from '@/components/FoldWrap';
 import OtherOperations from '@/components/OtherAction';
+import TestRun from '@/components/TestRun';
 import { Button, Popover, Select } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import FoldWarpNode from './component/disposeNode';
@@ -50,7 +51,7 @@ const AntvX6 = () => {
   }); // 拖拽子节点到画布中
 
   // 打开或者关闭添加工作流或者插件
-  const { setShow } = useModel('model');
+  const { setShow, setTestRun } = useModel('model');
   // 点击组件，显示抽屉
   const changeDrawer = (child: Child) => {
     console.log(child);
@@ -83,13 +84,23 @@ const AntvX6 = () => {
     // 使用可选链操作符确保容器存在
     container?.appendChild(graphContainer);
   }
+
+  // 打开试运行的模板
+  const showTestRun = () => {
+    setTestRun(true);
+  };
+
+  // 试运行
+  const handleTestRun = () => {
+    console.log('123');
+  };
   // 子节点如果有要发生改变的地方
   const handleNodeChange = (action: string, data?: any) => {
     // 处理节点变化逻辑，例如：重命名、创建副本、删除等
     switch (action) {
       case 'TestRun':
         // 运行测试
-        console.log('TestRun');
+        showTestRun();
         break;
       case 'Duplicate':
         // 创建副本
@@ -296,7 +307,6 @@ const AntvX6 = () => {
       {/* 绝对定位的容器，用以试运行 */}
       <div className="absolute-test">
         <ToolOutlined />
-
         <Button
           icon={<CaretRightOutlined />}
           type="primary"
@@ -338,6 +348,8 @@ const AntvX6 = () => {
 
       {/* 添加工作流,节点等 */}
       <Created checkTag={createdItem.checkTag} onAdded={onAdded} />
+      {/* 试运行的弹窗 */}
+      <TestRun type={'noInput'} run={handleTestRun} />
     </div>
   );
 };

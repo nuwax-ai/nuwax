@@ -1,12 +1,12 @@
-import { PlusOutlined } from '@ant-design/icons';
+import { CaretRightOutlined, PlusOutlined } from '@ant-design/icons';
 import React from 'react';
 import '../index.less';
 import ComplexNode from './complexNode';
 import NodeItem from './nodeItem';
 import ReferenceNode from './pluginNode';
 const { StartNode, EndNode, CycleNode, VariableNode, CodeNode } = NodeItem;
-const { ModelNode, IntentionNode } = ComplexNode;
-const { PluginInNode } = ReferenceNode;
+const { ModelNode, IntentionNode, QuestionsNode, HttpToolNode } = ComplexNode;
+const { PluginInNode, KnowledgeNode, DatabaseNode } = ReferenceNode;
 
 // 定义试运行
 const TestNode: React.FC = () => {
@@ -26,7 +26,7 @@ const groupedOptionsData = [
     label: 'Image Models',
     options: [
       {
-        icon: <PlusOutlined />,
+        icon: <CaretRightOutlined />,
         label: 'Image Processing',
         value: 'ImageProcessing',
         size: '10MB',
@@ -100,6 +100,15 @@ const FoldWarpNode: React.FC<FoldWarpNodeProps> = ({ type }) => {
       return <PluginInNode />;
     case 'codeNode':
       return <CodeNode />;
+    case 'questionsNode':
+      return <QuestionsNode />;
+    case 'httpToolNode':
+      return <HttpToolNode />;
+    case 'knowledgeNode':
+      return <KnowledgeNode />;
+    case 'databaseNode':
+      return <DatabaseNode />;
+
     default:
       return <TestNode />;
   }

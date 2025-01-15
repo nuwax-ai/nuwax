@@ -36,7 +36,10 @@ const OtherOperations: React.FC<OtherOperationsProps> = ({
       {/* 试运行 */}
       {testRun && (
         <Popover placement="top" content={'测试该节点'}>
-          <PlayCircleOutlined style={{ marginRight: '10px' }} />
+          <PlayCircleOutlined
+            style={{ marginRight: '10px' }}
+            onClick={() => changeNode('TestRun')}
+          />
         </Popover>
       )}
       {/* 节点操作 */}
