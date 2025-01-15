@@ -113,7 +113,7 @@ export const asideList: StencilList[] = [
       {
         title: '知识库',
         icon: <ICON_HOME />,
-        key: 'ii',
+        key: 'knowledgeNode',
         type: 'general-Node',
         content: [{ label: '知识库', value: '政策库' }],
         desc: '在选定的知识中，根据输入变量召回最匹配的信息',
@@ -121,7 +121,7 @@ export const asideList: StencilList[] = [
       {
         title: '数据库',
         icon: <ICON_HOME />,
-        key: 'jj',
+        key: 'databaseNode',
         type: 'general-Node',
         content: [{ label: '数据库', value: '数据库01' }],
         desc: '可支持对数据表放开读写控制，用户可读写其他用户提交的数据， 由开发者控制',
@@ -151,7 +151,7 @@ export const asideList: StencilList[] = [
       {
         title: '问答',
         icon: <ICON_FOLD />,
-        key: 'mm',
+        key: 'questionsNode',
         type: 'general-Node',
         content: [{ label: '提问方式', value: '回答方式' }],
         desc: '支持中间向用户提问问题',
@@ -175,7 +175,7 @@ export const asideList: StencilList[] = [
       {
         title: 'http请求',
         icon: <ICON_FOLD />,
-        key: 'pp',
+        key: 'httpToolNode',
         type: 'general-Node',
         content: 'http请求',
         desc: '用于配置http请求调用已有的服务',

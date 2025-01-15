@@ -307,7 +307,6 @@ const AntvX6 = () => {
       {/* 绝对定位的容器，用以试运行 */}
       <div className="absolute-test">
         <ToolOutlined />
-
         <Button
           icon={<CaretRightOutlined />}
           type="primary"

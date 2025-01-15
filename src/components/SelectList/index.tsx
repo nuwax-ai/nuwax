@@ -38,26 +38,29 @@ const SelectList: React.FC<SelectListType> = (props) => {
           {dropdownRenderComponent}
         </>
       )}
-      optionRender={(option) => (
-        <Flex gap={8}>
-          <div className={cx(styles['option-icon-box'])}>
-            {selectIcon ||
-              (value === option.data.value && (
-                <CheckOutlined className={cx(styles.icon)} />
-              ))}
-          </div>
-          {option.data.img && (
-            <img
-              className={cx(styles.image, 'radius-6')}
-              src={option.data.img}
-              alt=""
-            />
-          )}
-          <span className={cx('flex-1', 'text-ellipsis')}>
-            {option.data.label}
-          </span>
-        </Flex>
-      )}
+      optionRender={(option) => {
+        console.log(option);
+        return (
+          <Flex gap={8}>
+            <div className={cx(styles['option-icon-box'])}>
+              {selectIcon ||
+                (value === option.data.value && (
+                  <CheckOutlined className={cx(styles.icon)} />
+                ))}
+            </div>
+            {option.data.img && (
+              <img
+                className={cx(styles.image, 'radius-6')}
+                src={option.data.img}
+                alt=""
+              />
+            )}
+            <span className={cx('flex-1', 'text-ellipsis')}>
+              {option.data.label}
+            </span>
+          </Flex>
+        );
+      }}
     />
   );
 };
