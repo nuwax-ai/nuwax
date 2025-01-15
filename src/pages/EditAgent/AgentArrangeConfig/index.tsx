@@ -4,6 +4,7 @@ import {
   LONG_MEMORY_LIST,
   USER_PROBLEM_SUGGEST_LIST,
 } from '@/constants/space.contants';
+import LongMemoryContent from '@/pages/EditAgent/AgentArrangeConfig/LongMemoryContent';
 import TriggerContent from '@/pages/EditAgent/AgentArrangeConfig/TriggerContent';
 import {
   AgentConfigKnowledgeEnum,
@@ -14,8 +15,7 @@ import {
   LongMemberEnum,
   UserProblemSuggestEnum,
 } from '@/types/enums/space';
-import { InfoCircleOutlined } from '@ant-design/icons';
-import { Checkbox, CollapseProps, Tooltip } from 'antd';
+import { CollapseProps } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import ConfigOption from './ConfigOptionCollapse';
@@ -165,20 +165,11 @@ const AgentArrangeConfig: React.FC = () => {
     {
       key: AgentConfigMemoryEnum.Long_Memory,
       label: '长期记忆',
-      children: (
-        <div>
-          <p>总结聊天对话的内容，并用于更好的响应用户的消息。</p>
-          <div className={cx('flex')}>
-            <Checkbox />
-            <span>支持在Prompt中调用</span>
-            <Tooltip title="默认支持在Prompt中调用，取消勾选后将不支持在Prompt中调用（仅能在Workflow中调用）">
-              <InfoCircleOutlined />
-            </Tooltip>
-          </div>
-        </div>
-      ),
+      children: <LongMemoryContent />,
       extra: (
         <SelectList
+          className={styles.select}
+          size={'small'}
           value={longMemberValue}
           onChange={(value) => {
             setLongMemberValue(value as LongMemberEnum);
@@ -197,6 +188,8 @@ const AgentArrangeConfig: React.FC = () => {
       ),
       extra: (
         <SelectList
+          className={styles.select}
+          size={'small'}
           value={fileBoxValue}
           onChange={(value) => {
             setFileBoxValue(value as FileBoxEnum);
@@ -219,6 +212,8 @@ const AgentArrangeConfig: React.FC = () => {
       children: <p>在每次智能体回复后，不会提供任何用户问题建议</p>,
       extra: (
         <SelectList
+          className={styles.select}
+          size={'small'}
           value={userProblemSuggestValue}
           onChange={(value) => {
             setUserProblemSuggestValue(value as UserProblemSuggestEnum);

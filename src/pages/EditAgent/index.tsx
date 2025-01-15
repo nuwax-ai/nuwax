@@ -1,3 +1,4 @@
+import PreviewAndDebug from '@/pages/EditAgent/PreviewAndDebug';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import AgentArrangeConfig from './AgentArrangeConfig';
@@ -18,7 +19,14 @@ const EditAgent: React.FC = () => {
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader />
       <section
-        className={cx('flex', 'flex-1', 'px-16', 'py-16', 'overflow-hide')}
+        className={cx(
+          'flex',
+          'flex-1',
+          'px-16',
+          'py-16',
+          'overflow-hide',
+          styles.section,
+        )}
       >
         {/*编排*/}
         <div
@@ -35,7 +43,7 @@ const EditAgent: React.FC = () => {
           </div>
         </div>
         {/*预览与调试*/}
-        <div></div>
+        <PreviewAndDebug />
         {/*调试详情*/}
         <div></div>
       </section>

@@ -1,6 +1,7 @@
 import type { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CollapseProps } from 'antd';
 import type { MouseEventHandler } from 'react';
+import React from 'react';
 
 export interface ApplicationItemProps {
   onClickMore: (type: ApplicationMoreActionEnum) => void;
@@ -30,5 +31,12 @@ export interface ConfigOptionCollapseProps {
 // 加号（+）带提示组件
 export interface PlusIconProps {
   title?: string;
+  onClick?: MouseEventHandler<HTMLSpanElement>;
+}
+
+export interface TooltipIconProps {
+  type?: 'blank' | 'white';
+  title?: string;
+  icon?: React.ReactNode;
   onClick?: MouseEventHandler<HTMLSpanElement>;
 }
