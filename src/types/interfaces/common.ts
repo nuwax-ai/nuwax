@@ -35,10 +35,20 @@ export interface FoldWrapType {
   key?: string;
 }
 
-// 卡片样式类型
+// 卡片模式设置样式类型
 export interface CardStyleType {
   type: string;
   onClick: (type: CardStyleEnum) => void;
+}
+
+// 单张卡片
+export interface CardProps {
+  className?: string;
+  id: string;
+  img?: string;
+  title: string;
+  desc: string;
+  onClick: () => void;
 }
 
 interface option {

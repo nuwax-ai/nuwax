@@ -28,6 +28,7 @@ const TooltipIcon: React.FC<TooltipIconProps> = ({
           styles.box,
         )}
       >
+        {/*默认加号（+）*/}
         {icon || <PlusOutlined onClick={onClick} />}
       </span>
     </Tooltip>

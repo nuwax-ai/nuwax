@@ -1,10 +1,14 @@
-import PreviewAndDebug from '@/pages/EditAgent/PreviewAndDebug';
+import ShowStand from '@/pages/EditAgent/ShowStand';
+import VersionHistory from '@/pages/EditAgent/VersionHistory';
+import { EditAgentShowType } from '@/types/enums/space';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import AgentArrangeConfig from './AgentArrangeConfig';
 import AgentHeader from './AgentHeader';
 import ArrangeTitle from './ArrangeTitle';
+import DebugDetails from './DebugDetails';
 import styles from './index.less';
+import PreviewAndDebug from './PreviewAndDebug';
 import SystemTipsWord from './SystemTipsWord';
 
 const cx = classNames.bind(styles);
@@ -14,17 +18,39 @@ const cx = classNames.bind(styles);
  */
 const EditAgent: React.FC = () => {
   const [tipsText, setTipsText] = useState<string>('');
+  const [showType, setShowType] = useState<EditAgentShowType>(
+    EditAgentShowType.Hide,
+  );
+
+  const handlerClose = () => {
+    setShowType(0);
+  };
+
+  const handlerDebug = () => {
+    setShowType(1);
+  };
+
+  const handlerToggleShowStand = () => {
+    setShowType(2);
+  };
+
+  const handlerToggleHistoryLog = () => {
+    setShowType(3);
+  };
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <AgentHeader />
+      <AgentHeader
+        onToggleShowStand={handlerToggleShowStand}
+        onToggleHistoryLog={handlerToggleHistoryLog}
+      />
       <section
         className={cx(
           'flex',
           'flex-1',
           'px-16',
           'py-16',
-          'overflow-hide',
+          'overflow-y',
           styles.section,
         )}
       >
@@ -43,9 +69,22 @@ const EditAgent: React.FC = () => {
           </div>
         </div>
         {/*预览与调试*/}
-        <PreviewAndDebug />
+        <PreviewAndDebug onPressDebug={handlerDebug} />
         {/*调试详情*/}
-        <div></div>
+        <DebugDetails
+          visible={showType === EditAgentShowType.Debug_Details}
+          onClose={handlerClose}
+        />
+        {/*展示台*/}
+        <ShowStand
+          visible={showType === EditAgentShowType.Show_Stand}
+          onClose={handlerClose}
+        />
+        {/*版本历史*/}
+        <VersionHistory
+          visible={showType === EditAgentShowType.Version_History}
+          onClose={handlerClose}
+        />
       </section>
     </div>
   );

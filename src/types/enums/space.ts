@@ -99,3 +99,13 @@ export enum UserProblemSuggestEnum {
   // 关闭
   Close,
 }
+
+// 编辑智能体时,右侧切换显示内容枚举
+export enum EditAgentShowType {
+  // 隐藏
+  Hide,
+  Debug_Details,
+  Version_History,
+  // 展示台
+  Show_Stand,
+}

@@ -28,15 +28,16 @@ export interface ConfigOptionCollapseProps {
   items: CollapseProps['items'];
 }
 
-// 加号（+）带提示组件
-export interface PlusIconProps {
-  title?: string;
-  onClick?: MouseEventHandler<HTMLSpanElement>;
-}
-
+// 自定义icon带提示组件， 默认加号（+）
 export interface TooltipIconProps {
   type?: 'blank' | 'white';
   title?: string;
   icon?: React.ReactNode;
   onClick?: MouseEventHandler<HTMLSpanElement>;
+}
+
+// 版本历史组件
+export interface VersionHistoryProps {
+  visible: boolean;
+  onClose: () => void;
 }

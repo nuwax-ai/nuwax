@@ -12,10 +12,18 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+interface AgentHeaderProps {
+  onToggleShowStand: () => void;
+  onToggleHistoryLog: () => void;
+}
+
 /**
  * 编辑智能体顶部header
  */
-const AgentHeader: React.FC = () => {
+const AgentHeader: React.FC<AgentHeaderProps> = ({
+  onToggleShowStand,
+  onToggleHistoryLog,
+}) => {
   return (
     <header
       className={cx(
@@ -48,8 +56,14 @@ const AgentHeader: React.FC = () => {
       </div>
       <h2 className={cx('absolute', styles['header-title'])}>编排</h2>
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
-        <ICON_FOLD className={cx('cursor-pointer')} />
-        <ClockCircleOutlined className={cx(styles.ico, 'cursor-pointer')} />
+        <ICON_FOLD
+          className={cx('cursor-pointer')}
+          onClick={onToggleShowStand}
+        />
+        <ClockCircleOutlined
+          className={cx(styles.ico, 'cursor-pointer')}
+          onClick={onToggleHistoryLog}
+        />
         <Button type="primary" className={cx(styles['publish-btn'])}>
           发布
         </Button>
