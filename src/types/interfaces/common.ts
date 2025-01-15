@@ -1,8 +1,14 @@
 import type { CardStyleEnum } from '@/types/enums/common';
-import type { FormInstance, GetProp, UploadProps } from 'antd';
+import type {
+  ConfigProviderProps,
+  FormInstance,
+  GetProp,
+  UploadProps,
+} from 'antd';
 import React from 'react';
 
 export type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
+export type SizeType = ConfigProviderProps['componentSize'];
 
 /**
  * 定义键值对接口，用于表示具有标签和值的对象。
@@ -35,6 +41,13 @@ export interface CardStyleType {
   onClick: (type: CardStyleEnum) => void;
 }
 
+interface option {
+  label: React.ReactNode;
+  value: string | number;
+  // label文本前的图片
+  img?: string;
+}
+
 // 下拉选择框组件
 export interface SelectListType {
   className?: string;
@@ -43,14 +56,14 @@ export interface SelectListType {
   prefix?: React.ReactNode;
   // 自定义的选择框后缀图标
   suffixIcon?: React.ReactNode;
+  // 自定义底部
   dropdownRenderComponent?: React.ReactNode;
   placeholder?: string;
-  options: { label; value }[];
+  options: option[];
   // 是否选中的图标或者图片
   selectIcon?: React.ReactNode;
-  // label文本前的图片
-  img?: string;
   onChange: (value: React.Key) => void;
+  size?: SizeType;
 }
 
 // 默认的object

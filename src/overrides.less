@@ -1,8 +1,46 @@
+@import 'src/styles/color';
+
 .ant-select-dropdown
   .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
   background-color: transparent;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.04);
+    background-color: @BLANK12;
+  }
+}
+
+// 手风琴
+.ant-collapse-borderless > .ant-collapse-item {
+  border-bottom: 1px solid @GRAY01;
+
+  &:last-child {
+    border-bottom: 1px solid @GRAY01;
+  }
+}
+
+.ant-collapse-header:hover {
+  background-color: @GRAY01;
+  border-radius: 4px;
+}
+
+.tooltip-blank {
+  .ant-tooltip-inner {
+    color: @WHITE;
+    background-color: @BLANK;
+  }
+
+  .ant-tooltip-arrow:before {
+    background-color: @BLANK;
+  }
+}
+
+.tooltip-white {
+  .ant-tooltip-inner {
+    color: @BLANK;
+    background-color: @WHITE;
+  }
+
+  .ant-tooltip-arrow:before {
+    background-color: @WHITE;
   }
 }

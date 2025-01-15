@@ -1,4 +1,5 @@
 import type { SelectListType } from '@/types/interfaces/common';
+import { SizeType } from '@/types/interfaces/common';
 import { CheckOutlined } from '@ant-design/icons';
 import { Flex, Select } from 'antd';
 import classNames from 'classnames';
@@ -15,16 +16,22 @@ const SelectList: React.FC<SelectListType> = (props) => {
     placeholder,
     options,
     selectIcon,
-    img,
     onChange,
+    size = 'middle',
   } = props;
+
   return (
     <Select
       rootClassName={cx(styles.container, className)}
       value={value}
       placeholder={placeholder}
       onChange={onChange}
+      // 阻止冒泡事件
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
       options={options}
+      size={size as SizeType}
       dropdownRender={(menu) => (
         <>
           {menu}
@@ -39,8 +46,12 @@ const SelectList: React.FC<SelectListType> = (props) => {
                 <CheckOutlined className={cx(styles.icon)} />
               ))}
           </div>
-          {img && (
-            <img className={cx(styles.image, 'radius-6')} src={img} alt="" />
+          {option.data.img && (
+            <img
+              className={cx(styles.image, 'radius-6')}
+              src={option.data.img}
+              alt=""
+            />
           )}
           <span className={cx('flex-1', 'text-ellipsis')}>
             {option.data.label}
