@@ -1,3 +1,4 @@
+import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { TooltipIconProps } from '@/types/interfaces/space';
 import { PlusOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
@@ -11,12 +12,14 @@ const cx = classNames.bind(styles);
  * 带icon的Tooltip组件
  */
 const TooltipIcon: React.FC<TooltipIconProps> = ({
-  type = 'blank',
+  className,
+  type = TooltipTitleTypeEnum.Blank,
   icon,
   title,
   onClick,
 }) => {
-  const bg = type === 'blank' ? 'tooltip-blank' : 'tooltip-white';
+  const bg =
+    type === TooltipTitleTypeEnum.Blank ? 'tooltip-blank' : 'tooltip-white';
   return (
     <Tooltip title={title} overlayClassName={bg}>
       <span
@@ -25,7 +28,9 @@ const TooltipIcon: React.FC<TooltipIconProps> = ({
           'flex',
           'content-center',
           'items-center',
+          'cursor-pointer',
           styles.box,
+          className,
         )}
       >
         {/*默认加号（+）*/}

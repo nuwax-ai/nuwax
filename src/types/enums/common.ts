@@ -5,3 +5,9 @@ export enum CardStyleEnum {
   THREE = 'three',
   FOUR = 'four',
 }
+
+// Tooltip title样式
+export enum TooltipTitleTypeEnum {
+  Blank,
+  White,
+}

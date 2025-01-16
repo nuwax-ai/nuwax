@@ -1,24 +1,47 @@
 import classNames from 'classnames';
 import React from 'react';
+import ChatBottomMore from './ChatBottomMore';
 import styles from './index.less';
 import RunOver from './RunOver';
 
 const cx = classNames.bind(styles);
 
-const ChatView: React.FC = () => {
+interface ChatViewProps {
+  avatar: string;
+  nickname: string;
+  content: React.ReactNode;
+  onCopy?: () => void;
+  onDebug?: () => void;
+  onAsk?: () => void;
+  // 重新生成事件
+  onRegen?: () => void;
+  onDel?: () => void;
+}
+
+const ChatView: React.FC<ChatViewProps> = ({
+  avatar,
+  nickname,
+  content,
+  onCopy,
+  onDebug,
+  onAsk,
+  onRegen,
+  onDel,
+}) => {
   return (
     <div className={cx(styles.container, 'flex')}>
-      <img
-        className={cx(styles.avatar)}
-        src="https://p6-flow-product-sign.byteimg.com/tos-cn-i-13w3uml6bg/a200a4d4715a403cb3b2c52b9c71f6e4~tplv-13w3uml6bg-resize:128:128.image?rk3s=2e2596fd&x-expires=1739513009&x-signature=ltYlnCs3AvJgGnFoj73k8AKYewI%3D"
-        alt=""
-      />
+      <img className={cx(styles.avatar)} src={avatar} alt="" />
       <div className={cx('flex-1')}>
-        <div className={cx(styles.author)}>英雄联盟</div>
+        <div className={cx(styles.author)}>{nickname}</div>
         <RunOver />
-        <div className={cx(styles['chat-content'], 'radius-6')}>
-          <p>这里是内容区域</p>
-        </div>
+        <div className={cx(styles['chat-content'], 'radius-6')}>{content}</div>
+        <ChatBottomMore
+          onCopy={onCopy}
+          onDebug={onDebug}
+          onAsk={onAsk}
+          onRegen={onRegen}
+          onDel={onDel}
+        />
       </div>
     </div>
   );
