@@ -31,7 +31,13 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
   // }, []);
 
   return (
-    <FoldWrap lineMargin title={'版本历史'} visible={visible} onClose={onClose}>
+    <FoldWrap
+      lineMargin
+      title={'版本历史'}
+      className={styles.container}
+      visible={visible}
+      onClose={onClose}
+    >
       <div className={cx(styles['main-wrap'])}>
         <div className={cx(styles.box)}>
           <div className={cx('flex', 'items-center', styles.header)}>

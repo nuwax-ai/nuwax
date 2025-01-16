@@ -1,4 +1,5 @@
 import CreateAgent from '@/components/CreateAgent';
+import AgentModelSetting from '@/pages/EditAgent/AgentModelSetting';
 import PublishAgent from '@/pages/EditAgent/PublishAgent';
 import { CreateEditAgentEnum } from '@/types/enums/common';
 import { EditAgentShowType } from '@/types/enums/space';
@@ -27,6 +28,7 @@ const EditAgent: React.FC = () => {
   );
   const [open, setOpen] = useState<boolean>(false);
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
+  const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
   const [form] = Form.useForm();
 
   const handlerClose = () => {
@@ -94,7 +96,7 @@ const EditAgent: React.FC = () => {
           className={cx('radius-6', 'flex', 'flex-col', styles['edit-info'])}
         >
           {/*编排title*/}
-          <ArrangeTitle />
+          <ArrangeTitle onClick={() => setOpenAgentModel(true)} />
           <div className={cx('flex-1', 'flex', 'overflow-y')}>
             {/*系统提示词*/}
             <SystemTipsWord value={tipsText} onChange={setTipsText} />
@@ -136,6 +138,11 @@ const EditAgent: React.FC = () => {
         open={openEditAgent}
         onCancel={() => setOpenEditAgent(false)}
         onConfirm={handlerConfirmEditAgent}
+      />
+      {/*智能体模型设置*/}
+      <AgentModelSetting
+        open={openAgentModel}
+        onCancel={() => setOpenAgentModel(false)}
       />
     </div>
   );

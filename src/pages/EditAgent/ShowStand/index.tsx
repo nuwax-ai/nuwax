@@ -66,8 +66,14 @@ const ShowStand: React.FC<ShowStandProps> = ({ visible, onClose }) => {
   // }, []);
 
   return (
-    <FoldWrap lineMargin title={'展示台'} visible={visible} onClose={onClose}>
-      <div className={cx(styles.container)}>
+    <FoldWrap
+      lineMargin
+      title={'展示台'}
+      className={styles.container}
+      visible={visible}
+      onClose={onClose}
+    >
+      <div className={cx(styles['inner-container'])}>
         {LIST.map((item) => (
           <Card
             key={item.id}

@@ -17,6 +17,7 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
   return (
     <FoldWrap
       title="调试详情"
+      className={styles.container}
       onClose={onClose}
       visible={visible}
       lineMargin
