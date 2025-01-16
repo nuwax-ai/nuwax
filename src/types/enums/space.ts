@@ -36,12 +36,6 @@ export enum SpaceApplicationListEnum {
   Team_Setting,
 }
 
-// 创建智能体枚举
-export enum CreateAgentEnum {
-  Standard,
-  AI,
-}
-
 // 智能体配置技能枚举
 export enum AgentConfigSkillEnum {
   Plugin,
@@ -98,4 +92,22 @@ export enum UserProblemSuggestEnum {
   Start_Use,
   // 关闭
   Close,
+}
+
+// 编辑智能体时,右侧切换显示内容枚举
+export enum EditAgentShowType {
+  // 隐藏
+  Hide,
+  Debug_Details,
+  Version_History,
+  // 展示台
+  Show_Stand,
+}
+
+// 触发器类型
+export enum TriggerTypeEnum {
+  // 定时触发
+  Timing_Trigger,
+  // 事件触发
+  Event_Trigger,
 }

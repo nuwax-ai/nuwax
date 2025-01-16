@@ -5,7 +5,14 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const ArrangeTitle: React.FC = () => {
+interface ArrangeTitleProps {
+  onClick: () => void;
+}
+
+/**
+ * 编排顶部title组件
+ */
+const ArrangeTitle: React.FC<ArrangeTitleProps> = ({ onClick }) => {
   return (
     <div
       className={cx(
@@ -17,7 +24,10 @@ const ArrangeTitle: React.FC = () => {
       )}
     >
       <h3>编排</h3>
-      <div className={cx('flex', styles['drop-box'])}>
+      <div
+        className={cx('flex', 'cursor-pointer', styles['drop-box'])}
+        onClick={onClick}
+      >
         <FormOutlined />
         <span>女娲智能体</span>
         <CaretDownOutlined />

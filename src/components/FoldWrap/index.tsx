@@ -30,7 +30,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
   return (
     <div
       className={cx(
-        'flex flex-col flex-1 w-full overflow-hide',
+        'flex flex-col',
         styles['show-stand'],
         styleHide,
         className,

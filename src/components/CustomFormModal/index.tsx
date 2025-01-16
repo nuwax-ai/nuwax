@@ -9,6 +9,7 @@ const cx = classNames.bind(styles);
 
 const CustomFormModal: React.FC<PropsWithChildren<CustomFormModalProps>> = ({
   form,
+  classNames,
   title,
   open,
   loading,
@@ -22,7 +23,7 @@ const CustomFormModal: React.FC<PropsWithChildren<CustomFormModalProps>> = ({
     <Modal
       title={title}
       open={open}
-      classNames={styles.container}
+      classNames={classNames}
       destroyOnClose
       footer={
         <>

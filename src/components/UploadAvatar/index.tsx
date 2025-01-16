@@ -1,5 +1,5 @@
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
-import type { FileType } from '@/types/interfaces/common';
+import type { FileType, UploadAvatarProps } from '@/types/interfaces/common';
 import { getBase64 } from '@/utils/common';
 import { FormOutlined } from '@ant-design/icons';
 import { message, Upload, UploadProps } from 'antd';
@@ -9,15 +9,6 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-// 上传头像
-interface UploadAvatarProps {
-  className?: string;
-  imageClassName?: string;
-  onUploadSuccess?: (url: string) => void;
-  defaultImage: string;
-  imageUrl?: string;
-  beforeUpload?: (file: FileType) => void;
-}
 const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
   const {
     className,

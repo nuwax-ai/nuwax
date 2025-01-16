@@ -12,10 +12,22 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+interface AgentHeaderProps {
+  onToggleShowStand: () => void;
+  handlerToggleVersionHistory: () => void;
+  onEditAgent: () => void;
+  onPublish: () => void;
+}
+
 /**
  * 编辑智能体顶部header
  */
-const AgentHeader: React.FC = () => {
+const AgentHeader: React.FC<AgentHeaderProps> = ({
+  onToggleShowStand,
+  handlerToggleVersionHistory,
+  onEditAgent,
+  onPublish,
+}) => {
   return (
     <header
       className={cx(
@@ -36,7 +48,10 @@ const AgentHeader: React.FC = () => {
       <div className={cx('flex', 'flex-col', styles['header-info'])}>
         <div className={cx('flex', 'items-center')}>
           <h3 className={cx(styles['h-title'])}>角色陪伴</h3>
-          <FormOutlined className={cx(styles['edit-ico'])} />
+          <FormOutlined
+            className={cx(styles['edit-ico'])}
+            onClick={onEditAgent}
+          />
         </div>
         <div className={cx('flex', 'items-center', styles['agent-rel-info'])}>
           <UserDeleteOutlined />
@@ -48,9 +63,19 @@ const AgentHeader: React.FC = () => {
       </div>
       <h2 className={cx('absolute', styles['header-title'])}>编排</h2>
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
-        <ICON_FOLD className={cx('cursor-pointer')} />
-        <ClockCircleOutlined className={cx(styles.ico, 'cursor-pointer')} />
-        <Button type="primary" className={cx(styles['publish-btn'])}>
+        <ICON_FOLD
+          className={cx('cursor-pointer')}
+          onClick={onToggleShowStand}
+        />
+        <ClockCircleOutlined
+          className={cx(styles.ico, 'cursor-pointer')}
+          onClick={handlerToggleVersionHistory}
+        />
+        <Button
+          type="primary"
+          className={cx(styles['publish-btn'])}
+          onClick={onPublish}
+        >
           发布
         </Button>
       </div>

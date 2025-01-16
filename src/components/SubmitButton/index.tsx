@@ -7,7 +7,7 @@ const cx = classNames.bind(styles);
 
 interface SubmitButtonProps {
   form?: FormInstance;
-  loading: boolean;
+  loading?: boolean;
   // 确定按钮前缀icon
   okPrefixIcon?: React.ReactNode;
   // 确定按钮文本

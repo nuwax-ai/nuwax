@@ -1,3 +1,4 @@
+import CreateAgent from '@/components/CreateAgent';
 import SelectList from '@/components/SelectList';
 import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.contants';
 import {
@@ -13,7 +14,6 @@ import { history } from 'umi';
 import AgentAnalyze from './AgentAnalyze';
 import AgentMove from './AgentMove';
 import ApplicationItem from './ApplicationItem';
-import CreateAgent from './CreateAgent';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

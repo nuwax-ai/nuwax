@@ -1,3 +1,4 @@
+import type { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CollapseProps } from 'antd';
 import type { MouseEventHandler } from 'react';
@@ -28,15 +29,24 @@ export interface ConfigOptionCollapseProps {
   items: CollapseProps['items'];
 }
 
-// 加号（+）带提示组件
-export interface PlusIconProps {
-  title?: string;
-  onClick?: MouseEventHandler<HTMLSpanElement>;
-}
-
+// 自定义icon带提示组件， 默认加号（+）
 export interface TooltipIconProps {
-  type?: 'blank' | 'white';
+  className?: string;
+  type?: TooltipTitleTypeEnum;
   title?: string;
   icon?: React.ReactNode;
   onClick?: MouseEventHandler<HTMLSpanElement>;
+}
+
+// 版本历史组件
+export interface VersionHistoryProps {
+  visible: boolean;
+  onClose: () => void;
+}
+
+// 发布智能体弹窗组件
+export interface PublishAgentProps {
+  open: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
 }

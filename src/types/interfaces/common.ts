@@ -35,10 +35,20 @@ export interface FoldWrapType {
   key?: string;
 }
 
-// 卡片样式类型
+// 卡片模式设置样式类型
 export interface CardStyleType {
   type: string;
   onClick: (type: CardStyleEnum) => void;
+}
+
+// 单张卡片
+export interface CardProps {
+  className?: string;
+  id: string;
+  img?: string;
+  title: string;
+  desc: string;
+  onClick: () => void;
 }
 
 interface option {
@@ -51,7 +61,7 @@ interface option {
 // 下拉选择框组件
 export interface SelectListType {
   className?: string;
-  value: string | number;
+  value?: string | number;
   // 自定义前缀
   prefix?: React.ReactNode;
   // 自定义的选择框后缀图标
@@ -62,7 +72,7 @@ export interface SelectListType {
   options: option[];
   // 是否选中的图标或者图片
   selectIcon?: React.ReactNode;
-  onChange: (value: React.Key) => void;
+  onChange?: (value: React.Key) => void;
   size?: SizeType;
 }
 
@@ -106,12 +116,28 @@ export interface ModelBoxProps {
   onSearch?: (value: string) => void;
 }
 
+interface ModalClassNames {
+  // 遮罩层元素
+  mask?: string;
+  // Modal 容器元素
+  content?: string;
+  // 包裹层元素，一般用于动画容器
+  wrapper?: string;
+  // 头部元素
+  header?: string;
+  // 内容元素
+  body?: string;
+  // 底部元素
+  footer?: string;
+}
+
 // 封装带Form的Modal弹窗
 export interface CustomFormModalProps {
   form: FormInstance;
+  classNames?: ModalClassNames;
   title: string;
   open: boolean;
-  loading: boolean;
+  loading?: boolean;
   // 确定按钮前缀icon
   okPrefixIcon?: React.ReactNode;
   // 确定按钮文本
