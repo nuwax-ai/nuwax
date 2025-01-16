@@ -101,3 +101,19 @@ export const USER_PROBLEM_SUGGEST_LIST = [
     value: UserProblemSuggestEnum.Close,
   },
 ];
+
+// 任务执行
+export const TASK_EXECUTION = [
+  {
+    value: 0,
+    label: '机器人提示',
+  },
+  {
+    value: 1,
+    label: '插件',
+  },
+  {
+    value: 2,
+    label: '工作流',
+  },
+];

@@ -1,6 +1,6 @@
 import type { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { ApplicationMoreActionEnum } from '@/types/enums/space';
-import type { CollapseProps, FormInstance } from 'antd';
+import type { CollapseProps } from 'antd';
 import type { MouseEventHandler } from 'react';
 import React from 'react';
 
@@ -46,7 +46,6 @@ export interface VersionHistoryProps {
 
 // 发布智能体弹窗组件
 export interface PublishAgentProps {
-  form: FormInstance;
   open: boolean;
   onConfirm: () => void;
   onCancel: () => void;

@@ -11,11 +11,17 @@ const cx = classNames.bind(styles);
  * 发布智能体弹窗组件
  */
 const PublishAgent: React.FC<PublishAgentProps> = ({
-  form,
   open,
   onConfirm,
   onCancel,
 }) => {
+  const [form] = Form.useForm();
+
+  const handlerConfirm = () => {
+    form.submit();
+    onConfirm();
+  };
+
   return (
     <CustomFormModal
       form={form}
@@ -26,7 +32,7 @@ const PublishAgent: React.FC<PublishAgentProps> = ({
       loading={false}
       title="发布智能体"
       open={open}
-      onConfirm={onConfirm}
+      onConfirm={handlerConfirm}
       onCancel={onCancel}
     >
       <Form form={form} layout={'vertical'}>

@@ -1,3 +1,4 @@
+import Created from '@/components/Created';
 import SelectList from '@/components/SelectList';
 import TooltipIcon from '@/components/TooltipIcon';
 import {
@@ -5,6 +6,7 @@ import {
   LONG_MEMORY_LIST,
   USER_PROBLEM_SUGGEST_LIST,
 } from '@/constants/space.contants';
+import CreateTrigger from '@/pages/EditAgent/CreateTrigger';
 import {
   AgentConfigKnowledgeEnum,
   AgentConfigMemoryEnum,
@@ -17,6 +19,7 @@ import {
 import { CollapseProps } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
+import { useModel } from 'umi';
 import ConfigOption from './ConfigOptionCollapse';
 import ConfigOptionsHeader from './ConfigOptionsHeader';
 import styles from './index.less';
@@ -40,34 +43,47 @@ const AgentArrangeConfig: React.FC = () => {
   const [userProblemSuggestValue, setUserProblemSuggestValue] =
     useState<UserProblemSuggestEnum>(UserProblemSuggestEnum.Start_Use);
   const [triggerChecked, setTriggerChecked] = useState<boolean>(false);
+  const [openTriggerModel, setOpenTriggerModel] = useState<boolean>(false);
+  // 打开、关闭弹窗
+  const { show, setShow } = useModel('model');
 
   // 添加插件
   const handlerPluginPlus = (e) => {
     e.stopPropagation();
+    setShow(true);
     console.log('handlerPluginPlus');
   };
 
   // 添加工作流
   const handlerWorkflowPlus = (e) => {
     e.stopPropagation();
+    setShow(true);
     console.log('handlerWorkflowPlus');
   };
 
   // 添加触发器
   const handlerTriggerPlus = (e) => {
     e.stopPropagation();
+    setOpenTriggerModel(true);
     console.log('handlerTriggerPlus');
+  };
+
+  const handlerSuccessCreateTrigger = () => {
+    //todo 成功创建触发器后待完成的动作
+    setOpenTriggerModel(false);
   };
 
   // 添加文本
   const handlerTextPlus = (e) => {
     e.stopPropagation();
+    setShow(true);
     console.log('handlerTextPlus');
   };
 
   // 添加表格
   const handlerTablePlus = (e) => {
     e.stopPropagation();
+    setShow(true);
     console.log('handlerTablePlus');
   };
 
@@ -97,7 +113,12 @@ const AgentArrangeConfig: React.FC = () => {
     {
       key: AgentConfigSkillEnum.Plugin,
       label: '插件',
-      children: <p>这里是插件内容</p>,
+      children: (
+        <p>
+          插件能够让智能体调用外部
+          API，例如搜索信息、浏览网页、生成图片等，扩展智能体的能力和使用场景。
+        </p>
+      ),
       extra: <TooltipIcon title="添加插件" onClick={handlerPluginPlus} />,
     },
     {
@@ -243,6 +264,15 @@ const AgentArrangeConfig: React.FC = () => {
       <ConfigOption items={MemoryList} />
       <ConfigOptionsHeader title="对话体验" />
       <ConfigOption items={ConversationalExperienceList} />
+      {/*添加插件、工作流、知识库、数据库弹窗*/}
+      <Created checkTag="plugInNode" onAdded={() => {}} />
+      {/*添加触发器弹窗*/}
+      <CreateTrigger
+        open={openTriggerModel}
+        title="创建触发器"
+        onCancel={() => setOpenTriggerModel(false)}
+        onConfirm={handlerSuccessCreateTrigger}
+      />
     </div>
   );
 };

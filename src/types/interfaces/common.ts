@@ -61,7 +61,7 @@ interface option {
 // 下拉选择框组件
 export interface SelectListType {
   className?: string;
-  value: string | number;
+  value?: string | number;
   // 自定义前缀
   prefix?: React.ReactNode;
   // 自定义的选择框后缀图标
@@ -72,7 +72,7 @@ export interface SelectListType {
   options: option[];
   // 是否选中的图标或者图片
   selectIcon?: React.ReactNode;
-  onChange: (value: React.Key) => void;
+  onChange?: (value: React.Key) => void;
   size?: SizeType;
 }
 

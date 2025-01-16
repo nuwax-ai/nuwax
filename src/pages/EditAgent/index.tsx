@@ -1,17 +1,16 @@
 import CreateAgent from '@/components/CreateAgent';
-import AgentModelSetting from '@/pages/EditAgent/AgentModelSetting';
-import PublishAgent from '@/pages/EditAgent/PublishAgent';
 import { CreateEditAgentEnum } from '@/types/enums/common';
 import { EditAgentShowType } from '@/types/enums/space';
-import { Form } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import AgentArrangeConfig from './AgentArrangeConfig';
 import AgentHeader from './AgentHeader';
+import AgentModelSetting from './AgentModelSetting';
 import ArrangeTitle from './ArrangeTitle';
 import DebugDetails from './DebugDetails';
 import styles from './index.less';
 import PreviewAndDebug from './PreviewAndDebug';
+import PublishAgent from './PublishAgent';
 import ShowStand from './ShowStand';
 import SystemTipsWord from './SystemTipsWord';
 import VersionHistory from './VersionHistory';
@@ -29,7 +28,6 @@ const EditAgent: React.FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
-  const [form] = Form.useForm();
 
   const handlerClose = () => {
     setShowType(EditAgentShowType.Hide);
@@ -54,7 +52,7 @@ const EditAgent: React.FC = () => {
 
   // 确认发布智能体
   const handlerConfirmPublish = () => {
-    form.submit();
+    // todo 成功创建智能体后需要完成的动作
     setOpen(false);
   };
 
@@ -125,7 +123,6 @@ const EditAgent: React.FC = () => {
       </section>
       {/*发布智能体弹窗*/}
       <PublishAgent
-        form={form}
         open={open}
         onConfirm={handlerConfirmPublish}
         onCancel={handlerCancelPublish}

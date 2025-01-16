@@ -39,9 +39,8 @@ const SelectList: React.FC<SelectListType> = (props) => {
         </>
       )}
       optionRender={(option) => {
-        console.log(option);
         return (
-          <Flex gap={8}>
+          <Flex gap={8} align={'center'}>
             <div className={cx(styles['option-icon-box'])}>
               {selectIcon ||
                 (value === option.data.value && (

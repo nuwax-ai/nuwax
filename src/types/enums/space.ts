@@ -103,3 +103,11 @@ export enum EditAgentShowType {
   // 展示台
   Show_Stand,
 }
+
+// 触发器类型
+export enum TriggerTypeEnum {
+  // 定时触发
+  Timing_Trigger,
+  // 事件触发
+  Event_Trigger,
+}
