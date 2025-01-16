@@ -201,19 +201,3 @@ export interface CreatedNodeItem {
   // 是否有试运行的按钮
   testRun?: boolean;
 }
-
-export interface NodeFoldWrapType {
-  className?: string;
-  icon?: React.ReactNode;
-  title: string;
-  desc?: string;
-  visible?: boolean;
-  // 关闭按钮左侧操作区域，可选
-  testRun?: boolean;
-  otherAction?: boolean;
-  onClose: () => void;
-  // 顶部线条是否有margin样式
-  lineMargin?: boolean;
-  key?: string;
-  id?: string;
-}

@@ -1,10 +1,10 @@
+import { ChildNode, NodeProps } from '@/types/interfaces/workflow';
+import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { DashOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { register } from '@antv/x6-react-shape';
 import { Input, Popover } from 'antd';
 import React from 'react';
 import '../index.less';
-import { Child, NodeProps } from '../type';
-
 // 定义组件的状态类型
 interface GeneralNodeState {
   isEditingTitle: boolean;
@@ -16,11 +16,12 @@ interface GeneralNodeState {
 export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
   constructor(props: NodeProps) {
     super(props);
+    console.log(this.props.node.getData());
     this.state = {
       // 标题编辑状态
       isEditingTitle: false,
       // 标题的内容
-      editedTitle: this.props.node.getData<Child>().title || '',
+      editedTitle: this.props.node.getData<ChildNode>().name || '',
     };
   }
 
@@ -49,7 +50,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
   finishEditTitle = () => {
     this.setState({ isEditingTitle: false }, () => {
       const { node } = this.props;
-      const data = node.getData<Child>();
+      const data = node.getData<NodeProps>();
       const updatedData = { ...data, title: this.state.editedTitle };
       node.setData(updatedData);
     });
@@ -58,11 +59,11 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
   // 改变节点的宽高
   handleResized = () => {
     console.log('Node has been resized.');
-    const { node } = this.props;
-    const data = node.getData<Child>();
-    const width = data.width ? data.width : 304;
-    const height = data.height ? data.height : 83;
-    node.setSize(width, height);
+    // const { node } = this.props;
+    // const data = node.getData<NodeProps>();
+    // const width = data.width ? data.width : 304;
+    // const height = data.height ? data.height : 83;
+    // node.setSize(width, height);
   };
   /**
    * 右侧三个点的操作列表。
@@ -89,20 +90,24 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
   render() {
     const { node } = this.props;
     // 明确告诉 getData 返回的数据类型
-    const data = node.getData<Child>();
+    const data = node.getData<ChildNode>();
     // 或者返回一个默认的内容，以防止渲染错误
     if (!data) {
       return null;
     }
 
+    console.log(data);
     // 确保宽度和高度是有效的数字
-    const width = data.width ? data.width : 304;
-    const height = data.height ? data.height : 83;
+    const width = data.nodeConfig.extension?.width
+      ? data.nodeConfig.extension.width
+      : 304;
+    const height = data.nodeConfig.extension?.height
+      ? data.nodeConfig.extension.height
+      : 83;
     // 构造渐变背景字符串
-    const gradientBackground = data.backgroundColor
-      ? `linear-gradient(to bottom, ${data.backgroundColor} 0%, white 70%)`
-      : // 如果没有提供 backgroundColor，则默认为白色
-        'white';
+    const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
+      data.type,
+    )} 0%, white 70%)`;
 
     return (
       <div
@@ -118,7 +123,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
           style={{ background: gradientBackground }}
         >
           <div className="general-node-header-image">
-            {data.icon}
+            {returnImg(data.type)}
             {this.state.isEditingTitle ? (
               <Input
                 value={this.state.editedTitle}
@@ -128,11 +133,11 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
                 autoFocus
               />
             ) : (
-              <span>{data.title}</span>
+              <span>{data.name}</span>
             )}
           </div>
           <div>
-            {data.testRun && (
+            {data.type !== 'Start' && (
               <Popover placement="top" content={'测试该节点'}>
                 <PlayCircleOutlined
                   onClick={(e) => {
@@ -144,7 +149,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
               </Popover>
             )}
             {/* 使用 Popover 渲染右侧三个点 */}
-            {data.operations && (
+            {data.type !== 'Start' && (
               <Popover content={this.content} trigger="hover">
                 <DashOutlined
                   style={{ marginLeft: '10px' }}
@@ -156,20 +161,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
         </div>
         {/* 节点内容区，根据 data.content 的类型显示不同的内容 */}
         <div className="general-node-content">
-          {typeof data.content === 'string' ? (
-            <div className="text-ellipsis">{data.content}</div>
-          ) : (
-            <div className="general-node-content-list">
-              {data.content.map((item) => (
-                <div className="general-node-content-item" key={item.label}>
-                  <span className="general-node-content-label">
-                    {item.label}
-                  </span>
-                  <span>{item.value}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="text-ellipsis">{data.description}</div>
         </div>
       </div>
     );
@@ -261,7 +253,7 @@ export function registerCustomNodes() {
     // 添加连接桩配置
     ports: ports,
     // 设置 embeddable 属性以决定是否允许嵌套
-    embeddable: ({ data }: { data: Child }) => data && data.isParent,
+    embeddable: ({ data }: { data: ChildNode }) => data.type === 'Loop',
     // 启用节点大小调整
     resizable: true,
   });

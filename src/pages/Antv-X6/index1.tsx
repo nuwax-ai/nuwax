@@ -1,4 +1,5 @@
 import FoldWrap from '@/components/FoldWrap';
+import OtherOperations from '@/components/OtherAction';
 import TestRun from '@/components/TestRun';
 import { Button, Popover, Select } from 'antd';
 import { useEffect, useRef, useState } from 'react';
@@ -8,10 +9,9 @@ import InitGraph from './component/graph';
 import Monaco from './component/monaco';
 import { registerCustomNodes } from './component/registerCustomNodes'; // 引入自定义节点注册函数
 import StencilContent from './component/stencil';
-// 引入一些图标
-import Created from '@/components/Created';
-import { CreatedNodeItem } from '@/types/interfaces/common';
-import { ChildNode, Edge } from '@/types/interfaces/workflow';
+
+import { ICON_END, ICON_START } from '@/constants/images.constants';
+import { NodeFoldWrapType } from '@/types/interfaces/common';
 import {
   CaretRightOutlined,
   HomeOutlined,
@@ -22,54 +22,38 @@ import { Node } from '@antv/x6';
 import { useModel } from 'umi';
 import './index.less';
 import { Child } from './type';
-// 节点样例数据，后期删除
-import { getEdges, returnImg } from '@/utils/workflow';
-import { nodeListMock } from './params';
 // 确保在应用启动时就注册所有自定义节点
 registerCustomNodes();
 
 const AntvX6 = () => {
-  /** -------------------- 定义一些变量 -------------------- */
   // 画布的ref
   const containerRef = useRef<HTMLDivElement>(null);
-  // 抽屉的visible
-  const [visible, setVisible] = useState(false);
   // 抽屉的title
-  const [foldWrapItem, setFoldWrapItem] = useState<ChildNode>({
-    id: 0,
-    description: 'string',
-    workflowId: 0,
-    type: 'string',
-    nodeConfig: {},
-    name: '',
+  const [foldWrapItem, setFoldWrapItem] = useState<NodeFoldWrapType>({
+    title: '',
+    desc: '',
+    visible: false,
+    icon: null,
+    key: '',
+    onClose: () => {},
+    testRun: false,
   });
   // 创建插件、工作流、知识库、数据库所需的参数
   const [createdItem, setCreatedItem] = useState({
-    checkTag: 'plugInNode',
+    checkTag: '',
   });
-
-  // 当前被拖拽节点的x和y
-  const [dragEvent, setDragEvent] = useState({
-    x: 0,
-    y: 0,
-  }); // 拖拽子节点到画布中
 
   // 打开或者关闭添加工作流或者插件
   const { setShow, setTestRun } = useModel('model');
-
-  // 所有的节点
-  const [graphParams, setGraphParams] = useState<any>({
-    nodeList: [],
-    edgeList: [],
-  });
-
-  /** -------------------- 无需调用方法的接口 -------------------- */
   // 点击组件，显示抽屉
-  const changeDrawer = (child: ChildNode) => {
-    setFoldWrapItem(child);
-    setVisible(true);
+  const changeDrawer = (child: Child) => {
+    console.log(child);
   };
 
+  // 关闭抽屉
+  const closeDrawer = () => {
+    setFoldWrapItem({ ...foldWrapItem, visible: false });
+  };
   // 使用 useRef 来保持 graph 实例在整个组件生命周期内的引用
   const graphRef = useRef<any>(null);
   function preWork() {
@@ -108,7 +92,7 @@ const AntvX6 = () => {
         // 删除节点
         {
           graphRef.current?.removeNode(data ? data.id : foldWrapItem.id);
-          setVisible(false);
+          closeDrawer();
         }
         break;
       default:
@@ -123,7 +107,7 @@ const AntvX6 = () => {
     // 获取所有节点，并尝试找到位于拖拽位置的目标父节点
     let targetNode: Node | null = null;
     graphRef.current.getNodes().some((node: Node) => {
-      if (node.getData<ChildNode>()?.type === 'Loop') {
+      if (node.getData<Child>()?.isParent) {
         const bbox = node.getBBox();
         if (bbox.containsPoint(point)) {
           // 添加的位置上有其他节点，且节点允许添加子节点
@@ -140,9 +124,8 @@ const AntvX6 = () => {
       shape: child.type,
       x: point.x, // 使用转换后的坐标
       y: point.y,
-      // 后面要改
-      width: 304,
-      height: 83,
+      width: child.width ? child.width : 304,
+      height: child.height ? child.height : 83,
       data: {
         ...child,
         // 将父组件的方法作为属性传递给子组件
@@ -167,18 +150,14 @@ const AntvX6 = () => {
 
     // 这里要区分创建的节点是插件和工作流还是其他，如果是插件和工作流，就要先展示弹窗，待用户选中后再添加节点
     if (
-      child.key === 'Plugin' ||
-      child.key === 'Workflow' ||
-      child.key === 'KnowledgeBase' ||
-      child.key === 'Database'
+      child.key === 'plugInNode' ||
+      child.key === 'workflowNode' ||
+      child.key === 'knowledgeNode' ||
+      child.key === 'databaseNode'
     ) {
       setCreatedItem({ ...createdItem, checkTag: child.key });
       // 展示可以选择的选项蒙版层
       setShow(true);
-      setDragEvent({
-        x: e.clientX,
-        y: e.clientY,
-      });
     } else {
       addNode(
         {
@@ -190,36 +169,8 @@ const AntvX6 = () => {
     }
   };
 
-  // 添加插件,工作流,知识库,数据库
-  const onAdded = (val: CreatedNodeItem) => {
-    // 组装数据
-    const _child = {
-      name: val.label,
-      type: 'general-Node',
-      description: val.desc,
-      key: createdItem.checkTag,
-    };
-    // 添加节点
-    addNode(dragEvent, _child);
-    // 关闭新增差价工作流,知识库,数据库的弹窗
-    setShow(false);
-  };
-
-  /** -------------------- 需要调用方法的接口 -------------------- */
-  // 获取当前画布信息
-  const getList = async () => {
-    // const _res = await servic
-    // 获取节点的数据
-    const _nodeList = nodeListMock.data;
-    // 获取边的数据
-    const _edgeList = getEdges(_nodeList);
-    // 通过便利获取边的数据
-    setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
-  };
-
   // 创建一个用于存放图形的容器
   useEffect(() => {
-    getList();
     if (!containerRef.current) return;
     // 确保在调用任何需要DOM操作的函数之前，已经创建了必要的DOM元素
     preWork();
@@ -227,6 +178,50 @@ const AntvX6 = () => {
     graphRef.current = InitGraph({
       containerId: 'graph-container',
       changeDrawer: changeDrawer,
+    });
+
+    // 新进页面，创建两个节点
+
+    graphRef.current.addNode({
+      shape: 'general-Node',
+      x: 200, // 使用转换后的坐标
+      y: 200,
+      width: 304,
+      height: 83,
+      data: {
+        title: '开始',
+        icon: <ICON_START />,
+        key: 'startNode',
+        type: 'general-Node',
+        content: '工作流起始节点，用于设定启动工作流需要的信息',
+        desc: '工作流起始节点，用于设定启动工作流需要的信息',
+        backgroundColor: '#EEEEFF',
+        noPopover: true,
+        width: 304,
+        height: 83,
+      },
+      zIndex: 2, // 新节点的层级设置为2
+    });
+
+    graphRef.current.addNode({
+      shape: 'general-Node',
+      x: 1000, // 使用转换后的坐标
+      y: 200,
+      width: 324,
+      height: 83,
+      data: {
+        title: '结束',
+        icon: <ICON_END />,
+        key: 'endNode',
+        type: 'general-Node',
+        content: '工作流的最终节点，用于返回工作流运行后的结果信息',
+        desc: '工作流的最终节点，用于返回工作流运行后的结果信息',
+        backgroundColor: '#EEEEFF',
+        noPopover: true,
+        width: 324,
+        height: 83,
+      },
+      zIndex: 2, // 新节点的层级设置为2
     });
 
     // 绑定事件处理器并获取清理函数
@@ -239,36 +234,6 @@ const AntvX6 = () => {
     };
     // 空数组意味着这个效果只会在组件首次挂载时运行
   }, []);
-
-  useEffect(() => {
-    // 当graphParams变化时，更新图形
-    if (graphRef.current && graphParams.nodeList.length > 0) {
-      const cells = graphParams.nodeList
-        .map((node: ChildNode) => ({
-          id: node.id.toString(),
-          shape: 'general-Node',
-          x: 50 + Math.random() * 700, // 随机位置，实际应用中应该根据具体需求调整
-          y: 50 + Math.random() * 400,
-          width: 304,
-          height: 83,
-          label: node.name,
-          data: {
-            ...node,
-            onChange: handleNodeChange,
-          },
-        }))
-        .concat(
-          graphParams.edgeList.map((edge: Edge) => ({
-            shape: 'edge',
-            source: { id: edge.source.toString() },
-            target: { id: edge.target.toString() },
-          })),
-        );
-
-      graphRef.current.fromJSON({ cells });
-      // graphRef.current.zoomToFit(); // 自动缩放以适应所有元素
-    }
-  }, [graphParams]);
 
   return (
     <div
@@ -302,7 +267,21 @@ const AntvX6 = () => {
       {/* 绝对定位的容器，用以试运行 */}
       <div className="absolute-test">
         <ToolOutlined />
-        <Button icon={<CaretRightOutlined />} type="primary">
+        <Button
+          icon={<CaretRightOutlined />}
+          type="primary"
+          onClick={() =>
+            changeDrawer({
+              ...foldWrapItem,
+              title: '试运行',
+              desc: '',
+              icon: null,
+              key: 'testNode',
+              type: '',
+              content: '',
+            })
+          }
+        >
           试运行
         </Button>
       </div>
@@ -310,34 +289,25 @@ const AntvX6 = () => {
       <FoldWrap
         className="fold-wrap-style"
         lineMargin
-        title={foldWrapItem.name}
-        visible={visible}
-        onClose={() => setVisible(false)}
-        desc={foldWrapItem.description}
-        icon={returnImg(foldWrapItem.type)}
-        // otherAction={
-        //   <OtherOperations
-        //     onChange={(val: string) => handleNodeChange(val)}
-        //     testRun={foldWrapItem.testRun}
-        //   />
-        // }
+        title={foldWrapItem.title}
+        visible={foldWrapItem.visible}
+        onClose={closeDrawer}
+        desc={foldWrapItem.desc}
+        icon={foldWrapItem.icon}
+        otherAction={
+          <OtherOperations
+            onChange={(val: string) => handleNodeChange(val)}
+            testRun={foldWrapItem.testRun}
+          />
+        }
       >
         <div className="dispose-node-style">
-          <FoldWarpNode type={foldWrapItem.type as string} />
+          <FoldWarpNode type={foldWrapItem.key as string} />
         </div>
       </FoldWrap>
 
       {/* 添加工作流,节点等 */}
-      <Created
-        checkTag={
-          createdItem.checkTag as
-            | 'plugInNode'
-            | 'workflowNode'
-            | 'knowledgeNode'
-            | 'databaseNode'
-        }
-        onAdded={onAdded}
-      />
+      {/* <Created checkTag={createdItem.checkTag} onAdded={onAdded} /> */}
       {/* 试运行的弹窗 */}
       <TestRun type={'noInput'} run={handleTestRun} />
     </div>

@@ -29,30 +29,15 @@ export interface NodeProps {
  */
 export interface Child {
   // 子节点标题
-  title: string;
+  name: string;
   // 子节点显示的图像路径
-  icon: string | React.ReactNode; // 直接使用 SVGProps
+  icon?: string | React.ReactNode; // 直接使用 SVGProps
   // 唯一标识符
-  key: string;
-  // 子节点的类型，可能用于区分不同种类的节点
   type: string;
-  // 节点的内容，可能是纯文本或键值对数组
-  content: string | KeyValuePairs[];
+  // 子节点的类型，可能用于区分不同种类的节点
+  key: string;
   // 描述
-  desc?: string;
-  // 节点宽度，可选
-  width?: number;
-  // 节点高度，可选
-  height?: number;
-  // 标记该节点是否可以作为父节点嵌套其他节点，可选
-  isParent?: boolean;
-  // 节点背景颜色，可选
-  backgroundColor?: string;
-  // 是否有操作栏
-  operations?: boolean;
-  // 是否有试运行
-  testRun?: boolean;
-  id?: string;
+  description: string;
 }
 
 /**
@@ -65,16 +50,6 @@ export interface StencilList {
   key: string;
   // 模板列表中的子节点集合，遵循 Child 接口定义
   children: Child[];
-}
-
-/**
- * 定义 GraphProp 接口，用于描述图组件的属性。
- */
-export interface GraphProp {
-  // 包含图的 DOM 容器的 ID
-  containerId: string;
-  // 改变抽屉内容的回调函数，接收一个 Child 类型的参数
-  changeDrawer: (item: Child) => void;
 }
 
 /**
@@ -114,10 +89,14 @@ export interface ReferenceList {
 
 // 定义输入或引用参数
 export interface InputOrReferenceProps {
+  // 当前的引用列表
   referenceList: ReferenceList[];
+  // 与输入
   placeholder?: string;
-  value: string; // 新增：接受当前值
-  onChange: (value: string) => void; // 新增：接受值变化的回调
+  // 新增：接受当前值
+  value: string;
+  // 父组件传递的方法，改变当前的值，渲染页面
+  onChange: (value: string) => void;
 }
 
 // 定义输入项配置类型
@@ -133,25 +112,41 @@ export interface FieldConfig {
 
 // 定义传递给 renderItem 的参数类型
 export interface RenderItemProps {
+  // 当前字段的field
   field: FormListFieldData;
+  // 删除当前行
   onRemove: () => void;
+  // 当前渲染的详细信息
   fieldConfigs: FieldConfig[];
+  // 当前行的索引
   rowIndex: number;
+  // 父组件传递下来的form
   form: FormInstance;
+  // 是否渲染复选框
   showCheckbox?: boolean;
+  // 是否显示复制按钮
   showCopy?: boolean;
+  // 石佛iu显示关联按钮
   showAssociation?: boolean;
 }
 
 // 定义通用节点渲染逻辑的props类型
 export interface NodeRenderProps {
+  // 标题
   title: string;
+  // 遍历渲染的字段配置
   fieldConfigs: FieldConfig[];
+  // 渲染的内容(可以自定义，也可以使用默认的renderItem)
   renderItem?: (props: RenderItemProps) => JSX.Element; // 可选，允许自定义renderItem
+  // 初始值（适用于已经编辑过的内容）
   initialValues: object;
+  // 如果有多个相同组件时，传递不同的inputListName区分
   inputItemName?: string;
+  // 是否展示选中的选项框
   showCheckbox?: boolean;
+  // 是否显示复制按钮
   showCopy?: boolean;
+  // 是否显示关联按钮
   showAssociation?: boolean;
 }
 

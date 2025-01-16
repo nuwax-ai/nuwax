@@ -114,6 +114,7 @@ const defaultRenderItem: React.FC<RenderItemProps> = ({
   showAssociation,
   form,
 }) => {
+  console.log(fieldConfigs);
   return (
     <Space className="dis-sb" style={{ width: '100%' }}>
       {fieldConfigs.map((config, index) => {
@@ -135,11 +136,26 @@ const defaultRenderItem: React.FC<RenderItemProps> = ({
                 form={form} // 将 form 传递给 CommonInput
                 index={rowIndex} // 传递索引
                 value={fieldValue} // 传递当前字段的值
-                onChange={(value: string) =>
-                  form.setFieldsValue({
-                    [`${field.name}.${config.name}`]: value,
-                  })
-                } // 设置变更时更新表单值
+                onBlur={
+                  config.component === Input
+                    ? (event: React.FocusEvent<HTMLInputElement>) => {
+                        const value = event.target.value;
+                        form.setFieldsValue({
+                          [`${field.name}.${config.name}`]: value,
+                        });
+                      }
+                    : undefined
+                }
+                onChange={
+                  config.component !== Input
+                    ? (value: string) => {
+                        console.log(value);
+                        form.setFieldsValue({
+                          [`${field.name}.${config.name}`]: value,
+                        });
+                      }
+                    : undefined
+                }
               />
             </Form.Item>
           </div>
@@ -168,11 +184,14 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   fieldConfigs,
   renderItem = defaultRenderItem,
   initialValues,
+  inputItemName = 'inputItems',
   showCheckbox = false,
   showCopy = false,
   showAssociation = false,
 }) => {
   const [form] = Form.useForm();
+
+  console.log(inputItemName);
 
   // 根据传递的fieldConfigs生成表单项
   const formItem = fieldConfigs.reduce(
@@ -183,8 +202,8 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
     {},
   );
   const addInputItem = () => {
-    const nextItems = [...(form.getFieldValue('inputItems') || []), formItem];
-    form.setFieldsValue({ inputItems: nextItems });
+    const nextItems = [...(form.getFieldValue(inputItemName) || []), formItem];
+    form.setFieldsValue({ [inputItemName]: nextItems });
   };
   // 提交form表单
   const submitForm = (values: any) => {
@@ -203,7 +222,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
         ></Button>
       </div>
       <Form form={form} onFinish={submitForm} initialValues={initialValues}>
-        <Form.List name="inputItems">
+        <Form.List name={inputItemName}>
           {(fields, { remove }, { errors }) => (
             <>
               {fields.map((field, index) => {
@@ -213,7 +232,8 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                       field,
                       onRemove: () => remove(field.name),
                       fieldConfigs,
-                      rowIndex: index, // 新增传递索引信息
+                      // 新增传递索引信息
+                      rowIndex: index,
                       form,
                       showCheckbox,
                       showCopy,

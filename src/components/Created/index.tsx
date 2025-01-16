@@ -18,7 +18,7 @@ type MenuItem = Required<MenuProps>['items'][number];
 
 interface CreatedProp {
   // 选中的头部的tag
-  checkTag: string;
+  checkTag: 'plugInNode' | 'workflowNode' | 'knowledgeNode' | 'databaseNode';
   //   点击添加后,通知父组件添加节点
   onAdded: (val: CreatedNodeItem) => void;
 }
@@ -83,6 +83,7 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded }) => {
 
     // 遍历找到对应的选项
     const _item = buttonList.find((item) => item.key === _select);
+    console.log(_item);
     if (_item) {
       SetSelected(_item);
     }

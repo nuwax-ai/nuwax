@@ -21,16 +21,18 @@ import { InputAndOut } from './commonNode';
 
 // 定义开始节点
 // 定义开始和文档提取节点的渲染逻辑
-const StartNode: React.FC<NodeDisposeProps> = ({ type }) => {
+const StartNode: React.FC<NodeDisposeProps> = ({ type, initialValues }) => {
   return (
     <>
       <InputAndOut
         title="输入"
         fieldConfigs={InputConfigs}
-        initialValues={{ inputItems: [{ name: '', type: '' }] }}
+        initialValues={{ startInput: initialValues }} // 注意这里使用了'startInput'
         showCheckbox={true}
         showCopy={true}
         showAssociation={true}
+        // 如果这里使用动态的表单名称，initialValues 中的名称也应该和他相同
+        inputItemName="startInput"
       />
       {type && (
         <div className="margin-bottom">
