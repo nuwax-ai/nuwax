@@ -14,7 +14,12 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
 }) => {
   return (
     <header
-      className={cx('flex', 'content-between', 'items-center', styles.header)}
+      className={cx(
+        'flex',
+        'content-between',
+        'items-center',
+        styles.container,
+      )}
     >
       <h3>预览与调试</h3>
       <div className={cx(styles['extra-box'], 'flex')}>

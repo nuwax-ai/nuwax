@@ -3,7 +3,8 @@ import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
 import { CREATE_AGENT_LIST } from '@/constants/space.contants';
-import { CreateAgentEnum } from '@/types/enums/space';
+import { CreateAgentEnum, CreateEditAgentEnum } from '@/types/enums/common';
+import { CreateAgentProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, Input, message, Segmented } from 'antd';
 import classNames from 'classnames';
@@ -12,14 +13,11 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface CreateAgentProps {
-  open: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-}
-
 const { TextArea } = Input;
 const CreateAgent: React.FC<CreateAgentProps> = ({
+  type = CreateEditAgentEnum.Create,
+  agentName,
+  intro,
   open,
   onCancel,
   onConfirm,
@@ -65,19 +63,25 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       onConfirm={handlerSubmit}
       // loading={loading}
     >
-      <Segmented
-        className={cx(styles.segment)}
-        value={createAgentType}
-        onChange={handlerChange}
-        block
-        options={CREATE_AGENT_LIST}
-      />
+      {type === CreateEditAgentEnum.Create && (
+        <Segmented
+          className={cx(styles.segment)}
+          value={createAgentType}
+          onChange={handlerChange}
+          block
+          options={CREATE_AGENT_LIST}
+        />
+      )}
       <Form
         form={form}
         preserve={false}
         requiredMark={customizeRequiredMark}
         layout="vertical"
         onFinish={onFinish}
+        initialValues={{
+          agentName: agentName,
+          intro: intro,
+        }}
         autoComplete="off"
       >
         {createAgentType === CreateAgentEnum.Standard ? (

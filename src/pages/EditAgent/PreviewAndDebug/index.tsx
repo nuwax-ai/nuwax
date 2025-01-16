@@ -21,7 +21,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <PreviewAndDebugHeader onPressDebug={onPressDebug} />
       <div className={cx(styles['divider-horizontal'])}></div>
-      <div className={cx(styles['main-content'])}>
+      <div className={cx(styles['main-content'], 'flex-1')}>
         <ChatView
           avatar={avatar}
           nickname={'英雄联盟'}

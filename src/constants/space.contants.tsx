@@ -1,6 +1,6 @@
+import { CreateAgentEnum } from '@/types/enums/common';
 import {
   ApplicationMoreActionEnum,
-  CreateAgentEnum,
   CreateListEnum,
   FileBoxEnum,
   FilterStatusEnum,

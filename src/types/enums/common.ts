@@ -11,3 +11,17 @@ export enum TooltipTitleTypeEnum {
   Blank,
   White,
 }
+
+// 创建智能体枚举
+export enum CreateAgentEnum {
+  Standard,
+  AI,
+}
+
+// 创建、编辑智能体枚举
+export enum CreateEditAgentEnum {
+  // 创建
+  Create,
+  // 编辑
+  Edit,
+}

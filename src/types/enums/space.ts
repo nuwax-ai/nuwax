@@ -36,12 +36,6 @@ export enum SpaceApplicationListEnum {
   Team_Setting,
 }
 
-// 创建智能体枚举
-export enum CreateAgentEnum {
-  Standard,
-  AI,
-}
-
 // 智能体配置技能枚举
 export enum AgentConfigSkillEnum {
   Plugin,

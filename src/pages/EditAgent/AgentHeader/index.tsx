@@ -14,7 +14,9 @@ const cx = classNames.bind(styles);
 
 interface AgentHeaderProps {
   onToggleShowStand: () => void;
-  onToggleHistoryLog: () => void;
+  handlerToggleVersionHistory: () => void;
+  onEditAgent: () => void;
+  onPublish: () => void;
 }
 
 /**
@@ -22,7 +24,9 @@ interface AgentHeaderProps {
  */
 const AgentHeader: React.FC<AgentHeaderProps> = ({
   onToggleShowStand,
-  onToggleHistoryLog,
+  handlerToggleVersionHistory,
+  onEditAgent,
+  onPublish,
 }) => {
   return (
     <header
@@ -44,7 +48,10 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
       <div className={cx('flex', 'flex-col', styles['header-info'])}>
         <div className={cx('flex', 'items-center')}>
           <h3 className={cx(styles['h-title'])}>角色陪伴</h3>
-          <FormOutlined className={cx(styles['edit-ico'])} />
+          <FormOutlined
+            className={cx(styles['edit-ico'])}
+            onClick={onEditAgent}
+          />
         </div>
         <div className={cx('flex', 'items-center', styles['agent-rel-info'])}>
           <UserDeleteOutlined />
@@ -62,9 +69,13 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
         />
         <ClockCircleOutlined
           className={cx(styles.ico, 'cursor-pointer')}
-          onClick={onToggleHistoryLog}
+          onClick={handlerToggleVersionHistory}
         />
-        <Button type="primary" className={cx(styles['publish-btn'])}>
+        <Button
+          type="primary"
+          className={cx(styles['publish-btn'])}
+          onClick={onPublish}
+        >
           发布
         </Button>
       </div>
