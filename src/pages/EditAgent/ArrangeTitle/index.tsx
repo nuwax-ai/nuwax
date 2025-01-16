@@ -5,6 +5,9 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 编排顶部title组件
+ */
 const ArrangeTitle: React.FC = () => {
   return (
     <div

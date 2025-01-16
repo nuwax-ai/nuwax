@@ -11,6 +11,9 @@ interface PreviewAndDebugHeaderProps {
   onPressDebug: () => void;
 }
 
+/**
+ * 预览与调试组件
+ */
 const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
   onPressDebug,
 }) => {

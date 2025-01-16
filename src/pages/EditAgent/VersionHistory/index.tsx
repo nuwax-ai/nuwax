@@ -7,6 +7,9 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 版本历史组件
+ */
 const VersionHistory: React.FC<VersionHistoryProps> = ({
   visible,
   onClose,

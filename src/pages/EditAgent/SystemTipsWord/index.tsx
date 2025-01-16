@@ -9,6 +9,9 @@ const cx = classNames.bind(styles);
 
 const { TextArea } = Input;
 
+/**
+ * 系统提示词组件
+ */
 const SystemTipsWord: React.FC<SystemTipsWordProps> = ({ value, onChange }) => {
   return (
     <div className={cx('flex-1', 'px-16', 'py-16')}>

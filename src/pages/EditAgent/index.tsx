@@ -1,8 +1,8 @@
 import CreateAgent from '@/components/CreateAgent';
-import CustomFormModal from '@/components/CustomFormModal';
+import PublishAgent from '@/pages/EditAgent/PublishAgent';
 import { CreateEditAgentEnum } from '@/types/enums/common';
 import { EditAgentShowType } from '@/types/enums/space';
-import { Checkbox, Form, Input } from 'antd';
+import { Form } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import AgentArrangeConfig from './AgentArrangeConfig';
@@ -45,23 +45,28 @@ const EditAgent: React.FC = () => {
     setShowType(EditAgentShowType.Version_History);
   };
 
+  // 点击发布按钮，打开发布智能体弹窗
   const handlerPublishAgent = () => {
     setOpen(true);
   };
 
+  // 确认发布智能体
   const handlerConfirmPublish = () => {
     form.submit();
     setOpen(false);
   };
 
+  // 取消发布
   const handlerCancelPublish = () => {
     setOpen(false);
   };
 
+  // 点击编辑智能体按钮，打开弹窗
   const handlerEditAgent = () => {
     setOpenEditAgent(true);
   };
 
+  // 确认编辑智能体
   const handlerConfirmEditAgent = () => {
     setOpenEditAgent(false);
   };
@@ -116,31 +121,14 @@ const EditAgent: React.FC = () => {
           onClose={handlerClose}
         />
       </section>
-      <CustomFormModal
+      {/*发布智能体弹窗*/}
+      <PublishAgent
         form={form}
-        classNames={{
-          content: styles['modal-content'],
-          header: styles['modal-content'],
-        }}
-        loading={false}
-        title="发布智能体"
         open={open}
         onConfirm={handlerConfirmPublish}
         onCancel={handlerCancelPublish}
-      >
-        <Form form={form} layout={'vertical'}>
-          <Form.Item label="发布渠道">
-            <Checkbox>广场</Checkbox>
-          </Form.Item>
-          <Form.Item label="发布记录">
-            <Input.TextArea
-              rootClassName={styles['input-textarea']}
-              placeholder="这里填写详细的发布记录，如果渠道选择了广场审核通过后将在智能体广场进行展示"
-              autoSize={{ minRows: 5, maxRows: 8 }}
-            ></Input.TextArea>
-          </Form.Item>
-        </Form>
-      </CustomFormModal>
+      />
+      {/*编辑智能体弹窗*/}
       <CreateAgent
         type={CreateEditAgentEnum.Edit}
         agentName={'测试智能体'}

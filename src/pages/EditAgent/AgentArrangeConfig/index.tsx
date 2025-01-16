@@ -27,7 +27,6 @@ const cx = classNames.bind(styles);
 
 /**
  * 智能体编排区域配置
- * @constructor
  */
 const AgentArrangeConfig: React.FC = () => {
   // 长期记忆

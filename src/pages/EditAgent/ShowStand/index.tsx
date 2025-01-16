@@ -45,6 +45,9 @@ const LIST = [
   },
 ];
 
+/**
+ * 展示台
+ */
 const ShowStand: React.FC<ShowStandProps> = ({ visible, onClose }) => {
   // const [data, setData] = useState<any[]>([]);
   //

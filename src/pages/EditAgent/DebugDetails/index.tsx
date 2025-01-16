@@ -10,6 +10,9 @@ interface DebugDetailsProps {
   onClose: () => void;
 }
 
+/**
+ * 调试详情组件
+ */
 const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
   return (
     <FoldWrap
