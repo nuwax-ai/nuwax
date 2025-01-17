@@ -1,4 +1,86 @@
+@import '@/styles/color';
+
 .container {
   width: 100%;
   height: 100%;
+}
+
+.trigger-time-require {
+  color: @RED;
+  font-weight: 600;
+}
+
+.form-item {
+  width: 50%;
+  margin-bottom: 0;
+}
+
+.mode-input {
+  margin-bottom: 12px;
+
+  .dropdown-icon {
+    font-size: 12px;
+  }
+}
+
+.mode-box {
+  background-color: @GRAY08;
+
+  .mode-title {
+    gap: 4px;
+
+    h3 {
+      color: @BLANK14;
+      font-size: 14px;
+    }
+
+    .copy-icon {
+      color: @GRAY05;
+    }
+  }
+
+  p {
+    color: @GRAY05;
+  }
+}
+
+.require-params {
+  background: rgba(46, 46, 56, 0.04);
+  padding: 12px;
+
+  .r-header {
+    gap: 4px;
+    font-size: 12px;
+
+    .plus-icon {
+      width: 20px;
+      height: 20px;
+      margin-left: auto;
+
+      &:hover {
+        color: @WHITE;
+        background-color: @GRAY04;
+      }
+    }
+  }
+
+  .r-table-row {
+    height: 32px;
+    color: rgba(28, 31, 35, 0.35);
+    font-size: 10px;
+    font-weight: 400;
+    gap: 10px;
+
+    .var-name {
+      width: 180px;
+    }
+
+    .var-type {
+      width: 150px;
+    }
+
+    .desc {
+      flex: 1;
+    }
+  }
 }

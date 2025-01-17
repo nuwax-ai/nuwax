@@ -25,3 +25,17 @@ export enum CreateEditAgentEnum {
   // 编辑
   Edit,
 }
+
+// 变量类型枚举
+export enum VariableTypeEnum {
+  String,
+  Integer,
+  Boolean,
+  Number,
+  Object,
+  Array_String,
+  Array_Integer,
+  Array_Boolean,
+  Array_Number,
+  Array_Object,
+}

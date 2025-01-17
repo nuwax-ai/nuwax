@@ -1,3 +1,5 @@
+import { VariableTypeEnum } from '@/types/enums/common';
+
 export const BASE_URL = `${process.env.BASE_URL}/api`;
 
 export const UPLOAD_FILE_ACTION =
@@ -8,3 +10,47 @@ export const VERIFICATION_CODE_LEN = 6;
 
 // 倒计时
 export const COUNT_DOWN_LEN = 60;
+
+// 变量类型
+export const VARIABLE_TYPE_LIST = [
+  {
+    value: VariableTypeEnum.String,
+    label: 'String',
+  },
+  {
+    value: VariableTypeEnum.Integer,
+    label: 'Integer',
+  },
+  {
+    value: VariableTypeEnum.Boolean,
+    label: 'Boolean',
+  },
+  {
+    value: VariableTypeEnum.Number,
+    label: 'Number',
+  },
+  {
+    value: VariableTypeEnum.Object,
+    label: 'Object',
+  },
+  {
+    value: VariableTypeEnum.Array_String,
+    label: 'Array<String>',
+  },
+  {
+    value: VariableTypeEnum.Array_Integer,
+    label: 'Array<Integer>',
+  },
+  {
+    value: VariableTypeEnum.Array_Boolean,
+    label: 'Array<Boolean>',
+  },
+  {
+    value: VariableTypeEnum.Array_Number,
+    label: 'Array<Number>',
+  },
+  {
+    value: VariableTypeEnum.Array_Object,
+    label: 'Array<Object>',
+  },
+];
