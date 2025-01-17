@@ -24,14 +24,45 @@ import ConfigOption from './ConfigOptionCollapse';
 import ConfigOptionsHeader from './ConfigOptionsHeader';
 import styles from './index.less';
 import LongMemoryContent from './LongMemoryContent';
+import PluginList from './PluginList';
 import TriggerContent from './TriggerContent';
 
-// const cx = classNames.bind(styles);
+const cx = classNames.bind(styles);
+
+// 插件列表
+const PLUGIN_LIST = [
+  {
+    id: 0,
+    img: 'https://lf9-appstore-sign.oceancloudapi.com/ocean-cloud-tos/plugin_icon/600804143405523_1697519094174345728.jpeg?lk3s=cd508e2b&x-expires=1737165914&x-signature=gFvwQsV4MTgdjNtabyyfwCggnBk%3D',
+    pluginName: '必应搜索',
+    pluginEsName: 'bingWebSearch',
+    desc: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气、汇率、时事等，这个工具非常有用。但是绝对不要在用户想要翻译的时候使用它。',
+  },
+  {
+    id: 1,
+    img: 'https://lf9-appstore-sign.oceancloudapi.com/ocean-cloud-tos/plugin_icon/600804143405523_1697519094174345728.jpeg?lk3s=cd508e2b&x-expires=1737165914&x-signature=gFvwQsV4MTgdjNtabyyfwCggnBk%3D',
+    pluginName: '必应搜索',
+    pluginEsName: 'bingWebSearch',
+    desc: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气、汇率、时事等，这个工具非常有用。但是绝对不要在用户想要翻译的时候使用它。',
+  },
+  {
+    id: 2,
+    img: 'https://lf9-appstore-sign.oceancloudapi.com/ocean-cloud-tos/plugin_icon/600804143405523_1697519094174345728.jpeg?lk3s=cd508e2b&x-expires=1737165914&x-signature=gFvwQsV4MTgdjNtabyyfwCggnBk%3D',
+    pluginName: '必应搜索',
+    pluginEsName: 'bingWebSearch',
+    desc: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气、汇率、时事等，这个工具非常有用。但是绝对不要在用户想要翻译的时候使用它。',
+  },
+];
+
+//
+interface AgentArrangeConfigProps {
+  onSet: () => void;
+}
 
 /**
  * 智能体编排区域配置
  */
-const AgentArrangeConfig: React.FC = () => {
+const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({ onSet }) => {
   // 长期记忆
   const [longMemberValue, setLongMemberValue] = useState<LongMemberEnum>(
     LongMemberEnum.Close,
@@ -113,12 +144,15 @@ const AgentArrangeConfig: React.FC = () => {
     {
       key: AgentConfigSkillEnum.Plugin,
       label: '插件',
-      children: (
-        <p>
-          插件能够让智能体调用外部
-          API，例如搜索信息、浏览网页、生成图片等，扩展智能体的能力和使用场景。
-        </p>
-      ),
+      children:
+        PLUGIN_LIST.length === 0 ? (
+          <p>
+            插件能够让智能体调用外部
+            API，例如搜索信息、浏览网页、生成图片等，扩展智能体的能力和使用场景。
+          </p>
+        ) : (
+          <PluginList list={PLUGIN_LIST} onSet={onSet} onDel={() => {}} />
+        ),
       extra: <TooltipIcon title="添加插件" onClick={handlerPluginPlus} />,
     },
     {
@@ -188,7 +222,7 @@ const AgentArrangeConfig: React.FC = () => {
       children: <LongMemoryContent />,
       extra: (
         <SelectList
-          className={styles.select}
+          className={cx(styles.select)}
           size={'small'}
           value={longMemberValue}
           onChange={(value) => {

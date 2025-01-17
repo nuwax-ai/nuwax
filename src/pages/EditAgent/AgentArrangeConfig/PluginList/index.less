@@ -1,0 +1,46 @@
+@import '@/styles/color';
+
+.plugin-list-container {
+  gap: 6px;
+
+  .plugin-box {
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: 4px;
+    background-color: @WHITE;
+    cursor: default;
+
+    &:hover {
+      background-color: @GRAY01;
+
+      .extra-box {
+        display: flex;
+      }
+    }
+
+    .img {
+      width: 40px;
+      height: 40px;
+    }
+
+    .p-name {
+      display: inline-block;
+      color: @BLANK;
+    }
+
+    .p-desc {
+      color: @BLANK07;
+      font-size: 12px;
+    }
+
+    .extra-box {
+      gap: 6px;
+      display: none;
+      transition: all 0.3s;
+
+      .icon {
+        font-size: 16px;
+      }
+    }
+  }
+}

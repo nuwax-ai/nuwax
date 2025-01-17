@@ -5,6 +5,7 @@ import {
   FileBoxEnum,
   FilterStatusEnum,
   LongMemberEnum,
+  PluginSettingEnum,
   SpaceApplicationListEnum,
   UserProblemSuggestEnum,
 } from '@/types/enums/space';
@@ -115,5 +116,17 @@ export const TASK_EXECUTION = [
   {
     value: 2,
     label: '工作流',
+  },
+];
+
+// 智能体编排-插件设置列表
+export const PLUGIN_SETTING_ACTIONS = [
+  {
+    type: PluginSettingEnum.Params,
+    label: '参数',
+  },
+  {
+    type: PluginSettingEnum.Card_Bind,
+    label: '卡片绑定',
   },
 ];

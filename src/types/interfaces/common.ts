@@ -156,6 +156,13 @@ export interface OverrideTextAreaProps {
   maxRows?: number;
 }
 
+// 级联选项类型
+export interface CascaderOption {
+  value: React.Key;
+  label: string;
+  children?: CascaderOption[];
+}
+
 /**
  * 定义 Child 接口，用于描述子节点的数据结构。
  */
