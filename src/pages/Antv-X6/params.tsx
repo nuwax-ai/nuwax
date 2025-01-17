@@ -1,3 +1,4 @@
+import { InputOrReference } from '@/components/FormListItem/InputOrReference';
 import {
   ICON_FOLD,
   ICON_HOME,
@@ -6,8 +7,7 @@ import {
   ICON_START,
 } from '@/constants/images.constants';
 import { SwitcherFilled } from '@ant-design/icons';
-import { Cascader, Input } from 'antd';
-import { InputOrReference } from './component/commonNode';
+import { Cascader, Checkbox, Input } from 'antd';
 import { StencilList } from './type';
 
 // 定义左侧栏目的数据
@@ -19,30 +19,30 @@ export const asideList: StencilList[] = [
       {
         name: '大模型',
         icon: <ICON_NEW_AGENT />,
-        key: 'LLM',
-        type: 'general-Node',
+        type: 'LLM',
+        key: 'general-Node',
         description: '调用大语言模型，使用变量和提示词生成回复',
       },
 
       {
         name: '插件',
         icon: <ICON_NEW_AGENT />,
-        key: 'Plugin',
-        type: 'general-Node',
+        type: 'Plugin',
+        key: 'general-Node',
         description: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气...',
       },
       {
         name: '工作流',
         icon: <ICON_NEW_AGENT />,
-        key: 'Workflow',
-        type: 'general-Node',
+        type: 'Workflow',
+        key: 'general-Node',
         description: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气...',
       },
       {
         name: '过程输出',
         icon: <ICON_NEW_AGENT />,
-        key: 'Output',
-        type: 'general-Node',
+        type: 'Output',
+        key: 'general-Node',
         description: '支持中间过程的消息输出，支持流式和非流式两种方式',
       },
     ],
@@ -54,30 +54,30 @@ export const asideList: StencilList[] = [
       {
         name: '代码',
         icon: <ICON_LOGO />,
-        key: 'Code',
-        type: 'general-Node',
+        type: 'Code',
+        key: 'general-Node',
         description: '编写代码，处理输入变量来生成返回值',
       },
       {
         name: '条件分支',
         icon: <ICON_LOGO />,
-        key: 'Condition',
-        type: 'general-Node',
+        type: 'Condition',
+        key: 'general-Node',
         description:
           '连接多个下游分支，若设定的条件成立则仅运行对应的分支，若 均不成立则只运行“否则”分支',
       },
       {
         name: '意图识别',
         icon: <ICON_LOGO />,
-        key: 'IntentRecognition',
-        type: 'general-Node',
+        type: 'IntentRecognition',
+        key: 'general-Node',
         description: '用于用户输入的意图识别，并将其与预设意图选项进行匹配。',
       },
       {
         name: '循环',
         icon: <ICON_LOGO />,
-        key: 'Loop',
-        type: 'general-Node',
+        type: 'Loop',
+        key: 'general-Node',
         description: '用于通过设定循环次数和逻辑，重复执行一系列任务。',
       },
     ],
@@ -89,31 +89,31 @@ export const asideList: StencilList[] = [
       {
         name: '知识库',
         icon: <ICON_HOME />,
-        key: 'KnowledgeBase',
-        type: 'general-Node',
+        type: 'KnowledgeBase',
+        key: 'general-Node',
         description: '在选定的知识中，根据输入变量召回最匹配的信息',
       },
       {
         name: '数据库',
         icon: <ICON_HOME />,
-        key: 'Database',
-        type: 'general-Node',
+        type: 'Database',
+        key: 'general-Node',
         description:
           '可支持对数据表放开读写控制，用户可读写其他用户提交的数据， 由开发者控制',
       },
       {
         name: '变量',
         icon: <ICON_HOME />,
-        key: 'Variable',
-        type: 'general-Node',
+        type: 'Variable',
+        key: 'general-Node',
         description:
           '用于读取和写入项目中的变量，变量名须与项目中的变量名相匹配',
       },
       {
         name: '长期记忆',
         icon: <ICON_HOME />,
-        key: 'LongTermMemory',
-        type: 'general-Node',
+        type: 'LongTermMemory',
+        key: 'general-Node',
         description: '用于调用长期记忆，获取用户的个性化信息',
       },
     ],
@@ -125,30 +125,30 @@ export const asideList: StencilList[] = [
       {
         name: '问答',
         icon: <ICON_FOLD />,
-        key: 'QA',
-        type: 'general-Node',
+        type: 'QA',
+        key: 'general-Node',
         description: '支持中间向用户提问问题',
       },
       {
         name: '文本处理',
         icon: <ICON_FOLD />,
-        key: 'TextProcessing',
-        type: 'general-Node',
+        type: 'TextProcessing',
+        key: 'general-Node',
         description: '用于处理多个字符串类型变量的格式',
       },
       {
         name: '文档提取',
         icon: <ICON_FOLD />,
-        key: 'DocumentExtraction',
-        type: 'general-Node',
+        type: 'DocumentExtraction',
+        key: 'general-Node',
         description:
           '用于提取文档内容，支持的文件类型: txt、 markdown、pdf、 html、 xlsx、 xls、 docx、 csv、 md、 htm',
       },
       {
         name: 'http请求',
         icon: <ICON_FOLD />,
-        key: 'HTTPRequest',
-        type: 'general-Node',
+        type: 'HTTPRequest',
+        key: 'general-Node',
         description: '用于配置http请求调用已有的服务',
       },
     ],
@@ -321,16 +321,32 @@ export const InputConfigs = [
     label: '变量名',
     rules: [{ required: true, message: '请输入变量名' }],
     component: Input,
-    style: { width: '140px' },
+    width: 140,
   },
   {
-    name: 'type',
+    name: 'dataType',
     placeholder: '选择类型',
     label: '变量类型',
     rules: [{ required: true, message: '请选择变量类型' }],
     component: Cascader,
-    style: { width: '100px' },
+    width: 80,
     props: { options: dataTypes }, // 传递特定于 Cascader 的属性
+  },
+  {
+    name: 'description',
+    placeholder: '描述',
+    label: '',
+    rules: [{ required: true, message: '请输入描述' }],
+    component: Checkbox,
+    width: 0,
+  },
+  {
+    name: 'require',
+    placeholder: '变量名',
+    label: '',
+    rules: [{ required: true, message: '请输入变量名' }],
+    component: Checkbox,
+    width: 0,
   },
 ];
 
@@ -341,15 +357,24 @@ export const outPutConfigs = [
     label: '参数名',
     rules: [{ required: true, message: '请输入参数名' }],
     component: Input,
+    width: 160,
   },
   {
-    name: 'paramsValue',
+    name: 'dataType',
     placeholder: '输入或引用参数值',
     label: '参数值',
     rules: [{ required: true, message: '请输入参数值' }],
     component: InputOrReference,
-    style: { flex: '0 0 50%' },
-    props: { referenceList: modelTypes, fieldName: 'paramsValue' },
+    width: 120,
+    props: { referenceList: modelTypes, fieldName: 'dataType' },
+  },
+  {
+    name: 'description',
+    placeholder: '描述',
+    label: '',
+    rules: [{ required: true, message: '请输入描述' }],
+    component: Checkbox,
+    width: 0,
   },
 ];
 
@@ -541,7 +566,19 @@ export const nodeListMock = {
       nodeConfig: {
         extension: null,
         inputArgs: null,
-        outputArgs: null,
+        outputArgs: [
+          {
+            key: null,
+            name: 'AGENT_USER_MSG',
+            description: '用户输入消息',
+            dataType: 'String',
+            require: true,
+            systemVariable: true,
+            bindValueType: 'Reference',
+            bindValue: 'AGENT_USER_MSG',
+            subArgs: null,
+          },
+        ],
       },
       nextNodes: null,
       nextNodeIds: null,

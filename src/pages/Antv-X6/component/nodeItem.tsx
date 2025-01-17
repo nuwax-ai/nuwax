@@ -21,20 +21,26 @@ import { InputAndOut } from './commonNode';
 
 // 定义开始节点
 // 定义开始和文档提取节点的渲染逻辑
-const StartNode: React.FC<NodeDisposeProps> = ({ type, initialValues }) => {
+const StartNode: React.FC<NodeDisposeProps> = ({ params }) => {
+  let initialValues = {};
+  if (params.nodeConfig.inputArgs && params.nodeConfig.inputArgs.length) {
+    initialValues = params.nodeConfig.inputArgs;
+  }
+  console.log(initialValues);
+
   return (
     <>
       <InputAndOut
         title="输入"
         fieldConfigs={InputConfigs}
-        initialValues={{ startInput: initialValues }} // 注意这里使用了'startInput'
         showCheckbox={true}
         showCopy={true}
         showAssociation={true}
         // 如果这里使用动态的表单名称，initialValues 中的名称也应该和他相同
-        inputItemName="startInput"
+        inputItemName="inputArgs"
+        initialValues={{ inputArgs: initialValues }} // 注意这里使用了'startInput'
       />
-      {type && (
+      {params.type === 'DocumentExtraction' && (
         <div className="margin-bottom">
           <div className="dis-sb margin-bottom">
             <span className="node-title-style">输出</span>
@@ -46,7 +52,13 @@ const StartNode: React.FC<NodeDisposeProps> = ({ type, initialValues }) => {
 };
 
 // 定义结束和过程输出的节点渲染
-const EndNode: React.FC<NodeDisposeProps> = ({ type }) => {
+const EndNode: React.FC<NodeDisposeProps> = ({ params }) => {
+  let initialValues = {};
+
+  if (params.nodeConfig.outputArgs && params.nodeConfig.outputArgs.length) {
+    initialValues = params.nodeConfig.outputArgs;
+  }
+
   const [value, setValue] = useState<string>('返回变量');
   // 开关的状态
   const [checked, setChecked] = useState(true);
@@ -64,13 +76,13 @@ const EndNode: React.FC<NodeDisposeProps> = ({ type }) => {
         title="输出变量"
         fieldConfigs={outPutConfigs}
         showCopy={true}
-        initialValues={{ inputItems: [{ name: '', paramsValue: '' }] }}
+        inputItemName="outputArgs"
+        initialValues={{ outputArgs: initialValues }}
       />
-      {type && (
-        <div className="margin-bottom">
+      {value === '返回文本' && (
+        <div className="margin-bottom mt-16">
           <div className="dis-sb margin-bottom">
-            <span className="node-title-style">输出内容</span>
-
+            <span className="node-title-style">回答内容</span>
             <div>
               <span className="node-title-grey-style">
                 {checked ? '流式输出' : '非流式输出'}
@@ -94,7 +106,9 @@ const EndNode: React.FC<NodeDisposeProps> = ({ type }) => {
 };
 
 // 定义循环的节点渲染
-const CycleNode: React.FC<NodeDisposeProps> = () => {
+const CycleNode: React.FC<NodeDisposeProps> = ({ params }) => {
+  console.log(params);
+
   const [selectOption, setSelectOption] = useState<number>(1);
 
   const [count, setCount] = useState<number | null>(1);
@@ -148,7 +162,8 @@ const CycleNode: React.FC<NodeDisposeProps> = () => {
 };
 
 // 定义变量和文本处理的节点渲染
-const VariableNode: React.FC<NodeDisposeProps> = ({ type }) => {
+const VariableNode: React.FC<NodeDisposeProps> = ({ params }) => {
+  console.log(params);
   const [value, setValue] = useState<string>('设置变量值');
   const [name, setName] = useState('');
   const inputRef = useRef<InputRef>(null);
@@ -182,7 +197,9 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ type }) => {
       <div className="node-item-style dis-center">
         <Segmented<string>
           options={
-            type ? ['字符串拼接', '字符串分割'] : ['设置变量值', '获取变量值']
+            params.type === 'TextProcessing'
+              ? ['字符串拼接', '字符串分割']
+              : ['设置变量值', '获取变量值']
           }
           value={value}
           onChange={setValue}

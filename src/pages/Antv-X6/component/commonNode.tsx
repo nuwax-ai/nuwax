@@ -1,197 +1,37 @@
-import { ICON_ASSOCIATION } from '@/constants/images.constants';
+import { DefaultRenderItem } from '@/components/FormListItem';
 import type { DefaultObjectType } from '@/types/interfaces/common';
 import {
   DeleteOutlined,
   DownOutlined,
-  FileDoneOutlined,
   PlusOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
-import {
-  Button,
-  Checkbox,
-  Dropdown,
-  Form,
-  Input,
-  Select,
-  Space,
-  Tag,
-  Tree,
-  Typography,
-} from 'antd';
+import { Button, Checkbox, Form, Select, Tag, Tree } from 'antd';
 import React from 'react';
 import '../index.less';
 import {
   FieldConfig,
-  InputOrReferenceProps,
   KeyValuePairs,
   MultiSelectWithCheckboxProps,
   NodeRenderProps,
-  RenderItemProps,
   SkillProps,
   TreeNodeData,
   TreeOutputProps,
 } from '../type';
 import './commonNode.less';
 
-// 输入或引用参数
-export const InputOrReference: React.FC<InputOrReferenceProps> = ({
-  referenceList,
-  placeholder,
-  value, // 使用新增的 value 属性
-  onChange, // 使用新增的 onChange 回调
-}) => {
-  const handleSelect = (parentKey: string, childKey: string) => {
-    // 将选中的父选项和子选项作为字符串集合添加到 selected 数组中
-    const selectedItem = `${parentKey}-${childKey}`;
-    // 调用 onChange 更新值
-    onChange(selectedItem);
-  };
-  // 更新表单值为输入框内容
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    if (onChange) {
-      onChange(newValue);
-    }
-  };
-
-  return (
-    <Input
-      value={value && !value.includes('-') ? value : ''} // 如果有选中项，则清空输入框文本
-      placeholder={placeholder ? placeholder : '请输入或引用参数'}
-      onChange={handleInputChange}
-      addonBefore={
-        value &&
-        value.includes('-') && (
-          <Tag closable onClose={() => onChange('')} style={{ marginRight: 8 }}>
-            {value}
-          </Tag>
-        )
-      }
-      suffix={
-        <Dropdown
-          overlayStyle={{ width: '200px' }}
-          menu={{
-            items: referenceList.map((item) => ({
-              key: item.key,
-              label: item.label,
-              icon: item.icon,
-              children: item.children?.map((subItem) => ({
-                key: subItem.key,
-                label: (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      width: '300px',
-                    }}
-                  >
-                    {subItem.label}
-                    <Tag style={{ marginLeft: 20 }}>{subItem.tag}</Tag>
-                  </div>
-                ),
-                onClick: () => handleSelect(item.key, subItem.key),
-              })),
-            })),
-          }}
-          trigger={['click']}
-        >
-          <SettingOutlined style={{ cursor: 'pointer' }} />
-        </Dropdown>
-      }
-    />
-  );
-};
-
-// 默认的变量输入输出方法
-const defaultRenderItem: React.FC<RenderItemProps> = ({
-  field,
-  onRemove,
-  fieldConfigs,
-  rowIndex,
-  showCheckbox,
-  showCopy,
-  showAssociation,
-  form,
-}) => {
-  console.log(fieldConfigs);
-  return (
-    <Space className="dis-sb" style={{ width: '100%' }}>
-      {fieldConfigs.map((config, index) => {
-        const fieldValue = form.getFieldValue([field.name, config.name]);
-        return (
-          <div key={index}>
-            {rowIndex === 0 && (
-              <Typography.Text>{config.label}</Typography.Text>
-            )}
-            <Form.Item
-              name={[field.name, config.name]}
-              rules={config.rules}
-              style={config.style}
-            >
-              {/* 使用 ...config.props 来传递特定组件的属性 */}
-              <config.component
-                {...config.props}
-                placeholder={config.placeholder}
-                form={form} // 将 form 传递给 CommonInput
-                index={rowIndex} // 传递索引
-                value={fieldValue} // 传递当前字段的值
-                onBlur={
-                  config.component === Input
-                    ? (event: React.FocusEvent<HTMLInputElement>) => {
-                        const value = event.target.value;
-                        form.setFieldsValue({
-                          [`${field.name}.${config.name}`]: value,
-                        });
-                      }
-                    : undefined
-                }
-                onChange={
-                  config.component !== Input
-                    ? (value: string) => {
-                        console.log(value);
-                        form.setFieldsValue({
-                          [`${field.name}.${config.name}`]: value,
-                        });
-                      }
-                    : undefined
-                }
-              />
-            </Form.Item>
-          </div>
-        );
-      })}
-      <Form.Item
-        name={[field.name, 'isSelect']}
-        valuePropName="checked"
-        initialValue={true}
-      >
-        {/* 根据节点的需求，动态赋予右侧图标 */}
-        <div className={`dis-sa  ${rowIndex === 0 ? 'margin-bottom-20' : ''}`}>
-          {showCopy && <FileDoneOutlined className="margin-right" />}
-          {showCheckbox && <Checkbox className="margin-right"></Checkbox>}
-          {showAssociation && <ICON_ASSOCIATION className="margin-right" />}
-          <DeleteOutlined onClick={onRemove} />
-        </div>
-      </Form.Item>
-    </Space>
-  );
-};
-
 // 定义通用的输入输出
 export const InputAndOut: React.FC<NodeRenderProps> = ({
   title,
   fieldConfigs,
-  renderItem = defaultRenderItem,
-  initialValues,
+  renderItem = DefaultRenderItem,
   inputItemName = 'inputItems',
+  initialValues,
   showCheckbox = false,
   showCopy = false,
   showAssociation = false,
 }) => {
   const [form] = Form.useForm();
-
-  console.log(inputItemName);
 
   // 根据传递的fieldConfigs生成表单项
   const formItem = fieldConfigs.reduce(
@@ -206,7 +46,8 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
     form.setFieldsValue({ [inputItemName]: nextItems });
   };
   // 提交form表单
-  const submitForm = (values: any) => {
+  const submitForm = () => {
+    const values = form.getFieldsValue();
     // form.getFieldsValue()
     console.log('Received values of form:', values);
   };
@@ -221,11 +62,12 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
           onClick={addInputItem}
         ></Button>
       </div>
-      <Form form={form} onFinish={submitForm} initialValues={initialValues}>
+      <Form form={form} initialValues={initialValues}>
         <Form.List name={inputItemName}>
           {(fields, { remove }, { errors }) => (
             <>
               {fields.map((field, index) => {
+                console.log(field);
                 return (
                   <Form.Item key={field.key} noStyle>
                     {renderItem({
@@ -235,9 +77,11 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                       // 新增传递索引信息
                       rowIndex: index,
                       form,
+                      initialValues,
                       showCheckbox,
                       showCopy,
                       showAssociation,
+                      onChange: submitForm,
                     })}
                   </Form.Item>
                 );

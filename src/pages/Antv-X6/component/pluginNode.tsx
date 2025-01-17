@@ -1,10 +1,11 @@
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
+import { InputOrReference } from '@/components/FormListItem/InputOrReference';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Empty, Form, Popover, Select, Slider, Tag } from 'antd';
 import React, { useState } from 'react';
 import { InputConfigs, modelTypes, outPutConfigs } from '../params';
 import { NodeDisposeProps, ReferenceList } from '../type';
-import { InputAndOut, InputOrReference, TreeOutput } from './commonNode';
+import { InputAndOut, TreeOutput } from './commonNode';
 import './pluginNode.less';
 interface InputListProps {
   inputList: {

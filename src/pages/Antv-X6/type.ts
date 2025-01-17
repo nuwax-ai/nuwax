@@ -1,7 +1,15 @@
+/*
+ * @Author: binxiaolin 18030705033
+ * @Date: 2025-01-16 15:16:11
+ * @LastEditors: binxiaolin 18030705033
+ * @LastEditTime: 2025-01-17 13:42:00
+ * @FilePath: \agent-platform-front\src\pages\Antv-X6\type.ts
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 // 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
+import { ChildNode } from '@/types/interfaces/workflow';
 import { Graph, Node } from '@antv/x6';
 import { FormInstance } from 'antd';
-
 /**
  * 定义键值对接口，用于表示具有标签和值的对象。
  */
@@ -66,9 +74,11 @@ export type FormListFieldData = {
  * 定义节点
  */
 export interface NodeDisposeProps {
-  type?: string;
+  // 当前节点的参数
+  params: ChildNode;
   options?: ModelListItemProps[];
   groupedOptionsData?: GroupModelItem[];
+  // 这个其实可以不要了，今天调整
   initialValues?: object;
 }
 /**
@@ -122,6 +132,8 @@ export interface RenderItemProps {
   rowIndex: number;
   // 父组件传递下来的form
   form: FormInstance;
+  // 当前值改变的时候，通知父组件，重新获取值
+  onChange: () => void;
   // 是否渲染复选框
   showCheckbox?: boolean;
   // 是否显示复制按钮
@@ -139,7 +151,7 @@ export interface NodeRenderProps {
   // 渲染的内容(可以自定义，也可以使用默认的renderItem)
   renderItem?: (props: RenderItemProps) => JSX.Element; // 可选，允许自定义renderItem
   // 初始值（适用于已经编辑过的内容）
-  initialValues: object;
+  initialValues?: object;
   // 如果有多个相同组件时，传递不同的inputListName区分
   inputItemName?: string;
   // 是否展示选中的选项框

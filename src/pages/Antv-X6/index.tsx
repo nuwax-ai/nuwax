@@ -23,6 +23,7 @@ import { useModel } from 'umi';
 import './index.less';
 import { Child } from './type';
 // 节点样例数据，后期删除
+import service from '@/services/workflow';
 import { getEdges, returnImg } from '@/utils/workflow';
 import { nodeListMock } from './params';
 // 确保在应用启动时就注册所有自定义节点
@@ -137,7 +138,7 @@ const AntvX6 = () => {
 
     // 创建新节点
     const newNode = graphRef.current.addNode({
-      shape: child.type,
+      shape: child.key,
       x: point.x, // 使用转换后的坐标
       y: point.y,
       // 后面要改
@@ -208,6 +209,9 @@ const AntvX6 = () => {
   /** -------------------- 需要调用方法的接口 -------------------- */
   // 获取当前画布信息
   const getList = async () => {
+    //
+    const _res = await service.getNodeList(6);
+    console.log(_res);
     // const _res = await servic
     // 获取节点的数据
     const _nodeList = nodeListMock.data;
@@ -323,7 +327,7 @@ const AntvX6 = () => {
         // }
       >
         <div className="dispose-node-style">
-          <FoldWarpNode type={foldWrapItem.type as string} />
+          <FoldWarpNode params={foldWrapItem} />
         </div>
       </FoldWrap>
 
