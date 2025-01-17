@@ -16,7 +16,12 @@ import { InputConfigs, intentionConfigs, outPutConfigs } from '../params';
 import { NodeDisposeProps } from '../type';
 import { InputAndOut } from './commonNode';
 // 定义大模型节点
-const ModelNode: React.FC<NodeDisposeProps> = ({ groupedOptionsData }) => {
+const ModelNode: React.FC<NodeDisposeProps> = ({
+  groupedOptionsData,
+  params,
+}) => {
+  console.log(params);
+
   // 三个值(随机性，top，最大回复长度)
   const [value, setValue] = useState({
     top: 0,

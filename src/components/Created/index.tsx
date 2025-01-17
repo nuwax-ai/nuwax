@@ -83,7 +83,6 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded }) => {
 
     // 遍历找到对应的选项
     const _item = buttonList.find((item) => item.key === _select);
-    console.log(_item);
     if (_item) {
       SetSelected(_item);
     }

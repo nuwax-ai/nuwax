@@ -137,7 +137,7 @@ const AntvX6 = () => {
 
     // 创建新节点
     const newNode = graphRef.current.addNode({
-      shape: child.type,
+      shape: child.key,
       x: point.x, // 使用转换后的坐标
       y: point.y,
       // 后面要改
@@ -323,7 +323,7 @@ const AntvX6 = () => {
         // }
       >
         <div className="dispose-node-style">
-          <FoldWarpNode type={foldWrapItem.type as string} />
+          <FoldWarpNode params={foldWrapItem} />
         </div>
       </FoldWrap>
 

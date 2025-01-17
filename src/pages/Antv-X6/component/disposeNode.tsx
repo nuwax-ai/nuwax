@@ -1,3 +1,4 @@
+import { ChildNode } from '@/types/interfaces/workflow';
 import { CaretRightOutlined, PlusOutlined } from '@ant-design/icons';
 import React from 'react';
 import '../index.less';
@@ -14,8 +15,8 @@ const TestNode: React.FC = () => {
 };
 
 interface FoldWarpNodeProps {
-  // 当前节点的类型
-  type: string;
+  // 当前节点的参数
+  params: ChildNode;
   // 节点触发事件，通知父组件
   triggerEvent?: () => void;
 }
@@ -69,45 +70,51 @@ const groupedOptionsData = [
 ];
 
 // FoldWarpNode 函数根据 type 返回指定的 ReactNode
-const FoldWarpNode: React.FC<FoldWarpNodeProps> = ({ type }) => {
-  console.log(type);
-  switch (type) {
-    case 'startNode':
-      return <StartNode />;
-    case 'documentNode':
-      return <StartNode type="document" />;
-    case 'endNode':
-      return <EndNode />;
-    case 'processNode':
-      return <EndNode type="processNode" />;
-    case 'cycleNode':
-      return <CycleNode />;
-    case 'variableNode':
-      return <VariableNode />;
-    case 'textNode':
-      return <VariableNode type="textNode" />;
-    case 'modelNode': {
-      return <ModelNode groupedOptionsData={groupedOptionsData} />;
+const FoldWarpNode: React.FC<FoldWarpNodeProps> = ({ params }) => {
+  switch (params.type) {
+    case 'Start':
+      return <StartNode params={params} />;
+    case 'DocumentExtraction':
+      return <StartNode params={params} />;
+    case 'End':
+      return <EndNode params={params} />;
+    case 'Output':
+      return <EndNode params={params} />;
+    case 'Loop':
+      return <CycleNode params={params} />;
+    case 'Variable':
+      return <VariableNode params={params} />;
+    case 'TextProcessing':
+      return <VariableNode params={params} />;
+    case 'LLM': {
+      return (
+        <ModelNode groupedOptionsData={groupedOptionsData} params={params} />
+      );
     }
-    case 'intentionNode': {
-      return <IntentionNode groupedOptionsData={groupedOptionsData} />;
+    case 'IntentRecognition': {
+      return (
+        <IntentionNode
+          groupedOptionsData={groupedOptionsData}
+          params={params}
+        />
+      );
     }
-    case 'plugInNode':
-      return <PluginInNode />;
-    case 'workflowNode':
-      return <PluginInNode />;
-    case 'memoryNode':
-      return <PluginInNode />;
-    case 'codeNode':
-      return <CodeNode />;
-    case 'questionsNode':
-      return <QuestionsNode />;
-    case 'httpToolNode':
-      return <HttpToolNode />;
-    case 'knowledgeNode':
-      return <KnowledgeNode />;
-    case 'databaseNode':
-      return <DatabaseNode />;
+    case 'Plugin':
+      return <PluginInNode params={params} />;
+    case 'Workflow':
+      return <PluginInNode params={params} />;
+    case 'LongTermMemory':
+      return <PluginInNode params={params} />;
+    case 'Code':
+      return <CodeNode params={params} />;
+    case 'QA':
+      return <QuestionsNode params={params} />;
+    case 'HTTPRequest':
+      return <HttpToolNode params={params} />;
+    case 'KnowledgeBase':
+      return <KnowledgeNode params={params} />;
+    case 'Database':
+      return <DatabaseNode params={params} />;
 
     default:
       return <TestNode />;

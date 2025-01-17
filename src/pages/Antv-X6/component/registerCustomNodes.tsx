@@ -16,7 +16,6 @@ interface GeneralNodeState {
 export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
   constructor(props: NodeProps) {
     super(props);
-    console.log(this.props.node.getData());
     this.state = {
       // 标题编辑状态
       isEditingTitle: false,
@@ -95,15 +94,15 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
     if (!data) {
       return null;
     }
-
-    console.log(data);
     // 确保宽度和高度是有效的数字
-    const width = data.nodeConfig.extension?.width
-      ? data.nodeConfig.extension.width
-      : 304;
-    const height = data.nodeConfig.extension?.height
-      ? data.nodeConfig.extension.height
-      : 83;
+    const width =
+      data.nodeConfig && data.nodeConfig.extension
+        ? data.nodeConfig.extension.width
+        : 304;
+    const height =
+      data.nodeConfig && data.nodeConfig.extension?.height
+        ? data.nodeConfig.extension.height
+        : 83;
     // 构造渐变背景字符串
     const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
       data.type,
