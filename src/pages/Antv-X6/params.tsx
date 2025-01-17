@@ -7,7 +7,7 @@ import {
   ICON_START,
 } from '@/constants/images.constants';
 import { SwitcherFilled } from '@ant-design/icons';
-import { Cascader, Input } from 'antd';
+import { Cascader, Checkbox, Input } from 'antd';
 import { StencilList } from './type';
 
 // 定义左侧栏目的数据
@@ -321,16 +321,32 @@ export const InputConfigs = [
     label: '变量名',
     rules: [{ required: true, message: '请输入变量名' }],
     component: Input,
-    style: { width: '140px' },
+    width: 140,
   },
   {
-    name: 'type',
+    name: 'dataType',
     placeholder: '选择类型',
     label: '变量类型',
     rules: [{ required: true, message: '请选择变量类型' }],
     component: Cascader,
-    style: { width: '100px' },
+    width: 80,
     props: { options: dataTypes }, // 传递特定于 Cascader 的属性
+  },
+  {
+    name: 'description',
+    placeholder: '描述',
+    label: '',
+    rules: [{ required: true, message: '请输入描述' }],
+    component: Checkbox,
+    width: 0,
+  },
+  {
+    name: 'require',
+    placeholder: '变量名',
+    label: '',
+    rules: [{ required: true, message: '请输入变量名' }],
+    component: Checkbox,
+    width: 0,
   },
 ];
 
@@ -341,15 +357,24 @@ export const outPutConfigs = [
     label: '参数名',
     rules: [{ required: true, message: '请输入参数名' }],
     component: Input,
+    width: 160,
   },
   {
-    name: 'paramsValue',
+    name: 'dataType',
     placeholder: '输入或引用参数值',
     label: '参数值',
     rules: [{ required: true, message: '请输入参数值' }],
     component: InputOrReference,
-    style: { flex: '0 0 50%' },
-    props: { referenceList: modelTypes, fieldName: 'paramsValue' },
+    width: 120,
+    props: { referenceList: modelTypes, fieldName: 'dataType' },
+  },
+  {
+    name: 'description',
+    placeholder: '描述',
+    label: '',
+    rules: [{ required: true, message: '请输入描述' }],
+    component: Checkbox,
+    width: 0,
   },
 ];
 
@@ -541,7 +566,19 @@ export const nodeListMock = {
       nodeConfig: {
         extension: null,
         inputArgs: null,
-        outputArgs: null,
+        outputArgs: [
+          {
+            key: null,
+            name: 'AGENT_USER_MSG',
+            description: '用户输入消息',
+            dataType: 'String',
+            require: true,
+            systemVariable: true,
+            bindValueType: 'Reference',
+            bindValue: 'AGENT_USER_MSG',
+            subArgs: null,
+          },
+        ],
       },
       nextNodes: null,
       nextNodeIds: null,

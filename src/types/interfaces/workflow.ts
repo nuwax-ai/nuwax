@@ -1,8 +1,8 @@
 /*
  * @Author: error: error: git config user.name & please set dead value or install git && error: git config user.email & please set dead value or install git & please set dead value or install git
  * @Date: 2025-01-16 18:31:52
- * @LastEditors: error: error: git config user.name & please set dead value or install git && error: git config user.email & please set dead value or install git & please set dead value or install git
- * @LastEditTime: 2025-01-16 19:23:23
+ * @LastEditors: binxiaolin 18030705033
+ * @LastEditTime: 2025-01-17 16:34:02
  * @FilePath: \agent-platform-front\src\types\interfaces\workflow.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -38,7 +38,17 @@ interface NodeConfig {
     bindValue: string;
     subArgs?: any;
   }> | null;
-  outputArgs?: null;
+  outputArgs?: Array<{
+    key?: string | null;
+    name: string;
+    description: string;
+    dataType: string;
+    require: boolean;
+    systemVariable: boolean;
+    bindValueType: string;
+    bindValue: string;
+    subArgs?: any;
+  }> | null;
 }
 // 节点的数据
 export interface ChildNode {

@@ -25,8 +25,8 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   title,
   fieldConfigs,
   renderItem = DefaultRenderItem,
-  initialValues,
   inputItemName = 'inputItems',
+  initialValues,
   showCheckbox = false,
   showCopy = false,
   showAssociation = false,
@@ -67,6 +67,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
           {(fields, { remove }, { errors }) => (
             <>
               {fields.map((field, index) => {
+                console.log(field);
                 return (
                   <Form.Item key={field.key} noStyle>
                     {renderItem({
@@ -76,6 +77,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                       // 新增传递索引信息
                       rowIndex: index,
                       form,
+                      initialValues,
                       showCheckbox,
                       showCopy,
                       showAssociation,
