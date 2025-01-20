@@ -39,3 +39,11 @@ export enum VariableTypeEnum {
   Array_Number,
   Array_Object,
 }
+
+// 插件参数设置默认值类型枚举
+export enum PluginParamsSettingDefaultEnum {
+  // 输入
+  Input,
+  // 引用
+  Quote,
+}

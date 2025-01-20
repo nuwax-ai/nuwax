@@ -1,10 +1,11 @@
 import { PLUGIN_SETTING_ACTIONS } from '@/constants/space.contants';
 import { PluginSettingEnum } from '@/types/enums/space';
 import { CloseOutlined } from '@ant-design/icons';
-import { Modal, Space, Table, TableProps, Tag } from 'antd';
+import { Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './index.less';
+import ParamsSetting from './ParamsSetting';
 
 const cx = classNames.bind(styles);
 
@@ -12,87 +13,6 @@ interface PluginModelSettingProps {
   open: boolean;
   onCancel: () => void;
 }
-
-interface DataType {
-  key: string;
-  name: string;
-  age: number;
-  address: string;
-  tags: string[];
-}
-
-const columns: TableProps<DataType>['columns'] = [
-  {
-    title: '参数名称',
-    dataIndex: 'name',
-    key: 'name',
-    render: (text) => <a>{text}</a>,
-  },
-  {
-    title: '参数类型',
-    dataIndex: 'age',
-    key: 'age',
-  },
-  {
-    title: '必填',
-    dataIndex: 'address',
-    key: 'address',
-  },
-  {
-    title: '默认值',
-    key: 'tags',
-    dataIndex: 'tags',
-    render: (_, { tags }) => (
-      <>
-        {tags.map((tag) => {
-          let color = tag.length > 5 ? 'geekblue' : 'green';
-          if (tag === 'loser') {
-            color = 'volcano';
-          }
-          return (
-            <Tag color={color} key={tag}>
-              {tag.toUpperCase()}
-            </Tag>
-          );
-        })}
-      </>
-    ),
-  },
-  {
-    title: '开启',
-    key: 'action',
-    render: (_, record) => (
-      <Space size="middle">
-        <a>Invite {record.name}</a>
-        <a>Delete</a>
-      </Space>
-    ),
-  },
-];
-
-const data: DataType[] = [
-  {
-    key: '1',
-    name: 'John Brown',
-    age: 32,
-    address: 'New York No. 1 Lake Park',
-    tags: ['nice', 'developer'],
-  },
-  {
-    key: '2',
-    name: 'Jim Green',
-    age: 42,
-    address: 'London No. 1 Lake Park',
-    tags: ['loser'],
-  },
-  {
-    key: '3',
-    name: 'Joe Black',
-    age: 32,
-    address: 'Sydney No. 1 Lake Park',
-    tags: ['cool', 'teacher'],
-  },
-];
 
 const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
   open,
@@ -109,7 +29,7 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
   const Content: React.FC = () => {
     switch (action) {
       case PluginSettingEnum.Params:
-        return <Table<DataType> columns={columns} dataSource={data} />;
+        return <ParamsSetting />;
       case PluginSettingEnum.Card_Bind:
         return null;
     }
