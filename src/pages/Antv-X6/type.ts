@@ -1,13 +1,9 @@
-/*
- * @Author: binxiaolin 18030705033
- * @Date: 2025-01-16 15:16:11
- * @LastEditors: binxiaolin 18030705033
- * @LastEditTime: 2025-01-17 13:42:00
- * @FilePath: \agent-platform-front\src\pages\Antv-X6\type.ts
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
- */
 // 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
-import { ChildNode } from '@/types/interfaces/workflow';
+import type {
+  GroupModelItem,
+  ModelListItemProps,
+} from '@/types/interfaces/model';
+import { NodeConfig } from '@/types/interfaces/workflow';
 import { Graph, Node } from '@antv/x6';
 import { FormInstance } from 'antd';
 /**
@@ -75,7 +71,7 @@ export type FormListFieldData = {
  */
 export interface NodeDisposeProps {
   // 当前节点的参数
-  params: ChildNode;
+  params: any;
   options?: ModelListItemProps[];
   groupedOptionsData?: GroupModelItem[];
   // 这个其实可以不要了，今天调整
@@ -148,6 +144,8 @@ export interface NodeRenderProps {
   title: string;
   // 遍历渲染的字段配置
   fieldConfigs: FieldConfig[];
+  // 改变节点的入参和出参
+  handleChangeNodeConfig: (params: NodeConfig) => void;
   // 渲染的内容(可以自定义，也可以使用默认的renderItem)
   renderItem?: (props: RenderItemProps) => JSX.Element; // 可选，允许自定义renderItem
   // 初始值（适用于已经编辑过的内容）
@@ -167,30 +165,6 @@ export interface SkillProps {
   title: string;
   icon: React.ReactNode;
   desc: string;
-}
-
-// 定义模型列表
-export interface ModelListItemProps {
-  // 模型的图标
-  icon: React.ReactNode;
-  // 模型的名称
-  label: string;
-  // 模型的大小
-  size: string | number;
-  // 模型的id
-  modelName: string;
-  // 模型的简介
-  desc: string;
-  // 值
-  value: string;
-  // 模型的标签
-  tagList?: string[];
-}
-
-interface GroupModelItem {
-  // 分组的名称
-  label: string;
-  options: ModelListItemProps[];
 }
 
 // 定义分组的模型列表

@@ -22,4 +22,7 @@ export interface ExpandableInputTextareaState {
   title: string;
   value: string;
   onChange: (value: string) => void;
+  onClose: () => void;
+  // 输入框的提示文字
+  placeholder?: string;
 }

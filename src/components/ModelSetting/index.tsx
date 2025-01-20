@@ -1,63 +1,74 @@
-import {
-  CaretDownOutlined,
-  CaretUpOutlined,
-  SettingOutlined,
-} from '@ant-design/icons';
-import { InputNumber, Popover, Segmented, Select, Slider } from 'antd';
+import service from '@/services/workflow';
+import type {
+  GroupModelItem,
+  ModelListItemProps,
+} from '@/types/interfaces/model';
+import { groupModelsByApiProtocol } from '@/utils/model';
+import { SettingOutlined } from '@ant-design/icons';
+import { InputNumber, Popover, Select, Slider } from 'antd';
 import { useEffect, useState } from 'react';
 import ModelListItem from './listItem/index';
-import {
-  GroupModelListItemProps,
-  ModelSelectProp,
-  ModelSettingProp,
-} from './type';
-
+import { GroupModelListItemProps, ModelSettingProp } from './type';
 // 定义带图标的模型选择select
 export const GroupedOptionSelect: React.FC<GroupModelListItemProps> = ({
-  groupedOptionsData,
+  nodeConfig,
   onChange,
-  value,
 }) => {
+  const [modelList, setModelList] = useState<ModelListItemProps[]>([]);
+  const [groupedOptionsData, setGroupedOptionsData] = useState<
+    GroupModelItem[]
+  >([]);
+  // 获取当前模型的列表数据
+  const getModelList = async () => {
+    try {
+      // 调用接口，获取当前画布的所有节点和边
+      const _res = await service.getModelList({ modelType: 'Chat' });
+      // 将数据交给redux
+      setModelList(_res.data);
+      setGroupedOptionsData(groupModelsByApiProtocol(_res.data));
+    } catch (error) {
+      console.error('Failed to fetch graph data:', error);
+    }
+  };
   // 自定义渲染函数用于已选中的项
   const labelRender = (props: any) => {
-    if (value === '') return null;
-    // const { label } = props; // 假设 props 中包含了 label 和 icon
+    if (nodeConfig.modelId === null) return null;
+    const _item = modelList.find((item) => item.id === Number(props.value));
+
+    if (_item === undefined) return;
     return (
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        {props.label.props.icon}
-        <span style={{ marginLeft: '8px' }}>{props.label.props.label}</span>
+        {/* <img src={(_item as ModelListItemProps).icon} alt="" /> */}
+        <span style={{ marginLeft: '8px' }}>
+          {(_item as ModelListItemProps).name}
+        </span>
       </div>
     );
   };
 
+  useEffect(() => {
+    getModelList();
+  }, [nodeConfig.modelId]);
   return (
     <Select
       placeholder="请选择模型"
       style={{ width: '100%', marginTop: '10px' }}
       className="input-style"
-      value={value}
-      onChange={onChange}
-      labelRender={labelRender} // 使用 tagRender 来自定义已选中项的渲染
+      value={nodeConfig.modelId?.toString()}
+      onChange={(value: string) => onChange({ ...nodeConfig, mode: value })}
+      labelRender={labelRender}
       placement={'bottomLeft'}
       popupMatchSelectWidth={false}
     >
-      {groupedOptionsData?.map((group, groupIndex) => (
+      {groupedOptionsData?.map((group, groupIndex: number) => (
         <Select.OptGroup key={groupIndex} label={group.label}>
           {group.options.map((opt, index) => (
             <Select.Option
               key={`${groupIndex}-${index}`}
-              value={opt.value}
-              label={{ label: opt.label, icon: opt.icon }} // 设置 label 属性为一个对象
+              value={opt.id}
+              label={{ label: opt.name, icon: opt.icon }} // 设置 label 属性为一个对象
             >
-              <ModelListItem
-                icon={opt.icon}
-                label={opt.label}
-                size={opt.size}
-                modelName={opt.modelName}
-                desc={opt.desc}
-                tagList={opt.tagList}
-                value={opt.value}
-              />
+              <ModelListItem item={opt} />
             </Select.Option>
           ))}
         </Select.OptGroup>
@@ -68,65 +79,40 @@ export const GroupedOptionSelect: React.FC<GroupModelListItemProps> = ({
 
 // 定义模型的设置弹窗
 export const ModelSetting: React.FC<ModelSettingProp> = ({
-  value,
+  nodeConfig,
   onChange,
 }) => {
-  // 使用 useState 和 useEffect 实现受控组件
-  const [setting, setSetting] = useState(value);
-  // 默认显示高级设置
-  const [showDispose, setShowDispose] = useState<boolean>(true);
-  // 改变模式
-  const changeSegmented = (value: string) => {
-    console.log('changeSegmented', value);
-  };
-  useEffect(() => {
-    // 当父组件传递新的 settings 时，更新本地状态
-    setSetting(setting);
-  }, [setting]);
-
   // 更新值的辅助函数
-  const updateValue = (key: 'top' | 'reply' | 'random', val: number | null) => {
-    const newValue = {
-      ...value,
+  const updateValue = (
+    key: 'maxTokens' | 'temperature' | 'topP',
+    val: number | null,
+  ) => {
+    const newConfig = {
+      ...nodeConfig,
       [key]: val || 0,
     };
-    setSetting(newValue);
-    onChange(newValue); // 将更新后的值传递回父组件
+    onChange(newConfig); // 将更新后的 nodeConfig 传递回父组件
   };
 
   return (
     <>
       <div className="model-dispose-mode-style">
         <div className="dis-sb">
-          <span className="label-style">生成多样性</span>
-          <Segmented<string>
-            options={['精确模式', '平衡模式', '创意模式', '自定义']}
-            onChange={(value) => changeSegmented(value)}
-            className="slider-style"
-          />
-          <span
-            onClick={() => setShowDispose(!showDispose)}
-            className="input-style"
-          >
-            高级设置 {showDispose ? <CaretUpOutlined /> : <CaretDownOutlined />}
-          </span>
-        </div>
-        <div className="dis-sb">
           <span className="label-style">生成随机性</span>
           <Slider
             min={0}
-            max={100}
-            onChange={(val: number) => updateValue('random', val)}
-            value={value.random}
+            max={1}
+            onChange={(val: number) => updateValue('temperature', val)}
+            value={nodeConfig.temperature}
             className="slider-style"
           />
           <InputNumber
-            min={1}
-            max={20}
+            min={0}
+            max={1}
             size="small"
             style={{ margin: '0 16px' }}
-            value={value.random}
-            onChange={(val: number | null) => updateValue('random', val)}
+            value={nodeConfig.temperature}
+            onChange={(val: number | null) => updateValue('temperature', val)}
             className="input-style"
           />
         </div>
@@ -134,40 +120,37 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({
           <span className="label-style">top P</span>
           <Slider
             min={0}
-            max={100}
-            onChange={(val: number) => updateValue('top', val)}
-            value={value.top}
+            max={1}
+            onChange={(val: number) => updateValue('topP', val)}
+            value={nodeConfig.topP}
             className="slider-style"
           />
           <InputNumber
-            min={1}
-            max={20}
+            min={0}
+            max={1}
             style={{ margin: '0 16px' }}
             size="small"
-            value={value.top}
-            onChange={(val: number | null) => updateValue('top', val)}
+            value={nodeConfig.topP}
+            onChange={(val: number | null) => updateValue('topP', val)}
             className="input-style"
           />
         </div>
-      </div>
-      <div className="model-dispose-mode-style">
-        <p className="node-title-style">输入及输出设置</p>
         <div className="dis-sb">
           <span className="label-style">最大回复长度</span>
           <Slider
             min={0}
-            max={100}
-            onChange={(val: number) => updateValue('reply', val)}
-            value={value.reply}
+            max={10000}
+            onChange={(val: number) => updateValue('maxTokens', val)}
+            value={nodeConfig.maxTokens}
             className="slider-style"
           />
           <InputNumber
-            min={1}
-            max={20}
+            min={0}
+            max={10000}
             size="small"
             style={{ margin: '0 16px' }}
-            value={value.reply}
-            onChange={(val: number | null) => updateValue('reply', val)}
+            value={nodeConfig.maxTokens}
+            onChange={(val: number | null) => updateValue('maxTokens', val)}
             className="input-style"
           />
         </div>
@@ -177,18 +160,17 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({
 };
 
 // 定义模型模块
-export const ModelSelected: React.FC<ModelSelectProp> = ({
-  settings,
-  groupModelList,
+export const ModelSelected: React.FC<ModelSettingProp> = ({
+  nodeConfig,
+  onChange,
+  groupedOptionsData,
 }) => {
   return (
     <div className="node-item-style">
       <div className="dis-sb">
         <span className="node-title-style">模型</span>
         <Popover
-          content={
-            <ModelSetting value={settings.value} onChange={settings.onChange} />
-          }
+          content={<ModelSetting nodeConfig={nodeConfig} onChange={onChange} />}
           title="模型"
           trigger="click"
           placement="left"
@@ -196,13 +178,11 @@ export const ModelSelected: React.FC<ModelSelectProp> = ({
           <SettingOutlined />
         </Popover>
       </div>
-      {groupModelList.groupedOptionsData && (
-        <GroupedOptionSelect
-          groupedOptionsData={groupModelList.groupedOptionsData}
-          onChange={groupModelList.onChange}
-          value={groupModelList.value}
-        />
-      )}
+      <GroupedOptionSelect
+        groupedOptionsData={groupedOptionsData}
+        onChange={onChange}
+        nodeConfig={nodeConfig}
+      />
     </div>
   );
 };

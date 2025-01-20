@@ -24,6 +24,7 @@ import './commonNode.less';
 export const InputAndOut: React.FC<NodeRenderProps> = ({
   title,
   fieldConfigs,
+  handleChangeNodeConfig,
   renderItem = DefaultRenderItem,
   inputItemName = 'inputItems',
   initialValues,
@@ -49,7 +50,8 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   const submitForm = () => {
     const values = form.getFieldsValue();
     // form.getFieldsValue()
-    console.log('Received values of form:', values);
+    // console.log('Received values of form:', values);
+    handleChangeNodeConfig(values);
   };
 
   return (

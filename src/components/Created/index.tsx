@@ -1,3 +1,4 @@
+import { PluginAndLibraryEnum } from '@/types/enums/common';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { ProductFilled, SearchOutlined, StarFilled } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
@@ -9,16 +10,16 @@ import './index.less';
 
 // 顶部的标签页名称
 const buttonList = [
-  { label: '插件', key: 'plugInNode' },
-  { label: '工作流', key: 'workflowNode' },
-  { label: '知识库', key: 'knowledgeNode' },
-  { label: '数据库', key: 'databaseNode' },
+  { label: '插件', key: 'Plugin' },
+  { label: '工作流', key: 'Workflow' },
+  { label: '知识库', key: 'KnowledgeBase' },
+  { label: '数据库', key: 'Database' },
 ];
 type MenuItem = Required<MenuProps>['items'][number];
 
 interface CreatedProp {
   // 选中的头部的tag
-  checkTag: 'plugInNode' | 'workflowNode' | 'knowledgeNode' | 'databaseNode';
+  checkTag: PluginAndLibraryEnum;
   //   点击添加后,通知父组件添加节点
   onAdded: (val: CreatedNodeItem) => void;
 }
@@ -29,7 +30,7 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded }) => {
   // 当前顶部被选中被选中的
   const [selected, SetSelected] = useState<{ label: string; key: string }>({
     label: '插件',
-    key: 'plugInNode',
+    key: 'Plugin',
   });
   //
   //   右侧的list
@@ -117,7 +118,7 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded }) => {
   useEffect(() => {
     getList();
     changeTitle(checkTag);
-  }, []);
+  }, [checkTag]);
 
   //   顶部的标题
   const title = (

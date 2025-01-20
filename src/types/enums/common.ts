@@ -1,3 +1,11 @@
+/*
+ * @Author: binxiaolin 18030705033
+ * @Date: 2025-01-17 14:04:31
+ * @LastEditors: binxiaolin 18030705033
+ * @LastEditTime: 2025-01-20 14:51:14
+ * @FilePath: \agent-platform-front\src\types\enums\common.ts
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 // 卡片样式
 export enum CardStyleEnum {
   ONE = 'one',
@@ -38,4 +46,12 @@ export enum VariableTypeEnum {
   Array_Boolean,
   Array_Number,
   Array_Object,
+}
+
+// 插件，工作流，知识库，数据库的枚举
+export enum PluginAndLibraryEnum {
+  Plugin = 'Plugin',
+  Workflow = 'Workflow',
+  KnowledgeBase = 'KnowledgeBase',
+  Database = 'Database',
 }
