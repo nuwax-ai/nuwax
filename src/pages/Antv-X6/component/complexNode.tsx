@@ -1,5 +1,7 @@
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import { ModelSelected } from '@/components/ModelSetting';
+import { LLMNodeConfig } from '@/types/interfaces/node';
+import type { NodeConfig } from '@/types/interfaces/workflow';
 import { PlusOutlined } from '@ant-design/icons';
 import {
   Button,
@@ -16,44 +18,38 @@ import { InputConfigs, intentionConfigs, outPutConfigs } from '../params';
 import { NodeDisposeProps } from '../type';
 import { InputAndOut } from './commonNode';
 // 定义大模型节点
-const ModelNode: React.FC<NodeDisposeProps> = ({
-  groupedOptionsData,
-  params,
-}) => {
+const ModelNode: React.FC<NodeDisposeProps> = ({ params }) => {
   console.log(params);
 
-  // 三个值(随机性，top，最大回复长度)
-  const [value, setValue] = useState({
-    top: 0,
-    reply: 0,
-    random: 0,
+  const [nodeConfig, setNodeConfig] = useState<LLMNodeConfig>({
+    extension: {},
+    // 输入的initialValues
+    inputArgs: params.nodeConfig.inputArgs,
+    // 输出的initialValues
+    outputArgs: params.nodeConfig.outputArgs,
+    // 出参的类型
+    outputType: params.nodeConfig.outputType,
+    // 系统提示词
+    systemPrompt: params.nodeConfig.systemPrompt,
+    // 用户提示词
+    userPrompt: params.nodeConfig.userPrompt,
+    // 当前可以被选择的模型
+    skillComponentConfigs: params.nodeConfig.skillComponentConfigs,
+    // 当前选中的模型
+    mode: params.nodeConfig.mode,
+    // 被选中的模型id
+    modelId: params.nodeConfig.modelId,
+    // 三个参数，对应随机性，top和最大回复长度
+    maxTokens: params.nodeConfig.maxTokens,
+    temperature: params.nodeConfig.temperature,
+    topP: params.nodeConfig.topP,
   });
-  //   修改上述三个值
-  const handleModelSetValue = (newSettings: typeof value) => {
-    setValue(newSettings);
+
+  // 修改模型的入参和出参
+  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
+    setNodeConfig({ ...nodeConfig, ...newNodeConfig });
   };
 
-  const settings = {
-    value: value,
-    onChange: handleModelSetValue,
-  };
-
-  //   选择模型的
-  const [selectModel, setSelectModel] = useState('');
-  //   跟换选中的模型
-  const changeModel = (newModel: typeof selectModel) => {
-    setSelectModel(newModel);
-  };
-  const groupModelList = {
-    value: selectModel,
-    onChange: changeModel,
-    groupedOptionsData: groupedOptionsData,
-  };
-
-  // 用户提示词
-  const [userPrompt, setUserPrompt] = useState('');
-  // 系统提示词
-  const [systemPrompt, setSystemPrompt] = useState('');
   //   显示新增技能
   const showAdd = () => {
     console.log('showAdd');
@@ -62,7 +58,10 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
   return (
     <div className="model-node-style">
       {/* 模型模块 */}
-      <ModelSelected settings={settings} groupModelList={groupModelList} />
+      <ModelSelected
+        onChange={handleChangeNodeConfig}
+        nodeConfig={nodeConfig}
+      />
       {/* 技能模块 */}
       <div className="node-item-style">
         <div className="dis-sb margin-bottom">
@@ -80,34 +79,45 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
         <InputAndOut
           title="输入"
           fieldConfigs={outPutConfigs}
+          inputItemName="inputArgs"
+          handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{
-            inputItems: [{ name: '', type: '', isSelect: true }],
+            inputArgs: nodeConfig.inputArgs,
           }}
         />
       </div>
       {/* 系统提示词 */}
       <ExpandableInputTextarea
         title="系统提示词"
-        value={systemPrompt}
-        onChange={setSystemPrompt}
+        value={nodeConfig.systemPrompt}
+        onChange={(value: string) =>
+          setNodeConfig({ ...nodeConfig, systemPrompt: value })
+        }
         onExpand
+        onOptimize
         placeholder="系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
       />
       {/* 用户提示词 */}
       <ExpandableInputTextarea
         title="用户提示词"
-        value={userPrompt}
-        onChange={setUserPrompt}
+        value={nodeConfig.userPrompt}
+        onChange={(value: string) =>
+          setNodeConfig({ ...nodeConfig, userPrompt: value })
+        }
         onExpand
-        placeholder="系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
+        placeholder="用户提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
       />
       {/* 输出参数 */}
       <div className="node-item-style">
         <InputAndOut
           title="输出"
           fieldConfigs={InputConfigs}
+          handleChangeNodeConfig={handleChangeNodeConfig}
+          inputItemName="outputArgs"
+          showCopy={true}
+          showAssociation={true}
           initialValues={{
-            inputItems: [{ name: '', type: '', isSelect: true }],
+            outputArgs: nodeConfig.outputArgs,
           }}
         />
       </div>

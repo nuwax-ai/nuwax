@@ -28,7 +28,7 @@ const initGraph = ({ containerId, changeDrawer }: GraphProp) => {
   // 创建图形实例，并配置相关属性
   const graph = new Graph({
     container: graphContainer, // 设置 DOM 容器
-    grid: true, // 启用网格背景
+    // grid: true, // 启用网格背景
     mousewheel: {
       enabled: true, // 启用鼠标滚轮缩放
       zoomAtMousePosition: true, // 在鼠标位置进行缩放

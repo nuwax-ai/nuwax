@@ -1,12 +1,3 @@
-/*
- * @Author: error: error: git config user.name & please set dead value or install git && error: git config user.email & please set dead value or install git & please set dead value or install git
- * @Date: 2025-01-16 18:31:52
- * @LastEditors: binxiaolin 18030705033
- * @LastEditTime: 2025-01-17 16:34:02
- * @FilePath: \agent-platform-front\src\types\interfaces\workflow.ts
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
- */
-
 /**
  * 定义 GraphProp 接口，用于描述图组件的属性。
  */
@@ -25,7 +16,7 @@ interface Extension {
 }
 
 // 节点内部的config
-interface NodeConfig {
+export interface NodeConfig {
   extension?: Extension | null;
   inputArgs?: Array<{
     key?: string | null;
@@ -49,6 +40,7 @@ interface NodeConfig {
     bindValue: string;
     subArgs?: any;
   }> | null;
+  outputType?: string;
 }
 // 节点的数据
 export interface ChildNode {
@@ -70,8 +62,8 @@ export interface ChildNode {
 }
 
 export interface Edge {
-  source: number;
-  target: number;
+  source: string | number;
+  target: string | number;
 }
 
 import { Graph, Node } from '@antv/x6';
