@@ -10,7 +10,6 @@ interface SubArgs {
 }
 
 interface InputAndOutConfig {
-  key: string;
   name: string;
   description: string;
   dataType: string;
@@ -18,7 +17,8 @@ interface InputAndOutConfig {
   systemVariable: boolean;
   bindValueType: string;
   bindValue: string;
-  subArgs: SubArgs[];
+  subArgs?: SubArgs[];
+  key?: string | null;
 }
 
 // 技能列表配置
@@ -34,9 +34,9 @@ export interface SkillComponent {
 export interface LLMNodeConfig {
   extension: any;
   // 入参
-  inputArgs: InputAndOutConfig[] | [];
+  inputArgs: InputAndOutConfig[] | null;
   // 出参
-  outputArgs: InputAndOutConfig[] | [];
+  outputArgs: InputAndOutConfig[] | null;
   // 选定大模型
   mode?: string;
   // 模型id

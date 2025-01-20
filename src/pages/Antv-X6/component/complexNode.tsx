@@ -48,7 +48,6 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ params }) => {
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     setNodeConfig({ ...nodeConfig, ...newNodeConfig });
-    console.log(nodeConfig);
   };
 
   //   显示新增技能
