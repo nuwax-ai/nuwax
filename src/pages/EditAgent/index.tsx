@@ -9,6 +9,7 @@ import AgentModelSetting from './AgentModelSetting';
 import ArrangeTitle from './ArrangeTitle';
 import DebugDetails from './DebugDetails';
 import styles from './index.less';
+import PluginModelSetting from './PluginModelSetting';
 import PreviewAndDebug from './PreviewAndDebug';
 import PublishAgent from './PublishAgent';
 import ShowStand from './ShowStand';
@@ -28,6 +29,7 @@ const EditAgent: React.FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
+  const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
 
   const handlerClose = () => {
     setShowType(EditAgentShowType.Hide);
@@ -71,6 +73,11 @@ const EditAgent: React.FC = () => {
     setOpenEditAgent(false);
   };
 
+  // 插件设置
+  const handlerPluginSetting = () => {
+    setOpenPluginModel(true);
+  };
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader
@@ -100,7 +107,7 @@ const EditAgent: React.FC = () => {
             <SystemTipsWord value={tipsText} onChange={setTipsText} />
             <div className={cx(styles['h-line'])} />
             {/*配置区域*/}
-            <AgentArrangeConfig />
+            <AgentArrangeConfig onSet={handlerPluginSetting} />
           </div>
         </div>
         {/*预览与调试*/}
@@ -140,6 +147,11 @@ const EditAgent: React.FC = () => {
       <AgentModelSetting
         open={openAgentModel}
         onCancel={() => setOpenAgentModel(false)}
+      />
+      {/*插件设置弹窗*/}
+      <PluginModelSetting
+        open={openPluginModel}
+        onCancel={() => setOpenPluginModel(false)}
       />
     </div>
   );

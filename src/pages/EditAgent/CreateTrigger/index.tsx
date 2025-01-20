@@ -1,23 +1,14 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import SelectList from '@/components/SelectList';
-import TooltipIcon from '@/components/TooltipIcon';
-import { VARIABLE_TYPE_LIST } from '@/constants/common.constants';
 import { TASK_EXECUTION } from '@/constants/space.contants';
 import { TriggerTypeEnum } from '@/types/enums/space';
+import type { CascaderOption } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
-import {
-  CopyOutlined,
-  DownOutlined,
-  InfoCircleOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
 import type { CascaderProps } from 'antd';
-import { Cascader, Form, Input, Select, Space, Tooltip } from 'antd';
-import classNames from 'classnames';
+import { Form, Input } from 'antd';
 import React, { useState } from 'react';
-import styles from './index.less';
-
-const cx = classNames.bind(styles);
+import EventTrigger from './EventTrigger';
+import TimingTrigger from './TimingTrigger';
 
 interface CreateTriggerProps {
   open: boolean;
@@ -25,47 +16,6 @@ interface CreateTriggerProps {
   onCancel: () => void;
   onConfirm: () => void;
 }
-
-interface Option {
-  value: string;
-  label: string;
-  children?: Option[];
-}
-
-const options: Option[] = [
-  {
-    value: 'zhejiang',
-    label: 'Zhejiang',
-    children: [
-      {
-        value: 'hangzhou',
-        label: 'Hangzhou',
-        children: [
-          {
-            value: 'xihu',
-            label: 'West Lake',
-          },
-        ],
-      },
-    ],
-  },
-  {
-    value: 'jiangsu',
-    label: 'Jiangsu',
-    children: [
-      {
-        value: 'nanjing',
-        label: 'Nanjing',
-        children: [
-          {
-            value: 'zhonghuamen',
-            label: 'Zhong Hua Men',
-          },
-        ],
-      },
-    ],
-  },
-];
 
 const TRIGGER_TYPE_LIST = [
   {
@@ -87,11 +37,9 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
   onConfirm,
 }) => {
   const [form] = Form.useForm();
-  const [triggerType, setTriggerType] = useState<TriggerTypeEnum>();
-
-  const handlerChangeTriggerType = (value) => {
-    setTriggerType(value);
-  };
+  const [triggerType, setTriggerType] = useState<TriggerTypeEnum>(
+    TriggerTypeEnum.Timing_Trigger,
+  );
 
   const onFinish = (values) => {
     // todo 提交form表单
@@ -103,7 +51,7 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
     onConfirm();
   };
 
-  const onChange: CascaderProps<Option>['onChange'] = (value) => {
+  const onChange: CascaderProps<CascaderOption>['onChange'] = (value) => {
     console.log(value);
   };
 
@@ -145,146 +93,11 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
           />
         </Form.Item>
         {triggerType === TriggerTypeEnum.Timing_Trigger ? (
-          <Form.Item
-            label={
-              <span>
-                触发器时间{' '}
-                <span className={cx(styles['trigger-time-require'])}>*</span>
-              </span>
-            }
-          >
-            <Space.Compact block>
-              <Form.Item
-                className={cx(styles['form-item'])}
-                name="triggerTime"
-                rules={[{ required: true }]}
-              >
-                <Cascader
-                  options={options}
-                  onChange={onChange}
-                  placeholder="Please select"
-                />
-              </Form.Item>
-              <Form.Item
-                className={cx(styles['form-item'])}
-                name="triggerTime"
-                rules={[{ required: true }]}
-              >
-                <Cascader
-                  options={options}
-                  onChange={onChange}
-                  placeholder="Please select"
-                />
-              </Form.Item>
-            </Space.Compact>
-          </Form.Item>
+          // 定时触发
+          <TimingTrigger onChange={onChange} />
         ) : (
-          <>
-            <Form.Item label="模式">
-              <Form.Item className={cx(styles['mode-input'])}>
-                <Input
-                  disabled
-                  suffix={
-                    <DownOutlined className={cx(styles['dropdown-icon'])} />
-                  }
-                  placeholder="Webhook (Catch hook)"
-                />
-              </Form.Item>
-              <Form.Item className={cx('mb-0')}>
-                <div
-                  className={cx(
-                    'px-16',
-                    'py-12',
-                    'radius-6',
-                    styles['mode-box'],
-                  )}
-                >
-                  <div
-                    className={cx('flex', 'items-center', styles['mode-title'])}
-                  >
-                    <h3>复制url到你的应用</h3>
-                    <TooltipIcon
-                      title="复制"
-                      icon={
-                        <CopyOutlined
-                          className={cx(styles['copy-icon'])}
-                          onClick={() => {}}
-                        />
-                      }
-                    />
-                  </div>
-                  <Tooltip
-                    title={
-                      'https://api.coze.cn/api/trigger/v1/webhook/biz_id/bot_platform/hook/1000000000201990658'
-                    }
-                  >
-                    <p className={cx('text-ellipsis')}>
-                      https://api.coze.cn/api/trigger/v1/webhook/biz_id/bot_platform/hook/1000000000201990658
-                    </p>
-                  </Tooltip>
-                </div>
-              </Form.Item>
-            </Form.Item>
-            <Form.Item
-              label="Bearer Token"
-              rules={[{ required: true, message: '请输入Bearer Token' }]}
-            >
-              <Input.Password />
-            </Form.Item>
-            {/*请求参数*/}
-            <Form.Item>
-              <div className={cx(styles['require-params'], 'radius-6')}>
-                <div className={cx('flex', styles['r-header'])}>
-                  <DownOutlined className={cx(styles['dropdown-icon'])} />
-                  <span>请求参数</span>
-                  <TooltipIcon
-                    title="用于其他系统对Webhook URL发出的POST请求中RequestBody需遵循的JSON格式，触发任务将基于该消息格式执行后续动作"
-                    icon={<InfoCircleOutlined />}
-                  />
-                  <span
-                    className={cx(
-                      'hover-box',
-                      'cursor-pointer',
-                      'flex',
-                      'items-center',
-                      'content-center',
-                      styles['plus-icon'],
-                    )}
-                  >
-                    <PlusOutlined />
-                  </span>
-                </div>
-                <ul>
-                  <li
-                    className={cx(
-                      'flex',
-                      'items-center',
-                      styles['r-table-row'],
-                    )}
-                  >
-                    <div className={cx(styles['var-name'])}>变量名</div>
-                    <div className={cx(styles['var-type'])}>变量类型</div>
-                    <div className={cx(styles.desc)}>描述</div>
-                  </li>
-                  <li
-                    className={cx(
-                      'flex',
-                      'items-center',
-                      styles['r-table-row'],
-                    )}
-                  >
-                    <div className={cx(styles['var-name'])}>
-                      <Input placeholder="输入变量名" />
-                    </div>
-                    <div className={cx(styles['var-type'])}>
-                      <Select options={VARIABLE_TYPE_LIST} />
-                    </div>
-                    <div className={cx(styles.desc)}>描述</div>
-                  </li>
-                </ul>
-              </div>
-            </Form.Item>
-          </>
+          // 事件触发
+          <EventTrigger />
         )}
         <Form.Item
           name="taskExecution"

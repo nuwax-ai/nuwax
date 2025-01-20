@@ -1,4 +1,7 @@
-import { VariableTypeEnum } from '@/types/enums/common';
+import {
+  PluginParamsSettingDefaultEnum,
+  VariableTypeEnum,
+} from '@/types/enums/common';
 
 export const BASE_URL = `${process.env.BASE_URL}/api`;
 
@@ -52,5 +55,17 @@ export const VARIABLE_TYPE_LIST = [
   {
     value: VariableTypeEnum.Array_Object,
     label: 'Array<Object>',
+  },
+];
+
+// 插件参数值设置默认下拉选项
+export const ParamsSettingDefaultOptions = [
+  {
+    value: PluginParamsSettingDefaultEnum.Input,
+    label: '输入',
+  },
+  {
+    value: PluginParamsSettingDefaultEnum.Quote,
+    label: '引用',
   },
 ];

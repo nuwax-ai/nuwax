@@ -29,7 +29,7 @@
     background-color: @BLANK;
   }
 
-  .ant-tooltip-arrow:before {
+  .ant-tooltip-arrow::before {
     background-color: @BLANK;
   }
 }
@@ -40,7 +40,42 @@
     background-color: @WHITE;
   }
 
-  .ant-tooltip-arrow:before {
+  .ant-tooltip-arrow::before {
     background-color: @WHITE;
+  }
+}
+
+// 折叠面板内容区域去掉左右padding
+.ant-collapse .ant-collapse-content > .ant-collapse-content-box {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+// table
+.ant-table-wrapper .ant-table-thead > tr > th {
+  font-size: 14px;
+  color: @BLANK04;
+  background: transparent;
+}
+
+.ant-table-wrapper
+  .ant-table-thead
+  > tr
+  > th:not(:last-child):not(.ant-table-selection-column):not(
+    .ant-table-row-expand-icon-cell
+  ):not([colspan])::before {
+  width: 0;
+}
+
+.ant-table-wrapper .ant-table-tbody > tr > td {
+  border-bottom: none;
+}
+
+// switch 样式
+.ant-switch.ant-switch-checked {
+  background: @GREEN03;
+
+  &:hover {
+    background: @GREEN04 !important;
   }
 }

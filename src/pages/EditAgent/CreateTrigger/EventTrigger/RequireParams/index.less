@@ -1,0 +1,47 @@
+@import '@/styles/color';
+
+.require-params {
+  background: rgba(46, 46, 56, 4%);
+  padding: 12px;
+
+  .r-header {
+    gap: 4px;
+    font-size: 12px;
+
+    .plus-icon {
+      width: 20px;
+      height: 20px;
+      margin-left: auto;
+
+      &:hover {
+        color: @WHITE;
+        background-color: @GRAY04;
+      }
+    }
+  }
+
+  .r-table-row {
+    height: 32px;
+    color: rgba(28, 31, 35, 35%);
+    font-size: 10px;
+    font-weight: 400;
+    gap: 10px;
+
+    .var-name {
+      width: 130px;
+    }
+
+    .var-type {
+      width: 150px;
+    }
+
+    .desc {
+      flex: 1;
+      gap: 10px;
+
+      .reduce-icon {
+        font-size: 14px;
+      }
+    }
+  }
+}
