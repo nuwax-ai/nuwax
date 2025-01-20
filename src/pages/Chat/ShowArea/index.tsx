@@ -4,10 +4,10 @@ import React, { useEffect, useState } from 'react';
 // import { useRequest } from 'umi';
 import styles from './index.less';
 // import { RequestResponse } from '@/types/interfaces/request';
-import CardModeSetting from '@/components/CardModeSetting';
 import FoldWrap from '@/components/FoldWrap';
 import { ICON_FOLD } from '@/constants/images.constants';
 import { CardStyleEnum } from '@/types/enums/common';
+import CardModeSetting from 'src/pages/EditAgent/PluginModelSetting/CardBind/CardModeSetting';
 
 const cx = classNames.bind(styles);
 
