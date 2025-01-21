@@ -12,6 +12,7 @@ import { Selection } from '@antv/x6-plugin-selection';
 import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
 import { Transform } from '@antv/x6-plugin-transform';
+
 // 自定义类型定义
 import { GraphProp } from '@/types/interfaces/workflow';
 
@@ -129,7 +130,6 @@ const initGraph = ({ containerId, changeDrawer }: GraphProp) => {
 
   // 确保所有新的边都有更高的层级,这里可以触发父组件的方法，调用接口添加边
   graph.on('edge:added', ({ edge }) => {
-    console.log('edge:added', edge);
     edge.setZIndex(3); // 边的层级设置为3
   });
 

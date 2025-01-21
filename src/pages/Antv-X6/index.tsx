@@ -7,14 +7,16 @@ import { getEdges } from '@/utils/workflow';
 import React, { useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import Monaco from './component/monaco';
-import { registerCustomNodes } from './component/registerCustomNodes';
+
+import Constant from '@/constants/codes.constants';
+import { debounce } from '@/utils/debounce';
+import { updateNode } from '@/utils/updateNode';
 import ControlPanel from './controlPanel';
 import GraphContainer from './graphContainer';
 import Header from './header';
 import './index.less';
 import NodeDrawer from './nodeDrawer';
 import { Child } from './type';
-registerCustomNodes();
 
 const AntvX6: React.FC = () => {
   // 显示隐藏右侧节点抽屉
@@ -24,10 +26,11 @@ const AntvX6: React.FC = () => {
     id: 0,
     description: '',
     workflowId: 0,
-    type: '',
+    type: 'Start',
     nodeConfig: {},
     name: '',
   });
+
   // 创建工作流，插件，知识库，数据库
   const [createdItem, setCreatedItem] = useState<PluginAndLibraryEnum>(
     PluginAndLibraryEnum.Plugin,
@@ -45,7 +48,7 @@ const AntvX6: React.FC = () => {
   // 画布的ref
   const graphRef = useRef<any>(null);
   // 是否显示创建工作流，插件，知识库，数据库的弹窗和试运行的弹窗
-  const { setShow, setTestRun, setModelList } = useModel('model');
+  const { setShow, setTestRun } = useModel('model');
 
   const handleNodeChange = (action: string, data?: ChildNode) => {
     switch (action) {
@@ -104,34 +107,38 @@ const AntvX6: React.FC = () => {
     }
   };
 
-  // 获取当前模型的列表数据
-  const getModelList = async () => {
-    try {
-      // 调用接口，获取当前画布的所有节点和边
-      const _res = await service.getModelList({ modelType: 'Chat' });
-      // 将数据交给redux
-      setModelList(_res.data);
-    } catch (error) {
-      console.error('Failed to fetch graph data:', error);
+  // 更新节点数据
+  const changeNode = debounce(async (config: ChildNode) => {
+    const _res = await updateNode(config);
+    if (_res.code === Constant.success) {
+      graphRef.current.updateNode(config.id, config);
     }
-  };
-
+  }, 1000);
   // 点击组件，显示抽屉
   const changeDrawer = (child: ChildNode) => {
-    setFoldWrapItem(child);
-    setVisible(true);
-    if (child.type === 'LLM' || child.type === 'IntentRecognition') {
-      //
-      getModelList();
+    console.log(child);
+    // 如果有组件正在展示,那么就要看是否修改了参数,
+    // 如果修改了参数,那么就提交数据
+    if (visible) {
+    } else {
+      setVisible(true);
     }
+    setFoldWrapItem(child);
   };
+
   // 发布，保存数据
   const onSubmit = () => {
+    // 获取所有节点,保存位置
     console.log('onSubmit');
   };
 
+  // 保存当前画布中节点的位置
   useEffect(() => {
     getList();
+    return () => {
+      // 组件销毁时，清除定时器
+      graphRef.current.saveAllNodes();
+    };
   }, []);
 
   return (
@@ -153,6 +160,7 @@ const AntvX6: React.FC = () => {
         visible={visible}
         onClose={() => setVisible(false)}
         foldWrapItem={foldWrapItem}
+        onGetNodeConfig={changeNode} // 新增这一行
       />
       <Created
         checkTag={createdItem as PluginAndLibraryEnum}

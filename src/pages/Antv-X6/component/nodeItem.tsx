@@ -1,5 +1,6 @@
 // 这个页面定义普通的节点，如输入，输出，等
 import CodeEditor from '@/components/CodeEditor';
+import type { NodeConfig } from '@/types/interfaces/node';
 import { ExpandAltOutlined } from '@ant-design/icons';
 import type { InputRef } from 'antd';
 import {
@@ -21,12 +22,15 @@ import { InputAndOut } from './commonNode';
 
 // 定义开始节点
 // 定义开始和文档提取节点的渲染逻辑
-const StartNode: React.FC<NodeDisposeProps> = ({ params }) => {
+const StartNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   let initialValues = {};
-  if (params.nodeConfig.inputArgs && params.nodeConfig.inputArgs.length) {
-    initialValues = params.nodeConfig.inputArgs;
+  if (params.inputArgs && params.inputArgs.length) {
+    initialValues = params.inputArgs;
   }
-  console.log(initialValues);
+  // 修改模型的入参和出参
+  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
+    Modified({ ...params, ...newNodeConfig });
+  };
 
   return (
     <>
@@ -36,29 +40,33 @@ const StartNode: React.FC<NodeDisposeProps> = ({ params }) => {
         showCheckbox={true}
         showCopy={true}
         showAssociation={true}
+        handleChangeNodeConfig={handleChangeNodeConfig}
         // 如果这里使用动态的表单名称，initialValues 中的名称也应该和他相同
         inputItemName="inputArgs"
-        initialValues={{ inputArgs: initialValues }} // 注意这里使用了'startInput'
+        initialValues={initialValues} // 注意这里使用了'inputItemName'相同的
       />
-      {params.type === 'DocumentExtraction' && (
+      {/* {params.type === 'DocumentExtraction' && (
         <div className="margin-bottom">
           <div className="dis-sb margin-bottom">
             <span className="node-title-style">输出</span>
           </div>
         </div>
-      )}
+      )} */}
     </>
   );
 };
 
 // 定义结束和过程输出的节点渲染
-const EndNode: React.FC<NodeDisposeProps> = ({ params }) => {
+const EndNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   let initialValues = {};
 
-  if (params.nodeConfig.outputArgs && params.nodeConfig.outputArgs.length) {
-    initialValues = params.nodeConfig.outputArgs;
+  if (params.outputArgs && params.outputArgs.length) {
+    initialValues = params.outputArgs;
   }
-
+  // 修改模型的入参和出参
+  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
+    Modified({ ...params, ...newNodeConfig });
+  };
   const [value, setValue] = useState<string>('返回变量');
   // 开关的状态
   const [checked, setChecked] = useState(true);
@@ -78,6 +86,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({ params }) => {
         showCopy={true}
         inputItemName="outputArgs"
         initialValues={{ outputArgs: initialValues }}
+        handleChangeNodeConfig={handleChangeNodeConfig}
       />
       {value === '返回文本' && (
         <div className="margin-bottom mt-16">

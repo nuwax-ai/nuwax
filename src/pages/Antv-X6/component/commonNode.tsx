@@ -7,7 +7,7 @@ import {
   SettingOutlined,
 } from '@ant-design/icons';
 import { Button, Checkbox, Form, Select, Tag, Tree } from 'antd';
-import React from 'react';
+import React, { useEffect } from 'react';
 import '../index.less';
 import {
   FieldConfig,
@@ -43,6 +43,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
     {},
   );
   const addInputItem = () => {
+    console.log(fieldConfigs);
     const nextItems = [...(form.getFieldValue(inputItemName) || []), formItem];
     form.setFieldsValue({ [inputItemName]: nextItems });
   };
@@ -53,6 +54,10 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
     // console.log('Received values of form:', values);
     handleChangeNodeConfig(values);
   };
+  useEffect(() => {
+    // 设置初始值，确保Form.List能正确展示已有条目
+    form.setFieldsValue({ [inputItemName]: initialValues });
+  }, [form, inputItemName, initialValues]);
 
   return (
     <div className="start-node-style">
@@ -69,7 +74,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
           {(fields, { remove }, { errors }) => (
             <>
               {fields.map((field, index) => {
-                console.log(field);
                 return (
                   <Form.Item key={field.key} noStyle>
                     {renderItem({

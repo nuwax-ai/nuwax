@@ -3,7 +3,7 @@ import type {
   GroupModelItem,
   ModelListItemProps,
 } from '@/types/interfaces/model';
-import { NodeConfig } from '@/types/interfaces/workflow';
+import { NodeConfig } from '@/types/interfaces/node';
 import { Graph, Node } from '@antv/x6';
 import { FormInstance } from 'antd';
 /**
@@ -71,11 +71,13 @@ export type FormListFieldData = {
  */
 export interface NodeDisposeProps {
   // 当前节点的参数
-  params: any;
+  params: NodeConfig;
+  // 修改节点信息
+  Modified: (params: NodeConfig) => void;
+  // 选项列表
   options?: ModelListItemProps[];
+  // 分组的模型列表
   groupedOptionsData?: GroupModelItem[];
-  // 这个其实可以不要了，今天调整
-  initialValues?: object;
 }
 /**
  * 定义带勾选框的select

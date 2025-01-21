@@ -63,3 +63,40 @@ export enum PluginParamsSettingDefaultEnum {
   // 引用
   Quote,
 }
+
+export enum NodeTypeEnum {
+  // 数据库
+  Database = 'Database',
+  // 知识库
+  KnowledgeBase = 'KnowledgeBase',
+  // http
+  HTTPRequest = 'HTTPRequest',
+  // 问答
+  QA = 'QA',
+  // 代码
+  Code = 'Code',
+  // 插件
+  Plugin = 'Plugin',
+  // 意图识别
+  IntentRecognition = 'IntentRecognition',
+  // 节点
+  LLM = 'LLM',
+  // 变量
+  Variable = 'Variable',
+  // 循环
+  Loop = 'Loop',
+  // 开始
+  Start = 'Start',
+  // 结束
+  End = 'End',
+  // 文档提取
+  DocumentExtraction = 'DocumentExtraction',
+  // 过程输出
+  Output = 'Output',
+  // 文本处理
+  TextProcessing = 'TextProcessing',
+  // 工作流
+  Workflow = 'Workflow',
+  // 长期记忆
+  LongTermMemory = 'LongTermMemory',
+}

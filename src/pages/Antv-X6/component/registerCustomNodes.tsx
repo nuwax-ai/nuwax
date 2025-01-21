@@ -3,6 +3,7 @@ import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { DashOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { register } from '@antv/x6-react-shape';
 import { Input, Popover } from 'antd';
+
 import React from 'react';
 import '../index.less';
 // 定义组件的状态类型
@@ -10,6 +11,7 @@ interface GeneralNodeState {
   isEditingTitle: boolean;
   editedTitle: string;
 }
+
 /**
  * 定义 GeneralNode 类组件，代表一个通用节点，该节点可以是流程图或其他图形编辑器中的元素。
  */
@@ -24,6 +26,23 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
     };
   }
 
+  componentDidMount() {
+    const { node } = this.props;
+    // 监听节点大小变化事件
+    node.on('resize', this.handleResized);
+  }
+
+  componentWillUnmount() {
+    const { node } = this.props;
+    // 移除监听器
+    node.off('resize', this.handleResized);
+  }
+
+  handleResized = () => {
+    console.log('Node has been resized.');
+    // 调用 updatePorts 方法以根据新的尺寸更新端口位置
+    // this.props.node.updatePorts();
+  };
   /**
    * changeNode 是一个事件处理函数，当用户点击操作菜单项时触发。
    * @param val - 操作名称（例如：'Rename', 'Duplicate', 'Delete'）
@@ -55,15 +74,6 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
     });
   };
 
-  // 改变节点的宽高
-  handleResized = () => {
-    console.log('Node has been resized.');
-    // const { node } = this.props;
-    // const data = node.getData<NodeProps>();
-    // const width = data.width ? data.width : 304;
-    // const height = data.height ? data.height : 83;
-    // node.setSize(width, height);
-  };
   /**
    * 右侧三个点的操作列表。
    */
@@ -96,13 +106,18 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
     }
     // 确保宽度和高度是有效的数字
     const width =
-      data.nodeConfig && data.nodeConfig.extension
+      data.nodeConfig &&
+      data.nodeConfig.extension &&
+      data.nodeConfig.extension.width
         ? data.nodeConfig.extension.width
         : 304;
     const height =
-      data.nodeConfig && data.nodeConfig.extension?.height
+      data.nodeConfig &&
+      data.nodeConfig.extension &&
+      data.nodeConfig.extension.height
         ? data.nodeConfig.extension.height
         : 83;
+    console.log(width);
     // 构造渐变背景字符串
     const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
       data.type,
@@ -175,31 +190,16 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
 // 定义单个连接桩的样式
 const portItemStyle = {
   circle: {
-    // 圆形连接桩的半径
     r: 4,
-    // 标记为磁铁，使它能够成为连接线的目标
     magnet: true,
-    // 连接桩边框颜色
     stroke: '#5F95FF',
-    // 边框宽度
     strokeWidth: 1,
-    // 填充颜色
     fill: '#fff',
     style: {
-      // 默认隐藏连接桩，直到有连接线时才显示
-      visibility: 'hidden',
+      visibility: 'hidden', // 默认隐藏连接桩，直到有连接线时才显示
     },
   },
 };
-
-/**
- * 定义 插件和工作流的节点
- * 插件和工作流应该先弹出一个model，显示可以选择的选项，再添加节点
- */
-// const markup=[{
-//   tagName: 'circle',
-//   selector: 'portBody',
-// }]
 
 const ports = {
   groups: {
@@ -242,18 +242,14 @@ const ports = {
 };
 
 // 注册组件时，确保传递了正确的类型
+
 export function registerCustomNodes() {
   // 将自定义节点正确注册
   register({
-    // 用哪个自定义节点，现在只有这一个
     shape: 'general-Node',
-    //
     component: GeneralNode,
-    // 添加连接桩配置
     ports: ports,
-    // 设置 embeddable 属性以决定是否允许嵌套
     embeddable: ({ data }: { data: ChildNode }) => data.type === 'Loop',
-    // 启用节点大小调整
     resizable: true,
   });
 }

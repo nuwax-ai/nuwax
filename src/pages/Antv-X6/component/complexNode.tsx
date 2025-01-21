@@ -1,7 +1,6 @@
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import { ModelSelected } from '@/components/ModelSetting';
-import { LLMNodeConfig } from '@/types/interfaces/node';
-import type { NodeConfig } from '@/types/interfaces/workflow';
+import type { NodeConfig } from '@/types/interfaces/node';
 import { PlusOutlined } from '@ant-design/icons';
 import {
   Button,
@@ -17,37 +16,22 @@ import '../index.less';
 import { InputConfigs, intentionConfigs, outPutConfigs } from '../params';
 import { NodeDisposeProps } from '../type';
 import { InputAndOut } from './commonNode';
-// 定义大模型节点
-const ModelNode: React.FC<NodeDisposeProps> = ({ params }) => {
-  console.log(params);
 
-  const [nodeConfig, setNodeConfig] = useState<LLMNodeConfig>({
-    extension: {},
-    // 输入的initialValues
-    inputArgs: params.nodeConfig.inputArgs,
-    // 输出的initialValues
-    outputArgs: params.nodeConfig.outputArgs,
-    // 出参的类型
-    outputType: params.nodeConfig.outputType,
-    // 系统提示词
-    systemPrompt: params.nodeConfig.systemPrompt,
-    // 用户提示词
-    userPrompt: params.nodeConfig.userPrompt,
-    // 当前可以被选择的模型
-    skillComponentConfigs: params.nodeConfig.skillComponentConfigs,
-    // 当前选中的模型
-    mode: params.nodeConfig.mode,
-    // 被选中的模型id
-    modelId: params.nodeConfig.modelId,
-    // 三个参数，对应随机性，top和最大回复长度
-    maxTokens: params.nodeConfig.maxTokens,
-    temperature: params.nodeConfig.temperature,
-    topP: params.nodeConfig.topP,
-  });
+// 定义大模型节点
+
+const ModelNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
+  let inputInitialValues = {};
+  if (params.inputArgs && params.inputArgs.length) {
+    inputInitialValues = params.inputArgs;
+  }
+  let outputInitialValues = {};
+  if (params.outputArgs && params.outputArgs.length) {
+    outputInitialValues = params.outputArgs;
+  }
 
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
-    setNodeConfig({ ...nodeConfig, ...newNodeConfig });
+    Modified({ ...params, ...newNodeConfig });
   };
 
   //   显示新增技能
@@ -58,10 +42,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ params }) => {
   return (
     <div className="model-node-style">
       {/* 模型模块 */}
-      <ModelSelected
-        onChange={handleChangeNodeConfig}
-        nodeConfig={nodeConfig}
-      />
+      <ModelSelected onChange={handleChangeNodeConfig} nodeConfig={params} />
       {/* 技能模块 */}
       <div className="node-item-style">
         <div className="dis-sb margin-bottom">
@@ -81,17 +62,15 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ params }) => {
           fieldConfigs={outPutConfigs}
           inputItemName="inputArgs"
           handleChangeNodeConfig={handleChangeNodeConfig}
-          initialValues={{
-            inputArgs: nodeConfig.inputArgs,
-          }}
+          initialValues={inputInitialValues}
         />
       </div>
       {/* 系统提示词 */}
       <ExpandableInputTextarea
         title="系统提示词"
-        value={nodeConfig.systemPrompt}
+        value={params.systemPrompt || ''}
         onChange={(value: string) =>
-          setNodeConfig({ ...nodeConfig, systemPrompt: value })
+          Modified({ ...params, systemPrompt: value })
         }
         onExpand
         onOptimize
@@ -100,10 +79,8 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ params }) => {
       {/* 用户提示词 */}
       <ExpandableInputTextarea
         title="用户提示词"
-        value={nodeConfig.userPrompt}
-        onChange={(value: string) =>
-          setNodeConfig({ ...nodeConfig, userPrompt: value })
-        }
+        value={params.userPrompt || ''}
+        onChange={(value: string) => Modified({ ...params, userPrompt: value })}
         onExpand
         placeholder="用户提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
       />
@@ -116,9 +93,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ params }) => {
           inputItemName="outputArgs"
           showCopy={true}
           showAssociation={true}
-          initialValues={{
-            outputArgs: nodeConfig.outputArgs,
-          }}
+          initialValues={outputInitialValues}
         />
       </div>
     </div>
