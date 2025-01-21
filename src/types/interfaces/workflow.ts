@@ -1,3 +1,5 @@
+import { NodeTypeEnum } from '@/types/enums/common';
+import { NodeConfig } from '@/types/interfaces/node';
 /**
  * 定义 GraphProp 接口，用于描述图组件的属性。
  */
@@ -8,47 +10,13 @@ export interface GraphProp {
   changeDrawer: (item: ChildNode) => void;
 }
 
-interface Extension {
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-}
-
-// 节点内部的config
-export interface NodeConfig {
-  extension?: Extension | null;
-  inputArgs?: Array<{
-    key?: string | null;
-    name: string;
-    description: string;
-    dataType: string;
-    require: boolean;
-    systemVariable: boolean;
-    bindValueType: string;
-    bindValue: string;
-    subArgs?: any;
-  }> | null;
-  outputArgs?: Array<{
-    key?: string | null;
-    name: string;
-    description: string;
-    dataType: string;
-    require: boolean;
-    systemVariable: boolean;
-    bindValueType: string;
-    bindValue: string;
-    subArgs?: any;
-  }> | null;
-  outputType?: string;
-}
 // 节点的数据
 export interface ChildNode {
-  id: number;
+  id: number | string;
   name: string;
   description: string;
   workflowId: number;
-  type: string;
+  type: keyof typeof NodeTypeEnum; // 使用枚举键作为类型;
   preNodes?: null;
   nodeConfig: NodeConfig;
   nextNodes?: null;

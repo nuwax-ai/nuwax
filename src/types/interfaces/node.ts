@@ -30,29 +30,32 @@ export interface SkillComponent {
   typeId: number;
 }
 
-// 大模型节点
-export interface LLMNodeConfig {
-  extension: any;
-  // 入参
-  inputArgs: InputAndOutConfig[] | null;
-  // 出参
-  outputArgs: InputAndOutConfig[] | null;
-  // 选定大模型
-  mode?: string;
+interface Extension {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+}
+// 节点内部的config
+export interface NodeConfig {
+  extension?: Extension | null;
+  inputArgs?: InputAndOutConfig[] | null;
+  outputArgs?: InputAndOutConfig[] | null;
+  outputType?: string;
   // 模型id
   modelId?: number;
-  // 出参的方式
-  outputType?: string;
+  // 选定技能
+  mode?: string;
   // 技能列表配置
   skillComponentConfigs?: SkillComponent[];
   // 系统提示词
-  systemPrompt: string;
+  systemPrompt?: string;
   // 用户提示词
-  userPrompt: string;
+  userPrompt?: string;
   // 最大回复长度
-  maxTokens: number;
+  maxTokens?: number;
   // 生成随机性
-  temperature: number;
+  temperature?: number;
   //
-  topP: number;
+  topP?: number;
 }

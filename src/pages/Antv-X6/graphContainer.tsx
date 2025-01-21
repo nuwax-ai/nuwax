@@ -3,6 +3,7 @@ import { Node } from '@antv/x6';
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import EventHandlers from './component/eventHandlers';
 import InitGraph from './component/graph';
+import { registerCustomNodes } from './component/registerCustomNodes';
 import type { Child } from './type';
 interface GraphContainerProps {
   graphParams: { nodeList: ChildNode[]; edgeList: Edge[] };
@@ -12,22 +13,30 @@ interface GraphContainerProps {
 
 interface GraphContainerRef {
   addNode: (e: { x: number; y: number }, child: Child) => void;
+  updateNode: (nodeId: string, newData: Partial<ChildNode>) => void;
+  saveAllNodes: () => void;
+}
+
+// 辅助函数：生成随机坐标
+function getRandomPosition(maxWidth = 800, maxHeight = 600) {
+  return {
+    x: Math.random() * (maxWidth - 304), // 减去节点宽度以避免超出边界
+    y: Math.random() * (maxHeight - 83), // 减去节点高度以避免超出边界
+  };
 }
 
 const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
   ({ graphParams, handleNodeChange, changeDrawer }, ref) => {
+    registerCustomNodes();
     const containerRef = useRef<HTMLDivElement>(null);
     const graphRef = useRef<any>(null);
 
     function preWork() {
-      // 这里协助演示的代码，在实际项目中根据实际情况进行调整
       const container = containerRef.current;
       if (!container) return;
 
       const graphContainer = document.createElement('div');
       graphContainer.id = 'graph-container';
-
-      // 使用可选链操作符确保容器存在
       container?.appendChild(graphContainer);
     }
 
@@ -59,6 +68,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           ...child,
           onChange: handleNodeChange,
         },
+        resizable: true,
         zIndex: 2,
       });
 
@@ -70,28 +80,79 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       }
     };
 
+    // 修改节点信息
+    const updateNode = (nodeId: string, newData: Partial<ChildNode>) => {
+      if (!graphRef.current) return;
+
+      const node = graphRef.current.getCellById(nodeId);
+      if (node && node.isNode()) {
+        console.log(123, node);
+        const currentData = node.getData() as ChildNode;
+
+        const position = node.getPosition();
+
+        console.log(position);
+
+        if (position) {
+          // 确保 newData.nodeConfig 存在
+          if (!newData.nodeConfig) {
+            newData.nodeConfig = {};
+          }
+
+          // 确保 newData.nodeConfig.extension 存在
+          if (!newData.nodeConfig.extension) {
+            newData.nodeConfig.extension = {};
+          }
+
+          newData.nodeConfig.extension = {
+            ...newData.nodeConfig.extension,
+            x: position.x,
+            y: position.y,
+          };
+        }
+        const updatedData = { ...currentData, ...newData };
+
+        node.setData(updatedData);
+      }
+    };
+
+    // 保存所有节点的位置
+    const saveAllNodes = () => {
+      const nodes = graphRef.current.getNodes().map((node: Node) => {
+        const data = node.getData() as ChildNode;
+        const position = node.getPosition();
+        if (position) {
+          data.nodeConfig.extension = {
+            ...data.nodeConfig.extension,
+            x: position.x,
+            y: position.y,
+          };
+        }
+        return data;
+      });
+      return nodes;
+    };
+
     // 将子组件的方法暴露给父组件
     useImperativeHandle(ref, () => ({
       addNode,
+      updateNode,
+      saveAllNodes,
     }));
 
     useEffect(() => {
       if (!containerRef.current) return;
 
-      // 创建图形容器
       preWork();
 
-      // 初始化画布
       graphRef.current = InitGraph({
         containerId: 'graph-container',
-        changeDrawer: changeDrawer, // 需要传递实际函数
+        changeDrawer: changeDrawer,
       });
 
-      // 绑定事件处理器并获取清理函数
       const cleanup = EventHandlers(graphRef.current);
 
       return () => {
-        // 异步执行清理逻辑
         setTimeout(() => {
           cleanup();
           if (graphRef.current) {
@@ -103,36 +164,42 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
     useEffect(() => {
       if (graphRef.current && graphParams.nodeList.length > 0) {
-        // 更新图形逻辑...
+        const nodes = graphParams.nodeList.map((node: ChildNode) => {
+          const extension = node.nodeConfig?.extension || {};
+          const width = extension.width || 304;
+          const height = extension.height || 83;
+          const position = getRandomPosition(); // 如果没有提供具体的 x 和 y，则使用随机位置
 
-        const nodes = graphParams.nodeList.map((node: ChildNode) => ({
-          id: node.id.toString(),
-          shape: 'general-Node',
-          x: 50 + Math.random() * 700, // 随机位置，实际应用中应该根据具体需求调整
-          y: 50 + Math.random() * 400,
-          width: 304,
-          height: 83,
-          label: node.name,
-          data: {
-            ...node,
-            onChange: handleNodeChange,
-          },
-          zIndex: 2, // 可选：设置层级
-        }));
+          return {
+            id: node.id.toString(),
+            shape: 'general-Node',
+            x: extension.x !== undefined ? extension.x : position.x,
+            y: extension.y !== undefined ? extension.y : position.y,
+            width: width,
+            height: height,
+            label: node.name,
+            data: {
+              ...node,
+              onChange: handleNodeChange,
+            },
+            zIndex: 2,
+          };
+        });
 
         const edges = graphParams.edgeList.map((edge: Edge) => ({
-          id: `${edge.source}-${edge.target}`, // 添加唯一的 id
+          id: `${edge.source}-${edge.target}`,
           shape: 'edge',
           source: { id: edge.source.toString() },
           target: { id: edge.target.toString() },
-          zIndex: 3, // 可选：设置层级
+          zIndex: 3,
         }));
 
-        // 使用 fromJSON 方法更新图形
         graphRef.current.fromJSON({
           nodes,
           edges,
         });
+
+        console.log(graphRef.current.getCells());
       }
     }, [graphParams]);
 
