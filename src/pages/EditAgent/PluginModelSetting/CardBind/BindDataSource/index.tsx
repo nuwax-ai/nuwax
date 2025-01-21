@@ -45,6 +45,7 @@ const BindDataSource: React.FC = () => {
         <CustomInputNumber
           value={cardListLen}
           onChange={handlerChangeCardLen}
+          placeholder="请输入卡片列表最大长度"
           max={10}
           min={1}
         />

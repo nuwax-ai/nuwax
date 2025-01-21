@@ -1,3 +1,4 @@
+import AnalyzeStatistics from '@/components/AnalyzeStatistics';
 import CreateAgent from '@/components/CreateAgent';
 import SelectList from '@/components/SelectList';
 import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.contants';
@@ -11,7 +12,6 @@ import { Button, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { history } from 'umi';
-import AgentAnalyze from './AgentAnalyze';
 import AgentMove from './AgentMove';
 import ApplicationItem from './ApplicationItem';
 import styles from './index.less';
@@ -66,6 +66,25 @@ const Space: React.FC = () => {
     history.push(`/edit-agent?agent_id=${agentId}`);
   };
 
+  const analyzeList = [
+    {
+      label: '对话人数',
+      value: '2324',
+    },
+    {
+      label: '对话次数',
+      value: '12334',
+    },
+    {
+      label: '收藏用户数',
+      value: '1322',
+    },
+    {
+      label: '点赞次数',
+      value: '1423',
+    },
+  ];
+
   return (
     <div className={cx(styles.container, 'h-full')}>
       <div className={cx('flex', 'content-between')}>
@@ -107,10 +126,15 @@ const Space: React.FC = () => {
         <ApplicationItem onClickMore={handlerClickMore} />
         <ApplicationItem onClickMore={handlerClickMore} />
       </div>
-      <AgentAnalyze open={openAnalyze} onCancel={() => setOpenAnalyze(false)} />
+      <AnalyzeStatistics
+        open={openAnalyze}
+        onCancel={() => setOpenAnalyze(false)}
+        title="智能体概览"
+        list={analyzeList}
+      />
       <AgentMove
         open={openMove}
-        title={'智能体名称'}
+        title="智能体名称"
         onCancel={() => setOpenMove(false)}
         onConfirm={handlerConfirmMove}
       />

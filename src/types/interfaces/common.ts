@@ -1,4 +1,5 @@
 import type { CardStyleEnum } from '@/types/enums/common';
+import { CreateEditAgentEnum } from '@/types/enums/common';
 import type {
   ConfigProviderProps,
   FormInstance,
@@ -233,4 +234,34 @@ export interface CreatedNodeItem {
   otherAction?: boolean;
   // 是否有试运行的按钮
   testRun?: boolean;
+}
+
+// 创建、编辑智能体
+export interface CreateAgentProps {
+  type?: CreateEditAgentEnum;
+  agentName?: string;
+  intro?: string;
+  open: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+// 自定义数字输入框，带加减按钮
+export interface CustomInputNumberProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  min?: number;
+  max?: number;
+  step?: number;
+}
+
+export interface AnalyzeStatisticsProps {
+  open: boolean;
+  onCancel: () => void;
+  title: string;
+  list: {
+    label: string;
+    value: string;
+  }[];
 }

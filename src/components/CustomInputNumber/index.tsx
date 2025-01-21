@@ -1,3 +1,4 @@
+import type { CustomInputNumberProps } from '@/types/interfaces/common';
 import { DownOutlined, UpOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
 import classNames from 'classnames';
@@ -6,20 +7,13 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface CustomInputNumberProps {
-  value: string;
-  onChange: (value: string) => void;
-  min?: number;
-  max?: number;
-  gap?: number;
-}
-
 const CustomInputNumber: React.FC<CustomInputNumberProps> = ({
   value,
   onChange,
+  placeholder = '请输入',
   min = 0,
   max,
-  gap = 1,
+  step = 1,
 }) => {
   const maxDisabled = Number(value) === max ? styles['input-disabled'] : '';
   const minDisabled = Number(value) === min ? styles['input-disabled'] : '';
@@ -33,14 +27,11 @@ const CustomInputNumber: React.FC<CustomInputNumberProps> = ({
   };
 
   const handleResult = (_value: number) => {
-    let newValue = _value;
-    if (_value < min) {
-      newValue = min;
-    }
+    let newValue = Math.max(_value, min);
     if (max && _value > max) {
       newValue = max;
     }
-    if (gap.toString().indexOf('.')) {
+    if (step.toString().includes('.')) {
       newValue = parseFloat(newValue.toFixed(2));
     }
     onChange(newValue.toString());
@@ -48,9 +39,12 @@ const CustomInputNumber: React.FC<CustomInputNumberProps> = ({
 
   // '.' at the end or only '-' in the input box.
   const handleBlur = () => {
-    let valueTemp = value ?? '0';
-    if ((value && value.charAt(value.length - 1) === '.') || value === '-') {
-      valueTemp = value.slice(0, -1);
+    let valueTemp = value?.toString() || '0';
+    if (
+      (valueTemp && valueTemp.charAt(valueTemp.length - 1) === '.') ||
+      valueTemp === '-'
+    ) {
+      valueTemp = valueTemp.slice(0, -1);
     }
     let newValue = valueTemp?.replace(/0*(\d+)/, '$1');
     handleResult(Number(newValue));
@@ -58,13 +52,13 @@ const CustomInputNumber: React.FC<CustomInputNumberProps> = ({
 
   const handlerPlus = () => {
     let valueTemp = value ? Number(value) : 0;
-    let newValue = valueTemp + gap;
+    let newValue = valueTemp + step;
     handleResult(newValue);
   };
 
   const handlerReduce = () => {
     let valueTemp = value ? Number(value) : 0;
-    let newValue = valueTemp - gap;
+    let newValue = valueTemp - step;
     handleResult(newValue);
   };
 
@@ -72,7 +66,7 @@ const CustomInputNumber: React.FC<CustomInputNumberProps> = ({
     <div className={cx('flex', styles['space-box'])}>
       <Input
         rootClassName={cx('flex-1')}
-        placeholder="请输入卡片列表最大长度"
+        placeholder={placeholder}
         value={value}
         onChange={handleChange}
         onBlur={handleBlur}

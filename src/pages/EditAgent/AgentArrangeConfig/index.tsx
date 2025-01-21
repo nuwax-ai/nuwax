@@ -16,6 +16,8 @@ import {
   LongMemberEnum,
   UserProblemSuggestEnum,
 } from '@/types/enums/space';
+import type { AgentArrangeConfigProps } from '@/types/interfaces/agent';
+import { CaretDownOutlined } from '@ant-design/icons';
 import { CollapseProps } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
@@ -54,15 +56,13 @@ const PLUGIN_LIST = [
   },
 ];
 
-//
-interface AgentArrangeConfigProps {
-  onSet: () => void;
-}
-
 /**
  * 智能体编排区域配置
  */
-const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({ onSet }) => {
+const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
+  onKnowledge,
+  onSet,
+}) => {
   // 长期记忆
   const [longMemberValue, setLongMemberValue] = useState<LongMemberEnum>(
     LongMemberEnum.Close,
@@ -292,7 +292,18 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({ onSet }) => {
     <div className={classNames('overflow-y', 'flex-1', 'px-16', 'py-12')}>
       <ConfigOptionsHeader title="技能" />
       <ConfigOption items={SkillList} />
-      <ConfigOptionsHeader title="知识" />
+      <ConfigOptionsHeader title="知识">
+        <span
+          className={cx(
+            'cursor-pointer',
+            'hover-box',
+            styles['knowledge-extra'],
+          )}
+          onClick={onKnowledge}
+        >
+          按需调用 <CaretDownOutlined />
+        </span>
+      </ConfigOptionsHeader>
       <ConfigOption items={KnowledgeList} />
       <ConfigOptionsHeader title="记忆" />
       <ConfigOption items={MemoryList} />

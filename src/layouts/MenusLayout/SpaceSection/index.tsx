@@ -9,6 +9,7 @@ import { DownOutlined } from '@ant-design/icons';
 import { Form, Input, Popover } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
+import { history } from 'umi';
 import styles from './index.less';
 import PersonalSpaceContent from './PersonalSpaceContent';
 
@@ -21,8 +22,19 @@ const SpaceSection: React.FC = () => {
   const [imageUrl, setImageUrl] = useState<string>('');
   const [form] = Form.useForm();
 
+  const spaceId = '10101010';
   const handlerApplication = (type: SpaceApplicationListEnum) => {
     console.log(type);
+    switch (type) {
+      case SpaceApplicationListEnum.Application_Develop:
+        history.push(`/space`);
+        break;
+      case SpaceApplicationListEnum.Component_Library:
+        history.push(`/space/${spaceId}/library`);
+        break;
+      case SpaceApplicationListEnum.Team_Setting:
+        break;
+    }
   };
 
   const showModal = () => {

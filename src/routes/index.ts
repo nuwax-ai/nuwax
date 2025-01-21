@@ -23,6 +23,7 @@ const routes = [
       { path: '/home', component: '@/pages/Home' },
       { path: '/home/chat', component: '@/pages/Chat' },
       { path: '/space', component: '@/pages/Space' },
+      { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
       { path: '/square', component: '@/pages/Square' },
     ],
   },
