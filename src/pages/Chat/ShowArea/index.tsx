@@ -4,16 +4,14 @@ import React, { useEffect, useState } from 'react';
 // import { useRequest } from 'umi';
 import styles from './index.less';
 // import { RequestResponse } from '@/types/interfaces/request';
-import CardModeSetting from '@/components/CardModeSetting';
 import FoldWrap from '@/components/FoldWrap';
 import { ICON_FOLD } from '@/constants/images.constants';
-import { CardStyleEnum } from '@/types/enums/common';
+// import Card from '@/components/Card';
 
 const cx = classNames.bind(styles);
 
 const ShowArea: React.FC = () => {
   const [visible, setVisible] = useState<boolean>(true);
-  const [checked, setChecked] = useState<boolean>(false);
   // const [contents, setContents] = useState<[]>([]);
 
   // const { run, loading } = useRequest(apiHome, {
@@ -45,11 +43,12 @@ const ShowArea: React.FC = () => {
         onClose={() => setVisible(false)}
       >
         <div className={cx(styles['main-wrap'])}>
-          <CardModeSetting
-            type={CardStyleEnum.ONE}
-            checked={checked}
-            onClick={setChecked}
-          />
+          {/*<Card type={CardStyleEnum.ONE} />*/}
+          {/*<CardModeSetting*/}
+          {/*  type={CardStyleEnum.ONE}*/}
+          {/*  checked={checked}*/}
+          {/*  onClick={setChecked}*/}
+          {/*/>*/}
         </div>
       </FoldWrap>
     </div>

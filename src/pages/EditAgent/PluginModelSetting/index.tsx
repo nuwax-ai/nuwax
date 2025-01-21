@@ -4,6 +4,7 @@ import { CloseOutlined } from '@ant-design/icons';
 import { Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
+import CardBind from './CardBind';
 import styles from './index.less';
 import ParamsSetting from './ParamsSetting';
 
@@ -31,7 +32,7 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
       case PluginSettingEnum.Params:
         return <ParamsSetting />;
       case PluginSettingEnum.Card_Bind:
-        return null;
+        return <CardBind />;
     }
   };
 

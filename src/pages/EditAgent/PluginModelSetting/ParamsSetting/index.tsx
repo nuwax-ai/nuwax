@@ -122,86 +122,6 @@ const ParamsSetting: React.FC = () => {
       required: true,
       open: true,
     },
-    {
-      key: '2',
-      paramsName: {
-        name: 'offset',
-        text: '返回结果时跳过的偏移量',
-      },
-      type: VariableTypeEnum.Integer,
-      required: false,
-      open: true,
-    },
-    {
-      key: '3',
-      paramsName: {
-        name: 'query',
-        text: '查询关键词',
-      },
-      type: VariableTypeEnum.Integer,
-      required: true,
-      open: true,
-    },
-    {
-      key: '2',
-      paramsName: {
-        name: 'offset',
-        text: '返回结果时跳过的偏移量',
-      },
-      type: VariableTypeEnum.Integer,
-      required: false,
-      open: true,
-    },
-    {
-      key: '3',
-      paramsName: {
-        name: 'query',
-        text: '查询关键词',
-      },
-      type: VariableTypeEnum.Integer,
-      required: true,
-      open: true,
-    },
-    {
-      key: '2',
-      paramsName: {
-        name: 'offset',
-        text: '返回结果时跳过的偏移量',
-      },
-      type: VariableTypeEnum.Integer,
-      required: false,
-      open: true,
-    },
-    {
-      key: '3',
-      paramsName: {
-        name: 'query',
-        text: '查询关键词',
-      },
-      type: VariableTypeEnum.Integer,
-      required: true,
-      open: true,
-    },
-    {
-      key: '2',
-      paramsName: {
-        name: 'offset',
-        text: '返回结果时跳过的偏移量',
-      },
-      type: VariableTypeEnum.Integer,
-      required: false,
-      open: true,
-    },
-    {
-      key: '3',
-      paramsName: {
-        name: 'query',
-        text: '查询关键词',
-      },
-      type: VariableTypeEnum.Integer,
-      required: true,
-      open: true,
-    },
   ];
 
   return (
@@ -210,9 +130,6 @@ const ParamsSetting: React.FC = () => {
         columns={columns}
         dataSource={dataSource}
         pagination={false}
-        scroll={{
-          y: 560,
-        }}
       />
     </div>
   );
