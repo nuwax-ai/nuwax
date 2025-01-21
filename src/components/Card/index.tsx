@@ -9,9 +9,11 @@ import CardTwo from './CardTwo';
 /**
  * 卡片
  */
-const Card: React.FC<CardProps & {
-  type: CardStyleEnum;
-}> = (props) => {
+const Card: React.FC<
+  CardProps & {
+    type: CardStyleEnum;
+  }
+> = (props) => {
   const { type } = props;
   const content = () => {
     switch (type) {

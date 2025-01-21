@@ -11,7 +11,7 @@ interface CustomInputNumberProps {
   onChange: (value: string) => void;
   min?: number;
   max?: number;
-  gap: number;
+  gap?: number;
 }
 
 const CustomInputNumber: React.FC<CustomInputNumberProps> = ({
@@ -19,7 +19,7 @@ const CustomInputNumber: React.FC<CustomInputNumberProps> = ({
   onChange,
   min = 0,
   max,
-  gap,
+  gap = 1,
 }) => {
   const maxDisabled = Number(value) === max ? styles['input-disabled'] : '';
   const minDisabled = Number(value) === min ? styles['input-disabled'] : '';
