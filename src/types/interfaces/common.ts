@@ -5,7 +5,7 @@ import type {
   GetProp,
   UploadProps,
 } from 'antd';
-import React, { ReactElement } from 'react';
+import React from 'react';
 
 export type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
 export type SizeType = ConfigProviderProps['componentSize'];
