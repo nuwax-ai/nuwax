@@ -124,6 +124,38 @@ const SpaceLibrary: React.FC = () => {
           }
           onClickMore={handleClickMore}
         />
+        <ComponentItem
+          title={'这里是插件的名字'}
+          desc={'这里是更多的详细的插件描述信息'}
+          img={
+            'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
+          }
+          onClickMore={handleClickMore}
+        />
+        <ComponentItem
+          title={'这里是插件的名字'}
+          desc={'这里是更多的详细的插件描述信息'}
+          img={
+            'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
+          }
+          onClickMore={handleClickMore}
+        />
+        <ComponentItem
+          title={'这里是插件的名字'}
+          desc={'这里是更多的详细的插件描述信息'}
+          img={
+            'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
+          }
+          onClickMore={handleClickMore}
+        />
+        <ComponentItem
+          title={'这里是插件的名字'}
+          desc={'这里是更多的详细的插件描述信息'}
+          img={
+            'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
+          }
+          onClickMore={handleClickMore}
+        />
       </div>
       <AnalyzeStatistics
         open={openAnalyze}

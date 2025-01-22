@@ -99,7 +99,6 @@ const EditAgent: React.FC = () => {
           'flex-1',
           'px-16',
           'py-16',
-          'overflow-y',
           styles.section,
         )}
       >

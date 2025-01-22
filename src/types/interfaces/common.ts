@@ -256,12 +256,16 @@ export interface CustomInputNumberProps {
   step?: number;
 }
 
+// 分析统计单项
+interface AnalyzeStatisticsItem {
+  label: string;
+  value: string;
+}
+
+// 分析统计弹窗组件
 export interface AnalyzeStatisticsProps {
   open: boolean;
   onCancel: () => void;
   title: string;
-  list: {
-    label: string;
-    value: string;
-  }[];
+  list: AnalyzeStatisticsItem[];
 }
