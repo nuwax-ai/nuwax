@@ -50,8 +50,9 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
   changeNode = (val: string) => {
     // 检查 onChange 是否存在并且是一个函数
     const { node } = this.props;
+    const data = node.getData<NodeProps>();
     if (typeof this.props.node.getData().onChange === 'function') {
-      this.props.node.getData().onChange(val, node); // 调用父组件提供的回调函数
+      this.props.node.getData().onChange(val, data); // 调用父组件提供的回调函数
     }
   };
   // 将输入的值替换掉节点名称
@@ -69,8 +70,9 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
     this.setState({ isEditingTitle: false }, () => {
       const { node } = this.props;
       const data = node.getData<NodeProps>();
-      const updatedData = { ...data, title: this.state.editedTitle };
+      const updatedData = { ...data, name: this.state.editedTitle };
       node.setData(updatedData);
+      this.props.node.getData().onChange('Rename', updatedData); // 调用父组件提供的回调函数
     });
   };
 
@@ -117,7 +119,6 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
       data.nodeConfig.extension.height
         ? data.nodeConfig.extension.height
         : 83;
-    console.log(width);
     // 构造渐变背景字符串
     const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
       data.type,
@@ -196,7 +197,7 @@ const portItemStyle = {
     strokeWidth: 1,
     fill: '#fff',
     style: {
-      visibility: 'hidden', // 默认隐藏连接桩，直到有连接线时才显示
+      // visibility: 'hidden', // 默认隐藏连接桩，直到有连接线时才显示
     },
   },
 };
@@ -204,20 +205,20 @@ const portItemStyle = {
 const ports = {
   groups: {
     // 上方的连接桩
-    top: {
-      position: 'top',
-      attrs: portItemStyle,
-    },
+    // top: {
+    //   position: 'top',
+    //   attrs: portItemStyle,
+    // },
     // 右边的连接桩
     right: {
       position: 'right',
       attrs: portItemStyle,
     },
     // 下方的连接桩
-    bottom: {
-      position: 'bottom',
-      attrs: portItemStyle,
-    },
+    // bottom: {
+    //   position: 'bottom',
+    //   attrs: portItemStyle,
+    // },
     // 左边的连接桩
     left: {
       position: 'left',
@@ -227,14 +228,9 @@ const ports = {
   // 运用哪些连接桩，如果不需要就删除掉，或者动态传入
   items: [
     {
-      group: 'top',
-    },
-    {
       group: 'right',
     },
-    {
-      group: 'bottom',
-    },
+
     {
       group: 'left',
     },

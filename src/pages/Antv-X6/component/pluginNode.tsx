@@ -67,7 +67,12 @@ const InputList: React.FC<InputListProps> = ({
 };
 
 // 定义插件,工作流,知识库,数据库的节点渲染
-const PluginInNode: React.FC<NodeDisposeProps> = () => {
+const PluginInNode: React.FC<NodeDisposeProps> = ({ params }) => {
+  // let initialValues={}
+  // if (params.inputArgs && params.inputArgs.length) {
+  //   initialValues = params.inputArgs;
+  // }
+  console.log('params', params);
   const list = [
     {
       label: 'count',
@@ -88,7 +93,6 @@ const PluginInNode: React.FC<NodeDisposeProps> = () => {
   const treeData = [
     { title: 'msg', key: 'msg', tag: 'String' },
     { title: 'response_for_model', key: 'response_for_model', tag: 'String' },
-    { title: 'msg', key: 'msg', tag: 'String' },
     {
       title: 'data',
       key: 'data',

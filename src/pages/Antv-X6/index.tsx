@@ -1,16 +1,15 @@
 import Created from '@/components/Created';
+import Constant from '@/constants/codes.constants';
 import service from '@/services/workflow';
 import { PluginAndLibraryEnum } from '@/types/enums/common';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { ChildNode, Edge } from '@/types/interfaces/workflow';
+import { debounce } from '@/utils/debounce';
+import { updateNode } from '@/utils/updateNode';
 import { getEdges } from '@/utils/workflow';
 import React, { useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import Monaco from './component/monaco';
-
-import Constant from '@/constants/codes.constants';
-import { debounce } from '@/utils/debounce';
-import { updateNode } from '@/utils/updateNode';
 import ControlPanel from './controlPanel';
 import GraphContainer from './graphContainer';
 import Header from './header';
@@ -50,47 +49,6 @@ const AntvX6: React.FC = () => {
   // 是否显示创建工作流，插件，知识库，数据库的弹窗和试运行的弹窗
   const { setShow, setTestRun } = useModel('model');
 
-  const handleNodeChange = (action: string, data?: ChildNode) => {
-    switch (action) {
-      case 'TestRun':
-        setTestRun(true);
-        break;
-      case 'Duplicate':
-        console.log(data);
-        break;
-      case 'Delete':
-        setVisible(false);
-        break;
-      default:
-        break;
-    }
-  };
-
-  const onAdded = (val: CreatedNodeItem) => {
-    const _child: Child = {
-      name: val.label,
-      type: 'general-Node',
-      description: val.desc,
-      key: createdItem,
-    };
-    graphRef.current.addNode(dragEvent, _child);
-    setShow(false);
-  };
-  // 拖拽组件到画布中
-  const dragChild = (e: React.DragEvent<HTMLDivElement>, child: Child) => {
-    e.preventDefault();
-    if (
-      ['Plugin', 'Workflow', 'KnowledgeBase', 'Database'].includes(child.type)
-    ) {
-      console.log(child);
-      setCreatedItem(child.type as PluginAndLibraryEnum);
-      setShow(true);
-      setDragEvent({ x: e.clientX, y: e.clientY });
-    } else {
-      graphRef.current.addNode({ x: e.clientX, y: e.clientY }, child);
-    }
-  };
-
   /** -----------------  需要调用接口的方法  --------------------- */
   // 获取当前画布的信息
   const getList = async () => {
@@ -116,7 +74,6 @@ const AntvX6: React.FC = () => {
   }, 1000);
   // 点击组件，显示抽屉
   const changeDrawer = (child: ChildNode) => {
-    console.log(child);
     // 如果有组件正在展示,那么就要看是否修改了参数,
     // 如果修改了参数,那么就提交数据
     if (visible) {
@@ -126,15 +83,156 @@ const AntvX6: React.FC = () => {
     setFoldWrapItem(child);
   };
 
+  // 新增节点
+  const addNode = async (child: Child, dragEvent: { x: number; y: number }) => {
+    const _params = {
+      workflowId: 6,
+      type: child.type || createdItem,
+    };
+    const _res = await service.addNode(_params);
+    if (_res.code === Constant.success) {
+      child.id = _res.data;
+      graphRef.current.addNode(dragEvent, child);
+    }
+  };
+
+  // 复制节点
+  const copyNode = async (child: ChildNode) => {
+    const _res = await service.copyNode(child.id.toString());
+    if (_res.code === Constant.success) {
+      console.log(child);
+      const _dragEvent = {
+        x: 100,
+        y: 100,
+      };
+      if (
+        child.nodeConfig &&
+        child.nodeConfig.extension &&
+        child.nodeConfig.extension.x
+      ) {
+        _dragEvent.x = child.nodeConfig.extension.x;
+      }
+      if (
+        child.nodeConfig &&
+        child.nodeConfig.extension &&
+        child.nodeConfig.extension.y
+      ) {
+        _dragEvent.y = child.nodeConfig.extension.y;
+      }
+      child.id = _res.data;
+      child.key = 'general-Node';
+      console.log(child);
+      graphRef.current.addNode(_dragEvent, child);
+    }
+  };
+
+  // 删除指定的节点
+  const deleteNode = async (id: number | string) => {
+    const _res = await service.deleteNode(id);
+    if (_res.code === Constant.success) {
+      // console.log(graphRef.current)
+      graphRef.current.deleteNode(id.toString());
+    }
+  };
+
+  // 节点添加或移除边
+  const nodeChangeEdge = async (
+    sourceNode: ChildNode,
+    targetId: string,
+    type: string,
+    id: string,
+  ) => {
+    // 获取当前节点的nextNodeIds
+    const _nextNodeIds =
+      sourceNode.nextNodeIds === null
+        ? []
+        : (sourceNode.nextNodeIds as number[]);
+    // 组装参数
+    const _params = {
+      nodeId: Number(sourceNode.id),
+      integers: _nextNodeIds,
+    };
+    // 根据类型判断，如果type是created，那么就添加边，如果type是deleted，那么就删除边
+    if (type === 'created') {
+      // 如果已经有了这一条边，那么就不再创建
+      if (_params.integers.includes(Number(targetId))) {
+        graphRef.current.deleteEdge(id);
+        return;
+      }
+      _params.integers = [..._nextNodeIds, Number(targetId)];
+    } else {
+      _params.integers = _nextNodeIds?.filter(
+        (item) => item !== Number(targetId),
+      );
+    }
+    const _res = await service.addEdge(_params);
+    // 如果接口不成功，就需要删除掉那一条添加的线
+    if (_res.code !== Constant.success) {
+      graphRef.current.deleteEdge(id);
+    }
+  };
+
   // 发布，保存数据
   const onSubmit = () => {
     // 获取所有节点,保存位置
-    console.log('onSubmit');
+    console.log('onSubmit', graphParams);
+  };
+
+  const handleNodeChange = (action: string, data: ChildNode) => {
+    switch (action) {
+      case 'TestRun':
+        setTestRun(true);
+        break;
+      case 'Duplicate':
+        copyNode(data);
+        break;
+      case 'Rename':
+        changeNode(data);
+        break;
+      case 'Delete':
+        {
+          console.log(data);
+          deleteNode(data.id);
+          setVisible(false);
+        }
+        break;
+      default:
+        break;
+    }
+  };
+  // 添加工作流，插件，知识库，数据库
+  const onAdded = (val: CreatedNodeItem) => {
+    console.log(val);
+    const _child: Child = {
+      name: val.label,
+      key: 'general-Node',
+      description: val.desc,
+      type: createdItem,
+    };
+    addNode(_child, dragEvent);
+    // graphRef.current.addNode(dragEvent, _child);
+    setShow(false);
+  };
+  // 拖拽组件到画布中
+  const dragChild = (e: React.DragEvent<HTMLDivElement>, child: Child) => {
+    e.preventDefault();
+    if (
+      ['Plugin', 'Workflow', 'KnowledgeBase', 'Database'].includes(child.type)
+    ) {
+      console.log(child);
+      setCreatedItem(child.type as PluginAndLibraryEnum);
+      setShow(true);
+      setDragEvent({ x: e.clientX, y: e.clientY });
+    } else {
+      addNode(child, { x: e.clientX, y: e.clientY });
+      // graphRef.current.addNode({ x: e.clientX, y: e.clientY }, child);
+    }
   };
 
   // 保存当前画布中节点的位置
   useEffect(() => {
     getList();
+
     return () => {
       // 组件销毁时，清除定时器
       graphRef.current.saveAllNodes();
@@ -151,6 +249,7 @@ const AntvX6: React.FC = () => {
         handleNodeChange={handleNodeChange}
         ref={graphRef}
         changeDrawer={changeDrawer}
+        changeEdge={nodeChangeEdge}
       />
       <ControlPanel
         dragChild={dragChild}

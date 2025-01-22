@@ -8,6 +8,12 @@ export interface GraphProp {
   containerId: string;
   // 改变抽屉内容的回调函数，接收一个 Child 类型的参数
   changeDrawer: (item: ChildNode) => void;
+  changeEdge: (
+    sourceNode: ChildNode,
+    targetId: string,
+    type: string,
+    id: string,
+  ) => void;
 }
 
 // 节点的数据
@@ -27,6 +33,7 @@ export interface ChildNode {
   unreachableNextNodeIds?: number[] | null;
   modified?: string;
   created?: string;
+  key?: string;
 }
 
 export interface Edge {

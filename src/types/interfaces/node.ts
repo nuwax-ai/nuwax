@@ -58,4 +58,6 @@ export interface NodeConfig {
   temperature?: number;
   //
   topP?: number;
+  // 插件的id
+  pluginId?: number;
 }
