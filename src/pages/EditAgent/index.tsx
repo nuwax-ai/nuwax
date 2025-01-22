@@ -94,13 +94,7 @@ const EditAgent: React.FC = () => {
         onPublish={handlerPublishAgent}
       />
       <section
-        className={cx(
-          'flex',
-          'flex-1',
-          'px-16',
-          'py-16',
-          styles.section,
-        )}
+        className={cx('flex', 'flex-1', 'px-16', 'py-16', styles.section)}
       >
         {/*编排*/}
         <div

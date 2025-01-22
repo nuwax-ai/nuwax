@@ -1,5 +1,6 @@
 import { COMPONENT_MORE_ACTION } from '@/constants/library.constants';
 import { ComponentMoreActionEnum } from '@/types/enums/library';
+import type { ComponentItemProps } from '@/types/interfaces/library';
 import { MoreOutlined, PieChartOutlined } from '@ant-design/icons';
 import { Popover } from 'antd';
 import classNames from 'classnames';
@@ -7,13 +8,6 @@ import React from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-interface ComponentItemProps {
-  title: string;
-  desc: string;
-  img: string;
-  onClickMore: (type: ComponentMoreActionEnum) => void;
-}
 
 const ComponentItem: React.FC<ComponentItemProps> = ({
   title,
@@ -25,7 +19,6 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
     <div
       className={cx(
         styles.container,
-        'w-full',
         'py-12',
         'radius-6',
         'flex',

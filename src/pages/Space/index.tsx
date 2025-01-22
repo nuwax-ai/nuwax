@@ -126,18 +126,21 @@ const Space: React.FC = () => {
         <ApplicationItem onClickMore={handlerClickMore} />
         <ApplicationItem onClickMore={handlerClickMore} />
       </div>
+      {/*分析统计弹窗*/}
       <AnalyzeStatistics
         open={openAnalyze}
         onCancel={() => setOpenAnalyze(false)}
         title="智能体概览"
         list={analyzeList}
       />
+      {/*智能体迁移弹窗*/}
       <AgentMove
         open={openMove}
         title="智能体名称"
         onCancel={() => setOpenMove(false)}
         onConfirm={handlerConfirmMove}
       />
+      {/*创建智能体*/}
       <CreateAgent
         open={openCreateAgent}
         onCancel={() => setOpenCreateAgent(false)}

@@ -1,10 +1,6 @@
 import SelectList from '@/components/SelectList';
 import { Form, Modal } from 'antd';
-// import classNames from 'classnames';
 import React from 'react';
-// import styles from './index.less';
-
-// const cx = classNames.bind(styles);
 
 interface AgentModelSettingProps {
   open: boolean;

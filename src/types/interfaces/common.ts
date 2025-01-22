@@ -1,5 +1,4 @@
-import type { CardStyleEnum } from '@/types/enums/common';
-import { CreateEditAgentEnum } from '@/types/enums/common';
+import type { CardStyleEnum, CreateEditAgentEnum } from '@/types/enums/common';
 import type {
   ConfigProviderProps,
   FormInstance,

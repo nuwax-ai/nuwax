@@ -1,4 +1,5 @@
 import personal from '@/assets/images/personal.png';
+import type { PersonalSpaceContentType } from '@/types/interfaces/menus';
 import { CheckOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import { Divider } from 'antd';
 import classNames from 'classnames';
@@ -7,10 +8,9 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface PersonalSpaceContentType {
-  onCreateTeam: () => void;
-}
-
+/**
+ * 个人空间Popover内容组件
+ */
 const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
   onCreateTeam,
 }) => {
