@@ -7,14 +7,22 @@ import { registerCustomNodes } from './component/registerCustomNodes';
 import type { Child } from './type';
 interface GraphContainerProps {
   graphParams: { nodeList: ChildNode[]; edgeList: Edge[] };
-  handleNodeChange: (action: string, data?: ChildNode) => void;
+  handleNodeChange: (action: string, data: ChildNode) => void;
   changeDrawer: (child: ChildNode) => void;
+  changeEdge: (
+    sourceNode: ChildNode,
+    targetId: string,
+    type: string,
+    id: string,
+  ) => void;
 }
 
 interface GraphContainerRef {
   addNode: (e: { x: number; y: number }, child: Child) => void;
   updateNode: (nodeId: string, newData: Partial<ChildNode>) => void;
   saveAllNodes: () => void;
+  deleteNode: (id: string) => void;
+  deleteEdge: (id: string) => void;
 }
 
 // 辅助函数：生成随机坐标
@@ -26,7 +34,7 @@ function getRandomPosition(maxWidth = 800, maxHeight = 600) {
 }
 
 const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
-  ({ graphParams, handleNodeChange, changeDrawer }, ref) => {
+  ({ graphParams, handleNodeChange, changeDrawer, changeEdge }, ref) => {
     registerCustomNodes();
     const containerRef = useRef<HTMLDivElement>(null);
     const graphRef = useRef<any>(null);
@@ -60,6 +68,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
       const newNode = graphRef.current.addNode({
         shape: child.key,
+        id: child.id,
         x: point.x,
         y: point.y,
         width: 304,
@@ -86,7 +95,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
       const node = graphRef.current.getCellById(nodeId);
       if (node && node.isNode()) {
-        console.log(123, node);
         const currentData = node.getData() as ChildNode;
 
         const position = node.getPosition();
@@ -116,6 +124,20 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       }
     };
 
+    // 删除节点
+    const deleteNode = (nodeId: string) => {
+      if (!graphRef.current) return;
+
+      graphRef.current.removeCell(nodeId);
+    };
+
+    // 删除边
+    const deleteEdge = (id: string) => {
+      if (!graphRef.current) return;
+
+      graphRef.current.removeCell(id);
+    };
+
     // 保存所有节点的位置
     const saveAllNodes = () => {
       const nodes = graphRef.current.getNodes().map((node: Node) => {
@@ -138,6 +160,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       addNode,
       updateNode,
       saveAllNodes,
+      deleteNode,
+      deleteEdge,
     }));
 
     useEffect(() => {
@@ -148,6 +172,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       graphRef.current = InitGraph({
         containerId: 'graph-container',
         changeDrawer: changeDrawer,
+        changeEdge: changeEdge,
       });
 
       const cleanup = EventHandlers(graphRef.current);
@@ -164,6 +189,11 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
     useEffect(() => {
       if (graphRef.current && graphParams.nodeList.length > 0) {
+        // 清除现有元素，防止重复渲染
+        graphRef.current.clearCells();
+
+        console.log(graphRef.current);
+
         const nodes = graphParams.nodeList.map((node: ChildNode) => {
           const extension = node.nodeConfig?.extension || {};
           const width = extension.width || 304;
@@ -186,20 +216,37 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           };
         });
 
+        // 更新图形数据中的节点
+        // graphRef.current.fromJSON({ nodes });
+        // console.log(graphParams.edgeList);
         const edges = graphParams.edgeList.map((edge: Edge) => ({
-          id: `${edge.source}-${edge.target}`,
           shape: 'edge',
-          source: { id: edge.source.toString() },
-          target: { id: edge.target.toString() },
-          zIndex: 3,
+          source: {
+            cell: edge.source.toString(),
+            // 指定源端口为右侧端口
+            port: 'right',
+          },
+          target: {
+            cell: edge.target.toString(),
+            // 指定目标端口为左侧端口
+            port: 'left',
+          },
+          router: {
+            name: 'orth', // 使用正交路由算法
+          },
+          attrs: {
+            line: {
+              stroke: '#A2B1C3',
+              strokeWidth: 2,
+            },
+          },
+          zIndex: 30,
         }));
 
         graphRef.current.fromJSON({
           nodes,
           edges,
         });
-
-        console.log(graphRef.current.getCells());
       }
     }, [graphParams]);
 

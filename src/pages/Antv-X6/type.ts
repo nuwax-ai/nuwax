@@ -42,6 +42,8 @@ export interface Child {
   key: string;
   // 描述
   description: string;
+  // 节点的id
+  id?: number;
 }
 
 /**

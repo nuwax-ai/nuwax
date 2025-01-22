@@ -12,7 +12,7 @@ import { Selection } from '@antv/x6-plugin-selection';
 import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
 import { Transform } from '@antv/x6-plugin-transform';
-
+// import { Popover } from 'antd';
 // 自定义类型定义
 import { GraphProp } from '@/types/interfaces/workflow';
 
@@ -21,7 +21,7 @@ import { GraphProp } from '@/types/interfaces/workflow';
  * @param param0 - 包含容器 ID 和改变抽屉内容回调的对象
  * @returns 返回初始化后的图形实例
  */
-const initGraph = ({ containerId, changeDrawer }: GraphProp) => {
+const initGraph = ({ containerId, changeDrawer, changeEdge }: GraphProp) => {
   const graphContainer = document.getElementById(containerId);
   // 如果找不到容器，则抛出错误
   if (!graphContainer) throw new Error('Container not found');
@@ -123,6 +123,7 @@ const initGraph = ({ containerId, changeDrawer }: GraphProp) => {
 
   // 监听节点点击事件，调用 changeDrawer 函数更新右侧抽屉的内容
   graph.on('node:click', ({ node }) => {
+    console.log(node);
     const data = node.getData(); // 获取被点击节点的数据
     data.id = node.id;
     changeDrawer(data); // 调用回调函数以更新抽屉内容
@@ -130,8 +131,31 @@ const initGraph = ({ containerId, changeDrawer }: GraphProp) => {
 
   // 确保所有新的边都有更高的层级,这里可以触发父组件的方法，调用接口添加边
   graph.on('edge:added', ({ edge }) => {
-    edge.setZIndex(3); // 边的层级设置为3
+    setTimeout(() => {
+      console.log(edge);
+      const sourceNode = edge.getSourceNode()?.getData();
+      const targetNodeId = edge.getTargetCellId();
+
+      // 通知父组件创建边
+      changeEdge(sourceNode, targetNodeId, 'created', edge.id);
+      edge.setZIndex(30);
+    }, 1000); // 延迟 0 毫秒
   });
+
+  // 给所有的边添加一个右键监听
+  // graph.on('edge:contextmenu', ({ edge, x, y, e }) => {
+  //   // 阻止默认的浏览器右键菜单
+  //   e.preventDefault();
+  // // 创建一个新的 Popover 实例，并设置其位置和内容
+  // const content = (
+  //   <span  onClick={() => handleDeleteEdge(edge)}>
+  //     删除
+  //   </span>
+  // );
+
+  //   // 通知父组件创建边
+  //   changeEdge(sourceNode,targetNodeId,'delete',edge.id)
+  // });
 
   return graph; // 返回初始化好的图形实例
 };

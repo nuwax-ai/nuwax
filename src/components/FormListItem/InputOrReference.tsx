@@ -18,13 +18,14 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
 }) => {
   const handleSelect = (parentKey: string, childKey: string) => {
     // 将选中的父选项和子选项作为字符串集合添加到 selected 数组中
-    const selectedItem = `${parentKey}-${childKey}`;
+    // const selectedItem = `${parentKey}-${childKey}`;
     // 调用 onChange 更新值
-    onChange(selectedItem);
+    onChange(childKey);
   };
   // 更新表单值为输入框内容
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
+    console.log('newValue', newValue);
     if (onChange) {
       onChange(newValue);
     }
