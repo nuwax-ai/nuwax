@@ -16,12 +16,13 @@ const OverrideTextArea: React.FC<OverrideTextAreaProps> = (props) => {
     maxLength = 200,
     minRows = 3,
     maxRows = 6,
+    rules,
   } = props;
 
   const [value, setValue] = useState<string>('');
   return (
     <Form.Item className={cx('relative')}>
-      <Form.Item className={cx(styles['text-area'])} name={name} label={label}>
+      <Form.Item className={cx(styles['text-area'])} name={name} label={label} rules={rules}>
         <TextArea
           rootClassName={styles.input}
           placeholder={placeholder}
