@@ -4,6 +4,7 @@ import {
   CreateListEnum,
   FileBoxEnum,
   FilterStatusEnum,
+  LibraryAllTypeEnum,
   LongMemberEnum,
   PluginSettingEnum,
   SpaceApplicationListEnum,
@@ -14,6 +15,16 @@ import {
   HddOutlined,
   RadarChartOutlined,
 } from '@ant-design/icons';
+
+// 组件库所有类型
+export const LIBRARY_ALL_TYPE = [
+  { value: LibraryAllTypeEnum.All_Type, label: '所有类型' },
+  { value: LibraryAllTypeEnum.Workflow, label: '工作流' },
+  { value: LibraryAllTypeEnum.Plugin, label: '插件' },
+  { value: LibraryAllTypeEnum.Knowledge, label: '知识库' },
+  { value: LibraryAllTypeEnum.DataBase, label: '数据库' },
+  { value: LibraryAllTypeEnum.Model, label: '模型' },
+];
 
 // 过滤状态
 export const FILTER_STATUS = [

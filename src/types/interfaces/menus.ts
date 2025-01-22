@@ -28,3 +28,14 @@ export interface UserActionItemType {
   icon: React.ReactNode;
   text: string;
 }
+
+// 个人空间Popover内容组件
+export interface PersonalSpaceContentType {
+  onCreateTeam: () => void;
+}
+
+// 创建新团队组件
+export interface CreateNewTeamProps {
+  open: boolean;
+  onCancel: () => void;
+}

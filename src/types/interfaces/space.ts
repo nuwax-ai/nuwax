@@ -8,11 +8,6 @@ export interface ApplicationItemProps {
   onClickMore: (type: ApplicationMoreActionEnum) => void;
 }
 
-export interface AgentAnalyzeProps {
-  open: boolean;
-  onCancel: () => void;
-}
-
 // 系统提示词组件属性
 export interface SystemTipsWordProps {
   value: string;
@@ -33,7 +28,7 @@ export interface ConfigOptionCollapseProps {
 export interface TooltipIconProps {
   className?: string;
   type?: TooltipTitleTypeEnum;
-  title?: string;
+  title?: React.ReactNode;
   icon?: React.ReactNode;
   onClick?: MouseEventHandler<HTMLSpanElement>;
 }

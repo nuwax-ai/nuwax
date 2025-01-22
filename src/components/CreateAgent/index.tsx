@@ -4,7 +4,7 @@ import UploadAvatar from '@/components/UploadAvatar';
 import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
 import { CREATE_AGENT_LIST } from '@/constants/space.contants';
 import { CreateAgentEnum, CreateEditAgentEnum } from '@/types/enums/common';
-import { CreateAgentProps } from '@/types/interfaces/common';
+import type { CreateAgentProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, Input, message, Segmented } from 'antd';
 import classNames from 'classnames';
@@ -14,6 +14,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 const { TextArea } = Input;
+
 const CreateAgent: React.FC<CreateAgentProps> = ({
   type = CreateEditAgentEnum.Create,
   agentName,

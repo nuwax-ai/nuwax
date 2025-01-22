@@ -1,3 +1,13 @@
+// 组件库所有类型枚举
+export enum LibraryAllTypeEnum {
+  All_Type,
+  Workflow,
+  Plugin,
+  Knowledge,
+  DataBase,
+  Model,
+}
+
 // 过滤状态枚举
 export enum FilterStatusEnum {
   All,

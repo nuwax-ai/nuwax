@@ -9,6 +9,7 @@ import AgentModelSetting from './AgentModelSetting';
 import ArrangeTitle from './ArrangeTitle';
 import DebugDetails from './DebugDetails';
 import styles from './index.less';
+import KnowledgeSetting from './KnowledgeSetting';
 import PluginModelSetting from './PluginModelSetting';
 import PreviewAndDebug from './PreviewAndDebug';
 import PublishAgent from './PublishAgent';
@@ -30,6 +31,7 @@ const EditAgent: React.FC = () => {
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
   const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
+  const [openKnowledgeModel, setOpenKnowledgeModel] = useState<boolean>(false);
 
   const handlerClose = () => {
     setShowType(EditAgentShowType.Hide);
@@ -78,6 +80,11 @@ const EditAgent: React.FC = () => {
     setOpenPluginModel(true);
   };
 
+  // 知识库
+  const handleKnowledge = () => {
+    setOpenKnowledgeModel(true);
+  };
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader
@@ -87,14 +94,7 @@ const EditAgent: React.FC = () => {
         onPublish={handlerPublishAgent}
       />
       <section
-        className={cx(
-          'flex',
-          'flex-1',
-          'px-16',
-          'py-16',
-          'overflow-y',
-          styles.section,
-        )}
+        className={cx('flex', 'flex-1', 'px-16', 'py-16', styles.section)}
       >
         {/*编排*/}
         <div
@@ -107,7 +107,10 @@ const EditAgent: React.FC = () => {
             <SystemTipsWord value={tipsText} onChange={setTipsText} />
             <div className={cx(styles['h-line'])} />
             {/*配置区域*/}
-            <AgentArrangeConfig onSet={handlerPluginSetting} />
+            <AgentArrangeConfig
+              onKnowledge={handleKnowledge}
+              onSet={handlerPluginSetting}
+            />
           </div>
         </div>
         {/*预览与调试*/}
@@ -152,6 +155,11 @@ const EditAgent: React.FC = () => {
       <PluginModelSetting
         open={openPluginModel}
         onCancel={() => setOpenPluginModel(false)}
+      />
+      {/*知识库设置*/}
+      <KnowledgeSetting
+        open={openKnowledgeModel}
+        onCancel={() => setOpenKnowledgeModel(false)}
       />
     </div>
   );

@@ -1,11 +1,7 @@
 import { AppstoreOutlined, SettingOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { Menu } from 'antd';
-import classNames from 'classnames';
 import React, { useState } from 'react';
-import styles from './index.less';
-
-const cx = classNames.bind(styles);
 
 type MenuItem = Required<MenuProps>['items'][number];
 
@@ -59,6 +55,9 @@ const getLevelKeys = (items1: LevelKeysProps[]) => {
 
 const levelKeys = getLevelKeys(items as LevelKeysProps[]);
 
+/**
+ * 广场第二菜单栏
+ */
 const SquareSection: React.FC = () => {
   const [stateOpenKeys, setStateOpenKeys] = useState<string[]>(['sub4', '9']);
 
@@ -89,7 +88,7 @@ const SquareSection: React.FC = () => {
     console.log('click ', e);
   };
   return (
-    <div className={cx(styles.container)}>
+    <div className={'h-full'}>
       <Menu
         onClick={onClick}
         defaultSelectedKeys={['9']}
