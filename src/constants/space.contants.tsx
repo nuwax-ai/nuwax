@@ -13,17 +13,37 @@ import {
 import {
   BorderVerticleOutlined,
   HddOutlined,
+  PieChartOutlined,
   RadarChartOutlined,
 } from '@ant-design/icons';
 
 // 组件库所有类型
 export const LIBRARY_ALL_TYPE = [
-  { value: LibraryAllTypeEnum.All_Type, label: '所有类型' },
-  { value: LibraryAllTypeEnum.Workflow, label: '工作流' },
-  { value: LibraryAllTypeEnum.Plugin, label: '插件' },
-  { value: LibraryAllTypeEnum.Knowledge, label: '知识库' },
-  { value: LibraryAllTypeEnum.DataBase, label: '数据库' },
-  { value: LibraryAllTypeEnum.Model, label: '模型' },
+  {
+    value: LibraryAllTypeEnum.Workflow,
+    label: '工作流',
+    icon: <PieChartOutlined />,
+  },
+  {
+    value: LibraryAllTypeEnum.Plugin,
+    label: '插件',
+    icon: <PieChartOutlined />,
+  },
+  {
+    value: LibraryAllTypeEnum.Knowledge,
+    label: '知识库',
+    icon: <PieChartOutlined />,
+  },
+  {
+    value: LibraryAllTypeEnum.DataBase,
+    label: '数据库',
+    icon: <PieChartOutlined />,
+  },
+  {
+    value: LibraryAllTypeEnum.Model,
+    label: '模型',
+    icon: <PieChartOutlined />,
+  },
 ];
 
 // 过滤状态

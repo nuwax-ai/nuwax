@@ -146,6 +146,12 @@ export interface CustomFormModalProps {
   onConfirm: () => void;
 }
 
+// Form.Item 验证rule
+export type Rule = {
+  required: boolean;
+  message: string | React.ReactElement;
+};
+
 // 重写TextArea
 export interface OverrideTextAreaProps {
   placeholder?: string;
@@ -154,6 +160,7 @@ export interface OverrideTextAreaProps {
   maxLength?: number;
   minRows?: number;
   maxRows?: number;
+  rules?: Rule[];
 }
 
 // 级联选项类型
@@ -267,4 +274,18 @@ export interface AnalyzeStatisticsProps {
   onCancel: () => void;
   title: string;
   list: AnalyzeStatisticsItem[];
+}
+
+// 自定义popover单项
+export interface CustomPopoverItem {
+  icon?: React.ReactNode;
+  [key: string]: any;
+  label: string;
+  isDel?: boolean;
+}
+
+// 自定义popover弹窗组件
+export interface CustomPopoverProps {
+  list: CustomPopoverItem[];
+  onClick: (item: CustomPopoverItem) => void;
 }

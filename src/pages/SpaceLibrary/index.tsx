@@ -1,4 +1,5 @@
 import AnalyzeStatistics from '@/components/AnalyzeStatistics';
+import CustomPopover from '@/components/CustomPopover';
 import SelectList from '@/components/SelectList';
 import {
   CREATE_LIST,
@@ -11,21 +12,22 @@ import {
   FilterStatusEnum,
   LibraryAllTypeEnum,
 } from '@/types/enums/space';
+import { CustomPopoverItem } from '@/types/interfaces/common';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import ComponentItem from './ComponentItem';
+import CreateNewPlugin from './CreateNewPlugin';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 const SpaceLibrary: React.FC = () => {
+  // 新建插件弹窗
+  const [openPlugin, setOpenPlugin] = useState<boolean>(false);
   // 打开分析弹窗
   const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
-  // 打开创建组件弹窗
-  const [openCreateComponent, setOpenCreateComponent] =
-    useState<boolean>(false);
   const [type, setType] = useState<LibraryAllTypeEnum>(
     LibraryAllTypeEnum.All_Type,
   );
@@ -33,8 +35,6 @@ const SpaceLibrary: React.FC = () => {
   const [create, setCreate] = useState<CreateListEnum>(
     CreateListEnum.All_Person,
   );
-
-  console.log(openCreateComponent);
 
   const handlerChangeType = (value: LibraryAllTypeEnum) => {
     setType(value);
@@ -48,9 +48,27 @@ const SpaceLibrary: React.FC = () => {
     setCreate(value);
   };
 
+  // 点击添加资源
+  const handleClickPopoverItem = (item) => {
+    const { value: type } = item;
+    switch (type as LibraryAllTypeEnum) {
+      case LibraryAllTypeEnum.Workflow:
+        break;
+      case LibraryAllTypeEnum.Plugin:
+        setOpenPlugin(true);
+        break;
+      case LibraryAllTypeEnum.Knowledge:
+        break;
+      case LibraryAllTypeEnum.DataBase:
+        break;
+      case LibraryAllTypeEnum.Model:
+        break;
+    }
+  };
+
   // 点击更多操作
-  const handleClickMore = (type: ComponentMoreActionEnum) => {
-    console.log(type);
+  const handleClickMore = (item: CustomPopoverItem) => {
+    const { type } = item;
     switch (type) {
       case ComponentMoreActionEnum.Copy:
         break;
@@ -85,13 +103,12 @@ const SpaceLibrary: React.FC = () => {
     <div className={cx(styles.container, 'h-full')}>
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>组件库</h3>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setOpenCreateComponent(true)}
-        >
-          组件
-        </Button>
+        {/*添加资源*/}
+        <CustomPopover list={LIBRARY_ALL_TYPE} onClick={handleClickPopoverItem}>
+          <Button type="primary" icon={<PlusOutlined />}>
+            组件
+          </Button>
+        </CustomPopover>
       </div>
       <div className={cx('flex', styles['select-search-area'])}>
         <SelectList
@@ -122,7 +139,7 @@ const SpaceLibrary: React.FC = () => {
           img={
             'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
           }
-          onClickMore={handleClickMore}
+          onClick={handleClickMore}
         />
         <ComponentItem
           title={'这里是插件的名字'}
@@ -130,7 +147,7 @@ const SpaceLibrary: React.FC = () => {
           img={
             'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
           }
-          onClickMore={handleClickMore}
+          onClick={handleClickMore}
         />
         <ComponentItem
           title={'这里是插件的名字'}
@@ -138,7 +155,7 @@ const SpaceLibrary: React.FC = () => {
           img={
             'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
           }
-          onClickMore={handleClickMore}
+          onClick={handleClickMore}
         />
         <ComponentItem
           title={'这里是插件的名字'}
@@ -146,7 +163,7 @@ const SpaceLibrary: React.FC = () => {
           img={
             'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
           }
-          onClickMore={handleClickMore}
+          onClick={handleClickMore}
         />
         <ComponentItem
           title={'这里是插件的名字'}
@@ -154,14 +171,20 @@ const SpaceLibrary: React.FC = () => {
           img={
             'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
           }
-          onClickMore={handleClickMore}
+          onClick={handleClickMore}
         />
       </div>
+      {/*统计概览*/}
       <AnalyzeStatistics
         open={openAnalyze}
         onCancel={() => setOpenAnalyze(false)}
         title="统计概览"
         list={analyzeList}
+      />
+      {/*新建插件弹窗*/}
+      <CreateNewPlugin
+        open={openPlugin}
+        onCancel={() => setOpenPlugin(false)}
       />
     </div>
   );

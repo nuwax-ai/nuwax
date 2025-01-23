@@ -1,8 +1,7 @@
+import CustomPopover from '@/components/CustomPopover';
 import { COMPONENT_MORE_ACTION } from '@/constants/library.constants';
-import { ComponentMoreActionEnum } from '@/types/enums/library';
 import type { ComponentItemProps } from '@/types/interfaces/library';
 import { MoreOutlined, PieChartOutlined } from '@ant-design/icons';
-import { Popover } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -13,7 +12,7 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
   title,
   desc,
   img,
-  onClickMore,
+  onClick,
 }) => {
   return (
     <div
@@ -75,30 +74,7 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
       <div className={cx(styles.footer, 'flex', 'items-center')}>
         <img className={cx(styles.img, 'radius-6')} src={img} alt="" />
         <span>admin, 最近编辑 12-05 15:34</span>
-        <Popover
-          content={
-            <ul>
-              {COMPONENT_MORE_ACTION.map((item) => (
-                <li
-                  key={item.type}
-                  className={cx(
-                    styles['more-line'],
-                    'hover-box',
-                    'cursor-pointer',
-                    {
-                      [styles.del]: item.type === ComponentMoreActionEnum.Del,
-                    },
-                  )}
-                  onClick={() => onClickMore(item.type)}
-                >
-                  {item.label}
-                </li>
-              ))}
-            </ul>
-          }
-          placement="bottomRight"
-          arrow={false}
-        >
+        <CustomPopover list={COMPONENT_MORE_ACTION} onClick={onClick}>
           <span
             className={cx(
               styles['icon-box'],
@@ -110,7 +86,7 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
           >
             <MoreOutlined />
           </span>
-        </Popover>
+        </CustomPopover>
       </div>
     </div>
   );

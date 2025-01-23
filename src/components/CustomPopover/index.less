@@ -1,0 +1,24 @@
+@import '@/styles/color';
+
+.popover-box {
+  :global {
+    .ant-popover-inner {
+      padding: 0;
+    }
+  }
+
+  .popover-list {
+    padding: 4px 6px;
+
+    .p-box {
+      padding: 4px 30px 4px 10px;
+      font-size: 14px;
+      color: @BLANK04;
+      gap: 4px;
+
+      &.del {
+        color: @RED;
+      }
+    }
+  }
+}
