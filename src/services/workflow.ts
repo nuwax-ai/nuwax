@@ -23,7 +23,25 @@ interface IAddNode {
   type: string;
   loopNodeId?: number;
   typeId?: number;
+  extension?: {
+    x: number;
+    y: number;
+  };
 }
+
+// 获取工作流的详细信息
+const getDetails = (id: number) => {
+  return customRequest({
+    url: `/api/workflow/${id}`,
+    method: 'GET',
+  })
+    .then((response) => {
+      return response;
+    })
+    .catch((error) => {
+      console.error('Failed to get node list:', error);
+    });
+};
 
 // 根据id查询工作流节点列表
 const getNodeList = async (id: number) => {
@@ -155,6 +173,7 @@ const updatePluginNode = async (params: IUpdateLLMNode) => {
 };
 
 export default {
+  getDetails,
   getNodeList,
   addNode,
   getModelList,

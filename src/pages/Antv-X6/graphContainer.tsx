@@ -79,6 +79,38 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         },
         resizable: true,
         zIndex: 2,
+        ports: {
+          groups: {
+            left: {
+              position: 'left',
+              attrs: {
+                circle: {
+                  r: 5,
+                  magnet: true,
+                  stroke: '#8f8f8f',
+                  strokeWidth: 1,
+                  fill: '#fff',
+                },
+              },
+            },
+            right: {
+              position: 'right',
+              attrs: {
+                circle: {
+                  r: 5,
+                  magnet: true,
+                  stroke: '#8f8f8f',
+                  strokeWidth: 1,
+                  fill: '#fff',
+                },
+              },
+            },
+          },
+          items: [
+            { group: 'left', id: `${child.id}-left` },
+            { group: 'right', id: `${child.id}-right` },
+          ],
+        },
       });
 
       if (targetNode === null) {
@@ -192,8 +224,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         // 清除现有元素，防止重复渲染
         graphRef.current.clearCells();
 
-        console.log(graphRef.current);
-
         const nodes = graphParams.nodeList.map((node: ChildNode) => {
           const extension = node.nodeConfig?.extension || {};
           const width = extension.width || 304;
@@ -213,39 +243,80 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
               onChange: handleNodeChange,
             },
             zIndex: 2,
+            ports: {
+              groups: {
+                left: {
+                  position: 'left',
+                  attrs: {
+                    circle: {
+                      r: 5,
+                      magnet: true,
+                      stroke: '#8f8f8f',
+                      strokeWidth: 1,
+                      fill: '#fff',
+                    },
+                  },
+                },
+                right: {
+                  position: 'right',
+                  attrs: {
+                    circle: {
+                      r: 5,
+                      magnet: true,
+                      stroke: '#8f8f8f',
+                      strokeWidth: 1,
+                      fill: '#fff',
+                    },
+                  },
+                },
+              },
+              items: [
+                { group: 'left', id: `${node.id.toString()}-left` },
+                { group: 'right', id: `${node.id.toString()}-right` },
+              ],
+            },
           };
         });
 
         // 更新图形数据中的节点
         // graphRef.current.fromJSON({ nodes });
         // console.log(graphParams.edgeList);
-        const edges = graphParams.edgeList.map((edge: Edge) => ({
-          shape: 'edge',
-          source: {
-            cell: edge.source.toString(),
-            // 指定源端口为右侧端口
-            port: 'right',
-          },
-          target: {
-            cell: edge.target.toString(),
-            // 指定目标端口为左侧端口
-            port: 'left',
-          },
-          router: {
-            name: 'orth', // 使用正交路由算法
-          },
-          attrs: {
-            line: {
-              stroke: '#A2B1C3',
-              strokeWidth: 2,
+        const edges = graphParams.edgeList.map((edge: Edge) => {
+          return {
+            shape: 'edge',
+            source: {
+              cell: edge.source.toString(),
+              port: `${edge.source.toString()}-right`, // 使用右侧连接桩
             },
-          },
-          zIndex: 30,
-        }));
+            target: {
+              cell: edge.target.toString(),
+              port: `${edge.target.toString()}-left`, // 使用左侧连接桩
+            },
+            router: {
+              name: 'orth',
+            },
+            connector: {
+              name: 'rounded',
+              args: {
+                radius: 8,
+              },
+            },
+            attrs: {
+              line: {
+                stroke: '#A2B1C3',
+                strokeWidth: 2,
+              },
+            },
+            zIndex: 30,
+          };
+        });
 
         graphRef.current.fromJSON({
           nodes,
           edges,
+        });
+        graphRef.current.getNodes().forEach((node: Node) => {
+          console.log(node.getData().id, node.getPorts());
         });
       }
     }, [graphParams]);

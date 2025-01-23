@@ -3,3 +3,26 @@
     margin-bottom: 0 !important;
   }
 }
+
+.input-or-reference {
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  padding: 0 4px 0 0;
+  height: 32px;
+
+  .ant-input-outlined {
+    border: none;
+  }
+
+  .ant-input-outlined:focus {
+    box-shadow: none;
+  }
+
+  .ant-input-outlined.ant-input-status-error:not(.ant-input-disabled) {
+    border: none;
+  }
+
+  .input-or-reference-tag {
+    margin-left: 4px;
+  }
+}

@@ -357,7 +357,7 @@ export const outPutConfigs = [
     label: '参数名',
     rules: [{ required: true, message: '请输入参数名' }],
     component: Input,
-    width: 160,
+    width: 100,
   },
   {
     name: 'dataType',
@@ -365,7 +365,7 @@ export const outPutConfigs = [
     label: '参数值',
     rules: [{ required: true, message: '请输入参数值' }],
     component: InputOrReference,
-    width: 120,
+    width: 180,
     props: { referenceList: modelTypes, fieldName: 'dataType' },
   },
   {
