@@ -1,6 +1,9 @@
 import {
+  AfferentModeEnum,
   ComponentMoreActionEnum,
-  PluginCreateToolEnum, RequestContentFormatEnum, RequestMethodEnum,
+  PluginCreateToolEnum,
+  RequestContentFormatEnum,
+  RequestMethodEnum,
 } from '@/types/enums/library';
 import { CustomPopoverItem } from '@/types/interfaces/common';
 
@@ -24,31 +27,61 @@ export const PLUGIN_CREATE_TOOL = [
 ];
 
 // 请求方法
-export const REQUEST_METHOD = [{
-  value: RequestMethodEnum.Post,
-  label: 'POST',
-}, {
-  value: RequestMethodEnum.Get,
-  label: 'GET',
-}, {
-  value: RequestMethodEnum.Put,
-  label: 'PUT',
-}, {
-  value: RequestMethodEnum.Delete,
-  label: 'DELETE',
-}];
+export const REQUEST_METHOD = [
+  {
+    value: RequestMethodEnum.Post,
+    label: 'POST',
+  },
+  {
+    value: RequestMethodEnum.Get,
+    label: 'GET',
+  },
+  {
+    value: RequestMethodEnum.Put,
+    label: 'PUT',
+  },
+  {
+    value: RequestMethodEnum.Delete,
+    label: 'DELETE',
+  },
+];
 
 // 请求内容格式
-export const REQUEST_CONTENT_FORMAT = [{
-  value: RequestContentFormatEnum.No,
-  label: '无',
-}, {
-  value: RequestContentFormatEnum.Form_Data,
-  label: 'form-data',
-}, {
-  value: RequestContentFormatEnum.X_Www_Form_Urlencoded,
-  label: 'x-www-form-urlencoded',
-}, {
-  value: RequestContentFormatEnum.Json,
-  label: 'json',
-}];
+export const REQUEST_CONTENT_FORMAT = [
+  {
+    value: RequestContentFormatEnum.No,
+    label: '无',
+  },
+  {
+    value: RequestContentFormatEnum.Form_Data,
+    label: 'form-data',
+  },
+  {
+    value: RequestContentFormatEnum.X_Www_Form_Urlencoded,
+    label: 'x-www-form-urlencoded',
+  },
+  {
+    value: RequestContentFormatEnum.Json,
+    label: 'json',
+  },
+];
+
+// 传入方法
+export const AFFERENT_MODE_LIST = [
+  {
+    value: AfferentModeEnum.Body,
+    label: 'Body',
+  },
+  {
+    value: AfferentModeEnum.Path,
+    label: 'Path',
+  },
+  {
+    value: AfferentModeEnum.Query,
+    label: 'Query',
+  },
+  {
+    value: AfferentModeEnum.Header,
+    label: 'Header',
+  },
+];

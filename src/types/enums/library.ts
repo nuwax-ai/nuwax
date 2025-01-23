@@ -26,7 +26,7 @@ export enum RequestMethodEnum {
   Post,
   Get,
   Put,
-  Delete
+  Delete,
 }
 
 // 请求内容格式枚举
@@ -35,4 +35,12 @@ export enum RequestContentFormatEnum {
   Form_Data,
   X_Www_Form_Urlencoded,
   Json,
+}
+
+// 传入方法枚举
+export enum AfferentModeEnum {
+  Body,
+  Path,
+  Query,
+  Header,
 }

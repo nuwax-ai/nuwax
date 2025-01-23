@@ -37,7 +37,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
     setTimeout(() => {
       onCancel();
       // todo 目前逻辑未定，这里只是暂时做页面跳转到测试插件，后续修改
-      history.push('/space/1101010/plugin/15115')
+      history.push('/space/1101010/plugin/15115');
       setConfirmLoading(false);
     }, 3000);
   };
@@ -89,7 +89,9 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
           <OverrideTextArea
             name="desc"
             label="插件描述"
-            rules={[{required: true, message: '请输入插件的主要功能和使用场景'}]}
+            rules={[
+              { required: true, message: '请输入插件的主要功能和使用场景' },
+            ]}
             placeholder="请输入插件的主要功能和使用场景，确保内容符合平台规范。帮助用户/大模型更好地理解"
             maxLength={600}
           />

@@ -22,7 +22,12 @@ const OverrideTextArea: React.FC<OverrideTextAreaProps> = (props) => {
   const [value, setValue] = useState<string>('');
   return (
     <Form.Item className={cx('relative')}>
-      <Form.Item className={cx(styles['text-area'])} name={name} label={label} rules={rules}>
+      <Form.Item
+        className={cx(styles['text-area'])}
+        name={name}
+        label={label}
+        rules={rules}
+      >
         <TextArea
           rootClassName={styles.input}
           placeholder={placeholder}

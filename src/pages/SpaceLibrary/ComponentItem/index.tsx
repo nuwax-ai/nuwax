@@ -8,11 +8,13 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+// 单个资源组件
 const ComponentItem: React.FC<ComponentItemProps> = ({
   title,
   desc,
   img,
   onClick,
+  onClickMore,
 }) => {
   return (
     <div
@@ -25,6 +27,7 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
         'content-between',
         'cursor-pointer',
       )}
+      onClick={onClick}
     >
       <div className={cx('flex', 'content-between', styles.header)}>
         <div
@@ -74,7 +77,7 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
       <div className={cx(styles.footer, 'flex', 'items-center')}>
         <img className={cx(styles.img, 'radius-6')} src={img} alt="" />
         <span>admin, 最近编辑 12-05 15:34</span>
-        <CustomPopover list={COMPONENT_MORE_ACTION} onClick={onClick}>
+        <CustomPopover list={COMPONENT_MORE_ACTION} onClick={onClickMore}>
           <span
             className={cx(
               styles['icon-box'],

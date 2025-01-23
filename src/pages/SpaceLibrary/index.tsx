@@ -13,6 +13,7 @@ import {
   LibraryAllTypeEnum,
 } from '@/types/enums/space';
 import { CustomPopoverItem } from '@/types/interfaces/common';
+import { history } from '@@/core/history';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input } from 'antd';
 import classNames from 'classnames';
@@ -80,6 +81,11 @@ const SpaceLibrary: React.FC = () => {
     }
   };
 
+  // 点击单个资源组件 todo 需根据组件类型，跳转到不同页面
+  const handleClickComponent = () => {
+    history.push('/space/1101010/plugin/15115');
+  };
+
   const analyzeList = [
     {
       label: '智能体引用数',
@@ -139,7 +145,8 @@ const SpaceLibrary: React.FC = () => {
           img={
             'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
           }
-          onClick={handleClickMore}
+          onClick={handleClickComponent}
+          onClickMore={handleClickMore}
         />
         <ComponentItem
           title={'这里是插件的名字'}
@@ -147,7 +154,8 @@ const SpaceLibrary: React.FC = () => {
           img={
             'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
           }
-          onClick={handleClickMore}
+          onClick={handleClickComponent}
+          onClickMore={handleClickMore}
         />
         <ComponentItem
           title={'这里是插件的名字'}
@@ -155,7 +163,8 @@ const SpaceLibrary: React.FC = () => {
           img={
             'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
           }
-          onClick={handleClickMore}
+          onClick={handleClickComponent}
+          onClickMore={handleClickMore}
         />
         <ComponentItem
           title={'这里是插件的名字'}
@@ -163,7 +172,8 @@ const SpaceLibrary: React.FC = () => {
           img={
             'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
           }
-          onClick={handleClickMore}
+          onClick={handleClickComponent}
+          onClickMore={handleClickMore}
         />
         <ComponentItem
           title={'这里是插件的名字'}
@@ -171,7 +181,8 @@ const SpaceLibrary: React.FC = () => {
           img={
             'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
           }
-          onClick={handleClickMore}
+          onClick={handleClickComponent}
+          onClickMore={handleClickMore}
         />
       </div>
       {/*统计概览*/}

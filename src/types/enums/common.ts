@@ -48,6 +48,42 @@ export enum VariableTypeEnum {
   Array_Object,
 }
 
+// 参数类型枚举
+export enum ParamsTypeEnum {
+  String,
+  Integer,
+  Number,
+  File,
+  Boolean,
+  Object,
+  Array_String,
+  Array_Integer,
+  Array_Number,
+  Array_Boolean,
+  Array_Object,
+  Array_File,
+}
+
+// 文件类型枚举
+export enum FileTypeEnum {
+  Doc,
+  Excel,
+  PPT,
+  Txt,
+  Image,
+  Audio,
+  Video,
+  Other,
+  Array_Doc,
+  Array_Excel,
+  Array_PPT,
+  Array_Txt,
+  Array_Image,
+  Array_Audio,
+  Array_Video,
+  Array_Other,
+}
+
 // 插件，工作流，知识库，数据库的枚举
 export enum PluginAndLibraryEnum {
   Plugin = 'Plugin',
