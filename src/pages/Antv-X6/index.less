@@ -49,7 +49,7 @@
         font-weight: normal;
         line-height: 22px;
         letter-spacing: 0;
-        color: #979797;
+        color: @GRAY07;
       }
 
       .stencil-list-content {
@@ -81,6 +81,7 @@
   height: 100%;
   position: relative;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 #graph-container {
@@ -290,5 +291,36 @@
 
 .fold-header-style {
   height: 76px;
-  border-bottom: 1px solid @WHITE03;
+  border-bottom: 2px solid @WHITE11;
+  background-color: @WHITE03;
+  padding: 0 16px;
+
+  .back-icon-style {
+    font-size: 28px;
+    color: @GRAY07;
+    cursor: pointer;
+    margin-right: 20px;
+  }
+
+  .header-icon-style {
+    width: 42px;
+    height: 42px;
+    margin-right: 16px;
+  }
+
+  .header-content-style {
+    font-size: 12px;
+    color: @GRAY05;
+
+    .header-name-style {
+      font-size: 14px;
+      color: @BLANK04;
+      font-weight: bold;
+      margin-right: 16px;
+    }
+
+    .header-tag-style {
+      margin-top: 6px;
+    }
+  }
 }

@@ -9,7 +9,7 @@ interface SubArgs {
   bindValue: string;
 }
 
-interface InputAndOutConfig {
+export interface InputAndOutConfig {
   name: string;
   description: string;
   dataType: string;

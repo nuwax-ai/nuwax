@@ -34,6 +34,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
 }) => {
   const [form] = Form.useForm();
 
+  console.log('initialValues', initialValues);
   // 根据传递的fieldConfigs生成表单项
   const formItem = fieldConfigs.reduce(
     (acc: DefaultObjectType, field: FieldConfig) => {
@@ -43,20 +44,17 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
     {},
   );
   const addInputItem = () => {
-    console.log(fieldConfigs);
     const nextItems = [...(form.getFieldValue(inputItemName) || []), formItem];
     form.setFieldsValue({ [inputItemName]: nextItems });
   };
   // 提交form表单
   const submitForm = () => {
     const values = form.getFieldsValue();
-    // form.getFieldsValue()
-    // console.log('Received values of form:', values);
     handleChangeNodeConfig(values);
   };
   useEffect(() => {
     // 设置初始值，确保Form.List能正确展示已有条目
-    form.setFieldsValue({ [inputItemName]: initialValues });
+    form.setFieldsValue(initialValues);
   }, [form, inputItemName, initialValues]);
 
   return (
@@ -83,7 +81,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                       // 新增传递索引信息
                       rowIndex: index,
                       form,
-                      initialValues,
                       showCheckbox,
                       showCopy,
                       showAssociation,

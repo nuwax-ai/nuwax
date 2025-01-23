@@ -151,28 +151,27 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
               <span>{data.name}</span>
             )}
           </div>
-          <div>
-            {data.type !== 'Start' && (
-              <Popover placement="top" content={'测试该节点'}>
-                <PlayCircleOutlined
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // 触发父组件的事件
-                    this.changeNode('TestRun');
-                  }}
-                />
-              </Popover>
+          {data.type !== 'Start' &&
+            data.type !== 'End' &&
+            data.type !== 'Loop' && (
+              <div>
+                <Popover placement="top" content={'测试该节点'}>
+                  <PlayCircleOutlined
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // 触发父组件的事件
+                      this.changeNode('TestRun');
+                    }}
+                  />
+                </Popover>
+                <Popover content={this.content} trigger="hover">
+                  <DashOutlined
+                    style={{ marginLeft: '10px' }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </Popover>
+              </div>
             )}
-            {/* 使用 Popover 渲染右侧三个点 */}
-            {data.type !== 'Start' && (
-              <Popover content={this.content} trigger="hover">
-                <DashOutlined
-                  style={{ marginLeft: '10px' }}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </Popover>
-            )}
-          </div>
         </div>
         {/* 节点内容区，根据 data.content 的类型显示不同的内容 */}
         <div className="general-node-content">
@@ -188,52 +187,45 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
  * 每个连接桩都是一个小圆圈，具有特定的颜色、大小和可见性设置。
  */
 
-// 定义单个连接桩的样式
-const portItemStyle = {
-  circle: {
-    r: 4,
-    magnet: true,
-    stroke: '#5F95FF',
-    strokeWidth: 1,
-    fill: '#fff',
-    style: {
-      // visibility: 'hidden', // 默认隐藏连接桩，直到有连接线时才显示
-    },
-  },
-};
-
+// 定义端口生成函数
 const ports = {
   groups: {
-    // 上方的连接桩
-    // top: {
-    //   position: 'top',
-    //   attrs: portItemStyle,
-    // },
-    // 右边的连接桩
-    right: {
+    out: {
       position: 'right',
-      attrs: portItemStyle,
+      attrs: {
+        circle: {
+          r: 4,
+          magnet: true,
+          stroke: '#5F95FF',
+          strokeWidth: 1,
+          fill: '#fff',
+        },
+      },
+      connectable: {
+        source: true,
+        target: false,
+      },
     },
-    // 下方的连接桩
-    // bottom: {
-    //   position: 'bottom',
-    //   attrs: portItemStyle,
-    // },
-    // 左边的连接桩
-    left: {
+    in: {
       position: 'left',
-      attrs: portItemStyle,
+      attrs: {
+        circle: {
+          r: 4,
+          magnet: true,
+          stroke: '#5F95FF',
+          strokeWidth: 1,
+          fill: '#fff',
+        },
+      },
+      connectable: {
+        source: false,
+        target: true,
+      },
     },
   },
-  // 运用哪些连接桩，如果不需要就删除掉，或者动态传入
   items: [
-    {
-      group: 'right',
-    },
-
-    {
-      group: 'left',
-    },
+    { group: 'out', name: 'out-port' }, // 添加名字
+    { group: 'in', name: 'in-port' }, // 添加名字
   ],
 };
 
@@ -244,7 +236,7 @@ export function registerCustomNodes() {
   register({
     shape: 'general-Node',
     component: GeneralNode,
-    ports: ports,
+    ports: ports, // 确保返回 PortMetadata[]
     embeddable: ({ data }: { data: ChildNode }) => data.type === 'Loop',
     resizable: true,
   });

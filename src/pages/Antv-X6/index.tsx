@@ -29,6 +29,14 @@ const AntvX6: React.FC = () => {
     nodeConfig: {},
     name: '',
   });
+  // 工作流左上角的详细信息
+  const [info, setInfo] = useState({
+    name: '',
+    icon: '',
+    publishStatus: '',
+    created: '',
+    modified: '',
+  });
 
   // 创建工作流，插件，知识库，数据库
   const [createdItem, setCreatedItem] = useState<PluginAndLibraryEnum>(
@@ -50,13 +58,23 @@ const AntvX6: React.FC = () => {
   const { setShow, setTestRun } = useModel('model');
 
   /** -----------------  需要调用接口的方法  --------------------- */
+
   // 获取当前画布的信息
-  const getList = async () => {
+  const getDetails = async () => {
     try {
       // 调用接口，获取当前画布的所有节点和边
-      const _res = await service.getNodeList(6);
+      const _res = await service.getDetails(6);
+      // 获取左上角的信息
+      const _params = {
+        name: _res.data.name,
+        icon: _res.data.icon,
+        publishStatus: _res.data.publishStatus,
+        created: _res.data.created,
+        modified: _res.data.modified,
+      };
+      setInfo(_params);
       // 获取节点和边的数据
-      const _nodeList = _res.data;
+      const _nodeList = _res.data.nodes;
       const _edgeList = getEdges(_nodeList);
       // 修改数据，更新画布
       setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
@@ -80,6 +98,12 @@ const AntvX6: React.FC = () => {
     } else {
       setVisible(true);
     }
+    if (child.nodeConfig.inputArgs === null) {
+      child.nodeConfig.inputArgs = [];
+    }
+    if (child.nodeConfig.outputArgs === null) {
+      child.nodeConfig.outputArgs = [];
+    }
     setFoldWrapItem(child);
   };
 
@@ -88,6 +112,7 @@ const AntvX6: React.FC = () => {
     const _params = {
       workflowId: 6,
       type: child.type || createdItem,
+      extension: dragEvent,
     };
     const _res = await service.addNode(_params);
     if (_res.code === Constant.success) {
@@ -231,7 +256,7 @@ const AntvX6: React.FC = () => {
 
   // 保存当前画布中节点的位置
   useEffect(() => {
-    getList();
+    getDetails();
 
     return () => {
       // 组件销毁时，清除定时器
@@ -242,7 +267,7 @@ const AntvX6: React.FC = () => {
   return (
     <div style={{ width: '100%', height: '100%' }} id="container">
       {/* 顶部的名称和发布等按钮 */}
-      <Header title={'123'} onSubmit={onSubmit} />
+      <Header info={info} onSubmit={onSubmit} />
       <Monaco />
       <GraphContainer
         graphParams={graphParams}

@@ -12,10 +12,12 @@ import { Selection } from '@antv/x6-plugin-selection';
 import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
 import { Transform } from '@antv/x6-plugin-transform';
-// import { Popover } from 'antd';
+import { Message, Popover } from 'antd';
+import ReactDOM from 'react-dom/client';
 // 自定义类型定义
 import { GraphProp } from '@/types/interfaces/workflow';
 
+let currentPopover: any = null; // 用于跟踪当前显示的Popover
 /**
  * 初始化图形编辑器的函数，接收一个包含容器 ID 和改变抽屉内容回调的对象作为参数。
  * @param param0 - 包含容器 ID 和改变抽屉内容回调的对象
@@ -129,33 +131,70 @@ const initGraph = ({ containerId, changeDrawer, changeEdge }: GraphProp) => {
     changeDrawer(data); // 调用回调函数以更新抽屉内容
   });
 
-  // 确保所有新的边都有更高的层级,这里可以触发父组件的方法，调用接口添加边
-  graph.on('edge:added', ({ edge }) => {
-    setTimeout(() => {
-      console.log(edge);
+  // 假设 graph 是你的图实例
+  graph.on('edge:connected', ({ isNew, edge }) => {
+    // 是否是连接桩到连接桩
+    if (isNew) {
+      // 获取边的两个连接桩
+      const sourcePort = edge.getSourcePortId();
+      const targetPort = edge.getTargetPortId();
+      // 这里统一让left作为接入点，right作为输出点
+      if (sourcePort?.includes('left') || targetPort?.includes('right')) {
+        graph.removeCell(edge.id);
+        Message.warning('左侧连接桩只能作为接入点，右侧连接桩只能作为输出点');
+      } else {
+        const sourceNode = edge.getSourceNode()?.getData();
+        const targetNodeId = edge.getTargetCellId();
+        // 通知父组件创建边
+        changeEdge(sourceNode, targetNodeId, 'created', edge.id);
+      }
+    }
+  });
+
+  // 创建一个动态容器用于渲染 Popover
+  const popoverContainer = document.createElement('div');
+  document.body.appendChild(popoverContainer);
+  // 给所有的边添加一个右键监听
+  // 监听边的右键事件
+  graph.on('edge:contextmenu', ({ edge, x, y, e }) => {
+    e.preventDefault(); // 阻止默认右键菜单
+    // 如果当前已经有Popover显示，先销毁它
+    if (currentPopover) {
+      currentPopover.unmount();
+      currentPopover = null;
+    }
+    // 渲染 Popover 内容
+    currentPopover = ReactDOM.createRoot(popoverContainer);
+    // 创建一个删除边的回调函数
+    const handleDeleteEdge = () => {
       const sourceNode = edge.getSourceNode()?.getData();
       const targetNodeId = edge.getTargetCellId();
 
-      // 通知父组件创建边
-      changeEdge(sourceNode, targetNodeId, 'created', edge.id);
-      edge.setZIndex(30);
-    }, 1000); // 延迟 0 毫秒
+      // 通知父组件删除边
+      changeEdge(sourceNode, targetNodeId, 'delete', edge.id);
+      // 销毁Popover
+      if (currentPopover) {
+        currentPopover.unmount();
+        currentPopover = null;
+      }
+      // 删除边
+      graph.removeEdge(edge.id);
+    };
+
+    currentPopover.render(
+      <Popover
+        defaultOpen={true}
+        destroyTooltipOnHide
+        placement="top"
+        overlayStyle={{
+          position: 'absolute',
+          left: `${x}px`,
+          top: `${y + 40}px`,
+        }}
+        content={<p onClick={handleDeleteEdge}>删除</p>}
+      />,
+    );
   });
-
-  // 给所有的边添加一个右键监听
-  // graph.on('edge:contextmenu', ({ edge, x, y, e }) => {
-  //   // 阻止默认的浏览器右键菜单
-  //   e.preventDefault();
-  // // 创建一个新的 Popover 实例，并设置其位置和内容
-  // const content = (
-  //   <span  onClick={() => handleDeleteEdge(edge)}>
-  //     删除
-  //   </span>
-  // );
-
-  //   // 通知父组件创建边
-  //   changeEdge(sourceNode,targetNodeId,'delete',edge.id)
-  // });
 
   return graph; // 返回初始化好的图形实例
 };

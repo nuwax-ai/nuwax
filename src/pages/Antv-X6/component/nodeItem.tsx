@@ -1,6 +1,6 @@
 // 这个页面定义普通的节点，如输入，输出，等
 import CodeEditor from '@/components/CodeEditor';
-import type { NodeConfig } from '@/types/interfaces/node';
+import type { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
 import { ExpandAltOutlined } from '@ant-design/icons';
 import type { InputRef } from 'antd';
 import {
@@ -23,7 +23,7 @@ import { InputAndOut } from './commonNode';
 // 定义开始节点
 // 定义开始和文档提取节点的渲染逻辑
 const StartNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
-  let initialValues = {};
+  let initialValues: InputAndOutConfig[] = [];
   if (params.inputArgs && params.inputArgs.length) {
     initialValues = params.inputArgs;
   }
@@ -43,7 +43,7 @@ const StartNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
         handleChangeNodeConfig={handleChangeNodeConfig}
         // 如果这里使用动态的表单名称，initialValues 中的名称也应该和他相同
         inputItemName="inputArgs"
-        initialValues={initialValues} // 注意这里使用了'inputItemName'相同的
+        initialValues={{ inputArgs: initialValues }} // 注意这里使用了'inputItemName'相同的
       />
       {/* {params.type === 'DocumentExtraction' && (
         <div className="margin-bottom">
@@ -58,11 +58,12 @@ const StartNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
 
 // 定义结束和过程输出的节点渲染
 const EndNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
-  let initialValues = {};
+  let initialValues: InputAndOutConfig[] = [];
 
   if (params.outputArgs && params.outputArgs.length) {
     initialValues = params.outputArgs;
   }
+
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
