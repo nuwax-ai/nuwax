@@ -12,7 +12,7 @@ import { Selection } from '@antv/x6-plugin-selection';
 import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
 import { Transform } from '@antv/x6-plugin-transform';
-import { Message, Popover } from 'antd';
+import { message, Popover } from 'antd';
 import ReactDOM from 'react-dom/client';
 // 自定义类型定义
 import { GraphProp } from '@/types/interfaces/workflow';
@@ -141,7 +141,7 @@ const initGraph = ({ containerId, changeDrawer, changeEdge }: GraphProp) => {
       // 这里统一让left作为接入点，right作为输出点
       if (sourcePort?.includes('left') || targetPort?.includes('right')) {
         graph.removeCell(edge.id);
-        Message.warning('左侧连接桩只能作为接入点，右侧连接桩只能作为输出点');
+        message.warning('左侧连接桩只能作为接入点，右侧连接桩只能作为输出点');
       } else {
         const sourceNode = edge.getSourceNode()?.getData();
         const targetNodeId = edge.getTargetCellId();

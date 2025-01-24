@@ -99,4 +99,6 @@ export enum NodeTypeEnum {
   Workflow = 'Workflow',
   // 长期记忆
   LongTermMemory = 'LongTermMemory',
+  // 条件分支
+  Condition = 'Condition',
 }

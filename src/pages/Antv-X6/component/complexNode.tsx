@@ -101,52 +101,33 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
 };
 
 // 定义意图识别
-const IntentionNode: React.FC<NodeDisposeProps> = ({
-  groupedOptionsData = [],
-}) => {
-  // 三个值(随机性，top，最大回复长度)
-  const [value, setValue] = useState({
-    top: 0,
-    reply: 0,
-    random: 0,
-  });
-  //   修改上述三个值
-  const handleModelSetValue = (newSettings: typeof value) => {
-    setValue(newSettings);
-  };
+const IntentionNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
+  let inputInitialValues = {};
+  if (params.inputArgs && params.inputArgs.length) {
+    inputInitialValues = params.inputArgs;
+  }
 
-  const settings = {
-    value: value,
-    onChange: handleModelSetValue,
+  let outputInitialValues = {};
+  if (params.outputArgs && params.outputArgs.length) {
+    outputInitialValues = params.outputArgs;
+  }
+  // 修改模型的入参和出参
+  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
+    Modified({ ...params, ...newNodeConfig });
   };
-
-  //   选择模型的
-  const [selectModel, setSelectModel] = useState('');
-  //   更换选中的模型
-  const changeModel = (newModel: typeof selectModel) => {
-    setSelectModel(newModel);
-  };
-  const groupModelList = {
-    value: selectModel,
-    onChange: changeModel,
-    groupedOptionsData: groupedOptionsData,
-  };
-
-  // 用户提示词的数据
-  const [userPrompt, setUserPrompt] = useState('');
 
   return (
     <div className="model-node-style">
       {/* 模型模块 */}
-      <ModelSelected settings={settings} groupModelList={groupModelList} />
+      <ModelSelected onChange={handleChangeNodeConfig} nodeConfig={params} />
       {/* 输入参数 */}
       <div className="node-item-style">
         <InputAndOut
           title="输入"
           fieldConfigs={outPutConfigs}
-          initialValues={{
-            inputItems: [{ name: '', type: '', isSelect: true }],
-          }}
+          inputItemName="inputArgs"
+          handleChangeNodeConfig={handleChangeNodeConfig}
+          initialValues={inputInitialValues}
         />
       </div>
       {/* 意图匹配 */}
@@ -154,16 +135,20 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
         <InputAndOut
           title="意图匹配"
           fieldConfigs={intentionConfigs}
+          handleChangeNodeConfig={handleChangeNodeConfig}
+          inputItemName="outputArgs"
           initialValues={{
-            inputItems: [{ intention: '' }],
+            inputItems: [outputInitialValues],
           }}
         />
       </div>
       {/* 补充提示词 */}
       <ExpandableInputTextarea
         title="补充提示词"
-        value={userPrompt}
-        onChange={setUserPrompt}
+        value={params.systemPrompt || ''}
+        onChange={(value: string) =>
+          Modified({ ...params, systemPrompt: value })
+        }
         onExpand
         placeholder="支持额外的系统提示词，如对意图选项做更详细的例子以增 强用户输出与意图匹配的成功率。"
       />
@@ -172,63 +157,39 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
 };
 
 // 定义问答
-const QuestionsNode: React.FC<NodeDisposeProps> = ({
-  groupedOptionsData = [],
-}) => {
-  // 三个值(随机性，top，最大回复长度)
-  const [value, setValue] = useState({
-    top: 0,
-    reply: 0,
-    random: 0,
-  });
-  //   修改上述三个值
-  const handleModelSetValue = (newSettings: typeof value) => {
-    setValue(newSettings);
-  };
+const QuestionsNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
+  let inputInitialValues = {};
+  if (params.inputArgs && params.inputArgs.length) {
+    inputInitialValues = params.inputArgs;
+  }
+  let outputInitialValues = {};
+  if (params.outputArgs && params.outputArgs.length) {
+    outputInitialValues = params.outputArgs;
+  }
 
-  const settings = {
-    value: value,
-    onChange: handleModelSetValue,
+  // 修改模型的入参和出参
+  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
+    Modified({ ...params, ...newNodeConfig });
   };
-
-  //   选择模型的
-  const [selectModel, setSelectModel] = useState('');
-  //   更换选中的模型
-  const changeModel = (newModel: typeof selectModel) => {
-    setSelectModel(newModel);
-  };
-  const groupModelList = {
-    value: selectModel,
-    onChange: changeModel,
-    groupedOptionsData: groupedOptionsData,
-  };
-  // 用户提示词的数据
-  const [params, setParams] = useState({
-    questions: '',
-    answers: 1,
-  });
-
   return (
     <div className="node-title-style">
       {/* 模型模块 */}
-      <ModelSelected settings={settings} groupModelList={groupModelList} />
+      <ModelSelected onChange={handleChangeNodeConfig} nodeConfig={params} />
       {/* 输入参数 */}
       <div className="node-item-style">
         <InputAndOut
           title="输入"
           fieldConfigs={outPutConfigs}
-          initialValues={{
-            inputItems: [{ name: '', type: '', isSelect: true }],
-          }}
+          inputItemName="inputArgs"
+          handleChangeNodeConfig={handleChangeNodeConfig}
+          initialValues={inputInitialValues}
         />
       </div>
       {/* 提问问题 */}
       <ExpandableInputTextarea
         title="提问问题"
-        value={params.questions}
-        onChange={(value: string) => {
-          setParams({ ...params, questions: value });
-        }}
+        value={params.userPrompt || ''}
+        onChange={(value: string) => Modified({ ...params, userPrompt: value })}
         onExpand
         placeholder="可使用{{变量名}}的方式引用输入参数中的变量"
       />
@@ -236,7 +197,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
       <div>
         <Radio.Group
           onChange={(value: RadioChangeEvent) =>
-            setParams({ ...params, answers: value.target.value })
+            Modified({ ...params, answers: value.target.value })
           }
           value={params.answers}
         >
@@ -252,9 +213,11 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
           <InputAndOut
             title="输出"
             fieldConfigs={InputConfigs}
-            initialValues={{
-              inputItems: [{ name: '', type: '', isSelect: true }],
-            }}
+            handleChangeNodeConfig={handleChangeNodeConfig}
+            inputItemName="outputArgs"
+            showCopy={true}
+            showAssociation={true}
+            initialValues={outputInitialValues}
           />
         </div>
       )}
@@ -262,11 +225,13 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
       {params.answers === 2 && (
         <div className="node-item-style">
           <InputAndOut
-            title="设置选项内容"
-            fieldConfigs={intentionConfigs}
-            initialValues={{
-              inputItems: [{ intention: '' }],
-            }}
+            title="输出"
+            fieldConfigs={InputConfigs}
+            handleChangeNodeConfig={handleChangeNodeConfig}
+            inputItemName="outputArgs"
+            showCopy={true}
+            showAssociation={true}
+            initialValues={outputInitialValues}
           />
         </div>
       )}

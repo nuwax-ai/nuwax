@@ -1,5 +1,6 @@
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import { InputOrReference } from '@/components/FormListItem/InputOrReference';
+import type { NodeConfig } from '@/types/interfaces/node';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Empty, Form, Popover, Select, Slider, Tag } from 'antd';
 import React, { useState } from 'react';
@@ -251,8 +252,20 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = () => {
 };
 
 // 定义数据库
-const DatabaseNode: React.FC<NodeDisposeProps> = () => {
+const DatabaseNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
+  let inputInitialValues = {};
+  if (params.inputArgs && params.inputArgs.length) {
+    inputInitialValues = params.inputArgs;
+  }
+  let outputInitialValues = {};
+  if (params.outputArgs && params.outputArgs.length) {
+    outputInitialValues = params.outputArgs;
+  }
   const [sql, setSql] = useState('');
+  // 修改模型的入参和出参
+  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
+    Modified({ ...params, ...newNodeConfig });
+  };
 
   return (
     <>
@@ -261,9 +274,9 @@ const DatabaseNode: React.FC<NodeDisposeProps> = () => {
         <InputAndOut
           title="输入"
           fieldConfigs={outPutConfigs}
-          initialValues={{
-            inputItems: [{ name: '', type: '', isSelect: true }],
-          }}
+          inputItemName="inputArgs"
+          handleChangeNodeConfig={handleChangeNodeConfig}
+          initialValues={inputInitialValues}
         />
       </div>
       {/* 数据表 */}
@@ -282,9 +295,11 @@ const DatabaseNode: React.FC<NodeDisposeProps> = () => {
         <InputAndOut
           title="输出"
           fieldConfigs={InputConfigs}
-          initialValues={{
-            inputItems: [{ name: '', type: '', isSelect: true }],
-          }}
+          handleChangeNodeConfig={handleChangeNodeConfig}
+          inputItemName="outputArgs"
+          showCopy={true}
+          showAssociation={true}
+          initialValues={outputInitialValues}
         />
       </div>
     </>

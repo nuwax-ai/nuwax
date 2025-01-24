@@ -172,8 +172,21 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ params }) => {
 };
 
 // 定义变量和文本处理的节点渲染
-const VariableNode: React.FC<NodeDisposeProps> = ({ params }) => {
-  console.log(params);
+const VariableNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
+  // let inputInitialValues = {};
+  // if (params.inputArgs && params.inputArgs.length) {
+  //   inputInitialValues = params.inputArgs;
+  // }
+  let outputInitialValues = {};
+  if (params.outputArgs && params.outputArgs.length) {
+    outputInitialValues = params.outputArgs;
+  }
+
+  // 修改模型的入参和出参
+  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
+    Modified({ ...params, ...newNodeConfig });
+  };
+
   const [value, setValue] = useState<string>('设置变量值');
   const [name, setName] = useState('');
   const inputRef = useRef<InputRef>(null);
@@ -219,8 +232,10 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ params }) => {
       <InputAndOut
         title="输出变量"
         fieldConfigs={outPutConfigs}
+        inputItemName="outputArgs"
+        handleChangeNodeConfig={handleChangeNodeConfig}
         showCopy={true}
-        initialValues={{ inputItems: [{ name: '123', paramsValue: '123' }] }}
+        initialValues={outputInitialValues}
       />
       {value === '字符串拼接' && (
         <div className="margin-bottom">
@@ -275,14 +290,30 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ params }) => {
 };
 
 // 定义代码节点
-const CodeNode: React.FC<NodeDisposeProps> = () => {
+const CodeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   const { setIsShow } = useModel('monaco');
+
+  let inputInitialValues = {};
+  if (params.inputArgs && params.inputArgs.length) {
+    inputInitialValues = params.inputArgs;
+  }
+  let outputInitialValues = {};
+  if (params.outputArgs && params.outputArgs.length) {
+    outputInitialValues = params.outputArgs;
+  }
+
+  // 修改模型的入参和出参
+  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
+    Modified({ ...params, ...newNodeConfig });
+  };
   return (
     <>
       <InputAndOut
         title="输入"
         fieldConfigs={InputConfigs}
-        initialValues={{ inputItems: [{ name: '', type: '' }] }}
+        inputItemName="inputArgs"
+        handleChangeNodeConfig={handleChangeNodeConfig}
+        initialValues={inputInitialValues}
         showCheckbox={true}
         showCopy={true}
         showAssociation={true}
@@ -296,9 +327,12 @@ const CodeNode: React.FC<NodeDisposeProps> = () => {
       </div>
       <InputAndOut
         title="输出变量"
-        fieldConfigs={outPutConfigs}
+        fieldConfigs={InputConfigs}
+        handleChangeNodeConfig={handleChangeNodeConfig}
+        inputItemName="outputArgs"
         showCopy={true}
-        initialValues={{ inputItems: [{ name: '123', paramsValue: '123' }] }}
+        showAssociation={true}
+        initialValues={outputInitialValues}
       />
     </>
   );
