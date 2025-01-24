@@ -1,4 +1,4 @@
-@import "@/styles/color";
+@import '@/styles/color';
 
 .container {
   padding: 0 5px;
@@ -12,11 +12,41 @@
       font-size: 18px;
       font-weight: bold;
       color: @BLANK04;
+
+      &.output-title {
+        margin-top: 24px;
+      }
     }
 
     .request-select {
       width: 98px;
       margin-right: 16px;
+    }
+
+    .table-wrap {
+      border-radius: 5px;
+      border: 1px solid @BLANK19;
+    }
+
+    .select {
+      width: 120px;
+    }
+  }
+}
+
+.modal-container {
+  width: 1000px !important;
+
+  .container {
+    height: 750px;
+    border-radius: 10px;
+    background: @WHITE03;
+    pointer-events: auto;
+
+    .close {
+      position: absolute;
+      right: 20px;
+      top: 20px;
     }
   }
 }

@@ -1,3 +1,4 @@
+import { ReactComponent as ICON_ADD_TR } from '@/assets/svg/add-tr.svg';
 import { ReactComponent as ICON_ADJUSTMENT } from '@/assets/svg/adjustment-amount.svg';
 import { ReactComponent as ICON_ASSOCIATION } from '@/assets/svg/association.svg';
 import { ReactComponent as ICON_CONFIRM_STAR } from '@/assets/svg/confirm-star.svg';
@@ -12,6 +13,7 @@ import { ReactComponent as ICON_START } from '@/assets/svg/start.svg';
 import { ReactComponent as ICON_SUCCESS } from '@/assets/svg/successRate.svg';
 
 export {
+  ICON_ADD_TR,
   ICON_ADJUSTMENT,
   ICON_ASSOCIATION,
   ICON_CONFIRM_STAR,
