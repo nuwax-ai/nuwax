@@ -1,3 +1,4 @@
+import VersionHistory from '@/components/VersionHistory';
 import { PARAMS_TYPE_LIST } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
 import {
@@ -10,13 +11,13 @@ import type {
   outputConfigDataType,
 } from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
-import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import {
   Cascader,
   Checkbox,
   Form,
-  Input, Modal,
+  Input,
   Radio,
   Select,
   Space,
@@ -28,6 +29,7 @@ import React, { useState } from 'react';
 import styles from './index.less';
 import LabelStar from './LabelStar';
 import PluginHeader from './PluginHeader';
+import TryRunModel from './TryRunModel';
 
 const cx = classNames.bind(styles);
 
@@ -271,7 +273,7 @@ const outputData: outputConfigDataType[] = [
         open: true,
       },
       {
-        key: '20000',
+        key: '20',
         paramName: 'John Brown',
         desc: 'desc',
         paramType: 1,
@@ -298,91 +300,84 @@ const TestPlugin: React.FC = () => {
   // 试运行
   const handleTryRun = () => {
     setIsModalOpen(true);
-  }
+  };
+
+  const handlerClose = () => {};
 
   return (
-    <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
-      <PluginHeader onTryRun={handleTryRun} />
-      <div className={cx(styles['main-container'], 'overflow-y')}>
-        <h3 className={styles.title}>插件启用状态</h3>
-        <Switch className={cx('mb-16')} />
-        <h3 className={styles.title}>请求配置</h3>
-        <Form
-          form={form}
-          layout="vertical"
-          requiredMark={customizeRequiredMark}
-        >
-          <Form.Item
-            name="requestMethodAndPath"
-            label="请求方法与路径"
-            rules={[{ required: true, message: '请选择请求方法与路径' }]}
+    <div className={cx('flex', 'h-full')}>
+      <div
+        className={cx(styles.container, 'flex', 'flex-col', 'flex-1', 'h-full')}
+      >
+        <PluginHeader onTryRun={handleTryRun} />
+        <div className={cx(styles['main-container'], 'overflow-y')}>
+          <h3 className={styles.title}>插件启用状态</h3>
+          <Switch className={cx('mb-16')} />
+          <h3 className={styles.title}>请求配置</h3>
+          <Form
+            form={form}
+            layout="vertical"
+            requiredMark={customizeRequiredMark}
           >
-            <div className={cx('flex')}>
-              <Select
-                rootClassName={cx(styles['request-select'])}
-                options={REQUEST_METHOD}
-              />
-              <Input placeholder="请输入请求路径" />
-            </div>
-          </Form.Item>
-          <Form.Item
-            name="contentFormat"
-            label="请求内容格式"
-            rules={[{ required: true, message: '请选择请求内容格式' }]}
-          >
-            <Radio.Group options={REQUEST_CONTENT_FORMAT} />
-          </Form.Item>
-          <Form.Item
-            name="requestTimeout"
-            label="请求超时配置"
-            rules={[{ required: true, message: '请输入超时配置' }]}
-          >
-            <Input placeholder="请求超时配置，以秒为单位" />
-          </Form.Item>
-        </Form>
-        <h3 className={styles.title}>入参配置</h3>
-        <Table<InputConfigDataType>
-          className={cx(styles['table-wrap'], 'overflow-hide')}
-          columns={inputColumns}
-          dataSource={inputData}
-          pagination={false}
-          expandable={{
-            defaultExpandAllRows: true,
-            expandIcon: () => {
-              return null;
-            },
-          }}
-        />
-        <h3 className={cx(styles.title, styles['output-title'])}>出参配置</h3>
-        <Table<InputConfigDataType>
-          className={cx(styles['table-wrap'], 'overflow-hide')}
-          columns={outputColumns}
-          dataSource={outputData}
-          pagination={false}
-          expandable={{
-            defaultExpandAllRows: true,
-            expandIcon: () => {
-              return null;
-            },
-          }}
-        />
-        <Modal
-          centered
-          open={isModalOpen}
-          footer={null}
-          onCancel={() => setIsModalOpen(false)}
-          className={cx(styles['modal-container'])}
-          modalRender={() => (
-            <div className={cx(styles.container, 'flex', 'overflow-hide')}>
-              <div></div>
-              <CloseOutlined
-                className={cx(styles.close, 'cursor-pointer')}
-                onClick={() => setIsModalOpen(false)}
-              />
-            </div>
-          )}
-        ></Modal>
+            <Form.Item
+              name="requestMethodAndPath"
+              label="请求方法与路径"
+              rules={[{ required: true, message: '请选择请求方法与路径' }]}
+            >
+              <div className={cx('flex')}>
+                <Select
+                  rootClassName={cx(styles['request-select'])}
+                  options={REQUEST_METHOD}
+                />
+                <Input placeholder="请输入请求路径" />
+              </div>
+            </Form.Item>
+            <Form.Item
+              name="contentFormat"
+              label="请求内容格式"
+              rules={[{ required: true, message: '请选择请求内容格式' }]}
+            >
+              <Radio.Group options={REQUEST_CONTENT_FORMAT} />
+            </Form.Item>
+            <Form.Item
+              name="requestTimeout"
+              label="请求超时配置"
+              rules={[{ required: true, message: '请输入超时配置' }]}
+            >
+              <Input placeholder="请求超时配置，以秒为单位" />
+            </Form.Item>
+          </Form>
+          <h3 className={styles.title}>入参配置</h3>
+          <Table<InputConfigDataType>
+            className={cx(styles['table-wrap'], 'overflow-hide')}
+            columns={inputColumns}
+            dataSource={inputData}
+            pagination={false}
+            expandable={{
+              defaultExpandAllRows: true,
+              expandIcon: () => null,
+            }}
+          />
+          <h3 className={cx(styles.title, styles['output-title'])}>出参配置</h3>
+          <Table<InputConfigDataType>
+            className={cx(styles['table-wrap'], 'overflow-hide')}
+            columns={outputColumns}
+            dataSource={outputData}
+            pagination={false}
+            expandable={{
+              defaultExpandAllRows: true,
+              expandIcon: () => null,
+            }}
+          />
+          {/*试运行弹窗*/}
+          <TryRunModel
+            open={isModalOpen}
+            onCancel={() => setIsModalOpen(false)}
+          />
+        </div>
       </div>
+      {/*版本历史*/}
+      <VersionHistory visible={true} onClose={handlerClose} />
     </div>
   );
 };

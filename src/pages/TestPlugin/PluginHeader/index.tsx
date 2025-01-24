@@ -19,7 +19,7 @@ interface PluginHeaderProps {
 /**
  * 测试插件头部组件
  */
-const PluginHeader: React.FC<PluginHeaderProps> = ({onTryRun}) => {
+const PluginHeader: React.FC<PluginHeaderProps> = ({ onTryRun }) => {
   const handleBack = () => {
     history.back();
   };

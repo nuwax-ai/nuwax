@@ -47,3 +47,19 @@ export interface InputConfigDataType extends outputConfigDataType {
 export interface LabelStarProps {
   label: string;
 }
+
+// 试运行弹窗组件属性
+export interface TryRunModelProps {
+  open: boolean;
+  onCancel: () => void;
+}
+
+// 试运行~table出参配置数据类型
+export interface tryOutputConfigDataType {
+  key: React.Key;
+  // 参数名称
+  paramName: string;
+  // 参数值
+  desc: string;
+  children?: tryOutputConfigDataType[];
+}
