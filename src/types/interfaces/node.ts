@@ -60,4 +60,7 @@ export interface NodeConfig {
   topP?: number;
   // 插件的id
   pluginId?: number;
+
+  // 问答类型
+  answers?: number;
 }

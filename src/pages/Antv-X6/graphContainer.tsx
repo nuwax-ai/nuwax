@@ -242,7 +242,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
               ...node,
               onChange: handleNodeChange,
             },
-            zIndex: 2,
+
             ports: {
               groups: {
                 left: {

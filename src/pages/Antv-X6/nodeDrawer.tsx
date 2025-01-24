@@ -4,6 +4,7 @@ import { ChildNode } from '@/types/interfaces/workflow';
 import { returnImg } from '@/utils/workflow';
 import React, { useEffect, useState } from 'react';
 import ComplexNode from './component/complexNode';
+import { ConditionNode } from './component/condition';
 import NodeItem from './component/nodeItem';
 import ReferenceNode from './component/pluginNode';
 import './index.less';
@@ -136,6 +137,13 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
       case 'Database':
         return (
           <DatabaseNode
+            params={currentNodeConfig.nodeConfig}
+            Modified={handleChangeNodeConfig}
+          />
+        );
+      case 'Condition':
+        return (
+          <ConditionNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
           />
