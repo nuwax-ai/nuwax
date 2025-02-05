@@ -13,6 +13,10 @@ export interface ComponentItemProps {
 
 // 新建、更新插件组件
 export interface CreateNewPluginProps {
+  pluginId?: string;
+  img?: string;
+  pluginName?: string;
+  desc?: string;
   type?: PluginModeEnum;
   open: boolean;
   onCancel: () => void;

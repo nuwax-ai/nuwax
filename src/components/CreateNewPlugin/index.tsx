@@ -15,9 +15,13 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 /**
- * 新建插件组件
+ * 新建、修改插件组件
  */
 const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
+  pluginId,
+  img,
+  pluginName,
+  desc,
   type = PluginModeEnum.Create,
   open,
   onCancel,
@@ -28,7 +32,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   const [createTool, setCreateTool] = useState<PluginCreateToolEnum>();
 
   const onFinish = (values: any) => {
-    console.log('Received values of form: ', values);
+    console.log('Received values of form: ', values, pluginId, img);
   };
 
   const handleOk = () => {
@@ -70,13 +74,17 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
           form={form}
           preserve={false}
           requiredMark={customizeRequiredMark}
+          initialValues={{
+            pluginName,
+            desc,
+          }}
           layout="vertical"
           onFinish={onFinish}
           rootClassName={cx(styles['create-team-form'])}
           autoComplete="off"
         >
           <Form.Item
-            name="teamName"
+            name="pluginName"
             label="插件名称"
             rules={[{ required: true, message: '请输入插件名称' }]}
           >
@@ -89,6 +97,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
           <OverrideTextArea
             name="desc"
             label="插件描述"
+            initialValue={desc}
             rules={[
               { required: true, message: '请输入插件的主要功能和使用场景' },
             ]}
@@ -96,45 +105,47 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
             maxLength={600}
           />
           {type === PluginModeEnum.Create && (
-            <Form.Item
-              name="createMode"
-              label="插件工具创建方式"
-              rules={[{ required: true, message: '请选择插件工具创建方式' }]}
-            >
-              <Radio.Group
-                options={PLUGIN_CREATE_TOOL}
-                value={createTool}
-                onChange={handleChangeCreateTool}
-              ></Radio.Group>
-            </Form.Item>
-          )}
-          {createTool === PluginCreateToolEnum.Existing_Service_Based ? (
-            <Form.Item
-              name="pluginUrl"
-              label="插件 URL"
-              rules={[{ required: true, message: '请输入插件名称' }]}
-            >
-              <Input placeholder="请输入插件的访问地址或相关资源的链接" />
-            </Form.Item>
-          ) : (
-            <Form.Item
-              name="ide"
-              label="IDE 运行时"
-              rules={[{ required: true, message: '请输入插件名称' }]}
-            >
-              <SelectList
-                options={[
-                  {
-                    value: 1,
-                    label: 'Node.js',
-                  },
-                  {
-                    value: 2,
-                    label: 'Python3',
-                  },
-                ]}
-              />
-            </Form.Item>
+            <>
+              <Form.Item
+                name="createMode"
+                label="插件工具创建方式"
+                rules={[{ required: true, message: '请选择插件工具创建方式' }]}
+              >
+                <Radio.Group
+                  options={PLUGIN_CREATE_TOOL}
+                  value={createTool}
+                  onChange={handleChangeCreateTool}
+                ></Radio.Group>
+              </Form.Item>
+              {createTool === PluginCreateToolEnum.Existing_Service_Based ? (
+                <Form.Item
+                  name="pluginUrl"
+                  label="插件 URL"
+                  rules={[{ required: true, message: '请输入插件名称' }]}
+                >
+                  <Input placeholder="请输入插件的访问地址或相关资源的链接" />
+                </Form.Item>
+              ) : (
+                <Form.Item
+                  name="ide"
+                  label="IDE 运行时"
+                  rules={[{ required: true, message: '请输入插件名称' }]}
+                >
+                  <SelectList
+                    options={[
+                      {
+                        value: 1,
+                        label: 'Node.js',
+                      },
+                      {
+                        value: 2,
+                        label: 'Python3',
+                      },
+                    ]}
+                  />
+                </Form.Item>
+              )}
+            </>
           )}
         </Form>
       </div>

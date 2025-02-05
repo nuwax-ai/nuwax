@@ -1,7 +1,9 @@
+import CreateNewPlugin from '@/components/CreateNewPlugin';
 import LabelStar from '@/components/LabelStar';
 import VersionHistory from '@/components/VersionHistory';
 import { PARAMS_TYPE_LIST } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
+import { PluginModeEnum } from '@/types/enums/library';
 import type {
   InputConfigCloudDataType,
   OutputConfigDataType,
@@ -282,6 +284,8 @@ const SpacePluginCloudTool: React.FC = () => {
   const [value, setValue] = useState<number>(1);
   const [visible, setVisible] = useState<boolean>(false);
   const [openModal, setOpenModal] = useState<boolean>(false);
+  // 修改插件弹窗
+  const [openPlugin, setOpenPlugin] = useState<boolean>(false);
   const [code, setCode] = useState<string>('');
   const handleCodeChange = (value: string) => {
     setCode(value);
@@ -295,6 +299,7 @@ const SpacePluginCloudTool: React.FC = () => {
       <div className={cx(styles.container, 'flex', 'flex-col', 'flex-1')}>
         <PluginHeader
           value={value}
+          onEdit={() => setOpenPlugin(true)}
           onChange={setValue}
           onToggleHistory={() => setVisible(!visible)}
           onTryRun={handleTryRun}
@@ -411,6 +416,15 @@ const SpacePluginCloudTool: React.FC = () => {
       />
       {/*版本历史*/}
       <VersionHistory visible={visible} onClose={() => setVisible(false)} />
+      {/*修改插件弹窗*/}
+      <CreateNewPlugin
+        open={openPlugin}
+        pluginId={'110110'}
+        pluginName="测试插件"
+        desc={'测试插件的描述信息'}
+        type={PluginModeEnum.Update}
+        onCancel={() => setOpenPlugin(false)}
+      />
     </div>
   );
 };

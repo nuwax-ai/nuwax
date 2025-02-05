@@ -1,3 +1,4 @@
+import CreateNewPlugin from '@/components/CreateNewPlugin';
 import LabelStar from '@/components/LabelStar';
 import VersionHistory from '@/components/VersionHistory';
 import { PARAMS_TYPE_LIST } from '@/constants/common.constants';
@@ -8,6 +9,7 @@ import {
   REQUEST_METHOD,
 } from '@/constants/library.constants';
 import PluginPublish from '@/pages/SpacePluginCloudTool/PluginPublish';
+import { PluginModeEnum } from '@/types/enums/library';
 import type {
   InputConfigDataType,
   OutputConfigDataType,
@@ -300,6 +302,8 @@ const SpacePluginTool: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [visible, setVisible] = useState<boolean>(false);
   const [openModal, setOpenModal] = useState<boolean>(false);
+  // 修改插件弹窗
+  const [openPlugin, setOpenPlugin] = useState<boolean>(false);
 
   // 试运行
   const handleTryRun = () => {
@@ -312,6 +316,7 @@ const SpacePluginTool: React.FC = () => {
         className={cx(styles.container, 'flex', 'flex-col', 'flex-1', 'h-full')}
       >
         <PluginHeader
+          onEdit={() => setOpenPlugin(true)}
           onToggleHistory={() => setVisible(!visible)}
           onTryRun={handleTryRun}
           onPublish={() => setOpenModal(true)}
@@ -403,6 +408,12 @@ const SpacePluginTool: React.FC = () => {
       />
       {/*版本历史*/}
       <VersionHistory visible={visible} onClose={() => setVisible(false)} />
+      {/*修改插件弹窗*/}
+      <CreateNewPlugin
+        open={openPlugin}
+        type={PluginModeEnum.Update}
+        onCancel={() => setOpenPlugin(false)}
+      />
     </div>
   );
 };

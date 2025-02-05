@@ -155,6 +155,7 @@ export interface OverrideTextAreaProps {
   placeholder?: string;
   name: string;
   label?: string;
+  initialValue?: string;
   maxLength?: number;
   minRows?: number;
   maxRows?: number;

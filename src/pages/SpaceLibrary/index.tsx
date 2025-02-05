@@ -1,4 +1,5 @@
 import AnalyzeStatistics from '@/components/AnalyzeStatistics';
+import CreateNewPlugin from '@/components/CreateNewPlugin';
 import CustomPopover from '@/components/CustomPopover';
 import SelectList from '@/components/SelectList';
 import {
@@ -19,7 +20,6 @@ import { Button, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import ComponentItem from './ComponentItem';
-import CreateNewPlugin from './CreateNewPlugin';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

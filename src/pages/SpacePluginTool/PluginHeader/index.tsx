@@ -13,6 +13,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 interface PluginHeaderProps {
+  onEdit: () => void;
   onToggleHistory: () => void;
   onTryRun: () => void;
   onPublish: () => void;
@@ -22,6 +23,7 @@ interface PluginHeaderProps {
  * 测试插件头部组件
  */
 const PluginHeader: React.FC<PluginHeaderProps> = ({
+  onEdit,
   onToggleHistory,
   onTryRun,
   onPublish,
@@ -51,7 +53,10 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
       >
         <div className={cx('flex', styles['plugin-top'])}>
           <h3 className={cx(styles['plugin-name'])}>测试插件</h3>
-          <EditOutlined className={cx('cursor-pointer', 'hover-box')} />
+          <EditOutlined
+            className={cx('cursor-pointer', 'hover-box')}
+            onClick={onEdit}
+          />
           <CheckCircleOutlined className={cx(styles.circle)} />
         </div>
         <div className={cx(styles['plugin-bottom'], 'flex', 'items-center')}>
