@@ -15,6 +15,7 @@ const cx = classNames.bind(styles);
 interface PluginHeaderProps {
   onToggleHistory: () => void;
   onTryRun: () => void;
+  onPublish: () => void;
 }
 
 /**
@@ -23,6 +24,7 @@ interface PluginHeaderProps {
 const PluginHeader: React.FC<PluginHeaderProps> = ({
   onToggleHistory,
   onTryRun,
+  onPublish,
 }) => {
   const handleBack = () => {
     history.back();
@@ -72,7 +74,9 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
       >
         试运行
       </Button>
-      <Button type="primary">发布</Button>
+      <Button type="primary" onClick={onPublish}>
+        发布
+      </Button>
     </header>
   );
 };

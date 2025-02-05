@@ -1,6 +1,7 @@
 @import '@/styles/color';
 
 .header {
+  position: relative;
   height: 72px;
   padding: 0 10px;
   gap: 12px;
@@ -50,6 +51,23 @@
 
       .update-time {
         color: @GRAY05;
+      }
+    }
+  }
+
+  .segment {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate3d(-50%, -50%, 0);
+
+    :global {
+      .ant-segmented-item {
+        font-weight: bold;
+      }
+
+      .ant-segmented-item-selected {
+        color: @BLUE07;
       }
     }
   }

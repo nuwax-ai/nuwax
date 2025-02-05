@@ -7,6 +7,7 @@ import {
   REQUEST_CONTENT_FORMAT,
   REQUEST_METHOD,
 } from '@/constants/library.constants';
+import PluginPublish from '@/pages/SpacePluginCloudTool/PluginPublish';
 import type {
   InputConfigDataType,
   OutputConfigDataType,
@@ -298,6 +299,7 @@ const SpacePluginTool: React.FC = () => {
   const [form] = Form.useForm();
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [visible, setVisible] = useState<boolean>(false);
+  const [openModal, setOpenModal] = useState<boolean>(false);
 
   // 试运行
   const handleTryRun = () => {
@@ -312,6 +314,7 @@ const SpacePluginTool: React.FC = () => {
         <PluginHeader
           onToggleHistory={() => setVisible(!visible)}
           onTryRun={handleTryRun}
+          onPublish={() => setOpenModal(true)}
         />
         <div className={cx(styles['main-container'], 'overflow-y')}>
           <h3 className={cx(styles.title, 'mb-12')}>插件启用状态</h3>
@@ -393,6 +396,11 @@ const SpacePluginTool: React.FC = () => {
           />
         </div>
       </div>
+      <PluginPublish
+        open={openModal}
+        onCancel={() => setOpenModal(false)}
+        onConfirm={() => setOpenModal(false)}
+      />
       {/*版本历史*/}
       <VersionHistory visible={visible} onClose={() => setVisible(false)} />
     </div>
