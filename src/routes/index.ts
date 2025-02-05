@@ -14,13 +14,13 @@ const routes = [
     component: '@/pages/SetPassword',
     layout: false,
   },
-  { path: '/', redirect: '/home' },
   {
-    path: '',
-    component: '@/layouts/index',
+    path: '/',
+    component: '@/layouts',
+    // wrappers: ['@/wrappers/auth'],
     layout: false,
     routes: [
-      { path: '/home', component: '@/pages/Home' },
+      { path: '', component: '@/pages/Home' },
       { path: '/home/chat', component: '@/pages/Chat' },
       { path: '/space', component: '@/pages/Space' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
