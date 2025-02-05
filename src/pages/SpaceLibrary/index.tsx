@@ -21,6 +21,7 @@ import classNames from 'classnames';
 import React, { useState } from 'react';
 import ComponentItem from './ComponentItem';
 import styles from './index.less';
+import CreateKnowledge from '@/components/CreateKnowledge';
 
 const cx = classNames.bind(styles);
 
@@ -201,6 +202,7 @@ const SpaceLibrary: React.FC = () => {
         open={openPlugin}
         onCancel={() => setOpenPlugin(false)}
       />
+      <CreateKnowledge open={true} onCancel={() => {}} onConfirm={() => {}} />
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import CreateNewPlugin from '@/components/CreateNewPlugin';
 import LabelStar from '@/components/LabelStar';
+import PluginPublish from '@/components/PluginPublish';
 import VersionHistory from '@/components/VersionHistory';
 import { PARAMS_TYPE_LIST } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
@@ -32,7 +33,6 @@ import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './index.less';
 import PluginHeader from './PluginHeader';
-import PluginPublish from './PluginPublish';
 
 const cx = classNames.bind(styles);
 const { RangePicker } = DatePicker;
