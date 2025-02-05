@@ -1,23 +1,29 @@
 // 这个页面定义普通的节点，如输入，输出，等
 import CodeEditor from '@/components/CodeEditor';
 import type { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
-import { ExpandAltOutlined } from '@ant-design/icons';
-import type { InputRef } from 'antd';
+import {
+  CheckOutlined,
+  ExpandAltOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
 import {
   Button,
   Divider,
+  Flex,
   Input,
   InputNumber,
+  Popover,
   Segmented,
   Select,
   Space,
   Switch,
 } from 'antd';
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useModel } from 'umi';
 import { cycleOption, InputConfigs, outPutConfigs } from '../params';
 import { NodeDisposeProps } from '../type';
-import { InputAndOut } from './commonNode';
+import { InputAndOut, TreeOutput } from './commonNode';
+import './nodeItem.less';
 // 定义一些公共的数组
 
 // 定义开始节点
@@ -108,6 +114,12 @@ const EndNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
             placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
             autoSize={{ minRows: 3, maxRows: 5 }}
             style={{ marginBottom: '10px' }}
+            value={params.content}
+            onChange={(e) => {
+              const newValue = e.target.value; // 直接从事件对象中获取最新值
+              console.log('失焦时的新值:', e); // 调试信息
+              handleChangeNodeConfig({ content: newValue }); // 使用新值调用handleChangeNodeConfig
+            }}
           />
         </div>
       )}
@@ -171,16 +183,14 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ params }) => {
   );
 };
 
-// 定义变量和文本处理的节点渲染
+// 定义变量的节点渲染
 const VariableNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
-  // let inputInitialValues = {};
-  // if (params.inputArgs && params.inputArgs.length) {
-  //   inputInitialValues = params.inputArgs;
-  // }
-  let outputInitialValues = {};
-  if (params.outputArgs && params.outputArgs.length) {
-    outputInitialValues = params.outputArgs;
+  let initialValues: InputAndOutConfig[] = [];
+  if (params.inputArgs && params.inputArgs.length) {
+    initialValues = params.inputArgs;
   }
+
+  const outputArgs = params.outputArgs || null;
 
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
@@ -188,102 +198,208 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   };
 
   const [value, setValue] = useState<string>('设置变量值');
-  const [name, setName] = useState('');
-  const inputRef = useRef<InputRef>(null);
-  const [options, setOptions] = useState([
-    { label: '换行 (\n)', value: '\n' },
-    { label: '制表符 (\t)', value: '\t' },
-    { label: '句号 (。)', value: '.' },
-    { label: '逗号 (,)', value: ',' },
-    { label: '分号 (;)', value: ';' },
-    { label: '空格 ( )', value: ' ' },
-  ]);
-  const onNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setName(event.target.value);
-  };
-  const addItem = (
-    e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>,
-  ) => {
-    e.preventDefault();
-    const _option = {
-      label: name,
-      value: name,
-    };
-    setOptions([...options, _option]);
-    setName('');
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 0);
-  };
+
+  const treeData = [{ title: 'msg', key: 'msg', tag: 'String' }];
+
   return (
     <>
       <div className="node-item-style dis-center">
         <Segmented<string>
-          options={
-            params.type === 'TextProcessing'
-              ? ['字符串拼接', '字符串分割']
-              : ['设置变量值', '获取变量值']
-          }
+          options={['设置变量值', '获取变量值']}
           value={value}
           onChange={setValue}
           style={{ marginBottom: '10px' }}
         />
       </div>
       <InputAndOut
-        title="输出变量"
+        title={value === '设置变量值' ? '设置变量' : '输出变量'}
         fieldConfigs={outPutConfigs}
-        inputItemName="outputArgs"
+        inputItemName="inputArgs"
         handleChangeNodeConfig={handleChangeNodeConfig}
-        showCopy={true}
-        initialValues={outputInitialValues}
+        initialValues={{ inputArgs: initialValues }}
+      />
+
+      {outputArgs && (
+        <div>
+          <div className="node-title-style margin-bottom">输出</div>
+          <TreeOutput treeData={treeData} />
+        </div>
+      )}
+    </>
+  );
+};
+
+// 定义一个数组链接设置
+export const ArrayLinkSetting: React.FC<{
+  initValue: string;
+  onChange: (value: string) => void;
+}> = ({ initValue, onChange }) => {
+  const [options, setOptions] = useState([
+    { value: '\\n', label: '换行 (\\n)' },
+    { value: '\\t', label: '制表符 (\\t)' },
+    { value: '.', label: '逗号 (。)' },
+    { value: ',', label: '逗号 (,)' },
+    { value: ';', label: '分号 (;)' },
+    { value: '|', label: '空格 ( )' },
+  ]);
+
+  const [newItem, setNewItem] = useState({
+    label: '',
+    value: '',
+  });
+
+  const changeValue = (value: string) => {
+    onChange(value);
+  };
+  // 添加新选项
+  const addItem = (
+    e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>,
+  ) => {
+    e.preventDefault();
+    setOptions([...options, newItem]);
+    setNewItem({ label: '', value: '' });
+  };
+
+  return (
+    <div className="array-link-setting">
+      <p className="node-title-style">数组连接符设置</p>
+      <p>使用以下符号来自动连接数组中的每个项目</p>
+      <p className="array-link-setting-select-label">连接符</p>
+
+      <Select
+        allowClear
+        placeholder={'请选择连接符号'}
+        value={initValue}
+        onChange={changeValue}
+        className="array-link-setting-select"
+        dropdownRender={(menu) => (
+          <>
+            {menu}
+            <Divider style={{ margin: '8px 0' }} />
+            <div style={{ padding: '8px' }} className="dis-sb">
+              <Space>
+                <Input
+                  value={newItem.label}
+                  placeholder="选项名称"
+                  onChange={(e) =>
+                    setNewItem({ value: newItem.value, label: e.target.value })
+                  }
+                />
+                <Input
+                  value={newItem.value}
+                  placeholder="选项值"
+                  onChange={(e) =>
+                    setNewItem({ label: newItem.label, value: e.target.value })
+                  }
+                />
+                <Button type="primary" onClick={addItem}>
+                  添加
+                </Button>
+              </Space>
+            </div>
+          </>
+        )}
+        options={options}
+        optionRender={(option) => {
+          return (
+            <Flex gap={8} align={'center'}>
+              <div className="array-link-setting-select-option-icon">
+                {initValue === option.data.value && <CheckOutlined />}
+              </div>
+              <div>{option.data.label}</div>
+            </Flex>
+          );
+        }}
+      ></Select>
+    </div>
+  );
+};
+// 定义文本处理的节点渲染
+const TextProcessingNode: React.FC<NodeDisposeProps> = ({
+  params,
+  Modified,
+}) => {
+  // 输入参数的初始值
+  let initialValues: InputAndOutConfig[] = [];
+  if (params.inputArgs && params.inputArgs.length) {
+    initialValues = params.inputArgs;
+  }
+
+  const options = [
+    { value: '\\n', label: '换行 (\\n)' },
+    { value: '\\t', label: '制表符 (\\t)' },
+    { value: '.', label: '逗号 (。)' },
+    { value: ',', label: '逗号 (,)' },
+    { value: ';', label: '分号 (;)' },
+    { value: '|', label: '空格 ( )' },
+  ];
+  // 字符串凭借和分割的初始值
+
+  // 输出的初始值
+  // const outputArgs=[]
+  const [value, setValue] = useState<string>('字符串拼接');
+  // const treeData = [];
+
+  // 修改模型的入参和出参
+  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
+    Modified({ ...params, ...newNodeConfig });
+  };
+
+  return (
+    <>
+      <div className="node-item-style dis-center">
+        <Segmented<string>
+          options={['字符串拼接', '字符串分隔']}
+          value={value}
+          onChange={setValue}
+          style={{ marginBottom: '10px' }}
+        />
+      </div>
+      <InputAndOut
+        title="输入"
+        fieldConfigs={outPutConfigs}
+        inputItemName="inputArgs"
+        handleChangeNodeConfig={handleChangeNodeConfig}
+        initialValues={{ inputArgs: initialValues }}
       />
       {value === '字符串拼接' && (
         <div className="margin-bottom">
-          <div className=" margin-bottom">
+          <div className="dis-sb margin-bottom">
             <span className="node-title-style">字符串拼接</span>
+            <Popover
+              content={
+                <ArrayLinkSetting
+                  initValue={params.textHandleType || ''}
+                  onChange={(value) =>
+                    Modified({ ...params, textHandleType: value })
+                  }
+                />
+              }
+              trigger="click"
+            >
+              <SettingOutlined />
+            </Popover>
           </div>
           <Input.TextArea
+            value={params.text}
             placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
             autoSize={{ minRows: 3, maxRows: 5 }}
             style={{ marginBottom: '10px' }}
           />
         </div>
       )}
-      {value === '字符串分割' && (
-        <div className="margin-bottom">
-          <div className=" margin-bottom">
-            <span className="node-title-style">字符串分割</span>
-          </div>
+      {value === '字符串分隔' && (
+        <>
+          <span className="node-title-style">分隔符</span>
           <Select
-            style={{ width: 300 }}
             mode="multiple"
-            placeholder="custom dropdown render"
-            dropdownRender={(menu) => (
-              <>
-                {menu}
-                <Divider style={{ margin: '8px 0' }} />
-                <Space style={{ padding: '0 8px 4px' }}>
-                  <Input
-                    placeholder="Please enter item"
-                    ref={inputRef}
-                    value={name}
-                    onChange={onNameChange}
-                    onKeyDown={(e) => e.stopPropagation()}
-                  />
-                  <Button type="text" onClick={addItem}>
-                    添加自定义符号
-                  </Button>
-                </Space>
-              </>
-            )}
+            placeholder="Please select"
+            defaultValue={params.splits || []}
+            onChange={(value) => Modified({ ...params, splits: value })}
+            style={{ width: '100%' }}
             options={options}
-          />
-        </div>
-      )}
-      {value !== '获取变量值' && (
-        <div>
-          <div className="node-title-style margin-bottom">输出</div>
-        </div>
+          ></Select>
+        </>
       )}
     </>
   );
@@ -338,4 +454,11 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   );
 };
 
-export default { StartNode, EndNode, CycleNode, VariableNode, CodeNode };
+export default {
+  StartNode,
+  EndNode,
+  CycleNode,
+  VariableNode,
+  CodeNode,
+  TextProcessingNode,
+};

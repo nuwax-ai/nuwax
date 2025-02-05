@@ -29,6 +29,18 @@ export interface SkillComponent {
   type: string;
   typeId: number;
 }
+interface ConditionArgs {
+  bindArg: string;
+  compareType: string;
+  bindValueType: string;
+  bindValue: string;
+}
+export interface ConditionBranchConfigs {
+  branchType: string;
+  conditionType: string;
+  nextNodeIds: number[];
+  conditionArgs: ConditionArgs[];
+}
 
 interface Extension {
   x?: number;
@@ -41,6 +53,7 @@ export interface NodeConfig {
   extension?: Extension | null;
   inputArgs?: InputAndOutConfig[] | null;
   outputArgs?: InputAndOutConfig[] | null;
+  conditionBranchConfigs?: ConditionBranchConfigs[] | null;
   outputType?: string;
   // 模型id
   modelId?: number;
@@ -63,4 +76,8 @@ export interface NodeConfig {
 
   // 问答类型
   answers?: number;
+  textHandleType?: string;
+  text?: string;
+  splits?: string[];
+  content?: string;
 }

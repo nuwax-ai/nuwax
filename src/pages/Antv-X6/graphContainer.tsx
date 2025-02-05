@@ -315,9 +315,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           nodes,
           edges,
         });
-        graphRef.current.getNodes().forEach((node: Node) => {
-          console.log(node.getData().id, node.getPorts());
-        });
       }
     }, [graphParams]);
 

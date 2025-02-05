@@ -17,7 +17,6 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
   // 更新表单值为输入框内容
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    console.log('newValue', newValue);
     if (onChange) {
       onChange(newValue);
     }
