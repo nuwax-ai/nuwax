@@ -1,7 +1,7 @@
 import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { history, useModel } from 'umi';
+import { history, useLocation, useModel } from 'umi';
 import Header from './Header';
 import HomeSection from './HomeSection';
 import styles from './index.less';
@@ -18,25 +18,33 @@ const cx = classNames.bind(styles);
  */
 const MenusLayout: React.FC = () => {
   const { setOpenHistoryModal, setOpenMessage } = useModel('layout');
-  const [tabType, setTabType] = useState<TabsEnum>(TabsEnum.Home);
+  const location = useLocation();
+  const [tabType, setTabType] = useState<TabsEnum>();
   // 切换tab
   const handleTabsClick = (type: TabsEnum) => {
     setTabType(type);
-  };
-
-  useEffect(() => {
-    switch (tabType) {
+    switch (type) {
       case TabsEnum.Home:
-        history.push('/home');
+        history.push('/');
         break;
       case TabsEnum.Space:
-        history.push('/space');
+        history.push('/space/spaceid007/develop');
         break;
       case TabsEnum.Square:
         history.push('/square');
         break;
     }
-  }, [tabType]);
+  };
+
+  useEffect(() => {
+    if (location.pathname.includes('/space')) {
+      setTabType(TabsEnum.Space);
+    } else if (location.pathname.includes('/square')) {
+      setTabType(TabsEnum.Square);
+    } else {
+      setTabType(TabsEnum.Home);
+    }
+  }, []);
 
   // 用户区域操作
   const handleUserClick = (type: UserOperatorAreaEnum) => {

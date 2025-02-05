@@ -21,7 +21,7 @@ const SpaceSection: React.FC = () => {
     console.log(type);
     switch (type) {
       case SpaceApplicationListEnum.Application_Develop:
-        history.push(`/space`);
+        history.push(`/space/${spaceId}/develop`);
         break;
       case SpaceApplicationListEnum.Component_Library:
         history.push(`/space/${spaceId}/library`);

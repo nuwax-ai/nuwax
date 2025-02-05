@@ -1,3 +1,5 @@
+export const ACCESS_TOKEN = 'access_token';
+
 // 推荐聊天主题
 export const RECOMMEND_TEXT = [
   '女娲智能体设计平台功能概述',

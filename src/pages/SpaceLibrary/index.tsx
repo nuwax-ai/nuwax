@@ -1,4 +1,5 @@
 import AnalyzeStatistics from '@/components/AnalyzeStatistics';
+import CreateNewPlugin from '@/components/CreateNewPlugin';
 import CustomPopover from '@/components/CustomPopover';
 import SelectList from '@/components/SelectList';
 import {
@@ -19,11 +20,13 @@ import { Button, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import ComponentItem from './ComponentItem';
-import CreateNewPlugin from './CreateNewPlugin';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 工作空间 - 组件库
+ */
 const SpaceLibrary: React.FC = () => {
   // 新建插件弹窗
   const [openPlugin, setOpenPlugin] = useState<boolean>(false);
@@ -83,7 +86,8 @@ const SpaceLibrary: React.FC = () => {
 
   // 点击单个资源组件 todo 需根据组件类型，跳转到不同页面
   const handleClickComponent = () => {
-    history.push('/space/1101010/plugin/15115');
+    // history.push('/space/1101010/plugin/15115');
+    history.push('/space/1101010/plugin/15115/cloud-tool');
   };
 
   const analyzeList = [

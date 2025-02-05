@@ -13,13 +13,15 @@ const OverrideTextArea: React.FC<OverrideTextAreaProps> = (props) => {
     placeholder = '请输入',
     name,
     label,
+    initialValue,
     maxLength = 200,
     minRows = 3,
     maxRows = 6,
     rules,
   } = props;
 
-  const [value, setValue] = useState<string>('');
+  const [value, setValue] = useState<string>(initialValue || '');
+  console.log(value, 1111);
   return (
     <Form.Item className={cx('relative')}>
       <Form.Item
@@ -37,11 +39,9 @@ const OverrideTextArea: React.FC<OverrideTextAreaProps> = (props) => {
           autoSize={{ minRows, maxRows }}
         />
       </Form.Item>
-      <Form.Item className={cx('absolute', styles.text)}>
-        <span>
-          {value?.length ?? 0}/{maxLength}
-        </span>
-      </Form.Item>
+      <span className={cx('absolute', styles.text)}>
+        {value?.length ?? 0}/{maxLength}
+      </span>
     </Form.Item>
   );
 };

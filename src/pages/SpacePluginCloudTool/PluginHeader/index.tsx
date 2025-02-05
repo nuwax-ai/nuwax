@@ -1,11 +1,13 @@
+import { ICON_CODE } from '@/constants/images.constants';
 import {
+  BarsOutlined,
   CaretRightOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
   EditOutlined,
   LeftOutlined,
 } from '@ant-design/icons';
-import { Button } from 'antd';
+import { Button, Segmented } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -13,13 +15,25 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 interface PluginHeaderProps {
+  value: number;
+  onChange: (value: number) => void;
+  onEdit: () => void;
+  onToggleHistory: () => void;
   onTryRun: () => void;
+  onPublish: () => void;
 }
 
 /**
  * 测试插件头部组件
  */
-const PluginHeader: React.FC<PluginHeaderProps> = ({onTryRun}) => {
+const PluginHeader: React.FC<PluginHeaderProps> = ({
+  value,
+  onChange,
+  onEdit,
+  onToggleHistory,
+  onTryRun,
+  onPublish,
+}) => {
   const handleBack = () => {
     history.back();
   };
@@ -45,7 +59,10 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({onTryRun}) => {
       >
         <div className={cx('flex', styles['plugin-top'])}>
           <h3 className={cx(styles['plugin-name'])}>测试插件</h3>
-          <EditOutlined className={cx('cursor-pointer', 'hover-box')} />
+          <EditOutlined
+            className={cx('cursor-pointer', 'hover-box')}
+            onClick={onEdit}
+          />
           <CheckCircleOutlined className={cx(styles.circle)} />
         </div>
         <div className={cx(styles['plugin-bottom'], 'flex', 'items-center')}>
@@ -56,7 +73,19 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({onTryRun}) => {
           </span>
         </div>
       </section>
-      <ClockCircleOutlined className={cx(styles.history, 'cursor-pointer')} />
+      <Segmented
+        rootClassName={styles['segment']}
+        value={value}
+        onChange={onChange}
+        options={[
+          { label: '元数据', value: 1, icon: <BarsOutlined /> },
+          { label: '代码', value: 2, icon: <ICON_CODE /> },
+        ]}
+      />
+      <ClockCircleOutlined
+        className={cx(styles.history, 'cursor-pointer')}
+        onClick={onToggleHistory}
+      />
       <Button
         className={cx(styles['try-btn'])}
         type="primary"
@@ -65,7 +94,9 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({onTryRun}) => {
       >
         试运行
       </Button>
-      <Button type="primary">发布</Button>
+      <Button type="primary" onClick={onPublish}>
+        发布
+      </Button>
     </header>
   );
 };

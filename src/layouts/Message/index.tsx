@@ -25,6 +25,7 @@ const Message: React.FC = () => {
   const handlerClear = () => {
     console.log('清除未读消息');
     setUnreadMessageList([]);
+    setMessageList([]);
   };
   return (
     <Popover

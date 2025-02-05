@@ -1,4 +1,5 @@
 import CreateAgent from '@/components/CreateAgent';
+import VersionHistory from '@/components/VersionHistory';
 import { CreateEditAgentEnum } from '@/types/enums/common';
 import { EditAgentShowType } from '@/types/enums/space';
 import classNames from 'classnames';
@@ -15,7 +16,6 @@ import PreviewAndDebug from './PreviewAndDebug';
 import PublishAgent from './PublishAgent';
 import ShowStand from './ShowStand';
 import SystemTipsWord from './SystemTipsWord';
-import VersionHistory from './VersionHistory';
 
 const cx = classNames.bind(styles);
 

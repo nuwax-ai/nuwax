@@ -1,7 +1,11 @@
-import type { CustomPopoverProps } from '@/types/interfaces/common';
+import type {
+  CustomPopoverItem,
+  CustomPopoverProps,
+} from '@/types/interfaces/common';
 import { Popover } from 'antd';
 import classNames from 'classnames';
-import React, { PropsWithChildren } from 'react';
+import type { PropsWithChildren } from 'react';
+import React, { useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -11,6 +15,17 @@ const CustomPopover: React.FC<PropsWithChildren<CustomPopoverProps>> = ({
   list,
   onClick,
 }) => {
+  const [hovered, setHovered] = useState(false);
+  const handleHoverChange = (open: boolean) => {
+    setHovered(open);
+  };
+
+  const handleClick = (e, item: CustomPopoverItem) => {
+    e.stopPropagation();
+    onClick(item);
+    setHovered(false);
+  };
+
   return (
     <Popover
       overlayClassName={cx(styles['popover-box'])}
@@ -26,7 +41,7 @@ const CustomPopover: React.FC<PropsWithChildren<CustomPopoverProps>> = ({
                 'flex',
                 { [styles.del]: item.isDel },
               )}
-              onClick={() => onClick(item)}
+              onClick={(e) => handleClick(e, item)}
             >
               {item.icon}
               {item.label}
@@ -34,6 +49,10 @@ const CustomPopover: React.FC<PropsWithChildren<CustomPopoverProps>> = ({
           ))}
         </ul>
       }
+      trigger="hover"
+      open={hovered}
+      onClick={(e) => e.stopPropagation()}
+      onOpenChange={handleHoverChange}
       placement="bottomRight"
       arrow={false}
     >

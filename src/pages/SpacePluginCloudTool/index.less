@@ -1,0 +1,71 @@
+@import '@/styles/color';
+
+.container {
+  padding: 0 5px;
+
+  .main-container {
+    padding: 16px 20px;
+
+    &.code-mode {
+      gap: 10px;
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: bold;
+      color: @BLANK04;
+    }
+
+    .request-select {
+      width: 98px;
+      margin-right: 16px;
+    }
+
+    .table-wrap {
+      border-radius: 5px;
+      border: 1px solid @BLANK19;
+
+      &.mb-24 {
+        margin-bottom: 24px;
+      }
+    }
+
+    .select {
+      width: 120px;
+    }
+
+    // 代码模式
+    .code-wrap {
+      background-color: @WHITE;
+    }
+
+    .line-log {
+      width: 325px;
+      background-color: @GRAY09;
+
+      .log-header {
+        height: 52px;
+        padding: 0 20px;
+        color: @GRAY07;
+        border-bottom: 1px solid @GRAY01;
+
+        .log-title {
+          color: @BLANK10;
+          font-weight: 600;
+        }
+      }
+
+      .log-box {
+        padding: 16px;
+      }
+
+      .log-history {
+        padding: 16px;
+        color: @GRAY05;
+        font-size: 14px;
+        border-radius: 10px;
+        background-color: @GRAY01;
+      }
+    }
+  }
+}

@@ -70,8 +70,6 @@ export interface SelectListType {
   dropdownRenderComponent?: React.ReactNode;
   placeholder?: string;
   options: option[];
-  // 是否选中的图标或者图片
-  selectIcon?: React.ReactNode;
   onChange?: (value: React.Key) => void;
   size?: SizeType;
 }
@@ -157,6 +155,7 @@ export interface OverrideTextAreaProps {
   placeholder?: string;
   name: string;
   label?: string;
+  initialValue?: string;
   maxLength?: number;
   minRows?: number;
   maxRows?: number;

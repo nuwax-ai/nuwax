@@ -4,7 +4,7 @@ import { useModel } from 'umi';
 import './index.less';
 interface Props {
   // 代码编辑器的高度
-  height: string;
+  height?: string;
 }
 const CodeEditor: React.FC<Props> = ({ height = '400px' }: Props) => {
   const { code, setCode } = useModel('monaco');

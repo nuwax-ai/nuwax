@@ -1,3 +1,6 @@
+import CreateNewPlugin from '@/components/CreateNewPlugin';
+import LabelStar from '@/components/LabelStar';
+import VersionHistory from '@/components/VersionHistory';
 import { PARAMS_TYPE_LIST } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
 import {
@@ -5,18 +8,21 @@ import {
   REQUEST_CONTENT_FORMAT,
   REQUEST_METHOD,
 } from '@/constants/library.constants';
+import PluginPublish from '@/pages/SpacePluginCloudTool/PluginPublish';
+import { PluginModeEnum } from '@/types/enums/library';
 import type {
   InputConfigDataType,
-  outputConfigDataType,
+  OutputConfigDataType,
 } from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
-import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import {
+  Button,
   Cascader,
   Checkbox,
   Form,
-  Input, Modal,
+  Input,
   Radio,
   Select,
   Space,
@@ -26,8 +32,8 @@ import {
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './index.less';
-import LabelStar from './LabelStar';
 import PluginHeader from './PluginHeader';
+import TryRunModel from './TryRunModel';
 
 const cx = classNames.bind(styles);
 
@@ -200,7 +206,7 @@ const inputData: InputConfigDataType[] = [
 ];
 
 // 出参配置columns
-const outputColumns: TableColumnsType<outputConfigDataType>['columns'] = [
+const outputColumns: TableColumnsType<OutputConfigDataType>['columns'] = [
   {
     title: <LabelStar label="参数名称" />,
     dataIndex: 'paramName',
@@ -255,7 +261,7 @@ const outputColumns: TableColumnsType<outputConfigDataType>['columns'] = [
 ];
 
 // 出参源数据
-const outputData: outputConfigDataType[] = [
+const outputData: OutputConfigDataType[] = [
   {
     key: '1',
     paramName: 'John Brown',
@@ -271,7 +277,7 @@ const outputData: outputConfigDataType[] = [
         open: true,
       },
       {
-        key: '20000',
+        key: '20',
         paramName: 'John Brown',
         desc: 'desc',
         paramType: 1,
@@ -289,102 +295,127 @@ const outputData: outputConfigDataType[] = [
 ];
 
 /**
- * 测试插件组件
+ * 工作空间-组件库-测试插件组件（基于已有服务http接口创建）
  */
-const TestPlugin: React.FC = () => {
+const SpacePluginTool: React.FC = () => {
   const [form] = Form.useForm();
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [visible, setVisible] = useState<boolean>(false);
+  const [openModal, setOpenModal] = useState<boolean>(false);
+  // 修改插件弹窗
+  const [openPlugin, setOpenPlugin] = useState<boolean>(false);
 
   // 试运行
   const handleTryRun = () => {
     setIsModalOpen(true);
-  }
+  };
 
   return (
-    <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
-      <PluginHeader onTryRun={handleTryRun} />
-      <div className={cx(styles['main-container'], 'overflow-y')}>
-        <h3 className={styles.title}>插件启用状态</h3>
-        <Switch className={cx('mb-16')} />
-        <h3 className={styles.title}>请求配置</h3>
-        <Form
-          form={form}
-          layout="vertical"
-          requiredMark={customizeRequiredMark}
-        >
-          <Form.Item
-            name="requestMethodAndPath"
-            label="请求方法与路径"
-            rules={[{ required: true, message: '请选择请求方法与路径' }]}
-          >
-            <div className={cx('flex')}>
-              <Select
-                rootClassName={cx(styles['request-select'])}
-                options={REQUEST_METHOD}
-              />
-              <Input placeholder="请输入请求路径" />
-            </div>
-          </Form.Item>
-          <Form.Item
-            name="contentFormat"
-            label="请求内容格式"
-            rules={[{ required: true, message: '请选择请求内容格式' }]}
-          >
-            <Radio.Group options={REQUEST_CONTENT_FORMAT} />
-          </Form.Item>
-          <Form.Item
-            name="requestTimeout"
-            label="请求超时配置"
-            rules={[{ required: true, message: '请输入超时配置' }]}
-          >
-            <Input placeholder="请求超时配置，以秒为单位" />
-          </Form.Item>
-        </Form>
-        <h3 className={styles.title}>入参配置</h3>
-        <Table<InputConfigDataType>
-          className={cx(styles['table-wrap'], 'overflow-hide')}
-          columns={inputColumns}
-          dataSource={inputData}
-          pagination={false}
-          expandable={{
-            defaultExpandAllRows: true,
-            expandIcon: () => {
-              return null;
-            },
-          }}
+    <div className={cx('flex', 'h-full')}>
+      <div
+        className={cx(styles.container, 'flex', 'flex-col', 'flex-1', 'h-full')}
+      >
+        <PluginHeader
+          onEdit={() => setOpenPlugin(true)}
+          onToggleHistory={() => setVisible(!visible)}
+          onTryRun={handleTryRun}
+          onPublish={() => setOpenModal(true)}
         />
-        <h3 className={cx(styles.title, styles['output-title'])}>出参配置</h3>
-        <Table<InputConfigDataType>
-          className={cx(styles['table-wrap'], 'overflow-hide')}
-          columns={outputColumns}
-          dataSource={outputData}
-          pagination={false}
-          expandable={{
-            defaultExpandAllRows: true,
-            expandIcon: () => {
-              return null;
-            },
-          }}
-        />
-        <Modal
-          centered
-          open={isModalOpen}
-          footer={null}
-          onCancel={() => setIsModalOpen(false)}
-          className={cx(styles['modal-container'])}
-          modalRender={() => (
-            <div className={cx(styles.container, 'flex', 'overflow-hide')}>
-              <div></div>
-              <CloseOutlined
-                className={cx(styles.close, 'cursor-pointer')}
-                onClick={() => setIsModalOpen(false)}
-              />
-            </div>
-          )}
-        ></Modal>
+        <div className={cx(styles['main-container'], 'overflow-y')}>
+          <h3 className={cx(styles.title, 'mb-12')}>插件启用状态</h3>
+          <Switch className={cx('mb-16')} />
+          <h3 className={cx(styles.title, 'mb-12')}>请求配置</h3>
+          <Form
+            form={form}
+            layout="vertical"
+            requiredMark={customizeRequiredMark}
+          >
+            <Form.Item
+              name="requestMethodAndPath"
+              label="请求方法与路径"
+              rules={[{ required: true, message: '请选择请求方法与路径' }]}
+            >
+              <div className={cx('flex')}>
+                <Select
+                  rootClassName={cx(styles['request-select'])}
+                  options={REQUEST_METHOD}
+                />
+                <Input placeholder="请输入请求路径" />
+              </div>
+            </Form.Item>
+            <Form.Item
+              name="contentFormat"
+              label="请求内容格式"
+              rules={[{ required: true, message: '请选择请求内容格式' }]}
+            >
+              <Radio.Group options={REQUEST_CONTENT_FORMAT} />
+            </Form.Item>
+            <Form.Item
+              name="requestTimeout"
+              label="请求超时配置"
+              rules={[{ required: true, message: '请输入超时配置' }]}
+            >
+              <Input placeholder="请求超时配置，以秒为单位" />
+            </Form.Item>
+          </Form>
+          <div
+            className={cx('flex', 'content-between', 'items-center', 'mb-12')}
+          >
+            <h3 className={styles.title}>入参配置</h3>
+            <Button icon={<PlusOutlined />}>新增参数</Button>
+          </div>
+          <Table<InputConfigDataType>
+            className={cx(
+              styles['table-wrap'],
+              styles['mb-24'],
+              'overflow-hide',
+            )}
+            columns={inputColumns}
+            dataSource={inputData}
+            pagination={false}
+            expandable={{
+              defaultExpandAllRows: true,
+              expandIcon: () => null,
+            }}
+          />
+          <div
+            className={cx('flex', 'content-between', 'items-center', 'mb-12')}
+          >
+            <h3 className={cx(styles.title)}>出参配置</h3>
+            <Button icon={<PlusOutlined />}>新增参数</Button>
+          </div>
+          <Table<OutputConfigDataType>
+            className={cx(styles['table-wrap'], 'overflow-hide')}
+            columns={outputColumns}
+            dataSource={outputData}
+            pagination={false}
+            expandable={{
+              defaultExpandAllRows: true,
+              expandIcon: () => null,
+            }}
+          />
+          {/*试运行弹窗*/}
+          <TryRunModel
+            open={isModalOpen}
+            onCancel={() => setIsModalOpen(false)}
+          />
+        </div>
       </div>
+      <PluginPublish
+        open={openModal}
+        onCancel={() => setOpenModal(false)}
+        onConfirm={() => setOpenModal(false)}
+      />
+      {/*版本历史*/}
+      <VersionHistory visible={visible} onClose={() => setVisible(false)} />
+      {/*修改插件弹窗*/}
+      <CreateNewPlugin
+        open={openPlugin}
+        type={PluginModeEnum.Update}
+        onCancel={() => setOpenPlugin(false)}
+      />
     </div>
   );
 };
 
-export default TestPlugin;
+export default SpacePluginTool;
