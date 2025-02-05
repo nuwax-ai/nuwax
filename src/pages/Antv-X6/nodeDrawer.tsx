@@ -8,7 +8,14 @@ import { ConditionNode } from './component/condition';
 import NodeItem from './component/nodeItem';
 import ReferenceNode from './component/pluginNode';
 import './index.less';
-const { StartNode, EndNode, CycleNode, VariableNode, CodeNode } = NodeItem;
+const {
+  StartNode,
+  EndNode,
+  CycleNode,
+  VariableNode,
+  TextProcessingNode,
+  CodeNode,
+} = NodeItem;
 const { ModelNode, IntentionNode, QuestionsNode, HttpToolNode } = ComplexNode;
 const { PluginInNode, KnowledgeNode, DatabaseNode } = ReferenceNode;
 
@@ -58,6 +65,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <StartNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
+            type={currentNodeConfig.type}
           />
         );
       case 'End':
@@ -66,6 +74,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <EndNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
+            type={currentNodeConfig.type}
           />
         );
       case 'Loop':
@@ -76,9 +85,15 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           />
         );
       case 'Variable':
-      case 'TextProcessing':
         return (
           <VariableNode
+            params={currentNodeConfig.nodeConfig}
+            Modified={handleChangeNodeConfig}
+          />
+        );
+      case 'TextProcessing':
+        return (
+          <TextProcessingNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
           />
@@ -104,6 +119,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <PluginInNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
+            type={currentNodeConfig.type}
           />
         );
       case 'Code':

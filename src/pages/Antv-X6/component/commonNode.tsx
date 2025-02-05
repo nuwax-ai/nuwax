@@ -34,7 +34,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
 }) => {
   const [form] = Form.useForm();
 
-  console.log('initialValues', initialValues);
   // 根据传递的fieldConfigs生成表单项
   const formItem = fieldConfigs.reduce(
     (acc: DefaultObjectType, field: FieldConfig) => {

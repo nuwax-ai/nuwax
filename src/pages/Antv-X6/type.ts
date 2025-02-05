@@ -76,6 +76,8 @@ export interface NodeDisposeProps {
   params: NodeConfig;
   // 修改节点信息
   Modified: (params: NodeConfig) => void;
+  // 当前节点的类型
+  type?: string;
   // 选项列表
   options?: ModelListItemProps[];
   // 分组的模型列表
