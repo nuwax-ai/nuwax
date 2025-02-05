@@ -22,11 +22,15 @@ const routes = [
     routes: [
       { path: '', component: '@/pages/Home' },
       { path: '/home/chat', component: '@/pages/Chat' },
-      { path: '/space', component: '@/pages/Space' },
+      { path: '/space/:spaceId/develop', component: '@/pages/SpaceDevelop' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
       {
         path: '/space/:spaceId/plugin/:pluginId',
-        component: '@/pages/TestPlugin',
+        component: '@/pages/SpacePluginTool',
+      },
+      {
+        path: '/space/:spaceId/plugin/:pluginId/cloud-tool',
+        component: '@/pages/SpacePluginCloudTool',
       },
       { path: '/square', component: '@/pages/Square' },
     ],

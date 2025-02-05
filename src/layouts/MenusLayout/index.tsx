@@ -28,7 +28,7 @@ const MenusLayout: React.FC = () => {
         history.push('/');
         break;
       case TabsEnum.Space:
-        history.push('/space');
+        history.push('/space/spaceid007/develop');
         break;
       case TabsEnum.Square:
         history.push('/square');

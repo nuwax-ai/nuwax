@@ -6,6 +6,7 @@ import type {
   UploadProps,
 } from 'antd';
 import React from 'react';
+import SelectList from '@/components/SelectList';
 
 export type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
 export type SizeType = ConfigProviderProps['componentSize'];
@@ -70,8 +71,6 @@ export interface SelectListType {
   dropdownRenderComponent?: React.ReactNode;
   placeholder?: string;
   options: option[];
-  // 是否选中的图标或者图片
-  selectIcon?: React.ReactNode;
   onChange?: (value: React.Key) => void;
   size?: SizeType;
 }

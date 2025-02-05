@@ -8,7 +8,7 @@ import {
 } from '@/constants/library.constants';
 import type {
   InputConfigDataType,
-  outputConfigDataType,
+  OutputConfigDataType,
 } from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
 import { DeleteOutlined } from '@ant-design/icons';
@@ -27,7 +27,7 @@ import {
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './index.less';
-import LabelStar from './LabelStar';
+import LabelStar from '@/components/LabelStar';
 import PluginHeader from './PluginHeader';
 import TryRunModel from './TryRunModel';
 
@@ -202,7 +202,7 @@ const inputData: InputConfigDataType[] = [
 ];
 
 // 出参配置columns
-const outputColumns: TableColumnsType<outputConfigDataType>['columns'] = [
+const outputColumns: TableColumnsType<OutputConfigDataType>['columns'] = [
   {
     title: <LabelStar label="参数名称" />,
     dataIndex: 'paramName',
@@ -257,7 +257,7 @@ const outputColumns: TableColumnsType<outputConfigDataType>['columns'] = [
 ];
 
 // 出参源数据
-const outputData: outputConfigDataType[] = [
+const outputData: OutputConfigDataType[] = [
   {
     key: '1',
     paramName: 'John Brown',
@@ -291,9 +291,9 @@ const outputData: outputConfigDataType[] = [
 ];
 
 /**
- * 测试插件组件
+ * 工作空间-组件库-测试插件组件（基于已有服务http接口创建）
  */
-const TestPlugin: React.FC = () => {
+const SpacePluginTool: React.FC = () => {
   const [form] = Form.useForm();
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
@@ -359,7 +359,7 @@ const TestPlugin: React.FC = () => {
             }}
           />
           <h3 className={cx(styles.title, styles['output-title'])}>出参配置</h3>
-          <Table<InputConfigDataType>
+          <Table<OutputConfigDataType>
             className={cx(styles['table-wrap'], 'overflow-hide')}
             columns={outputColumns}
             dataSource={outputData}
@@ -382,4 +382,4 @@ const TestPlugin: React.FC = () => {
   );
 };
 
-export default TestPlugin;
+export default SpacePluginTool;

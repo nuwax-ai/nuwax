@@ -24,6 +24,9 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 工作空间 - 组件库
+ */
 const SpaceLibrary: React.FC = () => {
   // 新建插件弹窗
   const [openPlugin, setOpenPlugin] = useState<boolean>(false);

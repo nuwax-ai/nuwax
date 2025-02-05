@@ -18,7 +18,10 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const Space: React.FC = () => {
+/**
+ * 工作空间 - 应用开发
+ */
+const SpaceDevelop: React.FC = () => {
   // 打开分析弹窗
   const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
   // 迁移弹窗
@@ -150,4 +153,4 @@ const Space: React.FC = () => {
   );
 };
 
-export default Space;
+export default SpaceDevelop;

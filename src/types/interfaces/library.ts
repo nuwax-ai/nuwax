@@ -18,8 +18,8 @@ export interface CreateNewPluginProps {
   onCancel: () => void;
 }
 
-// 出参配置数据类型
-export interface outputConfigDataType {
+// 入参与出参共有配置数据类型
+export interface ConfigDataType {
   key: React.Key;
   // 参数名称
   paramName: string;
@@ -29,11 +29,24 @@ export interface outputConfigDataType {
   paramType: number;
   // 开启
   open: boolean;
-  children?: outputConfigDataType[];
 }
 
-// 入参配置数据类型
-export interface InputConfigDataType extends outputConfigDataType {
+// 出参配置数据类型
+export interface OutputConfigDataType extends ConfigDataType {
+  children?: OutputConfigDataType[];
+}
+
+// 入参配置数据类型(插件基于云端代码js、python创建)
+export interface InputConfigCloudDataType extends ConfigDataType {
+  // 是否必须
+  mustNot: boolean;
+  // 默认值
+  default: string;
+  children?: InputConfigCloudDataType[];
+}
+
+// 入参配置数据类型(插件基于http创建)
+export interface InputConfigDataType extends ConfigDataType {
   // 传入方式
   afferentMode: number;
   // 是否必须
