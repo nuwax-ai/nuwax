@@ -6,7 +6,6 @@ import type {
   UploadProps,
 } from 'antd';
 import React from 'react';
-import SelectList from '@/components/SelectList';
 
 export type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
 export type SizeType = ConfigProviderProps['componentSize'];

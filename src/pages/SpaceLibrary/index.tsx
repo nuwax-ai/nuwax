@@ -86,7 +86,8 @@ const SpaceLibrary: React.FC = () => {
 
   // 点击单个资源组件 todo 需根据组件类型，跳转到不同页面
   const handleClickComponent = () => {
-    history.push('/space/1101010/plugin/15115');
+    // history.push('/space/1101010/plugin/15115');
+    history.push('/space/1101010/plugin/15115/cloud-tool');
   };
 
   const analyzeList = [

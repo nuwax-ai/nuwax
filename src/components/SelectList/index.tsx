@@ -15,7 +15,6 @@ const SelectList: React.FC<SelectListType> = (props) => {
     dropdownRenderComponent,
     placeholder,
     options,
-    selectIcon,
     onChange,
     size = 'middle',
   } = props;
@@ -42,10 +41,9 @@ const SelectList: React.FC<SelectListType> = (props) => {
         return (
           <Flex gap={8} align={'center'}>
             <div className={cx(styles['option-icon-box'])}>
-              {selectIcon ||
-                (value === option.data.value && (
-                  <CheckOutlined className={cx(styles.icon)} />
-                ))}
+              {value === option.data.value && (
+                <CheckOutlined className={cx(styles.icon)} />
+              )}
             </div>
             {option.data.img && (
               <img

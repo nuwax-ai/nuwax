@@ -1,31 +1,18 @@
+import LabelStar from '@/components/LabelStar';
 import VersionHistory from '@/components/VersionHistory';
 import { PARAMS_TYPE_LIST } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
-import {
-  REQUEST_CONTENT_FORMAT,
-  REQUEST_METHOD,
-} from '@/constants/library.constants';
-import { customizeRequiredMark } from '@/utils/form';
-import { DeleteOutlined } from '@ant-design/icons';
+import type {
+  InputConfigCloudDataType,
+  OutputConfigDataType,
+} from '@/types/interfaces/library';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import {
-  Cascader,
-  Checkbox,
-  Form,
-  Input,
-  Radio,
-  Select,
-  Space,
-  Switch,
-  Table,
-} from 'antd';
+import { Button, Cascader, Checkbox, Input, Space, Switch, Table } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './index.less';
-import LabelStar from '@/components/LabelStar';
 import PluginHeader from './PluginHeader';
-import TryRunModel from './TryRunModel';
-import { InputConfigCloudDataType, OutputConfigDataType } from '@/types/interfaces/library';
 
 const cx = classNames.bind(styles);
 
@@ -273,62 +260,34 @@ const outputData: OutputConfigDataType[] = [
  * 工作空间-组件库-测试插件组件（基于云端代码js、python创建）
  */
 const SpacePluginCloudTool: React.FC = () => {
-  const [form] = Form.useForm();
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-
+  const [visible, setVisible] = useState<boolean>(false);
   // 试运行
-  const handleTryRun = () => {
-    setIsModalOpen(true);
-  };
-
-  const handlerClose = () => {};
+  const handleTryRun = () => {};
 
   return (
     <div className={cx('flex', 'h-full')}>
       <div
         className={cx(styles.container, 'flex', 'flex-col', 'flex-1', 'h-full')}
       >
-        <PluginHeader onTryRun={handleTryRun} />
+        <PluginHeader
+          onToggleHistory={() => setVisible(!visible)}
+          onTryRun={handleTryRun}
+        />
         <div className={cx(styles['main-container'], 'overflow-y')}>
-          <h3 className={styles.title}>插件启用状态</h3>
+          <h3 className={cx(styles.title, 'mb-12')}>插件启用状态</h3>
           <Switch className={cx('mb-16')} />
-          <h3 className={styles.title}>请求配置</h3>
-          <Form
-            form={form}
-            layout="vertical"
-            requiredMark={customizeRequiredMark}
+          <div
+            className={cx('flex', 'content-between', 'items-center', 'mb-12')}
           >
-            <Form.Item
-              name="requestMethodAndPath"
-              label="请求方法与路径"
-              rules={[{ required: true, message: '请选择请求方法与路径' }]}
-            >
-              <div className={cx('flex')}>
-                <Select
-                  rootClassName={cx(styles['request-select'])}
-                  options={REQUEST_METHOD}
-                />
-                <Input placeholder="请输入请求路径" />
-              </div>
-            </Form.Item>
-            <Form.Item
-              name="contentFormat"
-              label="请求内容格式"
-              rules={[{ required: true, message: '请选择请求内容格式' }]}
-            >
-              <Radio.Group options={REQUEST_CONTENT_FORMAT} />
-            </Form.Item>
-            <Form.Item
-              name="requestTimeout"
-              label="请求超时配置"
-              rules={[{ required: true, message: '请输入超时配置' }]}
-            >
-              <Input placeholder="请求超时配置，以秒为单位" />
-            </Form.Item>
-          </Form>
-          <h3 className={styles.title}>入参配置</h3>
+            <h3 className={styles.title}>入参配置</h3>
+            <Button icon={<PlusOutlined />}>新增参数</Button>
+          </div>
           <Table<InputConfigCloudDataType>
-            className={cx(styles['table-wrap'], 'overflow-hide')}
+            className={cx(
+              styles['table-wrap'],
+              styles['mb-24'],
+              'overflow-hide',
+            )}
             columns={inputColumns}
             dataSource={inputData}
             pagination={false}
@@ -337,7 +296,12 @@ const SpacePluginCloudTool: React.FC = () => {
               expandIcon: () => null,
             }}
           />
-          <h3 className={cx(styles.title, styles['output-title'])}>出参配置</h3>
+          <div
+            className={cx('flex', 'content-between', 'items-center', 'mb-12')}
+          >
+            <h3 className={cx(styles.title)}>出参配置</h3>
+            <Button icon={<PlusOutlined />}>新增参数</Button>
+          </div>
           <Table<OutputConfigDataType>
             className={cx(styles['table-wrap'], 'overflow-hide')}
             columns={outputColumns}
@@ -348,15 +312,10 @@ const SpacePluginCloudTool: React.FC = () => {
               expandIcon: () => null,
             }}
           />
-          {/*试运行弹窗*/}
-          <TryRunModel
-            open={isModalOpen}
-            onCancel={() => setIsModalOpen(false)}
-          />
         </div>
       </div>
       {/*版本历史*/}
-      <VersionHistory visible={true} onClose={handlerClose} />
+      <VersionHistory visible={visible} onClose={() => setVisible(false)} />
     </div>
   );
 };

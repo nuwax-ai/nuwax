@@ -1,3 +1,4 @@
+import LabelStar from '@/components/LabelStar';
 import VersionHistory from '@/components/VersionHistory';
 import { PARAMS_TYPE_LIST } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
@@ -11,9 +12,10 @@ import type {
   OutputConfigDataType,
 } from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import {
+  Button,
   Cascader,
   Checkbox,
   Form,
@@ -27,7 +29,6 @@ import {
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './index.less';
-import LabelStar from '@/components/LabelStar';
 import PluginHeader from './PluginHeader';
 import TryRunModel from './TryRunModel';
 
@@ -296,24 +297,26 @@ const outputData: OutputConfigDataType[] = [
 const SpacePluginTool: React.FC = () => {
   const [form] = Form.useForm();
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [visible, setVisible] = useState<boolean>(false);
 
   // 试运行
   const handleTryRun = () => {
     setIsModalOpen(true);
   };
 
-  const handlerClose = () => {};
-
   return (
     <div className={cx('flex', 'h-full')}>
       <div
         className={cx(styles.container, 'flex', 'flex-col', 'flex-1', 'h-full')}
       >
-        <PluginHeader onTryRun={handleTryRun} />
+        <PluginHeader
+          onToggleHistory={() => setVisible(!visible)}
+          onTryRun={handleTryRun}
+        />
         <div className={cx(styles['main-container'], 'overflow-y')}>
-          <h3 className={styles.title}>插件启用状态</h3>
+          <h3 className={cx(styles.title, 'mb-12')}>插件启用状态</h3>
           <Switch className={cx('mb-16')} />
-          <h3 className={styles.title}>请求配置</h3>
+          <h3 className={cx(styles.title, 'mb-12')}>请求配置</h3>
           <Form
             form={form}
             layout="vertical"
@@ -347,9 +350,18 @@ const SpacePluginTool: React.FC = () => {
               <Input placeholder="请求超时配置，以秒为单位" />
             </Form.Item>
           </Form>
-          <h3 className={styles.title}>入参配置</h3>
+          <div
+            className={cx('flex', 'content-between', 'items-center', 'mb-12')}
+          >
+            <h3 className={styles.title}>入参配置</h3>
+            <Button icon={<PlusOutlined />}>新增参数</Button>
+          </div>
           <Table<InputConfigDataType>
-            className={cx(styles['table-wrap'], 'overflow-hide')}
+            className={cx(
+              styles['table-wrap'],
+              styles['mb-24'],
+              'overflow-hide',
+            )}
             columns={inputColumns}
             dataSource={inputData}
             pagination={false}
@@ -358,7 +370,12 @@ const SpacePluginTool: React.FC = () => {
               expandIcon: () => null,
             }}
           />
-          <h3 className={cx(styles.title, styles['output-title'])}>出参配置</h3>
+          <div
+            className={cx('flex', 'content-between', 'items-center', 'mb-12')}
+          >
+            <h3 className={cx(styles.title)}>出参配置</h3>
+            <Button icon={<PlusOutlined />}>新增参数</Button>
+          </div>
           <Table<OutputConfigDataType>
             className={cx(styles['table-wrap'], 'overflow-hide')}
             columns={outputColumns}
@@ -377,7 +394,7 @@ const SpacePluginTool: React.FC = () => {
         </div>
       </div>
       {/*版本历史*/}
-      <VersionHistory visible={true} onClose={handlerClose} />
+      <VersionHistory visible={visible} onClose={() => setVisible(false)} />
     </div>
   );
 };

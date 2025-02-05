@@ -13,13 +13,17 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 interface PluginHeaderProps {
+  onToggleHistory: () => void;
   onTryRun: () => void;
 }
 
 /**
  * 测试插件头部组件
  */
-const PluginHeader: React.FC<PluginHeaderProps> = ({ onTryRun }) => {
+const PluginHeader: React.FC<PluginHeaderProps> = ({
+  onToggleHistory,
+  onTryRun,
+}) => {
   const handleBack = () => {
     history.back();
   };
@@ -56,7 +60,10 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({ onTryRun }) => {
           </span>
         </div>
       </section>
-      <ClockCircleOutlined className={cx(styles.history, 'cursor-pointer')} />
+      <ClockCircleOutlined
+        className={cx(styles.history, 'cursor-pointer')}
+        onClick={onToggleHistory}
+      />
       <Button
         className={cx(styles['try-btn'])}
         type="primary"
