@@ -1,4 +1,5 @@
 import AnalyzeStatistics from '@/components/AnalyzeStatistics';
+import CreateKnowledge from '@/components/CreateKnowledge';
 import CreateNewPlugin from '@/components/CreateNewPlugin';
 import CustomPopover from '@/components/CustomPopover';
 import SelectList from '@/components/SelectList';
@@ -32,6 +33,7 @@ const SpaceLibrary: React.FC = () => {
   const [openPlugin, setOpenPlugin] = useState<boolean>(false);
   // 打开分析弹窗
   const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
+  const [openKnowledge, setOpenKnowledge] = useState<boolean>(false);
   const [type, setType] = useState<LibraryAllTypeEnum>(
     LibraryAllTypeEnum.All_Type,
   );
@@ -62,6 +64,7 @@ const SpaceLibrary: React.FC = () => {
         setOpenPlugin(true);
         break;
       case LibraryAllTypeEnum.Knowledge:
+        setOpenKnowledge(true);
         break;
       case LibraryAllTypeEnum.DataBase:
         break;
@@ -88,6 +91,11 @@ const SpaceLibrary: React.FC = () => {
   const handleClickComponent = () => {
     // history.push('/space/1101010/plugin/15115');
     history.push('/space/1101010/plugin/15115/cloud-tool');
+  };
+
+  const handleCancelCreateKnowledge = () => {
+    setOpenKnowledge(false);
+    history.push('/space/1101010/knowledge/15115');
   };
 
   const analyzeList = [
@@ -200,6 +208,12 @@ const SpaceLibrary: React.FC = () => {
       <CreateNewPlugin
         open={openPlugin}
         onCancel={() => setOpenPlugin(false)}
+      />
+      {/*创建知识库弹窗*/}
+      <CreateKnowledge
+        open={openKnowledge}
+        onCancel={handleCancelCreateKnowledge}
+        onConfirm={() => setOpenKnowledge(false)}
       />
     </div>
   );

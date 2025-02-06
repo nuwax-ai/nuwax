@@ -1,10 +1,6 @@
-import {
-  CaretRightOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  EditOutlined,
-  LeftOutlined,
-} from '@ant-design/icons';
+import CustomPopover from '@/components/CustomPopover';
+import { KNOWLEDGE_TEXT_IMPORT_TYPE } from '@/constants/library.constants';
+import { DownOutlined, EditOutlined, LeftOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -12,25 +8,22 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface PluginHeaderProps {
+interface KnowledgeHeaderProps {
   onEdit: () => void;
-  onToggleHistory: () => void;
-  onTryRun: () => void;
-  onPublish: () => void;
 }
 
 /**
- * 测试插件头部组件
+ * 知识库头部组件
  */
-const PluginHeader: React.FC<PluginHeaderProps> = ({
-  onEdit,
-  onToggleHistory,
-  onTryRun,
-  onPublish,
-}) => {
+const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({ onEdit }) => {
   const handleBack = () => {
     history.back();
   };
+
+  const handleClickPopoverItem = () => {
+    console.log('点击popover');
+  };
+
   return (
     <header className={cx('flex', 'items-center', 'w-full', styles.header)}>
       <LeftOutlined
@@ -52,38 +45,32 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
         )}
       >
         <div className={cx('flex', styles['top-box'])}>
-          <h3 className={cx(styles.name)}>测试插件</h3>
+          <h3 className={cx(styles.name)}>知识库名称</h3>
           <EditOutlined
             className={cx('cursor-pointer', 'hover-box')}
             onClick={onEdit}
           />
-          <CheckCircleOutlined className={cx(styles.circle)} />
         </div>
         <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
-          <span className={cx(styles.box)}>http</span>
-          <span className={cx(styles.box)}>未发布</span>
-          <span className={cx(styles['update-time'])}>
-            配置自动保存于17:06:32
-          </span>
+          <span className={cx(styles.box, 'radius-6')}>http</span>
+          <span className={cx(styles.box, 'radius-6')}>未发布</span>
         </div>
       </section>
-      <ClockCircleOutlined
-        className={cx(styles.history, 'cursor-pointer')}
-        onClick={onToggleHistory}
-      />
-      <Button
-        className={cx(styles['try-btn'])}
-        type="primary"
-        icon={<CaretRightOutlined />}
-        onClick={onTryRun}
+      {/*添加内容*/}
+      <CustomPopover
+        list={KNOWLEDGE_TEXT_IMPORT_TYPE}
+        onClick={handleClickPopoverItem}
       >
-        试运行
-      </Button>
-      <Button type="primary" onClick={onPublish}>
-        发布
-      </Button>
+        <Button
+          type="primary"
+          icon={<DownOutlined className={cx(styles['dropdown-icon'])} />}
+          iconPosition="end"
+        >
+          添加内容
+        </Button>
+      </CustomPopover>
     </header>
   );
 };
 
-export default PluginHeader;
+export default KnowledgeHeader;

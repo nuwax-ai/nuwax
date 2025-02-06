@@ -44,3 +44,21 @@ export enum AfferentModeEnum {
   Query,
   Header,
 }
+
+// 知识库资源文件格式枚举
+export enum KnowledgeResourceEnum {
+  // 文本格式
+  Text,
+  // 表格格式
+  Table,
+}
+
+// 知识库资源-文本格式导入类型枚举
+export enum KnowledgeTextImportEnum {
+  // 本地文档
+  Local_Doc,
+  // 在线文档
+  Online_Doc,
+  // 自定义
+  Custom,
+}

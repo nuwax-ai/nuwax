@@ -1,0 +1,41 @@
+@import '@/styles/color';
+
+.container {
+  width: 320px;
+  padding: 16px 10px;
+  border-right: 1px solid @GRAY01;
+
+  .search-icon {
+    color: @GRAY05;
+  }
+
+  .document-title {
+    line-height: 40px;
+    padding: 0 10px;
+    color: @GRAY05;
+    font-size: 14px;
+  }
+
+  .file-info {
+    height: 40px;
+    padding: 0 10px;
+    gap: 6px;
+    margin-bottom: 4px;
+    color: @BLANK04;
+    font-size: 14px;
+    transition: background-color 0.3s;
+    cursor: default;
+
+    &:hover {
+      background-color: @GRAY01;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &.active {
+      background-color: @GRAY01;
+    }
+  }
+}
