@@ -62,3 +62,26 @@ export enum KnowledgeTextImportEnum {
   // 自定义
   Custom,
 }
+
+// 知识库资源-文本格式添加内容步骤枚举
+export enum KnowledgeTextStepEnum {
+  Upload,
+  Create_Set,
+  // 数据处理
+  Data_Processing,
+}
+
+// 知识库资源-自定义格式添加内容步骤枚举
+export enum KnowledgeCustomStepEnum {
+  Text_Fill,
+  Segmented_Set,
+  // 数据处理
+  Data_Processing,
+}
+
+// 知识库资源-文本格式添加内容-创建设置步骤枚举
+export enum KnowledgeTextCreateSetEnum {
+  // 自动分段与预处理规则
+  Auto_Segmentation_Cleaning,
+  Custom,
+}

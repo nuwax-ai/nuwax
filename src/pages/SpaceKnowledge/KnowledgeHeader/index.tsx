@@ -1,5 +1,6 @@
 import CustomPopover from '@/components/CustomPopover';
 import { KNOWLEDGE_TEXT_IMPORT_TYPE } from '@/constants/library.constants';
+import { CustomPopoverItem } from '@/types/interfaces/common';
 import { DownOutlined, EditOutlined, LeftOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
@@ -10,18 +11,18 @@ const cx = classNames.bind(styles);
 
 interface KnowledgeHeaderProps {
   onEdit: () => void;
+  onPopover: (item: CustomPopoverItem) => void;
 }
 
 /**
  * 知识库头部组件
  */
-const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({ onEdit }) => {
+const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
+  onEdit,
+  onPopover,
+}) => {
   const handleBack = () => {
     history.back();
-  };
-
-  const handleClickPopoverItem = () => {
-    console.log('点击popover');
   };
 
   return (
@@ -57,10 +58,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({ onEdit }) => {
         </div>
       </section>
       {/*添加内容*/}
-      <CustomPopover
-        list={KNOWLEDGE_TEXT_IMPORT_TYPE}
-        onClick={handleClickPopoverItem}
-      >
+      <CustomPopover list={KNOWLEDGE_TEXT_IMPORT_TYPE} onClick={onPopover}>
         <Button
           type="primary"
           icon={<DownOutlined className={cx(styles['dropdown-icon'])} />}

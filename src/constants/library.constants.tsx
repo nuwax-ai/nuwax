@@ -130,3 +130,29 @@ export const KNOWLEDGE_TEXT_IMPORT_TYPE = [
     desc: '自定义',
   },
 ];
+
+// 知识库-本地文档添加内容-步骤列表
+export const KNOWLEDGE_LOCAL_DOC_LIST = [
+  {
+    title: '上传',
+  },
+  {
+    title: '创建设置',
+  },
+  {
+    title: '数据处理',
+  },
+];
+
+// 知识库-自定义文档添加内容-步骤列表
+export const KNOWLEDGE_CUSTOM_DOC_LIST = [
+  {
+    title: '文本填写',
+  },
+  {
+    title: '分段设置',
+  },
+  {
+    title: '数据处理',
+  },
+];

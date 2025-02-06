@@ -288,3 +288,13 @@ export interface CustomPopoverProps {
   list: CustomPopoverItem[];
   onClick: (item: CustomPopoverItem) => void;
 }
+
+// 上传头像
+export interface UploadAvatarProps {
+  className?: string;
+  imageClassName?: string;
+  onUploadSuccess?: (url: string) => void;
+  defaultImage: string;
+  imageUrl?: string;
+  beforeUpload?: (file: FileType) => void;
+}

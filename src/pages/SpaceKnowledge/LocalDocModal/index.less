@@ -1,0 +1,27 @@
+@import '@/styles/color';
+
+.container {
+  width: 560px;
+  background-color: @WHITE12 !important;
+
+  .header {
+    background-color: @WHITE12 !important;
+  }
+
+  .body {
+    padding: 20px !important;
+  }
+
+  .step-wrap {
+    width: 400px;
+    padding: 10px 16px;
+    margin: 0 auto;
+    background-color: @WHITE;
+
+    :global {
+      .ant-steps .ant-steps-item-title::after {
+        height: 0;
+      }
+    }
+  }
+}
