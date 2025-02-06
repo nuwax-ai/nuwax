@@ -32,6 +32,10 @@ const routes = [
         path: '/space/:spaceId/plugin/:pluginId/cloud-tool',
         component: '@/pages/SpacePluginCloudTool',
       },
+      {
+        path: '/space/:spaceId/knowledge/:knowledgeId',
+        component: '@/pages/SpaceKnowledge',
+      },
       { path: '/square', component: '@/pages/Square' },
     ],
   },

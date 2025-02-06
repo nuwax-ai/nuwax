@@ -39,6 +39,7 @@ const CustomPopover: React.FC<PropsWithChildren<CustomPopoverProps>> = ({
                 'hover-box',
                 'cursor-pointer',
                 'flex',
+                'items-center',
                 { [styles.del]: item.isDel },
               )}
               onClick={(e) => handleClick(e, item)}

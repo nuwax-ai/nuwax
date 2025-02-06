@@ -1,11 +1,20 @@
 import {
+  ICON_CUSTOM_DOC,
+  ICON_LOCAL_DOC,
+  ICON_ONLINE_DOC,
+  ICON_TABLE_FORMAT,
+  ICON_TEXT_FORMAT,
+} from '@/constants/images.constants';
+import {
   AfferentModeEnum,
   ComponentMoreActionEnum,
+  KnowledgeResourceEnum,
+  KnowledgeTextImportEnum,
   PluginCreateToolEnum,
   RequestContentFormatEnum,
   RequestMethodEnum,
 } from '@/types/enums/library';
-import { CustomPopoverItem } from '@/types/interfaces/common';
+import type { CustomPopoverItem } from '@/types/interfaces/common';
 
 // 组件库更多操作
 export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
@@ -83,5 +92,41 @@ export const AFFERENT_MODE_LIST = [
   {
     value: AfferentModeEnum.Header,
     label: 'Header',
+  },
+];
+
+// 知识库资源格式
+export const KNOWLEDGE_RESOURCE_FORMAT = [
+  {
+    value: KnowledgeResourceEnum.Text,
+    label: '文本格式',
+    icon: <ICON_TEXT_FORMAT />,
+  },
+  {
+    value: KnowledgeResourceEnum.Table,
+    label: '表格格式',
+    icon: <ICON_TABLE_FORMAT />,
+  },
+];
+
+// 知识库文本格式导入类型
+export const KNOWLEDGE_TEXT_IMPORT_TYPE = [
+  {
+    value: KnowledgeTextImportEnum.Local_Doc,
+    label: '本地文档',
+    icon: <ICON_LOCAL_DOC />,
+    desc: '上传 PDF, TXT, MD, DOC, DOCX 格式的本地文件',
+  },
+  {
+    value: KnowledgeTextImportEnum.Online_Doc,
+    label: '在线文档',
+    icon: <ICON_ONLINE_DOC />,
+    desc: '获取在线网页内容',
+  },
+  {
+    value: KnowledgeTextImportEnum.Custom,
+    label: '自定义',
+    icon: <ICON_CUSTOM_DOC />,
+    desc: '自定义',
   },
 ];

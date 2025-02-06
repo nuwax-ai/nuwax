@@ -57,15 +57,15 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
           styles.section,
         )}
       >
-        <div className={cx('flex', styles['plugin-top'])}>
-          <h3 className={cx(styles['plugin-name'])}>测试插件</h3>
+        <div className={cx('flex', styles['top-box'])}>
+          <h3 className={cx(styles.name)}>测试插件</h3>
           <EditOutlined
             className={cx('cursor-pointer', 'hover-box')}
             onClick={onEdit}
           />
           <CheckCircleOutlined className={cx(styles.circle)} />
         </div>
-        <div className={cx(styles['plugin-bottom'], 'flex', 'items-center')}>
+        <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
           <span className={cx(styles.box)}>http</span>
           <span className={cx(styles.box)}>未发布</span>
           <span className={cx(styles['update-time'])}>

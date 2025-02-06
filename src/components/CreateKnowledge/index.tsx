@@ -1,6 +1,8 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
+import { KNOWLEDGE_RESOURCE_FORMAT } from '@/constants/library.constants';
+import { KnowledgeResourceEnum } from '@/types/enums/library';
 import type { CreateAgentProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, Input } from 'antd';
@@ -18,8 +20,14 @@ const CreateKnowledge: React.FC<CreateAgentProps> = ({
   onConfirm,
 }) => {
   const [imageUrl, setImageUrl] = useState<string>('');
-
+  const [knowledgeResourceFormat, setKnowledgeResourceFormat] =
+    useState<number>(KnowledgeResourceEnum.Text);
   const [form] = Form.useForm();
+
+  // 切换资源文件格式类型
+  const handleResourceType = (value: KnowledgeResourceEnum) => {
+    setKnowledgeResourceFormat(value);
+  };
 
   const onFinish = (values) => {
     console.log(values);
@@ -39,6 +47,26 @@ const CreateKnowledge: React.FC<CreateAgentProps> = ({
       onConfirm={handlerSubmit}
       // loading={loading}
     >
+      <div className={cx('flex', styles.header)}>
+        {KNOWLEDGE_RESOURCE_FORMAT.map((item) => (
+          <div
+            key={item.value}
+            className={cx(
+              'flex',
+              'flex-col',
+              'items-center',
+              'content-center',
+              'cursor-pointer',
+              styles.box,
+              { [styles.active]: knowledgeResourceFormat === item.value },
+            )}
+            onClick={() => handleResourceType(item.value)}
+          >
+            {item.icon}
+            <span>{item.label}</span>
+          </div>
+        ))}
+      </div>
       <Form
         form={form}
         preserve={false}
@@ -56,11 +84,7 @@ const CreateKnowledge: React.FC<CreateAgentProps> = ({
           label="名称"
           rules={[{ required: true, message: '输入知识库名称' }]}
         >
-          <Input
-            placeholder="输入知识库名称"
-            showCount
-            maxLength={100}
-          />
+          <Input placeholder="输入知识库名称" showCount maxLength={100} />
         </Form.Item>
         <OverrideTextArea
           name="intro"
