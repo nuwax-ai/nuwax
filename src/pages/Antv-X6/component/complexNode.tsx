@@ -1,7 +1,7 @@
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import { ModelSelected } from '@/components/ModelSetting';
-import type { NodeConfig } from '@/types/interfaces/node';
-import { PlusOutlined } from '@ant-design/icons';
+import type { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   Button,
   Empty,
@@ -11,7 +11,7 @@ import {
   Select,
   Space,
 } from 'antd';
-import React, { useState } from 'react';
+import React from 'react';
 import '../index.less';
 import { InputConfigs, intentionConfigs, outPutConfigs } from '../params';
 import { NodeDisposeProps } from '../type';
@@ -158,11 +158,11 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
 
 // 定义问答
 const QuestionsNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
-  let inputInitialValues = {};
+  let inputInitialValues: InputAndOutConfig[] = [];
   if (params.inputArgs && params.inputArgs.length) {
     inputInitialValues = params.inputArgs;
   }
-  let outputInitialValues = {};
+  let outputInitialValues: InputAndOutConfig[] = [];
   if (params.outputArgs && params.outputArgs.length) {
     outputInitialValues = params.outputArgs;
   }
@@ -180,16 +180,16 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
         <InputAndOut
           title="输入"
           fieldConfigs={outPutConfigs}
-          inputItemName="inputArgs"
           handleChangeNodeConfig={handleChangeNodeConfig}
-          initialValues={inputInitialValues}
+          inputItemName="inputArgs"
+          initialValues={{ inputArgs: inputInitialValues }}
         />
       </div>
       {/* 提问问题 */}
       <ExpandableInputTextarea
         title="提问问题"
-        value={params.userPrompt || ''}
-        onChange={(value: string) => Modified({ ...params, userPrompt: value })}
+        value={params.question || ''}
+        onChange={(value: string) => Modified({ ...params, question: value })}
         onExpand
         placeholder="可使用{{变量名}}的方式引用输入参数中的变量"
       />
@@ -197,18 +197,18 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
       <div>
         <Radio.Group
           onChange={(value: RadioChangeEvent) =>
-            Modified({ ...params, answers: value.target.value })
+            Modified({ ...params, answerType: value.target.value })
           }
-          value={params.answers}
+          value={params.answerType}
         >
           <Space direction="vertical">
-            <Radio value={1}>直接回答</Radio>
-            <Radio value={2}>选项回答</Radio>
+            <Radio value={'TEXT'}>直接回答</Radio>
+            <Radio value={'SELECT'}>选项回答</Radio>
           </Space>
         </Radio.Group>
       </div>
       {/* 输出参数 */}
-      {params.answers === 1 && (
+      {params.answerType === 'TEXT' && (
         <div className="node-item-style">
           <InputAndOut
             title="输出"
@@ -222,25 +222,55 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
         </div>
       )}
       {/* 选项内容 */}
-      {params.answers === 2 && (
-        <div className="node-item-style">
-          <InputAndOut
-            title="输出"
-            fieldConfigs={InputConfigs}
-            handleChangeNodeConfig={handleChangeNodeConfig}
-            inputItemName="outputArgs"
-            showCopy={true}
-            showAssociation={true}
-            initialValues={outputInitialValues}
-          />
-        </div>
+      {params.answerType === 'SELECT' && (
+        <>
+          <div className="dis-sb margin-bottom">
+            <span className="node-title-style">设置选项内容</span>
+            <Button
+              icon={<PlusOutlined />}
+              size={'small'}
+              onClick={() =>
+                handleChangeNodeConfig({
+                  options: [
+                    ...(params.options || []),
+                    { index: '', content: '' },
+                  ],
+                })
+              }
+            ></Button>
+          </div>
+          {params.options?.map((item) => (
+            <div key={item.index} className="dis-sb">
+              <span>{item.index}</span>
+              <Input value={item.content} onChange={() => {}}></Input>
+              <DeleteOutlined
+                onClick={() =>
+                  handleChangeNodeConfig({
+                    options: params.options?.filter(
+                      (sun) => sun.index !== item.index,
+                    ),
+                  })
+                }
+              />
+            </div>
+          ))}
+        </>
       )}
     </div>
   );
 };
 
 // 定义http工具
-const HttpToolNode: React.FC<NodeDisposeProps> = ({}) => {
+const HttpToolNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
+  // 请求方法的选项
+  const methodOption = [
+    { label: 'GET', value: 'GET' },
+    { label: 'POST', value: 'POST' },
+    { label: 'PUT', value: 'PUT' },
+    { label: 'DELETE', value: 'DELETE' },
+    { label: 'PATCH', value: 'PATCH' },
+  ];
+
   // 各种方法的options
   const methodOptions = [
     { label: 'json', value: 'json' },
@@ -249,12 +279,32 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({}) => {
     { label: '无', value: 'none' },
   ];
 
-  const [params, setParams] = useState({
-    method: '',
-    path: '',
-    timeout: '',
-    body: '',
-  });
+  // 请求头的数据
+  let headersInitialValues: InputAndOutConfig[] = [];
+  if (params.headers && params.headers.length) {
+    headersInitialValues = params.headers;
+  }
+  // 节点入参
+  let queriesInitialValues: InputAndOutConfig[] = [];
+  if (params.queries && params.queries.length) {
+    queriesInitialValues = params.queries;
+  }
+  // body的数据
+  let bodyInitialValues: InputAndOutConfig[] = [];
+  if (params.body && params.body.length) {
+    bodyInitialValues = params.body;
+  }
+
+  // 节点出参
+  let outputInitialValues: InputAndOutConfig[] = [];
+  if (params.outputArgs && params.outputArgs.length) {
+    outputInitialValues = params.outputArgs;
+  }
+  // 修改模型的入参和出参
+  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
+    console.log('123', newNodeConfig);
+    Modified({ ...params, ...newNodeConfig });
+  };
 
   return (
     <div>
@@ -264,16 +314,26 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({}) => {
         <p className="sub-item-title">请求方法与路径</p>
         <div className="margin-bottom">
           <Space>
-            <Select value={params.method} style={{ width: 140 }}></Select>
-            <Input value={params.path}></Input>
+            <Select
+              value={params.method}
+              style={{ width: 140 }}
+              options={methodOption}
+              onChange={(value) => handleChangeNodeConfig({ method: value })}
+            ></Select>
+            <Input
+              value={params.url}
+              onChange={(e) => handleChangeNodeConfig({ url: e.target.value })}
+            ></Input>
           </Space>
         </div>
         <p className="margin-bottom">请求内容格式</p>
         <Radio.Group
           onChange={(value: RadioChangeEvent) =>
-            setParams({ ...params, body: value.target.value })
+            handleChangeNodeConfig({
+              contentType: value.target.value,
+            })
           }
-          value={params.body}
+          value={params.contentType}
           className="margin-bottom"
         >
           <Space wrap>
@@ -285,29 +345,38 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({}) => {
           </Space>
         </Radio.Group>
         <p className="margin-bottom">请求超时配置</p>
-        <Input value={params.timeout}></Input>
+        <Input
+          value={params.timeout}
+          onChange={(e) => handleChangeNodeConfig({ timeout: e.target.value })}
+        ></Input>
       </div>
       {/* 入参 */}
       <div className="node-item-style">
         <InputAndOut
           title="Header"
+          handleChangeNodeConfig={handleChangeNodeConfig}
           fieldConfigs={outPutConfigs}
+          inputItemName="headers"
           initialValues={{
-            inputItems: [{ name: '', type: '', isSelect: true }],
+            headers: headersInitialValues,
           }}
         />
         <InputAndOut
           title="Query"
+          handleChangeNodeConfig={handleChangeNodeConfig}
           fieldConfigs={outPutConfigs}
+          inputItemName="queries"
           initialValues={{
-            inputItems: [{ name: '', type: '', isSelect: true }],
+            queries: queriesInitialValues,
           }}
         />
         <InputAndOut
           title="Body"
+          handleChangeNodeConfig={handleChangeNodeConfig}
           fieldConfigs={outPutConfigs}
+          inputItemName="body"
           initialValues={{
-            inputItems: [{ name: '', type: '', isSelect: true }],
+            body: bodyInitialValues,
           }}
         />
       </div>
@@ -316,8 +385,10 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({}) => {
         <InputAndOut
           title="出参"
           fieldConfigs={InputConfigs}
+          handleChangeNodeConfig={handleChangeNodeConfig}
+          inputItemName="outputArgs"
           initialValues={{
-            inputItems: [{ name: '', type: '' }],
+            outputArgs: outputInitialValues,
           }}
         />
       </div>

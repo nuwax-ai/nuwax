@@ -3,7 +3,7 @@ import { ConditionBranchConfigs } from '@/types/interfaces/node';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import type { FormInstance } from 'antd';
 import { Button, Form, Select, Tag } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { NodeDisposeProps } from '../type';
 import './condition.less';
@@ -230,36 +230,72 @@ export const ConditionList: React.FC<ConditionListProps> = ({
 export const ConditionNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,
+  updateNode,
 }) => {
   const [arr, setArr] = useState<ConditionBranchConfigs[]>(
     params.conditionBranchConfigs || [],
   );
 
+  // 监听params.conditionBranchConfigs的变化，并在变化时更新arr
+  useEffect(() => {
+    setArr(params.conditionBranchConfigs || []);
+  }, [params.conditionBranchConfigs]);
   const addInputItem = () => {
     setArr([
       ...arr,
       {
-        branchType: '',
-        conditionType: '',
+        branchType: null,
+        conditionType: null,
         nextNodeIds: [],
         conditionArgs: [
           {
-            bindArg: '',
-            compareType: '',
-            bindValueType: '',
-            bindValue: '',
+            bindArg: null,
+            compareType: null,
+            bindValueType: null,
+            bindValue: null,
           },
         ],
       },
     ]);
-    Modified({
-      ...params,
-      conditionBranchConfigs: arr,
-    });
+    if (updateNode) {
+      updateNode({
+        ...params,
+        conditionBranchConfigs: [
+          ...arr,
+          {
+            branchType: null,
+            conditionType: null,
+            nextNodeIds: [],
+            conditionArgs: [
+              {
+                bindArg: null,
+                compareType: null,
+                bindValueType: null,
+                bindValue: null,
+              },
+            ],
+          },
+        ],
+        extension: {
+          ...params.extension,
+          height: arr.length >= 2 ? arr.length * 50 + 60 : 140,
+        },
+      });
+    }
   };
 
   const removeItem = (index: number) => {
     setArr(arr.filter((_, i) => i !== index));
+    if (updateNode) {
+      updateNode({
+        ...params,
+        conditionBranchConfigs: arr.filter((_, i) => i !== index),
+        extension: {
+          ...params.extension,
+          height: arr.length >= 2 ? arr.length * 50 + 60 : 140,
+        },
+      });
+    }
   };
   // 提交数据
   const handleChangeNodeConfig = (

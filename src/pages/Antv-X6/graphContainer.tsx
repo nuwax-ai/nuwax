@@ -127,11 +127,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
       const node = graphRef.current.getCellById(nodeId);
       if (node && node.isNode()) {
-        const currentData = node.getData() as ChildNode;
-
         const position = node.getPosition();
-
-        console.log(position);
 
         if (position) {
           // 确保 newData.nodeConfig 存在
@@ -150,9 +146,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             y: position.y,
           };
         }
-        const updatedData = { ...currentData, ...newData };
-
-        node.setData(updatedData);
+        node.setData(newData);
       }
     };
 
@@ -230,6 +224,64 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           const height = extension.height || 83;
           const position = getRandomPosition(); // 如果没有提供具体的 x 和 y，则使用随机位置
 
+          let ports = {
+            groups: {
+              left: {
+                position: 'left',
+                attrs: {
+                  circle: {
+                    r: 5,
+                    magnet: true,
+                    stroke: '#8f8f8f',
+                    strokeWidth: 1,
+                    fill: '#fff',
+                  },
+                },
+              },
+              right: {
+                position: 'right',
+                attrs: {
+                  circle: {
+                    r: 5,
+                    magnet: true,
+                    stroke: '#8f8f8f',
+                    strokeWidth: 1,
+                    fill: '#fff',
+                  },
+                },
+              },
+            },
+            items: [
+              { group: 'left', id: `${node.id.toString()}-left` },
+              { group: 'right', id: `${node.id.toString()}-right` },
+            ],
+          };
+          // 如果节点为条件分支或者意图识别，就右侧就需要多个连接桩
+          if (
+            (node.type === 'Condition' &&
+              node.nodeConfig.conditionBranchConfigs &&
+              node.nodeConfig.conditionBranchConfigs.length) ||
+            (node.type === 'IntentRecognition' &&
+              node.nodeConfig.intentConfigs &&
+              node.nodeConfig.intentConfigs.length)
+          ) {
+            // 计算当前节点有几个分支
+            const arr =
+              node.nodeConfig.conditionBranchConfigs ||
+              node.nodeConfig.intentConfigs ||
+              [];
+            const _portsItems = arr.map((_, index) => {
+              return {
+                group: 'right',
+                id: `${node.id.toString()}-${index}-right`,
+              };
+            });
+            ports.items = [
+              ..._portsItems,
+              { group: 'left', id: `${node.id.toString()}-left` },
+            ];
+          }
+
           return {
             id: node.id.toString(),
             shape: 'general-Node',
@@ -243,38 +295,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
               onChange: handleNodeChange,
             },
 
-            ports: {
-              groups: {
-                left: {
-                  position: 'left',
-                  attrs: {
-                    circle: {
-                      r: 5,
-                      magnet: true,
-                      stroke: '#8f8f8f',
-                      strokeWidth: 1,
-                      fill: '#fff',
-                    },
-                  },
-                },
-                right: {
-                  position: 'right',
-                  attrs: {
-                    circle: {
-                      r: 5,
-                      magnet: true,
-                      stroke: '#8f8f8f',
-                      strokeWidth: 1,
-                      fill: '#fff',
-                    },
-                  },
-                },
-              },
-              items: [
-                { group: 'left', id: `${node.id.toString()}-left` },
-                { group: 'right', id: `${node.id.toString()}-right` },
-              ],
-            },
+            ports: ports,
           };
         });
 

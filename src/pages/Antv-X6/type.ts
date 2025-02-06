@@ -3,7 +3,7 @@ import type {
   GroupModelItem,
   ModelListItemProps,
 } from '@/types/interfaces/model';
-import { NodeConfig } from '@/types/interfaces/node';
+import { HttpNodeConfig, NodeConfig } from '@/types/interfaces/node';
 import { Graph, Node } from '@antv/x6';
 import { FormInstance } from 'antd';
 /**
@@ -74,6 +74,24 @@ export type FormListFieldData = {
 export interface NodeDisposeProps {
   // 当前节点的参数
   params: NodeConfig;
+  // 修改节点信息
+  Modified: (params: NodeConfig) => void;
+  // 实时调用接口，修改节点
+  updateNode?: (params: NodeConfig) => void;
+  // 当前节点的类型
+  type?: string;
+  // 选项列表
+  options?: ModelListItemProps[];
+  // 分组的模型列表
+  groupedOptionsData?: GroupModelItem[];
+}
+
+/**
+ * 定义Http节点
+ */
+export interface HttpNodeDisposeProps {
+  // 当前节点的参数
+  params: HttpNodeConfig;
   // 修改节点信息
   Modified: (params: NodeConfig) => void;
   // 当前节点的类型

@@ -1,19 +1,33 @@
+import Constant from '@/constants/codes.constants';
+import { ICON_ADJUSTMENT, ICON_SUCCESS } from '@/constants/images.constants';
+import service, { IgetList } from '@/services/created';
 import { PluginAndLibraryEnum } from '@/types/enums/common';
 import { CreatedNodeItem } from '@/types/interfaces/common';
-import { ProductFilled, SearchOutlined, StarFilled } from '@ant-design/icons';
+import { getTime } from '@/utils';
+import {
+  ClockCircleOutlined,
+  MessageOutlined,
+  ProductFilled,
+  SearchOutlined,
+  StarFilled,
+} from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Button, Input, Menu, Modal, Radio, Tag } from 'antd';
+import { Button, Divider, Input, Menu, Modal, Radio, Rate } from 'antd';
 import { RadioChangeEvent } from 'antd/lib/radio';
 import { useEffect, useState } from 'react';
 import { useModel } from 'umi';
-import './index.less';
 
+import './index.less';
+interface BottonList {
+  label: string;
+  key: PluginAndLibraryEnum;
+}
 // 顶部的标签页名称
-const buttonList = [
-  { label: '插件', key: 'Plugin' },
-  { label: '工作流', key: 'Workflow' },
-  { label: '知识库', key: 'KnowledgeBase' },
-  { label: '数据库', key: 'Database' },
+const buttonList: BottonList[] = [
+  { label: '插件', key: PluginAndLibraryEnum.Plugin },
+  { label: '工作流', key: PluginAndLibraryEnum.Workflow },
+  { label: '知识库', key: PluginAndLibraryEnum.KnowledgeBase },
+  { label: '数据库', key: PluginAndLibraryEnum.Database },
 ];
 type MenuItem = Required<MenuProps>['items'][number];
 
@@ -22,15 +36,20 @@ interface CreatedProp {
   checkTag: PluginAndLibraryEnum;
   //   点击添加后,通知父组件添加节点
   onAdded: (val: CreatedNodeItem) => void;
+  // 当前的工作流id
+  targetId?: number;
 }
 // 创建插件、工作流、知识库、数据库
-const Created: React.FC<CreatedProp> = ({ checkTag, onAdded }) => {
+const Created: React.FC<CreatedProp> = ({ checkTag, onAdded, targetId }) => {
   // 打开、关闭弹窗
   const { show, setShow } = useModel('model');
   // 当前顶部被选中被选中的
-  const [selected, SetSelected] = useState<{ label: string; key: string }>({
+  const [selected, SetSelected] = useState<{
+    label: string;
+    key: PluginAndLibraryEnum;
+  }>({
     label: '插件',
-    key: 'Plugin',
+    key: PluginAndLibraryEnum.Plugin,
   });
   //
   //   右侧的list
@@ -66,11 +85,6 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded }) => {
     },
   ];
 
-  //   搜索
-  const onSearch = (value: string) => {
-    console.log(value);
-  };
-
   //   修改顶部选项
   const changeTitle = (val: RadioChangeEvent | string) => {
     if (!val) return;
@@ -95,19 +109,20 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded }) => {
   };
 
   //   获取右侧的list
-  const getList = async () => {
-    setList([
-      {
-        icon: <ProductFilled />,
-        label: '必应搜索',
-        desc: '从必应搜索任何信息和网页URL',
-        id: 'biYing',
-        source: 'admin',
-        time: '12-05 15:34',
-        image: <ProductFilled />,
-        tag: '25个智能体正在使用',
-      },
-    ]);
+  const getList = async (type: PluginAndLibraryEnum, params?: IgetList) => {
+    const _res = await service.getList(type, params || {});
+    if (_res.code === Constant.success) {
+      console.log(_res.data);
+      setList(_res.data);
+    }
+  };
+
+  //   搜索
+  const onSearch = (value: string) => {
+    const _params = {
+      kw: value,
+    };
+    getList(selected.key, _params);
   };
 
   //   点击添加,通知父组件,并将参数传递给父组件
@@ -116,7 +131,7 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded }) => {
   };
 
   useEffect(() => {
-    getList();
+    getList(checkTag);
     changeTitle(checkTag);
   }, [checkTag]);
 
@@ -135,6 +150,9 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded }) => {
               className={`radio-button-style ${
                 index === 0 ? 'first-radio-style' : ''
               }`}
+              onChange={(e) => {
+                getList(e.target.value);
+              }}
             >
               {item.label}
             </Radio.Button>
@@ -191,22 +209,58 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded }) => {
         {/* 右侧部分应该是变动的 */}
         <div className="main-style flex-1">
           {list.map((item) => (
-            <div className="dis-sb list-item-style" key={item.id}>
-              <div className="left-image-style">{item.image}</div>
+            <div className="dis-sb list-item-style" key={item.spaceId}>
+              <img src={item.icon} alt="" className="left-image-style" />
               <div className="flex-1 content-font">
-                <p className="label-font-style">{item.label}</p>
-                <p>{item.desc}</p>
-                <Tag>{item.tag}</Tag>
-                <div className="dis-left">
-                  {item.icon}
-                  <span className="margin-right-6">{item.source}</span>
-                  <span>发布于{item.time}</span>
+                <p className="label-font-style">{item.name}</p>
+                <p>{item.description}</p>
+                {/* <Tag>{item.tag}</Tag> */}
+                <div className="dis-sb count-div-style">
+                  <div>
+                    {item.publishUser.avatar}
+                    <span>{item.publishUser.nickName}</span>
+                    <Divider type="vertical" />
+                    <span className="margin-left-6">
+                      发布于{getTime(item.created)}
+                    </span>
+                    {item.statistics && (
+                      <>
+                        <Divider type="vertical" />
+                        <div>
+                          <Rate count={1} />
+                          <span>{item.statistics.collectCount}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  {item.statistics && (
+                    <div>
+                      <span>
+                        <ICON_ADJUSTMENT />
+                        {item.statistics.callCount}
+                      </span>
+                      <Divider type="vertical" />
+                      <span>
+                        <MessageOutlined />
+                        {item.statistics.referenceCount}
+                      </span>
+                      <span>
+                        <ClockCircleOutlined />
+                        {item.statistics.failCallCount}
+                      </span>
+                      <span>
+                        <ICON_SUCCESS />
+                        {item.statistics.referenceCount}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
               <Button
                 color="primary"
                 variant="outlined"
                 onClick={() => onAddNode(item)}
+                disabled={item.targetId === targetId}
               >
                 添加
               </Button>

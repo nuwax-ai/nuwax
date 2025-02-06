@@ -123,7 +123,6 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
     const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
       data.type,
     )} 0%, white 70%)`;
-
     return (
       <div
         className="general-node"
@@ -174,9 +173,18 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
             )}
         </div>
         {/* 节点内容区，根据 data.content 的类型显示不同的内容 */}
-        <div className="general-node-content">
-          <div className="text-ellipsis">{data.description}</div>
-        </div>
+        {data.type !== 'IntentRecognition' && data.type !== 'Condition' && (
+          <div className="general-node-content">
+            <div className="text-ellipsis">{data.description}</div>
+          </div>
+        )}
+        {data.type === 'Condition' && (
+          <div className="condition-node-content-style">
+            {data.nodeConfig.conditionBranchConfigs?.map((_, index) => (
+              <Input key={index} className="margin-bottom" />
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -186,47 +194,69 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
  * 定义连接桩的样式配置，包括四个方向上的连接桩（上、右、下、左）。
  * 每个连接桩都是一个小圆圈，具有特定的颜色、大小和可见性设置。
  */
-
+import { ConditionBranchConfigs } from '@/types/interfaces/node';
 // 定义端口生成函数
-const ports = {
-  groups: {
-    out: {
-      position: 'right',
-      attrs: {
-        circle: {
-          r: 4,
-          magnet: true,
-          stroke: '#5F95FF',
-          strokeWidth: 1,
-          fill: '#fff',
+interface PortMetadata {
+  group: string;
+  name: string;
+}
+const generatePorts = (
+  nodeType: string,
+  conditionBranchConfigs: Array<ConditionBranchConfigs> = [],
+): { groups: Record<string, any>; items: PortMetadata[] } => {
+  let outputPorts;
+
+  if (nodeType === 'Condition' || nodeType === 'IntentRecognition') {
+    // 对于 Condition 和 IntentRecognition 类型的节点，动态生成多个输出端口
+    outputPorts = conditionBranchConfigs.map((_, index) => ({
+      group: 'out',
+      name: `out-port-${index}`, // 给每个端口一个唯一的名称
+    }));
+  } else {
+    // 对于其他类型的节点，仅生成一个默认的输出端口
+    outputPorts = [{ group: 'out', name: 'out-port' }];
+  }
+
+  return {
+    groups: {
+      out: {
+        position: 'right',
+        attrs: {
+          circle: {
+            r: 4,
+            magnet: true,
+            stroke: '#5F95FF',
+            strokeWidth: 1,
+            fill: '#fff',
+          },
+        },
+        connectable: {
+          source: true,
+          target: false,
         },
       },
-      connectable: {
-        source: true,
-        target: false,
-      },
-    },
-    in: {
-      position: 'left',
-      attrs: {
-        circle: {
-          r: 4,
-          magnet: true,
-          stroke: '#5F95FF',
-          strokeWidth: 1,
-          fill: '#fff',
+      in: {
+        position: 'left',
+        attrs: {
+          circle: {
+            r: 4,
+            magnet: true,
+            stroke: '#5F95FF',
+            strokeWidth: 1,
+            fill: '#fff',
+          },
+        },
+        connectable: {
+          source: false,
+          target: true,
         },
       },
-      connectable: {
-        source: false,
-        target: true,
-      },
     },
-  },
-  items: [
-    { group: 'out', name: 'out-port' }, // 添加名字
-    { group: 'in', name: 'in-port' }, // 添加名字
-  ],
+    items: [
+      ...outputPorts, // 添加所有输出端口
+      { group: 'in', name: 'in-port' }, // 默认的输入端口
+    ],
+  };
 };
 
 // 注册组件时，确保传递了正确的类型
@@ -236,7 +266,14 @@ export function registerCustomNodes() {
   register({
     shape: 'general-Node',
     component: GeneralNode,
-    ports: ports, // 确保返回 PortMetadata[]
+    ports: ({ data }: { data: ChildNode }) => {
+      const portConfig = generatePorts(
+        data.type,
+        data.nodeConfig?.conditionBranchConfigs || [],
+      );
+      // 返回 items 数组，因为 ports 参数需要的是 PortMetadata[] 类型
+      return portConfig.items;
+    },
     embeddable: ({ data }: { data: ChildNode }) => data.type === 'Loop',
     resizable: true,
   });

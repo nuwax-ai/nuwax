@@ -105,13 +105,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
             Modified={handleChangeNodeConfig}
           />
         );
-      case 'IntentRecognition':
-        return (
-          <IntentionNode
-            params={currentNodeConfig.nodeConfig}
-            Modified={handleChangeNodeConfig}
-          />
-        );
+
       case 'Plugin':
       case 'Workflow':
       case 'LongTermMemory':
@@ -157,9 +151,23 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
             Modified={handleChangeNodeConfig}
           />
         );
+      // 条件分支需要实时的调用接口
       case 'Condition':
         return (
           <ConditionNode
+            params={currentNodeConfig.nodeConfig}
+            Modified={handleChangeNodeConfig}
+            updateNode={(newNodeConfig) =>
+              onGetNodeConfig({
+                ...currentNodeConfig,
+                nodeConfig: newNodeConfig,
+              })
+            }
+          />
+        );
+      case 'IntentRecognition':
+        return (
+          <IntentionNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
           />
