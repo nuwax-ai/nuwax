@@ -16,6 +16,8 @@ interface IAddNode {
   extension?: {
     x: number;
     y: number;
+    width?: number;
+    height?: number;
   };
 }
 
@@ -114,6 +116,25 @@ const addEdge = async (params: IAddEdge) => {
     });
 };
 
+interface IgetModelList {
+  modelType: string;
+}
+// 查询当前工作流可以使用的模型
+const getModelListByWorkflowId = async (params: IgetModelList) => {
+  // 发送GET请求，使用相对路径
+  return customRequest({
+    url: `/api/model/list`,
+    method: 'POST',
+    data: params,
+  })
+    .then((response) => {
+      return response;
+    })
+    .catch((error) => {
+      console.error('Failed to getmodel list:', error);
+    });
+};
+
 // 查询模型列表
 const getModelList = async (params: IGetModelList) => {
   // 发送GET请求，使用相对路径
@@ -138,4 +159,5 @@ export default {
   deleteNode,
   copyNode,
   addEdge,
+  getModelListByWorkflowId,
 };

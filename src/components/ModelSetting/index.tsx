@@ -22,7 +22,9 @@ export const GroupedOptionSelect: React.FC<GroupModelListItemProps> = ({
   const getModelList = async () => {
     try {
       // 调用接口，获取当前画布的所有节点和边
-      const _res = await service.getModelList({ modelType: 'Chat' });
+      const _res = await service.getModelListByWorkflowId({
+        modelType: 'Chat',
+      });
       // 将数据交给redux
       setModelList(_res.data);
       setGroupedOptionsData(groupModelsByApiProtocol(_res.data));
@@ -55,7 +57,7 @@ export const GroupedOptionSelect: React.FC<GroupModelListItemProps> = ({
       style={{ width: '100%', marginTop: '10px' }}
       className="input-style"
       value={nodeConfig.modelId?.toString()}
-      onChange={(value: string) => onChange({ ...nodeConfig, mode: value })}
+      onChange={(value: string) => onChange({ ...nodeConfig, modelId: value })}
       labelRender={labelRender}
       placement={'bottomLeft'}
       popupMatchSelectWidth={false}
@@ -66,7 +68,23 @@ export const GroupedOptionSelect: React.FC<GroupModelListItemProps> = ({
             <Select.Option
               key={`${groupIndex}-${index}`}
               value={opt.id}
-              label={{ label: opt.name, icon: opt.icon }} // 设置 label 属性为一个对象
+              label={
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  {/* 如果有 icon，可以在这里显示 */}
+                  {opt.icon && (
+                    <img
+                      src={opt.icon}
+                      alt=""
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        marginRight: '8px',
+                      }}
+                    />
+                  )}
+                  <span>{opt.name}</span>
+                </div>
+              }
             >
               <ModelListItem item={opt} />
             </Select.Option>

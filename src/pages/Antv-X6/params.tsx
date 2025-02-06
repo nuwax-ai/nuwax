@@ -310,9 +310,9 @@ export const modelTypes = [
 
 // 循环的option
 export const cycleOption = [
-  { label: '使用数组循环', value: 1 },
-  { label: '指定次数循环', value: 2 },
-  { label: '无限循环', value: 3 },
+  { label: '使用数组循环', value: 'ARRAY_LOOP' },
+  { label: '指定次数循环', value: 'SPECIFY_TIMES_LOOP' },
+  { label: '无限循环', value: 'INFINITE_LOOP' },
 ];
 export const InputConfigs = [
   {

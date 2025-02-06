@@ -226,19 +226,52 @@ export interface WorkFlowItem {
   image: React.ReactNode;
 }
 
+interface Statistics {
+  targetId: number;
+  // 用户人数
+  userCount: number;
+  // 会话次数
+  convCount: number;
+  // 收藏次数
+  collectCount: number;
+  // 点赞次数
+  likeCount: number;
+  // 引用次数
+  referenceCount: number;
+  // 调用总次数
+  callCount: number;
+  // 失败调用次数
+  failCallCount: number;
+  // 调用总时长
+  totalCallDuration: number;
+}
+
 export interface CreatedNodeItem {
-  icon: React.ReactNode;
-  label: string;
-  desc: string;
-  id: string;
-  source: string;
-  time: string;
-  image: React.ReactNode;
-  tag: string;
-  // 是否又操作的按钮
-  otherAction?: boolean;
-  // 是否有试运行的按钮
-  testRun?: boolean;
+  // 图片
+  icon: string;
+  // 名称
+  name: string;
+  // 简介
+  description: string;
+  // 创建时间
+  created: string;
+  // 修改时间
+  modified: string;
+  // 备注
+  remark: string;
+  // 统计信息
+  statistics: Statistics | null;
+  // 当前id
+  spaceId: number;
+  // 正在使用的
+  targetId?: number;
+  // 发布人员信息
+  publishUser: {
+    userId: number;
+    userName: string;
+    nickName: string;
+    avatar: string;
+  };
 }
 
 // 创建、编辑智能体

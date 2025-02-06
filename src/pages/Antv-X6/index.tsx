@@ -36,6 +36,7 @@ const AntvX6: React.FC = () => {
     publishStatus: '',
     created: '',
     modified: '',
+    id: 0,
   });
 
   // 创建工作流，插件，知识库，数据库
@@ -71,6 +72,7 @@ const AntvX6: React.FC = () => {
         publishStatus: _res.data.publishStatus,
         created: _res.data.created,
         modified: _res.data.modified,
+        id: _res.data.id,
       };
       setInfo(_params);
       // 获取节点和边的数据
@@ -108,12 +110,20 @@ const AntvX6: React.FC = () => {
   };
 
   // 新增节点
-  const addNode = async (child: Child, dragEvent: { x: number; y: number }) => {
+  const addNode = async (
+    child: Child,
+    dragEvent: { x: number; y: number; height?: number },
+  ) => {
     const _params = {
       workflowId: 6,
       type: child.type || createdItem,
       extension: dragEvent,
     };
+    // 如果是条件分支，需要增加高度
+    if (child.type === 'Condition') {
+      _params.extension = { ...dragEvent, height: 140 };
+    }
+
     const _res = await service.addNode(_params);
     if (_res.code === Constant.success) {
       child.id = _res.data;
@@ -229,9 +239,9 @@ const AntvX6: React.FC = () => {
   const onAdded = (val: CreatedNodeItem) => {
     console.log(val);
     const _child: Child = {
-      name: val.label,
+      name: val.name,
       key: 'general-Node',
-      description: val.desc,
+      description: val.description,
       type: createdItem,
     };
     addNode(_child, dragEvent);
@@ -289,6 +299,7 @@ const AntvX6: React.FC = () => {
       <Created
         checkTag={createdItem as PluginAndLibraryEnum}
         onAdded={onAdded}
+        targetId={info.id}
       />
     </div>
   );

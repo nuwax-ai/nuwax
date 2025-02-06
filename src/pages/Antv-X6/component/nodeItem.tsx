@@ -33,6 +33,7 @@ const StartNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   if (params.inputArgs && params.inputArgs.length) {
     initialValues = params.inputArgs;
   }
+
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -128,36 +129,50 @@ const EndNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
 };
 
 // 定义循环的节点渲染
-const CycleNode: React.FC<NodeDisposeProps> = ({ params }) => {
-  console.log(params);
-
-  const [selectOption, setSelectOption] = useState<number>(1);
+const CycleNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
+  let initialValues: InputAndOutConfig[] = [];
+  if (params.inputArgs && params.inputArgs.length) {
+    initialValues = params.inputArgs;
+  }
+  let outPutInitialValues: InputAndOutConfig[] = [];
+  if (params.outputArgs && params.outputArgs.length) {
+    outPutInitialValues = params.outputArgs;
+  }
+  let variableInitialValues: InputAndOutConfig[] = [];
+  if (params.variableArgs && params.variableArgs.length) {
+    variableInitialValues = params.variableArgs;
+  }
 
   const [count, setCount] = useState<number | null>(1);
 
+  // 修改模型的入参和出参
+  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
+    Modified({ ...params, ...newNodeConfig });
+  };
   return (
     <div>
       <div className=" node-item-style">
         <span className="node-title-style margin-bottom">循环设置</span>
         <Select
+          value={params.loopType}
           options={cycleOption}
-          onChange={(value) => setSelectOption(value)}
+          onChange={(value) => handleChangeNodeConfig({ loopType: value })}
         ></Select>
       </div>
-      {selectOption !== 3 && (
+      {params.loopType !== 'INFINITE_LOOP' && (
         <div className=" node-item-style">
-          {selectOption === 1 && (
+          {params.loopType === 'ARRAY_LOOP' && (
             <div>
               <InputAndOut
                 title="循环数组"
                 fieldConfigs={outPutConfigs}
-                initialValues={{
-                  inputItems: [{ name: '123', paramsValue: '123' }],
-                }}
+                inputItemName="inputArgs"
+                handleChangeNodeConfig={handleChangeNodeConfig}
+                initialValues={{ inputArgs: initialValues }}
               />
             </div>
           )}
-          {selectOption === 2 && (
+          {params.loopType === 'SPECIFY_TIMES_LOOP' && (
             <div>
               <div className="node-title-style margin-bottom">循环次数</div>
               <InputNumber size="small" value={count} onChange={setCount} />
@@ -168,16 +183,16 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ params }) => {
       <InputAndOut
         title="中间变量"
         fieldConfigs={outPutConfigs}
-        initialValues={{
-          inputItems: [{ name: '123', paramsValue: '123' }],
-        }}
+        inputItemName="inputArgs"
+        handleChangeNodeConfig={handleChangeNodeConfig}
+        initialValues={{ inputArgs: outPutInitialValues }}
       />
       <InputAndOut
         title="输出"
         fieldConfigs={outPutConfigs}
-        initialValues={{
-          inputItems: [{ name: '123', paramsValue: '123' }],
-        }}
+        inputItemName="inputArgs"
+        handleChangeNodeConfig={handleChangeNodeConfig}
+        initialValues={{ inputArgs: variableInitialValues }}
       />
     </div>
   );
@@ -409,15 +424,19 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
 const CodeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   const { setIsShow } = useModel('monaco');
 
-  let inputInitialValues = {};
+  let initialValues: InputAndOutConfig[] = [];
   if (params.inputArgs && params.inputArgs.length) {
-    inputInitialValues = params.inputArgs;
+    initialValues = params.inputArgs;
   }
-  let outputInitialValues = {};
+  let outputInitialValues: InputAndOutConfig[] = [];
   if (params.outputArgs && params.outputArgs.length) {
     outputInitialValues = params.outputArgs;
   }
 
+  // 修改模型的代码
+  const changeCode = (code: string) => {
+    Modified({ ...params, code });
+  };
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -429,26 +448,27 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
         fieldConfigs={InputConfigs}
         inputItemName="inputArgs"
         handleChangeNodeConfig={handleChangeNodeConfig}
-        initialValues={inputInitialValues}
-        showCheckbox={true}
-        showCopy={true}
-        showAssociation={true}
+        initialValues={{ inputArgs: initialValues }}
       />
       <div className="node-item-style">
         <div className="dis-sb margin-bottom">
           <span className="node-title-style ">代码</span>
           <ExpandAltOutlined onClick={() => setIsShow(true)} />
         </div>
-        <CodeEditor height="180px" />
+        <CodeEditor
+          value={params.code}
+          changeCode={changeCode}
+          height="180px"
+        />
       </div>
       <InputAndOut
-        title="输出变量"
+        title="输出"
         fieldConfigs={InputConfigs}
         handleChangeNodeConfig={handleChangeNodeConfig}
         inputItemName="outputArgs"
         showCopy={true}
         showAssociation={true}
-        initialValues={outputInitialValues}
+        initialValues={{ outputArgs: outputInitialValues }}
       />
     </>
   );
