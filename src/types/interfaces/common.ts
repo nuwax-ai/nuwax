@@ -1,4 +1,5 @@
 import type { CardStyleEnum, CreateEditAgentEnum } from '@/types/enums/common';
+import { KnowledgeModeEnum } from '@/types/enums/library';
 import type {
   ConfigProviderProps,
   FormInstance,
@@ -285,6 +286,17 @@ export interface CreateAgentProps {
   onConfirm: () => void;
 }
 
+// 创建、编辑知识库
+export interface CreateKnowledgeProps {
+  type?: KnowledgeModeEnum;
+  knowledgeName?: string;
+  intro?: string;
+  img?: string;
+  open: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
 // 自定义数字输入框，带加减按钮
 export interface CustomInputNumberProps {
   value: string;
@@ -321,4 +333,14 @@ export interface CustomPopoverItem {
 export interface CustomPopoverProps {
   list: CustomPopoverItem[];
   onClick: (item: CustomPopoverItem) => void;
+}
+
+// 上传头像
+export interface UploadAvatarProps {
+  className?: string;
+  imageClassName?: string;
+  onUploadSuccess?: (url: string) => void;
+  defaultImage: string;
+  imageUrl?: string;
+  beforeUpload?: (file: FileType) => void;
 }

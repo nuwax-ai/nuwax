@@ -21,7 +21,6 @@ const OverrideTextArea: React.FC<OverrideTextAreaProps> = (props) => {
   } = props;
 
   const [value, setValue] = useState<string>(initialValue || '');
-  console.log(value, 1111);
   return (
     <Form.Item className={cx('relative')}>
       <Form.Item
