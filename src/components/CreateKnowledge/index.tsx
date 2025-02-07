@@ -1,3 +1,4 @@
+import knowledgeIcon from '@/assets/images/knowledge_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
@@ -101,9 +102,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
             className={cx(styles['upload-box'])}
             onUploadSuccess={setImageUrl}
             imageUrl={imageUrl}
-            defaultImage={
-              'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon4.png?lk3s=ca44e09c&x-expires=1736495925&x-signature=Cep9yaOi9FW4Y14KmEY9u366780%3D'
-            }
+            defaultImage={knowledgeIcon as string}
           />
         </Form.Item>
       </Form>

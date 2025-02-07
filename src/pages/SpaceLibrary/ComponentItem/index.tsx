@@ -1,21 +1,75 @@
+import databaseImage from '@/assets/images/database_image.png';
+import knowledgeImage from '@/assets/images/knowledge_image.png';
+import pluginImage from '@/assets/images/plugin_image.png';
+import workflowImage from '@/assets/images/workflow_image.png';
 import CustomPopover from '@/components/CustomPopover';
+import {
+  ICON_DATABASE,
+  ICON_KNOWLEDGE,
+  ICON_MODEL,
+  ICON_PLUGIN,
+  ICON_WORKFLOW,
+} from '@/constants/images.constants';
 import { COMPONENT_MORE_ACTION } from '@/constants/library.constants';
+import { LibraryAllTypeEnum } from '@/types/enums/space';
 import type { ComponentItemProps } from '@/types/interfaces/library';
-import { MoreOutlined, PieChartOutlined } from '@ant-design/icons';
+import { MoreOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 // 单个资源组件
 const ComponentItem: React.FC<ComponentItemProps> = ({
+  type = LibraryAllTypeEnum.Plugin,
   title,
   desc,
   img,
   onClick,
   onClickMore,
 }) => {
+  //  {
+  //     defaultImage: string;
+  //     icon: React.ReactNode;
+  //     text: string;
+  //   }
+
+  const info = useMemo(() => {
+    switch (type) {
+      case LibraryAllTypeEnum.Plugin:
+        return {
+          defaultImage: pluginImage,
+          icon: <ICON_PLUGIN />,
+          text: '插件',
+        };
+      case LibraryAllTypeEnum.Knowledge:
+        return {
+          defaultImage: knowledgeImage,
+          icon: <ICON_KNOWLEDGE />,
+          text: '知识库',
+        };
+      case LibraryAllTypeEnum.Workflow:
+        return {
+          defaultImage: workflowImage,
+          icon: <ICON_WORKFLOW />,
+          text: '工作流',
+        };
+      case LibraryAllTypeEnum.Database:
+        return {
+          defaultImage: databaseImage,
+          icon: <ICON_DATABASE />,
+          text: '数据库',
+        };
+      case LibraryAllTypeEnum.Model:
+        return {
+          defaultImage: databaseImage,
+          icon: <ICON_MODEL />,
+          text: '模型',
+        };
+    }
+  }, []);
+
   return (
     <div
       className={cx(
@@ -44,7 +98,11 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
           </h3>
           <p className={cx('text-ellipsis', styles.desc)}>{desc}</p>
         </div>
-        <img className={cx(styles.img)} src={img} alt="" />
+        <img
+          className={cx(styles.img)}
+          src={img || (info.defaultImage as string)}
+          alt=""
+        />
       </div>
       {/*插件类型*/}
       <div
@@ -59,8 +117,8 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
             'px-6',
           )}
         >
-          <PieChartOutlined />
-          <span>插件</span>
+          {info.icon}
+          <span>{info.text}</span>
         </span>
         <span
           className={cx(
@@ -95,4 +153,4 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
   );
 };
 
-export default ComponentItem;
+export default memo(ComponentItem);

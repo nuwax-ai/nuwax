@@ -1,5 +1,5 @@
 import type { CardStyleEnum, CreateEditAgentEnum } from '@/types/enums/common';
-import { KnowledgeModeEnum } from '@/types/enums/library';
+import type { KnowledgeModeEnum } from '@/types/enums/library';
 import type {
   ConfigProviderProps,
   FormInstance,
@@ -54,15 +54,15 @@ export interface CardProps {
 
 interface option {
   label: React.ReactNode;
-  value: string | number;
+  value: React.Key;
   // label文本前的图片
-  img?: string;
+  [key: string]: React.Key | React.ReactNode;
 }
 
 // 下拉选择框组件
 export interface SelectListType {
   className?: string;
-  value?: string | number;
+  value?: React.Key;
   // 自定义前缀
   prefix?: React.ReactNode;
   // 自定义的选择框后缀图标
