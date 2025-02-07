@@ -92,3 +92,24 @@ export interface tryOutputConfigDataType {
   desc: string;
   children?: tryOutputConfigDataType[];
 }
+
+// 接口配置
+export interface ModelConfigDataType {
+  key: React.Key;
+  url: string;
+  apikey: string;
+  // 权重
+  weight: string;
+}
+
+// 创建模型弹窗组件
+export interface CreateModelProps {
+  open: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+// 内网模型组件
+export interface IntranetModelProps {
+  onOpen: () => void;
+}

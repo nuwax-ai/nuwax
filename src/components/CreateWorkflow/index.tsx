@@ -25,12 +25,11 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   onConfirm,
 }) => {
   const [imageUrl, setImageUrl] = useState<string>('');
-
   const [form] = Form.useForm();
 
   const onFinish = (values) => {
     console.log(values, workflowId, img, type);
-    message.success('智能体已创建');
+    message.success('知识库已创建');
     onConfirm();
   };
 

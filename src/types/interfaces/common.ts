@@ -1,4 +1,5 @@
 import type { CardStyleEnum, CreateEditAgentEnum } from '@/types/enums/common';
+import { KnowledgeModeEnum } from '@/types/enums/library';
 import type {
   ConfigProviderProps,
   FormInstance,
@@ -279,6 +280,17 @@ export interface CreateAgentProps {
   type?: CreateEditAgentEnum;
   agentName?: string;
   intro?: string;
+  open: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+// 创建、编辑知识库
+export interface CreateKnowledgeProps {
+  type?: KnowledgeModeEnum;
+  knowledgeName?: string;
+  intro?: string;
+  img?: string;
   open: boolean;
   onCancel: () => void;
   onConfirm: () => void;

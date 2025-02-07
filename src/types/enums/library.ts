@@ -21,6 +21,14 @@ export enum PluginModeEnum {
   Update,
 }
 
+// 创建、编辑知识库枚举
+export enum KnowledgeModeEnum {
+  // 创建
+  Create,
+  // 编辑
+  Edit,
+}
+
 // 插件操作枚举
 export enum PluginCreateToolEnum {
   // 基于已有服务（http接口）创建

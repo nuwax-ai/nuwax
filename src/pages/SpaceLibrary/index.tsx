@@ -17,11 +17,12 @@ import {
 } from '@/types/enums/space';
 import { CustomPopoverItem } from '@/types/interfaces/common';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Input } from 'antd';
+import { Button, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { history } from 'umi';
 import ComponentItem from './ComponentItem';
+import CreateModel from './CreateModel';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -38,6 +39,8 @@ const SpaceLibrary: React.FC = () => {
   const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
   // 打开创建知识库弹窗
   const [openKnowledge, setOpenKnowledge] = useState<boolean>(false);
+  // 打开创建模型弹窗
+  const [openModel, setOpenModel] = useState<boolean>(false);
   const [type, setType] = useState<LibraryAllTypeEnum>(
     LibraryAllTypeEnum.All_Type,
   );
@@ -72,8 +75,10 @@ const SpaceLibrary: React.FC = () => {
         setOpenKnowledge(true);
         break;
       case LibraryAllTypeEnum.DataBase:
+        message.warning('数据库此版本暂时未做');
         break;
       case LibraryAllTypeEnum.Model:
+        setOpenModel(true);
         break;
     }
   };
@@ -225,6 +230,12 @@ const SpaceLibrary: React.FC = () => {
         open={openWorkflow}
         onCancel={() => setOpenWorkflow(false)}
         onConfirm={() => setOpenWorkflow(false)}
+      />
+      {/*创建模型*/}
+      <CreateModel
+        open={openModel}
+        onCancel={() => setOpenModel(false)}
+        onConfirm={() => setOpenModel(false)}
       />
     </div>
   );

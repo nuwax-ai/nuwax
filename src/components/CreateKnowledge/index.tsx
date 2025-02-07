@@ -3,7 +3,7 @@ import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { KNOWLEDGE_RESOURCE_FORMAT } from '@/constants/library.constants';
 import { KnowledgeResourceEnum } from '@/types/enums/library';
-import type { CreateAgentProps } from '@/types/interfaces/common';
+import type { CreateKnowledgeProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, Input } from 'antd';
 import classNames from 'classnames';
@@ -15,9 +15,10 @@ const cx = classNames.bind(styles);
 /**
  * 创建知识库
  */
-const CreateKnowledge: React.FC<CreateAgentProps> = ({
-  agentName,
+const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
+  knowledgeName,
   intro,
+  img,
   open,
   onCancel,
   onConfirm,
@@ -33,7 +34,7 @@ const CreateKnowledge: React.FC<CreateAgentProps> = ({
   };
 
   const onFinish = (values) => {
-    console.log(values);
+    console.log(values, img);
     onConfirm();
   };
 
@@ -77,7 +78,7 @@ const CreateKnowledge: React.FC<CreateAgentProps> = ({
         layout="vertical"
         onFinish={onFinish}
         initialValues={{
-          agentName: agentName,
+          knowledgeName: knowledgeName,
           intro: intro,
         }}
         autoComplete="off"
