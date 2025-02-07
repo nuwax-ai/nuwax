@@ -1,6 +1,7 @@
 import AnalyzeStatistics from '@/components/AnalyzeStatistics';
 import CreateKnowledge from '@/components/CreateKnowledge';
 import CreateNewPlugin from '@/components/CreateNewPlugin';
+import CreateWorkflow from '@/components/CreateWorkflow';
 import CustomPopover from '@/components/CustomPopover';
 import SelectList from '@/components/SelectList';
 import {
@@ -15,11 +16,11 @@ import {
   LibraryAllTypeEnum,
 } from '@/types/enums/space';
 import { CustomPopoverItem } from '@/types/interfaces/common';
-import { history } from '@@/core/history';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
+import { history } from 'umi';
 import ComponentItem from './ComponentItem';
 import styles from './index.less';
 
@@ -29,10 +30,13 @@ const cx = classNames.bind(styles);
  * 工作空间 - 组件库
  */
 const SpaceLibrary: React.FC = () => {
+  // 新建工作流弹窗
+  const [openWorkflow, setOpenWorkflow] = useState<boolean>(false);
   // 新建插件弹窗
   const [openPlugin, setOpenPlugin] = useState<boolean>(false);
   // 打开分析弹窗
   const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
+  // 打开创建知识库弹窗
   const [openKnowledge, setOpenKnowledge] = useState<boolean>(false);
   const [type, setType] = useState<LibraryAllTypeEnum>(
     LibraryAllTypeEnum.All_Type,
@@ -59,6 +63,7 @@ const SpaceLibrary: React.FC = () => {
     const { value: type } = item;
     switch (type as LibraryAllTypeEnum) {
       case LibraryAllTypeEnum.Workflow:
+        setOpenWorkflow(true);
         break;
       case LibraryAllTypeEnum.Plugin:
         setOpenPlugin(true);
@@ -214,6 +219,12 @@ const SpaceLibrary: React.FC = () => {
         open={openKnowledge}
         onCancel={handleCancelCreateKnowledge}
         onConfirm={() => setOpenKnowledge(false)}
+      />
+      {/*创建工作流*/}
+      <CreateWorkflow
+        open={openWorkflow}
+        onCancel={() => setOpenWorkflow(false)}
+        onConfirm={() => setOpenWorkflow(false)}
       />
     </div>
   );

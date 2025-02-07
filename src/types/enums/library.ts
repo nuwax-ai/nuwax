@@ -5,6 +5,14 @@ export enum ComponentMoreActionEnum {
   Del,
 }
 
+// 工作流操作枚举
+export enum WorkflowModeEnum {
+  // 新建
+  Create,
+  // 更新
+  Update,
+}
+
 // 插件操作枚举
 export enum PluginModeEnum {
   // 新建
@@ -63,18 +71,12 @@ export enum KnowledgeTextImportEnum {
   Custom,
 }
 
-// 知识库资源-文本格式添加内容步骤枚举
+// 知识库资源-文本格式-添加内容-本地文档或自定义步骤枚举
 export enum KnowledgeTextStepEnum {
-  Upload,
-  Create_Set,
-  // 数据处理
-  Data_Processing,
-}
-
-// 知识库资源-自定义格式添加内容步骤枚举
-export enum KnowledgeCustomStepEnum {
-  Text_Fill,
-  Segmented_Set,
+  // 上传或者文本填写
+  Upload_Or_Text_Fill,
+  // 创建设置或分段设置
+  Create_Segmented_Set,
   // 数据处理
   Data_Processing,
 }

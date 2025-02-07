@@ -1,11 +1,12 @@
 import { KnowledgeTextImportEnum } from '@/types/enums/library';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
+import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import DocWrap from './DocWrap';
 import FileInfo from './FileInfo';
 import KnowledgeHeader from './KnowledgeHeader';
-import LocalDocModal from './LocalDocModal';
+import LocalDocModal from './LocalCustomDocModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -15,18 +16,22 @@ const cx = classNames.bind(styles);
  */
 const SpaceKnowledge: React.FC = () => {
   const [open, setOpen] = useState<boolean>(false);
+  const [type, setType] = useState<KnowledgeTextImportEnum>();
 
   const handleEdit = () => {};
 
   const handleClickPopoverItem = (item: CustomPopoverItem) => {
     console.log('点击popover', item);
+    setType(item.value);
     switch (item.value) {
       case KnowledgeTextImportEnum.Local_Doc:
         setOpen(true);
         break;
       case KnowledgeTextImportEnum.Online_Doc:
+        message.warning('在线文档本版本暂时未做');
         break;
       case KnowledgeTextImportEnum.Custom:
+        setOpen(true);
         break;
     }
   };
@@ -60,6 +65,7 @@ const SpaceKnowledge: React.FC = () => {
       </div>
       {/*本地文档弹窗*/}
       <LocalDocModal
+        type={type}
         open={open}
         onCancel={handleCancel}
         onConfirm={handleConfirm}

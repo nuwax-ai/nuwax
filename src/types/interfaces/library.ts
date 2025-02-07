@@ -1,4 +1,4 @@
-import type { PluginModeEnum } from '@/types/enums/library';
+import type { PluginModeEnum, WorkflowModeEnum } from '@/types/enums/library';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import React from 'react';
 
@@ -9,6 +9,18 @@ export interface ComponentItemProps {
   img: string;
   onClick: () => void;
   onClickMore: (type: CustomPopoverItem) => void;
+}
+
+// 更新、创建工作流弹窗
+export interface CreateWorkflowProps {
+  type?: WorkflowModeEnum;
+  workflowId?: string;
+  workflowName?: string;
+  intro?: string;
+  img?: string;
+  open: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
 }
 
 // 新建、更新插件组件

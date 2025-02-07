@@ -1,16 +1,24 @@
-import { KNOWLEDGE_LOCAL_DOC_LIST } from '@/constants/library.constants';
-import { KnowledgeTextStepEnum } from '@/types/enums/library';
+import {
+  KNOWLEDGE_CUSTOM_DOC_LIST,
+  KNOWLEDGE_LOCAL_DOC_LIST,
+} from '@/constants/library.constants';
+import {
+  KnowledgeTextImportEnum,
+  KnowledgeTextStepEnum,
+} from '@/types/enums/library';
 import { Modal, Steps } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import CreateSet from './CreateSet';
 import DataProcess from './DataProcess';
-import styles from './index.less';
+import TextFill from './TextFill';
 import UploadFile from './UploadFile';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface LocalDocModalProps {
+interface LocalCustomDocModalProps {
+  type?: KnowledgeTextImportEnum;
   open: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -19,13 +27,14 @@ interface LocalDocModalProps {
 /**
  * 本地文档弹窗组件
  */
-const LocalDocModal: React.FC<LocalDocModalProps> = ({
+const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
+  type = KnowledgeTextImportEnum.Local_Doc,
   open,
   onConfirm,
   onCancel,
 }) => {
   const [current, setCurrent] = useState<KnowledgeTextStepEnum>(
-    KnowledgeTextStepEnum.Upload,
+    KnowledgeTextStepEnum.Upload_Or_Text_Fill,
   );
 
   const [confirmLoading, setConfirmLoading] = useState<boolean>(false);
@@ -38,10 +47,10 @@ const LocalDocModal: React.FC<LocalDocModalProps> = ({
   // 确认事件
   const handleOk = () => {
     setConfirmLoading(true);
-    if (current === KnowledgeTextStepEnum.Upload) {
-      setCurrent(KnowledgeTextStepEnum.Create_Set);
+    if (current === KnowledgeTextStepEnum.Upload_Or_Text_Fill) {
+      setCurrent(KnowledgeTextStepEnum.Create_Segmented_Set);
     }
-    if (current === KnowledgeTextStepEnum.Create_Set) {
+    if (current === KnowledgeTextStepEnum.Create_Segmented_Set) {
       setCurrent(KnowledgeTextStepEnum.Data_Processing);
     }
     if (current === KnowledgeTextStepEnum.Data_Processing) {
@@ -49,6 +58,12 @@ const LocalDocModal: React.FC<LocalDocModalProps> = ({
     }
     setConfirmLoading(false);
   };
+
+  const stepList = useMemo(() => {
+    return type === KnowledgeTextImportEnum.Local_Doc
+      ? KNOWLEDGE_LOCAL_DOC_LIST
+      : KNOWLEDGE_CUSTOM_DOC_LIST;
+  }, [type]);
 
   return (
     <Modal
@@ -71,12 +86,16 @@ const LocalDocModal: React.FC<LocalDocModalProps> = ({
           type="default"
           current={current}
           onChange={onChange}
-          items={KNOWLEDGE_LOCAL_DOC_LIST}
+          items={stepList}
         />
       </div>
-      {current === KnowledgeTextStepEnum.Upload ? (
-        <UploadFile />
-      ) : current === KnowledgeTextStepEnum.Create_Set ? (
+      {current === KnowledgeTextStepEnum.Upload_Or_Text_Fill ? (
+        type === KnowledgeTextImportEnum.Local_Doc ? (
+          <UploadFile />
+        ) : (
+          <TextFill />
+        )
+      ) : current === KnowledgeTextStepEnum.Create_Segmented_Set ? (
         <CreateSet />
       ) : (
         <DataProcess />
@@ -85,4 +104,4 @@ const LocalDocModal: React.FC<LocalDocModalProps> = ({
   );
 };
 
-export default LocalDocModal;
+export default LocalCustomDocModal;

@@ -1,11 +1,10 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
-import { KNOWLEDGE_RESOURCE_FORMAT } from '@/constants/library.constants';
-import { KnowledgeResourceEnum } from '@/types/enums/library';
-import type { CreateAgentProps } from '@/types/interfaces/common';
+import { WorkflowModeEnum } from '@/types/enums/library';
+import type { CreateWorkflowProps } from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, Input } from 'antd';
+import { Form, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './index.less';
@@ -13,27 +12,25 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 /**
- * 创建知识库
+ * 创建工作流弹窗
  */
-const CreateKnowledge: React.FC<CreateAgentProps> = ({
-  agentName,
+const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
+  type = WorkflowModeEnum.Create,
+  workflowName,
+  workflowId,
+  img,
   intro,
   open,
   onCancel,
   onConfirm,
 }) => {
   const [imageUrl, setImageUrl] = useState<string>('');
-  const [knowledgeResourceFormat, setKnowledgeResourceFormat] =
-    useState<number>(KnowledgeResourceEnum.Text);
+
   const [form] = Form.useForm();
 
-  // 切换资源文件格式类型
-  const handleResourceType = (value: KnowledgeResourceEnum) => {
-    setKnowledgeResourceFormat(value);
-  };
-
   const onFinish = (values) => {
-    console.log(values);
+    console.log(values, workflowId, img, type);
+    message.success('智能体已创建');
     onConfirm();
   };
 
@@ -44,32 +41,16 @@ const CreateKnowledge: React.FC<CreateAgentProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title="创建知识库"
+      title="创建工作流"
+      classNames={{
+        content: cx(styles.container),
+        header: cx(styles.header),
+      }}
       open={open}
       onCancel={onCancel}
       onConfirm={handlerSubmit}
       // loading={loading}
     >
-      <div className={cx('flex', styles.header)}>
-        {KNOWLEDGE_RESOURCE_FORMAT.map((item) => (
-          <div
-            key={item.value}
-            className={cx(
-              'flex',
-              'flex-col',
-              'items-center',
-              'content-center',
-              'cursor-pointer',
-              styles.box,
-              { [styles.active]: knowledgeResourceFormat === item.value },
-            )}
-            onClick={() => handleResourceType(item.value)}
-          >
-            {item.icon}
-            <span>{item.label}</span>
-          </div>
-        ))}
-      </div>
       <Form
         form={form}
         preserve={false}
@@ -77,27 +58,27 @@ const CreateKnowledge: React.FC<CreateAgentProps> = ({
         layout="vertical"
         onFinish={onFinish}
         initialValues={{
-          agentName: agentName,
+          workflowName: workflowName,
           intro: intro,
         }}
         autoComplete="off"
       >
         <Form.Item
-          name={'knowledgeName'}
+          name="workflowName"
           label="名称"
-          rules={[{ required: true, message: '输入知识库名称' }]}
+          rules={[{ required: true, message: '请输入工作流名称' }]}
         >
-          <Input placeholder="输入知识库名称" showCount maxLength={100} />
+          <Input placeholder="输入工作流名称" showCount maxLength={100} />
         </Form.Item>
         <OverrideTextArea
           name="intro"
           label="描述"
-          placeholder="输入知识库内容的描述"
+          placeholder="请输入描述，让大模型理解什么情况下应该调用此工作流"
           maxLength={2000}
         />
         <Form.Item name="image" label="图标">
           <UploadAvatar
-            className={cx(styles['upload-box'])}
+            className={styles['upload-box']}
             onUploadSuccess={setImageUrl}
             imageUrl={imageUrl}
             defaultImage={
@@ -110,4 +91,4 @@ const CreateKnowledge: React.FC<CreateAgentProps> = ({
   );
 };
 
-export default CreateKnowledge;
+export default CreateWorkflow;

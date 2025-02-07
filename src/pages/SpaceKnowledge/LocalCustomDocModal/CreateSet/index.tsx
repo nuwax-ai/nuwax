@@ -8,7 +8,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 /**
- * 创建设置
+ * 创建设置、分段设置
  */
 const CreateSet: React.FC = () => {
   const [createSet, setCreateSet] = useState<KnowledgeTextCreateSetEnum>(
