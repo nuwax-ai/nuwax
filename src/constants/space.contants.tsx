@@ -1,3 +1,10 @@
+import {
+  ICON_DATABASE,
+  ICON_KNOWLEDGE,
+  ICON_MODEL,
+  ICON_PLUGIN,
+  ICON_WORKFLOW,
+} from '@/constants/images.constants';
 import { CreateAgentEnum } from '@/types/enums/common';
 import {
   ApplicationMoreActionEnum,
@@ -13,37 +20,46 @@ import {
 import {
   BorderVerticleOutlined,
   HddOutlined,
-  PieChartOutlined,
   RadarChartOutlined,
 } from '@ant-design/icons';
 
-// 组件库所有类型
-export const LIBRARY_ALL_TYPE = [
+// 组件库所有资源类型
+export const LIBRARY_ALL_RESOURCE = [
   {
     value: LibraryAllTypeEnum.Workflow,
     label: '工作流',
-    icon: <PieChartOutlined />,
+    icon: <ICON_WORKFLOW />,
   },
   {
     value: LibraryAllTypeEnum.Plugin,
     label: '插件',
-    icon: <PieChartOutlined />,
+    icon: <ICON_PLUGIN />,
   },
   {
     value: LibraryAllTypeEnum.Knowledge,
     label: '知识库',
-    icon: <PieChartOutlined />,
+    icon: <ICON_KNOWLEDGE />,
   },
   {
-    value: LibraryAllTypeEnum.DataBase,
+    value: LibraryAllTypeEnum.Database,
     label: '数据库',
-    icon: <PieChartOutlined />,
+    icon: <ICON_DATABASE />,
   },
   {
     value: LibraryAllTypeEnum.Model,
     label: '模型',
-    icon: <PieChartOutlined />,
+    icon: <ICON_MODEL />,
   },
+];
+
+// 组件库所有类型
+export const LIBRARY_ALL_TYPE = [
+  {
+    value: LibraryAllTypeEnum.All_Type,
+    label: '所有类型',
+    icon: null,
+  },
+  ...LIBRARY_ALL_RESOURCE,
 ];
 
 // 过滤状态

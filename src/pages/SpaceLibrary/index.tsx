@@ -7,6 +7,7 @@ import SelectList from '@/components/SelectList';
 import {
   CREATE_LIST,
   FILTER_STATUS,
+  LIBRARY_ALL_RESOURCE,
   LIBRARY_ALL_TYPE,
 } from '@/constants/space.contants';
 import { ComponentMoreActionEnum } from '@/types/enums/library';
@@ -74,7 +75,7 @@ const SpaceLibrary: React.FC = () => {
       case LibraryAllTypeEnum.Knowledge:
         setOpenKnowledge(true);
         break;
-      case LibraryAllTypeEnum.DataBase:
+      case LibraryAllTypeEnum.Database:
         message.warning('数据库此版本暂时未做');
         break;
       case LibraryAllTypeEnum.Model:
@@ -132,7 +133,10 @@ const SpaceLibrary: React.FC = () => {
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>组件库</h3>
         {/*添加资源*/}
-        <CustomPopover list={LIBRARY_ALL_TYPE} onClick={handleClickPopoverItem}>
+        <CustomPopover
+          list={LIBRARY_ALL_RESOURCE}
+          onClick={handleClickPopoverItem}
+        >
           <Button type="primary" icon={<PlusOutlined />}>
             组件
           </Button>
@@ -164,45 +168,33 @@ const SpaceLibrary: React.FC = () => {
         <ComponentItem
           title={'这里是插件的名字'}
           desc={'这里是更多的详细的插件描述信息'}
-          img={
-            'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
-          }
+          onClick={handleClickComponent}
+          onClickMore={handleClickMore}
+        />
+        <ComponentItem
+          type={LibraryAllTypeEnum.Database}
+          title={'这里是插件的名字'}
+          desc={'这里是更多的详细的插件描述信息'}
           onClick={handleClickComponent}
           onClickMore={handleClickMore}
         />
         <ComponentItem
           title={'这里是插件的名字'}
           desc={'这里是更多的详细的插件描述信息'}
-          img={
-            'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
-          }
           onClick={handleClickComponent}
           onClickMore={handleClickMore}
         />
         <ComponentItem
+          type={LibraryAllTypeEnum.Workflow}
           title={'这里是插件的名字'}
           desc={'这里是更多的详细的插件描述信息'}
-          img={
-            'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
-          }
           onClick={handleClickComponent}
           onClickMore={handleClickMore}
         />
         <ComponentItem
+          type={LibraryAllTypeEnum.Knowledge}
           title={'这里是插件的名字'}
           desc={'这里是更多的详细的插件描述信息'}
-          img={
-            'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
-          }
-          onClick={handleClickComponent}
-          onClickMore={handleClickMore}
-        />
-        <ComponentItem
-          title={'这里是插件的名字'}
-          desc={'这里是更多的详细的插件描述信息'}
-          img={
-            'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon1.png?lk3s=ca44e09c&x-expires=1737538782&x-signature=%2B2KWOCHgi5KfBHYzusAUEH8VTis%3D'
-          }
           onClick={handleClickComponent}
           onClickMore={handleClickMore}
         />

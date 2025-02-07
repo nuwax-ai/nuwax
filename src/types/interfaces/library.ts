@@ -1,12 +1,14 @@
 import type { PluginModeEnum, WorkflowModeEnum } from '@/types/enums/library';
+import type { LibraryAllTypeEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import React from 'react';
 
 // 组件库单个组件项
 export interface ComponentItemProps {
+  type?: LibraryAllTypeEnum;
   title: string;
   desc: string;
-  img: string;
+  img?: string;
   onClick: () => void;
   onClickMore: (type: CustomPopoverItem) => void;
 }

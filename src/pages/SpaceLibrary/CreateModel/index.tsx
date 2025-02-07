@@ -11,6 +11,7 @@ import {
   Input,
   message,
   Radio,
+  RadioChangeEvent,
   Select,
   Table,
   TableColumnsType,
@@ -33,6 +34,11 @@ const CreateModel: React.FC<CreateModelProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [visible, setVisible] = useState<boolean>(false);
+  const [networkType, setNetworkType] = useState(1);
+
+  const handleNetworkType = (e: RadioChangeEvent) => {
+    setNetworkType(e.target.value);
+  };
 
   const onFinish = (values) => {
     console.log(values);
@@ -159,15 +165,19 @@ const CreateModel: React.FC<CreateModelProps> = ({
         </Form.Item>
         <Form.Item name="networkType" label="联网类型">
           <Radio.Group
+            value={networkType}
+            onChange={handleNetworkType}
             options={[
               { value: 1, label: '公网模型' },
               { value: 2, label: '内网模型' },
             ]}
           />
         </Form.Item>
-        <Form.Item>
-          <IntranetModel onOpen={() => setVisible(true)} />
-        </Form.Item>
+        {networkType === 2 && (
+          <Form.Item>
+            <IntranetModel onOpen={() => setVisible(true)} />
+          </Form.Item>
+        )}
         <Form.Item label={<LabelStar label="接口配置" />}>
           <Form.Item className={cx('mb-0')}>
             <p>调用策略</p>

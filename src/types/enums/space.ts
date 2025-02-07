@@ -4,7 +4,7 @@ export enum LibraryAllTypeEnum {
   Workflow,
   Plugin,
   Knowledge,
-  DataBase,
+  Database,
   Model,
 }
 
