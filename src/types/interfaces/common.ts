@@ -265,7 +265,7 @@ export interface CreatedNodeItem {
   // 当前id
   spaceId: number;
   // 正在使用的
-  targetId?: number;
+  targetId: number;
   // 发布人员信息
   publishUser: {
     userId: number;
@@ -273,6 +273,7 @@ export interface CreatedNodeItem {
     nickName: string;
     avatar: string;
   };
+  collect: boolean;
 }
 
 // 创建、编辑智能体
