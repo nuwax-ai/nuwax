@@ -1,6 +1,6 @@
 import Constant from '@/constants/codes.constants';
 import { ICON_ADJUSTMENT, ICON_SUCCESS } from '@/constants/images.constants';
-import service, { IgetList } from '@/services/created';
+import service, { IGetList } from '@/services/created';
 import { PluginAndLibraryEnum } from '@/types/enums/common';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { getTime } from '@/utils';
@@ -10,14 +10,16 @@ import {
   ProductFilled,
   SearchOutlined,
   StarFilled,
+  StarOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Button, Divider, Input, Menu, Modal, Radio, Rate } from 'antd';
+import { Button, Divider, Input, Menu, Modal, Radio } from 'antd';
 import { RadioChangeEvent } from 'antd/lib/radio';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
-
 import './index.less';
+
+/**  提前定义一些东西   */
 interface BottonList {
   label: string;
   key: PluginAndLibraryEnum;
@@ -41,6 +43,8 @@ interface CreatedProp {
 }
 // 创建插件、工作流、知识库、数据库
 const Created: React.FC<CreatedProp> = ({ checkTag, onAdded, targetId }) => {
+  /**  -----------------  定义一些变量  -----------------   */
+
   // 打开、关闭弹窗
   const { show, setShow } = useModel('model');
   // 当前顶部被选中被选中的
@@ -51,7 +55,13 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded, targetId }) => {
     label: '插件',
     key: PluginAndLibraryEnum.Plugin,
   });
-  //
+  // 分页
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: 10,
+  });
+  // 当前被选中的左侧菜单
+  const [selectMenu, setSelectMenu] = useState<string>('library');
   //   右侧的list
   const [list, setList] = useState<CreatedNodeItem[]>([]);
 
@@ -84,10 +94,131 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded, targetId }) => {
       ],
     },
   ];
+  // 添加一个状态用于跟踪是否正在加载更多数据
+  const [loadingMore, setLoadingMore] = useState(false);
+  // 添加一个状态用于跟踪是否还有更多数据
+  const [hasMore, setHasMore] = useState(true);
+  // 添加ref引用
+  const scrollRef = useRef<HTMLDivElement>(null);
+  /**  -----------------  需要调用接口  -----------------   */
+
+  //   获取右侧的list
+  const getList = async (type: PluginAndLibraryEnum, params?: IGetList) => {
+    setLoadingMore(true); // 开始加载时设置为true
+    const _res = await service.getList(type, params || {});
+    if (_res.code === Constant.success) {
+      const newDataLength = _res.data.length;
+      // 根据新获取的数据长度判断是否还有更多数据
+      setHasMore(newDataLength >= (params?.pageSize || pagination.pageSize));
+      setList((data) => [...data, ..._res.data]);
+    }
+    setLoadingMore(false); // 开始加载时设置为true
+  };
+
+  // 获取已经收藏的list
+  const getCollectList = async (params?: IGetList) => {
+    setLoadingMore(true); // 开始加载时设置为true
+    const _type = selected.key.toLowerCase();
+    const _res = await service.collectList(_type, params || {});
+    if (_res.code === Constant.success) {
+      const newDataLength = _res.data.length;
+      // 根据新获取的数据长度判断是否还有更多数据
+      setHasMore(newDataLength >= (params?.pageSize || pagination.pageSize));
+      setList((data) => [...data, ..._res.data]);
+    } else {
+      setList([]);
+    }
+    setLoadingMore(false); // 开始加载时设置为true
+  };
+
+  // 收藏和取消收藏
+  const collectAndUnCollect = async (item: CreatedNodeItem) => {
+    const _type = selected.key.toLowerCase();
+    // 使用计算属性名定义对象
+
+    let _res;
+    if (item.collect) {
+      _res = await service.unCollect(_type, item.targetId);
+    } else {
+      _res = await service.collect(_type, item.targetId);
+    }
+
+    if (_res.code === Constant.success) {
+      // console.log(_res);
+      const newArr = list.map((child) => {
+        if (item.targetId === child.targetId) {
+          if (child.collect) {
+            child.collect = false;
+            if (child.statistics) {
+              child.statistics.collectCount =
+                (child.statistics.collectCount || 1) - 1;
+            }
+          } else {
+            child.collect = true;
+            if (child.statistics) {
+              child.statistics.collectCount =
+                (child.statistics.collectCount || 0) + 1;
+            }
+          }
+        }
+        return child;
+      });
+      setList(newArr);
+    }
+  };
+
+  /**  -----------------  无需调用接口的方法  -----------------   */
+  //   点击添加,通知父组件,并将参数传递给父组件
+  const onAddNode = (item: CreatedNodeItem) => {
+    onAdded(item);
+  };
+  //   搜索
+  const onSearch = (value: string) => {
+    const _params = {
+      kw: value,
+    };
+    getList(selected.key, _params);
+  };
+
+  // 当用户切换左侧菜单和顶部菜单的时候，需要重置一些东西
+  const clear = () => {
+    // 清空list
+    setList([]);
+    // 重置更多
+    setHasMore(true);
+    // 重置分页
+    setPagination({
+      page: 1,
+      pageSize: 10,
+    });
+  };
+  const callInterface = (val: string) => {
+    // 通过左侧菜单决定调用哪个接口
+    switch (val) {
+      case 'library':
+        getList(selected.key, { ...pagination, spaceId: 6 });
+        break;
+      case 'collect':
+        getCollectList(pagination);
+        break;
+      default:
+        getList(selected.key, pagination);
+        break;
+    }
+  };
+  // 点击左侧菜单，触发不同的事件
+  const onMenuClick = (val: string) => {
+    clear();
+    // 切换左侧菜单
+    setSelectMenu(val);
+    callInterface(val);
+  };
 
   //   修改顶部选项
   const changeTitle = (val: RadioChangeEvent | string) => {
     if (!val) return;
+    clear();
+    setSelectMenu('library');
     // 获取被选中的key
     let _select;
     if (typeof val === 'string') {
@@ -100,40 +231,47 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded, targetId }) => {
     const _item = buttonList.find((item) => item.key === _select);
     if (_item) {
       SetSelected(_item);
+      getList(_item.key, { spaceId: 6 });
     }
   };
-
-  //   选中左侧菜单
-  const selectMenu = (val: string) => {
-    console.log(val);
-  };
-
-  //   获取右侧的list
-  const getList = async (type: PluginAndLibraryEnum, params?: IgetList) => {
-    const _res = await service.getList(type, params || {});
-    if (_res.code === Constant.success) {
-      console.log(_res.data);
-      setList(_res.data);
-    }
-  };
-
-  //   搜索
-  const onSearch = (value: string) => {
-    const _params = {
-      kw: value,
-    };
-    getList(selected.key, _params);
-  };
-
-  //   点击添加,通知父组件,并将参数传递给父组件
-  const onAddNode = (item: CreatedNodeItem) => {
-    onAdded(item);
-  };
-
+  /**  -----------------  初始化时需要的  -----------------   */
   useEffect(() => {
-    getList(checkTag);
+    getList(checkTag, { spaceId: 6 });
     changeTitle(checkTag);
   }, [checkTag]);
+  // 监听滚动事件
+  useEffect(() => {
+    const handleScroll = () => {
+      const node = scrollRef.current;
+      if (node && !loadingMore) {
+        // 如果没有正在加载更多数据
+        const isBottom =
+          node.scrollHeight - node.scrollTop - node.clientHeight < 10; // 判断是否接近底部
+        if (isBottom) {
+          setPagination((prevPagination) => ({
+            ...prevPagination,
+            page: prevPagination.page + 1, // 增加分页数
+          }));
+          if (!hasMore) return; // 如果没有更多数据，直接返回
+          callInterface(selectMenu);
+        }
+      }
+    };
+
+    scrollRef.current?.addEventListener('scroll', handleScroll);
+
+    return () => {
+      scrollRef.current?.removeEventListener('scroll', handleScroll);
+    };
+  }, [loadingMore, selected.key, pagination]);
+
+  // 在pagination变化时自动获取更多数据
+  useEffect(() => {
+    if (pagination.page > 1) {
+      // 确保不是首次加载
+      getList(selected.key, pagination);
+    }
+  }, [pagination, selected.key]);
 
   //   顶部的标题
   const title = (
@@ -198,22 +336,20 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded, targetId }) => {
 
           {/* 下方的菜单 */}
           <Menu
-            onClick={(val) => {
-              selectMenu(val.key);
-            }}
-            defaultSelectedKeys={['library']}
+            onClick={(val) => onMenuClick(val.key)}
+            selectedKeys={[selectMenu]}
             mode="inline"
             items={items}
           ></Menu>
         </div>
         {/* 右侧部分应该是变动的 */}
-        <div className="main-style flex-1">
+        <div className="main-style flex-1 overflow-y" ref={scrollRef}>
           {list.map((item) => (
-            <div className="dis-sb list-item-style" key={item.spaceId}>
+            <div className="dis-sb list-item-style" key={item.targetId}>
               <img src={item.icon} alt="" className="left-image-style" />
               <div className="flex-1 content-font">
-                <p className="label-font-style">{item.name}</p>
-                <p>{item.description}</p>
+                <p className="label-font-style margin-bottom-6">{item.name}</p>
+                <p className="margin-bottom-6 ">{item.description}</p>
                 {/* <Tag>{item.tag}</Tag> */}
                 <div className="dis-sb count-div-style">
                   <div>
@@ -223,37 +359,50 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded, targetId }) => {
                     <span className="margin-left-6">
                       发布于{getTime(item.created)}
                     </span>
-                    {item.statistics && (
-                      <>
-                        <Divider type="vertical" />
-                        <div>
-                          <Rate count={1} />
-                          <span>{item.statistics.collectCount}</span>
-                        </div>
-                      </>
+                    <Divider type="vertical" />
+                    {item.collect && (
+                      <StarFilled
+                        className="collect-star icon-margin"
+                        onClick={() => collectAndUnCollect(item)}
+                      />
                     )}
+                    {!item.collect && (
+                      <StarOutlined
+                        className="icon-margin"
+                        onClick={() => collectAndUnCollect(item)}
+                      />
+                    )}
+                    <span className="margin-left-6">
+                      {item.statistics ? item.statistics.collectCount : 0}
+                    </span>
                   </div>
-                  {item.statistics && (
-                    <div>
-                      <span>
-                        <ICON_ADJUSTMENT />
-                        {item.statistics.callCount}
-                      </span>
-                      <Divider type="vertical" />
-                      <span>
-                        <MessageOutlined />
-                        {item.statistics.referenceCount}
-                      </span>
-                      <span>
-                        <ClockCircleOutlined />
-                        {item.statistics.failCallCount}
-                      </span>
-                      <span>
-                        <ICON_SUCCESS />
-                        {item.statistics.referenceCount}
-                      </span>
-                    </div>
-                  )}
+                  <div>
+                    <span>
+                      <ICON_ADJUSTMENT
+                        style={{ marginBottom: '-2px' }}
+                        className="icon-margin"
+                      />
+                      {item.statistics ? item.statistics.likeCount : 0}
+                    </span>
+                    <Divider type="vertical" />
+                    <span>
+                      <MessageOutlined className="icon-margin" />
+                      {item.statistics ? item.statistics.referenceCount : 0}
+                    </span>
+                    <Divider type="vertical" />
+                    <span>
+                      <ClockCircleOutlined className="icon-margin" />
+                      {item.statistics ? item.statistics.failCallCount : 0}
+                    </span>
+                    <Divider type="vertical" />
+                    <span>
+                      <ICON_SUCCESS
+                        className="icon-margin"
+                        style={{ marginBottom: '-1px' }}
+                      />
+                      {item.statistics ? item.statistics.referenceCount : 0}
+                    </span>
+                  </div>
                 </div>
               </div>
               <Button

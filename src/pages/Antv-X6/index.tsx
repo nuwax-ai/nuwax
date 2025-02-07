@@ -114,11 +114,10 @@ const AntvX6: React.FC = () => {
     child: Child,
     dragEvent: { x: number; y: number; height?: number },
   ) => {
-    const _params = {
-      workflowId: 6,
-      type: child.type || createdItem,
-      extension: dragEvent,
-    };
+    let _params = JSON.parse(JSON.stringify(child));
+    _params.workflowId = 6;
+    _params.extension = dragEvent;
+
     // 如果是条件分支，需要增加高度
     if (child.type === 'Condition') {
       _params.extension = { ...dragEvent, height: 140 };
@@ -126,8 +125,8 @@ const AntvX6: React.FC = () => {
 
     const _res = await service.addNode(_params);
     if (_res.code === Constant.success) {
-      child.id = _res.data;
-      graphRef.current.addNode(dragEvent, child);
+      _res.data.key = 'general-Node';
+      graphRef.current.addNode(dragEvent, _res.data);
     }
   };
 
@@ -135,7 +134,6 @@ const AntvX6: React.FC = () => {
   const copyNode = async (child: ChildNode) => {
     const _res = await service.copyNode(child.id.toString());
     if (_res.code === Constant.success) {
-      console.log(child);
       const _dragEvent = {
         x: 100,
         y: 100,
@@ -156,7 +154,6 @@ const AntvX6: React.FC = () => {
       }
       child.id = _res.data;
       child.key = 'general-Node';
-      console.log(child);
       graphRef.current.addNode(_dragEvent, child);
     }
   };
@@ -237,12 +234,12 @@ const AntvX6: React.FC = () => {
   };
   // 添加工作流，插件，知识库，数据库
   const onAdded = (val: CreatedNodeItem) => {
-    console.log(val);
     const _child: Child = {
       name: val.name,
       key: 'general-Node',
       description: val.description,
       type: createdItem,
+      typeId: val.targetId,
     };
     addNode(_child, dragEvent);
     // graphRef.current.addNode(dragEvent, _child);

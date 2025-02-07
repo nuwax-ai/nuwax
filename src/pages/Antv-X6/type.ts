@@ -44,6 +44,10 @@ export interface Child {
   description: string;
   // 节点的id
   id?: number;
+  // 如果涉及工作流、插件、数据库、知识库需要typeId
+  typeId?: number;
+  // 如果涉及循环，需要提供循环的节点id
+  loopNodeId?: number;
 }
 
 /**
