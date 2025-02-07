@@ -10,11 +10,11 @@ import { InputAndOut, TreeOutput } from './commonNode';
 import './pluginNode.less';
 interface InputListProps {
   inputList: {
-    label: string;
-    tag: string;
-    desc: string;
-    value: string;
-    referenceList: ReferenceList[];
+    name: string;
+    dataType: string;
+    description: string;
+    bindValue: string;
+    subArgs: ReferenceList[];
   }[];
   title: string;
   initialValues?: object;
@@ -30,8 +30,9 @@ const InputList: React.FC<InputListProps> = ({
   const [form] = Form.useForm();
 
   // 提交表单
-  const submitForm = (values: any) => {
-    console.log('Received values of form:', values);
+  const submitForm = () => {
+    const values = form.getFieldsValue();
+    onChange(values);
   };
 
   return (
@@ -43,20 +44,20 @@ const InputList: React.FC<InputListProps> = ({
           <span>参数值</span>
         </div>
         {inputList.map((item, index) => (
-          <Form.Item key={index} name={item.label}>
+          <Form.Item key={index} name={item.name}>
             <div key={index} className="input-item-style">
               <div className="dis-left node-form-label-style">
-                <span className="margin-right-6">{item.label}</span>
-                <Popover placement="right" content={item.desc}>
+                <span className="margin-right-6">{item.name}</span>
+                <Popover placement="right" content={item.description}>
                   <InfoCircleOutlined className="margin-right-6" />
                 </Popover>
-                <Tag>{item.tag}</Tag>
+                <Tag>{item.dataType}</Tag>
               </div>
               <div>
                 <InputOrReference
-                  value={item.value}
-                  onChange={onChange}
-                  referenceList={item.referenceList}
+                  value={item.bindValue}
+                  onChange={submitForm}
+                  referenceList={item.subArgs}
                 />
               </div>
             </div>
@@ -73,52 +74,7 @@ const PluginInNode: React.FC<NodeDisposeProps> = ({ params }) => {
   // if (params.inputArgs && params.inputArgs.length) {
   //   initialValues = params.inputArgs;
   // }
-  console.log('params', params);
-  const list = [
-    {
-      label: 'count',
-      desc: 'xxxxxxxxxxxx',
-      tag: 'Integer',
-      value: '',
-      referenceList: modelTypes,
-    },
-    {
-      label: 'query',
-      desc: 'xxxxxxxxxxxx',
-      tag: 'String',
-      value: '',
-      referenceList: modelTypes,
-    },
-  ];
-
-  const treeData = [
-    { title: 'msg', key: 'msg', tag: 'String' },
-    { title: 'response_for_model', key: 'response_for_model', tag: 'String' },
-    {
-      title: 'data',
-      key: 'data',
-      tag: 'Object',
-      children: [
-        {
-          title: '_type',
-          key: '_type',
-          tag: 'String',
-        },
-        {
-          title: 'images',
-          key: 'images',
-          tag: 'Object',
-          children: [
-            {
-              title: 'leaf',
-              key: '0-0-1-0',
-              tag: 'String',
-            },
-          ],
-        },
-      ],
-    },
-  ];
+  //  获取输入的列表
 
   const changeInputList = (val: string) => {
     console.log('changeInputList', val);
@@ -126,9 +82,13 @@ const PluginInNode: React.FC<NodeDisposeProps> = ({ params }) => {
 
   return (
     <div className="node-style">
-      <InputList title={'输入'} inputList={list} onChange={changeInputList} />
+      <InputList
+        title={'输入'}
+        inputList={params.inputArgs || []}
+        onChange={changeInputList}
+      />
       <p className="node-title-style mt-16">{'输出'}</p>
-      <TreeOutput treeData={treeData} />
+      <TreeOutput treeData={params.outputArgs || []} />
     </div>
   );
 };

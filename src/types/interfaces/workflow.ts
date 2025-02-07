@@ -14,6 +14,7 @@ export interface GraphProp {
     type: string,
     id: string,
   ) => void;
+  changeCondition: (newData: ChildNode) => void;
 }
 
 // 节点的数据

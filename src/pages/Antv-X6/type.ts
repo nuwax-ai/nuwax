@@ -222,9 +222,8 @@ export interface ModelSelectProp {
 
 // 定义树节点的数据类型
 export interface TreeNodeData {
-  title: string;
-  key: string;
-  tag?: string; // 可选的标签属性
+  name: string;
+  dataType: string; // 可选的标签属性
   children?: TreeNodeData[]; // 子节点数组，可选
 }
 

@@ -129,10 +129,11 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
           <TreeNode
             title={
               <span>
-                {item.title} <Tag style={{ marginLeft: '5px' }}>{item.tag}</Tag>
+                {item.name}{' '}
+                <Tag style={{ marginLeft: '5px' }}>{item.dataType}</Tag>
               </span>
             }
-            key={item.key}
+            key={item.name}
           >
             {renderTreeNode(item.children)}
           </TreeNode>
@@ -142,10 +143,11 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
         <TreeNode
           title={
             <span>
-              {item.title} <Tag style={{ marginLeft: '5px' }}>{item.tag}</Tag>
+              {item.name}{' '}
+              <Tag style={{ marginLeft: '5px' }}>{item.dataType}</Tag>
             </span>
           }
-          key={item.key}
+          key={item.name}
         />
       );
     });

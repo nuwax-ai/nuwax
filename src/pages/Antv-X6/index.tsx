@@ -282,6 +282,7 @@ const AntvX6: React.FC = () => {
         ref={graphRef}
         changeDrawer={changeDrawer}
         changeEdge={nodeChangeEdge}
+        changeCondition={changeNode}
       />
       <ControlPanel
         dragChild={dragChild}

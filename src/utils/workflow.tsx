@@ -53,6 +53,7 @@ export const getEdges = (nodes: ChildNode[]): Edge[] => {
 
   const edgeList = [...edges, ...edges2];
 
+  console.log(edgeList);
   // 使用 Set 来移除重复的边
   const uniqueEdges = new Set<string>();
   const resultEdges: Edge[] = [];

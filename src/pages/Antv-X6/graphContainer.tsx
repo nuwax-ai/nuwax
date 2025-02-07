@@ -15,6 +15,7 @@ interface GraphContainerProps {
     type: string,
     id: string,
   ) => void;
+  changeCondition: (config: ChildNode) => void;
 }
 
 interface GraphContainerRef {
@@ -34,7 +35,16 @@ function getRandomPosition(maxWidth = 800, maxHeight = 600) {
 }
 
 const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
-  ({ graphParams, handleNodeChange, changeDrawer, changeEdge }, ref) => {
+  (
+    {
+      graphParams,
+      handleNodeChange,
+      changeDrawer,
+      changeEdge,
+      changeCondition,
+    },
+    ref,
+  ) => {
     registerCustomNodes();
     const containerRef = useRef<HTMLDivElement>(null);
     const graphRef = useRef<any>(null);
@@ -199,6 +209,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         containerId: 'graph-container',
         changeDrawer: changeDrawer,
         changeEdge: changeEdge,
+        changeCondition: changeCondition,
       });
 
       const cleanup = EventHandlers(graphRef.current);
@@ -298,7 +309,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             ports: ports,
           };
         });
-
         // 更新图形数据中的节点
         // graphRef.current.fromJSON({ nodes });
         // console.log(graphParams.edgeList);
@@ -306,7 +316,9 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           return {
             shape: 'edge',
             source: {
-              cell: edge.source.toString(),
+              cell: isNaN(Number(edge.source))
+                ? edge.source.toString().split('-')[0]
+                : edge.source.toString(),
               port: `${edge.source.toString()}-right`, // 使用右侧连接桩
             },
             target: {
@@ -316,18 +328,21 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             router: {
               name: 'orth',
             },
+            // 边的形式，曲线|直线|等
             connector: {
-              name: 'rounded',
+              name: 'smooth',
               args: {
-                radius: 8,
+                radius: 20,
               },
             },
+            // 边的颜色
             attrs: {
               line: {
                 stroke: '#A2B1C3',
                 strokeWidth: 2,
               },
             },
+
             zIndex: 30,
           };
         });

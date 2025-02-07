@@ -23,7 +23,12 @@ let currentPopover: any = null; // 用于跟踪当前显示的Popover
  * @param param0 - 包含容器 ID 和改变抽屉内容回调的对象
  * @returns 返回初始化后的图形实例
  */
-const initGraph = ({ containerId, changeDrawer, changeEdge }: GraphProp) => {
+const initGraph = ({
+  containerId,
+  changeDrawer,
+  changeEdge,
+  changeCondition,
+}: GraphProp) => {
   const graphContainer = document.getElementById(containerId);
   // 如果找不到容器，则抛出错误
   if (!graphContainer) throw new Error('Container not found');
@@ -142,9 +147,26 @@ const initGraph = ({ containerId, changeDrawer, changeEdge }: GraphProp) => {
       if (sourcePort?.includes('left') || targetPort?.includes('right')) {
         graph.removeCell(edge.id);
         message.warning('左侧连接桩只能作为接入点，右侧连接桩只能作为输出点');
+      }
+      const sourceNode = edge.getSourceNode()?.getData();
+      const targetNodeId = edge.getTargetCellId();
+      // 查看出发的节点是否时意图识别和条件分支
+      if (
+        sourceNode.type === 'Condition' ||
+        sourceNode.type === 'IntentRecognition'
+      ) {
+        if (!sourcePort) return;
+        // console.log(Number(sourcePort))
+        // 获取当前连接桩的输出端口
+        const _index: string = sourcePort.split('-')[1];
+        // 修改当前的数据
+        const newNodeParams = JSON.parse(JSON.stringify(sourceNode));
+        newNodeParams.nodeConfig.conditionBranchConfigs[
+          _index
+        ].nextNodeIds.push(targetNodeId);
+        changeCondition(newNodeParams);
+        // 通知父组件更新节点信息
       } else {
-        const sourceNode = edge.getSourceNode()?.getData();
-        const targetNodeId = edge.getTargetCellId();
         // 通知父组件创建边
         changeEdge(sourceNode, targetNodeId, 'created', edge.id);
       }
