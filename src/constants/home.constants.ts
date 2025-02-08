@@ -1,4 +1,5 @@
-export const ACCESS_TOKEN = 'access_token';
+export const ACCESS_TOKEN = 'ACCESS_TOKEN';
+export const LANGUAGE = 'zh_cn';
 
 // 推荐聊天主题
 export const RECOMMEND_TEXT = [

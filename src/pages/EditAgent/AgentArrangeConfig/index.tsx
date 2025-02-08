@@ -6,6 +6,7 @@ import {
   LONG_MEMORY_LIST,
   USER_PROBLEM_SUGGEST_LIST,
 } from '@/constants/space.contants';
+import { PluginAndLibraryEnum } from '@/types/enums/common';
 import {
   AgentConfigKnowledgeEnum,
   AgentConfigMemoryEnum,
@@ -310,7 +311,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       <ConfigOptionsHeader title="对话体验" />
       <ConfigOption items={ConversationalExperienceList} />
       {/*添加插件、工作流、知识库、数据库弹窗*/}
-      <Created checkTag="plugInNode" onAdded={() => {}} />
+      <Created checkTag={PluginAndLibraryEnum.Plugin} onAdded={() => {}} />
       {/*添加触发器弹窗*/}
       <CreateTrigger
         open={openTriggerModel}
