@@ -26,23 +26,23 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
     };
   }
 
-  componentDidMount() {
-    const { node } = this.props;
-    // 监听节点大小变化事件
-    node.on('resize', this.handleResized);
-  }
+  // componentDidMount() {
+  //   const { node } = this.props;
+  //   // 监听节点大小变化事件
+  //   node.on('resize', this.handleResized);
+  // }
 
-  componentWillUnmount() {
-    const { node } = this.props;
-    // 移除监听器
-    node.off('resize', this.handleResized);
-  }
+  // componentWillUnmount() {
+  //   const { node } = this.props;
+  //   // 移除监听器
+  //   node.off('resize', this.handleResized);
+  // }
 
-  handleResized = () => {
-    console.log('Node has been resized.');
-    // 调用 updatePorts 方法以根据新的尺寸更新端口位置
-    // this.props.node.updatePorts();
-  };
+  // handleResized = () => {
+  //   console.log('Node has been resized.');
+  //   // 调用 updatePorts 方法以根据新的尺寸更新端口位置
+  //   // this.props.node.updatePorts();
+  // };
   /**
    * changeNode 是一个事件处理函数，当用户点击操作菜单项时触发。
    * @param val - 操作名称（例如：'Rename', 'Duplicate', 'Delete'）
