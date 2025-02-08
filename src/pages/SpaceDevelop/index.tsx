@@ -44,6 +44,10 @@ const SpaceDevelop: React.FC = () => {
     setOpenMove(false);
   };
 
+  const handleClick = (agentId: string) => {
+    history.push(`/edit-agent?agent_id=${agentId}`);
+  };
+
   // 点击更多操作
   const handlerClickMore = (type: ApplicationMoreActionEnum) => {
     console.log(type);
@@ -118,16 +122,16 @@ const SpaceDevelop: React.FC = () => {
         />
       </div>
       <div className={cx(styles['main-container'])}>
-        <ApplicationItem onClickMore={handlerClickMore} />
-        <ApplicationItem onClickMore={handlerClickMore} />
-        <ApplicationItem onClickMore={handlerClickMore} />
-        <ApplicationItem onClickMore={handlerClickMore} />
-        <ApplicationItem onClickMore={handlerClickMore} />
-        <ApplicationItem onClickMore={handlerClickMore} />
-        <ApplicationItem onClickMore={handlerClickMore} />
-        <ApplicationItem onClickMore={handlerClickMore} />
-        <ApplicationItem onClickMore={handlerClickMore} />
-        <ApplicationItem onClickMore={handlerClickMore} />
+        <ApplicationItem onClickMore={handlerClickMore} onClick={handleClick} />
+        <ApplicationItem onClickMore={handlerClickMore} onClick={handleClick} />
+        <ApplicationItem onClickMore={handlerClickMore} onClick={handleClick} />
+        <ApplicationItem onClickMore={handlerClickMore} onClick={handleClick} />
+        <ApplicationItem onClickMore={handlerClickMore} onClick={handleClick} />
+        <ApplicationItem onClickMore={handlerClickMore} onClick={handleClick} />
+        <ApplicationItem onClickMore={handlerClickMore} onClick={handleClick} />
+        <ApplicationItem onClickMore={handlerClickMore} onClick={handleClick} />
+        <ApplicationItem onClickMore={handlerClickMore} onClick={handleClick} />
+        <ApplicationItem onClickMore={handlerClickMore} onClick={handleClick} />
       </div>
       {/*分析统计弹窗*/}
       <AnalyzeStatistics
