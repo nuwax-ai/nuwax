@@ -6,7 +6,6 @@ import {
   LONG_MEMORY_LIST,
   USER_PROBLEM_SUGGEST_LIST,
 } from '@/constants/space.contants';
-import CreateTrigger from '@/pages/EditAgent/CreateTrigger';
 import {
   AgentConfigKnowledgeEnum,
   AgentConfigMemoryEnum,
@@ -22,6 +21,7 @@ import { CollapseProps } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { useModel } from 'umi';
+import CreateTrigger from '../CreateTrigger';
 import ConfigOption from './ConfigOptionCollapse';
 import ConfigOptionsHeader from './ConfigOptionsHeader';
 import styles from './index.less';

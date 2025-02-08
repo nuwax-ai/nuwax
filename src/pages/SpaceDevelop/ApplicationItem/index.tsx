@@ -1,5 +1,8 @@
+import agentImage from '@/assets/images/agent_image.png';
+import CustomPopover from '@/components/CustomPopover';
 import { APPLICATION_MORE_ACTION } from '@/constants/space.contants';
-import { ApplicationMoreActionEnum } from '@/types/enums/space';
+import type { ApplicationMoreActionEnum } from '@/types/enums/space';
+import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ApplicationItemProps } from '@/types/interfaces/space';
 import {
   CheckCircleTwoTone,
@@ -7,17 +10,29 @@ import {
   StarOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { Popover } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const ApplicationItem: React.FC<ApplicationItemProps> = ({ onClickMore }) => {
+/**
+ * 单个应用项
+ */
+const ApplicationItem: React.FC<ApplicationItemProps> = ({
+  img,
+  onClick,
+  onClickMore,
+}) => {
+  // 收藏事件
   const handlerCollect = (e) => {
-    e.preventDefault();
-    console.log('收藏');
+    e.stopPropagation();
+  };
+
+  // 点击更多操作
+  const handlerClickMore = (item: CustomPopoverItem) => {
+    const type = item.type as ApplicationMoreActionEnum;
+    onClickMore(type);
   };
 
   return (
@@ -33,6 +48,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({ onClickMore }) => {
         'content-between',
         'cursor-pointer',
       )}
+      onClick={() => onClick('11100')}
     >
       <div className={cx('flex', styles.header)}>
         <div className={cx('flex-1', 'overflow-hide')}>
@@ -45,10 +61,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({ onClickMore }) => {
           </p>
         </div>
         <span className={cx(styles['logo-box'], 'overflow-hide')}>
-          <img
-            src="https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon4.png?lk3s=ca44e09c&x-expires=1736495925&x-signature=Cep9yaOi9FW4Y14KmEY9u366780%3D"
-            alt=""
-          />
+          <img src={img || (agentImage as string)} alt="" />
         </span>
       </div>
       <div className={cx('flex', styles['rel-info'])}>
@@ -76,29 +89,9 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({ onClickMore }) => {
         >
           <StarOutlined />
         </span>
-        <Popover
-          content={
-            <ul>
-              {APPLICATION_MORE_ACTION.map((item) => (
-                <li
-                  key={item.type}
-                  className={cx(
-                    styles['more-line'],
-                    'hover-box',
-                    'cursor-pointer',
-                    {
-                      [styles.del]: item.type === ApplicationMoreActionEnum.Del,
-                    },
-                  )}
-                  onClick={() => onClickMore(item.type)}
-                >
-                  {item.label}
-                </li>
-              ))}
-            </ul>
-          }
-          placement="bottomRight"
-          arrow={false}
+        <CustomPopover
+          onClick={handlerClickMore}
+          list={APPLICATION_MORE_ACTION}
         >
           <span
             className={cx(
@@ -111,7 +104,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({ onClickMore }) => {
           >
             <MoreOutlined />
           </span>
-        </Popover>
+        </CustomPopover>
       </div>
     </div>
   );

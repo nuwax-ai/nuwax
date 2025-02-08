@@ -5,6 +5,8 @@ import type { MouseEventHandler } from 'react';
 import React from 'react';
 
 export interface ApplicationItemProps {
+  img?: string;
+  onClick: (agentId: string) => void;
   onClickMore: (type: ApplicationMoreActionEnum) => void;
 }
 

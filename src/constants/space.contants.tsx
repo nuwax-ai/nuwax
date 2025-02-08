@@ -80,7 +80,7 @@ export const APPLICATION_MORE_ACTION = [
   { type: ApplicationMoreActionEnum.Analyze, label: '分析' },
   { type: ApplicationMoreActionEnum.Create_Copy, label: '创建副本' },
   { type: ApplicationMoreActionEnum.Move, label: '迁移' },
-  { type: ApplicationMoreActionEnum.Del, label: '删除' },
+  { type: ApplicationMoreActionEnum.Del, label: '删除', isDel: true },
 ];
 
 // 工作空间应用列表（layout二级菜单）

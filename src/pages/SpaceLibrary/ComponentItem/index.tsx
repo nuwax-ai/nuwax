@@ -29,12 +29,6 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
   onClick,
   onClickMore,
 }) => {
-  //  {
-  //     defaultImage: string;
-  //     icon: React.ReactNode;
-  //     text: string;
-  //   }
-
   const info = useMemo(() => {
     switch (type) {
       case LibraryAllTypeEnum.Plugin:
@@ -68,7 +62,7 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
           text: '模型',
         };
     }
-  }, []);
+  }, [type]);
 
   return (
     <div
