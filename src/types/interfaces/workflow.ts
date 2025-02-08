@@ -23,7 +23,7 @@ export interface ChildNode {
   name: string;
   description: string;
   workflowId: number;
-  type: keyof typeof NodeTypeEnum; // 使用枚举键作为类型;
+  type: NodeTypeEnum; // 使用枚举键作为类型;
   preNodes?: null;
   nodeConfig: NodeConfig;
   nextNodes?: null;

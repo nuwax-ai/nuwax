@@ -24,6 +24,7 @@ interface GraphContainerRef {
   saveAllNodes: () => void;
   deleteNode: (id: string) => void;
   deleteEdge: (id: string) => void;
+  changeGraphZoom: (val: number) => void;
 }
 
 // 辅助函数：生成随机坐标
@@ -191,6 +192,12 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       return nodes;
     };
 
+    // 改变画布缩放比例
+    const changeGraphZoom = (val: number) => {
+      if (!graphRef.current) return;
+      graphRef.current.zoomTo(Number(val));
+    };
+
     // 将子组件的方法暴露给父组件
     useImperativeHandle(ref, () => ({
       addNode,
@@ -198,6 +205,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       saveAllNodes,
       deleteNode,
       deleteEdge,
+      changeGraphZoom,
     }));
 
     useEffect(() => {

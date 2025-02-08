@@ -1,7 +1,8 @@
 import Created from '@/components/Created';
+import TestRun from '@/components/TestRun';
 import Constant from '@/constants/codes.constants';
 import service from '@/services/workflow';
-import { PluginAndLibraryEnum } from '@/types/enums/common';
+import { NodeTypeEnum, PluginAndLibraryEnum } from '@/types/enums/common';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { ChildNode, Edge } from '@/types/interfaces/workflow';
 import { debounce } from '@/utils/debounce';
@@ -25,7 +26,7 @@ const AntvX6: React.FC = () => {
     id: 0,
     description: '',
     workflowId: 0,
-    type: 'Start',
+    type: NodeTypeEnum.Start,
     nodeConfig: {},
     name: '',
   });
@@ -261,6 +262,16 @@ const AntvX6: React.FC = () => {
     }
   };
 
+  // 节点试运行
+  const nodeTestRun = async () => {
+    console.log('testRun', foldWrapItem);
+  };
+
+  // 调整画布的大小
+  const changeGraph = (val: number) => {
+    graphRef.current.changeGraphZoom(val);
+  };
+
   // 保存当前画布中节点的位置
   useEffect(() => {
     getDetails();
@@ -286,6 +297,7 @@ const AntvX6: React.FC = () => {
       />
       <ControlPanel
         dragChild={dragChild}
+        changeGraph={changeGraph}
         handleTestRun={() => console.log('Test run clicked')}
       />
       <NodeDrawer
@@ -293,12 +305,14 @@ const AntvX6: React.FC = () => {
         onClose={() => setVisible(false)}
         foldWrapItem={foldWrapItem}
         onGetNodeConfig={changeNode} // 新增这一行
+        handleNodeChange={handleNodeChange}
       />
       <Created
         checkTag={createdItem as PluginAndLibraryEnum}
         onAdded={onAdded}
         targetId={info.id}
       />
+      <TestRun type={foldWrapItem.type} run={nodeTestRun} />
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import FoldWrap from '@/components/FoldWrap';
+import OtherOperations from '@/components/OtherAction';
 import { NodeConfig } from '@/types/interfaces/node';
 import { ChildNode } from '@/types/interfaces/workflow';
 import { returnImg } from '@/utils/workflow';
@@ -28,6 +29,8 @@ interface NodeDrawerProps {
   foldWrapItem: ChildNode;
   // 将节点信息返回给父组件
   onGetNodeConfig: (config: ChildNode) => void;
+
+  handleNodeChange: (action: string, data: ChildNode) => void;
 }
 
 // 定义试运行,后面删除
@@ -40,6 +43,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   onClose,
   foldWrapItem,
   onGetNodeConfig, // 新增这一行
+  handleNodeChange,
 }) => {
   // 当前节点是否修改了参数
   const [isModified, setIsModified] = useState(false);
@@ -203,6 +207,12 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
       onClose={handleClose}
       desc={foldWrapItem.description}
       icon={returnImg(foldWrapItem.type)}
+      otherAction={
+        <OtherOperations
+          onChange={(val: string) => handleNodeChange(val, foldWrapItem)}
+          testRun
+        />
+      }
     >
       <div className="dispose-node-style">
         {renderNodeContent(foldWrapItem)}

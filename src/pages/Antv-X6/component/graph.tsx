@@ -11,7 +11,7 @@ import { Selection } from '@antv/x6-plugin-selection';
 // 对齐辅助线插件，帮助对齐节点
 import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
-import { Transform } from '@antv/x6-plugin-transform';
+// import { Transform } from '@antv/x6-plugin-transform';
 import { message, Popover } from 'antd';
 import ReactDOM from 'react-dom/client';
 // 自定义类型定义
@@ -37,6 +37,7 @@ const initGraph = ({
   const graph = new Graph({
     container: graphContainer, // 设置 DOM 容器
     // grid: true, // 启用网格背景
+    panning: true, //允许拖拽画布
     mousewheel: {
       enabled: true, // 启用鼠标滚轮缩放
       zoomAtMousePosition: true, // 在鼠标位置进行缩放
@@ -94,7 +95,7 @@ const initGraph = ({
 
   // 使用多个插件来增强图形编辑器的功能
   graph
-    .use(new Transform({ resizing: true, rotating: true })) // 启用变换插件，允许节点缩放和旋转
+    // .use(new Transform({ resizing: true, rotating: true })) // 启用变换插件，允许节点缩放和旋转
     .use(new Selection({ rubberband: true, showNodeSelectionBox: true })) // 启用选择插件，允许框选和显示选择框
     .use(new Snapline()) // 启用对齐辅助线插件，帮助节点对齐
     .use(new Keyboard()) // 启用键盘插件，支持快捷键操作
@@ -130,7 +131,6 @@ const initGraph = ({
 
   // 监听节点点击事件，调用 changeDrawer 函数更新右侧抽屉的内容
   graph.on('node:click', ({ node }) => {
-    console.log(node);
     const data = node.getData(); // 获取被点击节点的数据
     data.id = node.id;
     changeDrawer(data); // 调用回调函数以更新抽屉内容
@@ -216,6 +216,25 @@ const initGraph = ({
         content={<p onClick={handleDeleteEdge}>删除</p>}
       />,
     );
+  });
+
+  // 监听节点的拖拽移动位置
+  graph.on('node:moved', ({ node }) => {
+    // 获取节点被拖拽到的位置
+    const { x, y } = node.getPosition();
+    const data = node.getData();
+    console.log(' data.nodeConfig.extension', x);
+    // 将节点的extension属性设置为拖拽后的位置
+    if (data.nodeConfig && data.nodeConfig.extension) {
+      data.nodeConfig.extension.x = x;
+      data.nodeConfig.extension.y = y;
+    } else {
+      data.nodeConfig.extension = {
+        x,
+        y,
+      };
+    }
+    changeCondition(data);
   });
 
   return graph; // 返回初始化好的图形实例

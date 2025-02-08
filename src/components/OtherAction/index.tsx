@@ -32,7 +32,7 @@ const OtherOperations: React.FC<OtherOperationsProps> = ({
   );
 
   return (
-    <div className="dis-left">
+    <div className="dis-left" style={{ marginRight: '6px' }}>
       {/* 试运行 */}
       {testRun && (
         <Popover placement="top" content={'测试该节点'}>
