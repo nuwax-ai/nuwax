@@ -13,17 +13,27 @@ export interface ComponentItemProps {
   onClickMore: (type: CustomPopoverItem) => void;
 }
 
+interface Confirm {
+  name: string;
+  description: string;
+  icon: string;
+}
+
 // 更新、创建工作流弹窗
 export interface CreateWorkflowProps {
   type?: WorkflowModeEnum;
+<<<<<<< HEAD
   spaceId: string;
   workflowId?: string;
+=======
+  id?: string;
+>>>>>>> c173c361f13e13231b13ad96a6d0d60252869331
   name?: string;
   description?: string;
   icon?: string;
   open: boolean;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (value: Confirm) => void;
 }
 
 // 新建、更新插件组件

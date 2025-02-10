@@ -49,7 +49,7 @@ export interface ConditionBranchConfigs {
   conditionType: string | null;
   nextNodeIds: number[];
   conditionArgs: ConditionArgs[];
-  uuid?: number | string | null;
+  uuid: number;
 }
 
 interface IntentConfigs {
@@ -73,7 +73,7 @@ interface QANodeOption {
 // 节点内部的config
 export interface NodeConfig {
   // 扩展信息，前端配置，设置节点的宽高，位置
-  extension?: Extension | null;
+  extension: Extension | null;
   // 节点入参
   inputArgs?: InputAndOutConfig[] | null;
   // 节点出参

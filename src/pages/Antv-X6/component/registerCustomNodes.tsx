@@ -1,9 +1,9 @@
+import { ConditionBranchConfigs } from '@/types/interfaces/node';
 import { ChildNode, NodeProps } from '@/types/interfaces/workflow';
 import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { DashOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { register } from '@antv/x6-react-shape';
 import { Input, Popover } from 'antd';
-
 import React from 'react';
 import '../index.less';
 // 定义组件的状态类型
@@ -95,6 +95,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
       </p>
     </>
   );
+
   /**
    * 通过render返回节点的样式和内容
    */
@@ -102,23 +103,14 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
     const { node } = this.props;
     // 明确告诉 getData 返回的数据类型
     const data = node.getData<ChildNode>();
+    // console.log('data', data);
     // 或者返回一个默认的内容，以防止渲染错误
     if (!data) {
       return null;
     }
     // 确保宽度和高度是有效的数字
-    const width =
-      data.nodeConfig &&
-      data.nodeConfig.extension &&
-      data.nodeConfig.extension.width
-        ? data.nodeConfig.extension.width
-        : 304;
-    const height =
-      data.nodeConfig &&
-      data.nodeConfig.extension &&
-      data.nodeConfig.extension.height
-        ? data.nodeConfig.extension.height
-        : 83;
+    const width = data.nodeConfig?.extension?.width ?? 304;
+    const height = data.nodeConfig?.extension?.height ?? 83;
     // 构造渐变背景字符串
     const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
       data.type,
@@ -194,7 +186,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
  * 定义连接桩的样式配置，包括四个方向上的连接桩（上、右、下、左）。
  * 每个连接桩都是一个小圆圈，具有特定的颜色、大小和可见性设置。
  */
-import { ConditionBranchConfigs } from '@/types/interfaces/node';
+
 // 定义端口生成函数
 interface PortMetadata {
   group: string;

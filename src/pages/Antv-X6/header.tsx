@@ -16,10 +16,17 @@ interface HeaderProp {
   };
 
   onSubmit: () => void;
+
+  setShowCreateWorkflow: () => void;
 }
 
-const Header: React.FC<HeaderProp> = ({ info, onSubmit }) => {
+const Header: React.FC<HeaderProp> = ({
+  info,
+  onSubmit,
+  setShowCreateWorkflow,
+}) => {
   const { name, icon, publishStatus, modified } = info;
+
   return (
     <div className="fold-header-style dis-sb">
       <div className="dis-left">
@@ -28,7 +35,7 @@ const Header: React.FC<HeaderProp> = ({ info, onSubmit }) => {
         <div className="dis-col header-content-style ">
           <div className="dis-left ">
             <span className="header-name-style">{name}</span>
-            <EditOutlined className="mr-16" />
+            <EditOutlined className="mr-16" onClick={setShowCreateWorkflow} />
             <CheckCircleOutlined />
           </div>
           <div className="header-tag-style">

@@ -198,6 +198,10 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
     setCurrentNodeConfig(foldWrapItem);
   }, [foldWrapItem.id]);
 
+  useEffect(() => {
+    setCurrentNodeConfig(foldWrapItem);
+  }, [foldWrapItem]);
+
   return (
     <FoldWrap
       className="fold-wrap-style"

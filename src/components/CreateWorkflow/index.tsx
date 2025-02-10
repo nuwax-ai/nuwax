@@ -93,8 +93,9 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
           label="描述"
           placeholder="请输入描述，让大模型理解什么情况下应该调用此工作流"
           maxLength={2000}
+          rules={[{ required: true, message: '请输入工作流名称' }]}
         />
-        <Form.Item name="image" label="图标">
+        <Form.Item name="icon" label="图标">
           <UploadAvatar
             className={styles['upload-box']}
             onUploadSuccess={setImageUrl}

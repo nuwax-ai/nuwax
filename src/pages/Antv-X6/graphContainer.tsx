@@ -143,12 +143,9 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         if (position) {
           // 确保 newData.nodeConfig 存在
           if (!newData.nodeConfig) {
-            newData.nodeConfig = {};
-          }
-
-          // 确保 newData.nodeConfig.extension 存在
-          if (!newData.nodeConfig.extension) {
-            newData.nodeConfig.extension = {};
+            newData.nodeConfig = {
+              extension: {},
+            };
           }
 
           newData.nodeConfig.extension = {
@@ -157,7 +154,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             y: position.y,
           };
         }
-        node.setData(newData);
+        node.setData(newData, { overwrite: true });
+        console.log(node.getData());
       }
     };
 
@@ -210,9 +208,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
     useEffect(() => {
       if (!containerRef.current) return;
-
       preWork();
-
       graphRef.current = InitGraph({
         containerId: 'graph-container',
         changeDrawer: changeDrawer,
@@ -304,8 +300,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           return {
             id: node.id.toString(),
             shape: 'general-Node',
-            x: extension.x !== undefined ? extension.x : position.x,
-            y: extension.y !== undefined ? extension.y : position.y,
+            x: extension.x ?? position.x,
+            y: extension.y ?? position.y,
             width: width,
             height: height,
             label: node.name,
@@ -351,7 +347,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
               },
             },
 
-            zIndex: 30,
+            zIndex: 1,
           };
         });
 

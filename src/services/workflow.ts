@@ -8,6 +8,13 @@ interface IGetModelList {
   spaceId?: number;
 }
 
+export interface IUpdateDetails {
+  id?: number;
+  name: string;
+  description: string;
+  icon: string;
+}
+
 interface IAddNode {
   workflowId: number;
   type: string;
@@ -26,6 +33,21 @@ const getDetails = (id: number) => {
   return customRequest({
     url: `/api/workflow/${id}`,
     method: 'GET',
+  })
+    .then((response) => {
+      return response;
+    })
+    .catch((error) => {
+      console.error('Failed to get node list:', error);
+    });
+};
+
+// 更改工作流基础信息
+const updateDetails = (data: IUpdateDetails) => {
+  return customRequest({
+    url: `/api/workflow/update`,
+    method: 'POST',
+    data,
   })
     .then((response) => {
       return response;
@@ -153,6 +175,7 @@ const getModelList = async (params: IGetModelList) => {
 
 export default {
   getDetails,
+  updateDetails,
   getNodeList,
   addNode,
   getModelList,

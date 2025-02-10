@@ -51,6 +51,4 @@ export interface NodeProps {
   node: Node<any>;
   // 图实例，类型为 AntV X6 的 Graph 类型
   graph: Graph;
-  // 操作节点
-  onChange?: (action: string, nodeData: ChildNode) => void;
 }
