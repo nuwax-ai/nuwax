@@ -4,7 +4,6 @@ import type {
   ModelListItemProps,
 } from '@/types/interfaces/model';
 import { HttpNodeConfig, NodeConfig } from '@/types/interfaces/node';
-import { Graph, Node } from '@antv/x6';
 import { FormInstance } from 'antd';
 /**
  * 定义键值对接口，用于表示具有标签和值的对象。
@@ -14,18 +13,6 @@ export interface KeyValuePairs {
   label: string;
   // 键值对对应的值
   value: string;
-}
-
-/**
- * 定义 NodeProps 接口，用于定义传递给自定义节点组件的属性。
- */
-export interface NodeProps {
-  // 节点实例，类型为 AntV X6 的 Node 类型，泛型参数可以是任何类型
-  node: Node<any>;
-  // 图实例，类型为 AntV X6 的 Graph 类型
-  graph: Graph;
-  // 操作节点
-  onChange?: (action: string, nodeData: Child) => void;
 }
 
 /**

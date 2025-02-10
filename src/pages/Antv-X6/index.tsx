@@ -1,7 +1,8 @@
 import Created from '@/components/Created';
+import CreateWorkflow from '@/components/CreateWorkflow';
 import TestRun from '@/components/TestRun';
 import Constant from '@/constants/codes.constants';
-import service from '@/services/workflow';
+import service, { IUpdateDetails } from '@/services/workflow';
 import { NodeTypeEnum, PluginAndLibraryEnum } from '@/types/enums/common';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { ChildNode, Edge } from '@/types/interfaces/workflow';
@@ -27,7 +28,12 @@ const AntvX6: React.FC = () => {
     description: '',
     workflowId: 0,
     type: NodeTypeEnum.Start,
-    nodeConfig: {},
+    nodeConfig: {
+      extension: {
+        x: 0,
+        y: 0,
+      },
+    },
     name: '',
   });
   // 工作流左上角的详细信息
@@ -38,8 +44,11 @@ const AntvX6: React.FC = () => {
     created: '',
     modified: '',
     id: 0,
+    description: '',
   });
 
+  // 展示修改工作流的弹窗
+  const [showCreateWorkflow, setShowCreateWorkflow] = useState(false);
   // 创建工作流，插件，知识库，数据库
   const [createdItem, setCreatedItem] = useState<PluginAndLibraryEnum>(
     PluginAndLibraryEnum.Plugin,
@@ -74,6 +83,7 @@ const AntvX6: React.FC = () => {
         created: _res.data.created,
         modified: _res.data.modified,
         id: _res.data.id,
+        description: _res.data.description,
       };
       setInfo(_params);
       // 获取节点和边的数据
@@ -86,11 +96,21 @@ const AntvX6: React.FC = () => {
     }
   };
 
+  // 修改当前工作流的基础信息
+  const onConfirm = async (value: IUpdateDetails) => {
+    const _res = await service.updateDetails({ ...value, id: info.id });
+    if (_res.code === Constant.success) {
+      setInfo({ ...info, ...value });
+      setShowCreateWorkflow(false);
+    }
+  };
+
   // 更新节点数据
   const changeNode = debounce(async (config: ChildNode) => {
     const _res = await updateNode(config);
     if (_res.code === Constant.success) {
       graphRef.current.updateNode(config.id, config);
+      setFoldWrapItem(config);
     }
   }, 1000);
   // 点击组件，显示抽屉
@@ -285,7 +305,11 @@ const AntvX6: React.FC = () => {
   return (
     <div style={{ width: '100%', height: '100%' }} id="container">
       {/* 顶部的名称和发布等按钮 */}
-      <Header info={info} onSubmit={onSubmit} />
+      <Header
+        info={info}
+        onSubmit={onSubmit}
+        setShowCreateWorkflow={() => setShowCreateWorkflow(true)}
+      />
       <Monaco />
       <GraphContainer
         graphParams={graphParams}
@@ -313,6 +337,16 @@ const AntvX6: React.FC = () => {
         targetId={info.id}
       />
       <TestRun type={foldWrapItem.type} run={nodeTestRun} />
+
+      <CreateWorkflow
+        onConfirm={onConfirm}
+        onCancel={() => setShowCreateWorkflow(false)}
+        type={1}
+        name={info.name}
+        icon={info.icon}
+        description={info.description}
+        open={showCreateWorkflow}
+      />
     </div>
   );
 };

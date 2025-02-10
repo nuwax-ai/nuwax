@@ -3,10 +3,11 @@ import { ConditionBranchConfigs } from '@/types/interfaces/node';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import type { FormInstance } from 'antd';
 import { Button, Form, Select, Tag } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { NodeDisposeProps } from '../type';
 import './condition.less';
+
 export type FormListFieldData = {
   key: string | number;
   name: string | number;
@@ -136,6 +137,7 @@ export const ConditionList: React.FC<ConditionListProps> = ({
       conditionType: initialValues.conditionType,
       nextNodeIds: initialValues.nextNodeIds,
       conditionArgs: values.conditionArgs,
+      uuid: initialValues.uuid,
     };
 
     handleChangeNodeConfig(_params, index);
@@ -232,21 +234,24 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
   Modified,
   updateNode,
 }) => {
-  const [arr, setArr] = useState<ConditionBranchConfigs[]>(
-    params.conditionBranchConfigs || [],
-  );
+  // 监听params.conditionBranchConfigs的变化，并在变化时更新节点
+  // 使用深拷贝来确保每次 params.conditionBranchConfigs 变化时都能触发重新渲染
 
-  // 监听params.conditionBranchConfigs的变化，并在变化时更新arr
-  useEffect(() => {
-    setArr(params.conditionBranchConfigs || []);
-  }, [params.conditionBranchConfigs]);
+  const updateBranchType = (currentIndex: number): string => {
+    if (currentIndex === 0) return 'IF';
+    if (currentIndex === (params.conditionBranchConfigs || []).length - 1)
+      return 'ELSE';
+    return 'ELSE_IF';
+  };
+
   const addInputItem = () => {
-    setArr([
-      ...arr,
+    const newConditionBranchConfigs = [
+      ...(params.conditionBranchConfigs || []),
       {
         branchType: null,
         conditionType: null,
         nextNodeIds: [],
+        uuid: (params.conditionBranchConfigs?.length ?? 0) + 1,
         conditionArgs: [
           {
             bindArg: null,
@@ -256,81 +261,72 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
           },
         ],
       },
-    ]);
+    ];
+    newConditionBranchConfigs.forEach((item, index) => {
+      item.branchType = updateBranchType(index);
+    });
     if (updateNode) {
       updateNode({
         ...params,
-        conditionBranchConfigs: [
-          ...arr,
-          {
-            branchType: null,
-            conditionType: null,
-            nextNodeIds: [],
-            conditionArgs: [
-              {
-                bindArg: null,
-                compareType: null,
-                bindValueType: null,
-                bindValue: null,
-              },
-            ],
-          },
-        ],
+        conditionBranchConfigs: newConditionBranchConfigs,
         extension: {
           ...params.extension,
-          height: arr.length >= 2 ? arr.length * 50 + 60 : 140,
+          height:
+            newConditionBranchConfigs.length >= 2
+              ? newConditionBranchConfigs.length * 40 + 60
+              : 140,
         },
       });
     }
   };
 
   const removeItem = (index: number) => {
-    setArr(arr.filter((_, i) => i !== index));
+    const updatedConditionBranchConfigs = (
+      params.conditionBranchConfigs || []
+    ).filter((_, i) => i !== index);
+    updatedConditionBranchConfigs.forEach((item, index) => {
+      item.branchType = updateBranchType(index);
+    });
     if (updateNode) {
       updateNode({
         ...params,
-        conditionBranchConfigs: arr.filter((_, i) => i !== index),
+        conditionBranchConfigs: updatedConditionBranchConfigs,
         extension: {
           ...params.extension,
-          height: arr.length >= 2 ? arr.length * 50 + 60 : 140,
+          height:
+            updatedConditionBranchConfigs.length >= 2
+              ? updatedConditionBranchConfigs.length * 40 + 60
+              : 140,
         },
       });
     }
   };
-  // 提交数据
+
   const handleChangeNodeConfig = (
     values: ConditionBranchConfigs,
     index: number,
   ) => {
-    // 将values替换掉conditionBranchConfigs对应索引的值
-    const updateBranchType = (currentIndex: number): string => {
-      if (currentIndex === 0) return 'IF';
-      if (currentIndex === arr.length - 1) return 'ELSE';
-      return 'ELSE_IF';
-    };
-
-    // 使用 map 更新数组中的元素
-    const newArr = arr.map(
+    const newConditionBranchConfigs = (params.conditionBranchConfigs || []).map(
       (item, i) =>
         i === index
-          ? { ...values, branchType: updateBranchType(index) } // 更新指定索引的 item
-          : { ...item, branchType: updateBranchType(i) }, // 确保其他 items 的 branchType 正确
+          ? { ...values, branchType: updateBranchType(index) }
+          : { ...item, branchType: updateBranchType(i) },
     );
-    setArr(newArr);
-    Modified({ ...params, conditionBranchConfigs: newArr });
+
+    Modified({ ...params, conditionBranchConfigs: newConditionBranchConfigs });
   };
 
-  // 拖拽逻辑
   const onDragEnd = (result: any) => {
-    if (!result.destination) return; // 如果没有目标位置，直接返回
-    const newItems = Array.from(arr); // 复制当前数组
-    const [removed] = newItems.splice(result.source.index, 1); // 移除拖拽的项
-    newItems.splice(result.destination.index, 0, removed); // 插入到目标位置
-    setArr(newItems); // 更新状态
-    Modified({
-      ...params,
-      conditionBranchConfigs: newItems, // 同步到外部状态
-    });
+    if (!result.destination) return;
+    const newItems = Array.from(params.conditionBranchConfigs || []);
+    const [removed] = newItems.splice(result.source.index, 1);
+    newItems.splice(result.destination.index, 0, removed);
+    if (updateNode) {
+      updateNode({
+        ...params,
+        conditionBranchConfigs: newItems,
+      });
+    }
   };
 
   return (
@@ -347,13 +343,13 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
       <Droppable droppableId="condition-list">
         {(provided: any) => (
           <div {...provided.droppableProps} ref={provided.innerRef}>
-            {arr.map((item, index) => (
+            {(params.conditionBranchConfigs || []).map((item, index) => (
               <ConditionList
-                key={index}
+                key={item.uuid}
                 title={
                   index === 0
                     ? '如果'
-                    : index === arr.length - 1
+                    : index === (params.conditionBranchConfigs || []).length - 1
                     ? '否则'
                     : '否则如果'
                 }
@@ -361,7 +357,7 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
                 initialValues={item}
                 removeItem={removeItem}
                 handleChangeNodeConfig={handleChangeNodeConfig}
-                draggableId={`condition-${index}`} // 为每个条件设置唯一的 draggableId
+                draggableId={item.uuid.toString()}
               />
             ))}
             {provided.placeholder}

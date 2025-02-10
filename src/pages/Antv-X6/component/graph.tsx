@@ -7,7 +7,7 @@ import { History } from '@antv/x6-plugin-history';
 // 键盘快捷键插件，提供快捷键操作
 import { Keyboard } from '@antv/x6-plugin-keyboard';
 // 选择插件，支持多选和框选功能
-import { Selection } from '@antv/x6-plugin-selection';
+// import { Selection } from '@antv/x6-plugin-selection';
 // 对齐辅助线插件，帮助对齐节点
 import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
@@ -96,7 +96,7 @@ const initGraph = ({
   // 使用多个插件来增强图形编辑器的功能
   graph
     // .use(new Transform({ resizing: true, rotating: true })) // 启用变换插件，允许节点缩放和旋转
-    .use(new Selection({ rubberband: true, showNodeSelectionBox: true })) // 启用选择插件，允许框选和显示选择框
+    // .use(new Selection({ rubberband: true, showNodeSelectionBox: true })) // 启用选择插件，允许框选和显示选择框
     .use(new Snapline()) // 启用对齐辅助线插件，帮助节点对齐
     .use(new Keyboard()) // 启用键盘插件，支持快捷键操作
     .use(new Clipboard()) // 启用剪贴板插件，支持复制和粘贴
@@ -131,9 +131,13 @@ const initGraph = ({
 
   // 监听节点点击事件，调用 changeDrawer 函数更新右侧抽屉的内容
   graph.on('node:click', ({ node }) => {
-    const data = node.getData(); // 获取被点击节点的数据
-    data.id = node.id;
-    changeDrawer(data); // 调用回调函数以更新抽屉内容
+    // 判断点击的是空白处还是节点
+    if (node && node.isNode()) {
+      // 获取被点击节点的数据
+      const data = node.getData(); // 获取被点击节点的数据
+      data.id = node.id;
+      changeDrawer(data); // 调用回调函数以更新抽屉内容
+    }
   });
 
   // 假设 graph 是你的图实例

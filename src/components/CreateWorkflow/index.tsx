@@ -17,10 +17,10 @@ const cx = classNames.bind(styles);
  */
 const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   type = WorkflowModeEnum.Create,
-  workflowName,
-  workflowId,
-  img,
-  intro,
+  name,
+  id,
+  icon,
+  description,
   open,
   onCancel,
   onConfirm,
@@ -29,9 +29,11 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   const [form] = Form.useForm();
 
   const onFinish = (values) => {
-    console.log(values, workflowId, img, type);
-    message.success('知识库已创建');
-    onConfirm();
+    if (type === 0) {
+      message.success('知识库已创建');
+    }
+    console.log(id, icon);
+    onConfirm(values);
   };
 
   const handlerSubmit = async () => {
@@ -58,25 +60,26 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
         layout="vertical"
         onFinish={onFinish}
         initialValues={{
-          workflowName: workflowName,
-          intro: intro,
+          name,
+          description,
         }}
         autoComplete="off"
       >
         <Form.Item
-          name="workflowName"
+          name="name"
           label="名称"
           rules={[{ required: true, message: '请输入工作流名称' }]}
         >
           <Input placeholder="输入工作流名称" showCount maxLength={100} />
         </Form.Item>
         <OverrideTextArea
-          name="intro"
+          name="description"
           label="描述"
           placeholder="请输入描述，让大模型理解什么情况下应该调用此工作流"
           maxLength={2000}
+          rules={[{ required: true, message: '请输入工作流名称' }]}
         />
-        <Form.Item name="image" label="图标">
+        <Form.Item name="icon" label="图标">
           <UploadAvatar
             className={styles['upload-box']}
             onUploadSuccess={setImageUrl}

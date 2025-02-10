@@ -231,9 +231,13 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
               size={'small'}
               onClick={() =>
                 handleChangeNodeConfig({
+                  ...params,
                   options: [
                     ...(params.options || []),
-                    { index: '', content: '' },
+                    {
+                      index: ((params.options?.length || 0) + 1).toString(),
+                      content: '',
+                    },
                   ],
                 })
               }
@@ -246,6 +250,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
               <DeleteOutlined
                 onClick={() =>
                   handleChangeNodeConfig({
+                    ...params,
                     options: params.options?.filter(
                       (sun) => sun.index !== item.index,
                     ),
@@ -318,11 +323,15 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
               value={params.method}
               style={{ width: 140 }}
               options={methodOption}
-              onChange={(value) => handleChangeNodeConfig({ method: value })}
+              onChange={(value) =>
+                handleChangeNodeConfig({ ...params, method: value })
+              }
             ></Select>
             <Input
               value={params.url}
-              onChange={(e) => handleChangeNodeConfig({ url: e.target.value })}
+              onChange={(e) =>
+                handleChangeNodeConfig({ ...params, url: e.target.value })
+              }
             ></Input>
           </Space>
         </div>
@@ -330,6 +339,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
         <Radio.Group
           onChange={(value: RadioChangeEvent) =>
             handleChangeNodeConfig({
+              ...params,
               contentType: value.target.value,
             })
           }
@@ -347,7 +357,9 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
         <p className="margin-bottom">请求超时配置</p>
         <Input
           value={params.timeout}
-          onChange={(e) => handleChangeNodeConfig({ timeout: e.target.value })}
+          onChange={(e) =>
+            handleChangeNodeConfig({ ...params, timeout: e.target.value })
+          }
         ></Input>
       </div>
       {/* 入参 */}

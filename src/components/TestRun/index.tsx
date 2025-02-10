@@ -1,13 +1,9 @@
-import squareImage from '@/assets/images/square_bg.png';
-import SelectList from '@/components/SelectList';
+// import squareImage from '@/assets/images/square_bg.png';
+// import SelectList from '@/components/SelectList';
 import { NodeTypeEnum } from '@/types/enums/common';
-import {
-  CaretRightOutlined,
-  CloseOutlined,
-  SearchOutlined,
-} from '@ant-design/icons';
+import { CaretRightOutlined, CloseOutlined } from '@ant-design/icons';
 import { Button, Empty } from 'antd';
-import { useState } from 'react';
+// import { useState } from 'react';
 import { useModel } from 'umi';
 import './index.less';
 interface TestRunProps {
@@ -18,15 +14,15 @@ interface TestRunProps {
 }
 
 // mock的option数据
-const mockOptions = [
-  { label: '角色陪伴-苏瑶', value: 'su-yao', img: squareImage },
-  { label: '智慧家具管家', value: 'su', img: squareImage },
-  { label: 'coder', value: 'coder', img: squareImage },
-];
+// const mockOptions = [
+//   { label: '角色陪伴-苏瑶', value: 'su-yao', img: squareImage },
+//   { label: '智慧家具管家', value: 'su', img: squareImage },
+//   { label: 'coder', value: 'coder', img: squareImage },
+// ];
 // 试运行
 const TestRun: React.FC<TestRunProps> = ({ type, run }) => {
   const { testRun, setTestRun } = useModel('model');
-  const [value, setValue] = useState('');
+  // const [value, setValue] = useState('');
   return (
     <div
       className="test-run-style"
@@ -60,13 +56,13 @@ const TestRun: React.FC<TestRunProps> = ({ type, run }) => {
                 <div className="test-run-content-label">关联智能体</div>
                 <div>
                   <p>选择你需要的智能体</p>
-                  <SelectList
+                  {/* <SelectList
                     className={'selectItem'}
                     prefix={<SearchOutlined />}
                     value={value}
                     options={mockOptions}
                     onChange={setValue}
-                  />
+                  /> */}
                 </div>
               </div>
             ))}
