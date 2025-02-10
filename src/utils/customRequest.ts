@@ -19,8 +19,7 @@ const customRequest = async <T = any>(config: RequestConfig): Promise<T> => {
   // 直接拼接 base URL 和相对路径
   let originalUrl = config.url;
   if (!originalUrl.startsWith('http')) {
-    conf;
-    ig.url = new URL(originalUrl, BASE_URL).toString();
+    config.url = new URL(originalUrl, BASE_URL).toString();
   }
 
   // 获取token，假设token存储在localStorage或sessionStorage中
