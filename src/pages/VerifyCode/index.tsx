@@ -1,9 +1,8 @@
-import {
-  COUNT_DOWN_LEN,
-  VERIFICATION_CODE_LEN,
-} from '@/constants/common.constants';
+import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
+import { ACCESS_TOKEN, EXPIRE_DATE } from '@/constants/home.constants';
 import { apiLoginCode, apiSendCode } from '@/services/account';
 import { SendCodeEnum } from '@/types/enums/login';
+import type { ILoginResult } from '@/types/interfaces/login';
 import { getNumbersOnly } from '@/utils/common';
 import type { InputRef } from 'antd';
 import { Button, Input, message } from 'antd';
@@ -17,6 +16,7 @@ import React, {
 } from 'react';
 import { history, useLocation, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
+import useCountDown from '@/hooks/useCountDown';
 
 const cx = classNames.bind(styles);
 
@@ -24,11 +24,10 @@ const DefaultCode = Array(VERIFICATION_CODE_LEN).fill(null);
 const VerifyCode: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [countDown, setCountDown] = useState<number>(COUNT_DOWN_LEN);
+  const {countDown, handleCount} = useCountDown();
   const [codeString, setCodeString] = useState<string>('');
   const [errorString, setErrorString] = useState<string>('');
   const inputRef = useRef<InputRef | null>(null);
-  const timer = useRef<ReturnType<typeof setInterval>>();
   const { phone, areaCode } = location.state;
 
   const handleClick = () => {
@@ -54,9 +53,12 @@ const VerifyCode: React.FC = () => {
   const { run: runLoginCode, loadingLoginCode } = useRequest(apiLoginCode, {
     manual: true,
     debounceWait: 300,
-    onSuccess: (result) => {
-      console.log(result, 99966);
-      if (result.data?.resetPass === 1) {
+    onSuccess: (result: ILoginResult) => {
+      const { resetPass, expireDate, token } = result;
+      localStorage.setItem(ACCESS_TOKEN, token);
+      localStorage.setItem(EXPIRE_DATE, expireDate);
+      // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
+      if (!resetPass) {
         history.push('/set-password');
       } else {
         navigate('/', { replace: true });
@@ -92,20 +94,6 @@ const VerifyCode: React.FC = () => {
     [codes, errorString],
   );
 
-  const handleCount = () => {
-    let startCount = COUNT_DOWN_LEN;
-    setCountDown(startCount);
-
-    timer.current = setInterval(() => {
-      startCount--;
-      setCountDown(startCount);
-      if (startCount === 0) {
-        clearInterval(timer.current);
-        timer.current = undefined;
-      }
-    }, 1000);
-  };
-
   const handleSendCode = async () => {
     handleCount();
     run({
@@ -117,10 +105,6 @@ const VerifyCode: React.FC = () => {
   useEffect(() => {
     handleClick();
     handleCount();
-    return () => {
-      clearInterval(timer.current);
-      timer.current = undefined;
-    };
   }, []);
 
   const handleVerify = () => {

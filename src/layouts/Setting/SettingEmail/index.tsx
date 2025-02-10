@@ -1,25 +1,52 @@
 import useCountDown from '@/hooks/useCountDown';
-import { Button, Form, Input } from 'antd';
+import { Button, Form, Input, message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
+import { apiBindEmail, apiSendCode } from '@/services/account';
+import { useRequest } from 'umi';
+import { SendCodeEnum } from '@/types/enums/login';
+import { isValidEmail } from '@/utils/common';
+import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 
 const cx = classNames.bind(styles);
 
 const SettingEmail: React.FC = () => {
   const { countDown, handleCount } = useCountDown();
-  // const { run, loading } = useRequest(apiHome, {
-  //   manual: true,
-  //   debounceWait: 300,
-  //   onSuccess: (res: RequestResponse<T>) => {
-  //     const { data } = res;
-  //     if (data) {
-  //     }
-  //   },
-  // });
+  const [form] = Form.useForm<{ email: string; code: string }>();
 
+  // 绑定邮箱
+  const { run, loading } = useRequest(apiBindEmail, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: () => {
+      message.success('绑定成功');
+    },
+  });
+
+
+  // 绑定事件
   const handlerBindEmail = (values) => {
-    console.log(values);
+    run(values);
+  };
+
+  // 发送邮箱验证码
+  const { run: runSendCode } = useRequest(apiSendCode, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: () => {
+      message.success('验证码已发送');
+    },
+  });
+
+  const handleSendCode = async () => {
+    form.validateFields(['email']).then(({email}) => {
+      handleCount();
+      runSendCode({
+        type: SendCodeEnum.BIND_EMAIL,
+        email,
+      });
+    });
   };
 
   return (
@@ -27,34 +54,59 @@ const SettingEmail: React.FC = () => {
       <h3>邮箱绑定</h3>
       <Form
         layout="vertical"
+        form={form}
         rootClassName={cx(styles.form)}
+        requiredMark={(label: React.ReactNode) => <>{label}</>}
         onFinish={handlerBindEmail}
       >
         <Form.Item
-          name="username"
-          className={cx(styles.label)}
+          name="email"
           label="邮箱地址"
+          rules={[{required: true, message: '请输入邮箱地址'}, {
+            validator(_, value) {
+              if (!value || isValidEmail(value)) {
+                return Promise.resolve();
+              }
+              return Promise.reject(new Error('请输入正确的邮箱地址!'));
+            }
+          }]}
         >
           <Input placeholder="请输入邮箱地址" />
         </Form.Item>
-        <Form.Item name="code" className={cx(styles.label)} label="验证码">
+        <Form.Item name="code" label="验证码" rules={[{required: true, message: '请输入验证码'}, {
+          validator(_, value) {
+            if (!value || value?.length === VERIFICATION_CODE_LEN) {
+              return Promise.resolve();
+            }
+            return Promise.reject(new Error('请输入正确的验证码!'));
+          }
+        }]}>
           <div className={cx('flex', 'content-between')}>
             <Input
               rootClassName={styles.input}
               placeholder="请输入邮箱验证码"
             />
-            <Button
-              rootClassName={styles.btn}
-              disabled={countDown > 0}
-              type="primary"
-              onClick={handleCount}
-            >
-              {countDown > 0 ? `${countDown}s` : '发送验证码'}
+            {countDown < 60 && countDown > 0 ? (
+              <Button
+                rootClassName={styles.btn}
+                disabled
+                type="primary"
+              >
+                {`${countDown}s`}
+              </Button>
+            ) : (
+              <Button
+                rootClassName={styles.btn}
+                type="primary"
+                onClick={handleSendCode}
+              >
+              发送验证码
             </Button>
+            )}
           </div>
         </Form.Item>
         <Form.Item>
-          <Button block type="primary" htmlType="submit">
+          <Button block type="primary" htmlType="submit" loading={loading}>
             绑定
           </Button>
         </Form.Item>

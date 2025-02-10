@@ -41,6 +41,19 @@ export type SetPasswordFieldType = {
   confirmPassword: string;
 };
 
+// 绑定邮箱输入参数
+export interface BindEmailParams {
+  email: string;
+  code: string;
+}
+
+// 更新用户信息
+export interface UserUpdateParams {
+  userName: string;
+  nickName: string;
+  avatar: string;
+}
+
 // 滑动验证码弹窗类型
 export type ModalSliderCaptchaType = {
   open: boolean;

@@ -15,14 +15,12 @@ const SetPassword: React.FC = () => {
   const { run, loading } = useRequest(apiSetPassword, {
     manual: true,
     debounceWait: 300,
-    onSuccess: (result) => {
-      console.log(result);
+    onSuccess: () => {
       navigate('/', { replace: true });
     },
   });
 
   const onFinish: FormProps<SetPasswordFieldType>['onFinish'] = (values) => {
-    console.log(values);
     const { password } = values;
     run({ password });
   };
@@ -71,10 +69,14 @@ const SetPassword: React.FC = () => {
             },
             ({ getFieldValue }) => ({
               validator(_, value) {
-                if (!value || getFieldValue('password') === value) {
+                const _password = getFieldValue('password');
+                if (!value || _password === value) {
                   return Promise.resolve();
                 }
-                return Promise.reject(new Error('请再次输入密码!'));
+                if (_password && _password !== value) {
+                  return Promise.reject(new Error('两次密码不一致!'));
+                }
+                return Promise.reject(new Error('请输入正确的密码!'));
               },
             }),
           ]}

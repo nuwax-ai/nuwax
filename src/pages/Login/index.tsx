@@ -2,21 +2,22 @@ import { ICON_LOGO } from '@/constants/images.constants';
 import { apiLogin } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
-import type { RequestResponse } from '@/types/interfaces/request';
 import { isValidPhone } from '@/utils/common';
 import { ExclamationCircleFilled } from '@ant-design/icons';
-import { Button, Checkbox, Form, FormProps, Input, Modal, Select } from 'antd';
+import { Button, Checkbox, Form, FormProps, Input, message, Modal, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import { history, useRequest } from 'umi';
+import { history, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
 import ModalSliderCaptcha from './ModalSliderCaptcha';
+import { ACCESS_TOKEN, EXPIRE_DATE } from '@/constants/home.constants';
 
 const cx = classNames.bind(styles);
 
 const { confirm } = Modal;
 
 const Login: React.FC = () => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState<boolean>(false);
   const [loginType, setLoginType] = useState<LoginTypeEnum>(
     LoginTypeEnum.Password,
@@ -28,10 +29,12 @@ const Login: React.FC = () => {
   const { run } = useRequest(apiLogin, {
     manual: true,
     debounceWait: 300,
-    onSuccess: (result: RequestResponse<ILoginResult>) => {
-      console.log(result, 999);
-      // const {data} = result;
-      // localStorage.setItem(ACCESS_TOKEN, data.access_token);
+    onSuccess: (result: ILoginResult) => {
+      const { expireDate, token } = result;
+      localStorage.setItem(ACCESS_TOKEN, token);
+      localStorage.setItem(EXPIRE_DATE, expireDate);
+      navigate('/', { replace: true });
+      message.success('登录成功');
     },
   });
 
