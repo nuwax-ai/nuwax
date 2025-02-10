@@ -219,6 +219,7 @@ const SpaceLibrary: React.FC = () => {
       />
       {/*创建工作流*/}
       <CreateWorkflow
+        spaceId={'110110'}
         open={openWorkflow}
         onCancel={() => setOpenWorkflow(false)}
         onConfirm={() => setOpenWorkflow(false)}

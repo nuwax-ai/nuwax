@@ -1,5 +1,4 @@
-// 登录
-import { SendCodeEnum } from '@/types/enums/login';
+import type { SendCodeEnum } from '@/types/enums/login';
 
 // 账号密码登录请求参数
 export type LoginFieldType = {
@@ -12,7 +11,7 @@ export type LoginFieldType = {
 export interface ILoginResult {
   token: string;
   expireDate: string;
-  resetPass: string;
+  resetPass: number;
 }
 
 // 发送验证码
@@ -52,6 +51,24 @@ export interface UserUpdateParams {
   userName: string;
   nickName: string;
   avatar: string;
+}
+
+export interface UserInfo {
+  id: string;
+  tenantId: string;
+  userName: string;
+  nickName: string;
+  avatar: string;
+  password: string;
+  resetPass: number;
+  // 用户状态
+  status: string;
+  role: string;
+  email: string;
+  phone: string;
+  lastLoginTime: string;
+  created: string;
+  modified: string;
 }
 
 // 滑动验证码弹窗类型

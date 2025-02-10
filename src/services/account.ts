@@ -5,10 +5,11 @@ import type {
   LoginFieldType,
   SendCode,
   SetPasswordParams,
+  UserInfo,
+  UserUpdateParams,
 } from '@/types/interfaces/login';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
-import { UserUpdateParams } from '@/types/interfaces/login';
 
 // 账号密码登录
 export async function apiLogin(
@@ -58,7 +59,9 @@ export async function apiLogout(): Promise<RequestResponse<null>> {
 }
 
 // 绑定邮箱
-export async function apiBindEmail(body: BindEmailParams): Promise<RequestResponse<null>> {
+export async function apiBindEmail(
+  body: BindEmailParams,
+): Promise<RequestResponse<null>> {
   return request('/api/user/email/bind', {
     method: 'POST',
     data: body,
@@ -66,9 +69,18 @@ export async function apiBindEmail(body: BindEmailParams): Promise<RequestRespon
 }
 
 // 更新用户信息
-export async function apiUserUpdate(body: UserUpdateParams): Promise<RequestResponse<null>> {
+export async function apiUserUpdate(
+  body: UserUpdateParams,
+): Promise<RequestResponse<null>> {
   return request('/api/user/update', {
     method: 'POST',
     data: body,
+  });
+}
+
+// 查询当前登录用户信息
+export async function apiUserInfo(): Promise<RequestResponse<UserInfo>> {
+  return request('/api/user/getLoginInfo', {
+    method: 'GET',
   });
 }

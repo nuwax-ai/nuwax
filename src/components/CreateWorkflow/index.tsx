@@ -2,12 +2,14 @@ import workflowIcon from '@/assets/images/workflow_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
+import { apiAddWorkflow } from '@/services/library';
 import { WorkflowModeEnum } from '@/types/enums/library';
 import type { CreateWorkflowProps } from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -17,21 +19,37 @@ const cx = classNames.bind(styles);
  */
 const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   type = WorkflowModeEnum.Create,
-  workflowName,
+  name,
+  spaceId,
   workflowId,
-  img,
-  intro,
+  icon,
+  description,
   open,
   onCancel,
   onConfirm,
 }) => {
-  const [imageUrl, setImageUrl] = useState<string>('');
+  const [imageUrl, setImageUrl] = useState<string>(icon || '');
   const [form] = Form.useForm();
 
+  // 新增工作流
+  const { run } = useRequest(apiAddWorkflow, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: () => {
+      // todo
+      message.success('工作流已创建成功');
+      onConfirm();
+    },
+  });
+
   const onFinish = (values) => {
-    console.log(values, workflowId, img, type);
-    message.success('知识库已创建');
-    onConfirm();
+    console.log(values, workflowId, type);
+    run({
+      spaceId,
+      name: values?.name,
+      description: values?.description,
+      icon: imageUrl,
+    });
   };
 
   const handlerSubmit = async () => {
@@ -58,20 +76,20 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
         layout="vertical"
         onFinish={onFinish}
         initialValues={{
-          workflowName: workflowName,
-          intro: intro,
+          name,
+          description,
         }}
         autoComplete="off"
       >
         <Form.Item
-          name="workflowName"
+          name="name"
           label="名称"
           rules={[{ required: true, message: '请输入工作流名称' }]}
         >
           <Input placeholder="输入工作流名称" showCount maxLength={100} />
         </Form.Item>
         <OverrideTextArea
-          name="intro"
+          name="description"
           label="描述"
           placeholder="请输入描述，让大模型理解什么情况下应该调用此工作流"
           maxLength={2000}

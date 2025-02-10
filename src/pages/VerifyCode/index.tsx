@@ -1,5 +1,6 @@
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 import { ACCESS_TOKEN, EXPIRE_DATE } from '@/constants/home.constants';
+import useCountDown from '@/hooks/useCountDown';
 import { apiLoginCode, apiSendCode } from '@/services/account';
 import { SendCodeEnum } from '@/types/enums/login';
 import type { ILoginResult } from '@/types/interfaces/login';
@@ -16,7 +17,6 @@ import React, {
 } from 'react';
 import { history, useLocation, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
-import useCountDown from '@/hooks/useCountDown';
 
 const cx = classNames.bind(styles);
 
@@ -24,7 +24,7 @@ const DefaultCode = Array(VERIFICATION_CODE_LEN).fill(null);
 const VerifyCode: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const {countDown, handleCount} = useCountDown();
+  const { countDown, handleCount } = useCountDown();
   const [codeString, setCodeString] = useState<string>('');
   const [errorString, setErrorString] = useState<string>('');
   const inputRef = useRef<InputRef | null>(null);

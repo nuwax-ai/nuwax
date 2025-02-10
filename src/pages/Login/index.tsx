@@ -1,16 +1,25 @@
+import { ACCESS_TOKEN, EXPIRE_DATE } from '@/constants/home.constants';
 import { ICON_LOGO } from '@/constants/images.constants';
 import { apiLogin } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
 import { isValidPhone } from '@/utils/common';
 import { ExclamationCircleFilled } from '@ant-design/icons';
-import { Button, Checkbox, Form, FormProps, Input, message, Modal, Select } from 'antd';
+import {
+  Button,
+  Checkbox,
+  Form,
+  FormProps,
+  Input,
+  message,
+  Modal,
+  Select,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { history, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
 import ModalSliderCaptcha from './ModalSliderCaptcha';
-import { ACCESS_TOKEN, EXPIRE_DATE } from '@/constants/home.constants';
 
 const cx = classNames.bind(styles);
 

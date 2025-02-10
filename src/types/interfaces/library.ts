@@ -16,10 +16,11 @@ export interface ComponentItemProps {
 // 更新、创建工作流弹窗
 export interface CreateWorkflowProps {
   type?: WorkflowModeEnum;
+  spaceId: string;
   workflowId?: string;
-  workflowName?: string;
-  intro?: string;
-  img?: string;
+  name?: string;
+  description?: string;
+  icon?: string;
   open: boolean;
   onCancel: () => void;
   onConfirm: () => void;
@@ -114,4 +115,12 @@ export interface CreateModelProps {
 // 内网模型组件
 export interface IntranetModelProps {
   onOpen: () => void;
+}
+
+// 添加工作流传入参数
+export interface AddWorkflowParams {
+  spaceId: string;
+  name: string;
+  description: string;
+  icon: string;
 }
