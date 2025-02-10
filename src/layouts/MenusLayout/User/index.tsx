@@ -3,10 +3,11 @@ import { UserAvatarEnum } from '@/types/enums/menus';
 import { Popover } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { useModel, useNavigate } from 'umi';
+import { useModel, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
 import UserActionItem from './UserAction';
 import UserAvatar from './UserAvatar';
+import { apiLogout } from '@/services/account';
 
 const cx = classNames.bind(styles);
 
@@ -16,6 +17,15 @@ const cx = classNames.bind(styles);
 const User: React.FC = () => {
   const { openAdmin, setOpenAdmin, setOpenSetting } = useModel('layout');
   let navigate = useNavigate();
+  const { run } = useRequest(apiLogout, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: () => {
+      localStorage.clear();
+      navigate('/login', { replace: true });
+    },
+  });
+
   const handlerClick = (type: UserAvatarEnum) => {
     console.log(type);
     switch (type) {
@@ -28,8 +38,7 @@ const User: React.FC = () => {
         break;
       case UserAvatarEnum.Log_Out:
         setOpenAdmin(false);
-        // todo 退出登录，清除缓存
-        navigate('/login', { replace: true });
+        run();
         break;
     }
   };

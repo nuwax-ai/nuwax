@@ -1,10 +1,11 @@
-import {
-  COUNT_DOWN_LEN,
-  VERIFICATION_CODE_LEN,
-} from '@/constants/common.constants';
+import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
+import { ACCESS_TOKEN, EXPIRE_DATE } from '@/constants/home.constants';
+import { apiLoginCode, apiSendCode } from '@/services/account';
+import { SendCodeEnum } from '@/types/enums/login';
+import type { ILoginResult } from '@/types/interfaces/login';
 import { getNumbersOnly } from '@/utils/common';
 import type { InputRef } from 'antd';
-import { Button, Input } from 'antd';
+import { Button, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -13,21 +14,21 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { history, useLocation, useNavigate } from 'umi';
+import { history, useLocation, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
+import useCountDown from '@/hooks/useCountDown';
 
 const cx = classNames.bind(styles);
 
 const DefaultCode = Array(VERIFICATION_CODE_LEN).fill(null);
 const VerifyCode: React.FC = () => {
   const location = useLocation();
-  let navigate = useNavigate();
-  const [countDown, setCountDown] = useState<number>(COUNT_DOWN_LEN);
+  const navigate = useNavigate();
+  const {countDown, handleCount} = useCountDown();
   const [codeString, setCodeString] = useState<string>('');
   const [errorString, setErrorString] = useState<string>('');
   const inputRef = useRef<InputRef | null>(null);
-  const timer = useRef<ReturnType<typeof setInterval>>();
-  const { phoneNumber, areaCode } = location.state;
+  const { phone, areaCode } = location.state;
 
   const handleClick = () => {
     inputRef.current!.focus({
@@ -36,20 +37,34 @@ const VerifyCode: React.FC = () => {
     });
   };
 
-  // todo
-  const loading = null;
+  // 发送验证码
+  const { run, loading } = useRequest(apiSendCode, {
+    debounceWait: 300,
+    defaultParams: {
+      type: SendCodeEnum.LOGIN_OR_REGISTER,
+      phone,
+    },
+    onSuccess: () => {
+      message.success('验证码已发送');
+    },
+  });
 
-  // const {run, loading} = useRequest(apiValidEmailCode, {
-  //   manual: true,
-  //   debounceWait: 300,
-  //   onSuccess: async (res, params) => {
-  //     if (res.code === SUCCESS_CODE) {
-  //       return onSuccess(params[0].email);
-  //     }
-  //     setErrorString(res.msg);
-  //     handleClick();
-  //   },
-  // });
+  // 验证码登录
+  const { run: runLoginCode, loadingLoginCode } = useRequest(apiLoginCode, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: ILoginResult) => {
+      const { resetPass, expireDate, token } = result;
+      localStorage.setItem(ACCESS_TOKEN, token);
+      localStorage.setItem(EXPIRE_DATE, expireDate);
+      // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
+      if (!resetPass) {
+        history.push('/set-password');
+      } else {
+        navigate('/', { replace: true });
+      }
+    },
+  });
 
   const codes = useMemo(() => {
     if (!codeString) {
@@ -79,49 +94,25 @@ const VerifyCode: React.FC = () => {
     [codes, errorString],
   );
 
-  const handleCount = () => {
-    let startCount = COUNT_DOWN_LEN;
-    setCountDown(startCount);
-
-    timer.current = setInterval(() => {
-      startCount--;
-      setCountDown(startCount);
-      if (startCount === 0) {
-        clearInterval(timer.current);
-        timer.current = undefined;
-      }
-    }, 1000);
-  };
-
   const handleSendCode = async () => {
     handleCount();
-    // const params = {
-    //   email,
-    //   type,
-    // };
-    // await apiSendEmail(params);
-    // message.success(SEND_SUCCESS);
+    run({
+      type: SendCodeEnum.LOGIN_OR_REGISTER,
+      phone,
+    });
   };
 
   useEffect(() => {
     handleClick();
     handleCount();
-    return () => {
-      clearInterval(timer.current);
-      timer.current = undefined;
-    };
   }, []);
 
   const handleVerify = () => {
-    // const data = {
-    //   code: codeString,
-    //   email,
-    //   type,
-    // };
-    // run(data);
-    // todo 用户是否是第一次登录需要跳转到设置密码页
-    // navigate('/', { replace: true });
-    history.push('/set-password');
+    const data = {
+      code: codeString,
+      phone,
+    };
+    runLoginCode(data);
   };
 
   const handleEnter = useCallback(
@@ -156,7 +147,7 @@ const VerifyCode: React.FC = () => {
       <div className={cx(styles.inner, 'flex', 'flex-col', 'items-center')}>
         <h3>输入短信验证码</h3>
         <p>验证码已发送至手机号</p>
-        <span className={styles.phone}>{`${areaCode} ${phoneNumber}`}</span>
+        <span className={styles.phone}>{`+${areaCode} ${phone}`}</span>
         <div className={cx(styles['code-container'])}>
           {codes.map((code, index) => {
             return (
@@ -175,12 +166,13 @@ const VerifyCode: React.FC = () => {
           })}
         </div>
         {countDown > 0 ? (
-          <span className={styles['count-down']}>
-            <span className={styles.time}>{countDown}s</span>
-          </span>
+          <span className={styles['count-down']}>{countDown}s</span>
         ) : (
-          <span className={styles['count-down']} onClick={handleSendCode}>
-            重新发送 <span className={styles.time}>{countDown}</span>
+          <span
+            className={cx(styles['resend-btn'], 'cursor-pointer')}
+            onClick={handleSendCode}
+          >
+            重新发送
           </span>
         )}
         <div className={cx('flex', 'content-between', 'w-full', styles.footer)}>
@@ -188,8 +180,14 @@ const VerifyCode: React.FC = () => {
             上一步
           </Button>
           <Button
-            className={cx('flex-1')}
+            loading={loadingLoginCode}
+            className={cx(
+              'flex-1',
+              codeString?.length !== VERIFICATION_CODE_LEN &&
+                styles['next-step'],
+            )}
             type="primary"
+            disabled={codeString?.length !== VERIFICATION_CODE_LEN}
             onClick={handleVerify}
           >
             下一步

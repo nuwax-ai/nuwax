@@ -344,3 +344,13 @@ export interface UploadAvatarProps {
   imageUrl?: string;
   beforeUpload?: (file: FileType) => void;
 }
+
+export interface SubmitButtonProps {
+  form?: FormInstance;
+  loading?: boolean;
+  // 确定按钮前缀icon
+  okPrefixIcon?: React.ReactNode;
+  // 确定按钮文本
+  okText?: string;
+  onConfirm: () => void;
+}

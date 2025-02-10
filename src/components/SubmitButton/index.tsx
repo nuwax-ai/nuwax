@@ -1,19 +1,10 @@
-import { Button, Form, FormInstance } from 'antd';
+import type { SubmitButtonProps } from '@/types/interfaces/common';
+import { Button, Form } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-interface SubmitButtonProps {
-  form?: FormInstance;
-  loading?: boolean;
-  // 确定按钮前缀icon
-  okPrefixIcon?: React.ReactNode;
-  // 确定按钮文本
-  okText?: string;
-  onConfirm: () => void;
-}
 
 const SubmitButton: React.FC<SubmitButtonProps> = ({
   form,

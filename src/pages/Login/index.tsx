@@ -1,19 +1,23 @@
 import { ICON_LOGO } from '@/constants/images.constants';
-import ModalSliderCaptcha from '@/pages/Login/ModalSliderCaptcha';
+import { apiLogin } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
-import type { LoginFieldType } from '@/types/interfaces/login';
+import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
+import { isValidPhone } from '@/utils/common';
 import { ExclamationCircleFilled } from '@ant-design/icons';
-import { Button, Checkbox, Form, FormProps, Input, Modal, Select } from 'antd';
+import { Button, Checkbox, Form, FormProps, Input, message, Modal, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import { history } from 'umi';
+import { history, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
+import ModalSliderCaptcha from './ModalSliderCaptcha';
+import { ACCESS_TOKEN, EXPIRE_DATE } from '@/constants/home.constants';
 
 const cx = classNames.bind(styles);
 
 const { confirm } = Modal;
 
 const Login: React.FC = () => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState<boolean>(false);
   const [loginType, setLoginType] = useState<LoginTypeEnum>(
     LoginTypeEnum.Password,
@@ -22,18 +26,29 @@ const Login: React.FC = () => {
   const [form] = Form.useForm();
   const [formValues, setFormValues] = useState<LoginFieldType>();
 
+  const { run } = useRequest(apiLogin, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: ILoginResult) => {
+      const { expireDate, token } = result;
+      localStorage.setItem(ACCESS_TOKEN, token);
+      localStorage.setItem(EXPIRE_DATE, expireDate);
+      navigate('/', { replace: true });
+      message.success('登录成功');
+    },
+  });
+
   // 账号密码登录
   const handlerPasswordLogin = () => {
-    const { username, areaCode, password } = formValues;
-    // todo
-    console.log(username, areaCode, password);
+    const { phone, areaCode, password } = formValues;
+    run({ phone, areaCode, password });
   };
 
   // 验证码登录
   const handlerCodeLogin = () => {
-    const { username, areaCode } = formValues;
+    const { phone, areaCode } = formValues;
     history.push('/verify-code', {
-      phoneNumber: username,
+      phone,
       areaCode,
     });
   };
@@ -93,7 +108,7 @@ const Login: React.FC = () => {
       <Form
         form={form}
         initialValues={{
-          areaCode: '028',
+          areaCode: '86',
         }}
         rootClassName={cx(styles.form, 'flex', 'flex-col')}
         name="login"
@@ -106,15 +121,22 @@ const Login: React.FC = () => {
           <Select
             rootClassName={cx(styles.select)}
             variant="borderless"
-            options={[
-              { value: '028', label: '+86' },
-              { value: 'lucy', label: 'Lucy' },
-            ]}
+            options={[{ value: '86', label: '+86' }]}
           />
         </Form.Item>
         <Form.Item
-          name="username"
-          rules={[{ required: true, message: '请输入手机号码!' }]}
+          name="phone"
+          rules={[
+            { required: true, message: '请输入手机号码!' },
+            {
+              validator(_, value) {
+                if (!value || isValidPhone(value)) {
+                  return Promise.resolve();
+                }
+                return Promise.reject(new Error('请输入正确的手机号码!'));
+              },
+            },
+          ]}
         >
           <Input
             rootClassName={cx(styles.input, styles.username)}

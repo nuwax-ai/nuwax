@@ -1,8 +1,8 @@
 import { COUNT_DOWN_LEN } from '@/constants/common.constants';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const useCountDown = () => {
-  const [countDown, setCountDown] = useState<number>(0);
+  const [countDown, setCountDown] = useState<number>(COUNT_DOWN_LEN);
   const timer = useRef<ReturnType<typeof setInterval>>();
 
   const handleCount = () => {
@@ -18,6 +18,13 @@ const useCountDown = () => {
       }
     }, 1000);
   };
+
+  useEffect(() => {
+    return () => {
+      clearInterval(timer.current);
+      timer.current = undefined;
+    };
+  }, []);
 
   return {
     countDown,

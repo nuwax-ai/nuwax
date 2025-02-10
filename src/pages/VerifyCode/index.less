@@ -52,7 +52,7 @@
         font-size: 18px;
 
         &.error {
-          border-color: red;
+          border-color: @RED;
         }
 
         &.active {
@@ -66,16 +66,26 @@
     }
 
     .count-down {
+      margin-left: auto;
       margin-bottom: 120px;
       color: @BLANK04;
+    }
 
-      .time {
-        color: @GRAY07;
-      }
+    .resend-btn {
+      margin-left: auto;
+      margin-bottom: 120px;
+      color: @GRAY07;
     }
 
     .footer {
       gap: 20px;
+
+      .next-step[disabled] {
+        background-color: @GRAY03; /* 修改背景颜色 */
+        color: @WHITE; /* 修改文本颜色 */
+        border-color: transparent; /* 修改边框颜色 */
+        cursor: not-allowed; /* 修改鼠标指针样式 */
+      }
     }
   }
 }

@@ -7,3 +7,5 @@ class Constant {
 }
 
 export default Constant;
+
+export const SUCCESS_CODE = '0000';
