@@ -22,12 +22,8 @@ interface Confirm {
 // 更新、创建工作流弹窗
 export interface CreateWorkflowProps {
   type?: WorkflowModeEnum;
-<<<<<<< HEAD
-  spaceId: string;
-  workflowId?: string;
-=======
+  spaceId?: string;
   id?: string;
->>>>>>> c173c361f13e13231b13ad96a6d0d60252869331
   name?: string;
   description?: string;
   icon?: string;
@@ -130,6 +126,14 @@ export interface IntranetModelProps {
 // 添加工作流传入参数
 export interface AddWorkflowParams {
   spaceId: string;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+// 更新工作流传入参数
+export interface UpdateWorkflowParams {
+  id: string;
   name: string;
   description: string;
   icon: string;
