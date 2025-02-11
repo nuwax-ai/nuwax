@@ -1,6 +1,15 @@
 import { DefaultRenderItem } from '@/components/FormListItem';
 import type { DefaultObjectType } from '@/types/interfaces/common';
 import {
+  FieldConfig,
+  KeyValuePairs,
+  MultiSelectWithCheckboxProps,
+  NodeRenderProps,
+  SkillProps,
+  TreeNodeData,
+  TreeOutputProps,
+} from '@/types/interfaces/workflow';
+import {
   DeleteOutlined,
   DownOutlined,
   PlusOutlined,
@@ -9,15 +18,6 @@ import {
 import { Button, Checkbox, Form, Select, Tag, Tree } from 'antd';
 import React, { useEffect } from 'react';
 import '../index.less';
-import {
-  FieldConfig,
-  KeyValuePairs,
-  MultiSelectWithCheckboxProps,
-  NodeRenderProps,
-  SkillProps,
-  TreeNodeData,
-  TreeOutputProps,
-} from '../type';
 import './commonNode.less';
 
 // 定义通用的输入输出

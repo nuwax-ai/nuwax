@@ -1,7 +1,7 @@
 import FoldWrap from '@/components/FoldWrap';
 import OtherOperations from '@/components/OtherAction';
+import { ChildNode } from '@/types/interfaces/graph';
 import { NodeConfig } from '@/types/interfaces/node';
-import { ChildNode } from '@/types/interfaces/workflow';
 import { returnImg } from '@/utils/workflow';
 import React, { useEffect, useState } from 'react';
 import ComplexNode from './component/complexNode';

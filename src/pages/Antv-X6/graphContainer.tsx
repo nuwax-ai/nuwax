@@ -1,31 +1,15 @@
-import type { ChildNode, Edge } from '@/types/interfaces/workflow';
+import type {
+  Child,
+  ChildNode,
+  Edge,
+  GraphContainerProps,
+  GraphContainerRef,
+} from '@/types/interfaces/graph';
 import { Node } from '@antv/x6';
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import EventHandlers from './component/eventHandlers';
 import InitGraph from './component/graph';
 import { registerCustomNodes } from './component/registerCustomNodes';
-import type { Child } from './type';
-interface GraphContainerProps {
-  graphParams: { nodeList: ChildNode[]; edgeList: Edge[] };
-  handleNodeChange: (action: string, data: ChildNode) => void;
-  changeDrawer: (child: ChildNode) => void;
-  changeEdge: (
-    sourceNode: ChildNode,
-    targetId: string,
-    type: string,
-    id: string,
-  ) => void;
-  changeCondition: (config: ChildNode) => void;
-}
-
-interface GraphContainerRef {
-  addNode: (e: { x: number; y: number }, child: Child) => void;
-  updateNode: (nodeId: string, newData: Partial<ChildNode>) => void;
-  saveAllNodes: () => void;
-  deleteNode: (id: string) => void;
-  deleteEdge: (id: string) => void;
-  changeGraphZoom: (val: number) => void;
-}
 
 // 辅助函数：生成随机坐标
 function getRandomPosition(maxWidth = 800, maxHeight = 600) {
@@ -118,8 +102,24 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             },
           },
           items: [
-            { group: 'left', id: `${child.id}-left` },
-            { group: 'right', id: `${child.id}-right` },
+            {
+              group: 'left',
+              id: `${child.id}-left`,
+              attrs: {
+                circle: {
+                  zIndex: 99, // 确保连接桩的层级高于边
+                },
+              },
+            },
+            {
+              group: 'right',
+              id: `${child.id}-right`,
+              attrs: {
+                circle: {
+                  zIndex: 99, // 确保连接桩的层级高于边
+                },
+              },
+            },
           ],
         },
       });
@@ -127,7 +127,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       if (targetNode === null) {
         graphRef.current.addCell(newNode);
       } else {
-        targetNode.setZIndex(1);
+        targetNode.setZIndex(2);
         targetNode.addChild(newNode);
       }
     };
@@ -155,7 +155,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           };
         }
         node.setData(newData, { overwrite: true });
-        console.log(node.getData());
       }
     };
 
@@ -196,39 +195,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       graphRef.current.zoomTo(Number(val));
     };
 
-    // 将子组件的方法暴露给父组件
-    useImperativeHandle(ref, () => ({
-      addNode,
-      updateNode,
-      saveAllNodes,
-      deleteNode,
-      deleteEdge,
-      changeGraphZoom,
-    }));
-
-    useEffect(() => {
-      if (!containerRef.current) return;
-      preWork();
-      graphRef.current = InitGraph({
-        containerId: 'graph-container',
-        changeDrawer: changeDrawer,
-        changeEdge: changeEdge,
-        changeCondition: changeCondition,
-      });
-
-      const cleanup = EventHandlers(graphRef.current);
-
-      return () => {
-        setTimeout(() => {
-          cleanup();
-          if (graphRef.current) {
-            graphRef.current.dispose();
-          }
-        }, 0);
-      };
-    }, []);
-
-    useEffect(() => {
+    // 绘制画布
+    const drawGraph = () => {
       if (graphRef.current && graphParams.nodeList.length > 0) {
         // 清除现有元素，防止重复渲染
         graphRef.current.clearCells();
@@ -356,7 +324,40 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           edges,
         });
       }
-    }, [graphParams]);
+    };
+
+    // 将子组件的方法暴露给父组件
+    useImperativeHandle(ref, () => ({
+      addNode,
+      updateNode,
+      saveAllNodes,
+      deleteNode,
+      deleteEdge,
+      changeGraphZoom,
+      drawGraph,
+    }));
+
+    useEffect(() => {
+      if (!containerRef.current) return;
+      preWork();
+      graphRef.current = InitGraph({
+        containerId: 'graph-container',
+        changeDrawer: changeDrawer,
+        changeEdge: changeEdge,
+        changeCondition: changeCondition,
+      });
+
+      const cleanup = EventHandlers(graphRef.current);
+
+      return () => {
+        setTimeout(() => {
+          cleanup();
+          if (graphRef.current) {
+            graphRef.current.dispose();
+          }
+        }, 0);
+      };
+    }, []);
 
     return <div ref={containerRef} id="graph-container" />;
   },

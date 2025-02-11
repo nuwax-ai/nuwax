@@ -2,9 +2,9 @@ import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import { InputOrReference } from '@/components/FormListItem/InputOrReference';
 import type { NodeConfig } from '@/types/interfaces/node';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { Empty, Form, Popover, Select, Slider, Tag } from 'antd';
+import { Empty, Form, Popover, Tag } from 'antd';
 import React, { useState } from 'react';
-import { InputConfigs, modelTypes, outPutConfigs } from '../params';
+import { InputConfigs, outPutConfigs } from '../params';
 import { NodeDisposeProps, ReferenceList } from '../type';
 import { InputAndOut, TreeOutput } from './commonNode';
 import './pluginNode.less';
@@ -68,8 +68,8 @@ const InputList: React.FC<InputListProps> = ({
   );
 };
 
-// 定义插件,工作流,知识库,数据库的节点渲染
-const PluginInNode: React.FC<NodeDisposeProps> = ({ params }) => {
+// 定义插件,工作流的节点渲染
+const PluginInNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   // let initialValues={}
   // if (params.inputArgs && params.inputArgs.length) {
   //   initialValues = params.inputArgs;
@@ -78,6 +78,7 @@ const PluginInNode: React.FC<NodeDisposeProps> = ({ params }) => {
 
   const changeInputList = (val: string) => {
     console.log('changeInputList', val);
+    Modified({ ...params });
   };
 
   return (
@@ -89,124 +90,6 @@ const PluginInNode: React.FC<NodeDisposeProps> = ({ params }) => {
       />
       <p className="node-title-style mt-16">{'输出'}</p>
       <TreeOutput treeData={params.outputArgs || []} />
-    </div>
-  );
-};
-
-// 定义知识库
-const KnowledgeNode: React.FC<NodeDisposeProps> = () => {
-  const [params, setParams] = useState({
-    strategy: '',
-    recall: 0,
-    match: 0.01,
-  });
-
-  const list = [
-    {
-      label: 'count',
-      desc: 'xxxxxxxxxxxx',
-      tag: 'Integer',
-      value: '',
-      referenceList: modelTypes,
-    },
-    {
-      label: 'query',
-      desc: 'xxxxxxxxxxxx',
-      tag: 'String',
-      value: '',
-      referenceList: modelTypes,
-    },
-  ];
-
-  const treeData = [
-    { title: 'msg', key: 'msg', tag: 'String' },
-    { title: 'response_for_model', key: 'response_for_model', tag: 'String' },
-    { title: 'msg', key: 'msg', tag: 'String' },
-    {
-      title: 'data',
-      key: 'data',
-      tag: 'Object',
-      children: [
-        {
-          title: '_type',
-          key: '_type',
-          tag: 'String',
-        },
-        {
-          title: 'images',
-          key: 'images',
-          tag: 'Object',
-          children: [
-            {
-              title: 'leaf',
-              key: '0-0-1-0',
-              tag: 'String',
-            },
-          ],
-        },
-      ],
-    },
-  ];
-
-  const changeInputList = (val: string) => {
-    console.log('changeInputList', val);
-  };
-  return (
-    <div className="knowledge-node">
-      {/* 输入参数 */}
-      <div className="node-item-style">
-        <InputList title={'输入'} inputList={list} onChange={changeInputList} />
-      </div>
-      {/* 知识库选择 */}
-      <Empty />
-      <div className="knowledge-node-box">
-        <div className="dis-sb">
-          <div className="left-label-style">
-            <span>搜索策略</span>
-            <Popover placement="right" content={'123'}>
-              <InfoCircleOutlined className="margin-right-6" />
-            </Popover>
-          </div>
-          <Select
-            className="flex-1"
-            value={params.strategy}
-            onChange={(value) => setParams({ ...params, strategy: value })}
-          />
-        </div>
-        <div className="dis-sb">
-          <div className="left-label-style">
-            <span>最大召回数量</span>
-            <Popover placement="right" content={'123'}>
-              <InfoCircleOutlined className="margin-right-6" />
-            </Popover>
-          </div>
-          <Slider
-            min={1}
-            max={20}
-            onChange={(val: number) => setParams({ ...params, recall: val })}
-            value={params.recall}
-            className="flex-1"
-          />
-        </div>
-        <div className="dis-sb">
-          <div className="left-label-style">
-            <span>最小匹配度</span>
-            <Popover placement="right" content={'123'}>
-              <InfoCircleOutlined className="margin-right-6" />
-            </Popover>
-          </div>
-          <Slider
-            min={0.01}
-            max={1}
-            onChange={(val: number) => setParams({ ...params, match: val })}
-            value={params.match}
-            className="flex-1"
-          />
-        </div>
-      </div>
-      {/* 输出 */}
-      <p className="node-title-style mt-16">{'输出'}</p>
-      <TreeOutput treeData={treeData} />
     </div>
   );
 };
@@ -266,4 +149,4 @@ const DatabaseNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   );
 };
 
-export default { PluginInNode, KnowledgeNode, DatabaseNode };
+export default { PluginInNode, DatabaseNode };

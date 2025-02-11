@@ -1,6 +1,7 @@
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import { ModelSelected } from '@/components/ModelSetting';
 import type { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
+import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   Button,
@@ -14,7 +15,6 @@ import {
 import React from 'react';
 import '../index.less';
 import { InputConfigs, intentionConfigs, outPutConfigs } from '../params';
-import { NodeDisposeProps } from '../type';
 import { InputAndOut } from './commonNode';
 
 // 定义大模型节点

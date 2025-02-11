@@ -15,7 +15,7 @@ import { Snapline } from '@antv/x6-plugin-snapline';
 import { message, Popover } from 'antd';
 import ReactDOM from 'react-dom/client';
 // 自定义类型定义
-import { GraphProp } from '@/types/interfaces/workflow';
+import { GraphProp } from '@/types/interfaces/graph';
 
 let currentPopover: any = null; // 用于跟踪当前显示的Popover
 /**
@@ -56,6 +56,7 @@ const initGraph = ({
       anchor: 'center', // 默认连接点位于元素中心
       connectionPoint: 'anchor', // 连接点类型为锚点
       allowBlank: false, // 禁止在空白区域创建连接
+      allowMulti: true,
       snap: {
         radius: 20, // 连接时的吸附距离
       },
@@ -153,8 +154,11 @@ const initGraph = ({
         graph.removeCell(edge.id);
         message.warning('左侧连接桩只能作为接入点，右侧连接桩只能作为输出点');
       }
+
       const sourceNode = edge.getSourceNode()?.getData();
       const targetNodeId = edge.getTargetCellId();
+
+      if (!sourceNode) return;
       // 查看出发的节点是否时意图识别和条件分支
       if (
         sourceNode.type === 'Condition' ||

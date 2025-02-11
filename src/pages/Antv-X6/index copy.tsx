@@ -2,16 +2,16 @@ import FoldWrap from '@/components/FoldWrap';
 import TestRun from '@/components/TestRun';
 import { Button, Popover, Select } from 'antd';
 import { useEffect, useRef, useState } from 'react';
+import Monaco from '../../components/CodeEditor/monaco';
 import FoldWarpNode from './component/disposeNode';
 import EventHandlers from './component/eventHandlers';
 import InitGraph from './component/graph';
-import Monaco from './component/monaco';
 import { registerCustomNodes } from './component/registerCustomNodes'; // 引入自定义节点注册函数
 import StencilContent from './component/stencil';
 // 引入一些图标
 import Created from '@/components/Created';
 import { CreatedNodeItem } from '@/types/interfaces/common';
-import { ChildNode, Edge } from '@/types/interfaces/workflow';
+import { ChildNode, Edge } from '@/types/interfaces/graph';
 import {
   CaretRightOutlined,
   HomeOutlined,

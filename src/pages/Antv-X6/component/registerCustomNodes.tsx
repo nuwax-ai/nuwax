@@ -1,5 +1,5 @@
+import { ChildNode, NodeProps } from '@/types/interfaces/graph';
 import { ConditionBranchConfigs } from '@/types/interfaces/node';
-import { ChildNode, NodeProps } from '@/types/interfaces/workflow';
 import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { DashOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { register } from '@antv/x6-react-shape';
@@ -142,27 +142,25 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
               <span>{data.name}</span>
             )}
           </div>
-          {data.type !== 'Start' &&
-            data.type !== 'End' &&
-            data.type !== 'Loop' && (
-              <div>
-                <Popover placement="top" content={'测试该节点'}>
-                  <PlayCircleOutlined
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // 触发父组件的事件
-                      this.changeNode('TestRun');
-                    }}
-                  />
-                </Popover>
-                <Popover content={this.content} trigger="hover">
-                  <DashOutlined
-                    style={{ marginLeft: '10px' }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </Popover>
-              </div>
-            )}
+          {data.type !== 'Start' && data.type !== 'End' && (
+            <div>
+              <Popover placement="top" content={'测试该节点'}>
+                <PlayCircleOutlined
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // 触发父组件的事件
+                    this.changeNode('TestRun');
+                  }}
+                />
+              </Popover>
+              <Popover content={this.content} trigger="hover">
+                <DashOutlined
+                  style={{ marginLeft: '10px' }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </Popover>
+            </div>
+          )}
         </div>
         {/* 节点内容区，根据 data.content 的类型显示不同的内容 */}
         {data.type !== 'IntentRecognition' && data.type !== 'Condition' && (
@@ -203,10 +201,21 @@ const generatePorts = (
     outputPorts = conditionBranchConfigs.map((_, index) => ({
       group: 'out',
       name: `out-port-${index}`, // 给每个端口一个唯一的名称
+      circle: {
+        zIndex: 99, // 确保连接桩的层级高于边
+      },
     }));
   } else {
     // 对于其他类型的节点，仅生成一个默认的输出端口
-    outputPorts = [{ group: 'out', name: 'out-port' }];
+    outputPorts = [
+      {
+        group: 'out',
+        name: 'out-port',
+        circle: {
+          zIndex: 99, // 确保连接桩的层级高于边
+        },
+      },
+    ];
   }
 
   return {

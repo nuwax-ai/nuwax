@@ -3,7 +3,7 @@ import {
   ICON_NEW_AGENT,
   ICON_START,
 } from '@/constants/images.constants';
-import { ChildNode, Edge } from '@/types/interfaces/workflow';
+import { ChildNode, Edge } from '@/types/interfaces/graph';
 
 // 递归获取节点的边
 export const getEdges = (nodes: ChildNode[]): Edge[] => {

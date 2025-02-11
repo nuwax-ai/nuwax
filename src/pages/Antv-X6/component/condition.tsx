@@ -1,47 +1,15 @@
 import { InputOrReference } from '@/components/FormListItem/InputOrReference';
 import { ConditionBranchConfigs } from '@/types/interfaces/node';
+import {
+  ConditionListProps,
+  ConditionProps,
+  NodeDisposeProps,
+} from '@/types/interfaces/workflow';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import type { FormInstance } from 'antd';
 import { Button, Form, Select, Tag } from 'antd';
 import React from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
-import { NodeDisposeProps } from '../type';
 import './condition.less';
-
-export type FormListFieldData = {
-  key: string | number;
-  name: string | number;
-  fieldKey?: string | number;
-};
-
-interface ConditionListProps {
-  title: string;
-  index: number;
-  // 改变节点的入参和出参
-  handleChangeNodeConfig: (
-    params: ConditionBranchConfigs,
-    index: number,
-  ) => void;
-  // 删除当前的
-  removeItem: (val: number) => void;
-  draggableId: string;
-  // 初始值（适用于已经编辑过的内容）
-  initialValues: ConditionBranchConfigs;
-  // 如果有多个相同组件时，传递不同的inputListName区分
-  inputItemName?: string;
-}
-
-// 先封装一个组件
-interface ConditionProps {
-  // 当前字段的field
-  field: FormListFieldData;
-  // 删除当前行
-  onRemove: () => void;
-  // 父组件传递下来的form
-  form: FormInstance;
-  // 当前值改变的时候，通知父组件，重新获取值
-  onChange: () => void;
-}
 
 export const modelTypes = [
   {
