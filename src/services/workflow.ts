@@ -28,6 +28,14 @@ interface IAddNode {
   };
 }
 
+interface IAddEdge {
+  nodeId: number | string;
+  integers: number[];
+}
+
+interface IgetModelList {
+  modelType: string;
+}
 // 获取工作流的详细信息
 const getDetails = (id: number) => {
   return customRequest({
@@ -118,10 +126,6 @@ const deleteNode = async (id: number | string) => {
     });
 };
 
-interface IAddEdge {
-  nodeId: number | string;
-  integers: number[];
-}
 // 添加连线
 const addEdge = async (params: IAddEdge) => {
   // 发送GET请求，使用相对路径
@@ -138,9 +142,6 @@ const addEdge = async (params: IAddEdge) => {
     });
 };
 
-interface IgetModelList {
-  modelType: string;
-}
 // 查询当前工作流可以使用的模型
 const getModelListByWorkflowId = async (params: IgetModelList) => {
   // 发送GET请求，使用相对路径

@@ -1,13 +1,26 @@
 import CodeEditor from '@/components/CodeEditor';
 import { ICON_NEW_AGENT } from '@/constants/images.constants';
+import type { NodeConfig } from '@/types/interfaces/node';
 import { CloseOutlined, RightCircleOutlined } from '@ant-design/icons';
 import { Button, Select } from 'antd';
-import React, { useState } from 'react';
-import { useModel } from 'umi';
-const Monaco: React.FC = ({}) => {
-  const { isShow, setIsShow } = useModel('monaco');
+import React from 'react';
+import './index.less';
+interface MonacoProps {
+  // 当前节点的参数
+  params: NodeConfig;
+  // 修改节点信息
+  Modified: (params: NodeConfig) => void;
+  // 是否显示
+  isShow: boolean;
+  // 关闭
+  close: () => void;
+}
 
-  const [language, setLanguage] = useState('javascript');
+const Monaco: React.FC<MonacoProps> = ({ params, Modified, isShow, close }) => {
+  // 修改模型的入参和出参
+  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
+    Modified({ ...params, ...newNodeConfig });
+  };
 
   return (
     <>
@@ -22,7 +35,7 @@ const Monaco: React.FC = ({}) => {
               <span className="mr-16">代码</span>
               <Select
                 prefix={'语言'}
-                defaultValue={language}
+                value={params.codeLanguage}
                 style={{ width: 120 }}
                 options={[
                   { value: 'javascript', label: 'JavaScript' },
@@ -30,7 +43,7 @@ const Monaco: React.FC = ({}) => {
                 ]}
                 placeholder="请选择语言"
                 onChange={(value) => {
-                  setLanguage(value);
+                  handleChangeNodeConfig({ ...params, codeLanguage: value });
                 }}
               />
             </div>
@@ -43,11 +56,17 @@ const Monaco: React.FC = ({}) => {
               >
                 试运行
               </Button>
-              <CloseOutlined onClick={() => setIsShow(false)} />
+              <CloseOutlined onClick={close} />
             </div>
           </div>
           <div className="monaco-editor-content">
-            <CodeEditor height={'790px'} />
+            <CodeEditor
+              height={'790px'}
+              value={params.code}
+              changeCode={(value) =>
+                handleChangeNodeConfig({ ...params, code: value })
+              }
+            />
           </div>
         </div>
       )}

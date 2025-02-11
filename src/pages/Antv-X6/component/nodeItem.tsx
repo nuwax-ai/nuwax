@@ -1,6 +1,8 @@
 // 这个页面定义普通的节点，如输入，输出，等
 import CodeEditor from '@/components/CodeEditor';
+import Monaco from '@/components/CodeEditor/monaco';
 import type { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
+import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import {
   CheckOutlined,
   ExpandAltOutlined,
@@ -19,9 +21,7 @@ import {
   Switch,
 } from 'antd';
 import React, { useState } from 'react';
-import { useModel } from 'umi';
 import { cycleOption, InputConfigs, outPutConfigs } from '../params';
-import { NodeDisposeProps } from '../type';
 import { InputAndOut, TreeOutput } from './commonNode';
 import './nodeItem.less';
 // 定义一些公共的数组
@@ -118,8 +118,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
             value={params.content}
             onChange={(e) => {
               const newValue = e.target.value; // 直接从事件对象中获取最新值
-              console.log('失焦时的新值:', e); // 调试信息
-              handleChangeNodeConfig({ content: newValue }); // 使用新值调用handleChangeNodeConfig
+              handleChangeNodeConfig({ ...params, content: newValue }); // 使用新值调用handleChangeNodeConfig
             }}
           />
         </div>
@@ -156,7 +155,9 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
         <Select
           value={params.loopType}
           options={cycleOption}
-          onChange={(value) => handleChangeNodeConfig({ loopType: value })}
+          onChange={(value) =>
+            handleChangeNodeConfig({ ...params, loopType: value })
+          }
         ></Select>
       </div>
       {params.loopType !== 'INFINITE_LOOP' && (
@@ -214,7 +215,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
 
   const [value, setValue] = useState<string>('设置变量值');
 
-  const treeData = [{ title: 'msg', key: 'msg', tag: 'String' }];
+  const treeData = [{ name: 'msg', key: 'msg', dataType: 'String' }];
 
   return (
     <>
@@ -422,7 +423,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
 
 // 定义代码节点
 const CodeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
-  const { setIsShow } = useModel('monaco');
+  const [show, setShow] = useState(false);
 
   let initialValues: InputAndOutConfig[] = [];
   if (params.inputArgs && params.inputArgs.length) {
@@ -453,7 +454,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
       <div className="node-item-style">
         <div className="dis-sb margin-bottom">
           <span className="node-title-style ">代码</span>
-          <ExpandAltOutlined onClick={() => setIsShow(true)} />
+          <ExpandAltOutlined onClick={() => setShow(true)} />
         </div>
         <CodeEditor
           value={params.code}
@@ -469,6 +470,13 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
         showCopy={true}
         showAssociation={true}
         initialValues={{ outputArgs: outputInitialValues }}
+      />
+
+      <Monaco
+        params={params}
+        Modified={Modified}
+        isShow={show}
+        close={() => setShow(false)}
       />
     </>
   );

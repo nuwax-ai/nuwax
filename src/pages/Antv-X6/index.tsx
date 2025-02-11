@@ -5,20 +5,19 @@ import Constant from '@/constants/codes.constants';
 import service, { IUpdateDetails } from '@/services/workflow';
 import { NodeTypeEnum, PluginAndLibraryEnum } from '@/types/enums/common';
 import { CreatedNodeItem } from '@/types/interfaces/common';
-import { ChildNode, Edge } from '@/types/interfaces/workflow';
+import { ChildNode, Edge } from '@/types/interfaces/graph';
 import { debounce } from '@/utils/debounce';
-import { updateNode } from '@/utils/updateNode';
+import { getNodeRelationWithArgs, updateNode } from '@/utils/updateNode';
 import { getEdges } from '@/utils/workflow';
 import React, { useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
-import Monaco from './component/monaco';
+// import Monaco from '../../components/CodeEditor/monaco';
 import ControlPanel from './controlPanel';
 import GraphContainer from './graphContainer';
 import Header from './header';
 import './index.less';
 import NodeDrawer from './nodeDrawer';
 import { Child } from './type';
-
 const AntvX6: React.FC = () => {
   // 显示隐藏右侧节点抽屉
   const [visible, setVisible] = useState(false);
@@ -91,6 +90,12 @@ const AntvX6: React.FC = () => {
       const _edgeList = getEdges(_nodeList);
       // 修改数据，更新画布
       setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
+
+      if (!graphParams.nodeList.length) {
+        setTimeout(() => {
+          graphRef.current.drawGraph();
+        }, 1000);
+      }
     } catch (error) {
       console.error('Failed to fetch graph data:', error);
     }
@@ -127,6 +132,13 @@ const AntvX6: React.FC = () => {
     if (child.nodeConfig.outputArgs === null) {
       child.nodeConfig.outputArgs = [];
     }
+
+    const args = getNodeRelationWithArgs(
+      graphParams.nodeList,
+      Number(child.id),
+      15,
+    );
+    console.log(args);
     setFoldWrapItem(child);
   };
 
@@ -310,7 +322,6 @@ const AntvX6: React.FC = () => {
         onSubmit={onSubmit}
         setShowCreateWorkflow={() => setShowCreateWorkflow(true)}
       />
-      <Monaco />
       <GraphContainer
         graphParams={graphParams}
         handleNodeChange={handleNodeChange}

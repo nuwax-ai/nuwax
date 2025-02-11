@@ -139,6 +139,14 @@ export interface NodeConfig {
   extractField?: boolean;
   maxReplyCount?: number;
   options?: QANodeOption[];
+
+  // 知识库节点
+  // 搜索策略
+  searchStrategy?: string;
+  // 最大召回数量
+  maxRecallCount?: number;
+  // 最小匹配度
+  matchingDegree?: number;
 }
 
 export interface HttpNodeConfig extends NodeConfig {

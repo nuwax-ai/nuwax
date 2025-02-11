@@ -1,58 +1,73 @@
 // 知识库，数据库等节点
+import type { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
+import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Empty, Popover, Select, Slider } from 'antd';
-import React, { useState } from 'react';
+import React from 'react';
 import '../index.less';
 import { outPutConfigs } from '../params';
-import { NodeDisposeProps } from '../type';
 import { InputAndOut, TreeOutput } from './commonNode';
 // 定义知识库
-const KnowledgeNode: React.FC<NodeDisposeProps> = () => {
-  const [params, setParams] = useState({
-    strategy: '',
-    recall: 0,
-    match: '',
-  });
+const KnowledgeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
+  // const [params, setParams] = useState({
+  //   strategy: '',
+  //   recall: 0,
+  //   match: '',
+  // });
 
+  let initialValues: InputAndOutConfig[] = [];
+
+  if (params.outputArgs && params.outputArgs.length) {
+    initialValues = params.outputArgs;
+  }
   const treeData = [
-    { title: 'msg', key: 'msg', tag: 'String' },
-    { title: 'response_for_model', key: 'response_for_model', tag: 'String' },
-    { title: 'msg', key: 'msg', tag: 'String' },
+    { name: 'msg', key: 'msg', dataType: 'String' },
     {
-      title: 'data',
+      name: 'response_for_model',
+      key: 'response_for_model',
+      dataType: 'String',
+    },
+    { name: 'msg', key: 'msg', dataType: 'String' },
+    {
+      name: 'data',
       key: 'data',
-      tag: 'Object',
+      dataType: 'Object',
       children: [
         {
-          title: '_type',
+          name: '_type',
           key: '_type',
-          tag: 'String',
+          dataType: 'String',
         },
         {
-          title: 'images',
+          name: 'images',
           key: 'images',
-          tag: 'Object',
+          dataType: 'Object',
           children: [
             {
-              title: 'leaf',
+              name: 'leaf',
               key: '0-0-1-0',
-              tag: 'String',
+              dataType: 'String',
             },
           ],
         },
       ],
     },
   ];
+
+  // 修改模型的入参和出参
+  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
+    Modified({ ...params, ...newNodeConfig });
+  };
   return (
     <div className="knowledge-node">
       {/* 输入参数 */}
       <div className="node-item-style">
         <InputAndOut
           title="输入"
+          handleChangeNodeConfig={handleChangeNodeConfig}
           fieldConfigs={outPutConfigs}
-          initialValues={{
-            inputItems: [{ name: '', type: '', isSelect: true }],
-          }}
+          inputItemName="inputArgs"
+          initialValues={{ inputArgs: initialValues }}
         />
       </div>
       {/* 知识库选择 */}
@@ -66,8 +81,10 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = () => {
             </Popover>
           </div>
           <Select
-            value={params.strategy}
-            onChange={(value) => setParams({ ...params, strategy: value })}
+            value={params.searchStrategy}
+            onChange={(value) =>
+              handleChangeNodeConfig({ ...params, searchStrategy: value })
+            }
           />
         </div>
         <div className="dis-sb">
@@ -80,8 +97,10 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = () => {
           <Slider
             min={0}
             max={100}
-            onChange={(val: number) => setParams({ ...params, recall: val })}
-            value={params.recall}
+            onChange={(value) =>
+              handleChangeNodeConfig({ ...params, maxRecallCount: value })
+            }
+            value={params.maxRecallCount}
             className="slider-style"
           />
         </div>
@@ -95,8 +114,10 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = () => {
           <Slider
             min={0}
             max={100}
-            onChange={(val: number) => setParams({ ...params, recall: val })}
-            value={params.recall}
+            onChange={(value) =>
+              handleChangeNodeConfig({ ...params, matchingDegree: value })
+            }
+            value={params.matchingDegree}
             className="slider-style"
           />
         </div>
