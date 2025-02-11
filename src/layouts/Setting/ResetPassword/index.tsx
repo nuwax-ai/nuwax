@@ -1,25 +1,55 @@
+import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
+import { PHONE } from '@/constants/home.constants';
 import useCountDown from '@/hooks/useCountDown';
-import { Button, Form, Input } from 'antd';
+import { apiResetPassword, apiSendCode } from '@/services/account';
+import { SendCodeEnum } from '@/types/enums/login';
+import { validatePassword } from '@/utils/common';
+import { customizeRequiredNoStarMark } from '@/utils/form';
+import { Button, Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 const ResetPassword: React.FC = () => {
   const { countDown, handleCount } = useCountDown();
-  // const { run, loading } = useRequest(apiHome, {
-  //   manual: true,
-  //   debounceWait: 300,
-  //   onSuccess: (res: RequestResponse<T>) => {
-  //     const { data } = res;
-  //     if (data) {
-  //     }
-  //   },
-  // });
+  const { run, loading } = useRequest(apiResetPassword, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: () => {
+      message.success('重置成功');
+    },
+  });
 
-  const handlerBindEmail = (values) => {
-    console.log(values, countDown);
+  const onFinish: FormProps<{
+    password: string;
+    newPassword: string;
+    code: string;
+  }>['onFinish'] = (values) => {
+    const { newPassword, code } = values;
+    run({
+      newPassword,
+      code,
+    });
+  };
+
+  // 发送邮箱验证码
+  const { run: runSendCode } = useRequest(apiSendCode, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: () => {
+      message.success('验证码已发送');
+    },
+  });
+
+  const handleSendCode = async () => {
+    handleCount();
+    runSendCode({
+      type: SendCodeEnum.RESET_PASSWORD,
+      phone: localStorage.getItem(PHONE),
+    });
   };
 
   return (
@@ -27,37 +57,85 @@ const ResetPassword: React.FC = () => {
       <h3>重置密码</h3>
       <Form
         layout="vertical"
+        requiredMark={customizeRequiredNoStarMark}
         rootClassName={cx(styles.form)}
-        onFinish={handlerBindEmail}
+        onFinish={onFinish}
       >
-        <Form.Item name="password" className={cx(styles.label)} label="新密码">
+        <Form.Item
+          name="password"
+          label="新密码"
+          rules={[
+            { required: true, message: '请输入新密码!' },
+            {
+              validator(_, value) {
+                if (!value || validatePassword(value)) {
+                  return Promise.resolve();
+                }
+                return Promise.reject(new Error('请输入正确的新密码!'));
+              },
+            },
+          ]}
+        >
           <Input placeholder="请输入新密码" />
         </Form.Item>
         <Form.Item
-          name="confirmPassword"
-          className={cx(styles.label)}
+          name="newPassword"
           label="确认密码"
+          rules={[
+            { required: true, message: '请再次输入新密码!' },
+            ({ getFieldValue }) => ({
+              validator(_, value) {
+                const _password = getFieldValue('password');
+                if (!value || _password === value) {
+                  return Promise.resolve();
+                }
+                if (_password && _password !== value) {
+                  return Promise.reject(new Error('两次密码不一致!'));
+                }
+                return Promise.reject(new Error('请输入正确的密码!'));
+              },
+            }),
+          ]}
         >
           <Input placeholder="请再次输入新密码" />
         </Form.Item>
-        <Form.Item name="code" className={cx(styles.label)} label="验证码">
+        <Form.Item
+          name="code"
+          label="验证码"
+          rules={[
+            { required: true, message: '请输入验证码' },
+            {
+              validator(_, value) {
+                if (!value || value?.length === VERIFICATION_CODE_LEN) {
+                  return Promise.resolve();
+                }
+                return Promise.reject(new Error('请输入正确的验证码!'));
+              },
+            },
+          ]}
+        >
           <div className={cx('flex', 'content-between')}>
             <Input
               rootClassName={styles.input}
               placeholder="请输入手机验证码"
             />
-            <Button
-              rootClassName={styles.btn}
-              disabled={countDown > 0}
-              type="primary"
-              onClick={handleCount}
-            >
-              {countDown > 0 ? `${countDown}s` : '发送验证码'}
-            </Button>
+            {countDown < 60 && countDown > 0 ? (
+              <Button rootClassName={styles.btn} disabled type="primary">
+                {`${countDown}s`}
+              </Button>
+            ) : (
+              <Button
+                rootClassName={styles.btn}
+                type="primary"
+                onClick={handleSendCode}
+              >
+                发送验证码
+              </Button>
+            )}
           </div>
         </Form.Item>
         <Form.Item>
-          <Button block type="primary" htmlType="submit">
+          <Button block type="primary" htmlType="submit" loading={loading}>
             确定修改
           </Button>
         </Form.Item>

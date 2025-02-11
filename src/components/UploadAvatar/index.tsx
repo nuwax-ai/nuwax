@@ -1,6 +1,5 @@
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import type { FileType, UploadAvatarProps } from '@/types/interfaces/common';
-import { getBase64 } from '@/utils/common';
 import { FormOutlined } from '@ant-design/icons';
 import { message, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
@@ -9,6 +8,9 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 上传头像
+ */
 const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
   const { className, onUploadSuccess, defaultImage, imageUrl, beforeUpload } =
     props;
@@ -18,10 +20,12 @@ const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
       return;
     }
     if (info.file.status === 'done') {
+      const data = info.file.response?.data;
       // Get this url from response in real world.
-      getBase64(info.file.originFileObj as FileType, (url) => {
-        onUploadSuccess?.(url);
-      });
+      onUploadSuccess?.(data?.url);
+      // getBase64(info.file.originFileObj as FileType, (url) => {
+      //   onUploadSuccess?.(url);
+      // });
     }
   };
 

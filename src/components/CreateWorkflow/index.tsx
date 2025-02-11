@@ -6,7 +6,7 @@ import { apiAddWorkflow, apiUpdateWorkflow } from '@/services/library';
 import { WorkflowModeEnum } from '@/types/enums/library';
 import type { CreateWorkflowProps } from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, Input, message } from 'antd';
+import { Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { useRequest } from 'umi';
@@ -52,27 +52,30 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     },
   });
 
-  const onFinish = (values) => {
-    console.log(values, id, type);
+  const onFinish: FormProps<{
+    name: string;
+    description: string;
+  }>['onFinish'] = (values) => {
+    const params = {
+      name: values?.name,
+      description: values?.description,
+      icon: imageUrl,
+    };
     if (type === WorkflowModeEnum.Create) {
       run({
         spaceId,
-        name: values?.name,
-        description: values?.description,
-        icon: imageUrl,
+        ...params,
       });
     } else {
       runUpdate({
         id,
-        name: values?.name,
-        description: values?.description,
-        icon: imageUrl,
+        ...params,
       });
     }
   };
 
-  const handlerSubmit = async () => {
-    await form.submit();
+  const handlerSubmit = () => {
+    form.submit();
   };
 
   return (

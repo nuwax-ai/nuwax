@@ -1,9 +1,10 @@
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
-import { ACCESS_TOKEN, EXPIRE_DATE } from '@/constants/home.constants';
+import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useCountDown from '@/hooks/useCountDown';
 import { apiLoginCode, apiSendCode } from '@/services/account';
 import { SendCodeEnum } from '@/types/enums/login';
 import type { ILoginResult } from '@/types/interfaces/login';
+import { CodeLogin } from '@/types/interfaces/login';
 import { getNumbersOnly } from '@/utils/common';
 import type { InputRef } from 'antd';
 import { Button, Input, message } from 'antd';
@@ -53,10 +54,11 @@ const VerifyCode: React.FC = () => {
   const { run: runLoginCode, loadingLoginCode } = useRequest(apiLoginCode, {
     manual: true,
     debounceWait: 300,
-    onSuccess: (result: ILoginResult) => {
+    onSuccess: (result: ILoginResult, params: CodeLogin[]) => {
       const { resetPass, expireDate, token } = result;
       localStorage.setItem(ACCESS_TOKEN, token);
       localStorage.setItem(EXPIRE_DATE, expireDate);
+      localStorage.setItem(PHONE, params[0].phone);
       // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
       if (!resetPass) {
         history.push('/set-password');

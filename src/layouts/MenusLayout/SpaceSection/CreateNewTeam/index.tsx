@@ -1,16 +1,16 @@
+import teamImage from '@/assets/images/team_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
+import { apiCreateSpaceTeam } from '@/services/workspace';
 import type { CreateNewTeamProps } from '@/types/interfaces/menus';
+import type { CreateSpaceTeamParams } from '@/types/interfaces/workspace';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, Input, message } from 'antd';
+import { Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import styles from './index.less';
-import teamImage from '@/assets/images/team_image.png';
-import { apiCreateSpaceTeam } from '@/services/workspace';
 import { useRequest } from 'umi';
-import type { CreateSpaceTeamParams } from '@/types/interfaces/workspace';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
@@ -31,8 +31,7 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
     },
   });
 
-
-  const onFinish = (values: CreateSpaceTeamParams) => {
+  const onFinish: FormProps<CreateSpaceTeamParams>['onFinish'] = (values) => {
     run({
       icon: imageUrl,
       name: values?.name,

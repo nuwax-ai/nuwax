@@ -1,4 +1,4 @@
-import { ACCESS_TOKEN, EXPIRE_DATE } from '@/constants/home.constants';
+import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import { ICON_LOGO } from '@/constants/images.constants';
 import { apiLogin } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
@@ -38,10 +38,12 @@ const Login: React.FC = () => {
   const { run } = useRequest(apiLogin, {
     manual: true,
     debounceWait: 300,
-    onSuccess: (result: ILoginResult) => {
+    onSuccess: (result: ILoginResult, params: LoginFieldType[]) => {
+      console.log(params, 88877);
       const { expireDate, token } = result;
       localStorage.setItem(ACCESS_TOKEN, token);
       localStorage.setItem(EXPIRE_DATE, expireDate);
+      localStorage.setItem(PHONE, params[0].phone);
       navigate('/', { replace: true });
       message.success('登录成功');
     },
