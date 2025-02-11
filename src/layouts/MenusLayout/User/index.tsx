@@ -1,4 +1,5 @@
 import { USER_AVATAR_LIST } from '@/constants/menus.constants';
+import { apiLogout } from '@/services/account';
 import { UserAvatarEnum } from '@/types/enums/menus';
 import { Popover } from 'antd';
 import classNames from 'classnames';
@@ -7,7 +8,6 @@ import { useModel, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
 import UserActionItem from './UserAction';
 import UserAvatar from './UserAvatar';
-import { apiLogout } from '@/services/account';
 
 const cx = classNames.bind(styles);
 

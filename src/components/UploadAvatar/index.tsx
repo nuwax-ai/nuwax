@@ -10,14 +10,8 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
-  const {
-    className,
-    imageClassName,
-    onUploadSuccess,
-    defaultImage,
-    imageUrl,
-    beforeUpload,
-  } = props;
+  const { className, onUploadSuccess, defaultImage, imageUrl, beforeUpload } =
+    props;
 
   const handleChange: UploadProps['onChange'] = (info) => {
     if (info.file.status === 'uploading') {
@@ -26,7 +20,6 @@ const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
     if (info.file.status === 'done') {
       // Get this url from response in real world.
       getBase64(info.file.originFileObj as FileType, (url) => {
-        // setLoading(false);
         onUploadSuccess?.(url);
       });
     }
@@ -59,7 +52,6 @@ const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
           'relative',
           'overflow-hide',
           'cursor-pointer',
-          imageClassName,
         )}
       >
         <div

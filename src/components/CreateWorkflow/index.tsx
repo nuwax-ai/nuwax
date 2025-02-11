@@ -2,12 +2,14 @@ import workflowIcon from '@/assets/images/workflow_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
+import { apiAddWorkflow, apiUpdateWorkflow } from '@/services/library';
 import { WorkflowModeEnum } from '@/types/enums/library';
 import type { CreateWorkflowProps } from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -18,6 +20,7 @@ const cx = classNames.bind(styles);
 const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   type = WorkflowModeEnum.Create,
   name,
+  spaceId,
   id,
   icon,
   description,
@@ -25,15 +28,47 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   onCancel,
   onConfirm,
 }) => {
-  const [imageUrl, setImageUrl] = useState<string>('');
+  const [imageUrl, setImageUrl] = useState<string>(icon || '');
   const [form] = Form.useForm();
 
+  // 新增工作流
+  const { run } = useRequest(apiAddWorkflow, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (_, params) => {
+      // todo
+      message.success('工作流已创建成功');
+      onConfirm(...params);
+    },
+  });
+
+  // 新增工作流
+  const { run: runUpdate } = useRequest(apiUpdateWorkflow, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (_, params) => {
+      message.success('工作流更新成功');
+      onConfirm(...params);
+    },
+  });
+
   const onFinish = (values) => {
-    if (type === 0) {
-      message.success('知识库已创建');
+    console.log(values, id, type);
+    if (type === WorkflowModeEnum.Create) {
+      run({
+        spaceId,
+        name: values?.name,
+        description: values?.description,
+        icon: imageUrl,
+      });
+    } else {
+      runUpdate({
+        id,
+        name: values?.name,
+        description: values?.description,
+        icon: imageUrl,
+      });
     }
-    console.log(id, icon);
-    onConfirm(values);
   };
 
   const handlerSubmit = async () => {
@@ -77,11 +112,9 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
           label="描述"
           placeholder="请输入描述，让大模型理解什么情况下应该调用此工作流"
           maxLength={2000}
-          rules={[{ required: true, message: '请输入工作流名称' }]}
         />
         <Form.Item name="icon" label="图标">
           <UploadAvatar
-            className={styles['upload-box']}
             onUploadSuccess={setImageUrl}
             imageUrl={imageUrl}
             defaultImage={workflowIcon as string}

@@ -1,7 +1,7 @@
 export type SaveUsername = {
-  username: string;
+  userName: string;
 };
 
 export type SaveNickname = {
-  nickname: string;
+  nickName: string;
 };

@@ -1,16 +1,20 @@
+import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 import useCountDown from '@/hooks/useCountDown';
+import { apiBindEmail, apiSendCode } from '@/services/account';
+import { SendCodeEnum } from '@/types/enums/login';
+import { isValidEmail } from '@/utils/common';
+import { customizeRequiredNoStarMark } from '@/utils/form';
 import { Button, Form, Input, message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import styles from './index.less';
-import { apiBindEmail, apiSendCode } from '@/services/account';
 import { useRequest } from 'umi';
-import { SendCodeEnum } from '@/types/enums/login';
-import { isValidEmail } from '@/utils/common';
-import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 邮箱绑定
+ */
 const SettingEmail: React.FC = () => {
   const { countDown, handleCount } = useCountDown();
   const [form] = Form.useForm<{ email: string; code: string }>();
@@ -23,7 +27,6 @@ const SettingEmail: React.FC = () => {
       message.success('绑定成功');
     },
   });
-
 
   // 绑定事件
   const handlerBindEmail = (values) => {
@@ -40,7 +43,7 @@ const SettingEmail: React.FC = () => {
   });
 
   const handleSendCode = async () => {
-    form.validateFields(['email']).then(({email}) => {
+    form.validateFields(['email']).then(({ email }) => {
       handleCount();
       runSendCode({
         type: SendCodeEnum.BIND_EMAIL,
@@ -56,42 +59,48 @@ const SettingEmail: React.FC = () => {
         layout="vertical"
         form={form}
         rootClassName={cx(styles.form)}
-        requiredMark={(label: React.ReactNode) => <>{label}</>}
+        requiredMark={customizeRequiredNoStarMark}
         onFinish={handlerBindEmail}
       >
         <Form.Item
           name="email"
           label="邮箱地址"
-          rules={[{required: true, message: '请输入邮箱地址'}, {
-            validator(_, value) {
-              if (!value || isValidEmail(value)) {
-                return Promise.resolve();
-              }
-              return Promise.reject(new Error('请输入正确的邮箱地址!'));
-            }
-          }]}
+          rules={[
+            { required: true, message: '请输入邮箱地址' },
+            {
+              validator(_, value) {
+                if (!value || isValidEmail(value)) {
+                  return Promise.resolve();
+                }
+                return Promise.reject(new Error('请输入正确的邮箱地址!'));
+              },
+            },
+          ]}
         >
           <Input placeholder="请输入邮箱地址" />
         </Form.Item>
-        <Form.Item name="code" label="验证码" rules={[{required: true, message: '请输入验证码'}, {
-          validator(_, value) {
-            if (!value || value?.length === VERIFICATION_CODE_LEN) {
-              return Promise.resolve();
-            }
-            return Promise.reject(new Error('请输入正确的验证码!'));
-          }
-        }]}>
+        <Form.Item
+          name="code"
+          label="验证码"
+          rules={[
+            { required: true, message: '请输入验证码' },
+            {
+              validator(_, value) {
+                if (!value || value?.length === VERIFICATION_CODE_LEN) {
+                  return Promise.resolve();
+                }
+                return Promise.reject(new Error('请输入正确的验证码!'));
+              },
+            },
+          ]}
+        >
           <div className={cx('flex', 'content-between')}>
             <Input
               rootClassName={styles.input}
               placeholder="请输入邮箱验证码"
             />
             {countDown < 60 && countDown > 0 ? (
-              <Button
-                rootClassName={styles.btn}
-                disabled
-                type="primary"
-              >
+              <Button rootClassName={styles.btn} disabled type="primary">
                 {`${countDown}s`}
               </Button>
             ) : (
@@ -100,8 +109,8 @@ const SettingEmail: React.FC = () => {
                 type="primary"
                 onClick={handleSendCode}
               >
-              发送验证码
-            </Button>
+                发送验证码
+              </Button>
             )}
           </div>
         </Form.Item>

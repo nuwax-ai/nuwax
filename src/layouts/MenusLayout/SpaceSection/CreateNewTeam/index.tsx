@@ -3,10 +3,14 @@ import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import type { CreateNewTeamProps } from '@/types/interfaces/menus';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, Input } from 'antd';
+import { Form, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './index.less';
+import teamImage from '@/assets/images/team_image.png';
+import { apiCreateSpaceTeam } from '@/services/workspace';
+import { useRequest } from 'umi';
+import type { CreateSpaceTeamParams } from '@/types/interfaces/workspace';
 
 const cx = classNames.bind(styles);
 
@@ -14,21 +18,30 @@ const cx = classNames.bind(styles);
  * 创建新团队组件
  */
 const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
-  const [confirmLoading, setConfirmLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState<string>('');
   const [form] = Form.useForm();
 
-  const onFinish = (values: any) => {
-    console.log('Received values of form: ', values);
+  // 创建工作空间新团队
+  const { run, loading } = useRequest(apiCreateSpaceTeam, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: () => {
+      message.success('新建成功');
+      onCancel();
+    },
+  });
+
+
+  const onFinish = (values: CreateSpaceTeamParams) => {
+    run({
+      icon: imageUrl,
+      name: values?.name,
+      description: values?.description,
+    });
   };
 
   const handleOk = () => {
-    setConfirmLoading(true);
     form.submit();
-    setTimeout(() => {
-      onCancel();
-      setConfirmLoading(false);
-    }, 3000);
   };
 
   return (
@@ -37,7 +50,7 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
       title={'创建新团队'}
       open={open}
       onCancel={onCancel}
-      loading={confirmLoading}
+      loading={loading}
       onConfirm={handleOk}
     >
       <div className={cx('flex', 'flex-col', 'items-center', 'py-16')}>
@@ -48,9 +61,7 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
           className={styles['upload-box']}
           onUploadSuccess={setImageUrl}
           imageUrl={imageUrl}
-          defaultImage={
-            'https://lf3-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon4.png?lk3s=ca44e09c&x-expires=1736495925&x-signature=Cep9yaOi9FW4Y14KmEY9u366780%3D'
-          }
+          defaultImage={teamImage as string}
         />
         <Form
           form={form}
@@ -62,13 +73,13 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
           autoComplete="off"
         >
           <Form.Item
-            name="teamName"
+            name="name"
             label="团队名称"
             rules={[{ required: true, message: '请输入团队名称' }]}
           >
             <Input placeholder="请输入团队名称" showCount maxLength={50} />
           </Form.Item>
-          <OverrideTextArea name="desc" label="描述" />
+          <OverrideTextArea name="description" label="描述" />
         </Form>
       </div>
     </CustomFormModal>

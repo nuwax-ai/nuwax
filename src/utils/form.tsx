@@ -13,3 +13,7 @@ export const customizeRequiredMark = (
     ) : null}
   </>
 );
+
+export const customizeRequiredNoStarMark = (label: React.ReactNode) => (
+  <>{label}</>
+);
