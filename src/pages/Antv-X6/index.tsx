@@ -11,7 +11,7 @@ import { getNodeRelationWithArgs, updateNode } from '@/utils/updateNode';
 import { getEdges } from '@/utils/workflow';
 import React, { useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
-import Monaco from '../../components/CodeEditor/monaco';
+// import Monaco from '../../components/CodeEditor/monaco';
 import ControlPanel from './controlPanel';
 import GraphContainer from './graphContainer';
 import Header from './header';
@@ -322,7 +322,6 @@ const AntvX6: React.FC = () => {
         onSubmit={onSubmit}
         setShowCreateWorkflow={() => setShowCreateWorkflow(true)}
       />
-      <Monaco />
       <GraphContainer
         graphParams={graphParams}
         handleNodeChange={handleNodeChange}
