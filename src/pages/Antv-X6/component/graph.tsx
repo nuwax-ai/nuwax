@@ -7,7 +7,7 @@ import { History } from '@antv/x6-plugin-history';
 // 键盘快捷键插件，提供快捷键操作
 import { Keyboard } from '@antv/x6-plugin-keyboard';
 // 选择插件，支持多选和框选功能
-// import { Selection } from '@antv/x6-plugin-selection';
+import { Selection } from '@antv/x6-plugin-selection';
 // 对齐辅助线插件，帮助对齐节点
 import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
@@ -96,7 +96,7 @@ const initGraph = ({
   // 使用多个插件来增强图形编辑器的功能
   graph
     // .use(new Transform({ resizing: true, rotating: true })) // 启用变换插件，允许节点缩放和旋转
-    // .use(new Selection({ rubberband: true, showNodeSelectionBox: true })) // 启用选择插件，允许框选和显示选择框
+    .use(new Selection({ rubberband: true, showNodeSelectionBox: true })) // 启用选择插件，允许框选和显示选择框
     .use(new Snapline()) // 启用对齐辅助线插件，帮助节点对齐
     .use(new Keyboard()) // 启用键盘插件，支持快捷键操作
     .use(new Clipboard()) // 启用剪贴板插件，支持复制和粘贴
@@ -144,6 +144,7 @@ const initGraph = ({
   graph.on('edge:connected', ({ isNew, edge }) => {
     // 是否是连接桩到连接桩
     if (isNew) {
+      edge.setRouter('manhattan');
       // 获取边的两个连接桩
       const sourcePort = edge.getSourcePortId();
       const targetPort = edge.getTargetPortId();
@@ -196,8 +197,27 @@ const initGraph = ({
       const sourceNode = edge.getSourceNode()?.getData();
       const targetNodeId = edge.getTargetCellId();
 
-      // 通知父组件删除边
-      changeEdge(sourceNode, targetNodeId, 'delete', edge.id);
+      if (
+        sourceNode.type === 'Condition' ||
+        sourceNode.type === 'IntentRecognition'
+      ) {
+        // 获取边的两个连接桩
+        const sourcePort = edge.getSourcePortId();
+        if (!sourcePort) return;
+        // 获取当前连接桩的输出端口
+        const _index: string = sourcePort.split('-')[1];
+        // 修改当前的数据
+        const newNodeParams = JSON.parse(JSON.stringify(sourceNode));
+        newNodeParams.nodeConfig.conditionBranchConfigs[_index].nextNodeIds =
+          newNodeParams.nodeConfig.conditionBranchConfigs[
+            _index
+          ].nextNodeIds.filter((item: number) => item !== Number(targetNodeId));
+        changeCondition(newNodeParams);
+      } else {
+        // 通知父组件删除边
+        changeEdge(sourceNode, targetNodeId, 'delete', edge.id);
+      }
+
       // 销毁Popover
       if (currentPopover) {
         currentPopover.unmount();
