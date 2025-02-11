@@ -10,6 +10,9 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 设置密码
+ */
 const SetPassword: React.FC = () => {
   const navigate = useNavigate();
   const { run, loading } = useRequest(apiSetPassword, {

@@ -13,6 +13,9 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 重置密码
+ */
 const ResetPassword: React.FC = () => {
   const { countDown, handleCount } = useCountDown();
   const { run, loading } = useRequest(apiResetPassword, {

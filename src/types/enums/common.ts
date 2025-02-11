@@ -129,3 +129,10 @@ export enum NodeTypeEnum {
   // 条件分支
   Condition = 'Condition',
 }
+
+// 角色类型
+export enum RoleEnum {
+  Owner = 'Owner',
+  Admin = 'Admin',
+  User = 'User',
+}
