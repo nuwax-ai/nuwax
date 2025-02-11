@@ -1,4 +1,5 @@
 import personal from '@/assets/images/personal.png';
+import { SPACE_ID } from '@/constants/home.constants';
 import { SPACE_APPLICATION_LIST } from '@/constants/space.contants';
 import { apiSpaceList } from '@/services/workspace';
 import { SpaceApplicationListEnum } from '@/types/enums/space';
@@ -15,7 +16,6 @@ import { history } from 'umi';
 import CreateNewTeam from './CreateNewTeam';
 import styles from './index.less';
 import PersonalSpaceContent from './PersonalSpaceContent';
-import { SPACE_ID } from '@/constants/home.constants';
 
 const cx = classNames.bind(styles);
 

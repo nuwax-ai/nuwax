@@ -5,16 +5,16 @@ import UploadAvatar from '@/components/UploadAvatar';
 import { SPACE_ID } from '@/constants/home.constants';
 import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
 import { CREATE_AGENT_LIST } from '@/constants/space.contants';
+import { apiAgentAdd } from '@/services/agentConfig';
 import { CreateAgentEnum, CreateEditAgentEnum } from '@/types/enums/common';
+import type { AgentAddParams } from '@/types/interfaces/agent';
 import type { CreateAgentProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message, Segmented } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import styles from './index.less';
 import { useRequest } from 'umi';
-import { apiAgentAdd } from '@/services/agentConfig';
-import type { AgentAddParams } from '@/types/interfaces/agent';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
@@ -42,7 +42,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     manual: true,
     debounceWait: 300,
     onSuccess: (_, params) => {
-      console.log(params)
+      console.log(params);
       onConfirm();
       message.success('智能体已创建');
     },
@@ -56,8 +56,8 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     run({
       ...values,
       icon: imageUrl,
-      spaceId
-    })
+      spaceId,
+    });
   };
 
   const handlerSubmit = async () => {
@@ -104,7 +104,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         {createAgentType === CreateAgentEnum.Standard ? (
           <>
             <Form.Item
-              name='name'
+              name="name"
               label="智能体名称"
               rules={[{ required: true, message: '请输入智能体名称' }]}
             >
