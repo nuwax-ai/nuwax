@@ -53,6 +53,12 @@ export interface UserUpdateParams {
   avatar: string;
 }
 
+// 重置密码
+export interface ResetPasswordParams {
+  newPassword: string;
+  code: string;
+}
+
 export interface UserInfo {
   id: string;
   tenantId: string;

@@ -3,6 +3,7 @@ import type {
   CodeLogin,
   ILoginResult,
   LoginFieldType,
+  ResetPasswordParams,
   SendCode,
   SetPasswordParams,
   UserInfo,
@@ -82,5 +83,15 @@ export async function apiUserUpdate(
 export async function apiUserInfo(): Promise<RequestResponse<UserInfo>> {
   return request('/api/user/getLoginInfo', {
     method: 'GET',
+  });
+}
+
+// 重置密码
+export async function apiResetPassword(
+  body: ResetPasswordParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/user/password/reset', {
+    method: 'POST',
+    data: body,
   });
 }

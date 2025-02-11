@@ -1,5 +1,4 @@
 // 创建新团队传入参数
-import { apiAddSpaceUser } from '@/services/workspace';
 
 export interface CreateSpaceTeamParams {
   name: string;

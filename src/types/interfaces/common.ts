@@ -353,3 +353,13 @@ export interface SubmitButtonProps {
   okText?: string;
   onConfirm: () => void;
 }
+
+export interface UploadInfo {
+  url: string;
+  key: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  width: number;
+  height: number;
+}
