@@ -1,6 +1,7 @@
 import personalImage from '@/assets/images/personal.png';
 import UploadAvatar from '@/components/UploadAvatar';
-import { apiUserInfo, apiUserUpdate } from '@/services/account';
+import { USER_INFO } from '@/constants/home.constants';
+import { apiUserUpdate } from '@/services/account';
 import type { UserInfo } from '@/types/interfaces/login';
 import type { SaveNickname, SaveUsername } from '@/types/interfaces/setting';
 import { customizeRequiredNoStarMark } from '@/utils/form';
@@ -20,28 +21,29 @@ const SettingAccount: React.FC = () => {
   const [form] = Form.useForm();
   const [formNickname] = Form.useForm();
   const [userInfo, setUserInfo] = useState<UserInfo>();
+
+  const handleUserInfo = () => {
+    const userInfoString = localStorage.getItem(USER_INFO);
+    return JSON.parse(userInfoString) as UserInfo;
+  };
   // 更新用户信息
   const { run, loading } = useRequest(apiUserUpdate, {
     manual: true,
     debounceWait: 300,
     onSuccess: () => {
       message.success('保存成功');
-    },
-  });
-
-  // 查询当前登录用户信息
-  const { run: runQuery } = useRequest(apiUserInfo, {
-    manual: true,
-    debounceWait: 300,
-    onSuccess: (result: UserInfo) => {
-      setUserInfo(result);
-      form.setFieldValue('userName', result?.userName);
-      formNickname.setFieldValue('nickName', result?.nickName);
+      const _userInfo = handleUserInfo();
+      _userInfo.userName = form.getFieldValue('userName');
+      _userInfo.nickName = formNickname.getFieldValue('nickName');
+      localStorage.setItem(USER_INFO, JSON.stringify(_userInfo));
     },
   });
 
   useEffect(() => {
-    runQuery();
+    const _userInfo = handleUserInfo();
+    setUserInfo(_userInfo);
+    form.setFieldValue('userName', _userInfo?.userName);
+    formNickname.setFieldValue('nickName', _userInfo?.nickName);
   }, []);
 
   // 上传头像成功后更新头像
@@ -85,7 +87,6 @@ const SettingAccount: React.FC = () => {
             <Input
               rootClassName={cx(styles.input)}
               placeholder="请输入用户名"
-              defaultValue={userInfo?.userName}
             />
           </Form.Item>
           <Form.Item noStyle>

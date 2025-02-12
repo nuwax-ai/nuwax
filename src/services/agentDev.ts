@@ -53,21 +53,21 @@ export async function apiLikeAgent(
 
 // 取消开发智能体收藏
 export async function apiDevUnCollectAgent(
-  body: DevUnCollectAgentParams,
+  data: DevUnCollectAgentParams,
 ): Promise<RequestResponse<null>> {
-  return request('/api/user/agent/dev/unCollect', {
+  const agentId = data.agentId;
+  return request(`/api/user/agent/dev/unCollect/${agentId}`, {
     method: 'POST',
-    data: body,
   });
 }
 
 // 开发智能体收藏
 export async function apiDevCollectAgent(
-  body: DevCollectAgentParams,
+  data: DevCollectAgentParams,
 ): Promise<RequestResponse<null>> {
-  return request('/api/user/agent/dev/collect', {
+  const agentId = data.agentId;
+  return request(`/api/user/agent/dev/collect/${agentId}`, {
     method: 'POST',
-    data: body,
   });
 }
 
@@ -105,8 +105,8 @@ export async function apiUserEditAgentList(
 export async function apiUserDevCollectAgentList(
   params: PageParams,
 ): Promise<RequestResponse<AgentInfo[]>> {
-  return request('/api/user/agent/dev/collect/list', {
+  const { page, size } = params;
+  return request(`/api/user/agent/dev/collect/list/${page}/${size}`, {
     method: 'GET',
-    params,
   });
 }

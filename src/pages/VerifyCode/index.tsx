@@ -1,6 +1,7 @@
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useCountDown from '@/hooks/useCountDown';
+import useUserInfo from '@/hooks/useUserInfo';
 import { apiLoginCode, apiSendCode } from '@/services/account';
 import { SendCodeEnum } from '@/types/enums/login';
 import type { ILoginResult } from '@/types/interfaces/login';
@@ -30,6 +31,7 @@ const VerifyCode: React.FC = () => {
   const [errorString, setErrorString] = useState<string>('');
   const inputRef = useRef<InputRef | null>(null);
   const { phone, areaCode } = location.state;
+  const { runUserInfo } = useUserInfo();
 
   const handleClick = () => {
     inputRef.current!.focus({
@@ -59,6 +61,7 @@ const VerifyCode: React.FC = () => {
       localStorage.setItem(ACCESS_TOKEN, token);
       localStorage.setItem(EXPIRE_DATE, expireDate);
       localStorage.setItem(PHONE, params[0].phone);
+      runUserInfo();
       // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
       if (!resetPass) {
         history.push('/set-password');

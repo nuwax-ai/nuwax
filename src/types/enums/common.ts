@@ -136,3 +136,11 @@ export enum RoleEnum {
   Admin = 'Admin',
   User = 'User',
 }
+
+// 发布状态
+export enum PublishStatusEnum {
+  Developing = 'Developing',
+  Applying = 'Applying',
+  Published = 'Published',
+  Rejected = 'Rejected',
+}

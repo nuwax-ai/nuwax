@@ -1,3 +1,4 @@
+import { SPACE_ID } from '@/constants/home.constants';
 import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -20,6 +21,7 @@ const MenusLayout: React.FC = () => {
   const { setOpenHistoryModal, setOpenMessage } = useModel('layout');
   const location = useLocation();
   const [tabType, setTabType] = useState<TabsEnum>();
+  const { runSpace } = useModel('spaceModel');
   // 切换tab
   const handleTabsClick = (type: TabsEnum) => {
     setTabType(type);
@@ -28,13 +30,18 @@ const MenusLayout: React.FC = () => {
         history.push('/');
         break;
       case TabsEnum.Space:
-        history.push('/space/spaceid007/develop');
+        const spaceId = localStorage.getItem(SPACE_ID);
+        history.push(`/space/${spaceId}/develop`);
         break;
       case TabsEnum.Square:
         history.push('/square');
         break;
     }
   };
+
+  useEffect(() => {
+    runSpace();
+  }, []);
 
   useEffect(() => {
     if (location.pathname.includes('/space')) {

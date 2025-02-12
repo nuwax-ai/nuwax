@@ -21,6 +21,11 @@ export interface KeyValuePairs {
   value: string;
 }
 
+// 条件渲染组件
+export interface ConditionRenderProps {
+  condition: React.Key | boolean;
+}
+
 // 折叠容器
 export interface FoldWrapType {
   className?: string;
@@ -284,7 +289,7 @@ export interface CreateAgentProps {
   icon?: string;
   open: boolean;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (agentId: string) => void;
 }
 
 // 创建、编辑知识库
@@ -309,7 +314,7 @@ export interface CustomInputNumberProps {
 }
 
 // 分析统计单项
-interface AnalyzeStatisticsItem {
+export interface AnalyzeStatisticsItem {
   label: string;
   value: string;
 }

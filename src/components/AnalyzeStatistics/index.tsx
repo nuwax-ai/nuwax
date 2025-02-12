@@ -21,7 +21,7 @@ const AnalyzeStatistics: React.FC<AnalyzeStatisticsProps> = ({
       width={556}
     >
       <div className={cx('flex', 'flex-wrap', styles['analyze-wrapper'])}>
-        {list.map((item, index) => (
+        {list?.map((item, index) => (
           <div
             key={index}
             className={cx(styles['analyze-box'], 'flex', 'flex-col')}

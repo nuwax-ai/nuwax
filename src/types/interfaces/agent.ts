@@ -1,4 +1,5 @@
 import type { TooltipTitleTypeEnum } from '@/types/enums/common';
+import { PublishStatusEnum } from '@/types/enums/common';
 import type { UpdateModeComponentEnum } from '@/types/enums/library';
 import React from 'react';
 
@@ -131,6 +132,27 @@ export interface AgentComponentModelUpdateParams {
   fallbackMsg: string;
 }
 
+// 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)
+export interface AgentStatisticsInfo {
+  targetId: string;
+  // 用户人数
+  userCount: string;
+  // 会话次数
+  convCount: string;
+  // 收藏次数
+  collectCount: string;
+  // 点赞次数
+  likeCount: string;
+  // 引用次数
+  referenceCount: string;
+  // 调用总次数
+  callCount: string;
+  // 失败调用次数
+  failCallCount: string;
+  // 调用总时长
+  totalCallDuration: string;
+}
+
 // 智能体配置信息
 export interface AgentConfigInfo {
   id: string;
@@ -143,6 +165,7 @@ export interface AgentConfigInfo {
   name: string;
   // Agent描述
   description: string;
+  // 图标地址
   icon: string;
   // 系统提示词
   systemPrompt: string;
@@ -159,34 +182,17 @@ export interface AgentConfigInfo {
   // 是否开启长期记忆,可用值:Open,Close
   openLongMemory: string;
   // 发布状态,可用值:Developing,Applying,Published,Rejected
-  publishStatus: string;
+  publishStatus: PublishStatusEnum;
   modified: string;
   created: string;
   // 模型信息
   modelComponentConfig: AgentComponentInfo;
   // 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)
-  agentStatistics: {
-    targetId: string;
-    // 用户人数
-    userCount: string;
-    // 会话次数
-    convCount: string;
-    // 收藏次数
-    collectCount: string;
-    // 点赞次数
-    likeCount: string;
-    // 引用次数
-    referenceCount: string;
-    // 调用总次数
-    callCount: string;
-    // 失败调用次数
-    failCallCount: string;
-    // 调用总时长
-    totalCallDuration: string;
-  };
+  agentStatistics: AgentStatisticsInfo;
   // 创建者信息
   creator: {
     userId: string;
+    // 用户名
     userName: string;
     nickName: string;
     avatar: string;

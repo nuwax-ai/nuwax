@@ -1,5 +1,6 @@
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import { ICON_LOGO } from '@/constants/images.constants';
+import useUserInfo from '@/hooks/useUserInfo';
 import { apiLogin } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
@@ -34,6 +35,7 @@ const Login: React.FC = () => {
   const [checked, setChecked] = useState<boolean>(false);
   const [form] = Form.useForm();
   const [formValues, setFormValues] = useState<LoginFieldType>();
+  const { runUserInfo } = useUserInfo();
 
   const { run } = useRequest(apiLogin, {
     manual: true,
@@ -45,6 +47,7 @@ const Login: React.FC = () => {
       localStorage.setItem(PHONE, params[0].phone);
       navigate('/', { replace: true });
       message.success('登录成功');
+      runUserInfo();
     },
   });
 
