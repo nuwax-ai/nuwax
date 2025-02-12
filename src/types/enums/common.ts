@@ -130,6 +130,45 @@ export enum NodeTypeEnum {
   Condition = 'Condition',
 }
 
+export enum DataTypeEnum {
+  String = 'String', // 文本
+  Integer = 'Integer', // 整型数字
+  Number = 'Number', // 数字
+  Boolean = 'Boolean', // 布尔
+  File_Default = 'File_Default', // 默认文件
+  File_Image = 'File_Image', // 图像文件
+  File_PPT = 'File_PPT', // PPT 文件
+  File_Doc = 'File_Doc', // DOC 文件
+  File_PDF = 'File_PDF', // PDF 文件
+  File_Txt = 'File_Txt', // TXT 文件
+  File_Zip = 'File_Zip', // ZIP 文件
+  File_Excel = 'File_Excel', // Excel 文件
+  File_Video = 'File_Video', // 视频文件
+  File_Audio = 'File_Audio', // 音频文件
+  File_Voice = 'File_Voice', // 语音文件
+  File_Code = 'File_Code', // 语音文件
+  File_Svg = 'File_Svg',
+  Object = 'Object', // 对象
+  Array_String = 'Array_String', // String 数组
+  Array_Integer = 'Array_Integer', // Integer 数组
+  Array_Number = 'Array_Number', // Number 数组
+  Array_Boolean = 'Array_Boolean', // Boolean 数组
+  Array_File_Default = 'Array_File_Default', // 默认文件数组
+  Array_File_Image = 'Array_File_Image', // 图像文件数组
+  Array_File_PPT = 'Array_File_PPT', // PPT 文件数组
+  Array_File_Doc = 'Array_File_Doc', // DOC 文件数组
+  Array_File_PDF = 'Array_File_PDF', // PDF 文件数组
+  Array_File_Txt = 'Array_File_Txt', // TXT 文件数组
+  Array_File_Zip = 'Array_File_Zip', // ZIP 文件数组
+  Array_File_Excel = 'Array_File_Excel', // Excel 文件数组
+  Array_File_Video = 'Array_File_Video', // 视频文件数组
+  Array_File_Audio = 'Array_File_Audio', // 音频文件数组
+  Array_File_Voice = 'Array_File_Voice', // 语音文件数组
+  Array_File_Svg = 'Array_File_Svg', // 语音文件数组
+  Array_File_Code = 'Array_File_Code', // 语音文件数组
+  Array_Object = 'Array_Object', // 对象数组
+}
+
 // 角色类型
 export enum RoleEnum {
   Owner = 'Owner',

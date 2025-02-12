@@ -1,11 +1,11 @@
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import { InputOrReference } from '@/components/FormListItem/InputOrReference';
-import type { NodeConfig } from '@/types/interfaces/node';
+import type { NodeConfig, PreviousList } from '@/types/interfaces/node';
+import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Empty, Form, Popover, Tag } from 'antd';
 import React, { useState } from 'react';
 import { InputConfigs, outPutConfigs } from '../params';
-import { NodeDisposeProps, ReferenceList } from '../type';
 import { InputAndOut, TreeOutput } from './commonNode';
 import './pluginNode.less';
 interface InputListProps {
@@ -14,8 +14,8 @@ interface InputListProps {
     dataType: string;
     description: string;
     bindValue: string;
-    subArgs: ReferenceList[];
   }[];
+  referenceList: PreviousList[];
   title: string;
   initialValues?: object;
   onChange: (val: string) => void;
@@ -23,6 +23,7 @@ interface InputListProps {
 // 根据输入的list遍历创建输入框
 const InputList: React.FC<InputListProps> = ({
   inputList,
+  referenceList,
   title,
   initialValues,
   onChange,
@@ -57,7 +58,7 @@ const InputList: React.FC<InputListProps> = ({
                 <InputOrReference
                   value={item.bindValue}
                   onChange={submitForm}
-                  referenceList={item.subArgs}
+                  referenceList={referenceList}
                 />
               </div>
             </div>
@@ -69,7 +70,11 @@ const InputList: React.FC<InputListProps> = ({
 };
 
 // 定义插件,工作流的节点渲染
-const PluginInNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
+const PluginInNode: React.FC<NodeDisposeProps> = ({
+  params,
+  Modified,
+  referenceList,
+}) => {
   // let initialValues={}
   // if (params.inputArgs && params.inputArgs.length) {
   //   initialValues = params.inputArgs;
@@ -87,6 +92,7 @@ const PluginInNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
         title={'输入'}
         inputList={params.inputArgs || []}
         onChange={changeInputList}
+        referenceList={referenceList}
       />
       <p className="node-title-style mt-16">{'输出'}</p>
       <TreeOutput treeData={params.outputArgs || []} />

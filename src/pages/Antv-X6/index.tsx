@@ -6,9 +6,15 @@ import service, { IUpdateDetails } from '@/services/workflow';
 import { NodeTypeEnum, PluginAndLibraryEnum } from '@/types/enums/common';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
+import { PreviousList } from '@/types/interfaces/node';
 import { debounce } from '@/utils/debounce';
-import { getNodeRelationWithArgs, updateNode } from '@/utils/updateNode';
+import {
+  getAllParentArgs,
+  getNodeRelation,
+  updateNode,
+} from '@/utils/updateNode';
 import { getEdges } from '@/utils/workflow';
+import { message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 // import Monaco from '../../components/CodeEditor/monaco';
@@ -44,7 +50,12 @@ const AntvX6: React.FC = () => {
     modified: '',
     id: 0,
     description: '',
+    startNodeId: 0,
+    endNodeId: 0,
   });
+
+  // 上级节点的输出参数
+  const [referenceList, setReferenceList] = useState<PreviousList[]>([]);
 
   // 展示修改工作流的弹窗
   const [showCreateWorkflow, setShowCreateWorkflow] = useState(false);
@@ -83,6 +94,8 @@ const AntvX6: React.FC = () => {
         modified: _res.data.modified,
         id: _res.data.id,
         description: _res.data.description,
+        startNodeId: _res.data.startNode.id,
+        endNodeId: _res.data.endNode.id,
       };
       setInfo(_params);
       // 获取节点和边的数据
@@ -90,12 +103,6 @@ const AntvX6: React.FC = () => {
       const _edgeList = getEdges(_nodeList);
       // 修改数据，更新画布
       setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
-
-      if (!graphParams.nodeList.length) {
-        setTimeout(() => {
-          graphRef.current.drawGraph();
-        }, 1000);
-      }
     } catch (error) {
       console.error('Failed to fetch graph data:', error);
     }
@@ -119,10 +126,11 @@ const AntvX6: React.FC = () => {
     }
   }, 1000);
   // 点击组件，显示抽屉
-  const changeDrawer = (child: ChildNode) => {
+  const changeDrawer = async (child: ChildNode) => {
     // 如果有组件正在展示,那么就要看是否修改了参数,
     // 如果修改了参数,那么就提交数据
     if (visible) {
+      console.log('修改了参数');
     } else {
       setVisible(true);
     }
@@ -133,12 +141,12 @@ const AntvX6: React.FC = () => {
       child.nodeConfig.outputArgs = [];
     }
 
-    const args = getNodeRelationWithArgs(
-      graphParams.nodeList,
-      Number(child.id),
-      15,
-    );
-    console.log(args);
+    // 获取节点需要的引用参数
+    const _res = await service.getOutputArgs(Number(child.id));
+    if (_res.data === Constant.success) {
+      const newArr = getAllParentArgs(_res.data);
+      setReferenceList(newArr);
+    }
     setFoldWrapItem(child);
   };
 
@@ -256,7 +264,6 @@ const AntvX6: React.FC = () => {
         break;
       case 'Delete':
         {
-          console.log(data);
           deleteNode(data.id);
           setVisible(false);
         }
@@ -304,6 +311,30 @@ const AntvX6: React.FC = () => {
     graphRef.current.changeGraphZoom(val);
   };
 
+  // 试运行所有节点
+  const testRunAll = async () => {
+    // 获取完整的连线列表
+    const _edges = await getNodeRelation(graphParams.nodeList, 15);
+    if (!_edges) {
+      message.warning('需要添加连线');
+      return;
+    }
+    // 根据连线列表，查看是否有第一个数据是开始节点的id，最后一个是结束节点的信息
+    const fullPath = _edges.filter((item: number[]) => {
+      return (
+        item[0] === info.startNodeId && item[item.length - 1] === info.endNodeId
+      );
+    });
+    // 如果有完整的连线，那么就可以进行试运行
+    if (fullPath) {
+      // 遍历检查所有节点是否都已经输入了参数
+      console.log('submit');
+    } else {
+      message.warning('连线不完整');
+      return;
+    }
+  };
+
   // 保存当前画布中节点的位置
   useEffect(() => {
     getDetails();
@@ -333,7 +364,7 @@ const AntvX6: React.FC = () => {
       <ControlPanel
         dragChild={dragChild}
         changeGraph={changeGraph}
-        handleTestRun={() => console.log('Test run clicked')}
+        handleTestRun={() => testRunAll()}
       />
       <NodeDrawer
         visible={visible}
@@ -341,6 +372,7 @@ const AntvX6: React.FC = () => {
         foldWrapItem={foldWrapItem}
         onGetNodeConfig={changeNode} // 新增这一行
         handleNodeChange={handleNodeChange}
+        referenceList={referenceList}
       />
       <Created
         checkTag={createdItem as PluginAndLibraryEnum}

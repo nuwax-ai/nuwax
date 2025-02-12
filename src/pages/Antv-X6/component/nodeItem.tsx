@@ -422,7 +422,11 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
 };
 
 // 定义代码节点
-const CodeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
+const CodeNode: React.FC<NodeDisposeProps> = ({
+  params,
+  Modified,
+  referenceList,
+}) => {
   const [show, setShow] = useState(false);
 
   let initialValues: InputAndOutConfig[] = [];
@@ -434,6 +438,13 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
     outputInitialValues = params.outputArgs;
   }
 
+  for (let item of outPutConfigs) {
+    if (item.name === 'dataType') {
+      item.props.referenceList = referenceList;
+    }
+  }
+  console.log(outPutConfigs);
+  console.log(referenceList);
   // 修改模型的代码
   const changeCode = (code: string) => {
     Modified({ ...params, code });
@@ -446,7 +457,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
     <>
       <InputAndOut
         title="输入"
-        fieldConfigs={InputConfigs}
+        fieldConfigs={outPutConfigs}
         inputItemName="inputArgs"
         handleChangeNodeConfig={handleChangeNodeConfig}
         initialValues={{ inputArgs: initialValues }}

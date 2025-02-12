@@ -1,3 +1,4 @@
+import { PreviousList } from '@/types/interfaces/node';
 // 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
 import type {
   GroupModelItem,
@@ -71,6 +72,8 @@ export interface NodeDisposeProps {
   params: NodeConfig;
   // 修改节点信息
   Modified: (params: NodeConfig) => void;
+  // 上级节点的入参
+  referenceList: PreviousList[];
   // 实时调用接口，修改节点
   updateNode?: (params: NodeConfig) => void;
   // 当前节点的类型

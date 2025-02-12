@@ -174,6 +174,21 @@ const getModelList = async (params: IGetModelList) => {
     });
 };
 
+// 查询上级节点的输出参数
+const getOutputArgs = async (id: number) => {
+  // 发送GET请求，使用相对路径
+  return customRequest({
+    url: `/api/workflow/node/previous/${id}`,
+    method: 'GET',
+  })
+    .then((response) => {
+      return response;
+    })
+    .catch((error) => {
+      console.error('Failed to get node list:', error);
+    });
+};
+
 export default {
   getDetails,
   updateDetails,
@@ -184,4 +199,5 @@ export default {
   copyNode,
   addEdge,
   getModelListByWorkflowId,
+  getOutputArgs,
 };

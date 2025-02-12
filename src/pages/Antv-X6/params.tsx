@@ -6,10 +6,10 @@ import {
   ICON_NEW_AGENT,
   ICON_START,
 } from '@/constants/images.constants';
+import { DataTypeEnum } from '@/types/enums/common';
 import { SwitcherFilled } from '@ant-design/icons';
 import { Cascader, Checkbox, Input } from 'antd';
 import { StencilList } from './type';
-
 // 定义左侧栏目的数据
 export const asideList: StencilList[] = [
   {
@@ -156,132 +156,137 @@ export const asideList: StencilList[] = [
 ];
 
 // 定义右侧变量类型
+
 export const dataTypes = [
   {
     label: 'String',
-    value: 'String',
+    value: DataTypeEnum.String,
   },
   {
     label: 'Integer',
-    value: 'Integer',
+    value: DataTypeEnum.Integer,
   },
   {
     label: 'Number',
-    value: 'Number',
+    value: DataTypeEnum.Number,
   },
   {
     label: 'File',
-    value: 'File',
+    value: DataTypeEnum.File_Default,
     children: [
       {
         label: 'Doc',
-        value: 'Doc',
+        value: DataTypeEnum.File_Doc,
       },
       {
         label: 'Excel',
-        value: 'Excel',
+        value: DataTypeEnum.File_Excel,
       },
       {
         label: 'PPT',
-        value: 'PPT',
+        value: DataTypeEnum.File_PPT,
       },
       {
         label: 'Txt',
-        value: 'Txt',
+        value: DataTypeEnum.File_Txt,
       },
       {
         label: 'Image',
-        value: 'Image',
+        value: DataTypeEnum.File_Image,
       },
       {
         label: 'Audio',
-        value: 'Audio',
+        value: DataTypeEnum.File_Audio,
       },
       {
         label: 'Video',
-        value: 'Video',
+        value: DataTypeEnum.File_Video,
       },
       {
-        label: 'Other',
-        value: 'Other',
+        label: 'Svg',
+        value: DataTypeEnum.File_Svg,
+      },
+      {
+        label: 'Code',
+        value: DataTypeEnum.File_Code,
       },
     ],
   },
   {
     label: 'Boolean',
-    value: 'Boolean',
+    value: DataTypeEnum.Boolean,
   },
   {
     label: 'Object',
-    value: 'Object',
+    value: DataTypeEnum.Object,
   },
   {
     label: 'Array<String>',
-    value: 'Array<String>',
+    value: DataTypeEnum.Array_String,
   },
   {
     label: 'Array<Integer>',
-    value: 'Array<Integer>',
+    value: DataTypeEnum.Array_Integer,
   },
   {
     label: 'Array<Number>',
-    value: 'Array<Number>',
+    value: DataTypeEnum.Array_Number,
   },
   {
     label: 'Array<Boolean>',
-    value: 'Array<Boolean>',
+    value: DataTypeEnum.Array_Boolean,
   },
   {
     label: 'Array<Object>',
-    value: 'Array<Object>',
+    value: DataTypeEnum.Array_Object,
   },
   {
     label: 'Array<File>',
-    value: 'Array<File>',
+    value: DataTypeEnum.Array_File_Default,
     children: [
       {
         label: 'Default',
-        value: 'Default',
+        value: DataTypeEnum.Array_File_Default,
       },
       {
         label: 'Array<Image>',
-        value: 'Array<Image>',
+        value: DataTypeEnum.Array_File_Image,
       },
       {
         label: 'Array<Doc>',
-        value: 'Array<Doc>',
+        value: DataTypeEnum.Array_File_Doc,
       },
       {
         label: 'Array<Code>',
-        value: 'Array<Code>',
+        value: DataTypeEnum.Array_File_Code, // 这里假设 "Array<Code>" 对应 "Array_File_Default"
       },
       {
         label: 'Array<PPT>',
-        value: 'Array<PPT>',
+        value: DataTypeEnum.Array_File_PPT,
       },
       {
         label: 'Array<Txt>',
-        value: 'Array<Txt>',
+        value: DataTypeEnum.Array_File_Txt,
       },
       {
         label: 'Array<Excel>',
-        value: 'Array<Excel>',
+        value: DataTypeEnum.Array_File_Excel,
       },
       {
         label: 'Array<Audio>',
-        value: 'Array<Audio>',
+        value: DataTypeEnum.Array_File_Audio,
       },
       {
         label: 'Array<Zip>',
-        value: 'Array<Zip>',
+        value: DataTypeEnum.Array_File_Zip,
       },
       {
         label: 'Array<Video>',
-        value: 'Array<Video>',
+        value: DataTypeEnum.Array_File_Video,
       },
       {
         label: 'Array<Svg>',
-        value: 'Array<Svg>',
+        value: DataTypeEnum.Array_File_Svg, // 这里假设 "Array<Svg>" 对应 "Array_File_Default"
       },
     ],
   },
@@ -329,7 +334,7 @@ export const InputConfigs = [
     label: '变量类型',
     rules: [{ required: true, message: '请选择变量类型' }],
     component: Cascader,
-    width: 80,
+    width: 120,
     props: { options: dataTypes }, // 传递特定于 Cascader 的属性
   },
   {
@@ -366,7 +371,7 @@ export const outPutConfigs = [
     rules: [{ required: true, message: '请输入参数值' }],
     component: InputOrReference,
     width: 180,
-    props: { referenceList: modelTypes, fieldName: 'dataType' },
+    props: { referenceList: [], fieldName: 'dataType' },
   },
   {
     name: 'description',

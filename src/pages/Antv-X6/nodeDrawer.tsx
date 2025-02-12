@@ -1,11 +1,12 @@
 import FoldWrap from '@/components/FoldWrap';
 import OtherOperations from '@/components/OtherAction';
 import { ChildNode } from '@/types/interfaces/graph';
-import { NodeConfig } from '@/types/interfaces/node';
+import { NodeConfig, NodeDrawerProps } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
 import React, { useEffect, useState } from 'react';
 import ComplexNode from './component/complexNode';
 import { ConditionNode } from './component/condition';
+import Library from './component/library';
 import NodeItem from './component/nodeItem';
 import ReferenceNode from './component/pluginNode';
 import './index.less';
@@ -18,20 +19,8 @@ const {
   CodeNode,
 } = NodeItem;
 const { ModelNode, IntentionNode, QuestionsNode, HttpToolNode } = ComplexNode;
-const { PluginInNode, KnowledgeNode, DatabaseNode } = ReferenceNode;
-
-interface NodeDrawerProps {
-  // 是否显示,关闭右侧弹窗
-  visible: boolean;
-  // 关闭
-  onClose: () => void;
-  // 当前的数据
-  foldWrapItem: ChildNode;
-  // 将节点信息返回给父组件
-  onGetNodeConfig: (config: ChildNode) => void;
-
-  handleNodeChange: (action: string, data: ChildNode) => void;
-}
+const { PluginInNode, DatabaseNode } = ReferenceNode;
+const { KnowledgeNode } = Library;
 
 // 定义试运行,后面删除
 const TestNode: React.FC = () => {
@@ -44,12 +33,15 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   foldWrapItem,
   onGetNodeConfig, // 新增这一行
   handleNodeChange,
+  referenceList,
 }) => {
   // 当前节点是否修改了参数
   const [isModified, setIsModified] = useState(false);
   // 将节点的数据 保存到 state 中,维持数据双向绑定,便于管理
   const [currentNodeConfig, setCurrentNodeConfig] =
     useState<ChildNode>(foldWrapItem);
+
+  console.log(referenceList);
   // 修改节点数据
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     if (
@@ -70,6 +62,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
             type={currentNodeConfig.type}
+            referenceList={referenceList}
           />
         );
       case 'End':
@@ -79,6 +72,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
             type={currentNodeConfig.type}
+            referenceList={referenceList}
           />
         );
       case 'Loop':
@@ -86,6 +80,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <CycleNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
+            referenceList={referenceList}
           />
         );
       case 'Variable':
@@ -93,6 +88,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <VariableNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
+            referenceList={referenceList}
           />
         );
       case 'TextProcessing':
@@ -100,6 +96,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <TextProcessingNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
+            referenceList={referenceList}
           />
         );
       case 'LLM':
@@ -107,6 +104,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <ModelNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
+            referenceList={referenceList}
           />
         );
 
@@ -118,6 +116,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
             type={currentNodeConfig.type}
+            referenceList={referenceList}
           />
         );
       case 'Code':
@@ -125,6 +124,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <CodeNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
+            referenceList={referenceList}
           />
         );
       case 'QA':
@@ -132,6 +132,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <QuestionsNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
+            referenceList={referenceList}
           />
         );
       case 'HTTPRequest':
@@ -139,6 +140,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <HttpToolNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
+            referenceList={referenceList}
           />
         );
       case 'KnowledgeBase':
@@ -146,6 +148,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <KnowledgeNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
+            referenceList={referenceList}
           />
         );
       case 'Database':
@@ -153,6 +156,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <DatabaseNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
+            referenceList={referenceList}
           />
         );
       // 条件分支需要实时的调用接口
@@ -161,6 +165,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <ConditionNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
+            referenceList={referenceList}
             updateNode={(newNodeConfig) =>
               onGetNodeConfig({
                 ...currentNodeConfig,
@@ -174,6 +179,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <IntentionNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
+            referenceList={referenceList}
           />
         );
       default:

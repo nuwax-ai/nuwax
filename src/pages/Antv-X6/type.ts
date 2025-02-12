@@ -3,7 +3,11 @@ import type {
   GroupModelItem,
   ModelListItemProps,
 } from '@/types/interfaces/model';
-import { HttpNodeConfig, NodeConfig } from '@/types/interfaces/node';
+import {
+  HttpNodeConfig,
+  NodeConfig,
+  PreviousList,
+} from '@/types/interfaces/node';
 import { FormInstance } from 'antd';
 /**
  * 定义键值对接口，用于表示具有标签和值的对象。
@@ -101,17 +105,10 @@ export interface MultiSelectWithCheckboxProps {
   placeholder?: string;
 }
 
-export interface ReferenceList {
-  label: string;
-  key: string;
-  icon?: React.ReactNode;
-  children?: Array<{ label: string; key: string; tag: string }>;
-}
-
 // 定义输入或引用参数
 export interface InputOrReferenceProps {
   // 当前的引用列表
-  referenceList: ReferenceList[];
+  referenceList: PreviousList[];
   // 与输入
   placeholder?: string;
   // 新增：接受当前值

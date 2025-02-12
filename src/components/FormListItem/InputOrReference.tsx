@@ -8,7 +8,7 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
   value, // 使用新增的 value 属性
   onChange, // 使用新增的 onChange 回调
 }) => {
-  const handleSelect = (parentKey: string, childKey: string) => {
+  const handleSelect = (parentKey: number, childKey: string) => {
     // 将选中的父选项和子选项作为字符串集合添加到 selected 数组中
     const selectedItem = `${parentKey}-${childKey}`;
     // 调用 onChange 更新值
@@ -49,10 +49,10 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
         overlayStyle={{ width: '200px' }}
         menu={{
           items: referenceList.map((item) => ({
-            key: item.key,
-            label: item.label,
+            key: item.id,
+            label: item.name,
             icon: item.icon,
-            children: item.children?.map((subItem) => ({
+            children: item.outputArgs?.map((subItem) => ({
               key: subItem.key,
               label: (
                 <div
@@ -62,11 +62,11 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
                     width: '300px',
                   }}
                 >
-                  {subItem.label}
-                  <Tag style={{ marginLeft: 20 }}>{subItem.tag}</Tag>
+                  {subItem.name}
+                  <Tag style={{ marginLeft: 20 }}>{subItem.dataType}</Tag>
                 </div>
               ),
-              onClick: () => handleSelect(item.key, subItem.key),
+              onClick: () => handleSelect(item.id, subItem.key as string),
             })),
           })),
         }}
