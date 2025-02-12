@@ -359,6 +359,10 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       };
     }, []);
 
+    useEffect(() => {
+      drawGraph();
+    }, [graphParams.nodeList]);
+
     return <div ref={containerRef} id="graph-container" />;
   },
 );
