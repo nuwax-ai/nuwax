@@ -1,10 +1,17 @@
 import personal from '@/assets/images/personal.png';
+import { SPACE_ID } from '@/constants/home.constants';
 import { SPACE_APPLICATION_LIST } from '@/constants/space.contants';
+import { apiSpaceList } from '@/services/workspace';
 import { SpaceApplicationListEnum } from '@/types/enums/space';
+import type {
+  CreateSpaceTeamParams,
+  SpaceInfo,
+} from '@/types/interfaces/workspace';
+import { useRequest } from '@@/exports';
 import { DownOutlined } from '@ant-design/icons';
 import { Popover } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { history } from 'umi';
 import CreateNewTeam from './CreateNewTeam';
 import styles from './index.less';
@@ -15,8 +22,9 @@ const cx = classNames.bind(styles);
 const SpaceSection: React.FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   const [openModal, setOpenModal] = useState<boolean>(false);
+  const [spaceList, setSpaceList] = useState<SpaceInfo[]>([]);
 
-  const spaceId = '10101010';
+  const spaceId = localStorage.getItem(SPACE_ID);
   const handlerApplication = (type: SpaceApplicationListEnum) => {
     console.log(type);
     switch (type) {
@@ -31,12 +39,31 @@ const SpaceSection: React.FC = () => {
     }
   };
 
+  // 查询用户空间列表
+  const { run } = useRequest(apiSpaceList, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: SpaceInfo[]) => {
+      setSpaceList(result || []);
+    },
+  });
+
+  useEffect(() => {
+    run();
+  }, []);
+
   const showModal = () => {
     setOpen(false);
     setOpenModal(true);
   };
 
   const handleCancel = () => {
+    setOpenModal(false);
+  };
+
+  const handleConfirm = (info: CreateSpaceTeamParams) => {
+    const list = [...spaceList, info] as SpaceInfo[];
+    setSpaceList(list);
     setOpenModal(false);
   };
 
@@ -48,7 +75,12 @@ const SpaceSection: React.FC = () => {
         trigger="click"
         arrow={false}
         onOpenChange={setOpen}
-        content={<PersonalSpaceContent onCreateTeam={showModal} />}
+        content={
+          <PersonalSpaceContent
+            spaceList={spaceList}
+            onCreateTeam={showModal}
+          />
+        }
       >
         <div
           className={cx(
@@ -142,7 +174,11 @@ const SpaceSection: React.FC = () => {
         </li>
       </ul>
       {/*创建新团队*/}
-      <CreateNewTeam open={openModal} onCancel={handleCancel} />
+      <CreateNewTeam
+        open={openModal}
+        onCancel={handleCancel}
+        onConfirm={handleConfirm}
+      />
     </div>
   );
 };

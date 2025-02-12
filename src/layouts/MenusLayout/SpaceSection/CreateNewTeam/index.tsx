@@ -17,7 +17,11 @@ const cx = classNames.bind(styles);
 /**
  * 创建新团队组件
  */
-const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
+const CreateNewTeam: React.FC<CreateNewTeamProps> = ({
+  open,
+  onCancel,
+  onConfirm,
+}) => {
   const [imageUrl, setImageUrl] = useState<string>('');
   const [form] = Form.useForm();
 
@@ -25,9 +29,10 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
   const { run, loading } = useRequest(apiCreateSpaceTeam, {
     manual: true,
     debounceWait: 300,
-    onSuccess: () => {
+    onSuccess: (_, params: CreateSpaceTeamParams[]) => {
       message.success('新建成功');
-      onCancel();
+      setImageUrl('');
+      onConfirm(params[0]);
     },
   });
 
@@ -46,7 +51,7 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
   return (
     <CustomFormModal
       form={form}
-      title={'创建新团队'}
+      title="创建新团队"
       open={open}
       onCancel={onCancel}
       loading={loading}
@@ -68,7 +73,7 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
           requiredMark={customizeRequiredMark}
           layout="vertical"
           onFinish={onFinish}
-          rootClassName={cx(styles['create-team-form'])}
+          rootClassName={cx('w-full')}
           autoComplete="off"
         >
           <Form.Item

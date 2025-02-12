@@ -95,3 +95,15 @@ export enum KnowledgeTextCreateSetEnum {
   Auto_Segmentation_Cleaning,
   Custom,
 }
+
+// 更新模型组件配置
+export enum UpdateModeComponentEnum {
+  // 精确模式
+  Precision = 'Precision',
+  // 平衡模式
+  Balanced = 'Balanced',
+  // 创意模式
+  Creative = 'Creative',
+  // 自定义
+  Customization = 'Customization',
+}

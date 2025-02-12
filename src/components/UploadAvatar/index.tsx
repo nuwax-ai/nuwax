@@ -1,4 +1,5 @@
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
+import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { FileType, UploadAvatarProps } from '@/types/interfaces/common';
 import { FormOutlined } from '@ant-design/icons';
 import { message, Upload, UploadProps } from 'antd';
@@ -23,9 +24,6 @@ const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
       const data = info.file.response?.data;
       // Get this url from response in real world.
       onUploadSuccess?.(data?.url);
-      // getBase64(info.file.originFileObj as FileType, (url) => {
-      //   onUploadSuccess?.(url);
-      // });
     }
   };
 
@@ -42,11 +40,16 @@ const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
     return (isJpgOrPng && isLt2M) || Upload.LIST_IGNORE;
   };
 
+  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
+
   return (
     <Upload
       action={UPLOAD_FILE_ACTION}
       className={cx(styles.container, className)}
       onChange={handleChange}
+      headers={{
+        Authorization: token ? `Bearer ${token}` : '',
+      }}
       showUploadList={false}
       beforeUpload={beforeUpload ?? beforeUploadDefault}
     >

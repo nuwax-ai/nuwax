@@ -279,8 +279,9 @@ export interface CreatedNodeItem {
 // 创建、编辑智能体
 export interface CreateAgentProps {
   type?: CreateEditAgentEnum;
-  agentName?: string;
-  intro?: string;
+  name?: string;
+  description?: string;
+  icon?: string;
   open: boolean;
   onCancel: () => void;
   onConfirm: () => void;
@@ -362,4 +363,15 @@ export interface UploadInfo {
   size: number;
   width: number;
   height: number;
+}
+
+// 分页输入参数
+export interface PageParams {
+  page: number;
+  size: number;
+}
+
+// 查询特定数量输入参数
+export interface ListParams {
+  size: number;
 }

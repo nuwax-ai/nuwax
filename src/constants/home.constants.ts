@@ -3,6 +3,7 @@ export const ACCESS_TOKEN = 'ACCESS_TOKEN';
 // expireDate
 export const EXPIRE_DATE = 'EXPIRE_DATE';
 export const PHONE = 'PHONE';
+export const SPACE_ID = 'SPACE_ID';
 export const LANGUAGE = 'zh_cn';
 
 // 推荐聊天主题

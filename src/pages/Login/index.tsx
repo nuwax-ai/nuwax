@@ -39,7 +39,6 @@ const Login: React.FC = () => {
     manual: true,
     debounceWait: 300,
     onSuccess: (result: ILoginResult, params: LoginFieldType[]) => {
-      console.log(params, 88877);
       const { expireDate, token } = result;
       localStorage.setItem(ACCESS_TOKEN, token);
       localStorage.setItem(EXPIRE_DATE, expireDate);

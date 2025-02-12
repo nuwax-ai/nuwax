@@ -168,3 +168,10 @@ export enum DataTypeEnum {
   Array_File_Code = 'Array_File_Code', // 语音文件数组
   Array_Object = 'Array_Object', // 对象数组
 }
+
+// 角色类型
+export enum RoleEnum {
+  Owner = 'Owner',
+  Admin = 'Admin',
+  User = 'User',
+}

@@ -2,14 +2,18 @@ import agentImage from '@/assets/images/agent_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
+import { SPACE_ID } from '@/constants/home.constants';
 import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
 import { CREATE_AGENT_LIST } from '@/constants/space.contants';
+import { apiAgentAdd } from '@/services/agentConfig';
 import { CreateAgentEnum, CreateEditAgentEnum } from '@/types/enums/common';
+import type { AgentAddParams } from '@/types/interfaces/agent';
 import type { CreateAgentProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, Input, message, Segmented } from 'antd';
+import { Form, FormProps, Input, message, Segmented } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -18,8 +22,9 @@ const { TextArea } = Input;
 
 const CreateAgent: React.FC<CreateAgentProps> = ({
   type = CreateEditAgentEnum.Create,
-  agentName,
-  intro,
+  name,
+  description,
+  icon,
   open,
   onCancel,
   onConfirm,
@@ -28,20 +33,31 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   const [createAgentType, setCreateAgentType] = useState<CreateAgentEnum>(
     CreateAgentEnum.Standard,
   );
-  // const [teamId, setTeamId] = useState<number>(0);
-  // const [loading, setLoading] = useState<boolean>(false);
-  const [imageUrl, setImageUrl] = useState<string>('');
+  const [imageUrl, setImageUrl] = useState<string>(icon || '');
+  const spaceId = localStorage.getItem(SPACE_ID);
 
   const [form] = Form.useForm();
+
+  const { run } = useRequest(apiAgentAdd, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (_, params) => {
+      console.log(params);
+      onConfirm();
+      message.success('智能体已创建');
+    },
+  });
 
   const handlerChange = (value: CreateAgentEnum) => {
     setCreateAgentType(value);
   };
 
-  const onFinish = (values) => {
-    console.log(values);
-    message.success('智能体已创建');
-    onConfirm();
+  const onFinish: FormProps<AgentAddParams>['onFinish'] = (values) => {
+    run({
+      ...values,
+      icon: imageUrl,
+      spaceId,
+    });
   };
 
   const handlerSubmit = async () => {
@@ -63,7 +79,6 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       }
       onCancel={onCancel}
       onConfirm={handlerSubmit}
-      // loading={loading}
     >
       {type === CreateEditAgentEnum.Create && (
         <Segmented
@@ -81,15 +96,15 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         layout="vertical"
         onFinish={onFinish}
         initialValues={{
-          agentName: agentName,
-          intro: intro,
+          name,
+          description,
         }}
         autoComplete="off"
       >
         {createAgentType === CreateAgentEnum.Standard ? (
           <>
             <Form.Item
-              name={'agentName'}
+              name="name"
               label="智能体名称"
               rules={[{ required: true, message: '请输入智能体名称' }]}
             >
@@ -100,13 +115,13 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
               />
             </Form.Item>
             <OverrideTextArea
-              name="intro"
+              name="description"
               label="智能体功能介绍"
               placeholder="介绍智能体的功能，将会展示给智能体的用户"
               maxLength={500}
             />
             <Form.Item
-              name="image"
+              name="icon"
               label="图标"
               rules={[{ required: true, message: '请选择图标' }]}
             >

@@ -1,17 +1,20 @@
 import AnalyzeStatistics from '@/components/AnalyzeStatistics';
 import CreateAgent from '@/components/CreateAgent';
 import SelectList from '@/components/SelectList';
+import { SPACE_ID } from '@/constants/home.constants';
 import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.contants';
+import { apiAgentConfigList } from '@/services/agentConfig';
 import {
   ApplicationMoreActionEnum,
   CreateListEnum,
   FilterStatusEnum,
 } from '@/types/enums/space';
+import { AgentConfigInfo } from '@/types/interfaces/agent';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, message } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
-import { history } from 'umi';
+import React, { useEffect, useState } from 'react';
+import { history, useRequest } from 'umi';
 import AgentMove from './AgentMove';
 import ApplicationItem from './ApplicationItem';
 import styles from './index.less';
@@ -31,6 +34,22 @@ const SpaceDevelop: React.FC = () => {
   const [create, setCreate] = useState<CreateListEnum>(
     CreateListEnum.All_Person,
   );
+  const [agentList, setAgentList] = useState<AgentConfigInfo[]>([]);
+
+  // 查询空间智能体列表接口
+  const { run } = useRequest(apiAgentConfigList, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: AgentConfigInfo[]) => {
+      console.log(result);
+      setAgentList(result);
+    },
+  });
+
+  useEffect(() => {
+    const spaceId = localStorage.getItem(SPACE_ID) || 25;
+    run(spaceId);
+  }, []);
 
   const handlerChangeStatus = (value: FilterStatusEnum) => {
     setStatus(value);
@@ -122,6 +141,13 @@ const SpaceDevelop: React.FC = () => {
         />
       </div>
       <div className={cx(styles['main-container'])}>
+        {agentList?.map((item) => (
+          <ApplicationItem
+            key={item.id}
+            onClickMore={handlerClickMore}
+            onClick={handleClick}
+          />
+        ))}
         <ApplicationItem onClickMore={handlerClickMore} onClick={handleClick} />
         <ApplicationItem onClickMore={handlerClickMore} onClick={handleClick} />
         <ApplicationItem onClickMore={handlerClickMore} onClick={handleClick} />
