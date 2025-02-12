@@ -116,6 +116,18 @@ const AntvX6: React.FC = () => {
     if (_res.code === Constant.success) {
       graphRef.current.updateNode(config.id, config);
       setFoldWrapItem(config);
+      // 更新变量
+      const nowNodeList = graphParams.nodeList.map((item) => {
+        if (item.id === config.id) {
+          return config;
+        } else {
+          return item;
+        }
+      });
+      setGraphParams({
+        ...graphParams,
+        nodeList: nowNodeList,
+      });
     }
   }, 1000);
   // 点击组件，显示抽屉

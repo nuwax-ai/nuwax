@@ -8,11 +8,13 @@
  */
 
 import { ICON_ASSOCIATION } from '@/constants/images.constants';
+import { DataTypeEnum } from '@/types/enums/common';
 import { DeleteOutlined, FileDoneOutlined } from '@ant-design/icons';
-import { Checkbox, Form, Input, Popover, Space } from 'antd';
+import { Cascader, Checkbox, Form, Input, Popover, Space } from 'antd';
 // import { useState } from 'react';
 import './index.less';
 import { RenderItemProps } from './type';
+
 // 默认的变量输入输出方法
 export const DefaultRenderItem: React.FC<RenderItemProps> = ({
   field,
@@ -28,6 +30,25 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
     onChange();
   };
 
+  // 将Cascader的值从string转换为数组
+  const CascaderValue = (value: DataTypeEnum) => {
+    if (value) {
+      // if(ParamsTypeEnum)
+      if (value.includes('File')) {
+        if (value.includes('Array')) {
+          return ['Array_File', value];
+        } else {
+          return ['File', value];
+        }
+      } else {
+        return [value];
+      }
+      console.log(DataTypeEnum[value]);
+    } else {
+      return [];
+    }
+  };
+
   return (
     <div>
       {/* 标题 */}
@@ -36,14 +57,14 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
           {fieldConfigs.map((item) => (
             <span
               key={item.name}
-              style={{ width: (item.width as number) + 20 }}
+              style={{ width: (item.width as number) + 10 }}
             >
               {item.label}
             </span>
           ))}
         </div>
       )}
-      <Space className="dis-sb form-list-item-style" style={{ width: '100%' }}>
+      <Space className="form-list-item-style" style={{ width: '100%' }}>
         {fieldConfigs.map((config, index) => {
           if (config.name === 'description' || config.name === 'require') {
             // 跳过 description 和 require 字段，将在后面单独处理
@@ -51,7 +72,7 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
           }
           const fieldValue = form.getFieldValue([field.name, config.name]);
           return (
-            <div key={index}>
+            <div key={index} className="dis-left">
               <Form.Item
                 name={[field.name, config.name]}
                 rules={config.rules}
@@ -63,10 +84,14 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
                   placeholder={config.placeholder}
                   form={form}
                   index={field.name}
-                  value={fieldValue}
+                  value={
+                    config.component === Cascader
+                      ? CascaderValue(fieldValue)
+                      : fieldValue
+                  }
                   onBlur={config.component === Input ? changeValue : undefined}
                   onChange={
-                    config.component !== Input ? changeValue : undefined
+                    config.component === Input ? undefined : changeValue
                   }
                 />
               </Form.Item>

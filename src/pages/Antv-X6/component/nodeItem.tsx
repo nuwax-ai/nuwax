@@ -446,7 +446,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
     <>
       <InputAndOut
         title="输入"
-        fieldConfigs={InputConfigs}
+        fieldConfigs={outPutConfigs}
         inputItemName="inputArgs"
         handleChangeNodeConfig={handleChangeNodeConfig}
         initialValues={{ inputArgs: initialValues }}

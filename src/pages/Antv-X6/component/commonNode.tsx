@@ -49,6 +49,15 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   // 提交form表单
   const submitForm = () => {
     const values = form.getFieldsValue();
+    for (let item of values[inputItemName]) {
+      if (typeof item.dataType === 'object') {
+        if (item.dataType.length === 1) {
+          item.dataType = item.dataType[0];
+        } else {
+          item.dataType = item.dataType[1];
+        }
+      }
+    }
     handleChangeNodeConfig(values);
   };
   useEffect(() => {
