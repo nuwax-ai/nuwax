@@ -1,6 +1,7 @@
 import service from '@/services/modifyNode';
 import { ChildNode } from '@/types/interfaces/graph';
-import { InputAndOutConfig } from '@/types/interfaces/node';
+import { InputAndOutConfig, PreviousList } from '@/types/interfaces/node';
+
 export const updateNode = async (params: ChildNode) => {
   const _params = {
     nodeId: params.id,
@@ -128,4 +129,34 @@ export const getNodeRelationWithArgs = (
     targetNodeId,
   );
   return relationList;
+};
+
+// // 遍历查看所有节点是否都已经输入或者输出了参数
+// const validateNodeList =( nodes: ChildNode[])=>{
+//   const _arr
+// }
+
+interface PreviousData {
+  // 所有上级节点信息
+  previousNodes: PreviousList[];
+  // 如果是循环节点，则需要获取循环节点的上级参数
+  innerPreviousNodes: [];
+  // 被选中的参数的信息
+  argMap: any;
+}
+// 获取所有节点的上级参数
+export const getAllParentArgs = (data: PreviousData) => {
+  // 将数据进行组装
+  const _res: PreviousList[] = data.previousNodes.map((item) => {
+    const _child = {
+      icon: item.icon,
+      name: item.name,
+      type: item.type,
+      id: item.id,
+      outputArgs: item.outputArgs,
+    };
+
+    return _child;
+  });
+  return _res;
 };

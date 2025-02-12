@@ -43,7 +43,6 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
       } else {
         return [value];
       }
-      console.log(DataTypeEnum[value]);
     } else {
       return [];
     }

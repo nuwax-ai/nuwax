@@ -1,17 +1,10 @@
+import { PreviousList } from '@/types/interfaces/node';
 import { FormInstance } from 'antd';
-
-// 定义引用级联菜单的列表类型
-export interface ReferenceList {
-  label: string;
-  key: string;
-  icon?: React.ReactNode;
-  children?: Array<{ label: string; key: string; tag: string }>;
-}
 
 // 定义输入或引用参数
 export interface InputOrReferenceProps {
   // 当前的引用列表
-  referenceList: ReferenceList[];
+  referenceList: PreviousList[];
   // 与输入
   placeholder?: string;
   // 新增：接受当前值

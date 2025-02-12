@@ -1,3 +1,5 @@
+import { NodeTypeEnum } from '@/types/enums/common';
+import { ChildNode } from '@/types/interfaces/graph';
 interface SubArgs {
   key: string;
   name: string;
@@ -164,4 +166,33 @@ export interface HttpNodeConfig extends NodeConfig {
   body?: InputAndOutConfig[];
   // 请求体类型
   queries?: InputAndOutConfig[];
+}
+
+// 节点的上级节点的出参列表
+export interface PreviousList {
+  // 节点id
+  id: number;
+  // 节点名称
+  name: string;
+  // 节点id
+  type: NodeTypeEnum;
+  // 节点名称
+  icon: string | number;
+  // 节点的出参列表
+  outputArgs: InputAndOutConfig[];
+}
+
+export interface NodeDrawerProps {
+  // 是否显示,关闭右侧弹窗
+  visible: boolean;
+  // 关闭
+  onClose: () => void;
+  // 当前的数据
+  foldWrapItem: ChildNode;
+  // 将节点信息返回给父组件
+  onGetNodeConfig: (config: ChildNode) => void;
+
+  handleNodeChange: (action: string, data: ChildNode) => void;
+  // 当前节点所需要的上级节点的出参
+  referenceList: PreviousList[];
 }

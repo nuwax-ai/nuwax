@@ -371,7 +371,7 @@ export const outPutConfigs = [
     rules: [{ required: true, message: '请输入参数值' }],
     component: InputOrReference,
     width: 180,
-    props: { referenceList: modelTypes, fieldName: 'dataType' },
+    props: { referenceList: [], fieldName: 'dataType' },
   },
   {
     name: 'description',
