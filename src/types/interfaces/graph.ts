@@ -73,7 +73,7 @@ export interface GraphContainerProps {
 }
 
 export interface GraphContainerRef {
-  addNode: (e: { x: number; y: number }, child: Child) => void;
+  addNode: (e: { x: number; y: number }, child: ChildNode) => void;
   updateNode: (nodeId: string, newData: Partial<ChildNode>) => void;
   saveAllNodes: () => void;
   deleteNode: (id: string) => void;

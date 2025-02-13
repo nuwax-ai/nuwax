@@ -1,10 +1,10 @@
-import { PreviousList } from '@/types/interfaces/node';
+import { NodePreviousAndArgMap } from '@/types/interfaces/node';
 import { FormInstance } from 'antd';
 
 // 定义输入或引用参数
 export interface InputOrReferenceProps {
   // 当前的引用列表
-  referenceList: PreviousList[];
+  referenceList: NodePreviousAndArgMap;
   // 与输入
   placeholder?: string;
   // 新增：接受当前值
@@ -44,6 +44,7 @@ export interface RenderItemProps {
   form: FormInstance;
   // 当前值改变的时候，通知父组件，重新获取值
   onChange: () => void;
+  referenceList: NodePreviousAndArgMap;
   //   预显示的值，(通常用于二次编辑的时候)
   initialValues?: object;
   // 是否渲染复选框

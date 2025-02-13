@@ -1,5 +1,4 @@
 import { ChildNode, NodeProps } from '@/types/interfaces/graph';
-import { ConditionBranchConfigs } from '@/types/interfaces/node';
 import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { DashOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { register } from '@antv/x6-react-shape';
@@ -185,81 +184,6 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
  * 每个连接桩都是一个小圆圈，具有特定的颜色、大小和可见性设置。
  */
 
-// 定义端口生成函数
-interface PortMetadata {
-  group: string;
-  name: string;
-}
-const generatePorts = (
-  nodeType: string,
-  conditionBranchConfigs: Array<ConditionBranchConfigs> = [],
-): { groups: Record<string, any>; items: PortMetadata[] } => {
-  let outputPorts;
-
-  if (nodeType === 'Condition' || nodeType === 'IntentRecognition') {
-    // 对于 Condition 和 IntentRecognition 类型的节点，动态生成多个输出端口
-    outputPorts = conditionBranchConfigs.map((_, index) => ({
-      group: 'out',
-      name: `out-port-${index}`, // 给每个端口一个唯一的名称
-      circle: {
-        zIndex: 99, // 确保连接桩的层级高于边
-      },
-    }));
-  } else {
-    // 对于其他类型的节点，仅生成一个默认的输出端口
-    outputPorts = [
-      {
-        group: 'out',
-        name: 'out-port',
-        circle: {
-          zIndex: 99, // 确保连接桩的层级高于边
-        },
-      },
-    ];
-  }
-
-  return {
-    groups: {
-      out: {
-        position: 'right',
-        attrs: {
-          circle: {
-            r: 4,
-            magnet: true,
-            stroke: '#5F95FF',
-            strokeWidth: 1,
-            fill: '#fff',
-          },
-        },
-        connectable: {
-          source: true,
-          target: false,
-        },
-      },
-      in: {
-        position: 'left',
-        attrs: {
-          circle: {
-            r: 4,
-            magnet: true,
-            stroke: '#5F95FF',
-            strokeWidth: 1,
-            fill: '#fff',
-          },
-        },
-        connectable: {
-          source: false,
-          target: true,
-        },
-      },
-    },
-    items: [
-      ...outputPorts, // 添加所有输出端口
-      { group: 'in', name: 'in-port' }, // 默认的输入端口
-    ],
-  };
-};
-
 // 注册组件时，确保传递了正确的类型
 
 export function registerCustomNodes() {
@@ -267,14 +191,6 @@ export function registerCustomNodes() {
   register({
     shape: 'general-Node',
     component: GeneralNode,
-    ports: ({ data }: { data: ChildNode }) => {
-      const portConfig = generatePorts(
-        data.type,
-        data.nodeConfig?.conditionBranchConfigs || [],
-      );
-      // 返回 items 数组，因为 ports 参数需要的是 PortMetadata[] 类型
-      return portConfig.items;
-    },
     embeddable: ({ data }: { data: ChildNode }) => data.type === 'Loop',
     resizable: true,
   });

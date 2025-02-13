@@ -8,12 +8,6 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
   value, // 使用新增的 value 属性
   onChange, // 使用新增的 onChange 回调
 }) => {
-  const handleSelect = (parentKey: number, childKey: string) => {
-    // 将选中的父选项和子选项作为字符串集合添加到 selected 数组中
-    const selectedItem = `${parentKey}-${childKey}`;
-    // 调用 onChange 更新值
-    onChange(selectedItem);
-  };
   // 更新表单值为输入框内容
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -22,20 +16,66 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
     }
   };
 
+  console.log('referenceList', referenceList);
+  // 获取父组件的中文名称
+  const getName = (value: string) => {
+    // console
+    const _id = value.split('.')[0];
+    const _item = referenceList.previousNodes.find(
+      (item) => item.id === Number(_id),
+    );
+    return _item?.name;
+  };
+
   const handleTagClose = () => {
     onChange('');
   };
 
+  const menuItems =
+    referenceList.previousNodes.length > 0
+      ? referenceList.previousNodes.map((item) => ({
+          key: item.id,
+          label: item.name,
+          icon: item.icon,
+          children: item.outputArgs?.map((subItem) => ({
+            key: subItem.key,
+            label: (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: '300px',
+                }}
+              >
+                {subItem.name}
+                <Tag style={{ marginLeft: 20 }}>{subItem.dataType}</Tag>
+              </div>
+            ),
+            onClick: () => onChange(subItem.key as string),
+          })),
+        }))
+      : [
+          {
+            key: 'no-data',
+            label: (
+              <div style={{ padding: '8px', color: 'red' }}>
+                需要上级节点添加连线
+              </div>
+            ),
+            disabled: true,
+          },
+        ];
+
   return (
-    <div className="input-or-reference dis-center">
-      {value && value.includes('-') ? (
+    <div className="input-or-reference dis-sb">
+      {value && referenceList.argMap[value] ? (
         <Tag
           closable
           closeIcon
           onClose={handleTagClose}
           className="input-or-reference-tag text-ellipsis "
         >
-          {value}
+          {`${getName(value)} - ${referenceList.argMap[value].dataType}`}
         </Tag>
       ) : (
         <Input
@@ -48,27 +88,7 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
       <Dropdown
         overlayStyle={{ width: '200px' }}
         menu={{
-          items: referenceList.map((item) => ({
-            key: item.id,
-            label: item.name,
-            icon: item.icon,
-            children: item.outputArgs?.map((subItem) => ({
-              key: subItem.key,
-              label: (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    width: '300px',
-                  }}
-                >
-                  {subItem.name}
-                  <Tag style={{ marginLeft: 20 }}>{subItem.dataType}</Tag>
-                </div>
-              ),
-              onClick: () => handleSelect(item.id, subItem.key as string),
-            })),
-          })),
+          items: menuItems,
         }}
         trigger={['click']}
       >

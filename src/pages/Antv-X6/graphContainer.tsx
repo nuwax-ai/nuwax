@@ -1,16 +1,15 @@
 import type {
-  Child,
   ChildNode,
   Edge,
   GraphContainerProps,
   GraphContainerRef,
 } from '@/types/interfaces/graph';
+import { generatePorts } from '@/utils/workflow';
 import { Node } from '@antv/x6';
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import EventHandlers from './component/eventHandlers';
 import InitGraph from './component/graph';
 import { registerCustomNodes } from './component/registerCustomNodes';
-
 // 辅助函数：生成随机坐标
 function getRandomPosition(maxWidth = 800, maxHeight = 600) {
   return {
@@ -44,7 +43,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     }
 
     // 新增节点
-    const addNode = (e: { x: number; y: number }, child: Child) => {
+    const addNode = (e: { x: number; y: number }, child: ChildNode) => {
       if (!graphRef.current) return;
 
       const point = graphRef.current.clientToGraph(e.x, e.y);
@@ -60,7 +59,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         }
         return false;
       });
-
+      const ports = generatePorts(child);
+      // 根据情况，动态给予右侧的out连接桩
       const newNode = graphRef.current.addNode({
         shape: child.key,
         id: child.id,
@@ -73,55 +73,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           onChange: handleNodeChange,
         },
         resizable: true,
-        zIndex: 2,
-        ports: {
-          groups: {
-            left: {
-              position: 'left',
-              attrs: {
-                circle: {
-                  r: 5,
-                  magnet: true,
-                  stroke: '#8f8f8f',
-                  strokeWidth: 1,
-                  fill: '#fff',
-                },
-              },
-            },
-            right: {
-              position: 'right',
-              attrs: {
-                circle: {
-                  r: 5,
-                  magnet: true,
-                  stroke: '#8f8f8f',
-                  strokeWidth: 1,
-                  fill: '#fff',
-                },
-              },
-            },
-          },
-          items: [
-            {
-              group: 'left',
-              id: `${child.id}-left`,
-              attrs: {
-                circle: {
-                  zIndex: 99, // 确保连接桩的层级高于边
-                },
-              },
-            },
-            {
-              group: 'right',
-              id: `${child.id}-right`,
-              attrs: {
-                circle: {
-                  zIndex: 99, // 确保连接桩的层级高于边
-                },
-              },
-            },
-          ],
-        },
+        zIndex: 3,
+        ports: ports,
       });
 
       if (targetNode === null) {
@@ -209,7 +162,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
           let ports = {
             groups: {
-              left: {
+              in: {
                 position: 'left',
                 attrs: {
                   circle: {
@@ -221,7 +174,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
                   },
                 },
               },
-              right: {
+              out: {
                 position: 'right',
                 attrs: {
                   circle: {
@@ -235,8 +188,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
               },
             },
             items: [
-              { group: 'left', id: `${node.id.toString()}-left` },
-              { group: 'right', id: `${node.id.toString()}-right` },
+              { group: 'in', id: `${node.id.toString()}-in` },
+              { group: 'out', id: `${node.id.toString()}-out` },
             ],
           };
           // 如果节点为条件分支或者意图识别，就右侧就需要多个连接桩
@@ -255,13 +208,13 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
               [];
             const _portsItems = arr.map((_, index) => {
               return {
-                group: 'right',
-                id: `${node.id.toString()}-${index}-right`,
+                group: 'out',
+                id: `${node.id.toString()}-${index}-out`,
               };
             });
             ports.items = [
               ..._portsItems,
-              { group: 'left', id: `${node.id.toString()}-left` },
+              { group: 'in', id: `${node.id.toString()}-in` },
             ];
           }
 
@@ -277,8 +230,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
               ...node,
               onChange: handleNodeChange,
             },
-
             ports: ports,
+            zIndex: 3,
           };
         });
         // 更新图形数据中的节点
@@ -291,27 +244,22 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
               cell: isNaN(Number(edge.source))
                 ? edge.source.toString().split('-')[0]
                 : edge.source.toString(),
-              port: `${edge.source.toString()}-right`, // 使用右侧连接桩
+              port: `${edge.source.toString()}-out`, // 使用右侧连接桩
             },
             target: {
               cell: edge.target.toString(),
-              port: `${edge.target.toString()}-left`, // 使用左侧连接桩
+              port: `${edge.target.toString()}-in`, // 使用左侧连接桩
             },
             router: {
               name: 'orth',
             },
             // 边的形式，曲线|直线|等
-            connector: {
-              name: 'smooth',
-              args: {
-                radius: 20,
-              },
-            },
+            connector: 'smooth',
             // 边的颜色
             attrs: {
               line: {
                 stroke: '#A2B1C3',
-                strokeWidth: 2,
+                strokeWidth: 1,
               },
             },
 

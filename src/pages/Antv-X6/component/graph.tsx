@@ -53,10 +53,12 @@ const initGraph = ({
           radius: 8, // 圆角半径
         },
       },
-      anchor: 'center', // 默认连接点位于元素中心
+      // anchor: 'center', // 默认连接点位于元素中心
       connectionPoint: 'anchor', // 连接点类型为锚点
       allowBlank: false, // 禁止在空白区域创建连接
       allowMulti: true,
+      allowLoop: false, //禁止自己连接自己
+      highlight: true, //当用户尝试创建连接且鼠标悬停在一个有效的连接点上时，该连接点会被高亮显示
       snap: {
         radius: 20, // 连接时的吸附距离
       },

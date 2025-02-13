@@ -41,7 +41,6 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   const [currentNodeConfig, setCurrentNodeConfig] =
     useState<ChildNode>(foldWrapItem);
 
-  console.log(referenceList);
   // 修改节点数据
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     if (

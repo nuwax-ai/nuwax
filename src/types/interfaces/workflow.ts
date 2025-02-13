@@ -1,4 +1,4 @@
-import { PreviousList } from '@/types/interfaces/node';
+import { NodePreviousAndArgMap } from '@/types/interfaces/node';
 // 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
 import type {
   GroupModelItem,
@@ -73,7 +73,7 @@ export interface NodeDisposeProps {
   // 修改节点信息
   Modified: (params: NodeConfig) => void;
   // 上级节点的入参
-  referenceList: PreviousList[];
+  referenceList: NodePreviousAndArgMap;
   // 实时调用接口，修改节点
   updateNode?: (params: NodeConfig) => void;
   // 当前节点的类型
@@ -170,6 +170,7 @@ export interface NodeRenderProps {
   handleChangeNodeConfig: (params: NodeConfig) => void;
   // 渲染的内容(可以自定义，也可以使用默认的renderItem)
   renderItem?: (props: RenderItemProps) => JSX.Element; // 可选，允许自定义renderItem
+  referenceList?: NodePreviousAndArgMap;
   // 初始值（适用于已经编辑过的内容）
   initialValues?: object;
   // 如果有多个相同组件时，传递不同的inputListName区分
@@ -247,6 +248,9 @@ export interface ConditionListProps {
   // 删除当前的
   removeItem: (val: number) => void;
   draggableId: string;
+  // 可以引用的上级节点的参数
+  referenceList: NodePreviousAndArgMap;
+
   // 初始值（适用于已经编辑过的内容）
   initialValues: ConditionBranchConfigs;
   // 如果有多个相同组件时，传递不同的inputListName区分
@@ -263,4 +267,6 @@ export interface ConditionProps {
   form: FormInstance;
   // 当前值改变的时候，通知父组件，重新获取值
   onChange: () => void;
+  // 可以引用的上级节点的参数
+  referenceList: NodePreviousAndArgMap;
 }

@@ -182,6 +182,11 @@ export interface PreviousList {
   outputArgs: InputAndOutConfig[];
 }
 
+// 引用类型的map
+export interface ArgMap {
+  [key: string]: InputAndOutConfig;
+}
+
 export interface NodeDrawerProps {
   // 是否显示,关闭右侧弹窗
   visible: boolean;
@@ -194,5 +199,11 @@ export interface NodeDrawerProps {
 
   handleNodeChange: (action: string, data: ChildNode) => void;
   // 当前节点所需要的上级节点的出参
-  referenceList: PreviousList[];
+  referenceList: NodePreviousAndArgMap;
+}
+
+export interface NodePreviousAndArgMap {
+  previousNodes: PreviousList[];
+  innerPreviousNodes: PreviousList[];
+  argMap: ArgMap;
 }

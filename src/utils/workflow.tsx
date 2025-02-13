@@ -53,7 +53,6 @@ export const getEdges = (nodes: ChildNode[]): Edge[] => {
 
   const edgeList = [...edges, ...edges2];
 
-  console.log(edgeList);
   // 使用 Set 来移除重复的边
   const uniqueEdges = new Set<string>();
   const resultEdges: Edge[] = [];
@@ -91,4 +90,97 @@ export const returnBackgroundColor = (type: string) => {
     default:
       return '#EEEEFF';
   }
+};
+
+export const generatePorts = (data: ChildNode) => {
+  let outputPorts;
+
+  if (data.type === 'Condition' || data.type === 'IntentRecognition') {
+    const configs = data.nodeConfig?.conditionBranchConfigs || [];
+    outputPorts = configs.map((_, index) => ({
+      group: 'out',
+      id: `${data.id}-${index}-out`, // 给每个端口一个唯一的名称
+      zIndex: 99, // 确保连接桩的层级高于边
+      attrs: {
+        circle: {
+          r: 4,
+          magnet: true,
+          stroke: '#5F95FF',
+          strokeWidth: 1,
+          fill: '#fff',
+        },
+      },
+    }));
+  } else {
+    outputPorts = [
+      {
+        group: 'out',
+        id: `${data.id}-out`,
+        zIndex: 99, // 确保连接桩的层级高于边
+        attrs: {
+          circle: {
+            r: 4,
+            magnet: true,
+            stroke: '#5F95FF',
+            strokeWidth: 1,
+            fill: '#fff',
+          },
+        },
+      },
+    ];
+  }
+
+  return {
+    groups: {
+      out: {
+        position: 'right',
+        attrs: {
+          circle: {
+            r: 4,
+            magnet: true,
+            stroke: '#5F95FF',
+            strokeWidth: 1,
+            fill: '#fff',
+          },
+        },
+        connectable: {
+          source: true,
+          target: false,
+        },
+      },
+      in: {
+        position: 'left',
+        attrs: {
+          circle: {
+            r: 4,
+            magnet: true,
+            stroke: '#5F95FF',
+            strokeWidth: 1,
+            fill: '#fff',
+          },
+        },
+        connectable: {
+          source: false,
+          target: true,
+        },
+      },
+    },
+    items: [
+      ...outputPorts, // 添加所有输出端口
+      {
+        group: 'in',
+        id: `${data.id}-in`,
+        zIndex: 99, // 确保连接桩的层级高于边
+        attrs: {
+          circle: {
+            r: 4,
+            magnet: true,
+            stroke: '#5F95FF',
+            strokeWidth: 1,
+            fill: '#fff',
+          },
+        },
+      }, // 默认的输入端口
+    ],
+  };
 };

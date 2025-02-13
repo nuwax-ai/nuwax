@@ -365,13 +365,12 @@ export const outPutConfigs = [
     width: 100,
   },
   {
-    name: 'dataType',
+    name: 'bindValue',
     placeholder: '输入或引用参数值',
     label: '参数值',
     rules: [{ required: true, message: '请输入参数值' }],
     component: InputOrReference,
     width: 180,
-    props: { referenceList: [], fieldName: 'dataType' },
   },
   {
     name: 'description',
