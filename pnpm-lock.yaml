@@ -58,6 +58,9 @@ importers:
       insert-css:
         specifier: ^2.0.0
         version: 2.0.0
+      moment:
+        specifier: ^2.30.1
+        version: 2.30.1
       monaco-editor:
         specifier: ^0.52.2
         version: 0.52.2

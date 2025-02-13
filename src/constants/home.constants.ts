@@ -1,5 +1,6 @@
 export const ACCESS_TOKEN = 'ACCESS_TOKEN';
 
+export const USER_INFO = 'USER_INFO';
 // expireDate
 export const EXPIRE_DATE = 'EXPIRE_DATE';
 export const PHONE = 'PHONE';

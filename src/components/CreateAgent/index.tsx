@@ -41,9 +41,10 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   const { run } = useRequest(apiAgentAdd, {
     manual: true,
     debounceWait: 300,
-    onSuccess: (_, params) => {
-      console.log(params);
-      onConfirm();
+    onSuccess: (result, params) => {
+      console.log(params, 555, result);
+      setImageUrl('');
+      onConfirm(result);
       message.success('智能体已创建');
     },
   });

@@ -1,12 +1,14 @@
 import type { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { ApplicationMoreActionEnum } from '@/types/enums/space';
+import { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { CollapseProps } from 'antd';
 import type { MouseEventHandler } from 'react';
 import React from 'react';
 
 export interface ApplicationItemProps {
-  img?: string;
+  agentConfigInfo: AgentConfigInfo;
   onClick: (agentId: string) => void;
+  onCollect: (isCollect: boolean) => void;
   onClickMore: (type: ApplicationMoreActionEnum) => void;
 }
 

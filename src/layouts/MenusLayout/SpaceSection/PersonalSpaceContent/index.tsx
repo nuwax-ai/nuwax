@@ -1,10 +1,12 @@
 import personal from '@/assets/images/personal.png';
 import teamImage from '@/assets/images/team_image.png';
+import { SPACE_ID } from '@/constants/home.constants';
 import type { PersonalSpaceContentType } from '@/types/interfaces/menus';
 import { CheckOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import { Divider } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
+import { history, useLocation } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -16,6 +18,20 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
   spaceList,
   onCreateTeam,
 }) => {
+  const location = useLocation();
+  const { pathname } = location;
+  const handleClick = (id: string) => {
+    localStorage.setItem(SPACE_ID, id);
+    if (pathname.includes('develop')) {
+      history.push(`/space/${id}/develop`);
+    }
+    if (pathname.includes('library')) {
+      history.push(`/space/${id}/library`);
+    }
+    // 刷新页面
+    window.location.reload();
+  };
+
   return (
     <div className={styles.container}>
       <div className={cx(styles['p-header'], 'flex')}>
@@ -35,6 +51,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
             <li
               key={item.id}
               className={cx(styles['team-info'], 'flex', 'items-center')}
+              onClick={() => handleClick(item.id)}
             >
               <img
                 className={cx(styles['team-logo'])}

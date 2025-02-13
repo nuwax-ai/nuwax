@@ -30,6 +30,7 @@
     "classnames": "2.0.0",
     "create-puzzle": "^3.0.2",
     "insert-css": "^2.0.0",
+    "moment": "^2.30.1",
     "monaco-editor": "^0.52.2",
     "rc-slider-captcha": "^1.7.1",
     "react-beautiful-dnd": "^13.1.1",
