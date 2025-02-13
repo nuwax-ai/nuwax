@@ -41,7 +41,7 @@ const routes = [
   },
   { path: '/antv', component: '@/pages/Antv-X6', layout: false },
   {
-    path: '/edit-agent',
+    path: '/space/:spaceId/agent/:agentId',
     component: '@/pages/EditAgent',
     layout: false,
   },

@@ -7,6 +7,7 @@ import {
   apiAgentConfigList,
   apiAgentCopy,
   apiAgentDelete,
+  apiAgentTransfer,
 } from '@/services/agentConfig';
 import { PublishStatusEnum } from '@/types/enums/common';
 import {
@@ -44,8 +45,11 @@ const SpaceDevelop: React.FC = () => {
   const [create, setCreate] = useState<CreateListEnum>(
     CreateListEnum.All_Person,
   );
+  const [keyword, setKeyword] = useState<string>('');
   const [agentList, setAgentList] = useState<AgentConfigInfo[]>([]);
-  const agentAll = useRef<AgentConfigInfo[]>([]);
+  const agentAllRef = useRef<AgentConfigInfo[]>([]);
+  const createIdRef = useRef<string>('');
+  const targetAgentIdRef = useRef<string>('');
 
   // 查询空间智能体列表接口
   const { run } = useRequest(apiAgentConfigList, {
@@ -53,7 +57,7 @@ const SpaceDevelop: React.FC = () => {
     debounceWait: 300,
     onSuccess: (result: AgentConfigInfo[]) => {
       setAgentList(result);
-      agentAll.current = result;
+      agentAllRef.current = result;
     },
   });
 
@@ -63,78 +67,116 @@ const SpaceDevelop: React.FC = () => {
     debounceWait: 300,
     onSuccess: () => {
       message.success('已成功创建副本');
-      const spaceId = localStorage.getItem(SPACE_ID) || 25;
+      const spaceId = localStorage.getItem(SPACE_ID);
       run(spaceId);
     },
   });
+
+  // 删除或者迁移智能体后, 从列表移除智能体
+  const handleDelAgent = () => {
+    const agentId = targetAgentIdRef.current;
+    const _agentList = agentList.filter((item) => item.id !== agentId);
+    setAgentList(_agentList);
+    agentAllRef.current = agentAllRef.current.filter(
+      (item) => item.id !== agentId,
+    );
+  };
 
   // 删除智能体
   const { run: runDel } = useRequest(apiAgentDelete, {
     manual: true,
     debounceWait: 300,
-    onSuccess: (_, params) => {
+    onSuccess: () => {
       message.success('已成功删除');
-      const agentId = params[0].agentId;
-      const _agentList = agentList.filter((item) => item.id !== agentId);
-      setAgentList(_agentList);
-      agentAll.current = agentAll.current.filter((item) => item.id !== agentId);
+      handleDelAgent();
+    },
+  });
+
+  // 智能体迁移接口
+  const { run: runTransfer } = useRequest(apiAgentTransfer, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: () => {
+      message.success('迁移成功');
+      handleDelAgent();
+      setOpenMove(false);
     },
   });
 
   useEffect(() => {
-    const spaceId = localStorage.getItem(SPACE_ID) || 25;
+    const spaceId = localStorage.getItem(SPACE_ID);
     run(spaceId);
   }, []);
+
+  useEffect(() => {
+    const userInfoString = localStorage.getItem(USER_INFO);
+    const userInfo = JSON.parse(userInfoString) as UserInfo;
+    createIdRef.current = userInfo.id;
+  }, []);
+
+  useEffect(() => {
+    const unlisten = history.listen(() => {
+      const spaceId = localStorage.getItem(SPACE_ID);
+      run(spaceId);
+    });
+
+    return () => {
+      unlisten();
+    };
+  }, []);
+
+  // 过滤筛选智能体列表数据
+  const handleFilterAgentList = (
+    filterStatus: FilterStatusEnum,
+    filterCreate: CreateListEnum,
+    filterKeyword: string,
+  ) => {
+    let list = agentAllRef.current;
+    if (filterStatus === FilterStatusEnum.Published) {
+      list = list.filter(
+        (item) => item.publishStatus === PublishStatusEnum.Published,
+      );
+    }
+    if (filterCreate === CreateListEnum.Me) {
+      list = list.filter((item) => item.creatorId === createIdRef.current);
+    }
+    if (filterKeyword) {
+      list = list.filter((item) => item.name.includes(filterKeyword));
+    }
+    setAgentList(list);
+  };
 
   // 切换状态
   const handlerChangeStatus = (value: FilterStatusEnum) => {
     setStatus(value);
-    switch (value) {
-      case FilterStatusEnum.All:
-        const _agentList = agentAll.current;
-        setAgentList(_agentList);
-        break;
-      case FilterStatusEnum.Published:
-        const _agentPublishedList = agentAll.current.filter(
-          (item) => item.publishStatus === PublishStatusEnum.Published,
-        );
-        setAgentList(_agentPublishedList);
-        break;
-    }
-  };
-
-  const handleUserInfo = () => {
-    const userInfoString = localStorage.getItem(USER_INFO);
-    return JSON.parse(userInfoString) as UserInfo;
+    handleFilterAgentList(value, create, keyword);
   };
 
   // 切换创建者
   const handlerChangeCreate = (value: CreateListEnum) => {
     setCreate(value);
-    switch (value) {
-      case CreateListEnum.All_Person:
-        const _agentList = agentAll.current;
-        setAgentList(_agentList);
-        break;
-      case CreateListEnum.Me:
-        const userInfo = handleUserInfo();
-        const id = userInfo.id;
-        const _agentListCreateByMe = agentAll.current.filter(
-          (item) => item.creatorId === id,
-        );
-        console.log(id, 999);
-        setAgentList(_agentListCreateByMe);
-        break;
-    }
+    handleFilterAgentList(status, value, keyword);
   };
 
-  const handlerConfirmMove = () => {
-    setOpenMove(false);
+  // 智能体搜索
+  const handleQueryAgent = (e) => {
+    const _keyword = e.target.value;
+    setKeyword(_keyword);
+    handleFilterAgentList(status, create, _keyword);
+  };
+
+  // 确认迁移智能体
+  const handlerConfirmMove = (spaceId: string) => {
+    runTransfer({
+      agentId: targetAgentIdRef.current,
+      targetSpaceId: spaceId,
+    });
   };
 
   // 点击跳转到智能体
   const handleClick = (agentId: string) => {
-    history.push(`/edit-agent?agent_id=${agentId}`);
+    const spaceId = localStorage.getItem(SPACE_ID);
+    history.push(`/space/${spaceId}/agent/${agentId}`);
   };
 
   // 设置统计信息
@@ -163,8 +205,8 @@ const SpaceDevelop: React.FC = () => {
 
   // 点击更多操作
   const handlerClickMore = (type: ApplicationMoreActionEnum, index: number) => {
-    console.log(type);
     const agentInfo = agentList[index];
+    targetAgentIdRef.current = agentInfo.id;
     switch (type) {
       case ApplicationMoreActionEnum.Analyze:
         handleSetStatistics(agentInfo);
@@ -176,6 +218,7 @@ const SpaceDevelop: React.FC = () => {
           agentId: agentInfo.id,
         });
         break;
+      // 迁移
       case ApplicationMoreActionEnum.Move:
         setOpenMove(true);
         break;
@@ -190,7 +233,8 @@ const SpaceDevelop: React.FC = () => {
   // 确认创建智能体
   const handlerConfirmCreateAgent = (agentId: string) => {
     setOpenCreateAgent(false);
-    history.push(`/edit-agent?agent_id=${agentId}`);
+    const spaceId = localStorage.getItem(SPACE_ID);
+    history.push(`/space/${spaceId}/agent/${agentId}`);
   };
 
   // 收藏
@@ -226,6 +270,8 @@ const SpaceDevelop: React.FC = () => {
         <Input
           rootClassName={cx(styles.input)}
           placeholder="搜索智能体"
+          value={keyword}
+          onChange={handleQueryAgent}
           prefix={<SearchOutlined />}
         />
       </div>

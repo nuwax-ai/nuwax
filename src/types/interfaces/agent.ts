@@ -1,6 +1,10 @@
-import type { TooltipTitleTypeEnum } from '@/types/enums/common';
-import { PublishStatusEnum } from '@/types/enums/common';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import type {
+  PublishStatusEnum,
+  TooltipTitleTypeEnum,
+} from '@/types/enums/common';
 import type { UpdateModeComponentEnum } from '@/types/enums/library';
+import type { SpaceInfo } from '@/types/interfaces/workspace';
 import React from 'react';
 
 // 知识库设置label
@@ -8,12 +12,6 @@ export interface LabelIconProps {
   label: string;
   title: React.ReactNode;
   type?: TooltipTitleTypeEnum;
-}
-
-// 智能体编排区域配置组件
-export interface AgentArrangeConfigProps {
-  onKnowledge: () => void;
-  onSet: () => void;
 }
 
 // 智能体信息
@@ -197,6 +195,7 @@ export interface AgentConfigInfo {
     nickName: string;
     avatar: string;
   };
+  space: SpaceInfo;
   devCollected: boolean;
 }
 
@@ -235,7 +234,7 @@ export interface AgentComponentInfo {
   description: string;
   agentId: string;
   // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model
-  type: string;
+  type: AgentComponentTypeEnum;
   // 绑定组件配置，不同组件配置不一样
   bindConfig: string;
   // 关联的组件ID

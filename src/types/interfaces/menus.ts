@@ -3,10 +3,7 @@ import type {
   UserAvatarEnum,
   UserOperatorAreaEnum,
 } from '@/types/enums/menus';
-import type {
-  CreateSpaceTeamParams,
-  SpaceInfo,
-} from '@/types/interfaces/workspace';
+import type { CreateSpaceTeamParams } from '@/types/interfaces/workspace';
 import React from 'react';
 
 // 菜单栏~用户操作区域类型
@@ -35,7 +32,7 @@ export interface UserActionItemType {
 
 // 个人空间Popover内容组件
 export interface PersonalSpaceContentType {
-  spaceList: SpaceInfo[];
+  // spaceList: SpaceInfo[];
   onCreateTeam: () => void;
 }
 

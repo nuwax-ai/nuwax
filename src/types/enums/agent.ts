@@ -1,4 +1,5 @@
 // 调用方式类型
+
 export enum CallMethodEnum {
   // 自动调用
   Auto_Call,
@@ -22,4 +23,15 @@ export enum NoRecallResponseEnum {
   Default,
   // 自定义
   Custom,
+}
+
+// 智能体组件模型类型枚举
+export enum AgentComponentTypeEnum {
+  Plugin = 'Plugin',
+  Workflow = 'Workflow',
+  Trigger = 'Trigger',
+  Knowledge = 'Knowledge',
+  Variable = 'Variable',
+  Database = 'Database',
+  Model = 'Model',
 }

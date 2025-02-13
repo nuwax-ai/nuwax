@@ -1,3 +1,4 @@
+import type { ArrangeTitleProps } from '@/types/interfaces/agentConfig';
 import { CaretDownOutlined, FormOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
@@ -5,14 +6,10 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface ArrangeTitleProps {
-  onClick: () => void;
-}
-
 /**
  * 编排顶部title组件
  */
-const ArrangeTitle: React.FC<ArrangeTitleProps> = ({ onClick }) => {
+const ArrangeTitle: React.FC<ArrangeTitleProps> = ({ modelName, onClick }) => {
   return (
     <div
       className={cx(
@@ -29,7 +26,7 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({ onClick }) => {
         onClick={onClick}
       >
         <FormOutlined />
-        <span>女娲智能体</span>
+        <span>{modelName}</span>
         <CaretDownOutlined />
       </div>
     </div>

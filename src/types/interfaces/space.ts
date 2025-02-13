@@ -14,6 +14,7 @@ export interface ApplicationItemProps {
 
 // 系统提示词组件属性
 export interface SystemTipsWordProps {
+  placeholder?: string;
   value: string;
   onChange: (value: string) => void;
 }
@@ -48,4 +49,11 @@ export interface PublishAgentProps {
   open: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+}
+
+export interface AgentMoveProps {
+  open: boolean;
+  title: string;
+  onCancel: () => void;
+  onConfirm: (spaceId: string) => void;
 }

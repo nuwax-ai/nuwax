@@ -1,9 +1,12 @@
 import CreateAgent from '@/components/CreateAgent';
 import VersionHistory from '@/components/VersionHistory';
+import { apiAgentConfigInfo } from '@/services/agentConfig';
 import { CreateEditAgentEnum } from '@/types/enums/common';
 import { EditAgentShowType } from '@/types/enums/space';
+import { AgentConfigInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useLocation, useRequest } from 'umi';
 import AgentArrangeConfig from './AgentArrangeConfig';
 import AgentHeader from './AgentHeader';
 import AgentModelSetting from './AgentModelSetting';
@@ -23,6 +26,7 @@ const cx = classNames.bind(styles);
  * 编辑智能体
  */
 const EditAgent: React.FC = () => {
+  const location = useLocation();
   const [tipsText, setTipsText] = useState<string>('');
   const [showType, setShowType] = useState<EditAgentShowType>(
     EditAgentShowType.Hide,
@@ -32,6 +36,24 @@ const EditAgent: React.FC = () => {
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
   const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
   const [openKnowledgeModel, setOpenKnowledgeModel] = useState<boolean>(false);
+  const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>(null);
+  const agentIdRef = useRef<string>('');
+
+  // 查询智能体配置信息
+  const { run } = useRequest(apiAgentConfigInfo, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: AgentConfigInfo) => {
+      setAgentConfigInfo(result);
+    },
+  });
+
+  useEffect(() => {
+    const pathname = location.pathname;
+    const anentId = pathname.split('/')?.slice(-1)?.join();
+    agentIdRef.current = anentId;
+    run(anentId);
+  }, []);
 
   const handlerClose = () => {
     setShowType(EditAgentShowType.Hide);
@@ -88,6 +110,7 @@ const EditAgent: React.FC = () => {
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader
+        agentConfigInfo={agentConfigInfo}
         onToggleShowStand={handlerToggleShowStand}
         handlerToggleVersionHistory={handlerToggleVersionHistory}
         onEditAgent={handlerEditAgent}
@@ -101,13 +124,21 @@ const EditAgent: React.FC = () => {
           className={cx('radius-6', 'flex', 'flex-col', styles['edit-info'])}
         >
           {/*编排title*/}
-          <ArrangeTitle onClick={() => setOpenAgentModel(true)} />
+          <ArrangeTitle
+            modelName={agentConfigInfo?.modelComponentConfig?.name}
+            onClick={() => setOpenAgentModel(true)}
+          />
           <div className={cx('flex-1', 'flex', 'overflow-y')}>
             {/*系统提示词*/}
-            <SystemTipsWord value={tipsText} onChange={setTipsText} />
+            <SystemTipsWord
+              placeholder={agentConfigInfo?.systemPrompt}
+              value={tipsText}
+              onChange={setTipsText}
+            />
             <div className={cx(styles['h-line'])} />
             {/*配置区域*/}
             <AgentArrangeConfig
+              agentId={agentIdRef.current}
               onKnowledge={handleKnowledge}
               onSet={handlerPluginSetting}
             />

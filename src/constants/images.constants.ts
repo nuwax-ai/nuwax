@@ -1,12 +1,15 @@
 import { ReactComponent as ICON_ADD_TR } from '@/assets/svg/add_tr.svg';
 import { ReactComponent as ICON_ADJUSTMENT } from '@/assets/svg/adjustment_amount.svg';
+import { ReactComponent as ICON_APPLICATION_DEV } from '@/assets/svg/application_dev.svg';
 import { ReactComponent as ICON_ASSOCIATION } from '@/assets/svg/association.svg';
 import { ReactComponent as ICON_CODE } from '@/assets/svg/code.svg';
+import { ReactComponent as ICON_COMPONENT_LIBRARY } from '@/assets/svg/component_library.svg';
 import { ReactComponent as ICON_CONFIRM_STAR } from '@/assets/svg/confirm_star.svg';
 import { ReactComponent as ICON_CUSTOM_DOC } from '@/assets/svg/custom_doc.svg';
 import { ReactComponent as ICON_DATABASE } from '@/assets/svg/database_icon.svg';
 import { ReactComponent as ICON_END } from '@/assets/svg/end.svg';
 import { ReactComponent as ICON_FOLD } from '@/assets/svg/fold.svg';
+import { ReactComponent as ICON_GROUP_SET } from '@/assets/svg/group_set.svg';
 import { ReactComponent as ICON_HOME } from '@/assets/svg/home.svg';
 import { ReactComponent as ICON_KNOWLEDGE } from '@/assets/svg/knowledge_icon.svg';
 import { ReactComponent as ICON_LOCAL_DOC } from '@/assets/svg/local_doc.svg';
@@ -26,13 +29,16 @@ import { ReactComponent as ICON_WORKFLOW } from '@/assets/svg/workflow_icon.svg'
 export {
   ICON_ADD_TR,
   ICON_ADJUSTMENT,
+  ICON_APPLICATION_DEV,
   ICON_ASSOCIATION,
   ICON_CODE,
+  ICON_COMPONENT_LIBRARY,
   ICON_CONFIRM_STAR,
   ICON_CUSTOM_DOC,
   ICON_DATABASE,
   ICON_END,
   ICON_FOLD,
+  ICON_GROUP_SET,
   ICON_HOME,
   ICON_KNOWLEDGE,
   ICON_LOCAL_DOC,

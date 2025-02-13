@@ -128,3 +128,10 @@ export enum PluginSettingEnum {
   // 卡片绑定
   Card_Bind,
 }
+
+// 空间类型枚举
+export enum SpaceTypeEnum {
+  Personal = 'Personal',
+  Team = 'Team',
+  Class = 'Class',
+}

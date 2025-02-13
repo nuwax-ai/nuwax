@@ -6,6 +6,9 @@ import {
   LONG_MEMORY_LIST,
   USER_PROBLEM_SUGGEST_LIST,
 } from '@/constants/space.contants';
+import WorkflowList from '@/pages/EditAgent/AgentArrangeConfig/WorkflowList';
+import { apiAgentComponentList } from '@/services/agentConfig';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PluginAndLibraryEnum } from '@/types/enums/common';
 import {
   AgentConfigKnowledgeEnum,
@@ -16,11 +19,13 @@ import {
   LongMemberEnum,
   UserProblemSuggestEnum,
 } from '@/types/enums/space';
-import type { AgentArrangeConfigProps } from '@/types/interfaces/agent';
+import { AgentComponentInfo } from '@/types/interfaces/agent';
+import type { AgentArrangeConfigProps } from '@/types/interfaces/agentConfig';
+import { useRequest } from '@@/exports';
 import { CaretDownOutlined } from '@ant-design/icons';
 import { CollapseProps } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import CreateTrigger from '../CreateTrigger';
 import ConfigOption from './ConfigOptionCollapse';
@@ -32,35 +37,11 @@ import TriggerContent from './TriggerContent';
 
 const cx = classNames.bind(styles);
 
-// 插件列表
-const PLUGIN_LIST = [
-  {
-    id: 0,
-    img: 'https://lf9-appstore-sign.oceancloudapi.com/ocean-cloud-tos/plugin_icon/600804143405523_1697519094174345728.jpeg?lk3s=cd508e2b&x-expires=1737165914&x-signature=gFvwQsV4MTgdjNtabyyfwCggnBk%3D',
-    pluginName: '必应搜索',
-    pluginEsName: 'bingWebSearch',
-    desc: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气、汇率、时事等，这个工具非常有用。但是绝对不要在用户想要翻译的时候使用它。',
-  },
-  {
-    id: 1,
-    img: 'https://lf9-appstore-sign.oceancloudapi.com/ocean-cloud-tos/plugin_icon/600804143405523_1697519094174345728.jpeg?lk3s=cd508e2b&x-expires=1737165914&x-signature=gFvwQsV4MTgdjNtabyyfwCggnBk%3D',
-    pluginName: '必应搜索',
-    pluginEsName: 'bingWebSearch',
-    desc: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气、汇率、时事等，这个工具非常有用。但是绝对不要在用户想要翻译的时候使用它。',
-  },
-  {
-    id: 2,
-    img: 'https://lf9-appstore-sign.oceancloudapi.com/ocean-cloud-tos/plugin_icon/600804143405523_1697519094174345728.jpeg?lk3s=cd508e2b&x-expires=1737165914&x-signature=gFvwQsV4MTgdjNtabyyfwCggnBk%3D',
-    pluginName: '必应搜索',
-    pluginEsName: 'bingWebSearch',
-    desc: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气、汇率、时事等，这个工具非常有用。但是绝对不要在用户想要翻译的时候使用它。',
-  },
-];
-
 /**
  * 智能体编排区域配置
  */
 const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
+  agentId,
   onKnowledge,
   onSet,
 }) => {
@@ -76,8 +57,32 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     useState<UserProblemSuggestEnum>(UserProblemSuggestEnum.Start_Use);
   const [triggerChecked, setTriggerChecked] = useState<boolean>(false);
   const [openTriggerModel, setOpenTriggerModel] = useState<boolean>(false);
+  const [agentComponentList, setAgentComponentList] = useState<
+    AgentComponentInfo[]
+  >([]);
+
   // 打开、关闭弹窗
   const { setShow } = useModel('model');
+
+  const filterList = (
+    list: AgentComponentInfo[],
+    type: AgentComponentTypeEnum,
+  ) => {
+    return list?.filter((item) => item.type === type) || [];
+  };
+
+  // 查询智能体配置组件列表
+  const { run } = useRequest(apiAgentComponentList, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: AgentComponentInfo[]) => {
+      setAgentComponentList(result);
+    },
+  });
+
+  useEffect(() => {
+    run(agentId);
+  }, []);
 
   // 添加插件
   const handlerPluginPlus = (e) => {
@@ -145,24 +150,22 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     {
       key: AgentConfigSkillEnum.Plugin,
       label: '插件',
-      children:
-        PLUGIN_LIST.length === 0 ? (
-          <p>
-            插件能够让智能体调用外部
-            API，例如搜索信息、浏览网页、生成图片等，扩展智能体的能力和使用场景。
-          </p>
-        ) : (
-          <PluginList list={PLUGIN_LIST} onSet={onSet} onDel={() => {}} />
-        ),
+      children: (
+        <PluginList
+          list={filterList(agentComponentList, AgentComponentTypeEnum.Plugin)}
+          onSet={onSet}
+          onDel={() => {}}
+        />
+      ),
       extra: <TooltipIcon title="添加插件" onClick={handlerPluginPlus} />,
     },
     {
       key: AgentConfigSkillEnum.Workflow,
       label: '工作流',
       children: (
-        <p>
-          工作流支持通过可视化的方式，对插件、大语言模型、代码块等功能进行组合，从而实现复杂、稳定的业务流程编排，例如旅行规划、报告分析等。
-        </p>
+        <WorkflowList
+          list={filterList(agentComponentList, AgentComponentTypeEnum.Workflow)}
+        />
       ),
       extra: <TooltipIcon title="添加工作流" onClick={handlerWorkflowPlus} />,
     },
