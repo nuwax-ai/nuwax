@@ -8,7 +8,11 @@ import '../index.less';
 import { outPutConfigs } from '../params';
 import { InputAndOut, TreeOutput } from './commonNode';
 // 定义知识库
-const KnowledgeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
+const KnowledgeNode: React.FC<NodeDisposeProps> = ({
+  params,
+  Modified,
+  referenceList,
+}) => {
   // const [params, setParams] = useState({
   //   strategy: '',
   //   recall: 0,
@@ -65,6 +69,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
         <InputAndOut
           title="输入"
           handleChangeNodeConfig={handleChangeNodeConfig}
+          referenceList={referenceList}
           fieldConfigs={outPutConfigs}
           inputItemName="inputArgs"
           initialValues={{ inputArgs: initialValues }}

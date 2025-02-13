@@ -101,7 +101,11 @@ const PluginInNode: React.FC<NodeDisposeProps> = ({
 };
 
 // 定义数据库
-const DatabaseNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
+const DatabaseNode: React.FC<NodeDisposeProps> = ({
+  params,
+  Modified,
+  referenceList,
+}) => {
   let inputInitialValues = {};
   if (params.inputArgs && params.inputArgs.length) {
     inputInitialValues = params.inputArgs;
@@ -123,6 +127,7 @@ const DatabaseNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
         <InputAndOut
           title="输入"
           fieldConfigs={outPutConfigs}
+          referenceList={referenceList}
           inputItemName="inputArgs"
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={inputInitialValues}

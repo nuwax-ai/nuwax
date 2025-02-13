@@ -6,13 +6,9 @@ import service, { IUpdateDetails } from '@/services/workflow';
 import { NodeTypeEnum, PluginAndLibraryEnum } from '@/types/enums/common';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
-import { PreviousList } from '@/types/interfaces/node';
+import { NodePreviousAndArgMap } from '@/types/interfaces/node';
 import { debounce } from '@/utils/debounce';
-import {
-  getAllParentArgs,
-  getNodeRelation,
-  updateNode,
-} from '@/utils/updateNode';
+import { getNodeRelation, updateNode } from '@/utils/updateNode';
 import { getEdges } from '@/utils/workflow';
 import { message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
@@ -55,7 +51,11 @@ const AntvX6: React.FC = () => {
   });
 
   // 上级节点的输出参数
-  const [referenceList, setReferenceList] = useState<PreviousList[]>([]);
+  const [referenceList, setReferenceList] = useState<NodePreviousAndArgMap>({
+    previousNodes: [],
+    innerPreviousNodes: [],
+    argMap: {},
+  });
 
   // 展示修改工作流的弹窗
   const [showCreateWorkflow, setShowCreateWorkflow] = useState(false);
@@ -129,9 +129,7 @@ const AntvX6: React.FC = () => {
   const changeDrawer = async (child: ChildNode) => {
     // 如果有组件正在展示,那么就要看是否修改了参数,
     // 如果修改了参数,那么就提交数据
-    if (visible) {
-      console.log('修改了参数');
-    } else {
+    if (!visible) {
       setVisible(true);
     }
     if (child.nodeConfig.inputArgs === null) {
@@ -140,12 +138,16 @@ const AntvX6: React.FC = () => {
     if (child.nodeConfig.outputArgs === null) {
       child.nodeConfig.outputArgs = [];
     }
-
     // 获取节点需要的引用参数
     const _res = await service.getOutputArgs(Number(child.id));
-    if (_res.data === Constant.success) {
-      const newArr = getAllParentArgs(_res.data);
-      setReferenceList(newArr);
+    if (_res.code === Constant.success) {
+      if (
+        _res.data &&
+        _res.data.previousNodes &&
+        _res.data.previousNodes.length
+      ) {
+        setReferenceList(_res.data);
+      }
     }
     setFoldWrapItem(child);
   };

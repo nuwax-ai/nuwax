@@ -34,6 +34,7 @@ export const Condition: React.FC<ConditionProps> = ({
   field,
   onChange,
   form,
+  referenceList,
 }) => {
   return (
     <div className="condition-right-item">
@@ -75,7 +76,7 @@ export const Condition: React.FC<ConditionProps> = ({
           rules={[{ required: true }]}
         >
           <InputOrReference
-            referenceList={modelTypes}
+            referenceList={referenceList}
             value={form.getFieldValue([field.name, 'bindValue'])}
             onChange={onChange}
           />
@@ -94,6 +95,7 @@ export const ConditionList: React.FC<ConditionListProps> = ({
   removeItem,
   handleChangeNodeConfig,
   draggableId, // 新增一个 draggableId 属性
+  referenceList,
 }) => {
   const [form] = Form.useForm();
 
@@ -156,6 +158,7 @@ export const ConditionList: React.FC<ConditionListProps> = ({
                             },
                             form,
                             onChange: submitForm,
+                            referenceList,
                           })}
                           <MinusCircleOutlined
                             onClick={() => {
@@ -200,6 +203,7 @@ export const ConditionList: React.FC<ConditionListProps> = ({
 export const ConditionNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,
+  referenceList,
   updateNode,
 }) => {
   // 监听params.conditionBranchConfigs的变化，并在变化时更新节点
@@ -326,6 +330,7 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
                 removeItem={removeItem}
                 handleChangeNodeConfig={handleChangeNodeConfig}
                 draggableId={item.uuid.toString()}
+                referenceList={referenceList}
               />
             ))}
             {provided.placeholder}

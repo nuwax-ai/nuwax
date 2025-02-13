@@ -25,6 +25,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   title,
   fieldConfigs,
   handleChangeNodeConfig,
+  referenceList,
   renderItem = DefaultRenderItem,
   inputItemName = 'inputItems',
   initialValues,
@@ -33,7 +34,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   showAssociation = false,
 }) => {
   const [form] = Form.useForm();
-
   // 根据传递的fieldConfigs生成表单项
   const formItem = fieldConfigs.reduce(
     (acc: DefaultObjectType, field: FieldConfig) => {
@@ -50,13 +50,24 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   const submitForm = () => {
     const values = form.getFieldsValue();
     for (let item of values[inputItemName]) {
-      if (typeof item.dataType === 'object') {
-        if (item.dataType.length === 1) {
-          item.dataType = item.dataType[0];
-        } else {
-          item.dataType = item.dataType[1];
+      if (
+        item.bindValue &&
+        referenceList &&
+        referenceList.argMap &&
+        referenceList.argMap[item.bindValue]
+      ) {
+        item.bindValueType = 'Reference';
+        item.dataType = referenceList.argMap[item.bindValue].dataType;
+      } else {
+        if (item.dataType && typeof item.dataType === 'object') {
+          if (item.dataType.length === 1) {
+            item.dataType = item.dataType[0];
+          } else {
+            item.dataType = item.dataType[1];
+          }
         }
       }
+      // if(item.compo)
     }
     handleChangeNodeConfig(values);
   };
@@ -86,6 +97,11 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                       field,
                       onRemove: () => remove(field.name),
                       fieldConfigs,
+                      referenceList: referenceList || {
+                        previousNodes: [],
+                        innerPreviousNodes: [],
+                        argMap: {},
+                      },
                       // 新增传递索引信息
                       rowIndex: index,
                       form,

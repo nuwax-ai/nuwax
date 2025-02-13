@@ -1,16 +1,8 @@
-/*
- * @Author: binxiaolin 18030705033
- * @Date: 2025-01-17 13:41:09
- * @LastEditors: binxiaolin 18030705033
- * @LastEditTime: 2025-01-23 16:22:15
- * @FilePath: \agent-platform-front\src\components\FormListItem\index.tsx
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
- */
-
 import { ICON_ASSOCIATION } from '@/constants/images.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import { DeleteOutlined, FileDoneOutlined } from '@ant-design/icons';
 import { Cascader, Checkbox, Form, Input, Popover, Space } from 'antd';
+import { InputOrReference } from './InputOrReference';
 // import { useState } from 'react';
 import './index.less';
 import { RenderItemProps } from './type';
@@ -20,6 +12,7 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
   field,
   onRemove,
   fieldConfigs,
+  referenceList,
   showCheckbox,
   showCopy,
   showAssociation,
@@ -77,22 +70,34 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
                 rules={config.rules}
                 style={{ width: config.width }}
               >
-                {/* 使用 ...config.props 来传递特定组件的属性 */}
-                <config.component
-                  {...config.props}
-                  placeholder={config.placeholder}
-                  form={form}
-                  index={field.name}
-                  value={
-                    config.component === Cascader
-                      ? CascaderValue(fieldValue)
-                      : fieldValue
-                  }
-                  onBlur={config.component === Input ? changeValue : undefined}
-                  onChange={
-                    config.component === Input ? undefined : changeValue
-                  }
-                />
+                {(() => {
+                  const commonProps = {
+                    placeholder: config.placeholder,
+                    form: form,
+                    index: field.name,
+                    value:
+                      config.component === Cascader
+                        ? CascaderValue(fieldValue)
+                        : fieldValue,
+                    onBlur:
+                      config.component === Input ? changeValue : undefined,
+                    onChange:
+                      config.component === Input ? undefined : changeValue,
+                  };
+
+                  // 特定于InputOrReference的props
+                  const inputOrReferenceProps =
+                    config.component === InputOrReference
+                      ? { referenceList: referenceList ?? [] }
+                      : {};
+
+                  return (
+                    <config.component
+                      {...commonProps}
+                      {...inputOrReferenceProps}
+                    />
+                  );
+                })()}
               </Form.Item>
             </div>
           );
