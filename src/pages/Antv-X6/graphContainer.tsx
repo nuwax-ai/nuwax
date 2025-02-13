@@ -253,8 +253,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             router: {
               name: 'orth',
             },
-            // 边的形式，曲线|直线|等
-            connector: 'smooth',
+
             // 边的颜色
             attrs: {
               line: {

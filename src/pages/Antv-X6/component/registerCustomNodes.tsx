@@ -1,6 +1,7 @@
 import { ChildNode, NodeProps } from '@/types/interfaces/graph';
 import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { DashOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
 import { Input, Popover } from 'antd';
 import React from 'react';
@@ -195,3 +196,27 @@ export function registerCustomNodes() {
     resizable: true,
   });
 }
+
+export const createCurvePath = (
+  s: { x: number; y: number },
+  e: { x: number; y: number },
+) => {
+  const offset = 4;
+  const deltaX = 10; // 起点向右移，终点向左移的距离
+  const deltaY = Math.abs(e.y - s.y);
+  const control = Math.floor((deltaY / 3) * 2);
+
+  // 修改起点和终点的x坐标
+  const startPoint = { x: s.x + deltaX, y: s.y };
+  const endPoint = { x: e.x - deltaX, y: e.y };
+
+  const v1 = { x: startPoint.x, y: startPoint.y + offset + control };
+  const v2 = { x: endPoint.x, y: endPoint.y - offset - control };
+
+  return Path.normalize(
+    `M ${startPoint.x} ${startPoint.y}
+     L ${startPoint.x} ${startPoint.y + offset}
+     C ${v1.x} ${v1.y} ${v2.x} ${v2.y} ${endPoint.x} ${endPoint.y - offset}
+     L ${endPoint.x} ${endPoint.y}`,
+  );
+};

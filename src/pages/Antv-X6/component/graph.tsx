@@ -16,7 +16,7 @@ import { message, Popover } from 'antd';
 import ReactDOM from 'react-dom/client';
 // 自定义类型定义
 import { GraphProp } from '@/types/interfaces/graph';
-
+import { createCurvePath } from './registerCustomNodes';
 let currentPopover: any = null; // 用于跟踪当前显示的Popover
 /**
  * 初始化图形编辑器的函数，接收一个包含容器 ID 和改变抽屉内容回调的对象作为参数。
@@ -33,6 +33,25 @@ const initGraph = ({
   // 如果找不到容器，则抛出错误
   if (!graphContainer) throw new Error('Container not found');
 
+  // 注册自定义连接器
+  // 注册自定义连接器
+  Graph.registerConnector('curveConnector', createCurvePath, true);
+
+  Graph.registerEdge(
+    'dag-edge',
+    {
+      inherit: 'edge',
+      attrs: {
+        line: {
+          stroke: '#C2C8D5',
+          strokeWidth: 1,
+          targetMarker: null,
+        },
+      },
+    },
+    true,
+  );
+
   // 创建图形实例，并配置相关属性
   const graph = new Graph({
     container: graphContainer, // 设置 DOM 容器
@@ -47,12 +66,7 @@ const initGraph = ({
     },
     connecting: {
       router: 'manhattan', // 连接线路由方式，使用曼哈顿路径
-      connector: {
-        name: 'rounded', // 连接点样式，使用圆角矩形
-        args: {
-          radius: 8, // 圆角半径
-        },
-      },
+      connector: 'curveConnector',
       // anchor: 'center', // 默认连接点位于元素中心
       connectionPoint: 'anchor', // 连接点类型为锚点
       allowBlank: false, // 禁止在空白区域创建连接
@@ -65,18 +79,13 @@ const initGraph = ({
       createEdge() {
         // 创建新边时的默认设置
         return new Shape.Edge({
+          shape: 'dag-edge',
           attrs: {
             line: {
-              stroke: '#A2B1C3', // 边的颜色
-              strokeWidth: 2, // 边的宽度
-              targetMarker: {
-                name: 'block', // 目标端点标记类型
-                width: 12, // 标记宽度
-                height: 8, // 标记高度
-              },
+              strokeDasharray: '5 5',
             },
           },
-          zIndex: 0, // 设置边的 z-index 层级
+          zIndex: -1,
         });
       },
       validateConnection({ targetMagnet }) {
