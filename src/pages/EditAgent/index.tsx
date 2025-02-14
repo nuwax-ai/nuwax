@@ -1,9 +1,13 @@
 import CreateAgent from '@/components/CreateAgent';
 import VersionHistory from '@/components/VersionHistory';
-import { apiAgentConfigInfo } from '@/services/agentConfig';
+import {
+  apiAgentConfigHistoryList,
+  apiAgentConfigInfo,
+} from '@/services/agentConfig';
 import { CreateEditAgentEnum } from '@/types/enums/common';
 import { EditAgentShowType } from '@/types/enums/space';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
+import { HistoryData } from '@/types/interfaces/space';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
@@ -37,6 +41,7 @@ const EditAgent: React.FC = () => {
   const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
   const [openKnowledgeModel, setOpenKnowledgeModel] = useState<boolean>(false);
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>(null);
+  const [versionHistory, setVersionHistory] = useState<HistoryData[]>([]);
   const agentIdRef = useRef<string>('');
 
   // 查询智能体配置信息
@@ -48,11 +53,20 @@ const EditAgent: React.FC = () => {
     },
   });
 
+  const { run: runHistory, loading } = useRequest(apiAgentConfigHistoryList, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: HistoryData[]) => {
+      setVersionHistory(result);
+    },
+  });
+
   useEffect(() => {
     const pathname = location.pathname;
-    const anentId = pathname.split('/')?.slice(-1)?.join();
-    agentIdRef.current = anentId;
-    run(anentId);
+    const agentId = pathname.split('/')?.slice(-1)?.join();
+    agentIdRef.current = agentId;
+    run(agentId);
+    runHistory(agentId);
   }, []);
 
   const handlerClose = () => {
@@ -158,6 +172,7 @@ const EditAgent: React.FC = () => {
         />
         {/*版本历史*/}
         <VersionHistory
+          list={versionHistory}
           visible={showType === EditAgentShowType.Version_History}
           onClose={handlerClose}
         />

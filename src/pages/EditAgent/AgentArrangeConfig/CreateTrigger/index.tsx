@@ -2,16 +2,16 @@ import CustomFormModal from '@/components/CustomFormModal';
 import SelectList from '@/components/SelectList';
 import { TRIGGER_TYPE_LIST } from '@/constants/agent.constants';
 import { TASK_EXECUTION } from '@/constants/space.contants';
+import { apiAgentComponentTriggerAdd } from '@/services/agentConfig';
+import { TriggerTypeEnum } from '@/types/enums/agent';
+import type { AgentComponentTriggerAddParams } from '@/types/interfaces/agent';
 import type { CreateTriggerProps } from '@/types/interfaces/agentConfig';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';
 import React, { useState } from 'react';
+import { useRequest } from 'umi';
 import EventTrigger from './EventTrigger';
 import TimingTrigger from './TimingTrigger';
-import { useRequest } from 'umi';
-import { apiAgentComponentTriggerAdd } from '@/services/agentConfig';
-import { TriggerTypeEnum } from '@/types/enums/agent';
-import type { AgentComponentTriggerAddParams } from '@/types/interfaces/agent';
 
 /**
  * 创建触发器组件
@@ -40,7 +40,9 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
   });
 
   // todo
-  const onFinish: FormProps<AgentComponentTriggerAddParams>['onFinish'] = (values) => {
+  const onFinish: FormProps<AgentComponentTriggerAddParams>['onFinish'] = (
+    values,
+  ) => {
     console.log(values, '-----');
     const timeCronExpression = values.timeCronExpression.join(',');
     const timeZone = values.timeZone.join(',');
@@ -100,10 +102,7 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
           // 事件触发
           <EventTrigger />
         )}
-        <Form.Item
-          name="componentType"
-          label="任务执行"
-        >
+        <Form.Item name="componentType" label="任务执行">
           <SelectList options={TASK_EXECUTION} placeholder="请选择任务执行" />
         </Form.Item>
       </Form>

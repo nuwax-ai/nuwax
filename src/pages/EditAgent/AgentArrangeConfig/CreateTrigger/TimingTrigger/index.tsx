@@ -1,9 +1,9 @@
+import LabelStar from '@/components/LabelStar';
 import type { CascaderOption } from '@/types/interfaces/common';
 import { Cascader, Form, Space } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
-import LabelStar from '@/components/LabelStar';
 
 const cx = classNames.bind(styles);
 
@@ -74,27 +74,21 @@ const timeOptions: CascaderOption[] = [
  */
 const TimingTrigger: React.FC = () => {
   return (
-    <Form.Item label={<LabelStar label='触发器时间' />}>
+    <Form.Item label={<LabelStar label="触发器时间" />}>
       <Space.Compact block>
         <Form.Item
           className={cx(styles['form-item'])}
           name="timeZone"
           rules={[{ required: true }]}
         >
-          <Cascader
-            options={options}
-            placeholder="请选择"
-          />
+          <Cascader options={options} placeholder="请选择" />
         </Form.Item>
         <Form.Item
           className={cx(styles['form-item'])}
           name="timeCronExpression"
           rules={[{ required: true }]}
         >
-          <Cascader
-            options={timeOptions}
-            placeholder="请选择"
-          />
+          <Cascader options={timeOptions} placeholder="请选择" />
         </Form.Item>
       </Space.Compact>
     </Form.Item>
