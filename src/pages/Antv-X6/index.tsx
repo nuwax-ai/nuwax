@@ -12,8 +12,9 @@ import { getNodeRelation, updateNode } from '@/utils/updateNode';
 import { getEdges } from '@/utils/workflow';
 import { message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
-import { useModel } from 'umi';
+import { useModel, useParams } from 'umi';
 // import Monaco from '../../components/CodeEditor/monaco';
+import { WorkflowModeEnum } from '@/types/enums/library';
 import ControlPanel from './controlPanel';
 import ErrorList from './errorList';
 import GraphContainer from './graphContainer';
@@ -22,13 +23,15 @@ import './index.less';
 import NodeDrawer from './nodeDrawer';
 import { Child } from './type';
 const AntvX6: React.FC = () => {
+  // 当前工作流的id
+  const workflowId = Number(useParams().workflowId);
   // 显示隐藏右侧节点抽屉
   const [visible, setVisible] = useState(false);
   // 右侧抽屉的部分信息
   const [foldWrapItem, setFoldWrapItem] = useState<ChildNode>({
     id: 0,
     description: '',
-    workflowId: 0,
+    workflowId: workflowId,
     type: NodeTypeEnum.Start,
     nodeConfig: {
       extension: {
@@ -93,7 +96,7 @@ const AntvX6: React.FC = () => {
   const getDetails = async () => {
     try {
       // 调用接口，获取当前画布的所有节点和边
-      const _res = await service.getDetails(6);
+      const _res = await service.getDetails(workflowId);
       // 获取左上角的信息
       const _params = {
         name: _res.data.name,
@@ -120,11 +123,11 @@ const AntvX6: React.FC = () => {
 
   // 修改当前工作流的基础信息
   const onConfirm = async (value: IUpdateDetails) => {
-    console.log({ ...value, id: info.id });
+    // console.log({ ...value, id: info.id });
+    setInfo({ ...info, ...value });
+    setShowCreateWorkflow(false);
     // const _res = await service.updateDetails({ ...value, id: info.id });
     // if (_res.code === Constant.success) {
-    //   setInfo({ ...info, ...value });
-    //   setShowCreateWorkflow(false);
     // }
   };
 
@@ -169,7 +172,7 @@ const AntvX6: React.FC = () => {
     dragEvent: { x: number; y: number; height?: number },
   ) => {
     let _params = JSON.parse(JSON.stringify(child));
-    _params.workflowId = 6;
+    _params.workflowId = workflowId;
     _params.extension = dragEvent;
 
     // 如果是条件分支，需要增加高度
@@ -399,6 +402,7 @@ const AntvX6: React.FC = () => {
         onConfirm={onConfirm}
         onCancel={() => setShowCreateWorkflow(false)}
         open={showCreateWorkflow}
+        type={WorkflowModeEnum.Update}
         {...info}
       />
 
