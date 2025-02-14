@@ -42,6 +42,8 @@ export interface ChildNode {
   modified?: string;
   created?: string;
   key?: string;
+  icon: string;
+  selected?: boolean;
 }
 
 export interface Edge {

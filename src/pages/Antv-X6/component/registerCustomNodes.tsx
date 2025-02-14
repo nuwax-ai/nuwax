@@ -103,6 +103,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
     const { node } = this.props;
     // 明确告诉 getData 返回的数据类型
     const data = node.getData<ChildNode>();
+    const isSelected = !!data.selected; // 判断是否选中
     // console.log('data', data);
     // 或者返回一个默认的内容，以防止渲染错误
     if (!data) {
@@ -117,7 +118,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
     )} 0%, white 70%)`;
     return (
       <div
-        className="general-node"
+        className={`general-node ${isSelected ? 'selected-general-node' : ''}`} // 根据选中状态应用类名
         style={{
           width: width,
           height: height,
@@ -143,7 +144,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
             )}
           </div>
           {data.type !== 'Start' && data.type !== 'End' && (
-            <div>
+            <div className="other-action-style">
               <Popover placement="top" content={'测试该节点'}>
                 <PlayCircleOutlined
                   onClick={(e) => {
@@ -188,6 +189,16 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
 // 注册组件时，确保传递了正确的类型
 
 export function registerCustomNodes() {
+  // 将自定义节点正确注册
+  register({
+    shape: 'general-Node',
+    component: GeneralNode,
+    embeddable: ({ data }: { data: ChildNode }) => data.type === 'Loop',
+    resizable: true,
+  });
+}
+
+export function registerNode() {
   // 将自定义节点正确注册
   register({
     shape: 'general-Node',

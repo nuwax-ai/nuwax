@@ -16,7 +16,6 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
     }
   };
 
-  console.log('referenceList', referenceList);
   // 获取父组件的中文名称
   const getName = (value: string) => {
     // console

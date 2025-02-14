@@ -22,8 +22,8 @@ interface Confirm {
 // 更新、创建工作流弹窗
 export interface CreateWorkflowProps {
   type?: WorkflowModeEnum;
-  spaceId?: string;
-  id?: string;
+  spaceId?: string | number;
+  id?: string | number;
   name?: string;
   description?: string;
   icon?: string;

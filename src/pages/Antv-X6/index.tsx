@@ -15,6 +15,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 // import Monaco from '../../components/CodeEditor/monaco';
 import ControlPanel from './controlPanel';
+import ErrorList from './errorList';
 import GraphContainer from './graphContainer';
 import Header from './header';
 import './index.less';
@@ -36,6 +37,7 @@ const AntvX6: React.FC = () => {
       },
     },
     name: '',
+    icon: '',
   });
   // 工作流左上角的详细信息
   const [info, setInfo] = useState({
@@ -48,6 +50,7 @@ const AntvX6: React.FC = () => {
     description: '',
     startNodeId: 0,
     endNodeId: 0,
+    spaceId: 0,
   });
 
   // 上级节点的输出参数
@@ -73,6 +76,12 @@ const AntvX6: React.FC = () => {
     nodeList: ChildNode[];
     edgeList: Edge[];
   }>({ nodeList: [], edgeList: [] });
+
+  // 错误列表的参数
+  const [errorParams, setErrorParams] = useState({
+    errorList: [{ ...graphParams.nodeList[0], error: '123456' }],
+    show: false,
+  });
   // 画布的ref
   const graphRef = useRef<any>(null);
   // 是否显示创建工作流，插件，知识库，数据库的弹窗和试运行的弹窗
@@ -95,6 +104,7 @@ const AntvX6: React.FC = () => {
         id: _res.data.id,
         description: _res.data.description,
         startNodeId: _res.data.startNode.id,
+        spaceId: _res.data.spaceId,
         endNodeId: _res.data.endNode.id,
       };
       setInfo(_params);
@@ -110,11 +120,12 @@ const AntvX6: React.FC = () => {
 
   // 修改当前工作流的基础信息
   const onConfirm = async (value: IUpdateDetails) => {
-    const _res = await service.updateDetails({ ...value, id: info.id });
-    if (_res.code === Constant.success) {
-      setInfo({ ...info, ...value });
-      setShowCreateWorkflow(false);
-    }
+    console.log({ ...value, id: info.id });
+    // const _res = await service.updateDetails({ ...value, id: info.id });
+    // if (_res.code === Constant.success) {
+    //   setInfo({ ...info, ...value });
+    //   setShowCreateWorkflow(false);
+    // }
   };
 
   // 更新节点数据
@@ -331,6 +342,7 @@ const AntvX6: React.FC = () => {
     if (fullPath) {
       // 遍历检查所有节点是否都已经输入了参数
       console.log('submit');
+      setErrorParams({ ...errorParams, show: true });
     } else {
       message.warning('连线不完整');
       return;
@@ -386,11 +398,16 @@ const AntvX6: React.FC = () => {
       <CreateWorkflow
         onConfirm={onConfirm}
         onCancel={() => setShowCreateWorkflow(false)}
-        type={1}
-        name={info.name}
-        icon={info.icon}
-        description={info.description}
         open={showCreateWorkflow}
+        {...info}
+      />
+
+      <ErrorList
+        visible={visible}
+        errorList={errorParams.errorList}
+        show={errorParams.show}
+        onClose={() => setErrorParams({ ...errorParams, show: false })}
+        changeDrawer={changeDrawer}
       />
     </div>
   );
