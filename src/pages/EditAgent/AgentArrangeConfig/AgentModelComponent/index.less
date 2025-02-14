@@ -1,0 +1,45 @@
+@import '@/styles/color';
+
+.container {
+  gap: 6px;
+  margin-bottom: 6px;
+  padding: 6px 16px;
+  border-radius: 4px;
+  background-color: @WHITE;
+  cursor: default;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &:hover {
+    background-color: @GRAY01;
+
+    .extra-box {
+      display: flex;
+    }
+  }
+
+  .img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+  }
+
+  .name {
+    display: inline-block;
+    color: @BLANK;
+  }
+
+  .desc {
+    color: @BLANK07;
+    font-size: 12px;
+  }
+
+  .extra-box {
+    gap: 6px;
+    display: none;
+    font-size: 16px;
+    transition: all 0.3s;
+  }
+}

@@ -35,3 +35,48 @@ export enum AgentComponentTypeEnum {
   Database = 'Database',
   Model = 'Model',
 }
+
+// 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
+export enum BindValueType {
+  Input = 'Input',
+  Reference = 'Reference',
+}
+
+// 输入类型, Http插件有用,可用值:Query,Body,Header,Path
+export enum InputTypeType {
+  Query = 'Query',
+  Body = 'Body',
+  Header = 'Header',
+  Path = 'Path',
+}
+
+// 触发类型,TIME 定时触发, EVENT 事件触发,可用值:TIME,EVENT
+export enum TriggerTypeEnum {
+  TIME = 'TIME',
+  EVENT = 'EVENT',
+}
+
+// 触发器执行的组件类型,可用值:PLUGIN,WORKFLOW
+export enum TriggerComponentType {
+  PLUGIN = 'PLUGIN',
+  WORKFLOW = 'WORKFLOW',
+}
+
+// 调用方式,可用值:AUTO,ON_DEMAND
+export enum InvokeTypeEnum {
+  AUTO = 'AUTO',
+  ON_DEMAND = 'ON_DEMAND',
+}
+
+// 搜索策略,可用值:SEMANTIC,MIXED,FULL_TEXT
+export enum SearchStrategyEnum {
+  SEMANTIC = 'SEMANTIC',
+  MIXED = 'MIXED',
+  FULL_TEXT = 'FULL_TEXT',
+}
+
+// 无召回回复类型，默认、自定义,可用值:DEFAULT,CUSTOM
+export enum NoneRecallReplyTypeEnum {
+  DEFAULT = 'DEFAULT',
+  CUSTOM = 'CUSTOM',
+}

@@ -36,13 +36,12 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     manual: true,
     debounceWait: 300,
     onSuccess: (_, params) => {
-      // todo
       message.success('工作流已创建成功');
       onConfirm(...params);
     },
   });
 
-  // 新增工作流
+  // 更新工作流
   const { run: runUpdate } = useRequest(apiUpdateWorkflow, {
     manual: true,
     debounceWait: 300,

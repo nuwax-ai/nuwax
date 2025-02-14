@@ -20,6 +20,7 @@ import {
   SpaceApplicationListEnum,
   UserProblemSuggestEnum,
 } from '@/types/enums/space';
+import { TriggerComponentType } from '@/types/enums/agent';
 
 // 组件库所有资源类型
 export const LIBRARY_ALL_RESOURCE = [
@@ -150,16 +151,16 @@ export const USER_PROBLEM_SUGGEST_LIST = [
 
 // 任务执行
 export const TASK_EXECUTION = [
+  // {
+  //   value: 0,
+  //   label: '机器人提示',
+  // },
   {
-    value: 0,
-    label: '机器人提示',
-  },
-  {
-    value: 1,
+    value: TriggerComponentType.PLUGIN,
     label: '插件',
   },
   {
-    value: 2,
+    value: TriggerComponentType.WORKFLOW,
     label: '工作流',
   },
 ];

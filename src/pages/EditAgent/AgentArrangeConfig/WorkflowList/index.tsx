@@ -1,9 +1,10 @@
+import workflowImage from '@/assets/images/workflow_image.png';
+import TooltipIcon from '@/components/TooltipIcon';
+import { ICON_SETTING } from '@/constants/images.constants';
 import { AgentComponentInfo } from '@/types/interfaces/agent';
-import classNames from 'classnames';
+import { DeleteOutlined } from '@ant-design/icons';
 import React from 'react';
-import styles from './index.less';
-
-const cx = classNames.bind(styles);
+import AgentModelComponent from '../AgentModelComponent';
 
 interface WorkflowListProps {
   list: AgentComponentInfo[];
@@ -16,16 +17,23 @@ const WorkflowList: React.FC<WorkflowListProps> = ({ list }) => {
     </p>
   ) : (
     list.map((item) => (
-      <div
+      <AgentModelComponent
         key={item.id}
-        className={cx('flex', 'overflow-hide', styles.container)}
-      >
-        <img src={item.icon} alt="" />
-        <div className={cx('flex-1', 'flex', 'flex-col')}>
-          <h3>{item.name}</h3>
-          <p>{item.description}</p>
-        </div>
-      </div>
+        agentComponentInfo={item}
+        defaultImage={workflowImage as string}
+        extra={
+          <>
+            <TooltipIcon
+              title="设置"
+              icon={<ICON_SETTING className={'cursor-pointer'} />}
+            />
+            <TooltipIcon
+              title="删除"
+              icon={<DeleteOutlined className={'cursor-pointer'} />}
+            />
+          </>
+        }
+      />
     ))
   );
 };

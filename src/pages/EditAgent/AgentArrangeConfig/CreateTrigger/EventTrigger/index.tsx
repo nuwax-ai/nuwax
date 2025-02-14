@@ -27,7 +27,7 @@ const EventTrigger: React.FC = () => {
         </Form.Item>
       </Form.Item>
       <Form.Item
-        name="beareaToken"
+        name="eventBearerToken"
         label="Bearer Token"
         rules={[{ required: true, message: '请输入Bearer Token' }]}
       >

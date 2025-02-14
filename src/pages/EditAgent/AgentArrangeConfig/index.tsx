@@ -6,7 +6,6 @@ import {
   LONG_MEMORY_LIST,
   USER_PROBLEM_SUGGEST_LIST,
 } from '@/constants/space.contants';
-import WorkflowList from '@/pages/EditAgent/AgentArrangeConfig/WorkflowList';
 import { apiAgentComponentList } from '@/services/agentConfig';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PluginAndLibraryEnum } from '@/types/enums/common';
@@ -19,21 +18,21 @@ import {
   LongMemberEnum,
   UserProblemSuggestEnum,
 } from '@/types/enums/space';
-import { AgentComponentInfo } from '@/types/interfaces/agent';
+import type { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { AgentArrangeConfigProps } from '@/types/interfaces/agentConfig';
-import { useRequest } from '@@/exports';
 import { CaretDownOutlined } from '@ant-design/icons';
 import { CollapseProps } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useModel } from 'umi';
-import CreateTrigger from '../CreateTrigger';
+import { useModel, useRequest } from 'umi';
 import ConfigOption from './ConfigOptionCollapse';
 import ConfigOptionsHeader from './ConfigOptionsHeader';
+import CreateTrigger from './CreateTrigger';
 import styles from './index.less';
 import LongMemoryContent from './LongMemoryContent';
 import PluginList from './PluginList';
 import TriggerContent from './TriggerContent';
+import WorkflowList from './WorkflowList';
 
 const cx = classNames.bind(styles);
 
@@ -57,6 +56,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     useState<UserProblemSuggestEnum>(UserProblemSuggestEnum.Start_Use);
   const [triggerChecked, setTriggerChecked] = useState<boolean>(false);
   const [openTriggerModel, setOpenTriggerModel] = useState<boolean>(false);
+  // 智能体模型组件列表
   const [agentComponentList, setAgentComponentList] = useState<
     AgentComponentInfo[]
   >([]);
@@ -152,7 +152,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       label: '插件',
       children: (
         <PluginList
-          list={filterList(agentComponentList, AgentComponentTypeEnum.Plugin)}
+          list={filterList(agentComponentList, AgentComponentTypeEnum.Variable)}
           onSet={onSet}
           onDel={() => {}}
         />
@@ -317,6 +317,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       <Created checkTag={PluginAndLibraryEnum.Plugin} onAdded={() => {}} />
       {/*添加触发器弹窗*/}
       <CreateTrigger
+        agentId={agentId}
         open={openTriggerModel}
         title="创建触发器"
         onCancel={() => setOpenTriggerModel(false)}
