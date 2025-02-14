@@ -1,13 +1,12 @@
 // 引入 AntV X6 的核心库和必要的插件。
-import { Graph, Shape } from '@antv/x6';
+import { Graph, Node, Shape } from '@antv/x6';
 // 剪贴板插件，用于复制和粘贴节点
 import { Clipboard } from '@antv/x6-plugin-clipboard';
 // 历史记录插件，支持撤销/重做操作
 import { History } from '@antv/x6-plugin-history';
 // 键盘快捷键插件，提供快捷键操作
 import { Keyboard } from '@antv/x6-plugin-keyboard';
-// 选择插件，支持多选和框选功能
-import { Selection } from '@antv/x6-plugin-selection';
+
 // 对齐辅助线插件，帮助对齐节点
 import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
@@ -33,7 +32,6 @@ const initGraph = ({
   // 如果找不到容器，则抛出错误
   if (!graphContainer) throw new Error('Container not found');
 
-  // 注册自定义连接器
   // 注册自定义连接器
   Graph.registerConnector('curveConnector', createCurvePath, true);
 
@@ -83,13 +81,20 @@ const initGraph = ({
           attrs: {
             line: {
               strokeDasharray: '5 5',
+              strokeWidth: 1,
             },
           },
           zIndex: -1,
         });
       },
-      validateConnection({ targetMagnet }) {
-        return !!targetMagnet; // 验证连接是否有效，只有目标有磁铁时才允许连接
+      validateConnection({ sourceMagnet, targetMagnet }) {
+        if (!sourceMagnet || sourceMagnet.getAttribute('port-group') === 'in') {
+          return false;
+        }
+        if (!targetMagnet || targetMagnet.getAttribute('port-group') !== 'in') {
+          return false;
+        }
+        return true;
       },
     },
     highlighting: {
@@ -108,7 +113,6 @@ const initGraph = ({
   // 使用多个插件来增强图形编辑器的功能
   graph
     // .use(new Transform({ resizing: true, rotating: true })) // 启用变换插件，允许节点缩放和旋转
-    .use(new Selection({ rubberband: true, showNodeSelectionBox: true })) // 启用选择插件，允许框选和显示选择框
     .use(new Snapline()) // 启用对齐辅助线插件，帮助节点对齐
     .use(new Keyboard()) // 启用键盘插件，支持快捷键操作
     .use(new Clipboard()) // 启用剪贴板插件，支持复制和粘贴
@@ -145,11 +149,19 @@ const initGraph = ({
   graph.on('node:click', ({ node }) => {
     // 判断点击的是空白处还是节点
     if (node && node.isNode()) {
+      // 先取消所有节点的选中状态
+      graph.getNodes().forEach((n) => n.setData({ selected: false }));
+      // 设置当前节点为选中状态
+      node.setData({ selected: true });
       // 获取被点击节点的数据
       const data = node.getData(); // 获取被点击节点的数据
       data.id = node.id;
       changeDrawer(data); // 调用回调函数以更新抽屉内容
     }
+  });
+
+  graph.on('node:unselected', ({ node }: { node: Node }) => {
+    node.setData({ selected: false });
   });
 
   // 假设 graph 是你的图实例
@@ -190,6 +202,14 @@ const initGraph = ({
         // 通知父组件创建边
         changeEdge(sourceNode, targetNodeId, 'created', edge.id);
       }
+
+      edge.attr({
+        line: {
+          strokeDasharray: '', // 移除虚线样式
+          stroke: '#C2C8D5', // 设置边的颜色
+          strokeWidth: 1, // 设置边的宽度
+        },
+      });
     }
   });
 

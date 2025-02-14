@@ -39,7 +39,11 @@ const routes = [
       { path: '/square', component: '@/pages/Square' },
     ],
   },
-  { path: '/antv', component: '@/pages/Antv-X6', layout: false },
+  {
+    path: '/workflow/:workflowId',
+    component: '@/pages/Antv-X6',
+    layout: false,
+  },
   {
     path: '/space/:spaceId/agent/:agentId',
     component: '@/pages/EditAgent',

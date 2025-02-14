@@ -1,6 +1,9 @@
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import { InputOrReference } from '@/components/FormListItem/InputOrReference';
-import type { NodeConfig, PreviousList } from '@/types/interfaces/node';
+import type {
+  NodeConfig,
+  NodePreviousAndArgMap,
+} from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Empty, Form, Popover, Tag } from 'antd';
@@ -15,7 +18,7 @@ interface InputListProps {
     description: string;
     bindValue: string;
   }[];
-  referenceList: PreviousList[];
+  referenceList: NodePreviousAndArgMap;
   title: string;
   initialValues?: object;
   onChange: (val: string) => void;

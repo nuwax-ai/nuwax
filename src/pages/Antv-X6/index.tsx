@@ -12,22 +12,26 @@ import { getNodeRelation, updateNode } from '@/utils/updateNode';
 import { getEdges } from '@/utils/workflow';
 import { message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
-import { useModel } from 'umi';
+import { useModel, useParams } from 'umi';
 // import Monaco from '../../components/CodeEditor/monaco';
+import { WorkflowModeEnum } from '@/types/enums/library';
 import ControlPanel from './controlPanel';
+import ErrorList from './errorList';
 import GraphContainer from './graphContainer';
 import Header from './header';
 import './index.less';
 import NodeDrawer from './nodeDrawer';
 import { Child } from './type';
 const AntvX6: React.FC = () => {
+  // 当前工作流的id
+  const workflowId = Number(useParams().workflowId);
   // 显示隐藏右侧节点抽屉
   const [visible, setVisible] = useState(false);
   // 右侧抽屉的部分信息
   const [foldWrapItem, setFoldWrapItem] = useState<ChildNode>({
     id: 0,
     description: '',
-    workflowId: 0,
+    workflowId: workflowId,
     type: NodeTypeEnum.Start,
     nodeConfig: {
       extension: {
@@ -36,6 +40,7 @@ const AntvX6: React.FC = () => {
       },
     },
     name: '',
+    icon: '',
   });
   // 工作流左上角的详细信息
   const [info, setInfo] = useState({
@@ -48,6 +53,7 @@ const AntvX6: React.FC = () => {
     description: '',
     startNodeId: 0,
     endNodeId: 0,
+    spaceId: 0,
   });
 
   // 上级节点的输出参数
@@ -73,6 +79,12 @@ const AntvX6: React.FC = () => {
     nodeList: ChildNode[];
     edgeList: Edge[];
   }>({ nodeList: [], edgeList: [] });
+
+  // 错误列表的参数
+  const [errorParams, setErrorParams] = useState({
+    errorList: [{ ...graphParams.nodeList[0], error: '123456' }],
+    show: false,
+  });
   // 画布的ref
   const graphRef = useRef<any>(null);
   // 是否显示创建工作流，插件，知识库，数据库的弹窗和试运行的弹窗
@@ -84,7 +96,7 @@ const AntvX6: React.FC = () => {
   const getDetails = async () => {
     try {
       // 调用接口，获取当前画布的所有节点和边
-      const _res = await service.getDetails(6);
+      const _res = await service.getDetails(workflowId);
       // 获取左上角的信息
       const _params = {
         name: _res.data.name,
@@ -95,6 +107,7 @@ const AntvX6: React.FC = () => {
         id: _res.data.id,
         description: _res.data.description,
         startNodeId: _res.data.startNode.id,
+        spaceId: _res.data.spaceId,
         endNodeId: _res.data.endNode.id,
       };
       setInfo(_params);
@@ -110,11 +123,12 @@ const AntvX6: React.FC = () => {
 
   // 修改当前工作流的基础信息
   const onConfirm = async (value: IUpdateDetails) => {
-    const _res = await service.updateDetails({ ...value, id: info.id });
-    if (_res.code === Constant.success) {
-      setInfo({ ...info, ...value });
-      setShowCreateWorkflow(false);
-    }
+    // console.log({ ...value, id: info.id });
+    setInfo({ ...info, ...value });
+    setShowCreateWorkflow(false);
+    // const _res = await service.updateDetails({ ...value, id: info.id });
+    // if (_res.code === Constant.success) {
+    // }
   };
 
   // 更新节点数据
@@ -158,7 +172,7 @@ const AntvX6: React.FC = () => {
     dragEvent: { x: number; y: number; height?: number },
   ) => {
     let _params = JSON.parse(JSON.stringify(child));
-    _params.workflowId = 6;
+    _params.workflowId = workflowId;
     _params.extension = dragEvent;
 
     // 如果是条件分支，需要增加高度
@@ -331,6 +345,7 @@ const AntvX6: React.FC = () => {
     if (fullPath) {
       // 遍历检查所有节点是否都已经输入了参数
       console.log('submit');
+      setErrorParams({ ...errorParams, show: true });
     } else {
       message.warning('连线不完整');
       return;
@@ -386,11 +401,17 @@ const AntvX6: React.FC = () => {
       <CreateWorkflow
         onConfirm={onConfirm}
         onCancel={() => setShowCreateWorkflow(false)}
-        type={1}
-        name={info.name}
-        icon={info.icon}
-        description={info.description}
         open={showCreateWorkflow}
+        type={WorkflowModeEnum.Update}
+        {...info}
+      />
+
+      <ErrorList
+        visible={visible}
+        errorList={errorParams.errorList}
+        show={errorParams.show}
+        onClose={() => setErrorParams({ ...errorParams, show: false })}
+        changeDrawer={changeDrawer}
       />
     </div>
   );

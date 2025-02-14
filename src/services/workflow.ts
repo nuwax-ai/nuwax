@@ -51,11 +51,11 @@ const getDetails = (id: number) => {
 };
 
 // 更改工作流基础信息
-const updateDetails = (data: IUpdateDetails) => {
+const updateDetails = (params: IUpdateDetails) => {
   return customRequest({
     url: `/api/workflow/update`,
     method: 'POST',
-    data,
+    data: params,
   })
     .then((response) => {
       return response;
