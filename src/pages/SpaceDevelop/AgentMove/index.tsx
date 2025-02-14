@@ -1,52 +1,50 @@
+import personal from '@/assets/images/personal.png';
+import { SPACE_ID } from '@/constants/home.constants';
+import type { AgentMoveProps } from '@/types/interfaces/space';
 import { CheckOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface AgentMoveProps {
-  open: boolean;
-  title: string;
-  onCancel: () => void;
-  onConfirm: () => void;
-}
-
+/**
+ * 智能体迁移
+ */
 const AgentMove: React.FC<AgentMoveProps> = ({
   open,
   title,
   onCancel,
   onConfirm,
 }) => {
-  const [teamId, setTeamId] = useState<number>(0);
+  const [targetSpaceId, setTargetSpaceId] = useState<string>('');
+  const { spaceList } = useModel('spaceModel');
 
-  const spaceList = [
-    {
-      img: 'https://lf6-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon4.png?lk3s=ca44e09c&x-expires=1736819936&x-signature=aJULoDj7yjvagaC8zjjBp6Ph7ac%3D',
-      teamId: 0,
-      teamName: '星际争霸',
-    },
-    {
-      img: 'https://lf6-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon4.png?lk3s=ca44e09c&x-expires=1736819936&x-signature=aJULoDj7yjvagaC8zjjBp6Ph7ac%3D',
-      teamId: 1,
-      teamName: '魔兽世界',
-    },
-  ];
+  const spaceId = localStorage.getItem(SPACE_ID);
+  const filterSpaceList =
+    spaceList?.filter((item) => item.id.toString() !== spaceId) || [];
 
   return (
     <Modal
       open={open}
+      destroyOnClose
       onCancel={onCancel}
       title={
-        <div>
+        <>
           <span>{`迁移智能体至团队空间 - ${title}`}</span>
           <InfoCircleOutlined />
-        </div>
+        </>
       }
       footer={() => (
-        <Button type="primary" block onClick={onConfirm}>
-          下一步
+        <Button
+          type="primary"
+          block
+          onClick={() => onConfirm(targetSpaceId)}
+          disabled={!targetSpaceId}
+        >
+          迁移
         </Button>
       )}
       width={475}
@@ -55,17 +53,13 @@ const AgentMove: React.FC<AgentMoveProps> = ({
         <div className={cx(styles['row-line'])} />
         <span className={cx(styles.label)}>个人空间</span>
         <div className={cx('flex', 'items-center', styles.box)}>
-          <img
-            className={cx(styles.img)}
-            src="https://lf6-appstore-sign.oceancloudapi.com/ocean-cloud-tos/FileBizType.BIZ_BOT_ICON/default_bot_icon4.png?lk3s=ca44e09c&x-expires=1736819936&x-signature=aJULoDj7yjvagaC8zjjBp6Ph7ac%3D"
-            alt=""
-          />
+          <img className={cx(styles.img)} src={personal as string} alt="" />
           <span>个人空间</span>
         </div>
         <span className={cx(styles.label)}>选择要迁移到的团队空间</span>
-        {spaceList.map((item) => (
+        {filterSpaceList.map((item) => (
           <div
-            key={item.teamId}
+            key={item.id}
             className={cx(
               'flex',
               'items-center',
@@ -73,11 +67,11 @@ const AgentMove: React.FC<AgentMoveProps> = ({
               'cursor-pointer',
               styles.box,
             )}
-            onClick={() => setTeamId(item.teamId)}
+            onClick={() => setTargetSpaceId(item.id)}
           >
             <img className={cx(styles.img)} src={item.img} alt="" />
-            <span className={cx('flex-1')}>{item.teamName}</span>
-            {teamId === item.teamId && (
+            <span className={cx('flex-1')}>{item.name}</span>
+            {targetSpaceId === item.id && (
               <CheckOutlined className={cx(styles['selected-ico'])} />
             )}
           </div>

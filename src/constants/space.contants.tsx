@@ -1,5 +1,8 @@
 import {
+  ICON_APPLICATION_DEV,
+  ICON_COMPONENT_LIBRARY,
   ICON_DATABASE,
+  ICON_GROUP_SET,
   ICON_KNOWLEDGE,
   ICON_MODEL,
   ICON_PLUGIN,
@@ -17,11 +20,7 @@ import {
   SpaceApplicationListEnum,
   UserProblemSuggestEnum,
 } from '@/types/enums/space';
-import {
-  BorderVerticleOutlined,
-  HddOutlined,
-  RadarChartOutlined,
-} from '@ant-design/icons';
+import { TriggerComponentType } from '@/types/enums/agent';
 
 // 组件库所有资源类型
 export const LIBRARY_ALL_RESOURCE = [
@@ -66,7 +65,7 @@ export const LIBRARY_ALL_TYPE = [
 export const FILTER_STATUS = [
   { value: FilterStatusEnum.All, label: '全部' },
   { value: FilterStatusEnum.Published, label: '已发布' },
-  { value: FilterStatusEnum.Recently_Open, label: '最近打开' },
+  // { value: FilterStatusEnum.Recently_Open, label: '最近打开' },
 ];
 
 // 过滤创建者
@@ -87,17 +86,17 @@ export const APPLICATION_MORE_ACTION = [
 export const SPACE_APPLICATION_LIST = [
   {
     type: SpaceApplicationListEnum.Application_Develop,
-    icon: <BorderVerticleOutlined />,
+    icon: <ICON_APPLICATION_DEV />,
     text: '应用开发',
   },
   {
     type: SpaceApplicationListEnum.Component_Library,
-    icon: <HddOutlined />,
+    icon: <ICON_COMPONENT_LIBRARY />,
     text: '组件库',
   },
   {
     type: SpaceApplicationListEnum.Team_Setting,
-    icon: <RadarChartOutlined />,
+    icon: <ICON_GROUP_SET />,
     text: '团队设置',
   },
 ];
@@ -152,16 +151,16 @@ export const USER_PROBLEM_SUGGEST_LIST = [
 
 // 任务执行
 export const TASK_EXECUTION = [
+  // {
+  //   value: 0,
+  //   label: '机器人提示',
+  // },
   {
-    value: 0,
-    label: '机器人提示',
-  },
-  {
-    value: 1,
+    value: TriggerComponentType.PLUGIN,
     label: '插件',
   },
   {
-    value: 2,
+    value: TriggerComponentType.WORKFLOW,
     label: '工作流',
   },
 ];

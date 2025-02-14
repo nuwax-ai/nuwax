@@ -44,11 +44,11 @@ export async function apiDeleteSpace(
 
 // 查询指定空间信息
 export async function apiUserSpaceInfo(
-  params: UserSpaceInfoParams,
+  data: UserSpaceInfoParams,
 ): Promise<RequestResponse<SpaceInfo>> {
-  return request('/api/space/get', {
+  const spaceId = data.spaceId;
+  return request(`/api/space/get/${spaceId}`, {
     method: 'GET',
-    params,
   });
 }
 

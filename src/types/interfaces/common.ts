@@ -23,7 +23,7 @@ export interface KeyValuePairs {
 
 // 条件渲染组件
 export interface ConditionRenderProps {
-  condition: React.Key | boolean;
+  condition?: React.Key | boolean;
 }
 
 // 折叠容器

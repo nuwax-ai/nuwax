@@ -20,11 +20,12 @@ import { CustomPopoverItem } from '@/types/interfaces/common';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, message } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { history } from 'umi';
 import ComponentItem from './ComponentItem';
 import CreateModel from './CreateModel';
 import styles from './index.less';
+import { SPACE_ID } from '@/constants/home.constants';
 
 const cx = classNames.bind(styles);
 
@@ -49,6 +50,17 @@ const SpaceLibrary: React.FC = () => {
   const [create, setCreate] = useState<CreateListEnum>(
     CreateListEnum.All_Person,
   );
+  const spaceId = localStorage.getItem(SPACE_ID);
+
+  useEffect(() => {
+    const unlisten = history.listen(({ location }) => {
+      console.log(location.pathname);
+    });
+
+    return () => {
+      unlisten();
+    };
+  }, []);
 
   const handlerChangeType = (value: LibraryAllTypeEnum) => {
     setType(value);
@@ -219,7 +231,7 @@ const SpaceLibrary: React.FC = () => {
       />
       {/*创建工作流*/}
       <CreateWorkflow
-        spaceId={'110110'}
+        spaceId={spaceId}
         open={openWorkflow}
         onCancel={() => setOpenWorkflow(false)}
         onConfirm={() => setOpenWorkflow(false)}

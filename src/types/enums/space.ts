@@ -114,17 +114,16 @@ export enum EditAgentShowType {
   Show_Stand,
 }
 
-// 触发器类型
-export enum TriggerTypeEnum {
-  // 定时触发
-  Timing_Trigger,
-  // 事件触发
-  Event_Trigger,
-}
-
 // 插件设置类型
 export enum PluginSettingEnum {
   Params,
   // 卡片绑定
   Card_Bind,
+}
+
+// 空间类型枚举
+export enum SpaceTypeEnum {
+  Personal = 'Personal',
+  Team = 'Team',
+  Class = 'Class',
 }

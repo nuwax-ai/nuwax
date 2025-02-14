@@ -1,6 +1,22 @@
-import type { TooltipTitleTypeEnum } from '@/types/enums/common';
-import { PublishStatusEnum } from '@/types/enums/common';
+import type {
+  AgentComponentTypeEnum,
+  BindValueType,
+  InputTypeType,
+  TriggerComponentType,
+  TriggerTypeEnum,
+} from '@/types/enums/agent';
+import {
+  InvokeTypeEnum,
+  NoneRecallReplyTypeEnum,
+  SearchStrategyEnum,
+} from '@/types/enums/agent';
+import type {
+  DataTypeEnum,
+  PublishStatusEnum,
+  TooltipTitleTypeEnum,
+} from '@/types/enums/common';
 import type { UpdateModeComponentEnum } from '@/types/enums/library';
+import type { SpaceInfo } from '@/types/interfaces/workspace';
 import React from 'react';
 
 // 知识库设置label
@@ -8,12 +24,6 @@ export interface LabelIconProps {
   label: string;
   title: React.ReactNode;
   type?: TooltipTitleTypeEnum;
-}
-
-// 智能体编排区域配置组件
-export interface AgentArrangeConfigProps {
-  onKnowledge: () => void;
-  onSet: () => void;
 }
 
 // 智能体信息
@@ -110,13 +120,143 @@ export interface AgentConfigUpdateParams {
   openLongMemory: string;
 }
 
-// 更新模型组件配置输入参数
-export interface AgentComponentModelUpdateParams {
-  id: string;
+// 出参绑定配置，插件、工作流有效
+export interface ArgBindConfigs {
+  // 参数key，唯一标识，不需要前端传递，后台根据配置自动生成
+  key: string;
+  // 参数名称，符合函数命名规则
   name: string;
-  icon: string;
+  // 参数详细描述信息
   description: string;
+  // 数据类型
+  dataType: DataTypeEnum;
+  // 是否必须
+  require: boolean;
+  // 是否为开启，如果不开启，插件使用者和大模型均看不见该参数；如果bindValueType为空且require为true时，该参数必须开启
+  enable: boolean;
+  // 是否为系统内置变量参数，内置变量前端只可展示不可修改
+  systemVariable: boolean;
+  // 值引用类型 Input 输入；Reference 变量引用,可用值:Input,Reference
+  bindValueType: BindValueType;
+  // 参数值，当类型为引用时，示例 1.xxx 绑定节点ID为1的xxx字段；当类型为输入时，该字段为最终使用的值
+  bindValue: string;
+  // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
+  inputType: InputTypeType;
+}
+
+// 智能体组件模型基础信息
+export interface AgentComponentModeBaseInfo {
+  // 	组件配置ID
+  id: string;
+  // 组件名称
+  name: string;
+  // 组件图标
+  icon: string;
+  // 组件描述
+  description: string;
+  // 目标组件ID
   targetId: string;
+  exceptionOut: string;
+  fallbackMsg: string;
+}
+
+// 更新工作流组件配置输入参数
+export interface AgentComponentWorkflowUpdateParams
+  extends AgentComponentModeBaseInfo {
+  // 绑定组件配置，不同组件配置不一样
+  bindConfig: {
+    // 出参绑定配置，插件、工作流有效
+    argBindConfigs: {
+      key: string;
+      // 参数名称，符合函数命名规则
+      name: string;
+      // 参数详细描述信息
+      description: string;
+      // 数据类型
+      dataType: DataTypeEnum;
+      require: boolean;
+      enable: boolean;
+      // 是否为系统内置变量参数，内置变量前端只可展示不可修改
+      systemVariable: boolean;
+      // 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
+      bindValueType: BindValueType;
+      bindValue: string;
+      // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
+      inputType: InputTypeType;
+      subArgs: ArgBindConfigs[];
+    }[];
+    // 卡片ID
+    cardId: string;
+    // 卡片参数绑定信息
+    cardArgsBindConfigs: {
+      // 卡片参数名称key
+      key: string;
+      // 卡片参数引用信息，例如插件的出参 data.xxx
+      bindValue: string;
+    }[];
+  };
+}
+
+// 更新变量配置输入参数
+export interface AgentComponentVariableUpdateParams
+  extends AgentComponentModeBaseInfo {
+  bindConfig: {
+    variables: ArgBindConfigs[];
+  };
+}
+
+// 更新触发器组件配置输入参数
+export interface AgentComponentTriggerUpdateParams
+  extends AgentComponentModeBaseInfo {
+  bindConfig: AgentComponentTriggerAddParams;
+}
+
+// 新增智能体触发器配置输入参数
+export interface AgentComponentTriggerAddParams {
+  name: string;
+  // 触发类型,TIME 定时触发, EVENT 事件触发,可用值:TIME,EVENT
+  triggerType: TriggerTypeEnum;
+  timeZone: string;
+  timeCronExpression: string;
+  timeCronDesc: string;
+  eventBearerToken: string;
+  eventArgs: ArgBindConfigs[];
+  // 触发器执行的组件类型,可用值:PLUGIN,WORKFLOW
+  componentType: TriggerComponentType;
+  // 触发器执行的组件名称
+  componentName: string;
+  // 触发器执行的组件ID
+  componentId: string;
+  // 出参绑定配置，插件、工作流有效
+  argBindConfigs: {
+    key: string;
+    // 参数名称，符合函数命名规则
+    name: string;
+    // 参数详细描述信息
+    description: string;
+    // 数据类型
+    dataType: DataTypeEnum;
+    require: boolean;
+    enable: boolean;
+    // 是否为系统内置变量参数，内置变量前端只可展示不可修改
+    systemVariable: boolean;
+    // 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
+    bindValueType: BindValueType;
+    bindValue: string;
+    // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
+    inputType: InputTypeType;
+    subArgs: ArgBindConfigs[];
+  }[];
+  agentId: string;
+}
+
+// 更新插件组件配置
+export interface AgentComponentPluginUpdateParams
+  extends AgentComponentWorkflowUpdateParams {}
+
+// 更新模型组件配置输入参数
+export interface AgentComponentModelUpdateParams
+  extends AgentComponentModeBaseInfo {
   bindConfig: {
     mode: UpdateModeComponentEnum;
     // 	生成随机性;0-1
@@ -128,8 +268,27 @@ export interface AgentComponentModelUpdateParams {
     // 	上下文轮数
     contextRounds: string;
   };
-  exceptionOut: string;
-  fallbackMsg: string;
+}
+
+// 更新知识库组件配置输入参数
+export interface AgentComponentKnowledgeUpdateParams
+  extends AgentComponentModeBaseInfo {
+  // 绑定组件配置，不同组件配置不一样
+  bindConfig: {
+    invokeType: InvokeTypeEnum;
+    searchStrategy: SearchStrategyEnum;
+    maxRecallCount: number;
+    matchingDegree: number;
+    noneRecallReplyType: NoneRecallReplyTypeEnum;
+    noneRecallReply: string;
+  };
+}
+
+// 新增智能体插件、工作流、知识库组件配置输入参数
+export interface AgentComponentAddParams {
+  agentId: string;
+  type: AgentComponentTypeEnum;
+  targetId: string;
 }
 
 // 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)
@@ -197,6 +356,7 @@ export interface AgentConfigInfo {
     nickName: string;
     avatar: string;
   };
+  space: SpaceInfo;
   devCollected: boolean;
 }
 
@@ -235,7 +395,7 @@ export interface AgentComponentInfo {
   description: string;
   agentId: string;
   // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model
-  type: string;
+  type: AgentComponentTypeEnum;
   // 绑定组件配置，不同组件配置不一样
   bindConfig: string;
   // 关联的组件ID

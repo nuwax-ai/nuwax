@@ -6,7 +6,7 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface TriggerContentProps {
+export interface TriggerContentProps {
   checked: boolean;
   onChange?: (checked: boolean) => void;
 }

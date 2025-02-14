@@ -1,0 +1,60 @@
+@import '@/styles/color';
+
+.container {
+  max-width: 300px;
+
+  .p-header {
+    gap: 8px;
+
+    .icon {
+      color: @BLUE03;
+    }
+
+    .img {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+    }
+
+    .title {
+      font-size: 14px;
+      color: @BLANK04;
+    }
+  }
+
+  .divider {
+    margin: 12px auto;
+  }
+
+  .team-title {
+    padding: 0 22px;
+    line-height: 16px;
+    color: @GRAY05;
+    font-size: 12px;
+  }
+
+  .team-info {
+    height: 32px;
+    padding: 0 22px;
+    gap: 6px;
+    color: @BLANK07;
+    cursor: pointer;
+
+    &:hover {
+      background-color: @GRAY01;
+      border-radius: 6px;
+    }
+
+    .team-logo {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+    }
+  }
+
+  .create-team {
+    padding: 0 22px;
+    margin-top: 6px;
+    gap: 6px;
+  }
+}

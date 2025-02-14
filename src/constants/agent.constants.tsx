@@ -3,6 +3,7 @@ import {
   CallMethodEnum,
   NoRecallResponseEnum,
   SearchStrategyEnum,
+  TriggerTypeEnum,
 } from '@/types/enums/agent';
 import { InfoCircleOutlined } from '@ant-design/icons';
 
@@ -67,5 +68,19 @@ export const NO_RECALL_RESPONSE = [
   {
     value: NoRecallResponseEnum.Custom,
     label: '自定义',
+  },
+];
+
+// 触发器类型列表
+export const TRIGGER_TYPE_LIST = [
+  {
+    value: TriggerTypeEnum.TIME,
+    label: '定时触发',
+    img: '',
+  },
+  {
+    value: TriggerTypeEnum.EVENT,
+    label: '事件触发',
+    img: '',
   },
 ];

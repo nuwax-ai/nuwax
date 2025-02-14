@@ -1,4 +1,4 @@
-import pluginImage from '@/assets/images/plugin_image.png';
+import workflowImage from '@/assets/images/workflow_image.png';
 import TooltipIcon from '@/components/TooltipIcon';
 import { ICON_SETTING } from '@/constants/images.constants';
 import { AgentComponentInfo } from '@/types/interfaces/agent';
@@ -6,37 +6,30 @@ import { DeleteOutlined } from '@ant-design/icons';
 import React from 'react';
 import AgentModelComponent from '../AgentModelComponent';
 
-interface PluginListProps {
+interface WorkflowListProps {
   list: AgentComponentInfo[];
-  onSet: () => void;
-  onDel: () => void;
 }
 
-const PluginList: React.FC<PluginListProps> = ({ list, onSet, onDel }) => {
+const WorkflowList: React.FC<WorkflowListProps> = ({ list }) => {
   return !list?.length ? (
     <p>
-      插件能够让智能体调用外部
-      API，例如搜索信息、浏览网页、生成图片等，扩展智能体的能力和使用场景。
+      工作流支持通过可视化的方式，对插件、大语言模型、代码块等功能进行组合，从而实现复杂、稳定的业务流程编排，例如旅行规划、报告分析等。
     </p>
   ) : (
     list.map((item) => (
       <AgentModelComponent
         key={item.id}
         agentComponentInfo={item}
-        defaultImage={pluginImage as string}
+        defaultImage={workflowImage as string}
         extra={
           <>
             <TooltipIcon
               title="设置"
-              icon={
-                <ICON_SETTING className={'cursor-pointer'} onClick={onSet} />
-              }
+              icon={<ICON_SETTING className={'cursor-pointer'} />}
             />
             <TooltipIcon
               title="删除"
-              icon={
-                <DeleteOutlined className={'cursor-pointer'} onClick={onDel} />
-              }
+              icon={<DeleteOutlined className={'cursor-pointer'} />}
             />
           </>
         }
@@ -45,4 +38,4 @@ const PluginList: React.FC<PluginListProps> = ({ list, onSet, onDel }) => {
   );
 };
 
-export default PluginList;
+export default WorkflowList;

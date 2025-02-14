@@ -1,4 +1,5 @@
 import type { RoleEnum } from '@/types/enums/common';
+import type { SpaceTypeEnum } from '@/types/enums/space';
 
 // 创建新团队传入参数
 export interface CreateSpaceTeamParams {
@@ -25,12 +26,15 @@ export type UserSpaceInfoParams = DeleteSpaceParams;
 
 // 用户工作空间信息
 export interface SpaceInfo {
+  // 空间ID
   id: string;
+  // 租户ID
   tenantId: string;
   name: string;
   description: string;
   icon: string;
-  type: string;
+  // 	空间类型
+  type: SpaceTypeEnum;
   creatorId: string;
   modified: string;
   created: string;
@@ -57,5 +61,6 @@ export interface UserSpaceInfo {
 // 空间转让接口传入参数
 export interface TransferSpaceParams {
   spaceId: string;
+  // 	目标用户ID
   targetUserId: string;
 }

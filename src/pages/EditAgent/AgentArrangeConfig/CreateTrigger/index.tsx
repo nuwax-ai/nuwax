@@ -1,58 +1,59 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import SelectList from '@/components/SelectList';
+import { TRIGGER_TYPE_LIST } from '@/constants/agent.constants';
 import { TASK_EXECUTION } from '@/constants/space.contants';
-import { TriggerTypeEnum } from '@/types/enums/space';
-import type { CascaderOption } from '@/types/interfaces/common';
+import type { CreateTriggerProps } from '@/types/interfaces/agentConfig';
 import { customizeRequiredMark } from '@/utils/form';
-import type { CascaderProps } from 'antd';
-import { Form, Input } from 'antd';
+import { Form, FormProps, Input, message } from 'antd';
 import React, { useState } from 'react';
 import EventTrigger from './EventTrigger';
 import TimingTrigger from './TimingTrigger';
+import { useRequest } from 'umi';
+import { apiAgentComponentTriggerAdd } from '@/services/agentConfig';
+import { TriggerTypeEnum } from '@/types/enums/agent';
+import type { AgentComponentTriggerAddParams } from '@/types/interfaces/agent';
 
-interface CreateTriggerProps {
-  open: boolean;
-  title: string;
-  onCancel: () => void;
-  onConfirm: () => void;
-}
-
-const TRIGGER_TYPE_LIST = [
-  {
-    value: TriggerTypeEnum.Timing_Trigger,
-    label: '定时触发',
-    img: 'https://p3-flow-product-sign.byteimg.com/tos-cn-i-13w3uml6bg/d50c9c5c2fe249c3bfee86299d152dfe~tplv-13w3uml6bg-resize:128:128.image?rk3s=2e2596fd&x-expires=1739609524&x-signature=oQDYAxAVtYWH%2FsMGPZ6ItvH3D9E%3D',
-  },
-  {
-    value: TriggerTypeEnum.Event_Trigger,
-    label: '事件触发',
-    img: 'https://p26-flow-product-sign.byteimg.com/tos-cn-i-13w3uml6bg/c2e3da86fb5747ef950beb99d9667eea~tplv-13w3uml6bg-resize:128:128.image?rk3s=2e2596fd&x-expires=1739609524&x-signature=JpRrZVRVUm3K3EZpDHu24cKxylI%3D',
-  },
-];
-
+/**
+ * 创建触发器组件
+ */
 const CreateTrigger: React.FC<CreateTriggerProps> = ({
+  agentId,
   title,
   open,
   onCancel,
   onConfirm,
 }) => {
   const [form] = Form.useForm();
+  // 	触发类型
   const [triggerType, setTriggerType] = useState<TriggerTypeEnum>(
-    TriggerTypeEnum.Timing_Trigger,
+    TriggerTypeEnum.TIME,
   );
 
-  const onFinish = (values) => {
-    // todo 提交form表单
+  // 新增智能体触发器配置
+  const { run } = useRequest(apiAgentComponentTriggerAdd, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: () => {
+      message.success('触发器创建成功');
+      onConfirm();
+    },
+  });
+
+  // todo
+  const onFinish: FormProps<AgentComponentTriggerAddParams>['onFinish'] = (values) => {
     console.log(values, '-----');
+    const timeCronExpression = values.timeCronExpression.join(',');
+    const timeZone = values.timeZone.join(',');
+    run({
+      ...values,
+      timeCronExpression,
+      timeZone,
+      agentId,
+    });
   };
 
   const handlerConfirm = () => {
     form.submit();
-    onConfirm();
-  };
-
-  const onChange: CascaderProps<CascaderOption>['onChange'] = (value) => {
-    console.log(value);
   };
 
   return (
@@ -67,7 +68,7 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
         form={form}
         preserve={false}
         initialValues={{
-          triggerName: '',
+          name: '',
           triggerType: triggerType,
         }}
         layout="vertical"
@@ -76,7 +77,7 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
         autoComplete="off"
       >
         <Form.Item
-          name="triggerName"
+          name="name"
           label="名称"
           rules={[{ required: true, message: '请输入触发器名称' }]}
         >
@@ -92,17 +93,16 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
             onChange={(value) => setTriggerType(value as TriggerTypeEnum)}
           />
         </Form.Item>
-        {triggerType === TriggerTypeEnum.Timing_Trigger ? (
+        {triggerType === TriggerTypeEnum.TIME ? (
           // 定时触发
-          <TimingTrigger onChange={onChange} />
+          <TimingTrigger />
         ) : (
           // 事件触发
           <EventTrigger />
         )}
         <Form.Item
-          name="taskExecution"
+          name="componentType"
           label="任务执行"
-          rules={[{ required: true, message: '请选择任务执行' }]}
         >
           <SelectList options={TASK_EXECUTION} placeholder="请选择任务执行" />
         </Form.Item>

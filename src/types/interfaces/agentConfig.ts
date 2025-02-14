@@ -1,0 +1,43 @@
+import type {
+  AgentComponentInfo,
+  AgentConfigInfo,
+} from '@/types/interfaces/agent';
+import React from 'react';
+
+// 智能体header组件
+export interface AgentHeaderProps {
+  agentConfigInfo: AgentConfigInfo;
+  onToggleShowStand: () => void;
+  handlerToggleVersionHistory: () => void;
+  onEditAgent: () => void;
+  onPublish: () => void;
+}
+
+// 编配title组件
+export interface ArrangeTitleProps {
+  modelName?: string;
+  onClick: () => void;
+}
+
+// 智能体编排区域配置组件
+export interface AgentArrangeConfigProps {
+  agentId: string;
+  onKnowledge: () => void;
+  onSet: () => void;
+}
+
+// 智能体模型组件，插件、工作流、触发器等组件通用显示组件
+export interface AgentModelComponentProps {
+  agentComponentInfo: AgentComponentInfo;
+  defaultImage?: string;
+  extra?: React.ReactNode;
+}
+
+// 创建触发器组件
+export interface CreateTriggerProps {
+  agentId: string;
+  open: boolean;
+  title: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}

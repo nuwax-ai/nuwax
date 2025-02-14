@@ -1,7 +1,12 @@
-import {
-  AgentAddParams,
+import type {
+  AgentAddParams, AgentComponentAddParams,
   AgentComponentInfo,
+  AgentComponentKnowledgeUpdateParams,
   AgentComponentModelUpdateParams,
+  AgentComponentPluginUpdateParams,
+  AgentComponentTriggerAddParams,
+  AgentComponentTriggerUpdateParams,
+  AgentComponentVariableUpdateParams,
   AgentConfigHistoryInfo,
   AgentConfigInfo,
   AgentConfigUpdateParams,
@@ -9,19 +14,10 @@ import {
   AgentDeleteParams,
   AgentPublishApplyParams,
   AgentTransferParams,
+  AgentComponentWorkflowUpdateParams,
 } from '@/types/interfaces/agent';
-import { RequestResponse } from '@/types/interfaces/request';
+import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
-
-// 新增智能体接口
-export async function apiAgentAdd(
-  body: AgentAddParams,
-): Promise<RequestResponse<null>> {
-  return request('/api/agent/add', {
-    method: 'POST',
-    data: body,
-  });
-}
 
 // 智能体迁移接口
 export async function apiAgentTransfer(
@@ -74,11 +70,71 @@ export async function apiAgentConfigUpdate(
   });
 }
 
+// 更新工作流组件配置
+export async function apiAgentComponentWorkflowUpdate(
+  body: AgentComponentWorkflowUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/workflow/update', {
+    method: 'POST',
+    data: body,
+  });
+}
+
+// 更新变量配置
+export async function apiAgentComponentVariableUpdate(
+  body: AgentComponentVariableUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/variable/update', {
+    method: 'POST',
+    data: body,
+  });
+}
+
+// 更新触发器组件配置
+export async function apiAgentComponentTriggerUpdate(
+  body: AgentComponentTriggerUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/trigger/update', {
+    method: 'POST',
+    data: body,
+  });
+}
+
+// 新增智能体触发器配置
+export async function apiAgentComponentTriggerAdd(
+  body: AgentComponentTriggerAddParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/trigger/add', {
+    method: 'POST',
+    data: body,
+  });
+}
+
+// 更新插件组件配置
+export async function apiAgentComponentPluginUpdate(
+  body: AgentComponentPluginUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/plugin/update', {
+    method: 'POST',
+    data: body,
+  });
+}
+
 // 更新模型组件配置
 export async function apiAgentComponentModelUpdate(
   body: AgentComponentModelUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/model/update', {
+    method: 'POST',
+    data: body,
+  });
+}
+
+// 更新知识库组件配置
+export async function apiAgentComponentKnowledgeUpdate(
+  body: AgentComponentKnowledgeUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/knowledge/update', {
     method: 'POST',
     data: body,
   });
@@ -90,6 +146,26 @@ export async function apiAgentComponentDelete(
 ): Promise<RequestResponse<null>> {
   return request(`/api/agent/component/delete/${id}`, {
     method: 'POST',
+  });
+}
+
+// 新增智能体插件、工作流、知识库组件配置
+export async function apiAgentComponentAdd(
+  data: AgentComponentAddParams
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/add', {
+    method: 'POST',
+    body: data,
+  });
+}
+
+// 新增智能体接口
+export async function apiAgentAdd(
+  body: AgentAddParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/add', {
+    method: 'POST',
+    data: body,
   });
 }
 
