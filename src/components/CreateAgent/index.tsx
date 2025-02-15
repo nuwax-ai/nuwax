@@ -5,14 +5,14 @@ import UploadAvatar from '@/components/UploadAvatar';
 import { SPACE_ID } from '@/constants/home.constants';
 import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
 import { CREATE_AGENT_LIST } from '@/constants/space.contants';
-import { apiAgentAdd } from '@/services/agentConfig';
+import { apiAgentAdd, apiAgentConfigUpdate } from '@/services/agentConfig';
 import { CreateAgentEnum, CreateEditAgentEnum } from '@/types/enums/common';
 import type { AgentAddParams } from '@/types/interfaces/agent';
 import type { CreateAgentProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message, Segmented } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
@@ -22,47 +22,64 @@ const { TextArea } = Input;
 
 const CreateAgent: React.FC<CreateAgentProps> = ({
   type = CreateEditAgentEnum.Create,
-  name,
-  description,
-  icon,
+  agentConfigInfo,
   open,
   onCancel,
-  onConfirm,
+  onConfirmCreate,
+  onConfirmUpdate,
 }) => {
   // 分段控制器：标准创建、AI 创建
   const [createAgentType, setCreateAgentType] = useState<CreateAgentEnum>(
     CreateAgentEnum.Standard,
   );
-  const [imageUrl, setImageUrl] = useState<string>(icon || '');
-  const spaceId = localStorage.getItem(SPACE_ID);
-
+  const [imageUrl, setImageUrl] = useState<string>('');
   const [form] = Form.useForm();
 
-  const { run } = useRequest(apiAgentAdd, {
+  // 新增智能体接口
+  const { run: runEdit } = useRequest(apiAgentAdd, {
     manual: true,
     debounceWait: 300,
-    onSuccess: (result, params) => {
-      console.log(params, 555, result);
+    onSuccess: (result) => {
       setImageUrl('');
-      onConfirm(result);
+      onConfirmCreate?.(result);
       message.success('智能体已创建');
     },
   });
 
-  const handlerChange = (value: CreateAgentEnum) => {
-    setCreateAgentType(value);
-  };
+  // 更新智能体基础配置信息
+  const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (_, params) => {
+      message.success('智能体编辑成功');
+      onConfirmUpdate?.(...params);
+    },
+  });
+
+  useEffect(() => {
+    setImageUrl(agentConfigInfo?.icon as string);
+  }, [agentConfigInfo?.icon]);
 
   const onFinish: FormProps<AgentAddParams>['onFinish'] = (values) => {
-    run({
-      ...values,
-      icon: imageUrl,
-      spaceId,
-    });
+    if (type === CreateEditAgentEnum.Create) {
+      const spaceId = localStorage.getItem(SPACE_ID);
+      runEdit({
+        ...values,
+        icon: imageUrl,
+        spaceId,
+      });
+    } else {
+      // 更新智能体
+      runUpdate({
+        ...values,
+        icon: imageUrl,
+        id: agentConfigInfo?.id,
+      });
+    }
   };
 
-  const handlerSubmit = async () => {
-    await form.submit();
+  const handlerSubmit = () => {
+    form.submit();
   };
 
   return (
@@ -85,21 +102,20 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         <Segmented
           className={cx(styles.segment)}
           value={createAgentType}
-          onChange={handlerChange}
+          onChange={setCreateAgentType}
           block
           options={CREATE_AGENT_LIST}
         />
       )}
       <Form
         form={form}
-        preserve={false}
         requiredMark={customizeRequiredMark}
         layout="vertical"
-        onFinish={onFinish}
         initialValues={{
-          name,
-          description,
+          name: agentConfigInfo?.name,
+          description: agentConfigInfo?.description,
         }}
+        onFinish={onFinish}
         autoComplete="off"
       >
         {createAgentType === CreateAgentEnum.Standard ? (
@@ -124,28 +140,19 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             <Form.Item
               name="icon"
               label="图标"
-              rules={[{ required: true, message: '请选择图标' }]}
             >
-              <div className={cx('flex', 'items-end', styles['image-box'])}>
-                <UploadAvatar
-                  className={styles['upload-box']}
-                  onUploadSuccess={setImageUrl}
-                  imageUrl={imageUrl}
-                  defaultImage={agentImage as string}
-                />
-                <span className={cx(styles['vertical-line'])} />
-                <img
-                  className={cx(styles['recommend-img'], 'cursor-pointer')}
-                  src=""
-                  alt=""
-                />
-              </div>
+              <UploadAvatar
+                className={styles['upload-box']}
+                onUploadSuccess={setImageUrl}
+                imageUrl={imageUrl}
+                defaultImage={agentImage as string}
+              />
             </Form.Item>
           </>
         ) : (
           <Form.Item
             className={cx(styles['text-area'])}
-            name="intro"
+            name="description"
             rules={[
               { required: true, message: '请描述你希望创建一个什么样的智能体' },
             ]}

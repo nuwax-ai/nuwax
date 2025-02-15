@@ -26,13 +26,17 @@ export interface LabelIconProps {
   type?: TooltipTitleTypeEnum;
 }
 
-// 智能体信息
-export interface AgentInfo {
-  id: string;
-  userId: string;
+// 智能体基础信息
+export interface AgentBaseInfo {
   name: string;
   icon: string;
   description: string;
+}
+
+// 智能体信息
+export interface AgentInfo extends AgentBaseInfo {
+  id: string;
+  userId: string;
   modified: string;
   created: string;
   agentId: string;
@@ -75,11 +79,8 @@ export interface CollectAgentParams {
 }
 
 // 新增智能体输入参数
-export interface AgentAddParams {
+export interface AgentAddParams extends AgentBaseInfo {
   spaceId: string;
-  name: string;
-  description: string;
-  icon: string;
 }
 
 // 智能体迁移接口输入参数
@@ -106,11 +107,8 @@ export interface AgentCopyParams {
 }
 
 // 更新智能体基础配置信息输入参数
-export interface AgentConfigUpdateParams {
+export interface AgentConfigUpdateParams extends AgentBaseInfo {
   id: string;
-  name: string;
-  description: string;
-  icon: string;
   systemPrompt: string;
   userPrompt: string;
   openSuggest: string;
@@ -251,8 +249,7 @@ export interface AgentComponentTriggerAddParams {
 }
 
 // 更新插件组件配置
-export interface AgentComponentPluginUpdateParams
-  extends AgentComponentWorkflowUpdateParams {}
+export type AgentComponentPluginUpdateParams = AgentComponentWorkflowUpdateParams
 
 // 更新模型组件配置输入参数
 export interface AgentComponentModelUpdateParams

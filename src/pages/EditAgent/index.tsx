@@ -6,7 +6,7 @@ import {
 } from '@/services/agentConfig';
 import { CreateEditAgentEnum } from '@/types/enums/common';
 import { EditAgentShowType } from '@/types/enums/space';
-import { AgentConfigInfo } from '@/types/interfaces/agent';
+import { AgentBaseInfo, AgentConfigInfo } from '@/types/interfaces/agent';
 import { HistoryData } from '@/types/interfaces/space';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
@@ -53,7 +53,8 @@ const EditAgent: React.FC = () => {
     },
   });
 
-  const { run: runHistory, loading } = useRequest(apiAgentConfigHistoryList, {
+  // 版本历史记录
+  const { run: runHistory } = useRequest(apiAgentConfigHistoryList, {
     manual: true,
     debounceWait: 300,
     onSuccess: (result: HistoryData[]) => {
@@ -107,7 +108,12 @@ const EditAgent: React.FC = () => {
   };
 
   // 确认编辑智能体
-  const handlerConfirmEditAgent = () => {
+  const handlerConfirmEditAgent = (info: AgentBaseInfo) => {
+    const _agentConfigInfo = {
+      ...agentConfigInfo,
+      ...info,
+    }
+    setAgentConfigInfo(_agentConfigInfo);
     setOpenEditAgent(false);
   };
 
@@ -186,11 +192,10 @@ const EditAgent: React.FC = () => {
       {/*编辑智能体弹窗*/}
       <CreateAgent
         type={CreateEditAgentEnum.Edit}
-        agentName={'测试智能体'}
-        intro={'这里是智能体的介绍'}
+        agentConfigInfo={agentConfigInfo}
         open={openEditAgent}
         onCancel={() => setOpenEditAgent(false)}
-        onConfirm={handlerConfirmEditAgent}
+        onConfirmUpdate={handlerConfirmEditAgent}
       />
       {/*智能体模型设置*/}
       <AgentModelSetting

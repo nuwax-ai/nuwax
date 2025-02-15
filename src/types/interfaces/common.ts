@@ -7,6 +7,7 @@ import type {
   UploadProps,
 } from 'antd';
 import React from 'react';
+import { AgentBaseInfo, AgentConfigInfo } from '@/types/interfaces/agent';
 
 export type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
 export type SizeType = ConfigProviderProps['componentSize'];
@@ -284,12 +285,11 @@ export interface CreatedNodeItem {
 // 创建、编辑智能体
 export interface CreateAgentProps {
   type?: CreateEditAgentEnum;
-  name?: string;
-  description?: string;
-  icon?: string;
+  agentConfigInfo?: AgentConfigInfo;
   open: boolean;
   onCancel: () => void;
-  onConfirm: (agentId: string) => void;
+  onConfirmCreate?: (agentId: string) => void;
+  onConfirmUpdate?: (info: AgentBaseInfo) => void;
 }
 
 // 创建、编辑知识库

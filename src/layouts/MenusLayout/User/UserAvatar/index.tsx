@@ -1,4 +1,4 @@
-import type { UserAvatarType } from '@/types/interfaces/menus';
+import type { UserAvatarType } from '@/types/interfaces/layouts';
 import { UserOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';

@@ -1,7 +1,7 @@
 import personal from '@/assets/images/personal.png';
 import teamImage from '@/assets/images/team_image.png';
 import { SPACE_ID } from '@/constants/home.constants';
-import type { PersonalSpaceContentType } from '@/types/interfaces/menus';
+import type { PersonalSpaceContentType } from '@/types/interfaces/layouts';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import { CheckOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import { Divider } from 'antd';
