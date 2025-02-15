@@ -137,10 +137,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
               placeholder="介绍智能体的功能，将会展示给智能体的用户"
               maxLength={500}
             />
-            <Form.Item
-              name="icon"
-              label="图标"
-            >
+            <Form.Item name="icon" label="图标">
               <UploadAvatar
                 className={styles['upload-box']}
                 onUploadSuccess={setImageUrl}

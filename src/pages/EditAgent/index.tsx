@@ -112,7 +112,7 @@ const EditAgent: React.FC = () => {
     const _agentConfigInfo = {
       ...agentConfigInfo,
       ...info,
-    }
+    };
     setAgentConfigInfo(_agentConfigInfo);
     setOpenEditAgent(false);
   };

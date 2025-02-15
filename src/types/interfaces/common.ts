@@ -1,5 +1,6 @@
 import type { CardStyleEnum, CreateEditAgentEnum } from '@/types/enums/common';
 import type { KnowledgeModeEnum } from '@/types/enums/library';
+import { AgentBaseInfo, AgentConfigInfo } from '@/types/interfaces/agent';
 import type {
   ConfigProviderProps,
   FormInstance,
@@ -7,7 +8,6 @@ import type {
   UploadProps,
 } from 'antd';
 import React from 'react';
-import { AgentBaseInfo, AgentConfigInfo } from '@/types/interfaces/agent';
 
 export type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
 export type SizeType = ConfigProviderProps['componentSize'];

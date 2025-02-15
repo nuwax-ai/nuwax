@@ -17,6 +17,7 @@ import type {
   AgentPublishApplyParams,
   AgentTransferParams,
 } from '@/types/interfaces/agent';
+import { TriggerTimeZone } from '@/types/interfaces/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
@@ -175,6 +176,15 @@ export async function apiAgentConfigInfo(
   agentId: string,
 ): Promise<RequestResponse<AgentConfigInfo>> {
   return request(`/api/agent/${agentId}`, {
+    method: 'GET',
+  });
+}
+
+// 触发器定时任务时区数据
+export async function apiAgentTriggerTimeZone(): Promise<
+  RequestResponse<TriggerTimeZone>
+> {
+  return request('/api/agent/trigger/timeZone/data', {
     method: 'GET',
   });
 }

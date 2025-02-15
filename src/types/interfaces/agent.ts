@@ -249,7 +249,8 @@ export interface AgentComponentTriggerAddParams {
 }
 
 // 更新插件组件配置
-export type AgentComponentPluginUpdateParams = AgentComponentWorkflowUpdateParams
+export type AgentComponentPluginUpdateParams =
+  AgentComponentWorkflowUpdateParams;
 
 // 更新模型组件配置输入参数
 export interface AgentComponentModelUpdateParams
@@ -355,6 +356,34 @@ export interface AgentConfigInfo {
   };
   space: SpaceInfo;
   devCollected: boolean;
+}
+
+export interface UtcTimeZonesType {}
+
+// 触发器时区
+export interface TriggerTimeZone {
+  // UTC时区列表
+  utcTimeZones: {
+    // UTC时区
+    utc: string;
+    timeZones: {
+      // 时区
+      timeZone: string;
+      // 时区名称
+      name: string;
+    }[];
+  }[];
+  // 时间范围列表
+  cronExpScopes: {
+    // 时间范围
+    scope: string;
+    cronExps: {
+      // 时间描述
+      time: string;
+      // 表达式
+      expression: string;
+    }[];
+  }[];
 }
 
 // 智能体历史配置信息

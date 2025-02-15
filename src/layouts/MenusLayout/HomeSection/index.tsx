@@ -1,15 +1,15 @@
 import ConditionRender from '@/components/ConditionRender';
-import UserRelAgentList from './UserRelAgentList';
 import {
   apiUserCollectAgentList,
   apiUserEditAgentList,
   apiUserUsedAgentList,
 } from '@/services/agentDev';
 import type { AgentInfo } from '@/types/interfaces/agent';
-import { useRequest, history } from 'umi';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { history, useRequest } from 'umi';
 import styles from './index.less';
+import UserRelAgentList from './UserRelAgentList';
 
 const cx = classNames.bind(styles);
 
@@ -61,7 +61,7 @@ const HomeSection: React.FC = () => {
   }, []);
 
   const handleClick = (info: AgentInfo) => {
-    const {agentId, spaceId} = info;
+    const { agentId, spaceId } = info;
     history.push(`/space/${spaceId}/agent/${agentId}`);
   };
 

@@ -2,6 +2,7 @@ import type {
   AgentComponentInfo,
   AgentConfigInfo,
 } from '@/types/interfaces/agent';
+import { TriggerTimeZone } from '@/types/interfaces/agent';
 import React from 'react';
 
 // 智能体header组件
@@ -40,4 +41,9 @@ export interface CreateTriggerProps {
   title: string;
   onCancel: () => void;
   onConfirm: () => void;
+}
+
+// 触发器时区组件
+export interface TimingTriggerProps {
+  triggerTimeZone?: TriggerTimeZone;
 }

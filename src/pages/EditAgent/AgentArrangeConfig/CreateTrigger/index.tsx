@@ -2,13 +2,19 @@ import CustomFormModal from '@/components/CustomFormModal';
 import SelectList from '@/components/SelectList';
 import { TRIGGER_TYPE_LIST } from '@/constants/agent.constants';
 import { TASK_EXECUTION } from '@/constants/space.contants';
-import { apiAgentComponentTriggerAdd } from '@/services/agentConfig';
+import {
+  apiAgentComponentTriggerAdd,
+  apiAgentTriggerTimeZone,
+} from '@/services/agentConfig';
 import { TriggerTypeEnum } from '@/types/enums/agent';
-import type { AgentComponentTriggerAddParams } from '@/types/interfaces/agent';
+import type {
+  AgentComponentTriggerAddParams,
+  TriggerTimeZone,
+} from '@/types/interfaces/agent';
 import type { CreateTriggerProps } from '@/types/interfaces/agentConfig';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import EventTrigger from './EventTrigger';
 import TimingTrigger from './TimingTrigger';
@@ -24,10 +30,20 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
   onConfirm,
 }) => {
   const [form] = Form.useForm();
-  // 	触发类型
+  // 触发类型
   const [triggerType, setTriggerType] = useState<TriggerTypeEnum>(
     TriggerTypeEnum.TIME,
   );
+  const [triggerTimeZone, setTriggerTimeZone] = useState<TriggerTimeZone>();
+
+  // 触发器定时任务时区数据
+  const { run: runTriggerTimeZone } = useRequest(apiAgentTriggerTimeZone, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: TriggerTimeZone) => {
+      setTriggerTimeZone(result);
+    },
+  });
 
   // 新增智能体触发器配置
   const { run } = useRequest(apiAgentComponentTriggerAdd, {
@@ -38,6 +54,10 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
       onConfirm();
     },
   });
+
+  useEffect(() => {
+    runTriggerTimeZone();
+  }, []);
 
   // todo
   const onFinish: FormProps<AgentComponentTriggerAddParams>['onFinish'] = (
@@ -97,7 +117,7 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
         </Form.Item>
         {triggerType === TriggerTypeEnum.TIME ? (
           // 定时触发
-          <TimingTrigger />
+          <TimingTrigger triggerTimeZone={triggerTimeZone} />
         ) : (
           // 事件触发
           <EventTrigger />
