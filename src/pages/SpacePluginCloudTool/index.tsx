@@ -415,7 +415,11 @@ const SpacePluginCloudTool: React.FC = () => {
         onConfirm={() => setOpenModal(false)}
       />
       {/*版本历史*/}
-      <VersionHistory visible={visible} onClose={() => setVisible(false)} />
+      <VersionHistory
+        list={[]}
+        visible={visible}
+        onClose={() => setVisible(false)}
+      />
       {/*修改插件弹窗*/}
       <CreateNewPlugin
         open={openPlugin}

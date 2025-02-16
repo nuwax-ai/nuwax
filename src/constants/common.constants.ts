@@ -1,8 +1,8 @@
 import {
+  DataTypeEnum,
   FileTypeEnum,
   ParamsTypeEnum,
   PluginParamsSettingDefaultEnum,
-  VariableTypeEnum,
 } from '@/types/enums/common';
 
 export const BASE_URL = `${process.env.BASE_URL}/api`;
@@ -19,44 +19,148 @@ export const COUNT_DOWN_LEN = 60;
 // 变量类型
 export const VARIABLE_TYPE_LIST = [
   {
-    value: VariableTypeEnum.String,
+    value: DataTypeEnum.String,
     label: 'String',
   },
   {
-    value: VariableTypeEnum.Integer,
+    value: DataTypeEnum.Integer,
     label: 'Integer',
   },
   {
-    value: VariableTypeEnum.Boolean,
-    label: 'Boolean',
-  },
-  {
-    value: VariableTypeEnum.Number,
+    value: DataTypeEnum.Number,
     label: 'Number',
   },
   {
-    value: VariableTypeEnum.Object,
+    value: DataTypeEnum.Boolean,
+    label: 'Boolean',
+  },
+  {
+    value: DataTypeEnum.File_Default,
+    label: 'File_Default',
+  },
+  {
+    value: DataTypeEnum.File_Image,
+    label: 'File_Image',
+  },
+  {
+    value: DataTypeEnum.File_PPT,
+    label: 'File_PPT',
+  },
+  {
+    value: DataTypeEnum.File_Doc,
+    label: 'File_Doc',
+  },
+  {
+    value: DataTypeEnum.File_PDF,
+    label: 'File_PDF',
+  },
+  {
+    value: DataTypeEnum.File_Txt,
+    label: 'File_Txt',
+  },
+  {
+    value: DataTypeEnum.File_Zip,
+    label: 'File_Zip',
+  },
+  {
+    value: DataTypeEnum.File_Excel,
+    label: 'File_Excel',
+  },
+  {
+    value: DataTypeEnum.File_Video,
+    label: 'File_Video',
+  },
+  {
+    value: DataTypeEnum.File_Audio,
+    label: 'File_Audio',
+  },
+  {
+    value: DataTypeEnum.File_Voice,
+    label: 'File_Voice',
+  },
+  {
+    value: DataTypeEnum.File_Code,
+    label: 'File_Code',
+  },
+  {
+    value: DataTypeEnum.File_Svg,
+    label: 'File_Svg',
+  },
+  {
+    value: DataTypeEnum.Object,
     label: 'Object',
   },
   {
-    value: VariableTypeEnum.Array_String,
-    label: 'Array<String>',
+    value: DataTypeEnum.Array_String,
+    label: 'Array_String',
   },
   {
-    value: VariableTypeEnum.Array_Integer,
-    label: 'Array<Integer>',
+    value: DataTypeEnum.Array_Integer,
+    label: 'Array_Integer',
   },
   {
-    value: VariableTypeEnum.Array_Boolean,
-    label: 'Array<Boolean>',
+    value: DataTypeEnum.Array_Number,
+    label: 'Array_Number',
   },
   {
-    value: VariableTypeEnum.Array_Number,
-    label: 'Array<Number>',
+    value: DataTypeEnum.Array_Boolean,
+    label: 'Array_Boolean',
   },
   {
-    value: VariableTypeEnum.Array_Object,
-    label: 'Array<Object>',
+    value: DataTypeEnum.Array_File_Default,
+    label: 'Array_File_Default',
+  },
+  {
+    value: DataTypeEnum.Array_File_Image,
+    label: 'Array_File_Image',
+  },
+  {
+    value: DataTypeEnum.Array_File_PPT,
+    label: 'Array_File_PPT',
+  },
+  {
+    value: DataTypeEnum.Array_File_Doc,
+    label: 'Array_File_Doc',
+  },
+  {
+    value: DataTypeEnum.Array_File_PDF,
+    label: 'Array_File_PDF',
+  },
+  {
+    value: DataTypeEnum.Array_File_Txt,
+    label: 'Array_File_Txt',
+  },
+  {
+    value: DataTypeEnum.Array_File_Zip,
+    label: 'Array_File_Zip',
+  },
+  {
+    value: DataTypeEnum.Array_File_Excel,
+    label: 'Array_File_Excel',
+  },
+  {
+    value: DataTypeEnum.Array_File_Video,
+    label: 'Array_File_Video',
+  },
+  {
+    value: DataTypeEnum.Array_File_Audio,
+    label: 'Array_File_Audio',
+  },
+  {
+    value: DataTypeEnum.Array_File_Voice,
+    label: 'Array_File_Voice',
+  },
+  {
+    value: DataTypeEnum.Array_File_Svg,
+    label: 'Array_File_Svg',
+  },
+  {
+    value: DataTypeEnum.Array_File_Code,
+    label: 'Array_File_Code',
+  },
+  {
+    value: DataTypeEnum.Array_Object,
+    label: 'Array_Object',
   },
 ];
 

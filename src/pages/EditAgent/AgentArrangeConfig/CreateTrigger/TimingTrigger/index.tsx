@@ -50,7 +50,7 @@ const TimingTrigger: React.FC<TimingTriggerProps> = ({ triggerTimeZone }) => {
       <Space.Compact block>
         <Form.Item
           className={cx(styles['form-item'])}
-          name="timeZone"
+          name="utcTimeZone"
           rules={[{ required: true }]}
         >
           <Cascader options={utcTimeZones} placeholder="请选择" />

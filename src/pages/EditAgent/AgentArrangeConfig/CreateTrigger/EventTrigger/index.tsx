@@ -34,7 +34,7 @@ const EventTrigger: React.FC = () => {
         <Input.Password />
       </Form.Item>
       {/*请求参数*/}
-      <Form.Item>
+      <Form.Item name="requireParams">
         <RequireParams />
       </Form.Item>
     </>
