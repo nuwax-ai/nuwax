@@ -8,14 +8,14 @@ export enum ComponentTypeEnum {
 }
 
 // 组件库所有类型枚举
-export enum LibraryAllTypeEnum {
-  All_Type,
-  Workflow,
-  Plugin,
-  Knowledge,
-  Database,
-  Model,
-}
+// export enum LibraryAllTypeEnum {
+//   All_Type,
+//   Workflow,
+//   Plugin,
+//   Knowledge,
+//   Database,
+//   Model,
+// }
 
 // 过滤状态枚举
 export enum FilterStatusEnum {

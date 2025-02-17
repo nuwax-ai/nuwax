@@ -5,12 +5,12 @@ import React, { useEffect, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
 import Header from './Header';
 import HomeSection from './HomeSection';
-import styles from './index.less';
 import SpaceSection from './SpaceSection';
 import SquareSection from './SquareSection';
 import Tabs from './Tabs';
 import User from './User';
 import UserOperateArea from './UserOperateArea';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
@@ -30,8 +30,10 @@ const MenusLayout: React.FC = () => {
         history.push('/');
         break;
       case TabsEnum.Space:
-        const spaceId = localStorage.getItem(SPACE_ID);
-        history.push(`/space/${spaceId}/develop`);
+        {
+          const spaceId = localStorage.getItem(SPACE_ID);
+          history.push(`/space/${spaceId}/develop`);
+        }
         break;
       case TabsEnum.Square:
         history.push('/square');

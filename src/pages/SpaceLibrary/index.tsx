@@ -17,16 +17,14 @@ import {
   ComponentTypeEnum,
   CreateListEnum,
   FilterStatusEnum,
-  LibraryAllTypeEnum,
 } from '@/types/enums/space';
-import { CustomPopoverItem } from '@/types/interfaces/common';
-import { ComponentInfo } from '@/types/interfaces/library';
-import { useRequest } from '@@/exports';
+import type { CustomPopoverItem } from '@/types/interfaces/common';
+import type { ComponentInfo } from '@/types/interfaces/library';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { history } from 'umi';
+import { history, useRequest } from 'umi';
 import ComponentItem from './ComponentItem';
 import CreateModel from './CreateModel';
 import styles from './index.less';
@@ -37,6 +35,7 @@ const cx = classNames.bind(styles);
  * 工作空间 - 组件库
  */
 const SpaceLibrary: React.FC = () => {
+  // 组件列表
   const [componentList, setComponentList] = useState<ComponentInfo[]>([]);
   // 新建工作流弹窗
   const [openWorkflow, setOpenWorkflow] = useState<boolean>(false);
@@ -48,10 +47,11 @@ const SpaceLibrary: React.FC = () => {
   const [openKnowledge, setOpenKnowledge] = useState<boolean>(false);
   // 打开创建模型弹窗
   const [openModel, setOpenModel] = useState<boolean>(false);
-  const [type, setType] = useState<LibraryAllTypeEnum>(
-    LibraryAllTypeEnum.All_Type,
-  );
+  // 类型
+  const [type, setType] = useState<ComponentTypeEnum>(0);
+  // 过滤状态
   const [status, setStatus] = useState<FilterStatusEnum>(FilterStatusEnum.All);
+  // 创建
   const [create, setCreate] = useState<CreateListEnum>(
     CreateListEnum.All_Person,
   );
@@ -68,8 +68,8 @@ const SpaceLibrary: React.FC = () => {
 
   useEffect(() => {
     runComponent(spaceId);
-    const unlisten = history.listen(({ location }) => {
-      console.log(location.pathname);
+    const unlisten = history.listen(() => {
+      runComponent(spaceId);
     });
 
     return () => {
@@ -77,7 +77,7 @@ const SpaceLibrary: React.FC = () => {
     };
   }, [spaceId]);
 
-  const handlerChangeType = (value: LibraryAllTypeEnum) => {
+  const handlerChangeType = (value: ComponentTypeEnum) => {
     setType(value);
   };
 

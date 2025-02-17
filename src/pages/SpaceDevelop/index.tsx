@@ -49,6 +49,7 @@ const SpaceDevelop: React.FC = () => {
   const [agentList, setAgentList] = useState<AgentConfigInfo[]>([]);
   const agentAllRef = useRef<AgentConfigInfo[]>([]);
   const createIdRef = useRef<string>('');
+  const spaceIdRef = useRef<string>('');
   const targetAgentIdRef = useRef<string>('');
 
   // 查询空间智能体列表接口
@@ -67,8 +68,7 @@ const SpaceDevelop: React.FC = () => {
     debounceWait: 300,
     onSuccess: () => {
       message.success('已成功创建副本');
-      const spaceId = localStorage.getItem(SPACE_ID);
-      run(spaceId);
+      run(spaceIdRef.current);
     },
   });
 
@@ -104,20 +104,18 @@ const SpaceDevelop: React.FC = () => {
   });
 
   useEffect(() => {
-    const spaceId = localStorage.getItem(SPACE_ID);
-    run(spaceId);
-  }, []);
-
-  useEffect(() => {
     const userInfoString = localStorage.getItem(USER_INFO);
     const userInfo = JSON.parse(userInfoString) as UserInfo;
     createIdRef.current = userInfo.id;
   }, []);
 
   useEffect(() => {
+    const spaceId = localStorage.getItem(SPACE_ID);
+    spaceIdRef.current = spaceId;
+    run(spaceId);
+    // 监听路由
     const unlisten = history.listen(() => {
-      const spaceId = localStorage.getItem(SPACE_ID);
-      run(spaceId);
+      run(spaceIdRef.current);
     });
 
     return () => {
@@ -175,8 +173,7 @@ const SpaceDevelop: React.FC = () => {
 
   // 点击跳转到智能体
   const handleClick = (agentId: string) => {
-    const spaceId = localStorage.getItem(SPACE_ID);
-    history.push(`/space/${spaceId}/agent/${agentId}`);
+    history.push(`/space/${spaceIdRef.current}/agent/${agentId}`);
   };
 
   // 设置统计信息
@@ -233,8 +230,7 @@ const SpaceDevelop: React.FC = () => {
   // 确认创建智能体
   const handlerConfirmCreateAgent = (agentId: string) => {
     setOpenCreateAgent(false);
-    const spaceId = localStorage.getItem(SPACE_ID);
-    history.push(`/space/${spaceId}/agent/${agentId}`);
+    history.push(`/space/${spaceIdRef.current}/agent/${agentId}`);
   };
 
   // 收藏

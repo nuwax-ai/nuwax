@@ -16,7 +16,6 @@ import {
   CreateListEnum,
   FileBoxEnum,
   FilterStatusEnum,
-  LibraryAllTypeEnum,
   LongMemberEnum,
   PluginSettingEnum,
   SpaceApplicationListEnum,
@@ -55,7 +54,7 @@ export const LIBRARY_ALL_RESOURCE = [
 // 组件库所有类型
 export const LIBRARY_ALL_TYPE = [
   {
-    value: LibraryAllTypeEnum.All_Type,
+    value: 0,
     label: '所有类型',
     icon: null,
   },
