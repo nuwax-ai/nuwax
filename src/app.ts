@@ -8,6 +8,12 @@ export const request: any = {
   headers: { 'X-Requested-With': 'XMLHttpRequest' },
 
   requestInterceptors: [
+    // 直接写一个 function，作为拦截器
+    (url, options) => {
+      // do something
+      const new_url = process.env.BASE_URL + url;
+      return { url: new_url, options };
+    },
     (config) => {
       const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
       if (token) {
