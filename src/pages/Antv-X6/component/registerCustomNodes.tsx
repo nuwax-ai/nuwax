@@ -208,26 +208,44 @@ export function registerNode() {
   });
 }
 
-export const createCurvePath = (
-  s: { x: number; y: number },
-  e: { x: number; y: number },
-) => {
-  const offset = 4;
-  const deltaX = 10; // 起点向右移，终点向左移的距离
-  const deltaY = Math.abs(e.y - s.y);
-  const control = Math.floor((deltaY / 3) * 2);
+interface Point {
+  x: number;
+  y: number;
+}
 
-  // 修改起点和终点的x坐标
-  const startPoint = { x: s.x + deltaX, y: s.y };
-  const endPoint = { x: e.x - deltaX, y: e.y };
-
-  const v1 = { x: startPoint.x, y: startPoint.y + offset + control };
-  const v2 = { x: endPoint.x, y: endPoint.y - offset - control };
-
-  return Path.normalize(
-    `M ${startPoint.x} ${startPoint.y}
-     L ${startPoint.x} ${startPoint.y + offset}
-     C ${v1.x} ${v1.y} ${v2.x} ${v2.y} ${endPoint.x} ${endPoint.y - offset}
-     L ${endPoint.x} ${endPoint.y}`,
+export const createCurvePath = (sourcePoint: Point, targetPoint: Point) => {
+  const hgap = Math.abs(targetPoint.x - sourcePoint.x);
+  const path = new Path();
+  // 起点
+  path.appendSegment(Path.createSegment('M', sourcePoint.x - 4, sourcePoint.y));
+  // 直线段
+  path.appendSegment(
+    Path.createSegment('L', sourcePoint.x + 12, sourcePoint.y),
   );
+  // 水平三阶贝塞尔曲线
+  path.appendSegment(
+    Path.createSegment(
+      'C',
+      sourcePoint.x < targetPoint.x
+        ? sourcePoint.x + hgap / 2
+        : sourcePoint.x - hgap / 2,
+      sourcePoint.y,
+      sourcePoint.x < targetPoint.x
+        ? targetPoint.x - hgap / 2
+        : targetPoint.x + hgap / 2,
+      targetPoint.y,
+      targetPoint.x - 6,
+      targetPoint.y,
+    ),
+  );
+  // 计算新的终点，使箭头离连接桩有10px的距离
+  let finalX = targetPoint.x - 16; // 根据之前的路径计算
+  let finalY = targetPoint.y;
+  const directionX = sourcePoint.x < targetPoint.x ? 1 : -1; // 确定方向
+  finalX += directionX * 10; // 在x轴上移动10px
+
+  // 到达目标点前的小段直线，考虑10px的偏移
+  path.appendSegment(Path.createSegment('L', finalX, finalY));
+
+  return path.serialize();
 };

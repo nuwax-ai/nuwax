@@ -1,5 +1,5 @@
 // 引入 AntV X6 的核心库和必要的插件。
-import { Graph, Node, Shape } from '@antv/x6';
+import { Edge, Graph, Node, Shape } from '@antv/x6';
 // 剪贴板插件，用于复制和粘贴节点
 import { Clipboard } from '@antv/x6-plugin-clipboard';
 // 历史记录插件，支持撤销/重做操作
@@ -35,20 +35,48 @@ const initGraph = ({
   // 注册自定义连接器
   Graph.registerConnector('curveConnector', createCurvePath, true);
 
-  Graph.registerEdge(
-    'dag-edge',
-    {
-      inherit: 'edge',
-      attrs: {
-        line: {
-          stroke: '#C2C8D5',
-          strokeWidth: 1,
-          targetMarker: null,
+  // 配置并注册新的边类型
+  Edge.config({
+    markup: [
+      {
+        tagName: 'path',
+        selector: 'wrap',
+        attrs: {
+          fill: 'none',
+          cursor: 'pointer',
+          stroke: 'transparent',
+          strokeLinecap: 'round',
+        },
+      },
+      {
+        tagName: 'path',
+        selector: 'line',
+        attrs: {
+          fill: 'none',
+          pointerEvents: 'none',
+        },
+      },
+    ],
+    connector: { name: 'curveConnector' }, // 使用自定义的connector
+    attrs: {
+      wrap: {
+        connection: true,
+        strokeWidth: 10,
+        strokeLinejoin: 'round',
+      },
+      line: {
+        connection: true,
+        stroke: '#A2B1C3',
+        strokeWidth: 1,
+        targetMarker: {
+          name: 'classic',
+          size: 6,
         },
       },
     },
-    true,
-  );
+  });
+  // 注册自定义边类型
+  Graph.registerEdge('data-processing-curve', Edge, true);
 
   // 创建图形实例，并配置相关属性
   const graph = new Graph({
@@ -75,12 +103,11 @@ const initGraph = ({
         radius: 20, // 连接时的吸附距离
       },
       createEdge() {
-        // 创建新边时的默认设置
         return new Shape.Edge({
-          shape: 'dag-edge',
+          shape: 'data-processing-curve', // 更改为使用注册的自定义边样式
           attrs: {
             line: {
-              strokeDasharray: '5 5',
+              strokeDasharray: '5 5', // 示例：添加虚线效果
               strokeWidth: 1,
             },
           },

@@ -22,7 +22,7 @@ import Header from './header';
 import './index.less';
 import NodeDrawer from './nodeDrawer';
 import { Child } from './type';
-const AntvX6: React.FC = () => {
+const Workflow: React.FC = () => {
   // 当前工作流的id
   const workflowId = Number(useParams().workflowId);
   // 显示隐藏右侧节点抽屉
@@ -181,6 +181,7 @@ const AntvX6: React.FC = () => {
     }
 
     const _res = await service.addNode(_params);
+    console.log(_res);
     if (_res.code === Constant.success) {
       _res.data.key = 'general-Node';
       graphRef.current.addNode(dragEvent, _res.data);
@@ -417,4 +418,4 @@ const AntvX6: React.FC = () => {
   );
 };
 
-export default AntvX6;
+export default Workflow;
