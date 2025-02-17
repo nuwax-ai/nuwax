@@ -25,6 +25,23 @@ import { ReactComponent as ICON_SUCCESS } from '@/assets/svg/success_rate.svg';
 import { ReactComponent as ICON_TABLE_FORMAT } from '@/assets/svg/table_format.svg';
 import { ReactComponent as ICON_TEXT_FORMAT } from '@/assets/svg/text_format.svg';
 import { ReactComponent as ICON_WORKFLOW } from '@/assets/svg/workflow_icon.svg';
+// 工作流的图片
+import { ReactComponent as ICON_WORKFLOW_CODE } from '@/assets/workflow/workflow-Code.svg';
+import { ReactComponent as ICON_WORKFLOW_CONDITION } from '@/assets/workflow/workflow-Condition.svg';
+import { ReactComponent as ICON_WORKFLOW_DATABASE } from '@/assets/workflow/workflow-Database.svg';
+import { ReactComponent as ICON_WORKFLOW_DOCUMENT_EXTRACTION } from '@/assets/workflow/workflow-DocumentExtraction.svg';
+import { ReactComponent as ICON_WORKFLOW_HTTP_REQUEST } from '@/assets/workflow/workflow-HTTPRequest.svg';
+import { ReactComponent as ICON_WORKFLOW_INTENT_RECOGNITION } from '@/assets/workflow/workflow-IntentRecognition.svg';
+import { ReactComponent as ICON_WORKFLOW_KNOWLEDGE_BASE } from '@/assets/workflow/workflow-KnowledgeBase.svg';
+import { ReactComponent as ICON_WORKFLOW_LLM } from '@/assets/workflow/workflow-LLM.svg';
+import { ReactComponent as ICON_WORKFLOW_LONG_TERM_MEMORY } from '@/assets/workflow/workflow-LongTermMemory.svg';
+import { ReactComponent as ICON_WORKFLOW_LOOP } from '@/assets/workflow/workflow-Loop.svg';
+import { ReactComponent as ICON_WORKFLOW_OUTPUT } from '@/assets/workflow/workflow-Output.svg';
+import { ReactComponent as ICON_WORKFLOW_PLUGIN } from '@/assets/workflow/workflow-Plugin.svg';
+import { ReactComponent as ICON_WORKFLOW_QA } from '@/assets/workflow/workflow-QA.svg';
+import { ReactComponent as ICON_WORKFLOW_TEXT_PROCESSING } from '@/assets/workflow/workflow-TextProcessing.svg';
+import { ReactComponent as ICON_WORKFLOW_VARIABLE } from '@/assets/workflow/workflow-Variable.svg';
+import { ReactComponent as ICON_WORKFLOW_WORKFLOW } from '@/assets/workflow/workflow-Workflow.svg';
 
 export {
   ICON_ADD_TR,
@@ -54,4 +71,20 @@ export {
   ICON_TABLE_FORMAT,
   ICON_TEXT_FORMAT,
   ICON_WORKFLOW,
+  ICON_WORKFLOW_CODE,
+  ICON_WORKFLOW_CONDITION,
+  ICON_WORKFLOW_DATABASE,
+  ICON_WORKFLOW_DOCUMENT_EXTRACTION,
+  ICON_WORKFLOW_HTTP_REQUEST,
+  ICON_WORKFLOW_INTENT_RECOGNITION,
+  ICON_WORKFLOW_KNOWLEDGE_BASE,
+  ICON_WORKFLOW_LLM,
+  ICON_WORKFLOW_LONG_TERM_MEMORY,
+  ICON_WORKFLOW_LOOP,
+  ICON_WORKFLOW_OUTPUT,
+  ICON_WORKFLOW_PLUGIN,
+  ICON_WORKFLOW_QA,
+  ICON_WORKFLOW_TEXT_PROCESSING,
+  ICON_WORKFLOW_VARIABLE,
+  ICON_WORKFLOW_WORKFLOW,
 };

@@ -303,18 +303,43 @@ const Workflow: React.FC = () => {
     setShow(false);
   };
   // 拖拽组件到画布中
-  const dragChild = (e: React.DragEvent<HTMLDivElement>, child: Child) => {
-    e.preventDefault();
-    if (
-      ['Plugin', 'Workflow', 'KnowledgeBase', 'Database'].includes(child.type)
-    ) {
-      console.log(child);
+  const dragChild = (child: Child, e?: React.DragEvent<HTMLDivElement>) => {
+    // 定义画布大小或获取自父组件/全局状态
+    const canvasWidth = 1400;
+    const canvasHeight = 600;
+
+    // 获取坐标函数：优先使用拖拽事件坐标，否则生成随机坐标
+    const getCoordinates = (
+      e?: React.DragEvent<HTMLDivElement>,
+    ): { x: number; y: number } => {
+      if (e) {
+        return { x: e.clientX, y: e.clientY };
+      } else {
+        return {
+          x: Math.floor(Math.random() * canvasWidth),
+          y: Math.floor(Math.random() * canvasHeight),
+        };
+      }
+    };
+
+    // 判断是否需要显示特定类型的创建面板
+    const isSpecialType = [
+      'Plugin',
+      'Workflow',
+      'KnowledgeBase',
+      'Database',
+    ].includes(child.type);
+
+    if (isSpecialType) {
       setCreatedItem(child.type as PluginAndLibraryEnum);
       setShow(true);
-      setDragEvent({ x: e.clientX, y: e.clientY });
+      setDragEvent(getCoordinates(e));
     } else {
-      addNode(child, { x: e.clientX, y: e.clientY });
-      // graphRef.current.addNode({ x: e.clientX, y: e.clientY }, child);
+      const coordinates = getCoordinates(e);
+      if (e) {
+        e.preventDefault();
+      }
+      addNode(child, coordinates);
     }
   };
 
@@ -396,6 +421,7 @@ const Workflow: React.FC = () => {
         checkTag={createdItem as PluginAndLibraryEnum}
         onAdded={onAdded}
         targetId={info.id}
+        spaceId={info.spaceId}
       />
       <TestRun type={foldWrapItem.type} run={nodeTestRun} />
 

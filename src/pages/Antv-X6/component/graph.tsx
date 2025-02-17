@@ -87,9 +87,22 @@ const initGraph = ({
       enabled: true, // 启用鼠标滚轮缩放
       zoomAtMousePosition: true, // 在鼠标位置进行缩放
       modifiers: 'ctrl', // 需要按住 Ctrl 键才能触发缩放
+      factor: 1.1,
       minScale: 0.5, // 最小缩放比例
       maxScale: 3, // 最大缩放比例
     },
+    // highlighting: {
+    //   magnetAdsorbed: {
+    //     name: 'stroke',
+    //     args: {
+    //       attrs: {
+    //         fill: '#fff',
+    //         stroke: '#31d0c6',
+    //         strokeWidth: 4,
+    //       },
+    //     },
+    //   },
+    // },
     connecting: {
       router: 'manhattan', // 连接线路由方式，使用曼哈顿路径
       connector: 'curveConnector',
@@ -99,9 +112,7 @@ const initGraph = ({
       allowMulti: true,
       allowLoop: false, //禁止自己连接自己
       highlight: true, //当用户尝试创建连接且鼠标悬停在一个有效的连接点上时，该连接点会被高亮显示
-      snap: {
-        radius: 20, // 连接时的吸附距离
-      },
+      snap: true,
       createEdge() {
         return new Shape.Edge({
           shape: 'data-processing-curve', // 更改为使用注册的自定义边样式

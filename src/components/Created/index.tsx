@@ -2,7 +2,7 @@ import Constant from '@/constants/codes.constants';
 import { ICON_ADJUSTMENT, ICON_SUCCESS } from '@/constants/images.constants';
 import service, { IGetList } from '@/services/created';
 import { PluginAndLibraryEnum } from '@/types/enums/common';
-import { CreatedNodeItem } from '@/types/interfaces/common';
+import { WorkflowModeEnum } from '@/types/enums/library';
 import { getTime } from '@/utils';
 import {
   ClockCircleOutlined,
@@ -12,41 +12,38 @@ import {
   StarFilled,
   StarOutlined,
 } from '@ant-design/icons';
-import type { MenuProps } from 'antd';
 import { Button, Divider, Input, Menu, Modal, Radio } from 'antd';
 import { RadioChangeEvent } from 'antd/lib/radio';
 import { useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
+import CreateKnowledge from '../CreateKnowledge';
+import CreateNewPlugin from '../CreateNewPlugin';
+import CreateWorkflow from '../CreateWorkflow';
 import './index.less';
+import { ButtonList, CreatedNodeItem, CreatedProp, MenuItem } from './type';
 
-/**  提前定义一些东西   */
-interface BottonList {
-  label: string;
-  key: PluginAndLibraryEnum;
-}
 // 顶部的标签页名称
-const buttonList: BottonList[] = [
+const buttonList: ButtonList[] = [
   { label: '插件', key: PluginAndLibraryEnum.Plugin },
   { label: '工作流', key: PluginAndLibraryEnum.Workflow },
   { label: '知识库', key: PluginAndLibraryEnum.KnowledgeBase },
   { label: '数据库', key: PluginAndLibraryEnum.Database },
 ];
-type MenuItem = Required<MenuProps>['items'][number];
 
-interface CreatedProp {
-  // 选中的头部的tag
-  checkTag: PluginAndLibraryEnum;
-  //   点击添加后,通知父组件添加节点
-  onAdded: (val: CreatedNodeItem) => void;
-  // 当前的工作流id
-  targetId?: number;
-}
 // 创建插件、工作流、知识库、数据库
-const Created: React.FC<CreatedProp> = ({ checkTag, onAdded, targetId }) => {
+const Created: React.FC<CreatedProp> = ({
+  checkTag,
+  onAdded,
+  targetId,
+  spaceId,
+}) => {
   /**  -----------------  定义一些变量  -----------------   */
 
   // 打开、关闭弹窗
   const { show, setShow } = useModel('model');
+  // 打开、关闭创建弹窗
+  const [showCreate, setShowCreate] = useState(false);
+
   // 当前顶部被选中被选中的
   const [selected, SetSelected] = useState<{
     label: string;
@@ -167,6 +164,12 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded, targetId }) => {
     }
   };
 
+  // 新增工作流，插件，知识库，数据库
+  const onConfirm = () => {
+    setShowCreate(false);
+    getList(checkTag, { spaceId });
+  };
+
   /**  -----------------  无需调用接口的方法  -----------------   */
   //   点击添加,通知父组件,并将参数传递给父组件
   const onAddNode = (item: CreatedNodeItem) => {
@@ -196,7 +199,7 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded, targetId }) => {
     // 通过左侧菜单决定调用哪个接口
     switch (val) {
       case 'library':
-        getList(selected.key, { ...pagination, spaceId: 6 });
+        getList(selected.key, { ...pagination, spaceId });
         break;
       case 'collect':
         getCollectList(pagination);
@@ -231,12 +234,12 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded, targetId }) => {
     const _item = buttonList.find((item) => item.key === _select);
     if (_item) {
       SetSelected(_item);
-      getList(_item.key, { spaceId: 6 });
+      getList(_item.key, { spaceId });
     }
   };
   /**  -----------------  初始化时需要的  -----------------   */
   useEffect(() => {
-    getList(checkTag, { spaceId: 6 });
+    getList(checkTag, { spaceId });
     changeTitle(checkTag);
   }, [checkTag]);
   // 监听滚动事件
@@ -332,6 +335,7 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded, targetId }) => {
             type="primary"
             className="margin-bottom"
             style={{ width: '100%' }}
+            onClick={() => setShowCreate(true)}
           >{`创建${selected.label}`}</Button>
 
           {/* 下方的菜单 */}
@@ -417,6 +421,25 @@ const Created: React.FC<CreatedProp> = ({ checkTag, onAdded, targetId }) => {
           ))}
         </div>
       </div>
+      <CreateWorkflow
+        onConfirm={onConfirm}
+        onCancel={() => setShowCreate(false)}
+        open={showCreate && selected.key === PluginAndLibraryEnum.Workflow}
+        type={WorkflowModeEnum.Create}
+        spaceId={spaceId}
+      />
+      <CreateNewPlugin
+        onConfirm={onConfirm}
+        onCancel={() => setShowCreate(false)}
+        open={showCreate && selected.key === PluginAndLibraryEnum.Plugin}
+        type={WorkflowModeEnum.Create}
+      />
+      <CreateKnowledge
+        onConfirm={onConfirm}
+        onCancel={() => setShowCreate(false)}
+        open={showCreate && selected.key === PluginAndLibraryEnum.KnowledgeBase}
+        type={WorkflowModeEnum.Create}
+      />
     </Modal>
   );
 };

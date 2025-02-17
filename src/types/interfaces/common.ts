@@ -233,7 +233,7 @@ export interface WorkFlowItem {
   image: React.ReactNode;
 }
 
-interface Statistics {
+export interface Statistics {
   targetId: number;
   // 用户人数
   userCount: number;
