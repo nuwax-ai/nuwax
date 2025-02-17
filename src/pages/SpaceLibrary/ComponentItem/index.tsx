@@ -1,19 +1,10 @@
-import databaseImage from '@/assets/images/database_image.png';
-import knowledgeImage from '@/assets/images/knowledge_image.png';
-import pluginImage from '@/assets/images/plugin_image.png';
-import workflowImage from '@/assets/images/workflow_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import CustomPopover from '@/components/CustomPopover';
 import {
-  ICON_DATABASE,
-  ICON_KNOWLEDGE,
-  ICON_MODEL,
-  ICON_PLUGIN,
-  ICON_WORKFLOW,
-} from '@/constants/images.constants';
-import { COMPONENT_MORE_ACTION } from '@/constants/library.constants';
+  COMPONENT_LIST,
+  COMPONENT_MORE_ACTION,
+} from '@/constants/library.constants';
 import { PublishStatusEnum } from '@/types/enums/common';
-import { ComponentTypeEnum } from '@/types/enums/space';
 import type { ComponentItemProps } from '@/types/interfaces/library';
 import { CheckCircleTwoTone, MoreOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
@@ -31,40 +22,8 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
   onClickMore,
 }) => {
   const info = useMemo(() => {
-    switch (componentInfo.type) {
-      case ComponentTypeEnum.Plugin:
-        return {
-          defaultImage: pluginImage,
-          icon: <ICON_PLUGIN />,
-          text: '插件',
-        };
-      case ComponentTypeEnum.Knowledge:
-        return {
-          defaultImage: knowledgeImage,
-          icon: <ICON_KNOWLEDGE />,
-          text: '知识库',
-        };
-      case ComponentTypeEnum.Workflow:
-        return {
-          defaultImage: workflowImage,
-          icon: <ICON_WORKFLOW />,
-          text: '工作流',
-        };
-      case ComponentTypeEnum.Database:
-        return {
-          defaultImage: databaseImage,
-          icon: <ICON_DATABASE />,
-          text: '数据库',
-        };
-      // todo
-      case ComponentTypeEnum.Model:
-        return {
-          defaultImage: databaseImage,
-          icon: <ICON_MODEL />,
-          text: '模型',
-        };
-    }
-  }, [componentInfo]);
+    return COMPONENT_LIST.find((item) => item.type === componentInfo.type);
+  }, [componentInfo.type]);
 
   return (
     <div
@@ -98,7 +57,7 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
         </div>
         <img
           className={cx(styles.img)}
-          src={componentInfo.icon || (info.defaultImage as string)}
+          src={componentInfo.icon || (info?.defaultImage as string)}
           alt=""
         />
       </div>
@@ -106,7 +65,7 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
       <div
         className={cx('flex', 'flex-wrap', 'items-center', styles['type-wrap'])}
       >
-        <BoxInfo icon={info.icon} text={info.text} />
+        <BoxInfo icon={info?.icon} text={info?.text as string} />
         {componentInfo.publishStatus === PublishStatusEnum.Published && (
           <>
             <BoxInfo text="已发布" />
@@ -122,13 +81,13 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
             alt=""
           />
         </ConditionRender>
-        <div className={cx('flex-1', 'flex', 'item-center')}>
-          <div className={cx(styles.nickname, 'text-ellipsis')}>
+        <div className={cx('flex-1', 'flex', 'item-center', 'overflow-hide')}>
+          <div className={cx('flex-1', 'text-ellipsis')}>
             {componentInfo.creator?.nickName}
           </div>
-          <span>
+          <div className={cx(styles['edit-time'], 'text-ellipsis')}>
             最近编辑 {moment(componentInfo.modified).format('MM-DD HH:mm')}
-          </span>
+          </div>
         </div>
         <CustomPopover list={COMPONENT_MORE_ACTION} onClick={onClickMore}>
           <span

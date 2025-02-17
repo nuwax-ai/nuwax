@@ -1,12 +1,22 @@
 import { TABS } from '@/constants/menus.constants';
-import type { TabsType } from '@/types/interfaces/menus';
+import { TabsEnum } from '@/types/enums/menus';
+import type { TabsType } from '@/types/interfaces/layouts';
 import classNames from 'classnames';
 import React from 'react';
+import { useLocation } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 const Tabs: React.FC<TabsType> = ({ onClick }) => {
+  const location = useLocation();
+  const handleActive = (type) => {
+    return (
+      (type === TabsEnum.Home && location?.pathname === '/') ||
+      (type === TabsEnum.Space && location?.pathname.includes('space')) ||
+      (type === TabsEnum.Square && location?.pathname.includes('square'))
+    );
+  };
   return (
     <div className={cx('flex-1', 'overflow-y')}>
       {TABS.map((item, index) => {
@@ -22,6 +32,7 @@ const Tabs: React.FC<TabsType> = ({ onClick }) => {
               'hover-box',
               'cursor-pointer',
               styles.box,
+              { [styles.active]: handleActive(item.type) },
             )}
           >
             {item.icon}

@@ -55,3 +55,10 @@ export interface UserAvatarType {
 export interface UserOperateAreaType {
   onClick: (type: UserOperatorAreaEnum) => void;
 }
+
+// 用户操作区域数据项
+export interface UserOperateAreaItem {
+  title: string;
+  icon: React.ReactNode;
+  type: UserOperatorAreaEnum;
+}

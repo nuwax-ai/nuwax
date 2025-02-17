@@ -6,7 +6,7 @@ import type { AgentInfo } from '@/types/interfaces/agent';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { history, useRequest } from 'umi';
+import { history, useLocation, useRequest } from 'umi';
 import DevCollect from './DevCollect';
 import styles from './index.less';
 import SpaceTitle from './SpaceTitle';
@@ -14,6 +14,7 @@ import SpaceTitle from './SpaceTitle';
 const cx = classNames.bind(styles);
 
 const SpaceSection: React.FC = () => {
+  const location = useLocation();
   const [devCollectAgentList, setDevCollectAgentList] = useState<AgentInfo[]>(
     [],
   );
@@ -58,6 +59,15 @@ const SpaceSection: React.FC = () => {
     history.push(`/space/${spaceId}/agent/${agentId}`);
   };
 
+  const handleActive = (type) => {
+    return (
+      (type === SpaceApplicationListEnum.Application_Develop &&
+        location?.pathname.includes('develop')) ||
+      (type === SpaceApplicationListEnum.Component_Library &&
+        location?.pathname.includes('library'))
+    );
+  };
+
   return (
     <div className={cx('h-full', 'px-6', 'py-16', 'overflow-y')}>
       <SpaceTitle />
@@ -72,6 +82,7 @@ const SpaceSection: React.FC = () => {
               'flex',
               'items-center',
               'cursor-pointer',
+              { [styles.active]: handleActive(item.type) },
             )}
           >
             {item.icon}

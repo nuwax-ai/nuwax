@@ -6,12 +6,12 @@ import {
   UserOperatorAreaEnum,
 } from '@/types/enums/menus';
 import {
+  BellOutlined,
   CommentOutlined,
   CopyOutlined,
   GlobalOutlined,
   HomeOutlined,
   InboxOutlined,
-  MessageOutlined,
   PoweroffOutlined,
   SettingOutlined,
   UserOutlined,
@@ -50,7 +50,7 @@ export const USER_OPERATE_AREA = [
   },
   {
     title: '消息',
-    icon: <MessageOutlined />,
+    icon: <BellOutlined />,
     type: UserOperatorAreaEnum.Message,
   },
 ];
