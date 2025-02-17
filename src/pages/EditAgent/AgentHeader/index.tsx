@@ -25,6 +25,10 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
   onEditAgent,
   onPublish,
 }) => {
+  const handleBack = () => {
+    history.back();
+  };
+
   return (
     <header
       className={cx(
@@ -36,7 +40,7 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
         styles.header,
       )}
     >
-      <LeftOutlined />
+      <LeftOutlined className={cx('hover-box')} onClick={handleBack} />
       <img
         className={cx('radius-6', styles.avatar)}
         src={agentConfigInfo?.icon || (personal as string)}

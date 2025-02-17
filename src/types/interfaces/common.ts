@@ -1,5 +1,6 @@
 import type { CardStyleEnum, CreateEditAgentEnum } from '@/types/enums/common';
 import type { KnowledgeModeEnum } from '@/types/enums/library';
+import { AgentBaseInfo, AgentConfigInfo } from '@/types/interfaces/agent';
 import type {
   ConfigProviderProps,
   FormInstance,
@@ -284,12 +285,11 @@ export interface CreatedNodeItem {
 // 创建、编辑智能体
 export interface CreateAgentProps {
   type?: CreateEditAgentEnum;
-  name?: string;
-  description?: string;
-  icon?: string;
+  agentConfigInfo?: AgentConfigInfo;
   open: boolean;
   onCancel: () => void;
-  onConfirm: (agentId: string) => void;
+  onConfirmCreate?: (agentId: string) => void;
+  onConfirmUpdate?: (info: AgentBaseInfo) => void;
 }
 
 // 创建、编辑知识库

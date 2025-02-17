@@ -2,16 +2,23 @@ import CustomFormModal from '@/components/CustomFormModal';
 import SelectList from '@/components/SelectList';
 import { TRIGGER_TYPE_LIST } from '@/constants/agent.constants';
 import { TASK_EXECUTION } from '@/constants/space.contants';
+import {
+  apiAgentComponentTriggerAdd,
+  apiAgentTriggerTimeZone,
+} from '@/services/agentConfig';
+import { TriggerTypeEnum } from '@/types/enums/agent';
+import type {
+  AgentComponentTriggerAddParams,
+  TriggerTimeZone,
+} from '@/types/interfaces/agent';
 import type { CreateTriggerProps } from '@/types/interfaces/agentConfig';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';
-import React, { useState } from 'react';
+import omit from 'lodash/omit';
+import React, { useEffect, useState } from 'react';
+import { useRequest } from 'umi';
 import EventTrigger from './EventTrigger';
 import TimingTrigger from './TimingTrigger';
-import { useRequest } from 'umi';
-import { apiAgentComponentTriggerAdd } from '@/services/agentConfig';
-import { TriggerTypeEnum } from '@/types/enums/agent';
-import type { AgentComponentTriggerAddParams } from '@/types/interfaces/agent';
 
 /**
  * 创建触发器组件
@@ -24,10 +31,20 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
   onConfirm,
 }) => {
   const [form] = Form.useForm();
-  // 	触发类型
+  // 触发类型
   const [triggerType, setTriggerType] = useState<TriggerTypeEnum>(
     TriggerTypeEnum.TIME,
   );
+  const [triggerTimeZone, setTriggerTimeZone] = useState<TriggerTimeZone>();
+
+  // 触发器定时任务时区数据
+  const { run: runTriggerTimeZone } = useRequest(apiAgentTriggerTimeZone, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: TriggerTimeZone) => {
+      setTriggerTimeZone(result);
+    },
+  });
 
   // 新增智能体触发器配置
   const { run } = useRequest(apiAgentComponentTriggerAdd, {
@@ -39,17 +56,35 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
     },
   });
 
+  useEffect(() => {
+    runTriggerTimeZone();
+  }, []);
+
   // todo
-  const onFinish: FormProps<AgentComponentTriggerAddParams>['onFinish'] = (values) => {
-    console.log(values, '-----');
-    const timeCronExpression = values.timeCronExpression.join(',');
-    const timeZone = values.timeZone.join(',');
-    run({
-      ...values,
-      timeCronExpression,
-      timeZone,
-      agentId,
-    });
+  const onFinish: FormProps<AgentComponentTriggerAddParams>['onFinish'] = (
+    values,
+  ) => {
+    const utcTimeZone = values?.utcTimeZone;
+    const timeCronExpression = values?.timeCronExpression;
+    // 定时触发-时区，例如 Asia/Shanghai
+    const timeZone = utcTimeZone?.[1];
+    // 定时触发-utc时区，例如 UTC+08:00
+    const utc = utcTimeZone?.[0];
+    // 定时触发-触发时间，cron表达式（将中文描述转换）
+    const cronExpression = timeCronExpression?.[1];
+    // 定时触发-触发时间，cron描述
+    const cronDesc = timeCronExpression?.[0];
+    const _values = omit(values, ['timeCronExpression', 'utcTimeZone']);
+    console.log(_values, '--------');
+    return;
+    // run({
+    //   ..._values,
+    //   timeZone,
+    //   utc,
+    //   cronExpression,
+    //   cronDesc,
+    //   agentId,
+    // });
   };
 
   const handlerConfirm = () => {
@@ -95,15 +130,12 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
         </Form.Item>
         {triggerType === TriggerTypeEnum.TIME ? (
           // 定时触发
-          <TimingTrigger />
+          <TimingTrigger triggerTimeZone={triggerTimeZone} />
         ) : (
           // 事件触发
           <EventTrigger />
         )}
-        <Form.Item
-          name="componentType"
-          label="任务执行"
-        >
+        <Form.Item name="componentType" label="任务执行">
           <SelectList options={TASK_EXECUTION} placeholder="请选择任务执行" />
         </Form.Item>
       </Form>

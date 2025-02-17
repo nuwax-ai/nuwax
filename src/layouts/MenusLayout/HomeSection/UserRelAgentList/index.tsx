@@ -1,18 +1,22 @@
-import type { DevCollectProps } from '@/types/interfaces/layouts';
+import type { UserRelAgentListProps } from '@/types/interfaces/layouts';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-// 开发收藏
-const DevCollect: React.FC<DevCollectProps> = ({ list, onClick }) => {
+/**
+ * 用户相关智能体
+ */
+const UserRelAgentList: React.FC<UserRelAgentListProps> = ({
+  list,
+  onClick,
+}) => {
   return (
     <ul>
       {list?.map((item) => (
         <li
           key={item.id}
-          onClick={() => onClick(item.agentId)}
           className={cx(
             styles.row,
             'flex',
@@ -20,6 +24,7 @@ const DevCollect: React.FC<DevCollectProps> = ({ list, onClick }) => {
             'cursor-pointer',
             'hover-box',
           )}
+          onClick={() => onClick(item)}
         >
           <img src={item.icon} alt="" />
           <span className={cx(styles.name, 'flex-1', 'text-ellipsis')}>
@@ -31,4 +36,4 @@ const DevCollect: React.FC<DevCollectProps> = ({ list, onClick }) => {
   );
 };
 
-export default DevCollect;
+export default UserRelAgentList;

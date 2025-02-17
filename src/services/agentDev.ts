@@ -11,43 +11,33 @@ import type { ListParams, PageParams } from '@/types/interfaces/common';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
-// 查询用户收藏的智能体列表
-export async function apiUserCollectAgentList(
-  params: PageParams,
-): Promise<RequestResponse<AgentInfo[]>> {
-  return request('/api/user/agent/collect/list', {
-    method: 'GET',
-    params,
-  });
-}
-
 // 取消点赞智能体
 export async function apiUnlikeAgent(
-  body: UnlikeParams,
+  data: UnlikeParams,
 ): Promise<RequestResponse<null>> {
-  return request('/api/user/agent/unLike', {
+  const agentId = data.agentId;
+  return request(`/api/user/agent/unLike/${agentId}`, {
     method: 'POST',
-    data: body,
   });
 }
 
 // 智能体取消收藏
 export async function apiUnCollectAgent(
-  body: UnCollectParams,
+  data: UnCollectParams,
 ): Promise<RequestResponse<null>> {
-  return request('/api/user/agent/unCollect', {
+  const agentId = data.agentId;
+  return request(`/api/user/agent/unCollect/${agentId}`, {
     method: 'POST',
-    data: body,
   });
 }
 
 // 点赞智能体
 export async function apiLikeAgent(
-  body: LikeAgentParams,
+  data: LikeAgentParams,
 ): Promise<RequestResponse<null>> {
-  return request('/api/user/agent/like', {
+  const agentId = data.agentId;
+  return request(`/api/user/agent/like/${agentId}`, {
     method: 'POST',
-    data: body,
   });
 }
 
@@ -73,11 +63,11 @@ export async function apiDevCollectAgent(
 
 // 智能体收藏
 export async function apiCollectAgent(
-  body: CollectAgentParams,
+  data: CollectAgentParams,
 ): Promise<RequestResponse<null>> {
-  return request('/api/user/agent/collect', {
+  const agentId = data.agentId;
+  return request(`/api/user/agent/collect/${agentId}`, {
     method: 'POST',
-    data: body,
   });
 }
 
@@ -85,9 +75,9 @@ export async function apiCollectAgent(
 export async function apiUserUsedAgentList(
   params: ListParams,
 ): Promise<RequestResponse<AgentInfo[]>> {
-  return request('/api/user/agent/used/list', {
+  const size = params.size;
+  return request(`/api/user/agent/used/list/${size}`, {
     method: 'GET',
-    params,
   });
 }
 
@@ -95,9 +85,9 @@ export async function apiUserUsedAgentList(
 export async function apiUserEditAgentList(
   params: ListParams,
 ): Promise<RequestResponse<AgentInfo[]>> {
-  return request('/api/user/agent/edit/list', {
+  const size = params.size;
+  return request(`/api/user/agent/edit/list/${size}`, {
     method: 'GET',
-    params,
   });
 }
 
@@ -107,6 +97,16 @@ export async function apiUserDevCollectAgentList(
 ): Promise<RequestResponse<AgentInfo[]>> {
   const { page, size } = params;
   return request(`/api/user/agent/dev/collect/list/${page}/${size}`, {
+    method: 'GET',
+  });
+}
+
+// 查询用户收藏的智能体列表
+export async function apiUserCollectAgentList(
+  params: PageParams,
+): Promise<RequestResponse<AgentInfo[]>> {
+  const { page, size } = params;
+  return request(`/api/user/agent/collect/list/${page}/${size}`, {
     method: 'GET',
   });
 }

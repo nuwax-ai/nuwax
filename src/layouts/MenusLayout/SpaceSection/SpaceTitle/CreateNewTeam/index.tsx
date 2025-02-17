@@ -3,7 +3,7 @@ import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { apiCreateSpaceTeam } from '@/services/workspace';
-import type { CreateNewTeamProps } from '@/types/interfaces/menus';
+import type { CreateNewTeamProps } from '@/types/interfaces/layouts';
 import type { CreateSpaceTeamParams } from '@/types/interfaces/workspace';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';

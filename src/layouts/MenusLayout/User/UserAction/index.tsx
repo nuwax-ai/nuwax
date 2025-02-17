@@ -1,4 +1,4 @@
-import type { UserActionItemType } from '@/types/interfaces/menus';
+import type { UserActionItemType } from '@/types/interfaces/layouts';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';

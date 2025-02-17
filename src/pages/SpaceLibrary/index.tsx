@@ -4,6 +4,7 @@ import CreateNewPlugin from '@/components/CreateNewPlugin';
 import CreateWorkflow from '@/components/CreateWorkflow';
 import CustomPopover from '@/components/CustomPopover';
 import SelectList from '@/components/SelectList';
+import { SPACE_ID } from '@/constants/home.constants';
 import {
   CREATE_LIST,
   FILTER_STATUS,
@@ -25,7 +26,6 @@ import { history } from 'umi';
 import ComponentItem from './ComponentItem';
 import CreateModel from './CreateModel';
 import styles from './index.less';
-import { SPACE_ID } from '@/constants/home.constants';
 
 const cx = classNames.bind(styles);
 

@@ -1,5 +1,5 @@
 import { USER_OPERATE_AREA } from '@/constants/menus.constants';
-import type { UserOperateAreaType } from '@/types/interfaces/menus';
+import type { UserOperateAreaType } from '@/types/interfaces/layouts';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';

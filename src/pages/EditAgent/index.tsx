@@ -1,9 +1,13 @@
 import CreateAgent from '@/components/CreateAgent';
 import VersionHistory from '@/components/VersionHistory';
-import { apiAgentConfigInfo } from '@/services/agentConfig';
+import {
+  apiAgentConfigHistoryList,
+  apiAgentConfigInfo,
+} from '@/services/agentConfig';
 import { CreateEditAgentEnum } from '@/types/enums/common';
 import { EditAgentShowType } from '@/types/enums/space';
-import { AgentConfigInfo } from '@/types/interfaces/agent';
+import { AgentBaseInfo, AgentConfigInfo } from '@/types/interfaces/agent';
+import { HistoryData } from '@/types/interfaces/space';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
@@ -37,6 +41,7 @@ const EditAgent: React.FC = () => {
   const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
   const [openKnowledgeModel, setOpenKnowledgeModel] = useState<boolean>(false);
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>(null);
+  const [versionHistory, setVersionHistory] = useState<HistoryData[]>([]);
   const agentIdRef = useRef<string>('');
 
   // 查询智能体配置信息
@@ -48,11 +53,21 @@ const EditAgent: React.FC = () => {
     },
   });
 
+  // 版本历史记录
+  const { run: runHistory } = useRequest(apiAgentConfigHistoryList, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: HistoryData[]) => {
+      setVersionHistory(result);
+    },
+  });
+
   useEffect(() => {
     const pathname = location.pathname;
-    const anentId = pathname.split('/')?.slice(-1)?.join();
-    agentIdRef.current = anentId;
-    run(anentId);
+    const agentId = pathname.split('/')?.slice(-1)?.join();
+    agentIdRef.current = agentId;
+    run(agentId);
+    runHistory(agentId);
   }, []);
 
   const handlerClose = () => {
@@ -93,7 +108,12 @@ const EditAgent: React.FC = () => {
   };
 
   // 确认编辑智能体
-  const handlerConfirmEditAgent = () => {
+  const handlerConfirmEditAgent = (info: AgentBaseInfo) => {
+    const _agentConfigInfo = {
+      ...agentConfigInfo,
+      ...info,
+    };
+    setAgentConfigInfo(_agentConfigInfo);
     setOpenEditAgent(false);
   };
 
@@ -158,6 +178,7 @@ const EditAgent: React.FC = () => {
         />
         {/*版本历史*/}
         <VersionHistory
+          list={versionHistory}
           visible={showType === EditAgentShowType.Version_History}
           onClose={handlerClose}
         />
@@ -171,11 +192,10 @@ const EditAgent: React.FC = () => {
       {/*编辑智能体弹窗*/}
       <CreateAgent
         type={CreateEditAgentEnum.Edit}
-        agentName={'测试智能体'}
-        intro={'这里是智能体的介绍'}
+        agentConfigInfo={agentConfigInfo}
         open={openEditAgent}
         onCancel={() => setOpenEditAgent(false)}
-        onConfirm={handlerConfirmEditAgent}
+        onConfirmUpdate={handlerConfirmEditAgent}
       />
       {/*智能体模型设置*/}
       <AgentModelSetting

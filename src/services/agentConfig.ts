@@ -1,5 +1,6 @@
 import type {
-  AgentAddParams, AgentComponentAddParams,
+  AgentAddParams,
+  AgentComponentAddParams,
   AgentComponentInfo,
   AgentComponentKnowledgeUpdateParams,
   AgentComponentModelUpdateParams,
@@ -7,6 +8,7 @@ import type {
   AgentComponentTriggerAddParams,
   AgentComponentTriggerUpdateParams,
   AgentComponentVariableUpdateParams,
+  AgentComponentWorkflowUpdateParams,
   AgentConfigHistoryInfo,
   AgentConfigInfo,
   AgentConfigUpdateParams,
@@ -14,8 +16,8 @@ import type {
   AgentDeleteParams,
   AgentPublishApplyParams,
   AgentTransferParams,
-  AgentComponentWorkflowUpdateParams,
 } from '@/types/interfaces/agent';
+import { TriggerTimeZone } from '@/types/interfaces/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
@@ -151,7 +153,7 @@ export async function apiAgentComponentDelete(
 
 // 新增智能体插件、工作流、知识库组件配置
 export async function apiAgentComponentAdd(
-  data: AgentComponentAddParams
+  data: AgentComponentAddParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/add', {
     method: 'POST',
@@ -174,6 +176,15 @@ export async function apiAgentConfigInfo(
   agentId: string,
 ): Promise<RequestResponse<AgentConfigInfo>> {
   return request(`/api/agent/${agentId}`, {
+    method: 'GET',
+  });
+}
+
+// 触发器定时任务时区数据
+export async function apiAgentTriggerTimeZone(): Promise<
+  RequestResponse<TriggerTimeZone>
+> {
+  return request('/api/agent/trigger/timeZone/data', {
     method: 'GET',
   });
 }

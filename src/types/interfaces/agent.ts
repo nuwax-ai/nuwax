@@ -26,13 +26,17 @@ export interface LabelIconProps {
   type?: TooltipTitleTypeEnum;
 }
 
-// 智能体信息
-export interface AgentInfo {
-  id: string;
-  userId: string;
+// 智能体基础信息
+export interface AgentBaseInfo {
   name: string;
   icon: string;
   description: string;
+}
+
+// 智能体信息
+export interface AgentInfo extends AgentBaseInfo {
+  id: string;
+  userId: string;
   modified: string;
   created: string;
   agentId: string;
@@ -75,11 +79,8 @@ export interface CollectAgentParams {
 }
 
 // 新增智能体输入参数
-export interface AgentAddParams {
+export interface AgentAddParams extends AgentBaseInfo {
   spaceId: string;
-  name: string;
-  description: string;
-  icon: string;
 }
 
 // 智能体迁移接口输入参数
@@ -106,11 +107,8 @@ export interface AgentCopyParams {
 }
 
 // 更新智能体基础配置信息输入参数
-export interface AgentConfigUpdateParams {
+export interface AgentConfigUpdateParams extends AgentBaseInfo {
   id: string;
-  name: string;
-  description: string;
-  icon: string;
   systemPrompt: string;
   userPrompt: string;
   openSuggest: string;
@@ -251,8 +249,8 @@ export interface AgentComponentTriggerAddParams {
 }
 
 // 更新插件组件配置
-export interface AgentComponentPluginUpdateParams
-  extends AgentComponentWorkflowUpdateParams {}
+export type AgentComponentPluginUpdateParams =
+  AgentComponentWorkflowUpdateParams;
 
 // 更新模型组件配置输入参数
 export interface AgentComponentModelUpdateParams
@@ -358,6 +356,34 @@ export interface AgentConfigInfo {
   };
   space: SpaceInfo;
   devCollected: boolean;
+}
+
+export interface UtcTimeZonesType {}
+
+// 触发器时区
+export interface TriggerTimeZone {
+  // UTC时区列表
+  utcTimeZones: {
+    // UTC时区
+    utc: string;
+    timeZones: {
+      // 时区
+      timeZone: string;
+      // 时区名称
+      name: string;
+    }[];
+  }[];
+  // 时间范围列表
+  cronExpScopes: {
+    // 时间范围
+    scope: string;
+    cronExps: {
+      // 时间描述
+      time: string;
+      // 表达式
+      expression: string;
+    }[];
+  }[];
 }
 
 // 智能体历史配置信息

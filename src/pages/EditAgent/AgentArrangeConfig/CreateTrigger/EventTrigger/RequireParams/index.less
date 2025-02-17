@@ -1,12 +1,13 @@
 @import '@/styles/color';
 
 .require-params {
-  background: rgba(46, 46, 56, 4%);
+  background: @BLANK22;
   padding: 12px;
 
   .r-header {
     gap: 4px;
     font-size: 12px;
+    font-weight: 600;
 
     .plus-icon {
       width: 20px;
@@ -19,29 +20,25 @@
       }
     }
   }
+}
 
-  .r-table-row {
-    height: 32px;
-    color: rgba(28, 31, 35, 35%);
-    font-size: 10px;
-    font-weight: 400;
-    gap: 10px;
+.reduce-icon {
+  color: @BLANK23;
+  font-size: 14px;
+}
 
-    .var-name {
-      width: 130px;
+.table-container {
+  :global {
+    .ant-table-content .ant-table-thead > tr > th {
+      padding-left: 0;
+      font-size: 14px;
+      color: @GRAY05;
+      background: @BLANK22 !important;
     }
 
-    .var-type {
-      width: 150px;
-    }
-
-    .desc {
-      flex: 1;
-      gap: 10px;
-
-      .reduce-icon {
-        font-size: 14px;
-      }
+    .ant-table-content .ant-table-tbody > tr > td {
+      padding: 10px 10px 10px 0;
+      background: @BLANK22 !important;
     }
   }
 }

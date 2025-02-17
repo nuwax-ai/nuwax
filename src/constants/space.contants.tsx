@@ -8,6 +8,7 @@ import {
   ICON_PLUGIN,
   ICON_WORKFLOW,
 } from '@/constants/images.constants';
+import { TriggerComponentType } from '@/types/enums/agent';
 import { CreateAgentEnum } from '@/types/enums/common';
 import {
   ApplicationMoreActionEnum,
@@ -20,7 +21,6 @@ import {
   SpaceApplicationListEnum,
   UserProblemSuggestEnum,
 } from '@/types/enums/space';
-import { TriggerComponentType } from '@/types/enums/agent';
 
 // 组件库所有资源类型
 export const LIBRARY_ALL_RESOURCE = [

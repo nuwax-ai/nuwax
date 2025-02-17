@@ -312,7 +312,7 @@ const SpaceDevelop: React.FC = () => {
       <CreateAgent
         open={openCreateAgent}
         onCancel={() => setOpenCreateAgent(false)}
-        onConfirm={handlerConfirmCreateAgent}
+        onConfirmCreate={handlerConfirmCreateAgent}
       />
     </div>
   );
