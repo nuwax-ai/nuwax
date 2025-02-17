@@ -18,7 +18,7 @@ export async function apiNotifyMessageList(
 ): Promise<RequestResponse<NotifyMessageInfo[]>> {
   return request('/api/notify/message/list', {
     method: 'POST',
-    body: data,
+    data,
   });
 }
 

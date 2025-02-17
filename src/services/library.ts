@@ -8,21 +8,21 @@ import { request } from 'umi';
 
 // 添加工作流
 export async function apiAddWorkflow(
-  body: AddWorkflowParams,
+  data: AddWorkflowParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/workflow/add', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
 // 更新工作流
 export async function apiUpdateWorkflow(
-  body: UpdateWorkflowParams,
+  data: UpdateWorkflowParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/workflow/update', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 

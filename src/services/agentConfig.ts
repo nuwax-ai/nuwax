@@ -64,81 +64,81 @@ export async function apiAgentCopy(
 
 // 更新智能体基础配置信息
 export async function apiAgentConfigUpdate(
-  body: AgentConfigUpdateParams,
+  data: AgentConfigUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/config/update', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
 // 更新工作流组件配置
 export async function apiAgentComponentWorkflowUpdate(
-  body: AgentComponentWorkflowUpdateParams,
+  data: AgentComponentWorkflowUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/workflow/update', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
 // 更新变量配置
 export async function apiAgentComponentVariableUpdate(
-  body: AgentComponentVariableUpdateParams,
+  data: AgentComponentVariableUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/variable/update', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
 // 更新触发器组件配置
 export async function apiAgentComponentTriggerUpdate(
-  body: AgentComponentTriggerUpdateParams,
+  data: AgentComponentTriggerUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/trigger/update', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
 // 新增智能体触发器配置
 export async function apiAgentComponentTriggerAdd(
-  body: AgentComponentTriggerAddParams,
+  data: AgentComponentTriggerAddParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/trigger/add', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
 // 更新插件组件配置
 export async function apiAgentComponentPluginUpdate(
-  body: AgentComponentPluginUpdateParams,
+  data: AgentComponentPluginUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/plugin/update', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
 // 更新模型组件配置
 export async function apiAgentComponentModelUpdate(
-  body: AgentComponentModelUpdateParams,
+  data: AgentComponentModelUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/model/update', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
 // 更新知识库组件配置
 export async function apiAgentComponentKnowledgeUpdate(
-  body: AgentComponentKnowledgeUpdateParams,
+  data: AgentComponentKnowledgeUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/knowledge/update', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
@@ -157,17 +157,17 @@ export async function apiAgentComponentAdd(
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/add', {
     method: 'POST',
-    body: data,
+    data,
   });
 }
 
 // 新增智能体接口
 export async function apiAgentAdd(
-  body: AgentAddParams,
+  data: AgentAddParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/add', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 

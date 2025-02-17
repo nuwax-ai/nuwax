@@ -29,7 +29,7 @@ const Message: React.FC = () => {
     setValue(value);
   };
 
-  // 查询用户消息列表 todo
+  // 查询用户消息列表
   const { run: runMessageList } = useRequest(apiNotifyMessageList, {
     manual: true,
     debounceWait: 300,
@@ -39,9 +39,10 @@ const Message: React.FC = () => {
   });
 
   useEffect(() => {
-    // runMessageList({
-    //   size: 10,
-    // });
+    runMessageList({
+      lastId: 11110,
+      size: 10,
+    });
   }, []);
 
   // 清除所有未读消息
