@@ -16,6 +16,8 @@ import ReactDOM from 'react-dom/client';
 // 自定义类型定义
 import { GraphProp } from '@/types/interfaces/graph';
 import { createCurvePath } from './registerCustomNodes';
+
+import { modifyPorts } from '@/utils/workflow';
 let currentPopover: any = null; // 用于跟踪当前显示的Popover
 /**
  * 初始化图形编辑器的函数，接收一个包含容器 ID 和改变抽屉内容回调的对象作为参数。
@@ -156,31 +158,69 @@ const initGraph = ({
     .use(new Clipboard()) // 启用剪贴板插件，支持复制和粘贴
     .use(new History()); // 启用历史记录插件，支持撤销和重做
 
-  /**
-   * 控制连接桩（ports）的显示与隐藏
-   * @param ports - 查询到的所有连接桩元素
-   * @param show - 是否显示连接桩
-   */
-  const showPorts = (ports: NodeListOf<SVGElement>, show: boolean) => {
-    for (let i = 0, len = ports.length; i < len; i += 1) {
-      ports[i].style.visibility = show ? 'visible' : 'hidden';
-    }
-  };
-
   // 监听鼠标进入节点事件，显示连接桩
-  graph.on('node:mouseenter', () => {
-    const ports = graphContainer.querySelectorAll(
-      '.x6-port-body',
-    ) as NodeListOf<SVGElement>;
-    showPorts(ports, true);
-  });
+  graph.on('node:mouseenter', ({ node }) => {
+    const onMouseMove = (event: MouseEvent) => {
+      // 获取所有端口元素
+      const ports = node.getPorts();
+      let enlargePortId: string | undefined;
 
-  // 监听鼠标离开节点事件，隐藏连接桩
-  graph.on('node:mouseleave', () => {
-    const ports = graphContainer.querySelectorAll(
-      '.x6-port-body',
-    ) as NodeListOf<SVGElement>;
-    showPorts(ports, false);
+      ports.forEach((port) => {
+        // 获取对应的端口DOM元素，并进行类型断言
+        const portElement = document.querySelector(
+          `[port="${port.id}"]`,
+        ) as unknown as SVGGraphicsElement;
+        if (portElement) {
+          try {
+            // 获取端口的边界框
+            const bbox = portElement.getBBox();
+            // 获取SVG变换矩阵
+            const matrix = portElement.getScreenCTM();
+
+            if (matrix && bbox) {
+              // 转换边界框到屏幕坐标系
+              const transformedBBox = {
+                x: bbox.x * matrix.a + bbox.y * matrix.c + matrix.e,
+                y: bbox.x * matrix.b + bbox.y * matrix.d + matrix.f,
+                width: bbox.width * Math.abs(matrix.a),
+                height: bbox.height * Math.abs(matrix.d),
+              };
+
+              // 判断鼠标是否在端口的边界框内
+              if (
+                event.clientX >= transformedBBox.x &&
+                event.clientX <= transformedBBox.x + transformedBBox.width &&
+                event.clientY >= transformedBBox.y &&
+                event.clientY <= transformedBBox.y + transformedBBox.height
+              ) {
+                enlargePortId = port.id;
+                return false; // 找到匹配后退出循环
+              }
+            }
+          } catch (error) {
+            console.error('Error accessing port element properties:', error);
+          }
+        }
+      });
+
+      // 更新所有端口的显示状态
+      const allPorts = graphContainer.querySelectorAll(
+        '.x6-port-body',
+      ) as NodeListOf<SVGElement>;
+      modifyPorts(allPorts, true, enlargePortId); // 仅放大悬停的连接桩
+    };
+
+    // 监听容器上的 mousemove 事件
+    graphContainer.addEventListener('mousemove', onMouseMove);
+
+    // 当鼠标离开节点时移除 mousemove 监听器并隐藏所有端口
+    graph.on('node:mouseleave', () => {
+      graphContainer.removeEventListener('mousemove', onMouseMove);
+      const ports = graphContainer.querySelectorAll(
+        '.x6-port-body',
+      ) as NodeListOf<SVGElement>;
+      modifyPorts(ports, false); // 恢复并隐藏连接桩
+    });
   });
 
   // 监听节点点击事件，调用 changeDrawer 函数更新右侧抽屉的内容

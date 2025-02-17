@@ -168,6 +168,8 @@ export const getEdges = (nodes: ChildNode[]): Edge[] => {
 export const generatePorts = (data: ChildNode) => {
   let outputPorts;
 
+  const basePortSize = 5; // 设置基础端口大小为5
+
   if (data.type === 'Condition' || data.type === 'IntentRecognition') {
     const configs = data.nodeConfig?.conditionBranchConfigs || [];
     outputPorts = configs.map((_, index) => ({
@@ -176,11 +178,11 @@ export const generatePorts = (data: ChildNode) => {
       zIndex: 99, // 确保连接桩的层级高于边
       attrs: {
         circle: {
-          r: 4,
+          r: basePortSize, // 使用较小的基础端口大小
           magnet: true,
           stroke: '#5F95FF',
-          strokeWidth: 1,
-          fill: '#fff',
+          strokeWidth: 2,
+          fill: 'transparent', // 保持透明以增大点击区域但不影响外观大小
         },
       },
     }));
@@ -192,11 +194,11 @@ export const generatePorts = (data: ChildNode) => {
         zIndex: 99, // 确保连接桩的层级高于边
         attrs: {
           circle: {
-            r: 4,
+            r: basePortSize, // 使用较小的基础端口大小
             magnet: true,
             stroke: '#5F95FF',
-            strokeWidth: 1,
-            fill: '#fff',
+            strokeWidth: 2,
+            fill: 'transparent', // 保持透明以增大点击区域但不影响外观大小
           },
         },
       },
@@ -209,11 +211,11 @@ export const generatePorts = (data: ChildNode) => {
         position: 'right',
         attrs: {
           circle: {
-            r: 4,
+            r: basePortSize, // 统一端口大小
             magnet: true,
             stroke: '#5F95FF',
             strokeWidth: 1,
-            fill: '#fff',
+            fill: '#fff', // 这里可以使用非透明颜色来匹配视觉效果
           },
         },
         connectable: {
@@ -225,11 +227,11 @@ export const generatePorts = (data: ChildNode) => {
         position: 'left',
         attrs: {
           circle: {
-            r: 4,
+            r: basePortSize, // 统一端口大小
             magnet: true,
             stroke: '#5F95FF',
             strokeWidth: 1,
-            fill: '#fff',
+            fill: '#fff', // 这里可以使用非透明颜色来匹配视觉效果
           },
         },
         connectable: {
@@ -246,14 +248,46 @@ export const generatePorts = (data: ChildNode) => {
         zIndex: 99, // 确保连接桩的层级高于边
         attrs: {
           circle: {
-            r: 4,
+            r: basePortSize, // 使用较小的基础端口大小
             magnet: true,
             stroke: '#5F95FF',
-            strokeWidth: 1,
-            fill: '#fff',
+            strokeWidth: 2,
+            fill: 'transparent', // 保持透明以增大点击区域但不影响外观大小
           },
         },
       }, // 默认的输入端口
     ],
   };
+};
+
+/**
+ * 控制连接桩（ports）的显示与隐藏及大小变化
+ * @param ports - 查询到的所有连接桩元素
+ * @param show - 是否显示连接桩
+ * @param enlargePortId - 放大的特定连接桩ID（可选）
+ */
+export const modifyPorts = (
+  ports: NodeListOf<SVGElement>,
+  show: boolean,
+  enlargePortId?: string,
+) => {
+  console.log(enlargePortId);
+  for (let i = 0, len = ports.length; i < len; i += 1) {
+    const port = ports[i];
+    const portId = port.getAttribute('port');
+
+    if (show && portId) {
+      port.style.visibility = 'visible';
+      if (enlargePortId && portId === enlargePortId) {
+        // 放大并填充指定的连接桩
+        port.setAttribute('r', '10'); // 放大指定的连接桩
+        port.setAttribute('fill', '#5F95FF'); // 设置填充颜色为黑色（或任何其他颜色）
+      } else {
+        port.setAttribute('r', '5'); // 其他连接桩保持默认大小
+        port.setAttribute('fill', 'none'); // 清除填充，保留空心效果
+      }
+    } else {
+      port.style.visibility = 'hidden';
+    }
+  }
 };
