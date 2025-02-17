@@ -172,7 +172,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
         {data.type === 'Condition' && (
           <div className="condition-node-content-style">
             {data.nodeConfig.conditionBranchConfigs?.map((_, index) => (
-              <Input key={index} className="margin-bottom" />
+              <Input key={index} className="margin-bottom" disabled />
             ))}
           </div>
         )}

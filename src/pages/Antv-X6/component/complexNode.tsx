@@ -97,7 +97,6 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           handleChangeNodeConfig={handleChangeNodeConfig}
           inputItemName="outputArgs"
           showCopy={true}
-          showAssociation={true}
           initialValues={outputInitialValues}
         />
       </div>
@@ -231,7 +230,6 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
             handleChangeNodeConfig={handleChangeNodeConfig}
             inputItemName="outputArgs"
             showCopy={true}
-            showAssociation={true}
             initialValues={outputInitialValues}
           />
         </div>

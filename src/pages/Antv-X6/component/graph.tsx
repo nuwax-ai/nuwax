@@ -93,18 +93,7 @@ const initGraph = ({
       minScale: 0.5, // 最小缩放比例
       maxScale: 3, // 最大缩放比例
     },
-    // highlighting: {
-    //   magnetAdsorbed: {
-    //     name: 'stroke',
-    //     args: {
-    //       attrs: {
-    //         fill: '#fff',
-    //         stroke: '#31d0c6',
-    //         strokeWidth: 4,
-    //       },
-    //     },
-    //   },
-    // },
+
     connecting: {
       router: 'manhattan', // 连接线路由方式，使用曼哈顿路径
       connector: 'curveConnector',
@@ -360,7 +349,6 @@ const initGraph = ({
     // 获取节点被拖拽到的位置
     const { x, y } = node.getPosition();
     const data = node.getData();
-    console.log(' data.nodeConfig.extension', x);
     // 将节点的extension属性设置为拖拽后的位置
     if (data.nodeConfig && data.nodeConfig.extension) {
       data.nodeConfig.extension.x = x;

@@ -1,5 +1,18 @@
-import { NodePreviousAndArgMap } from '@/types/interfaces/node';
+import { DataTypeEnum } from '@/types/enums/common';
+import {
+  NodeConfig,
+  // ConditionBranchConfigs,
+  NodePreviousAndArgMap,
+} from '@/types/interfaces/node';
 import { FormInstance } from 'antd';
+
+export interface KeyValueTree {
+  // 键值对的标签
+  label: string;
+  // 键值对对应的值
+  value: DataTypeEnum;
+  children?: KeyValueTree[];
+}
 
 // 定义输入或引用参数
 export interface InputOrReferenceProps {
@@ -28,9 +41,9 @@ export interface FieldConfig {
   placeholder?: string;
   rules?: any[];
   component: React.ComponentType<any>;
-  width?: number;
-  props?: Record<string, any>; // 用于传递特定组件的属性
+  width: number;
   label: string;
+  options?: KeyValueTree[];
 }
 // 定义传递给 renderItem 的参数类型
 export interface RenderItemProps {
@@ -51,6 +64,10 @@ export interface RenderItemProps {
   showCheckbox?: boolean;
   // 是否显示复制按钮
   showCopy?: boolean;
-  // 石佛iu显示关联按钮
-  showAssociation?: boolean;
+}
+
+export interface TreeFormProps {
+  params: NodeConfig;
+  // 改变节点的入参和出参
+  handleChangeNodeConfig: (params: NodeConfig) => void;
 }

@@ -1,10 +1,10 @@
-import { ICON_ASSOCIATION } from '@/constants/images.constants';
+// import { ICON_ASSOCIATION } from '@/constants/images.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import { DeleteOutlined, FileDoneOutlined } from '@ant-design/icons';
 import { Cascader, Checkbox, Form, Input, Popover, Space } from 'antd';
-import { InputOrReference } from './InputOrReference';
-// import { useState } from 'react';
+import React from 'react';
 import './index.less';
+import { InputOrReference } from './InputOrReference';
 import { RenderItemProps } from './type';
 
 // 默认的变量输入输出方法
@@ -15,7 +15,6 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
   referenceList,
   showCheckbox,
   showCopy,
-  showAssociation,
   form,
   onChange,
 }) => {
@@ -23,6 +22,8 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
     onChange();
   };
 
+  // 是否展开子集
+  // const [isExpand, setIsExpand] = useState(false);
   // 将Cascader的值从string转换为数组
   const CascaderValue = (value: DataTypeEnum) => {
     if (value) {
@@ -40,6 +41,11 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
       return [];
     }
   };
+
+  // 获取当前行的数据类型
+  const dataType = form.getFieldValue([field.name, 'dataType']) as string;
+
+  console.log(dataType);
 
   return (
     <div>
@@ -63,6 +69,7 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
             return null;
           }
           const fieldValue = form.getFieldValue([field.name, config.name]);
+
           return (
             <div key={index} className="dis-left">
               <Form.Item
@@ -75,14 +82,11 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
                     placeholder: config.placeholder,
                     form: form,
                     index: field.name,
+                    options: config.options,
                     value:
                       config.component === Cascader
                         ? CascaderValue(fieldValue)
                         : fieldValue,
-                    onBlur:
-                      config.component === Input ? changeValue : undefined,
-                    onChange:
-                      config.component === Input ? undefined : changeValue,
                   };
 
                   // 特定于InputOrReference的props
@@ -91,10 +95,23 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
                       ? { referenceList: referenceList ?? [] }
                       : {};
 
+                  let eventHandlers = {} as {
+                    onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
+                    onChange?: (value: string | string[]) => void;
+                  };
+
+                  // 根据组件类型动态添加事件处理器
+                  if (config.component === Input) {
+                    eventHandlers.onBlur = () => changeValue();
+                  } else {
+                    eventHandlers.onChange = () => changeValue();
+                  }
+
                   return (
                     <config.component
                       {...commonProps}
                       {...inputOrReferenceProps}
+                      {...eventHandlers}
                     />
                   );
                 })()}
@@ -150,7 +167,7 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
             </Form.Item>
           )}
 
-          {showAssociation && (
+          {/* {isExpanded && (
             <Form.Item
               name={[field.name, 'association']}
               valuePropName="association"
@@ -158,7 +175,7 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
             >
               <ICON_ASSOCIATION className="margin-right" />
             </Form.Item>
-          )}
+          )} */}
           <Form.Item>
             <DeleteOutlined onClick={onRemove} />
           </Form.Item>

@@ -155,7 +155,6 @@ const DatabaseNode: React.FC<NodeDisposeProps> = ({
           handleChangeNodeConfig={handleChangeNodeConfig}
           inputItemName="outputArgs"
           showCopy={true}
-          showAssociation={true}
           initialValues={outputInitialValues}
         />
       </div>

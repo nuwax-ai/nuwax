@@ -1,6 +1,7 @@
 // 这个页面定义普通的节点，如输入，输出，等
 import CodeEditor from '@/components/CodeEditor';
 import Monaco from '@/components/CodeEditor/monaco';
+import TreeForm from '@/components/FormListItem/NestedForm';
 import type { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import {
@@ -29,11 +30,6 @@ import './nodeItem.less';
 // 定义开始节点
 // 定义开始和文档提取节点的渲染逻辑
 const StartNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
-  let initialValues: InputAndOutConfig[] = [];
-  if (params.inputArgs && params.inputArgs.length) {
-    initialValues = params.inputArgs;
-  }
-
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -41,17 +37,20 @@ const StartNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
 
   return (
     <>
-      <InputAndOut
+      <TreeForm
+        params={params}
+        handleChangeNodeConfig={handleChangeNodeConfig}
+      />
+      {/* <InputAndOut
         title="输入"
         fieldConfigs={InputConfigs}
         showCheckbox={true}
         showCopy={true}
-        showAssociation={true}
         handleChangeNodeConfig={handleChangeNodeConfig}
         // 如果这里使用动态的表单名称，initialValues 中的名称也应该和他相同
         inputItemName="inputArgs"
         initialValues={{ inputArgs: initialValues }} // 注意这里使用了'inputItemName'相同的
-      />
+      /> */}
       {/* {params.type === 'DocumentExtraction' && (
         <div className="margin-bottom">
           <div className="dis-sb margin-bottom">
@@ -418,6 +417,10 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
             placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
             autoSize={{ minRows: 3, maxRows: 5 }}
             style={{ marginBottom: '10px' }}
+            onChange={(e) => {
+              const newValue = e.target.value; // 直接从事件对象中获取最新值
+              handleChangeNodeConfig({ ...params, content: newValue }); // 使用新值调用handleChangeNodeConfig
+            }}
           />
         </div>
       )}
@@ -490,7 +493,6 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
         handleChangeNodeConfig={handleChangeNodeConfig}
         inputItemName="outputArgs"
         showCopy={true}
-        showAssociation={true}
         initialValues={{ outputArgs: outputInitialValues }}
       />
 

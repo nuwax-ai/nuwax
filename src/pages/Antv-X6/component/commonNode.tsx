@@ -1,7 +1,7 @@
 import { DefaultRenderItem } from '@/components/FormListItem';
+import { FieldConfig } from '@/components/FormListItem/type';
 import type { DefaultObjectType } from '@/types/interfaces/common';
 import {
-  FieldConfig,
   KeyValuePairs,
   MultiSelectWithCheckboxProps,
   NodeRenderProps,
@@ -31,7 +31,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   initialValues,
   showCheckbox = false,
   showCopy = false,
-  showAssociation = false,
 }) => {
   const [form] = Form.useForm();
   // 根据传递的fieldConfigs生成表单项
@@ -107,7 +106,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                       form,
                       showCheckbox,
                       showCopy,
-                      showAssociation,
                       onChange: submitForm,
                     })}
                   </Form.Item>

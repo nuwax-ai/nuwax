@@ -90,7 +90,7 @@ export const returnBackgroundColor = (type: string) => {
       return '#B7DAF7';
 
     case 'LLM':
-      return '#292D32';
+      return '#E9EBED';
     case 'Plugin':
       return '#E7E1FF';
     case 'Workflow':
@@ -271,7 +271,6 @@ export const modifyPorts = (
   show: boolean,
   enlargePortId?: string,
 ) => {
-  console.log(enlargePortId);
   for (let i = 0, len = ports.length; i < len; i += 1) {
     const port = ports[i];
     const portId = port.getAttribute('port');

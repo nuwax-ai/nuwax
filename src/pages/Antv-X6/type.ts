@@ -1,4 +1,5 @@
 // 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
+import { FieldConfig } from '@/components/FormListItem/type';
 import type {
   GroupModelItem,
   ModelListItemProps,
@@ -117,17 +118,6 @@ export interface InputOrReferenceProps {
   onChange: (value: string) => void;
 }
 
-// 定义输入项配置类型
-export interface FieldConfig {
-  name: string;
-  placeholder?: string;
-  rules?: any[];
-  component: React.ComponentType<any>;
-  style?: React.CSSProperties;
-  props?: Record<string, any>; // 用于传递特定组件的属性
-  label: string;
-}
-
 // 定义传递给 renderItem 的参数类型
 export interface RenderItemProps {
   // 当前字段的field
@@ -146,8 +136,6 @@ export interface RenderItemProps {
   showCheckbox?: boolean;
   // 是否显示复制按钮
   showCopy?: boolean;
-  // 石佛iu显示关联按钮
-  showAssociation?: boolean;
 }
 
 // 定义通用节点渲染逻辑的props类型
@@ -168,8 +156,6 @@ export interface NodeRenderProps {
   showCheckbox?: boolean;
   // 是否显示复制按钮
   showCopy?: boolean;
-  // 是否显示关联按钮
-  showAssociation?: boolean;
 }
 
 // 定义技能
