@@ -198,16 +198,6 @@ export function registerCustomNodes() {
   });
 }
 
-export function registerNode() {
-  // 将自定义节点正确注册
-  register({
-    shape: 'general-Node',
-    component: GeneralNode,
-    embeddable: ({ data }: { data: ChildNode }) => data.type === 'Loop',
-    resizable: true,
-  });
-}
-
 interface Point {
   x: number;
   y: number;
