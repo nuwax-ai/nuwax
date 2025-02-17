@@ -1,9 +1,15 @@
 import { MESSAGE_OPTIONS } from '@/constants/menus.constants';
+import {
+  apiNotifyMessageList,
+  apiNotifyMessageUnreadClear,
+} from '@/services/message';
 import { MessageOptionEnum } from '@/types/enums/menus';
+import type { NotifyMessageInfo } from '@/types/interfaces/message';
+import { useRequest } from '@@/exports';
 import { ClearOutlined } from '@ant-design/icons';
-import { Empty, Popover, Segmented, Tooltip } from 'antd';
+import { Empty, message, Popover, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 
@@ -13,13 +19,40 @@ const Message: React.FC = () => {
   const { openMessage, setOpenMessage } = useModel('layout');
   // 分段控制器：全部、未读
   const [value, setValue] = useState<MessageOptionEnum>(MessageOptionEnum.All);
-  // 消息列表 todo: 待修改any
-  const [messageList, setMessageList] = useState<any[]>([]);
+  // 消息列表
+  const [messageList, setMessageList] = useState<NotifyMessageInfo[]>([]);
   // 未读消息列表 todo: 待修改any
-  const [unreadMessageList, setUnreadMessageList] = useState<any[]>([]);
+  const [unreadMessageList, setUnreadMessageList] = useState<
+    NotifyMessageInfo[]
+  >([]);
   const handlerChange = (value: MessageOptionEnum) => {
     setValue(value);
   };
+
+  // 查询用户消息列表
+  const { run: runMessageList } = useRequest(apiNotifyMessageList, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: NotifyMessageInfo[]) => {
+      setMessageList(result);
+    },
+  });
+
+  useEffect(() => {
+    runMessageList({
+      lastId: 11110,
+      size: 10,
+    });
+  }, []);
+
+  // 清除所有未读消息
+  const { run: runClear } = useRequest(apiNotifyMessageUnreadClear, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: () => {
+      message.success('已清除所有未读消息');
+    },
+  });
 
   // todo
   const handlerClear = () => {
@@ -54,6 +87,7 @@ const Message: React.FC = () => {
                 />
               ) : (
                 <ClearOutlined
+                  onClick={runClear}
                   className={cx(styles['del-disabled'], 'cursor-disabled')}
                 />
               )}

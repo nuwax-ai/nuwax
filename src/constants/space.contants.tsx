@@ -12,6 +12,7 @@ import { TriggerComponentType } from '@/types/enums/agent';
 import { CreateAgentEnum } from '@/types/enums/common';
 import {
   ApplicationMoreActionEnum,
+  ComponentTypeEnum,
   CreateListEnum,
   FileBoxEnum,
   FilterStatusEnum,
@@ -25,27 +26,27 @@ import {
 // 组件库所有资源类型
 export const LIBRARY_ALL_RESOURCE = [
   {
-    value: LibraryAllTypeEnum.Workflow,
+    value: ComponentTypeEnum.Workflow,
     label: '工作流',
     icon: <ICON_WORKFLOW />,
   },
   {
-    value: LibraryAllTypeEnum.Plugin,
+    value: ComponentTypeEnum.Plugin,
     label: '插件',
     icon: <ICON_PLUGIN />,
   },
   {
-    value: LibraryAllTypeEnum.Knowledge,
+    value: ComponentTypeEnum.Knowledge,
     label: '知识库',
     icon: <ICON_KNOWLEDGE />,
   },
   {
-    value: LibraryAllTypeEnum.Database,
+    value: ComponentTypeEnum.Database,
     label: '数据库',
     icon: <ICON_DATABASE />,
   },
   {
-    value: LibraryAllTypeEnum.Model,
+    value: ComponentTypeEnum.Model,
     label: '模型',
     icon: <ICON_MODEL />,
   },

@@ -1,6 +1,10 @@
 import type { CardStyleEnum, CreateEditAgentEnum } from '@/types/enums/common';
 import type { KnowledgeModeEnum } from '@/types/enums/library';
-import { AgentBaseInfo, AgentConfigInfo } from '@/types/interfaces/agent';
+import type {
+  AgentBaseInfo,
+  AgentConfigInfo,
+  CreatorInfo,
+} from '@/types/interfaces/agent';
 import type {
   ConfigProviderProps,
   FormInstance,
@@ -273,12 +277,7 @@ export interface CreatedNodeItem {
   // 正在使用的
   targetId: number;
   // 发布人员信息
-  publishUser: {
-    userId: number;
-    userName: string;
-    nickName: string;
-    avatar: string;
-  };
+  publishUser: CreatorInfo;
   collect: boolean;
 }
 

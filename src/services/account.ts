@@ -14,41 +14,41 @@ import { request } from 'umi';
 
 // 账号密码登录
 export async function apiLogin(
-  body: LoginFieldType,
+  data: LoginFieldType,
 ): Promise<RequestResponse<ILoginResult>> {
   return request('/api/user/passwordLogin', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
 // 发送验证码
 export async function apiSendCode(
-  body: SendCode,
+  data: SendCode,
 ): Promise<RequestResponse<null>> {
   return request('/api/user/code/send', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
 // 验证码登录/注册接口
 export async function apiLoginCode(
-  body: CodeLogin,
+  data: CodeLogin,
 ): Promise<RequestResponse<ILoginResult>> {
   return request('/api/user/codeLogin', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
 // 首次登录设置密码
 export async function apiSetPassword(
-  body: SetPasswordParams,
+  data: SetPasswordParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/user/password/set', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
@@ -61,21 +61,21 @@ export async function apiLogout(): Promise<RequestResponse<null>> {
 
 // 绑定邮箱
 export async function apiBindEmail(
-  body: BindEmailParams,
+  data: BindEmailParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/user/email/bind', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
 // 更新用户信息
 export async function apiUserUpdate(
-  body: UserUpdateParams,
+  data: UserUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/user/update', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
@@ -88,10 +88,10 @@ export async function apiUserInfo(): Promise<RequestResponse<UserInfo>> {
 
 // 重置密码
 export async function apiResetPassword(
-  body: ResetPasswordParams,
+  data: ResetPasswordParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/user/password/reset', {
     method: 'POST',
-    data: body,
+    data,
   });
 }

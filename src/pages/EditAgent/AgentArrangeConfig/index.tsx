@@ -81,8 +81,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   });
 
   useEffect(() => {
-    run(agentId);
-  }, []);
+    if (agentId) {
+      run(agentId);
+    }
+  }, [agentId]);
 
   // 添加插件
   const handlerPluginPlus = (e) => {

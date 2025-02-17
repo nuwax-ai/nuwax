@@ -1,14 +1,13 @@
+import type { PublishStatusEnum } from '@/types/enums/common';
 import type { PluginModeEnum, WorkflowModeEnum } from '@/types/enums/library';
-import type { LibraryAllTypeEnum } from '@/types/enums/space';
+import type { ComponentTypeEnum } from '@/types/enums/space';
+import type { CreatorInfo } from '@/types/interfaces/agent';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import React from 'react';
 
 // 组件库单个组件项
 export interface ComponentItemProps {
-  type?: LibraryAllTypeEnum;
-  title: string;
-  desc: string;
-  img?: string;
+  ComponentInfo: ComponentInfo;
   onClick: () => void;
   onClickMore: (type: CustomPopoverItem) => void;
 }
@@ -137,4 +136,36 @@ export interface UpdateWorkflowParams {
   name: string;
   description: string;
   icon: string;
+}
+
+// 组件信息
+export interface ComponentInfo {
+  // 组件ID
+  id: string;
+  // 空间ID
+  spaceId: string;
+  // 组件类型,可用值:Workflow,Plugin,Model,KnowledgeBase,Database
+  type: ComponentTypeEnum;
+  // 组件名称
+  name: string;
+  // 	组件描述
+  description: string;
+  // 图标地址
+  icon: string;
+  // 发布状态，工作流、插件有效,可用值:Developing,Applying,Published,Rejected
+  publishStatus: PublishStatusEnum;
+  modified: string;
+  // 创建时间
+  created: string;
+  creatorId: string;
+  // 创建者信息
+  creator: CreatorInfo;
+  // 扩展字段
+  ext: string;
+}
+
+// box组件
+export interface BoxInfoProps {
+  icon?: React.ReactNode;
+  text: string;
 }

@@ -33,7 +33,7 @@ export interface SpaceInfo {
   name: string;
   description: string;
   icon: string;
-  // 	空间类型
+  // 空间类型
   type: SpaceTypeEnum;
   creatorId: string;
   modified: string;
@@ -61,6 +61,6 @@ export interface UserSpaceInfo {
 // 空间转让接口传入参数
 export interface TransferSpaceParams {
   spaceId: string;
-  // 	目标用户ID
+  // 目标用户ID
   targetUserId: string;
 }

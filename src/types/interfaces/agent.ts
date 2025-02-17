@@ -310,6 +310,18 @@ export interface AgentStatisticsInfo {
   totalCallDuration: string;
 }
 
+// 创建者信息
+export interface CreatorInfo {
+  // 用户ID
+  userId: string;
+  // 用户名
+  userName: string;
+  // 昵称
+  nickName: string;
+  // 头像
+  avatar: string;
+}
+
 // 智能体配置信息
 export interface AgentConfigInfo {
   id: string;
@@ -347,18 +359,10 @@ export interface AgentConfigInfo {
   // 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)
   agentStatistics: AgentStatisticsInfo;
   // 创建者信息
-  creator: {
-    userId: string;
-    // 用户名
-    userName: string;
-    nickName: string;
-    avatar: string;
-  };
+  creator: CreatorInfo;
   space: SpaceInfo;
   devCollected: boolean;
 }
-
-export interface UtcTimeZonesType {}
 
 // 触发器时区
 export interface TriggerTimeZone {
@@ -398,12 +402,7 @@ export interface AgentConfigHistoryInfo {
   config: string;
   description: string;
   // 操作人
-  opUser: {
-    userId: string;
-    userName: string;
-    nickName: string;
-    avatar: string;
-  };
+  opUser: CreatorInfo;
   modified: string;
   created: string;
 }

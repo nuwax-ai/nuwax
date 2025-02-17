@@ -14,31 +14,31 @@ import { request } from 'umi';
 
 // 创建新团队
 export async function apiCreateSpaceTeam(
-  body: CreateSpaceTeamParams,
+  data: CreateSpaceTeamParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/space/add', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
 // 更新工作空间新团队
 export async function apiUpdateSpaceTeam(
-  body: UpdateSpaceTeamParams,
+  data: UpdateSpaceTeamParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/space/update', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
 // 删除工作空间
 export async function apiDeleteSpace(
-  body: DeleteSpaceParams,
+  data: DeleteSpaceParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/space/delete', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
@@ -61,11 +61,11 @@ export async function apiSpaceList(): Promise<RequestResponse<SpaceInfo[]>> {
 
 // 增加团队成员接口
 export async function apiAddSpaceUser(
-  body: AddSpaceUserParams,
+  data: AddSpaceUserParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/space/user/add', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
 
@@ -81,10 +81,10 @@ export async function apiUserSpaceList(
 
 // 空间转让接口
 export async function apiUserSpaceTransfer(
-  body: TransferSpaceParams,
+  data: TransferSpaceParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/space/transfer', {
     method: 'POST',
-    data: body,
+    data,
   });
 }
