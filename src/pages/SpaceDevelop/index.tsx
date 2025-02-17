@@ -45,12 +45,18 @@ const SpaceDevelop: React.FC = () => {
   const [create, setCreate] = useState<CreateListEnum>(
     CreateListEnum.All_Person,
   );
+  // 搜索关键词
   const [keyword, setKeyword] = useState<string>('');
+  // 智能体列表
   const [agentList, setAgentList] = useState<AgentConfigInfo[]>([]);
+  // 所有智能体列表
   const agentAllRef = useRef<AgentConfigInfo[]>([]);
+  // 创建者ID
   const createIdRef = useRef<string>('');
-  const spaceIdRef = useRef<string>('');
+  // 目标智能体ID
   const targetAgentIdRef = useRef<string>('');
+
+  const spaceId = localStorage.getItem(SPACE_ID);
 
   // 查询空间智能体列表接口
   const { run } = useRequest(apiAgentConfigList, {
@@ -68,7 +74,7 @@ const SpaceDevelop: React.FC = () => {
     debounceWait: 300,
     onSuccess: () => {
       message.success('已成功创建副本');
-      run(spaceIdRef.current);
+      run(spaceId);
     },
   });
 
@@ -110,12 +116,14 @@ const SpaceDevelop: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const spaceId = localStorage.getItem(SPACE_ID);
-    spaceIdRef.current = spaceId;
     run(spaceId);
+  }, []);
+
+  useEffect(() => {
     // 监听路由
     const unlisten = history.listen(() => {
-      run(spaceIdRef.current);
+      const _spaceId = localStorage.getItem(SPACE_ID);
+      run(_spaceId);
     });
 
     return () => {
@@ -124,7 +132,7 @@ const SpaceDevelop: React.FC = () => {
   }, []);
 
   // 过滤筛选智能体列表数据
-  const handleFilterAgentList = (
+  const handleFilterList = (
     filterStatus: FilterStatusEnum,
     filterCreate: CreateListEnum,
     filterKeyword: string,
@@ -147,33 +155,33 @@ const SpaceDevelop: React.FC = () => {
   // 切换状态
   const handlerChangeStatus = (value: FilterStatusEnum) => {
     setStatus(value);
-    handleFilterAgentList(value, create, keyword);
+    handleFilterList(value, create, keyword);
   };
 
   // 切换创建者
   const handlerChangeCreate = (value: CreateListEnum) => {
     setCreate(value);
-    handleFilterAgentList(status, value, keyword);
+    handleFilterList(status, value, keyword);
   };
 
   // 智能体搜索
   const handleQueryAgent = (e) => {
     const _keyword = e.target.value;
     setKeyword(_keyword);
-    handleFilterAgentList(status, create, _keyword);
+    handleFilterList(status, create, _keyword);
   };
 
   // 确认迁移智能体
-  const handlerConfirmMove = (spaceId: string) => {
+  const handlerConfirmMove = (targetSpaceId: string) => {
     runTransfer({
       agentId: targetAgentIdRef.current,
-      targetSpaceId: spaceId,
+      targetSpaceId,
     });
   };
 
   // 点击跳转到智能体
   const handleClick = (agentId: string) => {
-    history.push(`/space/${spaceIdRef.current}/agent/${agentId}`);
+    history.push(`/space/${spaceId}/agent/${agentId}`);
   };
 
   // 设置统计信息
@@ -230,7 +238,7 @@ const SpaceDevelop: React.FC = () => {
   // 确认创建智能体
   const handlerConfirmCreateAgent = (agentId: string) => {
     setOpenCreateAgent(false);
-    history.push(`/space/${spaceIdRef.current}/agent/${agentId}`);
+    history.push(`/space/${spaceId}/agent/${agentId}`);
   };
 
   // 收藏
