@@ -29,6 +29,12 @@ export enum MessageOptionEnum {
   Unread,
 }
 
+// 消息状态,可用值:Unread,Read
+export enum MessageReadStatusEnum {
+  Unread = 'Unread',
+  Read = 'Read',
+}
+
 // 设置选项
 export enum SettingActionEnum {
   Account,

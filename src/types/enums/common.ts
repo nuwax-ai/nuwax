@@ -171,9 +171,15 @@ export enum DataTypeEnum {
 
 // 角色类型
 export enum RoleEnum {
-  Owner = 'Owner',
+  // Owner = 'Owner',
   Admin = 'Admin',
   User = 'User',
+}
+
+// 用户状态,可用值:Enabled,Disabled
+export enum UserStatus {
+  Enabled = 'Enabled',
+  Disabled = 'Disabled',
 }
 
 // 发布状态

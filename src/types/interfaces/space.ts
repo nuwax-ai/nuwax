@@ -1,10 +1,10 @@
 import type { TooltipTitleTypeEnum } from '@/types/enums/common';
-import type { ApplicationMoreActionEnum } from '@/types/enums/space';
-import {
+import type {
+  ApplicationMoreActionEnum,
   HistoryActionTypeEnum,
   HistoryTargetTypeEnum,
 } from '@/types/enums/space';
-import { AgentConfigInfo } from '@/types/interfaces/agent';
+import type { AgentConfigInfo, CreatorInfo } from '@/types/interfaces/agent';
 import type { CollapseProps } from 'antd';
 import type { MouseEventHandler } from 'react';
 import React from 'react';
@@ -52,12 +52,7 @@ export interface HistoryData {
   type: HistoryActionTypeEnum;
   config: string;
   description: string;
-  opUser: {
-    userId: string;
-    userName: string;
-    nickName: string;
-    avatar: string;
-  };
+  opUser: CreatorInfo;
   modified: string;
   created: string;
 }

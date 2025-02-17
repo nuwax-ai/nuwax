@@ -11,13 +11,17 @@ import {
   LIBRARY_ALL_RESOURCE,
   LIBRARY_ALL_TYPE,
 } from '@/constants/space.contants';
+import { apiComponentList } from '@/services/library';
 import { ComponentMoreActionEnum } from '@/types/enums/library';
 import {
+  ComponentTypeEnum,
   CreateListEnum,
   FilterStatusEnum,
   LibraryAllTypeEnum,
 } from '@/types/enums/space';
 import { CustomPopoverItem } from '@/types/interfaces/common';
+import { ComponentInfo } from '@/types/interfaces/library';
+import { useRequest } from '@@/exports';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, message } from 'antd';
 import classNames from 'classnames';
@@ -33,6 +37,7 @@ const cx = classNames.bind(styles);
  * 工作空间 - 组件库
  */
 const SpaceLibrary: React.FC = () => {
+  const [componentList, setComponentList] = useState<ComponentInfo[]>([]);
   // 新建工作流弹窗
   const [openWorkflow, setOpenWorkflow] = useState<boolean>(false);
   // 新建插件弹窗
@@ -52,7 +57,17 @@ const SpaceLibrary: React.FC = () => {
   );
   const spaceId = localStorage.getItem(SPACE_ID);
 
+  // 查询组件列表接口
+  const { run: runComponent } = useRequest(apiComponentList, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: ComponentInfo[]) => {
+      setComponentList(result);
+    },
+  });
+
   useEffect(() => {
+    runComponent(spaceId);
     const unlisten = history.listen(({ location }) => {
       console.log(location.pathname);
     });
@@ -60,7 +75,7 @@ const SpaceLibrary: React.FC = () => {
     return () => {
       unlisten();
     };
-  }, []);
+  }, [spaceId]);
 
   const handlerChangeType = (value: LibraryAllTypeEnum) => {
     setType(value);
@@ -77,20 +92,20 @@ const SpaceLibrary: React.FC = () => {
   // 点击添加资源
   const handleClickPopoverItem = (item) => {
     const { value: type } = item;
-    switch (type as LibraryAllTypeEnum) {
-      case LibraryAllTypeEnum.Workflow:
+    switch (type) {
+      case ComponentTypeEnum.Workflow:
         setOpenWorkflow(true);
         break;
-      case LibraryAllTypeEnum.Plugin:
+      case ComponentTypeEnum.Plugin:
         setOpenPlugin(true);
         break;
-      case LibraryAllTypeEnum.Knowledge:
+      case ComponentTypeEnum.Knowledge:
         setOpenKnowledge(true);
         break;
-      case LibraryAllTypeEnum.Database:
+      case ComponentTypeEnum.Database:
         message.warning('数据库此版本暂时未做');
         break;
-      case LibraryAllTypeEnum.Model:
+      case ComponentTypeEnum.Model:
         setOpenModel(true);
         break;
     }
@@ -110,10 +125,28 @@ const SpaceLibrary: React.FC = () => {
     }
   };
 
-  // 点击单个资源组件 todo 需根据组件类型，跳转到不同页面
-  const handleClickComponent = () => {
-    // history.push('/space/1101010/plugin/15115');
-    history.push('/space/1101010/plugin/15115/cloud-tool');
+  // 点击单个资源组件
+  const handleClickComponent = (item: ComponentInfo) => {
+    const { type } = item;
+    switch (type) {
+      case ComponentTypeEnum.Workflow:
+        setOpenWorkflow(true);
+        history.push(`/workflow/${item.id}`);
+        break;
+      case ComponentTypeEnum.Plugin:
+        history.push(`/space/${spaceId}/plugin/${item.id}/cloud-tool`);
+        setOpenPlugin(true);
+        break;
+      case ComponentTypeEnum.Knowledge:
+        setOpenKnowledge(true);
+        break;
+      case ComponentTypeEnum.Database:
+        message.warning('数据库此版本暂时未做');
+        break;
+      case ComponentTypeEnum.Model:
+        setOpenModel(true);
+        break;
+    }
   };
 
   const handleCancelCreateKnowledge = () => {
@@ -177,39 +210,14 @@ const SpaceLibrary: React.FC = () => {
         />
       </div>
       <div className={cx(styles['main-container'])}>
-        <ComponentItem
-          title={'这里是插件的名字'}
-          desc={'这里是更多的详细的插件描述信息'}
-          onClick={handleClickComponent}
-          onClickMore={handleClickMore}
-        />
-        <ComponentItem
-          type={LibraryAllTypeEnum.Database}
-          title={'这里是插件的名字'}
-          desc={'这里是更多的详细的插件描述信息'}
-          onClick={handleClickComponent}
-          onClickMore={handleClickMore}
-        />
-        <ComponentItem
-          title={'这里是插件的名字'}
-          desc={'这里是更多的详细的插件描述信息'}
-          onClick={handleClickComponent}
-          onClickMore={handleClickMore}
-        />
-        <ComponentItem
-          type={LibraryAllTypeEnum.Workflow}
-          title={'这里是插件的名字'}
-          desc={'这里是更多的详细的插件描述信息'}
-          onClick={handleClickComponent}
-          onClickMore={handleClickMore}
-        />
-        <ComponentItem
-          type={LibraryAllTypeEnum.Knowledge}
-          title={'这里是插件的名字'}
-          desc={'这里是更多的详细的插件描述信息'}
-          onClick={handleClickComponent}
-          onClickMore={handleClickMore}
-        />
+        {componentList?.map((item) => (
+          <ComponentItem
+            key={item.id}
+            componentInfo={item}
+            onClick={() => handleClickComponent(item)}
+            onClickMore={handleClickMore}
+          />
+        ))}
       </div>
       {/*统计概览*/}
       <AnalyzeStatistics

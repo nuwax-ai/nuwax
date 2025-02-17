@@ -1,3 +1,4 @@
+import type { RoleEnum, UserStatus } from '@/types/enums/common';
 import type { SendCodeEnum } from '@/types/enums/login';
 
 // 账号密码登录请求参数
@@ -66,10 +67,11 @@ export interface UserInfo {
   nickName: string;
   avatar: string;
   password: string;
+  // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
   resetPass: number;
   // 用户状态
-  status: string;
-  role: string;
+  status: UserStatus;
+  role: RoleEnum;
   email: string;
   phone: string;
   lastLoginTime: string;

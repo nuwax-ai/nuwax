@@ -1,3 +1,12 @@
+// 组件类型枚举
+export enum ComponentTypeEnum {
+  Workflow = 'Workflow',
+  Plugin = 'Plugin',
+  Knowledge = 'Knowledge',
+  Database = 'Database',
+  Model = 'Model',
+}
+
 // 组件库所有类型枚举
 export enum LibraryAllTypeEnum {
   All_Type,

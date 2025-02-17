@@ -1,9 +1,9 @@
-import { DataTypeEnum } from '@/types/enums/common';
+import type { DataTypeEnum } from '@/types/enums/common';
 import type {
   AgentComponentInfo,
   AgentConfigInfo,
+  TriggerTimeZone,
 } from '@/types/interfaces/agent';
-import { TriggerTimeZone } from '@/types/interfaces/agent';
 import React from 'react';
 
 // 智能体header组件
