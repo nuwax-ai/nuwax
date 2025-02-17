@@ -27,10 +27,15 @@ const Header: React.FC<HeaderProp> = ({
 }) => {
   const { name, icon, publishStatus, modified } = info;
 
+  // 返回上一级
+  const bank = () => {
+    history.back();
+  };
+
   return (
     <div className="fold-header-style dis-sb">
       <div className="dis-left">
-        <LeftOutlined className="back-icon-style" />
+        <LeftOutlined className="back-icon-style" onClick={bank} />
         {icon && <img src={icon} alt="" className="header-icon-style" />}
         <div className="dis-col header-content-style ">
           <div className="dis-left ">

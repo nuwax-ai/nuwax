@@ -11,7 +11,7 @@ import { Child } from './type';
 
 interface ControlPanelProps {
   // 拖拽节点到画布
-  dragChild: (e: React.DragEvent<HTMLDivElement>, child: Child) => void;
+  dragChild: (child: Child, e?: React.DragEvent<HTMLDivElement>) => void;
   //   试运行
   handleTestRun: () => void;
   // 切换画布大小

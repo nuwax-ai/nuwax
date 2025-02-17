@@ -22,7 +22,7 @@ import Header from './header';
 import './index.less';
 import NodeDrawer from './nodeDrawer';
 import { Child } from './type';
-const AntvX6: React.FC = () => {
+const Workflow: React.FC = () => {
   // 当前工作流的id
   const workflowId = Number(useParams().workflowId);
   // 显示隐藏右侧节点抽屉
@@ -181,6 +181,7 @@ const AntvX6: React.FC = () => {
     }
 
     const _res = await service.addNode(_params);
+    console.log(_res);
     if (_res.code === Constant.success) {
       _res.data.key = 'general-Node';
       graphRef.current.addNode(dragEvent, _res.data);
@@ -302,18 +303,43 @@ const AntvX6: React.FC = () => {
     setShow(false);
   };
   // 拖拽组件到画布中
-  const dragChild = (e: React.DragEvent<HTMLDivElement>, child: Child) => {
-    e.preventDefault();
-    if (
-      ['Plugin', 'Workflow', 'KnowledgeBase', 'Database'].includes(child.type)
-    ) {
-      console.log(child);
+  const dragChild = (child: Child, e?: React.DragEvent<HTMLDivElement>) => {
+    // 定义画布大小或获取自父组件/全局状态
+    const canvasWidth = 1400;
+    const canvasHeight = 600;
+
+    // 获取坐标函数：优先使用拖拽事件坐标，否则生成随机坐标
+    const getCoordinates = (
+      e?: React.DragEvent<HTMLDivElement>,
+    ): { x: number; y: number } => {
+      if (e) {
+        return { x: e.clientX, y: e.clientY };
+      } else {
+        return {
+          x: Math.floor(Math.random() * canvasWidth),
+          y: Math.floor(Math.random() * canvasHeight),
+        };
+      }
+    };
+
+    // 判断是否需要显示特定类型的创建面板
+    const isSpecialType = [
+      'Plugin',
+      'Workflow',
+      'KnowledgeBase',
+      'Database',
+    ].includes(child.type);
+
+    if (isSpecialType) {
       setCreatedItem(child.type as PluginAndLibraryEnum);
       setShow(true);
-      setDragEvent({ x: e.clientX, y: e.clientY });
+      setDragEvent(getCoordinates(e));
     } else {
-      addNode(child, { x: e.clientX, y: e.clientY });
-      // graphRef.current.addNode({ x: e.clientX, y: e.clientY }, child);
+      const coordinates = getCoordinates(e);
+      if (e) {
+        e.preventDefault();
+      }
+      addNode(child, coordinates);
     }
   };
 
@@ -395,6 +421,7 @@ const AntvX6: React.FC = () => {
         checkTag={createdItem as PluginAndLibraryEnum}
         onAdded={onAdded}
         targetId={info.id}
+        spaceId={info.spaceId}
       />
       <TestRun type={foldWrapItem.type} run={nodeTestRun} />
 
@@ -417,4 +444,4 @@ const AntvX6: React.FC = () => {
   );
 };
 
-export default AntvX6;
+export default Workflow;

@@ -8,7 +8,7 @@ import { Child } from '../type';
 interface Prop {
   // dragChild 是一个回调函数，用于处理拖拽开始事件。
   // 它接收 React 的原生 DragEvent 和当前被拖拽的子项 (Child) 对象作为参数。
-  dragChild: (e: React.DragEvent<HTMLDivElement>, child: Child) => void;
+  dragChild: (child: Child, e?: React.DragEvent<HTMLDivElement>) => void;
 }
 // StencilContent 组件用于渲染 stencil 内容，并允许用户拖拽子项（Child）到画布上。
 const StencilContent = ({ dragChild }: Prop) => {
@@ -21,10 +21,10 @@ const StencilContent = ({ dragChild }: Prop) => {
    * @param child - 被拖拽的子项对象
    */
   const handleDragStart = (
-    e: React.DragEvent<HTMLDivElement>,
     child: Child,
+    e?: React.DragEvent<HTMLDivElement>,
   ) => {
-    dragChild(e, child);
+    dragChild(child, e);
   };
 
   return (
@@ -46,7 +46,8 @@ const StencilContent = ({ dragChild }: Prop) => {
                   draggable="true"
                   key={child.type}
                   // 确保元素是可拖拽的
-                  onDragEnd={(e) => handleDragStart(e, child)}
+                  onDragEnd={(e) => handleDragStart(child, e)}
+                  onClick={() => handleDragStart(child)}
                 >
                   {child.icon}
                   <span>{child.name}</span>
