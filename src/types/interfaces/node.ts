@@ -1,15 +1,5 @@
 import { NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode } from '@/types/interfaces/graph';
-interface SubArgs {
-  key: string;
-  name: string;
-  description: string;
-  dataType: string;
-  require: boolean;
-  systemVariable: boolean;
-  bindValueType: string;
-  bindValue: string;
-}
 
 export interface InputAndOutConfig {
   // 参数名称
@@ -27,7 +17,7 @@ export interface InputAndOutConfig {
   // 参数值
   bindValue: string;
   //  	下级参数
-  subArgs?: SubArgs[];
+  subArgs?: InputAndOutConfig[];
   // 参数key，唯一标识
   key?: string | null;
 }

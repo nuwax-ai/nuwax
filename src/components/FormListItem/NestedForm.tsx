@@ -5,8 +5,9 @@ import {
   DeleteOutlined,
   DownOutlined,
   FileDoneOutlined,
+  PlusOutlined,
 } from '@ant-design/icons';
-import { Cascader, Checkbox, Input, Popover, Tree } from 'antd';
+import { Button, Cascader, Checkbox, Input, Popover, Tree } from 'antd';
 import { TreeFormProps } from './type';
 
 // 定义 TitleRender 组件，接收额外的 props 用于事件处理
@@ -76,41 +77,34 @@ const TreeForm: React.FC<TreeFormProps> = ({
     // 更新数据类型逻辑
   };
 
-  const handleAddChild = (nodeData: InputAndOutConfig) => {
-    let _arr;
-    if (!nodeData.subArgs) {
-      _arr = [
-        {
-          name: '',
-          dataType: '',
-          bindValue: '',
-          key: '0',
-          description: '',
-          require: false,
-          systemVariable: false,
-          bindValueType: '',
-        },
-      ];
-    } else {
-      _arr = [
-        ...nodeData.subArgs,
-        {
-          name: '',
-          dataType: '',
-          bindValue: '',
-          key: nodeData.subArgs.length.toString(),
-          description: '',
-          require: false,
-          systemVariable: false,
-          bindValueType: '',
-        },
-      ];
+  const addNodeItem = () => {
+    let _arr = [
+      {
+        name: '',
+        dataType: '',
+        bindValue: '',
+        key: '0',
+        description: '',
+        require: false,
+        systemVariable: false,
+        bindValueType: '',
+        subArgs: [],
+      },
+    ];
+    // 确保 params.inputArgs 是一个数组
+    if (!params.inputArgs) {
+      params.inputArgs = [];
     }
+    params.inputArgs.push(_arr);
     // 添加子节点逻辑
     handleChangeNodeConfig({
       ...params,
-      inputArgs: _arr,
+      inputArgs: [...params.inputArgs],
     });
+  };
+
+  const handleAddChild = (nodeData: InputAndOutConfig) => {
+    console.log('Adding child to node:', nodeData.name);
   };
 
   const handleDelete = (nodeData: InputAndOutConfig) => {
@@ -120,22 +114,32 @@ const TreeForm: React.FC<TreeFormProps> = ({
   };
 
   return (
-    <Tree
-      showLine
-      defaultExpandAll
-      switcherIcon={<DownOutlined />}
-      treeData={params.inputArgs || []}
-      fieldNames={{ title: 'name', key: 'bindValue', children: 'subArgs' }}
-      titleRender={(nodeData) => (
-        <TitleRender
-          inputArgs={nodeData}
-          onInputBlur={handleInputBlur}
-          onDataTypeChange={handleDataTypeChange}
-          onAddChild={() => handleAddChild(nodeData)}
-          onDelete={() => handleDelete(nodeData)}
-        />
-      )}
-    ></Tree>
+    <>
+      <div className="dis-sb margin-bottom">
+        <span className="node-title-style">{title}</span>
+        <Button
+          icon={<PlusOutlined />}
+          size={'small'}
+          onClick={addNodeItem}
+        ></Button>
+      </div>
+      <Tree
+        showLine
+        defaultExpandAll
+        switcherIcon={<DownOutlined />}
+        treeData={params.inputArgs || []}
+        fieldNames={{ title: 'name', key: 'bindValue', children: 'subArgs' }}
+        titleRender={(nodeData) => (
+          <TitleRender
+            inputArgs={nodeData}
+            onInputBlur={handleInputBlur}
+            onDataTypeChange={handleDataTypeChange}
+            onAddChild={() => handleAddChild(nodeData)}
+            onDelete={() => handleDelete(nodeData)}
+          />
+        )}
+      ></Tree>
+    </>
   );
 };
 

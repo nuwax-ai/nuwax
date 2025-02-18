@@ -1,5 +1,6 @@
 import { NodeConfig } from '@/types/interfaces/node';
-import customRequest from '@/utils/customRequest';
+import type { RequestResponse } from '@/types/interfaces/request';
+import { request } from 'umi';
 interface IUpdateLLMNode {
   nodeId: number | string;
   name: string;
@@ -30,24 +31,16 @@ const urlList = {
   Condition: '/api/workflow/node/condition/update',
   TextProcessing: '/api/workflow/node/text/update',
 };
-// 根据接单的type 来更新节点
-const modifyNode = async (
+
+export async function modifyNode(
   params: IUpdateLLMNode,
   type: keyof typeof urlList,
-) => {
-  // 发送GET请求，使用相对路径
-  return customRequest({
-    url: urlList[type],
+): Promise<RequestResponse<any>> {
+  return request(`${urlList[type]}`, {
     method: 'POST',
     data: params,
-  })
-    .then((response) => {
-      return response;
-    })
-    .catch((error) => {
-      console.error('Failed to get modellist:', error);
-    });
-};
+  });
+}
 
 export default {
   modifyNode,
