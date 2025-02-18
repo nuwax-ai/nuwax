@@ -12,14 +12,22 @@ import {
   LIBRARY_ALL_TYPE,
 } from '@/constants/space.contants';
 import { apiComponentList } from '@/services/library';
+import { PublishStatusEnum } from '@/types/enums/common';
 import { ComponentMoreActionEnum } from '@/types/enums/library';
 import {
   ComponentTypeEnum,
   CreateListEnum,
   FilterStatusEnum,
 } from '@/types/enums/space';
-import type { CustomPopoverItem, AnalyzeStatisticsItem } from '@/types/interfaces/common';
-import type { ComponentInfo } from '@/types/interfaces/library';
+import type {
+  AnalyzeStatisticsItem,
+  CustomPopoverItem,
+} from '@/types/interfaces/common';
+import type {
+  ComponentInfo,
+  WorkflowBaseInfo,
+} from '@/types/interfaces/library';
+import type { UserInfo } from '@/types/interfaces/login';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, message } from 'antd';
 import classNames from 'classnames';
@@ -28,8 +36,6 @@ import { history, useRequest } from 'umi';
 import ComponentItem from './ComponentItem';
 import CreateModel from './CreateModel';
 import styles from './index.less';
-import { PublishStatusEnum } from '@/types/enums/common';
-import type { UserInfo } from '@/types/interfaces/login';
 
 const cx = classNames.bind(styles);
 
@@ -109,9 +115,7 @@ const SpaceLibrary: React.FC = () => {
   ) => {
     let list = componentAllRef.current;
     if (filterType !== 0) {
-      list = list.filter(
-        (item) => item.type === filterType,
-      );
+      list = list.filter((item) => item.type === filterType);
     }
     if (filterStatus === FilterStatusEnum.Published) {
       list = list.filter(
@@ -150,6 +154,13 @@ const SpaceLibrary: React.FC = () => {
     const _keyword = e.target.value;
     setKeyword(_keyword);
     handleFilterList(type, status, create, _keyword);
+  };
+
+  // 确认添加工作流事件
+  const handleConfirmWorkflow = (data: WorkflowBaseInfo) => {
+    const id = data.id;
+    setOpenWorkflow(false);
+    history.push(`/workflow/${id}`);
   };
 
   // 点击添加资源
@@ -232,12 +243,10 @@ const SpaceLibrary: React.FC = () => {
     const { type } = item;
     switch (type) {
       case ComponentTypeEnum.Workflow:
-        setOpenWorkflow(true);
         history.push(`/workflow/${item.id}`);
         break;
       case ComponentTypeEnum.Plugin:
         history.push(`/space/${spaceId}/plugin/${item.id}/cloud-tool`);
-        setOpenPlugin(true);
         break;
       case ComponentTypeEnum.Knowledge:
         setOpenKnowledge(true);
@@ -327,7 +336,7 @@ const SpaceLibrary: React.FC = () => {
         spaceId={spaceId}
         open={openWorkflow}
         onCancel={() => setOpenWorkflow(false)}
-        onConfirm={() => setOpenWorkflow(false)}
+        onConfirm={handleConfirmWorkflow}
       />
       {/*创建模型*/}
       <CreateModel

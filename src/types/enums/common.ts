@@ -189,3 +189,19 @@ export enum PublishStatusEnum {
   Published = 'Published',
   Rejected = 'Rejected',
 }
+
+// 请求方法,可用值:POST,GET,PUT,DELETE
+export enum HttpMethodEnum {
+  POST = 'POST',
+  GET = 'GET',
+  PUT = 'PUT',
+  DELETE = 'DELETE',
+}
+
+// 请求内容格式,可用值:JSON,FORM_DATA,X_WWW_FORM_URLENCODED,OTHER
+export enum HttpContentTypeEnum {
+  JSON = 'JSON',
+  FORM_DATA = 'FORM_DATA',
+  X_WWW_FORM_URLENCODED = 'X_WWW_FORM_URLENCODED',
+  OTHER = 'OTHER',
+}

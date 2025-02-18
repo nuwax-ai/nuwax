@@ -12,12 +12,17 @@ import type {
   AgentConfigHistoryInfo,
   AgentConfigInfo,
   AgentConfigUpdateParams,
+  AgentConversationListParams,
   AgentCopyParams,
   AgentDeleteParams,
   AgentPublishApplyParams,
   AgentTransferParams,
+  TriggerTimeZone,
 } from '@/types/interfaces/agent';
-import { TriggerTimeZone } from '@/types/interfaces/agent';
+import {
+  AgentConversationUpdateParams,
+  AgentConversationUpdateResult,
+} from '@/types/interfaces/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
@@ -220,5 +225,52 @@ export async function apiAgentComponentList(
 export async function apiAgentCardList(): Promise<RequestResponse<null>> {
   return request('/api/agent/card/list', {
     method: 'GET',
+  });
+}
+
+// 查询会话
+export async function apiAgentConversation(
+  conversationId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/agent/conversation/${conversationId}`, {
+    method: 'POST',
+  });
+}
+
+// 根据用户消息更新会话主题
+export async function apiAgentConversationUpdate(
+  data: AgentConversationUpdateParams,
+): Promise<RequestResponse<AgentConversationUpdateResult>> {
+  return request('/api/agent/conversation/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 查询用户历史会话
+export async function apiAgentConversationList(
+  data: AgentConversationListParams,
+): Promise<RequestResponse<AgentConversationUpdateResult[]>> {
+  return request('/api/agent/conversation/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 删除会话
+export async function apiAgentConversationDelete(
+  conversationId: number,
+): Promise<RequestResponse<AgentConversationUpdateResult>> {
+  return request(`/api/agent/conversation/delete/${conversationId}`, {
+    method: 'POST',
+  });
+}
+
+// 创建会话
+export async function apiAgentConversationCreate(
+  agentId: number,
+): Promise<RequestResponse<AgentConversationUpdateResult>> {
+  return request(`/api/agent/conversation/create/${agentId}`, {
+    method: 'POST',
   });
 }

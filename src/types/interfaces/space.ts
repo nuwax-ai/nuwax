@@ -50,10 +50,14 @@ export interface HistoryData {
   targetId: string;
   // 操作类型,Add 新增, Edit 编辑, Publish 发布,可用值:Add,Edit,Publish,PublishApply,PublishApplyReject,OffShelf,AddComponent,EditComponent,DeleteComponent,AddNode,EditNode,DeleteNode
   type: HistoryActionTypeEnum;
-  config: string;
+  // 当时的配置信息
+  config: object;
+  // 操作描述
   description: string;
+  // 操作人
   opUser: CreatorInfo;
   modified: string;
+  // 创建时间
   created: string;
 }
 

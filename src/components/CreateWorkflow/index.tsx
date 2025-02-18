@@ -4,9 +4,13 @@ import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { apiAddWorkflow, apiUpdateWorkflow } from '@/services/library';
 import { WorkflowModeEnum } from '@/types/enums/library';
-import type { CreateWorkflowProps } from '@/types/interfaces/library';
+import type {
+  CreateWorkflowProps,
+  WorkflowBaseInfo,
+} from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, FormProps, Input, message } from 'antd';
+import type { FormProps } from 'antd';
+import { Form, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { useRequest } from 'umi';
@@ -35,9 +39,13 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   const { run } = useRequest(apiAddWorkflow, {
     manual: true,
     debounceWait: 300,
-    onSuccess: (_, params) => {
+    onSuccess: (result, params) => {
       message.success('工作流已创建成功');
-      onConfirm(...params);
+      const data: WorkflowBaseInfo = {
+        id: result,
+        ...params,
+      };
+      onConfirm(data);
     },
   });
 
@@ -47,7 +55,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     debounceWait: 300,
     onSuccess: (_, params) => {
       message.success('工作流更新成功');
-      onConfirm(...params);
+      onConfirm(params as WorkflowBaseInfo);
     },
   });
 
@@ -88,7 +96,6 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
       open={open}
       onCancel={onCancel}
       onConfirm={handlerSubmit}
-      // loading={loading}
     >
       <Form
         form={form}

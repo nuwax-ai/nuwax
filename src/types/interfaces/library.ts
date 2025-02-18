@@ -12,9 +12,16 @@ export interface ComponentItemProps {
   onClickMore: (type: CustomPopoverItem) => void;
 }
 
-interface Confirm {
+// 工作流基础信息
+export interface WorkflowBaseInfo {
+  // 工作流ID
+  id: string;
+  spaceId: string;
+  // 工作流名称
   name: string;
+  // 工作流描述
   description: string;
+  // 图标地址
   icon: string;
 }
 
@@ -28,7 +35,7 @@ export interface CreateWorkflowProps {
   icon?: string;
   open: boolean;
   onCancel: () => void;
-  onConfirm: (value: Confirm) => void;
+  onConfirm: (data: WorkflowBaseInfo) => void;
 }
 
 // 新建、更新插件组件

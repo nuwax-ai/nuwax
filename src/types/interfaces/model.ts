@@ -1,4 +1,8 @@
-import type { ModelApiProtocolEnum, ModelStrategyEnum, ModelTypeEnum } from '@/types/enums/modelConfig';
+import type {
+  ModelApiProtocolEnum,
+  ModelStrategyEnum,
+  ModelTypeEnum,
+} from '@/types/enums/modelConfig';
 import {
   ModelEventTypeEnum,
   ModelFunctionCallEnum,

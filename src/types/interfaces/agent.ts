@@ -1,14 +1,13 @@
 import type {
   AgentComponentTypeEnum,
+  AssistantRoleEnum,
   BindValueType,
   InputTypeType,
-  TriggerComponentType,
-  TriggerTypeEnum,
-} from '@/types/enums/agent';
-import {
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
   SearchStrategyEnum,
+  TriggerComponentType,
+  TriggerTypeEnum,
 } from '@/types/enums/agent';
 import type {
   DataTypeEnum,
@@ -16,6 +15,11 @@ import type {
   TooltipTitleTypeEnum,
 } from '@/types/enums/common';
 import type { UpdateModeComponentEnum } from '@/types/enums/library';
+import type {
+  HistoryActionTypeEnum,
+  HistoryTargetTypeEnum,
+  OpenCloseEnum,
+} from '@/types/enums/space';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import React from 'react';
 
@@ -119,7 +123,7 @@ export interface AgentConfigUpdateParams extends AgentBaseInfo {
 }
 
 // 出参绑定配置，插件、工作流有效
-export interface ArgBindConfigs {
+export interface ArgBindConfig {
   // 参数key，唯一标识，不需要前端传递，后台根据配置自动生成
   key: string;
   // 参数名称，符合函数命名规则
@@ -140,6 +144,29 @@ export interface ArgBindConfigs {
   bindValue: string;
   // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
   inputType: InputTypeType;
+}
+
+// 出参、入参绑定配置，带下级, 绑定组件配置，不同组件配置不一样
+export interface BindConfigWithSub {
+  key: string;
+  // 参数名称，符合函数命名规则
+  name: string;
+  // 参数详细描述信息
+  description: string;
+  // 数据类型
+  dataType: DataTypeEnum;
+  require: boolean;
+  // 是否为开启，如果不开启，插件使用者和大模型均看不见该参数；如果bindValueType为空且require为true时，该参数必须开启
+  enable: boolean;
+  // 是否为系统内置变量参数，内置变量前端只可展示不可修改
+  systemVariable: boolean;
+  // 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
+  bindValueType: BindValueType;
+  // 参数值，当类型为引用时，示例 1.xxx 绑定节点ID为1的xxx字段；当类型为输入时，该字段为最终使用的值
+  bindValue: string;
+  // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
+  inputType: InputTypeType;
+  subArgs: ArgBindConfig[];
 }
 
 // 智能体组件模型基础信息
@@ -164,25 +191,7 @@ export interface AgentComponentWorkflowUpdateParams
   // 绑定组件配置，不同组件配置不一样
   bindConfig: {
     // 出参绑定配置，插件、工作流有效
-    argBindConfigs: {
-      key: string;
-      // 参数名称，符合函数命名规则
-      name: string;
-      // 参数详细描述信息
-      description: string;
-      // 数据类型
-      dataType: DataTypeEnum;
-      require: boolean;
-      enable: boolean;
-      // 是否为系统内置变量参数，内置变量前端只可展示不可修改
-      systemVariable: boolean;
-      // 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
-      bindValueType: BindValueType;
-      bindValue: string;
-      // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
-      inputType: InputTypeType;
-      subArgs: ArgBindConfigs[];
-    }[];
+    argBindConfigs: BindConfigWithSub[];
     // 卡片ID
     cardId: string;
     // 卡片参数绑定信息
@@ -199,7 +208,7 @@ export interface AgentComponentWorkflowUpdateParams
 export interface AgentComponentVariableUpdateParams
   extends AgentComponentModeBaseInfo {
   bindConfig: {
-    variables: ArgBindConfigs[];
+    variables: ArgBindConfig[];
   };
 }
 
@@ -218,7 +227,7 @@ export interface AgentComponentTriggerAddParams {
   timeCronExpression: string;
   timeCronDesc: string;
   eventBearerToken: string;
-  eventArgs: ArgBindConfigs[];
+  eventArgs: ArgBindConfig[];
   // 触发器执行的组件类型,可用值:PLUGIN,WORKFLOW
   componentType: TriggerComponentType;
   // 触发器执行的组件名称
@@ -226,25 +235,7 @@ export interface AgentComponentTriggerAddParams {
   // 触发器执行的组件ID
   componentId: string;
   // 出参绑定配置，插件、工作流有效
-  argBindConfigs: {
-    key: string;
-    // 参数名称，符合函数命名规则
-    name: string;
-    // 参数详细描述信息
-    description: string;
-    // 数据类型
-    dataType: DataTypeEnum;
-    require: boolean;
-    enable: boolean;
-    // 是否为系统内置变量参数，内置变量前端只可展示不可修改
-    systemVariable: boolean;
-    // 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
-    bindValueType: BindValueType;
-    bindValue: string;
-    // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
-    inputType: InputTypeType;
-    subArgs: ArgBindConfigs[];
-  }[];
+  argBindConfigs: BindConfigWithSub[];
   agentId: string;
 }
 
@@ -263,7 +254,7 @@ export interface AgentComponentModelUpdateParams
     topP: string;
     // 最大生成长度
     maxTokens: string;
-    // 	上下文轮数
+    // 上下文轮数
     contextRounds: string;
   };
 }
@@ -326,7 +317,7 @@ export interface CreatorInfo {
 export interface AgentConfigInfo {
   id: string;
   uid: string;
-  // 	商户ID
+  // 商户ID
   tenantId: string;
   spaceId: string;
   creatorId: string;
@@ -341,7 +332,7 @@ export interface AgentConfigInfo {
   // 用户消息提示词
   userPrompt: string;
   // 是否开启问题建议,可用值:Open,Close
-  openSuggest: string;
+  openSuggest: OpenCloseEnum;
   // 问题建议提示词
   suggestPrompt: string;
   // 首次打开聊天框自动回复消息
@@ -349,7 +340,7 @@ export interface AgentConfigInfo {
   // 首次打开引导问题
   openingGuidQuestion: string;
   // 是否开启长期记忆,可用值:Open,Close
-  openLongMemory: string;
+  openLongMemory: OpenCloseEnum;
   // 发布状态,可用值:Developing,Applying,Published,Rejected
   publishStatus: PublishStatusEnum;
   modified: string;
@@ -394,10 +385,10 @@ export interface TriggerTimeZone {
 export interface AgentConfigHistoryInfo {
   id: string;
   // 可用值:Agent,Plugin,Workflow
-  targetType: string;
+  targetType: HistoryTargetTypeEnum;
   targetId: string;
   // 操作类型,Add 新增, Edit 编辑, Publish 发布,可用值:Add,Edit,Publish,PublishApply,PublishApplyReject,OffShelf,AddComponent,EditComponent,DeleteComponent,AddNode,EditNode,DeleteNode
-  type: string;
+  type: HistoryActionTypeEnum;
   // 当时的配置信息
   config: string;
   description: string;
@@ -431,4 +422,38 @@ export interface AgentComponentInfo {
   fallbackMsg: string;
   modified: string;
   created: string;
+}
+
+// 根据用户消息更新会话主题输入参数
+export interface AgentConversationUpdateParams {
+  id: number;
+  firstMessage: string;
+}
+
+// 根据用户消息更新会话主题结果
+export interface AgentConversationUpdateResult {
+  // 会话ID
+  id: string;
+  userId: string;
+  agentId: string;
+  // 会话主题
+  topic: string;
+  // 会话摘要，当开启长期记忆时，会对每次会话进行总结
+  summary: string;
+  modified: string;
+  created: string;
+  // 会话消息列表，会话列表查询时不会返回该字段值
+  messageList: {
+    // assistant 模型回复；user 用户消息,可用值:USER,ASSISTANT,SYSTEM,FUNCTION
+    role: AssistantRoleEnum;
+    // 消息内容
+    content: string;
+    // 消息时间
+    time: string;
+  }[];
+}
+
+// 查询用户历史会话输入参数
+export interface AgentConversationListParams {
+  agentId: number;
 }
