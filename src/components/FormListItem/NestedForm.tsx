@@ -1,5 +1,6 @@
 import { ICON_ASSOCIATION } from '@/constants/images.constants';
 import { dataTypes } from '@/pages/Antv-X6/params';
+import { DataTypeEnum } from '@/types/enums/common';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import {
   DeleteOutlined,
@@ -8,137 +9,197 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import { Button, Cascader, Checkbox, Input, Popover, Tree } from 'antd';
+import React, { useEffect, useState } from 'react';
+import './index.less';
 import { TreeFormProps } from './type';
-
-// 定义 TitleRender 组件，接收额外的 props 用于事件处理
 const TitleRender = ({
   inputArgs,
-  onInputBlur,
-  onDataTypeChange,
-  onAddChild,
-  onDelete,
+  handleOnchange,
+  handleDelete,
 }: {
   inputArgs: InputAndOutConfig;
-  onInputBlur: (newValue: string) => void;
-  onDataTypeChange: (newValue: string[]) => void;
-  onAddChild: () => void;
-  onDelete: () => void;
+  handleOnchange: (inputArgs: InputAndOutConfig) => void;
+  handleDelete: (inputArgs: InputAndOutConfig) => void;
 }) => {
   return (
-    <div className="dis-sb">
-      <Input
-        className="flex-1"
-        value={inputArgs.name}
-        onBlur={(e) => onInputBlur(e.target.value)}
-      />
-      <Cascader
-        options={dataTypes}
-        style={{ width: 100 }}
-        value={
-          typeof inputArgs.dataType === 'string'
-            ? [inputArgs.dataType]
-            : inputArgs.dataType
-        }
-        onChange={onDataTypeChange}
-      />
+    <>
       <div className="dis-left">
-        <Popover content={<Input.TextArea />} trigger="click">
-          <FileDoneOutlined
-            style={{ marginBottom: '14px' }}
-            className="margin-right cursor-pointer"
-          />
+        <Input
+          className="flex-1 tree-form-name"
+          value={inputArgs.name}
+          onBlur={(e) => handleOnchange({ ...inputArgs, name: e.target.value })}
+          disabled={inputArgs.systemVariable}
+        />
+        <Cascader
+          options={dataTypes}
+          style={{ width: 90 }}
+          className="tree-form-name"
+          value={
+            typeof inputArgs.dataType === 'string'
+              ? [inputArgs.dataType]
+              : inputArgs.dataType
+          }
+          onChange={(e: string[]) =>
+            handleOnchange({
+              ...inputArgs,
+              dataType: (e[e.length - 1] as DataTypeEnum | null) || null,
+            })
+          }
+          disabled={inputArgs.systemVariable}
+        />
+        <div className="dis-left" style={{ width: 70 }}>
+          <Popover
+            content={
+              <Input.TextArea
+                onChange={(e) =>
+                  handleOnchange({ ...inputArgs, description: e.target.value })
+                }
+              />
+            }
+            trigger="click"
+          >
+            <FileDoneOutlined className="margin-right cursor-pointer" />
+          </Popover>
           <Checkbox
             className="margin-right"
-            onChange={(e) => {
-              console.log(e);
-            }}
+            onChange={(e) =>
+              handleOnchange({ ...inputArgs, require: e.target.value })
+            }
           />
-        </Popover>
-        <ICON_ASSOCIATION className="cursor-pointer" onClick={onAddChild} />
-        <DeleteOutlined className="cursor-pointer" onClick={onDelete} />
+          {(inputArgs.dataType === DataTypeEnum.Object ||
+            inputArgs.dataType === DataTypeEnum.Array_Object) && (
+            <ICON_ASSOCIATION
+              className="cursor-pointer margin-right"
+              onClick={() => {
+                const newSubArgs = [
+                  ...(inputArgs.subArgs || []),
+                  {
+                    name: '',
+                    dataType: null,
+                    bindValue: '',
+                    key: `${Date.now()}`, // 使用时间戳作为唯一键
+                    description: '',
+                    require: false,
+                    systemVariable: false,
+                    bindValueType: '',
+                    subArgs: [],
+                  },
+                ];
+                handleOnchange({ ...inputArgs, subArgs: newSubArgs });
+              }}
+            />
+          )}
+          <DeleteOutlined
+            className="cursor-pointer"
+            onClick={() => handleDelete(inputArgs)}
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
 const TreeForm: React.FC<TreeFormProps> = ({
   params,
   handleChangeNodeConfig,
+  title,
 }) => {
-  console.log(params);
-  // 定义处理输入框和级联选择器变化的回调函数
-  const handleInputBlur = (newValue: string) => {
-    console.log(newValue);
-    // 更新节点名称逻辑
+  const [inputArgs, setInputArgs] = useState<InputAndOutConfig[]>(
+    params.inputArgs || [],
+  );
+
+  // 制作一个函数，便利inputArgs，如果存在subArgs，递归遍历赋予key
+  const updateKey = (arr: InputAndOutConfig[]) => {
+    arr.forEach((item) => {
+      if (item.subArgs && item.subArgs.length > 0) {
+        updateKey(item.subArgs);
+      }
+      item.key = `${Date.now()}`;
+    });
+    return arr;
   };
 
-  const handleDataTypeChange = (newValue: string[]) => {
-    console.log(newValue);
-    // 更新数据类型逻辑
-  };
-
-  const addNodeItem = () => {
-    let _arr = [
-      {
-        name: '',
-        dataType: '',
-        bindValue: '',
-        key: '0',
-        description: '',
-        require: false,
-        systemVariable: false,
-        bindValueType: '',
-        subArgs: [],
-      },
-    ];
-    // 确保 params.inputArgs 是一个数组
-    if (!params.inputArgs) {
-      params.inputArgs = [];
-    }
-    params.inputArgs.push(_arr);
-    // 添加子节点逻辑
+  const updateParams = () => {
     handleChangeNodeConfig({
       ...params,
-      inputArgs: [...params.inputArgs],
+      inputArgs: inputArgs,
     });
   };
+  useEffect(() => {
+    return () => {
+      // 组件销毁时,提交数据
+      updateParams();
+    };
+  }, []);
+  useEffect(() => {
+    // 当params.inputArgs变化时更新本地状态
+    const _newArr = updateKey(params.inputArgs || []);
 
-  const handleAddChild = (nodeData: InputAndOutConfig) => {
-    console.log('Adding child to node:', nodeData.name);
+    setInputArgs(_newArr);
+  }, [params.inputArgs]);
+
+  function addNodeItem() {
+    const newNode: InputAndOutConfig = {
+      name: '',
+      dataType: null,
+      bindValue: '',
+      key: `${Date.now()}`, // 使用时间戳作为唯一键
+      description: '',
+      require: false,
+      systemVariable: false,
+      bindValueType: '',
+      subArgs: [],
+    };
+    setInputArgs((prev) => [...prev, newNode]);
+  }
+
+  const handleOnchange = (nodeData: InputAndOutConfig) => {
+    console.log(nodeData);
+    setInputArgs((prev) =>
+      prev.map((item) =>
+        item.key === nodeData.key ? { ...item, ...nodeData } : item,
+      ),
+    );
   };
 
   const handleDelete = (nodeData: InputAndOutConfig) => {
-    console.log('Deleting node:', nodeData.name);
-    // 删除节点逻辑
-    // 这里需要根据实际情况来决定如何删除节点，可能是通过过滤父节点的subArgs数组
+    setInputArgs((prev) => prev.filter((item) => item.key !== nodeData.key));
   };
 
   return (
     <>
+      {/* 标题和按钮部分保持不变 */}
       <div className="dis-sb margin-bottom">
-        <span className="node-title-style">{title}</span>
+        <span className="node-title-style">
+          <span>{title}</span>
+        </span>
         <Button
           icon={<PlusOutlined />}
           size={'small'}
-          onClick={addNodeItem}
+          onClick={() => addNodeItem()}
         ></Button>
+      </div>
+      <div className="dis-left margin-bottom">
+        <span className="tree-name-style">参数名</span>
+        <span className="tree-data-type-style">参数值</span>
+        <span>描述</span>
       </div>
       <Tree
         showLine
         defaultExpandAll
         switcherIcon={<DownOutlined />}
-        treeData={params.inputArgs || []}
-        fieldNames={{ title: 'name', key: 'bindValue', children: 'subArgs' }}
-        titleRender={(nodeData) => (
-          <TitleRender
-            inputArgs={nodeData}
-            onInputBlur={handleInputBlur}
-            onDataTypeChange={handleDataTypeChange}
-            onAddChild={() => handleAddChild(nodeData)}
-            onDelete={() => handleDelete(nodeData)}
-          />
-        )}
-      ></Tree>
+        fieldNames={{ title: 'name', key: 'key', children: 'subArgs' }}
+        treeData={inputArgs}
+        titleRender={(nodeData) => {
+          return (
+            <TitleRender
+              inputArgs={nodeData as InputAndOutConfig}
+              handleOnchange={handleOnchange}
+              handleDelete={handleDelete}
+            />
+          );
+        }}
+      />
     </>
   );
 };

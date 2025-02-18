@@ -1,13 +1,12 @@
-import { NodeTypeEnum } from '@/types/enums/common';
+import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode } from '@/types/interfaces/graph';
-
 export interface InputAndOutConfig {
   // 参数名称
   name: string;
   // 参数详细描述信息
   description: string;
   // 数据类型
-  dataType: string;
+  dataType: DataTypeEnum | null;
   // 是否必须
   require: boolean;
   // 是否为系统内置变量参数

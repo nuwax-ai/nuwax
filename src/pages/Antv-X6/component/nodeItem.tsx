@@ -38,6 +38,7 @@ const StartNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   return (
     <>
       <TreeForm
+        title={'输入'}
         params={params}
         handleChangeNodeConfig={handleChangeNodeConfig}
       />
