@@ -37,12 +37,12 @@ export enum RequestContentFormatEnum {
   Json,
 }
 
-// 知识库资源文件格式枚举
-export enum KnowledgeResourceEnum {
+// 知识库资源文件格式枚举 数据类型,默认文本,1:文本;2:表格
+export enum KnowledgeDataTypeEnum {
   // 文本格式
-  Text,
+  Text = 1,
   // 表格格式
-  Table,
+  Table = 2,
 }
 
 // 知识库资源-文本格式导入类型枚举

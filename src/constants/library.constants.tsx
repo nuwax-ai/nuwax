@@ -18,7 +18,7 @@ import { InputTypeType } from '@/types/enums/agent';
 import { HttpMethodEnum } from '@/types/enums/common';
 import {
   ComponentMoreActionEnum,
-  KnowledgeResourceEnum,
+  KnowledgeDataTypeEnum,
   KnowledgeTextImportEnum,
   RequestContentFormatEnum,
 } from '@/types/enums/library';
@@ -120,12 +120,12 @@ export const AFFERENT_MODE_LIST = [
 // 知识库资源格式
 export const KNOWLEDGE_RESOURCE_FORMAT = [
   {
-    value: KnowledgeResourceEnum.Text,
+    value: KnowledgeDataTypeEnum.Text,
     label: '文本格式',
     icon: <ICON_TEXT_FORMAT />,
   },
   {
-    value: KnowledgeResourceEnum.Table,
+    value: KnowledgeDataTypeEnum.Table,
     label: '表格格式',
     icon: <ICON_TABLE_FORMAT />,
   },
