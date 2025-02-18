@@ -23,7 +23,7 @@ export interface ArrangeTitleProps {
 
 // 智能体编排区域配置组件
 export interface AgentArrangeConfigProps {
-  agentId: string;
+  agentId: number;
   onKnowledge: () => void;
   onSet: () => void;
 }
@@ -37,7 +37,7 @@ export interface AgentModelComponentProps {
 
 // 创建触发器组件
 export interface CreateTriggerProps {
-  agentId: string;
+  agentId: number;
   open: boolean;
   title: string;
   onCancel: () => void;

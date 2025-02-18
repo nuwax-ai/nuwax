@@ -12,8 +12,11 @@ import type { BindConfigWithSub, CreatorInfo } from '@/types/interfaces/agent';
 
 // 插件试运行输入参数
 export interface PluginTestParams {
+  // 请求ID
   requestId: string;
-  pluginId: string;
+  // 插件ID
+  pluginId: number;
+  // 插件参数
   params: object;
 }
 
@@ -30,7 +33,7 @@ export interface PluginTestResult {
   // 请求ID
   requestId: string;
   // 请求耗时
-  costTime: string;
+  costTime: number;
 }
 
 // 插件发布输入参数
@@ -93,9 +96,9 @@ export interface PluginCopyUpdateParams {
 // 新增插件输入参数
 export interface PluginAddParams {
   // 空间ID
-  spaceId: string;
+  spaceId: number;
   // 创建人ID
-  creatorId: string;
+  creatorId: number;
   // 插件名称
   name: string;
   // 插件描述
@@ -110,9 +113,9 @@ export interface PluginAddParams {
 
 // 插件信息
 export interface PluginInfo {
-  id: string;
-  spaceId: string;
-  creatorId: string;
+  id: number;
+  spaceId: number;
+  creatorId: number;
   name: string;
   description: string;
   icon: string;

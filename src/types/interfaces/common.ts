@@ -55,7 +55,7 @@ export interface CardStyleType {
 // 单张卡片
 export interface CardProps {
   className?: string;
-  id: string;
+  id: number;
   img?: string;
   title: string;
   desc: string;
@@ -329,7 +329,7 @@ export interface AnalyzeStatisticsProps {
 // 自定义popover单项
 export interface CustomPopoverItem {
   icon?: React.ReactNode;
-  [key: string]: any;
+  [key: string]: React.Key | React.ReactNode;
   label: string;
   isDel?: boolean;
 }

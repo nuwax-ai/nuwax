@@ -61,8 +61,8 @@ export interface ResetPasswordParams {
 }
 
 export interface UserInfo {
-  id: string;
-  tenantId: string;
+  id: number;
+  tenantId: number;
   userName: string;
   nickName: string;
   avatar: string;

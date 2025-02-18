@@ -64,7 +64,7 @@ const SpaceLibrary: React.FC = () => {
   // 搜索关键词
   const [keyword, setKeyword] = useState<string>('');
   // 创建者ID
-  const createIdRef = useRef<string>('');
+  const createIdRef = useRef<number>(0);
   const [componentStatistics, setComponentStatistics] = useState<
     AnalyzeStatisticsItem[]
   >([]);
@@ -73,7 +73,7 @@ const SpaceLibrary: React.FC = () => {
     CreateListEnum.All_Person,
   );
   // 空间id
-  const spaceId = localStorage.getItem(SPACE_ID);
+  const spaceId = localStorage.getItem(SPACE_ID) as number;
 
   // 查询组件列表接口
   const { run: runComponent } = useRequest(apiComponentList, {
@@ -97,7 +97,7 @@ const SpaceLibrary: React.FC = () => {
 
   useEffect(() => {
     const unlisten = history.listen(() => {
-      const _spaceId = localStorage.getItem(SPACE_ID);
+      const _spaceId = localStorage.getItem(SPACE_ID) as number;
       runComponent(_spaceId);
     });
 

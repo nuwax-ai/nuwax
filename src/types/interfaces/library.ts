@@ -15,8 +15,8 @@ export interface ComponentItemProps {
 // 工作流基础信息
 export interface WorkflowBaseInfo {
   // 工作流ID
-  id: string;
-  spaceId: string;
+  id: number;
+  spaceId: number;
   // 工作流名称
   name: string;
   // 工作流描述
@@ -28,8 +28,8 @@ export interface WorkflowBaseInfo {
 // 更新、创建工作流弹窗
 export interface CreateWorkflowProps {
   type?: WorkflowModeEnum;
-  spaceId?: string | number;
-  id?: string | number;
+  spaceId?: number;
+  id?: number;
   name?: string;
   description?: string;
   icon?: string;
@@ -40,7 +40,7 @@ export interface CreateWorkflowProps {
 
 // 新建、更新插件组件
 export interface CreateNewPluginProps {
-  pluginId?: string;
+  pluginId?: number;
   img?: string;
   pluginName?: string;
   desc?: string;
@@ -131,7 +131,7 @@ export interface IntranetModelProps {
 
 // 添加工作流传入参数
 export interface AddWorkflowParams {
-  spaceId: string;
+  spaceId: number;
   name: string;
   description: string;
   icon: string;
@@ -139,7 +139,7 @@ export interface AddWorkflowParams {
 
 // 更新工作流传入参数
 export interface UpdateWorkflowParams {
-  id: string;
+  id: number;
   name: string;
   description: string;
   icon: string;
@@ -148,9 +148,9 @@ export interface UpdateWorkflowParams {
 // 组件信息
 export interface ComponentInfo {
   // 组件ID
-  id: string;
+  id: number;
   // 空间ID
-  spaceId: string;
+  spaceId: number;
   // 组件类型,可用值:Workflow,Plugin,Model,KnowledgeBase,Database
   type: ComponentTypeEnum;
   // 组件名称
@@ -164,7 +164,7 @@ export interface ComponentInfo {
   modified: string;
   // 创建时间
   created: string;
-  creatorId: string;
+  creatorId: number;
   // 创建者信息
   creator: CreatorInfo;
   // 扩展字段

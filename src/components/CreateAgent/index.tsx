@@ -134,6 +134,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             <OverrideTextArea
               name="description"
               label="智能体功能介绍"
+              initialValue={agentConfigInfo?.description}
               placeholder="介绍智能体的功能，将会展示给智能体的用户"
               maxLength={500}
             />

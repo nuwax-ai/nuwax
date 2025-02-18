@@ -43,7 +43,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
       message.success('工作流已创建成功');
       const data: WorkflowBaseInfo = {
         id: result,
-        ...params,
+        ...params[0],
       };
       onConfirm(data);
     },
@@ -55,7 +55,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     debounceWait: 300,
     onSuccess: (_, params) => {
       message.success('工作流更新成功');
-      onConfirm(params as WorkflowBaseInfo);
+      onConfirm(...params);
     },
   });
 

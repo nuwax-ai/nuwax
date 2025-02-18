@@ -39,80 +39,80 @@ export interface AgentBaseInfo {
 
 // 智能体信息
 export interface AgentInfo extends AgentBaseInfo {
-  id: string;
-  userId: string;
+  id: number;
+  userId: number;
   modified: string;
   created: string;
-  agentId: string;
-  spaceId: string;
+  agentId: number;
+  spaceId: number;
 }
 
 // 取消点赞智能体输入参数
 export interface UnlikeParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 取消收藏智能体输入参数
 export interface UnCollectParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 点赞智能体输入参数
 export interface LikeAgentParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 取消开发智能体收藏输入参数
 export interface DevUnCollectAgentParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 开发智能体收藏输入参数
 export interface DevCollectAgentParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 智能体收藏输入参数
 export interface CollectAgentParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 智能体收藏输入参数
 export interface CollectAgentParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 新增智能体输入参数
 export interface AgentAddParams extends AgentBaseInfo {
-  spaceId: string;
+  spaceId: number;
 }
 
 // 智能体迁移接口输入参数
 export interface AgentTransferParams {
-  agentId: string;
-  targetSpaceId: string;
+  agentId: number;
+  targetSpaceId: number;
 }
 
 // 智能体发布申请输入参数
 export interface AgentPublishApplyParams {
-  agentId: string;
+  agentId: number;
   channels: string[];
   remark: string[];
 }
 
 // 删除智能体输入参数
 export interface AgentDeleteParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 创建副本输入参数
 export interface AgentCopyParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 更新智能体基础配置信息输入参数
 export interface AgentConfigUpdateParams extends AgentBaseInfo {
-  id: string;
+  id: number;
   systemPrompt: string;
   userPrompt: string;
   openSuggest: string;
@@ -172,7 +172,7 @@ export interface BindConfigWithSub {
 // 智能体组件模型基础信息
 export interface AgentComponentModeBaseInfo {
   // 	组件配置ID
-  id: string;
+  id: number;
   // 组件名称
   name: string;
   // 组件图标
@@ -180,7 +180,7 @@ export interface AgentComponentModeBaseInfo {
   // 组件描述
   description: string;
   // 目标组件ID
-  targetId: string;
+  targetId: number;
   exceptionOut: string;
   fallbackMsg: string;
 }
@@ -236,7 +236,7 @@ export interface AgentComponentTriggerAddParams {
   componentId: string;
   // 出参绑定配置，插件、工作流有效
   argBindConfigs: BindConfigWithSub[];
-  agentId: string;
+  agentId: number;
 }
 
 // 更新插件组件配置
@@ -248,7 +248,7 @@ export interface AgentComponentModelUpdateParams
   extends AgentComponentModeBaseInfo {
   bindConfig: {
     mode: UpdateModeComponentEnum;
-    // 	生成随机性;0-1
+    // 生成随机性;0-1
     temperature: string;
     // 累计概率: 模型在生成输出时会从概率最高的词汇开始选择;0-1
     topP: string;
@@ -275,36 +275,36 @@ export interface AgentComponentKnowledgeUpdateParams
 
 // 新增智能体插件、工作流、知识库组件配置输入参数
 export interface AgentComponentAddParams {
-  agentId: string;
+  agentId: number;
   type: AgentComponentTypeEnum;
-  targetId: string;
+  targetId: number;
 }
 
 // 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)
 export interface AgentStatisticsInfo {
-  targetId: string;
+  targetId: number;
   // 用户人数
-  userCount: string;
+  userCount: number;
   // 会话次数
-  convCount: string;
+  convCount: number;
   // 收藏次数
-  collectCount: string;
+  collectCount: number;
   // 点赞次数
-  likeCount: string;
+  likeCount: number;
   // 引用次数
-  referenceCount: string;
+  referenceCount: number;
   // 调用总次数
-  callCount: string;
+  callCount: number;
   // 失败调用次数
-  failCallCount: string;
+  failCallCount: number;
   // 调用总时长
-  totalCallDuration: string;
+  totalCallDuration: number;
 }
 
 // 创建者信息
 export interface CreatorInfo {
   // 用户ID
-  userId: string;
+  userId: number;
   // 用户名
   userName: string;
   // 昵称
@@ -315,12 +315,14 @@ export interface CreatorInfo {
 
 // 智能体配置信息
 export interface AgentConfigInfo {
-  id: string;
+  // 智能体ID
+  id: number;
+  // agent唯一标识
   uid: string;
   // 商户ID
-  tenantId: string;
-  spaceId: string;
-  creatorId: string;
+  tenantId: number;
+  spaceId: number;
+  creatorId: number;
   // Agent名称
   name: string;
   // Agent描述
@@ -383,10 +385,10 @@ export interface TriggerTimeZone {
 
 // 智能体历史配置信息
 export interface AgentConfigHistoryInfo {
-  id: string;
+  id: number;
   // 可用值:Agent,Plugin,Workflow
   targetType: HistoryTargetTypeEnum;
-  targetId: string;
+  targetId: number;
   // 操作类型,Add 新增, Edit 编辑, Publish 发布,可用值:Add,Edit,Publish,PublishApply,PublishApplyReject,OffShelf,AddComponent,EditComponent,DeleteComponent,AddNode,EditNode,DeleteNode
   type: HistoryActionTypeEnum;
   // 当时的配置信息
@@ -400,22 +402,22 @@ export interface AgentConfigHistoryInfo {
 
 // 智能体组件模型信息
 export interface AgentComponentInfo {
-  id: string;
+  id: number;
   // 商户ID
-  tenantId: string;
+  tenantId: number;
   // 组件名称
   name: string;
   // 组件图标
   icon: string;
   // 组件描述
   description: string;
-  agentId: string;
+  agentId: number;
   // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model
   type: AgentComponentTypeEnum;
   // 绑定组件配置，不同组件配置不一样
   bindConfig: string;
   // 关联的组件ID
-  targetId: string;
+  targetId: number;
   // 组件原始配置
   targetConfig: string;
   exceptionOut: string;
@@ -433,9 +435,9 @@ export interface AgentConversationUpdateParams {
 // 根据用户消息更新会话主题结果
 export interface AgentConversationUpdateResult {
   // 会话ID
-  id: string;
-  userId: string;
-  agentId: string;
+  id: number;
+  userId: number;
+  agentId: number;
   // 会话主题
   topic: string;
   // 会话摘要，当开启长期记忆时，会对每次会话进行总结
