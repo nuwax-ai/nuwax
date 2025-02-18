@@ -1,5 +1,8 @@
+import Created from '@/components/Created';
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import { ModelSelected } from '@/components/ModelSetting';
+import { PluginAndLibraryEnum } from '@/types/enums/common';
+import { CreatedNodeItem } from '@/types/interfaces/common';
 import type { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
@@ -12,10 +15,10 @@ import {
   Select,
   Space,
 } from 'antd';
-import React from 'react';
+import React, { useState } from 'react';
 import '../index.less';
 import { InputConfigs, intentionConfigs, outPutConfigs } from '../params';
-import { InputAndOut } from './commonNode';
+import { InputAndOut, Skill } from './commonNode';
 
 // 定义大模型节点
 
@@ -23,7 +26,10 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,
   referenceList,
+  updateNode,
 }) => {
+  // 打开、关闭弹窗
+  const [open, setOpen] = useState(false);
   let inputInitialValues = {};
   if (params.inputArgs && params.inputArgs.length) {
     inputInitialValues = params.inputArgs;
@@ -38,9 +44,28 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     Modified({ ...params, ...newNodeConfig });
   };
 
+  // 新增技能
+  const onAddedSkill = (item: CreatedNodeItem) => {
+    item.type = item.targetType;
+    item.typeId = item.targetId;
+    const skillComponentConfigs = params.skillComponentConfigs || [];
+    if (updateNode) {
+      updateNode({
+        ...params,
+        skillComponentConfigs: [...skillComponentConfigs, item],
+      });
+      setOpen(false);
+    }
+  };
+
   //   显示新增技能
   const showAdd = () => {
-    console.log('showAdd');
+    setOpen(true);
+  };
+
+  // 修改技能
+  const handleChangeSkill = (item: CreatedNodeItem, type: string) => {
+    console.log(type, item);
   };
 
   return (
@@ -57,7 +82,20 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
             onClick={showAdd}
           ></Button>
         </div>
-        <Empty />
+        {params.skillComponentConfigs &&
+          params.skillComponentConfigs.length && (
+            <>
+              {params.skillComponentConfigs.map((item) => (
+                <Skill
+                  params={item}
+                  handleChange={handleChangeSkill}
+                  key={item.typeId}
+                />
+              ))}
+            </>
+          )}
+        {(!params.skillComponentConfigs ||
+          !params.skillComponentConfigs.length) && <Empty />}
       </div>
       {/* 输入参数 */}
       <div className="node-item-style">
@@ -100,6 +138,14 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           initialValues={outputInitialValues}
         />
       </div>
+
+      <Created
+        checkTag={PluginAndLibraryEnum.Plugin}
+        spaceId={36}
+        onAdded={onAddedSkill}
+        open={open}
+        onCancel={() => setOpen(false)}
+      />
     </div>
   );
 };

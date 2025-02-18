@@ -14,18 +14,17 @@ import './index.less';
 import { TreeFormProps } from './type';
 
 interface TreeInputAndOutConfig extends InputAndOutConfig {
-  id: string; // 替换 key 为 id
+  key: string;
   subArgs: TreeInputAndOutConfig[];
 }
-
 const TitleRender = ({
   inputArgs,
   handleOnchange,
   handleDelete,
 }: {
-  inputArgs: TreeInputAndOutConfig;
-  handleOnchange: (inputArgs: TreeInputAndOutConfig) => void;
-  handleDelete: (inputArgs: TreeInputAndOutConfig) => void;
+  inputArgs: InputAndOutConfig;
+  handleOnchange: (inputArgs: InputAndOutConfig) => void;
+  handleDelete: (inputArgs: InputAndOutConfig) => void;
 }) => {
   return (
     <>
@@ -59,14 +58,9 @@ const TitleRender = ({
           <Popover
             content={
               <Input.TextArea
-                value={inputArgs.description}
                 onChange={(e) =>
-                  handleOnchange({
-                    ...inputArgs,
-                    description: e.target.value,
-                  })
+                  handleOnchange({ ...inputArgs, description: e.target.value })
                 }
-                placeholder="请输入描述"
               />
             }
             trigger="click"
@@ -75,14 +69,9 @@ const TitleRender = ({
           </Popover>
           <Checkbox
             className="margin-right"
-            checked={inputArgs.require}
-            onChange={(e) => {
-              console.log(e);
-              handleOnchange({
-                ...inputArgs,
-                require: e.target.checked,
-              });
-            }}
+            onChange={(e) =>
+              handleOnchange({ ...inputArgs, require: e.target.value })
+            }
           />
           {(inputArgs.dataType === DataTypeEnum.Object ||
             inputArgs.dataType === DataTypeEnum.Array_Object) && (
@@ -95,7 +84,7 @@ const TitleRender = ({
                     name: '',
                     dataType: null,
                     bindValue: '',
-                    id: `${Date.now()}`, // 使用时间戳作为唯一 id
+                    key: `${Date.now()}`, // 使用时间戳作为唯一键
                     description: '',
                     require: false,
                     systemVariable: false,
@@ -103,10 +92,7 @@ const TitleRender = ({
                     subArgs: [],
                   },
                 ];
-                handleOnchange({
-                  ...inputArgs,
-                  subArgs: newSubArgs,
-                });
+                handleOnchange({ ...inputArgs, subArgs: newSubArgs });
               }}
             />
           )}
@@ -129,13 +115,13 @@ const TreeForm: React.FC<TreeFormProps> = ({
     params.inputArgs || [],
   );
 
-  // 制作一个函数，便利 inputArgs，如果存在 subArgs，递归遍历赋予 id
-  const updateId = (arr: InputAndOutConfig[]) => {
+  // 制作一个函数，便利inputArgs，如果存在subArgs，递归遍历赋予key
+  const updateKey = (arr: InputAndOutConfig[]) => {
     arr.forEach((item) => {
       if (item.subArgs && item.subArgs.length > 0) {
-        updateId(item.subArgs || []);
+        updateKey(item.subArgs || []);
       }
-      item.id = `${Date.now()}`; // 使用 id 替代 key
+      item.key = `${Date.now()}`;
     });
     return arr;
   };
@@ -146,21 +132,20 @@ const TreeForm: React.FC<TreeFormProps> = ({
       inputArgs,
     });
   };
-
   useEffect(() => {
-    // 当 params.inputArgs 变化时更新本地状态
-    const _newArr = updateId(params.inputArgs || []);
+    // 当params.inputArgs变化时更新本地状态
+    const _newArr = updateKey(params.inputArgs || []);
     if (!inputArgs.length) {
       setInputArgs(_newArr);
     }
   }, [params.inputArgs]);
 
   function addNodeItem() {
-    const newNode: TreeInputAndOutConfig = {
+    const newNode: InputAndOutConfig = {
       name: '',
       dataType: null,
       bindValue: '',
-      id: `${Date.now()}`, // 使用时间戳作为唯一 id
+      key: `${Date.now()}`, // 使用时间戳作为唯一键
       description: '',
       require: false,
       systemVariable: false,
@@ -171,12 +156,15 @@ const TreeForm: React.FC<TreeFormProps> = ({
   }
 
   // 修改后的递归更新逻辑
-  const handleOnchange = (modifiedData: TreeInputAndOutConfig) => {
+  const handleOnchange = (
+    targetKey: string,
+    modifiedData: TreeInputAndOutConfig,
+  ) => {
     const recursiveUpdate = (
       items: TreeInputAndOutConfig[],
     ): TreeInputAndOutConfig[] =>
       items.map((item) => {
-        if (item.id === modifiedData.id) {
+        if (item.key === targetKey) {
           return { ...item, ...modifiedData };
         }
         if (item.subArgs?.length) {
@@ -193,12 +181,12 @@ const TreeForm: React.FC<TreeFormProps> = ({
   };
 
   // 增强版的删除逻辑
-  const handleDelete = (targetId: string) => {
+  const handleDelete = (targetKey: string) => {
     const recursiveDelete = (
       items: TreeInputAndOutConfig[],
     ): TreeInputAndOutConfig[] =>
       items.filter((item) => {
-        if (item.id === targetId) return false;
+        if (item.key === targetKey) return false;
         if (item.subArgs?.length) {
           item.subArgs = recursiveDelete(item.subArgs);
         }
@@ -208,7 +196,6 @@ const TreeForm: React.FC<TreeFormProps> = ({
     setInputArgs((prev) => recursiveDelete(prev));
     updateParams();
   };
-
   return (
     <>
       {/* 标题和按钮部分保持不变 */}
@@ -231,14 +218,17 @@ const TreeForm: React.FC<TreeFormProps> = ({
         showLine
         defaultExpandAll
         switcherIcon={<DownOutlined />}
-        fieldNames={{ title: 'name', key: 'id', children: 'subArgs' }} // 使用 id 替代 key
+        fieldNames={{ title: 'name', key: 'key', children: 'subArgs' }}
         treeData={inputArgs}
         titleRender={(nodeData) => {
+          console.log(nodeData);
           return (
             <TitleRender
               inputArgs={nodeData}
-              handleOnchange={(data) => handleOnchange(data)}
-              handleDelete={() => handleDelete(nodeData.id as string)}
+              handleOnchange={(data) =>
+                handleOnchange(nodeData.key as string, data)
+              }
+              handleDelete={() => handleDelete(nodeData.key as string)}
             />
           );
         }}

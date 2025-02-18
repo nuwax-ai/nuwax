@@ -276,9 +276,12 @@ export interface CreatedNodeItem {
   spaceId: number;
   // 正在使用的
   targetId: number;
+  targetType: string;
   // 发布人员信息
   publishUser: CreatorInfo;
   collect: boolean;
+  type?: string;
+  typeId?: string | number;
 }
 
 // 创建、编辑智能体

@@ -31,7 +31,7 @@ const urlList = {
   Condition: '/api/workflow/node/condition/update',
   TextProcessing: '/api/workflow/node/text/update',
 };
-
+// 更新节点信息
 export async function modifyNode(
   params: IUpdateLLMNode,
   type: keyof typeof urlList,

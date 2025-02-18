@@ -1,5 +1,5 @@
 export interface RequestResponse<T> {
-  code: number;
+  code: string;
   displayCode: string;
   message: string;
   data: T;

@@ -1,6 +1,7 @@
 import { NodePreviousAndArgMap } from '@/types/interfaces/node';
 // 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
 import type { FieldConfig } from '@/components/FormListItem/type';
+import { CreatedNodeItem } from '@/types/interfaces/common';
 import type {
   GroupModelItem,
   ModelListItemProps,
@@ -171,9 +172,8 @@ export interface NodeRenderProps {
 
 // 定义技能
 export interface SkillProps {
-  title: string;
-  icon: React.ReactNode;
-  desc: string;
+  params: CreatedNodeItem;
+  handleChange: (item: CreatedNodeItem, type: string) => void;
 }
 
 // 定义分组的模型列表

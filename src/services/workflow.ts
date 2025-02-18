@@ -121,6 +121,13 @@ export async function getOutputArgs(
   });
 }
 
+// 查询当前节点的详细信息
+export async function getNodeConfig(id: number): Promise<RequestResponse<any>> {
+  return request(`/api/workflow/node/${id}`, {
+    method: 'GET',
+  });
+}
+
 export default {
   getDetails,
   updateDetails,
@@ -132,4 +139,5 @@ export default {
   addEdge,
   getModelListByWorkflowId,
   getOutputArgs,
+  getNodeConfig,
 };

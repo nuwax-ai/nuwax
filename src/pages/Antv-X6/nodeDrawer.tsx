@@ -104,6 +104,15 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
             referenceList={referenceList}
+            updateNode={(newNodeConfig) =>
+              onGetNodeConfig(
+                {
+                  ...currentNodeConfig,
+                  nodeConfig: newNodeConfig,
+                },
+                true,
+              )
+            }
           />
         );
 

@@ -3,6 +3,7 @@ import { ICON_ADJUSTMENT, ICON_SUCCESS } from '@/constants/images.constants';
 import service, { IGetList } from '@/services/created';
 import { PluginAndLibraryEnum } from '@/types/enums/common';
 import { WorkflowModeEnum } from '@/types/enums/library';
+import { CreatedNodeItem } from '@/types/interfaces/common';
 import { getTime } from '@/utils';
 import {
   ClockCircleOutlined,
@@ -15,13 +16,11 @@ import {
 import { Button, Divider, Input, Menu, Modal, Radio } from 'antd';
 import { RadioChangeEvent } from 'antd/lib/radio';
 import { useEffect, useRef, useState } from 'react';
-import { useModel } from 'umi';
 import CreateKnowledge from '../CreateKnowledge';
 import CreateNewPlugin from '../CreateNewPlugin';
 import CreateWorkflow from '../CreateWorkflow';
 import './index.less';
-import { ButtonList, CreatedNodeItem, CreatedProp, MenuItem } from './type';
-
+import { ButtonList, CreatedProp, MenuItem } from './type';
 // 顶部的标签页名称
 const buttonList: ButtonList[] = [
   { label: '插件', key: PluginAndLibraryEnum.Plugin },
@@ -32,6 +31,8 @@ const buttonList: ButtonList[] = [
 
 // 创建插件、工作流、知识库、数据库
 const Created: React.FC<CreatedProp> = ({
+  open,
+  onCancel,
   checkTag,
   onAdded,
   targetId,
@@ -39,8 +40,6 @@ const Created: React.FC<CreatedProp> = ({
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
 
-  // 打开、关闭弹窗
-  const { show, setShow } = useModel('model');
   // 打开、关闭创建弹窗
   const [showCreate, setShowCreate] = useState(false);
 
@@ -307,11 +306,11 @@ const Created: React.FC<CreatedProp> = ({
     <Modal
       keyboard={false} //是否能使用sec关闭
       maskClosable={false} //点击蒙版层是否可以关闭
-      open={show}
+      open={open}
       footer={null}
       centered
       title={title}
-      onCancel={() => setShow(false)}
+      onCancel={() => onCancel()}
       className="created-modal-style"
       width={1096}
     >

@@ -1,4 +1,5 @@
 import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
+import { CreatedNodeItem } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
 export interface InputAndOutConfig {
   // 参数名称
@@ -21,14 +22,6 @@ export interface InputAndOutConfig {
   key?: string | null;
 }
 
-// 技能列表配置
-export interface SkillComponent {
-  name: string;
-  icon: string;
-  description: string;
-  type: string;
-  typeId: number;
-}
 interface ConditionArgs {
   bindArg: string | null;
   compareType: string | null;
@@ -71,6 +64,7 @@ export interface NodeConfig {
   outputArgs?: InputAndOutConfig[] | null;
   // 节点变量
   variableArgs?: InputAndOutConfig[] | null;
+  // 技能列表
   // 条件分支
   conditionBranchConfigs?: ConditionBranchConfigs[] | null;
   // 出参类型
@@ -80,7 +74,7 @@ export interface NodeConfig {
   // 选定技能
   mode?: string;
   // 技能列表配置
-  skillComponentConfigs?: SkillComponent[];
+  skillComponentConfigs?: CreatedNodeItem[];
   // 系统提示词
   systemPrompt?: string;
   // 用户提示词
@@ -184,7 +178,7 @@ export interface NodeDrawerProps {
   // 当前的数据
   foldWrapItem: ChildNode;
   // 将节点信息返回给父组件
-  onGetNodeConfig: (config: ChildNode) => void;
+  onGetNodeConfig: (config: ChildNode, update?: boolean) => void;
 
   handleNodeChange: (action: string, data: ChildNode) => void;
   // 当前节点所需要的上级节点的出参

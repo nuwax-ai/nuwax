@@ -123,20 +123,28 @@ const Workflow: React.FC = () => {
 
   // 修改当前工作流的基础信息
   const onConfirm = async (value: IUpdateDetails) => {
-    // console.log({ ...value, id: info.id });
     setInfo({ ...info, ...value });
     setShowCreateWorkflow(false);
-    // const _res = await service.updateDetails({ ...value, id: info.id });
-    // if (_res.code === Constant.success) {
-    // }
+  };
+
+  // 查询节点的指定信息
+  const getNodeConfig = async (id: number) => {
+    const _res = await service.getNodeConfig(id);
+    if (_res.code === Constant.success) {
+      setFoldWrapItem(_res.data);
+    }
   };
 
   // 更新节点数据
-  const changeNode = debounce(async (config: ChildNode) => {
+  const changeNode = debounce(async (config: ChildNode, update?: boolean) => {
     const _res = await updateNode(config);
     if (_res.code === Constant.success) {
       graphRef.current.updateNode(config.id, config);
-      setFoldWrapItem(config);
+      if (update) {
+        getNodeConfig(Number(config.id));
+      } else {
+        setFoldWrapItem(config);
+      }
     }
   }, 1000);
   // 点击组件，显示抽屉
@@ -290,7 +298,8 @@ const Workflow: React.FC = () => {
     }
   };
   // 添加工作流，插件，知识库，数据库
-  const onAdded = (val: CreatedNodeItem) => {
+  const onAdded = (val: CreatedNodeItem, parentFC?: string) => {
+    if (parentFC && parentFC !== 'workflow') return;
     const _child: Child = {
       name: val.name,
       key: 'general-Node',
@@ -422,6 +431,7 @@ const Workflow: React.FC = () => {
         onAdded={onAdded}
         targetId={info.id}
         spaceId={info.spaceId}
+        parentFC={'workflow'}
       />
       <TestRun type={foldWrapItem.type} run={nodeTestRun} />
 
