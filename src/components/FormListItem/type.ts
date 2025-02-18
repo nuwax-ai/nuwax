@@ -70,4 +70,6 @@ export interface TreeFormProps {
   params: NodeConfig;
   // 改变节点的入参和出参
   handleChangeNodeConfig: (params: NodeConfig) => void;
+  // 标题
+  title: string;
 }
