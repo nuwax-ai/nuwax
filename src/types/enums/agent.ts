@@ -1,20 +1,9 @@
 // 调用方式类型
-
 export enum CallMethodEnum {
   // 自动调用
   Auto_Call,
   // 按需调用
   On_Demand_Call,
-}
-
-// 搜索策略
-export enum SearchStrategyEnum {
-  // 混合
-  Mixed,
-  // 语义
-  Semantic,
-  // 全文
-  Full_Text,
 }
 
 // 无召回回复
@@ -70,8 +59,11 @@ export enum InvokeTypeEnum {
 
 // 搜索策略,可用值:SEMANTIC,MIXED,FULL_TEXT
 export enum SearchStrategyEnum {
+  // 语义
   SEMANTIC = 'SEMANTIC',
+  // 混合
   MIXED = 'MIXED',
+  // 全文
   FULL_TEXT = 'FULL_TEXT',
 }
 
@@ -79,4 +71,12 @@ export enum SearchStrategyEnum {
 export enum NoneRecallReplyTypeEnum {
   DEFAULT = 'DEFAULT',
   CUSTOM = 'CUSTOM',
+}
+
+// assistant 模型回复；user 用户消息,可用值:USER,ASSISTANT,SYSTEM,FUNCTION
+export enum AssistantRoleEnum {
+  USER = 'USER',
+  ASSISTANT = 'ASSISTANT',
+  SYSTEM = 'SYSTEM',
+  FUNCTION = 'FUNCTION',
 }

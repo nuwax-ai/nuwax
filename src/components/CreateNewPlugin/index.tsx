@@ -3,14 +3,21 @@ import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import SelectList from '@/components/SelectList';
 import UploadAvatar from '@/components/UploadAvatar';
-import { PLUGIN_CREATE_TOOL } from '@/constants/library.constants';
-import { PluginCreateToolEnum, PluginModeEnum } from '@/types/enums/library';
+import {
+  CLOUD_BASE_CODE_OPTIONS,
+  PLUGIN_CREATE_TOOL,
+} from '@/constants/library.constants';
+import { apiPluginAdd, apiPluginHttpUpdate } from '@/services/plugin';
+import { PluginModeEnum } from '@/types/enums/library';
+import { PluginTypeEnum } from '@/types/enums/plugin';
 import type { CreateNewPluginProps } from '@/types/interfaces/library';
+import type { PluginAddParams } from '@/types/interfaces/plugin';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, Input, Radio, RadioChangeEvent } from 'antd';
+import type { FormProps, RadioChangeEvent } from 'antd';
+import { Form, Input, message, Radio } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import { history } from 'umi';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -19,36 +26,67 @@ const cx = classNames.bind(styles);
  * 新建、修改插件组件
  */
 const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
+  spaceId,
   pluginId,
-  img,
-  pluginName,
-  desc,
+  icon,
+  name,
+  description,
   type = PluginModeEnum.Create,
+  codeLang,
   open,
   onCancel,
+  onConfirmCreate,
+  onConfirmUpdate,
 }) => {
-  const [confirmLoading, setConfirmLoading] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string>('');
   const [form] = Form.useForm();
-  const [createTool, setCreateTool] = useState<PluginCreateToolEnum>();
+  const [imageUrl, setImageUrl] = useState<string>(icon || '');
+  const [pluginType, setPluginType] = useState<PluginTypeEnum>();
 
-  const onFinish = (values: any) => {
-    console.log('Received values of form: ', values, pluginId, img);
+  // 新增插件接口
+  const { run: runCreate } = useRequest(apiPluginAdd, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result) => {
+      setImageUrl('');
+      onConfirmCreate?.(result);
+      message.success('插件已创建');
+    },
+  });
+
+  // 更新HTTP插件配置接口
+  const { run: runUpdate } = useRequest(apiPluginHttpUpdate, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: () => {
+      setImageUrl('');
+      onConfirmUpdate?.();
+      message.success('插件更新成功');
+    },
+  });
+
+  const onFinish: FormProps<PluginAddParams>['onFinish'] = (values) => {
+    if (type === PluginModeEnum.Create) {
+      runCreate({
+        ...values,
+        icon: imageUrl,
+        spaceId,
+      });
+    } else {
+      // 更新HTTP插件配置接口
+      runUpdate({
+        ...values,
+        icon: imageUrl,
+        id: pluginId,
+      });
+    }
   };
 
-  const handleOk = () => {
-    setConfirmLoading(true);
+  const handlerSubmit = () => {
     form.submit();
-    setTimeout(() => {
-      onCancel();
-      // todo 目前逻辑未定，这里只是暂时做页面跳转到测试插件，后续修改
-      history.push('/space/1101010/plugin/15115');
-      setConfirmLoading(false);
-    }, 3000);
   };
 
   const handleChangeCreateTool = ({ target: { value } }: RadioChangeEvent) => {
-    setCreateTool(value);
+    setPluginType(value);
   };
 
   const title = type === PluginModeEnum.Create ? '新建插件' : '更新插件';
@@ -59,8 +97,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
       title={title}
       open={open}
       onCancel={onCancel}
-      loading={confirmLoading}
-      onConfirm={handleOk}
+      onConfirm={handlerSubmit}
     >
       <div className={cx('flex', 'flex-col', 'items-center', 'py-16')}>
         <UploadAvatar
@@ -74,8 +111,10 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
           preserve={false}
           requiredMark={customizeRequiredMark}
           initialValues={{
-            pluginName,
-            desc,
+            name,
+            description,
+            type,
+            codeLang,
           }}
           layout="vertical"
           onFinish={onFinish}
@@ -83,7 +122,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
           autoComplete="off"
         >
           <Form.Item
-            name="pluginName"
+            name="name"
             label="插件名称"
             rules={[{ required: true, message: '请输入插件名称' }]}
           >
@@ -94,9 +133,9 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
             />
           </Form.Item>
           <OverrideTextArea
-            name="desc"
+            name="description"
             label="插件描述"
-            initialValue={desc}
+            initialValue={description}
             rules={[
               { required: true, message: '请输入插件的主要功能和使用场景' },
             ]}
@@ -106,17 +145,17 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
           {type === PluginModeEnum.Create && (
             <>
               <Form.Item
-                name="createMode"
+                name="type"
                 label="插件工具创建方式"
                 rules={[{ required: true, message: '请选择插件工具创建方式' }]}
               >
                 <Radio.Group
                   options={PLUGIN_CREATE_TOOL}
-                  value={createTool}
+                  value={pluginType}
                   onChange={handleChangeCreateTool}
                 ></Radio.Group>
               </Form.Item>
-              {createTool === PluginCreateToolEnum.Existing_Service_Based ? (
+              {pluginType === PluginTypeEnum.HTTP ? (
                 <Form.Item
                   name="pluginUrl"
                   label="插件 URL"
@@ -126,22 +165,11 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
                 </Form.Item>
               ) : (
                 <Form.Item
-                  name="ide"
+                  name="codeLang"
                   label="IDE 运行时"
                   rules={[{ required: true, message: '请输入插件名称' }]}
                 >
-                  <SelectList
-                    options={[
-                      {
-                        value: 1,
-                        label: 'Node.js',
-                      },
-                      {
-                        value: 2,
-                        label: 'Python3',
-                      },
-                    ]}
-                  />
+                  <SelectList options={CLOUD_BASE_CODE_OPTIONS} />
                 </Form.Item>
               )}
             </>

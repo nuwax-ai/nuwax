@@ -15,7 +15,7 @@ export interface UpdateSpaceTeamParams extends CreateSpaceTeamParams {
 
 // 删除工作空间
 export interface DeleteSpaceParams {
-  spaceId: string;
+  spaceId: number;
 }
 
 // 查询团队成员列表接口
@@ -27,32 +27,32 @@ export type UserSpaceInfoParams = DeleteSpaceParams;
 // 用户工作空间信息
 export interface SpaceInfo {
   // 空间ID
-  id: string;
+  id: number;
   // 租户ID
-  tenantId: string;
+  tenantId: number;
   name: string;
   description: string;
   icon: string;
   // 空间类型
   type: SpaceTypeEnum;
-  creatorId: string;
+  creatorId: number;
   modified: string;
   created: string;
 }
 
 // 增加团队成员输入参数
 export interface AddSpaceUserParams {
-  spaceId: string;
-  userId: string;
+  spaceId: number;
+  userId: number;
   role: string;
 }
 
 export interface UserSpaceInfo {
-  userId: string;
+  userId: number;
   userName: string;
   nickName: string;
   avatar: string;
-  spaceId: string;
+  spaceId: number;
   role: RoleEnum;
   modified: string;
   created: string;
@@ -60,7 +60,7 @@ export interface UserSpaceInfo {
 
 // 空间转让接口传入参数
 export interface TransferSpaceParams {
-  spaceId: string;
+  spaceId: number;
   // 目标用户ID
-  targetUserId: string;
+  targetUserId: number;
 }

@@ -1,0 +1,18 @@
+// 发布范围，Space 空间；Tenant 租户全局；Global 系统全局。目前UI上的"全局"指的是租户全局,可用值:Space,Tenant,Global
+export enum PluginPublishScopeEnum {
+  Space = 'Space',
+  Tenant = 'Tenant',
+  Global = 'Global',
+}
+
+// 插件类型,可用值:HTTP,CODE
+export enum PluginTypeEnum {
+  HTTP = 'HTTP',
+  CODE = 'CODE',
+}
+
+// 插件代码语言,可用值:Python,JavaScript
+export enum CodeLangEnum {
+  Python = 'Python',
+  JavaScript = 'JavaScript',
+}

@@ -12,15 +12,17 @@ export interface NotifyMessageListParams {
 
 // 用户消息信息
 export interface NotifyMessageInfo {
-  id: string;
+  id: number;
   // 消息内容
   content: string;
   // 消息状态,可用值:Unread,Read
   readStatus: MessageReadStatusEnum;
   sender: {
-    userId: string;
+    userId: number;
     userName: string;
+    nickName: string;
     avatar: string;
   };
+  // 创建时间（消息发送时间）
   created: string;
 }

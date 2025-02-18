@@ -1,11 +1,13 @@
-import type { ModelApiProtocolEnum, ModelStrategyEnum, ModelTypeEnum } from '@/types/enums/modelConfig';
-import {
+import type {
+  ModelApiProtocolEnum,
   ModelEventTypeEnum,
   ModelFunctionCallEnum,
   ModelNetworkTypeEnum,
   ModelScopeEnum,
+  ModelStrategyEnum,
+  ModelTypeEnum,
 } from '@/types/enums/modelConfig';
-import { CreatorInfo } from '@/types/interfaces/agent';
+import type { CreatorInfo } from '@/types/interfaces/agent';
 
 // 定义模型列表
 export interface ModelListItemProps {
@@ -40,9 +42,9 @@ export interface GroupModelItem {
 // 在空间中添加或更新模型配置输入参数
 export interface ModelSaveParams {
   // 模型ID（可选，不传递为新增，传递了为更新）
-  id: string;
+  id: number;
   // 空间ID（可选，在空间中添加模型组件时传递该参数）
-  spaceId: string;
+  spaceId: number;
   // 模型名称
   name: string;
   // 模型描述
@@ -79,12 +81,12 @@ export interface ModelListParams {
   // 模型范围，不传则返回所有有权限的模型,可用值:Space,Tenant,Global
   scope: ModelScopeEnum;
   // 空间ID，可选，传递后会返回当前空间管理的模型
-  spaceId: string;
+  spaceId: number;
 }
 
 // 模型配置信息
 export interface ModelConfigInfo extends ModelSaveParams {
-  tenantId: string;
+  tenantId: number;
   // 模型生效范围，可选值：Space, Tenant, Global,可用值:Space,Tenant,Global
   scope: ModelScopeEnum;
   networkType: ModelNetworkTypeEnum;
@@ -98,7 +100,7 @@ export interface ModelConfigInfo extends ModelSaveParams {
 
 // 模型测试信息
 export interface ModelTestInfo {
-  requestId: string;
+  requestId: number;
   // 可用值:PROCESSING,MESSAGE,FINAL_RESULT
   eventType: ModelEventTypeEnum;
   data: object;

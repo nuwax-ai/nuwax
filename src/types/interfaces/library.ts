@@ -1,5 +1,6 @@
 import type { PublishStatusEnum } from '@/types/enums/common';
 import type { PluginModeEnum, WorkflowModeEnum } from '@/types/enums/library';
+import { CodeLangEnum } from '@/types/enums/plugin';
 import type { ComponentTypeEnum } from '@/types/enums/space';
 import type { CreatorInfo } from '@/types/interfaces/agent';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
@@ -12,34 +13,47 @@ export interface ComponentItemProps {
   onClickMore: (type: CustomPopoverItem) => void;
 }
 
-interface Confirm {
+// 工作流基础信息
+export interface WorkflowBaseInfo {
+  // 工作流ID
+  id: number;
+  spaceId: number;
+  // 工作流名称
   name: string;
+  // 工作流描述
   description: string;
+  // 图标地址
   icon: string;
 }
 
 // 更新、创建工作流弹窗
 export interface CreateWorkflowProps {
   type?: WorkflowModeEnum;
-  spaceId?: string | number;
-  id?: string | number;
+  spaceId?: number;
+  id?: number;
   name?: string;
   description?: string;
   icon?: string;
   open: boolean;
   onCancel: () => void;
-  onConfirm: (value: Confirm) => void;
+  onConfirm: (data: WorkflowBaseInfo) => void;
 }
 
 // 新建、更新插件组件
 export interface CreateNewPluginProps {
-  pluginId?: string;
-  img?: string;
-  pluginName?: string;
-  desc?: string;
+  spaceId?: number;
+  pluginId?: number;
+  icon?: string;
+  name?: string;
+  description?: string;
+  // 插件类型,可用值:HTTP,CODE
   type?: PluginModeEnum;
+  // 插件代码语言,可用值:Python,JavaScript
+  codeLang?: CodeLangEnum;
   open: boolean;
   onCancel: () => void;
+  onConfirmCreate?: (id: number) => void;
+  onConfirmUpdate?: () => void;
 }
 
 // 入参与出参共有配置数据类型
@@ -124,7 +138,7 @@ export interface IntranetModelProps {
 
 // 添加工作流传入参数
 export interface AddWorkflowParams {
-  spaceId: string;
+  spaceId: number;
   name: string;
   description: string;
   icon: string;
@@ -132,7 +146,7 @@ export interface AddWorkflowParams {
 
 // 更新工作流传入参数
 export interface UpdateWorkflowParams {
-  id: string;
+  id: number;
   name: string;
   description: string;
   icon: string;
@@ -141,9 +155,9 @@ export interface UpdateWorkflowParams {
 // 组件信息
 export interface ComponentInfo {
   // 组件ID
-  id: string;
+  id: number;
   // 空间ID
-  spaceId: string;
+  spaceId: number;
   // 组件类型,可用值:Workflow,Plugin,Model,KnowledgeBase,Database
   type: ComponentTypeEnum;
   // 组件名称
@@ -157,7 +171,7 @@ export interface ComponentInfo {
   modified: string;
   // 创建时间
   created: string;
-  creatorId: string;
+  creatorId: number;
   // 创建者信息
   creator: CreatorInfo;
   // 扩展字段

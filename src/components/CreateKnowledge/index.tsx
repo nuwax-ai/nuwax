@@ -3,7 +3,7 @@ import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { KNOWLEDGE_RESOURCE_FORMAT } from '@/constants/library.constants';
-import { KnowledgeResourceEnum } from '@/types/enums/library';
+import { KnowledgeDataTypeEnum } from '@/types/enums/library';
 import type { CreateKnowledgeProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, Input } from 'antd';
@@ -26,11 +26,11 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
 }) => {
   const [imageUrl, setImageUrl] = useState<string>('');
   const [knowledgeResourceFormat, setKnowledgeResourceFormat] =
-    useState<number>(KnowledgeResourceEnum.Text);
+    useState<number>(KnowledgeDataTypeEnum.Text);
   const [form] = Form.useForm();
 
   // 切换资源文件格式类型
-  const handleResourceType = (value: KnowledgeResourceEnum) => {
+  const handleResourceType = (value: KnowledgeDataTypeEnum) => {
     setKnowledgeResourceFormat(value);
   };
 

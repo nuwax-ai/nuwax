@@ -1,14 +1,13 @@
 import type {
   AgentComponentTypeEnum,
+  AssistantRoleEnum,
   BindValueType,
   InputTypeType,
-  TriggerComponentType,
-  TriggerTypeEnum,
-} from '@/types/enums/agent';
-import {
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
   SearchStrategyEnum,
+  TriggerComponentType,
+  TriggerTypeEnum,
 } from '@/types/enums/agent';
 import type {
   DataTypeEnum,
@@ -16,6 +15,11 @@ import type {
   TooltipTitleTypeEnum,
 } from '@/types/enums/common';
 import type { UpdateModeComponentEnum } from '@/types/enums/library';
+import type {
+  HistoryActionTypeEnum,
+  HistoryTargetTypeEnum,
+  OpenCloseEnum,
+} from '@/types/enums/space';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import React from 'react';
 
@@ -35,80 +39,80 @@ export interface AgentBaseInfo {
 
 // 智能体信息
 export interface AgentInfo extends AgentBaseInfo {
-  id: string;
-  userId: string;
+  id: number;
+  userId: number;
   modified: string;
   created: string;
-  agentId: string;
-  spaceId: string;
+  agentId: number;
+  spaceId: number;
 }
 
 // 取消点赞智能体输入参数
 export interface UnlikeParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 取消收藏智能体输入参数
 export interface UnCollectParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 点赞智能体输入参数
 export interface LikeAgentParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 取消开发智能体收藏输入参数
 export interface DevUnCollectAgentParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 开发智能体收藏输入参数
 export interface DevCollectAgentParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 智能体收藏输入参数
 export interface CollectAgentParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 智能体收藏输入参数
 export interface CollectAgentParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 新增智能体输入参数
 export interface AgentAddParams extends AgentBaseInfo {
-  spaceId: string;
+  spaceId: number;
 }
 
 // 智能体迁移接口输入参数
 export interface AgentTransferParams {
-  agentId: string;
-  targetSpaceId: string;
+  agentId: number;
+  targetSpaceId: number;
 }
 
 // 智能体发布申请输入参数
 export interface AgentPublishApplyParams {
-  agentId: string;
+  agentId: number;
   channels: string[];
   remark: string[];
 }
 
 // 删除智能体输入参数
 export interface AgentDeleteParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 创建副本输入参数
 export interface AgentCopyParams {
-  agentId: string;
+  agentId: number;
 }
 
 // 更新智能体基础配置信息输入参数
 export interface AgentConfigUpdateParams extends AgentBaseInfo {
-  id: string;
+  id: number;
   systemPrompt: string;
   userPrompt: string;
   openSuggest: string;
@@ -119,7 +123,7 @@ export interface AgentConfigUpdateParams extends AgentBaseInfo {
 }
 
 // 出参绑定配置，插件、工作流有效
-export interface ArgBindConfigs {
+export interface ArgBindConfig {
   // 参数key，唯一标识，不需要前端传递，后台根据配置自动生成
   key: string;
   // 参数名称，符合函数命名规则
@@ -142,10 +146,33 @@ export interface ArgBindConfigs {
   inputType: InputTypeType;
 }
 
+// 出参、入参绑定配置，带下级, 绑定组件配置，不同组件配置不一样
+export interface BindConfigWithSub {
+  key: string;
+  // 参数名称，符合函数命名规则
+  name: string;
+  // 参数详细描述信息
+  description: string;
+  // 数据类型
+  dataType: DataTypeEnum;
+  require: boolean;
+  // 是否为开启，如果不开启，插件使用者和大模型均看不见该参数；如果bindValueType为空且require为true时，该参数必须开启
+  enable: boolean;
+  // 是否为系统内置变量参数，内置变量前端只可展示不可修改
+  systemVariable: boolean;
+  // 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
+  bindValueType: BindValueType;
+  // 参数值，当类型为引用时，示例 1.xxx 绑定节点ID为1的xxx字段；当类型为输入时，该字段为最终使用的值
+  bindValue: string;
+  // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
+  inputType: InputTypeType;
+  subArgs: ArgBindConfig[];
+}
+
 // 智能体组件模型基础信息
 export interface AgentComponentModeBaseInfo {
   // 	组件配置ID
-  id: string;
+  id: number;
   // 组件名称
   name: string;
   // 组件图标
@@ -153,7 +180,7 @@ export interface AgentComponentModeBaseInfo {
   // 组件描述
   description: string;
   // 目标组件ID
-  targetId: string;
+  targetId: number;
   exceptionOut: string;
   fallbackMsg: string;
 }
@@ -164,25 +191,7 @@ export interface AgentComponentWorkflowUpdateParams
   // 绑定组件配置，不同组件配置不一样
   bindConfig: {
     // 出参绑定配置，插件、工作流有效
-    argBindConfigs: {
-      key: string;
-      // 参数名称，符合函数命名规则
-      name: string;
-      // 参数详细描述信息
-      description: string;
-      // 数据类型
-      dataType: DataTypeEnum;
-      require: boolean;
-      enable: boolean;
-      // 是否为系统内置变量参数，内置变量前端只可展示不可修改
-      systemVariable: boolean;
-      // 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
-      bindValueType: BindValueType;
-      bindValue: string;
-      // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
-      inputType: InputTypeType;
-      subArgs: ArgBindConfigs[];
-    }[];
+    argBindConfigs: BindConfigWithSub[];
     // 卡片ID
     cardId: string;
     // 卡片参数绑定信息
@@ -199,7 +208,7 @@ export interface AgentComponentWorkflowUpdateParams
 export interface AgentComponentVariableUpdateParams
   extends AgentComponentModeBaseInfo {
   bindConfig: {
-    variables: ArgBindConfigs[];
+    variables: ArgBindConfig[];
   };
 }
 
@@ -218,7 +227,7 @@ export interface AgentComponentTriggerAddParams {
   timeCronExpression: string;
   timeCronDesc: string;
   eventBearerToken: string;
-  eventArgs: ArgBindConfigs[];
+  eventArgs: ArgBindConfig[];
   // 触发器执行的组件类型,可用值:PLUGIN,WORKFLOW
   componentType: TriggerComponentType;
   // 触发器执行的组件名称
@@ -226,26 +235,8 @@ export interface AgentComponentTriggerAddParams {
   // 触发器执行的组件ID
   componentId: string;
   // 出参绑定配置，插件、工作流有效
-  argBindConfigs: {
-    key: string;
-    // 参数名称，符合函数命名规则
-    name: string;
-    // 参数详细描述信息
-    description: string;
-    // 数据类型
-    dataType: DataTypeEnum;
-    require: boolean;
-    enable: boolean;
-    // 是否为系统内置变量参数，内置变量前端只可展示不可修改
-    systemVariable: boolean;
-    // 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
-    bindValueType: BindValueType;
-    bindValue: string;
-    // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
-    inputType: InputTypeType;
-    subArgs: ArgBindConfigs[];
-  }[];
-  agentId: string;
+  argBindConfigs: BindConfigWithSub[];
+  agentId: number;
 }
 
 // 更新插件组件配置
@@ -257,13 +248,13 @@ export interface AgentComponentModelUpdateParams
   extends AgentComponentModeBaseInfo {
   bindConfig: {
     mode: UpdateModeComponentEnum;
-    // 	生成随机性;0-1
+    // 生成随机性;0-1
     temperature: string;
     // 累计概率: 模型在生成输出时会从概率最高的词汇开始选择;0-1
     topP: string;
     // 最大生成长度
     maxTokens: string;
-    // 	上下文轮数
+    // 上下文轮数
     contextRounds: string;
   };
 }
@@ -284,36 +275,36 @@ export interface AgentComponentKnowledgeUpdateParams
 
 // 新增智能体插件、工作流、知识库组件配置输入参数
 export interface AgentComponentAddParams {
-  agentId: string;
+  agentId: number;
   type: AgentComponentTypeEnum;
-  targetId: string;
+  targetId: number;
 }
 
 // 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)
 export interface AgentStatisticsInfo {
-  targetId: string;
+  targetId: number;
   // 用户人数
-  userCount: string;
+  userCount: number;
   // 会话次数
-  convCount: string;
+  convCount: number;
   // 收藏次数
-  collectCount: string;
+  collectCount: number;
   // 点赞次数
-  likeCount: string;
+  likeCount: number;
   // 引用次数
-  referenceCount: string;
+  referenceCount: number;
   // 调用总次数
-  callCount: string;
+  callCount: number;
   // 失败调用次数
-  failCallCount: string;
+  failCallCount: number;
   // 调用总时长
-  totalCallDuration: string;
+  totalCallDuration: number;
 }
 
 // 创建者信息
 export interface CreatorInfo {
   // 用户ID
-  userId: string;
+  userId: number;
   // 用户名
   userName: string;
   // 昵称
@@ -324,12 +315,14 @@ export interface CreatorInfo {
 
 // 智能体配置信息
 export interface AgentConfigInfo {
-  id: string;
+  // 智能体ID
+  id: number;
+  // agent唯一标识
   uid: string;
-  // 	商户ID
-  tenantId: string;
-  spaceId: string;
-  creatorId: string;
+  // 商户ID
+  tenantId: number;
+  spaceId: number;
+  creatorId: number;
   // Agent名称
   name: string;
   // Agent描述
@@ -341,7 +334,7 @@ export interface AgentConfigInfo {
   // 用户消息提示词
   userPrompt: string;
   // 是否开启问题建议,可用值:Open,Close
-  openSuggest: string;
+  openSuggest: OpenCloseEnum;
   // 问题建议提示词
   suggestPrompt: string;
   // 首次打开聊天框自动回复消息
@@ -349,7 +342,7 @@ export interface AgentConfigInfo {
   // 首次打开引导问题
   openingGuidQuestion: string;
   // 是否开启长期记忆,可用值:Open,Close
-  openLongMemory: string;
+  openLongMemory: OpenCloseEnum;
   // 发布状态,可用值:Developing,Applying,Published,Rejected
   publishStatus: PublishStatusEnum;
   modified: string;
@@ -392,12 +385,12 @@ export interface TriggerTimeZone {
 
 // 智能体历史配置信息
 export interface AgentConfigHistoryInfo {
-  id: string;
+  id: number;
   // 可用值:Agent,Plugin,Workflow
-  targetType: string;
-  targetId: string;
+  targetType: HistoryTargetTypeEnum;
+  targetId: number;
   // 操作类型,Add 新增, Edit 编辑, Publish 发布,可用值:Add,Edit,Publish,PublishApply,PublishApplyReject,OffShelf,AddComponent,EditComponent,DeleteComponent,AddNode,EditNode,DeleteNode
-  type: string;
+  type: HistoryActionTypeEnum;
   // 当时的配置信息
   config: string;
   description: string;
@@ -409,26 +402,60 @@ export interface AgentConfigHistoryInfo {
 
 // 智能体组件模型信息
 export interface AgentComponentInfo {
-  id: string;
+  id: number;
   // 商户ID
-  tenantId: string;
+  tenantId: number;
   // 组件名称
   name: string;
   // 组件图标
   icon: string;
   // 组件描述
   description: string;
-  agentId: string;
+  agentId: number;
   // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model
   type: AgentComponentTypeEnum;
   // 绑定组件配置，不同组件配置不一样
   bindConfig: string;
   // 关联的组件ID
-  targetId: string;
+  targetId: number;
   // 组件原始配置
   targetConfig: string;
   exceptionOut: string;
   fallbackMsg: string;
   modified: string;
   created: string;
+}
+
+// 根据用户消息更新会话主题输入参数
+export interface AgentConversationUpdateParams {
+  id: number;
+  firstMessage: string;
+}
+
+// 根据用户消息更新会话主题结果
+export interface AgentConversationUpdateResult {
+  // 会话ID
+  id: number;
+  userId: number;
+  agentId: number;
+  // 会话主题
+  topic: string;
+  // 会话摘要，当开启长期记忆时，会对每次会话进行总结
+  summary: string;
+  modified: string;
+  created: string;
+  // 会话消息列表，会话列表查询时不会返回该字段值
+  messageList: {
+    // assistant 模型回复；user 用户消息,可用值:USER,ASSISTANT,SYSTEM,FUNCTION
+    role: AssistantRoleEnum;
+    // 消息内容
+    content: string;
+    // 消息时间
+    time: string;
+  }[];
+}
+
+// 查询用户历史会话输入参数
+export interface AgentConversationListParams {
+  agentId: number;
 }
