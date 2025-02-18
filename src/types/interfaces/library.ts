@@ -1,5 +1,6 @@
 import type { PublishStatusEnum } from '@/types/enums/common';
 import type { PluginModeEnum, WorkflowModeEnum } from '@/types/enums/library';
+import { CodeLangEnum } from '@/types/enums/plugin';
 import type { ComponentTypeEnum } from '@/types/enums/space';
 import type { CreatorInfo } from '@/types/interfaces/agent';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
@@ -40,13 +41,19 @@ export interface CreateWorkflowProps {
 
 // 新建、更新插件组件
 export interface CreateNewPluginProps {
+  spaceId?: number;
   pluginId?: number;
-  img?: string;
-  pluginName?: string;
-  desc?: string;
+  icon?: string;
+  name?: string;
+  description?: string;
+  // 插件类型,可用值:HTTP,CODE
   type?: PluginModeEnum;
+  // 插件代码语言,可用值:Python,JavaScript
+  codeLang?: CodeLangEnum;
   open: boolean;
   onCancel: () => void;
+  onConfirmCreate?: (id: number) => void;
+  onConfirmUpdate?: () => void;
 }
 
 // 入参与出参共有配置数据类型

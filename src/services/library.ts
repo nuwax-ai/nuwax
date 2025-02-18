@@ -1,7 +1,7 @@
 import type {
   AddWorkflowParams,
-  UpdateWorkflowParams,
   ComponentInfo,
+  UpdateWorkflowParams,
 } from '@/types/interfaces/library';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';

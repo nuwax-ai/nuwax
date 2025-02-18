@@ -14,15 +14,15 @@ import {
   ICON_TEXT_FORMAT,
   ICON_WORKFLOW,
 } from '@/constants/images.constants';
+import { InputTypeType } from '@/types/enums/agent';
+import { HttpMethodEnum } from '@/types/enums/common';
 import {
-  AfferentModeEnum,
   ComponentMoreActionEnum,
   KnowledgeResourceEnum,
   KnowledgeTextImportEnum,
-  PluginCreateToolEnum,
   RequestContentFormatEnum,
-  RequestMethodEnum,
 } from '@/types/enums/library';
+import { CodeLangEnum, PluginTypeEnum } from '@/types/enums/plugin';
 import { ComponentTypeEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 
@@ -36,31 +36,43 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
 // 插件工具创建方式
 export const PLUGIN_CREATE_TOOL = [
   {
-    value: PluginCreateToolEnum.Existing_Service_Based,
+    value: PluginTypeEnum.HTTP,
     label: '基于已有服务（http接口）创建',
   },
   {
-    value: PluginCreateToolEnum.Cloud_Based_Code_Creation,
+    value: PluginTypeEnum.CODE,
     label: '基于云端代码（nodejs、python）创建',
+  },
+];
+
+// 基于云端代码（nodejs、python）创建下拉选择项
+export const CLOUD_BASE_CODE_OPTIONS = [
+  {
+    value: CodeLangEnum.JavaScript,
+    label: 'JavaScript',
+  },
+  {
+    value: CodeLangEnum.Python,
+    label: 'Python3',
   },
 ];
 
 // 请求方法
 export const REQUEST_METHOD = [
   {
-    value: RequestMethodEnum.Post,
+    value: HttpMethodEnum.POST,
     label: 'POST',
   },
   {
-    value: RequestMethodEnum.Get,
+    value: HttpMethodEnum.GET,
     label: 'GET',
   },
   {
-    value: RequestMethodEnum.Put,
+    value: HttpMethodEnum.PUT,
     label: 'PUT',
   },
   {
-    value: RequestMethodEnum.Delete,
+    value: HttpMethodEnum.DELETE,
     label: 'DELETE',
   },
 ];
@@ -88,19 +100,19 @@ export const REQUEST_CONTENT_FORMAT = [
 // 传入方法
 export const AFFERENT_MODE_LIST = [
   {
-    value: AfferentModeEnum.Body,
+    value: InputTypeType.Body,
     label: 'Body',
   },
   {
-    value: AfferentModeEnum.Path,
+    value: InputTypeType.Path,
     label: 'Path',
   },
   {
-    value: AfferentModeEnum.Query,
+    value: InputTypeType.Query,
     label: 'Query',
   },
   {
-    value: AfferentModeEnum.Header,
+    value: InputTypeType.Header,
     label: 'Header',
   },
 ];

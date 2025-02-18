@@ -156,6 +156,12 @@ const SpaceLibrary: React.FC = () => {
     handleFilterList(type, status, create, _keyword);
   };
 
+  // 确认添加插件事件
+  const handleConfirmPlugin = (id: number) => {
+    setOpenPlugin(false);
+    history.push(`/space/${spaceId}/plugin/${id}`);
+  };
+
   // 确认添加工作流事件
   const handleConfirmWorkflow = (data: WorkflowBaseInfo) => {
     const id = data.id;
@@ -207,21 +213,6 @@ const SpaceLibrary: React.FC = () => {
     ];
     setComponentStatistics(analyzeList);
   };
-
-  // // 删除组件后, 从列表移除组件
-  // const handleDelComponent = () => {
-  //
-  // };
-
-  // // 删除智能体
-  // const { run: runDel } = useRequest(apiAgentDelete, {
-  //   manual: true,
-  //   debounceWait: 300,
-  //   onSuccess: () => {
-  //     message.success('已成功删除');
-  //     handleDelComponent();
-  //   },
-  // });
 
   // 点击更多操作
   const handleClickMore = (item: CustomPopoverItem) => {
@@ -322,8 +313,10 @@ const SpaceLibrary: React.FC = () => {
       />
       {/*新建插件弹窗*/}
       <CreateNewPlugin
+        spaceId={spaceId}
         open={openPlugin}
         onCancel={() => setOpenPlugin(false)}
+        onConfirmCreate={handleConfirmPlugin}
       />
       {/*创建知识库弹窗*/}
       <CreateKnowledge

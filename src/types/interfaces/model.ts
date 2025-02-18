@@ -1,11 +1,11 @@
 import type {
   ModelApiProtocolEnum,
-  ModelStrategyEnum,
-  ModelTypeEnum,
   ModelEventTypeEnum,
   ModelFunctionCallEnum,
   ModelNetworkTypeEnum,
   ModelScopeEnum,
+  ModelStrategyEnum,
+  ModelTypeEnum,
 } from '@/types/enums/modelConfig';
 import type { CreatorInfo } from '@/types/interfaces/agent';
 
