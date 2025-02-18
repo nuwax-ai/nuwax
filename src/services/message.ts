@@ -6,9 +6,10 @@ import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
 // 更新指定未读消息为已读
-export async function apiNotifyMessageRead(): Promise<RequestResponse<null>> {
+export async function apiNotifyMessageRead(data: number[]): Promise<RequestResponse<null>> {
   return request('/api/notify/message/read', {
     method: 'POST',
+    data,
   });
 }
 
