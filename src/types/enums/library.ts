@@ -83,3 +83,15 @@ export enum UpdateModeComponentEnum {
   // 自定义
   Customization = 'Customization',
 }
+
+// 知识状态,可用值:Waiting,Published
+export enum KnowledgePubStatusEnum {
+  Waiting = 'Waiting',
+  Published = 'Published',
+}
+
+// 分段类型，words: 按照词数分段, delimiter: 按照分隔符分段，field: 按照字段分段,可用值:WORDS,DELIMITER
+export enum KnowledgeSegmentTypeEnum {
+  WORDS = 'WORDS',
+  DELIMITER = 'DELIMITER',
+}

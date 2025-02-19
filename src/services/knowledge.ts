@@ -9,9 +9,19 @@ import type {
   KnowledgeDocumentListParams,
   KnowledgeDocumentUpdateParams,
   KnowledgeInfo,
+  KnowledgeDocumentAddParams, KnowledgeRawSegmentListParams, KnowledgeQAUpdateParams, KnowledgeQAListParams,
 } from '@/types/interfaces/knowledge';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
+import {
+  EmbeddingStatusInfo,
+  KnowledgeQAAddParams,
+  KnowledgeQAInfo,
+  KnowledgeQASearchParams,
+  KnowledgeRawSegmentAddParams,
+  KnowledgeRawSegmentInfo,
+  KnowledgeRawSegmentUpdateParams,
+} from '@/types/interfaces/knowledge';
 
 // 数据更新接口
 export async function apiKnowledgeConfigUpdate(
@@ -105,5 +115,174 @@ export async function apiKnowledgeDocumentGenerateEmbeddings(
 ): Promise<RequestResponse<null>> {
   return request(`/api/knowledge/document/doc/generateEmbeddings/${docId}`, {
     method: 'POST',
+  });
+}
+
+// 数据新增接口
+export async function apiKnowledgeDocumentAdd(
+  data: KnowledgeDocumentAddParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/knowledge/document/add', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 数据详情查询
+export async function apiKnowledgeDocumentDetail(
+  dataId: string,
+): Promise<RequestResponse<KnowledgeDocumentInfo>> {
+  return request('/api/knowledge/document/detailById', {
+    method: 'GET',
+    params: {
+      dataId,
+    },
+  });
+}
+
+// 数据删除接口
+export async function apiKnowledgeDocumentDelete(
+  id: string,
+): Promise<RequestResponse<null>> {
+  return request('/api/knowledge/document/deleteById', {
+    method: 'GET',
+    params: {
+      id,
+    },
+  });
+}
+
+/**
+ * 知识库 - 分段配置接口
+ */
+
+// 数据更新接口
+export async function apiKnowledgeRawSegmentUpdate(
+  data: KnowledgeRawSegmentUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/knowledge/rawSegment/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 数据列表查询
+export async function apiKnowledgeRawSegmentList(
+  data: KnowledgeRawSegmentListParams,
+): Promise<RequestResponse<Page<KnowledgeRawSegmentInfo>>> {
+  return request('/api/knowledge/rawSegment/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 数据新增接口
+export async function apiKnowledgeRawSegmentAdd(
+  data: KnowledgeRawSegmentAddParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/knowledge/rawSegment/add', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 数据详情查询
+export async function apiKnowledgeRawSegmentDetail(
+  dataId: string,
+): Promise<RequestResponse<KnowledgeRawSegmentInfo>> {
+  return request('/api/knowledge/rawSegment/detailById', {
+    method: 'GET',
+    params: {
+      dataId,
+    },
+  });
+}
+
+// 数据删除接口
+export async function apiKnowledgeRawSegmentDelete(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request('/api/knowledge/rawSegment/deleteById', {
+    method: 'GET',
+    params: {
+      id,
+    },
+  });
+}
+
+/**
+ * 知识库问答配置接口
+ */
+
+// 知识库问答 - 数据新增接口
+export async function apiKnowledgeQAUpdate(
+  data: KnowledgeQAUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/knowledge/qa/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 知识库问答 - 搜索单个知识库（它不关心知识库本身的状态，用于后台调试）
+export async function apiKnowledgeQASearch(
+  data: KnowledgeQASearchParams,
+): Promise<RequestResponse<KnowledgeQASearchParams[]>> {
+  return request('/api/knowledge/qa/search', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 知识库问答 - 数据列表查询
+export async function apiKnowledgeQAList(
+  data: KnowledgeQAListParams,
+): Promise<RequestResponse<Page<KnowledgeQAInfo>>> {
+  return request('/api/knowledge/qa/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 知识库问答 - 数据新增接口
+export async function apiKnowledgeQAAdd(
+  data: KnowledgeQAAddParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/knowledge/qa/add', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 知识库问答 - 查看Doc嵌入状态
+export async function apiKnowledgeQAEmbeddingStatus(
+  docId: number,
+): Promise<RequestResponse<EmbeddingStatusInfo>> {
+  return request(`/api/knowledge/qa/doc/embeddingStatus/${docId}`, {
+    method: 'GET',
+  });
+}
+
+// 知识库问答 - 数据详情查询
+export async function apiKnowledgeQADetail(
+  dataId: string,
+): Promise<RequestResponse<KnowledgeQAInfo>> {
+  return request('/api/knowledge/qa/detailById', {
+    method: 'GET',
+    params: {
+      dataId,
+    }
+  });
+}
+
+// 知识库问答 - 数据删除接口
+export async function apiKnowledgeQADelete(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request('/api/knowledge/qa/deleteById', {
+    method: 'GET',
+    params: {
+      id,
+    }
   });
 }
