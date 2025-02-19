@@ -22,7 +22,7 @@ export const CALL_METHOD_OPTIONS = [
 // 搜索策略
 export const SEARCH_STRATEGY_OPTIONS = [
   {
-    value: SearchStrategyEnum.Mixed,
+    value: SearchStrategyEnum.MIXED,
     label: (
       <span className={'flex items-center'}>
         <span>混合</span>
@@ -34,7 +34,7 @@ export const SEARCH_STRATEGY_OPTIONS = [
     ),
   },
   {
-    value: SearchStrategyEnum.Semantic,
+    value: SearchStrategyEnum.SEMANTIC,
     label: (
       <span className={'flex items-center'}>
         <span>语义</span>
@@ -46,7 +46,7 @@ export const SEARCH_STRATEGY_OPTIONS = [
     ),
   },
   {
-    value: SearchStrategyEnum.Full_Text,
+    value: SearchStrategyEnum.FULL_TEXT,
     label: (
       <span className={'flex items-center'}>
         <span>全文</span>

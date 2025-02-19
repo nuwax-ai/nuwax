@@ -1,21 +1,13 @@
 // 组件类型枚举
 export enum ComponentTypeEnum {
+  All_Type = 'All_Type',
+  Variable = 'Variable',
   Workflow = 'Workflow',
   Plugin = 'Plugin',
-  Knowledge = 'Knowledge',
+  Knowledge = 'KnowledgeBase',
   Database = 'Database',
   Model = 'Model',
 }
-
-// 组件库所有类型枚举
-// export enum LibraryAllTypeEnum {
-//   All_Type,
-//   Workflow,
-//   Plugin,
-//   Knowledge,
-//   Database,
-//   Model,
-// }
 
 // 过滤状态枚举
 export enum FilterStatusEnum {
@@ -23,7 +15,7 @@ export enum FilterStatusEnum {
   // 已发布
   Published,
   // 最近打开
-  // Recently_Open,
+  Recently_Open,
 }
 
 // 过滤创建者
@@ -62,12 +54,6 @@ export enum AgentConfigSkillEnum {
   Workflow,
   // 触发器
   Trigger,
-}
-
-// 智能体配置知识枚举
-export enum AgentConfigKnowledgeEnum {
-  Text,
-  Table,
 }
 
 // 智能体配置记忆枚举

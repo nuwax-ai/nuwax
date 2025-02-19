@@ -52,9 +52,9 @@ const SpaceDevelop: React.FC = () => {
   // 所有智能体列表
   const agentAllRef = useRef<AgentConfigInfo[]>([]);
   // 创建者ID
-  const createIdRef = useRef<string>('');
+  const createIdRef = useRef<number>(0);
   // 目标智能体ID
-  const targetAgentIdRef = useRef<string>('');
+  const targetAgentIdRef = useRef<number>(0);
 
   const spaceId = localStorage.getItem(SPACE_ID);
 

@@ -9,7 +9,7 @@ import {
   REQUEST_CONTENT_FORMAT,
   REQUEST_METHOD,
 } from '@/constants/library.constants';
-import { PluginModeEnum } from '@/types/enums/library';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type {
   InputConfigDataType,
   OutputConfigDataType,
@@ -415,11 +415,12 @@ const SpacePluginTool: React.FC = () => {
       {/*修改插件弹窗*/}
       <CreateNewPlugin
         open={openPlugin}
-        pluginId={'110110'}
-        pluginName="测试插件"
-        desc={'测试插件的描述信息'}
-        type={PluginModeEnum.Update}
+        id={110110}
+        name="测试插件"
+        description={'测试插件的描述信息'}
+        mode={CreateUpdateModeEnum.Update}
         onCancel={() => setOpenPlugin(false)}
+        onConfirm={() => setOpenPlugin(false)}
       />
     </div>
   );

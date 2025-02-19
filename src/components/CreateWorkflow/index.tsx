@@ -32,8 +32,8 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   onCancel,
   onConfirm,
 }) => {
-  const [imageUrl, setImageUrl] = useState<string>(icon || '');
   const [form] = Form.useForm();
+  const [imageUrl, setImageUrl] = useState<string>(icon || '');
 
   // 新增工作流
   const { run } = useRequest(apiAddWorkflow, {

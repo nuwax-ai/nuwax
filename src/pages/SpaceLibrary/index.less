@@ -24,6 +24,7 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
+    padding-bottom: 10px;
   }
 
   @media (min-width: 1200px) {
@@ -37,4 +38,9 @@
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
+}
+
+.no-data {
+  color: @BLANK05;
+  padding-top: 50px;
 }

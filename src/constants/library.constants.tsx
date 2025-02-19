@@ -22,6 +22,11 @@ import {
   KnowledgeTextImportEnum,
   RequestContentFormatEnum,
 } from '@/types/enums/library';
+import {
+  ModelApiProtocolEnum,
+  ModelNetworkTypeEnum,
+  ModelStrategyEnum,
+} from '@/types/enums/modelConfig';
 import { CodeLangEnum, PluginTypeEnum } from '@/types/enums/plugin';
 import { ComponentTypeEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
@@ -210,5 +215,53 @@ export const COMPONENT_LIST = [
     defaultImage: databaseImage,
     icon: <ICON_MODEL />,
     text: '模型',
+  },
+];
+
+// 模型联网类型
+export const MODEL_NETWORK_TYPE_LIST = [
+  {
+    value: ModelNetworkTypeEnum.Internet,
+    label: '公网模型',
+  },
+  {
+    value: ModelNetworkTypeEnum.Intranet,
+    label: '内网模型',
+  },
+];
+
+// 模型调用策略
+export const MODEL_STRATEGY_LIST = [
+  {
+    value: ModelStrategyEnum.RoundRobin,
+    label: '轮询',
+  },
+  {
+    value: ModelStrategyEnum.WeightedRoundRobin,
+    label: '加权轮询',
+  },
+  {
+    value: ModelStrategyEnum.LeastConnections,
+    label: '加权最少连接',
+  },
+  {
+    value: ModelStrategyEnum.Random,
+    label: '随机',
+  },
+  {
+    value: ModelStrategyEnum.ResponseTime,
+    label: '响应时间',
+  },
+];
+
+// 模型接口协议
+export const MODEL_API_PROTOCOL_LIST = [
+  {
+    value: ModelApiProtocolEnum.OpenAI,
+    label: 'OpenAI',
+  },
+  {
+    value: ModelApiProtocolEnum.Ollama,
+    label: 'Ollama',
   },
 ];

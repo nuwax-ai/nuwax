@@ -9,8 +9,8 @@ import {
 import { apiAgentComponentList } from '@/services/agentConfig';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PluginAndLibraryEnum } from '@/types/enums/common';
+import { KnowledgeDataTypeEnum } from '@/types/enums/library';
 import {
-  AgentConfigKnowledgeEnum,
   AgentConfigMemoryEnum,
   AgentConfigSkillEnum,
   ConversationalExperienceEnum,
@@ -186,7 +186,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   const KnowledgeList: CollapseProps['items'] = [
     {
-      key: AgentConfigKnowledgeEnum.Text,
+      key: KnowledgeDataTypeEnum.Text,
       label: '文本',
       children: (
         <p>
@@ -196,7 +196,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       extra: <TooltipIcon title="添加知识库" onClick={handlerTextPlus} />,
     },
     {
-      key: AgentConfigKnowledgeEnum.Table,
+      key: KnowledgeDataTypeEnum.Table,
       label: '表格',
       children: (
         <p>

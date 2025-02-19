@@ -17,12 +17,12 @@ export enum CreateAgentEnum {
   AI,
 }
 
-// 创建、编辑智能体枚举
-export enum CreateEditAgentEnum {
+// 新建、更新枚举
+export enum CreateUpdateModeEnum {
   // 创建
   Create,
   // 编辑
-  Edit,
+  Update,
 }
 
 // 变量类型枚举

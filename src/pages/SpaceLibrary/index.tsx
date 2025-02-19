@@ -12,8 +12,9 @@ import {
   LIBRARY_ALL_TYPE,
 } from '@/constants/space.contants';
 import { apiComponentList } from '@/services/library';
-import { PublishStatusEnum } from '@/types/enums/common';
+import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ComponentMoreActionEnum } from '@/types/enums/library';
+import { PluginTypeEnum } from '@/types/enums/plugin';
 import {
   ComponentTypeEnum,
   CreateListEnum,
@@ -23,11 +24,13 @@ import type {
   AnalyzeStatisticsItem,
   CustomPopoverItem,
 } from '@/types/interfaces/common';
+import { KnowledgeBaseInfo } from '@/types/interfaces/knowledge';
 import type {
   ComponentInfo,
   WorkflowBaseInfo,
 } from '@/types/interfaces/library';
 import type { UserInfo } from '@/types/interfaces/login';
+import { PluginInfo } from '@/types/interfaces/plugin';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, message } from 'antd';
 import classNames from 'classnames';
@@ -57,8 +60,11 @@ const SpaceLibrary: React.FC = () => {
   const [openKnowledge, setOpenKnowledge] = useState<boolean>(false);
   // 打开创建模型弹窗
   const [openModel, setOpenModel] = useState<boolean>(false);
+  const [modelComponentInfo, setModelComponentInfo] = useState<ComponentInfo>();
   // 类型
-  const [type, setType] = useState<ComponentTypeEnum>(0);
+  const [type, setType] = useState<ComponentTypeEnum>(
+    ComponentTypeEnum.All_Type,
+  );
   // 过滤状态
   const [status, setStatus] = useState<FilterStatusEnum>(FilterStatusEnum.All);
   // 搜索关键词
@@ -114,7 +120,7 @@ const SpaceLibrary: React.FC = () => {
     filterKeyword: string,
   ) => {
     let list = componentAllRef.current;
-    if (filterType !== 0) {
+    if (filterType !== ComponentTypeEnum.All_Type) {
       list = list.filter((item) => item.type === filterType);
     }
     if (filterStatus === FilterStatusEnum.Published) {
@@ -156,17 +162,32 @@ const SpaceLibrary: React.FC = () => {
     handleFilterList(type, status, create, _keyword);
   };
 
+  // 根据type类型，判断插件跳转路径
+  const handlePluginUrl = (id: number, type: PluginTypeEnum) => {
+    if (type === PluginTypeEnum.CODE) {
+      history.push(`/space/${spaceId}/plugin/${id}/cloud-tool`);
+    } else if (type === PluginTypeEnum.HTTP) {
+      history.push(`/space/${spaceId}/plugin/${id}`);
+    }
+  };
+
   // 确认添加插件事件
-  const handleConfirmPlugin = (id: number) => {
+  const handleConfirmPlugin = (info: PluginInfo) => {
     setOpenPlugin(false);
-    history.push(`/space/${spaceId}/plugin/${id}`);
+    const { id, type } = info;
+    handlePluginUrl(id, type);
   };
 
   // 确认添加工作流事件
-  const handleConfirmWorkflow = (data: WorkflowBaseInfo) => {
-    const id = data.id;
+  const handleConfirmWorkflow = (info: WorkflowBaseInfo) => {
+    const id = info.id;
     setOpenWorkflow(false);
     history.push(`/workflow/${id}`);
+  };
+
+  const handleConfirmModel = () => {
+    setOpenModel(false);
+    runComponent(spaceId);
   };
 
   // 点击添加资源
@@ -186,6 +207,7 @@ const SpaceLibrary: React.FC = () => {
         message.warning('数据库此版本暂时未做');
         break;
       case ComponentTypeEnum.Model:
+        setModelComponentInfo(null);
         setOpenModel(true);
         break;
     }
@@ -231,29 +253,32 @@ const SpaceLibrary: React.FC = () => {
 
   // 点击单个资源组件
   const handleClickComponent = (item: ComponentInfo) => {
-    const { type } = item;
+    const { type, id, ext } = item;
     switch (type) {
       case ComponentTypeEnum.Workflow:
-        history.push(`/workflow/${item.id}`);
+        history.push(`/workflow/${id}`);
         break;
       case ComponentTypeEnum.Plugin:
-        history.push(`/space/${spaceId}/plugin/${item.id}/cloud-tool`);
+        handlePluginUrl(id, ext as PluginTypeEnum);
         break;
       case ComponentTypeEnum.Knowledge:
-        setOpenKnowledge(true);
+        history.push(`/space/${spaceId}/knowledge/${id}`);
         break;
       case ComponentTypeEnum.Database:
         message.warning('数据库此版本暂时未做');
         break;
       case ComponentTypeEnum.Model:
+        setModelComponentInfo(item);
         setOpenModel(true);
         break;
     }
   };
 
-  const handleCancelCreateKnowledge = () => {
+  // 知识库新增确认事件
+  const handleConfirmKnowledge = (info: KnowledgeBaseInfo) => {
+    const { id } = info;
     setOpenKnowledge(false);
-    // history.push('/space/1101010/knowledge/15115');
+    history.push(`/space/${spaceId}/knowledge/${id}`);
   };
 
   return (
@@ -294,16 +319,22 @@ const SpaceLibrary: React.FC = () => {
           prefix={<SearchOutlined />}
         />
       </div>
-      <div className={cx(styles['main-container'])}>
-        {componentList?.map((item) => (
-          <ComponentItem
-            key={item.id}
-            componentInfo={item}
-            onClick={() => handleClickComponent(item)}
-            onClickMore={handleClickMore}
-          />
-        ))}
-      </div>
+      {componentList?.length > 0 ? (
+        <div className={cx(styles['main-container'])}>
+          {componentList?.map((item) => (
+            <ComponentItem
+              key={`${item.id}${item.type}`}
+              componentInfo={item}
+              onClick={() => handleClickComponent(item)}
+              onClickMore={handleClickMore}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className={cx('flex', 'content-center', styles['no-data'])}>
+          <span>未能找到相关结果</span>
+        </div>
+      )}
       {/*统计概览*/}
       <AnalyzeStatistics
         open={openAnalyze}
@@ -316,13 +347,14 @@ const SpaceLibrary: React.FC = () => {
         spaceId={spaceId}
         open={openPlugin}
         onCancel={() => setOpenPlugin(false)}
-        onConfirmCreate={handleConfirmPlugin}
+        onConfirm={handleConfirmPlugin}
       />
       {/*创建知识库弹窗*/}
       <CreateKnowledge
+        spaceId={spaceId}
         open={openKnowledge}
-        onCancel={handleCancelCreateKnowledge}
-        onConfirm={() => setOpenKnowledge(false)}
+        onCancel={() => setOpenKnowledge(false)}
+        onConfirm={handleConfirmKnowledge}
       />
       {/*创建工作流*/}
       <CreateWorkflow
@@ -333,9 +365,16 @@ const SpaceLibrary: React.FC = () => {
       />
       {/*创建模型*/}
       <CreateModel
+        mode={
+          modelComponentInfo
+            ? CreateUpdateModeEnum.Update
+            : CreateUpdateModeEnum.Create
+        }
+        spaceId={spaceId}
+        id={modelComponentInfo?.id}
         open={openModel}
         onCancel={() => setOpenModel(false)}
-        onConfirm={() => setOpenModel(false)}
+        onConfirm={handleConfirmModel}
       />
     </div>
   );

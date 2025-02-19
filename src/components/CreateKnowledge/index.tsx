@@ -3,12 +3,19 @@ import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { KNOWLEDGE_RESOURCE_FORMAT } from '@/constants/library.constants';
+import {
+  apiKnowledgeConfigAdd,
+  apiKnowledgeConfigUpdate,
+} from '@/services/knowledge';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { KnowledgeDataTypeEnum } from '@/types/enums/library';
 import type { CreateKnowledgeProps } from '@/types/interfaces/common';
+import type { KnowledgeBaseInfo } from '@/types/interfaces/knowledge';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, Input } from 'antd';
+import { Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -17,26 +24,73 @@ const cx = classNames.bind(styles);
  * 创建知识库
  */
 const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
-  knowledgeName,
-  intro,
-  img,
+  mode = CreateUpdateModeEnum.Create,
+  spaceId,
+  name,
+  description,
+  dataType = KnowledgeDataTypeEnum.Text,
+  id,
   open,
   onCancel,
   onConfirm,
 }) => {
-  const [imageUrl, setImageUrl] = useState<string>('');
-  const [knowledgeResourceFormat, setKnowledgeResourceFormat] =
-    useState<number>(KnowledgeDataTypeEnum.Text);
   const [form] = Form.useForm();
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [resourceFormat, setResourceFormat] = useState<KnowledgeDataTypeEnum>(
+    dataType || KnowledgeDataTypeEnum.Text,
+  );
+
+  // 数据新增接口
+  const { run } = useRequest(apiKnowledgeConfigAdd, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result, params) => {
+      message.success('知识库已创建成功');
+      const data: KnowledgeBaseInfo = {
+        id: result,
+        ...params[0],
+      };
+      onConfirm(data);
+    },
+  });
+
+  // 数据更新接口
+  const { run: runUpdate } = useRequest(apiKnowledgeConfigUpdate, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (_, params) => {
+      message.success('知识库更新成功');
+      onConfirm(...params);
+    },
+  });
 
   // 切换资源文件格式类型
-  const handleResourceType = (value: KnowledgeDataTypeEnum) => {
-    setKnowledgeResourceFormat(value);
+  const handleDataType = (value: KnowledgeDataTypeEnum) => {
+    if (value === KnowledgeDataTypeEnum.Table) {
+      message.warning('表格格式此版本暂时未做');
+      return;
+    }
+    setResourceFormat(value);
   };
 
-  const onFinish = (values) => {
-    console.log(values, img);
-    onConfirm();
+  const onFinish: FormProps<KnowledgeBaseInfo>['onFinish'] = (values) => {
+    const params = {
+      spaceId,
+      name: values.name,
+      description: values.description,
+      icon: imageUrl,
+      dataType: resourceFormat,
+    };
+    if (mode === CreateUpdateModeEnum.Create) {
+      run({
+        ...params,
+      });
+    } else {
+      runUpdate({
+        id,
+        ...params,
+      });
+    }
   };
 
   const handlerSubmit = async () => {
@@ -50,7 +104,6 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
       open={open}
       onCancel={onCancel}
       onConfirm={handlerSubmit}
-      // loading={loading}
     >
       <div className={cx('flex', styles.header)}>
         {KNOWLEDGE_RESOURCE_FORMAT.map((item) => (
@@ -63,9 +116,9 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
               'content-center',
               'cursor-pointer',
               styles.box,
-              { [styles.active]: knowledgeResourceFormat === item.value },
+              { [styles.active]: resourceFormat === item.value },
             )}
-            onClick={() => handleResourceType(item.value)}
+            onClick={() => handleDataType(item.value)}
           >
             {item.icon}
             <span>{item.label}</span>
@@ -79,25 +132,26 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
         layout="vertical"
         onFinish={onFinish}
         initialValues={{
-          knowledgeName: knowledgeName,
-          intro: intro,
+          name: name,
+          description: description,
         }}
         autoComplete="off"
       >
         <Form.Item
-          name={'knowledgeName'}
+          name="name"
           label="名称"
           rules={[{ required: true, message: '输入知识库名称' }]}
         >
           <Input placeholder="输入知识库名称" showCount maxLength={100} />
         </Form.Item>
         <OverrideTextArea
-          name="intro"
+          name="description"
           label="描述"
+          initialValue={description}
           placeholder="输入知识库内容的描述"
           maxLength={2000}
         />
-        <Form.Item name="image" label="图标">
+        <Form.Item name="icon" label="图标">
           <UploadAvatar
             className={cx(styles['upload-box'])}
             onUploadSuccess={setImageUrl}

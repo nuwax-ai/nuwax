@@ -1,9 +1,11 @@
 import type { PublishStatusEnum } from '@/types/enums/common';
-import type { PluginModeEnum, WorkflowModeEnum } from '@/types/enums/library';
-import { CodeLangEnum } from '@/types/enums/plugin';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
+import type { WorkflowModeEnum } from '@/types/enums/library';
 import type { ComponentTypeEnum } from '@/types/enums/space';
 import type { CreatorInfo } from '@/types/interfaces/agent';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
+import { ModelSaveParams } from '@/types/interfaces/model';
+import { PluginInfo } from '@/types/interfaces/plugin';
 import React from 'react';
 
 // 组件库单个组件项
@@ -36,24 +38,21 @@ export interface CreateWorkflowProps {
   icon?: string;
   open: boolean;
   onCancel: () => void;
-  onConfirm: (data: WorkflowBaseInfo) => void;
+  onConfirm: (info: WorkflowBaseInfo) => void;
 }
 
 // 新建、更新插件组件
 export interface CreateNewPluginProps {
   spaceId?: number;
-  pluginId?: number;
+  id?: number;
   icon?: string;
   name?: string;
   description?: string;
-  // 插件类型,可用值:HTTP,CODE
-  type?: PluginModeEnum;
-  // 插件代码语言,可用值:Python,JavaScript
-  codeLang?: CodeLangEnum;
+  // 弹窗类型： 新建、更新
+  mode?: CreateUpdateModeEnum;
   open: boolean;
   onCancel: () => void;
-  onConfirmCreate?: (id: number) => void;
-  onConfirmUpdate?: () => void;
+  onConfirm: (info: PluginInfo) => void;
 }
 
 // 入参与出参共有配置数据类型
@@ -119,6 +118,7 @@ export interface tryOutputConfigDataType {
 export interface ModelConfigDataType {
   key: React.Key;
   url: string;
+  // 接口密钥
   apikey: string;
   // 权重
   weight: string;
@@ -126,9 +126,12 @@ export interface ModelConfigDataType {
 
 // 创建模型弹窗组件
 export interface CreateModelProps {
+  mode?: CreateUpdateModeEnum;
+  id?: number;
+  spaceId?: number;
   open: boolean;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (info: ModelSaveParams) => void;
 }
 
 // 内网模型组件

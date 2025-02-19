@@ -1,27 +1,29 @@
-/**
- * 知识库基础配置接口
- */
 import type {
+  EmbeddingStatusInfo,
   KnowledgeConfigAddParams,
   KnowledgeConfigListParams,
   KnowledgeConfigUpdateParams,
+  KnowledgeDocumentAddParams,
   KnowledgeDocumentInfo,
   KnowledgeDocumentListParams,
   KnowledgeDocumentUpdateParams,
   KnowledgeInfo,
-  KnowledgeDocumentAddParams, KnowledgeRawSegmentListParams, KnowledgeQAUpdateParams, KnowledgeQAListParams,
+  KnowledgeQAAddParams,
+  KnowledgeQAInfo,
+  KnowledgeQAListParams,
+  KnowledgeQASearchParams,
+  KnowledgeQAUpdateParams,
+  KnowledgeRawSegmentAddParams,
+  KnowledgeRawSegmentInfo,
+  KnowledgeRawSegmentListParams,
+  KnowledgeRawSegmentUpdateParams,
 } from '@/types/interfaces/knowledge';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
-import {
-  EmbeddingStatusInfo,
-  KnowledgeQAAddParams,
-  KnowledgeQAInfo,
-  KnowledgeQASearchParams,
-  KnowledgeRawSegmentAddParams,
-  KnowledgeRawSegmentInfo,
-  KnowledgeRawSegmentUpdateParams,
-} from '@/types/interfaces/knowledge';
+
+/**
+ * 知识库基础配置接口
+ */
 
 // 数据更新接口
 export async function apiKnowledgeConfigUpdate(
@@ -271,7 +273,7 @@ export async function apiKnowledgeQADetail(
     method: 'GET',
     params: {
       dataId,
-    }
+    },
   });
 }
 
@@ -283,6 +285,6 @@ export async function apiKnowledgeQADelete(
     method: 'GET',
     params: {
       id,
-    }
+    },
   });
 }

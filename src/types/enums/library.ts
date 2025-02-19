@@ -13,22 +13,6 @@ export enum WorkflowModeEnum {
   Update,
 }
 
-// 插件操作枚举
-export enum PluginModeEnum {
-  // 新建
-  Create,
-  // 更新
-  Update,
-}
-
-// 创建、编辑知识库枚举
-export enum KnowledgeModeEnum {
-  // 创建
-  Create,
-  // 编辑
-  Edit,
-}
-
 // 请求内容格式枚举
 export enum RequestContentFormatEnum {
   No,

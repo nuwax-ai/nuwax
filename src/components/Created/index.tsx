@@ -1,7 +1,10 @@
 import Constant from '@/constants/codes.constants';
 import { ICON_ADJUSTMENT, ICON_SUCCESS } from '@/constants/images.constants';
 import service, { IGetList } from '@/services/created';
-import { PluginAndLibraryEnum } from '@/types/enums/common';
+import {
+  CreateUpdateModeEnum,
+  PluginAndLibraryEnum,
+} from '@/types/enums/common';
 import { WorkflowModeEnum } from '@/types/enums/library';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { getTime } from '@/utils';
@@ -431,13 +434,13 @@ const Created: React.FC<CreatedProp> = ({
         onConfirm={onConfirm}
         onCancel={() => setShowCreate(false)}
         open={showCreate && selected.key === PluginAndLibraryEnum.Plugin}
-        type={WorkflowModeEnum.Create}
+        mode={CreateUpdateModeEnum.Create}
       />
       <CreateKnowledge
         onConfirm={onConfirm}
         onCancel={() => setShowCreate(false)}
         open={showCreate && selected.key === PluginAndLibraryEnum.KnowledgeBase}
-        type={WorkflowModeEnum.Create}
+        mode={CreateUpdateModeEnum.Create}
       />
     </Modal>
   );

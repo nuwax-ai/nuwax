@@ -4,7 +4,7 @@ import PluginPublish from '@/components/PluginPublish';
 import VersionHistory from '@/components/VersionHistory';
 import { PARAMS_TYPE_LIST } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
-import { PluginModeEnum } from '@/types/enums/library';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type {
   InputConfigCloudDataType,
   OutputConfigDataType,
@@ -426,7 +426,7 @@ const SpacePluginCloudTool: React.FC = () => {
         pluginId={'110110'}
         pluginName="测试插件"
         desc={'测试插件的描述信息'}
-        type={PluginModeEnum.Update}
+        mode={CreateUpdateModeEnum.Update}
         onCancel={() => setOpenPlugin(false)}
       />
     </div>
