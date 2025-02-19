@@ -22,7 +22,12 @@ import {
   Switch,
 } from 'antd';
 import React, { useState } from 'react';
-import { cycleOption, InputConfigs, outPutConfigs } from '../params';
+import {
+  cycleOption,
+  InputConfigs,
+  outPutConfigs,
+  variableConfigs,
+} from '../params';
 import { InputAndOut, TreeOutput } from './commonNode';
 import './nodeItem.less';
 // 定义一些公共的数组
@@ -227,33 +232,41 @@ const VariableNode: React.FC<NodeDisposeProps> = ({
     Modified({ ...params, ...newNodeConfig });
   };
 
-  const [value, setValue] = useState<string>('设置变量值');
-
-  const treeData = [{ name: 'msg', key: 'msg', dataType: 'String' }];
+  const options = [
+    { label: '设置变量值', value: 'SET_VARIABLE' },
+    { label: '获取变量值', value: 'GET_VARIABLE' },
+  ];
 
   return (
     <>
       <div className="node-item-style dis-center">
-        <Segmented<string>
-          options={['设置变量值', '获取变量值']}
-          value={value}
-          onChange={setValue}
+        <Segmented
+          options={options}
+          value={params.configType}
+          onChange={(val) => {
+            handleChangeNodeConfig({
+              ...params,
+              configType: val as 'SET_VARIABLE' | 'GET_VARIABLE',
+            });
+          }}
           style={{ marginBottom: '10px' }}
         />
       </div>
       <InputAndOut
-        title={value === '设置变量值' ? '设置变量' : '输出变量'}
-        fieldConfigs={outPutConfigs}
+        title={params.configType === 'SET_VARIABLE' ? '设置变量' : '输出变量'}
+        fieldConfigs={
+          params.configType === 'SET_VARIABLE' ? outPutConfigs : variableConfigs
+        }
         referenceList={referenceList}
         inputItemName="inputArgs"
         handleChangeNodeConfig={handleChangeNodeConfig}
         initialValues={{ inputArgs: initialValues }}
       />
 
-      {outputArgs && (
+      {outputArgs && params.configType === 'SET_VARIABLE' && (
         <div>
           <div className="node-title-style margin-bottom">输出</div>
-          <TreeOutput treeData={treeData} />
+          <TreeOutput treeData={outputArgs} />
         </div>
       )}
     </>
@@ -262,9 +275,10 @@ const VariableNode: React.FC<NodeDisposeProps> = ({
 
 // 定义一个数组链接设置
 export const ArrayLinkSetting: React.FC<{
-  initValue: string;
-  onChange: (value: string) => void;
-}> = ({ initValue, onChange }) => {
+  initValue: string | string[];
+  onChange: (value: string | string[]) => void;
+  multiple?: boolean;
+}> = ({ initValue, onChange, multiple }) => {
   const [options, setOptions] = useState([
     { value: '\\n', label: '换行 (\\n)' },
     { value: '\\t', label: '制表符 (\\t)' },
@@ -279,9 +293,6 @@ export const ArrayLinkSetting: React.FC<{
     value: '',
   });
 
-  const changeValue = (value: string) => {
-    onChange(value);
-  };
   // 添加新选项
   const addItem = (
     e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>,
@@ -293,15 +304,12 @@ export const ArrayLinkSetting: React.FC<{
 
   return (
     <div className="array-link-setting">
-      <p className="node-title-style">数组连接符设置</p>
-      <p>使用以下符号来自动连接数组中的每个项目</p>
-      <p className="array-link-setting-select-label">连接符</p>
-
       <Select
         allowClear
         placeholder={'请选择连接符号'}
-        value={initValue}
-        onChange={changeValue}
+        mode={multiple ? 'multiple' : undefined}
+        value={multiple ? (initValue as string[]) : (initValue as string)}
+        onChange={onChange}
         className="array-link-setting-select"
         dropdownRender={(menu) => (
           <>
@@ -356,34 +364,28 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
   if (params.inputArgs && params.inputArgs.length) {
     initialValues = params.inputArgs;
   }
-
-  const options = [
-    { value: '\\n', label: '换行 (\\n)' },
-    { value: '\\t', label: '制表符 (\\t)' },
-    { value: '.', label: '逗号 (。)' },
-    { value: ',', label: '逗号 (,)' },
-    { value: ';', label: '分号 (;)' },
-    { value: '|', label: '空格 ( )' },
-  ];
-  // 字符串凭借和分割的初始值
-
-  // 输出的初始值
-  // const outputArgs=[]
-  const [value, setValue] = useState<string>('字符串拼接');
-  // const treeData = [];
-
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
   };
 
+  const textTypeOptions = [
+    { label: '字符串拼接', value: 'CONCAT' },
+    { label: '字符串分割', value: 'SPLIT' },
+  ];
+
   return (
     <>
       <div className="node-item-style dis-center">
-        <Segmented<string>
-          options={['字符串拼接', '字符串分隔']}
-          value={value}
-          onChange={setValue}
+        <Segmented
+          options={textTypeOptions}
+          value={params.textHandleType}
+          onChange={(val) => {
+            handleChangeNodeConfig({
+              ...params,
+              textHandleType: val as 'CONCAT' | 'SPLIT',
+            });
+          }}
           style={{ marginBottom: '10px' }}
         />
       </div>
@@ -395,18 +397,23 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
         handleChangeNodeConfig={handleChangeNodeConfig}
         initialValues={{ inputArgs: initialValues }}
       />
-      {value === '字符串拼接' && (
+      {params.textHandleType === 'CONCAT' && (
         <div className="margin-bottom">
           <div className="dis-sb margin-bottom">
             <span className="node-title-style">字符串拼接</span>
             <Popover
               content={
-                <ArrayLinkSetting
-                  initValue={params.textHandleType || ''}
-                  onChange={(value) =>
-                    Modified({ ...params, textHandleType: value })
-                  }
-                />
+                <>
+                  <p className="node-title-style">数组连接符设置</p>
+                  <p>使用以下符号来自动连接数组中的每个项目</p>
+                  <p className="array-link-setting-select-label">连接符</p>
+                  <ArrayLinkSetting
+                    initValue={params.join || ''}
+                    onChange={(value) =>
+                      Modified({ ...params, join: value as string })
+                    }
+                  />
+                </>
               }
               trigger="click"
             >
@@ -420,23 +427,28 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
             style={{ marginBottom: '10px' }}
             onChange={(e) => {
               const newValue = e.target.value; // 直接从事件对象中获取最新值
-              handleChangeNodeConfig({ ...params, content: newValue }); // 使用新值调用handleChangeNodeConfig
+              handleChangeNodeConfig({ ...params, text: newValue }); // 使用新值调用handleChangeNodeConfig
             }}
           />
         </div>
       )}
-      {value === '字符串分隔' && (
+      {params.textHandleType === 'SPLIT' && (
         <>
           <span className="node-title-style">分隔符</span>
-          <Select
-            mode="multiple"
-            placeholder="Please select"
-            defaultValue={params.splits || []}
-            onChange={(value) => Modified({ ...params, splits: value })}
-            style={{ width: '100%' }}
-            options={options}
-          ></Select>
+          <ArrayLinkSetting
+            initValue={params.splits || []}
+            onChange={(value) =>
+              Modified({ ...params, splits: value as string[] | undefined })
+            }
+            multiple
+          />
         </>
+      )}
+      {params.outputArgs && params.configType === 'SET_VARIABLE' && (
+        <div>
+          <div className="node-title-style margin-bottom">输出</div>
+          <TreeOutput treeData={params.outputArgs} />
+        </div>
       )}
     </>
   );
@@ -450,15 +462,6 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
 }) => {
   const [show, setShow] = useState(false);
 
-  let initialValues: InputAndOutConfig[] = [];
-  if (params.inputArgs && params.inputArgs.length) {
-    initialValues = params.inputArgs;
-  }
-  let outputInitialValues: InputAndOutConfig[] = [];
-  if (params.outputArgs && params.outputArgs.length) {
-    outputInitialValues = params.outputArgs;
-  }
-
   // 修改模型的代码
   const changeCode = (code: string) => {
     Modified({ ...params, code });
@@ -467,6 +470,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
   };
+  console.log(params);
   return (
     <>
       <InputAndOut
@@ -474,7 +478,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
         fieldConfigs={outPutConfigs}
         inputItemName="inputArgs"
         handleChangeNodeConfig={handleChangeNodeConfig}
-        initialValues={{ inputArgs: initialValues }}
+        initialValues={{ inputArgs: params.inputArgs || [] }}
         referenceList={referenceList}
       />
       <div className="node-item-style">
@@ -483,7 +487,11 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
           <ExpandAltOutlined onClick={() => setShow(true)} />
         </div>
         <CodeEditor
-          value={params.code}
+          value={
+            params.codeLanguage === 'Python'
+              ? params.codePython
+              : params.codeJavaScript
+          }
           changeCode={changeCode}
           height="180px"
         />
@@ -494,7 +502,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
         handleChangeNodeConfig={handleChangeNodeConfig}
         inputItemName="outputArgs"
         showCopy={true}
-        initialValues={{ outputArgs: outputInitialValues }}
+        initialValues={{ outputArgs: params.outputArgs || [] }}
       />
 
       <Monaco

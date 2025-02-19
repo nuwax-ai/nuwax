@@ -176,6 +176,13 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
             ))}
           </div>
         )}
+        {data.type === 'IntentRecognition' && (
+          <div className="condition-node-content-style">
+            {data.nodeConfig.intentConfigs?.map((item) => (
+              <span key={item.uuid}>{item.intent}</span>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -203,39 +210,19 @@ interface Point {
   y: number;
 }
 
-export const createCurvePath = (sourcePoint: Point, targetPoint: Point) => {
-  const hgap = Math.abs(targetPoint.x - sourcePoint.x);
-  const path = new Path();
-  // 起点
-  path.appendSegment(Path.createSegment('M', sourcePoint.x - 4, sourcePoint.y));
-  // 直线段
-  path.appendSegment(
-    Path.createSegment('L', sourcePoint.x + 12, sourcePoint.y),
-  );
-  // 水平三阶贝塞尔曲线
-  path.appendSegment(
-    Path.createSegment(
-      'C',
-      sourcePoint.x < targetPoint.x
-        ? sourcePoint.x + hgap / 2
-        : sourcePoint.x - hgap / 2,
-      sourcePoint.y,
-      sourcePoint.x < targetPoint.x
-        ? targetPoint.x - hgap / 2
-        : targetPoint.x + hgap / 2,
-      targetPoint.y,
-      targetPoint.x - 6,
-      targetPoint.y,
-    ),
-  );
-  // 计算新的终点，使箭头离连接桩有10px的距离
-  let finalX = targetPoint.x - 16; // 根据之前的路径计算
-  let finalY = targetPoint.y;
-  const directionX = sourcePoint.x < targetPoint.x ? 1 : -1; // 确定方向
-  finalX += directionX * 10; // 在x轴上移动10px
+export const createCurvePath = (s: Point, e: Point) => {
+  const offset = 10;
+  const deltaX = Math.abs(e.x - s.x);
+  const control = Math.floor((deltaX / 3) * 2);
 
-  // 到达目标点前的小段直线，考虑10px的偏移
-  path.appendSegment(Path.createSegment('L', finalX, finalY));
+  const v1 = { x: s.x + offset + control, y: s.y };
+  const v2 = { x: e.x - offset - control, y: e.y };
 
-  return path.serialize();
+  return Path.normalize(
+    `M ${s.x} ${s.y}
+     L ${s.x + offset} ${s.y}
+     C ${v1.x} ${v1.y} ${v2.x} ${v2.y} ${e.x} ${e.y}
+     L ${e.x} ${e.y}
+    `,
+  );
 };

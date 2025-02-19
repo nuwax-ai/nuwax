@@ -122,24 +122,26 @@ export const getEdges = (nodes: ChildNode[]): Edge[] => {
       if (item.type === 'Condition') {
         // 对于条件节点，遍历所有条件分支配置
         return (
-          item.nodeConfig.conditionBranchConfigs?.flatMap((item2, index) => {
+          item.nodeConfig.conditionBranchConfigs?.flatMap((item2) => {
             // 对于每个nextNodeId，创建一个新的边对象
             return (
               item2.nextNodeIds.map((nextNodeId) => ({
-                source: `${item.id}-${index}`, // 使用当前条件分支的索引作为source的一部分
+                source: `${item.id}-${item2.uuid}`, // 使用当前条件分支的索引作为source的一部分
                 target: nextNodeId, // 使用nextNodeId作为target
               })) || []
             );
           }) || []
         );
       } else {
+        console.log(item.nodeConfig);
         // 对于意图识别节点，直接返回单条边
         return (
-          item.nodeConfig.intentConfigs?.flatMap((item2, index) => {
+          item.nodeConfig.intentConfigs?.flatMap((item2) => {
+            if (!item2.nextNodeIds) item2.nextNodeIds = [];
             // 对于每个nextNodeId，创建一个新的边对象
             return (
               item2.nextNodeIds.map((nextNodeId) => ({
-                source: `${item.id}-${index}`, // 使用当前条件分支的索引作为source的一部分
+                source: `${item.id}-${item2.uuid}`, // 使用当前条件分支的索引作为source的一部分
                 target: nextNodeId, // 使用nextNodeId作为target
               })) || []
             );
@@ -171,10 +173,13 @@ export const generatePorts = (data: ChildNode) => {
   const basePortSize = 5; // 设置基础端口大小为5
 
   if (data.type === 'Condition' || data.type === 'IntentRecognition') {
-    const configs = data.nodeConfig?.conditionBranchConfigs || [];
-    outputPorts = configs.map((_, index) => ({
+    const configs =
+      data.nodeConfig?.conditionBranchConfigs ||
+      data.nodeConfig?.intentConfigs ||
+      [];
+    outputPorts = configs.map((item) => ({
       group: 'out',
-      id: `${data.id}-${index}-out`, // 给每个端口一个唯一的名称
+      id: `${data.id}-${item.uuid}-out`, // 给每个端口一个唯一的名称
       zIndex: 99, // 确保连接桩的层级高于边
       attrs: {
         circle: {

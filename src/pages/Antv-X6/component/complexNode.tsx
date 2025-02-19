@@ -1,6 +1,7 @@
 import Created from '@/components/Created';
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import { ModelSelected } from '@/components/ModelSetting';
+import { SkillList } from '@/components/Skill';
 import { PluginAndLibraryEnum } from '@/types/enums/common';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import type { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
@@ -18,7 +19,7 @@ import {
 import React, { useState } from 'react';
 import '../index.less';
 import { InputConfigs, intentionConfigs, outPutConfigs } from '../params';
-import { InputAndOut, Skill } from './commonNode';
+import { InputAndOut } from './commonNode';
 
 // 定义大模型节点
 
@@ -30,14 +31,6 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
 }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
-  let inputInitialValues = {};
-  if (params.inputArgs && params.inputArgs.length) {
-    inputInitialValues = params.inputArgs;
-  }
-  let outputInitialValues = {};
-  if (params.outputArgs && params.outputArgs.length) {
-    outputInitialValues = params.outputArgs;
-  }
 
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
@@ -63,11 +56,6 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     setOpen(true);
   };
 
-  // 修改技能
-  const handleChangeSkill = (item: CreatedNodeItem, type: string) => {
-    console.log(type, item);
-  };
-
   return (
     <div className="model-node-style">
       {/* 模型模块 */}
@@ -84,15 +72,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
         </div>
         {params.skillComponentConfigs &&
           params.skillComponentConfigs.length && (
-            <>
-              {params.skillComponentConfigs.map((item) => (
-                <Skill
-                  params={item}
-                  handleChange={handleChangeSkill}
-                  key={item.typeId}
-                />
-              ))}
-            </>
+            <SkillList params={params} handleChange={handleChangeNodeConfig} />
           )}
         {(!params.skillComponentConfigs ||
           !params.skillComponentConfigs.length) && <Empty />}
@@ -105,7 +85,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           referenceList={referenceList}
           inputItemName="inputArgs"
           handleChangeNodeConfig={handleChangeNodeConfig}
-          initialValues={inputInitialValues}
+          initialValues={{ inputArgs: params.inputArgs || [] }}
         />
       </div>
       {/* 系统提示词 */}
@@ -135,7 +115,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           handleChangeNodeConfig={handleChangeNodeConfig}
           inputItemName="outputArgs"
           showCopy={true}
-          initialValues={outputInitialValues}
+          initialValues={{ outputArgs: params.outputArgs || [] }}
         />
       </div>
 
@@ -156,15 +136,11 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
   Modified,
   referenceList,
 }) => {
-  let inputInitialValues = {};
+  let initialValues: InputAndOutConfig[] = [];
   if (params.inputArgs && params.inputArgs.length) {
-    inputInitialValues = params.inputArgs;
+    initialValues = params.inputArgs;
   }
 
-  let outputInitialValues = {};
-  if (params.outputArgs && params.outputArgs.length) {
-    outputInitialValues = params.outputArgs;
-  }
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -182,7 +158,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
           referenceList={referenceList}
           inputItemName="inputArgs"
           handleChangeNodeConfig={handleChangeNodeConfig}
-          initialValues={inputInitialValues}
+          initialValues={{ inputArgs: initialValues }}
         />
       </div>
       {/* 意图匹配 */}
@@ -191,9 +167,9 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
           title="意图匹配"
           fieldConfigs={intentionConfigs}
           handleChangeNodeConfig={handleChangeNodeConfig}
-          inputItemName="outputArgs"
+          inputItemName="intentConfigs"
           initialValues={{
-            inputItems: [outputInitialValues],
+            intentConfigs: params.intentConfigs || [],
           }}
         />
       </div>
@@ -217,15 +193,6 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
   Modified,
   referenceList,
 }) => {
-  let inputInitialValues: InputAndOutConfig[] = [];
-  if (params.inputArgs && params.inputArgs.length) {
-    inputInitialValues = params.inputArgs;
-  }
-  let outputInitialValues: InputAndOutConfig[] = [];
-  if (params.outputArgs && params.outputArgs.length) {
-    outputInitialValues = params.outputArgs;
-  }
-
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -242,14 +209,16 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
           handleChangeNodeConfig={handleChangeNodeConfig}
           referenceList={referenceList}
           inputItemName="inputArgs"
-          initialValues={{ inputArgs: inputInitialValues }}
+          initialValues={{ inputArgs: params.inputArgs || [] }}
         />
       </div>
       {/* 提问问题 */}
       <ExpandableInputTextarea
         title="提问问题"
         value={params.question || ''}
-        onChange={(value: string) => Modified({ ...params, question: value })}
+        onChange={(value: string) =>
+          handleChangeNodeConfig({ ...params, question: value })
+        }
         onExpand
         placeholder="可使用{{变量名}}的方式引用输入参数中的变量"
       />
@@ -276,7 +245,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
             handleChangeNodeConfig={handleChangeNodeConfig}
             inputItemName="outputArgs"
             showCopy={true}
-            initialValues={outputInitialValues}
+            initialValues={{ outputArgs: params.outputArgs || [] }}
           />
         </div>
       )}
@@ -304,7 +273,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
           </div>
           {params.options?.map((item) => (
             <div key={item.index} className="dis-sb">
-              <span>{item.index}</span>
+              <span className="mr-12">{item.index}</span>
               <Input value={item.content} onChange={() => {}}></Input>
               <DeleteOutlined
                 onClick={() =>

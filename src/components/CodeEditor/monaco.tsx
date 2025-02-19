@@ -38,8 +38,8 @@ const Monaco: React.FC<MonacoProps> = ({ params, Modified, isShow, close }) => {
                 value={params.codeLanguage}
                 style={{ width: 120 }}
                 options={[
-                  { value: 'javascript', label: 'JavaScript' },
-                  { value: 'python', label: 'Python' },
+                  { value: 'JavaScript', label: 'JavaScript' },
+                  { value: 'Python', label: 'Python' },
                 ]}
                 placeholder="请选择语言"
                 onChange={(value) => {
@@ -62,10 +62,18 @@ const Monaco: React.FC<MonacoProps> = ({ params, Modified, isShow, close }) => {
           <div className="monaco-editor-content">
             <CodeEditor
               height={'790px'}
-              value={params.code}
-              changeCode={(value) =>
-                handleChangeNodeConfig({ ...params, code: value })
+              value={
+                params.codeLanguage === 'Python'
+                  ? params.codePython
+                  : params.codeJavaScript
               }
+              changeCode={(value) => {
+                if (params.codeLanguage === 'Python') {
+                  handleChangeNodeConfig({ ...params, codePython: value });
+                } else {
+                  handleChangeNodeConfig({ ...params, codeJavaScript: value });
+                }
+              }}
             />
           </div>
         </div>

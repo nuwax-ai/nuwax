@@ -5,31 +5,14 @@ import {
   KeyValuePairs,
   MultiSelectWithCheckboxProps,
   NodeRenderProps,
-  SkillProps,
   TreeNodeData,
   TreeOutputProps,
 } from '@/types/interfaces/workflow';
-import {
-  DeleteOutlined,
-  DownOutlined,
-  InfoCircleOutlined,
-  PlusOutlined,
-  SettingOutlined,
-} from '@ant-design/icons';
-import {
-  Button,
-  Checkbox,
-  Form,
-  Modal,
-  Popover,
-  Select,
-  Tag,
-  Tree,
-} from 'antd';
+import { DownOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Checkbox, Form, Select, Tag, Tree } from 'antd';
 import React, { useEffect } from 'react';
 import '../index.less';
 import './commonNode.less';
-
 // 定义通用的输入输出
 export const InputAndOut: React.FC<NodeRenderProps> = ({
   title,
@@ -46,7 +29,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   // 根据传递的fieldConfigs生成表单项
   const formItem = fieldConfigs.reduce(
     (acc: DefaultObjectType, field: FieldConfig) => {
-      acc[field.name] = '';
+      acc[field.name] = null;
       return acc;
     },
     {},
@@ -132,37 +115,13 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   );
 };
 
-// 定义通用的技能显示
-export const Skill: React.FC<SkillProps> = ({ params, handleChange }) => {
-  return (
-    <div className="skill-item-style dis-left">
-      <img src={params.icon} alt="" className="skill-item-icon" />
-      <div className="skill-item-content-style">
-        <div className="skill-item-title-style">{params.name}</div>
-        <div className="skill-item-desc-style">{params.description}</div>
-      </div>
-      <div className="skill-item-dispose-style">
-        <Popover content={params.description} trigger="hover">
-          <InfoCircleOutlined />
-        </Popover>
-        <Popover content={'编辑参数'} trigger="hover">
-          <SettingOutlined />
-        </Popover>
-        <Popover content={'移除'} trigger="hover">
-          <DeleteOutlined onClick={() => handleChange(params, 'delete')} />
-        </Popover>
-      </div>
-    </div>
-  );
-};
-
 // 定义树结构的输出
 export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
   const { TreeNode } = Tree;
   // 定义一个函数来递归生成带有标签的树节点
   const renderTreeNode = (data: TreeNodeData[]) => {
     return data.map((item) => {
-      if (item.children) {
+      if (item.subArgs) {
         return (
           <TreeNode
             title={
@@ -173,7 +132,7 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
             }
             key={item.name}
           >
-            {renderTreeNode(item.children)}
+            {renderTreeNode(item.subArgs)}
           </TreeNode>
         );
       }
@@ -242,35 +201,5 @@ export const MultiSelectWithCheckbox: React.FC<
     >
       {options.map(renderOption)}
     </Select>
-  );
-};
-
-// 定义技能列表的设置参数的弹窗
-export const SkillDispose: React.FC<SkillDisposeProps> = ({
-  open,
-  onCancel,
-}) => {
-  return (
-    <Modal
-      keyboard={false} //是否能使用sec关闭
-      maskClosable={false} //点击蒙版层是否可以关闭
-      open={open}
-      footer={null}
-      centered
-      title={'设置'}
-      onCancel={() => onCancel()}
-      className="created-modal-style"
-      width={800}
-    >
-      <div className="skill-dispose-container">
-        {/* 左侧部分 */}
-        <div className="skill-dispose-left">
-          <p>配置输入参数</p>
-          <p>配置输出参数</p>
-        </div>
-        {/* 右侧部分 */}
-        <div className="skill-dispose-right"></div>
-      </div>
-    </Modal>
   );
 };

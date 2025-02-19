@@ -260,9 +260,19 @@ const initGraph = ({
         const _index: string = sourcePort.split('-')[1];
         // 修改当前的数据
         const newNodeParams = JSON.parse(JSON.stringify(sourceNode));
-        newNodeParams.nodeConfig.conditionBranchConfigs[
-          _index
-        ].nextNodeIds.push(targetNodeId);
+        if (sourceNode.type === 'Condition') {
+          for (let item of newNodeParams.nodeConfig.conditionBranchConfigs) {
+            if (_index === item.uuid) {
+              item.nextNodeIds.push(targetNodeId);
+            }
+          }
+        } else {
+          for (let item of newNodeParams.nodeConfig.intentConfigs) {
+            if (_index === item.uuid) {
+              item.nextNodeIds.push(targetNodeId);
+            }
+          }
+        }
         changeCondition(newNodeParams);
         // 通知父组件更新节点信息
       } else {

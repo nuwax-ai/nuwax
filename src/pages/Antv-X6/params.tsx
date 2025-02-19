@@ -397,12 +397,12 @@ export const outPutConfigs = [
 // 意图识别的参数配置
 export const intentionConfigs = [
   {
-    name: 'paramsValue',
-    placeholder: '输入或引用参数值',
+    name: 'intent',
+    placeholder: '输入参数值',
     label: '',
-    rules: [{ required: true, message: '请输入用户的意图描述' }],
+    rules: [{ required: true, message: '请输入用户意图的描述' }],
     component: Input,
-    width: 140,
+    width: 296,
   },
 ];
 
@@ -421,6 +421,25 @@ export const modelConfigs = [
     label: '变量值',
     rules: [{ required: true, message: '请输入变量值' }],
     component: InputOrReference,
+    width: 120,
+  },
+];
+
+export const variableConfigs = [
+  {
+    name: 'name',
+    placeholder: '参数名',
+    label: '参数名',
+    rules: [{ required: true, message: '请输入参数名' }],
+    component: Input,
+    width: 140,
+  },
+  {
+    name: 'bindValue',
+    placeholder: '输入变量名',
+    label: '变量名',
+    rules: [{ required: true, message: '请输入变量名' }],
+    component: Input,
     width: 120,
   },
 ];
