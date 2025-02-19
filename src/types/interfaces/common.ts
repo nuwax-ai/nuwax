@@ -5,6 +5,7 @@ import type {
   AgentConfigInfo,
   CreatorInfo,
 } from '@/types/interfaces/agent';
+import { InputAndOutConfig } from '@/types/interfaces/node';
 import type {
   ConfigProviderProps,
   FormInstance,
@@ -265,23 +266,25 @@ export interface CreatedNodeItem {
   // 简介
   description: string;
   // 创建时间
-  created: string;
+  created?: string;
   // 修改时间
-  modified: string;
+  modified?: string;
   // 备注
-  remark: string;
+  remark?: string;
   // 统计信息
   statistics: Statistics | null;
   // 当前id
-  spaceId: number;
+  spaceId?: number;
   // 正在使用的
   targetId: number;
   targetType: string;
   // 发布人员信息
-  publishUser: CreatorInfo;
-  collect: boolean;
+  publishUser?: CreatorInfo;
+  collect?: boolean;
   type?: string;
   typeId?: string | number;
+  inputArgBindConfigs?: InputAndOutConfig[];
+  outputArgBindConfigs?: InputAndOutConfig[];
 }
 
 // 创建、编辑智能体

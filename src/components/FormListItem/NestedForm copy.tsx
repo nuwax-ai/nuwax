@@ -221,7 +221,6 @@ const TreeForm: React.FC<TreeFormProps> = ({
         fieldNames={{ title: 'name', key: 'key', children: 'subArgs' }}
         treeData={inputArgs}
         titleRender={(nodeData) => {
-          console.log(nodeData);
           return (
             <TitleRender
               inputArgs={nodeData}

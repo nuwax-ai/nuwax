@@ -38,8 +38,8 @@ const Monaco: React.FC<MonacoProps> = ({ params, Modified, isShow, close }) => {
                 value={params.codeLanguage}
                 style={{ width: 120 }}
                 options={[
-                  { value: 'javascript', label: 'JavaScript' },
-                  { value: 'python', label: 'Python' },
+                  { value: 'JavaScript', label: 'JavaScript' },
+                  { value: 'Python', label: 'Python' },
                 ]}
                 placeholder="请选择语言"
                 onChange={(value) => {

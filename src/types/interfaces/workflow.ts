@@ -1,6 +1,7 @@
 import { NodePreviousAndArgMap } from '@/types/interfaces/node';
 // 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
 import type { FieldConfig } from '@/components/FormListItem/type';
+import { DataTypeEnum } from '@/types/enums/common';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import type {
   GroupModelItem,
@@ -172,8 +173,15 @@ export interface NodeRenderProps {
 
 // 定义技能
 export interface SkillProps {
+  params: NodeConfig;
+  handleChange: (item: NodeConfig) => void;
+}
+
+export interface SkillDisposeProps {
+  open: boolean;
+  onCancel: () => void;
   params: CreatedNodeItem;
-  handleChange: (item: CreatedNodeItem, type: string) => void;
+  onConfirm: (val: CreatedNodeItem) => void;
 }
 
 // 定义分组的模型列表
@@ -204,8 +212,8 @@ export interface ModelSelectProp {
 // 定义树节点的数据类型
 export interface TreeNodeData {
   name: string;
-  dataType: string; // 可选的标签属性
-  children?: TreeNodeData[]; // 子节点数组，可选
+  dataType: DataTypeEnum | null; // 可选的标签属性
+  subArgs?: TreeNodeData[]; // 子节点数组，可选
 }
 
 // 定义树结构的输出

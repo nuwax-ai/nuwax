@@ -20,6 +20,10 @@ export interface InputAndOutConfig {
   subArgs?: InputAndOutConfig[];
   // 参数key，唯一标识
   key?: string | null;
+  // 是否开启
+  enable?: boolean;
+  // 输入类型
+  inputType?: string;
 }
 
 interface ConditionArgs {
@@ -38,7 +42,7 @@ export interface ConditionBranchConfigs {
 
 interface IntentConfigs {
   nextNodeIds: number[];
-  description: string;
+  intent: string;
   uuid?: number | string;
 }
 
@@ -89,19 +93,24 @@ export interface NodeConfig {
   pluginId?: number;
   // 循环类型
   loopType?: string | null;
-
+  // 变量类型
+  configType?: 'SET_VARIABLE' | 'GET_VARIABLE';
+  // 文本处理的类型
+  textHandleType?: 'CONCAT' | 'SPLIT';
   intentConfigs?: IntentConfigs[];
   // 问答类型
   answers?: number;
-  // 处理方式
-  textHandleType?: string;
   // 文本
   text?: string;
+  // 连接符
+  join?: string;
   // 分割符
   splits?: string[];
   content?: string;
   code?: string;
   codeLanguage?: 'Python' | 'JavaScript';
+  codeJavaScript?: string;
+  codePython?: string;
   // http 节点
   // 请求方法
   method?: string;

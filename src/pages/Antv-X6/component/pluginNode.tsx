@@ -1,55 +1,69 @@
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import { InputOrReference } from '@/components/FormListItem/InputOrReference';
 import type {
+  InputAndOutConfig,
   NodeConfig,
   NodePreviousAndArgMap,
 } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Empty, Form, Popover, Tag } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { InputConfigs, outPutConfigs } from '../params';
 import { InputAndOut, TreeOutput } from './commonNode';
 import './pluginNode.less';
 interface InputListProps {
-  inputList: {
-    name: string;
-    dataType: string;
-    description: string;
-    bindValue: string;
-  }[];
+  inputList: InputAndOutConfig[];
   referenceList: NodePreviousAndArgMap;
   title: string;
-  initialValues?: object;
-  onChange: (val: string) => void;
+  inputItemName: string;
+  onChange: (val: InputAndOutConfig[]) => void;
 }
 // 根据输入的list遍历创建输入框
+
 const InputList: React.FC<InputListProps> = ({
   inputList,
   referenceList,
   title,
-  initialValues,
+  inputItemName,
   onChange,
 }) => {
   const [form] = Form.useForm();
 
-  // 提交表单
+  // 初始化表单值
+  useEffect(() => {
+    const initialValues = inputList.reduce((acc, item) => {
+      acc[`${inputItemName}.${item.key}.bindValue`] = item.bindValue;
+      return acc;
+    }, {} as { [key: string]: any });
+
+    form.setFieldsValue(initialValues);
+  }, [inputList, form, inputItemName]);
+
+  // 表单提交
   const submitForm = () => {
     const values = form.getFieldsValue();
-    onChange(values);
+    const updatedInputList = inputList.map((item) => ({
+      ...item,
+      bindValue:
+        values[inputItemName]?.[item.key as string]?.bindValue !== undefined
+          ? values[inputItemName][item.key as string].bindValue
+          : item.bindValue,
+    }));
+    onChange(updatedInputList);
   };
 
   return (
-    <div className="border-bottom">
+    <div className="border-bottom pb-12">
       <span className="node-title-style">{title}</span>
-      <Form form={form} onFinish={submitForm} initialValues={initialValues}>
-        <div className="dis-left margin-bottom-10">
+      <Form form={form} onValuesChange={() => submitForm()}>
+        <div className="dis-left ">
           <span className="node-form-label-style">参数名</span>
           <span>参数值</span>
         </div>
-        {inputList.map((item, index) => (
-          <Form.Item key={index} name={item.name}>
-            <div key={index} className="input-item-style">
+        {inputList.map((item) => (
+          <Form.Item key={item.key} noStyle>
+            <div className="input-item-style">
               <div className="dis-left node-form-label-style">
                 <span className="margin-right-6">{item.name}</span>
                 <Popover placement="right" content={item.description}>
@@ -57,13 +71,16 @@ const InputList: React.FC<InputListProps> = ({
                 </Popover>
                 <Tag>{item.dataType}</Tag>
               </div>
-              <div>
+              <Form.Item
+                name={[inputItemName, item.key as string, 'bindValue']}
+                noStyle
+              >
                 <InputOrReference
                   value={item.bindValue}
                   onChange={submitForm}
                   referenceList={referenceList}
                 />
-              </div>
+              </Form.Item>
             </div>
           </Form.Item>
         ))}
@@ -78,28 +95,25 @@ const PluginInNode: React.FC<NodeDisposeProps> = ({
   Modified,
   referenceList,
 }) => {
-  // let initialValues={}
-  // if (params.inputArgs && params.inputArgs.length) {
-  //   initialValues = params.inputArgs;
-  // }
   //  获取输入的列表
 
-  const changeInputList = (val: string) => {
-    console.log('changeInputList', val);
-    Modified({ ...params });
+  const changeInputList = (values: InputAndOutConfig[]) => {
+    console.log('changeInputList', values);
+    Modified({ ...params, inputArgs: values });
   };
 
   return (
-    <div className="node-style">
+    <>
       <InputList
         title={'输入'}
         inputList={params.inputArgs || []}
         onChange={changeInputList}
         referenceList={referenceList}
+        inputItemName={'inputArgs'}
       />
       <p className="node-title-style mt-16">{'输出'}</p>
       <TreeOutput treeData={params.outputArgs || []} />
-    </div>
+    </>
   );
 };
 

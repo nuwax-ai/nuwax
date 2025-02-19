@@ -43,9 +43,9 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
   };
 
   // 获取当前行的数据类型
-  const dataType = form.getFieldValue([field.name, 'dataType']) as string;
+  // const dataType = form.getFieldValue([field.name, 'dataType']) as string;
 
-  console.log(dataType);
+  // console.log(dataType);
 
   return (
     <div>

@@ -245,21 +245,21 @@ const Workflow: React.FC = () => {
       sourceNode.nextNodeIds === null
         ? []
         : (sourceNode.nextNodeIds as number[]);
-    // 组装参数
-    const _params = {
-      nodeId: Number(sourceNode.id),
-      integers: _nextNodeIds,
+    let _params = {
+      nodeId: _nextNodeIds,
+      sourceId: Number(sourceNode.id),
     };
     // 根据类型判断，如果type是created，那么就添加边，如果type是deleted，那么就删除边
     if (type === 'created') {
-      // 如果已经有了这一条边，那么就不再创建
-      if (_params.integers.includes(Number(targetId))) {
-        graphRef.current.deleteEdge(id);
+      // 如果有这条边了
+      if (_nextNodeIds.includes(Number(targetId))) {
         return;
+      } else {
+        // 组装参数
+        _params.nodeId.push(Number(targetId));
       }
-      _params.integers = [..._nextNodeIds, Number(targetId)];
     } else {
-      _params.integers = _nextNodeIds?.filter(
+      _params.nodeId = _params.nodeId.filter(
         (item) => item !== Number(targetId),
       );
     }

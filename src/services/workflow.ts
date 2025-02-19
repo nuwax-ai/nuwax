@@ -30,8 +30,8 @@ interface IAddNode {
 }
 
 interface IAddEdge {
-  nodeId: number | string;
-  integers: number[];
+  nodeId: number[];
+  sourceId: number | string;
 }
 
 // 获取工作流的详细信息
@@ -86,9 +86,9 @@ export async function deleteNode(
 
 // 添加连线
 export async function addEdge(data: IAddEdge): Promise<RequestResponse<null>> {
-  return request(`/api/workflow/node/${data.nodeId}/nextIds/update`, {
+  return request(`/api/workflow/node/${data.sourceId}/nextIds/update`, {
     method: 'POST',
-    data,
+    data: data.nodeId,
   });
 }
 
