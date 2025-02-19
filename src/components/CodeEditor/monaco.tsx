@@ -62,10 +62,18 @@ const Monaco: React.FC<MonacoProps> = ({ params, Modified, isShow, close }) => {
           <div className="monaco-editor-content">
             <CodeEditor
               height={'790px'}
-              value={params.code}
-              changeCode={(value) =>
-                handleChangeNodeConfig({ ...params, code: value })
+              value={
+                params.codeLanguage === 'Python'
+                  ? params.codePython
+                  : params.codeJavaScript
               }
+              changeCode={(value) => {
+                if (params.codeLanguage === 'Python') {
+                  handleChangeNodeConfig({ ...params, codePython: value });
+                } else {
+                  handleChangeNodeConfig({ ...params, codeJavaScript: value });
+                }
+              }}
             />
           </div>
         </div>

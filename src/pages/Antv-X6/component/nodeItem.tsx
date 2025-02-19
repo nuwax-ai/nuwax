@@ -462,15 +462,6 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
 }) => {
   const [show, setShow] = useState(false);
 
-  let initialValues: InputAndOutConfig[] = [];
-  if (params.inputArgs && params.inputArgs.length) {
-    initialValues = params.inputArgs;
-  }
-  let outputInitialValues: InputAndOutConfig[] = [];
-  if (params.outputArgs && params.outputArgs.length) {
-    outputInitialValues = params.outputArgs;
-  }
-
   // 修改模型的代码
   const changeCode = (code: string) => {
     Modified({ ...params, code });
@@ -479,6 +470,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
   };
+  console.log(params);
   return (
     <>
       <InputAndOut
@@ -486,7 +478,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
         fieldConfigs={outPutConfigs}
         inputItemName="inputArgs"
         handleChangeNodeConfig={handleChangeNodeConfig}
-        initialValues={{ inputArgs: initialValues }}
+        initialValues={{ inputArgs: params.inputArgs || [] }}
         referenceList={referenceList}
       />
       <div className="node-item-style">
@@ -495,7 +487,11 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
           <ExpandAltOutlined onClick={() => setShow(true)} />
         </div>
         <CodeEditor
-          value={params.code}
+          value={
+            params.codeLanguage === 'Python'
+              ? params.codePython
+              : params.codeJavaScript
+          }
           changeCode={changeCode}
           height="180px"
         />
@@ -506,7 +502,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
         handleChangeNodeConfig={handleChangeNodeConfig}
         inputItemName="outputArgs"
         showCopy={true}
-        initialValues={{ outputArgs: outputInitialValues }}
+        initialValues={{ outputArgs: params.outputArgs || [] }}
       />
 
       <Monaco
