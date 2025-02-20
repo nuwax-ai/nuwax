@@ -138,12 +138,14 @@ export interface RenderItemProps {
   onRemove: () => void;
   // 当前渲染的详细信息
   fieldConfigs: FieldConfig[];
-  // 当前行的索引
-  rowIndex: number;
   // 父组件传递下来的form
   form: FormInstance;
+  fieldName: (string | number)[];
   // 当前值改变的时候，通知父组件，重新获取值
   onChange: () => void;
+  referenceList: NodePreviousAndArgMap;
+  //   预显示的值，(通常用于二次编辑的时候)
+  initialValues?: object;
   // 是否渲染复选框
   showCheckbox?: boolean;
   // 是否显示复制按钮

@@ -205,11 +205,11 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
                 strokeWidth: 1,
               },
             },
-
             zIndex: 1,
           };
         });
-
+        console.log(edges);
+        console.log(nodes);
         graphRef.current.fromJSON({
           nodes,
           edges,

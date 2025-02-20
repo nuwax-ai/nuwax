@@ -4,214 +4,208 @@ import { DataTypeEnum } from '@/types/enums/common';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import {
   DeleteOutlined,
-  DownOutlined,
   FileDoneOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
 import { Button, Cascader, Checkbox, Input, Popover, Tree } from 'antd';
-import React, { useEffect, useState } from 'react';
-import './index.less';
+import React, { useEffect, useRef, useState } from 'react';
 import { TreeFormProps } from './type';
 
-interface TreeInputAndOutConfig extends InputAndOutConfig {
-  id: string; // 替换 key 为 id
-  subArgs: TreeInputAndOutConfig[];
+interface TreeNodeConfig extends InputAndOutConfig {
+  key: string;
+  subArgs?: TreeNodeConfig[];
 }
-
-const TitleRender = ({
-  inputArgs,
-  handleOnchange,
-  handleDelete,
-}: {
-  inputArgs: TreeInputAndOutConfig;
-  handleOnchange: (inputArgs: TreeInputAndOutConfig) => void;
-  handleDelete: (inputArgs: TreeInputAndOutConfig) => void;
+const CustomTree: React.FC<TreeFormProps> = ({
+  params,
+  handleChangeNodeConfig,
+  title,
 }) => {
-  return (
-    <>
+  // 状态初始化（新增初始化逻辑）
+  const [treeData, setTreeData] = useState<TreeNodeConfig[]>(
+    (params.inputArgs as TreeNodeConfig[]) || [],
+  );
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+
+  // 保持最新 params 引用（新增 ref 逻辑）
+  const paramsRef = useRef(params);
+  useEffect(() => {
+    paramsRef.current = params;
+  }, [params]);
+
+  // 同步父组件参数变化（新增同步逻辑）
+  useEffect(() => {
+    if (!treeData.length && params.inputArgs) {
+      setTreeData((params.inputArgs as TreeNodeConfig[]) || []);
+    }
+  }, [params.inputArgs]);
+
+  // 递归计算节点深度
+  const getNodeDepth = (
+    data: TreeNodeConfig[],
+    key: string,
+    depth = 1,
+  ): number => {
+    for (const node of data) {
+      if (node.key === key) return depth;
+      if (node.subArgs) {
+        const found = getNodeDepth(node.subArgs, key, depth + 1);
+        if (found) return found;
+      }
+    }
+    return 0;
+  };
+
+  // 添加根节点
+  const addRootNode = () => {
+    const newNode: TreeNodeConfig = {
+      key: `node-${Date.now()}`,
+      name: '',
+      description: '',
+      dataType: null,
+      require: false,
+      systemVariable: false,
+      bindValueType: null,
+      bindValue: '',
+    };
+    setTreeData([...treeData, newNode]);
+    handleChangeNodeConfig({ ...params, inputArgs: [...treeData, newNode] });
+  };
+
+  // 更新节点字段
+  const updateNodeField = (key: string, field: string, value: any) => {
+    const updateRecursive = (data: TreeNodeConfig[]): TreeNodeConfig[] =>
+      data.map((node) => {
+        if (node.key === key) {
+          return { ...node, [field]: value };
+        }
+        if (node.subArgs) {
+          return { ...node, subArgs: updateRecursive(node.subArgs) };
+        }
+        return node;
+      });
+
+    setTreeData(updateRecursive(treeData));
+    handleChangeNodeConfig({ ...params, inputArgs: updateRecursive(treeData) });
+  };
+
+  // 添加子节点
+  const addChildNode = (parentKey: string) => {
+    const depth = getNodeDepth(treeData, parentKey);
+    if (depth >= 4) return;
+
+    const newNode: TreeNodeConfig = {
+      key: `node-${Date.now()}`,
+      name: '',
+      description: null,
+      dataType: null,
+      require: false,
+      systemVariable: false,
+      bindValueType: null,
+      bindValue: '',
+    };
+
+    const updateRecursive = (data: TreeNodeConfig[]): TreeNodeConfig[] =>
+      data.map((node) => {
+        if (node.key === parentKey) {
+          return {
+            ...node,
+            subArgs: [...(node.subArgs || []), newNode],
+          };
+        }
+        if (node.subArgs) {
+          return { ...node, subArgs: updateRecursive(node.subArgs) };
+        }
+        return node;
+      });
+
+    setTreeData(updateRecursive(treeData));
+    handleChangeNodeConfig({ ...params, inputArgs: updateRecursive(treeData) });
+  };
+
+  // 删除节点
+  const deleteNode = (key: string) => {
+    const filterRecursive = (data: TreeNodeConfig[]): TreeNodeConfig[] =>
+      data.filter((node) => {
+        if (node.key === key) return false;
+        if (node.subArgs) node.subArgs = filterRecursive(node.subArgs);
+        return true;
+      });
+
+    setTreeData(filterRecursive(treeData));
+    handleChangeNodeConfig({ ...params, inputArgs: filterRecursive(treeData) });
+  };
+
+  // 自定义节点渲染
+  const renderTitle = (nodeData: TreeNodeConfig) => {
+    const canAddChild = [
+      DataTypeEnum.Object,
+      DataTypeEnum.Array_Object,
+    ].includes(nodeData.dataType!);
+
+    return (
       <div className="dis-left">
         <Input
-          className="flex-1 tree-form-name"
-          value={inputArgs.name}
+          value={nodeData.name}
           onChange={(e) =>
-            handleOnchange({ ...inputArgs, name: e.target.value })
+            updateNodeField(nodeData.key!, 'name', e.target.value)
           }
-          disabled={inputArgs.systemVariable}
+          className="flex-1 tree-form-name"
+          disabled={nodeData.systemVariable}
         />
         <Cascader
+          allowClear={false}
           options={dataTypes}
           style={{ width: 90 }}
+          value={nodeData.dataType ? [nodeData.dataType] : undefined}
+          onChange={(value) =>
+            updateNodeField(nodeData.key!, 'dataType', value[0])
+          }
           className="tree-form-name"
-          value={
-            typeof inputArgs.dataType === 'string'
-              ? [inputArgs.dataType]
-              : inputArgs.dataType
-          }
-          onChange={(e: string[]) =>
-            handleOnchange({
-              ...inputArgs,
-              dataType: (e[e.length - 1] as DataTypeEnum | null) || null,
-            })
-          }
-          disabled={inputArgs.systemVariable}
+          disabled={nodeData.systemVariable}
         />
+
         <div className="dis-left" style={{ width: 70 }}>
           <Popover
             content={
               <Input.TextArea
-                value={inputArgs.description}
+                value={nodeData.description || ''}
                 onChange={(e) =>
-                  handleOnchange({
-                    ...inputArgs,
-                    description: e.target.value,
-                  })
+                  updateNodeField(nodeData.key!, 'description', e.target.value)
                 }
-                placeholder="请输入描述"
+                rows={3}
               />
             }
             trigger="click"
           >
             <FileDoneOutlined className="margin-right cursor-pointer" />
           </Popover>
+
           <Checkbox
+            checked={nodeData.require}
+            onChange={(e) =>
+              updateNodeField(nodeData.key!, 'require', e.target.checked)
+            }
             className="margin-right"
-            checked={inputArgs.require}
-            onChange={(e) => {
-              console.log(e);
-              handleOnchange({
-                ...inputArgs,
-                require: e.target.checked,
-              });
-            }}
           />
-          {(inputArgs.dataType === DataTypeEnum.Object ||
-            inputArgs.dataType === DataTypeEnum.Array_Object) && (
+
+          {canAddChild && (
             <ICON_ASSOCIATION
+              onClick={() => addChildNode(nodeData.key!)}
               className="cursor-pointer margin-right"
-              onClick={() => {
-                const newSubArgs = [
-                  ...(inputArgs.subArgs || []),
-                  {
-                    name: '',
-                    dataType: null,
-                    bindValue: '',
-                    id: `${Date.now()}`, // 使用时间戳作为唯一 id
-                    description: '',
-                    require: false,
-                    systemVariable: false,
-                    bindValueType: '',
-                    subArgs: [],
-                  },
-                ];
-                handleOnchange({
-                  ...inputArgs,
-                  subArgs: newSubArgs,
-                });
-              }}
             />
           )}
+
           <DeleteOutlined
             className="cursor-pointer"
-            onClick={() => handleDelete(inputArgs)}
+            onClick={() => deleteNode(nodeData.key!)}
           />
         </div>
       </div>
-    </>
-  );
-};
-
-const TreeForm: React.FC<TreeFormProps> = ({
-  params,
-  handleChangeNodeConfig,
-  title,
-}) => {
-  const [inputArgs, setInputArgs] = useState<TreeInputAndOutConfig[]>(
-    params.inputArgs || [],
-  );
-
-  // 制作一个函数，便利 inputArgs，如果存在 subArgs，递归遍历赋予 id
-  const updateId = (arr: InputAndOutConfig[]) => {
-    arr.forEach((item) => {
-      if (item.subArgs && item.subArgs.length > 0) {
-        updateId(item.subArgs || []);
-      }
-      item.id = `${Date.now()}`; // 使用 id 替代 key
-    });
-    return arr;
-  };
-
-  const updateParams = () => {
-    handleChangeNodeConfig({
-      ...params,
-      inputArgs,
-    });
-  };
-
-  useEffect(() => {
-    // 当 params.inputArgs 变化时更新本地状态
-    const _newArr = updateId(params.inputArgs || []);
-    if (!inputArgs.length) {
-      setInputArgs(_newArr);
-    }
-  }, [params.inputArgs]);
-
-  function addNodeItem() {
-    const newNode: TreeInputAndOutConfig = {
-      name: '',
-      dataType: null,
-      bindValue: '',
-      id: `${Date.now()}`, // 使用时间戳作为唯一 id
-      description: '',
-      require: false,
-      systemVariable: false,
-      bindValueType: '',
-      subArgs: [],
-    };
-    setInputArgs((prev) => [...prev, newNode]);
-  }
-
-  // 修改后的递归更新逻辑
-  const handleOnchange = (modifiedData: TreeInputAndOutConfig) => {
-    const recursiveUpdate = (
-      items: TreeInputAndOutConfig[],
-    ): TreeInputAndOutConfig[] =>
-      items.map((item) => {
-        if (item.id === modifiedData.id) {
-          return { ...item, ...modifiedData };
-        }
-        if (item.subArgs?.length) {
-          return {
-            ...item,
-            subArgs: recursiveUpdate(item.subArgs),
-          };
-        }
-        return item;
-      });
-
-    setInputArgs((prev) => recursiveUpdate(prev));
-    updateParams();
-  };
-
-  // 增强版的删除逻辑
-  const handleDelete = (targetId: string) => {
-    const recursiveDelete = (
-      items: TreeInputAndOutConfig[],
-    ): TreeInputAndOutConfig[] =>
-      items.filter((item) => {
-        if (item.id === targetId) return false;
-        if (item.subArgs?.length) {
-          item.subArgs = recursiveDelete(item.subArgs);
-        }
-        return true;
-      });
-
-    setInputArgs((prev) => recursiveDelete(prev));
-    updateParams();
+    );
   };
 
   return (
-    <>
-      {/* 标题和按钮部分保持不变 */}
+    <div>
       <div className="dis-sb margin-bottom">
         <span className="node-title-style">
           <span>{title}</span>
@@ -219,32 +213,20 @@ const TreeForm: React.FC<TreeFormProps> = ({
         <Button
           icon={<PlusOutlined />}
           size={'small'}
-          onClick={() => addNodeItem()}
+          onClick={addRootNode}
         ></Button>
       </div>
-      <div className="dis-left margin-bottom">
-        <span className="tree-name-style">参数名</span>
-        <span className="tree-data-type-style">参数值</span>
-        <span>描述</span>
-      </div>
-      <Tree<TreeInputAndOutConfig>
+      <Tree
+        treeData={treeData}
         showLine
         defaultExpandAll
-        switcherIcon={<DownOutlined />}
-        fieldNames={{ title: 'name', key: 'id', children: 'subArgs' }} // 使用 id 替代 key
-        treeData={inputArgs}
-        titleRender={(nodeData) => {
-          return (
-            <TitleRender
-              inputArgs={nodeData}
-              handleOnchange={(data) => handleOnchange(data)}
-              handleDelete={() => handleDelete(nodeData.id as string)}
-            />
-          );
-        }}
+        fieldNames={{ title: 'name', key: 'key', children: 'subArgs' }}
+        titleRender={renderTitle}
+        selectedKeys={selectedKey ? [selectedKey] : []}
+        onSelect={(keys) => setSelectedKey(keys[0] as string)}
       />
-    </>
+    </div>
   );
 };
 
-export default TreeForm;
+export default CustomTree;

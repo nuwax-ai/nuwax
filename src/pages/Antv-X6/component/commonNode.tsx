@@ -26,6 +26,13 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   showCopy = false,
 }) => {
   const [form] = Form.useForm();
+
+  const getFieldPath = (fieldName: string, index: number) => [
+    inputItemName,
+    index,
+    fieldName,
+  ];
+
   // 根据传递的fieldConfigs生成表单项
   const formItem = fieldConfigs.reduce(
     (acc: DefaultObjectType, field: FieldConfig) => {
@@ -34,34 +41,28 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
     },
     {},
   );
+
   const addInputItem = () => {
     const nextItems = [...(form.getFieldValue(inputItemName) || []), formItem];
     form.setFieldsValue({ [inputItemName]: nextItems });
   };
+
   // 提交form表单
   const submitForm = () => {
-    const values = form.getFieldsValue();
-    for (let item of values[inputItemName]) {
-      if (
-        item.bindValue &&
-        referenceList &&
-        referenceList.argMap &&
-        referenceList.argMap[item.bindValue]
-      ) {
-        item.bindValueType = 'Reference';
-        item.dataType = referenceList.argMap[item.bindValue].dataType;
-      } else {
-        if (item.dataType && typeof item.dataType === 'object') {
-          if (item.dataType.length === 1) {
-            item.dataType = item.dataType[0];
-          } else {
-            item.dataType = item.dataType[1];
-          }
+    const raw = form.getFieldsValue(true);
+
+    for (let item of raw[inputItemName]) {
+      if (item.dataType && typeof item.dataType === 'object') {
+        if (item.dataType.length === 1) {
+          item.dataType = item.dataType[0];
+        } else {
+          item.dataType = item.dataType[1];
         }
       }
-      // if(item.compo)
     }
-    handleChangeNodeConfig(values);
+
+    handleChangeNodeConfig(raw);
+    // handleChangeNodeConfig(values);
   };
   useEffect(() => {
     // 设置初始值，确保Form.List能正确展示已有条目
@@ -80,35 +81,30 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
       </div>
       <Form form={form} initialValues={initialValues}>
         <Form.List name={inputItemName}>
-          {(fields, { remove }, { errors }) => (
-            <>
-              {fields.map((field, index) => {
-                return (
-                  <Form.Item key={field.key} noStyle>
-                    {renderItem({
-                      field,
-                      onRemove: () => remove(field.name),
-                      fieldConfigs,
-                      referenceList: referenceList || {
-                        previousNodes: [],
-                        innerPreviousNodes: [],
-                        argMap: {},
-                      },
-                      // 新增传递索引信息
-                      rowIndex: index,
-                      form,
-                      showCheckbox,
-                      showCopy,
-                      onChange: submitForm,
-                    })}
-                  </Form.Item>
-                );
-              })}
-              {errors.length > 0 && (
-                <div style={{ color: 'red' }}>{errors.join(', ')}</div>
-              )}
-            </>
-          )}
+          {(fields, { remove }) =>
+            fields.map((field) => (
+              <React.Fragment key={field.key}>
+                <Form.Item noStyle key={field.key} name={[field.name]}>
+                  {renderItem({
+                    field,
+                    // 生成字段路径
+                    fieldName: getFieldPath('bindValue', field.name),
+                    onRemove: () => remove(field.name),
+                    fieldConfigs,
+                    referenceList: referenceList || {
+                      previousNodes: [],
+                      innerPreviousNodes: [],
+                      argMap: {},
+                    },
+                    form,
+                    showCheckbox,
+                    showCopy,
+                    onChange: submitForm,
+                  })}
+                </Form.Item>
+              </React.Fragment>
+            ))
+          }
         </Form.List>
       </Form>
     </div>

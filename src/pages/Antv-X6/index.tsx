@@ -62,7 +62,8 @@ const Workflow: React.FC = () => {
     innerPreviousNodes: [],
     argMap: {},
   });
-
+  // 打开和关闭新增组件
+  const [open, setOpen] = useState(false);
   // 展示修改工作流的弹窗
   const [showCreateWorkflow, setShowCreateWorkflow] = useState(false);
   // 创建工作流，插件，知识库，数据库
@@ -88,7 +89,7 @@ const Workflow: React.FC = () => {
   // 画布的ref
   const graphRef = useRef<any>(null);
   // 是否显示创建工作流，插件，知识库，数据库的弹窗和试运行的弹窗
-  const { setShow, setTestRun } = useModel('model');
+  const { setTestRun } = useModel('model');
 
   /** -----------------  需要调用接口的方法  --------------------- */
 
@@ -142,7 +143,6 @@ const Workflow: React.FC = () => {
       graphRef.current.updateNode(config.id, config);
       if (update) {
         getNodeConfig(Number(config.id));
-      } else {
         setFoldWrapItem(config);
       }
     }
@@ -189,7 +189,7 @@ const Workflow: React.FC = () => {
     }
 
     const _res = await service.addNode(_params);
-    console.log(_res);
+
     if (_res.code === Constant.success) {
       _res.data.key = 'general-Node';
       graphRef.current.addNode(dragEvent, _res.data);
@@ -309,7 +309,7 @@ const Workflow: React.FC = () => {
     };
     addNode(_child, dragEvent);
     // graphRef.current.addNode(dragEvent, _child);
-    setShow(false);
+    setOpen(false);
   };
   // 拖拽组件到画布中
   const dragChild = (child: Child, e?: React.DragEvent<HTMLDivElement>) => {
@@ -341,7 +341,7 @@ const Workflow: React.FC = () => {
 
     if (isSpecialType) {
       setCreatedItem(child.type as PluginAndLibraryEnum);
-      setShow(true);
+      setOpen(true);
       setDragEvent(getCoordinates(e));
     } else {
       const coordinates = getCoordinates(e);
@@ -431,7 +431,8 @@ const Workflow: React.FC = () => {
         onAdded={onAdded}
         targetId={info.id}
         spaceId={info.spaceId}
-        parentFC={'workflow'}
+        open={open}
+        onCancel={() => setOpen(false)}
       />
       <TestRun type={foldWrapItem.type} run={nodeTestRun} />
 

@@ -22,8 +22,6 @@ import {
 import { ChildNode, Edge } from '@/types/interfaces/graph';
 
 // 根据type返回图片
-
-// 根据type返回图片
 export const returnImg = (type: string) => {
   switch (type) {
     case 'Start':

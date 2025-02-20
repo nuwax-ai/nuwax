@@ -5,7 +5,7 @@ export interface InputAndOutConfig {
   // 参数名称
   name: string;
   // 参数详细描述信息
-  description: string;
+  description: string | null;
   // 数据类型
   dataType: DataTypeEnum | null;
   // 是否必须
@@ -13,9 +13,9 @@ export interface InputAndOutConfig {
   // 是否为系统内置变量参数
   systemVariable: boolean;
   // 值引用类型
-  bindValueType: string;
+  bindValueType: string | null;
   // 参数值
-  bindValue: string;
+  bindValue: string | null;
   //  	下级参数
   subArgs?: InputAndOutConfig[];
   // 参数key，唯一标识

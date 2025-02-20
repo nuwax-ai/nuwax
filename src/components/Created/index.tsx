@@ -35,6 +35,7 @@ const Created: React.FC<CreatedProp> = ({
   onCancel,
   checkTag,
   onAdded,
+  hasIds = [],
   targetId,
   spaceId,
 }) => {
@@ -356,11 +357,11 @@ const Created: React.FC<CreatedProp> = ({
                 {/* <Tag>{item.tag}</Tag> */}
                 <div className="dis-sb count-div-style">
                   <div>
-                    {item.publishUser.avatar}
-                    <span>{item.publishUser.nickName}</span>
+                    <img src={item.publishUser?.avatar} alt="" />
+                    <span>{item.publishUser?.nickName}</span>
                     <Divider type="vertical" />
                     <span className="margin-left-6">
-                      发布于{getTime(item.created)}
+                      发布于{getTime(item.created!)}
                     </span>
                     <Divider type="vertical" />
                     {item.collect && (
@@ -412,7 +413,10 @@ const Created: React.FC<CreatedProp> = ({
                 color="primary"
                 variant="outlined"
                 onClick={() => onAddNode(item)}
-                disabled={item.targetId === targetId}
+                disabled={
+                  item.targetId === targetId ||
+                  hasIds.includes(item.spaceId as number)
+                }
               >
                 添加
               </Button>

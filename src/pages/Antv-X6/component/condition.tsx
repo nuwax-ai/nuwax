@@ -36,6 +36,20 @@ export const Condition: React.FC<ConditionProps> = ({
   form,
   referenceList,
 }) => {
+  const options = [
+    { label: '等于', value: 'EQUAL' },
+    { label: '不等于', value: 'NOT_EQUAL' },
+    { label: '长度大于', value: 'GREATER_THAN' },
+    { label: '长度大于等于', value: 'GREATER_THAN_OR_EQUAL' },
+    { label: '长度小于', value: 'LESS_THAN' },
+    { label: '长度小于等于', value: 'LESS_THAN_OR_EQUAL' },
+    { label: '包含', value: 'CONTAINS' },
+    { label: '不包含', value: 'NOT_CONTAINS' },
+    { label: '匹配正则表达式', value: 'MATCH_REGEX' },
+    { label: '为空', value: 'IS_NULL' },
+    { label: '不为空', value: 'NOT_NULL' },
+  ];
+
   return (
     <div className="condition-right-item">
       <Form.Item
@@ -45,21 +59,8 @@ export const Condition: React.FC<ConditionProps> = ({
         <Select
           className="condition-type-select-style"
           popupMatchSelectWidth={false}
-        >
-          <Select.Option value="EQUAL">等于</Select.Option>
-          <Select.Option value="NOT_EQUAL">不等于</Select.Option>
-          <Select.Option value="GREATER_THAN">长度大于</Select.Option>
-          <Select.Option value="GREATER_THAN_OR_EQUAL">
-            长度大于等于
-          </Select.Option>
-          <Select.Option value="LESS_THAN">长度小于</Select.Option>
-          <Select.Option value="LESS_THAN_OR_EQUAL">长度小于等于</Select.Option>
-          <Select.Option value="CONTAINS">包含</Select.Option>
-          <Select.Option value="NOT_CONTAINS">不包含</Select.Option>
-          <Select.Option value="MATCH_REGEX">匹配正则表达式</Select.Option>
-          <Select.Option value="IS_NULL">为空</Select.Option>
-          <Select.Option value="NOT_NULL">不为空</Select.Option>
-        </Select>
+          options={options}
+        ></Select>
       </Form.Item>
       <Form.Item style={{ marginRight: '8px' }}>
         <Form.Item name={[field.name, 'bindValueType']}>

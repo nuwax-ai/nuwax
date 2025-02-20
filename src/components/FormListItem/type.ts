@@ -24,7 +24,12 @@ export interface InputOrReferenceProps {
   value: string;
   // 父组件传递的方法，改变当前的值，渲染页面
   onChange: (value: string) => void;
+  // 新增类型定义
+  form: FormInstance; // 表单实例
+  fieldName: string; // 当前字段完整路径（如 "inputItems[0].bindValue"）
+  inputItemName?: string; // 列表字段名称（默认 "inputItems"）
 }
+
 /**
  * 定义 右侧节点数组设置。
  */
@@ -44,26 +49,6 @@ export interface FieldConfig {
   width: number;
   label: string;
   options?: KeyValueTree[];
-}
-// 定义传递给 renderItem 的参数类型
-export interface RenderItemProps {
-  // 当前字段的field
-  field: FormListFieldData;
-  // 删除当前行
-  onRemove: () => void;
-  // 当前渲染的详细信息
-  fieldConfigs: FieldConfig[];
-  // 父组件传递下来的form
-  form: FormInstance;
-  // 当前值改变的时候，通知父组件，重新获取值
-  onChange: () => void;
-  referenceList: NodePreviousAndArgMap;
-  //   预显示的值，(通常用于二次编辑的时候)
-  initialValues?: object;
-  // 是否渲染复选框
-  showCheckbox?: boolean;
-  // 是否显示复制按钮
-  showCopy?: boolean;
 }
 
 export interface TreeFormProps {

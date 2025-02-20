@@ -1,11 +1,11 @@
 // import { ICON_ASSOCIATION } from '@/constants/images.constants';
 import { DataTypeEnum } from '@/types/enums/common';
+import { RenderItemProps } from '@/types/interfaces/workflow';
 import { DeleteOutlined, FileDoneOutlined } from '@ant-design/icons';
 import { Cascader, Checkbox, Form, Input, Popover, Space } from 'antd';
 import React from 'react';
 import './index.less';
 import { InputOrReference } from './InputOrReference';
-import { RenderItemProps } from './type';
 
 // 默认的变量输入输出方法
 export const DefaultRenderItem: React.FC<RenderItemProps> = ({
@@ -13,6 +13,7 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
   onRemove,
   fieldConfigs,
   referenceList,
+  fieldName,
   showCheckbox,
   showCopy,
   form,
@@ -21,7 +22,8 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
   const changeValue = () => {
     onChange();
   };
-
+  // 修正路径生成逻辑（使用父字段路径）
+  const bindValueTypePath = [...fieldName.slice(0, -1), 'bindValueType'];
   // 是否展开子集
   // const [isExpand, setIsExpand] = useState(false);
   // 将Cascader的值从string转换为数组
@@ -63,7 +65,18 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
         </div>
       )}
       <Space className="form-list-item-style" style={{ width: '100%' }}>
+        <Form.Item
+          name={bindValueTypePath}
+          hidden
+          key={`${field.key}_bindType`}
+        >
+          <Input type="hidden" />
+        </Form.Item>
         {fieldConfigs.map((config, index) => {
+          {
+            /* 绑定类型隐藏字段 */
+          }
+
           if (config.name === 'description' || config.name === 'require') {
             // 跳过 description 和 require 字段，将在后面单独处理
             return null;
@@ -83,6 +96,7 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
                     form: form,
                     index: field.name,
                     options: config.options,
+                    fieldName: fieldName,
                     value:
                       config.component === Cascader
                         ? CascaderValue(fieldValue)
@@ -119,6 +133,7 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
             </div>
           );
         })}
+
         {/* 特殊处理 description 和 require 字段 */}
         <div className="dis-left">
           {showCopy && (

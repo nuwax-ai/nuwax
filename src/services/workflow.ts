@@ -1,3 +1,4 @@
+import { NodeConfig, NodePreviousAndArgMap } from '@/types/interfaces/node';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 // 工作流的接口
@@ -34,6 +35,29 @@ interface IAddEdge {
   sourceId: number | string;
 }
 
+// 新增节点的返回
+interface AddNodeResponse {
+  created: string;
+  description: string;
+  id: number;
+  innerEndNode: boolean;
+  innerEndNodeId: number | null;
+  innerNodes: number | null;
+  innerStartNodeId: number | null;
+  loopNodeId: number | null;
+  modified: string;
+  name: string;
+  nextNodeIds: number[] | null;
+  nextNodes: number[] | null;
+  nodeConfig: NodeConfig;
+  preNodes: number[] | null;
+  type: string;
+  unreachableNextNodeIds: number[] | null;
+  virtualExecute: boolean;
+  workflowId: number;
+  key?: string;
+}
+
 // 获取工作流的详细信息
 export async function getDetails(id: number): Promise<RequestResponse<any>> {
   return request(`/api/workflow/${id}`, {
@@ -59,7 +83,9 @@ export async function getNodeList(id: number): Promise<RequestResponse<any>> {
 }
 
 // 给工作流添加节点
-export async function addNode(data: IAddNode): Promise<RequestResponse<null>> {
+export async function addNode(
+  data: IAddNode,
+): Promise<RequestResponse<AddNodeResponse>> {
   return request(`/api/workflow/node/add`, {
     method: 'POST',
     data,
@@ -69,7 +95,7 @@ export async function addNode(data: IAddNode): Promise<RequestResponse<null>> {
 // 复制工作流
 export async function copyNode(
   id: string | number,
-): Promise<RequestResponse<null>> {
+): Promise<RequestResponse<number>> {
   return request(`/api/workflow/node/copy/${id}`, {
     method: 'POST',
   });
@@ -115,7 +141,7 @@ export async function getModelList(
 // 查询上级节点的输出参数
 export async function getOutputArgs(
   id: number,
-): Promise<RequestResponse<null>> {
+): Promise<RequestResponse<NodePreviousAndArgMap>> {
   return request(`/api/workflow/node/previous/${id}`, {
     method: 'GET',
   });
@@ -127,7 +153,6 @@ export async function getNodeConfig(id: number): Promise<RequestResponse<any>> {
     method: 'GET',
   });
 }
-
 export default {
   getDetails,
   updateDetails,

@@ -74,12 +74,6 @@ const EndNode: React.FC<NodeDisposeProps> = ({
   Modified,
   referenceList,
 }) => {
-  let initialValues: InputAndOutConfig[] = [];
-
-  if (params.outputArgs && params.outputArgs.length) {
-    initialValues = params.outputArgs;
-  }
-
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -103,7 +97,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({
         referenceList={referenceList}
         showCopy={true}
         inputItemName="outputArgs"
-        initialValues={{ outputArgs: initialValues }}
+        initialValues={{ outputArgs: params.outputArgs }}
         handleChangeNodeConfig={handleChangeNodeConfig}
       />
       {value === '返回文本' && (

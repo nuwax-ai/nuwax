@@ -135,6 +135,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,
   referenceList,
+  updateNode,
 }) => {
   let initialValues: InputAndOutConfig[] = [];
   if (params.inputArgs && params.inputArgs.length) {
@@ -144,6 +145,33 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
+  };
+  // 单独处理新增和修改
+  const addAndDelete = (newNodeConfig: NodeConfig) => {
+    console.log(newNodeConfig);
+    if (!params.intentConfigs) {
+      params.intentConfigs = [];
+    }
+    if (
+      newNodeConfig.intentConfigs &&
+      newNodeConfig.intentConfigs.length !== params.intentConfigs.length
+    ) {
+      if (updateNode) {
+        updateNode({
+          ...params,
+          intentConfigs: newNodeConfig.intentConfigs,
+          extension: {
+            ...params.extension,
+            height:
+              newNodeConfig.intentConfigs.length >= 2
+                ? newNodeConfig.intentConfigs.length * 40 + 60
+                : 140,
+          },
+        });
+      }
+    } else {
+      Modified({ ...params, ...newNodeConfig });
+    }
   };
 
   return (
@@ -166,7 +194,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
         <InputAndOut
           title="意图匹配"
           fieldConfigs={intentionConfigs}
-          handleChangeNodeConfig={handleChangeNodeConfig}
+          handleChangeNodeConfig={addAndDelete}
           inputItemName="intentConfigs"
           initialValues={{
             intentConfigs: params.intentConfigs || [],
