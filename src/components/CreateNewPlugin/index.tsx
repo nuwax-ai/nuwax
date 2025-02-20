@@ -1,4 +1,5 @@
 import pluginIcon from '@/assets/images/plugin_image.png';
+import ConditionRender from '@/components/ConditionRender';
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import SelectList from '@/components/SelectList';
@@ -8,15 +9,15 @@ import {
   PLUGIN_CREATE_TOOL,
 } from '@/constants/library.constants';
 import { apiPluginAdd, apiPluginHttpUpdate } from '@/services/plugin';
-import { PluginModeEnum } from '@/types/enums/library';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { PluginTypeEnum } from '@/types/enums/plugin';
 import type { CreateNewPluginProps } from '@/types/interfaces/library';
-import type { PluginAddParams } from '@/types/interfaces/plugin';
+import type { PluginAddParams, PluginInfo } from '@/types/interfaces/plugin';
 import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps, RadioChangeEvent } from 'antd';
 import { Form, Input, message, Radio } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
@@ -27,28 +28,36 @@ const cx = classNames.bind(styles);
  */
 const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   spaceId,
-  pluginId,
+  id,
   icon,
   name,
   description,
-  type = PluginModeEnum.Create,
-  codeLang,
+  mode = CreateUpdateModeEnum.Create,
   open,
   onCancel,
-  onConfirmCreate,
-  onConfirmUpdate,
+  onConfirm,
 }) => {
   const [form] = Form.useForm();
-  const [imageUrl, setImageUrl] = useState<string>(icon || '');
+  const [imageUrl, setImageUrl] = useState<string>('');
   const [pluginType, setPluginType] = useState<PluginTypeEnum>();
+
+  useEffect(() => {
+    if (icon) {
+      setImageUrl(icon);
+    }
+  }, [icon]);
 
   // 新增插件接口
   const { run: runCreate } = useRequest(apiPluginAdd, {
     manual: true,
     debounceWait: 300,
-    onSuccess: (result) => {
+    onSuccess: (result, params) => {
       setImageUrl('');
-      onConfirmCreate?.(result);
+      const info: PluginInfo = {
+        id: result,
+        ...params[0],
+      };
+      onConfirm(info);
       message.success('插件已创建');
     },
   });
@@ -57,15 +66,15 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   const { run: runUpdate } = useRequest(apiPluginHttpUpdate, {
     manual: true,
     debounceWait: 300,
-    onSuccess: () => {
+    onSuccess: (_, params) => {
       setImageUrl('');
-      onConfirmUpdate?.();
+      onConfirm(...params);
       message.success('插件更新成功');
     },
   });
 
   const onFinish: FormProps<PluginAddParams>['onFinish'] = (values) => {
-    if (type === PluginModeEnum.Create) {
+    if (mode === CreateUpdateModeEnum.Create) {
       runCreate({
         ...values,
         icon: imageUrl,
@@ -76,7 +85,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
       runUpdate({
         ...values,
         icon: imageUrl,
-        id: pluginId,
+        id,
       });
     }
   };
@@ -89,12 +98,10 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
     setPluginType(value);
   };
 
-  const title = type === PluginModeEnum.Create ? '新建插件' : '更新插件';
-
   return (
     <CustomFormModal
       form={form}
-      title={title}
+      title={mode === CreateUpdateModeEnum.Create ? '新建插件' : '更新插件'}
       open={open}
       onCancel={onCancel}
       onConfirm={handlerSubmit}
@@ -108,13 +115,10 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
         />
         <Form
           form={form}
-          preserve={false}
           requiredMark={customizeRequiredMark}
           initialValues={{
             name,
             description,
-            type,
-            codeLang,
           }}
           layout="vertical"
           onFinish={onFinish}
@@ -142,38 +146,28 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
             placeholder="请输入插件的主要功能和使用场景，确保内容符合平台规范。帮助用户/大模型更好地理解"
             maxLength={600}
           />
-          {type === PluginModeEnum.Create && (
-            <>
+          <ConditionRender condition={mode === CreateUpdateModeEnum.Create}>
+            <Form.Item
+              name="type"
+              label="插件工具创建方式"
+              rules={[{ required: true, message: '请选择插件工具创建方式' }]}
+            >
+              <Radio.Group
+                options={PLUGIN_CREATE_TOOL}
+                value={pluginType}
+                onChange={handleChangeCreateTool}
+              ></Radio.Group>
+            </Form.Item>
+            <ConditionRender condition={pluginType === PluginTypeEnum.CODE}>
               <Form.Item
-                name="type"
-                label="插件工具创建方式"
-                rules={[{ required: true, message: '请选择插件工具创建方式' }]}
+                name="codeLang"
+                label="IDE 运行时"
+                rules={[{ required: true, message: '请输入插件名称' }]}
               >
-                <Radio.Group
-                  options={PLUGIN_CREATE_TOOL}
-                  value={pluginType}
-                  onChange={handleChangeCreateTool}
-                ></Radio.Group>
+                <SelectList options={CLOUD_BASE_CODE_OPTIONS} />
               </Form.Item>
-              {pluginType === PluginTypeEnum.HTTP ? (
-                <Form.Item
-                  name="pluginUrl"
-                  label="插件 URL"
-                  rules={[{ required: true, message: '请输入插件名称' }]}
-                >
-                  <Input placeholder="请输入插件的访问地址或相关资源的链接" />
-                </Form.Item>
-              ) : (
-                <Form.Item
-                  name="codeLang"
-                  label="IDE 运行时"
-                  rules={[{ required: true, message: '请输入插件名称' }]}
-                >
-                  <SelectList options={CLOUD_BASE_CODE_OPTIONS} />
-                </Form.Item>
-              )}
-            </>
-          )}
+            </ConditionRender>
+          </ConditionRender>
         </Form>
       </div>
     </CustomFormModal>

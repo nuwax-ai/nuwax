@@ -35,7 +35,7 @@ const KnowledgeSetting: React.FC<KnowledgeSettingProps> = ({
     CallMethodEnum.Auto_Call,
   );
   const [searchStrategy, setSearchStrategy] = useState<SearchStrategyEnum>(
-    SearchStrategyEnum.Mixed,
+    SearchStrategyEnum.MIXED,
   );
   const [noRecallResponse, setNoRecallResponse] =
     useState<NoRecallResponseEnum>(NoRecallResponseEnum.Default);

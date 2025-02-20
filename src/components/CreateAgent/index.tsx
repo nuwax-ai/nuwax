@@ -6,7 +6,7 @@ import { SPACE_ID } from '@/constants/home.constants';
 import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
 import { CREATE_AGENT_LIST } from '@/constants/space.contants';
 import { apiAgentAdd, apiAgentConfigUpdate } from '@/services/agentConfig';
-import { CreateAgentEnum, CreateEditAgentEnum } from '@/types/enums/common';
+import { CreateAgentEnum, CreateUpdateModeEnum } from '@/types/enums/common';
 import type { AgentAddParams } from '@/types/interfaces/agent';
 import type { CreateAgentProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
@@ -21,7 +21,7 @@ const cx = classNames.bind(styles);
 const { TextArea } = Input;
 
 const CreateAgent: React.FC<CreateAgentProps> = ({
-  type = CreateEditAgentEnum.Create,
+  mode = CreateUpdateModeEnum.Create,
   agentConfigInfo,
   open,
   onCancel,
@@ -61,7 +61,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   }, [agentConfigInfo?.icon]);
 
   const onFinish: FormProps<AgentAddParams>['onFinish'] = (values) => {
-    if (type === CreateEditAgentEnum.Create) {
+    if (mode === CreateUpdateModeEnum.Create) {
       const spaceId = localStorage.getItem(SPACE_ID);
       runEdit({
         ...values,
@@ -98,7 +98,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       onCancel={onCancel}
       onConfirm={handlerSubmit}
     >
-      {type === CreateEditAgentEnum.Create && (
+      {mode === CreateUpdateModeEnum.Create && (
         <Segmented
           className={cx(styles.segment)}
           value={createAgentType}

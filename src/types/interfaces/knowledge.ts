@@ -1,4 +1,8 @@
-import type { KnowledgeDataTypeEnum, KnowledgeSegmentTypeEnum, KnowledgePubStatusEnum } from '@/types/enums/library';
+import type {
+  KnowledgeDataTypeEnum,
+  KnowledgePubStatusEnum,
+  KnowledgeSegmentTypeEnum,
+} from '@/types/enums/library';
 import type { Sort } from '@/types/interfaces/request';
 
 // 数据新增输入参数
@@ -12,11 +16,14 @@ export interface KnowledgeConfigAddParams {
   dataType: KnowledgeDataTypeEnum;
 }
 
-// 数据更新输入参数
-export interface KnowledgeConfigUpdateParams extends KnowledgeConfigAddParams {
+// 知识库基础信息
+export interface KnowledgeBaseInfo extends KnowledgeConfigAddParams {
   // 主键id
   id: number;
 }
+
+// 数据更新输入参数
+export type KnowledgeConfigUpdateParams = KnowledgeBaseInfo;
 
 // Table Column
 export interface SuperTableColumn {

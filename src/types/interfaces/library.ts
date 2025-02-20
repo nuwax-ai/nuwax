@@ -1,9 +1,13 @@
+import type { InputTypeEnum } from '@/types/enums/agent';
 import type { PublishStatusEnum } from '@/types/enums/common';
-import type { PluginModeEnum, WorkflowModeEnum } from '@/types/enums/library';
-import { CodeLangEnum } from '@/types/enums/plugin';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
+import type { WorkflowModeEnum } from '@/types/enums/library';
 import type { ComponentTypeEnum } from '@/types/enums/space';
 import type { CreatorInfo } from '@/types/interfaces/agent';
+import { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
+import { ModelSaveParams } from '@/types/interfaces/model';
+import { PluginInfo } from '@/types/interfaces/plugin';
 import React from 'react';
 
 // 组件库单个组件项
@@ -36,38 +40,25 @@ export interface CreateWorkflowProps {
   icon?: string;
   open: boolean;
   onCancel: () => void;
-  onConfirm: (data: WorkflowBaseInfo) => void;
+  onConfirm: (info: WorkflowBaseInfo) => void;
 }
 
 // 新建、更新插件组件
 export interface CreateNewPluginProps {
   spaceId?: number;
-  pluginId?: number;
+  id?: number;
   icon?: string;
   name?: string;
   description?: string;
-  // 插件类型,可用值:HTTP,CODE
-  type?: PluginModeEnum;
-  // 插件代码语言,可用值:Python,JavaScript
-  codeLang?: CodeLangEnum;
+  // 弹窗类型：新建、更新
+  mode?: CreateUpdateModeEnum;
   open: boolean;
   onCancel: () => void;
-  onConfirmCreate?: (id: number) => void;
-  onConfirmUpdate?: () => void;
+  onConfirm: (info: PluginInfo) => void;
 }
 
 // 入参与出参共有配置数据类型
-export interface ConfigDataType {
-  key: React.Key;
-  // 参数名称
-  paramName: string;
-  // 参数描述
-  desc: string;
-  // 参数类型
-  paramType: number;
-  // 开启
-  open: boolean;
-}
+export type ConfigDataType = BindConfigWithSub;
 
 // 出参配置数据类型
 export interface OutputConfigDataType extends ConfigDataType {
@@ -85,12 +76,10 @@ export interface InputConfigCloudDataType extends ConfigDataType {
 
 // 入参配置数据类型(插件基于http创建)
 export interface InputConfigDataType extends ConfigDataType {
-  // 传入方式
-  afferentMode: number;
+  // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
+  inputType: InputTypeEnum;
   // 是否必须
-  mustNot: boolean;
-  // 默认值
-  default: string;
+  require: boolean;
   children?: InputConfigDataType[];
 }
 
@@ -119,6 +108,7 @@ export interface tryOutputConfigDataType {
 export interface ModelConfigDataType {
   key: React.Key;
   url: string;
+  // 接口密钥
   apikey: string;
   // 权重
   weight: string;
@@ -126,9 +116,12 @@ export interface ModelConfigDataType {
 
 // 创建模型弹窗组件
 export interface CreateModelProps {
+  mode?: CreateUpdateModeEnum;
+  id?: number;
+  spaceId?: number;
   open: boolean;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (info: ModelSaveParams) => void;
 }
 
 // 内网模型组件

@@ -1,10 +1,11 @@
-import type { CardStyleEnum, CreateEditAgentEnum } from '@/types/enums/common';
-import type { KnowledgeModeEnum } from '@/types/enums/library';
+import type { CardStyleEnum, CreateUpdateModeEnum } from '@/types/enums/common';
+import type { KnowledgeDataTypeEnum } from '@/types/enums/library';
 import type {
   AgentBaseInfo,
   AgentConfigInfo,
   CreatorInfo,
 } from '@/types/interfaces/agent';
+import type { KnowledgeBaseInfo } from '@/types/interfaces/knowledge';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import type {
   ConfigProviderProps,
@@ -289,7 +290,7 @@ export interface CreatedNodeItem {
 
 // 创建、编辑智能体
 export interface CreateAgentProps {
-  type?: CreateEditAgentEnum;
+  mode?: CreateUpdateModeEnum;
   agentConfigInfo?: AgentConfigInfo;
   open: boolean;
   onCancel: () => void;
@@ -299,13 +300,18 @@ export interface CreateAgentProps {
 
 // 创建、编辑知识库
 export interface CreateKnowledgeProps {
-  type?: KnowledgeModeEnum;
-  knowledgeName?: string;
-  intro?: string;
-  img?: string;
+  mode?: CreateUpdateModeEnum;
+  spaceId: number;
+  // 知识库名称
+  name?: string;
+  // 知识库描述
+  description?: string;
+  // 数据类型,默认文本,1:文本;2:表格
+  dataType?: KnowledgeDataTypeEnum;
+  id?: number;
   open: boolean;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (info: KnowledgeBaseInfo) => void;
 }
 
 // 自定义数字输入框，带加减按钮
@@ -321,7 +327,7 @@ export interface CustomInputNumberProps {
 // 分析统计单项
 export interface AnalyzeStatisticsItem {
   label: string;
-  value: string;
+  value: React.Key;
 }
 
 // 分析统计弹窗组件

@@ -17,11 +17,17 @@ export enum ModelApiProtocolEnum {
 
 // 接口调用策略，可选值：RoundRobin, WeightedRoundRobin, LeastConnections, WeightedLeastConnections, Random, ResponseTime
 export enum ModelStrategyEnum {
+  // 轮询
   RoundRobin = 'RoundRobin',
+  // 加权轮询
   WeightedRoundRobin = 'WeightedRoundRobin',
+  // 最少连接
   LeastConnections = 'LeastConnections',
+  // 加权最少连接
   WeightedLeastConnections = 'WeightedLeastConnections',
+  // 随机
   Random = 'Random',
+  // 响应时间
   ResponseTime = 'ResponseTime',
 }
 
@@ -50,4 +56,11 @@ export enum ModelEventTypeEnum {
   PROCESSING = 'PROCESSING',
   MESSAGE = 'MESSAGE',
   FINAL_RESULT = 'FINAL_RESULT',
+}
+
+// Model apiInfo 的表单列表名称
+export enum ModelApiInfoColumnNameEnum {
+  Url = 'url',
+  Apikey = 'apikey',
+  Weight = 'weight',
 }

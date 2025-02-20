@@ -299,7 +299,7 @@ export const ParamsSettingDefaultOptions = [
     label: '输入',
   },
   {
-    value: PluginParamsSettingDefaultEnum.Quote,
+    value: PluginParamsSettingDefaultEnum.Reference,
     label: '引用',
   },
 ];

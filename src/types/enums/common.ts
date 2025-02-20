@@ -17,12 +17,12 @@ export enum CreateAgentEnum {
   AI,
 }
 
-// 创建、编辑智能体枚举
-export enum CreateEditAgentEnum {
+// 新建、更新枚举
+export enum CreateUpdateModeEnum {
   // 创建
   Create,
   // 编辑
-  Edit,
+  Update,
 }
 
 // 变量类型枚举
@@ -41,18 +41,18 @@ export enum VariableTypeEnum {
 
 // 参数类型枚举
 export enum ParamsTypeEnum {
-  String,
-  Integer,
-  Number,
-  File,
-  Boolean,
-  Object,
-  Array_String,
-  Array_Integer,
-  Array_Number,
-  Array_Boolean,
-  Array_Object,
-  Array_File,
+  String = 'String',
+  Integer = 'Integer',
+  Number = 'Number',
+  File = 'File',
+  Boolean = 'Boolean',
+  Object = 'Object',
+  Array_String = 'Array_String',
+  Array_Integer = 'Array_Integer',
+  Array_Number = 'Array_Number',
+  Array_Boolean = 'Array_Boolean',
+  Array_Object = 'Array_Object',
+  Array_File = 'Array_File',
 }
 
 // 文件类型枚举
@@ -86,9 +86,9 @@ export enum PluginAndLibraryEnum {
 // 插件参数设置默认值类型枚举
 export enum PluginParamsSettingDefaultEnum {
   // 输入
-  Input,
+  Input = 'Input ',
   // 引用
-  Quote,
+  Reference = 'Reference',
 }
 
 export enum NodeTypeEnum {

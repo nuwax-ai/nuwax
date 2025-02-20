@@ -32,7 +32,7 @@ export enum BindValueType {
 }
 
 // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
-export enum InputTypeType {
+export enum InputTypeEnum {
   Query = 'Query',
   Body = 'Body',
   Header = 'Header',

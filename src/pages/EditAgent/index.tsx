@@ -4,7 +4,7 @@ import {
   apiAgentConfigHistoryList,
   apiAgentConfigInfo,
 } from '@/services/agentConfig';
-import { CreateEditAgentEnum } from '@/types/enums/common';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { EditAgentShowType } from '@/types/enums/space';
 import { AgentBaseInfo, AgentConfigInfo } from '@/types/interfaces/agent';
 import { HistoryData } from '@/types/interfaces/space';
@@ -42,7 +42,7 @@ const EditAgent: React.FC = () => {
   const [openKnowledgeModel, setOpenKnowledgeModel] = useState<boolean>(false);
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>(null);
   const [versionHistory, setVersionHistory] = useState<HistoryData[]>([]);
-  const agentIdRef = useRef<string>('');
+  const agentIdRef = useRef<number>(0);
 
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
@@ -65,7 +65,7 @@ const EditAgent: React.FC = () => {
   useEffect(() => {
     const pathname = location.pathname;
     const agentId = pathname.split('/')?.slice(-1)?.join();
-    agentIdRef.current = agentId;
+    agentIdRef.current = agentId as number;
     run(agentId);
     runHistory(agentId);
   }, []);
@@ -191,7 +191,7 @@ const EditAgent: React.FC = () => {
       />
       {/*编辑智能体弹窗*/}
       <CreateAgent
-        type={CreateEditAgentEnum.Edit}
+        mode={CreateUpdateModeEnum.Update}
         agentConfigInfo={agentConfigInfo}
         open={openEditAgent}
         onCancel={() => setOpenEditAgent(false)}

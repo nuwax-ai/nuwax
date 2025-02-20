@@ -13,30 +13,6 @@ export enum WorkflowModeEnum {
   Update,
 }
 
-// 插件操作枚举
-export enum PluginModeEnum {
-  // 新建
-  Create,
-  // 更新
-  Update,
-}
-
-// 创建、编辑知识库枚举
-export enum KnowledgeModeEnum {
-  // 创建
-  Create,
-  // 编辑
-  Edit,
-}
-
-// 请求内容格式枚举
-export enum RequestContentFormatEnum {
-  No,
-  Form_Data,
-  X_Www_Form_Urlencoded,
-  Json,
-}
-
 // 知识库资源文件格式枚举 数据类型,默认文本,1:文本;2:表格
 export enum KnowledgeDataTypeEnum {
   // 文本格式

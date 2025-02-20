@@ -1,3 +1,7 @@
+import pluginImage from '@/assets/images/plugin_image.png';
+import { PublishStatusEnum } from '@/types/enums/common';
+import { PluginTypeEnum } from '@/types/enums/plugin';
+import type { PluginHeaderProps } from '@/types/interfaces/plugin';
 import {
   CaretRightOutlined,
   CheckCircleOutlined,
@@ -7,24 +11,20 @@ import {
 } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
+import moment from 'moment';
 import React from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface PluginHeaderProps {
-  onEdit: () => void;
-  onToggleHistory: () => void;
-  onTryRun: () => void;
-  onPublish: () => void;
-}
-
 /**
  * 测试插件头部组件
  */
 const PluginHeader: React.FC<PluginHeaderProps> = ({
+  pluginInfo,
   onEdit,
   onToggleHistory,
+  onSave,
   onTryRun,
   onPublish,
 }) => {
@@ -39,7 +39,7 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
       />
       <img
         className={cx(styles.logo)}
-        src="https://p26-flow-product-sign.byteimg.com/tos-cn-i-13w3uml6bg/ce8728aa91f74acbb7f5ddfd7dd7e861~tplv-13w3uml6bg-resize:128:128.image?rk3s=2e2596fd&x-expires=1740130702&x-signature=o423VSb8q%2F%2BZonW0xW9wIXZRi8Y%3D"
+        src={pluginInfo?.icon || (pluginImage as string)}
         alt=""
       />
       <section
@@ -52,7 +52,7 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
         )}
       >
         <div className={cx('flex', styles['top-box'])}>
-          <h3 className={cx(styles.name)}>测试插件</h3>
+          <h3 className={cx(styles.name)}>{pluginInfo?.name}</h3>
           <EditOutlined
             className={cx('cursor-pointer', 'hover-box')}
             onClick={onEdit}
@@ -60,10 +60,16 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
           <CheckCircleOutlined className={cx(styles.circle)} />
         </div>
         <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
-          <span className={cx(styles.box)}>http</span>
-          <span className={cx(styles.box)}>未发布</span>
+          <span className={cx(styles.box)}>
+            {pluginInfo?.type === PluginTypeEnum.HTTP ? 'http' : '代码'}
+          </span>
+          <span className={cx(styles.box)}>
+            {pluginInfo?.publishStatus === PublishStatusEnum.Published
+              ? '已发布'
+              : '未发布'}
+          </span>
           <span className={cx(styles['update-time'])}>
-            配置自动保存于17:06:32
+            配置自动保存于{moment(pluginInfo?.created).format('HH:mm')}
           </span>
         </div>
       </section>
@@ -71,6 +77,9 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
         className={cx(styles.history, 'cursor-pointer')}
         onClick={onToggleHistory}
       />
+      <Button className={cx(styles['try-btn'])} type="primary" onClick={onSave}>
+        保存
+      </Button>
       <Button
         className={cx(styles['try-btn'])}
         type="primary"

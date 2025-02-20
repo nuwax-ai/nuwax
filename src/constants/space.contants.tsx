@@ -54,7 +54,7 @@ export const LIBRARY_ALL_RESOURCE = [
 // 组件库所有类型
 export const LIBRARY_ALL_TYPE = [
   {
-    value: 0,
+    value: ComponentTypeEnum.All_Type,
     label: '所有类型',
     icon: null,
   },
