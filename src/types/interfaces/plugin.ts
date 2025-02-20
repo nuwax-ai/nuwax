@@ -45,6 +45,18 @@ export interface PluginPublishParams {
   remark: string;
 }
 
+// 插件请求配置
+export interface PluginRequestConfig {
+  // 请求方法,可用值:POST,GET,PUT,DELETE
+  method: HttpMethodEnum;
+  // 请求地址
+  url: string;
+  // 请求内容格式,可用值:JSON,FORM_DATA,X_WWW_FORM_URLENCODED,OTHER
+  contentType: HttpContentTypeEnum;
+  // 请求超时时间
+  timeout: number;
+}
+
 // 更新HTTP插件配置接口
 export interface PluginHttpUpdateParams {
   // 插件ID
@@ -56,19 +68,11 @@ export interface PluginHttpUpdateParams {
   // 插件图标
   icon: string;
   // 插件配置
-  config: {
+  config: PluginRequestConfig & {
     // 节点入参
     inputArgs: BindConfigWithSub[];
     // 节点出参
     outputArgs: BindConfigWithSub[];
-    // 请求方法,可用值:POST,GET,PUT,DELETE
-    method: HttpMethodEnum;
-    // 请求地址
-    url: string;
-    // 请求内容格式,可用值:JSON,FORM_DATA,X_WWW_FORM_URLENCODED,OTHER
-    contentType: HttpContentTypeEnum;
-    // 请求超时时间
-    timeout: number;
   };
 }
 
@@ -125,9 +129,18 @@ export interface PluginInfo {
   codeLang: CodeLangEnum;
   // 插件发布状态,可用值:Developing,Applying,Published,Rejected
   publishStatus: PublishStatusEnum;
-  config: string;
+  config: object;
   modified: string;
   created: string;
   // 创建者信息
   creator: CreatorInfo;
+}
+
+export interface PluginHeaderProps {
+  pluginInfo: PluginInfo;
+  onEdit: () => void;
+  onToggleHistory: () => void;
+  onSave: () => void;
+  onTryRun: () => void;
+  onPublish: () => void;
 }

@@ -2,7 +2,7 @@ import type {
   AgentComponentTypeEnum,
   AssistantRoleEnum,
   BindValueType,
-  InputTypeType,
+  InputTypeEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
   SearchStrategyEnum,
@@ -143,30 +143,32 @@ export interface ArgBindConfig {
   // 参数值，当类型为引用时，示例 1.xxx 绑定节点ID为1的xxx字段；当类型为输入时，该字段为最终使用的值
   bindValue: string;
   // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
-  inputType: InputTypeType;
+  inputType: InputTypeEnum;
 }
 
 // 出参、入参绑定配置，带下级, 绑定组件配置，不同组件配置不一样
 export interface BindConfigWithSub {
-  key: string;
+  key: React.Key;
   // 参数名称，符合函数命名规则
   name: string;
   // 参数详细描述信息
   description: string;
   // 数据类型
   dataType: DataTypeEnum;
-  require: boolean;
+  // 是否必须
+  require?: boolean;
   // 是否为开启，如果不开启，插件使用者和大模型均看不见该参数；如果bindValueType为空且require为true时，该参数必须开启
   enable: boolean;
   // 是否为系统内置变量参数，内置变量前端只可展示不可修改
-  systemVariable: boolean;
+  systemVariable?: boolean;
   // 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
-  bindValueType: BindValueType;
+  bindValueType?: BindValueType;
   // 参数值，当类型为引用时，示例 1.xxx 绑定节点ID为1的xxx字段；当类型为输入时，该字段为最终使用的值
-  bindValue: string;
+  bindValue?: string;
   // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
-  inputType: InputTypeType;
-  subArgs: ArgBindConfig[];
+  inputType?: InputTypeEnum;
+  // subArgs?: BindConfigWithSub[];
+  children?: BindConfigWithSub[];
 }
 
 // 智能体组件模型基础信息

@@ -9,16 +9,15 @@ import {
 import { apiModelInfo, apiModelSave } from '@/services/modelConfig';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import {
-  ModelApiProtocolEnum,
+  ModelApiInfoColumnNameEnum,
   ModelNetworkTypeEnum,
-  ModelStrategyEnum,
   ModelTypeEnum,
 } from '@/types/enums/modelConfig';
 import type {
   CreateModelProps,
   ModelConfigDataType,
 } from '@/types/interfaces/library';
-import type { ModelConfigInfo } from '@/types/interfaces/model';
+import type { ModelConfigInfo, ModelFormData } from '@/types/interfaces/model';
 import { getNumbersOnly } from '@/utils/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
@@ -28,7 +27,6 @@ import {
   Input,
   message,
   Radio,
-  RadioChangeEvent,
   Select,
   Table,
   TableColumnsType,
@@ -58,14 +56,13 @@ const CreateModel: React.FC<CreateModelProps> = ({
   const [networkType, setNetworkType] = useState<ModelNetworkTypeEnum>(
     ModelNetworkTypeEnum.Internet,
   );
-  const [modelInfo, setModelInfo] = useState<ModelConfigInfo>();
   // 入参源数据
   const [apiInfoList, setApiInfoList] = useState<ModelConfigDataType[]>([
     {
       key: Math.random(),
-      url: '',
-      apikey: '',
-      weight: '',
+      [ModelApiInfoColumnNameEnum.Url]: '',
+      [ModelApiInfoColumnNameEnum.Apikey]: '',
+      [ModelApiInfoColumnNameEnum.Weight]: '',
     },
   ]);
 
@@ -74,20 +71,21 @@ const CreateModel: React.FC<CreateModelProps> = ({
     manual: true,
     debounceWait: 300,
     onSuccess: (result: ModelConfigInfo) => {
-      console.log(result);
-      setModelInfo(result);
-      form.setFieldValue('name', modelInfo?.name);
-      form.setFieldValue('description', modelInfo?.description);
-      form.setFieldValue('model', modelInfo?.model);
-      form.setFieldValue('apiProtocol', modelInfo?.apiProtocol);
-      form.setFieldValue('networkType', modelInfo?.networkType);
-      form.setFieldValue('strategy', modelInfo?.strategy);
-      const _apiInfoList = modelInfo?.apiInfoList?.map((item) => ({
-        key: Math.random(),
-        url: item.url,
-        apikey: item.key,
-        weight: item.weight,
-      }));
+      form.setFieldsValue({
+        name: result?.name,
+        description: result?.description,
+        model: result?.model,
+        apiProtocol: result?.apiProtocol,
+        networkType: result?.networkType,
+        strategy: result?.strategy,
+      });
+      const _apiInfoList =
+        result?.apiInfoList?.map((item) => ({
+          key: Math.random(),
+          url: item.url,
+          apikey: item.key,
+          weight: item.weight,
+        })) || [];
       setApiInfoList(_apiInfoList as ModelConfigDataType[]);
     },
   });
@@ -108,18 +106,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
     },
   });
 
-  const handleNetworkType = (e: RadioChangeEvent) => {
-    setNetworkType(e.target.value);
-  };
-
-  const onFinish: FormProps<{
-    name: string;
-    description: string;
-    model: string;
-    networkType: ModelNetworkTypeEnum;
-    apiProtocol: ModelApiProtocolEnum;
-    strategy: ModelStrategyEnum;
-  }>['onFinish'] = (values) => {
+  const onFinish: FormProps<ModelFormData>['onFinish'] = (values) => {
     const _apiInfoList = apiInfoList?.map((item) => {
       return {
         url: item.url,
@@ -140,9 +127,11 @@ const CreateModel: React.FC<CreateModelProps> = ({
         spaceId,
       });
     } else {
+      // 更新模型
       run({
         ...data,
         id,
+        spaceId,
       });
     }
   };
@@ -155,9 +144,9 @@ const CreateModel: React.FC<CreateModelProps> = ({
     const _apiInfoList = [...apiInfoList];
     _apiInfoList.push({
       key: Math.random(),
-      url: '',
-      apikey: '',
-      weight: '',
+      [ModelApiInfoColumnNameEnum.Url]: '',
+      [ModelApiInfoColumnNameEnum.Apikey]: '',
+      [ModelApiInfoColumnNameEnum.Weight]: '',
     });
     setApiInfoList(_apiInfoList);
   };
@@ -170,10 +159,16 @@ const CreateModel: React.FC<CreateModelProps> = ({
   };
 
   // 修改value值
-  const handleChange = (index: number, attr: string, value: string) => {
+  const handleChange = (
+    index: number,
+    attr: ModelApiInfoColumnNameEnum,
+    value: string,
+  ) => {
     const _apiInfoList = [...apiInfoList];
-    _apiInfoList[index][attr] =
-      attr === 'weight' ? getNumbersOnly(value) : value;
+    _apiInfoList[index][attr as string] =
+      attr === ModelApiInfoColumnNameEnum.Weight
+        ? getNumbersOnly(value)
+        : value;
     setApiInfoList(_apiInfoList);
   };
 
@@ -181,38 +176,54 @@ const CreateModel: React.FC<CreateModelProps> = ({
   const inputColumns: TableColumnsType<ModelConfigDataType>['columns'] = [
     {
       title: 'URL',
-      dataIndex: 'url',
-      key: 'url',
+      dataIndex: ModelApiInfoColumnNameEnum.Url,
+      key: ModelApiInfoColumnNameEnum.Url,
       className: styles['table-bg'],
       render: (_, record, index) => (
         <Input
           placeholder="输入接口URL"
-          onChange={(e) => handleChange(index, 'url', e.target.value)}
+          value={record.url}
+          onChange={(e) =>
+            handleChange(index, ModelApiInfoColumnNameEnum.Url, e.target.value)
+          }
         />
       ),
     },
     {
       title: 'API KEY',
-      dataIndex: 'apikey',
-      key: 'apikey',
+      dataIndex: ModelApiInfoColumnNameEnum.Apikey,
+      key: ModelApiInfoColumnNameEnum.Apikey,
       className: styles['table-bg'],
       render: (_, record, index) => (
         <Input
           placeholder="输入接口API KEY"
-          onChange={(e) => handleChange(index, 'apikey', e.target.value)}
+          value={record.apikey}
+          onChange={(e) =>
+            handleChange(
+              index,
+              ModelApiInfoColumnNameEnum.Apikey,
+              e.target.value,
+            )
+          }
         />
       ),
     },
     {
       title: '权重',
-      dataIndex: 'weight',
-      key: 'weight',
+      dataIndex: ModelApiInfoColumnNameEnum.Weight,
+      key: ModelApiInfoColumnNameEnum.Weight,
       className: styles['table-bg'],
       render: (_, record, index) => (
         <Input
           placeholder="输入权重值"
           value={record.weight}
-          onChange={(e) => handleChange(index, 'weight', e.target.value)}
+          onChange={(e) =>
+            handleChange(
+              index,
+              ModelApiInfoColumnNameEnum.Weight,
+              e.target.value,
+            )
+          }
         />
       ),
     },
@@ -228,6 +239,11 @@ const CreateModel: React.FC<CreateModelProps> = ({
     },
   ];
 
+  const handleValuesChange = (changedValues: ModelFormData) => {
+    const { networkType } = changedValues;
+    setNetworkType(networkType);
+  };
+
   return (
     <CustomFormModal
       form={form}
@@ -242,10 +258,10 @@ const CreateModel: React.FC<CreateModelProps> = ({
     >
       <Form
         form={form}
-        preserve={false}
         requiredMark={customizeRequiredMark}
         layout="vertical"
         onFinish={onFinish}
+        onValuesChange={handleValuesChange}
         autoComplete="off"
       >
         <div className={cx('flex', styles['gap-16'])}>
@@ -287,11 +303,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
           />
         </Form.Item>
         <Form.Item name="networkType" label="联网类型">
-          <Radio.Group
-            value={networkType}
-            onChange={handleNetworkType}
-            options={MODEL_NETWORK_TYPE_LIST}
-          />
+          <Radio.Group options={MODEL_NETWORK_TYPE_LIST} />
         </Form.Item>
         <ConditionRender
           condition={networkType === ModelNetworkTypeEnum.Intranet}

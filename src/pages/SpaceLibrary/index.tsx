@@ -1,4 +1,5 @@
 import AnalyzeStatistics from '@/components/AnalyzeStatistics';
+import ConditionRender from '@/components/ConditionRender';
 import CreateKnowledge from '@/components/CreateKnowledge';
 import CreateNewPlugin from '@/components/CreateNewPlugin';
 import CreateWorkflow from '@/components/CreateWorkflow';
@@ -24,7 +25,7 @@ import type {
   AnalyzeStatisticsItem,
   CustomPopoverItem,
 } from '@/types/interfaces/common';
-import { KnowledgeBaseInfo } from '@/types/interfaces/knowledge';
+import type { KnowledgeBaseInfo } from '@/types/interfaces/knowledge';
 import type {
   ComponentInfo,
   WorkflowBaseInfo,
@@ -363,19 +364,21 @@ const SpaceLibrary: React.FC = () => {
         onCancel={() => setOpenWorkflow(false)}
         onConfirm={handleConfirmWorkflow}
       />
-      {/*创建模型*/}
-      <CreateModel
-        mode={
-          modelComponentInfo
-            ? CreateUpdateModeEnum.Update
-            : CreateUpdateModeEnum.Create
-        }
-        spaceId={spaceId}
-        id={modelComponentInfo?.id}
-        open={openModel}
-        onCancel={() => setOpenModel(false)}
-        onConfirm={handleConfirmModel}
-      />
+      <ConditionRender condition={openModel}>
+        {/*创建模型*/}
+        <CreateModel
+          mode={
+            modelComponentInfo
+              ? CreateUpdateModeEnum.Update
+              : CreateUpdateModeEnum.Create
+          }
+          spaceId={spaceId}
+          id={modelComponentInfo?.id}
+          open={openModel}
+          onCancel={() => setOpenModel(false)}
+          onConfirm={handleConfirmModel}
+        />
+      </ConditionRender>
     </div>
   );
 };

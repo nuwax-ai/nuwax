@@ -1,8 +1,10 @@
+import type { InputTypeEnum } from '@/types/enums/agent';
 import type { PublishStatusEnum } from '@/types/enums/common';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { WorkflowModeEnum } from '@/types/enums/library';
 import type { ComponentTypeEnum } from '@/types/enums/space';
 import type { CreatorInfo } from '@/types/interfaces/agent';
+import { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { ModelSaveParams } from '@/types/interfaces/model';
 import { PluginInfo } from '@/types/interfaces/plugin';
@@ -48,7 +50,7 @@ export interface CreateNewPluginProps {
   icon?: string;
   name?: string;
   description?: string;
-  // 弹窗类型： 新建、更新
+  // 弹窗类型：新建、更新
   mode?: CreateUpdateModeEnum;
   open: boolean;
   onCancel: () => void;
@@ -56,17 +58,7 @@ export interface CreateNewPluginProps {
 }
 
 // 入参与出参共有配置数据类型
-export interface ConfigDataType {
-  key: React.Key;
-  // 参数名称
-  paramName: string;
-  // 参数描述
-  desc: string;
-  // 参数类型
-  paramType: number;
-  // 开启
-  open: boolean;
-}
+export type ConfigDataType = BindConfigWithSub;
 
 // 出参配置数据类型
 export interface OutputConfigDataType extends ConfigDataType {
@@ -84,12 +76,10 @@ export interface InputConfigCloudDataType extends ConfigDataType {
 
 // 入参配置数据类型(插件基于http创建)
 export interface InputConfigDataType extends ConfigDataType {
-  // 传入方式
-  afferentMode: number;
+  // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
+  inputType: InputTypeEnum;
   // 是否必须
-  mustNot: boolean;
-  // 默认值
-  default: string;
+  require: boolean;
   children?: InputConfigDataType[];
 }
 

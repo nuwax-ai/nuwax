@@ -14,13 +14,12 @@ import {
   ICON_TEXT_FORMAT,
   ICON_WORKFLOW,
 } from '@/constants/images.constants';
-import { InputTypeType } from '@/types/enums/agent';
-import { HttpMethodEnum } from '@/types/enums/common';
+import { InputTypeEnum } from '@/types/enums/agent';
+import { HttpContentTypeEnum, HttpMethodEnum } from '@/types/enums/common';
 import {
   ComponentMoreActionEnum,
   KnowledgeDataTypeEnum,
   KnowledgeTextImportEnum,
-  RequestContentFormatEnum,
 } from '@/types/enums/library';
 import {
   ModelApiProtocolEnum,
@@ -85,19 +84,19 @@ export const REQUEST_METHOD = [
 // 请求内容格式
 export const REQUEST_CONTENT_FORMAT = [
   {
-    value: RequestContentFormatEnum.No,
+    value: HttpContentTypeEnum.OTHER,
     label: '无',
   },
   {
-    value: RequestContentFormatEnum.Form_Data,
+    value: HttpContentTypeEnum.FORM_DATA,
     label: 'form-data',
   },
   {
-    value: RequestContentFormatEnum.X_Www_Form_Urlencoded,
+    value: HttpContentTypeEnum.X_WWW_FORM_URLENCODED,
     label: 'x-www-form-urlencoded',
   },
   {
-    value: RequestContentFormatEnum.Json,
+    value: HttpContentTypeEnum.JSON,
     label: 'json',
   },
 ];
@@ -105,19 +104,19 @@ export const REQUEST_CONTENT_FORMAT = [
 // 传入方法
 export const AFFERENT_MODE_LIST = [
   {
-    value: InputTypeType.Body,
+    value: InputTypeEnum.Body,
     label: 'Body',
   },
   {
-    value: InputTypeType.Path,
+    value: InputTypeEnum.Path,
     label: 'Path',
   },
   {
-    value: InputTypeType.Query,
+    value: InputTypeEnum.Query,
     label: 'Query',
   },
   {
-    value: InputTypeType.Header,
+    value: InputTypeEnum.Header,
     label: 'Header',
   },
 ];

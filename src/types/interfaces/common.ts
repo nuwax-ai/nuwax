@@ -5,11 +5,8 @@ import type {
   AgentConfigInfo,
   CreatorInfo,
 } from '@/types/interfaces/agent';
-<<<<<<< HEAD
 import type { KnowledgeBaseInfo } from '@/types/interfaces/knowledge';
-=======
 import { InputAndOutConfig } from '@/types/interfaces/node';
->>>>>>> d43021e92734987408862e34c48ba277db6c7133
 import type {
   ConfigProviderProps,
   FormInstance,

@@ -17,7 +17,7 @@ import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps, RadioChangeEvent } from 'antd';
 import { Form, Input, message, Radio } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
@@ -38,8 +38,14 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   onConfirm,
 }) => {
   const [form] = Form.useForm();
-  const [imageUrl, setImageUrl] = useState<string>(icon || '');
+  const [imageUrl, setImageUrl] = useState<string>('');
   const [pluginType, setPluginType] = useState<PluginTypeEnum>();
+
+  useEffect(() => {
+    if (icon) {
+      setImageUrl(icon);
+    }
+  }, [icon]);
 
   // 新增插件接口
   const { run: runCreate } = useRequest(apiPluginAdd, {
@@ -109,7 +115,6 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
         />
         <Form
           form={form}
-          preserve={false}
           requiredMark={customizeRequiredMark}
           initialValues={{
             name,

@@ -57,3 +57,10 @@ export enum ModelEventTypeEnum {
   MESSAGE = 'MESSAGE',
   FINAL_RESULT = 'FINAL_RESULT',
 }
+
+// Model apiInfo 的表单列表名称
+export enum ModelApiInfoColumnNameEnum {
+  Url = 'url',
+  Apikey = 'apikey',
+  Weight = 'weight',
+}
