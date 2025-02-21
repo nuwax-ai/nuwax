@@ -57,4 +57,10 @@ export interface TreeFormProps {
   handleChangeNodeConfig: (params: NodeConfig) => void;
   // 标题
   title: string;
+  inputItemName?:
+    | 'inputArgs'
+    | 'outputArgs'
+    | 'variableArgs'
+    | 'conditionBranchConfigs'
+    | 'skillComponentConfigs';
 }

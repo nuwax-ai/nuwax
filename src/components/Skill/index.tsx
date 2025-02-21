@@ -10,10 +10,12 @@ import {
 import { Button, Input, Modal, Popover, Switch, Tag, Tree } from 'antd';
 import React, { useEffect, useState } from 'react';
 import './index.less';
+
+interface TreeOutput extends InputAndOutConfig {
+  key: string;
+}
 // 定义技能的参数展示
-const SkillParamsContent: React.FC<{ params: InputAndOutConfig[] }> = ({
-  params,
-}) => {
+const SkillParamsContent: React.FC<{ params: TreeOutput[] }> = ({ params }) => {
   return (
     <>
       {params.map((item) => (
@@ -127,7 +129,7 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
                   </div>
                   <Input
                     className="content-center-item-style"
-                    value={item.bindValue}
+                    value={item.bindValue ?? ''}
                     onChange={(e) => {
                       handleChangeValue(
                         {
@@ -179,12 +181,12 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
                   </Popover>
                 </p>
               </div>
-              <Tree<InputAndOutConfig>
+              <Tree<TreeOutput>
                 showLine
                 defaultExpandAll
                 switcherIcon={<DownOutlined />}
                 fieldNames={{ title: 'name', key: 'name', children: 'subArgs' }}
-                treeData={parameter.outputArgBindConfigs as InputAndOutConfig[]}
+                treeData={parameter.outputArgBindConfigs as TreeOutput[]}
                 titleRender={(nodeData) => {
                   console.log(nodeData);
                   return (
@@ -279,7 +281,7 @@ export const SkillList: React.FC<SkillProps> = ({ params, handleChange }) => {
                 <Popover
                   content={
                     <SkillParamsContent
-                      params={item.outputArgBindConfigs as InputAndOutConfig[]}
+                      params={item.outputArgBindConfigs as TreeOutput[]}
                     />
                   }
                   trigger="hover"

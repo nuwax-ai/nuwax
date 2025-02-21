@@ -1,3 +1,4 @@
+import { DefaultObjectType } from '@/types/interfaces/common';
 import { NodeConfig, NodePreviousAndArgMap } from '@/types/interfaces/node';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
@@ -153,6 +154,22 @@ export async function getNodeConfig(id: number): Promise<RequestResponse<any>> {
     method: 'GET',
   });
 }
+
+interface IExecuteNode {
+  nodeId: number | string;
+  requestId?: number | string;
+  params?: DefaultObjectType;
+}
+// 试运行单个节点
+export async function executeNode(
+  data: IExecuteNode,
+): Promise<RequestResponse<any>> {
+  return request(`/api/workflow/test/node/execute`, {
+    method: 'POST',
+    data,
+  });
+}
+
 export default {
   getDetails,
   updateDetails,
@@ -165,4 +182,5 @@ export default {
   getModelListByWorkflowId,
   getOutputArgs,
   getNodeConfig,
+  executeNode,
 };

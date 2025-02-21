@@ -4,7 +4,7 @@ import TestRun from '@/components/TestRun';
 import Constant from '@/constants/codes.constants';
 import service, { IUpdateDetails } from '@/services/workflow';
 import { NodeTypeEnum, PluginAndLibraryEnum } from '@/types/enums/common';
-import { CreatedNodeItem } from '@/types/interfaces/common';
+import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
 import { NodePreviousAndArgMap } from '@/types/interfaces/node';
 import { debounce } from '@/utils/debounce';
@@ -14,7 +14,9 @@ import { message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 // import Monaco from '../../components/CodeEditor/monaco';
+import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { WorkflowModeEnum } from '@/types/enums/library';
+import { createSSEConnection } from '@/utils/fetchEventSource';
 import ControlPanel from './controlPanel';
 import ErrorList from './errorList';
 import GraphContainer from './graphContainer';
@@ -55,6 +57,8 @@ const Workflow: React.FC = () => {
     endNodeId: 0,
     spaceId: 0,
   });
+  // 定义一个节点试运行返回值
+  const [testRunResult, setTestRunResult] = useState<string>();
 
   // 上级节点的输出参数
   const [referenceList, setReferenceList] = useState<NodePreviousAndArgMap>({
@@ -83,7 +87,7 @@ const Workflow: React.FC = () => {
 
   // 错误列表的参数
   const [errorParams, setErrorParams] = useState({
-    errorList: [{ ...graphParams.nodeList[0], error: '123456' }],
+    errorList: [],
     show: false,
   });
   // 画布的ref
@@ -353,8 +357,39 @@ const Workflow: React.FC = () => {
   };
 
   // 节点试运行
-  const nodeTestRun = async () => {
-    console.log('testRun', foldWrapItem);
+  const nodeTestRun = async (params: DefaultObjectType) => {
+    const _params = {
+      nodeId: foldWrapItem.id,
+      params,
+    };
+    // const _res = await service.executeNode(_params);
+    // console.log(_res)
+    // 启动连接
+    const abortConnection = await createSSEConnection({
+      url: `${process.env.BASE_URL}/api/workflow/test/node/execute`,
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`,
+        Accept: ' application/json, text/plain, */* ',
+      },
+      body: _params,
+      onMessage: (data) => {
+        setTestRunResult(data.data.output);
+        // 更新UI状态...
+      },
+      onError: (error) => {
+        console.error('流式请求异常:', error);
+        // 显示错误提示...
+      },
+      onOpen: (response) => {
+        console.log('连接已建立', response.status);
+      },
+      onClose: () => {
+        console.log('连接关闭');
+      },
+    });
+    // 主动关闭连接
+    abortConnection();
   };
 
   // 调整画布的大小
@@ -378,9 +413,44 @@ const Workflow: React.FC = () => {
     });
     // 如果有完整的连线，那么就可以进行试运行
     if (fullPath) {
+      await getDetails();
       // 遍历检查所有节点是否都已经输入了参数
-      console.log('submit');
-      setErrorParams({ ...errorParams, show: true });
+      const params = {
+        workflowId: info.id,
+      };
+      const abortConnection = await createSSEConnection({
+        url: `${process.env.BASE_URL}/api/workflow/test/execute`,
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`,
+          Accept: ' application/json, text/plain, */* ',
+        },
+        body: params,
+        onMessage: (data) => {
+          // setTestRunResult(data);
+          if (!data.success) {
+            if (data.data && data.data.result) {
+              setErrorParams({
+                errorList: [...errorParams.errorList, data.data.result],
+                show: true,
+              });
+            }
+          }
+          // 更新UI状态...
+        },
+        onError: (error) => {
+          console.error('流式请求异常:', error);
+          // 显示错误提示...
+        },
+        onOpen: (response) => {
+          console.log('连接已建立', response.status);
+        },
+        onClose: () => {
+          console.log('连接关闭');
+        },
+      });
+      // 主动关闭连接
+      abortConnection();
     } else {
       message.warning('连线不完整');
       return;
@@ -434,7 +504,13 @@ const Workflow: React.FC = () => {
         open={open}
         onCancel={() => setOpen(false)}
       />
-      <TestRun type={foldWrapItem.type} run={nodeTestRun} />
+      <TestRun
+        type={foldWrapItem.type}
+        run={nodeTestRun}
+        title={foldWrapItem.name}
+        inputArgs={foldWrapItem.nodeConfig.inputArgs ?? []}
+        testRunResult={testRunResult}
+      />
 
       <CreateWorkflow
         onConfirm={onConfirm}
@@ -450,6 +526,7 @@ const Workflow: React.FC = () => {
         show={errorParams.show}
         onClose={() => setErrorParams({ ...errorParams, show: false })}
         changeDrawer={changeDrawer}
+        nodeList={graphParams.nodeList}
       />
     </div>
   );
