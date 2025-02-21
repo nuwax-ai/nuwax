@@ -2,13 +2,13 @@ import type {
   PluginAddParams,
   PluginCopyUpdateParams,
   PluginHttpUpdateParams,
+  PluginInfo,
   PluginPublishParams,
   PluginTestParams,
   PluginTestResult,
 } from '@/types/interfaces/plugin';
-import { PluginInfo } from '@/types/interfaces/plugin';
 import type { RequestResponse } from '@/types/interfaces/request';
-import { HistoryData } from '@/types/interfaces/space';
+import type { HistoryData } from '@/types/interfaces/space';
 import { request } from 'umi';
 
 // 插件试运行接口

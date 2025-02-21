@@ -391,3 +391,10 @@ export interface PageParams {
 export interface ListParams {
   size: number;
 }
+
+// 插件发布弹窗组件
+export interface PluginPublishProps {
+  pluginId: number;
+  open: boolean;
+  onCancel: () => void;
+}

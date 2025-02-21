@@ -1,66 +1,76 @@
-import type {
-  tryOutputConfigDataType,
-  TryRunModelProps,
-} from '@/types/interfaces/library';
+import { apiPluginTest } from '@/services/plugin';
+import { DataTypeEnum } from '@/types/enums/common';
+import type { BindConfigWithSub } from '@/types/interfaces/agent';
+import type { TryRunModelProps } from '@/types/interfaces/library';
+import { PluginTestResult } from '@/types/interfaces/plugin';
 import { CloseOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import { Button, Checkbox, Input, Modal, Table } from 'antd';
+import { Button, Checkbox, Input, message, Modal, Table } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
+import { useRequest } from 'umi';
 import styles from './index.less';
 import ParamsNameLabel from './ParamsNameLabel';
 
 const cx = classNames.bind(styles);
 
-// 入参配置columns
-const inputColumns: TableColumnsType<tryOutputConfigDataType>['columns'] = [
-  {
-    title: '参数名称',
-    dataIndex: 'paramName',
-    key: 'paramName',
-    className: 'flex',
-    render: (_, record) => (
-      <ParamsNameLabel paramName={record.paramName} paramType="string" />
-    ),
-  },
-  {
-    title: '参数值',
-    dataIndex: 'desc',
-    key: 'desc',
-    render: (_, record) => (
-      <>
-        {record?.children?.length ? null : (
-          <Input placeholder="请输入参数描述，确保描述详细便于大模型更好的理解" />
-        )}
-        <p className={cx(styles['param-desc'])}>{record.desc}</p>
-      </>
-    ),
-  },
-];
-
-// 入参源数据
-const inputData: tryOutputConfigDataType[] = [
-  {
-    key: '1',
-    paramName: 'John Brown',
-    desc: '这里是参数描述',
-    children: [
-      {
-        key: '11',
-        paramName: 'John Brown',
-        desc: 'desc',
-      },
-      {
-        key: '12',
-        paramName: 'John Brown',
-        desc: 'desc',
-      },
-    ],
-  },
-];
-
 // 试运行弹窗组件
-const TryRunModel: React.FC<TryRunModelProps> = ({ open, onCancel }) => {
+const TryRunModel: React.FC<TryRunModelProps> = ({
+  inputConfigArgs,
+  pluginId,
+  pluginName,
+  open,
+  onCancel,
+}) => {
+  // 查询插件信息
+  const { run: runTest } = useRequest(apiPluginTest, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: PluginTestResult) => {
+      console.log(result);
+      if (!result.success) {
+        message.warning(result.error);
+      }
+    },
+  });
+
+  // 入参配置columns
+  const inputColumns: TableColumnsType<BindConfigWithSub>['columns'] = [
+    {
+      title: '参数名称',
+      dataIndex: 'name',
+      key: 'name',
+      className: 'flex',
+      render: (_, record) =>
+        record.require ? (
+          <ParamsNameLabel paramName={record.name} paramType="string" />
+        ) : (
+          <span>{record.name}</span>
+        ),
+    },
+    {
+      title: '参数值',
+      dataIndex: 'description',
+      key: 'description',
+      render: (_, record) => (
+        <>
+          {record?.dataType === DataTypeEnum.Object ? null : (
+            <Input placeholder="请输入参数值" />
+          )}
+          <p className={cx(styles['param-desc'])}>{record.description}</p>
+        </>
+      ),
+    },
+  ];
+
+  const handleRunTest = () => {
+    runTest({
+      requestId: '',
+      pluginId,
+      params: {},
+    });
+  };
+
   return (
     <Modal
       centered
@@ -97,11 +107,11 @@ const TryRunModel: React.FC<TryRunModelProps> = ({ open, onCancel }) => {
           >
             {/*左侧内容*/}
             <div className={cx('flex-1', 'flex', 'flex-col')}>
-              <h3 className={cx(styles['p-title'])}>端侧插件1.test输入参数</h3>
-              <Table<tryOutputConfigDataType>
+              <h3 className={cx(styles['p-title'])}>{pluginName} 输入参数</h3>
+              <Table<BindConfigWithSub>
                 className={cx(styles['table-wrap'])}
                 columns={inputColumns}
-                dataSource={inputData}
+                dataSource={inputConfigArgs}
                 pagination={false}
                 virtual
                 expandable={{
@@ -113,7 +123,7 @@ const TryRunModel: React.FC<TryRunModelProps> = ({ open, onCancel }) => {
                 }}
                 footer={() => (
                   <div className={cx('text-right')}>
-                    <Button type="primary" disabled>
+                    <Button type="primary" onClick={handleRunTest}>
                       运行
                     </Button>
                   </div>
@@ -122,7 +132,7 @@ const TryRunModel: React.FC<TryRunModelProps> = ({ open, onCancel }) => {
             </div>
             {/*右侧内容*/}
             <div className={cx('flex-1', 'flex', 'flex-col')}>
-              <h3 className={cx(styles['p-title'])}>端侧插件1.test 调试结果</h3>
+              <h3 className={cx(styles['p-title'])}>{pluginName} 调试结果</h3>
               <div className={cx('flex-1', 'radius-6', styles['result-wrap'])}>
                 {/*todo*/}
                 <div
@@ -144,7 +154,9 @@ const TryRunModel: React.FC<TryRunModelProps> = ({ open, onCancel }) => {
           >
             <Checkbox>保存调试结果为工具使用示例</Checkbox>
             <div className={cx(styles['divider-vertical'])} />
-            <Button type="primary">完成</Button>
+            <Button type="primary" onClick={onCancel}>
+              完成
+            </Button>
           </div>
         </div>
       )}

@@ -1,13 +1,14 @@
 import type { InputTypeEnum } from '@/types/enums/agent';
-import type { PublishStatusEnum } from '@/types/enums/common';
-import { CreateUpdateModeEnum } from '@/types/enums/common';
+import type {
+  CreateUpdateModeEnum,
+  PublishStatusEnum,
+} from '@/types/enums/common';
 import type { WorkflowModeEnum } from '@/types/enums/library';
 import type { ComponentTypeEnum } from '@/types/enums/space';
-import type { CreatorInfo } from '@/types/interfaces/agent';
-import { BindConfigWithSub } from '@/types/interfaces/agent';
+import type { BindConfigWithSub, CreatorInfo } from '@/types/interfaces/agent';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
-import { ModelSaveParams } from '@/types/interfaces/model';
-import { PluginInfo } from '@/types/interfaces/plugin';
+import type { ModelSaveParams } from '@/types/interfaces/model';
+import type { PluginInfo } from '@/types/interfaces/plugin';
 import React from 'react';
 
 // 组件库单个组件项
@@ -90,18 +91,11 @@ export interface LabelStarProps {
 
 // 试运行弹窗组件属性
 export interface TryRunModelProps {
+  inputConfigArgs: BindConfigWithSub[];
+  pluginId: string;
+  pluginName: string;
   open: boolean;
   onCancel: () => void;
-}
-
-// 试运行~table出参配置数据类型
-export interface tryOutputConfigDataType {
-  key: React.Key;
-  // 参数名称
-  paramName: string;
-  // 参数值
-  desc: string;
-  children?: tryOutputConfigDataType[];
 }
 
 // 接口配置

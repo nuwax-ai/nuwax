@@ -10,11 +10,15 @@ import {
   REQUEST_METHOD,
 } from '@/constants/library.constants';
 import {
+  PLUGIN_INPUT_CONFIG,
+  PLUGIN_OUTPUT_CONFIG,
+} from '@/constants/space.contants';
+import ConfigHeader from '@/pages/SpacePluginTool/ConfigHeader';
+import {
   apiPluginConfigHistoryList,
   apiPluginHttpUpdate,
   apiPluginInfo,
 } from '@/services/plugin';
-import { InputTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type {
@@ -24,10 +28,9 @@ import type {
 import type { PluginInfo } from '@/types/interfaces/plugin';
 import type { HistoryData } from '@/types/interfaces/space';
 import { customizeRequiredMark } from '@/utils/form';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import {
-  Button,
   Checkbox,
   Form,
   Input,
@@ -53,16 +56,28 @@ const cx = classNames.bind(styles);
 const SpacePluginTool: React.FC = () => {
   const [form] = Form.useForm();
   const match = useMatch('/space/:spaceId/plugin/:pluginId');
+  const { pluginId } = match.params;
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [visible, setVisible] = useState<boolean>(false);
+  // 弹窗modal
   const [openModal, setOpenModal] = useState<boolean>(false);
   // 修改插件弹窗
   const [openPlugin, setOpenPlugin] = useState<boolean>(false);
+  // 插件信息
   const [pluginInfo, setPluginInfo] = useState<PluginInfo>();
+  // 入参配置 - 展开的行，控制属性
+  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
+  // 出参配置 - 展开的行，控制属性
+  const [outputExpandedRowKeys, setOutputExpandedRowKeys] = useState<string[]>(
+    [],
+  );
+  // 历史版本数据
   const [historyData, setHistoryData] = useState<HistoryData[]>([]);
+  // 入参配置
   const [inputConfigArgs, setInputConfigArgs] = useState<BindConfigWithSub[]>(
     [],
   );
+  // 出参配置
   const [outputConfigArgs, setOutputConfigArgs] = useState<BindConfigWithSub[]>(
     [],
   );
@@ -76,7 +91,7 @@ const SpacePluginTool: React.FC = () => {
       if (result.config) {
         const { method, url, contentType, timeout, inputArgs, outputArgs } =
           result.config;
-        form.setFieldValues({
+        form.setFieldsValue({
           method,
           url,
           contentType,
@@ -102,36 +117,83 @@ const SpacePluginTool: React.FC = () => {
     manual: true,
     debounceWait: 300,
     onSuccess: () => {
-      message.success('插件更新成功');
+      message.success('插件保存成功');
     },
   });
 
   useEffect(() => {
-    const { pluginId } = match.params;
     runPluginInfo(pluginId);
     runHistory(pluginId);
-  }, []);
+  }, [pluginId]);
 
+  // 入参配置 - changeValue
   const handleInputValue = (
     index: number,
+    record: BindConfigWithSub,
     attr: string,
     value: string | boolean,
   ) => {
     const _inputConfigArgs = cloneDeep(inputConfigArgs);
-    _inputConfigArgs[index][attr] = value;
+    // 第一级
+    if (_inputConfigArgs[index]?.key === record.key) {
+      _inputConfigArgs[index][attr] = value;
+    } else {
+      // 子级
+      const f_index = _inputConfigArgs.findIndex((item) => {
+        const childIndex = item.children?.findIndex(
+          (childItem) => childItem?.key === record.key,
+        );
+        return childIndex > -1;
+      });
+      _inputConfigArgs[f_index].children[index][attr] = value;
+    }
     setInputConfigArgs(_inputConfigArgs);
   };
 
+  // 出参配置 - changeValue
   const handleOutputValue = (
     index: number,
+    record: BindConfigWithSub,
     attr: string,
     value: string | boolean,
   ) => {
     const _outputConfigArgs = cloneDeep(outputConfigArgs);
-    _outputConfigArgs[index][attr] = value;
+    // 第一级
+    if (_outputConfigArgs[index]?.key === record.key) {
+      _outputConfigArgs[index][attr] = value;
+    } else {
+      // 子级
+      const f_index = _outputConfigArgs.findIndex((item) => {
+        const childIndex = item.children?.findIndex(
+          (childItem) => childItem?.key === record.key,
+        );
+        return childIndex > -1;
+      });
+      _outputConfigArgs[f_index].children[index][attr] = value;
+    }
     setOutputConfigArgs(_outputConfigArgs);
   };
 
+  // 入参配置 - 新增参数
+  const handleInputAddChild = (index: number) => {
+    const _inputConfigArgs = cloneDeep(inputConfigArgs);
+    if (!_inputConfigArgs[index]?.children) {
+      _inputConfigArgs[index].children = [];
+    }
+    _inputConfigArgs[index].children.push({
+      key: Math.random(),
+      ...PLUGIN_INPUT_CONFIG,
+    });
+    setInputConfigArgs(_inputConfigArgs);
+    // 设置默认展开行
+    const _expandedRowKeys = [...expandedRowKeys];
+    if (!_expandedRowKeys.includes(_inputConfigArgs[index].key)) {
+      _expandedRowKeys.push(_inputConfigArgs[index].key as string);
+      setExpandedRowKeys(_expandedRowKeys);
+    }
+  };
+
+  // 出参配置 - 新增参数
   const handleOutputAddChild = (index: number) => {
     const _outputConfigArgs = cloneDeep(outputConfigArgs);
     if (!_outputConfigArgs[index]?.children) {
@@ -139,12 +201,21 @@ const SpacePluginTool: React.FC = () => {
     }
     _outputConfigArgs[index].children.push({
       key: Math.random(),
-      name: '',
-      description: '',
-      dataType: DataTypeEnum.String,
-      enable: false,
+      ...PLUGIN_OUTPUT_CONFIG,
     });
     setOutputConfigArgs(_outputConfigArgs);
+    // 设置默认展开行
+    const _outputExpandedRowKeys = [...outputExpandedRowKeys];
+    if (!_outputExpandedRowKeys.includes(_outputConfigArgs[index].key)) {
+      _outputExpandedRowKeys.push(_outputConfigArgs[index].key as string);
+      setOutputExpandedRowKeys(_outputExpandedRowKeys);
+    }
+  };
+
+  // 出参配置删除操作
+  const handleOutputDel = (index: number, record: BindConfigWithSub) => {
+    const _outputConfigArgs = cloneDeep(outputConfigArgs);
+    console.log(index, record, _outputConfigArgs);
   };
 
   // 入参配置columns
@@ -153,12 +224,14 @@ const SpacePluginTool: React.FC = () => {
       title: <LabelStar label="参数名称" />,
       dataIndex: 'name',
       key: 'name',
-      className: 'flex',
-      render: (_, record, index) => (
+      className: 'flex items-center',
+      render: (value, record, index) => (
         <Input
           placeholder="请输入参数名称，确保含义清晰"
-          value={record.name}
-          onChange={(e) => handleInputValue(index, 'name', e.target.value)}
+          value={value}
+          onChange={(e) =>
+            handleInputValue(index, record, 'name', e.target.value)
+          }
         />
       ),
     },
@@ -166,12 +239,12 @@ const SpacePluginTool: React.FC = () => {
       title: <LabelStar label="参数描述" />,
       dataIndex: 'description',
       key: 'description',
-      render: (_, record, index) => (
+      render: (value, record, index) => (
         <Input
           placeholder="请输入参数描述，确保描述详细便于大模型更好的理解"
-          value={record.description}
+          value={value}
           onChange={(e) =>
-            handleInputValue(index, 'description', e.target.value)
+            handleInputValue(index, record, 'description', e.target.value)
           }
         />
       ),
@@ -181,11 +254,13 @@ const SpacePluginTool: React.FC = () => {
       dataIndex: 'dataType',
       key: 'dataType',
       width: 120,
-      render: (_, record, index) => (
+      render: (value, record, index) => (
         <Select
           rootClassName={styles.select}
-          value={record.dataType}
-          onChange={(value) => handleInputValue(index, 'dataType', value)}
+          value={value}
+          onChange={(value) =>
+            handleInputValue(index, record, 'dataType', value)
+          }
           options={VARIABLE_TYPE_LIST}
         />
       ),
@@ -195,12 +270,14 @@ const SpacePluginTool: React.FC = () => {
       dataIndex: 'inputType',
       key: 'inputType',
       width: 120,
-      render: (_, record, index) => (
+      render: (value, record, index) => (
         <Select
           rootClassName={styles.select}
           options={AFFERENT_MODE_LIST}
-          onChange={(value) => handleInputValue(index, 'inputType', value)}
-          value={record.inputType}
+          onChange={(value) =>
+            handleInputValue(index, record, 'inputType', value)
+          }
+          value={value}
         />
       ),
     },
@@ -210,10 +287,12 @@ const SpacePluginTool: React.FC = () => {
       key: 'require',
       width: 100,
       align: 'center',
-      render: (_, record, index) => (
+      render: (value, record, index) => (
         <Checkbox
-          checked={record.require}
-          onChange={(e) => handleInputValue(index, 'require', e.target.checked)}
+          checked={value}
+          onChange={(e) =>
+            handleInputValue(index, record, 'require', e.target.checked)
+          }
         />
       ),
     },
@@ -222,11 +301,13 @@ const SpacePluginTool: React.FC = () => {
       dataIndex: 'bindValue',
       key: 'bindValue',
       width: 150,
-      render: (_, record, index) => (
+      render: (value, record, index) => (
         <Input
           placeholder="请输入默认值"
-          onChange={(e) => handleInputValue(index, 'bindValue', e.target.value)}
-          value={record.bindValue}
+          onChange={(e) =>
+            handleInputValue(index, record, 'bindValue', e.target.value)
+          }
+          value={value}
         />
       ),
     },
@@ -236,10 +317,12 @@ const SpacePluginTool: React.FC = () => {
       key: 'enable',
       width: 70,
       align: 'center',
-      render: (_, record, index) => (
+      render: (value, record, index) => (
         <Checkbox
-          checked={record.enable}
-          onChange={(e) => handleInputValue(index, 'enable', e.target.checked)}
+          checked={value}
+          onChange={(e) =>
+            handleInputValue(index, record, 'enable', e.target.checked)
+          }
         />
       ),
     },
@@ -248,11 +331,15 @@ const SpacePluginTool: React.FC = () => {
       key: 'action',
       width: 80,
       align: 'right',
-      render: (_, record) => (
+      render: (_, record, index) => (
         <Space size="middle">
-          {record.dataType === DataTypeEnum.Object && (
-            <ICON_ADD_TR className={cx('cursor-pointer')} />
-          )}
+          {record.dataType === DataTypeEnum.Object &&
+            inputConfigArgs?.[index]?.key === record.key && (
+              <ICON_ADD_TR
+                className={cx('cursor-pointer')}
+                onClick={() => handleInputAddChild(index)}
+              />
+            )}
           <DeleteOutlined onClick={() => console.log(record)} />
         </Space>
       ),
@@ -266,12 +353,14 @@ const SpacePluginTool: React.FC = () => {
       dataIndex: 'name',
       key: 'name',
       width: 430,
-      className: 'flex',
-      render: (_, record, index) => (
+      className: 'flex items-center',
+      render: (value, record, index) => (
         <Input
           placeholder="请输入参数名称，确保含义清晰"
-          value={record.name}
-          onChange={(e) => handleOutputValue(index, 'name', e.target.value)}
+          value={value}
+          onChange={(e) =>
+            handleOutputValue(index, record, 'name', e.target.value)
+          }
         />
       ),
     },
@@ -279,13 +368,13 @@ const SpacePluginTool: React.FC = () => {
       title: <LabelStar label="参数描述" />,
       dataIndex: 'description',
       key: 'description',
-      render: (_, record, index) => (
+      render: (value, record, index) => (
         <Input
           placeholder="请输入参数描述，确保描述详细便于大模型更好的理解"
           onChange={(e) =>
-            handleOutputValue(index, 'description', e.target.value)
+            handleOutputValue(index, record, 'description', e.target.value)
           }
-          value={record.description}
+          value={value}
         />
       ),
     },
@@ -294,11 +383,13 @@ const SpacePluginTool: React.FC = () => {
       dataIndex: 'dataType',
       key: 'dataType',
       width: 120,
-      render: (_, record, index) => (
+      render: (value, record, index) => (
         <Select
           rootClassName={styles.select}
-          value={record.dataType}
-          onChange={(value) => handleOutputValue(index, 'dataType', value)}
+          value={value}
+          onChange={(value) =>
+            handleOutputValue(index, record, 'dataType', value)
+          }
           options={VARIABLE_TYPE_LIST}
         />
       ),
@@ -309,10 +400,12 @@ const SpacePluginTool: React.FC = () => {
       key: 'enable',
       width: 70,
       align: 'center',
-      render: (_, record, index) => (
+      render: (value, record, index) => (
         <Checkbox
-          checked={record.enable}
-          onChange={(e) => handleOutputValue(index, 'enable', e.target.checked)}
+          checked={value}
+          onChange={(e) =>
+            handleOutputValue(index, record, 'enable', e.target.checked)
+          }
         />
       ),
     },
@@ -323,13 +416,14 @@ const SpacePluginTool: React.FC = () => {
       align: 'right',
       render: (_, record, index) => (
         <Space size="middle">
-          {record.dataType === DataTypeEnum.Object && (
-            <ICON_ADD_TR
-              className={cx('cursor-pointer')}
-              onClick={() => handleOutputAddChild(index)}
-            />
-          )}
-          <DeleteOutlined onClick={() => console.log(record)} />
+          {record.dataType === DataTypeEnum.Object &&
+            outputConfigArgs?.[index]?.key === record.key && (
+              <ICON_ADD_TR
+                className={cx('cursor-pointer')}
+                onClick={() => handleOutputAddChild(index)}
+              />
+            )}
+          <DeleteOutlined onClick={() => handleOutputDel(index, record)} />
         </Space>
       ),
     },
@@ -339,9 +433,12 @@ const SpacePluginTool: React.FC = () => {
   const handleSave = () => {
     form.validateFields().then((values) => {
       runUpdate({
-        ...values,
-        inputArgs: inputConfigArgs,
-        outputArgs: outputConfigArgs,
+        id: pluginId,
+        config: {
+          ...values,
+          inputArgs: inputConfigArgs,
+          outputArgs: outputConfigArgs,
+        },
       });
     });
   };
@@ -368,12 +465,7 @@ const SpacePluginTool: React.FC = () => {
     const _inputConfigArgs = cloneDeep(inputConfigArgs);
     _inputConfigArgs.push({
       key: Math.random(),
-      name: '',
-      description: '',
-      dataType: DataTypeEnum.String,
-      inputType: InputTypeEnum.Query,
-      require: false,
-      enable: false,
+      ...PLUGIN_INPUT_CONFIG,
     });
     setInputConfigArgs(_inputConfigArgs);
   };
@@ -383,10 +475,7 @@ const SpacePluginTool: React.FC = () => {
     const _outputConfigArgs = cloneDeep(outputConfigArgs);
     _outputConfigArgs.push({
       key: Math.random(),
-      name: '',
-      description: '',
-      dataType: DataTypeEnum.String,
-      enable: false,
+      ...PLUGIN_OUTPUT_CONFIG,
     });
     setOutputConfigArgs(_outputConfigArgs);
   };
@@ -448,14 +537,7 @@ const SpacePluginTool: React.FC = () => {
               <Input placeholder="请求超时配置，以秒为单位" />
             </Form.Item>
           </Form>
-          <div
-            className={cx('flex', 'content-between', 'items-center', 'mb-12')}
-          >
-            <h3 className={styles.title}>入参配置</h3>
-            <Button icon={<PlusOutlined />} onClick={handleInputConfigAdd}>
-              新增参数
-            </Button>
-          </div>
+          <ConfigHeader title="入参配置" onClick={handleInputConfigAdd} />
           <Table<InputConfigDataType>
             className={cx(
               styles['table-wrap'],
@@ -467,17 +549,11 @@ const SpacePluginTool: React.FC = () => {
             pagination={false}
             expandable={{
               defaultExpandAllRows: true,
+              expandedRowKeys: expandedRowKeys,
               expandIcon: () => null,
             }}
           />
-          <div
-            className={cx('flex', 'content-between', 'items-center', 'mb-12')}
-          >
-            <h3 className={cx(styles.title)}>出参配置</h3>
-            <Button icon={<PlusOutlined />} onClick={handleOutputConfigAdd}>
-              新增参数
-            </Button>
-          </div>
+          <ConfigHeader title="出参配置" onClick={handleOutputConfigAdd} />
           <Table<OutputConfigDataType>
             className={cx(styles['table-wrap'], 'overflow-hide')}
             columns={outputColumns}
@@ -486,21 +562,24 @@ const SpacePluginTool: React.FC = () => {
             expandable={{
               // 初始时，是否展开所有行
               defaultExpandAllRows: true,
-              // showExpandColumn: false,
-              // expandIcon: () => null,
+              expandedRowKeys: outputExpandedRowKeys,
+              expandIcon: () => null,
             }}
           />
           {/*试运行弹窗*/}
           <TryRunModel
+            inputConfigArgs={inputConfigArgs}
+            pluginId={pluginId}
+            pluginName={pluginInfo?.name as string}
             open={isModalOpen}
             onCancel={() => setIsModalOpen(false)}
           />
         </div>
       </div>
       <PluginPublish
+        pluginId={pluginId}
         open={openModal}
         onCancel={() => setOpenModal(false)}
-        onConfirm={() => setOpenModal(false)}
       />
       {/*版本历史*/}
       <VersionHistory

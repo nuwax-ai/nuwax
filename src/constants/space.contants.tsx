@@ -8,8 +8,8 @@ import {
   ICON_PLUGIN,
   ICON_WORKFLOW,
 } from '@/constants/images.constants';
-import { TriggerComponentType } from '@/types/enums/agent';
-import { CreateAgentEnum } from '@/types/enums/common';
+import { InputTypeEnum, TriggerComponentType } from '@/types/enums/agent';
+import { CreateAgentEnum, DataTypeEnum } from '@/types/enums/common';
 import {
   ApplicationMoreActionEnum,
   ComponentTypeEnum,
@@ -176,3 +176,21 @@ export const PLUGIN_SETTING_ACTIONS = [
     label: '卡片绑定',
   },
 ];
+
+// 插件配置 - 入参配置, 默认列值
+export const PLUGIN_INPUT_CONFIG = {
+  name: '',
+  description: '',
+  dataType: DataTypeEnum.String,
+  inputType: InputTypeEnum.Query,
+  require: false,
+  enable: false,
+};
+
+// 插件配置 - 出参配置, 默认列值
+export const PLUGIN_OUTPUT_CONFIG = {
+  name: '',
+  description: '',
+  dataType: DataTypeEnum.String,
+  enable: false,
+};
