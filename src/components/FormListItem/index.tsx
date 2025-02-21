@@ -1,8 +1,6 @@
-// import { ICON_ASSOCIATION } from '@/constants/images.constants';
-import { DataTypeEnum } from '@/types/enums/common';
 import { RenderItemProps } from '@/types/interfaces/workflow';
 import { DeleteOutlined, FileDoneOutlined } from '@ant-design/icons';
-import { Cascader, Checkbox, Form, Input, Popover, Space } from 'antd';
+import { Checkbox, Form, Input, Popover, Space } from 'antd';
 import React from 'react';
 import './index.less';
 import { InputOrReference } from './InputOrReference';
@@ -26,28 +24,9 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
   const bindValueTypePath = [...fieldName.slice(0, -1), 'bindValueType'];
   // 是否展开子集
   // const [isExpand, setIsExpand] = useState(false);
-  // 将Cascader的值从string转换为数组
-  const CascaderValue = (value: DataTypeEnum) => {
-    if (value) {
-      // if(ParamsTypeEnum)
-      if (value.includes('File')) {
-        if (value.includes('Array')) {
-          return ['Array_File', value];
-        } else {
-          return ['File', value];
-        }
-      } else {
-        return [value];
-      }
-    } else {
-      return [];
-    }
-  };
 
   // 获取当前行的数据类型
   // const dataType = form.getFieldValue([field.name, 'dataType']) as string;
-
-  // console.log(dataType);
 
   return (
     <div>
@@ -65,18 +44,17 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
         </div>
       )}
       <Space className="form-list-item-style" style={{ width: '100%' }}>
-        <Form.Item
-          name={bindValueTypePath}
-          hidden
-          key={`${field.key}_bindType`}
-        >
-          <Input type="hidden" />
-        </Form.Item>
+        {/* 如果是引用或输入没有dataType 则不显示绑定类型，否则显示绑定类型隐藏字段 */}
+        {
+          <Form.Item
+            name={bindValueTypePath}
+            hidden
+            key={`${field.key}_bindType`}
+          >
+            <Input type="hidden" />
+          </Form.Item>
+        }
         {fieldConfigs.map((config, index) => {
-          {
-            /* 绑定类型隐藏字段 */
-          }
-
           if (config.name === 'description' || config.name === 'require') {
             // 跳过 description 和 require 字段，将在后面单独处理
             return null;
@@ -97,10 +75,7 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
                     index: field.name,
                     options: config.options,
                     fieldName: fieldName,
-                    value:
-                      config.component === Cascader
-                        ? CascaderValue(fieldValue)
-                        : fieldValue,
+                    value: fieldValue,
                   };
 
                   // 特定于InputOrReference的props
@@ -181,16 +156,6 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
               />
             </Form.Item>
           )}
-
-          {/* {isExpanded && (
-            <Form.Item
-              name={[field.name, 'association']}
-              valuePropName="association"
-              initialValue={form.getFieldValue([field.name, 'association'])} // 添加association的initialValue
-            >
-              <ICON_ASSOCIATION className="margin-right" />
-            </Form.Item>
-          )} */}
           <Form.Item>
             <DeleteOutlined onClick={onRemove} />
           </Form.Item>

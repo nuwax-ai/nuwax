@@ -1,7 +1,7 @@
 // 这个页面定义普通的节点，如输入，输出，等
 import CodeEditor from '@/components/CodeEditor';
 import Monaco from '@/components/CodeEditor/monaco';
-import TreeForm from '@/components/FormListItem/NestedForm';
+import CustomTree from '@/components/FormListItem/NestedForm';
 import type { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import {
@@ -22,12 +22,7 @@ import {
   Switch,
 } from 'antd';
 import React, { useState } from 'react';
-import {
-  cycleOption,
-  InputConfigs,
-  outPutConfigs,
-  variableConfigs,
-} from '../params';
+import { cycleOption, outPutConfigs, variableConfigs } from '../params';
 import { InputAndOut, TreeOutput } from './commonNode';
 import './nodeItem.less';
 // 定义一些公共的数组
@@ -42,7 +37,7 @@ const StartNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
 
   return (
     <>
-      <TreeForm
+      <CustomTree
         title={'输入'}
         params={params}
         handleChangeNodeConfig={handleChangeNodeConfig}
@@ -464,7 +459,6 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
   };
-  console.log(params);
   return (
     <>
       <InputAndOut
@@ -490,13 +484,11 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
           height="180px"
         />
       </div>
-      <InputAndOut
-        title="输出"
-        fieldConfigs={InputConfigs}
+      <CustomTree
+        title={'输出'}
+        params={params}
         handleChangeNodeConfig={handleChangeNodeConfig}
-        inputItemName="outputArgs"
-        showCopy={true}
-        initialValues={{ outputArgs: params.outputArgs || [] }}
+        inputItemName={'outputArgs'}
       />
 
       <Monaco

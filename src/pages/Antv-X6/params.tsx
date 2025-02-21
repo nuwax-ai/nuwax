@@ -184,7 +184,7 @@ export const dataTypes = [
   },
   {
     label: 'File',
-    value: DataTypeEnum.File_Default,
+    value: 'File',
     children: [
       {
         label: 'Doc',
@@ -254,7 +254,7 @@ export const dataTypes = [
   },
   {
     label: 'Array<File>',
-    value: DataTypeEnum.Array_File_Default,
+    value: 'Array_File',
     children: [
       {
         label: 'Default',

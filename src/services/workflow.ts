@@ -153,6 +153,22 @@ export async function getNodeConfig(id: number): Promise<RequestResponse<any>> {
     method: 'GET',
   });
 }
+
+interface IExecuteNode {
+  requestId: number | string;
+  nodeId: number | string;
+  params: NodeConfig;
+}
+// 试运行单个节点
+export async function executeNode(
+  data: IExecuteNode,
+): Promise<RequestResponse<any>> {
+  return request(`/api/workflow/test/node/execute`, {
+    method: 'POST',
+    data,
+  });
+}
+
 export default {
   getDetails,
   updateDetails,

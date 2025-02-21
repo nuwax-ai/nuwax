@@ -1,10 +1,11 @@
 import Created from '@/components/Created';
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
+import CustomTree from '@/components/FormListItem/NestedForm';
 import { ModelSelected } from '@/components/ModelSetting';
 import { SkillList } from '@/components/Skill';
 import { PluginAndLibraryEnum } from '@/types/enums/common';
 import { CreatedNodeItem } from '@/types/interfaces/common';
-import type { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
+import type { NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import {
@@ -18,7 +19,7 @@ import {
 } from 'antd';
 import React, { useState } from 'react';
 import '../index.less';
-import { InputConfigs, intentionConfigs, outPutConfigs } from '../params';
+import { intentionConfigs, outPutConfigs } from '../params';
 import { InputAndOut } from './commonNode';
 
 // 定义大模型节点
@@ -71,7 +72,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           ></Button>
         </div>
         {params.skillComponentConfigs &&
-          params.skillComponentConfigs.length && (
+          params.skillComponentConfigs.length > 0 && (
             <SkillList params={params} handleChange={handleChangeNodeConfig} />
           )}
         {(!params.skillComponentConfigs ||
@@ -109,13 +110,11 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       />
       {/* 输出参数 */}
       <div className="node-item-style">
-        <InputAndOut
-          title="输出"
-          fieldConfigs={InputConfigs}
+        <CustomTree
+          title={'输出'}
+          params={params}
           handleChangeNodeConfig={handleChangeNodeConfig}
-          inputItemName="outputArgs"
-          showCopy={true}
-          initialValues={{ outputArgs: params.outputArgs || [] }}
+          inputItemName={'outputArgs'}
         />
       </div>
 
@@ -137,11 +136,6 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
   referenceList,
   updateNode,
 }) => {
-  let initialValues: InputAndOutConfig[] = [];
-  if (params.inputArgs && params.inputArgs.length) {
-    initialValues = params.inputArgs;
-  }
-
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -186,7 +180,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
           referenceList={referenceList}
           inputItemName="inputArgs"
           handleChangeNodeConfig={handleChangeNodeConfig}
-          initialValues={{ inputArgs: initialValues }}
+          initialValues={{ inputArgs: params.inputArgs || [] }}
         />
       </div>
       {/* 意图匹配 */}
@@ -267,13 +261,11 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
       {/* 输出参数 */}
       {params.answerType === 'TEXT' && (
         <div className="node-item-style">
-          <InputAndOut
-            title="输出"
-            fieldConfigs={InputConfigs}
+          <CustomTree
+            title={'输出'}
+            params={params}
             handleChangeNodeConfig={handleChangeNodeConfig}
-            inputItemName="outputArgs"
-            showCopy={true}
-            initialValues={{ outputArgs: params.outputArgs || [] }}
+            inputItemName={'outputArgs'}
           />
         </div>
       )}
@@ -344,27 +336,6 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
     { label: '无', value: 'none' },
   ];
 
-  // 请求头的数据
-  let headersInitialValues: InputAndOutConfig[] = [];
-  if (params.headers && params.headers.length) {
-    headersInitialValues = params.headers;
-  }
-  // 节点入参
-  let queriesInitialValues: InputAndOutConfig[] = [];
-  if (params.queries && params.queries.length) {
-    queriesInitialValues = params.queries;
-  }
-  // body的数据
-  let bodyInitialValues: InputAndOutConfig[] = [];
-  if (params.body && params.body.length) {
-    bodyInitialValues = params.body;
-  }
-
-  // 节点出参
-  let outputInitialValues: InputAndOutConfig[] = [];
-  if (params.outputArgs && params.outputArgs.length) {
-    outputInitialValues = params.outputArgs;
-  }
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     console.log('123', newNodeConfig);
@@ -431,7 +402,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
           referenceList={referenceList}
           inputItemName="headers"
           initialValues={{
-            headers: headersInitialValues,
+            headers: params.headers || [],
           }}
         />
         <InputAndOut
@@ -441,7 +412,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
           referenceList={referenceList}
           inputItemName="queries"
           initialValues={{
-            queries: queriesInitialValues,
+            queries: params.queries || [],
           }}
         />
         <InputAndOut
@@ -451,20 +422,17 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
           referenceList={referenceList}
           inputItemName="body"
           initialValues={{
-            body: bodyInitialValues,
+            body: params.body || [],
           }}
         />
       </div>
       {/* 出参 */}
       <div className="node-item-style">
-        <InputAndOut
-          title="出参"
-          fieldConfigs={InputConfigs}
+        <CustomTree
+          title={'出参'}
+          params={params}
           handleChangeNodeConfig={handleChangeNodeConfig}
-          inputItemName="outputArgs"
-          initialValues={{
-            outputArgs: outputInitialValues,
-          }}
+          inputItemName={'outputArgs'}
         />
       </div>
     </div>

@@ -2,6 +2,7 @@ import { ICON_ASSOCIATION } from '@/constants/images.constants';
 import { dataTypes } from '@/pages/Antv-X6/params';
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputAndOutConfig } from '@/types/interfaces/node';
+import { CascaderChange, CascaderValue } from '@/utils';
 import {
   DeleteOutlined,
   FileDoneOutlined,
@@ -19,10 +20,11 @@ const CustomTree: React.FC<TreeFormProps> = ({
   params,
   handleChangeNodeConfig,
   title,
+  inputItemName = 'inputArgs',
 }) => {
   // 状态初始化（新增初始化逻辑）
   const [treeData, setTreeData] = useState<TreeNodeConfig[]>(
-    (params.inputArgs as TreeNodeConfig[]) || [],
+    (params[inputItemName] as TreeNodeConfig[]) || [],
   );
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
@@ -34,10 +36,20 @@ const CustomTree: React.FC<TreeFormProps> = ({
 
   // 同步父组件参数变化（新增同步逻辑）
   useEffect(() => {
-    if (!treeData.length && params.inputArgs) {
-      setTreeData((params.inputArgs as TreeNodeConfig[]) || []);
+    if (!treeData.length && params[inputItemName]) {
+      const normalized = (params[inputItemName] as TreeNodeConfig[]).map(
+        (item) => ({
+          ...item,
+          // 转换遗留的 File 类型为 File_Default
+          dataType:
+            item.dataType === DataTypeEnum.File
+              ? DataTypeEnum.File_Default
+              : item.dataType,
+        }),
+      );
+      setTreeData(normalized);
     }
-  }, [params.inputArgs]);
+  }, [params[inputItemName]]);
 
   // 递归计算节点深度
   const getNodeDepth = (
@@ -68,7 +80,10 @@ const CustomTree: React.FC<TreeFormProps> = ({
       bindValue: '',
     };
     setTreeData([...treeData, newNode]);
-    handleChangeNodeConfig({ ...params, inputArgs: [...treeData, newNode] });
+    handleChangeNodeConfig({
+      ...params,
+      [inputItemName]: [...treeData, newNode],
+    });
   };
 
   // 更新节点字段
@@ -85,7 +100,10 @@ const CustomTree: React.FC<TreeFormProps> = ({
       });
 
     setTreeData(updateRecursive(treeData));
-    handleChangeNodeConfig({ ...params, inputArgs: updateRecursive(treeData) });
+    handleChangeNodeConfig({
+      ...params,
+      [inputItemName]: updateRecursive(treeData),
+    });
   };
 
   // 添加子节点
@@ -119,7 +137,10 @@ const CustomTree: React.FC<TreeFormProps> = ({
       });
 
     setTreeData(updateRecursive(treeData));
-    handleChangeNodeConfig({ ...params, inputArgs: updateRecursive(treeData) });
+    handleChangeNodeConfig({
+      ...params,
+      [inputItemName]: updateRecursive(treeData),
+    });
   };
 
   // 删除节点
@@ -132,7 +153,10 @@ const CustomTree: React.FC<TreeFormProps> = ({
       });
 
     setTreeData(filterRecursive(treeData));
-    handleChangeNodeConfig({ ...params, inputArgs: filterRecursive(treeData) });
+    handleChangeNodeConfig({
+      ...params,
+      [inputItemName]: filterRecursive(treeData),
+    });
   };
 
   // 自定义节点渲染
@@ -156,12 +180,15 @@ const CustomTree: React.FC<TreeFormProps> = ({
           allowClear={false}
           options={dataTypes}
           style={{ width: 90 }}
-          value={nodeData.dataType ? [nodeData.dataType] : undefined}
-          onChange={(value) =>
-            updateNodeField(nodeData.key!, 'dataType', value[0])
-          }
+          value={CascaderValue(nodeData.dataType ?? undefined)}
+          onChange={(value) => {
+            updateNodeField(nodeData.key!, 'dataType', CascaderChange(value));
+          }}
+          changeOnSelect={false}
+          expandTrigger="hover" // 改为悬停展开
           className="tree-form-name"
           disabled={nodeData.systemVariable}
+          placement={'bottomLeft'}
         />
 
         <div className="dis-left" style={{ width: 70 }}>

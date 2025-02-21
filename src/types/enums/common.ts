@@ -136,6 +136,7 @@ export enum DataTypeEnum {
   Number = 'Number', // 数字
   Boolean = 'Boolean', // 布尔
   File_Default = 'File_Default', // 默认文件
+  File = 'File', // 默认文件
   File_Image = 'File_Image', // 图像文件
   File_PPT = 'File_PPT', // PPT 文件
   File_Doc = 'File_Doc', // DOC 文件
@@ -154,6 +155,7 @@ export enum DataTypeEnum {
   Array_Number = 'Array_Number', // Number 数组
   Array_Boolean = 'Array_Boolean', // Boolean 数组
   Array_File_Default = 'Array_File_Default', // 默认文件数组
+  Array_File = 'Array_File', // 默认文件数组
   Array_File_Image = 'Array_File_Image', // 图像文件数组
   Array_File_PPT = 'Array_File_PPT', // PPT 文件数组
   Array_File_Doc = 'Array_File_Doc', // DOC 文件数组

@@ -51,16 +51,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   const submitForm = () => {
     const raw = form.getFieldsValue(true);
 
-    for (let item of raw[inputItemName]) {
-      if (item.dataType && typeof item.dataType === 'object') {
-        if (item.dataType.length === 1) {
-          item.dataType = item.dataType[0];
-        } else {
-          item.dataType = item.dataType[1];
-        }
-      }
-    }
-
     handleChangeNodeConfig(raw);
     // handleChangeNodeConfig(values);
   };
