@@ -27,12 +27,11 @@ export const request: any = {
   responseInterceptors: [
     async (response) => {
       // 拦截响应数据，进行个性化处理
-      const { data } = response;
-      if (data.code === SUCCESS_CODE) {
-        return response;
-      } else {
+      const { data = {} as any } = response;
+      if (data.code !== SUCCESS_CODE) {
         message.warning(data.message);
       }
+      return response;
     },
   ],
 };
