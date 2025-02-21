@@ -20,6 +20,7 @@ export const request: any = {
         config.headers.Authorization = `Bearer ${token}`;
       }
       config.headers['Content-Type'] = 'application/json';
+      config.headers['Accept'] = 'application/json, text/plain, */*';
       return { ...config };
     },
   ],

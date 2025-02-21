@@ -3,6 +3,7 @@ import { CloseOutlined } from '@ant-design/icons';
 import React from 'react';
 interface ErrorItem extends ChildNode {
   error: string;
+  nodeId: number | string;
 }
 
 interface ErrorListProps {
@@ -14,6 +15,7 @@ interface ErrorListProps {
   show: boolean;
   onClose: () => void;
   changeDrawer: (child: ChildNode) => void;
+  nodeList: ChildNode[];
 }
 
 const ErrorList: React.FC<ErrorListProps> = ({
@@ -22,6 +24,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
   show,
   onClose,
   changeDrawer,
+  nodeList,
 }) => {
   return (
     <div
@@ -38,21 +41,30 @@ const ErrorList: React.FC<ErrorListProps> = ({
       </div>
 
       {/* 遍历当前的错误信息列表 */}
-      <div className="error-list-content">
-        {errorList.map((item, index) => (
-          <div
-            className="dis-left error-list-item"
-            onClick={() => changeDrawer(item)}
-            key={index}
-          >
-            <img src={item.icon} alt="" />
-            <div>
-              <p>{item.name || '123'}</p>
-              <p className="error-text">{item.error}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      {nodeList && (
+        <div className="error-list-content">
+          {errorList.map((item) => {
+            const node = nodeList.find((node) => node.id === item.nodeId);
+            console.log(node);
+            if (node) {
+              return (
+                <div
+                  className="dis-left error-list-item"
+                  onClick={() => changeDrawer(node)}
+                  key={item.nodeId}
+                >
+                  <img src={node.icon} alt="" />
+                  <div>
+                    <p>{node.name || '123'}</p>
+                    <p className="error-text">{item.error}</p>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })}
+        </div>
+      )}
     </div>
   );
 };

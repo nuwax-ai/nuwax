@@ -1,14 +1,20 @@
 // import squareImage from '@/assets/images/square_bg.png';
 // import SelectList from '@/components/SelectList';
 import { NodeTypeEnum } from '@/types/enums/common';
+import { DefaultObjectType } from '@/types/interfaces/common';
 import { CaretRightOutlined, CloseOutlined } from '@ant-design/icons';
-import { Button, Empty } from 'antd';
+import { Button, Collapse, Empty, Form, Input, Tag } from 'antd';
 // import { useState } from 'react';
+import { InputAndOutConfig } from '@/types/interfaces/node';
+import { returnImg } from '@/utils/workflow';
 import { useModel } from 'umi';
 import './index.less';
 interface TestRunProps {
   type: NodeTypeEnum;
-  run: () => void;
+  run: (params: DefaultObjectType) => void;
+  title?: string;
+  inputArgs?: InputAndOutConfig[];
+  testRunResult?: string;
   value?: string;
   onChange?: (val?: string | number | bigint) => void;
 }
@@ -19,10 +25,88 @@ interface TestRunProps {
 //   { label: '智慧家具管家', value: 'su', img: squareImage },
 //   { label: 'coder', value: 'coder', img: squareImage },
 // ];
+
 // 试运行
-const TestRun: React.FC<TestRunProps> = ({ type, run }) => {
+const TestRun: React.FC<TestRunProps> = ({
+  type,
+  run,
+  title,
+  inputArgs,
+  testRunResult,
+}) => {
   const { testRun, setTestRun } = useModel('model');
   // const [value, setValue] = useState('');
+
+  const [form] = Form.useForm();
+
+  const items = [
+    {
+      key: 'inputArgs',
+      label: '试运行输入',
+      children: (
+        <>
+          {inputArgs && inputArgs.length && (
+            <div className="px-16 border-bottom">
+              <p className="collapse-title-style dis-left">
+                {returnImg(type)}
+                <span>{title}节点</span>
+              </p>
+              <Form form={form} layout={'vertical'}>
+                {inputArgs.map((item) => (
+                  <>
+                    <Form.Item
+                      name={item.name}
+                      label={
+                        <>
+                          {item.name}
+                          <Tag>{item.dataType}</Tag>
+                        </>
+                      }
+                    >
+                      <Input />
+                    </Form.Item>
+                  </>
+                ))}
+              </Form>
+            </div>
+          )}
+          {(!inputArgs || !inputArgs.length) && (
+            <Empty description="本次试运行无需输入" />
+          )}
+        </>
+      ),
+    },
+    ...(testRunResult
+      ? [
+          {
+            key: 'outputArgs',
+            label: '运行结果',
+            children: (
+              <>
+                <p className="collapse-title-style dis-left">输入</p>
+                {inputArgs?.map((item) => (
+                  <Input
+                    key={item.name}
+                    prefix={item.name + ':'}
+                    value={form.getFieldValue(item.name)}
+                    disabled
+                  ></Input>
+                ))}
+                <p className="collapse-title-style dis-left">输出</p>
+                <div className="result-style">{testRunResult}</div>
+              </>
+            ),
+          },
+        ]
+      : []),
+  ];
+
+  // 提交数据
+  const executeNode = () => {
+    const values = form.getFieldsValue(true);
+    run(values);
+  };
+
   return (
     <div
       className="test-run-style"
@@ -40,16 +124,11 @@ const TestRun: React.FC<TestRunProps> = ({ type, run }) => {
         </div>
         {/* 试运行的内容 */}
         <div className="test-run-content flex-1">
-          {/* 根据type来决定渲染些什么 */}
-          <div className="test-run-content-label">
-            试运行输入
-            <div>
-              <Empty description="本次试运行无需输入" />
-            </div>
-          </div>
-          {/* {value && onChange && (
-        )} */}
-
+          <Collapse
+            items={items}
+            ghost
+            defaultActiveKey={['inputArgs', 'outputArgs']}
+          />
           {type === 'Start' ||
             (type === 'Loop' && (
               <div>
@@ -68,7 +147,11 @@ const TestRun: React.FC<TestRunProps> = ({ type, run }) => {
             ))}
         </div>
         {/* 试运行的运行按钮 */}
-        <Button icon={<CaretRightOutlined />} onClick={run}>
+        <Button
+          icon={<CaretRightOutlined />}
+          type="primary"
+          onClick={executeNode}
+        >
           运行
         </Button>
       </div>
