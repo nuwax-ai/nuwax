@@ -152,7 +152,11 @@ const Workflow: React.FC = () => {
     }
   }, 1000);
   // 点击组件，显示抽屉
-  const changeDrawer = async (child: ChildNode) => {
+  const changeDrawer = async (child: ChildNode | null) => {
+    if (child === null) {
+      setVisible(false);
+      return;
+    }
     // 如果有组件正在展示,那么就要看是否修改了参数,
     // 如果修改了参数,那么就提交数据
     if (!visible) {
@@ -239,10 +243,10 @@ const Workflow: React.FC = () => {
 
   // 节点添加或移除边
   const nodeChangeEdge = async (
-    sourceNode: ChildNode,
-    targetId: string,
     type: string,
-    id: string,
+    targetId: string,
+    sourceNode: ChildNode,
+    id?: string,
   ) => {
     // 获取当前节点的nextNodeIds
     const _nextNodeIds =
@@ -460,15 +464,10 @@ const Workflow: React.FC = () => {
   // 保存当前画布中节点的位置
   useEffect(() => {
     getDetails();
-
-    return () => {
-      // 组件销毁时，清除定时器
-      graphRef.current.saveAllNodes();
-    };
   }, []);
 
   return (
-    <div style={{ width: '100%', height: '100%' }} id="container">
+    <div id="container">
       {/* 顶部的名称和发布等按钮 */}
       <Header
         info={info}
@@ -482,6 +481,8 @@ const Workflow: React.FC = () => {
         changeDrawer={changeDrawer}
         changeEdge={nodeChangeEdge}
         changeCondition={changeNode}
+        removeNode={deleteNode}
+        copyNode={copyNode}
       />
       <ControlPanel
         dragChild={dragChild}

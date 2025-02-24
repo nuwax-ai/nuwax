@@ -47,6 +47,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
               : item.dataType,
         }),
       );
+      console.log('123', normalized);
       setTreeData(normalized);
     }
   }, [params[inputItemName]]);

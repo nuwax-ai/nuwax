@@ -64,24 +64,47 @@ export interface NodeProps {
 export interface GraphContainerProps {
   graphParams: { nodeList: ChildNode[]; edgeList: Edge[] };
   handleNodeChange: (action: string, data: ChildNode) => void;
-  changeDrawer: (child: ChildNode) => void;
+  changeDrawer: (child: ChildNode | null) => void;
   changeEdge: (
-    sourceNode: ChildNode,
-    targetId: string,
     type: string,
+    targetId: string,
+    sourceNode: ChildNode,
     id: string,
   ) => void;
   changeCondition: (config: ChildNode) => void;
+  copyNode: (child: ChildNode) => void;
+  // 删除节点
+  removeNode: (id: string) => void;
 }
 
 export interface GraphContainerRef {
+  // 新增节点
   addNode: (e: { x: number; y: number }, child: ChildNode) => void;
+  // 修改节点
   updateNode: (nodeId: string, newData: Partial<ChildNode>) => void;
+  // 保存节点
   saveAllNodes: () => void;
+  // 删除节点
   deleteNode: (id: string) => void;
+  // 删除边
   deleteEdge: (id: string) => void;
   changeGraphZoom: (val: number) => void;
   drawGraph: () => void;
+}
+
+export interface BindEventHandlers {
+  graph: Graph;
+  // 新增或删除边
+  changeEdge: (
+    type: string,
+    targetId: string,
+    sourceNode: ChildNode,
+    id: string,
+  ) => void;
+  changeCondition: (config: ChildNode) => void;
+  copyNode: (child: ChildNode) => void;
+  // 删除节点
+  removeNode: (id: string) => void;
 }
 
 export interface ControlPanelProps {
@@ -100,11 +123,11 @@ export interface GraphProp {
   // 包含图的 DOM 容器的 ID
   containerId: string;
   // 改变抽屉内容的回调函数，接收一个 Child 类型的参数
-  changeDrawer: (item: ChildNode) => void;
+  changeDrawer: (item: ChildNode | null) => void;
   changeEdge: (
-    sourceNode: ChildNode,
-    targetId: string,
     type: string,
+    targetId: string,
+    sourceNode: ChildNode,
     id: string,
   ) => void;
   changeCondition: (newData: ChildNode) => void;

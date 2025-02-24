@@ -100,55 +100,50 @@ export const returnBackgroundColor = (type: string) => {
   }
 };
 
+const handleSpecialNodes = (node: ChildNode): Edge[] => {
+  let edges: Edge[] = [];
+
+  if (node.type === 'Condition') {
+    edges =
+      node.nodeConfig.conditionBranchConfigs?.flatMap((config) =>
+        config.nextNodeIds.map((nextNodeId) => ({
+          source: `${node.id}-${config.uuid}`,
+          target: nextNodeId,
+        })),
+      ) || [];
+  } else if (node.type === 'IntentRecognition') {
+    edges =
+      node.nodeConfig.intentConfigs?.flatMap((config) => {
+        if (!config.nextNodeIds) config.nextNodeIds = [];
+        return config.nextNodeIds.map((nextNodeId) => ({
+          source: `${node.id}-${config.uuid}`,
+          target: nextNodeId,
+        }));
+      }) || [];
+  }
+
+  return edges;
+};
+
 // 递归获取节点的边
 export const getEdges = (nodes: ChildNode[]): Edge[] => {
-  // 查找出有边的普通节点
-  const edges = nodes
-    .filter((node) => node.nextNodeIds && node.nextNodeIds.length > 0)
-    .flatMap((node) =>
-      (node.nextNodeIds || []).map((item) => ({
+  // 筛选出普通节点和特定类型的节点（Condition 和 IntentRecognition）
+  const edges = nodes.flatMap((node) => {
+    if (
+      (node.type === 'Condition' || node.type === 'IntentRecognition') &&
+      node.nodeConfig
+    ) {
+      return handleSpecialNodes(node);
+    } else if (node.nextNodeIds && node.nextNodeIds.length > 0) {
+      return node.nextNodeIds.map((item) => ({
         source: node.id,
         target: item,
-      })),
-    );
-  // 筛选出意图识别和条件分支
-  const edges2 = nodes
-    .filter(
-      (node) => node.type === 'Condition' || node.type === 'IntentRecognition',
-    )
-    .flatMap((item) => {
-      if (item.type === 'Condition') {
-        // 对于条件节点，遍历所有条件分支配置
-        return (
-          item.nodeConfig.conditionBranchConfigs?.flatMap((item2) => {
-            // 对于每个nextNodeId，创建一个新的边对象
-            return (
-              item2.nextNodeIds.map((nextNodeId) => ({
-                source: `${item.id}-${item2.uuid}`, // 使用当前条件分支的索引作为source的一部分
-                target: nextNodeId, // 使用nextNodeId作为target
-              })) || []
-            );
-          }) || []
-        );
-      } else {
-        console.log(item.nodeConfig);
-        // 对于意图识别节点，直接返回单条边
-        return (
-          item.nodeConfig.intentConfigs?.flatMap((item2) => {
-            if (!item2.nextNodeIds) item2.nextNodeIds = [];
-            // 对于每个nextNodeId，创建一个新的边对象
-            return (
-              item2.nextNodeIds.map((nextNodeId) => ({
-                source: `${item.id}-${item2.uuid}`, // 使用当前条件分支的索引作为source的一部分
-                target: nextNodeId, // 使用nextNodeId作为target
-              })) || []
-            );
-          }) || []
-        );
-      }
-    });
+      }));
+    }
+    return [];
+  });
 
-  const edgeList = [...edges, ...edges2];
+  const edgeList = [...edges];
 
   // 使用 Set 来移除重复的边
   const uniqueEdges = new Set<string>();
@@ -164,48 +159,65 @@ export const getEdges = (nodes: ChildNode[]): Edge[] => {
 
   return resultEdges;
 };
-
 export const generatePorts = (data: ChildNode) => {
-  let outputPorts;
+  const basePortSize = 3; // 设置基础端口大小
 
-  const basePortSize = 5; // 设置基础端口大小为5
+  // 定义默认的输入和输出端口配置
+  const defaultInputPort = {
+    group: 'in',
+    id: `${data.id}-in`,
+    zIndex: 99,
+    attrs: {
+      circle: {
+        r: basePortSize,
+        magnet: true,
+        stroke: '#5F95FF',
+        strokeWidth: 2,
+        fill: '#5F95FF',
+      },
+    },
+  };
 
-  if (data.type === 'Condition' || data.type === 'IntentRecognition') {
-    const configs =
-      data.nodeConfig?.conditionBranchConfigs ||
-      data.nodeConfig?.intentConfigs ||
-      [];
-    outputPorts = configs.map((item) => ({
-      group: 'out',
-      id: `${data.id}-${item.uuid}-out`, // 给每个端口一个唯一的名称
-      zIndex: 99, // 确保连接桩的层级高于边
-      attrs: {
-        circle: {
-          r: basePortSize, // 使用较小的基础端口大小
-          magnet: true,
-          stroke: '#5F95FF',
-          strokeWidth: 2,
-          fill: 'transparent', // 保持透明以增大点击区域但不影响外观大小
-        },
+  const defaultOutputPort = {
+    group: 'out',
+    id: `${data.id}-out`,
+    zIndex: 99,
+    attrs: {
+      circle: {
+        r: basePortSize,
+        magnet: true,
+        stroke: '#5F95FF',
+        strokeWidth: 2,
+        fill: '#5F95FF',
       },
-    }));
-  } else {
-    outputPorts = [
-      {
-        group: 'out',
-        id: `${data.id}-out`,
-        zIndex: 99, // 确保连接桩的层级高于边
-        attrs: {
-          circle: {
-            r: basePortSize, // 使用较小的基础端口大小
-            magnet: true,
-            stroke: '#5F95FF',
-            strokeWidth: 2,
-            fill: 'transparent', // 保持透明以增大点击区域但不影响外观大小
-          },
-        },
-      },
-    ];
+    },
+  };
+
+  let inputPorts = [defaultInputPort];
+  let outputPorts = [defaultOutputPort];
+
+  switch (data.type) {
+    case 'Start':
+      inputPorts = []; // 不创建输入端口
+      break;
+    case 'End':
+      outputPorts = []; // 不创建输出端口
+      break;
+    case 'Condition':
+    case 'IntentRecognition': {
+      const configs =
+        data.nodeConfig?.conditionBranchConfigs ||
+        data.nodeConfig?.intentConfigs ||
+        [];
+      outputPorts = configs.map((item, index) => ({
+        ...defaultOutputPort,
+        id: `${data.id}-${item.uuid || index}-out`, // 给每个端口一个唯一的名称
+      }));
+      break;
+    }
+    default:
+      // 对于其他类型的节点，默认创建输入和输出端口
+      break;
   }
 
   return {
@@ -214,11 +226,11 @@ export const generatePorts = (data: ChildNode) => {
         position: 'right',
         attrs: {
           circle: {
-            r: basePortSize, // 统一端口大小
+            r: basePortSize,
             magnet: true,
             stroke: '#5F95FF',
             strokeWidth: 1,
-            fill: '#fff', // 这里可以使用非透明颜色来匹配视觉效果
+            fill: '#5F95FF',
           },
         },
         connectable: {
@@ -230,11 +242,11 @@ export const generatePorts = (data: ChildNode) => {
         position: 'left',
         attrs: {
           circle: {
-            r: basePortSize, // 统一端口大小
+            r: basePortSize,
             magnet: true,
             stroke: '#5F95FF',
             strokeWidth: 1,
-            fill: '#fff', // 这里可以使用非透明颜色来匹配视觉效果
+            fill: '#5F95FF',
           },
         },
         connectable: {
@@ -243,23 +255,7 @@ export const generatePorts = (data: ChildNode) => {
         },
       },
     },
-    items: [
-      ...outputPorts, // 添加所有输出端口
-      {
-        group: 'in',
-        id: `${data.id}-in`,
-        zIndex: 99, // 确保连接桩的层级高于边
-        attrs: {
-          circle: {
-            r: basePortSize, // 使用较小的基础端口大小
-            magnet: true,
-            stroke: '#5F95FF',
-            strokeWidth: 2,
-            fill: 'transparent', // 保持透明以增大点击区域但不影响外观大小
-          },
-        },
-      }, // 默认的输入端口
-    ],
+    items: [...outputPorts, ...inputPorts],
   };
 };
 
@@ -271,27 +267,27 @@ export const generatePorts = (data: ChildNode) => {
  */
 export const modifyPorts = (
   ports: NodeListOf<SVGElement>,
-  show: boolean,
+  isEnter: boolean,
   enlargePortId?: string,
 ) => {
-  for (let i = 0, len = ports.length; i < len; i += 1) {
-    const port = ports[i];
-    const portId = port.getAttribute('port');
+  ports.forEach((port) => {
+    const portId = port.getAttribute('port')!;
+    const isTarget = portId === enlargePortId;
 
-    if (show && portId) {
-      port.style.visibility = 'visible';
-      if (enlargePortId && portId === enlargePortId) {
-        // 放大并填充指定的连接桩
-        port.setAttribute('r', '10'); // 放大指定的连接桩
-        port.setAttribute('fill', '#5F95FF'); // 设置填充颜色为黑色（或任何其他颜色）
-      } else {
-        port.setAttribute('r', '5'); // 其他连接桩保持默认大小
-        port.setAttribute('fill', 'none'); // 清除填充，保留空心效果
-      }
+    // 始终显示连接桩
+    port.style.visibility = 'visible';
+
+    // 调整大小
+    if (isEnter && isTarget) {
+      port.setAttribute('width', '12'); // 放大尺寸
+      port.setAttribute('height', '12');
+      port.style.fill = '#5F95FF'; // 悬停颜色
     } else {
-      port.style.visibility = 'hidden';
+      port.setAttribute('width', '8'); // 默认尺寸
+      port.setAttribute('height', '8');
+      port.style.fill = '#A2B1C3'; // 默认颜色
     }
-  }
+  });
 };
 
 //

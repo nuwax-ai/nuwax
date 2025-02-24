@@ -6,19 +6,18 @@ import { Clipboard } from '@antv/x6-plugin-clipboard';
 import { History } from '@antv/x6-plugin-history';
 // 键盘快捷键插件，提供快捷键操作
 import { Keyboard } from '@antv/x6-plugin-keyboard';
-
 // 对齐辅助线插件，帮助对齐节点
 import { Snapline } from '@antv/x6-plugin-snapline';
+
+import { Selection } from '@antv/x6-plugin-selection';
 // 变换插件，支持缩放和平移操作
 // import { Transform } from '@antv/x6-plugin-transform';
-import { message, Popover } from 'antd';
-import ReactDOM from 'react-dom/client';
+import { message } from 'antd';
+
 // 自定义类型定义
 import { GraphProp } from '@/types/interfaces/graph';
 import { createCurvePath } from './registerCustomNodes';
 
-import { modifyPorts } from '@/utils/workflow';
-let currentPopover: any = null; // 用于跟踪当前显示的Popover
 /**
  * 初始化图形编辑器的函数，接收一个包含容器 ID 和改变抽屉内容回调的对象作为参数。
  * @param param0 - 包含容器 ID 和改变抽屉内容回调的对象
@@ -145,73 +144,62 @@ const initGraph = ({
     .use(new Snapline()) // 启用对齐辅助线插件，帮助节点对齐
     .use(new Keyboard()) // 启用键盘插件，支持快捷键操作
     .use(new Clipboard()) // 启用剪贴板插件，支持复制和粘贴
-    .use(new History()); // 启用历史记录插件，支持撤销和重做
+    .use(new History()) // 启用历史记录插件，支持撤销和重做
+    .use(new Selection()); // 启用历史记录插件，支持撤销和重做
 
-  // 监听鼠标进入节点事件，显示连接桩
-  graph.on('node:mouseenter', ({ node }) => {
-    const onMouseMove = (event: MouseEvent) => {
-      // 获取所有端口元素
-      const ports = node.getPorts();
-      let enlargePortId: string | undefined;
-
-      ports.forEach((port) => {
-        // 获取对应的端口DOM元素，并进行类型断言
-        const portElement = document.querySelector(
-          `[port="${port.id}"]`,
-        ) as unknown as SVGGraphicsElement;
-        if (portElement) {
-          try {
-            // 获取端口的边界框
-            const bbox = portElement.getBBox();
-            // 获取SVG变换矩阵
-            const matrix = portElement.getScreenCTM();
-
-            if (matrix && bbox) {
-              // 转换边界框到屏幕坐标系
-              const transformedBBox = {
-                x: bbox.x * matrix.a + bbox.y * matrix.c + matrix.e,
-                y: bbox.x * matrix.b + bbox.y * matrix.d + matrix.f,
-                width: bbox.width * Math.abs(matrix.a),
-                height: bbox.height * Math.abs(matrix.d),
-              };
-
-              // 判断鼠标是否在端口的边界框内
-              if (
-                event.clientX >= transformedBBox.x &&
-                event.clientX <= transformedBBox.x + transformedBBox.width &&
-                event.clientY >= transformedBBox.y &&
-                event.clientY <= transformedBBox.y + transformedBBox.height
-              ) {
-                enlargePortId = port.id;
-                return false; // 找到匹配后退出循环
-              }
-            }
-          } catch (error) {
-            console.error('Error accessing port element properties:', error);
-          }
-        }
-      });
-
-      // 更新所有端口的显示状态
-      const allPorts = graphContainer.querySelectorAll(
-        '.x6-port-body',
-      ) as NodeListOf<SVGElement>;
-      modifyPorts(allPorts, true, enlargePortId); // 仅放大悬停的连接桩
-    };
-
-    // 监听容器上的 mousemove 事件
-    graphContainer.addEventListener('mousemove', onMouseMove);
-
-    // 当鼠标离开节点时移除 mousemove 监听器并隐藏所有端口
-    graph.on('node:mouseleave', () => {
-      graphContainer.removeEventListener('mousemove', onMouseMove);
-      const ports = graphContainer.querySelectorAll(
-        '.x6-port-body',
-      ) as NodeListOf<SVGElement>;
-      modifyPorts(ports, false); // 恢复并隐藏连接桩
+  // 监听连接桩鼠标进入事件
+  graph.on('node:port:mouseenter', ({ port, node }) => {
+    // 确保端口和端口ID存在
+    if (!port) return;
+    // 获取当前节点的端口
+    const ports = node.getPorts();
+    // 找到并更新特定端口的样式
+    const updatedPorts = ports.map((p) => {
+      if (p.id === port) {
+        // 更新目标端口的尺寸
+        p.attrs = {
+          ...p.attrs,
+          circle: { r: 10 }, // 假设你使用的是圆形作为端口图形，这里设置半径为8
+        };
+      }
+      return p;
     });
+
+    // 应用新的端口配置
+    node.prop('ports/items', updatedPorts);
   });
 
+  // 监听鼠标离开事件以恢复原始大小
+  graph.on('node:port:mouseleave', ({ port, node }) => {
+    // 确保端口和端口ID存在
+    if (!port) return;
+
+    // 获取当前节点的所有端口配置
+    const ports = node.getPorts();
+
+    // 找到并恢复特定端口的原始样式
+    const updatedPorts = ports.map((p) => {
+      if (p.id === port) {
+        // 恢复目标端口的尺寸
+        p.attrs = {
+          ...p.attrs,
+          circle: { r: 4 }, // 假设原始半径为4
+        };
+      }
+      return p;
+    });
+
+    // 应用新的端口配置
+    node.prop('ports/items', updatedPorts);
+  });
+  // 监听边鼠标进入事件
+  graph.on('edge:mouseenter', ({ edge }) => {
+    edge.attr('line/stroke', '#1890FF'); // 悬停时改为蓝色
+  });
+  // 监听边鼠标离开事件
+  graph.on('edge:mouseleave', ({ edge }) => {
+    edge.attr('line/stroke', '#C2C8D5'); // 恢复默认颜色
+  });
   // 监听节点点击事件，调用 changeDrawer 函数更新右侧抽屉的内容
   graph.on('node:click', ({ node }) => {
     // 判断点击的是空白处还是节点
@@ -277,7 +265,7 @@ const initGraph = ({
         // 通知父组件更新节点信息
       } else {
         // 通知父组件创建边
-        changeEdge(sourceNode, targetNodeId, 'created', edge.id);
+        changeEdge('created', targetNodeId, sourceNode, edge.id);
       }
 
       edge.attr({
@@ -294,65 +282,6 @@ const initGraph = ({
   const popoverContainer = document.createElement('div');
   document.body.appendChild(popoverContainer);
   // 给所有的边添加一个右键监听
-  // 监听边的右键事件
-  graph.on('edge:contextmenu', ({ edge, x, y, e }) => {
-    e.preventDefault(); // 阻止默认右键菜单
-    // 如果当前已经有Popover显示，先销毁它
-    if (currentPopover) {
-      currentPopover.unmount();
-      currentPopover = null;
-    }
-    // 渲染 Popover 内容
-    currentPopover = ReactDOM.createRoot(popoverContainer);
-    // 创建一个删除边的回调函数
-    const handleDeleteEdge = () => {
-      const sourceNode = edge.getSourceNode()?.getData();
-      const targetNodeId = edge.getTargetCellId();
-
-      if (
-        sourceNode.type === 'Condition' ||
-        sourceNode.type === 'IntentRecognition'
-      ) {
-        // 获取边的两个连接桩
-        const sourcePort = edge.getSourcePortId();
-        if (!sourcePort) return;
-        // 获取当前连接桩的输出端口
-        const _index: string = sourcePort.split('-')[1];
-        // 修改当前的数据
-        const newNodeParams = JSON.parse(JSON.stringify(sourceNode));
-        newNodeParams.nodeConfig.conditionBranchConfigs[_index].nextNodeIds =
-          newNodeParams.nodeConfig.conditionBranchConfigs[
-            _index
-          ].nextNodeIds.filter((item: number) => item !== Number(targetNodeId));
-        changeCondition(newNodeParams);
-      } else {
-        // 通知父组件删除边
-        changeEdge(sourceNode, targetNodeId, 'delete', edge.id);
-      }
-
-      // 销毁Popover
-      if (currentPopover) {
-        currentPopover.unmount();
-        currentPopover = null;
-      }
-      // 删除边
-      graph.removeEdge(edge.id);
-    };
-
-    currentPopover.render(
-      <Popover
-        defaultOpen={true}
-        destroyTooltipOnHide
-        placement="top"
-        overlayStyle={{
-          position: 'absolute',
-          left: `${x}px`,
-          top: `${y + 40}px`,
-        }}
-        content={<p onClick={handleDeleteEdge}>删除</p>}
-      />,
-    );
-  });
 
   // 监听节点的拖拽移动位置
   graph.on('node:moved', ({ node }) => {
@@ -370,6 +299,13 @@ const initGraph = ({
       };
     }
     changeCondition(data);
+  });
+
+  graph.on('blank:click', () => {
+    // 先取消所有节点的选中状态
+    graph.getNodes().forEach((n) => n.setData({ selected: false }));
+
+    changeDrawer(null); // 调用回调函数以更新抽屉内容
   });
 
   return graph; // 返回初始化好的图形实例

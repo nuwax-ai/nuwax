@@ -32,11 +32,11 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
     <div>
       {/* 标题 */}
       {field.name === 0 && (
-        <div className="dis-left">
+        <div className="dis-left font-12">
           {fieldConfigs.map((item) => (
             <span
               key={item.name}
-              style={{ width: (item.width as number) + 10 }}
+              style={{ width: (item.width as number) + 10, marginLeft: '5px' }}
             >
               {item.label}
             </span>
@@ -62,47 +62,45 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
           const fieldValue = form.getFieldValue([field.name, config.name]);
 
           return (
-            <div key={index} className="dis-left">
+            <div key={index} className="dis-left font-12">
               <Form.Item
                 name={[field.name, config.name]}
                 rules={config.rules}
                 style={{ width: config.width }}
               >
                 {(() => {
-                  const commonProps = {
-                    placeholder: config.placeholder,
-                    form: form,
-                    index: field.name,
-                    options: config.options,
-                    fieldName: fieldName,
-                    value: fieldValue,
-                  };
-
-                  // 特定于InputOrReference的props
-                  const inputOrReferenceProps =
-                    config.component === InputOrReference
-                      ? { referenceList: referenceList ?? [] }
-                      : {};
-
-                  let eventHandlers = {} as {
-                    onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
-                    onChange?: (value: string | string[]) => void;
-                  };
-
-                  // 根据组件类型动态添加事件处理器
-                  if (config.component === Input) {
-                    eventHandlers.onBlur = () => changeValue();
+                  if (config.component === InputOrReference) {
+                    return (
+                      <InputOrReference
+                        placeholder={config.placeholder}
+                        form={form}
+                        fieldName={bindValueTypePath}
+                        value={fieldValue}
+                        referenceList={referenceList}
+                        onChange={(e: string) => {
+                          form.setFieldValue(
+                            [...fieldName.slice(0, -1), config.name],
+                            e,
+                          );
+                          onChange();
+                        }}
+                      />
+                    );
                   } else {
-                    eventHandlers.onChange = () => changeValue();
+                    return (
+                      <Input
+                        placeholder={config.placeholder}
+                        value={fieldValue}
+                        onChange={(e) => {
+                          form.setFieldValue(
+                            [...fieldName.slice(0, -1), config.name],
+                            e.target.value,
+                          );
+                          onChange();
+                        }}
+                      />
+                    );
                   }
-
-                  return (
-                    <config.component
-                      {...commonProps}
-                      {...inputOrReferenceProps}
-                      {...eventHandlers}
-                    />
-                  );
                 })()}
               </Form.Item>
             </div>
@@ -123,7 +121,18 @@ export const DefaultRenderItem: React.FC<RenderItemProps> = ({
                       'description',
                     ])} // 添加description的initialValue
                   >
-                    <Input.TextArea onChange={changeValue} />
+                    <Input.TextArea
+                      autoSize={{ minRows: 3, maxRows: 5 }}
+                      onBlur={(e) => {
+                        form.setFieldsValue({
+                          [field.name]: {
+                            ...form.getFieldValue([field.name]),
+                            description: e.target.value,
+                          },
+                        });
+                        changeValue();
+                      }}
+                    />
                   </Form.Item>
                 }
                 trigger="click"
