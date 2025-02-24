@@ -10,6 +10,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import EventHandlers from './component/eventHandlers';
 import InitGraph from './component/graph';
 import { registerCustomNodes } from './component/registerCustomNodes';
+
 // 辅助函数：生成随机坐标
 function getRandomPosition(maxWidth = 800, maxHeight = 600) {
   return {
@@ -26,6 +27,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       changeDrawer,
       changeEdge,
       changeCondition,
+      copyNode,
+      removeNode,
     },
     ref,
   ) => {
@@ -238,7 +241,13 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         changeCondition: changeCondition,
       });
 
-      const cleanup = EventHandlers(graphRef.current);
+      const cleanup = EventHandlers({
+        graph: graphRef.current,
+        changeEdge,
+        copyNode,
+        changeCondition,
+        removeNode,
+      });
 
       return () => {
         setTimeout(() => {
@@ -246,7 +255,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           if (graphRef.current) {
             graphRef.current.dispose();
           }
-        }, 0);
+        }, 100);
       };
     }, []);
 

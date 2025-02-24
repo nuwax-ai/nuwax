@@ -26,7 +26,7 @@ export interface InputOrReferenceProps {
   onChange: (value: string) => void;
   // 新增类型定义
   form: FormInstance; // 表单实例
-  fieldName: string; // 当前字段完整路径（如 "inputItems[0].bindValue"）
+  fieldName: (string | number)[]; // 当前字段完整路径（如 "inputItems[0].bindValue"）
   inputItemName?: string; // 列表字段名称（默认 "inputItems"）
 }
 

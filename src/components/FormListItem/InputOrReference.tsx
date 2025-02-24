@@ -16,11 +16,16 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
     // 获取父路径数组
     const basePath = fieldName.slice(0, -1);
     form.setFieldValue([...basePath, 'bindValueType'], valueType); // 使用数组路径
+    // 顺便修改参数名
 
     //  新增 dataType 处理逻辑
     if (valueType === 'Reference') {
       const refDataType = referenceList?.argMap?.[newValue]?.dataType;
       form.setFieldValue([...basePath, 'dataType'], refDataType || 'String');
+      form.setFieldValue(
+        [...basePath, 'name'],
+        referenceList.argMap[newValue].name,
+      );
     } else {
       form.setFieldValue([...basePath, 'dataType'], 'String');
     }
@@ -86,7 +91,7 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
           onClose={handleTagClose}
           className="input-or-reference-tag text-ellipsis"
         >
-          {`${getName(value)} - ${referenceList.argMap[value].dataType}`}
+          {`${getName(value)} - ${referenceList.argMap[value].name}`}
         </Tag>
       ) : (
         <Input
@@ -101,7 +106,10 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
         trigger={['click']}
         overlayStyle={{ width: 200 }}
       >
-        <SettingOutlined style={{ cursor: 'pointer' }} />
+        <SettingOutlined
+          style={{ cursor: 'pointer' }}
+          className="input-reference-icon-style"
+        />
       </Dropdown>
     </div>
   );
