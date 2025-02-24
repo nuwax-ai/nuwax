@@ -1,3 +1,5 @@
+import LabelIcon from '@/components/LabelIcon';
+import SliderNumber from '@/components/SliderNumber';
 import {
   CALL_METHOD_OPTIONS,
   NO_RECALL_RESPONSE,
@@ -14,8 +16,6 @@ import { Divider, Modal, Radio, Switch } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './index.less';
-import LabelIcon from './LabelIcon';
-import SliderNumber from './SliderNumber';
 
 const cx = classNames.bind(styles);
 

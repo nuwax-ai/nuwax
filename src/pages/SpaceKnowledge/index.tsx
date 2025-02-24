@@ -22,7 +22,7 @@ const SpaceKnowledge: React.FC = () => {
 
   const handleClickPopoverItem = (item: CustomPopoverItem) => {
     console.log('点击popover', item);
-    setType(item.value);
+    setType(item.value as KnowledgeTextImportEnum);
     switch (item.value) {
       case KnowledgeTextImportEnum.Local_Doc:
         setOpen(true);

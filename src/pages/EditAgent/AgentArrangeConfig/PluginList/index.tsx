@@ -9,7 +9,7 @@ import AgentModelComponent from '../AgentModelComponent';
 interface PluginListProps {
   list: AgentComponentInfo[];
   onSet: () => void;
-  onDel: () => void;
+  onDel: (id: number) => void;
 }
 
 const PluginList: React.FC<PluginListProps> = ({ list, onSet, onDel }) => {
@@ -35,7 +35,10 @@ const PluginList: React.FC<PluginListProps> = ({ list, onSet, onDel }) => {
             <TooltipIcon
               title="删除"
               icon={
-                <DeleteOutlined className={'cursor-pointer'} onClick={onDel} />
+                <DeleteOutlined
+                  className={'cursor-pointer'}
+                  onClick={() => onDel(item.id)}
+                />
               }
             />
           </>

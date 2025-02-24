@@ -11,7 +11,7 @@ interface SliderNumberProps {
   max?: number;
   step?: number;
   value: string;
-  onChange: () => void;
+  onChange: (value: React.Key) => void;
 }
 
 const SliderNumber: React.FC<SliderNumberProps> = ({

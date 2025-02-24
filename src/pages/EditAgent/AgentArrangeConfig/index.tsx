@@ -6,7 +6,11 @@ import {
   LONG_MEMORY_LIST,
   USER_PROBLEM_SUGGEST_LIST,
 } from '@/constants/space.contants';
-import { apiAgentComponentList } from '@/services/agentConfig';
+import {
+  apiAgentComponentAdd,
+  apiAgentComponentDelete,
+  apiAgentComponentList,
+} from '@/services/agentConfig';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PluginAndLibraryEnum } from '@/types/enums/common';
 import { KnowledgeDataTypeEnum } from '@/types/enums/library';
@@ -20,8 +24,9 @@ import {
 } from '@/types/enums/space';
 import type { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { AgentArrangeConfigProps } from '@/types/interfaces/agentConfig';
+import type { CreatedNodeItem } from '@/types/interfaces/common';
 import { CaretDownOutlined } from '@ant-design/icons';
-import { CollapseProps } from 'antd';
+import { CollapseProps, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel, useRequest } from 'umi';
@@ -40,6 +45,7 @@ const cx = classNames.bind(styles);
  * 智能体编排区域配置
  */
 const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
+  spaceId,
   agentId,
   onKnowledge,
   onSet,
@@ -60,9 +66,12 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const [agentComponentList, setAgentComponentList] = useState<
     AgentComponentInfo[]
   >([]);
+  const [checkTag, setCheckTag] = useState<PluginAndLibraryEnum>(
+    PluginAndLibraryEnum.Plugin,
+  );
 
   // 打开、关闭弹窗
-  const { setShow } = useModel('model');
+  const { show, setShow } = useModel('model');
 
   const filterList = (
     list: AgentComponentInfo[],
@@ -80,6 +89,27 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
   });
 
+  // 删除智能体组件配置
+  const { run: runPluginComponentDel } = useRequest(apiAgentComponentDelete, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: () => {
+      message.success('已成功删除插件');
+    },
+  });
+
+  // 新增智能体插件、工作流、知识库组件配置
+  const { run: runComponentAdd } = useRequest(apiAgentComponentAdd, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: () => {
+      setShow(false);
+      message.success('已成功添加');
+      // 查询智能体配置组件列表
+      run(agentId);
+    },
+  });
+
   useEffect(() => {
     if (agentId) {
       run(agentId);
@@ -89,15 +119,15 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 添加插件
   const handlerPluginPlus = (e) => {
     e.stopPropagation();
+    setCheckTag(PluginAndLibraryEnum.Plugin);
     setShow(true);
-    console.log('handlerPluginPlus');
   };
 
   // 添加工作流
   const handlerWorkflowPlus = (e) => {
     e.stopPropagation();
+    setCheckTag(PluginAndLibraryEnum.Workflow);
     setShow(true);
-    console.log('handlerWorkflowPlus');
   };
 
   // 添加触发器
@@ -115,15 +145,15 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 添加文本
   const handlerTextPlus = (e) => {
     e.stopPropagation();
+    setCheckTag(PluginAndLibraryEnum.KnowledgeBase);
     setShow(true);
-    console.log('handlerTextPlus');
   };
 
   // 添加表格
   const handlerTablePlus = (e) => {
     e.stopPropagation();
+    setCheckTag(PluginAndLibraryEnum.KnowledgeBase);
     setShow(true);
-    console.log('handlerTablePlus');
   };
 
   // 添加变量
@@ -132,10 +162,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     console.log('handlerVariablePlus');
   };
 
-  // 添加表
-  const handlerSheetPlus = (e) => {
+  // 添加数据库表
+  const handlerDatabasePlus = (e) => {
     e.stopPropagation();
-    console.log('handlerSheetPlus');
+    setCheckTag(PluginAndLibraryEnum.Database);
+    setShow(true);
   };
 
   // 添加指令
@@ -154,9 +185,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       label: '插件',
       children: (
         <PluginList
-          list={filterList(agentComponentList, AgentComponentTypeEnum.Variable)}
+          list={filterList(agentComponentList, AgentComponentTypeEnum.Plugin)}
           onSet={onSet}
-          onDel={() => {}}
+          onDel={runPluginComponentDel}
         />
       ),
       extra: <TooltipIcon title="添加插件" onClick={handlerPluginPlus} />,
@@ -167,6 +198,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       children: (
         <WorkflowList
           list={filterList(agentComponentList, AgentComponentTypeEnum.Workflow)}
+          onDel={runPluginComponentDel}
         />
       ),
       extra: <TooltipIcon title="添加工作流" onClick={handlerWorkflowPlus} />,
@@ -176,8 +208,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       label: '触发器',
       children: (
         <TriggerContent
+          list={filterList(agentComponentList, AgentComponentTypeEnum.Trigger)}
           checked={triggerChecked}
           onChange={handlerChangeTrigger}
+          onDel={runPluginComponentDel}
         />
       ),
       extra: <TooltipIcon title="添加触发器" onClick={handlerTriggerPlus} />,
@@ -220,7 +254,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       key: AgentConfigMemoryEnum.Data_Base,
       label: '数据库',
       children: <p>以表格结构组织数据，可实现类似书签和图书管理等功能。</p>,
-      extra: <TooltipIcon title="添加表" onClick={handlerSheetPlus} />,
+      extra: <TooltipIcon title="添加表" onClick={handlerDatabasePlus} />,
     },
     {
       key: AgentConfigMemoryEnum.Long_Memory,
@@ -294,6 +328,15 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
   ];
 
+  // 添加插件、工作流、知识库、数据库
+  const handleAddComponent = (info: CreatedNodeItem) => {
+    runComponentAdd({
+      agentId,
+      type: info.targetType,
+      targetId: info.targetId,
+    });
+  };
+
   return (
     <div className={classNames('overflow-y', 'flex-1', 'px-16', 'py-12')}>
       <ConfigOptionsHeader title="技能" />
@@ -316,7 +359,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       <ConfigOptionsHeader title="对话体验" />
       <ConfigOption items={ConversationalExperienceList} />
       {/*添加插件、工作流、知识库、数据库弹窗*/}
-      <Created checkTag={PluginAndLibraryEnum.Plugin} onAdded={() => {}} />
+      <Created
+        open={show}
+        onCancel={() => setShow(false)}
+        spaceId={spaceId}
+        checkTag={checkTag}
+        onAdded={handleAddComponent}
+      />
       {/*添加触发器弹窗*/}
       <CreateTrigger
         agentId={agentId}

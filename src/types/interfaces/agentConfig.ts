@@ -23,6 +23,7 @@ export interface ArrangeTitleProps {
 
 // 智能体编排区域配置组件
 export interface AgentArrangeConfigProps {
+  spaceId: number;
   agentId: number;
   onKnowledge: () => void;
   onSet: () => void;

@@ -245,20 +245,23 @@ export interface AgentComponentTriggerAddParams {
 export type AgentComponentPluginUpdateParams =
   AgentComponentWorkflowUpdateParams;
 
+// 智能体组件模型设置
+export interface AgentComponentBindConfig {
+  mode: UpdateModeComponentEnum;
+  // 生成随机性;0-1
+  temperature: number;
+  // 累计概率: 模型在生成输出时会从概率最高的词汇开始选择;0-1
+  topP: number;
+  // 最大生成长度
+  maxTokens: number;
+  // 上下文轮数
+  contextRounds: number;
+}
+
 // 更新模型组件配置输入参数
 export interface AgentComponentModelUpdateParams
   extends AgentComponentModeBaseInfo {
-  bindConfig: {
-    mode: UpdateModeComponentEnum;
-    // 生成随机性;0-1
-    temperature: string;
-    // 累计概率: 模型在生成输出时会从概率最高的词汇开始选择;0-1
-    topP: string;
-    // 最大生成长度
-    maxTokens: string;
-    // 上下文轮数
-    contextRounds: string;
-  };
+  bindConfig: AgentComponentBindConfig;
 }
 
 // 更新知识库组件配置输入参数
@@ -417,7 +420,7 @@ export interface AgentComponentInfo {
   // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model
   type: AgentComponentTypeEnum;
   // 绑定组件配置，不同组件配置不一样
-  bindConfig: string;
+  bindConfig: AgentComponentBindConfig;
   // 关联的组件ID
   targetId: number;
   // 组件原始配置
