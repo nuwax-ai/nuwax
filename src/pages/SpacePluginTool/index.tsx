@@ -19,7 +19,11 @@ import {
   apiPluginHttpUpdate,
   apiPluginInfo,
 } from '@/services/plugin';
-import { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
+import {
+  CreateUpdateModeEnum,
+  DataTypeEnum,
+  HttpMethodEnum,
+} from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type {
   InputConfigDataType,
@@ -97,6 +101,18 @@ const SpacePluginTool: React.FC = () => {
           contentType,
           timeout,
         });
+        // 默认展开的入参配置key
+        const _expandedRowKeys =
+          inputArgs
+            ?.filter((item) => item?.children?.length > 0)
+            ?.map((item) => item.key) || [];
+        setExpandedRowKeys(_expandedRowKeys);
+        // 默认展开的出参配置key
+        const _outputExpandedRowKeys =
+          outputArgs
+            ?.filter((item) => item?.children?.length > 0)
+            ?.map((item) => item.key) || [];
+        setOutputExpandedRowKeys(_outputExpandedRowKeys);
         setInputConfigArgs(inputArgs);
         setOutputConfigArgs(outputArgs);
       }
@@ -449,6 +465,12 @@ const SpacePluginTool: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  // 发布事件
+  const handlePublish = () => {
+    handleSave();
+    setOpenModal(true);
+  };
+
   // 修改插件，更新信息
   const handleConfirmUpdate = (info: PluginInfo) => {
     const { icon, name, description } = info;
@@ -491,12 +513,15 @@ const SpacePluginTool: React.FC = () => {
           onToggleHistory={() => setVisible(!visible)}
           onSave={handleSave}
           onTryRun={handleTryRun}
-          onPublish={() => setOpenModal(true)}
+          onPublish={handlePublish}
         />
         <div className={cx(styles['main-container'], 'overflow-y')}>
           <h3 className={cx(styles.title, 'mb-12')}>请求配置</h3>
           <Form
             form={form}
+            initialValues={{
+              method: HttpMethodEnum.GET,
+            }}
             layout="vertical"
             requiredMark={customizeRequiredMark}
           >

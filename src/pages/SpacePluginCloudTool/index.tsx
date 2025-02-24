@@ -2,13 +2,18 @@ import CreateNewPlugin from '@/components/CreateNewPlugin';
 import LabelStar from '@/components/LabelStar';
 import PluginPublish from '@/components/PluginPublish';
 import VersionHistory from '@/components/VersionHistory';
-import { PARAMS_TYPE_LIST } from '@/constants/common.constants';
+import { VARIABLE_TYPE_LIST } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
-import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { AFFERENT_MODE_LIST } from '@/constants/library.constants';
+import usePluginConfig from '@/hooks/usePluginConfig';
+import { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
+import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type {
   InputConfigCloudDataType,
+  InputConfigDataType,
   OutputConfigDataType,
 } from '@/types/interfaces/library';
+import type { PluginInfo } from '@/types/interfaces/plugin';
 import {
   CloseOutlined,
   DeleteOutlined,
@@ -20,7 +25,6 @@ import Editor from '@monaco-editor/react';
 import type { TableColumnsType } from 'antd';
 import {
   Button,
-  Cascader,
   Checkbox,
   DatePicker,
   Input,
@@ -37,246 +41,6 @@ import PluginHeader from './PluginHeader';
 const cx = classNames.bind(styles);
 const { RangePicker } = DatePicker;
 
-// 入参配置columns
-const inputColumns: TableColumnsType<InputConfigCloudDataType>['columns'] = [
-  {
-    title: <LabelStar label="参数名称" />,
-    dataIndex: 'paramName',
-    key: 'paramName',
-    className: 'flex',
-    render: () => <Input placeholder="请输入参数名称，确保含义清晰" />,
-  },
-  {
-    title: <LabelStar label="参数描述" />,
-    dataIndex: 'desc',
-    key: 'desc',
-    render: () => (
-      <Input placeholder="请输入参数描述，确保描述详细便于大模型更好的理解" />
-    ),
-  },
-  {
-    title: <LabelStar label="参数类型" />,
-    dataIndex: 'paramType',
-    key: 'paramType',
-    width: 120,
-    render: () => (
-      <Cascader
-        rootClassName={styles.select}
-        expandTrigger="hover"
-        options={PARAMS_TYPE_LIST}
-      />
-    ),
-  },
-  {
-    title: '是否必须',
-    dataIndex: 'mustNot',
-    key: 'mustNot',
-    width: 100,
-    align: 'center',
-    render: () => <Checkbox />,
-  },
-  {
-    title: '默认值',
-    dataIndex: 'default',
-    key: 'default',
-    width: 150,
-    render: () => <Input placeholder="请输入默认值" />,
-  },
-  {
-    title: '开启',
-    dataIndex: 'open',
-    key: 'open',
-    width: 70,
-    align: 'center',
-    render: () => <Checkbox />,
-  },
-  {
-    title: '操作',
-    key: 'action',
-    width: 80,
-    align: 'right',
-    render: (_, record) => (
-      <Space size="middle">
-        {record.paramType === 2 && (
-          <ICON_ADD_TR className={cx('cursor-pointer')} />
-        )}
-        <DeleteOutlined onClick={() => console.log(record)} />
-      </Space>
-    ),
-  },
-];
-
-// 入参源数据
-const inputData: InputConfigCloudDataType[] = [
-  {
-    key: '1',
-    paramName: 'John Brown',
-    desc: 'desc',
-    paramType: 2,
-    mustNot: false,
-    default: '',
-    open: true,
-    children: [
-      {
-        key: '10',
-        paramName: 'John Brown',
-        desc: 'desc',
-        paramType: 2,
-        mustNot: false,
-        default: '',
-        open: true,
-        children: [
-          {
-            key: '110',
-            paramName: 'John Brown',
-            desc: 'desc',
-            paramType: 1,
-            mustNot: false,
-            default: '',
-            open: true,
-          },
-          {
-            key: '120',
-            paramName: 'John Brown',
-            desc: 'desc',
-            paramType: 2,
-            mustNot: false,
-            default: '',
-            open: true,
-            children: [
-              {
-                key: '1110',
-                paramName: 'John Brown',
-                desc: 'desc',
-                paramType: 2,
-                mustNot: false,
-                default: '',
-                open: true,
-              },
-              {
-                key: '1120',
-                paramName: 'John Brown',
-                desc: 'desc',
-                paramType: 1,
-                mustNot: false,
-                default: '',
-                open: true,
-              },
-            ],
-          },
-        ],
-      },
-      {
-        key: '20000',
-        paramName: 'John Brown',
-        desc: 'desc',
-        paramType: 2,
-        mustNot: false,
-        default: '',
-        open: true,
-      },
-    ],
-  },
-  {
-    key: '2',
-    paramName: 'John Brown',
-    desc: 'desc',
-    paramType: 2,
-    mustNot: false,
-    default: '',
-    open: true,
-  },
-];
-
-// 出参配置columns
-const outputColumns: TableColumnsType<OutputConfigDataType>['columns'] = [
-  {
-    title: <LabelStar label="参数名称" />,
-    dataIndex: 'paramName',
-    key: 'paramName',
-    width: 430,
-    className: 'flex',
-    render: () => <Input placeholder="请输入参数名称，确保含义清晰" />,
-  },
-  {
-    title: <LabelStar label="参数描述" />,
-    dataIndex: 'desc',
-    key: 'desc',
-    render: () => (
-      <Input placeholder="请输入参数描述，确保描述详细便于大模型更好的理解" />
-    ),
-  },
-  {
-    title: <LabelStar label="参数类型" />,
-    dataIndex: 'paramType',
-    key: 'paramType',
-    width: 120,
-    render: () => (
-      <Cascader
-        rootClassName={styles.select}
-        expandTrigger="hover"
-        options={PARAMS_TYPE_LIST}
-      />
-    ),
-  },
-  {
-    title: '开启',
-    dataIndex: 'open',
-    key: 'open',
-    width: 70,
-    align: 'center',
-    render: () => <Checkbox />,
-  },
-  {
-    title: '操作',
-    key: 'action',
-    width: 80,
-    align: 'right',
-    render: (_, record) => (
-      <Space size="middle">
-        {record.paramType === 2 && (
-          <ICON_ADD_TR className={cx('cursor-pointer')} />
-        )}
-        <DeleteOutlined onClick={() => console.log(record)} />
-      </Space>
-    ),
-  },
-];
-
-// 出参源数据
-const outputData: OutputConfigDataType[] = [
-  {
-    key: '1',
-    paramName: 'John Brown',
-    desc: 'desc',
-    paramType: 2,
-    open: true,
-    children: [
-      {
-        key: '10',
-        paramName: 'John Brown',
-        desc: 'desc',
-        paramType: 2,
-        open: true,
-      },
-      {
-        key: '20',
-        paramName: 'John Brown',
-        desc: 'desc',
-        paramType: 1,
-        open: true,
-      },
-    ],
-  },
-  {
-    key: '2',
-    paramName: 'John Brown',
-    desc: 'desc',
-    paramType: 2,
-    open: true,
-  },
-];
-
 /**
  * 工作空间-组件库-测试插件组件（基于云端代码js、python创建）
  */
@@ -291,19 +55,247 @@ const SpacePluginCloudTool: React.FC = () => {
     setCode(value);
   };
 
+  const {
+    pluginId,
+    pluginInfo,
+    inputConfigArgs,
+    outputConfigArgs,
+    handleInputValue,
+    handleOutputValue,
+    handleInputAddChild,
+    handleOutputAddChild,
+    handleOutputDel,
+    handleConfirmUpdate,
+  } = usePluginConfig();
+
+  // 入参配置columns
+  const inputColumns: TableColumnsType<InputConfigDataType>['columns'] = [
+    {
+      title: <LabelStar label="参数名称" />,
+      dataIndex: 'name',
+      key: 'name',
+      className: 'flex items-center',
+      render: (value, record, index) => (
+        <Input
+          placeholder="请输入参数名称，确保含义清晰"
+          value={value}
+          onChange={(e) =>
+            handleInputValue(index, record, 'name', e.target.value)
+          }
+        />
+      ),
+    },
+    {
+      title: <LabelStar label="参数描述" />,
+      dataIndex: 'description',
+      key: 'description',
+      render: (value, record, index) => (
+        <Input
+          placeholder="请输入参数描述，确保描述详细便于大模型更好的理解"
+          value={value}
+          onChange={(e) =>
+            handleInputValue(index, record, 'description', e.target.value)
+          }
+        />
+      ),
+    },
+    {
+      title: <LabelStar label="参数类型" />,
+      dataIndex: 'dataType',
+      key: 'dataType',
+      width: 120,
+      render: (value, record, index) => (
+        <Select
+          rootClassName={styles.select}
+          value={value}
+          onChange={(value) =>
+            handleInputValue(index, record, 'dataType', value)
+          }
+          options={VARIABLE_TYPE_LIST}
+        />
+      ),
+    },
+    {
+      title: <LabelStar label="传入方式" />,
+      dataIndex: 'inputType',
+      key: 'inputType',
+      width: 120,
+      render: (value, record, index) => (
+        <Select
+          rootClassName={styles.select}
+          options={AFFERENT_MODE_LIST}
+          onChange={(value) =>
+            handleInputValue(index, record, 'inputType', value)
+          }
+          value={value}
+        />
+      ),
+    },
+    {
+      title: '是否必须',
+      dataIndex: 'require',
+      key: 'require',
+      width: 100,
+      align: 'center',
+      render: (value, record, index) => (
+        <Checkbox
+          checked={value}
+          onChange={(e) =>
+            handleInputValue(index, record, 'require', e.target.checked)
+          }
+        />
+      ),
+    },
+    {
+      title: '默认值',
+      dataIndex: 'bindValue',
+      key: 'bindValue',
+      width: 150,
+      render: (value, record, index) => (
+        <Input
+          placeholder="请输入默认值"
+          onChange={(e) =>
+            handleInputValue(index, record, 'bindValue', e.target.value)
+          }
+          value={value}
+        />
+      ),
+    },
+    {
+      title: '开启',
+      dataIndex: 'enable',
+      key: 'enable',
+      width: 70,
+      align: 'center',
+      render: (value, record, index) => (
+        <Checkbox
+          checked={value}
+          onChange={(e) =>
+            handleInputValue(index, record, 'enable', e.target.checked)
+          }
+        />
+      ),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 80,
+      align: 'right',
+      render: (_, record, index) => (
+        <Space size="middle">
+          {record.dataType === DataTypeEnum.Object &&
+            inputConfigArgs?.[index]?.key === record.key && (
+              <ICON_ADD_TR
+                className={cx('cursor-pointer')}
+                onClick={() => handleInputAddChild(index)}
+              />
+            )}
+          <DeleteOutlined onClick={() => console.log(record)} />
+        </Space>
+      ),
+    },
+  ];
+
+  // 出参配置columns
+  const outputColumns: TableColumnsType<BindConfigWithSub>['columns'] = [
+    {
+      title: <LabelStar label="参数名称" />,
+      dataIndex: 'name',
+      key: 'name',
+      width: 430,
+      className: 'flex items-center',
+      render: (value, record, index) => (
+        <Input
+          placeholder="请输入参数名称，确保含义清晰"
+          value={value}
+          onChange={(e) =>
+            handleOutputValue(index, record, 'name', e.target.value)
+          }
+        />
+      ),
+    },
+    {
+      title: <LabelStar label="参数描述" />,
+      dataIndex: 'description',
+      key: 'description',
+      render: (value, record, index) => (
+        <Input
+          placeholder="请输入参数描述，确保描述详细便于大模型更好的理解"
+          onChange={(e) =>
+            handleOutputValue(index, record, 'description', e.target.value)
+          }
+          value={value}
+        />
+      ),
+    },
+    {
+      title: <LabelStar label="参数类型" />,
+      dataIndex: 'dataType',
+      key: 'dataType',
+      width: 120,
+      render: (value, record, index) => (
+        <Select
+          rootClassName={styles.select}
+          value={value}
+          onChange={(value) =>
+            handleOutputValue(index, record, 'dataType', value)
+          }
+          options={VARIABLE_TYPE_LIST}
+        />
+      ),
+    },
+    {
+      title: '开启',
+      dataIndex: 'enable',
+      key: 'enable',
+      width: 70,
+      align: 'center',
+      render: (value, record, index) => (
+        <Checkbox
+          checked={value}
+          onChange={(e) =>
+            handleOutputValue(index, record, 'enable', e.target.checked)
+          }
+        />
+      ),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 80,
+      align: 'right',
+      render: (_, record, index) => (
+        <Space size="middle">
+          {record.dataType === DataTypeEnum.Object &&
+            outputConfigArgs?.[index]?.key === record.key && (
+              <ICON_ADD_TR
+                className={cx('cursor-pointer')}
+                onClick={() => handleOutputAddChild(index)}
+              />
+            )}
+          <DeleteOutlined onClick={() => handleOutputDel(index, record)} />
+        </Space>
+      ),
+    },
+  ];
+
   // 试运行
+  const handleSave = () => {};
   const handleTryRun = () => {};
+  const handlePublish = () => {};
 
   return (
     <div className={cx('flex', 'h-full')}>
       <div className={cx(styles.container, 'flex', 'flex-col', 'flex-1')}>
         <PluginHeader
           value={value}
+          pluginInfo={pluginInfo as PluginInfo}
           onEdit={() => setOpenPlugin(true)}
           onChange={setValue}
           onToggleHistory={() => setVisible(!visible)}
+          onSave={handleSave}
           onTryRun={handleTryRun}
-          onPublish={() => setOpenModal(true)}
+          onPublish={handlePublish}
         />
         {/*todo*/}
         {value === 1 ? (
@@ -323,7 +315,7 @@ const SpacePluginCloudTool: React.FC = () => {
                 'overflow-hide',
               )}
               columns={inputColumns}
-              dataSource={inputData}
+              dataSource={inputConfigArgs}
               pagination={false}
               expandable={{
                 defaultExpandAllRows: true,
@@ -339,7 +331,7 @@ const SpacePluginCloudTool: React.FC = () => {
             <Table<OutputConfigDataType>
               className={cx(styles['table-wrap'], 'overflow-hide')}
               columns={outputColumns}
-              dataSource={outputData}
+              dataSource={outputConfigArgs}
               pagination={false}
               expandable={{
                 defaultExpandAllRows: true,
@@ -410,9 +402,9 @@ const SpacePluginCloudTool: React.FC = () => {
         )}
       </div>
       <PluginPublish
+        pluginId={pluginId}
         open={openModal}
         onCancel={() => setOpenModal(false)}
-        onConfirm={() => setOpenModal(false)}
       />
       {/*版本历史*/}
       <VersionHistory
@@ -423,11 +415,13 @@ const SpacePluginCloudTool: React.FC = () => {
       {/*修改插件弹窗*/}
       <CreateNewPlugin
         open={openPlugin}
-        pluginId={'110110'}
-        pluginName="测试插件"
-        desc={'测试插件的描述信息'}
+        id={pluginInfo?.id}
+        icon={pluginInfo?.icon}
+        name={pluginInfo?.name}
+        description={pluginInfo?.description}
         mode={CreateUpdateModeEnum.Update}
         onCancel={() => setOpenPlugin(false)}
+        onConfirm={handleConfirmUpdate}
       />
     </div>
   );
