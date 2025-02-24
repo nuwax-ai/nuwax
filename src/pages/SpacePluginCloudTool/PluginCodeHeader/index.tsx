@@ -1,10 +1,9 @@
 import pluginImage from '@/assets/images/plugin_image.png';
-import { ICON_CODE } from '@/constants/images.constants';
+import { PLUGIN_CODE_SEGMENTED_LIST } from '@/constants/library.constants';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { PluginTypeEnum } from '@/types/enums/plugin';
-import { PluginInfo } from '@/types/interfaces/plugin';
+import type { PluginCodeHeaderProps } from '@/types/interfaces/plugin';
 import {
-  BarsOutlined,
   CaretRightOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -19,21 +18,11 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface PluginHeaderProps {
-  value: number;
-  pluginInfo: PluginInfo;
-  onEdit: () => void;
-  onToggleHistory: () => void;
-  onSave: () => void;
-  onTryRun: () => void;
-  onPublish: () => void;
-}
-
 /**
  * 测试插件头部组件
  */
-const PluginHeader: React.FC<PluginHeaderProps> = ({
-  value,
+const PluginCodeHeader: React.FC<PluginCodeHeaderProps> = ({
+  codeMode,
   onChange,
   pluginInfo,
   onEdit,
@@ -89,12 +78,9 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
       </section>
       <Segmented
         rootClassName={styles['segment']}
-        value={value}
+        value={codeMode}
         onChange={onChange}
-        options={[
-          { label: '元数据', value: 1, icon: <BarsOutlined /> },
-          { label: '代码', value: 2, icon: <ICON_CODE /> },
-        ]}
+        options={PLUGIN_CODE_SEGMENTED_LIST}
       />
       <ClockCircleOutlined
         className={cx(styles.history, 'cursor-pointer')}
@@ -118,4 +104,4 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
   );
 };
 
-export default PluginHeader;
+export default PluginCodeHeader;

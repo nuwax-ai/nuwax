@@ -1,3 +1,4 @@
+import type { PluginConfigTitleProps } from '@/types/interfaces/common';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
@@ -6,12 +7,10 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface ConfigHeaderProps {
-  title: string;
-  onClick: () => void;
-}
-
-const ConfigHeader: React.FC<ConfigHeaderProps> = ({ title, onClick }) => {
+const PluginConfigTitle: React.FC<PluginConfigTitleProps> = ({
+  title,
+  onClick,
+}) => {
   return (
     <div className={cx('flex', 'content-between', 'items-center', 'mb-12')}>
       <h3 className={cx(styles.title)}>{title}</h3>
@@ -22,4 +21,4 @@ const ConfigHeader: React.FC<ConfigHeaderProps> = ({ title, onClick }) => {
   );
 };
 
-export default ConfigHeader;
+export default PluginConfigTitle;

@@ -16,3 +16,11 @@ export enum CodeLangEnum {
   Python = 'Python',
   JavaScript = 'JavaScript',
 }
+
+// 插件Code模式
+export enum PluginCodeModeEnum {
+  // 元数据
+  Metadata = 'Metadata',
+  // 代码
+  Code = 'Code',
+}

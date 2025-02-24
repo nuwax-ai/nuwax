@@ -6,8 +6,9 @@
   .main-container {
     padding: 16px 20px;
 
-    &.code-mode {
-      gap: 10px;
+    // 代码模式
+    &.code-wrap {
+      background-color: @WHITE;
     }
 
     .title {
@@ -32,40 +33,6 @@
 
     .select {
       width: 120px;
-    }
-
-    // 代码模式
-    .code-wrap {
-      background-color: @WHITE;
-    }
-
-    .line-log {
-      width: 325px;
-      background-color: @GRAY09;
-
-      .log-header {
-        height: 52px;
-        padding: 0 20px;
-        color: @GRAY07;
-        border-bottom: 1px solid @GRAY01;
-
-        .log-title {
-          color: @BLANK10;
-          font-weight: 600;
-        }
-      }
-
-      .log-box {
-        padding: 16px;
-      }
-
-      .log-history {
-        padding: 16px;
-        color: @GRAY05;
-        font-size: 14px;
-        border-radius: 10px;
-        background-color: @GRAY01;
-      }
     }
   }
 }
