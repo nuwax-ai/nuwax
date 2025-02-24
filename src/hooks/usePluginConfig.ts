@@ -2,22 +2,18 @@ import {
   PLUGIN_INPUT_CONFIG,
   PLUGIN_OUTPUT_CONFIG,
 } from '@/constants/space.contants';
-import { apiPluginConfigHistoryList, apiPluginInfo } from '@/services/plugin';
+import { apiPluginConfigHistoryList } from '@/services/plugin';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PluginInfo } from '@/types/interfaces/plugin';
 import type { HistoryData } from '@/types/interfaces/space';
-import { Form } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useMatch, useRequest } from 'umi';
+
 const usePluginConfig = () => {
-  const [form] = Form.useForm();
   const match = useMatch('/space/:spaceId/plugin/:pluginId');
-  const { pluginId } = match.params;
-  // const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  // const [visible, setVisible] = useState<boolean>(false);
-  // // 弹窗modal
-  // const [openModal, setOpenModal] = useState<boolean>(false);
+  const matchCode = useMatch('/space/:spaceId/plugin/:pluginId/cloud-tool');
+  const { pluginId } = match?.params || matchCode?.params;
   // 修改插件弹窗
   const [openPlugin, setOpenPlugin] = useState<boolean>(false);
   // 插件信息
@@ -39,39 +35,6 @@ const usePluginConfig = () => {
     [],
   );
 
-  // 查询插件信息
-  const { run: runPluginInfo } = useRequest(apiPluginInfo, {
-    manual: true,
-    debounceWait: 300,
-    onSuccess: (result: PluginInfo) => {
-      setPluginInfo(result);
-      if (result.config) {
-        const { method, url, contentType, timeout, inputArgs, outputArgs } =
-          result.config;
-        form.setFieldsValue({
-          method,
-          url,
-          contentType,
-          timeout,
-        });
-        // 默认展开的入参配置key
-        const _expandedRowKeys =
-          inputArgs
-            ?.filter((item) => item?.children?.length > 0)
-            ?.map((item) => item.key) || [];
-        setExpandedRowKeys(_expandedRowKeys);
-        // 默认展开的出参配置key
-        const _outputExpandedRowKeys =
-          outputArgs
-            ?.filter((item) => item?.children?.length > 0)
-            ?.map((item) => item.key) || [];
-        setOutputExpandedRowKeys(_outputExpandedRowKeys);
-        setInputConfigArgs(inputArgs);
-        setOutputConfigArgs(outputArgs);
-      }
-    },
-  });
-
   // 查询插件历史配置信息接口
   const { run: runHistory } = useRequest(apiPluginConfigHistoryList, {
     manual: true,
@@ -80,11 +43,6 @@ const usePluginConfig = () => {
       setHistoryData(result);
     },
   });
-
-  useEffect(() => {
-    runPluginInfo(pluginId);
-    runHistory(pluginId);
-  }, [pluginId]);
 
   // 入参配置 - changeValue
   const handleInputValue = (
@@ -173,9 +131,41 @@ const usePluginConfig = () => {
   };
 
   // 出参配置删除操作
+  const handleInputDel = (index: number, record: BindConfigWithSub) => {
+    const _inputConfigArgs = cloneDeep(inputConfigArgs);
+    // 第一级
+    if (_inputConfigArgs[index]?.key === record.key) {
+      _inputConfigArgs.splice(index, 1);
+    } else {
+      // 子级
+      const f_index = _inputConfigArgs.findIndex((item) => {
+        const childIndex = item.children?.findIndex(
+          (childItem) => childItem?.key === record.key,
+        );
+        return childIndex > -1;
+      });
+      _inputConfigArgs[f_index].children.splice(index, 1);
+    }
+    setInputConfigArgs(_inputConfigArgs);
+  };
+
+  // 出参配置删除操作
   const handleOutputDel = (index: number, record: BindConfigWithSub) => {
     const _outputConfigArgs = cloneDeep(outputConfigArgs);
-    console.log(index, record, _outputConfigArgs);
+    // 第一级
+    if (_outputConfigArgs[index]?.key === record.key) {
+      _outputConfigArgs.splice(index, 1);
+    } else {
+      // 子级
+      const f_index = _outputConfigArgs.findIndex((item) => {
+        const childIndex = item.children?.findIndex(
+          (childItem) => childItem?.key === record.key,
+        );
+        return childIndex > -1;
+      });
+      _outputConfigArgs[f_index].children.splice(index, 1);
+    }
+    setOutputConfigArgs(_outputConfigArgs);
   };
 
   // 修改插件，更新信息
@@ -210,16 +200,26 @@ const usePluginConfig = () => {
   };
 
   return {
+    runHistory,
     pluginId,
     pluginInfo,
+    setPluginInfo,
     openPlugin,
+    setOpenPlugin,
     historyData,
     inputConfigArgs,
+    setInputConfigArgs,
     outputConfigArgs,
+    setOutputConfigArgs,
+    expandedRowKeys,
+    setExpandedRowKeys,
+    outputExpandedRowKeys,
+    setOutputExpandedRowKeys,
     handleInputValue,
     handleOutputValue,
     handleInputAddChild,
     handleOutputAddChild,
+    handleInputDel,
     handleOutputDel,
     handleConfirmUpdate,
     handleInputConfigAdd,

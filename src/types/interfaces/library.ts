@@ -1,4 +1,3 @@
-import type { InputTypeEnum } from '@/types/enums/agent';
 import type {
   CreateUpdateModeEnum,
   PublishStatusEnum,
@@ -56,32 +55,6 @@ export interface CreateNewPluginProps {
   open: boolean;
   onCancel: () => void;
   onConfirm: (info: PluginInfo) => void;
-}
-
-// 入参与出参共有配置数据类型
-export type ConfigDataType = BindConfigWithSub;
-
-// 出参配置数据类型
-export interface OutputConfigDataType extends ConfigDataType {
-  children?: OutputConfigDataType[];
-}
-
-// 入参配置数据类型(插件基于云端代码js、python创建)
-export interface InputConfigCloudDataType extends ConfigDataType {
-  // 是否必须
-  mustNot: boolean;
-  // 默认值
-  default: string;
-  children?: InputConfigCloudDataType[];
-}
-
-// 入参配置数据类型(插件基于http创建)
-export interface InputConfigDataType extends ConfigDataType {
-  // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
-  inputType: InputTypeEnum;
-  // 是否必须
-  require: boolean;
-  children?: InputConfigDataType[];
 }
 
 // table头部header带*号标题

@@ -398,3 +398,9 @@ export interface PluginPublishProps {
   open: boolean;
   onCancel: () => void;
 }
+
+// 插件入参、出参配置title组件
+export interface PluginConfigTitleProps {
+  title: string;
+  onClick: () => void;
+}

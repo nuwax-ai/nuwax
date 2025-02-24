@@ -3,6 +3,7 @@ import knowledgeImage from '@/assets/images/knowledge_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
 import {
+  ICON_CODE,
   ICON_CUSTOM_DOC,
   ICON_DATABASE,
   ICON_KNOWLEDGE,
@@ -26,9 +27,14 @@ import {
   ModelNetworkTypeEnum,
   ModelStrategyEnum,
 } from '@/types/enums/modelConfig';
-import { CodeLangEnum, PluginTypeEnum } from '@/types/enums/plugin';
+import {
+  CodeLangEnum,
+  PluginCodeModeEnum,
+  PluginTypeEnum,
+} from '@/types/enums/plugin';
 import { ComponentTypeEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
+import { BarsOutlined } from '@ant-design/icons';
 
 // 组件库更多操作
 export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
@@ -263,4 +269,14 @@ export const MODEL_API_PROTOCOL_LIST = [
     value: ModelApiProtocolEnum.Ollama,
     label: 'Ollama',
   },
+];
+
+// 插件
+export const PLUGIN_CODE_SEGMENTED_LIST = [
+  {
+    label: '元数据',
+    value: PluginCodeModeEnum.Metadata,
+    icon: <BarsOutlined />,
+  },
+  { label: '代码', value: PluginCodeModeEnum.Code, icon: <ICON_CODE /> },
 ];

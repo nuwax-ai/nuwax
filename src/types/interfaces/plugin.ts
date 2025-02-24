@@ -5,6 +5,7 @@ import type {
 } from '@/types/enums/common';
 import type {
   CodeLangEnum,
+  PluginCodeModeEnum,
   PluginPublishScopeEnum,
   PluginTypeEnum,
 } from '@/types/enums/plugin';
@@ -136,7 +137,19 @@ export interface PluginInfo {
   creator: CreatorInfo;
 }
 
+// 插件http头部组件
 export interface PluginHeaderProps {
+  pluginInfo: PluginInfo;
+  onEdit: () => void;
+  onToggleHistory: () => void;
+  onSave: () => void;
+  onTryRun: () => void;
+  onPublish: () => void;
+}
+
+// 插件code头部组件
+export interface PluginCodeHeaderProps {
+  codeMode: PluginCodeModeEnum;
   pluginInfo: PluginInfo;
   onEdit: () => void;
   onToggleHistory: () => void;

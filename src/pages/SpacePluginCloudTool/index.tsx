@@ -1,75 +1,111 @@
 import CreateNewPlugin from '@/components/CreateNewPlugin';
 import LabelStar from '@/components/LabelStar';
+import PluginConfigTitle from '@/components/PluginConfigTitle';
 import PluginPublish from '@/components/PluginPublish';
 import VersionHistory from '@/components/VersionHistory';
 import { VARIABLE_TYPE_LIST } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
-import { AFFERENT_MODE_LIST } from '@/constants/library.constants';
 import usePluginConfig from '@/hooks/usePluginConfig';
+import { apiPluginCodeUpdate, apiPluginInfo } from '@/services/plugin';
 import { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
+import { PluginCodeModeEnum } from '@/types/enums/plugin';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
-import type {
-  InputConfigCloudDataType,
-  InputConfigDataType,
-  OutputConfigDataType,
-} from '@/types/interfaces/library';
 import type { PluginInfo } from '@/types/interfaces/plugin';
-import {
-  CloseOutlined,
-  DeleteOutlined,
-  InfoCircleOutlined,
-  PlusOutlined,
-  SearchOutlined,
-} from '@ant-design/icons';
+import { DeleteOutlined } from '@ant-design/icons';
 import Editor from '@monaco-editor/react';
 import type { TableColumnsType } from 'antd';
-import {
-  Button,
-  Checkbox,
-  DatePicker,
-  Input,
-  Select,
-  Space,
-  Switch,
-  Table,
-} from 'antd';
+import { Checkbox, Input, message, Select, Space, Table } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRequest } from 'umi';
 import styles from './index.less';
-import PluginHeader from './PluginHeader';
+import PluginHeader from './PluginCodeHeader';
 
 const cx = classNames.bind(styles);
-const { RangePicker } = DatePicker;
 
 /**
  * 工作空间-组件库-测试插件组件（基于云端代码js、python创建）
  */
 const SpacePluginCloudTool: React.FC = () => {
-  const [value, setValue] = useState<number>(1);
+  const [codeMode, setCodeMode] = useState<PluginCodeModeEnum>(
+    PluginCodeModeEnum.Metadata,
+  );
   const [visible, setVisible] = useState<boolean>(false);
   const [openModal, setOpenModal] = useState<boolean>(false);
-  // 修改插件弹窗
-  const [openPlugin, setOpenPlugin] = useState<boolean>(false);
   const [code, setCode] = useState<string>('');
   const handleCodeChange = (value: string) => {
     setCode(value);
   };
 
   const {
+    runHistory,
     pluginId,
     pluginInfo,
+    setPluginInfo,
+    openPlugin,
+    setOpenPlugin,
+    historyData,
     inputConfigArgs,
+    setInputConfigArgs,
     outputConfigArgs,
+    setOutputConfigArgs,
+    expandedRowKeys,
+    setExpandedRowKeys,
+    outputExpandedRowKeys,
+    setOutputExpandedRowKeys,
     handleInputValue,
     handleOutputValue,
     handleInputAddChild,
     handleOutputAddChild,
+    handleInputDel,
     handleOutputDel,
     handleConfirmUpdate,
+    handleInputConfigAdd,
+    handleOutputConfigAdd,
   } = usePluginConfig();
 
+  // 查询插件信息
+  const { run: runPluginInfo } = useRequest(apiPluginInfo, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: PluginInfo) => {
+      setPluginInfo(result);
+      if (result.config) {
+        const { inputArgs, outputArgs } = result.config;
+        // 默认展开的入参配置key
+        const _expandedRowKeys =
+          inputArgs
+            ?.filter((item) => item?.children?.length > 0)
+            ?.map((item) => item.key) || [];
+        setExpandedRowKeys(_expandedRowKeys);
+        // 默认展开的出参配置key
+        const _outputExpandedRowKeys =
+          outputArgs
+            ?.filter((item) => item?.children?.length > 0)
+            ?.map((item) => item.key) || [];
+        setOutputExpandedRowKeys(_outputExpandedRowKeys);
+        setInputConfigArgs(inputArgs);
+        setOutputConfigArgs(outputArgs);
+      }
+    },
+  });
+
+  // 更新代码插件配置接口
+  const { run: runUpdate } = useRequest(apiPluginCodeUpdate, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: () => {
+      message.success('插件保存成功');
+    },
+  });
+
+  useEffect(() => {
+    runPluginInfo(pluginId);
+    runHistory(pluginId);
+  }, [pluginId]);
+
   // 入参配置columns
-  const inputColumns: TableColumnsType<InputConfigDataType>['columns'] = [
+  const inputColumns: TableColumnsType<BindConfigWithSub>['columns'] = [
     {
       title: <LabelStar label="参数名称" />,
       dataIndex: 'name',
@@ -112,22 +148,6 @@ const SpacePluginCloudTool: React.FC = () => {
             handleInputValue(index, record, 'dataType', value)
           }
           options={VARIABLE_TYPE_LIST}
-        />
-      ),
-    },
-    {
-      title: <LabelStar label="传入方式" />,
-      dataIndex: 'inputType',
-      key: 'inputType',
-      width: 120,
-      render: (value, record, index) => (
-        <Select
-          rootClassName={styles.select}
-          options={AFFERENT_MODE_LIST}
-          onChange={(value) =>
-            handleInputValue(index, record, 'inputType', value)
-          }
-          value={value}
         />
       ),
     },
@@ -190,7 +210,7 @@ const SpacePluginCloudTool: React.FC = () => {
                 onClick={() => handleInputAddChild(index)}
               />
             )}
-          <DeleteOutlined onClick={() => console.log(record)} />
+          <DeleteOutlined onClick={() => handleInputDel(index, record)} />
         </Space>
       ),
     },
@@ -279,36 +299,44 @@ const SpacePluginCloudTool: React.FC = () => {
     },
   ];
 
+  // 保存插件信息
+  const handleSave = () => {
+    runUpdate({
+      id: pluginId,
+      config: {
+        inputArgs: inputConfigArgs,
+        outputArgs: outputConfigArgs,
+        code,
+      },
+    });
+  };
+
   // 试运行
-  const handleSave = () => {};
   const handleTryRun = () => {};
+
+  // 发布事件
   const handlePublish = () => {};
 
   return (
     <div className={cx('flex', 'h-full')}>
       <div className={cx(styles.container, 'flex', 'flex-col', 'flex-1')}>
         <PluginHeader
-          value={value}
+          codeMode={codeMode}
           pluginInfo={pluginInfo as PluginInfo}
           onEdit={() => setOpenPlugin(true)}
-          onChange={setValue}
+          onChange={setCodeMode}
           onToggleHistory={() => setVisible(!visible)}
           onSave={handleSave}
           onTryRun={handleTryRun}
           onPublish={handlePublish}
         />
-        {/*todo*/}
-        {value === 1 ? (
+        {codeMode === PluginCodeModeEnum.Metadata ? (
           <div className={cx(styles['main-container'], 'overflow-y', 'flex-1')}>
-            <h3 className={cx(styles.title, 'mb-12')}>插件启用状态</h3>
-            <Switch className={cx('mb-16')} />
-            <div
-              className={cx('flex', 'content-between', 'items-center', 'mb-12')}
-            >
-              <h3 className={styles.title}>入参配置</h3>
-              <Button icon={<PlusOutlined />}>新增参数</Button>
-            </div>
-            <Table<InputConfigCloudDataType>
+            <PluginConfigTitle
+              title="入参配置"
+              onClick={handleInputConfigAdd}
+            />
+            <Table<BindConfigWithSub>
               className={cx(
                 styles['table-wrap'],
                 styles['mb-24'],
@@ -319,22 +347,23 @@ const SpacePluginCloudTool: React.FC = () => {
               pagination={false}
               expandable={{
                 defaultExpandAllRows: true,
+                expandedRowKeys: expandedRowKeys,
                 expandIcon: () => null,
               }}
             />
-            <div
-              className={cx('flex', 'content-between', 'items-center', 'mb-12')}
-            >
-              <h3 className={cx(styles.title)}>出参配置</h3>
-              <Button icon={<PlusOutlined />}>新增参数</Button>
-            </div>
-            <Table<OutputConfigDataType>
+            <PluginConfigTitle
+              title="出参配置"
+              onClick={handleOutputConfigAdd}
+            />
+            <Table<BindConfigWithSub>
               className={cx(styles['table-wrap'], 'overflow-hide')}
               columns={outputColumns}
               dataSource={outputConfigArgs}
               pagination={false}
               expandable={{
+                // 初始时，是否展开所有行
                 defaultExpandAllRows: true,
+                expandedRowKeys: outputExpandedRowKeys,
                 expandIcon: () => null,
               }}
             />
@@ -343,61 +372,23 @@ const SpacePluginCloudTool: React.FC = () => {
           <div
             className={cx(
               styles['main-container'],
-              styles['code-mode'],
+              styles['code-wrap'],
               'overflow-y',
               'flex-1',
-              'flex',
             )}
           >
-            <div className={cx(styles['code-wrap'], 'flex-1')}>
-              <Editor
-                height={600}
-                defaultLanguage="javascript"
-                theme="light"
-                value={code} // 使用 value 而不是 defaultValue，使编辑器成为受控组件
-                onChange={handleCodeChange}
-                options={{
-                  selectOnLineNumbers: true,
-                  folding: true,
-                  automaticLayout: true,
-                }}
-              />
-            </div>
-            <div
-              className={cx(styles['line-log'], 'radius-6', 'flex', 'flex-col')}
-            >
-              <div
-                className={cx(
-                  styles['log-header'],
-                  'flex',
-                  'content-between',
-                  'items-center',
-                )}
-              >
-                <span className={cx(styles['log-title'])}>
-                  线上日志 <InfoCircleOutlined />
-                </span>
-                <CloseOutlined />
-              </div>
-              <div className={cx(styles['log-box'])}>
-                <Input
-                  rootClassName={cx('mb-12')}
-                  prefix={<SearchOutlined />}
-                  placeholder="按回车键搜索"
-                />
-                <Select
-                  style={{ width: '100%', marginBottom: '12px' }}
-                  options={[
-                    { value: '1', label: '自定义时间范围' },
-                    { value: '2', label: '其他' },
-                  ]}
-                />
-                <RangePicker />
-              </div>
-              <div className={cx('flex-1', styles['log-history'])}>
-                暂无日志
-              </div>
-            </div>
+            <Editor
+              height={'100%'}
+              defaultLanguage="javascript"
+              theme="light"
+              value={code} // 使用 value 而不是 defaultValue，使编辑器成为受控组件
+              onChange={handleCodeChange}
+              options={{
+                selectOnLineNumbers: true,
+                folding: true,
+                automaticLayout: true,
+              }}
+            />
           </div>
         )}
       </div>
@@ -408,7 +399,7 @@ const SpacePluginCloudTool: React.FC = () => {
       />
       {/*版本历史*/}
       <VersionHistory
-        list={[]}
+        list={historyData}
         visible={visible}
         onClose={() => setVisible(false)}
       />
