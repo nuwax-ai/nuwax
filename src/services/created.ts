@@ -1,6 +1,6 @@
-import { PluginAndLibraryEnum } from '@/types/enums/common';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
+import type { AgentComponentTypeEnum } from '@/types/enums/agent';
 const itemList = {
   Plugin: '/api/published/plugin/list',
   Workflow: '/api/published/workflow/list',
@@ -17,7 +17,7 @@ export interface IGetList {
 }
 
 export async function getList(
-  type: PluginAndLibraryEnum,
+  type: AgentComponentTypeEnum,
   data?: IGetList,
 ): Promise<RequestResponse<any>> {
   return request(`${itemList[type]}`, {

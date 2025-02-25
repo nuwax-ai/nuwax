@@ -3,7 +3,7 @@ import CreateWorkflow from '@/components/CreateWorkflow';
 import TestRun from '@/components/TestRun';
 import Constant from '@/constants/codes.constants';
 import service, { IUpdateDetails } from '@/services/workflow';
-import { NodeTypeEnum, PluginAndLibraryEnum } from '@/types/enums/common';
+import { NodeTypeEnum } from '@/types/enums/common';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
 import { NodePreviousAndArgMap } from '@/types/interfaces/node';
@@ -24,6 +24,7 @@ import Header from './header';
 import './index.less';
 import NodeDrawer from './nodeDrawer';
 import { Child } from './type';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 const Workflow: React.FC = () => {
   // 当前工作流的id
   const workflowId = Number(useParams().workflowId);
@@ -71,9 +72,7 @@ const Workflow: React.FC = () => {
   // 展示修改工作流的弹窗
   const [showCreateWorkflow, setShowCreateWorkflow] = useState(false);
   // 创建工作流，插件，知识库，数据库
-  const [createdItem, setCreatedItem] = useState<PluginAndLibraryEnum>(
-    PluginAndLibraryEnum.Plugin,
-  );
+  const [createdItem, setCreatedItem] = useState<AgentComponentTypeEnum>(AgentComponentTypeEnum.Plugin);
   // 拖动节点到画布中的x和y
   const [dragEvent, setDragEvent] = useState<{ x: number; y: number }>({
     x: 0,
@@ -359,7 +358,7 @@ const Workflow: React.FC = () => {
     ].includes(child.type);
 
     if (isSpecialType) {
-      setCreatedItem(child.type as PluginAndLibraryEnum);
+      setCreatedItem(child.type as AgentComponentTypeEnum);
       setOpen(true);
       setDragEvent(getCoordinates(e));
     } else {
@@ -511,7 +510,7 @@ const Workflow: React.FC = () => {
         referenceList={referenceList}
       />
       <Created
-        checkTag={createdItem as PluginAndLibraryEnum}
+        checkTag={createdItem as AgentComponentTypeEnum}
         onAdded={onAdded}
         targetId={info.id}
         spaceId={info.spaceId}

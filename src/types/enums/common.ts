@@ -75,14 +75,6 @@ export enum FileTypeEnum {
   Array_Other,
 }
 
-// 插件，工作流，知识库，数据库的枚举
-export enum PluginAndLibraryEnum {
-  Plugin = 'Plugin',
-  Workflow = 'Workflow',
-  KnowledgeBase = 'KnowledgeBase',
-  Database = 'Database',
-}
-
 // 插件参数设置默认值类型枚举
 export enum PluginParamsSettingDefaultEnum {
   // 输入
