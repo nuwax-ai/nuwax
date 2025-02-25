@@ -45,7 +45,7 @@ const Header: React.FC<HeaderProp> = ({
           </div>
           <div className="header-tag-style">
             <Tag>工作流</Tag>
-            <Tag>{publishStatus}</Tag>
+            <Tag>{publishStatus === 'Developing' ? '已发布' : '未发布'}</Tag>
             <span>配置自动保存于{getTime(modified)}</span>
           </div>
         </div>

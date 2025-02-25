@@ -36,7 +36,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
 
   // 同步父组件参数变化（新增同步逻辑）
   useEffect(() => {
-    if (!treeData.length && params[inputItemName]) {
+    if (params[inputItemName]) {
       const normalized = (params[inputItemName] as TreeNodeConfig[]).map(
         (item) => ({
           ...item,
@@ -47,7 +47,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
               : item.dataType,
         }),
       );
-      console.log('123', normalized);
+      // console.log('123', normalized);
       setTreeData(normalized);
     }
   }, [params[inputItemName]]);
@@ -167,6 +167,8 @@ const CustomTree: React.FC<TreeFormProps> = ({
       DataTypeEnum.Array_Object,
     ].includes(nodeData.dataType!);
 
+    const _dataType = CascaderValue(nodeData.dataType || undefined);
+
     return (
       <div className="dis-left">
         <Input
@@ -181,18 +183,18 @@ const CustomTree: React.FC<TreeFormProps> = ({
           allowClear={false}
           options={dataTypes}
           style={{ width: 90 }}
-          value={CascaderValue(nodeData.dataType ?? undefined)}
+          defaultValue={_dataType}
           onChange={(value) => {
             updateNodeField(nodeData.key!, 'dataType', CascaderChange(value));
           }}
-          changeOnSelect={false}
-          expandTrigger="hover" // 改为悬停展开
+          changeOnSelect={true}
+          // expandTrigger="hover" // 改为悬停展开
           className="tree-form-name"
           disabled={nodeData.systemVariable}
           placement={'bottomLeft'}
         />
 
-        <div className="dis-left" style={{ width: 70 }}>
+        <div className="flex" style={{ width: 60 }}>
           <Popover
             content={
               <Input.TextArea
@@ -205,7 +207,12 @@ const CustomTree: React.FC<TreeFormProps> = ({
             }
             trigger="click"
           >
-            <FileDoneOutlined className="margin-right cursor-pointer" />
+            <Button
+              type="text"
+              className="tree-icon-style"
+              disabled={nodeData.systemVariable}
+              icon={<FileDoneOutlined className="margin-right" />}
+            />
           </Popover>
 
           <Checkbox
@@ -213,19 +220,24 @@ const CustomTree: React.FC<TreeFormProps> = ({
             onChange={(e) =>
               updateNodeField(nodeData.key!, 'require', e.target.checked)
             }
-            className="margin-right"
+            className="margin-right tree-icon-style"
+            disabled={nodeData.systemVariable}
           />
-
           {canAddChild && (
-            <ICON_ASSOCIATION
+            <Button
+              type="text"
+              disabled={nodeData.systemVariable}
+              className="tree-icon-style"
               onClick={() => addChildNode(nodeData.key!)}
-              className="cursor-pointer margin-right"
+              icon={<ICON_ASSOCIATION />}
             />
           )}
-
-          <DeleteOutlined
-            className="cursor-pointer"
+          <Button
+            type="text"
+            disabled={nodeData.systemVariable}
+            className="tree-icon-style"
             onClick={() => deleteNode(nodeData.key!)}
+            icon={<DeleteOutlined />}
           />
         </div>
       </div>
@@ -246,7 +258,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
       </div>
       <Tree
         treeData={treeData}
-        showLine
+        // showLine
         defaultExpandAll
         fieldNames={{ title: 'name', key: 'key', children: 'subArgs' }}
         titleRender={renderTitle}

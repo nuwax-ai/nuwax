@@ -50,7 +50,7 @@ const Workflow: React.FC = () => {
     icon: '',
     publishStatus: '',
     created: '',
-    modified: '',
+    modified: '2025-02-14T09:24:07.000+00:00',
     id: 0,
     description: '',
     startNodeId: 0,
@@ -95,6 +95,12 @@ const Workflow: React.FC = () => {
   // 是否显示创建工作流，插件，知识库，数据库的弹窗和试运行的弹窗
   const { setTestRun } = useModel('model');
 
+  // 修改更新时间
+  const changeUpdateTime = () => {
+    const _time = new Date();
+    setInfo({ ...info, modified: _time.toString() });
+  };
+
   /** -----------------  需要调用接口的方法  --------------------- */
 
   // 获取当前画布的信息
@@ -130,6 +136,7 @@ const Workflow: React.FC = () => {
   const onConfirm = async (value: IUpdateDetails) => {
     setInfo({ ...info, ...value });
     setShowCreateWorkflow(false);
+    changeUpdateTime();
   };
 
   // 查询节点的指定信息
@@ -148,6 +155,7 @@ const Workflow: React.FC = () => {
       if (update) {
         getNodeConfig(Number(config.id));
         setFoldWrapItem(config);
+        changeUpdateTime();
       }
     }
   }, 1000);
@@ -201,6 +209,7 @@ const Workflow: React.FC = () => {
     if (_res.code === Constant.success) {
       _res.data.key = 'general-Node';
       graphRef.current.addNode(dragEvent, _res.data);
+      changeUpdateTime();
     }
   };
 
@@ -229,6 +238,7 @@ const Workflow: React.FC = () => {
       child.id = _res.data;
       child.key = 'general-Node';
       graphRef.current.addNode(_dragEvent, child);
+      changeUpdateTime();
     }
   };
 
@@ -238,6 +248,7 @@ const Workflow: React.FC = () => {
     if (_res.code === Constant.success) {
       // console.log(graphRef.current)
       graphRef.current.deleteNode(id.toString());
+      changeUpdateTime();
     }
   };
 
@@ -399,6 +410,7 @@ const Workflow: React.FC = () => {
   // 调整画布的大小
   const changeGraph = (val: number) => {
     graphRef.current.changeGraphZoom(val);
+    changeUpdateTime();
   };
 
   // 试运行所有节点
@@ -406,7 +418,7 @@ const Workflow: React.FC = () => {
     // 获取完整的连线列表
     const _edges = await getNodeRelation(graphParams.nodeList, 15);
     if (!_edges) {
-      message.warning('需要添加连线');
+      message.warning('没有完整的连线，需要一条从开始一直贯穿到结束的连线');
       return;
     }
     // 根据连线列表，查看是否有第一个数据是开始节点的id，最后一个是结束节点的信息
@@ -459,6 +471,7 @@ const Workflow: React.FC = () => {
       message.warning('连线不完整');
       return;
     }
+    changeUpdateTime();
   };
 
   // 保存当前画布中节点的位置
