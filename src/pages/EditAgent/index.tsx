@@ -6,11 +6,15 @@ import {
 } from '@/services/agentConfig';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { EditAgentShowType } from '@/types/enums/space';
-import { AgentBaseInfo, AgentConfigInfo } from '@/types/interfaces/agent';
+import {
+  AgentBaseInfo,
+  AgentComponentInfo,
+  AgentConfigInfo,
+} from '@/types/interfaces/agent';
 import { HistoryData } from '@/types/interfaces/space';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
-import { useLocation, useRequest } from 'umi';
+import React, { useEffect, useState } from 'react';
+import { useMatch, useRequest } from 'umi';
 import AgentArrangeConfig from './AgentArrangeConfig';
 import AgentHeader from './AgentHeader';
 import AgentModelSetting from './AgentModelSetting';
@@ -30,7 +34,8 @@ const cx = classNames.bind(styles);
  * 编辑智能体
  */
 const EditAgent: React.FC = () => {
-  const location = useLocation();
+  const match = useMatch('/space/:spaceId/agent/:agentId');
+  const { spaceId, agentId } = match.params;
   const [tipsText, setTipsText] = useState<string>('');
   const [showType, setShowType] = useState<EditAgentShowType>(
     EditAgentShowType.Hide,
@@ -42,7 +47,6 @@ const EditAgent: React.FC = () => {
   const [openKnowledgeModel, setOpenKnowledgeModel] = useState<boolean>(false);
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>(null);
   const [versionHistory, setVersionHistory] = useState<HistoryData[]>([]);
-  const agentIdRef = useRef<number>(0);
 
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
@@ -63,12 +67,9 @@ const EditAgent: React.FC = () => {
   });
 
   useEffect(() => {
-    const pathname = location.pathname;
-    const agentId = pathname.split('/')?.slice(-1)?.join();
-    agentIdRef.current = agentId as number;
     run(agentId);
     runHistory(agentId);
-  }, []);
+  }, [agentId]);
 
   const handlerClose = () => {
     setShowType(EditAgentShowType.Hide);
@@ -158,7 +159,8 @@ const EditAgent: React.FC = () => {
             <div className={cx(styles['h-line'])} />
             {/*配置区域*/}
             <AgentArrangeConfig
-              agentId={agentIdRef.current}
+              spaceId={spaceId}
+              agentId={agentId}
               onKnowledge={handleKnowledge}
               onSet={handlerPluginSetting}
             />
@@ -185,6 +187,7 @@ const EditAgent: React.FC = () => {
       </section>
       {/*发布智能体弹窗*/}
       <PublishAgent
+        agentId={agentId}
         open={open}
         onConfirm={handlerConfirmPublish}
         onCancel={handlerCancelPublish}
@@ -199,6 +202,11 @@ const EditAgent: React.FC = () => {
       />
       {/*智能体模型设置*/}
       <AgentModelSetting
+        spaceId={spaceId}
+        id={agentId}
+        modelComponentConfig={
+          agentConfigInfo?.modelComponentConfig as AgentComponentInfo
+        }
         open={openAgentModel}
         onCancel={() => setOpenAgentModel(false)}
       />

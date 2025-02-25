@@ -71,7 +71,7 @@ export interface CardProps {
   onClick: () => void;
 }
 
-interface option {
+export interface option {
   label: React.ReactNode;
   value: React.Key;
   // label文本前的图片

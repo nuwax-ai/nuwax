@@ -70,8 +70,8 @@ export interface VersionHistoryProps {
 
 // 发布智能体弹窗组件
 export interface PublishAgentProps {
+  agentId: number;
   open: boolean;
-  onConfirm: () => void;
   onCancel: () => void;
 }
 

@@ -31,6 +31,7 @@ export const request: any = {
       const { data = {} as any } = response;
       if (data.code !== SUCCESS_CODE) {
         message.warning(data.message);
+        return;
       }
       return response;
     },
