@@ -1,5 +1,11 @@
+import { CreatorInfo } from '@/types/interfaces/agent';
 import { DefaultObjectType } from '@/types/interfaces/common';
-import { NodeConfig, NodePreviousAndArgMap } from '@/types/interfaces/node';
+import { ChildNode } from '@/types/interfaces/graph';
+import {
+  InputAndOutConfig,
+  NodeConfig,
+  NodePreviousAndArgMap,
+} from '@/types/interfaces/node';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 // 工作流的接口
@@ -59,8 +65,29 @@ interface AddNodeResponse {
   key?: string;
 }
 
+// 获取详情的返回
+export interface IgetDetails {
+  startNode: ChildNode;
+  endNode: ChildNode;
+  creator: CreatorInfo;
+  created: string;
+  description: string;
+  id: number;
+  innerEndNode: boolean;
+  icon: string;
+  inputArgs: InputAndOutConfig[];
+  modified: string;
+  name: string;
+  nodes: ChildNode[];
+  outputArgs: InputAndOutConfig[];
+  spaceId: number;
+  publishStatus: string;
+}
+
 // 获取工作流的详细信息
-export async function getDetails(id: number): Promise<RequestResponse<any>> {
+export async function getDetails(
+  id: number,
+): Promise<RequestResponse<IgetDetails>> {
   return request(`/api/workflow/${id}`, {
     method: 'GET',
   });

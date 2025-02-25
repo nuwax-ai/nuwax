@@ -15,6 +15,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 // import Monaco from '../../components/CodeEditor/monaco';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import type { IgetDetails } from '@/services/workflow';
 import { WorkflowModeEnum } from '@/types/enums/library';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import ControlPanel from './controlPanel';
@@ -45,18 +46,7 @@ const Workflow: React.FC = () => {
     icon: '',
   });
   // 工作流左上角的详细信息
-  const [info, setInfo] = useState({
-    name: '',
-    icon: '',
-    publishStatus: '',
-    created: '',
-    modified: '2025-02-14T09:24:07.000+00:00',
-    id: 0,
-    description: '',
-    startNodeId: 0,
-    endNodeId: 0,
-    spaceId: 0,
-  });
+  const [info, setInfo] = useState<IgetDetails | null>(null);
   // 定义一个节点试运行返回值
   const [testRunResult, setTestRunResult] = useState<string>();
 
@@ -98,7 +88,7 @@ const Workflow: React.FC = () => {
   // 修改更新时间
   const changeUpdateTime = () => {
     const _time = new Date();
-    setInfo({ ...info, modified: _time.toString() });
+    setInfo({ ...(info as IgetDetails), modified: _time.toString() });
   };
 
   /** -----------------  需要调用接口的方法  --------------------- */
@@ -109,19 +99,8 @@ const Workflow: React.FC = () => {
       // 调用接口，获取当前画布的所有节点和边
       const _res = await service.getDetails(workflowId);
       // 获取左上角的信息
-      const _params = {
-        name: _res.data.name,
-        icon: _res.data.icon,
-        publishStatus: _res.data.publishStatus,
-        created: _res.data.created,
-        modified: _res.data.modified,
-        id: _res.data.id,
-        description: _res.data.description,
-        startNodeId: _res.data.startNode.id,
-        spaceId: _res.data.spaceId,
-        endNodeId: _res.data.endNode.id,
-      };
-      setInfo(_params);
+      setInfo(_res.data);
+      console.log(_res.data);
       // 获取节点和边的数据
       const _nodeList = _res.data.nodes;
       const _edgeList = getEdges(_nodeList);
@@ -134,7 +113,7 @@ const Workflow: React.FC = () => {
 
   // 修改当前工作流的基础信息
   const onConfirm = async (value: IUpdateDetails) => {
-    setInfo({ ...info, ...value });
+    setInfo({ ...(info as IgetDetails), ...value });
     setShowCreateWorkflow(false);
     changeUpdateTime();
   };
@@ -414,9 +393,12 @@ const Workflow: React.FC = () => {
   };
 
   // 试运行所有节点
-  const testRunAll = async () => {
+  const testRunAllNode = async () => {
     // 获取完整的连线列表
-    const _edges = await getNodeRelation(graphParams.nodeList, 15);
+    const _edges = await getNodeRelation(
+      graphParams.nodeList,
+      info?.startNode.id as number,
+    );
     if (!_edges) {
       message.warning('没有完整的连线，需要一条从开始一直贯穿到结束的连线');
       return;
@@ -424,7 +406,8 @@ const Workflow: React.FC = () => {
     // 根据连线列表，查看是否有第一个数据是开始节点的id，最后一个是结束节点的信息
     const fullPath = _edges.filter((item: number[]) => {
       return (
-        item[0] === info.startNodeId && item[item.length - 1] === info.endNodeId
+        item[0] === info?.startNode.id &&
+        item[item.length - 1] === info.endNode.id
       );
     });
     // 如果有完整的连线，那么就可以进行试运行
@@ -432,7 +415,7 @@ const Workflow: React.FC = () => {
       await getDetails();
       // 遍历检查所有节点是否都已经输入了参数
       const params = {
-        workflowId: info.id,
+        workflowId: info?.id,
       };
       const abortConnection = await createSSEConnection({
         url: `${process.env.BASE_URL}/api/workflow/test/execute`,
@@ -474,6 +457,16 @@ const Workflow: React.FC = () => {
     changeUpdateTime();
   };
 
+  // 试运行所有节点
+  const testRunAll = async () => {
+    setErrorParams({
+      errorList: [],
+      show: false,
+    });
+    // 打开开始节点
+    setFoldWrapItem(info!.startNode);
+    testRunAllNode();
+  };
   // 保存当前画布中节点的位置
   useEffect(() => {
     getDetails();
@@ -483,7 +476,7 @@ const Workflow: React.FC = () => {
     <div id="container">
       {/* 顶部的名称和发布等按钮 */}
       <Header
-        info={info}
+        info={info ?? {}}
         onSubmit={onSubmit}
         setShowCreateWorkflow={() => setShowCreateWorkflow(true)}
       />
@@ -513,8 +506,8 @@ const Workflow: React.FC = () => {
       <Created
         checkTag={createdItem as PluginAndLibraryEnum}
         onAdded={onAdded}
-        targetId={info.id}
-        spaceId={info.spaceId}
+        targetId={info?.id}
+        spaceId={info?.spaceId || 0}
         open={open}
         onCancel={() => setOpen(false)}
       />
