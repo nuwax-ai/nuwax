@@ -185,7 +185,7 @@ export interface OverrideTextAreaProps {
 // 级联选项类型
 export interface CascaderOption {
   value: React.Key;
-  label: string;
+  label?: React.ReactNode;
   children?: CascaderOption[];
 }
 

@@ -1,6 +1,6 @@
+import type { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import type { MenuProps } from 'antd';
-import type { AgentComponentTypeEnum } from '@/types/enums/agent';
 /**  提前定义一些东西   */
 export interface ButtonList {
   label: string;

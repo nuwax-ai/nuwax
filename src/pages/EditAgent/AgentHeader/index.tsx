@@ -21,7 +21,7 @@ const cx = classNames.bind(styles);
 const AgentHeader: React.FC<AgentHeaderProps> = ({
   agentConfigInfo,
   onToggleShowStand,
-  handlerToggleVersionHistory,
+  onToggleVersionHistory,
   onEditAgent,
   onPublish,
 }) => {
@@ -74,7 +74,7 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
         />
         <ClockCircleOutlined
           className={cx(styles.ico, 'cursor-pointer')}
-          onClick={handlerToggleVersionHistory}
+          onClick={onToggleVersionHistory}
         />
         <Button
           type="primary"

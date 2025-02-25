@@ -8,10 +8,11 @@ import {
   MinusCircleOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Input, Select, Space, Table, TableColumnsType } from 'antd';
+import type { TableColumnsType } from 'antd';
+import { Input, Select, Space, Table } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
-import React, { useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -19,62 +20,68 @@ const cx = classNames.bind(styles);
 /**
  * 请求参数
  */
-const RequireParams: React.FC = () => {
+const RequireParams: React.FC = forwardRef((_, ref) => {
+  // 请求参数 - 展开的行，控制属性
+  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
   const [inputData, setInputData] = useState<TriggerRequireInputType[]>([
     {
-      key: 1,
+      key: Math.random(),
       name: '',
       dataType: DataTypeEnum.String,
       description: '',
     },
   ]);
 
-  const handleReduce = (record: TriggerRequireInputType) => {
-    const newData = inputData.filter((item) => item.key !== record.key);
-    setInputData(newData);
+  useImperativeHandle(ref, () => ({
+    argBindConfigs: inputData,
+  }));
+
+  // 删除行
+  const handleReduce = (index: number, record: TriggerRequireInputType) => {
+    const _inputData = cloneDeep(inputData);
+    // 第一级
+    if (_inputData[index]?.key === record.key) {
+      _inputData.splice(index, 1);
+    } else {
+      // 子级
+      const f_index = _inputData.findIndex((item) => {
+        const childIndex = item.children?.findIndex(
+          (childItem) => childItem?.key === record.key,
+        );
+        return childIndex > -1;
+      });
+      _inputData[f_index].children.splice(index, 1);
+    }
+    setInputData(_inputData);
   };
 
-  // 输入变量名
-  const handleChange = (e, record, index) => {
-    const newInputData = cloneDeep(inputData);
-    // 第一层
-    if (newInputData[index]?.key === record.key) {
-      newInputData[index].name = e.target.value;
-      setInputData(newInputData);
+  const handleInputValue = (
+    index: number,
+    record: TriggerRequireInputType,
+    attr: string,
+    value: string | boolean,
+  ) => {
+    const _inputData = cloneDeep(inputData);
+    // 第一级
+    if (_inputData[index]?.key === record.key) {
+      _inputData[index][attr] = value;
     } else {
-      const _newInputData = newInputData.map((item) => {
-        if (item.children?.[index]?.key === record.key) {
-          item.children[index].name = e.target.value;
-        }
-        return item;
+      // 子级
+      const f_index = _inputData.findIndex((item) => {
+        const childIndex = item.children?.findIndex(
+          (childItem) => childItem?.key === record.key,
+        );
+        return childIndex > -1;
       });
-      setInputData(_newInputData);
+      _inputData[f_index].children[index][attr] = value;
     }
-  };
-
-  // 切换变量类型
-  const handleChangeSelect = (value, record, index) => {
-    const newInputData = cloneDeep(inputData);
-    // 第一层
-    if (newInputData[index]?.key === record.key) {
-      newInputData[index].dataType = value;
-      newInputData[index].children = [];
-      setInputData(newInputData);
-    } else {
-      const _newInputData = newInputData.map((item) => {
-        if (item.children?.[index]?.key === record.key) {
-          item.children[index].dataType = value;
-        }
-        return item;
-      });
-      setInputData(_newInputData);
-    }
+    setInputData(_inputData);
   };
 
   const handleAddChildren = (index) => {
-    const newInputData = cloneDeep(inputData);
-    if (!newInputData[index].children) {
-      newInputData[index].children = [];
+    const _inputData = cloneDeep(inputData);
+    if (!_inputData[index].children) {
+      _inputData[index].children = [];
     }
     const _key = index + Math.random();
     const newData: TriggerRequireInputType = {
@@ -84,8 +91,14 @@ const RequireParams: React.FC = () => {
       description: '',
     };
 
-    newInputData[index].children = [...newInputData[index].children, newData];
-    setInputData(newInputData);
+    _inputData[index].children = [..._inputData[index].children, newData];
+    setInputData(_inputData);
+    // 设置默认展开行
+    const _expandedRowKeys = [...expandedRowKeys];
+    if (!_expandedRowKeys.includes(_inputData[index].key)) {
+      _expandedRowKeys.push(_inputData[index].key as string);
+      setExpandedRowKeys(_expandedRowKeys);
+    }
   };
 
   // 入参配置columns
@@ -95,10 +108,13 @@ const RequireParams: React.FC = () => {
       dataIndex: 'name',
       key: 'name',
       className: 'flex',
+      width: 200,
       render: (_, record, index) => (
         <Input
           placeholder="请输入变量名"
-          onChange={(e) => handleChange(e, record, index)}
+          onChange={(e) =>
+            handleInputValue(index, record, 'name', e.target.value)
+          }
         />
       ),
     },
@@ -106,12 +122,13 @@ const RequireParams: React.FC = () => {
       title: '变量类型',
       dataIndex: 'dataType',
       key: 'dataType',
-      width: 120,
       render: (_, record, index) => (
         <Select
           options={VARIABLE_TYPE_LIST}
           placeholder="请选择变量类型"
-          onChange={(value) => handleChangeSelect(value, record, index)}
+          onChange={(value) =>
+            handleInputValue(index, record, 'dataType', value)
+          }
         />
       ),
     },
@@ -119,22 +136,31 @@ const RequireParams: React.FC = () => {
       title: '描述',
       dataIndex: 'description',
       key: 'description',
-      width: 120,
-      render: () => <Input placeholder="请描述变量用途" />,
+      width: 160,
+      render: (_, record, index) => (
+        <Input
+          placeholder="请描述变量用途"
+          onChange={(e) =>
+            handleInputValue(index, record, 'description', e.target.value)
+          }
+        />
+      ),
     },
     {
       title: '操作',
       key: 'action',
       width: 50,
       render: (_, record, index) => (
-        <Space>
-          <span>{record.dataType}</span>
+        <Space className={cx('flex', 'content-between')}>
           <MinusCircleOutlined
-            onClick={() => handleReduce(record)}
+            onClick={() => handleReduce(index, record)}
             className={cx('cursor-pointer', styles['reduce-icon'])}
           />
           {record.dataType === DataTypeEnum.Object && (
-            <span onClick={() => handleAddChildren(index)}>
+            <span
+              className={cx('hover-box')}
+              onClick={() => handleAddChildren(index)}
+            >
               <PlusOutlined />
             </span>
           )}
@@ -187,11 +213,12 @@ const RequireParams: React.FC = () => {
         pagination={false}
         expandable={{
           defaultExpandAllRows: true,
+          expandedRowKeys: expandedRowKeys,
           expandIcon: () => null,
         }}
       />
     </div>
   );
-};
+});
 
 export default RequireParams;

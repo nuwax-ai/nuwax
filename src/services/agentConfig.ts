@@ -1,5 +1,6 @@
 import type {
   AgentAddParams,
+  AgentCardInfo,
   AgentComponentAddParams,
   AgentComponentInfo,
   AgentComponentKnowledgeUpdateParams,
@@ -13,15 +14,13 @@ import type {
   AgentConfigInfo,
   AgentConfigUpdateParams,
   AgentConversationListParams,
+  AgentConversationUpdateParams,
+  AgentConversationUpdateResult,
   AgentCopyParams,
   AgentDeleteParams,
   AgentPublishApplyParams,
   AgentTransferParams,
   TriggerTimeZone,
-} from '@/types/interfaces/agent';
-import {
-  AgentConversationUpdateParams,
-  AgentConversationUpdateResult,
 } from '@/types/interfaces/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
@@ -222,7 +221,9 @@ export async function apiAgentComponentList(
 }
 
 // 查询卡片列表
-export async function apiAgentCardList(): Promise<RequestResponse<null>> {
+export async function apiAgentCardList(): Promise<
+  RequestResponse<AgentCardInfo[]>
+> {
   return request('/api/agent/card/list', {
     method: 'GET',
   });
