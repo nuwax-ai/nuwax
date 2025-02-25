@@ -28,7 +28,7 @@ import type { CreatedNodeItem } from '@/types/interfaces/common';
 import { CaretDownOutlined } from '@ant-design/icons';
 import { CollapseProps, message } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useModel, useRequest } from 'umi';
 import ConfigOption from './ConfigOptionCollapse';
 import ConfigOptionsHeader from './ConfigOptionsHeader';
@@ -86,8 +86,18 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     debounceWait: 300,
     onSuccess: (result: AgentComponentInfo[]) => {
       setAgentComponentList(result);
+      console.log(result, '========');
     },
   });
+
+  // 已选中的智能体组件id
+  const checkedIds = useMemo(() => {
+    return (
+      agentComponentList
+        ?.filter((item) => item.type === checkTag)
+        ?.map((item) => item.targetId) || []
+    );
+  }, [agentComponentList, checkTag]);
 
   // 删除智能体组件配置
   const { run: runPluginComponentDel } = useRequest(apiAgentComponentDelete, {
@@ -364,6 +374,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         onCancel={() => setShow(false)}
         spaceId={spaceId}
         checkTag={checkTag}
+        hasIds={checkedIds}
         onAdded={handleAddComponent}
       />
       {/*添加触发器弹窗*/}

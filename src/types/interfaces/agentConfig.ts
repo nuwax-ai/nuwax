@@ -58,3 +58,11 @@ export interface TriggerRequireInputType {
   description: string;
   children?: TriggerRequireInputType[];
 }
+
+// 智能体模型设置弹窗组件
+export interface AgentModelSettingProps {
+  spaceId: number;
+  modelComponentConfig: AgentComponentInfo;
+  open: boolean;
+  onCancel: () => void;
+}

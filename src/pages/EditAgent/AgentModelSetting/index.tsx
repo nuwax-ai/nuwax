@@ -5,199 +5,234 @@ import { apiAgentComponentModelUpdate } from '@/services/agentConfig';
 import { apiModelList } from '@/services/modelConfig';
 import { UpdateModeComponentEnum } from '@/types/enums/library';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
-import { AgentComponentInfo } from '@/types/interfaces/agent';
+import type { AgentComponentBindConfig } from '@/types/interfaces/agent';
+import type { AgentModelSettingProps } from '@/types/interfaces/agentConfig';
 import { option } from '@/types/interfaces/common';
 import type { ModelConfigInfo } from '@/types/interfaces/model';
-import { InfoCircleOutlined, UpOutlined } from '@ant-design/icons';
-import { Form, InputNumberProps, Modal, Segmented } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
+import type { InputNumberProps } from 'antd';
+import { message, Modal, Segmented } from 'antd';
 import classnames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classnames.bind(styles);
 
-interface AgentModelSettingProps {
-  id: number;
-  spaceId: number;
-  modelComponentConfig: AgentComponentInfo;
-  open: boolean;
-  onCancel: () => void;
-}
-
 /**
  * 智能体模型设置组件，待核实交互逻辑以及内容
  */
 const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
-  id,
   spaceId,
   modelComponentConfig,
   open,
   onCancel,
 }) => {
-  const [mode, setMode] = useState<UpdateModeComponentEnum>(
-    UpdateModeComponentEnum.Precision,
-  );
-  const [targetId, setTargetId] = useState<number>(
-    modelComponentConfig?.targetId || 0,
-  );
-  const [temperature, setTemperature] = useState<string>('1');
-  const [topP, setTopP] = useState<string>('0.7');
-  const [maxTokens, setMaxTokens] = useState<string>('100');
-  const [contextRounds, setContextRounds] = useState<string>('1024');
+  const [targetId, setTargetId] = useState<number>(0);
+  // 模型列表
   const [modelConfigList, setModelConfig] = useState<option[]>([]);
+  // 绑定组件配置，不同组件配置不一样
+  const [componentBindConfig, setComponentBindConfig] =
+    useState<AgentComponentBindConfig>({
+      contextRounds: 0,
+      maxTokens: 0,
+      mode: UpdateModeComponentEnum.Precision,
+      temperature: 0,
+      topP: 0,
+    });
+  const componentIdRef = useRef<number>(0);
 
   // 查询可使用模型列表接口
   const { run: runMode } = useRequest(apiModelList, {
     manual: true,
     debounceWait: 300,
     onSuccess: (result: ModelConfigInfo[]) => {
-      console.log(result, '------');
-      const list = result?.map((item) => ({
-        label: item.model,
-        value: item.id,
-      })) as option[];
+      const list: option[] =
+        result?.map((item) => ({
+          label: item.model,
+          value: item.id,
+        })) || [];
       setModelConfig(list);
     },
   });
 
   // 更新模型组件配置
-  const { run } = useRequest(apiAgentComponentModelUpdate, {
+  const { run: runUpdate } = useRequest(apiAgentComponentModelUpdate, {
     manual: true,
     debounceWait: 300,
-    onSuccess: () => {},
+    onSuccess: () => {
+      message.success('更新成功');
+    },
   });
 
-  console.log(modelComponentConfig, 'modelComponentConfig');
+  useEffect(() => {
+    if (modelComponentConfig) {
+      componentIdRef.current = modelComponentConfig.id;
+      setComponentBindConfig(modelComponentConfig.bindConfig);
+      setTargetId(modelComponentConfig.targetId);
+    }
+  }, [modelComponentConfig]);
 
   useEffect(() => {
+    // 查询可使用模型列表接口
     runMode({
       spaceId,
       modelType: ModelTypeEnum.Chat,
     });
   }, [spaceId]);
 
-  useEffect(() => {
-    run({
-      id,
-      bindConfig: {
-        mode,
-        temperature,
-        topP,
-        maxTokens,
-        contextRounds,
-      },
+  // 更新模型配置
+  const handleChangeModel = (
+    bindConfig: AgentComponentBindConfig,
+    _targetId = targetId,
+  ) => {
+    runUpdate({
+      id: componentIdRef.current,
+      targetId: _targetId,
+      bindConfig,
     });
-  }, [mode, temperature, topP, maxTokens, contextRounds]);
-
-  const handleChangeMode = (value) => {
-    setMode(value);
   };
 
-  const handleChangeTemp: InputNumberProps['onChange'] = (newValue) => {
-    setTemperature(newValue);
-  };
-
-  const handleChangeTopP = (value: string) => {
-    setTopP(value);
-  };
-
-  const handleChangeMaxTokens = (value: string) => {
-    setMaxTokens(value);
-  };
-
-  const handleChangeContextRounds = (value: string) => {
-    setContextRounds(value);
-  };
-
-  const handleChangeModel = (id: number) => {
+  // 下拉模型
+  const handleChangeModelTarget = (id: number) => {
     setTargetId(id);
+    handleChangeModel(componentBindConfig, id);
+  };
+
+  // 模式
+  const handleChangeMode = (newValue) => {
+    const _componentBindConfig = {
+      ...componentBindConfig,
+      mode: newValue,
+    } as AgentComponentBindConfig;
+    setComponentBindConfig(_componentBindConfig);
+    handleChangeModel(_componentBindConfig);
+  };
+
+  // 生成随机性;0-1
+  const handleChangeTemp: InputNumberProps['onChange'] = (newValue) => {
+    const _componentBindConfig = {
+      ...componentBindConfig,
+      temperature: newValue,
+    } as AgentComponentBindConfig;
+    setComponentBindConfig(_componentBindConfig);
+    handleChangeModel(_componentBindConfig);
+  };
+
+  // 累计概率: 模型在生成输出时会从概率最高的词汇开始选择;0-1
+  const handleChangeTopP: InputNumberProps['onChange'] = (newValue: string) => {
+    const _componentBindConfig = {
+      ...componentBindConfig,
+      topP: newValue,
+    } as AgentComponentBindConfig;
+    setComponentBindConfig(_componentBindConfig);
+    handleChangeModel(_componentBindConfig);
+  };
+
+  // 最大生成长度
+  const handleChangeMaxTokens: InputNumberProps['onChange'] = (
+    newValue: string,
+  ) => {
+    const _componentBindConfig = {
+      ...componentBindConfig,
+      maxTokens: newValue,
+    } as AgentComponentBindConfig;
+    setComponentBindConfig(_componentBindConfig);
+    handleChangeModel(_componentBindConfig);
+  };
+
+  // 上下文轮数
+  const handleChangeContextRounds: InputNumberProps['onChange'] = (
+    newValue: string,
+  ) => {
+    const _componentBindConfig = {
+      ...componentBindConfig,
+      contextRounds: newValue,
+    } as AgentComponentBindConfig;
+    setComponentBindConfig(_componentBindConfig);
+    handleChangeModel(_componentBindConfig);
   };
 
   return (
     <Modal title="模型设置" open={open} footer={null} onCancel={onCancel}>
-      <Form layout="vertical">
-        <Form.Item name="model" label="模型">
-          <SelectList
-            onChange={handleChangeModel}
-            options={modelConfigList}
-            value={targetId}
-          />
-        </Form.Item>
-      </Form>
+      <h3 className={cx(styles.title)}>模型</h3>
+      <SelectList
+        className={cx(styles.select)}
+        onChange={handleChangeModelTarget}
+        options={modelConfigList}
+        value={targetId}
+      />
       <h3 className={cx(styles.title)}>
         生成多样性
         <InfoCircleOutlined />
       </h3>
-      <Segmented<string>
+      <Segmented<UpdateModeComponentEnum>
         options={[
           { label: '精确模式', value: UpdateModeComponentEnum.Precision },
           { label: '平衡模式', value: UpdateModeComponentEnum.Balanced },
           { label: '创意模式', value: UpdateModeComponentEnum.Creative },
           { label: '自定义', value: UpdateModeComponentEnum.Customization },
         ]}
+        rootClassName={cx('mb-16')}
+        value={componentBindConfig.mode}
         onChange={handleChangeMode}
         block
       />
-      <div
-        className={cx(
-          'flex',
-          'content-end',
-          'items-center',
-          styles['high-box'],
-        )}
-      >
-        <span>
-          高级设置 <UpOutlined />
-        </span>
-      </div>
+      {/*生成随机性;0-1*/}
       <div className={cx('flex', 'mb-16')}>
-        <LabelIcon label="生成随机性" title="" />
+        <LabelIcon
+          label="生成随机性"
+          title="temperature: 调高温度会使得模型的输出更多样性和创新性，反之，降低温度会使输出内容更加遵循指令要求但减少多样性。建议不要与 “Top p” 同时调整"
+        />
         <SliderNumber
-          min={1}
-          max={10}
-          value={temperature}
+          min={0}
+          max={1}
+          step={0.1}
+          value={componentBindConfig?.temperature as string}
           onChange={handleChangeTemp}
         />
       </div>
+      {/*累计概率: 模型在生成输出时会从概率最高的词汇开始选择;0-1*/}
       <div className={cx('flex', 'mb-16')}>
-        <LabelIcon label="Top p" title="" />
+        <LabelIcon
+          label="Top p"
+          title="Top p 为累计概率: 模型在生成输出时会从概率最高的词汇开始选择，直到这些词汇的总概率累积达到 Top p 值。这样可以限制模型只选择这些高概率的词汇，从而控制输出内容的多样性。建议不要与 “生成随机性” 同时调整。"
+        />
         <SliderNumber
-          min={0.1}
+          min={0}
           max={1}
           step={0.1}
-          value={topP}
+          value={componentBindConfig?.topP as string}
           onChange={handleChangeTopP}
         />
       </div>
       <h3 className={cx(styles.title)}>输入及输出设置</h3>
+      {/*最大生成长度*/}
       <div className={cx('flex', 'mb-16')}>
-        <LabelIcon label="携带上下文轮数" title="" />
+        <LabelIcon
+          label="携带上下文轮数"
+          title="设置带入模型上下文的对话历史轮数。轮数越多，多轮对话的相关性越高，但消耗的 Token 也越多"
+        />
         <SliderNumber
           min={1}
-          max={100}
+          max={4096}
           step={1}
-          value={maxTokens}
+          value={componentBindConfig?.maxTokens as string}
           onChange={handleChangeMaxTokens}
         />
       </div>
+      {/*上下文轮数*/}
       <div className={cx('flex', 'mb-16')}>
-        <LabelIcon label="最大回复长度" title="" />
-        <SliderNumber
-          min={100}
-          max={1024}
-          step={1}
-          value={contextRounds}
-          onChange={handleChangeContextRounds}
+        <LabelIcon
+          label="最大回复长度"
+          title="控制模型输出的 Tokens 长度上限。通常 100 Tokens 约等于 150 个中文汉字。"
         />
-      </div>
-      <div className={cx('flex', 'mb-16')}>
-        <LabelIcon label="输出格式" title="" />
-        <SelectList
-          style={{ width: '100%' }}
-          onChange={() => {}}
-          options={[]}
-          value={1}
+        <SliderNumber
+          min={0}
+          max={100}
+          step={1}
+          value={componentBindConfig?.contextRounds as string}
+          onChange={handleChangeContextRounds}
         />
       </div>
     </Modal>
