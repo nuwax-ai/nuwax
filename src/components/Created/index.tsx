@@ -1,9 +1,8 @@
 import Constant from '@/constants/codes.constants';
 import { ICON_ADJUSTMENT, ICON_SUCCESS } from '@/constants/images.constants';
 import service, { IGetList } from '@/services/created';
-import {
-  CreateUpdateModeEnum,
-} from '@/types/enums/common';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { WorkflowModeEnum } from '@/types/enums/library';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { getTime } from '@/utils';
@@ -23,7 +22,6 @@ import CreateNewPlugin from '../CreateNewPlugin';
 import CreateWorkflow from '../CreateWorkflow';
 import './index.less';
 import { ButtonList, CreatedProp, MenuItem } from './type';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
 // 顶部的标签页名称
 const buttonList: ButtonList[] = [
   { label: '插件', key: AgentComponentTypeEnum.Plugin },

@@ -15,7 +15,7 @@ import type { CreateTriggerProps } from '@/types/interfaces/agentConfig';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';
 import omit from 'lodash/omit';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import EventTrigger from './EventTrigger';
 import TimingTrigger from './TimingTrigger';
@@ -36,6 +36,7 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
     TriggerTypeEnum.TIME,
   );
   const [triggerTimeZone, setTriggerTimeZone] = useState<TriggerTimeZone>();
+  const argBindConfigsRef = useRef(null);
 
   // 触发器定时任务时区数据
   const { run: runTriggerTimeZone } = useRequest(apiAgentTriggerTimeZone, {
@@ -60,7 +61,7 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
     runTriggerTimeZone();
   }, []);
 
-  // todo
+  // 创建触发器
   const onFinish: FormProps<AgentComponentTriggerAddParams>['onFinish'] = (
     values,
   ) => {
@@ -75,16 +76,15 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
     // 定时触发-触发时间，cron描述
     const cronDesc = timeCronExpression?.[0];
     const _values = omit(values, ['timeCronExpression', 'utcTimeZone']);
-    console.log(_values, '--------');
-    return;
-    // run({
-    //   ..._values,
-    //   timeZone,
-    //   utc,
-    //   cronExpression,
-    //   cronDesc,
-    //   agentId,
-    // });
+    run({
+      ..._values,
+      timeZone,
+      utc,
+      cronExpression,
+      cronDesc,
+      agentId,
+      ...argBindConfigsRef.current,
+    });
   };
 
   const handlerConfirm = () => {
@@ -133,7 +133,7 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
           <TimingTrigger triggerTimeZone={triggerTimeZone} />
         ) : (
           // 事件触发
-          <EventTrigger />
+          <EventTrigger ref={argBindConfigsRef} />
         )}
         <Form.Item name="componentType" label="任务执行">
           <SelectList options={TASK_EXECUTION} placeholder="请选择任务执行" />

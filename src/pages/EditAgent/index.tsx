@@ -71,31 +71,13 @@ const EditAgent: React.FC = () => {
     runHistory(agentId);
   }, [agentId]);
 
-  const handlerClose = () => {
-    setShowType(EditAgentShowType.Hide);
-  };
-
-  const handlerDebug = () => {
-    setShowType(EditAgentShowType.Debug_Details);
-  };
-
-  const handlerToggleShowStand = () => {
-    setShowType(EditAgentShowType.Show_Stand);
-  };
-
-  const handlerToggleVersionHistory = () => {
-    setShowType(EditAgentShowType.Version_History);
+  const handlerToggleType = (type: EditAgentShowType) => {
+    setShowType(type);
   };
 
   // 点击发布按钮，打开发布智能体弹窗
   const handlerPublishAgent = () => {
     setOpen(true);
-  };
-
-  // 确认发布智能体
-  const handlerConfirmPublish = () => {
-    // todo 成功创建智能体后需要完成的动作
-    setOpen(false);
   };
 
   // 取消发布
@@ -132,8 +114,12 @@ const EditAgent: React.FC = () => {
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader
         agentConfigInfo={agentConfigInfo}
-        onToggleShowStand={handlerToggleShowStand}
-        handlerToggleVersionHistory={handlerToggleVersionHistory}
+        onToggleShowStand={() =>
+          handlerToggleType(EditAgentShowType.Show_Stand)
+        }
+        onToggleVersionHistory={() =>
+          handlerToggleType(EditAgentShowType.Version_History)
+        }
         onEditAgent={handlerEditAgent}
         onPublish={handlerPublishAgent}
       />
@@ -167,29 +153,32 @@ const EditAgent: React.FC = () => {
           </div>
         </div>
         {/*预览与调试*/}
-        <PreviewAndDebug onPressDebug={handlerDebug} />
+        <PreviewAndDebug
+          onPressDebug={() =>
+            handlerToggleType(EditAgentShowType.Debug_Details)
+          }
+        />
         {/*调试详情*/}
         <DebugDetails
           visible={showType === EditAgentShowType.Debug_Details}
-          onClose={handlerClose}
+          onClose={() => handlerToggleType(EditAgentShowType.Hide)}
         />
         {/*展示台*/}
         <ShowStand
           visible={showType === EditAgentShowType.Show_Stand}
-          onClose={handlerClose}
+          onClose={() => handlerToggleType(EditAgentShowType.Hide)}
         />
         {/*版本历史*/}
         <VersionHistory
           list={versionHistory}
           visible={showType === EditAgentShowType.Version_History}
-          onClose={handlerClose}
+          onClose={() => handlerToggleType(EditAgentShowType.Hide)}
         />
       </section>
       {/*发布智能体弹窗*/}
       <PublishAgent
         agentId={agentId}
         open={open}
-        onConfirm={handlerConfirmPublish}
         onCancel={handlerCancelPublish}
       />
       {/*编辑智能体弹窗*/}

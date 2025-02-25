@@ -1,6 +1,6 @@
+import type { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
-import type { AgentComponentTypeEnum } from '@/types/enums/agent';
 const itemList = {
   Plugin: '/api/published/plugin/list',
   Workflow: '/api/published/workflow/list',

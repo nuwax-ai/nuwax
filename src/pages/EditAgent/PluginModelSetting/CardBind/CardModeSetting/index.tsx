@@ -1,21 +1,39 @@
-import { CardStyleEnum } from '@/types/enums/common';
-import React, { useState } from 'react';
-import CardStyleFour from './CardStyleFour';
-import CardStyleOne from './CardStyleOne';
-import CardStyleThree from './CardStyleThree';
-import CardStyleTwo from './CardStyleTwo';
+import type { CardModeSettingProps } from '@/types/interfaces/agentConfig';
+import { Radio } from 'antd';
+import classNames from 'classnames';
+import React from 'react';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 /**
  * 卡片模式设置
  */
-const CardModeSetting: React.FC = () => {
-  const [type, setType] = useState<CardStyleEnum>(CardStyleEnum.ONE);
+const CardModeSetting: React.FC<CardModeSettingProps> = ({
+  cardKey,
+  list,
+  onChoose,
+}) => {
   return (
     <>
-      <CardStyleOne type={type} onClick={setType} />
-      <CardStyleTwo type={type} onClick={setType} />
-      <CardStyleThree type={type} onClick={setType} />
-      <CardStyleFour type={type} onClick={setType} />
+      {list?.map((item) => (
+        <div
+          key={item.id}
+          className={cx(
+            styles['card-box'],
+            'flex',
+            'hover-box',
+            'cursor-pointer',
+          )}
+          onClick={() => onChoose(item.cardKey)}
+        >
+          <img className={'radius-6'} src={item.imageUrl} alt="" />
+          <Radio
+            checked={item.cardKey === cardKey}
+            className={cx(styles.radio)}
+          />
+        </div>
+      ))}
     </>
   );
 };

@@ -15,6 +15,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 // import Monaco from '../../components/CodeEditor/monaco';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { WorkflowModeEnum } from '@/types/enums/library';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import ControlPanel from './controlPanel';
@@ -24,7 +25,6 @@ import Header from './header';
 import './index.less';
 import NodeDrawer from './nodeDrawer';
 import { Child } from './type';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
 const Workflow: React.FC = () => {
   // 当前工作流的id
   const workflowId = Number(useParams().workflowId);
@@ -72,7 +72,9 @@ const Workflow: React.FC = () => {
   // 展示修改工作流的弹窗
   const [showCreateWorkflow, setShowCreateWorkflow] = useState(false);
   // 创建工作流，插件，知识库，数据库
-  const [createdItem, setCreatedItem] = useState<AgentComponentTypeEnum>(AgentComponentTypeEnum.Plugin);
+  const [createdItem, setCreatedItem] = useState<AgentComponentTypeEnum>(
+    AgentComponentTypeEnum.Plugin,
+  );
   // 拖动节点到画布中的x和y
   const [dragEvent, setDragEvent] = useState<{ x: number; y: number }>({
     x: 0,

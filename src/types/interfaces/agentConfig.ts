@@ -1,5 +1,6 @@
 import type { DataTypeEnum } from '@/types/enums/common';
 import type {
+  AgentCardInfo,
   AgentComponentInfo,
   AgentConfigInfo,
   TriggerTimeZone,
@@ -10,7 +11,7 @@ import React from 'react';
 export interface AgentHeaderProps {
   agentConfigInfo: AgentConfigInfo;
   onToggleShowStand: () => void;
-  handlerToggleVersionHistory: () => void;
+  onToggleVersionHistory: () => void;
   onEditAgent: () => void;
   onPublish: () => void;
 }
@@ -53,9 +54,12 @@ export interface TimingTriggerProps {
 // 触发器请求参数输入数据类型
 export interface TriggerRequireInputType {
   key: React.Key;
+  // 参数名称，符合函数命名规则
   name: string;
-  dataType?: DataTypeEnum;
+  // 参数详细描述信息
   description: string;
+  // 数据类型
+  dataType: DataTypeEnum;
   children?: TriggerRequireInputType[];
 }
 
@@ -65,4 +69,11 @@ export interface AgentModelSettingProps {
   modelComponentConfig: AgentComponentInfo;
   open: boolean;
   onCancel: () => void;
+}
+
+// 卡片设置组件
+export interface CardModeSettingProps {
+  cardKey: string;
+  list: AgentCardInfo[];
+  onChoose: (cardKey: string) => void;
 }

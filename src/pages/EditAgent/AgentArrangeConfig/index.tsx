@@ -85,7 +85,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     debounceWait: 300,
     onSuccess: (result: AgentComponentInfo[]) => {
       setAgentComponentList(result);
-      console.log(result, '========');
     },
   });
 
@@ -143,7 +142,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const handlerTriggerPlus = (e) => {
     e.stopPropagation();
     setOpenTriggerModel(true);
-    console.log('handlerTriggerPlus');
   };
 
   const handlerSuccessCreateTrigger = () => {
