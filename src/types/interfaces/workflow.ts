@@ -1,4 +1,7 @@
-import { NodePreviousAndArgMap } from '@/types/interfaces/node';
+import {
+  InputAndOutConfig,
+  NodePreviousAndArgMap,
+} from '@/types/interfaces/node';
 // 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
 import type { FieldConfig } from '@/components/FormListItem/type';
 import { DataTypeEnum } from '@/types/enums/common';
@@ -13,6 +16,7 @@ import {
   NodeConfig,
 } from '@/types/interfaces/node';
 import type { FormInstance } from 'antd';
+
 /**
  * 定义键值对接口，用于表示具有标签和值的对象。
  */
@@ -152,6 +156,16 @@ export interface RenderItemProps {
   showCopy?: boolean;
 }
 
+interface InitialValues {
+  inputArgs?: InputAndOutConfig[];
+  outputArgs?: InputAndOutConfig[];
+  variableArgs?: InputAndOutConfig[];
+  conditionBranchConfigs?: InputAndOutConfig[];
+  headers?: InputAndOutConfig[];
+  body?: InputAndOutConfig[];
+  queries?: InputAndOutConfig[];
+}
+
 // 定义通用节点渲染逻辑的props类型
 export interface NodeRenderProps {
   // 标题
@@ -164,7 +178,7 @@ export interface NodeRenderProps {
   renderItem?: (props: RenderItemProps) => JSX.Element; // 可选，允许自定义renderItem
   referenceList?: NodePreviousAndArgMap;
   // 初始值（适用于已经编辑过的内容）
-  initialValues?: object;
+  initialValues?: InitialValues;
   // 如果有多个相同组件时，传递不同的inputListName区分
   inputItemName?: string;
   // 是否展示选中的选项框

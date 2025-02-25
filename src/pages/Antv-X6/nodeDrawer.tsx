@@ -17,6 +17,7 @@ const {
   VariableNode,
   TextProcessingNode,
   CodeNode,
+  DocumentExtractionNode,
 } = NodeItem;
 const { ModelNode, IntentionNode, QuestionsNode, HttpToolNode } = ComplexNode;
 const { PluginInNode, DatabaseNode } = ReferenceNode;
@@ -82,9 +83,18 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   const renderNodeContent = (params: ChildNode) => {
     switch (params.type) {
       case 'Start':
-      case 'DocumentExtraction': // 如果这和 'Start' 是同样的组件，请考虑重用组件或创建一个新的组件。
+        // 如果这和 'Start' 是同样的组件，请考虑重用组件或创建一个新的组件。
         return (
           <StartNode
+            params={currentNodeConfig.nodeConfig}
+            Modified={handleChangeNodeConfig}
+            type={currentNodeConfig.type}
+            referenceList={referenceList}
+          />
+        );
+      case 'DocumentExtraction':
+        return (
+          <DocumentExtractionNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
             type={currentNodeConfig.type}

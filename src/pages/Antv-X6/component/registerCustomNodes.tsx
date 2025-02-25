@@ -179,11 +179,13 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
           </div>
         </div>
         {/* 节点内容区，根据 data.content 的类型显示不同的内容 */}
-        {data.type !== 'IntentRecognition' && data.type !== 'Condition' && (
-          <div className="general-node-content">
-            <div className="text-ellipsis">{data.description}</div>
-          </div>
-        )}
+        {data.type !== 'IntentRecognition' &&
+          data.type !== 'Loop' &&
+          data.type !== 'Condition' && (
+            <div className="general-node-content">
+              <div className="text-ellipsis">{data.description}</div>
+            </div>
+          )}
         {data.type === 'Condition' && (
           <div className="condition-node-content-style">
             {data.nodeConfig.conditionBranchConfigs?.map((_, index) => (

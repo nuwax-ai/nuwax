@@ -63,6 +63,35 @@ const StartNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   );
 };
 
+const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({
+  params,
+  Modified,
+  referenceList,
+}) => {
+  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
+    Modified({ ...params, ...newNodeConfig });
+  };
+  return (
+    <>
+      <InputAndOut
+        title="输入"
+        fieldConfigs={outPutConfigs}
+        referenceList={referenceList}
+        showCopy={true}
+        inputItemName="outputArgs"
+        initialValues={{ inputArgs: params.inputArgs }}
+        handleChangeNodeConfig={handleChangeNodeConfig}
+      />
+      {params.outputArgs && (
+        <div>
+          <div className="node-title-style margin-bottom">输出</div>
+          <TreeOutput treeData={params.outputArgs} />
+        </div>
+      )}
+    </>
+  );
+};
+
 // 定义结束和过程输出的节点渲染
 const EndNode: React.FC<NodeDisposeProps> = ({
   params,
@@ -508,4 +537,5 @@ export default {
   VariableNode,
   CodeNode,
   TextProcessingNode,
+  DocumentExtractionNode,
 };

@@ -33,7 +33,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   fieldConfigs,
   handleChangeNodeConfig,
   referenceList,
-  inputItemName = 'inputItems',
+  inputItemName = 'inputArgs',
   initialValues,
   showCheckbox = false,
   showCopy = false,
@@ -57,7 +57,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   // 提交form表单
   const submitForm = () => {
     const raw = form.getFieldsValue(true);
-    console.log(raw);
     handleChangeNodeConfig(raw);
     // handleChangeNodeConfig(values);
   };
@@ -82,10 +81,12 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
         initialValues={initialValues}
         onValuesChange={submitForm}
       >
-        <div className="dis-left">
-          <span>参数名</span>
-          <span>参数值</span>
-        </div>
+        {
+          <div className="dis-left">
+            <span>参数名</span>
+            <span>参数值</span>
+          </div>
+        }
         <Form.List name={inputItemName}>
           {(fields, { remove }) => (
             <>
