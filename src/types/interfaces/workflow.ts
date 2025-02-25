@@ -171,6 +171,7 @@ export interface NodeRenderProps {
   showCheckbox?: boolean;
   // 是否显示复制按钮
   showCopy?: boolean;
+  style?: any;
 }
 
 // 定义技能

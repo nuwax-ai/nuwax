@@ -1,5 +1,5 @@
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
-import { InputOrReference } from '@/components/FormListItem/InputOrReference';
+import InputOrReference from '@/components/FormListItem/InputOrReference';
 import type {
   InputAndOutConfig,
   NodeConfig,
@@ -9,7 +9,7 @@ import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Empty, Form, Popover, Tag } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { InputConfigs, outPutConfigs } from '../params';
+import { outPutConfigs } from '../params';
 import { InputAndOut, TreeOutput } from './commonNode';
 import './pluginNode.less';
 interface InputListProps {
@@ -76,7 +76,7 @@ const InputList: React.FC<InputListProps> = ({
                 noStyle
               >
                 <InputOrReference
-                  value={item.bindValue}
+                  value={item.bindValue || ''}
                   onChange={submitForm}
                   referenceList={referenceList}
                 />
@@ -127,10 +127,7 @@ const DatabaseNode: React.FC<NodeDisposeProps> = ({
   if (params.inputArgs && params.inputArgs.length) {
     inputInitialValues = params.inputArgs;
   }
-  let outputInitialValues = {};
-  if (params.outputArgs && params.outputArgs.length) {
-    outputInitialValues = params.outputArgs;
-  }
+
   const [sql, setSql] = useState('');
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
@@ -163,14 +160,14 @@ const DatabaseNode: React.FC<NodeDisposeProps> = ({
       />
       {/* 输出参数 */}
       <div className="node-item-style">
-        <InputAndOut
+        {/* <InputAndOut
           title="输出"
           fieldConfigs={InputConfigs}
           handleChangeNodeConfig={handleChangeNodeConfig}
           inputItemName="outputArgs"
           showCopy={true}
           initialValues={outputInitialValues}
-        />
+        /> */}
       </div>
     </>
   );

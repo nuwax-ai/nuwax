@@ -3,6 +3,7 @@ import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import { ModelSelected } from '@/components/ModelSetting';
 import { SkillList } from '@/components/Skill';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import type { NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
@@ -20,7 +21,6 @@ import React, { useState } from 'react';
 import '../index.less';
 import { intentionConfigs, outPutConfigs } from '../params';
 import { InputAndOut } from './commonNode';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
 
 // 定义大模型节点
 
@@ -87,6 +87,8 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           inputItemName="inputArgs"
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ inputArgs: params.inputArgs || [] }}
+          showCheckbox
+          showCopy
         />
       </div>
       {/* 系统提示词 */}

@@ -1,4 +1,4 @@
-import { InputOrReference } from '@/components/FormListItem/InputOrReference';
+import InputOrReference from '@/components/FormListItem/InputOrReference';
 import { ConditionBranchConfigs } from '@/types/interfaces/node';
 import {
   ConditionListProps,
