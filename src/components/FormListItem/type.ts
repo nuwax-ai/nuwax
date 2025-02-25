@@ -25,9 +25,10 @@ export interface InputOrReferenceProps {
   // 父组件传递的方法，改变当前的值，渲染页面
   onChange: (value: string) => void;
   // 新增类型定义
-  form: FormInstance; // 表单实例
-  fieldName: (string | number)[]; // 当前字段完整路径（如 "inputItems[0].bindValue"）
+  form?: FormInstance; // 表单实例
+  fieldName?: (string | number)[]; // 当前字段完整路径（如 "inputItems[0].bindValue"）
   inputItemName?: string; // 列表字段名称（默认 "inputItems"）
+  style?: any;
 }
 
 /**

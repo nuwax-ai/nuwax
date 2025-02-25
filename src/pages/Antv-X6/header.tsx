@@ -8,11 +8,11 @@ import { Button, Tag } from 'antd';
 import React from 'react';
 interface HeaderProp {
   info: {
-    name: string;
+    name?: string;
     icon?: string;
-    publishStatus: string;
-    created: string;
-    modified: string;
+    publishStatus?: string;
+    created?: string;
+    modified?: string;
   };
 
   onSubmit: () => void;
@@ -46,7 +46,9 @@ const Header: React.FC<HeaderProp> = ({
           <div className="header-tag-style">
             <Tag>工作流</Tag>
             <Tag>{publishStatus === 'Developing' ? '已发布' : '未发布'}</Tag>
-            <span>配置自动保存于{getTime(modified)}</span>
+            <span>
+              配置自动保存于{getTime(modified ?? new Date().toString())}
+            </span>
           </div>
         </div>
       </div>

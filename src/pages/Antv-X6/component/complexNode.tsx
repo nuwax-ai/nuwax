@@ -87,6 +87,8 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           inputItemName="inputArgs"
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ inputArgs: params.inputArgs || [] }}
+          showCheckbox
+          showCopy
         />
       </div>
       {/* 系统提示词 */}

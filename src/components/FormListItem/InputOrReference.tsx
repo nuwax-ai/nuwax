@@ -1,8 +1,8 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { Dropdown, Input, Tag } from 'antd';
+import './index.less';
 import { InputOrReferenceProps } from './type';
-
-export const InputOrReference: React.FC<InputOrReferenceProps> = ({
+const InputOrReference: React.FC<InputOrReferenceProps> = ({
   referenceList,
   placeholder,
   value,
@@ -10,28 +10,31 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
   // 新增必要参数
   form, // Form 实例（从父组件传入）
   fieldName, // 当前字段路径（如 "inputItems[0].bindValue"）
+  style,
 }) => {
   // InputOrReference.tsx
   const updateValues = (newValue: string, valueType: 'Input' | 'Reference') => {
-    // 获取父路径数组
-    const basePath = fieldName.slice(0, -1);
-    form.setFieldValue([...basePath, 'bindValueType'], valueType); // 使用数组路径
-    // 顺便修改参数名
+    if (fieldName && form) {
+      // 获取父路径数组
+      const basePath = fieldName.slice(0, -1);
+      form.setFieldValue([...basePath, 'bindValueType'], valueType); // 使用数组路径
+      // 顺便修改参数名
 
-    //  新增 dataType 处理逻辑
-    if (valueType === 'Reference') {
-      const refDataType = referenceList?.argMap?.[newValue]?.dataType;
-      form.setFieldValue([...basePath, 'dataType'], refDataType || 'String');
-      // 获取当前的name
-      const _name = form.getFieldValue([...basePath, 'name']);
-      if (!_name) {
-        form.setFieldValue(
-          [...basePath, 'name'],
-          referenceList.argMap[newValue].name,
-        );
+      //  新增 dataType 处理逻辑
+      if (valueType === 'Reference') {
+        const refDataType = referenceList?.argMap?.[newValue]?.dataType;
+        form.setFieldValue([...basePath, 'dataType'], refDataType || 'String');
+        // 获取当前的name
+        const _name = form.getFieldValue([...basePath, 'name']);
+        if (!_name) {
+          form.setFieldValue(
+            [...basePath, 'name'],
+            referenceList.argMap[newValue].name,
+          );
+        }
+      } else {
+        form.setFieldValue([...basePath, 'dataType'], 'String');
       }
-    } else {
-      form.setFieldValue([...basePath, 'dataType'], 'String');
     }
     onChange?.(newValue);
   };
@@ -88,13 +91,13 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
         ];
 
   return (
-    <div className="input-or-reference dis-sb">
+    <div className="input-or-reference dis-sb" style={style}>
       {value && referenceList.argMap[value] ? (
         <Tag
           closable
           onClose={handleTagClose}
           className="input-or-reference-tag text-ellipsis"
-          color="#d3d2d2"
+          color="#65656687"
         >
           {`${getName(value)} - ${referenceList.argMap[value].name}`}
         </Tag>
@@ -104,6 +107,7 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
           placeholder={placeholder || '请输入或引用参数'}
           onChange={handleInputChange}
           style={{ marginRight: 8 }}
+          size="small"
         />
       )}
       <Dropdown
@@ -119,3 +123,5 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
     </div>
   );
 };
+
+export default InputOrReference;

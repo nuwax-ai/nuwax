@@ -1,4 +1,4 @@
-import { DefaultRenderItem } from '@/components/FormListItem';
+import InputOrReference from '@/components/FormListItem/InputOrReference';
 import { FieldConfig } from '@/components/FormListItem/type';
 import type { DefaultObjectType } from '@/types/interfaces/common';
 import {
@@ -8,8 +8,22 @@ import {
   TreeNodeData,
   TreeOutputProps,
 } from '@/types/interfaces/workflow';
-import { DownOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Form, Select, Tag, Tree } from 'antd';
+import {
+  DeleteOutlined,
+  DownOutlined,
+  FileDoneOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
+import {
+  Button,
+  Checkbox,
+  Form,
+  Input,
+  Popover,
+  Select,
+  Tag,
+  Tree,
+} from 'antd';
 import React, { useEffect } from 'react';
 import '../index.less';
 import './commonNode.less';
@@ -19,19 +33,12 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   fieldConfigs,
   handleChangeNodeConfig,
   referenceList,
-  renderItem = DefaultRenderItem,
   inputItemName = 'inputItems',
   initialValues,
   showCheckbox = false,
   showCopy = false,
 }) => {
   const [form] = Form.useForm();
-
-  const getFieldPath = (fieldName: string, index: number) => [
-    inputItemName,
-    index,
-    fieldName,
-  ];
 
   // 根据传递的fieldConfigs生成表单项
   const formItem = fieldConfigs.reduce(
@@ -50,7 +57,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   // 提交form表单
   const submitForm = () => {
     const raw = form.getFieldsValue(true);
-
+    console.log(raw);
     handleChangeNodeConfig(raw);
     // handleChangeNodeConfig(values);
   };
@@ -69,32 +76,83 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
           onClick={addInputItem}
         ></Button>
       </div>
-      <Form form={form} initialValues={initialValues}>
+      <Form
+        layout={'vertical'}
+        form={form}
+        initialValues={initialValues}
+        onValuesChange={submitForm}
+      >
+        <div className="dis-left">
+          <span>参数名</span>
+          <span>参数值</span>
+        </div>
         <Form.List name={inputItemName}>
-          {(fields, { remove }) =>
-            fields.map((field) => (
-              <React.Fragment key={field.key}>
-                <Form.Item noStyle key={field.key} name={[field.name]}>
-                  {renderItem({
-                    field,
-                    // 生成字段路径
-                    fieldName: getFieldPath('bindValue', field.name),
-                    onRemove: () => remove(field.name),
-                    fieldConfigs,
-                    referenceList: referenceList || {
-                      previousNodes: [],
-                      innerPreviousNodes: [],
-                      argMap: {},
-                    },
-                    form,
-                    showCheckbox,
-                    showCopy,
-                    onChange: submitForm,
-                  })}
-                </Form.Item>
-              </React.Fragment>
-            ))
-          }
+          {(fields, { remove }) => (
+            <>
+              {fields.map((item) => {
+                return (
+                  <Form.Item key={item.key}>
+                    <div className="dis-left">
+                      <Form.Item name={[item.name, 'name']} noStyle>
+                        <Input
+                          size="small"
+                          style={{ width: '30%', marginRight: '10px' }}
+                        />
+                      </Form.Item>
+                      <Form.Item name={[item.name, 'bindValue']} noStyle>
+                        <InputOrReference
+                          referenceList={
+                            referenceList || {
+                              previousNodes: [],
+                              innerPreviousNodes: [],
+                              argMap: {},
+                            }
+                          }
+                          onChange={submitForm}
+                          value={form.getFieldValue([
+                            inputItemName,
+                            item.name,
+                            'bindValue',
+                          ])}
+                          form={form}
+                          fieldName={[inputItemName, item.name, 'bindValue']}
+                          style={{ width: '45%', marginRight: '10px' }}
+                        />
+                      </Form.Item>
+                      <Form.Item name={[item.name, 'bindType']} noStyle hidden>
+                        <Input type="hidden" />
+                      </Form.Item>
+                      {showCopy && (
+                        <Popover
+                          content={
+                            <Form.Item
+                              name={[item.name, 'description']}
+                              noStyle // 添加description的initialValue
+                            >
+                              <Input.TextArea
+                                autoSize={{ minRows: 3, maxRows: 5 }}
+                              />
+                            </Form.Item>
+                          }
+                          trigger="click"
+                        >
+                          <FileDoneOutlined className="margin-right cursor-pointer" />
+                        </Popover>
+                      )}
+                      {showCheckbox && (
+                        <Form.Item name={[item.name, 'require']} noStyle>
+                          <Checkbox className="margin-right" />
+                        </Form.Item>
+                      )}
+                      <Form.Item name={[item.name, 'require']} noStyle>
+                        <DeleteOutlined onClick={() => remove(item.name)} />
+                      </Form.Item>
+                    </div>
+                  </Form.Item>
+                );
+              })}
+            </>
+          )}
         </Form.List>
       </Form>
     </div>

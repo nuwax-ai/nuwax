@@ -1,4 +1,4 @@
-import { InputOrReference } from '@/components/FormListItem/InputOrReference';
+import InputOrReference from '@/components/FormListItem/InputOrReference';
 import {
   ICON_START,
   ICON_WORKFLOW_CODE,
