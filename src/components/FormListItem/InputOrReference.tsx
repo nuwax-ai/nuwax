@@ -22,10 +22,14 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
     if (valueType === 'Reference') {
       const refDataType = referenceList?.argMap?.[newValue]?.dataType;
       form.setFieldValue([...basePath, 'dataType'], refDataType || 'String');
-      form.setFieldValue(
-        [...basePath, 'name'],
-        referenceList.argMap[newValue].name,
-      );
+      // 获取当前的name
+      const _name = form.getFieldValue([...basePath, 'name']);
+      if (!_name) {
+        form.setFieldValue(
+          [...basePath, 'name'],
+          referenceList.argMap[newValue].name,
+        );
+      }
     } else {
       form.setFieldValue([...basePath, 'dataType'], 'String');
     }
@@ -90,6 +94,7 @@ export const InputOrReference: React.FC<InputOrReferenceProps> = ({
           closable
           onClose={handleTagClose}
           className="input-or-reference-tag text-ellipsis"
+          color="#d3d2d2"
         >
           {`${getName(value)} - ${referenceList.argMap[value].name}`}
         </Tag>

@@ -22,6 +22,19 @@ const { ModelNode, IntentionNode, QuestionsNode, HttpToolNode } = ComplexNode;
 const { PluginInNode, DatabaseNode } = ReferenceNode;
 const { KnowledgeNode } = Library;
 
+// 定义那些节点有试运行
+const testRunList = [
+  'Start',
+  'LLM',
+  'Plugin',
+  'Code',
+  'HTTPRequest',
+  'TextProcessing',
+  'Workflow',
+  'DocumentExtraction',
+  'KnowledgeBase',
+];
+
 // 定义试运行,后面删除
 const TestNode: React.FC = () => {
   return <div className="node-title-style">试运行输入</div>;
@@ -40,7 +53,21 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   // 将节点的数据 保存到 state 中,维持数据双向绑定,便于管理
   const [currentNodeConfig, setCurrentNodeConfig] =
     useState<ChildNode>(foldWrapItem);
-
+  // 修改节点的名称和描述
+  const changeFoldWrap = ({
+    name,
+    description,
+  }: {
+    name: string;
+    description: string;
+  }) => {
+    setCurrentNodeConfig({
+      ...foldWrapItem,
+      name: name,
+      description: description,
+    });
+    setIsModified(true);
+  };
   // 修改节点数据
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     if (
@@ -232,15 +259,17 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
     <FoldWrap
       className="fold-wrap-style"
       lineMargin
-      title={foldWrapItem.name}
+      title={currentNodeConfig.name}
       visible={visible}
       onClose={handleClose}
-      desc={foldWrapItem.description}
+      description={currentNodeConfig.description}
       icon={returnImg(foldWrapItem.type)}
+      changeFoldWrap={changeFoldWrap}
       otherAction={
         <OtherOperations
           onChange={(val: string) => handleNodeChange(val, foldWrapItem)}
-          testRun
+          testRun={testRunList.includes(foldWrapItem.type)}
+          action={foldWrapItem.type !== 'Start' && foldWrapItem.type !== 'End'}
         />
       }
     >

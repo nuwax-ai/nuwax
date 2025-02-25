@@ -38,7 +38,7 @@ export interface FoldWrapType {
   className?: string;
   icon?: React.ReactNode;
   title: string;
-  desc?: string;
+  description?: string;
   visible?: boolean;
   // 关闭按钮左侧操作区域，可选
   otherAction?: React.ReactNode;
@@ -46,6 +46,13 @@ export interface FoldWrapType {
   // 顶部线条是否有margin样式
   lineMargin?: boolean;
   key?: string;
+  changeFoldWrap?: ({
+    name,
+    description,
+  }: {
+    name: string;
+    description: string;
+  }) => void;
 }
 
 // 卡片模式设置样式类型

@@ -1,11 +1,10 @@
 import {
   CaretRightOutlined,
-  HomeOutlined,
   PlusOutlined,
   ToolOutlined,
 } from '@ant-design/icons';
 import { Button, Popover, Select } from 'antd';
-import React from 'react';
+import React, { useState } from 'react';
 import StencilContent from './component/stencil';
 import { Child } from './type';
 
@@ -19,46 +18,65 @@ interface ControlPanelProps {
 }
 
 const options = [
-  { label: '缩放到50%', value: 0.5 },
-  { label: '缩放到100%', value: 1 },
-  { label: '缩放到150%', value: 1.5 },
-  { label: '缩放到200%', value: 2 },
+  { label: '缩放到50%', value: 0.5, displayValue: '50%' },
+  { label: '缩放到100%', value: 1, displayValue: '100%' },
+  { label: '缩放到150%', value: 1.5, displayValue: '150%' },
+  { label: '缩放到200%', value: 2, displayValue: '200%' },
 ];
 
 const ControlPanel: React.FC<ControlPanelProps> = ({
   dragChild,
   handleTestRun,
   changeGraph,
-}) => (
-  <>
-    <div className="absolute-box">
-      <Select
-        options={options}
-        defaultValue={1}
-        /* ...其他属性 */ onChange={changeGraph}
-        style={{ width: 120 }}
-      />
-      <HomeOutlined />
-      <Popover
-        content={<StencilContent dragChild={dragChild} />}
-        trigger="click"
-      >
-        <Button icon={<PlusOutlined />} type="primary">
-          添加节点
+}) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <div className="absolute-box">
+        <Select
+          options={options}
+          defaultValue={1}
+          optionLabelProp="displayValue"
+          /* ...其他属性 */ onChange={changeGraph}
+          style={{ width: 80 }}
+        />
+        {/* <HomeOutlined /> */}
+        <Popover
+          content={
+            <StencilContent
+              dragChild={(
+                child: Child,
+                e?: React.DragEvent<HTMLDivElement>,
+              ) => {
+                dragChild(child, e);
+                setOpen(false);
+              }}
+            />
+          }
+          trigger="click"
+          open={open}
+        >
+          <Button
+            onClick={() => setOpen(true)}
+            icon={<PlusOutlined />}
+            type="primary"
+          >
+            添加节点
+          </Button>
+        </Popover>
+      </div>
+      <div className="absolute-test">
+        <ToolOutlined title="调试" />
+        <Button
+          icon={<CaretRightOutlined />}
+          type="primary"
+          onClick={handleTestRun}
+        >
+          试运行
         </Button>
-      </Popover>
-    </div>
-    <div className="absolute-test">
-      <ToolOutlined title="调试" />
-      <Button
-        icon={<CaretRightOutlined />}
-        type="primary"
-        onClick={handleTestRun}
-      >
-        试运行
-      </Button>
-    </div>
-  </>
-);
+      </div>
+    </>
+  );
+};
 
 export default ControlPanel;

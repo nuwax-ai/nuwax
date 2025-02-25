@@ -6,12 +6,15 @@ interface OtherOperationsProps {
   onChange: (val: string) => void;
   // 试运行
   testRun?: boolean;
+  // 是否有操作节点的按钮
+  action?: boolean;
 }
 
 // 其他操作，主要是试运行和重命名，创建副本和删除
 const OtherOperations: React.FC<OtherOperationsProps> = ({
   onChange,
   testRun,
+  action,
 }) => {
   const changeNode = (val: string) => {
     // 检查 onChange 是否存在并且是一个函数
@@ -43,9 +46,11 @@ const OtherOperations: React.FC<OtherOperationsProps> = ({
         </Popover>
       )}
       {/* 节点操作 */}
-      <Popover content={content} trigger="hover">
-        <DashOutlined />
-      </Popover>
+      {action && (
+        <Popover content={content} trigger="hover">
+          <DashOutlined />
+        </Popover>
+      )}
     </div>
   );
 };

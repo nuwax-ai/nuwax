@@ -45,7 +45,7 @@ const TestRun: React.FC<TestRunProps> = ({
       label: '试运行输入',
       children: (
         <>
-          {inputArgs && inputArgs.length && (
+          {inputArgs && inputArgs.length > 0 && (
             <div className="px-16 border-bottom">
               <p className="collapse-title-style dis-left">
                 {returnImg(type)}

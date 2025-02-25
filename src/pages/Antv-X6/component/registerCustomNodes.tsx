@@ -11,6 +11,18 @@ interface GeneralNodeState {
   isEditingTitle: boolean;
   editedTitle: string;
 }
+// 定义那些节点有试运行
+const testRunList = [
+  'Start',
+  'LLM',
+  'Plugin',
+  'Code',
+  'HTTPRequest',
+  'TextProcessing',
+  'Workflow',
+  'DocumentExtraction',
+  'KnowledgeBase',
+];
 
 /**
  * 定义 GeneralNode 类组件，代表一个通用节点，该节点可以是流程图或其他图形编辑器中的元素。
@@ -143,8 +155,8 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
               <span>{data.name}</span>
             )}
           </div>
-          {data.type !== 'Start' && data.type !== 'End' && (
-            <div className="other-action-style">
+          <div className="other-action-style">
+            {testRunList.includes(data.type) && (
               <Popover placement="top" content={'测试该节点'}>
                 <PlayCircleOutlined
                   onClick={(e) => {
@@ -154,14 +166,17 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
                   }}
                 />
               </Popover>
+            )}
+
+            {data.type !== 'Start' && data.type !== 'End' && (
               <Popover content={this.content} trigger="hover">
                 <DashOutlined
                   style={{ marginLeft: '10px' }}
                   onClick={(e) => e.stopPropagation()}
                 />
               </Popover>
-            </div>
-          )}
+            )}
+          </div>
         </div>
         {/* 节点内容区，根据 data.content 的类型显示不同的内容 */}
         {data.type !== 'IntentRecognition' && data.type !== 'Condition' && (
