@@ -3,7 +3,6 @@ import { ICON_ADJUSTMENT, ICON_SUCCESS } from '@/constants/images.constants';
 import service, { IGetList } from '@/services/created';
 import {
   CreateUpdateModeEnum,
-  PluginAndLibraryEnum,
 } from '@/types/enums/common';
 import { WorkflowModeEnum } from '@/types/enums/library';
 import { CreatedNodeItem } from '@/types/interfaces/common';
@@ -24,12 +23,13 @@ import CreateNewPlugin from '../CreateNewPlugin';
 import CreateWorkflow from '../CreateWorkflow';
 import './index.less';
 import { ButtonList, CreatedProp, MenuItem } from './type';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 // 顶部的标签页名称
 const buttonList: ButtonList[] = [
-  { label: '插件', key: PluginAndLibraryEnum.Plugin },
-  { label: '工作流', key: PluginAndLibraryEnum.Workflow },
-  { label: '知识库', key: PluginAndLibraryEnum.KnowledgeBase },
-  { label: '数据库', key: PluginAndLibraryEnum.Database },
+  { label: '插件', key: AgentComponentTypeEnum.Plugin },
+  { label: '工作流', key: AgentComponentTypeEnum.Workflow },
+  { label: '知识库', key: AgentComponentTypeEnum.Knowledge },
+  { label: '数据库', key: AgentComponentTypeEnum.Database },
 ];
 
 // 创建插件、工作流、知识库、数据库
@@ -50,10 +50,10 @@ const Created: React.FC<CreatedProp> = ({
   // 当前顶部被选中被选中的
   const [selected, SetSelected] = useState<{
     label: string;
-    key: PluginAndLibraryEnum;
+    key: AgentComponentTypeEnum;
   }>({
     label: '插件',
-    key: PluginAndLibraryEnum.Plugin,
+    key: AgentComponentTypeEnum.Plugin,
   });
   // 分页
   const [pagination, setPagination] = useState({
@@ -103,7 +103,7 @@ const Created: React.FC<CreatedProp> = ({
   /**  -----------------  需要调用接口  -----------------   */
 
   //   获取右侧的list
-  const getList = async (type: PluginAndLibraryEnum, params?: IGetList) => {
+  const getList = async (type: AgentComponentTypeEnum, params?: IGetList) => {
     setLoadingMore(true); // 开始加载时设置为true
     const _res = await service.getList(type, params || {});
     if (_res.code === Constant.success) {
@@ -430,20 +430,21 @@ const Created: React.FC<CreatedProp> = ({
       <CreateWorkflow
         onConfirm={onConfirm}
         onCancel={() => setShowCreate(false)}
-        open={showCreate && selected.key === PluginAndLibraryEnum.Workflow}
+        open={showCreate && selected.key === AgentComponentTypeEnum.Workflow}
         type={WorkflowModeEnum.Create}
         spaceId={spaceId}
       />
       <CreateNewPlugin
         onConfirm={onConfirm}
         onCancel={() => setShowCreate(false)}
-        open={showCreate && selected.key === PluginAndLibraryEnum.Plugin}
+        open={showCreate && selected.key === AgentComponentTypeEnum.Plugin}
         mode={CreateUpdateModeEnum.Create}
       />
       <CreateKnowledge
+        spaceId={spaceId}
         onConfirm={onConfirm}
         onCancel={() => setShowCreate(false)}
-        open={showCreate && selected.key === PluginAndLibraryEnum.KnowledgeBase}
+        open={showCreate && selected.key === AgentComponentTypeEnum.Knowledge}
         mode={CreateUpdateModeEnum.Create}
       />
     </Modal>

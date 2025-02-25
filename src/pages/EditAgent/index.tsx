@@ -11,7 +11,7 @@ import {
   AgentComponentInfo,
   AgentConfigInfo,
 } from '@/types/interfaces/agent';
-import { HistoryData } from '@/types/interfaces/space';
+import type { HistoryData } from '@/types/interfaces/space';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useMatch, useRequest } from 'umi';
@@ -203,7 +203,6 @@ const EditAgent: React.FC = () => {
       {/*智能体模型设置*/}
       <AgentModelSetting
         spaceId={spaceId}
-        id={agentId}
         modelComponentConfig={
           agentConfigInfo?.modelComponentConfig as AgentComponentInfo
         }

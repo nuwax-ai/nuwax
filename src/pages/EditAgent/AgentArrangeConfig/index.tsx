@@ -12,7 +12,6 @@ import {
   apiAgentComponentList,
 } from '@/services/agentConfig';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { PluginAndLibraryEnum } from '@/types/enums/common';
 import { KnowledgeDataTypeEnum } from '@/types/enums/library';
 import {
   AgentConfigMemoryEnum,
@@ -28,7 +27,7 @@ import type { CreatedNodeItem } from '@/types/interfaces/common';
 import { CaretDownOutlined } from '@ant-design/icons';
 import { CollapseProps, message } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useModel, useRequest } from 'umi';
 import ConfigOption from './ConfigOptionCollapse';
 import ConfigOptionsHeader from './ConfigOptionsHeader';
@@ -66,8 +65,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const [agentComponentList, setAgentComponentList] = useState<
     AgentComponentInfo[]
   >([]);
-  const [checkTag, setCheckTag] = useState<PluginAndLibraryEnum>(
-    PluginAndLibraryEnum.Plugin,
+  const [checkTag, setCheckTag] = useState<AgentComponentTypeEnum>(
+    AgentComponentTypeEnum.Plugin,
   );
 
   // 打开、关闭弹窗
@@ -86,8 +85,18 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     debounceWait: 300,
     onSuccess: (result: AgentComponentInfo[]) => {
       setAgentComponentList(result);
+      console.log(result, '========');
     },
   });
+
+  // 已选中的智能体组件id
+  const checkedIds = useMemo(() => {
+    return (
+      agentComponentList
+        ?.filter((item) => item.type === checkTag)
+        ?.map((item) => item.targetId) || []
+    );
+  }, [agentComponentList, checkTag]);
 
   // 删除智能体组件配置
   const { run: runPluginComponentDel } = useRequest(apiAgentComponentDelete, {
@@ -119,14 +128,14 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 添加插件
   const handlerPluginPlus = (e) => {
     e.stopPropagation();
-    setCheckTag(PluginAndLibraryEnum.Plugin);
+    setCheckTag(AgentComponentTypeEnum.Plugin);
     setShow(true);
   };
 
   // 添加工作流
   const handlerWorkflowPlus = (e) => {
     e.stopPropagation();
-    setCheckTag(PluginAndLibraryEnum.Workflow);
+    setCheckTag(AgentComponentTypeEnum.Workflow);
     setShow(true);
   };
 
@@ -145,14 +154,14 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 添加文本
   const handlerTextPlus = (e) => {
     e.stopPropagation();
-    setCheckTag(PluginAndLibraryEnum.KnowledgeBase);
+    setCheckTag(AgentComponentTypeEnum.Knowledge);
     setShow(true);
   };
 
   // 添加表格
   const handlerTablePlus = (e) => {
     e.stopPropagation();
-    setCheckTag(PluginAndLibraryEnum.KnowledgeBase);
+    setCheckTag(AgentComponentTypeEnum.Knowledge);
     setShow(true);
   };
 
@@ -165,7 +174,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 添加数据库表
   const handlerDatabasePlus = (e) => {
     e.stopPropagation();
-    setCheckTag(PluginAndLibraryEnum.Database);
+    setCheckTag(AgentComponentTypeEnum.Database);
     setShow(true);
   };
 
@@ -364,6 +373,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         onCancel={() => setShow(false)}
         spaceId={spaceId}
         checkTag={checkTag}
+        hasIds={checkedIds}
         onAdded={handleAddComponent}
       />
       {/*添加触发器弹窗*/}
