@@ -78,7 +78,7 @@ const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({
         fieldConfigs={outPutConfigs}
         referenceList={referenceList}
         showCopy={true}
-        inputItemName="outputArgs"
+        inputItemName="inputArgs"
         initialValues={{ inputArgs: params.inputArgs }}
         handleChangeNodeConfig={handleChangeNodeConfig}
       />
