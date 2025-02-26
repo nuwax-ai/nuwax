@@ -279,7 +279,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
         className={`${
           treeData.find((item) => item.subArgs && item.subArgs.length > 0)
             ? 'tree-form-style'
-            : 'tree-form-style-noChild'
+            : 'tree-form-style-no-child'
         }`}
       />
     </div>

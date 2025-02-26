@@ -421,7 +421,7 @@ const Workflow: React.FC = () => {
       );
     });
     // 如果有完整的连线，那么就可以进行试运行
-    if (fullPath) {
+    if (fullPath && fullPath.length > 0) {
       await getDetails();
       // 遍历检查所有节点是否都已经输入了参数
       const _params = {
