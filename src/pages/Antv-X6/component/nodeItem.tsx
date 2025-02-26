@@ -79,7 +79,7 @@ const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({
         referenceList={referenceList}
         showCopy={true}
         inputItemName="inputArgs"
-        initialValues={{ inputArgs: params.inputArgs }}
+        initialValues={{ inputArgs: params.inputArgs || [] }}
         handleChangeNodeConfig={handleChangeNodeConfig}
       />
       {params.outputArgs && (
@@ -121,7 +121,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({
         referenceList={referenceList}
         showCopy={true}
         inputItemName="outputArgs"
-        initialValues={{ outputArgs: params.outputArgs }}
+        initialValues={{ outputArgs: params.outputArgs || [] }}
         handleChangeNodeConfig={handleChangeNodeConfig}
       />
       {value === '返回文本' && (

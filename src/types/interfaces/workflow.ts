@@ -181,8 +181,6 @@ export interface NodeRenderProps {
   initialValues?: InitialValues;
   // 如果有多个相同组件时，传递不同的inputListName区分
   inputItemName?: string;
-  // 是否展示选中的选项框
-  showCheckbox?: boolean;
   // 是否显示复制按钮
   showCopy?: boolean;
   style?: any;

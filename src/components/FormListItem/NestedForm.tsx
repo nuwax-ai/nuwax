@@ -256,6 +256,12 @@ const CustomTree: React.FC<TreeFormProps> = ({
           onClick={addRootNode}
         ></Button>
       </div>
+      {treeData && treeData.length > 0 && (
+        <div className="dis-left">
+          <span>变量名</span>
+          <span style={{ marginLeft: '20%' }}>变量类型</span>
+        </div>
+      )}
       <Tree
         treeData={treeData}
         // showLine

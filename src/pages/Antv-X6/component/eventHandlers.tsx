@@ -46,7 +46,7 @@ const bindEventHandlers = ({
     return false; // 阻止默认行为
   });
   // 快捷键绑定：删除选中的单元格
-  graph.bindKey('delete', () => {
+  graph.bindKey(['delete', 'backspace'], () => {
     const cells = graph.getSelectedCells(); // 获取当前选中的单元格
     if (cells.length) {
       const _cell = cells[0];

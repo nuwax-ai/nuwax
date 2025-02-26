@@ -254,12 +254,12 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   };
 
   useEffect(() => {
-    if (visible && isModified) {
+    if (isModified) {
       onGetNodeConfig(currentNodeConfig);
       setIsModified(false); // 重置修改状态
     }
     setCurrentNodeConfig(foldWrapItem);
-  }, [foldWrapItem.id]);
+  }, [foldWrapItem.id, visible]);
 
   useEffect(() => {
     setCurrentNodeConfig(foldWrapItem);
