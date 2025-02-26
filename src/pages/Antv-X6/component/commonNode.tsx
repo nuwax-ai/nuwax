@@ -92,7 +92,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
             <>
               {fields.map((item, index) => {
                 return (
-                  <>
+                  <div key={item.name}>
                     {/* 只在第一个输入框组旁边显示标签 */}
                     {index === 0 && (
                       <>
@@ -165,7 +165,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                         </Form.Item>
                       </div>
                     </Form.Item>
-                  </>
+                  </div>
                 );
               })}
             </>

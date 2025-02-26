@@ -11,7 +11,8 @@ import { useModel } from 'umi';
 import './index.less';
 interface TestRunProps {
   type: NodeTypeEnum;
-  run: (params: DefaultObjectType) => void;
+  run: (params: DefaultObjectType, type: string) => void;
+  loading: boolean;
   title?: string;
   inputArgs?: InputAndOutConfig[];
   testRunResult?: string;
@@ -30,6 +31,7 @@ interface TestRunProps {
 const TestRun: React.FC<TestRunProps> = ({
   type,
   run,
+  loading,
   title,
   inputArgs,
   testRunResult,
@@ -39,6 +41,13 @@ const TestRun: React.FC<TestRunProps> = ({
 
   const [form] = Form.useForm();
 
+  const onFinish = (values: DefaultObjectType) => {
+    run(values, type);
+  };
+
+  const handlerSubmit = () => {
+    form.submit();
+  };
   const items = [
     {
       key: 'inputArgs',
@@ -51,9 +60,9 @@ const TestRun: React.FC<TestRunProps> = ({
                 {returnImg(type)}
                 <span>{title}节点</span>
               </p>
-              <Form form={form} layout={'vertical'}>
+              <Form form={form} layout={'vertical'} onFinish={onFinish}>
                 {inputArgs.map((item) => (
-                  <>
+                  <div key={item.name}>
                     <Form.Item
                       name={item.name}
                       label={
@@ -62,10 +71,11 @@ const TestRun: React.FC<TestRunProps> = ({
                           <Tag>{item.dataType}</Tag>
                         </>
                       }
+                      rules={[{ required: true, message: '请输入' }]}
                     >
                       <Input />
                     </Form.Item>
-                  </>
+                  </div>
                 ))}
               </Form>
             </div>
@@ -100,12 +110,6 @@ const TestRun: React.FC<TestRunProps> = ({
         ]
       : []),
   ];
-
-  // 提交数据
-  const executeNode = () => {
-    const values = form.getFieldsValue(true);
-    run(values);
-  };
 
   return (
     <div
@@ -150,7 +154,8 @@ const TestRun: React.FC<TestRunProps> = ({
         <Button
           icon={<CaretRightOutlined />}
           type="primary"
-          onClick={executeNode}
+          onClick={handlerSubmit}
+          loading={loading}
         >
           运行
         </Button>

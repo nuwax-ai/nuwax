@@ -279,3 +279,8 @@ export interface ConditionProps {
   // 可以引用的上级节点的参数
   referenceList: NodePreviousAndArgMap;
 }
+
+// 定义错误列表
+export interface ErrorListItem {
+  nodeId: number;
+}

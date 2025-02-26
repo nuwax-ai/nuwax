@@ -1,5 +1,6 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { Dropdown, Input, Tag } from 'antd';
+import { useEffect } from 'react';
 import './index.less';
 import { InputOrReferenceProps } from './type';
 const InputOrReference: React.FC<InputOrReferenceProps> = ({
@@ -12,6 +13,25 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   fieldName, // 当前字段路径（如 "inputItems[0].bindValue"）
   style,
 }) => {
+  useEffect(() => {
+    if (
+      referenceList.previousNodes &&
+      !referenceList.previousNodes.length &&
+      value
+    ) {
+      if (fieldName && form) {
+        const basePath = fieldName.slice(0, -1);
+        // 获取当前的bindValueType
+        const _bindValueType = form?.getFieldValue([
+          ...basePath,
+          'bindValueType',
+        ]);
+        if (_bindValueType === 'Reference') {
+          form.setFieldValue([...basePath, 'bindValue'], '');
+        }
+      }
+    }
+  }, [referenceList.previousNodes]);
   // InputOrReference.tsx
   const updateValues = (newValue: string, valueType: 'Input' | 'Reference') => {
     if (fieldName && form) {

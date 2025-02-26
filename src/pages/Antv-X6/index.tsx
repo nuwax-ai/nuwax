@@ -90,6 +90,8 @@ const Workflow: React.FC = () => {
     const _time = new Date();
     setInfo({ ...(info as IgetDetails), modified: _time.toString() });
   };
+  // 按钮是否处于loading
+  const [loading, setLoading] = useState(false);
 
   /** -----------------  需要调用接口的方法  --------------------- */
 
@@ -155,6 +157,11 @@ const Workflow: React.FC = () => {
     if (child.nodeConfig.outputArgs === null) {
       child.nodeConfig.outputArgs = [];
     }
+    setReferenceList({
+      previousNodes: [],
+      innerPreviousNodes: [],
+      argMap: {},
+    });
     // 获取节点需要的引用参数
     const _res = await service.getOutputArgs(Number(child.id));
     if (_res.code === Constant.success) {
@@ -382,7 +389,7 @@ const Workflow: React.FC = () => {
         console.log('连接已建立', response.status);
       },
       onClose: () => {
-        console.log('连接关闭');
+        setLoading(false);
       },
     });
     // 主动关闭连接
@@ -396,7 +403,7 @@ const Workflow: React.FC = () => {
   };
 
   // 试运行所有节点
-  const testRunAllNode = async () => {
+  const testRunAllNode = async (params: DefaultObjectType) => {
     // 获取完整的连线列表
     const _edges = await getNodeRelation(
       graphParams.nodeList,
@@ -417,8 +424,10 @@ const Workflow: React.FC = () => {
     if (fullPath) {
       await getDetails();
       // 遍历检查所有节点是否都已经输入了参数
-      const params = {
+      const _params = {
         workflowId: info?.id,
+        params,
+        requestId: new Date(),
       };
       const abortConnection = await createSSEConnection({
         url: `${process.env.BASE_URL}/api/workflow/test/execute`,
@@ -427,9 +436,12 @@ const Workflow: React.FC = () => {
           Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`,
           Accept: ' application/json, text/plain, */* ',
         },
-        body: params,
+        body: _params,
         onMessage: (data) => {
+          const _nodeId = data.data.nodeId;
+          // setFoldWrapItem(graphParams.nodeList.filter((item)=>item.id===_nodeId)[0])
           // setTestRunResult(data);
+          graphRef.current.selectNode(_nodeId);
           if (!data.success) {
             if (data.data && data.data.result) {
               setErrorParams({
@@ -448,7 +460,7 @@ const Workflow: React.FC = () => {
           console.log('连接已建立', response.status);
         },
         onClose: () => {
-          console.log('连接关闭');
+          setLoading(false);
         },
       });
       // 主动关闭连接
@@ -468,7 +480,19 @@ const Workflow: React.FC = () => {
     });
     // 打开开始节点
     setFoldWrapItem(info!.startNode);
-    testRunAllNode();
+    setVisible(true);
+    setTestRun(true);
+    // testRunAllNode();
+  };
+
+  // 节点试运行
+  const runTest = (params: DefaultObjectType, type: string) => {
+    if (type === 'Start') {
+      testRunAllNode(params);
+    } else {
+      nodeTestRun(params);
+    }
+    setLoading(true);
   };
   // 保存当前画布中节点的位置
   useEffect(() => {
@@ -516,10 +540,11 @@ const Workflow: React.FC = () => {
       />
       <TestRun
         type={foldWrapItem.type}
-        run={nodeTestRun}
+        run={runTest}
         title={foldWrapItem.name}
         inputArgs={foldWrapItem.nodeConfig.inputArgs ?? []}
         testRunResult={testRunResult}
+        loading={loading}
       />
 
       <CreateWorkflow
