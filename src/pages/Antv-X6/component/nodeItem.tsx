@@ -42,23 +42,6 @@ const StartNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
         params={params}
         handleChangeNodeConfig={handleChangeNodeConfig}
       />
-      {/* <InputAndOut
-        title="输入"
-        fieldConfigs={InputConfigs}
-        showCheckbox={true}
-        showCopy={true}
-        handleChangeNodeConfig={handleChangeNodeConfig}
-        // 如果这里使用动态的表单名称，initialValues 中的名称也应该和他相同
-        inputItemName="inputArgs"
-        initialValues={{ inputArgs: initialValues }} // 注意这里使用了'inputItemName'相同的
-      /> */}
-      {/* {params.type === 'DocumentExtraction' && (
-        <div className="margin-bottom">
-          <div className="dis-sb margin-bottom">
-            <span className="node-title-style">输出</span>
-          </div>
-        </div>
-      )} */}
     </>
   );
 };

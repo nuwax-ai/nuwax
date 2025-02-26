@@ -13,6 +13,7 @@ import type {
 import {
   ConditionBranchConfigs,
   HttpNodeConfig,
+  IntentConfigs,
   NodeConfig,
 } from '@/types/interfaces/node';
 import type { FormInstance } from 'antd';
@@ -156,6 +157,17 @@ export interface RenderItemProps {
   showCopy?: boolean;
 }
 
+interface QAOptions {
+  content: string;
+  index?: string;
+  nextNodeIds?: number[];
+}
+interface QAOptions {
+  content: string;
+  index?: string;
+  nextNodeIds?: number[];
+}
+
 interface InitialValues {
   inputArgs?: InputAndOutConfig[];
   outputArgs?: InputAndOutConfig[];
@@ -164,6 +176,8 @@ interface InitialValues {
   headers?: InputAndOutConfig[];
   body?: InputAndOutConfig[];
   queries?: InputAndOutConfig[];
+  options?: QAOptions[];
+  intentConfigs?: IntentConfigs[];
 }
 
 // 定义通用节点渲染逻辑的props类型
@@ -184,6 +198,23 @@ export interface NodeRenderProps {
   // 是否显示复制按钮
   showCopy?: boolean;
   style?: any;
+}
+
+// 定义通用的formList的props类型
+export interface FormListProps {
+  // 标题
+  title: string;
+  // 改变节点的入参和出参
+  handleChangeNodeConfig: (params: NodeConfig) => void;
+  updateNode?: (params: NodeConfig) => void;
+  // 当前input的field
+  field: string;
+  // 如果有多个相同组件时，传递不同的inputListName区分
+  inputItemName?: string;
+  // 初始值（适用于已经编辑过的内容）
+  initialValues?: InitialValues;
+
+  showIndex?: boolean;
 }
 
 // 定义技能

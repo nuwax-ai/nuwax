@@ -2,6 +2,7 @@ import InputOrReference from '@/components/FormListItem/InputOrReference';
 import { FieldConfig } from '@/components/FormListItem/type';
 import type { DefaultObjectType } from '@/types/interfaces/common';
 import {
+  FormListProps,
   KeyValuePairs,
   MultiSelectWithCheckboxProps,
   NodeRenderProps,
@@ -262,5 +263,105 @@ export const MultiSelectWithCheckbox: React.FC<
     >
       {options.map(renderOption)}
     </Select>
+  );
+};
+
+// 封装一个formList
+export const FormList: React.FC<FormListProps> = ({
+  title,
+  handleChangeNodeConfig,
+  field,
+  inputItemName = 'inputArgs',
+  initialValues,
+  showIndex,
+  updateNode,
+}) => {
+  const arr = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+  const [form] = Form.useForm();
+  const changeForm = () => {
+    const raw = form.getFieldsValue(true);
+    if (updateNode) {
+      updateNode(raw);
+    }
+  };
+  // 新增选项
+  const addInputItem = () => {
+    const nextItems = [
+      ...(form.getFieldValue(inputItemName) || []),
+      { [field]: '' },
+    ];
+    form.setFieldsValue({ [inputItemName]: nextItems });
+    changeForm();
+  };
+
+  // 提交form表单
+  const submitForm = () => {
+    const raw = form.getFieldsValue(true);
+    handleChangeNodeConfig(raw);
+    // handleChangeNodeConfig(values);
+  };
+
+  useEffect(() => {
+    // 设置初始值，确保Form.List能正确展示已有条目
+    form.setFieldsValue(initialValues);
+  }, [form, inputItemName, initialValues]);
+
+  return (
+    <div className="start-node-style">
+      <div className="dis-sb margin-bottom">
+        <span className="node-title-style">{title}</span>
+        <Button
+          icon={<PlusOutlined />}
+          size={'small'}
+          onClick={addInputItem}
+        ></Button>
+      </div>
+      <Form
+        layout={'vertical'}
+        form={form}
+        initialValues={initialValues}
+        onValuesChange={submitForm}
+        className="input-and-out-form"
+      >
+        {/* {
+          <div className="dis-left">
+            <span>参数名</span>
+            <span>参数值</span>
+          </div>
+        } */}
+        <Form.List name={inputItemName}>
+          {(fields, { remove }) => (
+            <>
+              {fields.map((item, index) => {
+                return (
+                  <Form.Item key={index}>
+                    <div className="dis-sb">
+                      {showIndex && (
+                        <Form.Item noStyle name={[item.name, 'index']}>
+                          <span className="mr-16">{arr[index]}</span>
+                        </Form.Item>
+                      )}
+                      <Form.Item name={[item.name, field]} noStyle>
+                        <Input></Input>
+                      </Form.Item>
+                      <Form.Item noStyle>
+                        <DeleteOutlined
+                          className={'ml-10'}
+                          onClick={() => {
+                            remove(item.name);
+                            changeForm();
+                          }}
+                        />
+                      </Form.Item>
+                    </div>
+                  </Form.Item>
+                );
+              })}
+            </>
+          )}
+        </Form.List>
+      </Form>
+    </div>
   );
 };

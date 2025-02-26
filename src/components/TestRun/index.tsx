@@ -11,7 +11,7 @@ import { useModel } from 'umi';
 import './index.less';
 interface TestRunProps {
   type: NodeTypeEnum;
-  run: (params: DefaultObjectType, type: string) => void;
+  run: (type: string, params?: DefaultObjectType) => void;
   loading: boolean;
   title?: string;
   inputArgs?: InputAndOutConfig[];
@@ -42,11 +42,15 @@ const TestRun: React.FC<TestRunProps> = ({
   const [form] = Form.useForm();
 
   const onFinish = (values: DefaultObjectType) => {
-    run(values, type);
+    run(type, values);
   };
 
   const handlerSubmit = () => {
-    form.submit();
+    if (inputArgs && inputArgs.length) {
+      form.submit();
+    } else {
+      run(type);
+    }
   };
   const items = [
     {

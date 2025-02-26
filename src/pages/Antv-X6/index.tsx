@@ -146,6 +146,7 @@ const Workflow: React.FC = () => {
       setVisible(false);
       return;
     }
+    setFoldWrapItem(child);
     // 如果有组件正在展示,那么就要看是否修改了参数,
     // 如果修改了参数,那么就提交数据
     if (!visible) {
@@ -157,11 +158,7 @@ const Workflow: React.FC = () => {
     if (child.nodeConfig.outputArgs === null) {
       child.nodeConfig.outputArgs = [];
     }
-    setReferenceList({
-      previousNodes: [],
-      innerPreviousNodes: [],
-      argMap: {},
-    });
+
     // 获取节点需要的引用参数
     const _res = await service.getOutputArgs(Number(child.id));
     if (_res.code === Constant.success) {
@@ -173,7 +170,6 @@ const Workflow: React.FC = () => {
         setReferenceList(_res.data);
       }
     }
-    setFoldWrapItem(child);
   };
 
   // 新增节点
@@ -233,6 +229,9 @@ const Workflow: React.FC = () => {
 
   // 删除指定的节点
   const deleteNode = async (id: number | string) => {
+    setVisible(false);
+    // if(Number(id)===Number(foldWrapItem.id)){
+    // }
     const _res = await service.deleteNode(id);
     if (_res.code === Constant.success) {
       // console.log(graphRef.current)
@@ -298,7 +297,6 @@ const Workflow: React.FC = () => {
       case 'Delete':
         {
           deleteNode(data.id);
-          setVisible(false);
         }
         break;
       default:
@@ -333,8 +331,8 @@ const Workflow: React.FC = () => {
         return { x: e.clientX, y: e.clientY };
       } else {
         return {
-          x: Math.floor(Math.random() * canvasWidth),
-          y: Math.floor(Math.random() * canvasHeight),
+          x: Math.floor(canvasWidth / 2),
+          y: Math.floor(canvasHeight / 2),
         };
       }
     };
@@ -361,7 +359,7 @@ const Workflow: React.FC = () => {
   };
 
   // 节点试运行
-  const nodeTestRun = async (params: DefaultObjectType) => {
+  const nodeTestRun = async (params?: DefaultObjectType) => {
     const _params = {
       nodeId: foldWrapItem.id,
       params,
@@ -378,7 +376,9 @@ const Workflow: React.FC = () => {
       },
       body: _params,
       onMessage: (data) => {
-        setTestRunResult(data.data.output);
+        if (data.success) {
+          setTestRunResult(data.data.output);
+        }
         // 更新UI状态...
       },
       onError: (error) => {
@@ -486,9 +486,10 @@ const Workflow: React.FC = () => {
   };
 
   // 节点试运行
-  const runTest = (params: DefaultObjectType, type: string) => {
+  const runTest = (type: string, params?: DefaultObjectType) => {
+    console.log(type);
     if (type === 'Start') {
-      testRunAllNode(params);
+      testRunAllNode(params || {});
     } else {
       nodeTestRun(params);
     }

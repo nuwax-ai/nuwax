@@ -194,9 +194,20 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
           </div>
         )}
         {data.type === 'IntentRecognition' && (
-          <div className="condition-node-content-style">
-            {data.nodeConfig.intentConfigs?.map((item) => (
-              <span key={item.uuid}>{item.intent}</span>
+          <div>
+            {data.nodeConfig.intentConfigs?.map((item, index) => (
+              <div className="dis-left mb-16" key={index}>
+                <span
+                  style={{
+                    width: '100px',
+                    textAlign: 'center',
+                    color: '#979797',
+                  }}
+                >
+                  选项
+                </span>
+                <span className="font-weight">{item.intent}</span>
+              </div>
             ))}
           </div>
         )}

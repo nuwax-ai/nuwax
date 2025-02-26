@@ -7,7 +7,7 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import type { NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 import {
   Button,
   Empty,
@@ -19,8 +19,8 @@ import {
 } from 'antd';
 import React, { useState } from 'react';
 import '../index.less';
-import { intentionConfigs, outPutConfigs } from '../params';
-import { InputAndOut } from './commonNode';
+import { outPutConfigs } from '../params';
+import { FormList, InputAndOut } from './commonNode';
 
 // 定义大模型节点
 
@@ -87,7 +87,6 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           inputItemName="inputArgs"
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ inputArgs: params.inputArgs || [] }}
-          showCheckbox
           showCopy
         />
       </div>
@@ -142,33 +141,23 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
   };
-  // 单独处理新增和修改
-  const addAndDelete = (newNodeConfig: NodeConfig) => {
-    console.log(newNodeConfig);
-    if (!params.intentConfigs) {
-      params.intentConfigs = [];
-    }
-    if (
-      newNodeConfig.intentConfigs &&
-      newNodeConfig.intentConfigs.length !== params.intentConfigs.length
-    ) {
-      if (updateNode) {
-        updateNode({
-          ...params,
-          intentConfigs: newNodeConfig.intentConfigs,
-          extension: {
-            ...params.extension,
-            height:
-              newNodeConfig.intentConfigs.length >= 2
-                ? newNodeConfig.intentConfigs.length * 40 + 60
-                : 140,
-          },
-        });
-      }
-    } else {
-      Modified({ ...params, ...newNodeConfig });
+
+  const changeIntent = (newNodeConfig: NodeConfig) => {
+    if (updateNode) {
+      updateNode({
+        ...params,
+        ...newNodeConfig,
+        extension: {
+          ...params.extension,
+          height:
+            newNodeConfig?.intentConfigs!.length >= 2
+              ? newNodeConfig.intentConfigs!.length * 40 + 60
+              : 140,
+        },
+      });
     }
   };
+  console.log(params.intentConfigs);
 
   return (
     <div className="model-node-style">
@@ -187,14 +176,13 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
       </div>
       {/* 意图匹配 */}
       <div className="node-item-style">
-        <InputAndOut
-          title="意图匹配"
-          fieldConfigs={intentionConfigs}
-          handleChangeNodeConfig={addAndDelete}
+        <FormList
+          title={'意图匹配'}
+          handleChangeNodeConfig={handleChangeNodeConfig}
+          field="intent"
           inputItemName="intentConfigs"
-          initialValues={{
-            intentConfigs: params.intentConfigs || [],
-          }}
+          initialValues={{ intentConfigs: params.intentConfigs || [] }}
+          updateNode={changeIntent}
         />
       </div>
       {/* 补充提示词 */}
@@ -221,6 +209,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
   };
+
   return (
     <div className="node-title-style">
       {/* 模型模块 */}
@@ -273,43 +262,14 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
       )}
       {/* 选项内容 */}
       {params.answerType === 'SELECT' && (
-        <>
-          <div className="dis-sb margin-bottom">
-            <span className="node-title-style">设置选项内容</span>
-            <Button
-              icon={<PlusOutlined />}
-              size={'small'}
-              onClick={() =>
-                handleChangeNodeConfig({
-                  ...params,
-                  options: [
-                    ...(params.options || []),
-                    {
-                      index: ((params.options?.length || 0) + 1).toString(),
-                      content: '',
-                    },
-                  ],
-                })
-              }
-            ></Button>
-          </div>
-          {params.options?.map((item) => (
-            <div key={item.index} className="dis-sb">
-              <span className="mr-12">{item.index}</span>
-              <Input value={item.content} onChange={() => {}}></Input>
-              <DeleteOutlined
-                onClick={() =>
-                  handleChangeNodeConfig({
-                    ...params,
-                    options: params.options?.filter(
-                      (sun) => sun.index !== item.index,
-                    ),
-                  })
-                }
-              />
-            </div>
-          ))}
-        </>
+        <FormList
+          title={'设置选项内容'}
+          handleChangeNodeConfig={handleChangeNodeConfig}
+          field="content"
+          inputItemName="options"
+          initialValues={{ options: params.options || [] }}
+          showIndex
+        />
       )}
     </div>
   );
@@ -332,10 +292,10 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
 
   // 各种方法的options
   const methodOptions = [
-    { label: 'json', value: 'json' },
-    { label: 'form-data', value: 'formdata' },
-    { label: 'x-www-form-urlencoded', value: 'urlencoded' },
-    { label: '无', value: 'none' },
+    { label: 'json', value: 'JSON' },
+    { label: 'form-data', value: 'FORM_DATA' },
+    { label: 'x-www-form-urlencoded', value: 'X_WWW_FORM_URLENCODED' },
+    { label: '无', value: 'OTHER' },
   ];
 
   // 修改模型的入参和出参

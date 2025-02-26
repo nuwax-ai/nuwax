@@ -26,6 +26,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
   const [treeData, setTreeData] = useState<TreeNodeConfig[]>(
     (params[inputItemName] as TreeNodeConfig[]) || [],
   );
+
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
   // 保持最新 params 引用（新增 ref 逻辑）
@@ -87,26 +88,6 @@ const CustomTree: React.FC<TreeFormProps> = ({
     });
   };
 
-  // 更新节点字段
-  const updateNodeField = (key: string, field: string, value: any) => {
-    const updateRecursive = (data: TreeNodeConfig[]): TreeNodeConfig[] =>
-      data.map((node) => {
-        if (node.key === key) {
-          return { ...node, [field]: value };
-        }
-        if (node.subArgs) {
-          return { ...node, subArgs: updateRecursive(node.subArgs) };
-        }
-        return node;
-      });
-
-    setTreeData(updateRecursive(treeData));
-    handleChangeNodeConfig({
-      ...params,
-      [inputItemName]: updateRecursive(treeData),
-    });
-  };
-
   // 添加子节点
   const addChildNode = (parentKey: string) => {
     const depth = getNodeDepth(treeData, parentKey);
@@ -160,6 +141,26 @@ const CustomTree: React.FC<TreeFormProps> = ({
     });
   };
 
+  // 更新节点字段
+  const updateNodeField = (key: string, field: string, value: any) => {
+    const updateRecursive = (data: TreeNodeConfig[]): TreeNodeConfig[] =>
+      data.map((node) => {
+        if (node.key === key) {
+          return { ...node, [field]: value };
+        }
+        if (node.subArgs) {
+          return { ...node, subArgs: updateRecursive(node.subArgs) };
+        }
+        return node;
+      });
+
+    // setTreeData(updateRecursive(treeData));
+    handleChangeNodeConfig({
+      ...params,
+      [inputItemName]: updateRecursive(treeData),
+    });
+  };
+
   // 自定义节点渲染
   const renderTitle = (nodeData: TreeNodeConfig) => {
     const canAddChild = [
@@ -172,17 +173,18 @@ const CustomTree: React.FC<TreeFormProps> = ({
     return (
       <div className="dis-left" style={{ width: '100%' }}>
         <Input
-          value={nodeData.name}
-          onChange={(e) =>
-            updateNodeField(nodeData.key!, 'name', e.target.value)
-          }
-          className="flex-1 tree-form-name"
+          key={nodeData.key} // 确保数据更新时重新渲染
+          defaultValue={nodeData.name}
+          onBlur={(e) => {
+            updateNodeField(nodeData.key, 'name', e.target.value);
+          }}
           disabled={nodeData.systemVariable}
+          className="tree-form-name flex-1"
         />
         <Cascader
           allowClear={false}
           options={dataTypes}
-          style={{ width: 90 }}
+          style={{ width: 80 }}
           defaultValue={_dataType}
           onChange={(value) => {
             updateNodeField(nodeData.key!, 'dataType', CascaderChange(value));
@@ -198,8 +200,9 @@ const CustomTree: React.FC<TreeFormProps> = ({
           <Popover
             content={
               <Input.TextArea
-                value={nodeData.description || ''}
-                onChange={(e) =>
+                key={nodeData.key} // 确保数据更新时重新渲染
+                defaultValue={nodeData.description || ''}
+                onBlur={(e) =>
                   updateNodeField(nodeData.key!, 'description', e.target.value)
                 }
                 rows={3}
@@ -265,9 +268,10 @@ const CustomTree: React.FC<TreeFormProps> = ({
           } dis-left font-12 mb-6`}
         >
           <span>变量名</span>
-          <span style={{ marginLeft: '35%' }}>变量类型</span>
+          <span style={{ marginLeft: '30%' }}>变量类型</span>
         </div>
       )}
+
       <Tree
         treeData={treeData}
         // showLine
