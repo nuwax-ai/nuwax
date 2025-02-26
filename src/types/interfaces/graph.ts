@@ -86,6 +86,8 @@ export interface GraphContainerRef {
   saveAllNodes: () => void;
   // 删除节点
   deleteNode: (id: string) => void;
+  // 选中节点
+  selectNode: (id: string) => void;
   // 删除边
   deleteEdge: (id: string) => void;
   changeGraphZoom: (val: number) => void;

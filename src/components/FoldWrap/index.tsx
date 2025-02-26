@@ -67,12 +67,15 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
                 {icon}
                 {isEdit ? (
                   <Input
-                    placeholder={title}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         submitForm();
                         setIsEdit(false);
                       }
+                    }}
+                    onBlur={() => {
+                      submitForm();
+                      setIsEdit(false);
                     }}
                   />
                 ) : (
@@ -104,11 +107,15 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
                     setIsEditDesc(false);
                   }
                 }}
+                onBlur={() => {
+                  submitForm();
+                  setIsEditDesc(false);
+                }}
               />
             ) : (
               <div
                 onDoubleClick={() => setIsEditDesc(true)}
-                className={cx(styles.desc, 'text-ellipsis-3')}
+                className={`text-ellipsis ${styles['desc']}`}
               >
                 {description}
               </div>

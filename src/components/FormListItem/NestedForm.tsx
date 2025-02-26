@@ -170,7 +170,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
     const _dataType = CascaderValue(nodeData.dataType || undefined);
 
     return (
-      <div className="dis-left">
+      <div className="dis-left" style={{ width: '100%' }}>
         <Input
           value={nodeData.name}
           onChange={(e) =>
@@ -256,6 +256,18 @@ const CustomTree: React.FC<TreeFormProps> = ({
           onClick={addRootNode}
         ></Button>
       </div>
+      {treeData && treeData.length > 0 && (
+        <div
+          className={`${
+            treeData.find((item) => item.subArgs && item.subArgs.length > 0)
+              ? 'ml-24'
+              : 'ml-10'
+          } dis-left font-12 mb-6`}
+        >
+          <span>变量名</span>
+          <span style={{ marginLeft: '35%' }}>变量类型</span>
+        </div>
+      )}
       <Tree
         treeData={treeData}
         // showLine
@@ -264,6 +276,11 @@ const CustomTree: React.FC<TreeFormProps> = ({
         titleRender={renderTitle}
         selectedKeys={selectedKey ? [selectedKey] : []}
         onSelect={(keys) => setSelectedKey(keys[0] as string)}
+        className={`${
+          treeData.find((item) => item.subArgs && item.subArgs.length > 0)
+            ? 'tree-form-style'
+            : 'tree-form-style-no-child'
+        }`}
       />
     </div>
   );

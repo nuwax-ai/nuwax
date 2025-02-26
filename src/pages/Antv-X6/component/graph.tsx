@@ -193,11 +193,11 @@ const initGraph = ({
     node.prop('ports/items', updatedPorts);
   });
   // 监听边鼠标进入事件
-  graph.on('edge:mouseenter', ({ edge }) => {
+  graph.on('edge:click', ({ edge }) => {
     edge.attr('line/stroke', '#1890FF'); // 悬停时改为蓝色
   });
   // 监听边鼠标离开事件
-  graph.on('edge:mouseleave', ({ edge }) => {
+  graph.on('edge:unselected', ({ edge }) => {
     edge.attr('line/stroke', '#C2C8D5'); // 恢复默认颜色
   });
   // 监听节点点击事件，调用 changeDrawer 函数更新右侧抽屉的内容

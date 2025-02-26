@@ -35,7 +35,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   referenceList,
   inputItemName = 'inputArgs',
   initialValues,
-  showCheckbox = false,
   showCopy = false,
 }) => {
   const [form] = Form.useForm();
@@ -80,76 +79,93 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
         form={form}
         initialValues={initialValues}
         onValuesChange={submitForm}
+        className="input-and-out-form"
       >
-        {
+        {/* {
           <div className="dis-left">
             <span>参数名</span>
             <span>参数值</span>
           </div>
-        }
+        } */}
         <Form.List name={inputItemName}>
           {(fields, { remove }) => (
             <>
-              {fields.map((item) => {
+              {fields.map((item, index) => {
                 return (
-                  <Form.Item key={item.key}>
-                    <div className="dis-left">
-                      <Form.Item name={[item.name, 'name']} noStyle>
-                        <Input
-                          size="small"
-                          style={{ width: '30%', marginRight: '10px' }}
-                        />
-                      </Form.Item>
-                      <Form.Item name={[item.name, 'bindValue']} noStyle>
-                        <InputOrReference
-                          referenceList={
-                            referenceList || {
-                              previousNodes: [],
-                              innerPreviousNodes: [],
-                              argMap: {},
-                            }
-                          }
-                          onChange={submitForm}
-                          value={form.getFieldValue([
-                            inputItemName,
-                            item.name,
-                            'bindValue',
-                          ])}
-                          form={form}
-                          fieldName={[inputItemName, item.name, 'bindValue']}
-                          style={{ width: '45%', marginRight: '10px' }}
-                        />
-                      </Form.Item>
-                      <Form.Item name={[item.name, 'bindType']} noStyle hidden>
-                        <Input type="hidden" />
-                      </Form.Item>
-                      {showCopy && (
-                        <Popover
-                          content={
-                            <Form.Item
-                              name={[item.name, 'description']}
-                              noStyle // 添加description的initialValue
-                            >
-                              <Input.TextArea
-                                autoSize={{ minRows: 3, maxRows: 5 }}
-                              />
-                            </Form.Item>
-                          }
-                          trigger="click"
+                  <div key={item.name}>
+                    {/* 只在第一个输入框组旁边显示标签 */}
+                    {index === 0 && (
+                      <>
+                        <span>参数名</span>
+                        <span style={{ marginLeft: '20%' }}>变量值</span>
+                      </>
+                    )}
+                    <Form.Item key={item.key}>
+                      <div className="dis-left">
+                        <Form.Item
+                          label="参数名"
+                          name={[item.name, 'name']}
+                          noStyle
                         >
-                          <FileDoneOutlined className="margin-right cursor-pointer" />
-                        </Popover>
-                      )}
-                      {showCheckbox && (
-                        <Form.Item name={[item.name, 'require']} noStyle>
-                          <Checkbox className="margin-right" />
+                          <Input
+                            size="small"
+                            style={{ width: '30%', marginRight: '10px' }}
+                          />
                         </Form.Item>
-                      )}
-                      <Form.Item name={[item.name, 'require']} noStyle>
-                        <DeleteOutlined onClick={() => remove(item.name)} />
-                      </Form.Item>
-                    </div>
-                  </Form.Item>
+                        <Form.Item
+                          label="参数值"
+                          name={[item.name, 'bindValue']}
+                          noStyle
+                        >
+                          <InputOrReference
+                            referenceList={
+                              referenceList || {
+                                previousNodes: [],
+                                innerPreviousNodes: [],
+                                argMap: {},
+                              }
+                            }
+                            onChange={submitForm}
+                            value={form.getFieldValue([
+                              inputItemName,
+                              item.name,
+                              'bindValue',
+                            ])}
+                            form={form}
+                            fieldName={[inputItemName, item.name, 'bindValue']}
+                            style={{ width: '55%', marginRight: '10px' }}
+                          />
+                        </Form.Item>
+                        <Form.Item
+                          name={[item.name, 'bindType']}
+                          noStyle
+                          hidden
+                        >
+                          <Input type="hidden" />
+                        </Form.Item>
+                        {showCopy && (
+                          <Popover
+                            content={
+                              <Form.Item
+                                name={[item.name, 'description']}
+                                noStyle // 添加description的initialValue
+                              >
+                                <Input.TextArea
+                                  autoSize={{ minRows: 3, maxRows: 5 }}
+                                />
+                              </Form.Item>
+                            }
+                            trigger="click"
+                          >
+                            <FileDoneOutlined className="margin-right cursor-pointer" />
+                          </Popover>
+                        )}
+                        <Form.Item name={[item.name, 'require']} noStyle>
+                          <DeleteOutlined onClick={() => remove(item.name)} />
+                        </Form.Item>
+                      </div>
+                    </Form.Item>
+                  </div>
                 );
               })}
             </>

@@ -128,6 +128,20 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       graphRef.current.removeCell(id);
     };
 
+    // 选中节点
+    const selectNode = (id: string) => {
+      if (!graphRef.current) return;
+      graphRef.current
+        .getNodes()
+        .forEach((n: Node) => n.setData({ selected: false }));
+      // 获取到当前id对应的节点
+      const node = graphRef.current.getCellById(id);
+      // console.log(node)
+      if (!node) return;
+      // 设置当前节点为选中状态
+      node.setData({ selected: true });
+    };
+
     // 保存所有节点的位置
     const saveAllNodes = () => {
       const nodes = graphRef.current.getNodes().map((node: Node) => {
@@ -229,6 +243,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       deleteEdge,
       changeGraphZoom,
       drawGraph,
+      selectNode,
     }));
 
     useEffect(() => {

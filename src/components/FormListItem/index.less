@@ -72,10 +72,6 @@
   height: 12px;
 }
 
-.ant-tree-switcher {
-  width: 12px !important;
-}
-
 .ant-tree-switcher::before {
   width: 12px;
 }
@@ -85,9 +81,33 @@
 }
 
 .tree-icon-style {
-  width: 24px;
+  width: 18px;
 
   &:hover {
     background-color: none;
+  }
+}
+
+.tree-form-style {
+  font-size: 12px;
+
+  .ant-tree-switcher {
+    width: 12px !important;
+  }
+
+  svg {
+    width: 14px;
+  }
+}
+
+.tree-form-style-no-child {
+  font-size: 12px;
+
+  .ant-tree-switcher {
+    display: none;
+  }
+
+  svg {
+    width: 14px;
   }
 }
