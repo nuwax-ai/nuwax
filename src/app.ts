@@ -10,13 +10,14 @@ export const request: any = {
   errorConfig: {
     // 错误抛出
     errorThrower: (res) => {
-      const { success, displayCode, message } = res;
-      if (!success) {
-        const error: any = new Error(message);
-        error.displayCode = displayCode;
-        error.message = message;
-        throw error; // 抛出自制的错误
-      }
+      //todo 处理错误逻辑
+      // const { success, displayCode, message } = res;
+      // if (!success) {
+      //   const error: any = new Error(message);
+      //   error.displayCode = displayCode;
+      //   error.message = message;
+      //   throw error; // 抛出自制的错误
+      // }
     },
 
     // 错误接收及处理
