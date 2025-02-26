@@ -1,11 +1,13 @@
 import type { CardStyleEnum, CreateUpdateModeEnum } from '@/types/enums/common';
-import type { KnowledgeDataTypeEnum } from '@/types/enums/library';
 import type {
   AgentBaseInfo,
   AgentConfigInfo,
   CreatorInfo,
 } from '@/types/interfaces/agent';
-import type { KnowledgeBaseInfo } from '@/types/interfaces/knowledge';
+import type {
+  KnowledgeBaseInfo,
+  KnowledgeInfo,
+} from '@/types/interfaces/knowledge';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import type {
   ConfigProviderProps,
@@ -309,13 +311,7 @@ export interface CreateAgentProps {
 export interface CreateKnowledgeProps {
   mode?: CreateUpdateModeEnum;
   spaceId: number;
-  // 知识库名称
-  name?: string;
-  // 知识库描述
-  description?: string;
-  // 数据类型,默认文本,1:文本;2:表格
-  dataType?: KnowledgeDataTypeEnum;
-  id?: number;
+  knowledgeInfo?: KnowledgeInfo;
   open: boolean;
   onCancel: () => void;
   onConfirm: (info: KnowledgeBaseInfo) => void;

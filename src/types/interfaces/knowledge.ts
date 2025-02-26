@@ -3,7 +3,9 @@ import type {
   KnowledgePubStatusEnum,
   KnowledgeSegmentTypeEnum,
 } from '@/types/enums/library';
+import { CustomPopoverItem, FileType } from '@/types/interfaces/common';
 import type { Sort } from '@/types/interfaces/request';
+import { KnowledgeTextImportEnum } from '@/types/enums/library';
 
 // 数据新增输入参数
 export interface KnowledgeConfigAddParams {
@@ -14,6 +16,8 @@ export interface KnowledgeConfigAddParams {
   description: string;
   // 数据类型,默认文本,1:文本;2:表格
   dataType: KnowledgeDataTypeEnum;
+  // 图标的url地址
+  icon: string;
 }
 
 // 知识库基础信息
@@ -223,6 +227,7 @@ export interface KnowledgeRawSegmentListParams extends KnowledgeListBaseInfo {
   // 知识库分段-新增请求参数
   queryFilter: {
     spaceId: number;
+    docId: number;
   };
 }
 
@@ -366,4 +371,41 @@ export interface EmbeddingStatusInfo {
   qaCount: number;
   // QA Embedding数量
   qaEmbeddingCount: number;
+}
+
+// 知识库详情header组件
+export interface KnowledgeHeaderProps {
+  knowledgeInfo: KnowledgeInfo;
+  onEdit: () => void;
+  onPopover: (item: CustomPopoverItem) => void;
+}
+
+// 文档列表组件
+export interface DocWrapProps {
+  documentList: KnowledgeDocumentInfo[];
+  onChange: (value: string) => void;
+  onClick: (info: KnowledgeDocumentInfo) => void;
+}
+
+// 分段信息
+export interface RawSegmentInfoProps {
+  onDel: () => void;
+  documentInfo: KnowledgeDocumentInfo,
+  rawSegmentInfoList: KnowledgeRawSegmentInfo[];
+}
+
+// 本地文档弹窗组件
+export interface LocalCustomDocModalProps {
+  type?: KnowledgeTextImportEnum;
+  open: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+// 上传文档
+export interface UploadFileProps {
+  className?: string;
+  onUploadSuccess?: (url: string) => void;
+  imageUrl?: string;
+  beforeUpload?: (file: FileType) => void;
 }

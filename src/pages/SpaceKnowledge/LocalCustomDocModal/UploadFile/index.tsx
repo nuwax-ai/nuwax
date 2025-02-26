@@ -1,51 +1,56 @@
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import type { FileType } from '@/types/interfaces/common';
-import { getBase64 } from '@/utils/common';
 import { UploadOutlined } from '@ant-design/icons';
 import { message, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
+import type { UploadFileProps } from '@/types/interfaces/knowledge';
+import { ACCESS_TOKEN } from '@/constants/home.constants';
 
 const cx = classNames.bind(styles);
 
 const { Dragger } = Upload;
 
-const UploadFile: React.FC = () => {
+const UploadFile: React.FC<UploadFileProps> = ({ onUploadSuccess, beforeUpload }) => {
   const handleChange: UploadProps['onChange'] = (info) => {
     if (info.file.status === 'uploading') {
       return;
     }
     if (info.file.status === 'done') {
       // Get this url from response in real world.
-      getBase64(info.file.originFileObj as FileType, (url) => {
-        // setLoading(false);
-        // onUploadSuccess?.(url);
-        console.log(url);
-      });
+      const data = info.file.response?.data;
+      // Get this url from response in real world.
+      onUploadSuccess?.(data?.url);
     }
   };
 
   // beforeUpload 返回 false 或 Promise.reject 时，只用于拦截上传行为，不会阻止文件进入上传列表（原因）。如果需要阻止列表展现，可以通过返回 Upload.LIST_IGNORE 实现。
   const beforeUploadDefault = (file: FileType) => {
-    const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
-    if (!isJpgOrPng) {
-      message.error('You can only upload JPG/PNG file!');
+    console.log(file, 99988)
+    const isFile = file?.type === 'text/plain' || file.type === 'text/*';
+    if (!isFile) {
+      message.error('You can only upload PDF、TXT、DOC、DOCX、MD file!');
     }
-    const isLt2M = file.size / 1024 / 1024 < 2;
-    if (!isLt2M) {
-      message.error('Image must smaller than 2MB!');
+    const isLt100M = file.size / 1024 / 1024 < 100;
+    if (!isLt100M) {
+      message.error('File must smaller than 100MB!');
     }
-    return (isJpgOrPng && isLt2M) || Upload.LIST_IGNORE;
+    return (isFile && isLt100M) || Upload.LIST_IGNORE;
   };
+
+  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
   return (
     <div className={cx('flex flex-col content-center', styles.container)}>
       <Dragger
         action={UPLOAD_FILE_ACTION}
         onChange={handleChange}
+        headers={{
+          Authorization: token ? `Bearer ${token}` : '',
+        }}
         showUploadList={false}
-        beforeUpload={beforeUploadDefault}
+        beforeUpload={beforeUpload ?? beforeUploadDefault}
       >
         <p className="ant-upload-drag-icon">
           <UploadOutlined />

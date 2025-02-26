@@ -14,15 +14,9 @@ import DataProcess from './DataProcess';
 import TextFill from './TextFill';
 import UploadFile from './UploadFile';
 import styles from './index.less';
+import type { LocalCustomDocModalProps } from '@/types/interfaces/knowledge';
 
 const cx = classNames.bind(styles);
-
-interface LocalCustomDocModalProps {
-  type?: KnowledgeTextImportEnum;
-  open: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
 
 /**
  * 本地文档弹窗组件
