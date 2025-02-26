@@ -10,6 +10,14 @@ export const BASE_URL = `${process.env.BASE_URL}/api`;
 export const UPLOAD_FILE_ACTION =
   'https://test-nvwa-api.xspaceagi.com/api/file/upload';
 
+// 上传PDF、TXT、DOC、DOCX file
+export const UPLOAD_FILE_TYPE = [
+  'text/plain',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/pdf',
+];
+
 // 验证码长度
 export const VERIFICATION_CODE_LEN = 6;
 

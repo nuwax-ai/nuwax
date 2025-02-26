@@ -1,6 +1,7 @@
 import CreateKnowledge from '@/components/CreateKnowledge';
 import {
-  apiKnowledgeConfigDetail, apiKnowledgeDocumentDelete,
+  apiKnowledgeConfigDetail,
+  apiKnowledgeDocumentDelete,
   apiKnowledgeDocumentList,
   apiKnowledgeRawSegmentList,
 } from '@/services/knowledge';
@@ -41,7 +42,8 @@ const SpaceKnowledge: React.FC = () => {
   // 文档列表
   const [documentList, setDocumentList] = useState<KnowledgeDocumentInfo[]>([]);
   // 当前文档
-  const [currentDocumentInfo, setCurrentDocumentInfo] = useState<KnowledgeDocumentInfo>(null);
+  const [currentDocumentInfo, setCurrentDocumentInfo] =
+    useState<KnowledgeDocumentInfo>(null);
   // 所有的文档列表, 用于搜索
   const documentListRef = useRef<KnowledgeDocumentInfo[]>([]);
   // 知识库文档分段信息
@@ -152,7 +154,7 @@ const SpaceKnowledge: React.FC = () => {
 
   // 点击文档
   const handleClickDoc = (info: KnowledgeDocumentInfo) => {
-    const {id} = info;
+    const { id } = info;
     runRawSegmentList({
       queryFilter: {
         spaceId,
@@ -203,10 +205,12 @@ const SpaceKnowledge: React.FC = () => {
         <RawSegmentInfo
           documentInfo={currentDocumentInfo}
           onDel={handleDocDel}
-          rawSegmentInfoList={rawSegmentInfoList} />
+          rawSegmentInfoList={rawSegmentInfoList}
+        />
       </div>
       {/*本地文档弹窗*/}
       <LocalDocModal
+        id={knowledgeId}
         type={type}
         open={open}
         onCancel={handleCancel}

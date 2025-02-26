@@ -1,3 +1,4 @@
+import ConditionRender from '@/components/ConditionRender';
 import type { RawSegmentInfoProps } from '@/types/interfaces/knowledge';
 import {
   DeleteOutlined,
@@ -8,7 +9,6 @@ import { Empty, Switch } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
-import ConditionRender from '@/components/ConditionRender';
 
 const cx = classNames.bind(styles);
 
@@ -34,7 +34,10 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
           <div className={cx(styles['extra-box'], 'flex', 'items-center')}>
             <span className={cx(styles['switch-name'])}>预览原始文档</span>
             <Switch defaultChecked onChange={handleChange} />
-            <DeleteOutlined className={cx(styles.del, 'cursor-pointer')} onClick={onDel} />
+            <DeleteOutlined
+              className={cx(styles.del, 'cursor-pointer')}
+              onClick={onDel}
+            />
           </div>
         </ConditionRender>
       </header>

@@ -1,36 +1,45 @@
-import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
+import {
+  UPLOAD_FILE_ACTION,
+  UPLOAD_FILE_TYPE,
+} from '@/constants/common.constants';
+import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { FileType } from '@/types/interfaces/common';
+import type {
+  UploadFileInfo,
+  UploadFileProps,
+} from '@/types/interfaces/knowledge';
 import { UploadOutlined } from '@ant-design/icons';
-import { message, Upload, UploadProps } from 'antd';
+import type { UploadProps } from 'antd';
+import { message, Upload } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
-import type { UploadFileProps } from '@/types/interfaces/knowledge';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 
 const cx = classNames.bind(styles);
 
 const { Dragger } = Upload;
 
-const UploadFile: React.FC<UploadFileProps> = ({ onUploadSuccess, beforeUpload }) => {
+const UploadFile: React.FC<UploadFileProps> = ({
+  onUploadSuccess,
+  beforeUpload,
+}) => {
   const handleChange: UploadProps['onChange'] = (info) => {
     if (info.file.status === 'uploading') {
       return;
     }
     if (info.file.status === 'done') {
       // Get this url from response in real world.
-      const data = info.file.response?.data;
+      const data: UploadFileInfo = info.file.response?.data;
       // Get this url from response in real world.
-      onUploadSuccess?.(data?.url);
+      onUploadSuccess?.(data);
     }
   };
 
   // beforeUpload 返回 false 或 Promise.reject 时，只用于拦截上传行为，不会阻止文件进入上传列表（原因）。如果需要阻止列表展现，可以通过返回 Upload.LIST_IGNORE 实现。
   const beforeUploadDefault = (file: FileType) => {
-    console.log(file, 99988)
-    const isFile = file?.type === 'text/plain' || file.type === 'text/*';
+    const isFile = UPLOAD_FILE_TYPE.includes(file.type);
     if (!isFile) {
-      message.error('You can only upload PDF、TXT、DOC、DOCX、MD file!');
+      message.error('You can only upload PDF、TXT、DOC、DOCX file!');
     }
     const isLt100M = file.size / 1024 / 1024 < 100;
     if (!isLt100M) {
