@@ -14,7 +14,7 @@ import type { KnowledgeBaseInfo } from '@/types/interfaces/knowledge';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
@@ -26,10 +26,7 @@ const cx = classNames.bind(styles);
 const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
   mode = CreateUpdateModeEnum.Create,
   spaceId,
-  name,
-  description,
-  dataType = KnowledgeDataTypeEnum.Text,
-  id,
+  knowledgeInfo,
   open,
   onCancel,
   onConfirm,
@@ -37,7 +34,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>('');
   const [resourceFormat, setResourceFormat] = useState<KnowledgeDataTypeEnum>(
-    dataType || KnowledgeDataTypeEnum.Text,
+    KnowledgeDataTypeEnum.Text,
   );
 
   // 数据新增接口
@@ -64,6 +61,13 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
     },
   });
 
+  useEffect(() => {
+    if (knowledgeInfo) {
+      setImageUrl(knowledgeInfo.icon);
+      setResourceFormat(knowledgeInfo.dataType);
+    }
+  }, [knowledgeInfo]);
+
   // 切换资源文件格式类型
   const handleDataType = (value: KnowledgeDataTypeEnum) => {
     if (value === KnowledgeDataTypeEnum.Table) {
@@ -87,7 +91,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
       });
     } else {
       runUpdate({
-        id,
+        id: knowledgeInfo?.id,
         ...params,
       });
     }
@@ -127,13 +131,12 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
       </div>
       <Form
         form={form}
-        preserve={false}
         requiredMark={customizeRequiredMark}
         layout="vertical"
         onFinish={onFinish}
         initialValues={{
-          name: name,
-          description: description,
+          name: knowledgeInfo?.name,
+          description: knowledgeInfo?.description,
         }}
         autoComplete="off"
       >
@@ -147,7 +150,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
         <OverrideTextArea
           name="description"
           label="描述"
-          initialValue={description}
+          initialValue={knowledgeInfo?.description}
           placeholder="输入知识库内容的描述"
           maxLength={2000}
         />

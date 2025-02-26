@@ -25,7 +25,7 @@ import { request } from 'umi';
  * 知识库基础配置接口
  */
 
-// 数据更新接口
+// 知识库基础配置接口 - 数据更新接口
 export async function apiKnowledgeConfigUpdate(
   data: KnowledgeConfigUpdateParams,
 ): Promise<RequestResponse<null>> {
@@ -35,7 +35,7 @@ export async function apiKnowledgeConfigUpdate(
   });
 }
 
-// 数据列表查询
+// 知识库基础配置接口 - 数据列表查询
 export async function apiKnowledgeConfigList(
   data: KnowledgeConfigListParams,
 ): Promise<RequestResponse<Page<KnowledgeInfo>>> {
@@ -45,7 +45,7 @@ export async function apiKnowledgeConfigList(
   });
 }
 
-// 数据新增接口
+// 知识库基础配置接口 - 数据新增接口
 export async function apiKnowledgeConfigAdd(
   data: KnowledgeConfigAddParams,
 ): Promise<RequestResponse<null>> {
@@ -55,7 +55,7 @@ export async function apiKnowledgeConfigAdd(
   });
 }
 
-// 数据详情查询
+// 知识库基础配置接口 - 数据详情查询
 export async function apiKnowledgeConfigDetail(
   id: string,
 ): Promise<RequestResponse<KnowledgeInfo>> {
@@ -67,7 +67,7 @@ export async function apiKnowledgeConfigDetail(
   });
 }
 
-// 数据删除接口
+// 知识库基础配置接口 - 数据删除接口
 export async function apiKnowledgeConfigDelete(
   id: string,
 ): Promise<RequestResponse<null>> {
@@ -82,7 +82,7 @@ export async function apiKnowledgeConfigDelete(
 /**
  * 知识库-文档配置接口
  */
-// 数据更新接口
+// 知识库文档配置 - 数据更新接口
 export async function apiKnowledgeDocumentUpdate(
   data: KnowledgeDocumentUpdateParams,
 ): Promise<RequestResponse<null>> {
@@ -92,7 +92,7 @@ export async function apiKnowledgeDocumentUpdate(
   });
 }
 
-// 数据列表查询
+// 知识库文档配置 - 数据列表查询
 export async function apiKnowledgeDocumentList(
   data: KnowledgeDocumentListParams,
 ): Promise<RequestResponse<Page<KnowledgeDocumentInfo>>> {
@@ -102,7 +102,7 @@ export async function apiKnowledgeDocumentList(
   });
 }
 
-// 生成文档Q&A
+// 知识库文档配置 - 生成文档Q&A
 export async function apiKnowledgeDocumentGenerateQA(
   docId: number,
 ): Promise<RequestResponse<null>> {
@@ -111,7 +111,7 @@ export async function apiKnowledgeDocumentGenerateQA(
   });
 }
 
-// 生成嵌入
+// 知识库文档配置 - 生成嵌入
 export async function apiKnowledgeDocumentGenerateEmbeddings(
   docId: number,
 ): Promise<RequestResponse<null>> {
@@ -120,7 +120,7 @@ export async function apiKnowledgeDocumentGenerateEmbeddings(
   });
 }
 
-// 数据新增接口
+// 知识库文档配置 - 数据新增接口
 export async function apiKnowledgeDocumentAdd(
   data: KnowledgeDocumentAddParams,
 ): Promise<RequestResponse<null>> {
@@ -130,7 +130,7 @@ export async function apiKnowledgeDocumentAdd(
   });
 }
 
-// 数据详情查询
+// 知识库文档配置 - 数据详情查询
 export async function apiKnowledgeDocumentDetail(
   dataId: string,
 ): Promise<RequestResponse<KnowledgeDocumentInfo>> {
@@ -142,7 +142,7 @@ export async function apiKnowledgeDocumentDetail(
   });
 }
 
-// 数据删除接口
+// 知识库文档配置 - 数据删除接口
 export async function apiKnowledgeDocumentDelete(
   id: string,
 ): Promise<RequestResponse<null>> {
@@ -158,7 +158,7 @@ export async function apiKnowledgeDocumentDelete(
  * 知识库 - 分段配置接口
  */
 
-// 数据更新接口
+// 知识库分段配置 - 数据更新接口
 export async function apiKnowledgeRawSegmentUpdate(
   data: KnowledgeRawSegmentUpdateParams,
 ): Promise<RequestResponse<null>> {
@@ -168,7 +168,7 @@ export async function apiKnowledgeRawSegmentUpdate(
   });
 }
 
-// 数据列表查询
+// 知识库分段配置 - 数据列表查询
 export async function apiKnowledgeRawSegmentList(
   data: KnowledgeRawSegmentListParams,
 ): Promise<RequestResponse<Page<KnowledgeRawSegmentInfo>>> {
@@ -178,7 +178,7 @@ export async function apiKnowledgeRawSegmentList(
   });
 }
 
-// 数据新增接口
+// 知识库分段配置 - 数据新增接口
 export async function apiKnowledgeRawSegmentAdd(
   data: KnowledgeRawSegmentAddParams,
 ): Promise<RequestResponse<null>> {
@@ -188,7 +188,7 @@ export async function apiKnowledgeRawSegmentAdd(
   });
 }
 
-// 数据详情查询
+// 知识库分段配置 - 数据详情查询
 export async function apiKnowledgeRawSegmentDetail(
   dataId: string,
 ): Promise<RequestResponse<KnowledgeRawSegmentInfo>> {
@@ -200,7 +200,7 @@ export async function apiKnowledgeRawSegmentDetail(
   });
 }
 
-// 数据删除接口
+// 知识库分段配置 - 数据删除接口
 export async function apiKnowledgeRawSegmentDelete(
   id: number,
 ): Promise<RequestResponse<null>> {

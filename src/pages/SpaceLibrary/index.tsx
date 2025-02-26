@@ -33,7 +33,7 @@ import type {
 import type { UserInfo } from '@/types/interfaces/login';
 import { PluginInfo } from '@/types/interfaces/plugin';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Input, message } from 'antd';
+import { Button, Empty, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useRequest } from 'umi';
@@ -283,7 +283,7 @@ const SpaceLibrary: React.FC = () => {
   };
 
   return (
-    <div className={cx(styles.container, 'h-full')}>
+    <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>组件库</h3>
         {/*添加资源*/}
@@ -332,8 +332,8 @@ const SpaceLibrary: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className={cx('flex', 'content-center', styles['no-data'])}>
-          <span>未能找到相关结果</span>
+        <div className={cx('flex', 'flex-1', 'items-center', 'content-center')}>
+          <Empty description="未能找到相关结果" />
         </div>
       )}
       {/*统计概览*/}

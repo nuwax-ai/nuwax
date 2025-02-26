@@ -2,8 +2,11 @@ import type {
   KnowledgeDataTypeEnum,
   KnowledgePubStatusEnum,
   KnowledgeSegmentTypeEnum,
+  KnowledgeTextImportEnum,
 } from '@/types/enums/library';
+import type { CustomPopoverItem, FileType } from '@/types/interfaces/common';
 import type { Sort } from '@/types/interfaces/request';
+import type { FormInstance } from 'antd';
 
 // 数据新增输入参数
 export interface KnowledgeConfigAddParams {
@@ -14,6 +17,8 @@ export interface KnowledgeConfigAddParams {
   description: string;
   // 数据类型,默认文本,1:文本;2:表格
   dataType: KnowledgeDataTypeEnum;
+  // 图标的url地址
+  icon: string;
 }
 
 // 知识库基础信息
@@ -195,10 +200,12 @@ export interface KnowledgeDocumentInfo {
 export interface KnowledgeDocumentAddParams {
   // 知识库ID
   kbId: number;
-  // 文档名称
-  name: string;
-  // 文档URL
-  docUrl: string;
+  fileList: {
+    // 文档名称
+    name: string;
+    // 文档URL
+    docUrl: string;
+  }[];
   // 快速自动分段与清洗,true:无需分段设置,自动使用默认值
   autoSegmentConfigFlag: boolean;
   // 分段配置
@@ -223,6 +230,7 @@ export interface KnowledgeRawSegmentListParams extends KnowledgeListBaseInfo {
   // 知识库分段-新增请求参数
   queryFilter: {
     spaceId: number;
+    docId: number;
   };
 }
 
@@ -366,4 +374,61 @@ export interface EmbeddingStatusInfo {
   qaCount: number;
   // QA Embedding数量
   qaEmbeddingCount: number;
+}
+
+// 知识库详情header组件
+export interface KnowledgeHeaderProps {
+  knowledgeInfo: KnowledgeInfo;
+  onEdit: () => void;
+  onPopover: (item: CustomPopoverItem) => void;
+}
+
+// 文档列表组件
+export interface DocWrapProps {
+  documentList: KnowledgeDocumentInfo[];
+  onChange: (value: string) => void;
+  onClick: (info: KnowledgeDocumentInfo) => void;
+}
+
+// 分段信息
+export interface RawSegmentInfoProps {
+  onDel: () => void;
+  documentInfo: KnowledgeDocumentInfo;
+  rawSegmentInfoList: KnowledgeRawSegmentInfo[];
+}
+
+// 本地文档弹窗组件
+export interface LocalCustomDocModalProps {
+  // 知识库ID
+  id: number;
+  type?: KnowledgeTextImportEnum;
+  open: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+// 上传文件信息
+export interface UploadFileInfo {
+  fileName: string;
+  height: number;
+  key: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  width: number;
+}
+
+// 上传文档
+export interface UploadFileProps {
+  className?: string;
+  onUploadSuccess?: (info: UploadFileInfo) => void;
+  imageUrl?: string;
+  beforeUpload?: (file: FileType) => void;
+}
+
+// 创建设置、分段设置组件
+export interface CreateSetProps {
+  form: FormInstance;
+  autoSegmentConfigFlag: boolean;
+  onChoose: (flag: boolean) => void;
 }

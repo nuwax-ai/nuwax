@@ -41,13 +41,6 @@ export enum KnowledgeTextStepEnum {
   Data_Processing,
 }
 
-// 知识库资源-文本格式添加内容-创建设置步骤枚举
-export enum KnowledgeTextCreateSetEnum {
-  // 自动分段与预处理规则
-  Auto_Segmentation_Cleaning,
-  Custom,
-}
-
 // 更新模型组件配置
 export enum UpdateModeComponentEnum {
   // 精确模式
