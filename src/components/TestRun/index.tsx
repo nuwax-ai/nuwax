@@ -11,6 +11,7 @@ import { useModel } from 'umi';
 import './index.less';
 interface TestRunProps {
   type: NodeTypeEnum;
+  visible: boolean;
   run: (type: string, params?: DefaultObjectType) => void;
   loading: boolean;
   title?: string;
@@ -30,6 +31,7 @@ interface TestRunProps {
 // 试运行
 const TestRun: React.FC<TestRunProps> = ({
   type,
+  visible,
   run,
   loading,
   title,
@@ -118,7 +120,10 @@ const TestRun: React.FC<TestRunProps> = ({
   return (
     <div
       className="test-run-style"
-      style={{ display: testRun ? 'flex' : 'none' }}
+      style={{
+        display: testRun ? 'flex' : 'none',
+        paddingTop: visible ? '100px' : '0',
+      }}
     >
       {/* 根据testRun来控制当前组件的状态 */}
       <div className="test-content-style dis-col">

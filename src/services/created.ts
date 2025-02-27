@@ -1,11 +1,14 @@
-import type { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 const itemList = {
-  Plugin: '/api/published/plugin/list',
-  Workflow: '/api/published/workflow/list',
-  KnowledgeBase: '/api/published/knowledge/list',
-  Database: '/api/published/dataBase/list',
+  [AgentComponentTypeEnum.Plugin]: '/api/published/plugin/list',
+  [AgentComponentTypeEnum.Workflow]: '/api/published/workflow/list',
+  [AgentComponentTypeEnum.Knowledge]: '/api/published/knowledge/list',
+  [AgentComponentTypeEnum.Database]: '/api/published/dataBase/list',
+  [AgentComponentTypeEnum.Variable]: '/api/published/dataBase/list',
+  [AgentComponentTypeEnum.Model]: '/api/published/dataBase/list',
+  [AgentComponentTypeEnum.Trigger]: '/api/published/dataBase/list',
 };
 
 export interface IGetList {

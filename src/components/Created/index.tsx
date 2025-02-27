@@ -21,6 +21,7 @@ import CreateKnowledge from '../CreateKnowledge';
 import CreateNewPlugin from '../CreateNewPlugin';
 import CreateWorkflow from '../CreateWorkflow';
 import './index.less';
+import { getImg } from './params';
 import { ButtonList, CreatedProp, MenuItem } from './type';
 // 顶部的标签页名称
 const buttonList: ButtonList[] = [
@@ -233,6 +234,7 @@ const Created: React.FC<CreatedProp> = ({
 
     // 遍历找到对应的选项
     const _item = buttonList.find((item) => item.key === _select);
+    console.log({ spaceId });
     if (_item) {
       SetSelected(_item);
       getList(_item.key, { spaceId });
@@ -292,9 +294,6 @@ const Created: React.FC<CreatedProp> = ({
               className={`radio-button-style ${
                 index === 0 ? 'first-radio-style' : ''
               }`}
-              onChange={(e) => {
-                getList(e.target.value);
-              }}
             >
               {item.label}
             </Radio.Button>
@@ -351,7 +350,11 @@ const Created: React.FC<CreatedProp> = ({
         <div className="main-style flex-1 overflow-y" ref={scrollRef}>
           {list.map((item) => (
             <div className="dis-sb list-item-style" key={item.targetId}>
-              <img src={item.icon} alt="" className="left-image-style" />
+              <img
+                src={item.icon || getImg(selected.key)}
+                alt=""
+                className="left-image-style"
+              />
               <div className="flex-1 content-font">
                 <p className="label-font-style margin-bottom-6">{item.name}</p>
                 <p className="margin-bottom-6 ">{item.description}</p>

@@ -102,7 +102,6 @@ const Workflow: React.FC = () => {
       const _res = await service.getDetails(workflowId);
       // 获取左上角的信息
       setInfo(_res.data);
-      console.log(_res.data);
       // 获取节点和边的数据
       const _nodeList = _res.data.nodes;
       const _edgeList = getEdges(_nodeList);
@@ -130,9 +129,9 @@ const Workflow: React.FC = () => {
 
   // 更新节点数据
   const changeNode = debounce(async (config: ChildNode, update?: boolean) => {
+    graphRef.current.updateNode(config.id, config);
     const _res = await updateNode(config);
     if (_res.code === Constant.success) {
-      graphRef.current.updateNode(config.id, config);
       if (update) {
         getNodeConfig(Number(config.id));
         setFoldWrapItem(config);
@@ -142,6 +141,7 @@ const Workflow: React.FC = () => {
   }, 1000);
   // 点击组件，显示抽屉
   const changeDrawer = async (child: ChildNode | null) => {
+    setTestRun(false);
     if (child === null) {
       setVisible(false);
       return;
@@ -338,12 +338,9 @@ const Workflow: React.FC = () => {
     };
 
     // 判断是否需要显示特定类型的创建面板
-    const isSpecialType = [
-      'Plugin',
-      'Workflow',
-      'KnowledgeBase',
-      'Database',
-    ].includes(child.type);
+    const isSpecialType = ['Plugin', 'Workflow', 'Database'].includes(
+      child.type,
+    );
 
     if (isSpecialType) {
       setCreatedItem(child.type as AgentComponentTypeEnum);
@@ -356,6 +353,12 @@ const Workflow: React.FC = () => {
       }
       addNode(child, coordinates);
     }
+  };
+
+  // 调整画布的大小
+  const changeGraph = (val: number) => {
+    graphRef.current.changeGraphZoom(val);
+    changeUpdateTime();
   };
 
   // 节点试运行
@@ -376,8 +379,12 @@ const Workflow: React.FC = () => {
       },
       body: _params,
       onMessage: (data) => {
-        if (data.success) {
-          setTestRunResult(data.data.output);
+        if (!data.success) {
+          console.log(data);
+        } else {
+          if (data.data && data.data.output) {
+            setTestRunResult(data.data.output);
+          }
         }
         // 更新UI状态...
       },
@@ -394,12 +401,6 @@ const Workflow: React.FC = () => {
     });
     // 主动关闭连接
     abortConnection();
-  };
-
-  // 调整画布的大小
-  const changeGraph = (val: number) => {
-    graphRef.current.changeGraphZoom(val);
-    changeUpdateTime();
   };
 
   // 试运行所有节点
@@ -442,12 +443,17 @@ const Workflow: React.FC = () => {
           // setFoldWrapItem(graphParams.nodeList.filter((item)=>item.id===_nodeId)[0])
           // setTestRunResult(data);
           graphRef.current.selectNode(_nodeId);
+          console.log(data);
           if (!data.success) {
             if (data.data && data.data.result) {
               setErrorParams({
                 errorList: [...errorParams.errorList, data.data.result],
                 show: true,
               });
+            }
+          } else {
+            if (data.data && data.data.output) {
+              setTestRunResult(data.data.output);
             }
           }
           // 更新UI状态...
@@ -478,9 +484,9 @@ const Workflow: React.FC = () => {
       errorList: [],
       show: false,
     });
-    // 打开开始节点
-    setFoldWrapItem(info!.startNode);
-    setVisible(true);
+    const _res = await service.getDetails(workflowId);
+    setFoldWrapItem(_res.data.startNode);
+    setVisible(false);
     setTestRun(true);
     // testRunAllNode();
   };
@@ -542,6 +548,7 @@ const Workflow: React.FC = () => {
       <TestRun
         type={foldWrapItem.type}
         run={runTest}
+        visible={visible}
         title={foldWrapItem.name}
         inputArgs={foldWrapItem.nodeConfig.inputArgs ?? []}
         testRunResult={testRunResult}
