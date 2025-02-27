@@ -1,6 +1,8 @@
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { SkillDisposeProps, SkillProps } from '@/types/interfaces/workflow';
+import { getImg } from '@/utils/workflow';
 import {
   DeleteOutlined,
   DownOutlined,
@@ -10,7 +12,6 @@ import {
 import { Button, Input, Modal, Popover, Switch, Tag, Tree } from 'antd';
 import React, { useEffect, useState } from 'react';
 import './index.less';
-
 interface TreeOutput extends InputAndOutConfig {
   key: string;
 }
@@ -230,6 +231,7 @@ export const SkillList: React.FC<SkillProps> = ({ params, handleChange }) => {
     statistics: null,
     targetId: 0,
     targetType: '0',
+    type: AgentComponentTypeEnum.Plugin,
   });
 
   // 打开技能配置的数据
@@ -267,7 +269,11 @@ export const SkillList: React.FC<SkillProps> = ({ params, handleChange }) => {
           }}
           onMouseLeave={() => setShowMask(false)}
         >
-          <img src={item.icon} alt="" className="skill-item-icon" />
+          <img
+            src={item.icon || getImg(item.type)}
+            alt=""
+            className="skill-item-icon"
+          />
           <div className="skill-item-content-style">
             <div className="skill-item-title-style">{item.name}</div>
             <div className="skill-item-desc-style">{item.description}</div>
@@ -286,11 +292,11 @@ export const SkillList: React.FC<SkillProps> = ({ params, handleChange }) => {
                   }
                   trigger="hover"
                 >
-                  <InfoCircleOutlined />
+                  <InfoCircleOutlined className="white" />
                 </Popover>
                 <Popover content={'编辑参数'} trigger="hover">
                   <SettingOutlined
-                    className="ml-12 cursor-pointer"
+                    className="ml-12 cursor-pointer white"
                     onClick={() => {
                       setHoveredItem(item);
                       setOpen(true);
@@ -299,7 +305,7 @@ export const SkillList: React.FC<SkillProps> = ({ params, handleChange }) => {
                 </Popover>
                 <Popover content={'移除'} trigger="hover">
                   <DeleteOutlined
-                    className="ml-12"
+                    className="ml-12  white"
                     onClick={() => handleDelete(item)}
                   />
                 </Popover>

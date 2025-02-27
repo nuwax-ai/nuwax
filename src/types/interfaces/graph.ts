@@ -31,9 +31,9 @@ export interface ChildNode {
   description: string;
   workflowId: number;
   type: NodeTypeEnum; // 使用枚举键作为类型;
-  preNodes?: null;
+  preNodes?: number[] | null;
   nodeConfig: NodeConfig;
-  nextNodes?: null;
+  nextNodes?: number[] | null;
   nextNodeIds?: number[] | null;
   innerNodes?: ChildNode[] | null;
   innerStartNodeId?: number | null;

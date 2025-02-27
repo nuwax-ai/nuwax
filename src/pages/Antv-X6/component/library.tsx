@@ -1,5 +1,5 @@
 // 知识库，数据库等节点
-import type { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
+import type { NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Empty, Popover, Select, Slider } from 'antd';
@@ -13,17 +13,6 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   Modified,
   referenceList,
 }) => {
-  // const [params, setParams] = useState({
-  //   strategy: '',
-  //   recall: 0,
-  //   match: '',
-  // });
-
-  let initialValues: InputAndOutConfig[] = [];
-
-  if (params.outputArgs && params.outputArgs.length) {
-    initialValues = params.outputArgs;
-  }
   const treeData = [
     { name: 'msg', key: 'msg', dataType: 'String' },
     {
@@ -68,11 +57,12 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
       <div className="node-item-style">
         <InputAndOut
           title="输入"
-          handleChangeNodeConfig={handleChangeNodeConfig}
-          referenceList={referenceList}
           fieldConfigs={outPutConfigs}
+          referenceList={referenceList}
+          showCopy={true}
           inputItemName="inputArgs"
-          initialValues={{ inputArgs: initialValues }}
+          initialValues={{ inputArgs: params.inputArgs || [] }}
+          handleChangeNodeConfig={handleChangeNodeConfig}
         />
       </div>
       {/* 知识库选择 */}

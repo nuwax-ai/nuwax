@@ -80,6 +80,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,
   referenceList,
+  type,
 }) => {
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
@@ -90,14 +91,16 @@ const EndNode: React.FC<NodeDisposeProps> = ({
   const [checked, setChecked] = useState(true);
   return (
     <>
-      <div className="node-item-style dis-center">
-        <Segmented<string>
-          options={['返回变量', '返回文本']}
-          value={value}
-          onChange={setValue}
-          style={{ marginBottom: '10px' }}
-        />
-      </div>
+      {type === 'End' && (
+        <div className="node-item-style dis-center">
+          <Segmented<string>
+            options={['返回变量', '返回文本']}
+            value={value}
+            onChange={setValue}
+            style={{ marginBottom: '10px' }}
+          />
+        </div>
+      )}
       <InputAndOut
         title="输出变量"
         fieldConfigs={outPutConfigs}
@@ -107,10 +110,11 @@ const EndNode: React.FC<NodeDisposeProps> = ({
         initialValues={{ outputArgs: params.outputArgs || [] }}
         handleChangeNodeConfig={handleChangeNodeConfig}
       />
-      {value === '返回文本' && (
+
+      {value !== '返回变量' && (
         <div className="margin-bottom mt-16">
           <div className="dis-sb margin-bottom">
-            <span className="node-title-style">回答内容</span>
+            <span className="node-title-style">输出内容</span>
             <div>
               <span className="node-title-grey-style">
                 {checked ? '流式输出' : '非流式输出'}

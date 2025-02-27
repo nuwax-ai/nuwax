@@ -47,7 +47,7 @@ const OtherOperations: React.FC<OtherOperationsProps> = ({
       )}
       {/* 节点操作 */}
       {action && (
-        <Popover content={content} trigger="hover">
+        <Popover content={content} trigger="click">
           <DashOutlined />
         </Popover>
       )}

@@ -172,6 +172,47 @@ export const VARIABLE_TYPE_LIST = [
   },
 ];
 
+export const DataTypeMap = {
+  [DataTypeEnum.String]: 'String',
+  [DataTypeEnum.Integer]: 'Integer',
+  [DataTypeEnum.Number]: 'Number',
+  [DataTypeEnum.Boolean]: 'Boolean',
+  [DataTypeEnum.Object]: 'Object',
+  [DataTypeEnum.File_Default]: 'File<Default>',
+  [DataTypeEnum.File_Image]: 'File<Image>',
+  [DataTypeEnum.File_PPT]: 'File<PPT>',
+  [DataTypeEnum.File_Doc]: 'File<Doc>',
+  [DataTypeEnum.File_PDF]: 'File<Pdf>',
+  [DataTypeEnum.File_Txt]: 'File<Txt>',
+  [DataTypeEnum.File_Zip]: 'File<Zip>',
+  [DataTypeEnum.File]: 'File',
+  [DataTypeEnum.File_Excel]: 'File<Excel>',
+  [DataTypeEnum.File_Video]: 'File<Video>',
+  [DataTypeEnum.File_Audio]: 'File<Audio>',
+  [DataTypeEnum.File_Voice]: 'File<Voice>',
+  [DataTypeEnum.File_Code]: 'File<Code>',
+  [DataTypeEnum.File_Svg]: 'File<SVG>',
+  [DataTypeEnum.Array_Integer]: 'ARRAY<Integer>',
+  [DataTypeEnum.Array_Number]: 'ARRAY<Number>',
+  [DataTypeEnum.Array_Boolean]: 'ARRAY<Boolean>',
+  [DataTypeEnum.Array_File_Default]: 'ARRAY<File<Default>>',
+  [DataTypeEnum.Array_File]: 'ARRAY<File>',
+  [DataTypeEnum.Array_File_Image]: 'ARRAY<File<Image>>',
+  [DataTypeEnum.Array_File_PPT]: 'ARRAY<File<PPT>>',
+  [DataTypeEnum.Array_File_Doc]: 'ARRAY<File<Doc>',
+  [DataTypeEnum.Array_File_PDF]: 'ARRAY<File<Pdf>>',
+  [DataTypeEnum.Array_File_Txt]: 'ARRAY<File<Txt>>',
+  [DataTypeEnum.Array_File_Zip]: 'ARRAY<File<Zip>>',
+  [DataTypeEnum.Array_File_Excel]: 'ARRAY<File<Excel>>',
+  [DataTypeEnum.Array_File_Video]: 'ARRAY<File<Video>>',
+  [DataTypeEnum.Array_File_Audio]: 'ARRAY<File<Audio>>',
+  [DataTypeEnum.Array_File_Voice]: 'ARRAY<File<Voice>>',
+  [DataTypeEnum.Array_File_Svg]: 'ARRAY<File<Svg>>',
+  [DataTypeEnum.Array_File_Code]: 'ARRAY<File<Code>>',
+  [DataTypeEnum.Array_Object]: 'ARRAY<Object>',
+  [DataTypeEnum.Array_String]: 'ARRAY<File<String>>',
+};
+
 // 参数类型
 export const PARAMS_TYPE_LIST = [
   {

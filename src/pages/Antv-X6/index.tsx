@@ -11,7 +11,6 @@ import { WorkflowModeEnum } from '@/types/enums/library';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
 import { NodePreviousAndArgMap } from '@/types/interfaces/node';
-import { debounce } from '@/utils/debounce';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { getNodeRelation, updateNode } from '@/utils/updateNode';
 import { getEdges } from '@/utils/workflow';
@@ -48,7 +47,7 @@ const Workflow: React.FC = () => {
   // 工作流左上角的详细信息
   const [info, setInfo] = useState<IgetDetails | null>(null);
   // 定义一个节点试运行返回值
-  const [testRunResult, setTestRunResult] = useState<string>();
+  const [testRunResult, setTestRunResult] = useState<string>('');
 
   // 上级节点的输出参数
   const [referenceList, setReferenceList] = useState<NodePreviousAndArgMap>({
@@ -128,30 +127,41 @@ const Workflow: React.FC = () => {
   };
 
   // 更新节点数据
-  const changeNode = debounce(async (config: ChildNode, update?: boolean) => {
+  const changeNode = async (config: ChildNode, update?: boolean) => {
     graphRef.current.updateNode(config.id, config);
+    if (foldWrapItem.id === config.id) {
+      setFoldWrapItem(config);
+    }
     const _res = await updateNode(config);
     if (_res.code === Constant.success) {
       if (update) {
         getNodeConfig(Number(config.id));
-        setFoldWrapItem(config);
-        changeUpdateTime();
       }
+      changeUpdateTime();
     }
-  }, 1000);
+  };
   // 点击组件，显示抽屉
   const changeDrawer = async (child: ChildNode | null) => {
     setTestRun(false);
     if (child === null) {
       setVisible(false);
       return;
+    } else {
+      // 先更新状态再执行后续逻辑
+      setFoldWrapItem((prev) => {
+        // 执行关联操作
+        if (!visible) setVisible(true);
+        // 如果ID相同则阻止更新
+        if (prev.id === child.id) return prev;
+
+        // 返回新值触发更新
+        return child;
+      });
     }
-    setFoldWrapItem(child);
+
     // 如果有组件正在展示,那么就要看是否修改了参数,
     // 如果修改了参数,那么就提交数据
-    if (!visible) {
-      setVisible(true);
-    }
+
     if (child.nodeConfig.inputArgs === null) {
       child.nodeConfig.inputArgs = [];
     }
@@ -168,6 +178,12 @@ const Workflow: React.FC = () => {
         _res.data.previousNodes.length
       ) {
         setReferenceList(_res.data);
+      } else {
+        setReferenceList({
+          previousNodes: [],
+          innerPreviousNodes: [],
+          argMap: {},
+        });
       }
     }
   };
@@ -194,6 +210,8 @@ const Workflow: React.FC = () => {
     if (_res.code === Constant.success) {
       _res.data.key = 'general-Node';
       graphRef.current.addNode(dragEvent, _res.data);
+      setFoldWrapItem(_res.data);
+      graphRef.current.selectNode(_res.data.id);
       changeUpdateTime();
     }
   };
@@ -206,23 +224,11 @@ const Workflow: React.FC = () => {
         x: 100,
         y: 100,
       };
-      if (
-        child.nodeConfig &&
-        child.nodeConfig.extension &&
-        child.nodeConfig.extension.x
-      ) {
-        _dragEvent.x = child.nodeConfig.extension.x;
-      }
-      if (
-        child.nodeConfig &&
-        child.nodeConfig.extension &&
-        child.nodeConfig.extension.y
-      ) {
-        _dragEvent.y = child.nodeConfig.extension.y;
-      }
-      child.id = _res.data;
-      child.key = 'general-Node';
-      graphRef.current.addNode(_dragEvent, child);
+      const _newNode = JSON.parse(JSON.stringify(_res.data));
+      _newNode.key = 'general-Node';
+      graphRef.current.addNode(_dragEvent, _newNode);
+      // 选中新增的节点
+      graphRef.current.selectNode(_res.data.id);
       changeUpdateTime();
     }
   };
@@ -367,6 +373,8 @@ const Workflow: React.FC = () => {
       nodeId: foldWrapItem.id,
       params,
     };
+
+    setTestRunResult('');
     // const _res = await service.executeNode(_params);
     // console.log(_res)
     // 启动连接
@@ -382,8 +390,8 @@ const Workflow: React.FC = () => {
         if (!data.success) {
           console.log(data);
         } else {
-          if (data.data && data.data.output) {
-            setTestRunResult(data.data.output);
+          if (data.data) {
+            setTestRunResult(JSON.stringify(data.data));
           }
         }
         // 更新UI状态...
@@ -440,10 +448,7 @@ const Workflow: React.FC = () => {
         body: _params,
         onMessage: (data) => {
           const _nodeId = data.data.nodeId;
-          // setFoldWrapItem(graphParams.nodeList.filter((item)=>item.id===_nodeId)[0])
-          // setTestRunResult(data);
           graphRef.current.selectNode(_nodeId);
-          console.log(data);
           if (!data.success) {
             if (data.data && data.data.result) {
               setErrorParams({
@@ -493,7 +498,6 @@ const Workflow: React.FC = () => {
 
   // 节点试运行
   const runTest = (type: string, params?: DefaultObjectType) => {
-    console.log(type);
     if (type === 'Start') {
       testRunAllNode(params || {});
     } else {

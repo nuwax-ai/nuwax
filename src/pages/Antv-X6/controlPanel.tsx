@@ -39,6 +39,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           optionLabelProp="displayValue"
           /* ...其他属性 */ onChange={changeGraph}
           style={{ width: 80 }}
+          popupMatchSelectWidth={false}
         />
         {/* <HomeOutlined /> */}
         <Popover

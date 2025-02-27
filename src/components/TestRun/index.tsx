@@ -43,6 +43,8 @@ const TestRun: React.FC<TestRunProps> = ({
 
   const [form] = Form.useForm();
 
+  console.log('456');
+
   const onFinish = (values: DefaultObjectType) => {
     run(type, values);
   };
@@ -61,12 +63,17 @@ const TestRun: React.FC<TestRunProps> = ({
       children: (
         <>
           {inputArgs && inputArgs.length > 0 && (
-            <div className="px-16 border-bottom">
+            <div className="border-bottom ">
               <p className="collapse-title-style dis-left">
                 {returnImg(type)}
-                <span>{title}节点</span>
+                <span className="ml-10">{title}节点</span>
               </p>
-              <Form form={form} layout={'vertical'} onFinish={onFinish}>
+              <Form
+                form={form}
+                layout={'vertical'}
+                onFinish={onFinish}
+                className="test-run-form"
+              >
                 {inputArgs.map((item) => (
                   <div key={item.name}>
                     <Form.Item
@@ -74,7 +81,7 @@ const TestRun: React.FC<TestRunProps> = ({
                       label={
                         <>
                           {item.name}
-                          <Tag>{item.dataType}</Tag>
+                          <Tag className="ml-10">{item.dataType}</Tag>
                         </>
                       }
                       rules={[{ required: true, message: '请输入' }]}
@@ -106,6 +113,7 @@ const TestRun: React.FC<TestRunProps> = ({
                     prefix={item.name + ':'}
                     value={form.getFieldValue(item.name)}
                     disabled
+                    className="mb-12"
                   ></Input>
                 ))}
                 <p className="collapse-title-style dis-left">输出</p>
@@ -126,7 +134,7 @@ const TestRun: React.FC<TestRunProps> = ({
       }}
     >
       {/* 根据testRun来控制当前组件的状态 */}
-      <div className="test-content-style dis-col">
+      <div className="test-content-style dis-col overflow-y">
         {/* 试运行的头部 */}
         <div className="test-run-header dis-sb">
           <span>试运行</span>
@@ -136,7 +144,7 @@ const TestRun: React.FC<TestRunProps> = ({
           />
         </div>
         {/* 试运行的内容 */}
-        <div className="test-run-content flex-1">
+        <div className="collapse-item-style flex-1">
           <Collapse
             items={items}
             ghost
@@ -165,6 +173,7 @@ const TestRun: React.FC<TestRunProps> = ({
           type="primary"
           onClick={handlerSubmit}
           loading={loading}
+          className="mt-16"
         >
           运行
         </Button>

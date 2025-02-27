@@ -29,7 +29,7 @@
 }
 
 .test-run-content-label {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: bold;
   line-height: 22px;
   letter-spacing: 0;
@@ -45,6 +45,28 @@
   margin-bottom: 10px;
 }
 
+.collapse-item-style {
+  .ant-collapse-header {
+    padding: 0;
+  }
+
+  .ant-collapse-content-box {
+    padding-block: 0 !important;
+    padding: 0 16px !important;
+  }
+
+  .test-run-form {
+    .ant-form-item {
+      margin-bottom: 2px;
+
+      .ant-form-item-label {
+        margin-bottom: 4px;
+        padding: 0;
+      }
+    }
+  }
+}
+
 .result-style {
   background-color: @WHITE16;
   border-radius: 6px;
@@ -58,11 +80,6 @@
 
 .ant-collapse-header {
   padding: 0 16px;
-}
-
-.ant-collapse-content-box {
-  padding-block: 0;
-  padding: 10px 16px;
 }
 
 .ant-input-prefix {

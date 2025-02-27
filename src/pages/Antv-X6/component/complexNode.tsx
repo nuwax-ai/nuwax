@@ -125,6 +125,9 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
         onAdded={onAddedSkill}
         open={open}
         onCancel={() => setOpen(false)}
+        hasIds={params.skillComponentConfigs?.map((item) =>
+          Number(item.typeId),
+        )}
       />
     </div>
   );

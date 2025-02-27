@@ -168,7 +168,7 @@ interface QAOptions {
   nextNodeIds?: number[];
 }
 
-interface InitialValues {
+export interface InitialValues {
   inputArgs?: InputAndOutConfig[];
   outputArgs?: InputAndOutConfig[];
   variableArgs?: InputAndOutConfig[];

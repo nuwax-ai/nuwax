@@ -253,6 +253,16 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
     onClose();
   };
 
+  // 重命名，试运行等操作
+  const handleChangeNode = (val: string) => {
+    if (val === 'TestRun') {
+      onGetNodeConfig(currentNodeConfig);
+    }
+    setTimeout(() => {
+      handleNodeChange(val, foldWrapItem);
+    });
+  };
+
   useEffect(() => {
     if (isModified) {
       onGetNodeConfig(currentNodeConfig);
@@ -277,7 +287,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
       changeFoldWrap={changeFoldWrap}
       otherAction={
         <OtherOperations
-          onChange={(val: string) => handleNodeChange(val, foldWrapItem)}
+          onChange={handleChangeNode}
           testRun={testRunList.includes(foldWrapItem.type)}
           action={foldWrapItem.type !== 'Start' && foldWrapItem.type !== 'End'}
         />

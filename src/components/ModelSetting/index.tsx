@@ -7,6 +7,7 @@ import { groupModelsByApiProtocol } from '@/utils/model';
 import { SettingOutlined } from '@ant-design/icons';
 import { InputNumber, Popover, Select, Slider } from 'antd';
 import { useEffect, useState } from 'react';
+import './index.less';
 import ModelListItem from './listItem/index';
 import { GroupModelListItemProps, ModelSettingProp } from './type';
 // 定义带图标的模型选择select
