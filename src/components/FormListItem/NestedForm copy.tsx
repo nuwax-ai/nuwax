@@ -28,8 +28,6 @@ const CustomTree: React.FC<TreeFormProps> = ({
     (params[inputItemName] as TreeNodeConfig[]) || [],
   );
 
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
-
   // 保持最新 params 引用（新增 ref 逻辑）
   const paramsRef = useRef(params);
   useEffect(() => {
@@ -180,6 +178,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
             updateNodeField(nodeData.key, 'name', e.target.value);
           }}
           disabled={nodeData.systemVariable}
+          placeholder="请输入名称"
           className="tree-form-name flex-1"
         />
         <Cascader
@@ -195,9 +194,10 @@ const CustomTree: React.FC<TreeFormProps> = ({
           className="tree-form-name"
           disabled={nodeData.systemVariable}
           placement={'bottomLeft'}
+          placeholder="请选择数据类型"
         />
 
-        <div className="flex" style={{ width: 60 }}>
+        <div className="flex" style={{ width: 70 }}>
           <Popover
             content={
               <Input.TextArea
@@ -207,6 +207,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
                   updateNodeField(nodeData.key!, 'description', e.target.value)
                 }
                 rows={3}
+                placeholder="请输入数据描述"
               />
             }
             trigger="click"
@@ -232,10 +233,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
               type="text"
               disabled={nodeData.systemVariable}
               className="tree-icon-style"
-              onClick={(e) => {
-                e.stopPropagation(); // 阻止事件冒泡
-                addChildNode(nodeData.key!);
-              }}
+              onClick={() => addChildNode(nodeData.key!)}
               icon={<ICON_ASSOCIATION />}
             />
           )}
@@ -276,7 +274,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
             style={{
               marginLeft: `${
                 treeData.find((item) => item.subArgs && item.subArgs.length > 0)
-                  ? '33%'
+                  ? '30%'
                   : '35%'
               }`,
             }}
@@ -293,8 +291,6 @@ const CustomTree: React.FC<TreeFormProps> = ({
         defaultExpandAll
         fieldNames={{ title: 'name', key: 'key', children: 'subArgs' }}
         titleRender={renderTitle}
-        selectedKeys={selectedKey ? [selectedKey] : []}
-        onSelect={(keys) => setSelectedKey(keys[0] as string)}
         className={`${
           treeData.find((item) => item.subArgs && item.subArgs.length > 0)
             ? 'tree-form-style'

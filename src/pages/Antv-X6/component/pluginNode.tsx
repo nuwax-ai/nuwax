@@ -1,89 +1,120 @@
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import InputOrReference from '@/components/FormListItem/InputOrReference';
 import type {
-  InputAndOutConfig,
   NodeConfig,
   NodePreviousAndArgMap,
 } from '@/types/interfaces/node';
-import { NodeDisposeProps } from '@/types/interfaces/workflow';
+import { InitialValues, NodeDisposeProps } from '@/types/interfaces/workflow';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { Empty, Form, Popover, Tag } from 'antd';
+import { Empty, Form, Popover } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { outPutConfigs } from '../params';
 import { InputAndOut, TreeOutput } from './commonNode';
 import './pluginNode.less';
 interface InputListProps {
-  inputList: InputAndOutConfig[];
   referenceList: NodePreviousAndArgMap;
   title: string;
   inputItemName: string;
-  onChange: (val: InputAndOutConfig[]) => void;
+  onChange: (val: NodeConfig) => void;
+  initialValues: InitialValues;
 }
 // 根据输入的list遍历创建输入框
 
 const InputList: React.FC<InputListProps> = ({
-  inputList,
   referenceList,
   title,
   inputItemName,
   onChange,
+  initialValues,
 }) => {
   const [form] = Form.useForm();
 
-  // 初始化表单值
   useEffect(() => {
-    const initialValues = inputList.reduce((acc, item) => {
-      acc[`${inputItemName}.${item.key}.bindValue`] = item.bindValue;
-      return acc;
-    }, {} as { [key: string]: any });
-
+    // 设置初始值，确保Form.List能正确展示已有条目
     form.setFieldsValue(initialValues);
-  }, [inputList, form, inputItemName]);
+  }, [form, inputItemName, initialValues]);
 
   // 表单提交
   const submitForm = () => {
     const values = form.getFieldsValue();
-    const updatedInputList = inputList.map((item) => ({
-      ...item,
-      bindValue:
-        values[inputItemName]?.[item.key as string]?.bindValue !== undefined
-          ? values[inputItemName][item.key as string].bindValue
-          : item.bindValue,
-    }));
-    onChange(updatedInputList);
+    onChange(values);
   };
 
   return (
     <div className="border-bottom pb-12">
       <span className="node-title-style">{title}</span>
-      <Form form={form} onValuesChange={() => submitForm()}>
-        <div className="dis-left ">
-          <span className="node-form-label-style">参数名</span>
-          <span>参数值</span>
-        </div>
-        {inputList.map((item) => (
-          <Form.Item key={item.key} noStyle>
-            <div className="input-item-style">
-              <div className="dis-left node-form-label-style">
-                <span className="margin-right-6">{item.name}</span>
-                <Popover placement="right" content={item.description}>
-                  <InfoCircleOutlined className="margin-right-6" />
-                </Popover>
-                <Tag>{item.dataType}</Tag>
-              </div>
-              <Form.Item
-                name={[inputItemName, item.key as string, 'bindValue']}
-                noStyle
-              >
-                <InputOrReference
-                  value={item.bindValue || ''}
-                  onChange={submitForm}
-                  referenceList={referenceList}
-                />
-              </Form.Item>
-            </div>
-          </Form.Item>
-        ))}
+      <Form
+        layout={'vertical'}
+        form={form}
+        initialValues={initialValues}
+        onValuesChange={submitForm}
+        className="input-and-out-form"
+      >
+        <Form.List name={inputItemName}>
+          {(fields) => (
+            <>
+              {fields.map((item, index) => {
+                console.log(form.getFieldValue(item.name));
+                return (
+                  <div key={item.name}>
+                    {/* 只在第一个输入框组旁边显示标签 */}
+                    {index === 0 && (
+                      <>
+                        <span>参数名</span>
+                        <span style={{ marginLeft: '25%' }}>参数值</span>
+                      </>
+                    )}
+                    <Form.Item key={item.key}>
+                      <div className="dis-left">
+                        <Form.Item noStyle name={[item.name, 'bindValue']}>
+                          <div className="dis-left node-form-label-style">
+                            <span className="margin-right-6 font-12 form-name-style">
+                              {form.getFieldValue([
+                                inputItemName,
+                                item.name,
+                                'name',
+                              ])}
+                            </span>
+                            <Popover
+                              placement="right"
+                              content={form.getFieldValue([
+                                inputItemName,
+                                item.name,
+                                'description',
+                              ])}
+                            >
+                              <InfoCircleOutlined className="margin-right-6 font-12" />
+                            </Popover>
+                          </div>
+                        </Form.Item>
+                        <Form.Item name={[item.name, 'bindValue']} noStyle>
+                          <InputOrReference
+                            referenceList={
+                              referenceList || {
+                                previousNodes: [],
+                                innerPreviousNodes: [],
+                                argMap: {},
+                              }
+                            }
+                            onChange={submitForm}
+                            value={form.getFieldValue([
+                              inputItemName,
+                              item.name,
+                              'bindValue',
+                            ])}
+                            form={form}
+                            fieldName={[inputItemName, item.name, 'bindValue']}
+                            style={{ width: '65%' }}
+                          />
+                        </Form.Item>
+                      </div>
+                    </Form.Item>
+                  </div>
+                );
+              })}
+            </>
+          )}
+        </Form.List>
       </Form>
     </div>
   );
@@ -97,16 +128,15 @@ const PluginInNode: React.FC<NodeDisposeProps> = ({
 }) => {
   //  获取输入的列表
 
-  const changeInputList = (values: InputAndOutConfig[]) => {
-    console.log('changeInputList', values);
-    Modified({ ...params, inputArgs: values });
+  const changeInputList = (newNode: NodeConfig) => {
+    Modified({ ...params, ...newNode });
   };
 
   return (
     <>
       <InputList
         title={'输入'}
-        inputList={params.inputArgs || []}
+        initialValues={{ inputArgs: params.inputArgs || [] }}
         onChange={changeInputList}
         referenceList={referenceList}
         inputItemName={'inputArgs'}

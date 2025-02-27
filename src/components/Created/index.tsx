@@ -1,14 +1,15 @@
 import Constant from '@/constants/codes.constants';
-import { ICON_ADJUSTMENT, ICON_SUCCESS } from '@/constants/images.constants';
+// import { ICON_ADJUSTMENT, ICON_SUCCESS } from '@/constants/images.constants';
 import service, { IGetList } from '@/services/created';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { WorkflowModeEnum } from '@/types/enums/library';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { getTime } from '@/utils';
+import { getImg } from '@/utils/workflow';
 import {
-  ClockCircleOutlined,
-  MessageOutlined,
+  // ClockCircleOutlined,
+  // MessageOutlined,
   ProductFilled,
   SearchOutlined,
   StarFilled,
@@ -59,7 +60,7 @@ const Created: React.FC<CreatedProp> = ({
     pageSize: 10,
   });
   // 当前被选中的左侧菜单
-  const [selectMenu, setSelectMenu] = useState<string>('library');
+  const [selectMenu, setSelectMenu] = useState<string>('all');
   //   右侧的list
   const [list, setList] = useState<CreatedNodeItem[]>([]);
 
@@ -108,7 +109,11 @@ const Created: React.FC<CreatedProp> = ({
       const newDataLength = _res.data.length;
       // 根据新获取的数据长度判断是否还有更多数据
       setHasMore(newDataLength >= (params?.pageSize || pagination.pageSize));
-      setList((data) => [...data, ..._res.data]);
+      if (hasMore) {
+        setList((data) => [...data, ..._res.data]);
+      } else {
+        setList(_res.data);
+      }
     }
     setLoadingMore(false); // 开始加载时设置为true
   };
@@ -168,7 +173,7 @@ const Created: React.FC<CreatedProp> = ({
   // 新增工作流，插件，知识库，数据库
   const onConfirm = () => {
     setShowCreate(false);
-    getList(checkTag, { spaceId });
+    getList(checkTag);
   };
 
   /**  -----------------  无需调用接口的方法  -----------------   */
@@ -222,7 +227,7 @@ const Created: React.FC<CreatedProp> = ({
   const changeTitle = (val: RadioChangeEvent | string) => {
     if (!val) return;
     clear();
-    setSelectMenu('library');
+    setSelectMenu('all');
     // 获取被选中的key
     let _select;
     if (typeof val === 'string') {
@@ -233,16 +238,16 @@ const Created: React.FC<CreatedProp> = ({
 
     // 遍历找到对应的选项
     const _item = buttonList.find((item) => item.key === _select);
+
     if (_item) {
       SetSelected(_item);
-      getList(_item.key, { spaceId });
+      getList(_item.key);
     }
   };
   /**  -----------------  初始化时需要的  -----------------   */
   useEffect(() => {
-    getList(checkTag, { spaceId });
     changeTitle(checkTag);
-  }, [checkTag]);
+  }, []);
   // 监听滚动事件
   useEffect(() => {
     const handleScroll = () => {
@@ -292,9 +297,6 @@ const Created: React.FC<CreatedProp> = ({
               className={`radio-button-style ${
                 index === 0 ? 'first-radio-style' : ''
               }`}
-              onChange={(e) => {
-                getList(e.target.value);
-              }}
             >
               {item.label}
             </Radio.Button>
@@ -351,7 +353,11 @@ const Created: React.FC<CreatedProp> = ({
         <div className="main-style flex-1 overflow-y" ref={scrollRef}>
           {list.map((item) => (
             <div className="dis-sb list-item-style" key={item.targetId}>
-              <img src={item.icon} alt="" className="left-image-style" />
+              <img
+                src={item.icon || getImg(selected.key)}
+                alt=""
+                className="left-image-style"
+              />
               <div className="flex-1 content-font">
                 <p className="label-font-style margin-bottom-6">{item.name}</p>
                 <p className="margin-bottom-6 ">{item.description}</p>
@@ -381,7 +387,7 @@ const Created: React.FC<CreatedProp> = ({
                       {item.statistics ? item.statistics.collectCount : 0}
                     </span>
                   </div>
-                  <div>
+                  {/* <div>
                     <span>
                       <ICON_ADJUSTMENT
                         style={{ marginBottom: '-2px' }}
@@ -407,7 +413,7 @@ const Created: React.FC<CreatedProp> = ({
                       />
                       {item.statistics ? item.statistics.referenceCount : 0}
                     </span>
-                  </div>
+                  </div> */}
                 </div>
               </div>
               <Button
@@ -416,7 +422,7 @@ const Created: React.FC<CreatedProp> = ({
                 onClick={() => onAddNode(item)}
                 disabled={
                   item.targetId === targetId ||
-                  hasIds.includes(item.spaceId as number)
+                  hasIds.includes(item.targetId as number)
                 }
               >
                 添加

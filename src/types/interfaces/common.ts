@@ -1,3 +1,4 @@
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { CardStyleEnum, CreateUpdateModeEnum } from '@/types/enums/common';
 import type {
   AgentBaseInfo,
@@ -287,11 +288,11 @@ export interface CreatedNodeItem {
   spaceId?: number;
   // 正在使用的
   targetId: number;
-  targetType: string;
+  targetType: AgentComponentTypeEnum;
   // 发布人员信息
   publishUser?: CreatorInfo;
   collect?: boolean;
-  type?: string;
+  type: AgentComponentTypeEnum;
   typeId?: string | number;
   inputArgBindConfigs?: InputAndOutConfig[];
   outputArgBindConfigs?: InputAndOutConfig[];

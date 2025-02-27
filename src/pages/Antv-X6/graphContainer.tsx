@@ -36,6 +36,9 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const graphRef = useRef<any>(null);
 
+    // 新增一个ref标记是否已初始化
+    const hasInitialized = useRef(false);
+
     function preWork() {
       const container = containerRef.current;
       if (!container) return;
@@ -275,7 +278,10 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     }, []);
 
     useEffect(() => {
-      drawGraph();
+      if (graphParams.nodeList.length > 0 && !hasInitialized.current) {
+        drawGraph();
+        hasInitialized.current = true;
+      }
     }, [graphParams.nodeList]);
 
     return <div ref={containerRef} id="graph-container" />;

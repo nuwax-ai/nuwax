@@ -1,3 +1,4 @@
+import { NodeTypeEnum } from '@/types/enums/common';
 import { CreatorInfo } from '@/types/interfaces/agent';
 import { DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
@@ -49,7 +50,7 @@ interface AddNodeResponse {
   id: number;
   innerEndNode: boolean;
   innerEndNodeId: number | null;
-  innerNodes: number | null;
+  innerNodes?: ChildNode[] | null;
   innerStartNodeId: number | null;
   loopNodeId: number | null;
   modified: string;
@@ -58,11 +59,12 @@ interface AddNodeResponse {
   nextNodes: number[] | null;
   nodeConfig: NodeConfig;
   preNodes: number[] | null;
-  type: string;
+  type: NodeTypeEnum;
   unreachableNextNodeIds: number[] | null;
   virtualExecute: boolean;
   workflowId: number;
   key?: string;
+  icon: string;
 }
 
 // 获取详情的返回
@@ -123,7 +125,7 @@ export async function addNode(
 // 复制工作流
 export async function copyNode(
   id: string | number,
-): Promise<RequestResponse<number>> {
+): Promise<RequestResponse<AddNodeResponse>> {
   return request(`/api/workflow/node/copy/${id}`, {
     method: 'POST',
   });

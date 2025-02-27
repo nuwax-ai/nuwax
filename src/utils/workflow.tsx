@@ -19,8 +19,32 @@ import {
   ICON_WORKFLOW_VARIABLE,
   ICON_WORKFLOW_WORKFLOW,
 } from '@/constants/images.constants';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
+// 引用默认图标
+import Database from '@/assets/images/database_image.png';
+import Knowledge from '@/assets/images/knowledge_image.png';
+import Plugin from '@/assets/images/plugin_image.png';
+import {
+  default as Model,
+  default as Trigger,
+  default as Variable,
+  default as Workflow,
+} from '@/assets/images/workflow_image.png';
 
+const imageList = {
+  Database,
+  Knowledge,
+  Plugin,
+  Workflow,
+  Trigger,
+  Variable,
+  Model,
+};
+// 根据type返回图片，用作技能和知识库等节点中的
+export const getImg = (data: AgentComponentTypeEnum) => {
+  return imageList[data];
+};
 // 根据type返回图片
 export const returnImg = (type: string) => {
   switch (type) {

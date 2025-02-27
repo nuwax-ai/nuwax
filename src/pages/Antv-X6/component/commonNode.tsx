@@ -1,5 +1,7 @@
 import InputOrReference from '@/components/FormListItem/InputOrReference';
 import { FieldConfig } from '@/components/FormListItem/type';
+import { DataTypeMap } from '@/constants/common.constants';
+import { DataTypeEnum } from '@/types/enums/common';
 import type { DefaultObjectType } from '@/types/interfaces/common';
 import {
   FormListProps,
@@ -111,6 +113,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                           <Input
                             size="small"
                             style={{ width: '30%', marginRight: '10px' }}
+                            placeholder="请输入参数名"
                           />
                         </Form.Item>
                         <Form.Item
@@ -203,7 +206,9 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
           title={
             <span>
               {item.name}{' '}
-              <Tag style={{ marginLeft: '5px' }}>{item.dataType}</Tag>
+              <Tag style={{ marginLeft: '5px' }}>
+                {DataTypeMap[item.dataType as DataTypeEnum]}
+              </Tag>
             </span>
           }
           key={item.name}

@@ -1,8 +1,8 @@
 import CodeEditor from '@/components/CodeEditor';
-import { ICON_NEW_AGENT } from '@/constants/images.constants';
+import { ICON_WORKFLOW_CODE } from '@/constants/images.constants';
 import type { NodeConfig } from '@/types/interfaces/node';
-import { CloseOutlined, RightCircleOutlined } from '@ant-design/icons';
-import { Button, Select } from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
+import { Select } from 'antd';
 import React from 'react';
 import './index.less';
 interface MonacoProps {
@@ -31,12 +31,11 @@ const Monaco: React.FC<MonacoProps> = ({ params, Modified, isShow, close }) => {
             {/* 左侧的标题和图标及语言选择 */}
             <div className="dis-left">
               {/* 图标 */}
-              <ICON_NEW_AGENT className="mr-16" />
+              <ICON_WORKFLOW_CODE className="mr-6" />
               <span className="mr-16">代码</span>
               <Select
-                prefix={'语言'}
                 value={params.codeLanguage}
-                style={{ width: 120 }}
+                style={{ width: 100 }}
                 options={[
                   { value: 'JavaScript', label: 'JavaScript' },
                   { value: 'Python', label: 'Python' },
@@ -49,13 +48,6 @@ const Monaco: React.FC<MonacoProps> = ({ params, Modified, isShow, close }) => {
             </div>
             {/* 右侧的关闭按钮和试运行 */}
             <div>
-              <Button
-                icon={<RightCircleOutlined />}
-                className="mr-16"
-                style={{ color: '#6A5CE9', background: '#F2F2FF' }}
-              >
-                试运行
-              </Button>
               <CloseOutlined onClick={close} />
             </div>
           </div>
