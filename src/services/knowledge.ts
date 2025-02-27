@@ -4,8 +4,10 @@ import type {
   KnowledgeConfigListParams,
   KnowledgeConfigUpdateParams,
   KnowledgeDocumentAddParams,
+  KnowledgeDocumentCustomAddParams,
   KnowledgeDocumentInfo,
   KnowledgeDocumentListParams,
+  KnowledgeDocumentUpdateDocNameParams,
   KnowledgeDocumentUpdateParams,
   KnowledgeInfo,
   KnowledgeQAAddParams,
@@ -92,6 +94,16 @@ export async function apiKnowledgeDocumentUpdate(
   });
 }
 
+// 知识库文档配置 - 更改文件名称
+export async function apiKnowledgeDocumentUpdateDocName(
+  data: KnowledgeDocumentUpdateDocNameParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/knowledge/document/updateDocName', {
+    method: 'POST',
+    data,
+  });
+}
+
 // 知识库文档配置 - 数据列表查询
 export async function apiKnowledgeDocumentList(
   data: KnowledgeDocumentListParams,
@@ -117,6 +129,16 @@ export async function apiKnowledgeDocumentGenerateEmbeddings(
 ): Promise<RequestResponse<null>> {
   return request(`/api/knowledge/document/doc/generateEmbeddings/${docId}`, {
     method: 'POST',
+  });
+}
+
+// 知识库文档配置 - 自定义新增接口
+export async function apiKnowledgeDocumentCustomAdd(
+  data: KnowledgeDocumentCustomAddParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/knowledge/document/customAdd', {
+    method: 'POST',
+    data,
   });
 }
 

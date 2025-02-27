@@ -153,6 +153,14 @@ export interface KnowledgeDocumentUpdateParams {
   segmentConfig: SegmentConfigModel;
 }
 
+// 更改文件名称输入参数
+export interface KnowledgeDocumentUpdateDocNameParams {
+  // 文档ID
+  docId: number;
+  // 文档名称
+  name: string;
+}
+
 // 知识库文档配置 - 数据列表查询
 export interface KnowledgeDocumentListParams extends KnowledgeListBaseInfo {
   // 知识库基础配置-列表查询
@@ -194,6 +202,20 @@ export interface KnowledgeDocumentInfo {
   modifiedId: number;
   // 最后修改人
   modifiedName: string;
+}
+
+// 知识库文档配置 - 自定义新增接口
+export interface KnowledgeDocumentCustomAddParams {
+  // 知识库ID
+  kbId: number;
+  // 文档名称
+  name: string;
+  // 文件内容
+  fileContent: string;
+  // 快速自动分段与清洗,true:无需分段设置,自动使用默认值
+  autoSegmentConfigFlag: boolean;
+  // 分段配置
+  segmentConfig: SegmentConfigModel;
 }
 
 // 知识库文档 - 数据新增接口
@@ -385,6 +407,7 @@ export interface KnowledgeHeaderProps {
 
 // 文档列表组件
 export interface DocWrapProps {
+  currentDocId?: number;
   documentList: KnowledgeDocumentInfo[];
   onChange: (value: string) => void;
   onClick: (info: KnowledgeDocumentInfo) => void;
@@ -393,6 +416,7 @@ export interface DocWrapProps {
 // 分段信息
 export interface RawSegmentInfoProps {
   onDel: () => void;
+  onSuccessUpdateName: (id: number, name: string) => void;
   documentInfo: KnowledgeDocumentInfo;
   rawSegmentInfoList: KnowledgeRawSegmentInfo[];
 }
@@ -431,4 +455,15 @@ export interface CreateSetProps {
   form: FormInstance;
   autoSegmentConfigFlag: boolean;
   onChoose: (flag: boolean) => void;
+}
+
+// 数据处理组件
+export interface DataProcessProps {
+  // 本地文档列表
+  uploadFileList: UploadFileInfo[];
+}
+
+// 文本填写组件
+export interface TextFillProps {
+  form: FormInstance;
 }

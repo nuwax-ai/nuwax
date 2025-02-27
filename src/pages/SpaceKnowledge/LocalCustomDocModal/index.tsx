@@ -1,21 +1,26 @@
+import docImage from '@/assets/images/doc_image.jpg';
 import {
   KNOWLEDGE_CUSTOM_DOC_LIST,
   KNOWLEDGE_LOCAL_DOC_LIST,
 } from '@/constants/library.constants';
-import { apiKnowledgeDocumentAdd } from '@/services/knowledge';
 import {
+  apiKnowledgeDocumentAdd,
+  apiKnowledgeDocumentCustomAdd,
+} from '@/services/knowledge';
+import {
+  KnowledgeSegmentTypeEnum,
   KnowledgeTextImportEnum,
   KnowledgeTextStepEnum,
 } from '@/types/enums/library';
 import type {
   LocalCustomDocModalProps,
+  SegmentConfigModel,
   UploadFileInfo,
 } from '@/types/interfaces/knowledge';
-import { SegmentConfigModel } from '@/types/interfaces/knowledge';
 import { DeleteOutlined } from '@ant-design/icons';
-import { Form, message, Modal, Steps } from 'antd';
+import { Button, Form, message, Modal, Steps } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import CreateSet from './CreateSet';
 import DataProcess from './DataProcess';
@@ -36,6 +41,9 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
   onCancel,
 }) => {
   const [form] = Form.useForm();
+  // 自定义模式下form
+  const [formText] = Form.useForm();
+  // 步骤
   const [current, setCurrent] = useState<KnowledgeTextStepEnum>(
     KnowledgeTextStepEnum.Upload_Or_Text_Fill,
   );
@@ -44,8 +52,22 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
   // 快速自动分段与清洗,true:无需分段设置,自动使用默认值
   const [autoSegmentConfigFlag, setAutoSegmentConfigFlag] =
     useState<boolean>(true);
-  const [segmentConfigModel, setSegmentConfigModel] =
-    useState<SegmentConfigModel>();
+  const fileConfigRef = useRef<{
+    name: string;
+    fileContent: string;
+  }>();
+  // 分段配置信息
+  const segmentConfigModelRef = useRef<SegmentConfigModel | null>(null);
+
+  // 清除重置操作
+  const handleClear = () => {
+    setCurrent(KnowledgeTextStepEnum.Upload_Or_Text_Fill);
+    setUploadFileList([]);
+    setAutoSegmentConfigFlag(true);
+    form.resetFields();
+    formText.resetFields();
+    segmentConfigModelRef.current = null;
+  };
 
   // 知识库文档配置 - 数据新增接口
   const { run: runDocAdd } = useRequest(apiKnowledgeDocumentAdd, {
@@ -53,35 +75,66 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     debounceWait: 300,
     onSuccess: () => {
       message.success('文档添加成功');
+      handleClear();
       onConfirm();
     },
   });
 
-  // 确认事件
+  // 知识库文档配置 - 自定义新增接口
+  const { run: runDocCustomAdd } = useRequest(apiKnowledgeDocumentCustomAdd, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: () => {
+      message.success('文档添加成功');
+      handleClear();
+      onConfirm();
+    },
+  });
+
+  // 本地文档 - 确认事件
   const handleOk = async () => {
-    if (current === KnowledgeTextStepEnum.Upload_Or_Text_Fill) {
-      setCurrent(KnowledgeTextStepEnum.Create_Segmented_Set);
-    }
-    if (current === KnowledgeTextStepEnum.Create_Segmented_Set) {
-      if (!autoSegmentConfigFlag) {
-        const values = await form.validateFields();
-        setSegmentConfigModel(values);
-      }
-      setCurrent(KnowledgeTextStepEnum.Data_Processing);
-    }
-    if (current === KnowledgeTextStepEnum.Data_Processing) {
-      const fileList =
-        uploadFileList?.map((info) => ({
-          name: info.fileName,
-          docUrl: info.url,
-        })) || [];
+    const fileList =
+      uploadFileList?.map((info) => ({
+        name: info.fileName,
+        docUrl: info.url,
+      })) || [];
+
+    const data = {
+      kbId: id,
+      fileList,
+      autoSegmentConfigFlag: autoSegmentConfigFlag,
+    };
+    // 自动分段与清洗
+    if (autoSegmentConfigFlag) {
+      runDocAdd(data);
+    } else {
       runDocAdd({
-        kbId: id,
-        fileList,
-        autoSegmentConfigFlag: true,
+        ...data,
         segmentConfig: {
-          segment: 'WORDS',
-          ...segmentConfigModel,
+          segment: KnowledgeSegmentTypeEnum.DELIMITER,
+          ...segmentConfigModelRef.current,
+          isTrim: true,
+        },
+      });
+    }
+  };
+
+  // 自定义文档 - 确认事件
+  const handleCustomDocOk = async () => {
+    const data = {
+      kbId: id,
+      ...fileConfigRef.current,
+      autoSegmentConfigFlag: autoSegmentConfigFlag,
+    };
+    // 自动分段与清洗
+    if (autoSegmentConfigFlag) {
+      runDocCustomAdd(data);
+    } else {
+      runDocCustomAdd({
+        ...data,
+        segmentConfig: {
+          segment: KnowledgeSegmentTypeEnum.DELIMITER,
+          ...segmentConfigModelRef.current,
           isTrim: true,
         },
       });
@@ -108,6 +161,88 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     setUploadFileList(_uploadFileInfo);
   };
 
+  // 上传 - 下一步
+  const handleUploadOrTextInput = async () => {
+    if (type === KnowledgeTextImportEnum.Custom) {
+      fileConfigRef.current = await formText.validateFields();
+    }
+    setCurrent(KnowledgeTextStepEnum.Create_Segmented_Set);
+  };
+
+  // 创建设置 - 下一步
+  const handleConfirmCreateSet = async () => {
+    if (!autoSegmentConfigFlag) {
+      segmentConfigModelRef.current = await form.validateFields();
+    }
+    setCurrent(KnowledgeTextStepEnum.Data_Processing);
+  };
+
+  // Modal弹窗footer组件
+  const footerComponent = () => {
+    switch (current) {
+      case KnowledgeTextStepEnum.Upload_Or_Text_Fill:
+        return (
+          <div className={cx('flex', 'content-end', styles.gap)}>
+            <Button onClick={onCancel}>取消</Button>
+            <Button
+              onClick={handleUploadOrTextInput}
+              type="primary"
+              disabled={
+                type === KnowledgeTextImportEnum.Local_Doc
+                  ? uploadFileList?.length === 0
+                  : false
+              }
+            >
+              下一步
+            </Button>
+          </div>
+        );
+      case KnowledgeTextStepEnum.Create_Segmented_Set:
+        return (
+          <div className={cx('flex', 'content-end', styles.gap)}>
+            <Button
+              onClick={() =>
+                setCurrent(KnowledgeTextStepEnum.Upload_Or_Text_Fill)
+              }
+            >
+              上一步
+            </Button>
+            <Button onClick={handleConfirmCreateSet} type="primary">
+              下一步
+            </Button>
+          </div>
+        );
+      case KnowledgeTextStepEnum.Data_Processing:
+        return (
+          <div className={cx('flex', 'content-end', styles.gap)}>
+            <Button
+              onClick={() =>
+                setCurrent(KnowledgeTextStepEnum.Create_Segmented_Set)
+              }
+            >
+              上一步
+            </Button>
+            <Button
+              onClick={
+                type === KnowledgeTextImportEnum.Local_Doc
+                  ? handleOk
+                  : handleCustomDocOk
+              }
+              type="primary"
+            >
+              确认
+            </Button>
+          </div>
+        );
+    }
+  };
+
+  // 取消事件
+  const handleCancel = () => {
+    handleClear();
+    onCancel();
+  };
+
   return (
     <Modal
       title="添加内容"
@@ -118,10 +253,8 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
         body: cx(styles.body),
       }}
       open={open}
-      onOk={handleOk}
-      onCancel={onCancel}
-      cancelText="取消"
-      okText="确认"
+      onCancel={handleCancel}
+      footer={footerComponent}
     >
       <div className={cx(styles['step-wrap'], 'radius-6')}>
         <Steps type="default" current={current} items={stepList} />
@@ -141,14 +274,14 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
                 )}
               >
                 <span>
-                  {info.fileName} ({`${info.size}k`})
+                  {info.fileName} ({`${info.size} Byte`})
                 </span>
                 <DeleteOutlined onClick={() => handleUploadFileDel(index)} />
               </div>
             ))}
           </>
         ) : (
-          <TextFill />
+          <TextFill form={formText} />
         )
       ) : current === KnowledgeTextStepEnum.Create_Segmented_Set ? (
         <CreateSet
@@ -156,8 +289,16 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
           autoSegmentConfigFlag={autoSegmentConfigFlag}
           onChoose={(flag) => setAutoSegmentConfigFlag(flag)}
         />
+      ) : type === KnowledgeTextImportEnum.Local_Doc ? (
+        <DataProcess uploadFileList={uploadFileList} />
       ) : (
-        <DataProcess />
+        <div className={cx('flex', 'items-center', 'radius-6', styles.box)}>
+          <img className={cx('radius-6')} src={docImage as string} alt="" />
+          <h3 className={cx('text-ellipsis', 'flex-1')}>
+            {fileConfigRef.current?.name}
+          </h3>
+          <span className={cx(styles.span)}>处理中.处理完成</span>
+        </div>
       )}
     </Modal>
   );

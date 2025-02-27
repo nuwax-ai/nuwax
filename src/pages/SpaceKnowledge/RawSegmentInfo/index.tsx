@@ -1,13 +1,18 @@
 import ConditionRender from '@/components/ConditionRender';
+import TooltipIcon from '@/components/TooltipIcon';
+import { apiKnowledgeDocumentUpdateDocName } from '@/services/knowledge';
+import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { RawSegmentInfoProps } from '@/types/interfaces/knowledge';
+import { customizeRequiredNoStarMark } from '@/utils/form';
 import {
   DeleteOutlined,
   FileSearchOutlined,
   FormOutlined,
 } from '@ant-design/icons';
-import { Empty, Switch } from 'antd';
+import { Button, Empty, Form, FormProps, Input, message, Popover } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -17,11 +22,48 @@ const cx = classNames.bind(styles);
  */
 const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
   onDel,
+  onSuccessUpdateName,
   documentInfo,
   rawSegmentInfoList,
 }) => {
-  const handleChange = (checked: boolean) => {
-    console.log(`switch to ${checked}`);
+  const [form] = Form.useForm();
+  const [hovered, setHovered] = useState<boolean>(false);
+
+  // const handleChange = (checked: boolean) => {
+  //   console.log(`switch to ${checked}`);
+  // };
+
+  // 知识库文档配置 - 更改文件名称
+  const { run: runUpdateDocName } = useRequest(
+    apiKnowledgeDocumentUpdateDocName,
+    {
+      manual: true,
+      debounceWait: 300,
+      onSuccess: (_, params) => {
+        message.success('更新成功');
+        setHovered(false);
+        const { docId, name } = params[0];
+        onSuccessUpdateName(docId, name);
+      },
+    },
+  );
+
+  useEffect(() => {
+    form.setFieldValue('name', documentInfo?.name);
+  }, [documentInfo]);
+
+  const onFinish: FormProps<{
+    name: string;
+  }>['onFinish'] = (values) => {
+    const { name } = values;
+    runUpdateDocName({
+      docId: documentInfo.id,
+      name,
+    });
+  };
+
+  const handleHoverChange = (open: boolean) => {
+    setHovered(open);
   };
 
   return (
@@ -30,10 +72,54 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
         <ConditionRender condition={!!documentInfo}>
           <FileSearchOutlined />
           <span>{documentInfo?.name}</span>
-          <FormOutlined className={cx('cursor-pointer')} />
+          <TooltipIcon
+            title="重命名"
+            type={TooltipTitleTypeEnum.Blank}
+            icon={
+              <Popover
+                arrow={false}
+                trigger="click"
+                open={hovered}
+                onOpenChange={handleHoverChange}
+                placement="bottom"
+                content={
+                  <Form
+                    form={form}
+                    layout="vertical"
+                    requiredMark={customizeRequiredNoStarMark}
+                    onFinish={onFinish}
+                  >
+                    <Form.Item
+                      className={cx(styles.input, 'mb-16')}
+                      name="name"
+                      label="重命名"
+                      rules={[
+                        {
+                          required: true,
+                          message: '文档名称不能为空',
+                        },
+                      ]}
+                    >
+                      <Input.TextArea
+                        placeholder={'请输入文档名称'}
+                        autoSize={{ minRows: 6, maxRows: 30 }}
+                      />
+                    </Form.Item>
+                    <Form.Item className={cx('flex', 'content-end', 'mb-6')}>
+                      <Button htmlType="submit" type="primary">
+                        确认
+                      </Button>
+                    </Form.Item>
+                  </Form>
+                }
+              >
+                <FormOutlined className={cx('cursor-pointer')} />
+              </Popover>
+            }
+          />
           <div className={cx(styles['extra-box'], 'flex', 'items-center')}>
-            <span className={cx(styles['switch-name'])}>预览原始文档</span>
-            <Switch defaultChecked onChange={handleChange} />
+            {/*<span className={cx(styles['switch-name'])}>预览原始文档</span>*/}
+            {/*<Switch defaultChecked onChange={handleChange} />*/}
             <DeleteOutlined
               className={cx(styles.del, 'cursor-pointer')}
               onClick={onDel}

@@ -11,6 +11,7 @@ const cx = classNames.bind(styles);
  * 文档列表（带搜索文档）
  */
 const DocWrap: React.FC<DocWrapProps> = ({
+  currentDocId,
   onChange,
   documentList,
   onClick,
@@ -34,6 +35,7 @@ const DocWrap: React.FC<DocWrapProps> = ({
               'flex',
               'items-center',
               'radius-6',
+              { [styles.active]: currentDocId === item.id },
             )}
           >
             <FileSearchOutlined />
