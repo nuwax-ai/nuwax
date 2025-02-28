@@ -11,6 +11,15 @@ interface GeneralNodeState {
   isEditingTitle: boolean;
   editedTitle: string;
 }
+
+// interface LoopNodeProps {
+//   position?: { x: number; y: number }
+//   size?: { width: number; height: number }
+//   label?: string
+//   children?: React.ReactNode
+//   style?: React.CSSProperties
+//   onReady?: (node: Node) => void
+// }
 // 定义那些节点有试运行
 const testRunList = [
   'Start',
@@ -217,6 +226,11 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
 }
 
 /**
+ * 定义循环的节点
+ */
+export const LoopNode = () => {};
+
+/**
  * 定义连接桩的样式配置，包括四个方向上的连接桩（上、右、下、左）。
  * 每个连接桩都是一个小圆圈，具有特定的颜色、大小和可见性设置。
  */
@@ -228,9 +242,13 @@ export function registerCustomNodes() {
   register({
     shape: 'general-Node',
     component: GeneralNode,
-    embeddable: ({ data }: { data: ChildNode }) => data.type === 'Loop',
     resizable: true,
   });
+  // register({
+  //   shape: 'loop-Node',
+  //   component: LoopNode,
+  //   embeddable: true,
+  // })
 }
 
 interface Point {

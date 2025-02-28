@@ -106,13 +106,13 @@ const Created: React.FC<CreatedProp> = ({
     setLoadingMore(true); // 开始加载时设置为true
     const _res = await service.getList(type, params || {});
     if (_res.code === Constant.success) {
-      const newDataLength = _res.data.length;
+      const newDataLength = _res.data.records.length;
       // 根据新获取的数据长度判断是否还有更多数据
       setHasMore(newDataLength >= (params?.pageSize || pagination.pageSize));
       if (hasMore) {
-        setList((data) => [...data, ..._res.data]);
+        setList((data) => [...data, ..._res.data.records]);
       } else {
-        setList(_res.data);
+        setList(_res.data.records);
       }
     }
     setLoadingMore(false); // 开始加载时设置为true
@@ -241,7 +241,7 @@ const Created: React.FC<CreatedProp> = ({
 
     if (_item) {
       SetSelected(_item);
-      getList(_item.key);
+      getList(_item.key, pagination);
     }
   };
   /**  -----------------  初始化时需要的  -----------------   */
