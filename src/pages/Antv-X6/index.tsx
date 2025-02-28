@@ -197,6 +197,10 @@ const Workflow: React.FC = () => {
     _params.workflowId = workflowId;
     _params.extension = dragEvent;
 
+    // 查看当前是否有选中的节点以及被选中的节点的type是否是Loop
+    if (visible && foldWrapItem.type === 'Loop') {
+      _params.loopNodeId = Number(foldWrapItem.id);
+    }
     // 如果是条件分支，需要增加高度
     if (child.type === 'Condition') {
       _params.extension = { ...dragEvent, height: 140 };
@@ -208,7 +212,7 @@ const Workflow: React.FC = () => {
     const _res = await service.addNode(_params);
 
     if (_res.code === Constant.success) {
-      _res.data.key = 'general-Node';
+      _res.data.key = _res.data.type === 'Loop' ? 'general-Node' : 'loop-node';
       graphRef.current.addNode(dragEvent, _res.data);
       setFoldWrapItem(_res.data);
       graphRef.current.selectNode(_res.data.id);
@@ -375,8 +379,7 @@ const Workflow: React.FC = () => {
     };
 
     setTestRunResult('');
-    // const _res = await service.executeNode(_params);
-    // console.log(_res)
+
     // 启动连接
     const abortConnection = await createSSEConnection({
       url: `${process.env.BASE_URL}/api/workflow/test/node/execute`,

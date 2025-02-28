@@ -44,6 +44,7 @@ export interface ChildNode {
   key?: string;
   icon: string;
   selected?: boolean;
+  loopNodeId?: number;
 }
 
 export interface Edge {

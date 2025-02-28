@@ -4,13 +4,13 @@ import type {
   GraphContainerProps,
   GraphContainerRef,
 } from '@/types/interfaces/graph';
+import { adjustParentSize } from '@/utils/graph';
 import { generatePorts } from '@/utils/workflow';
 import { Node } from '@antv/x6';
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import EventHandlers from './component/eventHandlers';
 import InitGraph from './component/graph';
 import { registerCustomNodes } from './component/registerCustomNodes';
-
 // 辅助函数：生成随机坐标
 function getRandomPosition(maxWidth = 800, maxHeight = 600) {
   return {
@@ -173,18 +173,21 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       if (graphRef.current && graphParams.nodeList.length > 0) {
         // 清除现有元素，防止重复渲染
         graphRef.current.clearCells();
-
-        const nodes = graphParams.nodeList.map((node: ChildNode) => {
+        const otherNodes = graphParams.nodeList.filter(
+          (item) => !item.loopNodeId,
+        );
+        // 创建非Loop的子节点
+        const nodes = otherNodes.map((node: ChildNode) => {
           const extension = node.nodeConfig?.extension || {};
           const width = extension.width || 304;
           const height = extension.height || 83;
           const position = getRandomPosition(); // 如果没有提供具体的 x 和 y，则使用随机位置
-
+          console.log(extension);
           const ports = generatePorts(node); // 应用自定义端口配置
 
           return {
             id: node.id.toString(),
-            shape: 'general-Node',
+            shape: node.type === 'Loop' ? 'loop-node' : 'general-Node',
             x: extension.x ?? position.x,
             y: extension.y ?? position.y,
             width: width,
@@ -198,9 +201,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             zIndex: 3,
           };
         });
-        // 更新图形数据中的节点
-        // graphRef.current.fromJSON({ nodes });
-        // console.log(graphParams.edgeList);
+
         const edges = graphParams.edgeList.map((edge: Edge) => {
           return {
             shape: 'edge',
@@ -228,11 +229,58 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             zIndex: 1,
           };
         });
-        console.log(edges);
-        console.log(nodes);
         graphRef.current.fromJSON({
           nodes,
           edges,
+        });
+
+        setTimeout(() => {
+          // 找到所有的loop节点
+          const arr = graphRef.current.getNodes().filter((item: Node) => {
+            const data = item.getData();
+            return data.type === 'Loop';
+          });
+          // 处理Loop节点及其子节点
+          arr.forEach((loopNode: Node) => {
+            const data = loopNode.getData();
+            if (!data.innerNodes || !data.innerNodes.length) return;
+            // 将子节点添加到Loop节点内
+            data.innerNodes.forEach((childNode: ChildNode) => {
+              const childExtension = childNode.nodeConfig?.extension || {};
+              const childPorts = generatePorts(childNode);
+
+              const childGraphNode = {
+                id: childNode.id.toString(),
+                shape: 'general-Node',
+                x: childExtension.x, // 子节点相对于父节点随机偏移
+                y: childExtension.y,
+                width: childExtension.width || 304,
+                height: childExtension.height || 83,
+                label: childNode.name,
+                data: {
+                  ...childNode,
+                  parentId: loopNode.id, // 记录父节点ID
+                  onChange: handleNodeChange,
+                },
+                ports: childPorts,
+                zIndex: 10,
+              };
+
+              // 直接在graph实例中添加子节点并设置父子关系
+              graphRef.current.addNode(childGraphNode);
+              // 获取刚刚添加的子节点的实例，并设置父子关系
+              const childNodeInstance = graphRef.current.getCellById(
+                childGraphNode.id,
+              );
+              if (childNodeInstance) {
+                loopNode.addChild(childNodeInstance);
+                // 确保子节点被添加后再调整父节点尺寸
+                setTimeout(() => {
+                  adjustParentSize(loopNode);
+                }, 0);
+              }
+            }, 100);
+          });
         });
       }
     };
