@@ -31,10 +31,22 @@ const getBase64 = (img: FileType, callback: (url: string) => void) => {
   reader.readAsDataURL(img as Blob);
 };
 
+// 获取url地址search中的参数
+const getURLParams = () => {
+  const searchParams = window.location.search.substring(1).split('&');
+  const params = {};
+  for (const param of searchParams) {
+    const [key, value] = param.split('=');
+    params[key] = value;
+  }
+  return params;
+};
+
 export {
-  isNumber,
   getBase64,
   getNumbersOnly,
+  getURLParams,
+  isNumber,
   isValidEmail,
   isValidPhone,
   validatePassword,

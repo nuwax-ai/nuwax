@@ -31,7 +31,7 @@ const SpaceSection: React.FC = () => {
   useEffect(() => {
     run({
       page: 1,
-      size: 10,
+      size: 50,
     });
   }, []);
 
@@ -59,12 +59,15 @@ const SpaceSection: React.FC = () => {
     history.push(`/space/${spaceId}/agent/${agentId}`);
   };
 
-  const handleActive = (type) => {
+  // 判断是否active
+  const handleActive = (type: SpaceApplicationListEnum) => {
     return (
       (type === SpaceApplicationListEnum.Application_Develop &&
         location?.pathname.includes('develop')) ||
       (type === SpaceApplicationListEnum.Component_Library &&
-        location?.pathname.includes('library'))
+        (location?.pathname.includes('library') ||
+          location?.pathname.includes('knowledge') ||
+          location?.pathname.includes('plugin')))
     );
   };
 

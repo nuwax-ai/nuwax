@@ -375,6 +375,7 @@ export interface SubmitButtonProps {
   onConfirm: () => void;
 }
 
+// 上传文件信息
 export interface UploadInfo {
   url: string;
   key: string;

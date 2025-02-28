@@ -1,9 +1,9 @@
+import type { TextFillProps } from '@/types/interfaces/knowledge';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, Input } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
-import type { TextFillProps } from '@/types/interfaces/knowledge';
 
 const cx = classNames.bind(styles);
 
