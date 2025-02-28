@@ -1,0 +1,12 @@
+.box-hidden {
+  height: 0;
+  overflow: hidden;
+  transition: all 0.3s;
+  transition-duration: 0.15s;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.visible {
+    height: auto;
+  }
+}

@@ -1,103 +1,97 @@
+import ConditionRender from '@/components/ConditionRender';
+import SquareMenuItem from '@/layouts/MenusLayout/SquareSection/SquareMenuItem';
+import { SquareAgentTypeEnum } from '@/types/enums/square';
+import { getURLParams } from '@/utils/common';
 import { AppstoreOutlined, SettingOutlined } from '@ant-design/icons';
-import type { MenuProps } from 'antd';
-import { Menu } from 'antd';
-import React, { useState } from 'react';
+import classNames from 'classnames';
+import React, { useEffect, useState } from 'react';
+import { history, useModel } from 'umi';
+import styles from './index.less';
 
-type MenuItem = Required<MenuProps>['items'][number];
-
-const items: MenuItem[] = [
-  {
-    key: 'sub2',
-    label: '智能体',
-    icon: <AppstoreOutlined />,
-    children: [
-      { key: '5', label: '其他分类01' },
-      { key: '6', label: '其他分类02' },
-      {
-        key: 'sub3',
-        label: '其他分类03',
-      },
-    ],
-  },
-  {
-    key: 'sub4',
-    label: '插件与工作流',
-    icon: <SettingOutlined />,
-    children: [
-      { key: '9', label: 'Option 9' },
-      { key: '10', label: 'Option 10' },
-      { key: '11', label: 'Option 11' },
-      { key: '12', label: 'Option 12' },
-    ],
-  },
-];
-
-interface LevelKeysProps {
-  key?: string;
-  children?: LevelKeysProps[];
-}
-
-const getLevelKeys = (items1: LevelKeysProps[]) => {
-  const key: Record<string, number> = {};
-  const func = (items2: LevelKeysProps[], level = 1) => {
-    items2.forEach((item) => {
-      if (item.key) {
-        key[item.key] = level;
-      }
-      if (item.children) {
-        func(item.children, level + 1);
-      }
-    });
-  };
-  func(items1);
-  return key;
-};
-
-const levelKeys = getLevelKeys(items as LevelKeysProps[]);
-
+const cx = classNames.bind(styles);
 /**
  * 广场第二菜单栏
  */
 const SquareSection: React.FC = () => {
-  const [stateOpenKeys, setStateOpenKeys] = useState<string[]>(['sub4', '9']);
+  const { agentInfoList, pluginInfoList } = useModel('squareModel');
+  // active项
+  const [activeKey, setActiveKey] = useState<string>(localStorage.getItem('ActiveKey') || '');
+  // menu显隐
+  const [visibleMenu, setVisibleMenu] = useState<string>(localStorage.getItem('VisibleMenu') || '');
 
-  const onOpenChange: MenuProps['onOpenChange'] = (openKeys) => {
-    const currentOpenKey = openKeys.find(
-      (key) => stateOpenKeys.indexOf(key) === -1,
-    );
-    // open
-    if (currentOpenKey !== undefined) {
-      const repeatIndex = openKeys
-        .filter((key) => key !== currentOpenKey)
-        .findIndex((key) => levelKeys[key] === levelKeys[currentOpenKey]);
+  useEffect(() => {
+    const params = getURLParams();
+    const { cate_type, cate_name } = params;
+    setActiveKey(cate_name ?? cate_type);
+    // 控制menu显隐
+    setVisibleMenu(cate_type);
+  }, []);
 
-      setStateOpenKeys(
-        openKeys
-          // remove repeat key
-          .filter((_, index) => index !== repeatIndex)
-          // remove current level all child
-          .filter((key) => levelKeys[key] <= levelKeys[currentOpenKey]),
-      );
-    } else {
-      // close
-      setStateOpenKeys(openKeys);
-    }
-  };
+  const handleClick = (cateType: string, cateName?: string) => {
+    localStorage.setItem('ActiveKey', cateName ?? cateType)
+    localStorage.setItem('VisibleMenu', cateType)
 
-  const onClick: MenuProps['onClick'] = (e) => {
-    console.log('click ', e);
+    const url = cateName
+      ? `/square?cate_type=${cateType}&cate_name=${cateName}`
+      : `/square?cate_type=${cateType}`;
+    history.push(url);
   };
   return (
-    <div className={'h-full'}>
-      <Menu
-        onClick={onClick}
-        defaultSelectedKeys={['9']}
-        openKeys={stateOpenKeys}
-        onOpenChange={onOpenChange}
-        // defaultOpenKeys={['sub1']}
-        mode="inline"
-        items={items}
-      />
+    <div className={cx('h-full', 'py-12', 'overflow-y')}>
+      <ConditionRender condition={agentInfoList?.length}>
+        <div className={cx('py-6 px-6')}>
+          <SquareMenuItem
+            name="智能体"
+            isDown
+            icon={<AppstoreOutlined />}
+            isActive={activeKey === SquareAgentTypeEnum.Agent}
+            onClick={() => handleClick(SquareAgentTypeEnum.Agent)}
+          />
+          <div
+            className={cx(styles['box-hidden'], {
+              [styles.visible]: visibleMenu === SquareAgentTypeEnum.Agent,
+            })}
+          >
+            {agentInfoList?.map((item) => (
+              <SquareMenuItem
+                key={item.name}
+                name={item.description}
+                isActive={activeKey === item.name}
+                onClick={() =>
+                  handleClick(SquareAgentTypeEnum.Agent, item.name)
+                }
+              />
+            ))}
+          </div>
+        </div>
+      </ConditionRender>
+      <ConditionRender condition={pluginInfoList?.length}>
+        <div className={cx('py-6 px-6')}>
+          <SquareMenuItem
+            name="插件"
+            isDown
+            icon={<SettingOutlined />}
+            isActive={activeKey === SquareAgentTypeEnum.Plugin}
+            onClick={() => handleClick(SquareAgentTypeEnum.Plugin)}
+          />
+          <div
+            className={cx(styles['box-hidden'], {
+              [styles.visible]: visibleMenu === SquareAgentTypeEnum.Plugin,
+            })}
+          >
+            {pluginInfoList?.map((item) => (
+              <SquareMenuItem
+                key={item.name}
+                name={item.description}
+                isActive={activeKey === item.name}
+                onClick={() =>
+                  handleClick(SquareAgentTypeEnum.Plugin, item.name)
+                }
+              />
+            ))}
+          </div>
+        </div>
+      </ConditionRender>
     </div>
   );
 };

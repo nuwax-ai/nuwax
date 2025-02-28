@@ -1,5 +1,6 @@
 import { SPACE_ID } from '@/constants/home.constants';
 import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
+import { SquareAgentTypeEnum } from '@/types/enums/square';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
@@ -11,6 +12,9 @@ import Tabs from './Tabs';
 import User from './User';
 import UserOperateArea from './UserOperateArea';
 import styles from './index.less';
+import type { SquareAgentInfo, SquareCategoryInfo } from '@/types/interfaces/square';
+import { useRequest } from '@@/exports';
+import { apiPublishedCategoryList } from '@/services/square';
 
 const cx = classNames.bind(styles);
 
@@ -18,10 +22,12 @@ const cx = classNames.bind(styles);
  * 菜单布局组件
  */
 const MenusLayout: React.FC = () => {
-  const { setOpenHistoryModal, setOpenMessage } = useModel('layout');
   const location = useLocation();
-  const [tabType, setTabType] = useState<TabsEnum>();
+  const { setOpenHistoryModal, setOpenMessage } = useModel('layout');
   const { runSpace } = useModel('spaceModel');
+  const { setAgentInfoList, setPluginInfoList } = useModel('squareModel');
+  const [tabType, setTabType] = useState<TabsEnum>();
+
   // 切换tab
   const handleTabsClick = (type: TabsEnum) => {
     setTabType(type);
@@ -36,7 +42,7 @@ const MenusLayout: React.FC = () => {
         }
         break;
       case TabsEnum.Square:
-        history.push('/square');
+        history.push(`/square?cate_type=${SquareAgentTypeEnum.Agent}`);
         break;
     }
   };
@@ -55,9 +61,49 @@ const MenusLayout: React.FC = () => {
     }
   }, []);
 
+
+  const handleCategoryList = (result: SquareCategoryInfo[]) => {
+    let _agentInfoList: SquareAgentInfo[] = [];
+    let _pluginInfoList: SquareAgentInfo[] = [];
+    result.forEach((info) => {
+      if (info.type === SquareAgentTypeEnum.Agent) {
+        _agentInfoList = info?.children?.map((item) => {
+          return {
+            name: item.key,
+            description: item.label,
+          };
+        }) as SquareAgentInfo[];
+      }
+
+      if (info.type === SquareAgentTypeEnum.Plugin) {
+        _pluginInfoList = info.children?.map((item) => {
+          return {
+            name: item.key,
+            description: item.label,
+          };
+        }) as SquareAgentInfo[];
+      }
+    });
+    setAgentInfoList(_agentInfoList);
+    setPluginInfoList(_pluginInfoList);
+  };
+
+  // 广场-智能体与插件分类
+  const { run } = useRequest(apiPublishedCategoryList, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: SquareCategoryInfo[]) => {
+      handleCategoryList(result);
+    },
+  });
+
+  useEffect(() => {
+    // 查询广场menus列表
+    run();
+  }, []);
+
   // 用户区域操作
   const handleUserClick = (type: UserOperatorAreaEnum) => {
-    console.log(type);
     switch (type) {
       case UserOperatorAreaEnum.Document:
         // todo 打开文档链接

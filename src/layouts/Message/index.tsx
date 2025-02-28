@@ -40,8 +40,8 @@ const Message: React.FC = () => {
 
   useEffect(() => {
     runMessageList({
-      lastId: 11110,
-      size: 10,
+      lastId: 1,
+      size: 100,
     });
   }, []);
 
