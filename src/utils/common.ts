@@ -5,6 +5,11 @@ const getNumbersOnly = (text: string) => {
   return text?.replace(/[^0-9]/g, '');
 };
 
+// 判断字符串是否全是数字
+const isNumber = (value: string) => {
+  return !Number.isNaN(Number(value));
+};
+
 function isValidPhone(phone: string) {
   const reg = /^1[3456789]\d{9}$/;
   return reg.test(phone);
@@ -27,6 +32,7 @@ const getBase64 = (img: FileType, callback: (url: string) => void) => {
 };
 
 export {
+  isNumber,
   getBase64,
   getNumbersOnly,
   isValidEmail,
