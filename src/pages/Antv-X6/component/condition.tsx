@@ -37,17 +37,21 @@ export const Condition: React.FC<ConditionProps> = ({
   referenceList,
 }) => {
   const options = [
-    { label: '等于', value: 'EQUAL' },
-    { label: '不等于', value: 'NOT_EQUAL' },
-    { label: '长度大于', value: 'GREATER_THAN' },
-    { label: '长度大于等于', value: 'GREATER_THAN_OR_EQUAL' },
-    { label: '长度小于', value: 'LESS_THAN' },
-    { label: '长度小于等于', value: 'LESS_THAN_OR_EQUAL' },
-    { label: '包含', value: 'CONTAINS' },
-    { label: '不包含', value: 'NOT_CONTAINS' },
-    { label: '匹配正则表达式', value: 'MATCH_REGEX' },
-    { label: '为空', value: 'IS_NULL' },
-    { label: '不为空', value: 'NOT_NULL' },
+    { label: '等于', value: 'EQUAL', displayValue: '=' },
+    { label: '不等于', value: 'NOT_EQUAL', displayValue: '≠' },
+    { label: '长度大于', value: 'GREATER_THAN', displayValue: '>' },
+    {
+      label: '长度大于等于',
+      value: 'GREATER_THAN_OR_EQUAL',
+      displayValue: '≥',
+    },
+    { label: '长度小于', value: 'LESS_THAN', displayValue: '<' },
+    { label: '长度小于等于', value: 'LESS_THAN_OR_EQUAL', displayValue: '≤' },
+    { label: '包含', value: 'CONTAINS', displayValue: '⊃' },
+    { label: '不包含', value: 'NOT_CONTAINS', displayValue: '⊅' },
+    { label: '匹配正则表达式', value: 'MATCH_REGEX', displayValue: '~' },
+    { label: '为空', value: 'IS_NULL', displayValue: '∅' },
+    { label: '不为空', value: 'NOT_NULL', displayValue: '!∅' },
   ];
 
   return (
@@ -60,6 +64,7 @@ export const Condition: React.FC<ConditionProps> = ({
           className="condition-type-select-style"
           popupMatchSelectWidth={false}
           options={options}
+          optionLabelProp="displayValue"
         ></Select>
       </Form.Item>
       <Form.Item style={{ marginRight: '8px' }}>
@@ -67,10 +72,8 @@ export const Condition: React.FC<ConditionProps> = ({
           <Select
             onChange={onChange}
             value={form.getFieldValue([field.name, 'bindValueType'])}
-          >
-            <Select.Option value="Input">输入</Select.Option>
-            <Select.Option value="Reference">引用</Select.Option>
-          </Select>
+            options={referenceList.previousNodes}
+          ></Select>
         </Form.Item>
         <Form.Item
           name={[field.name, 'bindValue']}
@@ -319,13 +322,7 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
             {(params.conditionBranchConfigs || []).map((item, index) => (
               <ConditionList
                 key={item.uuid}
-                title={
-                  index === 0
-                    ? '如果'
-                    : index === (params.conditionBranchConfigs || []).length - 1
-                    ? '否则'
-                    : '否则如果'
-                }
+                title={index === 0 ? '如果' : '否则如果'}
                 index={index}
                 initialValues={item}
                 removeItem={removeItem}
@@ -335,6 +332,7 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
               />
             ))}
             {provided.placeholder}
+            <div>否则</div>
           </div>
         )}
       </Droppable>

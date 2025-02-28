@@ -12,8 +12,8 @@ const itemList = {
 };
 
 export interface IGetList {
-  page?: number;
-  pageSize?: number;
+  page: number;
+  pageSize: number;
   category?: string;
   kw?: string;
   spaceId?: number;

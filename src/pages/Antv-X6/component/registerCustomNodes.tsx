@@ -1,3 +1,4 @@
+import { ICON_WORKFLOW_LOOP } from '@/constants/images.constants';
 import { ChildNode, NodeProps } from '@/types/interfaces/graph';
 import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { DashOutlined, PlayCircleOutlined } from '@ant-design/icons';
@@ -6,11 +7,21 @@ import { register } from '@antv/x6-react-shape';
 import { Input, Popover } from 'antd';
 import React from 'react';
 import '../index.less';
+
 // 定义组件的状态类型
 interface GeneralNodeState {
   isEditingTitle: boolean;
   editedTitle: string;
 }
+
+// interface LoopNodeProps {
+//   position?: { x: number; y: number }
+//   size?: { width: number; height: number }
+//   label?: string
+//   children?: React.ReactNode
+//   style?: React.CSSProperties
+//   onReady?: (node: Node) => void
+// }
 // 定义那些节点有试运行
 const testRunList = [
   'Start',
@@ -37,24 +48,6 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
       editedTitle: this.props.node.getData<ChildNode>().name || '',
     };
   }
-
-  // componentDidMount() {
-  //   const { node } = this.props;
-  //   // 监听节点大小变化事件
-  //   node.on('resize', this.handleResized);
-  // }
-
-  // componentWillUnmount() {
-  //   const { node } = this.props;
-  //   // 移除监听器
-  //   node.off('resize', this.handleResized);
-  // }
-
-  // handleResized = () => {
-  //   console.log('Node has been resized.');
-  //   // 调用 updatePorts 方法以根据新的尺寸更新端口位置
-  //   // this.props.node.updatePorts();
-  // };
   /**
    * changeNode 是一个事件处理函数，当用户点击操作菜单项时触发。
    * @param val - 操作名称（例如：'Rename', 'Duplicate', 'Delete'）
@@ -122,8 +115,8 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
       return null;
     }
     // 确保宽度和高度是有效的数字
-    const width = data.nodeConfig?.extension?.width ?? 304;
-    const height = data.nodeConfig?.extension?.height ?? 83;
+    // const width = data.nodeConfig?.extension?.width ?? 304;
+    // const height = data.nodeConfig?.extension?.height ?? 83;
     // 构造渐变背景字符串
     const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
       data.type,
@@ -131,10 +124,6 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
     return (
       <div
         className={`general-node ${isSelected ? 'selected-general-node' : ''}`} // 根据选中状态应用类名
-        style={{
-          width: width,
-          height: height,
-        }}
       >
         {/* 节点头部，包含标题、图像和操作菜单 */}
         <div
@@ -179,13 +168,11 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
           </div>
         </div>
         {/* 节点内容区，根据 data.content 的类型显示不同的内容 */}
-        {data.type !== 'IntentRecognition' &&
-          data.type !== 'Loop' &&
-          data.type !== 'Condition' && (
-            <div className="general-node-content">
-              <div className="text-ellipsis">{data.description}</div>
-            </div>
-          )}
+        {data.type !== 'IntentRecognition' && data.type !== 'Condition' && (
+          <div className="general-node-content">
+            <div className="text-ellipsis">{data.description}</div>
+          </div>
+        )}
         {data.type === 'Condition' && (
           <div className="condition-node-content-style">
             {data.nodeConfig.conditionBranchConfigs?.map((_, index) => (
@@ -217,6 +204,36 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
 }
 
 /**
+ * 定义循环的节点
+ */
+
+// 添加循环体节点
+// 优化后的 LoopNode 组件
+export const LoopNode: React.FC<NodeProps> = ({ node }) => {
+  const data = node.getData<ChildNode>();
+  const isSelected = !!data.selected; // 判断是否选中
+  const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
+    data.type,
+  )} 0%, white 70%)`;
+  return (
+    <div
+      className={`loop-node-style general-node ${
+        isSelected ? 'selected-general-node' : ''
+      }`}
+    >
+      <div
+        className="loop-node-title-style dis-left"
+        style={{ background: gradientBackground }}
+      >
+        <ICON_WORKFLOW_LOOP style={{ marginRight: '6px' }} />
+        <span>循环体</span>
+      </div>
+      <div className="loop-node-content" />
+    </div>
+  );
+};
+
+/**
  * 定义连接桩的样式配置，包括四个方向上的连接桩（上、右、下、左）。
  * 每个连接桩都是一个小圆圈，具有特定的颜色、大小和可见性设置。
  */
@@ -228,8 +245,13 @@ export function registerCustomNodes() {
   register({
     shape: 'general-Node',
     component: GeneralNode,
-    embeddable: ({ data }: { data: ChildNode }) => data.type === 'Loop',
+  });
+  register({
+    shape: 'loop-node',
+    component: LoopNode,
     resizable: true,
+    draggable: true,
+    // enabled: true
   });
 }
 

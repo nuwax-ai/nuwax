@@ -14,6 +14,8 @@ import { Selection } from '@antv/x6-plugin-selection';
 // import { Transform } from '@antv/x6-plugin-transform';
 import { message } from 'antd';
 
+import { adjustParentSize } from '@/utils/graph';
+
 // 自定义类型定义
 import { GraphProp } from '@/types/interfaces/graph';
 import { createCurvePath } from './registerCustomNodes';
@@ -136,7 +138,17 @@ const initGraph = ({
         },
       },
     },
+    embedding: {
+      enabled: true,
+      // findParent({ e }) {
+      //   // 根据鼠标位置找到可能的父节点
+      //   const pos = graph.getPointByClient(e.clientX, e.clientY);
+      //   return graph.findModelsInLayer(pos, (model) => model.isNode())[0];
+      // },
+    },
   });
+  // let ctrlPressed = false
+  // const embedPadding = 20
 
   // 使用多个插件来增强图形编辑器的功能
   graph
@@ -202,6 +214,7 @@ const initGraph = ({
   });
   // 监听节点点击事件，调用 changeDrawer 函数更新右侧抽屉的内容
   graph.on('node:click', ({ node }) => {
+    console.log('aaa', node);
     // 判断点击的是空白处还是节点
     if (node && node.isNode()) {
       // 先取消所有节点的选中状态
@@ -278,11 +291,6 @@ const initGraph = ({
     }
   });
 
-  // 创建一个动态容器用于渲染 Popover
-  const popoverContainer = document.createElement('div');
-  document.body.appendChild(popoverContainer);
-  // 给所有的边添加一个右键监听
-
   // 监听节点的拖拽移动位置
   graph.on('node:moved', ({ node }) => {
     // 获取节点被拖拽到的位置
@@ -306,6 +314,43 @@ const initGraph = ({
     graph.getNodes().forEach((n) => n.setData({ selected: false }));
 
     changeDrawer(null); // 调用回调函数以更新抽屉内容
+  });
+
+  let ctrlPressed = false;
+
+  graph.on('node:embedding', ({ e }) => {
+    ctrlPressed = e.metaKey || e.ctrlKey;
+  });
+
+  graph.on('node:embedded', () => {
+    ctrlPressed = false;
+  });
+
+  graph.on('node:change:size', ({ node, options }) => {
+    if (options.skipParentHandler) {
+      return;
+    }
+
+    const children = node.getChildren();
+    if (children && children.length) {
+      node.prop('originSize', node.getSize());
+    }
+  });
+
+  graph.on('node:change:position', ({ node, options }) => {
+    if (options.skipParentHandler || ctrlPressed) {
+      return;
+    }
+    // 当子节点位置改变时触发
+    const parentId = node.getData().parentId;
+    if (!parentId) return; // 如果没有父节点ID，则无需调整父节点大小
+
+    const parentNode = graph.getCellById(parentId);
+    console.log(parentNode);
+    if (Node.isNode(parentNode)) {
+      // 确保parentNode是一个Node实例
+      adjustParentSize(parentNode);
+    }
   });
 
   return graph; // 返回初始化好的图形实例

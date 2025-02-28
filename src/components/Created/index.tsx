@@ -59,6 +59,8 @@ const Created: React.FC<CreatedProp> = ({
     page: 1,
     pageSize: 10,
   });
+
+  const [sizes, setSizes] = useState<number>(100);
   // 当前被选中的左侧菜单
   const [selectMenu, setSelectMenu] = useState<string>('all');
   //   右侧的list
@@ -93,45 +95,31 @@ const Created: React.FC<CreatedProp> = ({
       ],
     },
   ];
-  // 添加一个状态用于跟踪是否正在加载更多数据
-  const [loadingMore, setLoadingMore] = useState(false);
-  // 添加一个状态用于跟踪是否还有更多数据
-  const [hasMore, setHasMore] = useState(true);
   // 添加ref引用
   const scrollRef = useRef<HTMLDivElement>(null);
   /**  -----------------  需要调用接口  -----------------   */
 
   //   获取右侧的list
-  const getList = async (type: AgentComponentTypeEnum, params?: IGetList) => {
-    setLoadingMore(true); // 开始加载时设置为true
-    const _res = await service.getList(type, params || {});
+  const getList = async (type: AgentComponentTypeEnum, params: IGetList) => {
+    if (params.page > sizes) return;
+    const _res = await service.getList(type, params);
     if (_res.code === Constant.success) {
-      const newDataLength = _res.data.length;
-      // 根据新获取的数据长度判断是否还有更多数据
-      setHasMore(newDataLength >= (params?.pageSize || pagination.pageSize));
-      if (hasMore) {
-        setList((data) => [...data, ..._res.data]);
+      setSizes(_res.data.pages);
+      setPagination({ ...pagination, page: _res.data.current });
+      if (params.page === 1) {
+        setList([..._res.data.records]);
       } else {
-        setList(_res.data);
+        setList((data) => [...data, ..._res.data.records]);
       }
     }
-    setLoadingMore(false); // 开始加载时设置为true
   };
 
   // 获取已经收藏的list
-  const getCollectList = async (params?: IGetList) => {
-    setLoadingMore(true); // 开始加载时设置为true
+  const getCollectList = async (params: IGetList) => {
+    if (params.page >= sizes) return;
     const _type = selected.key.toLowerCase();
-    const _res = await service.collectList(_type, params || {});
-    if (_res.code === Constant.success) {
-      const newDataLength = _res.data.length;
-      // 根据新获取的数据长度判断是否还有更多数据
-      setHasMore(newDataLength >= (params?.pageSize || pagination.pageSize));
-      setList((data) => [...data, ..._res.data]);
-    } else {
-      setList([]);
-    }
-    setLoadingMore(false); // 开始加载时设置为true
+    const _res = await service.collectList(_type, params);
+    setList([..._res.data]);
   };
 
   // 收藏和取消收藏
@@ -173,7 +161,12 @@ const Created: React.FC<CreatedProp> = ({
   // 新增工作流，插件，知识库，数据库
   const onConfirm = () => {
     setShowCreate(false);
-    getList(checkTag);
+    const _params = {
+      page: 1,
+      pageSize: 10,
+    };
+    getList(checkTag, _params);
+    setPagination(_params);
   };
 
   /**  -----------------  无需调用接口的方法  -----------------   */
@@ -185,48 +178,42 @@ const Created: React.FC<CreatedProp> = ({
   const onSearch = (value: string) => {
     const _params = {
       kw: value,
-    };
-    getList(selected.key, _params);
-  };
-
-  // 当用户切换左侧菜单和顶部菜单的时候，需要重置一些东西
-  const clear = () => {
-    // 清空list
-    setList([]);
-    // 重置更多
-    setHasMore(true);
-    // 重置分页
-    setPagination({
       page: 1,
       pageSize: 10,
-    });
+    };
+    getList(selected.key, _params);
+    setPagination({ ...pagination, page: 1 });
   };
-  const callInterface = (val: string) => {
+
+  const callInterface = (val: string, params: IGetList) => {
     // 通过左侧菜单决定调用哪个接口
     switch (val) {
       case 'library':
-        getList(selected.key, { ...pagination, spaceId });
+        getList(selected.key, { ...params, spaceId });
         break;
       case 'collect':
-        getCollectList(pagination);
+        getCollectList(params);
         break;
       default:
-        getList(selected.key, pagination);
+        getList(selected.key, params);
         break;
     }
   };
   // 点击左侧菜单，触发不同的事件
   const onMenuClick = (val: string) => {
-    clear();
     // 切换左侧菜单
     setSelectMenu(val);
-    callInterface(val);
+    const params = {
+      page: 1,
+      pageSize: 10,
+    };
+
+    callInterface(val, params);
   };
 
   //   修改顶部选项
   const changeTitle = (val: RadioChangeEvent | string) => {
     if (!val) return;
-    clear();
     setSelectMenu('all');
     // 获取被选中的key
     let _select;
@@ -235,13 +222,19 @@ const Created: React.FC<CreatedProp> = ({
     } else {
       _select = val.target.value;
     }
-
     // 遍历找到对应的选项
     const _item = buttonList.find((item) => item.key === _select);
 
+    const _params = {
+      page: 1,
+      pageSize: 10,
+    };
+
+    setSizes(100);
+
     if (_item) {
       SetSelected(_item);
-      getList(_item.key);
+      getList(_item.key, _params);
     }
   };
   /**  -----------------  初始化时需要的  -----------------   */
@@ -250,19 +243,26 @@ const Created: React.FC<CreatedProp> = ({
   }, []);
   // 监听滚动事件
   useEffect(() => {
+    // 收藏无需滚动加载
     const handleScroll = () => {
+      if (selectMenu === 'collect') return;
       const node = scrollRef.current;
-      if (node && !loadingMore) {
+
+      if (node) {
         // 如果没有正在加载更多数据
         const isBottom =
           node.scrollHeight - node.scrollTop - node.clientHeight < 10; // 判断是否接近底部
         if (isBottom) {
-          setPagination((prevPagination) => ({
-            ...prevPagination,
-            page: prevPagination.page + 1, // 增加分页数
-          }));
-          if (!hasMore) return; // 如果没有更多数据，直接返回
-          callInterface(selectMenu);
+          if (pagination.page >= sizes) return;
+          const _params: IGetList = {
+            pageSize: 10,
+            page: ++pagination.page,
+          };
+          if (selectMenu === 'library') {
+            _params.spaceId = spaceId;
+          }
+          setPagination(_params);
+          getList(selected.key, _params);
         }
       }
     };
@@ -272,15 +272,7 @@ const Created: React.FC<CreatedProp> = ({
     return () => {
       scrollRef.current?.removeEventListener('scroll', handleScroll);
     };
-  }, [loadingMore, selected.key, pagination]);
-
-  // 在pagination变化时自动获取更多数据
-  useEffect(() => {
-    if (pagination.page > 1) {
-      // 确保不是首次加载
-      getList(selected.key, pagination);
-    }
-  }, [pagination, selected.key]);
+  }, [sizes]);
 
   //   顶部的标题
   const title = (
