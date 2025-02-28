@@ -198,8 +198,10 @@ const Workflow: React.FC = () => {
     _params.extension = dragEvent;
 
     // 查看当前是否有选中的节点以及被选中的节点的type是否是Loop
-    if (visible && foldWrapItem.type === 'Loop') {
-      _params.loopNodeId = Number(foldWrapItem.id);
+
+    const loopParentId = graphRef.current.findLoopParentAtPosition(dragEvent);
+    if ((visible && foldWrapItem.type === 'Loop') || loopParentId) {
+      _params.loopNodeId = Number(loopParentId || foldWrapItem.id);
     }
     // 如果是条件分支，需要增加高度
     if (child.type === 'Condition') {
@@ -212,7 +214,7 @@ const Workflow: React.FC = () => {
     const _res = await service.addNode(_params);
 
     if (_res.code === Constant.success) {
-      _res.data.key = _res.data.type === 'Loop' ? 'general-Node' : 'loop-node';
+      _res.data.key = _res.data.type === 'Loop' ? 'loop-node' : 'general-Node';
       graphRef.current.addNode(dragEvent, _res.data);
       setFoldWrapItem(_res.data);
       graphRef.current.selectNode(_res.data.id);
@@ -266,6 +268,7 @@ const Workflow: React.FC = () => {
       nodeId: _nextNodeIds,
       sourceId: Number(sourceNode.id),
     };
+
     // 根据类型判断，如果type是created，那么就添加边，如果type是deleted，那么就删除边
     if (type === 'created') {
       // 如果有这条边了

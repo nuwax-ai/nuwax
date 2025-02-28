@@ -225,11 +225,6 @@ const VariableNode: React.FC<NodeDisposeProps> = ({
   Modified,
   referenceList,
 }) => {
-  let initialValues: InputAndOutConfig[] = [];
-  if (params.inputArgs && params.inputArgs.length) {
-    initialValues = params.inputArgs;
-  }
-
   const outputArgs = params.outputArgs || null;
 
   // 修改模型的入参和出参
@@ -265,7 +260,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({
         referenceList={referenceList}
         inputItemName="inputArgs"
         handleChangeNodeConfig={handleChangeNodeConfig}
-        initialValues={{ inputArgs: initialValues }}
+        initialValues={{ inputArgs: params.inputArgs || [] }}
       />
 
       {outputArgs && params.configType === 'SET_VARIABLE' && (
@@ -287,7 +282,7 @@ export const ArrayLinkSetting: React.FC<{
   const [options, setOptions] = useState([
     { value: '\\n', label: '换行 (\\n)' },
     { value: '\\t', label: '制表符 (\\t)' },
-    { value: '.', label: '逗号 (。)' },
+    { value: '.', label: '句号 (。)' },
     { value: ',', label: '逗号 (,)' },
     { value: ';', label: '分号 (;)' },
     { value: '|', label: '空格 ( )' },
@@ -365,10 +360,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
   referenceList,
 }) => {
   // 输入参数的初始值
-  let initialValues: InputAndOutConfig[] = [];
-  if (params.inputArgs && params.inputArgs.length) {
-    initialValues = params.inputArgs;
-  }
+
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -384,7 +376,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
       <div className="node-item-style dis-center">
         <Segmented
           options={textTypeOptions}
-          value={params.textHandleType}
+          value={params.textHandleType ?? 'CONCAT'}
           onChange={(val) => {
             handleChangeNodeConfig({
               ...params,
@@ -400,7 +392,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
         referenceList={referenceList}
         inputItemName="inputArgs"
         handleChangeNodeConfig={handleChangeNodeConfig}
-        initialValues={{ inputArgs: initialValues }}
+        initialValues={{ inputArgs: params.inputArgs || [] }}
       />
       {params.textHandleType === 'CONCAT' && (
         <div className="margin-bottom">

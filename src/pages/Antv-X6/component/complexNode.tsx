@@ -11,6 +11,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import {
   Button,
   Empty,
+  Form,
   Input,
   Radio,
   RadioChangeEvent,
@@ -301,10 +302,17 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
     { label: '无', value: 'OTHER' },
   ];
 
+  const [form] = Form.useForm();
+
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     console.log('123', newNodeConfig);
     Modified({ ...params, ...newNodeConfig });
+  };
+
+  const submitForm = () => {
+    const values = form.getFieldsValue();
+    handleChangeNodeConfig(values);
   };
 
   return (
@@ -312,51 +320,41 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
       {/* 请求配置 */}
       <div className="node-item-style">
         <p className="node-title-style">请求配置</p>
-        <p className="sub-item-title">请求方法与路径</p>
-        <div className="margin-bottom">
-          <Space>
-            <Select
-              value={params.method}
-              style={{ width: 140 }}
-              options={methodOption}
-              onChange={(value) =>
-                handleChangeNodeConfig({ ...params, method: value })
-              }
-            ></Select>
-            <Input
-              value={params.url}
-              onChange={(e) =>
-                handleChangeNodeConfig({ ...params, url: e.target.value })
-              }
-            ></Input>
-          </Space>
-        </div>
-        <p className="margin-bottom">请求内容格式</p>
-        <Radio.Group
-          onChange={(value: RadioChangeEvent) =>
-            handleChangeNodeConfig({
-              ...params,
-              contentType: value.target.value,
-            })
-          }
-          value={params.contentType}
-          className="margin-bottom"
+        <Form
+          form={form}
+          onValuesChange={submitForm}
+          initialValues={params}
+          layout={'vertical'}
         >
-          <Space wrap>
-            {methodOptions.map((item) => (
-              <Radio key={item.value} value={item.value}>
-                {item.label}
-              </Radio>
-            ))}
-          </Space>
-        </Radio.Group>
-        <p className="margin-bottom">请求超时配置</p>
-        <Input
-          value={params.timeout}
-          onChange={(e) =>
-            handleChangeNodeConfig({ ...params, timeout: e.target.value })
-          }
-        ></Input>
+          <Form.Item label="请求方法与路径">
+            <div className="dis-sb">
+              <Form.Item name="method" noStyle>
+                <Select
+                  style={{ width: '30%', marginRight: '10px' }}
+                  options={methodOption}
+                  placeholder="请求方法"
+                ></Select>
+              </Form.Item>
+              <Form.Item name="url" noStyle>
+                <Input placeholder="请输入url地址"></Input>
+              </Form.Item>
+            </div>
+          </Form.Item>
+          <Form.Item label="请求内容格式" name="contentType">
+            <Radio.Group className="margin-bottom">
+              <Space wrap>
+                {methodOptions.map((item) => (
+                  <Radio key={item.value} value={item.value}>
+                    {item.label}
+                  </Radio>
+                ))}
+              </Space>
+            </Radio.Group>
+          </Form.Item>
+          <Form.Item label="请求超时配置" name="timeout">
+            <Input placeholder="请输入超时配置时长"></Input>
+          </Form.Item>
+        </Form>
       </div>
       {/* 入参 */}
       <div className="node-item-style">

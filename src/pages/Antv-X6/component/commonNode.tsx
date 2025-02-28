@@ -192,7 +192,9 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
             title={
               <span>
                 {item.name}{' '}
-                <Tag style={{ marginLeft: '5px' }}>{item.dataType}</Tag>
+                <Tag style={{ marginLeft: '5px' }}>
+                  {DataTypeMap[item.dataType as DataTypeEnum]}
+                </Tag>
               </span>
             }
             key={item.name}

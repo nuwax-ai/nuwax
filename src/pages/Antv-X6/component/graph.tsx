@@ -1,5 +1,5 @@
 // 引入 AntV X6 的核心库和必要的插件。
-import { Edge, Graph, Node, Shape } from '@antv/x6';
+import { Cell, Edge, Graph, Node, Shape } from '@antv/x6';
 // 剪贴板插件，用于复制和粘贴节点
 import { Clipboard } from '@antv/x6-plugin-clipboard';
 // 历史记录插件，支持撤销/重做操作
@@ -117,13 +117,37 @@ const initGraph = ({
           zIndex: -1,
         });
       },
-      validateConnection({ sourceMagnet, targetMagnet }) {
-        if (!sourceMagnet || sourceMagnet.getAttribute('port-group') === 'in') {
+      validateConnection({
+        sourceMagnet,
+        targetMagnet,
+        sourceCell,
+        targetCell,
+      }) {
+        // 添加类型守卫，过滤 null/undefined
+        if (!sourceMagnet || !targetMagnet || !sourceCell || !targetCell) {
           return false;
         }
-        if (!targetMagnet || targetMagnet.getAttribute('port-group') !== 'in') {
-          return false;
+
+        // 定义类型断言函数
+        const isLoopNode = (cell: Cell): cell is Cell<ChildNode> => {
+          return cell.getData()?.type === 'Loop';
+        };
+
+        // 定义内部节点检查
+        const isInnerNode = (cell: Cell) => !!cell.getParent();
+
+        // Case 1: Loop节点作为源时的出端口
+        if (isLoopNode(sourceCell)) {
+          const isLoopOutPort =
+            sourceMagnet.getAttribute('port-group') === 'out';
+          return isLoopOutPort ? !isInnerNode(targetCell) : true;
         }
+
+        // Case 2: Loop节点作为目标时的入端口
+        if (isLoopNode(targetCell)) {
+          return targetMagnet.getAttribute('port-group') === 'in';
+        }
+
         return true;
       },
     },
@@ -214,7 +238,6 @@ const initGraph = ({
   });
   // 监听节点点击事件，调用 changeDrawer 函数更新右侧抽屉的内容
   graph.on('node:click', ({ node }) => {
-    console.log('aaa', node);
     // 判断点击的是空白处还是节点
     if (node && node.isNode()) {
       // 先取消所有节点的选中状态
@@ -240,14 +263,63 @@ const initGraph = ({
       // 获取边的两个连接桩
       const sourcePort = edge.getSourcePortId();
       const targetPort = edge.getTargetPortId();
+      const sourceNode = edge.getSourceNode()?.getData();
+      const targetNode = edge.getTargetNode()?.getData();
+      const targetNodeId = edge.getTargetCellId();
+
+      if (sourceNode.type === 'Loop') {
+        // 看连接的点是否时内部的节点
+        if (targetNode.loopNodeId && targetNode.loopNodeId === sourceNode.id) {
+          const _params = { ...sourceNode };
+          if (!sourceNode.innerStartNodeId) {
+            _params.innerStartNodeId = [targetNodeId];
+            changeCondition(_params);
+            return;
+          }
+          // 如果当前的innerStartNodeId已经包含了这条线，就不做处理了
+          if (
+            sourceNode.innerStartNodeId &&
+            sourceNode.innerStartNodeId.includes(targetNodeId)
+          ) {
+            return;
+          } else {
+            _params.innerStartNodeId = [
+              ..._params.innerStartNodeId,
+              targetNodeId,
+            ];
+            changeCondition(_params);
+            return;
+          }
+        }
+      }
+      if (targetNode.type === 'Loop') {
+        // 看连接的点是否时内部的节点
+        if (sourceNode.loopNodeId && sourceNode.loopNodeId === targetNodeId) {
+          const _params = { ...targetNode };
+          if (!targetNode.innerEndNodeId) {
+            _params.innerEndNodeId = [targetNodeId];
+            changeCondition(_params);
+            return;
+          }
+          // 如果当前的innerStartNodeId已经包含了这条线，就不做处理了
+          if (
+            targetNode.innerEndNodeId &&
+            targetNode.innerEndNodeId.includes(targetNodeId)
+          ) {
+            return;
+          } else {
+            _params.innerEndNodeId = [..._params.innerEndNodeId, targetNodeId];
+            changeCondition(_params);
+            return;
+          }
+        }
+      }
+
       // 这里统一让left作为接入点，right作为输出点
       if (sourcePort?.includes('left') || targetPort?.includes('right')) {
         graph.removeCell(edge.id);
         message.warning('左侧连接桩只能作为接入点，右侧连接桩只能作为输出点');
       }
-
-      const sourceNode = edge.getSourceNode()?.getData();
-      const targetNodeId = edge.getTargetCellId();
 
       if (!sourceNode) return;
       // 查看出发的节点是否时意图识别和条件分支
@@ -256,7 +328,6 @@ const initGraph = ({
         sourceNode.type === 'IntentRecognition'
       ) {
         if (!sourcePort) return;
-        // console.log(Number(sourcePort))
         // 获取当前连接桩的输出端口
         const _index: string = sourcePort.split('-')[1];
         // 修改当前的数据
@@ -330,7 +401,6 @@ const initGraph = ({
     if (options.skipParentHandler) {
       return;
     }
-
     const children = node.getChildren();
     if (children && children.length) {
       node.prop('originSize', node.getSize());
@@ -346,7 +416,7 @@ const initGraph = ({
     if (!parentId) return; // 如果没有父节点ID，则无需调整父节点大小
 
     const parentNode = graph.getCellById(parentId);
-    console.log(parentNode);
+
     if (Node.isNode(parentNode)) {
       // 确保parentNode是一个Node实例
       adjustParentSize(parentNode);

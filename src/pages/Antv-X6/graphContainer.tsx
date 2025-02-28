@@ -53,19 +53,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       if (!graphRef.current) return;
 
       const point = graphRef.current.clientToGraph(e.x, e.y);
-
-      let targetNode: any | null = null;
-      graphRef.current.getNodes().some((node: Node) => {
-        if (node.getData<ChildNode>()?.type === 'Loop') {
-          const bbox = node.getBBox();
-          if (bbox.containsPoint(point)) {
-            targetNode = node;
-            return true;
-          }
-        }
-        return false;
-      });
       const ports = generatePorts(child);
+
       // 根据情况，动态给予右侧的out连接桩
       const newNode = graphRef.current.addNode({
         shape: child.key,
@@ -82,12 +71,16 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         zIndex: 3,
         ports: ports,
       });
-
-      if (targetNode === null) {
-        graphRef.current.addCell(newNode);
-      } else {
-        targetNode.setZIndex(2);
-        targetNode.addChild(newNode);
+      console.log('223', newNode);
+      // 添加节点
+      graphRef.current.addNode(newNode);
+      if (child.loopNodeId) {
+        console.log('123242141');
+        // 获取刚刚添加的子节点的实例，并设置父子关系
+        const childNodeInstance = graphRef.current.getCellById(newNode.id);
+        // 直接在graph实例中添加子节点并设置父子关系
+        const parentNode = graphRef.current.getCellById(child.loopNodeId);
+        parentNode.addChild(childNodeInstance);
       }
     };
 
@@ -203,22 +196,11 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         });
 
         const edges = graphParams.edgeList.map((edge: Edge) => {
-          return {
+          const _obj = {
             shape: 'edge',
-            source: {
-              cell: isNaN(Number(edge.source))
-                ? edge.source.toString().split('-')[0]
-                : edge.source.toString(),
-              port: `${edge.source.toString()}-out`, // 使用右侧连接桩
-            },
-            target: {
-              cell: edge.target.toString(),
-              port: `${edge.target.toString()}-in`, // 使用左侧连接桩
-            },
             router: {
               name: 'orth',
             },
-
             // 边的颜色
             attrs: {
               line: {
@@ -228,6 +210,51 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             },
             zIndex: 1,
           };
+          // 挑出循环的
+          if (
+            edge.source.toString().includes('loop') ||
+            edge.target.toString().includes('loop')
+          ) {
+            if (edge.source.toString().includes('loop')) {
+              return {
+                ..._obj,
+                source: {
+                  cell: edge.source.toString().split('-')[0],
+                  port: `${edge.source.toString().split('-')[0]}-in`,
+                },
+                target: {
+                  cell: edge.target.toString(),
+                  port: `${edge.target.toString()}-in`, // 使用左侧连接桩
+                },
+              };
+            } else {
+              return {
+                ..._obj,
+                source: {
+                  cell: edge.source.toString,
+                  port: `${edge.source.toString()}-out`,
+                },
+                target: {
+                  cell: edge.source.toString().split('-')[0],
+                  port: `${edge.source.toString().split('-')[0]}-out`, // 使用左侧连接桩
+                },
+              };
+            }
+          } else {
+            return {
+              ..._obj,
+              source: {
+                cell: isNaN(Number(edge.source))
+                  ? edge.source.toString().split('-')[0]
+                  : edge.source.toString(),
+                port: `${edge.source.toString()}-out`, // 使用右侧连接桩
+              },
+              target: {
+                cell: edge.target.toString(),
+                port: `${edge.target.toString()}-in`, // 使用左侧连接桩
+              },
+            };
+          }
         });
         graphRef.current.fromJSON({
           nodes,
@@ -285,6 +312,41 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       }
     };
 
+    // 新增函数：检测坐标是否在 Loop 节点内
+    const findLoopParentAtPosition = (position: { x: number; y: number }) => {
+      if (!graphRef.current || !graphRef.current.container) return null;
+
+      // 1. 获取容器滚动偏移
+      const container = graphRef.current.container;
+      const scrollLeft = container.scrollLeft;
+      const scrollTop = container.scrollTop;
+
+      // 2. 计算修正坐标
+      const adjustedX = position.x + scrollLeft;
+      const adjustedY = position.y + scrollTop;
+
+      // 3. 转换到画布坐标系
+      const graphPoint = graphRef.current.clientToGraph(
+        adjustedX,
+        adjustedY,
+        true,
+      );
+
+      // 4. 检测逻辑
+      const loops = graphRef.current.getNodes().filter((node: Node) => {
+        return node.getData()?.type === 'Loop';
+      });
+
+      for (const loopNode of loops) {
+        const bbox = loopNode.getBBox();
+        if (bbox.containsPoint(graphPoint)) {
+          return loopNode.id;
+        }
+      }
+
+      return null;
+    };
+
     // 将子组件的方法暴露给父组件
     useImperativeHandle(ref, () => ({
       addNode,
@@ -295,6 +357,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       changeGraphZoom,
       drawGraph,
       selectNode,
+      findLoopParentAtPosition,
     }));
 
     useEffect(() => {

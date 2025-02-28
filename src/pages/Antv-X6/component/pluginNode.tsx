@@ -54,7 +54,6 @@ const InputList: React.FC<InputListProps> = ({
           {(fields) => (
             <>
               {fields.map((item, index) => {
-                console.log(form.getFieldValue(item.name));
                 return (
                   <div key={item.name}>
                     {/* 只在第一个输入框组旁边显示标签 */}

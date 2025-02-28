@@ -149,6 +149,31 @@ const handleSpecialNodes = (node: ChildNode): Edge[] => {
   return edges;
 };
 
+const getLoopEdges = (node: ChildNode) => {
+  const edgeList = [];
+  if (node.innerStartNodeId && node.innerStartNodeId.length) {
+    const list = node.innerStartNodeId.map((item) => {
+      return {
+        source: `${node.id}-loop`,
+        target: item,
+      };
+    });
+    console.log('aaa', list);
+    edgeList.push(...list);
+  }
+  if (node.innerEndNodeId && node.innerEndNodeId.length) {
+    const list = node.innerEndNodeId.map((item) => {
+      return {
+        source: item,
+        target: `${node.id}-loop`,
+      };
+    });
+    console.log('bbb', list);
+    edgeList.push(...list);
+  }
+  return edgeList;
+};
+
 // 递归获取节点的边
 export const getEdges = (nodes: ChildNode[]): Edge[] => {
   // 筛选出普通节点和特定类型的节点（Condition 和 IntentRecognition）
@@ -163,9 +188,12 @@ export const getEdges = (nodes: ChildNode[]): Edge[] => {
         source: node.id,
         target: item,
       }));
+    } else if (node.type === 'Loop') {
+      return getLoopEdges(node);
     }
     return [];
   });
+  console.log(edges);
 
   const edgeList = [...edges];
 
@@ -184,9 +212,10 @@ export const getEdges = (nodes: ChildNode[]): Edge[] => {
   return resultEdges;
 };
 export const generatePorts = (data: ChildNode) => {
-  const basePortSize = 3; // 设置基础端口大小
+  const basePortSize = 3;
+  const isLoopNode = data.type === 'Loop'; // 新增 Loop 节点判断
 
-  // 定义默认的输入和输出端口配置
+  // 默认输入端口配置（所有节点通用）
   const defaultInputPort = {
     group: 'in',
     id: `${data.id}-in`,
@@ -202,6 +231,7 @@ export const generatePorts = (data: ChildNode) => {
     },
   };
 
+  // 默认输出端口配置（所有节点通用）
   const defaultOutputPort = {
     group: 'out',
     id: `${data.id}-out`,
@@ -222,10 +252,10 @@ export const generatePorts = (data: ChildNode) => {
 
   switch (data.type) {
     case 'Start':
-      inputPorts = []; // 不创建输入端口
+      inputPorts = [];
       break;
     case 'End':
-      outputPorts = []; // 不创建输出端口
+      outputPorts = [];
       break;
     case 'Condition':
     case 'IntentRecognition': {
@@ -235,47 +265,38 @@ export const generatePorts = (data: ChildNode) => {
         [];
       outputPorts = configs.map((item, index) => ({
         ...defaultOutputPort,
-        id: `${data.id}-${item.uuid || index}-out`, // 给每个端口一个唯一的名称
+        id: `${data.id}-${item.uuid || index}-out`,
       }));
       break;
     }
     default:
-      // 对于其他类型的节点，默认创建输入和输出端口
       break;
   }
 
   return {
     groups: {
-      out: {
-        position: 'right',
-        attrs: {
-          circle: {
-            r: basePortSize,
-            magnet: true,
-            stroke: '#5F95FF',
-            strokeWidth: 1,
-            fill: '#5F95FF',
-          },
-        },
-        connectable: {
-          source: true,
-          target: false,
-        },
-      },
+      // 通用端口组配置
       in: {
         position: 'left',
-        attrs: {
-          circle: {
-            r: basePortSize,
-            magnet: true,
-            stroke: '#5F95FF',
-            strokeWidth: 1,
-            fill: '#5F95FF',
-          },
-        },
+        attrs: { circle: { r: basePortSize } },
         connectable: {
-          source: false,
-          target: true,
+          source: false, // 禁止作为连接源
+          target: true, // 允许作为连接目标
+          ...(isLoopNode && {
+            source: true, // Loop 的左侧允许内部连出
+            target: true, // 同时允许外部连入
+          }),
+        },
+      },
+      out: {
+        position: 'right',
+        attrs: { circle: { r: basePortSize } },
+        connectable: {
+          source: true, // 允许作为连接源
+          target: false, // 禁止作为连接目标
+          ...(isLoopNode && {
+            target: true, // Loop 的右侧允许内部连入
+          }),
         },
       },
     },

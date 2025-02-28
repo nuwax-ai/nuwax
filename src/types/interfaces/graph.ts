@@ -36,8 +36,8 @@ export interface ChildNode {
   nextNodes?: number[] | null;
   nextNodeIds?: number[] | null;
   innerNodes?: ChildNode[] | null;
-  innerStartNodeId?: number | null;
-  innerEndNodeId?: number | null;
+  innerStartNodeId?: number[] | null;
+  innerEndNodeId?: number[] | null;
   unreachableNextNodeIds?: number[] | null;
   modified?: string;
   created?: string;
@@ -93,6 +93,7 @@ export interface GraphContainerRef {
   deleteEdge: (id: string) => void;
   changeGraphZoom: (val: number) => void;
   drawGraph: () => void;
+  findLoopParentAtPosition: (position: { x: number; y: number }) => void;
 }
 
 export interface BindEventHandlers {
