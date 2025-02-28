@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
+import { isNumber } from '@/utils/common';
 
 const cx = classNames.bind(styles);
 
@@ -68,6 +69,9 @@ const CreateSet: React.FC<CreateSetProps> = ({
                   if (!value || Number(value) >= 100 || Number(value) <= 5000) {
                     return Promise.resolve();
                   }
+                  if (value && !isNumber(value)) {
+                    return Promise.reject(new Error('请输入正确的数字!'));
+                  }
                   return Promise.reject(new Error('分段最大长度不得小于100，大于5000!'));
                 },
               }]}
@@ -81,6 +85,9 @@ const CreateSet: React.FC<CreateSetProps> = ({
                 validator(_, value) {
                   if (!value || Number(value) >= 0 || Number(value) <= 100) {
                     return Promise.resolve();
+                  }
+                  if (value && !isNumber(value)) {
+                    return Promise.reject(new Error('请输入正确的数字!'));
                   }
                   return Promise.reject(new Error('分段重叠数不得小于0，大于100!'));
                 },

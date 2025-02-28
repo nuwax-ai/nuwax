@@ -30,6 +30,20 @@ export interface KnowledgeBaseInfo extends KnowledgeConfigAddParams {
 // 数据更新输入参数
 export type KnowledgeConfigUpdateParams = KnowledgeBaseInfo;
 
+// table ext信息
+export interface TableExtInfo {
+  fixed: string;
+  visible: boolean;
+  subLabel: string;
+  width: string;
+  minWidth: string;
+  settable: boolean;
+  align: string;
+  formatter: string;
+  tips: string;
+  ellipsis: boolean;
+}
+
 // Table Column
 export interface SuperTableColumn {
   serialNumber: number;
@@ -37,18 +51,7 @@ export interface SuperTableColumn {
   name: string;
   sortable: boolean;
   tips: string;
-  ext: {
-    fixed: string;
-    visible: boolean;
-    subLabel: string;
-    width: string;
-    minWidth: string;
-    settable: boolean;
-    align: string;
-    formatter: string;
-    tips: string;
-    ellipsis: boolean;
-  };
+  ext: TableExtInfo;
 }
 
 // 知识库数据列表请求基础信息
@@ -72,18 +75,7 @@ export interface KnowledgeListBaseInfo {
     name: string;
     sortable: boolean;
     tips: string;
-    ext: {
-      fixed: string;
-      visible: boolean;
-      subLabel: string;
-      width: string;
-      minWidth: string;
-      settable: boolean;
-      align: string;
-      formatter: string;
-      tips: string;
-      ellipsis: boolean;
-    };
+    ext: TableExtInfo;
     children: SuperTableColumn[];
   }[];
 }
