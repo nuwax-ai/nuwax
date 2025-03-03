@@ -1,3 +1,4 @@
+import logo from '@/assets/images/logo.png';
 import { apiSetPassword } from '@/services/account';
 import type { SetPasswordFieldType } from '@/types/interfaces/login';
 import { validatePassword } from '@/utils/common';
@@ -6,7 +7,6 @@ import classNames from 'classnames';
 import React from 'react';
 import { useNavigate, useRequest } from 'umi';
 import styles from './index.less';
-import logo from '@/assets/images/logo.png';
 
 const cx = classNames.bind(styles);
 

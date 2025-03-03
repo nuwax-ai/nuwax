@@ -1,4 +1,9 @@
 import {
+  ICON_HOME,
+  ICON_SQUARE,
+  ICON_WORKSPACE,
+} from '@/constants/images.constants';
+import {
   MessageOptionEnum,
   SettingActionEnum,
   TabsEnum,
@@ -13,7 +18,6 @@ import {
   SettingOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { ICON_HOME, ICON_SQUARE, ICON_WORKSPACE } from '@/constants/images.constants';
 
 // tabs
 export const TABS = [

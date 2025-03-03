@@ -1,13 +1,12 @@
 import ConditionRender from '@/components/ConditionRender';
+import { ICON_AGENT, ICON_PLUGIN } from '@/constants/images.constants';
 import SquareMenuItem from '@/layouts/MenusLayout/SquareSection/SquareMenuItem';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { getURLParams } from '@/utils/common';
-import { SettingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useModel } from 'umi';
 import styles from './index.less';
-import { ICON_AGENT, ICON_PLUGIN } from '@/constants/images.constants';
 
 const cx = classNames.bind(styles);
 /**

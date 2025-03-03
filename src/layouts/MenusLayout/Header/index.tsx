@@ -1,8 +1,8 @@
+import logo from '@/assets/images/logo.png';
 import { ICON_NEW_AGENT } from '@/constants/images.constants';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
-import logo from '@/assets/images/logo.png';
 
 const cx = classNames.bind(styles);
 

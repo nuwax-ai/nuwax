@@ -1,3 +1,4 @@
+import logo from '@/assets/images/logo.png';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useUserInfo from '@/hooks/useUserInfo';
 import { apiLogin } from '@/services/account';
@@ -20,7 +21,6 @@ import React, { useState } from 'react';
 import { history, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
 import ModalSliderCaptcha from './ModalSliderCaptcha';
-import logo from '@/assets/images/logo.png';
 
 const cx = classNames.bind(styles);
 

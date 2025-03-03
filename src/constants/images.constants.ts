@@ -10,13 +10,17 @@ import { ReactComponent as ICON_DATABASE } from '@/assets/svg/database_icon.svg'
 import { ReactComponent as ICON_END } from '@/assets/svg/end.svg';
 import { ReactComponent as ICON_FOLD } from '@/assets/svg/fold.svg';
 import { ReactComponent as ICON_GROUP_SET } from '@/assets/svg/group_set.svg';
+import { ReactComponent as ICON_AGENT } from '@/assets/svg/icon_agent.svg';
+import { ReactComponent as ICON_HOME } from '@/assets/svg/icon_home.svg';
+import { ReactComponent as ICON_PLUGIN } from '@/assets/svg/icon_plugin.svg';
+import { ReactComponent as ICON_SQUARE } from '@/assets/svg/icon_square.svg';
+import { ReactComponent as ICON_WORKSPACE } from '@/assets/svg/icon_workspace.svg';
 import { ReactComponent as ICON_KNOWLEDGE } from '@/assets/svg/knowledge_icon.svg';
 import { ReactComponent as ICON_LOCAL_DOC } from '@/assets/svg/local_doc.svg';
 import { ReactComponent as ICON_MODEL } from '@/assets/svg/model_icon.svg';
 import { ReactComponent as ICON_NEW_AGENT } from '@/assets/svg/new_agent.svg';
 import { ReactComponent as ICON_ONLINE_DOC } from '@/assets/svg/online_doc.svg';
 import { ReactComponent as ICON_OPTIMIZE } from '@/assets/svg/optimize.svg';
-import { ReactComponent as ICON_PLUGIN } from '@/assets/svg/icon_plugin.svg';
 import { ReactComponent as ICON_SETTING } from '@/assets/svg/setting.svg';
 import { ReactComponent as ICON_START } from '@/assets/svg/start.svg';
 import { ReactComponent as ICON_SUCCESS } from '@/assets/svg/success_rate.svg';
@@ -25,10 +29,6 @@ import { ReactComponent as ICON_TABLE_FORMAT } from '@/assets/svg/table_format.s
 import { ReactComponent as ICON_TEXT_FORMAT } from '@/assets/svg/text_format.svg';
 import { ReactComponent as ICON_WORD } from '@/assets/svg/word.svg';
 import { ReactComponent as ICON_WORKFLOW } from '@/assets/svg/workflow_icon.svg';
-import { ReactComponent as ICON_HOME } from '@/assets/svg/icon_home.svg';
-import { ReactComponent as ICON_WORKSPACE } from '@/assets/svg/icon_workspace.svg';
-import { ReactComponent as ICON_SQUARE } from '@/assets/svg/icon_square.svg';
-import { ReactComponent as ICON_AGENT } from '@/assets/svg/icon_agent.svg';
 // import { ReactComponent as ICON_PLUGIN } from '@/assets/svg/icon_plugin.svg';
 // 工作流的图片
 import { ReactComponent as ICON_WORKFLOW_CODE } from '@/assets/workflow/workflow-Code.svg';
@@ -51,6 +51,7 @@ import { ReactComponent as ICON_WORKFLOW_WORKFLOW } from '@/assets/workflow/work
 export {
   ICON_ADD_TR,
   ICON_ADJUSTMENT,
+  ICON_AGENT,
   ICON_APPLICATION_DEV,
   ICON_ASSOCIATION,
   ICON_CODE,
@@ -62,9 +63,6 @@ export {
   ICON_FOLD,
   ICON_GROUP_SET,
   ICON_HOME,
-  ICON_WORKSPACE,
-  ICON_SQUARE,
-  ICON_AGENT,
   ICON_KNOWLEDGE,
   ICON_LOCAL_DOC,
   ICON_MODEL,
@@ -73,6 +71,7 @@ export {
   ICON_OPTIMIZE,
   ICON_PLUGIN,
   ICON_SETTING,
+  ICON_SQUARE,
   ICON_START,
   ICON_SUCCESS,
   ICON_TABLE,
@@ -96,4 +95,5 @@ export {
   ICON_WORKFLOW_TEXT_PROCESSING,
   ICON_WORKFLOW_VARIABLE,
   ICON_WORKFLOW_WORKFLOW,
+  ICON_WORKSPACE,
 };
