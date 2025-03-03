@@ -101,7 +101,7 @@ const SpaceLibrary: React.FC = () => {
 
   useEffect(() => {
     const userInfoString = localStorage.getItem(USER_INFO);
-    const userInfo = JSON.parse(userInfoString) as UserInfo;
+    const userInfo = (JSON.parse(userInfoString) as UserInfo) || {};
     createIdRef.current = userInfo.id;
   }, []);
 

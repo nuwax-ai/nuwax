@@ -1,7 +1,7 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { message } from 'antd';
-
+import { history } from 'umi'; // 使用 umi 提供的 history API
 // 运行时配置 todo 待完善
 export const request: any = {
   timeout: 10000,
@@ -11,7 +11,11 @@ export const request: any = {
     // 错误抛出
     errorThrower: (res) => {
       //todo 处理错误逻辑
-      // const { success, displayCode, message } = res;
+      const { code } = res;
+      if (code === '4010') {
+        //用户未登录 , 使用 history.push 进行跳转
+        history.push('/login');
+      }
       // if (!success) {
       //   const error: any = new Error(message);
       //   error.displayCode = displayCode;
