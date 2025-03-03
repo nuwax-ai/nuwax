@@ -36,11 +36,47 @@ import { ComponentTypeEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { BarsOutlined } from '@ant-design/icons';
 
-// 组件库更多操作
+// 组件库更多操作 插件： 创建副本、删除 模型：删除 工作流：创建副本、删除 知识库： 删除
 export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
-  { type: ComponentMoreActionEnum.Copy, label: '复制' },
-  { type: ComponentMoreActionEnum.Statistics, label: '统计' },
-  { type: ComponentMoreActionEnum.Del, label: '删除', isDel: true },
+  // 插件
+  {
+    action: ComponentMoreActionEnum.Copy,
+    label: '复制',
+    type: ComponentTypeEnum.Plugin,
+  },
+  {
+    action: ComponentMoreActionEnum.Del,
+    label: '删除',
+    isDel: true,
+    type: ComponentTypeEnum.Plugin,
+  },
+  // 模型
+  {
+    action: ComponentMoreActionEnum.Del,
+    label: '删除',
+    isDel: true,
+    type: ComponentTypeEnum.Model,
+  },
+  // 工作流
+  {
+    action: ComponentMoreActionEnum.Copy,
+    label: '复制',
+    mode: ComponentTypeEnum.Workflow,
+  },
+  {
+    action: ComponentMoreActionEnum.Del,
+    label: '删除',
+    isDel: true,
+    type: ComponentTypeEnum.Workflow,
+  },
+  // 知识库
+  // { type: ComponentMoreActionEnum.Statistics, label: '统计' },
+  {
+    action: ComponentMoreActionEnum.Del,
+    label: '删除',
+    isDel: true,
+    type: ComponentTypeEnum.Knowledge,
+  },
 ];
 
 // 插件工具创建方式

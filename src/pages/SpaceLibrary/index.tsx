@@ -1,4 +1,4 @@
-import AnalyzeStatistics from '@/components/AnalyzeStatistics';
+// import AnalyzeStatistics from '@/components/AnalyzeStatistics';
 import ConditionRender from '@/components/ConditionRender';
 import CreateKnowledge from '@/components/CreateKnowledge';
 import CreateNewPlugin from '@/components/CreateNewPlugin';
@@ -13,6 +13,7 @@ import {
   LIBRARY_ALL_TYPE,
 } from '@/constants/space.contants';
 import { apiComponentList } from '@/services/library';
+import { apiPluginCopy } from '@/services/plugin';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ComponentMoreActionEnum } from '@/types/enums/library';
 import { PluginTypeEnum } from '@/types/enums/plugin';
@@ -21,11 +22,8 @@ import {
   CreateListEnum,
   FilterStatusEnum,
 } from '@/types/enums/space';
-import type {
-  AnalyzeStatisticsItem,
-  CustomPopoverItem,
-} from '@/types/interfaces/common';
-import type { KnowledgeInfo } from '@/types/interfaces/knowledge';
+import type { CustomPopoverItem } from '@/types/interfaces/common';
+import type { KnowledgeBaseInfo } from '@/types/interfaces/knowledge';
 import type {
   ComponentInfo,
   WorkflowBaseInfo,
@@ -56,7 +54,7 @@ const SpaceLibrary: React.FC = () => {
   // 新建插件弹窗
   const [openPlugin, setOpenPlugin] = useState<boolean>(false);
   // 打开分析弹窗
-  const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
+  // const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
   // 打开创建知识库弹窗
   const [openKnowledge, setOpenKnowledge] = useState<boolean>(false);
   // 打开创建模型弹窗
@@ -72,9 +70,9 @@ const SpaceLibrary: React.FC = () => {
   const [keyword, setKeyword] = useState<string>('');
   // 创建者ID
   const createIdRef = useRef<number>(0);
-  const [componentStatistics, setComponentStatistics] = useState<
-    AnalyzeStatisticsItem[]
-  >([]);
+  // const [componentStatistics, setComponentStatistics] = useState<
+  //   AnalyzeStatisticsItem[]
+  // >([]);
   // 创建
   const [create, setCreate] = useState<CreateListEnum>(
     CreateListEnum.All_Person,
@@ -92,6 +90,15 @@ const SpaceLibrary: React.FC = () => {
     },
   });
 
+  // 创建副本接口
+  const { run: runPluginCopy } = useRequest(apiPluginCopy, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: () => {
+      message.success('插件删除成功');
+    },
+  });
+  console.log(runPluginCopy);
   useEffect(() => {
     const userInfoString = localStorage.getItem(USER_INFO);
     const userInfo = (JSON.parse(userInfoString) as UserInfo) || {};
@@ -215,41 +222,75 @@ const SpaceLibrary: React.FC = () => {
   };
 
   // 设置统计信息
-  const handleSetStatistics = () => {
-    const analyzeList = [
-      {
-        label: '智能体引用数',
-        value: '2324',
-      },
-      {
-        label: '调用次数',
-        value: '12334',
-      },
-      {
-        label: '平均响应时长（毫秒）',
-        value: '1322',
-      },
-      {
-        label: '调用成功率',
-        value: '99.8%',
-      },
-    ];
-    setComponentStatistics(analyzeList);
-  };
+  // const handleSetStatistics = () => {
+  //   const analyzeList = [
+  //     {
+  //       label: '智能体引用数',
+  //       value: '2324',
+  //     },
+  //     {
+  //       label: '调用次数',
+  //       value: '12334',
+  //     },
+  //     {
+  //       label: '平均响应时长（毫秒）',
+  //       value: '1322',
+  //     },
+  //     {
+  //       label: '调用成功率',
+  //       value: '99.8%',
+  //     },
+  //   ];
+  //   setComponentStatistics(analyzeList);
+  // };
 
-  // 点击更多操作
+  // 点击更多操作 插件： 创建副本、删除 模型：删除 工作流：创建副本、删除 知识库： 删除
   const handleClickMore = (item: CustomPopoverItem) => {
-    const { type } = item;
-    switch (type) {
-      case ComponentMoreActionEnum.Copy:
-        break;
-      case ComponentMoreActionEnum.Statistics:
-        handleSetStatistics();
-        setOpenAnalyze(true);
-        break;
-      case ComponentMoreActionEnum.Del:
-        break;
+    const { action, type } = item;
+    // 插件
+    if (type === ComponentTypeEnum.Plugin) {
+      switch (action) {
+        case ComponentMoreActionEnum.Copy:
+          // runPluginCopy(2);
+          break;
+        case ComponentMoreActionEnum.Del:
+          break;
+      }
     }
+
+    // 模型
+    if (
+      type === ComponentTypeEnum.Model &&
+      action === ComponentMoreActionEnum.Del
+    ) {
+    }
+
+    // 工作流
+    if (type === ComponentTypeEnum.Workflow) {
+      switch (action) {
+        case ComponentMoreActionEnum.Copy:
+          break;
+        case ComponentMoreActionEnum.Del:
+          break;
+      }
+    }
+
+    // 工作流
+    if (
+      type === ComponentTypeEnum.Knowledge &&
+      action === ComponentMoreActionEnum.Del
+    ) {
+    }
+    // switch (action) {
+    //   case ComponentMoreActionEnum.Copy:
+    //     break;
+    //   case ComponentMoreActionEnum.Statistics:
+    //     handleSetStatistics();
+    //     setOpenAnalyze(true);
+    //     break;
+    //   case ComponentMoreActionEnum.Del:
+    //     break;
+    // }
   };
 
   // 点击单个资源组件
@@ -276,7 +317,7 @@ const SpaceLibrary: React.FC = () => {
   };
 
   // 知识库新增确认事件
-  const handleConfirmKnowledge = (info: KnowledgeInfo) => {
+  const handleConfirmKnowledge = (info: KnowledgeBaseInfo) => {
     const { id } = info;
     setOpenKnowledge(false);
     history.push(`/space/${spaceId}/knowledge/${id}`);
@@ -337,12 +378,12 @@ const SpaceLibrary: React.FC = () => {
         </div>
       )}
       {/*统计概览*/}
-      <AnalyzeStatistics
-        open={openAnalyze}
-        onCancel={() => setOpenAnalyze(false)}
-        title="统计概览"
-        list={componentStatistics}
-      />
+      {/*<AnalyzeStatistics*/}
+      {/*  open={openAnalyze}*/}
+      {/*  onCancel={() => setOpenAnalyze(false)}*/}
+      {/*  title="统计概览"*/}
+      {/*  list={componentStatistics}*/}
+      {/*/>*/}
       {/*新建插件弹窗*/}
       <CreateNewPlugin
         spaceId={spaceId}

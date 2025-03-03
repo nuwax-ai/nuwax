@@ -5,11 +5,12 @@ import {
   COMPONENT_MORE_ACTION,
 } from '@/constants/library.constants';
 import { PublishStatusEnum } from '@/types/enums/common';
+import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentItemProps } from '@/types/interfaces/library';
 import { CheckCircleTwoTone, MoreOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import moment from 'moment';
-import React, { memo, useMemo } from 'react';
+import React, { memo, useEffect, useMemo, useState } from 'react';
 import BoxInfo from './BoxInfo';
 import styles from './index.less';
 
@@ -21,9 +22,18 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
   onClick,
   onClickMore,
 }) => {
+  const [actionList, setActionList] = useState<CustomPopoverItem[]>([]);
+  // 组件默认信息
   const info = useMemo(() => {
     return COMPONENT_LIST.find((item) => item.type === componentInfo.type);
   }, [componentInfo.type]);
+
+  useEffect(() => {
+    const list = COMPONENT_MORE_ACTION.filter(
+      (item) => item.type === componentInfo.type,
+    );
+    setActionList(list);
+  }, [componentInfo]);
 
   return (
     <div
@@ -89,7 +99,7 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
             最近编辑 {moment(componentInfo.modified).format('MM-DD HH:mm')}
           </div>
         </div>
-        <CustomPopover list={COMPONENT_MORE_ACTION} onClick={onClickMore}>
+        <CustomPopover list={actionList} onClick={onClickMore}>
           <span
             className={cx(
               styles['icon-box'],

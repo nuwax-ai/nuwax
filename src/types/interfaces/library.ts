@@ -14,7 +14,7 @@ import React from 'react';
 export interface ComponentItemProps {
   ComponentInfo: ComponentInfo;
   onClick: () => void;
-  onClickMore: (type: CustomPopoverItem) => void;
+  onClickMore: (item: CustomPopoverItem) => void;
 }
 
 // 工作流基础信息
@@ -118,7 +118,7 @@ export interface ComponentInfo {
   id: number;
   // 空间ID
   spaceId: number;
-  // 组件类型,可用值:Workflow,Plugin,Model,KnowledgeBase,Database
+  // 组件类型,可用值:Variable,Workflow,Plugin,Model,KnowledgeBase,Database
   type: ComponentTypeEnum;
   // 组件名称
   name: string;

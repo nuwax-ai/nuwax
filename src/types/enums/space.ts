@@ -4,7 +4,7 @@ export enum ComponentTypeEnum {
   Variable = 'Variable',
   Workflow = 'Workflow',
   Plugin = 'Plugin',
-  Knowledge = 'Knowledge',
+  Knowledge = 'KnowledgeBase',
   Database = 'Database',
   Model = 'Model',
 }

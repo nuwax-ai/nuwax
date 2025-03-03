@@ -1,11 +1,5 @@
 import TooltipIcon from '@/components/TooltipIcon';
-import {
-  CopyOutlined,
-  DeleteOutlined,
-  LinkOutlined,
-  PaperClipOutlined,
-  ReloadOutlined,
-} from '@ant-design/icons';
+import { CopyOutlined, PaperClipOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -15,19 +9,9 @@ const cx = classNames.bind(styles);
 interface ChatBottomMoreProps {
   onCopy?: () => void;
   onDebug?: () => void;
-  onAsk?: () => void;
-  // 重新生成事件
-  onRegen?: () => void;
-  onDel?: () => void;
 }
 
-const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({
-  onCopy,
-  onDebug,
-  onAsk,
-  onRegen,
-  onDel,
-}) => {
+const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({ onCopy, onDebug }) => {
   const iconList = [
     {
       icon: <CopyOutlined />,
@@ -39,21 +23,21 @@ const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({
       title: '调试',
       onClick: onDebug,
     },
-    {
-      icon: <LinkOutlined />,
-      title: '追问',
-      onClick: onAsk,
-    },
-    {
-      icon: <ReloadOutlined />,
-      title: '重新生成',
-      onClick: onRegen,
-    },
-    {
-      icon: <DeleteOutlined />,
-      title: '删除',
-      onClick: onDel,
-    },
+    // {
+    //   icon: <LinkOutlined />,
+    //   title: '追问',
+    //   onClick: onAsk,
+    // },
+    // {
+    //   icon: <ReloadOutlined />,
+    //   title: '重新生成',
+    //   onClick: onRegen,
+    // },
+    // {
+    //   icon: <DeleteOutlined />,
+    //   title: '删除',
+    //   onClick: onDel,
+    // },
   ];
 
   return (

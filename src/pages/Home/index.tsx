@@ -1,8 +1,7 @@
 import { RECOMMEND_TEXT } from '@/constants/home.constants';
-import { useModel } from '@umijs/max';
 import classNames from 'classnames';
 import React from 'react';
-import { history } from 'umi';
+import { history, useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

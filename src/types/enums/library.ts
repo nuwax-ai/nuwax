@@ -1,8 +1,8 @@
 // 组件库更多操作枚举
 export enum ComponentMoreActionEnum {
-  Copy,
-  Statistics,
-  Del,
+  Copy = 'Copy',
+  Statistics = 'Statistics',
+  Del = 'Del',
 }
 
 // 工作流操作枚举

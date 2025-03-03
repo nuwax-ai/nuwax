@@ -4,6 +4,8 @@ import type {
   BindValueType,
   InputTypeEnum,
   InvokeTypeEnum,
+  MessageModeEnum,
+  MessageTypeEnum,
   NoneRecallReplyTypeEnum,
   SearchStrategyEnum,
   TriggerComponentType,
@@ -336,6 +338,8 @@ export interface AgentConfigInfo {
   creator: CreatorInfo;
   space: SpaceInfo;
   devCollected: boolean;
+  // 会话ID
+  devConversationId: number;
 }
 
 // 触发器时区
@@ -409,15 +413,34 @@ export interface AgentComponentInfo {
 
 // 根据用户消息更新会话主题输入参数
 export interface AgentConversationUpdateParams {
+  // 会话ID
   id: number;
+  // 用户第一条消息
   firstMessage: string;
 }
 
-// 根据用户消息更新会话主题结果
-export interface AgentConversationUpdateResult {
+export interface MessageInfo {
+  // assistant 模型回复；user 用户消息,可用值:USER,ASSISTANT,SYSTEM,FUNCTION
+  role: AssistantRoleEnum;
+  // 可用值:CHAT,GUID,QUESTION,ANSWER
+  type: MessageModeEnum;
+  // 消息内容，其中附件放在.*?标签中
+  text: string;
+  // 消息时间
+  time: string;
+  metadata: object;
+  // 可用值:USER,ASSISTANT,SYSTEM,TOOL
+  messageType: MessageTypeEnum;
+}
+
+// 查询会话信息
+export interface AgentConversationInfo {
   // 会话ID
   id: number;
   userId: number;
+  // 会话UUID
+  uid: string;
+  // 智能体ID
   agentId: number;
   // 会话主题
   topic: string;
@@ -425,15 +448,33 @@ export interface AgentConversationUpdateResult {
   summary: string;
   modified: string;
   created: string;
+  agent: {
+    spaceId: number;
+    // 目标对象（智能体、工作流、插件）ID,可用值:Agent,Plugin,Workflow,Knowledge
+    targetType: string;
+    // 目标对象（智能体、工作流、插件）ID
+    targetId: number;
+    // 发布名称
+    name: string;
+    // 描述
+    description: string;
+    // 图标
+    icon: string;
+    remark: string;
+    // 智能体发布修改时间
+    modified: string;
+    // 智能体发布创建时间
+    created: string;
+    // 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)
+    statistics: AgentStatisticsInfo;
+    // 发布者信息
+    publishUser: CreatorInfo;
+    // 分类名称
+    category: string;
+    collect: boolean;
+  };
   // 会话消息列表，会话列表查询时不会返回该字段值
-  messageList: {
-    // assistant 模型回复；user 用户消息,可用值:USER,ASSISTANT,SYSTEM,FUNCTION
-    role: AssistantRoleEnum;
-    // 消息内容
-    content: string;
-    // 消息时间
-    time: string;
-  }[];
+  messageList: MessageInfo[];
 }
 
 // 查询用户历史会话输入参数
@@ -452,3 +493,31 @@ export interface AgentCardInfo {
     placeholder: string;
   }[];
 }
+
+// 附加文件信息
+export interface AttachmentFile {
+  fileKey: string;
+  // 文件URL
+  fileUrl: string;
+  // 文件名
+  fileName: string;
+  // 文件类型
+  mimeType: string;
+}
+
+// 智能体会话输入参数
+export interface AgentConversationChatParams {
+  // 会话唯一标识
+  conversationId: number;
+  // 变量参数，前端需要根据agent配置组装参数
+  variableParams: object;
+  // chat消息
+  message: string;
+  // 附件列表
+  attachments: AttachmentFile[];
+  // 是否调试模式
+  debug: boolean;
+}
+
+// 智能体会话问题建议输入参数
+export type AgentConversationChatSuggestParams = AgentConversationChatParams;
