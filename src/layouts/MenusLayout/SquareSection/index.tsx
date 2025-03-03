@@ -2,11 +2,12 @@ import ConditionRender from '@/components/ConditionRender';
 import SquareMenuItem from '@/layouts/MenusLayout/SquareSection/SquareMenuItem';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { getURLParams } from '@/utils/common';
-import { AppstoreOutlined, SettingOutlined } from '@ant-design/icons';
+import { SettingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useModel } from 'umi';
 import styles from './index.less';
+import { ICON_AGENT, ICON_PLUGIN } from '@/constants/images.constants';
 
 const cx = classNames.bind(styles);
 /**
@@ -47,7 +48,7 @@ const SquareSection: React.FC = () => {
           <SquareMenuItem
             name="智能体"
             isDown
-            icon={<AppstoreOutlined />}
+            icon={<ICON_AGENT />}
             isActive={activeKey === SquareAgentTypeEnum.Agent}
             onClick={() => handleClick(SquareAgentTypeEnum.Agent)}
           />
@@ -74,7 +75,7 @@ const SquareSection: React.FC = () => {
           <SquareMenuItem
             name="插件"
             isDown
-            icon={<SettingOutlined />}
+            icon={<ICON_PLUGIN />}
             isActive={activeKey === SquareAgentTypeEnum.Plugin}
             onClick={() => handleClick(SquareAgentTypeEnum.Plugin)}
           />

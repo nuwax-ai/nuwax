@@ -1,7 +1,8 @@
-import { ICON_LOGO, ICON_NEW_AGENT } from '@/constants/images.constants';
+import { ICON_NEW_AGENT } from '@/constants/images.constants';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
+import logo from '@/assets/images/logo.png';
 
 const cx = classNames.bind(styles);
 
@@ -12,7 +13,7 @@ const Header: React.FC = () => {
   };
   return (
     <>
-      <ICON_LOGO className={cx(styles.logo)} />
+      <img src={logo as string} className={cx(styles.logo)} alt="" />
       <span
         className={cx(
           styles['add-agent'],
