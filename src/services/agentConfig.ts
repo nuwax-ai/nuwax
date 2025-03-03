@@ -13,15 +13,17 @@ import type {
   AgentConfigHistoryInfo,
   AgentConfigInfo,
   AgentConfigUpdateParams,
+  AgentConversationChatParams,
+  AgentConversationChatSuggestParams,
   AgentConversationListParams,
   AgentConversationUpdateParams,
-  AgentConversationUpdateResult,
   AgentCopyParams,
   AgentDeleteParams,
   AgentPublishApplyParams,
   AgentTransferParams,
   TriggerTimeZone,
 } from '@/types/interfaces/agent';
+import { AgentConversationInfo } from '@/types/interfaces/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
@@ -232,7 +234,7 @@ export async function apiAgentCardList(): Promise<
 // 查询会话
 export async function apiAgentConversation(
   conversationId: number,
-): Promise<RequestResponse<null>> {
+): Promise<RequestResponse<AgentConversationInfo>> {
   return request(`/api/agent/conversation/${conversationId}`, {
     method: 'POST',
   });
@@ -241,7 +243,7 @@ export async function apiAgentConversation(
 // 根据用户消息更新会话主题
 export async function apiAgentConversationUpdate(
   data: AgentConversationUpdateParams,
-): Promise<RequestResponse<AgentConversationUpdateResult>> {
+): Promise<RequestResponse<AgentConversationInfo>> {
   return request('/api/agent/conversation/update', {
     method: 'POST',
     data,
@@ -251,7 +253,7 @@ export async function apiAgentConversationUpdate(
 // 查询用户历史会话
 export async function apiAgentConversationList(
   data: AgentConversationListParams,
-): Promise<RequestResponse<AgentConversationUpdateResult[]>> {
+): Promise<RequestResponse<AgentConversationInfo[]>> {
   return request('/api/agent/conversation/list', {
     method: 'POST',
     data,
@@ -261,7 +263,7 @@ export async function apiAgentConversationList(
 // 删除会话
 export async function apiAgentConversationDelete(
   conversationId: number,
-): Promise<RequestResponse<AgentConversationUpdateResult>> {
+): Promise<RequestResponse<AgentConversationInfo>> {
   return request(`/api/agent/conversation/delete/${conversationId}`, {
     method: 'POST',
   });
@@ -270,8 +272,28 @@ export async function apiAgentConversationDelete(
 // 创建会话
 export async function apiAgentConversationCreate(
   agentId: number,
-): Promise<RequestResponse<AgentConversationUpdateResult>> {
+): Promise<RequestResponse<AgentConversationInfo>> {
   return request(`/api/agent/conversation/create/${agentId}`, {
     method: 'POST',
+  });
+}
+
+// 智能体会话接口
+export async function apiAgentConversationChat(
+  data: AgentConversationChatParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/conversation/chat', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 智能体会话问题建议
+export async function apiAgentConversationChatSuggest(
+  data: AgentConversationChatSuggestParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/conversation/chat/suggest', {
+    method: 'POST',
+    data,
   });
 }

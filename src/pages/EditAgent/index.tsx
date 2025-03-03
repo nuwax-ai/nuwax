@@ -154,6 +154,7 @@ const EditAgent: React.FC = () => {
         </div>
         {/*预览与调试*/}
         <PreviewAndDebug
+          agentConfigInfo={agentConfigInfo}
           onPressDebug={() =>
             handlerToggleType(EditAgentShowType.Debug_Details)
           }

@@ -15,9 +15,13 @@ const cx = classNames.bind(styles);
 const SquareSection: React.FC = () => {
   const { agentInfoList, pluginInfoList } = useModel('squareModel');
   // active项
-  const [activeKey, setActiveKey] = useState<string>(localStorage.getItem('ActiveKey') || '');
+  const [activeKey, setActiveKey] = useState<string>(
+    localStorage.getItem('ActiveKey') || '',
+  );
   // menu显隐
-  const [visibleMenu, setVisibleMenu] = useState<string>(localStorage.getItem('VisibleMenu') || '');
+  const [visibleMenu, setVisibleMenu] = useState<string>(
+    localStorage.getItem('VisibleMenu') || '',
+  );
 
   useEffect(() => {
     const params = getURLParams();
@@ -28,8 +32,8 @@ const SquareSection: React.FC = () => {
   }, []);
 
   const handleClick = (cateType: string, cateName?: string) => {
-    localStorage.setItem('ActiveKey', cateName ?? cateType)
-    localStorage.setItem('VisibleMenu', cateType)
+    localStorage.setItem('ActiveKey', cateName ?? cateType);
+    localStorage.setItem('VisibleMenu', cateType);
 
     const url = cateName
       ? `/square?cate_type=${cateType}&cate_name=${cateName}`

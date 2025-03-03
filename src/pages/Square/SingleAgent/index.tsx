@@ -1,3 +1,4 @@
+import ConditionRender from '@/components/ConditionRender';
 import type { SingleAgentProps } from '@/types/interfaces/square';
 import {
   PlayCircleOutlined,
@@ -7,7 +8,6 @@ import {
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
-import ConditionRender from '@/components/ConditionRender';
 
 const cx = classNames.bind(styles);
 
@@ -30,7 +30,9 @@ const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
             </span>
           </div>
           <div className={cx('flex', 'items-center', styles['info-author'])}>
-            <ConditionRender condition={publishedAgentInfo?.publishUser?.avatar}>
+            <ConditionRender
+              condition={publishedAgentInfo?.publishUser?.avatar}
+            >
               <img
                 className={cx(styles.avatar)}
                 src={publishedAgentInfo?.publishUser?.avatar}

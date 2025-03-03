@@ -180,7 +180,7 @@ const SpaceDevelop: React.FC = () => {
   };
 
   // 点击跳转到智能体
-  const handleClick = (agentId: string) => {
+  const handleClick = (agentId: number) => {
     history.push(`/space/${spaceId}/agent/${agentId}`);
   };
 

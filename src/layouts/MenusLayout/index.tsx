@@ -1,6 +1,12 @@
 import { SPACE_ID } from '@/constants/home.constants';
+import { apiPublishedCategoryList } from '@/services/square';
 import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
+import type {
+  SquareAgentInfo,
+  SquareCategoryInfo,
+} from '@/types/interfaces/square';
+import { useRequest } from '@@/exports';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
@@ -12,9 +18,6 @@ import Tabs from './Tabs';
 import User from './User';
 import UserOperateArea from './UserOperateArea';
 import styles from './index.less';
-import type { SquareAgentInfo, SquareCategoryInfo } from '@/types/interfaces/square';
-import { useRequest } from '@@/exports';
-import { apiPublishedCategoryList } from '@/services/square';
 
 const cx = classNames.bind(styles);
 
@@ -60,7 +63,6 @@ const MenusLayout: React.FC = () => {
       setTabType(TabsEnum.Home);
     }
   }, []);
-
 
   const handleCategoryList = (result: SquareCategoryInfo[]) => {
     let _agentInfoList: SquareAgentInfo[] = [];

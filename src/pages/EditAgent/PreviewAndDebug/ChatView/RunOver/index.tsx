@@ -58,7 +58,7 @@ const RunOver: React.FC = () => {
       >
         <CheckCircleOutlined />
         <span className={cx('flex-1')}>运行完毕</span>
-        <DownOutlined />
+        <DownOutlined className={cx(styles.icon)} />
       </div>
     </Popover>
   );

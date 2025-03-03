@@ -80,3 +80,19 @@ export enum AssistantRoleEnum {
   SYSTEM = 'SYSTEM',
   FUNCTION = 'FUNCTION',
 }
+
+// 可用值:CHAT,GUID,QUESTION,ANSWER
+export enum MessageModeEnum {
+  CHAT = 'CHAT',
+  GUID = 'GUID',
+  QUESTION = 'QUESTION',
+  ANSWER = 'ANSWER',
+}
+
+// 可用值:USER,ASSISTANT,SYSTEM,TOOL
+export enum MessageTypeEnum {
+  USER = 'USER',
+  ASSISTANT = 'ASSISTANT',
+  SYSTEM = 'SYSTEM',
+  TOOL = 'TOOL',
+}
