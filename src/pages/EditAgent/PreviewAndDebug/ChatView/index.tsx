@@ -1,3 +1,5 @@
+import personal from '@/assets/images/personal.png';
+import { USER_INFO } from '@/constants/home.constants';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import { AgentConfigInfo, MessageInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
@@ -25,6 +27,7 @@ const ChatView: React.FC<ChatViewProps> = ({
   onCopy,
   onDebug,
 }) => {
+  const userInfo = JSON.parse(localStorage.getItem(USER_INFO));
   return (
     <div className={cx(styles.container, 'flex')}>
       {messageInfo.role !== AssistantRoleEnum.USER ? (
@@ -45,9 +48,15 @@ const ChatView: React.FC<ChatViewProps> = ({
         </>
       ) : (
         <>
-          <img className={cx(styles.avatar)} src={avatar} alt="" />
+          <img
+            className={cx(styles.avatar)}
+            src={avatar || userInfo?.avatar || (personal as string)}
+            alt=""
+          />
           <div className={cx('flex-1')}>
-            <div className={cx(styles.author)}>{nickname}</div>
+            <div className={cx(styles.author)}>
+              {nickname || userInfo?.nickName}
+            </div>
             <span className={cx(styles['chat-content'], 'radius-6')}>
               {messageInfo.text}
             </span>

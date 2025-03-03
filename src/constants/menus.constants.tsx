@@ -1,4 +1,9 @@
 import {
+  ICON_HOME,
+  ICON_SQUARE,
+  ICON_WORKSPACE,
+} from '@/constants/images.constants';
+import {
   MessageOptionEnum,
   SettingActionEnum,
   TabsEnum,
@@ -9,9 +14,6 @@ import {
   BellOutlined,
   CommentOutlined,
   CopyOutlined,
-  GlobalOutlined,
-  HomeOutlined,
-  InboxOutlined,
   PoweroffOutlined,
   SettingOutlined,
   UserOutlined,
@@ -20,17 +22,17 @@ import {
 // tabs
 export const TABS = [
   {
-    icon: <HomeOutlined />,
+    icon: <ICON_HOME />,
     text: '主页',
     type: TabsEnum.Home,
   },
   {
-    icon: <InboxOutlined />,
+    icon: <ICON_WORKSPACE />,
     text: '工作空间',
     type: TabsEnum.Space,
   },
   {
-    icon: <GlobalOutlined />,
+    icon: <ICON_SQUARE />,
     text: '广场',
     type: TabsEnum.Square,
   },

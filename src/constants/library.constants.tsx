@@ -1,5 +1,6 @@
 import databaseImage from '@/assets/images/database_image.png';
 import knowledgeImage from '@/assets/images/knowledge_image.png';
+import modelImage from '@/assets/images/model_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
 import {
@@ -253,7 +254,7 @@ export const COMPONENT_LIST = [
   },
   {
     type: ComponentTypeEnum.Model,
-    defaultImage: databaseImage,
+    defaultImage: modelImage,
     icon: <ICON_MODEL />,
     text: '模型',
   },

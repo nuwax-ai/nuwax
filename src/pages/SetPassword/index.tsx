@@ -1,4 +1,4 @@
-import { ICON_LOGO } from '@/constants/images.constants';
+import logo from '@/assets/images/logo.png';
 import { apiSetPassword } from '@/services/account';
 import type { SetPasswordFieldType } from '@/types/interfaces/login';
 import { validatePassword } from '@/utils/common';
@@ -38,7 +38,7 @@ const SetPassword: React.FC = () => {
         'items-center',
       )}
     >
-      <ICON_LOGO className={cx(styles.logo)} />
+      <img src={logo as string} className={cx(styles.logo)} alt="" />
       <Form
         rootClassName={cx(styles.form, 'flex', 'flex-col')}
         name="login"

@@ -35,7 +35,16 @@ const Tabs: React.FC<TabsType> = ({ onClick }) => {
               { [styles.active]: handleActive(item.type) },
             )}
           >
-            {item.icon}
+            <span
+              className={cx(
+                styles.icon,
+                'flex',
+                'items-center',
+                'content-center',
+              )}
+            >
+              {item.icon}
+            </span>
             <span className={cx(styles.text)}>{item.text}</span>
           </div>
         );

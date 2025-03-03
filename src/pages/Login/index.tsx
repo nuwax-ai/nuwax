@@ -1,5 +1,5 @@
+import logo from '@/assets/images/logo.png';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
-import { ICON_LOGO } from '@/constants/images.constants';
 import useUserInfo from '@/hooks/useUserInfo';
 import { apiLogin } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
@@ -117,7 +117,7 @@ const Login: React.FC = () => {
         'items-center',
       )}
     >
-      <ICON_LOGO className={cx(styles.logo)} />
+      <img src={logo as string} className={cx(styles.logo)} alt="" />
       <Form
         form={form}
         initialValues={{

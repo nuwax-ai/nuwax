@@ -166,6 +166,7 @@ const EditAgent: React.FC = () => {
         />
         {/*展示台*/}
         <ShowStand
+          list={[]}
           visible={showType === EditAgentShowType.Show_Stand}
           onClose={() => handlerToggleType(EditAgentShowType.Hide)}
         />
