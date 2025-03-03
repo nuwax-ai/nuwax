@@ -5,54 +5,41 @@ import {
   ConditionProps,
   NodeDisposeProps,
 } from '@/types/interfaces/workflow';
+import { returnImg } from '@/utils/workflow';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Form, Select, Tag } from 'antd';
 import React from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import './condition.less';
 
-export const modelTypes = [
+const options = [
+  { label: '等于', value: 'EQUAL', displayValue: '=' },
+  { label: '不等于', value: 'NOT_EQUAL', displayValue: '≠' },
+  { label: '长度大于', value: 'GREATER_THAN', displayValue: '>' },
   {
-    label: '标题生成',
-    icon: <MinusCircleOutlined />,
-    key: '标题生成',
-    children: [
-      {
-        key: 'output',
-        label: 'output',
-        tag: 'String',
-      },
-      {
-        key: 'setting',
-        label: 'Setting',
-        tag: 'Number',
-      },
-    ],
+    label: '长度大于等于',
+    value: 'GREATER_THAN_OR_EQUAL',
+    displayValue: '≥',
   },
+  { label: '长度小于', value: 'LESS_THAN', displayValue: '<' },
+  { label: '长度小于等于', value: 'LESS_THAN_OR_EQUAL', displayValue: '≤' },
+  { label: '包含', value: 'CONTAINS', displayValue: '⊃' },
+  { label: '不包含', value: 'NOT_CONTAINS', displayValue: '⊅' },
+  { label: '匹配正则表达式', value: 'MATCH_REGEX', displayValue: '~' },
+  { label: '为空', value: 'IS_NULL', displayValue: '∅' },
+  { label: '不为空', value: 'NOT_NULL', displayValue: '!∅' },
 ];
+
 export const Condition: React.FC<ConditionProps> = ({
   field,
   onChange,
   form,
   referenceList,
 }) => {
-  const options = [
-    { label: '等于', value: 'EQUAL', displayValue: '=' },
-    { label: '不等于', value: 'NOT_EQUAL', displayValue: '≠' },
-    { label: '长度大于', value: 'GREATER_THAN', displayValue: '>' },
-    {
-      label: '长度大于等于',
-      value: 'GREATER_THAN_OR_EQUAL',
-      displayValue: '≥',
-    },
-    { label: '长度小于', value: 'LESS_THAN', displayValue: '<' },
-    { label: '长度小于等于', value: 'LESS_THAN_OR_EQUAL', displayValue: '≤' },
-    { label: '包含', value: 'CONTAINS', displayValue: '⊃' },
-    { label: '不包含', value: 'NOT_CONTAINS', displayValue: '⊅' },
-    { label: '匹配正则表达式', value: 'MATCH_REGEX', displayValue: '~' },
-    { label: '为空', value: 'IS_NULL', displayValue: '∅' },
-    { label: '不为空', value: 'NOT_NULL', displayValue: '!∅' },
-  ];
+  // const changeReference = (value: string) => {
+  //   const _dataType = referenceList?.argMap?.[value];
+  //   form.setFieldValue([field.name, 'dataType'], _dataType || 'String');
+  // }
 
   return (
     <div className="condition-right-item">
@@ -65,24 +52,53 @@ export const Condition: React.FC<ConditionProps> = ({
           popupMatchSelectWidth={false}
           options={options}
           optionLabelProp="displayValue"
+          placeholder="请选择"
         ></Select>
       </Form.Item>
-      <Form.Item style={{ marginRight: '8px' }}>
-        <Form.Item name={[field.name, 'bindValueType']}>
+      <Form.Item style={{ marginRight: '8px', flex: 1 }}>
+        <Form.Item name={[field.name, 'firstArg']}>
           <Select
-            onChange={onChange}
-            value={form.getFieldValue([field.name, 'bindValueType'])}
-            options={referenceList.previousNodes}
-          ></Select>
+            placeholder="请选择"
+            optionLabelProp="displayValue"
+            options={referenceList.previousNodes.map((item) => {
+              return {
+                label: (
+                  <div className="dis-left font-12">
+                    {returnImg(item.type)}
+                    <span className="select-groud-label-style">
+                      {item.name}
+                    </span>
+                  </div>
+                ),
+                options: item.outputArgs.map((arg) => {
+                  return {
+                    arg,
+                    label: (
+                      <div className="dis-left  font-12">
+                        <span className=" font-12">{arg.name}</span>
+                        <Tag className="select-groud-label-style">
+                          {arg.dataType}
+                        </Tag>
+                      </div>
+                    ),
+                    value: JSON.stringify(arg),
+                    displayValue: `${item.name}-${arg.name}`,
+                  };
+                }),
+              };
+            })}
+          />
         </Form.Item>
         <Form.Item
-          name={[field.name, 'bindValue']}
+          name={[field.name, 'secondArg']}
           rules={[{ required: true }]}
         >
           <InputOrReference
             referenceList={referenceList}
             value={form.getFieldValue([field.name, 'bindValue'])}
             onChange={onChange}
+            returnObj
+            form={form}
           />
         </Form.Item>
       </Form.Item>
@@ -107,13 +123,15 @@ export const ConditionList: React.FC<ConditionListProps> = ({
   const submitForm = () => {
     const values = form.getFieldsValue();
     const _params = {
-      branchType: initialValues.branchType,
-      conditionType: initialValues.conditionType,
-      nextNodeIds: initialValues.nextNodeIds,
-      conditionArgs: values.conditionArgs,
-      uuid: initialValues.uuid,
+      ...initialValues,
+      conditionArgs: values.conditionArgs.map((item: any) => {
+        return {
+          ...item,
+          firstArg: item.firstArg ? JSON.parse(item.firstArg) : null,
+          secondArg: item.secondArg ? JSON.parse(item.secondArg) : null,
+        };
+      }),
     };
-
     handleChangeNodeConfig(_params, index);
   };
   return (
@@ -132,7 +150,21 @@ export const ConditionList: React.FC<ConditionListProps> = ({
             </div>
             <MinusCircleOutlined onClick={() => removeItem(index)} />
           </div>
-          <Form form={form} initialValues={initialValues} layout={'horizontal'}>
+          <Form
+            form={form}
+            onValuesChange={submitForm}
+            initialValues={{
+              ...initialValues,
+              conditionArgs: initialValues.conditionArgs.map((item) => ({
+                ...item,
+                firstArg: item.firstArg ? JSON.stringify(item.firstArg) : null,
+                secondArg: item.secondArg
+                  ? JSON.stringify(item.secondArg)
+                  : null,
+              })),
+            }}
+            layout={'horizontal'}
+          >
             <Form.List name={inputItemName}>
               {(fields, { add, remove }, { errors }) => (
                 <div className="relative">
@@ -144,7 +176,10 @@ export const ConditionList: React.FC<ConditionListProps> = ({
                     {fields.length > 1 && (
                       <div className="select-condition-type-style">
                         <Form.Item name={[inputItemName, 'conditionType']}>
-                          <Select value={form.getFieldValue('conditionType')}>
+                          <Select
+                            value={form.getFieldValue('conditionType')}
+                            defaultValue={'AND'}
+                          >
                             <Select.Option value="AND">且</Select.Option>
                             <Select.Option value="OR">或</Select.Option>
                           </Select>
@@ -215,8 +250,6 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
 
   const updateBranchType = (currentIndex: number): string => {
     if (currentIndex === 0) return 'IF';
-    if (currentIndex === (params.conditionBranchConfigs || []).length - 1)
-      return 'ELSE';
     return 'ELSE_IF';
   };
 
@@ -230,10 +263,9 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
         uuid: (params.conditionBranchConfigs?.length ?? 0) + 1,
         conditionArgs: [
           {
-            bindArg: null,
+            firstArg: null,
             compareType: null,
-            bindValueType: null,
-            bindValue: null,
+            secondArg: null,
           },
         ],
       },
@@ -319,20 +351,22 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
       <Droppable droppableId="condition-list">
         {(provided: any) => (
           <div {...provided.droppableProps} ref={provided.innerRef}>
-            {(params.conditionBranchConfigs || []).map((item, index) => (
-              <ConditionList
-                key={item.uuid}
-                title={index === 0 ? '如果' : '否则如果'}
-                index={index}
-                initialValues={item}
-                removeItem={removeItem}
-                handleChangeNodeConfig={handleChangeNodeConfig}
-                draggableId={item.uuid.toString()}
-                referenceList={referenceList}
-              />
-            ))}
+            {(params.conditionBranchConfigs || []).map((item, index) => {
+              return (
+                <ConditionList
+                  key={item.uuid}
+                  title={index === 0 ? '如果' : '否则如果'}
+                  index={index}
+                  initialValues={item}
+                  removeItem={removeItem}
+                  handleChangeNodeConfig={handleChangeNodeConfig}
+                  draggableId={item.uuid.toString()}
+                  referenceList={referenceList}
+                />
+              );
+            })}
             {provided.placeholder}
-            <div>否则</div>
+            <div className="condition-card-style">否则</div>
           </div>
         )}
       </Droppable>

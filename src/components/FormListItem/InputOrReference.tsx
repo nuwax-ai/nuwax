@@ -1,5 +1,8 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { Dropdown, Input, Tag } from 'antd';
+
+import { InputAndOutConfig } from '@/types/interfaces/node';
+import { returnImg } from '@/utils/workflow';
 import { useEffect } from 'react';
 import './index.less';
 import { InputOrReferenceProps } from './type';
@@ -12,6 +15,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   form, // Form 实例（从父组件传入）
   fieldName, // 当前字段路径（如 "inputItems[0].bindValue"）
   style,
+  returnObj = false,
 }) => {
   useEffect(() => {
     if (
@@ -56,6 +60,11 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         form.setFieldValue([...basePath, 'dataType'], 'String');
       }
     }
+    if (returnObj) {
+      const _values = referenceList.argMap[newValue];
+      onChange?.(JSON.stringify(_values));
+      return;
+    }
     onChange?.(newValue);
   };
   // 输入处理
@@ -84,7 +93,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
       ? referenceList.previousNodes.map((node) => ({
           key: node.id,
           label: node.name,
-          icon: node.icon,
+          icon: returnImg(node.type),
           children: node.outputArgs?.map((arg) => ({
             key: arg.key,
             label: (
@@ -110,26 +119,106 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           },
         ];
 
+  // 生成名称
+  const getObjName = (value: InputAndOutConfig) => {
+    const key = value.key?.split('.')[0];
+    const parent = referenceList.previousNodes.find(
+      (item) => item.id === Number(key),
+    );
+
+    if (parent) {
+      return `${parent.name} - ${value.name}`;
+    }
+  };
+
   return (
     <div className="input-or-reference dis-sb" style={style}>
-      {value && referenceList.argMap[value] ? (
-        <Tag
-          closable
-          onClose={handleTagClose}
-          className="input-or-reference-tag text-ellipsis"
-          color="#65656687"
-        >
-          {`${getName(value)} - ${referenceList.argMap[value].name}`}
-        </Tag>
-      ) : (
-        <Input
-          value={value}
-          placeholder={placeholder || '请输入或引用参数'}
-          onChange={handleInputChange}
-          style={{ marginRight: 8 }}
-          size="small"
-        />
-      )}
+      {(() => {
+        // 预计算通用条件
+        const hasValue = !!value;
+        const isReturnObjMode = returnObj;
+        let parsedValue = null;
+        let isValidObject = false;
+
+        if (isReturnObjMode) {
+          try {
+            // 增加 null/undefined 校验
+            if (value === '') {
+              return (
+                <Input
+                  value={value}
+                  placeholder={placeholder}
+                  style={{ marginRight: 8, color: 'red' }}
+                  size="small"
+                />
+              );
+            }
+
+            parsedValue = JSON.parse(value);
+            isValidObject =
+              parsedValue &&
+              typeof parsedValue === 'object' &&
+              !Array.isArray(parsedValue);
+          } catch (e) {
+            return (
+              <Input
+                value={value ?? ''}
+                placeholder={placeholder}
+                onChange={handleInputChange}
+                style={{ marginRight: 8, color: 'red' }}
+                size="small"
+              />
+            );
+          }
+        }
+
+        // 处理引用模式
+        const isReference = hasValue && referenceList.argMap[value];
+
+        // 统一渲染逻辑
+        if (isReturnObjMode) {
+          return isValidObject ? (
+            <Tag
+              closable
+              onClose={handleTagClose}
+              className="input-or-reference-tag text-ellipsis"
+              color="#65656687"
+            >
+              {getObjName(parsedValue)}
+            </Tag>
+          ) : (
+            <Input
+              value={value || ''}
+              placeholder={placeholder || '请输入或引用参数'}
+              onChange={handleInputChange}
+              style={{ marginRight: 8 }}
+              size="small"
+            />
+          );
+        }
+
+        // 非对象模式
+        return isReference ? (
+          <Tag
+            closable
+            onClose={handleTagClose}
+            className="input-or-reference-tag text-ellipsis"
+            color="#65656687"
+          >
+            {`${getName(value)} - ${
+              referenceList.argMap[value]?.name || '未知参数'
+            }`}
+          </Tag>
+        ) : (
+          <Input
+            value={value || ''}
+            placeholder={placeholder || '请输入或引用参数'}
+            onChange={handleInputChange}
+            style={{ marginRight: 8 }}
+            size="small"
+          />
+        );
+      })()}
       <Dropdown
         menu={{ items: menuItems }}
         trigger={['click']}

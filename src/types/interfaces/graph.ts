@@ -76,6 +76,8 @@ export interface GraphContainerProps {
   copyNode: (child: ChildNode) => void;
   // 删除节点
   removeNode: (id: string) => void;
+  // 改变画布大小
+  changeZoom: (val: number | string) => void;
 }
 
 export interface GraphContainerRef {
@@ -135,4 +137,5 @@ export interface GraphProp {
     id: string,
   ) => void;
   changeCondition: (newData: ChildNode) => void;
+  changeZoom: (val: number | string) => void;
 }

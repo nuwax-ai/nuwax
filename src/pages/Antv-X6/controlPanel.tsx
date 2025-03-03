@@ -15,6 +15,8 @@ interface ControlPanelProps {
   handleTestRun: () => void;
   // 切换画布大小
   changeGraph: (val: number) => void;
+  // 当前画布的缩放比例
+  zoomSize?: number;
 }
 
 const options = [
@@ -25,6 +27,7 @@ const options = [
 ];
 
 const ControlPanel: React.FC<ControlPanelProps> = ({
+  zoomSize = 1,
   dragChild,
   handleTestRun,
   changeGraph,
@@ -35,7 +38,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
       <div className="absolute-box">
         <Select
           options={options}
-          defaultValue={1}
+          value={zoomSize}
           optionLabelProp="displayValue"
           /* ...其他属性 */ onChange={changeGraph}
           style={{ width: 80 }}

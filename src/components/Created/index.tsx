@@ -1,5 +1,5 @@
 import Constant from '@/constants/codes.constants';
-// import { ICON_ADJUSTMENT, ICON_SUCCESS } from '@/constants/images.constants';
+import { ICON_TABLE, ICON_WORD } from '@/constants/images.constants';
 import service, { IGetList } from '@/services/created';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
@@ -28,7 +28,7 @@ const buttonList: ButtonList[] = [
   { label: '插件', key: AgentComponentTypeEnum.Plugin },
   { label: '工作流', key: AgentComponentTypeEnum.Workflow },
   { label: '知识库', key: AgentComponentTypeEnum.Knowledge },
-  { label: '数据库', key: AgentComponentTypeEnum.Database },
+  // { label: '数据库', key: AgentComponentTypeEnum.Database },
 ];
 
 // 创建插件、工作流、知识库、数据库
@@ -95,13 +95,31 @@ const Created: React.FC<CreatedProp> = ({
       ],
     },
   ];
+
+  const knowledgeItem = [
+    {
+      key: 'all', // 子项也需要唯一的 key
+      label: '全部',
+      icon: <ProductFilled />,
+    },
+    {
+      key: '1',
+      icon: <ICON_WORD />,
+      label: '文档',
+    },
+    {
+      key: '2',
+      icon: <ICON_TABLE />,
+      label: '表格',
+    },
+  ];
   // 添加ref引用
   const scrollRef = useRef<HTMLDivElement>(null);
   /**  -----------------  需要调用接口  -----------------   */
 
   //   获取右侧的list
   const getList = async (type: AgentComponentTypeEnum, params: IGetList) => {
-    if (params.page > sizes) return;
+    if (params.page !== 1 && params.page > sizes) return;
     const _res = await service.getList(type, params);
     if (_res.code === Constant.success) {
       setSizes(_res.data.pages);
@@ -203,11 +221,15 @@ const Created: React.FC<CreatedProp> = ({
   const onMenuClick = (val: string) => {
     // 切换左侧菜单
     setSelectMenu(val);
-    const params = {
+    const params: IGetList = {
       page: 1,
       pageSize: 10,
     };
-
+    if (selected.key === AgentComponentTypeEnum.Knowledge) {
+      if (val !== 'all') {
+        params.dataType = val;
+      }
+    }
     callInterface(val, params);
   };
 
@@ -224,6 +246,8 @@ const Created: React.FC<CreatedProp> = ({
     }
     // 遍历找到对应的选项
     const _item = buttonList.find((item) => item.key === _select);
+
+    console.log(_item);
 
     const _params = {
       page: 1,
@@ -338,7 +362,11 @@ const Created: React.FC<CreatedProp> = ({
             onClick={(val) => onMenuClick(val.key)}
             selectedKeys={[selectMenu]}
             mode="inline"
-            items={items}
+            items={
+              selected.key === AgentComponentTypeEnum.Knowledge
+                ? knowledgeItem
+                : items
+            }
           ></Menu>
         </div>
         {/* 右侧部分应该是变动的 */}
@@ -379,33 +407,6 @@ const Created: React.FC<CreatedProp> = ({
                       {item.statistics ? item.statistics.collectCount : 0}
                     </span>
                   </div>
-                  {/* <div>
-                    <span>
-                      <ICON_ADJUSTMENT
-                        style={{ marginBottom: '-2px' }}
-                        className="icon-margin"
-                      />
-                      {item.statistics ? item.statistics.likeCount : 0}
-                    </span>
-                    <Divider type="vertical" />
-                    <span>
-                      <MessageOutlined className="icon-margin" />
-                      {item.statistics ? item.statistics.referenceCount : 0}
-                    </span>
-                    <Divider type="vertical" />
-                    <span>
-                      <ClockCircleOutlined className="icon-margin" />
-                      {item.statistics ? item.statistics.failCallCount : 0}
-                    </span>
-                    <Divider type="vertical" />
-                    <span>
-                      <ICON_SUCCESS
-                        className="icon-margin"
-                        style={{ marginBottom: '-1px' }}
-                      />
-                      {item.statistics ? item.statistics.referenceCount : 0}
-                    </span>
-                  </div> */}
                 </div>
               </div>
               <Button

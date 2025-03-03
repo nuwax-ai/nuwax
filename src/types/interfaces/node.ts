@@ -27,10 +27,9 @@ export interface InputAndOutConfig {
 }
 
 interface ConditionArgs {
-  bindArg: string | null;
+  secondArg: InputAndOutConfig | null;
   compareType: string | null;
-  bindValueType: string | null;
-  bindValue: string | null;
+  firstArg: InputAndOutConfig | null;
 }
 export interface ConditionBranchConfigs {
   branchType: string | null;

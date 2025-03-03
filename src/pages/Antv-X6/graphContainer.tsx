@@ -29,6 +29,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       changeCondition,
       copyNode,
       removeNode,
+      changeZoom,
     },
     ref,
   ) => {
@@ -175,7 +176,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           const width = extension.width || 304;
           const height = extension.height || 83;
           const position = getRandomPosition(); // 如果没有提供具体的 x 和 y，则使用随机位置
-          console.log(extension);
           const ports = generatePorts(node); // 应用自定义端口配置
 
           return {
@@ -368,6 +368,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         changeDrawer: changeDrawer,
         changeEdge: changeEdge,
         changeCondition: changeCondition,
+        changeZoom: changeZoom,
       });
 
       const cleanup = EventHandlers({

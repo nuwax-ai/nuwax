@@ -66,7 +66,7 @@ export const returnImg = (type: string) => {
       return <ICON_WORKFLOW_HTTP_REQUEST />;
     case 'IntentRecognition':
       return <ICON_WORKFLOW_INTENT_RECOGNITION />;
-    case 'KnowledgeBase':
+    case 'Knowledge':
       return <ICON_WORKFLOW_KNOWLEDGE_BASE />;
     case 'LLM':
       return <ICON_WORKFLOW_LLM />;
@@ -100,7 +100,7 @@ export const returnBackgroundColor = (type: string) => {
     case 'Condition':
     case 'IntentRecognition':
       return '#C8FFFF';
-    case 'KnowledgeBase':
+    case 'Knowledge':
     case 'Database':
     case 'Variable':
     case 'LongTermMemory':
@@ -229,6 +229,7 @@ export const generatePorts = (data: ChildNode) => {
         fill: '#5F95FF',
       },
     },
+    args: {},
   };
 
   // 默认输出端口配置（所有节点通用）
@@ -245,6 +246,7 @@ export const generatePorts = (data: ChildNode) => {
         fill: '#5F95FF',
       },
     },
+    args: {},
   };
 
   let inputPorts = [defaultInputPort];
@@ -259,6 +261,7 @@ export const generatePorts = (data: ChildNode) => {
       break;
     case 'Condition':
     case 'IntentRecognition': {
+      inputPorts = [{ ...defaultInputPort, args: { y: '50%' } }];
       const configs =
         data.nodeConfig?.conditionBranchConfigs ||
         data.nodeConfig?.intentConfigs ||
@@ -266,6 +269,9 @@ export const generatePorts = (data: ChildNode) => {
       outputPorts = configs.map((item, index) => ({
         ...defaultOutputPort,
         id: `${data.id}-${item.uuid || index}-out`,
+        args: {
+          y: index * 32 + 32, // 垂直居中在对应项右侧
+        },
       }));
       break;
     }

@@ -22,8 +22,10 @@ import { ReactComponent as ICON_PLUGIN } from '@/assets/svg/plugin_icon.svg';
 import { ReactComponent as ICON_SETTING } from '@/assets/svg/setting.svg';
 import { ReactComponent as ICON_START } from '@/assets/svg/start.svg';
 import { ReactComponent as ICON_SUCCESS } from '@/assets/svg/success_rate.svg';
+import { ReactComponent as ICON_TABLE } from '@/assets/svg/table.svg';
 import { ReactComponent as ICON_TABLE_FORMAT } from '@/assets/svg/table_format.svg';
 import { ReactComponent as ICON_TEXT_FORMAT } from '@/assets/svg/text_format.svg';
+import { ReactComponent as ICON_WORD } from '@/assets/svg/word.svg';
 import { ReactComponent as ICON_WORKFLOW } from '@/assets/svg/workflow_icon.svg';
 // 工作流的图片
 import { ReactComponent as ICON_WORKFLOW_CODE } from '@/assets/workflow/workflow-Code.svg';
@@ -32,7 +34,7 @@ import { ReactComponent as ICON_WORKFLOW_DATABASE } from '@/assets/workflow/work
 import { ReactComponent as ICON_WORKFLOW_DOCUMENT_EXTRACTION } from '@/assets/workflow/workflow-DocumentExtraction.svg';
 import { ReactComponent as ICON_WORKFLOW_HTTP_REQUEST } from '@/assets/workflow/workflow-HTTPRequest.svg';
 import { ReactComponent as ICON_WORKFLOW_INTENT_RECOGNITION } from '@/assets/workflow/workflow-IntentRecognition.svg';
-import { ReactComponent as ICON_WORKFLOW_KNOWLEDGE_BASE } from '@/assets/workflow/workflow-KnowledgeBase.svg';
+import { ReactComponent as ICON_WORKFLOW_KNOWLEDGE_BASE } from '@/assets/workflow/workflow-Knowledge.svg';
 import { ReactComponent as ICON_WORKFLOW_LLM } from '@/assets/workflow/workflow-LLM.svg';
 import { ReactComponent as ICON_WORKFLOW_LONG_TERM_MEMORY } from '@/assets/workflow/workflow-LongTermMemory.svg';
 import { ReactComponent as ICON_WORKFLOW_LOOP } from '@/assets/workflow/workflow-Loop.svg';
@@ -68,8 +70,10 @@ export {
   ICON_SETTING,
   ICON_START,
   ICON_SUCCESS,
+  ICON_TABLE,
   ICON_TABLE_FORMAT,
   ICON_TEXT_FORMAT,
+  ICON_WORD,
   ICON_WORKFLOW,
   ICON_WORKFLOW_CODE,
   ICON_WORKFLOW_CONDITION,

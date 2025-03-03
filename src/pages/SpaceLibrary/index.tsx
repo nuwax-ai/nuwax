@@ -25,7 +25,7 @@ import type {
   AnalyzeStatisticsItem,
   CustomPopoverItem,
 } from '@/types/interfaces/common';
-import type { KnowledgeBaseInfo } from '@/types/interfaces/knowledge';
+import type { KnowledgeInfo } from '@/types/interfaces/knowledge';
 import type {
   ComponentInfo,
   WorkflowBaseInfo,
@@ -276,7 +276,7 @@ const SpaceLibrary: React.FC = () => {
   };
 
   // 知识库新增确认事件
-  const handleConfirmKnowledge = (info: KnowledgeBaseInfo) => {
+  const handleConfirmKnowledge = (info: KnowledgeInfo) => {
     const { id } = info;
     setOpenKnowledge(false);
     history.push(`/space/${spaceId}/knowledge/${id}`);
