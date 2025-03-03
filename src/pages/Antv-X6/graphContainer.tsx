@@ -72,7 +72,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         zIndex: 3,
         ports: ports,
       });
-      console.log('223', newNode);
       // 添加节点
       graphRef.current.addNode(newNode);
       if (child.loopNodeId) {
@@ -86,7 +85,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     };
 
     // 修改节点信息
-    const updateNode = (nodeId: string, newData: Partial<ChildNode>) => {
+    const updateNode = (nodeId: string, newData: ChildNode) => {
       if (!graphRef.current) return;
 
       const node = graphRef.current.getCellById(nodeId);
@@ -107,6 +106,23 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             y: position.y,
           };
         }
+        // 如果是意图识别，条件分支，或者问答(选中了选项回答)
+        if (
+          newData.type === 'Condition' ||
+          newData.type === 'IntentRecognition' ||
+          (newData.type === 'QA' && newData.nodeConfig?.answerType === 'Select')
+        ) {
+          const height = node.getSize().height;
+          console.log(height);
+          const newPort = generatePorts(newData, height);
+          console.log(newPort);
+          node.prop('ports', {
+            ...newPort, // 使用新生成的端口配置
+          });
+          //   node.removePorts(); // 清除现有的所有端口
+          // newPort.forEach(port => node.addPort(port)); // 添加新端口
+        }
+
         node.setData(newData, { overwrite: true });
       }
     };

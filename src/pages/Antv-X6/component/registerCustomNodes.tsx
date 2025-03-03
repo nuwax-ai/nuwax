@@ -32,7 +32,7 @@ const testRunList = [
   'TextProcessing',
   'Workflow',
   'DocumentExtraction',
-  'KnowledgeBase',
+  'Knowledge',
 ];
 
 /**

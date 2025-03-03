@@ -211,7 +211,7 @@ export const getEdges = (nodes: ChildNode[]): Edge[] => {
 
   return resultEdges;
 };
-export const generatePorts = (data: ChildNode) => {
+export const generatePorts = (data: ChildNode, height?: number) => {
   const basePortSize = 3;
   const isLoopNode = data.type === 'Loop'; // 新增 Loop 节点判断
 
@@ -261,7 +261,9 @@ export const generatePorts = (data: ChildNode) => {
       break;
     case 'Condition':
     case 'IntentRecognition': {
-      inputPorts = [{ ...defaultInputPort, args: { y: '50%' } }];
+      inputPorts = [
+        { ...defaultInputPort, args: { y: height ? height / 2 : '50%' } },
+      ];
       const configs =
         data.nodeConfig?.conditionBranchConfigs ||
         data.nodeConfig?.intentConfigs ||

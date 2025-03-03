@@ -5,7 +5,6 @@ import {
   ConditionProps,
   NodeDisposeProps,
 } from '@/types/interfaces/workflow';
-import { returnImg } from '@/utils/workflow';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Form, Select, Tag } from 'antd';
 import React from 'react';
@@ -53,11 +52,12 @@ export const Condition: React.FC<ConditionProps> = ({
           options={options}
           optionLabelProp="displayValue"
           placeholder="请选择"
+          style={{ width: 55 }}
         ></Select>
       </Form.Item>
       <Form.Item style={{ marginRight: '8px', flex: 1 }}>
         <Form.Item name={[field.name, 'firstArg']}>
-          <Select
+          {/* <Select
             placeholder="请选择"
             optionLabelProp="displayValue"
             options={referenceList.previousNodes.map((item) => {
@@ -87,6 +87,13 @@ export const Condition: React.FC<ConditionProps> = ({
                 }),
               };
             })}
+          /> */}
+          <InputOrReference
+            referenceList={referenceList}
+            value={form.getFieldValue([field.name, 'bindValue'])}
+            onChange={onChange}
+            returnObj
+            form={form}
           />
         </Form.Item>
         <Form.Item
@@ -279,10 +286,6 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
         conditionBranchConfigs: newConditionBranchConfigs,
         extension: {
           ...params.extension,
-          height:
-            newConditionBranchConfigs.length >= 2
-              ? newConditionBranchConfigs.length * 40 + 60
-              : 140,
         },
       });
     }
@@ -301,10 +304,6 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
         conditionBranchConfigs: updatedConditionBranchConfigs,
         extension: {
           ...params.extension,
-          height:
-            updatedConditionBranchConfigs.length >= 2
-              ? updatedConditionBranchConfigs.length * 40 + 60
-              : 140,
         },
       });
     }

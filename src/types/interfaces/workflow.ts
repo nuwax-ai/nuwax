@@ -198,6 +198,8 @@ export interface NodeRenderProps {
   // 是否显示复制按钮
   showCopy?: boolean;
   style?: any;
+  //   不显示新增按钮
+  disabledAdd?: boolean;
 }
 
 // 定义通用的formList的props类型

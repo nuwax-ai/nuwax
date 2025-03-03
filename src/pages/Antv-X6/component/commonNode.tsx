@@ -39,6 +39,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   inputItemName = 'inputArgs',
   initialValues,
   showCopy = false,
+  disabledAdd,
 }) => {
   const [form] = Form.useForm();
 
@@ -71,11 +72,13 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
     <div className="start-node-style">
       <div className="dis-sb margin-bottom">
         <span className="node-title-style">{title}</span>
-        <Button
-          icon={<PlusOutlined />}
-          size={'small'}
-          onClick={addInputItem}
-        ></Button>
+        {!disabledAdd && (
+          <Button
+            icon={<PlusOutlined />}
+            size={'small'}
+            onClick={addInputItem}
+          ></Button>
+        )}
       </div>
       <Form
         layout={'vertical'}

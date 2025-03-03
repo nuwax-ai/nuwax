@@ -84,7 +84,7 @@ export interface GraphContainerRef {
   // 新增节点
   addNode: (e: { x: number; y: number }, child: ChildNode) => void;
   // 修改节点
-  updateNode: (nodeId: string, newData: Partial<ChildNode>) => void;
+  updateNode: (nodeId: string, newData: ChildNode) => void;
   // 保存节点
   saveAllNodes: () => void;
   // 删除节点

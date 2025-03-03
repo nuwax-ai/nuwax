@@ -3,7 +3,6 @@ import { Dropdown, Input, Tag } from 'antd';
 
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
-import { useEffect } from 'react';
 import './index.less';
 import { InputOrReferenceProps } from './type';
 const InputOrReference: React.FC<InputOrReferenceProps> = ({
@@ -17,25 +16,6 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   style,
   returnObj = false,
 }) => {
-  useEffect(() => {
-    if (
-      referenceList.previousNodes &&
-      !referenceList.previousNodes.length &&
-      value
-    ) {
-      if (fieldName && form) {
-        const basePath = fieldName.slice(0, -1);
-        // 获取当前的bindValueType
-        const _bindValueType = form?.getFieldValue([
-          ...basePath,
-          'bindValueType',
-        ]);
-        if (_bindValueType === 'Reference') {
-          form.setFieldValue([...basePath, 'bindValue'], '');
-        }
-      }
-    }
-  }, [referenceList.previousNodes]);
   // InputOrReference.tsx
   const updateValues = (newValue: string, valueType: 'Input' | 'Reference') => {
     if (fieldName && form) {
@@ -143,13 +123,14 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         if (isReturnObjMode) {
           try {
             // 增加 null/undefined 校验
-            if (value === '') {
+            if (value === '' || !referenceList.previousNodes.length) {
               return (
                 <Input
-                  value={value}
+                  value={''}
                   placeholder={placeholder}
                   style={{ marginRight: 8, color: 'red' }}
                   size="small"
+                  disabled
                 />
               );
             }
@@ -175,6 +156,25 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         // 处理引用模式
         const isReference = hasValue && referenceList.argMap[value];
 
+        let clearValue: boolean = false;
+
+        if (
+          referenceList.previousNodes &&
+          !referenceList.previousNodes.length &&
+          value
+        ) {
+          if (fieldName && form) {
+            const basePath = fieldName.slice(0, -1);
+            // 获取当前的bindValueType
+            const _bindValueType = form?.getFieldValue([
+              ...basePath,
+              'bindValueType',
+            ]);
+            if (_bindValueType === 'Reference') {
+              clearValue = true;
+            }
+          }
+        }
         // 统一渲染逻辑
         if (isReturnObjMode) {
           return isValidObject ? (
@@ -211,7 +211,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           </Tag>
         ) : (
           <Input
-            value={value || ''}
+            value={clearValue ? '' : value}
             placeholder={placeholder || '请输入或引用参数'}
             onChange={handleInputChange}
             style={{ marginRight: 8 }}

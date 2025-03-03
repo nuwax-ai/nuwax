@@ -205,7 +205,7 @@ const Workflow: React.FC = () => {
     }
     // 如果是条件分支，需要增加高度
     if (child.type === 'Condition') {
-      _params.extension = { ...dragEvent, height: 140 };
+      _params.extension = { ...dragEvent };
     }
     if (child.type === 'Loop') {
       _params.extension = { ...dragEvent, height: 240, width: 600 };

@@ -188,7 +188,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
             referenceList={referenceList}
           />
         );
-      case 'Knowledge':
+      case 'KnowledgeBase':
         return (
           <KnowledgeNode
             params={currentNodeConfig.nodeConfig}
