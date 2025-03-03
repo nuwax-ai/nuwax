@@ -33,7 +33,7 @@ const testRunList = [
   'TextProcessing',
   'Workflow',
   'DocumentExtraction',
-  'KnowledgeBase',
+  'Knowledge',
 ];
 
 // 定义试运行,后面删除
@@ -188,7 +188,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
             referenceList={referenceList}
           />
         );
-      case 'KnowledgeBase':
+      case 'Knowledge':
         return (
           <KnowledgeNode
             params={currentNodeConfig.nodeConfig}

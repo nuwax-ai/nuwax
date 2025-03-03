@@ -168,16 +168,42 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
           </div>
         </div>
         {/* 节点内容区，根据 data.content 的类型显示不同的内容 */}
-        {data.type !== 'IntentRecognition' && data.type !== 'Condition' && (
-          <div className="general-node-content">
-            <div className="text-ellipsis">{data.description}</div>
-          </div>
-        )}
+        {data.type !== 'IntentRecognition' &&
+          data.type !== 'Condition' &&
+          data.type !== 'QA' && (
+            <div className="general-node-content">
+              <div className="text-ellipsis">{data.description}</div>
+            </div>
+          )}
         {data.type === 'Condition' && (
           <div className="condition-node-content-style">
             {data.nodeConfig.conditionBranchConfigs?.map((_, index) => (
               <Input key={index} className="margin-bottom" disabled />
             ))}
+            <Input className="margin-bottom" disabled />
+          </div>
+        )}
+        {data.type === 'QA' && data.nodeConfig.answerType === 'SELECT' && (
+          <div className="condition-node-content-style">
+            {data.nodeConfig.options?.map((item, index) => (
+              <div key={index} className="dis-left mb-16">
+                <span
+                  style={{
+                    width: '60px',
+                    textAlign: 'center',
+                    color: '#979797',
+                  }}
+                >
+                  选项{index + 1}
+                </span>
+                <span className="font-weight">{item.content}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {data.type === 'QA' && data.nodeConfig.answerType === 'TEXT' && (
+          <div className="general-node-content">
+            <div className="text-ellipsis">{data.description}</div>
           </div>
         )}
         {data.type === 'IntentRecognition' && (
@@ -191,7 +217,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
                     color: '#979797',
                   }}
                 >
-                  选项
+                  选项{index + 1}
                 </span>
                 <span className="font-weight">{item.intent}</span>
               </div>

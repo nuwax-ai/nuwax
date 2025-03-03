@@ -30,6 +30,7 @@ const initGraph = ({
   changeDrawer,
   changeEdge,
   changeCondition,
+  changeZoom,
 }: GraphProp) => {
   const graphContainer = document.getElementById(containerId);
   // 如果找不到容器，则抛出错误
@@ -163,7 +164,7 @@ const initGraph = ({
       },
     },
     embedding: {
-      enabled: true,
+      enabled: false,
       // findParent({ e }) {
       //   // 根据鼠标位置找到可能的父节点
       //   const pos = graph.getPointByClient(e.clientX, e.clientY);
@@ -363,7 +364,8 @@ const initGraph = ({
   });
 
   // 监听节点的拖拽移动位置
-  graph.on('node:moved', ({ node }) => {
+  graph.on('node:moved', ({ node, e }) => {
+    e.stopPropagation(); // 阻止事件冒泡
     // 获取节点被拖拽到的位置
     const { x, y } = node.getPosition();
     const data = node.getData();
@@ -387,38 +389,26 @@ const initGraph = ({
     changeDrawer(null); // 调用回调函数以更新抽屉内容
   });
 
-  let ctrlPressed = false;
-
-  graph.on('node:embedding', ({ e }) => {
-    ctrlPressed = e.metaKey || e.ctrlKey;
+  // 监听画布缩放
+  graph.on('scale', ({ sx }) => {
+    changeZoom(sx);
   });
 
-  graph.on('node:embedded', () => {
-    ctrlPressed = false;
-  });
-
-  graph.on('node:change:size', ({ node, options }) => {
-    if (options.skipParentHandler) {
-      return;
-    }
+  graph.on('node:change:size', ({ node }) => {
     const children = node.getChildren();
     if (children && children.length) {
       node.prop('originSize', node.getSize());
     }
   });
 
-  graph.on('node:change:position', ({ node, options }) => {
-    if (options.skipParentHandler || ctrlPressed) {
-      return;
-    }
-    // 当子节点位置改变时触发
+  graph.on('node:change:position', ({ node }) => {
+    // 增加子节点有效性验证
     const parentId = node.getData().parentId;
-    if (!parentId) return; // 如果没有父节点ID，则无需调整父节点大小
+    if (!parentId || parentId === undefined) return;
 
+    // 确认父节点存在且是Loop类型
     const parentNode = graph.getCellById(parentId);
-
-    if (Node.isNode(parentNode)) {
-      // 确保parentNode是一个Node实例
+    if (Node.isNode(parentNode) && parentNode.getData()?.type === 'Loop') {
       adjustParentSize(parentNode);
     }
   });

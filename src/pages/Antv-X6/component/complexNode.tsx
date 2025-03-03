@@ -306,7 +306,6 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
 
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
-    console.log('123', newNodeConfig);
     Modified({ ...params, ...newNodeConfig });
   };
 

@@ -10,7 +10,7 @@ import {
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { KnowledgeDataTypeEnum } from '@/types/enums/library';
 import type { CreateKnowledgeProps } from '@/types/interfaces/common';
-import type { KnowledgeBaseInfo } from '@/types/interfaces/knowledge';
+import type { KnowledgeInfo } from '@/types/interfaces/knowledge';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
@@ -43,7 +43,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
     debounceWait: 300,
     onSuccess: (result, params) => {
       message.success('知识库已创建成功');
-      const data: KnowledgeBaseInfo = {
+      const data: KnowledgeInfo = {
         id: result,
         ...params[0],
       };
@@ -77,7 +77,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
     setResourceFormat(value);
   };
 
-  const onFinish: FormProps<KnowledgeBaseInfo>['onFinish'] = (values) => {
+  const onFinish: FormProps<KnowledgeInfo>['onFinish'] = (values) => {
     const params = {
       spaceId,
       name: values.name,

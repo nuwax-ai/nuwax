@@ -1,8 +1,5 @@
 import TooltipIcon from '@/components/TooltipIcon';
-import {
-  CopyOutlined,
-  PaperClipOutlined,
-} from '@ant-design/icons';
+import { CopyOutlined, PaperClipOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -14,10 +11,7 @@ interface ChatBottomMoreProps {
   onDebug?: () => void;
 }
 
-const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({
-  onCopy,
-  onDebug,
-}) => {
+const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({ onCopy, onDebug }) => {
   const iconList = [
     {
       icon: <CopyOutlined />,

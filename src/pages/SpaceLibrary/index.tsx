@@ -98,7 +98,7 @@ const SpaceLibrary: React.FC = () => {
       message.success('插件删除成功');
     },
   });
-
+  console.log(runPluginCopy);
   useEffect(() => {
     const userInfoString = localStorage.getItem(USER_INFO);
     const userInfo = (JSON.parse(userInfoString) as UserInfo) || {};

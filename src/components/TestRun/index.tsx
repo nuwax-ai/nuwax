@@ -43,8 +43,6 @@ const TestRun: React.FC<TestRunProps> = ({
 
   const [form] = Form.useForm();
 
-  console.log('456');
-
   const onFinish = (values: DefaultObjectType) => {
     run(type, values);
   };

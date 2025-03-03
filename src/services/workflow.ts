@@ -49,10 +49,10 @@ interface AddNodeResponse {
   description: string;
   id: number;
   innerEndNode: boolean;
-  innerEndNodeId: number | null;
+  innerEndNodeId?: number[] | null;
   innerNodes?: ChildNode[] | null;
-  innerStartNodeId: number | null;
-  loopNodeId: number | null;
+  innerStartNodeId?: number[] | null;
+  loopNodeId?: number;
   modified: string;
   name: string;
   nextNodeIds: number[] | null;

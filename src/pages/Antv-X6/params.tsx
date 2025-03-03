@@ -101,7 +101,7 @@ export const asideList: StencilList[] = [
       {
         name: '知识库',
         icon: <ICON_WORKFLOW_KNOWLEDGE_BASE />,
-        type: 'KnowledgeBase',
+        type: 'Knowledge',
         key: 'general-Node',
         description: '在选定的知识中，根据输入变量召回最匹配的信息',
       },

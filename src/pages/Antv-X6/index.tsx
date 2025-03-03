@@ -351,7 +351,7 @@ const Workflow: React.FC = () => {
     };
 
     // 判断是否需要显示特定类型的创建面板
-    const isSpecialType = ['Plugin', 'Workflow', 'Database'].includes(
+    const isSpecialType = ['Plugin', 'Workflow', 'Knowledge'].includes(
       child.type,
     );
 
@@ -372,6 +372,11 @@ const Workflow: React.FC = () => {
   const changeGraph = (val: number) => {
     graphRef.current.changeGraphZoom(val);
     changeUpdateTime();
+  };
+
+  //
+  const changeZoom = (val: number | string) => {
+    console.log(val);
   };
 
   // 节点试运行
@@ -533,6 +538,7 @@ const Workflow: React.FC = () => {
         changeCondition={changeNode}
         removeNode={deleteNode}
         copyNode={copyNode}
+        changeZoom={changeZoom}
       />
       <ControlPanel
         dragChild={dragChild}

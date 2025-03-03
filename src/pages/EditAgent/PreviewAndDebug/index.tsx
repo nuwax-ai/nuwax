@@ -1,24 +1,32 @@
-import personal from '@/assets/images/personal.png';
 import docImage from '@/assets/images/doc_image.jpg';
-import RecommendList from './RecommendList';
+import personal from '@/assets/images/personal.png';
+import ConditionRender from '@/components/ConditionRender';
+import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
+import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   apiAgentConversation,
   apiAgentConversationChatSuggest,
 } from '@/services/agentConfig';
-import type { AgentConfigInfo, AgentConversationInfo, CreatorInfo } from '@/types/interfaces/agent';
-import { useRequest } from 'umi';
+import type {
+  AgentConfigInfo,
+  AgentConversationInfo,
+  CreatorInfo,
+} from '@/types/interfaces/agent';
+import { UploadInfo } from '@/types/interfaces/common';
+import { createSSEConnection } from '@/utils/fetchEventSource';
+import {
+  ClearOutlined,
+  CloseCircleOutlined,
+  PlusCircleOutlined,
+} from '@ant-design/icons';
+import { Input, Tooltip, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { useRequest } from 'umi';
 import ChatView from './ChatView';
 import styles from './index.less';
 import PreviewAndDebugHeader from './PreviewAndDebugHeader';
-import { ClearOutlined, CloseCircleOutlined, PlusCircleOutlined } from '@ant-design/icons';
-import { Input, Tooltip, Upload, UploadProps } from 'antd';
-import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { UploadInfo } from '@/types/interfaces/common';
-import ConditionRender from '@/components/ConditionRender';
-import { createSSEConnection } from '@/utils/fetchEventSource';
+import RecommendList from './RecommendList';
 
 const cx = classNames.bind(styles);
 
@@ -63,7 +71,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
 
   useEffect(() => {
     if (agentConfigInfo) {
-      const {devConversationId} = agentConfigInfo;
+      const { devConversationId } = agentConfigInfo;
       run(devConversationId);
     }
   }, [agentConfigInfo]);
@@ -72,13 +80,14 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     if (!agentConfigInfo?.devConversationId) {
       return;
     }
-    const {value} = e.target;
-    const attachments = files?.map(file => ({
-      fileKey: file.key,
-      fileUrl: file.url,
-      fileName: file.fileName,
-      mimeType: file.mimeType,
-    })) || [];
+    const { value } = e.target;
+    const attachments =
+      files?.map((file) => ({
+        fileKey: file.key,
+        fileUrl: file.url,
+        fileName: file.fileName,
+        mimeType: file.mimeType,
+      })) || [];
 
     const params = {
       conversationId: agentConfigInfo?.devConversationId,
@@ -98,7 +107,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       body: params,
       onMessage: (data) => {
         console.log(data, 6666);
-        if (data.eventType === "FINAL_RESULT") {
+        if (data.eventType === 'FINAL_RESULT') {
           runChatSuggest(params);
         }
         // 更新UI状态...
@@ -110,12 +119,11 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       onOpen: (response) => {
         console.log('连接已建立', response.status);
       },
-      onClose: () => {
-      },
+      onClose: () => {},
     });
     // 主动关闭连接
     abortConnection();
-  }
+  };
 
   const handleChange: UploadProps['onChange'] = (info) => {
     if (info.file.status === 'uploading') {
@@ -133,13 +141,21 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     const _files = [...files];
     _files.splice(index, 1);
     setFiles(_files);
-  }
+  };
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <PreviewAndDebugHeader onPressDebug={onPressDebug} />
       <div className={cx(styles['divider-horizontal'])}></div>
-      <div className={cx(styles['main-content'], 'flex-1', 'flex', 'flex-col', 'overflow-y')}>
+      <div
+        className={cx(
+          styles['main-content'],
+          'flex-1',
+          'flex',
+          'flex-col',
+          'overflow-y',
+        )}
+      >
         <div className={cx(styles['chat-wrapper'], 'flex-1')}>
           <>
             {conversationInfo?.messageList?.length > 0 ? (
@@ -153,9 +169,23 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
                 />
               ))
             ) : (
-              <div className={cx('flex', 'flex-col', 'h-full', 'items-center', 'content-center')}>
-                <img className={cx(styles.avatar)} src={agentConfigInfo?.icon || personal as string} alt="" />
-                <h3 className={cx('w-full', 'text-ellipsis', styles.nickname)}>{agentConfigInfo?.name}</h3>
+              <div
+                className={cx(
+                  'flex',
+                  'flex-col',
+                  'h-full',
+                  'items-center',
+                  'content-center',
+                )}
+              >
+                <img
+                  className={cx(styles.avatar)}
+                  src={agentConfigInfo?.icon || (personal as string)}
+                  alt=""
+                />
+                <h3 className={cx('w-full', 'text-ellipsis', styles.nickname)}>
+                  {agentConfigInfo?.name}
+                </h3>
               </div>
             )}
           </>
@@ -165,28 +195,41 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
         <footer className={cx(styles.footer, 'flex', 'items-center')}>
           <Tooltip title="清除会话">
             <span
-              className={cx(styles.clear, 'flex', 'items-center', 'content-center', 'hover-box', 'cursor-pointer')}>
+              className={cx(
+                styles.clear,
+                'flex',
+                'items-center',
+                'content-center',
+                'hover-box',
+                'cursor-pointer',
+              )}
+            >
               <ClearOutlined />
             </span>
           </Tooltip>
           <div className={cx(styles['chat-box'], 'flex-1')}>
             <ConditionRender condition={files?.length}>
               <div className={cx(styles['files-container'])}>
-                {
-                  files?.map((file, index) => (
-                    <div key={file.key} className={cx(styles['file-box'], 'flex', 'items-center')}>
-                      {
-                        file.mimeType.includes('image/') ? <img src={file.url} alt="" /> :
-                          <img src={docImage as string} alt="" />
-                      }
-                      <div className={cx('flex-1', 'overflow-hide')}>
-                        <h4 className={cx('text-ellipsis')}>{file.fileName}</h4>
-                        <span className={styles.size}>{`${file.size} Byte`}</span>
-                      </div>
-                      <CloseCircleOutlined className={cx(styles.del)} onClick={() => handleDelFile(index)} />
+                {files?.map((file, index) => (
+                  <div
+                    key={file.key}
+                    className={cx(styles['file-box'], 'flex', 'items-center')}
+                  >
+                    {file.mimeType.includes('image/') ? (
+                      <img src={file.url} alt="" />
+                    ) : (
+                      <img src={docImage as string} alt="" />
+                    )}
+                    <div className={cx('flex-1', 'overflow-hide')}>
+                      <h4 className={cx('text-ellipsis')}>{file.fileName}</h4>
+                      <span className={styles.size}>{`${file.size} Byte`}</span>
                     </div>
-                  ))
-                }
+                    <CloseCircleOutlined
+                      className={cx(styles.del)}
+                      onClick={() => handleDelFile(index)}
+                    />
+                  </div>
+                ))}
               </div>
             </ConditionRender>
             <div className={cx(styles['chat-input'], 'flex', 'items-center')}>
@@ -194,7 +237,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
                 rootClassName={styles.input}
                 onPressEnter={handlePressEnter}
                 placeholder="直接输入指令；可通过cmd+回车发送"
-                autoSize={{ minRows: 1, maxRows: 3 }} />
+                autoSize={{ minRows: 1, maxRows: 3 }}
+              />
               <Upload
                 action={UPLOAD_FILE_ACTION}
                 className={cx(styles['add-file'])}
