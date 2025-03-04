@@ -230,7 +230,7 @@ export const SkillList: React.FC<SkillProps> = ({ params, handleChange }) => {
     description: '',
     statistics: null,
     targetId: 0,
-    targetType: '0',
+    targetType: AgentComponentTypeEnum.Plugin,
     type: AgentComponentTypeEnum.Plugin,
   });
 

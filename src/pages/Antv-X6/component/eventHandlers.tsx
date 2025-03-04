@@ -54,9 +54,23 @@ const bindEventHandlers = ({
       if (_cell.isEdge()) {
         // 获取当前节点
         const sourceNode = _cell.getSourceNode()?.getData();
+        const targetNode = _cell.getTargetNode()?.getData();
         // 获取连接点的节点id
         const _targetNodeId = _cell.getTargetNode()?.id;
-        console.log(sourceNode);
+        console.log(sourceNode.type === 'Loop', targetNode.type === 'Loop');
+        // 查看当前的边是否是loop或者他的子节点
+        if (sourceNode.type === 'Loop' || targetNode.type === 'Loop') {
+          if (sourceNode.type === 'Loop') {
+            sourceNode.innerStartNodeId = -1;
+            changeCondition(sourceNode);
+            return;
+          }
+          if (targetNode.type === 'Loop') {
+            targetNode.innerEndNodeId = -1;
+            changeCondition(targetNode);
+            return;
+          }
+        }
         if (
           sourceNode.type === 'Condition' ||
           sourceNode.type === 'IntentRecognition'

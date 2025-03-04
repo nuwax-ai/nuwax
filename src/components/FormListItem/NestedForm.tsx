@@ -7,9 +7,10 @@ import {
   DeleteOutlined,
   DownOutlined,
   FileDoneOutlined,
+  InfoCircleOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Button, Cascader, Checkbox, Input, Popover, Tree } from 'antd';
+import { Button, Cascader, Checkbox, Input, Popover, Select, Tree } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { TreeFormProps } from './type';
 
@@ -22,6 +23,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
   handleChangeNodeConfig,
   title,
   inputItemName = 'inputArgs',
+  notShowTitle,
 }) => {
   // 状态初始化（新增初始化逻辑）
   const [treeData, setTreeData] = useState<TreeNodeConfig[]>(
@@ -257,12 +259,48 @@ const CustomTree: React.FC<TreeFormProps> = ({
         <span className="node-title-style">
           <span>{title}</span>
         </span>
-        <Button
-          icon={<PlusOutlined />}
-          size={'small'}
-          onClick={addRootNode}
-        ></Button>
+        <div>
+          {notShowTitle && (
+            <Select
+              prefix={
+                <Popover
+                  content={
+                    <ul>
+                      <li>文本: 使用普通文本格式回复</li>
+                      <li>Markdown: 将引导模型使用 Markdown 格式输出回复</li>
+                      <li>JSON: 将引导模型使用 JSON 格式输出</li>
+                    </ul>
+                  }
+                >
+                  <div className="dis-left">
+                    <InfoCircleOutlined />
+                    <span className="ml-10">输出格式</span>
+                  </div>
+                </Popover>
+              }
+              defaultValue={params.outputType || 'JSON'}
+              options={[
+                { label: '文本', value: 'Text' },
+                { label: 'Markdown', value: 'Markdown' },
+                { label: 'JSON', value: 'JSON' },
+              ]}
+              onChange={(value: string) =>
+                handleChangeNodeConfig({ ...params, outputType: value })
+              }
+              style={{ width: 160 }}
+            ></Select>
+          )}
+          {(!notShowTitle || params.outputType === 'JSON') && (
+            <Button
+              icon={<PlusOutlined />}
+              size={'small'}
+              onClick={addRootNode}
+              className="ml-10"
+            ></Button>
+          )}
+        </div>
       </div>
+
       {treeData && treeData.length > 0 && (
         <div
           className={`${
@@ -286,7 +324,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
         </div>
       )}
 
-      <Tree
+      <Tree<TreeNodeConfig>
         treeData={treeData}
         showLine
         switcherIcon={<DownOutlined />}

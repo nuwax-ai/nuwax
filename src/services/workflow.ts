@@ -9,6 +9,7 @@ import {
 } from '@/types/interfaces/node';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
+
 // 工作流的接口
 
 interface IGetModelList {
@@ -86,6 +87,7 @@ export interface IgetDetails {
   publishStatus: string;
 }
 
+import type { ModelListItemProps } from '@/types/interfaces/model';
 // 获取工作流的详细信息
 export async function getDetails(
   id: number,
@@ -151,7 +153,7 @@ export async function addEdge(data: IAddEdge): Promise<RequestResponse<null>> {
 // 查询当前工作流可以使用的模型
 export async function getModelListByWorkflowId(
   data: IGetModelList,
-): Promise<RequestResponse<null>> {
+): Promise<RequestResponse<ModelListItemProps[]>> {
   return request(`/api/model/list`, {
     method: 'POST',
     data,

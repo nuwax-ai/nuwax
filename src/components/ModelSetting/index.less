@@ -2,6 +2,43 @@
 .model-dispose-mode-style {
   display: flex;
   flex-direction: column;
+  font-size: 12px;
+
+  .model-title-style {
+    font-weight: 600;
+    font-size: 18px;
+    padding-bottom: 10px;
+    letter-spacing: 4px;
+    width: 600px;
+  }
+
+  .radio-button-style {
+    border: none;
+
+    .ant-radio-button-wrapper {
+      border: none;
+      width: 100px;
+      font-size: 12px;
+      font-weight: 520;
+
+      &::before {
+        width: 0;
+      }
+    }
+  }
+
+  .dispose-title-style {
+    font-weight: 550;
+    font-size: 14px;
+  }
+
+  .right-content-style {
+    width: 110px;
+  }
+
+  .border-bottom {
+    border-bottom: 1px solid #e8e8e8;
+  }
 
   .label-style {
     width: 120px;
@@ -15,4 +52,12 @@
     width: 100px;
     margin-left: 30px;
   }
+
+  .ant-divider {
+    margin: 10px 0;
+  }
+}
+
+.margin-top-10 {
+  margin-top: 10px;
 }

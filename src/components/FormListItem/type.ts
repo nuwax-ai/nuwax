@@ -65,4 +65,5 @@ export interface TreeFormProps {
     | 'variableArgs'
     | 'conditionBranchConfigs'
     | 'skillComponentConfigs';
+  notShowTitle?: boolean;
 }

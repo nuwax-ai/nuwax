@@ -3,7 +3,7 @@ import OtherOperations from '@/components/OtherAction';
 import { ChildNode } from '@/types/interfaces/graph';
 import { NodeConfig, NodeDrawerProps } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ComplexNode from './component/complexNode';
 import { ConditionNode } from './component/condition';
 import Library from './component/library';
@@ -54,6 +54,9 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   // 将节点的数据 保存到 state 中,维持数据双向绑定,便于管理
   const [currentNodeConfig, setCurrentNodeConfig] =
     useState<ChildNode>(foldWrapItem);
+
+  // 新增定时器引用
+  const timerRef = useRef<NodeJS.Timeout>();
   // 修改节点的名称和描述
   const changeFoldWrap = ({
     name,
@@ -79,6 +82,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
       setIsModified(true);
     }
   };
+
   // 根据类型返回指定的 ReactNode
   const renderNodeContent = (params: ChildNode) => {
     switch (params.type) {
@@ -274,6 +278,28 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   useEffect(() => {
     setCurrentNodeConfig(foldWrapItem);
   }, [foldWrapItem]);
+
+  useEffect(() => {
+    // 清除已有定时器
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+
+    // 创建新定时器
+    timerRef.current = setInterval(() => {
+      if (isModified) {
+        onGetNodeConfig(currentNodeConfig);
+        setIsModified(false); // 重置修改状态
+      }
+    }, 10000);
+
+    // 清理函数
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [visible, currentNodeConfig, isModified]);
 
   return (
     <FoldWrap

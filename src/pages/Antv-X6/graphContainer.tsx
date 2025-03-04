@@ -5,7 +5,7 @@ import type {
   GraphContainerRef,
 } from '@/types/interfaces/graph';
 import { adjustParentSize } from '@/utils/graph';
-import { generatePorts } from '@/utils/workflow';
+import { generatePorts, getLength } from '@/utils/workflow';
 import { Node } from '@antv/x6';
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import EventHandlers from './component/eventHandlers';
@@ -75,7 +75,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       // 添加节点
       graphRef.current.addNode(newNode);
       if (child.loopNodeId) {
-        console.log('123242141');
         // 获取刚刚添加的子节点的实例，并设置父子关系
         const childNodeInstance = graphRef.current.getCellById(newNode.id);
         // 直接在graph实例中添加子节点并设置父子关系
@@ -106,21 +105,24 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             y: position.y,
           };
         }
-        // 如果是意图识别，条件分支，或者问答(选中了选项回答)
+        // 处理特殊情况,如果是条件节点，需要调整子节点的大小并且重新绘制连接桩
         if (
           newData.type === 'Condition' ||
-          newData.type === 'IntentRecognition' ||
-          (newData.type === 'QA' && newData.nodeConfig?.answerType === 'Select')
+          newData.type === 'IntentRecognition'
         ) {
-          const height = node.getSize().height;
-          console.log(height);
-          const newPort = generatePorts(newData, height);
-          console.log(newPort);
-          node.prop('ports', {
-            ...newPort, // 使用新生成的端口配置
-          });
-          //   node.removePorts(); // 清除现有的所有端口
-          // newPort.forEach(port => node.addPort(port)); // 添加新端口
+          const oldData = node.getData() as ChildNode;
+          const _length = getLength(
+            oldData,
+            newData,
+            newData.type === 'Condition'
+              ? 'conditionBranchConfigs'
+              : 'intentConfigs',
+          );
+          if (_length) {
+            node.setSize(304, 83 + 40 * _length);
+            // 使用prop方法更新端口配置
+            node.prop('ports', generatePorts(newData));
+          }
         }
 
         node.setData(newData, { overwrite: true });
@@ -240,8 +242,9 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
                 },
                 target: {
                   cell: edge.target.toString(),
-                  port: `${edge.target.toString()}-in`, // 使用左侧连接桩
+                  port: `${edge.target}-in`, // 使用左侧连接桩
                 },
+                zIndex: 199,
               };
             } else {
               return {
@@ -254,6 +257,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
                   cell: edge.source.toString().split('-')[0],
                   port: `${edge.source.toString().split('-')[0]}-out`, // 使用左侧连接桩
                 },
+                zIndex: 199,
               };
             }
           } else {
@@ -272,6 +276,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             };
           }
         });
+        console.log(edges);
         graphRef.current.fromJSON({
           nodes,
           edges,

@@ -379,6 +379,11 @@ const Workflow: React.FC = () => {
     console.log(val);
   };
 
+  // 修改节点高度并且重新绘制连接装
+  // const changeNodeHeight = (length:number,node:ChildNode)=>{
+  //   graphRef.current.changeNodeHeight(length,node);
+  // }
+
   // 节点试运行
   const nodeTestRun = async (params?: DefaultObjectType) => {
     const _params = {

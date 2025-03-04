@@ -129,26 +129,37 @@ const initGraph = ({
           return false;
         }
 
+        // 防止自己连接自己
+        if (sourceCell === targetCell) {
+          return false;
+        }
+
         // 定义类型断言函数
-        const isLoopNode = (cell: Cell): cell is Cell<ChildNode> => {
-          return cell.getData()?.type === 'Loop';
-        };
+        const isLoopNode = (cell: Cell) => cell.getData()?.type === 'Loop';
 
-        // 定义内部节点检查
-        const isInnerNode = (cell: Cell) => !!cell.getParent();
+        // 获取端口组信息
+        const sourcePortGroup = sourceMagnet.getAttribute('port-group');
+        const targetPortGroup = targetMagnet.getAttribute('port-group');
 
-        // Case 1: Loop节点作为源时的出端口
-        if (isLoopNode(sourceCell)) {
-          const isLoopOutPort =
-            sourceMagnet.getAttribute('port-group') === 'out';
-          return isLoopOutPort ? !isInnerNode(targetCell) : true;
+        // 对于非 Loop 节点
+        if (!isLoopNode(sourceCell) && !isLoopNode(targetCell)) {
+          // 非 Loop 节点的 in 端口只能作为 target
+          if (sourcePortGroup === 'in') {
+            return false; // 不允许 in 端口作为 source
+          }
+          // 非 Loop 节点的 out 端口只能作为 source
+          if (targetPortGroup === 'out') {
+            return false; // 不允许 out 端口作为 target
+          }
         }
 
-        // Case 2: Loop节点作为目标时的入端口
-        if (isLoopNode(targetCell)) {
-          return targetMagnet.getAttribute('port-group') === 'in';
+        // 对于 Loop 节点
+        // Loop 节点的 in 和 out 端口既可以作为 source 也可以作为 target
+        if (isLoopNode(sourceCell) || isLoopNode(targetCell)) {
+          return true;
         }
 
+        // 默认返回 true 允许其他类型的连接，这里已经通过了前面的所有检查
         return true;
       },
     },
@@ -272,47 +283,25 @@ const initGraph = ({
         // 看连接的点是否时内部的节点
         if (targetNode.loopNodeId && targetNode.loopNodeId === sourceNode.id) {
           const _params = { ...sourceNode };
-          if (!sourceNode.innerStartNodeId) {
-            _params.innerStartNodeId = [targetNodeId];
-            changeCondition(_params);
-            return;
-          }
-          // 如果当前的innerStartNodeId已经包含了这条线，就不做处理了
-          if (
-            sourceNode.innerStartNodeId &&
-            sourceNode.innerStartNodeId.includes(targetNodeId)
-          ) {
-            return;
-          } else {
-            _params.innerStartNodeId = [
-              ..._params.innerStartNodeId,
-              targetNodeId,
-            ];
-            changeCondition(_params);
-            return;
-          }
+          _params.innerStartNodeId = targetNodeId;
+          changeCondition(_params);
+          edge.setZIndex(999); // 使用专用方法设置层级
+          return;
         }
       }
+
       if (targetNode.type === 'Loop') {
         // 看连接的点是否时内部的节点
-        if (sourceNode.loopNodeId && sourceNode.loopNodeId === targetNodeId) {
+
+        if (
+          sourceNode.loopNodeId &&
+          sourceNode.loopNodeId.toString() === targetNodeId
+        ) {
           const _params = { ...targetNode };
-          if (!targetNode.innerEndNodeId) {
-            _params.innerEndNodeId = [targetNodeId];
-            changeCondition(_params);
-            return;
-          }
-          // 如果当前的innerStartNodeId已经包含了这条线，就不做处理了
-          if (
-            targetNode.innerEndNodeId &&
-            targetNode.innerEndNodeId.includes(targetNodeId)
-          ) {
-            return;
-          } else {
-            _params.innerEndNodeId = [..._params.innerEndNodeId, targetNodeId];
-            changeCondition(_params);
-            return;
-          }
+          _params.innerEndNodeId = sourceNode.id;
+          changeCondition(_params);
+          edge.setZIndex(999); // 使用专用方法设置层级
+          return;
         }
       }
 
@@ -351,6 +340,9 @@ const initGraph = ({
       } else {
         // 通知父组件创建边
         changeEdge('created', targetNodeId, sourceNode, edge.id);
+        if (targetNode.loopNodeId && sourceNode.loopNodeId) {
+          edge.setZIndex(999); // 使用专用方法设置层级
+        }
       }
 
       edge.attr({

@@ -18,6 +18,8 @@ export interface InputAndOutConfig {
   bindValue: string | null;
   //  	下级参数
   subArgs?: InputAndOutConfig[];
+  // 有可能有children
+  children?: InputAndOutConfig[];
   // 参数key，唯一标识
   key?: string | null;
   // 是否开启
@@ -52,7 +54,7 @@ interface Extension {
   height?: number;
 }
 
-interface QANodeOption {
+export interface QANodeOption {
   index: string;
   content: string;
   nextNodeIds?: number[];
