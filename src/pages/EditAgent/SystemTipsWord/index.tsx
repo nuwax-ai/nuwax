@@ -12,11 +12,7 @@ const { TextArea } = Input;
 /**
  * 系统提示词组件
  */
-const SystemTipsWord: React.FC<SystemTipsWordProps> = ({
-  placeholder,
-  value,
-  onChange,
-}) => {
+const SystemTipsWord: React.FC<SystemTipsWordProps> = ({ value, onChange }) => {
   return (
     <div className={cx('flex-1', 'px-16', 'py-16')}>
       <div className={cx('flex', 'items-center', 'content-between', 'mb-16')}>
@@ -31,11 +27,12 @@ const SystemTipsWord: React.FC<SystemTipsWordProps> = ({
         </Tooltip>
       </div>
       <TextArea
-        placeholder={placeholder || '输入系统提示词，对大模型进行角色塑造'}
+        rootClassName={styles['text-area']}
+        placeholder={'输入系统提示词，对大模型进行角色塑造'}
         variant="borderless"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        autoSize={{ minRows: 6, maxRows: 30 }}
+        autoSize={{ minRows: 20, maxRows: 30 }}
       />
     </div>
   );

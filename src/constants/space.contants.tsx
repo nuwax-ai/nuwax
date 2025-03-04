@@ -14,12 +14,10 @@ import {
   ApplicationMoreActionEnum,
   ComponentTypeEnum,
   CreateListEnum,
-  FileBoxEnum,
   FilterStatusEnum,
-  LongMemberEnum,
+  OpenCloseEnum,
   PluginSettingEnum,
   SpaceApplicationListEnum,
-  UserProblemSuggestEnum,
 } from '@/types/enums/space';
 
 // 组件库所有资源类型
@@ -113,48 +111,20 @@ export const CREATE_AGENT_LIST = [
   },
 ];
 
-// 长期记忆选择列表
-export const LONG_MEMORY_LIST = [
+// 是否开启列表,可用值:Open,Close
+export const ENABLE_LIST = [
   {
     label: '开启',
-    value: LongMemberEnum.Start_Use,
+    value: OpenCloseEnum.Open,
   },
   {
     label: '关闭',
-    value: LongMemberEnum.Close,
-  },
-];
-
-// 文件盒子选择列表
-export const FILE_BOX_LIST = [
-  {
-    label: '开启',
-    value: FileBoxEnum.Start_Use,
-  },
-  {
-    label: '关闭',
-    value: FileBoxEnum.Close,
-  },
-];
-
-// 用户问题建议选择列表
-export const USER_PROBLEM_SUGGEST_LIST = [
-  {
-    label: '开启',
-    value: UserProblemSuggestEnum.Start_Use,
-  },
-  {
-    label: '关闭',
-    value: UserProblemSuggestEnum.Close,
+    value: OpenCloseEnum.Close,
   },
 ];
 
 // 任务执行
 export const TASK_EXECUTION = [
-  // {
-  //   value: 0,
-  //   label: '机器人提示',
-  // },
   {
     value: TriggerComponentType.PLUGIN,
     label: '插件',

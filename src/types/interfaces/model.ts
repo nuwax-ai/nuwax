@@ -1,13 +1,15 @@
 import type {
   ModelApiProtocolEnum,
-  ModelEventTypeEnum,
   ModelFunctionCallEnum,
   ModelNetworkTypeEnum,
   ModelScopeEnum,
   ModelStrategyEnum,
   ModelTypeEnum,
 } from '@/types/enums/modelConfig';
-import type { CreatorInfo } from '@/types/interfaces/agent';
+import type {
+  ConversationChatResponse,
+  CreatorInfo,
+} from '@/types/interfaces/agent';
 
 // 定义模型列表
 export interface ModelListItemProps {
@@ -103,9 +105,4 @@ export interface ModelConfigInfo extends ModelSaveParams {
 }
 
 // 模型测试信息
-export interface ModelTestInfo {
-  requestId: number;
-  // 可用值:PROCESSING,MESSAGE,FINAL_RESULT
-  eventType: ModelEventTypeEnum;
-  data: object;
-}
+export type ModelTestInfo = ConversationChatResponse;

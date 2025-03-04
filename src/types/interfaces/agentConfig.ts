@@ -1,4 +1,5 @@
 import type { DataTypeEnum } from '@/types/enums/common';
+import { OpenCloseEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
   AgentComponentInfo,
@@ -26,6 +27,9 @@ export interface ArrangeTitleProps {
 export interface AgentArrangeConfigProps {
   spaceId: number;
   agentId: number;
+  agentConfigInfo: AgentConfigInfo;
+  // 是否开启
+  onChangeEnable: (value: string, attr: string) => void;
   onKnowledge: () => void;
   onSet: () => void;
 }
@@ -69,6 +73,7 @@ export interface AgentModelSettingProps {
   modelComponentConfig: AgentComponentInfo;
   open: boolean;
   onCancel: () => void;
+  onSelectMode: (value: number, label: string) => void;
 }
 
 // 卡片设置组件
@@ -76,4 +81,32 @@ export interface CardModeSettingProps {
   cardKey: string;
   list: AgentCardInfo[];
   onChoose: (cardKey: string) => void;
+}
+
+// 预览与调试组件
+export interface PreviewAndDebugHeaderProps {
+  agentConfigInfo: AgentConfigInfo;
+  onExecuteResults: (executeResults: string[]) => void;
+  onPressDebug: () => void;
+}
+
+// 智能体聊天记录为空组件 - 展示智能体信息
+export interface AgentChatEmptyProps {
+  agentConfigInfo: AgentConfigInfo;
+}
+
+// 会话建议列表
+export interface RecommendListProps {
+  chatSuggestList: string[];
+  onClick: (message: string) => void;
+}
+
+// 长期记忆内容组件
+export interface LongMemoryContentProps {
+  openLongMemory?: OpenCloseEnum;
+}
+
+// 变量列表组件
+export interface VariableListProps {
+  list: AgentComponentInfo[];
 }

@@ -3,6 +3,7 @@ import VersionHistory from '@/components/VersionHistory';
 import {
   apiAgentConfigHistoryList,
   apiAgentConfigInfo,
+  apiAgentConfigUpdate,
 } from '@/services/agentConfig';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { EditAgentShowType } from '@/types/enums/space';
@@ -12,7 +13,9 @@ import {
   AgentConfigInfo,
 } from '@/types/interfaces/agent';
 import type { HistoryData } from '@/types/interfaces/space';
+import { message } from 'antd';
 import classNames from 'classnames';
+import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
 import { useMatch, useRequest } from 'umi';
 import AgentArrangeConfig from './AgentArrangeConfig';
@@ -36,7 +39,6 @@ const cx = classNames.bind(styles);
 const EditAgent: React.FC = () => {
   const match = useMatch('/space/:spaceId/agent/:agentId');
   const { spaceId, agentId } = match.params;
-  const [tipsText, setTipsText] = useState<string>('');
   const [showType, setShowType] = useState<EditAgentShowType>(
     EditAgentShowType.Hide,
   );
@@ -45,8 +47,12 @@ const EditAgent: React.FC = () => {
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
   const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
   const [openKnowledgeModel, setOpenKnowledgeModel] = useState<boolean>(false);
+  // 智能体配置信息
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>(null);
+  // 历史版本信息
   const [versionHistory, setVersionHistory] = useState<HistoryData[]>([]);
+  // 调试结果
+  const [executeResults, setExecuteResults] = useState<string[]>([]);
 
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
@@ -54,6 +60,15 @@ const EditAgent: React.FC = () => {
     debounceWait: 300,
     onSuccess: (result: AgentConfigInfo) => {
       setAgentConfigInfo(result);
+    },
+  });
+
+  // 更新智能体基础配置信息
+  const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
+    manual: true,
+    debounceWait: 1000,
+    onSuccess: () => {
+      message.success('智能体编辑成功');
     },
   });
 
@@ -110,6 +125,51 @@ const EditAgent: React.FC = () => {
     setOpenKnowledgeModel(true);
   };
 
+  // 更新智能体绑定模型
+  const handleSelectMode = (id: number, name: string) => {
+    const _agentConfigInfo = cloneDeep(agentConfigInfo);
+    _agentConfigInfo.modelComponentConfig.targetId = id;
+    _agentConfigInfo.modelComponentConfig.name = name;
+    setAgentConfigInfo(_agentConfigInfo);
+  };
+
+  // 更新智能体信息
+  const handleChangeAgent = (value: string, attr: string) => {
+    // 更新智能体配置信息
+    const _agentConfigInfo = {
+      ...agentConfigInfo,
+      [attr]: value,
+    };
+    setAgentConfigInfo(_agentConfigInfo);
+    const {
+      id,
+      name,
+      description,
+      icon,
+      userPrompt,
+      openSuggest,
+      systemPrompt,
+      suggestPrompt,
+      openingChatMsg,
+      openingGuidQuestion,
+      openLongMemory,
+    } = _agentConfigInfo;
+    // 更新智能体信息
+    runUpdate({
+      id,
+      name,
+      description,
+      icon,
+      systemPrompt,
+      userPrompt,
+      openSuggest,
+      suggestPrompt,
+      openingChatMsg,
+      openingGuidQuestion,
+      openLongMemory,
+    });
+  };
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader
@@ -138,15 +198,16 @@ const EditAgent: React.FC = () => {
           <div className={cx('flex-1', 'flex', 'overflow-y')}>
             {/*系统提示词*/}
             <SystemTipsWord
-              placeholder={agentConfigInfo?.systemPrompt}
-              value={tipsText}
-              onChange={setTipsText}
+              value={agentConfigInfo?.systemPrompt}
+              onChange={(value) => handleChangeAgent(value, 'systemPrompt')}
             />
             <div className={cx(styles['h-line'])} />
             {/*配置区域*/}
             <AgentArrangeConfig
               spaceId={spaceId}
               agentId={agentId}
+              agentConfigInfo={agentConfigInfo}
+              onChangeEnable={handleChangeAgent}
               onKnowledge={handleKnowledge}
               onSet={handlerPluginSetting}
             />
@@ -155,12 +216,14 @@ const EditAgent: React.FC = () => {
         {/*预览与调试*/}
         <PreviewAndDebug
           agentConfigInfo={agentConfigInfo}
+          onExecuteResults={setExecuteResults}
           onPressDebug={() =>
             handlerToggleType(EditAgentShowType.Debug_Details)
           }
         />
         {/*调试详情*/}
         <DebugDetails
+          executeResults={executeResults}
           visible={showType === EditAgentShowType.Debug_Details}
           onClose={() => handlerToggleType(EditAgentShowType.Hide)}
         />
@@ -199,6 +262,7 @@ const EditAgent: React.FC = () => {
         }
         open={openAgentModel}
         onCancel={() => setOpenAgentModel(false)}
+        onSelectMode={handleSelectMode}
       />
       {/*插件设置弹窗*/}
       <PluginModelSetting

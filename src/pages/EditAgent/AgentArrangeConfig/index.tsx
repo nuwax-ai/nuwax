@@ -1,11 +1,8 @@
 import Created from '@/components/Created';
 import SelectList from '@/components/SelectList';
 import TooltipIcon from '@/components/TooltipIcon';
-import {
-  FILE_BOX_LIST,
-  LONG_MEMORY_LIST,
-  USER_PROBLEM_SUGGEST_LIST,
-} from '@/constants/space.contants';
+import { ENABLE_LIST } from '@/constants/space.contants';
+import VariableList from '@/pages/EditAgent/AgentArrangeConfig/VariableList';
 import {
   apiAgentComponentAdd,
   apiAgentComponentDelete,
@@ -17,9 +14,7 @@ import {
   AgentConfigMemoryEnum,
   AgentConfigSkillEnum,
   ConversationalExperienceEnum,
-  FileBoxEnum,
-  LongMemberEnum,
-  UserProblemSuggestEnum,
+  OpenCloseEnum,
 } from '@/types/enums/space';
 import type { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { AgentArrangeConfigProps } from '@/types/interfaces/agentConfig';
@@ -46,19 +41,11 @@ const cx = classNames.bind(styles);
 const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   spaceId,
   agentId,
+  agentConfigInfo,
   onKnowledge,
+  onChangeEnable,
   onSet,
 }) => {
-  // 长期记忆
-  const [longMemberValue, setLongMemberValue] = useState<LongMemberEnum>(
-    LongMemberEnum.Close,
-  );
-  // 文件盒子
-  const [fileBoxValue, setFileBoxValue] = useState<FileBoxEnum>(
-    FileBoxEnum.Close,
-  );
-  const [userProblemSuggestValue, setUserProblemSuggestValue] =
-    useState<UserProblemSuggestEnum>(UserProblemSuggestEnum.Start_Use);
   const [triggerChecked, setTriggerChecked] = useState<boolean>(false);
   const [openTriggerModel, setOpenTriggerModel] = useState<boolean>(false);
   // 智能体模型组件列表
@@ -101,8 +88,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const { run: runPluginComponentDel } = useRequest(apiAgentComponentDelete, {
     manual: true,
     debounceWait: 300,
-    onSuccess: () => {
+    onSuccess: (_, params) => {
       message.success('已成功删除插件');
+      const id = params[0];
+      const list = agentComponentList.filter((item) => item.id !== id);
+      setAgentComponentList(list);
     },
   });
 
@@ -156,13 +146,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     setShow(true);
   };
 
-  // 添加表格
-  const handlerTablePlus = (e) => {
-    e.stopPropagation();
-    setCheckTag(AgentComponentTypeEnum.Knowledge);
-    setShow(true);
-  };
-
   // 添加变量
   const handlerVariablePlus = (e) => {
     e.stopPropagation();
@@ -170,11 +153,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   };
 
   // 添加数据库表
-  const handlerDatabasePlus = (e) => {
-    e.stopPropagation();
-    setCheckTag(AgentComponentTypeEnum.Database);
-    setShow(true);
-  };
+  // const handlerDatabasePlus = (e) => {
+  //   e.stopPropagation();
+  //   setCheckTag(AgentComponentTypeEnum.Database);
+  //   setShow(true);
+  // };
 
   // 添加指令
   const handlerDirectivePlus = (e) => {
@@ -236,16 +219,16 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       ),
       extra: <TooltipIcon title="添加知识库" onClick={handlerTextPlus} />,
     },
-    {
-      key: KnowledgeDataTypeEnum.Table,
-      label: '表格',
-      children: (
-        <p>
-          用户上传表格后，支持按照表格的某列来匹配合适的行给智能体引用，同时也支持基于自然语言对数据库进行查询和计算
-        </p>
-      ),
-      extra: <TooltipIcon title="添加知识库" onClick={handlerTablePlus} />,
-    },
+    // {
+    //   key: KnowledgeDataTypeEnum.Table,
+    //   label: '表格',
+    //   children: (
+    //     <p>
+    //       用户上传表格后，支持按照表格的某列来匹配合适的行给智能体引用，同时也支持基于自然语言对数据库进行查询和计算
+    //     </p>
+    //   ),
+    //   extra: <TooltipIcon title="添加知识库" onClick={handlerTablePlus} />,
+    // },
   ];
 
   const MemoryList: CollapseProps['items'] = [
@@ -253,52 +236,54 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       key: AgentConfigMemoryEnum.Variable,
       label: '变量',
       children: (
-        <p>用于保存用户个人信息，让智能体记住用户的特征，使回复更加个性化。</p>
+        <VariableList
+          list={filterList(agentComponentList, AgentComponentTypeEnum.Variable)}
+        />
       ),
       extra: <TooltipIcon title="添加变量" onClick={handlerVariablePlus} />,
     },
-    {
-      key: AgentConfigMemoryEnum.Data_Base,
-      label: '数据库',
-      children: <p>以表格结构组织数据，可实现类似书签和图书管理等功能。</p>,
-      extra: <TooltipIcon title="添加表" onClick={handlerDatabasePlus} />,
-    },
+    // {
+    //   key: AgentConfigMemoryEnum.Data_Base,
+    //   label: '数据库',
+    //   children: <p>以表格结构组织数据，可实现类似书签和图书管理等功能。</p>,
+    //   extra: <TooltipIcon title="添加表" onClick={handlerDatabasePlus} />,
+    // },
     {
       key: AgentConfigMemoryEnum.Long_Memory,
       label: '长期记忆',
-      children: <LongMemoryContent />,
+      children: (
+        <LongMemoryContent openLongMemory={agentConfigInfo?.openLongMemory} />
+      ),
       extra: (
         <SelectList
           className={cx(styles.select)}
           size={'small'}
-          value={longMemberValue}
-          onChange={(value) => {
-            setLongMemberValue(value as LongMemberEnum);
-          }}
-          options={LONG_MEMORY_LIST}
+          value={agentConfigInfo?.openLongMemory}
+          onChange={(value) =>
+            onChangeEnable(value as OpenCloseEnum, 'openLongMemory')
+          }
+          options={ENABLE_LIST}
         />
       ),
     },
-    {
-      key: AgentConfigMemoryEnum.File_Box,
-      label: '文件盒子',
-      children: (
-        <p>
-          现在文件盒已关闭，用户无法保存他们的文件。如果你想使用存储空间，请打开文件盒。
-        </p>
-      ),
-      extra: (
-        <SelectList
-          className={styles.select}
-          size={'small'}
-          value={fileBoxValue}
-          onChange={(value) => {
-            setFileBoxValue(value as FileBoxEnum);
-          }}
-          options={FILE_BOX_LIST}
-        />
-      ),
-    },
+    // {
+    //   key: AgentConfigMemoryEnum.File_Box,
+    //   label: '文件盒子',
+    //   children: (
+    //     <p>
+    //       现在文件盒已关闭，用户无法保存他们的文件。如果你想使用存储空间，请打开文件盒。
+    //     </p>
+    //   ),
+    //   extra: (
+    //     <SelectList
+    //       className={styles.select}
+    //       size={'small'}
+    //       value={agentConfigInfo?.openLongMemory}
+    //       onChange={onChangeEnable}
+    //       options={ENABLE_LIST}
+    //     />
+    //   ),
+    // },
   ];
 
   const ConversationalExperienceList: CollapseProps['items'] = [
@@ -315,11 +300,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         <SelectList
           className={styles.select}
           size={'small'}
-          value={userProblemSuggestValue}
-          onChange={(value) => {
-            setUserProblemSuggestValue(value as UserProblemSuggestEnum);
-          }}
-          options={USER_PROBLEM_SUGGEST_LIST}
+          value={agentConfigInfo?.openSuggest}
+          onChange={(value) =>
+            onChangeEnable(value as OpenCloseEnum, 'openSuggest')
+          }
+          options={ENABLE_LIST}
         />
       ),
     },

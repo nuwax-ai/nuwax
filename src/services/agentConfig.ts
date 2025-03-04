@@ -15,15 +15,16 @@ import type {
   AgentConfigUpdateParams,
   AgentConversationChatParams,
   AgentConversationChatSuggestParams,
+  AgentConversationInfo,
   AgentConversationListParams,
   AgentConversationUpdateParams,
   AgentCopyParams,
   AgentDeleteParams,
   AgentPublishApplyParams,
   AgentTransferParams,
+  ConversationChatResponse,
   TriggerTimeZone,
 } from '@/types/interfaces/agent';
-import { AgentConversationInfo } from '@/types/interfaces/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
@@ -281,7 +282,7 @@ export async function apiAgentConversationCreate(
 // 智能体会话接口
 export async function apiAgentConversationChat(
   data: AgentConversationChatParams,
-): Promise<RequestResponse<null>> {
+): Promise<RequestResponse<ConversationChatResponse>> {
   return request('/api/agent/conversation/chat', {
     method: 'POST',
     data,

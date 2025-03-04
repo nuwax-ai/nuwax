@@ -76,30 +76,6 @@ export enum ConversationalExperienceEnum {
   Shortcut_Instruction,
 }
 
-// 长期记忆枚举
-export enum LongMemberEnum {
-  // 启用
-  Start_Use,
-  // 关闭
-  Close,
-}
-
-// 文件盒子枚举
-export enum FileBoxEnum {
-  // 启用
-  Start_Use,
-  // 关闭
-  Close,
-}
-
-// 用户问题建议枚举
-export enum UserProblemSuggestEnum {
-  // 启用
-  Start_Use,
-  // 关闭
-  Close,
-}
-
 // 是否开启问题建议,可用值:Open,Close
 export enum OpenCloseEnum {
   Open = 'Open',

@@ -18,8 +18,7 @@ export interface ApplicationItemProps {
 
 // 系统提示词组件属性
 export interface SystemTipsWordProps {
-  placeholder?: string;
-  value: string;
+  value?: string;
   onChange: (value: string) => void;
 }
 

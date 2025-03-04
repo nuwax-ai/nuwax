@@ -18,7 +18,7 @@
 
     .chat-wrapper {
       overflow-y: auto;
-      //-webkit-mask: linear-gradient(180deg, #fff 91.89%, hsla(0, 0%, 100%, 0));
+      padding-bottom: 30px;
       mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
     }
 
@@ -64,10 +64,16 @@
               position: absolute;
               top: -6px;
               right: -6px;
+              font-size: 16px;
               color: @GRAY05;
-              visibility: visible;
-              transition: visibility 0.3s;
+              visibility: hidden;
+              transition: visibility 0.3s, background-color 0.3s;
               cursor: pointer;
+              border-radius: 50%;
+
+              &:hover {
+                background-color: @GRAY01;
+              }
             }
 
             img {
@@ -97,17 +103,5 @@
         }
       }
     }
-  }
-
-  .avatar {
-    width: 60px;
-    height: 60px;
-    margin-bottom: 16px;
-    border-radius: 10px;
-  }
-
-  .nickname {
-    padding: 0 30px;
-    text-align: center;
   }
 }
