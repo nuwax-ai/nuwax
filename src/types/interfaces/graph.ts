@@ -26,7 +26,7 @@ export interface Child {
 
 // 节点的数据
 export interface ChildNode {
-  id: number | string;
+  id: number;
   name: string;
   description: string;
   workflowId: number;
@@ -36,8 +36,8 @@ export interface ChildNode {
   nextNodes?: number[] | null;
   nextNodeIds?: number[] | null;
   innerNodes?: ChildNode[] | null;
-  innerStartNodeId?: number[] | null;
-  innerEndNodeId?: number[] | null;
+  innerStartNodeId?: number | null;
+  innerEndNodeId?: number | null;
   unreachableNextNodeIds?: number[] | null;
   modified?: string;
   created?: string;
@@ -48,8 +48,8 @@ export interface ChildNode {
 }
 
 export interface Edge {
-  source: string | number;
-  target: string | number;
+  source: string;
+  target: string;
 }
 
 /**

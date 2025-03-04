@@ -31,7 +31,8 @@ import {
   default as Variable,
   default as Workflow,
 } from '@/assets/images/workflow_image.png';
-
+import { adjustParentSize } from '@/utils/graph';
+import { Graph, Node } from '@antv/x6';
 const imageList = {
   Database,
   Knowledge,
@@ -124,77 +125,67 @@ export const returnBackgroundColor = (type: string) => {
   }
 };
 
+// 处理 Condition 和 IntentRecognition 节点的边
 const handleSpecialNodes = (node: ChildNode): Edge[] => {
-  let edges: Edge[] = [];
+  if (!node.nodeConfig) return [];
 
-  if (node.type === 'Condition') {
-    edges =
-      node.nodeConfig.conditionBranchConfigs?.flatMap((config) =>
-        config.nextNodeIds.map((nextNodeId) => ({
-          source: `${node.id}-${config.uuid}`,
-          target: nextNodeId,
-        })),
-      ) || [];
-  } else if (node.type === 'IntentRecognition') {
-    edges =
-      node.nodeConfig.intentConfigs?.flatMap((config) => {
-        if (!config.nextNodeIds) config.nextNodeIds = [];
-        return config.nextNodeIds.map((nextNodeId) => ({
-          source: `${node.id}-${config.uuid}`,
-          target: nextNodeId,
-        }));
-      }) || [];
+  const { conditionBranchConfigs, intentConfigs } = node.nodeConfig;
+  const configs =
+    node.type === 'Condition' ? conditionBranchConfigs : intentConfigs;
+
+  return (
+    configs?.flatMap((config) => {
+      if (!config.nextNodeIds) config.nextNodeIds = [];
+      return config.nextNodeIds.map((nextNodeId) => ({
+        source: `${node.id}-${config.uuid}`,
+        target: nextNodeId.toString(),
+      }));
+    }) || []
+  );
+};
+
+// 处理 Loop 节点的边
+const handleLoopEdges = (node: ChildNode): Edge[] => {
+  const edges: Edge[] = [];
+
+  if (node.innerStartNodeId && node.innerStartNodeId !== -1) {
+    edges.push({
+      source: `${node.id}-in`, // Loop 节点的 in 端口连接到内部起始节点
+      target: node.innerStartNodeId.toString(),
+    });
+  }
+
+  if (node.innerEndNodeId && node.innerEndNodeId !== -1) {
+    edges.push({
+      source: node.innerEndNodeId.toString(),
+      target: `${node.id}-out`, // 内部结束节点连接到 Loop 节点的 out 端口
+    });
   }
 
   return edges;
 };
 
-const getLoopEdges = (node: ChildNode) => {
-  const edgeList = [];
-
-  if (node.innerStartNodeId) {
-    edgeList.push({
-      source: `${node.id}-loop`,
-      target: node.innerStartNodeId,
-    });
-  }
-  if (node.innerEndNodeId) {
-    edgeList.push({
-      source: node.innerEndNodeId,
-      target: `${node.id}-loop`,
-    });
-  }
-
-  return edgeList;
-};
-
 // 递归获取节点的边
 export const getEdges = (nodes: ChildNode[]): Edge[] => {
-  // 筛选出普通节点和特定类型的节点（Condition 和 IntentRecognition）
-  const edges = nodes.flatMap((node: ChildNode) => {
-    if (
-      (node.type === 'Condition' || node.type === 'IntentRecognition') &&
-      node.nodeConfig
-    ) {
+  const allEdges: Edge[] = nodes.flatMap((node) => {
+    if (node.type === 'Condition' || node.type === 'IntentRecognition') {
       return handleSpecialNodes(node);
-    } else if (node.nextNodeIds && node.nextNodeIds.length > 0) {
-      return node.nextNodeIds.map((item) => ({
-        source: node.id,
-        target: item,
-      }));
     } else if (node.type === 'Loop') {
-      return getLoopEdges(node);
+      return handleLoopEdges(node);
+    } else if (node.nextNodeIds && node.nextNodeIds.length > 0) {
+      return node.nextNodeIds.map((nextNodeId) => ({
+        source: Number(node.id).toString(),
+        target: Number(nextNodeId).toString(),
+      }));
     }
     return [];
   });
-
-  const edgeList = [...edges];
 
   // 使用 Set 来移除重复的边
   const uniqueEdges = new Set<string>();
   const resultEdges: Edge[] = [];
 
-  edgeList.forEach((edge) => {
+  allEdges.forEach((edge) => {
     const edgeKey = `${edge.source}-${edge.target}`;
     if (!uniqueEdges.has(edgeKey)) {
       uniqueEdges.add(edgeKey);
@@ -204,9 +195,10 @@ export const getEdges = (nodes: ChildNode[]): Edge[] => {
 
   return resultEdges;
 };
+// 获取节点端口
 export const generatePorts = (data: ChildNode, height?: number) => {
   const basePortSize = 3;
-  const isLoopNode = data.type === 'Loop'; // 新增 Loop 节点判断
+  const isLoopNode = data.type === 'Loop'; // 判断是否为 Loop 节点
 
   // 默认端口配置
   const defaultPortConfig = (
@@ -234,10 +226,10 @@ export const generatePorts = (data: ChildNode, height?: number) => {
 
   switch (data.type) {
     case 'Start':
-      inputPorts = [];
+      inputPorts = []; // Start 节点没有输入端口
       break;
     case 'End':
-      outputPorts = [];
+      outputPorts = []; // End 节点没有输出端口
       break;
     case 'Condition':
     case 'IntentRecognition': {
@@ -269,23 +261,16 @@ export const generatePorts = (data: ChildNode, height?: number) => {
         position: 'left',
         attrs: { circle: { r: basePortSize } },
         connectable: {
-          source: false, // 禁止作为连接源
-          target: true, // 允许作为连接目标
-          ...(isLoopNode && {
-            source: true, // Loop 的左侧允许内部连出
-            target: true, // 同时允许外部连入
-          }),
+          source: isLoopNode, // Loop 节点的 in 端口允许作为 source
+          target: true, // 非 Loop 节点的 in 端口只能作为 target
         },
       },
       out: {
         position: 'right',
         attrs: { circle: { r: basePortSize } },
         connectable: {
-          source: true, // 允许作为连接源
-          target: false, // 禁止作为连接目标
-          ...(isLoopNode && {
-            target: true, // Loop 的右侧允许内部连入
-          }),
+          source: true, // 非 Loop 节点的 out 端口只能作为 source
+          target: isLoopNode, // Loop 节点的 out 端口允许作为 target
         },
       },
     },
@@ -339,4 +324,88 @@ export const modifyPorts = (
   });
 };
 
-//
+// 辅助函数：生成随机坐标
+function getRandomPosition(maxWidth = 800, maxHeight = 600) {
+  return {
+    x: Math.random() * (maxWidth - 304), // 减去节点宽度以避免超出边界
+    y: Math.random() * (maxHeight - 83), // 减去节点高度以避免超出边界
+  };
+}
+
+// 生成主节点
+export const createBaseNode = (node: ChildNode) => {
+  const extension = node.nodeConfig?.extension || {};
+  return {
+    id: node.id,
+    shape: node.type === 'Loop' ? 'loop-node' : 'general-Node',
+    x: extension.x ?? getRandomPosition().x,
+    y: extension.y ?? getRandomPosition().y,
+    width: extension.width || 304,
+    height: extension.height || 83,
+    label: node.name,
+    data: node,
+    ports: generatePorts(node),
+    zIndex: 3,
+  };
+};
+// 生成循环的子节点
+export const createChildNode = (parentId: string, child: ChildNode) => {
+  const ext = child.nodeConfig?.extension || {};
+  return {
+    id: child.id.toString(),
+    shape: 'general-Node',
+    x: ext.x,
+    y: ext.y,
+    width: ext.width || 304,
+    height: ext.height || 83,
+    label: child.name,
+    data: { ...child, parentId },
+    ports: generatePorts(child),
+    zIndex: 5,
+  };
+};
+
+// 构造边
+export const createEdge = (edge: Edge) => {
+  const parseEndpoint = (endpoint: string, type: string) => {
+    const isLoop = endpoint.includes('in') || endpoint.includes('out');
+    const isNotGraent = endpoint.includes('-');
+    return {
+      cell: isLoop || isNotGraent ? endpoint.split('-')[0] : endpoint,
+      port: isLoop ? endpoint : `${endpoint}-${type}`,
+    };
+  };
+
+  return {
+    shape: 'edge',
+    router: { name: 'orth' },
+    attrs: { line: { stroke: '#A2B1C3', strokeWidth: 1 } },
+    source: parseEndpoint(edge.source, 'out'),
+    target: parseEndpoint(edge.target, 'in'),
+    zIndex: edge.source.includes('in') || edge.target.includes('out') ? 9 : 1,
+  };
+};
+
+export const processLoopNode = (loopNode: Node, graph: Graph) => {
+  const data = loopNode.getData();
+  if (!data.innerNodes?.length) return;
+
+  data.innerNodes.forEach((childDef: ChildNode) => {
+    const child = createChildNode(data.id.toString(), childDef); // 创建子节点配置
+    const childNode = graph.addNode(child); // 添加子节点到图中
+
+    // 确保子节点的父节点 ID 被正确设置
+    childNode.setData({
+      ...childDef,
+      parentId: loopNode.id, // 显式设置父节点 ID
+    });
+
+    // 将子节点添加到父节点中
+    loopNode.addChild(childNode);
+
+    // 调试：确保父子关系正确建立
+    console.log(`Child Node ID: ${loopNode.id}`);
+  });
+
+  adjustParentSize(loopNode); // 初始调整父节点大小
+};

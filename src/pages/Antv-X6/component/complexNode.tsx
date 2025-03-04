@@ -21,8 +21,7 @@ import {
 import React, { useState } from 'react';
 import '../index.less';
 import { outPutConfigs } from '../params';
-import { FormList, InputAndOut } from './commonNode';
-
+import { FormList, InputAndOut, TreeOutput } from './commonNode';
 // 定义大模型节点
 
 const ModelNode: React.FC<NodeDisposeProps> = ({
@@ -195,6 +194,9 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
         onExpand
         placeholder="支持额外的系统提示词，如对意图选项做更详细的例子以增 强用户输出与意图匹配的成功率。"
       />
+      {/* 输出 */}
+      <p className="node-title-style mt-16">{'输出'}</p>
+      <TreeOutput treeData={params.outputArgs || []} />
     </div>
   );
 };
@@ -328,6 +330,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
                   style={{ width: '30%', marginRight: '10px' }}
                   options={methodOption}
                   placeholder="请求方法"
+                  defaultValue={'GET'}
                 ></Select>
               </Form.Item>
               <Form.Item name="url" noStyle>
@@ -336,7 +339,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
             </div>
           </Form.Item>
           <Form.Item label="请求内容格式" name="contentType">
-            <Radio.Group className="margin-bottom">
+            <Radio.Group className="margin-bottom" defaultValue={'JSON'}>
               <Space wrap>
                 {methodOptions.map((item) => (
                   <Radio key={item.value} value={item.value}>

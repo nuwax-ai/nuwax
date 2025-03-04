@@ -134,14 +134,19 @@ const initGraph = ({
           return false;
         }
 
-        // 定义类型断言函数
-        const isLoopNode = (cell: Cell) => cell.getData()?.type === 'Loop';
-
-        // 获取端口组信息
+        // 提取端口组信息
         const sourcePortGroup = sourceMagnet.getAttribute('port-group');
         const targetPortGroup = targetMagnet.getAttribute('port-group');
 
-        // 对于非 Loop 节点
+        // 边界检查：确保端口组属性存在
+        if (!sourcePortGroup || !targetPortGroup) {
+          return false;
+        }
+
+        // 定义类型断言函数
+        const isLoopNode = (cell: Cell) => cell.getData()?.type === 'Loop';
+
+        // 处理非 Loop 节点的连接限制
         if (!isLoopNode(sourceCell) && !isLoopNode(targetCell)) {
           // 非 Loop 节点的 in 端口只能作为 target
           if (sourcePortGroup === 'in') {
@@ -153,13 +158,12 @@ const initGraph = ({
           }
         }
 
-        // 对于 Loop 节点
         // Loop 节点的 in 和 out 端口既可以作为 source 也可以作为 target
         if (isLoopNode(sourceCell) || isLoopNode(targetCell)) {
-          return true;
+          return true; // Loop 节点允许任意连接
         }
 
-        // 默认返回 true 允许其他类型的连接，这里已经通过了前面的所有检查
+        // 默认返回 true 允许其他类型的连接（这里已经通过了前面的所有检查）
         return true;
       },
     },
@@ -175,6 +179,7 @@ const initGraph = ({
       },
     },
     embedding: {
+      // 这里设置为false，设置为true会导致重叠节点一起移动
       enabled: false,
       // findParent({ e }) {
       //   // 根据鼠标位置找到可能的父节点
@@ -280,6 +285,8 @@ const initGraph = ({
       const targetNodeId = edge.getTargetCellId();
 
       if (sourceNode.type === 'Loop') {
+        console.log(targetNode);
+        console.log(sourceNode.id);
         // 看连接的点是否时内部的节点
         if (targetNode.loopNodeId && targetNode.loopNodeId === sourceNode.id) {
           const _params = { ...sourceNode };
@@ -293,10 +300,7 @@ const initGraph = ({
       if (targetNode.type === 'Loop') {
         // 看连接的点是否时内部的节点
 
-        if (
-          sourceNode.loopNodeId &&
-          sourceNode.loopNodeId.toString() === targetNodeId
-        ) {
+        if (sourceNode.loopNodeId && sourceNode.loopNodeId === targetNodeId) {
           const _params = { ...targetNode };
           _params.innerEndNodeId = sourceNode.id;
           changeCondition(_params);
@@ -394,13 +398,16 @@ const initGraph = ({
   });
 
   graph.on('node:change:position', ({ node }) => {
-    // 增加子节点有效性验证
-    const parentId = node.getData().parentId;
-    if (!parentId || parentId === undefined) return;
-
-    // 确认父节点存在且是Loop类型
-    const parentNode = graph.getCellById(parentId);
-    if (Node.isNode(parentNode) && parentNode.getData()?.type === 'Loop') {
+    console.log('123', node);
+    // 优化点1：直接通过父子关系API获取父节点
+    const parentNode = node.getParent();
+    console.log('123', parentNode);
+    // 优化点2：仅处理Loop类型的父节点
+    if (
+      parentNode &&
+      parentNode.isNode() &&
+      parentNode.getData()?.type === 'Loop'
+    ) {
       adjustParentSize(parentNode);
     }
   });
