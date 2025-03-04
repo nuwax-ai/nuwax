@@ -6,6 +6,7 @@ import styles from './index.less';
 // const cx = classNames.bind(styles);
 
 interface DebugDetailsProps {
+  executeResults: string[];
   visible?: boolean;
   onClose: () => void;
 }
@@ -13,7 +14,11 @@ interface DebugDetailsProps {
 /**
  * 调试详情组件
  */
-const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
+const DebugDetails: React.FC<DebugDetailsProps> = ({
+  visible,
+  onClose,
+  executeResults,
+}) => {
   return (
     <FoldWrap
       title="调试详情"
@@ -21,7 +26,9 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
       onClose={onClose}
       visible={visible}
       lineMargin
-    ></FoldWrap>
+    >
+      {executeResults}
+    </FoldWrap>
   );
 };
 

@@ -11,6 +11,7 @@ import type {
   TriggerComponentType,
   TriggerTypeEnum,
 } from '@/types/enums/agent';
+import { ConversationEventTypeEnum } from '@/types/enums/agent';
 import type {
   DataTypeEnum,
   PublishStatusEnum,
@@ -431,6 +432,7 @@ export interface MessageInfo {
   metadata: object;
   // 可用值:USER,ASSISTANT,SYSTEM,TOOL
   messageType: MessageTypeEnum;
+  chatFinalResult?: ConversationChatFinalResult;
 }
 
 // 查询会话信息
@@ -517,6 +519,44 @@ export interface AgentConversationChatParams {
   attachments: AttachmentFile[];
   // 是否调试模式
   debug: boolean;
+}
+
+// 会话聊天消息
+export interface ConversationChatMessage {
+  ext: string;
+  finished: boolean;
+  id: string;
+  // 可用值:USER,ASSISTANT,SYSTEM,TOOL
+  messageType: MessageTypeEnum;
+  metadata: object;
+  // assistant 模型回复；user 用户消息,可用值:USER,ASSISTANT,SYSTEM,FUNCTION
+  role: AssistantRoleEnum;
+  text: string;
+  time: number;
+  // 可用值:CHAT,GUID,QUESTION,ANSWER
+  type: MessageModeEnum;
+}
+
+// 会话聊天"FINAL_RESULT"
+export interface ConversationChatFinalResult {
+  completionTokens: number;
+  componentExecuteResults: string[];
+  endTime: number;
+  error: string;
+  outputText: string;
+  promptTokens: number;
+  startTime: number;
+  success: boolean;
+  totalTokens: number;
+}
+
+// 会话聊天响应数据
+export interface ConversationChatResponse {
+  completed: boolean;
+  data: ConversationChatMessage | ConversationChatFinalResult;
+  error: string;
+  eventType: ConversationEventTypeEnum;
+  requestId: string;
 }
 
 // 智能体会话问题建议输入参数

@@ -1,19 +1,20 @@
+import type { RecommendListProps } from '@/types/interfaces/agentConfig';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface RecommendListProps {
-  chatSuggestList: string[];
-}
-
-const RecommendList: React.FC<RecommendListProps> = ({ chatSuggestList }) => {
+const RecommendList: React.FC<RecommendListProps> = ({
+  chatSuggestList,
+  onClick,
+}) => {
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       {chatSuggestList?.map((item, index) => (
         <div
           key={index}
+          onClick={() => onClick(item)}
           className={cx(
             styles.box,
             'px-16',

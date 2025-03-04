@@ -73,6 +73,14 @@ export enum NoneRecallReplyTypeEnum {
   CUSTOM = 'CUSTOM',
 }
 
+// 会话事件类型 可用值:PROCESSING,MESSAGE,FINAL_RESULT,ERROR
+export enum ConversationEventTypeEnum {
+  PROCESSING = 'PROCESSING',
+  MESSAGE = 'MESSAGE',
+  FINAL_RESULT = 'FINAL_RESULT',
+  ERROR = 'ERROR',
+}
+
 // assistant 模型回复；user 用户消息,可用值:USER,ASSISTANT,SYSTEM,FUNCTION
 export enum AssistantRoleEnum {
   USER = 'USER',

@@ -6,10 +6,9 @@ import type {
   SquareAgentInfo,
   SquareCategoryInfo,
 } from '@/types/interfaces/square';
-import { useRequest } from '@@/exports';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
-import { history, useLocation, useModel } from 'umi';
+import React, { useCallback, useEffect, useState } from 'react';
+import { history, useLocation, useModel, useRequest } from 'umi';
 import Header from './Header';
 import HomeSection from './HomeSection';
 import SpaceSection from './SpaceSection';
@@ -32,7 +31,7 @@ const MenusLayout: React.FC = () => {
   const [tabType, setTabType] = useState<TabsEnum>();
 
   // 切换tab
-  const handleTabsClick = (type: TabsEnum) => {
+  const handleTabsClick = useCallback((type: TabsEnum) => {
     setTabType(type);
     switch (type) {
       case TabsEnum.Home:
@@ -48,7 +47,7 @@ const MenusLayout: React.FC = () => {
         history.push(`/square?cate_type=${SquareAgentTypeEnum.Agent}`);
         break;
     }
-  };
+  }, []);
 
   useEffect(() => {
     runSpace();
@@ -64,6 +63,7 @@ const MenusLayout: React.FC = () => {
     }
   }, []);
 
+  // 广场分类列表信息
   const handleCategoryList = (result: SquareCategoryInfo[]) => {
     let _agentInfoList: SquareAgentInfo[] = [];
     let _pluginInfoList: SquareAgentInfo[] = [];
@@ -105,7 +105,7 @@ const MenusLayout: React.FC = () => {
   }, []);
 
   // 用户区域操作
-  const handleUserClick = (type: UserOperatorAreaEnum) => {
+  const handleUserClick = useCallback((type: UserOperatorAreaEnum) => {
     switch (type) {
       case UserOperatorAreaEnum.Document:
         // todo 打开文档链接
@@ -118,9 +118,9 @@ const MenusLayout: React.FC = () => {
         setOpenMessage(true);
         break;
     }
-  };
+  }, []);
 
-  const Content: React.FC = () => {
+  const Content: React.FC = useCallback(() => {
     switch (tabType) {
       case TabsEnum.Home:
         return <HomeSection />;
@@ -129,7 +129,7 @@ const MenusLayout: React.FC = () => {
       case TabsEnum.Square:
         return <SquareSection />;
     }
-  };
+  }, [tabType]);
 
   return (
     <div className={cx(styles.container, 'flex')}>

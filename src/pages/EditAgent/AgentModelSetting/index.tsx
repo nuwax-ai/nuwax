@@ -27,6 +27,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   modelComponentConfig,
   open,
   onCancel,
+  onSelectMode,
 }) => {
   const [targetId, setTargetId] = useState<number>(0);
   // 模型列表
@@ -49,7 +50,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
     onSuccess: (result: ModelConfigInfo[]) => {
       const list: option[] =
         result?.map((item) => ({
-          label: item.model,
+          label: item.name,
           value: item.id,
         })) || [];
       setModelConfig(list);
@@ -97,6 +98,9 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   const handleChangeModelTarget = (id: number) => {
     setTargetId(id);
     handleChangeModel(componentBindConfig, id);
+    // 更新智能体 - 绑定的模型名称
+    const { value, label } = modelConfigList?.find((item) => item.value === id);
+    onSelectMode(value, label);
   };
 
   // 模式
