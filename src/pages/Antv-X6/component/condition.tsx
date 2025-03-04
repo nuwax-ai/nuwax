@@ -286,6 +286,7 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
         conditionBranchConfigs: newConditionBranchConfigs,
         extension: {
           ...params.extension,
+          height: newConditionBranchConfigs.length * 40 + 80,
         },
       });
     }
@@ -304,6 +305,7 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
         conditionBranchConfigs: updatedConditionBranchConfigs,
         extension: {
           ...params.extension,
+          height: updatedConditionBranchConfigs.length * 40 + 80,
         },
       });
     }

@@ -59,7 +59,6 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
           title="输入"
           fieldConfigs={outPutConfigs}
           referenceList={referenceList}
-          showCopy={true}
           inputItemName="inputArgs"
           initialValues={{ inputArgs: params.inputArgs || [] }}
           handleChangeNodeConfig={handleChangeNodeConfig}

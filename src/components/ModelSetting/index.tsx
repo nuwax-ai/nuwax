@@ -4,12 +4,28 @@ import type {
   ModelListItemProps,
 } from '@/types/interfaces/model';
 import { groupModelsByApiProtocol } from '@/utils/model';
-import { SettingOutlined } from '@ant-design/icons';
-import { InputNumber, Popover, Select, Slider } from 'antd';
+import {
+  CaretDownFilled,
+  CaretUpFilled,
+  InfoCircleOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
+import { Divider, InputNumber, Popover, Radio, Select, Slider } from 'antd';
 import { useEffect, useState } from 'react';
 import './index.less';
 import ModelListItem from './listItem/index';
 import { GroupModelListItemProps, ModelSettingProp } from './type';
+
+// 类型定义需要移到组件外部或使用内联类型
+interface ContentProps {
+  title: string;
+  configKey: 'maxTokens' | 'temperature' | 'topP';
+  content: string;
+  min: number;
+  max: number;
+  step: number;
+}
+
 // 定义带图标的模型选择select
 export const GroupedOptionSelect: React.FC<GroupModelListItemProps> = ({
   nodeConfig,
@@ -96,11 +112,21 @@ export const GroupedOptionSelect: React.FC<GroupModelListItemProps> = ({
   );
 };
 
+const options = [
+  { label: '精确模式', value: 'Precision' },
+  { label: '平衡模式', value: 'Balanced' },
+  { label: '创意模式', value: 'Creative' },
+  { label: '自定义', value: 'Customization' },
+];
 // 定义模型的设置弹窗
 export const ModelSetting: React.FC<ModelSettingProp> = ({
   nodeConfig,
   onChange,
 }) => {
+  const [showMore, setShowMore] = useState(true);
+
+  // 切换显示更多的状态
+
   // 更新值的辅助函数
   const updateValue = (
     key: 'maxTokens' | 'temperature' | 'topP',
@@ -113,66 +139,98 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({
     onChange(newConfig); // 将更新后的 nodeConfig 传递回父组件
   };
 
+  const Content: React.FC<ContentProps> = ({
+    title,
+    configKey,
+    content,
+    min,
+    max,
+    step,
+  }) => {
+    return (
+      <div className="dis-sb">
+        <div className="dis-left label-style">
+          <span className="mr-16">{title}</span>
+          <Popover content={content} overlayInnerStyle={{ width: '300px' }}>
+            <InfoCircleOutlined />
+          </Popover>
+        </div>
+        <Slider
+          min={min}
+          max={max}
+          onChange={(val: number) => updateValue(configKey, val)}
+          value={nodeConfig[configKey]}
+          className="slider-style"
+          step={step}
+        />
+        <InputNumber
+          min={min}
+          max={max}
+          step={step}
+          size="small"
+          style={{ margin: '0 16px' }}
+          value={nodeConfig[configKey]}
+          onChange={(val: number | null) => updateValue(configKey, val)}
+          className="input-style"
+        />
+      </div>
+    );
+  };
   return (
     <>
       <div className="model-dispose-mode-style">
-        <div className="dis-sb">
-          <span className="label-style">生成随机性</span>
-          <Slider
-            min={0}
-            max={1}
-            onChange={(val: number) => updateValue('temperature', val)}
-            value={nodeConfig.temperature}
-            className="slider-style"
-          />
-          <InputNumber
-            min={0}
-            max={1}
-            size="small"
-            style={{ margin: '0 16px' }}
-            value={nodeConfig.temperature}
-            onChange={(val: number | null) => updateValue('temperature', val)}
-            className="input-style"
-          />
+        <div className="model-title-style border-bottom">模型</div>
+        <div className="dis-sb margin-top-10">
+          <span className="dispose-title-style">生成多样性</span>
+          <div className="dis-left">
+            <Radio.Group
+              optionType="button"
+              className="radio-button-style"
+              options={options}
+              block
+              defaultValue="Balanced"
+            ></Radio.Group>
+            <div
+              onClick={() => setShowMore(!showMore)}
+              className="right-content-style"
+            >
+              <span>高级设置</span>
+              {showMore ? <CaretUpFilled /> : <CaretDownFilled />}
+            </div>
+          </div>
         </div>
-        <div className="dis-sb">
-          <span className="label-style">top P</span>
-          <Slider
-            min={0}
-            max={1}
-            onChange={(val: number) => updateValue('topP', val)}
-            value={nodeConfig.topP}
-            className="slider-style"
-          />
-          <InputNumber
-            min={0}
-            max={1}
-            style={{ margin: '0 16px' }}
-            size="small"
-            value={nodeConfig.topP}
-            onChange={(val: number | null) => updateValue('topP', val)}
-            className="input-style"
-          />
-        </div>
-        <div className="dis-sb">
-          <span className="label-style">最大回复长度</span>
-          <Slider
-            min={0}
-            max={10000}
-            onChange={(val: number) => updateValue('maxTokens', val)}
-            value={nodeConfig.maxTokens}
-            className="slider-style"
-          />
-          <InputNumber
-            min={0}
-            max={10000}
-            size="small"
-            style={{ margin: '0 16px' }}
-            value={nodeConfig.maxTokens}
-            onChange={(val: number | null) => updateValue('maxTokens', val)}
-            className="input-style"
-          />
-        </div>
+        {showMore && (
+          <div>
+            {/* temperature 参数配置 */}
+            <Content
+              min={0}
+              max={1}
+              step={0.1}
+              title={'生成随机性'}
+              configKey="temperature"
+              content="temperature: 调高温度会使得模型的输出更多样性和创新性，反之，降低温度会使输出内容更加遵循指令要求但减少多样性。建议不要与 “Top p” 同时调整。"
+            />
+            {/* topP 参数配置 */}
+            <Content
+              min={0}
+              max={1}
+              step={0.1}
+              title={'Top P'}
+              configKey="topP"
+              content="Top p 为累计概率: 模型在生成输出时会从概率最高的词汇开始选择，直到这些词汇的总概率累积达到 Top p 值。这样可以限制模型只选择这些高概率的词汇，从而控制输出内容的多样性。建议不要与 “生成随机性” 同时调整。"
+            />
+          </div>
+        )}
+        <Divider />
+        <div className="dispose-title-style">输入及输出设置</div>
+        <Content
+          min={5}
+          max={4093}
+          step={1}
+          title={'最大恢复长度'}
+          configKey="maxTokens"
+          content="控制模型输出的 Tokens 长度上限。通常 100 Tokens 约等于 150 个中文汉字。"
+        />
       </div>
     </>
   );
@@ -190,7 +248,6 @@ export const ModelSelected: React.FC<ModelSettingProp> = ({
         <span className="node-title-style">模型</span>
         <Popover
           content={<ModelSetting nodeConfig={nodeConfig} onChange={onChange} />}
-          title="模型"
           trigger="click"
           placement="left"
         >

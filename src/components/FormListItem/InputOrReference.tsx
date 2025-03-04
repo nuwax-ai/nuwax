@@ -74,18 +74,44 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           key: node.id,
           label: node.name,
           icon: returnImg(node.type),
-          children: node.outputArgs?.map((arg) => ({
-            key: arg.key,
-            label: (
-              <div
-                style={{ display: 'flex', alignItems: 'center', width: 300 }}
-              >
-                {arg.name}
-                <Tag style={{ marginLeft: 20 }}>{arg.dataType}</Tag>
-              </div>
-            ),
-            onClick: () => updateValues(arg.key!, 'Reference'), // 选择时标记为引用类型
-          })),
+          children: node.outputArgs?.flatMap((arg) => [
+            // 父级参数项
+            {
+              key: arg.key,
+              label: (
+                <div
+                  style={{ display: 'flex', alignItems: 'center', width: 300 }}
+                >
+                  <span>{arg.name}</span>
+                  <Tag style={{ marginLeft: 20 }} color="#65656687">
+                    {arg.dataType}
+                  </Tag>
+                </div>
+              ),
+              onClick: () => updateValues(arg.key!, 'Reference'),
+              style: { background: '#f5f5f5' }, // 添加父项背景色
+            },
+            // 子参数项（如果有）
+            ...(arg.children || []).map((item: InputAndOutConfig) => ({
+              key: item.key,
+              label: (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    width: 300,
+                    marginLeft: 24, // 添加左侧缩进
+                  }}
+                >
+                  <span>{item.name}</span>
+                  <Tag style={{ marginLeft: 20 }} color="#65656687">
+                    {item.dataType}
+                  </Tag>
+                </div>
+              ),
+              onClick: () => updateValues(item.key!, 'Reference'),
+            })),
+          ]),
         }))
       : [
           {

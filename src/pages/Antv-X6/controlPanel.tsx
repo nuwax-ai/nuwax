@@ -40,7 +40,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           options={options}
           value={zoomSize}
           optionLabelProp="displayValue"
-          /* ...其他属性 */ onChange={changeGraph}
+          onChange={changeGraph}
           style={{ width: 80 }}
           popupMatchSelectWidth={false}
         />

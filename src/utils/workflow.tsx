@@ -151,33 +151,27 @@ const handleSpecialNodes = (node: ChildNode): Edge[] => {
 
 const getLoopEdges = (node: ChildNode) => {
   const edgeList = [];
-  if (node.innerStartNodeId && node.innerStartNodeId.length) {
-    const list = node.innerStartNodeId.map((item) => {
-      return {
-        source: `${node.id}-loop`,
-        target: item,
-      };
+
+  if (node.innerStartNodeId) {
+    edgeList.push({
+      source: `${node.id}-loop`,
+      target: node.innerStartNodeId,
     });
-    console.log('aaa', list);
-    edgeList.push(...list);
   }
-  if (node.innerEndNodeId && node.innerEndNodeId.length) {
-    const list = node.innerEndNodeId.map((item) => {
-      return {
-        source: item,
-        target: `${node.id}-loop`,
-      };
+  if (node.innerEndNodeId) {
+    edgeList.push({
+      source: node.innerEndNodeId,
+      target: `${node.id}-loop`,
     });
-    console.log('bbb', list);
-    edgeList.push(...list);
   }
+
   return edgeList;
 };
 
 // 递归获取节点的边
 export const getEdges = (nodes: ChildNode[]): Edge[] => {
   // 筛选出普通节点和特定类型的节点（Condition 和 IntentRecognition）
-  const edges = nodes.flatMap((node) => {
+  const edges = nodes.flatMap((node: ChildNode) => {
     if (
       (node.type === 'Condition' || node.type === 'IntentRecognition') &&
       node.nodeConfig
@@ -193,7 +187,6 @@ export const getEdges = (nodes: ChildNode[]): Edge[] => {
     }
     return [];
   });
-  console.log(edges);
 
   const edgeList = [...edges];
 
@@ -215,10 +208,14 @@ export const generatePorts = (data: ChildNode, height?: number) => {
   const basePortSize = 3;
   const isLoopNode = data.type === 'Loop'; // 新增 Loop 节点判断
 
-  // 默认输入端口配置（所有节点通用）
-  const defaultInputPort = {
-    group: 'in',
-    id: `${data.id}-in`,
+  // 默认端口配置
+  const defaultPortConfig = (
+    group: 'in' | 'out',
+    idSuffix: string,
+    yPosition?: number | string,
+  ) => ({
+    group,
+    id: `${data.id}-${idSuffix}`,
     zIndex: 99,
     attrs: {
       circle: {
@@ -229,28 +226,11 @@ export const generatePorts = (data: ChildNode, height?: number) => {
         fill: '#5F95FF',
       },
     },
-    args: {},
-  };
+    args: yPosition ? { y: yPosition } : {},
+  });
 
-  // 默认输出端口配置（所有节点通用）
-  const defaultOutputPort = {
-    group: 'out',
-    id: `${data.id}-out`,
-    zIndex: 99,
-    attrs: {
-      circle: {
-        r: basePortSize,
-        magnet: true,
-        stroke: '#5F95FF',
-        strokeWidth: 2,
-        fill: '#5F95FF',
-      },
-    },
-    args: {},
-  };
-
-  let inputPorts = [defaultInputPort];
-  let outputPorts = [defaultOutputPort];
+  let inputPorts = [defaultPortConfig('in', 'in')];
+  let outputPorts = [defaultPortConfig('out', 'out')];
 
   switch (data.type) {
     case 'Start':
@@ -261,18 +241,19 @@ export const generatePorts = (data: ChildNode, height?: number) => {
       break;
     case 'Condition':
     case 'IntentRecognition': {
-      inputPorts = [
-        { ...defaultInputPort, args: { y: height ? height / 2 : '50%' } },
-      ];
+      // 假设 heights 数组与 conditionBranchConfigs 的顺序一致
       const configs =
         data.nodeConfig?.conditionBranchConfigs ||
-        data.nodeConfig?.intentConfigs ||
+        data.nodeConfig.intentConfigs ||
         [];
+      inputPorts = [
+        { ...defaultPortConfig('in', `in`, height ? height / 2 : '50%') },
+      ];
+
       outputPorts = configs.map((item, index) => ({
-        ...defaultOutputPort,
-        id: `${data.id}-${item.uuid || index}-out`,
+        ...defaultPortConfig('out', `${item.uuid || index}-out`),
         args: {
-          y: index * 32 + 32, // 垂直居中在对应项右侧
+          y: index * 40 + 100, // 根据需要调整垂直位置
         },
       }));
       break;
@@ -310,6 +291,21 @@ export const generatePorts = (data: ChildNode, height?: number) => {
     },
     items: [...outputPorts, ...inputPorts],
   };
+};
+
+// 计算当前的数据的长度
+export const getLength = (
+  oldData: ChildNode,
+  newData: ChildNode,
+  key: 'conditionBranchConfigs' | 'intentConfigs',
+) => {
+  const _oldLength = oldData.nodeConfig?.[key]?.length || 0;
+  const _newLength = newData.nodeConfig?.[key]?.length || 0;
+  if (_oldLength !== _newLength) {
+    return _newLength;
+  } else {
+    return null;
+  }
 };
 
 /**

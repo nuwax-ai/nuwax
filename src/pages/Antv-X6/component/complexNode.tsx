@@ -88,7 +88,6 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           inputItemName="inputArgs"
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ inputArgs: params.inputArgs || [] }}
-          showCopy
         />
       </div>
       {/* 系统提示词 */}
@@ -114,6 +113,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       <div className="node-item-style">
         <CustomTree
           title={'输出'}
+          notShowTitle
           params={params}
           handleChangeNodeConfig={handleChangeNodeConfig}
           inputItemName={'outputArgs'}
@@ -153,15 +153,11 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
         ...newNodeConfig,
         extension: {
           ...params.extension,
-          height:
-            newNodeConfig?.intentConfigs!.length >= 2
-              ? newNodeConfig.intentConfigs!.length * 40 + 60
-              : 140,
+          height: newNodeConfig?.intentConfigs!.length * 40 + 80,
         },
       });
     }
   };
-  console.log(params.intentConfigs);
 
   return (
     <div className="model-node-style">
