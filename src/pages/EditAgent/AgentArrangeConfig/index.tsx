@@ -135,8 +135,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   };
 
   const handlerSuccessCreateTrigger = () => {
-    //todo 成功创建触发器后待完成的动作
     setOpenTriggerModel(false);
+    // 查询智能体配置组件列表
+    run(agentId);
   };
 
   // 添加文本

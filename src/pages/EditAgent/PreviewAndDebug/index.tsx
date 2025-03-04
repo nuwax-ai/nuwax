@@ -1,6 +1,4 @@
-import docImage from '@/assets/images/doc_image.jpg';
-import ConditionRender from '@/components/ConditionRender';
-import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
+import ChatInput from '@/components/ChatInput';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   apiAgentConversation,
@@ -15,18 +13,12 @@ import {
 import { OpenCloseEnum } from '@/types/enums/space';
 import type {
   AgentConversationInfo,
+  AttachmentFile,
   ConversationChatResponse,
   CreatorInfo,
 } from '@/types/interfaces/agent';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
-import { UploadInfo } from '@/types/interfaces/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
-import {
-  ClearOutlined,
-  CloseCircleOutlined,
-  PlusCircleOutlined,
-} from '@ant-design/icons';
-import { Input, Tooltip, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import moment from 'moment';
@@ -53,11 +45,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     useState<AgentConversationInfo>();
   // 会话问题建议
   const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
-  // 文档
-  const [files, setFiles] = useState<UploadInfo[]>([]);
   // 发布者信息
   const [publishUser, setPublishUser] = useState<CreatorInfo>();
-  const [message, setMessage] = useState<string>('');
   const messageViewRef = useRef<HTMLDivElement | null>(null);
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
@@ -88,19 +77,14 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
   }, [agentConfigInfo?.devConversationId]);
 
   // 会话处理
-  const handleConversation = async (value: string) => {
+  const handleConversation = async (
+    value: string,
+    attachments: AttachmentFile[] = [],
+  ) => {
     if (!agentConfigInfo?.devConversationId) {
       return;
     }
     setChatSuggestList([]);
-    const attachments =
-      files?.map((file) => ({
-        fileKey: file.key,
-        fileUrl: file.url,
-        fileName: file.fileName,
-        mimeType: file.mimeType,
-      })) || [];
-
     const params = {
       conversationId: agentConfigInfo?.devConversationId,
       message: value,
@@ -124,9 +108,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     const _conversationInfo = cloneDeep(conversationInfo);
     _conversationInfo.messageList.push(chatMessage);
     setConversationInfo(_conversationInfo);
-    // 置空
-    setFiles([]);
-    setMessage('');
 
     // 启动连接
     const abortConnection = await createSSEConnection({
@@ -138,7 +119,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       },
       body: params,
       onMessage: (data: ConversationChatResponse) => {
-        console.log(data, '====');
         // 更新UI状态...
         if (data.eventType === ConversationEventTypeEnum.FINAL_RESULT) {
           // 调试结果
@@ -171,33 +151,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       top: messageViewRef.current?.scrollHeight,
       behavior: 'smooth',
     });
-  };
-
-  // enter事件
-  const handlePressEnter = (e) => {
-    e.preventDefault();
-    const { value } = e.target;
-    handleConversation(value);
-  };
-
-  // 上传成功后，修改文档列表
-  const handleChange: UploadProps['onChange'] = (info) => {
-    if (info.file.status === 'uploading') {
-      return;
-    }
-    if (info.file.status === 'done') {
-      const data: UploadInfo = info.file.response?.data;
-      const _files = [...files];
-      _files.push(data);
-      setFiles(_files);
-    }
-  };
-
-  // 删除文档
-  const handleDelFile = (index: number) => {
-    const _files = [...files];
-    _files.splice(index, 1);
-    setFiles(_files);
   };
 
   return (
@@ -240,74 +193,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
           )}
         </div>
         {/*会话输入框*/}
-        <footer className={cx(styles.footer, 'flex', 'items-center')}>
-          <Tooltip title="清除会话">
-            <span
-              className={cx(
-                styles.clear,
-                'flex',
-                'items-center',
-                'content-center',
-                'hover-box',
-                'cursor-pointer',
-              )}
-            >
-              <ClearOutlined />
-            </span>
-          </Tooltip>
-          <div className={cx(styles['chat-box'], 'flex-1')}>
-            <ConditionRender condition={files?.length}>
-              <div className={cx(styles['files-container'])}>
-                {files?.map((file, index) => (
-                  <div
-                    key={file.key}
-                    className={cx(styles['file-box'], 'flex', 'items-center')}
-                  >
-                    {/*如果文件是图片，则显示图片，否则显示文档默认图片*/}
-                    <img
-                      src={
-                        file.mimeType.includes('image/')
-                          ? file.url
-                          : (docImage as string)
-                      }
-                      alt=""
-                    />
-                    <div className={cx('flex-1', 'overflow-hide')}>
-                      <h4 className={cx('text-ellipsis')}>{file.fileName}</h4>
-                      <span className={styles.size}>{`${file.size} Byte`}</span>
-                    </div>
-                    <CloseCircleOutlined
-                      className={cx(styles.del)}
-                      onClick={() => handleDelFile(index)}
-                    />
-                  </div>
-                ))}
-              </div>
-            </ConditionRender>
-            <div className={cx(styles['chat-input'], 'flex', 'items-center')}>
-              <Input.TextArea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                rootClassName={styles.input}
-                onPressEnter={handlePressEnter}
-                placeholder="直接输入指令；可通过回车发送"
-                autoSize={{ minRows: 1, maxRows: 3 }}
-              />
-              <Upload
-                action={UPLOAD_FILE_ACTION}
-                className={cx(styles['add-file'])}
-                onChange={handleChange}
-                headers={{
-                  Authorization: token ? `Bearer ${token}` : '',
-                }}
-                showUploadList={false}
-                // beforeUpload={beforeUpload ?? beforeUploadDefault}
-              >
-                <PlusCircleOutlined className={cx('cursor-pointer')} />
-              </Upload>
-            </div>
-          </div>
-        </footer>
+        <ChatInput onEnter={handleConversation} />
       </div>
     </div>
   );

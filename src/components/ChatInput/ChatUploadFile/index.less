@@ -1,0 +1,52 @@
+@import '@/styles/color';
+
+.files-container {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 10px 0;
+  margin-bottom: 10px;
+  border-bottom: 1px solid @GRAY01;
+
+  .file-box {
+    position: relative;
+    padding: 10px;
+    background-color: @WHITE04;
+    border-radius: 10px;
+    font-size: 14px;
+    color: @BLANK24;
+
+    &:hover {
+      .del {
+        visibility: visible;
+      }
+    }
+
+    .del {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      font-size: 16px;
+      color: @GRAY05;
+      visibility: hidden;
+      transition: visibility 0.3s, background-color 0.3s;
+      cursor: pointer;
+      border-radius: 50%;
+
+      &:hover {
+        background-color: @GRAY01;
+      }
+    }
+
+    img {
+      width: 50px;
+      margin-right: 5px;
+      border-radius: 10px;
+    }
+
+    .size {
+      color: @GRAY05;
+      font-size: 12px;
+    }
+  }
+}

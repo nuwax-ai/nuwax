@@ -1,7 +1,9 @@
+import { apiAgentConversationList } from '@/services/agentConfig';
+import type { AgentConversationInfo } from '@/types/interfaces/agent';
 import { Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useModel } from 'umi';
+import { useModel, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -11,24 +13,45 @@ const cx = classNames.bind(styles);
  */
 const HistoryConversation: React.FC = () => {
   const { openHistoryModal, setOpenHistoryModal } = useModel('layout');
-  const [loading, setLoading] = useState<boolean>(false);
+  const [todayConversationList, setTodayConversationList] = useState<
+    AgentConversationInfo[]
+  >([]);
+  const [weekConversationList, setWeekConversationList] = useState<
+    AgentConversationInfo[]
+  >([]);
+  const [yearConversationList, setYearConversationList] = useState<
+    AgentConversationInfo[]
+  >([]);
 
   // todo 请求历史会话记录
-  // const { run, loading } = useRequest(apiHome, {
-  //   manual: true,
-  //   debounceWait: 300,
-  //   onSuccess: (res: RequestResponse<T>) => {
-  //     const { data } = res;
-  //     if (data) {
-  //     }
-  //   },
-  // });
-  //
+  const { run, loading } = useRequest(apiAgentConversationList, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: AgentConversationInfo[]) => {
+      console.log(result, 88);
+      const _todayConversationList = [];
+      const _weekConversationList = [];
+      const _yearConversationList = [];
+      result?.forEach((item) => {
+        console.log(item);
+      });
+
+      setTodayConversationList(_todayConversationList);
+      setWeekConversationList(_weekConversationList);
+      setYearConversationList(_yearConversationList);
+    },
+  });
+
+  console.log(
+    todayConversationList,
+    weekConversationList,
+    yearConversationList,
+    run,
+  );
   useEffect(() => {
     // todo
-    setLoading(true);
-    // run()
-    setLoading(false);
+    // const agentId = 26;
+    // run(agentId);
   }, []);
 
   return (

@@ -13,7 +13,7 @@ export default function Layout() {
     <div className={cx('flex', 'h-full', styles.container)}>
       {/*菜单栏*/}
       <MenusLayout />
-      {/*历史记录弹窗*/}
+      {/*历史会话记录弹窗*/}
       <HistoryConversation />
       {/*消息弹窗*/}
       <Message />

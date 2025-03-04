@@ -1,9 +1,10 @@
 import type { DataTypeEnum } from '@/types/enums/common';
-import { OpenCloseEnum } from '@/types/enums/space';
+import type { OpenCloseEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
   AgentComponentInfo,
   AgentConfigInfo,
+  AttachmentFile,
   TriggerTimeZone,
 } from '@/types/interfaces/agent';
 import React from 'react';
@@ -109,4 +110,15 @@ export interface LongMemoryContentProps {
 // 变量列表组件
 export interface VariableListProps {
   list: AgentComponentInfo[];
+}
+
+// 聊天输入框组件
+export interface ChatInputProps {
+  onEnter: (message: string, attachments: AttachmentFile[]) => void;
+}
+
+// 聊天上传文件列表组件
+export interface ChatUploadFileProps {
+  files: any;
+  onDel: (index: number) => void;
 }
