@@ -245,7 +245,7 @@ export const generatePorts = (data: ChildNode, height?: number) => {
       outputPorts = configs.map((item, index) => ({
         ...defaultPortConfig('out', `${item.uuid || index}-out`),
         args: {
-          y: index * 40 + 100, // 根据需要调整垂直位置
+          y: index * 40, // 根据需要调整垂直位置
         },
       }));
       break;

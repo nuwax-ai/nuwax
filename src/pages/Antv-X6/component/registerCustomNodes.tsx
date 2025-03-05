@@ -57,6 +57,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
     const { node } = this.props;
     const data = node.getData<NodeProps>();
     if (typeof this.props.node.getData().onChange === 'function') {
+      console.log(val);
       this.props.node.getData().onChange(val, data); // 调用父组件提供的回调函数
     }
   };

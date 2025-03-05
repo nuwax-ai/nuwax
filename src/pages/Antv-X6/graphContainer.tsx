@@ -186,7 +186,13 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         graphRef.current.clearCells();
 
         // 创建主节点
-        const mainNodes = graphParams.nodeList.map(createBaseNode);
+        const mainNodes = graphParams.nodeList.map((node) => ({
+          ...createBaseNode(node),
+          data: {
+            ...node,
+            onChange: handleNodeChange, // 注入事件处理器
+          },
+        }));
         graphRef.current.fromJSON({
           nodes: mainNodes, // X6 会自动实例化节点
         });

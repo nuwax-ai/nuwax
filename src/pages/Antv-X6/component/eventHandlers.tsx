@@ -1,4 +1,5 @@
 import { BindEventHandlers } from '@/types/interfaces/graph';
+import { message } from 'antd';
 /**
  * 绑定图形编辑器的事件处理器
  * @param graph - AntV X6 图形实例
@@ -6,7 +7,7 @@ import { BindEventHandlers } from '@/types/interfaces/graph';
  */
 const bindEventHandlers = ({
   graph,
-  changeEdge,
+  // changeEdge,
   copyNode,
   changeCondition,
   removeNode,
@@ -99,10 +100,24 @@ const bindEventHandlers = ({
           }
           changeCondition(newNodeParams);
         } else {
+          // 移除边,修改为修改source节点的nextNodeId
+          const sourceNode = _cell.getSourceNode()?.getData();
+          const _newNode = JSON.parse(JSON.stringify(sourceNode));
+          _newNode.nextNodeIds = _newNode.nextNodeIds.filter((item: number) => {
+            return item !== Number(_targetNodeId);
+          });
+          changeCondition(_newNode);
           // 移除边
-          changeEdge('delete', _targetNodeId as string, sourceNode, '0');
+          // changeEdge('delete', _targetNodeId as string, sourceNode, '0');
         }
       } else {
+        if (
+          _cell.getData().type === 'Start' ||
+          _cell.getData().type === 'End'
+        ) {
+          message.warning('不能删除开始节点和结束节点');
+          return;
+        }
         // 删除节点
         removeNode(_cell.id);
       }

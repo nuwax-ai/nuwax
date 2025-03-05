@@ -6,11 +6,11 @@ import {
   NodeDisposeProps,
 } from '@/types/interfaces/workflow';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Form, Select, Tag } from 'antd';
+import { Button, Form, message, Select, Tag } from 'antd';
 import React from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
+import { v4 as uuidv4 } from 'uuid';
 import './condition.less';
-
 const options = [
   { label: '等于', value: 'EQUAL', displayValue: '=' },
   { label: '不等于', value: 'NOT_EQUAL', displayValue: '≠' },
@@ -130,20 +130,14 @@ export const ConditionList: React.FC<ConditionListProps> = ({
   // 提交form表单
   const submitForm = () => {
     const values = form.getFieldsValue();
-    const _params = {
-      ...initialValues,
-      conditionArgs: values.conditionArgs.map((item: any) => {
-        return {
-          ...item,
-          firstArg: item.firstArg ? JSON.parse(item.firstArg) : null,
-          secondArg: item.secondArg ? JSON.parse(item.secondArg) : null,
-        };
-      }),
-    };
-    handleChangeNodeConfig(_params, index);
+    handleChangeNodeConfig(values, draggableId);
   };
   return (
-    <Draggable draggableId={draggableId} index={index}>
+    <Draggable
+      draggableId={draggableId}
+      key={draggableId}
+      isDragDisabled={initialValues.branchType === 'ELSE'}
+    >
       {(provided: any) => (
         <div
           className="dis-col condition-card-style"
@@ -157,7 +151,7 @@ export const ConditionList: React.FC<ConditionListProps> = ({
               <Tag>优先级{index + 1}</Tag>
             </div>
             {initialValues.branchType !== 'ELSE' && (
-              <MinusCircleOutlined onClick={() => removeItem(index)} />
+              <MinusCircleOutlined onClick={() => removeItem(draggableId)} />
             )}
           </div>
           {initialValues.branchType !== 'ELSE' && (
@@ -255,9 +249,9 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
   const updateBranchType = (
     currentIndex: number,
   ): 'IF' | 'ELSE' | 'ELSE_IF' => {
-    if (currentIndex === 0) return 'IF';
-    if (currentIndex === (params.conditionBranchConfigs?.length ?? 0) - 1)
-      return 'ELSE';
+    if (currentIndex === 0) {
+      return 'IF';
+    }
     return 'ELSE_IF';
   };
 
@@ -270,20 +264,25 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
   const addInputItem = () => {
     const newConditionBranchConfigs = [
       ...(params.conditionBranchConfigs || []),
-      {
-        branchType: 'ELSE_IF',
-        conditionType: null,
-        nextNodeIds: [],
-        uuid: (params.conditionBranchConfigs?.length ?? 0) + 1,
-        conditionArgs: [
-          {
-            firstArg: null,
-            compareType: null,
-            secondArg: null,
-          },
-        ],
-      },
     ];
+    const insertIndex =
+      newConditionBranchConfigs.length > 0
+        ? newConditionBranchConfigs.length - 1
+        : 0;
+
+    newConditionBranchConfigs.splice(insertIndex, 0, {
+      branchType: 'ELSE_IF',
+      conditionType: null,
+      nextNodeIds: [],
+      uuid: uuidv4(),
+      conditionArgs: [
+        {
+          firstArg: null,
+          compareType: null,
+          secondArg: null,
+        },
+      ],
+    });
 
     if (updateNode) {
       updateNode({
@@ -297,12 +296,21 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
     }
   };
 
-  const removeItem = (index: number) => {
+  const removeItem = (key: string) => {
+    if (
+      params.conditionBranchConfigs &&
+      params.conditionBranchConfigs?.length <= 2
+    ) {
+      message.warning('至少需要两个分支');
+      return;
+    }
     const updatedConditionBranchConfigs = (
       params.conditionBranchConfigs || []
-    ).filter((_, i) => i !== index);
+    ).filter((item) => item.uuid !== key);
     updatedConditionBranchConfigs.forEach((item, index) => {
-      item.branchType = updateBranchType(index);
+      if (index !== updatedConditionBranchConfigs.length - 1) {
+        item.branchType = updateBranchType(index);
+      }
     });
     if (updateNode) {
       updateNode({
@@ -318,28 +326,40 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
 
   const handleChangeNodeConfig = (
     values: ConditionBranchConfigs,
-    index: number,
+    key: string,
   ) => {
     const newConditionBranchConfigs = (params.conditionBranchConfigs || []).map(
-      (item, i) =>
-        i === index
-          ? { ...values, branchType: updateBranchType(index) }
-          : { ...item, branchType: updateBranchType(i) },
+      (item) => (item.uuid === key ? { ...values } : { ...item }),
     );
 
     Modified({ ...params, conditionBranchConfigs: newConditionBranchConfigs });
   };
 
+  // 修改 onDragEnd 方法
   const onDragEnd = (result: any) => {
-    console.log(result);
     if (!result.destination) return;
-    const newItems = Array.from(params.conditionBranchConfigs || []);
+
+    const items = params.conditionBranchConfigs || [];
+    const lastIndex = items.length - 1;
+
+    // 禁止拖拽到最后一个元素（ELSE）之后
+    if (result.destination.index === lastIndex) {
+      return;
+    }
+
+    // 当拖拽源是最后一个元素时直接返回
+    if (result.source.index === lastIndex) return;
+
+    const newItems = Array.from(items);
     const [removed] = newItems.splice(result.source.index, 1);
     newItems.splice(result.destination.index, 0, removed);
-    // 重新编排他们的branchType
+
+    // 重新编排branchType时保持最后一个为ELSE
     newItems.forEach((item, index) => {
-      item.branchType = updateBranchType(index);
+      item.branchType =
+        index === newItems.length - 1 ? 'ELSE' : updateBranchType(index);
     });
+
     if (updateNode) {
       updateNode({
         ...params,
@@ -367,11 +387,11 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
                 <ConditionList
                   key={item.uuid}
                   title={branchTypeMap[item.branchType]}
-                  index={index}
                   initialValues={item}
                   removeItem={removeItem}
                   handleChangeNodeConfig={handleChangeNodeConfig}
-                  draggableId={item.uuid.toString()}
+                  draggableId={item.uuid}
+                  index={index}
                   referenceList={referenceList}
                 />
               );

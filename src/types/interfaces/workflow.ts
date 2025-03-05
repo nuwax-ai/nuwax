@@ -280,19 +280,15 @@ export interface ExpandableInputTextareaProps {
 }
 
 export interface ConditionListProps {
-  title: string;
   index: number;
+  title: string;
   // 改变节点的入参和出参
-  handleChangeNodeConfig: (
-    params: ConditionBranchConfigs,
-    index: number,
-  ) => void;
+  handleChangeNodeConfig: (params: ConditionBranchConfigs, key: string) => void;
   // 删除当前的
-  removeItem: (val: number) => void;
+  removeItem: (val: string) => void;
   draggableId: string;
   // 可以引用的上级节点的参数
   referenceList: NodePreviousAndArgMap;
-
   // 初始值（适用于已经编辑过的内容）
   initialValues: ConditionBranchConfigs;
   // 如果有多个相同组件时，传递不同的inputListName区分
