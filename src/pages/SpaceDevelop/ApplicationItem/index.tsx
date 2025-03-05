@@ -2,7 +2,6 @@ import ConditionRender from '@/components/ConditionRender';
 import CustomPopover from '@/components/CustomPopover';
 import { APPLICATION_MORE_ACTION } from '@/constants/space.contants';
 import { apiDevCollectAgent } from '@/services/agentDev';
-import { PublishStatusEnum } from '@/types/enums/common';
 import type { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ApplicationItemProps } from '@/types/interfaces/space';
@@ -103,16 +102,10 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
           </span>
         </div>
         {/*收藏与取消收藏*/}
-        <ConditionRender
-          condition={
-            agentConfigInfo.publishStatus === PublishStatusEnum.Published
-          }
-        >
-          <CollectStar
-            devCollected={agentConfigInfo.devCollected}
-            onClick={handlerCollect}
-          />
-        </ConditionRender>
+        <CollectStar
+          devCollected={agentConfigInfo.devCollected}
+          onClick={handlerCollect}
+        />
         {/*更多操作*/}
         <CustomPopover
           onClick={handlerClickMore}

@@ -1,3 +1,4 @@
+import sendImage from '@/assets/images/send_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
@@ -16,7 +17,11 @@ const cx = classNames.bind(styles);
 /**
  * 聊天输入组件
  */
-const ChatInput: React.FC<ChatInputProps> = ({ onEnter }) => {
+const ChatInput: React.FC<ChatInputProps> = ({
+  className,
+  onClear,
+  onEnter,
+}) => {
   // 文档
   const [files, setFiles] = useState<UploadInfo[]>([]);
   const [message, setMessage] = useState<string>('');
@@ -65,21 +70,24 @@ const ChatInput: React.FC<ChatInputProps> = ({ onEnter }) => {
   };
 
   return (
-    <div className={cx(styles.footer, 'flex', 'items-center')}>
-      <Tooltip title="清除会话">
-        <span
-          className={cx(
-            styles.clear,
-            'flex',
-            'items-center',
-            'content-center',
-            'hover-box',
-            'cursor-pointer',
-          )}
-        >
-          <ClearOutlined />
-        </span>
-      </Tooltip>
+    <div className={cx(styles.footer, 'flex', 'items-center', className)}>
+      <ConditionRender condition={!!onClear}>
+        <Tooltip title="清空会话记录">
+          <span
+            className={cx(
+              styles.clear,
+              'flex',
+              'items-center',
+              'content-center',
+              'hover-box',
+              'cursor-pointer',
+            )}
+            onClick={onClear}
+          >
+            <ClearOutlined />
+          </span>
+        </Tooltip>
+      </ConditionRender>
       <div className={cx(styles['chat-box'], 'flex-1')}>
         {/*文件列表*/}
         <ConditionRender condition={files?.length}>
@@ -106,8 +114,31 @@ const ChatInput: React.FC<ChatInputProps> = ({ onEnter }) => {
             showUploadList={false}
             // beforeUpload={beforeUpload ?? beforeUploadDefault}
           >
-            <PlusCircleOutlined className={cx('cursor-pointer')} />
+            <span
+              className={cx(
+                styles['icon-box'],
+                'flex',
+                'items-center',
+                'content-center',
+              )}
+            >
+              <PlusCircleOutlined className={cx('cursor-pointer')} />
+            </span>
           </Upload>
+          <span
+            className={cx(
+              styles['icon-box'],
+              'flex',
+              'items-center',
+              'content-center',
+            )}
+          >
+            <img
+              className={cx(styles['send-image'], 'cursor-pointer')}
+              src={sendImage as string}
+              alt=""
+            />
+          </span>
         </div>
       </div>
     </div>

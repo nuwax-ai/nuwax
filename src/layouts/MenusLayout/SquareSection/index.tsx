@@ -45,9 +45,9 @@ const SquareSection: React.FC = () => {
         <div className={cx('py-6 px-6')}>
           <SquareMenuItem
             name="智能体"
+            isDown
             icon={<ICON_AGENT />}
             isActive={activeKey === SquareAgentTypeEnum.Agent}
-            isDown={activeKey !== SquareAgentTypeEnum.Agent}
             onClick={() => handleClick(SquareAgentTypeEnum.Agent)}
           />
           <div
@@ -73,8 +73,8 @@ const SquareSection: React.FC = () => {
           <SquareMenuItem
             name="插件"
             icon={<ICON_PLUGIN />}
+            isDown
             isActive={activeKey === SquareAgentTypeEnum.Plugin}
-            isDown={activeKey !== SquareAgentTypeEnum.Plugin}
             onClick={() => handleClick(SquareAgentTypeEnum.Plugin)}
           />
           <div

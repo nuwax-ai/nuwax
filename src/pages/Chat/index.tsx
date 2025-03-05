@@ -8,15 +8,15 @@ const cx = classNames.bind(styles);
 
 /**
  * 主页咨询聊天页面
- * @constructor
  */
 const Chat: React.FC = () => {
   const [chatTitle, setChatTitle] = useState<string>();
   const location = useLocation();
-  const { question } = location.state;
+  const { message, attachments } = location.state;
 
   useEffect(() => {
-    setChatTitle(question);
+    console.log(attachments)
+    setChatTitle(message);
   }, []);
 
   return (
@@ -24,6 +24,7 @@ const Chat: React.FC = () => {
       <div className={cx('flex-1', 'flex', 'flex-col', 'items-center')}>
         <h3 className={cx(styles.title)}>{chatTitle}</h3>
       </div>
+      {/*展示台区域*/}
       <ShowArea />
     </div>
   );

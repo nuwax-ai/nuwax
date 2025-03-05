@@ -153,6 +153,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     });
   };
 
+  const handleClear = () => {
+
+  }
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <PreviewAndDebugHeader onPressDebug={onPressDebug} />
@@ -193,7 +197,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
           )}
         </div>
         {/*会话输入框*/}
-        <ChatInput onEnter={handleConversation} />
+        <ChatInput onEnter={handleConversation} onClear={handleClear} />
       </div>
     </div>
   );

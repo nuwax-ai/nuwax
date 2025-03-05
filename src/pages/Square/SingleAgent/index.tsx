@@ -8,6 +8,7 @@ import {
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
+import {history} from 'umi';
 
 const cx = classNames.bind(styles);
 
@@ -15,8 +16,12 @@ const cx = classNames.bind(styles);
  * 单个智能体组件
  */
 const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
+  const handleClick = () => {
+    history.push('/', { title: publishedAgentInfo?.name });
+  }
+
   return (
-    <div className={cx(styles.container, 'cursor-pointer')}>
+    <div className={cx(styles.container, 'cursor-pointer')} onClick={handleClick}>
       <div className={cx(styles.header, 'flex')}>
         <img
           className={cx(styles['a-logo'])}
@@ -54,17 +59,20 @@ const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
       <div className={cx(styles['divider-horizontal'])} />
       <div className={cx(styles.footer, 'flex', 'items-center')}>
         <div className={cx('flex', styles.left)}>
+          {/*用户人数*/}
           <span className={cx(styles.text, 'flex')}>
             <UserOutlined />
             <span>{publishedAgentInfo?.statistics?.userCount || 0}</span>
           </span>
+          {/*会话次数*/}
           <span className={cx(styles.text, 'flex')}>
             <PlayCircleOutlined />
-            <span>{publishedAgentInfo?.statistics?.likeCount || 0}</span>
+            <span>{publishedAgentInfo?.statistics?.convCount || 0}</span>
           </span>
+          {/*收藏次数*/}
           <span className={cx(styles.text, 'flex')}>
             <StarOutlined />
-            <span>{publishedAgentInfo?.statistics?.callCount || 0}</span>
+            <span>{publishedAgentInfo?.statistics?.collectCount || 0}</span>
           </span>
         </div>
         <div className={cx(styles.right)}>
