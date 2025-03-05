@@ -38,7 +38,7 @@ export interface ConditionBranchConfigs {
   conditionType: string | null;
   nextNodeIds: number[];
   conditionArgs: ConditionArgs[];
-  uuid: number;
+  uuid: string;
 }
 
 export interface IntentConfigs {
