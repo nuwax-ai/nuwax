@@ -12,8 +12,8 @@ import {
   LIBRARY_ALL_RESOURCE,
   LIBRARY_ALL_TYPE,
 } from '@/constants/space.contants';
-import { apiComponentList } from '@/services/library';
-import { apiPluginCopy } from '@/services/plugin';
+import { apiComponentList, apiWorkflowCopy, apiWorkflowDelete } from '@/services/library';
+import { apiPluginCopy, apiPluginDelete } from '@/services/plugin';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ComponentMoreActionEnum } from '@/types/enums/library';
 import { PluginTypeEnum } from '@/types/enums/plugin';
@@ -38,6 +38,8 @@ import { history, useRequest } from 'umi';
 import ComponentItem from './ComponentItem';
 import CreateModel from './CreateModel';
 import styles from './index.less';
+import { apiModelDelete } from '@/services/modelConfig';
+import { apiKnowledgeConfigDelete } from '@/services/knowledge';
 
 const cx = classNames.bind(styles);
 
@@ -80,12 +82,39 @@ const SpaceLibrary: React.FC = () => {
   // 空间id
   const spaceId = localStorage.getItem(SPACE_ID) as number;
 
+  // 过滤筛选智能体列表数据
+  const handleFilterList = (
+    filterType: ComponentTypeEnum,
+    filterStatus: FilterStatusEnum,
+    filterCreate: CreateListEnum,
+    filterKeyword: string,
+    list = componentAllRef.current
+  ) => {
+    let _list = list;
+    if (filterType !== ComponentTypeEnum.All_Type) {
+      _list = _list.filter((item) => item.type === filterType);
+    }
+    if (filterStatus === FilterStatusEnum.Published) {
+      _list = _list.filter(
+        (item) => item.publishStatus === PublishStatusEnum.Published,
+      );
+    }
+    if (filterCreate === CreateListEnum.Me) {
+      _list = _list.filter((item) => item.creatorId === createIdRef.current);
+    }
+    if (filterKeyword) {
+      _list = _list.filter((item) => item.name.includes(filterKeyword));
+    }
+    setComponentList(_list);
+  };
+
   // 查询组件列表接口
   const { run: runComponent } = useRequest(apiComponentList, {
     manual: true,
     debounceWait: 300,
     onSuccess: (result: ComponentInfo[]) => {
-      setComponentList(result);
+      console.log(type, status, create, keyword, 999)
+      handleFilterList(type, status, create, keyword, result);
       componentAllRef.current = result;
     },
   });
@@ -95,13 +124,73 @@ const SpaceLibrary: React.FC = () => {
     manual: true,
     debounceWait: 300,
     onSuccess: () => {
-      message.success('插件删除成功');
+      message.success('插件复制成功');
+      runComponent(spaceId);
     },
   });
-  console.log(runPluginCopy);
+
+  const handleDel = (id: number) => {
+    const list = componentList.filter(info => info.id !== id);
+    setComponentList(list);
+  }
+
+  // 删除插件接口
+  const { run: runPluginDel } = useRequest(apiPluginDelete, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (_, params) => {
+      message.success('插件删除成功');
+      const id = params[0];
+      handleDel(id);
+    },
+  });
+
+  // 删除指定模型配置信息
+  const { run: runModelDel } = useRequest(apiModelDelete, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (_, params) => {
+      message.success('模型删除成功');
+      const id = params[0];
+      handleDel(id);
+    },
+  });
+
+  // 工作流 - 创建副本接口
+  const { run: runWorkflowCopy } = useRequest(apiWorkflowCopy, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: () => {
+      message.success('工作流复制成功');
+      runComponent(spaceId);
+    },
+  });
+
+  // 工作流 - 删除工作流接口
+  const { run: runWorkflowDel } = useRequest(apiWorkflowDelete, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (_, params) => {
+      message.success('工作流删除成功');
+      const id = params[0];
+      handleDel(id);
+    },
+  });
+
+  // 知识库基础配置接口 - 数据删除接口
+  const { run: runKnowledgeDel } = useRequest(apiKnowledgeConfigDelete, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (_, params) => {
+      message.success('知识库删除成功');
+      const id = params[0];
+      handleDel(id);
+    },
+  });
+
   useEffect(() => {
     const userInfoString = localStorage.getItem(USER_INFO);
-    const userInfo = (JSON.parse(userInfoString) as UserInfo) || {};
+    const userInfo = (JSON.parse(userInfoString) || {}) as UserInfo;
     createIdRef.current = userInfo.id;
   }, []);
 
@@ -119,31 +208,6 @@ const SpaceLibrary: React.FC = () => {
       unlisten();
     };
   }, []);
-
-  // 过滤筛选智能体列表数据
-  const handleFilterList = (
-    filterType: ComponentTypeEnum,
-    filterStatus: FilterStatusEnum,
-    filterCreate: CreateListEnum,
-    filterKeyword: string,
-  ) => {
-    let list = componentAllRef.current;
-    if (filterType !== ComponentTypeEnum.All_Type) {
-      list = list.filter((item) => item.type === filterType);
-    }
-    if (filterStatus === FilterStatusEnum.Published) {
-      list = list.filter(
-        (item) => item.publishStatus === PublishStatusEnum.Published,
-      );
-    }
-    if (filterCreate === CreateListEnum.Me) {
-      list = list.filter((item) => item.creatorId === createIdRef.current);
-    }
-    if (filterKeyword) {
-      list = list.filter((item) => item.name.includes(filterKeyword));
-    }
-    setComponentList(list);
-  };
 
   // 切换类型
   const handlerChangeType = (value: ComponentTypeEnum) => {
@@ -245,15 +309,17 @@ const SpaceLibrary: React.FC = () => {
   // };
 
   // 点击更多操作 插件： 创建副本、删除 模型：删除 工作流：创建副本、删除 知识库： 删除
-  const handleClickMore = (item: CustomPopoverItem) => {
+  const handleClickMore = (item: CustomPopoverItem, info: ComponentInfo) => {
     const { action, type } = item;
+    const {id} = info;
     // 插件
     if (type === ComponentTypeEnum.Plugin) {
       switch (action) {
         case ComponentMoreActionEnum.Copy:
-          // runPluginCopy(2);
+          runPluginCopy(id);
           break;
         case ComponentMoreActionEnum.Del:
+          runPluginDel(id);
           break;
       }
     }
@@ -263,23 +329,27 @@ const SpaceLibrary: React.FC = () => {
       type === ComponentTypeEnum.Model &&
       action === ComponentMoreActionEnum.Del
     ) {
+      runModelDel(id);
     }
 
     // 工作流
     if (type === ComponentTypeEnum.Workflow) {
       switch (action) {
         case ComponentMoreActionEnum.Copy:
+          runWorkflowCopy(id);
           break;
         case ComponentMoreActionEnum.Del:
+          runWorkflowDel(id);
           break;
       }
     }
 
-    // 工作流
+    // 知识库
     if (
       type === ComponentTypeEnum.Knowledge &&
       action === ComponentMoreActionEnum.Del
     ) {
+      runKnowledgeDel(id);
     }
     // switch (action) {
     //   case ComponentMoreActionEnum.Copy:
@@ -363,12 +433,12 @@ const SpaceLibrary: React.FC = () => {
       </div>
       {componentList?.length > 0 ? (
         <div className={cx(styles['main-container'])}>
-          {componentList?.map((item) => (
+          {componentList?.map((info) => (
             <ComponentItem
-              key={`${item.id}${item.type}`}
-              componentInfo={item}
-              onClick={() => handleClickComponent(item)}
-              onClickMore={handleClickMore}
+              key={`${info.id}${info.type}`}
+              componentInfo={info}
+              onClick={() => handleClickComponent(info)}
+              onClickMore={(item) => handleClickMore(item, info)}
             />
           ))}
         </div>

@@ -26,6 +26,24 @@ export async function apiUpdateWorkflow(
   });
 }
 
+// 工作流 - 创建副本接口
+export async function apiWorkflowCopy(
+  workflowId: number,
+): Promise<RequestResponse<number>> {
+  return request(`/api/workflow/copy/${workflowId}`, {
+    method: 'POST',
+  });
+}
+
+// 工作流 - 删除工作流接口
+export async function apiWorkflowDelete(
+  workflowId: number,
+): Promise<RequestResponse<number>> {
+  return request(`/api/workflow/delete/${workflowId}`, {
+    method: 'POST',
+  });
+}
+
 // 查询组件列表接口
 export async function apiComponentList(
   spaceId: number,

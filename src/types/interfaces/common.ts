@@ -3,6 +3,7 @@ import type { CardStyleEnum, CreateUpdateModeEnum } from '@/types/enums/common';
 import type {
   AgentBaseInfo,
   AgentConfigInfo,
+  AttachmentFile,
   CreatorInfo,
 } from '@/types/interfaces/agent';
 import type {
@@ -408,4 +409,9 @@ export interface PluginPublishProps {
 export interface PluginConfigTitleProps {
   title: string;
   onClick: () => void;
+}
+
+// 聊天输入框组件
+export interface ChatInputProps {
+  onEnter: (message: string, attachments: AttachmentFile[]) => void;
 }

@@ -4,9 +4,9 @@ import type {
   AgentCardInfo,
   AgentComponentInfo,
   AgentConfigInfo,
-  AttachmentFile,
   TriggerTimeZone,
 } from '@/types/interfaces/agent';
+import type { UploadInfo } from '@/types/interfaces/common';
 import React from 'react';
 
 // 智能体header组件
@@ -112,13 +112,15 @@ export interface VariableListProps {
   list: AgentComponentInfo[];
 }
 
-// 聊天输入框组件
-export interface ChatInputProps {
-  onEnter: (message: string, attachments: AttachmentFile[]) => void;
-}
-
 // 聊天上传文件列表组件
 export interface ChatUploadFileProps {
-  files: any;
+  files: UploadInfo[];
   onDel: (index: number) => void;
+}
+
+// 调试详情组件
+export interface DebugDetailsProps {
+  executeResults: string[];
+  visible?: boolean;
+  onClose: () => void;
 }

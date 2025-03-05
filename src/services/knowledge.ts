@@ -59,7 +59,7 @@ export async function apiKnowledgeConfigAdd(
 
 // 知识库基础配置接口 - 数据详情查询
 export async function apiKnowledgeConfigDetail(
-  id: string,
+  id: number,
 ): Promise<RequestResponse<KnowledgeInfo>> {
   return request('/api/knowledge/config/detailById', {
     method: 'GET',
@@ -71,7 +71,7 @@ export async function apiKnowledgeConfigDetail(
 
 // 知识库基础配置接口 - 数据删除接口
 export async function apiKnowledgeConfigDelete(
-  id: string,
+  id: number,
 ): Promise<RequestResponse<null>> {
   return request('/api/knowledge/config/deleteById', {
     method: 'GET',
@@ -154,7 +154,7 @@ export async function apiKnowledgeDocumentAdd(
 
 // 知识库文档配置 - 数据详情查询
 export async function apiKnowledgeDocumentDetail(
-  dataId: string,
+  dataId: number,
 ): Promise<RequestResponse<KnowledgeDocumentInfo>> {
   return request('/api/knowledge/document/detailById', {
     method: 'GET',
@@ -166,7 +166,7 @@ export async function apiKnowledgeDocumentDetail(
 
 // 知识库文档配置 - 数据删除接口
 export async function apiKnowledgeDocumentDelete(
-  id: string,
+  id: number,
 ): Promise<RequestResponse<null>> {
   return request('/api/knowledge/document/deleteById', {
     method: 'GET',
@@ -212,7 +212,7 @@ export async function apiKnowledgeRawSegmentAdd(
 
 // 知识库分段配置 - 数据详情查询
 export async function apiKnowledgeRawSegmentDetail(
-  dataId: string,
+  dataId: number,
 ): Promise<RequestResponse<KnowledgeRawSegmentInfo>> {
   return request('/api/knowledge/rawSegment/detailById', {
     method: 'GET',
@@ -289,7 +289,7 @@ export async function apiKnowledgeQAEmbeddingStatus(
 
 // 知识库问答 - 数据详情查询
 export async function apiKnowledgeQADetail(
-  dataId: string,
+  dataId: number,
 ): Promise<RequestResponse<KnowledgeQAInfo>> {
   return request('/api/knowledge/qa/detailById', {
     method: 'GET',
