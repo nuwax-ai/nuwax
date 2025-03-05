@@ -1,7 +1,7 @@
 import personal from '@/assets/images/personal.png';
 import { USER_INFO } from '@/constants/home.constants';
 import { AssistantRoleEnum } from '@/types/enums/agent';
-import { AgentConfigInfo, MessageInfo } from '@/types/interfaces/agent';
+import { MessageInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
 import React from 'react';
 import ChatBottomMore from './ChatBottomMore';
@@ -12,18 +12,25 @@ const cx = classNames.bind(styles);
 
 interface ChatViewProps {
   messageInfo: MessageInfo;
-  agentConfigInfo: AgentConfigInfo;
-  avatar: string;
-  nickname: string;
+  // 智能体图标
+  icon: string;
+  // 智能体名称
+  name: string;
+  // 用户头像
+  avatar?: string;
+  // 用户昵称
+  nickname?: string;
   onCopy?: () => void;
   onDebug?: () => void;
 }
 
 const ChatView: React.FC<ChatViewProps> = ({
+  icon,
+  name,
   avatar,
   nickname,
   messageInfo,
-  agentConfigInfo,
+  // agentConfigInfo,
   onCopy,
   onDebug,
 }) => {
@@ -34,11 +41,11 @@ const ChatView: React.FC<ChatViewProps> = ({
         <>
           <img
             className={cx(styles.avatar)}
-            src={agentConfigInfo?.icon}
+            src={icon}
             alt=""
           />
           <div className={cx('flex-1')}>
-            <div className={cx(styles.author)}>{agentConfigInfo?.name}</div>
+            <div className={cx(styles.author)}>{name}</div>
             <RunOver />
             <div className={cx(styles['chat-content'], 'radius-6')}>
               {messageInfo.text}
