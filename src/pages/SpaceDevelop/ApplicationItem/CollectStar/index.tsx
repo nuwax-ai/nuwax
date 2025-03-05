@@ -1,34 +1,36 @@
-import {apiHome} from '@/services/home';
+import type { CollectStarProps } from '@/types/interfaces/space';
+import { StarFilled } from '@ant-design/icons';
 import classNames from 'classnames';
-import React, {useEffect, useState} from 'react';
-import {useRequest} from 'umi';
+import React from 'react';
 import styles from './index.less';
-import { RequestResponse } from '@/types/interfaces/request';
 
 const cx = classNames.bind(styles);
 
-const Home: React.FC = () => {
-  const [data, setData] = useState<any[]>([]);
-
-  const {run, loading} = useRequest(apiHome, {
-    manual: true,
-    debounceWait: 300,
-    onSuccess: (res: RequestResponse<T>) => {
-      const {data} = res;
-      if (data) {
-      }
-    },
-  });
-
-  useEffect(() => {
-    run();
-  }, []);
+/**
+ * 收藏star
+ */
+const CollectStar: React.FC<CollectStarProps> = ({ devCollected, onClick }) => {
+  // 收藏、取消收藏事件
+  const handlerCollect = async (e) => {
+    e.stopPropagation();
+    onClick();
+  };
 
   return (
-    <div className={cx(styles.container)}>
-      
-    </div>
+    <span
+      className={cx(
+        styles['icon-box'],
+        'flex',
+        'content-center',
+        'items-center',
+        'hover-box',
+        { [styles['collected']]: devCollected },
+      )}
+      onClick={handlerCollect}
+    >
+      <StarFilled />
+    </span>
   );
 };
 
-export default Home;
+export default CollectStar;

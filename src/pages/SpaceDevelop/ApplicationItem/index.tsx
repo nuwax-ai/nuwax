@@ -1,22 +1,19 @@
-import agentImage from '@/assets/images/agent_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import CustomPopover from '@/components/CustomPopover';
 import { APPLICATION_MORE_ACTION } from '@/constants/space.contants';
-import { apiDevCollectAgent, apiDevUnCollectAgent } from '@/services/agentDev';
+import { apiDevCollectAgent } from '@/services/agentDev';
+import { PublishStatusEnum } from '@/types/enums/common';
 import type { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ApplicationItemProps } from '@/types/interfaces/space';
-import {
-  CheckCircleTwoTone,
-  MoreOutlined,
-  StarFilled,
-  UserOutlined,
-} from '@ant-design/icons';
+import { MoreOutlined, UserOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment';
 import React from 'react';
-import { useRequest } from 'umi';
+import { useModel, useRequest } from 'umi';
+import ApplicationHeader from './ApplicationHeader';
+import CollectStar from './CollectStar';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -30,37 +27,37 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
   onCollect,
   onClickMore,
 }) => {
-  // 取消开发智能体收藏
-  const { run: runCancel } = useRequest(apiDevUnCollectAgent, {
-    manual: true,
-    debounceWait: 300,
-    onSuccess: () => {
-      message.success('取消收藏成功');
-      onCollect(false);
-    },
-  });
+  const { runCancelCollect, runDevCollect } = useModel(
+    'devCollectAgent',
+    (model) => ({
+      runCancelCollect: model.runCancelCollect,
+      runDevCollect: model.runDevCollect,
+    }),
+  );
 
   // 开发智能体收藏
-  const { run } = useRequest(apiDevCollectAgent, {
+  const { run: runCollect } = useRequest(apiDevCollectAgent, {
     manual: true,
     debounceWait: 300,
     onSuccess: () => {
       message.success('收藏成功');
-      onCollect(true);
+      // 更新开发智能体收藏列表
+      runDevCollect({
+        page: 1,
+        size: 50,
+      });
     },
   });
 
-  // 收藏事件
-  const handlerCollect = (e) => {
-    e.stopPropagation();
-    const data = {
-      agentId: agentConfigInfo.id,
-    };
-    if (agentConfigInfo.devCollected) {
-      runCancel(data);
+  // 收藏、取消收藏事件
+  const handlerCollect = async () => {
+    const { id, devCollected } = agentConfigInfo;
+    if (devCollected) {
+      await runCancelCollect(id);
     } else {
-      run(data);
+      await runCollect(id);
     }
+    onCollect(!devCollected);
   };
 
   // 点击更多操作
@@ -84,22 +81,9 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
       )}
       onClick={() => onClick(agentConfigInfo.id)}
     >
-      <div className={cx('flex', styles.header)}>
-        <div className={cx('flex-1', 'overflow-hide')}>
-          <div className={cx('flex', styles['info-box'])}>
-            <h3 className={cx('text-ellipsis', styles.title)}>
-              {agentConfigInfo.name}
-            </h3>
-            <CheckCircleTwoTone twoToneColor="#52c41a" />
-          </div>
-          <p className={cx('text-ellipsis-2', styles.desc)}>
-            {agentConfigInfo.description}
-          </p>
-        </div>
-        <span className={cx(styles['logo-box'], 'overflow-hide')}>
-          <img src={agentConfigInfo.icon || (agentImage as string)} alt="" />
-        </span>
-      </div>
+      {/*头部信息*/}
+      <ApplicationHeader agentConfigInfo={agentConfigInfo} />
+      {/*相关信息*/}
       <div className={cx('flex', styles['rel-info'])}>
         <ConditionRender condition={agentConfigInfo.systemPrompt}>
           <span>{agentConfigInfo.systemPrompt}</span>
@@ -110,26 +94,26 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
         <span>最近编辑</span>
         <span>{moment(agentConfigInfo.modified).format('MM-DD HH:mm')}</span>
       </div>
-      <div className={cx(styles.footer, 'flex', 'items-center')}>
+      {/*底部*/}
+      <footer className={cx(styles.footer, 'flex', 'items-center')}>
         <div className={cx('flex-1', 'flex', 'overflow-hide')}>
           <UserOutlined />
           <span className={cx('flex-1', 'text-ellipsis', styles.author)}>
-            {agentConfigInfo.creator.userName}
+            {agentConfigInfo.creator?.userName}
           </span>
         </div>
-        <span
-          className={cx(
-            styles['icon-box'],
-            'flex',
-            'content-center',
-            'items-center',
-            'hover-box',
-            { [styles['collected']]: agentConfigInfo.devCollected },
-          )}
-          onClick={handlerCollect}
+        {/*收藏与取消收藏*/}
+        <ConditionRender
+          condition={
+            agentConfigInfo.publishStatus === PublishStatusEnum.Published
+          }
         >
-          <StarFilled />
-        </span>
+          <CollectStar
+            devCollected={agentConfigInfo.devCollected}
+            onClick={handlerCollect}
+          />
+        </ConditionRender>
+        {/*更多操作*/}
         <CustomPopover
           onClick={handlerClickMore}
           list={APPLICATION_MORE_ACTION}
@@ -146,7 +130,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
             <MoreOutlined />
           </span>
         </CustomPopover>
-      </div>
+      </footer>
     </div>
   );
 };

@@ -12,7 +12,13 @@ import {
   LIBRARY_ALL_RESOURCE,
   LIBRARY_ALL_TYPE,
 } from '@/constants/space.contants';
-import { apiComponentList, apiWorkflowCopy, apiWorkflowDelete } from '@/services/library';
+import { apiKnowledgeConfigDelete } from '@/services/knowledge';
+import {
+  apiComponentList,
+  apiWorkflowCopy,
+  apiWorkflowDelete,
+} from '@/services/library';
+import { apiModelDelete } from '@/services/modelConfig';
 import { apiPluginCopy, apiPluginDelete } from '@/services/plugin';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ComponentMoreActionEnum } from '@/types/enums/library';
@@ -38,8 +44,6 @@ import { history, useRequest } from 'umi';
 import ComponentItem from './ComponentItem';
 import CreateModel from './CreateModel';
 import styles from './index.less';
-import { apiModelDelete } from '@/services/modelConfig';
-import { apiKnowledgeConfigDelete } from '@/services/knowledge';
 
 const cx = classNames.bind(styles);
 
@@ -88,7 +92,7 @@ const SpaceLibrary: React.FC = () => {
     filterStatus: FilterStatusEnum,
     filterCreate: CreateListEnum,
     filterKeyword: string,
-    list = componentAllRef.current
+    list = componentAllRef.current,
   ) => {
     let _list = list;
     if (filterType !== ComponentTypeEnum.All_Type) {
@@ -113,7 +117,6 @@ const SpaceLibrary: React.FC = () => {
     manual: true,
     debounceWait: 300,
     onSuccess: (result: ComponentInfo[]) => {
-      console.log(type, status, create, keyword, 999)
       handleFilterList(type, status, create, keyword, result);
       componentAllRef.current = result;
     },
@@ -130,9 +133,9 @@ const SpaceLibrary: React.FC = () => {
   });
 
   const handleDel = (id: number) => {
-    const list = componentList.filter(info => info.id !== id);
+    const list = componentList.filter((info) => info.id !== id);
     setComponentList(list);
-  }
+  };
 
   // 删除插件接口
   const { run: runPluginDel } = useRequest(apiPluginDelete, {
@@ -311,7 +314,7 @@ const SpaceLibrary: React.FC = () => {
   // 点击更多操作 插件： 创建副本、删除 模型：删除 工作流：创建副本、删除 知识库： 删除
   const handleClickMore = (item: CustomPopoverItem, info: ComponentInfo) => {
     const { action, type } = item;
-    const {id} = info;
+    const { id } = info;
     // 插件
     if (type === ComponentTypeEnum.Plugin) {
       switch (action) {

@@ -1,10 +1,9 @@
-// 广场-已发布智能体列表输入参数
-import type { KnowledgeDataTypeEnum } from '@/types/enums/library';
 import type { SquareAgentTypeEnum } from '@/types/enums/square';
 import type {
   AgentStatisticsInfo,
   CreatorInfo,
 } from '@/types/interfaces/agent';
+import React from 'react';
 
 // 已发布插件列表输入参数
 export interface PublishedPluginListParams {
@@ -13,18 +12,16 @@ export interface PublishedPluginListParams {
   // 分类名称
   category: string;
   // 关键字搜索
-  kw: string;
+  kw?: string;
   // 空间ID（可选）需要通过空间过滤时有用
-  spaceId: number;
+  spaceId?: number;
 }
 
 // 已发布知识库列表输入参数
 export type PublishedKnowledgeListParams = PublishedPluginListParams;
 
 // 广场-已发布智能体列表输入参数
-export interface PublishedAgentListParams extends PublishedPluginListParams {
-  dataType: KnowledgeDataTypeEnum;
-}
+export type PublishedAgentListParams = PublishedPluginListParams;
 
 // 已发布的智能体信息
 export interface PublishedAgentInfo {
@@ -74,4 +71,13 @@ export interface SquareAgentInfo {
 // 单个智能体组件
 export interface SingleAgentProps {
   publishedAgentInfo: PublishedAgentInfo;
+}
+
+// 广场菜单项组件
+export interface SquareMenuItemProps {
+  icon?: React.ReactNode;
+  name: string;
+  isActive: boolean;
+  isDown?: boolean;
+  onClick: () => void;
 }

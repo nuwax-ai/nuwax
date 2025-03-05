@@ -22,7 +22,7 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useRequest } from 'umi';
+import { history, useModel, useRequest } from 'umi';
 import AgentMove from './AgentMove';
 import ApplicationItem from './ApplicationItem';
 import styles from './index.less';
@@ -47,23 +47,50 @@ const SpaceDevelop: React.FC = () => {
   );
   // 搜索关键词
   const [keyword, setKeyword] = useState<string>('');
-  // 智能体列表
-  const [agentList, setAgentList] = useState<AgentConfigInfo[]>([]);
-  // 所有智能体列表
-  const agentAllRef = useRef<AgentConfigInfo[]>([]);
   // 创建者ID
   const createIdRef = useRef<number>(0);
   // 目标智能体ID
   const targetAgentIdRef = useRef<number>(0);
+  const { agentList, setAgentList, agentAllRef, handlerCollect } = useModel(
+    'applicationDev',
+    (model) => ({
+      agentList: model.agentList,
+      setAgentList: model.setAgentList,
+      agentAllRef: model.agentAllRef,
+      handlerCollect: model.handlerCollect,
+    }),
+  );
 
   const spaceId = localStorage.getItem(SPACE_ID);
+
+  // 过滤筛选智能体列表数据
+  const handleFilterList = (
+    filterStatus: FilterStatusEnum,
+    filterCreate: CreateListEnum,
+    filterKeyword: string,
+    list = agentAllRef.current,
+  ) => {
+    let _list = list;
+    if (filterStatus === FilterStatusEnum.Published) {
+      _list = _list.filter(
+        (item) => item.publishStatus === PublishStatusEnum.Published,
+      );
+    }
+    if (filterCreate === CreateListEnum.Me) {
+      _list = _list.filter((item) => item.creatorId === createIdRef.current);
+    }
+    if (filterKeyword) {
+      _list = _list.filter((item) => item.name.includes(filterKeyword));
+    }
+    setAgentList(_list);
+  };
 
   // 查询空间智能体列表接口
   const { run } = useRequest(apiAgentConfigList, {
     manual: true,
     debounceWait: 300,
     onSuccess: (result: AgentConfigInfo[]) => {
-      setAgentList(result);
+      handleFilterList(status, create, keyword, result);
       agentAllRef.current = result;
     },
   });
@@ -81,9 +108,9 @@ const SpaceDevelop: React.FC = () => {
   // 删除或者迁移智能体后, 从列表移除智能体
   const handleDelAgent = () => {
     const agentId = targetAgentIdRef.current;
-    const _agentList = agentList.filter((item) => item.id !== agentId);
+    const _agentList = agentList?.filter((item) => item.id !== agentId) || [];
     setAgentList(_agentList);
-    agentAllRef.current = agentAllRef.current.filter(
+    agentAllRef.current = agentAllRef.current?.filter(
       (item) => item.id !== agentId,
     );
   };
@@ -111,7 +138,7 @@ const SpaceDevelop: React.FC = () => {
 
   useEffect(() => {
     const userInfoString = localStorage.getItem(USER_INFO);
-    const userInfo = (JSON.parse(userInfoString) as UserInfo) || {};
+    const userInfo = (JSON.parse(userInfoString) || {}) as UserInfo;
     createIdRef.current = userInfo.id;
   }, []);
 
@@ -130,27 +157,6 @@ const SpaceDevelop: React.FC = () => {
       unlisten();
     };
   }, []);
-
-  // 过滤筛选智能体列表数据
-  const handleFilterList = (
-    filterStatus: FilterStatusEnum,
-    filterCreate: CreateListEnum,
-    filterKeyword: string,
-  ) => {
-    let list = agentAllRef.current;
-    if (filterStatus === FilterStatusEnum.Published) {
-      list = list.filter(
-        (item) => item.publishStatus === PublishStatusEnum.Published,
-      );
-    }
-    if (filterCreate === CreateListEnum.Me) {
-      list = list.filter((item) => item.creatorId === createIdRef.current);
-    }
-    if (filterKeyword) {
-      list = list.filter((item) => item.name.includes(filterKeyword));
-    }
-    setAgentList(list);
-  };
 
   // 切换状态
   const handlerChangeStatus = (value: FilterStatusEnum) => {
@@ -186,23 +192,24 @@ const SpaceDevelop: React.FC = () => {
 
   // 设置统计信息
   const handleSetStatistics = (agentInfo: AgentConfigInfo) => {
-    const statisticsInfo = agentInfo.agentStatistics;
+    const { userCount, convCount, collectCount, likeCount } =
+      agentInfo?.agentStatistics;
     const analyzeList = [
       {
         label: '对话人数',
-        value: statisticsInfo.userCount,
+        value: userCount,
       },
       {
         label: '对话次数',
-        value: statisticsInfo.convCount,
+        value: convCount,
       },
       {
         label: '收藏用户数',
-        value: statisticsInfo.collectCount,
+        value: collectCount,
       },
       {
         label: '点赞次数',
-        value: statisticsInfo.likeCount,
+        value: likeCount,
       },
     ];
     setAgentStatistics(analyzeList);
@@ -211,7 +218,8 @@ const SpaceDevelop: React.FC = () => {
   // 点击更多操作
   const handlerClickMore = (type: ApplicationMoreActionEnum, index: number) => {
     const agentInfo = agentList[index];
-    targetAgentIdRef.current = agentInfo.id;
+    const { id } = agentInfo;
+    targetAgentIdRef.current = id;
     switch (type) {
       case ApplicationMoreActionEnum.Analyze:
         handleSetStatistics(agentInfo);
@@ -219,18 +227,14 @@ const SpaceDevelop: React.FC = () => {
         break;
       // 创建副本
       case ApplicationMoreActionEnum.Create_Copy:
-        runCopy({
-          agentId: agentInfo.id,
-        });
+        runCopy(id);
         break;
       // 迁移
       case ApplicationMoreActionEnum.Move:
         setOpenMove(true);
         break;
       case ApplicationMoreActionEnum.Del:
-        runDel({
-          agentId: agentInfo.id,
-        });
+        runDel(id);
         break;
     }
   };
@@ -239,13 +243,6 @@ const SpaceDevelop: React.FC = () => {
   const handlerConfirmCreateAgent = (agentId: string) => {
     setOpenCreateAgent(false);
     history.push(`/space/${spaceId}/agent/${agentId}`);
-  };
-
-  // 收藏
-  const handlerCollect = (index: number, isCollect: boolean) => {
-    const _agentList = [...agentList];
-    _agentList[index].devCollected = isCollect;
-    setAgentList(_agentList);
   };
 
   return (

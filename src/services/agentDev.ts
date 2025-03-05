@@ -1,21 +1,12 @@
-import type {
-  AgentInfo,
-  CollectAgentParams,
-  DevCollectAgentParams,
-  DevUnCollectAgentParams,
-  LikeAgentParams,
-  UnCollectParams,
-  UnlikeParams,
-} from '@/types/interfaces/agent';
+import type { AgentInfo } from '@/types/interfaces/agent';
 import type { ListParams, PageParams } from '@/types/interfaces/common';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
 // 取消点赞智能体
 export async function apiUnlikeAgent(
-  data: UnlikeParams,
+  agentId: number,
 ): Promise<RequestResponse<null>> {
-  const agentId = data.agentId;
   return request(`/api/user/agent/unLike/${agentId}`, {
     method: 'POST',
   });
@@ -23,9 +14,8 @@ export async function apiUnlikeAgent(
 
 // 智能体取消收藏
 export async function apiUnCollectAgent(
-  data: UnCollectParams,
+  agentId: number,
 ): Promise<RequestResponse<null>> {
-  const agentId = data.agentId;
   return request(`/api/user/agent/unCollect/${agentId}`, {
     method: 'POST',
   });
@@ -33,9 +23,8 @@ export async function apiUnCollectAgent(
 
 // 点赞智能体
 export async function apiLikeAgent(
-  data: LikeAgentParams,
+  agentId: number,
 ): Promise<RequestResponse<null>> {
-  const agentId = data.agentId;
   return request(`/api/user/agent/like/${agentId}`, {
     method: 'POST',
   });
@@ -43,9 +32,8 @@ export async function apiLikeAgent(
 
 // 取消开发智能体收藏
 export async function apiDevUnCollectAgent(
-  data: DevUnCollectAgentParams,
+  agentId: number,
 ): Promise<RequestResponse<null>> {
-  const agentId = data.agentId;
   return request(`/api/user/agent/dev/unCollect/${agentId}`, {
     method: 'POST',
   });
@@ -53,9 +41,8 @@ export async function apiDevUnCollectAgent(
 
 // 开发智能体收藏
 export async function apiDevCollectAgent(
-  data: DevCollectAgentParams,
+  agentId: number,
 ): Promise<RequestResponse<null>> {
-  const agentId = data.agentId;
   return request(`/api/user/agent/dev/collect/${agentId}`, {
     method: 'POST',
   });
@@ -63,9 +50,8 @@ export async function apiDevCollectAgent(
 
 // 智能体收藏
 export async function apiCollectAgent(
-  data: CollectAgentParams,
+  agentId: number,
 ): Promise<RequestResponse<null>> {
-  const agentId = data.agentId;
   return request(`/api/user/agent/collect/${agentId}`, {
     method: 'POST',
   });
