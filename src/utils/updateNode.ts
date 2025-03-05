@@ -4,14 +4,9 @@ import { InputAndOutConfig } from '@/types/interfaces/node';
 
 export const updateNode = async (params: ChildNode) => {
   const _params = {
+    ...params,
     nodeId: params.id,
-    name: params.name,
-    description: params.description,
-    innerStartNodeId: params.innerStartNodeId,
-    innerEndNodeId: params.innerEndNodeId,
-    nodeConfig: params.nodeConfig,
   };
-
   return await service.modifyNode(_params, params.type);
 };
 
@@ -25,6 +20,7 @@ export const updateNode = async (params: ChildNode) => {
 function findAllPaths(
   nodeMap: Map<number, ChildNode>,
   startNodeId: number,
+  targetNodeId: number, // 新增目标节点ID参数
   visited = new Set<number>(),
   currentPath: number[] = [],
 ): number[][] {
@@ -37,15 +33,20 @@ function findAllPaths(
   let allPaths: number[][] = [];
   const newPath = [...currentPath, startNodeId]; // 当前路径加入当前节点
 
-  // 如果当前节点没有后续节点，则直接返回当前路径
-  if (!currentNode.nextNodeIds || currentNode.nextNodeIds.length === 0) {
+  // 如果到达目标节点，则直接返回当前路径
+  if (startNodeId === targetNodeId) {
     allPaths.push(newPath);
-  } else {
+    return allPaths;
+  }
+
+  // 如果当前节点有后续节点，则继续递归
+  if (currentNode.nextNodeIds && currentNode.nextNodeIds.length > 0) {
     // 对于每一个后续节点ID，递归寻找路径
     for (const nextNodeId of currentNode.nextNodeIds) {
       const pathsFromNextNode = findAllPaths(
         nodeMap,
         nextNodeId,
+        targetNodeId,
         new Set(visited),
         newPath,
       );
@@ -56,16 +57,18 @@ function findAllPaths(
   return allPaths;
 }
 
-// 获取一条线上的节点关系
+// 修改getNodeRelation函数以接收targetNodeId参数
 export const getNodeRelation = async (
   nodes: ChildNode[],
   startNodeId: number,
+  targetNodeId: number, // 新增目标节点ID参数
 ): Promise<number[][]> => {
   // 创建一个映射方便查找，确保键为 number 类型
   const nodeMap = new Map<number, ChildNode>(
     nodes.map((node) => [Number(node.id), node]),
   );
-  const relationList = findAllPaths(nodeMap, startNodeId);
+  const relationList = findAllPaths(nodeMap, startNodeId, targetNodeId);
+  console.log(relationList);
   return relationList;
 };
 

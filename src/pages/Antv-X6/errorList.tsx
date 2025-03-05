@@ -1,4 +1,5 @@
 import { ChildNode } from '@/types/interfaces/graph';
+import { returnImg } from '@/utils/workflow';
 import { CloseOutlined } from '@ant-design/icons';
 import React from 'react';
 interface ErrorItem extends ChildNode {
@@ -53,8 +54,8 @@ const ErrorList: React.FC<ErrorListProps> = ({
                   onClick={() => changeDrawer(node)}
                   key={item.nodeId}
                 >
-                  <img src={node.icon} alt="" />
-                  <div>
+                  {returnImg(node.type)}
+                  <div className="ml-12">
                     <p>{node.name || '123'}</p>
                     <p className="error-text">{item.error}</p>
                   </div>

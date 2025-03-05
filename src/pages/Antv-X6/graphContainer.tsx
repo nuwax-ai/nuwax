@@ -5,10 +5,10 @@ import type {
 } from '@/types/interfaces/graph';
 import {
   createBaseNode,
+  createChildNode,
   createEdge,
   generatePorts,
   getLength,
-  processLoopNode,
 } from '@/utils/workflow';
 import { Node } from '@antv/x6';
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
@@ -198,12 +198,21 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             return data.type === 'Loop';
           });
         // 创建循环的子节点
+        // 创建循环的子节点
         if (loopNodeList.length) {
           loopNodeList.forEach((element: Node) => {
-            processLoopNode(element, graphRef.current);
+            const data = element.getData();
+            if (!data.innerNodes?.length) return;
+            console.log('data', data);
+            data.innerNodes.forEach((childDef: ChildNode) => {
+              const child = createChildNode(data.id, childDef); // 创建子节点配置
+              const childNode = graphRef.current.addNode(child); // 添加子节点到图中
+              console.log(childDef);
+              // 更新父节点的子节点列表（如果必要）
+              element.addChild(childNode);
+            });
           });
         }
-
         // 4. 创建边（需要验证节点存在性）
         const edges = graphParams.edgeList
           .map((edge) => {

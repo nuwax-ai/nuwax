@@ -3,7 +3,6 @@ import { Node } from '@antv/x6';
 // 调整父节点尺寸以包含所有子节点
 
 export const adjustParentSize = (parentNode: Node) => {
-  console.log(123, parentNode);
   const childrenNodes = parentNode.getChildren
     ? Array.from(parentNode.getChildren() || [])
     : [];

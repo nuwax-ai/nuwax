@@ -17,6 +17,7 @@ import { getEdges } from '@/utils/workflow';
 import { message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
 import ControlPanel from './controlPanel';
 import ErrorList from './errorList';
 import GraphContainer from './graphContainer';
@@ -87,7 +88,20 @@ const Workflow: React.FC = () => {
   // 修改更新时间
   const changeUpdateTime = () => {
     const _time = new Date();
-    setInfo({ ...(info as IgetDetails), modified: _time.toString() });
+    // 修改时间
+    setInfo((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        modified: _time.toString(),
+        creator: prev.creator || {
+          id: 0,
+          name: '',
+          avatar: '',
+          email: '',
+        },
+      };
+    });
   };
   // 按钮是否处于loading
   const [loading, setLoading] = useState(false);
@@ -187,7 +201,6 @@ const Workflow: React.FC = () => {
       }
     }
   };
-
   // 新增节点
   const addNode = async (
     child: Child,
@@ -196,16 +209,14 @@ const Workflow: React.FC = () => {
     let _params = JSON.parse(JSON.stringify(child));
     _params.workflowId = workflowId;
     _params.extension = dragEvent;
-
     // 查看当前是否有选中的节点以及被选中的节点的type是否是Loop
-
     const loopParentId = graphRef.current.findLoopParentAtPosition(dragEvent);
     if ((visible && foldWrapItem.type === 'Loop') || loopParentId) {
       _params.loopNodeId = Number(loopParentId || foldWrapItem.id);
     }
     // 如果是条件分支，需要增加高度
     if (child.type === 'Condition') {
-      _params.extension = { ...dragEvent };
+      _params.extension = { ...dragEvent, height: 124 };
     }
     if (child.type === 'Loop') {
       _params.extension = { ...dragEvent, height: 240, width: 600 };
@@ -215,6 +226,7 @@ const Workflow: React.FC = () => {
 
     if (_res.code === Constant.success) {
       _res.data.key = _res.data.type === 'Loop' ? 'loop-node' : 'general-Node';
+
       graphRef.current.addNode(dragEvent, _res.data);
       setFoldWrapItem(_res.data);
       graphRef.current.selectNode(_res.data.id);
@@ -409,6 +421,9 @@ const Workflow: React.FC = () => {
           if (data.data) {
             setTestRunResult(JSON.stringify(data.data));
           }
+          if (data.data.status === 'STOP_WAIT_ANSWER') {
+            setLoading(false);
+          }
         }
         // 更新UI状态...
       },
@@ -433,11 +448,13 @@ const Workflow: React.FC = () => {
     const _edges = await getNodeRelation(
       graphParams.nodeList,
       info?.startNode.id as number,
+      info?.endNode.id as number,
     );
     if (!_edges) {
       message.warning('没有完整的连线，需要一条从开始一直贯穿到结束的连线');
       return;
     }
+    console.log(graphParams.nodeList);
     // 根据连线列表，查看是否有第一个数据是开始节点的id，最后一个是结束节点的信息
     const fullPath = _edges.filter((item: number[]) => {
       return (
@@ -452,7 +469,7 @@ const Workflow: React.FC = () => {
       const _params = {
         workflowId: info?.id,
         params,
-        requestId: new Date(),
+        requestId: uuidv4(), // 使用uuid生成唯一ID
       };
       const abortConnection = await createSSEConnection({
         url: `${process.env.BASE_URL}/api/workflow/test/execute`,
@@ -475,6 +492,9 @@ const Workflow: React.FC = () => {
           } else {
             if (data.data && data.data.output) {
               setTestRunResult(data.data.output);
+            }
+            if (data.data.status === 'STOP_WAIT_ANSWER') {
+              setLoading(false);
             }
           }
           // 更新UI状态...
@@ -515,6 +535,7 @@ const Workflow: React.FC = () => {
   // 节点试运行
   const runTest = (type: string, params?: DefaultObjectType) => {
     if (type === 'Start') {
+      getDetails();
       testRunAllNode(params || {});
     } else {
       nodeTestRun(params);

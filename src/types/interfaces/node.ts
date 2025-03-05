@@ -34,7 +34,7 @@ interface ConditionArgs {
   firstArg: InputAndOutConfig | null;
 }
 export interface ConditionBranchConfigs {
-  branchType: string | null;
+  branchType: 'IF' | 'ELSE_IF' | 'ELSE';
   conditionType: string | null;
   nextNodeIds: number[];
   conditionArgs: ConditionArgs[];
@@ -72,6 +72,9 @@ export interface NodeConfig {
   // 技能列表
   // 条件分支
   conditionBranchConfigs?: ConditionBranchConfigs[] | null;
+  // 结束节点的
+  returnType?: 'VARIABLE' | 'TEXT';
+
   // 出参类型
   outputType?: string;
   // 模型id

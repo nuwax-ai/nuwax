@@ -50,9 +50,9 @@ interface AddNodeResponse {
   description: string;
   id: number;
   innerEndNode: boolean;
-  innerEndNodeId?: number[] | null;
+  innerEndNodeId?: number | null;
   innerNodes?: ChildNode[] | null;
-  innerStartNodeId?: number[] | null;
+  innerStartNodeId?: number | null;
   loopNodeId?: number;
   modified: string;
   name: string;
@@ -70,21 +70,21 @@ interface AddNodeResponse {
 
 // 获取详情的返回
 export interface IgetDetails {
-  startNode: ChildNode;
-  endNode: ChildNode;
   creator: CreatorInfo;
   created: string;
   description: string;
-  id: number;
-  innerEndNode: boolean;
+  endNode: ChildNode;
   icon: string;
+  id: number;
   inputArgs: InputAndOutConfig[];
   modified: string;
   name: string;
   nodes: ChildNode[];
   outputArgs: InputAndOutConfig[];
-  spaceId: number;
   publishStatus: string;
+  spaceId: number;
+  startNode: ChildNode;
+  innerEndNode?: boolean;
 }
 
 import type { ModelListItemProps } from '@/types/interfaces/model';

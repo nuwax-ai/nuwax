@@ -30,6 +30,7 @@ export interface InputOrReferenceProps {
   inputItemName?: string; // 列表字段名称（默认 "inputItems"）
   style?: any;
   returnObj?: boolean;
+  isDisabled?: boolean;
 }
 
 /**

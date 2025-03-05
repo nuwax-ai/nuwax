@@ -57,7 +57,7 @@ const bindEventHandlers = ({
         const targetNode = _cell.getTargetNode()?.getData();
         // 获取连接点的节点id
         const _targetNodeId = _cell.getTargetNode()?.id;
-        console.log(sourceNode.type === 'Loop', targetNode.type === 'Loop');
+
         // 查看当前的边是否是loop或者他的子节点
         if (sourceNode.type === 'Loop' || targetNode.type === 'Loop') {
           if (sourceNode.type === 'Loop') {

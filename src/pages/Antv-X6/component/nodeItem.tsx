@@ -2,7 +2,7 @@
 import CodeEditor from '@/components/CodeEditor';
 import Monaco from '@/components/CodeEditor/monaco';
 import CustomTree from '@/components/FormListItem/NestedForm';
-import type { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
+import type { NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import {
   CheckOutlined,
@@ -86,7 +86,11 @@ const EndNode: React.FC<NodeDisposeProps> = ({
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
   };
-  const [value, setValue] = useState<string>('返回变量');
+
+  const segOptions = [
+    { label: '返回变量', value: 'VARIABLE' },
+    { label: '返回文本', value: 'TEXT' },
+  ];
   // 开关的状态
   const [checked, setChecked] = useState(true);
   return (
@@ -94,9 +98,17 @@ const EndNode: React.FC<NodeDisposeProps> = ({
       {type === 'End' && (
         <div className="node-item-style dis-center">
           <Segmented<string>
-            options={['返回变量', '返回文本']}
-            value={value}
-            onChange={setValue}
+            options={segOptions}
+            value={params.returnType || 'VARIABLE'}
+            onChange={(value: string) => {
+              const validValues: ('VARIABLE' | 'TEXT')[] = ['VARIABLE', 'TEXT'];
+              if (validValues.includes(value as 'VARIABLE' | 'TEXT')) {
+                handleChangeNodeConfig({
+                  ...params,
+                  returnType: value as 'VARIABLE' | 'TEXT',
+                });
+              }
+            }}
             style={{ marginBottom: '10px' }}
           />
         </div>
@@ -111,7 +123,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({
         handleChangeNodeConfig={handleChangeNodeConfig}
       />
 
-      {value !== '返回变量' && (
+      {params.returnType !== 'VARIABLE' && (
         <div className="margin-bottom mt-16">
           <div className="dis-sb margin-bottom">
             <span className="node-title-style">输出内容</span>
@@ -148,19 +160,6 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
   Modified,
   referenceList,
 }) => {
-  let initialValues: InputAndOutConfig[] = [];
-  if (params.inputArgs && params.inputArgs.length) {
-    initialValues = params.inputArgs;
-  }
-  let outPutInitialValues: InputAndOutConfig[] = [];
-  if (params.outputArgs && params.outputArgs.length) {
-    outPutInitialValues = params.outputArgs;
-  }
-  let variableInitialValues: InputAndOutConfig[] = [];
-  if (params.variableArgs && params.variableArgs.length) {
-    variableInitialValues = params.variableArgs;
-  }
-
   const [count, setCount] = useState<number | null>(1);
 
   // 修改模型的入参和出参
@@ -177,44 +176,52 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
           onChange={(value) =>
             handleChangeNodeConfig({ ...params, loopType: value })
           }
+          style={{ width: '100%', marginBottom: '10px' }}
         ></Select>
       </div>
       {params.loopType !== 'INFINITE_LOOP' && (
         <div className=" node-item-style">
           {params.loopType === 'ARRAY_LOOP' && (
-            <div>
-              <InputAndOut
-                title="循环数组"
-                fieldConfigs={outPutConfigs}
-                referenceList={referenceList}
-                inputItemName="inputArgs"
-                handleChangeNodeConfig={handleChangeNodeConfig}
-                initialValues={{ inputArgs: initialValues }}
-              />
-            </div>
+            <InputAndOut
+              title="循环数组"
+              fieldConfigs={outPutConfigs}
+              referenceList={referenceList}
+              inputItemName="inputArgs"
+              handleChangeNodeConfig={handleChangeNodeConfig}
+              initialValues={{ inputArgs: params.inputArgs || [] }}
+            />
           )}
           {params.loopType === 'SPECIFY_TIMES_LOOP' && (
             <div>
               <div className="node-title-style margin-bottom">循环次数</div>
-              <InputNumber size="small" value={count} onChange={setCount} />
+              <InputNumber
+                size="small"
+                value={count}
+                onChange={setCount}
+                style={{ width: '100%', marginBottom: '10px' }}
+              />
             </div>
           )}
         </div>
       )}
-      <InputAndOut
-        title="中间变量"
-        fieldConfigs={outPutConfigs}
-        inputItemName="inputArgs"
-        handleChangeNodeConfig={handleChangeNodeConfig}
-        initialValues={{ inputArgs: outPutInitialValues }}
-      />
-      <InputAndOut
-        title="输出"
-        fieldConfigs={outPutConfigs}
-        inputItemName="inputArgs"
-        handleChangeNodeConfig={handleChangeNodeConfig}
-        initialValues={{ inputArgs: variableInitialValues }}
-      />
+      <div className=" node-item-style">
+        <InputAndOut
+          title="中间变量"
+          fieldConfigs={outPutConfigs}
+          inputItemName="variableArgs"
+          handleChangeNodeConfig={handleChangeNodeConfig}
+          initialValues={{ variableArgs: params.variableArgs || [] }}
+        />
+      </div>
+      <div className=" node-item-style">
+        <InputAndOut
+          title="输出"
+          fieldConfigs={outPutConfigs}
+          inputItemName="outputArgs"
+          handleChangeNodeConfig={handleChangeNodeConfig}
+          initialValues={{ outputArgs: params.outputArgs || [] }}
+        />
+      </div>
     </div>
   );
 };
@@ -488,6 +495,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
               ? params.codePython
               : params.codeJavaScript
           }
+          codeLanguage={params.codeLanguage || 'JavaScript'}
           changeCode={changeCode}
           height="180px"
         />
