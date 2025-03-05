@@ -53,6 +53,7 @@ const Monaco: React.FC<MonacoProps> = ({ params, Modified, isShow, close }) => {
           </div>
           <div className="monaco-editor-content">
             <CodeEditor
+              codeLanguage={params.codeLanguage || 'JavaScript'}
               height={'790px'}
               value={
                 params.codeLanguage === 'Python'

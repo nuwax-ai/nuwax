@@ -14,8 +14,8 @@ import { Selection } from '@antv/x6-plugin-selection';
 // import { Transform } from '@antv/x6-plugin-transform';
 import { message } from 'antd';
 
+import { ChildNode } from '@/types/interfaces/graph';
 import { adjustParentSize } from '@/utils/graph';
-
 // 自定义类型定义
 import { GraphProp } from '@/types/interfaces/graph';
 import { createCurvePath } from './registerCustomNodes';
@@ -326,16 +326,23 @@ const initGraph = ({
         const _index: string = sourcePort.split('-')[1];
         // 修改当前的数据
         const newNodeParams = JSON.parse(JSON.stringify(sourceNode));
+        // 提取更新nextNodeIds的通用逻辑
+        const updateNextNodeIds = (item: any, targetNodeId: number) => {
+          item.nextNodeIds = item.nextNodeIds
+            ? [...item.nextNodeIds, targetNodeId]
+            : [targetNodeId];
+        };
+
         if (sourceNode.type === 'Condition') {
           for (let item of newNodeParams.nodeConfig.conditionBranchConfigs) {
             if (_index === item.uuid) {
-              item.nextNodeIds.push(targetNodeId);
+              updateNextNodeIds(item, Number(targetNodeId));
             }
           }
         } else {
           for (let item of newNodeParams.nodeConfig.intentConfigs) {
             if (_index === item.uuid) {
-              item.nextNodeIds.push(targetNodeId);
+              updateNextNodeIds(item, Number(targetNodeId));
             }
           }
         }
@@ -362,6 +369,7 @@ const initGraph = ({
   // 监听节点的拖拽移动位置
   graph.on('node:moved', ({ node, e }) => {
     e.stopPropagation(); // 阻止事件冒泡
+
     // 获取节点被拖拽到的位置
     const { x, y } = node.getPosition();
     const data = node.getData();
@@ -375,6 +383,39 @@ const initGraph = ({
         y,
       };
     }
+    // 如果时移动循环节点，且节点内有子节点
+    if (data.type === 'Loop' && data.innerNodes && data.innerNodes.length > 0) {
+      // 更新内部节点的位置信息
+      data.innerNodes.forEach((innerNode: ChildNode) => {
+        const childNode = graph.getCellById(innerNode.id.toString()) as Node;
+        if (childNode) {
+          const { x, y } = childNode.getPosition();
+          if (innerNode.nodeConfig.extension) {
+            innerNode.nodeConfig.extension.x = x;
+            innerNode.nodeConfig.extension.y = y;
+          } else {
+            innerNode.nodeConfig.extension = { x, y };
+          }
+        }
+      });
+    }
+    console.log('111', data);
+    // 如果时循环内部的节点，要一并修改循环的宽度和位置
+    if (data.loopNodeId) {
+      const parentNode = graph.getCellById(data.loopNodeId) as Node;
+      const _size = parentNode.getSize();
+      const _position = parentNode.getPosition();
+      const extension = {
+        x: _position.x,
+        y: _position.y,
+        width: _size.width,
+        height: _size.height,
+      };
+      const _data = parentNode.getData();
+      _data.nodeConfig.extension = extension;
+      changeCondition(_data);
+    }
+
     changeCondition(data);
   });
 
@@ -398,10 +439,21 @@ const initGraph = ({
   });
 
   graph.on('node:change:position', ({ node }) => {
-    console.log('123', node);
     // 优化点1：直接通过父子关系API获取父节点
-    const parentNode = node.getParent();
-    console.log('123', parentNode);
+    let parentNode = node.getParent();
+    //
+    const data = node.getData();
+    if (!parentNode && data.loopNodeId) {
+      const cell = graph.getCellById(data.loopNodeId);
+      if (cell && cell.isNode()) {
+        parentNode = cell as Node;
+        // 确保传入的是 Node 类型
+        if (parentNode instanceof Node) {
+          adjustParentSize(parentNode);
+        }
+      }
+      // return
+    }
     // 优化点2：仅处理Loop类型的父节点
     if (
       parentNode &&

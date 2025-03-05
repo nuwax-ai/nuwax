@@ -94,6 +94,7 @@ export const Condition: React.FC<ConditionProps> = ({
             onChange={onChange}
             returnObj
             form={form}
+            isDisabled
           />
         </Form.Item>
         <Form.Item
@@ -155,89 +156,85 @@ export const ConditionList: React.FC<ConditionListProps> = ({
               <span className="margin-right-6">{title}</span>
               <Tag>优先级{index + 1}</Tag>
             </div>
-            <MinusCircleOutlined onClick={() => removeItem(index)} />
+            {initialValues.branchType !== 'ELSE' && (
+              <MinusCircleOutlined onClick={() => removeItem(index)} />
+            )}
           </div>
-          <Form
-            form={form}
-            onValuesChange={submitForm}
-            initialValues={{
-              ...initialValues,
-              conditionArgs: initialValues.conditionArgs.map((item) => ({
-                ...item,
-                firstArg: item.firstArg ? JSON.stringify(item.firstArg) : null,
-                secondArg: item.secondArg
-                  ? JSON.stringify(item.secondArg)
-                  : null,
-              })),
-            }}
-            layout={'horizontal'}
-          >
-            <Form.List name={inputItemName}>
-              {(fields, { add, remove }, { errors }) => (
-                <div className="relative">
-                  <div
-                    className={`dis-sb ${
-                      fields.length > 1 ? 'select-condition-border' : ''
-                    }`}
-                  >
-                    {fields.length > 1 && (
-                      <div className="select-condition-type-style">
-                        <Form.Item name={[inputItemName, 'conditionType']}>
-                          <Select
-                            value={form.getFieldValue('conditionType')}
-                            defaultValue={'AND'}
-                          >
-                            <Select.Option value="AND">且</Select.Option>
-                            <Select.Option value="OR">或</Select.Option>
-                          </Select>
-                        </Form.Item>
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      {fields.map((field) => (
-                        <div key={field.key} className="dis-sb">
-                          {Condition({
-                            field,
-                            onRemove: () => {
-                              remove(field.name);
-                              submitForm();
-                            },
-                            form,
-                            onChange: submitForm,
-                            referenceList,
-                          })}
-                          <MinusCircleOutlined
-                            onClick={() => {
-                              remove(field.name);
-                              submitForm();
-                            }}
-                          />
+          {initialValues.branchType !== 'ELSE' && (
+            <Form
+              form={form}
+              onValuesChange={submitForm}
+              initialValues={initialValues}
+              layout={'horizontal'}
+            >
+              <Form.List name={inputItemName}>
+                {(fields, { add, remove }, { errors }) => (
+                  <div className="relative">
+                    <div
+                      className={`dis-sb ${
+                        fields.length > 1 ? 'select-condition-border' : ''
+                      }`}
+                    >
+                      {fields.length > 1 && (
+                        <div className="select-condition-type-style">
+                          <Form.Item name={[inputItemName, 'conditionType']}>
+                            <Select
+                              value={form.getFieldValue('conditionType')}
+                              defaultValue={'AND'}
+                            >
+                              <Select.Option value="AND">且</Select.Option>
+                              <Select.Option value="OR">或</Select.Option>
+                            </Select>
+                          </Form.Item>
                         </div>
-                      ))}
-                      {errors.length > 0 && (
-                        <div style={{ color: 'red' }}>{errors.join(', ')}</div>
                       )}
+                      <div className="flex-1">
+                        {fields.map((field) => (
+                          <div key={field.key} className="dis-sb">
+                            {Condition({
+                              field,
+                              onRemove: () => {
+                                remove(field.name);
+                                submitForm();
+                              },
+                              form,
+                              onChange: submitForm,
+                              referenceList,
+                            })}
+                            <MinusCircleOutlined
+                              onClick={() => {
+                                remove(field.name);
+                                submitForm();
+                              }}
+                            />
+                          </div>
+                        ))}
+                        {errors.length > 0 && (
+                          <div style={{ color: 'red' }}>
+                            {errors.join(', ')}
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    <Button
+                      icon={<PlusOutlined />}
+                      type="primary"
+                      onClick={() => {
+                        add({
+                          firstArgs: [],
+                          compareType: 'EQUAL',
+                          secondArg: [],
+                        });
+                        submitForm();
+                      }}
+                    >
+                      新增
+                    </Button>
                   </div>
-                  <Button
-                    icon={<PlusOutlined />}
-                    type="primary"
-                    onClick={() => {
-                      add({
-                        bindArg: '',
-                        compareType: '',
-                        bindValueType: '',
-                        bindValue: '',
-                      });
-                      submitForm();
-                    }}
-                  >
-                    新增
-                  </Button>
-                </div>
-              )}
-            </Form.List>
-          </Form>
+                )}
+              </Form.List>
+            </Form>
+          )}
           {provided.placeholder}
         </div>
       )}
@@ -255,16 +252,26 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
   // 监听params.conditionBranchConfigs的变化，并在变化时更新节点
   // 使用深拷贝来确保每次 params.conditionBranchConfigs 变化时都能触发重新渲染
 
-  const updateBranchType = (currentIndex: number): string => {
+  const updateBranchType = (
+    currentIndex: number,
+  ): 'IF' | 'ELSE' | 'ELSE_IF' => {
     if (currentIndex === 0) return 'IF';
+    if (currentIndex === (params.conditionBranchConfigs?.length ?? 0) - 1)
+      return 'ELSE';
     return 'ELSE_IF';
+  };
+
+  const branchTypeMap = {
+    IF: '如果',
+    ELSE_IF: '否则如果',
+    ELSE: '否则',
   };
 
   const addInputItem = () => {
     const newConditionBranchConfigs = [
       ...(params.conditionBranchConfigs || []),
       {
-        branchType: null,
+        branchType: 'ELSE_IF',
         conditionType: null,
         nextNodeIds: [],
         uuid: (params.conditionBranchConfigs?.length ?? 0) + 1,
@@ -277,9 +284,7 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
         ],
       },
     ];
-    newConditionBranchConfigs.forEach((item, index) => {
-      item.branchType = updateBranchType(index);
-    });
+
     if (updateNode) {
       updateNode({
         ...params,
@@ -326,10 +331,15 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
   };
 
   const onDragEnd = (result: any) => {
+    console.log(result);
     if (!result.destination) return;
     const newItems = Array.from(params.conditionBranchConfigs || []);
     const [removed] = newItems.splice(result.source.index, 1);
     newItems.splice(result.destination.index, 0, removed);
+    // 重新编排他们的branchType
+    newItems.forEach((item, index) => {
+      item.branchType = updateBranchType(index);
+    });
     if (updateNode) {
       updateNode({
         ...params,
@@ -356,7 +366,7 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
               return (
                 <ConditionList
                   key={item.uuid}
-                  title={index === 0 ? '如果' : '否则如果'}
+                  title={branchTypeMap[item.branchType]}
                   index={index}
                   initialValues={item}
                   removeItem={removeItem}
@@ -367,7 +377,6 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
               );
             })}
             {provided.placeholder}
-            <div className="condition-card-style">否则</div>
           </div>
         )}
       </Droppable>

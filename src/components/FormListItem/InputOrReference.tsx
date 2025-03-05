@@ -15,6 +15,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   fieldName, // 当前字段路径（如 "inputItems[0].bindValue"）
   style,
   returnObj = false,
+  isDisabled = false,
 }) => {
   // InputOrReference.tsx
   const updateValues = (newValue: string, valueType: 'Input' | 'Reference') => {
@@ -79,32 +80,23 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
             {
               key: arg.key,
               label: (
-                <div
-                  style={{ display: 'flex', alignItems: 'center', width: 300 }}
-                >
+                <div className="reference-item-child">
                   <span>{arg.name}</span>
-                  <Tag style={{ marginLeft: 20 }} color="#65656687">
+                  <Tag className="ml-20" color="#65656687">
                     {arg.dataType}
                   </Tag>
                 </div>
               ),
               onClick: () => updateValues(arg.key!, 'Reference'),
-              style: { background: '#f5f5f5' }, // 添加父项背景色
+              // style: { background: '#f5f5f5' }, // 添加父项背景色
             },
             // 子参数项（如果有）
             ...(arg.children || []).map((item: InputAndOutConfig) => ({
               key: item.key,
               label: (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    width: 300,
-                    marginLeft: 24, // 添加左侧缩进
-                  }}
-                >
+                <div className="reference-item-child ml-20">
                   <span>{item.name}</span>
-                  <Tag style={{ marginLeft: 20 }} color="#65656687">
+                  <Tag className="ml-20" color="#65656687">
                     {item.dataType}
                   </Tag>
                 </div>
@@ -156,7 +148,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
                   placeholder={placeholder}
                   style={{ marginRight: 8, color: 'red' }}
                   size="small"
-                  disabled
+                  disabled={isDisabled}
                 />
               );
             }

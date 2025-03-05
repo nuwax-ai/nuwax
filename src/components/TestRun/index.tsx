@@ -2,11 +2,11 @@
 // import SelectList from '@/components/SelectList';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { DefaultObjectType } from '@/types/interfaces/common';
-import { CaretRightOutlined, CloseOutlined } from '@ant-design/icons';
-import { Button, Collapse, Empty, Form, Input, Tag } from 'antd';
-// import { useState } from 'react';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
+import { CaretRightOutlined, CloseOutlined } from '@ant-design/icons';
+import { Button, Collapse, Empty, Form, Input, Tag } from 'antd';
+import { useEffect } from 'react';
 import { useModel } from 'umi';
 import './index.less';
 interface TestRunProps {
@@ -122,6 +122,10 @@ const TestRun: React.FC<TestRunProps> = ({
         ]
       : []),
   ];
+  // 每次点开前应该要清除遗留数据
+  useEffect(() => {
+    form.resetFields();
+  }, [testRun]);
 
   return (
     <div

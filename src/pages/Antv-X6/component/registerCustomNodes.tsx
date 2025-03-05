@@ -180,7 +180,6 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
             {data.nodeConfig.conditionBranchConfigs?.map((_, index) => (
               <Input key={index} className="margin-bottom" disabled />
             ))}
-            <Input className="margin-bottom" disabled />
           </div>
         )}
         {data.type === 'QA' && data.nodeConfig.answerType === 'SELECT' && (
@@ -201,11 +200,13 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
             ))}
           </div>
         )}
-        {data.type === 'QA' && data.nodeConfig.answerType === 'TEXT' && (
-          <div className="general-node-content">
-            <div className="text-ellipsis">{data.description}</div>
-          </div>
-        )}
+        {data.type === 'QA' &&
+          (!data.nodeConfig.answerType ||
+            data.nodeConfig.answerType === 'TEXT') && (
+            <div className="general-node-content">
+              <div className="text-ellipsis">{data.description}</div>
+            </div>
+          )}
         {data.type === 'IntentRecognition' && (
           <div>
             {data.nodeConfig.intentConfigs?.map((item, index) => (

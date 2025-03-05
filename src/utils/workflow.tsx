@@ -359,7 +359,14 @@ export const createChildNode = (parentId: string, child: ChildNode) => {
     width: ext.width || 304,
     height: ext.height || 83,
     label: child.name,
-    data: { ...child, parentId },
+    data: {
+      ...child, // 先展开原有数据
+      nodeConfig: {
+        ...child.nodeConfig,
+        extension: ext, // 保持扩展属性合并
+      },
+      parentId, // 最后显式覆盖parentId字段
+    },
     ports: generatePorts(child),
     zIndex: 5,
   };
@@ -402,9 +409,6 @@ export const processLoopNode = (loopNode: Node, graph: Graph) => {
 
     // 将子节点添加到父节点中
     loopNode.addChild(childNode);
-
-    // 调试：确保父子关系正确建立
-    console.log(`Child Node ID: ${loopNode.id}`);
   });
 
   adjustParentSize(loopNode); // 初始调整父节点大小

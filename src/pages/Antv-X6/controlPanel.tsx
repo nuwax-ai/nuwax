@@ -59,6 +59,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           }
           trigger="click"
           open={open}
+          onOpenChange={(visible) => setOpen(visible)}
         >
           <Button
             onClick={() => setOpen(true)}
