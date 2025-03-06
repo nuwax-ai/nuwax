@@ -335,11 +335,11 @@ const initGraph = ({
       // 查看出发的节点是否时意图识别和条件分支
       if (
         sourceNode.type === 'Condition' ||
-        sourceNode.type === 'IntentRecognition'
+        sourceNode.type === 'IntentRecognition' ||
+        (sourceNode.type === 'QA' &&
+          sourceNode.nodeConfig.answerType === 'SELECT')
       ) {
         if (!sourcePort) return;
-        // 获取当前连接桩的输出端口
-        const _index: string = sourcePort.split('-')[1];
         // 修改当前的数据
         const newNodeParams = JSON.parse(JSON.stringify(sourceNode));
         // 提取更新nextNodeIds的通用逻辑
@@ -348,20 +348,27 @@ const initGraph = ({
             ? [...item.nextNodeIds, targetNodeId]
             : [targetNodeId];
         };
-
         if (sourceNode.type === 'Condition') {
           for (let item of newNodeParams.nodeConfig.conditionBranchConfigs) {
-            if (_index === item.uuid) {
+            if (sourcePort.includes(item.uuid)) {
+              updateNextNodeIds(item, Number(targetNodeId));
+            }
+          }
+        } else if (sourceNode.type === 'IntentRecognition') {
+          for (let item of newNodeParams.nodeConfig.intentConfigs) {
+            if (sourcePort.includes(item.uuid)) {
               updateNextNodeIds(item, Number(targetNodeId));
             }
           }
         } else {
-          for (let item of newNodeParams.nodeConfig.intentConfigs) {
-            if (_index === item.uuid) {
+          console.log('item', sourcePort);
+          for (let item of newNodeParams.nodeConfig.options) {
+            if (sourcePort.includes(item.uuid)) {
               updateNextNodeIds(item, Number(targetNodeId));
             }
           }
         }
+
         changeCondition(newNodeParams);
         // 通知父组件更新节点信息
       } else {

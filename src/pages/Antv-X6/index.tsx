@@ -116,6 +116,7 @@ const Workflow: React.FC = () => {
       const _res = await service.getDetails(workflowId);
       // 获取左上角的信息
       setInfo(_res.data);
+      sessionStorage.setItem('spaceId', _res.data.spaceId.toString());
       // 获取节点和边的数据
       const _nodeList = _res.data.nodes;
       const _edgeList = getEdges(_nodeList);
@@ -298,6 +299,10 @@ const Workflow: React.FC = () => {
       _params.nodeId = _params.nodeId.filter(
         (item) => item !== Number(targetId),
       );
+      graphRef.current.updateNode(sourceNode.id, {
+        ...sourceNode,
+        nextNodeIds: _params.nodeId,
+      });
     }
     const _res = await service.addEdge(_params);
     // 如果接口不成功，就需要删除掉那一条添加的线

@@ -151,7 +151,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
       <TreeOutput treeData={params.outputArgs || []} />
       <Created
         checkTag={AgentComponentTypeEnum.Knowledge}
-        spaceId={36}
+        spaceId={Number(sessionStorage.getItem('spaceId'))}
         onAdded={onAddedSkill}
         open={open}
         onCancel={() => setOpen(false)}

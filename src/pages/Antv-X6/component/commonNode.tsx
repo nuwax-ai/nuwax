@@ -304,7 +304,7 @@ export const FormList: React.FC<FormListProps> = ({
     const newItem = {
       [field]: '',
       index: currentItems.length,
-      ...(hasUuid ? { uuid: uuidv4() } : {}),
+      uuid: uuidv4(),
     };
 
     // 判断插入位置
