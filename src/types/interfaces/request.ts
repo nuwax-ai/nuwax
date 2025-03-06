@@ -5,6 +5,7 @@ export interface RequestResponse<T> {
   data: T;
   debugInfo: object;
   success: boolean;
+  tid: string;
 }
 
 // 排序字段信息,可空,一般没有默认为创建时间排序

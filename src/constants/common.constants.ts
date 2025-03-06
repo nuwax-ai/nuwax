@@ -5,8 +5,7 @@ import {
   PluginParamsSettingDefaultEnum,
 } from '@/types/enums/common';
 
-export const BASE_URL = `${process.env.BASE_URL}/api`;
-
+// 文件上传地址
 export const UPLOAD_FILE_ACTION =
   'https://test-nvwa-api.xspaceagi.com/api/file/upload';
 
@@ -14,7 +13,7 @@ export const UPLOAD_FILE_ACTION =
 export const UPLOAD_FILE_TYPE = [
   'text/plain',
   'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/*',
   'application/pdf',
 ];
 
