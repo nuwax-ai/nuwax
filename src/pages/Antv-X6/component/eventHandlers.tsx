@@ -7,7 +7,7 @@ import { message } from 'antd';
  */
 const bindEventHandlers = ({
   graph,
-  // changeEdge,
+  changeEdge,
   copyNode,
   changeCondition,
   removeNode,
@@ -101,14 +101,14 @@ const bindEventHandlers = ({
           changeCondition(newNodeParams);
         } else {
           // 移除边,修改为修改source节点的nextNodeId
-          const sourceNode = _cell.getSourceNode()?.getData();
-          const _newNode = JSON.parse(JSON.stringify(sourceNode));
-          _newNode.nextNodeIds = _newNode.nextNodeIds.filter((item: number) => {
-            return item !== Number(_targetNodeId);
-          });
-          changeCondition(_newNode);
+          // const sourceNode = _cell.getSourceNode()?.getData();
+          // const _newNode = JSON.parse(JSON.stringify(sourceNode));
+          // _newNode.nextNodeIds = _newNode.nextNodeIds.filter((item: number) => {
+          //   return item !== Number(_targetNodeId);
+          // });
+          // changeCondition(_newNode);
           // 移除边
-          // changeEdge('delete', _targetNodeId as string, sourceNode, '0');
+          changeEdge('delete', _targetNodeId as string, sourceNode, '0');
         }
       } else {
         if (

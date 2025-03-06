@@ -2,6 +2,7 @@ import { ChildNode } from '@/types/interfaces/graph';
 import { returnImg } from '@/utils/workflow';
 import { CloseOutlined } from '@ant-design/icons';
 import React from 'react';
+import './index.less';
 interface ErrorItem extends ChildNode {
   error: string;
   nodeId: number | string;

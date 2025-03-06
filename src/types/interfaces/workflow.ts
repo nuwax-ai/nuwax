@@ -307,6 +307,8 @@ export interface ConditionProps {
   onChange: () => void;
   // 可以引用的上级节点的参数
   referenceList: NodePreviousAndArgMap;
+
+  inputItemName: string;
 }
 
 // 定义错误列表

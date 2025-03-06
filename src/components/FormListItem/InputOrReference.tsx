@@ -14,7 +14,6 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   form, // Form 实例（从父组件传入）
   fieldName, // 当前字段路径（如 "inputItems[0].bindValue"）
   style,
-  returnObj = false,
   isDisabled = false,
 }) => {
   // InputOrReference.tsx
@@ -23,8 +22,6 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
       // 获取父路径数组
       const basePath = fieldName.slice(0, -1);
       form.setFieldValue([...basePath, 'bindValueType'], valueType); // 使用数组路径
-      // 顺便修改参数名
-
       //  新增 dataType 处理逻辑
       if (valueType === 'Reference') {
         const refDataType = referenceList?.argMap?.[newValue]?.dataType;
@@ -41,12 +38,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         form.setFieldValue([...basePath, 'dataType'], 'String');
       }
     }
-    if (returnObj) {
-      const _values = referenceList.argMap[newValue];
-      onChange?.(JSON.stringify(_values));
-      return;
-    }
-    onChange?.(newValue);
+    onChange?.(newValue, valueType);
   };
   // 输入处理
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,125 +110,39 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         ];
 
   // 生成名称
-  const getObjName = (value: InputAndOutConfig) => {
-    const key = value.key?.split('.')[0];
-    const parent = referenceList.previousNodes.find(
-      (item) => item.id === Number(key),
-    );
+  // const getObjName = (value: InputAndOutConfig) => {
+  //   const key = value.key?.split('.')[0];
+  //   const parent = referenceList.previousNodes.find(
+  //     (item) => item.id === Number(key),
+  //   );
 
-    if (parent) {
-      return `${parent.name} - ${value.name}`;
-    }
-  };
+  //   if (parent) {
+  //     return `${parent.name} - ${value.name}`;
+  //   }
+  // };
 
   return (
     <div className="input-or-reference dis-sb" style={style}>
-      {(() => {
-        // 预计算通用条件
-        const hasValue = !!value;
-        const isReturnObjMode = returnObj;
-        let parsedValue = null;
-        let isValidObject = false;
+      {value && referenceList.argMap[value] ? (
+        <Tag
+          closable
+          onClose={handleTagClose}
+          className="input-or-reference-tag text-ellipsis"
+          color="#65656687"
+        >
+          {`${getName(value)} - ${referenceList.argMap[value].name}`}
+        </Tag>
+      ) : (
+        <Input
+          value={value}
+          placeholder={placeholder || '请输入或引用参数'}
+          onChange={handleInputChange}
+          style={{ marginRight: 8 }}
+          size="small"
+          disabled={isDisabled}
+        />
+      )}
 
-        if (isReturnObjMode) {
-          try {
-            // 增加 null/undefined 校验
-            if (value === '' || !referenceList.previousNodes.length) {
-              return (
-                <Input
-                  value={''}
-                  placeholder={placeholder}
-                  style={{ marginRight: 8, color: 'red' }}
-                  size="small"
-                  disabled={isDisabled}
-                />
-              );
-            }
-
-            parsedValue = JSON.parse(value);
-            isValidObject =
-              parsedValue &&
-              typeof parsedValue === 'object' &&
-              !Array.isArray(parsedValue);
-          } catch (e) {
-            return (
-              <Input
-                value={value ?? ''}
-                placeholder={placeholder}
-                onChange={handleInputChange}
-                style={{ marginRight: 8, color: 'red' }}
-                size="small"
-              />
-            );
-          }
-        }
-
-        // 处理引用模式
-        const isReference = hasValue && referenceList.argMap[value];
-
-        let clearValue: boolean = false;
-
-        if (
-          referenceList.previousNodes &&
-          !referenceList.previousNodes.length &&
-          value
-        ) {
-          if (fieldName && form) {
-            const basePath = fieldName.slice(0, -1);
-            // 获取当前的bindValueType
-            const _bindValueType = form?.getFieldValue([
-              ...basePath,
-              'bindValueType',
-            ]);
-            if (_bindValueType === 'Reference') {
-              clearValue = true;
-            }
-          }
-        }
-        // 统一渲染逻辑
-        if (isReturnObjMode) {
-          return isValidObject ? (
-            <Tag
-              closable
-              onClose={handleTagClose}
-              className="input-or-reference-tag text-ellipsis"
-              color="#65656687"
-            >
-              {getObjName(parsedValue)}
-            </Tag>
-          ) : (
-            <Input
-              value={value || ''}
-              placeholder={placeholder || '请输入或引用参数'}
-              onChange={handleInputChange}
-              style={{ marginRight: 8 }}
-              size="small"
-            />
-          );
-        }
-
-        // 非对象模式
-        return isReference ? (
-          <Tag
-            closable
-            onClose={handleTagClose}
-            className="input-or-reference-tag text-ellipsis"
-            color="#65656687"
-          >
-            {`${getName(value)} - ${
-              referenceList.argMap[value]?.name || '未知参数'
-            }`}
-          </Tag>
-        ) : (
-          <Input
-            value={clearValue ? '' : value}
-            placeholder={placeholder || '请输入或引用参数'}
-            onChange={handleInputChange}
-            style={{ marginRight: 8 }}
-            size="small"
-          />
-        );
-      })()}
       <Dropdown
         menu={{ items: menuItems }}
         trigger={['click']}

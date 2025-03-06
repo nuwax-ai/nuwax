@@ -8,6 +8,7 @@ import {
   createChildNode,
   createEdge,
   generatePorts,
+  getHeight,
   getLength,
 } from '@/utils/workflow';
 import { Node } from '@antv/x6';
@@ -107,7 +108,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         // 处理特殊情况,如果是条件节点，需要调整子节点的大小并且重新绘制连接桩
         if (
           newData.type === 'Condition' ||
-          newData.type === 'IntentRecognition'
+          newData.type === 'IntentRecognition' ||
+          (newData.type === 'QA' && newData.nodeConfig.answerType === 'SELECT')
         ) {
           const oldData = node.getData() as ChildNode;
           const _length = getLength(
@@ -115,10 +117,15 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             newData,
             newData.type === 'Condition'
               ? 'conditionBranchConfigs'
+              : newData.type === 'QA'
+              ? 'options'
               : 'intentConfigs',
           );
+          console.log('123412');
           if (_length) {
-            node.setSize(304, 83 + 40 * _length);
+            const newHeight = getHeight(newData.type, _length);
+            node.setSize(304, newHeight);
+            console.log(generatePorts(newData, newHeight));
             // 使用prop方法更新端口配置
             node.prop('ports', generatePorts(newData));
           }
