@@ -44,7 +44,8 @@ export interface ConditionBranchConfigs {
 export interface IntentConfigs {
   nextNodeIds: number[];
   intent: string;
-  uuid?: number | string;
+  uuid: string;
+  intentType?: string;
 }
 
 interface Extension {

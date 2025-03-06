@@ -215,7 +215,8 @@ export interface FormListProps {
   inputItemName?: string;
   // 初始值（适用于已经编辑过的内容）
   initialValues?: InitialValues;
-
+  // 是否要写入uuid
+  hasUuid?: boolean;
   showIndex?: boolean;
 }
 

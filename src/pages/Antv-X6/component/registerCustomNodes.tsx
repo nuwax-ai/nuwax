@@ -24,6 +24,7 @@ const testRunList = [
   'Workflow',
   'DocumentExtraction',
   'Knowledge',
+  'QA',
 ];
 const branchTypeMap = {
   IF: '如果',
@@ -200,9 +201,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
                     {branchTypeMap[item.branchType]}
                   </span>
                   <Input
-                    defaultValue={
-                      item.conditionArgs[0]?.firstArg?.bindValue || ''
-                    }
+                    defaultValue={item.conditionArgs[0]?.firstArg?.name || ''}
                     className="flex-1"
                     disabled
                   />
@@ -220,7 +219,9 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
                       <Input
                         disabled
                         defaultValue={
-                          item.conditionArgs[0]?.secondArg?.bindValue || ''
+                          item.conditionArgs[0]?.secondArg?.name ||
+                          item.conditionArgs[0]?.secondArg?.bindValue ||
+                          ''
                         }
                         className="condition-right-input"
                       />

@@ -121,7 +121,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
               ? 'options'
               : 'intentConfigs',
           );
-          console.log('123412');
           if (_length) {
             const newHeight = getHeight(newData.type, _length);
             node.setSize(304, newHeight);

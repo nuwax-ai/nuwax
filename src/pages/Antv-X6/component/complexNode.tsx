@@ -179,6 +179,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
           title={'意图匹配'}
           handleChangeNodeConfig={handleChangeNodeConfig}
           field="intent"
+          hasUuid
           inputItemName="intentConfigs"
           initialValues={{ intentConfigs: params.intentConfigs || [] }}
           updateNode={changeIntent}

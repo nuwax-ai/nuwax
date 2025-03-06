@@ -28,6 +28,7 @@ import {
   Tree,
 } from 'antd';
 import React, { useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
 import './commonNode.less';
 // 定义通用的输入输出
@@ -283,8 +284,9 @@ export const FormList: React.FC<FormListProps> = ({
   field,
   inputItemName = 'inputArgs',
   initialValues,
-  showIndex,
   updateNode,
+  hasUuid,
+  showIndex,
 }) => {
   const arr = ['A', 'B', 'C', 'D', 'E', 'F'];
 
@@ -296,14 +298,29 @@ export const FormList: React.FC<FormListProps> = ({
     }
   };
   // 新增选项
+  // ... existing code ...
   const addInputItem = () => {
-    const nextItems = [
-      ...(form.getFieldValue(inputItemName) || []),
-      { [field]: '' },
-    ];
+    const currentItems = form.getFieldValue(inputItemName) || [];
+    const newItem = {
+      [field]: '',
+      index: currentItems.length,
+      ...(hasUuid ? { uuid: uuidv4() } : {}),
+    };
+
+    // 判断插入位置
+    const nextItems =
+      hasUuid && currentItems.length > 0
+        ? [
+            ...currentItems.slice(0, -1),
+            newItem,
+            ...currentItems.slice(-1), // 保持最后一个元素在末尾
+          ]
+        : [...currentItems, newItem];
+
     form.setFieldsValue({ [inputItemName]: nextItems });
     changeForm();
   };
+  // ... existing code ...
 
   // 提交form表单
   const submitForm = () => {
@@ -344,6 +361,16 @@ export const FormList: React.FC<FormListProps> = ({
           {(fields, { remove }) => (
             <>
               {fields.map((item, index) => {
+                let fieldData = false;
+                if (
+                  form.getFieldValue([
+                    inputItemName,
+                    item.name,
+                    'intentType',
+                  ]) === 'OTHER'
+                ) {
+                  fieldData = true;
+                }
                 return (
                   <Form.Item key={index}>
                     <div className="dis-sb">
@@ -353,17 +380,19 @@ export const FormList: React.FC<FormListProps> = ({
                         </Form.Item>
                       )}
                       <Form.Item name={[item.name, field]} noStyle>
-                        <Input></Input>
+                        <Input disabled={fieldData}></Input>
                       </Form.Item>
-                      <Form.Item noStyle>
-                        <DeleteOutlined
-                          className={'ml-10'}
-                          onClick={() => {
-                            remove(item.name);
-                            changeForm();
-                          }}
-                        />
-                      </Form.Item>
+                      {!fieldData && (
+                        <Form.Item noStyle>
+                          <DeleteOutlined
+                            className={'ml-10'}
+                            onClick={() => {
+                              remove(item.name);
+                              changeForm();
+                            }}
+                          />
+                        </Form.Item>
+                      )}
                     </div>
                   </Form.Item>
                 );

@@ -399,7 +399,6 @@ const initGraph = ({
         }
       });
     }
-    console.log('111', data);
     // 如果时循环内部的节点，要一并修改循环的宽度和位置
     if (data.loopNodeId) {
       const parentNode = graph.getCellById(data.loopNodeId) as Node;
