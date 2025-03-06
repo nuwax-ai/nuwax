@@ -195,6 +195,25 @@ export const getEdges = (nodes: ChildNode[]): Edge[] => {
 
   return resultEdges;
 };
+
+// 处理条件分支，意图识别，问答的高度
+export const getHeight = (
+  type: 'Condition' | 'IntentRecognition' | 'QA',
+  length: number,
+) => {
+  switch (type) {
+    case 'Condition': {
+      return 42 + 28 * length;
+    }
+    case 'IntentRecognition': {
+      return 42 + 18 * length;
+    }
+    case 'QA': {
+      return 110 + 18 * length;
+    }
+  }
+};
+
 // 获取节点端口
 export const generatePorts = (data: ChildNode, height?: number) => {
   const basePortSize = 3;
@@ -209,6 +228,10 @@ export const generatePorts = (data: ChildNode, height?: number) => {
     group,
     id: `${data.id}-${idSuffix}`,
     zIndex: 99,
+    position: {
+      name: 'absolute', // 确保使用绝对定位
+    },
+    args: yPosition !== undefined ? { y: yPosition } : {}, // 直接作为顶级属性
     attrs: {
       circle: {
         r: basePortSize,
@@ -218,7 +241,6 @@ export const generatePorts = (data: ChildNode, height?: number) => {
         fill: '#5F95FF',
       },
     },
-    args: yPosition ? { y: yPosition } : {},
   });
 
   let inputPorts = [defaultPortConfig('in', 'in')];
@@ -241,15 +263,30 @@ export const generatePorts = (data: ChildNode, height?: number) => {
       inputPorts = [
         { ...defaultPortConfig('in', `in`, height ? height / 2 : '50%') },
       ];
-
+      const baseY = 32; // 节点头部固定高度
+      const itemHeight = data.type === 'Condition' ? 28 : 18; // 每个条件项高度
       outputPorts = configs.map((item, index) => ({
         ...defaultPortConfig('out', `${item.uuid || index}-out`),
         args: {
-          y: index * 40, // 根据需要调整垂直位置
+          y: baseY + index * itemHeight + itemHeight / 2,
         },
       }));
       break;
     }
+    case 'QA': {
+      const type = data.nodeConfig.answerType;
+      console.log(type);
+      const configs = data.nodeConfig?.options;
+      if (type === 'SELECT')
+        outputPorts = (configs || []).map((item, index) => ({
+          ...defaultPortConfig('out', `${item.uuid || index}-out`),
+          args: {
+            y: 110 + index * 18 + 9,
+          },
+        }));
+      break;
+    }
+
     default:
       break;
   }
@@ -282,7 +319,7 @@ export const generatePorts = (data: ChildNode, height?: number) => {
 export const getLength = (
   oldData: ChildNode,
   newData: ChildNode,
-  key: 'conditionBranchConfigs' | 'intentConfigs',
+  key: 'conditionBranchConfigs' | 'intentConfigs' | 'options',
 ) => {
   const _oldLength = oldData.nodeConfig?.[key]?.length || 0;
   const _newLength = newData.nodeConfig?.[key]?.length || 0;

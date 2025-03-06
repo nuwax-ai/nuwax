@@ -152,7 +152,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
         ...newNodeConfig,
         extension: {
           ...params.extension,
-          height: newNodeConfig?.intentConfigs!.length * 40 + 80,
+          height: newNodeConfig?.intentConfigs!.length * 18 + 42,
         },
       });
     }
@@ -206,12 +206,26 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,
   referenceList,
+  updateNode,
 }) => {
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
   };
 
+  const changeOptions = (newNodeConfig: NodeConfig) => {
+    if (updateNode) {
+      updateNode({
+        ...params,
+        ...newNodeConfig,
+        answerType: 'SELECT',
+        extension: {
+          ...params.extension,
+          height: newNodeConfig?.options!.length * 18 + 110,
+        },
+      });
+    }
+  };
   return (
     <div className="node-title-style">
       {/* 模型模块 */}
@@ -266,11 +280,12 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
       {params.answerType === 'SELECT' && (
         <FormList
           title={'设置选项内容'}
-          handleChangeNodeConfig={handleChangeNodeConfig}
+          updateNode={changeOptions}
           field="content"
           inputItemName="options"
           initialValues={{ options: params.options || [] }}
           showIndex
+          handleChangeNodeConfig={handleChangeNodeConfig}
         />
       )}
     </div>

@@ -58,6 +58,7 @@ export interface QANodeOption {
   index: string;
   content: string;
   nextNodeIds?: number[];
+  uuid: string;
 }
 // 节点内部的config
 export interface NodeConfig {

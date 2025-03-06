@@ -4,7 +4,7 @@ import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { DashOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
-import { Input, Popover } from 'antd';
+import { Input, Popover, Tag } from 'antd';
 import React from 'react';
 import '../index.less';
 
@@ -13,15 +13,6 @@ interface GeneralNodeState {
   isEditingTitle: boolean;
   editedTitle: string;
 }
-
-// interface LoopNodeProps {
-//   position?: { x: number; y: number }
-//   size?: { width: number; height: number }
-//   label?: string
-//   children?: React.ReactNode
-//   style?: React.CSSProperties
-//   onReady?: (node: Node) => void
-// }
 // 定义那些节点有试运行
 const testRunList = [
   'Start',
@@ -34,6 +25,30 @@ const testRunList = [
   'DocumentExtraction',
   'Knowledge',
 ];
+const branchTypeMap = {
+  IF: '如果',
+  ELSE_IF: '否则如果',
+  ELSE: '否则',
+};
+
+const compareTypeMap = {
+  EQUAL: '=',
+  NOT_EQUAL: '≠',
+  GREATER_THAN: '>',
+  GREATER_THAN_OR_EQUAL: '≥',
+  LESS_THAN: '<',
+  LESS_THAN_OR_EQUAL: '≤',
+  CONTAINS: '⊃',
+  NOT_CONTAINS: '⊅',
+  MATCH_REGEX: '~',
+  IS_NULL: '∅',
+  NOT_NULL: '!∅',
+};
+const ansewerTypeMap = {
+  TEXT: '直接回答',
+  SELECT: '选项回答',
+};
+const optionsMap = ['A', 'B', 'C', 'D', 'E'];
 
 /**
  * 定义 GeneralNode 类组件，代表一个通用节点，该节点可以是流程图或其他图形编辑器中的元素。
@@ -178,50 +193,88 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
           )}
         {data.type === 'Condition' && (
           <div className="condition-node-content-style">
-            {data.nodeConfig.conditionBranchConfigs?.map((_, index) => (
-              <Input key={index} className="margin-bottom" disabled />
-            ))}
+            {data.nodeConfig.conditionBranchConfigs?.map((item) => {
+              return (
+                <div key={item.uuid} className="dis-left condition-item-style">
+                  <span className="condition-title-sytle">
+                    {branchTypeMap[item.branchType]}
+                  </span>
+                  <Input
+                    defaultValue={
+                      item.conditionArgs[0]?.firstArg?.bindValue || ''
+                    }
+                    className="flex-1"
+                    disabled
+                  />
+                  {item.conditionArgs && item.conditionArgs.length > 0 && (
+                    <div className="dis-left">
+                      {/* 添加空值检查，确保 compareType 不是 null 或 undefined */}
+                      <span style={{ width: '18px' }}>
+                        {item.conditionArgs[0]?.compareType
+                          ? compareTypeMap[
+                              item.conditionArgs[0]
+                                .compareType as keyof typeof compareTypeMap
+                            ]
+                          : ''}
+                      </span>
+                      <Input
+                        disabled
+                        defaultValue={
+                          item.conditionArgs[0]?.secondArg?.bindValue || ''
+                        }
+                        className="condition-right-input"
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
-        {data.type === 'QA' && data.nodeConfig.answerType === 'SELECT' && (
-          <div className="condition-node-content-style">
-            {data.nodeConfig.options?.map((item, index) => (
-              <div key={index} className="dis-left mb-16">
-                <span
-                  style={{
-                    width: '60px',
-                    textAlign: 'center',
-                    color: '#979797',
-                  }}
-                >
-                  选项{index + 1}
-                </span>
-                <span className="font-weight">{item.content}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {data.type === 'QA' &&
-          (!data.nodeConfig.answerType ||
-            data.nodeConfig.answerType === 'TEXT') && (
-            <div className="general-node-content">
-              <div className="text-ellipsis">{data.description}</div>
+        {/* [0].secondArg?.bindValue */}
+        {/* ?item.conditionArgs[0].firstArg?.bindValue:'' */}
+        {data.type === 'QA' && (
+          <div className="qa-node-content-style">
+            <div className="dis-left">
+              <span className="text-right qa-title-style">输入</span>
+
+              {data.nodeConfig.inputArgs &&
+                data.nodeConfig?.inputArgs.map((item) => {
+                  return <Tag key={item.name}>{item.name}</Tag>;
+                })}
+              {!data.nodeConfig.inputArgs && <span>未配置输入内容</span>}
             </div>
-          )}
+            <div className="dis-left">
+              <span className="text-right qa-title-style">提问内容</span>
+              <span>{data.nodeConfig.question || '未配置提问内容'}</span>
+            </div>
+            <div className="dis-left">
+              <span className="text-right qa-title-style">问答类型</span>
+              <span>
+                {
+                  ansewerTypeMap[
+                    (data.nodeConfig.answerType as 'TEXT' | 'SELECT') ?? 'TEXT'
+                  ]
+                }
+              </span>
+            </div>
+            {data.nodeConfig.answerType === 'SELECT' &&
+              data.nodeConfig.options?.map((item, index) => (
+                <div key={index} className="dis-left mb-16">
+                  <span className="text-right qa-title-style"></span>
+                  <Tag>{optionsMap[index]}</Tag>
+                  <span>{item.content || '未配置内容'}</span>
+                </div>
+              ))}
+          </div>
+        )}
+
         {data.type === 'IntentRecognition' && (
-          <div>
+          <div className="qa-node-content-style">
             {data.nodeConfig.intentConfigs?.map((item, index) => (
-              <div className="dis-left mb-16" key={index}>
-                <span
-                  style={{
-                    width: '100px',
-                    textAlign: 'center',
-                    color: '#979797',
-                  }}
-                >
-                  选项{index + 1}
-                </span>
-                <span className="font-weight">{item.intent}</span>
+              <div className="dis-left" key={index}>
+                <span className="qa-title-style">选项{index + 1}</span>
+                <span>{item.intent || '未配置意图'}</span>
               </div>
             ))}
           </div>

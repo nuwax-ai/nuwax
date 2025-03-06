@@ -7,7 +7,7 @@ import {
 } from '@/types/interfaces/workflow';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Form, message, Select, Tag } from 'antd';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { v4 as uuidv4 } from 'uuid';
 import './condition.less';
@@ -34,14 +34,42 @@ export const Condition: React.FC<ConditionProps> = ({
   onChange,
   form,
   referenceList,
+  inputItemName,
 }) => {
-  // const changeReference = (value: string) => {
-  //   const _dataType = referenceList?.argMap?.[value];
-  //   form.setFieldValue([field.name, 'dataType'], _dataType || 'String');
-  // }
+  // 因为这里是数组嵌套数组
+  const changeInputValue = (
+    e: string | object,
+    fieldName: 'firstArg' | 'secondArg',
+    type?: 'Input' | 'Reference',
+  ) => {
+    // 修正路径构造方式，使用对象展开语法
+    const newValue =
+      type === 'Input'
+        ? {
+            bindValue: e,
+            bindValueType: 'Input',
+            dataType: 'String',
+            name: '',
+          }
+        : {
+            bindValue: referenceList.argMap[e as string].key,
+            name: referenceList.argMap[e as string].name,
+            bindValueType: 'Reference',
+            dataType: referenceList.argMap[e as string].dataType || 'String',
+          };
+    // 使用深层对象赋值
+    form.setFieldsValue({
+      [inputItemName]: {
+        [field.name]: {
+          [fieldName]: newValue,
+        },
+      },
+    });
+    onChange?.();
+  };
 
   return (
-    <div className="condition-right-item">
+    <div className="condition-right-item" key={field.key}>
       <Form.Item
         style={{ marginRight: '8px' }}
         name={[field.name, 'compareType']}
@@ -56,56 +84,30 @@ export const Condition: React.FC<ConditionProps> = ({
         ></Select>
       </Form.Item>
       <Form.Item style={{ marginRight: '8px', flex: 1 }}>
-        <Form.Item name={[field.name, 'firstArg']}>
-          {/* <Select
-            placeholder="请选择"
-            optionLabelProp="displayValue"
-            options={referenceList.previousNodes.map((item) => {
-              return {
-                label: (
-                  <div className="dis-left font-12">
-                    {returnImg(item.type)}
-                    <span className="select-groud-label-style">
-                      {item.name}
-                    </span>
-                  </div>
-                ),
-                options: item.outputArgs.map((arg) => {
-                  return {
-                    arg,
-                    label: (
-                      <div className="dis-left  font-12">
-                        <span className=" font-12">{arg.name}</span>
-                        <Tag className="select-groud-label-style">
-                          {arg.dataType}
-                        </Tag>
-                      </div>
-                    ),
-                    value: JSON.stringify(arg),
-                    displayValue: `${item.name}-${arg.name}`,
-                  };
-                }),
-              };
-            })}
-          /> */}
+        <Form.Item
+          name={[field.name, 'firstArg', 'bindValue']}
+          rules={[{ required: true }]}
+        >
           <InputOrReference
             referenceList={referenceList}
-            value={form.getFieldValue([field.name, 'bindValue'])}
-            onChange={onChange}
-            returnObj
+            value={form.getFieldValue([field.name, 'firstArg', 'bindValue'])}
+            onChange={(value, type) =>
+              changeInputValue(value, 'firstArg', type)
+            }
             form={form}
             isDisabled
           />
         </Form.Item>
         <Form.Item
-          name={[field.name, 'secondArg']}
+          name={[field.name, 'secondArg', 'bindValue']}
           rules={[{ required: true }]}
         >
           <InputOrReference
             referenceList={referenceList}
-            value={form.getFieldValue([field.name, 'bindValue'])}
-            onChange={onChange}
-            returnObj
+            value={form.getFieldValue([field.name, 'secondArg', 'bindValue'])}
+            onChange={(value, type) =>
+              changeInputValue(value, 'secondArg', type)
+            }
             form={form}
           />
         </Form.Item>
@@ -129,13 +131,16 @@ export const ConditionList: React.FC<ConditionListProps> = ({
 
   // 提交form表单
   const submitForm = () => {
-    const values = form.getFieldsValue();
+    const values = form.getFieldsValue(true);
     handleChangeNodeConfig(values, draggableId);
   };
+  useEffect(() => {
+    form.setFieldsValue(initialValues);
+  }, [initialValues]);
   return (
     <Draggable
       draggableId={draggableId}
-      key={draggableId}
+      index={index}
       isDragDisabled={initialValues.branchType === 'ELSE'}
     >
       {(provided: any) => (
@@ -144,6 +149,7 @@ export const ConditionList: React.FC<ConditionListProps> = ({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
+          key={draggableId}
         >
           <div className="dis-sb condition-header-style">
             <div>
@@ -158,7 +164,7 @@ export const ConditionList: React.FC<ConditionListProps> = ({
             <Form
               form={form}
               onValuesChange={submitForm}
-              initialValues={initialValues}
+              // initialValues={initialValues}
               layout={'horizontal'}
             >
               <Form.List name={inputItemName}>
@@ -171,11 +177,8 @@ export const ConditionList: React.FC<ConditionListProps> = ({
                     >
                       {fields.length > 1 && (
                         <div className="select-condition-type-style">
-                          <Form.Item name={[inputItemName, 'conditionType']}>
-                            <Select
-                              value={form.getFieldValue('conditionType')}
-                              defaultValue={'AND'}
-                            >
+                          <Form.Item name={['conditionType']}>
+                            <Select value={form.getFieldValue('conditionType')}>
                               <Select.Option value="AND">且</Select.Option>
                               <Select.Option value="OR">或</Select.Option>
                             </Select>
@@ -194,6 +197,7 @@ export const ConditionList: React.FC<ConditionListProps> = ({
                               form,
                               onChange: submitForm,
                               referenceList,
+                              inputItemName: 'conditionArgs',
                             })}
                             <MinusCircleOutlined
                               onClick={() => {
@@ -290,7 +294,7 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
         conditionBranchConfigs: newConditionBranchConfigs,
         extension: {
           ...params.extension,
-          height: newConditionBranchConfigs.length * 40 + 80,
+          height: newConditionBranchConfigs.length * 32 + 48,
         },
       });
     }
@@ -318,7 +322,7 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
         conditionBranchConfigs: updatedConditionBranchConfigs,
         extension: {
           ...params.extension,
-          height: updatedConditionBranchConfigs.length * 40 + 80,
+          height: updatedConditionBranchConfigs.length * 32 + 48,
         },
       });
     }
@@ -341,9 +345,9 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
 
     const items = params.conditionBranchConfigs || [];
     const lastIndex = items.length - 1;
-
     // 禁止拖拽到最后一个元素（ELSE）之后
     if (result.destination.index === lastIndex) {
+      message.warning('不能拖拽到否则条件后');
       return;
     }
 
