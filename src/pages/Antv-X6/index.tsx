@@ -3,8 +3,11 @@ import CreateWorkflow from '@/components/CreateWorkflow';
 import TestRun from '@/components/TestRun';
 import Constant from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import type { IgetDetails } from '@/services/workflow';
-import service, { ITestRun, IUpdateDetails } from '@/services/workflow';
+import service, {
+  IgetDetails,
+  ITestRun,
+  IUpdateDetails,
+} from '@/services/workflow';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { WorkflowModeEnum } from '@/types/enums/library';
@@ -117,6 +120,7 @@ const Workflow: React.FC = () => {
       // 获取左上角的信息
       setInfo(_res.data);
       sessionStorage.setItem('spaceId', _res.data.spaceId.toString());
+      sessionStorage.setItem('workfolwId', _res.data.id.toString());
       // 获取节点和边的数据
       const _nodeList = _res.data.nodes;
       const _edgeList = getEdges(_nodeList);
@@ -129,9 +133,31 @@ const Workflow: React.FC = () => {
 
   // 修改当前工作流的基础信息
   const onConfirm = async (value: IUpdateDetails) => {
-    setInfo({ ...(info as IgetDetails), ...value });
-    setShowCreateWorkflow(false);
-    changeUpdateTime();
+    if (showCreateWorkflow) {
+      setShowCreateWorkflow(false);
+    }
+
+    const _res = await service.updateDetails(value);
+    if (_res.code === Constant.success) {
+      changeUpdateTime();
+      setInfo({ ...(info as IgetDetails), extension: value.extension });
+    }
+  };
+  // 调整画布的大小
+  const changeGraph = (val: number) => {
+    onConfirm({
+      id: sessionStorage.getItem('workfolwId'),
+      extension: { size: val },
+    } as IUpdateDetails);
+    graphRef.current.changeGraphZoom(val);
+  };
+
+  //
+  const changeZoom = (val: number | string) => {
+    onConfirm({
+      id: sessionStorage.getItem('workfolwId'),
+      extension: { size: val },
+    } as IUpdateDetails);
   };
 
   // 查询节点的指定信息
@@ -391,17 +417,6 @@ const Workflow: React.FC = () => {
     }
   };
 
-  // 调整画布的大小
-  const changeGraph = (val: number) => {
-    graphRef.current.changeGraphZoom(val);
-    changeUpdateTime();
-  };
-
-  //
-  const changeZoom = (val: number | string) => {
-    console.log(val);
-  };
-
   // 修改节点高度并且重新绘制连接装
   // const changeNodeHeight = (length:number,node:ChildNode)=>{
   //   graphRef.current.changeNodeHeight(length,node);
@@ -593,6 +608,7 @@ const Workflow: React.FC = () => {
         dragChild={dragChild}
         changeGraph={changeGraph}
         handleTestRun={() => testRunAll()}
+        zoomSize={info ? Number(info.extension.size) || 1 : 1}
       />
       <NodeDrawer
         visible={visible}

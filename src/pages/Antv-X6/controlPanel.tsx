@@ -38,7 +38,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
       <div className="absolute-box">
         <Select
           options={options}
-          value={zoomSize}
+          value={`${zoomSize * 100}%`}
           optionLabelProp="displayValue"
           onChange={changeGraph}
           style={{ width: 80 }}

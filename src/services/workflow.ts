@@ -21,10 +21,13 @@ interface IGetModelList {
 }
 
 export interface IUpdateDetails {
-  id?: number;
-  name: string;
-  description: string;
-  icon: string;
+  id?: number | string;
+  name?: string;
+  description?: string;
+  icon?: string;
+  extension: {
+    size: number;
+  };
 }
 
 interface IAddNode {
@@ -86,6 +89,9 @@ export interface IgetDetails {
   spaceId: number;
   startNode: ChildNode;
   innerEndNode?: boolean;
+  extension: {
+    size: number | string;
+  };
 }
 // 试运行所有节点
 export interface ITestRun {
