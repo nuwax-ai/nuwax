@@ -224,7 +224,7 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
   };
 
   return (
-    <Tree showLine switcherIcon={<DownOutlined />}>
+    <Tree showLine defaultExpandAll switcherIcon={<DownOutlined />}>
       {renderTreeNode(treeData)}
     </Tree>
   );

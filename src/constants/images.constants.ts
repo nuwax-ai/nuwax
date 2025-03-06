@@ -47,6 +47,7 @@ import { ReactComponent as ICON_WORKFLOW_QA } from '@/assets/workflow/workflow-Q
 import { ReactComponent as ICON_WORKFLOW_TEXT_PROCESSING } from '@/assets/workflow/workflow-TextProcessing.svg';
 import { ReactComponent as ICON_WORKFLOW_VARIABLE } from '@/assets/workflow/workflow-Variable.svg';
 import { ReactComponent as ICON_WORKFLOW_WORKFLOW } from '@/assets/workflow/workflow-Workflow.svg';
+// 修改导入语句以正确导入图片
 
 export {
   ICON_ADD_TR,

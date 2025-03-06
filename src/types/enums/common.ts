@@ -87,7 +87,7 @@ export enum NodeTypeEnum {
   // 数据库
   Database = 'Database',
   // 知识库
-  KnowledgeBase = 'KnowledgeBase',
+  Knowledge = 'Knowledge',
   // http
   HTTPRequest = 'HTTPRequest',
   // 问答

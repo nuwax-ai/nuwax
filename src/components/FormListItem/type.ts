@@ -67,4 +67,5 @@ export interface TreeFormProps {
     | 'conditionBranchConfigs'
     | 'skillComponentConfigs';
   notShowTitle?: boolean;
+  showCheck?: boolean;
 }

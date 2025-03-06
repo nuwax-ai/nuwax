@@ -2,6 +2,7 @@ import { NodeTypeEnum } from '@/types/enums/common';
 import { CreatorInfo } from '@/types/interfaces/agent';
 import { DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
+import type { ModelListItemProps } from '@/types/interfaces/model';
 import {
   InputAndOutConfig,
   NodeConfig,
@@ -86,8 +87,19 @@ export interface IgetDetails {
   startNode: ChildNode;
   innerEndNode?: boolean;
 }
-
-import type { ModelListItemProps } from '@/types/interfaces/model';
+// 试运行所有节点
+export interface ITestRun {
+  workflowId: number | string;
+  requestId: string;
+  params?: DefaultObjectType;
+  answer?: string;
+}
+// 试运行单个节点
+interface IExecuteNode {
+  nodeId: number | string;
+  requestId?: number | string;
+  params?: DefaultObjectType;
+}
 // 获取工作流的详细信息
 export async function getDetails(
   id: number,
@@ -186,11 +198,6 @@ export async function getNodeConfig(id: number): Promise<RequestResponse<any>> {
   });
 }
 
-interface IExecuteNode {
-  nodeId: number | string;
-  requestId?: number | string;
-  params?: DefaultObjectType;
-}
 // 试运行单个节点
 export async function executeNode(
   data: IExecuteNode,

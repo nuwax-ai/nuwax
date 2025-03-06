@@ -16,7 +16,7 @@ const urlList = {
   LLM: '/api/workflow/node/llm/update',
   Plugin: '/api/workflow/node/plugin/update',
   Variable: '/api/workflow/node/variable/update',
-  KnowledgeBase: '/api/workflow/node/knowledge/update',
+  Knowledge: '/api/workflow/node/knowledge/update',
   HTTPRequest: '/api/workflow/node/http/update',
   QA: '/api/workflow/node/qa/update',
   Code: '/api/workflow/node/code/update',

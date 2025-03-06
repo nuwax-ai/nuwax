@@ -1,6 +1,6 @@
 import ConditionRender from '@/components/ConditionRender';
 import CustomPopover from '@/components/CustomPopover';
-import { APPLICATION_MORE_ACTION } from '@/constants/space.contants';
+import { APPLICATION_MORE_ACTION } from '@/constants/space.constants';
 import { apiDevCollectAgent } from '@/services/agentDev';
 import type { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';

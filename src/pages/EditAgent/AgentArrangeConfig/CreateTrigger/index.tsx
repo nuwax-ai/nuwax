@@ -1,7 +1,7 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import SelectList from '@/components/SelectList';
 import { TRIGGER_TYPE_LIST } from '@/constants/agent.constants';
-import { TASK_EXECUTION } from '@/constants/space.contants';
+import { TASK_EXECUTION } from '@/constants/space.constants';
 import {
   apiAgentComponentTriggerAdd,
   apiAgentTriggerTimeZone,

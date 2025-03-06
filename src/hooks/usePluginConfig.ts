@@ -1,7 +1,7 @@
 import {
   PLUGIN_INPUT_CONFIG,
   PLUGIN_OUTPUT_CONFIG,
-} from '@/constants/space.contants';
+} from '@/constants/space.constants';
 import { apiPluginConfigHistoryList } from '@/services/plugin';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PluginInfo } from '@/types/interfaces/plugin';

@@ -4,7 +4,7 @@ import TestRun from '@/components/TestRun';
 import Constant from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { IgetDetails } from '@/services/workflow';
-import service, { IUpdateDetails } from '@/services/workflow';
+import service, { ITestRun, IUpdateDetails } from '@/services/workflow';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { WorkflowModeEnum } from '@/types/enums/library';
@@ -49,7 +49,8 @@ const Workflow: React.FC = () => {
   const [info, setInfo] = useState<IgetDetails | null>(null);
   // 定义一个节点试运行返回值
   const [testRunResult, setTestRunResult] = useState<string>('');
-
+  // 节点试运行
+  const [stopWait, setStopWait] = useState<boolean>(false);
   // 上级节点的输出参数
   const [referenceList, setReferenceList] = useState<NodePreviousAndArgMap>({
     previousNodes: [],
@@ -313,9 +314,13 @@ const Workflow: React.FC = () => {
 
   const handleNodeChange = (action: string, data: ChildNode) => {
     switch (action) {
-      case 'TestRun':
+      case 'TestRun': {
+        if (data.type === 'QA') {
+          setStopWait(true);
+        }
         setTestRun(true);
         break;
+      }
       case 'Duplicate':
         copyNode(data);
         break;
@@ -366,9 +371,7 @@ const Workflow: React.FC = () => {
     };
 
     // 判断是否需要显示特定类型的创建面板
-    const isSpecialType = ['Plugin', 'Workflow', 'Knowledge'].includes(
-      child.type,
-    );
+    const isSpecialType = ['Plugin', 'Workflow'].includes(child.type);
 
     if (isSpecialType) {
       setCreatedItem(child.type as AgentComponentTypeEnum);
@@ -405,7 +408,6 @@ const Workflow: React.FC = () => {
       nodeId: foldWrapItem.id,
       params,
     };
-
     setTestRunResult('');
 
     // 启动连接
@@ -426,6 +428,7 @@ const Workflow: React.FC = () => {
           }
           if (data.data.status === 'STOP_WAIT_ANSWER') {
             setLoading(false);
+            setStopWait(true);
           }
         }
         // 更新UI状态...
@@ -446,7 +449,7 @@ const Workflow: React.FC = () => {
   };
 
   // 试运行所有节点
-  const testRunAllNode = async (params: DefaultObjectType) => {
+  const testRunAllNode = async (params: ITestRun) => {
     // 获取完整的连线列表
     const _edges = await getNodeRelation(
       graphParams.nodeList,
@@ -457,7 +460,7 @@ const Workflow: React.FC = () => {
       message.warning('没有完整的连线，需要一条从开始一直贯穿到结束的连线');
       return;
     }
-    console.log(graphParams.nodeList);
+
     // 根据连线列表，查看是否有第一个数据是开始节点的id，最后一个是结束节点的信息
     const fullPath = _edges.filter((item: number[]) => {
       return (
@@ -469,11 +472,7 @@ const Workflow: React.FC = () => {
     if (fullPath && fullPath.length > 0) {
       await getDetails();
       // 遍历检查所有节点是否都已经输入了参数
-      const _params = {
-        workflowId: info?.id,
-        params,
-        requestId: uuidv4(), // 使用uuid生成唯一ID
-      };
+
       const abortConnection = await createSSEConnection({
         url: `${process.env.BASE_URL}/api/workflow/test/execute`,
         method: 'POST',
@@ -481,7 +480,7 @@ const Workflow: React.FC = () => {
           Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`,
           Accept: ' application/json, text/plain, */* ',
         },
-        body: _params,
+        body: params,
         onMessage: (data) => {
           const _nodeId = data.data.nodeId;
           graphRef.current.selectNode(_nodeId);
@@ -498,6 +497,7 @@ const Workflow: React.FC = () => {
             }
             if (data.data.status === 'STOP_WAIT_ANSWER') {
               setLoading(false);
+              setStopWait(true);
             }
           }
           // 更新UI状态...
@@ -539,7 +539,22 @@ const Workflow: React.FC = () => {
   const runTest = (type: string, params?: DefaultObjectType) => {
     if (type === 'Start') {
       getDetails();
-      testRunAllNode(params || {});
+      const _params = {
+        workflowId: info?.id as number,
+        params,
+        requestId: uuidv4(), // 使用uuid生成唯一ID
+      };
+      localStorage.setItem('testRun', JSON.stringify(_params));
+      testRunAllNode(_params);
+    } else if (type === 'QA') {
+      let _paramsStr = localStorage.getItem('testRun');
+      if (_paramsStr !== null) {
+        const _params: ITestRun = {
+          ...JSON.parse(_paramsStr),
+          ...(params as DefaultObjectType),
+        };
+        testRunAllNode(_params);
+      }
     } else {
       nodeTestRun(params);
     }
@@ -591,13 +606,12 @@ const Workflow: React.FC = () => {
         onCancel={() => setOpen(false)}
       />
       <TestRun
-        type={foldWrapItem.type}
+        node={foldWrapItem}
         run={runTest}
         visible={visible}
-        title={foldWrapItem.name}
-        inputArgs={foldWrapItem.nodeConfig.inputArgs ?? []}
         testRunResult={testRunResult}
         loading={loading}
+        stopWait={stopWait}
       />
 
       <CreateWorkflow

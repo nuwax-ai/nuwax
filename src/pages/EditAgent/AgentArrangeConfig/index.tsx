@@ -1,7 +1,7 @@
 import Created from '@/components/Created';
 import SelectList from '@/components/SelectList';
 import TooltipIcon from '@/components/TooltipIcon';
-import { ENABLE_LIST } from '@/constants/space.contants';
+import { ENABLE_LIST } from '@/constants/space.constants';
 import VariableList from '@/pages/EditAgent/AgentArrangeConfig/VariableList';
 import {
   apiAgentComponentAdd,

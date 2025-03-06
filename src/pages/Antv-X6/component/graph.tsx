@@ -274,15 +274,30 @@ const initGraph = ({
 
   // 假设 graph 是你的图实例
   graph.on('edge:connected', ({ isNew, edge }) => {
+    // 新增：连接完成后恢复端口尺寸
+    const restorePortSize = (node: Node, portId: string) => {
+      const ports = node.getPorts();
+      const updatedPorts = ports.map((p) => {
+        if (p.id === portId) {
+          p.attrs = { ...p.attrs, circle: { r: 4 } };
+        }
+        return p;
+      });
+      node.prop('ports/items', updatedPorts);
+    };
     // 是否是连接桩到连接桩
     if (isNew) {
       edge.setRouter('manhattan');
       // 获取边的两个连接桩
       const sourcePort = edge.getSourcePortId();
+      const getsourceNode = edge.getSourceNode();
       const targetPort = edge.getTargetPortId();
       const sourceNode = edge.getSourceNode()?.getData();
       const targetNode = edge.getTargetNode()?.getData();
       const targetNodeId = edge.getTargetCellId();
+      if (getsourceNode && sourcePort) {
+        restorePortSize(getsourceNode, sourcePort);
+      }
 
       if (sourceNode.type === 'Loop') {
         console.log(targetNode);
@@ -316,6 +331,7 @@ const initGraph = ({
       }
 
       if (!sourceNode) return;
+
       // 查看出发的节点是否时意图识别和条件分支
       if (
         sourceNode.type === 'Condition' ||

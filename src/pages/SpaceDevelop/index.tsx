@@ -2,7 +2,7 @@ import AnalyzeStatistics from '@/components/AnalyzeStatistics';
 import CreateAgent from '@/components/CreateAgent';
 import SelectList from '@/components/SelectList';
 import { SPACE_ID, USER_INFO } from '@/constants/home.constants';
-import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.contants';
+import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.constants';
 import {
   apiAgentConfigList,
   apiAgentCopy,
