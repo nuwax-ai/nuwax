@@ -7,8 +7,8 @@ import {
 } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
+import { history } from 'umi';
 import styles from './index.less';
-import {history} from 'umi';
 
 const cx = classNames.bind(styles);
 
@@ -18,10 +18,13 @@ const cx = classNames.bind(styles);
 const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
   const handleClick = () => {
     history.push('/', { title: publishedAgentInfo?.name });
-  }
+  };
 
   return (
-    <div className={cx(styles.container, 'cursor-pointer')} onClick={handleClick}>
+    <div
+      className={cx(styles.container, 'cursor-pointer')}
+      onClick={handleClick}
+    >
       <div className={cx(styles.header, 'flex')}>
         <img
           className={cx(styles['a-logo'])}

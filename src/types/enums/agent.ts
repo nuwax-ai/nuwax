@@ -1,19 +1,3 @@
-// 调用方式类型
-export enum CallMethodEnum {
-  // 自动调用
-  Auto_Call,
-  // 按需调用
-  On_Demand_Call,
-}
-
-// 无召回回复
-export enum NoRecallResponseEnum {
-  // 默认
-  Default,
-  // 自定义
-  Custom,
-}
-
 // 智能体组件模型类型枚举
 export enum AgentComponentTypeEnum {
   Plugin = 'Plugin',
@@ -69,7 +53,9 @@ export enum SearchStrategyEnum {
 
 // 无召回回复类型，默认、自定义,可用值:DEFAULT,CUSTOM
 export enum NoneRecallReplyTypeEnum {
+  // 默认
   DEFAULT = 'DEFAULT',
+  // 自定义
   CUSTOM = 'CUSTOM',
 }
 

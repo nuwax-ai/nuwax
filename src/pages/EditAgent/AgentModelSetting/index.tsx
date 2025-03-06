@@ -5,7 +5,7 @@ import { apiAgentComponentModelUpdate } from '@/services/agentConfig';
 import { apiModelList } from '@/services/modelConfig';
 import { UpdateModeComponentEnum } from '@/types/enums/library';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
-import type { AgentComponentBindConfig } from '@/types/interfaces/agent';
+import type { ComponentModelBindConfig } from '@/types/interfaces/agent';
 import type { AgentModelSettingProps } from '@/types/interfaces/agentConfig';
 import { option } from '@/types/interfaces/common';
 import type { ModelConfigInfo } from '@/types/interfaces/model';
@@ -34,7 +34,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   const [modelConfigList, setModelConfig] = useState<option[]>([]);
   // 绑定组件配置，不同组件配置不一样
   const [componentBindConfig, setComponentBindConfig] =
-    useState<AgentComponentBindConfig>({
+    useState<ComponentModelBindConfig>({
       contextRounds: 0,
       maxTokens: 0,
       mode: UpdateModeComponentEnum.Precision,
@@ -69,7 +69,9 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   useEffect(() => {
     if (modelComponentConfig) {
       componentIdRef.current = modelComponentConfig.id;
-      setComponentBindConfig(modelComponentConfig.bindConfig);
+      setComponentBindConfig(
+        modelComponentConfig.bindConfig as ComponentModelBindConfig,
+      );
       setTargetId(modelComponentConfig.targetId);
     }
   }, [modelComponentConfig]);
@@ -84,7 +86,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
 
   // 更新模型配置
   const handleChangeModel = (
-    bindConfig: AgentComponentBindConfig,
+    bindConfig: ComponentModelBindConfig,
     _targetId = targetId,
   ) => {
     runUpdate({
@@ -108,7 +110,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
     const _componentBindConfig = {
       ...componentBindConfig,
       mode: newValue,
-    } as AgentComponentBindConfig;
+    } as ComponentModelBindConfig;
     setComponentBindConfig(_componentBindConfig);
     handleChangeModel(_componentBindConfig);
   };
@@ -118,7 +120,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
     const _componentBindConfig = {
       ...componentBindConfig,
       temperature: newValue,
-    } as AgentComponentBindConfig;
+    } as ComponentModelBindConfig;
     setComponentBindConfig(_componentBindConfig);
     handleChangeModel(_componentBindConfig);
   };
@@ -128,7 +130,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
     const _componentBindConfig = {
       ...componentBindConfig,
       topP: newValue,
-    } as AgentComponentBindConfig;
+    } as ComponentModelBindConfig;
     setComponentBindConfig(_componentBindConfig);
     handleChangeModel(_componentBindConfig);
   };
@@ -140,7 +142,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
     const _componentBindConfig = {
       ...componentBindConfig,
       maxTokens: newValue,
-    } as AgentComponentBindConfig;
+    } as ComponentModelBindConfig;
     setComponentBindConfig(_componentBindConfig);
     handleChangeModel(_componentBindConfig);
   };
@@ -152,7 +154,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
     const _componentBindConfig = {
       ...componentBindConfig,
       contextRounds: newValue,
-    } as AgentComponentBindConfig;
+    } as ComponentModelBindConfig;
     setComponentBindConfig(_componentBindConfig);
     handleChangeModel(_componentBindConfig);
   };

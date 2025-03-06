@@ -15,6 +15,7 @@ import type {
   AgentConfigUpdateParams,
   AgentConversationChatParams,
   AgentConversationChatSuggestParams,
+  AgentConversationCreateParams,
   AgentConversationInfo,
   AgentConversationListParams,
   AgentConversationUpdateParams,
@@ -268,10 +269,11 @@ export async function apiAgentConversationDelete(
 
 // 创建会话
 export async function apiAgentConversationCreate(
-  agentId: number,
+  data: AgentConversationCreateParams,
 ): Promise<RequestResponse<AgentConversationInfo>> {
-  return request(`/api/agent/conversation/create/${agentId}`, {
+  return request('/api/agent/conversation/create', {
     method: 'POST',
+    data,
   });
 }
 

@@ -19,7 +19,7 @@ import {
 import type { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { AgentArrangeConfigProps } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
-import { CaretDownOutlined } from '@ant-design/icons';
+// import { CaretDownOutlined } from '@ant-design/icons';
 import { CollapseProps, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -28,6 +28,7 @@ import ConfigOption from './ConfigOptionCollapse';
 import ConfigOptionsHeader from './ConfigOptionsHeader';
 import CreateTrigger from './CreateTrigger';
 import styles from './index.less';
+import KnowledgeTextList from './KnowledgeList';
 import LongMemoryContent from './LongMemoryContent';
 import PluginList from './PluginList';
 import TriggerContent from './TriggerContent';
@@ -42,7 +43,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   spaceId,
   agentId,
   agentConfigInfo,
-  onKnowledge,
+  // onKnowledge,
   onChangeEnable,
   onSet,
 }) => {
@@ -85,7 +86,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   }, [agentComponentList, checkTag]);
 
   // 删除智能体组件配置
-  const { run: runPluginComponentDel } = useRequest(apiAgentComponentDelete, {
+  const { run: runAgentComponentDel } = useRequest(apiAgentComponentDelete, {
     manual: true,
     debounceWait: 300,
     onSuccess: (_, params) => {
@@ -178,7 +179,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         <PluginList
           list={filterList(agentComponentList, AgentComponentTypeEnum.Plugin)}
           onSet={onSet}
-          onDel={runPluginComponentDel}
+          onDel={runAgentComponentDel}
         />
       ),
       extra: <TooltipIcon title="添加插件" onClick={handlerPluginPlus} />,
@@ -189,7 +190,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       children: (
         <WorkflowList
           list={filterList(agentComponentList, AgentComponentTypeEnum.Workflow)}
-          onDel={runPluginComponentDel}
+          onDel={runAgentComponentDel}
         />
       ),
       extra: <TooltipIcon title="添加工作流" onClick={handlerWorkflowPlus} />,
@@ -202,7 +203,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           list={filterList(agentComponentList, AgentComponentTypeEnum.Trigger)}
           checked={triggerChecked}
           onChange={handlerChangeTrigger}
-          onDel={runPluginComponentDel}
+          onDel={runAgentComponentDel}
         />
       ),
       extra: <TooltipIcon title="添加触发器" onClick={handlerTriggerPlus} />,
@@ -214,9 +215,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       key: KnowledgeDataTypeEnum.Text,
       label: '文本',
       children: (
-        <p>
-          将文档、URL、三方数据源上传为文本知识库后，用户发送消息时，智能体能够引用文本知识中的内容回答用户问题。
-        </p>
+        <KnowledgeTextList
+          list={filterList(
+            agentComponentList,
+            AgentComponentTypeEnum.Knowledge,
+          )}
+          onDel={runAgentComponentDel}
+        />
       ),
       extra: <TooltipIcon title="添加知识库" onClick={handlerTextPlus} />,
     },
@@ -334,18 +339,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     <div className={classNames('overflow-y', 'flex-1', 'px-16', 'py-12')}>
       <ConfigOptionsHeader title="技能" />
       <ConfigOption items={SkillList} />
-      <ConfigOptionsHeader title="知识">
-        <span
-          className={cx(
-            'cursor-pointer',
-            'hover-box',
-            styles['knowledge-extra'],
-          )}
-          onClick={onKnowledge}
-        >
-          按需调用 <CaretDownOutlined />
-        </span>
-      </ConfigOptionsHeader>
+      <ConfigOptionsHeader title="知识" />
       <ConfigOption items={KnowledgeList} />
       <ConfigOptionsHeader title="记忆" />
       <ConfigOption items={MemoryList} />

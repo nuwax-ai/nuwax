@@ -3,6 +3,7 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   apiAgentConversation,
   apiAgentConversationChatSuggest,
+  apiAgentConversationCreate,
 } from '@/services/agentConfig';
 import {
   AssistantRoleEnum,
@@ -36,6 +37,7 @@ const cx = classNames.bind(styles);
  * 预览与调试组件
  */
 const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
+  agentId,
   onExecuteResults,
   agentConfigInfo,
   onPressDebug,
@@ -48,6 +50,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
   // 发布者信息
   const [publishUser, setPublishUser] = useState<CreatorInfo>();
   const messageViewRef = useRef<HTMLDivElement | null>(null);
+  const devConversationIdRef = useRef<number>(0);
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
   // 查询会话
@@ -69,9 +72,23 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     },
   });
 
+  // 创建会话
+  const { run: runConversationCreate } = useRequest(
+    apiAgentConversationCreate,
+    {
+      manual: true,
+      debounceWait: 300,
+      onSuccess: (result: AgentConversationInfo) => {
+        devConversationIdRef.current = result.id;
+      },
+    },
+  );
+
   useEffect(() => {
     if (agentConfigInfo) {
       const { devConversationId } = agentConfigInfo;
+      devConversationIdRef.current = devConversationId;
+      // 查询会话
       run(devConversationId);
     }
   }, [agentConfigInfo?.devConversationId]);
@@ -81,16 +98,18 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     value: string,
     attachments: AttachmentFile[] = [],
   ) => {
-    if (!agentConfigInfo?.devConversationId) {
+    if (!devConversationIdRef.current) {
       return;
     }
     setChatSuggestList([]);
     const params = {
-      conversationId: agentConfigInfo?.devConversationId,
+      conversationId: devConversationIdRef.current,
       message: value,
       attachments,
       debug: true,
     };
+
+    console.log(devConversationIdRef.current, 'devConversationIdRef.current');
 
     // 将文件和消息加入会话中
     const chatMessage = {
@@ -119,7 +138,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       },
       body: params,
       onMessage: (data: ConversationChatResponse) => {
-        console.log(data)
+        // console.log(data)
         // 更新UI状态...
         if (data.eventType === ConversationEventTypeEnum.FINAL_RESULT) {
           // 调试结果
@@ -154,9 +173,15 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     });
   };
 
+  // 清空会话记录，实际上是创建新的会话
   const handleClear = () => {
-
-  }
+    setConversationInfo(null);
+    setChatSuggestList([]);
+    runConversationCreate({
+      agentId,
+      devMode: true,
+    });
+  };
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
@@ -195,7 +220,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
             </>
           ) : (
             // Chat记录为空
-            <AgentChatEmpty icon={agentConfigInfo?.icon} name={agentConfigInfo?.name as string} />
+            <AgentChatEmpty
+              icon={agentConfigInfo?.icon}
+              name={agentConfigInfo?.name as string}
+            />
           )}
         </div>
         {/*会话输入框*/}
