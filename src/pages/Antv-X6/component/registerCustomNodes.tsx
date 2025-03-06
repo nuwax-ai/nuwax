@@ -1,4 +1,11 @@
 import { ICON_WORKFLOW_LOOP } from '@/constants/images.constants';
+import {
+  ansewerTypeMap,
+  branchTypeMap,
+  compareTypeMap,
+  optionsMap,
+  testRunList,
+} from '@/constants/node.constants';
 import { ChildNode, NodeProps } from '@/types/interfaces/graph';
 import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { DashOutlined, PlayCircleOutlined } from '@ant-design/icons';
@@ -14,42 +21,6 @@ interface GeneralNodeState {
   editedTitle: string;
 }
 // 定义那些节点有试运行
-const testRunList = [
-  'Start',
-  'LLM',
-  'Plugin',
-  'Code',
-  'HTTPRequest',
-  'TextProcessing',
-  'Workflow',
-  'DocumentExtraction',
-  'Knowledge',
-  'QA',
-];
-const branchTypeMap = {
-  IF: '如果',
-  ELSE_IF: '否则如果',
-  ELSE: '否则',
-};
-
-const compareTypeMap = {
-  EQUAL: '=',
-  NOT_EQUAL: '≠',
-  GREATER_THAN: '>',
-  GREATER_THAN_OR_EQUAL: '≥',
-  LESS_THAN: '<',
-  LESS_THAN_OR_EQUAL: '≤',
-  CONTAINS: '⊃',
-  NOT_CONTAINS: '⊅',
-  MATCH_REGEX: '~',
-  IS_NULL: '∅',
-  NOT_NULL: '!∅',
-};
-const ansewerTypeMap = {
-  TEXT: '直接回答',
-  SELECT: '选项回答',
-};
-const optionsMap = ['A', 'B', 'C', 'D', 'E'];
 
 /**
  * 定义 GeneralNode 类组件，代表一个通用节点，该节点可以是流程图或其他图形编辑器中的元素。

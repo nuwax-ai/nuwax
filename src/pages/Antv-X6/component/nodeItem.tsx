@@ -28,7 +28,6 @@ import './nodeItem.less';
 // 定义一些公共的数组
 
 // 定义开始节点
-// 定义开始和文档提取节点的渲染逻辑
 const StartNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
@@ -40,12 +39,13 @@ const StartNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
       <CustomTree
         title={'输入'}
         params={params}
+        showCheck
         handleChangeNodeConfig={handleChangeNodeConfig}
       />
     </>
   );
 };
-
+// 定义文档提取节点
 const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,

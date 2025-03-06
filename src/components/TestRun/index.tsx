@@ -1,27 +1,24 @@
 // import squareImage from '@/assets/images/square_bg.png';
-// import SelectList from '@/components/SelectList';
-import { NodeTypeEnum } from '@/types/enums/common';
 import { DefaultObjectType } from '@/types/interfaces/common';
-import { InputAndOutConfig } from '@/types/interfaces/node';
+import { ChildNode } from '@/types/interfaces/graph';
 import { returnImg } from '@/utils/workflow';
 import { CaretRightOutlined, CloseOutlined } from '@ant-design/icons';
+import { Bubble, Prompts, Sender } from '@ant-design/x';
 import { Button, Collapse, Empty, Form, Input, Tag } from 'antd';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import './index.less';
 interface TestRunProps {
   // 当前节点的类型
-  type: NodeTypeEnum;
+  node: ChildNode;
+
   // 是否开启弹窗
   visible: boolean;
   // 运行
   run: (type: string, params?: DefaultObjectType) => void;
   // 按钮是否处于加载
   loading: boolean;
-  // 顶部的样式
-  title?: string;
-  // 输入的内容
-  inputArgs?: InputAndOutConfig[];
+
   // 运行结果
   testRunResult?: string;
   // 预设值
@@ -30,6 +27,11 @@ interface TestRunProps {
   onChange?: (val?: string | number | bigint) => void;
   // 专属于问答，在stopwait后，修改当前的
   stopWait?: boolean;
+}
+
+interface QaItems {
+  key: string;
+  description: string;
 }
 
 // mock的option数据
@@ -41,12 +43,10 @@ interface TestRunProps {
 
 // 试运行
 const TestRun: React.FC<TestRunProps> = ({
-  type,
+  node,
   visible,
   run,
   loading,
-  title,
-  inputArgs,
   testRunResult,
   stopWait,
 }) => {
@@ -54,16 +54,17 @@ const TestRun: React.FC<TestRunProps> = ({
   // const [value, setValue] = useState('');
 
   const [form] = Form.useForm();
-
+  // 问答的选项
+  const [qaItems, setQaItem] = useState<QaItems[]>([]);
   const onFinish = (values: DefaultObjectType) => {
-    run(type, values);
+    run(node.type, values);
   };
 
   const handlerSubmit = () => {
-    if (inputArgs && inputArgs.length) {
+    if (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length) {
       form.submit();
     } else {
-      run(type);
+      run(node.type);
     }
   };
   const items = [
@@ -72,38 +73,40 @@ const TestRun: React.FC<TestRunProps> = ({
       label: '试运行输入',
       children: (
         <>
-          {inputArgs && inputArgs.length > 0 && (
-            <div className="border-bottom ">
-              <p className="collapse-title-style dis-left">
-                {returnImg(type)}
-                <span className="ml-10">{title}节点</span>
-              </p>
-              <Form
-                form={form}
-                layout={'vertical'}
-                onFinish={onFinish}
-                className="test-run-form"
-              >
-                {inputArgs.map((item) => (
-                  <div key={item.name}>
-                    <Form.Item
-                      name={item.name}
-                      label={
-                        <>
-                          {item.name}
-                          <Tag className="ml-10">{item.dataType}</Tag>
-                        </>
-                      }
-                      rules={[{ required: true, message: '请输入' }]}
-                    >
-                      <Input />
-                    </Form.Item>
-                  </div>
-                ))}
-              </Form>
-            </div>
-          )}
-          {(!inputArgs || !inputArgs.length) && (
+          {node.nodeConfig.inputArgs &&
+            node.nodeConfig.inputArgs.length > 0 && (
+              <div className="border-bottom ">
+                <p className="collapse-title-style dis-left">
+                  {returnImg(node.type)}
+                  <span className="ml-10">{node.name}节点</span>
+                </p>
+                <Form
+                  form={form}
+                  layout={'vertical'}
+                  onFinish={onFinish}
+                  className="test-run-form"
+                >
+                  {node.nodeConfig.inputArgs.map((item) => (
+                    <div key={item.name}>
+                      <Form.Item
+                        name={item.name}
+                        label={
+                          <>
+                            {item.name}
+                            <Tag className="ml-10">{item.dataType}</Tag>
+                          </>
+                        }
+                        rules={[{ required: true, message: '请输入' }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                    </div>
+                  ))}
+                </Form>
+              </div>
+            )}
+          {(!node.nodeConfig.inputArgs ||
+            !node.nodeConfig.inputArgs.length) && (
             <Empty description="本次试运行无需输入" />
           )}
         </>
@@ -117,7 +120,7 @@ const TestRun: React.FC<TestRunProps> = ({
             children: (
               <>
                 <p className="collapse-title-style dis-left">输入</p>
-                {inputArgs?.map((item) => (
+                {node.nodeConfig.inputArgs?.map((item) => (
                   <Input
                     key={item.name}
                     prefix={item.name + ':'}
@@ -134,10 +137,24 @@ const TestRun: React.FC<TestRunProps> = ({
         ]
       : []),
   ];
+
+  const answer = (val: string) => {
+    console.log(val);
+  };
+
+  const [value, setValue] = useState<string>('');
+
   // 每次点开前应该要清除遗留数据
   useEffect(() => {
     form.resetFields();
-  }, [testRun]);
+    if (stopWait) {
+      const newItem = (node.nodeConfig?.options || []).map((item) => ({
+        key: item.index,
+        description: item.content,
+      }));
+      setQaItem(newItem);
+    }
+  }, [testRun, stopWait]);
 
   return (
     <div
@@ -159,49 +176,97 @@ const TestRun: React.FC<TestRunProps> = ({
         </div>
         {/* 试运行的内容 */}
         {!stopWait && (
-          <div className="collapse-item-style flex-1">
-            <Collapse
-              items={items}
-              ghost
-              defaultActiveKey={['inputArgs', 'outputArgs']}
-            />
-            {type === 'Start' ||
-              (type === 'Loop' && (
-                <div>
-                  <div className="test-run-content-label">关联智能体</div>
+          <>
+            <div className="collapse-item-style flex-1">
+              <Collapse
+                items={items}
+                ghost
+                defaultActiveKey={['inputArgs', 'outputArgs']}
+              />
+              {node.type === 'Start' ||
+                (node.type === 'Loop' && (
                   <div>
-                    <p>选择你需要的智能体</p>
-                    {/* <SelectList
+                    <div className="test-run-content-label">关联智能体</div>
+                    <div>
+                      <p>选择你需要的智能体</p>
+                      {/* <SelectList
                     className={'selectItem'}
                     prefix={<SearchOutlined />}
                     value={value}
                     options={mockOptions}
                     onChange={setValue}
                   /> */}
+                    </div>
                   </div>
-                </div>
-              ))}
-          </div>
+                ))}
+            </div>
+            {/* 试运行的运行按钮 */}
+            <Button
+              icon={<CaretRightOutlined />}
+              type="primary"
+              onClick={handlerSubmit}
+              loading={loading}
+              className="mt-16"
+            >
+              运行
+            </Button>
+          </>
         )}
         {stopWait && (
-          <div className="stop-wait-style">
-            <div className="stop-wait-header">
+          <div className="stop-wait-style dis-col flex-1">
+            {/* 头部 */}
+            <div className="stop-wait-header dis-center">
               {returnImg('QA')}
+              <div></div>
               <span className="ml-10">问答</span>
-              <span>回复以下问题后继续试运行</span>
+              <span className="ml-10">回复以下问题后继续试运行</span>
             </div>
+            {/* 对话气泡 */}
+            <Bubble
+              className="flex-1"
+              avatar={
+                <img
+                  src={require('@/assets/images/robot.png')}
+                  className="bubble-avatar"
+                />
+              }
+              variant={
+                node.nodeConfig.answerType === 'SELECT'
+                  ? 'borderless'
+                  : 'filled'
+              }
+              header={<span>机器人</span>}
+              content={
+                node.nodeConfig.answerType === 'SELECT' ? (
+                  <div className="qa-question-style">
+                    <Prompts
+                      title={node.nodeConfig.question}
+                      items={qaItems}
+                      vertical
+                      onItemClick={(info) => {
+                        answer(info.data.description as string);
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="qa-question-style">
+                    {node.nodeConfig.question}
+                  </div>
+                )
+              }
+            />
+
+            <Sender
+              value={value}
+              onChange={(v) => {
+                setValue(v);
+              }}
+              onSubmit={() => {
+                answer(value);
+              }}
+            />
           </div>
         )}
-        {/* 试运行的运行按钮 */}
-        <Button
-          icon={<CaretRightOutlined />}
-          type="primary"
-          onClick={handlerSubmit}
-          loading={loading}
-          className="mt-16"
-        >
-          运行
-        </Button>
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ import {
   FILTER_STATUS,
   LIBRARY_ALL_RESOURCE,
   LIBRARY_ALL_TYPE,
-} from '@/constants/space.contants';
+} from '@/constants/space.constants';
 import { apiKnowledgeConfigDelete } from '@/services/knowledge';
 import {
   apiComponentList,

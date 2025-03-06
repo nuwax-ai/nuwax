@@ -1,7 +1,7 @@
 import Created from '@/components/Created';
 import SelectList from '@/components/SelectList';
 import TooltipIcon from '@/components/TooltipIcon';
-import { ENABLE_LIST } from '@/constants/space.contants';
+import { ENABLE_LIST } from '@/constants/space.constants';
 import {
   apiAgentComponentAdd,
   apiAgentComponentDelete,
@@ -20,7 +20,7 @@ import type { AgentArrangeConfigProps } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
 import VariableList from './VariableList';
 // import { CaretDownOutlined } from '@ant-design/icons';
-import CreateVariables from '@/pages/EditAgent/AgentArrangeConfig/CreateVariables';
+import CreateVariables from './CreateVariables';
 import { CollapseProps, message } from 'antd';
 import classNames from 'classnames';
 import React, { MouseEvent, useEffect, useMemo, useState } from 'react';

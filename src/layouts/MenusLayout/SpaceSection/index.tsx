@@ -1,5 +1,5 @@
 import { SPACE_ID } from '@/constants/home.constants';
-import { SPACE_APPLICATION_LIST } from '@/constants/space.contants';
+import { SPACE_APPLICATION_LIST } from '@/constants/space.constants';
 import { SpaceApplicationListEnum } from '@/types/enums/space';
 import { message } from 'antd';
 import classNames from 'classnames';

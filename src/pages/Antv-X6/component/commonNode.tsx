@@ -224,7 +224,7 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
   };
 
   return (
-    <Tree showLine switcherIcon={<DownOutlined />}>
+    <Tree showLine defaultExpandAll switcherIcon={<DownOutlined />}>
       {renderTreeNode(treeData)}
     </Tree>
   );
@@ -304,7 +304,7 @@ export const FormList: React.FC<FormListProps> = ({
     const newItem = {
       [field]: '',
       index: currentItems.length,
-      ...(hasUuid ? { uuid: uuidv4() } : {}),
+      uuid: uuidv4(),
     };
 
     // 判断插入位置

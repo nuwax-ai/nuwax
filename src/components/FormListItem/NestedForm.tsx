@@ -24,6 +24,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
   title,
   inputItemName = 'inputArgs',
   notShowTitle,
+  showCheck,
 }) => {
   // 状态初始化（新增初始化逻辑）
   const [treeData, setTreeData] = useState<TreeNodeConfig[]>(
@@ -199,7 +200,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
           placement={'bottomLeft'}
         />
 
-        <div className="flex" style={{ width: 60 }}>
+        <div className="flex" style={{ width: showCheck ? 60 : 40 }}>
           <Popover
             content={
               <Input.TextArea
@@ -221,14 +222,16 @@ const CustomTree: React.FC<TreeFormProps> = ({
             />
           </Popover>
 
-          <Checkbox
-            checked={nodeData.require}
-            onChange={(e) =>
-              updateNodeField(nodeData.key!, 'require', e.target.checked)
-            }
-            className="margin-right tree-icon-style"
-            disabled={nodeData.systemVariable}
-          />
+          {showCheck && (
+            <Checkbox
+              checked={nodeData.require}
+              onChange={(e) =>
+                updateNodeField(nodeData.key!, 'require', e.target.checked)
+              }
+              className="margin-right tree-icon-style"
+              disabled={nodeData.systemVariable}
+            />
+          )}
           {canAddChild && (
             <Button
               type="text"
@@ -314,8 +317,8 @@ const CustomTree: React.FC<TreeFormProps> = ({
             style={{
               marginLeft: `${
                 treeData.find((item) => item.subArgs && item.subArgs.length > 0)
-                  ? '33%'
-                  : '35%'
+                  ? '36%'
+                  : '40%'
               }`,
             }}
           >

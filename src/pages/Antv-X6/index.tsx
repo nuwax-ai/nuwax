@@ -3,8 +3,11 @@ import CreateWorkflow from '@/components/CreateWorkflow';
 import TestRun from '@/components/TestRun';
 import Constant from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import type { IgetDetails } from '@/services/workflow';
-import service, { IUpdateDetails } from '@/services/workflow';
+import service, {
+  IgetDetails,
+  ITestRun,
+  IUpdateDetails,
+} from '@/services/workflow';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { WorkflowModeEnum } from '@/types/enums/library';
@@ -49,7 +52,8 @@ const Workflow: React.FC = () => {
   const [info, setInfo] = useState<IgetDetails | null>(null);
   // 定义一个节点试运行返回值
   const [testRunResult, setTestRunResult] = useState<string>('');
-
+  // 节点试运行
+  const [stopWait, setStopWait] = useState<boolean>(false);
   // 上级节点的输出参数
   const [referenceList, setReferenceList] = useState<NodePreviousAndArgMap>({
     previousNodes: [],
@@ -115,6 +119,8 @@ const Workflow: React.FC = () => {
       const _res = await service.getDetails(workflowId);
       // 获取左上角的信息
       setInfo(_res.data);
+      sessionStorage.setItem('spaceId', _res.data.spaceId.toString());
+      sessionStorage.setItem('workfolwId', _res.data.id.toString());
       // 获取节点和边的数据
       const _nodeList = _res.data.nodes;
       const _edgeList = getEdges(_nodeList);
@@ -127,9 +133,31 @@ const Workflow: React.FC = () => {
 
   // 修改当前工作流的基础信息
   const onConfirm = async (value: IUpdateDetails) => {
-    setInfo({ ...(info as IgetDetails), ...value });
-    setShowCreateWorkflow(false);
-    changeUpdateTime();
+    if (showCreateWorkflow) {
+      setShowCreateWorkflow(false);
+    }
+
+    const _res = await service.updateDetails(value);
+    if (_res.code === Constant.success) {
+      changeUpdateTime();
+      setInfo({ ...(info as IgetDetails), extension: value.extension });
+    }
+  };
+  // 调整画布的大小
+  const changeGraph = (val: number) => {
+    onConfirm({
+      id: sessionStorage.getItem('workfolwId'),
+      extension: { size: val },
+    } as IUpdateDetails);
+    graphRef.current.changeGraphZoom(val);
+  };
+
+  //
+  const changeZoom = (val: number | string) => {
+    onConfirm({
+      id: sessionStorage.getItem('workfolwId'),
+      extension: { size: val },
+    } as IUpdateDetails);
   };
 
   // 查询节点的指定信息
@@ -297,6 +325,10 @@ const Workflow: React.FC = () => {
       _params.nodeId = _params.nodeId.filter(
         (item) => item !== Number(targetId),
       );
+      graphRef.current.updateNode(sourceNode.id, {
+        ...sourceNode,
+        nextNodeIds: _params.nodeId,
+      });
     }
     const _res = await service.addEdge(_params);
     // 如果接口不成功，就需要删除掉那一条添加的线
@@ -313,9 +345,13 @@ const Workflow: React.FC = () => {
 
   const handleNodeChange = (action: string, data: ChildNode) => {
     switch (action) {
-      case 'TestRun':
+      case 'TestRun': {
+        if (data.type === 'QA') {
+          setStopWait(true);
+        }
         setTestRun(true);
         break;
+      }
       case 'Duplicate':
         copyNode(data);
         break;
@@ -366,9 +402,7 @@ const Workflow: React.FC = () => {
     };
 
     // 判断是否需要显示特定类型的创建面板
-    const isSpecialType = ['Plugin', 'Workflow', 'Knowledge'].includes(
-      child.type,
-    );
+    const isSpecialType = ['Plugin', 'Workflow'].includes(child.type);
 
     if (isSpecialType) {
       setCreatedItem(child.type as AgentComponentTypeEnum);
@@ -383,17 +417,6 @@ const Workflow: React.FC = () => {
     }
   };
 
-  // 调整画布的大小
-  const changeGraph = (val: number) => {
-    graphRef.current.changeGraphZoom(val);
-    changeUpdateTime();
-  };
-
-  //
-  const changeZoom = (val: number | string) => {
-    console.log(val);
-  };
-
   // 修改节点高度并且重新绘制连接装
   // const changeNodeHeight = (length:number,node:ChildNode)=>{
   //   graphRef.current.changeNodeHeight(length,node);
@@ -405,7 +428,6 @@ const Workflow: React.FC = () => {
       nodeId: foldWrapItem.id,
       params,
     };
-
     setTestRunResult('');
 
     // 启动连接
@@ -426,6 +448,7 @@ const Workflow: React.FC = () => {
           }
           if (data.data.status === 'STOP_WAIT_ANSWER') {
             setLoading(false);
+            setStopWait(true);
           }
         }
         // 更新UI状态...
@@ -446,7 +469,7 @@ const Workflow: React.FC = () => {
   };
 
   // 试运行所有节点
-  const testRunAllNode = async (params: DefaultObjectType) => {
+  const testRunAllNode = async (params: ITestRun) => {
     // 获取完整的连线列表
     const _edges = await getNodeRelation(
       graphParams.nodeList,
@@ -457,7 +480,7 @@ const Workflow: React.FC = () => {
       message.warning('没有完整的连线，需要一条从开始一直贯穿到结束的连线');
       return;
     }
-    console.log(graphParams.nodeList);
+
     // 根据连线列表，查看是否有第一个数据是开始节点的id，最后一个是结束节点的信息
     const fullPath = _edges.filter((item: number[]) => {
       return (
@@ -469,11 +492,7 @@ const Workflow: React.FC = () => {
     if (fullPath && fullPath.length > 0) {
       await getDetails();
       // 遍历检查所有节点是否都已经输入了参数
-      const _params = {
-        workflowId: info?.id,
-        params,
-        requestId: uuidv4(), // 使用uuid生成唯一ID
-      };
+
       const abortConnection = await createSSEConnection({
         url: `${process.env.BASE_URL}/api/workflow/test/execute`,
         method: 'POST',
@@ -481,7 +500,7 @@ const Workflow: React.FC = () => {
           Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`,
           Accept: ' application/json, text/plain, */* ',
         },
-        body: _params,
+        body: params,
         onMessage: (data) => {
           const _nodeId = data.data.nodeId;
           graphRef.current.selectNode(_nodeId);
@@ -498,6 +517,7 @@ const Workflow: React.FC = () => {
             }
             if (data.data.status === 'STOP_WAIT_ANSWER') {
               setLoading(false);
+              setStopWait(true);
             }
           }
           // 更新UI状态...
@@ -539,7 +559,22 @@ const Workflow: React.FC = () => {
   const runTest = (type: string, params?: DefaultObjectType) => {
     if (type === 'Start') {
       getDetails();
-      testRunAllNode(params || {});
+      const _params = {
+        workflowId: info?.id as number,
+        params,
+        requestId: uuidv4(), // 使用uuid生成唯一ID
+      };
+      localStorage.setItem('testRun', JSON.stringify(_params));
+      testRunAllNode(_params);
+    } else if (type === 'QA') {
+      let _paramsStr = localStorage.getItem('testRun');
+      if (_paramsStr !== null) {
+        const _params: ITestRun = {
+          ...JSON.parse(_paramsStr),
+          ...(params as DefaultObjectType),
+        };
+        testRunAllNode(_params);
+      }
     } else {
       nodeTestRun(params);
     }
@@ -573,6 +608,7 @@ const Workflow: React.FC = () => {
         dragChild={dragChild}
         changeGraph={changeGraph}
         handleTestRun={() => testRunAll()}
+        zoomSize={info ? Number(info.extension.size) || 1 : 1}
       />
       <NodeDrawer
         visible={visible}
@@ -591,13 +627,12 @@ const Workflow: React.FC = () => {
         onCancel={() => setOpen(false)}
       />
       <TestRun
-        type={foldWrapItem.type}
+        node={foldWrapItem}
         run={runTest}
         visible={visible}
-        title={foldWrapItem.name}
-        inputArgs={foldWrapItem.nodeConfig.inputArgs ?? []}
         testRunResult={testRunResult}
         loading={loading}
+        stopWait={stopWait}
       />
 
       <CreateWorkflow

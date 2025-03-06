@@ -141,6 +141,7 @@ export interface NodeConfig {
   options?: QANodeOption[];
 
   // 知识库节点
+  knowledgeBaseConfigs?: CreatedNodeItem[];
   // 搜索策略
   searchStrategy?: string;
   // 最大召回数量

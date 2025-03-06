@@ -121,7 +121,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
 
       <Created
         checkTag={AgentComponentTypeEnum.Plugin}
-        spaceId={36}
+        spaceId={Number(sessionStorage.getItem('spaceId'))}
         onAdded={onAddedSkill}
         open={open}
         onCancel={() => setOpen(false)}

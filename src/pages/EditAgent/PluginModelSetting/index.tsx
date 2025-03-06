@@ -1,4 +1,4 @@
-import { PLUGIN_SETTING_ACTIONS } from '@/constants/space.contants';
+import { PLUGIN_SETTING_ACTIONS } from '@/constants/space.constants';
 import { PluginSettingEnum } from '@/types/enums/space';
 import { CloseOutlined } from '@ant-design/icons';
 import { Modal } from 'antd';

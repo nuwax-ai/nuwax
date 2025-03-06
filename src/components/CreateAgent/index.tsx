@@ -4,7 +4,7 @@ import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { SPACE_ID } from '@/constants/home.constants';
 import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
-import { CREATE_AGENT_LIST } from '@/constants/space.contants';
+import { CREATE_AGENT_LIST } from '@/constants/space.constants';
 import { apiAgentAdd, apiAgentConfigUpdate } from '@/services/agentConfig';
 import { CreateAgentEnum, CreateUpdateModeEnum } from '@/types/enums/common';
 import type { AgentAddParams } from '@/types/interfaces/agent';

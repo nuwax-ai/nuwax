@@ -1,5 +1,6 @@
 import FoldWrap from '@/components/FoldWrap';
 import OtherOperations from '@/components/OtherAction';
+import { testRunList } from '@/constants/node.constants';
 import { ChildNode } from '@/types/interfaces/graph';
 import { NodeConfig, NodeDrawerProps } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
@@ -22,20 +23,6 @@ const {
 const { ModelNode, IntentionNode, QuestionsNode, HttpToolNode } = ComplexNode;
 const { PluginInNode, DatabaseNode } = ReferenceNode;
 const { KnowledgeNode } = Library;
-
-// 定义那些节点有试运行
-const testRunList = [
-  'Start',
-  'LLM',
-  'Plugin',
-  'Code',
-  'HTTPRequest',
-  'TextProcessing',
-  'Workflow',
-  'DocumentExtraction',
-  'Knowledge',
-  'QA',
-];
 
 // 定义试运行,后面删除
 const TestNode: React.FC = () => {
@@ -202,7 +189,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
             referenceList={referenceList}
           />
         );
-      case 'KnowledgeBase':
+      case 'Knowledge':
         return (
           <KnowledgeNode
             params={currentNodeConfig.nodeConfig}
