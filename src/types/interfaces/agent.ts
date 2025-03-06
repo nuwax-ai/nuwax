@@ -88,11 +88,11 @@ export interface BindConfigWithSub {
   // 参数详细描述信息
   description: string;
   // 数据类型
-  dataType: DataTypeEnum;
+  dataType?: DataTypeEnum;
   // 是否必须
   require?: boolean;
   // 是否为开启，如果不开启，插件使用者和大模型均看不见该参数；如果bindValueType为空且require为true时，该参数必须开启
-  enable: boolean;
+  enable?: boolean;
   // 是否为系统内置变量参数，内置变量前端只可展示不可修改
   systemVariable?: boolean;
   // 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
@@ -365,7 +365,7 @@ export interface AgentComponentInfo {
   // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model
   type: AgentComponentTypeEnum;
   // 绑定组件配置，不同组件配置不一样
-  bindConfig: object;
+  bindConfig: any;
   // 关联的组件ID
   targetId: number;
   // 组件原始配置

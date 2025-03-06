@@ -183,7 +183,6 @@ const EditAgent: React.FC = () => {
               agentId={agentId}
               agentConfigInfo={agentConfigInfo}
               onChangeEnable={handleChangeAgent}
-              // onKnowledge={() => setOpenKnowledgeModel(true)}
               onSet={() => setOpenPluginModel(true)}
             />
           </div>

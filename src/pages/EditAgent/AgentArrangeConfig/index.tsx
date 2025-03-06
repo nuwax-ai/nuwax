@@ -2,7 +2,6 @@ import Created from '@/components/Created';
 import SelectList from '@/components/SelectList';
 import TooltipIcon from '@/components/TooltipIcon';
 import { ENABLE_LIST } from '@/constants/space.contants';
-import VariableList from '@/pages/EditAgent/AgentArrangeConfig/VariableList';
 import {
   apiAgentComponentAdd,
   apiAgentComponentDelete,
@@ -19,10 +18,12 @@ import {
 import type { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { AgentArrangeConfigProps } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
+import VariableList from './VariableList';
 // import { CaretDownOutlined } from '@ant-design/icons';
+import CreateVariables from '@/pages/EditAgent/AgentArrangeConfig/CreateVariables';
 import { CollapseProps, message } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { MouseEvent, useEffect, useMemo, useState } from 'react';
 import { useModel, useRequest } from 'umi';
 import ConfigOption from './ConfigOptionCollapse';
 import ConfigOptionsHeader from './ConfigOptionsHeader';
@@ -43,12 +44,14 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   spaceId,
   agentId,
   agentConfigInfo,
-  // onKnowledge,
   onChangeEnable,
   onSet,
 }) => {
   const [triggerChecked, setTriggerChecked] = useState<boolean>(false);
+  // 触发器弹窗
   const [openTriggerModel, setOpenTriggerModel] = useState<boolean>(false);
+  // 变量弹窗
+  const [openVariableModel, setOpenVariableModel] = useState<boolean>(false);
   // 智能体模型组件列表
   const [agentComponentList, setAgentComponentList] = useState<
     AgentComponentInfo[]
@@ -60,12 +63,20 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 打开、关闭弹窗
   const { show, setShow } = useModel('model');
 
+  // 根据组件类型，过滤组件
   const filterList = (
     list: AgentComponentInfo[],
     type: AgentComponentTypeEnum,
   ) => {
     return list?.filter((item) => item.type === type) || [];
   };
+
+  // 绑定的变量信息
+  const variablesInfo = useMemo(() => {
+    return agentComponentList?.find(
+      (item) => item.type === AgentComponentTypeEnum.Variable,
+    ) as AgentComponentInfo;
+  }, [agentComponentList]);
 
   // 查询智能体配置组件列表
   const { run } = useRequest(apiAgentComponentList, {
@@ -116,21 +127,21 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   }, [agentId]);
 
   // 添加插件
-  const handlerPluginPlus = (e) => {
+  const handlerPluginPlus = (e: MouseEvent) => {
     e.stopPropagation();
     setCheckTag(AgentComponentTypeEnum.Plugin);
     setShow(true);
   };
 
   // 添加工作流
-  const handlerWorkflowPlus = (e) => {
+  const handlerWorkflowPlus = (e: MouseEvent) => {
     e.stopPropagation();
     setCheckTag(AgentComponentTypeEnum.Workflow);
     setShow(true);
   };
 
   // 添加触发器
-  const handlerTriggerPlus = (e) => {
+  const handlerTriggerPlus = (e: MouseEvent) => {
     e.stopPropagation();
     setOpenTriggerModel(true);
   };
@@ -142,30 +153,30 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   };
 
   // 添加文本
-  const handlerTextPlus = (e) => {
+  const handlerTextPlus = (e: MouseEvent) => {
     e.stopPropagation();
     setCheckTag(AgentComponentTypeEnum.Knowledge);
     setShow(true);
   };
 
   // 添加变量
-  const handlerVariablePlus = (e) => {
+  const handlerVariablePlus = (e: MouseEvent) => {
     e.stopPropagation();
-    console.log('handlerVariablePlus');
+    setOpenVariableModel(true);
   };
 
   // 添加数据库表
-  // const handlerDatabasePlus = (e) => {
+  // const handlerDatabasePlus = (e: MouseEvent) => {
   //   e.stopPropagation();
   //   setCheckTag(AgentComponentTypeEnum.Database);
   //   setShow(true);
   // };
 
   // 添加指令
-  const handlerDirectivePlus = (e) => {
-    e.stopPropagation();
-    console.log('handlerDirectivePlus');
-  };
+  // const handlerDirectivePlus = (e: MouseEvent) => {
+  //   e.stopPropagation();
+  //   console.log('handlerDirectivePlus');
+  // };
 
   const handlerChangeTrigger = (checked: boolean) => {
     setTriggerChecked(checked);
@@ -243,7 +254,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       label: '变量',
       children: (
         <VariableList
-          list={filterList(agentComponentList, AgentComponentTypeEnum.Variable)}
+          list={variablesInfo?.bindConfig?.variables || []}
+          onClick={handlerVariablePlus}
         />
       ),
       extra: <TooltipIcon title="添加变量" onClick={handlerVariablePlus} />,
@@ -314,16 +326,16 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         />
       ),
     },
-    {
-      key: ConversationalExperienceEnum.Shortcut_Instruction,
-      label: '快捷指令',
-      children: (
-        <p>
-          快捷指令是对话输入框上方的按钮，配置完成后，用户可以快速发起预设对话
-        </p>
-      ),
-      extra: <TooltipIcon title="添加指令" onClick={handlerDirectivePlus} />,
-    },
+    // {
+    //   key: ConversationalExperienceEnum.Shortcut_Instruction,
+    //   label: '快捷指令',
+    //   children: (
+    //     <p>
+    //       快捷指令是对话输入框上方的按钮，配置完成后，用户可以快速发起预设对话
+    //     </p>
+    //   ),
+    //   extra: <TooltipIcon title="添加指令" onClick={handlerDirectivePlus} />,
+    // },
   ];
 
   // 添加插件、工作流、知识库、数据库
@@ -361,6 +373,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         title="创建触发器"
         onCancel={() => setOpenTriggerModel(false)}
         onConfirm={handlerSuccessCreateTrigger}
+      />
+      <CreateVariables
+        open={openVariableModel}
+        variablesInfo={variablesInfo}
+        onCancel={() => setOpenVariableModel(false)}
       />
     </div>
   );

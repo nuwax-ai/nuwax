@@ -14,7 +14,7 @@ import {
 } from '@/types/enums/agent';
 import type { KnowledgeBindConfig } from '@/types/interfaces/agent';
 import type { KnowledgeSettingProps } from '@/types/interfaces/agentConfig';
-import { Divider, Input, message, Modal, Radio } from 'antd';
+import { Divider, Input, Modal, Radio } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -47,9 +47,6 @@ const KnowledgeSetting: React.FC<KnowledgeSettingProps> = ({
     {
       manual: true,
       debounceWait: 300,
-      onSuccess: () => {
-        message.success('知识库设置成功');
-      },
     },
   );
 
