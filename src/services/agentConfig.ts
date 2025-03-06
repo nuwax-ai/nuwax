@@ -18,8 +18,6 @@ import type {
   AgentConversationInfo,
   AgentConversationListParams,
   AgentConversationUpdateParams,
-  AgentCopyParams,
-  AgentDeleteParams,
   AgentPublishApplyParams,
   AgentTransferParams,
   ConversationChatResponse,
@@ -51,9 +49,8 @@ export async function apiAgentPublishApply(
 
 // 删除智能体接口
 export async function apiAgentDelete(
-  data: AgentDeleteParams,
+  agentId: number,
 ): Promise<RequestResponse<null>> {
-  const { agentId } = data;
   return request(`/api/agent/delete/${agentId}`, {
     method: 'POST',
   });
@@ -61,9 +58,8 @@ export async function apiAgentDelete(
 
 // 创建副本接口
 export async function apiAgentCopy(
-  data: AgentCopyParams,
+  agentId: number,
 ): Promise<RequestResponse<null>> {
-  const { agentId } = data;
   return request(`/api/agent/copy/${agentId}`, {
     method: 'POST',
   });

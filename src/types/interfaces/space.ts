@@ -9,11 +9,23 @@ import type { CollapseProps } from 'antd';
 import type { MouseEventHandler } from 'react';
 import React from 'react';
 
+// 单个应用项
 export interface ApplicationItemProps {
   agentConfigInfo: AgentConfigInfo;
   onClick: (agentId: number) => void;
   onCollect: (isCollect: boolean) => void;
   onClickMore: (type: ApplicationMoreActionEnum) => void;
+}
+
+// 单个应用项顶部组件
+export interface ApplicationHeaderProps {
+  agentConfigInfo: AgentConfigInfo;
+}
+
+// 收藏star组件
+export interface CollectStarProps {
+  devCollected: boolean;
+  onClick: () => void;
 }
 
 // 系统提示词组件属性

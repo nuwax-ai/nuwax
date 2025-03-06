@@ -4,6 +4,12 @@
   padding: 6px 8px;
   gap: 10px;
 
+  &:hover {
+    .icon {
+      visibility: visible;
+    }
+  }
+
   img {
     width: 16px;
     height: 16px;
@@ -15,4 +21,22 @@
     line-height: 22px;
     color: @BLANK04;
   }
+
+  .icon {
+    color: @GRAY05;
+    visibility: hidden;
+    border-radius: 4px;
+    transition: background-color ease-in-out 0.2s;
+
+    &:hover {
+      background-color: @WHITE14;
+    }
+  }
+}
+
+.no-dev-collect {
+  line-height: 22px;
+  padding: 0 8px;
+  font-size: 14px;
+  color: @BLANK21;
 }

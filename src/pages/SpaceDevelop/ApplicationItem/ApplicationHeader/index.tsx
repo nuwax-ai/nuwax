@@ -1,34 +1,41 @@
-import {apiHome} from '@/services/home';
+import agentImage from '@/assets/images/agent_image.png';
+import ConditionRender from '@/components/ConditionRender';
+import { PublishStatusEnum } from '@/types/enums/common';
+import type { ApplicationHeaderProps } from '@/types/interfaces/space';
+import { CheckCircleTwoTone } from '@ant-design/icons';
 import classNames from 'classnames';
-import React, {useEffect, useState} from 'react';
-import {useRequest} from 'umi';
+import React from 'react';
 import styles from './index.less';
-import { RequestResponse } from '@/types/interfaces/request';
 
 const cx = classNames.bind(styles);
 
-const Home: React.FC = () => {
-  const [data, setData] = useState<any[]>([]);
-
-  const {run, loading} = useRequest(apiHome, {
-    manual: true,
-    debounceWait: 300,
-    onSuccess: (res: RequestResponse<T>) => {
-      const {data} = res;
-      if (data) {
-      }
-    },
-  });
-
-  useEffect(() => {
-    run();
-  }, []);
-
+const ApplicationHeader: React.FC<ApplicationHeaderProps> = ({
+  agentConfigInfo,
+}) => {
   return (
-    <div className={cx(styles.container)}>
-      
+    <div className={cx('flex', styles.header)}>
+      <div className={cx('flex-1', 'overflow-hide')}>
+        <div className={cx('flex', styles['info-box'])}>
+          <h3 className={cx('text-ellipsis', styles.title)}>
+            {agentConfigInfo.name}
+          </h3>
+          <ConditionRender
+            condition={
+              agentConfigInfo.publishStatus === PublishStatusEnum.Published
+            }
+          >
+            <CheckCircleTwoTone twoToneColor="#52c41a" />
+          </ConditionRender>
+        </div>
+        <p className={cx('text-ellipsis-2', styles.desc)}>
+          {agentConfigInfo.description}
+        </p>
+      </div>
+      <span className={cx(styles['logo-box'], 'overflow-hide')}>
+        <img src={agentConfigInfo.icon || (agentImage as string)} alt="" />
+      </span>
     </div>
   );
 };
 
-export default Home;
+export default ApplicationHeader;

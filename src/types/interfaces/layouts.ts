@@ -13,12 +13,6 @@ export interface UserRelAgentListProps {
   onClick: (info: AgentInfo) => void;
 }
 
-// 开发收藏
-export interface DevCollectProps {
-  list: AgentInfo[];
-  onClick: (agentId: string) => void;
-}
-
 // 创建新团队组件
 export interface CreateNewTeamProps {
   open: boolean;

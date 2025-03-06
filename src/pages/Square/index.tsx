@@ -41,7 +41,10 @@ const Square: React.FC = () => {
   });
 
   const handleQuery = () => {
-    const params = getURLParams();
+    const params = getURLParams() as {
+      cate_type: string;
+      cate_name: string;
+    };
     const { cate_type, cate_name } = params;
     if (cate_type === SquareAgentTypeEnum.Agent) {
       setTitle('智能体');

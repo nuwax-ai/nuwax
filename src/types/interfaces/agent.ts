@@ -2,6 +2,7 @@ import type {
   AgentComponentTypeEnum,
   AssistantRoleEnum,
   BindValueType,
+  ConversationEventTypeEnum,
   InputTypeEnum,
   InvokeTypeEnum,
   MessageModeEnum,
@@ -11,7 +12,6 @@ import type {
   TriggerComponentType,
   TriggerTypeEnum,
 } from '@/types/enums/agent';
-import { ConversationEventTypeEnum } from '@/types/enums/agent';
 import type {
   DataTypeEnum,
   PublishStatusEnum,
@@ -50,41 +50,6 @@ export interface AgentInfo extends AgentBaseInfo {
   spaceId: number;
 }
 
-// 取消点赞智能体输入参数
-export interface UnlikeParams {
-  agentId: number;
-}
-
-// 取消收藏智能体输入参数
-export interface UnCollectParams {
-  agentId: number;
-}
-
-// 点赞智能体输入参数
-export interface LikeAgentParams {
-  agentId: number;
-}
-
-// 取消开发智能体收藏输入参数
-export interface DevUnCollectAgentParams {
-  agentId: number;
-}
-
-// 开发智能体收藏输入参数
-export interface DevCollectAgentParams {
-  agentId: number;
-}
-
-// 智能体收藏输入参数
-export interface CollectAgentParams {
-  agentId: number;
-}
-
-// 智能体收藏输入参数
-export interface CollectAgentParams {
-  agentId: number;
-}
-
 // 新增智能体输入参数
 export interface AgentAddParams extends AgentBaseInfo {
   spaceId: number;
@@ -101,16 +66,6 @@ export interface AgentPublishApplyParams {
   agentId: number;
   channels: string[];
   remark: string[];
-}
-
-// 删除智能体输入参数
-export interface AgentDeleteParams {
-  agentId: number;
-}
-
-// 创建副本输入参数
-export interface AgentCopyParams {
-  agentId: number;
 }
 
 // 更新智能体基础配置信息输入参数
@@ -152,7 +107,7 @@ export interface BindConfigWithSub {
 
 // 智能体组件模型基础信息
 export interface AgentComponentModeBaseInfo {
-  // 	组件配置ID
+  // 组件配置ID
   id: number;
   // 组件名称
   name: string;

@@ -119,6 +119,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       },
       body: params,
       onMessage: (data: ConversationChatResponse) => {
+        console.log(data)
         // 更新UI状态...
         if (data.eventType === ConversationEventTypeEnum.FINAL_RESULT) {
           // 调试结果
@@ -153,6 +154,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     });
   };
 
+  const handleClear = () => {
+
+  }
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <PreviewAndDebugHeader onPressDebug={onPressDebug} />
@@ -176,7 +181,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
                 <ChatView
                   key={index}
                   messageInfo={item}
-                  agentConfigInfo={agentConfigInfo}
+                  icon={agentConfigInfo?.icon as string}
+                  name={agentConfigInfo?.name as string}
                   avatar={publishUser?.avatar as string}
                   nickname={publishUser?.nickName as string}
                 />
@@ -189,11 +195,11 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
             </>
           ) : (
             // Chat记录为空
-            <AgentChatEmpty agentConfigInfo={agentConfigInfo} />
+            <AgentChatEmpty icon={agentConfigInfo?.icon} name={agentConfigInfo?.name as string} />
           )}
         </div>
         {/*会话输入框*/}
-        <ChatInput onEnter={handleConversation} />
+        <ChatInput onEnter={handleConversation} onClear={handleClear} />
       </div>
     </div>
   );

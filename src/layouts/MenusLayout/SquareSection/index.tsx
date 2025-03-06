@@ -15,16 +15,15 @@ const cx = classNames.bind(styles);
 const SquareSection: React.FC = () => {
   const { agentInfoList, pluginInfoList } = useModel('squareModel');
   // active项
-  const [activeKey, setActiveKey] = useState<string>(
-    localStorage.getItem('ActiveKey') || '',
-  );
+  const [activeKey, setActiveKey] = useState<string>('');
   // menu显隐
-  const [visibleMenu, setVisibleMenu] = useState<string>(
-    localStorage.getItem('VisibleMenu') || '',
-  );
+  const [visibleMenu, setVisibleMenu] = useState<string>('');
 
   useEffect(() => {
-    const params = getURLParams();
+    const params = getURLParams() as {
+      cate_type: string;
+      cate_name: string;
+    };
     const { cate_type, cate_name } = params;
     setActiveKey(cate_name ?? cate_type);
     // 控制menu显隐
@@ -32,8 +31,8 @@ const SquareSection: React.FC = () => {
   }, []);
 
   const handleClick = (cateType: string, cateName?: string) => {
-    localStorage.setItem('ActiveKey', cateName ?? cateType);
-    localStorage.setItem('VisibleMenu', cateType);
+    setActiveKey(cateName ?? cateType);
+    setVisibleMenu(cateType);
 
     const url = cateName
       ? `/square?cate_type=${cateType}&cate_name=${cateName}`
@@ -73,8 +72,8 @@ const SquareSection: React.FC = () => {
         <div className={cx('py-6 px-6')}>
           <SquareMenuItem
             name="插件"
-            isDown
             icon={<ICON_PLUGIN />}
+            isDown
             isActive={activeKey === SquareAgentTypeEnum.Plugin}
             onClick={() => handleClick(SquareAgentTypeEnum.Plugin)}
           />
