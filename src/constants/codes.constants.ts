@@ -9,3 +9,5 @@ class Constant {
 export default Constant;
 
 export const SUCCESS_CODE = '0000';
+// 用户未登录
+export const USER_NO_LOGIN = '4010';
