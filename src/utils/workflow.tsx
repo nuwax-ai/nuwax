@@ -279,7 +279,7 @@ export const generatePorts = (data: ChildNode, height?: number) => {
       const configs = data.nodeConfig?.options;
       if (type === 'SELECT')
         outputPorts = (configs || []).map((item, index) => ({
-          ...defaultPortConfig('out', `${item.uuid || index}-out`),
+          ...defaultPortConfig('out', `${item.index || index}-out`),
           args: {
             y: 110 + index * 18 + 9,
           },

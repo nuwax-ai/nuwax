@@ -76,19 +76,20 @@
 
 #container {
   display: flex;
-  position: relative;
   flex-direction: column;
+  position: absolute;
   border: 1px solid #dfe3e8;
-  width: 100%;
+  width: 100%; // 改为视窗单位
   height: 100%;
-  min-width: 1400px;
-  min-height: 600px;
+  top: 0;
+  left: 0; // 改为视窗单位
   overflow: auto;
+  // min-width: 1400px;
 }
 
 #graph-container {
   width: 100%;
-  height: calc(100% - 74px);
+  height: calc(100vh - 74px);
   background-color: @WHITE05;
 }
 

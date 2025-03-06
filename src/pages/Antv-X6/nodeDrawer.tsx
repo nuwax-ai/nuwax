@@ -34,6 +34,7 @@ const testRunList = [
   'Workflow',
   'DocumentExtraction',
   'Knowledge',
+  'QA',
 ];
 
 // 定义试运行,后面删除
@@ -269,7 +270,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   // 重命名，试运行等操作
   const handleChangeNode = (val: string) => {
     if (val === 'TestRun') {
-      onGetNodeConfig(currentNodeConfig);
+      onGetNodeConfig(currentNodeConfig, true);
     }
     setTimeout(() => {
       handleNodeChange(val, foldWrapItem);

@@ -10,15 +10,26 @@ import { useEffect } from 'react';
 import { useModel } from 'umi';
 import './index.less';
 interface TestRunProps {
+  // 当前节点的类型
   type: NodeTypeEnum;
+  // 是否开启弹窗
   visible: boolean;
+  // 运行
   run: (type: string, params?: DefaultObjectType) => void;
+  // 按钮是否处于加载
   loading: boolean;
+  // 顶部的样式
   title?: string;
+  // 输入的内容
   inputArgs?: InputAndOutConfig[];
+  // 运行结果
   testRunResult?: string;
+  // 预设值
   value?: string;
+  // 修改
   onChange?: (val?: string | number | bigint) => void;
+  // 专属于问答，在stopwait后，修改当前的
+  stopWait?: boolean;
 }
 
 // mock的option数据
@@ -37,6 +48,7 @@ const TestRun: React.FC<TestRunProps> = ({
   title,
   inputArgs,
   testRunResult,
+  stopWait,
 }) => {
   const { testRun, setTestRun } = useModel('model');
   // const [value, setValue] = useState('');
@@ -146,29 +158,40 @@ const TestRun: React.FC<TestRunProps> = ({
           />
         </div>
         {/* 试运行的内容 */}
-        <div className="collapse-item-style flex-1">
-          <Collapse
-            items={items}
-            ghost
-            defaultActiveKey={['inputArgs', 'outputArgs']}
-          />
-          {type === 'Start' ||
-            (type === 'Loop' && (
-              <div>
-                <div className="test-run-content-label">关联智能体</div>
+        {!stopWait && (
+          <div className="collapse-item-style flex-1">
+            <Collapse
+              items={items}
+              ghost
+              defaultActiveKey={['inputArgs', 'outputArgs']}
+            />
+            {type === 'Start' ||
+              (type === 'Loop' && (
                 <div>
-                  <p>选择你需要的智能体</p>
-                  {/* <SelectList
+                  <div className="test-run-content-label">关联智能体</div>
+                  <div>
+                    <p>选择你需要的智能体</p>
+                    {/* <SelectList
                     className={'selectItem'}
                     prefix={<SearchOutlined />}
                     value={value}
                     options={mockOptions}
                     onChange={setValue}
                   /> */}
+                  </div>
                 </div>
-              </div>
-            ))}
-        </div>
+              ))}
+          </div>
+        )}
+        {stopWait && (
+          <div className="stop-wait-style">
+            <div className="stop-wait-header">
+              {returnImg('QA')}
+              <span className="ml-10">问答</span>
+              <span>回复以下问题后继续试运行</span>
+            </div>
+          </div>
+        )}
         {/* 试运行的运行按钮 */}
         <Button
           icon={<CaretRightOutlined />}
