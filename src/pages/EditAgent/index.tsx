@@ -24,7 +24,6 @@ import AgentModelSetting from './AgentModelSetting';
 import ArrangeTitle from './ArrangeTitle';
 import DebugDetails from './DebugDetails';
 import styles from './index.less';
-import KnowledgeSetting from './KnowledgeSetting';
 import PluginModelSetting from './PluginModelSetting';
 import PreviewAndDebug from './PreviewAndDebug';
 import PublishAgent from './PublishAgent';
@@ -46,7 +45,6 @@ const EditAgent: React.FC = () => {
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
   const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
-  const [openKnowledgeModel, setOpenKnowledgeModel] = useState<boolean>(false);
   // 智能体配置信息
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>(null);
   // 历史版本信息
@@ -90,21 +88,6 @@ const EditAgent: React.FC = () => {
     setShowType(type);
   };
 
-  // 点击发布按钮，打开发布智能体弹窗
-  const handlerPublishAgent = () => {
-    setOpen(true);
-  };
-
-  // 取消发布
-  const handlerCancelPublish = () => {
-    setOpen(false);
-  };
-
-  // 点击编辑智能体按钮，打开弹窗
-  const handlerEditAgent = () => {
-    setOpenEditAgent(true);
-  };
-
   // 确认编辑智能体
   const handlerConfirmEditAgent = (info: AgentBaseInfo) => {
     const _agentConfigInfo = {
@@ -113,16 +96,6 @@ const EditAgent: React.FC = () => {
     };
     setAgentConfigInfo(_agentConfigInfo);
     setOpenEditAgent(false);
-  };
-
-  // 插件设置
-  const handlerPluginSetting = () => {
-    setOpenPluginModel(true);
-  };
-
-  // 知识库
-  const handleKnowledge = () => {
-    setOpenKnowledgeModel(true);
   };
 
   // 更新智能体绑定模型
@@ -180,8 +153,10 @@ const EditAgent: React.FC = () => {
         onToggleVersionHistory={() =>
           handlerToggleType(EditAgentShowType.Version_History)
         }
-        onEditAgent={handlerEditAgent}
-        onPublish={handlerPublishAgent}
+        // 点击编辑智能体按钮，打开弹窗
+        onEditAgent={() => setOpenEditAgent(true)}
+        // 点击发布按钮，打开发布智能体弹窗
+        onPublish={() => setOpen(true)}
       />
       <section
         className={cx('flex', 'flex-1', 'px-16', 'py-16', styles.section)}
@@ -208,14 +183,15 @@ const EditAgent: React.FC = () => {
               agentId={agentId}
               agentConfigInfo={agentConfigInfo}
               onChangeEnable={handleChangeAgent}
-              onKnowledge={handleKnowledge}
-              onSet={handlerPluginSetting}
+              // onKnowledge={() => setOpenKnowledgeModel(true)}
+              onSet={() => setOpenPluginModel(true)}
             />
           </div>
         </div>
         {/*预览与调试*/}
         <PreviewAndDebug
           agentConfigInfo={agentConfigInfo}
+          agentId={agentId}
           onExecuteResults={setExecuteResults}
           onPressDebug={() =>
             handlerToggleType(EditAgentShowType.Debug_Details)
@@ -244,7 +220,8 @@ const EditAgent: React.FC = () => {
       <PublishAgent
         agentId={agentId}
         open={open}
-        onCancel={handlerCancelPublish}
+        // 取消发布
+        onCancel={() => setOpen(false)}
       />
       {/*编辑智能体弹窗*/}
       <CreateAgent
@@ -268,11 +245,6 @@ const EditAgent: React.FC = () => {
       <PluginModelSetting
         open={openPluginModel}
         onCancel={() => setOpenPluginModel(false)}
-      />
-      {/*知识库设置*/}
-      <KnowledgeSetting
-        open={openKnowledgeModel}
-        onCancel={() => setOpenKnowledgeModel(false)}
       />
     </div>
   );

@@ -25,9 +25,7 @@ const AgentChatEmpty: React.FC<AgentChatEmptyProps> = ({ icon, name }) => {
         src={icon || (personal as string)}
         alt=""
       />
-      <h3 className={cx('w-full', 'text-ellipsis', styles.nickname)}>
-        {name}
-      </h3>
+      <h3 className={cx('w-full', 'text-ellipsis', styles.nickname)}>{name}</h3>
     </div>
   );
 };

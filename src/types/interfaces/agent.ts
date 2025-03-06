@@ -106,24 +106,24 @@ export interface BindConfigWithSub {
 }
 
 // 智能体组件模型基础信息
-export interface AgentComponentModeBaseInfo {
+export interface AgentComponentBaseInfo {
   // 组件配置ID
   id: number;
   // 组件名称
-  name: string;
+  name?: string;
   // 组件图标
-  icon: string;
+  icon?: string;
   // 组件描述
-  description: string;
+  description?: string;
   // 目标组件ID
   targetId: number;
-  exceptionOut: string;
-  fallbackMsg: string;
+  exceptionOut?: string;
+  fallbackMsg?: string;
 }
 
 // 更新工作流组件配置输入参数
 export interface AgentComponentWorkflowUpdateParams
-  extends AgentComponentModeBaseInfo {
+  extends AgentComponentBaseInfo {
   // 绑定组件配置，不同组件配置不一样
   bindConfig: {
     // 出参绑定配置，插件、工作流有效
@@ -142,7 +142,7 @@ export interface AgentComponentWorkflowUpdateParams
 
 // 更新变量配置输入参数
 export interface AgentComponentVariableUpdateParams
-  extends AgentComponentModeBaseInfo {
+  extends AgentComponentBaseInfo {
   bindConfig: {
     variables: BindConfigWithSub[];
   };
@@ -150,7 +150,7 @@ export interface AgentComponentVariableUpdateParams
 
 // 更新触发器组件配置输入参数
 export interface AgentComponentTriggerUpdateParams
-  extends AgentComponentModeBaseInfo {
+  extends AgentComponentBaseInfo {
   bindConfig: AgentComponentTriggerAddParams;
 }
 
@@ -180,7 +180,7 @@ export type AgentComponentPluginUpdateParams =
   AgentComponentWorkflowUpdateParams;
 
 // 智能体组件模型设置
-export interface AgentComponentBindConfig {
+export interface ComponentModelBindConfig {
   mode: UpdateModeComponentEnum;
   // 生成随机性;0-1
   temperature: number;
@@ -194,22 +194,31 @@ export interface AgentComponentBindConfig {
 
 // 更新模型组件配置输入参数
 export interface AgentComponentModelUpdateParams
-  extends AgentComponentModeBaseInfo {
-  bindConfig: AgentComponentBindConfig;
+  extends AgentComponentBaseInfo {
+  bindConfig: ComponentModelBindConfig;
+}
+
+// 知识库绑定组件配置
+export interface KnowledgeBindConfig {
+  // 调用方式,可用值:AUTO,ON_DEMAND
+  invokeType: InvokeTypeEnum;
+  // 搜索策略,可用值:SEMANTIC,MIXED,FULL_TEXT
+  searchStrategy: SearchStrategyEnum;
+  // 最大召回数量
+  maxRecallCount: number;
+  // 匹配度,0.01 - 0.99
+  matchingDegree: number;
+  // 无召回回复类型，默认、自定义,可用值:DEFAULT,CUSTOM
+  noneRecallReplyType: NoneRecallReplyTypeEnum;
+  // 无召回回复自定义内容
+  noneRecallReply: string;
 }
 
 // 更新知识库组件配置输入参数
 export interface AgentComponentKnowledgeUpdateParams
-  extends AgentComponentModeBaseInfo {
+  extends AgentComponentBaseInfo {
   // 绑定组件配置，不同组件配置不一样
-  bindConfig: {
-    invokeType: InvokeTypeEnum;
-    searchStrategy: SearchStrategyEnum;
-    maxRecallCount: number;
-    matchingDegree: number;
-    noneRecallReplyType: NoneRecallReplyTypeEnum;
-    noneRecallReply: string;
-  };
+  bindConfig: KnowledgeBindConfig;
 }
 
 // 新增智能体插件、工作流、知识库组件配置输入参数
@@ -356,7 +365,7 @@ export interface AgentComponentInfo {
   // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model
   type: AgentComponentTypeEnum;
   // 绑定组件配置，不同组件配置不一样
-  bindConfig: AgentComponentBindConfig;
+  bindConfig: object;
   // 关联的组件ID
   targetId: number;
   // 组件原始配置
@@ -516,3 +525,11 @@ export interface ConversationChatResponse {
 
 // 智能体会话问题建议输入参数
 export type AgentConversationChatSuggestParams = AgentConversationChatParams;
+
+// 创建会话输入参数
+export interface AgentConversationCreateParams {
+  // 智能体ID
+  agentId: number;
+  // 开发模式
+  devMode: boolean;
+}

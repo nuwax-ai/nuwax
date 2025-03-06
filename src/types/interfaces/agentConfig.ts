@@ -86,6 +86,7 @@ export interface CardModeSettingProps {
 
 // 预览与调试组件
 export interface PreviewAndDebugHeaderProps {
+  agentId: number;
   agentConfigInfo: AgentConfigInfo;
   onExecuteResults: (executeResults: string[]) => void;
   onPressDebug: () => void;
@@ -126,4 +127,17 @@ export interface DebugDetailsProps {
   executeResults: string[];
   visible?: boolean;
   onClose: () => void;
+}
+
+// 知识库文本列表组件
+export interface KnowledgeTextListProps {
+  list: AgentComponentInfo[];
+  onDel: (id: number) => void;
+}
+
+// 知识库设置组件
+export interface KnowledgeSettingProps {
+  open: boolean;
+  agentComponentInfo: AgentComponentInfo;
+  onCancel: () => void;
 }

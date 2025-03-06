@@ -1,18 +1,31 @@
+import ChatInput from '@/components/ChatInput';
+import { ACCESS_TOKEN } from '@/constants/home.constants';
+import AgentChatEmpty from '@/pages/EditAgent/PreviewAndDebug/AgentChatEmpty';
+import ChatView from '@/pages/EditAgent/PreviewAndDebug/ChatView';
+import RecommendList from '@/pages/EditAgent/PreviewAndDebug/RecommendList';
+import {
+  apiAgentConversation,
+  apiAgentConversationChatSuggest,
+} from '@/services/agentConfig';
+import {
+  AssistantRoleEnum,
+  ConversationEventTypeEnum,
+  MessageModeEnum,
+  MessageTypeEnum,
+} from '@/types/enums/agent';
+import {
+  AgentConversationInfo,
+  AttachmentFile,
+  ConversationChatResponse,
+  CreatorInfo,
+} from '@/types/interfaces/agent';
+import { createSSEConnection } from '@/utils/fetchEventSource';
 import classNames from 'classnames';
+import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
 import styles from './index.less';
 import ShowArea from './ShowArea';
-import ChatView from '@/pages/EditAgent/PreviewAndDebug/ChatView';
-import RecommendList from '@/pages/EditAgent/PreviewAndDebug/RecommendList';
-import AgentChatEmpty from '@/pages/EditAgent/PreviewAndDebug/AgentChatEmpty';
-import ChatInput from '@/components/ChatInput';
-import { AgentConversationInfo, AttachmentFile, ConversationChatResponse, CreatorInfo } from '@/types/interfaces/agent';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { apiAgentConversation, apiAgentConversationChatSuggest } from '@/services/agentConfig';
-import { AssistantRoleEnum, ConversationEventTypeEnum, MessageModeEnum, MessageTypeEnum } from '@/types/enums/agent';
-import cloneDeep from 'lodash/cloneDeep';
-import { createSSEConnection } from '@/utils/fetchEventSource';
 
 const cx = classNames.bind(styles);
 
@@ -54,7 +67,7 @@ const Chat: React.FC = () => {
     },
   });
 
-  console.log(run, runChatSuggest, setDevConversationId)
+  console.log(run, runChatSuggest, setDevConversationId);
 
   // useEffect(() => {
   //   if (agentConfigInfo) {
@@ -110,7 +123,7 @@ const Chat: React.FC = () => {
         if (data.eventType === ConversationEventTypeEnum.FINAL_RESULT) {
           // 调试结果
           const { componentExecuteResults, outputText } = data.data;
-          console.log(componentExecuteResults)
+          console.log(componentExecuteResults);
           // onExecuteResults(componentExecuteResults);
           const chatResponseMessage = {
             role: AssistantRoleEnum.ASSISTANT,
@@ -142,7 +155,7 @@ const Chat: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log(attachments)
+    console.log(attachments);
     setChatTitle(message);
   }, []);
 

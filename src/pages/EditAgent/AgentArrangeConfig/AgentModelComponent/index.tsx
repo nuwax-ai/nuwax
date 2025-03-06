@@ -1,3 +1,4 @@
+import ConditionRender from '@/components/ConditionRender';
 import type { AgentModelComponentProps } from '@/types/interfaces/agentConfig';
 import classNames from 'classnames';
 import React from 'react';
@@ -18,13 +19,23 @@ const AgentModelComponent: React.FC<AgentModelComponentProps> = ({
         src={agentComponentInfo.icon || defaultImage}
         alt=""
       />
-      <div className={cx('flex-1', 'overflow-hide')}>
-        <h3 className={cx('text-ellipsis', 'w-full', styles.name)}>
+      <div
+        className={cx(
+          'flex-1',
+          'flex',
+          'flex-col',
+          'content-center',
+          'overflow-hide',
+        )}
+      >
+        <h3 className={cx('text-ellipsis', styles.name)}>
           {agentComponentInfo.name}
         </h3>
-        <p className={cx('text-ellipsis', styles.desc)}>
-          {agentComponentInfo.description}
-        </p>
+        <ConditionRender condition={agentComponentInfo.description}>
+          <p className={cx('text-ellipsis', styles.desc)}>
+            {agentComponentInfo.description}
+          </p>
+        </ConditionRender>
       </div>
       <div className={cx(styles['extra-box'], 'flex', 'items-center')}>
         {extra}

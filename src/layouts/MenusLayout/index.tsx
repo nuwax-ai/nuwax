@@ -54,6 +54,7 @@ const MenusLayout: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    console.log(666666);
     if (location.pathname.includes('/space')) {
       setTabType(TabsEnum.Space);
     } else if (location.pathname.includes('/square')) {

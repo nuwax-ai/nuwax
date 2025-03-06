@@ -1,7 +1,7 @@
 import TooltipIcon from '@/components/TooltipIcon';
 import {
-  CallMethodEnum,
-  NoRecallResponseEnum,
+  InvokeTypeEnum,
+  NoneRecallReplyTypeEnum,
   SearchStrategyEnum,
   TriggerTypeEnum,
 } from '@/types/enums/agent';
@@ -10,11 +10,11 @@ import { InfoCircleOutlined } from '@ant-design/icons';
 // 调用方式
 export const CALL_METHOD_OPTIONS = [
   {
-    value: CallMethodEnum.Auto_Call,
+    value: InvokeTypeEnum.AUTO,
     label: '自动调用',
   },
   {
-    value: CallMethodEnum.On_Demand_Call,
+    value: InvokeTypeEnum.ON_DEMAND,
     label: '按需调用',
   },
 ];
@@ -62,11 +62,11 @@ export const SEARCH_STRATEGY_OPTIONS = [
 // 无召回回复
 export const NO_RECALL_RESPONSE = [
   {
-    value: NoRecallResponseEnum.Default,
+    value: NoneRecallReplyTypeEnum.DEFAULT,
     label: '默认',
   },
   {
-    value: NoRecallResponseEnum.Custom,
+    value: NoneRecallReplyTypeEnum.CUSTOM,
     label: '自定义',
   },
 ];

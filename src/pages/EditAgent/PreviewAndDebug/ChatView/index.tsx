@@ -39,11 +39,7 @@ const ChatView: React.FC<ChatViewProps> = ({
     <div className={cx(styles.container, 'flex')}>
       {messageInfo.role !== AssistantRoleEnum.USER ? (
         <>
-          <img
-            className={cx(styles.avatar)}
-            src={icon}
-            alt=""
-          />
+          <img className={cx(styles.avatar)} src={icon} alt="" />
           <div className={cx('flex-1')}>
             <div className={cx(styles.author)}>{name}</div>
             <RunOver />
