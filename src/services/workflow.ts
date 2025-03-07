@@ -90,7 +90,7 @@ export interface IgetDetails {
   startNode: ChildNode;
   innerEndNode?: boolean;
   extension: {
-    size: number | string;
+    size?: number | string;
   };
 }
 // 试运行所有节点

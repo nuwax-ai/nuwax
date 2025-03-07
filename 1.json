@@ -1,0 +1,46 @@
+{
+  "success": true,
+  "data": {
+    "AGENT_USER_MSG": "yes"
+  },
+  "message": null,
+  "requestId": "9476d0cc-b83d-4c2d-810e-a846e40902ab",
+  "nodeExecuteResultMap": {
+    "110": {
+      "nodeId": 110,
+      "success": true,
+      "error": null,
+      "data": {
+        "timer": {
+          "time": "456",
+          "value": "123"
+        },
+        "AGENT_USER_MSG": "sadf "
+      },
+      "startTime": 1741328291773,
+      "endTime": 1741328291773
+    },
+    "573": {
+      "nodeId": 573,
+      "success": true,
+      "error": null,
+      "data": {
+        "USER_RESPONSE": "yes"
+      },
+      "startTime": 1741328291774,
+      "endTime": 1741328291783
+    },
+    "111": {
+      "nodeId": 111,
+      "success": true,
+      "error": null,
+      "data": {
+        "AGENT_USER_MSG": "yes"
+      },
+      "startTime": 1741328291783,
+      "endTime": 1741328291784
+    }
+  },
+  "costTime": 11,
+  "complete": true
+}
