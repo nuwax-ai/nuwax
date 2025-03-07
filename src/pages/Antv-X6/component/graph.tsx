@@ -361,12 +361,13 @@ const initGraph = ({
             }
           }
         } else {
-          console.log('item', sourcePort);
           for (let item of newNodeParams.nodeConfig.options) {
+            console.log('item', sourcePort, item.uuid);
             if (sourcePort.includes(item.uuid)) {
               updateNextNodeIds(item, Number(targetNodeId));
             }
           }
+          console.log(newNodeParams);
         }
 
         changeCondition(newNodeParams);

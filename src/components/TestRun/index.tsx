@@ -1,4 +1,5 @@
 // import squareImage from '@/assets/images/square_bg.png';
+import CodeEditor from '@/components/CodeEditor';
 import { DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
 import { returnImg } from '@/utils/workflow';
@@ -62,11 +63,18 @@ const TestRun: React.FC<TestRunProps> = ({
 
   const handlerSubmit = () => {
     if (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length) {
-      form.submit();
+      const value = form.getFieldsValue();
+      for (let item in value) {
+        if (value[item].includes('\r\n')) {
+          value[item] = JSON.parse(value[item]);
+        }
+      }
+      run(node.type, value);
     } else {
       run(node.type);
     }
   };
+
   const items = [
     {
       key: 'inputArgs',
@@ -86,22 +94,49 @@ const TestRun: React.FC<TestRunProps> = ({
                   onFinish={onFinish}
                   className="test-run-form"
                 >
-                  {node.nodeConfig.inputArgs.map((item) => (
-                    <div key={item.name}>
-                      <Form.Item
-                        name={item.name}
-                        label={
-                          <>
-                            {item.name}
-                            <Tag className="ml-10">{item.dataType}</Tag>
-                          </>
-                        }
-                        rules={[{ required: true, message: '请输入' }]}
-                      >
-                        <Input />
-                      </Form.Item>
-                    </div>
-                  ))}
+                  {node.nodeConfig.inputArgs.map((item) => {
+                    if (item.dataType === 'Object') {
+                      return (
+                        <div key={item.name}>
+                          <Form.Item
+                            name={item.name}
+                            label={
+                              <>
+                                {item.name}
+                                <Tag className="ml-10">{item.dataType}</Tag>
+                              </>
+                            }
+                            rules={[{ required: true, message: '请输入' }]}
+                          >
+                            <CodeEditor
+                              value={form.getFieldValue(item.name) || ''}
+                              codeLanguage={'JSON'}
+                              changeCode={(code) => {
+                                form.setFieldsValue({ [item.name]: code }); // 更新表单值
+                              }}
+                              height="180px"
+                            />
+                          </Form.Item>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={item.name}>
+                        <Form.Item
+                          name={item.name}
+                          label={
+                            <>
+                              {item.name}
+                              <Tag className="ml-10">{item.dataType}</Tag>
+                            </>
+                          }
+                          rules={[{ required: true, message: '请输入' }]}
+                        >
+                          <Input />
+                        </Form.Item>
+                      </div>
+                    );
+                  })}
                 </Form>
               </div>
             )}
@@ -139,7 +174,7 @@ const TestRun: React.FC<TestRunProps> = ({
   ];
 
   const answer = (val: string) => {
-    console.log(val);
+    run('QA', { answer: val });
   };
 
   const [value, setValue] = useState<string>('');

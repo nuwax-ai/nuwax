@@ -7,7 +7,7 @@ interface Props {
   value: string | undefined;
   changeCode: (code: string) => void;
   // 代码编辑器的高度
-  codeLanguage: 'JavaScript' | 'Python';
+  codeLanguage: 'JavaScript' | 'Python' | 'JSON';
   height?: string;
 }
 const CodeEditor: React.FC<Props> = ({

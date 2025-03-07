@@ -492,7 +492,6 @@ const Workflow: React.FC = () => {
     if (fullPath && fullPath.length > 0) {
       await getDetails();
       // 遍历检查所有节点是否都已经输入了参数
-
       const abortConnection = await createSSEConnection({
         url: `${process.env.BASE_URL}/api/workflow/test/execute`,
         method: 'POST',
@@ -518,6 +517,11 @@ const Workflow: React.FC = () => {
             if (data.data.status === 'STOP_WAIT_ANSWER') {
               setLoading(false);
               setStopWait(true);
+              // 根据节点id拿到节点信息
+              const qaNode = graphParams.nodeList.find(
+                (node) => Number(node.id) === Number(data.data.nodeId),
+              );
+              setFoldWrapItem(qaNode as ChildNode);
             }
           }
           // 更新UI状态...
@@ -544,12 +548,10 @@ const Workflow: React.FC = () => {
 
   // 试运行所有节点
   const testRunAll = async () => {
-    setErrorParams({
-      errorList: [],
-      show: false,
-    });
     const _res = await service.getDetails(workflowId);
+    const _nodeList = _res.data.nodes;
     setFoldWrapItem(_res.data.startNode);
+    setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
     setVisible(false);
     setTestRun(true);
     // testRunAllNode();
@@ -557,6 +559,10 @@ const Workflow: React.FC = () => {
 
   // 节点试运行
   const runTest = (type: string, params?: DefaultObjectType) => {
+    setErrorParams({
+      errorList: [],
+      show: false,
+    });
     if (type === 'Start') {
       getDetails();
       const _params = {
@@ -574,6 +580,7 @@ const Workflow: React.FC = () => {
           ...(params as DefaultObjectType),
         };
         testRunAllNode(_params);
+        setTestRun(false);
       }
     } else {
       nodeTestRun(params);

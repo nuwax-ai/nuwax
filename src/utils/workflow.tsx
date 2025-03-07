@@ -129,9 +129,18 @@ export const returnBackgroundColor = (type: string) => {
 const handleSpecialNodes = (node: ChildNode): Edge[] => {
   if (!node.nodeConfig) return [];
 
-  const { conditionBranchConfigs, intentConfigs } = node.nodeConfig;
-  const configs =
-    node.type === 'Condition' ? conditionBranchConfigs : intentConfigs;
+  let configs;
+  const { conditionBranchConfigs, intentConfigs, options } = node.nodeConfig;
+  switch (node.type) {
+    case 'Condition':
+      configs = conditionBranchConfigs;
+      break;
+    case 'IntentRecognition':
+      configs = intentConfigs;
+    default:
+      configs = options;
+      break;
+  }
 
   return (
     configs?.flatMap((config) => {
@@ -168,24 +177,36 @@ const handleLoopEdges = (node: ChildNode): Edge[] => {
 // 递归获取节点的边
 export const getEdges = (nodes: ChildNode[]): Edge[] => {
   const allEdges: Edge[] = nodes.flatMap((node) => {
-    if (node.type === 'Condition' || node.type === 'IntentRecognition') {
+    if (
+      node.type === 'Condition' ||
+      node.type === 'IntentRecognition' ||
+      (node.type === 'QA' && node.nodeConfig.answerType === 'SELECT')
+    ) {
       return handleSpecialNodes(node);
     } else if (node.type === 'Loop') {
       return handleLoopEdges(node);
     } else if (node.nextNodeIds && node.nextNodeIds.length > 0) {
-      return node.nextNodeIds.map((nextNodeId) => ({
-        source: Number(node.id).toString(),
-        target: Number(nextNodeId).toString(),
-      }));
+      return node.nextNodeIds.map((nextNodeId) => {
+        return {
+          source: Number(node.id).toString(),
+          target: Number(nextNodeId).toString(),
+        };
+      });
     }
     return [];
+  });
+
+  // 过滤目标节点不存在的边（新增过滤逻辑）
+  const validEdges = allEdges.filter((edge) => {
+    // 检查目标节点是否存在于节点列表中
+    return nodes.some((n) => n.id.toString() === edge.target);
   });
 
   // 使用 Set 来移除重复的边
   const uniqueEdges = new Set<string>();
   const resultEdges: Edge[] = [];
 
-  allEdges.forEach((edge) => {
+  validEdges.forEach((edge) => {
     const edgeKey = `${edge.source}-${edge.target}`;
     if (!uniqueEdges.has(edgeKey)) {
       uniqueEdges.add(edgeKey);
