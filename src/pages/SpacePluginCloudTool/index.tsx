@@ -12,7 +12,6 @@ import { PluginCodeModeEnum } from '@/types/enums/plugin';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PluginInfo } from '@/types/interfaces/plugin';
 import { DeleteOutlined } from '@ant-design/icons';
-import Editor from '@monaco-editor/react';
 import type { TableColumnsType } from 'antd';
 import { Checkbox, Input, message, Select, Space, Table } from 'antd';
 import classNames from 'classnames';
@@ -20,6 +19,7 @@ import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 import PluginHeader from './PluginCodeHeader';
+import CodeEditor from '@/components/CodeEditor';
 
 const cx = classNames.bind(styles);
 
@@ -33,9 +33,6 @@ const SpacePluginCloudTool: React.FC = () => {
   const [visible, setVisible] = useState<boolean>(false);
   const [openModal, setOpenModal] = useState<boolean>(false);
   const [code, setCode] = useState<string>('');
-  const handleCodeChange = (value: string) => {
-    setCode(value);
-  };
 
   const {
     runHistory,
@@ -63,6 +60,14 @@ const SpacePluginCloudTool: React.FC = () => {
     handleInputConfigAdd,
     handleOutputConfigAdd,
   } = usePluginConfig();
+
+  const handleCodeChange = (value: string) => {
+    setCode(value);
+  };
+
+  useEffect(() => {
+    setCode(pluginInfo?.config?.code as string);
+  }, [pluginInfo]);
 
   // 查询插件信息
   const { run: runPluginInfo } = useRequest(apiPluginInfo, {
@@ -377,18 +382,7 @@ const SpacePluginCloudTool: React.FC = () => {
               'flex-1',
             )}
           >
-            <Editor
-              height={'100%'}
-              defaultLanguage="javascript"
-              theme="light"
-              value={code} // 使用 value 而不是 defaultValue，使编辑器成为受控组件
-              onChange={handleCodeChange}
-              options={{
-                selectOnLineNumbers: true,
-                folding: true,
-                automaticLayout: true,
-              }}
-            />
+            <CodeEditor value={code} height={'600px'} changeCode={handleCodeChange} codeLanguage={pluginInfo?.config?.codeLang} />
           </div>
         )}
       </div>

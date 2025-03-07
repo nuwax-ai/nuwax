@@ -126,6 +126,8 @@ const SpacePluginTool: React.FC = () => {
     runHistory(pluginId);
   }, [pluginId]);
 
+  // const _VARIABLE_TYPE_LIST = VARIABLE_TYPE_LIST.filter(item => ![DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(item.value));
+
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub>['columns'] = [
     {
@@ -241,7 +243,7 @@ const SpacePluginTool: React.FC = () => {
       align: 'right',
       render: (_, record, index) => (
         <Space size="middle">
-          {record.dataType === DataTypeEnum.Object &&
+          {(record.dataType === DataTypeEnum.Object || record.dataType === DataTypeEnum.Array_Object) &&
             inputConfigArgs?.[index]?.key === record.key && (
               <ICON_ADD_TR
                 className={cx('cursor-pointer')}
@@ -324,7 +326,7 @@ const SpacePluginTool: React.FC = () => {
       align: 'right',
       render: (_, record, index) => (
         <Space size="middle">
-          {record.dataType === DataTypeEnum.Object &&
+          {(record.dataType === DataTypeEnum.Object || record.dataType === DataTypeEnum.Array_Object) &&
             outputConfigArgs?.[index]?.key === record.key && (
               <ICON_ADD_TR
                 className={cx('cursor-pointer')}

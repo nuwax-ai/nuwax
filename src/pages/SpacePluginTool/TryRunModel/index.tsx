@@ -7,7 +7,7 @@ import { CloseOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import { Button, Checkbox, Input, message, Modal, Table } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 import ParamsNameLabel from './ParamsNameLabel';
@@ -22,6 +22,8 @@ const TryRunModel: React.FC<TryRunModelProps> = ({
   open,
   onCancel,
 }) => {
+  const [dataSource, setDataSource] = useState<BindConfigWithSub[]>([]);
+  console.log(dataSource, 999)
   // 查询插件信息
   const { run: runTest } = useRequest(apiPluginTest, {
     manual: true,
@@ -34,6 +36,18 @@ const TryRunModel: React.FC<TryRunModelProps> = ({
     },
   });
 
+  useEffect(() => {
+    if (inputConfigArgs?.length > 0) {
+      setDataSource(inputConfigArgs);
+    }
+  }, [inputConfigArgs]);
+
+  const handleChangeValue = (index, value) => {
+    const _dataSource = [...dataSource];
+    _dataSource[index].bindValue = value;
+    setDataSource(_dataSource);
+  }
+
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub>['columns'] = [
     {
@@ -42,20 +56,16 @@ const TryRunModel: React.FC<TryRunModelProps> = ({
       key: 'name',
       className: 'flex',
       render: (_, record) =>
-        record.require ? (
-          <ParamsNameLabel paramName={record.name} paramType="string" />
-        ) : (
-          <span>{record.name}</span>
-        ),
+        <ParamsNameLabel require={record.require} paramName={record.name} paramType="string" />
     },
     {
       title: '参数值',
       dataIndex: 'description',
       key: 'description',
-      render: (_, record) => (
+      render: (_, record, index) => (
         <>
           {record?.dataType === DataTypeEnum.Object ? null : (
-            <Input placeholder="请输入参数值" />
+            <Input value={record.bindValue} onChange={(e) => handleChangeValue(index, e.target.value)} placeholder="请输入参数值" />
           )}
           <p className={cx(styles['param-desc'])}>{record.description}</p>
         </>
@@ -64,10 +74,16 @@ const TryRunModel: React.FC<TryRunModelProps> = ({
   ];
 
   const handleRunTest = () => {
+    const params = {};
+    for (let i = 0; i < dataSource.length; i++) {
+      const item = dataSource[i];
+      if ( item.dataType === DataTypeEnum.String) {
+        params[item.name] = item.bindValue;
+      }
+    }
     runTest({
-      requestId: '',
       pluginId,
-      params: {},
+      params,
     });
   };
 
@@ -111,7 +127,7 @@ const TryRunModel: React.FC<TryRunModelProps> = ({
               <Table<BindConfigWithSub>
                 className={cx(styles['table-wrap'])}
                 columns={inputColumns}
-                dataSource={inputConfigArgs}
+                dataSource={dataSource}
                 pagination={false}
                 virtual
                 expandable={{

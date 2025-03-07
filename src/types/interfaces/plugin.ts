@@ -130,7 +130,7 @@ export interface PluginInfo {
   codeLang: CodeLangEnum;
   // 插件发布状态,可用值:Developing,Applying,Published,Rejected
   publishStatus: PublishStatusEnum;
-  config: object;
+  config: unknown;
   modified: string;
   created: string;
   // 创建者信息
