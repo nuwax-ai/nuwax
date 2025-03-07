@@ -34,10 +34,10 @@ interface ConditionArgs {
   firstArg: InputAndOutConfig | null;
 }
 export interface ConditionBranchConfigs {
-  branchType: 'IF' | 'ELSE_IF' | 'ELSE';
+  branchType?: 'IF' | 'ELSE_IF' | 'ELSE';
   conditionType: string | null;
-  nextNodeIds: number[];
-  conditionArgs: ConditionArgs[];
+  nextNodeIds?: number[];
+  conditionArgs?: ConditionArgs[];
   uuid: string;
 }
 

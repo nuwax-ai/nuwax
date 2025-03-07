@@ -217,7 +217,6 @@ const initGraph = ({
       }
       return p;
     });
-
     // 应用新的端口配置
     node.prop('ports/items', updatedPorts);
   });
@@ -226,10 +225,8 @@ const initGraph = ({
   graph.on('node:port:mouseleave', ({ port, node }) => {
     // 确保端口和端口ID存在
     if (!port) return;
-
     // 获取当前节点的所有端口配置
     const ports = node.getPorts();
-
     // 找到并恢复特定端口的原始样式
     const updatedPorts = ports.map((p) => {
       if (p.id === port) {
@@ -274,30 +271,29 @@ const initGraph = ({
 
   // 假设 graph 是你的图实例
   graph.on('edge:connected', ({ isNew, edge }) => {
-    // 新增：连接完成后恢复端口尺寸
-    const restorePortSize = (node: Node, portId: string) => {
+    // 成功连接后，同样确保所有端口处于正确的状态
+    graph.getNodes().forEach((node) => {
       const ports = node.getPorts();
       const updatedPorts = ports.map((p) => {
-        if (p.id === portId) {
-          p.attrs = { ...p.attrs, circle: { r: 4 } };
-        }
+        // 可以根据需求调整这里的逻辑
+        p.attrs = {
+          ...p.attrs,
+          circle: { r: 4 }, // 强制恢复所有端口到默认大小
+        };
         return p;
       });
       node.prop('ports/items', updatedPorts);
-    };
+    });
     // 是否是连接桩到连接桩
+    edge.setRouter('manhattan');
     if (isNew) {
-      edge.setRouter('manhattan');
       // 获取边的两个连接桩
       const sourcePort = edge.getSourcePortId();
-      const getsourceNode = edge.getSourceNode();
+      // const getsourceNode = edge.getSourceNode();
       const targetPort = edge.getTargetPortId();
       const sourceNode = edge.getSourceNode()?.getData();
       const targetNode = edge.getTargetNode()?.getData();
       const targetNodeId = edge.getTargetCellId();
-      if (getsourceNode && sourcePort) {
-        restorePortSize(getsourceNode, sourcePort);
-      }
 
       if (sourceNode.type === 'Loop') {
         console.log(targetNode);
@@ -362,12 +358,10 @@ const initGraph = ({
           }
         } else {
           for (let item of newNodeParams.nodeConfig.options) {
-            console.log('item', sourcePort, item.uuid);
             if (sourcePort.includes(item.uuid)) {
               updateNextNodeIds(item, Number(targetNodeId));
             }
           }
-          console.log(newNodeParams);
         }
 
         changeCondition(newNodeParams);
@@ -445,7 +439,19 @@ const initGraph = ({
   graph.on('blank:click', () => {
     // 先取消所有节点的选中状态
     graph.getNodes().forEach((n) => n.setData({ selected: false }));
-
+    // 成功连接后，同样确保所有端口处于正确的状态
+    graph.getNodes().forEach((node) => {
+      const ports = node.getPorts();
+      const updatedPorts = ports.map((p) => {
+        // 可以根据需求调整这里的逻辑
+        p.attrs = {
+          ...p.attrs,
+          circle: { r: 4 }, // 强制恢复所有端口到默认大小
+        };
+        return p;
+      });
+      node.prop('ports/items', updatedPorts);
+    });
     changeDrawer(null); // 调用回调函数以更新抽屉内容
   });
 

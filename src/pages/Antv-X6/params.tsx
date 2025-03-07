@@ -3,7 +3,7 @@ import {
   ICON_START,
   ICON_WORKFLOW_CODE,
   ICON_WORKFLOW_CONDITION,
-  ICON_WORKFLOW_DATABASE,
+  // ICON_WORKFLOW_DATABASE,
   ICON_WORKFLOW_DOCUMENT_EXTRACTION,
   ICON_WORKFLOW_HTTP_REQUEST,
   ICON_WORKFLOW_INTENT_RECOGNITION,
@@ -105,14 +105,14 @@ export const asideList: StencilList[] = [
         key: 'general-Node',
         description: '在选定的知识中，根据输入变量召回最匹配的信息',
       },
-      {
-        name: '数据库',
-        icon: <ICON_WORKFLOW_DATABASE />,
-        type: 'Database',
-        key: 'general-Node',
-        description:
-          '可支持对数据表放开读写控制，用户可读写其他用户提交的数据， 由开发者控制',
-      },
+      // {
+      //   name: '数据库',
+      //   icon: <ICON_WORKFLOW_DATABASE />,
+      //   type: 'Database',
+      //   key: 'general-Node',
+      //   description:
+      //     '可支持对数据表放开读写控制，用户可读写其他用户提交的数据， 由开发者控制',
+      // },
       {
         name: '变量',
         icon: <ICON_WORKFLOW_VARIABLE />,

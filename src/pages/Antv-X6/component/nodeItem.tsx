@@ -64,6 +64,7 @@ const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({
         initialValues={{ inputArgs: params.inputArgs || [] }}
         handleChangeNodeConfig={handleChangeNodeConfig}
         disabledAdd
+        disabledDelete
       />
       {params.outputArgs && (
         <div>

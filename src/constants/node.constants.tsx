@@ -35,3 +35,10 @@ export const ansewerTypeMap = {
   SELECT: '选项回答',
 };
 export const optionsMap = ['A', 'B', 'C', 'D', 'E'];
+
+// export const StatusMap={
+//   Developing:"",
+//   Applying:"",
+//   Published:"发布",
+//   Rejected:'拒绝'
+// }

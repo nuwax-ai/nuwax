@@ -18,7 +18,7 @@ import {
   Select,
   Space,
 } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import '../index.less';
 import { outPutConfigs } from '../params';
 import { FormList, InputAndOut, TreeOutput } from './commonNode';
@@ -328,6 +328,13 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
     handleChangeNodeConfig(values);
   };
 
+  useEffect(() => {
+    form.setFieldsValue({
+      ...params,
+      method: params.method || 'GET',
+      contentType: params.contentType || 'JSON',
+    });
+  }, [params]);
   return (
     <div>
       {/* 请求配置 */}
@@ -346,7 +353,6 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
                   style={{ width: '30%', marginRight: '10px' }}
                   options={methodOption}
                   placeholder="请求方法"
-                  defaultValue={'GET'}
                 ></Select>
               </Form.Item>
               <Form.Item name="url" noStyle>
@@ -355,15 +361,10 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
             </div>
           </Form.Item>
           <Form.Item label="请求内容格式" name="contentType">
-            <Radio.Group className="margin-bottom" defaultValue={'JSON'}>
-              <Space wrap>
-                {methodOptions.map((item) => (
-                  <Radio key={item.value} value={item.value}>
-                    {item.label}
-                  </Radio>
-                ))}
-              </Space>
-            </Radio.Group>
+            <Radio.Group
+              className="margin-bottom"
+              options={methodOptions}
+            ></Radio.Group>
           </Form.Item>
           <Form.Item label="请求超时配置" name="timeout">
             <Input placeholder="请输入超时配置时长"></Input>

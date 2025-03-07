@@ -200,6 +200,8 @@ export interface NodeRenderProps {
   style?: any;
   //   不显示新增按钮
   disabledAdd?: boolean;
+  // 不显示删除按钮
+  disabledDelete?: boolean;
 }
 
 // 定义通用的formList的props类型

@@ -53,8 +53,8 @@ export const Condition: React.FC<ConditionProps> = ({
           }
         : {
             bindValue: referenceList.argMap[e as string].key,
-            name: referenceList.argMap[e as string].name,
             bindValueType: 'Reference',
+            name: referenceList.argMap[e as string].name,
             dataType: referenceList.argMap[e as string].dataType || 'String',
           };
     // 使用深层对象赋值
@@ -86,7 +86,7 @@ export const Condition: React.FC<ConditionProps> = ({
       <Form.Item style={{ marginRight: '8px', flex: 1 }}>
         <Form.Item
           name={[field.name, 'firstArg', 'bindValue']}
-          rules={[{ required: true }]}
+          // rules={[{ required: true }]}
         >
           <InputOrReference
             referenceList={referenceList}
@@ -94,17 +94,19 @@ export const Condition: React.FC<ConditionProps> = ({
             onChange={(value, type) =>
               changeInputValue(value, 'firstArg', type)
             }
+            fieldName={['conditionArgs', field.name, 'firstArg', 'bindValue']}
             form={form}
             isDisabled
           />
         </Form.Item>
         <Form.Item
           name={[field.name, 'secondArg', 'bindValue']}
-          rules={[{ required: true }]}
+          // rules={[{ required: true }]}
         >
           <InputOrReference
             referenceList={referenceList}
             value={form.getFieldValue([field.name, 'secondArg', 'bindValue'])}
+            fieldName={['conditionArgs', field.name, 'secondArg', 'bindValue']}
             onChange={(value, type) =>
               changeInputValue(value, 'secondArg', type)
             }
@@ -168,68 +170,80 @@ export const ConditionList: React.FC<ConditionListProps> = ({
               layout={'horizontal'}
             >
               <Form.List name={inputItemName}>
-                {(fields, { add, remove }, { errors }) => (
-                  <div className="relative">
-                    <div
-                      className={`dis-sb ${
-                        fields.length > 1 ? 'select-condition-border' : ''
-                      }`}
-                    >
-                      {fields.length > 1 && (
-                        <div className="select-condition-type-style">
-                          <Form.Item name={['conditionType']}>
-                            <Select value={form.getFieldValue('conditionType')}>
-                              <Select.Option value="AND">且</Select.Option>
-                              <Select.Option value="OR">或</Select.Option>
-                            </Select>
-                          </Form.Item>
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        {fields.map((field) => (
-                          <div key={field.key} className="dis-sb">
-                            {Condition({
-                              field,
-                              onRemove: () => {
-                                remove(field.name);
-                                submitForm();
-                              },
-                              form,
-                              onChange: submitForm,
-                              referenceList,
-                              inputItemName: 'conditionArgs',
-                            })}
-                            <MinusCircleOutlined
-                              onClick={() => {
-                                remove(field.name);
-                                submitForm();
-                              }}
-                            />
-                          </div>
-                        ))}
-                        {errors.length > 0 && (
-                          <div style={{ color: 'red' }}>
-                            {errors.join(', ')}
+                {(fields, { add, remove }, { errors }) => {
+                  console.log(fields);
+                  return (
+                    <div className="relative">
+                      <div
+                        className={`dis-sb ${
+                          fields.length > 1 ? 'select-condition-border' : ''
+                        }`}
+                      >
+                        {fields.length > 1 && (
+                          <div className="select-condition-type-style">
+                            <Form.Item>
+                              <Select
+                                value={initialValues.conditionType}
+                                onChange={(e) => {
+                                  handleChangeNodeConfig(
+                                    { conditionType: e, uuid: draggableId },
+                                    draggableId,
+                                  );
+                                }}
+                                style={{ width: 60 }}
+                              >
+                                <Select.Option value="AND">且</Select.Option>
+                                <Select.Option value="OR">或</Select.Option>
+                              </Select>
+                            </Form.Item>
                           </div>
                         )}
+                        <div className="flex-1">
+                          {fields.map((field) => (
+                            <div key={field.key} className="dis-sb">
+                              {Condition({
+                                field,
+                                onRemove: () => {
+                                  remove(field.name);
+                                  submitForm();
+                                },
+                                form,
+                                onChange: submitForm,
+                                referenceList,
+                                inputItemName: 'conditionArgs',
+                              })}
+                              <MinusCircleOutlined
+                                onClick={() => {
+                                  remove(field.name);
+                                  submitForm();
+                                }}
+                              />
+                            </div>
+                          ))}
+                          {errors.length > 0 && (
+                            <div style={{ color: 'red' }}>
+                              {errors.join(', ')}
+                            </div>
+                          )}
+                        </div>
                       </div>
+                      <Button
+                        icon={<PlusOutlined />}
+                        type="primary"
+                        onClick={() => {
+                          add({
+                            firstArg: null,
+                            compareType: 'EQUAL',
+                            secondArg: null,
+                          });
+                          submitForm();
+                        }}
+                      >
+                        新增
+                      </Button>
                     </div>
-                    <Button
-                      icon={<PlusOutlined />}
-                      type="primary"
-                      onClick={() => {
-                        add({
-                          firstArgs: [],
-                          compareType: 'EQUAL',
-                          secondArg: [],
-                        });
-                        submitForm();
-                      }}
-                    >
-                      新增
-                    </Button>
-                  </div>
-                )}
+                  );
+                }}
               </Form.List>
             </Form>
           )}
@@ -333,7 +347,13 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
     key: string,
   ) => {
     const newConditionBranchConfigs = (params.conditionBranchConfigs || []).map(
-      (item) => (item.uuid === key ? { ...values } : { ...item }),
+      (item) => {
+        if (!values.conditionArgs) {
+          return item.uuid === key ? { ...item, ...values } : { ...item };
+        } else {
+          return item.uuid === key ? { ...item, ...values } : { ...item };
+        }
+      },
     );
 
     Modified({ ...params, conditionBranchConfigs: newConditionBranchConfigs });
@@ -390,7 +410,9 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
               return (
                 <ConditionList
                   key={item.uuid}
-                  title={branchTypeMap[item.branchType]}
+                  title={
+                    branchTypeMap[item.branchType as 'IF' | 'ELSE_IF' | 'ELSE']
+                  }
                   initialValues={item}
                   removeItem={removeItem}
                   handleChangeNodeConfig={handleChangeNodeConfig}

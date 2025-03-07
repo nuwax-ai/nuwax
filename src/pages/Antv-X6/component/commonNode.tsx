@@ -41,6 +41,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   initialValues,
   showCopy = false,
   disabledAdd,
+  disabledDelete,
 }) => {
   const [form] = Form.useForm();
 
@@ -168,9 +169,11 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                             <FileDoneOutlined className="margin-right cursor-pointer" />
                           </Popover>
                         )}
-                        <Form.Item name={[item.name, 'require']} noStyle>
-                          <DeleteOutlined onClick={() => remove(item.name)} />
-                        </Form.Item>
+                        {!disabledDelete && (
+                          <Form.Item name={[item.name, 'require']} noStyle>
+                            <DeleteOutlined onClick={() => remove(item.name)} />
+                          </Form.Item>
+                        )}
                       </div>
                     </Form.Item>
                   </div>

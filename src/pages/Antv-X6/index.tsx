@@ -5,6 +5,7 @@ import Constant from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import service, {
   IgetDetails,
+  IPublish,
   ITestRun,
   IUpdateDetails,
 } from '@/services/workflow';
@@ -60,6 +61,7 @@ const Workflow: React.FC = () => {
     innerPreviousNodes: [],
     argMap: {},
   });
+  // const [isUpdate, setIsUpdate] = useState<boolean>(false)
   // 打开和关闭新增组件
   const [open, setOpen] = useState(false);
   // 展示修改工作流的弹窗
@@ -124,6 +126,9 @@ const Workflow: React.FC = () => {
       // 获取节点和边的数据
       const _nodeList = _res.data.nodes;
       const _edgeList = getEdges(_nodeList);
+      if (_res.data.extension && _res.data.extension.size) {
+        graphRef.current.changeGraphZoom(_res.data.extension.size);
+      }
       // 修改数据，更新画布
       setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
     } catch (error) {
@@ -133,14 +138,15 @@ const Workflow: React.FC = () => {
 
   // 修改当前工作流的基础信息
   const onConfirm = async (value: IUpdateDetails) => {
+    if (!value.name) return;
     if (showCreateWorkflow) {
       setShowCreateWorkflow(false);
     }
-
     const _res = await service.updateDetails(value);
     if (_res.code === Constant.success) {
       changeUpdateTime();
-      setInfo({ ...(info as IgetDetails), extension: value.extension });
+      // setInfo({ ...(info as IgetDetails), extension: value.extension });
+      getDetails();
     }
   };
   // 调整画布的大小
@@ -159,7 +165,26 @@ const Workflow: React.FC = () => {
       extension: { size: val },
     } as IUpdateDetails);
   };
-
+  // 获取当前节点的参数
+  const getRefernece = async (child: ChildNode) => {
+    // 获取节点需要的引用参数
+    const _res = await service.getOutputArgs(Number(child.id));
+    if (_res.code === Constant.success) {
+      if (
+        _res.data &&
+        _res.data.previousNodes &&
+        _res.data.previousNodes.length
+      ) {
+        setReferenceList(_res.data);
+      } else {
+        setReferenceList({
+          previousNodes: [],
+          innerPreviousNodes: [],
+          argMap: {},
+        });
+      }
+    }
+  };
   // 查询节点的指定信息
   const getNodeConfig = async (id: number) => {
     const _res = await service.getNodeConfig(id);
@@ -170,6 +195,8 @@ const Workflow: React.FC = () => {
 
   // 更新节点数据
   const changeNode = async (config: ChildNode, update?: boolean) => {
+    // 更改状态，当前有节点再更新
+    // setIsUpdate(true)
     graphRef.current.updateNode(config.id, config);
     if (foldWrapItem.id === config.id) {
       setFoldWrapItem(config);
@@ -181,7 +208,9 @@ const Workflow: React.FC = () => {
       }
       changeUpdateTime();
     }
+    // setIsUpdate(false)
   };
+
   // 点击组件，显示抽屉
   const changeDrawer = async (child: ChildNode | null) => {
     setTestRun(false);
@@ -200,7 +229,6 @@ const Workflow: React.FC = () => {
         return child;
       });
     }
-
     // 如果有组件正在展示,那么就要看是否修改了参数,
     // 如果修改了参数,那么就提交数据
 
@@ -210,24 +238,9 @@ const Workflow: React.FC = () => {
     if (child.nodeConfig.outputArgs === null) {
       child.nodeConfig.outputArgs = [];
     }
-
-    // 获取节点需要的引用参数
-    const _res = await service.getOutputArgs(Number(child.id));
-    if (_res.code === Constant.success) {
-      if (
-        _res.data &&
-        _res.data.previousNodes &&
-        _res.data.previousNodes.length
-      ) {
-        setReferenceList(_res.data);
-      } else {
-        setReferenceList({
-          previousNodes: [],
-          innerPreviousNodes: [],
-          argMap: {},
-        });
-      }
-    }
+    setTimeout(async () => {
+      getRefernece(child);
+    }, 500);
   };
   // 新增节点
   const addNode = async (
@@ -335,12 +348,25 @@ const Workflow: React.FC = () => {
     if (_res.code !== Constant.success) {
       graphRef.current.deleteEdge(id);
     }
+
+    setFoldWrapItem((prev) => {
+      // 这里的prev是最新值
+      if (Number(targetId) === prev.id) {
+        getRefernece(prev);
+      }
+      return prev; // 如果不修改状态就直接返回原值
+    });
   };
 
   // 发布，保存数据
-  const onSubmit = () => {
+  const onSubmit = async (values: IPublish) => {
     // 获取所有节点,保存位置
-    console.log('onSubmit', graphParams);
+    const _params = { ...values, workflowId: info?.id };
+    _params.scope = _params.scope[0] as 'Space' | 'Tenant';
+    const _res = await service.publishWorkflow(_params);
+    if (_res.code === Constant.success) {
+      message.success('发布成功');
+    }
   };
 
   const handleNodeChange = (action: string, data: ChildNode) => {
@@ -552,26 +578,31 @@ const Workflow: React.FC = () => {
     const _nodeList = _res.data.nodes;
     setFoldWrapItem(_res.data.startNode);
     setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
-    setVisible(false);
     setTestRun(true);
+    if (!visible) {
+      setVisible(true);
+    }
+    // setVisible(false);
     // testRunAllNode();
   };
 
   // 节点试运行
-  const runTest = (type: string, params?: DefaultObjectType) => {
+  const runTest = async (type: string, params?: DefaultObjectType) => {
     setErrorParams({
       errorList: [],
       show: false,
     });
     if (type === 'Start') {
-      getDetails();
       const _params = {
         workflowId: info?.id as number,
         params,
         requestId: uuidv4(), // 使用uuid生成唯一ID
       };
       localStorage.setItem('testRun', JSON.stringify(_params));
-      testRunAllNode(_params);
+      const _res = await service.validWorkflow(info?.id as number);
+      if (_res.code === Constant.success) {
+        testRunAllNode(_params);
+      }
     } else if (type === 'QA') {
       let _paramsStr = localStorage.getItem('testRun');
       if (_paramsStr !== null) {

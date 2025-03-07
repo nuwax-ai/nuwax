@@ -45,6 +45,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
       message.success('知识库已创建成功');
       const data: KnowledgeBaseInfo = {
         id: result,
+        spaceId,
         ...params[0],
       };
       onConfirm(data);

@@ -9,6 +9,7 @@ export const request: RequestConfig = {
   errorConfig: {
     // 错误抛出
     errorThrower: (res: RequestResponse<null>) => {
+      console.log(res);
       const { code, displayCode, message, data, debugInfo, success, tid } = res;
 
       if (!success) {

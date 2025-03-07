@@ -45,7 +45,8 @@ const Created: React.FC<CreatedProp> = ({
 
   // 打开、关闭创建弹窗
   const [showCreate, setShowCreate] = useState(false);
-
+  // 搜索栏的
+  const [search, setSearch] = useState<string>('');
   // 当前顶部被选中被选中的
   const [selected, SetSelected] = useState<{
     label: string;
@@ -134,7 +135,6 @@ const Created: React.FC<CreatedProp> = ({
 
   // 获取已经收藏的list
   const getCollectList = async (params: IGetList) => {
-    if (params.page >= sizes) return;
     const _type = selected.key.toLowerCase();
     const _res = await service.collectList(_type, params);
     setList([..._res.data]);
@@ -183,7 +183,7 @@ const Created: React.FC<CreatedProp> = ({
       page: 1,
       pageSize: 10,
     };
-    getList(checkTag, _params);
+    getList(selected.key, _params);
     setPagination(_params);
   };
 
@@ -204,6 +204,7 @@ const Created: React.FC<CreatedProp> = ({
   };
 
   const callInterface = (val: string, params: IGetList) => {
+    console.log(val);
     // 通过左侧菜单决定调用哪个接口
     switch (val) {
       case 'library':
@@ -237,6 +238,7 @@ const Created: React.FC<CreatedProp> = ({
   const changeTitle = (val: RadioChangeEvent | string) => {
     if (!val) return;
     setSelectMenu('all');
+    setSearch('');
     // 获取被选中的key
     let _select;
     if (typeof val === 'string') {
@@ -246,8 +248,6 @@ const Created: React.FC<CreatedProp> = ({
     }
     // 遍历找到对应的选项
     const _item = buttonList.find((item) => item.key === _select);
-
-    console.log(_item);
 
     const _params = {
       page: 1,
@@ -341,8 +341,12 @@ const Created: React.FC<CreatedProp> = ({
           <Input
             className="margin-bottom"
             allowClear
+            value={search}
             placeholder="搜索"
             prefix={<SearchOutlined />}
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
             onPressEnter={(event) => {
               if (event.key === 'Enter') {
                 onSearch((event.currentTarget as HTMLInputElement).value);
@@ -390,22 +394,26 @@ const Created: React.FC<CreatedProp> = ({
                     <span className="margin-left-6">
                       发布于{getTime(item.created!)}
                     </span>
-                    <Divider type="vertical" />
-                    {item.collect && (
-                      <StarFilled
-                        className="collect-star icon-margin"
-                        onClick={() => collectAndUnCollect(item)}
-                      />
+                    {selected.key !== AgentComponentTypeEnum.Knowledge && (
+                      <>
+                        <Divider type="vertical" />
+                        {item.collect && (
+                          <StarFilled
+                            className="collect-star icon-margin"
+                            onClick={() => collectAndUnCollect(item)}
+                          />
+                        )}
+                        {!item.collect && (
+                          <StarOutlined
+                            className="icon-margin"
+                            onClick={() => collectAndUnCollect(item)}
+                          />
+                        )}
+                        <span className="margin-left-6">
+                          {item.statistics ? item.statistics.collectCount : 0}
+                        </span>
+                      </>
                     )}
-                    {!item.collect && (
-                      <StarOutlined
-                        className="icon-margin"
-                        onClick={() => collectAndUnCollect(item)}
-                      />
-                    )}
-                    <span className="margin-left-6">
-                      {item.statistics ? item.statistics.collectCount : 0}
-                    </span>
                   </div>
                 </div>
               </div>
@@ -433,6 +441,7 @@ const Created: React.FC<CreatedProp> = ({
       />
       <CreateNewPlugin
         onConfirm={onConfirm}
+        spaceId={spaceId}
         onCancel={() => setShowCreate(false)}
         open={showCreate && selected.key === AgentComponentTypeEnum.Plugin}
         mode={CreateUpdateModeEnum.Create}

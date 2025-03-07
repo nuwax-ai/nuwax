@@ -1,4 +1,5 @@
 import { NodeTypeEnum } from '@/types/enums/common';
+import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { CreatorInfo } from '@/types/interfaces/agent';
 import { DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
@@ -106,6 +107,14 @@ interface IExecuteNode {
   requestId?: number | string;
   params?: DefaultObjectType;
 }
+
+// 发布工作流
+export interface IPublish {
+  workflowId?: number;
+  scope: PluginPublishScopeEnum;
+  remark?: string;
+}
+
 // 获取工作流的详细信息
 export async function getDetails(
   id: number,
@@ -120,6 +129,16 @@ export async function updateDetails(
   data: IUpdateDetails,
 ): Promise<RequestResponse<null>> {
   return request('/api/workflow/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 获取工作流的详细信息
+export async function publishWorkflow(
+  data: IPublish,
+): Promise<RequestResponse<null>> {
+  return request(`/api/workflow/publish`, {
     method: 'POST',
     data,
   });
@@ -214,6 +233,12 @@ export async function executeNode(
   });
 }
 
+// 验证工作流配置的完整性
+export async function validWorkflow(id: number): Promise<RequestResponse<any>> {
+  return request(`/api/workflow/valid/${id}`, {
+    method: 'GET',
+  });
+}
 export default {
   getDetails,
   updateDetails,
@@ -227,4 +252,6 @@ export default {
   getOutputArgs,
   getNodeConfig,
   executeNode,
+  publishWorkflow,
+  validWorkflow,
 };

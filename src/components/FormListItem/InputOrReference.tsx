@@ -1,10 +1,11 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { Dropdown, Input, Tag } from 'antd';
-
+// import { useEffect } from 'react'
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
 import './index.less';
 import { InputOrReferenceProps } from './type';
+
 const InputOrReference: React.FC<InputOrReferenceProps> = ({
   referenceList,
   placeholder,
@@ -102,7 +103,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
             key: 'no-data',
             label: (
               <div style={{ padding: 8, color: 'red' }}>
-                需要上级节点添加连线
+                未添加上级节点连线或上级节点无参数
               </div>
             ),
             disabled: true,
@@ -120,6 +121,19 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   //     return `${parent.name} - ${value.name}`;
   //   }
   // };
+
+  // useEffect(() => {
+  //   if (value && (!referenceList.previousNodes || !referenceList.previousNodes.length) && fieldName) {
+  //     console.log('abc123')
+  //     // 获取父路径数组
+  //     const basePath = fieldName.slice(0, -1);
+  //     // 获取当前引用的类型
+  //     const type = form?.getFieldValue([...basePath, 'bindValueType']); // 使用数组路径
+  //     if (type === 'Reference') {
+  //       updateValues?.('', 'Input'); // 清除当前值并重置为Input类型
+  //     }
+  //   }
+  // }, [value])
 
   return (
     <div className="input-or-reference dis-sb" style={style}>
