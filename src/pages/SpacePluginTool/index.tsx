@@ -15,6 +15,7 @@ import { apiPluginHttpUpdate, apiPluginInfo } from '@/services/plugin';
 import {
   CreateUpdateModeEnum,
   DataTypeEnum,
+  HttpContentTypeEnum,
   HttpMethodEnum,
 } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
@@ -88,9 +89,9 @@ const SpacePluginTool: React.FC = () => {
         const { method, url, contentType, timeout, inputArgs, outputArgs } =
           result.config;
         form.setFieldsValue({
-          method,
+          method: method || HttpMethodEnum.GET,
           url,
-          contentType,
+          contentType: contentType || HttpContentTypeEnum.JSON,
           timeout,
         });
         // 默认展开的入参配置key
@@ -381,6 +382,7 @@ const SpacePluginTool: React.FC = () => {
             form={form}
             initialValues={{
               method: HttpMethodEnum.GET,
+              contentType: HttpContentTypeEnum.JSON,
             }}
             layout="vertical"
             requiredMark={customizeRequiredMark}

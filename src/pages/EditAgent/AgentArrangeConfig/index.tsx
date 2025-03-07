@@ -8,31 +8,25 @@ import {
   apiAgentComponentList,
 } from '@/services/agentConfig';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { KnowledgeDataTypeEnum } from '@/types/enums/library';
-import {
-  AgentConfigMemoryEnum,
-  AgentConfigSkillEnum,
-  ConversationalExperienceEnum,
-  OpenCloseEnum,
-} from '@/types/enums/space';
+import { AgentArrangeConfigEnum, OpenCloseEnum } from '@/types/enums/space';
 import type { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { AgentArrangeConfigProps } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
 import VariableList from './VariableList';
 // import { CaretDownOutlined } from '@ant-design/icons';
-import CreateVariables from './CreateVariables';
 import { CollapseProps, message } from 'antd';
 import classNames from 'classnames';
 import React, { MouseEvent, useEffect, useMemo, useState } from 'react';
 import { useModel, useRequest } from 'umi';
-import ConfigOption from './ConfigOptionCollapse';
+import ConfigOptionCollapse from './ConfigOptionCollapse';
 import ConfigOptionsHeader from './ConfigOptionsHeader';
-import CreateTrigger from './CreateTrigger';
+import CreateVariables from './CreateVariables';
+// import CreateTrigger from './CreateTrigger';
 import styles from './index.less';
 import KnowledgeTextList from './KnowledgeList';
 import LongMemoryContent from './LongMemoryContent';
 import PluginList from './PluginList';
-import TriggerContent from './TriggerContent';
+// import TriggerContent from './TriggerContent';
 import WorkflowList from './WorkflowList';
 
 const cx = classNames.bind(styles);
@@ -47,9 +41,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   onChangeEnable,
   onSet,
 }) => {
-  const [triggerChecked, setTriggerChecked] = useState<boolean>(false);
+  // const [triggerChecked, setTriggerChecked] = useState<boolean>(false);
   // 触发器弹窗
-  const [openTriggerModel, setOpenTriggerModel] = useState<boolean>(false);
+  // const [openTriggerModel, setOpenTriggerModel] = useState<boolean>(false);
   // 变量弹窗
   const [openVariableModel, setOpenVariableModel] = useState<boolean>(false);
   // 智能体模型组件列表
@@ -64,11 +58,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const { show, setShow } = useModel('model');
 
   // 根据组件类型，过滤组件
-  const filterList = (
-    list: AgentComponentInfo[],
-    type: AgentComponentTypeEnum,
-  ) => {
-    return list?.filter((item) => item.type === type) || [];
+  const filterList = (type: AgentComponentTypeEnum) => {
+    return agentComponentList?.filter((item) => item.type === type) || [];
   };
 
   // 绑定的变量信息
@@ -76,6 +67,47 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     return agentComponentList?.find(
       (item) => item.type === AgentComponentTypeEnum.Variable,
     ) as AgentComponentInfo;
+  }, [agentComponentList]);
+
+  // 技能列表 - 当前激活 tab 面板的 key
+  const skillActiveKey = useMemo(() => {
+    const skill: AgentArrangeConfigEnum[] = [];
+    for (let i = 0; i < agentComponentList.length; i++) {
+      if (agentComponentList[i].type === AgentComponentTypeEnum.Plugin) {
+        if (!skill.includes(AgentArrangeConfigEnum.Plugin)) {
+          skill.push(AgentArrangeConfigEnum.Plugin);
+        }
+        continue;
+      }
+      if (agentComponentList[i].type === AgentComponentTypeEnum.Workflow) {
+        if (!skill.includes(AgentArrangeConfigEnum.Workflow)) {
+          skill.push(AgentArrangeConfigEnum.Workflow);
+        }
+        continue;
+      }
+      if (agentComponentList[i].type === AgentComponentTypeEnum.Trigger) {
+        if (!skill.includes(AgentArrangeConfigEnum.Trigger)) {
+          skill.push(AgentArrangeConfigEnum.Trigger);
+        }
+      }
+    }
+    return skill;
+  }, [agentComponentList]);
+
+  // 知识 - 当前激活 tab 面板的 key
+  const knowledgeActiveKey = useMemo(() => {
+    const index = agentComponentList?.findIndex(
+      (item) => item.type === AgentComponentTypeEnum.Knowledge,
+    );
+    return index > -1 ? [AgentArrangeConfigEnum.Text] : [];
+  }, [agentComponentList]);
+
+  // 记忆 - 当前激活 tab 面板的 key
+  const memoryActiveKey = useMemo(() => {
+    const index = agentComponentList?.findIndex(
+      (item) => item.type === AgentComponentTypeEnum.Variable,
+    );
+    return index > -1 ? [AgentArrangeConfigEnum.Variable] : [];
   }, [agentComponentList]);
 
   // 查询智能体配置组件列表
@@ -126,43 +158,39 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     }
   }, [agentId]);
 
-  // 添加插件
-  const handlerPluginPlus = (e: MouseEvent) => {
+  // 添加插件、工作流、知识库等
+  const handlerComponentPlus = (
+    e: MouseEvent,
+    type: AgentComponentTypeEnum,
+  ) => {
     e.stopPropagation();
-    setCheckTag(AgentComponentTypeEnum.Plugin);
-    setShow(true);
-  };
-
-  // 添加工作流
-  const handlerWorkflowPlus = (e: MouseEvent) => {
-    e.stopPropagation();
-    setCheckTag(AgentComponentTypeEnum.Workflow);
+    setCheckTag(type);
     setShow(true);
   };
 
   // 添加触发器
-  const handlerTriggerPlus = (e: MouseEvent) => {
-    e.stopPropagation();
-    setOpenTriggerModel(true);
-  };
+  // const handlerTriggerPlus = (e: MouseEvent) => {
+  //   e.stopPropagation();
+  //   setOpenTriggerModel(true);
+  // };
 
-  const handlerSuccessCreateTrigger = () => {
-    setOpenTriggerModel(false);
-    // 查询智能体配置组件列表
-    run(agentId);
-  };
-
-  // 添加文本
-  const handlerTextPlus = (e: MouseEvent) => {
-    e.stopPropagation();
-    setCheckTag(AgentComponentTypeEnum.Knowledge);
-    setShow(true);
-  };
+  // const handlerSuccessCreateTrigger = () => {
+  //   setOpenTriggerModel(false);
+  //   // 查询智能体配置组件列表
+  //   run(agentId);
+  // };
 
   // 添加变量
   const handlerVariablePlus = (e: MouseEvent) => {
     e.stopPropagation();
     setOpenVariableModel(true);
+  };
+
+  // 确定添加、更新变量
+  const handleConfirmVariables = () => {
+    setOpenVariableModel(false);
+    // 查询智能体配置组件列表
+    run(agentId);
   };
 
   // 添加数据库表
@@ -178,66 +206,85 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   //   console.log('handlerDirectivePlus');
   // };
 
-  const handlerChangeTrigger = (checked: boolean) => {
-    setTriggerChecked(checked);
-  };
+  // const handlerChangeTrigger = (checked: boolean) => {
+  //   setTriggerChecked(checked);
+  // };
 
+  // 技能列表
   const SkillList: CollapseProps['items'] = [
     {
-      key: AgentConfigSkillEnum.Plugin,
+      key: AgentArrangeConfigEnum.Plugin,
       label: '插件',
       children: (
         <PluginList
-          list={filterList(agentComponentList, AgentComponentTypeEnum.Plugin)}
+          list={filterList(AgentComponentTypeEnum.Plugin)}
           onSet={onSet}
           onDel={runAgentComponentDel}
         />
       ),
-      extra: <TooltipIcon title="添加插件" onClick={handlerPluginPlus} />,
+      extra: (
+        <TooltipIcon
+          title="添加插件"
+          onClick={(e: MouseEvent) =>
+            handlerComponentPlus(e, AgentComponentTypeEnum.Plugin)
+          }
+        />
+      ),
     },
     {
-      key: AgentConfigSkillEnum.Workflow,
+      key: AgentArrangeConfigEnum.Workflow,
       label: '工作流',
       children: (
         <WorkflowList
-          list={filterList(agentComponentList, AgentComponentTypeEnum.Workflow)}
+          list={filterList(AgentComponentTypeEnum.Workflow)}
           onDel={runAgentComponentDel}
         />
       ),
-      extra: <TooltipIcon title="添加工作流" onClick={handlerWorkflowPlus} />,
-    },
-    {
-      key: AgentConfigSkillEnum.Trigger,
-      label: '触发器',
-      children: (
-        <TriggerContent
-          list={filterList(agentComponentList, AgentComponentTypeEnum.Trigger)}
-          checked={triggerChecked}
-          onChange={handlerChangeTrigger}
-          onDel={runAgentComponentDel}
+      extra: (
+        <TooltipIcon
+          title="添加工作流"
+          onClick={(e: MouseEvent) =>
+            handlerComponentPlus(e, AgentComponentTypeEnum.Workflow)
+          }
         />
       ),
-      extra: <TooltipIcon title="添加触发器" onClick={handlerTriggerPlus} />,
     },
+    // {
+    //   key: AgentArrangeConfigEnum.Trigger,
+    //   label: '触发器',
+    //   children: (
+    //     <TriggerContent
+    //       list={filterList(AgentComponentTypeEnum.Trigger)}
+    //       checked={triggerChecked}
+    //       onChange={handlerChangeTrigger}
+    //       onDel={runAgentComponentDel}
+    //     />
+    //   ),
+    //   extra: <TooltipIcon title="添加触发器" onClick={handlerTriggerPlus} />,
+    // },
   ];
 
   const KnowledgeList: CollapseProps['items'] = [
     {
-      key: KnowledgeDataTypeEnum.Text,
+      key: AgentArrangeConfigEnum.Text,
       label: '文本',
       children: (
         <KnowledgeTextList
-          list={filterList(
-            agentComponentList,
-            AgentComponentTypeEnum.Knowledge,
-          )}
+          list={filterList(AgentComponentTypeEnum.Knowledge)}
           onDel={runAgentComponentDel}
         />
       ),
-      extra: <TooltipIcon title="添加知识库" onClick={handlerTextPlus} />,
+      extra: (
+        <TooltipIcon
+          title="添加知识库"
+          onClick={(e: MouseEvent) =>
+            handlerComponentPlus(e, AgentComponentTypeEnum.Knowledge)
+          }
+        />
+      ),
     },
     // {
-    //   key: KnowledgeDataTypeEnum.Table,
+    //   key: AgentArrangeConfigEnum.Table,
     //   label: '表格',
     //   children: (
     //     <p>
@@ -248,9 +295,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     // },
   ];
 
+  // 记忆
   const MemoryList: CollapseProps['items'] = [
     {
-      key: AgentConfigMemoryEnum.Variable,
+      key: AgentArrangeConfigEnum.Variable,
       label: '变量',
       children: (
         <VariableList
@@ -261,13 +309,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       extra: <TooltipIcon title="添加变量" onClick={handlerVariablePlus} />,
     },
     // {
-    //   key: AgentConfigMemoryEnum.Data_Base,
+    //   key: AgentArrangeConfigEnum.Data_Base,
     //   label: '数据库',
     //   children: <p>以表格结构组织数据，可实现类似书签和图书管理等功能。</p>,
     //   extra: <TooltipIcon title="添加表" onClick={handlerDatabasePlus} />,
     // },
     {
-      key: AgentConfigMemoryEnum.Long_Memory,
+      key: AgentArrangeConfigEnum.Long_Memory,
       label: '长期记忆',
       children: (
         <LongMemoryContent openLongMemory={agentConfigInfo?.openLongMemory} />
@@ -285,7 +333,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       ),
     },
     // {
-    //   key: AgentConfigMemoryEnum.File_Box,
+    //   key: AgentArrangeConfigEnum.File_Box,
     //   label: '文件盒子',
     //   children: (
     //     <p>
@@ -304,14 +352,15 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     // },
   ];
 
+  // 对话体验
   const ConversationalExperienceList: CollapseProps['items'] = [
     {
-      key: ConversationalExperienceEnum.Opening_Remarks,
+      key: AgentArrangeConfigEnum.Opening_Remarks,
       label: '开场白',
       children: <p>这里是开场白内容</p>,
     },
     {
-      key: ConversationalExperienceEnum.User_Problem_Suggestion,
+      key: AgentArrangeConfigEnum.User_Problem_Suggestion,
       label: '用户问题建议',
       children: <p>在每次智能体回复后，不会提供任何用户问题建议</p>,
       extra: (
@@ -327,7 +376,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       ),
     },
     // {
-    //   key: ConversationalExperienceEnum.Shortcut_Instruction,
+    //   key: AgentArrangeConfigEnum.Shortcut_Instruction,
     //   label: '快捷指令',
     //   children: (
     //     <p>
@@ -350,13 +399,22 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   return (
     <div className={classNames('overflow-y', 'flex-1', 'px-16', 'py-12')}>
       <ConfigOptionsHeader title="技能" />
-      <ConfigOption items={SkillList} />
+      <ConfigOptionCollapse
+        items={SkillList}
+        defaultActiveKey={skillActiveKey}
+      />
       <ConfigOptionsHeader title="知识" />
-      <ConfigOption items={KnowledgeList} />
+      <ConfigOptionCollapse
+        items={KnowledgeList}
+        defaultActiveKey={knowledgeActiveKey}
+      />
       <ConfigOptionsHeader title="记忆" />
-      <ConfigOption items={MemoryList} />
+      <ConfigOptionCollapse
+        items={MemoryList}
+        defaultActiveKey={memoryActiveKey}
+      />
       <ConfigOptionsHeader title="对话体验" />
-      <ConfigOption items={ConversationalExperienceList} />
+      <ConfigOptionCollapse items={ConversationalExperienceList} />
       {/*添加插件、工作流、知识库、数据库弹窗*/}
       <Created
         open={show}
@@ -367,17 +425,19 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         onAdded={handleAddComponent}
       />
       {/*添加触发器弹窗*/}
-      <CreateTrigger
-        agentId={agentId}
-        open={openTriggerModel}
-        title="创建触发器"
-        onCancel={() => setOpenTriggerModel(false)}
-        onConfirm={handlerSuccessCreateTrigger}
-      />
+      {/*<CreateTrigger*/}
+      {/*  agentId={agentId}*/}
+      {/*  open={openTriggerModel}*/}
+      {/*  title="创建触发器"*/}
+      {/*  onCancel={() => setOpenTriggerModel(false)}*/}
+      {/*  onConfirm={handlerSuccessCreateTrigger}*/}
+      {/*/>*/}
+      {/*创建变量弹窗*/}
       <CreateVariables
         open={openVariableModel}
         variablesInfo={variablesInfo}
         onCancel={() => setOpenVariableModel(false)}
+        onConfirm={handleConfirmVariables}
       />
     </div>
   );

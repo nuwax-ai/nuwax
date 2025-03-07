@@ -1,8 +1,6 @@
 import { apiAgentComponentVariableUpdate } from '@/services/agentConfig';
-import {
-  AgentComponentInfo,
-  BindConfigWithSub,
-} from '@/types/interfaces/agent';
+import { BindConfigWithSub } from '@/types/interfaces/agent';
+import type { CreateVariablesProps } from '@/types/interfaces/agentConfig';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Input, message, Modal, Space, Table } from 'antd';
 import classNames from 'classnames';
@@ -12,23 +10,20 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface CreateVariablesProps {
-  open: boolean;
-  variablesInfo: AgentComponentInfo;
-  onCancel: () => void;
-}
-
 // 创建、更新变量弹窗
 const CreateVariables: React.FC<CreateVariablesProps> = ({
   open,
   variablesInfo,
   onCancel,
+  onConfirm,
 }) => {
   const [inputData, setInputData] = useState<BindConfigWithSub[]>([]);
 
   useEffect(() => {
-    if (variablesInfo?.bindConfig?.variables?.length > 0) {
-      const _variables = variablesInfo?.bindConfig?.variables?.map((item) => {
+    const variables: BindConfigWithSub[] =
+      variablesInfo?.bindConfig?.variables || [];
+    if (variables?.length > 0) {
+      const _variables = variables.map((item) => {
         return {
           ...item,
           key: Math.random(),
@@ -46,7 +41,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       debounceWait: 300,
       onSuccess: () => {
         message.success('变量更新成功');
-        onCancel();
+        onConfirm();
       },
     },
   );
@@ -69,7 +64,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
     _inputData.push(data);
     setInputData(_inputData);
   };
-  const handleDel = (index) => {
+  const handleDel = (index: number) => {
     const _inputData = [...inputData];
     _inputData.splice(index, 1);
     setInputData(_inputData);
@@ -100,6 +95,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
           ) : (
             <Input
               placeholder="输入变量名称"
+              value={value}
               onChange={(e) => handleInputValue(index, 'name', e.target.value)}
             />
           )}
@@ -117,6 +113,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
           ) : (
             <Input
               placeholder="输入变量描述信息"
+              value={value}
               onChange={(e) =>
                 handleInputValue(index, 'description', e.target.value)
               }
@@ -139,7 +136,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       dataIndex: 'bindValue',
       key: 'bindValue',
       width: 150,
-      render: (_: string, record: BindConfigWithSub, index: number) => (
+      render: (value: string, record: BindConfigWithSub, index: number) => (
         <>
           {record?.systemVariable ? (
             <span>--</span>
@@ -147,6 +144,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
             <Space className={cx('flex', 'content-between')}>
               <Input
                 placeholder="输入默认值（选填）"
+                value={value}
                 onChange={(e) =>
                   handleInputValue(index, 'bindValue', e.target.value)
                 }
