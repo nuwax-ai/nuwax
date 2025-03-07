@@ -48,32 +48,26 @@ export enum SpaceApplicationListEnum {
   Team_Setting,
 }
 
-// 智能体配置技能枚举
-export enum AgentConfigSkillEnum {
-  Plugin,
-  Workflow,
+// 智能体配置 - 编排类型枚举
+export enum AgentArrangeConfigEnum {
+  Plugin = 'Plugin',
+  Workflow = 'Workflow',
   // 触发器
-  Trigger,
-}
-
-// 智能体配置记忆枚举
-export enum AgentConfigMemoryEnum {
-  Variable,
-  Data_Base,
+  Trigger = 'Trigger',
+  // 文本
+  Text = 'Text',
+  Variable = 'Variable',
+  Database = Database,
   // 长期记忆
-  Long_Memory,
+  Long_Memory = 'Long_Memory',
   // 文件盒子
-  File_Box,
-}
-
-// 智能体配置对话体验枚举
-export enum ConversationalExperienceEnum {
+  File_Box = 'File_Box',
   // 开场白
-  Opening_Remarks,
+  Opening_Remarks = 'Opening_Remarks',
   // 用户问题建议
-  User_Problem_Suggestion,
+  User_Problem_Suggestion = 'User_Problem_Suggestion',
   // 快捷指令
-  Shortcut_Instruction,
+  Shortcut_Instruction = 'Shortcut_Instruction',
 }
 
 // 是否开启问题建议,可用值:Open,Close

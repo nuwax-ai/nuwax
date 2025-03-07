@@ -153,6 +153,7 @@ export const PLUGIN_INPUT_CONFIG = {
   dataType: DataTypeEnum.String,
   inputType: InputTypeEnum.Query,
   require: false,
+  bindValue: '',
   enable: false,
 };
 

@@ -1,10 +1,12 @@
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
+import ConditionRender from '@/components/ConditionRender';
 
 const cx = classNames.bind(styles);
 
 export interface ParamsNameLabelProps {
+  require?: boolean;
   paramName: string;
   paramType: string;
 }
@@ -13,13 +15,16 @@ export interface ParamsNameLabelProps {
  * 参数名称label
  */
 const ParamsNameLabel: React.FC<ParamsNameLabelProps> = ({
+  require,
   paramName,
   paramType,
 }) => {
   return (
     <div className={cx('flex', 'items-center', styles.container)}>
       <span>{paramName}</span>
-      <span className={cx(styles.star)}>*</span>
+      <ConditionRender condition={require}>
+        <span className={cx(styles.star)}>*</span>
+      </ConditionRender>
       <span className={cx(styles['param-type'])}>{paramType}</span>
     </div>
   );

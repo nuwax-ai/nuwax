@@ -142,3 +142,11 @@ export interface KnowledgeSettingProps {
   agentComponentInfo: AgentComponentInfo;
   onCancel: () => void;
 }
+
+// 创建、更新变量弹窗组件
+export interface CreateVariablesProps {
+  open: boolean;
+  variablesInfo: AgentComponentInfo;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
