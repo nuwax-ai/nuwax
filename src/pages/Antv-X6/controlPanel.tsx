@@ -4,7 +4,7 @@ import {
   ToolOutlined,
 } from '@ant-design/icons';
 import { Button, Popover, Select } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import StencilContent from './component/stencil';
 import { Child } from './type';
 
@@ -19,30 +19,41 @@ interface ControlPanelProps {
   zoomSize?: number;
 }
 
-const options = [
-  { label: '缩放到50%', value: 0.5, displayValue: '50%' },
-  { label: '缩放到100%', value: 1, displayValue: '100%' },
-  { label: '缩放到150%', value: 1.5, displayValue: '150%' },
-  { label: '缩放到200%', value: 2, displayValue: '200%' },
-];
-
 const ControlPanel: React.FC<ControlPanelProps> = ({
   zoomSize = 1,
   dragChild,
   handleTestRun,
   changeGraph,
 }) => {
+  const [options, setOptions] = useState([
+    { label: '缩放到50%', value: 0.5, displayValue: '50%' },
+    { label: '缩放到100%', value: 1, displayValue: '100%' },
+    { label: '缩放到150%', value: 1.5, displayValue: '150%' },
+    { label: '缩放到200%', value: 2, displayValue: '200%' },
+  ]);
+
+  useEffect(() => {
+    if (!options.find((option) => option.value === zoomSize)) {
+      const _newOptions = {
+        label: `缩放到${Math.floor(zoomSize * 100)}%`,
+        value: zoomSize,
+        displayValue: `${Math.floor(zoomSize * 100)}%`,
+      };
+      setOptions((prev) => [...prev, _newOptions]);
+    }
+  }, [zoomSize]);
+
   const [open, setOpen] = useState(false);
   return (
     <>
       <div className="absolute-box">
         <Select
           options={options}
-          value={`${zoomSize * 100}%`}
-          optionLabelProp="displayValue"
+          value={zoomSize}
           onChange={changeGraph}
           style={{ width: 80 }}
           popupMatchSelectWidth={false}
+          optionLabelProp="displayValue"
         />
         {/* <HomeOutlined /> */}
         <Popover

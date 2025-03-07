@@ -608,7 +608,7 @@ const Workflow: React.FC = () => {
         dragChild={dragChild}
         changeGraph={changeGraph}
         handleTestRun={() => testRunAll()}
-        zoomSize={info ? Number(info.extension.size) || 1 : 1}
+        zoomSize={info?.extension?.size ? Number(info.extension.size) : 1}
       />
       <NodeDrawer
         visible={visible}
