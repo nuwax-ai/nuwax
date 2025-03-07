@@ -4,10 +4,11 @@ import type {
   AgentCardInfo,
   AgentComponentInfo,
   AgentConfigInfo,
+  BindConfigWithSub,
   TriggerTimeZone,
 } from '@/types/interfaces/agent';
 import type { UploadInfo } from '@/types/interfaces/common';
-import React from 'react';
+import React, { MouseEvent } from 'react';
 
 // 智能体header组件
 export interface AgentHeaderProps {
@@ -31,7 +32,6 @@ export interface AgentArrangeConfigProps {
   agentConfigInfo: AgentConfigInfo;
   // 是否开启
   onChangeEnable: (value: string, attr: string) => void;
-  onKnowledge: () => void;
   onSet: () => void;
 }
 
@@ -113,7 +113,8 @@ export interface LongMemoryContentProps {
 
 // 变量列表组件
 export interface VariableListProps {
-  list: AgentComponentInfo[];
+  onClick: (e: MouseEvent) => void;
+  list: BindConfigWithSub[];
 }
 
 // 聊天上传文件列表组件

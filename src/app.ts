@@ -1,15 +1,15 @@
 import { SUCCESS_CODE, USER_NO_LOGIN } from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import type { RequestResponse } from '@/types/interfaces/request';
+import { RequestConfig } from '@@/plugin-request/request';
 import { message } from 'antd';
 import { history } from 'umi';
-import { RequestConfig } from '@@/plugin-request/request';
-import type { RequestResponse } from '@/types/interfaces/request';
 
-export const request: RequestConfig  = {
+export const request: RequestConfig = {
   errorConfig: {
     // 错误抛出
     errorThrower: (res: RequestResponse<null>) => {
-      const {code, displayCode, message, data, debugInfo, success, tid} = res;
+      const { code, displayCode, message, data, debugInfo, success, tid } = res;
 
       if (!success) {
         const error: any = new Error(message);

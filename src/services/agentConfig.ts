@@ -148,7 +148,7 @@ export async function apiAgentComponentKnowledgeUpdate(
 
 // 删除智能体组件配置
 export async function apiAgentComponentDelete(
-  id: string,
+  id: number,
 ): Promise<RequestResponse<null>> {
   return request(`/api/agent/component/delete/${id}`, {
     method: 'POST',
@@ -177,7 +177,7 @@ export async function apiAgentAdd(
 
 // 查询智能体配置信息
 export async function apiAgentConfigInfo(
-  agentId: string,
+  agentId: number,
 ): Promise<RequestResponse<AgentConfigInfo>> {
   return request(`/api/agent/${agentId}`, {
     method: 'GET',
@@ -195,7 +195,7 @@ export async function apiAgentTriggerTimeZone(): Promise<
 
 // 查询空间智能体列表接口
 export async function apiAgentConfigList(
-  spaceId: string,
+  spaceId: number,
 ): Promise<RequestResponse<AgentConfigInfo[]>> {
   return request(`/api/agent/list/${spaceId}`, {
     method: 'GET',
@@ -204,7 +204,7 @@ export async function apiAgentConfigList(
 
 // 查询智能体历史配置信息接口
 export async function apiAgentConfigHistoryList(
-  agentId: string,
+  agentId: number,
 ): Promise<RequestResponse<AgentConfigHistoryInfo[]>> {
   return request(`/api/agent/config/history/list/${agentId}`, {
     method: 'GET',
@@ -213,7 +213,7 @@ export async function apiAgentConfigHistoryList(
 
 // 查询智能体配置组件列表
 export async function apiAgentComponentList(
-  agentId: string,
+  agentId: number,
 ): Promise<RequestResponse<AgentComponentInfo[]>> {
   return request(`/api/agent/component/list/${agentId}`, {
     method: 'GET',

@@ -1,6 +1,6 @@
-import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
+// import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
 import type { SystemTipsWordProps } from '@/types/interfaces/space';
-import { Button, Input, Tooltip } from 'antd';
+import { Input } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -15,16 +15,24 @@ const { TextArea } = Input;
 const SystemTipsWord: React.FC<SystemTipsWordProps> = ({ value, onChange }) => {
   return (
     <div className={cx('flex-1', 'px-16', 'py-16')}>
-      <div className={cx('flex', 'items-center', 'content-between', 'mb-16')}>
+      <div
+        className={cx(
+          'flex',
+          'items-center',
+          'content-between',
+          'mb-16',
+          'py-6',
+        )}
+      >
         <span className={cx(styles['system-tips'])}>系统提示词</span>
-        <Tooltip title="自动优化提示词" placement="top">
-          <Button
-            className={cx(styles['optimize-btn'])}
-            icon={<ICON_CONFIRM_STAR />}
-          >
-            优化
-          </Button>
-        </Tooltip>
+        {/*<Tooltip title="自动优化提示词" placement="top">*/}
+        {/*  <Button*/}
+        {/*    className={cx(styles['optimize-btn'])}*/}
+        {/*    icon={<ICON_CONFIRM_STAR />}*/}
+        {/*  >*/}
+        {/*    优化*/}
+        {/*  </Button>*/}
+        {/*</Tooltip>*/}
       </div>
       <TextArea
         rootClassName={styles['text-area']}
