@@ -9,6 +9,7 @@ import type { HistoryData } from '@/types/interfaces/space';
 import cloneDeep from 'lodash/cloneDeep';
 import { useState } from 'react';
 import { useMatch, useRequest } from 'umi';
+import { addChildNode, deleteNode, updateNodeField } from '@/utils/deepNode';
 
 const usePluginConfig = () => {
   const match = useMatch('/space/:spaceId/plugin/:pluginId');
@@ -46,125 +47,68 @@ const usePluginConfig = () => {
 
   // 入参配置 - changeValue
   const handleInputValue = (
-    index: number,
-    record: BindConfigWithSub,
+    key: string,
     attr: string,
     value: string | boolean,
   ) => {
-    const _inputConfigArgs = cloneDeep(inputConfigArgs);
-    // 第一级
-    if (_inputConfigArgs[index]?.key === record.key) {
-      _inputConfigArgs[index][attr] = value;
-    } else {
-      // 子级
-      const f_index = _inputConfigArgs.findIndex((item) => {
-        const childIndex = item.children?.findIndex(
-          (childItem) => childItem?.key === record.key,
-        );
-        return childIndex > -1;
-      });
-      _inputConfigArgs[f_index].children[index][attr] = value;
-    }
+    const _inputConfigArgs = updateNodeField(inputConfigArgs, key, attr, value);
     setInputConfigArgs(_inputConfigArgs);
   };
 
   // 出参配置 - changeValue
   const handleOutputValue = (
-    index: number,
-    record: BindConfigWithSub,
+    key: string,
     attr: string,
     value: string | boolean,
   ) => {
-    const _outputConfigArgs = cloneDeep(outputConfigArgs);
-    // 第一级
-    if (_outputConfigArgs[index]?.key === record.key) {
-      _outputConfigArgs[index][attr] = value;
-    } else {
-      // 子级
-      const f_index = _outputConfigArgs.findIndex((item) => {
-        const childIndex = item.children?.findIndex(
-          (childItem) => childItem?.key === record.key,
-        );
-        return childIndex > -1;
-      });
-      _outputConfigArgs[f_index].children[index][attr] = value;
-    }
+    const _outputConfigArgs = updateNodeField(outputConfigArgs, key, attr, value);
     setOutputConfigArgs(_outputConfigArgs);
   };
 
   // 入参配置 - 新增参数
-  const handleInputAddChild = (index: number) => {
-    const _inputConfigArgs = cloneDeep(inputConfigArgs);
-    if (!_inputConfigArgs[index]?.children) {
-      _inputConfigArgs[index].children = [];
-    }
-    _inputConfigArgs[index].children.push({
+  const handleInputAddChild = (key: string) => {
+    const newNode = {
       key: Math.random(),
       ...PLUGIN_INPUT_CONFIG,
-    });
+    };
+
+    const _inputConfigArgs = addChildNode(inputConfigArgs, key, newNode)
     setInputConfigArgs(_inputConfigArgs);
     // 设置默认展开行
     const _expandedRowKeys = [...expandedRowKeys];
-    if (!_expandedRowKeys.includes(_inputConfigArgs[index].key)) {
-      _expandedRowKeys.push(_inputConfigArgs[index].key as string);
+    if (!_expandedRowKeys.includes(key)) {
+      _expandedRowKeys.push(key);
       setExpandedRowKeys(_expandedRowKeys);
     }
   };
 
   // 出参配置 - 新增参数
-  const handleOutputAddChild = (index: number) => {
-    const _outputConfigArgs = cloneDeep(outputConfigArgs);
-    if (!_outputConfigArgs[index]?.children) {
-      _outputConfigArgs[index].children = [];
-    }
-    _outputConfigArgs[index].children.push({
+  const handleOutputAddChild = (key: string) => {
+    const newNode = {
       key: Math.random(),
       ...PLUGIN_OUTPUT_CONFIG,
-    });
+    };
+
+    const _outputConfigArgs = addChildNode(outputConfigArgs, key, newNode)
     setOutputConfigArgs(_outputConfigArgs);
+
     // 设置默认展开行
     const _outputExpandedRowKeys = [...outputExpandedRowKeys];
-    if (!_outputExpandedRowKeys.includes(_outputConfigArgs[index].key)) {
-      _outputExpandedRowKeys.push(_outputConfigArgs[index].key as string);
+    if (!_outputExpandedRowKeys.includes(key)) {
+      _outputExpandedRowKeys.push(key);
       setOutputExpandedRowKeys(_outputExpandedRowKeys);
     }
   };
 
   // 出参配置删除操作
-  const handleInputDel = (index: number, record: BindConfigWithSub) => {
-    const _inputConfigArgs = cloneDeep(inputConfigArgs);
-    // 第一级
-    if (_inputConfigArgs[index]?.key === record.key) {
-      _inputConfigArgs.splice(index, 1);
-    } else {
-      // 子级
-      const f_index = _inputConfigArgs.findIndex((item) => {
-        const childIndex = item.children?.findIndex(
-          (childItem) => childItem?.key === record.key,
-        );
-        return childIndex > -1;
-      });
-      _inputConfigArgs[f_index].children.splice(index, 1);
-    }
+  const handleInputDel = (key: string) => {
+    const _inputConfigArgs = deleteNode(inputConfigArgs, key)
     setInputConfigArgs(_inputConfigArgs);
   };
 
   // 出参配置删除操作
-  const handleOutputDel = (index: number, record: BindConfigWithSub) => {
-    const _outputConfigArgs = cloneDeep(outputConfigArgs);
-    // 第一级
-    if (_outputConfigArgs[index]?.key === record.key) {
-      _outputConfigArgs.splice(index, 1);
-    } else {
-      // 子级
-      const f_index = _outputConfigArgs.findIndex((item) => {
-        const childIndex = item.children?.findIndex(
-          (childItem) => childItem?.key === record.key,
-        );
-        return childIndex > -1;
-      });
-      _outputConfigArgs[f_index].children.splice(index, 1);
-    }
+  const handleOutputDel = (key: string) => {
+    const _outputConfigArgs = deleteNode(outputConfigArgs, key)
     setOutputConfigArgs(_outputConfigArgs);
   };
 
