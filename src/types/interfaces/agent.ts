@@ -101,7 +101,7 @@ export interface BindConfigWithSub {
   bindValue?: string;
   // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
   inputType?: InputTypeEnum;
-  // subArgs?: BindConfigWithSub[];
+  subArgs?: BindConfigWithSub[];
   children?: BindConfigWithSub[];
 }
 
