@@ -126,19 +126,20 @@ export const returnBackgroundColor = (type: string) => {
 };
 
 // 处理 Condition 和 IntentRecognition 节点的边
-const handleSpecialNodes = (node: ChildNode): Edge[] => {
+const handleSpecialNodes = (node: ChildNode, isLoopNode: boolean): Edge[] => {
   if (!node.nodeConfig) return [];
+  // 是否是循环内的节点
 
   let configs;
-  const { conditionBranchConfigs, intentConfigs, options } = node.nodeConfig;
   switch (node.type) {
     case 'Condition':
-      configs = conditionBranchConfigs;
+      configs = node.nodeConfig.conditionBranchConfigs;
       break;
     case 'IntentRecognition':
-      configs = intentConfigs;
+      configs = node.nodeConfig.intentConfigs;
+      break;
     default:
-      configs = options;
+      configs = node.nodeConfig.options;
       break;
   }
 
@@ -148,6 +149,7 @@ const handleSpecialNodes = (node: ChildNode): Edge[] => {
       return config.nextNodeIds.map((nextNodeId) => ({
         source: `${node.id}-${config.uuid}`,
         target: nextNodeId.toString(),
+        zIndex: isLoopNode ? 15 : 1,
       }));
     }) || []
   );
@@ -161,6 +163,7 @@ const handleLoopEdges = (node: ChildNode): Edge[] => {
     edges.push({
       source: `${node.id}-in`, // Loop 节点的 in 端口连接到内部起始节点
       target: node.innerStartNodeId.toString(),
+      zIndex: 15, // 新增层级设置
     });
   }
 
@@ -168,6 +171,7 @@ const handleLoopEdges = (node: ChildNode): Edge[] => {
     edges.push({
       source: node.innerEndNodeId.toString(),
       target: `${node.id}-out`, // 内部结束节点连接到 Loop 节点的 out 端口
+      zIndex: 15, // 新增层级设置
     });
   }
 
@@ -177,12 +181,16 @@ const handleLoopEdges = (node: ChildNode): Edge[] => {
 // 递归获取节点的边
 export const getEdges = (nodes: ChildNode[]): Edge[] => {
   const allEdges: Edge[] = nodes.flatMap((node) => {
+    let isLoopNode: boolean = false;
+    if (node.loopNodeId) {
+      isLoopNode = true;
+    }
     if (
       node.type === 'Condition' ||
       node.type === 'IntentRecognition' ||
       (node.type === 'QA' && node.nodeConfig.answerType === 'SELECT')
     ) {
-      return handleSpecialNodes(node);
+      return handleSpecialNodes(node, isLoopNode);
     } else if (node.type === 'Loop') {
       return handleLoopEdges(node);
     } else if (node.nextNodeIds && node.nextNodeIds.length > 0) {
@@ -190,18 +198,20 @@ export const getEdges = (nodes: ChildNode[]): Edge[] => {
         return {
           source: Number(node.id).toString(),
           target: Number(nextNodeId).toString(),
+          zIndex: isLoopNode ? 15 : 1,
         };
       });
     }
+
     return [];
   });
 
   // 过滤目标节点不存在的边（新增过滤逻辑）
   const validEdges = allEdges.filter((edge) => {
     // 检查目标节点是否存在于节点列表中
-    return nodes.some((n) => n.id.toString() === edge.target);
+    return nodes.some((n) => edge.target.includes(n.id.toString()));
   });
-
+  console.log(validEdges);
   // 使用 Set 来移除重复的边
   const uniqueEdges = new Set<string>();
   const resultEdges: Edge[] = [];
@@ -447,7 +457,7 @@ export const createEdge = (edge: Edge) => {
     attrs: { line: { stroke: '#A2B1C3', strokeWidth: 1 } },
     source: parseEndpoint(edge.source, 'out'),
     target: parseEndpoint(edge.target, 'in'),
-    zIndex: edge.source.includes('in') || edge.target.includes('out') ? 9 : 1,
+    zIndex: edge.zIndex,
   };
 };
 

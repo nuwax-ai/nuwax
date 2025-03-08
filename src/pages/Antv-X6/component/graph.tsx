@@ -115,7 +115,7 @@ const initGraph = ({
               strokeWidth: 1,
             },
           },
-          zIndex: -1,
+          // zIndex: -1,
         });
       },
       validateConnection({
@@ -296,26 +296,41 @@ const initGraph = ({
       const targetNodeId = edge.getTargetCellId();
 
       if (sourceNode.type === 'Loop') {
-        console.log(targetNode);
-        console.log(sourceNode.id);
         // 看连接的点是否时内部的节点
         if (targetNode.loopNodeId && targetNode.loopNodeId === sourceNode.id) {
           const _params = { ...sourceNode };
           _params.innerStartNodeId = targetNodeId;
           changeCondition(_params);
-          edge.setZIndex(999); // 使用专用方法设置层级
+          graph.addEdge(edge); // 新增行：显式添加边到
+          edge.prop('zIndex', 15);
+          edge.attr({
+            line: {
+              strokeDasharray: '', // 移除虚线样式
+              stroke: '#C2C8D5', // 设置边的颜色
+              strokeWidth: 1, // 设置边的宽度
+            },
+          });
           return;
         }
       }
 
       if (targetNode.type === 'Loop') {
         // 看连接的点是否时内部的节点
-
         if (sourceNode.loopNodeId && sourceNode.loopNodeId === targetNodeId) {
+          console.log('targetLoop');
           const _params = { ...targetNode };
           _params.innerEndNodeId = sourceNode.id;
           changeCondition(_params);
-          edge.setZIndex(999); // 使用专用方法设置层级
+          graph.addEdge(edge); // 新增行：显式添加边到
+          graph.addEdge(edge); // 新增行：显式添加边到
+          edge.prop('zIndex', 15);
+          edge.attr({
+            line: {
+              strokeDasharray: '', // 移除虚线样式
+              stroke: '#C2C8D5', // 设置边的颜色
+              strokeWidth: 1, // 设置边的宽度
+            },
+          });
           return;
         }
       }
@@ -340,9 +355,18 @@ const initGraph = ({
         const newNodeParams = JSON.parse(JSON.stringify(sourceNode));
         // 提取更新nextNodeIds的通用逻辑
         const updateNextNodeIds = (item: any, targetNodeId: number) => {
-          item.nextNodeIds = item.nextNodeIds
-            ? [...item.nextNodeIds, targetNodeId]
-            : [targetNodeId];
+          const getoption = (option: number[] | null, nodeId: number) => {
+            if (!option) {
+              return [nodeId];
+            } else {
+              if (option.includes(nodeId)) {
+                return option;
+              } else {
+                return [...option, nodeId];
+              }
+            }
+          };
+          item.nextNodeIds = getoption(item.nextNodeIds, targetNodeId);
         };
         if (sourceNode.type === 'Condition') {
           for (let item of newNodeParams.nodeConfig.conditionBranchConfigs) {
@@ -370,7 +394,7 @@ const initGraph = ({
         // 通知父组件创建边
         changeEdge('created', targetNodeId, sourceNode, edge.id);
         if (targetNode.loopNodeId && sourceNode.loopNodeId) {
-          edge.setZIndex(999); // 使用专用方法设置层级
+          edge.setZIndex(15); // 使用专用方法设置层级
         }
       }
 

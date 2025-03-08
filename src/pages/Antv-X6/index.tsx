@@ -256,9 +256,6 @@ const Workflow: React.FC = () => {
     if (child.nodeConfig.outputArgs === null) {
       child.nodeConfig.outputArgs = [];
     }
-    setTimeout(async () => {
-      getRefernece(child);
-    }, 500);
   };
   // 新增节点
   const addNode = async (
@@ -268,9 +265,14 @@ const Workflow: React.FC = () => {
     let _params = JSON.parse(JSON.stringify(child));
     _params.workflowId = workflowId;
     _params.extension = dragEvent;
+
     // 查看当前是否有选中的节点以及被选中的节点的type是否是Loop
     const loopParentId = graphRef.current.findLoopParentAtPosition(dragEvent);
     if ((visible && foldWrapItem.type === 'Loop') || loopParentId) {
+      if (_params.type === 'Loop') {
+        message.warning('循环体里请不要再添加循环体');
+        return;
+      }
       _params.loopNodeId = Number(loopParentId || foldWrapItem.id);
     }
     // 如果是条件分支，需要增加高度
@@ -697,6 +699,7 @@ const Workflow: React.FC = () => {
         onGetNodeConfig={changeNode} // 新增这一行
         handleNodeChange={handleNodeChange}
         referenceList={referenceList}
+        getRefernece={getRefernece}
       />
       <Created
         checkTag={createdItem as AgentComponentTypeEnum}
