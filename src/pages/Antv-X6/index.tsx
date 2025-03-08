@@ -564,7 +564,7 @@ const Workflow: React.FC = () => {
           }
           if (!data.success) {
             setErrorParams((prev: ErrorParams) => {
-              if (data.data && data.data.rusult) {
+              if (data.data && data.data.result) {
                 console.log([...prev.errorList, data.data.result]);
                 return {
                   errorList: [...prev.errorList, data.data.result],

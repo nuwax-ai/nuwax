@@ -277,7 +277,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           getRefernece(foldWrapItem);
         } else {
           // 如果是切换节点，那么就获取一下节点的上级数据
-          if (prev.id !== currentNodeConfig.id) {
+          if (prev.id !== foldWrapItem.id) {
             getRefernece(foldWrapItem);
           }
         }
