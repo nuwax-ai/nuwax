@@ -6,15 +6,19 @@ import { apiPluginConfigHistoryList } from '@/services/plugin';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PluginInfo } from '@/types/interfaces/plugin';
 import type { HistoryData } from '@/types/interfaces/space';
+import { addChildNode, deleteNode, updateNodeField } from '@/utils/deepNode';
 import cloneDeep from 'lodash/cloneDeep';
 import { useState } from 'react';
 import { useMatch, useRequest } from 'umi';
-import { addChildNode, deleteNode, updateNodeField } from '@/utils/deepNode';
 
 const usePluginConfig = () => {
   const match = useMatch('/space/:spaceId/plugin/:pluginId');
   const matchCode = useMatch('/space/:spaceId/plugin/:pluginId/cloud-tool');
   const { pluginId } = match?.params || matchCode?.params;
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [visible, setVisible] = useState<boolean>(false);
+  // 弹窗modal
+  const [openModal, setOpenModal] = useState<boolean>(false);
   // 修改插件弹窗
   const [openPlugin, setOpenPlugin] = useState<boolean>(false);
   // 插件信息
@@ -49,7 +53,7 @@ const usePluginConfig = () => {
   const handleInputValue = (
     key: string,
     attr: string,
-    value: string | boolean,
+    value: string | number | boolean,
   ) => {
     const _inputConfigArgs = updateNodeField(inputConfigArgs, key, attr, value);
     setInputConfigArgs(_inputConfigArgs);
@@ -59,9 +63,14 @@ const usePluginConfig = () => {
   const handleOutputValue = (
     key: string,
     attr: string,
-    value: string | boolean,
+    value: string | number | boolean,
   ) => {
-    const _outputConfigArgs = updateNodeField(outputConfigArgs, key, attr, value);
+    const _outputConfigArgs = updateNodeField(
+      outputConfigArgs,
+      key,
+      attr,
+      value,
+    );
     setOutputConfigArgs(_outputConfigArgs);
   };
 
@@ -72,7 +81,7 @@ const usePluginConfig = () => {
       ...PLUGIN_INPUT_CONFIG,
     };
 
-    const _inputConfigArgs = addChildNode(inputConfigArgs, key, newNode)
+    const _inputConfigArgs = addChildNode(inputConfigArgs, key, newNode);
     setInputConfigArgs(_inputConfigArgs);
     // 设置默认展开行
     const _expandedRowKeys = [...expandedRowKeys];
@@ -89,7 +98,7 @@ const usePluginConfig = () => {
       ...PLUGIN_OUTPUT_CONFIG,
     };
 
-    const _outputConfigArgs = addChildNode(outputConfigArgs, key, newNode)
+    const _outputConfigArgs = addChildNode(outputConfigArgs, key, newNode);
     setOutputConfigArgs(_outputConfigArgs);
 
     // 设置默认展开行
@@ -102,13 +111,13 @@ const usePluginConfig = () => {
 
   // 出参配置删除操作
   const handleInputDel = (key: string) => {
-    const _inputConfigArgs = deleteNode(inputConfigArgs, key)
+    const _inputConfigArgs = deleteNode(inputConfigArgs, key);
     setInputConfigArgs(_inputConfigArgs);
   };
 
   // 出参配置删除操作
   const handleOutputDel = (key: string) => {
-    const _outputConfigArgs = deleteNode(outputConfigArgs, key)
+    const _outputConfigArgs = deleteNode(outputConfigArgs, key);
     setOutputConfigArgs(_outputConfigArgs);
   };
 
@@ -144,6 +153,12 @@ const usePluginConfig = () => {
   };
 
   return {
+    isModalOpen,
+    setIsModalOpen,
+    visible,
+    setVisible,
+    openModal,
+    setOpenModal,
     runHistory,
     pluginId,
     pluginInfo,

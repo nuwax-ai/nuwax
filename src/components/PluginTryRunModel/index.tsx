@@ -1,11 +1,11 @@
 import { apiPluginTest } from '@/services/plugin';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
-import type { TryRunModelProps } from '@/types/interfaces/library';
+import type { PluginTryRunModelProps } from '@/types/interfaces/library';
 import { PluginTestResult } from '@/types/interfaces/plugin';
 import { CloseOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import { Button, Checkbox, Input, message, Modal, Table } from 'antd';
+import { Button, Input, message, Modal, Table } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -15,7 +15,7 @@ import ParamsNameLabel from './ParamsNameLabel';
 const cx = classNames.bind(styles);
 
 // 试运行弹窗组件
-const TryRunModel: React.FC<TryRunModelProps> = ({
+const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
   inputConfigArgs,
   pluginId,
   pluginName,
@@ -23,7 +23,6 @@ const TryRunModel: React.FC<TryRunModelProps> = ({
   onCancel,
 }) => {
   const [dataSource, setDataSource] = useState<BindConfigWithSub[]>([]);
-  console.log(dataSource, 999)
   // 查询插件信息
   const { run: runTest } = useRequest(apiPluginTest, {
     manual: true,
@@ -46,7 +45,7 @@ const TryRunModel: React.FC<TryRunModelProps> = ({
     const _dataSource = [...dataSource];
     _dataSource[index].bindValue = value;
     setDataSource(_dataSource);
-  }
+  };
 
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub>['columns'] = [
@@ -55,8 +54,13 @@ const TryRunModel: React.FC<TryRunModelProps> = ({
       dataIndex: 'name',
       key: 'name',
       className: 'flex',
-      render: (_, record) =>
-        <ParamsNameLabel require={record.require} paramName={record.name} paramType="string" />
+      render: (_, record) => (
+        <ParamsNameLabel
+          require={record.require}
+          paramName={record.name}
+          paramType="string"
+        />
+      ),
     },
     {
       title: '参数值',
@@ -65,7 +69,11 @@ const TryRunModel: React.FC<TryRunModelProps> = ({
       render: (_, record, index) => (
         <>
           {record?.dataType === DataTypeEnum.Object ? null : (
-            <Input value={record.bindValue} onChange={(e) => handleChangeValue(index, e.target.value)} placeholder="请输入参数值" />
+            <Input
+              value={record.bindValue}
+              onChange={(e) => handleChangeValue(index, e.target.value)}
+              placeholder="请输入参数值"
+            />
           )}
           <p className={cx(styles['param-desc'])}>{record.description}</p>
         </>
@@ -77,7 +85,7 @@ const TryRunModel: React.FC<TryRunModelProps> = ({
     const params = {};
     for (let i = 0; i < dataSource.length; i++) {
       const item = dataSource[i];
-      if ( item.dataType === DataTypeEnum.String) {
+      if (item.dataType === DataTypeEnum.String) {
         params[item.name] = item.bindValue;
       }
     }
@@ -165,19 +173,19 @@ const TryRunModel: React.FC<TryRunModelProps> = ({
             </div>
           </section>
           {/*footer*/}
-          <div
-            className={cx('flex', 'items-center', 'content-end', styles.footer)}
-          >
-            <Checkbox>保存调试结果为工具使用示例</Checkbox>
-            <div className={cx(styles['divider-vertical'])} />
-            <Button type="primary" onClick={onCancel}>
-              完成
-            </Button>
-          </div>
+          {/*<div*/}
+          {/*  className={cx('flex', 'items-center', 'content-end', styles.footer)}*/}
+          {/*>*/}
+          {/*  <Checkbox>保存调试结果为工具使用示例</Checkbox>*/}
+          {/*  <div className={cx(styles['divider-vertical'])} />*/}
+          {/*  <Button type="primary" onClick={onCancel}>*/}
+          {/*    完成*/}
+          {/*  </Button>*/}
+          {/*</div>*/}
         </div>
       )}
     ></Modal>
   );
 };
 
-export default TryRunModel;
+export default PluginTryRunModel;

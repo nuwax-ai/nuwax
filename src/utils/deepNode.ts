@@ -1,7 +1,9 @@
 // 递归计算节点深度
-import { BindConfigWithSub } from '@/types/interfaces/agent';
+import { DataTypeEnum } from '@/types/enums/common';
+import type { BindConfigWithSub } from '@/types/interfaces/agent';
+
 // 递归计算节点深度
-const getNodeDepth = (
+export const getNodeDepth = (
   treeData: BindConfigWithSub[],
   key: string,
   depth = 1,
@@ -17,12 +19,14 @@ const getNodeDepth = (
 };
 
 // 添加子节点
-export const addChildNode = (treeData: BindConfigWithSub[], parentKey: string, newNode: BindConfigWithSub) => {
-  const depth = getNodeDepth(treeData, parentKey);
-  if (depth >= 4) return;
-  const updateRecursive = (arr: BindConfigWithSub[]): BindConfigWithSub[] => (
+export const addChildNode = (
+  treeData: BindConfigWithSub[],
+  key: string,
+  newNode: BindConfigWithSub,
+) => {
+  const updateRecursive = (arr: BindConfigWithSub[]) =>
     arr.map((node) => {
-      if (node.key === parentKey) {
+      if (node.key === key) {
         return {
           ...node,
           subArgs: [...(node.subArgs || []), newNode],
@@ -32,41 +36,55 @@ export const addChildNode = (treeData: BindConfigWithSub[], parentKey: string, n
         return { ...node, subArgs: updateRecursive(node.subArgs) };
       }
       return node;
-    })
-  );
+    });
 
-  return updateRecursive(treeData);
+  return (updateRecursive(treeData) as BindConfigWithSub[]) || [];
 };
 
-// export const activeKey = (arr: BindConfigWithSub[]) => {
-//   const filterRecursive = (data: BindConfigWithSub[]): string
-//   [] =>
-//     data.filter((node) => {
-//       if (node.key === key) return false;
-//       if (node.subArgs) node.subArgs = filterRecursive(node.subArgs);
-//       return true;
-//     });
-//
-//   return filterRecursive(arr);
-// };
+// 获取默认展开的配置key
+export const getActiveKeys = (arr: BindConfigWithSub[]) => {
+  const activeList = [];
+  const filterRecursive = (data: BindConfigWithSub[]) => {
+    for (let info of data) {
+      if (info.subArgs) {
+        activeList.push(info.key);
+        filterRecursive(info.subArgs);
+      }
+    }
+  };
+
+  filterRecursive(arr);
+  return activeList;
+};
 
 // 删除节点
 export const deleteNode = (arr: BindConfigWithSub[], key: string) => {
-  const filterRecursive = (data: BindConfigWithSub[]): BindConfigWithSub[] =>
+  const filterRecursive = (data: BindConfigWithSub[]) =>
     data.filter((node) => {
       if (node.key === key) return false;
       if (node.subArgs) node.subArgs = filterRecursive(node.subArgs);
       return true;
     });
 
-  return filterRecursive(arr);
+  return (filterRecursive(arr) as BindConfigWithSub[]) || [];
 };
 
 // 更新节点字段
-export const updateNodeField = (arr: BindConfigWithSub[], key: string, field: string, value: any) => {
-  const updateRecursive = (data: BindConfigWithSub[]): BindConfigWithSub[] =>
+export const updateNodeField = (
+  arr: BindConfigWithSub[],
+  key: string,
+  field: string,
+  value: string | number | boolean,
+) => {
+  const updateRecursive = (data: BindConfigWithSub[]) =>
     data.map((node) => {
       if (node.key === key) {
+        if (
+          field === 'dataType' &&
+          [DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(value)
+        ) {
+          node.bindValue = '';
+        }
         return { ...node, [field]: value };
       }
       if (node.subArgs) {
@@ -75,5 +93,5 @@ export const updateNodeField = (arr: BindConfigWithSub[], key: string, field: st
       return node;
     });
 
-  return updateRecursive(arr);
+  return (updateRecursive(arr) as BindConfigWithSub[]) || [];
 };
