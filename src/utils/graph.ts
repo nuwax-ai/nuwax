@@ -46,14 +46,15 @@ export const adjustParentSize = (parentNode: Node) => {
   // 应用最小尺寸限制
   const MIN_WIDTH = 600;
   const MIN_HEIGHT = 240;
-  newWidth = Math.max(newWidth, MIN_WIDTH);
-  newHeight = Math.max(newHeight, MIN_HEIGHT);
 
+  const parentCurrentSize = parentNode.getSize();
+  newWidth = Math.max(newWidth, MIN_WIDTH, parentCurrentSize.width);
+  newHeight = Math.max(newHeight, MIN_HEIGHT, parentCurrentSize.height);
   // 计算最终位置（保持子节点居中于父节点）
   const centerX = (globalMinX + globalMaxX) / 2;
   const centerY = (globalMinY + globalMaxY) / 2;
-  const newX = centerX - newWidth / 2;
-  const newY = centerY - newHeight / 2;
+  const newX = centerX - Math.max(newWidth, MIN_WIDTH) / 2; // [!code ++]
+  const newY = centerY - Math.max(newHeight, MIN_HEIGHT) / 2; // [!code ++]
 
   parentNode.prop(
     {

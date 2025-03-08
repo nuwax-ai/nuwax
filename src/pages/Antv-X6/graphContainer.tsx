@@ -86,7 +86,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     // 修改节点信息
     const updateNode = (nodeId: string, newData: ChildNode) => {
       if (!graphRef.current) return;
-
+      console.log('asdsasf', newData);
       const node = graphRef.current.getCellById(nodeId);
       if (node && node.isNode()) {
         const position = node.getPosition();
@@ -127,20 +127,19 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             node.prop('ports', generatePorts(newData));
           }
         }
-        if (
-          newData.type === 'QA' &&
-          newData.nodeConfig.answerType !== 'SELECT'
-        ) {
-          node.setSize(304, 110);
-          node.prop('ports', generatePorts(newData));
-        } else {
-          const optionsLength = newData.nodeConfig?.options
-            ? newData.nodeConfig.options.length
-            : 0;
-          const newHeight = getHeight('QA', optionsLength);
-          // 确保在获取到新高度后设置节点大小和端口
-          node.setSize(304, newHeight);
-          node.prop('ports', generatePorts(newData));
+        if (newData.type === 'QA') {
+          if (newData.nodeConfig.answerType !== 'SELECT') {
+            node.setSize(304, 110);
+            node.prop('ports', generatePorts(newData));
+          } else {
+            const optionsLength = newData.nodeConfig?.options
+              ? newData.nodeConfig.options.length
+              : 0;
+            const newHeight = getHeight('QA', optionsLength);
+            // 确保在获取到新高度后设置节点大小和端口
+            node.setSize(304, newHeight);
+            node.prop('ports', generatePorts(newData));
+          }
         }
         node.setData(newData, { overwrite: true });
       }
