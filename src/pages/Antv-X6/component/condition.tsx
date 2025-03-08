@@ -43,8 +43,8 @@ export const Condition: React.FC<ConditionProps> = ({
     type?: 'Input' | 'Reference',
   ) => {
     // 修正路径构造方式，使用对象展开语法
-    const newValue =
-      type === 'Input'
+    const newValue = e
+      ? type === 'Input'
         ? {
             bindValue: e,
             bindValueType: 'Input',
@@ -56,7 +56,14 @@ export const Condition: React.FC<ConditionProps> = ({
             bindValueType: 'Reference',
             name: referenceList.argMap[e as string].name,
             dataType: referenceList.argMap[e as string].dataType || 'String',
-          };
+          }
+      : {
+          bindValue: e,
+          bindValueType: 'Input',
+          dataType: 'String',
+          name: '',
+        };
+
     // 使用深层对象赋值
     form.setFieldsValue({
       [inputItemName]: {
@@ -257,7 +264,7 @@ export const ConditionList: React.FC<ConditionListProps> = ({
 // 修改 ConditionNode 组件
 export const ConditionNode: React.FC<NodeDisposeProps> = ({
   params,
-  Modified,
+  // Modified,
   referenceList,
   updateNode,
 }) => {
@@ -355,8 +362,12 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
         }
       },
     );
-
-    Modified({ ...params, conditionBranchConfigs: newConditionBranchConfigs });
+    if (updateNode) {
+      updateNode({
+        ...params,
+        conditionBranchConfigs: newConditionBranchConfigs,
+      });
+    }
   };
 
   // 修改 onDragEnd 方法

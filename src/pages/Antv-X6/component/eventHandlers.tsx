@@ -64,11 +64,13 @@ const bindEventHandlers = ({
           if (sourceNode.type === 'Loop') {
             sourceNode.innerStartNodeId = -1;
             changeCondition(sourceNode);
+            graph.removeCells([_cell]); // 新增行：实际移除边元素
             return;
           }
           if (targetNode.type === 'Loop') {
             targetNode.innerEndNodeId = -1;
             changeCondition(targetNode);
+            graph.removeCells([_cell]); // 新增行：实际移除边元素
             return;
           }
         }

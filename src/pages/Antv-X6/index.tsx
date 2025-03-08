@@ -12,9 +12,11 @@ import service, {
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { WorkflowModeEnum } from '@/types/enums/library';
+import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
 import { NodePreviousAndArgMap } from '@/types/interfaces/node';
+import { ErrorParams } from '@/types/interfaces/workflow';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { getNodeRelation, updateNode } from '@/utils/updateNode';
 import { getEdges } from '@/utils/workflow';
@@ -50,7 +52,7 @@ const Workflow: React.FC = () => {
     icon: '',
   });
   // 工作流左上角的详细信息
-  const [info, setInfo] = useState<IgetDetails | null>(null);
+  const [info, setInfo] = useState<IgetDetails | null>();
   // 定义一个节点试运行返回值
   const [testRunResult, setTestRunResult] = useState<string>('');
   // 节点试运行
@@ -82,7 +84,7 @@ const Workflow: React.FC = () => {
   }>({ nodeList: [], edgeList: [] });
 
   // 错误列表的参数
-  const [errorParams, setErrorParams] = useState({
+  const [errorParams, setErrorParams] = useState<ErrorParams>({
     errorList: [],
     show: false,
   });
@@ -100,12 +102,6 @@ const Workflow: React.FC = () => {
       return {
         ...prev,
         modified: _time.toString(),
-        creator: prev.creator || {
-          id: 0,
-          name: '',
-          avatar: '',
-          email: '',
-        },
       };
     });
   };
@@ -146,24 +142,46 @@ const Workflow: React.FC = () => {
     if (_res.code === Constant.success) {
       changeUpdateTime();
       // setInfo({ ...(info as IgetDetails), extension: value.extension });
-      getDetails();
+      if (value.description) {
+        getDetails();
+      }
     }
   };
   // 调整画布的大小
   const changeGraph = (val: number) => {
-    onConfirm({
-      id: sessionStorage.getItem('workfolwId'),
-      extension: { size: val },
-    } as IUpdateDetails);
+    setInfo((prev) => {
+      if (!prev || !prev.extension) return prev;
+
+      const numVal = typeof val === 'string' ? parseFloat(val) : val;
+      if (prev.extension.size !== numVal) {
+        onConfirm({
+          id: sessionStorage.getItem('workfolwId')!,
+          name: prev.name,
+          extension: { size: numVal },
+        });
+        return { ...prev, extension: { ...prev.extension, size: numVal } };
+      }
+      return prev;
+    });
     graphRef.current.changeGraphZoom(val);
   };
 
   //
   const changeZoom = (val: number | string) => {
-    onConfirm({
-      id: sessionStorage.getItem('workfolwId'),
-      extension: { size: val },
-    } as IUpdateDetails);
+    setInfo((prev) => {
+      if (!prev || !prev.extension) return prev;
+
+      const numVal = typeof val === 'string' ? parseFloat(val) : val;
+      if (prev.extension.size !== numVal) {
+        onConfirm({
+          id: sessionStorage.getItem('workfolwId')!,
+          name: prev.name,
+          extension: { size: numVal },
+        });
+        return { ...prev, extension: { ...prev.extension, size: numVal } };
+      }
+      return prev;
+    });
   };
   // 获取当前节点的参数
   const getRefernece = async (child: ChildNode) => {
@@ -238,9 +256,6 @@ const Workflow: React.FC = () => {
     if (child.nodeConfig.outputArgs === null) {
       child.nodeConfig.outputArgs = [];
     }
-    setTimeout(async () => {
-      getRefernece(child);
-    }, 500);
   };
   // 新增节点
   const addNode = async (
@@ -250,9 +265,14 @@ const Workflow: React.FC = () => {
     let _params = JSON.parse(JSON.stringify(child));
     _params.workflowId = workflowId;
     _params.extension = dragEvent;
+
     // 查看当前是否有选中的节点以及被选中的节点的type是否是Loop
     const loopParentId = graphRef.current.findLoopParentAtPosition(dragEvent);
     if ((visible && foldWrapItem.type === 'Loop') || loopParentId) {
+      if (_params.type === 'Loop') {
+        message.warning('循环体里请不要再添加循环体');
+        return;
+      }
       _params.loopNodeId = Number(loopParentId || foldWrapItem.id);
     }
     // 如果是条件分支，需要增加高度
@@ -362,7 +382,7 @@ const Workflow: React.FC = () => {
   const onSubmit = async (values: IPublish) => {
     // 获取所有节点,保存位置
     const _params = { ...values, workflowId: info?.id };
-    _params.scope = _params.scope[0] as 'Space' | 'Tenant';
+    _params.scope = _params.scope[0] as PluginPublishScopeEnum;
     const _res = await service.publishWorkflow(_params);
     if (_res.code === Constant.success) {
       message.success('发布成功');
@@ -448,6 +468,16 @@ const Workflow: React.FC = () => {
   //   graphRef.current.changeNodeHeight(length,node);
   // }
 
+  // 校验当前工作流
+  const volidWorkflow = async () => {
+    const _res = await service.validWorkflow(info?.id as number);
+    if (_res.code === Constant.success) {
+      return true;
+    } else {
+      return false;
+    }
+  };
+
   // 节点试运行
   const nodeTestRun = async (params?: DefaultObjectType) => {
     const _params = {
@@ -527,15 +557,29 @@ const Workflow: React.FC = () => {
         },
         body: params,
         onMessage: (data) => {
-          const _nodeId = data.data.nodeId;
-          graphRef.current.selectNode(_nodeId);
+          console.log(data);
+          if (data.data && data.data.nodeId) {
+            const _nodeId = data.data.nodeId;
+            graphRef.current.selectNode(_nodeId);
+          }
           if (!data.success) {
-            if (data.data && data.data.result) {
-              setErrorParams({
-                errorList: [...errorParams.errorList, data.data.result],
-                show: true,
-              });
-            }
+            setErrorParams((prev: ErrorParams) => {
+              if (data.data && data.data.result) {
+                console.log([...prev.errorList, data.data.result]);
+                return {
+                  errorList: [...prev.errorList, data.data.result],
+                  show: true,
+                };
+              } else {
+                if (!data.data) {
+                  return {
+                    errorList: [...prev.errorList, { error: data.message }],
+                    show: true,
+                  };
+                }
+                return prev;
+              }
+            });
           } else {
             if (data.data && data.data.output) {
               setTestRunResult(data.data.output);
@@ -599,8 +643,8 @@ const Workflow: React.FC = () => {
         requestId: uuidv4(), // 使用uuid生成唯一ID
       };
       localStorage.setItem('testRun', JSON.stringify(_params));
-      const _res = await service.validWorkflow(info?.id as number);
-      if (_res.code === Constant.success) {
+      const volid = await volidWorkflow();
+      if (volid) {
         testRunAllNode(_params);
       }
     } else if (type === 'QA') {
@@ -646,7 +690,7 @@ const Workflow: React.FC = () => {
         dragChild={dragChild}
         changeGraph={changeGraph}
         handleTestRun={() => testRunAll()}
-        zoomSize={info?.extension?.size ? Number(info.extension.size) : 1}
+        zoomSize={(info?.extension?.size as number) ?? 1}
       />
       <NodeDrawer
         visible={visible}
@@ -655,6 +699,7 @@ const Workflow: React.FC = () => {
         onGetNodeConfig={changeNode} // 新增这一行
         handleNodeChange={handleNodeChange}
         referenceList={referenceList}
+        getRefernece={getRefernece}
       />
       <Created
         checkTag={createdItem as AgentComponentTypeEnum}
@@ -685,7 +730,9 @@ const Workflow: React.FC = () => {
         visible={visible}
         errorList={errorParams.errorList}
         show={errorParams.show}
-        onClose={() => setErrorParams({ ...errorParams, show: false })}
+        onClose={() =>
+          setErrorParams({ ...errorParams, errorList: [], show: false })
+        }
         changeDrawer={changeDrawer}
         nodeList={graphParams.nodeList}
       />

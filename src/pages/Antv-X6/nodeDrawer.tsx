@@ -36,6 +36,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   onGetNodeConfig, // 新增这一行
   handleNodeChange,
   referenceList,
+  getRefernece,
 }) => {
   // 当前节点是否修改了参数
   const [isModified, setIsModified] = useState(false);
@@ -265,11 +266,26 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   };
 
   useEffect(() => {
-    if (isModified) {
-      onGetNodeConfig(currentNodeConfig);
-      setIsModified(false); // 重置修改状态
-    }
-    setCurrentNodeConfig(foldWrapItem);
+    const handleUpdate = async () => {
+      if (isModified) {
+        await onGetNodeConfig(currentNodeConfig); // 假设onGetNodeConfig返回Promise
+        setIsModified(false);
+      }
+      setCurrentNodeConfig((prev) => {
+        if (visible && !prev.id) {
+          // 初始进来需要获取一下节点的上级节点
+          getRefernece(foldWrapItem);
+        } else {
+          // 如果是切换节点，那么就获取一下节点的上级数据
+          if (prev.id !== foldWrapItem.id) {
+            getRefernece(foldWrapItem);
+          }
+        }
+        return foldWrapItem;
+      });
+    };
+
+    handleUpdate();
   }, [foldWrapItem.id, visible]);
 
   useEffect(() => {

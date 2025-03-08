@@ -50,6 +50,7 @@ export interface ChildNode {
 export interface Edge {
   source: string;
   target: string;
+  zIndex?: number;
 }
 
 /**

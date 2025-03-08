@@ -33,14 +33,21 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   ]);
 
   useEffect(() => {
-    if (!options.find((option) => option.value === zoomSize)) {
-      const _newOptions = {
-        label: `缩放到${Math.floor(zoomSize * 100)}%`,
-        value: zoomSize,
-        displayValue: `${Math.floor(zoomSize * 100)}%`,
-      };
-      setOptions((prev) => [...prev, _newOptions]);
-    }
+    console.log(zoomSize);
+    setOptions((prev) => {
+      // 使用函数式更新确保获取最新options
+      if (!prev.find((option) => option.value === zoomSize)) {
+        return [
+          ...prev,
+          {
+            label: `缩放到${Math.floor(zoomSize * 100)}%`,
+            value: zoomSize,
+            displayValue: `${Math.floor(zoomSize * 100)}%`,
+          },
+        ];
+      }
+      return prev;
+    });
   }, [zoomSize]);
 
   const [open, setOpen] = useState(false);

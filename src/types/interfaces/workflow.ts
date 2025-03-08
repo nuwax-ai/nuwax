@@ -318,3 +318,11 @@ export interface ConditionProps {
 export interface ErrorListItem {
   nodeId: number;
 }
+export interface ErrorItem {
+  nodeId?: number;
+  error: string;
+}
+export interface ErrorParams {
+  errorList: ErrorItem[];
+  show: boolean;
+}

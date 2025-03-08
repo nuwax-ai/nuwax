@@ -12,8 +12,8 @@ import {
 } from '@ant-design/icons';
 import { Button, Cascader, Checkbox, Input, Popover, Select, Tree } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
+import { useModel } from 'umi';
 import { TreeFormProps } from './type';
-
 interface TreeNodeConfig extends InputAndOutConfig {
   key: string;
   subArgs?: TreeNodeConfig[];
@@ -33,12 +33,14 @@ const CustomTree: React.FC<TreeFormProps> = ({
 
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
+  // 在组件顶部添加状态管理
+  const [errors, setErrors] = useState<Record<string, string>>({});
   // 保持最新 params 引用（新增 ref 逻辑）
   const paramsRef = useRef(params);
   useEffect(() => {
     paramsRef.current = params;
   }, [params]);
-
+  const { volid } = useModel('workflow');
   // 同步父组件参数变化（新增同步逻辑）
   useEffect(() => {
     if (params[inputItemName]) {
@@ -176,29 +178,58 @@ const CustomTree: React.FC<TreeFormProps> = ({
 
     return (
       <div className="dis-left" style={{ width: '100%' }}>
-        <Input
-          key={nodeData.key} // 确保数据更新时重新渲染
-          defaultValue={nodeData.name}
-          onBlur={(e) => {
-            updateNodeField(nodeData.key, 'name', e.target.value);
-          }}
-          disabled={nodeData.systemVariable}
-          className="tree-form-name flex-1"
-        />
-        <Cascader
-          allowClear={false}
-          options={dataTypes}
-          style={{ width: 80 }}
-          defaultValue={_dataType}
-          onChange={(value) => {
-            updateNodeField(nodeData.key!, 'dataType', CascaderChange(value));
-          }}
-          changeOnSelect={true}
-          // expandTrigger="hover" // 改为悬停展开
-          className="tree-form-name"
-          disabled={nodeData.systemVariable}
-          placement={'bottomLeft'}
-        />
+        <div
+          className="flex-1"
+          style={{ position: 'relative', marginRight: '6px' }}
+        >
+          <Input
+            key={nodeData.key} // 确保数据更新时重新渲染
+            defaultValue={nodeData.name}
+            onBlur={(e) => {
+              updateNodeField(nodeData.key, 'name', e.target.value);
+            }}
+            disabled={nodeData.systemVariable}
+            className="tree-form-name flex-1"
+            style={{
+              borderColor: errors[`${nodeData.key}-name`]
+                ? '#ff4d4f'
+                : undefined,
+              backgroundColor: nodeData.systemVariable ? '#f5f5f5' : undefined,
+            }}
+          />
+          {errors[`${nodeData.key}-name`] && (
+            <div style={{ color: '#ff4d4f', fontSize: 12 }}>
+              {errors[`${nodeData.key}-name`]}
+            </div>
+          )}
+        </div>
+        <div style={{ width: '80px', position: 'relative' }}>
+          <Cascader
+            allowClear={false}
+            options={dataTypes}
+            defaultValue={_dataType}
+            onChange={(value) => {
+              updateNodeField(nodeData.key!, 'dataType', CascaderChange(value));
+            }}
+            changeOnSelect={true}
+            // expandTrigger="hover" // 改为悬停展开
+            className="tree-form-name"
+            disabled={nodeData.systemVariable}
+            placement={'bottomLeft'}
+            style={{
+              width: '100%',
+              borderColor: errors[`${nodeData.key}-type`]
+                ? '#ff4d4f'
+                : undefined,
+              backgroundColor: nodeData.systemVariable ? '#f5f5f5' : undefined,
+            }}
+          />
+          {errors[`${nodeData.key}-type`] && (
+            <div style={{ color: '#ff4d4f', fontSize: 12 }}>
+              {errors[`${nodeData.key}-type`]}
+            </div>
+          )}
+        </div>
 
         <div className="flex" style={{ width: showCheck ? 60 : 40 }}>
           <Popover
@@ -256,6 +287,25 @@ const CustomTree: React.FC<TreeFormProps> = ({
     );
   };
 
+  useEffect(() => {
+    if (volid) {
+      const newErrors: Record<string, string> = {};
+
+      treeData.forEach((node) => {
+        console.log(node);
+        // 校验节点名称
+        if (!node.name?.trim()) {
+          newErrors[`${node.key}-name`] = '请输入变量名称';
+        }
+        // 校验数据类型
+        if (!node.dataType) {
+          newErrors[`${node.key}-type`] = '请选择';
+        }
+      });
+
+      setErrors(newErrors);
+    }
+  }, [volid, treeData]);
   return (
     <div>
       <div className="dis-sb margin-bottom">
@@ -317,8 +367,8 @@ const CustomTree: React.FC<TreeFormProps> = ({
             style={{
               marginLeft: `${
                 treeData.find((item) => item.subArgs && item.subArgs.length > 0)
-                  ? '36%'
-                  : '40%'
+                  ? '38%'
+                  : '42%'
               }`,
             }}
           >

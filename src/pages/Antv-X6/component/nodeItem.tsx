@@ -124,7 +124,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({
         handleChangeNodeConfig={handleChangeNodeConfig}
       />
 
-      {params.returnType !== 'VARIABLE' && (
+      {params.returnType === 'TEXT' && (
         <div className="margin-bottom mt-16">
           <div className="dis-sb margin-bottom">
             <span className="node-title-style">输出内容</span>

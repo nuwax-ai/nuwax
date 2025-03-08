@@ -65,7 +65,7 @@ const TestRun: React.FC<TestRunProps> = ({
     if (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length) {
       const value = form.getFieldsValue();
       for (let item in value) {
-        if (value[item].includes('\r\n')) {
+        if (typeof value[item] === 'string' && value[item].includes('\r\n')) {
           value[item] = JSON.parse(value[item]);
         }
       }
