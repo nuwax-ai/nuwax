@@ -13,7 +13,7 @@ export const adjustParentSize = (parentNode: Node) => {
     minY = Infinity;
   let maxX = -Infinity,
     maxY = -Infinity;
-  const padding = 20; // 内边距
+  const padding = 40; // 内边距
 
   childrenNodes.forEach((childNode) => {
     if (Node.isNode(childNode)) {

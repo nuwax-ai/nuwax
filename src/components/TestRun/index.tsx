@@ -165,7 +165,7 @@ const TestRun: React.FC<TestRunProps> = ({
                   ></Input>
                 ))}
                 <p className="collapse-title-style dis-left">输出</p>
-                <div className="result-style">{testRunResult}</div>
+                <pre className="result-style">{testRunResult}</pre>
               </>
             ),
           },

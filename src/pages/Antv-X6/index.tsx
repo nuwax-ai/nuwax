@@ -390,6 +390,7 @@ const Workflow: React.FC = () => {
   };
 
   const handleNodeChange = (action: string, data: ChildNode) => {
+    console.log('123', 123);
     switch (action) {
       case 'TestRun': {
         if (data.type === 'QA') {
@@ -499,8 +500,11 @@ const Workflow: React.FC = () => {
         if (!data.success) {
           console.log(data);
         } else {
-          if (data.data) {
-            setTestRunResult(JSON.stringify(data.data));
+          if (data.complete) {
+            if (data.data && data.data.output) {
+              setTestRunResult(data.data.output);
+            }
+            setTestRunResult(JSON.stringify(data.data, null, 2));
           }
           if (data.data.status === 'STOP_WAIT_ANSWER') {
             setLoading(false);
@@ -565,7 +569,6 @@ const Workflow: React.FC = () => {
           if (!data.success) {
             setErrorParams((prev: ErrorParams) => {
               if (data.data && data.data.result) {
-                console.log([...prev.errorList, data.data.result]);
                 return {
                   errorList: [...prev.errorList, data.data.result],
                   show: true,
@@ -581,8 +584,11 @@ const Workflow: React.FC = () => {
               }
             });
           } else {
-            if (data.data && data.data.output) {
-              setTestRunResult(data.data.output);
+            if (data.complete) {
+              if (data.data && data.data.output) {
+                setTestRunResult(data.data.output);
+              }
+              setTestRunResult(JSON.stringify(data.data, null, 2));
             }
             if (data.data.status === 'STOP_WAIT_ANSWER') {
               setLoading(false);
@@ -636,6 +642,7 @@ const Workflow: React.FC = () => {
       errorList: [],
       show: false,
     });
+    setTestRunResult('');
     if (type === 'Start') {
       const _params = {
         workflowId: info?.id as number,

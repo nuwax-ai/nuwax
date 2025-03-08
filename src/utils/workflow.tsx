@@ -308,13 +308,16 @@ export const generatePorts = (data: ChildNode, height?: number) => {
       const type = data.nodeConfig.answerType;
       console.log(type);
       const configs = data.nodeConfig?.options;
-      if (type === 'SELECT')
+      if (type === 'SELECT') {
         outputPorts = (configs || []).map((item, index) => ({
           ...defaultPortConfig('out', `${item.uuid || index}-out`),
           args: {
             y: 110 + index * 18 + 9,
           },
         }));
+      } else {
+        outputPorts = [{ ...defaultPortConfig('out', `out`, '50%') }];
+      }
       break;
     }
 
@@ -352,6 +355,7 @@ export const getLength = (
   newData: ChildNode,
   key: 'conditionBranchConfigs' | 'intentConfigs' | 'options',
 ) => {
+  console.log(key);
   const _oldLength = oldData.nodeConfig?.[key]?.length || 0;
   const _newLength = newData.nodeConfig?.[key]?.length || 0;
   if (_oldLength !== _newLength) {

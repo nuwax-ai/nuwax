@@ -26,8 +26,13 @@ interface GeneralNodeState {
  * 定义 GeneralNode 类组件，代表一个通用节点，该节点可以是流程图或其他图形编辑器中的元素。
  */
 export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
+  // 新增实例属性保存回调引用
+  private onChangeRef: ((val: string, data: NodeProps) => void) | null = null;
+
   constructor(props: NodeProps) {
     super(props);
+    // 初始化时缓存回调函数
+    this.onChangeRef = this.props.node.getData().onChange;
     this.state = {
       // 标题编辑状态
       isEditingTitle: false,
@@ -43,9 +48,8 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
     // 检查 onChange 是否存在并且是一个函数
     const { node } = this.props;
     const data = node.getData<NodeProps>();
-    if (typeof this.props.node.getData().onChange === 'function') {
-      console.log(val);
-      this.props.node.getData().onChange(val, data); // 调用父组件提供的回调函数
+    if (typeof this.onChangeRef === 'function') {
+      this.onChangeRef(val, data);
     }
   };
   // 将输入的值替换掉节点名称
@@ -65,7 +69,10 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
       const data = node.getData<NodeProps>();
       const updatedData = { ...data, name: this.state.editedTitle };
       node.setData(updatedData);
-      this.props.node.getData().onChange('Rename', updatedData); // 调用父组件提供的回调函数
+      // 使用缓存的回调引用
+      if (typeof this.onChangeRef === 'function') {
+        this.onChangeRef('Rename', updatedData);
+      }
     });
   };
 
@@ -239,7 +246,9 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
                 <div key={index} className="dis-left mb-16">
                   <span className="text-right qa-title-style"></span>
                   <Tag>{optionsMap[index]}</Tag>
-                  <span>{item.content || '未配置内容'}</span>
+                  <span style={{ width: 160 }}>
+                    {item.content || '未配置内容'}
+                  </span>
                 </div>
               ))}
           </div>
