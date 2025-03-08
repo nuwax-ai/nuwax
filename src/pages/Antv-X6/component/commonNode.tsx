@@ -28,9 +28,11 @@ import {
   Tree,
 } from 'antd';
 import React, { useEffect } from 'react';
+import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
 import './commonNode.less';
+
 // 定义通用的输入输出
 export const InputAndOut: React.FC<NodeRenderProps> = ({
   title,
@@ -45,6 +47,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
 }) => {
   const [form] = Form.useForm();
 
+  const { volid } = useModel('workflow');
   // 根据传递的fieldConfigs生成表单项
   const formItem = fieldConfigs.reduce(
     (acc: DefaultObjectType, field: FieldConfig) => {
@@ -69,6 +72,13 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
     // 设置初始值，确保Form.List能正确展示已有条目
     form.setFieldsValue(initialValues);
   }, [form, inputItemName, initialValues]);
+
+  useEffect(() => {
+    console.log(volid);
+    if (volid) {
+      form.validateFields();
+    }
+  }, [volid]);
 
   return (
     <div className="start-node-style">
@@ -114,6 +124,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                           label="参数名"
                           name={[item.name, 'name']}
                           noStyle
+                          rules={[{ required: true, message: '请输入变量名' }]}
                         >
                           <Input
                             size="small"
@@ -125,6 +136,9 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                           label="参数值"
                           name={[item.name, 'bindValue']}
                           noStyle
+                          rules={[
+                            { required: true, message: '请选择或输入变量值' },
+                          ]}
                         >
                           <InputOrReference
                             referenceList={

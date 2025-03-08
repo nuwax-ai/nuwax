@@ -28,6 +28,7 @@ export interface WorkflowBaseInfo {
   description: string;
   // 图标地址
   icon: string;
+  extension: { size: number };
 }
 
 // 更新、创建工作流弹窗

@@ -169,10 +169,14 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
               return (
                 <div key={item.uuid} className="dis-left condition-item-style">
                   <span className="condition-title-sytle">
-                    {branchTypeMap[item.branchType]}
+                    {branchTypeMap[item.branchType || 'ELSE_IF']}
                   </span>
                   <Input
-                    defaultValue={item.conditionArgs[0]?.firstArg?.name || ''}
+                    defaultValue={
+                      item.conditionArgs
+                        ? item.conditionArgs[0]?.firstArg?.name
+                        : ''
+                    }
                     className="flex-1"
                     disabled
                   />

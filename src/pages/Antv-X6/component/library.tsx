@@ -113,8 +113,9 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
             </Popover>
           </div>
           <Slider
-            min={0}
-            max={100}
+            min={1}
+            max={20}
+            step={1}
             onChange={(value) =>
               handleChangeNodeConfig({ ...params, maxRecallCount: value })
             }
@@ -136,8 +137,9 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
             </Popover>
           </div>
           <Slider
-            min={0}
-            max={100}
+            min={0.01}
+            max={0.99}
+            step={0.01}
             onChange={(value) =>
               handleChangeNodeConfig({ ...params, matchingDegree: value })
             }
