@@ -234,14 +234,19 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
         },
       ];
     }
-    handleChangeNodeConfig({ ...params, answerType: val, options });
-    if (updateNode) {
-      updateNode({
-        ...params,
-        answerType: val,
-        options,
-      });
-    }
+    // 添加变更检查
+    const typeChanged = val !== params.answerType;
+    const optionsChanged = options !== params.options;
+    if (typeChanged || optionsChanged) {
+      // [!code ++]
+      if (updateNode) {
+        updateNode({
+          ...params,
+          answerType: val,
+          options,
+        });
+      }
+    } // [!code ++]
   };
 
   const changeOptions = (newNodeConfig: NodeConfig) => {
@@ -258,7 +263,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
     }
   };
   useEffect(() => {
-    if (!params.answerType) {
+    if (params && params.answerType === null) {
       Modified({ ...params, answerType: 'TEXT' });
     }
   }, [params]);

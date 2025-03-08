@@ -144,7 +144,10 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           className="input-or-reference-tag text-ellipsis"
           color="#65656687"
         >
-          {`${getName(value)} - ${referenceList.argMap[value].name}`}
+          <span className="tag-text-style">
+            {' '}
+            {`${getName(value)} - ${referenceList.argMap[value].name}`}
+          </span>
         </Tag>
       ) : (
         <Input

@@ -83,6 +83,8 @@ const Workflow: React.FC = () => {
     edgeList: Edge[];
   }>({ nodeList: [], edgeList: [] });
 
+  // 针对问答节点条开始节点，参数丢失
+  const [formItemValue, setFormItemValue] = useState<DefaultObjectType>({});
   // 错误列表的参数
   const [errorParams, setErrorParams] = useState<ErrorParams>({
     errorList: [],
@@ -561,7 +563,6 @@ const Workflow: React.FC = () => {
         },
         body: params,
         onMessage: (data) => {
-          console.log(data);
           if (data.data && data.data.nodeId) {
             const _nodeId = data.data.nodeId;
             graphRef.current.selectNode(_nodeId);
@@ -588,6 +589,12 @@ const Workflow: React.FC = () => {
               if (data.data && data.data.output) {
                 setTestRunResult(data.data.output);
               }
+
+              setFormItemValue(
+                data.nodeExecuteResultMap[
+                  (info?.startNode.id as number).toString()
+                ].data,
+              );
               setTestRunResult(JSON.stringify(data.data, null, 2));
             }
             if (data.data.status === 'STOP_WAIT_ANSWER') {
@@ -626,6 +633,7 @@ const Workflow: React.FC = () => {
   const testRunAll = async () => {
     const _res = await service.getDetails(workflowId);
     const _nodeList = _res.data.nodes;
+    setTestRunResult('');
     setFoldWrapItem(_res.data.startNode);
     setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
     setTestRun(true);
@@ -662,7 +670,8 @@ const Workflow: React.FC = () => {
           ...(params as DefaultObjectType),
         };
         testRunAllNode(_params);
-        setTestRun(false);
+        setFoldWrapItem(info?.startNode as ChildNode);
+        setStopWait(false);
       }
     } else {
       nodeTestRun(params);
@@ -723,6 +732,7 @@ const Workflow: React.FC = () => {
         testRunResult={testRunResult}
         loading={loading}
         stopWait={stopWait}
+        formItemValue={formItemValue}
       />
 
       <CreateWorkflow

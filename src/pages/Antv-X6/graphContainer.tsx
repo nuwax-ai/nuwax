@@ -86,7 +86,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     // 修改节点信息
     const updateNode = (nodeId: string, newData: ChildNode) => {
       if (!graphRef.current) return;
-      console.log('asdsasf', newData);
       const node = graphRef.current.getCellById(nodeId);
       if (node && node.isNode()) {
         const position = node.getPosition();

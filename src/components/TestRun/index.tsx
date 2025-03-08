@@ -12,14 +12,12 @@ import './index.less';
 interface TestRunProps {
   // 当前节点的类型
   node: ChildNode;
-
   // 是否开启弹窗
   visible: boolean;
   // 运行
   run: (type: string, params?: DefaultObjectType) => void;
   // 按钮是否处于加载
   loading: boolean;
-
   // 运行结果
   testRunResult?: string;
   // 预设值
@@ -28,6 +26,8 @@ interface TestRunProps {
   onChange?: (val?: string | number | bigint) => void;
   // 专属于问答，在stopwait后，修改当前的
   stopWait?: boolean;
+  //
+  formItemValue?: DefaultObjectType;
 }
 
 interface QaItems {
@@ -50,6 +50,7 @@ const TestRun: React.FC<TestRunProps> = ({
   loading,
   testRunResult,
   stopWait,
+  formItemValue,
 }) => {
   const { testRun, setTestRun } = useModel('model');
   // const [value, setValue] = useState('');
@@ -184,12 +185,18 @@ const TestRun: React.FC<TestRunProps> = ({
     form.resetFields();
     if (stopWait) {
       const newItem = (node.nodeConfig?.options || []).map((item) => ({
-        key: item.index,
+        key: item.index.toString(),
         description: item.content,
       }));
       setQaItem(newItem);
     }
   }, [testRun, stopWait]);
+
+  useEffect(() => {
+    if (JSON.stringify(formItemValue) !== '{}') {
+      form.setFieldsValue(formItemValue);
+    }
+  }, [formItemValue]);
 
   return (
     <div
@@ -298,6 +305,7 @@ const TestRun: React.FC<TestRunProps> = ({
               }}
               onSubmit={() => {
                 answer(value);
+                setValue('');
               }}
             />
           </div>

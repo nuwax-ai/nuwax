@@ -21,7 +21,7 @@ import {
   Space,
   Switch,
 } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { cycleOption, outPutConfigs, variableConfigs } from '../params';
 import { InputAndOut, TreeOutput } from './commonNode';
 import './nodeItem.less';
@@ -210,6 +210,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
           title="中间变量"
           fieldConfigs={outPutConfigs}
           inputItemName="variableArgs"
+          referenceList={referenceList}
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ variableArgs: params.variableArgs || [] }}
         />
@@ -219,6 +220,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
           title="输出"
           fieldConfigs={outPutConfigs}
           inputItemName="outputArgs"
+          referenceList={referenceList}
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ outputArgs: params.outputArgs || [] }}
         />
@@ -245,6 +247,11 @@ const VariableNode: React.FC<NodeDisposeProps> = ({
     { label: '获取变量值', value: 'GET_VARIABLE' },
   ];
 
+  useEffect(() => {
+    if (params.configType === null) {
+      handleChangeNodeConfig({ ...params, configType: 'SET_VARIABLE' });
+    }
+  }, [params.configType]);
   return (
     <>
       <div className="node-item-style dis-center">
@@ -449,12 +456,10 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
           />
         </>
       )}
-      {params.outputArgs && params.configType === 'SET_VARIABLE' && (
-        <div>
-          <div className="node-title-style margin-bottom">输出</div>
-          <TreeOutput treeData={params.outputArgs} />
-        </div>
-      )}
+      <div>
+        <div className="node-title-style margin-bottom">输出</div>
+        <TreeOutput treeData={params.outputArgs || []} />
+      </div>
     </>
   );
 };

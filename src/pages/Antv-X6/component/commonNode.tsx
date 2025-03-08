@@ -74,7 +74,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   }, [form, inputItemName, initialValues]);
 
   useEffect(() => {
-    console.log(volid);
     if (volid) {
       form.validateFields();
     }

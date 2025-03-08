@@ -1,0 +1,44 @@
+{
+  "success": true,
+  "data": {
+    "`测试`": 12.0
+  },
+  "message": null,
+  "requestId": "d3446a06-05bb-420f-954d-c7e28bd7302b",
+  "nodeExecuteResultMap": {
+    "655": {
+      "nodeId": 655,
+      "success": true,
+      "error": null,
+      "data": {
+        "测试": "12",
+        "value": 12.0
+      },
+      "startTime": 1741424693129,
+      "endTime": 1741424693130
+    },
+    "724": {
+      "nodeId": 724,
+      "success": true,
+      "error": null,
+      "data": {
+        "classificationId": 1,
+        "reason": "无法匹配到任何预设意图"
+      },
+      "startTime": 1741424693130,
+      "endTime": 1741424694654
+    },
+    "656": {
+      "nodeId": 656,
+      "success": true,
+      "error": null,
+      "data": {
+        "测试": 12.0
+      },
+      "startTime": 1741424694655,
+      "endTime": 1741424694655
+    }
+  },
+  "costTime": 1526,
+  "complete": true
+}

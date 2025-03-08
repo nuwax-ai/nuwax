@@ -306,7 +306,6 @@ export const generatePorts = (data: ChildNode, height?: number) => {
     }
     case 'QA': {
       const type = data.nodeConfig.answerType;
-      console.log(type);
       const configs = data.nodeConfig?.options;
       if (type === 'SELECT') {
         outputPorts = (configs || []).map((item, index) => ({

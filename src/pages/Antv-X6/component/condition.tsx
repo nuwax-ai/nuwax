@@ -178,7 +178,6 @@ export const ConditionList: React.FC<ConditionListProps> = ({
             >
               <Form.List name={inputItemName}>
                 {(fields, { add, remove }, { errors }) => {
-                  console.log(fields);
                   return (
                     <div className="relative">
                       <div
