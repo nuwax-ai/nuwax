@@ -29,24 +29,23 @@ const CodeEditor: React.FC<Props> = ({
   }, []);
 
   return (
-    <div className="code-editor">
-      <Editor
-        height={height}
-        language={codeLanguage ? codeLanguage.toLowerCase() : 'javascript'}
-        theme="vs-dark"
-        value={value} // 使用 value 而不是 defaultValue，使编辑器成为受控组件
-        onChange={handleCodeChange}
-        options={{
-          selectOnLineNumbers: true,
-          folding: true,
-          automaticLayout: true,
-        }}
-        beforeMount={(monaco) => {
-          // 注册python语言支持
-          monaco.languages.register({ id: 'python' });
-        }}
-      />
-    </div>
+    <Editor
+      height={height}
+      className={'code-editor'}
+      language={codeLanguage ? codeLanguage.toLowerCase() : 'javascript'}
+      theme="vs-dark"
+      value={value} // 使用 value 而不是 defaultValue，使编辑器成为受控组件
+      onChange={handleCodeChange}
+      options={{
+        selectOnLineNumbers: true,
+        folding: true,
+        automaticLayout: true,
+      }}
+      beforeMount={(monaco) => {
+        // 注册python语言支持
+        monaco.languages.register({ id: 'python' });
+      }}
+    />
   );
 };
 

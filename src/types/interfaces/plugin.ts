@@ -21,12 +21,19 @@ export interface PluginTestParams {
   params: object;
 }
 
+// 执行结果
+export interface PluginTestResultObject {
+  HTTP_BODY: string;
+  HTTP_HEADERS: string;
+  HTTP_STATUS_CODE: number;
+}
+
 // 插件试运行输出结果
 export interface PluginTestResult {
-  // 	执行结果状态
+  // 执行结果状态
   success: boolean;
   // 执行结果
-  result: object;
+  result: PluginTestResultObject;
   // 执行日志
   logs: string[];
   // 执行错误信息

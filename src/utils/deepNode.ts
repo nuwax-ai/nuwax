@@ -1,4 +1,5 @@
 // 递归计算节点深度
+import { PLUGIN_INPUT_CONFIG } from '@/constants/space.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 
@@ -74,17 +75,33 @@ export const updateNodeField = (
   arr: BindConfigWithSub[],
   key: string,
   field: string,
-  value: string | number | boolean,
+  value: string | number | boolean | any,
 ) => {
   const updateRecursive = (data: BindConfigWithSub[]) =>
     data.map((node) => {
       if (node.key === key) {
-        if (
-          field === 'dataType' &&
-          [DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(value)
-        ) {
-          node.bindValue = '';
+        if (field === 'dataType') {
+          if (
+            [DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(value) ||
+            value.toString().includes('Array')
+          ) {
+            // 对象或数组时，默认值置空
+            node.bindValue = '';
+          }
+          // 切换参数类型： 如果是对象或者数组对象，则自动添加子项，反之，清空子项
+          if (
+            [DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(value)
+          ) {
+            const newNode = {
+              key: Math.random(),
+              ...PLUGIN_INPUT_CONFIG,
+            };
+            node.subArgs = [newNode];
+          } else {
+            node.subArgs = undefined;
+          }
         }
+        // 返回节点
         return { ...node, [field]: value };
       }
       if (node.subArgs) {

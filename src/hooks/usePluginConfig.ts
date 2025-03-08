@@ -3,6 +3,7 @@ import {
   PLUGIN_OUTPUT_CONFIG,
 } from '@/constants/space.constants';
 import { apiPluginConfigHistoryList } from '@/services/plugin';
+import { DataTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PluginInfo } from '@/types/interfaces/plugin';
 import type { HistoryData } from '@/types/interfaces/space';
@@ -57,6 +58,17 @@ const usePluginConfig = () => {
   ) => {
     const _inputConfigArgs = updateNodeField(inputConfigArgs, key, attr, value);
     setInputConfigArgs(_inputConfigArgs);
+
+    if (attr === 'dataType') {
+      // 设置默认展开行
+      if ([DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(value)) {
+        const _expandedRowKeys = [...expandedRowKeys, key];
+        setExpandedRowKeys(_expandedRowKeys);
+      } else if (expandedRowKeys.includes(key)) {
+        const _expandedRowKeys = expandedRowKeys.filter((item) => item !== key);
+        setExpandedRowKeys(_expandedRowKeys);
+      }
+    }
   };
 
   // 出参配置 - changeValue
@@ -72,6 +84,19 @@ const usePluginConfig = () => {
       value,
     );
     setOutputConfigArgs(_outputConfigArgs);
+
+    if (attr === 'dataType') {
+      // 设置默认展开行
+      if ([DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(value)) {
+        const _outputExpandedRowKeys = [...outputExpandedRowKeys, key];
+        setOutputExpandedRowKeys(_outputExpandedRowKeys);
+      } else if (outputExpandedRowKeys.includes(key)) {
+        const _outputExpandedRowKeys = outputExpandedRowKeys.filter(
+          (item) => item !== key,
+        );
+        setOutputExpandedRowKeys(_outputExpandedRowKeys);
+      }
+    }
   };
 
   // 入参配置 - 新增参数
