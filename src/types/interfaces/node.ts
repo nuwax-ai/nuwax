@@ -56,10 +56,11 @@ interface Extension {
 }
 
 export interface QANodeOption {
-  index: string;
+  index: number;
   content: string;
   nextNodeIds?: number[];
   uuid: string;
+  disabled?: boolean;
 }
 // 节点内部的config
 export interface NodeConfig {

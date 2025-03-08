@@ -19,6 +19,7 @@ import {
   Space,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
 import { outPutConfigs } from '../params';
 import { FormList, InputAndOut, TreeOutput } from './commonNode';
@@ -214,6 +215,40 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
     Modified({ ...params, ...newNodeConfig });
   };
 
+  const changeType = (val: string) => {
+    // 首次选中
+    let options = params.options;
+    if (val === 'SELECT' && (!options || !options.length)) {
+      options = [
+        {
+          uuid: uuidv4(),
+          index: 0,
+          content: '',
+          nextNodeIds: [],
+        },
+        {
+          uuid: uuidv4(),
+          index: 1,
+          content: '此选项用户不可见，用户回复无关内容时走此分支',
+          nextNodeIds: [],
+        },
+      ];
+    }
+    // 添加变更检查
+    const typeChanged = val !== params.answerType;
+    const optionsChanged = options !== params.options;
+    if (typeChanged || optionsChanged) {
+      // [!code ++]
+      if (updateNode) {
+        updateNode({
+          ...params,
+          answerType: val,
+          options,
+        });
+      }
+    } // [!code ++]
+  };
+
   const changeOptions = (newNodeConfig: NodeConfig) => {
     if (updateNode) {
       updateNode({
@@ -227,6 +262,11 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
       });
     }
   };
+  useEffect(() => {
+    if (params && params.answerType === null) {
+      Modified({ ...params, answerType: 'TEXT' });
+    }
+  }, [params]);
   return (
     <div className="node-title-style">
       {/* 模型模块 */}
@@ -255,9 +295,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
       {/* 回答类型 */}
       <div>
         <Radio.Group
-          onChange={(value: RadioChangeEvent) =>
-            Modified({ ...params, answerType: value.target.value })
-          }
+          onChange={(value: RadioChangeEvent) => changeType(value.target.value)}
           value={params.answerType}
         >
           <Space direction="vertical">
@@ -286,6 +324,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
           inputItemName="options"
           initialValues={{ options: params.options || [] }}
           showIndex
+          hasUuid
           handleChangeNodeConfig={handleChangeNodeConfig}
         />
       )}

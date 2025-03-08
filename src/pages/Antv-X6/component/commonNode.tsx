@@ -74,7 +74,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   }, [form, inputItemName, initialValues]);
 
   useEffect(() => {
-    console.log(volid);
     if (volid) {
       form.validateFields();
     }
@@ -388,6 +387,13 @@ export const FormList: React.FC<FormListProps> = ({
                 ) {
                   fieldData = true;
                 }
+                if (
+                  form.getFieldValue([inputItemName, item.name, 'content']) ===
+                  '此选项用户不可见，用户回复无关内容时走此分支'
+                ) {
+                  fieldData = true;
+                }
+
                 return (
                   <Form.Item key={index}>
                     <div className="dis-sb">

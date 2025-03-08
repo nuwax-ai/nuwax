@@ -15,6 +15,7 @@ import {
   HttpNodeConfig,
   IntentConfigs,
   NodeConfig,
+  QANodeOption,
 } from '@/types/interfaces/node';
 import type { FormInstance } from 'antd';
 
@@ -157,17 +158,6 @@ export interface RenderItemProps {
   showCopy?: boolean;
 }
 
-interface QAOptions {
-  content: string;
-  index?: string;
-  nextNodeIds?: number[];
-}
-interface QAOptions {
-  content: string;
-  index?: string;
-  nextNodeIds?: number[];
-}
-
 export interface InitialValues {
   inputArgs?: InputAndOutConfig[];
   outputArgs?: InputAndOutConfig[];
@@ -176,7 +166,7 @@ export interface InitialValues {
   headers?: InputAndOutConfig[];
   body?: InputAndOutConfig[];
   queries?: InputAndOutConfig[];
-  options?: QAOptions[];
+  options?: QANodeOption[];
   intentConfigs?: IntentConfigs[];
 }
 
