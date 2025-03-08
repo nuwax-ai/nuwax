@@ -1,7 +1,7 @@
+import ConditionRender from '@/components/ConditionRender';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
-import ConditionRender from '@/components/ConditionRender';
 
 const cx = classNames.bind(styles);
 

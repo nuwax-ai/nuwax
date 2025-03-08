@@ -1,7 +1,7 @@
 import FoldWrap from '@/components/FoldWrap';
 import { HistoryActionTypeEnum } from '@/types/enums/space';
 import type { VersionHistoryProps } from '@/types/interfaces/space';
-import { Button } from 'antd';
+// import { Button } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment';
 import React from 'react';
@@ -39,9 +39,9 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
     >
       <div className={cx(styles['main-wrap'])}>
         {list?.map((item) => (
-          <div key={item.id} className={cx(styles.box)}>
+          <div key={item.id} className={cx(styles.box, 'py-6')}>
             <div className={cx('flex', 'items-center', styles.header)}>
-              <span className={cx(styles.name, 'text-ellipsis')}>
+              <span className={cx(styles.name, 'flex-1', 'text-ellipsis')}>
                 {item.opUser.nickName}
               </span>
               <span className={cx(styles['author-update-time'])}>
@@ -50,9 +50,9 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
               <span className={styles['new-version']}>
                 {getType(item.type)}
               </span>
-              <Button type="link" className={cx(styles['recover-btn'])}>
-                恢复
-              </Button>
+              {/*<Button type="link" className={cx(styles['recover-btn'])}>*/}
+              {/*  恢复*/}
+              {/*</Button>*/}
             </div>
             <p>{item.description}</p>
           </div>

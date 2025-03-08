@@ -63,7 +63,7 @@ export interface LabelStarProps {
 }
 
 // 试运行弹窗组件属性
-export interface TryRunModelProps {
+export interface PluginTryRunModelProps {
   inputConfigArgs: BindConfigWithSub[];
   pluginId: string;
   pluginName: string;

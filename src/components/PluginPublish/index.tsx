@@ -16,7 +16,7 @@ const PluginPublish: React.FC<PluginPublishProps> = ({
   const [scope, setScope] = useState<PluginPublishScopeEnum>();
 
   // 插件发布
-  const { run: runPublish } = useRequest(apiPluginPublish, {
+  const { run: runPublish, loading } = useRequest(apiPluginPublish, {
     manual: true,
     debounceWait: 300,
     onSuccess: () => {
@@ -48,6 +48,7 @@ const PluginPublish: React.FC<PluginPublishProps> = ({
     <CustomFormModal
       form={form}
       open={open}
+      loading={loading}
       onCancel={onCancel}
       title="发布插件"
       onConfirm={handleConfirm}

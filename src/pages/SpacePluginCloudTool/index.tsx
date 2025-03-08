@@ -1,7 +1,9 @@
+import CodeEditor from '@/components/CodeEditor';
 import CreateNewPlugin from '@/components/CreateNewPlugin';
 import LabelStar from '@/components/LabelStar';
 import PluginConfigTitle from '@/components/PluginConfigTitle';
 import PluginPublish from '@/components/PluginPublish';
+import TryRunModel from '@/components/PluginTryRunModel';
 import VersionHistory from '@/components/VersionHistory';
 import { VARIABLE_TYPE_LIST } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
@@ -11,6 +13,7 @@ import { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
 import { PluginCodeModeEnum } from '@/types/enums/plugin';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PluginInfo } from '@/types/interfaces/plugin';
+import { getActiveKeys } from '@/utils/deepNode';
 import { DeleteOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import { Checkbox, Input, message, Select, Space, Table } from 'antd';
@@ -19,7 +22,6 @@ import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 import PluginHeader from './PluginCodeHeader';
-import CodeEditor from '@/components/CodeEditor';
 
 const cx = classNames.bind(styles);
 
@@ -30,11 +32,15 @@ const SpacePluginCloudTool: React.FC = () => {
   const [codeMode, setCodeMode] = useState<PluginCodeModeEnum>(
     PluginCodeModeEnum.Metadata,
   );
-  const [visible, setVisible] = useState<boolean>(false);
-  const [openModal, setOpenModal] = useState<boolean>(false);
   const [code, setCode] = useState<string>('');
 
   const {
+    isModalOpen,
+    setIsModalOpen,
+    visible,
+    setVisible,
+    openModal,
+    setOpenModal,
     runHistory,
     pluginId,
     pluginInfo,
@@ -78,16 +84,10 @@ const SpacePluginCloudTool: React.FC = () => {
       if (result.config) {
         const { inputArgs, outputArgs } = result.config;
         // 默认展开的入参配置key
-        const _expandedRowKeys =
-          inputArgs
-            ?.filter((item) => item?.children?.length > 0)
-            ?.map((item) => item.key) || [];
+        const _expandedRowKeys = getActiveKeys(inputArgs);
         setExpandedRowKeys(_expandedRowKeys);
         // 默认展开的出参配置key
-        const _outputExpandedRowKeys =
-          outputArgs
-            ?.filter((item) => item?.children?.length > 0)
-            ?.map((item) => item.key) || [];
+        const _outputExpandedRowKeys = getActiveKeys(outputArgs);
         setOutputExpandedRowKeys(_outputExpandedRowKeys);
         setInputConfigArgs(inputArgs);
         setOutputConfigArgs(outputArgs);
@@ -120,9 +120,7 @@ const SpacePluginCloudTool: React.FC = () => {
         <Input
           placeholder="请输入参数名称，确保含义清晰"
           value={value}
-          onChange={(e) =>
-            handleInputValue(record.key, 'name', e.target.value)
-          }
+          onChange={(e) => handleInputValue(record.key, 'name', e.target.value)}
         />
       ),
     },
@@ -149,9 +147,7 @@ const SpacePluginCloudTool: React.FC = () => {
         <Select
           rootClassName={styles.select}
           value={value}
-          onChange={(value) =>
-            handleInputValue(record.key, 'dataType', value)
-          }
+          onChange={(value) => handleInputValue(record.key, 'dataType', value)}
           options={VARIABLE_TYPE_LIST}
         />
       ),
@@ -179,10 +175,13 @@ const SpacePluginCloudTool: React.FC = () => {
       render: (value, record) => (
         <Input
           placeholder="请输入默认值"
-          onChange={(e) =>
-            handleInputValue(record.key, 'bindValue', e.target.checked)
-          }
+          disabled={[DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(
+            record.dataType,
+          )}
           value={value}
+          onChange={(e) =>
+            handleInputValue(record.key, 'bindValue', e.target.value)
+          }
         />
       ),
     },
@@ -208,13 +207,14 @@ const SpacePluginCloudTool: React.FC = () => {
       align: 'right',
       render: (_, record) => (
         <Space size="middle">
-          {record.dataType === DataTypeEnum.Object &&
-            // inputConfigArgs?.[index]?.key === record.key && (
+          {[DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(
+            record.dataType,
+          ) && (
             <ICON_ADD_TR
               className={cx('cursor-pointer')}
               onClick={() => handleInputAddChild(record.key)}
             />
-          }
+          )}
           <DeleteOutlined onClick={() => handleInputDel(record.key)} />
         </Space>
       ),
@@ -262,9 +262,7 @@ const SpacePluginCloudTool: React.FC = () => {
         <Select
           rootClassName={styles.select}
           value={value}
-          onChange={(value) =>
-            handleOutputValue(record.key, 'dataType', value)
-          }
+          onChange={(value) => handleOutputValue(record.key, 'dataType', value)}
           options={VARIABLE_TYPE_LIST}
         />
       ),
@@ -289,15 +287,16 @@ const SpacePluginCloudTool: React.FC = () => {
       key: 'action',
       width: 80,
       align: 'right',
-      render: (_, record, index) => (
+      render: (_, record) => (
         <Space size="middle">
-          {record.dataType === DataTypeEnum.Object &&
-            // outputConfigArgs?.[index]?.key === record.key && (
-              <ICON_ADD_TR
-                className={cx('cursor-pointer')}
-                onClick={() => handleOutputAddChild(index)}
-              />
-            }
+          {[DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(
+            record.dataType,
+          ) && (
+            <ICON_ADD_TR
+              className={cx('cursor-pointer')}
+              onClick={() => handleOutputAddChild(record.key)}
+            />
+          )}
           <DeleteOutlined onClick={() => handleOutputDel(record.key)} />
         </Space>
       ),
@@ -317,10 +316,16 @@ const SpacePluginCloudTool: React.FC = () => {
   };
 
   // 试运行
-  const handleTryRun = () => {};
+  const handleTryRun = () => {
+    handleSave();
+    setIsModalOpen(true);
+  };
 
   // 发布事件
-  const handlePublish = () => {};
+  const handlePublish = () => {
+    handleSave();
+    setOpenModal(true);
+  };
 
   return (
     <div className={cx('flex', 'h-full')}>
@@ -374,6 +379,14 @@ const SpacePluginCloudTool: React.FC = () => {
                 expandIcon: () => null,
               }}
             />
+            {/*试运行弹窗*/}
+            <TryRunModel
+              inputConfigArgs={inputConfigArgs}
+              pluginId={pluginId}
+              pluginName={pluginInfo?.name as string}
+              open={isModalOpen}
+              onCancel={() => setIsModalOpen(false)}
+            />
           </div>
         ) : (
           <div
@@ -384,7 +397,12 @@ const SpacePluginCloudTool: React.FC = () => {
               'flex-1',
             )}
           >
-            <CodeEditor value={code} height={'600px'} changeCode={handleCodeChange} codeLanguage={pluginInfo?.config?.codeLang} />
+            <CodeEditor
+              value={code}
+              height={'600px'}
+              changeCode={handleCodeChange}
+              codeLanguage={pluginInfo?.config?.codeLang}
+            />
           </div>
         )}
       </div>
