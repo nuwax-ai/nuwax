@@ -14,11 +14,11 @@ import type { BindConfigWithSub, CreatorInfo } from '@/types/interfaces/agent';
 // 插件试运行输入参数
 export interface PluginTestParams {
   // 请求ID
-  requestId: string;
+  requestId?: string;
   // 插件ID
   pluginId: number;
   // 插件参数
-  params: object;
+  params: unknown;
 }
 
 // 执行结果

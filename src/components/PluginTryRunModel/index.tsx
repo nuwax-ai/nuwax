@@ -1,3 +1,4 @@
+import { ARRAY_ITEM } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
 import { PLUGIN_INPUT_CONFIG } from '@/constants/space.constants';
 import { apiPluginTest } from '@/services/plugin';
@@ -10,7 +11,6 @@ import {
 } from '@/types/interfaces/plugin';
 import { addChildNode, deleteNode, updateNodeField } from '@/utils/deepNode';
 import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
-import type { TableColumnsType } from 'antd';
 import { Button, Input, message, Modal, Space, Table } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -19,8 +19,6 @@ import styles from './index.less';
 import ParamsNameLabel from './ParamsNameLabel';
 
 const cx = classNames.bind(styles);
-
-const ARRAY_ITEM = '[Array_Item]';
 
 // 试运行弹窗组件
 const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
@@ -33,7 +31,7 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
 }) => {
   const [dataSource, setDataSource] = useState<BindConfigWithSub[]>([]);
   // 入参配置 - 展开的行，控制属性
-  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
+  const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   const [testResult, setTestResult] = useState<PluginTestResultObject>();
 
   // 插件试运行接口
@@ -50,16 +48,55 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
     },
   });
 
+  // 处理Array_Object类型数据
+  const handleArrayObjectArr = (
+    treeData: BindConfigWithSub[],
+    keys: React.Key[],
+  ) => {
+    const deepArrayObject = (arr: BindConfigWithSub[]) => {
+      return arr.map((node) => {
+        const { dataType, subArgs } = node;
+        if (dataType === DataTypeEnum.Array_Object) {
+          const key = Math.random();
+          keys.push(key);
+          // 子级数组长度大于0
+          if (subArgs && subArgs.length > 0) {
+            const _subArgs: BindConfigWithSub[] = [
+              {
+                ...PLUGIN_INPUT_CONFIG,
+                key,
+                name: ARRAY_ITEM,
+                dataType: DataTypeEnum.Object,
+                subArgs: deepArrayObject(subArgs as BindConfigWithSub[]),
+              },
+            ];
+
+            return {
+              ...node,
+              subArgs: _subArgs,
+            };
+          }
+        }
+        return node;
+      });
+    };
+
+    return (deepArrayObject(treeData) as BindConfigWithSub[]) || [];
+  };
+
   useEffect(() => {
-    setExpandedRowKeys(inputExpandedRowKeys);
     if (inputConfigArgs?.length > 0) {
-      setDataSource(inputConfigArgs);
+      const keys = [...inputExpandedRowKeys];
+      const _inputConfigArgs =
+        handleArrayObjectArr(inputConfigArgs, keys) || [];
+      setExpandedRowKeys(keys);
+      setDataSource(_inputConfigArgs);
     }
   }, [inputConfigArgs, inputExpandedRowKeys]);
 
   // 入参配置 - changeValue
   const handleInputValue = (
-    key: string,
+    key: React.Key,
     attr: string,
     value: string | number | boolean,
   ) => {
@@ -67,45 +104,108 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
     setDataSource(_dataSource);
   };
 
-  // 入参配置 - 新增参数
-  const handleInputAddChild = (key: string, dataType: DataTypeEnum) => {
-    const addDataType = dataType.split('_')[1] as DataTypeEnum;
-    const newNode = {
-      ...PLUGIN_INPUT_CONFIG,
-      key: Math.random(),
-      name: ARRAY_ITEM,
-      dataType: addDataType,
+  // 递归获取子级，以及展开的key值
+  const handleChangeSubArgsKey = (
+    bindConfig: BindConfigWithSub,
+    keys: React.Key[],
+  ) => {
+    const addKey = (data: BindConfigWithSub) => {
+      // 存在下级，递归更新key值
+      if (data.subArgs && data.subArgs.length > 0) {
+        // 更新下级
+        const newSub: BindConfigWithSub[] =
+          data.subArgs?.map((item) => {
+            const subKey = Math.random();
+            // 不存在下级
+            if (!item.subArgs?.length) {
+              return {
+                ...item,
+                key: subKey,
+                bindValue: '', // 清空默认值
+              };
+            } else {
+              keys.push(subKey);
+              return addKey(item);
+            }
+          }) || [];
+        // 更新父级key， 并加入active keys
+        const newDataKey = Math.random();
+        keys.push(newDataKey);
+        return {
+          ...data,
+          key: newDataKey,
+          subArgs: newSub,
+        };
+      }
+
+      // 不存在subArgs
+      return {
+        ...data,
+        key: Math.random(),
+      };
     };
 
-    const _dataSource = addChildNode(dataSource, key, newNode);
+    return addKey(bindConfig);
+  };
+
+  // 入参配置 - 新增参数 只有“数组类型（eg: Array_）”才有新增下级按钮
+  const handleInputAddChild = (record: BindConfigWithSub) => {
+    const { key, dataType } = record;
+    let newNode;
+    const keys: React.Key[] = [];
+    // 数组对象, 必须要有第一项，不认复制的对象不存在name值
+    if (dataType === DataTypeEnum.Array_Object) {
+      if (record.subArgs && record.subArgs.length > 0) {
+        // 取第一行对象数据，作为添加的项，但是需要更新key值，以及它的子级的key值
+        const currentSubArgs = record.subArgs?.[0] as BindConfigWithSub;
+        newNode = handleChangeSubArgsKey(currentSubArgs, keys);
+      }
+    } else {
+      const addDataType = dataType?.toString()?.split('_')?.[1] as DataTypeEnum;
+      newNode = {
+        ...PLUGIN_INPUT_CONFIG,
+        key: Math.random(),
+        name: ARRAY_ITEM,
+        dataType: addDataType,
+      };
+    }
+
+    const _dataSource = addChildNode(
+      dataSource,
+      key,
+      newNode as BindConfigWithSub,
+    );
     setDataSource(_dataSource);
 
     // 设置默认展开行
     const _expandedRowKeys = [...expandedRowKeys];
     if (!_expandedRowKeys.includes(key)) {
       _expandedRowKeys.push(key);
-      setExpandedRowKeys(_expandedRowKeys);
     }
+    if (dataType === DataTypeEnum.Array_Object) {
+      _expandedRowKeys.push(...keys);
+    }
+    setExpandedRowKeys(_expandedRowKeys);
   };
 
   // 配置删除操作
-  const handleInputDel = (key: string) => {
+  const handleInputDel = (key: React.Key) => {
     const _dataSource = deleteNode(dataSource, key);
     setDataSource(_dataSource);
   };
 
   // 入参配置columns
-  const inputColumns: TableColumnsType<BindConfigWithSub>['columns'] = [
+  const inputColumns = [
     {
       title: '参数名称',
       dataIndex: 'name',
       key: 'name',
       className: 'flex',
-      render: (_, record) => (
+      render: (_: string, record: BindConfigWithSub) => (
         <ParamsNameLabel
           require={record.require}
           paramName={record.name}
-          paramType={record.dataType}
+          paramType={record.dataType as DataTypeEnum}
         />
       ),
     },
@@ -113,11 +213,11 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
       title: '参数值',
       dataIndex: 'description',
       key: 'description',
-      render: (value, record) => (
+      render: (_: string, record: BindConfigWithSub) => (
         <>
-          {[DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(
-            record?.dataType,
-          ) || record?.dataType.includes('Array') ? null : (
+          {DataTypeEnum.Object === record.dataType ||
+          DataTypeEnum.Array_Object === record.dataType ||
+          record.dataType?.includes('Array') ? null : (
             <Input
               value={record.bindValue}
               onChange={(e) =>
@@ -133,16 +233,17 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
     {
       title: '操作',
       key: 'action',
-      width: 80,
+      width: 60,
       align: 'center',
-      render: (_, record) => (
+      render: (_, record: BindConfigWithSub, index: number) => (
         <Space size="middle">
-          {record.dataType.includes('Array') ? (
+          {record.dataType?.includes('Array') ? (
             <ICON_ADD_TR
               className={cx('cursor-pointer')}
-              onClick={() => handleInputAddChild(record.key, record.dataType)}
+              onClick={() => handleInputAddChild(record)}
             />
-          ) : record.name === ARRAY_ITEM ? (
+          ) : record.name === ARRAY_ITEM && index !== 0 ? (
+            // Array_Object时，第一项不能删除
             <DeleteOutlined onClick={() => handleInputDel(record.key)} />
           ) : null}
         </Space>
@@ -150,28 +251,57 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
     },
   ];
 
+  const handleArrayItem = (treeData: BindConfigWithSub[]) => {
+    const params = {};
+    const arrayItem = (data: BindConfigWithSub[]) => {
+      data.forEach((item) => {
+        const { dataType } = item;
+        if (!dataType?.includes('Array') && dataType !== DataTypeEnum.Object) {
+          return (params[item.name] = item.bindValue);
+        }
+        if (dataType?.includes('Array') && !dataType?.includes('Object')) {
+          return (params[item.name] = item.subArgs?.map(
+            (info) => info.bindValue,
+          ));
+        }
+        // 数组或者数组对象
+        if (item.subArgs && item.subArgs?.length > 0) {
+          return {
+            [item.name]: arrayItem(item.subArgs),
+          };
+        }
+      });
+    };
+    arrayItem(treeData);
+    return params;
+  };
+
   // todo 待完善
   const handleRunTest = () => {
-    const _dataSource = dataSource.map((item) => {
-      const { dataType } = item;
-      if (!dataType?.includes('Array') && dataType !== DataTypeEnum.Object) {
-        return item;
-      }
-      if (item.subArgs?.length > 0) {
-        const bindValue = item.subArgs?.map((item) => item.bindValue);
-        // omit(item, ['subArgs']);
-        item.subArgs = undefined;
-        return {
-          ...item,
-          bindValue,
-        };
-      }
-      return item;
-    });
-    const params = {};
-    for (let item of _dataSource) {
-      params[item.name] = item.bindValue;
-    }
+    // const _dataSource = dataSource.map((item) => {
+    //   const { dataType } = item;
+    //   if (!dataType?.includes('Array') && dataType !== DataTypeEnum.Object) {
+    //     return item;
+    //   }
+    //   if (item.subArgs && item.subArgs?.length > 0) {
+    //     const bindValue = item.subArgs?.map((item) => item.bindValue);
+    //     item.subArgs = undefined;
+    //     return {
+    //       ...item,
+    //       bindValue,
+    //     };
+    //   }
+    //   return item;
+    // });
+    const params = handleArrayItem(dataSource);
+    console.log(params, 7777777);
+    // const params = {} as {
+    //   [key: string]: string | number | unknown;
+    // };
+    //
+    // for (let item of _dataSource) {
+    //   params[item.name] = item.bindValue;
+    // }
     runTest({
       pluginId,
       params,

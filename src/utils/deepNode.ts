@@ -2,11 +2,12 @@
 import { PLUGIN_INPUT_CONFIG } from '@/constants/space.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
+import React from 'react';
 
 // 递归计算节点深度
 export const getNodeDepth = (
   treeData: BindConfigWithSub[],
-  key: string,
+  key: React.Key,
   depth = 1,
 ): number => {
   for (const node of treeData) {
@@ -22,11 +23,11 @@ export const getNodeDepth = (
 // 添加子节点
 export const addChildNode = (
   treeData: BindConfigWithSub[],
-  key: string,
+  key: React.Key,
   newNode: BindConfigWithSub,
 ) => {
-  const updateRecursive = (arr: BindConfigWithSub[]) =>
-    arr.map((node) => {
+  const updateRecursive = (arr: BindConfigWithSub[]) => {
+    return arr.map((node) => {
       if (node.key === key) {
         return {
           ...node,
@@ -38,6 +39,7 @@ export const addChildNode = (
       }
       return node;
     });
+  };
 
   return (updateRecursive(treeData) as BindConfigWithSub[]) || [];
 };
@@ -59,13 +61,14 @@ export const getActiveKeys = (arr: BindConfigWithSub[]) => {
 };
 
 // 删除节点
-export const deleteNode = (arr: BindConfigWithSub[], key: string) => {
-  const filterRecursive = (data: BindConfigWithSub[]) =>
-    data.filter((node) => {
+export const deleteNode = (arr: BindConfigWithSub[], key: React.Key) => {
+  const filterRecursive = (data: BindConfigWithSub[]) => {
+    return data.filter((node) => {
       if (node.key === key) return false;
       if (node.subArgs) node.subArgs = filterRecursive(node.subArgs);
       return true;
     });
+  };
 
   return (filterRecursive(arr) as BindConfigWithSub[]) || [];
 };
@@ -73,14 +76,15 @@ export const deleteNode = (arr: BindConfigWithSub[], key: string) => {
 // 更新节点字段
 export const updateNodeField = (
   arr: BindConfigWithSub[],
-  key: string,
+  key: React.Key,
   field: string,
-  value: string | number | boolean | any,
+  value: React.Key | boolean | any,
 ) => {
-  const updateRecursive = (data: BindConfigWithSub[]) =>
-    data.map((node) => {
+  const updateRecursive = (data: BindConfigWithSub[]) => {
+    return data.map((node) => {
       if (node.key === key) {
         if (field === 'dataType') {
+          // 切换参数类型： 如果是对象或者数组对象或者是数组相关类型，则清空默认值
           if (
             [DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(value) ||
             value.toString().includes('Array')
@@ -109,6 +113,7 @@ export const updateNodeField = (
       }
       return node;
     });
+  };
 
   return (updateRecursive(arr) as BindConfigWithSub[]) || [];
 };

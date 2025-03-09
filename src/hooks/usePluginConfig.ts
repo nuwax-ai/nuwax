@@ -9,7 +9,7 @@ import type { PluginInfo } from '@/types/interfaces/plugin';
 import type { HistoryData } from '@/types/interfaces/space';
 import { addChildNode, deleteNode, updateNodeField } from '@/utils/deepNode';
 import cloneDeep from 'lodash/cloneDeep';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useMatch, useRequest } from 'umi';
 
 const usePluginConfig = () => {
@@ -25,11 +25,11 @@ const usePluginConfig = () => {
   // 插件信息
   const [pluginInfo, setPluginInfo] = useState<PluginInfo>();
   // 入参配置 - 展开的行，控制属性
-  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
+  const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   // 出参配置 - 展开的行，控制属性
-  const [outputExpandedRowKeys, setOutputExpandedRowKeys] = useState<string[]>(
-    [],
-  );
+  const [outputExpandedRowKeys, setOutputExpandedRowKeys] = useState<
+    React.Key[]
+  >([]);
   // 历史版本数据
   const [historyData, setHistoryData] = useState<HistoryData[]>([]);
   // 入参配置
@@ -52,7 +52,7 @@ const usePluginConfig = () => {
 
   // 入参配置 - changeValue
   const handleInputValue = (
-    key: string,
+    key: React.Key,
     attr: string,
     value: string | number | boolean,
   ) => {
@@ -73,7 +73,7 @@ const usePluginConfig = () => {
 
   // 出参配置 - changeValue
   const handleOutputValue = (
-    key: string,
+    key: React.Key,
     attr: string,
     value: string | number | boolean,
   ) => {
