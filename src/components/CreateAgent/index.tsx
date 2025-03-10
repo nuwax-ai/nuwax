@@ -3,22 +3,22 @@ import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { SPACE_ID } from '@/constants/home.constants';
-import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
-import { CREATE_AGENT_LIST } from '@/constants/space.constants';
+// import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
+// import { CREATE_AGENT_LIST } from '@/constants/space.constants';
 import { apiAgentAdd, apiAgentConfigUpdate } from '@/services/agentConfig';
-import { CreateAgentEnum, CreateUpdateModeEnum } from '@/types/enums/common';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { AgentAddParams } from '@/types/interfaces/agent';
 import type { CreateAgentProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, FormProps, Input, message, Segmented } from 'antd';
-import classNames from 'classnames';
+import { Form, FormProps, Input, message } from 'antd';
+// import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
-import styles from './index.less';
+// import styles from './index.less';
 
-const cx = classNames.bind(styles);
-
-const { TextArea } = Input;
+// const cx = classNames.bind(styles);
+//
+// const { TextArea } = Input;
 
 const CreateAgent: React.FC<CreateAgentProps> = ({
   mode = CreateUpdateModeEnum.Create,
@@ -29,9 +29,9 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   onConfirmUpdate,
 }) => {
   // 分段控制器：标准创建、AI 创建
-  const [createAgentType, setCreateAgentType] = useState<CreateAgentEnum>(
-    CreateAgentEnum.Standard,
-  );
+  // const [createAgentType, setCreateAgentType] = useState<CreateAgentEnum>(
+  //   CreateAgentEnum.Standard,
+  // );
   const [imageUrl, setImageUrl] = useState<string>('');
   const [form] = Form.useForm();
 
@@ -87,26 +87,26 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       form={form}
       title="创建智能体"
       open={open}
-      okText={createAgentType === CreateAgentEnum.Standard ? '' : '生成'}
-      okPrefixIcon={
-        createAgentType === CreateAgentEnum.Standard ? (
-          ''
-        ) : (
-          <ICON_CONFIRM_STAR />
-        )
-      }
+      // okText={createAgentType === CreateAgentEnum.Standard ? '' : '生成'}
+      // okPrefixIcon={
+      //   createAgentType === CreateAgentEnum.Standard ? (
+      //     ''
+      //   ) : (
+      //     <ICON_CONFIRM_STAR />
+      //   )
+      // }
       onCancel={onCancel}
       onConfirm={handlerSubmit}
     >
-      {mode === CreateUpdateModeEnum.Create && (
-        <Segmented
-          className={cx(styles.segment)}
-          value={createAgentType}
-          onChange={setCreateAgentType}
-          block
-          options={CREATE_AGENT_LIST}
-        />
-      )}
+      {/*{mode === CreateUpdateModeEnum.Create && (*/}
+      {/*  <Segmented*/}
+      {/*    className={cx(styles.segment)}*/}
+      {/*    value={createAgentType}*/}
+      {/*    onChange={setCreateAgentType}*/}
+      {/*    block*/}
+      {/*    options={CREATE_AGENT_LIST}*/}
+      {/*  />*/}
+      {/*)}*/}
       <Form
         form={form}
         requiredMark={customizeRequiredMark}
@@ -118,49 +118,48 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         onFinish={onFinish}
         autoComplete="off"
       >
-        {createAgentType === CreateAgentEnum.Standard ? (
-          <>
-            <Form.Item
-              name="name"
-              label="智能体名称"
-              rules={[{ required: true, message: '请输入智能体名称' }]}
-            >
-              <Input
-                placeholder="给智能体起一个独一无二的名字"
-                showCount
-                maxLength={20}
-              />
-            </Form.Item>
-            <OverrideTextArea
-              name="description"
-              label="智能体功能介绍"
-              initialValue={agentConfigInfo?.description}
-              placeholder="介绍智能体的功能，将会展示给智能体的用户"
-              maxLength={500}
-            />
-            <Form.Item name="icon" label="图标">
-              <UploadAvatar
-                className={styles['upload-box']}
-                onUploadSuccess={setImageUrl}
-                imageUrl={imageUrl}
-                defaultImage={agentImage as string}
-              />
-            </Form.Item>
-          </>
-        ) : (
+        {/*{createAgentType === CreateAgentEnum.Standard ? (*/}
+        {/*  <>*/}
           <Form.Item
-            className={cx(styles['text-area'])}
-            name="description"
-            rules={[
-              { required: true, message: '请描述你希望创建一个什么样的智能体' },
-            ]}
+            name="name"
+            label="智能体名称"
+            rules={[{ required: true, message: '请输入智能体名称' }]}
           >
-            <TextArea
-              placeholder="请描述你希望创建一个什么样的智能体"
-              autoSize={{ minRows: 4, maxRows: 6 }}
+            <Input
+              placeholder="给智能体起一个独一无二的名字"
+              showCount
+              maxLength={20}
             />
           </Form.Item>
-        )}
+          <OverrideTextArea
+            name="description"
+            label="智能体功能介绍"
+            initialValue={agentConfigInfo?.description}
+            placeholder="介绍智能体的功能，将会展示给智能体的用户"
+            maxLength={500}
+          />
+          <Form.Item name="icon" label="图标">
+            <UploadAvatar
+              onUploadSuccess={setImageUrl}
+              imageUrl={imageUrl}
+              defaultImage={agentImage as string}
+            />
+          </Form.Item>
+        {/*  </>*/}
+        {/*) : (*/}
+        {/*  <Form.Item*/}
+        {/*    className={cx(styles['text-area'])}*/}
+        {/*    name="description"*/}
+        {/*    rules={[*/}
+        {/*      { required: true, message: '请描述你希望创建一个什么样的智能体' },*/}
+        {/*    ]}*/}
+        {/*  >*/}
+        {/*    <TextArea*/}
+        {/*      placeholder="请描述你希望创建一个什么样的智能体"*/}
+        {/*      autoSize={{ minRows: 4, maxRows: 6 }}*/}
+        {/*    />*/}
+        {/*  </Form.Item>*/}
+        {/*)}*/}
       </Form>
     </CustomFormModal>
   );

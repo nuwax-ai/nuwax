@@ -8,6 +8,7 @@ import type {
   SetPasswordParams,
   UserInfo,
   UserUpdateParams,
+  TenantConfigInfo,
 } from '@/types/interfaces/login';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
@@ -93,5 +94,12 @@ export async function apiResetPassword(
   return request('/api/user/password/reset', {
     method: 'POST',
     data,
+  });
+}
+
+// 租户配置信息查询接口
+export async function apiTenantConfig(): Promise<RequestResponse<TenantConfigInfo>> {
+  return request('/api/tenant/config', {
+    method: 'GET',
   });
 }

@@ -152,9 +152,9 @@ export const PLUGIN_INPUT_CONFIG = {
   description: '',
   dataType: DataTypeEnum.String,
   inputType: InputTypeEnum.Query,
-  require: false,
+  require: true,
   bindValue: '',
-  enable: false,
+  enable: true,
 };
 
 // 插件配置 - 出参配置, 默认列值
@@ -162,5 +162,5 @@ export const PLUGIN_OUTPUT_CONFIG = {
   name: '',
   description: '',
   dataType: DataTypeEnum.String,
-  enable: false,
+  enable: true,
 };

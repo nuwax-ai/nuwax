@@ -1,4 +1,4 @@
-import personal from '@/assets/images/personal.png';
+import agentImage from '@/assets/images/agent_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import { ICON_FOLD } from '@/constants/images.constants';
 import type { AgentHeaderProps } from '@/types/interfaces/agentConfig';
@@ -43,7 +43,7 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
       <LeftOutlined className={cx('hover-box')} onClick={handleBack} />
       <img
         className={cx('radius-6', styles.avatar)}
-        src={agentConfigInfo?.icon || (personal as string)}
+        src={agentConfigInfo?.icon || (agentImage as string)}
         alt=""
       />
       <div className={cx('flex', 'flex-col', styles['header-info'])}>

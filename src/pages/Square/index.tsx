@@ -13,6 +13,8 @@ import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
 import styles from './index.less';
 import SingleAgent from './SingleAgent';
+import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
+import type { TenantConfigInfo } from '@/types/interfaces/login';
 
 const cx = classNames.bind(styles);
 
@@ -20,8 +22,12 @@ const cx = classNames.bind(styles);
  * 广场
  */
 const Square: React.FC = () => {
+  // 配置信息
+  const [configInfo, setConfigInfo] = useState<TenantConfigInfo>();
+  // 智能体列表
   const [agentList, setAgentList] = useState<PublishedAgentInfo[]>([]);
   const [title, setTitle] = useState<string>('智能体');
+
   // 广场-已发布智能体列表接口
   const { run: runAgent } = useRequest(apiPublishedAgentList, {
     manual: true,
@@ -66,7 +72,11 @@ const Square: React.FC = () => {
   };
 
   useEffect(() => {
+    // 配置信息
+    const info = localStorage.getItem(TENANT_CONFIG_INFO);
+    setConfigInfo(JSON.parse(info));
     handleQuery();
+
     const unlisten = history.listen(() => {
       handleQuery();
     });
@@ -76,14 +86,21 @@ const Square: React.FC = () => {
     };
   }, []);
 
+  const handleLink = () => {
+    if (configInfo?.squareBannerLinkUrl) {
+      window.location.href = configInfo.squareBannerLinkUrl;
+    }
+  }
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <header className={cx(styles.header, 'relative')}>
-        <img className={'absolute'} src={squareImage as string} alt="" />
+      <header className={cx(styles.header, 'relative')} onClick={handleLink}>
+        <img className={'absolute'} src={configInfo?.squareBanner || squareImage as string} alt="" />
         <div className={cx(styles['cover-box'], 'h-full', 'relative')}>
-          <h3>人人都是智能设计师</h3>
-          <p>新一代AI应用设计、开发、实践平台</p>
-          <p>无需代码，轻松创建，适合各类人群，支持多种端发布及API</p>
+          <h3>{configInfo?.squareBannerText || '人人都是智能设计师'}</h3>
+          <p className={cx('text-ellipsis-2')}>
+            {configInfo?.squareBannerSubText || '新一代AI应用设计、开发、实践平台 \n 无需代码，轻松创建，适合各类人群，支持多种端发布及API'}
+          </p>
         </div>
       </header>
       <h6 className={cx(styles['theme-title'])}>{title}</h6>

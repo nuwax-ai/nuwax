@@ -2,13 +2,12 @@ import sendImage from '@/assets/images/send_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import type { AttachmentFile } from '@/types/interfaces/agent';
 import type { ChatInputProps, UploadInfo } from '@/types/interfaces/common';
 import { ClearOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import { Input, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ChatUploadFile from './ChatUploadFile';
 import styles from './index.less';
 
@@ -18,6 +17,8 @@ const cx = classNames.bind(styles);
  * 聊天输入组件
  */
 const ChatInput: React.FC<ChatInputProps> = ({
+  message: inputMessage,
+  files: inputFiles,
   className,
   onClear,
   onEnter,
@@ -27,26 +28,41 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [message, setMessage] = useState<string>('');
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
-  // 附加文件
-  const attachments: AttachmentFile[] = useMemo(() => {
-    return (
-      files?.map((file) => ({
-        fileKey: file.key,
-        fileUrl: file.url,
-        fileName: file.fileName,
-        mimeType: file.mimeType,
-      })) || []
-    );
-  }, []);
+  useEffect(() => {
+    if (inputFiles) {
+      setFiles(inputFiles);
+    }
+    if (inputMessage) {
+      setMessage(inputMessage);
+    }
+  }, [inputFiles, inputMessage]);
+
+  // 点击发送事件
+  const handleSendMessage = () => {
+    if (message || files?.length > 0) {
+      // enter事件
+      onEnter(message, files);
+      // 置空
+      setFiles([]);
+      setMessage('');
+    }
+  }
 
   // enter事件
   const handlePressEnter = (e) => {
     e.preventDefault();
     const { value } = e.target;
-    onEnter(value, attachments);
-    // 置空
-    setFiles([]);
-    setMessage('');
+    // shift+enter或者ctrl+enter时换行
+    if (e.nativeEvent.keyCode === 13 && (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)) {
+      const enterValue = `${value}\n`;
+      setMessage(enterValue);
+    } else {
+      // enter事件
+      onEnter(value, files);
+      // 置空
+      setFiles([]);
+      setMessage('');
+    }
   };
 
   // 上传成功后，修改文档列表
@@ -126,6 +142,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             </span>
           </Upload>
           <span
+            onClick={handleSendMessage}
             className={cx(
               styles['icon-box'],
               'flex',

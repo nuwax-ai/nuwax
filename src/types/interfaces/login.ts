@@ -85,3 +85,33 @@ export type ModalSliderCaptchaType = {
   onCancel: (open: boolean) => void;
   onSuccess: () => void;
 };
+
+// 租户配置信息
+export interface TenantConfigInfo {
+  // 站点名称
+  siteName: string;
+  // 站点描述
+  siteDescription: string;
+  // 站点LOGO，为空使用现有默认的
+  siteLogo: string;
+  // 登录页banner
+  loginBanner: string;
+  // 登录页banner文案
+  loginBannerText: string;
+  // 广场Banner地址，为空使用现有默认的
+  squareBanner: string;
+  // 广场Banner文案标题
+  squareBannerText: string;
+  // 广场Banner文案副标题
+  squareBannerSubText: string;
+  // 广场Banner链接，如果链接不为空，点击跳转
+  squareBannerLinkUrl: string;
+  // 开启注册, 0 关闭；1 开启，如果为0，前端不展示注册入口
+  openRegister: number;
+  // 默认站点Agent
+  defaultAgentId: number;
+  // 首页会话框下的推荐问题
+  homeRecommendQuestions: string[];
+  // 站点域名
+  domainNames: string[];
+}

@@ -1,9 +1,9 @@
 import logo from '@/assets/images/logo.png';
-import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
+import { ACCESS_TOKEN, EXPIRE_DATE, PHONE, TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import useUserInfo from '@/hooks/useUserInfo';
-import { apiLogin } from '@/services/account';
+import { apiLogin, apiTenantConfig } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
-import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
+import type { ILoginResult, LoginFieldType, TenantConfigInfo } from '@/types/interfaces/login';
 import { isValidPhone } from '@/utils/common';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import {
@@ -17,7 +17,7 @@ import {
   Select,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { history, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
 import ModalSliderCaptcha from './ModalSliderCaptcha';
@@ -50,6 +50,19 @@ const Login: React.FC = () => {
       runUserInfo();
     },
   });
+
+  // 租户配置信息查询接口
+  const { run: runTenantConfig } = useRequest(apiTenantConfig, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: TenantConfigInfo) => {
+      localStorage.setItem(TENANT_CONFIG_INFO, JSON.stringify(result));
+    },
+  });
+
+  useEffect(() => {
+    runTenantConfig();
+  }, []);
 
   // 账号密码登录
   const handlerPasswordLogin = () => {

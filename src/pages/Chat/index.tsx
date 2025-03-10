@@ -1,8 +1,8 @@
 import ChatInput from '@/components/ChatInput';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import AgentChatEmpty from '@/pages/EditAgent/PreviewAndDebug/AgentChatEmpty';
-import ChatView from '@/pages/EditAgent/PreviewAndDebug/ChatView';
-import RecommendList from '@/pages/EditAgent/PreviewAndDebug/RecommendList';
+import AgentChatEmpty from '@/components/AgentChatEmpty';
+import ChatView from '@/components/ChatView';
+import RecommendList from '@/components/RecommendList';
 import {
   apiAgentConversation,
   apiAgentConversationChatSuggest,
@@ -13,9 +13,8 @@ import {
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
-import {
+import type {
   AgentConversationInfo,
-  AttachmentFile,
   ConversationChatResponse,
   CreatorInfo,
 } from '@/types/interfaces/agent';
@@ -23,9 +22,11 @@ import { createSSEConnection } from '@/utils/fetchEventSource';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useRef, useState } from 'react';
-import { useLocation, useRequest } from 'umi';
+import { useLocation, useMatch, useRequest } from 'umi';
 import styles from './index.less';
 import ShowArea from './ShowArea';
+import moment from 'moment';
+import type { UploadInfo } from '@/types/interfaces/common';
 
 const cx = classNames.bind(styles);
 
@@ -35,9 +36,14 @@ const cx = classNames.bind(styles);
 const Chat: React.FC = () => {
   const [chatTitle, setChatTitle] = useState<string>();
   const location = useLocation();
-  const { message, attachments } = location.state;
-
-  const [devConversationId, setDevConversationId] = useState<number>(0);
+  // 会话ID
+  const match = useMatch('/home/chat/:id');
+  const id = match.params?.id;
+  // 附加state
+  const message = location.state?.message;
+  const files = location.state?.files;
+  // 会话ID
+  const [devConversationId, setDevConversationId] = useState<number>(id || 0);
   // 会话信息
   const [conversationInfo, setConversationInfo] =
     useState<AgentConversationInfo>();
@@ -69,22 +75,29 @@ const Chat: React.FC = () => {
 
   console.log(run, runChatSuggest, setDevConversationId);
 
-  // useEffect(() => {
-  //   if (agentConfigInfo) {
-  //     const { devConversationId } = agentConfigInfo;
-  //     run(devConversationId);
-  //   }
-  // }, [agentConfigInfo?.devConversationId]);
+  useEffect(() => {
+    if (devConversationId) {
+      run(devConversationId);
+    }
+  }, [devConversationId]);
 
   // 会话处理
   const handleConversation = async (
     value: string,
-    attachments: AttachmentFile[] = [],
+    files: UploadInfo[] = [],
   ) => {
     if (!devConversationId) {
       return;
     }
     setChatSuggestList([]);
+    // 附件文件
+    const attachments = files?.map((file) => ({
+      fileKey: file.key,
+      fileUrl: file.url,
+      fileName: file.fileName,
+      mimeType: file.mimeType,
+    })) || [];
+
     const params = {
       conversationId: devConversationId,
       message: value,
@@ -155,7 +168,6 @@ const Chat: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log(attachments);
     setChatTitle(message);
   }, []);
 
@@ -181,6 +193,8 @@ const Chat: React.FC = () => {
               <>
                 {conversationInfo?.messageList?.map((item, index) => (
                   <ChatView
+                    icon={conversationInfo?.agent?.publishUser?.avatar}
+                    name={conversationInfo?.agent?.publishUser?.nickName}
                     key={index}
                     messageInfo={item}
                     avatar={publishUser?.avatar as string}
@@ -199,7 +213,7 @@ const Chat: React.FC = () => {
             )}
           </div>
           {/*会话输入框*/}
-          <ChatInput onEnter={handleConversation} />
+          <ChatInput onEnter={handleConversation} files={files} message={message} />
         </div>
       </div>
       {/*展示台区域*/}

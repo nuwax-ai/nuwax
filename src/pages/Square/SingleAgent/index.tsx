@@ -9,6 +9,9 @@ import classNames from 'classnames';
 import React from 'react';
 import { history } from 'umi';
 import styles from './index.less';
+import { useRequest } from '@@/exports';
+import { apiAgentConversationCreate } from '@/services/agentConfig';
+import type { AgentConversationInfo } from '@/types/interfaces/agent';
 
 const cx = classNames.bind(styles);
 
@@ -16,8 +19,24 @@ const cx = classNames.bind(styles);
  * 单个智能体组件
  */
 const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
+  const {targetId, icon, name, publishUser, description, statistics} = publishedAgentInfo;
+  // 创建会话
+  const { run: runConversationCreate } = useRequest(
+    apiAgentConversationCreate,
+    {
+      manual: true,
+      debounceWait: 300,
+      onSuccess: (result: AgentConversationInfo) => {
+        history.push(`/home/chat/${result.id}`);
+      },
+    },
+  );
+
   const handleClick = () => {
-    history.push('/', { title: publishedAgentInfo?.name });
+    runConversationCreate({
+      agentId: targetId,
+      devMode: true,
+    });
   };
 
   return (
@@ -28,34 +47,34 @@ const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
       <div className={cx(styles.header, 'flex')}>
         <img
           className={cx(styles['a-logo'])}
-          src={publishedAgentInfo?.icon}
+          src={icon}
           alt=""
         />
         <div className={cx(styles['info-container'], 'flex-1')}>
           <div className={cx('flex')}>
             <span className={cx('flex-1', styles['a-name'], 'text-ellipsis')}>
-              {publishedAgentInfo?.name}
+              {name}
             </span>
           </div>
           <div className={cx('flex', 'items-center', styles['info-author'])}>
             <ConditionRender
-              condition={publishedAgentInfo?.publishUser?.avatar}
+              condition={publishUser?.avatar}
             >
               <img
                 className={cx(styles.avatar)}
-                src={publishedAgentInfo?.publishUser?.avatar}
+                src={publishUser?.avatar}
                 alt=""
               />
             </ConditionRender>
             <span className={cx(styles.author)}>
-              {publishedAgentInfo?.publishUser?.userName}
+              {publishUser?.userName}
             </span>
             <span className={cx(styles.nickname)}>
-              {publishedAgentInfo?.publishUser?.nickName}
+              {publishUser?.nickName}
             </span>
           </div>
           <p className={cx(styles.desc, 'text-ellipsis-3')}>
-            {publishedAgentInfo?.description}
+            {description}
           </p>
         </div>
       </div>
@@ -65,17 +84,17 @@ const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
           {/*用户人数*/}
           <span className={cx(styles.text, 'flex')}>
             <UserOutlined />
-            <span>{publishedAgentInfo?.statistics?.userCount || 0}</span>
+            <span>{statistics?.userCount || 0}</span>
           </span>
           {/*会话次数*/}
           <span className={cx(styles.text, 'flex')}>
             <PlayCircleOutlined />
-            <span>{publishedAgentInfo?.statistics?.convCount || 0}</span>
+            <span>{statistics?.convCount || 0}</span>
           </span>
           {/*收藏次数*/}
           <span className={cx(styles.text, 'flex')}>
             <StarOutlined />
-            <span>{publishedAgentInfo?.statistics?.collectCount || 0}</span>
+            <span>{statistics?.collectCount || 0}</span>
           </span>
         </div>
         <div className={cx(styles.right)}>
