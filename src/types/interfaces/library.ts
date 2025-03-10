@@ -66,7 +66,8 @@ export interface LabelStarProps {
 // 试运行弹窗组件属性
 export interface PluginTryRunModelProps {
   inputConfigArgs: BindConfigWithSub[];
-  pluginId: string;
+  inputExpandedRowKeys: React.Key[];
+  pluginId: number;
   pluginName: string;
   open: boolean;
   onCancel: () => void;

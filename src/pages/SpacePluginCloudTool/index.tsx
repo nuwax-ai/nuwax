@@ -175,9 +175,11 @@ const SpacePluginCloudTool: React.FC = () => {
       render: (value, record) => (
         <Input
           placeholder="请输入默认值"
-          disabled={[DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(
-            record.dataType,
-          )}
+          disabled={
+            [DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(
+              record.dataType,
+            ) || record.dataType.includes('Array')
+          }
           value={value}
           onChange={(e) =>
             handleInputValue(record.key, 'bindValue', e.target.value)
@@ -382,6 +384,7 @@ const SpacePluginCloudTool: React.FC = () => {
             {/*试运行弹窗*/}
             <TryRunModel
               inputConfigArgs={inputConfigArgs}
+              inputExpandedRowKeys={expandedRowKeys}
               pluginId={pluginId}
               pluginName={pluginInfo?.name as string}
               open={isModalOpen}
@@ -399,7 +402,7 @@ const SpacePluginCloudTool: React.FC = () => {
           >
             <CodeEditor
               value={code}
-              height={'600px'}
+              height={'100%'}
               changeCode={handleCodeChange}
               codeLanguage={pluginInfo?.config?.codeLang}
             />

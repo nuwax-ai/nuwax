@@ -23,6 +23,9 @@ export const VERIFICATION_CODE_LEN = 6;
 // 倒计时
 export const COUNT_DOWN_LEN = 60;
 
+// 插件处理时，新增的字段默认名称
+export const ARRAY_ITEM = '[Array_Item]';
+
 // 变量类型
 export const VARIABLE_TYPE_LIST = [
   {

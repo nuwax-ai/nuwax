@@ -1,4 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
+import type { DataTypeEnum } from '@/types/enums/common';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -8,7 +9,7 @@ const cx = classNames.bind(styles);
 export interface ParamsNameLabelProps {
   require?: boolean;
   paramName: string;
-  paramType: string;
+  paramType: DataTypeEnum;
 }
 
 /**
