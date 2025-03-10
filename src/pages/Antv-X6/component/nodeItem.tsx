@@ -19,7 +19,6 @@ import {
   Segmented,
   Select,
   Space,
-  Switch,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { cycleOption, outPutConfigs, variableConfigs } from '../params';
@@ -93,7 +92,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({
     { label: '返回文本', value: 'TEXT' },
   ];
   // 开关的状态
-  const [checked, setChecked] = useState(true);
+  // const [checked, setChecked] = useState(true);
   return (
     <>
       {type === 'End' && (
@@ -124,11 +123,11 @@ const EndNode: React.FC<NodeDisposeProps> = ({
         handleChangeNodeConfig={handleChangeNodeConfig}
       />
 
-      {params.returnType === 'TEXT' && (
+      {params.returnType !== 'VARIABLE' && (
         <div className="margin-bottom mt-16">
           <div className="dis-sb margin-bottom">
             <span className="node-title-style">输出内容</span>
-            <div>
+            {/* <div>
               <span className="node-title-grey-style">
                 {checked ? '流式输出' : '非流式输出'}
               </span>
@@ -137,7 +136,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({
                 onChange={() => setChecked(!checked)}
                 size="small"
               />
-            </div>
+            </div> */}
           </div>
           <Input.TextArea
             placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
@@ -236,7 +235,6 @@ const VariableNode: React.FC<NodeDisposeProps> = ({
   referenceList,
 }) => {
   const outputArgs = params.outputArgs || null;
-
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });

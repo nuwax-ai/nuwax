@@ -331,7 +331,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
                   </div>
                 </Popover>
               }
-              defaultValue={params.outputType || 'JSON'}
+              value={params.outputType || 'JSON'}
               options={[
                 { label: '文本', value: 'Text' },
                 { label: 'Markdown', value: 'Markdown' },

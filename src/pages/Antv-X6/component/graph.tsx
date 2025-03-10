@@ -49,6 +49,7 @@ const initGraph = ({
           cursor: 'pointer',
           stroke: 'transparent',
           strokeLinecap: 'round',
+          pointerEvents: 'none', // 确保边不拦截事件
         },
       },
       {
@@ -101,14 +102,12 @@ const initGraph = ({
       // anchor: 'center', // 默认连接点位于元素中心
       connectionPoint: 'anchor', // 连接点类型为锚点
       allowBlank: false, // 禁止在空白区域创建连接
-      allowMulti: true,
+      allowMulti: false,
       allowNode: false,
       allowLoop: false, //禁止自己连接自己
       allowEdge: false,
       highlight: true, //当用户尝试创建连接且鼠标悬停在一个有效的连接点上时，该连接点会被高亮显示
-      snap: {
-        radius: 50,
-      },
+      snap: true,
       createEdge() {
         return new Shape.Edge({
           shape: 'data-processing-curve', // 更改为使用注册的自定义边样式
@@ -165,7 +164,6 @@ const initGraph = ({
         if (isLoopNode(sourceCell) || isLoopNode(targetCell)) {
           return true; // Loop 节点允许任意连接
         }
-
         // 默认返回 true 允许其他类型的连接（这里已经通过了前面的所有检查）
         return true;
       },
@@ -184,11 +182,6 @@ const initGraph = ({
     embedding: {
       // 这里设置为false，设置为true会导致重叠节点一起移动
       enabled: false,
-      // findParent({ e }) {
-      //   // 根据鼠标位置找到可能的父节点
-      //   const pos = graph.getPointByClient(e.clientX, e.clientY);
-      //   return graph.findModelsInLayer(pos, (model) => model.isNode())[0];
-      // },
     },
   });
 
@@ -200,13 +193,13 @@ const initGraph = ({
         attrs: {
           ...p.attrs,
           circle: { r: 4 }, // 强制重置所有连接桩半径
+          pointerEvents: 'all', // 保持事件穿透
+          event: 'mouseenter',
         },
       }));
       node.prop('ports/items', updatedPorts);
     });
   };
-  // let ctrlPressed = false
-  // const embedPadding = 20
 
   // 使用多个插件来增强图形编辑器的功能
   graph
@@ -250,6 +243,7 @@ const initGraph = ({
   // 监听边鼠标进入事件
   graph.on('edge:click', ({ edge }) => {
     edge.attr('line/stroke', '#1890FF'); // 悬停时改为蓝色
+    console.log(edge);
   });
   // 监听边鼠标离开事件
   graph.on('edge:unselected', ({ edge }) => {
@@ -277,17 +271,34 @@ const initGraph = ({
   // 假设 graph 是你的图实例
   graph.on('edge:connected', ({ isNew, edge }) => {
     changePortSize();
+
     // 是否是连接桩到连接桩
     edge.setRouter('manhattan');
     if (isNew) {
+      // 查看当前的边是否已经有了
+      const edges = graph.getEdges();
+      const sourceCellId = edge.getSourceCellId();
+      const targetNodeId = edge.getTargetCellId();
+      // 检查是否存在具有相同source和target的边
+      const hasDuplicateEdge = edges.some((e) => {
+        return (
+          e !== edge &&
+          e.getSourceCellId() === sourceCellId.toString() &&
+          e.getTargetCellId() === targetNodeId.toString()
+        );
+      });
+
+      if (hasDuplicateEdge) {
+        graph.removeEdge(edge);
+        message.warning('不能创建重复的边');
+        return;
+      }
       // 获取边的两个连接桩
       const sourcePort = edge.getSourcePortId();
       // const getsourceNode = edge.getSourceNode();
       const targetPort = edge.getTargetPortId();
       const sourceNode = edge.getSourceNode()?.getData();
       const targetNode = edge.getTargetNode()?.getData();
-      const targetNodeId = edge.getTargetCellId();
-
       if (sourceNode.type === 'Loop') {
         // 看连接的点是否时内部的节点
         if (targetNode.loopNodeId && targetNode.loopNodeId === sourceNode.id) {
@@ -314,7 +325,6 @@ const initGraph = ({
           const _params = { ...targetNode };
           _params.innerEndNodeId = sourceNode.id;
           changeCondition(_params);
-          graph.addEdge(edge); // 新增行：显式添加边到
           graph.addEdge(edge); // 新增行：显式添加边到
           edge.prop('zIndex', 15);
           edge.attr({

@@ -225,7 +225,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           loopNodeList.forEach((element: Node) => {
             const data = element.getData();
             if (!data.innerNodes?.length) return;
-            console.log('data', data);
             data.innerNodes.forEach((childDef: ChildNode) => {
               const child = createChildNode(data.id, childDef); // 创建子节点配置
               const childNode = graphRef.current.addNode(child); // 添加子节点到图中

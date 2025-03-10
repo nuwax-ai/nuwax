@@ -1,8 +1,9 @@
-import Editor from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
-import { language as pythonLanguage } from 'monaco-editor/esm/vs/basic-languages/python/python';
-import React, { useEffect } from 'react';
+import Editor, { loader } from '@monaco-editor/react';
+// import * as monaco from 'monaco-editor';
+// import { language as pythonLanguage } from 'monaco-editor/esm/vs/basic-languages/python/python';
+import React from 'react';
 import './index.less';
+
 interface Props {
   value: string | undefined;
   changeCode: (code: string) => void;
@@ -16,34 +17,43 @@ const CodeEditor: React.FC<Props> = ({
   height = '400px',
   codeLanguage,
 }: Props) => {
-  //   通知父组件，代码发生了变化
+  // 统一路径生成逻辑
+  const getMonacoPath = () => {
+    // 开发环境直接使用绝对路径
+    return '/monaco-editor/vs';
+  };
+
+  // 正确配置 loader
+  loader.config({
+    paths: {
+      vs: getMonacoPath(),
+    },
+  });
+
   const handleCodeChange = (value?: string) => {
     const newValue = value || '';
     changeCode(newValue);
   };
-
-  useEffect(() => {
-    // 确保在组件加载时设置语言支持
-    monaco.languages.register({ id: 'python' });
-    monaco.languages.setMonarchTokensProvider('python', pythonLanguage);
-  }, []);
-
   return (
     <Editor
       height={height}
       className={'code-editor'}
-      language={codeLanguage ? codeLanguage.toLowerCase() : 'javascript'}
+      language={codeLanguage.toLowerCase()}
       theme="vs-dark"
-      value={value} // 使用 value 而不是 defaultValue，使编辑器成为受控组件
+      value={value}
       onChange={handleCodeChange}
       options={{
         selectOnLineNumbers: true,
         folding: true,
         automaticLayout: true,
       }}
-      beforeMount={(monaco) => {
-        // 注册python语言支持
-        monaco.languages.register({ id: 'python' });
+      beforeMount={() => {
+        // 修复 worker 加载路径
+        (window as any).MonacoEnvironment = {
+          getWorkerUrl: (_moduleId: string, label: string) => {
+            return `${getMonacoPath()}/language/${label}/monaco.worker.js`;
+          },
+        };
       }}
     />
   );
