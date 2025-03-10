@@ -12,9 +12,9 @@ import { Snapline } from '@antv/x6-plugin-snapline';
 import { Selection } from '@antv/x6-plugin-selection';
 // 变换插件，支持缩放和平移操作
 // import { Transform } from '@antv/x6-plugin-transform';
-import { message } from 'antd';
-
+import { ChildNode } from '@/types/interfaces/graph';
 import { adjustParentSize } from '@/utils/graph';
+import { message } from 'antd';
 // 自定义类型定义
 import { GraphProp } from '@/types/interfaces/graph';
 import { createCurvePath } from './registerCustomNodes';
@@ -230,6 +230,59 @@ const initGraph = ({
     // 应用新的端口配置
     node.prop('ports/items', updatedPorts);
   });
+
+  // 监听节点的拖拽移动位置
+  graph.on('node:moved', ({ node, e }) => {
+    e.stopPropagation(); // 阻止事件冒泡
+
+    // 获取节点被拖拽到的位置
+    const { x, y } = node.getPosition();
+    const data = node.getData();
+    // 将节点的extension属性设置为拖拽后的位置
+    if (data.nodeConfig && data.nodeConfig.extension) {
+      data.nodeConfig.extension.x = x;
+      data.nodeConfig.extension.y = y;
+    } else {
+      data.nodeConfig.extension = {
+        x,
+        y,
+      };
+    }
+    // 如果时移动循环节点，且节点内有子节点
+    if (data.type === 'Loop' && data.innerNodes && data.innerNodes.length > 0) {
+      // 更新内部节点的位置信息
+      data.innerNodes.forEach((innerNode: ChildNode) => {
+        const childNode = graph.getCellById(innerNode.id.toString()) as Node;
+        if (childNode) {
+          const { x, y } = childNode.getPosition();
+          if (innerNode.nodeConfig.extension) {
+            innerNode.nodeConfig.extension.x = x;
+            innerNode.nodeConfig.extension.y = y;
+          } else {
+            innerNode.nodeConfig.extension = { x, y };
+          }
+        }
+      });
+    }
+    // 如果时循环内部的节点，要一并修改循环的宽度和位置
+    if (data.loopNodeId) {
+      const parentNode = graph.getCellById(data.loopNodeId) as Node;
+      const _size = parentNode.getSize();
+      const _position = parentNode.getPosition();
+      const extension = {
+        x: _position.x,
+        y: _position.y,
+        width: _size.width,
+        height: _size.height,
+      };
+      const _data = parentNode.getData();
+      _data.nodeConfig.extension = extension;
+      changeCondition(_data);
+    }
+
+    changeCondition(data);
+  });
+
   // 监听连接桩鼠标离开事件
   graph.on('node:port:mouseleave', () => {
     changePortSize();
