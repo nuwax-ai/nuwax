@@ -89,7 +89,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       const node = graphRef.current.getCellById(nodeId);
       if (node && node.isNode()) {
         const position = node.getPosition();
-
+        console.log(newData);
         if (position) {
           // 确保 newData.nodeConfig 存在
           if (!newData.nodeConfig) {
@@ -140,7 +140,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             node.prop('ports', generatePorts(newData));
           }
         }
-        node.setData(newData, { overwrite: true });
+        node.updateData(newData);
+        console.log(node.getData());
       }
     };
 
@@ -166,6 +167,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         .forEach((n: Node) => n.setData({ selected: false }));
       // 获取到当前id对应的节点
       const node = graphRef.current.getCellById(id);
+
       // console.log(node)
       if (!node) return;
       // 设置当前节点为选中状态

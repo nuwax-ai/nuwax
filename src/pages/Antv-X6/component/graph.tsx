@@ -293,6 +293,10 @@ const initGraph = ({
     changePortSize();
   });
 
+  graph.on('blank:click', () => {
+    changeDrawer(null); // 调用回调函数以更新抽屉内容
+  });
+
   // 监听边鼠标进入事件
   graph.on('edge:click', ({ edge }) => {
     edge.attr('line/stroke', '#1890FF'); // 悬停时改为蓝色
@@ -310,10 +314,14 @@ const initGraph = ({
       graph.getNodes().forEach((n) => n.setData({ selected: false }));
       // 设置当前节点为选中状态
       node.setData({ selected: true });
+      console.log('156', node.getData());
       // 获取被点击节点的数据
-      const data = node.getData(); // 获取被点击节点的数据
-      data.id = node.id;
-      changeDrawer(data); // 调用回调函数以更新抽屉内容
+      const latestData = {
+        ...node.getData(), // 获取图形实例存储的数据
+        id: node.id, // 确保ID同步
+      };
+
+      changeDrawer(latestData); // 调用回调函数以更新抽屉内容
     }
   });
 

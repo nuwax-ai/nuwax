@@ -61,13 +61,21 @@ const bindEventHandlers = ({
 
         // 查看当前的边是否是loop或者他的子节点
         if (sourceNode.type === 'Loop' || targetNode.type === 'Loop') {
-          if (sourceNode.type === 'Loop') {
+          if (
+            sourceNode.type === 'Loop' &&
+            targetNode.loopNodeId &&
+            targetNode.loopNodeId === sourceNode.id
+          ) {
             sourceNode.innerStartNodeId = -1;
             changeCondition(sourceNode);
             graph.removeCells([_cell]); // 新增行：实际移除边元素
             return;
           }
-          if (targetNode.type === 'Loop') {
+          if (
+            targetNode.type === 'Loop' &&
+            sourceNode.loopNodeId &&
+            sourceNode.loopNodeId === targetNode.id
+          ) {
             targetNode.innerEndNodeId = -1;
             changeCondition(targetNode);
             graph.removeCells([_cell]); // 新增行：实际移除边元素

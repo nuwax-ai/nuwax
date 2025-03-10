@@ -5,6 +5,7 @@ import {
 // 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
 import type { FieldConfig } from '@/components/FormListItem/type';
 import { DataTypeEnum } from '@/types/enums/common';
+import { InputItemNameEnum } from '@/types/enums/node';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import type {
   GroupModelItem,
@@ -184,7 +185,7 @@ export interface NodeRenderProps {
   // 初始值（适用于已经编辑过的内容）
   initialValues?: InitialValues;
   // 如果有多个相同组件时，传递不同的inputListName区分
-  inputItemName?: string;
+  inputItemName?: InputItemNameEnum;
   // 是否显示复制按钮
   showCopy?: boolean;
   style?: any;
@@ -204,7 +205,7 @@ export interface FormListProps {
   // 当前input的field
   field: string;
   // 如果有多个相同组件时，传递不同的inputListName区分
-  inputItemName?: string;
+  inputItemName?: InputItemNameEnum;
   // 初始值（适用于已经编辑过的内容）
   initialValues?: InitialValues;
   // 是否要写入uuid

@@ -4,6 +4,7 @@ import CustomTree from '@/components/FormListItem/NestedForm';
 import { ModelSelected } from '@/components/ModelSetting';
 import { SkillList } from '@/components/Skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { InputItemNameEnum } from '@/types/enums/node';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import type { NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
@@ -85,7 +86,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           title="输入"
           fieldConfigs={outPutConfigs}
           referenceList={referenceList}
-          inputItemName="inputArgs"
+          inputItemName={InputItemNameEnum.inputArgs}
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ inputArgs: params.inputArgs || [] }}
         />
@@ -169,7 +170,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
           title="输入"
           fieldConfigs={outPutConfigs}
           referenceList={referenceList}
-          inputItemName="inputArgs"
+          inputItemName={InputItemNameEnum.inputArgs}
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ inputArgs: params.inputArgs || [] }}
         />
@@ -181,7 +182,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
           handleChangeNodeConfig={handleChangeNodeConfig}
           field="intent"
           hasUuid
-          inputItemName="intentConfigs"
+          inputItemName={InputItemNameEnum.intentConfigs}
           initialValues={{ intentConfigs: params.intentConfigs || [] }}
           updateNode={changeIntent}
         />
@@ -278,7 +279,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
           fieldConfigs={outPutConfigs}
           handleChangeNodeConfig={handleChangeNodeConfig}
           referenceList={referenceList}
-          inputItemName="inputArgs"
+          inputItemName={InputItemNameEnum.inputArgs}
           initialValues={{ inputArgs: params.inputArgs || [] }}
         />
       </div>
@@ -321,7 +322,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
           title={'设置选项内容'}
           updateNode={changeOptions}
           field="content"
-          inputItemName="options"
+          inputItemName={InputItemNameEnum.options}
           initialValues={{ options: params.options || [] }}
           showIndex
           hasUuid
@@ -417,7 +418,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
           handleChangeNodeConfig={handleChangeNodeConfig}
           fieldConfigs={outPutConfigs}
           referenceList={referenceList}
-          inputItemName="headers"
+          inputItemName={InputItemNameEnum.headers}
           initialValues={{
             headers: params.headers || [],
           }}
@@ -427,7 +428,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
           handleChangeNodeConfig={handleChangeNodeConfig}
           fieldConfigs={outPutConfigs}
           referenceList={referenceList}
-          inputItemName="queries"
+          inputItemName={InputItemNameEnum.queries}
           initialValues={{
             queries: params.queries || [],
           }}
@@ -437,7 +438,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
           handleChangeNodeConfig={handleChangeNodeConfig}
           fieldConfigs={outPutConfigs}
           referenceList={referenceList}
-          inputItemName="body"
+          inputItemName={InputItemNameEnum.body}
           initialValues={{
             body: params.body || [],
           }}
@@ -449,7 +450,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
           title={'出参'}
           params={params}
           handleChangeNodeConfig={handleChangeNodeConfig}
-          inputItemName={'outputArgs'}
+          inputItemName={InputItemNameEnum.outputArgs}
         />
       </div>
     </div>

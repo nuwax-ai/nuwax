@@ -62,16 +62,32 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
     form.setFieldsValue({ [inputItemName]: nextItems });
   };
 
+  const removeItem = (index: number) => {
+    const formValue = form.getFieldsValue()[inputItemName];
+    const _newValue = formValue.filter((_: unknown, i: number) => i !== index);
+    form.setFieldsValue({ [inputItemName]: _newValue });
+  };
+
+  //  // 重构表单项创建方式
+  //  const createNewItem = () => {
+  //   return fieldConfigs.reduce((acc: DefaultObjectType, field: FieldConfig) => {
+  //     acc[field.name] = ''; // 使用空字符串代替 null
+  //     return acc;
+  //   }, { id: uuidv4() }); // 添加唯一标识
+  // };
+
   // 提交form表单
   const submitForm = () => {
     const raw = form.getFieldsValue(true);
     handleChangeNodeConfig(raw);
     // handleChangeNodeConfig(values);
   };
+
   useEffect(() => {
+    console.log('467968746', initialValues);
     // 设置初始值，确保Form.List能正确展示已有条目
     form.setFieldsValue(initialValues);
-  }, [form, inputItemName, initialValues]);
+  }, [initialValues]);
 
   useEffect(() => {
     if (volid) {
@@ -81,16 +97,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
 
   return (
     <div className="start-node-style">
-      <div className="dis-sb margin-bottom">
-        <span className="node-title-style">{title}</span>
-        {!disabledAdd && (
-          <Button
-            icon={<PlusOutlined />}
-            size={'small'}
-            onClick={addInputItem}
-          ></Button>
-        )}
-      </div>
       <Form
         layout={'vertical'}
         form={form}
@@ -104,8 +110,18 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
             <span>参数值</span>
           </div>
         } */}
+        <div className="dis-sb margin-bottom">
+          <span className="node-title-style">{title}</span>
+          {!disabledAdd && (
+            <Button
+              icon={<PlusOutlined />}
+              size={'small'}
+              onClick={addInputItem}
+            ></Button>
+          )}
+        </div>
         <Form.List name={inputItemName}>
-          {(fields, { remove }) => (
+          {(fields) => (
             <>
               {fields.map((item, index) => {
                 return (
@@ -184,7 +200,9 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                         )}
                         {!disabledDelete && (
                           <Form.Item name={[item.name, 'require']} noStyle>
-                            <DeleteOutlined onClick={() => remove(item.name)} />
+                            <DeleteOutlined
+                              onClick={() => removeItem(item.name)}
+                            />
                           </Form.Item>
                         )}
                       </div>
