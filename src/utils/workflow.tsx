@@ -247,7 +247,7 @@ export const getHeight = (
 
 // 获取节点端口
 export const generatePorts = (data: ChildNode, height?: number) => {
-  const basePortSize = 3;
+  const basePortSize = 4;
   const isLoopNode = data.type === 'Loop'; // 判断是否为 Loop 节点
 
   // 默认端口配置
@@ -262,6 +262,7 @@ export const generatePorts = (data: ChildNode, height?: number) => {
     position: {
       name: 'absolute', // 确保使用绝对定位
     },
+    magnet: true,
     args: yPosition !== undefined ? { y: yPosition } : {}, // 直接作为顶级属性
     attrs: {
       circle: {
@@ -270,6 +271,10 @@ export const generatePorts = (data: ChildNode, height?: number) => {
         stroke: '#5F95FF',
         strokeWidth: 2,
         fill: '#5F95FF',
+        pointerEvents: 'all', // 强制启用指针事件
+        event: 'mouseenter', // 明确事件类型
+        // 新增磁吸区域扩展
+        magnetRadius: 50, // 将磁吸半径从默认15px增大到24px
       },
     },
   });

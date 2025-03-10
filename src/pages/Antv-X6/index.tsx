@@ -240,16 +240,8 @@ const Workflow: React.FC = () => {
       setVisible(false);
       return;
     } else {
-      // 先更新状态再执行后续逻辑
-      setFoldWrapItem((prev) => {
-        // 执行关联操作
-        if (!visible) setVisible(true);
-        // 如果ID相同则阻止更新
-        if (prev.id === child.id) return prev;
-
-        // 返回新值触发更新
-        return child;
-      });
+      if (!visible) setVisible(true);
+      setFoldWrapItem(child);
     }
     // 如果有组件正在展示,那么就要看是否修改了参数,
     // 如果修改了参数,那么就提交数据

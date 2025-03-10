@@ -12,9 +12,9 @@ import { Snapline } from '@antv/x6-plugin-snapline';
 import { Selection } from '@antv/x6-plugin-selection';
 // 变换插件，支持缩放和平移操作
 // import { Transform } from '@antv/x6-plugin-transform';
-import { message } from 'antd';
-
+import { ChildNode } from '@/types/interfaces/graph';
 import { adjustParentSize } from '@/utils/graph';
+import { message } from 'antd';
 // 自定义类型定义
 import { GraphProp } from '@/types/interfaces/graph';
 import { createCurvePath } from './registerCustomNodes';
@@ -49,6 +49,7 @@ const initGraph = ({
           cursor: 'pointer',
           stroke: 'transparent',
           strokeLinecap: 'round',
+          pointerEvents: 'none', // 确保边不拦截事件
         },
       },
       {
@@ -101,14 +102,12 @@ const initGraph = ({
       // anchor: 'center', // 默认连接点位于元素中心
       connectionPoint: 'anchor', // 连接点类型为锚点
       allowBlank: false, // 禁止在空白区域创建连接
-      allowMulti: true,
+      allowMulti: false,
       allowNode: false,
       allowLoop: false, //禁止自己连接自己
       allowEdge: false,
       highlight: true, //当用户尝试创建连接且鼠标悬停在一个有效的连接点上时，该连接点会被高亮显示
-      snap: {
-        radius: 50,
-      },
+      snap: true,
       createEdge() {
         return new Shape.Edge({
           shape: 'data-processing-curve', // 更改为使用注册的自定义边样式
@@ -165,7 +164,6 @@ const initGraph = ({
         if (isLoopNode(sourceCell) || isLoopNode(targetCell)) {
           return true; // Loop 节点允许任意连接
         }
-
         // 默认返回 true 允许其他类型的连接（这里已经通过了前面的所有检查）
         return true;
       },
@@ -184,11 +182,6 @@ const initGraph = ({
     embedding: {
       // 这里设置为false，设置为true会导致重叠节点一起移动
       enabled: false,
-      // findParent({ e }) {
-      //   // 根据鼠标位置找到可能的父节点
-      //   const pos = graph.getPointByClient(e.clientX, e.clientY);
-      //   return graph.findModelsInLayer(pos, (model) => model.isNode())[0];
-      // },
     },
   });
 
@@ -200,13 +193,13 @@ const initGraph = ({
         attrs: {
           ...p.attrs,
           circle: { r: 4 }, // 强制重置所有连接桩半径
+          pointerEvents: 'all', // 保持事件穿透
+          event: 'mouseenter',
         },
       }));
       node.prop('ports/items', updatedPorts);
     });
   };
-  // let ctrlPressed = false
-  // const embedPadding = 20
 
   // 使用多个插件来增强图形编辑器的功能
   graph
@@ -237,6 +230,59 @@ const initGraph = ({
     // 应用新的端口配置
     node.prop('ports/items', updatedPorts);
   });
+
+  // 监听节点的拖拽移动位置
+  graph.on('node:moved', ({ node, e }) => {
+    e.stopPropagation(); // 阻止事件冒泡
+
+    // 获取节点被拖拽到的位置
+    const { x, y } = node.getPosition();
+    const data = node.getData();
+    // 将节点的extension属性设置为拖拽后的位置
+    if (data.nodeConfig && data.nodeConfig.extension) {
+      data.nodeConfig.extension.x = x;
+      data.nodeConfig.extension.y = y;
+    } else {
+      data.nodeConfig.extension = {
+        x,
+        y,
+      };
+    }
+    // 如果时移动循环节点，且节点内有子节点
+    if (data.type === 'Loop' && data.innerNodes && data.innerNodes.length > 0) {
+      // 更新内部节点的位置信息
+      data.innerNodes.forEach((innerNode: ChildNode) => {
+        const childNode = graph.getCellById(innerNode.id.toString()) as Node;
+        if (childNode) {
+          const { x, y } = childNode.getPosition();
+          if (innerNode.nodeConfig.extension) {
+            innerNode.nodeConfig.extension.x = x;
+            innerNode.nodeConfig.extension.y = y;
+          } else {
+            innerNode.nodeConfig.extension = { x, y };
+          }
+        }
+      });
+    }
+    // 如果时循环内部的节点，要一并修改循环的宽度和位置
+    if (data.loopNodeId) {
+      const parentNode = graph.getCellById(data.loopNodeId) as Node;
+      const _size = parentNode.getSize();
+      const _position = parentNode.getPosition();
+      const extension = {
+        x: _position.x,
+        y: _position.y,
+        width: _size.width,
+        height: _size.height,
+      };
+      const _data = parentNode.getData();
+      _data.nodeConfig.extension = extension;
+      changeCondition(_data);
+    }
+
+    changeCondition(data);
+  });
+
   // 监听连接桩鼠标离开事件
   graph.on('node:port:mouseleave', () => {
     changePortSize();
@@ -247,9 +293,14 @@ const initGraph = ({
     changePortSize();
   });
 
+  graph.on('blank:click', () => {
+    changeDrawer(null); // 调用回调函数以更新抽屉内容
+  });
+
   // 监听边鼠标进入事件
   graph.on('edge:click', ({ edge }) => {
     edge.attr('line/stroke', '#1890FF'); // 悬停时改为蓝色
+    console.log(edge);
   });
   // 监听边鼠标离开事件
   graph.on('edge:unselected', ({ edge }) => {
@@ -263,10 +314,14 @@ const initGraph = ({
       graph.getNodes().forEach((n) => n.setData({ selected: false }));
       // 设置当前节点为选中状态
       node.setData({ selected: true });
+      console.log('156', node.getData());
       // 获取被点击节点的数据
-      const data = node.getData(); // 获取被点击节点的数据
-      data.id = node.id;
-      changeDrawer(data); // 调用回调函数以更新抽屉内容
+      const latestData = {
+        ...node.getData(), // 获取图形实例存储的数据
+        id: node.id, // 确保ID同步
+      };
+
+      changeDrawer(latestData); // 调用回调函数以更新抽屉内容
     }
   });
 
@@ -277,17 +332,34 @@ const initGraph = ({
   // 假设 graph 是你的图实例
   graph.on('edge:connected', ({ isNew, edge }) => {
     changePortSize();
+
     // 是否是连接桩到连接桩
     edge.setRouter('manhattan');
     if (isNew) {
+      // 查看当前的边是否已经有了
+      const edges = graph.getEdges();
+      const sourceCellId = edge.getSourceCellId();
+      const targetNodeId = edge.getTargetCellId();
+      // 检查是否存在具有相同source和target的边
+      const hasDuplicateEdge = edges.some((e) => {
+        return (
+          e !== edge &&
+          e.getSourceCellId() === sourceCellId.toString() &&
+          e.getTargetCellId() === targetNodeId.toString()
+        );
+      });
+
+      if (hasDuplicateEdge) {
+        graph.removeEdge(edge);
+        message.warning('不能创建重复的边');
+        return;
+      }
       // 获取边的两个连接桩
       const sourcePort = edge.getSourcePortId();
       // const getsourceNode = edge.getSourceNode();
       const targetPort = edge.getTargetPortId();
       const sourceNode = edge.getSourceNode()?.getData();
       const targetNode = edge.getTargetNode()?.getData();
-      const targetNodeId = edge.getTargetCellId();
-
       if (sourceNode.type === 'Loop') {
         // 看连接的点是否时内部的节点
         if (targetNode.loopNodeId && targetNode.loopNodeId === sourceNode.id) {
@@ -314,7 +386,6 @@ const initGraph = ({
           const _params = { ...targetNode };
           _params.innerEndNodeId = sourceNode.id;
           changeCondition(_params);
-          graph.addEdge(edge); // 新增行：显式添加边到
           graph.addEdge(edge); // 新增行：显式添加边到
           edge.prop('zIndex', 15);
           edge.attr({

@@ -277,7 +277,6 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   useEffect(() => {
     const handleUpdate = async () => {
       if (isModified) {
-        console.log('modify');
         await onGetNodeConfig(currentNodeConfig);
         setIsModified(false);
         getRefernece(foldWrapItem);
@@ -297,6 +296,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
 
   useEffect(() => {
     setCurrentNodeConfig(foldWrapItem);
+    console.log('123124', foldWrapItem);
   }, [foldWrapItem]);
 
   useEffect(() => {
@@ -311,7 +311,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
         onGetNodeConfig(currentNodeConfig);
         setIsModified(false); // 重置修改状态
       }
-    }, 10000);
+    }, 3000);
 
     // 清理函数
     return () => {

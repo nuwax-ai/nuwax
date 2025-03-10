@@ -1,5 +1,6 @@
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import InputOrReference from '@/components/FormListItem/InputOrReference';
+import { InputItemNameEnum } from '@/types/enums/node';
 import type {
   NodeConfig,
   NodePreviousAndArgMap,
@@ -138,7 +139,7 @@ const PluginInNode: React.FC<NodeDisposeProps> = ({
         initialValues={{ inputArgs: params.inputArgs || [] }}
         onChange={changeInputList}
         referenceList={referenceList}
-        inputItemName={'inputArgs'}
+        inputItemName={InputItemNameEnum.inputArgs}
       />
       <p className="node-title-style mt-16">{'输出'}</p>
       <TreeOutput treeData={params.outputArgs || []} />
@@ -171,7 +172,7 @@ const DatabaseNode: React.FC<NodeDisposeProps> = ({
           title="输入"
           fieldConfigs={outPutConfigs}
           referenceList={referenceList}
-          inputItemName="inputArgs"
+          inputItemName={InputItemNameEnum.inputArgs}
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={inputInitialValues}
         />

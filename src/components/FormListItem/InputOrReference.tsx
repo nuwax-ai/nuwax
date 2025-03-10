@@ -54,7 +54,10 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
 
   // 获取父节点名称
   const getName = (value: string) => {
-    const _id = value.split('.')[0];
+    let _id = value.split('.')[0];
+    if (_id.includes('-')) {
+      _id = _id.split('-')[0];
+    }
     const parentNode = referenceList.previousNodes.find(
       (item) => item.id === Number(_id),
     );

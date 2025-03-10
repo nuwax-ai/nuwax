@@ -327,18 +327,28 @@ interface Point {
 }
 
 export const createCurvePath = (s: Point, e: Point) => {
-  const offset = 10;
+  const startOffset = 6; // 起点偏移量
+  const endOffset = 6; // 终点偏移量
   const deltaX = Math.abs(e.x - s.x);
-  const control = Math.floor((deltaX / 3) * 2);
+  const control = Math.floor((deltaX / 3) * 2); // 控制点的计算
 
-  const v1 = { x: s.x + offset + control, y: s.y };
-  const v2 = { x: e.x - offset - control, y: e.y };
+  // 计算新的起点和终点位置，考虑到偏移量
+  let newStartX = s.x < e.x ? s.x + startOffset : s.x - startOffset;
+  let newEndX = e.x > s.x ? e.x - endOffset : e.x + endOffset;
+
+  // 根据原始方向调整Y轴位置
+  const startY = s.y;
+  const endY = e.y;
+
+  // 计算控制点的位置
+  const v1 = { x: newStartX + control, y: startY };
+  const v2 = { x: newEndX - control, y: endY };
 
   return Path.normalize(
-    `M ${s.x} ${s.y}
-     L ${s.x + offset} ${s.y}
-     C ${v1.x} ${v1.y} ${v2.x} ${v2.y} ${e.x} ${e.y}
-     L ${e.x} ${e.y}
+    `M ${newStartX} ${startY}
+     L ${newStartX + (s.x < e.x ? startOffset : -startOffset)} ${startY}
+     C ${v1.x} ${v1.y} ${v2.x} ${v2.y} ${newEndX} ${endY}
+     L ${newEndX} ${endY}
     `,
   );
 };

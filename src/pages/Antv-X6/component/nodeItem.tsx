@@ -2,6 +2,8 @@
 import CodeEditor from '@/components/CodeEditor';
 import Monaco from '@/components/CodeEditor/monaco';
 import CustomTree from '@/components/FormListItem/NestedForm';
+import { DataTypeEnum } from '@/types/enums/common';
+import { InputItemNameEnum } from '@/types/enums/node';
 import type { NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import {
@@ -19,7 +21,6 @@ import {
   Segmented,
   Select,
   Space,
-  Switch,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { cycleOption, outPutConfigs, variableConfigs } from '../params';
@@ -60,7 +61,7 @@ const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({
         title="输入"
         fieldConfigs={outPutConfigs}
         referenceList={referenceList}
-        inputItemName="inputArgs"
+        inputItemName={InputItemNameEnum.inputArgs}
         initialValues={{ inputArgs: params.inputArgs || [] }}
         handleChangeNodeConfig={handleChangeNodeConfig}
         disabledAdd
@@ -93,7 +94,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({
     { label: '返回文本', value: 'TEXT' },
   ];
   // 开关的状态
-  const [checked, setChecked] = useState(true);
+  // const [checked, setChecked] = useState(true);
   return (
     <>
       {type === 'End' && (
@@ -119,16 +120,16 @@ const EndNode: React.FC<NodeDisposeProps> = ({
         fieldConfigs={outPutConfigs}
         referenceList={referenceList}
         showCopy={true}
-        inputItemName="outputArgs"
+        inputItemName={InputItemNameEnum.outputArgs}
         initialValues={{ outputArgs: params.outputArgs || [] }}
         handleChangeNodeConfig={handleChangeNodeConfig}
       />
 
-      {params.returnType === 'TEXT' && (
+      {params.returnType !== 'VARIABLE' && (
         <div className="margin-bottom mt-16">
           <div className="dis-sb margin-bottom">
             <span className="node-title-style">输出内容</span>
-            <div>
+            {/* <div>
               <span className="node-title-grey-style">
                 {checked ? '流式输出' : '非流式输出'}
               </span>
@@ -137,7 +138,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({
                 onChange={() => setChecked(!checked)}
                 size="small"
               />
-            </div>
+            </div> */}
           </div>
           <Input.TextArea
             placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
@@ -187,7 +188,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
               title="循环数组"
               fieldConfigs={outPutConfigs}
               referenceList={referenceList}
-              inputItemName="inputArgs"
+              inputItemName={InputItemNameEnum.inputArgs}
               handleChangeNodeConfig={handleChangeNodeConfig}
               initialValues={{ inputArgs: params.inputArgs || [] }}
             />
@@ -209,7 +210,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
         <InputAndOut
           title="中间变量"
           fieldConfigs={outPutConfigs}
-          inputItemName="variableArgs"
+          inputItemName={InputItemNameEnum.variableArgs}
           referenceList={referenceList}
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ variableArgs: params.variableArgs || [] }}
@@ -219,7 +220,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
         <InputAndOut
           title="输出"
           fieldConfigs={outPutConfigs}
-          inputItemName="outputArgs"
+          inputItemName={InputItemNameEnum.outputArgs}
           referenceList={referenceList}
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ outputArgs: params.outputArgs || [] }}
@@ -236,7 +237,6 @@ const VariableNode: React.FC<NodeDisposeProps> = ({
   referenceList,
 }) => {
   const outputArgs = params.outputArgs || null;
-
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -246,6 +246,9 @@ const VariableNode: React.FC<NodeDisposeProps> = ({
     { label: '设置变量值', value: 'SET_VARIABLE' },
     { label: '获取变量值', value: 'GET_VARIABLE' },
   ];
+  useEffect(() => {
+    console.log('aaabbb', params.inputArgs);
+  }, [params.inputArgs]);
 
   useEffect(() => {
     if (params.configType === null) {
@@ -273,7 +276,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({
           params.configType === 'SET_VARIABLE' ? outPutConfigs : variableConfigs
         }
         referenceList={referenceList}
-        inputItemName="inputArgs"
+        inputItemName={InputItemNameEnum.inputArgs}
         handleChangeNodeConfig={handleChangeNodeConfig}
         initialValues={{ inputArgs: params.inputArgs || [] }}
       />
@@ -281,7 +284,14 @@ const VariableNode: React.FC<NodeDisposeProps> = ({
       {outputArgs && params.configType === 'SET_VARIABLE' && (
         <div>
           <div className="node-title-style margin-bottom">输出</div>
-          <TreeOutput treeData={outputArgs} />
+          <TreeOutput
+            treeData={[
+              {
+                name: 'isSuccess',
+                dataType: DataTypeEnum.Boolean,
+              },
+            ]}
+          />
         </div>
       )}
     </>
@@ -405,7 +415,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
         title="输入"
         fieldConfigs={outPutConfigs}
         referenceList={referenceList}
-        inputItemName="inputArgs"
+        inputItemName={InputItemNameEnum.inputArgs}
         handleChangeNodeConfig={handleChangeNodeConfig}
         initialValues={{ inputArgs: params.inputArgs || [] }}
       />
@@ -485,7 +495,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
       <InputAndOut
         title="输入"
         fieldConfigs={outPutConfigs}
-        inputItemName="inputArgs"
+        inputItemName={InputItemNameEnum.inputArgs}
         handleChangeNodeConfig={handleChangeNodeConfig}
         initialValues={{ inputArgs: params.inputArgs || [] }}
         referenceList={referenceList}
