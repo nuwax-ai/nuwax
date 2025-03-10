@@ -262,9 +262,10 @@ const Created: React.FC<CreatedProp> = ({
     }
   };
   /**  -----------------  初始化时需要的  -----------------   */
+
   useEffect(() => {
     changeTitle(checkTag);
-  }, []);
+  }, [checkTag]);
   // 监听滚动事件
   useEffect(() => {
     // 收藏无需滚动加载

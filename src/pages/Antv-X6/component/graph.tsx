@@ -14,7 +14,6 @@ import { Selection } from '@antv/x6-plugin-selection';
 // import { Transform } from '@antv/x6-plugin-transform';
 import { message } from 'antd';
 
-import { ChildNode } from '@/types/interfaces/graph';
 import { adjustParentSize } from '@/utils/graph';
 // 自定义类型定义
 import { GraphProp } from '@/types/interfaces/graph';
@@ -103,9 +102,13 @@ const initGraph = ({
       connectionPoint: 'anchor', // 连接点类型为锚点
       allowBlank: false, // 禁止在空白区域创建连接
       allowMulti: true,
+      allowNode: false,
       allowLoop: false, //禁止自己连接自己
+      allowEdge: false,
       highlight: true, //当用户尝试创建连接且鼠标悬停在一个有效的连接点上时，该连接点会被高亮显示
-      snap: true,
+      snap: {
+        radius: 50,
+      },
       createEdge() {
         return new Shape.Edge({
           shape: 'data-processing-curve', // 更改为使用注册的自定义边样式
@@ -188,6 +191,20 @@ const initGraph = ({
       // },
     },
   });
+
+  const changePortSize = () => {
+    graph.getNodes().forEach((node) => {
+      const ports = node.getPorts();
+      const updatedPorts = ports.map((p) => ({
+        ...p,
+        attrs: {
+          ...p.attrs,
+          circle: { r: 4 }, // 强制重置所有连接桩半径
+        },
+      }));
+      node.prop('ports/items', updatedPorts);
+    });
+  };
   // let ctrlPressed = false
   // const embedPadding = 20
 
@@ -220,28 +237,16 @@ const initGraph = ({
     // 应用新的端口配置
     node.prop('ports/items', updatedPorts);
   });
-
-  // 监听鼠标离开事件以恢复原始大小
-  graph.on('node:port:mouseleave', ({ port, node }) => {
-    // 确保端口和端口ID存在
-    if (!port) return;
-    // 获取当前节点的所有端口配置
-    const ports = node.getPorts();
-    // 找到并恢复特定端口的原始样式
-    const updatedPorts = ports.map((p) => {
-      if (p.id === port) {
-        // 恢复目标端口的尺寸
-        p.attrs = {
-          ...p.attrs,
-          circle: { r: 4 }, // 假设原始半径为4
-        };
-      }
-      return p;
-    });
-
-    // 应用新的端口配置
-    node.prop('ports/items', updatedPorts);
+  // 监听连接桩鼠标离开事件
+  graph.on('node:port:mouseleave', () => {
+    changePortSize();
   });
+  // 监听边移除事件
+  graph.on('edge:removed', () => {
+    // 遍历所有节点
+    changePortSize();
+  });
+
   // 监听边鼠标进入事件
   graph.on('edge:click', ({ edge }) => {
     edge.attr('line/stroke', '#1890FF'); // 悬停时改为蓝色
@@ -271,19 +276,7 @@ const initGraph = ({
 
   // 假设 graph 是你的图实例
   graph.on('edge:connected', ({ isNew, edge }) => {
-    // 成功连接后，同样确保所有端口处于正确的状态
-    graph.getNodes().forEach((node) => {
-      const ports = node.getPorts();
-      const updatedPorts = ports.map((p) => {
-        // 可以根据需求调整这里的逻辑
-        p.attrs = {
-          ...p.attrs,
-          circle: { r: 4 }, // 强制恢复所有端口到默认大小
-        };
-        return p;
-      });
-      node.prop('ports/items', updatedPorts);
-    });
+    changePortSize();
     // 是否是连接桩到连接桩
     edge.setRouter('manhattan');
     if (isNew) {
@@ -406,77 +399,6 @@ const initGraph = ({
         },
       });
     }
-  });
-
-  // 监听节点的拖拽移动位置
-  graph.on('node:moved', ({ node, e }) => {
-    e.stopPropagation(); // 阻止事件冒泡
-
-    // 获取节点被拖拽到的位置
-    const { x, y } = node.getPosition();
-    const data = node.getData();
-    // 将节点的extension属性设置为拖拽后的位置
-    if (data.nodeConfig && data.nodeConfig.extension) {
-      data.nodeConfig.extension.x = x;
-      data.nodeConfig.extension.y = y;
-    } else {
-      data.nodeConfig.extension = {
-        x,
-        y,
-      };
-    }
-    // 如果时移动循环节点，且节点内有子节点
-    if (data.type === 'Loop' && data.innerNodes && data.innerNodes.length > 0) {
-      // 更新内部节点的位置信息
-      data.innerNodes.forEach((innerNode: ChildNode) => {
-        const childNode = graph.getCellById(innerNode.id.toString()) as Node;
-        if (childNode) {
-          const { x, y } = childNode.getPosition();
-          if (innerNode.nodeConfig.extension) {
-            innerNode.nodeConfig.extension.x = x;
-            innerNode.nodeConfig.extension.y = y;
-          } else {
-            innerNode.nodeConfig.extension = { x, y };
-          }
-        }
-      });
-    }
-    // 如果时循环内部的节点，要一并修改循环的宽度和位置
-    if (data.loopNodeId) {
-      const parentNode = graph.getCellById(data.loopNodeId) as Node;
-      const _size = parentNode.getSize();
-      const _position = parentNode.getPosition();
-      const extension = {
-        x: _position.x,
-        y: _position.y,
-        width: _size.width,
-        height: _size.height,
-      };
-      const _data = parentNode.getData();
-      _data.nodeConfig.extension = extension;
-      changeCondition(_data);
-    }
-
-    changeCondition(data);
-  });
-
-  graph.on('blank:click', () => {
-    // 先取消所有节点的选中状态
-    graph.getNodes().forEach((n) => n.setData({ selected: false }));
-    // 成功连接后，同样确保所有端口处于正确的状态
-    graph.getNodes().forEach((node) => {
-      const ports = node.getPorts();
-      const updatedPorts = ports.map((p) => {
-        // 可以根据需求调整这里的逻辑
-        p.attrs = {
-          ...p.attrs,
-          circle: { r: 4 }, // 强制恢复所有端口到默认大小
-        };
-        return p;
-      });
-      node.prop('ports/items', updatedPorts);
-    });
-    changeDrawer(null); // 调用回调函数以更新抽屉内容
   });
 
   // 监听画布缩放

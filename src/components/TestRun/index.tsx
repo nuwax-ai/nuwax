@@ -2,6 +2,7 @@
 import CodeEditor from '@/components/CodeEditor';
 import { DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
+import { TestRunparams } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
 import { CaretRightOutlined, CloseOutlined } from '@ant-design/icons';
 import { Bubble, Prompts, Sender } from '@ant-design/x';
@@ -28,6 +29,7 @@ interface TestRunProps {
   stopWait?: boolean;
   //
   formItemValue?: DefaultObjectType;
+  testRunparams?: TestRunparams;
 }
 
 interface QaItems {
@@ -51,6 +53,7 @@ const TestRun: React.FC<TestRunProps> = ({
   testRunResult,
   stopWait,
   formItemValue,
+  testRunparams,
 }) => {
   const { testRun, setTestRun } = useModel('model');
   // const [value, setValue] = useState('');
@@ -175,7 +178,7 @@ const TestRun: React.FC<TestRunProps> = ({
   ];
 
   const answer = (val: string) => {
-    run('QA', { answer: val });
+    run('Start', { answer: val });
   };
 
   const [value, setValue] = useState<string>('');
@@ -184,8 +187,8 @@ const TestRun: React.FC<TestRunProps> = ({
   useEffect(() => {
     form.resetFields();
     if (stopWait) {
-      const newItem = (node.nodeConfig?.options || []).map((item) => ({
-        key: item.index.toString(),
+      const newItem = (testRunparams?.options || []).map((item) => ({
+        key: item.uuid,
         description: item.content,
       }));
       setQaItem(newItem);
@@ -279,10 +282,12 @@ const TestRun: React.FC<TestRunProps> = ({
               }
               header={<span>机器人</span>}
               content={
-                node.nodeConfig.answerType === 'SELECT' ? (
+                testRunparams &&
+                testRunparams.options &&
+                testRunparams.options.length ? (
                   <div className="qa-question-style">
                     <Prompts
-                      title={node.nodeConfig.question}
+                      title={testRunparams.question}
                       items={qaItems}
                       vertical
                       onItemClick={(info) => {
@@ -292,7 +297,7 @@ const TestRun: React.FC<TestRunProps> = ({
                   </div>
                 ) : (
                   <div className="qa-question-style">
-                    {node.nodeConfig.question}
+                    {testRunparams?.question}
                   </div>
                 )
               }

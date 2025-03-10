@@ -76,24 +76,39 @@ const bindEventHandlers = ({
         }
         if (
           sourceNode.type === 'Condition' ||
-          sourceNode.type === 'IntentRecognition'
+          sourceNode.type === 'IntentRecognition' ||
+          sourceNode.type === 'QA'
         ) {
-          const sourcePort = _cell.getSourcePortId();
-          // 获取当前连接桩的输出端口
-          const _index: string = sourcePort?.split('-')[1] as string;
+          const _index: string = _cell.getSourcePortId() as string;
+
           // 修改当前的数据
           const newNodeParams = JSON.parse(JSON.stringify(sourceNode));
           if (sourceNode.type === 'Condition') {
             for (let item of newNodeParams.nodeConfig.conditionBranchConfigs) {
-              if (_index === item.uuid) {
+              if (_index.includes(item.uuid)) {
                 item.nextNodeIds = item.nextNodeIds.filter((item: number) => {
                   return item !== Number(_targetNodeId);
                 });
               }
             }
+          } else if (sourceNode.type === 'QA') {
+            if (newNodeParams.nodeConfig.answerType === 'SELECT') {
+              for (let item of newNodeParams.nodeConfig.options) {
+                console.log(123, _index, item.uuid);
+                if (_index.includes(item.uuid)) {
+                  item.nextNodeIds = item.nextNodeIds.filter((item: number) => {
+                    return item !== Number(_targetNodeId);
+                  });
+                }
+              }
+            } else {
+              changeEdge('delete', _targetNodeId as string, sourceNode, '0');
+              graph.removeCells(cells); // 删除选中的单元格
+              return;
+            }
           } else {
             for (let item of newNodeParams.nodeConfig.intentConfigs) {
-              if (_index === item.uuid) {
+              if (_index.includes(item.uuid)) {
                 item.nextNodeIds = item.nextNodeIds.filter((item: number) => {
                   return item !== Number(_targetNodeId);
                 });
@@ -102,14 +117,6 @@ const bindEventHandlers = ({
           }
           changeCondition(newNodeParams);
         } else {
-          // 移除边,修改为修改source节点的nextNodeId
-          // const sourceNode = _cell.getSourceNode()?.getData();
-          // const _newNode = JSON.parse(JSON.stringify(sourceNode));
-          // _newNode.nextNodeIds = _newNode.nextNodeIds.filter((item: number) => {
-          //   return item !== Number(_targetNodeId);
-          // });
-          // changeCondition(_newNode);
-          // 移除边
           changeEdge('delete', _targetNodeId as string, sourceNode, '0');
         }
       } else {

@@ -297,6 +297,7 @@ export interface CreatedNodeItem {
   typeId?: string | number;
   inputArgBindConfigs?: InputAndOutConfig[];
   outputArgBindConfigs?: InputAndOutConfig[];
+  knowledgeBaseId?: number;
 }
 
 // 创建、编辑智能体

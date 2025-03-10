@@ -12,13 +12,12 @@ import service, {
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { WorkflowModeEnum } from '@/types/enums/library';
-import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
-import { NodePreviousAndArgMap } from '@/types/interfaces/node';
+import { NodePreviousAndArgMap, TestRunparams } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
 import { createSSEConnection } from '@/utils/fetchEventSource';
-import { getNodeRelation, updateNode } from '@/utils/updateNode';
+import { updateNode } from '@/utils/updateNode';
 import { getEdges } from '@/utils/workflow';
 import { message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
@@ -82,7 +81,11 @@ const Workflow: React.FC = () => {
     nodeList: ChildNode[];
     edgeList: Edge[];
   }>({ nodeList: [], edgeList: [] });
-
+  // 针对问答节点，试运行的问答参数
+  const [testRunparams, setTestRunparams] = useState<TestRunparams>({
+    question: '',
+    options: [],
+  });
   // 针对问答节点条开始节点，参数丢失
   const [formItemValue, setFormItemValue] = useState<DefaultObjectType>({});
   // 错误列表的参数
@@ -210,6 +213,7 @@ const Workflow: React.FC = () => {
     const _res = await service.getNodeConfig(id);
     if (_res.code === Constant.success) {
       setFoldWrapItem(_res.data);
+      graphRef.current.updateNode(_res.data.id, _res.data);
     }
   };
 
@@ -218,9 +222,6 @@ const Workflow: React.FC = () => {
     // 更改状态，当前有节点再更新
     // setIsUpdate(true)
     graphRef.current.updateNode(config.id, config);
-    if (foldWrapItem.id === config.id) {
-      setFoldWrapItem(config);
-    }
     const _res = await updateNode(config);
     if (_res.code === Constant.success) {
       if (update) {
@@ -234,6 +235,7 @@ const Workflow: React.FC = () => {
   // 点击组件，显示抽屉
   const changeDrawer = async (child: ChildNode | null) => {
     setTestRun(false);
+    setTestRunResult('');
     if (child === null) {
       setVisible(false);
       return;
@@ -267,7 +269,6 @@ const Workflow: React.FC = () => {
     let _params = JSON.parse(JSON.stringify(child));
     _params.workflowId = workflowId;
     _params.extension = dragEvent;
-
     // 查看当前是否有选中的节点以及被选中的节点的type是否是Loop
     const loopParentId = graphRef.current.findLoopParentAtPosition(dragEvent);
     if ((visible && foldWrapItem.type === 'Loop') || loopParentId) {
@@ -384,7 +385,6 @@ const Workflow: React.FC = () => {
   const onSubmit = async (values: IPublish) => {
     // 获取所有节点,保存位置
     const _params = { ...values, workflowId: info?.id };
-    _params.scope = _params.scope[0] as PluginPublishScopeEnum;
     const _res = await service.publishWorkflow(_params);
     if (_res.code === Constant.success) {
       message.success('发布成功');
@@ -392,7 +392,6 @@ const Workflow: React.FC = () => {
   };
 
   const handleNodeChange = (action: string, data: ChildNode) => {
-    console.log('123', 123);
     switch (action) {
       case 'TestRun': {
         if (data.type === 'QA') {
@@ -419,13 +418,28 @@ const Workflow: React.FC = () => {
   // 添加工作流，插件，知识库，数据库
   const onAdded = (val: CreatedNodeItem, parentFC?: string) => {
     if (parentFC && parentFC !== 'workflow') return;
-    const _child: Child = {
-      name: val.name,
-      key: 'general-Node',
-      description: val.description,
-      type: createdItem,
-      typeId: val.targetId,
-    };
+    let _child: Child;
+    if (val.targetType === AgentComponentTypeEnum.Knowledge) {
+      _child = {
+        name: val.name,
+        key: 'general-Node',
+        description: val.description,
+        type: val.targetType,
+        typeId: val.targetId,
+        nodeConfig: {
+          knowledgeBaseConfigs: [val],
+          extension: {},
+        },
+      };
+    } else {
+      _child = {
+        name: val.name,
+        key: 'general-Node',
+        description: val.description,
+        type: val.targetType,
+        typeId: val.targetId,
+      };
+    }
     addNode(_child, dragEvent);
     // graphRef.current.addNode(dragEvent, _child);
     setOpen(false);
@@ -473,9 +487,23 @@ const Workflow: React.FC = () => {
 
   // 校验当前工作流
   const volidWorkflow = async () => {
+    setLoading(false);
     const _res = await service.validWorkflow(info?.id as number);
     if (_res.code === Constant.success) {
-      return true;
+      const _arr = _res.data.filter((item) => !item.success);
+      if (!_arr.length) {
+        return true;
+      } else {
+        setErrorParams({
+          show: true,
+          errorList: _arr.map((child) => ({
+            nodeId: child.nodeId,
+            error: child.messages[0],
+          })),
+        });
+
+        return false;
+      }
     } else {
       return false;
     }
@@ -533,99 +561,100 @@ const Workflow: React.FC = () => {
   // 试运行所有节点
   const testRunAllNode = async (params: ITestRun) => {
     // 获取完整的连线列表
-    const _edges = await getNodeRelation(
-      graphParams.nodeList,
-      info?.startNode.id as number,
-      info?.endNode.id as number,
-    );
-    if (!_edges) {
-      message.warning('没有完整的连线，需要一条从开始一直贯穿到结束的连线');
-      return;
-    }
+    // const _edges = await getNodeRelation(
+    //   graphParams.nodeList,
+    //   info?.startNode.id as number,
+    //   info?.endNode.id as number,
+    // );
+    // if (!_edges) {
+    //   message.warning('没有完整的连线，需要一条从开始一直贯穿到结束的连线');
+    //   return;
+    // }
 
-    // 根据连线列表，查看是否有第一个数据是开始节点的id，最后一个是结束节点的信息
-    const fullPath = _edges.filter((item: number[]) => {
-      return (
-        item[0] === info?.startNode.id &&
-        item[item.length - 1] === info.endNode.id
-      );
-    });
+    // // 根据连线列表，查看是否有第一个数据是开始节点的id，最后一个是结束节点的信息
+    // const fullPath = _edges.filter((item: number[]) => {
+    //   return (
+    //     item[0] === info?.startNode.id &&
+    //     item[item.length - 1] === info.endNode.id
+    //   );
+    // });
     // 如果有完整的连线，那么就可以进行试运行
-    if (fullPath && fullPath.length > 0) {
-      await getDetails();
-      // 遍历检查所有节点是否都已经输入了参数
-      const abortConnection = await createSSEConnection({
-        url: `${process.env.BASE_URL}/api/workflow/test/execute`,
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`,
-          Accept: ' application/json, text/plain, */* ',
-        },
-        body: params,
-        onMessage: (data) => {
-          if (data.data && data.data.nodeId) {
-            const _nodeId = data.data.nodeId;
-            graphRef.current.selectNode(_nodeId);
-          }
-          if (!data.success) {
-            setErrorParams((prev: ErrorParams) => {
-              if (data.data && data.data.result) {
+    // if (fullPath && fullPath.length > 0) {
+    await getDetails();
+    setLoading(true);
+    // 遍历检查所有节点是否都已经输入了参数
+    const abortConnection = await createSSEConnection({
+      url: `${process.env.BASE_URL}/api/workflow/test/execute`,
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`,
+        Accept: ' application/json, text/plain, */* ',
+      },
+      body: params,
+      onMessage: (data) => {
+        if (data.data && data.data.nodeId) {
+          const _nodeId = data.data.nodeId;
+          graphRef.current.selectNode(_nodeId);
+        }
+        if (!data.success) {
+          setErrorParams((prev: ErrorParams) => {
+            if (data.data && data.data.result) {
+              return {
+                errorList: [...prev.errorList, data.data.result],
+                show: true,
+              };
+            } else {
+              if (!data.data) {
                 return {
-                  errorList: [...prev.errorList, data.data.result],
+                  errorList: [...prev.errorList, { error: data.message }],
                   show: true,
                 };
-              } else {
-                if (!data.data) {
-                  return {
-                    errorList: [...prev.errorList, { error: data.message }],
-                    show: true,
-                  };
-                }
-                return prev;
               }
-            });
-          } else {
-            if (data.complete) {
-              if (data.data && data.data.output) {
-                setTestRunResult(data.data.output);
-              }
-
-              setFormItemValue(
-                data.nodeExecuteResultMap[
-                  (info?.startNode.id as number).toString()
-                ].data,
-              );
-              setTestRunResult(JSON.stringify(data.data, null, 2));
+              return prev;
             }
-            if (data.data.status === 'STOP_WAIT_ANSWER') {
-              setLoading(false);
-              setStopWait(true);
-              // 根据节点id拿到节点信息
-              const qaNode = graphParams.nodeList.find(
-                (node) => Number(node.id) === Number(data.data.nodeId),
-              );
-              setFoldWrapItem(qaNode as ChildNode);
+          });
+        } else {
+          if (data.complete) {
+            if (data.data && data.data.output) {
+              setTestRunResult(data.data.output);
+            }
+
+            setFormItemValue(
+              data.nodeExecuteResultMap[
+                (info?.startNode.id as number).toString()
+              ].data,
+            );
+            setTestRunResult(JSON.stringify(data.data, null, 2));
+          }
+          if (data.data.status === 'STOP_WAIT_ANSWER') {
+            setLoading(false);
+            setStopWait(true);
+            console.log(data.data.result);
+            if (data.data.result) {
+              setTestRunparams(data.data.result.data);
             }
           }
-          // 更新UI状态...
-        },
-        onError: (error) => {
-          console.error('流式请求异常:', error);
-          // 显示错误提示...
-        },
-        onOpen: (response) => {
-          console.log('连接已建立', response.status);
-        },
-        onClose: () => {
           setLoading(false);
-        },
-      });
-      // 主动关闭连接
-      abortConnection();
-    } else {
-      message.warning('连线不完整');
-      return;
-    }
+        }
+        // 更新UI状态...
+      },
+      onError: (error) => {
+        console.error('流式请求异常:', error);
+        // 显示错误提示...
+      },
+      onOpen: (response) => {
+        console.log('连接已建立', response.status);
+      },
+      onClose: () => {
+        setLoading(false);
+      },
+    });
+    // 主动关闭连接
+    abortConnection();
+    // } else {
+    //   message.warning('连线不完整');
+    //   return;
+    // }
     changeUpdateTime();
   };
 
@@ -633,15 +662,16 @@ const Workflow: React.FC = () => {
   const testRunAll = async () => {
     const _res = await service.getDetails(workflowId);
     const _nodeList = _res.data.nodes;
-    setTestRunResult('');
-    setFoldWrapItem(_res.data.startNode);
-    setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
-    setTestRun(true);
-    if (!visible) {
-      setVisible(true);
+    const volid = await volidWorkflow();
+    if (volid) {
+      setTestRunResult('');
+      setFoldWrapItem(_res.data.startNode);
+      setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
+      setTestRun(true);
+      if (!visible) {
+        setVisible(true);
+      }
     }
-    // setVisible(false);
-    // testRunAllNode();
   };
 
   // 节点试运行
@@ -652,32 +682,30 @@ const Workflow: React.FC = () => {
     });
     setTestRunResult('');
     if (type === 'Start') {
-      const _params = {
-        workflowId: info?.id as number,
-        params,
-        requestId: uuidv4(), // 使用uuid生成唯一ID
-      };
-      localStorage.setItem('testRun', JSON.stringify(_params));
-      const volid = await volidWorkflow();
-      if (volid) {
-        testRunAllNode(_params);
-      }
-    } else if (type === 'QA') {
-      let _paramsStr = localStorage.getItem('testRun');
-      if (_paramsStr !== null) {
-        const _params: ITestRun = {
-          ...JSON.parse(_paramsStr),
+      let _params: ITestRun;
+      let testRun = localStorage.getItem('testRun') || null;
+      if (testRun) {
+        _params = {
+          ...JSON.parse(testRun),
           ...(params as DefaultObjectType),
         };
-        testRunAllNode(_params);
-        setFoldWrapItem(info?.startNode as ChildNode);
         setStopWait(false);
+        localStorage.removeItem('testRun');
+      } else {
+        _params = {
+          workflowId: info?.id as number,
+          params,
+          requestId: uuidv4(), // 使用uuid生成唯一ID
+        };
+        localStorage.setItem('testRun', JSON.stringify(_params));
       }
+      testRunAllNode(_params);
     } else {
       nodeTestRun(params);
     }
     setLoading(true);
   };
+
   // 保存当前画布中节点的位置
   useEffect(() => {
     getDetails();
@@ -733,6 +761,7 @@ const Workflow: React.FC = () => {
         loading={loading}
         stopWait={stopWait}
         formItemValue={formItemValue}
+        testRunparams={testRunparams}
       />
 
       <CreateWorkflow

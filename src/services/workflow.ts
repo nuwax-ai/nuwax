@@ -115,6 +115,12 @@ export interface IPublish {
   remark?: string;
 }
 
+// 校验工作流
+export interface IVolidWorkfow {
+  nodeId: number;
+  success: boolean;
+  messages: string[];
+}
 // 获取工作流的详细信息
 export async function getDetails(
   id: number,
@@ -234,7 +240,9 @@ export async function executeNode(
 }
 
 // 验证工作流配置的完整性
-export async function validWorkflow(id: number): Promise<RequestResponse<any>> {
+export async function validWorkflow(
+  id: number,
+): Promise<RequestResponse<IVolidWorkfow[]>> {
   return request(`/api/workflow/valid/${id}`, {
     method: 'GET',
   });
