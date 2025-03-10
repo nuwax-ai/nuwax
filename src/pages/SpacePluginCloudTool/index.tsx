@@ -10,7 +10,7 @@ import { ICON_ADD_TR } from '@/constants/images.constants';
 import usePluginConfig from '@/hooks/usePluginConfig';
 import { apiPluginCodeUpdate, apiPluginInfo } from '@/services/plugin';
 import { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
-import { PluginCodeModeEnum } from '@/types/enums/plugin';
+import { PluginCodeModeEnum, PluginTypeEnum } from '@/types/enums/plugin';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PluginInfo } from '@/types/interfaces/plugin';
 import { getActiveKeys } from '@/utils/deepNode';
@@ -383,6 +383,7 @@ const SpacePluginCloudTool: React.FC = () => {
             />
             {/*试运行弹窗*/}
             <TryRunModel
+              type={PluginTypeEnum.CODE}
               inputConfigArgs={inputConfigArgs}
               inputExpandedRowKeys={expandedRowKeys}
               pluginId={pluginId}

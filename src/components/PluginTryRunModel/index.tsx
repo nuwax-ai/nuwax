@@ -3,6 +3,7 @@ import { ICON_ADD_TR } from '@/constants/images.constants';
 import { PLUGIN_INPUT_CONFIG } from '@/constants/space.constants';
 import { apiPluginTest } from '@/services/plugin';
 import { DataTypeEnum } from '@/types/enums/common';
+import { PluginTypeEnum } from '@/types/enums/plugin';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PluginTryRunModelProps } from '@/types/interfaces/library';
 import {
@@ -22,6 +23,7 @@ const cx = classNames.bind(styles);
 
 // 试运行弹窗组件
 const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
+  type = PluginTypeEnum.HTTP,
   inputConfigArgs,
   inputExpandedRowKeys,
   pluginId,
@@ -33,17 +35,21 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
   // 入参配置 - 展开的行，控制属性
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   const [testResult, setTestResult] = useState<PluginTestResultObject>();
+  const [result, setResult] = useState<object>();
 
   // 插件试运行接口
   const { run: runTest } = useRequest(apiPluginTest, {
     manual: true,
     debounceWait: 300,
     onSuccess: (res: PluginTestResult) => {
-      console.log(res);
       if (!res.success) {
         message.warning(res.error);
       } else {
-        setTestResult(res.result);
+        if (type === PluginTypeEnum.HTTP) {
+          setTestResult(res.result);
+        } else {
+          setResult(res.result);
+        }
       }
     },
   });
@@ -251,57 +257,76 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
     },
   ];
 
-  const handleArrayItem = (treeData: BindConfigWithSub[]) => {
-    const params = {};
-    const arrayItem = (data: BindConfigWithSub[]) => {
-      data.forEach((item) => {
-        const { dataType } = item;
-        if (!dataType?.includes('Array') && dataType !== DataTypeEnum.Object) {
-          return (params[item.name] = item.bindValue);
+  // 处理Array_Object
+  const handleArrayObject = (data: BindConfigWithSub[]) => {
+    return data?.map((item) => {
+      const { subArgs } = item;
+      const _params = {};
+      subArgs?.forEach((info) => {
+        // 如果是非数组默认名称（Array_Item）对象
+        if (info.dataType === DataTypeEnum.Object && info.name !== ARRAY_ITEM) {
+          const obj = {};
+          info.subArgs?.forEach((info) => {
+            obj[info.name] = info.bindValue;
+          });
+          _params[info.name] = obj;
         }
-        if (dataType?.includes('Array') && !dataType?.includes('Object')) {
-          return (params[item.name] = item.subArgs?.map(
-            (info) => info.bindValue,
-          ));
-        }
-        // 数组或者数组对象
-        if (item.subArgs && item.subArgs?.length > 0) {
-          return {
-            [item.name]: arrayItem(item.subArgs),
-          };
+        // 数据类型是Array，但不是Array_Object
+        else if (
+          info.dataType?.includes('Array') &&
+          !info.dataType?.includes('Object')
+        ) {
+          _params[info.name] = info.subArgs?.map((_arg) => _arg.bindValue);
+        } else {
+          // 系统对象（Array_Item）
+          _params[info.name] = handleArrayObject(
+            info?.subArgs as BindConfigWithSub[],
+          );
         }
       });
-    };
-    arrayItem(treeData);
-    return params;
+      return _params;
+    });
   };
 
-  // todo 待完善
+  // 处理入参列表数据
+  const handleDataSource = (treeData: BindConfigWithSub[]) => {
+    // const params = {};
+    const arrayItem = (data: BindConfigWithSub[]) => {
+      const params = {};
+      data?.forEach((item) => {
+        const { name, dataType, subArgs } = item;
+        // 数据类型不是Array，也不是Object
+        if (!dataType?.includes('Array') && dataType !== DataTypeEnum.Object) {
+          params[name] = item.bindValue;
+        }
+        // 数据类型是Array，但不是Array_Object
+        if (dataType?.includes('Array') && !dataType?.includes('Object')) {
+          params[name] = item.subArgs?.map((info) => info.bindValue);
+        }
+        if (dataType === DataTypeEnum.Object && name !== ARRAY_ITEM) {
+          const obj = {};
+          subArgs?.forEach((info) => {
+            obj[info.name] = info.bindValue;
+          });
+          params[name] = obj;
+        }
+
+        if (
+          dataType === DataTypeEnum.Array_Object &&
+          subArgs &&
+          subArgs?.length > 0
+        ) {
+          params[name] = handleArrayObject(subArgs);
+        }
+      });
+      return params;
+    };
+    return arrayItem(treeData);
+  };
+
+  // 试运行
   const handleRunTest = () => {
-    // const _dataSource = dataSource.map((item) => {
-    //   const { dataType } = item;
-    //   if (!dataType?.includes('Array') && dataType !== DataTypeEnum.Object) {
-    //     return item;
-    //   }
-    //   if (item.subArgs && item.subArgs?.length > 0) {
-    //     const bindValue = item.subArgs?.map((item) => item.bindValue);
-    //     item.subArgs = undefined;
-    //     return {
-    //       ...item,
-    //       bindValue,
-    //     };
-    //   }
-    //   return item;
-    // });
-    const params = handleArrayItem(dataSource);
-    console.log(params, 7777777);
-    // const params = {} as {
-    //   [key: string]: string | number | unknown;
-    // };
-    //
-    // for (let item of _dataSource) {
-    //   params[item.name] = item.bindValue;
-    // }
+    const params = handleDataSource(dataSource);
     runTest({
       pluginId,
       params,
@@ -383,12 +408,18 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
                       'py-16',
                     )}
                   >
-                    <h3>http_status</h3>
-                    <span>{testResult.HTTP_STATUS_CODE}</span>
-                    <h3>header</h3>
-                    <span>{testResult.HTTP_HEADERS}</span>
-                    <h3>body</h3>
-                    <span>{testResult.HTTP_BODY}</span>
+                    {type === PluginTypeEnum.HTTP ? (
+                      <>
+                        <h3>http_status</h3>
+                        <span>{testResult.HTTP_STATUS_CODE}</span>
+                        <h3>header</h3>
+                        <span>{testResult.HTTP_HEADERS}</span>
+                        <h3>body</h3>
+                        <span>{testResult.HTTP_BODY}</span>
+                      </>
+                    ) : (
+                      { result }
+                    )}
                   </div>
                 ) : (
                   <div
