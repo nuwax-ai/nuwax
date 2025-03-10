@@ -61,7 +61,10 @@ const usePluginConfig = () => {
 
     if (attr === 'dataType') {
       // 设置默认展开行
-      if (value === DataTypeEnum.Object || value === DataTypeEnum.Array_Object) {
+      if (
+        value === DataTypeEnum.Object ||
+        value === DataTypeEnum.Array_Object
+      ) {
         const _expandedRowKeys = [...expandedRowKeys, key];
         setExpandedRowKeys(_expandedRowKeys);
       } else if (expandedRowKeys.includes(key)) {
@@ -87,7 +90,10 @@ const usePluginConfig = () => {
 
     if (attr === 'dataType') {
       // 设置默认展开行
-        if (value === DataTypeEnum.Object || value === DataTypeEnum.Array_Object) {
+      if (
+        value === DataTypeEnum.Object ||
+        value === DataTypeEnum.Array_Object
+      ) {
         const _outputExpandedRowKeys = [...outputExpandedRowKeys, key];
         setOutputExpandedRowKeys(_outputExpandedRowKeys);
       } else if (outputExpandedRowKeys.includes(key)) {
