@@ -62,6 +62,12 @@ export interface QANodeOption {
   uuid: string;
   disabled?: boolean;
 }
+
+export interface TestRunparams {
+  question: string;
+  options: QANodeOption[];
+}
+
 // 节点内部的config
 export interface NodeConfig {
   // 扩展信息，前端配置，设置节点的宽高，位置

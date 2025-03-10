@@ -41,6 +41,7 @@ export interface Child {
   // 如果涉及循环，需要提供循环的节点id
   loopNodeId?: number;
   //
+  nodeConfig?: NodeConfig;
 }
 
 /**

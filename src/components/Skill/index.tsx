@@ -241,12 +241,22 @@ export const SkillList: React.FC<SkillProps> = ({ params, handleChange }) => {
 
   // 移除技能
   const handleDelete = (item: CreatedNodeItem) => {
-    const newParams = {
-      ...params,
-      skillComponentConfigs: params.skillComponentConfigs?.filter(
-        (i) => i.typeId !== item.typeId,
-      ),
-    };
+    let newParams;
+    if (item.knowledgeBaseId) {
+      newParams = {
+        ...params,
+        knowledgeBaseConfigs: params.knowledgeBaseConfigs?.filter(
+          (i) => i.knowledgeBaseId !== item.knowledgeBaseId,
+        ),
+      };
+    } else {
+      newParams = {
+        ...params,
+        skillComponentConfigs: params.skillComponentConfigs?.filter(
+          (i) => i.typeId !== item.typeId,
+        ),
+      };
+    }
     handleChange(newParams);
   };
 
@@ -303,6 +313,42 @@ export const SkillList: React.FC<SkillProps> = ({ params, handleChange }) => {
                     }}
                   />
                 </Popover>
+                <Popover content={'移除'} trigger="hover">
+                  <DeleteOutlined
+                    className="ml-12  white"
+                    onClick={() => handleDelete(item)}
+                  />
+                </Popover>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+      {params.knowledgeBaseConfigs?.map((item) => (
+        <div
+          className="skill-item-style dis-left"
+          key={item.knowledgeBaseId}
+          onMouseEnter={() => {
+            setHoveredItem(item);
+            setShowMask(true);
+          }}
+          onMouseLeave={() => setShowMask(false)}
+        >
+          <img
+            src={item.icon || getImg(AgentComponentTypeEnum.Knowledge)}
+            alt=""
+            className="skill-item-icon"
+          />
+          <div className="skill-item-content-style">
+            <div className="skill-item-title-style">{item.name}</div>
+            <div className="skill-item-desc-style">{item.description}</div>
+          </div>
+          {hoveredItem?.typeId === item.typeId && showMask && (
+            <div className="mask-layer-style" style={{}}>
+              <div
+                className="skill-item-dispose-style"
+                style={{ color: '#fff', backgroundColor: 'transparent' }}
+              >
                 <Popover content={'移除'} trigger="hover">
                   <DeleteOutlined
                     className="ml-12  white"

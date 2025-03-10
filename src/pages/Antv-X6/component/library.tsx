@@ -11,6 +11,7 @@ import React, { useState } from 'react';
 import '../index.less';
 import { outPutConfigs } from '../params';
 import { InputAndOut, TreeOutput } from './commonNode';
+
 // 定义知识库
 const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   params,
@@ -29,11 +30,14 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   const onAddedSkill = (item: CreatedNodeItem) => {
     item.type = item.targetType;
     item.typeId = item.targetId;
-    const skillComponentConfigs = params.skillComponentConfigs || [];
+    const knowledgeBaseConfigs = params.knowledgeBaseConfigs || [];
     if (updateNode) {
       updateNode({
         ...params,
-        skillComponentConfigs: [...skillComponentConfigs, item],
+        knowledgeBaseConfigs: [
+          ...knowledgeBaseConfigs,
+          { ...item, knowledgeBaseId: item.targetId },
+        ],
       });
       setOpen(false);
     }
