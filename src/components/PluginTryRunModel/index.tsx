@@ -39,7 +39,6 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
     manual: true,
     debounceWait: 300,
     onSuccess: (res: PluginTestResult) => {
-      console.log(res);
       if (!res.success) {
         message.warning(res.error);
       } else {
@@ -251,57 +250,69 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
     },
   ];
 
-  const handleArrayItem = (treeData: BindConfigWithSub[]) => {
-    const params = {};
+  // 处理Array_Object
+  const handleArrayObject = (data: BindConfigWithSub[]) => {
+    return data?.map((item) => {
+      const { subArgs } = item;
+        const _params = {};
+        subArgs?.forEach(info => {
+          // 如果是非数组默认名称（Array_Item）对象
+          if (info.dataType === DataTypeEnum.Object && info.name !== ARRAY_ITEM) {
+            const obj = {};
+            info.subArgs?.forEach(info => {
+              obj[info.name] = info.bindValue;
+            });
+            _params[info.name] = obj;
+          }
+          // 数据类型是Array，但不是Array_Object
+          else if (info.dataType?.includes('Array') && !info.dataType?.includes('Object')) {
+            _params[info.name] = info.subArgs?.map((_arg) => _arg.bindValue);
+          } else {
+            // 系统对象（Array_Item）
+            _params[info.name] = handleArrayObject(info?.subArgs as BindConfigWithSub[]);
+          }
+        });
+        return _params;
+    });
+  }
+
+  // 处理入参列表数据
+  const handleDataSource = (treeData: BindConfigWithSub[]) => {
+    // const params = {};
     const arrayItem = (data: BindConfigWithSub[]) => {
-      data.forEach((item) => {
-        const { dataType } = item;
+      const params = {};
+      data?.forEach((item) => {
+        const { name, dataType, subArgs } = item;
+        // 数据类型不是Array，也不是Object
         if (!dataType?.includes('Array') && dataType !== DataTypeEnum.Object) {
-          return (params[item.name] = item.bindValue);
+          params[name] = item.bindValue;
         }
+        // 数据类型是Array，但不是Array_Object
         if (dataType?.includes('Array') && !dataType?.includes('Object')) {
-          return (params[item.name] = item.subArgs?.map(
+          params[name] = item.subArgs?.map(
             (info) => info.bindValue,
-          ));
+          );
         }
-        // 数组或者数组对象
-        if (item.subArgs && item.subArgs?.length > 0) {
-          return {
-            [item.name]: arrayItem(item.subArgs),
-          };
+        if (dataType === DataTypeEnum.Object && name !== ARRAY_ITEM) {
+          const obj = {};
+          subArgs?.forEach(info => {
+            obj[info.name] = info.bindValue;
+          });
+          params[name] = obj;
+        }
+
+        if (dataType === DataTypeEnum.Array_Object && subArgs && subArgs?.length > 0) {
+          params[name] = handleArrayObject(subArgs);
         }
       });
+      return params;
     };
-    arrayItem(treeData);
-    return params;
+    return arrayItem(treeData);
   };
 
-  // todo 待完善
+  // 试运行
   const handleRunTest = () => {
-    // const _dataSource = dataSource.map((item) => {
-    //   const { dataType } = item;
-    //   if (!dataType?.includes('Array') && dataType !== DataTypeEnum.Object) {
-    //     return item;
-    //   }
-    //   if (item.subArgs && item.subArgs?.length > 0) {
-    //     const bindValue = item.subArgs?.map((item) => item.bindValue);
-    //     item.subArgs = undefined;
-    //     return {
-    //       ...item,
-    //       bindValue,
-    //     };
-    //   }
-    //   return item;
-    // });
-    const params = handleArrayItem(dataSource);
-    console.log(params, 7777777);
-    // const params = {} as {
-    //   [key: string]: string | number | unknown;
-    // };
-    //
-    // for (let item of _dataSource) {
-    //   params[item.name] = item.bindValue;
-    // }
+    const params = handleDataSource(dataSource);
     runTest({
       pluginId,
       params,
