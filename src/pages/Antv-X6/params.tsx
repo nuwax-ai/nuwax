@@ -425,25 +425,6 @@ export const modelConfigs = [
   },
 ];
 
-export const variableConfigs = [
-  {
-    name: 'name',
-    placeholder: '参数名',
-    label: '参数名',
-    rules: [{ required: true, message: '请输入参数名' }],
-    component: Input,
-    width: 140,
-  },
-  {
-    name: 'bindValue',
-    placeholder: '输入变量名',
-    label: '变量名',
-    rules: [{ required: true, message: '请输入变量名' }],
-    component: Input,
-    width: 120,
-  },
-];
-
 // 工作流的左侧菜单
 export const leftMenuList = [
   {

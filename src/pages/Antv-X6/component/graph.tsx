@@ -18,7 +18,7 @@ import { message } from 'antd';
 // 自定义类型定义
 import { GraphProp } from '@/types/interfaces/graph';
 import { createCurvePath } from './registerCustomNodes';
-
+// import { PlusOutlined,} from '@ant-design/icons';
 /**
  * 初始化图形编辑器的函数，接收一个包含容器 ID 和改变抽屉内容回调的对象作为参数。
  * @param param0 - 包含容器 ID 和改变抽屉内容回调的对象
@@ -259,32 +259,35 @@ const initGraph = ({
 
   // 监听连接桩鼠标进入事件
   graph.on('node:port:mouseenter', ({ port, node }) => {
-    // 确保端口和端口ID存在
     if (!port) return;
-    // 获取当前节点的端口
     const ports = node.getPorts();
-    // 找到并更新特定端口的样式
     const updatedPorts = ports.map((p) => {
       if (p.id === port) {
-        // 更新目标端口的尺寸
         p.attrs = {
           ...p.attrs,
-          circle: { r: 10 }, // 假设你使用的是圆形作为端口图形，这里设置半径为8
+          circle: {
+            r: 10,
+            // fill: '#fff', // 添加背景色
+            stroke: '#5F95FF', // 添加边框颜色
+            strokeWidth: 2,
+          },
+          // image: {
+          //   'xlink:href': Plus,
+          //   width: 16,
+          //   height: 16,
+          //   x: -8,
+          //   y: -8,
+          // },
         };
       }
       return p;
     });
-    // 应用新的端口配置
     node.prop('ports/items', updatedPorts);
   });
 
   // 监听节点的拖拽移动位置
   graph.on('node:moved', ({ node, e }) => {
     e.stopPropagation(); // 阻止事件冒泡
-    // 设置被拖拽的节点的层级
-    // 设置当前拖拽节点层级为最高
-    // 设置被拖拽的节点的层级为最高
-
     // 获取节点被拖拽到的位置
     const { x, y } = node.getPosition();
     const data = node.getData();
@@ -378,7 +381,7 @@ const initGraph = ({
     node.setData({ selected: false });
   });
 
-  // 假设 graph 是你的图实例
+  // 新增连线
   graph.on('edge:connected', ({ isNew, edge }) => {
     changePortSize();
     // 是否是连接桩到连接桩
@@ -396,7 +399,6 @@ const initGraph = ({
           e.getTargetCellId() === targetNodeId.toString()
         );
       });
-
       if (hasDuplicateEdge) {
         graph.removeEdge(edge);
         message.warning('不能创建重复的边');
@@ -408,12 +410,39 @@ const initGraph = ({
       const targetPort = edge.getTargetPortId();
       const sourceNode = edge.getSourceNode()?.getData();
       const targetNode = edge.getTargetNode()?.getData();
+      // 如果是循环内部的节点被外部的节点连接或者内部的节点连接外部的节点，就告知不能连接
+      if (sourceNode.loopNodeId || targetNode.loopNodeId) {
+        if (
+          sourceNode.loopNodeId &&
+          (targetNode.type !== 'Loop' ||
+            targetNode.loopNodeId !== sourceNode.loopNodeId)
+        ) {
+          message.warning('不能连接外部节点');
+          graph.removeEdge(edge);
+          return;
+        }
+        if (
+          targetNode.loopNodeId &&
+          (sourceNode.type !== 'Loop' ||
+            targetNode.loopNodeId !== sourceNode.loopNodeId)
+        ) {
+          message.warning('循环内部节点不能被外部节点连接');
+          graph.removeEdge(edge);
+          return;
+        }
+      }
+
       if (sourceNode.type === 'Loop') {
         // 看连接的点是否时内部的节点
         if (targetNode.loopNodeId && targetNode.loopNodeId === sourceNode.id) {
+          if (sourceNode.innerStartNodeId) {
+            message.warning('当前循环已有对子节点的连线，请先删除该连线');
+            graph.removeEdge(edge);
+            return;
+          }
           const _params = { ...sourceNode };
           _params.innerStartNodeId = targetNodeId;
-          changeCondition(_params);
+          changeCondition(_params, targetNodeId);
           graph.addEdge(edge); // 新增行：显式添加边到
           edge.attr({
             line: {
@@ -426,11 +455,16 @@ const initGraph = ({
         }
       }
       if (targetNode.type === 'Loop') {
-        // 看连接的点是否时内部的节点
+        // 是否是循环内部的节点连接循环
         if (sourceNode.loopNodeId && sourceNode.loopNodeId === targetNodeId) {
+          if (targetNode.innerEndNodeId) {
+            message.warning('当前已有对子节点连接循环的出口，请先删除该连线');
+            graph.removeEdge(edge);
+            return;
+          }
           const _params = { ...targetNode };
           _params.innerEndNodeId = sourceNode.id;
-          changeCondition(_params);
+          changeCondition(_params, sourceNode.id);
           graph.addEdge(edge); // 新增行：显式添加边到
           edge.attr({
             line: {
@@ -495,7 +529,7 @@ const initGraph = ({
           }
         }
 
-        changeCondition(newNodeParams);
+        changeCondition(newNodeParams, targetNodeId);
         // 通知父组件更新节点信息
       } else {
         // 通知父组件创建边
@@ -534,8 +568,6 @@ const initGraph = ({
     if (node.getData().type !== 'Loop') {
       node.toFront();
     }
-    const nodes = graph.getNodes();
-    console.log(nodes);
     // 优化点1：直接通过父子关系API获取父节点
     let parentNode = node.getParent();
     //

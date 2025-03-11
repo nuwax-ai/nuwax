@@ -1,8 +1,8 @@
-import { SettingOutlined } from '@ant-design/icons';
-import { Dropdown, Input, Tag } from 'antd';
-// import { useEffect } from 'react'
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
+import { SettingOutlined } from '@ant-design/icons';
+import { Dropdown, Input, Tag } from 'antd';
+import React, { useEffect } from 'react';
 import './index.less';
 import { InputOrReferenceProps } from './type';
 
@@ -16,6 +16,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   fieldName, // 当前字段路径（如 "inputItems[0].bindValue"）
   style,
   isDisabled = false,
+  referenceType = 'Reference',
 }) => {
   // InputOrReference.tsx
   const updateValues = (newValue: string, valueType: 'Input' | 'Reference') => {
@@ -113,30 +114,24 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           },
         ];
 
-  // 生成名称
-  // const getObjName = (value: InputAndOutConfig) => {
-  //   const key = value.key?.split('.')[0];
-  //   const parent = referenceList.previousNodes.find(
-  //     (item) => item.id === Number(key),
-  //   );
-
-  //   if (parent) {
-  //     return `${parent.name} - ${value.name}`;
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   if (value && (!referenceList.previousNodes || !referenceList.previousNodes.length) && fieldName) {
-  //     console.log('abc123')
-  //     // 获取父路径数组
-  //     const basePath = fieldName.slice(0, -1);
-  //     // 获取当前引用的类型
-  //     const type = form?.getFieldValue([...basePath, 'bindValueType']); // 使用数组路径
-  //     if (type === 'Reference') {
-  //       updateValues?.('', 'Input'); // 清除当前值并重置为Input类型
-  //     }
-  //   }
-  // }, [value])
+  useEffect(() => {
+    // if (!value) return
+    // 只有当referenceList发生变化时才处理
+    if (referenceType === 'Reference') {
+      const previousNodes = referenceList.previousNodes;
+      if (value) {
+        if (
+          previousNodes.length &&
+          previousNodes[0].id !== 1 &&
+          previousNodes[0].name !== '测试'
+        ) {
+          if (referenceList.argMap && !referenceList.argMap[value]) {
+            updateValues?.('', 'Input'); // 清除当前值并重置为Input类型
+          }
+        }
+      }
+    }
+  }, [referenceList]);
 
   return (
     <div className="input-or-reference dis-sb" style={style}>

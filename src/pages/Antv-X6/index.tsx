@@ -58,7 +58,15 @@ const Workflow: React.FC = () => {
   const [stopWait, setStopWait] = useState<boolean>(false);
   // 上级节点的输出参数
   const [referenceList, setReferenceList] = useState<NodePreviousAndArgMap>({
-    previousNodes: [],
+    previousNodes: [
+      {
+        id: 0,
+        name: '测试',
+        outputArgs: [],
+        icon: '',
+        type: NodeTypeEnum.Start,
+      },
+    ],
     innerPreviousNodes: [],
     argMap: {},
   });
@@ -189,9 +197,9 @@ const Workflow: React.FC = () => {
     });
   };
   // 获取当前节点的参数
-  const getRefernece = async (child: ChildNode) => {
+  const getRefernece = async (id: number) => {
     // 获取节点需要的引用参数
-    const _res = await service.getOutputArgs(Number(child.id));
+    const _res = await service.getOutputArgs(id);
     if (_res.code === Constant.success) {
       if (
         _res.data &&
@@ -208,6 +216,7 @@ const Workflow: React.FC = () => {
       }
     }
   };
+
   // 查询节点的指定信息
   const getNodeConfig = async (id: number) => {
     const _res = await service.getNodeConfig(id);
@@ -218,14 +227,24 @@ const Workflow: React.FC = () => {
   };
 
   // 更新节点数据
-  const changeNode = async (config: ChildNode, update?: boolean) => {
-    // 更改状态，当前有节点再更新
+  const changeNode = async (config: ChildNode, update?: boolean | string) => {
     // setIsUpdate(true)
     graphRef.current.updateNode(config.id, config);
     const _res = await updateNode(config);
     if (_res.code === Constant.success) {
       if (update) {
-        getNodeConfig(Number(config.id));
+        if (typeof update === 'string') {
+          // 新增和删除边以后，如果当前的节点是被连接的节点，那么就要更新当前节点的参数
+          setFoldWrapItem((prev) => {
+            if (prev.id === Number(update)) {
+              getRefernece(Number(update));
+            }
+            return prev;
+          });
+        } else {
+          // 如果传递的是boolean，那么证明要更新这个节点
+          getNodeConfig(Number(config.id));
+        }
       }
       changeUpdateTime();
     }
@@ -362,15 +381,16 @@ const Workflow: React.FC = () => {
     // 如果接口不成功，就需要删除掉那一条添加的线
     if (_res.code !== Constant.success) {
       graphRef.current.deleteEdge(id);
+    } else {
+      console.log(123123213, targetId);
+      setFoldWrapItem((prev) => {
+        // 这里的prev是最新值
+        if (Number(targetId) === prev.id) {
+          getRefernece(prev.id);
+        }
+        return prev; // 如果不修改状态就直接返回原值
+      });
     }
-
-    setFoldWrapItem((prev) => {
-      // 这里的prev是最新值
-      if (Number(targetId) === prev.id) {
-        getRefernece(prev);
-      }
-      return prev; // 如果不修改状态就直接返回原值
-    });
   };
 
   // 发布，保存数据
@@ -490,7 +510,7 @@ const Workflow: React.FC = () => {
           show: true,
           errorList: _arr.map((child) => ({
             nodeId: child.nodeId,
-            error: child.messages[0],
+            error: child.messages.join(','),
           })),
         });
 

@@ -31,6 +31,7 @@ export interface InputOrReferenceProps {
   style?: any;
   returnObj?: boolean;
   isDisabled?: boolean;
+  referenceType?: 'Input' | 'Reference';
 }
 
 /**

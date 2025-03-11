@@ -175,6 +175,12 @@ const handleLoopEdges = (node: ChildNode): Edge[] => {
     });
   }
 
+  const _edge = (node.nextNodeIds || []).map((item) => ({
+    source: Number(node.id).toString(),
+    target: Number(item).toString(),
+    zIndex: 1,
+  }));
+  edges.push(..._edge);
   return edges;
 };
 

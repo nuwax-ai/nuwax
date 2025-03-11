@@ -279,24 +279,15 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
       if (isModified) {
         await onGetNodeConfig(currentNodeConfig);
         setIsModified(false);
-        getRefernece(foldWrapItem);
-      } else {
-        // 独立处理非修改状态的更新
-        setCurrentNodeConfig((prev) => {
-          if (visible && (prev.id !== foldWrapItem.id || !prev.id)) {
-            getRefernece(foldWrapItem);
-          }
-          return foldWrapItem;
-        });
       }
+      getRefernece(foldWrapItem.id);
     };
-
     handleUpdate();
-  }, [foldWrapItem.id, visible]);
+  }, [foldWrapItem, visible]);
 
   useEffect(() => {
     setCurrentNodeConfig(foldWrapItem);
-  }, [foldWrapItem]);
+  }, [foldWrapItem, visible]);
 
   useEffect(() => {
     // 清除已有定时器

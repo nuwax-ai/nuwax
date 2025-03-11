@@ -108,7 +108,7 @@ export interface BindEventHandlers {
     sourceNode: ChildNode,
     id: string,
   ) => void;
-  changeCondition: (config: ChildNode) => void;
+  changeCondition: (config: ChildNode, targetNodeId?: string) => void;
   copyNode: (child: ChildNode) => void;
   // 删除节点
   removeNode: (id: string) => void;
@@ -137,6 +137,6 @@ export interface GraphProp {
     sourceNode: ChildNode,
     id: string,
   ) => void;
-  changeCondition: (newData: ChildNode) => void;
+  changeCondition: (newData: ChildNode, targetNodeId?: string) => void;
   changeZoom: (val: number | string) => void;
 }

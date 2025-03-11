@@ -3,6 +3,7 @@ import { FieldConfig } from '@/components/FormListItem/type';
 import { DataTypeMap } from '@/constants/common.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { DefaultObjectType } from '@/types/interfaces/common';
+
 import {
   FormListProps,
   KeyValuePairs,
@@ -68,14 +69,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
     form.setFieldsValue({ [inputItemName]: _newValue });
   };
 
-  //  // 重构表单项创建方式
-  //  const createNewItem = () => {
-  //   return fieldConfigs.reduce((acc: DefaultObjectType, field: FieldConfig) => {
-  //     acc[field.name] = ''; // 使用空字符串代替 null
-  //     return acc;
-  //   }, { id: uuidv4() }); // 添加唯一标识
-  // };
-
   // 提交form表单
   const submitForm = () => {
     const raw = form.getFieldsValue(true);
@@ -84,9 +77,10 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   };
 
   useEffect(() => {
-    // 仅在表单值为空时设置初始值
-    const currentValues = form.getFieldsValue(true);
-    if (!currentValues[inputItemName]?.length) {
+    if (
+      form.getFieldsValue(true)[inputItemName] &&
+      !form.getFieldsValue(true)[inputItemName].length
+    ) {
       form.setFieldsValue(initialValues);
     }
   }, [initialValues]);
@@ -106,12 +100,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
         onValuesChange={submitForm}
         className="input-and-out-form"
       >
-        {/* {
-          <div className="dis-left">
-            <span>参数名</span>
-            <span>参数值</span>
-          </div>
-        } */}
         <div className="dis-sb margin-bottom">
           <span className="node-title-style">{title}</span>
           {!disabledAdd && (
@@ -126,6 +114,11 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
           {(fields) => (
             <>
               {fields.map((item, index) => {
+                const fieldValue = form.getFieldValue([
+                  inputItemName,
+                  item.name,
+                  'bindValueType',
+                ]);
                 return (
                   <div key={item.name}>
                     {/* 只在第一个输入框组旁边显示标签 */}
@@ -174,6 +167,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                             form={form}
                             fieldName={[inputItemName, item.name, 'bindValue']}
                             style={{ width: '55%', marginRight: '10px' }}
+                            referenceType={fieldValue}
                           />
                         </Form.Item>
                         <Form.Item
@@ -207,6 +201,119 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                             />
                           </Form.Item>
                         )}
+                      </div>
+                    </Form.Item>
+                  </div>
+                );
+              })}
+            </>
+          )}
+        </Form.List>
+      </Form>
+    </div>
+  );
+};
+
+// 定义其他的输出
+export const OtherFormList: React.FC<NodeRenderProps> = ({
+  title,
+  inputItemName = 'conditionArgs',
+  initialValues,
+  handleChangeNodeConfig,
+  fieldConfigs,
+}) => {
+  const formItem = fieldConfigs.reduce(
+    (acc: DefaultObjectType, field: FieldConfig) => {
+      acc[field.name] = null;
+      return acc;
+    },
+    {},
+  );
+  const [form] = Form.useForm();
+  const addInputItem = () => {
+    const nextItems = [...(form.getFieldValue(inputItemName) || []), formItem];
+    form.setFieldsValue({ [inputItemName]: nextItems });
+  };
+
+  const removeItem = (index: number) => {
+    const formValue = form.getFieldsValue()[inputItemName];
+    const _newValue = formValue.filter((_: unknown, i: number) => i !== index);
+    form.setFieldsValue({ [inputItemName]: _newValue });
+  };
+  // 提交form表单
+  const submitForm = () => {
+    const values = form.getFieldsValue(true);
+    handleChangeNodeConfig(values);
+  };
+  useEffect(() => {
+    if (!form.getFieldsValue(true)[inputItemName]) {
+      form.setFieldsValue(initialValues);
+    }
+  }, [initialValues]);
+
+  return (
+    <div className="start-node-style">
+      <Form
+        layout={'vertical'}
+        form={form}
+        initialValues={initialValues}
+        onValuesChange={submitForm}
+        className="input-and-out-form"
+      >
+        <div className="dis-sb margin-bottom">
+          <span className="node-title-style">{title}</span>
+          <Button
+            icon={<PlusOutlined />}
+            size={'small'}
+            onClick={addInputItem}
+          ></Button>
+        </div>
+        <Form.List name={inputItemName}>
+          {(fields) => (
+            <>
+              {fields.map((item, index) => {
+                return (
+                  <div key={item.name}>
+                    {/* 只在第一个输入框组旁边显示标签 */}
+                    {index === 0 && (
+                      <>
+                        <span>参数名</span>
+                        <span style={{ marginLeft: '20%' }}>变量值</span>
+                      </>
+                    )}
+                    <Form.Item key={item.key}>
+                      <div className="dis-left">
+                        <Form.Item
+                          label="参数名"
+                          name={[item.name, 'name']}
+                          noStyle
+                          rules={[{ required: true, message: '请输入变量名' }]}
+                        >
+                          <Input
+                            size="small"
+                            style={{ width: '30%', marginRight: '10px' }}
+                            placeholder="请输入参数名"
+                          />
+                        </Form.Item>
+                        <Form.Item
+                          label="变量名"
+                          name={[item.name, 'bindValue']}
+                          noStyle
+                          rules={[
+                            { required: true, message: '请选择或输入变量值' },
+                          ]}
+                        >
+                          <Input
+                            placeholder="请输入参数值"
+                            size="small"
+                            style={{ width: '55%', marginRight: '10px' }}
+                          />
+                        </Form.Item>
+                        <Form.Item name={[item.name, 'require']} noStyle>
+                          <DeleteOutlined
+                            onClick={() => removeItem(item.name)}
+                          />
+                        </Form.Item>
                       </div>
                     </Form.Item>
                   </div>

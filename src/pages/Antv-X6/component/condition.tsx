@@ -144,7 +144,9 @@ export const ConditionList: React.FC<ConditionListProps> = ({
     handleChangeNodeConfig(values, draggableId);
   };
   useEffect(() => {
-    form.setFieldsValue(initialValues);
+    if (!form.getFieldsValue(true)[inputItemName]) {
+      form.setFieldsValue(initialValues);
+    }
   }, [initialValues]);
   return (
     <Draggable

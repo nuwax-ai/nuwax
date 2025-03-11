@@ -23,8 +23,8 @@ import {
   Space,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { cycleOption, outPutConfigs, variableConfigs } from '../params';
-import { InputAndOut, TreeOutput } from './commonNode';
+import { cycleOption, outPutConfigs } from '../params';
+import { InputAndOut, OtherFormList, TreeOutput } from './commonNode';
 import './nodeItem.less';
 // 定义一些公共的数组
 
@@ -281,17 +281,25 @@ const VariableNode: React.FC<NodeDisposeProps> = ({
           style={{ marginBottom: '10px' }}
         />
       </div>
-      <InputAndOut
-        title={params.configType === 'SET_VARIABLE' ? '设置变量' : '输出变量'}
-        fieldConfigs={
-          params.configType === 'SET_VARIABLE' ? outPutConfigs : variableConfigs
-        }
-        referenceList={referenceList}
-        inputItemName={InputItemNameEnum.inputArgs}
-        handleChangeNodeConfig={handleChangeNodeConfig}
-        initialValues={{ inputArgs: params.inputArgs || [] }}
-      />
-
+      {params.configType === 'SET_VARIABLE' && (
+        <InputAndOut
+          title={'设置变量'}
+          fieldConfigs={outPutConfigs}
+          referenceList={referenceList}
+          inputItemName={InputItemNameEnum.inputArgs}
+          handleChangeNodeConfig={handleChangeNodeConfig}
+          initialValues={{ inputArgs: params.inputArgs || [] }}
+        />
+      )}
+      {params.configType !== 'SET_VARIABLE' && (
+        <OtherFormList
+          title={'输出变量'}
+          fieldConfigs={outPutConfigs}
+          inputItemName={InputItemNameEnum.outputArgs}
+          handleChangeNodeConfig={handleChangeNodeConfig}
+          initialValues={{ inputArgs: params.outputArgs || [] }}
+        />
+      )}
       {outputArgs && params.configType === 'SET_VARIABLE' && (
         <div>
           <div className="node-title-style margin-bottom">输出</div>
@@ -466,7 +474,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
         </div>
       )}
       {params.textHandleType === 'SPLIT' && (
-        <>
+        <div className=" node-item-style">
           <span className="node-title-style">分隔符</span>
           <ArrayLinkSetting
             initValue={params.splits || []}
@@ -475,7 +483,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
             }
             multiple
           />
-        </>
+        </div>
       )}
       <div>
         <div className="node-title-style margin-bottom">输出</div>

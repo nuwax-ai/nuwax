@@ -67,7 +67,7 @@ const bindEventHandlers = ({
             targetNode.loopNodeId === sourceNode.id
           ) {
             sourceNode.innerStartNodeId = -1;
-            changeCondition(sourceNode);
+            changeCondition(sourceNode, _targetNodeId);
             graph.removeCells([_cell]); // 新增行：实际移除边元素
             return;
           }
@@ -77,7 +77,7 @@ const bindEventHandlers = ({
             sourceNode.loopNodeId === targetNode.id
           ) {
             targetNode.innerEndNodeId = -1;
-            changeCondition(targetNode);
+            changeCondition(targetNode, targetNode.id);
             graph.removeCells([_cell]); // 新增行：实际移除边元素
             return;
           }
@@ -123,7 +123,7 @@ const bindEventHandlers = ({
               }
             }
           }
-          changeCondition(newNodeParams);
+          changeCondition(newNodeParams, _targetNodeId);
         } else {
           changeEdge('delete', _targetNodeId as string, sourceNode, '0');
         }

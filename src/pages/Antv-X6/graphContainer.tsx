@@ -69,7 +69,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           onChange: handleNodeChange,
         },
         resizable: true,
-        zIndex: 3,
+        zIndex: 99,
         ports: ports,
       });
       // 添加节点
@@ -89,7 +89,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       const node = graphRef.current.getCellById(nodeId);
       if (node && node.isNode()) {
         const position = node.getPosition();
-        console.log(newData);
         if (position) {
           // 确保 newData.nodeConfig 存在
           if (!newData.nodeConfig) {
@@ -140,7 +139,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           }
         }
         node.updateData(newData);
-        console.log(node.getData());
       }
     };
 
@@ -165,8 +163,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         .forEach((n: Node) => n.setData({ selected: false }));
       // 获取到当前id对应的节点
       const node = graphRef.current.getCellById(id);
-
-      // console.log(node)
       if (!node) return;
       // 设置当前节点为选中状态
       node.setData({ selected: true });
@@ -228,7 +224,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             data.innerNodes.forEach((childDef: ChildNode) => {
               const child = createChildNode(data.id, childDef); // 创建子节点配置
               const childNode = graphRef.current.addNode(child); // 添加子节点到图中
-              console.log(childDef);
               // 更新父节点的子节点列表（如果必要）
               element.addChild(childNode);
             });
