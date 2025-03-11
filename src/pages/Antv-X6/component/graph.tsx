@@ -117,7 +117,7 @@ const initGraph = ({
               strokeWidth: 1,
             },
           },
-          // zIndex: -1,
+          zIndex: 3,
         });
       },
       validateConnection({
@@ -201,6 +201,53 @@ const initGraph = ({
     });
   };
 
+  const changeZindex = (node?: Node) => {
+    const nodes = graph.getNodes();
+    // 先将其他节点的zindex设置为4
+    nodes.forEach((n) => {
+      n.setData({ selected: false });
+      n.prop('zIndex', 4); // 正确设置层级
+    });
+    // 将loop节点设置为5
+    const loopData = nodes.filter((item) => {
+      const data = item.getData();
+      return data.type === 'Loop';
+    });
+    // loop节点的子节点设置为8
+    loopData.forEach((child) => {
+      child.prop('zIndex', 5); // 正确设置层级
+      const sun = child.getChildren();
+      sun?.forEach((sun) => {
+        sun.prop('zIndex', 8); // 正确设置层级
+      });
+    });
+    if (node) {
+      const data = node.getData();
+      if (data.type === 'Loop') {
+        const children = node.getChildren();
+        children?.forEach((child) => {
+          child.prop('zIndex', 99);
+          // 获取所有的边
+          const edges = graph.getEdges();
+          // 如果边和节点有关系，那么就要将其处于节点的上层
+          edges.forEach((edge) => {
+            if (
+              edge.getSourceNode()?.getData().id === child.getData().id ||
+              edge.getTargetNode()?.getData().id === child.getData().id
+            ) {
+              edge.prop('zIndex', 15);
+            }
+            // if(Number(edge.getData()))
+          });
+        });
+        // 设置内部边的层级
+        node.prop('zIndex', 10);
+      } else {
+        node.prop('zIndex', 99);
+      }
+    }
+  };
+
   // 使用多个插件来增强图形编辑器的功能
   graph
     // .use(new Transform({ resizing: true, rotating: true })) // 启用变换插件，允许节点缩放和旋转
@@ -234,6 +281,9 @@ const initGraph = ({
   // 监听节点的拖拽移动位置
   graph.on('node:moved', ({ node, e }) => {
     e.stopPropagation(); // 阻止事件冒泡
+    // 设置被拖拽的节点的层级
+    // 设置当前拖拽节点层级为最高
+    // 设置被拖拽的节点的层级为最高
 
     // 获取节点被拖拽到的位置
     const { x, y } = node.getPosition();
@@ -278,9 +328,11 @@ const initGraph = ({
       const _data = parentNode.getData();
       _data.nodeConfig.extension = extension;
       changeCondition(_data);
+      return;
     }
-
+    // node.prop('zIndex', 99);
     changeCondition(data);
+    changeZindex(node);
   });
 
   // 监听连接桩鼠标离开事件
@@ -300,7 +352,6 @@ const initGraph = ({
   // 监听边鼠标进入事件
   graph.on('edge:click', ({ edge }) => {
     edge.attr('line/stroke', '#1890FF'); // 悬停时改为蓝色
-    console.log(edge);
   });
   // 监听边鼠标离开事件
   graph.on('edge:unselected', ({ edge }) => {
@@ -310,51 +361,9 @@ const initGraph = ({
   graph.on('node:click', ({ node }) => {
     // 判断点击的是空白处还是节点
     if (node && node.isNode()) {
-      const nodes = graph.getNodes();
-      // 先将其他节点的zindex设置为4
-      nodes.forEach((n) => {
-        n.setData({ selected: false });
-        n.prop('zIndex', 4); // 正确设置层级
-      });
-      // 将loop节点设置为5
-      const loopData = nodes.filter((item) => {
-        const data = item.getData();
-        return data.type === 'Loop';
-      });
-      // loop节点的子节点设置为8
-      loopData.forEach((child) => {
-        child.prop('zIndex', 5); // 正确设置层级
-        const sun = child.getChildren();
-        sun?.forEach((sun) => {
-          sun.prop('zIndex', 8); // 正确设置层级
-        });
-      });
       // 设置当前节点为选中状态
+      changeZindex(node);
       node.setData({ selected: true }); // 保持当前节点层级999
-      const data = node.getData();
-      if (data.type === 'Loop') {
-        const children = node.getChildren();
-        children?.forEach((child) => {
-          child.prop('zIndex', 99);
-          // 获取所有的边
-          const edges = graph.getEdges();
-          // 如果边和节点有关系，那么就要将其处于节点的上层
-          edges.forEach((edge) => {
-            if (
-              edge.getSourceNode()?.getData().id === child.getData().id ||
-              edge.getTargetNode()?.getData().id === child.getData().id
-            ) {
-              edge.toFront();
-            }
-            // if(Number(edge.getData()))
-          });
-        });
-        // 设置内部边的层级
-
-        node.prop('zIndex', 90);
-      } else {
-        node.prop('zIndex', 99);
-      }
       // 获取被点击节点的数据
       const latestData = {
         ...node.getData(), // 获取图形实例存储的数据
@@ -372,7 +381,6 @@ const initGraph = ({
   // 假设 graph 是你的图实例
   graph.on('edge:connected', ({ isNew, edge }) => {
     changePortSize();
-
     // 是否是连接桩到连接桩
     edge.setRouter('manhattan');
     if (isNew) {
@@ -407,7 +415,6 @@ const initGraph = ({
           _params.innerStartNodeId = targetNodeId;
           changeCondition(_params);
           graph.addEdge(edge); // 新增行：显式添加边到
-          edge.prop('zIndex', 15);
           edge.attr({
             line: {
               strokeDasharray: '', // 移除虚线样式
@@ -418,16 +425,13 @@ const initGraph = ({
           return;
         }
       }
-
       if (targetNode.type === 'Loop') {
         // 看连接的点是否时内部的节点
         if (sourceNode.loopNodeId && sourceNode.loopNodeId === targetNodeId) {
-          console.log('targetLoop');
           const _params = { ...targetNode };
           _params.innerEndNodeId = sourceNode.id;
           changeCondition(_params);
           graph.addEdge(edge); // 新增行：显式添加边到
-          edge.prop('zIndex', 15);
           edge.attr({
             line: {
               strokeDasharray: '', // 移除虚线样式
@@ -438,7 +442,6 @@ const initGraph = ({
           return;
         }
       }
-
       // 这里统一让left作为接入点，right作为输出点
       if (sourcePort?.includes('left') || targetPort?.includes('right')) {
         graph.removeCell(edge.id);
@@ -497,8 +500,10 @@ const initGraph = ({
       } else {
         // 通知父组件创建边
         changeEdge('created', targetNodeId, sourceNode, edge.id);
-        if (targetNode.loopNodeId && sourceNode.loopNodeId) {
-          edge.setZIndex(15); // 使用专用方法设置层级
+        if (targetNode.loopNodeId || sourceNode.loopNodeId) {
+          edge.prop('zIndex', 15);
+        } else {
+          edge.prop('zIndex', 3);
         }
       }
 
@@ -509,6 +514,7 @@ const initGraph = ({
           strokeWidth: 1, // 设置边的宽度
         },
       });
+      changeZindex();
     }
   });
 
@@ -525,6 +531,7 @@ const initGraph = ({
   });
 
   graph.on('node:change:position', ({ node }) => {
+    node.toFront();
     // 优化点1：直接通过父子关系API获取父节点
     let parentNode = node.getParent();
     //
