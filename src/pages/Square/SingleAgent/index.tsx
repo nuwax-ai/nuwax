@@ -1,5 +1,8 @@
 import ConditionRender from '@/components/ConditionRender';
+import { apiAgentConversationCreate } from '@/services/agentConfig';
+import type { AgentConversationInfo } from '@/types/interfaces/agent';
 import type { SingleAgentProps } from '@/types/interfaces/square';
+import { useRequest } from '@@/exports';
 import {
   PlayCircleOutlined,
   StarOutlined,
@@ -9,9 +12,6 @@ import classNames from 'classnames';
 import React from 'react';
 import { history } from 'umi';
 import styles from './index.less';
-import { useRequest } from '@@/exports';
-import { apiAgentConversationCreate } from '@/services/agentConfig';
-import type { AgentConversationInfo } from '@/types/interfaces/agent';
 
 const cx = classNames.bind(styles);
 
@@ -19,7 +19,8 @@ const cx = classNames.bind(styles);
  * 单个智能体组件
  */
 const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
-  const {targetId, icon, name, publishUser, description, statistics} = publishedAgentInfo;
+  const { targetId, icon, name, publishUser, description, statistics } =
+    publishedAgentInfo;
   // 创建会话
   const { run: runConversationCreate } = useRequest(
     apiAgentConversationCreate,
@@ -45,11 +46,7 @@ const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
       onClick={handleClick}
     >
       <div className={cx(styles.header, 'flex')}>
-        <img
-          className={cx(styles['a-logo'])}
-          src={icon}
-          alt=""
-        />
+        <img className={cx(styles['a-logo'])} src={icon} alt="" />
         <div className={cx(styles['info-container'], 'flex-1')}>
           <div className={cx('flex')}>
             <span className={cx('flex-1', styles['a-name'], 'text-ellipsis')}>
@@ -57,25 +54,17 @@ const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
             </span>
           </div>
           <div className={cx('flex', 'items-center', styles['info-author'])}>
-            <ConditionRender
-              condition={publishUser?.avatar}
-            >
+            <ConditionRender condition={publishUser?.avatar}>
               <img
                 className={cx(styles.avatar)}
                 src={publishUser?.avatar}
                 alt=""
               />
             </ConditionRender>
-            <span className={cx(styles.author)}>
-              {publishUser?.userName}
-            </span>
-            <span className={cx(styles.nickname)}>
-              {publishUser?.nickName}
-            </span>
+            <span className={cx(styles.author)}>{publishUser?.userName}</span>
+            <span className={cx(styles.nickname)}>{publishUser?.nickName}</span>
           </div>
-          <p className={cx(styles.desc, 'text-ellipsis-3')}>
-            {description}
-          </p>
+          <p className={cx(styles.desc, 'text-ellipsis-3')}>{description}</p>
         </div>
       </div>
       <div className={cx(styles['divider-horizontal'])} />

@@ -120,31 +120,31 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       >
         {/*{createAgentType === CreateAgentEnum.Standard ? (*/}
         {/*  <>*/}
-          <Form.Item
-            name="name"
-            label="智能体名称"
-            rules={[{ required: true, message: '请输入智能体名称' }]}
-          >
-            <Input
-              placeholder="给智能体起一个独一无二的名字"
-              showCount
-              maxLength={20}
-            />
-          </Form.Item>
-          <OverrideTextArea
-            name="description"
-            label="智能体功能介绍"
-            initialValue={agentConfigInfo?.description}
-            placeholder="介绍智能体的功能，将会展示给智能体的用户"
-            maxLength={500}
+        <Form.Item
+          name="name"
+          label="智能体名称"
+          rules={[{ required: true, message: '请输入智能体名称' }]}
+        >
+          <Input
+            placeholder="给智能体起一个独一无二的名字"
+            showCount
+            maxLength={20}
           />
-          <Form.Item name="icon" label="图标">
-            <UploadAvatar
-              onUploadSuccess={setImageUrl}
-              imageUrl={imageUrl}
-              defaultImage={agentImage as string}
-            />
-          </Form.Item>
+        </Form.Item>
+        <OverrideTextArea
+          name="description"
+          label="智能体功能介绍"
+          initialValue={agentConfigInfo?.description}
+          placeholder="介绍智能体的功能，将会展示给智能体的用户"
+          maxLength={500}
+        />
+        <Form.Item name="icon" label="图标">
+          <UploadAvatar
+            onUploadSuccess={setImageUrl}
+            imageUrl={imageUrl}
+            defaultImage={agentImage as string}
+          />
+        </Form.Item>
         {/*  </>*/}
         {/*) : (*/}
         {/*  <Form.Item*/}

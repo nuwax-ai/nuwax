@@ -3,7 +3,6 @@ import type { CardStyleEnum, CreateUpdateModeEnum } from '@/types/enums/common';
 import type {
   AgentBaseInfo,
   AgentConfigInfo,
-  AttachmentFile,
   CreatorInfo,
 } from '@/types/interfaces/agent';
 import type {

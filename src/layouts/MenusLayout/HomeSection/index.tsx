@@ -49,14 +49,14 @@ const HomeSection: React.FC = () => {
 
   useEffect(() => {
     runEdit({
-      size: 20,
+      size: 10,
     });
     runUsed({
-      size: 20,
+      size: 10,
     });
     runCollect({
       page: 1,
-      size: 20,
+      size: 10,
     });
   }, []);
 
@@ -67,11 +67,11 @@ const HomeSection: React.FC = () => {
 
   return (
     <div className={cx('px-6', 'py-16')}>
-      <h3 className={cx(styles.title)}>最近编辑</h3>
-      <UserRelAgentList list={editAgentList} onClick={handleClick} />
-      <ConditionRender condition={usedAgentList?.length}>
-        <h3 className={cx(styles.title, 'mt-16')}>最近使用</h3>
-        <UserRelAgentList list={usedAgentList} onClick={handleClick} />
+      <h3 className={cx(styles.title, 'mt-16')}>最近使用</h3>
+      <UserRelAgentList list={usedAgentList} onClick={handleClick} />
+      <ConditionRender condition={editAgentList?.length}>
+        <h3 className={cx(styles.title)}>最近编辑</h3>
+        <UserRelAgentList list={editAgentList} onClick={handleClick} />
       </ConditionRender>
       <ConditionRender condition={collectAgentList?.length}>
         <h3 className={cx(styles.title, 'mt-16')}>收藏</h3>

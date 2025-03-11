@@ -1,9 +1,11 @@
 import squareImage from '@/assets/images/square_image.png';
+import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import {
   apiPublishedAgentList,
   apiPublishedPluginList,
 } from '@/services/square';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
+import type { TenantConfigInfo } from '@/types/interfaces/login';
 import type { Page } from '@/types/interfaces/request';
 import type { PublishedAgentInfo } from '@/types/interfaces/square';
 import { getURLParams } from '@/utils/common';
@@ -13,8 +15,6 @@ import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
 import styles from './index.less';
 import SingleAgent from './SingleAgent';
-import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
-import type { TenantConfigInfo } from '@/types/interfaces/login';
 
 const cx = classNames.bind(styles);
 
@@ -90,16 +90,21 @@ const Square: React.FC = () => {
     if (configInfo?.squareBannerLinkUrl) {
       window.location.href = configInfo.squareBannerLinkUrl;
     }
-  }
+  };
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <header className={cx(styles.header, 'relative')} onClick={handleLink}>
-        <img className={'absolute'} src={configInfo?.squareBanner || squareImage as string} alt="" />
+        <img
+          className={'absolute'}
+          src={configInfo?.squareBanner || (squareImage as string)}
+          alt=""
+        />
         <div className={cx(styles['cover-box'], 'h-full', 'relative')}>
           <h3>{configInfo?.squareBannerText || '人人都是智能设计师'}</h3>
           <p className={cx('text-ellipsis-2')}>
-            {configInfo?.squareBannerSubText || '新一代AI应用设计、开发、实践平台 \n 无需代码，轻松创建，适合各类人群，支持多种端发布及API'}
+            {configInfo?.squareBannerSubText ||
+              '新一代AI应用设计、开发、实践平台 \n 无需代码，轻松创建，适合各类人群，支持多种端发布及API'}
           </p>
         </div>
       </header>

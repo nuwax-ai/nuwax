@@ -60,6 +60,11 @@ export interface ResetPasswordParams {
   code: string;
 }
 
+// 重置密码form
+export interface ResetPasswordForm extends ResetPasswordParams {
+  password: string;
+}
+
 export interface UserInfo {
   id: number;
   tenantId: number;

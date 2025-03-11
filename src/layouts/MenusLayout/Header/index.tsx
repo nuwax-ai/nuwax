@@ -1,10 +1,10 @@
 import logo from '@/assets/images/logo.png';
+import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import { ICON_NEW_AGENT } from '@/constants/images.constants';
+import type { TenantConfigInfo } from '@/types/interfaces/login';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';
-import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
-import type { TenantConfigInfo } from '@/types/interfaces/login';
 
 const cx = classNames.bind(styles);
 
@@ -23,7 +23,11 @@ const Header: React.FC = () => {
   };
   return (
     <>
-      <img src={configInfo?.siteLogo || logo as string} className={cx(styles.logo)} alt="" />
+      <img
+        src={configInfo?.siteLogo || (logo as string)}
+        className={cx(styles.logo)}
+        alt=""
+      />
       <span
         className={cx(
           styles['add-agent'],

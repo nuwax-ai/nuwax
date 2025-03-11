@@ -1,9 +1,18 @@
 import logo from '@/assets/images/logo.png';
-import { ACCESS_TOKEN, EXPIRE_DATE, PHONE, TENANT_CONFIG_INFO } from '@/constants/home.constants';
+import {
+  ACCESS_TOKEN,
+  EXPIRE_DATE,
+  PHONE,
+  TENANT_CONFIG_INFO,
+} from '@/constants/home.constants';
 import useUserInfo from '@/hooks/useUserInfo';
 import { apiLogin, apiTenantConfig } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
-import type { ILoginResult, LoginFieldType, TenantConfigInfo } from '@/types/interfaces/login';
+import type {
+  ILoginResult,
+  LoginFieldType,
+  TenantConfigInfo,
+} from '@/types/interfaces/login';
 import { isValidPhone } from '@/utils/common';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import {

@@ -1,8 +1,8 @@
-import ChatInput from '@/components/ChatInput';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import AgentChatEmpty from '@/components/AgentChatEmpty';
+import ChatInput from '@/components/ChatInput';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
+import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   apiAgentConversation,
   apiAgentConversationChatSuggest,
@@ -18,15 +18,15 @@ import type {
   ConversationChatResponse,
   CreatorInfo,
 } from '@/types/interfaces/agent';
+import type { UploadInfo } from '@/types/interfaces/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
+import moment from 'moment';
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useMatch, useRequest } from 'umi';
 import styles from './index.less';
 import ShowArea from './ShowArea';
-import moment from 'moment';
-import type { UploadInfo } from '@/types/interfaces/common';
 
 const cx = classNames.bind(styles);
 
@@ -91,12 +91,13 @@ const Chat: React.FC = () => {
     }
     setChatSuggestList([]);
     // 附件文件
-    const attachments = files?.map((file) => ({
-      fileKey: file.key,
-      fileUrl: file.url,
-      fileName: file.fileName,
-      mimeType: file.mimeType,
-    })) || [];
+    const attachments =
+      files?.map((file) => ({
+        fileKey: file.key,
+        fileUrl: file.url,
+        fileName: file.fileName,
+        mimeType: file.mimeType,
+      })) || [];
 
     const params = {
       conversationId: devConversationId,
@@ -213,7 +214,11 @@ const Chat: React.FC = () => {
             )}
           </div>
           {/*会话输入框*/}
-          <ChatInput onEnter={handleConversation} files={files} message={message} />
+          <ChatInput
+            onEnter={handleConversation}
+            files={files}
+            message={message}
+          />
         </div>
       </div>
       {/*展示台区域*/}

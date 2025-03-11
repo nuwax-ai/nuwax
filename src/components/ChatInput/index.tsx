@@ -46,14 +46,17 @@ const ChatInput: React.FC<ChatInputProps> = ({
       setFiles([]);
       setMessage('');
     }
-  }
+  };
 
   // enter事件
   const handlePressEnter = (e) => {
     e.preventDefault();
     const { value } = e.target;
     // shift+enter或者ctrl+enter时换行
-    if (e.nativeEvent.keyCode === 13 && (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)) {
+    if (
+      e.nativeEvent.keyCode === 13 &&
+      (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)
+    ) {
       const enterValue = `${value}\n`;
       setMessage(enterValue);
     } else {

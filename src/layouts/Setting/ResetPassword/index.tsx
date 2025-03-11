@@ -10,6 +10,7 @@ import classNames from 'classnames';
 import React from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
+import type { ResetPasswordForm } from '@/types/interfaces/login';
 
 const cx = classNames.bind(styles);
 
@@ -17,20 +18,26 @@ const cx = classNames.bind(styles);
  * 重置密码
  */
 const ResetPassword: React.FC = () => {
-  const { countDown, handleCount } = useCountDown();
+  const { countDown, setCountDown, onClearTimer, handleCount } = useCountDown();
+  const [form] = Form.useForm<ResetPasswordForm>();
+
+
   const { run, loading } = useRequest(apiResetPassword, {
     manual: true,
     debounceWait: 300,
     onSuccess: () => {
       message.success('重置成功');
+      form.resetFields();
+      setCountDown(0);
+      onClearTimer();
     },
+    onError: () => {
+      setCountDown(0);
+      onClearTimer();
+    }
   });
 
-  const onFinish: FormProps<{
-    password: string;
-    newPassword: string;
-    code: string;
-  }>['onFinish'] = (values) => {
+  const onFinish: FormProps<ResetPasswordForm>['onFinish'] = (values) => {
     const { newPassword, code } = values;
     run({
       newPassword,
@@ -60,6 +67,7 @@ const ResetPassword: React.FC = () => {
       <h3>重置密码</h3>
       <Form
         layout="vertical"
+        form={form}
         requiredMark={customizeRequiredNoStarMark}
         rootClassName={cx(styles.form)}
         onFinish={onFinish}
