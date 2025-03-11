@@ -7,7 +7,7 @@ import { ClearOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import { Input, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import ChatUploadFile from './ChatUploadFile';
 import styles from './index.less';
 
@@ -17,8 +17,6 @@ const cx = classNames.bind(styles);
  * 聊天输入组件
  */
 const ChatInput: React.FC<ChatInputProps> = ({
-  message: inputMessage,
-  files: inputFiles,
   className,
   onClear,
   onEnter,
@@ -27,15 +25,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [files, setFiles] = useState<UploadInfo[]>([]);
   const [message, setMessage] = useState<string>('');
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-
-  useEffect(() => {
-    if (inputFiles) {
-      setFiles(inputFiles);
-    }
-    if (inputMessage) {
-      setMessage(inputMessage);
-    }
-  }, [inputFiles, inputMessage]);
 
   // 点击发送事件
   const handleSendMessage = () => {
@@ -59,7 +48,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     ) {
       const enterValue = `${value}\n`;
       setMessage(enterValue);
-    } else {
+    } else if (e.nativeEvent.keyCode === 13 && !!value.trim()) {
       // enter事件
       onEnter(value, files);
       // 置空

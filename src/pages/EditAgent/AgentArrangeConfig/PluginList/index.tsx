@@ -1,6 +1,6 @@
 import pluginImage from '@/assets/images/plugin_image.png';
 import TooltipIcon from '@/components/TooltipIcon';
-import { ICON_SETTING } from '@/constants/images.constants';
+// import { ICON_SETTING } from '@/constants/images.constants';
 import { AgentComponentInfo } from '@/types/interfaces/agent';
 import { DeleteOutlined } from '@ant-design/icons';
 import React from 'react';
@@ -12,7 +12,7 @@ interface PluginListProps {
   onDel: (id: number) => void;
 }
 
-const PluginList: React.FC<PluginListProps> = ({ list, onSet, onDel }) => {
+const PluginList: React.FC<PluginListProps> = ({ list, onDel }) => {
   return !list?.length ? (
     <p>
       插件能够让智能体调用外部
@@ -26,12 +26,12 @@ const PluginList: React.FC<PluginListProps> = ({ list, onSet, onDel }) => {
         defaultImage={pluginImage as string}
         extra={
           <>
-            <TooltipIcon
-              title="设置"
-              icon={
-                <ICON_SETTING className={'cursor-pointer'} onClick={onSet} />
-              }
-            />
+            {/*<TooltipIcon*/}
+            {/*  title="设置"*/}
+            {/*  icon={*/}
+            {/*    <ICON_SETTING className={'cursor-pointer'} onClick={onSet} />*/}
+            {/*  }*/}
+            {/*/>*/}
             <TooltipIcon
               title="删除"
               icon={

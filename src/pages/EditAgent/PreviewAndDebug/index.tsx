@@ -145,7 +145,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       },
       body: params,
       onMessage: (data: ConversationChatResponse) => {
-        // console.log(data)
+        console.log(data)
         // 更新UI状态...
         if (data.eventType === ConversationEventTypeEnum.FINAL_RESULT) {
           // 调试结果
