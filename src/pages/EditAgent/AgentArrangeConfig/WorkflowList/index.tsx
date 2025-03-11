@@ -1,6 +1,6 @@
 import workflowImage from '@/assets/images/workflow_image.png';
 import TooltipIcon from '@/components/TooltipIcon';
-import { ICON_SETTING } from '@/constants/images.constants';
+// import { ICON_SETTING } from '@/constants/images.constants';
 import { AgentComponentInfo } from '@/types/interfaces/agent';
 import { DeleteOutlined } from '@ant-design/icons';
 import React from 'react';
@@ -24,10 +24,10 @@ const WorkflowList: React.FC<WorkflowListProps> = ({ list, onDel }) => {
         defaultImage={workflowImage as string}
         extra={
           <>
-            <TooltipIcon
-              title="设置"
-              icon={<ICON_SETTING className={'cursor-pointer'} />}
-            />
+            {/*<TooltipIcon*/}
+            {/*  title="设置"*/}
+            {/*  icon={<ICON_SETTING className={'cursor-pointer'} />}*/}
+            {/*/>*/}
             <TooltipIcon
               title="删除"
               icon={

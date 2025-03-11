@@ -393,9 +393,10 @@ export interface MessageInfo {
   text: string;
   // 消息时间
   time: string;
-  metadata: object;
+  metadata?: object;
   // 可用值:USER,ASSISTANT,SYSTEM,TOOL
   messageType: MessageTypeEnum;
+  // 自定义添加字段：chat 会话结果
   chatFinalResult?: ConversationChatFinalResult;
 }
 
@@ -487,8 +488,11 @@ export interface AgentConversationChatParams {
 
 // 会话聊天消息
 export interface ConversationChatMessage {
+  attachments?: AttachmentFile[];
   ext: string;
+  // 是否完成
   finished: boolean;
+  // 唯一标识
   id: string;
   // 可用值:USER,ASSISTANT,SYSTEM,TOOL
   messageType: MessageTypeEnum;
@@ -501,7 +505,7 @@ export interface ConversationChatMessage {
   type: MessageModeEnum;
 }
 
-// 会话聊天"FINAL_RESULT"
+// 会话聊天"FINAL_RESULT", 用于会话底部显示时间
 export interface ConversationChatFinalResult {
   completionTokens: number;
   componentExecuteResults: string[];

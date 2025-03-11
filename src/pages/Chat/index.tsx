@@ -27,6 +27,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useMatch, useRequest } from 'umi';
 import styles from './index.less';
 import ShowArea from './ShowArea';
+import { MessageInfo } from '@/types/interfaces/agent';
 
 const cx = classNames.bind(styles);
 
@@ -34,35 +35,23 @@ const cx = classNames.bind(styles);
  * 主页咨询聊天页面
  */
 const Chat: React.FC = () => {
-  const [chatTitle, setChatTitle] = useState<string>();
   const location = useLocation();
-  // 会话ID
   const match = useMatch('/home/chat/:id');
+  // 会话ID
   const id = match.params?.id;
   // 附加state
   const message = location.state?.message;
   const files = location.state?.files;
-  // 会话ID
-  const [devConversationId, setDevConversationId] = useState<number>(id || 0);
   // 会话信息
   const [conversationInfo, setConversationInfo] =
     useState<AgentConversationInfo>();
+  const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 会话问题建议
   const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
   // 发布者信息
   const [publishUser, setPublishUser] = useState<CreatorInfo>();
   const messageViewRef = useRef<HTMLDivElement | null>(null);
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-
-  // 查询会话
-  const { run } = useRequest(apiAgentConversation, {
-    manual: true,
-    debounceWait: 300,
-    onSuccess: (result) => {
-      setConversationInfo(result);
-      setPublishUser(result?.agent?.publishUser);
-    },
-  });
 
   // 智能体会话问题建议
   const { run: runChatSuggest } = useRequest(apiAgentConversationChatSuggest, {
@@ -73,20 +62,12 @@ const Chat: React.FC = () => {
     },
   });
 
-  console.log(run, runChatSuggest, setDevConversationId);
-
-  useEffect(() => {
-    if (devConversationId) {
-      run(devConversationId);
-    }
-  }, [devConversationId]);
-
   // 会话处理
   const handleConversation = async (
     value: string,
     files: UploadInfo[] = [],
   ) => {
-    if (!devConversationId) {
+    if (!id) {
       return;
     }
     setChatSuggestList([]);
@@ -100,7 +81,7 @@ const Chat: React.FC = () => {
       })) || [];
 
     const params = {
-      conversationId: devConversationId,
+      conversationId: id,
       message: value,
       attachments,
       debug: true,
@@ -119,9 +100,9 @@ const Chat: React.FC = () => {
       messageType: MessageTypeEnum.USER,
     };
 
-    const _conversationInfo = cloneDeep(conversationInfo);
-    _conversationInfo.messageList.push(chatMessage);
-    setConversationInfo(_conversationInfo);
+    const _messageList = cloneDeep(messageList);
+    _messageList?.push(chatMessage);
+    setMessageList(_messageList);
 
     // 启动连接
     const abortConnection = await createSSEConnection({
@@ -133,25 +114,27 @@ const Chat: React.FC = () => {
       },
       body: params,
       onMessage: (data: ConversationChatResponse) => {
+        console.log(data, '-------')
         // 更新UI状态...
         if (data.eventType === ConversationEventTypeEnum.FINAL_RESULT) {
           // 调试结果
           const { componentExecuteResults, outputText } = data.data;
-          console.log(componentExecuteResults);
+          console.log(componentExecuteResults, outputText);
           // onExecuteResults(componentExecuteResults);
-          const chatResponseMessage = {
-            role: AssistantRoleEnum.ASSISTANT,
-            type: MessageModeEnum.CHAT,
-            text: outputText,
-            time: moment(),
-            id: null,
-            ext: '',
-            finished: true,
-            metadata: null,
-            messageType: MessageTypeEnum.ASSISTANT,
-          };
-          _conversationInfo?.messageList?.push(chatResponseMessage);
-          setConversationInfo(_conversationInfo);
+          // const chatResponseMessage = {
+          //   role: AssistantRoleEnum.ASSISTANT,
+          //   type: MessageModeEnum.CHAT,
+          //   text: outputText,
+          //   time: moment(),
+          //   // id: null,
+          //   // ext: '',
+          //   // finished: true,
+          //   // metadata: null,
+          //   messageType: MessageTypeEnum.ASSISTANT,
+          // };
+          // messageList?.push(chatResponseMessage);
+          // setConversationInfo(_conversationInfo);
+          runChatSuggest(params);
           // 是否开启问题建议,可用值:Open,Close
           // if (agentConfigInfo.openSuggest === OpenCloseEnum.Open) {
           //   runChatSuggest(params);
@@ -168,14 +151,30 @@ const Chat: React.FC = () => {
     });
   };
 
+  // 查询会话
+  const { run } = useRequest(apiAgentConversation, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result) => {
+      setConversationInfo(result);
+      setPublishUser(result?.agent?.publishUser);
+      if (message || files?.length > 0) {
+        handleConversation(message, files);
+      }
+    },
+  });
+
   useEffect(() => {
-    setChatTitle(message);
-  }, []);
+    // 查询会话
+    if (id) {
+      run(id);
+    }
+  }, [id]);
 
   return (
     <div className={cx('flex', 'h-full')}>
       <div className={cx('flex-1', 'flex', 'flex-col', 'items-center')}>
-        <h3 className={cx(styles.title)}>{chatTitle}</h3>
+        {/*<h3 className={cx(styles.title)}>{chatTitle}</h3>*/}
         <div
           className={cx(
             styles['main-content'],
@@ -214,11 +213,7 @@ const Chat: React.FC = () => {
             )}
           </div>
           {/*会话输入框*/}
-          <ChatInput
-            onEnter={handleConversation}
-            files={files}
-            message={message}
-          />
+          <ChatInput onEnter={handleConversation} />
         </div>
       </div>
       {/*展示台区域*/}
