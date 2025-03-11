@@ -310,31 +310,25 @@ const initGraph = ({
   graph.on('node:click', ({ node }) => {
     // 判断点击的是空白处还是节点
     if (node && node.isNode()) {
-      graph.getNodes().forEach((n) => {
+      const nodes = graph.getNodes();
+      // 先将其他节点的zindex设置为4
+      nodes.forEach((n) => {
         n.setData({ selected: false });
-        const data = n.getData();
-        if (data.type === 'Loop') {
-          n.prop('zIndex', 2); // 正确设置层级
-          const children = node.getChildren();
-          children?.forEach((child) => {
-            child.prop('zIndex', 4);
-            // 获取所有的边
-            const edges = graph.getEdges();
-            // 如果边和节点有关系，那么就要将其处于节点的上层
-            edges.forEach((edge) => {
-              if (
-                edge.getSourceNode()?.getData().id === child.getData().id ||
-                edge.getTargetNode()?.getData().id === child.getData().id
-              ) {
-                edge.toFront();
-              }
-              // if(Number(edge.getData()))
-            });
-          });
-        } else {
-          n.prop('zIndex', 4); // 正确设置层级
-        }
-      }); // 修改其他节点层级为4
+        n.prop('zIndex', 4); // 正确设置层级
+      });
+      // 将loop节点设置为5
+      const loopData = nodes.filter((item) => {
+        const data = item.getData();
+        return data.type === 'Loop';
+      });
+      // loop节点的子节点设置为8
+      loopData.forEach((child) => {
+        child.prop('zIndex', 5); // 正确设置层级
+        const sun = child.getChildren();
+        sun?.forEach((sun) => {
+          sun.prop('zIndex', 8); // 正确设置层级
+        });
+      });
       // 设置当前节点为选中状态
       node.setData({ selected: true }); // 保持当前节点层级999
       const data = node.getData();
