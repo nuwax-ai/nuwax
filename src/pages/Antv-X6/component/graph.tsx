@@ -531,7 +531,11 @@ const initGraph = ({
   });
 
   graph.on('node:change:position', ({ node }) => {
-    node.toFront();
+    if (node.getData().type !== 'Loop') {
+      node.toFront();
+    }
+    const nodes = graph.getNodes();
+    console.log(nodes);
     // 优化点1：直接通过父子关系API获取父节点
     let parentNode = node.getParent();
     //

@@ -47,9 +47,10 @@ export const adjustParentSize = (parentNode: Node) => {
   const MIN_WIDTH = 600;
   const MIN_HEIGHT = 240;
 
-  const parentCurrentSize = parentNode.getSize();
-  newWidth = Math.max(newWidth, MIN_WIDTH, parentCurrentSize.width);
-  newHeight = Math.max(newHeight, MIN_HEIGHT, parentCurrentSize.height);
+  // 修改：直接应用新尺寸，不再与当前尺寸比较
+  newWidth = Math.max(newWidth, MIN_WIDTH);
+  newHeight = Math.max(newHeight, MIN_HEIGHT);
+
   // 计算最终位置（保持子节点居中于父节点）
   const centerX = (globalMinX + globalMaxX) / 2;
   const centerY = (globalMinY + globalMaxY) / 2;
