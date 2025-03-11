@@ -1,6 +1,6 @@
-import { ICON_OPTIMIZE } from '@/constants/images.constants';
+// import { ICON_OPTIMIZE } from '@/constants/images.constants';
 import { CloseOutlined } from '@ant-design/icons';
-import { Button, ConfigProvider, Input, Space } from 'antd';
+import { ConfigProvider, Input, Space } from 'antd';
 import React from 'react';
 import './index.less';
 import type { ExpandableInputTextareaState } from './type';
@@ -29,14 +29,14 @@ const ExpandTextArea: React.FC<
             }}
           >
             <Space>
-              <Button
+              {/* <Button
                 size="small"
                 icon={<ICON_OPTIMIZE />}
                 type="primary"
                 className="gradient-button"
               >
                 优化
-              </Button>
+              </Button> */}
               {/* 通知父组件关闭我 */}
               <CloseOutlined
                 onClick={() => onClose()}

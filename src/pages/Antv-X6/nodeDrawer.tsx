@@ -296,7 +296,6 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
 
   useEffect(() => {
     setCurrentNodeConfig(foldWrapItem);
-    console.log('123124', foldWrapItem);
   }, [foldWrapItem]);
 
   useEffect(() => {

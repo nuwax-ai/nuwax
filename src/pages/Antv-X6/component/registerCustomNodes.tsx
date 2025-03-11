@@ -327,8 +327,8 @@ interface Point {
 }
 
 export const createCurvePath = (s: Point, e: Point) => {
-  const startOffset = 6; // 起点偏移量
-  const endOffset = 6; // 终点偏移量
+  const startOffset = 2; // 起点偏移量
+  const endOffset = 2; // 终点偏移量
   const deltaX = Math.abs(e.x - s.x);
   const control = Math.floor((deltaX / 3) * 2); // 控制点的计算
 

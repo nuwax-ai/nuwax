@@ -310,11 +310,57 @@ const initGraph = ({
   graph.on('node:click', ({ node }) => {
     // 判断点击的是空白处还是节点
     if (node && node.isNode()) {
-      // 先取消所有节点的选中状态
-      graph.getNodes().forEach((n) => n.setData({ selected: false }));
+      graph.getNodes().forEach((n) => {
+        n.setData({ selected: false });
+        const data = n.getData();
+        if (data.type === 'Loop') {
+          n.prop('zIndex', 2); // 正确设置层级
+          const children = node.getChildren();
+          children?.forEach((child) => {
+            child.prop('zIndex', 4);
+            // 获取所有的边
+            const edges = graph.getEdges();
+            // 如果边和节点有关系，那么就要将其处于节点的上层
+            edges.forEach((edge) => {
+              if (
+                edge.getSourceNode()?.getData().id === child.getData().id ||
+                edge.getTargetNode()?.getData().id === child.getData().id
+              ) {
+                edge.toFront();
+              }
+              // if(Number(edge.getData()))
+            });
+          });
+        } else {
+          n.prop('zIndex', 4); // 正确设置层级
+        }
+      }); // 修改其他节点层级为4
       // 设置当前节点为选中状态
-      node.setData({ selected: true });
-      console.log('156', node.getData());
+      node.setData({ selected: true }); // 保持当前节点层级999
+      const data = node.getData();
+      if (data.type === 'Loop') {
+        const children = node.getChildren();
+        children?.forEach((child) => {
+          child.prop('zIndex', 99);
+          // 获取所有的边
+          const edges = graph.getEdges();
+          // 如果边和节点有关系，那么就要将其处于节点的上层
+          edges.forEach((edge) => {
+            if (
+              edge.getSourceNode()?.getData().id === child.getData().id ||
+              edge.getTargetNode()?.getData().id === child.getData().id
+            ) {
+              edge.toFront();
+            }
+            // if(Number(edge.getData()))
+          });
+        });
+        // 设置内部边的层级
+
+        node.prop('zIndex', 90);
+      } else {
+        node.prop('zIndex', 99);
+      }
       // 获取被点击节点的数据
       const latestData = {
         ...node.getData(), // 获取图形实例存储的数据
