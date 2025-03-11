@@ -110,7 +110,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           newData.type === 'IntentRecognition'
         ) {
           const oldData = node.getData() as ChildNode;
-          console.log('456', newData);
           const _length = getLength(
             oldData,
             newData,
@@ -155,7 +154,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     // 删除边
     const deleteEdge = (id: string) => {
       if (!graphRef.current) return;
-
       graphRef.current.removeCell(id);
     };
 

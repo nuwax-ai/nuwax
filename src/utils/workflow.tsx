@@ -211,7 +211,6 @@ export const getEdges = (nodes: ChildNode[]): Edge[] => {
     // 检查目标节点是否存在于节点列表中
     return nodes.some((n) => edge.target.includes(n.id.toString()));
   });
-  console.log(validEdges);
   // 使用 Set 来移除重复的边
   const uniqueEdges = new Set<string>();
   const resultEdges: Edge[] = [];

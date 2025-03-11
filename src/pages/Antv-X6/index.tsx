@@ -520,7 +520,9 @@ const Workflow: React.FC = () => {
       body: _params,
       onMessage: (data) => {
         if (!data.success) {
-          console.log(data);
+          if (data.message) {
+            message.warning(data.message);
+          }
         } else {
           if (data.complete) {
             if (data.data && data.data.output) {

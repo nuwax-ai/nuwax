@@ -99,7 +99,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           Modified({ ...params, systemPrompt: value })
         }
         onExpand
-        onOptimize
+        // onOptimize
         placeholder="系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
       />
       {/* 用户提示词 */}

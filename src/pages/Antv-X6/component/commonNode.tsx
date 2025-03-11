@@ -84,9 +84,11 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   };
 
   useEffect(() => {
-    console.log('467968746', initialValues);
-    // 设置初始值，确保Form.List能正确展示已有条目
-    form.setFieldsValue(initialValues);
+    // 仅在表单值为空时设置初始值
+    const currentValues = form.getFieldsValue(true);
+    if (!currentValues[inputItemName]?.length) {
+      form.setFieldsValue(initialValues);
+    }
   }, [initialValues]);
 
   useEffect(() => {

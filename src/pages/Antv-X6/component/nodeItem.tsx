@@ -164,6 +164,17 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
 }) => {
   const [count, setCount] = useState<number | null>(1);
 
+  const [cycleReference, setCycleReference] = useState(referenceList);
+
+  useEffect(() => {
+    let _newObj = {
+      previousNodes: referenceList.innerPreviousNodes,
+      innerPreviousNodes: [],
+      argMap: referenceList.argMap,
+    };
+    setCycleReference(_newObj);
+  }, [referenceList]);
+
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -221,7 +232,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
           title="输出"
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.outputArgs}
-          referenceList={referenceList}
+          referenceList={cycleReference}
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ outputArgs: params.outputArgs || [] }}
         />
