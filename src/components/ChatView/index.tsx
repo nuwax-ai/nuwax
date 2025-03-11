@@ -13,9 +13,9 @@ const cx = classNames.bind(styles);
 interface ChatViewProps {
   messageInfo: MessageInfo;
   // 智能体图标
-  icon: string;
+  icon?: string;
   // 智能体名称
-  name: string;
+  name?: string;
   // 用户头像
   avatar?: string;
   // 用户昵称

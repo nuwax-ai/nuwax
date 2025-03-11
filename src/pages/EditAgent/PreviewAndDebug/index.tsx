@@ -1,4 +1,7 @@
+import AgentChatEmpty from '@/components/AgentChatEmpty';
 import ChatInput from '@/components/ChatInput';
+import ChatView from '@/components/ChatView';
+import RecommendList from '@/components/RecommendList';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   apiAgentConversation,
@@ -14,22 +17,19 @@ import {
 import { OpenCloseEnum } from '@/types/enums/space';
 import type {
   AgentConversationInfo,
-  AttachmentFile,
   ConversationChatResponse,
   CreatorInfo,
 } from '@/types/interfaces/agent';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
+import type { UploadInfo } from '@/types/interfaces/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import moment from 'moment';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
-import AgentChatEmpty from './AgentChatEmpty';
-import ChatView from './ChatView';
 import styles from './index.less';
 import PreviewAndDebugHeader from './PreviewAndDebugHeader';
-import RecommendList from './RecommendList';
 
 const cx = classNames.bind(styles);
 
@@ -96,20 +96,27 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
   // 会话处理
   const handleConversation = async (
     value: string,
-    attachments: AttachmentFile[] = [],
+    files: UploadInfo[] = [],
   ) => {
     if (!devConversationIdRef.current) {
       return;
     }
     setChatSuggestList([]);
+    // 附件文件
+    const attachments =
+      files?.map((file) => ({
+        fileKey: file.key,
+        fileUrl: file.url,
+        fileName: file.fileName,
+        mimeType: file.mimeType,
+      })) || [];
+
     const params = {
       conversationId: devConversationIdRef.current,
       message: value,
       attachments,
       debug: true,
     };
-
-    console.log(devConversationIdRef.current, 'devConversationIdRef.current');
 
     // 将文件和消息加入会话中
     const chatMessage = {

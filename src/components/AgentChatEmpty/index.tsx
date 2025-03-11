@@ -1,4 +1,4 @@
-import personal from '@/assets/images/personal.png';
+import agentImage from '@/assets/images/agent_image.png';
 import type { AgentChatEmptyProps } from '@/types/interfaces/agentConfig';
 import classNames from 'classnames';
 import React from 'react';
@@ -22,7 +22,7 @@ const AgentChatEmpty: React.FC<AgentChatEmptyProps> = ({ icon, name }) => {
     >
       <img
         className={cx(styles.avatar)}
-        src={icon || (personal as string)}
+        src={icon || (agentImage as string)}
         alt=""
       />
       <h3 className={cx('w-full', 'text-ellipsis', styles.nickname)}>{name}</h3>

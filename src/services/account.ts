@@ -6,6 +6,7 @@ import type {
   ResetPasswordParams,
   SendCode,
   SetPasswordParams,
+  TenantConfigInfo,
   UserInfo,
   UserUpdateParams,
 } from '@/types/interfaces/login';
@@ -93,5 +94,14 @@ export async function apiResetPassword(
   return request('/api/user/password/reset', {
     method: 'POST',
     data,
+  });
+}
+
+// 租户配置信息查询接口
+export async function apiTenantConfig(): Promise<
+  RequestResponse<TenantConfigInfo>
+> {
+  return request('/api/tenant/config', {
+    method: 'GET',
   });
 }

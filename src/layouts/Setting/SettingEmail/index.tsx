@@ -9,6 +9,7 @@ import classNames from 'classnames';
 import React from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
+import type { BindEmailParams } from '@/types/interfaces/login';
 
 const cx = classNames.bind(styles);
 
@@ -16,8 +17,8 @@ const cx = classNames.bind(styles);
  * 邮箱绑定
  */
 const SettingEmail: React.FC = () => {
-  const { countDown, handleCount } = useCountDown();
-  const [form] = Form.useForm<{ email: string; code: string }>();
+  const { countDown, setCountDown, onClearTimer, handleCount } = useCountDown();
+  const [form] = Form.useForm<BindEmailParams>();
 
   // 绑定邮箱
   const { run, loading } = useRequest(apiBindEmail, {
@@ -25,7 +26,14 @@ const SettingEmail: React.FC = () => {
     debounceWait: 300,
     onSuccess: () => {
       message.success('绑定成功');
+      form.resetFields();
+      setCountDown(0);
+      onClearTimer();
     },
+    onError: () => {
+      setCountDown(0);
+      onClearTimer();
+    }
   });
 
   // 绑定事件

@@ -2,6 +2,7 @@ import type { UserRelAgentListProps } from '@/types/interfaces/layouts';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
+import agentImage from '@/assets/images/agent_image.png';
 
 const cx = classNames.bind(styles);
 
@@ -26,7 +27,7 @@ const UserRelAgentList: React.FC<UserRelAgentListProps> = ({
           )}
           onClick={() => onClick(item)}
         >
-          <img src={item.icon} alt="" />
+          <img src={item.icon || agentImage as string} alt="" />
           <span className={cx(styles.name, 'flex-1', 'text-ellipsis')}>
             {item.name}
           </span>

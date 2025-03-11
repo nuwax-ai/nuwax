@@ -1,10 +1,11 @@
 import CustomPopover from '@/components/CustomPopover';
 import { SPACE_ID } from '@/constants/home.constants';
-import { history, useModel } from '@@/exports';
+import { history, useModel } from 'umi';
 import { EllipsisOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
 import styles from './index.less';
+import agentImage from '@/assets/images/agent_image.png';
 
 const cx = classNames.bind(styles);
 
@@ -60,7 +61,7 @@ const DevCollect: React.FC = () => {
             'hover-box',
           )}
         >
-          <img src={item.icon} alt="" />
+          <img src={item.icon || agentImage as string} alt="" />
           <span className={cx(styles.name, 'flex-1', 'text-ellipsis')}>
             {item.name}
           </span>

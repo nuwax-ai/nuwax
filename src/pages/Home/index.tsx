@@ -1,22 +1,50 @@
 import ChatInput from '@/components/ChatInput';
-import { RECOMMEND_TEXT } from '@/constants/home.constants';
-import type { AttachmentFile } from '@/types/interfaces/agent';
+import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
+import { apiAgentConversationCreate } from '@/services/agentConfig';
+import type { AgentConversationInfo } from '@/types/interfaces/agent';
+import type { UploadInfo } from '@/types/interfaces/common';
+import type { TenantConfigInfo } from '@/types/interfaces/login';
 import classNames from 'classnames';
-import React from 'react';
-import { history, useLocation } from 'umi';
+import React, { useEffect, useRef, useState } from 'react';
+import { history, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 const Home: React.FC = () => {
-  const location = useLocation();
-  const title = location.state?.title;
-  console.log(title, 'title');
+  // 配置信息
+  const [configInfo, setConfigInfo] = useState<TenantConfigInfo>();
+  // 会话ID
+  const conversationIdRef = useRef<number>(0);
+
+  // 创建会话
+  const { run: runConversationCreate } = useRequest(
+    apiAgentConversationCreate,
+    {
+      manual: true,
+      debounceWait: 300,
+      onSuccess: (result: AgentConversationInfo) => {
+        conversationIdRef.current = result.id;
+      },
+    },
+  );
+
+  useEffect(() => {
+    // 配置信息
+    const info = JSON.parse(
+      localStorage.getItem(TENANT_CONFIG_INFO),
+    ) as TenantConfigInfo;
+    setConfigInfo(info);
+
+    runConversationCreate({
+      agentId: info?.defaultAgentId,
+      devMode: true,
+    });
+  }, []);
 
   // 跳转页面
-  const handleEnter = (message: string, attachments?: AttachmentFile[]) => {
-    console.log(message, attachments);
-    history.push('/home/chat', { message, attachments });
+  const handleEnter = (message: string, files?: UploadInfo[]) => {
+    history.push(`/home/chat/${conversationIdRef.current}`, { message, files });
   };
 
   return (
@@ -27,7 +55,7 @@ const Home: React.FC = () => {
       <div
         className={cx(styles.recommend, 'flex', 'content-center', 'flex-wrap')}
       >
-        {RECOMMEND_TEXT.map((item, index) => {
+        {configInfo?.homeRecommendQuestions?.map((item, index) => {
           return (
             <div
               key={index}

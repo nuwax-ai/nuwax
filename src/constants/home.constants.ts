@@ -5,6 +5,9 @@ export const EXPIRE_DATE = 'EXPIRE_DATE';
 export const PHONE = 'PHONE';
 export const SPACE_ID = 'SPACE_ID';
 
+// 租户配置信息
+export const TENANT_CONFIG_INFO = 'TENANT_CONFIG_INFO';
+
 // 推荐聊天主题
 export const RECOMMEND_TEXT = [
   '女娲智能体设计平台功能概述',

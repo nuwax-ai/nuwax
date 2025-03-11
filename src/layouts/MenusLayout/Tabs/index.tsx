@@ -12,9 +12,10 @@ const Tabs: React.FC<TabsType> = ({ onClick }) => {
   const location = useLocation();
   const handleActive = (type) => {
     return (
-      (type === TabsEnum.Home && location?.pathname === '/') ||
-      (type === TabsEnum.Space && location?.pathname.includes('space')) ||
-      (type === TabsEnum.Square && location?.pathname.includes('square'))
+      (type === TabsEnum.Home &&
+        (location.pathname === '/' || location.pathname.includes('home'))) ||
+      (type === TabsEnum.Space && location.pathname.includes('space')) ||
+      (type === TabsEnum.Square && location.pathname.includes('square'))
     );
   };
   return (

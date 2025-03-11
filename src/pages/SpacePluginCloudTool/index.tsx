@@ -381,16 +381,6 @@ const SpacePluginCloudTool: React.FC = () => {
                 expandIcon: () => null,
               }}
             />
-            {/*试运行弹窗*/}
-            <TryRunModel
-              type={PluginTypeEnum.CODE}
-              inputConfigArgs={inputConfigArgs}
-              inputExpandedRowKeys={expandedRowKeys}
-              pluginId={pluginId}
-              pluginName={pluginInfo?.name as string}
-              open={isModalOpen}
-              onCancel={() => setIsModalOpen(false)}
-            />
           </div>
         ) : (
           <div
@@ -410,6 +400,16 @@ const SpacePluginCloudTool: React.FC = () => {
           </div>
         )}
       </div>
+      {/*试运行弹窗*/}
+      <TryRunModel
+        type={PluginTypeEnum.CODE}
+        inputConfigArgs={inputConfigArgs}
+        inputExpandedRowKeys={expandedRowKeys}
+        pluginId={pluginId}
+        pluginName={pluginInfo?.name as string}
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+      />
       <PluginPublish
         pluginId={pluginId}
         open={openModal}
