@@ -1,4 +1,5 @@
 import type { MessageReadStatusEnum } from '@/types/enums/menus';
+import type { CreatorInfo } from '@/types/interfaces/agent';
 
 // 查询用户消息列表输入参数
 export interface NotifyMessageListParams {
@@ -17,12 +18,7 @@ export interface NotifyMessageInfo {
   content: string;
   // 消息状态,可用值:Unread,Read
   readStatus: MessageReadStatusEnum;
-  sender: {
-    userId: number;
-    userName: string;
-    nickName: string;
-    avatar: string;
-  };
+  sender: CreatorInfo;
   // 创建时间（消息发送时间）
   created: string;
 }

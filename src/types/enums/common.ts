@@ -199,3 +199,11 @@ export enum HttpContentTypeEnum {
   X_WWW_FORM_URLENCODED = 'X_WWW_FORM_URLENCODED',
   OTHER = 'OTHER',
 }
+
+// 消息状态枚举
+export enum MessageStatusEnum {
+  Loading = 'loading',
+  Incomplete = 'incomplete',
+  Complete = 'complete',
+  Error = 'error',
+}

@@ -1,4 +1,4 @@
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import type { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { CardStyleEnum, CreateUpdateModeEnum } from '@/types/enums/common';
 import type {
   AgentBaseInfo,

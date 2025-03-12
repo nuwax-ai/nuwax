@@ -2,6 +2,7 @@ import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 import useCountDown from '@/hooks/useCountDown';
 import { apiBindEmail, apiSendCode } from '@/services/account';
 import { SendCodeEnum } from '@/types/enums/login';
+import type { BindEmailParams } from '@/types/interfaces/login';
 import { isValidEmail } from '@/utils/common';
 import { customizeRequiredNoStarMark } from '@/utils/form';
 import { Button, Form, Input, message } from 'antd';
@@ -9,7 +10,6 @@ import classNames from 'classnames';
 import React from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
-import type { BindEmailParams } from '@/types/interfaces/login';
 
 const cx = classNames.bind(styles);
 
@@ -33,7 +33,7 @@ const SettingEmail: React.FC = () => {
     onError: () => {
       setCountDown(0);
       onClearTimer();
-    }
+    },
   });
 
   // 绑定事件
