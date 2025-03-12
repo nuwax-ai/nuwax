@@ -28,7 +28,7 @@ import {
   Tag,
   Tree,
 } from 'antd';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
@@ -36,6 +36,7 @@ import './commonNode.less';
 
 // 定义通用的输入输出
 export const InputAndOut: React.FC<NodeRenderProps> = ({
+  key,
   title,
   fieldConfigs,
   handleChangeNodeConfig,
@@ -46,10 +47,15 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   disabledDelete,
   isLoop,
   isVariable,
+  retrieveRefernece,
 }) => {
   const [form] = Form.useForm();
 
-  const { volid, setReferenceList } = useModel('workflow');
+  const [isSet, setIsSet] = useState(false);
+  // 添加一个ref来存储上一次的key
+  const prevKeyRef = useRef(key);
+
+  const { volid } = useModel('workflow');
   // 根据传递的fieldConfigs生成表单项
   const formItem = fieldConfigs.reduce(
     (acc: DefaultObjectType, field: FieldConfig) => {
@@ -63,6 +69,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
     const nextItems = [...(form.getFieldValue(inputItemName) || []), formItem];
     form.setFieldsValue({ [inputItemName]: nextItems });
     handleChangeNodeConfig({ [inputItemName]: nextItems });
+    setIsSet(true);
   };
 
   const removeItem = (index: number) => {
@@ -70,35 +77,35 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
     const _newValue = formValue.filter((_: unknown, i: number) => i !== index);
     form.setFieldsValue({ [inputItemName]: _newValue });
     handleChangeNodeConfig({ [inputItemName]: _newValue });
+    setIsSet(true);
   };
 
   // 提交form表单
   const submitForm = () => {
     const raw = form.getFieldsValue(true);
     handleChangeNodeConfig(raw);
-    if (isVariable) {
-      setReferenceList((prev) => {
-        const newInner = prev.innerPreviousNodes.map((item) => {
-          if (item.name === '循环') {
-            item.outputArgs = raw[inputItemName];
-          }
-          return item;
-        });
-        const newMap = Object.assign(prev.argMap, ...raw[inputItemName]);
-        const newReference = {
-          previousNodes: prev.previousNodes,
-          innerPreviousNodes: newInner,
-          argMap: newMap,
-        };
-        return newReference;
-      });
+    setIsSet(true);
+    if (isVariable && retrieveRefernece) {
+      // 这里要调用reference接口
+      retrieveRefernece();
     }
-    // handleChangeNodeConfig(values);
   };
 
   useEffect(() => {
-    form.setFieldsValue(initialValues);
-  }, [initialValues]);
+    // 当key发生变化时，重置isSet
+    if (prevKeyRef.current !== key) {
+      setIsSet(false);
+      prevKeyRef.current = key;
+    }
+  }, [key]);
+
+  // ... existing code ...
+
+  useEffect(() => {
+    if (!isSet) {
+      form.setFieldsValue(initialValues);
+    }
+  }, [initialValues, isSet]);
 
   useEffect(() => {
     if (volid) {

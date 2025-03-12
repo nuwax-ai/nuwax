@@ -81,6 +81,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       {/* 输入参数 */}
       <div className="node-item-style">
         <InputAndOut
+          key={uuidv4()}
           title="输入"
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.inputArgs}
@@ -163,6 +164,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
       {/* 输入参数 */}
       <div className="node-item-style">
         <InputAndOut
+          key={uuidv4()}
           title="输入"
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.inputArgs}
@@ -269,6 +271,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
       {/* 输入参数 */}
       <div className="node-item-style">
         <InputAndOut
+          key={uuidv4()}
           title="输入"
           fieldConfigs={outPutConfigs}
           handleChangeNodeConfig={handleChangeNodeConfig}
@@ -403,6 +406,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
       {/* 入参 */}
       <div className="node-item-style">
         <InputAndOut
+          key={uuidv4()}
           title="Header"
           handleChangeNodeConfig={handleChangeNodeConfig}
           fieldConfigs={outPutConfigs}
@@ -412,6 +416,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
           }}
         />
         <InputAndOut
+          key={uuidv4()}
           title="Query"
           handleChangeNodeConfig={handleChangeNodeConfig}
           fieldConfigs={outPutConfigs}
@@ -421,6 +426,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
           }}
         />
         <InputAndOut
+          key={uuidv4()}
           title="Body"
           handleChangeNodeConfig={handleChangeNodeConfig}
           fieldConfigs={outPutConfigs}

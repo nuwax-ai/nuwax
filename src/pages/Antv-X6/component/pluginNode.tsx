@@ -6,10 +6,10 @@ import { InitialValues, NodeDisposeProps } from '@/types/interfaces/workflow';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Empty, Form, Popover } from 'antd';
 import React, { useEffect, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { outPutConfigs } from '../params';
 import { InputAndOut, TreeOutput } from './commonNode';
 import './pluginNode.less';
-
 interface InputListProps {
   title: string;
   inputItemName: string;
@@ -149,6 +149,7 @@ const DatabaseNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
       {/* 输入参数 */}
       <div className="node-item-style">
         <InputAndOut
+          key={uuidv4()}
           title="输入"
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.inputArgs}

@@ -23,6 +23,7 @@ import {
   Space,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { cycleOption, outPutConfigs } from '../params';
 import { InputAndOut, OtherFormList, TreeOutput } from './commonNode';
 import './nodeItem.less';
@@ -57,6 +58,7 @@ const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({
   return (
     <>
       <InputAndOut
+        key={uuidv4()}
         title="输入"
         fieldConfigs={outPutConfigs}
         inputItemName={InputItemNameEnum.inputArgs}
@@ -109,6 +111,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({ params, Modified, type }) => {
         </div>
       )}
       <InputAndOut
+        key={uuidv4()}
         title="输出变量"
         fieldConfigs={outPutConfigs}
         showCopy={true}
@@ -149,7 +152,11 @@ const EndNode: React.FC<NodeDisposeProps> = ({ params, Modified, type }) => {
 };
 
 // 定义循环的节点渲染
-const CycleNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
+const CycleNode: React.FC<NodeDisposeProps> = ({
+  params,
+  Modified,
+  retrieveRefernece,
+}) => {
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -171,6 +178,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
         <div className=" node-item-style">
           {params.loopType === 'ARRAY_LOOP' && (
             <InputAndOut
+              key={uuidv4()}
               title="循环数组"
               fieldConfigs={outPutConfigs}
               inputItemName={InputItemNameEnum.inputArgs}
@@ -199,16 +207,19 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
       )}
       <div className=" node-item-style">
         <InputAndOut
+          key={uuidv4()}
           title="中间变量"
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.variableArgs}
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ variableArgs: params.variableArgs || [] }}
           isVariable
+          retrieveRefernece={retrieveRefernece}
         />
       </div>
       <div className=" node-item-style">
         <InputAndOut
+          key={uuidv4()}
           title="输出"
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.outputArgs}
@@ -259,6 +270,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
       </div>
       {params.configType === 'SET_VARIABLE' && (
         <InputAndOut
+          key={uuidv4()}
           title={'设置变量'}
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.inputArgs}
@@ -268,6 +280,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
       )}
       {params.configType !== 'SET_VARIABLE' && (
         <OtherFormList
+          key={uuidv4()}
           title={'输出变量'}
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.outputArgs}
@@ -405,6 +418,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
         />
       </div>
       <InputAndOut
+        key={uuidv4()}
         title="输入"
         fieldConfigs={outPutConfigs}
         inputItemName={InputItemNameEnum.inputArgs}
@@ -481,6 +495,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   return (
     <>
       <InputAndOut
+        key={uuidv4()}
         title="输入"
         fieldConfigs={outPutConfigs}
         inputItemName={InputItemNameEnum.inputArgs}

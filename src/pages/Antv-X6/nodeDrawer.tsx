@@ -71,6 +71,11 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
     }
   };
 
+  // 重新获取当前的上级节点参数
+  const retrieveRefernece = () => {
+    getRefernece(foldWrapItem.id);
+  };
+
   // 根据类型返回指定的 ReactNode
   const renderNodeContent = (params: ChildNode) => {
     switch (params.type) {
@@ -105,6 +110,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <CycleNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
+            retrieveRefernece={retrieveRefernece}
           />
         );
       case 'Variable':
@@ -278,7 +284,6 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
     if (foldWrapItem.id !== 0) {
       handleUpdate();
     }
-    console.log('ccc', foldWrapItem);
   }, [foldWrapItem]);
 
   useEffect(() => {

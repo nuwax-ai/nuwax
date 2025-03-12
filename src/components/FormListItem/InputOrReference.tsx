@@ -28,6 +28,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
       form.setFieldValue([...basePath, 'bindValueType'], valueType); // 使用数组路径
       //  新增 dataType 处理逻辑
       if (valueType === 'Reference') {
+        console.log(referenceList?.argMap);
         const refDataType = referenceList?.argMap?.[newValue]?.dataType;
         form.setFieldValue([...basePath, 'dataType'], refDataType || 'String');
         // 获取当前的name

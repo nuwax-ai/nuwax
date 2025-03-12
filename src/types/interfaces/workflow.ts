@@ -90,6 +90,8 @@ export interface NodeDisposeProps {
   options?: ModelListItemProps[];
   // 分组的模型列表
   groupedOptionsData?: GroupModelItem[];
+  //
+  retrieveRefernece?: () => void;
 }
 
 /**
@@ -171,6 +173,7 @@ export interface InitialValues {
 
 // 定义通用节点渲染逻辑的props类型
 export interface NodeRenderProps {
+  key: string;
   // 标题
   title: string;
   // 遍历渲染的字段配置
@@ -194,6 +197,8 @@ export interface NodeRenderProps {
   isLoop?: boolean;
   // 是否是中间变量节点
   isVariable?: boolean;
+  // 重新获取上级节点的参数
+  retrieveRefernece?: () => void;
 }
 
 // 定义通用的formList的props类型
