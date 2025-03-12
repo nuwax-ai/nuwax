@@ -367,7 +367,6 @@ const Workflow: React.FC = () => {
     if (_res.code !== Constant.success) {
       graphRef.current.deleteEdge(id);
     } else {
-      console.log(123123213, targetId);
       setFoldWrapItem((prev) => {
         // 这里的prev是最新值
         if (Number(targetId) === prev.id) {

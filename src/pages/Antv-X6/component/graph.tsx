@@ -18,6 +18,15 @@ import { message } from 'antd';
 // 自定义类型定义
 import { GraphProp } from '@/types/interfaces/graph';
 import { createCurvePath } from './registerCustomNodes';
+
+import {
+  handleLoopEdge,
+  handleSpecialNodeTypes,
+  hasDuplicateEdge,
+  isValidLoopConnection,
+  setEdgeAttributes,
+  validatePortConnection,
+} from '@/utils/graph';
 // import { PlusOutlined,} from '@ant-design/icons';
 /**
  * 初始化图形编辑器的函数，接收一个包含容器 ID 和改变抽屉内容回调的对象作为参数。
@@ -117,7 +126,6 @@ const initGraph = ({
               strokeWidth: 1,
             },
           },
-          zIndex: 3,
         });
       },
       validateConnection({
@@ -229,6 +237,7 @@ const initGraph = ({
           child.prop('zIndex', 99);
           // 获取所有的边
           const edges = graph.getEdges();
+          console.log(edges);
           // 如果边和节点有关系，那么就要将其处于节点的上层
           edges.forEach((edge) => {
             if (
@@ -271,13 +280,6 @@ const initGraph = ({
             stroke: '#5F95FF', // 添加边框颜色
             strokeWidth: 2,
           },
-          // image: {
-          //   'xlink:href': Plus,
-          //   width: 16,
-          //   height: 16,
-          //   x: -8,
-          //   y: -8,
-          // },
         };
       }
       return p;
@@ -386,182 +388,81 @@ const initGraph = ({
     changePortSize();
     // 是否是连接桩到连接桩
     edge.setRouter('manhattan');
-    if (isNew) {
-      // 查看当前的边是否已经有了
-      const edges = graph.getEdges();
-      const sourceCellId = edge.getSourceCellId();
-      const targetNodeId = edge.getTargetCellId();
-      // 检查是否存在具有相同source和target的边
-      const hasDuplicateEdge = edges.some((e) => {
-        return (
-          e !== edge &&
-          e.getSourceCellId() === sourceCellId.toString() &&
-          e.getTargetCellId() === targetNodeId.toString()
-        );
-      });
-      if (hasDuplicateEdge) {
-        graph.removeEdge(edge);
-        message.warning('不能创建重复的边');
+    if (!isNew) return;
+    // 查看当前的边是否已经有了
+    const edges = graph.getEdges();
+    const sourceCellId = edge.getSourceCellId();
+    const targetNodeId = edge.getTargetCellId();
+    // 获取边的两个连接桩
+    const sourcePort = edge.getSourcePortId();
+    const targetPort = edge.getTargetPortId();
+    const sourceNode = edge.getSourceNode()?.getData();
+    const targetNode = edge.getTargetNode()?.getData();
+
+    if (!sourceNode || !targetNode || !sourcePort || !targetPort) return;
+    // 检查是否存在具有相同source和target的边
+    if (hasDuplicateEdge(edges, sourceCellId, targetNodeId)) {
+      edge.remove();
+      message.warning('不能创建重复的边');
+      return;
+    }
+    // 处理循环节点的逻辑
+    if (sourceNode.type === 'Loop' || targetNode.type === 'Loop') {
+      const _params = handleLoopEdge(sourceNode, targetNode, edge);
+      if (_params !== undefined) {
+        changeCondition(_params, targetNode.id);
+        graph.addEdge(edge);
+        setEdgeAttributes(edge);
+        edge.toFront();
         return;
       }
-      // 获取边的两个连接桩
-      const sourcePort = edge.getSourcePortId();
-      // const getsourceNode = edge.getSourceNode();
-      const targetPort = edge.getTargetPortId();
-      const sourceNode = edge.getSourceNode()?.getData();
-      const targetNode = edge.getTargetNode()?.getData();
-      // 如果是循环内部的节点被外部的节点连接或者内部的节点连接外部的节点，就告知不能连接
-      if (sourceNode.loopNodeId || targetNode.loopNodeId) {
-        // 获取当前循环节点ID
-        const currentLoopNodeId =
-          sourceNode.loopNodeId || targetNode.loopNodeId;
-        // 检查源节点和目标节点是否允许连接
-        const isValidConnection = (node: any) => {
-          if (node.type === 'Loop') {
-            // 如果是Loop节点，检查ID是否匹配
-            return node.id === currentLoopNodeId;
-          } else {
-            // 如果不是Loop节点，检查loopNodeId是否匹配
-            return node.loopNodeId === currentLoopNodeId;
-          }
-        };
-        if (!isValidConnection(sourceNode) || !isValidConnection(targetNode)) {
-          message.warning('不能连接外部节点');
-          graph.removeEdge(edge);
-          return;
-        } else {
-          graph.addEdge(edge); // 新增行：显式添加边到
-          edge.attr({
-            line: {
-              strokeDasharray: '', // 移除虚线样式
-              stroke: '#C2C8D5', // 设置边的颜色
-              strokeWidth: 1, // 设置边的宽度
-            },
-          });
-        }
-      }
-
-      if (sourceNode.type === 'Loop') {
-        // 看连接的点是否时内部的节点
-        if (targetNode.loopNodeId && targetNode.loopNodeId === sourceNode.id) {
-          if (
-            sourceNode.innerStartNodeId &&
-            sourceNode.innerStartNodeId !== -1
-          ) {
-            message.warning('当前循环已有对子节点的连线，请先删除该连线');
-            graph.removeEdge(edge);
-            return;
-          }
-          const _params = { ...sourceNode };
-          _params.innerStartNodeId = targetNodeId;
-          changeCondition(_params, targetNodeId);
-          graph.addEdge(edge); // 新增行：显式添加边到
-          edge.attr({
-            line: {
-              strokeDasharray: '', // 移除虚线样式
-              stroke: '#C2C8D5', // 设置边的颜色
-              strokeWidth: 1, // 设置边的宽度
-            },
-          });
-          return;
-        }
-      }
-      if (targetNode.type === 'Loop') {
-        // 是否是循环内部的节点连接循环
-        if (sourceNode.loopNodeId && sourceNode.loopNodeId === targetNodeId) {
-          if (targetNode.innerEndNodeId && targetNode.innerEndNodeId !== -1) {
-            message.warning('当前已有对子节点连接循环的出口，请先删除该连线');
-            graph.removeEdge(edge);
-            return;
-          }
-          const _params = { ...targetNode };
-          _params.innerEndNodeId = sourceNode.id;
-          changeCondition(_params, sourceNode.id);
-          graph.addEdge(edge); // 新增行：显式添加边到
-          edge.attr({
-            line: {
-              strokeDasharray: '', // 移除虚线样式
-              stroke: '#C2C8D5', // 设置边的颜色
-              strokeWidth: 1, // 设置边的宽度
-            },
-          });
-          return;
-        }
-      }
-      // 这里统一让left作为接入点，right作为输出点
-      if (sourcePort?.includes('left') || targetPort?.includes('right')) {
-        graph.removeCell(edge.id);
-        message.warning('左侧连接桩只能作为接入点，右侧连接桩只能作为输出点');
-      }
-
-      if (!sourceNode) return;
-
-      // 查看出发的节点是否时意图识别和条件分支
-      if (
-        sourceNode.type === 'Condition' ||
-        sourceNode.type === 'IntentRecognition' ||
-        (sourceNode.type === 'QA' &&
-          sourceNode.nodeConfig.answerType === 'SELECT')
-      ) {
-        if (!sourcePort) return;
-        // 修改当前的数据
-        const newNodeParams = JSON.parse(JSON.stringify(sourceNode));
-        // 提取更新nextNodeIds的通用逻辑
-        const updateNextNodeIds = (item: any, targetNodeId: number) => {
-          const getoption = (option: number[] | null, nodeId: number) => {
-            if (!option) {
-              return [nodeId];
-            } else {
-              if (option.includes(nodeId)) {
-                return option;
-              } else {
-                return [...option, nodeId];
-              }
-            }
-          };
-          item.nextNodeIds = getoption(item.nextNodeIds, targetNodeId);
-        };
-        if (sourceNode.type === 'Condition') {
-          for (let item of newNodeParams.nodeConfig.conditionBranchConfigs) {
-            if (sourcePort.includes(item.uuid)) {
-              updateNextNodeIds(item, Number(targetNodeId));
-            }
-          }
-        } else if (sourceNode.type === 'IntentRecognition') {
-          for (let item of newNodeParams.nodeConfig.intentConfigs) {
-            if (sourcePort.includes(item.uuid)) {
-              updateNextNodeIds(item, Number(targetNodeId));
-            }
-          }
-        } else {
-          for (let item of newNodeParams.nodeConfig.options) {
-            if (sourcePort.includes(item.uuid)) {
-              updateNextNodeIds(item, Number(targetNodeId));
-            }
-          }
-        }
-
-        changeCondition(newNodeParams, targetNodeId);
-        // 通知父组件更新节点信息
-      } else {
-        // 通知父组件创建边
-        changeEdge('created', targetNodeId, sourceNode, edge.id);
-        if (targetNode.loopNodeId || sourceNode.loopNodeId) {
-          edge.prop('zIndex', 15);
-        } else {
-          edge.prop('zIndex', 3);
-        }
-      }
-
-      edge.attr({
-        line: {
-          strokeDasharray: '', // 移除虚线样式
-          stroke: '#C2C8D5', // 设置边的颜色
-          strokeWidth: 1, // 设置边的宽度
-        },
-      });
-      changeZindex();
     }
+    // 校验是否从右侧连接桩连入，左侧连接桩连出
+    if (!validatePortConnection(sourcePort, targetPort)) {
+      edge.remove();
+      return;
+    }
+    // 如果是循环内部的节点被外部的节点连接或者内部的节点连接外部的节点，就告知不能连接
+    const currentLoopNodeId = sourceNode.loopNodeId || targetNode.loopNodeId;
+    if (currentLoopNodeId) {
+      if (
+        !isValidLoopConnection(sourceNode, currentLoopNodeId) ||
+        !isValidLoopConnection(targetNode, currentLoopNodeId)
+      ) {
+        message.warning('不能连接外部节点');
+        edge.remove();
+        return;
+      }
+    }
+    // 处理特殊的三个节点
+    if (
+      sourceNode.type === 'Condition' ||
+      sourceNode.type === 'IntentRecognition' ||
+      (sourceNode.type === 'QA' &&
+        sourceNode.nodeConfig.answerType === 'SELECT')
+    ) {
+      //
+      const _params = handleSpecialNodeTypes(
+        sourceNode,
+        targetNode,
+        sourcePort,
+      );
+      changeCondition(_params, targetNodeId);
+      // 通知父组件更新节点信息
+    } else {
+      // 通知父组件创建边
+      changeEdge('created', targetNodeId, sourceNode, edge.id);
+    }
+    graph.addEdge(edge);
+    setEdgeAttributes(edge);
+    // edge.toFront()
+    setTimeout(() => {
+      if (sourceNode.loopNodeId || targetNode.loopNodeId) {
+        edge.prop('zIndex', 15);
+      } else {
+        edge.prop('zIndex', 1);
+      }
+    }, 0);
   });
 
   // 监听画布缩放

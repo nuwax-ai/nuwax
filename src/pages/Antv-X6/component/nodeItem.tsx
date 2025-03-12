@@ -150,8 +150,6 @@ const EndNode: React.FC<NodeDisposeProps> = ({ params, Modified, type }) => {
 
 // 定义循环的节点渲染
 const CycleNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
-  const [count, setCount] = useState<number | null>(1);
-
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -185,8 +183,14 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
               <div className="node-title-style margin-bottom">循环次数</div>
               <InputNumber
                 size="small"
-                value={count}
-                onChange={setCount}
+                value={params.loopTimes}
+                onChange={(value) =>
+                  // 确保传入的 value 不为 null，如果为 null 则设置为 undefined
+                  handleChangeNodeConfig({
+                    ...params,
+                    loopTimes: value !== null ? value : undefined,
+                  })
+                }
                 style={{ width: '100%', marginBottom: '10px' }}
               />
             </div>
@@ -200,6 +204,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
           inputItemName={InputItemNameEnum.variableArgs}
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ variableArgs: params.variableArgs || [] }}
+          isVariable
         />
       </div>
       <div className=" node-item-style">
@@ -209,6 +214,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
           inputItemName={InputItemNameEnum.outputArgs}
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ outputArgs: params.outputArgs || [] }}
+          isLoop
         />
       </div>
     </div>

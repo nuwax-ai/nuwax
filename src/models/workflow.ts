@@ -32,10 +32,30 @@ const useWorkflow = () => {
     return parentNode?.name;
   };
 
+  const getLoopName = (value: string) => {
+    let _id = value.split('.')[0];
+    if (_id.includes('-')) {
+      _id = _id.split('-')[0];
+    }
+    const parentNode = referenceList.innerPreviousNodes.find(
+      (item) => item.id === Number(_id),
+    );
+    return parentNode?.name;
+  };
+
   // 提取当前的数据
   const getValue = (val: string) => {
     if (referenceList.previousNodes?.length && referenceList.argMap[val]) {
       return `${getName(val)} - ${referenceList.argMap[val].name}`;
+    }
+    return '';
+  };
+
+  // 单独处理循环的数据
+  const getLoopValue = (val: string) => {
+    console.log(referenceList.argMap, val);
+    if (referenceList.innerPreviousNodes?.length && referenceList.argMap[val]) {
+      return `${getLoopName(val)} - ${referenceList.argMap[val].name}`;
     }
     return '';
   };
@@ -46,6 +66,7 @@ const useWorkflow = () => {
     referenceList,
     setReferenceList,
     getValue,
+    getLoopValue,
   };
 };
 

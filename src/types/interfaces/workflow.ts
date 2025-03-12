@@ -190,6 +190,10 @@ export interface NodeRenderProps {
   disabledAdd?: boolean;
   // 不显示删除按钮
   disabledDelete?: boolean;
+  // 当前是循环节点
+  isLoop?: boolean;
+  // 是否是中间变量节点
+  isVariable?: boolean;
 }
 
 // 定义通用的formList的props类型

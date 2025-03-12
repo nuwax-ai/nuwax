@@ -1,5 +1,6 @@
 import { ChildNode } from '@/types/interfaces/graph';
 import { Edge, Node } from '@antv/x6';
+import { message } from 'antd';
 // 边界检查并调整子节点位置
 // 调整父节点尺寸以包含所有子节点
 
@@ -67,20 +68,7 @@ export const adjustParentSize = (parentNode: Node) => {
   );
 };
 
-// 检查是否是循环内部的节点
-export function isConnectionValid(
-  sourceNode: ChildNode,
-  targetNode: ChildNode,
-) {
-  if (sourceNode.loopNodeId || targetNode.loopNodeId) {
-    const currentLoopNodeId = sourceNode.loopNodeId || targetNode.loopNodeId;
-    return (
-      sourceNode.id === currentLoopNodeId && targetNode.id === currentLoopNodeId
-    );
-  }
-  return true;
-}
-
+// 辅助函数：设置边的属性
 export function setEdgeAttributes(edge: Edge) {
   edge.attr({
     line: {
@@ -88,5 +76,120 @@ export function setEdgeAttributes(edge: Edge) {
       stroke: '#C2C8D5', // 设置边的颜色
       strokeWidth: 1, // 设置边的宽度
     },
+  });
+}
+
+// 辅助函数：检查循环节点的连接是否有效
+export function isValidLoopConnection(
+  node: ChildNode,
+  currentLoopNodeId: number,
+) {
+  if (node.type === 'Loop') {
+    return node.id === currentLoopNodeId;
+  } else {
+    return node.loopNodeId === currentLoopNodeId;
+  }
+}
+
+// 辅助函数：更新节点的 nextNodeIds
+export function updateNextNodeIds(item: any, targetNodeId: number) {
+  if (!item.nextNodeIds) {
+    item.nextNodeIds = [targetNodeId];
+  } else if (!item.nextNodeIds.includes(targetNodeId)) {
+    item.nextNodeIds.push(targetNodeId);
+  }
+}
+
+// 辅助函数：处理循环节点的逻辑
+export function handleLoopEdge(
+  sourceNode: ChildNode,
+  targetNode: ChildNode,
+  edge: Edge,
+) {
+  if (sourceNode.type === 'Loop') {
+    // 源节点是循环节点
+    if (targetNode.loopNodeId && targetNode.loopNodeId === sourceNode.id) {
+      // 目标节点是循环内部节点
+      if (sourceNode.innerStartNodeId && sourceNode.innerStartNodeId !== -1) {
+        message.warning('当前循环已有对子节点的连线，请先删除该连线');
+        edge.remove();
+        return;
+      }
+      const _params = { ...sourceNode };
+      _params.innerStartNodeId = targetNode.id;
+      return _params;
+    }
+  }
+  if (targetNode.type === 'Loop') {
+    if (sourceNode.loopNodeId && sourceNode.loopNodeId === targetNode.id) {
+      // 源节点是循环内部节点
+      if (targetNode.innerEndNodeId && targetNode.innerEndNodeId !== -1) {
+        message.warning('当前已有对子节点连接循环的出口，请先删除该连线');
+        edge.remove();
+        return;
+      }
+      const _params = { ...targetNode };
+      _params.innerEndNodeId = sourceNode.id;
+      console.log('aa', _params);
+      return _params;
+    }
+  }
+}
+
+// 辅助函数：处理特殊节点类型（Condition、IntentRecognition、QA）
+export function handleSpecialNodeTypes(
+  sourceNode: ChildNode,
+  targetNode: ChildNode,
+  sourcePort: string,
+) {
+  const newNodeParams = JSON.parse(JSON.stringify(sourceNode));
+  const targetNodeId = targetNode.id;
+
+  if (sourceNode.type === 'Condition') {
+    for (let item of newNodeParams.nodeConfig.conditionBranchConfigs) {
+      if (sourcePort.includes(item.uuid)) {
+        updateNextNodeIds(item, targetNodeId);
+      }
+    }
+  } else if (sourceNode.type === 'IntentRecognition') {
+    for (let item of newNodeParams.nodeConfig.intentConfigs) {
+      if (sourcePort.includes(item.uuid)) {
+        updateNextNodeIds(item, targetNodeId);
+      }
+    }
+  } else if (
+    sourceNode.type === 'QA' &&
+    sourceNode.nodeConfig.answerType === 'SELECT'
+  ) {
+    for (let item of newNodeParams.nodeConfig.options) {
+      if (sourcePort.includes(item.uuid)) {
+        updateNextNodeIds(item, targetNodeId);
+      }
+    }
+  }
+
+  return newNodeParams;
+}
+
+// 辅助函数：验证端口连接是否合法
+export function validatePortConnection(sourcePort: string, targetPort: string) {
+  if (sourcePort?.includes('left') || targetPort?.includes('right')) {
+    message.warning('左侧连接桩只能作为接入点，右侧连接桩只能作为输出点');
+    return false;
+  }
+  return true;
+}
+
+// 辅助函数：检查是否存在重复边
+export function hasDuplicateEdge(
+  edges: Edge[],
+  sourceCellId: string,
+  targetNodeId: string,
+) {
+  return edges.some((e: Edge) => {
+    return (
+      e.getSourceCellId() === sourceCellId.toString() &&
+      e.getTargetCellId() === targetNodeId.toString()
+    );
   });
 }

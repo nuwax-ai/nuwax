@@ -44,10 +44,12 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   showCopy = false,
   disabledAdd,
   disabledDelete,
+  isLoop,
+  isVariable,
 }) => {
   const [form] = Form.useForm();
 
-  const { volid } = useModel('workflow');
+  const { volid, setReferenceList } = useModel('workflow');
   // 根据传递的fieldConfigs生成表单项
   const formItem = fieldConfigs.reduce(
     (acc: DefaultObjectType, field: FieldConfig) => {
@@ -73,8 +75,24 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   // 提交form表单
   const submitForm = () => {
     const raw = form.getFieldsValue(true);
-    console.log('aaa', raw);
     handleChangeNodeConfig(raw);
+    if (isVariable) {
+      setReferenceList((prev) => {
+        const newInner = prev.innerPreviousNodes.map((item) => {
+          if (item.name === '循环') {
+            item.outputArgs = raw[inputItemName];
+          }
+          return item;
+        });
+        const newMap = Object.assign(prev.argMap, ...raw[inputItemName]);
+        const newReference = {
+          previousNodes: prev.previousNodes,
+          innerPreviousNodes: newInner,
+          argMap: newMap,
+        };
+        return newReference;
+      });
+    }
     // handleChangeNodeConfig(values);
   };
 
@@ -158,6 +176,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                             fieldName={[inputItemName, item.name, 'bindValue']}
                             style={{ width: '55%', marginRight: '10px' }}
                             referenceType={fieldValue}
+                            isLoop={isLoop}
                           />
                         </Form.Item>
                         <Form.Item

@@ -235,7 +235,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             return createEdge(edge);
           })
           .filter(Boolean);
-
+        console.log(edges);
         // 5. 批量添加边
         graphRef.current.addEdges(edges);
       }
