@@ -200,7 +200,10 @@ export const getEdges = (nodes: ChildNode[]): Edge[] => {
     } else if (node.type === 'Loop') {
       return handleLoopEdges(node);
     } else if (node.nextNodeIds && node.nextNodeIds.length > 0) {
-      return node.nextNodeIds.map((nextNodeId) => {
+      const _arr = node.nextNodeIds.filter(
+        (item) => item !== node.loopNodeId && item !== node.id,
+      );
+      return _arr.map((nextNodeId) => {
         return {
           source: Number(node.id).toString(),
           target: Number(nextNodeId).toString(),

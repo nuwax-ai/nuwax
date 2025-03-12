@@ -7,7 +7,7 @@ import {
 } from '@/types/interfaces/workflow';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Form, message, Select, Tag } from 'antd';
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
@@ -37,44 +37,47 @@ export const Condition: React.FC<ConditionProps> = ({
   inputItemName,
 }) => {
   const { referenceList } = useModel('workflow');
-  // 因为这里是数组嵌套数组
-  const changeInputValue = (
-    e: string | object,
-    fieldName: 'firstArg' | 'secondArg',
-    type?: 'Input' | 'Reference',
-  ) => {
-    // 修正路径构造方式，使用对象展开语法
-    const newValue = e
-      ? type === 'Input'
-        ? {
+
+  // 将referenceList作为参数传递给changeInputValue
+  const changeInputValue = useCallback(
+    (
+      e: string | object,
+      fieldName: 'firstArg' | 'secondArg',
+      type?: 'Input' | 'Reference',
+      referenceList?: any,
+    ) => {
+      const newValue = e
+        ? type === 'Input'
+          ? {
+              bindValue: e,
+              bindValueType: 'Input',
+              dataType: 'String',
+              name: '',
+            }
+          : {
+              bindValue: referenceList.argMap[e as string].key,
+              bindValueType: 'Reference',
+              name: referenceList.argMap[e as string].name,
+              dataType: referenceList.argMap[e as string].dataType || 'String',
+            }
+        : {
             bindValue: e,
             bindValueType: 'Input',
             dataType: 'String',
             name: '',
-          }
-        : {
-            bindValue: referenceList.argMap[e as string].key,
-            bindValueType: 'Reference',
-            name: referenceList.argMap[e as string].name,
-            dataType: referenceList.argMap[e as string].dataType || 'String',
-          }
-      : {
-          bindValue: e,
-          bindValueType: 'Input',
-          dataType: 'String',
-          name: '',
-        };
+          };
 
-    // 使用深层对象赋值
-    form.setFieldsValue({
-      [inputItemName]: {
-        [field.name]: {
-          [fieldName]: newValue,
+      form.setFieldsValue({
+        [inputItemName]: {
+          [field.name]: {
+            [fieldName]: newValue,
+          },
         },
-      },
-    });
-    onChange?.();
-  };
+      });
+      onChange?.();
+    },
+    [form, inputItemName, onChange],
+  );
 
   return (
     <div className="condition-right-item" key={field.key}>
@@ -92,29 +95,23 @@ export const Condition: React.FC<ConditionProps> = ({
         ></Select>
       </Form.Item>
       <Form.Item style={{ marginRight: '8px', flex: 1 }}>
-        <Form.Item
-          name={[field.name, 'firstArg', 'bindValue']}
-          // rules={[{ required: true }]}
-        >
+        <Form.Item name={[field.name, 'firstArg', 'bindValue']}>
           <InputOrReference
             value={form.getFieldValue([field.name, 'firstArg', 'bindValue'])}
             onChange={(value, type) =>
-              changeInputValue(value, 'firstArg', type)
+              changeInputValue(value, 'firstArg', type, referenceList)
             }
             fieldName={['conditionArgs', field.name, 'firstArg', 'bindValue']}
             form={form}
             isDisabled
           />
         </Form.Item>
-        <Form.Item
-          name={[field.name, 'secondArg', 'bindValue']}
-          // rules={[{ required: true }]}
-        >
+        <Form.Item name={[field.name, 'secondArg', 'bindValue']}>
           <InputOrReference
             value={form.getFieldValue([field.name, 'secondArg', 'bindValue'])}
             fieldName={['conditionArgs', field.name, 'secondArg', 'bindValue']}
             onChange={(value, type) =>
-              changeInputValue(value, 'secondArg', type)
+              changeInputValue(value, 'secondArg', type, referenceList)
             }
             form={form}
           />

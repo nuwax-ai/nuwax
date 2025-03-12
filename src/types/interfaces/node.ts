@@ -106,6 +106,8 @@ export interface NodeConfig {
   pluginId?: number;
   // 循环类型
   loopType?: string | null;
+  // 循环次数
+  loopTimes?: number;
   // 变量类型
   configType?: 'SET_VARIABLE' | 'GET_VARIABLE';
   // 文本处理的类型

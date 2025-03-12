@@ -28,7 +28,7 @@ import {
   Tag,
   Tree,
 } from 'antd';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
@@ -36,6 +36,7 @@ import './commonNode.less';
 
 // 定义通用的输入输出
 export const InputAndOut: React.FC<NodeRenderProps> = ({
+  key,
   title,
   fieldConfigs,
   handleChangeNodeConfig,
@@ -44,8 +45,15 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   showCopy = false,
   disabledAdd,
   disabledDelete,
+  isLoop,
+  isVariable,
+  retrieveRefernece,
 }) => {
   const [form] = Form.useForm();
+
+  const [isSet, setIsSet] = useState(false);
+  // 添加一个ref来存储上一次的key
+  const prevKeyRef = useRef(key);
 
   const { volid } = useModel('workflow');
   // 根据传递的fieldConfigs生成表单项
@@ -61,6 +69,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
     const nextItems = [...(form.getFieldValue(inputItemName) || []), formItem];
     form.setFieldsValue({ [inputItemName]: nextItems });
     handleChangeNodeConfig({ [inputItemName]: nextItems });
+    setIsSet(true);
   };
 
   const removeItem = (index: number) => {
@@ -68,19 +77,35 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
     const _newValue = formValue.filter((_: unknown, i: number) => i !== index);
     form.setFieldsValue({ [inputItemName]: _newValue });
     handleChangeNodeConfig({ [inputItemName]: _newValue });
+    setIsSet(true);
   };
 
   // 提交form表单
   const submitForm = () => {
     const raw = form.getFieldsValue(true);
-    console.log('aaa', raw);
     handleChangeNodeConfig(raw);
-    // handleChangeNodeConfig(values);
+    setIsSet(true);
+    if (isVariable && retrieveRefernece) {
+      // 这里要调用reference接口
+      retrieveRefernece();
+    }
   };
 
   useEffect(() => {
-    form.setFieldsValue(initialValues);
-  }, [initialValues]);
+    // 当key发生变化时，重置isSet
+    if (prevKeyRef.current !== key) {
+      setIsSet(false);
+      prevKeyRef.current = key;
+    }
+  }, [key]);
+
+  // ... existing code ...
+
+  useEffect(() => {
+    if (!isSet) {
+      form.setFieldsValue(initialValues);
+    }
+  }, [initialValues, isSet]);
 
   useEffect(() => {
     if (volid) {
@@ -158,6 +183,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                             fieldName={[inputItemName, item.name, 'bindValue']}
                             style={{ width: '55%', marginRight: '10px' }}
                             referenceType={fieldValue}
+                            isLoop={isLoop}
                           />
                         </Form.Item>
                         <Form.Item

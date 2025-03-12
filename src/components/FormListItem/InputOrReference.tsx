@@ -1,4 +1,4 @@
-import { InputAndOutConfig } from '@/types/interfaces/node';
+import { InputAndOutConfig, PreviousList } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
 import { SettingOutlined } from '@ant-design/icons';
 import { Dropdown, Input, Tag } from 'antd';
@@ -6,7 +6,6 @@ import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import './index.less';
 import { InputOrReferenceProps } from './type';
-
 const InputOrReference: React.FC<InputOrReferenceProps> = ({
   placeholder,
   value,
@@ -16,8 +15,9 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   style,
   isDisabled = false,
   referenceType = 'Reference',
+  isLoop,
 }) => {
-  const { referenceList, getValue } = useModel('workflow');
+  const { referenceList, getValue, getLoopValue } = useModel('workflow');
 
   const [newValue, setNewValue] = useState('');
   // InputOrReference.tsx
@@ -28,6 +28,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
       form.setFieldValue([...basePath, 'bindValueType'], valueType); // 使用数组路径
       //  新增 dataType 处理逻辑
       if (valueType === 'Reference') {
+        console.log(referenceList?.argMap);
         const refDataType = referenceList?.argMap?.[newValue]?.dataType;
         form.setFieldValue([...basePath, 'dataType'], refDataType || 'String');
         // 获取当前的name
@@ -55,13 +56,9 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
     updateValues('', 'Input'); // 清空时重置为 Input 类型
   };
 
-  const getMenuItems = () => {
-    if (
-      referenceList.previousNodes.length > 0 &&
-      referenceList.previousNodes[0].id !== 1 &&
-      referenceList.previousNodes[0].name !== '测试'
-    ) {
-      return referenceList.previousNodes.map((node) => ({
+  const changeMenuItem = (arr: PreviousList[]) => {
+    if (arr.length > 0) {
+      return arr.map((node) => ({
         key: node.id,
         label: node.name,
         icon: returnImg(node.type),
@@ -110,9 +107,21 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
     }
   };
 
+  const getMenuItems = () => {
+    if (isLoop) {
+      return changeMenuItem(referenceList.innerPreviousNodes);
+    } else {
+      return changeMenuItem(referenceList.previousNodes);
+    }
+  };
+
   // 监听value和referenceList变化
   useEffect(() => {
-    setNewValue(getValue(value));
+    if (isLoop) {
+      setNewValue(getLoopValue(value));
+    } else {
+      setNewValue(getValue(value));
+    }
   }, [value, referenceList]);
 
   // // 初始化时设置值
