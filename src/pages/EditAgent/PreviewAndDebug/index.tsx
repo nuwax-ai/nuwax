@@ -14,20 +14,22 @@ import {
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
+import { MessageStatusEnum } from '@/types/enums/common';
 import { OpenCloseEnum } from '@/types/enums/space';
-import type { CreatorInfo } from '@/types/interfaces/agent';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadInfo } from '@/types/interfaces/common';
-import {
+import type {
   AttachmentFile,
   ConversationChatResponse,
   ConversationInfo,
   MessageInfo,
+  RoleInfo,
 } from '@/types/interfaces/conversationInfo';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import classNames from 'classnames';
+import cloneDeep from 'lodash/cloneDeep';
 import moment from 'moment';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 import PreviewAndDebugHeader from './PreviewAndDebugHeader';
@@ -44,12 +46,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
   onPressDebug,
 }) => {
   // 会话信息
-  const [conversationInfo, setConversationInfo] = useState<ConversationInfo>();
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 会话问题建议
   const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
-  // 发布者信息
-  const [publishUser, setPublishUser] = useState<CreatorInfo>();
   const messageViewRef = useRef<HTMLDivElement | null>(null);
   const devConversationIdRef = useRef<number>(0);
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
@@ -59,22 +58,38 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     manual: true,
     debounceWait: 300,
     onSuccess: (result) => {
-      if (result) {
-        setConversationInfo(result);
-        setMessageList(result.messageList || []);
-        setPublishUser(result.agent?.publishUser);
-      }
+      setMessageList(result?.messageList || []);
     },
   });
 
+  const roleInfo: RoleInfo = useMemo(() => {
+    return {
+      user: {
+        name: agentConfigInfo?.creator.nickName as string,
+        avatar: agentConfigInfo?.creator.avatar as string,
+      },
+      assistant: {
+        name: agentConfigInfo?.name as string,
+        avatar: agentConfigInfo?.icon as string,
+      },
+      system: {
+        name: agentConfigInfo?.name as string,
+        avatar: agentConfigInfo?.icon as string,
+      },
+    };
+  }, [agentConfigInfo]);
+
   // 智能体会话问题建议
-  const { run: runChatSuggest } = useRequest(apiAgentConversationChatSuggest, {
-    manual: true,
-    debounceWait: 300,
-    onSuccess: (result) => {
-      setChatSuggestList(result);
+  const { run: runChatSuggest, loading } = useRequest(
+    apiAgentConversationChatSuggest,
+    {
+      manual: true,
+      debounceWait: 300,
+      onSuccess: (result) => {
+        setChatSuggestList(result);
+      },
     },
-  });
+  );
 
   // 创建会话
   const { run: runConversationCreate } = useRequest(
@@ -108,6 +123,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       attachments,
       debug: true,
     };
+
     // 启动连接
     const abortConnection = await createSSEConnection({
       url: `${process.env.BASE_URL}/api/agent/conversation/chat`,
@@ -118,32 +134,46 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       },
       body: params,
       onMessage: (data: ConversationChatResponse) => {
-        console.log(data);
+        // console.log(data, '====');
+        const _messageList = cloneDeep(messageList);
+        const lastMessage = _messageList.slice(-1)[0] as MessageInfo;
+        let newMessage;
         // 更新UI状态...
-        if (data.eventType === ConversationEventTypeEnum.FINAL_RESULT) {
-          // 调试结果
-          const { componentExecuteResults, outputText } = data.data;
-          onExecuteResults(componentExecuteResults);
-          const chatResponseMessage = {
-            role: AssistantRoleEnum.ASSISTANT,
-            type: MessageModeEnum.CHAT,
-            text: outputText,
-            time: moment(),
-            id: null,
-            // ext: '',
-            // finished: true,
-            metadata: null,
-            messageType: MessageTypeEnum.ASSISTANT,
+        if (data.eventType === ConversationEventTypeEnum.PROCESSING) {
+          newMessage = {
+            ...lastMessage,
+            status: MessageStatusEnum.Incomplete,
           };
-          setMessageList(
-            (messageList) =>
-              [...messageList, chatResponseMessage] as MessageInfo[],
-          );
+        }
+        if (data.eventType === ConversationEventTypeEnum.MESSAGE) {
+          const { text } = data.data;
+          newMessage = {
+            ...lastMessage,
+            text: `${lastMessage.text}${text}`,
+          };
+
+          console.log(`${lastMessage.text}${text}`);
+        }
+        if (data.eventType === ConversationEventTypeEnum.FINAL_RESULT) {
+          const { outputText, componentExecuteResults } = data.data;
+          newMessage = {
+            ...lastMessage,
+            text: outputText,
+            status: MessageStatusEnum.Complete,
+            finalResult: componentExecuteResults,
+          };
+          // 调试结果
+          onExecuteResults(componentExecuteResults);
           // 是否开启问题建议,可用值:Open,Close
           if (agentConfigInfo.openSuggest === OpenCloseEnum.Open) {
             runChatSuggest(params);
           }
         }
+
+        setMessageList([
+          ..._messageList.slice(0, -1),
+          newMessage,
+        ] as MessageInfo[]);
       },
     });
     // 主动关闭连接
@@ -176,15 +206,24 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       type: MessageModeEnum.CHAT,
       text: message,
       time: moment(),
+      attachments,
       id: Math.random(),
-      ext: attachments,
-      finished: false,
-      metadata: null,
       messageType: MessageTypeEnum.USER,
     };
+    // 助手信息
+    const assistantMessage = {
+      role: AssistantRoleEnum.ASSISTANT,
+      type: MessageModeEnum.CHAT,
+      text: '',
+      time: moment(),
+      id: Math.random(),
+      messageType: MessageTypeEnum.ASSISTANT,
+      status: MessageStatusEnum.Loading,
+    } as MessageInfo;
 
     setMessageList(
-      (messageList) => [...messageList, chatMessage] as MessageInfo[],
+      (messageList) =>
+        [...messageList, chatMessage, assistantMessage] as MessageInfo[],
     );
     // 处理会话
     await handleConversation(message, attachments);
@@ -192,12 +231,16 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
 
   // 清空会话记录，实际上是创建新的会话
   const handleClear = () => {
-    setConversationInfo(null);
+    setMessageList([]);
     setChatSuggestList([]);
     runConversationCreate({
       agentId,
       devMode: true,
     });
+  };
+
+  const handleDebug = () => {
+    console.log('调试');
   };
 
   return (
@@ -217,20 +260,19 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
           className={cx(styles['chat-wrapper'], 'flex-1')}
           ref={messageViewRef}
         >
-          {conversationInfo?.messageList?.length > 0 ? (
+          {messageList?.length > 0 ? (
             <>
-              {conversationInfo?.messageList?.map((item, index) => (
+              {messageList?.map((item, index) => (
                 <ChatView
                   key={index}
                   messageInfo={item}
-                  icon={agentConfigInfo?.icon as string}
-                  name={agentConfigInfo?.name as string}
-                  avatar={publishUser?.avatar as string}
-                  nickname={publishUser?.nickName as string}
+                  roleInfo={roleInfo}
+                  onDebug={handleDebug}
                 />
               ))}
               {/*会话建议*/}
               <RecommendList
+                loading={loading}
                 chatSuggestList={chatSuggestList}
                 onClick={onMessageSend}
               />

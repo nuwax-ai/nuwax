@@ -1,6 +1,8 @@
+import { MessageStatusEnum } from '@/types/enums/common';
+import { MessageInfo } from '@/types/interfaces/conversationInfo';
 import {
-  CheckCircleOutlined,
   DownOutlined,
+  LoadingOutlined,
   SolutionOutlined,
   UnorderedListOutlined,
   UpOutlined,
@@ -12,10 +14,14 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+interface RunOverProps {
+  messageInfo: MessageInfo;
+}
+
 /**
  * 运行完毕
  */
-const RunOver: React.FC = () => {
+const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
   return (
     <Popover
       placement="bottomLeft"
@@ -56,8 +62,16 @@ const RunOver: React.FC = () => {
           styles['run-success'],
         )}
       >
-        <CheckCircleOutlined />
-        <span className={cx('flex-1')}>运行完毕</span>
+        {/*<CheckCircleOutlined />*/}
+        <span className={cx('flex-1')}>
+          {messageInfo?.status === MessageStatusEnum.Loading ? (
+            <LoadingOutlined />
+          ) : messageInfo?.status === MessageStatusEnum.Incomplete ? (
+            '已从海量知识库中搜索到结果'
+          ) : (
+            '运行完毕'
+          )}
+        </span>
         <DownOutlined className={cx(styles.icon)} />
       </div>
     </Popover>

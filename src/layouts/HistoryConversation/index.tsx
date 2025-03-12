@@ -1,11 +1,11 @@
 import { apiAgentConversationList } from '@/services/agentConfig';
+import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { Empty, Modal } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment';
 import React, { useEffect, useState } from 'react';
 import { useModel, useRequest } from 'umi';
 import styles from './index.less';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 
 const cx = classNames.bind(styles);
 
@@ -15,9 +15,9 @@ const cx = classNames.bind(styles);
 const HistoryConversation: React.FC = () => {
   const { openHistoryModal, setOpenHistoryModal } = useModel('layout');
   // 历史会话列表
-  const [conversationList, setConversationList] = useState<
-    ConversationInfo[]
-  >([]);
+  const [conversationList, setConversationList] = useState<ConversationInfo[]>(
+    [],
+  );
 
   // 查询历史会话记录
   const { run, loading } = useRequest(apiAgentConversationList, {

@@ -1,5 +1,6 @@
 import ConditionRender from '@/components/ConditionRender';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
+import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { SingleAgentProps } from '@/types/interfaces/square';
 import { useRequest } from '@@/exports';
 import {
@@ -11,7 +12,6 @@ import classNames from 'classnames';
 import React from 'react';
 import { history } from 'umi';
 import styles from './index.less';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 
 const cx = classNames.bind(styles);
 
