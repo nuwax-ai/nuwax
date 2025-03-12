@@ -1,9 +1,5 @@
 import { DataTypeEnum } from '@/types/enums/common';
-import {
-  NodeConfig,
-  // ConditionBranchConfigs,
-  NodePreviousAndArgMap,
-} from '@/types/interfaces/node';
+import { NodeConfig } from '@/types/interfaces/node';
 import { FormInstance } from 'antd';
 
 export interface KeyValueTree {
@@ -16,8 +12,6 @@ export interface KeyValueTree {
 
 // 定义输入或引用参数
 export interface InputOrReferenceProps {
-  // 当前的引用列表
-  referenceList: NodePreviousAndArgMap;
   // 与输入
   placeholder?: string;
   // 新增：接受当前值

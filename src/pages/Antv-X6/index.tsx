@@ -14,7 +14,7 @@ import { NodeTypeEnum } from '@/types/enums/common';
 import { WorkflowModeEnum } from '@/types/enums/library';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
-import { NodePreviousAndArgMap, TestRunparams } from '@/types/interfaces/node';
+import { TestRunparams } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { updateNode } from '@/utils/updateNode';
@@ -57,19 +57,7 @@ const Workflow: React.FC = () => {
   // 节点试运行
   const [stopWait, setStopWait] = useState<boolean>(false);
   // 上级节点的输出参数
-  const [referenceList, setReferenceList] = useState<NodePreviousAndArgMap>({
-    previousNodes: [
-      {
-        id: 0,
-        name: '测试',
-        outputArgs: [],
-        icon: '',
-        type: NodeTypeEnum.Start,
-      },
-    ],
-    innerPreviousNodes: [],
-    argMap: {},
-  });
+
   // const [isUpdate, setIsUpdate] = useState<boolean>(false)
   // 打开和关闭新增组件
   const [open, setOpen] = useState(false);
@@ -106,6 +94,7 @@ const Workflow: React.FC = () => {
   // 是否显示创建工作流，插件，知识库，数据库的弹窗和试运行的弹窗
   const { setTestRun } = useModel('model');
 
+  const { setReferenceList } = useModel('workflow');
   // 修改更新时间
   const changeUpdateTime = () => {
     const _time = new Date();
@@ -207,12 +196,6 @@ const Workflow: React.FC = () => {
         _res.data.previousNodes.length
       ) {
         setReferenceList(_res.data);
-      } else {
-        setReferenceList({
-          previousNodes: [],
-          innerPreviousNodes: [],
-          argMap: {},
-        });
       }
     }
   };
@@ -259,12 +242,14 @@ const Workflow: React.FC = () => {
       setVisible(false);
       return;
     } else {
+      setReferenceList({
+        previousNodes: [],
+        innerPreviousNodes: [],
+        argMap: {},
+      });
       if (!visible) setVisible(true);
       setFoldWrapItem(child);
     }
-    // 如果有组件正在展示,那么就要看是否修改了参数,
-    // 如果修改了参数,那么就提交数据
-
     if (child.nodeConfig.inputArgs === null) {
       child.nodeConfig.inputArgs = [];
     }
@@ -756,7 +741,6 @@ const Workflow: React.FC = () => {
         foldWrapItem={foldWrapItem}
         onGetNodeConfig={changeNode} // 新增这一行
         handleNodeChange={handleNodeChange}
-        referenceList={referenceList}
         getRefernece={getRefernece}
       />
       <Created

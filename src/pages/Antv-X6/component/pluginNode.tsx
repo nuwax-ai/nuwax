@@ -1,10 +1,7 @@
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import InputOrReference from '@/components/FormListItem/InputOrReference';
 import { InputItemNameEnum } from '@/types/enums/node';
-import type {
-  NodeConfig,
-  NodePreviousAndArgMap,
-} from '@/types/interfaces/node';
+import type { NodeConfig } from '@/types/interfaces/node';
 import { InitialValues, NodeDisposeProps } from '@/types/interfaces/workflow';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Empty, Form, Popover } from 'antd';
@@ -12,8 +9,8 @@ import React, { useEffect, useState } from 'react';
 import { outPutConfigs } from '../params';
 import { InputAndOut, TreeOutput } from './commonNode';
 import './pluginNode.less';
+
 interface InputListProps {
-  referenceList: NodePreviousAndArgMap;
   title: string;
   inputItemName: string;
   onChange: (val: NodeConfig) => void;
@@ -22,7 +19,6 @@ interface InputListProps {
 // 根据输入的list遍历创建输入框
 
 const InputList: React.FC<InputListProps> = ({
-  referenceList,
   title,
   inputItemName,
   onChange,
@@ -89,13 +85,6 @@ const InputList: React.FC<InputListProps> = ({
                         </Form.Item>
                         <Form.Item name={[item.name, 'bindValue']} noStyle>
                           <InputOrReference
-                            referenceList={
-                              referenceList || {
-                                previousNodes: [],
-                                innerPreviousNodes: [],
-                                argMap: {},
-                              }
-                            }
                             onChange={submitForm}
                             value={form.getFieldValue([
                               inputItemName,
@@ -121,11 +110,7 @@ const InputList: React.FC<InputListProps> = ({
 };
 
 // 定义插件,工作流的节点渲染
-const PluginInNode: React.FC<NodeDisposeProps> = ({
-  params,
-  Modified,
-  referenceList,
-}) => {
+const PluginInNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   //  获取输入的列表
 
   const changeInputList = (newNode: NodeConfig) => {
@@ -138,7 +123,6 @@ const PluginInNode: React.FC<NodeDisposeProps> = ({
         title={'输入'}
         initialValues={{ inputArgs: params.inputArgs || [] }}
         onChange={changeInputList}
-        referenceList={referenceList}
         inputItemName={InputItemNameEnum.inputArgs}
       />
       <p className="node-title-style mt-16">{'输出'}</p>
@@ -148,11 +132,7 @@ const PluginInNode: React.FC<NodeDisposeProps> = ({
 };
 
 // 定义数据库
-const DatabaseNode: React.FC<NodeDisposeProps> = ({
-  params,
-  Modified,
-  referenceList,
-}) => {
+const DatabaseNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   let inputInitialValues = {};
   if (params.inputArgs && params.inputArgs.length) {
     inputInitialValues = params.inputArgs;
@@ -171,7 +151,6 @@ const DatabaseNode: React.FC<NodeDisposeProps> = ({
         <InputAndOut
           title="输入"
           fieldConfigs={outPutConfigs}
-          referenceList={referenceList}
           inputItemName={InputItemNameEnum.inputArgs}
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={inputInitialValues}

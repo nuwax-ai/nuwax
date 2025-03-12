@@ -2,22 +2,24 @@ import { InputAndOutConfig } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
 import { SettingOutlined } from '@ant-design/icons';
 import { Dropdown, Input, Tag } from 'antd';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useModel } from 'umi';
 import './index.less';
 import { InputOrReferenceProps } from './type';
 
 const InputOrReference: React.FC<InputOrReferenceProps> = ({
-  referenceList,
   placeholder,
   value,
   onChange,
-  // 新增必要参数
   form, // Form 实例（从父组件传入）
   fieldName, // 当前字段路径（如 "inputItems[0].bindValue"）
   style,
   isDisabled = false,
   referenceType = 'Reference',
 }) => {
+  const { referenceList, getValue } = useModel('workflow');
+
+  const [newValue, setNewValue] = useState('');
   // InputOrReference.tsx
   const updateValues = (newValue: string, valueType: 'Input' | 'Reference') => {
     if (fieldName && form) {
@@ -53,100 +55,93 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
     updateValues('', 'Input'); // 清空时重置为 Input 类型
   };
 
-  // 获取父节点名称
-  const getName = (value: string) => {
-    let _id = value.split('.')[0];
-    if (_id.includes('-')) {
-      _id = _id.split('-')[0];
-    }
-    const parentNode = referenceList.previousNodes.find(
-      (item) => item.id === Number(_id),
-    );
-    return parentNode?.name;
-  };
-
-  // 生成下拉菜单项
-  const menuItems =
-    referenceList.previousNodes.length > 0
-      ? referenceList.previousNodes.map((node) => ({
-          key: node.id,
-          label: node.name,
-          icon: returnImg(node.type),
-          children: node.outputArgs?.flatMap((arg) => [
-            // 父级参数项
-            {
-              key: arg.key,
-              label: (
-                <div className="reference-item-child">
-                  <span>{arg.name}</span>
-                  <Tag className="ml-20" color="#65656687">
-                    {arg.dataType}
-                  </Tag>
-                </div>
-              ),
-              onClick: () => updateValues(arg.key!, 'Reference'),
-              // style: { background: '#f5f5f5' }, // 添加父项背景色
-            },
-            // 子参数项（如果有）
-            ...(arg.children || []).map((item: InputAndOutConfig) => ({
-              key: item.key,
-              label: (
-                <div className="reference-item-child ml-20">
-                  <span>{item.name}</span>
-                  <Tag className="ml-20" color="#65656687">
-                    {item.dataType}
-                  </Tag>
-                </div>
-              ),
-              onClick: () => updateValues(item.key!, 'Reference'),
-            })),
-          ]),
-        }))
-      : [
+  const getMenuItems = () => {
+    if (
+      referenceList.previousNodes.length > 0 &&
+      referenceList.previousNodes[0].id !== 1 &&
+      referenceList.previousNodes[0].name !== '测试'
+    ) {
+      return referenceList.previousNodes.map((node) => ({
+        key: node.id,
+        label: node.name,
+        icon: returnImg(node.type),
+        children: node.outputArgs?.flatMap((arg) => [
+          // 父级参数项
           {
-            key: 'no-data',
+            key: arg.key,
             label: (
-              <div style={{ padding: 8, color: 'red' }}>
-                未添加上级节点连线或上级节点无参数
+              <div className="reference-item-child">
+                <span>{arg.name}</span>
+                <Tag className="ml-20" color="#65656687">
+                  {arg.dataType}
+                </Tag>
               </div>
             ),
-            disabled: true,
+            onClick: () => updateValues(arg.key!, 'Reference'),
+            // style: { background: '#f5f5f5' }, // 添加父项背景色
           },
-        ];
-
-  useEffect(() => {
-    // if (!value) return
-    // 只有当referenceList发生变化时才处理
-    if (referenceType === 'Reference') {
-      const previousNodes = referenceList.previousNodes;
-      if (value) {
-        if (
-          previousNodes.length &&
-          previousNodes[0].id !== 1 &&
-          previousNodes[0].name !== '测试'
-        ) {
-          if (referenceList.argMap && !referenceList.argMap[value]) {
-            updateValues?.('', 'Input'); // 清除当前值并重置为Input类型
-          }
-        }
-      }
+          // 子参数项（如果有）
+          ...(arg.children || []).map((item: InputAndOutConfig) => ({
+            key: item.key,
+            label: (
+              <div className="reference-item-child ml-20">
+                <span>{item.name}</span>
+                <Tag className="ml-20" color="#65656687">
+                  {item.dataType}
+                </Tag>
+              </div>
+            ),
+            onClick: () => updateValues(item.key!, 'Reference'),
+          })),
+        ]),
+      }));
+    } else {
+      return [
+        {
+          key: 'no-data',
+          label: (
+            <div style={{ padding: 8, color: 'red' }}>
+              未添加上级节点连线或上级节点无参数
+            </div>
+          ),
+          disabled: true,
+        },
+      ];
     }
-  }, [referenceList]);
+  };
+
+  // 监听value和referenceList变化
+  useEffect(() => {
+    setNewValue(getValue(value));
+  }, [value, referenceList]);
+
+  // // 初始化时设置值
+  // useEffect(() => {
+  //   setNewValue(getValue(value));
+  // }, []);
 
   return (
     <div className="input-or-reference dis-sb" style={style}>
-      {value && referenceList.argMap[value] ? (
-        <Tag
-          closable
-          onClose={handleTagClose}
-          className="input-or-reference-tag text-ellipsis"
-          color="#65656687"
-        >
-          <span className="tag-text-style">
-            {' '}
-            {`${getName(value)} - ${referenceList.argMap[value].name}`}
-          </span>
-        </Tag>
+      {referenceType === 'Reference' ? (
+        newValue.length ? (
+          <Tag
+            closable
+            onClose={handleTagClose}
+            className="input-or-reference-tag text-ellipsis"
+            color="#65656687"
+          >
+            <span className="tag-text-style">{newValue}</span>
+          </Tag>
+        ) : (
+          <Input
+            value={''}
+            placeholder={placeholder || '请输入或引用参数'}
+            onChange={handleInputChange}
+            style={{ marginRight: 8 }}
+            size="small"
+            disabled={isDisabled}
+          />
+        )
       ) : (
         <Input
           value={value}
@@ -159,7 +154,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
       )}
 
       <Dropdown
-        menu={{ items: menuItems }}
+        menu={{ items: getMenuItems() }}
         trigger={['click']}
         overlayStyle={{ width: 200 }}
       >
