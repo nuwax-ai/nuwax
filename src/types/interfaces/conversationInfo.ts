@@ -30,7 +30,7 @@ export interface ConversationChatMessage {
 }
 
 // 会话聊天"FINAL_RESULT", 用于会话底部显示时间
-export interface ConversationChatFinalResult {
+export interface ConversationFinalResult {
   completionTokens: number;
   componentExecuteResults: string[];
   endTime: number;
@@ -45,7 +45,7 @@ export interface ConversationChatFinalResult {
 // 会话聊天响应数据
 export interface ConversationChatResponse {
   completed: boolean;
-  data: ConversationChatMessage | ConversationChatFinalResult;
+  data: ConversationChatMessage | ConversationFinalResult;
   error: string;
   eventType: ConversationEventTypeEnum;
   requestId: string;
@@ -87,16 +87,17 @@ export interface ConversationCreateParams {
   devMode: boolean;
 }
 
+// 会话消息信息
 export interface MessageInfo {
   // assistant 模型回复；user 用户消息,可用值:USER,ASSISTANT,SYSTEM,FUNCTION
   role: AssistantRoleEnum;
   // 可用值:CHAT,GUID,QUESTION,ANSWER
-  type: MessageModeEnum;
+  type?: MessageModeEnum;
   // 消息内容，其中附件放在.*?标签中
-  text: string;
+  text?: string;
   // 消息时间
   time: string;
-  attachments: AttachmentFile[];
+  attachments?: AttachmentFile[];
   id: number;
   metadata?: unknown;
   // 可用值:USER,ASSISTANT,SYSTEM,TOOL
@@ -104,7 +105,7 @@ export interface MessageInfo {
   // 消息状态，可选值为 loading | incomplete | complete | error
   status?: MessageStatusEnum;
   // 自定义添加字段：chat 会话结果
-  chatFinalResult?: ConversationChatFinalResult;
+  finalResult?: ConversationFinalResult;
 }
 
 // 查询会话信息
@@ -156,17 +157,22 @@ export interface ConversationListParams {
   agentId: number;
 }
 
+// 聊天用户信息
+export interface ChatUserInfo {
+  name: string;
+  avatar: string;
+}
+
+// 角色信息
+export interface RoleInfo {
+  user: ChatUserInfo;
+  assistant: ChatUserInfo;
+  system: ChatUserInfo;
+}
+
 // 聊天框组件
 export interface ChatViewProps {
   messageInfo: MessageInfo;
-  // 智能体图标
-  icon?: string;
-  // 智能体名称
-  name?: string;
-  // 用户头像
-  avatar?: string;
-  // 用户昵称
-  nickname?: string;
-  onCopy?: () => void;
+  roleInfo: RoleInfo;
   onDebug?: () => void;
 }

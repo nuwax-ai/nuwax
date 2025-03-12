@@ -10,7 +10,11 @@ import { ICON_FOLD } from '@/constants/images.constants';
 
 const cx = classNames.bind(styles);
 
-const ShowArea: React.FC = () => {
+interface ShowAreaProps {
+  executeResults: string[];
+}
+
+const ShowArea: React.FC<ShowAreaProps> = ({ executeResults }) => {
   const [visible, setVisible] = useState<boolean>(true);
   // const [contents, setContents] = useState<[]>([]);
 
@@ -43,6 +47,9 @@ const ShowArea: React.FC = () => {
         onClose={() => setVisible(false)}
       >
         <div className={cx(styles['main-wrap'])}>
+          {executeResults?.map((item, index) => (
+            <div key={index}>{item}</div>
+          ))}
           {/*<Card type={CardStyleEnum.ONE} />*/}
           {/*<CardModeSetting*/}
           {/*  type={CardStyleEnum.ONE}*/}
