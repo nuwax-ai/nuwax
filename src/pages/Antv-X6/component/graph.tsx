@@ -303,6 +303,7 @@ const initGraph = ({
         y,
       };
     }
+    console.log(data);
     // 如果时移动循环节点，且节点内有子节点
     if (data.type === 'Loop' && data.innerNodes && data.innerNodes.length > 0) {
       // 更新内部节点的位置信息
@@ -319,6 +320,7 @@ const initGraph = ({
         }
       });
     }
+
     // 如果时循环内部的节点，要一并修改循环的宽度和位置
     if (data.loopNodeId) {
       const parentNode = graph.getCellById(data.loopNodeId) as Node;
@@ -332,6 +334,13 @@ const initGraph = ({
       };
       const _data = parentNode.getData();
       _data.nodeConfig.extension = extension;
+      // 找到循环节点中当前被移动的节点
+      for (let item of _data.innerNodes) {
+        if (item.id === data.id) {
+          item.nodeConfig.extension.x = x;
+          item.nodeConfig.extension.y = y;
+        }
+      }
       changeCondition(_data);
       return;
     }
@@ -354,11 +363,11 @@ const initGraph = ({
     changeDrawer(null); // 调用回调函数以更新抽屉内容
   });
 
-  // 监听边鼠标进入事件
+  // 监听边选中
   graph.on('edge:click', ({ edge }) => {
     edge.attr('line/stroke', '#1890FF'); // 悬停时改为蓝色
   });
-  // 监听边鼠标离开事件
+  // 监听边取消选中事件
   graph.on('edge:unselected', ({ edge }) => {
     edge.attr('line/stroke', '#C2C8D5'); // 恢复默认颜色
   });
@@ -374,7 +383,6 @@ const initGraph = ({
         ...node.getData(), // 获取图形实例存储的数据
         id: node.id, // 确保ID同步
       };
-
       changeDrawer(latestData); // 调用回调函数以更新抽屉内容
     }
   });
@@ -408,12 +416,15 @@ const initGraph = ({
     }
     // 处理循环节点的逻辑
     if (sourceNode.type === 'Loop' || targetNode.type === 'Loop') {
-      const _params = handleLoopEdge(sourceNode, targetNode, edge);
-      if (_params !== undefined) {
+      const _params = handleLoopEdge(sourceNode, targetNode);
+      if (_params) {
         changeCondition(_params, targetNode.id);
         graph.addEdge(edge);
         setEdgeAttributes(edge);
         edge.toFront();
+        return;
+      } else {
+        edge.remove();
         return;
       }
     }

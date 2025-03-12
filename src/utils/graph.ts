@@ -101,18 +101,13 @@ export function updateNextNodeIds(item: any, targetNodeId: number) {
 }
 
 // 辅助函数：处理循环节点的逻辑
-export function handleLoopEdge(
-  sourceNode: ChildNode,
-  targetNode: ChildNode,
-  edge: Edge,
-) {
+export function handleLoopEdge(sourceNode: ChildNode, targetNode: ChildNode) {
   if (sourceNode.type === 'Loop') {
     // 源节点是循环节点
     if (targetNode.loopNodeId && targetNode.loopNodeId === sourceNode.id) {
       // 目标节点是循环内部节点
       if (sourceNode.innerStartNodeId && sourceNode.innerStartNodeId !== -1) {
         message.warning('当前循环已有对子节点的连线，请先删除该连线');
-        edge.remove();
         return;
       }
       const _params = { ...sourceNode };
@@ -121,11 +116,14 @@ export function handleLoopEdge(
     }
   }
   if (targetNode.type === 'Loop') {
+    if (sourceNode.type === 'IntentRecognition' || 'Condition' || 'QA') {
+      message.warning('条件分支，意图识别，问答不能作为循环的出口连接节点');
+      return;
+    }
     if (sourceNode.loopNodeId && sourceNode.loopNodeId === targetNode.id) {
       // 源节点是循环内部节点
       if (targetNode.innerEndNodeId && targetNode.innerEndNodeId !== -1) {
         message.warning('当前已有对子节点连接循环的出口，请先删除该连线');
-        edge.remove();
         return;
       }
       const _params = { ...targetNode };

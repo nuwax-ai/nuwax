@@ -216,7 +216,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             return data.type === 'Loop';
           });
         // 创建循环的子节点
-        // 创建循环的子节点
         if (loopNodeList.length) {
           loopNodeList.forEach((element: Node) => {
             const data = element.getData();
