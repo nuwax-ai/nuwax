@@ -13,12 +13,13 @@ import {
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
-import type {
-  AgentConversationInfo,
-  ConversationChatResponse,
-  CreatorInfo,
-} from '@/types/interfaces/agent';
+import type { CreatorInfo } from '@/types/interfaces/agent';
 import type { UploadInfo } from '@/types/interfaces/common';
+import {
+  ConversationChatResponse,
+  ConversationInfo,
+  MessageInfo,
+} from '@/types/interfaces/conversationInfo';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
@@ -27,7 +28,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useMatch, useRequest } from 'umi';
 import styles from './index.less';
 import ShowArea from './ShowArea';
-import { MessageInfo } from '@/types/interfaces/agent';
 
 const cx = classNames.bind(styles);
 
@@ -43,8 +43,7 @@ const Chat: React.FC = () => {
   const message = location.state?.message;
   const files = location.state?.files;
   // 会话信息
-  const [conversationInfo, setConversationInfo] =
-    useState<AgentConversationInfo>();
+  const [conversationInfo, setConversationInfo] = useState<ConversationInfo>();
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 会话问题建议
   const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
@@ -84,7 +83,6 @@ const Chat: React.FC = () => {
       conversationId: id,
       message: value,
       attachments,
-      debug: true,
     };
 
     // 将文件和消息加入会话中
@@ -114,7 +112,7 @@ const Chat: React.FC = () => {
       },
       body: params,
       onMessage: (data: ConversationChatResponse) => {
-        console.log(data, '-------')
+        console.log(data, '-------');
         // 更新UI状态...
         if (data.eventType === ConversationEventTypeEnum.FINAL_RESULT) {
           // 调试结果

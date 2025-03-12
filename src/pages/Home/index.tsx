@@ -38,7 +38,7 @@ const Home: React.FC = () => {
 
     runConversationCreate({
       agentId: info?.defaultAgentId,
-      devMode: true,
+      devMode: false,
     });
   }, []);
 

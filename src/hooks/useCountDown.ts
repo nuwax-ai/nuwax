@@ -8,7 +8,7 @@ const useCountDown = () => {
   const onClearTimer = () => {
     clearInterval(timer.current);
     timer.current = 0;
-  }
+  };
 
   const handleCount = () => {
     let startCount = COUNT_DOWN_LEN;

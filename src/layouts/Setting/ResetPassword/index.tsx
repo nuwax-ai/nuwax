@@ -3,6 +3,7 @@ import { PHONE } from '@/constants/home.constants';
 import useCountDown from '@/hooks/useCountDown';
 import { apiResetPassword, apiSendCode } from '@/services/account';
 import { SendCodeEnum } from '@/types/enums/login';
+import type { ResetPasswordForm } from '@/types/interfaces/login';
 import { validatePassword } from '@/utils/common';
 import { customizeRequiredNoStarMark } from '@/utils/form';
 import { Button, Form, FormProps, Input, message } from 'antd';
@@ -10,7 +11,6 @@ import classNames from 'classnames';
 import React from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
-import type { ResetPasswordForm } from '@/types/interfaces/login';
 
 const cx = classNames.bind(styles);
 
@@ -20,7 +20,6 @@ const cx = classNames.bind(styles);
 const ResetPassword: React.FC = () => {
   const { countDown, setCountDown, onClearTimer, handleCount } = useCountDown();
   const [form] = Form.useForm<ResetPasswordForm>();
-
 
   const { run, loading } = useRequest(apiResetPassword, {
     manual: true,
@@ -34,7 +33,7 @@ const ResetPassword: React.FC = () => {
     onError: () => {
       setCountDown(0);
       onClearTimer();
-    }
+    },
   });
 
   const onFinish: FormProps<ResetPasswordForm>['onFinish'] = (values) => {

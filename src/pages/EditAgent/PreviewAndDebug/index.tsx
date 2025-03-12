@@ -15,16 +15,17 @@ import {
   MessageTypeEnum,
 } from '@/types/enums/agent';
 import { OpenCloseEnum } from '@/types/enums/space';
-import type {
-  AgentConversationInfo,
-  ConversationChatResponse,
-  CreatorInfo,
-} from '@/types/interfaces/agent';
+import type { CreatorInfo } from '@/types/interfaces/agent';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadInfo } from '@/types/interfaces/common';
+import {
+  AttachmentFile,
+  ConversationChatResponse,
+  ConversationInfo,
+  MessageInfo,
+} from '@/types/interfaces/conversationInfo';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import classNames from 'classnames';
-import cloneDeep from 'lodash/cloneDeep';
 import moment from 'moment';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
@@ -43,8 +44,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
   onPressDebug,
 }) => {
   // 会话信息
-  const [conversationInfo, setConversationInfo] =
-    useState<AgentConversationInfo>();
+  const [conversationInfo, setConversationInfo] = useState<ConversationInfo>();
+  const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 会话问题建议
   const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
   // 发布者信息
@@ -58,8 +59,11 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     manual: true,
     debounceWait: 300,
     onSuccess: (result) => {
-      setConversationInfo(result);
-      setPublishUser(result?.agent?.publishUser);
+      if (result) {
+        setConversationInfo(result);
+        setMessageList(result.messageList || []);
+        setPublishUser(result.agent?.publishUser);
+      }
     },
   });
 
@@ -78,7 +82,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     {
       manual: true,
       debounceWait: 300,
-      onSuccess: (result: AgentConversationInfo) => {
+      onSuccess: (result: ConversationInfo) => {
         devConversationIdRef.current = result.id;
       },
     },
@@ -95,46 +99,15 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
 
   // 会话处理
   const handleConversation = async (
-    value: string,
-    files: UploadInfo[] = [],
+    message: string,
+    attachments: AttachmentFile[] = [],
   ) => {
-    if (!devConversationIdRef.current) {
-      return;
-    }
-    setChatSuggestList([]);
-    // 附件文件
-    const attachments =
-      files?.map((file) => ({
-        fileKey: file.key,
-        fileUrl: file.url,
-        fileName: file.fileName,
-        mimeType: file.mimeType,
-      })) || [];
-
     const params = {
       conversationId: devConversationIdRef.current,
-      message: value,
+      message,
       attachments,
       debug: true,
     };
-
-    // 将文件和消息加入会话中
-    const chatMessage = {
-      role: AssistantRoleEnum.USER,
-      type: MessageModeEnum.CHAT,
-      text: value,
-      time: moment(),
-      id: null,
-      ext: attachments,
-      finished: false,
-      metadata: null,
-      messageType: MessageTypeEnum.USER,
-    };
-
-    const _conversationInfo = cloneDeep(conversationInfo);
-    _conversationInfo.messageList.push(chatMessage);
-    setConversationInfo(_conversationInfo);
-
     // 启动连接
     const abortConnection = await createSSEConnection({
       url: `${process.env.BASE_URL}/api/agent/conversation/chat`,
@@ -145,7 +118,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       },
       body: params,
       onMessage: (data: ConversationChatResponse) => {
-        console.log(data)
+        console.log(data);
         // 更新UI状态...
         if (data.eventType === ConversationEventTypeEnum.FINAL_RESULT) {
           // 调试结果
@@ -157,13 +130,15 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
             text: outputText,
             time: moment(),
             id: null,
-            ext: '',
-            finished: true,
+            // ext: '',
+            // finished: true,
             metadata: null,
             messageType: MessageTypeEnum.ASSISTANT,
           };
-          _conversationInfo?.messageList?.push(chatResponseMessage);
-          setConversationInfo(_conversationInfo);
+          setMessageList(
+            (messageList) =>
+              [...messageList, chatResponseMessage] as MessageInfo[],
+          );
           // 是否开启问题建议,可用值:Open,Close
           if (agentConfigInfo.openSuggest === OpenCloseEnum.Open) {
             runChatSuggest(params);
@@ -178,6 +153,41 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       top: messageViewRef.current?.scrollHeight,
       behavior: 'smooth',
     });
+  };
+
+  // 发送消息
+  const onMessageSend = async (message: string, files: UploadInfo[] = []) => {
+    if (!devConversationIdRef.current) {
+      return;
+    }
+    setChatSuggestList([]);
+    // 附件文件
+    const attachments =
+      files?.map((file) => ({
+        fileKey: file.key,
+        fileUrl: file.url,
+        fileName: file.fileName,
+        mimeType: file.mimeType,
+      })) || [];
+
+    // 将文件和消息加入会话中
+    const chatMessage = {
+      role: AssistantRoleEnum.USER,
+      type: MessageModeEnum.CHAT,
+      text: message,
+      time: moment(),
+      id: Math.random(),
+      ext: attachments,
+      finished: false,
+      metadata: null,
+      messageType: MessageTypeEnum.USER,
+    };
+
+    setMessageList(
+      (messageList) => [...messageList, chatMessage] as MessageInfo[],
+    );
+    // 处理会话
+    await handleConversation(message, attachments);
   };
 
   // 清空会话记录，实际上是创建新的会话
@@ -222,7 +232,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
               {/*会话建议*/}
               <RecommendList
                 chatSuggestList={chatSuggestList}
-                onClick={handleConversation}
+                onClick={onMessageSend}
               />
             </>
           ) : (
@@ -234,7 +244,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
           )}
         </div>
         {/*会话输入框*/}
-        <ChatInput onEnter={handleConversation} onClear={handleClear} />
+        <ChatInput onEnter={onMessageSend} onClear={handleClear} />
       </div>
     </div>
   );
