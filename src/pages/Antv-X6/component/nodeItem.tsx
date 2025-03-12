@@ -50,7 +50,6 @@ const StartNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
 const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,
-  referenceList,
 }) => {
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -60,7 +59,6 @@ const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({
       <InputAndOut
         title="输入"
         fieldConfigs={outPutConfigs}
-        referenceList={referenceList}
         inputItemName={InputItemNameEnum.inputArgs}
         initialValues={{ inputArgs: params.inputArgs || [] }}
         handleChangeNodeConfig={handleChangeNodeConfig}
@@ -78,12 +76,7 @@ const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({
 };
 
 // 定义结束和过程输出的节点渲染
-const EndNode: React.FC<NodeDisposeProps> = ({
-  params,
-  Modified,
-  referenceList,
-  type,
-}) => {
+const EndNode: React.FC<NodeDisposeProps> = ({ params, Modified, type }) => {
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -118,7 +111,6 @@ const EndNode: React.FC<NodeDisposeProps> = ({
       <InputAndOut
         title="输出变量"
         fieldConfigs={outPutConfigs}
-        referenceList={referenceList}
         showCopy={true}
         inputItemName={InputItemNameEnum.outputArgs}
         initialValues={{ outputArgs: params.outputArgs || [] }}
@@ -157,23 +149,8 @@ const EndNode: React.FC<NodeDisposeProps> = ({
 };
 
 // 定义循环的节点渲染
-const CycleNode: React.FC<NodeDisposeProps> = ({
-  params,
-  Modified,
-  referenceList,
-}) => {
+const CycleNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   const [count, setCount] = useState<number | null>(1);
-
-  const [cycleReference, setCycleReference] = useState(referenceList);
-
-  useEffect(() => {
-    let _newObj = {
-      previousNodes: referenceList.innerPreviousNodes,
-      innerPreviousNodes: [],
-      argMap: referenceList.argMap,
-    };
-    setCycleReference(_newObj);
-  }, [referenceList]);
 
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
@@ -198,7 +175,6 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
             <InputAndOut
               title="循环数组"
               fieldConfigs={outPutConfigs}
-              referenceList={referenceList}
               inputItemName={InputItemNameEnum.inputArgs}
               handleChangeNodeConfig={handleChangeNodeConfig}
               initialValues={{ inputArgs: params.inputArgs || [] }}
@@ -222,7 +198,6 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
           title="中间变量"
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.variableArgs}
-          referenceList={referenceList}
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ variableArgs: params.variableArgs || [] }}
         />
@@ -232,7 +207,6 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
           title="输出"
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.outputArgs}
-          referenceList={cycleReference}
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ outputArgs: params.outputArgs || [] }}
         />
@@ -242,11 +216,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
 };
 
 // 定义变量的节点渲染
-const VariableNode: React.FC<NodeDisposeProps> = ({
-  params,
-  Modified,
-  referenceList,
-}) => {
+const VariableNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   const outputArgs = params.outputArgs || null;
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
@@ -257,9 +227,9 @@ const VariableNode: React.FC<NodeDisposeProps> = ({
     { label: '设置变量值', value: 'SET_VARIABLE' },
     { label: '获取变量值', value: 'GET_VARIABLE' },
   ];
-  useEffect(() => {
-    console.log('aaabbb', params.inputArgs);
-  }, [params.inputArgs]);
+  // useEffect(() => {
+  //   console.log('aaabbb', params.inputArgs);
+  // }, [params.inputArgs]);
 
   useEffect(() => {
     if (params.configType === null) {
@@ -285,7 +255,6 @@ const VariableNode: React.FC<NodeDisposeProps> = ({
         <InputAndOut
           title={'设置变量'}
           fieldConfigs={outPutConfigs}
-          referenceList={referenceList}
           inputItemName={InputItemNameEnum.inputArgs}
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ inputArgs: params.inputArgs || [] }}
@@ -401,7 +370,6 @@ export const ArrayLinkSetting: React.FC<{
 const TextProcessingNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,
-  referenceList,
 }) => {
   // 输入参数的初始值
 
@@ -433,7 +401,6 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
       <InputAndOut
         title="输入"
         fieldConfigs={outPutConfigs}
-        referenceList={referenceList}
         inputItemName={InputItemNameEnum.inputArgs}
         handleChangeNodeConfig={handleChangeNodeConfig}
         initialValues={{ inputArgs: params.inputArgs || [] }}
@@ -494,11 +461,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
 };
 
 // 定义代码节点
-const CodeNode: React.FC<NodeDisposeProps> = ({
-  params,
-  Modified,
-  referenceList,
-}) => {
+const CodeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   const [show, setShow] = useState(false);
 
   // 修改模型的代码
@@ -517,7 +480,6 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
         inputItemName={InputItemNameEnum.inputArgs}
         handleChangeNodeConfig={handleChangeNodeConfig}
         initialValues={{ inputArgs: params.inputArgs || [] }}
-        referenceList={referenceList}
       />
       <div className="node-item-style">
         <div className="dis-sb margin-bottom">

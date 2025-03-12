@@ -9,6 +9,7 @@ import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Form, message, Select, Tag } from 'antd';
 import React, { useEffect } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
+import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import './condition.less';
 const options = [
@@ -33,9 +34,9 @@ export const Condition: React.FC<ConditionProps> = ({
   field,
   onChange,
   form,
-  referenceList,
   inputItemName,
 }) => {
+  const { referenceList } = useModel('workflow');
   // 因为这里是数组嵌套数组
   const changeInputValue = (
     e: string | object,
@@ -96,7 +97,6 @@ export const Condition: React.FC<ConditionProps> = ({
           // rules={[{ required: true }]}
         >
           <InputOrReference
-            referenceList={referenceList}
             value={form.getFieldValue([field.name, 'firstArg', 'bindValue'])}
             onChange={(value, type) =>
               changeInputValue(value, 'firstArg', type)
@@ -111,7 +111,6 @@ export const Condition: React.FC<ConditionProps> = ({
           // rules={[{ required: true }]}
         >
           <InputOrReference
-            referenceList={referenceList}
             value={form.getFieldValue([field.name, 'secondArg', 'bindValue'])}
             fieldName={['conditionArgs', field.name, 'secondArg', 'bindValue']}
             onChange={(value, type) =>
@@ -134,7 +133,6 @@ export const ConditionList: React.FC<ConditionListProps> = ({
   removeItem,
   handleChangeNodeConfig,
   draggableId, // 新增一个 draggableId 属性
-  referenceList,
 }) => {
   const [form] = Form.useForm();
 
@@ -217,7 +215,6 @@ export const ConditionList: React.FC<ConditionListProps> = ({
                                 },
                                 form,
                                 onChange: submitForm,
-                                referenceList,
                                 inputItemName: 'conditionArgs',
                               })}
                               <MinusCircleOutlined
@@ -266,7 +263,6 @@ export const ConditionList: React.FC<ConditionListProps> = ({
 export const ConditionNode: React.FC<NodeDisposeProps> = ({
   params,
   // Modified,
-  referenceList,
   updateNode,
 }) => {
   // 监听params.conditionBranchConfigs的变化，并在变化时更新节点
@@ -430,7 +426,6 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
                   handleChangeNodeConfig={handleChangeNodeConfig}
                   draggableId={item.uuid}
                   index={index}
-                  referenceList={referenceList}
                 />
               );
             })}

@@ -25,11 +25,9 @@ import '../index.less';
 import { outPutConfigs } from '../params';
 import { FormList, InputAndOut, TreeOutput } from './commonNode';
 // 定义大模型节点
-
 const ModelNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,
-  referenceList,
   updateNode,
 }) => {
   // 打开、关闭弹窗
@@ -85,7 +83,6 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
         <InputAndOut
           title="输入"
           fieldConfigs={outPutConfigs}
-          referenceList={referenceList}
           inputItemName={InputItemNameEnum.inputArgs}
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ inputArgs: params.inputArgs || [] }}
@@ -139,7 +136,6 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
 const IntentionNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,
-  referenceList,
   updateNode,
 }) => {
   // 修改模型的入参和出参
@@ -169,7 +165,6 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
         <InputAndOut
           title="输入"
           fieldConfigs={outPutConfigs}
-          referenceList={referenceList}
           inputItemName={InputItemNameEnum.inputArgs}
           handleChangeNodeConfig={handleChangeNodeConfig}
           initialValues={{ inputArgs: params.inputArgs || [] }}
@@ -208,7 +203,6 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
 const QuestionsNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,
-  referenceList,
   updateNode,
 }) => {
   // 修改模型的入参和出参
@@ -278,7 +272,6 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
           title="输入"
           fieldConfigs={outPutConfigs}
           handleChangeNodeConfig={handleChangeNodeConfig}
-          referenceList={referenceList}
           inputItemName={InputItemNameEnum.inputArgs}
           initialValues={{ inputArgs: params.inputArgs || [] }}
         />
@@ -334,11 +327,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
 };
 
 // 定义http工具
-const HttpToolNode: React.FC<NodeDisposeProps> = ({
-  params,
-  Modified,
-  referenceList,
-}) => {
+const HttpToolNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   // 请求方法的选项
   const methodOption = [
     { label: 'GET', value: 'GET' },
@@ -417,7 +406,6 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
           title="Header"
           handleChangeNodeConfig={handleChangeNodeConfig}
           fieldConfigs={outPutConfigs}
-          referenceList={referenceList}
           inputItemName={InputItemNameEnum.headers}
           initialValues={{
             headers: params.headers || [],
@@ -427,7 +415,6 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
           title="Query"
           handleChangeNodeConfig={handleChangeNodeConfig}
           fieldConfigs={outPutConfigs}
-          referenceList={referenceList}
           inputItemName={InputItemNameEnum.queries}
           initialValues={{
             queries: params.queries || [],
@@ -437,7 +424,6 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
           title="Body"
           handleChangeNodeConfig={handleChangeNodeConfig}
           fieldConfigs={outPutConfigs}
-          referenceList={referenceList}
           inputItemName={InputItemNameEnum.body}
           initialValues={{
             body: params.body || [],

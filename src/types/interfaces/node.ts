@@ -204,8 +204,6 @@ export interface NodeDrawerProps {
   onGetNodeConfig: (config: ChildNode, update?: boolean) => void;
 
   handleNodeChange: (action: string, data: ChildNode) => void;
-  // 当前节点所需要的上级节点的出参
-  referenceList: NodePreviousAndArgMap;
   getRefernece: (id: number) => void;
 }
 

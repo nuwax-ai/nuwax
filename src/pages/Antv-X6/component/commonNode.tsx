@@ -39,7 +39,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   title,
   fieldConfigs,
   handleChangeNodeConfig,
-  referenceList,
   inputItemName = 'inputArgs',
   initialValues,
   showCopy = false,
@@ -61,28 +60,26 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   const addInputItem = () => {
     const nextItems = [...(form.getFieldValue(inputItemName) || []), formItem];
     form.setFieldsValue({ [inputItemName]: nextItems });
+    handleChangeNodeConfig({ [inputItemName]: nextItems });
   };
 
   const removeItem = (index: number) => {
     const formValue = form.getFieldsValue()[inputItemName];
     const _newValue = formValue.filter((_: unknown, i: number) => i !== index);
     form.setFieldsValue({ [inputItemName]: _newValue });
+    handleChangeNodeConfig({ [inputItemName]: _newValue });
   };
 
   // 提交form表单
   const submitForm = () => {
     const raw = form.getFieldsValue(true);
+    console.log('aaa', raw);
     handleChangeNodeConfig(raw);
     // handleChangeNodeConfig(values);
   };
 
   useEffect(() => {
-    if (
-      form.getFieldsValue(true)[inputItemName] &&
-      !form.getFieldsValue(true)[inputItemName].length
-    ) {
-      form.setFieldsValue(initialValues);
-    }
+    form.setFieldsValue(initialValues);
   }, [initialValues]);
 
   useEffect(() => {
@@ -151,13 +148,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                           ]}
                         >
                           <InputOrReference
-                            referenceList={
-                              referenceList || {
-                                previousNodes: [],
-                                innerPreviousNodes: [],
-                                argMap: {},
-                              }
-                            }
                             onChange={submitForm}
                             value={form.getFieldValue([
                               inputItemName,
