@@ -116,7 +116,11 @@ export function handleLoopEdge(sourceNode: ChildNode, targetNode: ChildNode) {
     }
   }
   if (targetNode.type === 'Loop') {
-    if (sourceNode.type === 'IntentRecognition' || 'Condition' || 'QA') {
+    if (
+      sourceNode.type === 'IntentRecognition' ||
+      sourceNode.type === 'Condition' ||
+      sourceNode.type === 'QA'
+    ) {
       message.warning('条件分支，意图识别，问答不能作为循环的出口连接节点');
       return;
     }

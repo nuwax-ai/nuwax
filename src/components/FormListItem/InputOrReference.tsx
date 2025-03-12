@@ -20,6 +20,10 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   const { referenceList, getValue, getLoopValue } = useModel('workflow');
 
   const [newValue, setNewValue] = useState('');
+
+  const [inputValue, setInputValue] = useState('');
+
+  const [noRefernece, setNoRefernece] = useState('');
   // InputOrReference.tsx
   const updateValues = (newValue: string, valueType: 'Input' | 'Reference') => {
     if (fieldName && form) {
@@ -28,7 +32,6 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
       form.setFieldValue([...basePath, 'bindValueType'], valueType); // 使用数组路径
       //  新增 dataType 处理逻辑
       if (valueType === 'Reference') {
-        console.log(referenceList?.argMap);
         const refDataType = referenceList?.argMap?.[newValue]?.dataType;
         form.setFieldValue([...basePath, 'dataType'], refDataType || 'String');
         // 获取当前的name
@@ -122,6 +125,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
     } else {
       setNewValue(getValue(value));
     }
+    setInputValue(value);
   }, [value, referenceList]);
 
   // // 初始化时设置值
@@ -143,9 +147,10 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           </Tag>
         ) : (
           <Input
-            value={''}
+            value={noRefernece}
             placeholder={placeholder || '请输入或引用参数'}
-            onChange={handleInputChange}
+            onChange={(e) => setNoRefernece(e.target.value)}
+            onBlur={handleInputChange}
             style={{ marginRight: 8 }}
             size="small"
             disabled={isDisabled}
@@ -153,9 +158,10 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         )
       ) : (
         <Input
-          value={value}
+          value={inputValue}
           placeholder={placeholder || '请输入或引用参数'}
-          onChange={handleInputChange}
+          onChange={(e) => setInputValue(e.target.value)}
+          onBlur={handleInputChange}
           style={{ marginRight: 8 }}
           size="small"
           disabled={isDisabled}

@@ -367,7 +367,6 @@ export const getLength = (
   newData: ChildNode,
   key: 'conditionBranchConfigs' | 'intentConfigs' | 'options',
 ) => {
-  console.log(key);
   const _oldLength = oldData.nodeConfig?.[key]?.length || 0;
   const _newLength = newData.nodeConfig?.[key]?.length || 0;
   if (_oldLength !== _newLength) {

@@ -1,125 +1,15 @@
-import InputOrReference from '@/components/FormListItem/InputOrReference';
+import ConditionItem from '@/components/FormListItem/Condition';
 import { ConditionBranchConfigs } from '@/types/interfaces/node';
 import {
   ConditionListProps,
-  ConditionProps,
   NodeDisposeProps,
 } from '@/types/interfaces/workflow';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Form, message, Select, Tag } from 'antd';
-import React, { useCallback, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
-import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import './condition.less';
-const options = [
-  { label: '等于', value: 'EQUAL', displayValue: '=' },
-  { label: '不等于', value: 'NOT_EQUAL', displayValue: '≠' },
-  { label: '长度大于', value: 'GREATER_THAN', displayValue: '>' },
-  {
-    label: '长度大于等于',
-    value: 'GREATER_THAN_OR_EQUAL',
-    displayValue: '≥',
-  },
-  { label: '长度小于', value: 'LESS_THAN', displayValue: '<' },
-  { label: '长度小于等于', value: 'LESS_THAN_OR_EQUAL', displayValue: '≤' },
-  { label: '包含', value: 'CONTAINS', displayValue: '⊃' },
-  { label: '不包含', value: 'NOT_CONTAINS', displayValue: '⊅' },
-  { label: '匹配正则表达式', value: 'MATCH_REGEX', displayValue: '~' },
-  { label: '为空', value: 'IS_NULL', displayValue: '∅' },
-  { label: '不为空', value: 'NOT_NULL', displayValue: '!∅' },
-];
-
-export const Condition: React.FC<ConditionProps> = ({
-  field,
-  onChange,
-  form,
-  inputItemName,
-}) => {
-  const { referenceList } = useModel('workflow');
-
-  // 将referenceList作为参数传递给changeInputValue
-  const changeInputValue = useCallback(
-    (
-      e: string | object,
-      fieldName: 'firstArg' | 'secondArg',
-      type?: 'Input' | 'Reference',
-      referenceList?: any,
-    ) => {
-      const newValue = e
-        ? type === 'Input'
-          ? {
-              bindValue: e,
-              bindValueType: 'Input',
-              dataType: 'String',
-              name: '',
-            }
-          : {
-              bindValue: referenceList.argMap[e as string].key,
-              bindValueType: 'Reference',
-              name: referenceList.argMap[e as string].name,
-              dataType: referenceList.argMap[e as string].dataType || 'String',
-            }
-        : {
-            bindValue: e,
-            bindValueType: 'Input',
-            dataType: 'String',
-            name: '',
-          };
-
-      form.setFieldsValue({
-        [inputItemName]: {
-          [field.name]: {
-            [fieldName]: newValue,
-          },
-        },
-      });
-      onChange?.();
-    },
-    [form, inputItemName, onChange],
-  );
-
-  return (
-    <div className="condition-right-item" key={field.key}>
-      <Form.Item
-        style={{ marginRight: '8px' }}
-        name={[field.name, 'compareType']}
-      >
-        <Select
-          className="condition-type-select-style"
-          popupMatchSelectWidth={false}
-          options={options}
-          optionLabelProp="displayValue"
-          placeholder="请选择"
-          style={{ width: 55 }}
-        ></Select>
-      </Form.Item>
-      <Form.Item style={{ marginRight: '8px', flex: 1 }}>
-        <Form.Item name={[field.name, 'firstArg', 'bindValue']}>
-          <InputOrReference
-            value={form.getFieldValue([field.name, 'firstArg', 'bindValue'])}
-            onChange={(value, type) =>
-              changeInputValue(value, 'firstArg', type, referenceList)
-            }
-            fieldName={['conditionArgs', field.name, 'firstArg', 'bindValue']}
-            form={form}
-            isDisabled
-          />
-        </Form.Item>
-        <Form.Item name={[field.name, 'secondArg', 'bindValue']}>
-          <InputOrReference
-            value={form.getFieldValue([field.name, 'secondArg', 'bindValue'])}
-            fieldName={['conditionArgs', field.name, 'secondArg', 'bindValue']}
-            onChange={(value, type) =>
-              changeInputValue(value, 'secondArg', type, referenceList)
-            }
-            form={form}
-          />
-        </Form.Item>
-      </Form.Item>
-    </div>
-  );
-};
 
 // 修改 ConditionList 组件
 export const ConditionList: React.FC<ConditionListProps> = ({
@@ -204,16 +94,17 @@ export const ConditionList: React.FC<ConditionListProps> = ({
                         <div className="flex-1">
                           {fields.map((field) => (
                             <div key={field.key} className="dis-sb">
-                              {Condition({
-                                field,
-                                onRemove: () => {
+                              <ConditionItem
+                                field={field}
+                                onRemove={() => {
                                   remove(field.name);
                                   submitForm();
-                                },
-                                form,
-                                onChange: submitForm,
-                                inputItemName: 'conditionArgs',
-                              })}
+                                }}
+                                form={form}
+                                onChange={submitForm}
+                                inputItemName={'conditionArgs'}
+                              />
+
                               <MinusCircleOutlined
                                 onClick={() => {
                                   remove(field.name);

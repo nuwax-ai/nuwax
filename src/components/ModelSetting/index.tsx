@@ -227,7 +227,7 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({
           min={5}
           max={4093}
           step={1}
-          title={'最大恢复长度'}
+          title={'最大回复长度'}
           configKey="maxTokens"
           content="控制模型输出的 Tokens 长度上限。通常 100 Tokens 约等于 150 个中文汉字。"
         />

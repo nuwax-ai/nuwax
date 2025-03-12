@@ -18,7 +18,7 @@ interface InputListProps {
 }
 // 根据输入的list遍历创建输入框
 
-const InputList: React.FC<InputListProps> = ({
+export const InputList: React.FC<InputListProps> = ({
   title,
   inputItemName,
   onChange,
@@ -33,7 +33,7 @@ const InputList: React.FC<InputListProps> = ({
 
   // 表单提交
   const submitForm = () => {
-    const values = form.getFieldsValue();
+    const values = form.getFieldsValue(true);
     onChange(values);
   };
 

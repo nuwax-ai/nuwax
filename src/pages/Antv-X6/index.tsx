@@ -172,7 +172,6 @@ const Workflow: React.FC = () => {
   const changeZoom = (val: number | string) => {
     setInfo((prev) => {
       if (!prev || !prev.extension) return prev;
-
       const numVal = typeof val === 'string' ? parseFloat(val) : val;
       if (prev.extension.size !== numVal) {
         onConfirm({
@@ -186,19 +185,30 @@ const Workflow: React.FC = () => {
     });
   };
   // 获取当前节点的参数
-  const getRefernece = async (id: number) => {
-    // 获取节点需要的引用参数
-    const _res = await service.getOutputArgs(id);
-    if (_res.code === Constant.success) {
-      if (
-        _res.data &&
-        _res.data.previousNodes &&
-        _res.data.previousNodes.length
-      ) {
-        setReferenceList(_res.data);
+  const getRefernece = (() => {
+    let timer: NodeJS.Timeout | null = null;
+
+    return async (id: number) => {
+      if (timer) {
+        clearTimeout(timer);
       }
-    }
-  };
+
+      timer = setTimeout(async () => {
+        // 获取节点需要的引用参数
+        const _res = await service.getOutputArgs(id);
+        if (_res.code === Constant.success) {
+          if (
+            _res.data &&
+            _res.data.previousNodes &&
+            _res.data.previousNodes.length
+          ) {
+            setReferenceList(_res.data);
+          }
+        }
+        timer = null;
+      }, 1000); // 1秒防抖
+    };
+  })();
 
   // 查询节点的指定信息
   const getNodeConfig = async (id: number) => {
@@ -377,16 +387,6 @@ const Workflow: React.FC = () => {
     }
   };
 
-  // 发布，保存数据
-  const onSubmit = async (values: IPublish) => {
-    // 获取所有节点,保存位置
-    const _params = { ...values, workflowId: info?.id };
-    const _res = await service.publishWorkflow(_params);
-    if (_res.code === Constant.success) {
-      message.success('发布成功');
-    }
-  };
-
   const handleNodeChange = (action: string, data: ChildNode) => {
     switch (action) {
       case 'TestRun': {
@@ -505,6 +505,19 @@ const Workflow: React.FC = () => {
     }
   };
 
+  // 发布，保存数据
+  const onSubmit = async (values: IPublish) => {
+    const volid = await volidWorkflow();
+    if (volid) {
+      // 获取所有节点,保存位置
+      const _params = { ...values, workflowId: info?.id };
+      const _res = await service.publishWorkflow(_params);
+      if (_res.code === Constant.success) {
+        message.success('发布成功');
+      }
+    }
+  };
+
   // 节点试运行
   const nodeTestRun = async (params?: DefaultObjectType) => {
     const _params = {
@@ -558,27 +571,7 @@ const Workflow: React.FC = () => {
 
   // 试运行所有节点
   const testRunAllNode = async (params: ITestRun) => {
-    // 获取完整的连线列表
-    // const _edges = await getNodeRelation(
-    //   graphParams.nodeList,
-    //   info?.startNode.id as number,
-    //   info?.endNode.id as number,
-    // );
-    // if (!_edges) {
-    //   message.warning('没有完整的连线，需要一条从开始一直贯穿到结束的连线');
-    //   return;
-    // }
-
-    // // 根据连线列表，查看是否有第一个数据是开始节点的id，最后一个是结束节点的信息
-    // const fullPath = _edges.filter((item: number[]) => {
-    //   return (
-    //     item[0] === info?.startNode.id &&
-    //     item[item.length - 1] === info.endNode.id
-    //   );
-    // });
-    // 如果有完整的连线，那么就可以进行试运行
-    // if (fullPath && fullPath.length > 0) {
-    await getDetails();
+    // await getDetails();
     setLoading(true);
     // 遍历检查所有节点是否都已经输入了参数
     const abortConnection = await createSSEConnection({

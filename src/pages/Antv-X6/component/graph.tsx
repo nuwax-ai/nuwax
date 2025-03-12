@@ -423,9 +423,6 @@ const initGraph = ({
         setEdgeAttributes(edge);
         edge.toFront();
         return;
-      } else {
-        edge.remove();
-        return;
       }
     }
     // 校验是否从右侧连接桩连入，左侧连接桩连出

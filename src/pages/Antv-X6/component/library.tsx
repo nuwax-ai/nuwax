@@ -2,6 +2,7 @@
 import Created from '@/components/Created';
 import { SkillList } from '@/components/Skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { InputItemNameEnum } from '@/types/enums/node';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import type { NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
@@ -9,14 +10,12 @@ import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Empty, Popover, Select, Slider } from 'antd';
 import React, { useState } from 'react';
 import '../index.less';
-import { outPutConfigs } from '../params';
-import { InputAndOut, TreeOutput } from './commonNode';
-
+import { TreeOutput } from './commonNode';
+import { InputList } from './pluginNode';
 // 定义知识库
 const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,
-  referenceList,
   updateNode,
 }) => {
   // 打开、关闭弹窗
@@ -50,13 +49,11 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
     <div className="knowledge-node">
       {/* 输入参数 */}
       <div className="node-item-style">
-        <InputAndOut
-          title="输入"
-          fieldConfigs={outPutConfigs}
-          referenceList={referenceList}
-          inputItemName="inputArgs"
+        <InputList
+          title={'输入'}
           initialValues={{ inputArgs: params.inputArgs || [] }}
-          handleChangeNodeConfig={handleChangeNodeConfig}
+          onChange={handleChangeNodeConfig}
+          inputItemName={InputItemNameEnum.inputArgs}
         />
       </div>
       {/* 知识库选择 */}
@@ -120,6 +117,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
             min={1}
             max={20}
             step={1}
+            marks={{ 1: 1, 20: 20 }}
             onChange={(value) =>
               handleChangeNodeConfig({ ...params, maxRecallCount: value })
             }
@@ -144,6 +142,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
             min={0.01}
             max={0.99}
             step={0.01}
+            marks={{ 0.01: 0.01, 0.99: 0.99 }}
             onChange={(value) =>
               handleChangeNodeConfig({ ...params, matchingDegree: value })
             }
