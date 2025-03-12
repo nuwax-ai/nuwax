@@ -1,4 +1,5 @@
-import { Node } from '@antv/x6';
+import { ChildNode } from '@/types/interfaces/graph';
+import { Edge, Node } from '@antv/x6';
 // 边界检查并调整子节点位置
 // 调整父节点尺寸以包含所有子节点
 
@@ -65,3 +66,27 @@ export const adjustParentSize = (parentNode: Node) => {
     { skipParentHandler: true },
   );
 };
+
+// 检查是否是循环内部的节点
+export function isConnectionValid(
+  sourceNode: ChildNode,
+  targetNode: ChildNode,
+) {
+  if (sourceNode.loopNodeId || targetNode.loopNodeId) {
+    const currentLoopNodeId = sourceNode.loopNodeId || targetNode.loopNodeId;
+    return (
+      sourceNode.id === currentLoopNodeId && targetNode.id === currentLoopNodeId
+    );
+  }
+  return true;
+}
+
+export function setEdgeAttributes(edge: Edge) {
+  edge.attr({
+    line: {
+      strokeDasharray: '', // 移除虚线样式
+      stroke: '#C2C8D5', // 设置边的颜色
+      strokeWidth: 1, // 设置边的宽度
+    },
+  });
+}

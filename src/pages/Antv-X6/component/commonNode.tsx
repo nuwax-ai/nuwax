@@ -79,12 +79,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   };
 
   useEffect(() => {
-    // console.log('ee',initialValues,form.getFieldsValue(true)[inputItemName])
-    // if (
-    //   form.getFieldsValue(true)[inputItemName] &&
-    //   !form.getFieldsValue(true)[inputItemName].length
-    // ) {
-    // }
     form.setFieldsValue(initialValues);
   }, [initialValues]);
 

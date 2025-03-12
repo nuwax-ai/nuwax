@@ -412,30 +412,42 @@ const initGraph = ({
       const targetNode = edge.getTargetNode()?.getData();
       // 如果是循环内部的节点被外部的节点连接或者内部的节点连接外部的节点，就告知不能连接
       if (sourceNode.loopNodeId || targetNode.loopNodeId) {
-        if (
-          sourceNode.loopNodeId &&
-          (targetNode.type !== 'Loop' ||
-            targetNode.loopNodeId !== sourceNode.loopNodeId)
-        ) {
+        // 获取当前循环节点ID
+        const currentLoopNodeId =
+          sourceNode.loopNodeId || targetNode.loopNodeId;
+        // 检查源节点和目标节点是否允许连接
+        const isValidConnection = (node: any) => {
+          if (node.type === 'Loop') {
+            // 如果是Loop节点，检查ID是否匹配
+            return node.id === currentLoopNodeId;
+          } else {
+            // 如果不是Loop节点，检查loopNodeId是否匹配
+            return node.loopNodeId === currentLoopNodeId;
+          }
+        };
+        if (!isValidConnection(sourceNode) || !isValidConnection(targetNode)) {
           message.warning('不能连接外部节点');
           graph.removeEdge(edge);
           return;
-        }
-        if (
-          targetNode.loopNodeId &&
-          (sourceNode.type !== 'Loop' ||
-            targetNode.loopNodeId !== sourceNode.loopNodeId)
-        ) {
-          message.warning('循环内部节点不能被外部节点连接');
-          graph.removeEdge(edge);
-          return;
+        } else {
+          graph.addEdge(edge); // 新增行：显式添加边到
+          edge.attr({
+            line: {
+              strokeDasharray: '', // 移除虚线样式
+              stroke: '#C2C8D5', // 设置边的颜色
+              strokeWidth: 1, // 设置边的宽度
+            },
+          });
         }
       }
 
       if (sourceNode.type === 'Loop') {
         // 看连接的点是否时内部的节点
         if (targetNode.loopNodeId && targetNode.loopNodeId === sourceNode.id) {
-          if (sourceNode.innerStartNodeId) {
+          if (
+            sourceNode.innerStartNodeId &&
+            sourceNode.innerStartNodeId !== -1
+          ) {
             message.warning('当前循环已有对子节点的连线，请先删除该连线');
             graph.removeEdge(edge);
             return;
@@ -457,7 +469,7 @@ const initGraph = ({
       if (targetNode.type === 'Loop') {
         // 是否是循环内部的节点连接循环
         if (sourceNode.loopNodeId && sourceNode.loopNodeId === targetNodeId) {
-          if (targetNode.innerEndNodeId) {
+          if (targetNode.innerEndNodeId && targetNode.innerEndNodeId !== -1) {
             message.warning('当前已有对子节点连接循环的出口，请先删除该连线');
             graph.removeEdge(edge);
             return;
