@@ -52,9 +52,9 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       if (!graphRef.current) return;
 
       const point = graphRef.current.clientToGraph(e.x, e.y);
-      const ports = generatePorts(child);
 
       const extension = child.nodeConfig.extension || {};
+      const ports = generatePorts(child);
 
       // 根据情况，动态给予右侧的out连接桩
       const newNode = graphRef.current.addNode({
@@ -72,6 +72,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         zIndex: 99,
         ports: ports,
       });
+      console.log(newNode);
       // 添加节点
       graphRef.current.addNode(newNode);
       if (child.loopNodeId) {
@@ -118,10 +119,10 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           );
 
           if (_length) {
-            const newHeight = getHeight(newData.type, _length);
-            node.setSize(304, newHeight);
             // 使用prop方法更新端口配置
-            node.prop('ports', generatePorts(newData));
+            const ports = generatePorts(newData);
+            node.prop('ports', ports);
+            // node.updatePorts();
           }
         }
         if (newData.type === 'QA') {
@@ -198,13 +199,21 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         graphRef.current.clearCells();
 
         // 创建主节点
-        const mainNodes = graphParams.nodeList.map((node) => ({
-          ...createBaseNode(node),
-          data: {
-            ...node,
-            onChange: handleNodeChange, // 注入事件处理器
-          },
-        }));
+        const mainNodes = graphParams.nodeList.map((node) => {
+          const baseNode = createBaseNode(node);
+          // 从节点配置中获取实际尺寸
+          const extension = node.nodeConfig?.extension || {};
+          return {
+            ...baseNode,
+            width: extension.width || 304, // 显式设置宽度
+            height: extension.height || 76,
+            data: {
+              ...node,
+              onChange: handleNodeChange,
+            },
+          };
+        });
+        console.log(mainNodes);
         graphRef.current.fromJSON({
           nodes: mainNodes, // X6 会自动实例化节点
         });
@@ -234,45 +243,10 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             return createEdge(edge);
           })
           .filter(Boolean);
-        console.log(edges);
+
         // 5. 批量添加边
         graphRef.current.addEdges(edges);
       }
-    };
-
-    // 新增函数：检测坐标是否在 Loop 节点内
-    const findLoopParentAtPosition = (position: { x: number; y: number }) => {
-      if (!graphRef.current || !graphRef.current.container) return null;
-
-      // 1. 获取容器滚动偏移
-      const container = graphRef.current.container;
-      const scrollLeft = container.scrollLeft;
-      const scrollTop = container.scrollTop;
-
-      // 2. 计算修正坐标
-      const adjustedX = position.x + scrollLeft;
-      const adjustedY = position.y + scrollTop;
-
-      // 3. 转换到画布坐标系
-      const graphPoint = graphRef.current.clientToGraph(
-        adjustedX,
-        adjustedY,
-        true,
-      );
-
-      // 4. 检测逻辑
-      const loops = graphRef.current.getNodes().filter((node: Node) => {
-        return node.getData()?.type === 'Loop';
-      });
-
-      for (const loopNode of loops) {
-        const bbox = loopNode.getBBox();
-        if (bbox.containsPoint(graphPoint)) {
-          return loopNode.id;
-        }
-      }
-
-      return null;
     };
 
     // 将子组件的方法暴露给父组件
@@ -285,7 +259,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       changeGraphZoom,
       drawGraph,
       selectNode,
-      findLoopParentAtPosition,
     }));
 
     useEffect(() => {

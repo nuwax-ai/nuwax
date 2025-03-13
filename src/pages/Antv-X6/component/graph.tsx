@@ -333,7 +333,9 @@ const initGraph = ({
         height: _size.height,
       };
       const _data = parentNode.getData();
-      _data.nodeConfig.extension = extension;
+      if (_data.nodeConfig) {
+        _data.nodeConfig.extension = extension;
+      }
       // 找到循环节点中当前被移动的节点
       for (let item of _data.innerNodes) {
         if (item.id === data.id) {
@@ -358,9 +360,10 @@ const initGraph = ({
     // 遍历所有节点
     changePortSize();
   });
-
+  // 点击空白处，取消所有的选中
   graph.on('blank:click', () => {
     changeDrawer(null); // 调用回调函数以更新抽屉内容
+    graph.cleanSelection();
   });
 
   // 监听边选中
@@ -416,8 +419,16 @@ const initGraph = ({
     }
     // 处理循环节点的逻辑
     if (sourceNode.type === 'Loop' || targetNode.type === 'Loop') {
-      const _params = handleLoopEdge(sourceNode, targetNode);
-      if (_params) {
+      // 确保传递正确的参数类型给 handleLoopEdge 函数
+      const _params = handleLoopEdge(
+        sourceNode as ChildNode,
+        targetNode as ChildNode,
+      );
+      if (typeof _params === 'string' && _params === 'error') {
+        edge.remove();
+        return;
+      }
+      if (_params && typeof _params !== 'string') {
         changeCondition(_params, targetNode.id);
         graph.addEdge(edge);
         setEdgeAttributes(edge);

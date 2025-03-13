@@ -25,8 +25,16 @@ const { PluginInNode, DatabaseNode } = ReferenceNode;
 const { KnowledgeNode } = Library;
 
 // 定义试运行,后面删除
-const TestNode: React.FC = () => {
-  return <div className="node-title-style">试运行输入</div>;
+const LoopContinue: React.FC = () => {
+  return <div className="node-title-style">用于终止当前循环，执行下次循环</div>;
+};
+
+const LoopBreak: React.FC = () => {
+  return (
+    <div className="node-title-style">
+      用于立即终止当前所在的循环，跳出循环体
+    </div>
+  );
 };
 
 const NodeDrawer: React.FC<NodeDrawerProps> = ({
@@ -240,8 +248,12 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
             }
           />
         );
+      case 'LoopBreak':
+        return <LoopBreak />;
+      case 'LoopContinue':
+        return <LoopContinue />;
       default:
-        return <TestNode />;
+        return;
     }
   };
 
@@ -284,7 +296,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
     if (foldWrapItem.id !== 0) {
       handleUpdate();
     }
-  }, [foldWrapItem]);
+  }, [foldWrapItem.id]);
 
   useEffect(() => {
     // 清除已有定时器

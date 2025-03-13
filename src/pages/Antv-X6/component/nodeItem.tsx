@@ -52,13 +52,15 @@ const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,
 }) => {
+  // 添加状态保持稳定key
+  const [outputKey] = useState(() => uuidv4());
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
   };
   return (
     <>
       <InputAndOut
-        key={uuidv4()}
+        nodeKey={outputKey}
         title="输入"
         fieldConfigs={outPutConfigs}
         inputItemName={InputItemNameEnum.inputArgs}
@@ -83,7 +85,8 @@ const EndNode: React.FC<NodeDisposeProps> = ({ params, Modified, type }) => {
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
   };
-
+  // 添加状态保持稳定key
+  const [outputKey] = useState(() => uuidv4());
   const segOptions = [
     { label: '返回变量', value: 'VARIABLE' },
     { label: '返回文本', value: 'TEXT' },
@@ -111,7 +114,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({ params, Modified, type }) => {
         </div>
       )}
       <InputAndOut
-        key={uuidv4()}
+        nodeKey={outputKey}
         title="输出变量"
         fieldConfigs={outPutConfigs}
         showCopy={true}
@@ -157,6 +160,8 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
   Modified,
   retrieveRefernece,
 }) => {
+  // 添加状态保持稳定key
+  const [outputKey] = useState(() => uuidv4());
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -178,7 +183,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
         <div className=" node-item-style">
           {params.loopType === 'ARRAY_LOOP' && (
             <InputAndOut
-              key={uuidv4()}
+              nodeKey={outputKey}
               title="循环数组"
               fieldConfigs={outPutConfigs}
               inputItemName={InputItemNameEnum.inputArgs}
@@ -207,7 +212,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
       )}
       <div className=" node-item-style">
         <InputAndOut
-          key={uuidv4()}
+          nodeKey={outputKey}
           title="中间变量"
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.variableArgs}
@@ -219,7 +224,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
       </div>
       <div className=" node-item-style">
         <InputAndOut
-          key={uuidv4()}
+          nodeKey={outputKey}
           title="输出"
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.outputArgs}
@@ -236,6 +241,8 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
 const VariableNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   const outputArgs = params.outputArgs || null;
   // 修改模型的入参和出参
+  // 添加状态保持稳定key
+  const [outputKey] = useState(() => uuidv4());
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
   };
@@ -270,7 +277,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
       </div>
       {params.configType === 'SET_VARIABLE' && (
         <InputAndOut
-          key={uuidv4()}
+          nodeKey={outputKey}
           title={'设置变量'}
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.inputArgs}
@@ -280,12 +287,12 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
       )}
       {params.configType !== 'SET_VARIABLE' && (
         <OtherFormList
-          key={uuidv4()}
+          nodeKey={outputKey}
           title={'输出变量'}
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.outputArgs}
           handleChangeNodeConfig={handleChangeNodeConfig}
-          initialValues={{ inputArgs: params.outputArgs || [] }}
+          initialValues={{ outputArgs: params.outputArgs || [] }}
         />
       )}
       {outputArgs && params.configType === 'SET_VARIABLE' && (
@@ -390,7 +397,8 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,
 }) => {
-  // 输入参数的初始值
+  // 添加状态保持稳定key
+  const [outputKey] = useState(() => uuidv4());
 
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
@@ -418,7 +426,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
         />
       </div>
       <InputAndOut
-        key={uuidv4()}
+        nodeKey={outputKey}
         title="输入"
         fieldConfigs={outPutConfigs}
         inputItemName={InputItemNameEnum.inputArgs}
@@ -483,7 +491,8 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
 // 定义代码节点
 const CodeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   const [show, setShow] = useState(false);
-
+  // 添加状态保持稳定key
+  const [outputKey] = useState(() => uuidv4());
   // 修改模型的代码
   const changeCode = (code: string) => {
     Modified({ ...params, code });
@@ -495,7 +504,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   return (
     <>
       <InputAndOut
-        key={uuidv4()}
+        nodeKey={outputKey}
         title="输入"
         fieldConfigs={outPutConfigs}
         inputItemName={InputItemNameEnum.inputArgs}

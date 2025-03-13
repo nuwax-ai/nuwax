@@ -74,7 +74,9 @@ export const GroupedOptionSelect: React.FC<GroupModelListItemProps> = ({
       style={{ width: '100%', marginTop: '10px' }}
       className="input-style"
       value={nodeConfig.modelId?.toString()}
-      onChange={(value: string) => onChange({ ...nodeConfig, modelId: value })}
+      onChange={(value: string) =>
+        onChange({ ...nodeConfig, modelId: Number(value) })
+      }
       labelRender={labelRender}
       placement={'bottomLeft'}
       popupMatchSelectWidth={false}
@@ -118,25 +120,57 @@ const options = [
   { label: '创意模式', value: 'Creative' },
   { label: '自定义', value: 'Customization' },
 ];
+
+const typeOptionValue = {
+  Precision: {
+    temperature: 0.1,
+    topP: 0.7,
+    maxTokens: 1024,
+  },
+  Balanced: {
+    temperature: 1.0,
+    topP: 0.7,
+    maxTokens: 1024,
+  },
+  Creative: {
+    temperature: 1.0,
+    topP: 0.8,
+    maxTokens: 1024,
+  },
+};
+
 // 定义模型的设置弹窗
 export const ModelSetting: React.FC<ModelSettingProp> = ({
   nodeConfig,
   onChange,
 }) => {
   const [showMore, setShowMore] = useState(true);
-
   // 切换显示更多的状态
-
-  // 更新值的辅助函数
+  // 在组件顶部添加模式变更处理
+  const handleModeChange = (mode: string) => {
+    if (mode !== 'Customization') {
+      // 当选择预设模式时应用对应配置
+      onChange({
+        ...nodeConfig,
+        mode,
+        ...typeOptionValue[mode as keyof typeof typeOptionValue],
+      });
+    } else {
+      // 自定义模式保持当前值
+      onChange({ ...nodeConfig, mode });
+    }
+  };
+  // 修改滑块和输入框的更新逻辑
   const updateValue = (
     key: 'maxTokens' | 'temperature' | 'topP',
     val: number | null,
   ) => {
     const newConfig = {
       ...nodeConfig,
+      mode: 'Customization', // 任何手动调整都切换为自定义模式
       [key]: val || 0,
     };
-    onChange(newConfig); // 将更新后的 nodeConfig 传递回父组件
+    onChange(newConfig);
   };
 
   const Content: React.FC<ContentProps> = ({
@@ -188,7 +222,8 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({
               className="radio-button-style"
               options={options}
               block
-              defaultValue="Balanced"
+              value={nodeConfig.mode}
+              onChange={(e) => handleModeChange(e.target.value)} // 改用新的处理函数
             ></Radio.Group>
             <div
               onClick={() => setShowMore(!showMore)}

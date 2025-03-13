@@ -32,7 +32,8 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
 }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
-
+  // 添加状态保持稳定key
+  const [outputKey] = useState(() => uuidv4());
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -81,7 +82,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       {/* 输入参数 */}
       <div className="node-item-style">
         <InputAndOut
-          key={uuidv4()}
+          nodeKey={outputKey}
           title="输入"
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.inputArgs}
@@ -139,6 +140,8 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
   Modified,
   updateNode,
 }) => {
+  // 添加状态保持稳定key
+  const [outputKey] = useState(() => uuidv4());
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -164,7 +167,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
       {/* 输入参数 */}
       <div className="node-item-style">
         <InputAndOut
-          key={uuidv4()}
+          nodeKey={outputKey}
           title="输入"
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.inputArgs}
@@ -175,6 +178,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
       {/* 意图匹配 */}
       <div className="node-item-style">
         <FormList
+          nodeKey={outputKey}
           title={'意图匹配'}
           handleChangeNodeConfig={handleChangeNodeConfig}
           field="intent"
@@ -207,6 +211,8 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
   Modified,
   updateNode,
 }) => {
+  // 添加状态保持稳定key
+  const [outputKey] = useState(() => uuidv4());
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
@@ -271,7 +277,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
       {/* 输入参数 */}
       <div className="node-item-style">
         <InputAndOut
-          key={uuidv4()}
+          nodeKey={outputKey}
           title="输入"
           fieldConfigs={outPutConfigs}
           handleChangeNodeConfig={handleChangeNodeConfig}
@@ -316,6 +322,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
       {params.answerType === 'SELECT' && (
         <FormList
           title={'设置选项内容'}
+          nodeKey={outputKey}
           updateNode={changeOptions}
           field="content"
           inputItemName={InputItemNameEnum.options}
@@ -331,6 +338,8 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
 
 // 定义http工具
 const HttpToolNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
+  // 添加状态保持稳定key
+  const [outputKey] = useState(() => uuidv4());
   // 请求方法的选项
   const methodOption = [
     { label: 'GET', value: 'GET' },
@@ -406,7 +415,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
       {/* 入参 */}
       <div className="node-item-style">
         <InputAndOut
-          key={uuidv4()}
+          nodeKey={outputKey}
           title="Header"
           handleChangeNodeConfig={handleChangeNodeConfig}
           fieldConfigs={outPutConfigs}
@@ -416,7 +425,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
           }}
         />
         <InputAndOut
-          key={uuidv4()}
+          nodeKey={outputKey}
           title="Query"
           handleChangeNodeConfig={handleChangeNodeConfig}
           fieldConfigs={outPutConfigs}
@@ -426,7 +435,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
           }}
         />
         <InputAndOut
-          key={uuidv4()}
+          nodeKey={outputKey}
           title="Body"
           handleChangeNodeConfig={handleChangeNodeConfig}
           fieldConfigs={outPutConfigs}

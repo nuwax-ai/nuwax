@@ -1,5 +1,5 @@
 import type { ModelListItemProps } from '@/types/interfaces/model';
-import { LLMNodeConfig } from '@/types/interfaces/node';
+import { NodeConfig } from '@/types/interfaces/node';
 // type.ts 或 types/index.ts
 interface GroupModelItem {
   // 分组的名称
@@ -14,13 +14,13 @@ export interface GroupModel {
 
 // 定义分组的模型列表
 export interface GroupModelListItemProps {
-  onChange: (value: LLMNodeConfig) => void;
-  nodeConfig: LLMNodeConfig;
+  onChange: (value: NodeConfig) => void;
+  nodeConfig: NodeConfig;
   groupedOptionsData?: GroupModelItem[];
 }
 
 export interface ModelSettingProp {
-  nodeConfig: LLMNodeConfig;
-  onChange: (newConfig: LLMNodeConfig) => void;
+  nodeConfig: NodeConfig;
+  onChange: (newConfig: NodeConfig) => void;
   groupedOptionsData?: GroupModelItem[];
 }

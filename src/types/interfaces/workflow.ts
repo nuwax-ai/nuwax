@@ -173,7 +173,7 @@ export interface InitialValues {
 
 // 定义通用节点渲染逻辑的props类型
 export interface NodeRenderProps {
-  key: string;
+  nodeKey: string;
   // 标题
   title: string;
   // 遍历渲染的字段配置
@@ -203,6 +203,7 @@ export interface NodeRenderProps {
 
 // 定义通用的formList的props类型
 export interface FormListProps {
+  nodeKey: string;
   // 标题
   title: string;
   // 改变节点的入参和出参

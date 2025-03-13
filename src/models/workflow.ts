@@ -1,4 +1,4 @@
-import { NodeTypeEnum } from '@/types/enums/common';
+// import { NodeTypeEnum } from '@/types/enums/common';
 import { NodePreviousAndArgMap } from '@/types/interfaces/node';
 import { useState } from 'react';
 
@@ -7,15 +7,7 @@ const useWorkflow = () => {
   const [volid, setVolid] = useState<boolean>(false);
 
   const [referenceList, setReferenceList] = useState<NodePreviousAndArgMap>({
-    previousNodes: [
-      {
-        id: 1,
-        name: '测试',
-        outputArgs: [],
-        icon: '',
-        type: NodeTypeEnum.Start,
-      },
-    ],
+    previousNodes: [],
     innerPreviousNodes: [],
     argMap: {},
   });

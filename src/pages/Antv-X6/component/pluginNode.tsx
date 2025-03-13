@@ -133,6 +133,8 @@ const PluginInNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
 
 // 定义数据库
 const DatabaseNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
+  // 添加状态保持稳定key
+  const [outputKey] = useState(() => uuidv4());
   let inputInitialValues = {};
   if (params.inputArgs && params.inputArgs.length) {
     inputInitialValues = params.inputArgs;
@@ -149,7 +151,7 @@ const DatabaseNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
       {/* 输入参数 */}
       <div className="node-item-style">
         <InputAndOut
-          key={uuidv4()}
+          nodeKey={outputKey}
           title="输入"
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.inputArgs}

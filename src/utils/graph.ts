@@ -108,7 +108,8 @@ export function handleLoopEdge(sourceNode: ChildNode, targetNode: ChildNode) {
       // 目标节点是循环内部节点
       if (sourceNode.innerStartNodeId && sourceNode.innerStartNodeId !== -1) {
         message.warning('当前循环已有对子节点的连线，请先删除该连线');
-        return;
+
+        return 'error';
       }
       const _params = { ...sourceNode };
       _params.innerStartNodeId = targetNode.id;
@@ -122,17 +123,16 @@ export function handleLoopEdge(sourceNode: ChildNode, targetNode: ChildNode) {
       sourceNode.type === 'QA'
     ) {
       message.warning('条件分支，意图识别，问答不能作为循环的出口连接节点');
-      return;
+      return 'error';
     }
     if (sourceNode.loopNodeId && sourceNode.loopNodeId === targetNode.id) {
       // 源节点是循环内部节点
       if (targetNode.innerEndNodeId && targetNode.innerEndNodeId !== -1) {
         message.warning('当前已有对子节点连接循环的出口，请先删除该连线');
-        return;
+        return 'error';
       }
       const _params = { ...targetNode };
       _params.innerEndNodeId = sourceNode.id;
-      console.log('aa', _params);
       return _params;
     }
   }

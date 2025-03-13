@@ -41,6 +41,8 @@ import { ReactComponent as ICON_WORKFLOW_KNOWLEDGE_BASE } from '@/assets/workflo
 import { ReactComponent as ICON_WORKFLOW_LLM } from '@/assets/workflow/workflow-LLM.svg';
 import { ReactComponent as ICON_WORKFLOW_LONG_TERM_MEMORY } from '@/assets/workflow/workflow-LongTermMemory.svg';
 import { ReactComponent as ICON_WORKFLOW_LOOP } from '@/assets/workflow/workflow-Loop.svg';
+import { ReactComponent as ICON_WORKFLOW_LOOPBREAK } from '@/assets/workflow/workflow-LoopBreak.svg';
+import { ReactComponent as ICON_WORKFLOW_LOOPCONTINUE } from '@/assets/workflow/workflow-LoopContinue.svg';
 import { ReactComponent as ICON_WORKFLOW_OUTPUT } from '@/assets/workflow/workflow-Output.svg';
 import { ReactComponent as ICON_WORKFLOW_PLUGIN } from '@/assets/workflow/workflow-Plugin.svg';
 import { ReactComponent as ICON_WORKFLOW_QA } from '@/assets/workflow/workflow-QA.svg';
@@ -90,6 +92,8 @@ export {
   ICON_WORKFLOW_LLM,
   ICON_WORKFLOW_LONG_TERM_MEMORY,
   ICON_WORKFLOW_LOOP,
+  ICON_WORKFLOW_LOOPBREAK,
+  ICON_WORKFLOW_LOOPCONTINUE,
   ICON_WORKFLOW_OUTPUT,
   ICON_WORKFLOW_PLUGIN,
   ICON_WORKFLOW_QA,

@@ -104,6 +104,10 @@ export enum NodeTypeEnum {
   Variable = 'Variable',
   // 循环
   Loop = 'Loop',
+  // 终止循环
+  LoopBreak = 'LoopBreak',
+  // 继续循环
+  LoopContinue = 'LoopContinue',
   // 开始
   Start = 'Start',
   // 结束

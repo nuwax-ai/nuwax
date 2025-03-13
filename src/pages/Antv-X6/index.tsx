@@ -29,6 +29,7 @@ import GraphContainer from './graphContainer';
 import Header from './header';
 import './index.less';
 import NodeDrawer from './nodeDrawer';
+import Published from './Published';
 import { Child } from './type';
 const Workflow: React.FC = () => {
   // 当前工作流的id
@@ -56,7 +57,8 @@ const Workflow: React.FC = () => {
   const [testRunResult, setTestRunResult] = useState<string>('');
   // 节点试运行
   const [stopWait, setStopWait] = useState<boolean>(false);
-  // 上级节点的输出参数
+  // 打开和关闭发布弹窗
+  const [showPublish, setShowPublish] = useState<boolean>(false);
 
   // const [isUpdate, setIsUpdate] = useState<boolean>(false)
   // 打开和关闭新增组件
@@ -185,30 +187,25 @@ const Workflow: React.FC = () => {
     });
   };
   // 获取当前节点的参数
-  const getRefernece = (() => {
-    let timer: NodeJS.Timeout | null = null;
-
-    return async (id: number) => {
-      if (timer) {
-        clearTimeout(timer);
+  const getRefernece = async (id: number) => {
+    // 获取节点需要的引用参数
+    const _res = await service.getOutputArgs(id);
+    if (_res.code === Constant.success) {
+      if (
+        _res.data &&
+        _res.data.previousNodes &&
+        _res.data.previousNodes.length
+      ) {
+        setReferenceList(_res.data);
+      } else {
+        setReferenceList({
+          previousNodes: [],
+          innerPreviousNodes: [],
+          argMap: {},
+        });
       }
-
-      timer = setTimeout(async () => {
-        // 获取节点需要的引用参数
-        const _res = await service.getOutputArgs(id);
-        if (_res.code === Constant.success) {
-          if (
-            _res.data &&
-            _res.data.previousNodes &&
-            _res.data.previousNodes.length
-          ) {
-            setReferenceList(_res.data);
-          }
-        }
-        timer = null;
-      }, 1000); // 1秒防抖
-    };
-  })();
+    }
+  };
 
   // 查询节点的指定信息
   const getNodeConfig = async (id: number) => {
@@ -250,13 +247,22 @@ const Workflow: React.FC = () => {
     setTestRunResult('');
     if (child === null) {
       setVisible(false);
+      setFoldWrapItem({
+        id: 0,
+        description: '',
+        workflowId: workflowId,
+        type: NodeTypeEnum.Start,
+        nodeConfig: {
+          extension: {
+            x: 0,
+            y: 0,
+          },
+        },
+        name: '',
+        icon: '',
+      });
       return;
     } else {
-      setReferenceList({
-        previousNodes: [],
-        innerPreviousNodes: [],
-        argMap: {},
-      });
       if (!visible) setVisible(true);
       setFoldWrapItem(child);
     }
@@ -275,15 +281,6 @@ const Workflow: React.FC = () => {
     let _params = JSON.parse(JSON.stringify(child));
     _params.workflowId = workflowId;
     _params.extension = dragEvent;
-    // 查看当前是否有选中的节点以及被选中的节点的type是否是Loop
-    const loopParentId = graphRef.current.findLoopParentAtPosition(dragEvent);
-    if ((visible && foldWrapItem.type === 'Loop') || loopParentId) {
-      if (_params.type === 'Loop') {
-        message.warning('循环体里请不要再添加循环体');
-        return;
-      }
-      _params.loopNodeId = Number(loopParentId || foldWrapItem.id);
-    }
     // 如果是条件分支，需要增加高度
     if (child.type === 'Condition') {
       _params.extension = { ...dragEvent, height: 120 };
@@ -294,13 +291,33 @@ const Workflow: React.FC = () => {
     if (child.type === 'Loop') {
       _params.extension = { ...dragEvent, height: 240, width: 600 };
     }
+    // 查看当前是否有选中的节点以及被选中的节点的type是否是Loop
+    // 如果是加给循环节点，那么就要将他的位置放置于循环内部
+    // const loopParentId = graphRef.current.findLoopParentAtPosition(dragEvent);
+    if (visible && foldWrapItem.type === 'Loop') {
+      if (_params.type === 'Loop') {
+        message.warning('循环体里请不要再添加循环体');
+        return;
+      }
+      _params.loopNodeId = Number(foldWrapItem.id);
+      // 点击增加的节点，需要通过接口获取父节点的数据
+      const _parent = await service.getNodeConfig(_params.loopNodeId);
+      if (_parent.code === Constant.success) {
+        const loopNode: ChildNode = _parent.data;
+        const extension = loopNode.nodeConfig.extension;
+        _params.extension = {
+          ..._params.extension,
+          x: (extension?.x || 0) + 40,
+          y: (extension?.y || 0) + 110,
+        };
+      }
+    }
 
     const _res = await service.addNode(_params);
-
     if (_res.code === Constant.success) {
       _res.data.key = _res.data.type === 'Loop' ? 'loop-node' : 'general-Node';
-
-      graphRef.current.addNode(dragEvent, _res.data);
+      const extension = _res.data.nodeConfig.extension;
+      graphRef.current.addNode(extension, _res.data);
       setFoldWrapItem(_res.data);
       graphRef.current.selectNode(_res.data.id);
       changeUpdateTime();
@@ -514,6 +531,7 @@ const Workflow: React.FC = () => {
       const _res = await service.publishWorkflow(_params);
       if (_res.code === Constant.success) {
         message.success('发布成功');
+        setShowPublish(false);
       }
     }
   };
@@ -538,7 +556,8 @@ const Workflow: React.FC = () => {
       onMessage: (data) => {
         if (!data.success) {
           if (data.message) {
-            message.warning(data.message);
+            // message.warning(data.message);
+            setTestRunResult(data.message);
           }
         } else {
           if (data.complete) {
@@ -707,8 +726,8 @@ const Workflow: React.FC = () => {
       {/* 顶部的名称和发布等按钮 */}
       <Header
         info={info ?? {}}
-        onSubmit={onSubmit}
         setShowCreateWorkflow={() => setShowCreateWorkflow(true)}
+        showPublish={() => setShowPublish(true)}
       />
       <GraphContainer
         graphParams={graphParams}
@@ -723,6 +742,7 @@ const Workflow: React.FC = () => {
       />
       <ControlPanel
         dragChild={dragChild}
+        foldWrapItem={foldWrapItem}
         changeGraph={changeGraph}
         handleTestRun={() => testRunAll()}
         zoomSize={(info?.extension?.size as number) ?? 1}
@@ -771,6 +791,13 @@ const Workflow: React.FC = () => {
         }
         changeDrawer={changeDrawer}
         nodeList={graphParams.nodeList}
+      />
+
+      <Published
+        id={info?.id || 0}
+        open={showPublish}
+        onCancel={() => setShowPublish(false)}
+        onSubmit={onSubmit}
       />
     </div>
   );

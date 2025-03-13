@@ -12,6 +12,8 @@ import {
   ICON_WORKFLOW_LLM,
   ICON_WORKFLOW_LONG_TERM_MEMORY,
   ICON_WORKFLOW_LOOP,
+  ICON_WORKFLOW_LOOPBREAK,
+  ICON_WORKFLOW_LOOPCONTINUE,
   ICON_WORKFLOW_OUTPUT,
   ICON_WORKFLOW_PLUGIN,
   ICON_WORKFLOW_QA,
@@ -75,6 +77,10 @@ export const returnImg = (type: string) => {
       return <ICON_WORKFLOW_LONG_TERM_MEMORY />;
     case 'Loop':
       return <ICON_WORKFLOW_LOOP />;
+    case 'LoopContinue':
+      return <ICON_WORKFLOW_LOOPCONTINUE />;
+    case 'LoopBreak':
+      return <ICON_WORKFLOW_LOOPBREAK />;
     case 'Plugin':
       return <ICON_WORKFLOW_PLUGIN />;
     case 'QA':
@@ -98,6 +104,8 @@ export const returnBackgroundColor = (type: string) => {
       return '#EEEEFF';
     case 'Code':
     case 'Loop':
+    case 'LoopContinue':
+    case 'LoopBreak':
     case 'Condition':
     case 'IntentRecognition':
       return '#C8FFFF';
@@ -242,7 +250,7 @@ export const getHeight = (
 ) => {
   switch (type) {
     case 'Condition': {
-      return 42 + 28 * length;
+      return 42 + 35 * length;
     }
     case 'IntentRecognition': {
       return 42 + 18 * length;
@@ -254,24 +262,19 @@ export const getHeight = (
 };
 
 // 获取节点端口
-export const generatePorts = (data: ChildNode, height?: number) => {
+export const generatePorts = (data: ChildNode) => {
   const basePortSize = 4;
   const isLoopNode = data.type === 'Loop'; // 判断是否为 Loop 节点
-
   // 默认端口配置
-  const defaultPortConfig = (
-    group: 'in' | 'out',
-    idSuffix: string,
-    yPosition?: number | string,
-  ) => ({
+  const defaultPortConfig = (group: 'in' | 'out', idSuffix: string) => ({
     group,
     id: `${data.id}-${idSuffix}`,
     zIndex: 99,
-    position: {
-      name: 'absolute', // 确保使用绝对定位
-    },
+    // position: {
+    //   name: 'absolute', // 确保使用绝对定位
+    //   args: , // 直接作为顶级属性
+    // },
     magnet: true,
-    args: yPosition !== undefined ? { y: yPosition } : {}, // 直接作为顶级属性
     attrs: {
       circle: {
         r: basePortSize,
@@ -287,14 +290,46 @@ export const generatePorts = (data: ChildNode, height?: number) => {
     },
   });
 
+  const specialPortConfig = (
+    group: 'special',
+    idSuffix: string,
+    yHeight: number,
+  ) => ({
+    group,
+    id: `${data.id}-${idSuffix}`,
+    zIndex: 99,
+    magnet: true,
+    attrs: {
+      circle: {
+        r: basePortSize,
+        magnet: true,
+        stroke: '#5F95FF',
+        strokeWidth: 2,
+        fill: '#5F95FF',
+        pointerEvents: 'all', // 强制启用指针事件
+        event: 'mouseenter', // 明确事件类型
+        // 新增磁吸区域扩展
+        magnetRadius: 50, // 将磁吸半径从默认15px增大到24px
+      },
+    },
+    args: {
+      x: '100%',
+      y: yHeight,
+    },
+  });
+
   let inputPorts = [defaultPortConfig('in', 'in')];
-  let outputPorts = [defaultPortConfig('out', 'out')];
+  let outputPorts: Array<
+    ReturnType<typeof defaultPortConfig> | ReturnType<typeof specialPortConfig>
+  > = [];
 
   switch (data.type) {
     case 'Start':
       inputPorts = []; // Start 节点没有输入端口
+      outputPorts = [defaultPortConfig('out', 'out')];
       break;
     case 'End':
+      inputPorts = [defaultPortConfig('in', 'in')];
       outputPorts = []; // End 节点没有输出端口
       break;
     case 'Condition':
@@ -304,16 +339,16 @@ export const generatePorts = (data: ChildNode, height?: number) => {
         data.nodeConfig?.conditionBranchConfigs ||
         data.nodeConfig.intentConfigs ||
         [];
-      inputPorts = [
-        { ...defaultPortConfig('in', `in`, height ? height / 2 : '50%') },
-      ];
-      const baseY = 32; // 节点头部固定高度
-      const itemHeight = data.type === 'Condition' ? 28 : 18; // 每个条件项高度
+
+      inputPorts = [{ ...defaultPortConfig('in', `in`) }];
+      const baseY = 30; // 节点头部固定高度
+      const itemHeight = data.type === 'Condition' ? 31 : 18; // 每个条件项高度
       outputPorts = configs.map((item, index) => ({
-        ...defaultPortConfig('out', `${item.uuid || index}-out`),
-        args: {
-          y: baseY + index * itemHeight + itemHeight / 2,
-        },
+        ...specialPortConfig(
+          'special',
+          `${item.uuid || index}-out`,
+          baseY + (index + 1) * itemHeight,
+        ),
       }));
       break;
     }
@@ -322,18 +357,20 @@ export const generatePorts = (data: ChildNode, height?: number) => {
       const configs = data.nodeConfig?.options;
       if (type === 'SELECT') {
         outputPorts = (configs || []).map((item, index) => ({
-          ...defaultPortConfig('out', `${item.uuid || index}-out`),
-          args: {
-            y: 110 + index * 18 + 9,
-          },
+          ...specialPortConfig(
+            'special',
+            `${item.uuid || index}-out`,
+            106 + index * 26,
+          ),
         }));
       } else {
-        outputPorts = [{ ...defaultPortConfig('out', `out`, '50%') }];
+        outputPorts = [{ ...defaultPortConfig('out', `out`) }];
       }
       break;
     }
-
     default:
+      inputPorts = [defaultPortConfig('in', 'in')];
+      outputPorts = [defaultPortConfig('out', 'out')];
       break;
   }
 
@@ -350,6 +387,17 @@ export const generatePorts = (data: ChildNode, height?: number) => {
       },
       out: {
         position: 'right',
+        attrs: { circle: { r: basePortSize } },
+        connectable: {
+          source: true, // 非 Loop 节点的 out 端口只能作为 source
+          target: isLoopNode, // Loop 节点的 out 端口允许作为 target
+        },
+      },
+      special: {
+        position: {
+          name: 'absolute',
+          args: { x: 0, y: 0 },
+        },
         attrs: { circle: { r: basePortSize } },
         connectable: {
           source: true, // 非 Loop 节点的 out 端口只能作为 source
