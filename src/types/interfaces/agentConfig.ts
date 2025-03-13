@@ -8,6 +8,7 @@ import type {
   TriggerTimeZone,
 } from '@/types/interfaces/agent';
 import type { UploadInfo } from '@/types/interfaces/common';
+import { ExecuteResultInfo } from '@/types/interfaces/conversationInfo';
 import React, { MouseEvent } from 'react';
 
 // 智能体header组件
@@ -88,7 +89,7 @@ export interface CardModeSettingProps {
 export interface PreviewAndDebugHeaderProps {
   agentId: number;
   agentConfigInfo: AgentConfigInfo;
-  onExecuteResults: (executeResults: string[]) => void;
+  onExecuteResults?: (executeResults: ExecuteResultInfo[]) => void;
   onPressDebug: () => void;
 }
 
@@ -126,7 +127,6 @@ export interface ChatUploadFileProps {
 
 // 调试详情组件
 export interface DebugDetailsProps {
-  executeResults: string[];
   visible?: boolean;
   onClose: () => void;
 }

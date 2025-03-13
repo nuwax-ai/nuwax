@@ -203,6 +203,7 @@ export enum HttpContentTypeEnum {
 // 消息状态枚举
 export enum MessageStatusEnum {
   Loading = 'loading',
+  // 不完整的
   Incomplete = 'incomplete',
   Complete = 'complete',
   Error = 'error',

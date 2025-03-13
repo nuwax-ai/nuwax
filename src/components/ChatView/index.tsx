@@ -3,6 +3,7 @@ import personal from '@/assets/images/personal.png';
 import ConditionRender from '@/components/ConditionRender';
 import { USER_INFO } from '@/constants/home.constants';
 import { AssistantRoleEnum } from '@/types/enums/agent';
+import { MessageStatusEnum } from '@/types/enums/common';
 import type { ChatViewProps } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
 import markdown from 'markdown-it';
@@ -45,17 +46,14 @@ const ChatView: React.FC<ChatViewProps> = ({
           avatar: system.avatar || agentImage,
         };
     }
-  }, [roleInfo, messageInfo]);
-
-  const handleCopy = () => {
-    console.log('复制文本');
-  };
+  }, [roleInfo, messageInfo?.role]);
 
   return (
     <div className={cx(styles.container, 'flex')}>
       <img className={cx(styles.avatar)} src={info?.avatar as string} alt="" />
       <div className={cx('flex-1')}>
         <div className={cx(styles.author)}>{info?.name}</div>
+        {/*用户信息*/}
         <ConditionRender
           condition={
             messageInfo.role === AssistantRoleEnum.USER && !!messageInfo?.text
@@ -68,10 +66,15 @@ const ChatView: React.FC<ChatViewProps> = ({
             }}
           />
         </ConditionRender>
+        {/*助手信息或系统信息*/}
         <ConditionRender
           condition={messageInfo.role !== AssistantRoleEnum.USER}
         >
-          <RunOver messageInfo={messageInfo} />
+          {/*运行状态*/}
+          <ConditionRender condition={!!messageInfo.status}>
+            <RunOver messageInfo={messageInfo} />
+          </ConditionRender>
+          {/*文本内容*/}
           <ConditionRender condition={!!messageInfo?.text}>
             <div
               className={cx(styles['chat-content'], 'radius-6')}
@@ -80,8 +83,18 @@ const ChatView: React.FC<ChatViewProps> = ({
               }}
             />
           </ConditionRender>
-          <ConditionRender condition={!!messageInfo?.finalResult}>
-            <ChatBottomMore onCopy={handleCopy} onDebug={onDebug} />
+          {/*底部区域*/}
+          <ConditionRender
+            condition={
+              messageInfo?.status === MessageStatusEnum.Complete ||
+              !messageInfo?.status
+            }
+          >
+            <ChatBottomMore
+              text={messageInfo?.text as string}
+              onDebug={onDebug}
+              finalResult={messageInfo?.finalResult}
+            />
           </ConditionRender>
         </ConditionRender>
       </div>
