@@ -96,7 +96,6 @@ export interface GraphContainerRef {
   deleteEdge: (id: string) => void;
   changeGraphZoom: (val: number) => void;
   drawGraph: () => void;
-  findLoopParentAtPosition: (position: { x: number; y: number }) => void;
 }
 
 export interface BindEventHandlers {

@@ -1,3 +1,4 @@
+import { ChildNode } from '@/types/interfaces/graph';
 import {
   CaretRightOutlined,
   PlusOutlined,
@@ -17,6 +18,8 @@ interface ControlPanelProps {
   changeGraph: (val: number) => void;
   // 当前画布的缩放比例
   zoomSize?: number;
+  // 当前正在展示的节点
+  foldWrapItem: ChildNode;
 }
 
 const ControlPanel: React.FC<ControlPanelProps> = ({
@@ -24,6 +27,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   dragChild,
   handleTestRun,
   changeGraph,
+  foldWrapItem,
 }) => {
   const [options, setOptions] = useState([
     { label: '缩放到50%', value: 0.5, displayValue: '50%' },
@@ -66,6 +70,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         <Popover
           content={
             <StencilContent
+              foldWrapItem={foldWrapItem}
               dragChild={(
                 child: Child,
                 e?: React.DragEvent<HTMLDivElement>,

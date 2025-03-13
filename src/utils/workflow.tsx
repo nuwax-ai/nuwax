@@ -12,6 +12,8 @@ import {
   ICON_WORKFLOW_LLM,
   ICON_WORKFLOW_LONG_TERM_MEMORY,
   ICON_WORKFLOW_LOOP,
+  ICON_WORKFLOW_LOOPBREAK,
+  ICON_WORKFLOW_LOOPCONTINUE,
   ICON_WORKFLOW_OUTPUT,
   ICON_WORKFLOW_PLUGIN,
   ICON_WORKFLOW_QA,
@@ -75,6 +77,10 @@ export const returnImg = (type: string) => {
       return <ICON_WORKFLOW_LONG_TERM_MEMORY />;
     case 'Loop':
       return <ICON_WORKFLOW_LOOP />;
+    case 'LoopContinue':
+      return <ICON_WORKFLOW_LOOPCONTINUE />;
+    case 'LoopBreak':
+      return <ICON_WORKFLOW_LOOPBREAK />;
     case 'Plugin':
       return <ICON_WORKFLOW_PLUGIN />;
     case 'QA':
@@ -98,6 +104,8 @@ export const returnBackgroundColor = (type: string) => {
       return '#EEEEFF';
     case 'Code':
     case 'Loop':
+    case 'LoopContinue':
+    case 'LoopBreak':
     case 'Condition':
     case 'IntentRecognition':
       return '#C8FFFF';

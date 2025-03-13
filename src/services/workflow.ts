@@ -223,7 +223,9 @@ export async function getOutputArgs(
 }
 
 // 查询当前节点的详细信息
-export async function getNodeConfig(id: number): Promise<RequestResponse<any>> {
+export async function getNodeConfig(
+  id: number,
+): Promise<RequestResponse<ChildNode>> {
   return request(`/api/workflow/node/${id}`, {
     method: 'GET',
   });

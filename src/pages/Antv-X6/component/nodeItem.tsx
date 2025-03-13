@@ -292,7 +292,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.outputArgs}
           handleChangeNodeConfig={handleChangeNodeConfig}
-          initialValues={{ inputArgs: params.outputArgs || [] }}
+          initialValues={{ outputArgs: params.outputArgs || [] }}
         />
       )}
       {outputArgs && params.configType === 'SET_VARIABLE' && (

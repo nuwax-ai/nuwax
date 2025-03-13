@@ -358,9 +358,10 @@ const initGraph = ({
     // 遍历所有节点
     changePortSize();
   });
-
+  // 点击空白处，取消所有的选中
   graph.on('blank:click', () => {
     changeDrawer(null); // 调用回调函数以更新抽屉内容
+    graph.cleanSelection();
   });
 
   // 监听边选中

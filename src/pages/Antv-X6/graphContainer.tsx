@@ -249,41 +249,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       }
     };
 
-    // 新增函数：检测坐标是否在 Loop 节点内
-    const findLoopParentAtPosition = (position: { x: number; y: number }) => {
-      if (!graphRef.current || !graphRef.current.container) return null;
-
-      // 1. 获取容器滚动偏移
-      const container = graphRef.current.container;
-      const scrollLeft = container.scrollLeft;
-      const scrollTop = container.scrollTop;
-
-      // 2. 计算修正坐标
-      const adjustedX = position.x + scrollLeft;
-      const adjustedY = position.y + scrollTop;
-
-      // 3. 转换到画布坐标系
-      const graphPoint = graphRef.current.clientToGraph(
-        adjustedX,
-        adjustedY,
-        true,
-      );
-
-      // 4. 检测逻辑
-      const loops = graphRef.current.getNodes().filter((node: Node) => {
-        return node.getData()?.type === 'Loop';
-      });
-
-      for (const loopNode of loops) {
-        const bbox = loopNode.getBBox();
-        if (bbox.containsPoint(graphPoint)) {
-          return loopNode.id;
-        }
-      }
-
-      return null;
-    };
-
     // 将子组件的方法暴露给父组件
     useImperativeHandle(ref, () => ({
       addNode,
@@ -294,7 +259,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       changeGraphZoom,
       drawGraph,
       selectNode,
-      findLoopParentAtPosition,
     }));
 
     useEffect(() => {
