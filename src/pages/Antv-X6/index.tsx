@@ -197,6 +197,12 @@ const Workflow: React.FC = () => {
         _res.data.previousNodes.length
       ) {
         setReferenceList(_res.data);
+      } else {
+        setReferenceList({
+          previousNodes: [],
+          innerPreviousNodes: [],
+          argMap: {},
+        });
       }
     }
   };
@@ -550,7 +556,8 @@ const Workflow: React.FC = () => {
       onMessage: (data) => {
         if (!data.success) {
           if (data.message) {
-            message.warning(data.message);
+            // message.warning(data.message);
+            setTestRunResult(data.message);
           }
         } else {
           if (data.complete) {
