@@ -54,7 +54,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       const point = graphRef.current.clientToGraph(e.x, e.y);
 
       const extension = child.nodeConfig.extension || {};
-      const ports = generatePorts(child, extension.height ?? 75);
+      const ports = generatePorts(child);
 
       // 根据情况，动态给予右侧的out连接桩
       const newNode = graphRef.current.addNode({
@@ -119,12 +119,10 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           );
 
           if (_length) {
-            const newHeight = getHeight(newData.type, _length);
-            node.setSize(304, newHeight);
             // 使用prop方法更新端口配置
-            const ports = generatePorts(newData, newHeight);
-            console.log(ports);
+            const ports = generatePorts(newData);
             node.prop('ports', ports);
+            // node.updatePorts();
           }
         }
         if (newData.type === 'QA') {
