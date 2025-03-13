@@ -284,7 +284,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
     if (foldWrapItem.id !== 0) {
       handleUpdate();
     }
-  }, [foldWrapItem]);
+  }, [foldWrapItem.id]);
 
   useEffect(() => {
     // 清除已有定时器

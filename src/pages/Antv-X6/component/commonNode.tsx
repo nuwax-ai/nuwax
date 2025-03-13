@@ -36,7 +36,7 @@ import './commonNode.less';
 
 // 定义通用的输入输出
 export const InputAndOut: React.FC<NodeRenderProps> = ({
-  key,
+  nodeKey,
   title,
   fieldConfigs,
   handleChangeNodeConfig,
@@ -53,7 +53,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
 
   const [isSet, setIsSet] = useState(false);
   // 添加一个ref来存储上一次的key
-  const prevKeyRef = useRef(key);
+  const prevKeyRef = useRef(nodeKey);
 
   const { volid } = useModel('workflow');
   // 根据传递的fieldConfigs生成表单项
@@ -68,7 +68,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   const addInputItem = () => {
     const nextItems = [...(form.getFieldValue(inputItemName) || []), formItem];
     form.setFieldsValue({ [inputItemName]: nextItems });
-    handleChangeNodeConfig({ [inputItemName]: nextItems });
+    // handleChangeNodeConfig({ [inputItemName]: nextItems });
     setIsSet(true);
   };
 
@@ -76,7 +76,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
     const formValue = form.getFieldsValue()[inputItemName];
     const _newValue = formValue.filter((_: unknown, i: number) => i !== index);
     form.setFieldsValue({ [inputItemName]: _newValue });
-    handleChangeNodeConfig({ [inputItemName]: _newValue });
+    // handleChangeNodeConfig({ [inputItemName]: _newValue });
     setIsSet(true);
   };
 
@@ -93,19 +93,21 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
 
   useEffect(() => {
     // 当key发生变化时，重置isSet
-    if (prevKeyRef.current !== key) {
+    if (prevKeyRef.current !== nodeKey) {
       setIsSet(false);
-      prevKeyRef.current = key;
+      prevKeyRef.current = nodeKey;
     }
-  }, [key]);
+  }, [nodeKey]);
 
   // ... existing code ...
 
+  // 修改useEffect逻辑
   useEffect(() => {
+    // 当key变化或initialValues变化时重置表单
     if (!isSet) {
       form.setFieldsValue(initialValues);
     }
-  }, [initialValues, isSet]);
+  }, [isSet, initialValues]);
 
   useEffect(() => {
     if (volid) {
@@ -438,6 +440,7 @@ export const MultiSelectWithCheckbox: React.FC<
 
 // 封装一个formList
 export const FormList: React.FC<FormListProps> = ({
+  nodeKey,
   title,
   handleChangeNodeConfig,
   field,
@@ -448,12 +451,16 @@ export const FormList: React.FC<FormListProps> = ({
   showIndex,
 }) => {
   const arr = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const [isSet, setIsSet] = useState(false);
+  // 添加一个ref来存储上一次的key
+  const prevKeyRef = useRef(nodeKey);
 
   const [form] = Form.useForm();
   const changeForm = () => {
     const raw = form.getFieldsValue(true);
     if (updateNode) {
       updateNode(raw);
+      setIsSet(true);
     }
   };
   // 新增选项
@@ -478,6 +485,7 @@ export const FormList: React.FC<FormListProps> = ({
 
     form.setFieldsValue({ [inputItemName]: nextItems });
     changeForm();
+    setIsSet(true);
   };
   // ... existing code ...
 
@@ -485,13 +493,21 @@ export const FormList: React.FC<FormListProps> = ({
   const submitForm = () => {
     const raw = form.getFieldsValue(true);
     handleChangeNodeConfig(raw);
+    setIsSet(true);
     // handleChangeNodeConfig(values);
   };
-
   useEffect(() => {
-    // 设置初始值，确保Form.List能正确展示已有条目
-    form.setFieldsValue(initialValues);
-  }, [form, inputItemName, initialValues]);
+    // 当key发生变化时，重置isSet
+    if (prevKeyRef.current !== nodeKey) {
+      setIsSet(false);
+      prevKeyRef.current = nodeKey;
+    }
+  }, [nodeKey]);
+  useEffect(() => {
+    if (!isSet) {
+      form.setFieldsValue(initialValues);
+    }
+  }, [initialValues, isSet]);
 
   return (
     <div className="start-node-style">

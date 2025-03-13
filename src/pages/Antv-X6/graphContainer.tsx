@@ -198,13 +198,21 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         graphRef.current.clearCells();
 
         // 创建主节点
-        const mainNodes = graphParams.nodeList.map((node) => ({
-          ...createBaseNode(node),
-          data: {
-            ...node,
-            onChange: handleNodeChange, // 注入事件处理器
-          },
-        }));
+        const mainNodes = graphParams.nodeList.map((node) => {
+          const baseNode = createBaseNode(node);
+          // 从节点配置中获取实际尺寸
+          const extension = node.nodeConfig?.extension || {};
+          return {
+            ...baseNode,
+            width: extension.width || 304, // 显式设置宽度
+            height: extension.height || 76,
+            data: {
+              ...node,
+              onChange: handleNodeChange,
+            },
+          };
+        });
+        console.log(mainNodes);
         graphRef.current.fromJSON({
           nodes: mainNodes, // X6 会自动实例化节点
         });
@@ -234,7 +242,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             return createEdge(edge);
           })
           .filter(Boolean);
-        console.log(edges);
+
         // 5. 批量添加边
         graphRef.current.addEdges(edges);
       }

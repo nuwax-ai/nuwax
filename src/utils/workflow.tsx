@@ -269,9 +269,9 @@ export const generatePorts = (data: ChildNode, height?: number) => {
     zIndex: 99,
     position: {
       name: 'absolute', // 确保使用绝对定位
+      args: yPosition !== undefined ? { y: yPosition, x: '100%' } : {}, // 直接作为顶级属性
     },
     magnet: true,
-    args: yPosition !== undefined ? { y: yPosition } : {}, // 直接作为顶级属性
     attrs: {
       circle: {
         r: basePortSize,
@@ -304,16 +304,18 @@ export const generatePorts = (data: ChildNode, height?: number) => {
         data.nodeConfig?.conditionBranchConfigs ||
         data.nodeConfig.intentConfigs ||
         [];
+
       inputPorts = [
         { ...defaultPortConfig('in', `in`, height ? height / 2 : '50%') },
       ];
       const baseY = 32; // 节点头部固定高度
       const itemHeight = data.type === 'Condition' ? 28 : 18; // 每个条件项高度
       outputPorts = configs.map((item, index) => ({
-        ...defaultPortConfig('out', `${item.uuid || index}-out`),
-        args: {
-          y: baseY + index * itemHeight + itemHeight / 2,
-        },
+        ...defaultPortConfig(
+          'out',
+          `${item.uuid || index}-out`,
+          baseY + index * itemHeight + itemHeight / 2,
+        ),
       }));
       break;
     }
@@ -322,10 +324,11 @@ export const generatePorts = (data: ChildNode, height?: number) => {
       const configs = data.nodeConfig?.options;
       if (type === 'SELECT') {
         outputPorts = (configs || []).map((item, index) => ({
-          ...defaultPortConfig('out', `${item.uuid || index}-out`),
-          args: {
-            y: 110 + index * 18 + 9,
-          },
+          ...defaultPortConfig(
+            'out',
+            `${item.uuid || index}-out`,
+            110 + index * 18 + 9,
+          ),
         }));
       } else {
         outputPorts = [{ ...defaultPortConfig('out', `out`, '50%') }];
@@ -427,7 +430,7 @@ export const createBaseNode = (node: ChildNode) => {
     height: extension.height || 83,
     label: node.name,
     data: node,
-    ports: generatePorts(node),
+    ports: generatePorts(node, extension.height),
     zIndex: 3,
   };
 };

@@ -185,30 +185,19 @@ const Workflow: React.FC = () => {
     });
   };
   // 获取当前节点的参数
-  const getRefernece = (() => {
-    let timer: NodeJS.Timeout | null = null;
-
-    return async (id: number) => {
-      if (timer) {
-        clearTimeout(timer);
+  const getRefernece = async (id: number) => {
+    // 获取节点需要的引用参数
+    const _res = await service.getOutputArgs(id);
+    if (_res.code === Constant.success) {
+      if (
+        _res.data &&
+        _res.data.previousNodes &&
+        _res.data.previousNodes.length
+      ) {
+        setReferenceList(_res.data);
       }
-
-      timer = setTimeout(async () => {
-        // 获取节点需要的引用参数
-        const _res = await service.getOutputArgs(id);
-        if (_res.code === Constant.success) {
-          if (
-            _res.data &&
-            _res.data.previousNodes &&
-            _res.data.previousNodes.length
-          ) {
-            setReferenceList(_res.data);
-          }
-        }
-        timer = null;
-      }, 1000); // 1秒防抖
-    };
-  })();
+    }
+  };
 
   // 查询节点的指定信息
   const getNodeConfig = async (id: number) => {
@@ -252,11 +241,6 @@ const Workflow: React.FC = () => {
       setVisible(false);
       return;
     } else {
-      setReferenceList({
-        previousNodes: [],
-        innerPreviousNodes: [],
-        argMap: {},
-      });
       if (!visible) setVisible(true);
       setFoldWrapItem(child);
     }
