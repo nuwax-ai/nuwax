@@ -68,7 +68,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   const addInputItem = () => {
     const nextItems = [...(form.getFieldValue(inputItemName) || []), formItem];
     form.setFieldsValue({ [inputItemName]: nextItems });
-    // handleChangeNodeConfig({ [inputItemName]: nextItems });
+    handleChangeNodeConfig({ [inputItemName]: nextItems });
     setIsSet(true);
   };
 
@@ -76,7 +76,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
     const formValue = form.getFieldsValue()[inputItemName];
     const _newValue = formValue.filter((_: unknown, i: number) => i !== index);
     form.setFieldsValue({ [inputItemName]: _newValue });
-    // handleChangeNodeConfig({ [inputItemName]: _newValue });
+    handleChangeNodeConfig({ [inputItemName]: _newValue });
     setIsSet(true);
   };
 

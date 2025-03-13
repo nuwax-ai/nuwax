@@ -6,7 +6,7 @@ import {
 } from '@/types/interfaces/workflow';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Form, message, Select, Tag } from 'antd';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { v4 as uuidv4 } from 'uuid';
 import './condition.less';
@@ -153,8 +153,8 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
   // Modified,
   updateNode,
 }) => {
-  // 监听params.conditionBranchConfigs的变化，并在变化时更新节点
   // 使用深拷贝来确保每次 params.conditionBranchConfigs 变化时都能触发重新渲染
+  const [conditionParams, setConditionParams] = useState(params);
 
   const updateBranchType = (
     currentIndex: number,
@@ -173,7 +173,7 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
 
   const addInputItem = () => {
     const newConditionBranchConfigs = [
-      ...(params.conditionBranchConfigs || []),
+      ...(conditionParams.conditionBranchConfigs || []),
     ];
     const insertIndex =
       newConditionBranchConfigs.length > 0
@@ -193,13 +193,17 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
         },
       ],
     });
+    setConditionParams({
+      ...conditionParams,
+      conditionBranchConfigs: newConditionBranchConfigs,
+    });
 
     if (updateNode) {
       updateNode({
-        ...params,
+        ...conditionParams,
         conditionBranchConfigs: newConditionBranchConfigs,
         extension: {
-          ...params.extension,
+          ...conditionParams.extension,
           height: newConditionBranchConfigs.length * 32 + 48,
         },
       });
@@ -208,23 +212,27 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
 
   const removeItem = (key: string) => {
     if (
-      params.conditionBranchConfigs &&
-      params.conditionBranchConfigs?.length <= 2
+      conditionParams.conditionBranchConfigs &&
+      conditionParams.conditionBranchConfigs?.length <= 2
     ) {
       message.warning('至少需要两个分支');
       return;
     }
     const updatedConditionBranchConfigs = (
-      params.conditionBranchConfigs || []
+      conditionParams.conditionBranchConfigs || []
     ).filter((item) => item.uuid !== key);
     updatedConditionBranchConfigs.forEach((item, index) => {
       if (index !== updatedConditionBranchConfigs.length - 1) {
         item.branchType = updateBranchType(index);
       }
     });
+    setConditionParams({
+      ...conditionParams,
+      conditionBranchConfigs: updatedConditionBranchConfigs,
+    });
     if (updateNode) {
       updateNode({
-        ...params,
+        ...conditionParams,
         conditionBranchConfigs: updatedConditionBranchConfigs,
         extension: {
           ...params.extension,
@@ -238,18 +246,21 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
     values: ConditionBranchConfigs,
     key: string,
   ) => {
-    const newConditionBranchConfigs = (params.conditionBranchConfigs || []).map(
-      (item) => {
-        if (!values.conditionArgs) {
-          return item.uuid === key ? { ...item, ...values } : { ...item };
-        } else {
-          return item.uuid === key ? { ...item, ...values } : { ...item };
-        }
-      },
-    );
+    const newConditionBranchConfigs = (
+      conditionParams.conditionBranchConfigs || []
+    ).map((item) => {
+      if (!values.conditionArgs) {
+        return item.uuid === key ? { ...item, ...values } : { ...item };
+      } else {
+        return item.uuid === key ? { ...item, ...values } : { ...item };
+      }
+    });
+    console.log(newConditionBranchConfigs);
+    // conditionParams.conditionBranchConfigs=newConditionBranchConfigs
+    // setConditionParams({...conditionParams,conditionBranchConfigs:newConditionBranchConfigs})
     if (updateNode) {
       updateNode({
-        ...params,
+        ...conditionParams,
         conditionBranchConfigs: newConditionBranchConfigs,
       });
     }
@@ -288,6 +299,10 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
     }
   };
 
+  useEffect(() => {
+    setConditionParams(params);
+  }, [params]);
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="dis-sb margin-bottom">
@@ -302,21 +317,25 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
       <Droppable droppableId="condition-list">
         {(provided: any) => (
           <div {...provided.droppableProps} ref={provided.innerRef}>
-            {(params.conditionBranchConfigs || []).map((item, index) => {
-              return (
-                <ConditionList
-                  key={item.uuid}
-                  title={
-                    branchTypeMap[item.branchType as 'IF' | 'ELSE_IF' | 'ELSE']
-                  }
-                  initialValues={item}
-                  removeItem={removeItem}
-                  handleChangeNodeConfig={handleChangeNodeConfig}
-                  draggableId={item.uuid}
-                  index={index}
-                />
-              );
-            })}
+            {(conditionParams.conditionBranchConfigs || []).map(
+              (item, index) => {
+                return (
+                  <ConditionList
+                    key={item.uuid}
+                    title={
+                      branchTypeMap[
+                        item.branchType as 'IF' | 'ELSE_IF' | 'ELSE'
+                      ]
+                    }
+                    initialValues={item}
+                    removeItem={removeItem}
+                    handleChangeNodeConfig={handleChangeNodeConfig}
+                    draggableId={item.uuid}
+                    index={index}
+                  />
+                );
+              },
+            )}
             {provided.placeholder}
           </div>
         )}
