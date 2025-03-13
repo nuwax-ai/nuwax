@@ -241,6 +241,20 @@ const Workflow: React.FC = () => {
     setTestRunResult('');
     if (child === null) {
       setVisible(false);
+      setFoldWrapItem({
+        id: 0,
+        description: '',
+        workflowId: workflowId,
+        type: NodeTypeEnum.Start,
+        nodeConfig: {
+          extension: {
+            x: 0,
+            y: 0,
+          },
+        },
+        name: '',
+        icon: '',
+      });
       return;
     } else {
       if (!visible) setVisible(true);
