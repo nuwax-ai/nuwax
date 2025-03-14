@@ -35,10 +35,14 @@ const bindEventHandlers = ({
     if (!graph.isClipboardEmpty()) {
       // 检查剪贴板是否为空
       const cells = graph.getSelectedCells(); // 粘贴并偏移一定距离
-      const node = cells[0].getData();
-      node.nodeConfig.extension.y = node.nodeConfig.extension.y + 32;
-      node.nodeConfig.extension.x = node.nodeConfig.extension.x + 32;
-      copyNode(node);
+      if (cells) {
+        const node = cells[0].getData();
+        if (node.type === 'Start' || node.type === 'End') {
+          message.error('不能粘贴起始节点和结束节点');
+          return;
+        }
+        copyNode(node);
+      }
       graph.cleanSelection(); // 清除当前选择
       // graph.select(cells); // 选择新粘贴的单元格
       // const _cell = cells[0]

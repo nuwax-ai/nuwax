@@ -116,7 +116,10 @@ const initGraph = ({
       allowLoop: false, //禁止自己连接自己
       allowEdge: false,
       highlight: true, //当用户尝试创建连接且鼠标悬停在一个有效的连接点上时，该连接点会被高亮显示
-      snap: true,
+      snap: {
+        radius: 50, // 设置自定义的吸附半径，例如从默认的50px改为24px或其他值
+        anchor: 'bbox', // 或者 'center'，决定计算距离时是基于节点中心还是包围盒
+      },
       createEdge() {
         return new Shape.Edge({
           shape: 'data-processing-curve', // 更改为使用注册的自定义边样式
@@ -267,23 +270,26 @@ const initGraph = ({
     .use(new Selection()); // 启用历史记录插件，支持撤销和重做
 
   // 监听连接桩鼠标进入事件
-  graph.on('node:port:mouseenter', ({ port, node }) => {
-    if (!port) return;
-    const ports = node.getPorts();
-    const updatedPorts = ports.map((p) => {
-      if (p.id === port) {
-        p.attrs = {
-          ...p.attrs,
-          circle: {
-            r: 10,
-            // fill: '#fff', // 添加背景色
-            stroke: '#5F95FF', // 添加边框颜色
-            strokeWidth: 2,
-          },
-        };
-      }
-      return p;
+  graph.on('node:mouseenter', ({ node }) => {
+    const currentPorts = node.getPorts();
+    // 保存原始端口状态到节点数据
+    node.setData({
+      originalPorts: currentPorts.map((p) => ({ ...(p.attrs?.circle || {}) })),
     });
+
+    // 更新当前节点端口
+    const updatedPorts = currentPorts.map((p) => ({
+      ...p,
+      attrs: {
+        ...p.attrs,
+        circle: {
+          ...(p.attrs?.circle || {}),
+          r: 8,
+          stroke: '#5F95FF',
+          strokeWidth: 2,
+        },
+      },
+    }));
     node.prop('ports/items', updatedPorts);
   });
 
@@ -336,11 +342,13 @@ const initGraph = ({
       if (_data.nodeConfig) {
         _data.nodeConfig.extension = extension;
       }
-      // 找到循环节点中当前被移动的节点
-      for (let item of _data.innerNodes) {
-        if (item.id === data.id) {
-          item.nodeConfig.extension.x = x;
-          item.nodeConfig.extension.y = y;
+      if (_data.innerNodes && _data.innerNodes.length > 0) {
+        // 找到循环节点中当前被移动的节点
+        for (let item of _data.innerNodes) {
+          if (item.id === data.id) {
+            item.nodeConfig.extension.x = x;
+            item.nodeConfig.extension.y = y;
+          }
         }
       }
       changeCondition(_data);
@@ -352,7 +360,7 @@ const initGraph = ({
   });
 
   // 监听连接桩鼠标离开事件
-  graph.on('node:port:mouseleave', () => {
+  graph.on('node:mouseleave', () => {
     changePortSize();
   });
   // 监听边移除事件

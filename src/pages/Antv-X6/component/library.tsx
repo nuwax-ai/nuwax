@@ -8,7 +8,7 @@ import type { NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Empty, Popover, Select, Slider } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import '../index.less';
 import { TreeOutput } from './commonNode';
 import { InputList } from './pluginNode';
@@ -16,7 +16,7 @@ import { InputList } from './pluginNode';
 const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,
-  updateNode,
+  // updateNode,
 }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
@@ -28,23 +28,22 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   // 知识库
   const onAddedSkill = (item: CreatedNodeItem) => {
     item.type = item.targetType;
-    item.typeId = item.targetId;
+    item.knowledgeBaseId = item.targetId;
     const knowledgeBaseConfigs = params.knowledgeBaseConfigs || [];
-    if (updateNode) {
-      updateNode({
-        ...params,
-        knowledgeBaseConfigs: [
-          ...knowledgeBaseConfigs,
-          { ...item, knowledgeBaseId: item.targetId },
-        ],
-      });
-      setOpen(false);
-    }
+    Modified({
+      ...params,
+      knowledgeBaseConfigs: [...knowledgeBaseConfigs, item],
+    });
+    setOpen(false);
   };
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
   };
+
+  useEffect(() => {
+    console.log('params', params);
+  }, [params]);
   return (
     <div className="knowledge-node">
       {/* 输入参数 */}
@@ -68,7 +67,11 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
         </div>
         {params.knowledgeBaseConfigs &&
           params.knowledgeBaseConfigs.length > 0 && (
-            <SkillList params={params} handleChange={handleChangeNodeConfig} />
+            <SkillList
+              skillName={'knowledgeBaseConfigs'}
+              params={params}
+              handleChange={handleChangeNodeConfig}
+            />
           )}
         {(!params.knowledgeBaseConfigs ||
           !params.knowledgeBaseConfigs.length) && <Empty />}
@@ -160,7 +163,9 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
         onAdded={onAddedSkill}
         open={open}
         onCancel={() => setOpen(false)}
-        hasIds={params.knowledgeBaseConfigs?.map((item) => Number(item.typeId))}
+        hasIds={params.knowledgeBaseConfigs?.map((item) =>
+          Number(item.knowledgeBaseId),
+        )}
       />
     </div>
   );

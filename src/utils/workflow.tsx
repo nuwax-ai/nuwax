@@ -284,8 +284,8 @@ export const generatePorts = (data: ChildNode) => {
         fill: '#5F95FF',
         pointerEvents: 'all', // 强制启用指针事件
         event: 'mouseenter', // 明确事件类型
-        // 新增磁吸区域扩展
-        magnetRadius: 50, // 将磁吸半径从默认15px增大到24px
+        // // 新增磁吸区域扩展
+        // magnetRadius: 1, // 将磁吸半径从默认15px增大到24px
       },
     },
   });

@@ -107,7 +107,9 @@ const TestRun: React.FC<TestRunProps> = ({
                             label={
                               <>
                                 {item.name}
-                                <Tag className="ml-10">{item.dataType}</Tag>
+                                <Tag color="#C9CDD4" className="ml-10">
+                                  {item.dataType}
+                                </Tag>
                               </>
                             }
                             rules={[{ required: true, message: '请输入' }]}
@@ -131,7 +133,9 @@ const TestRun: React.FC<TestRunProps> = ({
                           label={
                             <>
                               {item.name}
-                              <Tag className="ml-10">{item.dataType}</Tag>
+                              <Tag color="#C9CDD4" className="ml-10">
+                                {item.dataType}
+                              </Tag>
                             </>
                           }
                           rules={[{ required: true, message: '请输入' }]}

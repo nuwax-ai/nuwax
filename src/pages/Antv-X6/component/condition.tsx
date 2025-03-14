@@ -50,7 +50,7 @@ export const ConditionList: React.FC<ConditionListProps> = ({
           <div className="dis-sb condition-header-style">
             <div>
               <span className="margin-right-6">{title}</span>
-              <Tag>优先级{index + 1}</Tag>
+              <Tag color="#C9CDD4">优先级{index + 1}</Tag>
             </div>
             {initialValues.branchType !== 'ELSE' && (
               <MinusCircleOutlined onClick={() => removeItem(draggableId)} />
@@ -59,7 +59,11 @@ export const ConditionList: React.FC<ConditionListProps> = ({
           {initialValues.branchType !== 'ELSE' && (
             <Form
               form={form}
-              onValuesChange={submitForm}
+              // onValuesChange={submitForm}
+              // onValuesChange={(changedValues, allValues) => {
+              //   console.log('Changed values:', changedValues);
+              //   console.log('All values:', allValues);
+              // }}
               // initialValues={initialValues}
               layout={'horizontal'}
             >
@@ -255,7 +259,6 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
         return item.uuid === key ? { ...item, ...values } : { ...item };
       }
     });
-    console.log(newConditionBranchConfigs);
     // conditionParams.conditionBranchConfigs=newConditionBranchConfigs
     // setConditionParams({...conditionParams,conditionBranchConfigs:newConditionBranchConfigs})
     if (updateNode) {
@@ -300,7 +303,9 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
   };
 
   useEffect(() => {
-    setConditionParams(params);
+    if (conditionParams && !conditionParams.conditionBranchConfigs) {
+      setConditionParams(params);
+    }
   }, [params]);
 
   return (

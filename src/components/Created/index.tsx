@@ -348,6 +348,10 @@ const Created: React.FC<CreatedProp> = ({
             onChange={(e) => {
               setSearch(e.target.value);
             }}
+            onClear={() => {
+              setSearch('');
+              getList(selected.key, { page: 1, pageSize: 10 });
+            }}
             onPressEnter={(event) => {
               if (event.key === 'Enter') {
                 onSearch((event.currentTarget as HTMLInputElement).value);

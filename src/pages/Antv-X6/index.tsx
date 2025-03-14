@@ -151,7 +151,7 @@ const Workflow: React.FC = () => {
       }
     }
   };
-  // 调整画布的大小
+  // 调整画布的大小(滚轮)
   const changeGraph = (val: number) => {
     setInfo((prev) => {
       if (!prev || !prev.extension) return prev;
@@ -169,8 +169,7 @@ const Workflow: React.FC = () => {
     });
     graphRef.current.changeGraphZoom(val);
   };
-
-  //
+  // 调整画布的大小（左下角select）
   const changeZoom = (val: number | string) => {
     setInfo((prev) => {
       if (!prev || !prev.extension) return prev;
@@ -328,16 +327,19 @@ const Workflow: React.FC = () => {
   const copyNode = async (child: ChildNode) => {
     const _res = await service.copyNode(child.id.toString());
     if (_res.code === Constant.success) {
-      const _dragEvent = {
-        x: 100,
-        y: 100,
-      };
       const _newNode = JSON.parse(JSON.stringify(_res.data));
+      const _dragEvent = {
+        x: _newNode.nodeConfig.extension.x + 20,
+        y: _newNode.nodeConfig.extension.y + 20,
+      };
+      _newNode.nodeConfig.extension.x = _newNode.nodeConfig.extension.x + 32;
+      _newNode.nodeConfig.extension.y = _newNode.nodeConfig.extension.y + +32;
       _newNode.key = 'general-Node';
       graphRef.current.addNode(_dragEvent, _newNode);
+      changeNode(_res.data);
       // 选中新增的节点
       graphRef.current.selectNode(_res.data.id);
-      changeUpdateTime();
+      // changeUpdateTime();
     }
   };
 
@@ -527,11 +529,15 @@ const Workflow: React.FC = () => {
     const volid = await volidWorkflow();
     if (volid) {
       // 获取所有节点,保存位置
+      setLoading(true);
       const _params = { ...values, workflowId: info?.id };
       const _res = await service.publishWorkflow(_params);
       if (_res.code === Constant.success) {
         message.success('发布成功');
+        setLoading(false);
         setShowPublish(false);
+        // 更新时间
+        getDetails();
       }
     }
   };
@@ -628,13 +634,13 @@ const Workflow: React.FC = () => {
             if (data.data && data.data.output) {
               setTestRunResult(data.data.output);
             }
-
             setFormItemValue(
               data.nodeExecuteResultMap[
                 (info?.startNode.id as number).toString()
               ].data,
             );
             setTestRunResult(JSON.stringify(data.data, null, 2));
+            setLoading(false);
           }
           if (data.data.status === 'STOP_WAIT_ANSWER') {
             setLoading(false);
@@ -644,7 +650,6 @@ const Workflow: React.FC = () => {
               setTestRunparams(data.data.result.data);
             }
           }
-          setLoading(false);
         }
         // 更新UI状态...
       },
@@ -798,6 +803,7 @@ const Workflow: React.FC = () => {
         open={showPublish}
         onCancel={() => setShowPublish(false)}
         onSubmit={onSubmit}
+        loading={loading}
       />
     </div>
   );

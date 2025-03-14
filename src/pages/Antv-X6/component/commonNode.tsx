@@ -45,6 +45,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   showCopy = false,
   disabledAdd,
   disabledDelete,
+  disabledInput,
   isLoop,
   isVariable,
   retrieveRefernece,
@@ -147,10 +148,10 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                   <div key={item.name}>
                     {/* 只在第一个输入框组旁边显示标签 */}
                     {index === 0 && (
-                      <>
+                      <div className="font-color-gray07">
                         <span>参数名</span>
                         <span style={{ marginLeft: '20%' }}>变量值</span>
-                      </>
+                      </div>
                     )}
                     <Form.Item key={item.key}>
                       <div className="dis-left">
@@ -164,6 +165,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                             size="small"
                             style={{ width: '30%', marginRight: '10px' }}
                             placeholder="请输入参数名"
+                            disabled={disabledInput}
                           />
                         </Form.Item>
                         <Form.Item
@@ -183,7 +185,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                             ])}
                             form={form}
                             fieldName={[inputItemName, item.name, 'bindValue']}
-                            style={{ width: '55%', marginRight: '10px' }}
+                            style={{ flex: 1, marginRight: '10px' }}
                             referenceType={fieldValue}
                             isLoop={isLoop}
                           />
@@ -319,10 +321,10 @@ export const OtherFormList: React.FC<NodeRenderProps> = ({
                   <div key={item.name}>
                     {/* 只在第一个输入框组旁边显示标签 */}
                     {index === 0 && (
-                      <>
+                      <div className="font-color-gray07">
                         <span>参数名</span>
                         <span style={{ marginLeft: '20%' }}>变量值</span>
-                      </>
+                      </div>
                     )}
                     <Form.Item key={item.key}>
                       <div className="dis-left">
@@ -382,7 +384,7 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
             title={
               <span>
                 {item.name}{' '}
-                <Tag style={{ marginLeft: '5px' }}>
+                <Tag color="#C9CDD4" style={{ marginLeft: '5px' }}>
                   {DataTypeMap[item.dataType as DataTypeEnum]}
                 </Tag>
               </span>
@@ -398,7 +400,7 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
           title={
             <span>
               {item.name}{' '}
-              <Tag style={{ marginLeft: '5px' }}>
+              <Tag color="#C9CDD4" style={{ marginLeft: '5px' }}>
                 {DataTypeMap[item.dataType as DataTypeEnum]}
               </Tag>
             </span>

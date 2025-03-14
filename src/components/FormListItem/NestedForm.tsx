@@ -189,6 +189,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
               updateNodeField(nodeData.key, 'name', e.target.value);
             }}
             disabled={nodeData.systemVariable}
+            placeholder="请输入参数名称"
             className="tree-form-name flex-1"
             style={{
               borderColor: errors[`${nodeData.key}-name`]
@@ -216,6 +217,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
             className="tree-form-name"
             disabled={nodeData.systemVariable}
             placement={'bottomLeft'}
+            placeholder="请选择数据类型"
             style={{
               width: '100%',
               borderColor: errors[`${nodeData.key}-type`]
@@ -360,7 +362,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
             treeData.find((item) => item.subArgs && item.subArgs.length > 0)
               ? 'ml-34'
               : 'ml-10'
-          } dis-left font-12 mb-6`}
+          } dis-left font-12 mb-6 font-color-gray07`}
         >
           <span>变量名</span>
           <span

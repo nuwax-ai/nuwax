@@ -52,13 +52,6 @@ export const asideList: StencilList[] = [
         key: 'general-Node',
         description: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气...',
       },
-      {
-        name: '过程输出',
-        icon: <ICON_WORKFLOW_OUTPUT />,
-        type: 'Output',
-        key: 'general-Node',
-        description: '支持中间过程的消息输出，支持流式和非流式两种方式',
-      },
     ],
   },
   {
@@ -178,6 +171,19 @@ export const asideList: StencilList[] = [
         type: 'HTTPRequest',
         key: 'general-Node',
         description: '用于配置http请求调用已有的服务',
+      },
+    ],
+  },
+  {
+    name: '输出',
+    key: 'group5',
+    children: [
+      {
+        name: '过程输出',
+        icon: <ICON_WORKFLOW_OUTPUT />,
+        type: 'Output',
+        key: 'general-Node',
+        description: '支持中间过程的消息输出，支持流式和非流式两种方式',
       },
     ],
   },

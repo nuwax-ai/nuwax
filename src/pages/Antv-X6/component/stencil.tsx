@@ -1,6 +1,6 @@
 import { ChildNode } from '@/types/interfaces/graph';
-import { SearchOutlined } from '@ant-design/icons';
-import { Input } from 'antd';
+// import { SearchOutlined } from '@ant-design/icons';
+// import { Input } from 'antd';
 import '../index.less';
 import { asideList } from '../params';
 import { Child } from '../type';
@@ -32,7 +32,8 @@ const StencilContent = ({ dragChild, foldWrapItem }: Prop) => {
   return (
     <div className="stencil-content">
       {/* 输入框用于搜索功能 */}
-      <Input placeholder="搜索" prefix={<SearchOutlined />} />
+      {/* <Input placeholder="搜索" prefix={<SearchOutlined />} /> */}
+      <p className="stencil-title">节点选择</p>
       {/* 渲染 stencil 列表 */}
       <div className="stencil-list-style">
         {asideList.map((item) => (

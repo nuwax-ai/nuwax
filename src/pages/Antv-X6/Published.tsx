@@ -7,7 +7,7 @@ import {
   Input,
   Modal,
 } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface Values {
   scope: PluginPublishScopeEnum;
@@ -19,6 +19,7 @@ interface PublishedProp {
   open: boolean;
   onCancel: () => void;
   onSubmit: (params: Values) => void;
+  loading: boolean;
 }
 
 const Published: React.FC<PublishedProp> = ({
@@ -26,6 +27,7 @@ const Published: React.FC<PublishedProp> = ({
   open,
   onCancel,
   onSubmit,
+  loading,
 }) => {
   const [form] = Form.useForm();
   const [scope, setScope] = useState<PluginPublishScopeEnum>(
@@ -37,13 +39,17 @@ const Published: React.FC<PublishedProp> = ({
     remark: string;
   }>['onFinish'] = (values) => {
     onSubmit({ id, scope, remark: values.remark });
-    form.resetFields();
   };
 
   const handleChangeScope = (e: CheckboxChangeEvent) => {
     setScope(e.target.value as PluginPublishScopeEnum);
   };
 
+  useEffect(() => {
+    if (!open) {
+      form.resetFields();
+    }
+  }, [open]);
   return (
     <Modal
       open={open}
@@ -51,6 +57,7 @@ const Published: React.FC<PublishedProp> = ({
       keyboard={false} //是否能使用sec关闭
       maskClosable={false} //点击蒙版层是否可以关闭
       onCancel={onCancel}
+      confirmLoading={loading}
       cancelText="取消"
       okText="确认"
       onOk={() => {
