@@ -2,6 +2,7 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { getTime } from '@/utils';
 import { getImg } from '@/utils/workflow';
 import {
+  CheckCircleFilled,
   // CheckCircleOutlined,
   EditOutlined,
   InfoCircleOutlined,
@@ -50,15 +51,23 @@ const Header: React.FC<HeaderProp> = ({
             <Popover content={description}>
               <InfoCircleOutlined className="mr-6" />
             </Popover>
+            {publishStatus === 'Published' && (
+              <Popover content={'已发布'}>
+                <CheckCircleFilled
+                  className="mr-6"
+                  style={{ color: '#00B23C' }}
+                />
+              </Popover>
+            )}
             <EditOutlined onClick={setShowCreateWorkflow} />
             {/* <CheckCircleOutlined /> */}
           </div>
           <div className="header-tag-style">
-            <Tag color="#C9CDD4">
+            {/* <Tag color="#C9CDD4">
               {publishStatus === 'Published' ? '已发布' : '未发布'}
-            </Tag>
-            <Tag color="#C9CDD4">
-              已自动保存{getTime(modified ?? new Date().toString())}
+            </Tag> */}
+            <Tag color="#EBECF5" style={{ color: 'rgba(15,21,40,0.82)' }}>
+              已自动保存 {getTime(modified ?? new Date().toString())}
             </Tag>
           </div>
         </div>

@@ -155,8 +155,8 @@ const Workflow: React.FC = () => {
   const changeGraph = (val: number) => {
     setInfo((prev) => {
       if (!prev || !prev.extension) return prev;
-
       const numVal = typeof val === 'string' ? parseFloat(val) : val;
+
       if (prev.extension.size !== numVal) {
         onConfirm({
           id: sessionStorage.getItem('workfolwId')!,
@@ -172,9 +172,11 @@ const Workflow: React.FC = () => {
   // 调整画布的大小（左下角select）
   const changeZoom = (val: number | string) => {
     setInfo((prev) => {
-      if (!prev || !prev.extension) return prev;
       const numVal = typeof val === 'string' ? parseFloat(val) : val;
-      if (prev.extension.size !== numVal) {
+      if (!prev) {
+        return prev;
+      }
+      if (!prev.extension || prev.extension.size !== numVal) {
         onConfirm({
           id: sessionStorage.getItem('workfolwId')!,
           name: prev.name,
@@ -182,6 +184,7 @@ const Workflow: React.FC = () => {
         });
         return { ...prev, extension: { ...prev.extension, size: numVal } };
       }
+
       return prev;
     });
   };
