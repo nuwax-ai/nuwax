@@ -1,6 +1,6 @@
 import {
   UPLOAD_FILE_ACTION,
-  UPLOAD_FILE_TYPE,
+  UPLOAD_FILE_SUFFIX,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { FileType } from '@/types/interfaces/common';
@@ -37,11 +37,17 @@ const UploadFile: React.FC<UploadFileProps> = ({
 
   // beforeUpload 返回 false 或 Promise.reject 时，只用于拦截上传行为，不会阻止文件进入上传列表（原因）。如果需要阻止列表展现，可以通过返回 Upload.LIST_IGNORE 实现。
   const beforeUploadDefault = (file: FileType) => {
-    const isFile = UPLOAD_FILE_TYPE.includes(file.type);
+    const { type, size } = file;
+    if (!type.includes('.')) {
+      message.error('请上传正确的文件类型');
+      return;
+    }
+    const suffix = type.split('.')[1].toLower();
+    const isFile = UPLOAD_FILE_SUFFIX.includes(suffix);
     if (!isFile) {
       message.error('You can only upload PDF、TXT、DOC、DOCX file!');
     }
-    const isLt100M = file.size / 1024 / 1024 < 100;
+    const isLt100M = size / 1024 / 1024 < 100;
     if (!isLt100M) {
       message.error('File must smaller than 100MB!');
     }

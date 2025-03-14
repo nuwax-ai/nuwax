@@ -2,6 +2,9 @@
 
 .footer {
   gap: 12px;
+  padding: 10px 16px;
+  border: 1px solid @GRAY01;
+  border-radius: 20px;
 
   .clear {
     width: 40px;
@@ -11,35 +14,29 @@
     border: 1px solid @GRAY01;
   }
 
-  .chat-box {
-    padding: 10px 16px;
-    border: 1px solid @GRAY01;
-    border-radius: 30px;
+  .chat-input {
+    gap: 8px;
 
-    .chat-input {
-      gap: 8px;
+    .input {
+      flex: 1;
+      border: none;
+      background-color: transparent;
+    }
 
-      .input {
-        flex: 1;
-        border: none;
-        background-color: transparent;
-      }
+    .icon-box {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background-color: @WHITE01;
+    }
 
-      .icon-box {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background-color: @WHITE01;
-      }
+    .add-file {
+      font-size: 20px;
+      color: @BLANK05;
+    }
 
-      .add-file {
-        font-size: 20px;
-        color: @BLANK05;
-      }
-
-      .send-image {
-        width: 30px;
-      }
+    .send-image {
+      width: 30px;
     }
   }
 }

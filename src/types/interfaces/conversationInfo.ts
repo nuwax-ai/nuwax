@@ -4,8 +4,11 @@ import type {
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { MessageStatusEnum } from '@/types/enums/common';
+import { ProcessingEnum } from '@/types/enums/common';
 import type {
+  AgentCardInfo,
   AgentStatisticsInfo,
   CreatorInfo,
 } from '@/types/interfaces/agent';
@@ -32,14 +35,14 @@ export interface ConversationChatMessage {
 // 调试结果
 export interface ExecuteResultInfo {
   data: unknown;
-  endTime: string;
+  endTime: number;
   error: string;
   id: number;
   input: unknown;
   name: string;
-  startTime: string;
+  startTime: number;
   success: boolean;
-  type: string;
+  type: AgentComponentTypeEnum;
 }
 
 // 会话聊天"FINAL_RESULT", 用于会话底部显示时间
@@ -100,6 +103,16 @@ export interface ConversationCreateParams {
   devMode: boolean;
 }
 
+// 消息查询过程信息
+export interface ProcessingInfo {
+  cardBindConfig: AgentCardInfo;
+  name: string;
+  result: ExecuteResultInfo;
+  status: ProcessingEnum;
+  targetId: number;
+  type: AgentComponentTypeEnum;
+}
+
 // 会话消息信息
 export interface MessageInfo {
   // assistant 模型回复；user 用户消息,可用值:USER,ASSISTANT,SYSTEM,FUNCTION
@@ -119,6 +132,8 @@ export interface MessageInfo {
   status?: MessageStatusEnum;
   // 自定义添加字段：chat 会话结果
   finalResult?: ConversationFinalResult;
+  // 消息查询过程信息
+  processingList?: ProcessingInfo[];
 }
 
 // 查询会话信息
@@ -185,7 +200,8 @@ export interface RoleInfo {
 
 // 聊天框组件
 export interface ChatViewProps {
+  className?: string;
+  contentClassName?: string;
   messageInfo: MessageInfo;
   roleInfo: RoleInfo;
-  onDebug?: () => void;
 }

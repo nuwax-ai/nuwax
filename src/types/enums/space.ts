@@ -79,11 +79,11 @@ export enum OpenCloseEnum {
 // 编辑智能体时,右侧切换显示内容枚举
 export enum EditAgentShowType {
   // 隐藏
-  Hide,
-  Debug_Details,
-  Version_History,
+  Hide = 'Hide',
+  Debug_Details = 'Debug_Details',
+  Version_History = 'Version_History',
   // 展示台
-  Show_Stand,
+  Show_Stand = 'Show_Stand',
 }
 
 // 插件设置类型

@@ -2,8 +2,8 @@ import AgentChatEmpty from '@/components/AgentChatEmpty';
 import ChatInput from '@/components/ChatInput';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
-import { UploadInfo } from '@/types/interfaces/common';
-import { RoleInfo } from '@/types/interfaces/conversationInfo';
+import type { UploadInfo } from '@/types/interfaces/common';
+import type { RoleInfo } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
 import React, { useEffect, useMemo } from 'react';
 import { useLocation, useMatch, useModel } from 'umi';
@@ -31,24 +31,25 @@ const Chat: React.FC = () => {
     runQueryConversation,
     loadingSuggest,
     onMessageSend,
-    handleDebug,
     messageViewRef,
     executeResults,
   } = useModel('conversationInfo');
 
+  // 角色信息（名称、头像）
   const roleInfo: RoleInfo = useMemo(() => {
+    const agent = conversationInfo?.agent;
     return {
       user: {
-        name: conversationInfo?.agent?.publishUser?.nickName as string,
-        avatar: conversationInfo?.agent?.publishUser?.avatar as string,
+        name: agent?.publishUser?.nickName as string,
+        avatar: agent?.publishUser?.avatar as string,
       },
       assistant: {
-        name: conversationInfo?.agent?.name as string,
-        avatar: conversationInfo?.agent?.icon as string,
+        name: agent?.name as string,
+        avatar: agent?.icon as string,
       },
       system: {
-        name: conversationInfo?.agent?.name as string,
-        avatar: conversationInfo?.agent?.icon as string,
+        name: agent?.name as string,
+        avatar: agent?.icon as string,
       },
     };
   }, [conversationInfo]);
@@ -62,7 +63,7 @@ const Chat: React.FC = () => {
         onMessageSend(id, message, files);
       }
     }
-  }, [id]);
+  }, [id, message, files]);
 
   // 消息发送
   const handleMessageSend = (message: string, files?: UploadInfo[]) => {
@@ -70,48 +71,38 @@ const Chat: React.FC = () => {
   };
 
   return (
-    <div className={cx('flex', 'h-full')}>
-      <div className={cx('flex-1', 'flex', 'flex-col', 'items-center')}>
-        {/*<h3 className={cx(styles.title)}>{chatTitle}</h3>*/}
+    <div className={cx('flex', 'h-full', 'overflow-y')} ref={messageViewRef}>
+      <div
+        className={cx(
+          'flex-1',
+          'flex',
+          'flex-col',
+          styles['main-content']
+        )}
+      >
+        <h3 className={cx(styles.title)}>{conversationInfo?.topic}</h3>
         <div
-          className={cx(
-            styles['main-content'],
-            'flex-1',
-            'flex',
-            'flex-col',
-            'w-full',
-            'overflow-y',
-          )}
+          className={cx(styles['chat-wrapper'], 'flex-1')}
         >
-          <div
-            className={cx(styles['chat-wrapper'], 'flex-1')}
-            ref={messageViewRef}
-          >
-            {messageList?.length > 0 ? (
-              <>
-                {messageList?.map((item, index) => (
-                  <ChatView
-                    key={index}
-                    messageInfo={item}
-                    roleInfo={roleInfo}
-                    onDebug={handleDebug}
-                  />
-                ))}
-                {/*会话建议*/}
-                <RecommendList
-                  loading={loadingSuggest}
-                  chatSuggestList={chatSuggestList}
-                  onClick={handleMessageSend}
-                />
-              </>
-            ) : (
-              // Chat记录为空
-              <AgentChatEmpty name={'智能体'} />
-            )}
-          </div>
-          {/*会话输入框*/}
-          <ChatInput onEnter={handleMessageSend} />
+          {messageList?.length > 0 ? (
+            <>
+              {messageList?.map((item, index) => (
+                <ChatView key={index} messageInfo={item} roleInfo={roleInfo} />
+              ))}
+              {/*会话建议*/}
+              <RecommendList
+                loading={loadingSuggest}
+                chatSuggestList={chatSuggestList}
+                onClick={handleMessageSend}
+              />
+            </>
+          ) : (
+            // Chat记录为空
+            <AgentChatEmpty name={'智能体'} />
+          )}
         </div>
+        {/*会话输入框*/}
+        <ChatInput className={cx(styles['chat-input'])} onEnter={handleMessageSend} />
       </div>
       {/*展示台区域*/}
       <ShowArea executeResults={executeResults} />

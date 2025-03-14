@@ -67,10 +67,10 @@ const HomeSection: React.FC = () => {
 
   return (
     <div className={cx('px-6', 'py-16')}>
-      <h3 className={cx(styles.title, 'mt-16')}>最近使用</h3>
+      <h3 className={cx(styles.title)}>最近使用</h3>
       <UserRelAgentList list={usedAgentList} onClick={handleClick} />
       <ConditionRender condition={editAgentList?.length}>
-        <h3 className={cx(styles.title)}>最近编辑</h3>
+        <h3 className={cx(styles.title, 'mt-16')}>最近编辑</h3>
         <UserRelAgentList list={editAgentList} onClick={handleClick} />
       </ConditionRender>
       <ConditionRender condition={collectAgentList?.length}>

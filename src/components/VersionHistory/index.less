@@ -1,42 +1,38 @@
 @import '@/styles/color';
 
-.container {
-  min-width: 340px;
+.main-wrap {
+  padding: 0 10px;
 
-  .main-wrap {
-    padding: 0 10px;
+  .box {
+    padding: 10px 0;
+    font-size: 12px;
+    border-bottom: 1px solid @GRAY06;
 
-    .box {
-      padding: 10px 0;
-      font-size: 12px;
-      border-bottom: 1px solid @GRAY06;
+    .header {
+      gap: 4px;
 
-      .header {
-        gap: 4px;
-
-        .name {
-          color: @BLUE04;
-        }
-
-        .author-update-time {
-          color: @BLUE04;
-        }
-
-        .new-version {
-          color: @GRAY05;
-        }
-
-        //.recover-btn {
-        //  height: auto;
-        //  margin-left: auto;
-        //  font-size: 12px;
-        //}
+      .name {
+        color: @BLUE04;
       }
 
-      p {
-        line-height: 20px;
-        color: @BLANK;
+      .author-update-time {
+        color: @BLUE04;
       }
+
+      .new-version {
+        color: @GRAY05;
+      }
+
+      //.recover-btn {
+      //  height: auto;
+      //  margin-left: auto;
+      //  font-size: 12px;
+      //}
+    }
+
+    p {
+      line-height: 20px;
+      color: @BLANK;
     }
   }
 }

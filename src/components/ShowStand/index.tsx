@@ -1,14 +1,16 @@
 import Card from '@/components/Card';
-import FoldWrap from '@/components/FoldWrap';
 import { CardStyleEnum } from '@/types/enums/common';
 import { Empty } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
+import ToggleWrap from '@/components/ToggleWrap';
 
 const cx = classNames.bind(styles);
 
-interface ShowStandProps {
+// 展示台组件
+export interface ShowStandProps {
+  className?: string;
   list: {
     id: number;
     img: string;
@@ -22,12 +24,11 @@ interface ShowStandProps {
 /**
  * 展示台
  */
-const ShowStand: React.FC<ShowStandProps> = ({ visible, onClose, list }) => {
+const ShowStand: React.FC<ShowStandProps> = ({ className, visible, onClose, list }) => {
   return (
-    <FoldWrap
-      lineMargin
+    <ToggleWrap
       title={'展示台'}
-      className={styles.container}
+      className={className}
       visible={visible}
       onClose={onClose}
     >
@@ -47,7 +48,7 @@ const ShowStand: React.FC<ShowStandProps> = ({ visible, onClose, list }) => {
           <Empty description="暂无数据" />
         </div>
       )}
-    </FoldWrap>
+    </ToggleWrap>
   );
 };
 

@@ -9,7 +9,6 @@ import type {
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
-// import moment from 'moment';
 import { OpenCloseEnum } from '@/types/enums/space';
 import { UploadInfo } from '@/types/interfaces/common';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -37,7 +36,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     runQueryConversation,
     loadingSuggest,
     onMessageSend,
-    handleDebug,
     messageViewRef,
   } = useModel('conversationInfo');
 
@@ -92,11 +90,12 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
 
   // 消息发送
   const handleMessageSend = (message: string, files?: UploadInfo[]) => {
-    if (!devConversationIdRef.current) {
+    const id = devConversationIdRef.current;
+    if (!id) {
       return;
     }
     const openSuggest = agentConfigInfo.openSuggest === OpenCloseEnum.Open;
-    onMessageSend(devConversationIdRef.current, message, files, openSuggest);
+    onMessageSend(id, message, files, openSuggest, true);
   };
 
   return (
@@ -119,12 +118,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
           {messageList?.length > 0 ? (
             <>
               {messageList?.map((item, index) => (
-                <ChatView
-                  key={index}
-                  messageInfo={item}
-                  roleInfo={roleInfo}
-                  onDebug={() => handleDebug(item)}
-                />
+                <ChatView key={index} messageInfo={item} roleInfo={roleInfo} />
               ))}
               {/*会话建议*/}
               <RecommendList

@@ -1,6 +1,10 @@
-import { MessageStatusEnum } from '@/types/enums/common';
+import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type { RunOverProps } from '@/types/interfaces/common';
-import { DownOutlined, LoadingOutlined } from '@ant-design/icons';
+import {
+  DownOutlined,
+  LoadingOutlined,
+  SolutionOutlined,
+} from '@ant-design/icons';
 import { Popover } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -12,7 +16,7 @@ const cx = classNames.bind(styles);
  * 运行状态组件：进行中、运行完毕
  */
 const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
-  const { finalResult } = messageInfo;
+  const { finalResult, processingList } = messageInfo;
 
   // 运行时间
   const runTime = useMemo(() => {
@@ -24,6 +28,15 @@ const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
     return 0;
   }, [finalResult]);
 
+  // 查询过程信息 - 最后一个
+  const lastProcessInfo = useMemo(() => {
+    const len = processingList?.length || 0;
+    if (len > 0) {
+      return processingList?.[len - 1];
+    }
+    return null;
+  }, [processingList]);
+
   return (
     <Popover
       placement="bottomLeft"
@@ -32,25 +45,23 @@ const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
       }}
       content={
         <div className={cx(styles['pop-content'])}>
-          {/*<div className={cx(styles['row'], 'flex', 'items-center')}>*/}
-          {/*  <UnorderedListOutlined />*/}
-          {/*  <span className={cx('flex-1')}>隐藏运行过程</span>*/}
-          {/*  <UpOutlined />*/}
-          {/*</div>*/}
-          {/*<div className={cx(styles['row'], 'flex', 'items-center')}>*/}
-          {/*  <SolutionOutlined />*/}
-          {/*  <span className={cx('flex-1')}>从长期记忆召回的内容</span>*/}
-          {/*  <span>0.2s</span>*/}
-          {/*</div>*/}
-          {/*<div className={cx(styles['row'], 'flex', 'items-center')}>*/}
-          {/*  <SolutionOutlined />*/}
-          {/*  <span className={cx('flex-1')}>已调用 必应搜索</span>*/}
-          {/*  <span>5.1s: 模型3.8s | 工具1.3s</span>*/}
-          {/*</div>*/}
-          <span className={cx(styles.summary)}>
-            {/*{`运行完毕${runTime}s (LLM 3.8s | 插件1.3s | 长期记忆0.2s)`}*/}
-            {`运行完毕 ${runTime}s`}
-          </span>
+          {processingList?.map((info, index) => {
+            return (
+              info.status === ProcessingEnum.FINISHED && (
+                <div
+                  key={index}
+                  className={cx(styles.row, 'flex', 'items-center')}
+                >
+                  <SolutionOutlined />
+                  <span className={cx('flex-1')}>{`已调用 ${info.name}`}</span>
+                  <span>{`${
+                    info.result?.endTime - info.result?.startTime
+                  }ms`}</span>
+                </div>
+              )
+            );
+          })}
+          <span className={cx(styles.summary)}>{`运行完毕 ${runTime}s`}</span>
         </div>
       }
       arrow={false}
@@ -58,7 +69,17 @@ const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
     >
       <span className={cx('cursor-pointer', styles['run-success'])}>
         {messageInfo?.status === MessageStatusEnum.Loading ? (
-          <LoadingOutlined />
+          <>
+            <LoadingOutlined />
+            {lastProcessInfo && (
+              <span className={cx(styles['status-name'])}>
+                {lastProcessInfo.status === ProcessingEnum.EXECUTING
+                  ? `正在调用 `
+                  : `已调用 `}
+                {lastProcessInfo.name}
+              </span>
+            )}
+          </>
         ) : messageInfo?.status === MessageStatusEnum.Incomplete ? (
           <span>已从海量知识库中搜索到结果</span>
         ) : (

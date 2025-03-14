@@ -16,14 +16,11 @@ const cx = classNames.bind(styles);
 
 const md = markdown({ html: true, breaks: true });
 
-const ChatView: React.FC<ChatViewProps> = ({
-  roleInfo,
-  messageInfo,
-  onDebug,
-}) => {
+const ChatView: React.FC<ChatViewProps> = ({ className, contentClassName, roleInfo, messageInfo }) => {
   // 当前用户信息
   const userInfo = JSON.parse(localStorage.getItem(USER_INFO));
 
+  // 角色名称和头像
   const info = useMemo(() => {
     const { user, assistant, system } = roleInfo;
     switch (messageInfo?.role) {
@@ -49,37 +46,37 @@ const ChatView: React.FC<ChatViewProps> = ({
   }, [roleInfo, messageInfo?.role]);
 
   return (
-    <div className={cx(styles.container, 'flex')}>
+    <div className={cx(styles.container, 'flex', className)}>
       <img className={cx(styles.avatar)} src={info?.avatar as string} alt="" />
       <div className={cx('flex-1')}>
         <div className={cx(styles.author)}>{info?.name}</div>
         {/*用户信息*/}
         <ConditionRender
           condition={
-            messageInfo.role === AssistantRoleEnum.USER && !!messageInfo?.text
+            messageInfo?.role === AssistantRoleEnum.USER && !!messageInfo?.text
           }
         >
           <div
-            className={cx(styles['chat-content'], 'radius-6')}
+            className={cx(styles['chat-content'], 'radius-6', contentClassName)}
             dangerouslySetInnerHTML={{
-              __html: md.render(messageInfo?.text?.toString()),
+              __html: md.render(messageInfo?.text),
             }}
           />
         </ConditionRender>
         {/*助手信息或系统信息*/}
         <ConditionRender
-          condition={messageInfo.role !== AssistantRoleEnum.USER}
+          condition={messageInfo?.role !== AssistantRoleEnum.USER}
         >
           {/*运行状态*/}
-          <ConditionRender condition={!!messageInfo.status}>
+          <ConditionRender condition={!!messageInfo?.status}>
             <RunOver messageInfo={messageInfo} />
           </ConditionRender>
           {/*文本内容*/}
           <ConditionRender condition={!!messageInfo?.text}>
             <div
-              className={cx(styles['chat-content'], 'radius-6')}
+              className={cx(styles['chat-content'], 'radius-6', 'w-full', contentClassName)}
               dangerouslySetInnerHTML={{
-                __html: md.render(messageInfo?.text?.toString()),
+                __html: md.render(messageInfo?.text),
               }}
             />
           </ConditionRender>
@@ -90,11 +87,7 @@ const ChatView: React.FC<ChatViewProps> = ({
               !messageInfo?.status
             }
           >
-            <ChatBottomMore
-              text={messageInfo?.text as string}
-              onDebug={onDebug}
-              finalResult={messageInfo?.finalResult}
-            />
+            <ChatBottomMore messageInfo={messageInfo} />
           </ConditionRender>
         </ConditionRender>
       </div>

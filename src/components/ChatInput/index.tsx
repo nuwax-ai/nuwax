@@ -96,7 +96,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           </span>
         </Tooltip>
       </ConditionRender>
-      <div className={cx(styles['chat-box'], 'flex-1')}>
+      <div className={cx('flex-1', 'w-full')}>
         {/*文件列表*/}
         <ConditionRender condition={files?.length}>
           <ChatUploadFile files={files} onDel={handleDelFile} />

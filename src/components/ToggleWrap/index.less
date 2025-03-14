@@ -1,0 +1,42 @@
+@import '@/styles/color';
+
+.container {
+  display: flex;
+  width: 360px;
+  border-radius: 15px;
+  background: @WHITE;
+  transition: all 0.3s ease;
+
+  &.hidden {
+    display: none;
+    width: 0;
+    overflow: hidden;
+  }
+
+  .header {
+    height: 60px;
+    padding: 0 12px;
+
+    h3 {
+      font-size: 18px;
+      font-weight: bold;
+      color: @BLANK04;
+      white-space: nowrap;
+    }
+
+    .close {
+      margin-left: 8px;
+      font-size: 14px;
+      transition: opacity ease-in-out 0.2s;
+
+      &:hover {
+        opacity: 0.8;
+      }
+    }
+  }
+
+  .divider-horizontal {
+    border-bottom: 1px solid @GRAY06;
+    margin: 0 12px;
+  }
+}

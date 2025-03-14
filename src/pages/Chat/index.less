@@ -1,16 +1,34 @@
 @import '@/styles/color';
 
 .title {
-  margin-top: 30px;
+  position: sticky;
+  top: 0;
+  line-height: 60px;
+  color: @BLANK17;
+  font-size: 16px;
+  text-align: center;
+  background-color: #fcfcff;
+  mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
 }
 
 .main-content {
-  gap: 20px;
-  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
 
   .chat-wrapper {
-    overflow-y: auto;
     padding-bottom: 30px;
-    mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
   }
+}
+
+.chat-input {
+  position: sticky;
+  bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: @WHITE;
+  z-index: 10;
 }

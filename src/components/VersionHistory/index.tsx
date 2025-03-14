@@ -1,4 +1,3 @@
-import FoldWrap from '@/components/FoldWrap';
 import { HistoryActionTypeEnum } from '@/types/enums/space';
 import type { VersionHistoryProps } from '@/types/interfaces/space';
 // import { Button } from 'antd';
@@ -6,6 +5,7 @@ import classNames from 'classnames';
 import moment from 'moment';
 import React from 'react';
 import styles from './index.less';
+import ToggleWrap from '@/components/ToggleWrap';
 
 const cx = classNames.bind(styles);
 
@@ -30,10 +30,8 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
     }
   };
   return (
-    <FoldWrap
-      lineMargin
+    <ToggleWrap
       title={'版本历史'}
-      className={styles.container}
       visible={visible}
       onClose={onClose}
     >
@@ -58,7 +56,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
           </div>
         ))}
       </div>
-    </FoldWrap>
+    </ToggleWrap>
   );
 };
 
