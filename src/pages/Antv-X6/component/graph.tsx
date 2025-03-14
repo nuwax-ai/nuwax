@@ -203,7 +203,7 @@ const initGraph = ({
         ...p,
         attrs: {
           ...p.attrs,
-          circle: { r: 4 }, // 强制重置所有连接桩半径
+          circle: { r: 3 }, // 强制重置所有连接桩半径
           pointerEvents: 'all', // 保持事件穿透
           event: 'mouseenter',
         },

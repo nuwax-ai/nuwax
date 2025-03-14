@@ -375,6 +375,22 @@ export const OtherFormList: React.FC<NodeRenderProps> = ({
 // 定义树结构的输出
 export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
   const { TreeNode } = Tree;
+  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+  useEffect(() => {
+    // 当 treeData 更新时，重新计算 expandedKeys
+    const getAllParentKeys = (data: TreeNodeData[]): React.Key[] => {
+      const keys: React.Key[] = [];
+      data.forEach((node) => {
+        if (node.subArgs && node.subArgs.length > 0) {
+          keys.push(node.name);
+          keys.push(...getAllParentKeys(node.subArgs));
+        }
+      });
+      return keys;
+    };
+
+    setExpandedKeys(getAllParentKeys(treeData));
+  }, [treeData]);
   // 定义一个函数来递归生成带有标签的树节点
   const renderTreeNode = (data: TreeNodeData[]) => {
     return data.map((item) => {
@@ -412,7 +428,12 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
   };
 
   return (
-    <Tree showLine defaultExpandAll switcherIcon={<DownOutlined />}>
+    <Tree
+      showLine
+      expandedKeys={expandedKeys} // 使用 expandedKeys 控制展开
+      onExpand={(keys) => setExpandedKeys(keys)} // 更新 expandedKeys
+      switcherIcon={<DownOutlined />}
+    >
       {renderTreeNode(treeData)}
     </Tree>
   );

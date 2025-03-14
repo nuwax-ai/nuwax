@@ -263,7 +263,7 @@ export const getHeight = (
 
 // 获取节点端口
 export const generatePorts = (data: ChildNode) => {
-  const basePortSize = 4;
+  const basePortSize = 3;
   const isLoopNode = data.type === 'Loop'; // 判断是否为 Loop 节点
   // 默认端口配置
   const defaultPortConfig = (group: 'in' | 'out', idSuffix: string) => ({
