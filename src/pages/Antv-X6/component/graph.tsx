@@ -25,6 +25,7 @@ import {
   hasDuplicateEdge,
   isValidLoopConnection,
   setEdgeAttributes,
+  updateEdgeArrows,
   validatePortConnection,
 } from '@/utils/graph';
 // import { PlusOutlined,} from '@ant-design/icons';
@@ -79,7 +80,7 @@ const initGraph = ({
       },
       line: {
         connection: true,
-        stroke: '#A2B1C3',
+        stroke: '#5147FF',
         strokeWidth: 1,
         targetMarker: {
           name: 'classic',
@@ -127,6 +128,7 @@ const initGraph = ({
             line: {
               strokeDasharray: '5 5', // 示例：添加虚线效果
               strokeWidth: 1,
+              targetMarker: null, // 初始不显示箭头
             },
           },
         });
@@ -175,7 +177,8 @@ const initGraph = ({
         if (isLoopNode(sourceCell) || isLoopNode(targetCell)) {
           return true; // Loop 节点允许任意连接
         }
-        // 默认返回 true 允许其他类型的连接（这里已经通过了前面的所有检查）
+
+        // // 默认返回 true 允许其他类型的连接（这里已经通过了前面的所有检查）
         return true;
       },
     },
@@ -184,8 +187,8 @@ const initGraph = ({
         name: 'stroke', // 当磁铁吸附时使用的高亮样式
         args: {
           attrs: {
-            fill: '#5F95FF', // 内部填充颜色
-            stroke: '#5F95FF', // 边框颜色
+            fill: '#5147FF', // 内部填充颜色
+            stroke: '#5147FF', // 边框颜色
           },
         },
       },
@@ -285,8 +288,9 @@ const initGraph = ({
         circle: {
           ...(p.attrs?.circle || {}),
           r: 8,
-          stroke: '#5F95FF',
-          strokeWidth: 2,
+          stroke: '#5147FF',
+          fill: '#5147FF',
+          // strokeWidth: 1,
         },
       },
     }));
@@ -367,6 +371,8 @@ const initGraph = ({
   graph.on('edge:removed', () => {
     // 遍历所有节点
     changePortSize();
+    // 统一调用更新
+    updateEdgeArrows(graph);
   });
   // 点击空白处，取消所有的选中
   graph.on('blank:click', () => {
@@ -376,11 +382,11 @@ const initGraph = ({
 
   // 监听边选中
   graph.on('edge:click', ({ edge }) => {
-    edge.attr('line/stroke', '#1890FF'); // 悬停时改为蓝色
+    edge.attr('line/stroke', '#37D0FF'); // 悬停时改为蓝色
   });
   // 监听边取消选中事件
   graph.on('edge:unselected', ({ edge }) => {
-    edge.attr('line/stroke', '#C2C8D5'); // 恢复默认颜色
+    edge.attr('line/stroke', '#5147FF'); // 恢复默认颜色
   });
   // 监听节点点击事件，调用 changeDrawer 函数更新右侧抽屉的内容
   graph.on('node:click', ({ node }) => {
@@ -449,6 +455,7 @@ const initGraph = ({
       edge.remove();
       return;
     }
+
     // 如果是循环内部的节点被外部的节点连接或者内部的节点连接外部的节点，就告知不能连接
     const currentLoopNodeId = sourceNode.loopNodeId || targetNode.loopNodeId;
     if (currentLoopNodeId) {
@@ -490,6 +497,8 @@ const initGraph = ({
         edge.prop('zIndex', 1);
       }
     }, 0);
+    // 统一调用更新
+    updateEdgeArrows(graph);
   });
 
   // 监听画布缩放
