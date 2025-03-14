@@ -13,6 +13,7 @@ import {
 import { Button, Cascader, Checkbox, Input, Popover, Select, Tree } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
 import { TreeFormProps } from './type';
 interface TreeNodeConfig extends InputAndOutConfig {
   key: string;
@@ -30,8 +31,9 @@ const CustomTree: React.FC<TreeFormProps> = ({
   const [treeData, setTreeData] = useState<TreeNodeConfig[]>(
     (params[inputItemName] as TreeNodeConfig[]) || [],
   );
-
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  // 在组件状态部分添加展开节点状态
+  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+  // const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
   // 在组件顶部添加状态管理
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -59,6 +61,18 @@ const CustomTree: React.FC<TreeFormProps> = ({
     }
   }, [params[inputItemName]]);
 
+  // 递归获取所有父节点的 key
+  const getAllParentKeys = (data: TreeNodeConfig[]): React.Key[] => {
+    const keys: React.Key[] = [];
+    data.forEach((node) => {
+      if (node.subArgs && node.subArgs.length > 0) {
+        keys.push(node.key);
+        keys.push(...getAllParentKeys(node.subArgs));
+      }
+    });
+    return keys;
+  };
+
   // 递归计算节点深度
   const getNodeDepth = (
     data: TreeNodeConfig[],
@@ -78,7 +92,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
   // 添加根节点
   const addRootNode = () => {
     const newNode: TreeNodeConfig = {
-      key: `node-${Date.now()}`,
+      key: uuidv4(),
       name: '',
       description: '',
       dataType: null,
@@ -100,7 +114,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
     if (depth >= 4) return;
 
     const newNode: TreeNodeConfig = {
-      key: `node-${Date.now()}`,
+      key: uuidv4(),
       name: '',
       description: null,
       dataType: null,
@@ -128,6 +142,12 @@ const CustomTree: React.FC<TreeFormProps> = ({
     handleChangeNodeConfig({
       ...params,
       [inputItemName]: updateRecursive(treeData),
+    });
+
+    // 更新展开状态（新增展开逻辑）
+    setExpandedKeys((prevKeys) => {
+      // 如果父节点尚未展开则添加，同时保留已有展开项
+      return Array.from(new Set([...prevKeys, parentKey]));
     });
   };
 
@@ -189,6 +209,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
               updateNodeField(nodeData.key, 'name', e.target.value);
             }}
             disabled={nodeData.systemVariable}
+            placeholder="请输入参数名称"
             className="tree-form-name flex-1"
             style={{
               borderColor: errors[`${nodeData.key}-name`]
@@ -216,6 +237,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
             className="tree-form-name"
             disabled={nodeData.systemVariable}
             placement={'bottomLeft'}
+            placeholder="请选择数据类型"
             style={{
               width: '100%',
               borderColor: errors[`${nodeData.key}-type`]
@@ -306,6 +328,12 @@ const CustomTree: React.FC<TreeFormProps> = ({
       setErrors(newErrors);
     }
   }, [volid, treeData]);
+
+  useEffect(() => {
+    // 初始化时展开所有父节点
+    const parentKeys = getAllParentKeys(treeData);
+    setExpandedKeys(parentKeys);
+  }, [treeData]);
   return (
     <div>
       <div className="dis-sb margin-bottom">
@@ -360,7 +388,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
             treeData.find((item) => item.subArgs && item.subArgs.length > 0)
               ? 'ml-34'
               : 'ml-10'
-          } dis-left font-12 mb-6`}
+          } dis-left font-12 mb-6 font-color-gray07`}
         >
           <span>变量名</span>
           <span
@@ -384,8 +412,9 @@ const CustomTree: React.FC<TreeFormProps> = ({
         defaultExpandAll
         fieldNames={{ title: 'name', key: 'key', children: 'subArgs' }}
         titleRender={renderTitle}
-        selectedKeys={selectedKey ? [selectedKey] : []}
-        onSelect={(keys) => setSelectedKey(keys[0] as string)}
+        defaultExpandParent
+        expandedKeys={expandedKeys}
+        onExpand={(keys) => setExpandedKeys(keys)}
         className={`${
           treeData.find((item) => item.subArgs && item.subArgs.length > 0)
             ? 'tree-form-style'

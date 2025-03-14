@@ -3,6 +3,7 @@ import type {
   GraphContainerProps,
   GraphContainerRef,
 } from '@/types/interfaces/graph';
+import { updateEdgeArrows } from '@/utils/graph';
 import {
   createBaseNode,
   createChildNode,
@@ -16,7 +17,6 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import EventHandlers from './component/eventHandlers';
 import InitGraph from './component/graph';
 import { registerCustomNodes } from './component/registerCustomNodes';
-
 const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
   (
     {
@@ -246,6 +246,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
         // 5. 批量添加边
         graphRef.current.addEdges(edges);
+        updateEdgeArrows(graphRef.current);
       }
     };
 

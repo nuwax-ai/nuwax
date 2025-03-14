@@ -1,5 +1,5 @@
 import { ChildNode } from '@/types/interfaces/graph';
-import { Edge, Node } from '@antv/x6';
+import { Edge, Graph, Node } from '@antv/x6';
 import { message } from 'antd';
 // 边界检查并调整子节点位置
 // 调整父节点尺寸以包含所有子节点
@@ -73,7 +73,7 @@ export function setEdgeAttributes(edge: Edge) {
   edge.attr({
     line: {
       strokeDasharray: '', // 移除虚线样式
-      stroke: '#C2C8D5', // 设置边的颜色
+      stroke: '#5147FF', // 设置边的颜色
       strokeWidth: 1, // 设置边的宽度
     },
   });
@@ -118,9 +118,10 @@ export function handleLoopEdge(sourceNode: ChildNode, targetNode: ChildNode) {
   }
   if (targetNode.type === 'Loop') {
     if (
-      sourceNode.type === 'IntentRecognition' ||
-      sourceNode.type === 'Condition' ||
-      sourceNode.type === 'QA'
+      (sourceNode.type === 'IntentRecognition' ||
+        sourceNode.type === 'Condition' ||
+        sourceNode.type === 'QA') &&
+      sourceNode.loopNodeId
     ) {
       message.warning('条件分支，意图识别，问答不能作为循环的出口连接节点');
       return 'error';
@@ -195,3 +196,43 @@ export function hasDuplicateEdge(
     );
   });
 }
+// 1. 定义箭头样式常量
+const ARROW_CONFIG = {
+  name: 'classic' as const,
+  size: 6,
+  fill: '#5147FF',
+  stroke: '#5147FF',
+};
+
+// 提取箭头更新逻辑为独立函数
+export const updateEdgeArrows = (graph: Graph) => {
+  // 创建端口分组映射 { [targetNodeId-portId]: Edge[] }
+  const portMap = new Map<string, Edge[]>();
+
+  graph.getEdges().forEach((edge) => {
+    const targetNode = edge.getTargetNode();
+    const targetPort = edge.getTargetPortId();
+
+    if (targetNode && targetPort) {
+      const key = `${targetNode.id}-${targetPort}`;
+      const edges = portMap.get(key) || [];
+      edges.push(edge);
+      portMap.set(key, edges);
+    }
+  });
+  // 处理每个端口组
+  portMap.forEach((edges) => {
+    // 按创建时间排序（假设id包含时间戳）
+    const sortedEdges = edges.sort((a, b) => a.id.localeCompare(b.id));
+
+    sortedEdges.forEach((edge, index) => {
+      const isLast = index === sortedEdges.length - 1;
+
+      // 设置箭头状态
+      edge.attr('line/targetMarker', isLast ? ARROW_CONFIG : null);
+
+      // 设置层级关系
+      edge.setZIndex(isLast ? 10 : 1);
+    });
+  });
+};

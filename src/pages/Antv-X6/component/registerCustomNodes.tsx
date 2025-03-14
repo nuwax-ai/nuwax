@@ -104,7 +104,6 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
     // 明确告诉 getData 返回的数据类型
     const data = node.getData<ChildNode>();
     const isSelected = !!data.selected; // 判断是否选中
-    console.log('data', data);
     // 或者返回一个默认的内容，以防止渲染错误
     if (!data) {
       return null;
@@ -292,7 +291,7 @@ export const LoopNode: React.FC<NodeProps> = ({ node }) => {
         style={{ background: gradientBackground }}
       >
         <ICON_WORKFLOW_LOOP style={{ marginRight: '6px' }} />
-        <span>循环</span>
+        <span>{data.name}</span>
       </div>
       <div className="loop-node-content" />
     </div>

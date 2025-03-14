@@ -1,12 +1,15 @@
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { getTime } from '@/utils';
+import { getImg } from '@/utils/workflow';
 import {
-  CheckCircleOutlined,
+  CheckCircleFilled,
+  // CheckCircleOutlined,
   EditOutlined,
+  InfoCircleOutlined,
   LeftOutlined,
 } from '@ant-design/icons';
-import { Button, Tag } from 'antd';
+import { Button, Popover, Tag } from 'antd';
 import React from 'react';
-
 interface HeaderProp {
   info: {
     name?: string;
@@ -15,6 +18,7 @@ interface HeaderProp {
     created?: string;
     modified?: string;
     id?: number;
+    description?: string;
   };
   showPublish: () => void;
   setShowCreateWorkflow: () => void;
@@ -25,7 +29,7 @@ const Header: React.FC<HeaderProp> = ({
   setShowCreateWorkflow,
   showPublish,
 }) => {
-  const { name, icon, publishStatus, modified } = info;
+  const { name, icon, publishStatus, modified, description } = info;
 
   // 返回上一级
   const bank = () => {
@@ -36,19 +40,35 @@ const Header: React.FC<HeaderProp> = ({
     <div className="fold-header-style dis-sb">
       <div className="dis-left">
         <LeftOutlined className="back-icon-style" onClick={bank} />
-        {icon && <img src={icon} alt="" className="header-icon-style" />}
+        <img
+          src={icon || getImg(AgentComponentTypeEnum.Workflow)}
+          alt=""
+          className="header-icon-style"
+        />
         <div className="dis-col header-content-style ">
-          <div className="dis-left ">
-            <span className="header-name-style">{name}</span>
-            <EditOutlined className="mr-16" onClick={setShowCreateWorkflow} />
-            <CheckCircleOutlined />
+          <div className="dis-left">
+            <strong className="header-name-style">{name}</strong>
+            <Popover content={description}>
+              <InfoCircleOutlined className="mr-6" />
+            </Popover>
+            {publishStatus === 'Published' && (
+              <Popover content={'已发布'}>
+                <CheckCircleFilled
+                  className="mr-6"
+                  style={{ color: '#00B23C' }}
+                />
+              </Popover>
+            )}
+            <EditOutlined onClick={setShowCreateWorkflow} />
+            {/* <CheckCircleOutlined /> */}
           </div>
           <div className="header-tag-style">
-            <Tag>工作流</Tag>
-            <Tag>{publishStatus === 'Published' ? '已发布' : '未发布'}</Tag>
-            <span>
-              配置自动保存于{getTime(modified ?? new Date().toString())}
-            </span>
+            {/* <Tag color="#C9CDD4">
+              {publishStatus === 'Published' ? '已发布' : '未发布'}
+            </Tag> */}
+            <Tag color="#EBECF5" style={{ color: 'rgba(15,21,40,0.82)' }}>
+              已自动保存 {getTime(modified ?? new Date().toString())}
+            </Tag>
           </div>
         </div>
       </div>

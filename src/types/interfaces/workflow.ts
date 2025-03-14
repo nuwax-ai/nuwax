@@ -193,6 +193,8 @@ export interface NodeRenderProps {
   disabledAdd?: boolean;
   // 不显示删除按钮
   disabledDelete?: boolean;
+  // 禁止输入参数名
+  disabledInput?: boolean;
   // 当前是循环节点
   isLoop?: boolean;
   // 是否是中间变量节点
@@ -224,6 +226,8 @@ export interface FormListProps {
 export interface SkillProps {
   params: NodeConfig;
   handleChange: (item: NodeConfig) => void;
+  // 当前既能的参数名称
+  skillName: 'knowledgeBaseConfigs' | 'skillComponentConfigs';
 }
 
 export interface SkillDisposeProps {

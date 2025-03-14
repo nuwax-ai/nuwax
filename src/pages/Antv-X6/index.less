@@ -36,11 +36,15 @@
 .stencil-content {
   width: 240px;
 
+  .stencil-title {
+    color: @GRAY07;
+  }
+
   .stencil-list-style {
     width: 100%;
 
     .stencil-list-item {
-      margin-top: 10px;
+      margin: 12px 0;
 
       .stencil-list-title {
         margin-bottom: 6px;
@@ -66,8 +70,11 @@
 
         .child-content {
           width: 50%;
-          margin-top: 4px;
+          // margin-top: 4px;
           cursor: pointer;
+          letter-spacing: 1px;
+          line-height: 22px;
+          margin: 6px 0;
         }
       }
     }
@@ -89,8 +96,8 @@
 
 #graph-container {
   width: 100%;
-  height: calc(100vh - 74px);
-  background-color: @WHITE05;
+  height: calc(100vh - 64px);
+  background-color: @GRAY09;
 }
 
 .x6-widget-transform {
@@ -214,11 +221,12 @@
 
 .fold-wrap-style {
   position: absolute;
-  top: 90px;
-  right: 10px;
-  bottom: 10px;
+  top: 91px;
+  right: 9px;
+  bottom: 11px;
   width: 370px;
   z-index: 99;
+  border: 1px solid @WHITE15;
 }
 
 .dispose-node-style {
@@ -296,22 +304,23 @@
 }
 
 .fold-header-style {
-  height: 76px;
-  border-bottom: 2px solid @WHITE11;
+  height: 64px;
+  border-bottom: 1px solid @WHITE11;
   padding: 0 16px;
   background-color: @WHITE02;
+  box-sizing: border-box;
 
   .back-icon-style {
-    font-size: 28px;
-    color: @GRAY07;
+    font-size: 14px;
+    color: @BLANK17;
     cursor: pointer;
-    margin-right: 20px;
+    margin-right: 12px;
   }
 
   .header-icon-style {
-    width: 42px;
-    height: 42px;
-    margin-right: 16px;
+    width: 32px;
+    height: 32px;
+    margin-right: 12px;
   }
 
   .header-content-style {
@@ -322,11 +331,17 @@
       font-size: 14px;
       color: @BLANK04;
       font-weight: bold;
-      margin-right: 16px;
+      margin-right: 6px;
+      line-height: 20px;
     }
 
     .header-tag-style {
-      margin-top: 6px;
+      margin-top: 0;
+
+      .ant-tag {
+        line-height: 14px;
+        height: 16px;
+      }
     }
   }
 }

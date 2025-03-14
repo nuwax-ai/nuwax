@@ -50,6 +50,8 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   // 将节点的数据 保存到 state 中,维持数据双向绑定,便于管理
   const [currentNodeConfig, setCurrentNodeConfig] =
     useState<ChildNode>(foldWrapItem);
+  // 打开重命名的input
+  const [showNameInput, setShowNameInput] = useState<boolean>(false);
 
   // 新增定时器引用
   const timerRef = useRef<NodeJS.Timeout>();
@@ -270,6 +272,9 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   const handleChangeNode = (val: string) => {
     if (val === 'TestRun') {
       onGetNodeConfig(currentNodeConfig, true);
+    } else if (val === 'Rename') {
+      // 这里要触发展开input
+      setShowNameInput(true);
     }
     setTimeout(() => {
       handleNodeChange(val, foldWrapItem);
@@ -330,6 +335,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
       description={currentNodeConfig.description}
       icon={returnImg(foldWrapItem.type)}
       changeFoldWrap={changeFoldWrap}
+      showNameInput={showNameInput}
       otherAction={
         <OtherOperations
           onChange={handleChangeNode}

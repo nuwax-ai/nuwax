@@ -21,7 +21,7 @@ export interface InputAndOutConfig {
   // 有可能有children
   children?: InputAndOutConfig[];
   // 参数key，唯一标识
-  key?: string | null;
+  key: string;
   // 是否开启
   enable?: boolean;
   // 输入类型

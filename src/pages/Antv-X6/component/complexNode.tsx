@@ -28,7 +28,7 @@ import { FormList, InputAndOut, TreeOutput } from './commonNode';
 const ModelNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,
-  updateNode,
+  // updateNode,
 }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
@@ -44,13 +44,14 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     item.type = item.targetType;
     item.typeId = item.targetId;
     const skillComponentConfigs = params.skillComponentConfigs || [];
-    if (updateNode) {
-      updateNode({
-        ...params,
-        skillComponentConfigs: [...skillComponentConfigs, item],
-      });
-      setOpen(false);
-    }
+    handleChangeNodeConfig({
+      ...params,
+      skillComponentConfigs: [...skillComponentConfigs, item],
+    });
+    setOpen(false);
+    // if (updateNode) {
+    //   updateNode();
+    // }
   };
 
   //   显示新增技能
@@ -74,7 +75,11 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
         </div>
         {params.skillComponentConfigs &&
           params.skillComponentConfigs.length > 0 && (
-            <SkillList params={params} handleChange={handleChangeNodeConfig} />
+            <SkillList
+              skillName={'skillComponentConfigs'}
+              params={params}
+              handleChange={handleChangeNodeConfig}
+            />
           )}
         {(!params.skillComponentConfigs ||
           !params.skillComponentConfigs.length) && <Empty />}
@@ -241,15 +246,8 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
     const typeChanged = val !== params.answerType;
     const optionsChanged = options !== params.options;
     if (typeChanged || optionsChanged) {
-      // [!code ++]
-      if (updateNode) {
-        updateNode({
-          ...params,
-          answerType: val,
-          options,
-        });
-      }
-    } // [!code ++]
+      handleChangeNodeConfig({ ...params, answerType: val, options });
+    }
   };
 
   const changeOptions = (newNodeConfig: NodeConfig) => {
@@ -266,6 +264,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
     }
   };
   useEffect(() => {
+    console.log(params);
     if (params && params.answerType === null) {
       Modified({ ...params, answerType: 'TEXT' });
     }
@@ -379,8 +378,8 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   return (
     <div>
       {/* 请求配置 */}
-      <div className="node-item-style">
-        <p className="node-title-style">请求配置</p>
+      <div className="node-item-style has-child-node">
+        <p className="node-title-bold-style">请求配置</p>
         <Form
           form={form}
           onValuesChange={submitForm}
@@ -413,7 +412,8 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
         </Form>
       </div>
       {/* 入参 */}
-      <div className="node-item-style">
+      <div className="node-item-style has-child-node">
+        <p className="node-title-bold-style">入参</p>
         <InputAndOut
           nodeKey={outputKey}
           title="Header"

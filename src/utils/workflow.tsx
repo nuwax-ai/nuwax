@@ -263,7 +263,7 @@ export const getHeight = (
 
 // 获取节点端口
 export const generatePorts = (data: ChildNode) => {
-  const basePortSize = 4;
+  const basePortSize = 3;
   const isLoopNode = data.type === 'Loop'; // 判断是否为 Loop 节点
   // 默认端口配置
   const defaultPortConfig = (group: 'in' | 'out', idSuffix: string) => ({
@@ -279,13 +279,13 @@ export const generatePorts = (data: ChildNode) => {
       circle: {
         r: basePortSize,
         magnet: true,
-        stroke: '#5F95FF',
-        strokeWidth: 2,
-        fill: '#5F95FF',
+        stroke: '#5147FF',
+        // strokeWidth: 2,
+        fill: '#5147FF',
         pointerEvents: 'all', // 强制启用指针事件
         event: 'mouseenter', // 明确事件类型
-        // 新增磁吸区域扩展
-        magnetRadius: 50, // 将磁吸半径从默认15px增大到24px
+        // // 新增磁吸区域扩展
+        // magnetRadius: 1, // 将磁吸半径从默认15px增大到24px
       },
     },
   });
@@ -303,9 +303,9 @@ export const generatePorts = (data: ChildNode) => {
       circle: {
         r: basePortSize,
         magnet: true,
-        stroke: '#5F95FF',
-        strokeWidth: 2,
-        fill: '#5F95FF',
+        stroke: '#5147FF',
+        // strokeWidth: 2,
+        fill: '#5147FF',
         pointerEvents: 'all', // 强制启用指针事件
         event: 'mouseenter', // 明确事件类型
         // 新增磁吸区域扩展
@@ -517,7 +517,7 @@ export const createEdge = (edge: Edge) => {
   return {
     shape: 'edge',
     router: { name: 'orth' },
-    attrs: { line: { stroke: '#A2B1C3', strokeWidth: 1 } },
+    attrs: { line: { stroke: '#5147FF', strokeWidth: 1 } },
     source: parseEndpoint(edge.source, 'out'),
     target: parseEndpoint(edge.target, 'in'),
     zIndex: edge.zIndex,

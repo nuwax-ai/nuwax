@@ -45,6 +45,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   showCopy = false,
   disabledAdd,
   disabledDelete,
+  disabledInput,
   isLoop,
   isVariable,
   retrieveRefernece,
@@ -147,10 +148,10 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                   <div key={item.name}>
                     {/* 只在第一个输入框组旁边显示标签 */}
                     {index === 0 && (
-                      <>
+                      <div className="font-color-gray07">
                         <span>参数名</span>
                         <span style={{ marginLeft: '20%' }}>变量值</span>
-                      </>
+                      </div>
                     )}
                     <Form.Item key={item.key}>
                       <div className="dis-left">
@@ -164,6 +165,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                             size="small"
                             style={{ width: '30%', marginRight: '10px' }}
                             placeholder="请输入参数名"
+                            disabled={disabledInput}
                           />
                         </Form.Item>
                         <Form.Item
@@ -183,7 +185,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                             ])}
                             form={form}
                             fieldName={[inputItemName, item.name, 'bindValue']}
-                            style={{ width: '55%', marginRight: '10px' }}
+                            style={{ flex: 1, marginRight: '10px' }}
                             referenceType={fieldValue}
                             isLoop={isLoop}
                           />
@@ -319,10 +321,10 @@ export const OtherFormList: React.FC<NodeRenderProps> = ({
                   <div key={item.name}>
                     {/* 只在第一个输入框组旁边显示标签 */}
                     {index === 0 && (
-                      <>
+                      <div className="font-color-gray07">
                         <span>参数名</span>
                         <span style={{ marginLeft: '20%' }}>变量值</span>
-                      </>
+                      </div>
                     )}
                     <Form.Item key={item.key}>
                       <div className="dis-left">
@@ -373,6 +375,22 @@ export const OtherFormList: React.FC<NodeRenderProps> = ({
 // 定义树结构的输出
 export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
   const { TreeNode } = Tree;
+  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+  useEffect(() => {
+    // 当 treeData 更新时，重新计算 expandedKeys
+    const getAllParentKeys = (data: TreeNodeData[]): React.Key[] => {
+      const keys: React.Key[] = [];
+      data.forEach((node) => {
+        if (node.subArgs && node.subArgs.length > 0) {
+          keys.push(node.name);
+          keys.push(...getAllParentKeys(node.subArgs));
+        }
+      });
+      return keys;
+    };
+
+    setExpandedKeys(getAllParentKeys(treeData));
+  }, [treeData]);
   // 定义一个函数来递归生成带有标签的树节点
   const renderTreeNode = (data: TreeNodeData[]) => {
     return data.map((item) => {
@@ -382,7 +400,7 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
             title={
               <span>
                 {item.name}{' '}
-                <Tag style={{ marginLeft: '5px' }}>
+                <Tag color="#C9CDD4" style={{ marginLeft: '5px' }}>
                   {DataTypeMap[item.dataType as DataTypeEnum]}
                 </Tag>
               </span>
@@ -398,7 +416,7 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
           title={
             <span>
               {item.name}{' '}
-              <Tag style={{ marginLeft: '5px' }}>
+              <Tag color="#C9CDD4" style={{ marginLeft: '5px' }}>
                 {DataTypeMap[item.dataType as DataTypeEnum]}
               </Tag>
             </span>
@@ -410,7 +428,12 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
   };
 
   return (
-    <Tree showLine defaultExpandAll switcherIcon={<DownOutlined />}>
+    <Tree
+      showLine
+      expandedKeys={expandedKeys} // 使用 expandedKeys 控制展开
+      onExpand={(keys) => setExpandedKeys(keys)} // 更新 expandedKeys
+      switcherIcon={<DownOutlined />}
+    >
       {renderTreeNode(treeData)}
     </Tree>
   );

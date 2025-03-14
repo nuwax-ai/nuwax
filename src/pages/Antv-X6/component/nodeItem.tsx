@@ -14,7 +14,6 @@ import {
 import {
   Button,
   Divider,
-  Flex,
   Input,
   InputNumber,
   Popover,
@@ -68,6 +67,7 @@ const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({
         handleChangeNodeConfig={handleChangeNodeConfig}
         disabledAdd
         disabledDelete
+        disabledInput
       />
       {params.outputArgs && (
         <div>
@@ -337,9 +337,25 @@ export const ArrayLinkSetting: React.FC<{
     e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>,
   ) => {
     e.preventDefault();
-    setOptions([...options, newItem]);
+    if (newItem.label === '' || newItem.value === '') return;
+    const newOption = {
+      label: `${newItem.label}(${newItem.value})`,
+      value: newItem.value,
+    };
+    setOptions([...options, newOption]);
     setNewItem({ label: '', value: '' });
+    localStorage.setItem(
+      'arrayLinkSetting',
+      JSON.stringify([...options, newOption]),
+    );
   };
+
+  useEffect(() => {
+    const arrayLinkSetting = localStorage.getItem('arrayLinkSetting');
+    if (arrayLinkSetting) {
+      setOptions(JSON.parse(arrayLinkSetting));
+    }
+  }, []);
 
   return (
     <div className="array-link-setting">
@@ -349,7 +365,9 @@ export const ArrayLinkSetting: React.FC<{
         mode={multiple ? 'multiple' : undefined}
         value={multiple ? (initValue as string[]) : (initValue as string)}
         onChange={onChange}
-        className="array-link-setting-select"
+        className={`array-link-setting-select ${
+          multiple ? '' : 'single-select'
+        }`}
         dropdownRender={(menu) => (
           <>
             {menu}
@@ -362,6 +380,7 @@ export const ArrayLinkSetting: React.FC<{
                   onChange={(e) =>
                     setNewItem({ value: newItem.value, label: e.target.value })
                   }
+                  onKeyDown={(e) => e.stopPropagation()} // 阻止键盘事件冒泡
                 />
                 <Input
                   value={newItem.value}
@@ -369,6 +388,7 @@ export const ArrayLinkSetting: React.FC<{
                   onChange={(e) =>
                     setNewItem({ label: newItem.label, value: e.target.value })
                   }
+                  onKeyDown={(e) => e.stopPropagation()} // 阻止键盘事件冒泡
                 />
                 <Button type="primary" onClick={addItem}>
                   添加
@@ -380,12 +400,14 @@ export const ArrayLinkSetting: React.FC<{
         options={options}
         optionRender={(option) => {
           return (
-            <Flex gap={8} align={'center'}>
-              <div className="array-link-setting-select-option-icon">
-                {initValue === option.data.value && <CheckOutlined />}
-              </div>
+            <div className="dis-sb select-render-style">
               <div>{option.data.label}</div>
-            </Flex>
+              <div className="array-link-setting-select-option-icon">
+                {initValue === option.data.value && (
+                  <CheckOutlined style={{ color: '#1677FF' }} />
+                )}
+              </div>
+            </div>
           );
         }}
       ></Select>
@@ -405,6 +427,50 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
     Modified({ ...params, ...newNodeConfig });
   };
 
+  const changeTxetType = (val: 'CONCAT' | 'SPLIT') => {
+    if (val === 'SPLIT') {
+      handleChangeNodeConfig({
+        ...params,
+        textHandleType: 'SPLIT',
+        outputArgs: [
+          {
+            key: uuidv4(),
+            name: 'output',
+            description: '处理后的字符串输出结果',
+            dataType: DataTypeEnum.Array_String,
+            require: true,
+            enable: true,
+            systemVariable: true,
+            bindValueType: null,
+            bindValue: null,
+            subArgs: [],
+            children: [],
+          },
+        ],
+      });
+    } else {
+      handleChangeNodeConfig({
+        ...params,
+        textHandleType: 'CONCAT',
+        outputArgs: [
+          {
+            key: uuidv4(),
+            name: 'output',
+            description: '处理后的字符串输出结果',
+            dataType: DataTypeEnum.String,
+            require: true,
+            enable: true,
+            systemVariable: true,
+            bindValueType: null,
+            bindValue: null,
+            subArgs: [],
+            children: [],
+          },
+        ],
+      });
+    }
+  };
+
   const textTypeOptions = [
     { label: '字符串拼接', value: 'CONCAT' },
     { label: '字符串分割', value: 'SPLIT' },
@@ -414,14 +480,11 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
     <>
       <div className="node-item-style dis-center">
         <Segmented
-          options={textTypeOptions}
+          options={
+            textTypeOptions as { label: string; value: 'CONCAT' | 'SPLIT' }[]
+          }
           value={params.textHandleType ?? 'CONCAT'}
-          onChange={(val) => {
-            handleChangeNodeConfig({
-              ...params,
-              textHandleType: val as 'CONCAT' | 'SPLIT',
-            });
-          }}
+          onChange={changeTxetType}
           style={{ marginBottom: '10px' }}
         />
       </div>

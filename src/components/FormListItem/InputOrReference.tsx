@@ -72,7 +72,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
             label: (
               <div className="reference-item-child">
                 <span>{arg.name}</span>
-                <Tag className="ml-20" color="#65656687">
+                <Tag className="ml-20" color="#C9CDD4">
                   {arg.dataType}
                 </Tag>
               </div>
@@ -86,7 +86,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
             label: (
               <div className="reference-item-child ml-20">
                 <span>{item.name}</span>
-                <Tag className="ml-20" color="#65656687">
+                <Tag className="ml-20" color="#C9CDD4">
                   {item.dataType}
                 </Tag>
               </div>
@@ -141,7 +141,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
             closable
             onClose={handleTagClose}
             className="input-or-reference-tag text-ellipsis"
-            color="#65656687"
+            color="#C9CDD4"
           >
             <span className="tag-text-style">{newValue}</span>
           </Tag>

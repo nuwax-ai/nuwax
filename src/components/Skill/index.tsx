@@ -23,7 +23,7 @@ const SkillParamsContent: React.FC<{ params: TreeOutput[] }> = ({ params }) => {
         <div key={item.name}>
           <div className="dis-left">
             <span className="mr-16">{item.name}</span>
-            <Tag>{item.dataType}</Tag>
+            <Tag color="#C9CDD4">{item.dataType}</Tag>
           </div>
           <p className="skill-params-description">{item.description}</p>
         </div>
@@ -124,7 +124,7 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
                   <div className="flex-1">
                     <p className="flex">
                       <span className="mr-16">{item.name}</span>
-                      <Tag>{item.dataType}</Tag>
+                      <Tag color="#C9CDD4">{item.dataType}</Tag>
                     </p>
                     <p>{item.description}</p>
                   </div>
@@ -189,12 +189,13 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
                 fieldNames={{ title: 'name', key: 'name', children: 'subArgs' }}
                 treeData={parameter.outputArgBindConfigs as TreeOutput[]}
                 titleRender={(nodeData) => {
-                  console.log(nodeData);
                   return (
                     <div className="dis-sb tree-title-style">
                       <div>
                         <span>{nodeData.name}</span>
-                        <Tag className="ml-12">{nodeData.dataType}</Tag>
+                        <Tag color="#C9CDD4" className="ml-12">
+                          {nodeData.dataType}
+                        </Tag>
                       </div>
                       <Switch
                         size="small"
@@ -222,7 +223,13 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
 };
 
 // 定义通用的技能显示
-export const SkillList: React.FC<SkillProps> = ({ params, handleChange }) => {
+export const SkillList: React.FC<SkillProps> = ({
+  params,
+  handleChange,
+  skillName,
+}) => {
+  // const [skillParams,setSkillParams] = useState<NodeConfig>(params);
+
   // 使用useState钩子来管理每个项目的hover状态
   const [hoveredItem, setHoveredItem] = useState<CreatedNodeItem>({
     icon: '',
@@ -245,14 +252,14 @@ export const SkillList: React.FC<SkillProps> = ({ params, handleChange }) => {
     if (item.knowledgeBaseId) {
       newParams = {
         ...params,
-        knowledgeBaseConfigs: params.knowledgeBaseConfigs?.filter(
+        knowledgeBaseConfigs: params[skillName]?.filter(
           (i) => i.knowledgeBaseId !== item.knowledgeBaseId,
         ),
       };
     } else {
       newParams = {
         ...params,
-        skillComponentConfigs: params.skillComponentConfigs?.filter(
+        skillComponentConfigs: params[skillName]?.filter(
           (i) => i.typeId !== item.typeId,
         ),
       };
@@ -261,11 +268,23 @@ export const SkillList: React.FC<SkillProps> = ({ params, handleChange }) => {
   };
 
   const handleConfirm = (val: CreatedNodeItem) => {
-    const newParams = params.skillComponentConfigs?.map((item) =>
-      item.typeId === val.typeId ? val : item,
-    );
-    handleChange({ ...params, skillComponentConfigs: newParams });
+    let newParams;
+    if (skillName === 'skillComponentConfigs') {
+      newParams = params.skillComponentConfigs?.map((item) =>
+        item.typeId === val.typeId ? val : item,
+      );
+    } else {
+      newParams = params.knowledgeBaseConfigs?.map((item) =>
+        item.knowledgeBaseId === val.knowledgeBaseId ? val : item,
+      );
+    }
+    // setSkillParams((prev) => ())
+    handleChange({ ...params, [skillName]: newParams });
   };
+
+  // useEffect(() => {
+  //   setSkillParams(params);
+  // }, [params]);
 
   return (
     <>
@@ -343,21 +362,22 @@ export const SkillList: React.FC<SkillProps> = ({ params, handleChange }) => {
             <div className="skill-item-title-style">{item.name}</div>
             <div className="skill-item-desc-style">{item.description}</div>
           </div>
-          {hoveredItem?.typeId === item.typeId && showMask && (
-            <div className="mask-layer-style" style={{}}>
-              <div
-                className="skill-item-dispose-style"
-                style={{ color: '#fff', backgroundColor: 'transparent' }}
-              >
-                <Popover content={'移除'} trigger="hover">
-                  <DeleteOutlined
-                    className="ml-12  white"
-                    onClick={() => handleDelete(item)}
-                  />
-                </Popover>
+          {hoveredItem?.knowledgeBaseId === item.knowledgeBaseId &&
+            showMask && (
+              <div className="mask-layer-style" style={{}}>
+                <div
+                  className="skill-item-dispose-style"
+                  style={{ color: '#fff', backgroundColor: 'transparent' }}
+                >
+                  <Popover content={'移除'} trigger="hover">
+                    <DeleteOutlined
+                      className="ml-12  white"
+                      onClick={() => handleDelete(item)}
+                    />
+                  </Popover>
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
       ))}
       <SkillDispose

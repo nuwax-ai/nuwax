@@ -80,7 +80,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
               }}
             />
           }
-          trigger="click"
+          trigger="hover"
           open={open}
           onOpenChange={(visible) => setOpen(visible)}
         >
