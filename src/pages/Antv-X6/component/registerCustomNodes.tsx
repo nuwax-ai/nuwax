@@ -291,7 +291,7 @@ export const LoopNode: React.FC<NodeProps> = ({ node }) => {
         style={{ background: gradientBackground }}
       >
         <ICON_WORKFLOW_LOOP style={{ marginRight: '6px' }} />
-        <span>循环</span>
+        <span>{data.name}</span>
       </div>
       <div className="loop-node-content" />
     </div>

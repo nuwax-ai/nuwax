@@ -22,6 +22,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
     lineMargin,
     children,
     changeFoldWrap,
+    showNameInput,
   } = props;
 
   const styleHide = !visible ? styles.hidden : '';
@@ -52,6 +53,11 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
     }
   }, [isEditDesc]);
 
+  useEffect(() => {
+    if (showNameInput) {
+      setIsEdit(true);
+    }
+  }, [showNameInput]);
   interface Values {
     name: string;
     description: string;

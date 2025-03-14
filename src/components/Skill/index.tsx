@@ -189,7 +189,6 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
                 fieldNames={{ title: 'name', key: 'name', children: 'subArgs' }}
                 treeData={parameter.outputArgBindConfigs as TreeOutput[]}
                 titleRender={(nodeData) => {
-                  console.log(nodeData);
                   return (
                     <div className="dis-sb tree-title-style">
                       <div>

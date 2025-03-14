@@ -434,7 +434,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
         textHandleType: 'SPLIT',
         outputArgs: [
           {
-            key: null,
+            key: uuidv4(),
             name: 'output',
             description: '处理后的字符串输出结果',
             dataType: DataTypeEnum.Array_String,
@@ -454,7 +454,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({
         textHandleType: 'CONCAT',
         outputArgs: [
           {
-            key: null,
+            key: uuidv4(),
             name: 'output',
             description: '处理后的字符串输出结果',
             dataType: DataTypeEnum.String,

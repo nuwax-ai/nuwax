@@ -37,8 +37,12 @@ const bindEventHandlers = ({
       const cells = graph.getSelectedCells(); // 粘贴并偏移一定距离
       if (cells) {
         const node = cells[0].getData();
-        if (node.type === 'Start' || node.type === 'End') {
-          message.error('不能粘贴起始节点和结束节点');
+        if (
+          node.type === 'Start' ||
+          node.type === 'End' ||
+          node.type === 'Loop'
+        ) {
+          message.error('不能粘贴开始、结束和循环节点');
           return;
         }
         copyNode(node);

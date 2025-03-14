@@ -53,6 +53,8 @@ export interface FoldWrapType {
   // 顶部线条是否有margin样式
   lineMargin?: boolean;
   key?: string;
+  // 是否显示修改名称的input
+  showNameInput?: boolean;
   changeFoldWrap?: ({
     name,
     description,

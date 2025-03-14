@@ -4,9 +4,10 @@ import { getImg } from '@/utils/workflow';
 import {
   // CheckCircleOutlined,
   EditOutlined,
+  InfoCircleOutlined,
   LeftOutlined,
 } from '@ant-design/icons';
-import { Button, Tag } from 'antd';
+import { Button, Popover, Tag } from 'antd';
 import React from 'react';
 interface HeaderProp {
   info: {
@@ -16,6 +17,7 @@ interface HeaderProp {
     created?: string;
     modified?: string;
     id?: number;
+    description?: string;
   };
   showPublish: () => void;
   setShowCreateWorkflow: () => void;
@@ -26,7 +28,7 @@ const Header: React.FC<HeaderProp> = ({
   setShowCreateWorkflow,
   showPublish,
 }) => {
-  const { name, icon, publishStatus, modified } = info;
+  const { name, icon, publishStatus, modified, description } = info;
 
   // 返回上一级
   const bank = () => {
@@ -43,19 +45,21 @@ const Header: React.FC<HeaderProp> = ({
           className="header-icon-style"
         />
         <div className="dis-col header-content-style ">
-          <div className="dis-left ">
-            <span className="header-name-style">{name}</span>
-            <EditOutlined className="mr-16" onClick={setShowCreateWorkflow} />
+          <div className="dis-left">
+            <strong className="header-name-style">{name}</strong>
+            <Popover content={description}>
+              <InfoCircleOutlined className="mr-6" />
+            </Popover>
+            <EditOutlined onClick={setShowCreateWorkflow} />
             {/* <CheckCircleOutlined /> */}
           </div>
           <div className="header-tag-style">
-            <Tag color="#C9CDD4">工作流</Tag>
             <Tag color="#C9CDD4">
               {publishStatus === 'Published' ? '已发布' : '未发布'}
             </Tag>
-            <span>
-              配置自动保存于{getTime(modified ?? new Date().toString())}
-            </span>
+            <Tag color="#C9CDD4">
+              已自动保存{getTime(modified ?? new Date().toString())}
+            </Tag>
           </div>
         </div>
       </div>
