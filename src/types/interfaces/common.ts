@@ -5,6 +5,10 @@ import type {
   AgentConfigInfo,
   CreatorInfo,
 } from '@/types/interfaces/agent';
+import {
+  ConversationFinalResult,
+  MessageInfo,
+} from '@/types/interfaces/conversationInfo';
 import type {
   KnowledgeBaseInfo,
   KnowledgeInfo,
@@ -416,4 +420,17 @@ export interface ChatInputProps {
   className?: React.CSSProperties;
   onClear?: () => void;
   onEnter: (message: string, files: UploadInfo[]) => void;
+}
+
+// 聊天框底部更多操作组件
+export interface ChatBottomMoreProps {
+  text: string;
+  onDebug?: () => void;
+  // 自定义添加字段：chat 会话结果
+  finalResult?: ConversationFinalResult;
+}
+
+// 运行状态组件：进行中、运行完毕
+export interface RunOverProps {
+  messageInfo: MessageInfo;
 }

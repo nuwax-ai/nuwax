@@ -29,10 +29,23 @@ export interface ConversationChatMessage {
   type: MessageModeEnum;
 }
 
+// 调试结果
+export interface ExecuteResultInfo {
+  data: unknown;
+  endTime: string;
+  error: string;
+  id: number;
+  input: unknown;
+  name: string;
+  startTime: string;
+  success: boolean;
+  type: string;
+}
+
 // 会话聊天"FINAL_RESULT", 用于会话底部显示时间
 export interface ConversationFinalResult {
   completionTokens: number;
-  componentExecuteResults: string[];
+  componentExecuteResults: ExecuteResultInfo[];
   endTime: number;
   error: string;
   outputText: string;

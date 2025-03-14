@@ -1,44 +1,34 @@
+import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/TooltipIcon';
+import type { ChatBottomMoreProps } from '@/types/interfaces/common';
 import { CopyOutlined, PaperClipOutlined } from '@ant-design/icons';
+import { message, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useMemo } from 'react';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface ChatBottomMoreProps {
-  onCopy?: () => void;
-  onDebug?: () => void;
-}
+// 聊天框底部更多操作组件
+const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({
+  text,
+  onDebug,
+  finalResult,
+}) => {
+  const handleCopy = () => {
+    message.success('复制成功');
+  };
 
-const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({ onCopy, onDebug }) => {
-  const iconList = [
-    {
-      icon: <CopyOutlined />,
-      title: '复制',
-      onClick: onCopy,
-    },
-    {
-      icon: <PaperClipOutlined />,
-      title: '调试',
-      onClick: onDebug,
-    },
-    // {
-    //   icon: <LinkOutlined />,
-    //   title: '追问',
-    //   onClick: onAsk,
-    // },
-    // {
-    //   icon: <ReloadOutlined />,
-    //   title: '重新生成',
-    //   onClick: onRegen,
-    // },
-    // {
-    //   icon: <DeleteOutlined />,
-    //   title: '删除',
-    //   onClick: onDel,
-    // },
-  ];
+  // 运行时间
+  const runTime = useMemo(() => {
+    if (finalResult) {
+      return ((finalResult?.endTime - finalResult?.startTime) / 1000).toFixed(
+        1,
+      );
+    }
+    return 0;
+  }, [finalResult]);
 
   return (
     <div
@@ -50,21 +40,36 @@ const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({ onCopy, onDebug }) => {
       )}
     >
       <div className={cx('flex', 'items-center', styles['elapsed-time'])}>
-        <span>4.7s</span>
-        <span className={cx(styles['vertical-line'])} />
-        <span>4576 Tokens</span>
+        <ConditionRender condition={!!finalResult}>
+          <span>{`${runTime}s`}</span>
+          <span className={cx(styles['vertical-line'])} />
+          <span>{`${finalResult?.totalTokens} Tokens`}</span>
+        </ConditionRender>
       </div>
       <div className={cx('flex', styles['more-action'])}>
-        {iconList.map((item, index) => (
+        <CopyToClipboard text={text} onCopy={handleCopy}>
+          <Tooltip title="复制">
+            <span
+              className={cx(
+                'hover-box',
+                'flex',
+                'content-center',
+                'items-center',
+                'cursor-pointer',
+              )}
+            >
+              <CopyOutlined />
+            </span>
+          </Tooltip>
+        </CopyToClipboard>
+        <ConditionRender condition={!!finalResult}>
           <TooltipIcon
-            key={index}
             className={styles.icon}
-            icon={item.icon}
-            title={item.title}
+            icon={<PaperClipOutlined onClick={onDebug} />}
+            title="调试"
             type="white"
-            onClick={item.onClick}
           />
-        ))}
+        </ConditionRender>
       </div>
     </div>
   );

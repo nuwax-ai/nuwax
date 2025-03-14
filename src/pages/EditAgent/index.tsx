@@ -49,8 +49,6 @@ const EditAgent: React.FC = () => {
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>(null);
   // 历史版本信息
   const [versionHistory, setVersionHistory] = useState<HistoryData[]>([]);
-  // 调试结果
-  const [executeResults, setExecuteResults] = useState<string[]>([]);
 
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
@@ -191,14 +189,12 @@ const EditAgent: React.FC = () => {
         <PreviewAndDebug
           agentConfigInfo={agentConfigInfo}
           agentId={agentId}
-          onExecuteResults={setExecuteResults}
           onPressDebug={() =>
             handlerToggleType(EditAgentShowType.Debug_Details)
           }
         />
         {/*调试详情*/}
         <DebugDetails
-          executeResults={executeResults}
           visible={showType === EditAgentShowType.Debug_Details}
           onClose={() => handlerToggleType(EditAgentShowType.Hide)}
         />

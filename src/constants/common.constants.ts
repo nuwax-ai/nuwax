@@ -9,7 +9,10 @@ import {
 export const UPLOAD_FILE_ACTION =
   'https://test-nvwa-api.xspaceagi.com/api/file/upload';
 
-// 上传PDF、TXT、DOC、DOCX file
+// 会话 Connection地址
+export const CONVERSATION_CONNECTION_URL = `${process.env.BASE_URL}/api/agent/conversation/chat`;
+
+// 上传PDF、TXT、DOC、DOCX file  doc docx pdf md json txt
 export const UPLOAD_FILE_TYPE = [
   'text/plain',
   'application/msword',
