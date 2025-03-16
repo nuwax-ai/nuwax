@@ -12,13 +12,13 @@ export default defineConfig({
   request: {},
   routes,
   // 其他配置...
-  jsMinifier: 'esbuild',
-  jsMinifierOptions: {
-    minify: true,
-    target: 'es2020',
-    // 关键配置：启用 IIFE 包裹
-    esbuildMinifyIIFE: true,
-  },
+  // jsMinifier: 'esbuild',
+  // jsMinifierOptions: {
+  //   minify: true,
+  //   target: 'es2020',
+  //   // 关键配置：启用 IIFE 包裹
+  //   esbuildMinifyIIFE: true,
+  // },
   npmClient: 'pnpm',
   chainWebpack(config) {
     config.externals({
