@@ -201,17 +201,6 @@ const SpaceLibrary: React.FC = () => {
     runComponent(spaceId);
   }, []);
 
-  useEffect(() => {
-    const unlisten = history.listen(() => {
-      const _spaceId = localStorage.getItem(SPACE_ID) as number;
-      runComponent(_spaceId);
-    });
-
-    return () => {
-      unlisten();
-    };
-  }, []);
-
   // 切换类型
   const handlerChangeType = (value: ComponentTypeEnum) => {
     setType(value);

@@ -98,7 +98,7 @@ const Chat: React.FC = () => {
             </>
           ) : (
             // Chat记录为空
-            <AgentChatEmpty name={'智能体'} />
+            <AgentChatEmpty icon={conversationInfo?.agent?.icon} name={conversationInfo?.agent?.name} />
           )}
         </div>
         {/*会话输入框*/}

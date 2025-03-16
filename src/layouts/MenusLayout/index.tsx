@@ -32,7 +32,7 @@ const MenusLayout: React.FC = () => {
 
   // 切换tab
   const handleTabsClick = useCallback((type: TabsEnum) => {
-    setTabType(type);
+    // setTabType(type);
     switch (type) {
       case TabsEnum.Home:
         history.push('/');
@@ -61,7 +61,7 @@ const MenusLayout: React.FC = () => {
     } else {
       setTabType(TabsEnum.Home);
     }
-  }, []);
+  }, [location.pathname]);
 
   // 广场分类列表信息
   const handleCategoryList = (result: SquareCategoryInfo[]) => {

@@ -146,18 +146,6 @@ const SpaceDevelop: React.FC = () => {
     run(spaceId);
   }, []);
 
-  useEffect(() => {
-    // 监听路由
-    const unlisten = history.listen(() => {
-      const _spaceId = localStorage.getItem(SPACE_ID);
-      run(_spaceId);
-    });
-
-    return () => {
-      unlisten();
-    };
-  }, []);
-
   // 切换状态
   const handlerChangeStatus = (value: FilterStatusEnum) => {
     setStatus(value);
