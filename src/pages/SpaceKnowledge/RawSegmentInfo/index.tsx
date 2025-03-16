@@ -49,8 +49,10 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
   );
 
   useEffect(() => {
-    form.setFieldValue('name', documentInfo?.name);
-  }, [documentInfo]);
+    if (hovered) {
+      form.setFieldValue('name', documentInfo?.name);
+    }
+  }, [documentInfo, hovered]);
 
   const onFinish: FormProps<{
     name: string;
@@ -60,10 +62,6 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
       docId: documentInfo.id,
       name,
     });
-  };
-
-  const handleHoverChange = (open: boolean) => {
-    setHovered(open);
   };
 
   return (
@@ -80,7 +78,7 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
                 arrow={false}
                 trigger="click"
                 open={hovered}
-                onOpenChange={handleHoverChange}
+                onOpenChange={setHovered}
                 placement="bottom"
                 content={
                   <Form
