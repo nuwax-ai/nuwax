@@ -388,7 +388,7 @@ export interface SubmitButtonProps {
 }
 
 // 上传文件信息
-export interface UploadInfo {
+export interface UploadFileInfo {
   url: string;
   key: string;
   fileName: string;
@@ -426,7 +426,7 @@ export interface PluginConfigTitleProps {
 export interface ChatInputProps {
   className?: React.CSSProperties;
   onClear?: () => void;
-  onEnter: (message: string, files: UploadInfo[]) => void;
+  onEnter: (message: string, files: UploadFileInfo[]) => void;
 }
 
 // 聊天框底部更多操作组件

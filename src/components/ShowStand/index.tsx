@@ -1,10 +1,10 @@
 import Card from '@/components/Card';
+import ToggleWrap from '@/components/ToggleWrap';
 import { CardStyleEnum } from '@/types/enums/common';
 import { Empty } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
-import ToggleWrap from '@/components/ToggleWrap';
 
 const cx = classNames.bind(styles);
 
@@ -24,7 +24,12 @@ export interface ShowStandProps {
 /**
  * 展示台
  */
-const ShowStand: React.FC<ShowStandProps> = ({ className, visible, onClose, list }) => {
+const ShowStand: React.FC<ShowStandProps> = ({
+  className,
+  visible,
+  onClose,
+  list,
+}) => {
   return (
     <ToggleWrap
       title={'展示台'}

@@ -4,13 +4,12 @@ import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
+import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   ConversationInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
-import { OpenCloseEnum } from '@/types/enums/space';
-import { UploadInfo } from '@/types/interfaces/common';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useModel, useRequest } from 'umi';
 import styles from './index.less';
@@ -89,13 +88,13 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
   }, [agentId]);
 
   // 消息发送
-  const handleMessageSend = (message: string, files?: UploadInfo[]) => {
+  const handleMessageSend = (message: string, files?: UploadFileInfo[]) => {
     const id = devConversationIdRef.current;
     if (!id) {
       return;
     }
-    const openSuggest = agentConfigInfo.openSuggest === OpenCloseEnum.Open;
-    onMessageSend(id, message, files, openSuggest, true);
+
+    onMessageSend(id, message, files, true);
   };
 
   return (

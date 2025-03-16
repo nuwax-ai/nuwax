@@ -11,22 +11,20 @@ import {
   MessageTypeEnum,
 } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
-import { EditAgentShowType } from '@/types/enums/space';
-import type { UploadInfo } from '@/types/interfaces/common';
+import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
+import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   AttachmentFile,
   ConversationChatResponse,
-  MessageInfo,
-} from '@/types/interfaces/conversationInfo';
-import {
   ConversationInfo,
   ExecuteResultInfo,
+  MessageInfo,
   ProcessingInfo,
 } from '@/types/interfaces/conversationInfo';
 import { createSSEConnection } from '@/utils/fetchEventSource';
-import { useRequest } from 'umi';
 import moment from 'moment/moment';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRequest } from 'umi';
 
 export default () => {
   // 会话信息
@@ -93,7 +91,6 @@ export default () => {
     id: number,
     message: string,
     attachments: AttachmentFile[] = [],
-    openSuggest = false,
     debug = false,
   ) => {
     const params = {
@@ -151,7 +148,7 @@ export default () => {
               clearTimeout(timeoutRef.current);
               timeoutRef.current = 0;
               // 是否开启问题建议,可用值:Open,Close
-              if (openSuggest) {
+              if (conversationInfo?.agent.openSuggest === OpenCloseEnum.Open) {
                 // 滚动到底部
                 handleScrollBottom();
                 runChatSuggest(params);
@@ -173,8 +170,7 @@ export default () => {
   const onMessageSend = async (
     id: number,
     message: string,
-    files: UploadInfo[] = [],
-    openSuggest = false,
+    files: UploadFileInfo[] = [],
     debug = false,
   ) => {
     setChatSuggestList([]);
@@ -209,12 +205,11 @@ export default () => {
     } as MessageInfo;
 
     setMessageList(
-      (list) =>
-        [...list, chatMessage, assistantMessage] as MessageInfo[],
+      (list) => [...list, chatMessage, assistantMessage] as MessageInfo[],
     );
     await handleScrollBottom();
     // 处理会话
-    await handleConversation(id, message, attachments, openSuggest, debug);
+    await handleConversation(id, message, attachments, debug);
   };
 
   const handleDebug = useCallback((item: MessageInfo) => {

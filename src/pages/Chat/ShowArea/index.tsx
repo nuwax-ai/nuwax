@@ -1,10 +1,10 @@
+import ShowStand from '@/components/ShowStand';
+import { ICON_FOLD } from '@/constants/images.constants';
+import { EditAgentShowType } from '@/types/enums/space';
 import classNames from 'classnames';
 import React from 'react';
-import styles from './index.less';
-import { ICON_FOLD } from '@/constants/images.constants';
-import ShowStand from '@/components/ShowStand';
-import { EditAgentShowType } from '@/types/enums/space';
 import { useModel } from 'umi';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 

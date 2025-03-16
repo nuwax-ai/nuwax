@@ -1,10 +1,10 @@
+import ToggleWrap from '@/components/ToggleWrap';
 import type { DebugDetailsProps } from '@/types/interfaces/agentConfig';
 import { Empty } from 'antd';
 import classNames from 'classnames';
 import React, { memo } from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
-import ToggleWrap from '@/components/ToggleWrap';
 
 const cx = classNames.bind(styles);
 
@@ -17,11 +17,7 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
   // console.log(executeResults);
 
   return (
-    <ToggleWrap
-      title="调试详情"
-      onClose={onClose}
-      visible={visible}
-    >
+    <ToggleWrap title="调试详情" onClose={onClose} visible={visible}>
       {executeResults?.length > 0 ? (
         <div>
           {executeResults?.map((item, index) => (

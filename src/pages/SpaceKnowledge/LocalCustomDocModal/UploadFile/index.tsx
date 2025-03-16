@@ -3,11 +3,8 @@ import {
   UPLOAD_FILE_SUFFIX,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import type { FileType } from '@/types/interfaces/common';
-import type {
-  UploadFileInfo,
-  UploadFileProps,
-} from '@/types/interfaces/knowledge';
+import type { FileType, UploadFileInfo } from '@/types/interfaces/common';
+import type { UploadFileProps } from '@/types/interfaces/knowledge';
 import { UploadOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import { message, Upload } from 'antd';
@@ -37,12 +34,12 @@ const UploadFile: React.FC<UploadFileProps> = ({
 
   // beforeUpload 返回 false 或 Promise.reject 时，只用于拦截上传行为，不会阻止文件进入上传列表（原因）。如果需要阻止列表展现，可以通过返回 Upload.LIST_IGNORE 实现。
   const beforeUploadDefault = (file: FileType) => {
-    const { type, size } = file;
-    if (!type.includes('.')) {
+    const { name, size } = file;
+    if (!name.includes('.')) {
       message.error('请上传正确的文件类型');
-      return;
+      return false;
     }
-    const suffix = type.split('.')[1].toLower();
+    const suffix = name.split('.')[1].toLowerCase();
     const isFile = UPLOAD_FILE_SUFFIX.includes(suffix);
     if (!isFile) {
       message.error('You can only upload PDF、TXT、DOC、DOCX file!');

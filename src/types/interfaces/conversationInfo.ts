@@ -7,6 +7,7 @@ import type {
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { MessageStatusEnum } from '@/types/enums/common';
 import { ProcessingEnum } from '@/types/enums/common';
+import type { OpenCloseEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
   AgentStatisticsInfo,
@@ -174,6 +175,12 @@ export interface ConversationInfo {
     publishUser: CreatorInfo;
     // 分类名称
     category: string;
+    // 是否开启问题建议,可用值:Open,Close
+    openSuggest: OpenCloseEnum;
+    // 开场白文案
+    openingChatMsg: string;
+    // 引导问题
+    openingGuidQuestions: string[];
     collect: boolean;
   };
   // 会话消息列表，会话列表查询时不会返回该字段值

@@ -7,8 +7,11 @@ import type {
   BindConfigWithSub,
   TriggerTimeZone,
 } from '@/types/interfaces/agent';
-import type { UploadInfo } from '@/types/interfaces/common';
-import { ExecuteResultInfo } from '@/types/interfaces/conversationInfo';
+import type { UploadFileInfo } from '@/types/interfaces/common';
+import type {
+  AttachmentFile,
+  ExecuteResultInfo,
+} from '@/types/interfaces/conversationInfo';
 import React, { MouseEvent } from 'react';
 
 // 智能体header组件
@@ -121,8 +124,13 @@ export interface VariableListProps {
 
 // 聊天上传文件列表组件
 export interface ChatUploadFileProps {
-  files: UploadInfo[];
+  files: UploadFileInfo[];
   onDel: (index: number) => void;
+}
+
+// 用户聊天上传文件列表组件
+export interface AttachFileProps {
+  files: AttachmentFile[];
 }
 
 // 调试详情组件

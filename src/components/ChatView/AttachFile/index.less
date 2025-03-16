@@ -1,0 +1,23 @@
+@import '@/styles/color';
+
+.files-container {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+
+  .file-box {
+    position: relative;
+    padding: 10px;
+    background-color: @WHITE04;
+    border-radius: 10px;
+    font-size: 14px;
+    color: @BLANK24;
+
+    img {
+      width: 50px;
+      margin-right: 5px;
+      border-radius: 10px;
+    }
+  }
+}

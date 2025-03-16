@@ -1,10 +1,14 @@
 import agentImage from '@/assets/images/agent_image.png';
 import personal from '@/assets/images/personal.png';
+import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
 import { USER_INFO } from '@/constants/home.constants';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
-import type { ChatViewProps } from '@/types/interfaces/conversationInfo';
+import type {
+  AttachmentFile,
+  ChatViewProps,
+} from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
 import markdown from 'markdown-it';
 import React, { useMemo } from 'react';
@@ -16,7 +20,12 @@ const cx = classNames.bind(styles);
 
 const md = markdown({ html: true, breaks: true });
 
-const ChatView: React.FC<ChatViewProps> = ({ className, contentClassName, roleInfo, messageInfo }) => {
+const ChatView: React.FC<ChatViewProps> = ({
+  className,
+  contentClassName,
+  roleInfo,
+  messageInfo,
+}) => {
   // 当前用户信息
   const userInfo = JSON.parse(localStorage.getItem(USER_INFO));
 
@@ -50,6 +59,9 @@ const ChatView: React.FC<ChatViewProps> = ({ className, contentClassName, roleIn
       <img className={cx(styles.avatar)} src={info?.avatar as string} alt="" />
       <div className={cx('flex-1')}>
         <div className={cx(styles.author)}>{info?.name}</div>
+        <ConditionRender condition={messageInfo?.attachments?.length > 0}>
+          <AttachFile files={messageInfo.attachments as AttachmentFile[]} />
+        </ConditionRender>
         {/*用户信息*/}
         <ConditionRender
           condition={
@@ -74,7 +86,12 @@ const ChatView: React.FC<ChatViewProps> = ({ className, contentClassName, roleIn
           {/*文本内容*/}
           <ConditionRender condition={!!messageInfo?.text}>
             <div
-              className={cx(styles['chat-content'], 'radius-6', 'w-full', contentClassName)}
+              className={cx(
+                styles['chat-content'],
+                'radius-6',
+                'w-full',
+                contentClassName,
+              )}
               dangerouslySetInnerHTML={{
                 __html: md.render(messageInfo?.text),
               }}

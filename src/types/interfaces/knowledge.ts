@@ -4,7 +4,11 @@ import type {
   KnowledgeSegmentTypeEnum,
   KnowledgeTextImportEnum,
 } from '@/types/enums/library';
-import type { CustomPopoverItem, FileType } from '@/types/interfaces/common';
+import type {
+  CustomPopoverItem,
+  FileType,
+  UploadFileInfo,
+} from '@/types/interfaces/common';
 import type { Sort } from '@/types/interfaces/request';
 import type { FormInstance } from 'antd';
 
@@ -421,17 +425,6 @@ export interface LocalCustomDocModalProps {
   open: boolean;
   onConfirm: () => void;
   onCancel: () => void;
-}
-
-// 上传文件信息
-export interface UploadFileInfo {
-  fileName: string;
-  height: number;
-  key: string;
-  mimeType: string;
-  size: number;
-  url: string;
-  width: number;
 }
 
 // 上传文档

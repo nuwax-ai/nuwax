@@ -1,7 +1,7 @@
 import ChatInput from '@/components/ChatInput';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
-import type { UploadInfo } from '@/types/interfaces/common';
+import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { TenantConfigInfo } from '@/types/interfaces/login';
 import classNames from 'classnames';
@@ -43,7 +43,7 @@ const Home: React.FC = () => {
   }, []);
 
   // 跳转页面
-  const handleEnter = (message: string, files?: UploadInfo[]) => {
+  const handleEnter = (message: string, files?: UploadFileInfo[]) => {
     history.push(`/home/chat/${conversationIdRef.current}`, { message, files });
   };
 

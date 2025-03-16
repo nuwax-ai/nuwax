@@ -1,4 +1,5 @@
 import CreateAgent from '@/components/CreateAgent';
+import ShowStand from '@/components/ShowStand';
 import VersionHistory from '@/components/VersionHistory';
 import {
   apiAgentConfigHistoryList,
@@ -27,7 +28,6 @@ import styles from './index.less';
 import PluginModelSetting from './PluginModelSetting';
 import PreviewAndDebug from './PreviewAndDebug';
 import PublishAgent from './PublishAgent';
-import ShowStand from '@/components/ShowStand';
 import SystemTipsWord from './SystemTipsWord';
 
 const cx = classNames.bind(styles);
