@@ -21,7 +21,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
 
   const [newValue, setNewValue] = useState('');
 
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState(value);
 
   const [noRefernece, setNoRefernece] = useState('');
   // InputOrReference.tsx
@@ -120,12 +120,16 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
 
   // 监听value和referenceList变化
   useEffect(() => {
-    if (isLoop) {
-      setNewValue(getLoopValue(value));
+    console.log(123, referenceType);
+    if (referenceType === 'Reference') {
+      if (isLoop) {
+        setNewValue(getLoopValue(value));
+      } else {
+        setNewValue(getValue(value));
+      }
     } else {
-      setNewValue(getValue(value));
+      setInputValue(value);
     }
-    setInputValue(value);
   }, [value, referenceList]);
 
   // // 初始化时设置值
