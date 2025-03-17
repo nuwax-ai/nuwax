@@ -294,14 +294,14 @@ const Workflow: React.FC = () => {
       _params.extension = { ...dragEvent, height: 240, width: 600 };
     }
     // 查看当前是否有选中的节点以及被选中的节点的type是否是Loop
-    // 如果是加给循环节点，那么就要将他的位置放置于循环内部
-    // const loopParentId = graphRef.current.findLoopParentAtPosition(dragEvent);
-    if (visible && foldWrapItem.type === 'Loop') {
+    // 如果当前选择的是循环节点或者循环内部的子节点，那么就要将他的位置放置于循环内部
+    if (foldWrapItem.type === 'Loop' || foldWrapItem.loopNodeId) {
       if (_params.type === 'Loop') {
         message.warning('循环体里请不要再添加循环体');
         return;
       }
-      _params.loopNodeId = Number(foldWrapItem.id);
+      _params.loopNodeId =
+        Number(foldWrapItem.loopNodeId) || Number(foldWrapItem.id);
       // 点击增加的节点，需要通过接口获取父节点的数据
       const _parent = await service.getNodeConfig(_params.loopNodeId);
       if (_parent.code === Constant.success) {
@@ -406,7 +406,8 @@ const Workflow: React.FC = () => {
         }
         return prev; // 如果不修改状态就直接返回原值
       });
-      getNodeConfig(sourceNode.id);
+      graphRef.current.updateNode(sourceNode.id, _res.data);
+      // getNodeConfig(sourceNode.id);
     }
   };
 
@@ -795,6 +796,8 @@ const Workflow: React.FC = () => {
         open={showCreateWorkflow}
         type={WorkflowModeEnum.Update}
         {...info}
+        title={'修改工作流'}
+        // icon={info?.description}
       />
 
       <ErrorList

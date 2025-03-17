@@ -12,7 +12,7 @@ import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps } from 'antd';
 import { Form, Input, message } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
@@ -56,6 +56,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     onSuccess: (_, params) => {
       message.success('工作流更新成功');
       onConfirm(...params);
+      form.resetFields();
     },
   });
 
@@ -84,6 +85,11 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   const handlerSubmit = () => {
     form.submit();
   };
+  console.log(description);
+
+  useEffect(() => {
+    console.log(description);
+  }, [description]);
 
   return (
     <CustomFormModal
@@ -99,7 +105,6 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     >
       <Form
         form={form}
-        preserve={false}
         requiredMark={customizeRequiredMark}
         layout="vertical"
         onFinish={onFinish}
