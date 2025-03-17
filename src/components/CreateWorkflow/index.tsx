@@ -124,6 +124,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
         <OverrideTextArea
           name="description"
           label="描述"
+          initialValue={description}
           placeholder="请输入描述，让大模型理解什么情况下应该调用此工作流"
           maxLength={2000}
         />
