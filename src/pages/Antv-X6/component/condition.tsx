@@ -57,16 +57,7 @@ export const ConditionList: React.FC<ConditionListProps> = ({
             )}
           </div>
           {initialValues.branchType !== 'ELSE' && (
-            <Form
-              form={form}
-              // onValuesChange={submitForm}
-              // onValuesChange={(changedValues, allValues) => {
-              //   console.log('Changed values:', changedValues);
-              //   console.log('All values:', allValues);
-              // }}
-              // initialValues={initialValues}
-              layout={'horizontal'}
-            >
+            <Form form={form} layout={'horizontal'}>
               <Form.List name={inputItemName}>
                 {(fields, { add, remove }, { errors }) => {
                   return (
@@ -154,7 +145,7 @@ export const ConditionList: React.FC<ConditionListProps> = ({
 // 修改 ConditionNode 组件
 export const ConditionNode: React.FC<NodeDisposeProps> = ({
   params,
-  // Modified,
+  Modified,
   updateNode,
 }) => {
   // 使用深拷贝来确保每次 params.conditionBranchConfigs 变化时都能触发重新渲染
@@ -261,12 +252,12 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
     });
     // conditionParams.conditionBranchConfigs=newConditionBranchConfigs
     // setConditionParams({...conditionParams,conditionBranchConfigs:newConditionBranchConfigs})
-    if (updateNode) {
-      updateNode({
-        ...conditionParams,
-        conditionBranchConfigs: newConditionBranchConfigs,
-      });
-    }
+    Modified({
+      ...conditionParams,
+      conditionBranchConfigs: newConditionBranchConfigs,
+    });
+    // if (updateNode) {
+    // }
   };
 
   // 修改 onDragEnd 方法
@@ -303,9 +294,15 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
   };
 
   useEffect(() => {
-    if (conditionParams && !conditionParams.conditionBranchConfigs) {
-      setConditionParams(params);
-    }
+    // console.log(params)
+    setConditionParams((prev) => {
+      if (!prev.conditionBranchConfigs) {
+        return params;
+      }
+
+      return prev;
+    });
+    // setConditionParams(params);
   }, [params]);
 
   return (

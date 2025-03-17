@@ -153,13 +153,17 @@ const initGraph = ({
         const sourcePortGroup = sourceMagnet.getAttribute('port-group') || '';
         const targetPortGroup = targetMagnet.getAttribute('port-group') || '';
 
+        console.log('aabb', sourcePortGroup, targetPortGroup);
         // 定义类型断言函数
         const isLoopNode = (cell: Cell) => cell.getData()?.type === 'Loop';
 
         // 处理非 Loop 节点的连接限制 (逻辑优化)
         if (!isLoopNode(sourceCell) && !isLoopNode(targetCell)) {
           // 允许从 out 到 in 的正常连接
-          if (sourcePortGroup === 'out' && targetPortGroup === 'in') {
+          if (
+            (sourcePortGroup === 'out' || sourcePortGroup === 'special') &&
+            targetPortGroup === 'in'
+          ) {
             return validatePortConnection(sourcePortGroup, targetPortGroup);
           }
           return false; // 阻止其他类型的连接

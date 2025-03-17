@@ -97,6 +97,15 @@ const ConditionItem: React.FC<ConditionProps> = ({
               changeInputValue(value, 'secondArg', type)
             }
             form={form}
+            referenceType={
+              // 修正路径，从conditionArgs层级获取
+              form.getFieldValue([
+                'conditionArgs',
+                field.name,
+                'secondArg',
+                'bindValueType',
+              ]) || 'Input'
+            }
           />
         </Form.Item>
       </Form.Item>

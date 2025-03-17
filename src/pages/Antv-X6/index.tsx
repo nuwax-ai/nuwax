@@ -797,7 +797,7 @@ const Workflow: React.FC = () => {
         open={showCreateWorkflow}
         type={WorkflowModeEnum.Update}
         {...info}
-        title={'修改工作流'}
+        // title={'修改工作流'}
         // icon={info?.description}
       />
 
