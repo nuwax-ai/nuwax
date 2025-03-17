@@ -19,7 +19,7 @@ const SetPassword: React.FC = () => {
 
   const { run, loading } = useRequest(apiSetPassword, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       navigate('/', { replace: true });
     },

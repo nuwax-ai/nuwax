@@ -38,7 +38,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   // 新增智能体接口
   const { run: runEdit } = useRequest(apiAgentAdd, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result) => {
       setImageUrl('');
       onConfirmCreate?.(result);
@@ -49,7 +49,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   // 更新智能体基础配置信息
   const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (_, params) => {
       message.success('智能体编辑成功');
       onConfirmUpdate?.(...params);

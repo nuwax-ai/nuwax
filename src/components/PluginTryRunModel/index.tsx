@@ -40,7 +40,7 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
   // 插件试运行接口
   const { run: runTest } = useRequest(apiPluginTest, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (res: PluginTestResult) => {
       if (!res.success) {
         message.warning(res.error);

@@ -51,7 +51,7 @@ const EditAgent: React.FC = () => {
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: AgentConfigInfo) => {
       setAgentConfigInfo(result);
     },
@@ -60,7 +60,7 @@ const EditAgent: React.FC = () => {
   // 更新智能体基础配置信息
   const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
     manual: true,
-    debounceWait: 1000,
+    debounceInterval: 1000,
     onSuccess: () => {
       message.success('智能体编辑成功');
     },
@@ -69,7 +69,7 @@ const EditAgent: React.FC = () => {
   // 版本历史记录
   const { run: runHistory } = useRequest(apiAgentConfigHistoryList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: HistoryData[]) => {
       setVersionHistory(result);
     },

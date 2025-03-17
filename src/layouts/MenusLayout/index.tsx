@@ -93,7 +93,7 @@ const MenusLayout: React.FC = () => {
   // 广场-智能体与插件分类
   const { run } = useRequest(apiPublishedCategoryList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: SquareCategoryInfo[]) => {
       handleCategoryList(result);
     },

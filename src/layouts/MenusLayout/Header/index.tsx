@@ -26,7 +26,7 @@ const Header: React.FC = () => {
     apiAgentConversationCreate,
     {
       manual: true,
-      debounceWait: 300,
+      debounceInterval: 300,
       onSuccess: (result: ConversationInfo) => {
         history.push(`/home/chat/${result.id}`);
       },

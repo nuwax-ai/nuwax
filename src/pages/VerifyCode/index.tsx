@@ -42,7 +42,7 @@ const VerifyCode: React.FC = () => {
 
   // 发送验证码
   const { run, loading } = useRequest(apiSendCode, {
-    debounceWait: 300,
+    debounceInterval: 300,
     defaultParams: {
       type: SendCodeEnum.LOGIN_OR_REGISTER,
       phone,
@@ -55,7 +55,7 @@ const VerifyCode: React.FC = () => {
   // 验证码登录
   const { run: runLoginCode, loadingLoginCode } = useRequest(apiLoginCode, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: ILoginResult, params: CodeLogin[]) => {
       const { resetPass, expireDate, token } = result;
       localStorage.setItem(ACCESS_TOKEN, token);

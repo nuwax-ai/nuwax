@@ -16,7 +16,7 @@ export default () => {
   // 查询用户开发智能体收藏列表
   const { run: runDevCollect } = useRequest(apiUserDevCollectAgentList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: AgentInfo[]) => {
       setDevCollectAgentList(result);
     },
@@ -25,7 +25,7 @@ export default () => {
   // 取消开发智能体收藏
   const { run: runCancelCollect } = useRequest(apiDevUnCollectAgent, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (_, params) => {
       message.success('取消收藏成功');
       const agentId = params[0];

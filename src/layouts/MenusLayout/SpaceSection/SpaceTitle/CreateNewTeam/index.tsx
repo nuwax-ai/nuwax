@@ -28,7 +28,7 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({
   // 创建工作空间新团队
   const { run, loading } = useRequest(apiCreateSpaceTeam, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (data: number, params: CreateSpaceTeamParams[]) => {
       message.success('新建成功');
       setImageUrl('');

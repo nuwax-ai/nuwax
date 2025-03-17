@@ -42,7 +42,7 @@ const Login: React.FC = () => {
 
   const { run } = useRequest(apiLogin, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: ILoginResult, params: LoginFieldType[]) => {
       const { expireDate, token } = result;
       localStorage.setItem(ACCESS_TOKEN, token);

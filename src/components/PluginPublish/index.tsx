@@ -18,7 +18,7 @@ const PluginPublish: React.FC<PluginPublishProps> = ({
   // 插件发布
   const { run: runPublish, loading } = useRequest(apiPluginPublish, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('插件发布成功');
       onCancel();

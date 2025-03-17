@@ -115,7 +115,7 @@ const SpaceLibrary: React.FC = () => {
   // 查询组件列表接口
   const { run: runComponent } = useRequest(apiComponentList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: ComponentInfo[]) => {
       handleFilterList(type, status, create, keyword, result);
       componentAllRef.current = result;
@@ -125,7 +125,7 @@ const SpaceLibrary: React.FC = () => {
   // 创建副本接口
   const { run: runPluginCopy } = useRequest(apiPluginCopy, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('插件复制成功');
       runComponent(spaceId);
@@ -140,7 +140,7 @@ const SpaceLibrary: React.FC = () => {
   // 删除插件接口
   const { run: runPluginDel } = useRequest(apiPluginDelete, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (_, params) => {
       message.success('插件删除成功');
       const id = params[0];
@@ -151,7 +151,7 @@ const SpaceLibrary: React.FC = () => {
   // 删除指定模型配置信息
   const { run: runModelDel } = useRequest(apiModelDelete, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (_, params) => {
       message.success('模型删除成功');
       const id = params[0];
@@ -162,7 +162,7 @@ const SpaceLibrary: React.FC = () => {
   // 工作流 - 创建副本接口
   const { run: runWorkflowCopy } = useRequest(apiWorkflowCopy, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('工作流复制成功');
       runComponent(spaceId);
@@ -172,7 +172,7 @@ const SpaceLibrary: React.FC = () => {
   // 工作流 - 删除工作流接口
   const { run: runWorkflowDel } = useRequest(apiWorkflowDelete, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (_, params) => {
       message.success('工作流删除成功');
       const id = params[0];
@@ -183,7 +183,7 @@ const SpaceLibrary: React.FC = () => {
   // 知识库基础配置接口 - 数据删除接口
   const { run: runKnowledgeDel } = useRequest(apiKnowledgeConfigDelete, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (_, params) => {
       message.success('知识库删除成功');
       const id = params[0];

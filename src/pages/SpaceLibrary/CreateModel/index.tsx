@@ -69,7 +69,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
   // 查询指定模型配置信息
   const { run: runQuery } = useRequest(apiModelInfo, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: ModelConfigInfo) => {
       form.setFieldsValue({
         name: result?.name,
@@ -99,7 +99,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
   // 在空间中添加或更新模型配置接口
   const { run } = useRequest(apiModelSave, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (_, params) => {
       message.success('模型已创建成功');
       onConfirm(...params);

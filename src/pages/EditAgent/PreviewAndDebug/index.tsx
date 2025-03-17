@@ -61,7 +61,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     apiAgentConversationCreate,
     {
       manual: true,
-      debounceWait: 300,
+      debounceInterval: 300,
       onSuccess: (result: ConversationInfo) => {
         devConversationIdRef.current = result.id;
       },

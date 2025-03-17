@@ -10,7 +10,7 @@ export default () => {
   // 租户配置信息查询接口
   const { run: runTenantConfig } = useRequest(apiTenantConfig, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: TenantConfigInfo) => {
       setTenantConfigInfo(result);
       localStorage.setItem(TENANT_CONFIG_INFO, JSON.stringify(result));

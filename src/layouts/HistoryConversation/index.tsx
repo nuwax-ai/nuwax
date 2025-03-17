@@ -22,7 +22,7 @@ const HistoryConversation: React.FC = () => {
   // 查询历史会话记录
   const { run, loading } = useRequest(apiAgentConversationList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: ConversationInfo[]) => {
       setConversationList(result);
     },

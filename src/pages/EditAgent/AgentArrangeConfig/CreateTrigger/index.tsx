@@ -41,7 +41,7 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
   // 触发器定时任务时区数据
   const { run: runTriggerTimeZone } = useRequest(apiAgentTriggerTimeZone, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: TriggerTimeZone) => {
       setTriggerTimeZone(result);
     },
@@ -50,7 +50,7 @@ const CreateTrigger: React.FC<CreateTriggerProps> = ({
   // 新增智能体触发器配置
   const { run } = useRequest(apiAgentComponentTriggerAdd, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('触发器创建成功');
       onConfirm();

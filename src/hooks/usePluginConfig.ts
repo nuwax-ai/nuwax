@@ -44,7 +44,7 @@ const usePluginConfig = () => {
   // 查询插件历史配置信息接口
   const { run: runHistory } = useRequest(apiPluginConfigHistoryList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: HistoryData[]) => {
       setHistoryData(result);
     },

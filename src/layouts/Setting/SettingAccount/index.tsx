@@ -29,7 +29,7 @@ const SettingAccount: React.FC = () => {
   // 更新用户信息
   const { run, loading } = useRequest(apiUserUpdate, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('保存成功');
       const _userInfo = handleUserInfo();

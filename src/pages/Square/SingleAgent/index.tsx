@@ -26,7 +26,7 @@ const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
     apiAgentConversationCreate,
     {
       manual: true,
-      debounceWait: 300,
+      debounceInterval: 300,
       onSuccess: (result: ConversationInfo) => {
         history.push(`/home/chat/${result.id}`);
       },

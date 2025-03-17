@@ -22,7 +22,7 @@ const UserOperateArea: React.FC<UserOperateAreaType> = ({ onClick }) => {
   // 查询用户消息列表
   const { run } = useRequest(apiNotifyMessageUnreadCount, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: number) => {
       if (result > 0) {
         setUnreadCount(result);

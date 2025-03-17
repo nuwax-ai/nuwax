@@ -16,7 +16,7 @@ const CardBind: React.FC = () => {
   // 查询卡片列表
   const { run: runCard } = useRequest(apiAgentCardList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: AgentCardInfo[]) => {
       setAgentCardList(result);
     },

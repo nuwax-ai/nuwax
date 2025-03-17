@@ -38,7 +38,7 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
     apiKnowledgeDocumentUpdateDocName,
     {
       manual: true,
-      debounceWait: 300,
+      debounceInterval: 300,
       onSuccess: (_, params) => {
         message.success('更新成功');
         setHovered(false);

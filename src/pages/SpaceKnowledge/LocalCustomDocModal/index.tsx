@@ -72,7 +72,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
   // 知识库文档配置 - 数据新增接口
   const { run: runDocAdd } = useRequest(apiKnowledgeDocumentAdd, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('文档添加成功');
       handleClear();
@@ -83,7 +83,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
   // 知识库文档配置 - 自定义新增接口
   const { run: runDocCustomAdd } = useRequest(apiKnowledgeDocumentCustomAdd, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('文档添加成功');
       handleClear();

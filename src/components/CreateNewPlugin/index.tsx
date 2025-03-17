@@ -50,7 +50,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   // 新增插件接口
   const { run: runCreate } = useRequest(apiPluginAdd, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result, params) => {
       setImageUrl('');
       const info: PluginInfo = {
@@ -65,7 +65,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   // 更新HTTP插件配置接口
   const { run: runUpdate } = useRequest(apiPluginHttpUpdate, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (_, params) => {
       setImageUrl('');
       onConfirm(...params);

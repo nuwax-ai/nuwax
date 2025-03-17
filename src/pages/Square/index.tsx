@@ -31,7 +31,7 @@ const Square: React.FC = () => {
   // 广场-已发布智能体列表接口
   const { run: runAgent } = useRequest(apiPublishedAgentList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: Page<PublishedAgentInfo>) => {
       setAgentList(result?.records || []);
     },
@@ -40,7 +40,7 @@ const Square: React.FC = () => {
   // 已发布插件列表接口（广场以及弹框选择中全部插件）
   const { run: runPlugin } = useRequest(apiPublishedPluginList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: Page<PublishedAgentInfo>) => {
       setAgentList(result?.records || []);
     },

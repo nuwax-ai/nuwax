@@ -37,7 +37,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
   // 开发智能体收藏
   const { run: runCollect } = useRequest(apiDevCollectAgent, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('收藏成功');
       // 更新开发智能体收藏列表
