@@ -1,4 +1,5 @@
 import personal from '@/assets/images/personal.png';
+import agentImage from '@/assets/images/agent_image.png';
 import { SPACE_ID } from '@/constants/home.constants';
 import type { AgentMoveProps } from '@/types/interfaces/space';
 import { CheckOutlined, InfoCircleOutlined } from '@ant-design/icons';
@@ -21,10 +22,10 @@ const AgentMove: React.FC<AgentMoveProps> = ({
 }) => {
   const [targetSpaceId, setTargetSpaceId] = useState<string>('');
   const { spaceList } = useModel('spaceModel');
+  const spaceId = Number(localStorage.getItem(SPACE_ID));
 
-  const spaceId = localStorage.getItem(SPACE_ID);
   const filterSpaceList =
-    spaceList?.filter((item) => item.id.toString() !== spaceId) || [];
+    spaceList?.filter((item) => item.id !== spaceId) || [];
 
   return (
     <Modal
@@ -69,7 +70,7 @@ const AgentMove: React.FC<AgentMoveProps> = ({
             )}
             onClick={() => setTargetSpaceId(item.id)}
           >
-            <img className={cx(styles.img)} src={item.img} alt="" />
+            <img className={cx(styles.img)} src={item.icon || agentImage as string} alt="" />
             <span className={cx('flex-1')}>{item.name}</span>
             {targetSpaceId === item.id && (
               <CheckOutlined className={cx(styles['selected-ico'])} />

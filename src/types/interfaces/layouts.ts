@@ -24,6 +24,7 @@ export interface CreateNewTeamProps {
 export interface PersonalSpaceContentType {
   // spaceList: SpaceInfo[];
   onCreateTeam: () => void;
+  onClosePopover: (flag: boolean) => void;
 }
 
 // 菜单栏~tab切换类型
