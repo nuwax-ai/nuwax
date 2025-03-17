@@ -557,6 +557,7 @@ const Workflow: React.FC = () => {
           if (data.data.status === 'STOP_WAIT_ANSWER') {
             setLoading(false);
             setStopWait(true);
+            localStorage.setItem('testRun', JSON.stringify(params));
           }
         }
         // 更新UI状态...
@@ -615,6 +616,7 @@ const Workflow: React.FC = () => {
           if (data.complete) {
             if (data.data && data.data.output) {
               setTestRunResult(data.data.output);
+              localStorage.removeItem('testRun');
             }
             setFormItemValue(
               data.nodeExecuteResultMap[
@@ -627,7 +629,7 @@ const Workflow: React.FC = () => {
           if (data.data.status === 'STOP_WAIT_ANSWER') {
             setLoading(false);
             setStopWait(true);
-            console.log(data.data.result);
+            localStorage.setItem('testRun', JSON.stringify(params));
             if (data.data.result) {
               setTestRunparams(data.data.result.data);
             }
@@ -694,7 +696,6 @@ const Workflow: React.FC = () => {
           params,
           requestId: uuidv4(), // 使用uuid生成唯一ID
         };
-        localStorage.setItem('testRun', JSON.stringify(_params));
       }
       testRunAllNode(_params);
     } else {
