@@ -247,7 +247,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title={ mode === CreateUpdateModeEnum.Create ? '新增模型' : '更新模型'}
+      title={mode === CreateUpdateModeEnum.Create ? '新增模型' : '更新模型'}
       classNames={{
         content: cx(styles.container),
         header: cx(styles.header),

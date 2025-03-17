@@ -59,9 +59,9 @@ const ChatView: React.FC<ChatViewProps> = ({
       <img className={cx(styles.avatar)} src={info?.avatar as string} alt="" />
       <div className={cx('flex-1')}>
         <div className={cx(styles.author)}>{info?.name}</div>
-        <ConditionRender condition={messageInfo?.attachments?.length > 0}>
-          <AttachFile files={messageInfo.attachments as AttachmentFile[]} />
-        </ConditionRender>
+        {messageInfo?.attachments?.length > 0 && (
+          <AttachFile files={messageInfo?.attachments as AttachmentFile[]} />
+        )}
         {/*用户信息*/}
         <ConditionRender
           condition={

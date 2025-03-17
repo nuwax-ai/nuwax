@@ -91,16 +91,11 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   const handlerSubmit = () => {
     form.submit();
   };
-  console.log(description);
-
-  useEffect(() => {
-    console.log(description);
-  }, [description]);
 
   return (
     <CustomFormModal
       form={form}
-      title="创建工作流"
+      title={type === WorkflowModeEnum.Create ? '创建工作流' : '更新工作流'}
       classNames={{
         content: cx(styles.container),
         header: cx(styles.header),

@@ -1,17 +1,11 @@
 import logo from '@/assets/images/logo.png';
-import {
-  ACCESS_TOKEN,
-  EXPIRE_DATE,
-  PHONE,
-} from '@/constants/home.constants';
+import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useUserInfo from '@/hooks/useUserInfo';
 import { apiLogin } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
-import type {
-  ILoginResult,
-  LoginFieldType,
-} from '@/types/interfaces/login';
+import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
 import { isValidPhone } from '@/utils/common';
+import { useModel } from '@@/exports';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import {
   Button,
@@ -28,7 +22,6 @@ import React, { useEffect, useState } from 'react';
 import { history, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
 import ModalSliderCaptcha from './ModalSliderCaptcha';
-import { useModel } from '@@/exports';
 
 const cx = classNames.bind(styles);
 
@@ -131,7 +124,11 @@ const Login: React.FC = () => {
         'items-center',
       )}
     >
-      <img src={tenantConfigInfo?.siteLogo || logo as string} className={cx(styles.logo)} alt="" />
+      <img
+        src={tenantConfigInfo?.siteLogo || (logo as string)}
+        className={cx(styles.logo)}
+        alt=""
+      />
       <Form
         form={form}
         validateTrigger="onBlur"
@@ -143,7 +140,9 @@ const Login: React.FC = () => {
         onFinish={onFinish}
       >
         <Form.Item>
-          <h3 className={cx(styles.title)}>{ tenantConfigInfo?.siteName }</h3>
+          <h3
+            className={cx(styles.title)}
+          >{`欢迎使用${tenantConfigInfo?.siteName}`}</h3>
         </Form.Item>
         <Form.Item className={styles['select-box']} name="areaCode">
           <Select

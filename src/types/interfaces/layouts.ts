@@ -4,8 +4,8 @@ import type {
   UserOperatorAreaEnum,
 } from '@/types/enums/menus';
 import type { AgentInfo } from '@/types/interfaces/agent';
-import React from 'react';
 import type { UpdateSpaceTeamParams } from '@/types/interfaces/workspace';
+import React from 'react';
 
 // 用户相关智能体
 export interface UserRelAgentListProps {
