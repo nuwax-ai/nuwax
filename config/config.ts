@@ -22,18 +22,9 @@ export default defineConfig({
     target: ['es2020'],
     format: 'iife',
   },
-
+  publicPath: '/', // 保持根路径
   chainWebpack(config) {
-    // 修改 monaco 插件配置
-    config.plugin('monaco').use(MonacoWebpackPlugin, [
-      {
-        languages: ['javascript', 'python', 'json'],
-        globalAPI: true,
-        publicPath: './monaco-editor/vs', // 改为绝对路径
-      },
-    ]);
-
-    // 修改资源复制配置
+    // 修改复制目标路径
     config.plugin('copy-monaco').use(CopyWebpackPlugin, [
       {
         patterns: [
@@ -42,10 +33,19 @@ export default defineConfig({
               path.dirname(require.resolve('monaco-editor/package.json')),
               'min/vs',
             ),
-            to: 'monaco-editor/vs', // 确保输出到 public 目录
+            to: 'monaco-editor/vs', // 直接复制到根目录
             force: true,
           },
         ],
+      },
+    ]);
+
+    // 更新 monaco 插件配置
+    config.plugin('monaco').use(MonacoWebpackPlugin, [
+      {
+        languages: ['javascript', 'python', 'json'],
+        globalAPI: true,
+        publicPath: '/monaco-editor/vs', // 根目录绝对路径
       },
     ]);
   },
