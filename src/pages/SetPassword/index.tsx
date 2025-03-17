@@ -5,7 +5,7 @@ import { validatePassword } from '@/utils/common';
 import { Button, Form, FormProps, Input } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { useNavigate, useRequest, useModel } from 'umi';
+import { useModel, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -40,7 +40,11 @@ const SetPassword: React.FC = () => {
         'items-center',
       )}
     >
-      <img src={tenantConfigInfo?.siteLogo || logo as string} className={cx(styles.logo)} alt="" />
+      <img
+        src={tenantConfigInfo?.siteLogo || (logo as string)}
+        className={cx(styles.logo)}
+        alt=""
+      />
       <Form
         rootClassName={cx(styles.form, 'flex', 'flex-col')}
         name="login"

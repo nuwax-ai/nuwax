@@ -21,7 +21,8 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
 }) => {
   const location = useLocation();
   const { pathname } = location;
-  const { spaceList, currentSpaceInfo, setCurrentSpaceInfo } = useModel('spaceModel');
+  const { spaceList, currentSpaceInfo, setCurrentSpaceInfo } =
+    useModel('spaceModel');
   const spaceId = Number(localStorage.getItem(SPACE_ID));
   // 过滤当前工作空间
   const filterSpaceList = useMemo(() => {
@@ -50,10 +51,12 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
         <CheckOutlined className={styles.icon} />
         <img
           className={cx(styles.img, 'radius-6')}
-          src={currentSpaceInfo?.icon || personal as string}
+          src={currentSpaceInfo?.icon || (personal as string)}
           alt=""
         />
-        <span className={cx('flex-1', styles.title)}>{ currentSpaceInfo?.name || '个人空间' }</span>
+        <span className={cx('flex-1', styles.title)}>
+          {currentSpaceInfo?.name || '个人空间'}
+        </span>
       </div>
       <Divider className={styles['divider']} />
       <ul>

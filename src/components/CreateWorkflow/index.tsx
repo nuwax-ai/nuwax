@@ -94,7 +94,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title="创建工作流"
+      title={type === WorkflowModeEnum.Create ? '创建工作流' : '更新工作流'}
       classNames={{
         content: cx(styles.container),
         header: cx(styles.header),
@@ -105,7 +105,6 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     >
       <Form
         form={form}
-        preserve={false}
         requiredMark={customizeRequiredMark}
         layout="vertical"
         onFinish={onFinish}

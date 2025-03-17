@@ -1,13 +1,13 @@
 import logo from '@/assets/images/logo.png';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import { ICON_NEW_AGENT } from '@/constants/images.constants';
+import { apiAgentConversationCreate } from '@/services/agentConfig';
+import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { TenantConfigInfo } from '@/types/interfaces/login';
+import { history, useRequest } from '@@/exports';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';
-import { history, useRequest } from '@@/exports';
-import { apiAgentConversationCreate } from '@/services/agentConfig';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 
 const cx = classNames.bind(styles);
 
@@ -20,7 +20,6 @@ const Header: React.FC = () => {
     const info = localStorage.getItem(TENANT_CONFIG_INFO);
     setConfigInfo(JSON.parse(info));
   }, []);
-
 
   // 创建会话
   const { run: runConversationCreate } = useRequest(

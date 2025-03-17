@@ -35,7 +35,7 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({
       const spaceInfo = {
         id: data,
         ...params[0],
-      }
+      };
       onConfirm(spaceInfo);
     },
   });

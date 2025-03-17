@@ -1,6 +1,7 @@
 import personal from '@/assets/images/personal.png';
 import type {
   SpaceInfo,
+  UpdateSpaceTeamParams,
 } from '@/types/interfaces/workspace';
 import { DownOutlined } from '@ant-design/icons';
 import { Popover } from 'antd';
@@ -10,7 +11,6 @@ import { useModel } from 'umi';
 import CreateNewTeam from './CreateNewTeam';
 import styles from './index.less';
 import PersonalSpaceContent from './PersonalSpaceContent';
-import { UpdateSpaceTeamParams } from '@/types/interfaces/workspace';
 
 const cx = classNames.bind(styles);
 
@@ -45,7 +45,12 @@ const SpaceTitle: React.FC = () => {
         trigger="click"
         arrow={false}
         onOpenChange={setOpen}
-        content={<PersonalSpaceContent onCreateTeam={showModal} onClosePopover={setOpen} />}
+        content={
+          <PersonalSpaceContent
+            onCreateTeam={showModal}
+            onClosePopover={setOpen}
+          />
+        }
       >
         <div
           className={cx(
