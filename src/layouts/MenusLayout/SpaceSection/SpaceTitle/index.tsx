@@ -1,4 +1,4 @@
-import personal from '@/assets/images/personal.png';
+import teamImage from '@/assets/images/team_image.png';
 import type {
   SpaceInfo,
   UpdateSpaceTeamParams,
@@ -64,7 +64,7 @@ const SpaceTitle: React.FC = () => {
         >
           <img
             className={cx(styles.img, 'radius-6')}
-            src={currentSpaceInfo?.icon || (personal as string)}
+            src={currentSpaceInfo?.icon || (teamImage as string)}
             alt=""
           />
           <span className={cx('flex-1', styles.title)}>

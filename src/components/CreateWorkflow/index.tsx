@@ -91,11 +91,6 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   const handlerSubmit = () => {
     form.submit();
   };
-  console.log(description);
-
-  useEffect(() => {
-    console.log(description);
-  }, [description]);
 
   return (
     <CustomFormModal

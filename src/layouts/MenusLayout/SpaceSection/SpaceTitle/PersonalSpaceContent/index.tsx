@@ -1,4 +1,3 @@
-import personal from '@/assets/images/personal.png';
 import teamImage from '@/assets/images/team_image.png';
 import { SPACE_ID } from '@/constants/home.constants';
 import type { PersonalSpaceContentType } from '@/types/interfaces/layouts';
@@ -51,7 +50,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
         <CheckOutlined className={styles.icon} />
         <img
           className={cx(styles.img, 'radius-6')}
-          src={currentSpaceInfo?.icon || (personal as string)}
+          src={currentSpaceInfo?.icon || (teamImage as string)}
           alt=""
         />
         <span className={cx('flex-1', styles.title)}>
