@@ -76,6 +76,15 @@ Within a particular ecosystem, there may be a common way of installing things, s
 
 ## Usage
 
+### docker 容器构建
+
+```bash
+ docker buildx build --platform linux/amd64 --load --build-arg SERVER_NAME=devagent-platform.xspace.com -t agent-nginx -f Dockerfile .
+
+docker run -it --rm --platform linux/amd64 agent-nginx
+
+```
+
 Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
 
 ## Support
