@@ -21,9 +21,7 @@ const CodeEditor: React.FC<Props> = ({
   // 统一路径生成逻辑
   // 修改路径获取逻辑
   const getMonacoPath = () => {
-    return `${
-      (window as typeof window & { publicPath?: string }).publicPath || ''
-    }/monaco-editor/vs`;
+    return `${process.env.publicPath || ''}/monaco-editor/vs`;
   };
 
   // 在组件挂载前配置 loader

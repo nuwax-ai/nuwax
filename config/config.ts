@@ -6,6 +6,7 @@ import { defineConfig } from 'umi';
 import routes from '../src/routes';
 
 export default defineConfig({
+  publicPath: process.env.NODE_ENV === 'production' ? '/prod-path/' : '/',
   antd: {},
   access: {},
   model: {},
@@ -22,15 +23,16 @@ export default defineConfig({
   },
 
   chainWebpack(config) {
+    // 修改 monaco 插件配置
     config.plugin('monaco').use(MonacoWebpackPlugin, [
       {
         languages: ['javascript', 'python', 'json'],
         globalAPI: true,
-        publicPath: './',
-        // 删除此处错误的配置项
+        publicPath: '/monaco-editor/vs', // 改为绝对路径
       },
     ]);
 
+    // 修改资源复制配置
     config.plugin('copy-monaco').use(CopyWebpackPlugin, [
       {
         patterns: [
@@ -39,7 +41,8 @@ export default defineConfig({
               path.dirname(require.resolve('monaco-editor/package.json')),
               'min/vs',
             ),
-            to: 'monaco-editor/vs',
+            to: 'monaco-editor/vs', // 确保输出到 public 目录
+            force: true,
           },
         ],
       },
