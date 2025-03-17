@@ -21,7 +21,10 @@ const CodeEditor: React.FC<Props> = ({
   // 统一路径生成逻辑
   // 修改路径获取逻辑
   const getMonacoPath = () => {
-    return `${process.env.publicPath || ''}/monaco-editor/vs`;
+    console.log(123456, process.env);
+    return process.env.NODE_ENV === 'development'
+      ? '/monaco-editor/vs'
+      : './monaco-editor/vs';
   };
 
   // 在组件挂载前配置 loader

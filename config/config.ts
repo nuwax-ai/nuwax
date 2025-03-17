@@ -6,7 +6,8 @@ import { defineConfig } from 'umi';
 import routes from '../src/routes';
 
 export default defineConfig({
-  publicPath: process.env.NODE_ENV === 'production' ? '/prod-path/' : '/',
+  // 优先从环境变量读取（需要创建 .env 文件）
+  // publicPath: process.env.UMI_PUBLIC_PATH || '/',
   antd: {},
   access: {},
   model: {},
@@ -28,7 +29,7 @@ export default defineConfig({
       {
         languages: ['javascript', 'python', 'json'],
         globalAPI: true,
-        publicPath: '/monaco-editor/vs', // 改为绝对路径
+        publicPath: './monaco-editor/vs', // 改为绝对路径
       },
     ]);
 
