@@ -34,6 +34,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
     localStorage.setItem(SPACE_ID, spaceId.toString());
     setCurrentSpaceInfo(info);
     onClosePopover(false);
+
     // 路由跳转
     if (pathname.includes('develop')) {
       history.push(`/space/${spaceId}/develop`);

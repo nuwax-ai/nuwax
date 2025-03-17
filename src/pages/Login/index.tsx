@@ -3,15 +3,13 @@ import {
   ACCESS_TOKEN,
   EXPIRE_DATE,
   PHONE,
-  TENANT_CONFIG_INFO,
 } from '@/constants/home.constants';
 import useUserInfo from '@/hooks/useUserInfo';
-import { apiLogin, apiTenantConfig } from '@/services/account';
+import { apiLogin } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
 import type {
   ILoginResult,
   LoginFieldType,
-  TenantConfigInfo,
 } from '@/types/interfaces/login';
 import { isValidPhone } from '@/utils/common';
 import { ExclamationCircleFilled } from '@ant-design/icons';
@@ -30,6 +28,7 @@ import React, { useEffect, useState } from 'react';
 import { history, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
 import ModalSliderCaptcha from './ModalSliderCaptcha';
+import { useModel } from '@@/exports';
 
 const cx = classNames.bind(styles);
 
@@ -46,6 +45,8 @@ const Login: React.FC = () => {
   const [formValues, setFormValues] = useState<LoginFieldType>();
   const { runUserInfo } = useUserInfo();
 
+  const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
+
   const { run } = useRequest(apiLogin, {
     manual: true,
     debounceWait: 300,
@@ -57,15 +58,6 @@ const Login: React.FC = () => {
       navigate('/', { replace: true });
       message.success('登录成功');
       runUserInfo();
-    },
-  });
-
-  // 租户配置信息查询接口
-  const { run: runTenantConfig } = useRequest(apiTenantConfig, {
-    manual: true,
-    debounceWait: 300,
-    onSuccess: (result: TenantConfigInfo) => {
-      localStorage.setItem(TENANT_CONFIG_INFO, JSON.stringify(result));
     },
   });
 
@@ -139,9 +131,10 @@ const Login: React.FC = () => {
         'items-center',
       )}
     >
-      <img src={logo as string} className={cx(styles.logo)} alt="" />
+      <img src={tenantConfigInfo?.siteLogo || logo as string} className={cx(styles.logo)} alt="" />
       <Form
         form={form}
+        validateTrigger="onBlur"
         initialValues={{
           areaCode: '86',
         }}
@@ -150,7 +143,7 @@ const Login: React.FC = () => {
         onFinish={onFinish}
       >
         <Form.Item>
-          <h3 className={cx(styles.title)}>欢迎使用女娲智能应用平台</h3>
+          <h3 className={cx(styles.title)}>{ tenantConfigInfo?.siteName }</h3>
         </Form.Item>
         <Form.Item className={styles['select-box']} name="areaCode">
           <Select

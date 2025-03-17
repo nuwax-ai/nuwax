@@ -33,7 +33,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   onConfirm,
 }) => {
   const [form] = Form.useForm();
-  const [imageUrl, setImageUrl] = useState<string>(icon || '');
+  const [imageUrl, setImageUrl] = useState<string>('');
 
   // 新增工作流
   const { run } = useRequest(apiAddWorkflow, {
@@ -59,6 +59,12 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
       form.resetFields();
     },
   });
+
+  useEffect(() => {
+    if (icon) {
+      setImageUrl(icon);
+    }
+  }, [icon]);
 
   const onFinish: FormProps<{
     name: string;

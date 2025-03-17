@@ -1,6 +1,5 @@
 import personal from '@/assets/images/personal.png';
 import type {
-  CreateSpaceTeamParams,
   SpaceInfo,
 } from '@/types/interfaces/workspace';
 import { DownOutlined } from '@ant-design/icons';
@@ -11,6 +10,7 @@ import { useModel } from 'umi';
 import CreateNewTeam from './CreateNewTeam';
 import styles from './index.less';
 import PersonalSpaceContent from './PersonalSpaceContent';
+import { UpdateSpaceTeamParams } from '@/types/interfaces/workspace';
 
 const cx = classNames.bind(styles);
 
@@ -31,7 +31,7 @@ const SpaceTitle: React.FC = () => {
     setOpenModal(false);
   };
 
-  const handleConfirm = (info: CreateSpaceTeamParams) => {
+  const handleConfirm = (info: UpdateSpaceTeamParams) => {
     const list = [...spaceList, info] as SpaceInfo[];
     setSpaceList(list);
     setOpenModal(false);

@@ -29,10 +29,14 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({
   const { run, loading } = useRequest(apiCreateSpaceTeam, {
     manual: true,
     debounceWait: 300,
-    onSuccess: (_, params: CreateSpaceTeamParams[]) => {
+    onSuccess: (data: number, params: CreateSpaceTeamParams[]) => {
       message.success('新建成功');
       setImageUrl('');
-      onConfirm(params[0]);
+      const spaceInfo = {
+        id: data,
+        ...params[0],
+      }
+      onConfirm(spaceInfo);
     },
   });
 
