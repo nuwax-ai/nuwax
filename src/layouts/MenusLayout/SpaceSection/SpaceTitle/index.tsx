@@ -45,7 +45,7 @@ const SpaceTitle: React.FC = () => {
         trigger="click"
         arrow={false}
         onOpenChange={setOpen}
-        content={<PersonalSpaceContent onCreateTeam={showModal} />}
+        content={<PersonalSpaceContent onCreateTeam={showModal} onClosePopover={setOpen} />}
       >
         <div
           className={cx(

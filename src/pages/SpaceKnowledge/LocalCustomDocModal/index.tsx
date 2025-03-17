@@ -12,10 +12,10 @@ import {
   KnowledgeTextImportEnum,
   KnowledgeTextStepEnum,
 } from '@/types/enums/library';
+import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   LocalCustomDocModalProps,
   SegmentConfigModel,
-  UploadFileInfo,
 } from '@/types/interfaces/knowledge';
 import { DeleteOutlined } from '@ant-design/icons';
 import { Button, Form, message, Modal, Steps } from 'antd';

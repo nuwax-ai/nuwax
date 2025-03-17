@@ -12,13 +12,8 @@ export const UPLOAD_FILE_ACTION =
 // 会话 Connection地址
 export const CONVERSATION_CONNECTION_URL = `${process.env.BASE_URL}/api/agent/conversation/chat`;
 
-// 上传PDF、TXT、DOC、DOCX file  doc docx pdf md json txt
-export const UPLOAD_FILE_TYPE = [
-  'text/plain',
-  'application/msword',
-  'application/*',
-  'application/pdf',
-];
+// 可上传文件后缀类型：doc docx pdf md json txt
+export const UPLOAD_FILE_SUFFIX = ['doc', 'docx', 'pdf', 'md', 'json', 'txt'];
 
 // 验证码长度
 export const VERIFICATION_CODE_LEN = 6;

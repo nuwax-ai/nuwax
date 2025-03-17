@@ -212,3 +212,9 @@ export enum MessageStatusEnum {
   Complete = 'complete',
   Error = 'error',
 }
+
+// 消息loading时，调用状态
+export enum ProcessingEnum {
+  EXECUTING = 'EXECUTING',
+  FINISHED = 'FINISHED',
+}

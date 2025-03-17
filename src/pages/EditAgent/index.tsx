@@ -1,4 +1,5 @@
 import CreateAgent from '@/components/CreateAgent';
+import ShowStand from '@/components/ShowStand';
 import VersionHistory from '@/components/VersionHistory';
 import {
   apiAgentConfigHistoryList,
@@ -17,7 +18,7 @@ import { message } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
-import { useMatch, useRequest } from 'umi';
+import { useMatch, useModel, useRequest } from 'umi';
 import AgentArrangeConfig from './AgentArrangeConfig';
 import AgentHeader from './AgentHeader';
 import AgentModelSetting from './AgentModelSetting';
@@ -27,7 +28,6 @@ import styles from './index.less';
 import PluginModelSetting from './PluginModelSetting';
 import PreviewAndDebug from './PreviewAndDebug';
 import PublishAgent from './PublishAgent';
-import ShowStand from './ShowStand';
 import SystemTipsWord from './SystemTipsWord';
 
 const cx = classNames.bind(styles);
@@ -38,9 +38,6 @@ const cx = classNames.bind(styles);
 const EditAgent: React.FC = () => {
   const match = useMatch('/space/:spaceId/agent/:agentId');
   const { spaceId, agentId } = match.params;
-  const [showType, setShowType] = useState<EditAgentShowType>(
-    EditAgentShowType.Hide,
-  );
   const [open, setOpen] = useState<boolean>(false);
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
@@ -49,6 +46,7 @@ const EditAgent: React.FC = () => {
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>(null);
   // 历史版本信息
   const [versionHistory, setVersionHistory] = useState<HistoryData[]>([]);
+  const { showType, setShowType } = useModel('conversationInfo');
 
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
@@ -81,10 +79,6 @@ const EditAgent: React.FC = () => {
     run(agentId);
     runHistory(agentId);
   }, [agentId]);
-
-  const handlerToggleType = (type: EditAgentShowType) => {
-    setShowType(type);
-  };
 
   // 确认编辑智能体
   const handlerConfirmEditAgent = (info: AgentBaseInfo) => {
@@ -125,6 +119,7 @@ const EditAgent: React.FC = () => {
       openingGuidQuestion,
       openLongMemory,
     } = _agentConfigInfo;
+
     // 更新智能体信息
     runUpdate({
       id,
@@ -145,11 +140,9 @@ const EditAgent: React.FC = () => {
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader
         agentConfigInfo={agentConfigInfo}
-        onToggleShowStand={() =>
-          handlerToggleType(EditAgentShowType.Show_Stand)
-        }
+        onToggleShowStand={() => setShowType(EditAgentShowType.Show_Stand)}
         onToggleVersionHistory={() =>
-          handlerToggleType(EditAgentShowType.Version_History)
+          setShowType(EditAgentShowType.Version_History)
         }
         // 点击编辑智能体按钮，打开弹窗
         onEditAgent={() => setOpenEditAgent(true)}
@@ -189,26 +182,24 @@ const EditAgent: React.FC = () => {
         <PreviewAndDebug
           agentConfigInfo={agentConfigInfo}
           agentId={agentId}
-          onPressDebug={() =>
-            handlerToggleType(EditAgentShowType.Debug_Details)
-          }
+          onPressDebug={() => setShowType(EditAgentShowType.Debug_Details)}
         />
         {/*调试详情*/}
         <DebugDetails
           visible={showType === EditAgentShowType.Debug_Details}
-          onClose={() => handlerToggleType(EditAgentShowType.Hide)}
+          onClose={() => setShowType(EditAgentShowType.Hide)}
         />
         {/*展示台*/}
         <ShowStand
           list={[]}
           visible={showType === EditAgentShowType.Show_Stand}
-          onClose={() => handlerToggleType(EditAgentShowType.Hide)}
+          onClose={() => setShowType(EditAgentShowType.Hide)}
         />
         {/*版本历史*/}
         <VersionHistory
           list={versionHistory}
           visible={showType === EditAgentShowType.Version_History}
-          onClose={() => handlerToggleType(EditAgentShowType.Hide)}
+          onClose={() => setShowType(EditAgentShowType.Hide)}
         />
       </section>
       {/*发布智能体弹窗*/}

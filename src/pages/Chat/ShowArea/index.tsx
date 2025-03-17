@@ -1,63 +1,34 @@
-// import { apiHome } from '@/services/Demo';
-import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
-// import { useRequest } from 'umi';
-import styles from './index.less';
-// import { RequestResponse } from '@/types/interfaces/request';
-import FoldWrap from '@/components/FoldWrap';
+import ShowStand from '@/components/ShowStand';
 import { ICON_FOLD } from '@/constants/images.constants';
-// import Card from '@/components/Card';
+import { EditAgentShowType } from '@/types/enums/space';
+import classNames from 'classnames';
+import React from 'react';
+import { useModel } from 'umi';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface ShowAreaProps {
-  executeResults: string[];
-}
-
-const ShowArea: React.FC<ShowAreaProps> = ({ executeResults }) => {
-  const [visible, setVisible] = useState<boolean>(true);
-  // const [contents, setContents] = useState<[]>([]);
-
-  // const { run, loading } = useRequest(apiHome, {
-  //   manual: true,
-  //   debounceWait: 300,
-  //   onSuccess: (res: RequestResponse<null>) => {
-  //     const { data } = res;
-  //     if (data) {
-  //     }
-  //   },
-  // });
-
-  useEffect(() => {
-    // run();
-  }, []);
+const ShowArea: React.FC = () => {
+  const { showType, setShowType } = useModel('conversationInfo');
 
   const handlerVisible = () => {
-    setVisible(!visible);
+    if (showType === EditAgentShowType.Hide) {
+      setShowType(EditAgentShowType.Show_Stand);
+    } else {
+      setShowType(EditAgentShowType.Hide);
+    }
   };
 
   return (
-    <div className={`flex flex-col items-end ${styles.container}`}>
+    <div className={cx('flex', 'flex-col', 'items-end', styles.container)}>
       <ICON_FOLD onClick={handlerVisible} />
-      <FoldWrap
-        className={cx(styles.box, 'flex-1')}
-        lineMargin
-        title={'展示台'}
-        visible={visible}
-        onClose={() => setVisible(false)}
-      >
-        <div className={cx(styles['main-wrap'])}>
-          {executeResults?.map((item, index) => (
-            <div key={index}>{item}</div>
-          ))}
-          {/*<Card type={CardStyleEnum.ONE} />*/}
-          {/*<CardModeSetting*/}
-          {/*  type={CardStyleEnum.ONE}*/}
-          {/*  checked={checked}*/}
-          {/*  onClick={setChecked}*/}
-          {/*/>*/}
-        </div>
-      </FoldWrap>
+      {/*展示台*/}
+      <ShowStand
+        className={cx('flex-1')}
+        list={[]}
+        visible={showType === EditAgentShowType.Show_Stand}
+        onClose={() => setShowType(EditAgentShowType.Hide)}
+      />
     </div>
   );
 };

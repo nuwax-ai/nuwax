@@ -148,9 +148,11 @@ const SpaceDevelop: React.FC = () => {
 
   useEffect(() => {
     // 监听路由
-    const unlisten = history.listen(() => {
-      const _spaceId = localStorage.getItem(SPACE_ID);
-      run(_spaceId);
+    const unlisten = history.listen(({ location }) => {
+      if (location.pathname.includes('develop')) {
+        const _spaceId = localStorage.getItem(SPACE_ID) as number;
+        run(_spaceId);
+      }
     });
 
     return () => {

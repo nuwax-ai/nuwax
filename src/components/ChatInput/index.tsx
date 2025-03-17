@@ -2,7 +2,7 @@ import sendImage from '@/assets/images/send_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import type { ChatInputProps, UploadInfo } from '@/types/interfaces/common';
+import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import { ClearOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import { Input, Tooltip, Upload } from 'antd';
@@ -22,7 +22,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   onEnter,
 }) => {
   // 文档
-  const [files, setFiles] = useState<UploadInfo[]>([]);
+  const [files, setFiles] = useState<UploadFileInfo[]>([]);
   const [message, setMessage] = useState<string>('');
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
@@ -63,7 +63,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
       return;
     }
     if (info.file.status === 'done') {
-      const data: UploadInfo = info.file.response?.data;
+      const data: UploadFileInfo = info.file.response?.data;
       const _files = [...files];
       _files.push(data);
       setFiles(_files);
@@ -96,7 +96,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           </span>
         </Tooltip>
       </ConditionRender>
-      <div className={cx(styles['chat-box'], 'flex-1')}>
+      <div className={cx('flex-1', 'w-full')}>
         {/*文件列表*/}
         <ConditionRender condition={files?.length}>
           <ChatUploadFile files={files} onDel={handleDelFile} />

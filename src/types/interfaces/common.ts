@@ -5,15 +5,12 @@ import type {
   AgentConfigInfo,
   CreatorInfo,
 } from '@/types/interfaces/agent';
-import {
-  ConversationFinalResult,
-  MessageInfo,
-} from '@/types/interfaces/conversationInfo';
+import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import type {
   KnowledgeBaseInfo,
   KnowledgeInfo,
 } from '@/types/interfaces/knowledge';
-import { InputAndOutConfig } from '@/types/interfaces/node';
+import type { InputAndOutConfig } from '@/types/interfaces/node';
 import type {
   ConfigProviderProps,
   FormInstance,
@@ -62,6 +59,14 @@ export interface FoldWrapType {
     name: string;
     description: string;
   }) => void;
+}
+
+// 容器组件
+export interface ToggleWrapProps {
+  className?: string;
+  title: string;
+  visible?: boolean;
+  onClose: () => void;
 }
 
 // 卡片模式设置样式类型
@@ -383,7 +388,7 @@ export interface SubmitButtonProps {
 }
 
 // 上传文件信息
-export interface UploadInfo {
+export interface UploadFileInfo {
   url: string;
   key: string;
   fileName: string;
@@ -421,18 +426,13 @@ export interface PluginConfigTitleProps {
 export interface ChatInputProps {
   className?: React.CSSProperties;
   onClear?: () => void;
-  onEnter: (message: string, files: UploadInfo[]) => void;
+  onEnter: (message: string, files: UploadFileInfo[]) => void;
 }
 
 // 聊天框底部更多操作组件
 export interface ChatBottomMoreProps {
-  text: string;
-  onDebug?: () => void;
-  // 自定义添加字段：chat 会话结果
-  finalResult?: ConversationFinalResult;
+  messageInfo: MessageInfo;
 }
 
 // 运行状态组件：进行中、运行完毕
-export interface RunOverProps {
-  messageInfo: MessageInfo;
-}
+export type RunOverProps = ChatBottomMoreProps;

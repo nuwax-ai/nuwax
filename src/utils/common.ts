@@ -21,8 +21,9 @@ function isValidEmail(email: string) {
 }
 
 function validatePassword(password: string) {
-  const reg = /^(?=.*\d)(?=.*[a-zA-Z])[\da-zA-Z~!@#$%^&*]{8,16}$/;
-  return reg.test(password);
+  return password?.length >= 6;
+  // const reg = /^(?=.*\d)(?=.*[a-zA-Z])[\da-zA-Z~!@#$%^&*]{8,16}$/;
+  // return reg.test(password);
 }
 
 const getBase64 = (img: FileType, callback: (url: string) => void) => {

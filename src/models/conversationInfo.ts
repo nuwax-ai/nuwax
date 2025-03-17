@@ -11,20 +11,20 @@ import {
   MessageTypeEnum,
 } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
-import type { UploadInfo } from '@/types/interfaces/common';
+import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
+import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   AttachmentFile,
   ConversationChatResponse,
-  MessageInfo,
-} from '@/types/interfaces/conversationInfo';
-import {
   ConversationInfo,
   ExecuteResultInfo,
+  MessageInfo,
+  ProcessingInfo,
 } from '@/types/interfaces/conversationInfo';
 import { createSSEConnection } from '@/utils/fetchEventSource';
-import { useRequest } from '@@/exports';
 import moment from 'moment/moment';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRequest } from 'umi';
 
 export default () => {
   // 会话信息
@@ -36,6 +36,9 @@ export default () => {
   const messageViewRef = useRef<HTMLDivElement | null>(null);
   const timeoutRef = useRef<number>(0);
   const scrollTimeoutRef = useRef<number>(0);
+  const [showType, setShowType] = useState<EditAgentShowType>(
+    EditAgentShowType.Hide,
+  );
   // 调试结果
   const [executeResults, setExecuteResults] = useState<ExecuteResultInfo[]>([]);
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
@@ -88,13 +91,13 @@ export default () => {
     id: number,
     message: string,
     attachments: AttachmentFile[] = [],
-    openSuggest = false,
+    debug = false,
   ) => {
     const params = {
       conversationId: id,
       message,
       attachments,
-      // debug: true,
+      debug,
     };
 
     // 启动连接
@@ -110,11 +113,19 @@ export default () => {
         timeoutRef.current = setTimeout(() => {
           setMessageList((list) => {
             const lastMessage = list.slice(-1)[0] as MessageInfo;
-            let newMessage;
+            if (!lastMessage) {
+              return [];
+            }
+            let newMessage = null;
             // 更新UI状态...
             if (data.eventType === ConversationEventTypeEnum.PROCESSING) {
               newMessage = {
                 ...lastMessage,
+                status: MessageStatusEnum.Loading,
+                processingList: [
+                  ...(lastMessage?.processingList || []),
+                  data.data,
+                ] as ProcessingInfo[],
               };
             }
             if (data.eventType === ConversationEventTypeEnum.MESSAGE) {
@@ -126,17 +137,18 @@ export default () => {
               };
             }
             if (data.eventType === ConversationEventTypeEnum.FINAL_RESULT) {
-              const { outputText, componentExecuteResults } = data.data;
+              const { componentExecuteResults } = data.data;
               newMessage = {
                 ...lastMessage,
-                text: outputText,
                 status: MessageStatusEnum.Complete,
                 finalResult: data.data,
               };
               // 调试结果
               setExecuteResults(componentExecuteResults);
+              clearTimeout(timeoutRef.current);
+              timeoutRef.current = 0;
               // 是否开启问题建议,可用值:Open,Close
-              if (openSuggest) {
+              if (conversationInfo?.agent.openSuggest === OpenCloseEnum.Open) {
                 // 滚动到底部
                 handleScrollBottom();
                 runChatSuggest(params);
@@ -152,16 +164,14 @@ export default () => {
     });
     // 主动关闭连接
     abortConnection();
-    clearTimeout(timeoutRef.current);
-    timeoutRef.current = 0;
   };
 
   // 发送消息
   const onMessageSend = async (
     id: number,
     message: string,
-    files: UploadInfo[] = [],
-    openSuggest?: boolean,
+    files: UploadFileInfo[] = [],
+    debug = false,
   ) => {
     setChatSuggestList([]);
     // 附件文件
@@ -195,12 +205,11 @@ export default () => {
     } as MessageInfo;
 
     setMessageList(
-      (messageList) =>
-        [...messageList, chatMessage, assistantMessage] as MessageInfo[],
+      (list) => [...list, chatMessage, assistantMessage] as MessageInfo[],
     );
-    handleScrollBottom();
+    await handleScrollBottom();
     // 处理会话
-    await handleConversation(id, message, attachments, openSuggest);
+    await handleConversation(id, message, attachments, debug);
   };
 
   const handleDebug = useCallback((item: MessageInfo) => {
@@ -208,6 +217,7 @@ export default () => {
     if (result) {
       setExecuteResults(result as ExecuteResultInfo[]);
     }
+    setShowType(EditAgentShowType.Debug_Details);
   }, []);
 
   return {
@@ -222,5 +232,7 @@ export default () => {
     onMessageSend,
     handleDebug,
     messageViewRef,
+    showType,
+    setShowType,
   };
 };

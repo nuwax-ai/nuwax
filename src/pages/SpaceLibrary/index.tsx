@@ -202,9 +202,11 @@ const SpaceLibrary: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const unlisten = history.listen(() => {
-      const _spaceId = localStorage.getItem(SPACE_ID) as number;
-      runComponent(_spaceId);
+    const unlisten = history.listen(({ location }) => {
+      if (location.pathname.includes('library')) {
+        const _spaceId = localStorage.getItem(SPACE_ID) as number;
+        runComponent(_spaceId);
+      }
     });
 
     return () => {

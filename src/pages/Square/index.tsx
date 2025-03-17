@@ -77,8 +77,10 @@ const Square: React.FC = () => {
     setConfigInfo(JSON.parse(info));
     handleQuery();
 
-    const unlisten = history.listen(() => {
-      handleQuery();
+    const unlisten = history.listen(({ location }) => {
+      if (location.pathname === '/square') {
+        handleQuery();
+      }
     });
 
     return () => {
@@ -86,6 +88,7 @@ const Square: React.FC = () => {
     };
   }, []);
 
+  // 点击打开页面
   const handleLink = () => {
     if (configInfo?.squareBannerLinkUrl) {
       window.location.href = configInfo.squareBannerLinkUrl;

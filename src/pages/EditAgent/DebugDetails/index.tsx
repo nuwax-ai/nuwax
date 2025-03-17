@@ -1,8 +1,8 @@
-import FoldWrap from '@/components/FoldWrap';
+import ToggleWrap from '@/components/ToggleWrap';
 import type { DebugDetailsProps } from '@/types/interfaces/agentConfig';
 import { Empty } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { memo } from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 
@@ -14,14 +14,10 @@ const cx = classNames.bind(styles);
 const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
   const { executeResults } = useModel('conversationInfo');
 
+  // console.log(executeResults);
+
   return (
-    <FoldWrap
-      title="调试详情"
-      className={styles.container}
-      onClose={onClose}
-      visible={visible}
-      lineMargin
-    >
+    <ToggleWrap title="调试详情" onClose={onClose} visible={visible}>
       {executeResults?.length > 0 ? (
         <div>
           {executeResults?.map((item, index) => (
@@ -35,8 +31,8 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
           <Empty description="暂无数据" />
         </div>
       )}
-    </FoldWrap>
+    </ToggleWrap>
   );
 };
 
-export default DebugDetails;
+export default memo(DebugDetails);

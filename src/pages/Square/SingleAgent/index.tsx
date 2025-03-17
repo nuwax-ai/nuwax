@@ -36,7 +36,6 @@ const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
   const handleClick = () => {
     runConversationCreate({
       agentId: targetId,
-      devMode: true,
     });
   };
 

@@ -105,7 +105,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title="创建知识库"
+      title={mode === CreateUpdateModeEnum.Create ? '创建知识库' : '更新知识库'}
       open={open}
       onCancel={onCancel}
       onConfirm={handlerSubmit}

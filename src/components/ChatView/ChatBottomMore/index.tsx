@@ -6,16 +6,17 @@ import { message, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 // 聊天框底部更多操作组件
-const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({
-  text,
-  onDebug,
-  finalResult,
-}) => {
+const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({ messageInfo }) => {
+  // finalResult 自定义添加字段：chat 会话结果
+  const { text, finalResult } = messageInfo;
+  const { handleDebug } = useModel('conversationInfo');
+
   const handleCopy = () => {
     message.success('复制成功');
   };
@@ -47,7 +48,7 @@ const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({
         </ConditionRender>
       </div>
       <div className={cx('flex', styles['more-action'])}>
-        <CopyToClipboard text={text} onCopy={handleCopy}>
+        <CopyToClipboard text={text || ''} onCopy={handleCopy}>
           <Tooltip title="复制">
             <span
               className={cx(
@@ -65,7 +66,7 @@ const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({
         <ConditionRender condition={!!finalResult}>
           <TooltipIcon
             className={styles.icon}
-            icon={<PaperClipOutlined onClick={onDebug} />}
+            icon={<PaperClipOutlined onClick={handleDebug} />}
             title="调试"
             type="white"
           />
