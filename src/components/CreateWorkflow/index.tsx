@@ -38,7 +38,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   // 新增工作流
   const { run } = useRequest(apiAddWorkflow, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result, params) => {
       message.success('工作流已创建成功');
       const data: WorkflowBaseInfo = {
@@ -52,7 +52,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   // 更新工作流
   const { run: runUpdate } = useRequest(apiUpdateWorkflow, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (_, params) => {
       message.success('工作流更新成功');
       onConfirm(...params);

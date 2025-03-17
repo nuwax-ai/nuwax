@@ -22,7 +22,7 @@ const Home: React.FC = () => {
     apiAgentConversationCreate,
     {
       manual: true,
-      debounceWait: 300,
+      debounceInterval: 300,
       onSuccess: (result: ConversationInfo) => {
         conversationIdRef.current = result.id;
       },

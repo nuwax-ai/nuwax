@@ -19,7 +19,7 @@ const User: React.FC = () => {
   let navigate = useNavigate();
   const { run } = useRequest(apiLogout, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       localStorage.clear();
       navigate('/login', { replace: true });
@@ -27,7 +27,6 @@ const User: React.FC = () => {
   });
 
   const handlerClick = (type: UserAvatarEnum) => {
-    console.log(type);
     switch (type) {
       // 用户名称
       case UserAvatarEnum.User_Name:

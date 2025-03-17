@@ -32,7 +32,7 @@ const Message: React.FC = () => {
   // 查询用户消息列表
   const { run: runMessageList } = useRequest(apiNotifyMessageList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: NotifyMessageInfo[]) => {
       setMessageList(result);
     },
@@ -48,7 +48,7 @@ const Message: React.FC = () => {
   // 清除所有未读消息
   const { run: runClear } = useRequest(apiNotifyMessageUnreadClear, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('已清除所有未读消息');
     },

@@ -113,7 +113,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 查询智能体配置组件列表
   const { run } = useRequest(apiAgentComponentList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: AgentComponentInfo[]) => {
       setAgentComponentList(result);
     },
@@ -131,7 +131,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 删除智能体组件配置
   const { run: runAgentComponentDel } = useRequest(apiAgentComponentDelete, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (_, params) => {
       message.success('已成功删除插件');
       const id = params[0];
@@ -143,7 +143,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 新增智能体插件、工作流、知识库组件配置
   const { run: runComponentAdd } = useRequest(apiAgentComponentAdd, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       setShow(false);
       message.success('已成功添加');

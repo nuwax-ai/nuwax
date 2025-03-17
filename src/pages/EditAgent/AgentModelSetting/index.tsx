@@ -46,7 +46,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   // 查询可使用模型列表接口
   const { run: runMode } = useRequest(apiModelList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: ModelConfigInfo[]) => {
       const list: option[] =
         result?.map((item) => ({
@@ -60,7 +60,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   // 更新模型组件配置
   const { run: runUpdate } = useRequest(apiAgentComponentModelUpdate, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('更新成功');
     },

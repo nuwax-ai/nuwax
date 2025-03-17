@@ -12,7 +12,7 @@ function Space() {
   // 查询用户空间列表
   const { run: runSpace } = useRequest(apiSpaceList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: SpaceInfo[]) => {
       const spaceId = localStorage.getItem(SPACE_ID);
       // 首次进入时

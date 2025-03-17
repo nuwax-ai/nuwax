@@ -38,7 +38,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
     apiAgentComponentVariableUpdate,
     {
       manual: true,
-      debounceWait: 300,
+      debounceInterval: 300,
       onSuccess: () => {
         message.success('变量更新成功');
         onConfirm();

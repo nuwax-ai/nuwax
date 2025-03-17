@@ -25,7 +25,7 @@ const HomeSection: React.FC = () => {
   // 查询用户最近编辑的智能体列表
   const { run: runEdit } = useRequest(apiUserEditAgentList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: AgentInfo[]) => {
       setEditAgentList(result);
     },
@@ -34,7 +34,7 @@ const HomeSection: React.FC = () => {
   // 查询用户最近使用过的智能体列表
   const { run: runUsed } = useRequest(apiUserUsedAgentList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: AgentInfo[]) => {
       setUsedAgentList(result);
     },
@@ -43,7 +43,7 @@ const HomeSection: React.FC = () => {
   // 查询用户收藏的智能体列表
   const { run: runCollect } = useRequest(apiUserCollectAgentList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: AgentInfo[]) => {
       setCollectAgentList(result);
     },
@@ -54,7 +54,7 @@ const HomeSection: React.FC = () => {
     apiAgentConversationCreate,
     {
       manual: true,
-      debounceWait: 300,
+      debounceInterval: 300,
       onSuccess: (result: ConversationInfo) => {
         history.push(`/home/chat/${result.id}`);
       },

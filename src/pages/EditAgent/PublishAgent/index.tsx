@@ -22,7 +22,7 @@ const PublishAgent: React.FC<PublishAgentProps> = ({
   // 智能体发布申请
   const { run, loading } = useRequest(apiAgentPublishApply, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('发布成功');
       onCancel();

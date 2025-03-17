@@ -55,7 +55,7 @@ const SpaceKnowledge: React.FC = () => {
   // 知识库基础配置接口 - 数据详情查询
   const { run } = useRequest(apiKnowledgeConfigDetail, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: KnowledgeInfo) => {
       setKnowledgeInfo(result);
     },
@@ -64,7 +64,7 @@ const SpaceKnowledge: React.FC = () => {
   // 知识库分段配置 - 数据列表查询
   const { run: runRawSegmentList } = useRequest(apiKnowledgeRawSegmentList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: Page<KnowledgeRawSegmentInfo>) => {
       setRawSegmentInfoList(result.records);
     },
@@ -73,7 +73,7 @@ const SpaceKnowledge: React.FC = () => {
   // 知识库文档配置 - 数据列表查询
   const { run: runDocList } = useRequest(apiKnowledgeDocumentList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: Page<KnowledgeDocumentInfo>) => {
       if (result?.records?.length > 0) {
         const { records } = result;
@@ -134,7 +134,7 @@ const SpaceKnowledge: React.FC = () => {
   // 知识库文档配置 - 数据删除接口
   const { run: runDocDelete } = useRequest(apiKnowledgeDocumentDelete, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (_, params) => {
       message.success('删除文档成功');
       const delDocId = params[0];

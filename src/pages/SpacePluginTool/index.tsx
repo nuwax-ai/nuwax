@@ -84,7 +84,7 @@ const SpacePluginTool: React.FC = () => {
   // 查询插件信息
   const { run: runPluginInfo } = useRequest(apiPluginInfo, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: PluginInfo) => {
       setPluginInfo(result);
       if (result.config) {
@@ -111,7 +111,7 @@ const SpacePluginTool: React.FC = () => {
   // 更新HTTP插件配置接口
   const { run: runUpdate } = useRequest(apiPluginHttpUpdate, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('插件保存成功');
     },

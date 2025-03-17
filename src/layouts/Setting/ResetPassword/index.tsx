@@ -23,7 +23,7 @@ const ResetPassword: React.FC = () => {
 
   const { run, loading } = useRequest(apiResetPassword, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('重置成功');
       form.resetFields();
@@ -47,7 +47,7 @@ const ResetPassword: React.FC = () => {
   // 发送邮箱验证码
   const { run: runSendCode } = useRequest(apiSendCode, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('验证码已发送');
     },

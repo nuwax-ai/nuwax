@@ -40,7 +40,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
   // 数据新增接口
   const { run } = useRequest(apiKnowledgeConfigAdd, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result, params) => {
       message.success('知识库已创建成功');
       const data: KnowledgeBaseInfo = {
@@ -55,7 +55,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
   // 数据更新接口
   const { run: runUpdate } = useRequest(apiKnowledgeConfigUpdate, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (_, params) => {
       message.success('知识库更新成功');
       onConfirm(...params);

@@ -56,7 +56,7 @@ export default () => {
   // 查询会话
   const { run: runQueryConversation } = useRequest(apiAgentConversation, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result) => {
       setConversationInfo(result);
       setMessageList(result?.messageList || []);
@@ -69,7 +69,7 @@ export default () => {
     apiAgentConversationChatSuggest,
     {
       manual: true,
-      debounceWait: 300,
+      debounceInterval: 300,
       onSuccess: (result) => {
         setChatSuggestList(result);
         handleScrollBottom();

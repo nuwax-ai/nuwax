@@ -46,7 +46,7 @@ const KnowledgeSetting: React.FC<KnowledgeSettingProps> = ({
     apiAgentComponentKnowledgeUpdate,
     {
       manual: true,
-      debounceWait: 300,
+      debounceInterval: 300,
     },
   );
 

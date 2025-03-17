@@ -88,7 +88,7 @@ const SpaceDevelop: React.FC = () => {
   // 查询空间智能体列表接口
   const { run } = useRequest(apiAgentConfigList, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: AgentConfigInfo[]) => {
       handleFilterList(status, create, keyword, result);
       agentAllRef.current = result;
@@ -98,7 +98,7 @@ const SpaceDevelop: React.FC = () => {
   // 创建副本
   const { run: runCopy } = useRequest(apiAgentCopy, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('已成功创建副本');
       run(spaceId);
@@ -118,7 +118,7 @@ const SpaceDevelop: React.FC = () => {
   // 删除智能体
   const { run: runDel } = useRequest(apiAgentDelete, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('已成功删除');
       handleDelAgent();
@@ -128,7 +128,7 @@ const SpaceDevelop: React.FC = () => {
   // 智能体迁移接口
   const { run: runTransfer } = useRequest(apiAgentTransfer, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('迁移成功');
       handleDelAgent();
