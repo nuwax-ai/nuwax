@@ -33,11 +33,11 @@ const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
     const isJpgOrPng =
       type === 'image/jpeg' || type === 'image/jpg' || type === 'image/png';
     if (!isJpgOrPng) {
-      message.error('You can only upload JPG/PNG file!');
+      message.error('请上传 JPG、JPEG、PNG 类型图片文件!');
     }
     const isLt2M = size / 1024 / 1024 < 2;
     if (!isLt2M) {
-      message.error('Image must smaller than 2MB!');
+      message.error('图片大小不能超过2MB!');
     }
     return (isJpgOrPng && isLt2M) || Upload.LIST_IGNORE;
   };
