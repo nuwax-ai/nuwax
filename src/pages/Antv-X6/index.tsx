@@ -406,33 +406,10 @@ const Workflow: React.FC = () => {
         }
         return prev; // 如果不修改状态就直接返回原值
       });
+      getNodeConfig(sourceNode.id);
     }
   };
 
-  const handleNodeChange = (action: string, data: ChildNode) => {
-    switch (action) {
-      case 'TestRun': {
-        if (data.type === 'QA') {
-          setStopWait(true);
-        }
-        setTestRun(true);
-        break;
-      }
-      case 'Duplicate':
-        copyNode(data);
-        break;
-      case 'Rename':
-        changeNode(data);
-        break;
-      case 'Delete':
-        {
-          deleteNode(data.id);
-        }
-        break;
-      default:
-        break;
-    }
-  };
   // 添加工作流，插件，知识库，数据库
   const onAdded = (val: CreatedNodeItem, parentFC?: string) => {
     if (parentFC && parentFC !== 'workflow') return;
@@ -574,6 +551,7 @@ const Workflow: React.FC = () => {
               setTestRunResult(data.data.output);
             }
             setTestRunResult(JSON.stringify(data.data, null, 2));
+            localStorage.removeItem('testRun');
           }
           if (data.data.status === 'STOP_WAIT_ANSWER') {
             setLoading(false);
@@ -722,6 +700,35 @@ const Workflow: React.FC = () => {
       nodeTestRun(params);
     }
     setLoading(true);
+  };
+
+  const handleNodeChange = (action: string, data: ChildNode) => {
+    switch (action) {
+      case 'TestRun': {
+        if (data.type === 'QA') {
+          setStopWait(true);
+        } else if (data.type === 'Start') {
+          testRunAll();
+          return;
+        }
+        setTestRun(true);
+
+        break;
+      }
+      case 'Duplicate':
+        copyNode(data);
+        break;
+      case 'Rename':
+        changeNode(data);
+        break;
+      case 'Delete':
+        {
+          deleteNode(data.id);
+        }
+        break;
+      default:
+        break;
+    }
   };
 
   // 保存当前画布中节点的位置
