@@ -19,7 +19,7 @@ export default defineConfig({
   //   // 关键配置：启用 IIFE 包裹
   //   esbuildMinifyIIFE: true,
   // },
-  npmClient: 'pnpm',
+  // npmClient: 'pnpm',
   // chainWebpack(config) {
   //   config.externals({
   //     'monaco-editor/esm/vs/editor/editor.worker': 'self.MonacoEditorWorker',

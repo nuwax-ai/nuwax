@@ -56,6 +56,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     onSuccess: (_, params) => {
       message.success('工作流更新成功');
       onConfirm(...params);
+      form.resetFields();
     },
   });
 
@@ -90,6 +91,11 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   const handlerSubmit = () => {
     form.submit();
   };
+  console.log(description);
+
+  useEffect(() => {
+    console.log(description);
+  }, [description]);
 
   return (
     <CustomFormModal

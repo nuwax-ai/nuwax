@@ -233,7 +233,12 @@ const initGraph = ({
         const children = node.getChildren();
         console.log(children);
         children?.forEach((child) => {
-          child.prop('zIndex', 99);
+          // 使用 X6 内置类型检查方法
+          if (child.isEdge()) {
+            child.prop('zIndex', 15);
+          } else {
+            child.prop('zIndex', 20);
+          }
         });
         // 设置内部边的层级
         node.prop('zIndex', 10);
