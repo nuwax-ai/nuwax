@@ -42,11 +42,11 @@ const UploadFile: React.FC<UploadFileProps> = ({
     const suffix = name.split('.')[1].toLowerCase();
     const isFile = UPLOAD_FILE_SUFFIX.includes(suffix);
     if (!isFile) {
-      message.error('You can only upload PDF、TXT、DOC、DOCX file!');
+      message.error('请上传 PDF、TXT、DOC、DOCX、MD、JSON 类型文件!');
     }
     const isLt100M = size / 1024 / 1024 < 100;
     if (!isLt100M) {
-      message.error('File must smaller than 100MB!');
+      message.error('文件大小不能超过100MB!');
     }
     return (isFile && isLt100M) || Upload.LIST_IGNORE;
   };
@@ -69,7 +69,7 @@ const UploadFile: React.FC<UploadFileProps> = ({
         </p>
         <p className="ant-upload-text">点击上传或拖拽文档到这里</p>
         <p className="ant-upload-hint">
-          支持 PDF、TXT、DOC、DOCX、MD，最多可上传 300 个文件，每个文件不超过
+          支持 PDF、TXT、DOC、DOCX、MD、JSON，最多可上传 300 个文件，每个文件不超过
           100MB， PDF 最多 500 页
         </p>
       </Dragger>

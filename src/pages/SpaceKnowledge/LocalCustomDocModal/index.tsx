@@ -274,7 +274,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
                 )}
               >
                 <span>
-                  {info.fileName} ({`${info.size} Byte`})
+                  {info.fileName} ({`${info.size / 1000} kb`})
                 </span>
                 <DeleteOutlined onClick={() => handleUploadFileDel(index)} />
               </div>
