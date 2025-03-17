@@ -266,14 +266,13 @@ export const generatePorts = (data: ChildNode) => {
   const basePortSize = 3;
   const isLoopNode = data.type === 'Loop'; // 判断是否为 Loop 节点
   // 默认端口配置
-  const defaultPortConfig = (group: 'in' | 'out', idSuffix: string) => ({
+  const defaultPortConfig = (
+    group: 'in' | 'out' | 'special',
+    idSuffix: string,
+  ) => ({
     group,
     id: `${data.id}-${idSuffix}`,
     zIndex: 99,
-    // position: {
-    //   name: 'absolute', // 确保使用绝对定位
-    //   args: , // 直接作为顶级属性
-    // },
     magnet: true,
     attrs: {
       circle: {
@@ -295,25 +294,9 @@ export const generatePorts = (data: ChildNode) => {
     idSuffix: string,
     yHeight: number,
   ) => ({
-    group,
-    id: `${data.id}-${idSuffix}`,
-    zIndex: 99,
-    magnet: true,
-    attrs: {
-      circle: {
-        r: basePortSize,
-        magnet: true,
-        stroke: '#5147FF',
-        // strokeWidth: 2,
-        fill: '#5147FF',
-        pointerEvents: 'all', // 强制启用指针事件
-        event: 'mouseenter', // 明确事件类型
-        // 新增磁吸区域扩展
-        magnetRadius: 50, // 将磁吸半径从默认15px增大到24px
-      },
-    },
+    ...defaultPortConfig(group, idSuffix), // 继承默认配置
     args: {
-      x: '100%',
+      x: 304,
       y: yHeight,
     },
   });
@@ -360,7 +343,7 @@ export const generatePorts = (data: ChildNode) => {
           ...specialPortConfig(
             'special',
             `${item.uuid || index}-out`,
-            106 + index * 26,
+            88 + (index + 1) * 26,
           ),
         }));
       } else {
@@ -396,7 +379,7 @@ export const generatePorts = (data: ChildNode) => {
       special: {
         position: {
           name: 'absolute',
-          args: { x: 0, y: 0 },
+          // args: { x: 0, y: 0 },
         },
         attrs: { circle: { r: basePortSize } },
         connectable: {
