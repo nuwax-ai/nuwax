@@ -1,7 +1,8 @@
 import Editor, { loader } from '@monaco-editor/react';
-// import * as monaco from 'monaco-editor';
+import * as monaco from 'monaco-editor';
 // import { language as pythonLanguage } from 'monaco-editor/esm/vs/basic-languages/python/python';
-import React from 'react';
+import React, { useEffect } from 'react';
+
 import './index.less';
 
 interface Props {
@@ -18,17 +19,20 @@ const CodeEditor: React.FC<Props> = ({
   codeLanguage,
 }: Props) => {
   // 统一路径生成逻辑
+  // 修改路径获取逻辑
   const getMonacoPath = () => {
-    // 开发环境直接使用绝对路径
-    return '/monaco-editor/vs';
+    return `${
+      (window as typeof window & { publicPath?: string }).publicPath || ''
+    }/monaco-editor/vs`;
   };
 
-  // 正确配置 loader
-  loader.config({
-    paths: {
-      vs: getMonacoPath(),
-    },
-  });
+  // 在组件挂载前配置 loader
+  useEffect(() => {
+    loader.config({
+      paths: { vs: getMonacoPath() },
+      monaco: monaco,
+    });
+  }, []);
 
   const handleCodeChange = (value?: string) => {
     const newValue = value || '';
