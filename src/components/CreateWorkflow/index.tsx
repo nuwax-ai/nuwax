@@ -12,7 +12,7 @@ import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps } from 'antd';
 import { Form, Input, message } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
@@ -33,7 +33,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   onConfirm,
 }) => {
   const [form] = Form.useForm();
-  const [imageUrl, setImageUrl] = useState<string>(icon || '');
+  const [imageUrl, setImageUrl] = useState<string>('');
 
   // 新增工作流
   const { run } = useRequest(apiAddWorkflow, {
@@ -58,6 +58,12 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
       onConfirm(...params);
     },
   });
+
+  useEffect(() => {
+    if (icon) {
+      setImageUrl(icon);
+    }
+  }, [icon]);
 
   const onFinish: FormProps<{
     name: string;
