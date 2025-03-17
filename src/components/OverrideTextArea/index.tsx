@@ -1,7 +1,7 @@
 import type { OverrideTextAreaProps } from '@/types/interfaces/common';
 import { Form, Input } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -20,7 +20,13 @@ const OverrideTextArea: React.FC<OverrideTextAreaProps> = (props) => {
     rules,
   } = props;
 
-  const [value, setValue] = useState<string>(initialValue || '');
+  const [value, setValue] = useState<string>('');
+
+  useEffect(() => {
+    if (initialValue) {
+      setValue(initialValue);
+    }
+  }, [initialValue]);
   return (
     <Form.Item className={cx('relative')}>
       <Form.Item
