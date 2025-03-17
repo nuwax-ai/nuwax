@@ -149,36 +149,27 @@ const initGraph = ({
           return false;
         }
 
-        // 提取端口组信息
-        const sourcePortGroup = sourceMagnet.getAttribute('port-group');
-        const targetPortGroup = targetMagnet.getAttribute('port-group');
-
-        // 边界检查：确保端口组属性存在
-        if (!sourcePortGroup || !targetPortGroup) {
-          return false;
-        }
+        // 提取端口组信息 (关键修复：添加空值保护)
+        const sourcePortGroup = sourceMagnet.getAttribute('port-group') || '';
+        const targetPortGroup = targetMagnet.getAttribute('port-group') || '';
 
         // 定义类型断言函数
         const isLoopNode = (cell: Cell) => cell.getData()?.type === 'Loop';
 
-        // 处理非 Loop 节点的连接限制
+        // 处理非 Loop 节点的连接限制 (逻辑优化)
         if (!isLoopNode(sourceCell) && !isLoopNode(targetCell)) {
-          // 非 Loop 节点的 in 端口只能作为 target
-          if (sourcePortGroup === 'in') {
-            return false; // 不允许 in 端口作为 source
+          // 允许从 out 到 in 的正常连接
+          if (sourcePortGroup === 'out' && targetPortGroup === 'in') {
+            return validatePortConnection(sourcePortGroup, targetPortGroup);
           }
-          // 非 Loop 节点的 out 端口只能作为 source
-          if (targetPortGroup === 'out') {
-            return false; // 不允许 out 端口作为 target
-          }
+          return false; // 阻止其他类型的连接
         }
 
         // Loop 节点的 in 和 out 端口既可以作为 source 也可以作为 target
         if (isLoopNode(sourceCell) || isLoopNode(targetCell)) {
-          return true; // Loop 节点允许任意连接
+          return true;
         }
 
-        // // 默认返回 true 允许其他类型的连接（这里已经通过了前面的所有检查）
         return true;
       },
     },
@@ -206,6 +197,7 @@ const initGraph = ({
         ...p,
         attrs: {
           ...p.attrs,
+          // hotArea: { r: 15 }, // 保持热区不变
           circle: { r: 3 }, // 强制重置所有连接桩半径
           pointerEvents: 'all', // 保持事件穿透
           event: 'mouseenter',
@@ -239,21 +231,9 @@ const initGraph = ({
       const data = node.getData();
       if (data.type === 'Loop') {
         const children = node.getChildren();
+        console.log(children);
         children?.forEach((child) => {
           child.prop('zIndex', 99);
-          // 获取所有的边
-          const edges = graph.getEdges();
-          console.log(edges);
-          // 如果边和节点有关系，那么就要将其处于节点的上层
-          edges.forEach((edge) => {
-            if (
-              edge.getSourceNode()?.getData().id === child.getData().id ||
-              edge.getTargetNode()?.getData().id === child.getData().id
-            ) {
-              edge.prop('zIndex', 15);
-            }
-            // if(Number(edge.getData()))
-          });
         });
         // 设置内部边的层级
         node.prop('zIndex', 10);
@@ -291,6 +271,23 @@ const initGraph = ({
           stroke: '#5147FF',
           fill: '#5147FF',
           // strokeWidth: 1,
+        },
+      },
+    }));
+    node.prop('ports/items', updatedPorts);
+  });
+
+  graph.on('node:port:mouseenter', ({ node }) => {
+    const ports = node.getPorts();
+    const updatedPorts = ports.map((p) => ({
+      ...p,
+      attrs: {
+        ...p.attrs,
+        circle: {
+          ...(p.attrs?.circle || {}),
+          r: 8, // 仅修改当前端口
+          stroke: '#5147FF',
+          fill: '#5147FF',
         },
       },
     }));
@@ -496,9 +493,9 @@ const initGraph = ({
       } else {
         edge.prop('zIndex', 1);
       }
+      updateEdgeArrows(graph);
     }, 0);
     // 统一调用更新
-    updateEdgeArrows(graph);
   });
 
   // 监听画布缩放

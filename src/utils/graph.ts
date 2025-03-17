@@ -196,17 +196,14 @@ export function hasDuplicateEdge(
     );
   });
 }
-// 1. 定义箭头样式常量
 const ARROW_CONFIG = {
-  name: 'classic' as const,
+  name: 'classic',
   size: 6,
   fill: '#5147FF',
   stroke: '#5147FF',
 };
 
-// 提取箭头更新逻辑为独立函数
 export const updateEdgeArrows = (graph: Graph) => {
-  // 创建端口分组映射 { [targetNodeId-portId]: Edge[] }
   const portMap = new Map<string, Edge[]>();
 
   graph.getEdges().forEach((edge) => {
@@ -220,19 +217,13 @@ export const updateEdgeArrows = (graph: Graph) => {
       portMap.set(key, edges);
     }
   });
-  // 处理每个端口组
-  portMap.forEach((edges) => {
-    // 按创建时间排序（假设id包含时间戳）
-    const sortedEdges = edges.sort((a, b) => a.id.localeCompare(b.id));
 
+  portMap.forEach((edges) => {
+    const sortedEdges = edges.sort((a, b) => a.id.localeCompare(b.id));
     sortedEdges.forEach((edge, index) => {
       const isLast = index === sortedEdges.length - 1;
-
-      // 设置箭头状态
       edge.attr('line/targetMarker', isLast ? ARROW_CONFIG : null);
-
-      // 设置层级关系
-      edge.setZIndex(isLast ? 10 : 1);
+      // edge.setZIndex(isLast ? 3 : 1);
     });
   });
 };
