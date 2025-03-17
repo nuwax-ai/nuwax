@@ -466,6 +466,7 @@ function getRandomPosition(maxWidth = 800, maxHeight = 600) {
 // 生成主节点
 export const createBaseNode = (node: ChildNode) => {
   const extension = node.nodeConfig?.extension || {};
+  const isLoopChild = node.loopNodeId;
   return {
     id: node.id,
     shape: node.type === 'Loop' ? 'loop-node' : 'general-Node',
@@ -476,7 +477,7 @@ export const createBaseNode = (node: ChildNode) => {
     label: node.name,
     data: node,
     ports: generatePorts(node),
-    zIndex: 3,
+    zIndex: isLoopChild ? 6 : 3,
   };
 };
 // 生成循环的子节点
@@ -499,7 +500,8 @@ export const createChildNode = (parentId: string, child: ChildNode) => {
       parentId, // 最后显式覆盖parentId字段
     },
     ports: generatePorts(child),
-    zIndex: 5,
+    zIndex: 6,
+    inherit: false, // 禁止继承父节点层级设置
   };
 };
 

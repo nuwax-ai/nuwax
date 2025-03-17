@@ -198,8 +198,12 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         // 清除现有元素，防止重复渲染
         graphRef.current.clearCells();
 
+        const notLoopChildrenNodes = graphParams.nodeList.filter(
+          (item) => !item.loopNodeId,
+        );
+
         // 创建主节点
-        const mainNodes = graphParams.nodeList.map((node) => {
+        const mainNodes = notLoopChildrenNodes.map((node) => {
           const baseNode = createBaseNode(node);
           // 从节点配置中获取实际尺寸
           const extension = node.nodeConfig?.extension || {};
@@ -213,7 +217,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             },
           };
         });
-        console.log(mainNodes);
         graphRef.current.fromJSON({
           nodes: mainNodes, // X6 会自动实例化节点
         });
@@ -227,11 +230,13 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         // 创建循环的子节点
         if (loopNodeList.length) {
           loopNodeList.forEach((element: Node) => {
+            element.prop('zIndex', 4);
             const data = element.getData();
             if (!data.innerNodes?.length) return;
             data.innerNodes.forEach((childDef: ChildNode) => {
               const child = createChildNode(data.id, childDef); // 创建子节点配置
               const childNode = graphRef.current.addNode(child); // 添加子节点到图中
+              // childNode.setZIndex(6);  // 新增显式层级设置方法
               // 更新父节点的子节点列表（如果必要）
               element.addChild(childNode);
             });
@@ -246,6 +251,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
         // 5. 批量添加边
         graphRef.current.addEdges(edges);
+
         updateEdgeArrows(graphRef.current);
       }
     };
