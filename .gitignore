@@ -13,3 +13,6 @@
 .swc
 /.idea
 /.yarn.lock
+
+# Ignore DevSpace cache and log folder
+.devspace/
