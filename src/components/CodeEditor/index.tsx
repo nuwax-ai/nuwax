@@ -1,6 +1,6 @@
 import Editor, { loader } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface Props {
   value: string | undefined;
@@ -15,22 +15,39 @@ const CodeEditor: React.FC<Props> = ({
   height = '400px',
   codeLanguage,
 }) => {
+  const [isMonacoReady, setIsMonacoReady] = useState(false);
+
   useEffect(() => {
-    // 配置 loader，确保加载本地资源
+    const initializeMonaco = async () => {
+      try {
+        const { conf, language } = await import(
+          'monaco-editor/esm/vs/basic-languages/python/python'
+        );
+        await loader.init();
+
+        monaco.languages.register({ id: 'python' });
+        monaco.languages.setMonarchTokensProvider('python', language);
+        monaco.languages.setLanguageConfiguration('python', conf);
+
+        setIsMonacoReady(true);
+      } catch (error) {
+        console.error('Failed to initialize Monaco Editor:', error);
+      }
+    };
+
     loader.config({
-      monaco, // 显式绑定本地实例
+      monaco,
       paths: {
-        vs: '/monaco-editor/min/vs', // 与 publicPath 一致
+        vs: '/monaco-editor/min/vs', // 与webpack配置保持一致
       },
     });
 
-    // 配置 Web Worker 路径
-    (window as any).MonacoEnvironment = {
-      getWorkerUrl: (_: any, label: string) => {
-        return `/monaco-editor/min/vs/${label}.worker.js`;
-      },
-    };
+    initializeMonaco();
   }, []);
+
+  if (!isMonacoReady) {
+    return <div>Loading editor...</div>;
+  }
 
   const handleCodeChange = (newValue?: string) => {
     changeCode(newValue || '');
