@@ -36,6 +36,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     loadingSuggest,
     onMessageSend,
     messageViewRef,
+    setNeedUpdateTopic,
   } = useModel('conversationInfo');
 
   // 角色信息（名称、头像）
@@ -74,6 +75,11 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       devConversationIdRef.current = devConversationId;
       // 查询会话
       runQueryConversation(devConversationId);
+    }
+
+    return () => {
+      setMessageList([]);
+      setNeedUpdateTopic(true);
     }
   }, [agentConfigInfo?.devConversationId]);
 

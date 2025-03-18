@@ -28,6 +28,7 @@
     "@microsoft/fetch-event-source": "^2.0.1",
     "@monaco-editor/react": "^4.6.0",
     "@umijs/max": "^4.4.2",
+    "ahooks": "^3.8.4",
     "antd": "^5.4.0",
     "classnames": "2.0.0",
     "copy-webpack-plugin": "11.0.0",
