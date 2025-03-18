@@ -431,6 +431,7 @@ export interface ChatInputProps {
 
 // 聊天框底部更多操作组件
 export interface ChatBottomMoreProps {
+  canDebug?: boolean;
   messageInfo: MessageInfo;
 }
 

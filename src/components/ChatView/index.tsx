@@ -25,6 +25,7 @@ const ChatView: React.FC<ChatViewProps> = ({
   contentClassName,
   roleInfo,
   messageInfo,
+  canDebug,
 }) => {
   // 当前用户信息
   const userInfo = JSON.parse(localStorage.getItem(USER_INFO));
@@ -104,7 +105,7 @@ const ChatView: React.FC<ChatViewProps> = ({
               !messageInfo?.status
             }
           >
-            <ChatBottomMore messageInfo={messageInfo} />
+            <ChatBottomMore messageInfo={messageInfo} canDebug={canDebug} />
           </ConditionRender>
         </ConditionRender>
       </div>

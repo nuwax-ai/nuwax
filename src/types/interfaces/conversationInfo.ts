@@ -211,4 +211,5 @@ export interface ChatViewProps {
   contentClassName?: string;
   messageInfo: MessageInfo;
   roleInfo: RoleInfo;
+  canDebug?: boolean;
 }

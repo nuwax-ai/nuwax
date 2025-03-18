@@ -3,6 +3,7 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   apiAgentConversation,
   apiAgentConversationChatSuggest,
+  apiAgentConversationUpdate,
 } from '@/services/agentConfig';
 import {
   AssistantRoleEnum,
@@ -24,9 +25,10 @@ import type {
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import moment from 'moment/moment';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRequest } from 'umi';
+import { useRequest } from 'ahooks';
 
 export default () => {
+  const [needUpdateTopic, setNeedUpdateTopic] = useState<boolean>(false);
   // 会话信息
   const [conversationInfo, setConversationInfo] = useState<ConversationInfo>();
   // 会话信息
@@ -53,13 +55,26 @@ export default () => {
     }, 400);
   };
 
-  // 查询会话
-  const { run: runQueryConversation } = useRequest(apiAgentConversation, {
+  // 根据用户消息更新会话主题
+  const { run: runUpdateTopic } = useRequest(apiAgentConversationUpdate, {
     manual: true,
-    debounceInterval: 300,
+    debounceWait: 300,
     onSuccess: (result) => {
-      setConversationInfo(result);
-      setMessageList(result?.messageList || []);
+      setNeedUpdateTopic(true);
+      setConversationInfo((info) => ({
+        ...info,
+        topic: result?.data?.topic,
+      } as ConversationInfo));
+    },
+  });
+
+  // 查询会话
+  const { run: runQueryConversation, runAsync } = useRequest(apiAgentConversation, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result) => {
+      setConversationInfo(result.data);
+      setMessageList(result.data?.messageList || []);
       handleScrollBottom();
     },
   });
@@ -69,9 +84,9 @@ export default () => {
     apiAgentConversationChatSuggest,
     {
       manual: true,
-      debounceInterval: 300,
+      debounceWait: 300,
       onSuccess: (result) => {
-        setChatSuggestList(result);
+        setChatSuggestList(result.data);
         handleScrollBottom();
       },
     },
@@ -210,6 +225,13 @@ export default () => {
     await handleScrollBottom();
     // 处理会话
     await handleConversation(id, message, attachments, debug);
+    // 第一次发送消息后更新主题
+    if (!needUpdateTopic) {
+      runUpdateTopic({
+        id,
+        firstMessage: message,
+      });
+    }
   };
 
   const handleDebug = useCallback((item: MessageInfo) => {
@@ -228,6 +250,7 @@ export default () => {
     chatSuggestList,
     setChatSuggestList,
     runQueryConversation,
+    runAsync,
     loadingSuggest,
     onMessageSend,
     handleDebug,

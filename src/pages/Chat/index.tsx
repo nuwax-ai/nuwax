@@ -28,7 +28,7 @@ const Chat: React.FC = () => {
     conversationInfo,
     messageList,
     chatSuggestList,
-    runQueryConversation,
+    runAsync,
     loadingSuggest,
     onMessageSend,
     messageViewRef,
@@ -57,10 +57,11 @@ const Chat: React.FC = () => {
   useEffect(() => {
     if (id) {
       const asyncFun = async () => {
-        // 查询会话, 此处必须先同步查询会话信息，因为成功后会设置消息列表，如果是异步查询，会导致发送消息时，清空消息列表的bug
-        await runQueryConversation(id);
-        // 如果message或者附件不为空
-        if (message || files?.length > 0) {
+        // 同步查询会话, 此处必须先同步查询会话信息，因为成功后会设置消息列表，如果是异步查询，会导致发送消息时，清空消息列表的bug
+        const res = await runAsync(id);
+        const len = res?.data?.messageList?.length || 0;
+        // 如果message或者附件不为空,可以发送消息，但刷新页面时，不重新发送消息
+        if (!len && (message || files?.length > 0)) {
           onMessageSend(id, message, files);
         }
       };
@@ -81,7 +82,7 @@ const Chat: React.FC = () => {
           {messageList?.length > 0 ? (
             <>
               {messageList?.map((item, index) => (
-                <ChatView key={index} messageInfo={item} roleInfo={roleInfo} />
+                <ChatView key={index} messageInfo={item} roleInfo={roleInfo} canDebug={false} />
               ))}
               {/*会话建议*/}
               <RecommendList

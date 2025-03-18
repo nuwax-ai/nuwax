@@ -235,7 +235,7 @@ export async function apiAgentCardList(): Promise<
 export async function apiAgentConversation(
   conversationId: number,
 ): Promise<RequestResponse<ConversationInfo>> {
-  return request(`/api/agent/conversation/${conversationId}`, {
+  return await request(`/api/agent/conversation/${conversationId}`, {
     method: 'POST',
   });
 }
