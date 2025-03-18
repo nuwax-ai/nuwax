@@ -249,6 +249,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           })
           .filter(Boolean);
 
+        console.log(edges);
         // 5. 批量添加边
         graphRef.current.addEdges(edges);
 

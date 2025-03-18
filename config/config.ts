@@ -22,30 +22,32 @@ export default defineConfig({
     target: ['es2020'],
     format: 'iife',
   },
-  publicPath: '/', // 保持根路径
+  // publicPath: '/', // 保持根路径
+  // 修改复制配置和插件配置
   chainWebpack(config) {
-    // 修改复制目标路径
+    // 复制 Monaco Editor 的 min 目录到 public/monaco-editor/min
     config.plugin('copy-monaco').use(CopyWebpackPlugin, [
       {
         patterns: [
           {
             from: path.join(
               path.dirname(require.resolve('monaco-editor/package.json')),
-              'min/vs',
+              'min',
             ),
-            to: 'monaco-editor/vs', // 直接复制到根目录
+            to: 'public/monaco-editor/min', // 输出到 public 目录
             force: true,
           },
         ],
       },
     ]);
 
-    // 更新 monaco 插件配置
+    // 配置 MonacoWebpackPlugin
     config.plugin('monaco').use(MonacoWebpackPlugin, [
       {
         languages: ['javascript', 'python', 'json'],
         globalAPI: true,
-        publicPath: '/monaco-editor/vs', // 根目录绝对路径
+        publicPath: '/monaco-editor/min/', // 与 CopyWebpackPlugin 的 to 路径一致
+        filename: 'vs/[name].worker.js', // Web Worker 文件名规则
       },
     ]);
   },

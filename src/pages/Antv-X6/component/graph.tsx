@@ -153,7 +153,6 @@ const initGraph = ({
         const sourcePortGroup = sourceMagnet.getAttribute('port-group') || '';
         const targetPortGroup = targetMagnet.getAttribute('port-group') || '';
 
-        console.log('aabb', sourcePortGroup, targetPortGroup);
         // 定义类型断言函数
         const isLoopNode = (cell: Cell) => cell.getData()?.type === 'Loop';
 
@@ -431,8 +430,10 @@ const initGraph = ({
     const targetNode = edge.getTargetNode()?.getData();
 
     if (!sourceNode || !targetNode || !sourcePort || !targetPort) return;
+    console.log(edges, sourceCellId, targetNodeId);
     // 检查是否存在具有相同source和target的边
-    if (hasDuplicateEdge(edges, sourceCellId, targetNodeId)) {
+    if (hasDuplicateEdge(edges, sourceCellId, targetNodeId, edge.id)) {
+      // [!code ++]
       edge.remove();
       message.warning('不能创建重复的边');
       return;

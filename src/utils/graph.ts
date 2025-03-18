@@ -188,8 +188,11 @@ export function hasDuplicateEdge(
   edges: Edge[],
   sourceCellId: string,
   targetNodeId: string,
+  currentEdgeId?: string, // [!code ++]
 ) {
   return edges.some((e: Edge) => {
+    // 排除当前正在处理的边 // [!code ++]
+    if (currentEdgeId && e.id === currentEdgeId) return false; // [!code ++]
     return (
       e.getSourceCellId() === sourceCellId.toString() &&
       e.getTargetCellId() === targetNodeId.toString()
