@@ -25,29 +25,38 @@ export default defineConfig({
   // publicPath: '/', // 保持根路径
   // 修改复制配置和插件配置
   chainWebpack(config) {
-    // 复制 Monaco Editor 的 min 目录到 public/monaco-editor/min
     config.plugin('copy-monaco').use(CopyWebpackPlugin, [
       {
         patterns: [
           {
             from: path.join(
               path.dirname(require.resolve('monaco-editor/package.json')),
-              'min',
+              'min/vs',
             ),
-            to: 'public/monaco-editor/min', // 输出到 public 目录
+            to: 'dist/vs',
             force: true,
           },
         ],
       },
     ]);
 
-    // 配置 MonacoWebpackPlugin
     config.plugin('monaco').use(MonacoWebpackPlugin, [
       {
-        languages: ['javascript', 'python', 'json'],
-        globalAPI: true,
-        publicPath: '/monaco-editor/min/', // 与 CopyWebpackPlugin 的 to 路径一致
-        filename: 'vs/[name].worker.js', // Web Worker 文件名规则
+        languages: ['javascript', 'typescript', 'json', 'python'],
+        publicPath: '/vs',
+        filename: 'vs/[name].worker.js',
+        features: [
+          // 保留必要功能
+          'accessibilityHelp',
+          'bracketMatching',
+          'clipboard',
+          'find',
+          'folding',
+          'hover',
+          'links',
+          'suggest',
+          'wordHighlighter',
+        ],
       },
     ]);
   },
