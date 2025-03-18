@@ -18,7 +18,9 @@ const DataProcess: React.FC<DataProcessProps> = ({ uploadFileList }) => {
             <img className={cx('radius-6')} src={docImage as string} alt="" />
             <div className={cx('flex-1', 'overflow-hide')}>
               <h3 className={cx('text-ellipsis')}>{info.fileName}</h3>
-              <span className={cx(styles.desc)}>{`${info.size / 1000} kb`}</span>
+              <span className={cx(styles.desc)}>{`${
+                info.size / 1000
+              } kb`}</span>
             </div>
             <span>处理中.处理完成</span>
           </div>

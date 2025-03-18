@@ -73,7 +73,7 @@ const Chat: React.FC = () => {
     return () => {
       setMessageList([]);
       setNeedUpdateTopic(true);
-    }
+    };
   }, [id, message, files]);
 
   // 消息发送
@@ -89,7 +89,12 @@ const Chat: React.FC = () => {
           {messageList?.length > 0 ? (
             <>
               {messageList?.map((item, index) => (
-                <ChatView key={index} messageInfo={item} roleInfo={roleInfo} canDebug={false} />
+                <ChatView
+                  key={index}
+                  messageInfo={item}
+                  roleInfo={roleInfo}
+                  canDebug={false}
+                />
               ))}
               {/*会话建议*/}
               <RecommendList

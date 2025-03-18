@@ -36,6 +36,11 @@ export const TABS = [
     text: '广场',
     type: TabsEnum.Square,
   },
+  {
+    icon: <SettingOutlined />,
+    text: '系统管理',
+    type: TabsEnum.System_Manage,
+  },
 ];
 
 // 用户操作区域

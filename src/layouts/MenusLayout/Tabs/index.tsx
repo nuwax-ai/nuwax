@@ -15,7 +15,8 @@ const Tabs: React.FC<TabsType> = ({ onClick }) => {
       (type === TabsEnum.Home &&
         (location.pathname === '/' || location.pathname.includes('home'))) ||
       (type === TabsEnum.Space && location.pathname.includes('space')) ||
-      (type === TabsEnum.Square && location.pathname.includes('square'))
+      (type === TabsEnum.Square && location.pathname.includes('square')) ||
+      (type === TabsEnum.System_Manage && location.pathname.includes('system'))
     );
   };
   return (

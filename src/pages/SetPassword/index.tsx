@@ -68,7 +68,10 @@ const SetPassword: React.FC = () => {
             },
           ]}
         >
-          <Input rootClassName={cx(styles.input)} placeholder="请输入6位以上密码" />
+          <Input
+            rootClassName={cx(styles.input)}
+            placeholder="请输入6位以上密码"
+          />
         </Form.Item>
         <Form.Item
           name="confirmPassword"

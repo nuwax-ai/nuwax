@@ -37,6 +37,17 @@ const routes = [
         component: '@/pages/SpaceKnowledge',
       },
       { path: '/square', component: '@/pages/Square' },
+      { path: '/system/publish/audit', component: '@/pages/PublishAudit' },
+      {
+        path: '/system/published/manage',
+        component: '@/pages/PublishedManage',
+      },
+      { path: '/system/system/config', component: '@/pages/SystemConfig' },
+      { path: '/system/user/manage', component: '@/pages/UserManage' },
+      {
+        path: '/system/global/model/manage',
+        component: '@/pages/GlobalModelManage',
+      },
     ],
   },
   {

@@ -12,7 +12,10 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 // 聊天框底部更多操作组件
-const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({ canDebug = true, messageInfo }) => {
+const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({
+  canDebug = true,
+  messageInfo,
+}) => {
   // finalResult 自定义添加字段：chat 会话结果
   const { text, finalResult } = messageInfo;
   const { handleDebug } = useModel('conversationInfo');
