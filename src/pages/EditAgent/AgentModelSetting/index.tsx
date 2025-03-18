@@ -60,7 +60,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   // 更新模型组件配置
   const { run: runUpdate } = useRequest(apiAgentComponentModelUpdate, {
     manual: true,
-    debounceInterval: 300,
+    debounceInterval: 1000,
     onSuccess: () => {
       message.success('更新成功');
     },

@@ -4,7 +4,7 @@ import useUserInfo from '@/hooks/useUserInfo';
 import { apiLogin } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
-import { isValidPhone } from '@/utils/common';
+import { isValidPhone, validatePassword } from '@/utils/common';
 import { useModel } from '@@/exports';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import {
@@ -174,12 +174,22 @@ const Login: React.FC = () => {
           {loginType === LoginTypeEnum.Password && (
             <Form.Item
               name="password"
-              rules={[{ required: true, message: '请输入密码!' }]}
+              rules={[
+                { required: true, message: '请输入6位以上密码!' },
+                {
+                  validator(_, value) {
+                    if (!value || validatePassword(value)) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error('请输入正确格式的密码!'));
+                  },
+                },
+              ]}
             >
               <Input
                 rootClassName={styles.input}
                 type="password"
-                placeholder="请输入密码"
+                placeholder="请输入6位以上密码"
               />
             </Form.Item>
           )}

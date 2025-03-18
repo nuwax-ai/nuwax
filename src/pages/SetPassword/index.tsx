@@ -57,7 +57,7 @@ const SetPassword: React.FC = () => {
         <Form.Item
           name="password"
           rules={[
-            { required: true, message: '请输入密码!' },
+            { required: true, message: '请输入6位以上密码!' },
             {
               validator(_, value) {
                 if (!value || validatePassword(value)) {
@@ -68,7 +68,7 @@ const SetPassword: React.FC = () => {
             },
           ]}
         >
-          <Input rootClassName={cx(styles.input)} placeholder="请输入密码" />
+          <Input rootClassName={cx(styles.input)} placeholder="请输入6位以上密码" />
         </Form.Item>
         <Form.Item
           name="confirmPassword"
