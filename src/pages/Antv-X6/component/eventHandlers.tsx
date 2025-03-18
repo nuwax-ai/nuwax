@@ -35,7 +35,7 @@ const bindEventHandlers = ({
     if (!graph.isClipboardEmpty()) {
       // 检查剪贴板是否为空
       const cells = graph.getSelectedCells(); // 粘贴并偏移一定距离
-      if (cells) {
+      if (cells && cells.length > 0) {
         const node = cells[0].getData();
         if (
           node.type === 'Start' ||
