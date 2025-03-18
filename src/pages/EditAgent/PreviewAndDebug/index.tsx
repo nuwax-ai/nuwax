@@ -75,6 +75,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       // 查询会话
       runQueryConversation(devConversationId);
     }
+
+    return () => {
+      setMessageList([]);
+    }
   }, [agentConfigInfo?.devConversationId]);
 
   // 清空会话记录，实际上是创建新的会话

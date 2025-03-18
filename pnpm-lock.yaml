@@ -49,7 +49,7 @@ importers:
         version: 2.0.1
       '@monaco-editor/react':
         specifier: ^4.6.0
-        version: 4.6.0(monaco-editor@0.52.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 4.6.0(monaco-editor@0.34.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@umijs/max':
         specifier: ^4.4.2
         version: 4.4.2(@babel/core@7.26.0)(@types/node@22.10.2)(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(dva@2.5.0-beta.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(lightningcss@1.22.1)(prettier@2.8.8)(rc-field-form@2.7.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@3.29.5)(terser@5.37.0)(type-fest@1.4.0)(typescript@5.7.2)(webpack@5.97.1)
@@ -62,6 +62,9 @@ importers:
       classnames:
         specifier: 2.0.0
         version: 2.0.0
+      copy-webpack-plugin:
+        specifier: 11.0.0
+        version: 11.0.0(webpack@5.97.1)
       create-puzzle:
         specifier: ^3.0.2
         version: 3.0.2
@@ -78,8 +81,11 @@ importers:
         specifier: ^2.30.1
         version: 2.30.1
       monaco-editor:
-        specifier: ^0.52.2
-        version: 0.52.2
+        specifier: 0.34.1
+        version: 0.34.1
+      monaco-editor-webpack-plugin:
+        specifier: 7.0.1
+        version: 7.0.1(monaco-editor@0.34.1)(webpack@5.97.1)
       rc-slider-captcha:
         specifier: ^1.7.1
         version: 1.7.1(react@18.3.1)
@@ -105,9 +111,6 @@ importers:
       '@types/react-dom':
         specifier: ^18.0.11
         version: 18.3.5(@types/react@18.3.18)
-      copy-webpack-plugin:
-        specifier: ^13.0.0
-        version: 13.0.0(webpack@5.97.1)
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -117,9 +120,6 @@ importers:
       lint-staged:
         specifier: ^13.2.0
         version: 13.3.0
-      monaco-editor-webpack-plugin:
-        specifier: ^7.1.0
-        version: 7.1.0(monaco-editor@0.52.2)(webpack@5.97.1)
       prettier:
         specifier: ^2.8.7
         version: 2.8.8
@@ -2388,9 +2388,9 @@ packages:
   copy-to-clipboard@3.3.3:
     resolution: {integrity: sha512-2KV8NhB5JqC3ky0r9PMCAZKbUHSwtEo4CwCs0KXgruG43gX5PMqDEBbVU4OUzw2MuAWUfsuFmWvEKG5QRfSnJA==}
 
-  copy-webpack-plugin@13.0.0:
-    resolution: {integrity: sha512-FgR/h5a6hzJqATDGd9YG41SeDViH+0bkHn6WNXCi5zKAZkeESeSxLySSsFLHqLEVCh0E+rITmCf0dusXWYukeQ==}
-    engines: {node: '>= 18.12.0'}
+  copy-webpack-plugin@11.0.0:
+    resolution: {integrity: sha512-fX2MWpamkW0hZxMEg0+mYnA40LTosOSa5TqZ9GYIBzyJa9C3QUaMPSE2xAi/buNr8u89SfD9wHSQVBzrRa/SOQ==}
+    engines: {node: '>= 14.15.0'}
     peerDependencies:
       webpack: ^5.1.0
 
@@ -3035,14 +3035,6 @@ packages:
 
   fdir@6.4.2:
     resolution: {integrity: sha512-KnhMXsKSPZlAhp7+IjUkRZKPb4fUyccpDrdFXbi4QL1qkmFh9kVY09Yox+n4MaOb3lHZ1Tv829C3oaaXoMYPDQ==}
-    peerDependencies:
-      picomatch: ^3 || ^4
-    peerDependenciesMeta:
-      picomatch:
-        optional: true
-
-  fdir@6.4.3:
-    resolution: {integrity: sha512-PMXmW2y1hDDfTSRc9gaXIuCCRpuoz3Kaz8cUelp3smouvfT632ozg2vrT6lJsHKKOF59YLbOGfAWGUcKEfRMQw==}
     peerDependencies:
       picomatch: ^3 || ^4
     peerDependenciesMeta:
@@ -4094,14 +4086,14 @@ packages:
   moment@2.30.1:
     resolution: {integrity: sha512-uEmtNhbDOrWPFS+hdjFCBfy9f2YoyzRpwcl+DqpC6taX21FzsTLQVbMV/W7PzNSX6x/bhC1zA3c2UQ5NzH6how==}
 
-  monaco-editor-webpack-plugin@7.1.0:
-    resolution: {integrity: sha512-ZjnGINHN963JQkFqjjcBtn1XBtUATDZBMgNQhDQwd78w2ukRhFXAPNgWuacaQiDZsUr4h1rWv5Mv6eriKuOSzA==}
+  monaco-editor-webpack-plugin@7.0.1:
+    resolution: {integrity: sha512-M8qIqizltrPlIbrb73cZdTWfU9sIsUVFvAZkL3KGjAHmVWEJ0hZKa/uad14JuOckc0GwnCaoGHvMoYtJjVyCzw==}
     peerDependencies:
       monaco-editor: '>= 0.31.0'
       webpack: ^4.5.0 || 5.x
 
-  monaco-editor@0.52.2:
-    resolution: {integrity: sha512-GEQWEZmfkOGLdd3XK8ryrfWz3AIP8YymVXiPHEdewrUq7mh0qrKrfHLNCXcbB6sTnMLnOZ3ztSiKcciFUkIJwQ==}
+  monaco-editor@0.34.1:
+    resolution: {integrity: sha512-FKc80TyiMaruhJKKPz5SpJPIjL+dflGvz4CpuThaPMc94AyN7SeC9HQ8hrvaxX7EyHdJcUY5i4D0gNyJj1vSZQ==}
 
   mousetrap@1.6.5:
     resolution: {integrity: sha512-QNo4kEepaIBwiT8CDhP98umTetp+JNfQYBWvC1pc6/OAibuXtRcxZ58Qz8skvEHYvURne/7R8T5VoOI7rDsEUA==}
@@ -5981,10 +5973,6 @@ packages:
     resolution: {integrity: sha512-Zc+8eJlFMvgatPZTl6A9L/yht8QqdmUNtURHaKZLmKBE12hNPSrqNkUp2cs3M/UKmNVVAMFQYSjYIVHDjW5zew==}
     engines: {node: '>=12.0.0'}
 
-  tinyglobby@0.2.12:
-    resolution: {integrity: sha512-qkf4trmKSIiMTs/E63cxH+ojC2unam7rJ0WrauAzpT3ECNTxGRMlaXxVbfxMUC/w0LaYk6jQ4y/nGR9uBO3tww==}
-    engines: {node: '>=12.0.0'}
-
   titleize@3.0.0:
     resolution: {integrity: sha512-KxVu8EYHDPBdUYdKZdKtU2aj2XfEx9AfjXxE/Aj0vT06w2icA09Vus1rh6eSu1y01akYg6BjIK/hxyLJINoMLQ==}
     engines: {node: '>=12'}
@@ -7644,15 +7632,15 @@ snapshots:
 
   '@microsoft/fetch-event-source@2.0.1': {}
 
-  '@monaco-editor/loader@1.4.0(monaco-editor@0.52.2)':
+  '@monaco-editor/loader@1.4.0(monaco-editor@0.34.1)':
     dependencies:
-      monaco-editor: 0.52.2
+      monaco-editor: 0.34.1
       state-local: 1.0.7
 
-  '@monaco-editor/react@4.6.0(monaco-editor@0.52.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@monaco-editor/react@4.6.0(monaco-editor@0.34.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
-      '@monaco-editor/loader': 1.4.0(monaco-editor@0.52.2)
-      monaco-editor: 0.52.2
+      '@monaco-editor/loader': 1.4.0(monaco-editor@0.34.1)
+      monaco-editor: 0.34.1
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
@@ -9455,13 +9443,14 @@ snapshots:
     dependencies:
       toggle-selection: 1.0.6
 
-  copy-webpack-plugin@13.0.0(webpack@5.97.1):
+  copy-webpack-plugin@11.0.0(webpack@5.97.1):
     dependencies:
+      fast-glob: 3.3.2
       glob-parent: 6.0.2
+      globby: 13.2.2
       normalize-path: 3.0.0
       schema-utils: 4.3.0
       serialize-javascript: 6.0.2
-      tinyglobby: 0.2.12
       webpack: 5.97.1
 
   core-js-pure@3.39.0: {}
@@ -10337,10 +10326,6 @@ snapshots:
       bser: 2.1.1
 
   fdir@6.4.2(picomatch@4.0.2):
-    optionalDependencies:
-      picomatch: 4.0.2
-
-  fdir@6.4.3(picomatch@4.0.2):
     optionalDependencies:
       picomatch: 4.0.2
 
@@ -11416,13 +11401,13 @@ snapshots:
 
   moment@2.30.1: {}
 
-  monaco-editor-webpack-plugin@7.1.0(monaco-editor@0.52.2)(webpack@5.97.1):
+  monaco-editor-webpack-plugin@7.0.1(monaco-editor@0.34.1)(webpack@5.97.1):
     dependencies:
       loader-utils: 2.0.4
-      monaco-editor: 0.52.2
+      monaco-editor: 0.34.1
       webpack: 5.97.1
 
-  monaco-editor@0.52.2: {}
+  monaco-editor@0.34.1: {}
 
   mousetrap@1.6.5: {}
 
@@ -13678,11 +13663,6 @@ snapshots:
   tinyglobby@0.2.10:
     dependencies:
       fdir: 6.4.2(picomatch@4.0.2)
-      picomatch: 4.0.2
-
-  tinyglobby@0.2.12:
-    dependencies:
-      fdir: 6.4.3(picomatch@4.0.2)
       picomatch: 4.0.2
 
   titleize@3.0.0: {}
