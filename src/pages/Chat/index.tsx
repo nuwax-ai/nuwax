@@ -27,12 +27,14 @@ const Chat: React.FC = () => {
   const {
     conversationInfo,
     messageList,
+    setMessageList,
     chatSuggestList,
     runAsync,
     loadingSuggest,
     onMessageSend,
     messageViewRef,
     executeResults,
+    setNeedUpdateTopic,
   } = useModel('conversationInfo');
 
   // 角色信息（名称、头像）
@@ -66,6 +68,11 @@ const Chat: React.FC = () => {
         }
       };
       asyncFun();
+    }
+
+    return () => {
+      setMessageList([]);
+      setNeedUpdateTopic(true);
     }
   }, [id, message, files]);
 

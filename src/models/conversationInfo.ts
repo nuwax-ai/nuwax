@@ -28,7 +28,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRequest } from 'ahooks';
 
 export default () => {
-  const [needUpdateTopic, setNeedUpdateTopic] = useState<boolean>(false);
+  const [needUpdateTopic, setNeedUpdateTopic] = useState<boolean>(true);
   // 会话信息
   const [conversationInfo, setConversationInfo] = useState<ConversationInfo>();
   // 会话信息
@@ -60,7 +60,7 @@ export default () => {
     manual: true,
     debounceWait: 300,
     onSuccess: (result) => {
-      setNeedUpdateTopic(true);
+      setNeedUpdateTopic(false);
       setConversationInfo((info) => ({
         ...info,
         topic: result?.data?.topic,
@@ -226,7 +226,7 @@ export default () => {
     // 处理会话
     await handleConversation(id, message, attachments, debug);
     // 第一次发送消息后更新主题
-    if (!needUpdateTopic) {
+    if (needUpdateTopic) {
       runUpdateTopic({
         id,
         firstMessage: message,
@@ -257,5 +257,6 @@ export default () => {
     messageViewRef,
     showType,
     setShowType,
+    setNeedUpdateTopic,
   };
 };
