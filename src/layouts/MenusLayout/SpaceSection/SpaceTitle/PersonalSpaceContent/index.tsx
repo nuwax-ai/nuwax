@@ -7,7 +7,7 @@ import type { SpaceInfo } from '@/types/interfaces/workspace';
 import { CheckOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import { Divider } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { history, useLocation, useModel } from 'umi';
 import styles from './index.less';
 
@@ -25,6 +25,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
   const { spaceList, currentSpaceInfo, setCurrentSpaceInfo } =
     useModel('spaceModel');
   const spaceId = Number(localStorage.getItem(SPACE_ID));
+
   // 过滤当前工作空间
   const filterSpaceList = useMemo(() => {
     return spaceList?.filter((item) => item.id !== spaceId) || [];
@@ -47,11 +48,11 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
   };
 
   // 个人空间时，头像是默认的
-  const getAvatar = (info: SpaceInfo) => {
-    return info.type === SpaceTypeEnum.Personal
+  const getAvatar = useCallback((info: SpaceInfo) => {
+    return info?.type === SpaceTypeEnum.Personal
       ? (personal as string)
       : ((info?.icon || teamImage) as string);
-  };
+  }, []);
 
   return (
     <div className={styles.container}>
@@ -76,7 +77,6 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
           >
             <img
               className={cx(styles['team-logo'])}
-              // src={item.icon || (teamImage as string)}
               src={getAvatar(item)}
               alt=""
             />

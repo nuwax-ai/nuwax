@@ -16,6 +16,8 @@ const cx = classNames.bind(styles);
  */
 const User: React.FC = () => {
   const { openAdmin, setOpenAdmin, setOpenSetting } = useModel('layout');
+  const { userInfo } = useModel('userInfo');
+
   let navigate = useNavigate();
   const { run } = useRequest(apiLogout, {
     manual: true,
@@ -53,6 +55,11 @@ const User: React.FC = () => {
           {USER_AVATAR_LIST.map((item) => {
             const style =
               item.type === UserAvatarEnum.Log_Out ? styles['log-out'] : '';
+            // 显示用户名称或默认值
+            item.text =
+              item.type === UserAvatarEnum.User_Name && userInfo?.userName
+                ? userInfo?.userName
+                : item.text;
             return (
               <UserActionItem
                 key={item.type}

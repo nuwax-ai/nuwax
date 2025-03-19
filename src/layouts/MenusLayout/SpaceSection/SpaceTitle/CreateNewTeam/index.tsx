@@ -9,7 +9,7 @@ import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import { useRequest } from 'umi';
+import { useModel, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -17,26 +17,22 @@ const cx = classNames.bind(styles);
 /**
  * 创建新团队组件
  */
-const CreateNewTeam: React.FC<CreateNewTeamProps> = ({
-  open,
-  onCancel,
-  onConfirm,
-}) => {
+const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
   const [imageUrl, setImageUrl] = useState<string>('');
   const [form] = Form.useForm();
+  const { runSpace } = useModel('spaceModel');
 
   // 创建工作空间新团队
   const { run, loading } = useRequest(apiCreateSpaceTeam, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (data: number, params: CreateSpaceTeamParams[]) => {
+    onSuccess: () => {
       message.success('新建成功');
       setImageUrl('');
-      const spaceInfo = {
-        id: data,
-        ...params[0],
-      };
-      onConfirm(spaceInfo);
+      // 关闭弹窗
+      onCancel();
+      // 更新空间列表
+      runSpace();
     },
   });
 

@@ -19,7 +19,7 @@ const cx = classNames.bind(styles);
 const UserOperateArea: React.FC<UserOperateAreaType> = ({ onClick }) => {
   const { unreadCount, setUnreadCount } = useModel('layout');
   const [data, setData] = useState<UserOperateAreaItem[]>(USER_OPERATE_AREA);
-  // 查询用户消息列表
+  // 查询用户未读消息数量
   const { run } = useRequest(apiNotifyMessageUnreadCount, {
     manual: true,
     debounceInterval: 300,
@@ -40,6 +40,7 @@ const UserOperateArea: React.FC<UserOperateAreaType> = ({ onClick }) => {
   useEffect(() => {
     run();
   }, []);
+
   return (
     <>
       {data.map((item, index) => (

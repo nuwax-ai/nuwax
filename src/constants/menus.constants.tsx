@@ -1,5 +1,8 @@
 import {
+  ICON_FILE,
+  ICON_HISTORY,
   ICON_HOME,
+  ICON_NOTIFICATION,
   ICON_SETTING,
   ICON_SQUARE,
   ICON_WORKSPACE,
@@ -12,9 +15,6 @@ import {
   UserOperatorAreaEnum,
 } from '@/types/enums/menus';
 import {
-  BellOutlined,
-  CommentOutlined,
-  CopyOutlined,
   PoweroffOutlined,
   SettingOutlined,
   UserOutlined,
@@ -48,17 +48,17 @@ export const TABS = [
 export const USER_OPERATE_AREA = [
   {
     title: '文档',
-    icon: <CopyOutlined />,
+    icon: <ICON_FILE />,
     type: UserOperatorAreaEnum.Document,
   },
   {
     title: '历史会话',
-    icon: <CommentOutlined />,
+    icon: <ICON_HISTORY />,
     type: UserOperatorAreaEnum.History_Conversation,
   },
   {
     title: '消息',
-    icon: <BellOutlined />,
+    icon: <ICON_NOTIFICATION />,
     type: UserOperatorAreaEnum.Message,
   },
 ];

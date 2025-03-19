@@ -38,11 +38,13 @@ const Message: React.FC = () => {
   });
 
   useEffect(() => {
-    runMessageList({
-      lastId: 1,
-      size: 100,
-    });
-  }, []);
+    if (openMessage) {
+      runMessageList({
+        lastId: 1,
+        size: 100,
+      });
+    }
+  }, [openMessage]);
 
   // 清除所有未读消息
   const { run: runClear } = useRequest(apiNotifyMessageUnreadClear, {

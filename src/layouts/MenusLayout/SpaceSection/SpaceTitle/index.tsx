@@ -1,10 +1,6 @@
 import personal from '@/assets/images/personal.png';
 import teamImage from '@/assets/images/team_image.png';
 import { SpaceTypeEnum } from '@/types/enums/space';
-import type {
-  SpaceInfo,
-  UpdateSpaceTeamParams,
-} from '@/types/interfaces/workspace';
 import { DownOutlined } from '@ant-design/icons';
 import { Popover } from 'antd';
 import classNames from 'classnames';
@@ -20,23 +16,13 @@ const cx = classNames.bind(styles);
  * Popover弹窗-空间主题
  */
 const SpaceTitle: React.FC = () => {
-  const { spaceList, setSpaceList, currentSpaceInfo } = useModel('spaceModel');
+  const { currentSpaceInfo } = useModel('spaceModel');
   const [open, setOpen] = useState<boolean>(false);
   const [openModal, setOpenModal] = useState<boolean>(false);
 
   const showModal = () => {
     setOpen(false);
     setOpenModal(true);
-  };
-
-  const handleCancel = () => {
-    setOpenModal(false);
-  };
-
-  const handleConfirm = (info: UpdateSpaceTeamParams) => {
-    const list = [...spaceList, info] as SpaceInfo[];
-    setSpaceList(list);
-    setOpenModal(false);
   };
 
   // 个人空间时，头像是默认的
@@ -78,11 +64,7 @@ const SpaceTitle: React.FC = () => {
         </div>
       </Popover>
       {/*创建新团队*/}
-      <CreateNewTeam
-        open={openModal}
-        onCancel={handleCancel}
-        onConfirm={handleConfirm}
-      />
+      <CreateNewTeam open={openModal} onCancel={() => setOpenModal(false)} />
     </>
   );
 };
