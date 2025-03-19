@@ -32,6 +32,15 @@ export interface TabsType {
   onClick: (type: TabsEnum) => void;
 }
 
+export interface TabItemProps {
+  active: boolean;
+  type: TabsEnum;
+  icon: React.ReactNode;
+  text: string;
+  onClick: (type: TabsEnum) => void;
+}
+
+
 // 用户操作项类型
 export interface UserActionItemType {
   className?: string;

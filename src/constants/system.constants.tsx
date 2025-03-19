@@ -1,8 +1,9 @@
 import {
   ICON_AUDIT,
   ICON_GROUP_SET,
-  ICON_MODEL_WHITE, ICON_PUBLISHED,
-  ICON_SETTING,
+  ICON_MODEL_WHITE,
+  ICON_PUBLISHED,
+  ICON_SETTING_SMALL,
 } from '@/constants/images.constants';
 import { SystemManageListEnum } from '@/types/enums/systemManage';
 
@@ -20,7 +21,6 @@ export const SYSTEM_MANAGE_LIST = [
   },
   {
     type: SystemManageListEnum.Published_Manage,
-    // icon: <ICON_GROUP_SET />,
     icon: <ICON_PUBLISHED />,
     text: '已发布管理',
   },
@@ -31,7 +31,7 @@ export const SYSTEM_MANAGE_LIST = [
   },
   {
     type: SystemManageListEnum.System_Config,
-    icon: <ICON_SETTING />,
+    icon: <ICON_SETTING_SMALL />,
     text: '系统配置',
   },
 ];

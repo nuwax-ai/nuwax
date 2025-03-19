@@ -1,15 +1,21 @@
 import { TABS } from '@/constants/menus.constants';
+import TabItem from '@/layouts/MenusLayout/Tabs/TabItem';
 import { TabsEnum } from '@/types/enums/menus';
 import type { TabsType } from '@/types/interfaces/layouts';
 import classNames from 'classnames';
-import React from 'react';
-import { useLocation } from 'umi';
-import styles from './index.less';
-
-const cx = classNames.bind(styles);
+import React, { useEffect } from 'react';
+import { useLocation, useModel } from 'umi';
+import { RoleEnum } from '@/types/enums/common';
 
 const Tabs: React.FC<TabsType> = ({ onClick }) => {
   const location = useLocation();
+  const { userInfo, runUserInfo } = useModel('userInfo');
+
+  useEffect(() => {
+    console.log('查询当前登录用户信息')
+    runUserInfo();
+  }, []);
+
   const handleActive = (type) => {
     return (
       (type === TabsEnum.Home &&
@@ -19,36 +25,31 @@ const Tabs: React.FC<TabsType> = ({ onClick }) => {
       (type === TabsEnum.System_Manage && location.pathname.includes('system'))
     );
   };
+
   return (
-    <div className={cx('flex-1', 'overflow-y')}>
+    <div className={classNames('flex-1', 'overflow-y')}>
       {TABS.map((item, index) => {
+        if (item.type === TabsEnum.System_Manage) {
+          // 管理员
+          if (userInfo?.role === RoleEnum.Admin) {
+            return (
+              <TabItem
+                key={index}
+                {...item}
+                onClick={() => onClick(item.type)}
+                active={handleActive(item.type)}
+              />
+            );
+          }
+          return null;
+        }
         return (
-          <div
+          <TabItem
             key={index}
+            {...item}
             onClick={() => onClick(item.type)}
-            className={cx(
-              'flex',
-              'flex-col',
-              'items-center',
-              'content-center',
-              'hover-box',
-              'cursor-pointer',
-              styles.box,
-              { [styles.active]: handleActive(item.type) },
-            )}
-          >
-            <span
-              className={cx(
-                styles.icon,
-                'flex',
-                'items-center',
-                'content-center',
-              )}
-            >
-              {item.icon}
-            </span>
-            <span className={cx(styles.text)}>{item.text}</span>
-          </div>
+            active={handleActive(item.type)}
+          />
         );
       })}
     </div>

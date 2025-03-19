@@ -1,5 +1,6 @@
 import {
-  ICON_HOME, ICON_SETTING,
+  ICON_HOME,
+  ICON_SETTING,
   ICON_SQUARE,
   ICON_WORKSPACE,
 } from '@/constants/images.constants';

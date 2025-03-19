@@ -2,15 +2,15 @@ import personalImage from '@/assets/images/personal.png';
 import UploadAvatar from '@/components/UploadAvatar';
 import { USER_INFO } from '@/constants/home.constants';
 import { apiUserUpdate } from '@/services/account';
-import type { UserInfo } from '@/types/interfaces/login';
 import type { SaveNickname, SaveUsername } from '@/types/interfaces/setting';
 import { customizeRequiredNoStarMark } from '@/utils/form';
 import type { FormProps } from 'antd';
 import { Button, Form, Input, message } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import React, { useEffect } from 'react';
+import { useRequest, useModel } from 'umi';
 import styles from './index.less';
+import cloneDeep from 'lodash/cloneDeep';
 
 const cx = classNames.bind(styles);
 
@@ -20,39 +20,33 @@ const cx = classNames.bind(styles);
 const SettingAccount: React.FC = () => {
   const [form] = Form.useForm();
   const [formNickname] = Form.useForm();
-  const [userInfo, setUserInfo] = useState<UserInfo>();
+  const { userInfo, setUserInfo } = useModel('userInfo');
 
-  const handleUserInfo = () => {
-    const userInfoString = localStorage.getItem(USER_INFO);
-    return JSON.parse(userInfoString) as UserInfo;
-  };
   // 更新用户信息
   const { run, loading } = useRequest(apiUserUpdate, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
+    onSuccess: (_, params) => {
       message.success('保存成功');
-      const _userInfo = handleUserInfo();
+      const _userInfo = cloneDeep(userInfo);
+      _userInfo.avatar = params[0].avatar;
       _userInfo.userName = form.getFieldValue('userName');
       _userInfo.nickName = formNickname.getFieldValue('nickName');
+      setUserInfo(_userInfo);
       localStorage.setItem(USER_INFO, JSON.stringify(_userInfo));
     },
   });
 
   useEffect(() => {
-    const _userInfo = handleUserInfo();
-    setUserInfo(_userInfo);
-    form.setFieldValue('userName', _userInfo?.userName);
-    formNickname.setFieldValue('nickName', _userInfo?.nickName);
+    form.setFieldValue('userName', userInfo?.userName);
+    formNickname.setFieldValue('nickName', userInfo?.nickName);
   }, []);
 
   // 上传头像成功后更新头像
   const handleSuccessUpload = (url: string) => {
-    const _userInfo = {
-      ...(userInfo || {}),
+    run({
       avatar: url,
-    };
-    setUserInfo(_userInfo as UserInfo);
+    });
   };
 
   const onSaveUsername: FormProps<SaveUsername>['onFinish'] = (values) => {
