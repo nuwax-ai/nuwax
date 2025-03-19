@@ -1,5 +1,7 @@
+import personal from '@/assets/images/personal.png';
 import teamImage from '@/assets/images/team_image.png';
 import { SPACE_ID } from '@/constants/home.constants';
+import { SpaceTypeEnum } from '@/types/enums/space';
 import type { PersonalSpaceContentType } from '@/types/interfaces/layouts';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import { CheckOutlined, PlusCircleOutlined } from '@ant-design/icons';
@@ -44,13 +46,20 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
     }
   };
 
+  // 个人空间时，头像是默认的
+  const getAvatar = (info: SpaceInfo) => {
+    return info.type === SpaceTypeEnum.Personal
+      ? (personal as string)
+      : ((info?.icon || teamImage) as string);
+  };
+
   return (
     <div className={styles.container}>
       <div className={cx(styles['p-header'], 'flex')}>
         <CheckOutlined className={styles.icon} />
         <img
           className={cx(styles.img, 'radius-6')}
-          src={currentSpaceInfo?.icon || (teamImage as string)}
+          src={getAvatar(currentSpaceInfo)}
           alt=""
         />
         <span className={cx('flex-1', styles.title)}>
@@ -67,7 +76,8 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
           >
             <img
               className={cx(styles['team-logo'])}
-              src={item.icon || (teamImage as string)}
+              // src={item.icon || (teamImage as string)}
+              src={getAvatar(item)}
               alt=""
             />
             <span className={cx('text-ellipsis')}>{item.name}</span>

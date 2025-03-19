@@ -1,4 +1,6 @@
+import personal from '@/assets/images/personal.png';
 import teamImage from '@/assets/images/team_image.png';
+import { SpaceTypeEnum } from '@/types/enums/space';
 import type {
   SpaceInfo,
   UpdateSpaceTeamParams,
@@ -37,6 +39,12 @@ const SpaceTitle: React.FC = () => {
     setOpenModal(false);
   };
 
+  // 个人空间时，头像是默认的
+  const avatar =
+    currentSpaceInfo?.type === SpaceTypeEnum.Personal
+      ? personal
+      : currentSpaceInfo?.icon || (teamImage as string);
+
   return (
     <>
       <Popover
@@ -62,11 +70,7 @@ const SpaceTitle: React.FC = () => {
             styles.header,
           )}
         >
-          <img
-            className={cx(styles.img, 'radius-6')}
-            src={currentSpaceInfo?.icon || (teamImage as string)}
-            alt=""
-          />
+          <img className={cx(styles.img, 'radius-6')} src={avatar} alt="" />
           <span className={cx('flex-1', styles.title)}>
             {currentSpaceInfo?.name || '个人空间'}
           </span>

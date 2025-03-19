@@ -1,3 +1,4 @@
+import logo from '@/assets/images/logo.png';
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useCountDown from '@/hooks/useCountDown';
@@ -7,6 +8,7 @@ import { SendCodeEnum } from '@/types/enums/login';
 import type { ILoginResult } from '@/types/interfaces/login';
 import { CodeLogin } from '@/types/interfaces/login';
 import { getNumbersOnly } from '@/utils/common';
+import { useModel } from '@@/exports';
 import type { InputRef } from 'antd';
 import { Button, Input, message } from 'antd';
 import classNames from 'classnames';
@@ -32,6 +34,7 @@ const VerifyCode: React.FC = () => {
   const inputRef = useRef<InputRef | null>(null);
   const { phone, areaCode } = location.state;
   const { runUserInfo } = useUserInfo();
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   const handleClick = () => {
     inputRef.current!.focus({
@@ -149,6 +152,11 @@ const VerifyCode: React.FC = () => {
         'content-center',
       )}
     >
+      <img
+        src={tenantConfigInfo?.siteLogo || (logo as string)}
+        className={cx(styles.logo)}
+        alt=""
+      />
       <div className={cx(styles.inner, 'flex', 'flex-col', 'items-center')}>
         <h3>输入短信验证码</h3>
         <p>验证码已发送至手机号</p>

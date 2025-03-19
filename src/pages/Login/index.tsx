@@ -32,7 +32,7 @@ const Login: React.FC = () => {
   const [loginType, setLoginType] = useState<LoginTypeEnum>(
     LoginTypeEnum.Password,
   );
-  const [checked, setChecked] = useState<boolean>(false);
+  const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
   const [formValues, setFormValues] = useState<LoginFieldType>();
   const { runUserInfo } = useUserInfo();
