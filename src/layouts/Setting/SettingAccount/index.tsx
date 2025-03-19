@@ -2,15 +2,15 @@ import personalImage from '@/assets/images/personal.png';
 import UploadAvatar from '@/components/UploadAvatar';
 import { USER_INFO } from '@/constants/home.constants';
 import { apiUserUpdate } from '@/services/account';
-import type { SaveNickname, SaveUsername } from '@/types/interfaces/setting';
+import type { SetUserAccountInfo } from '@/types/interfaces/login';
 import { customizeRequiredNoStarMark } from '@/utils/form';
 import type { FormProps } from 'antd';
 import { Button, Form, Input, message } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect } from 'react';
-import { useRequest, useModel } from 'umi';
-import styles from './index.less';
 import cloneDeep from 'lodash/cloneDeep';
+import React, { useEffect } from 'react';
+import { useModel, useRequest } from 'umi';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
@@ -19,7 +19,6 @@ const cx = classNames.bind(styles);
  */
 const SettingAccount: React.FC = () => {
   const [form] = Form.useForm();
-  const [formNickname] = Form.useForm();
   const { userInfo, setUserInfo } = useModel('userInfo');
 
   // 更新用户信息
@@ -29,9 +28,12 @@ const SettingAccount: React.FC = () => {
     onSuccess: (_, params) => {
       message.success('保存成功');
       const _userInfo = cloneDeep(userInfo);
-      _userInfo.avatar = params[0].avatar;
-      _userInfo.userName = form.getFieldValue('userName');
-      _userInfo.nickName = formNickname.getFieldValue('nickName');
+      if (params[0]?.avatar) {
+        _userInfo.avatar = params[0].avatar;
+      } else {
+        _userInfo.userName = form.getFieldValue('userName');
+        _userInfo.nickName = form.getFieldValue('nickName');
+      }
       setUserInfo(_userInfo);
       localStorage.setItem(USER_INFO, JSON.stringify(_userInfo));
     },
@@ -39,7 +41,7 @@ const SettingAccount: React.FC = () => {
 
   useEffect(() => {
     form.setFieldValue('userName', userInfo?.userName);
-    formNickname.setFieldValue('nickName', userInfo?.nickName);
+    form.setFieldValue('nickName', userInfo?.nickName);
   }, []);
 
   // 上传头像成功后更新头像
@@ -49,11 +51,9 @@ const SettingAccount: React.FC = () => {
     });
   };
 
-  const onSaveUsername: FormProps<SaveUsername>['onFinish'] = (values) => {
-    run(values);
-  };
-
-  const onSaveNickname: FormProps<SaveNickname>['onFinish'] = (values) => {
+  const onSaveUsername: FormProps<SetUserAccountInfo>['onFinish'] = (
+    values,
+  ) => {
     run(values);
   };
 
@@ -89,13 +89,6 @@ const SettingAccount: React.FC = () => {
             </Button>
           </Form.Item>
         </Form.Item>
-      </Form>
-      <Form
-        form={formNickname}
-        layout="vertical"
-        requiredMark={customizeRequiredNoStarMark}
-        onFinish={onSaveNickname}
-      >
         <Form.Item label="用户昵称">
           <Form.Item
             noStyle

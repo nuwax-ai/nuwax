@@ -17,7 +17,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { history, useLocation, useNavigate, useRequest, useModel } from 'umi';
+import { history, useLocation, useModel, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

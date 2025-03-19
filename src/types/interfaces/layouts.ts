@@ -40,7 +40,6 @@ export interface TabItemProps {
   onClick: (type: TabsEnum) => void;
 }
 
-
 // 用户操作项类型
 export interface UserActionItemType {
   className?: string;

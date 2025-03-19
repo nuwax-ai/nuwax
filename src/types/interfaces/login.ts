@@ -120,3 +120,9 @@ export interface TenantConfigInfo {
   // 站点域名
   domainNames: string[];
 }
+
+// 设置用户账号信息
+export interface SetUserAccountInfo {
+  userName: string;
+  nickName: string;
+}

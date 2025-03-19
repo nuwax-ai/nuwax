@@ -1,18 +1,18 @@
 import { TABS } from '@/constants/menus.constants';
 import TabItem from '@/layouts/MenusLayout/Tabs/TabItem';
+import { RoleEnum } from '@/types/enums/common';
 import { TabsEnum } from '@/types/enums/menus';
 import type { TabsType } from '@/types/interfaces/layouts';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
 import { useLocation, useModel } from 'umi';
-import { RoleEnum } from '@/types/enums/common';
 
 const Tabs: React.FC<TabsType> = ({ onClick }) => {
   const location = useLocation();
   const { userInfo, runUserInfo } = useModel('userInfo');
 
   useEffect(() => {
-    console.log('查询当前登录用户信息')
+    // 获取用户信息
     runUserInfo();
   }, []);
 
