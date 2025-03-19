@@ -42,10 +42,10 @@ const routes = [
         path: '/system/published/manage',
         component: '@/pages/PublishedManage',
       },
-      { path: '/system/system/config', component: '@/pages/SystemConfig' },
+      { path: '/system/config', component: '@/pages/SystemConfig' },
       { path: '/system/user/manage', component: '@/pages/UserManage' },
       {
-        path: '/system/global/model/manage',
+        path: '/system/model/manage',
         component: '@/pages/GlobalModelManage',
       },
     ],

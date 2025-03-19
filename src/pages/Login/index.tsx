@@ -5,7 +5,6 @@ import { apiLogin } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
 import { isValidPhone, validatePassword } from '@/utils/common';
-import { useModel } from '@@/exports';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import {
   Button,
@@ -19,7 +18,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { history, useNavigate, useRequest } from 'umi';
+import { history, useModel, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
 import ModalSliderCaptcha from './ModalSliderCaptcha';
 

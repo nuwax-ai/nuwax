@@ -4,9 +4,9 @@ import { ICON_NEW_AGENT } from '@/constants/images.constants';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { TenantConfigInfo } from '@/types/interfaces/login';
-import { history, useRequest } from '@@/exports';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { history, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

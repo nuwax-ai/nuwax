@@ -72,9 +72,10 @@ Depending on what you are making, it can be a good idea to include screenshots o
 
 ## Installation
 
-本地容器CI/CD部署，参考：https://www.devspace.sh/ 进行安装使用
+本地容器 CI/CD 部署，参考：https://www.devspace.sh/ 进行安装使用
 
 devspace 安装后，执行以下命令，在容器里启动，模拟生产环境运行
+
 ```shell
 devspace dev
 ```

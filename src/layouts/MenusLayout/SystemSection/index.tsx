@@ -1,8 +1,8 @@
 import { SYSTEM_MANAGE_LIST } from '@/constants/system.constants';
 import { SystemManageListEnum } from '@/types/enums/systemManage';
-import { history, useLocation } from '@@/exports';
 import classNames from 'classnames';
 import React from 'react';
+import { history, useLocation } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -30,11 +30,11 @@ const SystemSection: React.FC = () => {
         break;
       // 全局模型管理
       case SystemManageListEnum.Global_Model_Manage:
-        history.push('/system/global/model/manage');
+        history.push('/system/model/manage');
         break;
       // 系统配置
       case SystemManageListEnum.System_Config:
-        history.push('/system/system/config');
+        history.push('/system/config');
         break;
     }
   };
@@ -49,7 +49,7 @@ const SystemSection: React.FC = () => {
       (type === SystemManageListEnum.Published_Manage &&
         pathname.includes('published')) ||
       (type === SystemManageListEnum.Global_Model_Manage &&
-        pathname.includes('global')) ||
+        pathname.includes('model')) ||
       (type === SystemManageListEnum.System_Config &&
         pathname.includes('config'))
     );
