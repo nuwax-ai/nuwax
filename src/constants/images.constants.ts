@@ -17,7 +17,10 @@ import { ReactComponent as ICON_SQUARE } from '@/assets/svg/icon_square.svg';
 import { ReactComponent as ICON_WORKSPACE } from '@/assets/svg/icon_workspace.svg';
 import { ReactComponent as ICON_KNOWLEDGE } from '@/assets/svg/knowledge_icon.svg';
 import { ReactComponent as ICON_LOCAL_DOC } from '@/assets/svg/local_doc.svg';
-import { ReactComponent as ICON_MODEL } from '@/assets/svg/model_icon.svg';
+import { ReactComponent as ICON_MODEL } from '@/assets/svg/icon_model.svg';
+import { ReactComponent as ICON_MODEL_WHITE } from '@/assets/svg/icon_model_white.svg';
+import { ReactComponent as ICON_PUBLISHED } from '@/assets/svg/icon_published.svg';
+import { ReactComponent as ICON_AUDIT } from '@/assets/svg/icon_audit.svg';
 import { ReactComponent as ICON_NEW_AGENT } from '@/assets/svg/new_agent.svg';
 import { ReactComponent as ICON_ONLINE_DOC } from '@/assets/svg/online_doc.svg';
 import { ReactComponent as ICON_OPTIMIZE } from '@/assets/svg/optimize.svg';
@@ -69,6 +72,9 @@ export {
   ICON_KNOWLEDGE,
   ICON_LOCAL_DOC,
   ICON_MODEL,
+  ICON_MODEL_WHITE,
+  ICON_PUBLISHED,
+  ICON_AUDIT,
   ICON_NEW_AGENT,
   ICON_ONLINE_DOC,
   ICON_OPTIMIZE,

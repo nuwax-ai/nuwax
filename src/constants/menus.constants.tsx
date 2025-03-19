@@ -1,5 +1,5 @@
 import {
-  ICON_HOME,
+  ICON_HOME, ICON_SETTING,
   ICON_SQUARE,
   ICON_WORKSPACE,
 } from '@/constants/images.constants';
@@ -37,7 +37,7 @@ export const TABS = [
     type: TabsEnum.Square,
   },
   {
-    icon: <SettingOutlined />,
+    icon: <ICON_SETTING />,
     text: '系统管理',
     type: TabsEnum.System_Manage,
   },
