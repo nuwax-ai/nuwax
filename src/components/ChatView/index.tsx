@@ -18,7 +18,11 @@ import RunOver from './RunOver';
 
 const cx = classNames.bind(styles);
 
-const md = markdown({ html: true, breaks: true });
+const md = markdown({
+  html: true,
+  breaks: true,
+  linkify: true,
+});
 
 const ChatView: React.FC<ChatViewProps> = ({
   className,

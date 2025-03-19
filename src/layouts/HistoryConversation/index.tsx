@@ -6,6 +6,7 @@ import moment from 'moment';
 import React, { useEffect, useState } from 'react';
 import { useModel, useRequest } from 'umi';
 import styles from './index.less';
+import { LoadingOutlined } from '@ant-design/icons';
 
 const cx = classNames.bind(styles);
 
@@ -55,7 +56,7 @@ const HistoryConversation: React.FC = () => {
           <div
             className={cx('flex', 'items-center', 'content-center', 'h-full')}
           >
-            loading...
+            <LoadingOutlined />
           </div>
         ) : conversationList?.length > 0 ? (
           <ul>
