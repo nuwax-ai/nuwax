@@ -1,5 +1,6 @@
+import ConditionRender from '@/components/ConditionRender';
 import type { ArrangeTitleProps } from '@/types/interfaces/agentConfig';
-import { CaretDownOutlined, FormOutlined } from '@ant-design/icons';
+import { CaretDownOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -9,7 +10,11 @@ const cx = classNames.bind(styles);
 /**
  * 编排顶部title组件
  */
-const ArrangeTitle: React.FC<ArrangeTitleProps> = ({ modelName, onClick }) => {
+const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
+  icon,
+  modelName,
+  onClick,
+}) => {
   return (
     <div
       className={cx(
@@ -22,10 +27,17 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({ modelName, onClick }) => {
     >
       <h3>编排</h3>
       <div
-        className={cx('flex', 'cursor-pointer', styles['drop-box'])}
+        className={cx(
+          'flex',
+          'items-center',
+          'cursor-pointer',
+          styles['drop-box'],
+        )}
         onClick={onClick}
       >
-        <FormOutlined />
+        <ConditionRender condition={!!icon}>
+          <img src={icon} alt="" />
+        </ConditionRender>
         <span>{modelName}</span>
         <CaretDownOutlined />
       </div>

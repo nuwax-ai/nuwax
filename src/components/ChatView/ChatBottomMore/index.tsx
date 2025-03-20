@@ -17,7 +17,7 @@ const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({
   messageInfo,
 }) => {
   // finalResult 自定义添加字段：chat 会话结果
-  const { text, finalResult } = messageInfo;
+  const { text, finalResult } = messageInfo || {};
   const { handleDebug } = useModel('conversationInfo');
 
   const handleCopy = () => {
@@ -26,7 +26,7 @@ const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({
 
   // 运行时间
   const runTime = useMemo(() => {
-    if (finalResult) {
+    if (!!finalResult) {
       return ((finalResult?.endTime - finalResult?.startTime) / 1000).toFixed(
         1,
       );

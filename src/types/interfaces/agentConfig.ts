@@ -25,6 +25,7 @@ export interface AgentHeaderProps {
 
 // 编配title组件
 export interface ArrangeTitleProps {
+  icon?: string;
   modelName?: string;
   onClick: () => void;
 }

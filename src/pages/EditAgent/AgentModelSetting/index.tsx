@@ -11,7 +11,7 @@ import { option } from '@/types/interfaces/common';
 import type { ModelConfigInfo } from '@/types/interfaces/model';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import type { InputNumberProps } from 'antd';
-import { message, Modal, Segmented } from 'antd';
+import { Modal, Segmented } from 'antd';
 import classnames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
@@ -61,9 +61,6 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   const { run: runUpdate } = useRequest(apiAgentComponentModelUpdate, {
     manual: true,
     debounceInterval: 1000,
-    onSuccess: () => {
-      message.success('更新成功');
-    },
   });
 
   useEffect(() => {
@@ -213,25 +210,11 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
         />
       </div>
       <h3 className={cx(styles.title)}>输入及输出设置</h3>
-      {/*最大生成长度*/}
+      {/*上下文轮数*/}
       <div className={cx('flex', 'mb-16')}>
         <LabelIcon
           label="携带上下文轮数"
           title="设置带入模型上下文的对话历史轮数。轮数越多，多轮对话的相关性越高，但消耗的 Token 也越多"
-        />
-        <SliderNumber
-          min={1}
-          max={4096}
-          step={1}
-          value={componentBindConfig?.maxTokens as string}
-          onChange={handleChangeMaxTokens}
-        />
-      </div>
-      {/*上下文轮数*/}
-      <div className={cx('flex', 'mb-16')}>
-        <LabelIcon
-          label="最大回复长度"
-          title="控制模型输出的 Tokens 长度上限。通常 100 Tokens 约等于 150 个中文汉字。"
         />
         <SliderNumber
           min={0}
@@ -239,6 +222,20 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           step={1}
           value={componentBindConfig?.contextRounds as string}
           onChange={handleChangeContextRounds}
+        />
+      </div>
+      {/*最大生成长度*/}
+      <div className={cx('flex', 'mb-16')}>
+        <LabelIcon
+          label="最大回复长度"
+          title="控制模型输出的 Tokens 长度上限。通常 100 Tokens 约等于 150 个中文汉字。"
+        />
+        <SliderNumber
+          min={1}
+          max={4096}
+          step={1}
+          value={componentBindConfig?.maxTokens as string}
+          onChange={handleChangeMaxTokens}
         />
       </div>
     </Modal>

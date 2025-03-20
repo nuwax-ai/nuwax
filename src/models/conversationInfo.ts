@@ -175,6 +175,9 @@ export default () => {
                 runChatSuggest(params);
               }
             }
+            if (data.eventType === ConversationEventTypeEnum.ERROR) {
+              return list;
+            }
 
             return [...list.slice(0, -1), newMessage] as MessageInfo[];
           });

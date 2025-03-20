@@ -138,7 +138,7 @@ const Login: React.FC = () => {
         <Form.Item>
           <h3
             className={cx(styles.title)}
-          >{`欢迎使用${tenantConfigInfo?.siteName}`}</h3>
+          >{`欢迎使用${tenantConfigInfo?.siteName || ''}`}</h3>
         </Form.Item>
         <Form.Item className={styles['select-box']} name="areaCode">
           <Select
@@ -185,6 +185,7 @@ const Login: React.FC = () => {
               <Input
                 rootClassName={styles.input}
                 type="password"
+                autoComplete="off"
                 placeholder="请输入6位以上密码"
               />
             </Form.Item>
