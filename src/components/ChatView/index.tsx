@@ -106,8 +106,9 @@ const ChatView: React.FC<ChatViewProps> = ({
           {/*底部区域*/}
           <ConditionRender
             condition={
-              messageInfo && (messageInfo?.status === MessageStatusEnum.Complete ||
-              !messageInfo?.status)
+              messageInfo &&
+              (messageInfo?.status === MessageStatusEnum.Complete ||
+                !messageInfo?.status)
             }
           >
             <ChatBottomMore messageInfo={messageInfo} canDebug={canDebug} />

@@ -3,17 +3,17 @@ kind: Ingress
 metadata:
   name: frontend-ingress
   annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: 'false'
 spec:
-  ingressClassName: "nginx"
+  ingressClassName: 'nginx'
   rules:
-  - host: p1-front.space.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: p1-frontend-service
-            port:
-              number: 80
+    - host: p1-front.space.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: p1-frontend-service
+                port:
+                  number: 80

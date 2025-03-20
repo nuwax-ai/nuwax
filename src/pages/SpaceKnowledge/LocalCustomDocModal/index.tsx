@@ -8,6 +8,7 @@ import {
   apiKnowledgeDocumentCustomAdd,
 } from '@/services/knowledge';
 import {
+  KnowledgeSegmentIdentifierEnum,
   KnowledgeSegmentTypeEnum,
   KnowledgeTextImportEnum,
   KnowledgeTextStepEnum,
@@ -20,6 +21,7 @@ import type {
 import { DeleteOutlined } from '@ant-design/icons';
 import { Button, Form, message, Modal, Steps } from 'antd';
 import classNames from 'classnames';
+import omit from 'lodash/omit';
 import React, { useMemo, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import CreateSet from './CreateSet';
@@ -172,7 +174,22 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
   // 创建设置 - 下一步
   const handleConfirmCreateSet = async () => {
     if (!autoSegmentConfigFlag) {
-      segmentConfigModelRef.current = await form.validateFields();
+      const formValues = await form.validateFields();
+      let data;
+      // 选择自定义‘分段标识符’
+      if (
+        formValues?.selectDelimiter === KnowledgeSegmentIdentifierEnum.Custom
+      ) {
+        data = omit(formValues, ['selectDelimiter']);
+      } else {
+        // 选择下拉‘分段标识符’
+        data = {
+          delimiter: formValues?.selectDelimiter,
+          overlaps: formValues.overlaps,
+          words: formValues.words,
+        };
+      }
+      segmentConfigModelRef.current = data;
     }
     setCurrent(KnowledgeTextStepEnum.Data_Processing);
   };
