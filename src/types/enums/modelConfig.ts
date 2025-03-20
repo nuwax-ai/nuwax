@@ -9,10 +9,12 @@ export enum ModelTypeEnum {
   Other = 'Other',
 }
 
-// 模型接口协议，可选值：OpenAI, Ollama,可用值:OpenAI,Ollama
+// 模型接口协议，可选值：OpenAI, Ollama, Zhipu, Anthropic 可用值:OpenAI,Ollama,Zhipu,Anthropic
 export enum ModelApiProtocolEnum {
   OpenAI = 'OpenAI',
   Ollama = 'Ollama',
+  Zhipu = 'Zhipu',
+  Anthropic = 'Anthropic',
 }
 
 // 接口调用策略，可选值：RoundRobin, WeightedRoundRobin, LeastConnections, WeightedLeastConnections, Random, ResponseTime

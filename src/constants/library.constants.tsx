@@ -307,6 +307,14 @@ export const MODEL_API_PROTOCOL_LIST = [
     value: ModelApiProtocolEnum.Ollama,
     label: 'Ollama',
   },
+  {
+    value: ModelApiProtocolEnum.Zhipu,
+    label: 'Zhipu',
+  },
+  {
+    value: ModelApiProtocolEnum.Anthropic,
+    label: 'Anthropic',
+  },
 ];
 
 // 插件
