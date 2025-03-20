@@ -2,19 +2,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend-deployment
+  name: agent-frontend-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: frontend
+      app: agent-frontend
   template:
     metadata:
       labels:
-        app: frontend
+        app: agent-frontend
     spec:
       containers:
-      - name: frontend
+      - name: agent-frontend
         image: localhost:5000/agent-platform-front:latest
         ports:
         - containerPort: 80
