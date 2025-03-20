@@ -487,7 +487,7 @@ const Workflow: React.FC = () => {
     const _res = await service.validWorkflow(info?.id as number);
     if (_res.code === Constant.success) {
       const _arr = _res.data.filter((item) => !item.success);
-      if (!_arr.length) {
+      if (_arr.length === 0) {
         return true;
       } else {
         setErrorParams({
@@ -659,18 +659,19 @@ const Workflow: React.FC = () => {
 
   // 试运行所有节点
   const testRunAll = async () => {
-    const _res = await service.getDetails(workflowId);
-    const _nodeList = _res.data.nodes;
-    setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
-    const volid = await volidWorkflow();
-    if (volid) {
-      setTestRunResult('');
-      setFoldWrapItem(_res.data.startNode);
-      setTestRun(true);
-      if (!visible) {
+    setVisible(false);
+    setTimeout(async () => {
+      const _res = await service.getDetails(workflowId);
+      const _nodeList = _res.data.nodes;
+      setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
+      const volid = await volidWorkflow();
+      if (volid) {
+        setFoldWrapItem(_res.data.startNode);
+        setTestRunResult('');
+        setTestRun(true);
         setVisible(true);
       }
-    }
+    }, 100);
   };
 
   // 节点试运行
