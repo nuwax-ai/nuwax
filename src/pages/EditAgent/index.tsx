@@ -136,8 +136,6 @@ const EditAgent: React.FC = () => {
     });
   };
 
-  console.log(agentConfigInfo, 'agentConfigInfo');
-
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader

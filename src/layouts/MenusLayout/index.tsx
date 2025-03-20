@@ -33,7 +33,6 @@ const MenusLayout: React.FC = () => {
 
   // 切换tab
   const handleTabsClick = useCallback((type: TabsEnum) => {
-    // setTabType(type);
     switch (type) {
       case TabsEnum.Home:
         history.push('/');
@@ -54,6 +53,7 @@ const MenusLayout: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // 查询空间列表
     runSpace();
   }, []);
 
