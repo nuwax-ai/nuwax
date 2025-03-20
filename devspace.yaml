@@ -1,6 +1,5 @@
 version: v2beta1
 name: agent-platform-front
-
 # This is a list of `pipelines` that DevSpace can execute (you can define your own)
 pipelines:
   # This is the pipeline for the main command: `devspace dev` (or `devspace run-pipeline dev`)
@@ -22,12 +21,16 @@ pipelines:
 # We recommend to skip image building during development (devspace dev) as much as possible
 images:
   app:
-    image: my-image-registry.tld/username/app
+    image: localhost:5000/agent-platform-front
     dockerfile: ./Dockerfile
+    # 添加构建参数
+    buildArgs:
+      NODE_ENV: production
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
   app:
+    namespace: agent-platform
     # This deployment uses `helm` but you can also define `kubectl` deployments or kustomizations
     helm:
       # We are deploying this project with the Helm chart you provided
@@ -38,16 +41,18 @@ deployments:
       # You may also use `valuesFiles` to load values from files, e.g. valuesFiles: ["values.yaml"]
       values:
         containers:
-          - image: my-image-registry.tld/username/app
+          - image: localhost:5000/agent-platform-front
+            imagePullPolicy: IfNotPresent
         service:
           ports:
             - port: 3000
+            - containerPort: 80
 
 # This is a list of `dev` containers that are based on the containers created by your deployments
 dev:
   app:
     # Search for the container that runs this image
-    imageSelector: my-image-registry.tld/username/app
+    imageSelector: localhost:5000/agent-platform-front
     # Replace the container image with this dev-optimized image (allows to skip image building during development)
     devImage: ghcr.io/loft-sh/devspace-containers/typescript:18-alpine
     # Sync files between the local filesystem and the development container
@@ -87,3 +92,8 @@ commands:
 #     tag: v1.0.0
 #   ui:
 #     path: ./ui        # Path-based dependencies (for monorepos)
+
+# If you want to always use the local registry.
+localRegistry:
+  enabled: true
+  port: 5000
