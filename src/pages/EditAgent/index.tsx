@@ -136,6 +136,8 @@ const EditAgent: React.FC = () => {
     });
   };
 
+  console.log(agentConfigInfo, 'agentConfigInfo');
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader
@@ -158,6 +160,7 @@ const EditAgent: React.FC = () => {
         >
           {/*编排title*/}
           <ArrangeTitle
+            icon={agentConfigInfo?.modelComponentConfig?.icon}
             modelName={agentConfigInfo?.modelComponentConfig?.name}
             onClick={() => setOpenAgentModel(true)}
           />

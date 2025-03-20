@@ -69,8 +69,7 @@ const CreateSet: React.FC<CreateSetProps> = ({
                   validator(_, value) {
                     if (
                       !value ||
-                      Number(value) >= 100 ||
-                      Number(value) <= 5000
+                      (Number(value) >= 100 && Number(value) <= 5000)
                     ) {
                       return Promise.resolve();
                     }
@@ -93,7 +92,10 @@ const CreateSet: React.FC<CreateSetProps> = ({
                 { required: true, message: '请输入0-100的数值' },
                 {
                   validator(_, value) {
-                    if (!value || Number(value) >= 0 || Number(value) <= 100) {
+                    if (
+                      !value ||
+                      (Number(value) >= 0 && Number(value) <= 100)
+                    ) {
                       return Promise.resolve();
                     }
                     if (value && !isNumber(value)) {
