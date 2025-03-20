@@ -42,7 +42,6 @@ deployments:
       values:
         containers:
           - image: localhost:5000/agent-platform-front
-            imagePullPolicy: IfNotPresent
         service:
           ports:
             - port: 3000
