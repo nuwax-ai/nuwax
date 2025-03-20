@@ -119,6 +119,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
         <CustomTree
           title={'输出'}
           notShowTitle
+          showCheck
           params={params}
           handleChangeNodeConfig={handleChangeNodeConfig}
           inputItemName={'outputArgs'}
@@ -246,7 +247,12 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
     const typeChanged = val !== params.answerType;
     const optionsChanged = options !== params.options;
     if (typeChanged || optionsChanged) {
-      handleChangeNodeConfig({ ...params, answerType: val, options });
+      if (val !== 'SELECT') {
+        options = options?.map((item) => ({ ...item, nextNodeIds: [] }));
+      }
+      if (updateNode) {
+        updateNode({ ...params, answerType: val, options });
+      }
     }
   };
 
@@ -264,6 +270,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
     }
   };
   useEffect(() => {
+    console.log(params);
     if (params && params.answerType === null) {
       Modified({ ...params, answerType: 'TEXT' });
     }
@@ -313,6 +320,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
             params={params}
             handleChangeNodeConfig={handleChangeNodeConfig}
             inputItemName={'outputArgs'}
+            showCheck
           />
         </div>
       )}

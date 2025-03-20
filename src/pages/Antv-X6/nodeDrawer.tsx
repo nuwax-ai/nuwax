@@ -142,15 +142,19 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <ModelNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
-            updateNode={(newNodeConfig) =>
+            updateNode={(newNodeConfig) => {
               onGetNodeConfig(
                 {
                   ...currentNodeConfig,
                   nodeConfig: newNodeConfig,
                 },
                 true,
-              )
-            }
+              );
+              setCurrentNodeConfig({
+                ...currentNodeConfig,
+                nodeConfig: newNodeConfig,
+              });
+            }}
           />
         );
 
@@ -176,15 +180,19 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <QuestionsNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
-            updateNode={(newNodeConfig) =>
+            updateNode={(newNodeConfig) => {
               onGetNodeConfig(
                 {
                   ...currentNodeConfig,
                   nodeConfig: newNodeConfig,
                 },
                 true,
-              )
-            }
+              );
+              setCurrentNodeConfig({
+                ...currentNodeConfig,
+                nodeConfig: newNodeConfig,
+              });
+            }}
           />
         );
       case 'HTTPRequest':
@@ -223,15 +231,19 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <ConditionNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
-            updateNode={(newNodeConfig) =>
+            updateNode={(newNodeConfig) => {
               onGetNodeConfig(
                 {
                   ...currentNodeConfig,
                   nodeConfig: newNodeConfig,
                 },
                 true,
-              )
-            }
+              );
+              setCurrentNodeConfig({
+                ...currentNodeConfig,
+                nodeConfig: newNodeConfig,
+              });
+            }}
           />
         );
       case 'IntentRecognition':
@@ -239,15 +251,19 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <IntentionNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
-            updateNode={(newNodeConfig) =>
+            updateNode={(newNodeConfig) => {
               onGetNodeConfig(
                 {
                   ...currentNodeConfig,
                   nodeConfig: newNodeConfig,
                 },
                 true,
-              )
-            }
+              );
+              setCurrentNodeConfig({
+                ...currentNodeConfig,
+                nodeConfig: newNodeConfig,
+              });
+            }}
           />
         );
       case 'LoopBreak':
