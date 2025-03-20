@@ -47,7 +47,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
       </div>
 
       {/* 遍历当前的错误信息列表 */}
-      {nodeList && (
+      {errorList && (
         <div className="error-list-content">
           {errorList.map((item) => {
             if (item && item.nodeId) {
