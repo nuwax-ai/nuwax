@@ -23,6 +23,12 @@ yarn dev
 - 需要本地安装 devspace，参考：https://devspace.sh/cli/docs/getting-started/installation
 - 需要本地安装 kubectl
 
+本地使用 "devspace deploy --force-purge" 启动完毕后,配置本地域名,如下:
+```shell
+127.0.0.1 p1-backend.space.com
+127.0.0.1 p1-front.space.com
+```
+
 ### devspace 本地部署
 
 本地容器 CI/CD 部署，参考：https://www.devspace.sh/ 进行安装使用

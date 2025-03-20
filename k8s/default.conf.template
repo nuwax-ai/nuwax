@@ -3,7 +3,7 @@ server {
     listen  [::]:80;
     # 修改成自己需要的域名
     #server_name  localhost;
-    server_name   ${SERVER_NAME}  localhost;
+    #server_name   ${SERVER_NAME}  localhost;
 
     charset utf-8;
 
