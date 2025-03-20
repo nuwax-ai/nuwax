@@ -11,3 +11,15 @@ export enum SystemManageListEnum {
   // 系统配置
   System_Config,
 }
+
+// 系统管理-用户管理-角色枚举
+export enum UserRoleEnum {
+  Admin,
+  User,
+}
+
+// 系统管理-用户管理-状态枚举
+export enum UserStatusEnum {
+  Enabled,
+  Disabled,
+}
