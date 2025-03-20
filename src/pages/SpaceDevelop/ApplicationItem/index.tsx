@@ -84,12 +84,6 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
       <ApplicationHeader agentConfigInfo={agentConfigInfo} />
       {/*相关信息*/}
       <div className={cx('flex', styles['rel-info'])}>
-        <ConditionRender condition={agentConfigInfo.systemPrompt}>
-          <span>{agentConfigInfo.systemPrompt}</span>
-        </ConditionRender>
-        <ConditionRender condition={agentConfigInfo.userPrompt}>
-          <span>{agentConfigInfo.userPrompt}</span>
-        </ConditionRender>
         <span>最近编辑</span>
         <span>{moment(agentConfigInfo.modified).format('MM-DD HH:mm')}</span>
       </div>
