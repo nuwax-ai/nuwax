@@ -11,13 +11,20 @@ import { ReactComponent as ICON_END } from '@/assets/svg/end.svg';
 import { ReactComponent as ICON_FOLD } from '@/assets/svg/fold.svg';
 import { ReactComponent as ICON_GROUP_SET } from '@/assets/svg/group_set.svg';
 import { ReactComponent as ICON_AGENT } from '@/assets/svg/icon_agent.svg';
+import { ReactComponent as ICON_AUDIT } from '@/assets/svg/icon_audit.svg';
+import { ReactComponent as ICON_FILE } from '@/assets/svg/icon_file.svg';
+import { ReactComponent as ICON_HISTORY } from '@/assets/svg/icon_history.svg';
 import { ReactComponent as ICON_HOME } from '@/assets/svg/icon_home.svg';
+import { ReactComponent as ICON_MODEL } from '@/assets/svg/icon_model.svg';
+import { ReactComponent as ICON_MODEL_WHITE } from '@/assets/svg/icon_model_white.svg';
+import { ReactComponent as ICON_NOTIFICATION } from '@/assets/svg/icon_notification.svg';
 import { ReactComponent as ICON_PLUGIN } from '@/assets/svg/icon_plugin.svg';
+import { ReactComponent as ICON_PUBLISHED } from '@/assets/svg/icon_published.svg';
+import { ReactComponent as ICON_SETTING_SMALL } from '@/assets/svg/icon_setting_small.svg';
 import { ReactComponent as ICON_SQUARE } from '@/assets/svg/icon_square.svg';
 import { ReactComponent as ICON_WORKSPACE } from '@/assets/svg/icon_workspace.svg';
 import { ReactComponent as ICON_KNOWLEDGE } from '@/assets/svg/knowledge_icon.svg';
 import { ReactComponent as ICON_LOCAL_DOC } from '@/assets/svg/local_doc.svg';
-import { ReactComponent as ICON_MODEL } from '@/assets/svg/model_icon.svg';
 import { ReactComponent as ICON_NEW_AGENT } from '@/assets/svg/new_agent.svg';
 import { ReactComponent as ICON_ONLINE_DOC } from '@/assets/svg/online_doc.svg';
 import { ReactComponent as ICON_OPTIMIZE } from '@/assets/svg/optimize.svg';
@@ -57,23 +64,30 @@ export {
   ICON_AGENT,
   ICON_APPLICATION_DEV,
   ICON_ASSOCIATION,
+  ICON_AUDIT,
   ICON_CODE,
   ICON_COMPONENT_LIBRARY,
   ICON_CONFIRM_STAR,
   ICON_CUSTOM_DOC,
   ICON_DATABASE,
   ICON_END,
+  ICON_FILE,
   ICON_FOLD,
   ICON_GROUP_SET,
+  ICON_HISTORY,
   ICON_HOME,
   ICON_KNOWLEDGE,
   ICON_LOCAL_DOC,
   ICON_MODEL,
+  ICON_MODEL_WHITE,
   ICON_NEW_AGENT,
+  ICON_NOTIFICATION,
   ICON_ONLINE_DOC,
   ICON_OPTIMIZE,
   ICON_PLUGIN,
+  ICON_PUBLISHED,
   ICON_SETTING,
+  ICON_SETTING_SMALL,
   ICON_SQUARE,
   ICON_START,
   ICON_SUCCESS,

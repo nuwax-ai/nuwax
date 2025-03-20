@@ -23,9 +23,9 @@ import type {
   ProcessingInfo,
 } from '@/types/interfaces/conversationInfo';
 import { createSSEConnection } from '@/utils/fetchEventSource';
+import { useRequest } from 'ahooks';
 import moment from 'moment/moment';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRequest } from 'ahooks';
 
 export default () => {
   const [needUpdateTopic, setNeedUpdateTopic] = useState<boolean>(true);
@@ -61,23 +61,29 @@ export default () => {
     debounceWait: 300,
     onSuccess: (result) => {
       setNeedUpdateTopic(false);
-      setConversationInfo((info) => ({
-        ...info,
-        topic: result?.data?.topic,
-      } as ConversationInfo));
+      setConversationInfo(
+        (info) =>
+          ({
+            ...info,
+            topic: result?.data?.topic,
+          } as ConversationInfo),
+      );
     },
   });
 
   // 查询会话
-  const { run: runQueryConversation, runAsync } = useRequest(apiAgentConversation, {
-    manual: true,
-    debounceWait: 300,
-    onSuccess: (result) => {
-      setConversationInfo(result.data);
-      setMessageList(result.data?.messageList || []);
-      handleScrollBottom();
+  const { run: runQueryConversation, runAsync } = useRequest(
+    apiAgentConversation,
+    {
+      manual: true,
+      debounceWait: 300,
+      onSuccess: (result) => {
+        setConversationInfo(result.data);
+        setMessageList(result.data?.messageList || []);
+        handleScrollBottom();
+      },
     },
-  });
+  );
 
   // 智能体会话问题建议
   const { run: runChatSuggest, loading: loadingSuggest } = useRequest(

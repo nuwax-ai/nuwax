@@ -1,11 +1,9 @@
 import logo from '@/assets/images/logo.png';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
-import useUserInfo from '@/hooks/useUserInfo';
 import { apiLogin } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
 import { isValidPhone, validatePassword } from '@/utils/common';
-import { useModel } from '@@/exports';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import {
   Button,
@@ -19,7 +17,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { history, useNavigate, useRequest } from 'umi';
+import { history, useModel, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
 import ModalSliderCaptcha from './ModalSliderCaptcha';
 
@@ -33,10 +31,9 @@ const Login: React.FC = () => {
   const [loginType, setLoginType] = useState<LoginTypeEnum>(
     LoginTypeEnum.Password,
   );
-  const [checked, setChecked] = useState<boolean>(false);
+  const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
   const [formValues, setFormValues] = useState<LoginFieldType>();
-  const { runUserInfo } = useUserInfo();
 
   const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
 
@@ -50,7 +47,6 @@ const Login: React.FC = () => {
       localStorage.setItem(PHONE, params[0].phone);
       navigate('/', { replace: true });
       message.success('登录成功');
-      runUserInfo();
     },
   });
 

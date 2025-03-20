@@ -69,8 +69,8 @@ const UploadFile: React.FC<UploadFileProps> = ({
         </p>
         <p className="ant-upload-text">点击上传或拖拽文档到这里</p>
         <p className="ant-upload-hint">
-          支持 PDF、TXT、DOC、DOCX、MD、JSON，最多可上传 300 个文件，每个文件不超过
-          100MB， PDF 最多 500 页
+          支持 PDF、TXT、DOC、DOCX、MD、JSON，最多可上传 300
+          个文件，每个文件不超过 100MB， PDF 最多 500 页
         </p>
       </Dragger>
     </div>

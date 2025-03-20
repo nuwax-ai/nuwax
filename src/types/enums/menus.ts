@@ -6,6 +6,8 @@ export enum TabsEnum {
   Space = 'space',
   // 广场
   Square = 'square',
+  // 系统管理
+  System_Manage = 'system_manage',
 }
 
 // 菜单栏，用户操作区域点击事件枚举

@@ -80,7 +80,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     return () => {
       setMessageList([]);
       setNeedUpdateTopic(true);
-    }
+    };
   }, [agentConfigInfo?.devConversationId]);
 
   // 清空会话记录，实际上是创建新的会话

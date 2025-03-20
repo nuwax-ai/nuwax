@@ -1,4 +1,5 @@
 import { SPACE_ID } from '@/constants/home.constants';
+import SystemSection from '@/layouts/MenusLayout/SystemSection';
 import { apiPublishedCategoryList } from '@/services/square';
 import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
@@ -46,6 +47,9 @@ const MenusLayout: React.FC = () => {
       case TabsEnum.Square:
         history.push(`/square?cate_type=${SquareAgentTypeEnum.Agent}`);
         break;
+      case TabsEnum.System_Manage:
+        history.push('/system/user/manage');
+        break;
     }
   }, []);
 
@@ -58,6 +62,8 @@ const MenusLayout: React.FC = () => {
       setTabType(TabsEnum.Space);
     } else if (location.pathname.includes('/square')) {
       setTabType(TabsEnum.Square);
+    } else if (location.pathname.includes('/system')) {
+      setTabType(TabsEnum.System_Manage);
     } else {
       setTabType(TabsEnum.Home);
     }
@@ -128,6 +134,8 @@ const MenusLayout: React.FC = () => {
         return <SpaceSection />;
       case TabsEnum.Square:
         return <SquareSection />;
+      case TabsEnum.System_Manage:
+        return <SystemSection />;
     }
   }, [tabType]);
 

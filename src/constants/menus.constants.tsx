@@ -1,5 +1,9 @@
 import {
+  ICON_FILE,
+  ICON_HISTORY,
   ICON_HOME,
+  ICON_NOTIFICATION,
+  ICON_SETTING,
   ICON_SQUARE,
   ICON_WORKSPACE,
 } from '@/constants/images.constants';
@@ -11,9 +15,6 @@ import {
   UserOperatorAreaEnum,
 } from '@/types/enums/menus';
 import {
-  BellOutlined,
-  CommentOutlined,
-  CopyOutlined,
   PoweroffOutlined,
   SettingOutlined,
   UserOutlined,
@@ -36,23 +37,28 @@ export const TABS = [
     text: '广场',
     type: TabsEnum.Square,
   },
+  {
+    icon: <ICON_SETTING />,
+    text: '系统管理',
+    type: TabsEnum.System_Manage,
+  },
 ];
 
 // 用户操作区域
 export const USER_OPERATE_AREA = [
   {
     title: '文档',
-    icon: <CopyOutlined />,
+    icon: <ICON_FILE />,
     type: UserOperatorAreaEnum.Document,
   },
   {
     title: '历史会话',
-    icon: <CommentOutlined />,
+    icon: <ICON_HISTORY />,
     type: UserOperatorAreaEnum.History_Conversation,
   },
   {
     title: '消息',
-    icon: <BellOutlined />,
+    icon: <ICON_NOTIFICATION />,
     type: UserOperatorAreaEnum.Message,
   },
 ];

@@ -6,6 +6,7 @@ import moment from 'moment';
 import React, { useEffect, useState } from 'react';
 import { useModel, useRequest } from 'umi';
 import styles from './index.less';
+import { LoadingOutlined } from '@ant-design/icons';
 
 const cx = classNames.bind(styles);
 
@@ -22,17 +23,23 @@ const HistoryConversation: React.FC = () => {
   // 查询历史会话记录
   const { run, loading } = useRequest(apiAgentConversationList, {
     manual: true,
-    debounceInterval: 300,
+    debounceInterval: 500,
     onSuccess: (result: ConversationInfo[]) => {
       setConversationList(result);
     },
   });
 
   useEffect(() => {
-    run({
-      agentId: null,
-    });
-  }, []);
+    if (openHistoryModal) {
+      run({
+        agentId: null,
+      });
+    }
+
+    return () => {
+      setConversationList([]);
+    };
+  }, [openHistoryModal]);
 
   return (
     <Modal
@@ -49,17 +56,24 @@ const HistoryConversation: React.FC = () => {
           <div
             className={cx('flex', 'items-center', 'content-center', 'h-full')}
           >
-            loading...
+            <LoadingOutlined />
           </div>
         ) : conversationList?.length > 0 ? (
           <ul>
             {conversationList?.map((item) => (
               <li
                 key={item.id}
-                className={cx('flex', 'items-center', styles.row)}
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'radius-6',
+                  'cursor-pointer',
+                  'hover-box',
+                  styles.row,
+                )}
               >
                 <p className={cx('flex-1')}>{item.topic}</p>
-                <span>{moment(item.created).format('HH:mm')}</span>
+                <span>{moment(item.created).format('MM-DD HH:mm')}</span>
               </li>
             ))}
           </ul>

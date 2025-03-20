@@ -5,12 +5,11 @@ import {
 } from '@/services/message';
 import { MessageOptionEnum } from '@/types/enums/menus';
 import type { NotifyMessageInfo } from '@/types/interfaces/message';
-import { useRequest } from '@@/exports';
 import { ClearOutlined } from '@ant-design/icons';
 import { Empty, message, Popover, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useModel } from 'umi';
+import { useModel, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -39,11 +38,13 @@ const Message: React.FC = () => {
   });
 
   useEffect(() => {
-    runMessageList({
-      lastId: 1,
-      size: 100,
-    });
-  }, []);
+    if (openMessage) {
+      runMessageList({
+        lastId: 1,
+        size: 100,
+      });
+    }
+  }, [openMessage]);
 
   // 清除所有未读消息
   const { run: runClear } = useRequest(apiNotifyMessageUnreadClear, {

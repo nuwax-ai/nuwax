@@ -4,7 +4,6 @@ import type {
   UserOperatorAreaEnum,
 } from '@/types/enums/menus';
 import type { AgentInfo } from '@/types/interfaces/agent';
-import type { UpdateSpaceTeamParams } from '@/types/interfaces/workspace';
 import React from 'react';
 
 // 用户相关智能体
@@ -17,18 +16,24 @@ export interface UserRelAgentListProps {
 export interface CreateNewTeamProps {
   open: boolean;
   onCancel: () => void;
-  onConfirm: (info: UpdateSpaceTeamParams) => void;
 }
 
 // 个人空间Popover内容组件
 export interface PersonalSpaceContentType {
-  // spaceList: SpaceInfo[];
   onCreateTeam: () => void;
   onClosePopover: (flag: boolean) => void;
 }
 
 // 菜单栏~tab切换类型
 export interface TabsType {
+  onClick: (type: TabsEnum) => void;
+}
+
+export interface TabItemProps {
+  active: boolean;
+  type: TabsEnum;
+  icon: React.ReactNode;
+  text: string;
   onClick: (type: TabsEnum) => void;
 }
 

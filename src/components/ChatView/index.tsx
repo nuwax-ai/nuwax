@@ -18,7 +18,11 @@ import RunOver from './RunOver';
 
 const cx = classNames.bind(styles);
 
-const md = markdown({ html: true, breaks: true });
+const md = markdown({
+  html: true,
+  breaks: true,
+  linkify: true,
+});
 
 const ChatView: React.FC<ChatViewProps> = ({
   className,
@@ -64,18 +68,19 @@ const ChatView: React.FC<ChatViewProps> = ({
           <AttachFile files={messageInfo?.attachments as AttachmentFile[]} />
         )}
         {/*用户信息*/}
-        <ConditionRender
-          condition={
-            messageInfo?.role === AssistantRoleEnum.USER && !!messageInfo?.text
-          }
-        >
-          <div
-            className={cx(styles['chat-content'], 'radius-6', contentClassName)}
-            dangerouslySetInnerHTML={{
-              __html: md.render(messageInfo?.text),
-            }}
-          />
-        </ConditionRender>
+        {messageInfo?.role === AssistantRoleEnum.USER &&
+          !!messageInfo?.text && (
+            <div
+              className={cx(
+                styles['chat-content'],
+                'radius-6',
+                contentClassName,
+              )}
+              dangerouslySetInnerHTML={{
+                __html: md.render(messageInfo?.text),
+              }}
+            />
+          )}
         {/*助手信息或系统信息*/}
         <ConditionRender
           condition={messageInfo?.role !== AssistantRoleEnum.USER}
@@ -85,7 +90,7 @@ const ChatView: React.FC<ChatViewProps> = ({
             <RunOver messageInfo={messageInfo} />
           </ConditionRender>
           {/*文本内容*/}
-          <ConditionRender condition={!!messageInfo?.text}>
+          {!!messageInfo?.text && (
             <div
               className={cx(
                 styles['chat-content'],
@@ -97,7 +102,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                 __html: md.render(messageInfo?.text),
               }}
             />
-          </ConditionRender>
+          )}
           {/*底部区域*/}
           <ConditionRender
             condition={

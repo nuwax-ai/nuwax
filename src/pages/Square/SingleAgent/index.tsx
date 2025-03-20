@@ -1,8 +1,8 @@
+import agentImage from '@/assets/images/agent_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { SingleAgentProps } from '@/types/interfaces/square';
-import { useRequest } from '@@/exports';
 import {
   PlayCircleOutlined,
   StarOutlined,
@@ -10,7 +10,7 @@ import {
 } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
-import { history } from 'umi';
+import { history, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -45,7 +45,11 @@ const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
       onClick={handleClick}
     >
       <div className={cx(styles.header, 'flex')}>
-        <img className={cx(styles['a-logo'])} src={icon} alt="" />
+        <img
+          className={cx(styles['a-logo'])}
+          src={icon || (agentImage as string)}
+          alt=""
+        />
         <div className={cx(styles['info-container'], 'flex-1')}>
           <div className={cx('flex')}>
             <span className={cx('flex-1', styles['a-name'], 'text-ellipsis')}>

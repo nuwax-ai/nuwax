@@ -1,8 +1,8 @@
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import { apiTenantConfig } from '@/services/account';
 import type { TenantConfigInfo } from '@/types/interfaces/login';
-import { useRequest } from '@@/exports';
 import { useState } from 'react';
+import { useRequest } from 'umi';
 
 export default () => {
   const [tenantConfigInfo, setTenantConfigInfo] = useState<TenantConfigInfo>();

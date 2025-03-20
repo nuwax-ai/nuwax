@@ -1,7 +1,7 @@
+import logo from '@/assets/images/logo.png';
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useCountDown from '@/hooks/useCountDown';
-import useUserInfo from '@/hooks/useUserInfo';
 import { apiLoginCode, apiSendCode } from '@/services/account';
 import { SendCodeEnum } from '@/types/enums/login';
 import type { ILoginResult } from '@/types/interfaces/login';
@@ -17,7 +17,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { history, useLocation, useNavigate, useRequest } from 'umi';
+import { history, useLocation, useModel, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -31,7 +31,7 @@ const VerifyCode: React.FC = () => {
   const [errorString, setErrorString] = useState<string>('');
   const inputRef = useRef<InputRef | null>(null);
   const { phone, areaCode } = location.state;
-  const { runUserInfo } = useUserInfo();
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   const handleClick = () => {
     inputRef.current!.focus({
@@ -61,7 +61,6 @@ const VerifyCode: React.FC = () => {
       localStorage.setItem(ACCESS_TOKEN, token);
       localStorage.setItem(EXPIRE_DATE, expireDate);
       localStorage.setItem(PHONE, params[0].phone);
-      runUserInfo();
       // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
       if (!resetPass) {
         history.push('/set-password');
@@ -149,6 +148,11 @@ const VerifyCode: React.FC = () => {
         'content-center',
       )}
     >
+      <img
+        src={tenantConfigInfo?.siteLogo || (logo as string)}
+        className={cx(styles.logo)}
+        alt=""
+      />
       <div className={cx(styles.inner, 'flex', 'flex-col', 'items-center')}>
         <h3>输入短信验证码</h3>
         <p>验证码已发送至手机号</p>
