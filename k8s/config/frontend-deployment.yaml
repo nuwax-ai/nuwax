@@ -14,16 +14,8 @@ spec:
         app: agent-frontend
     spec:
       containers:
-<<<<<<< HEAD
-        - name: frontend
-          image: localhost:5000/agent-platform-front:latest
-          ports:
-            - containerPort: 80
-            - containerPort: 443
-=======
       - name: agent-frontend
         image: localhost:5000/agent-platform-front:latest
         ports:
         - containerPort: 80
         - containerPort: 443
->>>>>>> 8cb07e3555de3d3cff3add21a4b75ade56d9d718
