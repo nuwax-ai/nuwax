@@ -661,11 +661,11 @@ const Workflow: React.FC = () => {
   const testRunAll = async () => {
     const _res = await service.getDetails(workflowId);
     const _nodeList = _res.data.nodes;
+    setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
     const volid = await volidWorkflow();
     if (volid) {
       setTestRunResult('');
       setFoldWrapItem(_res.data.startNode);
-      setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
       setTestRun(true);
       if (!visible) {
         setVisible(true);
