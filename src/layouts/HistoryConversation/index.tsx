@@ -1,12 +1,12 @@
 import { apiAgentConversationList } from '@/services/agentConfig';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import { LoadingOutlined } from '@ant-design/icons';
 import { Empty, Modal } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment';
 import React, { useEffect, useState } from 'react';
 import { useModel, useRequest } from 'umi';
 import styles from './index.less';
-import { LoadingOutlined } from '@ant-design/icons';
 
 const cx = classNames.bind(styles);
 
