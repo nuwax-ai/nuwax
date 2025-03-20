@@ -24,9 +24,11 @@ yarn dev
 - 需要本地安装 kubectl
 
 本地使用 "devspace deploy --force-purge" 启动完毕后,配置本地域名,如下:
+
 ```shell
+# 具体参考 k8s 目录下的ingress 的域名配置为准
 127.0.0.1 p1-backend.space.com
-127.0.0.1 p1-front.space.com
+127.0.0.1 agent-front.space.com
 ```
 
 ### devspace 本地部署
