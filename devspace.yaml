@@ -49,6 +49,8 @@ dev:
     # Sync files between the local filesystem and the development container
     sync:
       - path: ./
+        uploadExcludePaths:
+          - node_modules
     # Open a terminal and use the following command to start it
     terminal:
       command: ./devspace_start.sh
