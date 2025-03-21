@@ -24,6 +24,7 @@ const routes = [
       { path: '/home/chat/:id', component: '@/pages/Chat' },
       { path: '/space/:spaceId/develop', component: '@/pages/SpaceDevelop' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
+      { path: '/space/:spaceId/team', component: '@/pages/TeamSetting' },
       {
         path: '/space/:spaceId/plugin/:pluginId',
         component: '@/pages/SpacePluginTool',
