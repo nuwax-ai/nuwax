@@ -4,5 +4,6 @@ node_modules
 
 k8s
 Dockerfile
-devspace.yaml
 devspace_start.sh
+
+*.yaml
