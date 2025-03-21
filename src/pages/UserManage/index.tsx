@@ -1,25 +1,39 @@
-import { apiSystemUserList } from '@/services/systemManage';
-import { CheckOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import {
+  apiDisableSystemUser,
+  apiEnableSystemUser,
+  apiSystemUserList,
+} from '@/services/systemManage';
+import styles from '@/styles/systemManage.less';
+import { UserRoleEnum, UserStatusEnum } from '@/types/enums/systemManage';
+import type { SystemUserListInfo } from '@/types/interfaces/systemManage';
+import { transformTDate } from '@/utils/getTime';
+import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Button, Input, Select, Space, Table } from 'antd';
+import { Button, Input, Select, Space, Table, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import styles from './index.less';
+import CreateModifyUser from './components/createModifyUser';
 
 const cx = classNames.bind(styles);
 
 const selectOptions = [
   { value: '', label: '全部' },
-  { value: 'Admin', label: '管理员' },
-  { value: 'User', label: '成员' },
+  { value: UserRoleEnum.Admin, label: '管理员' },
+  { value: UserRoleEnum.User, label: '成员' },
 ];
 
 const UserManage: React.FC = () => {
   const [selectedValue, setSelectedValue] = useState('');
   const [inputValue, setInputValue] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [enableLoadingMap, setEnableLoadingMap] = useState<
+    Record<number, boolean>
+  >({});
+  const [disableLoadingMap, setDisableLoadingMap] = useState<
+    Record<number, boolean>
+  >({});
 
-  const { data, run } = useRequest(apiSystemUserList, {
+  const { data, run, refresh, loading } = useRequest(apiSystemUserList, {
     debounceWait: 300,
     defaultParams: [
       {
@@ -33,57 +47,80 @@ const UserManage: React.FC = () => {
     ],
   });
 
-  const disableUser = (id: number) => {
-    console.log('disableUser', id);
-    // 调用禁用用户接口
-  };
+  const { run: runEnable } = useRequest(apiEnableSystemUser, {
+    manual: true,
+    loadingDelay: 300,
+    onBefore: (params) => {
+      setEnableLoadingMap((prev) => ({ ...prev, [params[0].id]: true }));
+    },
+    onSuccess: () => {
+      message.success('启用成功');
+      refresh();
+    },
+    onFinally: (params) => {
+      setEnableLoadingMap((prev) => ({ ...prev, [params[0].id]: false }));
+    },
+  });
 
-  const enableUser = (id: number) => {
-    console.log('enableUser', id);
-    // 调用启用用户接口
-  };
+  const { run: runDisable } = useRequest(apiDisableSystemUser, {
+    manual: true,
+    loadingDelay: 300,
+    onBefore: (params) => {
+      setDisableLoadingMap((prev) => ({ ...prev, [params[0].id]: true }));
+    },
+    onSuccess: () => {
+      message.success('禁用成功');
+      refresh();
+    },
+    onFinally: (params) => {
+      setDisableLoadingMap((prev) => ({ ...prev, [params[0].id]: false }));
+    },
+  });
 
-  const modifyUser = (id: number) => {
-    console.log('modifyUser', id);
-    // 调用修改用户信息接口
+  const getParams = (
+    page: number,
+    role: UserRoleEnum | undefined,
+    keyword: string,
+  ) => {
+    return {
+      pageNo: page,
+      pageSize: 10,
+      queryFilter: {
+        role: role || undefined,
+        userName: keyword,
+      },
+    };
   };
 
   const handleSelectChange = (value: string) => {
     setSelectedValue(value);
-    const params = {
-      pageNo: 1,
-      pageSize: 10,
-      queryFilter: {
-        role: value || undefined,
-        userName: inputValue,
-      },
-    };
+    setCurrentPage(1);
+    const params = getParams(1, value as UserRoleEnum, inputValue);
     run(params);
   };
 
   const handleInputChange = (value: string) => {
     setInputValue(value);
-    const params = {
-      pageNo: 1,
-      pageSize: 10,
-      queryFilter: {
-        role: selectedValue || undefined,
-        userName: value,
-      },
-    };
+    setCurrentPage(1);
+    const params = getParams(1, selectedValue as UserRoleEnum, value);
     run(params);
   };
 
   const handleTableChange = (page: number) => {
     setCurrentPage(page); // 更新当前页码
-    const params = {
-      pageNo: page,
-      pageSize: 10,
-      queryFilter: {
-        role: selectedValue || undefined,
-        userName: inputValue,
-      },
-    };
+    const params = getParams(page, selectedValue as UserRoleEnum, inputValue);
+    run(params);
+  };
+
+  const handleSuccess = (isEdit: boolean) => {
+    if (isEdit) {
+      refresh();
+      return;
+    }
+    setSelectedValue('');
+    setInputValue('');
+    setCurrentPage(1);
+    const params = getParams(1, selectedValue as UserRoleEnum, inputValue);
     run(params);
   };
 
@@ -97,6 +134,9 @@ const UserManage: React.FC = () => {
       title: '用户名',
       dataIndex: 'userName',
       key: 'userName',
+      render: (text: string) => {
+        return text ? text : '--';
+      },
     },
     {
       title: '手机号码',
@@ -107,58 +147,103 @@ const UserManage: React.FC = () => {
       title: '邮箱',
       dataIndex: 'email',
       key: 'email',
+      render: (text: string) => {
+        return text ? text : '--';
+      },
     },
     {
       title: '角色',
       dataIndex: 'role',
       key: 'role',
+      render: (role: UserRoleEnum) => {
+        switch (role) {
+          case UserRoleEnum.Admin:
+            return '管理员';
+          case UserRoleEnum.User:
+            return '成员';
+          default:
+            return '--';
+        }
+      },
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
+      render: (status: UserStatusEnum) => {
+        let statusText = '';
+        let dotStyle = '';
+        switch (status) {
+          case UserStatusEnum.Disabled:
+            statusText = '禁用';
+            dotStyle = styles['dot-red'];
+            break;
+          case UserStatusEnum.Enabled:
+            statusText = '正常';
+            dotStyle = styles['dot-green'];
+            break;
+        }
+        return (
+          <span>
+            <span className={cx(styles['dot-circle'], dotStyle)}></span>
+            {statusText}
+          </span>
+        );
+      },
     },
     {
       title: '加入时间',
       dataIndex: 'created',
       key: 'created',
+      render: (created: string) => {
+        return transformTDate(created);
+      },
     },
     {
       title: '操作',
       key: 'action',
       width: 150,
-      align: 'right',
-      render: (_, record: any) => (
+      align: 'center',
+      render: (_, record: SystemUserListInfo) => (
         <Space size="middle">
-          <span
-            className={cx('hover-box')}
-            onClick={() => disableUser(record.id)}
-          >
-            禁用
-          </span>
-          <span
-            className={cx('hover-box')}
-            onClick={() => enableUser(record.id)}
-          >
-            启用
-          </span>
-          <span
-            className={cx('hover-box')}
-            onClick={() => modifyUser(record.id)}
-          >
-            修改
-          </span>
+          {
+            // 移除多余的分号
+            record.status === UserStatusEnum.Enabled ? (
+              <Button
+                type="link"
+                className={cx(styles['operation-short-btn'])}
+                loading={disableLoadingMap[record.id] || false}
+                onClick={() => runDisable({ id: record.id })}
+              >
+                禁用
+              </Button>
+            ) : (
+              <Button
+                type="link"
+                className={cx(styles['operation-short-btn'])}
+                loading={enableLoadingMap[record.id] || false}
+                onClick={() => runEnable({ id: record.id })}
+              >
+                启用
+              </Button>
+            )
+          }
+          <CreateModifyUser
+            isEdit={true}
+            record={record}
+            onSuccess={handleSuccess}
+          />
         </Space>
       ),
     },
   ];
 
   return (
-    <div className={cx(styles.container)}>
-      <h3 className={cx(styles.title)}>用户管理</h3>
-      <section className={cx('flex', 'content-between', styles.header)}>
+    <div className={cx(styles['system-manage-container'])}>
+      <h3 className={cx(styles['system-manage-title'])}>用户管理</h3>
+      <section className={cx('flex', 'content-between')}>
         <Select
-          className={cx(styles.select)}
+          className={cx(styles['select-132'])}
           options={selectOptions}
           defaultValue=""
           onChange={handleSelectChange}
@@ -168,7 +253,7 @@ const UserManage: React.FC = () => {
         />
         <div className={cx('flex')}>
           <Input
-            className={cx(styles['search-input'])}
+            className={cx(styles['search-input-225'], 'mr-38')}
             placeholder="请输入手机号码邮箱或昵称"
             prefix={<SearchOutlined />}
             onPressEnter={(event) => {
@@ -179,22 +264,21 @@ const UserManage: React.FC = () => {
               }
             }}
           />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            className={cx(styles.btn)}
-          >
-            添加用户
-          </Button>
+          <CreateModifyUser isEdit={false} onSuccess={handleSuccess} />
         </div>
       </section>
 
       <Table
-        className={cx(styles.table)}
+        className={cx('mt-22')}
         rowKey="id"
+        loading={loading}
         columns={columns}
         dataSource={data?.data.records}
-        pagination={{ total: data?.data.total, onChange: handleTableChange }}
+        pagination={{
+          total: data?.data.total,
+          onChange: handleTableChange,
+          showTotal: (total) => `共 ${total} 条`,
+        }}
       />
     </div>
   );
