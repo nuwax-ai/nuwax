@@ -1,3 +1,8 @@
 node_modules
 .umi
 .umi-production
+
+k8s
+Dockerfile
+devspace.yaml
+devspace_start.sh
