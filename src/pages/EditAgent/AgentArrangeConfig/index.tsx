@@ -27,6 +27,7 @@ import KnowledgeTextList from './KnowledgeList';
 import LongMemoryContent from './LongMemoryContent';
 import PluginList from './PluginList';
 // import TriggerContent from './TriggerContent';
+import OpenRemarksEdit from '@/pages/EditAgent/AgentArrangeConfig/OpenRemarksEdit';
 import WorkflowList from './WorkflowList';
 
 const cx = classNames.bind(styles);
@@ -357,7 +358,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     {
       key: AgentArrangeConfigEnum.Opening_Remarks,
       label: '开场白',
-      children: <p>这里是开场白内容</p>,
+      children: <OpenRemarksEdit />,
     },
     {
       key: AgentArrangeConfigEnum.User_Problem_Suggestion,

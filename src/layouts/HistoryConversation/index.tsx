@@ -1,5 +1,6 @@
 import { apiAgentConversationList } from '@/services/agentConfig';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import { history } from '@@/core/history';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Empty, Modal } from 'antd';
 import classNames from 'classnames';
@@ -41,6 +42,11 @@ const HistoryConversation: React.FC = () => {
     };
   }, [openHistoryModal]);
 
+  const handleLink = (id: number) => {
+    setOpenHistoryModal(false);
+    history.push(`/home/chat/${id}`);
+  };
+
   return (
     <Modal
       title={<p>历史会话</p>}
@@ -71,6 +77,7 @@ const HistoryConversation: React.FC = () => {
                   'hover-box',
                   styles.row,
                 )}
+                onClick={() => handleLink(item.id)}
               >
                 <p className={cx('flex-1')}>{item.topic}</p>
                 <span>{moment(item.created).format('MM-DD HH:mm')}</span>

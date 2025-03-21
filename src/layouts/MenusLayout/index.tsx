@@ -29,45 +29,8 @@ const MenusLayout: React.FC = () => {
   const { setOpenHistoryModal, setOpenMessage } = useModel('layout');
   const { runSpace } = useModel('spaceModel');
   const { setAgentInfoList, setPluginInfoList } = useModel('squareModel');
+  const { runTenantConfig } = useModel('tenantConfigInfo');
   const [tabType, setTabType] = useState<TabsEnum>();
-
-  // 切换tab
-  const handleTabsClick = useCallback((type: TabsEnum) => {
-    switch (type) {
-      case TabsEnum.Home:
-        history.push('/');
-        break;
-      case TabsEnum.Space:
-        {
-          const spaceId = localStorage.getItem(SPACE_ID);
-          history.push(`/space/${spaceId}/develop`);
-        }
-        break;
-      case TabsEnum.Square:
-        history.push(`/square?cate_type=${SquareAgentTypeEnum.Agent}`);
-        break;
-      case TabsEnum.System_Manage:
-        history.push('/system/user/manage');
-        break;
-    }
-  }, []);
-
-  useEffect(() => {
-    // 查询空间列表
-    runSpace();
-  }, []);
-
-  useEffect(() => {
-    if (location.pathname.includes('/space')) {
-      setTabType(TabsEnum.Space);
-    } else if (location.pathname.includes('/square')) {
-      setTabType(TabsEnum.Square);
-    } else if (location.pathname.includes('/system')) {
-      setTabType(TabsEnum.System_Manage);
-    } else {
-      setTabType(TabsEnum.Home);
-    }
-  }, [location.pathname]);
 
   // 广场分类列表信息
   const handleCategoryList = (result: SquareCategoryInfo[]) => {
@@ -105,16 +68,53 @@ const MenusLayout: React.FC = () => {
     },
   });
 
+  // 切换tab
+  const handleTabsClick = useCallback((type: TabsEnum) => {
+    switch (type) {
+      case TabsEnum.Home:
+        history.push('/');
+        break;
+      case TabsEnum.Space:
+        {
+          const spaceId = localStorage.getItem(SPACE_ID);
+          history.push(`/space/${spaceId}/develop`);
+        }
+        break;
+      case TabsEnum.Square:
+        history.push(`/square?cate_type=${SquareAgentTypeEnum.Agent}`);
+        break;
+      case TabsEnum.System_Manage:
+        history.push('/system/user/manage');
+        break;
+    }
+  }, []);
+
   useEffect(() => {
+    // 查询空间列表
+    runSpace();
     // 查询广场menus列表
     run();
+    // 租户配置信息查询接口
+    runTenantConfig();
   }, []);
+
+  useEffect(() => {
+    if (location.pathname.includes('/space')) {
+      setTabType(TabsEnum.Space);
+    } else if (location.pathname.includes('/square')) {
+      setTabType(TabsEnum.Square);
+    } else if (location.pathname.includes('/system')) {
+      setTabType(TabsEnum.System_Manage);
+    } else {
+      setTabType(TabsEnum.Home);
+    }
+  }, [location.pathname]);
 
   // 用户区域操作
   const handleUserClick = useCallback((type: UserOperatorAreaEnum) => {
     switch (type) {
       case UserOperatorAreaEnum.Document:
-        // todo 打开文档链接
+        window.open('https://nlp-book.swufenlp.group/', '_blank');
         break;
       // 会话记录
       case UserOperatorAreaEnum.History_Conversation:

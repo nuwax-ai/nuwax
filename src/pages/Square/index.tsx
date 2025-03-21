@@ -91,7 +91,7 @@ const Square: React.FC = () => {
   // 点击打开页面
   const handleLink = () => {
     if (configInfo?.squareBannerLinkUrl) {
-      window.location.href = configInfo.squareBannerLinkUrl;
+      window.open(configInfo.squareBannerLinkUrl, '_blank');
     }
   };
 

@@ -47,6 +47,7 @@ const EditAgent: React.FC = () => {
   // 历史版本信息
   const [versionHistory, setVersionHistory] = useState<HistoryData[]>([]);
   const { showType, setShowType } = useModel('conversationInfo');
+  const { setTitle } = useModel('tenantConfigInfo');
 
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
@@ -78,6 +79,8 @@ const EditAgent: React.FC = () => {
   useEffect(() => {
     run(agentId);
     runHistory(agentId);
+    // 设置页面title
+    setTitle();
   }, [agentId]);
 
   // 确认编辑智能体
