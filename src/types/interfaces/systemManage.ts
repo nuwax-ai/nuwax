@@ -10,6 +10,26 @@ export interface SystemUserListParams {
   };
 }
 
+// 新增用户输入参数
+export interface AddSystemUserParams {
+  phone: string;
+  password: string;
+  userName: string;
+  nickName: string;
+  email?: string;
+  role: UserRoleEnum;
+}
+
+// 更新用户输入参数
+export interface UpdateSystemUserParams {
+  id: number;
+  phone: string;
+  userName: string;
+  nickName: string;
+  email?: string;
+  role: UserRoleEnum;
+}
+
 // 查询用户列表返回数据
 export interface SystemUserListInfo {
   // 主键id

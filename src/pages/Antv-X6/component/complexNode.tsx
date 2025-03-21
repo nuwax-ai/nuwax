@@ -270,7 +270,6 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
     }
   };
   useEffect(() => {
-    console.log(params);
     if (params && params.answerType === null) {
       Modified({ ...params, answerType: 'TEXT' });
     }

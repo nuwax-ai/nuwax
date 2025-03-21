@@ -72,7 +72,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         zIndex: 99,
         ports: ports,
       });
-      console.log(newNode);
       // 添加节点
       graphRef.current.addNode(newNode);
       if (child.loopNodeId) {
@@ -249,7 +248,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           })
           .filter(Boolean);
 
-        console.log(edges);
         // 5. 批量添加边
         graphRef.current.addEdges(edges);
 

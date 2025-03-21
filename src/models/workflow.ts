@@ -45,7 +45,6 @@ const useWorkflow = () => {
 
   // 单独处理循环的数据
   const getLoopValue = (val: string) => {
-    console.log(referenceList.argMap, val);
     if (referenceList.innerPreviousNodes?.length && referenceList.argMap[val]) {
       return `${getLoopName(val)} - ${referenceList.argMap[val].name}`;
     }

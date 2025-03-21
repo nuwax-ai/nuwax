@@ -234,7 +234,6 @@ const initGraph = ({
       const data = node.getData();
       if (data.type === 'Loop') {
         const children = node.getChildren();
-        console.log(children);
         children?.forEach((child) => {
           // 使用 X6 内置类型检查方法
           if (child.isEdge()) {
@@ -318,7 +317,6 @@ const initGraph = ({
         y,
       };
     }
-    console.log(data);
     // 如果时移动循环节点，且节点内有子节点
     if (data.type === 'Loop' && data.innerNodes && data.innerNodes.length > 0) {
       // 更新内部节点的位置信息
@@ -430,7 +428,6 @@ const initGraph = ({
     const targetNode = edge.getTargetNode()?.getData();
 
     if (!sourceNode || !targetNode || !sourcePort || !targetPort) return;
-    console.log(edges, sourceCellId, targetNodeId);
     // 检查是否存在具有相同source和target的边
     if (hasDuplicateEdge(edges, sourceCellId, targetNodeId, edge.id)) {
       // [!code ++]
