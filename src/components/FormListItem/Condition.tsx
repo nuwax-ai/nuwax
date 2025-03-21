@@ -62,6 +62,17 @@ const ConditionItem: React.FC<ConditionProps> = ({
     onChange?.();
   };
 
+  const changeConditionType = (e: string) => {
+    form.setFieldsValue({
+      [inputItemName]: {
+        [field.name]: {
+          conditionType: e,
+        },
+      },
+    });
+    onChange?.();
+  };
+
   return (
     <div className="condition-right-item" key={field.key}>
       <Form.Item
@@ -75,6 +86,7 @@ const ConditionItem: React.FC<ConditionProps> = ({
           optionLabelProp="displayValue"
           placeholder="请选择"
           style={{ width: 55 }}
+          onChange={changeConditionType}
         ></Select>
       </Form.Item>
       <Form.Item style={{ marginRight: '8px', flex: 1 }}>

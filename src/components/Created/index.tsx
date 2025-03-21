@@ -153,7 +153,6 @@ const Created: React.FC<CreatedProp> = ({
     }
 
     if (_res.code === Constant.success) {
-      // console.log(_res);
       const newArr = list.map((child) => {
         if (item.targetId === child.targetId) {
           if (child.collect) {
@@ -204,7 +203,6 @@ const Created: React.FC<CreatedProp> = ({
   };
 
   const callInterface = (val: string, params: IGetList) => {
-    console.log(val);
     // 通过左侧菜单决定调用哪个接口
     switch (val) {
       case 'library':

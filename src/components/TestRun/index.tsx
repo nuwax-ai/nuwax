@@ -112,7 +112,7 @@ const TestRun: React.FC<TestRunProps> = ({
                                 </Tag>
                               </>
                             }
-                            rules={[{ required: true, message: '请输入' }]}
+                            // rules={[{ required: true, message: '请输入' }]}
                           >
                             <CodeEditor
                               value={form.getFieldValue(item.name) || ''}
@@ -138,7 +138,7 @@ const TestRun: React.FC<TestRunProps> = ({
                               </Tag>
                             </>
                           }
-                          rules={[{ required: true, message: '请输入' }]}
+                          // rules={[{ required: true, message: '请输入' }]}
                         >
                           <Input />
                         </Form.Item>

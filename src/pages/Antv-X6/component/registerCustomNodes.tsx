@@ -189,7 +189,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
                   {item.conditionArgs && item.conditionArgs.length > 0 && (
                     <div className="dis-left">
                       {/* 添加空值检查，确保 compareType 不是 null 或 undefined */}
-                      <span style={{ width: '18px' }}>
+                      <span style={{ width: '18px', textAlign: 'center' }}>
                         {item.conditionArgs[0]?.compareType
                           ? compareTypeMap[
                               item.conditionArgs[0]

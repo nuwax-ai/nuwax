@@ -8,7 +8,7 @@ import type { NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Empty, Popover, Select, Slider } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import '../index.less';
 import { TreeOutput } from './commonNode';
 import { InputList } from './pluginNode';
@@ -41,9 +41,6 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
     Modified({ ...params, ...newNodeConfig });
   };
 
-  useEffect(() => {
-    console.log('params', params);
-  }, [params]);
   return (
     <div className="knowledge-node">
       {/* 输入参数 */}

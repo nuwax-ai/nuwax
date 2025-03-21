@@ -110,7 +110,6 @@ const bindEventHandlers = ({
           } else if (sourceNode.type === 'QA') {
             if (newNodeParams.nodeConfig.answerType === 'SELECT') {
               for (let item of newNodeParams.nodeConfig.options) {
-                console.log(123, _index, item.uuid);
                 if (_index.includes(item.uuid)) {
                   item.nextNodeIds = item.nextNodeIds.filter((item: number) => {
                     return item !== Number(_targetNodeId);

@@ -37,7 +37,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   ]);
 
   useEffect(() => {
-    console.log(zoomSize);
     setOptions((prev) => {
       // 使用函数式更新确保获取最新options
       if (!prev.find((option) => option.value === zoomSize)) {

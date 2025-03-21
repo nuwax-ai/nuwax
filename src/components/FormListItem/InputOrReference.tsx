@@ -120,7 +120,6 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
 
   // 监听value和referenceList变化
   useEffect(() => {
-    console.log(123, referenceType);
     if (referenceType === 'Reference') {
       if (isLoop) {
         setNewValue(getLoopValue(value));

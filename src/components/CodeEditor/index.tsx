@@ -33,7 +33,6 @@ const CodeEditor: React.FC<Props> = ({
         // 最后设置worker路径
         (window as any).MonacoEnvironment = {
           getWorkerUrl: function (moduleId: number, label: string) {
-            console.log('Requesting worker for:', label);
             if (label === 'json') {
               return '/vs/json.worker.js';
             }
@@ -46,7 +45,6 @@ const CodeEditor: React.FC<Props> = ({
             return '/vs/editor.worker.js';
           },
           getWorker: function (moduleId: string, label: string) {
-            console.log('Creating worker for:', label);
             if (label === 'python') {
               return new Worker('/vs/ts.worker.js');
             }
