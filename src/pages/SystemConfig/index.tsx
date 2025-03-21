@@ -31,34 +31,56 @@ const SystemConfig: React.FC = () => {
     });
     setConfig(_config);
   };
+  const [tab, setTab] = useState<TabKey>('BaseConfig');
   const tabs: TabsProps['items'] = [
     {
-      key: '1',
+      key: 'BaseConfig',
       label: '基础配置',
-      children: config?.BaseConfig && <BaseTab config={config.BaseConfig} />,
+      children: config?.BaseConfig && (
+        <BaseTab
+          currentTab={tab}
+          config={config.BaseConfig}
+          refresh={fetchConfig}
+        />
+      ),
     },
     {
-      key: '2',
+      key: 'ModelSetting',
       label: '默认模型设置',
       children: config?.ModelSetting && (
-        <BaseTab config={config.ModelSetting} />
+        <BaseTab
+          currentTab={tab}
+          config={config.ModelSetting}
+          refresh={fetchConfig}
+        />
       ),
     },
     {
-      key: '3',
+      key: 'AgentSetting',
       label: '站点智能体设置',
       children: config?.AgentSetting && (
-        <BaseTab config={config.AgentSetting} />
+        <BaseTab
+          currentTab={tab}
+          config={config.AgentSetting}
+          refresh={fetchConfig}
+        />
       ),
     },
     {
-      key: '4',
+      key: 'DomainBind',
       label: '域名绑定',
-      children: config?.DomainBind && <BaseTab config={config.DomainBind} />,
+      children: config?.DomainBind && (
+        <BaseTab
+          currentTab={tab}
+          config={config.DomainBind}
+          refresh={fetchConfig}
+        />
+      ),
     },
   ];
-  const onChange = (key: string) => {
+  const onChange = (key: TabKey) => {
     console.log(key);
+    setTab(key);
   };
   useEffect(() => {
     fetchConfig();
@@ -78,10 +100,18 @@ const SystemConfig: React.FC = () => {
           },
         }}
       >
-        <Tabs defaultActiveKey="1" items={tabs} onChange={onChange} />
+        <Tabs
+          defaultActiveKey="BaseConfig"
+          items={tabs}
+          onChange={(key) => onChange(key as TabKey)}
+        />
       </ConfigProvider>
     </div>
   );
 };
-
+export type TabKey =
+  | 'BaseConfig'
+  | 'ModelSetting'
+  | 'AgentSetting'
+  | 'DomainBind';
 export default SystemConfig;
