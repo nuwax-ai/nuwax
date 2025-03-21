@@ -17,3 +17,8 @@ package-lock.json
 
 # Ignore DevSpace cache and log folder
 .devspace/
+
+#/k8s
+#/devspace.yaml
+#/devspace_start.sh
+#/Dockerfile

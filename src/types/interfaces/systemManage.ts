@@ -29,3 +29,34 @@ export interface SystemUserListInfo {
   // 加入时间
   created: string;
 }
+export interface SystemUserConfig {
+  /** 租户ID */
+  tenantId: number;
+  /** 配置项名称 */
+  name: string;
+  /** 配置项值 */
+  value: string | string[];
+  /** 配置项描述 */
+  description: string;
+  /** 配置项分类，可用值: BaseConfig, ModelSetting, AgentSetting, DomainBind */
+  category: 'BaseConfig' | 'ModelSetting' | 'AgentSetting' | 'DomainBind';
+  /** 配置项输入类型，可用值: Input, MultiInput, Select, MultiSelect, Textarea, File */
+  inputType:
+    | 'Input'
+    | 'MultiInput'
+    | 'Select'
+    | 'MultiSelect'
+    | 'Textarea'
+    | 'File';
+  /** 配置项数据类型，可用值: String, Number, Array */
+  dataType: 'String' | 'Number' | 'Array';
+  /** 配置项提示 */
+  notice: string;
+  /** 配置项占位符 */
+  placeholder: string;
+  /** 配置项最小高度 */
+  minHeight: number;
+  /** 是否必填 */
+  required: boolean;
+  sort: number;
+}

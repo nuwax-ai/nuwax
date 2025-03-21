@@ -21,6 +21,7 @@ import { HttpContentTypeEnum, HttpMethodEnum } from '@/types/enums/common';
 import {
   ComponentMoreActionEnum,
   KnowledgeDataTypeEnum,
+  KnowledgeSegmentIdentifierEnum,
   KnowledgeTextImportEnum,
 } from '@/types/enums/library';
 import {
@@ -306,6 +307,14 @@ export const MODEL_API_PROTOCOL_LIST = [
     value: ModelApiProtocolEnum.Ollama,
     label: 'Ollama',
   },
+  {
+    value: ModelApiProtocolEnum.Zhipu,
+    label: 'Zhipu',
+  },
+  {
+    value: ModelApiProtocolEnum.Anthropic,
+    label: 'Anthropic',
+  },
 ];
 
 // 插件
@@ -316,4 +325,44 @@ export const PLUGIN_CODE_SEGMENTED_LIST = [
     icon: <BarsOutlined />,
   },
   { label: '代码', value: PluginCodeModeEnum.Code, icon: <ICON_CODE /> },
+];
+
+// 知识库分段标识符列表
+export const KNOWLEDGE_SEGMENT_IDENTIFIER_LIST = [
+  {
+    label: '换行（\\n）',
+    value: KnowledgeSegmentIdentifierEnum.Line_Feed,
+  },
+  {
+    label: '2个换行（\\n\\n）',
+    value: KnowledgeSegmentIdentifierEnum.Two_Line_Feed,
+  },
+  {
+    label: '中文句号（。）',
+    value: KnowledgeSegmentIdentifierEnum.Chinese_Sentence,
+  },
+  {
+    label: '中文叹号(！)',
+    value: KnowledgeSegmentIdentifierEnum.Chinese_Exclamation,
+  },
+  {
+    label: '英文句号（.）',
+    value: KnowledgeSegmentIdentifierEnum.English_Sentence,
+  },
+  {
+    label: '英文叹号（!）',
+    value: KnowledgeSegmentIdentifierEnum.English_Exclamation,
+  },
+  {
+    label: '中文问号（？）',
+    value: KnowledgeSegmentIdentifierEnum.Chinese_Question_Mark,
+  },
+  {
+    label: '英文问号（?）',
+    value: KnowledgeSegmentIdentifierEnum.English_Question_Mark,
+  },
+  {
+    label: '自定义',
+    value: KnowledgeSegmentIdentifierEnum.Custom,
+  },
 ];

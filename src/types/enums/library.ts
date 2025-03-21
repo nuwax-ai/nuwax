@@ -64,3 +64,25 @@ export enum KnowledgeSegmentTypeEnum {
   WORDS = 'WORDS',
   DELIMITER = 'DELIMITER',
 }
+
+// 知识库分段标识符枚举
+export enum KnowledgeSegmentIdentifierEnum {
+  // 换行
+  Line_Feed = '\n',
+  // 2个换行
+  Two_Line_Feed = '\n\n',
+  // 中文句号
+  Chinese_Sentence = '。',
+  // 中文叹号
+  Chinese_Exclamation = '！',
+  // 英文句号
+  English_Sentence = '.',
+  // 英文叹号
+  English_Exclamation = '!',
+  // 中文问号
+  Chinese_Question_Mark = '？',
+  // 英文问号
+  English_Question_Mark = '?',
+  // 自定义
+  Custom = 'Custom',
+}

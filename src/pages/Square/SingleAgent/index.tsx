@@ -2,6 +2,7 @@ import agentImage from '@/assets/images/agent_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
+import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { SingleAgentProps } from '@/types/interfaces/square';
 import {
@@ -13,7 +14,6 @@ import classNames from 'classnames';
 import React from 'react';
 import { history, useRequest } from 'umi';
 import styles from './index.less';
-import { SquareAgentTypeEnum } from '@/types/enums/square';
 
 const cx = classNames.bind(styles);
 
@@ -21,11 +21,19 @@ const cx = classNames.bind(styles);
  * 单个智能体组件
  */
 const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
-  const { targetType, targetId, icon, name, publishUser, description, statistics } =
-    publishedAgentInfo;
+  const {
+    targetType,
+    targetId,
+    icon,
+    name,
+    publishUser,
+    description,
+    statistics,
+  } = publishedAgentInfo;
 
   // 根据类型（目标对象（智能体、工作流、插件））显示不同的默认图标
-  const defaultImage = targetType === SquareAgentTypeEnum.Agent ? agentImage : pluginImage;
+  const defaultImage =
+    targetType === SquareAgentTypeEnum.Agent ? agentImage : pluginImage;
   // 创建会话
   const { run: runConversationCreate } = useRequest(
     apiAgentConversationCreate,

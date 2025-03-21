@@ -1,19 +1,19 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: frontend-ingress
+  name: agent-frontend-ingress
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   ingressClassName: "nginx"
   rules:
-  - host: p1-front.space.com
+  - host: agent-front.space.com
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: p1-frontend-service
+            name: agent-frontend-service
             port:
               number: 80

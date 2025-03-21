@@ -1,9 +1,14 @@
+import ConditionRender from '@/components/ConditionRender';
+import LabelStar from '@/components/LabelStar';
+import SelectList from '@/components/SelectList';
+import { KNOWLEDGE_SEGMENT_IDENTIFIER_LIST } from '@/constants/library.constants';
+import { KnowledgeSegmentIdentifierEnum } from '@/types/enums/library';
 import type { CreateSetProps } from '@/types/interfaces/knowledge';
 import { isNumber } from '@/utils/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, Input } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -16,6 +21,16 @@ const CreateSet: React.FC<CreateSetProps> = ({
   autoSegmentConfigFlag,
   onChoose,
 }) => {
+  const [segmentDelimiter, setSegmentDelimiter] =
+    useState<KnowledgeSegmentIdentifierEnum>(
+      KnowledgeSegmentIdentifierEnum.Line_Feed,
+    );
+
+  const handleChange = (value: KnowledgeSegmentIdentifierEnum) => {
+    console.log(`selected ${value}`);
+    setSegmentDelimiter(value);
+  };
+
   return (
     <>
       <div
@@ -51,14 +66,39 @@ const CreateSet: React.FC<CreateSetProps> = ({
           <Form
             form={form}
             layout="vertical"
+            initialValues={{
+              selectDelimiter: KnowledgeSegmentIdentifierEnum.Line_Feed,
+              words: 800,
+              overlaps: 10,
+            }}
             requiredMark={customizeRequiredMark}
           >
-            <Form.Item
-              name="delimiter"
-              label="分段标识符"
-              rules={[{ required: true, message: '输入分段标识符' }]}
-            >
-              <Input placeholder="输入分段标识符，例如 \n 换行" />
+            <Form.Item label={<LabelStar label="分段标识符" />}>
+              <Form.Item name="selectDelimiter" noStyle>
+                <SelectList
+                  className={cx({
+                    [styles['mb-10']]:
+                      segmentDelimiter ===
+                      KnowledgeSegmentIdentifierEnum.Custom,
+                  })}
+                  value={segmentDelimiter}
+                  onChange={handleChange}
+                  options={KNOWLEDGE_SEGMENT_IDENTIFIER_LIST}
+                />
+              </Form.Item>
+              <ConditionRender
+                condition={
+                  segmentDelimiter === KnowledgeSegmentIdentifierEnum.Custom
+                }
+              >
+                <Form.Item
+                  name="delimiter"
+                  noStyle
+                  rules={[{ required: true, message: '输入分段标识符' }]}
+                >
+                  <Input placeholder="输入分段标识符，例如 \n 换行" />
+                </Form.Item>
+              </ConditionRender>
             </Form.Item>
             <Form.Item
               name="words"

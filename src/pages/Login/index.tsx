@@ -136,9 +136,9 @@ const Login: React.FC = () => {
         onFinish={onFinish}
       >
         <Form.Item>
-          <h3
-            className={cx(styles.title)}
-          >{`欢迎使用${tenantConfigInfo?.siteName || ''}`}</h3>
+          <h3 className={cx(styles.title)}>{`欢迎使用${
+            tenantConfigInfo?.siteName || ''
+          }`}</h3>
         </Form.Item>
         <Form.Item className={styles['select-box']} name="areaCode">
           <Select
