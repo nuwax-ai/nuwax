@@ -10,7 +10,7 @@ import type { PublishApplyListInfo } from '@/types/interfaces/publishManage';
 import { transformTDate } from '@/utils/getTime';
 import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Button, Input, Select, Space, Table, message } from 'antd';
+import { Button, Input, Select, Table, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { history } from 'umi';
@@ -195,8 +195,11 @@ const PublishAudit: React.FC = () => {
     },
     {
       title: '发布者',
-      dataIndex: 'applyUser.userName',
-      key: 'applyUser.userName',
+      dataIndex: 'applyUser',
+      key: 'applyUser',
+      render: (applyUser: any) => {
+        return applyUser ? applyUser.userName ?? '--' : '--';
+      },
     },
     {
       title: '状态',
@@ -241,12 +244,12 @@ const PublishAudit: React.FC = () => {
       width: 150,
       align: 'center',
       render: (_, record: PublishApplyListInfo) => (
-        <Space size="middle">
+        <>
           {record.publishStatus === PublishStatusEnum.Applying ? (
             <>
               <Button
                 type="link"
-                className={cx(styles['operation-short-btn'])}
+                className={cx(styles['table-action-ant-btn-link'])}
                 loading={passLoadingMap[record.id] || false}
                 onClick={() => runPassAudit({ id: record.id })}
               >
@@ -254,7 +257,7 @@ const PublishAudit: React.FC = () => {
               </Button>
               <Button
                 type="link"
-                className={cx(styles['operation-short-btn'])}
+                className={cx(styles['table-action-ant-btn-link'])}
                 loading={rejectLoadingMap[record.id] || false}
                 onClick={() => runRejectAudit({ id: record.id })}
               >
@@ -265,7 +268,7 @@ const PublishAudit: React.FC = () => {
           <Button type="link" onClick={() => handleView(record)}>
             查看
           </Button>
-        </Space>
+        </>
       ),
     },
   ];
@@ -309,6 +312,7 @@ const PublishAudit: React.FC = () => {
       </section>
 
       <Table
+        rowClassName={cx(styles['table-row-divider'])}
         className={cx('mt-22')}
         rowKey="id"
         loading={loading}

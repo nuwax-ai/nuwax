@@ -3,17 +3,7 @@ import styles from '@/styles/systemManage.less';
 import { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { CheckOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import {
-  Button,
-  Col,
-  Form,
-  Input,
-  Modal,
-  Row,
-  Select,
-  Space,
-  Table,
-} from 'antd';
+import { Button, Col, Form, Input, Modal, Row, Select, Table } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import classNames from 'classnames';
 import React, { useState } from 'react';
@@ -121,9 +111,10 @@ const GlobalModelManage: React.FC = () => {
       align: 'center',
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       render: (_, record) => (
-        <Space size="middle">
+        <>
           <Button
             type="link"
+            className={cx(styles['table-action-ant-btn-link'])}
             onClick={() => {
               setModel(record);
               setModelType('edit');
@@ -132,8 +123,13 @@ const GlobalModelManage: React.FC = () => {
           >
             编辑
           </Button>
-          <Button type="link">删除</Button>
-        </Space>
+          <Button
+            type="link"
+            className={cx(styles['table-action-ant-btn-link'])}
+          >
+            删除
+          </Button>
+        </>
       ),
     },
   ];
@@ -143,7 +139,7 @@ const GlobalModelManage: React.FC = () => {
 
   return (
     <div className={cx(styles['system-manage-container'])}>
-      <h3 className={cx(styles['system-manage-title'])}>全局模型管理页面</h3>
+      <h3 className={cx(styles['system-manage-title'])}>全局模型管理</h3>
       <section className={cx('flex', 'content-between')}>
         <Select
           className={cx(styles['select-132'])}
@@ -157,6 +153,7 @@ const GlobalModelManage: React.FC = () => {
       </section>
 
       <Table
+        rowClassName={cx(styles['table-row-divider'])}
         className={cx('mt-22')}
         rowKey="id"
         loading={loading}
