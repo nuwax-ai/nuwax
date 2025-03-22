@@ -48,3 +48,24 @@ export async function apiUpdateSpace(
     data,
   });
 }
+
+// 删除空间
+export async function apiRemoveSpace(data: {
+  spaceId: number;
+}): Promise<RequestResponse<null>> {
+  return request(`/api/space/delete/${data.spaceId}`, {
+    method: 'POST',
+    data,
+  });
+}
+
+// 转让空间
+export async function apiTransferSpace(data: {
+  spaceId: number;
+  targetUserId: number;
+}): Promise<RequestResponse<null>> {
+  return request('/api/space/transfer', {
+    method: 'POST',
+    data,
+  });
+}

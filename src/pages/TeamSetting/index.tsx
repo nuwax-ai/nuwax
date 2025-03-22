@@ -34,22 +34,36 @@ const TeamSetting: React.FC = () => {
   const [openModifyTeamModal, setOpenModifyTeamModal] =
     useState<boolean>(false);
 
+  const { data, run } = useRequest(apiGetSpaceDetail, {
+    manual: true,
+  });
+
+  const handleTransferSuccess = () => {
+    run({ spaceId });
+  };
+
   const tabs: TabsProps['items'] = [
     {
       key: 'MemberManage',
       label: '成员管理',
       children: <MemberManageTab spaceId={spaceId} />,
     },
-    {
-      key: 'SpaceSetting',
-      label: '空间设置',
-      children: <SpaceSettingTab />,
-    },
+    ...(data?.data?.currentUserRole === TeamStatusEnum.Owner
+      ? [
+          {
+            key: 'SpaceSetting',
+            label: '空间设置',
+            children: (
+              <SpaceSettingTab
+                spaceId={spaceId}
+                name={data?.data.name}
+                onTransferSuccess={handleTransferSuccess}
+              />
+            ),
+          },
+        ]
+      : []),
   ];
-
-  const { data, run } = useRequest(apiGetSpaceDetail, {
-    manual: true,
-  });
 
   const handlerConfirmModifyTeam = () => {
     setOpenModifyTeamModal(false);
