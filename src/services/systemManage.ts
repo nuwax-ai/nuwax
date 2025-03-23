@@ -79,6 +79,15 @@ export async function apiSystemModelList(): Promise<
     method: 'GET',
   });
 }
+// 查询可选模型列表
+export async function apiUseableModelList(): Promise<
+  RequestResponse<ModelConfigDto[]>
+> {
+  return request('/api/model/list', {
+    method: 'POST',
+    data: {},
+  });
+}
 // 查询可选择的智能体列表
 export async function apiSystemAgentList(
   kw: string,

@@ -2,6 +2,7 @@ import { ReactComponent as ICON_ADD_TR } from '@/assets/svg/add_tr.svg';
 import { ReactComponent as ICON_ADJUSTMENT } from '@/assets/svg/adjustment_amount.svg';
 import { ReactComponent as ICON_APPLICATION_DEV } from '@/assets/svg/application_dev.svg';
 import { ReactComponent as ICON_ASSOCIATION } from '@/assets/svg/association.svg';
+import { ReactComponent as ICON_BOOK } from '@/assets/svg/book.svg';
 import { ReactComponent as ICON_CODE } from '@/assets/svg/code.svg';
 import { ReactComponent as ICON_COMPONENT_LIBRARY } from '@/assets/svg/component_library.svg';
 import { ReactComponent as ICON_CONFIRM_STAR } from '@/assets/svg/confirm_star.svg';
@@ -65,6 +66,7 @@ export {
   ICON_APPLICATION_DEV,
   ICON_ASSOCIATION,
   ICON_AUDIT,
+  ICON_BOOK,
   ICON_CODE,
   ICON_COMPONENT_LIBRARY,
   ICON_CONFIRM_STAR,

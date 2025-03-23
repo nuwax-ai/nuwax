@@ -1,7 +1,7 @@
 import {
   apiSystemAgentList,
   apiSystemConfigUpdate,
-  apiSystemModelList,
+  apiUseableModelList,
 } from '@/services/systemManage';
 import {
   ModelConfigDto,
@@ -24,7 +24,7 @@ export default function BaseTab({
 }) {
   const [modelList, setModelList] = useState<ModelConfigDto[]>([]);
   const fetchModelList = async () => {
-    const res = await apiSystemModelList();
+    const res = await apiUseableModelList();
     setModelList(res.data);
   };
   const [agentList, setAgentList] = useState<PublishedDto[]>([]);

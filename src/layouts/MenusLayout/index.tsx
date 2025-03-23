@@ -86,6 +86,9 @@ const MenusLayout: React.FC = () => {
       case TabsEnum.System_Manage:
         history.push('/system/user/manage');
         break;
+      case TabsEnum.Course_System:
+        window.open('https://nlp-book.swufenlp.group/', '_blank');
+        break;
     }
   }, []);
 
