@@ -84,7 +84,7 @@ export const SPACE_APPLICATION_LIST = [
   {
     type: SpaceApplicationListEnum.Application_Develop,
     icon: <ICON_APPLICATION_DEV />,
-    text: '应用开发',
+    text: '智能体开发',
   },
   {
     type: SpaceApplicationListEnum.Component_Library,
@@ -94,7 +94,7 @@ export const SPACE_APPLICATION_LIST = [
   {
     type: SpaceApplicationListEnum.Team_Setting,
     icon: <ICON_GROUP_SET />,
-    text: '团队设置',
+    text: '团队与设置',
   },
 ];
 
