@@ -201,7 +201,7 @@ const MemberManageTab: React.FC<MemberManageTabProps> = ({ spaceId }) => {
         spaceId={spaceId}
         open={openAddMemberModal}
         onCancel={() => setOpenAddMemberModal(false)}
-        onConfirmEdit={handlerConfirmAddMember}
+        onConfirmAdd={handlerConfirmAddMember}
       />
     </>
   );

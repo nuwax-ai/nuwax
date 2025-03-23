@@ -39,6 +39,20 @@ export async function apiDeleteSpaceUser(data: {
   });
 }
 
+// 增加团队成员
+export async function apiAddSpaceMember(
+  data: {
+    spaceId: number;
+    userId: number;
+    role: string;
+  }[],
+): Promise<RequestResponse<null>> {
+  return request('/api/space/user/add', {
+    method: 'POST',
+    data,
+  });
+}
+
 // 更新空间
 export async function apiUpdateSpace(
   data: UpdateSpaceParams,

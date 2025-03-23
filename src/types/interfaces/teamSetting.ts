@@ -18,6 +18,7 @@ export interface SpaceUserInfo {
   spaceId: number;
   userName: string;
   nickName: string;
+  avatar: string;
   role: TeamStatusEnum;
   created: string;
 }
