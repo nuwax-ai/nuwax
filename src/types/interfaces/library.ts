@@ -91,6 +91,7 @@ export interface CreateModelProps {
   id?: number;
   spaceId?: number;
   open: boolean;
+  action?: (data: ModelSaveParams) => Promise<any>;
   onCancel: () => void;
   onConfirm: (info: ModelSaveParams) => void;
 }

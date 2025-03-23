@@ -5,6 +5,7 @@ import {
   MODEL_API_PROTOCOL_LIST,
   MODEL_NETWORK_TYPE_LIST,
   MODEL_STRATEGY_LIST,
+  MODEL_TYPE_LIST,
 } from '@/constants/library.constants';
 import { apiModelInfo, apiModelSave } from '@/services/modelConfig';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
@@ -48,6 +49,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
   id,
   spaceId,
   open,
+  action = apiModelSave,
   onCancel,
   onConfirm,
 }) => {
@@ -78,6 +80,8 @@ const CreateModel: React.FC<CreateModelProps> = ({
         apiProtocol: result?.apiProtocol,
         networkType: result?.networkType,
         strategy: result?.strategy,
+        type: result?.type,
+        dimension: result?.dimension,
       });
       const _apiInfoList =
         result?.apiInfoList?.map((item) => ({
@@ -97,7 +101,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
   }, [id]);
 
   // 在空间中添加或更新模型配置接口
-  const { run } = useRequest(apiModelSave, {
+  const { run } = useRequest(action, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (_, params) => {
@@ -116,10 +120,10 @@ const CreateModel: React.FC<CreateModelProps> = ({
     });
     // 模型类型和联网类型此版本先固定写死
     const data = {
-      ...values,
       type: ModelTypeEnum.Chat,
-      networkType: ModelNetworkTypeEnum.Internet,
       apiInfoList: _apiInfoList,
+      ...values,
+      networkType: ModelNetworkTypeEnum.Internet,
     };
     if (mode === CreateUpdateModeEnum.Create) {
       run({
@@ -292,6 +296,15 @@ const CreateModel: React.FC<CreateModelProps> = ({
             autoSize={{ minRows: 3, maxRows: 5 }}
           />
         </Form.Item>
+        <ConditionRender condition={action !== apiModelSave}>
+          <Form.Item
+            name="type"
+            label="模型类型"
+            rules={[{ required: true, message: '选择模型接口协议' }]}
+          >
+            <Select options={MODEL_TYPE_LIST} placeholder="选择模型接口协议" />
+          </Form.Item>
+        </ConditionRender>
         <Form.Item
           name="apiProtocol"
           label="接口协议"
@@ -302,11 +315,25 @@ const CreateModel: React.FC<CreateModelProps> = ({
             placeholder="请选择模型接口协议"
           />
         </Form.Item>
-        <Form.Item name="networkType" label="联网类型">
-          <Radio.Group options={MODEL_NETWORK_TYPE_LIST} />
-        </Form.Item>
+        <ConditionRender condition={action !== apiModelSave}>
+          <Form.Item
+            name="dimension"
+            label="向量维度"
+            rules={[{ required: true, message: '输入向量维度' }]}
+          >
+            <Input placeholder="输入向量维度" />
+          </Form.Item>
+        </ConditionRender>
+        <ConditionRender condition={action === apiModelSave}>
+          <Form.Item name="networkType" label="联网类型">
+            <Radio.Group options={MODEL_NETWORK_TYPE_LIST} />
+          </Form.Item>
+        </ConditionRender>
         <ConditionRender
-          condition={networkType === ModelNetworkTypeEnum.Intranet}
+          condition={
+            action === apiModelSave &&
+            networkType === ModelNetworkTypeEnum.Intranet
+          }
         >
           <Form.Item>
             <IntranetModel onOpen={() => setVisible(true)} />

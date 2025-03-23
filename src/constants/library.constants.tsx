@@ -28,6 +28,7 @@ import {
   ModelApiProtocolEnum,
   ModelNetworkTypeEnum,
   ModelStrategyEnum,
+  ModelTypeEnum,
 } from '@/types/enums/modelConfig';
 import {
   CodeLangEnum,
@@ -296,7 +297,37 @@ export const MODEL_STRATEGY_LIST = [
     label: '响应时间',
   },
 ];
-
+// 模型类型
+export const MODEL_TYPE_LIST = [
+  {
+    value: ModelTypeEnum.Completions,
+    label: '文本补全',
+  },
+  {
+    value: ModelTypeEnum.Chat,
+    label: '聊天对话',
+  },
+  {
+    value: ModelTypeEnum.Edits,
+    label: '文本编辑',
+  },
+  {
+    value: ModelTypeEnum.Images,
+    label: '图像处理',
+  },
+  {
+    value: ModelTypeEnum.Embeddings,
+    label: '向量嵌入',
+  },
+  {
+    value: ModelTypeEnum.Audio,
+    label: '语音处理',
+  },
+  {
+    value: ModelTypeEnum.Other,
+    label: '其他',
+  },
+];
 // 模型接口协议
 export const MODEL_API_PROTOCOL_LIST = [
   {

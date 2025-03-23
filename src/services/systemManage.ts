@@ -1,3 +1,4 @@
+import { ModelSaveParams } from '@/types/interfaces/model';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
 import type {
   AddSystemUserParams,
@@ -76,6 +77,23 @@ export async function apiSystemModelList(): Promise<
   RequestResponse<ModelConfigDto[]>
 > {
   return request('/api/system/model/list', {
+    method: 'GET',
+  });
+}
+// 添加或更新模型配置接口
+export async function apiSystemModelSave(
+  data: ModelSaveParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/model/save', {
+    method: 'POST',
+    data,
+  });
+}
+// 删除全局模型
+export async function apiSystemModelDelete(data: {
+  id: number;
+}): Promise<RequestResponse<null>> {
+  return request(`/api/system/model/${data.id}/delete`, {
     method: 'GET',
   });
 }
