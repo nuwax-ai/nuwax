@@ -25,9 +25,10 @@ const selectOptions = [
 
 interface MemberManageTabProps {
   spaceId: number;
+  role: TeamStatusEnum | undefined;
 }
 
-const MemberManageTab: React.FC<MemberManageTabProps> = ({ spaceId }) => {
+const MemberManageTab: React.FC<MemberManageTabProps> = ({ spaceId, role }) => {
   const [selectedValue, setSelectedValue] = useState('');
   const [inputValue, setInputValue] = useState('');
   const [removeLoadingMap, setRemoveLoadingMap] = useState<
@@ -130,24 +131,30 @@ const MemberManageTab: React.FC<MemberManageTabProps> = ({ spaceId }) => {
         return transformTDate(created);
       },
     },
-    {
-      title: '操作',
-      key: 'action',
-      align: 'center',
-      width: '160px',
-      render: (_, record: SpaceUserInfo) => (
-        <>
-          <Button
-            type="link"
-            className={cx(systemManageStyles['table-action-ant-btn-link'])}
-            loading={removeLoadingMap[record.userId] || false}
-            onClick={() => removeUser(record.userId)}
-          >
-            删除
-          </Button>
-        </>
-      ),
-    },
+    ...(role !== TeamStatusEnum.User
+      ? [
+          {
+            title: '操作',
+            key: 'action',
+            align: 'center',
+            width: '160px',
+            render: (_, record: SpaceUserInfo) => (
+              <>
+                <Button
+                  type="link"
+                  className={cx(
+                    systemManageStyles['table-action-ant-btn-link'],
+                  )}
+                  loading={removeLoadingMap[record.userId] || false}
+                  onClick={() => removeUser(record.userId)}
+                >
+                  删除
+                </Button>
+              </>
+            ),
+          },
+        ]
+      : []),
   ];
 
   useEffect(() => {
@@ -179,14 +186,16 @@ const MemberManageTab: React.FC<MemberManageTabProps> = ({ spaceId }) => {
               }
             }}
           />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            className={cx('ml-12')}
-            onClick={addUser}
-          >
-            添加成员
-          </Button>
+          {role !== TeamStatusEnum.User && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              className={cx('ml-12')}
+              onClick={addUser}
+            >
+              添加成员
+            </Button>
+          )}
         </div>
       </section>
       <Table

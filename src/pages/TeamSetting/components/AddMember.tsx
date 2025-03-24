@@ -1,9 +1,16 @@
 import personalImage from '@/assets/images/personal.png';
 import CustomFormModal from '@/components/CustomFormModal';
-import { apiAddSpaceMember, apiGetSpaceUserList } from '@/services/teamSetting';
+import {
+  apiAddSpaceMember,
+  apiGetSpaceUserList,
+  apiSearchUser,
+} from '@/services/teamSetting';
 import styles from '@/styles/teamSetting.less';
 import { TeamStatusEnum } from '@/types/enums/teamSetting';
-import type { SpaceUserInfo } from '@/types/interfaces/teamSetting';
+import type {
+  SearchUserInfo,
+  SpaceUserInfo,
+} from '@/types/interfaces/teamSetting';
 import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import {
@@ -29,7 +36,6 @@ export interface AddMemberProps {
 }
 
 const selectOptions = [
-  { value: TeamStatusEnum.Owner, label: '创建人' },
   { value: TeamStatusEnum.Admin, label: '管理员' },
   { value: TeamStatusEnum.User, label: '成员' },
 ];
@@ -41,14 +47,19 @@ const AddMember: React.FC<AddMemberProps> = ({
   onConfirmAdd,
 }) => {
   const [form] = Form.useForm();
-  const [fullMembers, setFullMembers] = useState<SpaceUserInfo[]>([]);
-  const [leftColumnMembers, setLeftColumnMembers] = useState<SpaceUserInfo[]>(
+  const [spaceExistMembers, setSpaceExistMembers] = useState<SpaceUserInfo[]>(
+    [],
+  );
+  const [leftColumnMembers, setLeftColumnMembers] = useState<SearchUserInfo[]>(
     [],
   );
   const [leftCheckedMembers, setLeftCheckedMembers] = useState<number[]>([]);
-  const [rightColumnMembers, setRightColumnMembers] = useState<SpaceUserInfo[]>(
-    [],
-  );
+  const [rightColumnMembers, setRightColumnMembers] = useState<
+    SearchUserInfo[]
+  >([]);
+  const [searchedAllMembers, setSearchedAllMembers] = useState<
+    SearchUserInfo[]
+  >([]);
 
   const cancelModal = () => {
     onCancel();
@@ -57,8 +68,8 @@ const AddMember: React.FC<AddMemberProps> = ({
   const { run } = useRequest(apiGetSpaceUserList, {
     manual: true,
     onSuccess(data) {
-      setLeftColumnMembers(JSON.parse(JSON.stringify(data.data)));
-      setFullMembers(JSON.parse(JSON.stringify(data.data)));
+      // 空间所有成员
+      setSpaceExistMembers(JSON.parse(JSON.stringify(data.data)));
     },
   });
 
@@ -71,6 +82,29 @@ const AddMember: React.FC<AddMemberProps> = ({
     },
   });
 
+  const { run: runSearch } = useRequest(apiSearchUser, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (data) => {
+      // role不存在时设置role默认为成员
+      data.data.forEach((m: SearchUserInfo) => {
+        if (!m.role) {
+          m.role = TeamStatusEnum.User;
+        }
+      });
+      // 保留一份搜索结果全数据
+      setSearchedAllMembers(JSON.parse(JSON.stringify(data.data)));
+      // 排除 rightColumnMembers 和 spaceExistMembers 中的数据
+      const newLeftColumnMembers = data.data.filter((m: SearchUserInfo) => {
+        return (
+          !rightColumnMembers.some((r) => r.id === m.id) &&
+          !spaceExistMembers.some((f) => f.userId === m.id)
+        );
+      });
+      setLeftColumnMembers(newLeftColumnMembers);
+    },
+  });
+
   const handlerSubmit = () => {
     if (rightColumnMembers.length === 0) {
       message.warning('请选择要添加的成员');
@@ -78,16 +112,16 @@ const AddMember: React.FC<AddMemberProps> = ({
     }
     const params = rightColumnMembers.map((m) => ({
       spaceId,
-      userId: m.userId,
+      userId: m.id,
       role: m.role,
     }));
     runAdd(params);
   };
 
-  const handleRoleChange = (userId: number, role: TeamStatusEnum) => {
+  const handleRoleChange = (id: number, role: TeamStatusEnum) => {
     // 创建一个新的 rightColumnMembers 数组，避免直接修改原对象
     const newRightColumnMembers = rightColumnMembers.map((m) => {
-      if (m.userId === userId) {
+      if (m.id === id) {
         // 复制对象并更新角色
         return { ...m, role };
       }
@@ -95,16 +129,14 @@ const AddMember: React.FC<AddMemberProps> = ({
     });
     setRightColumnMembers(newRightColumnMembers);
   };
-  const handleRemoveMember = (userId: number) => {
+  const handleRemoveMember = (id: number) => {
     // 从 rightColumnMembers 中移除指定 userId 的成员
-    const newRightColumnMembers = rightColumnMembers.filter(
-      (m) => m.userId !== userId,
-    );
+    const newRightColumnMembers = rightColumnMembers.filter((m) => m.id !== id);
     setRightColumnMembers(newRightColumnMembers);
-    // 从 fullMembers 中找到要添加到 leftColumnMembers 的成员
-    const removedMember = fullMembers.find((m) => m.userId === userId);
+    // 从 searchedAllMembers 中找到要添加到 leftColumnMembers 的成员
+    const removedMember = searchedAllMembers.find((m) => m.id === id);
     if (removedMember) {
-      // 复制对象以避免修改 fullMembers
+      // 复制对象以避免修改 spaceExistMembers
       const copiedMember = { ...removedMember };
       // 将复制后的成员添加到 leftColumnMembers
       setLeftColumnMembers((prev) => [...prev, copiedMember]);
@@ -122,32 +154,21 @@ const AddMember: React.FC<AddMemberProps> = ({
   };
 
   const handleCheckChange = (checkedValues: number[]) => {
-    // 过滤掉 checkedValues 中包含的 userId 对应的成员
-    const newLeftColumnMembers = leftColumnMembers.filter(
-      (m) => !checkedValues.includes(m.userId),
-    );
-    setLeftColumnMembers(newLeftColumnMembers);
-
     const newCheckedMembers = leftColumnMembers.filter((m) =>
-      checkedValues.includes(m.userId),
+      checkedValues.includes(m.id),
     );
     setRightColumnMembers([...rightColumnMembers, ...newCheckedMembers]);
+
+    const newLeftColumnMembers = leftColumnMembers.filter(
+      (m) => !checkedValues.includes(m.id),
+    );
+    setLeftColumnMembers(newLeftColumnMembers);
   };
 
   const handleInputChange = (value: string) => {
-    // 从 fullMembers 中减去 rightColumnMembers 中的数据
-    const availableMembers = fullMembers.filter(
-      (m) => !rightColumnMembers.some((r) => r.userId === m.userId),
-    );
-
-    if (value) {
-      const matchedMembers = availableMembers.filter((m) =>
-        m.nickName.includes(value),
-      );
-      setLeftColumnMembers(matchedMembers);
-    } else {
-      setLeftColumnMembers(availableMembers);
-    }
+    runSearch({
+      kw: value || undefined,
+    });
   };
 
   useEffect(() => {
@@ -157,6 +178,7 @@ const AddMember: React.FC<AddMemberProps> = ({
     setLeftCheckedMembers([]);
     setRightColumnMembers([]);
     setLeftColumnMembers([]);
+    setSearchedAllMembers([]);
     run({ spaceId, role: undefined, kw: '' });
   }, [spaceId, open]);
 
@@ -200,12 +222,8 @@ const AddMember: React.FC<AddMemberProps> = ({
             value={leftCheckedMembers}
           >
             {leftColumnMembers.map((m) => (
-              <Checkbox
-                key={m.userId}
-                value={m.userId}
-                className={'flex mb-12'}
-              >
-                <Avatar src={m.avatar || personalImage} /> {m.nickName}
+              <Checkbox key={m.id} value={m.id} className={'flex mb-12'}>
+                <Avatar src={m.avatar || personalImage} /> {m.userName}
               </Checkbox>
             ))}
           </Checkbox.Group>
@@ -219,17 +237,17 @@ const AddMember: React.FC<AddMemberProps> = ({
             dataSource={rightColumnMembers}
             renderItem={(m) => (
               <List.Item style={{ borderBlockEnd: 0 }}>
-                <Avatar src={m.avatar || personalImage} /> {m.nickName}
+                <Avatar src={m.avatar || personalImage} /> {m.userName}
                 <Select
                   value={m.role}
-                  onChange={(value) => handleRoleChange(m.userId, value)}
+                  onChange={(value) => handleRoleChange(m.id, value)}
                   style={{ width: 100, marginLeft: 10 }}
                   options={selectOptions}
                 />
                 <Button
                   type="text"
                   icon={<CloseOutlined />}
-                  onClick={() => handleRemoveMember(m.userId)}
+                  onClick={() => handleRemoveMember(m.id)}
                 />
               </List.Item>
             )}
