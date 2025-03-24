@@ -1,10 +1,15 @@
+import { ModelSaveParams } from '@/types/interfaces/model';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
 import type {
   AddSystemUserParams,
+  ModelConfigDto,
+  PublishedDto,
   SystemUserConfig,
   SystemUserListInfo,
   SystemUserListParams,
+  TenantConfigDto,
   UpdateSystemUserParams,
+  UploadResultDto,
 } from '@/types/interfaces/systemManage';
 import { request } from 'umi';
 
@@ -59,10 +64,74 @@ export async function apiDisableSystemUser(data: {
 }
 
 // 查询用户列表
+// 查询系统设置列表
 export async function apiSystemConfigList(): Promise<
   RequestResponse<SystemUserConfig[]>
 > {
   return request('/api/system/config/list', {
     method: 'POST',
+  });
+}
+// 查询模型列表
+export async function apiSystemModelList(): Promise<
+  RequestResponse<ModelConfigDto[]>
+> {
+  return request('/api/system/model/list', {
+    method: 'GET',
+  });
+}
+// 添加或更新模型配置接口
+export async function apiSystemModelSave(
+  data: ModelSaveParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/model/save', {
+    method: 'POST',
+    data,
+  });
+}
+// 删除全局模型
+export async function apiSystemModelDelete(data: {
+  id: number;
+}): Promise<RequestResponse<null>> {
+  return request(`/api/system/model/${data.id}/delete`, {
+    method: 'GET',
+  });
+}
+// 查询可选模型列表
+export async function apiUseableModelList(): Promise<
+  RequestResponse<ModelConfigDto[]>
+> {
+  return request('/api/model/list', {
+    method: 'POST',
+    data: {},
+  });
+}
+// 查询可选择的智能体列表
+export async function apiSystemAgentList(
+  kw: string,
+): Promise<RequestResponse<PublishedDto[]>> {
+  return request('/api/system/publish/agent/list', {
+    method: 'POST',
+    data: { kw },
+  });
+}
+// 上传文件
+export async function apiSystemUploadFile(
+  file: File,
+): Promise<RequestResponse<UploadResultDto>> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request('/api/file/upload', {
+    method: 'POST',
+    data: formData,
+  });
+}
+// 更新配置信息
+export async function apiSystemConfigUpdate(
+  data: TenantConfigDto,
+): Promise<RequestResponse<any>> {
+  return request('/api/system/config/add', {
+    method: 'POST',
+    data,
   });
 }

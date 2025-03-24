@@ -1,4 +1,5 @@
 import {
+  ICON_BOOK,
   ICON_FILE,
   ICON_HISTORY,
   ICON_HOME,
@@ -36,6 +37,11 @@ export const TABS = [
     icon: <ICON_SQUARE />,
     text: '广场',
     type: TabsEnum.Square,
+  },
+  {
+    icon: <ICON_BOOK />,
+    text: '教材体系',
+    type: TabsEnum.Course_System,
   },
   {
     icon: <ICON_SETTING />,

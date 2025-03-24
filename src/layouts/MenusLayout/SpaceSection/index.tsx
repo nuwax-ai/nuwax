@@ -1,7 +1,6 @@
 import { SPACE_ID } from '@/constants/home.constants';
 import { SPACE_APPLICATION_LIST } from '@/constants/space.constants';
 import { SpaceApplicationListEnum } from '@/types/enums/space';
-import { message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { history, useLocation } from 'umi';
@@ -28,7 +27,7 @@ const SpaceSection: React.FC = () => {
         break;
       // 团队设置
       case SpaceApplicationListEnum.Team_Setting:
-        message.warning('团队设置此版本待完善');
+        history.push(`/space/${spaceId}/team`);
         break;
     }
   };
@@ -41,7 +40,9 @@ const SpaceSection: React.FC = () => {
       (type === SpaceApplicationListEnum.Component_Library &&
         (pathname.includes('library') ||
           pathname.includes('knowledge') ||
-          pathname.includes('plugin')))
+          pathname.includes('plugin'))) ||
+      (type === SpaceApplicationListEnum.Team_Setting &&
+        pathname.includes('team'))
     );
   };
 

@@ -14,7 +14,6 @@ import {
   AgentConfigInfo,
 } from '@/types/interfaces/agent';
 import type { HistoryData } from '@/types/interfaces/space';
-import { message } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
@@ -47,6 +46,7 @@ const EditAgent: React.FC = () => {
   // 历史版本信息
   const [versionHistory, setVersionHistory] = useState<HistoryData[]>([]);
   const { showType, setShowType } = useModel('conversationInfo');
+  const { setTitle } = useModel('tenantConfigInfo');
 
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
@@ -61,9 +61,6 @@ const EditAgent: React.FC = () => {
   const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
     manual: true,
     debounceInterval: 1000,
-    onSuccess: () => {
-      message.success('智能体编辑成功');
-    },
   });
 
   // 版本历史记录
@@ -78,7 +75,17 @@ const EditAgent: React.FC = () => {
   useEffect(() => {
     run(agentId);
     runHistory(agentId);
+    // 设置页面title
+    setTitle();
   }, [agentId]);
+
+  useEffect(() => {
+    if (!document.head.querySelector('base')) {
+      const base = document.createElement('base');
+      base.target = '_blank';
+      document.head.append(base);
+    }
+  }, []);
 
   // 确认编辑智能体
   const handlerConfirmEditAgent = (info: AgentBaseInfo) => {

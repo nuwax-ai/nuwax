@@ -18,6 +18,7 @@ const cx = classNames.bind(styles);
  */
 const ChatInput: React.FC<ChatInputProps> = ({
   className,
+  disabled = false,
   onClear,
   onEnter,
 }) => {
@@ -77,6 +78,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
     setFiles(_files);
   };
 
+  const handleClear = () => {
+    if (disabled) {
+      return;
+    }
+    onClear?.();
+  };
+
   return (
     <div className={cx(styles.footer, 'flex', 'items-center', className)}>
       <ConditionRender condition={!!onClear}>
@@ -89,8 +97,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
               'content-center',
               'hover-box',
               'cursor-pointer',
+              { [styles.disabled]: disabled },
             )}
-            onClick={onClear}
+            onClick={handleClear}
           >
             <ClearOutlined />
           </span>

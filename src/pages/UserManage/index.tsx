@@ -9,7 +9,7 @@ import type { SystemUserListInfo } from '@/types/interfaces/systemManage';
 import { transformTDate } from '@/utils/getTime';
 import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Button, Input, Select, Space, Table, message } from 'antd';
+import { Button, Input, Select, Table, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import CreateModifyUser from './components/createModifyUser';
@@ -205,35 +205,32 @@ const UserManage: React.FC = () => {
       width: 150,
       align: 'center',
       render: (_, record: SystemUserListInfo) => (
-        <Space size="middle">
-          {
-            // 移除多余的分号
-            record.status === UserStatusEnum.Enabled ? (
-              <Button
-                type="link"
-                className={cx(styles['operation-short-btn'])}
-                loading={disableLoadingMap[record.id] || false}
-                onClick={() => runDisable({ id: record.id })}
-              >
-                禁用
-              </Button>
-            ) : (
-              <Button
-                type="link"
-                className={cx(styles['operation-short-btn'])}
-                loading={enableLoadingMap[record.id] || false}
-                onClick={() => runEnable({ id: record.id })}
-              >
-                启用
-              </Button>
-            )
-          }
+        <>
+          {record.status === UserStatusEnum.Enabled ? (
+            <Button
+              type="link"
+              className={cx(styles['table-action-ant-btn-link'])}
+              loading={disableLoadingMap[record.id] || false}
+              onClick={() => runDisable({ id: record.id })}
+            >
+              禁用
+            </Button>
+          ) : (
+            <Button
+              type="link"
+              className={cx(styles['table-action-ant-btn-link'])}
+              loading={enableLoadingMap[record.id] || false}
+              onClick={() => runEnable({ id: record.id })}
+            >
+              启用
+            </Button>
+          )}
           <CreateModifyUser
             isEdit={true}
             record={record}
             onSuccess={handleSuccess}
           />
-        </Space>
+        </>
       ),
     },
   ];
@@ -269,6 +266,7 @@ const UserManage: React.FC = () => {
       </section>
 
       <Table
+        rowClassName={cx(styles['table-row-divider'])}
         className={cx('mt-22')}
         rowKey="id"
         loading={loading}

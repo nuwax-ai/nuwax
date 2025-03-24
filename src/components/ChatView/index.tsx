@@ -32,7 +32,7 @@ const ChatView: React.FC<ChatViewProps> = ({
   canDebug,
 }) => {
   // 当前用户信息
-  const userInfo = JSON.parse(localStorage.getItem(USER_INFO));
+  const userInfo = JSON.parse(localStorage.getItem(USER_INFO) as string);
 
   // 角色名称和头像
   const info = useMemo(() => {
@@ -64,7 +64,7 @@ const ChatView: React.FC<ChatViewProps> = ({
       <img className={cx(styles.avatar)} src={info?.avatar as string} alt="" />
       <div className={cx('flex-1')}>
         <div className={cx(styles.author)}>{info?.name}</div>
-        {messageInfo?.attachments?.length > 0 && (
+        {!!messageInfo?.attachments?.length && (
           <AttachFile files={messageInfo?.attachments as AttachmentFile[]} />
         )}
         {/*用户信息*/}

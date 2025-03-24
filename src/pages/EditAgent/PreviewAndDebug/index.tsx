@@ -141,7 +141,11 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
           )}
         </div>
         {/*会话输入框*/}
-        <ChatInput onEnter={handleMessageSend} onClear={handleClear} />
+        <ChatInput
+          disabled={!messageList?.length}
+          onEnter={handleMessageSend}
+          onClear={handleClear}
+        />
       </div>
     </div>
   );

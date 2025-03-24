@@ -39,7 +39,9 @@ const UploadFile: React.FC<UploadFileProps> = ({
       message.error('请上传正确的文件类型');
       return false;
     }
-    const suffix = name.split('.')[1].toLowerCase();
+    const splitList = name.split('.');
+    // 取后缀（文件名可能包含多个点号）
+    const suffix = splitList[splitList.length - 1].toLowerCase();
     const isFile = UPLOAD_FILE_SUFFIX.includes(suffix);
     if (!isFile) {
       message.error('请上传 PDF、TXT、DOC、DOCX、MD、JSON 类型文件!');

@@ -390,7 +390,7 @@ const Created: React.FC<CreatedProp> = ({
                 <p className="margin-bottom-6 ">{item.description}</p>
                 {/* <Tag>{item.tag}</Tag> */}
                 <div className="dis-sb count-div-style">
-                  <div>
+                  <div className={'dis-left'}>
                     <img src={item.publishUser?.avatar} alt="" />
                     <span>{item.publishUser?.nickName}</span>
                     <Divider type="vertical" />

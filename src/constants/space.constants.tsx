@@ -84,7 +84,7 @@ export const SPACE_APPLICATION_LIST = [
   {
     type: SpaceApplicationListEnum.Application_Develop,
     icon: <ICON_APPLICATION_DEV />,
-    text: '应用开发',
+    text: '智能体开发',
   },
   {
     type: SpaceApplicationListEnum.Component_Library,

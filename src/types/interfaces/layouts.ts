@@ -48,7 +48,8 @@ export interface UserActionItemType {
 
 // 用户头像组件类型
 export interface UserAvatarType {
-  onClick: (open: boolean) => void;
+  avatar?: string;
+  onClick: () => void;
 }
 
 // 菜单栏~用户操作区域类型

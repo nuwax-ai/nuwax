@@ -14,11 +14,28 @@ export default () => {
     onSuccess: (result: TenantConfigInfo) => {
       setTenantConfigInfo(result);
       localStorage.setItem(TENANT_CONFIG_INFO, JSON.stringify(result));
+      const { siteName, siteDescription } = result;
+      document.title = siteDescription
+        ? `${siteName} - ${siteDescription}`
+        : siteName;
     },
   });
+
+  // 从缓存中获取租户配置信息，设置页面title
+  const setTitle = () => {
+    const tenantConfigInfoString = localStorage.getItem(TENANT_CONFIG_INFO);
+    if (!!tenantConfigInfoString) {
+      const tenantConfigInfo = JSON.parse(tenantConfigInfoString);
+      const { siteName, siteDescription } = tenantConfigInfo;
+      document.title = siteDescription
+        ? `${siteName} - ${siteDescription}`
+        : siteName;
+    }
+  };
 
   return {
     tenantConfigInfo,
     runTenantConfig,
+    setTitle,
   };
 };

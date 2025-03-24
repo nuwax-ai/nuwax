@@ -5,7 +5,7 @@ import type { PublishListInfo } from '@/types/interfaces/publishManage';
 import { transformTDate } from '@/utils/getTime';
 import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Button, Input, Modal, Select, Space, Table, message } from 'antd';
+import { Button, Input, Modal, Select, Table, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { history } from 'umi';
@@ -126,6 +126,7 @@ const PublishManage: React.FC = () => {
       title: '发布名称',
       dataIndex: 'name',
       key: 'name',
+      minWidth: '200px',
     },
     {
       title: '类型',
@@ -152,12 +153,16 @@ const PublishManage: React.FC = () => {
       title: '版本信息',
       dataIndex: 'remark',
       key: 'remark',
+      width: '150px',
     },
     {
       title: '发布者',
-      dataIndex: 'applyUser.userName',
-      key: 'applyUser.userName',
+      dataIndex: 'publishUser',
+      key: 'publishUser',
       width: '100px',
+      render: (publishUser: any) => {
+        return publishUser ? publishUser.userName ?? '--' : '--';
+      },
     },
     {
       title: '发布时间',
@@ -172,19 +177,25 @@ const PublishManage: React.FC = () => {
       title: '操作',
       key: 'action',
       align: 'center',
+      width: '160px',
       render: (_, record: PublishListInfo) => (
-        <Space size="middle">
-          <Button type="link" onClick={() => handleView(record)}>
+        <>
+          <Button
+            type="link"
+            className={cx(styles['table-action-ant-btn-link'])}
+            onClick={() => handleView(record)}
+          >
             查看
           </Button>
           <Button
             type="link"
+            className={cx(styles['table-action-ant-btn-link'])}
             loading={discardLoadingMap[record.id] || false}
             onClick={() => discard(record.id)}
           >
             下架
           </Button>
-        </Space>
+        </>
       ),
     },
   ];
@@ -217,6 +228,7 @@ const PublishManage: React.FC = () => {
       </section>
 
       <Table
+        rowClassName={cx(styles['table-row-divider'])}
         className={cx('mt-22')}
         rowKey="id"
         loading={loading}

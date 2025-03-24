@@ -27,7 +27,7 @@ export const SYSTEM_MANAGE_LIST = [
   {
     type: SystemManageListEnum.Global_Model_Manage,
     icon: <ICON_MODEL_WHITE />,
-    text: '全局模型管理',
+    text: '公共模型管理',
   },
   {
     type: SystemManageListEnum.System_Config,

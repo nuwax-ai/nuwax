@@ -1,8 +1,10 @@
 import { apiAddSystemUser, apiUpdateSystemUser } from '@/services/systemManage';
+import styles from '@/styles/systemManage.less';
 import { UserRoleEnum } from '@/types/enums/systemManage';
 import type { SystemUserListInfo } from '@/types/interfaces/systemManage';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Form, Input, Modal, Radio } from 'antd';
+import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 
 interface CreateModifyUserProps {
@@ -10,6 +12,8 @@ interface CreateModifyUserProps {
   record?: SystemUserListInfo;
   onSuccess: (isEdit: boolean) => void;
 }
+
+const cx = classNames.bind(styles);
 
 const CreateModifyUser: React.FC<CreateModifyUserProps> = ({
   isEdit,
@@ -73,7 +77,11 @@ const CreateModifyUser: React.FC<CreateModifyUserProps> = ({
   return (
     <>
       {isEdit ? (
-        <Button type="link" onClick={modifyUser}>
+        <Button
+          type="link"
+          className={cx(styles['table-action-ant-btn-link'])}
+          onClick={modifyUser}
+        >
           修改
         </Button>
       ) : (

@@ -43,7 +43,6 @@ export default () => {
   );
   // 调试结果
   const [executeResults, setExecuteResults] = useState<ExecuteResultInfo[]>([]);
-  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
   const handleScrollBottom = () => {
     scrollTimeoutRef.current = setTimeout(() => {
@@ -120,6 +119,8 @@ export default () => {
       attachments,
       debug,
     };
+
+    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
     // 启动连接
     const abortConnection = await createSSEConnection({

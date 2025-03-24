@@ -51,6 +51,7 @@ const Login: React.FC = () => {
   });
 
   useEffect(() => {
+    // 租户配置信息查询接口
     runTenantConfig();
   }, []);
 
