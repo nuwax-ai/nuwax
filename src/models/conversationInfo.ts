@@ -38,6 +38,7 @@ export default () => {
   const messageViewRef = useRef<HTMLDivElement | null>(null);
   const timeoutRef = useRef<number>(0);
   const scrollTimeoutRef = useRef<number>(0);
+  const abortConnectionRef = useRef<unknown>();
   const [showType, setShowType] = useState<EditAgentShowType>(
     EditAgentShowType.Hide,
   );
@@ -103,8 +104,12 @@ export default () => {
       timeoutRef.current = 0;
       clearTimeout(scrollTimeoutRef.current);
       scrollTimeoutRef.current = 0;
+      if (abortConnectionRef.current) {
+        abortConnectionRef.current();
+        abortConnectionRef.current = null;
+      }
     };
-  }, []);
+  }, [timeoutRef, scrollTimeoutRef, abortConnectionRef]);
 
   // 会话处理
   const handleConversation = async (
@@ -123,7 +128,7 @@ export default () => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
     // 启动连接
-    const abortConnection = await createSSEConnection({
+    abortConnectionRef.current = await createSSEConnection({
       url: CONVERSATION_CONNECTION_URL,
       method: 'POST',
       headers: {
@@ -131,39 +136,45 @@ export default () => {
         Accept: 'application/json, text/plain, */* ',
       },
       body: params,
-      onMessage: (data: ConversationChatResponse) => {
+      onMessage: (res: ConversationChatResponse) => {
+        const { data, eventType } = res;
         timeoutRef.current = setTimeout(() => {
           setMessageList((list) => {
             const lastMessage = list.slice(-1)[0] as MessageInfo;
-            if (!lastMessage) {
+            const currentMessage =
+              list.find((info) => info.id === data?.id) || lastMessage;
+            if (!currentMessage) {
               return [];
             }
             let newMessage = null;
             // 更新UI状态...
-            if (data.eventType === ConversationEventTypeEnum.PROCESSING) {
+            if (eventType === ConversationEventTypeEnum.PROCESSING) {
               newMessage = {
-                ...lastMessage,
+                ...currentMessage,
+                id: data?.id,
                 status: MessageStatusEnum.Loading,
                 processingList: [
-                  ...(lastMessage?.processingList || []),
-                  data.data,
+                  ...(currentMessage?.processingList || []),
+                  data,
                 ] as ProcessingInfo[],
               };
             }
-            if (data.eventType === ConversationEventTypeEnum.MESSAGE) {
-              const { text } = data.data;
+            if (eventType === ConversationEventTypeEnum.MESSAGE) {
+              const { id: messageId, text, think } = res.data;
               newMessage = {
-                ...lastMessage,
-                text: `${lastMessage.text}${text}`,
+                ...currentMessage,
+                id: messageId,
+                text: `${currentMessage.text}${text}`,
+                think: `${currentMessage.think}${think}`,
                 status: MessageStatusEnum.Incomplete,
               };
             }
-            if (data.eventType === ConversationEventTypeEnum.FINAL_RESULT) {
-              const { componentExecuteResults } = data.data;
+            if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
+              const { componentExecuteResults } = data;
               newMessage = {
-                ...lastMessage,
+                ...currentMessage,
                 status: MessageStatusEnum.Complete,
-                finalResult: data.data,
+                finalResult: data,
               };
               // 调试结果
               setExecuteResults(componentExecuteResults);
@@ -176,7 +187,7 @@ export default () => {
                 runChatSuggest(params);
               }
             }
-            if (data.eventType === ConversationEventTypeEnum.ERROR) {
+            if (res.eventType === ConversationEventTypeEnum.ERROR) {
               return list;
             }
 
@@ -188,7 +199,7 @@ export default () => {
       },
     });
     // 主动关闭连接
-    abortConnection();
+    abortConnectionRef.current();
   };
 
   // 发送消息
@@ -199,6 +210,22 @@ export default () => {
     debug = false,
   ) => {
     setChatSuggestList([]);
+    timeoutRef.current = 0;
+    clearTimeout(timeoutRef.current);
+    if (abortConnectionRef.current) {
+      abortConnectionRef.current();
+      abortConnectionRef.current = null;
+    }
+
+    setMessageList((list) => {
+      return list?.map((item) => {
+        if (item.status === MessageStatusEnum.Incomplete) {
+          item.status = MessageStatusEnum.Complete;
+        }
+        return item;
+      }) as MessageInfo[];
+    });
+
     // 附件文件
     const attachments =
       files?.map((file) => ({

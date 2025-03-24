@@ -28,6 +28,7 @@ export interface ConversationChatMessage {
   // assistant 模型回复；user 用户消息,可用值:USER,ASSISTANT,SYSTEM,FUNCTION
   role: AssistantRoleEnum;
   text: string;
+  think: string;
   time: number;
   // 可用值:CHAT,GUID,QUESTION,ANSWER
   type: MessageModeEnum;
@@ -62,7 +63,7 @@ export interface ConversationFinalResult {
 // 会话聊天响应数据
 export interface ConversationChatResponse {
   completed: boolean;
-  data: ConversationChatMessage | ConversationFinalResult;
+  data: ConversationChatMessage | ConversationFinalResult | unknown;
   error: string;
   eventType: ConversationEventTypeEnum;
   requestId: string;
@@ -119,6 +120,7 @@ export interface MessageInfo {
   type?: MessageModeEnum;
   // 消息内容，其中附件放在.*?标签中
   text?: string;
+  think?: string;
   // 消息时间
   time: string;
   attachments?: AttachmentFile[];
