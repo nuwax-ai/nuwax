@@ -425,6 +425,7 @@ export interface PluginConfigTitleProps {
 // 聊天输入框组件
 export interface ChatInputProps {
   className?: React.CSSProperties;
+  disabled?: boolean;
   onClear?: () => void;
   onEnter: (message: string, files: UploadFileInfo[]) => void;
 }

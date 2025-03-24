@@ -18,6 +18,7 @@ const cx = classNames.bind(styles);
  */
 const ChatInput: React.FC<ChatInputProps> = ({
   className,
+  disabled = false,
   onClear,
   onEnter,
 }) => {
@@ -89,6 +90,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
               'content-center',
               'hover-box',
               'cursor-pointer',
+              { [styles.disabled]: disabled },
             )}
             onClick={onClear}
           >
