@@ -57,8 +57,8 @@ const User: React.FC = () => {
               item.type === UserAvatarEnum.Log_Out ? styles['log-out'] : '';
             // 显示用户名称或默认值
             item.text =
-              item.type === UserAvatarEnum.User_Name && userInfo?.userName
-                ? userInfo?.userName
+              item.type === UserAvatarEnum.User_Name
+                ? userInfo?.nickName || userInfo?.userName
                 : item.text;
             return (
               <UserActionItem
@@ -79,7 +79,10 @@ const User: React.FC = () => {
     >
       {/*这里需要包裹一层div，否则控制台会出现Warning警告，可能跟Popover组件有关*/}
       <div>
-        <UserAvatar onClick={setOpenAdmin} />
+        <UserAvatar
+          avatar={userInfo?.avatar}
+          onClick={() => setOpenAdmin(true)}
+        />
       </div>
     </Popover>
   );

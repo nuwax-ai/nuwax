@@ -117,6 +117,11 @@ export interface LongMemoryContentProps {
   openLongMemory?: OpenCloseEnum;
 }
 
+// 开场白组件
+export interface OpenRemarksEditProps {
+  agentConfigInfo: AgentConfigInfo;
+}
+
 // 变量列表组件
 export interface VariableListProps {
   onClick: (e: MouseEvent) => void;

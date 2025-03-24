@@ -27,7 +27,7 @@ import KnowledgeTextList from './KnowledgeList';
 import LongMemoryContent from './LongMemoryContent';
 import PluginList from './PluginList';
 // import TriggerContent from './TriggerContent';
-import OpenRemarksEdit from '@/pages/EditAgent/AgentArrangeConfig/OpenRemarksEdit';
+import OpenRemarksEdit from './OpenRemarksEdit';
 import WorkflowList from './WorkflowList';
 
 const cx = classNames.bind(styles);
@@ -358,7 +358,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     {
       key: AgentArrangeConfigEnum.Opening_Remarks,
       label: '开场白',
-      children: <OpenRemarksEdit />,
+      children: <OpenRemarksEdit agentConfigInfo={agentConfigInfo} />,
     },
     {
       key: AgentArrangeConfigEnum.User_Problem_Suggestion,
@@ -415,7 +415,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         defaultActiveKey={memoryActiveKey}
       />
       <ConfigOptionsHeader title="对话体验" />
-      <ConfigOptionCollapse items={ConversationalExperienceList} />
+      <ConfigOptionCollapse
+        items={ConversationalExperienceList}
+        defaultActiveKey={[AgentArrangeConfigEnum.Opening_Remarks]}
+      />
       {/*添加插件、工作流、知识库、数据库弹窗*/}
       <Created
         open={show}

@@ -94,7 +94,7 @@ export const SPACE_APPLICATION_LIST = [
   {
     type: SpaceApplicationListEnum.Team_Setting,
     icon: <ICON_GROUP_SET />,
-    text: '团队与设置',
+    text: '团队设置',
   },
 ];
 

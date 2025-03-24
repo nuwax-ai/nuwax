@@ -78,6 +78,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
     setFiles(_files);
   };
 
+  const handleClear = () => {
+    if (disabled) {
+      return;
+    }
+    onClear?.();
+  };
+
   return (
     <div className={cx(styles.footer, 'flex', 'items-center', className)}>
       <ConditionRender condition={!!onClear}>
@@ -92,7 +99,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
               'cursor-pointer',
               { [styles.disabled]: disabled },
             )}
-            onClick={onClear}
+            onClick={handleClear}
           >
             <ClearOutlined />
           </span>

@@ -29,7 +29,7 @@ const UserActionItem: React.FC<UserActionItemType> = ({
       onClick={() => onClick(type)}
     >
       {icon}
-      <span>{text}</span>
+      <span className={cx('text-ellipsis')}>{text}</span>
     </div>
   );
 };

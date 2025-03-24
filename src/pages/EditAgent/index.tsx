@@ -14,7 +14,6 @@ import {
   AgentConfigInfo,
 } from '@/types/interfaces/agent';
 import type { HistoryData } from '@/types/interfaces/space';
-import { message } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
@@ -62,9 +61,6 @@ const EditAgent: React.FC = () => {
   const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
     manual: true,
     debounceInterval: 1000,
-    onSuccess: () => {
-      message.success('智能体编辑成功');
-    },
   });
 
   // 版本历史记录

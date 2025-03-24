@@ -6,17 +6,24 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const UserAvatar: React.FC<UserAvatarType> = ({ onClick }) => {
+const UserAvatar: React.FC<UserAvatarType> = ({ avatar, onClick }) => {
   return (
-    <div
-      className={cx('hover-box', 'cursor-pointer')}
-      onClick={() => onClick(true)}
-    >
-      <div
-        className={cx(styles.user, 'flex', 'content-center', 'items-center')}
-      >
-        <UserOutlined />
-      </div>
+    <div className={cx('hover-box', 'cursor-pointer')} onClick={onClick}>
+      {avatar ? (
+        <img src={avatar} className={cx(styles.user)} alt="" />
+      ) : (
+        <div
+          className={cx(
+            styles.user,
+            styles.default,
+            'flex',
+            'content-center',
+            'items-center',
+          )}
+        >
+          <UserOutlined />
+        </div>
+      )}
     </div>
   );
 };

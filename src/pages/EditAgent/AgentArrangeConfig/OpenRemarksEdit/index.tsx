@@ -1,23 +1,82 @@
+import { apiAgentConfigUpdate } from '@/services/agentConfig';
+import type { OpenRemarksEditProps } from '@/types/interfaces/agentConfig';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { Input } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRequest } from 'umi';
 import styles from './index.less';
 const cx = classNames.bind(styles);
 
-// import { EditorProvider, useCurrentEditor } from '@tiptap/react'
-import {
-  BubbleMenu,
-  EditorContent,
-  FloatingMenu,
-  useEditor,
-} from '@tiptap/react';
+// import { EditorProvider, useCurrentEditor } from '@tiptap/react';
+// import { StarterKit } from '@tiptap/starter-kit';
+// import { TextStyle } from '@tiptap/extension-text-style';
+// import { Color } from '@tiptap/extension-color';
+// import { ListItem } from '@tiptap/extension-list-item';
 
 /**
  * 开场白编辑
  */
-const OpenRemarksEdit: React.FC = () => {
+const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
+  agentConfigInfo,
+}) => {
   const [content, setContent] = useState<string>('');
+  const [guidQuestions, setGuidQuestions] = useState<string[]>(['']);
 
-  setContent('嗨，你好！我无所不知哦。');
+  // 更新智能体基础配置信息
+  const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
+    manual: true,
+    debounceInterval: 1000,
+  });
+
+  useEffect(() => {
+    if (!!agentConfigInfo) {
+      setContent(agentConfigInfo.openingChatMsg);
+      if (agentConfigInfo.openingGuidQuestions?.length > 0) {
+        setGuidQuestions(agentConfigInfo.openingGuidQuestions);
+      }
+    }
+  }, [agentConfigInfo]);
+
+  // 新增开场白引导问题
+  const handlePlus = () => {
+    const _guidQuestions = [...guidQuestions];
+    _guidQuestions.push('');
+    setGuidQuestions(_guidQuestions);
+  };
+
+  // 删除开场白引导问题
+  const handleDel = (index: number) => {
+    const _guidQuestions = [...guidQuestions];
+    _guidQuestions.splice(index, 1);
+    setGuidQuestions(_guidQuestions);
+
+    runUpdate({
+      id: agentConfigInfo.id,
+      openingGuidQuestions: _guidQuestions,
+    });
+  };
+
+  // 修改首次打开聊天框自动回复消息
+  const handleOpeningChatMsg = (value: string) => {
+    setContent(value);
+    runUpdate({
+      id: agentConfigInfo.id,
+      openingChatMsg: value,
+    });
+  };
+
+  // 修改开场白引导问题
+  const handleChangeGuidQuestions = (index: number, value: string) => {
+    const _guidQuestions = [...guidQuestions];
+    _guidQuestions[index] = value;
+    setGuidQuestions(_guidQuestions);
+
+    runUpdate({
+      id: agentConfigInfo.id,
+      openingGuidQuestions: _guidQuestions,
+    });
+  };
 
   // const MenuBar = () => {
   //   const { editor } = useCurrentEditor();
@@ -160,7 +219,7 @@ const OpenRemarksEdit: React.FC = () => {
   //     </div>
   //   );
   // };
-
+  //
   // const extensions = [
   //   Color.configure({ types: [TextStyle.name, ListItem.name] }),
   //   TextStyle.configure({ types: [ListItem.name] }),
@@ -176,23 +235,49 @@ const OpenRemarksEdit: React.FC = () => {
   //   }),
   // ];
 
-  const editor = useEditor({
-    content,
-  });
-
   return (
-    <div className={cx(styles.container)}>
-      <p>开场白文案</p>
+    <div>
+      <p className={cx(styles.title)}>开场白文案</p>
       <div className={cx(styles['content-box'])}>
+        <Input.TextArea
+          placeholder="请输入开场白"
+          value={content}
+          onChange={(e) => handleOpeningChatMsg(e.target.value)}
+          autoSize={{ minRows: 3, maxRows: 5 }}
+        />
         {/*<EditorProvider*/}
         {/*  slotBefore={<MenuBar />}*/}
         {/*  extensions={extensions}*/}
         {/*  content={content}*/}
         {/*  onUpdate={handleUpdate}*/}
         {/*></EditorProvider>*/}
-        <EditorContent editor={editor} />
-        <FloatingMenu editor={editor}>This is the floating menu</FloatingMenu>
-        <BubbleMenu editor={editor}>This is the bubble menu</BubbleMenu>
+        {/*<EditorContent editor={editor} />*/}
+        {/*<FloatingMenu editor={editor}>This is the floating menu</FloatingMenu>*/}
+        {/*<BubbleMenu editor={editor}>This is the bubble menu</BubbleMenu>*/}
+      </div>
+      <div className={cx('flex', 'content-between')}>
+        <p className={cx(styles.title)}>开场白预置问题</p>
+        <PlusOutlined
+          className={cx(styles.add, 'cursor-pointer')}
+          onClick={handlePlus}
+        />
+      </div>
+      <div>
+        {guidQuestions?.map((item, index) => (
+          <Input
+            key={index}
+            rootClassName={cx(styles.input)}
+            placeholder="输入开场白引导问题"
+            value={item}
+            onChange={(e) => handleChangeGuidQuestions(index, e.target.value)}
+            suffix={
+              <DeleteOutlined
+                className={cx('cursor-pointer')}
+                onClick={() => handleDel(index)}
+              />
+            }
+          />
+        ))}
       </div>
     </div>
   );

@@ -43,7 +43,7 @@ export interface ConfigOptionsHeaderProps {
 // 智能体编排-单个配置选项手风琴组件属性
 export interface ConfigOptionCollapseProps {
   items: CollapseProps['items'];
-  defaultActiveKey?: AgentArrangeConfigEnum[];
+  defaultActiveKey: AgentArrangeConfigEnum[];
 }
 
 // 自定义icon带提示组件， 默认加号（+）

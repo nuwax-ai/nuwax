@@ -291,7 +291,7 @@ export interface AgentConfigInfo {
   // 首次打开聊天框自动回复消息
   openingChatMsg: string;
   // 首次打开引导问题
-  openingGuidQuestion: string;
+  openingGuidQuestions: string[];
   // 是否开启长期记忆,可用值:Open,Close
   openLongMemory: OpenCloseEnum;
   // 发布状态,可用值:Developing,Applying,Published,Rejected
