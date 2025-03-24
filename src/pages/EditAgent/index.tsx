@@ -79,6 +79,14 @@ const EditAgent: React.FC = () => {
     setTitle();
   }, [agentId]);
 
+  useEffect(() => {
+    if (!document.head.querySelector('base')) {
+      const base = document.createElement('base');
+      base.target = '_blank';
+      document.head.append(base);
+    }
+  }, []);
+
   // 确认编辑智能体
   const handlerConfirmEditAgent = (info: AgentBaseInfo) => {
     const _agentConfigInfo = {

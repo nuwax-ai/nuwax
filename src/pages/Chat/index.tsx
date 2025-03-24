@@ -76,6 +76,14 @@ const Chat: React.FC = () => {
     };
   }, [id, message, files]);
 
+  useEffect(() => {
+    if (!document.head.querySelector('base')) {
+      const base = document.createElement('base');
+      base.target = '_blank';
+      document.head.append(base);
+    }
+  }, []);
+
   // 消息发送
   const handleMessageSend = (message: string, files?: UploadFileInfo[]) => {
     onMessageSend(id, message, files);
