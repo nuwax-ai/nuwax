@@ -112,7 +112,7 @@ const initGraph = ({
       // anchor: 'center', // 默认连接点位于元素中心
       connectionPoint: 'anchor', // 连接点类型为锚点
       allowBlank: false, // 禁止在空白区域创建连接
-      allowMulti: false,
+      allowMulti: true, // 允许同一个连接桩连接多个边
       allowNode: false,
       allowLoop: false, //禁止自己连接自己
       allowEdge: false,
@@ -143,7 +143,6 @@ const initGraph = ({
         if (!sourceMagnet || !targetMagnet || !sourceCell || !targetCell) {
           return false;
         }
-
         // 防止自己连接自己
         if (sourceCell === targetCell) {
           return false;
@@ -152,6 +151,44 @@ const initGraph = ({
         // 提取端口组信息 (关键修复：添加空值保护)
         const sourcePortGroup = sourceMagnet.getAttribute('port-group') || '';
         const targetPortGroup = targetMagnet.getAttribute('port-group') || '';
+
+        // 获取源端口和目标端口的唯一标识符
+        const sourcePortId = sourceMagnet.getAttribute('port');
+        const targetPortId = targetMagnet.getAttribute('port');
+        // 如果端口ID缺失，则阻止连接
+        if (!sourcePortId || !targetPortId) {
+          return false;
+        }
+
+        // 检查是否已经存在从 sourcePort 到 targetPort 的边
+        const existingEdges = graph.getEdges();
+        const isDuplicateEdge = existingEdges.some((edge) => {
+          const edgeSource = edge.getSource();
+          const edgeTarget = edge.getTarget();
+
+          if (
+            typeof edgeSource === 'object' &&
+            'cell' in edgeSource &&
+            'port' in edgeSource &&
+            typeof edgeTarget === 'object' &&
+            'cell' in edgeTarget &&
+            'port' in edgeTarget
+          ) {
+            return (
+              edgeSource.cell === sourceCell.id && // 源节点相同
+              edgeSource.port === sourcePortId && // 源端口相同
+              edgeTarget.cell === targetCell.id && // 目标节点相同
+              edgeTarget.port === targetPortId // 目标端口相同
+            );
+          }
+
+          return false; // 如果 edgeSource 或 edgeTarget 不符合预期类型，跳过检查
+        });
+
+        if (isDuplicateEdge) {
+          // 如果存在重复的边，返回 false 以阻止新边创建
+          return false;
+        }
 
         // 定义类型断言函数
         const isLoopNode = (cell: Cell) => cell.getData()?.type === 'Loop';
@@ -163,7 +200,8 @@ const initGraph = ({
             (sourcePortGroup === 'out' || sourcePortGroup === 'special') &&
             targetPortGroup === 'in'
           ) {
-            return validatePortConnection(sourcePortGroup, targetPortGroup);
+            return true;
+            // return validatePortConnection(sourcePortGroup, targetPortGroup);
           }
           return false; // 阻止其他类型的连接
         }
@@ -429,7 +467,16 @@ const initGraph = ({
 
     if (!sourceNode || !targetNode || !sourcePort || !targetPort) return;
     // 检查是否存在具有相同source和target的边
-    if (hasDuplicateEdge(edges, sourceCellId, targetNodeId, edge.id)) {
+    if (
+      hasDuplicateEdge(
+        edges,
+        sourceCellId,
+        targetNodeId,
+        sourcePort,
+        targetPort,
+        edge.id,
+      )
+    ) {
       // [!code ++]
       edge.remove();
       message.warning('不能创建重复的边');
