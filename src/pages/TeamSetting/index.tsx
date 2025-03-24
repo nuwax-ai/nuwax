@@ -46,7 +46,9 @@ const TeamSetting: React.FC = () => {
     {
       key: 'MemberManage',
       label: '成员管理',
-      children: <MemberManageTab spaceId={spaceId} />,
+      children: (
+        <MemberManageTab spaceId={spaceId} role={data?.data?.currentUserRole} />
+      ),
     },
     ...(data?.data?.currentUserRole === TeamStatusEnum.Owner
       ? [
@@ -85,11 +87,13 @@ const TeamSetting: React.FC = () => {
       >
         <img src={data?.data.icon || teamImage} alt="" />
         <section>
-          <h1 className={cx('flex', 'items-center')}>
+          <h1 className={cx('flex', 'items-center', 'font-16')}>
             {data?.data.name}{' '}
             <FormOutlined className="ml-10" onClick={editTeam} />
           </h1>
-          <p>我的状态：{getStatusName(data?.data.currentUserRole)}</p>
+          <p className={cx('font-14')}>
+            我的状态：{getStatusName(data?.data.currentUserRole)}
+          </p>
         </section>
       </section>
       <ConfigProvider

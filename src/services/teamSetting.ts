@@ -1,5 +1,6 @@
 import type { RequestResponse } from '@/types/interfaces/request';
 import type {
+  SearchUserInfo,
   SpaceUserInfo,
   TeamDetailInfo,
   UpdateSpaceParams,
@@ -79,6 +80,16 @@ export async function apiTransferSpace(data: {
   targetUserId: number;
 }): Promise<RequestResponse<null>> {
   return request('/api/space/transfer', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 根据关键字搜索用户信息
+export async function apiSearchUser(data: {
+  kw: string | undefined;
+}): Promise<RequestResponse<SearchUserInfo[]>> {
+  return request('/api/user/search', {
     method: 'POST',
     data,
   });
