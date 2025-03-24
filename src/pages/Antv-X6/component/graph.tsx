@@ -112,7 +112,7 @@ const initGraph = ({
       // anchor: 'center', // 默认连接点位于元素中心
       connectionPoint: 'anchor', // 连接点类型为锚点
       allowBlank: false, // 禁止在空白区域创建连接
-      allowMulti: true,
+      allowMulti: true, // 允许同一个连接桩连接多个边
       allowNode: false,
       allowLoop: false, //禁止自己连接自己
       allowEdge: false,

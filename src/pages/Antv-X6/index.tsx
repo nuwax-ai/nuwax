@@ -358,7 +358,7 @@ const Workflow: React.FC = () => {
       changeUpdateTime();
       // 如果传递了node,证明时循环节点下的子节点
       if (node) {
-        await service.getNodeConfig(node.loopNodeId as number);
+        getNodeConfig(node.loopNodeId as number);
       }
     }
   };
