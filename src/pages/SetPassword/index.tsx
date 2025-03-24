@@ -4,7 +4,7 @@ import type { SetPasswordFieldType } from '@/types/interfaces/login';
 import { validatePassword } from '@/utils/common';
 import { Button, Form, FormProps, Input } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useModel, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
 
@@ -15,7 +15,7 @@ const cx = classNames.bind(styles);
  */
 const SetPassword: React.FC = () => {
   const navigate = useNavigate();
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const { tenantConfigInfo, setTitle } = useModel('tenantConfigInfo');
 
   const { run, loading } = useRequest(apiSetPassword, {
     manual: true,
@@ -24,6 +24,11 @@ const SetPassword: React.FC = () => {
       navigate('/', { replace: true });
     },
   });
+
+  useEffect(() => {
+    // 设置页面title
+    setTitle();
+  }, []);
 
   const onFinish: FormProps<SetPasswordFieldType>['onFinish'] = (values) => {
     const { password } = values;

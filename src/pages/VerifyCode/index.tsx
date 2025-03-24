@@ -31,7 +31,7 @@ const VerifyCode: React.FC = () => {
   const [errorString, setErrorString] = useState<string>('');
   const inputRef = useRef<InputRef | null>(null);
   const { phone, areaCode } = location.state;
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const { tenantConfigInfo, setTitle } = useModel('tenantConfigInfo');
 
   const handleClick = () => {
     inputRef.current!.focus({
@@ -109,6 +109,8 @@ const VerifyCode: React.FC = () => {
   useEffect(() => {
     handleClick();
     handleCount();
+    // 设置页面title
+    setTitle();
   }, []);
 
   const handleVerify = () => {
