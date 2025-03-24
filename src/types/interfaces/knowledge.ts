@@ -164,6 +164,8 @@ export interface KnowledgeDocumentListParams extends KnowledgeListBaseInfo {
     spaceId: number;
     // 知识库名称
     name: string;
+    // 知识库ID
+    kbId: number;
   };
 }
 

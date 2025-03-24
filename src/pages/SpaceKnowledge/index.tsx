@@ -150,6 +150,7 @@ const SpaceKnowledge: React.FC = () => {
     runDocList({
       queryFilter: {
         spaceId,
+        kbId: knowledgeId,
         name: '',
       },
       current: 1,
