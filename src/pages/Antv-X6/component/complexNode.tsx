@@ -24,11 +24,12 @@ import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
 import { outPutConfigs } from '../params';
 import { FormList, InputAndOut, TreeOutput } from './commonNode';
+
 // 定义大模型节点
 const ModelNode: React.FC<NodeDisposeProps> = ({
   params,
   Modified,
-  // updateNode,
+  updateNode,
 }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
@@ -44,20 +45,32 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     item.type = item.targetType;
     item.typeId = item.targetId;
     const skillComponentConfigs = params.skillComponentConfigs || [];
-    handleChangeNodeConfig({
-      ...params,
-      skillComponentConfigs: [...skillComponentConfigs, item],
-    });
+    if (updateNode) {
+      updateNode({
+        ...params,
+        skillComponentConfigs: [...skillComponentConfigs, item],
+      });
+    }
     setOpen(false);
-    // if (updateNode) {
-    //   updateNode();
-    // }
   };
 
   //   显示新增技能
   const showAdd = () => {
     setOpen(true);
   };
+
+  const hasIds = {
+    [AgentComponentTypeEnum.Plugin]: [],
+    [AgentComponentTypeEnum.Workflow]: [],
+    [AgentComponentTypeEnum.Knowledge]: [],
+  };
+
+  // 遍历 skillComponentConfigs 并填充 hasIds
+  for (const item of params.skillComponentConfigs || []) {
+    if (item.type) {
+      hasIds[item.type].push(Number(item.typeId));
+    }
+  }
 
   return (
     <div className="model-node-style">
@@ -132,9 +145,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
         onAdded={onAddedSkill}
         open={open}
         onCancel={() => setOpen(false)}
-        hasIds={params.skillComponentConfigs?.map((item) =>
-          Number(item.typeId),
-        )}
+        hasIds={hasIds}
       />
     </div>
   );

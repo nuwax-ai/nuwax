@@ -7,6 +7,13 @@ export interface ButtonList {
   key: AgentComponentTypeEnum;
 }
 
+// 定义 hasIds 类型
+type HasIdsType = {
+  [AgentComponentTypeEnum.Plugin]: number[];
+  [AgentComponentTypeEnum.Workflow]: number[];
+  [AgentComponentTypeEnum.Knowledge]: number[];
+};
+
 export interface CreatedProp {
   // 打开当前的弹窗
   open: boolean;
@@ -18,7 +25,7 @@ export interface CreatedProp {
   // 当前空间ID
   spaceId: number;
   // 当前工作流、工作空间已有的
-  hasIds?: number[];
+  hasIds?: HasIdsType;
   // 当前的工作流id
   targetId?: number;
 }

@@ -281,11 +281,6 @@ export const SkillList: React.FC<SkillProps> = ({
     // setSkillParams((prev) => ())
     handleChange({ ...params, [skillName]: newParams });
   };
-
-  // useEffect(() => {
-  //   setSkillParams(params);
-  // }, [params]);
-
   return (
     <>
       {params.skillComponentConfigs?.map((item) => (

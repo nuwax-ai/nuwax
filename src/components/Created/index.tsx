@@ -37,7 +37,7 @@ const Created: React.FC<CreatedProp> = ({
   onCancel,
   checkTag,
   onAdded,
-  hasIds = [],
+  hasIds = {},
   targetId,
   spaceId,
 }) => {
@@ -426,7 +426,8 @@ const Created: React.FC<CreatedProp> = ({
                 onClick={() => onAddNode(item)}
                 disabled={
                   item.targetId === targetId ||
-                  hasIds.includes(item.targetId as number)
+                  (hasIds &&
+                    hasIds[selected.key]?.includes(item.targetId as number))
                 }
               >
                 添加

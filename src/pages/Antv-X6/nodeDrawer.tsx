@@ -310,6 +310,9 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
       onGetNodeConfig(currentNodeConfig);
       setIsModified(false);
     }
+    if (foldWrapItem.type === 'LLM' && currentNodeConfig.type === 'LLM') {
+      setCurrentNodeConfig(foldWrapItem);
+    }
   }, [foldWrapItem, visible]);
 
   useEffect(() => {

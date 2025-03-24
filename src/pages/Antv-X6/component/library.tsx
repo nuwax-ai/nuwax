@@ -41,6 +41,19 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
     Modified({ ...params, ...newNodeConfig });
   };
 
+  const hasIds = {
+    [AgentComponentTypeEnum.Plugin]: [],
+    [AgentComponentTypeEnum.Workflow]: [],
+    [AgentComponentTypeEnum.Knowledge]: [],
+  };
+
+  // 遍历 skillComponentConfigs 并填充 hasIds
+  for (const item of params.skillComponentConfigs || []) {
+    if (item.type && item.typeId) {
+      hasIds[item.type].push(Number(item.knowledgeBaseId));
+    }
+  }
+
   return (
     <div className="knowledge-node">
       {/* 输入参数 */}
@@ -160,9 +173,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
         onAdded={onAddedSkill}
         open={open}
         onCancel={() => setOpen(false)}
-        hasIds={params.knowledgeBaseConfigs?.map((item) =>
-          Number(item.knowledgeBaseId),
-        )}
+        hasIds={hasIds}
       />
     </div>
   );

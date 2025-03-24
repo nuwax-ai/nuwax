@@ -16,10 +16,13 @@ const OtherOperations: React.FC<OtherOperationsProps> = ({
   testRun,
   action,
 }) => {
+  const [popoverVisible, setPopoverVisible] = React.useState(false);
+
   const changeNode = (val: string) => {
-    // 检查 onChange 是否存在并且是一个函数
     onChange(val);
+    setPopoverVisible(false); // 关闭Popover
   };
+
   const content = (
     <>
       <p onClick={() => changeNode('Rename')} className="cursor-pointer">
@@ -47,8 +50,13 @@ const OtherOperations: React.FC<OtherOperationsProps> = ({
       )}
       {/* 节点操作 */}
       {action && (
-        <Popover content={content} trigger="click">
-          <DashOutlined />
+        <Popover
+          content={content}
+          trigger="click"
+          visible={popoverVisible}
+          onVisibleChange={(visible) => setPopoverVisible(visible)}
+        >
+          <DashOutlined onClick={() => setPopoverVisible(true)} />
         </Popover>
       )}
     </div>
