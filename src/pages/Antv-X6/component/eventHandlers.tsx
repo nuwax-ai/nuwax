@@ -133,12 +133,14 @@ const bindEventHandlers = ({
           message.warning('不能删除开始节点和结束节点');
           return;
         }
-        if (_cell.getData().loopNodeId) {
+        // 如果是删除循环节点或删除循环的子节点
+        if (_cell.getData().loopNodeId || _cell.getData().type === 'Loop') {
           // 删除节点
           removeNode(_cell.id, _cell.getData());
+        } else {
+          // 删除节点
+          removeNode(_cell.id);
         }
-        // 删除节点
-        removeNode(_cell.id);
       }
       graph.removeCells(cells); // 删除选中的单元格
     }

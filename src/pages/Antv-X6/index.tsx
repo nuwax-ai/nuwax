@@ -358,7 +358,13 @@ const Workflow: React.FC = () => {
       changeUpdateTime();
       // 如果传递了node,证明时循环节点下的子节点
       if (node) {
-        getNodeConfig(node.loopNodeId as number);
+        // 如果是删除循环节点
+        if (node.type === 'Loop') {
+          setFoldWrapItem({ ...foldWrapItem, type: NodeTypeEnum.Start });
+        } else {
+          // 如果是删除循环的子节点,就要更新循环节点的数据
+          getNodeConfig(node.loopNodeId as number);
+        }
       }
     }
   };
