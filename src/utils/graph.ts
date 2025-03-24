@@ -188,14 +188,18 @@ export function hasDuplicateEdge(
   edges: Edge[],
   sourceCellId: string,
   targetNodeId: string,
+  sourcePortId: string, // [!code ++]
+  targetPortId: string, // [!code ++]
   currentEdgeId?: string, // [!code ++]
 ) {
   return edges.some((e: Edge) => {
-    // 排除当前正在处理的边 // [!code ++]
-    if (currentEdgeId && e.id === currentEdgeId) return false; // [!code ++]
+    // 排除当前正在处理的边
+    if (currentEdgeId && e.id === currentEdgeId) return false;
     return (
       e.getSourceCellId() === sourceCellId.toString() &&
-      e.getTargetCellId() === targetNodeId.toString()
+      e.getTargetCellId() === targetNodeId.toString() &&
+      e.getSourcePortId() === sourcePortId && // [!code ++]
+      e.getTargetPortId() === targetPortId // [!code ++]
     );
   });
 }

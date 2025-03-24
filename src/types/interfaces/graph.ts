@@ -110,7 +110,7 @@ export interface BindEventHandlers {
   changeCondition: (config: ChildNode, targetNodeId?: string) => void;
   copyNode: (child: ChildNode) => void;
   // 删除节点
-  removeNode: (id: string) => void;
+  removeNode: (id: string, node?: ChildNode) => void;
 }
 
 export interface ControlPanelProps {

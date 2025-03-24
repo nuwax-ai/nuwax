@@ -21,15 +21,6 @@ const bindEventHandlers = ({
     return false; // 阻止默认行为
   });
 
-  // 快捷键绑定：剪切选中的单元格
-  // graph.bindKey(['meta+x', 'ctrl+x'], () => {
-  //   const cells = graph.getSelectedCells(); // 获取当前选中的单元格
-  //   if (cells.length) {
-  //     graph.cut(cells); // 如果有选中的单元格，则执行剪切操作
-  //   }
-  //   return false; // 阻止默认行为
-  // });
-
   // 快捷键绑定：粘贴已复制的单元格
   graph.bindKey(['meta+v', 'ctrl+v'], () => {
     if (!graph.isClipboardEmpty()) {
@@ -141,6 +132,10 @@ const bindEventHandlers = ({
         ) {
           message.warning('不能删除开始节点和结束节点');
           return;
+        }
+        if (_cell.getData().loopNodeId) {
+          // 删除节点
+          removeNode(_cell.id, _cell.getData());
         }
         // 删除节点
         removeNode(_cell.id);

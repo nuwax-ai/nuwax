@@ -347,7 +347,7 @@ const Workflow: React.FC = () => {
   };
 
   // 删除指定的节点
-  const deleteNode = async (id: number | string) => {
+  const deleteNode = async (id: number | string, node?: ChildNode) => {
     setVisible(false);
     // if(Number(id)===Number(foldWrapItem.id)){
     // }
@@ -356,6 +356,10 @@ const Workflow: React.FC = () => {
       // console.log(graphRef.current)
       graphRef.current.deleteNode(id.toString());
       changeUpdateTime();
+      // 如果传递了node,证明时循环节点下的子节点
+      if (node) {
+        await service.getNodeConfig(node.loopNodeId as number);
+      }
     }
   };
 
