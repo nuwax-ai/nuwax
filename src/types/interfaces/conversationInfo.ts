@@ -79,8 +79,8 @@ export interface AttachmentFile {
   mimeType: string;
 }
 
-// 会话输入参数
-export interface ConversationChatParams {
+// 智能体会话问题建议输入参数
+export interface ConversationChatSuggestParams {
   // 会话唯一标识
   conversationId: number;
   // 变量参数，前端需要根据agent配置组装参数
@@ -92,9 +92,6 @@ export interface ConversationChatParams {
   // 是否调试模式
   debug: boolean;
 }
-
-// 智能体会话问题建议输入参数
-export type ConversationChatSuggestParams = ConversationChatParams;
 
 // 创建会话输入参数
 export interface ConversationCreateParams {

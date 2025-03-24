@@ -19,8 +19,6 @@ import type {
   TriggerTimeZone,
 } from '@/types/interfaces/agent';
 import type {
-  ConversationChatParams,
-  ConversationChatResponse,
   ConversationChatSuggestParams,
   ConversationCreateParams,
   ConversationInfo,
@@ -274,16 +272,6 @@ export async function apiAgentConversationCreate(
   data: ConversationCreateParams,
 ): Promise<RequestResponse<ConversationInfo>> {
   return request('/api/agent/conversation/create', {
-    method: 'POST',
-    data,
-  });
-}
-
-// 智能体会话接口
-export async function apiAgentConversationChat(
-  data: ConversationChatParams,
-): Promise<RequestResponse<ConversationChatResponse>> {
-  return request('/api/agent/conversation/chat', {
     method: 'POST',
     data,
   });
