@@ -1,9 +1,9 @@
 import { SPACE_ID } from '@/constants/home.constants';
 import { SPACE_APPLICATION_LIST } from '@/constants/space.constants';
-import { SpaceApplicationListEnum } from '@/types/enums/space';
+import { SpaceApplicationListEnum, SpaceTypeEnum } from '@/types/enums/space';
 import classNames from 'classnames';
 import React from 'react';
-import { history, useLocation } from 'umi';
+import { history, useLocation, useModel } from 'umi';
 import DevCollect from './DevCollect';
 import styles from './index.less';
 import SpaceTitle from './SpaceTitle';
@@ -13,6 +13,7 @@ const cx = classNames.bind(styles);
 const SpaceSection: React.FC = () => {
   const location = useLocation();
   const { pathname } = location;
+  const { currentSpaceInfo } = useModel('spaceModel');
 
   const handlerApplication = (type: SpaceApplicationListEnum) => {
     const spaceId = localStorage.getItem(SPACE_ID);
@@ -50,23 +51,31 @@ const SpaceSection: React.FC = () => {
     <div className={cx('h-full', 'px-6', 'py-16', 'overflow-y')}>
       <SpaceTitle />
       <ul>
-        {SPACE_APPLICATION_LIST.map((item) => (
-          <li
-            key={item.type}
-            onClick={() => handlerApplication(item.type)}
-            className={cx(
-              styles['space-item'],
-              'hover-box',
-              'flex',
-              'items-center',
-              'cursor-pointer',
-              { [styles.active]: handleActive(item.type) },
-            )}
-          >
-            {item.icon}
-            <span className={cx(styles.text)}>{item.text}</span>
-          </li>
-        ))}
+        {SPACE_APPLICATION_LIST.map((item) => {
+          if (
+            currentSpaceInfo?.type === SpaceTypeEnum.Personal &&
+            item.type === SpaceApplicationListEnum.Team_Setting
+          ) {
+            return null;
+          }
+          return (
+            <li
+              key={item.type}
+              onClick={() => handlerApplication(item.type)}
+              className={cx(
+                styles['space-item'],
+                'hover-box',
+                'flex',
+                'items-center',
+                'cursor-pointer',
+                { [styles.active]: handleActive(item.type) },
+              )}
+            >
+              {item.icon}
+              <span className={cx(styles.text)}>{item.text}</span>
+            </li>
+          );
+        })}
       </ul>
       <h3 className={cx(styles['collection-title'])}>开发收藏</h3>
       <DevCollect />

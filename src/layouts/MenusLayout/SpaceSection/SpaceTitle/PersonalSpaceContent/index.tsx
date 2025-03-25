@@ -45,8 +45,15 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
     if (pathname.includes('library')) {
       history.push(`/space/${spaceId}/library`);
     }
+
     if (pathname.includes('team')) {
-      history.push(`/space/${spaceId}/team`);
+      // 如果团队空间切换到个人空间，需要隐藏团队设置，同样需要切换到默认页'智能体开发'
+      if (info.type === SpaceTypeEnum.Personal) {
+        history.push(`/space/${spaceId}/develop`);
+      } else {
+        // 团队空间互相切换时，只更新空间id即可
+        history.push(`/space/${spaceId}/team`);
+      }
     }
   };
 

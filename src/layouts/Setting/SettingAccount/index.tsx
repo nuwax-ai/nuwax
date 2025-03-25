@@ -1,4 +1,4 @@
-import personalImage from '@/assets/images/personal.png';
+import avatarImage from '@/assets/images/avatar.png';
 import UploadAvatar from '@/components/UploadAvatar';
 import { USER_INFO } from '@/constants/home.constants';
 import { apiUserUpdate } from '@/services/account';
@@ -26,6 +26,7 @@ const SettingAccount: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (_, params) => {
+      console.log(111111);
       message.success('保存成功');
       const _userInfo = cloneDeep(userInfo);
       if (params[0]?.avatar) {
@@ -46,9 +47,12 @@ const SettingAccount: React.FC = () => {
 
   // 上传头像成功后更新头像
   const handleSuccessUpload = (url: string) => {
-    run({
-      avatar: url,
-    });
+    console.log(url, 'url');
+    if (url) {
+      run({
+        avatar: url,
+      });
+    }
   };
 
   const onSaveUsername: FormProps<SetUserAccountInfo>['onFinish'] = (
@@ -63,7 +67,7 @@ const SettingAccount: React.FC = () => {
       <UploadAvatar
         imageUrl={userInfo?.avatar}
         className={cx(styles.avatar)}
-        defaultImage={personalImage as string}
+        defaultImage={avatarImage as string}
         onUploadSuccess={handleSuccessUpload}
       />
       <Form

@@ -10,9 +10,9 @@ import {
   ICON_KNOWLEDGE,
   ICON_LOCAL_DOC,
   ICON_MODEL,
-  ICON_ONLINE_DOC,
+  // ICON_ONLINE_DOC,
   ICON_PLUGIN,
-  ICON_TABLE_FORMAT,
+  // ICON_TABLE_FORMAT,
   ICON_TEXT_FORMAT,
   ICON_WORKFLOW,
 } from '@/constants/images.constants';
@@ -173,11 +173,11 @@ export const KNOWLEDGE_RESOURCE_FORMAT = [
     label: '文本格式',
     icon: <ICON_TEXT_FORMAT />,
   },
-  {
-    value: KnowledgeDataTypeEnum.Table,
-    label: '表格格式',
-    icon: <ICON_TABLE_FORMAT />,
-  },
+  // {
+  //   value: KnowledgeDataTypeEnum.Table,
+  //   label: '表格格式',
+  //   icon: <ICON_TABLE_FORMAT />,
+  // },
 ];
 
 // 知识库文本格式导入类型
@@ -188,12 +188,12 @@ export const KNOWLEDGE_TEXT_IMPORT_TYPE = [
     icon: <ICON_LOCAL_DOC />,
     desc: '上传 PDF, TXT, MD, DOC, DOCX 格式的本地文件',
   },
-  {
-    value: KnowledgeTextImportEnum.Online_Doc,
-    label: '在线文档',
-    icon: <ICON_ONLINE_DOC />,
-    desc: '获取在线网页内容',
-  },
+  // {
+  //   value: KnowledgeTextImportEnum.Online_Doc,
+  //   label: '在线文档',
+  //   icon: <ICON_ONLINE_DOC />,
+  //   desc: '获取在线网页内容',
+  // },
   {
     value: KnowledgeTextImportEnum.Custom,
     label: '自定义',

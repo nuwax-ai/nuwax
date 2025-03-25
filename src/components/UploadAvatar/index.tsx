@@ -1,3 +1,4 @@
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { FileType, UploadAvatarProps } from '@/types/interfaces/common';
@@ -17,13 +18,19 @@ const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
     props;
 
   const handleChange: UploadProps['onChange'] = (info) => {
+    console.log(info, 'info');
     if (info.file.status === 'uploading') {
       return;
     }
     if (info.file.status === 'done') {
+      const code = info.file.response?.code;
       const data = info.file.response?.data;
-      // Get this url from response in real world.
-      onUploadSuccess?.(data?.url);
+      if (code === SUCCESS_CODE) {
+        // Get this url from response in real world.
+        onUploadSuccess?.(data?.url);
+      } else {
+        message.warning(info.file.response?.message);
+      }
     }
   };
 

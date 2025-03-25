@@ -17,7 +17,6 @@ function Space() {
       const spaceId = localStorage.getItem(SPACE_ID);
       // 首次进入时
       if (!spaceId) {
-        console.log(result, '查询用户空间列表');
         const defaultSpace = result?.find(
           (item) => item.type === SpaceTypeEnum.Personal,
         );

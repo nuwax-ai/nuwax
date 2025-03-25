@@ -22,7 +22,6 @@ const DataProcess: React.FC<DataProcessProps> = ({ uploadFileList }) => {
                 info.size / 1000
               } kb`}</span>
             </div>
-            <span>处理中.处理完成</span>
           </div>
         </div>
       ))}

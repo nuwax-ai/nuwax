@@ -143,7 +143,6 @@ const SpaceDevelop: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    console.log('运行到这里了', spaceId);
     run(spaceId);
   }, [spaceId]);
 

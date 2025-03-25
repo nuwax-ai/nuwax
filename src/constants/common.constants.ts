@@ -6,8 +6,7 @@ import {
 } from '@/types/enums/common';
 
 // 文件上传地址
-export const UPLOAD_FILE_ACTION =
-  'https://test-nvwa-api.xspaceagi.com/api/file/upload';
+export const UPLOAD_FILE_ACTION = `${process.env.BASE_URL}/api/file/upload`;
 
 // 会话 Connection地址
 export const CONVERSATION_CONNECTION_URL = `${process.env.BASE_URL}/api/agent/conversation/chat`;
