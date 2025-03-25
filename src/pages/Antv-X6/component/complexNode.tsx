@@ -1,4 +1,5 @@
 import Created from '@/components/Created';
+import type { HasIdsType } from '@/components/Created/type';
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import { ModelSelected } from '@/components/ModelSetting';
@@ -24,7 +25,6 @@ import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
 import { outPutConfigs } from '../params';
 import { FormList, InputAndOut, TreeOutput } from './commonNode';
-
 // 定义大模型节点
 const ModelNode: React.FC<NodeDisposeProps> = ({
   params,
@@ -59,7 +59,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     setOpen(true);
   };
 
-  const hasIds = {
+  const hasIds: HasIdsType = {
     [AgentComponentTypeEnum.Plugin]: [],
     [AgentComponentTypeEnum.Workflow]: [],
     [AgentComponentTypeEnum.Knowledge]: [],
@@ -68,7 +68,10 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
   // 遍历 skillComponentConfigs 并填充 hasIds
   for (const item of params.skillComponentConfigs || []) {
     if (item.type) {
-      hasIds[item.type].push(Number(item.typeId));
+      const type = item.type as AgentComponentTypeEnum; // 明确类型
+      if (hasIds[type]) {
+        hasIds[type]?.push(Number(item.typeId));
+      }
     }
   }
 

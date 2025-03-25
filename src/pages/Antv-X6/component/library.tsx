@@ -1,5 +1,6 @@
 // 知识库，数据库等节点
 import Created from '@/components/Created';
+import type { HasIdsType } from '@/components/Created/type';
 import { SkillList } from '@/components/Skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { InputItemNameEnum } from '@/types/enums/node';
@@ -41,16 +42,19 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
     Modified({ ...params, ...newNodeConfig });
   };
 
-  const hasIds = {
+  const hasIds: HasIdsType = {
     [AgentComponentTypeEnum.Plugin]: [],
     [AgentComponentTypeEnum.Workflow]: [],
     [AgentComponentTypeEnum.Knowledge]: [],
   };
 
   // 遍历 skillComponentConfigs 并填充 hasIds
-  for (const item of params.skillComponentConfigs || []) {
-    if (item.type && item.typeId) {
-      hasIds[item.type].push(Number(item.knowledgeBaseId));
+  for (const item of params.knowledgeBaseConfigs || []) {
+    if (item.type && item.knowledgeBaseId) {
+      const type = item.type as AgentComponentTypeEnum; // 明确类型
+      if (hasIds[type]) {
+        hasIds[type]?.push(Number(item.knowledgeBaseId));
+      }
     }
   }
 
