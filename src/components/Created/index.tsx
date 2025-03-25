@@ -229,6 +229,8 @@ const Created: React.FC<CreatedProp> = ({
         params.dataType = val;
       }
     }
+    setPagination((prev) => ({ ...prev, page: 1 })); // 新增分页重置
+    setList([]);
     callInterface(val, params);
   };
 
@@ -253,7 +255,8 @@ const Created: React.FC<CreatedProp> = ({
     };
 
     setSizes(100);
-
+    setPagination((prev) => ({ ...prev, page: 1 })); // 新增分页重置
+    setList([]);
     if (_item) {
       SetSelected(_item);
       getList(_item.key, _params);
@@ -266,17 +269,13 @@ const Created: React.FC<CreatedProp> = ({
   }, [checkTag]);
   // 监听滚动事件
   useEffect(() => {
-    // 收藏无需滚动加载
     const handleScroll = () => {
       if (selectMenu === 'collect') return;
       const node = scrollRef.current;
-
       if (node) {
-        // 如果没有正在加载更多数据
         const isBottom =
-          node.scrollHeight - node.scrollTop - node.clientHeight < 10; // 判断是否接近底部
-        if (isBottom) {
-          if (pagination.page >= sizes) return;
+          node.scrollHeight - node.scrollTop - node.clientHeight < 10;
+        if (isBottom && pagination.page < sizes) {
           const _params: IGetList = {
             pageSize: 10,
             page: ++pagination.page,
@@ -284,18 +283,27 @@ const Created: React.FC<CreatedProp> = ({
           if (selectMenu === 'library') {
             _params.spaceId = spaceId;
           }
+          // 立即更新页码避免重复请求
           setPagination(_params);
           getList(selected.key, _params);
         }
       }
     };
 
-    scrollRef.current?.addEventListener('scroll', handleScroll);
+    const currentScrollRef = scrollRef.current;
+    // 当modal打开时重新绑定事件
+    if (open && currentScrollRef) {
+      currentScrollRef.addEventListener('scroll', handleScroll);
+      // 初始化时立即检查滚动位置
+      handleScroll();
+    }
 
     return () => {
-      scrollRef.current?.removeEventListener('scroll', handleScroll);
+      if (currentScrollRef) {
+        currentScrollRef.removeEventListener('scroll', handleScroll);
+      }
     };
-  }, [sizes]);
+  }, [open, selectMenu, sizes, selected.key, spaceId]); // 添加open依赖
 
   //   顶部的标题
   const title = (
@@ -391,7 +399,14 @@ const Created: React.FC<CreatedProp> = ({
                 {/* <Tag>{item.tag}</Tag> */}
                 <div className="dis-sb count-div-style">
                   <div className={'dis-left'}>
-                    <img src={item.publishUser?.avatar} alt="" />
+                    <img
+                      src={
+                        item.publishUser?.avatar ||
+                        require('@/assets/images/avatar.png')
+                      }
+                      style={{ borderRadius: '50%' }}
+                      alt="用户头像"
+                    />
                     <span>{item.publishUser?.nickName}</span>
                     <Divider type="vertical" />
                     <span className="margin-left-6">
