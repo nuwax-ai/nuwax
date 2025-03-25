@@ -17,7 +17,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Divider, Input, Menu, Modal, Radio } from 'antd';
 import { RadioChangeEvent } from 'antd/lib/radio';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import CreateKnowledge from '../CreateKnowledge';
 import CreateNewPlugin from '../CreateNewPlugin';
 import CreateWorkflow from '../CreateWorkflow';
@@ -116,20 +116,30 @@ const Created: React.FC<CreatedProp> = ({
   ];
   // 添加ref引用
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isRequesting = useRef(false);
   /**  -----------------  需要调用接口  -----------------   */
-
-  //   获取右侧的list
+  // 获取右侧的list（关键修改）
   const getList = async (type: AgentComponentTypeEnum, params: IGetList) => {
-    if (params.page !== 1 && params.page > sizes) return;
+    // 新增请求锁定防止重复
+    if (params.page > sizes || isRequesting.current) return;
+
+    isRequesting.current = true;
     const _res = await service.getList(type, params);
+    isRequesting.current = false;
+
     if (_res.code === Constant.success) {
       setSizes(_res.data.pages);
-      setPagination({ ...pagination, page: _res.data.current });
-      if (params.page === 1) {
-        setList([..._res.data.records]);
-      } else {
-        setList((data) => [...data, ..._res.data.records]);
-      }
+      setPagination((prev) => ({
+        ...prev,
+        page: _res.data.current,
+        total: _res.data.total,
+      }));
+
+      setList((prev) =>
+        params.page === 1
+          ? [..._res.data.records]
+          : [...prev, ..._res.data.records],
+      );
     }
   };
 
@@ -218,85 +228,89 @@ const Created: React.FC<CreatedProp> = ({
   };
   // 点击左侧菜单，触发不同的事件
   const onMenuClick = (val: string) => {
-    // 切换左侧菜单
+    // 切换左侧菜单时重置所有分页状态
     setSelectMenu(val);
+    setPagination({ page: 1, pageSize: 10 });
+    setList([]);
+
     const params: IGetList = {
       page: 1,
       pageSize: 10,
     };
-    if (selected.key === AgentComponentTypeEnum.Knowledge) {
-      if (val !== 'all') {
-        params.dataType = val;
-      }
+
+    if (selected.key === AgentComponentTypeEnum.Knowledge && val !== 'all') {
+      params.dataType = val;
     }
+
     callInterface(val, params);
   };
 
-  //   修改顶部选项
+  const handleScroll = useCallback(() => {
+    if (selectMenu === 'collect' || isRequesting.current) return;
+
+    const node = scrollRef.current;
+    if (node) {
+      const remainingSpace =
+        node.scrollHeight - node.scrollTop - node.clientHeight;
+      const shouldLoad = remainingSpace < 50 && pagination.page < sizes;
+
+      if (shouldLoad) {
+        const nextPage = pagination.page + 1;
+        const params: IGetList = {
+          pageSize: 10,
+          page: nextPage,
+          ...(selectMenu === 'library' && { spaceId }),
+        };
+
+        setPagination((prev) => ({ ...prev, page: nextPage }));
+        getList(selected.key, params);
+      }
+    }
+  }, [pagination, selectMenu, sizes, isRequesting, selected.key]);
+
+  // 修改顶部选项
   const changeTitle = (val: RadioChangeEvent | string) => {
     if (!val) return;
-    setSelectMenu('all');
-    setSearch('');
-    // 获取被选中的key
-    let _select;
-    if (typeof val === 'string') {
-      _select = val;
-    } else {
-      _select = val.target.value;
-    }
-    // 遍历找到对应的选项
+
+    // 重置所有相关状态
+    const _select = typeof val === 'string' ? val : val.target.value;
     const _item = buttonList.find((item) => item.key === _select);
 
-    const _params = {
-      page: 1,
-      pageSize: 10,
-    };
-
-    setSizes(100);
-
     if (_item) {
+      setSelectMenu('all');
+      setSearch('');
       SetSelected(_item);
-      getList(_item.key, _params);
+      setPagination({ page: 1, pageSize: 10 });
+      setSizes(100);
+      setList([]);
+
+      getList(_item.key, {
+        page: 1,
+        pageSize: 10,
+      });
     }
   };
+
+  useEffect(() => {
+    const node = scrollRef.current;
+
+    if (open && node) {
+      node.addEventListener('scroll', handleScroll);
+
+      // 初始化检查
+      handleScroll();
+
+      return () => {
+        node.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, [open, handleScroll]); // 只保留 open 依赖
+
   /**  -----------------  初始化时需要的  -----------------   */
 
   useEffect(() => {
     changeTitle(checkTag);
   }, [checkTag]);
-  // 监听滚动事件
-  useEffect(() => {
-    // 收藏无需滚动加载
-    const handleScroll = () => {
-      if (selectMenu === 'collect') return;
-      const node = scrollRef.current;
-
-      if (node) {
-        // 如果没有正在加载更多数据
-        const isBottom =
-          node.scrollHeight - node.scrollTop - node.clientHeight < 10; // 判断是否接近底部
-        if (isBottom) {
-          if (pagination.page >= sizes) return;
-          const _params: IGetList = {
-            pageSize: 10,
-            page: ++pagination.page,
-          };
-          if (selectMenu === 'library') {
-            _params.spaceId = spaceId;
-          }
-          setPagination(_params);
-          getList(selected.key, _params);
-        }
-      }
-    };
-
-    scrollRef.current?.addEventListener('scroll', handleScroll);
-
-    return () => {
-      scrollRef.current?.removeEventListener('scroll', handleScroll);
-    };
-  }, [sizes]);
-
   //   顶部的标题
   const title = (
     <div className="dis-left created-title">
@@ -391,7 +405,14 @@ const Created: React.FC<CreatedProp> = ({
                 {/* <Tag>{item.tag}</Tag> */}
                 <div className="dis-sb count-div-style">
                   <div className={'dis-left'}>
-                    <img src={item.publishUser?.avatar} alt="" />
+                    <img
+                      src={
+                        item.publishUser?.avatar ||
+                        require('@/assets/images/avatar.png')
+                      }
+                      style={{ borderRadius: '50%' }}
+                      alt="用户头像"
+                    />
                     <span>{item.publishUser?.nickName}</span>
                     <Divider type="vertical" />
                     <span className="margin-left-6">

@@ -243,9 +243,13 @@ const CreateModel: React.FC<CreateModelProps> = ({
     },
   ];
 
+  const [shouldRenderDimension, setShouldRenderDimension] = useState(false);
   const handleValuesChange = (changedValues: ModelFormData) => {
     const { networkType } = changedValues;
     setNetworkType(networkType);
+    if (action !== apiModelSave) {
+      setShouldRenderDimension(changedValues.type === ModelTypeEnum.Embeddings);
+    }
   };
 
   return (
@@ -302,7 +306,14 @@ const CreateModel: React.FC<CreateModelProps> = ({
             label="模型类型"
             rules={[{ required: true, message: '选择模型接口协议' }]}
           >
-            <Select options={MODEL_TYPE_LIST} placeholder="选择模型接口协议" />
+            <Select
+              options={MODEL_TYPE_LIST.filter((v) =>
+                [ModelTypeEnum.Chat, ModelTypeEnum.Embeddings].includes(
+                  v.value,
+                ),
+              )}
+              placeholder="选择模型接口协议"
+            />
           </Form.Item>
         </ConditionRender>
         <Form.Item
@@ -315,7 +326,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
             placeholder="请选择模型接口协议"
           />
         </Form.Item>
-        <ConditionRender condition={action !== apiModelSave}>
+        <ConditionRender condition={shouldRenderDimension}>
           <Form.Item
             name="dimension"
             label="向量维度"

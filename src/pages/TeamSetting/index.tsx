@@ -89,7 +89,9 @@ const TeamSetting: React.FC = () => {
         <section>
           <h1 className={cx('flex', 'items-center', 'font-16')}>
             {data?.data.name}{' '}
-            <FormOutlined className="ml-10" onClick={editTeam} />
+            {data?.data?.currentUserRole !== TeamStatusEnum.User && (
+              <FormOutlined className="ml-10" onClick={editTeam} />
+            )}
           </h1>
           <p className={cx('font-14')}>
             我的状态：{getStatusName(data?.data.currentUserRole)}

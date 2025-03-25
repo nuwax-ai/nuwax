@@ -8,10 +8,8 @@ export interface ButtonList {
 }
 
 // 定义 hasIds 类型
-type HasIdsType = {
-  [AgentComponentTypeEnum.Plugin]: number[];
-  [AgentComponentTypeEnum.Workflow]: number[];
-  [AgentComponentTypeEnum.Knowledge]: number[];
+export type HasIdsType = {
+  [key in AgentComponentTypeEnum]?: number[];
 };
 
 export interface CreatedProp {
