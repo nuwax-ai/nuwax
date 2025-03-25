@@ -177,7 +177,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           { label: '自定义', value: UpdateModeComponentEnum.Customization },
         ]}
         rootClassName={cx('mb-16')}
-        value={componentBindConfig.mode}
+        value={componentBindConfig?.mode}
         onChange={handleChangeMode}
         block
       />

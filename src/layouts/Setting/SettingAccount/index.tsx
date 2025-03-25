@@ -26,7 +26,6 @@ const SettingAccount: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (_, params) => {
-      console.log(111111);
       message.success('保存成功');
       const _userInfo = cloneDeep(userInfo);
       if (params[0]?.avatar) {

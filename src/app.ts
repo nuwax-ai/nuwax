@@ -1,4 +1,8 @@
-import { SUCCESS_CODE, USER_NO_LOGIN } from '@/constants/codes.constants';
+import {
+  REDIRECT_LOGIN,
+  SUCCESS_CODE,
+  USER_NO_LOGIN,
+} from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { RequestConfig } from '@@/plugin-request/request';
@@ -9,7 +13,7 @@ export const request: RequestConfig = {
   errorConfig: {
     // 错误抛出
     errorThrower: (res: RequestResponse<null>) => {
-      console.log(res);
+      // console.log(res);
       const {
         code,
         displayCode,
@@ -23,6 +27,12 @@ export const request: RequestConfig = {
       if (code === USER_NO_LOGIN) {
         localStorage.clear();
         history.push('/login');
+        return;
+      }
+
+      //4011
+      if (code === REDIRECT_LOGIN) {
+        window.location.href = resMessage;
         return;
       }
 
@@ -85,15 +95,13 @@ export const request: RequestConfig = {
 
   responseInterceptors: [
     async (response) => {
-      // console.log(response, 2222);
-      if (response.status === 301 || response.status === 302) {
-        const location = response?.headers?.location;
-        window.open(location);
-        return;
-      }
+      // if (response.status === 301 || response.status === 302) {
+      //   const location = response?.headers?.location;
+      //   window.open(location);
+      //   return;
+      // }
       // 拦截响应数据，进行个性化处理
       const { data = {} as any } = response;
-
       if (data.code !== SUCCESS_CODE) {
         request.errorConfig?.errorThrower?.(data);
       }
