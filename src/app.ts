@@ -30,7 +30,7 @@ export const request: RequestConfig = {
         return;
       }
 
-      //4011
+      // 4011
       if (code === REDIRECT_LOGIN) {
         window.location.href = resMessage;
         return;

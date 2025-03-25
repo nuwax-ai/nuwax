@@ -181,7 +181,7 @@ export default () => {
               clearTimeout(timeoutRef.current);
               timeoutRef.current = 0;
               // 是否开启问题建议,可用值:Open,Close
-              if (conversationInfo?.agent.openSuggest === OpenCloseEnum.Open) {
+              if (conversationInfo?.agent?.openSuggest === OpenCloseEnum.Open) {
                 // 滚动到底部
                 handleScrollBottom();
                 runChatSuggest(params);

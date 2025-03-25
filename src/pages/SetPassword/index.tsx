@@ -17,8 +17,6 @@ const SetPassword: React.FC = () => {
   const navigate = useNavigate();
   const { tenantConfigInfo, setTitle } = useModel('tenantConfigInfo');
 
-  console.log(tenantConfigInfo, '====');
-
   const { run, loading } = useRequest(apiSetPassword, {
     manual: true,
     debounceInterval: 300,

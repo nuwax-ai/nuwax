@@ -27,7 +27,7 @@ const cx = classNames.bind(styles);
 const MenusLayout: React.FC = () => {
   const location = useLocation();
   const { setOpenHistoryModal, setOpenMessage } = useModel('layout');
-  const { runSpace } = useModel('spaceModel');
+  const { currentSpaceInfo, runSpace } = useModel('spaceModel');
   const { setAgentInfoList, setPluginInfoList } = useModel('squareModel');
   const { runTenantConfig } = useModel('tenantConfigInfo');
   const [tabType, setTabType] = useState<TabsEnum>();
@@ -76,7 +76,8 @@ const MenusLayout: React.FC = () => {
         break;
       case TabsEnum.Space:
         {
-          const spaceId = localStorage.getItem(SPACE_ID);
+          const spaceId =
+            localStorage.getItem(SPACE_ID) ?? currentSpaceInfo?.id;
           history.push(`/space/${spaceId}/develop`);
         }
         break;

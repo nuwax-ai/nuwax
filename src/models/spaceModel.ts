@@ -2,6 +2,7 @@ import { SPACE_ID } from '@/constants/home.constants';
 import { apiSpaceList } from '@/services/workspace';
 import { SpaceTypeEnum } from '@/types/enums/space';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
+import { message } from 'antd';
 import { useState } from 'react';
 import { useRequest } from 'umi';
 
@@ -14,6 +15,10 @@ function Space() {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: SpaceInfo[]) => {
+      if (!result?.length) {
+        message.warning('用户空间列表为空');
+        return;
+      }
       const spaceId = localStorage.getItem(SPACE_ID);
       // 首次进入时
       if (!spaceId) {
