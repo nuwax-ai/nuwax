@@ -199,7 +199,7 @@ export interface ChatUserInfo {
 
 // 角色信息
 export interface RoleInfo {
-  user: ChatUserInfo;
+  user?: ChatUserInfo;
   assistant: ChatUserInfo;
   system: ChatUserInfo;
 }

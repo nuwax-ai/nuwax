@@ -1,4 +1,4 @@
-import logo from '@/assets/images/logo.png';
+import ConditionRender from '@/components/ConditionRender';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import { ICON_NEW_AGENT } from '@/constants/images.constants';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
@@ -46,11 +46,9 @@ const Header: React.FC = () => {
   };
   return (
     <>
-      <img
-        src={configInfo?.siteLogo || (logo as string)}
-        className={cx(styles.logo)}
-        alt=""
-      />
+      <ConditionRender condition={!!configInfo?.siteLogo}>
+        <img src={configInfo?.siteLogo} className={cx(styles.logo)} alt="" />
+      </ConditionRender>
       <span
         className={cx(
           styles['add-agent'],

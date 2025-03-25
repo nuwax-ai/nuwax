@@ -1,4 +1,4 @@
-import logo from '@/assets/images/logo.png';
+import ConditionRender from '@/components/ConditionRender';
 import { apiSetPassword } from '@/services/account';
 import type { SetPasswordFieldType } from '@/types/interfaces/login';
 import { validatePassword } from '@/utils/common';
@@ -16,6 +16,8 @@ const cx = classNames.bind(styles);
 const SetPassword: React.FC = () => {
   const navigate = useNavigate();
   const { tenantConfigInfo, setTitle } = useModel('tenantConfigInfo');
+
+  console.log(tenantConfigInfo, '====');
 
   const { run, loading } = useRequest(apiSetPassword, {
     manual: true,
@@ -45,11 +47,13 @@ const SetPassword: React.FC = () => {
         'items-center',
       )}
     >
-      <img
-        src={tenantConfigInfo?.siteLogo || (logo as string)}
-        className={cx(styles.logo)}
-        alt=""
-      />
+      <ConditionRender condition={!!tenantConfigInfo?.siteLogo}>
+        <img
+          src={tenantConfigInfo?.siteLogo}
+          className={cx(styles.logo)}
+          alt=""
+        />
+      </ConditionRender>
       <Form
         rootClassName={cx(styles.form, 'flex', 'flex-col')}
         name="login"
@@ -73,7 +77,7 @@ const SetPassword: React.FC = () => {
             },
           ]}
         >
-          <Input
+          <Input.Password
             rootClassName={cx(styles.input)}
             placeholder="请输入6位以上密码"
           />
@@ -99,7 +103,7 @@ const SetPassword: React.FC = () => {
             }),
           ]}
         >
-          <Input
+          <Input.Password
             rootClassName={cx(styles.input)}
             placeholder="请再次输入密码"
           />

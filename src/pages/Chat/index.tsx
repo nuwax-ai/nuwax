@@ -41,10 +41,6 @@ const Chat: React.FC = () => {
   const roleInfo: RoleInfo = useMemo(() => {
     const agent = conversationInfo?.agent;
     return {
-      user: {
-        name: agent?.publishUser?.nickName as string,
-        avatar: agent?.publishUser?.avatar as string,
-      },
       assistant: {
         name: agent?.name as string,
         avatar: agent?.icon as string,

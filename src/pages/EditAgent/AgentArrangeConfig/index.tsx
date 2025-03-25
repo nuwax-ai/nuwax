@@ -73,7 +73,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 技能列表 - 当前激活 tab 面板的 key
   const skillActiveKey = useMemo(() => {
     const skill: AgentArrangeConfigEnum[] = [];
-    for (let i = 0; i < agentComponentList.length; i++) {
+    for (let i = 0; i < agentComponentList?.length; i++) {
       if (agentComponentList[i].type === AgentComponentTypeEnum.Plugin) {
         if (!skill.includes(AgentArrangeConfigEnum.Plugin)) {
           skill.push(AgentArrangeConfigEnum.Plugin);
@@ -136,7 +136,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     onSuccess: (_, params) => {
       message.success('已成功删除插件');
       const id = params[0];
-      const list = agentComponentList.filter((item) => item.id !== id);
+      const list = agentComponentList?.filter((item) => item.id !== id) || [];
       setAgentComponentList(list);
     },
   });

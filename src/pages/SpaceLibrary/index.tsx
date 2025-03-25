@@ -5,7 +5,7 @@ import CreateNewPlugin from '@/components/CreateNewPlugin';
 import CreateWorkflow from '@/components/CreateWorkflow';
 import CustomPopover from '@/components/CustomPopover';
 import SelectList from '@/components/SelectList';
-import { SPACE_ID, USER_INFO } from '@/constants/home.constants';
+import { USER_INFO } from '@/constants/home.constants';
 import {
   CREATE_LIST,
   FILTER_STATUS,
@@ -40,7 +40,7 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useRequest } from 'umi';
+import { history, useMatch, useRequest } from 'umi';
 import ComponentItem from './ComponentItem';
 import CreateModel from './CreateModel';
 import styles from './index.less';
@@ -51,6 +51,8 @@ const cx = classNames.bind(styles);
  * 工作空间 - 组件库
  */
 const SpaceLibrary: React.FC = () => {
+  const match = useMatch('/space/:spaceId/library');
+  const { spaceId } = match.params;
   // 组件列表
   const [componentList, setComponentList] = useState<ComponentInfo[]>([]);
   // 所有智能体列表
@@ -83,8 +85,6 @@ const SpaceLibrary: React.FC = () => {
   const [create, setCreate] = useState<CreateListEnum>(
     CreateListEnum.All_Person,
   );
-  // 空间id
-  const spaceId = localStorage.getItem(SPACE_ID) as number;
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
@@ -199,20 +199,7 @@ const SpaceLibrary: React.FC = () => {
 
   useEffect(() => {
     runComponent(spaceId);
-  }, []);
-
-  useEffect(() => {
-    const unlisten = history.listen(({ location }) => {
-      if (location.pathname.includes('library')) {
-        const _spaceId = localStorage.getItem(SPACE_ID) as number;
-        runComponent(_spaceId);
-      }
-    });
-
-    return () => {
-      unlisten();
-    };
-  }, []);
+  }, [spaceId]);
 
   // 切换类型
   const handlerChangeType = (value: ComponentTypeEnum) => {

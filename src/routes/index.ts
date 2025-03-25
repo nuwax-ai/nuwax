@@ -17,7 +17,7 @@ const routes = [
   {
     path: '/',
     component: '@/layouts',
-    wrappers: ['@/wrappers/auth'],
+    // wrappers: ['@/wrappers/auth'],
     layout: false,
     routes: [
       { path: '', component: '@/pages/Home' },
@@ -54,13 +54,13 @@ const routes = [
   {
     path: '/workflow/:workflowId',
     component: '@/pages/Antv-X6',
-    wrappers: ['@/wrappers/auth'],
+    // wrappers: ['@/wrappers/auth'],
     layout: false,
   },
   {
     path: '/space/:spaceId/agent/:agentId',
     component: '@/pages/EditAgent',
-    wrappers: ['@/wrappers/auth'],
+    // wrappers: ['@/wrappers/auth'],
     layout: false,
   },
   {

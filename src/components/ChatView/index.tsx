@@ -9,6 +9,7 @@ import type {
   AttachmentFile,
   ChatViewProps,
 } from '@/types/interfaces/conversationInfo';
+import { useModel } from '@@/exports';
 import classNames from 'classnames';
 import markdown from 'markdown-it';
 import React, { useMemo } from 'react';
@@ -31,18 +32,20 @@ const ChatView: React.FC<ChatViewProps> = ({
   messageInfo,
   canDebug,
 }) => {
+  const { userInfo } = useModel('userInfo');
   // 当前用户信息
-  const userInfo = JSON.parse(localStorage.getItem(USER_INFO) as string);
+  const _userInfo =
+    userInfo || JSON.parse(localStorage.getItem(USER_INFO) as string);
 
   // 角色名称和头像
   const info = useMemo(() => {
-    const { user, assistant, system } = roleInfo;
+    const { assistant, system } = roleInfo;
     switch (messageInfo?.role) {
       // 用户信息
       case AssistantRoleEnum.USER:
         return {
-          name: user.name || userInfo.nickName,
-          avatar: user.avatar || userInfo.avatar || personal,
+          name: _userInfo?.nickName || _userInfo?.userName,
+          avatar: _userInfo?.avatar || personal,
         };
       // 助手信息
       case AssistantRoleEnum.ASSISTANT:
@@ -57,7 +60,7 @@ const ChatView: React.FC<ChatViewProps> = ({
           avatar: system.avatar || agentImage,
         };
     }
-  }, [roleInfo, messageInfo?.role]);
+  }, [roleInfo, _userInfo, messageInfo?.role]);
 
   return (
     <div className={cx(styles.container, 'flex', className)}>

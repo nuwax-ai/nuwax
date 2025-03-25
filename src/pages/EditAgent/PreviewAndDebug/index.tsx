@@ -42,10 +42,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
   // 角色信息（名称、头像）
   const roleInfo: RoleInfo = useMemo(() => {
     return {
-      user: {
-        name: agentConfigInfo?.creator.nickName as string,
-        avatar: agentConfigInfo?.creator.avatar as string,
-      },
       assistant: {
         name: agentConfigInfo?.name as string,
         avatar: agentConfigInfo?.icon as string,

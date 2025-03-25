@@ -90,11 +90,7 @@ const SettingAccount: React.FC = () => {
           </Form.Item>
         </Form.Item>
         <Form.Item label="用户昵称">
-          <Form.Item
-            noStyle
-            name="nickName"
-            rules={[{ required: true, message: '请输入用户昵称' }]}
-          >
+          <Form.Item noStyle name="nickName">
             <Input
               rootClassName={cx(styles.input)}
               placeholder="请输入用户昵称"

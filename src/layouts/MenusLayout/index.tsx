@@ -36,7 +36,7 @@ const MenusLayout: React.FC = () => {
   const handleCategoryList = (result: SquareCategoryInfo[]) => {
     let _agentInfoList: SquareAgentInfo[] = [];
     let _pluginInfoList: SquareAgentInfo[] = [];
-    result.forEach((info) => {
+    result?.forEach((info) => {
       if (info.type === SquareAgentTypeEnum.Agent) {
         _agentInfoList = info?.children?.map((item) => {
           return {
