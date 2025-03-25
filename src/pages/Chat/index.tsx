@@ -29,6 +29,7 @@ const Chat: React.FC = () => {
     messageList,
     setMessageList,
     chatSuggestList,
+    setChatSuggestList,
     runAsync,
     loadingSuggest,
     onMessageSend,
@@ -68,6 +69,7 @@ const Chat: React.FC = () => {
 
     return () => {
       setMessageList([]);
+      setChatSuggestList([]);
       setNeedUpdateTopic(true);
     };
   }, [id, message, files]);

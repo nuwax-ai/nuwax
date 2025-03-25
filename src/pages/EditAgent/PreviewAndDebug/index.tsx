@@ -61,6 +61,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       debounceInterval: 300,
       onSuccess: (result: ConversationInfo) => {
         devConversationIdRef.current = result.id;
+        // 查询会话
+        runQueryConversation(result.id);
       },
     },
   );
@@ -75,6 +77,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
 
     return () => {
       setMessageList([]);
+      setChatSuggestList([]);
       setNeedUpdateTopic(true);
     };
   }, [agentConfigInfo?.devConversationId]);
