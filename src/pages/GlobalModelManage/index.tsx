@@ -148,7 +148,7 @@ const GlobalModelManage: React.FC = () => {
 
       <Table
         rowClassName={cx(styles['table-row-divider'])}
-        className={cx('mt-22')}
+        className={cx('mt-30')}
         rowKey="id"
         loading={loading}
         columns={columns}

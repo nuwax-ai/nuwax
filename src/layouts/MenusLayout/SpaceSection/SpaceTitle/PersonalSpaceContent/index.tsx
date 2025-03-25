@@ -45,6 +45,9 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
     if (pathname.includes('library')) {
       history.push(`/space/${spaceId}/library`);
     }
+    if (pathname.includes('team')) {
+      history.push(`/space/${spaceId}/team`);
+    }
   };
 
   // 个人空间时，头像是默认的
