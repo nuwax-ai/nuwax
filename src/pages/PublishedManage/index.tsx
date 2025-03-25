@@ -159,7 +159,7 @@ const PublishManage: React.FC = () => {
       title: '发布者',
       dataIndex: 'publishUser',
       key: 'publishUser',
-      width: '100px',
+      width: '200px',
       render: (publishUser: any) => {
         return publishUser ? publishUser.userName ?? '--' : '--';
       },
@@ -229,7 +229,7 @@ const PublishManage: React.FC = () => {
 
       <Table
         rowClassName={cx(styles['table-row-divider'])}
-        className={cx('mt-22')}
+        className={cx('mt-30')}
         rowKey="id"
         loading={loading}
         columns={columns}
