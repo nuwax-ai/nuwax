@@ -53,6 +53,7 @@ export interface ModelFormData {
   apiProtocol: ModelApiProtocolEnum;
   // 接口调用策略，可选值：RoundRobin, WeightedRoundRobin, LeastConnections, WeightedLeastConnections, Random, ResponseTime
   strategy: ModelStrategyEnum;
+  type?: ModelTypeEnum;
 }
 
 // 在空间中添加或更新模型配置输入参数
