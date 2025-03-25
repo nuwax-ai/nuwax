@@ -2,7 +2,7 @@ import CreateNewPlugin from '@/components/CreateNewPlugin';
 import LabelStar from '@/components/LabelStar';
 import PluginConfigTitle from '@/components/PluginConfigTitle';
 import PluginPublish from '@/components/PluginPublish';
-import TryRunModel from '@/components/PluginTryRunModel';
+import PluginTryRunModel from '@/components/PluginTryRunModel';
 import VersionHistory from '@/components/VersionHistory';
 import { VARIABLE_TYPE_LIST } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
@@ -25,16 +25,7 @@ import { getActiveKeys, getNodeDepth } from '@/utils/deepNode';
 import { customizeRequiredMark } from '@/utils/form';
 import { DeleteOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import {
-  Checkbox,
-  Form,
-  Input,
-  message,
-  Radio,
-  Select,
-  Space,
-  Table,
-} from 'antd';
+import { Checkbox, Form, Input, Radio, Select, Space, Table } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
 import { useRequest } from 'umi';
@@ -112,9 +103,9 @@ const SpacePluginTool: React.FC = () => {
   const { run: runUpdate } = useRequest(apiPluginHttpUpdate, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
-      message.success('插件保存成功');
-    },
+    // onSuccess: () => {
+    //   message.success('插件保存成功');
+    // },
   });
 
   useEffect(() => {
@@ -451,7 +442,7 @@ const SpacePluginTool: React.FC = () => {
             }}
           />
           {/*试运行弹窗*/}
-          <TryRunModel
+          <PluginTryRunModel
             inputConfigArgs={inputConfigArgs}
             inputExpandedRowKeys={expandedRowKeys}
             pluginId={pluginId}

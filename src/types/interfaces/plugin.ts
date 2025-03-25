@@ -26,6 +26,7 @@ export interface PluginTestResultObject {
   HTTP_BODY: string;
   HTTP_HEADERS: string;
   HTTP_STATUS_CODE: number;
+  data: string;
 }
 
 // 插件试运行输出结果
