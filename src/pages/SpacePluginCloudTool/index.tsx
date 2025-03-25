@@ -3,7 +3,7 @@ import CreateNewPlugin from '@/components/CreateNewPlugin';
 import LabelStar from '@/components/LabelStar';
 import PluginConfigTitle from '@/components/PluginConfigTitle';
 import PluginPublish from '@/components/PluginPublish';
-import TryRunModel from '@/components/PluginTryRunModel';
+import PluginTryRunModel from '@/components/PluginTryRunModel';
 import VersionHistory from '@/components/VersionHistory';
 import { VARIABLE_TYPE_LIST } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
@@ -16,7 +16,7 @@ import type { PluginInfo } from '@/types/interfaces/plugin';
 import { getActiveKeys } from '@/utils/deepNode';
 import { DeleteOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import { Checkbox, Input, message, Select, Space, Table } from 'antd';
+import { Checkbox, Input, Select, Space, Table } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -99,9 +99,6 @@ const SpacePluginCloudTool: React.FC = () => {
   const { run: runUpdate } = useRequest(apiPluginCodeUpdate, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
-      message.success('插件保存成功');
-    },
   });
 
   useEffect(() => {
@@ -401,7 +398,7 @@ const SpacePluginCloudTool: React.FC = () => {
         )}
       </div>
       {/*试运行弹窗*/}
-      <TryRunModel
+      <PluginTryRunModel
         type={PluginTypeEnum.CODE}
         inputConfigArgs={inputConfigArgs}
         inputExpandedRowKeys={expandedRowKeys}

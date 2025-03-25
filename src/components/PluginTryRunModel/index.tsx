@@ -3,13 +3,9 @@ import { ICON_ADD_TR } from '@/constants/images.constants';
 import { PLUGIN_INPUT_CONFIG } from '@/constants/space.constants';
 import { apiPluginTest } from '@/services/plugin';
 import { DataTypeEnum } from '@/types/enums/common';
-import { PluginTypeEnum } from '@/types/enums/plugin';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PluginTryRunModelProps } from '@/types/interfaces/library';
-import {
-  PluginTestResult,
-  PluginTestResultObject,
-} from '@/types/interfaces/plugin';
+import { PluginTestResult } from '@/types/interfaces/plugin';
 import { addChildNode, deleteNode, updateNodeField } from '@/utils/deepNode';
 import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Button, Input, message, Modal, Space, Table } from 'antd';
@@ -23,7 +19,6 @@ const cx = classNames.bind(styles);
 
 // 试运行弹窗组件
 const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
-  type = PluginTypeEnum.HTTP,
   inputConfigArgs,
   inputExpandedRowKeys,
   pluginId,
@@ -34,8 +29,7 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
   const [dataSource, setDataSource] = useState<BindConfigWithSub[]>([]);
   // 入参配置 - 展开的行，控制属性
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
-  const [testResult, setTestResult] = useState<PluginTestResultObject>();
-  const [result, setResult] = useState<object>();
+  const [result, setResult] = useState<string>(null);
 
   // 插件试运行接口
   const { run: runTest } = useRequest(apiPluginTest, {
@@ -45,11 +39,7 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
       if (!res.success) {
         message.warning(res.error);
       } else {
-        if (type === PluginTypeEnum.HTTP) {
-          setTestResult(res.result);
-        } else {
-          setResult(res.result);
-        }
+        setResult(JSON.stringify(res.result, null, 2));
       }
     },
   });
@@ -97,6 +87,8 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
         handleArrayObjectArr(inputConfigArgs, keys) || [];
       setExpandedRowKeys(keys);
       setDataSource(_inputConfigArgs);
+    } else {
+      setDataSource([]);
     }
   }, [inputConfigArgs, inputExpandedRowKeys]);
 
@@ -333,11 +325,16 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
     });
   };
 
+  const handleCancel = () => {
+    setResult(null);
+    onCancel();
+  };
+
   return (
     <Modal
       centered
       open={open}
-      onCancel={onCancel}
+      onCancel={handleCancel}
       className={cx(styles['modal-container'])}
       modalRender={() => (
         <div
@@ -360,7 +357,7 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
             <h3>试运行</h3>
             <CloseOutlined
               className={cx('cursor-pointer')}
-              onClick={onCancel}
+              onClick={handleCancel}
             />
           </header>
           {/*内容区*/}
@@ -395,10 +392,17 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
               />
             </div>
             {/*右侧内容*/}
-            <div className={cx('flex-1', 'flex', 'flex-col')}>
+            <div className={cx('flex-1', 'flex', 'flex-col', 'overflow-hide')}>
               <h3 className={cx(styles['p-title'])}>{pluginName} 调试结果</h3>
-              <div className={cx('flex-1', 'radius-6', styles['result-wrap'])}>
-                {testResult ? (
+              <div
+                className={cx(
+                  'flex-1',
+                  'radius-6',
+                  'overflow-hide',
+                  styles['result-wrap'],
+                )}
+              >
+                {result ? (
                   <div
                     className={cx(
                       'h-full',
@@ -406,20 +410,10 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
                       'flex-col',
                       'px-16',
                       'py-16',
+                      'overflow-y',
                     )}
                   >
-                    {type === PluginTypeEnum.HTTP ? (
-                      <>
-                        <h3>http_status</h3>
-                        <span>{testResult.HTTP_STATUS_CODE}</span>
-                        <h3>header</h3>
-                        <span>{testResult.HTTP_HEADERS}</span>
-                        <h3>body</h3>
-                        <span>{testResult.HTTP_BODY}</span>
-                      </>
-                    ) : (
-                      { result }
-                    )}
+                    <pre>{result}</pre>
                   </div>
                 ) : (
                   <div
@@ -430,7 +424,7 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
                       'content-center',
                     )}
                   >
-                    调试结果将展示在此处，调试通过后，即可进入下一步
+                    调试结果将展示在此处
                   </div>
                 )}
               </div>

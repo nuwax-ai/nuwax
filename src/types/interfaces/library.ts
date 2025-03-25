@@ -3,7 +3,6 @@ import type {
   PublishStatusEnum,
 } from '@/types/enums/common';
 import type { WorkflowModeEnum } from '@/types/enums/library';
-import { PluginTypeEnum } from '@/types/enums/plugin';
 import type { ComponentTypeEnum } from '@/types/enums/space';
 import type { BindConfigWithSub, CreatorInfo } from '@/types/interfaces/agent';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
@@ -66,7 +65,6 @@ export interface LabelStarProps {
 
 // 试运行弹窗组件属性
 export interface PluginTryRunModelProps {
-  type?: PluginTypeEnum;
   inputConfigArgs: BindConfigWithSub[];
   inputExpandedRowKeys: React.Key[];
   pluginId: number;
