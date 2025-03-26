@@ -24,7 +24,6 @@ import AgentModelSetting from './AgentModelSetting';
 import ArrangeTitle from './ArrangeTitle';
 import DebugDetails from './DebugDetails';
 import styles from './index.less';
-import PluginModelSetting from './PluginModelSetting';
 import PreviewAndDebug from './PreviewAndDebug';
 import PublishAgent from './PublishAgent';
 import SystemTipsWord from './SystemTipsWord';
@@ -40,7 +39,6 @@ const EditAgent: React.FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
-  const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
   // 智能体配置信息
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>(null);
   // 历史版本信息
@@ -186,7 +184,6 @@ const EditAgent: React.FC = () => {
               agentId={agentId}
               agentConfigInfo={agentConfigInfo}
               onChangeEnable={handleChangeAgent}
-              onSet={() => setOpenPluginModel(true)}
             />
           </div>
         </div>
@@ -238,11 +235,6 @@ const EditAgent: React.FC = () => {
         open={openAgentModel}
         onCancel={() => setOpenAgentModel(false)}
         onSelectMode={handleSelectMode}
-      />
-      {/*插件设置弹窗*/}
-      <PluginModelSetting
-        open={openPluginModel}
-        onCancel={() => setOpenPluginModel(false)}
       />
     </div>
   );

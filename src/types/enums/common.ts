@@ -75,14 +75,6 @@ export enum FileTypeEnum {
   Array_Other,
 }
 
-// 插件参数设置默认值类型枚举
-export enum PluginParamsSettingDefaultEnum {
-  // 输入
-  Input = 'Input ',
-  // 引用
-  Reference = 'Reference',
-}
-
 export enum NodeTypeEnum {
   // 数据库
   Database = 'Database',

@@ -1,5 +1,6 @@
 import { PLUGIN_SETTING_ACTIONS } from '@/constants/space.constants';
 import { PluginSettingEnum } from '@/types/enums/space';
+import type { PluginModelSettingProps } from '@/types/interfaces/agentConfig';
 import { CloseOutlined } from '@ant-design/icons';
 import { Modal } from 'antd';
 import classNames from 'classnames';
@@ -10,13 +11,13 @@ import ParamsSetting from './ParamsSetting';
 
 const cx = classNames.bind(styles);
 
-interface PluginModelSettingProps {
-  open: boolean;
-  onCancel: () => void;
-}
-
+/**
+ * 插件模型设置
+ */
 const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
   open,
+  componentInfo,
+  variables,
   onCancel,
 }) => {
   const [action, setAction] = useState<PluginSettingEnum>(
@@ -30,7 +31,13 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
   const Content: React.FC = () => {
     switch (action) {
       case PluginSettingEnum.Params:
-        return <ParamsSetting />;
+        return (
+          <ParamsSetting
+            id={componentInfo.id}
+            inputConfigArgs={componentInfo?.bindConfig?.inputArgBindConfigs}
+            variables={variables}
+          />
+        );
       case PluginSettingEnum.Card_Bind:
         return <CardBind />;
     }
@@ -40,7 +47,6 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
     <Modal
       centered
       open={open}
-      footer={null}
       onCancel={onCancel}
       className={cx(styles['modal-container'])}
       modalRender={() => (

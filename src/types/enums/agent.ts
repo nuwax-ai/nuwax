@@ -11,7 +11,9 @@ export enum AgentComponentTypeEnum {
 
 // 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
 export enum BindValueType {
+  // 输入
   Input = 'Input',
+  // 引用
   Reference = 'Reference',
 }
 

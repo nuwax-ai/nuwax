@@ -58,7 +58,7 @@ const usePluginConfig = () => {
   ) => {
     const _inputConfigArgs = updateNodeField(inputConfigArgs, key, attr, value);
     setInputConfigArgs(_inputConfigArgs);
-
+    // 数据类型
     if (attr === 'dataType') {
       // 设置默认展开行
       if (
@@ -87,7 +87,7 @@ const usePluginConfig = () => {
       value,
     );
     setOutputConfigArgs(_outputConfigArgs);
-
+    // 数据类型
     if (attr === 'dataType') {
       // 设置默认展开行
       if (

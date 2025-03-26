@@ -28,6 +28,7 @@ import LongMemoryContent from './LongMemoryContent';
 import PluginList from './PluginList';
 // import TriggerContent from './TriggerContent';
 import OpenRemarksEdit from './OpenRemarksEdit';
+import PluginModelSetting from './PluginModelSetting';
 import WorkflowList from './WorkflowList';
 
 const cx = classNames.bind(styles);
@@ -40,13 +41,17 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   agentId,
   agentConfigInfo,
   onChangeEnable,
-  onSet,
 }) => {
   // const [triggerChecked, setTriggerChecked] = useState<boolean>(false);
   // 触发器弹窗
   // const [openTriggerModel, setOpenTriggerModel] = useState<boolean>(false);
+  // 插件弹窗
+  const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
   // 变量弹窗
   const [openVariableModel, setOpenVariableModel] = useState<boolean>(false);
+  // 当前组件信息
+  const [currentComponentInfo, setCurrentComponentInfo] =
+    useState<AgentComponentInfo>();
   // 智能体模型组件列表
   const [agentComponentList, setAgentComponentList] = useState<
     AgentComponentInfo[]
@@ -211,6 +216,14 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   //   setTriggerChecked(checked);
   // };
 
+  // 插件设置
+  const handlePluginSet = (id: number) => {
+    const componentInfo = agentComponentList?.find((info) => info.id === id);
+    // setBindConfig(componentInfo?.bindConfig as PluginBindConfig);
+    setCurrentComponentInfo(componentInfo);
+    setOpenPluginModel(true);
+  };
+
   // 技能列表
   const SkillList: CollapseProps['items'] = [
     {
@@ -219,7 +232,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       children: (
         <PluginList
           list={filterList(AgentComponentTypeEnum.Plugin)}
-          onSet={onSet}
+          onSet={handlePluginSet}
           onDel={runAgentComponentDel}
         />
       ),
@@ -442,6 +455,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         variablesInfo={variablesInfo}
         onCancel={() => setOpenVariableModel(false)}
         onConfirm={handleConfirmVariables}
+      />
+      {/*插件设置弹窗*/}
+      <PluginModelSetting
+        open={openPluginModel}
+        componentInfo={currentComponentInfo as AgentComponentInfo}
+        variables={variablesInfo?.bindConfig?.variables || []}
+        onCancel={() => setOpenPluginModel(false)}
       />
     </div>
   );

@@ -1,8 +1,8 @@
+import { BindValueType } from '@/types/enums/agent';
 import {
   DataTypeEnum,
   FileTypeEnum,
   ParamsTypeEnum,
-  PluginParamsSettingDefaultEnum,
 } from '@/types/enums/common';
 
 // 文件上传地址
@@ -343,11 +343,11 @@ export const PARAMS_TYPE_LIST = [
 // 插件参数值设置默认下拉选项
 export const ParamsSettingDefaultOptions = [
   {
-    value: PluginParamsSettingDefaultEnum.Input,
+    value: BindValueType.Input,
     label: '输入',
   },
   {
-    value: PluginParamsSettingDefaultEnum.Reference,
+    value: BindValueType.Reference,
     label: '引用',
   },
 ];

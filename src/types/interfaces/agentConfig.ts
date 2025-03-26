@@ -37,7 +37,20 @@ export interface AgentArrangeConfigProps {
   agentConfigInfo: AgentConfigInfo;
   // 是否开启
   onChangeEnable: (value: string, attr: string) => void;
-  onSet: () => void;
+}
+
+// 插件模型设置
+export interface PluginModelSettingProps {
+  open: boolean;
+  componentInfo: AgentComponentInfo;
+  variables?: BindConfigWithSub[];
+  onCancel: () => void;
+}
+
+export interface ParamsSettingProps {
+  id: number;
+  inputConfigArgs?: BindConfigWithSub[];
+  variables?: BindConfigWithSub[];
 }
 
 // 智能体模型组件，插件、工作流、触发器等组件通用显示组件

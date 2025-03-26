@@ -1,4 +1,3 @@
-// 递归计算节点深度
 import { PLUGIN_INPUT_CONFIG } from '@/constants/space.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
@@ -17,7 +16,7 @@ export const getNodeDepth = (
       if (found) return found;
     }
   }
-  return 0;
+  return depth;
 };
 
 // 添加子节点
@@ -83,6 +82,7 @@ export const updateNodeField = (
   const updateRecursive = (data: BindConfigWithSub[]) => {
     return data.map((node) => {
       if (node.key === key) {
+        // 数据类型
         if (field === 'dataType') {
           // 切换参数类型： 如果是对象或者数组对象或者是数组相关类型，则清空默认值
           if (
@@ -104,6 +104,10 @@ export const updateNodeField = (
           } else {
             node.subArgs = undefined;
           }
+        }
+        // 切换值引用类型时，清空bindValue值
+        if (field === 'bindValueType') {
+          node.bindValue = '';
         }
         // 返回节点
         return { ...node, [field]: value };

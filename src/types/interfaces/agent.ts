@@ -108,6 +108,12 @@ export interface BindConfigWithSub {
   children?: BindConfigWithSub[];
 }
 
+export interface PluginBindConfig {
+  cardBindConfig: unknown;
+  inputArgBindConfigs: BindConfigWithSub[];
+  outputArgBindConfigs: unknown[];
+}
+
 // 智能体组件模型基础信息
 export interface AgentComponentBaseInfo {
   // 组件配置ID
