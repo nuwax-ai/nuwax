@@ -92,10 +92,12 @@ const ChatView: React.FC<ChatViewProps> = ({
           <ConditionRender condition={!!messageInfo?.status}>
             <RunOver messageInfo={messageInfo} />
           </ConditionRender>
-          {!!messageInfo?.think && (
+          {/*think*/}
+          {!!messageInfo?.think && !!md.render(messageInfo?.think) && (
             <div
               className={cx(
                 styles['chat-content'],
+                styles['mb-10'],
                 'radius-6',
                 'w-full',
                 contentClassName,

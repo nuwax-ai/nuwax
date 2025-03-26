@@ -37,6 +37,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
 }) => {
   // 入参配置 - 展开的行，控制属性
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
+  // 入参配置
   const [configArgs, setConfigArgs] = useState<BindConfigWithSub[]>([]);
   const { setCurrentComponentInfo, setAgentComponentList } =
     useModel('spaceAgent');
@@ -68,6 +69,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
 
   useEffect(() => {
     if (!!inputConfigArgs?.length) {
+      // 默认值：输入
       const _inputConfigArgs = inputConfigArgs.map((info) => {
         if (!info.bindValueType) {
           info.bindValueType = BindValueType.Input;
@@ -160,6 +162,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
           <Space.Compact block>
             <SelectList
               rootClassName={cx(styles.select)}
+              disabled={!record.enable}
               value={record.bindValueType}
               onChange={(value) =>
                 handleInputValue(record.key, 'bindValueType', value)
@@ -170,6 +173,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
               <Input
                 rootClassName={cx(styles.select)}
                 placeholder="请填写"
+                disabled={!record.enable}
                 value={record.bindValue}
                 onChange={(e) =>
                   handleInputValue(record.key, 'bindValue', e.target.value)
@@ -178,6 +182,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
             ) : (
               <Select
                 placeholder="请选择"
+                disabled={!record.enable}
                 rootClassName={cx(styles.select)}
                 popupMatchSelectWidth={false}
                 value={record.bindValue}
@@ -223,7 +228,11 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
         }}
       />
       <footer className={cx(styles.footer)}>
-        <Button type="primary" onClick={handleSave}>
+        <Button
+          type="primary"
+          onClick={handleSave}
+          disabled={!configArgs?.length}
+        >
           保存
         </Button>
       </footer>

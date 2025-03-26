@@ -103,6 +103,7 @@ export interface SelectListType {
   // 自定义底部
   dropdownRenderComponent?: React.ReactNode;
   placeholder?: string;
+  disabled?: boolean;
   options: option[];
   onChange?: (value: React.Key) => void;
   size?: SizeType;

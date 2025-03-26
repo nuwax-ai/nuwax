@@ -49,13 +49,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
   // 变量弹窗
   const [openVariableModel, setOpenVariableModel] = useState<boolean>(false);
-  // // 当前组件信息
-  // const [currentComponentInfo, setCurrentComponentInfo] =
-  //   useState<AgentComponentInfo>();
-  // // 智能体模型组件列表
-  // const [agentComponentList, setAgentComponentList] = useState<
-  //   AgentComponentInfo[]
-  // >([]);
   const [checkTag, setCheckTag] = useState<AgentComponentTypeEnum>(
     AgentComponentTypeEnum.Plugin,
   );
