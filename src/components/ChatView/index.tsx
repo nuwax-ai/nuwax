@@ -9,10 +9,10 @@ import type {
   AttachmentFile,
   ChatViewProps,
 } from '@/types/interfaces/conversationInfo';
-import { useModel } from '@@/exports';
 import classNames from 'classnames';
 import markdown from 'markdown-it';
 import React, { useMemo } from 'react';
+import { useModel } from 'umi';
 import ChatBottomMore from './ChatBottomMore';
 import styles from './index.less';
 import RunOver from './RunOver';
@@ -92,6 +92,19 @@ const ChatView: React.FC<ChatViewProps> = ({
           <ConditionRender condition={!!messageInfo?.status}>
             <RunOver messageInfo={messageInfo} />
           </ConditionRender>
+          {!!messageInfo?.think && (
+            <div
+              className={cx(
+                styles['chat-content'],
+                'radius-6',
+                'w-full',
+                contentClassName,
+              )}
+              dangerouslySetInnerHTML={{
+                __html: md.render(messageInfo?.think),
+              }}
+            />
+          )}
           {/*文本内容*/}
           {!!messageInfo?.text && (
             <div

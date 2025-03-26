@@ -116,7 +116,7 @@ export interface ProcessingInfo {
 export interface MessageInfo {
   // assistant 模型回复；user 用户消息,可用值:USER,ASSISTANT,SYSTEM,FUNCTION
   role: AssistantRoleEnum;
-  // 可用值:CHAT,GUID,QUESTION,ANSWER
+  // 可用值:CHAT,THINK, GUID,QUESTION,ANSWER
   type?: MessageModeEnum;
   // 消息内容，其中附件放在.*?标签中
   text?: string;

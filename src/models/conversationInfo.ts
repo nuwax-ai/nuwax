@@ -160,14 +160,23 @@ export default () => {
               };
             }
             if (eventType === ConversationEventTypeEnum.MESSAGE) {
-              const { id: messageId, text, think } = res.data;
-              newMessage = {
-                ...currentMessage,
-                id: messageId,
-                text: `${currentMessage.text}${text}`,
-                think: `${currentMessage.think}${think}`,
-                status: MessageStatusEnum.Incomplete,
-              };
+              const { id: messageId, text, type } = res.data;
+              // 思考think
+              if (type === MessageModeEnum.THINK) {
+                newMessage = {
+                  ...currentMessage,
+                  id: messageId,
+                  think: `${currentMessage.think}${text}`,
+                  status: MessageStatusEnum.Incomplete,
+                };
+              } else {
+                newMessage = {
+                  ...currentMessage,
+                  id: messageId,
+                  text: `${currentMessage.text}${text}`,
+                  status: MessageStatusEnum.Incomplete,
+                };
+              }
             }
             if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
               const { componentExecuteResults } = data;

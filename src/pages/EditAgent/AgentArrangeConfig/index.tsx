@@ -49,19 +49,21 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
   // 变量弹窗
   const [openVariableModel, setOpenVariableModel] = useState<boolean>(false);
-  // 当前组件信息
-  const [currentComponentInfo, setCurrentComponentInfo] =
-    useState<AgentComponentInfo>();
-  // 智能体模型组件列表
-  const [agentComponentList, setAgentComponentList] = useState<
-    AgentComponentInfo[]
-  >([]);
+  // // 当前组件信息
+  // const [currentComponentInfo, setCurrentComponentInfo] =
+  //   useState<AgentComponentInfo>();
+  // // 智能体模型组件列表
+  // const [agentComponentList, setAgentComponentList] = useState<
+  //   AgentComponentInfo[]
+  // >([]);
   const [checkTag, setCheckTag] = useState<AgentComponentTypeEnum>(
     AgentComponentTypeEnum.Plugin,
   );
 
   // 打开、关闭弹窗
   const { show, setShow } = useModel('model');
+  const { setCurrentComponentInfo, agentComponentList, setAgentComponentList } =
+    useModel('spaceAgent');
 
   // 根据组件类型，过滤组件
   const filterList = (type: AgentComponentTypeEnum) => {
@@ -219,7 +221,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 插件设置
   const handlePluginSet = (id: number) => {
     const componentInfo = agentComponentList?.find((info) => info.id === id);
-    // setBindConfig(componentInfo?.bindConfig as PluginBindConfig);
     setCurrentComponentInfo(componentInfo);
     setOpenPluginModel(true);
   };
@@ -459,7 +460,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       {/*插件设置弹窗*/}
       <PluginModelSetting
         open={openPluginModel}
-        componentInfo={currentComponentInfo as AgentComponentInfo}
         variables={variablesInfo?.bindConfig?.variables || []}
         onCancel={() => setOpenPluginModel(false)}
       />

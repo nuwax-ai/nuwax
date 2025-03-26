@@ -140,10 +140,10 @@ export const PLUGIN_SETTING_ACTIONS = [
     type: PluginSettingEnum.Params,
     label: '参数',
   },
-  {
-    type: PluginSettingEnum.Card_Bind,
-    label: '卡片绑定',
-  },
+  // {
+  //   type: PluginSettingEnum.Card_Bind,
+  //   label: '卡片绑定',
+  // },
 ];
 
 // 插件配置 - 入参配置, 默认列值

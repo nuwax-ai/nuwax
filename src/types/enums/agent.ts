@@ -77,9 +77,10 @@ export enum AssistantRoleEnum {
   FUNCTION = 'FUNCTION',
 }
 
-// 可用值:CHAT,GUID,QUESTION,ANSWER
+// 可用值:CHAT,THINK, GUID,QUESTION,ANSWER
 export enum MessageModeEnum {
   CHAT = 'CHAT',
+  THINK = 'THINK',
   GUID = 'GUID',
   QUESTION = 'QUESTION',
   ANSWER = 'ANSWER',

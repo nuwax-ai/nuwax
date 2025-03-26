@@ -5,6 +5,7 @@ import { CloseOutlined } from '@ant-design/icons';
 import { Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
+import { useModel } from 'umi';
 import CardBind from './CardBind';
 import styles from './index.less';
 import ParamsSetting from './ParamsSetting';
@@ -16,25 +17,23 @@ const cx = classNames.bind(styles);
  */
 const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
   open,
-  componentInfo,
   variables,
   onCancel,
 }) => {
+  const { currentComponentInfo } = useModel('spaceAgent');
   const [action, setAction] = useState<PluginSettingEnum>(
     PluginSettingEnum.Params,
   );
-
-  const handlerClick = (type: PluginSettingEnum) => {
-    setAction(type);
-  };
 
   const Content: React.FC = () => {
     switch (action) {
       case PluginSettingEnum.Params:
         return (
           <ParamsSetting
-            id={componentInfo.id}
-            inputConfigArgs={componentInfo?.bindConfig?.inputArgBindConfigs}
+            id={currentComponentInfo?.id}
+            inputConfigArgs={
+              currentComponentInfo?.bindConfig?.inputArgBindConfigs
+            }
             variables={variables}
           />
         );
@@ -60,7 +59,7 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
                   className={cx(styles.item, 'cursor-pointer', {
                     [styles.checked]: action === item.type,
                   })}
-                  onClick={() => handlerClick(item.type)}
+                  onClick={() => setAction(item.type)}
                 >
                   {item.label}
                 </li>

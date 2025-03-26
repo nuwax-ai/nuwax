@@ -42,14 +42,11 @@ export interface AgentArrangeConfigProps {
 // 插件模型设置
 export interface PluginModelSettingProps {
   open: boolean;
-  componentInfo: AgentComponentInfo;
   variables?: BindConfigWithSub[];
   onCancel: () => void;
 }
 
 export interface ParamsSettingProps {
-  id: number;
-  inputConfigArgs?: BindConfigWithSub[];
   variables?: BindConfigWithSub[];
 }
 

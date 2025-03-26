@@ -22,7 +22,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useRequest } from 'umi';
+import { useModel, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -38,6 +38,8 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
   // 入参配置 - 展开的行，控制属性
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   const [configArgs, setConfigArgs] = useState<BindConfigWithSub[]>([]);
+  const { setCurrentComponentInfo, setAgentComponentList } =
+    useModel('spaceAgent');
 
   // 更新插件组件配置
   const { run: runPluginUpdate } = useRequest(apiAgentComponentPluginUpdate, {
@@ -45,22 +47,42 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
     debounceInterval: 300,
     onSuccess: () => {
       message.success('保存成功');
+      if (inputConfigArgs?.length > 0) {
+        // 更新当前组件信息
+        setCurrentComponentInfo((info) => {
+          info.bindConfig.inputArgBindConfigs = configArgs;
+          return info;
+        });
+        // 更新智能体模型组件列表
+        setAgentComponentList((list) => {
+          return list.map((item) => {
+            if (item.id === id) {
+              item.bindConfig.inputArgBindConfigs = configArgs;
+            }
+            return item;
+          });
+        });
+      }
     },
   });
 
   useEffect(() => {
-    const _inputConfigArgs =
-      inputConfigArgs?.map((info) => {
+    if (!!inputConfigArgs?.length) {
+      const _inputConfigArgs = inputConfigArgs.map((info) => {
         if (!info.bindValueType) {
           info.bindValueType = BindValueType.Input;
         }
         return info;
-      }) || [];
-    setConfigArgs(_inputConfigArgs);
+      });
+      setConfigArgs(_inputConfigArgs);
 
-    // 默认展开的入参配置key
-    const _expandedRowKeys = getActiveKeys(inputConfigArgs || []);
-    setExpandedRowKeys(_expandedRowKeys);
+      // 默认展开的入参配置key
+      const _expandedRowKeys = getActiveKeys(inputConfigArgs || []);
+      setExpandedRowKeys(_expandedRowKeys);
+    } else {
+      setConfigArgs([]);
+      setExpandedRowKeys([]);
+    }
   }, [inputConfigArgs]);
 
   // 缓存变量列表
