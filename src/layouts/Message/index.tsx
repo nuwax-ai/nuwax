@@ -3,7 +3,7 @@ import {
   apiNotifyMessageList,
   apiNotifyMessageUnreadClear,
 } from '@/services/message';
-import { MessageOptionEnum } from '@/types/enums/menus';
+import { MessageReadStatusEnum } from '@/types/enums/menus';
 import type { NotifyMessageInfo } from '@/types/interfaces/message';
 import { ClearOutlined } from '@ant-design/icons';
 import { Empty, message, Popover, Segmented, Tooltip } from 'antd';
@@ -11,38 +11,59 @@ import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel, useRequest } from 'umi';
 import styles from './index.less';
+import MessageItem from './MessageItem';
 
 const cx = classNames.bind(styles);
 
 const Message: React.FC = () => {
-  const { openMessage, setOpenMessage } = useModel('layout');
+  const { unreadCount, setUnreadCount, openMessage, setOpenMessage } =
+    useModel('layout');
   // 分段控制器：全部、未读
-  const [value, setValue] = useState<MessageOptionEnum>(MessageOptionEnum.All);
+  const [segmentedValue, setSegmentedValue] = useState<MessageReadStatusEnum>(
+    MessageReadStatusEnum.All,
+  );
   // 消息列表
   const [messageList, setMessageList] = useState<NotifyMessageInfo[]>([]);
-  // 未读消息列表 todo: 待修改any
+  // 未读消息列表
   const [unreadMessageList, setUnreadMessageList] = useState<
     NotifyMessageInfo[]
   >([]);
-  const handlerChange = (value: MessageOptionEnum) => {
-    setValue(value);
-  };
 
   // 查询用户消息列表
   const { run: runMessageList } = useRequest(apiNotifyMessageList, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: NotifyMessageInfo[]) => {
-      setMessageList(result);
+      if (segmentedValue === MessageReadStatusEnum.All) {
+        setMessageList(result || []);
+      } else {
+        setUnreadMessageList(result || []);
+      }
     },
   });
+
+  // 切换分段控制器
+  const handlerChangeSegment = (status: MessageReadStatusEnum) => {
+    setSegmentedValue(status);
+    if (status === MessageReadStatusEnum.All) {
+      runMessageList({
+        size: 100,
+      });
+    } else {
+      runMessageList({
+        size: 100,
+        readStatus: MessageReadStatusEnum.Unread,
+      });
+    }
+  };
 
   useEffect(() => {
     if (openMessage) {
       runMessageList({
-        lastId: 1,
         size: 100,
       });
+    } else {
+      setSegmentedValue(MessageReadStatusEnum.All);
     }
   }, [openMessage]);
 
@@ -51,29 +72,32 @@ const Message: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
+      setUnreadMessageList([]);
+      setUnreadCount(0);
       message.success('已清除所有未读消息');
     },
   });
 
-  // todo
-  const handlerClear = () => {
-    console.log('清除未读消息');
-    setUnreadMessageList([]);
-    setMessageList([]);
-  };
+  const showList =
+    segmentedValue === MessageReadStatusEnum.All
+      ? messageList
+      : unreadMessageList;
+
   return (
     <Popover
       overlayClassName={cx(styles.container)}
       content={
         <>
           <div className={cx('flex', 'content-between')}>
+            {/*分段控制器*/}
             <Segmented
               className={cx(styles.segment)}
-              value={value}
-              onChange={handlerChange}
+              value={segmentedValue}
+              onChange={handlerChangeSegment}
               block
               options={MESSAGE_OPTIONS}
             />
+            {/*清空按钮*/}
             <Tooltip
               placement="top"
               color={'#fff'}
@@ -81,14 +105,13 @@ const Message: React.FC = () => {
               title={'清除所有未读消息'}
             >
               {/*根据是否有未读消息做图标切换*/}
-              {unreadMessageList?.length > 0 ? (
+              {unreadCount > 0 ? (
                 <ClearOutlined
-                  onClick={handlerClear}
+                  onClick={runClear}
                   className={cx('cursor-pointer')}
                 />
               ) : (
                 <ClearOutlined
-                  onClick={runClear}
                   className={cx(styles['del-disabled'], 'cursor-disabled')}
                 />
               )}
@@ -96,9 +119,9 @@ const Message: React.FC = () => {
           </div>
           {/*内容区域*/}
           <div className={cx(styles['message-list'], 'py-16', 'overflow-y')}>
-            {messageList?.length > 0 ? (
-              messageList.map((item, index) => {
-                return <div key={index}>item</div>;
+            {showList?.length > 0 ? (
+              showList.map((item, index) => {
+                return <MessageItem key={index} info={item} />;
               })
             ) : (
               <Empty
@@ -110,14 +133,15 @@ const Message: React.FC = () => {
                   'content-center',
                 )}
                 description={
-                  value === MessageOptionEnum.All ? '暂无消息' : '暂无未读消息'
+                  segmentedValue === MessageReadStatusEnum.All
+                    ? '暂无消息'
+                    : '暂无未读消息'
                 }
               />
             )}
           </div>
         </>
       }
-      title={null}
       arrow={false}
       destroyTooltipOnHide
       placement="rightBottom"

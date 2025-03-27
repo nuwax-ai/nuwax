@@ -4,6 +4,7 @@ import type {
   UserOperatorAreaEnum,
 } from '@/types/enums/menus';
 import type { AgentInfo } from '@/types/interfaces/agent';
+import type { NotifyMessageInfo } from '@/types/interfaces/message';
 import React from 'react';
 
 // 用户相关智能体
@@ -62,4 +63,9 @@ export interface UserOperateAreaItem {
   title: string;
   icon: React.ReactNode;
   type: UserOperatorAreaEnum;
+}
+
+// 消息模块
+export interface MessageItemProps {
+  info: NotifyMessageInfo;
 }

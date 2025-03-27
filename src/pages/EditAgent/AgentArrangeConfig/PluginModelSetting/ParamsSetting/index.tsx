@@ -9,25 +9,23 @@ import { BindValueType } from '@/types/enums/agent';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { ParamsSettingProps } from '@/types/interfaces/agentConfig';
 import { getActiveKeys, updateNodeField } from '@/utils/deepNode';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import {
   Button,
   Input,
   message,
+  Popover,
   Select,
   Space,
   Switch,
   Table,
   Tooltip,
-  Popover,
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useModel, useRequest } from 'umi';
 import styles from './index.less';
-import {
-  InfoCircleOutlined,
-} from '@ant-design/icons';
 
 const cx = classNames.bind(styles);
 
@@ -201,7 +199,8 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       ),
     },
     {
-      title: <>
+      title: (
+        <>
           <span>开启</span>
           <Popover
             content={
@@ -211,7 +210,8 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
           >
             <InfoCircleOutlined className="ml-12" />
           </Popover>
-        </>,
+        </>
+      ),
       dataIndex: 'enable',
       key: 'enable',
       width: 98,

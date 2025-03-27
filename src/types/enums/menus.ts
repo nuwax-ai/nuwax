@@ -27,14 +27,9 @@ export enum UserAvatarEnum {
   Log_Out = 'log_out',
 }
 
-// 消息选项：全部、未读
-export enum MessageOptionEnum {
-  All,
-  Unread,
-}
-
-// 消息状态,可用值:Unread,Read
+// 消息状态,可用值:All, Unread, Read
 export enum MessageReadStatusEnum {
+  All,
   Unread = 'Unread',
   Read = 'Read',
 }

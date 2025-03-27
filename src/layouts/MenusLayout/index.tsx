@@ -157,8 +157,11 @@ const MenusLayout: React.FC = () => {
         )}
       >
         <Header />
+        {/*中间内容区域：主页、工作空间、广场等*/}
         <Tabs onClick={handleTabsClick} />
+        {/*用户操作区域： 文档、历史会话、消息*/}
         <UserOperateArea onClick={handleUserClick} />
+        {/*用户头像区域*/}
         <User />
       </div>
       {/*二级导航菜单栏*/}
