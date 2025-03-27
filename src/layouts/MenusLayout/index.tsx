@@ -1,3 +1,4 @@
+import { DOCUMENT_URL } from '@/constants/common.constants';
 import { SPACE_ID } from '@/constants/home.constants';
 import SystemSection from '@/layouts/MenusLayout/SystemSection';
 import { apiPublishedCategoryList } from '@/services/square';
@@ -88,7 +89,7 @@ const MenusLayout: React.FC = () => {
         history.push('/system/user/manage');
         break;
       case TabsEnum.Course_System:
-        window.open('https://nlp-book.swufenlp.group/', '_blank');
+        window.open(DOCUMENT_URL);
         break;
     }
   }, []);
@@ -118,7 +119,7 @@ const MenusLayout: React.FC = () => {
   const handleUserClick = useCallback((type: UserOperatorAreaEnum) => {
     switch (type) {
       case UserOperatorAreaEnum.Document:
-        window.open('https://nlp-book.swufenlp.group/', '_blank');
+        window.open(DOCUMENT_URL);
         break;
       // 会话记录
       case UserOperatorAreaEnum.History_Conversation:

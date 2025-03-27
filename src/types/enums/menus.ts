@@ -29,7 +29,7 @@ export enum UserAvatarEnum {
 
 // 消息状态,可用值:All, Unread, Read
 export enum MessageReadStatusEnum {
-  All,
+  All = 'All',
   Unread = 'Unread',
   Read = 'Read',
 }
