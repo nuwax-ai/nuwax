@@ -304,7 +304,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
           <Form.Item
             name="type"
             label="模型类型"
-            rules={[{ required: true, message: '选择模型接口协议' }]}
+            rules={[{ required: true, message: '请选择模型类型' }]}
           >
             <Select
               options={MODEL_TYPE_LIST.filter((v) =>
