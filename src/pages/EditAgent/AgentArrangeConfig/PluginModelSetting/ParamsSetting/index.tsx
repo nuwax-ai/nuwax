@@ -19,11 +19,15 @@ import {
   Switch,
   Table,
   Tooltip,
+  Popover,
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useModel, useRequest } from 'umi';
 import styles from './index.less';
+import {
+  InfoCircleOutlined,
+} from '@ant-design/icons';
 
 const cx = classNames.bind(styles);
 
@@ -92,7 +96,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
     return variables?.map(
       (item) =>
         ({
-          label: item.description,
+          label: item.name,
           value: item.name,
         } || []),
     );
@@ -197,10 +201,20 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       ),
     },
     {
-      title: '开启',
+      title: <>
+          <span>开启</span>
+          <Popover
+            content={
+              '当参数设置为关闭时，大模型将无法看到该参数。如果该参数设置了默认值并且不可见，则在调用时，智能体会默认只使用这个设定值'
+            }
+            overlayInnerStyle={{ width: '300px' }}
+          >
+            <InfoCircleOutlined className="ml-12" />
+          </Popover>
+        </>,
       dataIndex: 'enable',
       key: 'enable',
-      width: 70,
+      width: 98,
       align: 'center',
       render: (_, record) => (
         <Switch
