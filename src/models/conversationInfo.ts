@@ -15,7 +15,7 @@ import { MessageStatusEnum } from '@/types/enums/common';
 import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
-  AttachmentFile,
+  ConversationChatParams,
   ConversationChatResponse,
   ConversationInfo,
   ExecuteResultInfo,
@@ -25,7 +25,7 @@ import type {
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { useRequest } from 'ahooks';
 import moment from 'moment/moment';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 export default () => {
   const [needUpdateTopic, setNeedUpdateTopic] = useState<boolean>(true);
@@ -98,35 +98,86 @@ export default () => {
     },
   );
 
-  useEffect(() => {
-    return () => {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = 0;
-      clearTimeout(scrollTimeoutRef.current);
-      scrollTimeoutRef.current = 0;
-      if (abortConnectionRef.current) {
-        abortConnectionRef.current();
-        abortConnectionRef.current = null;
-      }
-    };
-  }, [timeoutRef, scrollTimeoutRef, abortConnectionRef]);
+  // 修改消息列表
+  const handleChangeMessageList = (
+    params: ConversationChatParams,
+    res: ConversationChatResponse,
+    currentMessageId: number,
+  ) => {
+    const { data, eventType } = res;
+    timeoutRef.current = setTimeout(() => {
+      setMessageList((messageList) => {
+        const list = [...messageList];
+        if (eventType === ConversationEventTypeEnum.ERROR) {
+          return list;
+        }
+
+        const index = list.findIndex((item) => item.id === currentMessageId);
+        const currentMessage = list.find(
+          (item) => item.id === currentMessageId,
+        ) as MessageInfo;
+        let newMessage = null;
+        // 更新UI状态...
+        if (eventType === ConversationEventTypeEnum.PROCESSING) {
+          newMessage = {
+            ...currentMessage,
+            status: MessageStatusEnum.Loading,
+            processingList: [
+              ...(currentMessage?.processingList || []),
+              data,
+            ] as ProcessingInfo[],
+          };
+        }
+        if (eventType === ConversationEventTypeEnum.MESSAGE) {
+          const { text, type } = data;
+          // 思考think
+          if (type === MessageModeEnum.THINK) {
+            newMessage = {
+              ...currentMessage,
+              think: `${currentMessage.think}${text}`,
+              status: MessageStatusEnum.Incomplete,
+            };
+          } else {
+            newMessage = {
+              ...currentMessage,
+              text: `${currentMessage.text}${text}`,
+              status: MessageStatusEnum.Incomplete,
+            };
+          }
+        }
+        if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
+          const { componentExecuteResults } = data;
+          newMessage = {
+            ...currentMessage,
+            status: MessageStatusEnum.Complete,
+            finalResult: data,
+          };
+          // 调试结果
+          setExecuteResults(componentExecuteResults);
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = 0;
+          // 是否开启问题建议,可用值:Open,Close
+          if (conversationInfo?.agent?.openSuggest === OpenCloseEnum.Open) {
+            // 滚动到底部
+            handleScrollBottom();
+            runChatSuggest(params);
+          }
+        }
+
+        list.splice(index, 1, newMessage);
+        return list;
+      });
+    }, 200);
+    // 滚动到底部
+    handleScrollBottom();
+  };
 
   // 会话处理
   const handleConversation = async (
-    id: number,
-    message: string,
-    attachments: AttachmentFile[] = [],
-    debug = false,
+    params: ConversationChatParams,
+    currentMessageId: number,
   ) => {
-    const params = {
-      conversationId: id,
-      message,
-      attachments,
-      debug,
-    };
-
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-
     // 启动连接
     abortConnectionRef.current = await createSSEConnection({
       url: CONVERSATION_CONNECTION_URL,
@@ -137,78 +188,26 @@ export default () => {
       },
       body: params,
       onMessage: (res: ConversationChatResponse) => {
-        const { data, eventType } = res;
-        timeoutRef.current = setTimeout(() => {
-          setMessageList((list) => {
-            const lastMessage = list.slice(-1)[0] as MessageInfo;
-            const currentMessage =
-              list.find((info) => info.id === data?.id) || lastMessage;
-            if (!currentMessage) {
-              return [];
-            }
-            let newMessage = null;
-            // 更新UI状态...
-            if (eventType === ConversationEventTypeEnum.PROCESSING) {
-              newMessage = {
-                ...currentMessage,
-                id: data?.id,
-                status: MessageStatusEnum.Loading,
-                processingList: [
-                  ...(currentMessage?.processingList || []),
-                  data,
-                ] as ProcessingInfo[],
-              };
-            }
-            if (eventType === ConversationEventTypeEnum.MESSAGE) {
-              const { id: messageId, text, type } = res.data;
-              // 思考think
-              if (type === MessageModeEnum.THINK) {
-                newMessage = {
-                  ...currentMessage,
-                  id: messageId,
-                  think: `${currentMessage.think}${text}`,
-                  status: MessageStatusEnum.Incomplete,
-                };
-              } else {
-                newMessage = {
-                  ...currentMessage,
-                  id: messageId,
-                  text: `${currentMessage.text}${text}`,
-                  status: MessageStatusEnum.Incomplete,
-                };
-              }
-            }
-            if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
-              const { componentExecuteResults } = data;
-              newMessage = {
-                ...currentMessage,
-                status: MessageStatusEnum.Complete,
-                finalResult: data,
-              };
-              // 调试结果
-              setExecuteResults(componentExecuteResults);
-              clearTimeout(timeoutRef.current);
-              timeoutRef.current = 0;
-              // 是否开启问题建议,可用值:Open,Close
-              if (conversationInfo?.agent?.openSuggest === OpenCloseEnum.Open) {
-                // 滚动到底部
-                handleScrollBottom();
-                runChatSuggest(params);
-              }
-            }
-            if (res.eventType === ConversationEventTypeEnum.ERROR) {
-              return list;
-            }
-
-            return [...list.slice(0, -1), newMessage] as MessageInfo[];
-          });
-        }, 200);
-        // 滚动到底部
-        handleScrollBottom();
+        handleChangeMessageList(params, res, currentMessageId);
       },
     });
     // 主动关闭连接
     abortConnectionRef.current();
+  };
+
+  // 清除副作用
+  const handleClearSideEffect = () => {
+    setChatSuggestList([]);
+    timeoutRef.current = 0;
+    clearTimeout(timeoutRef.current);
+    // 清除滚动
+    clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = 0;
+    // 主动关闭连接
+    if (abortConnectionRef.current) {
+      abortConnectionRef.current();
+      abortConnectionRef.current = null;
+    }
   };
 
   // 发送消息
@@ -218,22 +217,8 @@ export default () => {
     files: UploadFileInfo[] = [],
     debug = false,
   ) => {
-    setChatSuggestList([]);
-    timeoutRef.current = 0;
-    clearTimeout(timeoutRef.current);
-    if (abortConnectionRef.current) {
-      abortConnectionRef.current();
-      abortConnectionRef.current = null;
-    }
-
-    setMessageList((list) => {
-      return list?.map((item) => {
-        if (item.status === MessageStatusEnum.Incomplete) {
-          item.status = MessageStatusEnum.Complete;
-        }
-        return item;
-      }) as MessageInfo[];
-    });
+    // 清除副作用
+    handleClearSideEffect();
 
     // 附件文件
     const attachments =
@@ -254,23 +239,42 @@ export default () => {
       id: Math.random(),
       messageType: MessageTypeEnum.USER,
     };
-    // 助手信息
-    const assistantMessage = {
+
+    const currentMessageId = Math.random();
+    // 当前助手信息
+    const currentMessage = {
       role: AssistantRoleEnum.ASSISTANT,
       type: MessageModeEnum.CHAT,
       text: '',
+      think: '',
       time: moment(),
-      id: Math.random(),
+      id: currentMessageId,
       messageType: MessageTypeEnum.ASSISTANT,
       status: MessageStatusEnum.Loading,
     } as MessageInfo;
 
-    setMessageList(
-      (list) => [...list, chatMessage, assistantMessage] as MessageInfo[],
-    );
+    setMessageList((list) => {
+      const _list =
+        list?.map((item) => {
+          if (item.status === MessageStatusEnum.Incomplete) {
+            item.status = MessageStatusEnum.Complete;
+          }
+          return item;
+        }) || [];
+
+      return [..._list, chatMessage, currentMessage] as MessageInfo[];
+    });
+    // 滚动
     await handleScrollBottom();
+    // 会话请求参数
+    const params: ConversationChatParams = {
+      conversationId: id,
+      message,
+      attachments,
+      debug,
+    };
     // 处理会话
-    await handleConversation(id, message, attachments, debug);
+    await handleConversation(params, currentMessageId);
     // 第一次发送消息后更新主题
     if (needUpdateTopic) {
       runUpdateTopic({
@@ -304,5 +308,6 @@ export default () => {
     showType,
     setShowType,
     setNeedUpdateTopic,
+    handleClearSideEffect,
   };
 };

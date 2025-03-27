@@ -29,13 +29,13 @@ const Chat: React.FC = () => {
     messageList,
     setMessageList,
     chatSuggestList,
-    setChatSuggestList,
     runAsync,
     loadingSuggest,
     onMessageSend,
     messageViewRef,
     executeResults,
     setNeedUpdateTopic,
+    handleClearSideEffect,
   } = useModel('conversationInfo');
 
   // 角色信息（名称、头像）
@@ -68,8 +68,8 @@ const Chat: React.FC = () => {
     }
 
     return () => {
+      handleClearSideEffect();
       setMessageList([]);
-      setChatSuggestList([]);
       setNeedUpdateTopic(true);
     };
   }, [id, message, files]);

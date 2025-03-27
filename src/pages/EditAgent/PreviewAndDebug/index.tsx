@@ -37,6 +37,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     onMessageSend,
     messageViewRef,
     setNeedUpdateTopic,
+    handleClearSideEffect,
   } = useModel('conversationInfo');
 
   // 角色信息（名称、头像）
@@ -76,8 +77,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     }
 
     return () => {
+      handleClearSideEffect();
       setMessageList([]);
-      setChatSuggestList([]);
       setNeedUpdateTopic(true);
     };
   }, [agentConfigInfo?.devConversationId]);
