@@ -31,6 +31,8 @@ export default () => {
   const [needUpdateTopic, setNeedUpdateTopic] = useState<boolean>(true);
   // 会话信息
   const [conversationInfo, setConversationInfo] = useState<ConversationInfo>();
+  // 是否用户问题建议
+  const [isSuggest, setIsSuggest] = useState<boolean>(true);
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 会话问题建议
@@ -79,6 +81,7 @@ export default () => {
       debounceWait: 300,
       onSuccess: (result) => {
         setConversationInfo(result.data);
+        setIsSuggest(result?.data?.agent?.openSuggest === OpenCloseEnum.Open);
         setMessageList(result.data?.messageList || []);
         handleScrollBottom();
       },
@@ -157,7 +160,7 @@ export default () => {
           clearTimeout(timeoutRef.current);
           timeoutRef.current = 0;
           // 是否开启问题建议,可用值:Open,Close
-          if (conversationInfo?.agent?.openSuggest === OpenCloseEnum.Open) {
+          if (isSuggest) {
             // 滚动到底部
             handleScrollBottom();
             runChatSuggest(params);
@@ -293,6 +296,7 @@ export default () => {
   }, []);
 
   return {
+    setIsSuggest,
     conversationInfo,
     messageList,
     setMessageList,

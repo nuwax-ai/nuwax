@@ -7,7 +7,7 @@ import {
   apiAgentConfigUpdate,
 } from '@/services/agentConfig';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { EditAgentShowType } from '@/types/enums/space';
+import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import {
   AgentBaseInfo,
   AgentComponentInfo,
@@ -43,7 +43,7 @@ const EditAgent: React.FC = () => {
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>(null);
   // 历史版本信息
   const [versionHistory, setVersionHistory] = useState<HistoryData[]>([]);
-  const { showType, setShowType } = useModel('conversationInfo');
+  const { showType, setShowType, setIsSuggest } = useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
 
   // 查询智能体配置信息
@@ -115,6 +115,10 @@ const EditAgent: React.FC = () => {
       [attr]: value,
     };
     setAgentConfigInfo(_agentConfigInfo);
+    // 用户问题建议
+    if (attr === 'openSuggest') {
+      setIsSuggest(value === OpenCloseEnum.Open);
+    }
     const {
       id,
       name,
