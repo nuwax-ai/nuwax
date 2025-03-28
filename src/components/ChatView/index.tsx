@@ -1,5 +1,5 @@
 import agentImage from '@/assets/images/agent_image.png';
-import personal from '@/assets/images/personal.png';
+import avatar from '@/assets/images/avatar.png';
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
 import { USER_INFO } from '@/constants/home.constants';
@@ -45,7 +45,7 @@ const ChatView: React.FC<ChatViewProps> = ({
       case AssistantRoleEnum.USER:
         return {
           name: _userInfo?.nickName || _userInfo?.userName,
-          avatar: _userInfo?.avatar || personal,
+          avatar: _userInfo?.avatar || avatar,
         };
       // 助手信息
       case AssistantRoleEnum.ASSISTANT:

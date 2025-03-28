@@ -1,3 +1,4 @@
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { DOCUMENT_URL } from '@/constants/common.constants';
 import { SPACE_ID } from '@/constants/home.constants';
 import SystemSection from '@/layouts/MenusLayout/SystemSection';
@@ -28,7 +29,8 @@ const cx = classNames.bind(styles);
 const MenusLayout: React.FC = () => {
   const location = useLocation();
   const { setOpenHistoryModal, setOpenMessage } = useModel('layout');
-  const { currentSpaceInfo, runSpace } = useModel('spaceModel');
+  const { currentSpaceInfo, runSpace, setSpaceList, setPersonalSpaceInfo } =
+    useModel('spaceModel');
   const { setAgentInfoList, setPluginInfoList } = useModel('squareModel');
   const { runTenantConfig } = useModel('tenantConfigInfo');
   const [tabType, setTabType] = useState<TabsEnum>();
@@ -69,6 +71,12 @@ const MenusLayout: React.FC = () => {
     },
   });
 
+  // 点击工作空间
+  const handleClickSpace = () => {
+    const spaceId = localStorage.getItem(SPACE_ID) ?? currentSpaceInfo?.id;
+    history.push(`/space/${spaceId}/develop`);
+  };
+
   // 切换tab
   const handleTabsClick = useCallback((type: TabsEnum) => {
     switch (type) {
@@ -76,11 +84,7 @@ const MenusLayout: React.FC = () => {
         history.push('/');
         break;
       case TabsEnum.Space:
-        {
-          const spaceId =
-            localStorage.getItem(SPACE_ID) ?? currentSpaceInfo?.id;
-          history.push(`/space/${spaceId}/develop`);
-        }
+        handleClickSpace();
         break;
       case TabsEnum.Square:
         history.push(`/square?cate_type=${SquareAgentTypeEnum.Agent}`);
@@ -95,12 +99,24 @@ const MenusLayout: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // 查询空间列表
-    runSpace();
     // 查询广场menus列表
     run();
     // 租户配置信息查询接口
     runTenantConfig();
+  }, []);
+
+  useEffect(() => {
+    const asyncFun = async () => {
+      // 查询空间列表
+      const res = await runSpace();
+      if (res.code === SUCCESS_CODE) {
+        setSpaceList(res.data || []);
+        // 设置个人空间为当前空间
+        setPersonalSpaceInfo(res.data || []);
+      }
+    };
+
+    asyncFun();
   }, []);
 
   useEffect(() => {

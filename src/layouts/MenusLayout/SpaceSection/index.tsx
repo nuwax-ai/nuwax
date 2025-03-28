@@ -1,9 +1,8 @@
-import { SPACE_ID } from '@/constants/home.constants';
 import { SPACE_APPLICATION_LIST } from '@/constants/space.constants';
 import { SpaceApplicationListEnum, SpaceTypeEnum } from '@/types/enums/space';
 import classNames from 'classnames';
-import React from 'react';
-import { history, useLocation, useModel } from 'umi';
+import React, { useEffect } from 'react';
+import { history, useLocation, useModel, useParams } from 'umi';
 import DevCollect from './DevCollect';
 import styles from './index.less';
 import SpaceTitle from './SpaceTitle';
@@ -12,11 +11,19 @@ const cx = classNames.bind(styles);
 
 const SpaceSection: React.FC = () => {
   const location = useLocation();
+  const { spaceId } = useParams();
   const { pathname } = location;
-  const { currentSpaceInfo } = useModel('spaceModel');
+  const { spaceList, currentSpaceInfo, handleCurrentSpaceInfo } =
+    useModel('spaceModel');
+
+  useEffect(() => {
+    // 根据url地址中的spaceId来重置当前空间信息，因为用户可能手动修改url地址栏中的空间id，也可能是复制来的url
+    if (spaceId && !!spaceList?.length) {
+      handleCurrentSpaceInfo(spaceList, Number(spaceId));
+    }
+  }, [spaceList, spaceId]);
 
   const handlerApplication = (type: SpaceApplicationListEnum) => {
-    const spaceId = localStorage.getItem(SPACE_ID);
     switch (type) {
       // 应用开发
       case SpaceApplicationListEnum.Application_Develop:

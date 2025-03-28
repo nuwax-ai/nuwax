@@ -2,6 +2,7 @@ import teamImage from '@/assets/images/team_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { SPACE_ID } from '@/constants/home.constants';
 import { apiCreateSpaceTeam } from '@/services/workspace';
 import type { CreateNewTeamProps } from '@/types/interfaces/layouts';
@@ -25,21 +26,24 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
 
   const [imageUrl, setImageUrl] = useState<string>('');
   const [form] = Form.useForm();
-  const { runSpace } = useModel('spaceModel');
+  const { runSpace, setSpaceList } = useModel('spaceModel');
 
   // 创建工作空间新团队
   const { run, loading } = useRequest(apiCreateSpaceTeam, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (res: number) => {
+    onSuccess: async (result: number) => {
       message.success('新建成功');
       setImageUrl('');
       // 关闭弹窗
       onCancel();
       // 更新空间列表
-      runSpace();
-      if (res) {
-        const spaceId = res;
+      const res = await runSpace();
+      if (res.code === SUCCESS_CODE) {
+        setSpaceList(res.data || []);
+      }
+      if (result) {
+        const spaceId = result;
         localStorage.setItem(SPACE_ID, spaceId.toString());
         // 路由跳转
         if (pathname.includes('develop')) {

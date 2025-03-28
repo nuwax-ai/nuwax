@@ -46,7 +46,6 @@ const SettingAccount: React.FC = () => {
 
   // 上传头像成功后更新头像
   const handleSuccessUpload = (url: string) => {
-    console.log(url, 'url');
     if (url) {
       run({
         avatar: url,

@@ -1,6 +1,5 @@
 import personal from '@/assets/images/personal.png';
 import teamImage from '@/assets/images/team_image.png';
-import { SPACE_ID } from '@/constants/home.constants';
 import { SpaceTypeEnum } from '@/types/enums/space';
 import type { PersonalSpaceContentType } from '@/types/interfaces/layouts';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
@@ -22,20 +21,16 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
 }) => {
   const location = useLocation();
   const { pathname } = location;
-  const { spaceList, currentSpaceInfo, setCurrentSpaceInfo } =
-    useModel('spaceModel');
-  const spaceId = Number(localStorage.getItem(SPACE_ID));
+  const { spaceList, currentSpaceInfo } = useModel('spaceModel');
 
   // 过滤当前工作空间
   const filterSpaceList = useMemo(() => {
-    return spaceList?.filter((item) => item.id !== spaceId) || [];
-  }, [spaceList, currentSpaceInfo, spaceId]);
+    return spaceList?.filter((item) => item.id !== currentSpaceInfo.id) || [];
+  }, [spaceList, currentSpaceInfo]);
 
   // 点击空间列表事件
   const handleClick = (info: SpaceInfo) => {
     const spaceId = info.id;
-    localStorage.setItem(SPACE_ID, spaceId.toString());
-    setCurrentSpaceInfo(info);
     onClosePopover(false);
 
     // 路由跳转
