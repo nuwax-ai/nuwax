@@ -1,4 +1,3 @@
-import LabelStar from '@/components/LabelStar';
 import SelectList from '@/components/SelectList';
 import {
   ParamsSettingDefaultOptions,
@@ -122,7 +121,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub>['columns'] = [
     {
-      title: <LabelStar label="参数名称" />,
+      title: '参数名称',
       dataIndex: 'name',
       key: 'name',
       className: 'flex items-center',
@@ -218,6 +217,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       align: 'center',
       render: (_, record) => (
         <Switch
+          disabled={record.require}
           checked={record.enable}
           onChange={(checked) =>
             handleInputValue(record.key, 'enable', checked)

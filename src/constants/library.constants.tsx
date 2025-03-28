@@ -268,10 +268,10 @@ export const MODEL_NETWORK_TYPE_LIST = [
     value: ModelNetworkTypeEnum.Internet,
     label: '公网模型',
   },
-  {
-    value: ModelNetworkTypeEnum.Intranet,
-    label: '内网模型',
-  },
+  // {
+  //   value: ModelNetworkTypeEnum.Intranet,
+  //   label: '内网模型',
+  // },
 ];
 
 // 模型调用策略
