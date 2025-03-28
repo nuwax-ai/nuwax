@@ -1,4 +1,4 @@
-import ConditionRender from '@/components/ConditionRender';
+import avatar from '@/assets/images/avatar.png';
 import CustomPopover from '@/components/CustomPopover';
 import {
   COMPONENT_LIST,
@@ -84,13 +84,11 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
         )}
       </div>
       <div className={cx(styles.footer, 'flex', 'items-center')}>
-        <ConditionRender condition={componentInfo.icon}>
-          <img
-            className={cx(styles.img, 'radius-6')}
-            src={componentInfo.icon}
-            alt=""
-          />
-        </ConditionRender>
+        <img
+          className={cx(styles.img, 'radius-6')}
+          src={componentInfo?.creator?.avatar || avatar}
+          alt=""
+        />
         <div className={cx('flex-1', 'flex', 'item-center', 'overflow-hide')}>
           <div className={cx('flex-1', 'text-ellipsis')}>
             {componentInfo.creator?.nickName}

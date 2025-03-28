@@ -74,11 +74,7 @@ const ChatView: React.FC<ChatViewProps> = ({
         {messageInfo?.role === AssistantRoleEnum.USER &&
           !!messageInfo?.text && (
             <div
-              className={cx(
-                styles['chat-content'],
-                'radius-6',
-                contentClassName,
-              )}
+              className={cx(styles['chat-content'], styles.user, 'radius-6')}
               dangerouslySetInnerHTML={{
                 __html: md.render(messageInfo?.text),
               }}
@@ -92,35 +88,27 @@ const ChatView: React.FC<ChatViewProps> = ({
           <ConditionRender condition={!!messageInfo?.status}>
             <RunOver messageInfo={messageInfo} />
           </ConditionRender>
-          {/*think*/}
-          {!!messageInfo?.think && !!md.render(messageInfo?.think) && (
-            <div
-              className={cx(
-                styles['chat-content'],
-                styles['mb-10'],
-                'radius-6',
-                'w-full',
-                contentClassName,
-              )}
-              dangerouslySetInnerHTML={{
-                __html: md.render(messageInfo?.think),
-              }}
-            />
-          )}
-          {/*文本内容*/}
-          {!!messageInfo?.text && (
-            <div
-              className={cx(
-                styles['chat-content'],
-                'radius-6',
-                'w-full',
-                contentClassName,
-              )}
-              dangerouslySetInnerHTML={{
-                __html: md.render(messageInfo?.text),
-              }}
-            />
-          )}
+          <div className={cx(styles['inner-container'], contentClassName)}>
+            {/*think*/}
+            {!!messageInfo?.think && !!md.render(messageInfo?.think) && (
+              <div
+                className={cx(styles['think-content'], 'radius-6', 'w-full')}
+                dangerouslySetInnerHTML={{
+                  __html: md.render(messageInfo?.think),
+                }}
+              />
+            )}
+            {/*文本内容*/}
+            {!!messageInfo?.text && (
+              <div
+                className={cx(styles['chat-content'], 'radius-6', 'w-full')}
+                dangerouslySetInnerHTML={{
+                  __html: md.render(messageInfo?.text),
+                }}
+              />
+            )}
+          </div>
+
           {/*底部区域*/}
           <ConditionRender
             condition={
