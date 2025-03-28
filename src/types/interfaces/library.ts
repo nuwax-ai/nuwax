@@ -41,7 +41,7 @@ export interface CreateWorkflowProps {
   icon?: string;
   open: boolean;
   onCancel: () => void;
-  onConfirm: (info: WorkflowBaseInfo) => void;
+  onConfirm?: (info: WorkflowBaseInfo) => void;
 }
 
 // 新建、更新插件组件
@@ -55,7 +55,7 @@ export interface CreateNewPluginProps {
   mode?: CreateUpdateModeEnum;
   open: boolean;
   onCancel: () => void;
-  onConfirm: (info: PluginInfo) => void;
+  onConfirm?: (info: PluginInfo) => void;
 }
 
 // table头部header带*号标题

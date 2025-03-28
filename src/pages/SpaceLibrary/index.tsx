@@ -29,13 +29,8 @@ import {
   FilterStatusEnum,
 } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
-import type { KnowledgeBaseInfo } from '@/types/interfaces/knowledge';
-import type {
-  ComponentInfo,
-  WorkflowBaseInfo,
-} from '@/types/interfaces/library';
+import type { ComponentInfo } from '@/types/interfaces/library';
 import type { UserInfo } from '@/types/interfaces/login';
-import { PluginInfo } from '@/types/interfaces/plugin';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, message } from 'antd';
 import classNames from 'classnames';
@@ -235,20 +230,6 @@ const SpaceLibrary: React.FC = () => {
     }
   };
 
-  // 确认添加插件事件
-  const handleConfirmPlugin = (info: PluginInfo) => {
-    setOpenPlugin(false);
-    const { id, type } = info;
-    handlePluginUrl(id, type);
-  };
-
-  // 确认添加工作流事件
-  const handleConfirmWorkflow = (info: WorkflowBaseInfo) => {
-    const id = info.id;
-    setOpenWorkflow(false);
-    history.push(`/workflow/${id}`);
-  };
-
   const handleConfirmModel = () => {
     setOpenModel(false);
     runComponent(spaceId);
@@ -378,13 +359,6 @@ const SpaceLibrary: React.FC = () => {
     }
   };
 
-  // 知识库新增确认事件
-  const handleConfirmKnowledge = (info: KnowledgeBaseInfo) => {
-    const { id } = info;
-    setOpenKnowledge(false);
-    history.push(`/space/${spaceId}/knowledge/${id}`);
-  };
-
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <div className={cx('flex', 'content-between')}>
@@ -451,21 +425,18 @@ const SpaceLibrary: React.FC = () => {
         spaceId={spaceId}
         open={openPlugin}
         onCancel={() => setOpenPlugin(false)}
-        onConfirm={handleConfirmPlugin}
       />
       {/*创建知识库弹窗*/}
       <CreateKnowledge
         spaceId={spaceId}
         open={openKnowledge}
         onCancel={() => setOpenKnowledge(false)}
-        onConfirm={handleConfirmKnowledge}
       />
       {/*创建工作流*/}
       <CreateWorkflow
         spaceId={spaceId}
         open={openWorkflow}
         onCancel={() => setOpenWorkflow(false)}
-        onConfirm={handleConfirmWorkflow}
       />
       <ConditionRender condition={openModel}>
         {/*创建模型*/}

@@ -328,7 +328,7 @@ export interface CreateKnowledgeProps {
   knowledgeInfo?: KnowledgeInfo;
   open: boolean;
   onCancel: () => void;
-  onConfirm: (info: KnowledgeBaseInfo) => void;
+  onConfirm?: (info: KnowledgeBaseInfo) => void;
 }
 
 // 自定义数字输入框，带加减按钮

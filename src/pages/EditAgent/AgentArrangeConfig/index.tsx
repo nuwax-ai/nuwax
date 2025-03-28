@@ -432,7 +432,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         onCancel={() => setShow(false)}
         spaceId={spaceId}
         checkTag={checkTag}
-        hasIds={checkedIds}
+        hasIds={{
+          [checkTag]: checkedIds,
+        }}
         onAdded={handleAddComponent}
       />
       {/*添加触发器弹窗*/}
