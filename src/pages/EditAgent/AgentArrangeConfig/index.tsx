@@ -245,6 +245,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       children: (
         <WorkflowList
           list={filterList(AgentComponentTypeEnum.Workflow)}
+          onSet={handlePluginSet}
           onDel={runAgentComponentDel}
         />
       ),

@@ -3,8 +3,11 @@ import {
   ParamsSettingDefaultOptions,
   VARIABLE_TYPE_LIST,
 } from '@/constants/common.constants';
-import { apiAgentComponentPluginUpdate } from '@/services/agentConfig';
-import { BindValueType } from '@/types/enums/agent';
+import {
+  apiAgentComponentPluginUpdate,
+  apiAgentComponentWorkflowUpdate,
+} from '@/services/agentConfig';
+import { AgentComponentTypeEnum, BindValueType } from '@/types/enums/agent';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { ParamsSettingProps } from '@/types/interfaces/agentConfig';
 import { getActiveKeys, updateNodeField } from '@/utils/deepNode';
@@ -33,6 +36,7 @@ const cx = classNames.bind(styles);
  */
 const ParamsSetting: React.FC<ParamsSettingProps> = ({
   id,
+  type,
   inputConfigArgs,
   variables,
 }) => {
@@ -67,6 +71,34 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       }
     },
   });
+
+  // 更新工作流组件配置
+  const { run: runWorkflowUpdate } = useRequest(
+    apiAgentComponentWorkflowUpdate,
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: () => {
+        message.success('保存成功');
+        if (inputConfigArgs?.length > 0) {
+          // 更新当前组件信息
+          setCurrentComponentInfo((info) => {
+            info.bindConfig.argBindConfigs = configArgs;
+            return info;
+          });
+          // 更新智能体模型组件列表
+          setAgentComponentList((list) => {
+            return list.map((item) => {
+              if (item.id === id) {
+                item.bindConfig.argBindConfigs = configArgs;
+              }
+              return item;
+            });
+          });
+        }
+      },
+    },
+  );
 
   useEffect(() => {
     if (!!inputConfigArgs?.length) {
@@ -110,12 +142,21 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
   };
 
   const handleSave = () => {
-    runPluginUpdate({
-      id,
-      bindConfig: {
-        inputArgBindConfigs: configArgs,
-      },
-    });
+    if (type === AgentComponentTypeEnum.Plugin) {
+      runPluginUpdate({
+        id,
+        bindConfig: {
+          inputArgBindConfigs: configArgs,
+        },
+      });
+    } else {
+      runWorkflowUpdate({
+        id,
+        bindConfig: {
+          argBindConfigs: configArgs,
+        },
+      });
+    }
   };
 
   // 入参配置columns
@@ -152,7 +193,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       title: '必填',
       dataIndex: 'require',
       key: 'require',
-      width: 80,
+      width: 85,
       render: (value) => <span>{value ? '必填' : '非必填'}</span>,
     },
     {
@@ -213,7 +254,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       ),
       dataIndex: 'enable',
       key: 'enable',
-      width: 98,
+      width: 100,
       align: 'center',
       render: (_, record) => (
         <Switch

@@ -1,3 +1,4 @@
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { DataTypeEnum } from '@/types/enums/common';
 import type { OpenCloseEnum } from '@/types/enums/space';
 import type {
@@ -47,6 +48,9 @@ export interface PluginModelSettingProps {
 }
 
 export interface ParamsSettingProps {
+  id: number;
+  type: AgentComponentTypeEnum;
+  inputConfigArgs: BindConfigWithSub[];
   variables?: BindConfigWithSub[];
 }
 

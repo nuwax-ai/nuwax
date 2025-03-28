@@ -1,4 +1,5 @@
 import { PLUGIN_SETTING_ACTIONS } from '@/constants/space.constants';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PluginSettingEnum } from '@/types/enums/space';
 import type { PluginModelSettingProps } from '@/types/interfaces/agentConfig';
 import { CloseOutlined } from '@ant-design/icons';
@@ -25,15 +26,19 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
     PluginSettingEnum.Params,
   );
 
+  const inputConfigArgs =
+    currentComponentInfo?.type === AgentComponentTypeEnum.Plugin
+      ? currentComponentInfo?.bindConfig?.inputArgBindConfigs
+      : currentComponentInfo?.bindConfig?.argBindConfigs;
+
   const Content: React.FC = () => {
     switch (action) {
       case PluginSettingEnum.Params:
         return (
           <ParamsSetting
             id={currentComponentInfo?.id}
-            inputConfigArgs={
-              currentComponentInfo?.bindConfig?.inputArgBindConfigs
-            }
+            type={currentComponentInfo?.type}
+            inputConfigArgs={inputConfigArgs}
             variables={variables}
           />
         );
