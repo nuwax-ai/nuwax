@@ -42,6 +42,8 @@ const SpaceKnowledge: React.FC = () => {
   const [openKnowledge, setOpenKnowledge] = useState<boolean>(false);
   // 文档列表
   const [documentList, setDocumentList] = useState<KnowledgeDocumentInfo[]>([]);
+  // 文档总数
+  const [totalDocCount, setTotalDocCount] = useState<number>(0);
   // 当前文档信息
   const [currentDocumentInfo, setCurrentDocumentInfo] =
     useState<KnowledgeDocumentInfo>(null);
@@ -75,6 +77,7 @@ const SpaceKnowledge: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: Page<KnowledgeDocumentInfo>) => {
+      setTotalDocCount(result.total);
       if (result?.records?.length > 0) {
         const { records } = result;
         setDocumentList(records);
@@ -251,6 +254,7 @@ const SpaceKnowledge: React.FC = () => {
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <KnowledgeHeader
+        docCount={totalDocCount}
         knowledgeInfo={knowledgeInfo}
         onEdit={() => setOpenKnowledge(true)}
         onPopover={handleClickPopoverItem}

@@ -8,7 +8,7 @@ import classNames from 'classnames';
 import React, { useEffect, useMemo } from 'react';
 import { useLocation, useMatch, useModel } from 'umi';
 import styles from './index.less';
-import ShowArea from './ShowArea';
+// import ShowArea from './ShowArea';
 
 const cx = classNames.bind(styles);
 
@@ -33,7 +33,7 @@ const Chat: React.FC = () => {
     loadingSuggest,
     onMessageSend,
     messageViewRef,
-    executeResults,
+    // executeResults,
     setNeedUpdateTopic,
     handleClearSideEffect,
   } = useModel('conversationInfo');
@@ -124,7 +124,7 @@ const Chat: React.FC = () => {
         />
       </div>
       {/*展示台区域*/}
-      <ShowArea executeResults={executeResults} />
+      {/*<ShowArea executeResults={executeResults} />*/}
     </div>
   );
 };

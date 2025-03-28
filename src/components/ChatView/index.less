@@ -19,7 +19,8 @@
   }
 
   .inner-container {
-    background-color: rgba(255, 255, 255, 80%);
+    //background-color: rgba(255, 255, 255, 80%);
+    background-color: @WHITE04;
     padding: 12px 16px;
     border-radius: 10px;
 
@@ -27,8 +28,8 @@
       position: relative;
       line-height: 28px;
       padding: 12px 15px 12px 23px;
-      color: #5e6772;
-      background-color: #f3f5fc;
+      color: #626b75;
+      background-color: #edf0fc;
       word-wrap: break-word;
       word-break: break-all;
       transition: 0.4s background cubic-bezier(0.4, 0, 0.2, 1);
@@ -41,7 +42,7 @@
         top: 12px;
         bottom: 12px;
         width: 1px;
-        background-color: #cccfd3; /* 竖线颜色 */
+        background-color: #dfe1e3; /* 竖线颜色 */
         border-radius: 2px;
       }
     }
@@ -55,9 +56,8 @@
     word-break: break-all;
 
     &.user {
-      color: @WHITE;
       padding: 10px 16px;
-      background-color: #2d65f7;
+      background-color: @WHITE04;
     }
 
     img {
