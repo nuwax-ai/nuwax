@@ -258,7 +258,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       align: 'center',
       render: (_, record) => (
         <Switch
-          disabled={record.require}
+          disabled={record.require && !record.bindValue}
           checked={record.enable}
           onChange={(checked) =>
             handleInputValue(record.key, 'enable', checked)
