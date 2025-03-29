@@ -124,6 +124,7 @@ const Created: React.FC<CreatedProp> = ({
     if (params.page > sizes || isRequesting.current) return;
 
     isRequesting.current = true;
+    params.spaceId = spaceId;
     const _res = await service.getList(type, params);
     isRequesting.current = false;
 
