@@ -52,11 +52,11 @@ export const TABS = [
 
 // 用户操作区域
 export const USER_OPERATE_AREA = [
-  {
-    title: '文档',
-    icon: <ICON_FILE />,
-    type: UserOperatorAreaEnum.Document,
-  },
+  // {
+  //   title: '文档',
+  //   icon: <ICON_FILE />,
+  //   type: UserOperatorAreaEnum.Document,
+  // },
   {
     title: '历史会话',
     icon: <ICON_HISTORY />,
