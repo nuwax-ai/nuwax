@@ -99,6 +99,8 @@ export interface TenantConfigInfo {
   siteDescription: string;
   // 站点LOGO，为空使用现有默认的
   siteLogo: string;
+  // 站点Favicon，为空使用现有默认的
+  faviconUrl: string;
   // 登录页banner
   loginBanner: string;
   // 登录页banner文案
