@@ -18,7 +18,7 @@ export default () => {
       document.title = siteDescription
         ? `${siteName} - ${siteDescription}`
         : siteName;
-      if(faviconUrl) {
+      if (faviconUrl) {
         // 创建一个新的link元素
         const link = document.createElement('link');
         link.rel = 'shortcut icon';

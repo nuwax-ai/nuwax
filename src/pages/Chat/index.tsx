@@ -2,6 +2,7 @@ import AgentChatEmpty from '@/components/AgentChatEmpty';
 import ChatInput from '@/components/ChatInput';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
+import { MessageTypeEnum } from '@/types/enums/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
 import { addBaseTarget } from '@/utils/common';
@@ -59,9 +60,15 @@ const Chat: React.FC = () => {
       const asyncFun = async () => {
         // 同步查询会话, 此处必须先同步查询会话信息，因为成功后会设置消息列表，如果是异步查询，会导致发送消息时，清空消息列表的bug
         const res = await runAsync(id);
-        const len = res?.data?.messageList?.length || 0;
+        // 会话消息列表
+        const list = res?.data?.messageList || [];
+        const len = list?.length || 0;
+        // 会话消息列表为空或者只有一条消息并且此消息时开场白时，可以发送消息
+        const isCanMessage =
+          !len ||
+          (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
         // 如果message或者附件不为空,可以发送消息，但刷新页面时，不重新发送消息
-        if (!len && (message || files?.length > 0)) {
+        if (isCanMessage && (message || files?.length > 0)) {
           onMessageSend(id, message, files);
         }
       };
