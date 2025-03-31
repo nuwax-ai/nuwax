@@ -4,6 +4,7 @@ import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
+import { addBaseTarget } from '@/utils/common';
 import classNames from 'classnames';
 import React, { useEffect, useMemo } from 'react';
 import { useLocation, useMatch, useModel } from 'umi';
@@ -34,7 +35,7 @@ const Chat: React.FC = () => {
     onMessageSend,
     messageViewRef,
     // executeResults,
-    setNeedUpdateTopic,
+    needUpdateTopicRef,
     handleClearSideEffect,
   } = useModel('conversationInfo');
 
@@ -70,16 +71,12 @@ const Chat: React.FC = () => {
     return () => {
       handleClearSideEffect();
       setMessageList([]);
-      setNeedUpdateTopic(true);
+      needUpdateTopicRef.current = true;
     };
   }, [id, message, files]);
 
   useEffect(() => {
-    if (!document.head.querySelector('base')) {
-      const base = document.createElement('base');
-      base.target = '_blank';
-      document.head.append(base);
-    }
+    addBaseTarget();
   }, []);
 
   // 消息发送

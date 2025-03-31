@@ -43,7 +43,17 @@ const getURLParams = () => {
   return params;
 };
 
+// 给页面head添加base标签: <base target="_blank">
+const addBaseTarget = () => {
+  if (!document.head.querySelector('base')) {
+    const base = document.createElement('base');
+    base.target = '_blank';
+    document.head.append(base);
+  }
+};
+
 export {
+  addBaseTarget,
   getBase64,
   getNumbersOnly,
   getURLParams,

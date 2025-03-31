@@ -28,7 +28,6 @@ import moment from 'moment/moment';
 import { useCallback, useRef, useState } from 'react';
 
 export default () => {
-  const [needUpdateTopic, setNeedUpdateTopic] = useState<boolean>(true);
   // 会话信息
   const [conversationInfo, setConversationInfo] = useState<ConversationInfo>();
   // 是否用户问题建议
@@ -46,6 +45,7 @@ export default () => {
   );
   // 调试结果
   const [executeResults, setExecuteResults] = useState<ExecuteResultInfo[]>([]);
+  const needUpdateTopicRef = useRef<boolean>(true);
 
   const handleScrollBottom = () => {
     scrollTimeoutRef.current = setTimeout(() => {
@@ -62,7 +62,7 @@ export default () => {
     manual: true,
     debounceWait: 300,
     onSuccess: (result) => {
-      setNeedUpdateTopic(false);
+      needUpdateTopicRef.current = false;
       setConversationInfo(
         (info) =>
           ({
@@ -80,7 +80,7 @@ export default () => {
       manual: true,
       debounceWait: 300,
       onSuccess: (result) => {
-        setConversationInfo(result.data);
+        setConversationInfo(result?.data);
         setIsSuggest(result?.data?.agent?.openSuggest === OpenCloseEnum.Open);
         setMessageList(result.data?.messageList || []);
         handleScrollBottom();
@@ -110,15 +110,28 @@ export default () => {
     const { data, eventType } = res;
     timeoutRef.current = setTimeout(() => {
       setMessageList((messageList) => {
-        const list = [...messageList];
-        if (eventType === ConversationEventTypeEnum.ERROR) {
-          return list;
+        if (
+          !messageList?.length ||
+          eventType === ConversationEventTypeEnum.ERROR
+        ) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = 0;
+          return messageList;
         }
-
+        // 深拷贝消息列表
+        const list = [...messageList];
         const index = list.findIndex((item) => item.id === currentMessageId);
+        // 当前消息
         const currentMessage = list.find(
           (item) => item.id === currentMessageId,
         ) as MessageInfo;
+        // 消息不存在时
+        if (!currentMessage) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = 0;
+          return messageList;
+        }
+
         let newMessage = null;
         // 更新UI状态...
         if (eventType === ConversationEventTypeEnum.PROCESSING) {
@@ -279,7 +292,7 @@ export default () => {
     // 处理会话
     await handleConversation(params, currentMessageId);
     // 第一次发送消息后更新主题
-    if (needUpdateTopic) {
+    if (needUpdateTopicRef.current) {
       runUpdateTopic({
         id,
         firstMessage: message,
@@ -311,7 +324,7 @@ export default () => {
     messageViewRef,
     showType,
     setShowType,
-    setNeedUpdateTopic,
+    needUpdateTopicRef,
     handleClearSideEffect,
   };
 };

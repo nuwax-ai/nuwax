@@ -31,12 +31,11 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     messageList,
     setMessageList,
     chatSuggestList,
-    setChatSuggestList,
     runQueryConversation,
     loadingSuggest,
     onMessageSend,
     messageViewRef,
-    setNeedUpdateTopic,
+    needUpdateTopicRef,
     handleClearSideEffect,
   } = useModel('conversationInfo');
 
@@ -79,14 +78,15 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     return () => {
       handleClearSideEffect();
       setMessageList([]);
-      setNeedUpdateTopic(true);
+      needUpdateTopicRef.current = true;
     };
   }, [agentConfigInfo?.devConversationId]);
 
   // 清空会话记录，实际上是创建新的会话
   const handleClear = useCallback(() => {
+    handleClearSideEffect();
     setMessageList([]);
-    setChatSuggestList([]);
+    // 创建会话
     runConversationCreate({
       agentId,
       devMode: true,

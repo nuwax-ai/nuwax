@@ -14,6 +14,7 @@ import {
   AgentConfigInfo,
 } from '@/types/interfaces/agent';
 import type { HistoryData } from '@/types/interfaces/space';
+import { addBaseTarget } from '@/utils/common';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
@@ -78,11 +79,7 @@ const EditAgent: React.FC = () => {
   }, [agentId]);
 
   useEffect(() => {
-    if (!document.head.querySelector('base')) {
-      const base = document.createElement('base');
-      base.target = '_blank';
-      document.head.append(base);
-    }
+    addBaseTarget();
   }, []);
 
   // 确认编辑智能体
