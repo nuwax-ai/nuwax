@@ -140,6 +140,10 @@ export const PLUGIN_SETTING_ACTIONS = [
     type: PluginSettingEnum.Params,
     label: '参数',
   },
+  {
+    type: PluginSettingEnum.Method_Call,
+    label: '调用方式',
+  },
   // {
   //   type: PluginSettingEnum.Card_Bind,
   //   label: '卡片绑定',

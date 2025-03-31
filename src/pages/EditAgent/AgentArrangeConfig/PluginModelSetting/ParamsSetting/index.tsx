@@ -3,10 +3,6 @@ import {
   ParamsSettingDefaultOptions,
   VARIABLE_TYPE_LIST,
 } from '@/constants/common.constants';
-import {
-  apiAgentComponentPluginUpdate,
-  apiAgentComponentWorkflowUpdate,
-} from '@/services/agentConfig';
 import { AgentComponentTypeEnum, BindValueType } from '@/types/enums/agent';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { ParamsSettingProps } from '@/types/interfaces/agentConfig';
@@ -16,7 +12,6 @@ import type { TableColumnsType } from 'antd';
 import {
   Button,
   Input,
-  message,
   Popover,
   Select,
   Space,
@@ -26,7 +21,6 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useModel, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -35,70 +29,15 @@ const cx = classNames.bind(styles);
  * 插件参数设置
  */
 const ParamsSetting: React.FC<ParamsSettingProps> = ({
-  id,
   type,
   inputConfigArgs,
   variables,
+  onSave,
 }) => {
   // 入参配置 - 展开的行，控制属性
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   // 入参配置
   const [configArgs, setConfigArgs] = useState<BindConfigWithSub[]>([]);
-  const { setCurrentComponentInfo, setAgentComponentList } =
-    useModel('spaceAgent');
-
-  // 更新插件组件配置
-  const { run: runPluginUpdate } = useRequest(apiAgentComponentPluginUpdate, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      message.success('保存成功');
-      if (inputConfigArgs?.length > 0) {
-        // 更新当前组件信息
-        setCurrentComponentInfo((info) => {
-          info.bindConfig.inputArgBindConfigs = configArgs;
-          return info;
-        });
-        // 更新智能体模型组件列表
-        setAgentComponentList((list) => {
-          return list.map((item) => {
-            if (item.id === id) {
-              item.bindConfig.inputArgBindConfigs = configArgs;
-            }
-            return item;
-          });
-        });
-      }
-    },
-  });
-
-  // 更新工作流组件配置
-  const { run: runWorkflowUpdate } = useRequest(
-    apiAgentComponentWorkflowUpdate,
-    {
-      manual: true,
-      debounceInterval: 300,
-      onSuccess: () => {
-        message.success('保存成功');
-        if (inputConfigArgs?.length > 0) {
-          // 更新当前组件信息
-          setCurrentComponentInfo((info) => {
-            info.bindConfig.argBindConfigs = configArgs;
-            return info;
-          });
-          // 更新智能体模型组件列表
-          setAgentComponentList((list) => {
-            return list.map((item) => {
-              if (item.id === id) {
-                item.bindConfig.argBindConfigs = configArgs;
-              }
-              return item;
-            });
-          });
-        }
-      },
-    },
-  );
 
   useEffect(() => {
     if (!!inputConfigArgs?.length) {
@@ -142,21 +81,11 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
   };
 
   const handleSave = () => {
-    if (type === AgentComponentTypeEnum.Plugin) {
-      runPluginUpdate({
-        id,
-        bindConfig: {
-          inputArgBindConfigs: configArgs,
-        },
-      });
-    } else {
-      runWorkflowUpdate({
-        id,
-        bindConfig: {
-          argBindConfigs: configArgs,
-        },
-      });
-    }
+    const attr =
+      type === AgentComponentTypeEnum.Plugin
+        ? 'inputArgBindConfigs'
+        : 'argBindConfigs';
+    onSave(attr, configArgs);
   };
 
   // 入参配置columns
