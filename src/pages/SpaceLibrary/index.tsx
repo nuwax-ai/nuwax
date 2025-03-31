@@ -35,7 +35,7 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useMatch, useRequest } from 'umi';
+import { history, useParams, useRequest } from 'umi';
 import ComponentItem from './ComponentItem';
 import CreateModel from './CreateModel';
 import styles from './index.less';
@@ -46,8 +46,7 @@ const cx = classNames.bind(styles);
  * 工作空间 - 组件库
  */
 const SpaceLibrary: React.FC = () => {
-  const match = useMatch('/space/:spaceId/library');
-  const { spaceId } = match.params;
+  const { spaceId } = useParams();
   // 组件列表
   const [componentList, setComponentList] = useState<ComponentInfo[]>([]);
   // 所有智能体列表

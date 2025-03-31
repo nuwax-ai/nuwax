@@ -6,9 +6,10 @@ import { MessageTypeEnum } from '@/types/enums/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
 import { addBaseTarget } from '@/utils/common';
+import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect, useMemo } from 'react';
-import { useLocation, useMatch, useModel } from 'umi';
+import { useLocation, useModel, useParams } from 'umi';
 import styles from './index.less';
 // import ShowArea from './ShowArea';
 
@@ -19,15 +20,15 @@ const cx = classNames.bind(styles);
  */
 const Chat: React.FC = () => {
   const location = useLocation();
-  const match = useMatch('/home/chat/:id');
   // 会话ID
-  const id = match.params?.id;
+  const { id } = useParams();
   // 附加state
   const message = location.state?.message;
   const files = location.state?.files;
 
   const {
     conversationInfo,
+    loadingConversation,
     messageList,
     setMessageList,
     chatSuggestList,
@@ -96,7 +97,13 @@ const Chat: React.FC = () => {
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
         <h3 className={cx(styles.title)}>{conversationInfo?.topic}</h3>
         <div className={cx(styles['chat-wrapper'], 'flex-1')}>
-          {messageList?.length > 0 ? (
+          {loadingConversation ? (
+            <div
+              className={cx('flex', 'items-center', 'content-center', 'h-full')}
+            >
+              <LoadingOutlined className={cx(styles.loading)} />
+            </div>
+          ) : messageList?.length > 0 ? (
             <>
               {messageList?.map((item, index) => (
                 <ChatView

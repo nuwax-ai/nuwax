@@ -74,19 +74,20 @@ export default () => {
   });
 
   // 查询会话
-  const { run: runQueryConversation, runAsync } = useRequest(
-    apiAgentConversation,
-    {
-      manual: true,
-      debounceWait: 300,
-      onSuccess: (result) => {
-        setConversationInfo(result?.data);
-        setIsSuggest(result?.data?.agent?.openSuggest === OpenCloseEnum.Open);
-        setMessageList(result.data?.messageList || []);
-        handleScrollBottom();
-      },
+  const {
+    run: runQueryConversation,
+    runAsync,
+    loading: loadingConversation,
+  } = useRequest(apiAgentConversation, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result) => {
+      setConversationInfo(result?.data);
+      setIsSuggest(result?.data?.agent?.openSuggest === OpenCloseEnum.Open);
+      setMessageList(result.data?.messageList || []);
+      handleScrollBottom();
     },
-  );
+  });
 
   // 智能体会话问题建议
   const { run: runChatSuggest, loading: loadingSuggest } = useRequest(
@@ -311,6 +312,7 @@ export default () => {
   return {
     setIsSuggest,
     conversationInfo,
+    loadingConversation,
     messageList,
     setMessageList,
     executeResults,

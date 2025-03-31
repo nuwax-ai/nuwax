@@ -22,7 +22,7 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useMatch, useModel, useRequest } from 'umi';
+import { history, useModel, useParams, useRequest } from 'umi';
 import AgentMove from './AgentMove';
 import ApplicationItem from './ApplicationItem';
 import styles from './index.less';
@@ -33,8 +33,7 @@ const cx = classNames.bind(styles);
  * 工作空间 - 应用开发
  */
 const SpaceDevelop: React.FC = () => {
-  const match = useMatch('/space/:spaceId/develop');
-  const { spaceId } = match.params;
+  const { spaceId } = useParams();
   // 打开分析弹窗
   const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
   // 迁移弹窗

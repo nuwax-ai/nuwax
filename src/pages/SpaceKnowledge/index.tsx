@@ -18,7 +18,7 @@ import type { Page } from '@/types/interfaces/request';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { useMatch, useRequest } from 'umi';
+import { useParams, useRequest } from 'umi';
 import DocWrap from './DocWrap';
 import KnowledgeHeader from './KnowledgeHeader';
 import LocalDocModal from './LocalCustomDocModal';
@@ -31,8 +31,7 @@ const cx = classNames.bind(styles);
  * 工作空间-知识库
  */
 const SpaceKnowledge: React.FC = () => {
-  const match = useMatch('/space/:spaceId/knowledge/:knowledgeId');
-  const { spaceId, knowledgeId } = match.params;
+  const { spaceId, knowledgeId } = useParams();
   const [open, setOpen] = useState<boolean>(false);
   // 知识库资源-文本格式导入类型枚举： 本地文档、在线文档、自定义
   const [type, setType] = useState<KnowledgeTextImportEnum>();

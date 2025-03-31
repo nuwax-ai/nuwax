@@ -18,7 +18,7 @@ import { addBaseTarget } from '@/utils/common';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
-import { useMatch, useModel, useRequest } from 'umi';
+import { useModel, useParams, useRequest } from 'umi';
 import AgentArrangeConfig from './AgentArrangeConfig';
 import AgentHeader from './AgentHeader';
 import AgentModelSetting from './AgentModelSetting';
@@ -35,8 +35,7 @@ const cx = classNames.bind(styles);
  * 编辑智能体
  */
 const EditAgent: React.FC = () => {
-  const match = useMatch('/space/:spaceId/agent/:agentId');
-  const { spaceId, agentId } = match.params;
+  const { spaceId, agentId } = useParams();
   const [open, setOpen] = useState<boolean>(false);
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
