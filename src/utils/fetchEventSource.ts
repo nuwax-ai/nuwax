@@ -33,6 +33,7 @@ export async function createSSEConnection<T = any>(
           ? JSON.stringify(options.body)
           : options.body,
       signal: controller.signal,
+      openWhenHidden: true, // 页面不可见时保持连接
 
       onopen: async (response) => {
         if (response.status >= 400) {
