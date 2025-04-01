@@ -15,7 +15,8 @@ import type {
   KnowledgeRawSegmentInfo,
 } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
-import { message } from 'antd';
+import { ExclamationCircleFilled } from '@ant-design/icons';
+import { message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
@@ -26,6 +27,7 @@ import RawSegmentInfo from './RawSegmentInfo';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+const { confirm } = Modal;
 
 /**
  * 工作空间-知识库
@@ -228,7 +230,17 @@ const SpaceKnowledge: React.FC = () => {
   // 删除文档
   const handleDocDel = () => {
     const docId = currentDocumentInfo?.id;
-    runDocDelete(docId);
+    confirm({
+      title: '您确定要删除此文档吗?',
+      icon: <ExclamationCircleFilled />,
+      content: currentDocumentInfo?.name,
+      okText: '确定',
+      maskClosable: true,
+      cancelText: '取消',
+      onOk() {
+        runDocDelete(docId);
+      },
+    });
   };
 
   // 修改文档名称成功后更新state
