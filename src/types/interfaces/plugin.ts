@@ -106,6 +106,11 @@ export interface PluginCopyUpdateParams {
   };
 }
 
+// 自动解析插件出参输入参数
+export interface PluginAnalysisOutputParams {
+  pluginId: number;
+}
+
 // 新增插件输入参数
 export interface PluginAddParams {
   // 空间ID

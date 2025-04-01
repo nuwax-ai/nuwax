@@ -18,8 +18,12 @@ import {
 import { AgentConfigInfo } from '@/types/interfaces/agent';
 import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
 import type { UserInfo } from '@/types/interfaces/login';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Input, message } from 'antd';
+import {
+  ExclamationCircleFilled,
+  PlusOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
+import { Button, Input, message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
@@ -28,6 +32,7 @@ import ApplicationItem from './ApplicationItem';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+const { confirm } = Modal;
 
 /**
  * 工作空间 - 应用开发
@@ -221,7 +226,17 @@ const SpaceDevelop: React.FC = () => {
         setOpenMove(true);
         break;
       case ApplicationMoreActionEnum.Del:
-        runDel(id);
+        confirm({
+          title: '您确定要删除此智能体吗?',
+          icon: <ExclamationCircleFilled />,
+          content: agentInfo?.name,
+          okText: '确定',
+          maskClosable: true,
+          cancelText: '取消',
+          onOk() {
+            runDel(id);
+          },
+        });
         break;
     }
   };

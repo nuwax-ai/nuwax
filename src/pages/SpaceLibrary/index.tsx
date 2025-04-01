@@ -31,8 +31,12 @@ import {
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentInfo } from '@/types/interfaces/library';
 import type { UserInfo } from '@/types/interfaces/login';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Empty, Input, message } from 'antd';
+import {
+  ExclamationCircleFilled,
+  PlusOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
+import { Button, Empty, Input, message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useParams, useRequest } from 'umi';
@@ -41,6 +45,7 @@ import CreateModel from './CreateModel';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+const { confirm } = Modal;
 
 /**
  * 工作空间 - 组件库
@@ -280,9 +285,41 @@ const SpaceLibrary: React.FC = () => {
   //   setComponentStatistics(analyzeList);
   // };
 
+  // 删除组件确认弹窗
+  const showDeleteConfirm = (type: ComponentTypeEnum, info: ComponentInfo) => {
+    const { id, name } = info;
+    confirm({
+      title: '您确定要删除此组件吗?',
+      icon: <ExclamationCircleFilled />,
+      content: name,
+      okText: '确定',
+      maskClosable: true,
+      cancelText: '取消',
+      onOk() {
+        switch (type) {
+          case ComponentTypeEnum.Plugin:
+            runPluginDel(id);
+            break;
+          case ComponentTypeEnum.Model:
+            runModelDel(id);
+            break;
+          case ComponentTypeEnum.Workflow:
+            runWorkflowDel(id);
+            break;
+          case ComponentTypeEnum.Knowledge:
+            runKnowledgeDel(id);
+            break;
+        }
+      },
+    });
+  };
+
   // 点击更多操作 插件： 创建副本、删除 模型：删除 工作流：创建副本、删除 知识库： 删除
   const handleClickMore = (item: CustomPopoverItem, info: ComponentInfo) => {
-    const { action, type } = item;
+    const { action, type } = item as {
+      action: ComponentMoreActionEnum;
+      type: ComponentTypeEnum;
+    };
     const { id } = info;
     // 插件
     if (type === ComponentTypeEnum.Plugin) {
@@ -291,7 +328,7 @@ const SpaceLibrary: React.FC = () => {
           runPluginCopy(id);
           break;
         case ComponentMoreActionEnum.Del:
-          runPluginDel(id);
+          showDeleteConfirm(type, info);
           break;
       }
     }
@@ -301,7 +338,7 @@ const SpaceLibrary: React.FC = () => {
       type === ComponentTypeEnum.Model &&
       action === ComponentMoreActionEnum.Del
     ) {
-      runModelDel(id);
+      showDeleteConfirm(type, info);
     }
 
     // 工作流
@@ -311,7 +348,7 @@ const SpaceLibrary: React.FC = () => {
           runWorkflowCopy(id);
           break;
         case ComponentMoreActionEnum.Del:
-          runWorkflowDel(id);
+          showDeleteConfirm(type, info);
           break;
       }
     }
@@ -321,7 +358,7 @@ const SpaceLibrary: React.FC = () => {
       type === ComponentTypeEnum.Knowledge &&
       action === ComponentMoreActionEnum.Del
     ) {
-      runKnowledgeDel(id);
+      showDeleteConfirm(type, info);
     }
     // switch (action) {
     //   case ComponentMoreActionEnum.Copy:
