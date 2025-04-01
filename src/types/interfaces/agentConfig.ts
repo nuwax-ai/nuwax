@@ -107,7 +107,7 @@ export interface AgentModelSettingProps {
 export interface CardModeSettingProps {
   cardKey: string;
   list: AgentCardInfo[];
-  onChoose: (cardKey: string) => void;
+  onChoose: (info: AgentCardInfo) => void;
 }
 
 // 预览与调试组件

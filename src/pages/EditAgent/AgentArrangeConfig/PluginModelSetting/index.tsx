@@ -33,6 +33,7 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
     PluginSettingEnum.Params,
   );
 
+  // console.log(currentComponentInfo, 'currentComponentInfo')
   const id = currentComponentInfo?.id;
 
   const inputConfigArgs =

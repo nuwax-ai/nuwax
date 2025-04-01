@@ -395,14 +395,16 @@ export interface AgentConversationUpdateParams {
   firstMessage: string;
 }
 
+export interface ArgList {
+  key: string;
+  placeholder: string;
+}
+
 // 卡片信息
 export interface AgentCardInfo {
   id: number;
   cardKey: string;
   name: string;
   imageUrl: string;
-  argList: {
-    key: string;
-    placeholder: string;
-  }[];
+  argList: ArgList[];
 }

@@ -24,3 +24,11 @@ export enum PluginCodeModeEnum {
   // 代码
   Code = 'Code',
 }
+
+// 卡片绑定样式,可用值:SINGLE,LIST
+export enum BindCardStyleEnum {
+  // 单张卡片
+  SINGLE = 'SINGLE',
+  // 竖向列表
+  LIST = 'LIST',
+}
