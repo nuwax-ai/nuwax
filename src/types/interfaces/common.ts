@@ -420,6 +420,7 @@ export interface PluginPublishProps {
 // 插件入参、出参配置title组件
 export interface PluginConfigTitleProps {
   title: string;
+  extra?: React.ReactNode;
   onClick: () => void;
 }
 

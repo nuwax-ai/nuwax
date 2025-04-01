@@ -7,7 +7,11 @@ import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PluginTryRunModelProps } from '@/types/interfaces/library';
 import { PluginTestResult } from '@/types/interfaces/plugin';
 import { addChildNode, deleteNode, updateNodeField } from '@/utils/deepNode';
-import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
+import {
+  CloseOutlined,
+  DeleteOutlined,
+  LoadingOutlined,
+} from '@ant-design/icons';
 import { Button, Input, message, Modal, Space, Table } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -32,7 +36,7 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
   const [result, setResult] = useState<string>(null);
 
   // 插件试运行接口
-  const { run: runTest } = useRequest(apiPluginTest, {
+  const { run: runTest, loading } = useRequest(apiPluginTest, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (res: PluginTestResult) => {
@@ -384,7 +388,11 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
                 }}
                 footer={() => (
                   <div className={cx('text-right')}>
-                    <Button type="primary" onClick={handleRunTest}>
+                    <Button
+                      type="primary"
+                      onClick={handleRunTest}
+                      loading={loading}
+                    >
                       运行
                     </Button>
                   </div>
@@ -402,7 +410,20 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
                   styles['result-wrap'],
                 )}
               >
-                {result ? (
+                {loading ? (
+                  <div
+                    className={cx(
+                      'h-full',
+                      'flex',
+                      'items-center',
+                      'content-center',
+                      styles['loading-box'],
+                    )}
+                  >
+                    <LoadingOutlined />
+                    <span>加载中...</span>
+                  </div>
+                ) : result ? (
                   <div
                     className={cx(
                       'h-full',

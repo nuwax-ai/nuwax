@@ -16,9 +16,9 @@ import type { PluginInfo } from '@/types/interfaces/plugin';
 import { getActiveKeys } from '@/utils/deepNode';
 import { DeleteOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import { Checkbox, Input, Select, Space, Table } from 'antd';
+import { Button, Checkbox, Input, message, Select, Space, Table } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 import PluginHeader from './PluginCodeHeader';
@@ -65,7 +65,10 @@ const SpacePluginCloudTool: React.FC = () => {
     handleConfirmUpdate,
     handleInputConfigAdd,
     handleOutputConfigAdd,
+    runPluginAnalysis,
   } = usePluginConfig();
+
+  const isClickSaveBtnRef = useRef<boolean>(false);
 
   const handleCodeChange = (value: string) => {
     setCode(value);
@@ -99,6 +102,12 @@ const SpacePluginCloudTool: React.FC = () => {
   const { run: runUpdate } = useRequest(apiPluginCodeUpdate, {
     manual: true,
     debounceInterval: 300,
+    onSuccess: () => {
+      if (isClickSaveBtnRef.current) {
+        message.success('插件保存成功');
+        isClickSaveBtnRef.current = false;
+      }
+    },
   });
 
   useEffect(() => {
@@ -314,6 +323,12 @@ const SpacePluginCloudTool: React.FC = () => {
     });
   };
 
+  // 单独点击保存按钮，提示保存成功
+  const handleSaveConfig = async () => {
+    isClickSaveBtnRef.current = true;
+    await handleSave();
+  };
+
   // 试运行
   const handleTryRun = () => {
     handleSave();
@@ -326,6 +341,12 @@ const SpacePluginCloudTool: React.FC = () => {
     setOpenModal(true);
   };
 
+  const handleAutoResolve = () => {
+    runPluginAnalysis({
+      pluginId,
+    });
+  };
+
   return (
     <div className={cx('flex', 'h-full')}>
       <div className={cx(styles.container, 'flex', 'flex-col', 'flex-1')}>
@@ -335,7 +356,7 @@ const SpacePluginCloudTool: React.FC = () => {
           onEdit={() => setOpenPlugin(true)}
           onChange={setCodeMode}
           onToggleHistory={() => setVisible(!visible)}
-          onSave={handleSave}
+          onSave={handleSaveConfig}
           onTryRun={handleTryRun}
           onPublish={handlePublish}
         />
@@ -364,6 +385,7 @@ const SpacePluginCloudTool: React.FC = () => {
             <PluginConfigTitle
               title="出参配置"
               onClick={handleOutputConfigAdd}
+              extra={<Button onClick={handleAutoResolve}>自动解析</Button>}
             />
             <Table<BindConfigWithSub>
               className={cx(styles['table-wrap'], 'overflow-hide')}

@@ -1,3 +1,4 @@
+import { BindConfigWithSub } from '@/types/interfaces/agent';
 import type {
   PluginAddParams,
   PluginCopyUpdateParams,
@@ -7,6 +8,7 @@ import type {
   PluginTestParams,
   PluginTestResult,
 } from '@/types/interfaces/plugin';
+import { PluginAnalysisOutputParams } from '@/types/interfaces/plugin';
 import type { RequestResponse } from '@/types/interfaces/request';
 import type { HistoryData } from '@/types/interfaces/space';
 import { request } from 'umi';
@@ -64,6 +66,16 @@ export async function apiPluginCodeUpdate(
   data: PluginCopyUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/plugin/code/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 自动解析插件出参
+export async function apiPluginAnalysisOutput(
+  data: PluginAnalysisOutputParams,
+): Promise<RequestResponse<BindConfigWithSub[]>> {
+  return request('/api/plugin/analysis/output', {
     method: 'POST',
     data,
   });

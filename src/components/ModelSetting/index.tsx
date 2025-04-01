@@ -185,7 +185,7 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({
       <div className="dis-sb">
         <div className="dis-left label-style">
           <span className="mr-16">{title}</span>
-          <Popover content={content} overlayInnerStyle={{ width: '300px' }}>
+          <Popover content={content} styles={{ body: { width: '300px' } }}>
             <InfoCircleOutlined />
           </Popover>
         </div>
