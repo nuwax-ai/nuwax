@@ -95,6 +95,22 @@ const Square: React.FC = () => {
     }
   };
 
+  const handleToggleCollectSuccess = (id: number, isCollect: boolean) => {
+    const _agentList = agentList.map((item) => {
+      if (item.targetId === id) {
+        item.collect = isCollect;
+        if (!item.statistics?.collectCount) {
+          item.statistics.collectCount = 0;
+        }
+        item.statistics.collectCount = isCollect
+          ? item.statistics.collectCount + 1
+          : item.statistics.collectCount - 1;
+      }
+      return item;
+    });
+    setAgentList(_agentList);
+  };
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <header className={cx(styles.header, 'relative')} onClick={handleLink}>
@@ -115,7 +131,11 @@ const Square: React.FC = () => {
       {agentList?.length > 0 ? (
         <div className={cx(styles['list-section'])}>
           {agentList.map((item, index) => (
-            <SingleAgent key={index} publishedAgentInfo={item} />
+            <SingleAgent
+              key={index}
+              publishedAgentInfo={item}
+              onToggleCollectSuccess={handleToggleCollectSuccess}
+            />
           ))}
         </div>
       ) : (
