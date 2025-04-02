@@ -1,5 +1,6 @@
 import CreateNewPlugin from '@/components/CreateNewPlugin';
 import LabelStar from '@/components/LabelStar';
+import PluginAutoAnalysis from '@/components/PluginAutoAnalysis';
 import PluginConfigTitle from '@/components/PluginConfigTitle';
 import PluginPublish from '@/components/PluginPublish';
 import PluginTryRunModel from '@/components/PluginTryRunModel';
@@ -52,6 +53,8 @@ const SpacePluginTool: React.FC = () => {
   const {
     isModalOpen,
     setIsModalOpen,
+    autoAnalysisOpen,
+    setAutoAnalysisOpen,
     visible,
     setVisible,
     openModal,
@@ -80,7 +83,6 @@ const SpacePluginTool: React.FC = () => {
     handleConfirmUpdate,
     handleInputConfigAdd,
     handleOutputConfigAdd,
-    runPluginAnalysis,
   } = usePluginConfig();
 
   const isClickSaveBtnRef = useRef<boolean>(false);
@@ -378,9 +380,7 @@ const SpacePluginTool: React.FC = () => {
   const handleAutoResolve = async () => {
     // 插件http模式下， 先保存配置，否则自动解析可能会因为url地址未填写或者未保存报错
     await handleSave();
-    runPluginAnalysis({
-      pluginId,
-    });
+    setAutoAnalysisOpen(true);
   };
 
   return (
@@ -484,6 +484,16 @@ const SpacePluginTool: React.FC = () => {
             pluginName={pluginInfo?.name as string}
             open={isModalOpen}
             onCancel={() => setIsModalOpen(false)}
+          />
+          {/*自动解析弹窗组件*/}
+          <PluginAutoAnalysis
+            inputConfigArgs={inputConfigArgs}
+            inputExpandedRowKeys={expandedRowKeys}
+            pluginId={pluginId}
+            pluginName={pluginInfo?.name as string}
+            open={autoAnalysisOpen}
+            onCancel={() => setAutoAnalysisOpen(false)}
+            onConfirm={setOutputConfigArgs}
           />
         </div>
       </div>

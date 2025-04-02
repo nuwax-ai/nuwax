@@ -1,0 +1,43 @@
+@import '@/styles/color';
+
+.modal-container {
+  width: 600px !important;
+
+  .inner-container {
+    height: 700px;
+    padding: 0 20px 20px;
+    border-radius: 10px;
+    background: @WHITE03;
+    pointer-events: auto;
+
+    .header {
+      height: 60px;
+
+      h3 {
+        font-weight: 600;
+      }
+    }
+
+    .p-title {
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+
+    .table-wrap {
+      border: 1px solid @GRAY01;
+      border-radius: 6px;
+      overflow: hidden;
+
+      :global {
+        .ant-table-footer {
+          background-color: transparent;
+        }
+      }
+    }
+  }
+
+  .param-desc {
+    color: @GRAY05;
+    font-size: 12px;
+  }
+}
