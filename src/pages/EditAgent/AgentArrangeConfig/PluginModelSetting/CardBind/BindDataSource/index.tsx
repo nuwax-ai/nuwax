@@ -18,6 +18,7 @@ import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
   Button,
+  Empty,
   Form,
   Radio,
   RadioChangeEvent,
@@ -226,20 +227,24 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
                 }}
                 onClick={() => setOpenBindArray(true)}
                 placeholder="请为卡片整体绑定一个数组"
-                dropdownRender={() => (
-                  <Tree
-                    treeData={bindArray}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
-                    onSelect={handleSelectBindArray}
-                    fieldNames={{
-                      title: 'name',
-                      key: 'key',
-                      children: 'subArgs',
-                    }}
-                  />
-                )}
+                dropdownRender={() =>
+                  bindArray?.length > 0 ? (
+                    <Tree
+                      treeData={bindArray}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      onSelect={handleSelectBindArray}
+                      fieldNames={{
+                        title: 'name',
+                        key: 'key',
+                        children: 'subArgs',
+                      }}
+                    />
+                  ) : (
+                    <Empty description="暂无数据" />
+                  )
+                }
               />
             </Form.Item>
           </>

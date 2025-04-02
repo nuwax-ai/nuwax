@@ -273,6 +273,13 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
           !info.dataType?.includes('Object')
         ) {
           _params[info.name] = info.subArgs?.map((_arg) => _arg.bindValue);
+        }
+        // 数据类型不是Array，也不是Object
+        else if (
+          !info.dataType?.includes('Array') &&
+          info.dataType !== DataTypeEnum.Object
+        ) {
+          _params[info.name] = info.bindValue;
         } else {
           // 系统对象（Array_Item）
           _params[info.name] = handleArrayObject(
