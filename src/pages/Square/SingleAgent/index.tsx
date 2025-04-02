@@ -2,12 +2,17 @@ import agentImage from '@/assets/images/agent_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
+import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
+import {
+  apiPublishedPluginCollect,
+  apiPublishedPluginUnCollect,
+} from '@/services/plugin';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { SingleAgentProps } from '@/types/interfaces/square';
 import {
   PlayCircleOutlined,
-  StarOutlined,
+  StarFilled,
   UserOutlined,
 } from '@ant-design/icons';
 import classNames from 'classnames';
@@ -20,7 +25,10 @@ const cx = classNames.bind(styles);
 /**
  * 单个智能体组件
  */
-const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
+const SingleAgent: React.FC<SingleAgentProps> = ({
+  publishedAgentInfo,
+  onToggleCollectSuccess,
+}) => {
   const {
     targetType,
     targetId,
@@ -29,6 +37,7 @@ const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
     publishUser,
     description,
     statistics,
+    collect,
   } = publishedAgentInfo;
 
   // 根据类型（目标对象（智能体、工作流、插件））显示不同的默认图标
@@ -46,10 +55,63 @@ const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
     },
   );
 
+  // 智能体收藏
+  const { run: runCollectAgent } = useRequest(apiCollectAgent, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      onToggleCollectSuccess(targetId, true);
+    },
+  });
+
+  // 智能体取消收藏
+  const { run: runUnCollectAgent } = useRequest(apiUnCollectAgent, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      onToggleCollectSuccess(targetId, false);
+    },
+  });
+
+  // 收藏插件接口
+  const { run: runPluginCollect } = useRequest(apiPublishedPluginCollect, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      onToggleCollectSuccess(targetId, true);
+    },
+  });
+
+  // 取消收藏插件接口
+  const { run: runPluginUnCollect } = useRequest(apiPublishedPluginUnCollect, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      onToggleCollectSuccess(targetId, false);
+    },
+  });
+
   const handleClick = () => {
     runConversationCreate({
       agentId: targetId,
     });
+  };
+
+  const handleToggleCollect = (e) => {
+    e.stopPropagation();
+    if (targetType === SquareAgentTypeEnum.Agent) {
+      if (collect) {
+        runUnCollectAgent(targetId);
+      } else {
+        runCollectAgent(targetId);
+      }
+    } else if (targetType === SquareAgentTypeEnum.Plugin) {
+      if (collect) {
+        runPluginUnCollect(targetId);
+      } else {
+        runPluginCollect(targetId);
+      }
+    }
   };
 
   return (
@@ -97,8 +159,13 @@ const SingleAgent: React.FC<SingleAgentProps> = ({ publishedAgentInfo }) => {
             <span>{statistics?.convCount || 0}</span>
           </span>
           {/*收藏次数*/}
-          <span className={cx(styles.text, 'flex')}>
-            <StarOutlined />
+          <span
+            className={cx(styles.text, styles.collect, 'flex')}
+            onClick={handleToggleCollect}
+          >
+            <StarFilled
+              className={cx({ [styles['collected-star']]: collect })}
+            />
             <span>{statistics?.collectCount || 0}</span>
           </span>
         </div>

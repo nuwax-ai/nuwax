@@ -108,3 +108,21 @@ export async function apiPluginConfigHistoryList(
     method: 'GET',
   });
 }
+
+// 收藏插件接口
+export async function apiPublishedPluginCollect(
+  pluginId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/published/plugin/collect/${pluginId}`, {
+    method: 'POST',
+  });
+}
+
+// 取消收藏插件接口
+export async function apiPublishedPluginUnCollect(
+  pluginId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/published/plugin/unCollect/${pluginId}`, {
+    method: 'POST',
+  });
+}

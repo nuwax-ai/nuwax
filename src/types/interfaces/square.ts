@@ -71,6 +71,7 @@ export interface SquareAgentInfo {
 // 单个智能体组件
 export interface SingleAgentProps {
   publishedAgentInfo: PublishedAgentInfo;
+  onToggleCollectSuccess: (id: number, isCollect: boolean) => void;
 }
 
 // 广场菜单项组件
