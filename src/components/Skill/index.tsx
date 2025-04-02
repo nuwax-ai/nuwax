@@ -5,11 +5,11 @@ import { SkillDisposeProps, SkillProps } from '@/types/interfaces/workflow';
 import { getImg } from '@/utils/workflow';
 import {
   DeleteOutlined,
-  DownOutlined,
+  // DownOutlined,
   InfoCircleOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
-import { Button, Input, Modal, Popover, Switch, Tag, Tree } from 'antd';
+import { Button, Input, Modal, Popover, Switch, Tag } from 'antd';
 import React, { useEffect, useState } from 'react';
 import './index.less';
 interface TreeOutput extends InputAndOutConfig {
@@ -91,14 +91,14 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
           >
             配置输入参数
           </p>
-          <p
+          {/* <p
             className={`skill-menu-style ${
               selectMenu === 'output' ? 'select-menu' : ''
             }`}
             onClick={() => setSelectMenu('output')}
           >
             配置输出参数
-          </p>
+          </p> */}
         </div>
         {/* 右侧部分 */}
         <div className="skill-dispose-right">
@@ -161,12 +161,12 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
             </div>
           )}
 
-          {selectMenu === 'output' && (
+          {/* {selectMenu === 'output' && (
             <>
               <p className="skill-menu-style content-title-style output-style">
                 输出变量
               </p>
-              {/* <Input value={params.bindValueType}></Input> */}
+              <Input value={params.bindValueType}></Input>
               <p className="output-remark-style">
                 当参数设置为不可见时，大模型将无法看到该参数。如果该参数设置了默认值并且不可见，则在调用插件时，智能体会默认只使用这个设定值
               </p>
@@ -182,6 +182,7 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
                   </Popover>
                 </p>
               </div>
+              <div  className='skill-tree'>
               <Tree<TreeOutput>
                 showLine
                 defaultExpandAll
@@ -191,7 +192,7 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
                 titleRender={(nodeData) => {
                   return (
                     <div className="dis-sb tree-title-style">
-                      <div>
+                      <div className='flex-1'>
                         <span>{nodeData.name}</span>
                         <Tag color="#C9CDD4" className="ml-12">
                           {nodeData.dataType}
@@ -214,8 +215,9 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
                   );
                 }}
               />
+              </div>
             </>
-          )}
+          )} */}
         </div>
       </div>
     </Modal>
