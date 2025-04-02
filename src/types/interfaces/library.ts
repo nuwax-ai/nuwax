@@ -73,6 +73,11 @@ export interface PluginTryRunModelProps {
   onCancel: () => void;
 }
 
+// 自动解析弹窗
+export interface PluginAutoAnalysisProps extends PluginTryRunModelProps {
+  onConfirm: (list: BindConfigWithSub[]) => void;
+}
+
 // 接口配置
 export interface ModelConfigDataType {
   key: React.Key;

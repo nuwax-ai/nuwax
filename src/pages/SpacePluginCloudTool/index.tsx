@@ -1,6 +1,7 @@
 import CodeEditor from '@/components/CodeEditor';
 import CreateNewPlugin from '@/components/CreateNewPlugin';
 import LabelStar from '@/components/LabelStar';
+import PluginAutoAnalysis from '@/components/PluginAutoAnalysis';
 import PluginConfigTitle from '@/components/PluginConfigTitle';
 import PluginPublish from '@/components/PluginPublish';
 import PluginTryRunModel from '@/components/PluginTryRunModel';
@@ -37,6 +38,8 @@ const SpacePluginCloudTool: React.FC = () => {
   const {
     isModalOpen,
     setIsModalOpen,
+    autoAnalysisOpen,
+    setAutoAnalysisOpen,
     visible,
     setVisible,
     openModal,
@@ -65,14 +68,9 @@ const SpacePluginCloudTool: React.FC = () => {
     handleConfirmUpdate,
     handleInputConfigAdd,
     handleOutputConfigAdd,
-    runPluginAnalysis,
   } = usePluginConfig();
 
   const isClickSaveBtnRef = useRef<boolean>(false);
-
-  const handleCodeChange = (value: string) => {
-    setCode(value);
-  };
 
   useEffect(() => {
     setCode(pluginInfo?.config?.code as string);
@@ -342,9 +340,8 @@ const SpacePluginCloudTool: React.FC = () => {
   };
 
   const handleAutoResolve = () => {
-    runPluginAnalysis({
-      pluginId,
-    });
+    handleSave();
+    setAutoAnalysisOpen(true);
   };
 
   return (
@@ -413,7 +410,7 @@ const SpacePluginCloudTool: React.FC = () => {
             <CodeEditor
               value={code}
               height={'100%'}
-              changeCode={handleCodeChange}
+              changeCode={setCode}
               codeLanguage={pluginInfo?.config?.codeLang}
             />
           </div>
@@ -428,6 +425,16 @@ const SpacePluginCloudTool: React.FC = () => {
         pluginName={pluginInfo?.name as string}
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
+      />
+      {/*自动解析弹窗组件*/}
+      <PluginAutoAnalysis
+        inputConfigArgs={inputConfigArgs}
+        inputExpandedRowKeys={expandedRowKeys}
+        pluginId={pluginId}
+        pluginName={pluginInfo?.name as string}
+        open={autoAnalysisOpen}
+        onCancel={() => setAutoAnalysisOpen(false)}
+        onConfirm={setOutputConfigArgs}
       />
       <PluginPublish
         pluginId={pluginId}

@@ -2,10 +2,7 @@ import {
   PLUGIN_INPUT_CONFIG,
   PLUGIN_OUTPUT_CONFIG,
 } from '@/constants/space.constants';
-import {
-  apiPluginAnalysisOutput,
-  apiPluginConfigHistoryList,
-} from '@/services/plugin';
+import { apiPluginConfigHistoryList } from '@/services/plugin';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PluginInfo } from '@/types/interfaces/plugin';
@@ -17,7 +14,10 @@ import { useParams, useRequest } from 'umi';
 
 const usePluginConfig = () => {
   const { pluginId } = useParams();
+  // 试运行弹窗
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  // 自动解析弹窗
+  const [autoAnalysisOpen, setAutoAnalysisOpen] = useState<boolean>(false);
   const [visible, setVisible] = useState<boolean>(false);
   // 弹窗modal
   const [openModal, setOpenModal] = useState<boolean>(false);
@@ -48,24 +48,6 @@ const usePluginConfig = () => {
     debounceInterval: 300,
     onSuccess: (result: HistoryData[]) => {
       setHistoryData(result);
-    },
-  });
-
-  // 查询插件历史配置信息接口
-  const { run: runPluginAnalysis } = useRequest(apiPluginAnalysisOutput, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: BindConfigWithSub[]) => {
-      if (!!result?.length) {
-        // 如果配置项key值为null, 添加随机值
-        const list = result.map((item) => {
-          if (!item.key) {
-            item.key = Math.random();
-          }
-          return item;
-        });
-        setOutputConfigArgs(list);
-      }
     },
   });
 
@@ -205,6 +187,8 @@ const usePluginConfig = () => {
   return {
     isModalOpen,
     setIsModalOpen,
+    autoAnalysisOpen,
+    setAutoAnalysisOpen,
     visible,
     setVisible,
     openModal,
@@ -233,7 +217,6 @@ const usePluginConfig = () => {
     handleConfirmUpdate,
     handleInputConfigAdd,
     handleOutputConfigAdd,
-    runPluginAnalysis,
   };
 };
 
