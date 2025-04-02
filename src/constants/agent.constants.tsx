@@ -5,6 +5,7 @@ import {
   SearchStrategyEnum,
   TriggerTypeEnum,
 } from '@/types/enums/agent';
+import { BindCardStyleEnum } from '@/types/enums/plugin';
 import { InfoCircleOutlined } from '@ant-design/icons';
 
 // 调用方式
@@ -82,5 +83,17 @@ export const TRIGGER_TYPE_LIST = [
     value: TriggerTypeEnum.EVENT,
     label: '事件触发',
     img: '',
+  },
+];
+
+// 卡片绑定列表
+export const BIND_CARD_STYLE_LIST = [
+  {
+    value: BindCardStyleEnum.SINGLE,
+    label: '单张卡片',
+  },
+  {
+    value: BindCardStyleEnum.LIST,
+    label: '竖向列表',
   },
 ];

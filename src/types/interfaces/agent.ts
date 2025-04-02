@@ -398,6 +398,7 @@ export interface AgentConversationUpdateParams {
 export interface ArgList {
   key: string;
   placeholder: string;
+  [key: string]: React.Key | boolean;
 }
 
 // 卡片信息
