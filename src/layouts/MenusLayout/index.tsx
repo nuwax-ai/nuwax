@@ -182,7 +182,7 @@ const MenusLayout: React.FC = () => {
         <User />
       </div>
       {/*二级导航菜单栏*/}
-      <div className={cx(styles['nav-menus'])}>
+      <div className={cx(styles['nav-menus'], 'overflow-y')}>
         <Content />
       </div>
     </div>

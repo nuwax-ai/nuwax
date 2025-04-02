@@ -3,6 +3,10 @@ import pluginImage from '@/assets/images/plugin_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
+import {
+  apiPublishedPluginCollect,
+  apiPublishedPluginUnCollect,
+} from '@/services/plugin';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { SingleAgentProps } from '@/types/interfaces/square';
@@ -69,6 +73,24 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
     },
   });
 
+  // 收藏插件接口
+  const { run: runPluginCollect } = useRequest(apiPublishedPluginCollect, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      onToggleCollectSuccess(targetId, true);
+    },
+  });
+
+  // 取消收藏插件接口
+  const { run: runPluginUnCollect } = useRequest(apiPublishedPluginUnCollect, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      onToggleCollectSuccess(targetId, false);
+    },
+  });
+
   const handleClick = () => {
     runConversationCreate({
       agentId: targetId,
@@ -77,10 +99,18 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
 
   const handleToggleCollect = (e) => {
     e.stopPropagation();
-    if (collect) {
-      runUnCollectAgent(targetId);
-    } else {
-      runCollectAgent(targetId);
+    if (targetType === SquareAgentTypeEnum.Agent) {
+      if (collect) {
+        runUnCollectAgent(targetId);
+      } else {
+        runCollectAgent(targetId);
+      }
+    } else if (targetType === SquareAgentTypeEnum.Plugin) {
+      if (collect) {
+        runPluginUnCollect(targetId);
+      } else {
+        runPluginCollect(targetId);
+      }
     }
   };
 
@@ -130,10 +160,12 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
           </span>
           {/*收藏次数*/}
           <span
-            className={cx(styles.text, 'flex')}
+            className={cx(styles.text, styles.collect, 'flex')}
             onClick={handleToggleCollect}
           >
-            <StarFilled className={cx({ [styles.collect]: collect })} />
+            <StarFilled
+              className={cx({ [styles['collected-star']]: collect })}
+            />
             <span>{statistics?.collectCount || 0}</span>
           </span>
         </div>
