@@ -157,14 +157,24 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   };
 
   return (
-    <Modal title="模型设置" open={open} footer={null} onCancel={onCancel}>
+    <Modal
+      title="模型设置"
+      classNames={{
+        content: cx(styles['modal-wrapper']),
+      }}
+      open={open}
+      footer={null}
+      onCancel={onCancel}
+    >
       <h3 className={cx(styles.title)}>模型</h3>
-      <SelectList
-        className={cx(styles.select)}
-        onChange={handleChangeModelTarget}
-        options={modelConfigList}
-        value={targetId}
-      />
+      <div>
+        <SelectList
+          className={cx(styles.select)}
+          onChange={handleChangeModelTarget}
+          options={modelConfigList}
+          value={targetId}
+        />
+      </div>
       <h3 className={cx(styles.title)}>
         生成多样性
         <InfoCircleOutlined />
