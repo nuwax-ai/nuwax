@@ -1,8 +1,15 @@
+import {
+  apiAgentComponentPluginUpdate,
+  apiAgentComponentWorkflowUpdate,
+} from '@/services/agentConfig';
 import type { InvokeTypeEnum } from '@/types/enums/agent';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type {
   AgentComponentInfo,
   BindConfigWithSub,
 } from '@/types/interfaces/agent';
+import { useRequest } from 'ahooks';
+import { message } from 'antd';
 import { useState } from 'react';
 
 export default () => {
@@ -13,6 +20,24 @@ export default () => {
   const [agentComponentList, setAgentComponentList] = useState<
     AgentComponentInfo[]
   >([]);
+
+  // 更新插件组件配置
+  const { runAsync: runPluginUpdate } = useRequest(
+    apiAgentComponentPluginUpdate,
+    {
+      manual: true,
+      debounceWait: 300,
+    },
+  );
+
+  // 更新工作流组件配置
+  const { runAsync: runWorkflowUpdate } = useRequest(
+    apiAgentComponentWorkflowUpdate,
+    {
+      manual: true,
+      debounceWait: 300,
+    },
+  );
 
   const onSetSuccess = (
     id: number,
@@ -37,11 +62,34 @@ export default () => {
     });
   };
 
+  // 保存设置
+  const onSaveSet = async (
+    attr: string,
+    value: BindConfigWithSub[] | InvokeTypeEnum,
+  ) => {
+    const id = currentComponentInfo?.id || 0;
+    const params = {
+      id,
+      bindConfig: {
+        ...currentComponentInfo?.bindConfig,
+        [attr]: value,
+      },
+    };
+    if (currentComponentInfo?.type === AgentComponentTypeEnum.Plugin) {
+      await runPluginUpdate(params);
+    } else {
+      await runWorkflowUpdate(params);
+    }
+    onSetSuccess(id, attr, value);
+    message.success('保存成功');
+  };
+
   return {
     currentComponentInfo,
     setCurrentComponentInfo,
     agentComponentList,
     setAgentComponentList,
     onSetSuccess,
+    onSaveSet,
   };
 };

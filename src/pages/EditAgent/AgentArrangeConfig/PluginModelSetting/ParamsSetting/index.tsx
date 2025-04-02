@@ -21,6 +21,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -29,15 +30,20 @@ const cx = classNames.bind(styles);
  * 插件参数设置
  */
 const ParamsSetting: React.FC<ParamsSettingProps> = ({
-  type,
-  inputConfigArgs,
+  // inputConfigArgs,
   variables,
-  onSave,
 }) => {
   // 入参配置 - 展开的行，控制属性
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   // 入参配置
   const [configArgs, setConfigArgs] = useState<BindConfigWithSub[]>([]);
+
+  const { currentComponentInfo, onSaveSet } = useModel('spaceAgent');
+
+  const inputConfigArgs =
+    currentComponentInfo?.type === AgentComponentTypeEnum.Plugin
+      ? currentComponentInfo?.bindConfig?.inputArgBindConfigs
+      : currentComponentInfo?.bindConfig?.argBindConfigs;
 
   useEffect(() => {
     if (!!inputConfigArgs?.length) {
@@ -82,10 +88,10 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
 
   const handleSave = () => {
     const attr =
-      type === AgentComponentTypeEnum.Plugin
+      currentComponentInfo?.type === AgentComponentTypeEnum.Plugin
         ? 'inputArgBindConfigs'
         : 'argBindConfigs';
-    onSave(attr, configArgs);
+    onSaveSet(attr, configArgs);
   };
 
   // 入参配置columns

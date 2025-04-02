@@ -1,98 +1,340 @@
+import ConditionRender from '@/components/ConditionRender';
 import CustomInputNumber from '@/components/CustomInputNumber';
+import LabelStar from '@/components/LabelStar';
+import { BIND_CARD_STYLE_LIST } from '@/constants/agent.constants';
+import { BindCardStyleEnum } from '@/types/enums/plugin';
+import {
+  AgentCardInfo,
+  ArgList,
+  BindConfigWithSub,
+} from '@/types/interfaces/agent';
+import {
+  findNode,
+  loopFilterArray,
+  loopOmitArray,
+  loopSetDisabled,
+} from '@/utils/deepNode';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { Form, Radio, RadioChangeEvent, Select, Switch } from 'antd';
+import {
+  Button,
+  Empty,
+  Form,
+  Radio,
+  RadioChangeEvent,
+  Select,
+  Switch,
+  Tree,
+} from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import cloneDeep from 'lodash/cloneDeep';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const BindDataSource: React.FC = () => {
-  const [cardStyle, setCardStyle] = useState<number>(1);
-  const [cardListLen, setCardListLen] = useState<string>('');
+export interface BindDataSourceProps {
+  cardInfo?: AgentCardInfo;
+}
 
+// 为卡片绑定数据源组件
+const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
+  // 卡片类型
+  const [cardStyle, setCardStyle] = useState<BindCardStyleEnum>(
+    BindCardStyleEnum.SINGLE,
+  );
+  // 卡片列表最大长度
+  const [cardListLen, setCardListLen] = useState<string>('5');
+  const [cardKey, setCardKey] = useState<string>(null);
+  // 卡片整体绑定的数组
+  const [bindArray, setBindArray] = useState<BindConfigWithSub[]>([]);
+  // 展开、隐藏"为卡片整体绑定一个数组"下拉列表
+  const [openBindArray, setOpenBindArray] = useState<boolean>(false);
+  // 为卡片内的列表项绑定数据
+  const [argList, setArgList] = useState<ArgList[]>([]);
+  // 卡片跳转显隐
+  const [urlVisible, setUrlVisible] = useState<boolean>(false);
+  const [urlChecked, setUrlChecked] = useState<boolean>(false);
+  // 绑定跳转链接地址
+  const [bindLinkUrl, setBindLinkUrl] = useState<string>(null);
+
+  // 当前组件信息
+  const { currentComponentInfo, onSaveSet } = useModel('spaceAgent');
+  // 出参配置
+  const outputArgBindConfigs =
+    currentComponentInfo?.bindConfig?.outputArgBindConfigs;
+
+  // 出参配置
+  const cardBindConfig = currentComponentInfo?.bindConfig?.cardBindConfig;
+
+  useEffect(() => {
+    // 卡片样式是竖向列表时，卡片整体绑定一个数组（需要从出参配置中过滤出数组）
+    if (cardStyle === BindCardStyleEnum.LIST) {
+      const _outputArgBindConfigs = cloneDeep(outputArgBindConfigs);
+      // 过滤数组
+      const list = loopFilterArray(_outputArgBindConfigs);
+      // 删除subArgs属性
+      const _list = loopOmitArray(list);
+      setBindArray(_list);
+    }
+  }, [outputArgBindConfigs, cardStyle]);
+
+  useEffect(() => {
+    // 回显卡片绑定数据
+    if (cardBindConfig && cardInfo?.id === cardBindConfig.cardId) {
+      setCardStyle(cardBindConfig.bindCardStyle);
+      setCardListLen(cardBindConfig?.maxCardCount || '5');
+      setCardKey(cardBindConfig?.bindArray);
+      if (cardBindConfig?.bindLinkUrl) {
+        setUrlChecked(true);
+        setBindLinkUrl(cardBindConfig?.bindLinkUrl);
+      }
+
+      if (cardBindConfig?.cardArgsBindConfigs?.length) {
+        const list = cardBindConfig?.cardArgsBindConfigs?.map((item) => {
+          return {
+            key: item.key,
+            cardKey: item.bindValue,
+          };
+        });
+        setArgList(list);
+      }
+    } else {
+      setCardStyle(BindCardStyleEnum.SINGLE);
+      setCardKey(null);
+      setCardListLen('5');
+      setUrlChecked(false);
+      setBindLinkUrl(null);
+      setArgList(cardInfo?.argList || []);
+    }
+  }, [cardInfo, cardBindConfig]);
+
+  // "为卡片内的列表项绑定数据"下拉数据源
+  const dataSource = useMemo(() => {
+    const _outputArgBindConfigs = cloneDeep(outputArgBindConfigs);
+    if (cardStyle === BindCardStyleEnum.SINGLE) {
+      return loopSetDisabled(_outputArgBindConfigs);
+    } else {
+      if (!cardKey) {
+        return [];
+      }
+      return findNode(_outputArgBindConfigs, cardKey)?.subArgs || [];
+    }
+  }, [outputArgBindConfigs, cardStyle, cardKey]);
+
+  // 选择卡片样式
   const onChangeCardStyle = (e: RadioChangeEvent) => {
-    console.log('radio checked', e.target.value);
-    setCardStyle(e.target.value);
-  };
-  const handlerChangeCardLen = (value: string) => {
-    setCardListLen(value);
+    const { value } = e.target;
+    setCardStyle(value);
+    setUrlChecked(false);
+    setBindLinkUrl(null);
+    setArgList(cardInfo?.argList || []);
   };
 
-  const onFinish = (values) => {
-    console.log(values);
+  // 为卡片整体绑定一个数组
+  const handleSelectBindArray = (_, { node }) => {
+    setCardKey(node.key);
+    setOpenBindArray(false);
+  };
+
+  // 为卡片内的列表项绑定数据(展开、隐藏下拉选择)
+  const handleArgList = (index: number, value: React.Key | boolean) => {
+    const _argList = cloneDeep(argList);
+    _argList[index].open = value;
+    setArgList(_argList);
+  };
+
+  // 为卡片内的列表项绑定数据(选择下拉选择项)
+  const handleSelectDataSource = (node: BindConfigWithSub, index: number) => {
+    const _argList = cloneDeep(argList);
+    _argList[index].open = false;
+    _argList[index].cardKey = node.key;
+    setArgList(_argList);
+  };
+
+  // 切换卡片跳转
+  const handleChangeUrl = (checked: boolean) => {
+    setUrlChecked(checked);
+    if (!checked) {
+      setBindLinkUrl(null);
+    }
+  };
+
+  // 保存卡片绑定
+  const handleSave = () => {
+    const configs = argList?.map((item) => {
+      return {
+        key: item.key,
+        bindValue: item?.cardKey || '',
+      };
+    });
+    const singleConfig = {
+      cardId: cardInfo?.id,
+      cardKey: cardInfo?.cardKey,
+      bindCardStyle: cardStyle,
+      cardArgsBindConfigs: configs,
+      bindLinkUrl,
+    };
+
+    const config =
+      cardStyle === BindCardStyleEnum.SINGLE
+        ? singleConfig
+        : {
+            ...singleConfig,
+            maxCardCount: cardListLen,
+            bindArray: cardKey,
+          };
+    onSaveSet('cardBindConfig', config);
   };
 
   return (
-    <Form
-      layout="vertical"
-      preserve={false}
-      requiredMark={customizeRequiredMark}
-      onFinish={onFinish}
-    >
-      <Form.Item name="cardStyle" label="选择卡片样式">
-        <Radio.Group onChange={onChangeCardStyle} value={cardStyle}>
-          <Radio value={1}>单张卡片</Radio>
-          <Radio value={2}>竖向列表</Radio>
-        </Radio.Group>
-      </Form.Item>
-      <Form.Item
-        name="cardLength"
-        label="卡片列表最大长度"
-        rules={[{ required: true, message: '请输入卡片列表最大长度' }]}
+    <div className={cx('flex-1', 'flex', 'flex-col')}>
+      <Form
+        layout="vertical"
+        preserve={false}
+        rootClassName={cx('flex-1')}
+        requiredMark={customizeRequiredMark}
       >
-        <CustomInputNumber
-          value={cardListLen}
-          onChange={handlerChangeCardLen}
-          placeholder="请输入卡片列表最大长度"
-          max={10}
-          min={1}
-        />
-      </Form.Item>
-      <Form.Item label="为卡片整体绑定一个数组">
-        <Select options={[]} placeholder="请选择"></Select>
-      </Form.Item>
-      <Form.Item label="为卡片内的列表项绑定数据">
-        <Form.Item name="name01" className={cx('mb-16')}>
-          <div className={cx('flex', 'items-center', styles['space-box'])}>
-            <span className={cx(styles['radius-number'])}>1</span>
-            <Select
-              rootClassName={cx('flex-1')}
-              options={[]}
-              placeholder="请选择"
-            ></Select>
-          </div>
+        <Form.Item label="选择卡片样式">
+          <Radio.Group
+            onChange={onChangeCardStyle}
+            value={cardStyle}
+            options={BIND_CARD_STYLE_LIST}
+          />
         </Form.Item>
-        <Form.Item name="name02" className={cx('mb-16')}>
-          <div className={cx('flex', 'items-center', styles['space-box'])}>
-            <span className={cx(styles['radius-number'])}>2</span>
-            <Select
-              rootClassName={cx('flex-1')}
-              options={[]}
-              placeholder="请选择"
-            ></Select>
-          </div>
+        {cardStyle === BindCardStyleEnum.LIST && (
+          <>
+            <Form.Item
+              label={<LabelStar label="卡片列表最大长度" />}
+              rules={[{ required: true, message: '请输入卡片列表最大长度' }]}
+            >
+              <CustomInputNumber
+                value={cardListLen}
+                onChange={(value) => setCardListLen(value)}
+                placeholder="请输入卡片列表最大长度"
+                max={20}
+                min={1}
+              />
+            </Form.Item>
+            <Form.Item label="为卡片整体绑定一个数组">
+              <Select
+                popupMatchSelectWidth={false}
+                open={openBindArray}
+                value={cardKey}
+                onDropdownVisibleChange={(open) => {
+                  setOpenBindArray(open);
+                }}
+                onClick={() => setOpenBindArray(true)}
+                placeholder="请为卡片整体绑定一个数组"
+                dropdownRender={() =>
+                  bindArray?.length > 0 ? (
+                    <Tree
+                      treeData={bindArray}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      onSelect={handleSelectBindArray}
+                      fieldNames={{
+                        title: 'name',
+                        key: 'key',
+                        children: 'subArgs',
+                      }}
+                    />
+                  ) : (
+                    <Empty description="暂无数据" />
+                  )
+                }
+              />
+            </Form.Item>
+          </>
+        )}
+        <Form.Item label="为卡片内的列表项绑定数据">
+          {argList?.map((info, index) => (
+            <Form.Item key={info.key} className={cx('mb-16')}>
+              <div className={cx('flex', 'items-center', styles['space-box'])}>
+                <span className={cx(styles['radius-number'])}>{index + 1}</span>
+                <Select
+                  rootClassName={cx('flex-1')}
+                  popupMatchSelectWidth={false}
+                  disabled={cardStyle === BindCardStyleEnum.LIST && !cardKey}
+                  open={info?.open}
+                  value={info?.cardKey}
+                  onDropdownVisibleChange={(open) => handleArgList(index, open)}
+                  onClick={() => handleArgList(index, true)}
+                  dropdownRender={() => (
+                    <Tree
+                      treeData={dataSource}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      onSelect={(_, { node }) =>
+                        handleSelectDataSource(node, index)
+                      }
+                      fieldNames={{
+                        title: 'name',
+                        key: 'key',
+                        children: 'subArgs',
+                      }}
+                    />
+                  )}
+                  placeholder={info.placeholder}
+                />
+              </div>
+            </Form.Item>
+          ))}
         </Form.Item>
-        <Form.Item name="name03" className={cx('mb-0')}>
-          <div className={cx('flex', 'items-center', styles['space-box'])}>
-            <span className={cx(styles['radius-number'])}>3</span>
+        <Form.Item
+          label="点击卡片跳转"
+          tooltip={{
+            title: '绑定后，用户在智能体对话流中点击 卡片可跳转至其他页面',
+            icon: <InfoCircleOutlined />,
+          }}
+        >
+          <Switch
+            className={cx(styles['link-switch'])}
+            disabled={!dataSource?.length}
+            size="small"
+            checked={urlChecked}
+            onChange={handleChangeUrl}
+          />
+          <ConditionRender condition={urlChecked}>
             <Select
+              allowClear
               rootClassName={cx('flex-1')}
-              options={[]}
-              placeholder="请选择"
-            ></Select>
-          </div>
+              popupMatchSelectWidth={false}
+              open={urlVisible}
+              value={bindLinkUrl}
+              onDropdownVisibleChange={(open) => setUrlVisible(open)}
+              onClick={() => setUrlVisible(true)}
+              dropdownRender={() => (
+                <Tree
+                  treeData={dataSource}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onSelect={(_, { node }) => {
+                    setBindLinkUrl(node.key);
+                    setUrlVisible(false);
+                  }}
+                  fieldNames={{
+                    title: 'name',
+                    key: 'key',
+                    children: 'subArgs',
+                  }}
+                />
+              )}
+              placeholder="为url选择数据来源"
+            />
+          </ConditionRender>
         </Form.Item>
-      </Form.Item>
-      <Form.Item
-        label="点击卡片跳转"
-        tooltip={{ title: '点击卡片跳转', icon: <InfoCircleOutlined /> }}
-      >
-        <Switch className={cx(styles['link-switch'])} size="small" />
-        <Select options={[]} placeholder="请选择"></Select>
-      </Form.Item>
-    </Form>
+      </Form>
+      <footer className={cx(styles.footer)}>
+        <Button type="primary" onClick={handleSave}>
+          保存
+        </Button>
+      </footer>
+    </div>
   );
 };
 
