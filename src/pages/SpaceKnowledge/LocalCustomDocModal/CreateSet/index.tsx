@@ -27,7 +27,6 @@ const CreateSet: React.FC<CreateSetProps> = ({
     );
 
   const handleChange = (value: KnowledgeSegmentIdentifierEnum) => {
-    console.log(`selected ${value}`);
     setSegmentDelimiter(value);
   };
 

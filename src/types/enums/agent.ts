@@ -11,7 +11,9 @@ export enum AgentComponentTypeEnum {
 
 // 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
 export enum BindValueType {
+  // 输入
   Input = 'Input',
+  // 引用
   Reference = 'Reference',
 }
 
@@ -75,9 +77,10 @@ export enum AssistantRoleEnum {
   FUNCTION = 'FUNCTION',
 }
 
-// 可用值:CHAT,GUID,QUESTION,ANSWER
+// 可用值:CHAT,THINK, GUID,QUESTION,ANSWER
 export enum MessageModeEnum {
   CHAT = 'CHAT',
+  THINK = 'THINK',
   GUID = 'GUID',
   QUESTION = 'QUESTION',
   ANSWER = 'ANSWER',

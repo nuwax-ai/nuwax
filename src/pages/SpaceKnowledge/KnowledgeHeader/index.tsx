@@ -1,7 +1,6 @@
 import knowledgeImage from '@/assets/images/knowledge_image.png';
 import CustomPopover from '@/components/CustomPopover';
 import { KNOWLEDGE_TEXT_IMPORT_TYPE } from '@/constants/library.constants';
-import { KnowledgePubStatusEnum } from '@/types/enums/library';
 import type { KnowledgeHeaderProps } from '@/types/interfaces/knowledge';
 import { DownOutlined, EditOutlined, LeftOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
@@ -15,6 +14,7 @@ const cx = classNames.bind(styles);
  * 知识库头部组件
  */
 const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
+  docCount = 0,
   knowledgeInfo,
   onEdit,
   onPopover,
@@ -52,9 +52,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
         </div>
         <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
           <span className={cx(styles.box, 'radius-6')}>
-            {knowledgeInfo?.pubStatus === KnowledgePubStatusEnum.Published
-              ? '已发布'
-              : '未发布'}
+            {`${docCount}个文档`}
           </span>
         </div>
       </section>

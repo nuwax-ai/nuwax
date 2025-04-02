@@ -4,16 +4,13 @@ import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { apiAddWorkflow, apiUpdateWorkflow } from '@/services/library';
 import { WorkflowModeEnum } from '@/types/enums/library';
-import type {
-  CreateWorkflowProps,
-  WorkflowBaseInfo,
-} from '@/types/interfaces/library';
+import type { CreateWorkflowProps } from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps } from 'antd';
 import { Form, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { history, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -39,13 +36,10 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   const { run } = useRequest(apiAddWorkflow, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result, params) => {
+    onSuccess: (result: number) => {
       message.success('工作流已创建成功');
-      const data: WorkflowBaseInfo = {
-        id: result,
-        ...params[0],
-      };
-      onConfirm(data);
+      onCancel();
+      history.push(`/workflow/${result}`);
     },
   });
 
@@ -55,7 +49,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     debounceInterval: 300,
     onSuccess: (_, params) => {
       message.success('工作流更新成功');
-      onConfirm(...params);
+      onConfirm?.(...params);
     },
   });
 

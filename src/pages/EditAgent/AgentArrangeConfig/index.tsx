@@ -28,6 +28,7 @@ import LongMemoryContent from './LongMemoryContent';
 import PluginList from './PluginList';
 // import TriggerContent from './TriggerContent';
 import OpenRemarksEdit from './OpenRemarksEdit';
+import PluginModelSetting from './PluginModelSetting';
 import WorkflowList from './WorkflowList';
 
 const cx = classNames.bind(styles);
@@ -40,23 +41,22 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   agentId,
   agentConfigInfo,
   onChangeEnable,
-  onSet,
 }) => {
   // const [triggerChecked, setTriggerChecked] = useState<boolean>(false);
   // 触发器弹窗
   // const [openTriggerModel, setOpenTriggerModel] = useState<boolean>(false);
+  // 插件弹窗
+  const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
   // 变量弹窗
   const [openVariableModel, setOpenVariableModel] = useState<boolean>(false);
-  // 智能体模型组件列表
-  const [agentComponentList, setAgentComponentList] = useState<
-    AgentComponentInfo[]
-  >([]);
   const [checkTag, setCheckTag] = useState<AgentComponentTypeEnum>(
     AgentComponentTypeEnum.Plugin,
   );
 
   // 打开、关闭弹窗
   const { show, setShow } = useModel('model');
+  const { setCurrentComponentInfo, agentComponentList, setAgentComponentList } =
+    useModel('spaceAgent');
 
   // 根据组件类型，过滤组件
   const filterList = (type: AgentComponentTypeEnum) => {
@@ -73,7 +73,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 技能列表 - 当前激活 tab 面板的 key
   const skillActiveKey = useMemo(() => {
     const skill: AgentArrangeConfigEnum[] = [];
-    for (let i = 0; i < agentComponentList.length; i++) {
+    for (let i = 0; i < agentComponentList?.length; i++) {
       if (agentComponentList[i].type === AgentComponentTypeEnum.Plugin) {
         if (!skill.includes(AgentArrangeConfigEnum.Plugin)) {
           skill.push(AgentArrangeConfigEnum.Plugin);
@@ -136,7 +136,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     onSuccess: (_, params) => {
       message.success('已成功删除插件');
       const id = params[0];
-      const list = agentComponentList.filter((item) => item.id !== id);
+      const list = agentComponentList?.filter((item) => item.id !== id) || [];
       setAgentComponentList(list);
     },
   });
@@ -211,6 +211,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   //   setTriggerChecked(checked);
   // };
 
+  // 插件设置
+  const handlePluginSet = (id: number) => {
+    const componentInfo = agentComponentList?.find((info) => info.id === id);
+    setCurrentComponentInfo(componentInfo);
+    setOpenPluginModel(true);
+  };
+
   // 技能列表
   const SkillList: CollapseProps['items'] = [
     {
@@ -219,7 +226,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       children: (
         <PluginList
           list={filterList(AgentComponentTypeEnum.Plugin)}
-          onSet={onSet}
+          onSet={handlePluginSet}
           onDel={runAgentComponentDel}
         />
       ),
@@ -238,6 +245,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       children: (
         <WorkflowList
           list={filterList(AgentComponentTypeEnum.Workflow)}
+          onSet={handlePluginSet}
           onDel={runAgentComponentDel}
         />
       ),
@@ -425,7 +433,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         onCancel={() => setShow(false)}
         spaceId={spaceId}
         checkTag={checkTag}
-        hasIds={checkedIds}
+        hasIds={{
+          [checkTag]: checkedIds,
+        }}
         onAdded={handleAddComponent}
       />
       {/*添加触发器弹窗*/}
@@ -442,6 +452,12 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         variablesInfo={variablesInfo}
         onCancel={() => setOpenVariableModel(false)}
         onConfirm={handleConfirmVariables}
+      />
+      {/*插件设置弹窗*/}
+      <PluginModelSetting
+        open={openPluginModel}
+        variables={variablesInfo?.bindConfig?.variables || []}
+        onCancel={() => setOpenPluginModel(false)}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 import AnalyzeStatistics from '@/components/AnalyzeStatistics';
 import CreateAgent from '@/components/CreateAgent';
 import SelectList from '@/components/SelectList';
-import { SPACE_ID, USER_INFO } from '@/constants/home.constants';
+import { USER_INFO } from '@/constants/home.constants';
 import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.constants';
 import {
   apiAgentConfigList,
@@ -18,21 +18,27 @@ import {
 import { AgentConfigInfo } from '@/types/interfaces/agent';
 import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
 import type { UserInfo } from '@/types/interfaces/login';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Input, message } from 'antd';
+import {
+  ExclamationCircleFilled,
+  PlusOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
+import { Button, Input, message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useModel, useRequest } from 'umi';
+import { history, useModel, useParams, useRequest } from 'umi';
 import AgentMove from './AgentMove';
 import ApplicationItem from './ApplicationItem';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+const { confirm } = Modal;
 
 /**
  * 工作空间 - 应用开发
  */
 const SpaceDevelop: React.FC = () => {
+  const { spaceId } = useParams();
   // 打开分析弹窗
   const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
   // 迁移弹窗
@@ -60,8 +66,6 @@ const SpaceDevelop: React.FC = () => {
       handlerCollect: model.handlerCollect,
     }),
   );
-
-  const spaceId = localStorage.getItem(SPACE_ID);
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
@@ -144,21 +148,7 @@ const SpaceDevelop: React.FC = () => {
 
   useEffect(() => {
     run(spaceId);
-  }, []);
-
-  useEffect(() => {
-    // 监听路由
-    const unlisten = history.listen(({ location }) => {
-      if (location.pathname.includes('develop')) {
-        const _spaceId = localStorage.getItem(SPACE_ID) as number;
-        run(_spaceId);
-      }
-    });
-
-    return () => {
-      unlisten();
-    };
-  }, []);
+  }, [spaceId]);
 
   // 切换状态
   const handlerChangeStatus = (value: FilterStatusEnum) => {
@@ -236,7 +226,17 @@ const SpaceDevelop: React.FC = () => {
         setOpenMove(true);
         break;
       case ApplicationMoreActionEnum.Del:
-        runDel(id);
+        confirm({
+          title: '您确定要删除此智能体吗?',
+          icon: <ExclamationCircleFilled />,
+          content: agentInfo?.name,
+          okText: '确定',
+          maskClosable: true,
+          cancelText: '取消',
+          onOk() {
+            runDel(id);
+          },
+        });
         break;
     }
   };

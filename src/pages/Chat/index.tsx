@@ -2,13 +2,16 @@ import AgentChatEmpty from '@/components/AgentChatEmpty';
 import ChatInput from '@/components/ChatInput';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
+import { MessageTypeEnum } from '@/types/enums/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
+import { addBaseTarget } from '@/utils/common';
+import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect, useMemo } from 'react';
-import { useLocation, useMatch, useModel } from 'umi';
+import { useLocation, useModel, useParams } from 'umi';
 import styles from './index.less';
-import ShowArea from './ShowArea';
+// import ShowArea from './ShowArea';
 
 const cx = classNames.bind(styles);
 
@@ -17,15 +20,15 @@ const cx = classNames.bind(styles);
  */
 const Chat: React.FC = () => {
   const location = useLocation();
-  const match = useMatch('/home/chat/:id');
   // 会话ID
-  const id = match.params?.id;
+  const { id } = useParams();
   // 附加state
   const message = location.state?.message;
   const files = location.state?.files;
 
   const {
     conversationInfo,
+    loadingConversation,
     messageList,
     setMessageList,
     chatSuggestList,
@@ -33,18 +36,15 @@ const Chat: React.FC = () => {
     loadingSuggest,
     onMessageSend,
     messageViewRef,
-    executeResults,
-    setNeedUpdateTopic,
+    // executeResults,
+    needUpdateTopicRef,
+    handleClearSideEffect,
   } = useModel('conversationInfo');
 
   // 角色信息（名称、头像）
   const roleInfo: RoleInfo = useMemo(() => {
     const agent = conversationInfo?.agent;
     return {
-      user: {
-        name: agent?.publishUser?.nickName as string,
-        avatar: agent?.publishUser?.avatar as string,
-      },
       assistant: {
         name: agent?.name as string,
         avatar: agent?.icon as string,
@@ -61,9 +61,15 @@ const Chat: React.FC = () => {
       const asyncFun = async () => {
         // 同步查询会话, 此处必须先同步查询会话信息，因为成功后会设置消息列表，如果是异步查询，会导致发送消息时，清空消息列表的bug
         const res = await runAsync(id);
-        const len = res?.data?.messageList?.length || 0;
+        // 会话消息列表
+        const list = res?.data?.messageList || [];
+        const len = list?.length || 0;
+        // 会话消息列表为空或者只有一条消息并且此消息时开场白时，可以发送消息
+        const isCanMessage =
+          !len ||
+          (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
         // 如果message或者附件不为空,可以发送消息，但刷新页面时，不重新发送消息
-        if (!len && (message || files?.length > 0)) {
+        if (isCanMessage && (message || files?.length > 0)) {
           onMessageSend(id, message, files);
         }
       };
@@ -71,17 +77,14 @@ const Chat: React.FC = () => {
     }
 
     return () => {
+      handleClearSideEffect();
       setMessageList([]);
-      setNeedUpdateTopic(true);
+      needUpdateTopicRef.current = true;
     };
   }, [id, message, files]);
 
   useEffect(() => {
-    if (!document.head.querySelector('base')) {
-      const base = document.createElement('base');
-      base.target = '_blank';
-      document.head.append(base);
-    }
+    addBaseTarget();
   }, []);
 
   // 消息发送
@@ -94,7 +97,13 @@ const Chat: React.FC = () => {
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
         <h3 className={cx(styles.title)}>{conversationInfo?.topic}</h3>
         <div className={cx(styles['chat-wrapper'], 'flex-1')}>
-          {messageList?.length > 0 ? (
+          {loadingConversation ? (
+            <div
+              className={cx('flex', 'items-center', 'content-center', 'h-full')}
+            >
+              <LoadingOutlined className={cx(styles.loading)} />
+            </div>
+          ) : messageList?.length > 0 ? (
             <>
               {messageList?.map((item, index) => (
                 <ChatView
@@ -126,7 +135,7 @@ const Chat: React.FC = () => {
         />
       </div>
       {/*展示台区域*/}
-      <ShowArea executeResults={executeResults} />
+      {/*<ShowArea executeResults={executeResults} />*/}
     </div>
   );
 };

@@ -21,7 +21,7 @@ const TooltipIcon: React.FC<TooltipIconProps> = ({
   const bg =
     type === TooltipTitleTypeEnum.Blank ? 'tooltip-blank' : 'tooltip-white';
   return (
-    <Tooltip title={title} overlayClassName={bg}>
+    <Tooltip title={title} classNames={{ root: bg }}>
       <span
         className={cx(
           'hover-box',

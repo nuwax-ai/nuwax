@@ -1,7 +1,7 @@
-// 递归计算节点深度
 import { PLUGIN_INPUT_CONFIG } from '@/constants/space.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
+import omit from 'lodash/omit';
 import React from 'react';
 
 // 递归计算节点深度
@@ -17,7 +17,7 @@ export const getNodeDepth = (
       if (found) return found;
     }
   }
-  return 0;
+  return depth;
 };
 
 // 添加子节点
@@ -83,6 +83,7 @@ export const updateNodeField = (
   const updateRecursive = (data: BindConfigWithSub[]) => {
     return data.map((node) => {
       if (node.key === key) {
+        // 数据类型
         if (field === 'dataType') {
           // 切换参数类型： 如果是对象或者数组对象或者是数组相关类型，则清空默认值
           if (
@@ -105,6 +106,10 @@ export const updateNodeField = (
             node.subArgs = undefined;
           }
         }
+        // 切换值引用类型时，清空bindValue值
+        if (field === 'bindValueType') {
+          node.bindValue = '';
+        }
         // 返回节点
         return { ...node, [field]: value };
       }
@@ -116,4 +121,61 @@ export const updateNodeField = (
   };
 
   return (updateRecursive(arr) as BindConfigWithSub[]) || [];
+};
+
+// 过滤数组
+export const loopFilterArray = (data: BindConfigWithSub[]) =>
+  data.filter((item) => {
+    if (item.dataType === DataTypeEnum.Object) {
+      item['disabled'] = true;
+
+      if (!!item.subArgs?.length) {
+        return { ...item, subArgs: loopFilterArray(item.subArgs) };
+      }
+
+      return item;
+    }
+
+    return null;
+  });
+
+// 删除subArgs属性
+export const loopOmitArray = (data: BindConfigWithSub[]) => {
+  return data.map((item) => {
+    if (item.dataType?.includes('Array')) {
+      return omit(item, ['subArgs']);
+    }
+    if (!!item.subArgs?.length) {
+      return { ...item, subArgs: loopOmitArray(item.subArgs) };
+    }
+
+    return item;
+  });
+};
+
+// 设置disabled
+export const loopSetDisabled = (data: BindConfigWithSub[]) =>
+  data.map((item) => {
+    if (
+      item.dataType === DataTypeEnum.Object ||
+      item.dataType?.includes('Array')
+    ) {
+      item['disabled'] = true;
+    }
+
+    if (!!item.subArgs?.length) {
+      return { ...item, subArgs: loopSetDisabled(item.subArgs) };
+    }
+    return item;
+  });
+
+// 查询节点
+export const findNode = (treeData: BindConfigWithSub[], key: React.Key) => {
+  for (const node of treeData) {
+    if (node.key === key) return node;
+    if (node.subArgs) {
+      const _node = findNode(node.subArgs, key);
+      if (_node) return _node;
+    }
+  }
 };

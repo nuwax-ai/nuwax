@@ -1,3 +1,4 @@
+import { AgentComponentTypeEnum, InvokeTypeEnum } from '@/types/enums/agent';
 import type { DataTypeEnum } from '@/types/enums/common';
 import type { OpenCloseEnum } from '@/types/enums/space';
 import type {
@@ -37,7 +38,27 @@ export interface AgentArrangeConfigProps {
   agentConfigInfo: AgentConfigInfo;
   // 是否开启
   onChangeEnable: (value: string, attr: string) => void;
-  onSet: () => void;
+}
+
+// 插件模型设置
+export interface PluginModelSettingProps {
+  open: boolean;
+  variables?: BindConfigWithSub[];
+  onCancel: () => void;
+}
+
+// 参数设置组件
+export interface ParamsSettingProps {
+  type: AgentComponentTypeEnum;
+  inputConfigArgs: BindConfigWithSub[];
+  variables?: BindConfigWithSub[];
+  onSave: (attr: string, configArgs: BindConfigWithSub[]) => void;
+}
+
+// 调用方式组件
+export interface InvokeTypeProps {
+  invokeType: InvokeTypeEnum;
+  onSave: (attr: string, type: InvokeTypeEnum) => void;
 }
 
 // 智能体模型组件，插件、工作流、触发器等组件通用显示组件
@@ -86,7 +107,7 @@ export interface AgentModelSettingProps {
 export interface CardModeSettingProps {
   cardKey: string;
   list: AgentCardInfo[];
-  onChoose: (cardKey: string) => void;
+  onChoose: (info: AgentCardInfo) => void;
 }
 
 // 预览与调试组件

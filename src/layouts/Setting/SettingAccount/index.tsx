@@ -1,4 +1,4 @@
-import personalImage from '@/assets/images/personal.png';
+import avatarImage from '@/assets/images/avatar.png';
 import UploadAvatar from '@/components/UploadAvatar';
 import { USER_INFO } from '@/constants/home.constants';
 import { apiUserUpdate } from '@/services/account';
@@ -46,9 +46,11 @@ const SettingAccount: React.FC = () => {
 
   // 上传头像成功后更新头像
   const handleSuccessUpload = (url: string) => {
-    run({
-      avatar: url,
-    });
+    if (url) {
+      run({
+        avatar: url,
+      });
+    }
   };
 
   const onSaveUsername: FormProps<SetUserAccountInfo>['onFinish'] = (
@@ -63,7 +65,7 @@ const SettingAccount: React.FC = () => {
       <UploadAvatar
         imageUrl={userInfo?.avatar}
         className={cx(styles.avatar)}
-        defaultImage={personalImage as string}
+        defaultImage={avatarImage as string}
         onUploadSuccess={handleSuccessUpload}
       />
       <Form
@@ -90,11 +92,7 @@ const SettingAccount: React.FC = () => {
           </Form.Item>
         </Form.Item>
         <Form.Item label="用户昵称">
-          <Form.Item
-            noStyle
-            name="nickName"
-            rules={[{ required: true, message: '请输入用户昵称' }]}
-          >
+          <Form.Item noStyle name="nickName">
             <Input
               rootClassName={cx(styles.input)}
               placeholder="请输入用户昵称"

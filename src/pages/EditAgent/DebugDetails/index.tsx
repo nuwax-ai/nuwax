@@ -14,8 +14,6 @@ const cx = classNames.bind(styles);
 const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
   const { executeResults } = useModel('conversationInfo');
 
-  // console.log(executeResults);
-
   return (
     <ToggleWrap title="调试详情" onClose={onClose} visible={visible}>
       {executeResults?.length > 0 ? (

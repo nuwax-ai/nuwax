@@ -18,7 +18,7 @@ import type { FormProps, RadioChangeEvent } from 'antd';
 import { Form, Input, message, Radio } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { history, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -47,17 +47,30 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
     }
   }, [icon]);
 
+  // 根据type类型，判断插件跳转路径
+  const handlePluginUrl = (id: number, type: PluginTypeEnum) => {
+    if (type === PluginTypeEnum.CODE) {
+      history.push(`/space/${spaceId}/plugin/${id}/cloud-tool`);
+    } else if (type === PluginTypeEnum.HTTP) {
+      history.push(`/space/${spaceId}/plugin/${id}`);
+    }
+  };
+
   // 新增插件接口
   const { run: runCreate } = useRequest(apiPluginAdd, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result, params) => {
       setImageUrl('');
+      // 关闭弹窗
+      onCancel();
+      // 跳转到插件配置页面
       const info: PluginInfo = {
         id: result,
         ...params[0],
       };
-      onConfirm(info);
+      const { id, type } = info;
+      handlePluginUrl(id, type);
       message.success('插件已创建');
     },
   });
@@ -68,7 +81,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
     debounceInterval: 300,
     onSuccess: (_, params) => {
       setImageUrl('');
-      onConfirm(...params);
+      onConfirm?.(...params);
       message.success('插件更新成功');
     },
   });

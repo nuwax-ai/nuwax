@@ -110,6 +110,12 @@ const PublishManage: React.FC = () => {
       return;
     }
     if (record.targetType === SquareAgentTypeEnum.Plugin) {
+      if (record.pluginType === 'CODE') {
+        history.push(
+          `/space/${record.spaceId}/plugin/${record.targetId}/cloud-tool?applyId=${record.id}`,
+        );
+        return;
+      }
       history.push(
         `/space/${record.spaceId}/plugin/${record.targetId}?publishId=${record.id}`,
       );

@@ -15,7 +15,7 @@ import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { history, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -41,14 +41,10 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
   const { run } = useRequest(apiKnowledgeConfigAdd, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result, params) => {
+    onSuccess: (result: number) => {
       message.success('知识库已创建成功');
-      const data: KnowledgeBaseInfo = {
-        id: result,
-        spaceId,
-        ...params[0],
-      };
-      onConfirm(data);
+      onCancel();
+      history.push(`/space/${spaceId}/knowledge/${result}`);
     },
   });
 
@@ -58,7 +54,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
     debounceInterval: 300,
     onSuccess: (_, params) => {
       message.success('知识库更新成功');
-      onConfirm(...params);
+      onConfirm?.(...params);
     },
   });
 

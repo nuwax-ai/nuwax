@@ -25,7 +25,7 @@ const CardModeSetting: React.FC<CardModeSettingProps> = ({
             'hover-box',
             'cursor-pointer',
           )}
-          onClick={() => onChoose(item.cardKey)}
+          onClick={() => onChoose(item)}
         >
           <img className={'radius-6'} src={item.imageUrl} alt="" />
           <Radio

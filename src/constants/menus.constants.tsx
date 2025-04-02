@@ -1,6 +1,5 @@
 import {
   ICON_BOOK,
-  ICON_FILE,
   ICON_HISTORY,
   ICON_HOME,
   ICON_NOTIFICATION,
@@ -9,7 +8,7 @@ import {
   ICON_WORKSPACE,
 } from '@/constants/images.constants';
 import {
-  MessageOptionEnum,
+  MessageReadStatusEnum,
   SettingActionEnum,
   TabsEnum,
   UserAvatarEnum,
@@ -52,11 +51,11 @@ export const TABS = [
 
 // 用户操作区域
 export const USER_OPERATE_AREA = [
-  {
-    title: '文档',
-    icon: <ICON_FILE />,
-    type: UserOperatorAreaEnum.Document,
-  },
+  // {
+  //   title: '文档',
+  //   icon: <ICON_FILE />,
+  //   type: UserOperatorAreaEnum.Document,
+  // },
   {
     title: '历史会话',
     icon: <ICON_HISTORY />,
@@ -88,17 +87,19 @@ export const USER_AVATAR_LIST = [
   },
 ];
 
+// 消息分段器选项
 export const MESSAGE_OPTIONS = [
   {
     label: '全部',
-    value: MessageOptionEnum.All,
+    value: MessageReadStatusEnum.All,
   },
   {
     label: '未读',
-    value: MessageOptionEnum.Unread,
+    value: MessageReadStatusEnum.Unread,
   },
 ];
 
+// 设置选项
 export const SETTING_ACTIONS = [
   {
     type: SettingActionEnum.Account,

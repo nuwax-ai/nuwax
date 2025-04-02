@@ -80,18 +80,22 @@ export interface AttachmentFile {
   mimeType: string;
 }
 
-// 智能体会话问题建议输入参数
-export interface ConversationChatSuggestParams {
+// 会话参数
+export interface ConversationChatParams {
   // 会话唯一标识
   conversationId: number;
-  // 变量参数，前端需要根据agent配置组装参数
-  variableParams: object;
   // chat消息
   message: string;
   // 附件列表
   attachments: AttachmentFile[];
   // 是否调试模式
   debug: boolean;
+}
+
+// 智能体会话问题建议输入参数
+export interface ConversationChatSuggestParams extends ConversationChatParams {
+  // 变量参数，前端需要根据agent配置组装参数
+  variableParams: object;
 }
 
 // 创建会话输入参数
@@ -116,7 +120,7 @@ export interface ProcessingInfo {
 export interface MessageInfo {
   // assistant 模型回复；user 用户消息,可用值:USER,ASSISTANT,SYSTEM,FUNCTION
   role: AssistantRoleEnum;
-  // 可用值:CHAT,GUID,QUESTION,ANSWER
+  // 可用值:CHAT,THINK, GUID,QUESTION,ANSWER
   type?: MessageModeEnum;
   // 消息内容，其中附件放在.*?标签中
   text?: string;
@@ -199,7 +203,7 @@ export interface ChatUserInfo {
 
 // 角色信息
 export interface RoleInfo {
-  user: ChatUserInfo;
+  user?: ChatUserInfo;
   assistant: ChatUserInfo;
   system: ChatUserInfo;
 }
@@ -208,7 +212,10 @@ export interface RoleInfo {
 export interface ChatViewProps {
   className?: string;
   contentClassName?: string;
+  // 消息信息
   messageInfo: MessageInfo;
+  // 角色信息
   roleInfo: RoleInfo;
+  // 能否调试
   canDebug?: boolean;
 }

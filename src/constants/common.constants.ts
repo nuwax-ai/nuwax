@@ -1,16 +1,18 @@
+import { BindValueType } from '@/types/enums/agent';
 import {
   DataTypeEnum,
   FileTypeEnum,
   ParamsTypeEnum,
-  PluginParamsSettingDefaultEnum,
 } from '@/types/enums/common';
 
 // 文件上传地址
-export const UPLOAD_FILE_ACTION =
-  'https://test-nvwa-api.xspaceagi.com/api/file/upload';
+export const UPLOAD_FILE_ACTION = `${process.env.BASE_URL}/api/file/upload`;
 
 // 会话 Connection地址
 export const CONVERSATION_CONNECTION_URL = `${process.env.BASE_URL}/api/agent/conversation/chat`;
+
+// 文档地址
+export const DOCUMENT_URL = 'https://nlp-book.swufenlp.group';
 
 // 可上传文件后缀类型：doc docx pdf md json txt
 export const UPLOAD_FILE_SUFFIX = ['doc', 'docx', 'pdf', 'md', 'json', 'txt'];
@@ -344,11 +346,11 @@ export const PARAMS_TYPE_LIST = [
 // 插件参数值设置默认下拉选项
 export const ParamsSettingDefaultOptions = [
   {
-    value: PluginParamsSettingDefaultEnum.Input,
+    value: BindValueType.Input,
     label: '输入',
   },
   {
-    value: PluginParamsSettingDefaultEnum.Reference,
+    value: BindValueType.Reference,
     label: '引用',
   },
 ];

@@ -14,10 +14,21 @@ export default () => {
     onSuccess: (result: TenantConfigInfo) => {
       setTenantConfigInfo(result);
       localStorage.setItem(TENANT_CONFIG_INFO, JSON.stringify(result));
-      const { siteName, siteDescription } = result;
+      const { siteName, siteDescription, faviconUrl } = result;
       document.title = siteDescription
         ? `${siteName} - ${siteDescription}`
         : siteName;
+      if (faviconUrl) {
+        // 创建一个新的link元素
+        const link = document.createElement('link');
+        link.rel = 'shortcut icon';
+        link.href = faviconUrl;
+        link.type = 'image/x-icon';
+
+        // 获取head元素并添加link元素
+        const head = document.head || document.getElementsByTagName('head')[0];
+        head.appendChild(link);
+      }
     },
   });
 

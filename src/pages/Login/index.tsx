@@ -1,4 +1,4 @@
-import logo from '@/assets/images/logo.png';
+import ConditionRender from '@/components/ConditionRender';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import { apiLogin } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
@@ -121,11 +121,13 @@ const Login: React.FC = () => {
         'items-center',
       )}
     >
-      <img
-        src={tenantConfigInfo?.siteLogo || (logo as string)}
-        className={cx(styles.logo)}
-        alt=""
-      />
+      <ConditionRender condition={!!tenantConfigInfo?.siteLogo}>
+        <img
+          src={tenantConfigInfo?.siteLogo}
+          className={cx(styles.logo)}
+          alt=""
+        />
+      </ConditionRender>
       <Form
         form={form}
         validateTrigger="onBlur"

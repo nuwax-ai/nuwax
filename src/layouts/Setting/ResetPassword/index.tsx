@@ -86,7 +86,7 @@ const ResetPassword: React.FC = () => {
             },
           ]}
         >
-          <Input placeholder="请输入新密码" />
+          <Input.Password placeholder="请输入新密码" />
         </Form.Item>
         <Form.Item
           name="newPassword"
@@ -107,7 +107,7 @@ const ResetPassword: React.FC = () => {
             }),
           ]}
         >
-          <Input placeholder="请再次输入新密码" />
+          <Input.Password placeholder="请再次输入新密码" />
         </Form.Item>
         <Form.Item
           name="code"

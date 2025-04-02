@@ -2,46 +2,54 @@ import { SPACE_ID } from '@/constants/home.constants';
 import { apiSpaceList } from '@/services/workspace';
 import { SpaceTypeEnum } from '@/types/enums/space';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
-import { useState } from 'react';
-import { useRequest } from 'umi';
+import { useRequest } from 'ahooks';
+import { useCallback, useState } from 'react';
 
 function Space() {
   const [spaceList, setSpaceList] = useState<SpaceInfo[]>([]);
   const [currentSpaceInfo, setCurrentSpaceInfo] = useState<SpaceInfo>();
 
-  // 查询用户空间列表
-  const { run: runSpace } = useRequest(apiSpaceList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: SpaceInfo[]) => {
-      const spaceId = localStorage.getItem(SPACE_ID);
-      // 首次进入时
-      if (!spaceId) {
-        const defaultSpace = result?.find(
-          (item) => item.type === SpaceTypeEnum.Personal,
-        );
-        setCurrentSpaceInfo(defaultSpace);
-        // 保存spaceId
-        const _spaceId =
-          (defaultSpace?.id as string) || (result?.[0]?.id as string);
-        localStorage.setItem(SPACE_ID, _spaceId);
+  // 设置个人空间为当前空间
+  const setPersonalSpaceInfo = useCallback((list: SpaceInfo[]) => {
+    const defaultSpace = list?.find(
+      (item) => item.type === SpaceTypeEnum.Personal,
+    );
+    setCurrentSpaceInfo(defaultSpace);
+    // 保存spaceId
+    const id = (defaultSpace?.id as string) || (list?.[0]?.id as string);
+    localStorage.setItem(SPACE_ID, id);
+  }, []);
+
+  // 设置当前工作空间
+  const handleCurrentSpaceInfo = useCallback(
+    (list: SpaceInfo[], spaceId: number) => {
+      // 如果用户直接修改空间ID或者粘贴url在浏览器中，刷新页面浏览时
+      const spaceInfo = list?.find((item) => item.id === spaceId);
+      // 空间列表中存在此id的空间
+      if (!!spaceInfo) {
+        localStorage.setItem(SPACE_ID, spaceId.toString());
+        setCurrentSpaceInfo(spaceInfo);
       } else {
-        // 刷新页面
-        const _currentSpaceInfo = result?.find(
-          (item) => item.id.toString() === spaceId,
-        );
-        setCurrentSpaceInfo(_currentSpaceInfo);
+        // 不存在时，设置个人空间为当前空间
+        setPersonalSpaceInfo(list);
       }
-      setSpaceList(result || []);
     },
+    [],
+  );
+
+  // 查询用户空间列表
+  const { runAsync: runSpace } = useRequest(apiSpaceList, {
+    manual: true,
+    debounceWait: 300,
   });
 
   return {
     spaceList,
     setSpaceList,
     runSpace,
+    handleCurrentSpaceInfo,
+    setPersonalSpaceInfo,
     currentSpaceInfo,
-    setCurrentSpaceInfo,
   };
 }
 

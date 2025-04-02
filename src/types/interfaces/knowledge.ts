@@ -398,6 +398,8 @@ export interface EmbeddingStatusInfo {
 
 // 知识库详情header组件
 export interface KnowledgeHeaderProps {
+  // 文档数量
+  docCount: number;
   knowledgeInfo: KnowledgeInfo;
   onEdit: () => void;
   onPopover: (item: CustomPopoverItem) => void;

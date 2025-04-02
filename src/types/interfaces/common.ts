@@ -103,6 +103,7 @@ export interface SelectListType {
   // 自定义底部
   dropdownRenderComponent?: React.ReactNode;
   placeholder?: string;
+  disabled?: boolean;
   options: option[];
   onChange?: (value: React.Key) => void;
   size?: SizeType;
@@ -327,7 +328,7 @@ export interface CreateKnowledgeProps {
   knowledgeInfo?: KnowledgeInfo;
   open: boolean;
   onCancel: () => void;
-  onConfirm: (info: KnowledgeBaseInfo) => void;
+  onConfirm?: (info: KnowledgeBaseInfo) => void;
 }
 
 // 自定义数字输入框，带加减按钮
@@ -419,6 +420,7 @@ export interface PluginPublishProps {
 // 插件入参、出参配置title组件
 export interface PluginConfigTitleProps {
   title: string;
+  extra?: React.ReactNode;
   onClick: () => void;
 }
 

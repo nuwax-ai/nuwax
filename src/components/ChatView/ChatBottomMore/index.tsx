@@ -46,8 +46,10 @@ const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({
       <div className={cx('flex', 'items-center', styles['elapsed-time'])}>
         <ConditionRender condition={!!finalResult}>
           <span>{`${runTime}s`}</span>
-          <span className={cx(styles['vertical-line'])} />
-          <span>{`${finalResult?.totalTokens} Tokens`}</span>
+          <ConditionRender condition={!!finalResult?.totalTokens}>
+            <span className={cx(styles['vertical-line'])} />
+            <span>{`${finalResult?.totalTokens} Tokens`}</span>
+          </ConditionRender>
         </ConditionRender>
       </div>
       <div className={cx('flex', styles['more-action'])}>

@@ -7,24 +7,24 @@ import {
   apiAgentConfigUpdate,
 } from '@/services/agentConfig';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { EditAgentShowType } from '@/types/enums/space';
+import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import {
   AgentBaseInfo,
   AgentComponentInfo,
   AgentConfigInfo,
 } from '@/types/interfaces/agent';
 import type { HistoryData } from '@/types/interfaces/space';
+import { addBaseTarget } from '@/utils/common';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
-import { useMatch, useModel, useRequest } from 'umi';
+import { useModel, useParams, useRequest } from 'umi';
 import AgentArrangeConfig from './AgentArrangeConfig';
 import AgentHeader from './AgentHeader';
 import AgentModelSetting from './AgentModelSetting';
 import ArrangeTitle from './ArrangeTitle';
 import DebugDetails from './DebugDetails';
 import styles from './index.less';
-import PluginModelSetting from './PluginModelSetting';
 import PreviewAndDebug from './PreviewAndDebug';
 import PublishAgent from './PublishAgent';
 import SystemTipsWord from './SystemTipsWord';
@@ -35,17 +35,15 @@ const cx = classNames.bind(styles);
  * 编辑智能体
  */
 const EditAgent: React.FC = () => {
-  const match = useMatch('/space/:spaceId/agent/:agentId');
-  const { spaceId, agentId } = match.params;
+  const { spaceId, agentId } = useParams();
   const [open, setOpen] = useState<boolean>(false);
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
-  const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
   // 智能体配置信息
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>(null);
   // 历史版本信息
   const [versionHistory, setVersionHistory] = useState<HistoryData[]>([]);
-  const { showType, setShowType } = useModel('conversationInfo');
+  const { showType, setShowType, setIsSuggest } = useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
 
   // 查询智能体配置信息
@@ -80,11 +78,7 @@ const EditAgent: React.FC = () => {
   }, [agentId]);
 
   useEffect(() => {
-    if (!document.head.querySelector('base')) {
-      const base = document.createElement('base');
-      base.target = '_blank';
-      document.head.append(base);
-    }
+    addBaseTarget();
   }, []);
 
   // 确认编辑智能体
@@ -100,6 +94,10 @@ const EditAgent: React.FC = () => {
   // 更新智能体绑定模型
   const handleSelectMode = (id: number, name: string) => {
     const _agentConfigInfo = cloneDeep(agentConfigInfo);
+    // 智能体组件模型信息可能为null
+    if (!_agentConfigInfo?.modelComponentConfig) {
+      _agentConfigInfo.modelComponentConfig = {};
+    }
     _agentConfigInfo.modelComponentConfig.targetId = id;
     _agentConfigInfo.modelComponentConfig.name = name;
     setAgentConfigInfo(_agentConfigInfo);
@@ -113,6 +111,10 @@ const EditAgent: React.FC = () => {
       [attr]: value,
     };
     setAgentConfigInfo(_agentConfigInfo);
+    // 用户问题建议
+    if (attr === 'openSuggest') {
+      setIsSuggest(value === OpenCloseEnum.Open);
+    }
     const {
       id,
       name,
@@ -182,7 +184,6 @@ const EditAgent: React.FC = () => {
               agentId={agentId}
               agentConfigInfo={agentConfigInfo}
               onChangeEnable={handleChangeAgent}
-              onSet={() => setOpenPluginModel(true)}
             />
           </div>
         </div>
@@ -234,11 +235,6 @@ const EditAgent: React.FC = () => {
         open={openAgentModel}
         onCancel={() => setOpenAgentModel(false)}
         onSelectMode={handleSelectMode}
-      />
-      {/*插件设置弹窗*/}
-      <PluginModelSetting
-        open={openPluginModel}
-        onCancel={() => setOpenPluginModel(false)}
       />
     </div>
   );

@@ -3,7 +3,6 @@ import type {
   PublishStatusEnum,
 } from '@/types/enums/common';
 import type { WorkflowModeEnum } from '@/types/enums/library';
-import { PluginTypeEnum } from '@/types/enums/plugin';
 import type { ComponentTypeEnum } from '@/types/enums/space';
 import type { BindConfigWithSub, CreatorInfo } from '@/types/interfaces/agent';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
@@ -42,7 +41,7 @@ export interface CreateWorkflowProps {
   icon?: string;
   open: boolean;
   onCancel: () => void;
-  onConfirm: (info: WorkflowBaseInfo) => void;
+  onConfirm?: (info: WorkflowBaseInfo) => void;
 }
 
 // 新建、更新插件组件
@@ -56,7 +55,7 @@ export interface CreateNewPluginProps {
   mode?: CreateUpdateModeEnum;
   open: boolean;
   onCancel: () => void;
-  onConfirm: (info: PluginInfo) => void;
+  onConfirm?: (info: PluginInfo) => void;
 }
 
 // table头部header带*号标题
@@ -66,7 +65,6 @@ export interface LabelStarProps {
 
 // 试运行弹窗组件属性
 export interface PluginTryRunModelProps {
-  type?: PluginTypeEnum;
   inputConfigArgs: BindConfigWithSub[];
   inputExpandedRowKeys: React.Key[];
   pluginId: number;

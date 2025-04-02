@@ -89,6 +89,8 @@ export enum EditAgentShowType {
 // 插件设置类型
 export enum PluginSettingEnum {
   Params,
+  // 调用方式
+  Method_Call,
   // 卡片绑定
   Card_Bind,
 }

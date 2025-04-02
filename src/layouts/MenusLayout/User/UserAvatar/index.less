@@ -5,10 +5,11 @@
   height: 40px;
   margin-top: 6px;
   border-radius: 50%;
-  object-fit: cover;
+  overflow: hidden;
 
-  &.default {
-    color: @WHITE;
-    background-color: @BLUE01;
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 }

@@ -14,6 +14,7 @@ const SelectList: React.FC<SelectListType> = (props) => {
     value,
     dropdownRenderComponent,
     placeholder,
+    disabled,
     options,
     onChange,
     size = 'middle',
@@ -24,6 +25,7 @@ const SelectList: React.FC<SelectListType> = (props) => {
       rootClassName={cx(styles.container, className)}
       value={value}
       placeholder={placeholder}
+      disabled={disabled}
       onChange={onChange}
       // 阻止冒泡事件
       onClick={(e) => {

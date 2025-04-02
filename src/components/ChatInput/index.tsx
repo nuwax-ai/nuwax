@@ -128,6 +128,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
             headers={{
               Authorization: token ? `Bearer ${token}` : '',
             }}
+            data={{
+              type: 'tmp',
+            }}
             showUploadList={false}
             // beforeUpload={beforeUpload ?? beforeUploadDefault}
           >

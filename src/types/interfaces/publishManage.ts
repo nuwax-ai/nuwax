@@ -20,6 +20,7 @@ export interface PublishApplyListInfo {
   spaceId: number;
   name: string;
   targetType: SquareAgentTypeEnum;
+  pluginType: string;
   description: string;
   remark: string;
   publishStatus: PublishStatusEnum;
@@ -47,6 +48,7 @@ export interface PublishListInfo {
   spaceId: number;
   name: string;
   targetType: SquareAgentTypeEnum;
+  pluginType: string;
   targetId: number;
   description: string;
   remark: string;

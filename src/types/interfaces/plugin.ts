@@ -26,6 +26,7 @@ export interface PluginTestResultObject {
   HTTP_BODY: string;
   HTTP_HEADERS: string;
   HTTP_STATUS_CODE: number;
+  data: string;
 }
 
 // 插件试运行输出结果
@@ -103,6 +104,11 @@ export interface PluginCopyUpdateParams {
     // 代码
     code: string;
   };
+}
+
+// 自动解析插件出参输入参数
+export interface PluginAnalysisOutputParams {
+  pluginId: number;
 }
 
 // 新增插件输入参数

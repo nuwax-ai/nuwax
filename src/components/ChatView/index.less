@@ -18,14 +18,47 @@
     color: @GRAY05;
   }
 
+  .inner-container {
+    //background-color: rgba(255, 255, 255, 80%);
+    background-color: @WHITE04;
+    padding: 12px 16px;
+    border-radius: 10px;
+
+    .think-content {
+      position: relative;
+      line-height: 28px;
+      padding: 12px 15px 12px 23px;
+      color: #626b75;
+      background-color: #edf0fc;
+      word-wrap: break-word;
+      word-break: break-all;
+      transition: 0.4s background cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: 10px;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 10px;
+        top: 12px;
+        bottom: 12px;
+        width: 1px;
+        background-color: #dfe1e3; /* 竖线颜色 */
+        border-radius: 2px;
+      }
+    }
+  }
+
   .chat-content {
     display: inline-block;
     line-height: 28px;
-    padding: 12px 16px;
     color: @GRAY13;
     word-wrap: break-word;
     word-break: break-all;
-    background-color: @WHITE04;
+
+    &.user {
+      padding: 10px 16px;
+      background-color: @WHITE04;
+    }
 
     img {
       max-width: 100%;

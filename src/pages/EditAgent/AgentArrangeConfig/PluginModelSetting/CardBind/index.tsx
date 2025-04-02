@@ -9,8 +9,14 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const CardBind: React.FC = () => {
+export interface CardBindProps {
+  // outputArgBindConfigs: BindConfigWithSub[];
+  onSave?: () => void;
+}
+
+const CardBind: React.FC<CardBindProps> = () => {
   const [cardKey, setCardKey] = useState<string>('');
+  const [cardInfo, setCardInfo] = useState<AgentCardInfo>();
   const [agentCardList, setAgentCardList] = useState<AgentCardInfo[]>([]);
 
   // 查询卡片列表
@@ -18,7 +24,12 @@ const CardBind: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: AgentCardInfo[]) => {
-      setAgentCardList(result);
+      if (result?.length) {
+        setAgentCardList(result);
+        const firstCardInfo = result[0];
+        setCardKey(firstCardInfo.cardKey);
+        setCardInfo(firstCardInfo);
+      }
     },
   });
 
@@ -26,8 +37,9 @@ const CardBind: React.FC = () => {
     runCard();
   }, []);
 
-  const handleChooseCard = (cardKey: string) => {
-    setCardKey(cardKey);
+  const handleChooseCard = (info: AgentCardInfo) => {
+    setCardKey(info.cardKey);
+    setCardInfo(info);
   };
 
   return (
@@ -40,9 +52,9 @@ const CardBind: React.FC = () => {
           onChoose={handleChooseCard}
         />
       </div>
-      <div className={cx('flex-1', 'px-16', 'py-16')}>
+      <div className={cx('flex-1', 'flex', 'flex-col', 'px-16', 'py-16')}>
         <h3 className={cx(styles.title)}>为卡片绑定数据源</h3>
-        <BindDataSource />
+        <BindDataSource cardInfo={cardInfo} />
       </div>
     </div>
   );

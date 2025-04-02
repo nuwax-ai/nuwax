@@ -55,6 +55,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [visible, setVisible] = useState<boolean>(false);
+  const [shouldRenderDimension, setShouldRenderDimension] = useState(false);
   const [networkType, setNetworkType] = useState<ModelNetworkTypeEnum>(
     ModelNetworkTypeEnum.Internet,
   );
@@ -243,7 +244,6 @@ const CreateModel: React.FC<CreateModelProps> = ({
     },
   ];
 
-  const [shouldRenderDimension, setShouldRenderDimension] = useState(false);
   const handleValuesChange = (changedValues: ModelFormData) => {
     const { networkType } = changedValues;
     setNetworkType(networkType);
@@ -270,6 +270,9 @@ const CreateModel: React.FC<CreateModelProps> = ({
         layout="vertical"
         onFinish={onFinish}
         onValuesChange={handleValuesChange}
+        initialValues={{
+          networkType: ModelNetworkTypeEnum.Internet,
+        }}
         autoComplete="off"
       >
         <div className={cx('flex', styles['gap-16'])}>
@@ -304,7 +307,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
           <Form.Item
             name="type"
             label="模型类型"
-            rules={[{ required: true, message: '选择模型接口协议' }]}
+            rules={[{ required: true, message: '请选择模型类型' }]}
           >
             <Select
               options={MODEL_TYPE_LIST.filter((v) =>

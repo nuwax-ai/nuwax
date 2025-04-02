@@ -15,10 +15,11 @@ import type {
   KnowledgeRawSegmentInfo,
 } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
-import { message } from 'antd';
+import { ExclamationCircleFilled } from '@ant-design/icons';
+import { message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { useMatch, useRequest } from 'umi';
+import { useParams, useRequest } from 'umi';
 import DocWrap from './DocWrap';
 import KnowledgeHeader from './KnowledgeHeader';
 import LocalDocModal from './LocalCustomDocModal';
@@ -26,13 +27,13 @@ import RawSegmentInfo from './RawSegmentInfo';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+const { confirm } = Modal;
 
 /**
  * 工作空间-知识库
  */
 const SpaceKnowledge: React.FC = () => {
-  const match = useMatch('/space/:spaceId/knowledge/:knowledgeId');
-  const { spaceId, knowledgeId } = match.params;
+  const { spaceId, knowledgeId } = useParams();
   const [open, setOpen] = useState<boolean>(false);
   // 知识库资源-文本格式导入类型枚举： 本地文档、在线文档、自定义
   const [type, setType] = useState<KnowledgeTextImportEnum>();
@@ -42,6 +43,8 @@ const SpaceKnowledge: React.FC = () => {
   const [openKnowledge, setOpenKnowledge] = useState<boolean>(false);
   // 文档列表
   const [documentList, setDocumentList] = useState<KnowledgeDocumentInfo[]>([]);
+  // 文档总数
+  const [totalDocCount, setTotalDocCount] = useState<number>(0);
   // 当前文档信息
   const [currentDocumentInfo, setCurrentDocumentInfo] =
     useState<KnowledgeDocumentInfo>(null);
@@ -75,6 +78,7 @@ const SpaceKnowledge: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: Page<KnowledgeDocumentInfo>) => {
+      setTotalDocCount(result.total);
       if (result?.records?.length > 0) {
         const { records } = result;
         setDocumentList(records);
@@ -185,6 +189,7 @@ const SpaceKnowledge: React.FC = () => {
     runDocList({
       queryFilter: {
         spaceId,
+        kbId: knowledgeId,
         name: '',
       },
       current: 1,
@@ -225,7 +230,17 @@ const SpaceKnowledge: React.FC = () => {
   // 删除文档
   const handleDocDel = () => {
     const docId = currentDocumentInfo?.id;
-    runDocDelete(docId);
+    confirm({
+      title: '您确定要删除此文档吗?',
+      icon: <ExclamationCircleFilled />,
+      content: currentDocumentInfo?.name,
+      okText: '确定',
+      maskClosable: true,
+      cancelText: '取消',
+      onOk() {
+        runDocDelete(docId);
+      },
+    });
   };
 
   // 修改文档名称成功后更新state
@@ -250,6 +265,7 @@ const SpaceKnowledge: React.FC = () => {
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <KnowledgeHeader
+        docCount={totalDocCount}
         knowledgeInfo={knowledgeInfo}
         onEdit={() => setOpenKnowledge(true)}
         onPopover={handleClickPopoverItem}

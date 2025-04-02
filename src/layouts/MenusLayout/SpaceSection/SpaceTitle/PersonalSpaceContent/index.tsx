@@ -1,6 +1,5 @@
 import personal from '@/assets/images/personal.png';
 import teamImage from '@/assets/images/team_image.png';
-import { SPACE_ID } from '@/constants/home.constants';
 import { SpaceTypeEnum } from '@/types/enums/space';
 import type { PersonalSpaceContentType } from '@/types/interfaces/layouts';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
@@ -22,20 +21,16 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
 }) => {
   const location = useLocation();
   const { pathname } = location;
-  const { spaceList, currentSpaceInfo, setCurrentSpaceInfo } =
-    useModel('spaceModel');
-  const spaceId = Number(localStorage.getItem(SPACE_ID));
+  const { spaceList, currentSpaceInfo } = useModel('spaceModel');
 
   // 过滤当前工作空间
   const filterSpaceList = useMemo(() => {
-    return spaceList?.filter((item) => item.id !== spaceId) || [];
-  }, [spaceList, currentSpaceInfo, spaceId]);
+    return spaceList?.filter((item) => item.id !== currentSpaceInfo.id) || [];
+  }, [spaceList, currentSpaceInfo]);
 
   // 点击空间列表事件
   const handleClick = (info: SpaceInfo) => {
     const spaceId = info.id;
-    localStorage.setItem(SPACE_ID, spaceId.toString());
-    setCurrentSpaceInfo(info);
     onClosePopover(false);
 
     // 路由跳转
@@ -45,8 +40,15 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
     if (pathname.includes('library')) {
       history.push(`/space/${spaceId}/library`);
     }
+
     if (pathname.includes('team')) {
-      history.push(`/space/${spaceId}/team`);
+      // 如果团队空间切换到个人空间，需要隐藏团队设置，同样需要切换到默认页'智能体开发'
+      if (info.type === SpaceTypeEnum.Personal) {
+        history.push(`/space/${spaceId}/develop`);
+      } else {
+        // 团队空间互相切换时，只更新空间id即可
+        history.push(`/space/${spaceId}/team`);
+      }
     }
   };
 

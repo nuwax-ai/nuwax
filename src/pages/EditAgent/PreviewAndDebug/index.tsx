@@ -31,21 +31,17 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     messageList,
     setMessageList,
     chatSuggestList,
-    setChatSuggestList,
     runQueryConversation,
     loadingSuggest,
     onMessageSend,
     messageViewRef,
-    setNeedUpdateTopic,
+    needUpdateTopicRef,
+    handleClearSideEffect,
   } = useModel('conversationInfo');
 
   // 角色信息（名称、头像）
   const roleInfo: RoleInfo = useMemo(() => {
     return {
-      user: {
-        name: agentConfigInfo?.creator.nickName as string,
-        avatar: agentConfigInfo?.creator.avatar as string,
-      },
       assistant: {
         name: agentConfigInfo?.name as string,
         avatar: agentConfigInfo?.icon as string,
@@ -65,6 +61,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       debounceInterval: 300,
       onSuccess: (result: ConversationInfo) => {
         devConversationIdRef.current = result.id;
+        // 查询会话
+        runQueryConversation(result.id);
       },
     },
   );
@@ -78,15 +76,17 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     }
 
     return () => {
+      handleClearSideEffect();
       setMessageList([]);
-      setNeedUpdateTopic(true);
+      needUpdateTopicRef.current = true;
     };
   }, [agentConfigInfo?.devConversationId]);
 
   // 清空会话记录，实际上是创建新的会话
   const handleClear = useCallback(() => {
+    handleClearSideEffect();
     setMessageList([]);
-    setChatSuggestList([]);
+    // 创建会话
     runConversationCreate({
       agentId,
       devMode: true,

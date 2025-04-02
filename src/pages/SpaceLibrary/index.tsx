@@ -5,7 +5,7 @@ import CreateNewPlugin from '@/components/CreateNewPlugin';
 import CreateWorkflow from '@/components/CreateWorkflow';
 import CustomPopover from '@/components/CustomPopover';
 import SelectList from '@/components/SelectList';
-import { SPACE_ID, USER_INFO } from '@/constants/home.constants';
+import { USER_INFO } from '@/constants/home.constants';
 import {
   CREATE_LIST,
   FILTER_STATUS,
@@ -29,28 +29,29 @@ import {
   FilterStatusEnum,
 } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
-import type { KnowledgeBaseInfo } from '@/types/interfaces/knowledge';
-import type {
-  ComponentInfo,
-  WorkflowBaseInfo,
-} from '@/types/interfaces/library';
+import type { ComponentInfo } from '@/types/interfaces/library';
 import type { UserInfo } from '@/types/interfaces/login';
-import { PluginInfo } from '@/types/interfaces/plugin';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Empty, Input, message } from 'antd';
+import {
+  ExclamationCircleFilled,
+  PlusOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
+import { Button, Empty, Input, message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useRequest } from 'umi';
+import { history, useParams, useRequest } from 'umi';
 import ComponentItem from './ComponentItem';
 import CreateModel from './CreateModel';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+const { confirm } = Modal;
 
 /**
  * 工作空间 - 组件库
  */
 const SpaceLibrary: React.FC = () => {
+  const { spaceId } = useParams();
   // 组件列表
   const [componentList, setComponentList] = useState<ComponentInfo[]>([]);
   // 所有智能体列表
@@ -83,8 +84,6 @@ const SpaceLibrary: React.FC = () => {
   const [create, setCreate] = useState<CreateListEnum>(
     CreateListEnum.All_Person,
   );
-  // 空间id
-  const spaceId = localStorage.getItem(SPACE_ID) as number;
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
@@ -199,20 +198,7 @@ const SpaceLibrary: React.FC = () => {
 
   useEffect(() => {
     runComponent(spaceId);
-  }, []);
-
-  useEffect(() => {
-    const unlisten = history.listen(({ location }) => {
-      if (location.pathname.includes('library')) {
-        const _spaceId = localStorage.getItem(SPACE_ID) as number;
-        runComponent(_spaceId);
-      }
-    });
-
-    return () => {
-      unlisten();
-    };
-  }, []);
+  }, [spaceId]);
 
   // 切换类型
   const handlerChangeType = (value: ComponentTypeEnum) => {
@@ -246,20 +232,6 @@ const SpaceLibrary: React.FC = () => {
     } else if (type === PluginTypeEnum.HTTP) {
       history.push(`/space/${spaceId}/plugin/${id}`);
     }
-  };
-
-  // 确认添加插件事件
-  const handleConfirmPlugin = (info: PluginInfo) => {
-    setOpenPlugin(false);
-    const { id, type } = info;
-    handlePluginUrl(id, type);
-  };
-
-  // 确认添加工作流事件
-  const handleConfirmWorkflow = (info: WorkflowBaseInfo) => {
-    const id = info.id;
-    setOpenWorkflow(false);
-    history.push(`/workflow/${id}`);
   };
 
   const handleConfirmModel = () => {
@@ -313,9 +285,41 @@ const SpaceLibrary: React.FC = () => {
   //   setComponentStatistics(analyzeList);
   // };
 
+  // 删除组件确认弹窗
+  const showDeleteConfirm = (type: ComponentTypeEnum, info: ComponentInfo) => {
+    const { id, name } = info;
+    confirm({
+      title: '您确定要删除此组件吗?',
+      icon: <ExclamationCircleFilled />,
+      content: name,
+      okText: '确定',
+      maskClosable: true,
+      cancelText: '取消',
+      onOk() {
+        switch (type) {
+          case ComponentTypeEnum.Plugin:
+            runPluginDel(id);
+            break;
+          case ComponentTypeEnum.Model:
+            runModelDel(id);
+            break;
+          case ComponentTypeEnum.Workflow:
+            runWorkflowDel(id);
+            break;
+          case ComponentTypeEnum.Knowledge:
+            runKnowledgeDel(id);
+            break;
+        }
+      },
+    });
+  };
+
   // 点击更多操作 插件： 创建副本、删除 模型：删除 工作流：创建副本、删除 知识库： 删除
   const handleClickMore = (item: CustomPopoverItem, info: ComponentInfo) => {
-    const { action, type } = item;
+    const { action, type } = item as {
+      action: ComponentMoreActionEnum;
+      type: ComponentTypeEnum;
+    };
     const { id } = info;
     // 插件
     if (type === ComponentTypeEnum.Plugin) {
@@ -324,7 +328,7 @@ const SpaceLibrary: React.FC = () => {
           runPluginCopy(id);
           break;
         case ComponentMoreActionEnum.Del:
-          runPluginDel(id);
+          showDeleteConfirm(type, info);
           break;
       }
     }
@@ -334,7 +338,7 @@ const SpaceLibrary: React.FC = () => {
       type === ComponentTypeEnum.Model &&
       action === ComponentMoreActionEnum.Del
     ) {
-      runModelDel(id);
+      showDeleteConfirm(type, info);
     }
 
     // 工作流
@@ -344,7 +348,7 @@ const SpaceLibrary: React.FC = () => {
           runWorkflowCopy(id);
           break;
         case ComponentMoreActionEnum.Del:
-          runWorkflowDel(id);
+          showDeleteConfirm(type, info);
           break;
       }
     }
@@ -354,7 +358,7 @@ const SpaceLibrary: React.FC = () => {
       type === ComponentTypeEnum.Knowledge &&
       action === ComponentMoreActionEnum.Del
     ) {
-      runKnowledgeDel(id);
+      showDeleteConfirm(type, info);
     }
     // switch (action) {
     //   case ComponentMoreActionEnum.Copy:
@@ -389,13 +393,6 @@ const SpaceLibrary: React.FC = () => {
         setOpenModel(true);
         break;
     }
-  };
-
-  // 知识库新增确认事件
-  const handleConfirmKnowledge = (info: KnowledgeBaseInfo) => {
-    const { id } = info;
-    setOpenKnowledge(false);
-    history.push(`/space/${spaceId}/knowledge/${id}`);
   };
 
   return (
@@ -464,21 +461,18 @@ const SpaceLibrary: React.FC = () => {
         spaceId={spaceId}
         open={openPlugin}
         onCancel={() => setOpenPlugin(false)}
-        onConfirm={handleConfirmPlugin}
       />
       {/*创建知识库弹窗*/}
       <CreateKnowledge
         spaceId={spaceId}
         open={openKnowledge}
         onCancel={() => setOpenKnowledge(false)}
-        onConfirm={handleConfirmKnowledge}
       />
       {/*创建工作流*/}
       <CreateWorkflow
         spaceId={spaceId}
         open={openWorkflow}
         onCancel={() => setOpenWorkflow(false)}
-        onConfirm={handleConfirmWorkflow}
       />
       <ConditionRender condition={openModel}>
         {/*创建模型*/}

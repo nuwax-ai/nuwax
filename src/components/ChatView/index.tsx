@@ -1,5 +1,5 @@
 import agentImage from '@/assets/images/agent_image.png';
-import personal from '@/assets/images/personal.png';
+import avatar from '@/assets/images/avatar.png';
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
 import { USER_INFO } from '@/constants/home.constants';
@@ -12,6 +12,7 @@ import type {
 import classNames from 'classnames';
 import markdown from 'markdown-it';
 import React, { useMemo } from 'react';
+import { useModel } from 'umi';
 import ChatBottomMore from './ChatBottomMore';
 import styles from './index.less';
 import RunOver from './RunOver';
@@ -31,18 +32,20 @@ const ChatView: React.FC<ChatViewProps> = ({
   messageInfo,
   canDebug,
 }) => {
+  const { userInfo } = useModel('userInfo');
   // 当前用户信息
-  const userInfo = JSON.parse(localStorage.getItem(USER_INFO) as string);
+  const _userInfo =
+    userInfo || JSON.parse(localStorage.getItem(USER_INFO) as string);
 
   // 角色名称和头像
   const info = useMemo(() => {
-    const { user, assistant, system } = roleInfo;
+    const { assistant, system } = roleInfo;
     switch (messageInfo?.role) {
       // 用户信息
       case AssistantRoleEnum.USER:
         return {
-          name: user.name || userInfo.nickName,
-          avatar: user.avatar || userInfo.avatar || personal,
+          name: _userInfo?.nickName || _userInfo?.userName,
+          avatar: _userInfo?.avatar || avatar,
         };
       // 助手信息
       case AssistantRoleEnum.ASSISTANT:
@@ -57,7 +60,7 @@ const ChatView: React.FC<ChatViewProps> = ({
           avatar: system.avatar || agentImage,
         };
     }
-  }, [roleInfo, messageInfo?.role]);
+  }, [roleInfo, _userInfo, messageInfo?.role]);
 
   return (
     <div className={cx(styles.container, 'flex', className)}>
@@ -71,11 +74,7 @@ const ChatView: React.FC<ChatViewProps> = ({
         {messageInfo?.role === AssistantRoleEnum.USER &&
           !!messageInfo?.text && (
             <div
-              className={cx(
-                styles['chat-content'],
-                'radius-6',
-                contentClassName,
-              )}
+              className={cx(styles['chat-content'], styles.user, 'radius-6')}
               dangerouslySetInnerHTML={{
                 __html: md.render(messageInfo?.text),
               }}
@@ -89,19 +88,27 @@ const ChatView: React.FC<ChatViewProps> = ({
           <ConditionRender condition={!!messageInfo?.status}>
             <RunOver messageInfo={messageInfo} />
           </ConditionRender>
-          {/*文本内容*/}
-          {!!messageInfo?.text && (
-            <div
-              className={cx(
-                styles['chat-content'],
-                'radius-6',
-                'w-full',
-                contentClassName,
+          {(!!messageInfo?.think || !!messageInfo?.text) && (
+            <div className={cx(styles['inner-container'], contentClassName)}>
+              {/*think*/}
+              {!!messageInfo?.think && !!md.render(messageInfo?.think) && (
+                <div
+                  className={cx(styles['think-content'], 'radius-6', 'w-full')}
+                  dangerouslySetInnerHTML={{
+                    __html: md.render(messageInfo?.think),
+                  }}
+                />
               )}
-              dangerouslySetInnerHTML={{
-                __html: md.render(messageInfo?.text),
-              }}
-            />
+              {/*文本内容*/}
+              {!!messageInfo?.text && (
+                <div
+                  className={cx(styles['chat-content'], 'radius-6', 'w-full')}
+                  dangerouslySetInnerHTML={{
+                    __html: md.render(messageInfo?.text),
+                  }}
+                />
+              )}
+            </div>
           )}
           {/*底部区域*/}
           <ConditionRender

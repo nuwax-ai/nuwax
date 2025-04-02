@@ -2,7 +2,7 @@ import CreateNewPlugin from '@/components/CreateNewPlugin';
 import LabelStar from '@/components/LabelStar';
 import PluginConfigTitle from '@/components/PluginConfigTitle';
 import PluginPublish from '@/components/PluginPublish';
-import TryRunModel from '@/components/PluginTryRunModel';
+import PluginTryRunModel from '@/components/PluginTryRunModel';
 import VersionHistory from '@/components/VersionHistory';
 import { VARIABLE_TYPE_LIST } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
@@ -26,6 +26,7 @@ import { customizeRequiredMark } from '@/utils/form';
 import { DeleteOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import {
+  Button,
   Checkbox,
   Form,
   Input,
@@ -36,7 +37,7 @@ import {
   Table,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 import PluginHeader from './PluginHeader';
@@ -79,7 +80,10 @@ const SpacePluginTool: React.FC = () => {
     handleConfirmUpdate,
     handleInputConfigAdd,
     handleOutputConfigAdd,
+    runPluginAnalysis,
   } = usePluginConfig();
+
+  const isClickSaveBtnRef = useRef<boolean>(false);
 
   // 查询插件信息
   const { run: runPluginInfo } = useRequest(apiPluginInfo, {
@@ -90,6 +94,7 @@ const SpacePluginTool: React.FC = () => {
       if (result.config) {
         const { method, url, contentType, timeout, inputArgs, outputArgs } =
           result.config;
+        // 初始化form
         form.setFieldsValue({
           method: method || HttpMethodEnum.GET,
           url,
@@ -113,7 +118,10 @@ const SpacePluginTool: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success('插件保存成功');
+      if (isClickSaveBtnRef.current) {
+        message.success('插件保存成功');
+        isClickSaveBtnRef.current = false;
+      }
     },
   });
 
@@ -336,29 +344,43 @@ const SpacePluginTool: React.FC = () => {
   ];
 
   // 保存插件信息
-  const handleSave = () => {
-    form.validateFields().then((values) => {
-      runUpdate({
-        id: pluginId,
-        config: {
-          ...values,
-          inputArgs: inputConfigArgs,
-          outputArgs: outputConfigArgs,
-        },
-      });
+  const handleSave = async () => {
+    const values = await form.validateFields();
+    runUpdate({
+      id: pluginId,
+      config: {
+        ...values,
+        inputArgs: inputConfigArgs,
+        outputArgs: outputConfigArgs,
+      },
     });
   };
 
+  // 单独点击保存按钮，提示保存成功
+  const handleSaveConfig = async () => {
+    isClickSaveBtnRef.current = true;
+    await handleSave();
+  };
+
   // 试运行
-  const handleTryRun = () => {
-    handleSave();
+  const handleTryRun = async () => {
+    await handleSave();
     setIsModalOpen(true);
   };
 
   // 发布事件
-  const handlePublish = () => {
-    handleSave();
+  const handlePublish = async () => {
+    await handleSave();
     setOpenModal(true);
+  };
+
+  // 自动解析
+  const handleAutoResolve = async () => {
+    // 插件http模式下， 先保存配置，否则自动解析可能会因为url地址未填写或者未保存报错
+    await handleSave();
+    runPluginAnalysis({
+      pluginId,
+    });
   };
 
   return (
@@ -370,7 +392,7 @@ const SpacePluginTool: React.FC = () => {
           pluginInfo={pluginInfo as PluginInfo}
           onEdit={() => setOpenPlugin(true)}
           onToggleHistory={() => setVisible(!visible)}
-          onSave={handleSave}
+          onSave={handleSaveConfig}
           onTryRun={handleTryRun}
           onPublish={handlePublish}
         />
@@ -436,7 +458,11 @@ const SpacePluginTool: React.FC = () => {
               expandIcon: () => null,
             }}
           />
-          <PluginConfigTitle title="出参配置" onClick={handleOutputConfigAdd} />
+          <PluginConfigTitle
+            title="出参配置"
+            onClick={handleOutputConfigAdd}
+            extra={<Button onClick={handleAutoResolve}>自动解析</Button>}
+          />
           <Table<BindConfigWithSub>
             className={cx(styles['table-wrap'], 'overflow-hide')}
             columns={outputColumns}
@@ -451,7 +477,7 @@ const SpacePluginTool: React.FC = () => {
             }}
           />
           {/*试运行弹窗*/}
-          <TryRunModel
+          <PluginTryRunModel
             inputConfigArgs={inputConfigArgs}
             inputExpandedRowKeys={expandedRowKeys}
             pluginId={pluginId}

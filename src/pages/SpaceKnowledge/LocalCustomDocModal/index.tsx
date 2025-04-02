@@ -282,7 +282,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
             <UploadFile onUploadSuccess={handleUploadSuccess} />
             {uploadFileList?.map((info, index) => (
               <div
-                key={info.key}
+                key={info?.key}
                 className={cx(
                   'flex',
                   'items-center',
@@ -291,7 +291,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
                 )}
               >
                 <span>
-                  {info.fileName} ({`${info.size / 1000} kb`})
+                  {info?.fileName} ({`${info?.size / 1000} kb`})
                 </span>
                 <DeleteOutlined onClick={() => handleUploadFileDel(index)} />
               </div>

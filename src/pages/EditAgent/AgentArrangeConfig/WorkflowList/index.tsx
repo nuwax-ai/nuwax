@@ -1,6 +1,6 @@
 import workflowImage from '@/assets/images/workflow_image.png';
 import TooltipIcon from '@/components/TooltipIcon';
-// import { ICON_SETTING } from '@/constants/images.constants';
+import { ICON_SETTING } from '@/constants/images.constants';
 import { AgentComponentInfo } from '@/types/interfaces/agent';
 import { DeleteOutlined } from '@ant-design/icons';
 import React from 'react';
@@ -8,10 +8,11 @@ import AgentModelComponent from '../AgentModelComponent';
 
 interface WorkflowListProps {
   list: AgentComponentInfo[];
+  onSet: (id: number) => void;
   onDel: (id: number) => void;
 }
 
-const WorkflowList: React.FC<WorkflowListProps> = ({ list, onDel }) => {
+const WorkflowList: React.FC<WorkflowListProps> = ({ list, onSet, onDel }) => {
   return !list?.length ? (
     <p>
       工作流支持通过可视化的方式，对插件、大语言模型、代码块等功能进行组合，从而实现复杂、稳定的业务流程编排，例如旅行规划、报告分析等。
@@ -24,10 +25,15 @@ const WorkflowList: React.FC<WorkflowListProps> = ({ list, onDel }) => {
         defaultImage={workflowImage as string}
         extra={
           <>
-            {/*<TooltipIcon*/}
-            {/*  title="设置"*/}
-            {/*  icon={<ICON_SETTING className={'cursor-pointer'} />}*/}
-            {/*/>*/}
+            <TooltipIcon
+              title="设置"
+              icon={
+                <ICON_SETTING
+                  className={'cursor-pointer'}
+                  onClick={() => onSet(item.id)}
+                />
+              }
+            />
             <TooltipIcon
               title="删除"
               icon={
