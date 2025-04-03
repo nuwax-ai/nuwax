@@ -458,7 +458,7 @@ const SpacePluginTool: React.FC = () => {
           <PluginConfigTitle
             title="出参配置"
             onClick={handleOutputConfigAdd}
-            // extra={<Button onClick={handleAutoResolve}>自动解析</Button>}
+            extra={<Button onClick={handleAutoResolve}>自动解析</Button>}
           />
           <Table<BindConfigWithSub>
             className={cx(styles['table-wrap'], 'overflow-hide')}
