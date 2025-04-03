@@ -1,5 +1,5 @@
 import ShowStand from '@/components/ShowStand';
-import { ICON_FOLD } from '@/constants/images.constants';
+// import { ICON_FOLD } from '@/constants/images.constants';
 import { EditAgentShowType } from '@/types/enums/space';
 import classNames from 'classnames';
 import React from 'react';
@@ -11,17 +11,17 @@ const cx = classNames.bind(styles);
 const ShowArea: React.FC = () => {
   const { cardList, showType, setShowType } = useModel('conversationInfo');
 
-  const handlerVisible = () => {
-    if (showType === EditAgentShowType.Hide) {
-      setShowType(EditAgentShowType.Show_Stand);
-    } else {
-      setShowType(EditAgentShowType.Hide);
-    }
-  };
+  // const handlerVisible = () => {
+  //   if (showType === EditAgentShowType.Hide) {
+  //     setShowType(EditAgentShowType.Show_Stand);
+  //   } else {
+  //     setShowType(EditAgentShowType.Hide);
+  //   }
+  // };
 
   return (
     <div className={cx('flex', 'flex-col', 'items-end', styles.container)}>
-      <ICON_FOLD onClick={handlerVisible} />
+      {/*<ICON_FOLD onClick={handlerVisible} />*/}
       {/*展示台*/}
       <ShowStand
         className={cx('flex-1')}
