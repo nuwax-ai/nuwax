@@ -18,9 +18,16 @@ const ToggleWrap: React.FC<PropsWithChildren<ToggleWrapProps>> = ({
 }) => {
   return (
     <div
-      className={cx('flex', 'flex-col', styles.container, className, {
-        [styles.hidden]: !visible,
-      })}
+      className={cx(
+        'flex',
+        'flex-col',
+        'overflow-y',
+        styles.container,
+        className,
+        {
+          [styles.hidden]: !visible,
+        },
+      )}
     >
       <div
         className={cx(styles.header, 'flex', 'items-center', 'content-between')}
