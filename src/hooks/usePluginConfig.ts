@@ -7,7 +7,12 @@ import { DataTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PluginInfo } from '@/types/interfaces/plugin';
 import type { HistoryData } from '@/types/interfaces/space';
-import { addChildNode, deleteNode, updateNodeField } from '@/utils/deepNode';
+import {
+  addChildNode,
+  deleteNode,
+  getActiveKeys,
+  updateNodeField,
+} from '@/utils/deepNode';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useState } from 'react';
 import { useParams, useRequest } from 'umi';
@@ -184,6 +189,14 @@ const usePluginConfig = () => {
     setOutputConfigArgs(_outputConfigArgs);
   };
 
+  // 设置出参配置以及展开key值
+  const handleOutputConfigArgs = (list: BindConfigWithSub[]) => {
+    // 默认展开的出参配置key
+    const _outputExpandedRowKeys = getActiveKeys(list);
+    setOutputExpandedRowKeys(_outputExpandedRowKeys);
+    setOutputConfigArgs(list);
+  };
+
   return {
     isModalOpen,
     setIsModalOpen,
@@ -203,11 +216,9 @@ const usePluginConfig = () => {
     inputConfigArgs,
     setInputConfigArgs,
     outputConfigArgs,
-    setOutputConfigArgs,
     expandedRowKeys,
     setExpandedRowKeys,
     outputExpandedRowKeys,
-    setOutputExpandedRowKeys,
     handleInputValue,
     handleOutputValue,
     handleInputAddChild,
@@ -217,6 +228,7 @@ const usePluginConfig = () => {
     handleConfirmUpdate,
     handleInputConfigAdd,
     handleOutputConfigAdd,
+    handleOutputConfigArgs,
   };
 };
 

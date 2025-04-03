@@ -1,10 +1,8 @@
-import agentImage from '@/assets/images/agent_image.png';
-import CustomPopover from '@/components/CustomPopover';
 import { SPACE_ID } from '@/constants/home.constants';
-import { EllipsisOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
 import { history, useModel } from 'umi';
+import UserRelAgent from '../../UserRelAgent';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -28,7 +26,7 @@ const DevCollect: React.FC = () => {
   useEffect(() => {
     runDevCollect({
       page: 1,
-      size: 50,
+      size: 8,
     });
   }, []);
 
@@ -48,32 +46,15 @@ const DevCollect: React.FC = () => {
   };
 
   return devCollectAgentList?.length > 0 ? (
-    <ul>
-      {devCollectAgentList?.map((item) => (
-        <li
-          key={item.id}
-          onClick={() => handleDevCollect(item.agentId)}
-          className={cx(
-            styles.row,
-            'flex',
-            'items-center',
-            'cursor-pointer',
-            'hover-box',
-          )}
-        >
-          <img src={item.icon || (agentImage as string)} alt="" />
-          <span className={cx(styles.name, 'flex-1', 'text-ellipsis')}>
-            {item.name}
-          </span>
-          <CustomPopover
-            list={[{ label: '取消收藏' }]}
-            onClick={() => handleCancelCollect(item.agentId)}
-          >
-            <EllipsisOutlined className={cx(styles.icon)} />
-          </CustomPopover>
-        </li>
-      ))}
-    </ul>
+    devCollectAgentList?.map((item) => (
+      <UserRelAgent
+        key={item.id}
+        onClick={() => handleDevCollect(item.agentId)}
+        icon={item.icon}
+        name={item.name}
+        onCancelCollect={() => handleCancelCollect(item.agentId)}
+      />
+    ))
   ) : (
     <>
       <div className={cx(styles['no-dev-collect'])}>还没有收藏任何内容</div>

@@ -3,14 +3,15 @@ import type {
   UserAvatarEnum,
   UserOperatorAreaEnum,
 } from '@/types/enums/menus';
-import type { AgentInfo } from '@/types/interfaces/agent';
 import type { NotifyMessageInfo } from '@/types/interfaces/message';
 import React from 'react';
 
-// 用户相关智能体
-export interface UserRelAgentListProps {
-  list: AgentInfo[];
-  onClick: (info: AgentInfo) => void;
+// 用户相关智能体属性（我的收藏、最近使用、最近编辑）
+export interface UserRelAgentProps {
+  onClick: () => void;
+  icon: string;
+  name: string;
+  onCancelCollect?: () => void;
 }
 
 // 创建新团队组件

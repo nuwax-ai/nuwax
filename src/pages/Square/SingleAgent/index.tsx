@@ -1,4 +1,5 @@
 import agentImage from '@/assets/images/agent_image.png';
+import avatar from '@/assets/images/avatar.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
@@ -91,12 +92,14 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
     },
   });
 
+  // 点击单个智能体，创建会话，并跳转到会话页面
   const handleClick = () => {
     runConversationCreate({
       agentId: targetId,
     });
   };
 
+  // 切换收藏与取消收藏
   const handleToggleCollect = (e) => {
     e.stopPropagation();
     if (targetType === SquareAgentTypeEnum.Agent) {
@@ -132,15 +135,21 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
             </span>
           </div>
           <div className={cx('flex', 'items-center', styles['info-author'])}>
-            <ConditionRender condition={publishUser?.avatar}>
-              <img
-                className={cx(styles.avatar)}
-                src={publishUser?.avatar}
-                alt=""
-              />
+            <img
+              className={cx(styles.avatar)}
+              src={publishUser?.avatar || (avatar as string)}
+              alt=""
+            />
+            <ConditionRender condition={publishUser?.userName}>
+              <span className={cx(styles.author, 'text-ellipsis')}>
+                {publishUser?.userName}
+              </span>
             </ConditionRender>
-            <span className={cx(styles.author)}>{publishUser?.userName}</span>
-            <span className={cx(styles.nickname)}>{publishUser?.nickName}</span>
+            <ConditionRender condition={publishUser?.nickName}>
+              <span className={cx(styles.nickname, 'text-ellipsis', 'flex-1')}>
+                {publishUser?.nickName}
+              </span>
+            </ConditionRender>
           </div>
           <p className={cx(styles.desc, 'text-ellipsis-3')}>{description}</p>
         </div>
