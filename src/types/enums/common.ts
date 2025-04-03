@@ -1,8 +1,9 @@
+// 卡片样式枚举
 export enum CardStyleEnum {
-  ONE = 'one',
-  TWO = 'two',
-  THREE = 'three',
-  FOUR = 'four',
+  ONE = 'template-1',
+  TWO = 'template-2',
+  THREE = 'template-3',
+  FOUR = 'template-4',
 }
 
 // Tooltip title样式

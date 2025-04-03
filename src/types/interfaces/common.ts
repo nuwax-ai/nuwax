@@ -1,5 +1,5 @@
 import type { AgentComponentTypeEnum } from '@/types/enums/agent';
-import type { CardStyleEnum, CreateUpdateModeEnum } from '@/types/enums/common';
+import type { CreateUpdateModeEnum } from '@/types/enums/common';
 import type {
   AgentBaseInfo,
   AgentConfigInfo,
@@ -67,22 +67,6 @@ export interface ToggleWrapProps {
   title: string;
   visible?: boolean;
   onClose: () => void;
-}
-
-// 卡片模式设置样式类型
-export interface CardStyleType {
-  type: string;
-  onClick: (type: CardStyleEnum) => void;
-}
-
-// 单张卡片
-export interface CardProps {
-  className?: string;
-  id: number;
-  img?: string;
-  title: string;
-  desc: string;
-  onClick: () => void;
 }
 
 export interface option {

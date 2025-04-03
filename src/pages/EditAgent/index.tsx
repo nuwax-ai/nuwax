@@ -43,7 +43,8 @@ const EditAgent: React.FC = () => {
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>(null);
   // 历史版本信息
   const [versionHistory, setVersionHistory] = useState<HistoryData[]>([]);
-  const { showType, setShowType, setIsSuggest } = useModel('conversationInfo');
+  const { cardList, showType, setShowType, setIsSuggest } =
+    useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
 
   // 查询智能体配置信息
@@ -200,7 +201,7 @@ const EditAgent: React.FC = () => {
         />
         {/*展示台*/}
         <ShowStand
-          list={[]}
+          cardList={cardList}
           visible={showType === EditAgentShowType.Show_Stand}
           onClose={() => setShowType(EditAgentShowType.Hide)}
         />

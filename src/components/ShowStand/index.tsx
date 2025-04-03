@@ -1,6 +1,6 @@
 import Card from '@/components/Card';
 import ToggleWrap from '@/components/ToggleWrap';
-import { CardStyleEnum } from '@/types/enums/common';
+import { CardDataInfo } from '@/types/interfaces/cardInfo';
 import { Empty } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -11,12 +11,7 @@ const cx = classNames.bind(styles);
 // 展示台组件
 export interface ShowStandProps {
   className?: string;
-  list: {
-    id: number;
-    img: string;
-    title: string;
-    desc: string;
-  }[];
+  cardList: CardDataInfo[];
   visible: boolean;
   onClose: () => void;
 }
@@ -28,7 +23,7 @@ const ShowStand: React.FC<ShowStandProps> = ({
   className,
   visible,
   onClose,
-  list,
+  cardList,
 }) => {
   return (
     <ToggleWrap
@@ -37,14 +32,13 @@ const ShowStand: React.FC<ShowStandProps> = ({
       visible={visible}
       onClose={onClose}
     >
-      {list?.length > 0 ? (
-        <div className={cx(styles['inner-container'])}>
-          {list?.map((item) => (
+      {cardList?.length > 0 ? (
+        <div className={cx(styles['inner-container'], 'overflow-y')}>
+          {cardList?.map((item, index) => (
             <Card
-              key={item.id}
+              key={`${item.cardKey}${index}`}
               {...item}
-              type={CardStyleEnum.ONE}
-              className={styles['card-wrapper']}
+              type={item.cardKey}
             />
           ))}
         </div>

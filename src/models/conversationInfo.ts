@@ -11,7 +11,8 @@ import {
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
-import { MessageStatusEnum } from '@/types/enums/common';
+import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
+import { BindCardStyleEnum } from '@/types/enums/plugin';
 import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
@@ -22,6 +23,7 @@ import type {
   MessageInfo,
   ProcessingInfo,
 } from '@/types/interfaces/conversationInfo';
+import { CardInfo } from '@/types/interfaces/conversationInfo';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { useRequest } from 'ahooks';
 import moment from 'moment/moment';
@@ -46,6 +48,8 @@ export default () => {
   // 调试结果
   const [executeResults, setExecuteResults] = useState<ExecuteResultInfo[]>([]);
   const needUpdateTopicRef = useRef<boolean>(true);
+  // 展示台卡片列表
+  const [cardList, setCardList] = useState<CardInfo[]>([]);
 
   const handleScrollBottom = () => {
     scrollTimeoutRef.current = setTimeout(() => {
@@ -144,6 +148,36 @@ export default () => {
               data,
             ] as ProcessingInfo[],
           };
+
+          // 已调用完毕后, 处理卡片信息
+          if (
+            data?.status === ProcessingEnum.FINISHED &&
+            data?.cardBindConfig &&
+            data?.cardData
+          ) {
+            // 自动展开展示台
+            setShowType(EditAgentShowType.Show_Stand);
+            setCardList(() => {
+              // 竖向列表
+              if (
+                data.cardBindConfig?.bindCardStyle === BindCardStyleEnum.LIST
+              ) {
+                const cardDataList =
+                  data?.cardData?.map((item) => ({
+                    ...item,
+                    cardKey: data.cardBindConfig.cardKey,
+                  })) || [];
+
+                return [...cardDataList];
+              }
+              // 单张卡片
+              const cardInfo = {
+                ...data?.cardData,
+                cardKey: data.cardBindConfig?.cardKey,
+              };
+              return [cardInfo] as CardInfo[];
+            });
+          }
         }
         if (eventType === ConversationEventTypeEnum.MESSAGE) {
           const { text, type } = data;
@@ -328,5 +362,7 @@ export default () => {
     setShowType,
     needUpdateTopicRef,
     handleClearSideEffect,
+    cardList,
+    setCardList,
   };
 };

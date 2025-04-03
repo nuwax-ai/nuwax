@@ -9,7 +9,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 const ShowArea: React.FC = () => {
-  const { showType, setShowType } = useModel('conversationInfo');
+  const { cardList, showType, setShowType } = useModel('conversationInfo');
 
   const handlerVisible = () => {
     if (showType === EditAgentShowType.Hide) {
@@ -25,7 +25,7 @@ const ShowArea: React.FC = () => {
       {/*展示台*/}
       <ShowStand
         className={cx('flex-1')}
-        list={[]}
+        cardList={cardList}
         visible={showType === EditAgentShowType.Show_Stand}
         onClose={() => setShowType(EditAgentShowType.Hide)}
       />

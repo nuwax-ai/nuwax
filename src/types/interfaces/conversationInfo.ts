@@ -13,6 +13,7 @@ import type {
   AgentStatisticsInfo,
   CreatorInfo,
 } from '@/types/interfaces/agent';
+import { CardBindConfig, CardDataInfo } from '@/types/interfaces/cardInfo';
 
 // 会话聊天消息
 export interface ConversationChatMessage {
@@ -32,6 +33,31 @@ export interface ConversationChatMessage {
   time: number;
   // 可用值:CHAT,GUID,QUESTION,ANSWER
   type: MessageModeEnum;
+}
+
+// 会话调用插件、工作流等的过程数据
+export interface ProcessingData {
+  targetId: number;
+  name: string;
+  type: AgentComponentTypeEnum;
+  status: ProcessingEnum;
+  result: {
+    id: number;
+    name: string;
+    type: AgentComponentTypeEnum;
+    success: boolean;
+    error: string;
+    data: unknown;
+    startTime: number;
+    endTime: number;
+    input: {
+      query: string;
+    };
+  };
+  // 卡片绑定配置信息
+  cardBindConfig: CardBindConfig;
+  // 卡片数据
+  cardData: CardDataInfo[] | CardDataInfo;
 }
 
 // 调试结果
@@ -63,7 +89,11 @@ export interface ConversationFinalResult {
 // 会话聊天响应数据
 export interface ConversationChatResponse {
   completed: boolean;
-  data: ConversationChatMessage | ConversationFinalResult | unknown;
+  data:
+    | ConversationChatMessage
+    | ConversationFinalResult
+    | ProcessingData
+    | unknown;
   error: string;
   eventType: ConversationEventTypeEnum;
   requestId: string;
@@ -218,4 +248,15 @@ export interface ChatViewProps {
   roleInfo: RoleInfo;
   // 能否调试
   canDebug?: boolean;
+}
+
+// 卡片信息
+export interface CardInfo {
+  image: string;
+  title: string;
+  content: string;
+  // 卡片key值
+  cardKey: string;
+  // 跳转url
+  bindLinkUrl: string;
 }

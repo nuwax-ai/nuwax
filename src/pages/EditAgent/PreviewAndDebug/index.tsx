@@ -3,6 +3,7 @@ import ChatInput from '@/components/ChatInput';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
+import { EditAgentShowType } from '@/types/enums/space';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
@@ -37,6 +38,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     messageViewRef,
     needUpdateTopicRef,
     handleClearSideEffect,
+    setCardList,
+    setShowType,
   } = useModel('conversationInfo');
 
   // 角色信息（名称、头像）
@@ -76,6 +79,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     }
 
     return () => {
+      setShowType(EditAgentShowType.Hide);
+      setCardList([]);
       handleClearSideEffect();
       setMessageList([]);
       needUpdateTopicRef.current = true;
