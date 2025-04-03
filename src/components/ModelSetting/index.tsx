@@ -277,6 +277,7 @@ export const ModelSelected: React.FC<ModelSettingProp> = ({
   onChange,
   groupedOptionsData,
 }) => {
+  console.log(nodeConfig);
   return (
     <div className="node-item-style">
       <div className="dis-sb">

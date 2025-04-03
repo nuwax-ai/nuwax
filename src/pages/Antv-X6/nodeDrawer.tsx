@@ -4,7 +4,8 @@ import { testRunList } from '@/constants/node.constants';
 import { ChildNode } from '@/types/interfaces/graph';
 import { NodeConfig, NodeDrawerProps } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
-import React, { useEffect, useRef, useState } from 'react';
+import { Form, FormInstance } from 'antd';
+import React, { useEffect, useState } from 'react';
 import ComplexNode from './component/complexNode';
 import { ConditionNode } from './component/condition';
 import Library from './component/library';
@@ -21,7 +22,7 @@ const {
   DocumentExtractionNode,
 } = NodeItem;
 const { ModelNode, IntentionNode, QuestionsNode, HttpToolNode } = ComplexNode;
-const { PluginInNode, DatabaseNode } = ReferenceNode;
+const { PluginInNode } = ReferenceNode;
 const { KnowledgeNode } = Library;
 
 // 定义试运行,后面删除
@@ -50,11 +51,53 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   // 将节点的数据 保存到 state 中,维持数据双向绑定,便于管理
   const [currentNodeConfig, setCurrentNodeConfig] =
     useState<ChildNode>(foldWrapItem);
+
   // 打开重命名的input
   const [showNameInput, setShowNameInput] = useState<boolean>(false);
+  // 将form表单拿到最上层
+  const [form] = Form.useForm<NodeConfig>();
 
-  // 新增定时器引用
-  const timerRef = useRef<NodeJS.Timeout>();
+  // form表单校验完毕后提交数据
+  const onFinish = () => {
+    const values = form.getFieldsValue(true);
+    console.log('onFinish', values);
+    if (
+      !visible ||
+      (foldWrapItem.id !== currentNodeConfig.id && currentNodeConfig.id !== 0)
+    ) {
+      const newNodeConfig = {
+        ...currentNodeConfig,
+        nodeConfig: {
+          ...currentNodeConfig.nodeConfig,
+          ...values,
+        },
+      };
+      onGetNodeConfig(newNodeConfig);
+    }
+  };
+
+  const onFinishFailed = () => {
+    if (
+      !visible ||
+      (foldWrapItem.id !== currentNodeConfig.id && currentNodeConfig.id !== 0)
+    ) {
+      const values = form.getFieldsValue(true);
+      console.log(values, 'onFinishFailed');
+      const newNodeConfig = {
+        ...currentNodeConfig,
+        nodeConfig: {
+          ...currentNodeConfig.nodeConfig,
+          ...values,
+        },
+      };
+      onGetNodeConfig(newNodeConfig);
+    }
+  };
+
+  const submit = () => {
+    form.submit();
+  };
+
   // 修改节点的名称和描述
   const changeFoldWrap = ({
     name,
@@ -87,7 +130,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   };
 
   // 根据类型返回指定的 ReactNode
-  const renderNodeContent = (params: ChildNode) => {
+  const renderNodeContent = (params: ChildNode, form: FormInstance) => {
     switch (params.type) {
       case 'Start':
         // 如果这和 'Start' 是同样的组件，请考虑重用组件或创建一个新的组件。
@@ -96,11 +139,13 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
             type={currentNodeConfig.type}
+            form={form}
           />
         );
       case 'DocumentExtraction':
         return (
           <DocumentExtractionNode
+            form={form}
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
             type={currentNodeConfig.type}
@@ -110,6 +155,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
       case 'Output':
         return (
           <EndNode
+            form={form}
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
             type={currentNodeConfig.type}
@@ -126,6 +172,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
       case 'Variable':
         return (
           <VariableNode
+            form={form}
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
           />
@@ -133,6 +180,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
       case 'TextProcessing':
         return (
           <TextProcessingNode
+            form={form}
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
           />
@@ -166,11 +214,13 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
             type={currentNodeConfig.type}
+            form={form}
           />
         );
       case 'Code':
         return (
           <CodeNode
+            form={form}
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
           />
@@ -178,6 +228,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
       case 'QA':
         return (
           <QuestionsNode
+            form={form}
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
             updateNode={(newNodeConfig) => {
@@ -218,13 +269,6 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
             }
           />
         );
-      case 'Database':
-        return (
-          <DatabaseNode
-            params={currentNodeConfig.nodeConfig}
-            Modified={handleChangeNodeConfig}
-          />
-        );
       // 条件分支需要实时的调用接口
       case 'Condition':
         return (
@@ -251,19 +295,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <IntentionNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
-            updateNode={(newNodeConfig) => {
-              onGetNodeConfig(
-                {
-                  ...currentNodeConfig,
-                  nodeConfig: newNodeConfig,
-                },
-                true,
-              );
-              setCurrentNodeConfig({
-                ...currentNodeConfig,
-                nodeConfig: newNodeConfig,
-              });
-            }}
+            form={form}
           />
         );
       case 'LoopBreak':
@@ -297,52 +329,38 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
     });
   };
   // 当切换节点之前，先保存当前节点的数据，再调用新节点的数据，刷新他的refernect
-  const handleUpdate = async () => {
-    if (isModified) {
-      await onGetNodeConfig(currentNodeConfig);
-      setIsModified(false);
-    }
-    getRefernece(foldWrapItem.id);
-  };
+  // const handleUpdate = async () => {
+  //   if (isModified) {
+  //     await onGetNodeConfig(currentNodeConfig);
+  //     setIsModified(false);
+  //   }
+  //   getRefernece(foldWrapItem.id);
+  // };
 
   useEffect(() => {
-    if (isModified) {
-      onGetNodeConfig(currentNodeConfig);
-      setIsModified(false);
+    if (!visible && isModified && currentNodeConfig.id !== 0) {
+      submit();
+      setIsModified(false); // 重置修改状态
     }
-    if (foldWrapItem.type === 'LLM' && currentNodeConfig.type === 'LLM') {
+  }, [visible]);
+
+  useEffect(() => {
+    if (foldWrapItem.id && foldWrapItem.id !== 0) {
       setCurrentNodeConfig(foldWrapItem);
+      // 直接设置表单值而不是通过initialValues
+      form.setFieldsValue(foldWrapItem.nodeConfig);
     }
-  }, [foldWrapItem, visible]);
 
-  useEffect(() => {
-    setCurrentNodeConfig(foldWrapItem);
-    if (foldWrapItem.id !== 0) {
-      handleUpdate();
+    if (
+      foldWrapItem.id !== 0 &&
+      currentNodeConfig.id !== 0 &&
+      foldWrapItem.id !== currentNodeConfig.id &&
+      isModified
+    ) {
+      submit();
+      setIsModified(false); // 重置修改状态
     }
   }, [foldWrapItem.id]);
-
-  useEffect(() => {
-    // 清除已有定时器
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-
-    // 创建新定时器
-    timerRef.current = setInterval(() => {
-      if (isModified) {
-        onGetNodeConfig(currentNodeConfig);
-        setIsModified(false); // 重置修改状态
-      }
-    }, 3000);
-
-    // 清理函数
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [visible, currentNodeConfig, isModified]);
 
   return (
     <FoldWrap
@@ -364,7 +382,15 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
       }
     >
       <div className="dispose-node-style">
-        {renderNodeContent(foldWrapItem)}
+        <Form
+          form={form}
+          layout={'vertical'}
+          onFinishFailed={onFinishFailed}
+          onFinish={onFinish}
+          onValuesChange={() => setIsModified(true)}
+        >
+          {renderNodeContent(foldWrapItem, form)}
+        </Form>
       </div>
     </FoldWrap>
   );

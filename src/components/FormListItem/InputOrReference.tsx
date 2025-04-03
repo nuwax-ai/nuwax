@@ -34,6 +34,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
       if (valueType === 'Reference') {
         const refDataType = referenceList?.argMap?.[newValue]?.dataType;
         form.setFieldValue([...basePath, 'dataType'], refDataType || 'String');
+        form.setFieldValue([...basePath, 'bindValue'], newValue);
         // 获取当前的name
         const _name = form.getFieldValue([...basePath, 'name']);
         if (!_name) {
@@ -44,6 +45,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         }
       } else {
         form.setFieldValue([...basePath, 'dataType'], 'String');
+        form.setFieldValue([...basePath, 'bindValue'], newValue);
       }
     }
     onChange?.(newValue, valueType);

@@ -155,72 +155,61 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
 };
 
 // 定义意图识别
-const IntentionNode: React.FC<NodeDisposeProps> = ({
-  params,
-  Modified,
-  updateNode,
-}) => {
+const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
   // 添加状态保持稳定key
   const [outputKey] = useState(() => uuidv4());
-  // 修改模型的入参和出参
-  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
-    Modified({ ...params, ...newNodeConfig });
-  };
 
-  const changeIntent = (newNodeConfig: NodeConfig) => {
-    if (updateNode) {
-      updateNode({
-        ...params,
-        ...newNodeConfig,
-        extension: {
-          ...params.extension,
-          height: newNodeConfig?.intentConfigs!.length * 18 + 42,
-        },
-      });
-    }
+  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
+    console.log(newNodeConfig, 'newNodeConfig');
+    form.setFieldsValue({ ...newNodeConfig });
   };
 
   return (
     <div className="model-node-style">
       {/* 模型模块 */}
-      <ModelSelected onChange={handleChangeNodeConfig} nodeConfig={params} />
+      <Form.Item noStyle>
+        <ModelSelected
+          onChange={handleChangeNodeConfig}
+          nodeConfig={form.getFieldsValue()}
+        />
+      </Form.Item>
       {/* 输入参数 */}
-      <div className="node-item-style">
-        <InputAndOut
-          nodeKey={outputKey}
-          title="输入"
-          fieldConfigs={outPutConfigs}
-          inputItemName={InputItemNameEnum.inputArgs}
-          handleChangeNodeConfig={handleChangeNodeConfig}
-          initialValues={{ inputArgs: params.inputArgs || [] }}
-        />
-      </div>
+      <InputAndOut
+        nodeKey={outputKey}
+        title="输入"
+        fieldConfigs={outPutConfigs}
+        inputItemName={InputItemNameEnum.inputArgs}
+        form={form}
+      />
       {/* 意图匹配 */}
-      <div className="node-item-style">
-        <FormList
-          nodeKey={outputKey}
-          title={'意图匹配'}
-          handleChangeNodeConfig={handleChangeNodeConfig}
-          field="intent"
-          hasUuid
-          inputItemName={InputItemNameEnum.intentConfigs}
-          initialValues={{ intentConfigs: params.intentConfigs || [] }}
-          updateNode={changeIntent}
-        />
-      </div>
+      <FormList
+        form={form}
+        title={'意图匹配'}
+        field="intent"
+        hasUuid
+        inputItemName={InputItemNameEnum.intentConfigs}
+      />
       {/* 补充提示词 */}
       <ExpandableInputTextarea
         title="补充提示词"
-        value={params.systemPrompt || ''}
-        onChange={(value: string) =>
-          Modified({ ...params, systemPrompt: value })
+        value={form.getFieldValue('systemPrompt') || ''}
+        onChange={
+          (value: string) => form.setFieldsValue({ systemPrompt: value }) // 直接修改 Form 的值，而不是调用 Modified 函数，因为 Modified 函数是用于修改整个节点的配置，而这里是修改 Form 中的一个字段的值，所以直接修改 Form 的值就可以了，不需要调用 Modified 函数
         }
         onExpand
         placeholder="支持额外的系统提示词，如对意图选项做更详细的例子以增 强用户输出与意图匹配的成功率。"
       />
       {/* 输出 */}
-      <p className="node-title-style mt-16">{'输出'}</p>
-      <TreeOutput treeData={params.outputArgs || []} />
+      <Form.Item shouldUpdate>
+        {() =>
+          form.getFieldValue('outputArgs') && (
+            <>
+              <div className="node-title-style margin-bottom">输出</div>
+              <TreeOutput treeData={form.getFieldValue('outputArgs')} />
+            </>
+          )
+        }
+      </Form.Item>
     </div>
   );
 };

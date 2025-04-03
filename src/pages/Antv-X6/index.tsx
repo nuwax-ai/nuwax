@@ -34,6 +34,7 @@ import { Child } from './type';
 const Workflow: React.FC = () => {
   // 当前工作流的id
   const workflowId = Number(useParams().workflowId);
+
   // 显示隐藏右侧节点抽屉
   const [visible, setVisible] = useState(false);
   // 右侧抽屉的部分信息
@@ -126,9 +127,9 @@ const Workflow: React.FC = () => {
       // 获取节点和边的数据
       const _nodeList = _res.data.nodes;
       const _edgeList = getEdges(_nodeList);
-      if (_res.data.extension && _res.data.extension.size) {
-        graphRef.current.changeGraphZoom(_res.data.extension.size);
-      }
+      // if (_res.data.extension && _res.data.extension.size) {
+      //   graphRef.current.changeGraphZoom(_res.data.extension.size);
+      // }
       // 修改数据，更新画布
       setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
     } catch (error) {
@@ -221,6 +222,7 @@ const Workflow: React.FC = () => {
   // 更新节点数据
   const changeNode = async (config: ChildNode, update?: boolean | string) => {
     // setIsUpdate(true)
+
     graphRef.current.updateNode(config.id, config);
     const _res = await updateNode(config);
     if (_res.code === Constant.success) {
@@ -267,6 +269,7 @@ const Workflow: React.FC = () => {
     } else {
       if (!visible) setVisible(true);
       setFoldWrapItem(child);
+      getRefernece(child.id);
     }
     if (child.nodeConfig.inputArgs === null) {
       child.nodeConfig.inputArgs = [];
