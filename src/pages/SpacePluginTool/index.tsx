@@ -69,11 +69,9 @@ const SpacePluginTool: React.FC = () => {
     inputConfigArgs,
     setInputConfigArgs,
     outputConfigArgs,
-    setOutputConfigArgs,
     expandedRowKeys,
     setExpandedRowKeys,
     outputExpandedRowKeys,
-    setOutputExpandedRowKeys,
     handleInputValue,
     handleOutputValue,
     handleInputAddChild,
@@ -83,6 +81,7 @@ const SpacePluginTool: React.FC = () => {
     handleConfirmUpdate,
     handleInputConfigAdd,
     handleOutputConfigAdd,
+    handleOutputConfigArgs,
   } = usePluginConfig();
 
   const isClickSaveBtnRef = useRef<boolean>(false);
@@ -106,11 +105,9 @@ const SpacePluginTool: React.FC = () => {
         // 默认展开的入参配置key
         const _expandedRowKeys = getActiveKeys(inputArgs);
         setExpandedRowKeys(_expandedRowKeys);
-        // 默认展开的出参配置key
-        const _outputExpandedRowKeys = getActiveKeys(outputArgs);
-        setOutputExpandedRowKeys(_outputExpandedRowKeys);
         setInputConfigArgs(inputArgs);
-        setOutputConfigArgs(outputArgs);
+        // 设置出参配置以及展开key值
+        handleOutputConfigArgs(outputArgs);
       }
     },
   });
@@ -493,7 +490,7 @@ const SpacePluginTool: React.FC = () => {
             pluginName={pluginInfo?.name as string}
             open={autoAnalysisOpen}
             onCancel={() => setAutoAnalysisOpen(false)}
-            onConfirm={setOutputConfigArgs}
+            onConfirm={handleOutputConfigArgs}
           />
         </div>
       </div>
