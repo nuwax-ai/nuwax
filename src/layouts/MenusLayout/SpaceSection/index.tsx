@@ -1,8 +1,12 @@
+import ConditionRender from '@/components/ConditionRender';
 import { SPACE_APPLICATION_LIST } from '@/constants/space.constants';
+import { apiUserEditAgentList } from '@/services/agentDev';
 import { SpaceApplicationListEnum, SpaceTypeEnum } from '@/types/enums/space';
+import type { AgentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
-import React, { useEffect } from 'react';
-import { history, useLocation, useModel, useParams } from 'umi';
+import React, { useEffect, useState } from 'react';
+import { history, useLocation, useModel, useParams, useRequest } from 'umi';
+import UserRelAgent from '../UserRelAgent';
 import DevCollect from './DevCollect';
 import styles from './index.less';
 import SpaceTitle from './SpaceTitle';
@@ -13,8 +17,19 @@ const SpaceSection: React.FC = () => {
   const location = useLocation();
   const { spaceId } = useParams();
   const { pathname } = location;
+  const [editAgentList, setEditAgentList] = useState<AgentInfo[]>([]);
+
   const { spaceList, currentSpaceInfo, handleCurrentSpaceInfo } =
     useModel('spaceModel');
+
+  // 查询用户最近编辑的智能体列表
+  const { run: runEdit } = useRequest(apiUserEditAgentList, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: AgentInfo[]) => {
+      setEditAgentList(result);
+    },
+  });
 
   useEffect(() => {
     // 根据url地址中的spaceId来重置当前空间信息，因为用户可能手动修改url地址栏中的空间id，也可能是复制来的url
@@ -22,6 +37,12 @@ const SpaceSection: React.FC = () => {
       handleCurrentSpaceInfo(spaceList, Number(spaceId));
     }
   }, [spaceList, spaceId]);
+
+  useEffect(() => {
+    runEdit({
+      size: 8,
+    });
+  }, []);
 
   const handlerApplication = (type: SpaceApplicationListEnum) => {
     switch (type) {
@@ -54,6 +75,12 @@ const SpaceSection: React.FC = () => {
     );
   };
 
+  // 点击进入"工作空间智能体"
+  const handleClick = (info: AgentInfo) => {
+    const { agentId, spaceId } = info;
+    history.push(`/space/${spaceId}/agent/${agentId}`);
+  };
+
   return (
     <div className={cx('h-full', 'px-6', 'py-16', 'overflow-y')}>
       <SpaceTitle />
@@ -84,6 +111,17 @@ const SpaceSection: React.FC = () => {
           );
         })}
       </ul>
+      <ConditionRender condition={editAgentList?.length}>
+        <h3 className={cx(styles['collection-title'])}>最近编辑</h3>
+        {editAgentList?.map((item) => (
+          <UserRelAgent
+            key={item.id}
+            onClick={() => handleClick(item)}
+            icon={item.icon}
+            name={item.name}
+          />
+        ))}
+      </ConditionRender>
       <h3 className={cx(styles['collection-title'])}>开发收藏</h3>
       <DevCollect />
     </div>

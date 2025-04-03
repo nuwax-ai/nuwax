@@ -1,8 +1,8 @@
 import ConditionRender from '@/components/ConditionRender';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
 import {
+  apiUnCollectAgent,
   apiUserCollectAgentList,
-  apiUserEditAgentList,
   apiUserUsedAgentList,
 } from '@/services/agentDev';
 import type { AgentInfo } from '@/types/interfaces/agent';
@@ -10,8 +10,8 @@ import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
+import UserRelAgent from '../UserRelAgent';
 import styles from './index.less';
-import UserRelAgentList from './UserRelAgentList';
 
 const cx = classNames.bind(styles);
 
@@ -19,17 +19,8 @@ const cx = classNames.bind(styles);
  * 主页二级菜单栏
  */
 const HomeSection: React.FC = () => {
-  const [editAgentList, setEditAgentList] = useState<AgentInfo[]>([]);
   const [usedAgentList, setUsedAgentList] = useState<AgentInfo[]>([]);
   const [collectAgentList, setCollectAgentList] = useState<AgentInfo[]>([]);
-  // 查询用户最近编辑的智能体列表
-  const { run: runEdit } = useRequest(apiUserEditAgentList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: AgentInfo[]) => {
-      setEditAgentList(result);
-    },
-  });
 
   // 查询用户最近使用过的智能体列表
   const { run: runUsed } = useRequest(apiUserUsedAgentList, {
@@ -61,45 +52,57 @@ const HomeSection: React.FC = () => {
     },
   );
 
+  // 智能体取消收藏
+  const { run: runUnCollectAgent } = useRequest(apiUnCollectAgent, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (_, params) => {
+      const agentId = params[0];
+      const list =
+        collectAgentList?.filter((item) => item.agentId !== agentId) || [];
+      setCollectAgentList(list);
+    },
+  });
+
   useEffect(() => {
-    runEdit({
-      size: 10,
-    });
     runUsed({
-      size: 10,
+      size: 8,
     });
     runCollect({
       page: 1,
-      size: 10,
+      size: 8,
     });
   }, []);
 
-  const handleClickRecentlyUsed = (info: AgentInfo) => {
+  const handleToChat = (info: AgentInfo) => {
     runConversationCreate({
       agentId: info.agentId,
       devMode: false,
     });
   };
 
-  const handleClick = (info: AgentInfo) => {
-    const { agentId, spaceId } = info;
-    history.push(`/space/${spaceId}/agent/${agentId}`);
-  };
-
   return (
     <div className={cx('px-6', 'py-16')}>
       <h3 className={cx(styles.title)}>最近使用</h3>
-      <UserRelAgentList
-        list={usedAgentList}
-        onClick={handleClickRecentlyUsed}
-      />
-      <ConditionRender condition={editAgentList?.length}>
-        <h3 className={cx(styles.title, 'mt-16')}>最近编辑</h3>
-        <UserRelAgentList list={editAgentList} onClick={handleClick} />
-      </ConditionRender>
+      {usedAgentList?.map((item) => (
+        <UserRelAgent
+          key={item.id}
+          onClick={() => handleToChat(item)}
+          icon={item.icon}
+          name={item.name}
+        />
+      ))}
       <ConditionRender condition={collectAgentList?.length}>
-        <h3 className={cx(styles.title, 'mt-16')}>收藏</h3>
-        <UserRelAgentList list={collectAgentList} onClick={handleClick} />
+        <h3 className={cx(styles.title, 'mt-16')}>我的收藏</h3>
+        {collectAgentList?.map((item) => (
+          <UserRelAgent
+            key={item.id}
+            onClick={() => handleToChat(item)}
+            icon={item.icon}
+            name={item.name}
+            onCancelCollect={() => runUnCollectAgent(item.agentId)}
+          />
+        ))}
       </ConditionRender>
     </div>
   );
