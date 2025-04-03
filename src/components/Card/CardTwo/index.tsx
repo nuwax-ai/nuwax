@@ -1,4 +1,5 @@
-import type { CardProps } from '@/types/interfaces/common';
+import ConditionRender from '@/components/ConditionRender';
+import type { CardProps } from '@/types/interfaces/cardInfo';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -11,8 +12,8 @@ const cx = classNames.bind(styles);
 const CardTwo: React.FC<CardProps> = ({
   className,
   title,
-  desc,
-  img,
+  content,
+  image,
   onClick,
 }) => {
   return (
@@ -21,7 +22,6 @@ const CardTwo: React.FC<CardProps> = ({
         styles.container,
         'flex',
         'flex-col',
-        'hover-box',
         'cursor-pointer',
         className,
       )}
@@ -29,8 +29,10 @@ const CardTwo: React.FC<CardProps> = ({
     >
       <h3>{title}</h3>
       <div className={'flex'}>
-        <p className={'flex-1 text-ellipsis-2'}>{desc}</p>
-        <img className={'radius-6'} src={img} alt="" />
+        <p className={'flex-1 text-ellipsis-2'}>{content}</p>
+        <ConditionRender condition={image}>
+          <img className={'radius-6'} src={image} alt="" />
+        </ConditionRender>
       </div>
     </div>
   );

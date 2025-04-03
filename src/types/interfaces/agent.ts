@@ -108,12 +108,6 @@ export interface BindConfigWithSub {
   children?: BindConfigWithSub[];
 }
 
-export interface PluginBindConfig {
-  cardBindConfig: unknown;
-  inputArgBindConfigs: BindConfigWithSub[];
-  outputArgBindConfigs: unknown[];
-}
-
 // 智能体组件模型基础信息
 export interface AgentComponentBaseInfo {
   // 组件配置ID
@@ -395,9 +389,11 @@ export interface AgentConversationUpdateParams {
   firstMessage: string;
 }
 
+// 卡片列表参数
 export interface ArgList {
   key: string;
   placeholder: string;
+  // 自定义数据，用于页面渲染操作
   [key: string]: React.Key | boolean;
 }
 

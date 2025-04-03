@@ -3,6 +3,7 @@ import ChatInput from '@/components/ChatInput';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
 import { MessageTypeEnum } from '@/types/enums/agent';
+import { EditAgentShowType } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
 import { addBaseTarget } from '@/utils/common';
@@ -11,7 +12,7 @@ import classNames from 'classnames';
 import React, { useEffect, useMemo } from 'react';
 import { useLocation, useModel, useParams } from 'umi';
 import styles from './index.less';
-// import ShowArea from './ShowArea';
+import ShowArea from './ShowArea';
 
 const cx = classNames.bind(styles);
 
@@ -36,9 +37,11 @@ const Chat: React.FC = () => {
     loadingSuggest,
     onMessageSend,
     messageViewRef,
-    // executeResults,
+    executeResults,
     needUpdateTopicRef,
     handleClearSideEffect,
+    setCardList,
+    setShowType,
   } = useModel('conversationInfo');
 
   // 角色信息（名称、头像）
@@ -77,7 +80,9 @@ const Chat: React.FC = () => {
     }
 
     return () => {
+      setShowType(EditAgentShowType.Hide);
       handleClearSideEffect();
+      setCardList([]);
       setMessageList([]);
       needUpdateTopicRef.current = true;
     };
@@ -135,7 +140,7 @@ const Chat: React.FC = () => {
         />
       </div>
       {/*展示台区域*/}
-      {/*<ShowArea executeResults={executeResults} />*/}
+      <ShowArea executeResults={executeResults} />
     </div>
   );
 };

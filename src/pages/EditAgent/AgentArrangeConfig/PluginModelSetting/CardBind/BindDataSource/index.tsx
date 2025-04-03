@@ -94,7 +94,9 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
       if (cardBindConfig?.cardArgsBindConfigs?.length) {
         const list = cardBindConfig?.cardArgsBindConfigs?.map((item) => {
           return {
+            // 字段名
             key: item.key,
+            // 卡片key值
             cardKey: item.bindValue,
           };
         });
