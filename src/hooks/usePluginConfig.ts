@@ -16,6 +16,7 @@ import {
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useState } from 'react';
 import { useParams, useRequest } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
 
 const usePluginConfig = () => {
   const { pluginId } = useParams();
@@ -114,7 +115,7 @@ const usePluginConfig = () => {
   // 入参配置 - 新增参数
   const handleInputAddChild = (key: string) => {
     const newNode = {
-      key: Math.random(),
+      key: uuidv4(),
       ...PLUGIN_INPUT_CONFIG,
     };
 
@@ -131,7 +132,7 @@ const usePluginConfig = () => {
   // 出参配置 - 新增参数
   const handleOutputAddChild = (key: string) => {
     const newNode = {
-      key: Math.random(),
+      key: uuidv4(),
       ...PLUGIN_OUTPUT_CONFIG,
     };
 
@@ -173,7 +174,7 @@ const usePluginConfig = () => {
   const handleInputConfigAdd = () => {
     const _inputConfigArgs = cloneDeep(inputConfigArgs);
     _inputConfigArgs.push({
-      key: Math.random(),
+      key: uuidv4(),
       ...PLUGIN_INPUT_CONFIG,
     });
     setInputConfigArgs(_inputConfigArgs);
@@ -183,7 +184,7 @@ const usePluginConfig = () => {
   const handleOutputConfigAdd = () => {
     const _outputConfigArgs = cloneDeep(outputConfigArgs);
     _outputConfigArgs.push({
-      key: Math.random(),
+      key: uuidv4(),
       ...PLUGIN_OUTPUT_CONFIG,
     });
     setOutputConfigArgs(_outputConfigArgs);

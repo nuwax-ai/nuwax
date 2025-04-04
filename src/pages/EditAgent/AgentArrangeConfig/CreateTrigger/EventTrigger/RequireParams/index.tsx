@@ -13,6 +13,7 @@ import { Input, Select, Space, Table } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { forwardRef, useImperativeHandle, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -25,7 +26,7 @@ const RequireParams: React.FC = forwardRef((_, ref) => {
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
   const [inputData, setInputData] = useState<TriggerRequireInputType[]>([
     {
-      key: Math.random(),
+      key: uuidv4(),
       name: '',
       dataType: DataTypeEnum.String,
       description: '',
@@ -83,7 +84,7 @@ const RequireParams: React.FC = forwardRef((_, ref) => {
     if (!_inputData[index].children) {
       _inputData[index].children = [];
     }
-    const _key = index + Math.random();
+    const _key = index + uuidv4();
     const newData: TriggerRequireInputType = {
       key: _key,
       name: '',

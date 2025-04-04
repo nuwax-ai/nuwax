@@ -28,6 +28,7 @@ import { createSSEConnection } from '@/utils/fetchEventSource';
 import { useRequest } from 'ahooks';
 import moment from 'moment/moment';
 import { useCallback, useRef, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 export default () => {
   // 会话信息
@@ -287,11 +288,11 @@ export default () => {
       text: message,
       time: moment(),
       attachments,
-      id: Math.random(),
+      id: uuidv4(),
       messageType: MessageTypeEnum.USER,
     };
 
-    const currentMessageId = Math.random();
+    const currentMessageId = uuidv4();
     // 当前助手信息
     const currentMessage = {
       role: AssistantRoleEnum.ASSISTANT,

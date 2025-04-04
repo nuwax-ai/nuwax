@@ -6,6 +6,7 @@ import { Button, Input, message, Modal, Space, Table } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -26,7 +27,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       const _variables = variables.map((item) => {
         return {
           ...item,
-          key: Math.random(),
+          key: uuidv4(),
         };
       });
       setInputData(_variables);
@@ -54,7 +55,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
 
   const handleAddChildren = () => {
     const data = {
-      key: Math.random(),
+      key: uuidv4(),
       name: '',
       description: '',
       systemVariable: false,

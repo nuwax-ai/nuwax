@@ -11,6 +11,7 @@ import { Button, Input, Modal, Space, Table } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 import ParamsNameLabel from './ParamsNameLabel';
 
@@ -42,7 +43,7 @@ const PluginAutoAnalysis: React.FC<PluginAutoAnalysisProps> = ({
           // 如果配置项key值为null, 添加随机值
           const list = result.map((item) => {
             if (!item.key) {
-              item.key = Math.random();
+              item.key = uuidv4();
             }
             return item;
           });
@@ -62,7 +63,7 @@ const PluginAutoAnalysis: React.FC<PluginAutoAnalysisProps> = ({
       return arr.map((node) => {
         const { dataType, subArgs } = node;
         if (dataType === DataTypeEnum.Array_Object) {
-          const key = Math.random();
+          const key = uuidv4();
           keys.push(key);
           // 子级数组长度大于0
           if (subArgs && subArgs.length > 0) {
@@ -122,7 +123,7 @@ const PluginAutoAnalysis: React.FC<PluginAutoAnalysisProps> = ({
         // 更新下级
         const newSub: BindConfigWithSub[] =
           data.subArgs?.map((item) => {
-            const subKey = Math.random();
+            const subKey = uuidv4();
             // 不存在下级
             if (!item.subArgs?.length) {
               return {
@@ -136,7 +137,7 @@ const PluginAutoAnalysis: React.FC<PluginAutoAnalysisProps> = ({
             }
           }) || [];
         // 更新父级key， 并加入active keys
-        const newDataKey = Math.random();
+        const newDataKey = uuidv4();
         keys.push(newDataKey);
         return {
           ...data,
@@ -148,7 +149,7 @@ const PluginAutoAnalysis: React.FC<PluginAutoAnalysisProps> = ({
       // 不存在subArgs
       return {
         ...data,
-        key: Math.random(),
+        key: uuidv4(),
       };
     };
 
@@ -171,7 +172,7 @@ const PluginAutoAnalysis: React.FC<PluginAutoAnalysisProps> = ({
       const addDataType = dataType?.toString()?.split('_')?.[1] as DataTypeEnum;
       newNode = {
         ...PLUGIN_INPUT_CONFIG,
-        key: Math.random(),
+        key: uuidv4(),
         name: ARRAY_ITEM,
         dataType: addDataType,
       };

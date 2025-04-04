@@ -3,6 +3,7 @@ import { DataTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import omit from 'lodash/omit';
 import React from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 // 递归计算节点深度
 export const getNodeDepth = (
@@ -98,7 +99,7 @@ export const updateNodeField = (
             [DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(value)
           ) {
             const newNode = {
-              key: Math.random(),
+              key: uuidv4(),
               ...PLUGIN_INPUT_CONFIG,
             };
             node.subArgs = [newNode];

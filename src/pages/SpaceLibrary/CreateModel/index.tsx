@@ -35,6 +35,7 @@ import {
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 import IntranetModel from './IntranetModel';
 import IntranetServerCommand from './IntranetServerCommand';
@@ -62,7 +63,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
   // 入参源数据
   const [apiInfoList, setApiInfoList] = useState<ModelConfigDataType[]>([
     {
-      key: Math.random(),
+      key: uuidv4(),
       [ModelApiInfoColumnNameEnum.Url]: '',
       [ModelApiInfoColumnNameEnum.Apikey]: '',
       [ModelApiInfoColumnNameEnum.Weight]: '',
@@ -86,7 +87,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
       });
       const _apiInfoList =
         result?.apiInfoList?.map((item) => ({
-          key: Math.random(),
+          key: uuidv4(),
           url: item.url,
           apikey: item.key,
           weight: item.weight,
@@ -148,7 +149,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
   const handleAdd = () => {
     const _apiInfoList = [...apiInfoList];
     _apiInfoList.push({
-      key: Math.random(),
+      key: uuidv4(),
       [ModelApiInfoColumnNameEnum.Url]: '',
       [ModelApiInfoColumnNameEnum.Apikey]: '',
       [ModelApiInfoColumnNameEnum.Weight]: '',
