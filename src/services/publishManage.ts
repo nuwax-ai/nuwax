@@ -31,7 +31,8 @@ export async function apiPassAudit(data: {
 
 // 审核拒绝
 export async function apiRejectAudit(data: {
-  id: number;
+  id: number | undefined;
+  reason: string;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/publish/reject/${data.id}`, {
     method: 'POST',
@@ -51,7 +52,8 @@ export async function apiPublishList(
 
 // 下架
 export async function apiOffShelf(data: {
-  id: number;
+  id: number | undefined;
+  reason: string;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/publish/offShelf/${data.id}`, {
     method: 'POST',

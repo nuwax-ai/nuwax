@@ -1,14 +1,15 @@
-import { apiOffShelf, apiPublishList } from '@/services/publishManage';
+import { apiPublishList } from '@/services/publishManage';
 import styles from '@/styles/systemManage.less';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { PublishListInfo } from '@/types/interfaces/publishManage';
 import { transformTDate } from '@/utils/getTime';
 import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Button, Input, Modal, Select, Table, message } from 'antd';
+import { Button, Input, Select, Table } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { history } from 'umi';
+import OffshelfModal from './components/OffshelfModal';
 
 const cx = classNames.bind(styles);
 
@@ -23,9 +24,8 @@ const PublishManage: React.FC = () => {
   const [selectedValue, setSelectedValue] = useState('');
   const [inputValue, setInputValue] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [discardLoadingMap, setDiscardLoadingMap] = useState<
-    Record<number, boolean>
-  >({});
+  const [openOffshelfModal, setOpenOffshelfModal] = useState(false);
+  const [offshelfId, setOffshelfId] = useState<number>();
 
   const { data, run, refresh, loading } = useRequest(apiPublishList, {
     debounceWait: 300,
@@ -76,30 +76,9 @@ const PublishManage: React.FC = () => {
     run(params);
   };
 
-  const { run: runOffShelf } = useRequest(apiOffShelf, {
-    manual: true,
-    loadingDelay: 300,
-    onBefore: (params) => {
-      setDiscardLoadingMap((prev) => ({ ...prev, [params[0].id]: true }));
-    },
-    onSuccess: () => {
-      message.success('下架成功');
-      refresh();
-    },
-    onFinally: (params) => {
-      setDiscardLoadingMap((prev) => ({ ...prev, [params[0].id]: false }));
-    },
-  });
-
-  const discard = async (id: number) => {
-    Modal.confirm({
-      title: '确认下架',
-      content: '您确定要下架吗？',
-      okText: '确定',
-      cancelText: '取消',
-      onOk: runOffShelf.bind(null, { id }),
-      onCancel: () => {},
-    });
+  const discard = (id: number) => {
+    setOffshelfId(id);
+    setOpenOffshelfModal(true);
   };
 
   const handleView = (record: PublishListInfo) => {
@@ -196,7 +175,6 @@ const PublishManage: React.FC = () => {
           <Button
             type="link"
             className={cx(styles['table-action-ant-btn-link'])}
-            loading={discardLoadingMap[record.id] || false}
             onClick={() => discard(record.id)}
           >
             下架
@@ -244,6 +222,15 @@ const PublishManage: React.FC = () => {
           total: data?.data.total,
           onChange: handleTableChange,
           showTotal: (total) => `共 ${total} 条`,
+        }}
+      />
+      <OffshelfModal
+        open={openOffshelfModal}
+        id={offshelfId}
+        onCancel={() => setOpenOffshelfModal(false)}
+        onConfirm={() => {
+          setOpenOffshelfModal(false);
+          refresh();
         }}
       />
     </div>

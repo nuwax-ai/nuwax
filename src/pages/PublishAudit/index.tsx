@@ -1,8 +1,4 @@
-import {
-  apiPassAudit,
-  apiPublishApplyList,
-  apiRejectAudit,
-} from '@/services/publishManage';
+import { apiPassAudit, apiPublishApplyList } from '@/services/publishManage';
 import styles from '@/styles/systemManage.less';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
@@ -14,7 +10,7 @@ import { Button, Input, Select, Table, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { history } from 'umi';
-
+import RejectAuditModal from './components/RejectAuditModal';
 const cx = classNames.bind(styles);
 
 const selectOptions = [
@@ -41,9 +37,6 @@ const PublishAudit: React.FC = () => {
   const [passLoadingMap, setPassLoadingMap] = useState<Record<number, boolean>>(
     {},
   );
-  const [rejectLoadingMap, setRejectLoadingMap] = useState<
-    Record<number, boolean>
-  >({});
 
   const { data, run, refresh, loading } = useRequest(apiPublishApplyList, {
     debounceWait: 300,
@@ -128,21 +121,14 @@ const PublishAudit: React.FC = () => {
       setPassLoadingMap((prev) => ({ ...prev, [params[0].id]: false }));
     },
   });
-  const { run: runRejectAudit } = useRequest(apiRejectAudit, {
-    manual: true,
-    loadingDelay: 300,
-    onBefore: (params) => {
-      setRejectLoadingMap((prev) => ({ ...prev, [params[0].id]: true }));
-    },
-    onSuccess: () => {
-      message.success('拒绝审核成功');
-      refresh();
-    },
-    onFinally: (params) => {
-      setRejectLoadingMap((prev) => ({ ...prev, [params[0].id]: false }));
-    },
-  });
 
+  const [openRejectAuditModal, setOpenRejectAuditModal] = useState(false);
+  const [rejectAuditId, setRejectAuditId] = useState<number>();
+
+  const handleRejectAudit = (id: number) => {
+    setRejectAuditId(id);
+    setOpenRejectAuditModal(true);
+  };
   const handleView = (record: PublishApplyListInfo) => {
     if (record.targetType === SquareAgentTypeEnum.Agent) {
       history.push(
@@ -264,8 +250,7 @@ const PublishAudit: React.FC = () => {
               <Button
                 type="link"
                 className={cx(styles['table-action-ant-btn-link'])}
-                loading={rejectLoadingMap[record.id] || false}
-                onClick={() => runRejectAudit({ id: record.id })}
+                onClick={() => handleRejectAudit(record.id)}
               >
                 拒绝
               </Button>
@@ -328,6 +313,15 @@ const PublishAudit: React.FC = () => {
           total: data?.data.total,
           onChange: handleTableChange,
           showTotal: (total) => `共 ${total} 条`,
+        }}
+      />
+      <RejectAuditModal
+        open={openRejectAuditModal}
+        id={rejectAuditId}
+        onCancel={() => setOpenRejectAuditModal(false)}
+        onConfirm={() => {
+          setOpenRejectAuditModal(false);
+          refresh();
         }}
       />
     </div>
