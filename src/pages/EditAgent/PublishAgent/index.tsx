@@ -56,7 +56,14 @@ const PublishAgent: React.FC<PublishAgentProps> = ({
       onConfirm={handlerConfirm}
       onCancel={onCancel}
     >
-      <Form form={form} layout="vertical" onFinish={onFinish}>
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{
+          channels: ['Square'],
+        }}
+        onFinish={onFinish}
+      >
         <Form.Item name="channels" label="发布渠道">
           <Checkbox.Group
             options={[
