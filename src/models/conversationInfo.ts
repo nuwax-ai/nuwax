@@ -87,9 +87,13 @@ export default () => {
     manual: true,
     debounceWait: 300,
     onSuccess: (result) => {
-      setConversationInfo(result?.data);
-      setIsSuggest(result?.data?.agent?.openSuggest === OpenCloseEnum.Open);
-      setMessageList(result.data?.messageList || []);
+      const { data } = result;
+      setConversationInfo(data);
+      // 是否开启用户问题建议
+      setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
+      setMessageList(data?.messageList || []);
+      // 开场白预置问题
+      setChatSuggestList(data?.agent?.openingGuidQuestions || []);
       handleScrollBottom();
     },
   });
