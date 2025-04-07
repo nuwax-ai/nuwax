@@ -5,6 +5,7 @@ import {
   SearchStrategyEnum,
   TriggerTypeEnum,
 } from '@/types/enums/agent';
+import { UpdateModeComponentEnum } from '@/types/enums/library';
 import { BindCardStyleEnum } from '@/types/enums/plugin';
 import { InfoCircleOutlined } from '@ant-design/icons';
 
@@ -97,3 +98,31 @@ export const BIND_CARD_STYLE_LIST = [
     label: '竖向列表',
   },
 ];
+
+// 生产多样性
+export const GENERATE_DIVERSITY_OPTION_VALUE = {
+  // 精确模式
+  [UpdateModeComponentEnum.Precision]: {
+    // 生成随机性;0-1
+    temperature: 0.1,
+    // 累计概率: 模型在生成输出时会从概率最高的词汇开始选择;0-1
+    topP: 0.7,
+    contextRounds: 100,
+    // 最大生成长度
+    maxTokens: 1024,
+  },
+  // 平衡模式
+  [UpdateModeComponentEnum.Balanced]: {
+    temperature: 1.0,
+    topP: 0.7,
+    contextRounds: 100,
+    maxTokens: 1024,
+  },
+  // 创意模式
+  [UpdateModeComponentEnum.Creative]: {
+    temperature: 1.0,
+    topP: 0.8,
+    contextRounds: 100,
+    maxTokens: 1024,
+  },
+};

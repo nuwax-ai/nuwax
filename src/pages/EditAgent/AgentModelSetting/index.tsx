@@ -1,6 +1,7 @@
 import LabelIcon from '@/components/LabelIcon';
 import SelectList from '@/components/SelectList';
 import SliderNumber from '@/components/SliderNumber';
+import { GENERATE_DIVERSITY_OPTION_VALUE } from '@/constants/agent.constants';
 import { apiAgentComponentModelUpdate } from '@/services/agentConfig';
 import { apiModelList } from '@/services/modelConfig';
 import { UpdateModeComponentEnum } from '@/types/enums/library';
@@ -10,7 +11,6 @@ import type { AgentModelSettingProps } from '@/types/interfaces/agentConfig';
 import { option } from '@/types/interfaces/common';
 import type { ModelConfigInfo } from '@/types/interfaces/model';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import type { InputNumberProps } from 'antd';
 import { Modal, Segmented } from 'antd';
 import classnames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
@@ -35,10 +35,14 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   // 绑定组件配置，不同组件配置不一样
   const [componentBindConfig, setComponentBindConfig] =
     useState<ComponentModelBindConfig>({
+      // 上下文轮数
       contextRounds: 0,
+      // 最大生成长度
       maxTokens: 0,
       mode: UpdateModeComponentEnum.Precision,
+      // 生成随机性;0-1
       temperature: 0,
+      // 累计概率: 模型在生成输出时会从概率最高的词汇开始选择;0-1
       topP: 0,
     });
   const componentIdRef = useRef<number>(0);
@@ -102,56 +106,34 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
     onSelectMode(value, label);
   };
 
-  // 模式
-  const handleChangeMode = (newValue) => {
-    const _componentBindConfig = {
-      ...componentBindConfig,
-      mode: newValue,
-    } as ComponentModelBindConfig;
+  // 生成多样性
+  const handleChangeGenerateDiversity = (newValue: UpdateModeComponentEnum) => {
+    let _componentBindConfig: ComponentModelBindConfig;
+    // 自定义
+    if (newValue === UpdateModeComponentEnum.Customization) {
+      _componentBindConfig = {
+        ...componentBindConfig,
+        mode: newValue,
+      };
+    } else {
+      // 默认值
+      _componentBindConfig = {
+        ...GENERATE_DIVERSITY_OPTION_VALUE[newValue],
+        mode: newValue,
+      };
+    }
+
     setComponentBindConfig(_componentBindConfig);
     handleChangeModel(_componentBindConfig);
   };
 
-  // 生成随机性;0-1
-  const handleChangeTemp: InputNumberProps['onChange'] = (newValue) => {
-    const _componentBindConfig = {
+  // 更新模型组件配置
+  const handleChange = (newValue: React.Key, attr: string) => {
+    const _componentBindConfig: ComponentModelBindConfig = {
       ...componentBindConfig,
-      temperature: newValue,
-    } as ComponentModelBindConfig;
-    setComponentBindConfig(_componentBindConfig);
-    handleChangeModel(_componentBindConfig);
-  };
-
-  // 累计概率: 模型在生成输出时会从概率最高的词汇开始选择;0-1
-  const handleChangeTopP: InputNumberProps['onChange'] = (newValue: string) => {
-    const _componentBindConfig = {
-      ...componentBindConfig,
-      topP: newValue,
-    } as ComponentModelBindConfig;
-    setComponentBindConfig(_componentBindConfig);
-    handleChangeModel(_componentBindConfig);
-  };
-
-  // 最大生成长度
-  const handleChangeMaxTokens: InputNumberProps['onChange'] = (
-    newValue: string,
-  ) => {
-    const _componentBindConfig = {
-      ...componentBindConfig,
-      maxTokens: newValue,
-    } as ComponentModelBindConfig;
-    setComponentBindConfig(_componentBindConfig);
-    handleChangeModel(_componentBindConfig);
-  };
-
-  // 上下文轮数
-  const handleChangeContextRounds: InputNumberProps['onChange'] = (
-    newValue: string,
-  ) => {
-    const _componentBindConfig = {
-      ...componentBindConfig,
-      contextRounds: newValue,
-    } as ComponentModelBindConfig;
+      [attr]: Number(newValue),
+      mode: UpdateModeComponentEnum.Customization,
+    };
     setComponentBindConfig(_componentBindConfig);
     handleChangeModel(_componentBindConfig);
   };
@@ -188,7 +170,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
         ]}
         rootClassName={cx('mb-16')}
         value={componentBindConfig?.mode}
-        onChange={handleChangeMode}
+        onChange={handleChangeGenerateDiversity}
         block
       />
       {/*生成随机性;0-1*/}
@@ -202,7 +184,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           max={1}
           step={0.1}
           value={componentBindConfig?.temperature as string}
-          onChange={handleChangeTemp}
+          onChange={(value) => handleChange(value, 'temperature')}
         />
       </div>
       {/*累计概率: 模型在生成输出时会从概率最高的词汇开始选择;0-1*/}
@@ -216,7 +198,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           max={1}
           step={0.1}
           value={componentBindConfig?.topP as string}
-          onChange={handleChangeTopP}
+          onChange={(value) => handleChange(value, 'topP')}
         />
       </div>
       <h3 className={cx(styles.title)}>输入及输出设置</h3>
@@ -231,7 +213,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           max={100}
           step={1}
           value={componentBindConfig?.contextRounds as string}
-          onChange={handleChangeContextRounds}
+          onChange={(value) => handleChange(value, 'contextRounds')}
         />
       </div>
       {/*最大生成长度*/}
@@ -245,7 +227,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           max={4096}
           step={1}
           value={componentBindConfig?.maxTokens as string}
-          onChange={handleChangeMaxTokens}
+          onChange={(value) => handleChange(value, 'maxTokens')}
         />
       </div>
     </Modal>
