@@ -57,7 +57,9 @@ const UserOperateArea: React.FC<UserOperateAreaType> = ({ onClick }) => {
       key={index}
       placement="right"
       color={'#fff'}
-      overlayInnerStyle={{ color: '#000' }}
+      styles={{
+        body: { color: '#000' },
+      }}
       title={item.title}
     >
       <div

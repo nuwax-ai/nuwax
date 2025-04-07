@@ -3,16 +3,17 @@ import {
   apiKnowledgeConfigDetail,
   apiKnowledgeDocumentDelete,
   apiKnowledgeDocumentList,
-  apiKnowledgeRawSegmentList,
 } from '@/services/knowledge';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { KnowledgeTextImportEnum } from '@/types/enums/library';
+import {
+  KnowledgeDocStatusEnum,
+  KnowledgeTextImportEnum,
+} from '@/types/enums/library';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type {
   KnowledgeBaseInfo,
   KnowledgeDocumentInfo,
   KnowledgeInfo,
-  KnowledgeRawSegmentInfo,
 } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
 import { ExclamationCircleFilled } from '@ant-design/icons';
@@ -50,10 +51,6 @@ const SpaceKnowledge: React.FC = () => {
     useState<KnowledgeDocumentInfo>(null);
   // 所有的文档列表, 用于搜索
   const documentListRef = useRef<KnowledgeDocumentInfo[]>([]);
-  // 知识库文档分段信息
-  const [rawSegmentInfoList, setRawSegmentInfoList] = useState<
-    KnowledgeRawSegmentInfo[]
-  >([]);
 
   // 知识库基础配置接口 - 数据详情查询
   const { run } = useRequest(apiKnowledgeConfigDetail, {
@@ -61,15 +58,6 @@ const SpaceKnowledge: React.FC = () => {
     debounceInterval: 300,
     onSuccess: (result: KnowledgeInfo) => {
       setKnowledgeInfo(result);
-    },
-  });
-
-  // 知识库分段配置 - 数据列表查询
-  const { run: runRawSegmentList } = useRequest(apiKnowledgeRawSegmentList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: Page<KnowledgeRawSegmentInfo>) => {
-      setRawSegmentInfoList(result.records);
     },
   });
 
@@ -87,21 +75,24 @@ const SpaceKnowledge: React.FC = () => {
         if (!currentDocumentInfo) {
           // 取文档列表第一项作为当前文档信息
           const firstDocumentInfo = records[0];
-          const id = firstDocumentInfo.id;
           setCurrentDocumentInfo(firstDocumentInfo);
-          // 知识库分段配置 - 数据列表查询
-          runRawSegmentList({
-            queryFilter: {
-              spaceId,
-              docId: id,
-            },
-            current: 1,
-            pageSize: 100,
-          });
         }
       }
     },
   });
+
+  // 文档数据列表查询
+  const handleDocList = (kbId: number, current: number = 1) => {
+    runDocList({
+      queryFilter: {
+        spaceId,
+        kbId,
+        name: '',
+      },
+      current,
+      pageSize: 100,
+    });
+  };
 
   // 删除文档后，更新文档列表以及分段信息
   const handleDocDelete = (delDocId: number) => {
@@ -114,24 +105,12 @@ const SpaceKnowledge: React.FC = () => {
     documentListRef.current = _documentList;
     // 删除文档后， 新的文档列表是否为空
     if (_documentList?.length > 0) {
-      // 默认第一项文档为当前文档
-      setCurrentDocumentInfo(_documentList[0]);
-      // 文档ID
-      const id = _documentList[0].id;
-      // 知识库分段配置 - 数据列表查询
-      runRawSegmentList({
-        queryFilter: {
-          spaceId,
-          docId: id,
-        },
-        current: 1,
-        pageSize: 100,
-      });
+      // 取文档列表第一项作为当前文档信息
+      const firstDocumentInfo = _documentList[0];
+      setCurrentDocumentInfo(firstDocumentInfo);
     } else {
       // 文档列表为空时, 文档信息重置为空
       setCurrentDocumentInfo(null);
-      // 文档分段数组清空
-      setRawSegmentInfoList([]);
     }
   };
 
@@ -151,15 +130,7 @@ const SpaceKnowledge: React.FC = () => {
     // 查询知识库数据详情查询
     run(knowledgeId);
     // 文档数据列表查询
-    runDocList({
-      queryFilter: {
-        spaceId,
-        kbId: knowledgeId,
-        name: '',
-      },
-      current: 1,
-      pageSize: 100,
-    });
+    handleDocList(knowledgeId);
   }, [knowledgeId]);
 
   // 点击添加内容下拉
@@ -186,15 +157,8 @@ const SpaceKnowledge: React.FC = () => {
   // 添加内容-确认
   const handleConfirm = () => {
     setOpen(false);
-    runDocList({
-      queryFilter: {
-        spaceId,
-        kbId: knowledgeId,
-        name: '',
-      },
-      current: 1,
-      pageSize: 100,
-    });
+    // 文档数据列表查询
+    handleDocList(knowledgeId);
   };
 
   // 知识库新增确认事件
@@ -204,26 +168,22 @@ const SpaceKnowledge: React.FC = () => {
     setKnowledgeInfo(_knowledgeInfo);
   };
 
-  // 点击文档
-  const handleClickDoc = (info: KnowledgeDocumentInfo) => {
-    const { id } = info;
-    // 当前文档信息
-    setCurrentDocumentInfo(info);
-    runRawSegmentList({
-      queryFilter: {
-        spaceId,
-        docId: id,
-      },
-      current: 1,
-      pageSize: 100,
-    });
-  };
-
   // 搜索
   const handleQueryDoc = (value: string) => {
     const list = documentListRef.current.filter((item) =>
       item.name.includes(value),
     );
+    setDocumentList(list);
+  };
+
+  // 设置分析成功
+  const handleSetAnalyzed = (id: number) => {
+    const list = documentList.map((item) => {
+      if (item.id === id) {
+        item.docStatus = KnowledgeDocStatusEnum.ANALYZED;
+      }
+      return item;
+    });
     setDocumentList(list);
   };
 
@@ -246,16 +206,15 @@ const SpaceKnowledge: React.FC = () => {
   // 修改文档名称成功后更新state
   const handleSuccessUpdateName = (id: number, name: string) => {
     // 修改当前文档名称
-    const _documentInfo = { ...currentDocumentInfo };
-    _documentInfo.name = name;
+    const _documentInfo = {
+      ...currentDocumentInfo,
+      name,
+    };
     setCurrentDocumentInfo(_documentInfo);
     // 修改文档列表中当前文档名称
-    const _documentList = [...documentList].map((info) => {
+    const _documentList = documentList.map((info) => {
       if (info.id === id) {
-        return {
-          ...info,
-          name,
-        };
+        info.name = name;
       }
       return info;
     });
@@ -283,15 +242,15 @@ const SpaceKnowledge: React.FC = () => {
         <DocWrap
           currentDocId={currentDocumentInfo?.id}
           documentList={documentList}
-          onClick={handleClickDoc}
+          onClick={setCurrentDocumentInfo}
           onChange={handleQueryDoc}
+          onSetAnalyzed={handleSetAnalyzed}
         />
         {/*文件信息*/}
         <RawSegmentInfo
           documentInfo={currentDocumentInfo}
           onDel={handleDocDel}
           onSuccessUpdateName={handleSuccessUpdateName}
-          rawSegmentInfoList={rawSegmentInfoList}
         />
       </div>
       {/*本地文档弹窗*/}

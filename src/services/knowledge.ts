@@ -152,6 +152,24 @@ export async function apiKnowledgeDocumentAdd(
   });
 }
 
+// 知识库文档配置 - 重试最近x天的失败任务,如果有分段,问答,向量化有失败的话
+export async function apiDocRetryAllTaskByDays(
+  days: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/knowledge/document/doc/retryAllTaskByDays/${days}`, {
+    method: 'GET',
+  });
+}
+
+// 知识库文档配置 - 根据文件id,自动重试,如果有分段,问答,向量化有失败的话
+export async function apiDocAutoRetryTaskByDocId(
+  docId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/knowledge/document/doc/autoRetryTaskByDocId/${docId}`, {
+    method: 'GET',
+  });
+}
+
 // 知识库文档配置 - 数据详情查询
 export async function apiKnowledgeDocumentDetail(
   dataId: number,

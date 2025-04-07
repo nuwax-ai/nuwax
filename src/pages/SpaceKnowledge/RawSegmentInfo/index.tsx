@@ -1,18 +1,27 @@
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/TooltipIcon';
-import { apiKnowledgeDocumentUpdateDocName } from '@/services/knowledge';
+import {
+  apiKnowledgeDocumentUpdateDocName,
+  apiKnowledgeRawSegmentList,
+} from '@/services/knowledge';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
-import type { RawSegmentInfoProps } from '@/types/interfaces/knowledge';
+import { KnowledgeDocStatusEnum } from '@/types/enums/library';
+import type {
+  KnowledgeRawSegmentInfo,
+  RawSegmentInfoProps,
+} from '@/types/interfaces/knowledge';
+import type { Page } from '@/types/interfaces/request';
 import { customizeRequiredNoStarMark } from '@/utils/form';
 import {
   DeleteOutlined,
   FileSearchOutlined,
   FormOutlined,
+  LoadingOutlined,
 } from '@ant-design/icons';
 import { Button, Empty, Form, FormProps, Input, message, Popover } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { useParams, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -24,10 +33,54 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
   onDel,
   onSuccessUpdateName,
   documentInfo,
-  rawSegmentInfoList,
 }) => {
+  const { spaceId } = useParams();
   const [form] = Form.useForm();
   const [hovered, setHovered] = useState<boolean>(false);
+
+  // 知识库文档分段信息
+  const [rawSegmentInfoList, setRawSegmentInfoList] = useState<
+    KnowledgeRawSegmentInfo[]
+  >([]);
+
+  // 知识库分段配置 - 数据列表查询
+  const { run: runRawSegmentList, loading } = useRequest(
+    apiKnowledgeRawSegmentList,
+    {
+      manual: true,
+      debounceInterval: 300,
+      // 设置显示 loading 的延迟时间，避免闪烁
+      loadingDelay: 300,
+      onSuccess: (result: Page<KnowledgeRawSegmentInfo>) => {
+        setRawSegmentInfoList(result.records);
+      },
+    },
+  );
+
+  // 知识库分段配置 - 数据列表查询
+  const handleRawSegmentList = (docId: number, current: number = 1) => {
+    runRawSegmentList({
+      queryFilter: {
+        spaceId,
+        docId,
+      },
+      current,
+      pageSize: 100,
+    });
+  };
+
+  useEffect(() => {
+    if (!!documentInfo) {
+      const { id, docStatus } = documentInfo;
+      if (docStatus === KnowledgeDocStatusEnum.ANALYZED) {
+        // 知识库分段配置 - 数据列表查询
+        handleRawSegmentList(id);
+      }
+    } else {
+      // 文档分段数组清空
+      setRawSegmentInfoList([]);
+    }
+  }, [documentInfo]);
 
   // const handleChange = (checked: boolean) => {
   //   console.log(`switch to ${checked}`);
@@ -125,7 +178,21 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
           </div>
         </ConditionRender>
       </header>
-      {rawSegmentInfoList?.length > 0 ? (
+      {loading ||
+      documentInfo?.docStatus === KnowledgeDocStatusEnum.ANALYZING ? (
+        <div
+          className={cx(
+            'flex',
+            'flex-1',
+            'items-center',
+            'content-center',
+            styles['loading-box'],
+          )}
+        >
+          <LoadingOutlined />
+          <span>加载中...</span>
+        </div>
+      ) : rawSegmentInfoList?.length > 0 ? (
         <ul className={cx('px-16', 'py-16', 'flex-1', 'overflow-y')}>
           {rawSegmentInfoList?.map((info) => (
             <li key={info.id} className={cx(styles.line, 'radius-6')}>

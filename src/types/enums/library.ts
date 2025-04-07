@@ -41,7 +41,7 @@ export enum KnowledgeTextStepEnum {
   Data_Processing,
 }
 
-// 更新模型组件配置
+// 更新模型组件配置 - 模式
 export enum UpdateModeComponentEnum {
   // 精确模式
   Precision = 'Precision',
@@ -85,4 +85,14 @@ export enum KnowledgeSegmentIdentifierEnum {
   English_Question_Mark = '?',
   // 自定义
   Custom = 'Custom',
+}
+
+// 知识库文档状态,1:分析中;2:分析成功;10:分析失败;,可用值:ANALYZING,ANALYZED,ANALYZE_FAILED
+export enum KnowledgeDocStatusEnum {
+  // 分析中
+  ANALYZING = 'ANALYZING',
+  // 分析成功
+  ANALYZED = 'ANALYZED',
+  // 分析失败
+  ANALYZE_FAILED = 'ANALYZE_FAILED',
 }

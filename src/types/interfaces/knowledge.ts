@@ -4,6 +4,7 @@ import type {
   KnowledgeSegmentTypeEnum,
   KnowledgeTextImportEnum,
 } from '@/types/enums/library';
+import { KnowledgeDocStatusEnum } from '@/types/enums/library';
 import type {
   CustomPopoverItem,
   FileType,
@@ -187,6 +188,7 @@ export interface KnowledgeDocumentInfo {
   hasEmbedding: boolean;
   // 分段配置
   segment: SegmentConfigModel;
+  // 所属空间ID
   spaceId: number;
   // 创建时间
   created: string;
@@ -200,6 +202,14 @@ export interface KnowledgeDocumentInfo {
   modifiedId: number;
   // 最后修改人
   modifiedName: string;
+  // 知识库文档状态,1:分析中;2:分析成功;10:分析失败;,可用值:ANALYZING,ANALYZED,ANALYZE_FAILED
+  docStatus: KnowledgeDocStatusEnum;
+  // 知识库文档状态
+  docStatusCode: number;
+  // 知识库文档状态描述
+  docStatusDesc: string;
+  // 知识库文档状态原因
+  docStatusReason: string;
 }
 
 // 知识库文档配置 - 自定义新增接口
@@ -411,6 +421,7 @@ export interface DocWrapProps {
   documentList: KnowledgeDocumentInfo[];
   onChange: (value: string) => void;
   onClick: (info: KnowledgeDocumentInfo) => void;
+  onSetAnalyzed: (id: number) => void;
 }
 
 // 分段信息
@@ -418,7 +429,6 @@ export interface RawSegmentInfoProps {
   onDel: () => void;
   onSuccessUpdateName: (id: number, name: string) => void;
   documentInfo: KnowledgeDocumentInfo;
-  rawSegmentInfoList: KnowledgeRawSegmentInfo[];
 }
 
 // 本地文档弹窗组件

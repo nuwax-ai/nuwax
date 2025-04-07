@@ -1,7 +1,10 @@
 import LabelIcon from '@/components/LabelIcon';
 import SelectList from '@/components/SelectList';
 import SliderNumber from '@/components/SliderNumber';
-import { GENERATE_DIVERSITY_OPTION_VALUE } from '@/constants/agent.constants';
+import {
+  GENERATE_DIVERSITY_OPTION_VALUE,
+  GENERATE_DIVERSITY_OPTIONS,
+} from '@/constants/agent.constants';
 import { apiAgentComponentModelUpdate } from '@/services/agentConfig';
 import { apiModelList } from '@/services/modelConfig';
 import { UpdateModeComponentEnum } from '@/types/enums/library';
@@ -162,12 +165,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
         <InfoCircleOutlined />
       </h3>
       <Segmented<UpdateModeComponentEnum>
-        options={[
-          { label: '精确模式', value: UpdateModeComponentEnum.Precision },
-          { label: '平衡模式', value: UpdateModeComponentEnum.Balanced },
-          { label: '创意模式', value: UpdateModeComponentEnum.Creative },
-          { label: '自定义', value: UpdateModeComponentEnum.Customization },
-        ]}
+        options={GENERATE_DIVERSITY_OPTIONS}
         rootClassName={cx('mb-16')}
         value={componentBindConfig?.mode}
         onChange={handleChangeGenerateDiversity}

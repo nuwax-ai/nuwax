@@ -99,6 +99,14 @@ export const BIND_CARD_STYLE_LIST = [
   },
 ];
 
+// 生成多样性选项
+export const GENERATE_DIVERSITY_OPTIONS = [
+  { label: '精确模式', value: UpdateModeComponentEnum.Precision },
+  { label: '平衡模式', value: UpdateModeComponentEnum.Balanced },
+  { label: '创意模式', value: UpdateModeComponentEnum.Creative },
+  { label: '自定义', value: UpdateModeComponentEnum.Customization },
+];
+
 // 生产多样性
 export const GENERATE_DIVERSITY_OPTION_VALUE = {
   // 精确模式

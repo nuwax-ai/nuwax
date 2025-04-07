@@ -1,3 +1,4 @@
+import { GENERATE_DIVERSITY_OPTIONS } from '@/constants/agent.constants';
 import service from '@/services/workflow';
 import type {
   GroupModelItem,
@@ -114,13 +115,6 @@ export const GroupedOptionSelect: React.FC<GroupModelListItemProps> = ({
   );
 };
 
-const options = [
-  { label: '精确模式', value: 'Precision' },
-  { label: '平衡模式', value: 'Balanced' },
-  { label: '创意模式', value: 'Creative' },
-  { label: '自定义', value: 'Customization' },
-];
-
 const typeOptionValue = {
   Precision: {
     temperature: 0.1,
@@ -220,7 +214,7 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({
             <Radio.Group
               optionType="button"
               className="radio-button-style"
-              options={options}
+              options={GENERATE_DIVERSITY_OPTIONS}
               block
               value={nodeConfig.mode}
               onChange={(e) => handleModeChange(e.target.value)} // 改用新的处理函数
