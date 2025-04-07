@@ -4,7 +4,7 @@ kind: Service
 metadata:
   name: agent-frontend-service
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: agent-frontend
   ports:
