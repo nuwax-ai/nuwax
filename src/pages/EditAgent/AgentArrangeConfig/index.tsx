@@ -40,7 +40,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   spaceId,
   agentId,
   agentConfigInfo,
-  onChangeEnable,
+  onChangeAgent,
 }) => {
   // const [triggerChecked, setTriggerChecked] = useState<boolean>(false);
   // 触发器弹窗
@@ -335,7 +335,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           size={'small'}
           value={agentConfigInfo?.openLongMemory}
           onChange={(value) =>
-            onChangeEnable(value as OpenCloseEnum, 'openLongMemory')
+            onChangeAgent(value as OpenCloseEnum, 'openLongMemory')
           }
           options={ENABLE_LIST}
         />
@@ -354,7 +354,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     //       className={styles.select}
     //       size={'small'}
     //       value={agentConfigInfo?.openLongMemory}
-    //       onChange={onChangeEnable}
+    //       onChange={onChangeAgent}
     //       options={ENABLE_LIST}
     //     />
     //   ),
@@ -366,7 +366,12 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     {
       key: AgentArrangeConfigEnum.Opening_Remarks,
       label: '开场白',
-      children: <OpenRemarksEdit agentConfigInfo={agentConfigInfo} />,
+      children: (
+        <OpenRemarksEdit
+          agentConfigInfo={agentConfigInfo}
+          onChangeAgent={onChangeAgent}
+        />
+      ),
     },
     {
       key: AgentArrangeConfigEnum.User_Problem_Suggestion,
@@ -378,7 +383,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           size={'small'}
           value={agentConfigInfo?.openSuggest}
           onChange={(value) =>
-            onChangeEnable(value as OpenCloseEnum, 'openSuggest')
+            onChangeAgent(value as OpenCloseEnum, 'openSuggest')
           }
           options={ENABLE_LIST}
         />

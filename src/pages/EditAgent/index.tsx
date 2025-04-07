@@ -105,7 +105,7 @@ const EditAgent: React.FC = () => {
   };
 
   // 更新智能体信息
-  const handleChangeAgent = (value: string, attr: string) => {
+  const handleChangeAgent = (value: string | string[], attr: string) => {
     // 更新智能体配置信息
     const _agentConfigInfo = {
       ...agentConfigInfo,
@@ -126,7 +126,7 @@ const EditAgent: React.FC = () => {
       systemPrompt,
       suggestPrompt,
       openingChatMsg,
-      openingGuidQuestion,
+      openingGuidQuestions,
       openLongMemory,
     } = _agentConfigInfo;
 
@@ -141,7 +141,7 @@ const EditAgent: React.FC = () => {
       openSuggest,
       suggestPrompt,
       openingChatMsg,
-      openingGuidQuestion,
+      openingGuidQuestions,
       openLongMemory,
     });
   };
@@ -184,7 +184,7 @@ const EditAgent: React.FC = () => {
               spaceId={spaceId}
               agentId={agentId}
               agentConfigInfo={agentConfigInfo}
-              onChangeEnable={handleChangeAgent}
+              onChangeAgent={handleChangeAgent}
             />
           </div>
         </div>

@@ -1,10 +1,8 @@
-import { apiAgentConfigUpdate } from '@/services/agentConfig';
 import type { OpenRemarksEditProps } from '@/types/interfaces/agentConfig';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
 import styles from './index.less';
 const cx = classNames.bind(styles);
 
@@ -19,15 +17,10 @@ const cx = classNames.bind(styles);
  */
 const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
   agentConfigInfo,
+  onChangeAgent,
 }) => {
   const [content, setContent] = useState<string>('');
   const [guidQuestions, setGuidQuestions] = useState<string[]>(['']);
-
-  // 更新智能体基础配置信息
-  const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
-    manual: true,
-    debounceInterval: 1000,
-  });
 
   useEffect(() => {
     if (!!agentConfigInfo) {
@@ -50,20 +43,13 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
     const _guidQuestions = [...guidQuestions];
     _guidQuestions.splice(index, 1);
     setGuidQuestions(_guidQuestions);
-
-    runUpdate({
-      id: agentConfigInfo.id,
-      openingGuidQuestions: _guidQuestions,
-    });
+    onChangeAgent(_guidQuestions, 'openingGuidQuestions');
   };
 
   // 修改首次打开聊天框自动回复消息
   const handleOpeningChatMsg = (value: string) => {
     setContent(value);
-    runUpdate({
-      id: agentConfigInfo.id,
-      openingChatMsg: value,
-    });
+    onChangeAgent(value, 'openingChatMsg');
   };
 
   // 修改开场白引导问题
@@ -71,11 +57,7 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
     const _guidQuestions = [...guidQuestions];
     _guidQuestions[index] = value;
     setGuidQuestions(_guidQuestions);
-
-    runUpdate({
-      id: agentConfigInfo.id,
-      openingGuidQuestions: _guidQuestions,
-    });
+    onChangeAgent(_guidQuestions, 'openingGuidQuestions');
   };
 
   // const MenuBar = () => {

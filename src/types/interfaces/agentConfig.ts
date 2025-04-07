@@ -35,8 +35,8 @@ export interface AgentArrangeConfigProps {
   spaceId: number;
   agentId: number;
   agentConfigInfo: AgentConfigInfo;
-  // 是否开启
-  onChangeEnable: (value: string, attr: string) => void;
+  // 修改智能体基础配置信息
+  onChangeAgent: (value: string | string[], attr: string) => void;
 }
 
 // 插件模型设置
@@ -131,6 +131,7 @@ export interface LongMemoryContentProps {
 // 开场白组件
 export interface OpenRemarksEditProps {
   agentConfigInfo: AgentConfigInfo;
+  onChangeAgent: (value: string | string[], attr: string) => void;
 }
 
 // 变量列表组件
