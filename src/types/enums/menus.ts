@@ -13,7 +13,7 @@ export enum TabsEnum {
 
 // 菜单栏，用户操作区域点击事件枚举
 export enum UserOperatorAreaEnum {
-  Document = 'document',
+  // Document = 'document',
   // 历史会话
   History_Conversation = 'history_conversation',
   Message = 'message',

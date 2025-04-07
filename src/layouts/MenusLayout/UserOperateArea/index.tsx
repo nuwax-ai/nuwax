@@ -20,9 +20,14 @@ const UserOperateArea: React.FC<UserOperateAreaType> = ({ onClick }) => {
   const { unreadCount, setUnreadCount } = useModel('layout');
   const [data, setData] = useState<UserOperateAreaItem[]>(USER_OPERATE_AREA);
   // 查询用户未读消息数量
-  const { run } = useRequest(apiNotifyMessageUnreadCount, {
+  const { run, cancel } = useRequest(apiNotifyMessageUnreadCount, {
     manual: true,
     debounceInterval: 300,
+    // 轮询间隔，单位为毫秒。
+    pollingInterval: 5000,
+    pollingWhenHidden: false,
+    // 轮询错误重试次数。如果设置为 -1，则无限次
+    pollingErrorRetryCount: 3,
     onSuccess: (result: number) => {
       if (result > 0) {
         setUnreadCount(result);
@@ -38,42 +43,44 @@ const UserOperateArea: React.FC<UserOperateAreaType> = ({ onClick }) => {
   });
 
   useEffect(() => {
+    // 启动轮询
     run();
+
+    return () => {
+      // 停止轮询
+      cancel();
+    };
   }, []);
 
-  return (
-    <>
-      {data.map((item, index) => (
-        <Tooltip
-          key={index}
-          placement="right"
-          color={'#fff'}
-          overlayInnerStyle={{ color: '#000' }}
-          title={item.title}
-        >
-          <div
-            className={cx(
-              styles['user-icon'],
-              'flex',
-              'content-center',
-              'items-center',
-              'hover-box',
-              'cursor-pointer',
-            )}
-            onClick={() => onClick(item.type)}
-          >
-            {item.type === UserOperatorAreaEnum.Message && unreadCount > 0 ? (
-              <Badge count={unreadCount} size="small">
-                {item.icon}
-              </Badge>
-            ) : (
-              item.icon
-            )}
-          </div>
-        </Tooltip>
-      ))}
-    </>
-  );
+  return data.map((item, index) => (
+    <Tooltip
+      key={index}
+      placement="right"
+      color={'#fff'}
+      overlayInnerStyle={{ color: '#000' }}
+      title={item.title}
+    >
+      <div
+        className={cx(
+          styles['user-icon'],
+          'flex',
+          'content-center',
+          'items-center',
+          'hover-box',
+          'cursor-pointer',
+        )}
+        onClick={() => onClick(item.type)}
+      >
+        {item.type === UserOperatorAreaEnum.Message && unreadCount > 0 ? (
+          <Badge count={unreadCount} size="small">
+            {item.icon}
+          </Badge>
+        ) : (
+          item.icon
+        )}
+      </div>
+    </Tooltip>
+  ));
 };
 
 export default UserOperateArea;

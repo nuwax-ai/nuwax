@@ -134,9 +134,9 @@ const MenusLayout: React.FC = () => {
   // 用户区域操作
   const handleUserClick = useCallback((type: UserOperatorAreaEnum) => {
     switch (type) {
-      case UserOperatorAreaEnum.Document:
-        window.open(DOCUMENT_URL);
-        break;
+      // case UserOperatorAreaEnum.Document:
+      //   window.open(DOCUMENT_URL);
+      //   break;
       // 会话记录
       case UserOperatorAreaEnum.History_Conversation:
         setOpenHistoryModal(true);
