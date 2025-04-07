@@ -26,15 +26,19 @@ import './nodeItem.less';
 // 定义一些公共的数组
 
 // 定义开始节点
-const StartNode: React.FC<NodeDisposeProps> = ({ params, form }) => {
+const StartNode: React.FC<NodeDisposeProps> = ({ form }) => {
+  // 递归一下inputArgs，保证children都是数组而不是null
+
   return (
-    <CustomTree
-      title={'输入'}
-      fieldName={['inputArgs']}
-      params={params.inputArgs || []} // 改为直接读取表单最新值
-      form={form}
-      showCheck
-    />
+    <Form.Item name={'inputArgs'}>
+      <CustomTree
+        title={'输入'}
+        inputItemName={'inputArgs'}
+        params={form.getFieldValue('inputArgs') || []} // 改为直接读取表单最新值
+        form={form}
+        showCheck
+      />
+    </Form.Item>
   );
 };
 // 定义文档提取节点
@@ -117,11 +121,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
 };
 
 // 定义循环的节点渲染
-const CycleNode: React.FC<NodeDisposeProps> = ({
-  params,
-  Modified,
-  retrieveRefernece,
-}) => {
+const CycleNode: React.FC<NodeDisposeProps> = ({ form, params, Modified }) => {
   // 添加状态保持稳定key
   const [outputKey] = useState(() => uuidv4());
   // 修改模型的入参和出参
@@ -132,28 +132,16 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
     <div>
       <div className=" node-item-style">
         <span className="node-title-style margin-bottom">循环设置</span>
-        <Select
-          value={params.loopType}
-          options={cycleOption}
-          onChange={(value) =>
-            handleChangeNodeConfig({ ...params, loopType: value })
-          }
-          style={{ width: '100%', marginBottom: '10px' }}
-        ></Select>
+        <Form.Item name={'loopType'}>
+          <Select
+            options={cycleOption}
+            style={{ width: '100%', marginBottom: '10px' }}
+          ></Select>
+        </Form.Item>
       </div>
-      {params.loopType !== 'INFINITE_LOOP' && (
-        <div className=" node-item-style">
-          {params.loopType === 'ARRAY_LOOP' && (
-            <InputAndOut
-              nodeKey={outputKey}
-              title="循环数组"
-              fieldConfigs={outPutConfigs}
-              inputItemName={InputItemNameEnum.inputArgs}
-              handleChangeNodeConfig={handleChangeNodeConfig}
-              initialValues={{ inputArgs: params.inputArgs || [] }}
-            />
-          )}
-          {params.loopType === 'SPECIFY_TIMES_LOOP' && (
+      <Form.Item shouldUpdate>
+        {() =>
+          form.getFieldValue('loopType') !== 'INFINITE_LOOP' ? (
             <div>
               <div className="node-title-style margin-bottom">循环次数</div>
               <InputNumber
@@ -169,32 +157,35 @@ const CycleNode: React.FC<NodeDisposeProps> = ({
                 style={{ width: '100%', marginBottom: '10px' }}
               />
             </div>
-          )}
-        </div>
-      )}
-      <div className=" node-item-style">
-        <InputAndOut
-          nodeKey={outputKey}
-          title="中间变量"
-          fieldConfigs={outPutConfigs}
-          inputItemName={InputItemNameEnum.variableArgs}
-          handleChangeNodeConfig={handleChangeNodeConfig}
-          initialValues={{ variableArgs: params.variableArgs || [] }}
-          isVariable
-          retrieveRefernece={retrieveRefernece}
-        />
-      </div>
-      <div className=" node-item-style">
-        <InputAndOut
-          nodeKey={outputKey}
-          title="输出"
-          fieldConfigs={outPutConfigs}
-          inputItemName={InputItemNameEnum.outputArgs}
-          handleChangeNodeConfig={handleChangeNodeConfig}
-          initialValues={{ outputArgs: params.outputArgs || [] }}
-          isLoop
-        />
-      </div>
+          ) : (
+            <InputAndOut
+              nodeKey={outputKey}
+              title="循环数组"
+              fieldConfigs={outPutConfigs}
+              inputItemName={InputItemNameEnum.inputArgs}
+              form={form}
+            />
+          )
+        }
+      </Form.Item>
+
+      <InputAndOut
+        nodeKey={outputKey}
+        title="中间变量"
+        fieldConfigs={outPutConfigs}
+        inputItemName={InputItemNameEnum.variableArgs}
+        form={form}
+        isVariable
+      />
+
+      <InputAndOut
+        nodeKey={outputKey}
+        title="输出"
+        fieldConfigs={outPutConfigs}
+        inputItemName={InputItemNameEnum.outputArgs}
+        form={form}
+        isLoop
+      />
     </div>
   );
 };
@@ -468,15 +459,11 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
 };
 
 // 定义代码节点
-const CodeNode: React.FC<NodeDisposeProps> = ({ form, params, Modified }) => {
+const CodeNode: React.FC<NodeDisposeProps> = ({ form, Modified }) => {
   const [show, setShow] = useState(false);
   // 添加状态保持稳定key
   const [outputKey] = useState(() => uuidv4());
 
-  // 修改模型的入参和出参
-  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
-    Modified({ ...params, ...newNodeConfig });
-  };
   return (
     <>
       <InputAndOut
@@ -507,8 +494,8 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ form, params, Modified }) => {
 
       <CustomTree
         title={'输出'}
-        params={params}
-        handleChangeNodeConfig={handleChangeNodeConfig}
+        params={form.getFieldValue('outputArgs') || []} // 改为直接读取表单最新值
+        form={form}
         inputItemName={'outputArgs'}
       />
 

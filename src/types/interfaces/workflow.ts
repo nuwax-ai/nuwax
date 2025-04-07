@@ -194,6 +194,7 @@ export interface NodeRenderProps {
   disabledInput?: boolean;
   // 当前是循环节点
   isLoop?: boolean;
+  isVariable?: boolean;
 }
 
 // 定义通用的formList的props类型

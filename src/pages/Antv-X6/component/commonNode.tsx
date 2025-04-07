@@ -266,7 +266,6 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
   const { TreeNode } = Tree;
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   useEffect(() => {
-    console.log(treeData, 'treeData');
     // 当 treeData 更新时，重新计算 expandedKeys
     const getAllParentKeys = (data: TreeNodeData[]): React.Key[] => {
       const keys: React.Key[] = [];
@@ -283,7 +282,6 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
   }, [treeData]);
   // 定义一个函数来递归生成带有标签的树节点
   const renderTreeNode = (data: TreeNodeData[]) => {
-    console.log(data, 'data');
     return data.map((item) => {
       if (item.subArgs) {
         return (

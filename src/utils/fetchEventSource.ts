@@ -22,7 +22,6 @@ export async function createSSEConnection<T = any>(
   const controller = options.abortController || new AbortController();
 
   try {
-    console.log('1231231', options.url);
     await fetchEventSource(options.url, {
       method: options.method || 'GET',
       headers: {

@@ -3,18 +3,18 @@ import Created from '@/components/Created';
 import type { HasIdsType } from '@/components/Created/type';
 import { SkillList } from '@/components/Skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { InputItemNameEnum } from '@/types/enums/node';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import type { NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Empty, Popover, Select, Slider } from 'antd';
+import { Button, Empty, Form, Popover, Select, Slider } from 'antd';
 import React, { useState } from 'react';
 import '../index.less';
 import { TreeOutput } from './commonNode';
 import { InputList } from './pluginNode';
 // 定义知识库
 const KnowledgeNode: React.FC<NodeDisposeProps> = ({
+  form,
   params,
   Modified,
   // updateNode,
@@ -61,14 +61,8 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   return (
     <div className="knowledge-node">
       {/* 输入参数 */}
-      <div className="node-item-style">
-        <InputList
-          title={'输入'}
-          initialValues={{ inputArgs: params.inputArgs || [] }}
-          onChange={handleChangeNodeConfig}
-          inputItemName={InputItemNameEnum.inputArgs}
-        />
-      </div>
+      <InputList title={'输入'} form={form} inputItemName={'inputArgs'} />
+
       {/* 知识库选择 */}
       <div className="node-item-style">
         <div className="dis-sb margin-bottom">
@@ -79,16 +73,19 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
             onClick={showAdd}
           ></Button>
         </div>
-        {params.knowledgeBaseConfigs &&
-          params.knowledgeBaseConfigs.length > 0 && (
-            <SkillList
-              skillName={'knowledgeBaseConfigs'}
-              params={params}
-              handleChange={handleChangeNodeConfig}
-            />
-          )}
-        {(!params.knowledgeBaseConfigs ||
-          !params.knowledgeBaseConfigs.length) && <Empty />}
+        <Form.Item shouldUpdate noStyle>
+          {() =>
+            form.getFieldValue('knowledgeBaseConfigs') ? (
+              <SkillList
+                skillName={'knowledgeBaseConfigs'}
+                params={params}
+                handleChange={handleChangeNodeConfig}
+              />
+            ) : (
+              <Empty />
+            )
+          }
+        </Form.Item>
       </div>
       <div className="knowledge-node-box">
         <div className="dis-sb mb-16">
@@ -104,18 +101,16 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
               <InfoCircleOutlined className="margin-right-6" />
             </Popover>
           </div>
-          <Select
-            className="flex-1"
-            value={params.searchStrategy}
-            onChange={(value) =>
-              handleChangeNodeConfig({ ...params, searchStrategy: value })
-            }
-            options={[
-              { label: '语义', value: 'SEMANTIC' },
-              { label: '混合', value: 'MIXED' },
-              { label: '全文', value: 'FULL_TEXT' },
-            ]}
-          />
+          <Form.Item name={['searchStrategy']} noStyle>
+            <Select
+              className="flex-1"
+              options={[
+                { label: '语义', value: 'SEMANTIC' },
+                { label: '混合', value: 'MIXED' },
+                { label: '全文', value: 'FULL_TEXT' },
+              ]}
+            />
+          </Form.Item>
         </div>
         <div className="dis-sb mb-16">
           <div className="knowlegenow-left-title">
@@ -130,17 +125,15 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
               <InfoCircleOutlined className="margin-right-6" />
             </Popover>
           </div>
-          <Slider
-            min={1}
-            max={20}
-            step={1}
-            marks={{ 1: 1, 20: 20 }}
-            onChange={(value) =>
-              handleChangeNodeConfig({ ...params, maxRecallCount: value })
-            }
-            value={params.maxRecallCount}
-            className="flex-1"
-          />
+          <Form.Item name={['maxRecallCount']} noStyle>
+            <Slider
+              min={1}
+              max={20}
+              step={1}
+              marks={{ 1: 1, 20: 20 }}
+              className="flex-1"
+            />
+          </Form.Item>
         </div>
         <div className="dis-sb ">
           <div className="knowlegenow-left-title">
@@ -155,22 +148,29 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
               <InfoCircleOutlined className="margin-right-6" />
             </Popover>
           </div>
-          <Slider
-            min={0.01}
-            max={0.99}
-            step={0.01}
-            marks={{ 0.01: 0.01, 0.99: 0.99 }}
-            onChange={(value) =>
-              handleChangeNodeConfig({ ...params, matchingDegree: value })
-            }
-            value={params.matchingDegree}
-            className="flex-1"
-          />
+          <Form.Item name={['matchingDegree']} noStyle>
+            <Slider
+              min={0.01}
+              max={0.99}
+              step={0.01}
+              marks={{ 0.01: 0.01, 0.99: 0.99 }}
+              className="flex-1"
+            />
+          </Form.Item>
         </div>
       </div>
       {/* 输出 */}
-      <p className="node-title-style mt-16">{'输出'}</p>
-      <TreeOutput treeData={params.outputArgs || []} />
+      {/* 输出 */}
+      <Form.Item shouldUpdate>
+        {() =>
+          form.getFieldValue('outputArgs') && (
+            <>
+              <div className="node-title-style margin-bottom">输出</div>
+              <TreeOutput treeData={form.getFieldValue('outputArgs')} />
+            </>
+          )
+        }
+      </Form.Item>
       <Created
         checkTag={AgentComponentTypeEnum.Knowledge}
         spaceId={Number(sessionStorage.getItem('spaceId'))}

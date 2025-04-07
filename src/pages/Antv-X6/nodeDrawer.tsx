@@ -60,7 +60,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   // form表单校验完毕后提交数据
   const onFinish = () => {
     const values = form.getFieldsValue(true);
-    console.log('onFinish', values);
+
     if (
       !visible ||
       (foldWrapItem.id !== currentNodeConfig.id && currentNodeConfig.id !== 0)
@@ -164,6 +164,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
       case 'Loop':
         return (
           <CycleNode
+            form={form}
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
             retrieveRefernece={retrieveRefernece}
@@ -188,6 +189,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
       case 'LLM':
         return (
           <ModelNode
+            form={form}
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
             updateNode={(newNodeConfig) => {
@@ -251,11 +253,13 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           <HttpToolNode
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
+            form={form}
           />
         );
       case 'Knowledge':
         return (
           <KnowledgeNode
+            form={form}
             params={currentNodeConfig.nodeConfig}
             Modified={handleChangeNodeConfig}
             updateNode={(newNodeConfig) =>

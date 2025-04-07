@@ -24,7 +24,7 @@ export const InputList: React.FC<InputListProps> = ({
       <Form.List name={inputItemName}>
         {(fields) => (
           <>
-            <span>{title}</span>
+            <span className="node-title-style">{title}</span>
             {fields.map((item, index) => {
               return (
                 <div key={item.name}>
@@ -61,6 +61,7 @@ export const InputList: React.FC<InputListProps> = ({
                       <Form.Item name={[item.name, 'bindValue']} noStyle>
                         <InputOrReference
                           onChange={(value) => {
+                            console.log(123123213);
                             form.setFieldValue(
                               [inputItemName, item.name, 'bindValue'],
                               value,

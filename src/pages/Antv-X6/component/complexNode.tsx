@@ -10,16 +10,7 @@ import { CreatedNodeItem } from '@/types/interfaces/common';
 import type { NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { PlusOutlined } from '@ant-design/icons';
-import {
-  Button,
-  Empty,
-  Form,
-  Input,
-  Radio,
-  RadioChangeEvent,
-  Select,
-  Space,
-} from 'antd';
+import { Button, Empty, Form, Input, Radio, Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
@@ -27,6 +18,7 @@ import { outPutConfigs } from '../params';
 import { FormList, InputAndOut, TreeOutput } from './commonNode';
 // 定义大模型节点
 const ModelNode: React.FC<NodeDisposeProps> = ({
+  form,
   params,
   Modified,
   updateNode,
@@ -80,37 +72,35 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       {/* 模型模块 */}
       <ModelSelected onChange={handleChangeNodeConfig} nodeConfig={params} />
       {/* 技能模块 */}
-      <div className="node-item-style">
-        <div className="dis-sb margin-bottom">
-          <span className="node-title-style">技能</span>
-          <Button
-            icon={<PlusOutlined />}
-            size={'small'}
-            onClick={showAdd}
-          ></Button>
-        </div>
-        {params.skillComponentConfigs &&
-          params.skillComponentConfigs.length > 0 && (
+      <div className="dis-sb margin-bottom">
+        <span className="node-title-style">技能</span>
+        <Button
+          icon={<PlusOutlined />}
+          size={'small'}
+          onClick={showAdd}
+        ></Button>
+      </div>
+      <Form.Item shouldUpdate noStyle>
+        {() =>
+          form.getFieldValue('skillComponentConfigs') ? (
             <SkillList
               skillName={'skillComponentConfigs'}
               params={params}
               handleChange={handleChangeNodeConfig}
             />
-          )}
-        {(!params.skillComponentConfigs ||
-          !params.skillComponentConfigs.length) && <Empty />}
-      </div>
+          ) : (
+            <Empty />
+          )
+        }
+      </Form.Item>
       {/* 输入参数 */}
-      <div className="node-item-style">
-        <InputAndOut
-          nodeKey={outputKey}
-          title="输入"
-          fieldConfigs={outPutConfigs}
-          inputItemName={InputItemNameEnum.inputArgs}
-          handleChangeNodeConfig={handleChangeNodeConfig}
-          initialValues={{ inputArgs: params.inputArgs || [] }}
-        />
-      </div>
+      <InputAndOut
+        nodeKey={outputKey}
+        title="输入"
+        fieldConfigs={outPutConfigs}
+        inputItemName={InputItemNameEnum.inputArgs}
+        form={form}
+      />
       {/* 系统提示词 */}
       <ExpandableInputTextarea
         title="系统提示词"
@@ -131,16 +121,16 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
         placeholder="用户提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
       />
       {/* 输出参数 */}
-      <div className="node-item-style">
+      <Form.Item shouldUpdate name={'outputArgs'}>
         <CustomTree
           title={'输出'}
           notShowTitle
           showCheck
-          params={params}
-          handleChangeNodeConfig={handleChangeNodeConfig}
+          form={form}
+          params={form.getFieldValue('outputArgs') || []}
           inputItemName={'outputArgs'}
         />
-      </div>
+      </Form.Item>
 
       <Created
         checkTag={AgentComponentTypeEnum.Plugin}
@@ -216,6 +206,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
 
 // 定义问答
 const QuestionsNode: React.FC<NodeDisposeProps> = ({
+  form,
   params,
   Modified,
   updateNode,
@@ -225,38 +216,6 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
   // 修改模型的入参和出参
   const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
     Modified({ ...params, ...newNodeConfig });
-  };
-
-  const changeType = (val: string) => {
-    // 首次选中
-    let options = params.options;
-    if (val === 'SELECT' && (!options || !options.length)) {
-      options = [
-        {
-          uuid: uuidv4(),
-          index: 0,
-          content: '',
-          nextNodeIds: [],
-        },
-        {
-          uuid: uuidv4(),
-          index: 1,
-          content: '此选项用户不可见，用户回复无关内容时走此分支',
-          nextNodeIds: [],
-        },
-      ];
-    }
-    // 添加变更检查
-    const typeChanged = val !== params.answerType;
-    const optionsChanged = options !== params.options;
-    if (typeChanged || optionsChanged) {
-      if (val !== 'SELECT') {
-        options = options?.map((item) => ({ ...item, nextNodeIds: [] }));
-      }
-      if (updateNode) {
-        updateNode({ ...params, answerType: val, options });
-      }
-    }
   };
 
   const changeOptions = (newNodeConfig: NodeConfig) => {
@@ -287,15 +246,14 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
           nodeKey={outputKey}
           title="输入"
           fieldConfigs={outPutConfigs}
-          handleChangeNodeConfig={handleChangeNodeConfig}
           inputItemName={InputItemNameEnum.inputArgs}
-          initialValues={{ inputArgs: params.inputArgs || [] }}
+          form={form}
         />
       </div>
       {/* 提问问题 */}
       <ExpandableInputTextarea
         title="提问问题"
-        value={params.question || ''}
+        value={form.getFieldValue('question') || ''}
         onChange={(value: string) =>
           handleChangeNodeConfig({ ...params, question: value })
         }
@@ -303,49 +261,51 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
         placeholder="可使用{{变量名}}的方式引用输入参数中的变量"
       />
       {/* 回答类型 */}
-      <div>
-        <Radio.Group
-          onChange={(value: RadioChangeEvent) => changeType(value.target.value)}
-          value={params.answerType}
-        >
+      <Form.Item label="回答类型" name={'answerType'}>
+        <Radio.Group>
           <Space direction="vertical">
             <Radio value={'TEXT'}>直接回答</Radio>
             <Radio value={'SELECT'}>选项回答</Radio>
           </Space>
         </Radio.Group>
-      </div>
+      </Form.Item>
+
       {/* 输出参数 */}
-      {params.answerType === 'TEXT' && (
-        <div className="node-item-style">
-          <CustomTree
-            title={'输出'}
-            params={params}
-            handleChangeNodeConfig={handleChangeNodeConfig}
-            inputItemName={'outputArgs'}
-            showCheck
-          />
-        </div>
-      )}
-      {/* 选项内容 */}
-      {params.answerType === 'SELECT' && (
-        <FormList
-          title={'设置选项内容'}
-          nodeKey={outputKey}
-          updateNode={changeOptions}
-          field="content"
-          inputItemName={InputItemNameEnum.options}
-          initialValues={{ options: params.options || [] }}
-          showIndex
-          hasUuid
-          handleChangeNodeConfig={handleChangeNodeConfig}
-        />
-      )}
+      <Form.Item shouldUpdate noStyle>
+        {() =>
+          form.getFieldValue('answerType') === 'TEXT' ? (
+            <CustomTree
+              title={'输出'}
+              form={form}
+              params={form.getFieldValue('outputArgs') || []}
+              inputItemName={'outputArgs'}
+              showCheck
+            />
+          ) : null
+        }
+      </Form.Item>
+
+      <Form.Item shouldUpdate noStyle>
+        {() =>
+          form.getFieldValue('answerType') === 'SELECT' ? (
+            <FormList
+              title={'设置选项内容'}
+              form={form}
+              updateNode={changeOptions}
+              field="content"
+              inputItemName={InputItemNameEnum.options}
+              showIndex
+              hasUuid
+            />
+          ) : null
+        }
+      </Form.Item>
     </div>
   );
 };
 
 // 定义http工具
-const HttpToolNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
+const HttpToolNode: React.FC<NodeDisposeProps> = ({ form, params }) => {
   // 添加状态保持稳定key
   const [outputKey] = useState(() => uuidv4());
   // 请求方法的选项
@@ -365,18 +325,6 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
     { label: '无', value: 'OTHER' },
   ];
 
-  const [form] = Form.useForm();
-
-  // 修改模型的入参和出参
-  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
-    Modified({ ...params, ...newNodeConfig });
-  };
-
-  const submitForm = () => {
-    const values = form.getFieldsValue();
-    handleChangeNodeConfig(values);
-  };
-
   useEffect(() => {
     form.setFieldsValue({
       ...params,
@@ -387,80 +335,61 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
   return (
     <div>
       {/* 请求配置 */}
-      <div className="node-item-style has-child-node">
-        <p className="node-title-bold-style">请求配置</p>
-        <Form
-          form={form}
-          onValuesChange={submitForm}
-          initialValues={params}
-          layout={'vertical'}
-        >
-          <Form.Item label="请求方法与路径">
-            <div className="dis-sb">
-              <Form.Item name="method" noStyle>
-                <Select
-                  style={{ width: '30%', marginRight: '10px' }}
-                  options={methodOption}
-                  placeholder="请求方法"
-                ></Select>
-              </Form.Item>
-              <Form.Item name="url" noStyle>
-                <Input placeholder="请输入url地址"></Input>
-              </Form.Item>
-            </div>
+      <Form.Item label="请求方法与路径">
+        <div className="dis-sb">
+          <Form.Item name="method" noStyle>
+            <Select
+              style={{ width: '30%', marginRight: '10px' }}
+              options={methodOption}
+              placeholder="请求方法"
+            ></Select>
           </Form.Item>
-          <Form.Item label="请求内容格式" name="contentType">
-            <Radio.Group
-              className="margin-bottom"
-              options={methodOptions}
-            ></Radio.Group>
+          <Form.Item name="url" noStyle>
+            <Input placeholder="请输入url地址"></Input>
           </Form.Item>
-          <Form.Item label="请求超时配置" name="timeout">
-            <Input placeholder="请输入超时配置时长"></Input>
-          </Form.Item>
-        </Form>
-      </div>
+        </div>
+      </Form.Item>
+      <Form.Item label="请求内容格式" name="contentType">
+        <Radio.Group
+          className="margin-bottom"
+          options={methodOptions}
+        ></Radio.Group>
+      </Form.Item>
+      <Form.Item label="请求超时配置" name="timeout">
+        <Input placeholder="请输入超时配置时长"></Input>
+      </Form.Item>
       {/* 入参 */}
       <div className="node-item-style has-child-node">
         <p className="node-title-bold-style">入参</p>
         <InputAndOut
           nodeKey={outputKey}
           title="Header"
-          handleChangeNodeConfig={handleChangeNodeConfig}
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.headers}
-          initialValues={{
-            headers: params.headers || [],
-          }}
+          form={form}
         />
         <InputAndOut
           nodeKey={outputKey}
           title="Query"
-          handleChangeNodeConfig={handleChangeNodeConfig}
+          form={form}
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.queries}
-          initialValues={{
-            queries: params.queries || [],
-          }}
         />
-        <InputAndOut
-          nodeKey={outputKey}
-          title="Body"
-          handleChangeNodeConfig={handleChangeNodeConfig}
-          fieldConfigs={outPutConfigs}
-          inputItemName={InputItemNameEnum.body}
-          initialValues={{
-            body: params.body || [],
-          }}
+        <CustomTree
+          title={'body'}
+          form={form}
+          inputItemName="body"
+          isBody
+          params={form.getFieldValue('body') || []}
         />
       </div>
       {/* 出参 */}
       <div className="node-item-style">
         <CustomTree
           title={'出参'}
-          params={params}
-          handleChangeNodeConfig={handleChangeNodeConfig}
-          inputItemName={InputItemNameEnum.outputArgs}
+          form={form}
+          inputItemName="outputArgs"
+          params={form.getFieldValue('outputArgs') || []}
         />
       </div>
     </div>

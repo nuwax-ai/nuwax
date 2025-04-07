@@ -29,14 +29,6 @@ const ExpandTextArea: React.FC<
             }}
           >
             <Space>
-              {/* <Button
-                size="small"
-                icon={<ICON_OPTIMIZE />}
-                type="primary"
-                className="gradient-button"
-              >
-                优化
-              </Button> */}
               {/* 通知父组件关闭我 */}
               <CloseOutlined
                 onClick={() => onClose()}

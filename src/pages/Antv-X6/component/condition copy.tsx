@@ -144,7 +144,7 @@ export const ConditionList: React.FC<ConditionListProps> = ({
 
 // 修改 ConditionNode 组件
 export const ConditionNode: React.FC<NodeDisposeProps> = ({
-  form,
+  // form,
   params,
   // Modified,
   updateNode,
@@ -251,22 +251,37 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
     }
   };
 
-  // 处理拖拽结束事件
+  // 修改 onDragEnd 方法
   const onDragEnd = (result: any) => {
-    const { source, destination } = result;
+    if (!result.destination) return;
 
-    // 如果没有放置目标位置，则直接返回
-    if (!destination) return;
+    const items = params.conditionBranchConfigs || [];
+    const lastIndex = items.length - 1;
+    // 禁止拖拽到最后一个元素（ELSE）之后
+    if (result.destination.index === lastIndex) {
+      message.warning('不能拖拽到否则条件后');
+      return;
+    }
 
-    // 获取字段列表
-    const fields = form.getFieldValue('conditionBranchConfigs');
+    // 当拖拽源是最后一个元素时直接返回
+    if (result.source.index === lastIndex) return;
 
-    // 移动字段
-    const [removed] = fields.splice(source.index, 1);
-    fields.splice(destination.index, 0, removed);
+    const newItems = Array.from(items);
+    const [removed] = newItems.splice(result.source.index, 1);
+    newItems.splice(result.destination.index, 0, removed);
 
-    // 更新表单字段
-    form.setFieldsValue({ conditionBranchConfigs: fields });
+    // 重新编排branchType时保持最后一个为ELSE
+    newItems.forEach((item, index) => {
+      item.branchType =
+        index === newItems.length - 1 ? 'ELSE' : updateBranchType(index);
+    });
+
+    if (updateNode) {
+      updateNode({
+        ...params,
+        conditionBranchConfigs: newItems,
+      });
+    }
   };
 
   // useEffect(() => {
@@ -277,70 +292,37 @@ export const ConditionNode: React.FC<NodeDisposeProps> = ({
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <Form.List name="conditionBranchConfigs">
-        {(fields) => (
-          <>
-            <div className="dis-sb margin-bottom">
-              <span className="node-title-style">条件分支</span>
-              <Button
-                icon={<PlusOutlined />}
-                size="small"
-                onClick={addInputItem}
-              >
-                添加条件
-              </Button>
-            </div>
-            <Droppable droppableId="condition-list">
-              {(provided) => (
-                <div {...provided.droppableProps} ref={provided.innerRef}>
-                  {fields.map((field, index) => {
-                    const isLast = index === fields.length - 1;
+      <div className="dis-sb margin-bottom">
+        <span className="node-title-style">条件分支</span>
+        <Button
+          icon={<PlusOutlined />}
+          size={'small'}
+          onClick={addInputItem}
+        ></Button>
+      </div>
 
-                    if (isLast) {
-                      return (
-                        <div
-                          key={field.key}
-                          className="condition-else-style"
-                          data-rbd-draggable-context-id="fixed"
-                        >
-                          {branchTypeMap.ELSE}
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <Draggable
-                        key={field.key}
-                        draggableId={field.key.toString()}
-                        index={index}
-                      >
-                        {(provided) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                          >
-                            <ConditionList
-                              title={branchTypeMap[updateBranchType(index)]}
-                              index={index}
-                              initialValues={field}
-                              removeItem={() => removeItem(index)}
-                              handleChangeNodeConfig={(value) =>
-                                handleChangeNodeConfig(index, value)
-                              }
-                            />
-                          </div>
-                        )}
-                      </Draggable>
-                    );
-                  })}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </>
+      <Droppable droppableId="condition-list">
+        {(provided: any) => (
+          <div {...provided.droppableProps} ref={provided.innerRef}>
+            {(params.conditionBranchConfigs || []).map((item, index) => {
+              return (
+                <ConditionList
+                  key={item.uuid}
+                  title={
+                    branchTypeMap[item.branchType as 'IF' | 'ELSE_IF' | 'ELSE']
+                  }
+                  initialValues={item}
+                  removeItem={removeItem}
+                  handleChangeNodeConfig={handleChangeNodeConfig}
+                  draggableId={item.uuid}
+                  index={index}
+                />
+              );
+            })}
+            {provided.placeholder}
+          </div>
         )}
-      </Form.List>
+      </Droppable>
     </DragDropContext>
   );
 };

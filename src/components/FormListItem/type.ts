@@ -1,5 +1,5 @@
 import { DataTypeEnum } from '@/types/enums/common';
-import { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
+import { InputAndOutConfig } from '@/types/interfaces/node';
 import { FormInstance } from 'antd';
 
 export interface KeyValueTree {
@@ -50,22 +50,41 @@ export interface FieldConfig {
 }
 
 export interface TreeFormProps {
-  params: InputAndOutConfig[];
+  params?: InputAndOutConfig[];
   // 改变节点的入参和出参
   // 外部传递进来的form
   form: FormInstance;
-  level?: number;
-  handleChangeNodeConfig?: (params: NodeConfig) => void;
   // 标题
   title?: string;
-  // 当前的字段
-  fieldName: string;
   inputItemName?:
     | 'inputArgs'
     | 'outputArgs'
     | 'variableArgs'
     | 'conditionBranchConfigs'
-    | 'skillComponentConfigs';
+    | 'skillComponentConfigs'
+    | 'body';
   notShowTitle?: boolean;
   showCheck?: boolean;
+  isBody?: boolean;
+}
+
+export interface TreeFormSubProps {
+  form: FormInstance;
+  fieldName: string | (string | number)[];
+  inputItemName: string;
+  showCheck?: boolean;
+  level: number;
+}
+
+export interface TreeFormSubRef {
+  addChild: () => void; // 子组件暴露的 add 方法
+}
+
+export interface TreeFormItemProps {
+  form: FormInstance;
+  field: FormListFieldData;
+  fieldName: (string | number)[];
+  remove: (index: number | number[]) => void;
+  showCheck?: boolean;
+  inputItemName?: string;
 }

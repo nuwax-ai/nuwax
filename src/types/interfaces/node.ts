@@ -15,7 +15,7 @@ export interface InputAndOutConfig {
   // 值引用类型
   bindValueType: string | null;
   // 参数值
-  bindValue: string | null;
+  bindValue: string;
   //  	下级参数
   subArgs?: InputAndOutConfig[];
   // 有可能有children
