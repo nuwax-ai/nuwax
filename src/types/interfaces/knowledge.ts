@@ -171,8 +171,19 @@ export interface KnowledgeDocumentListParams extends KnowledgeListBaseInfo {
   };
 }
 
+export interface KnowledgeDocumentStatus {
+  // 知识库文档状态,1:分析中;2:分析成功;10:分析失败;,可用值:ANALYZING,ANALYZED,ANALYZE_FAILED
+  docStatus: DocStatusEnum;
+  // 知识库文档状态
+  docStatusCode: DocStatusCodeEnum;
+  // 知识库文档状态描述
+  docStatusDesc: string;
+  // 知识库文档状态原因
+  docStatusReason: string;
+}
+
 // 知识库文档信息
-export interface KnowledgeDocumentInfo {
+export interface KnowledgeDocumentInfo extends KnowledgeDocumentStatus {
   // 主键id
   id: number;
   // 文档所属知识库
@@ -203,14 +214,6 @@ export interface KnowledgeDocumentInfo {
   modifiedId: number;
   // 最后修改人
   modifiedName: string;
-  // 知识库文档状态,1:分析中;2:分析成功;10:分析失败;,可用值:ANALYZING,ANALYZED,ANALYZE_FAILED
-  docStatus: DocStatusEnum;
-  // 知识库文档状态
-  docStatusCode: DocStatusCodeEnum;
-  // 知识库文档状态描述
-  docStatusDesc: string;
-  // 知识库文档状态原因
-  docStatusReason: string;
 }
 
 // 知识库文档配置 - 自定义新增接口
@@ -423,7 +426,7 @@ export interface DocWrapProps {
   documentList: KnowledgeDocumentInfo[];
   onChange: (value: string) => void;
   onClick: (info: KnowledgeDocumentInfo) => void;
-  onSetAnalyzed: (id: number) => void;
+  onSetAnalyzed: (id: number, status?: KnowledgeDocumentStatus) => void;
 }
 
 // 文档列表项
@@ -431,7 +434,7 @@ export interface DocItemProps {
   currentDocId?: number;
   info: KnowledgeDocumentInfo;
   onClick: (info: KnowledgeDocumentInfo) => void;
-  onSetAnalyzed: (id: number) => void;
+  onSetAnalyzed: (id: number, status?: KnowledgeDocumentStatus) => void;
 }
 
 // 分段信息

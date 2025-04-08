@@ -15,10 +15,12 @@ import type {
   KnowledgeDocumentInfo,
   KnowledgeInfo,
 } from '@/types/interfaces/knowledge';
+import { KnowledgeDocumentStatus } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { message, Modal } from 'antd';
 import classNames from 'classnames';
+import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import DocWrap from './DocWrap';
@@ -179,11 +181,34 @@ const SpaceKnowledge: React.FC = () => {
     setDocumentList(list);
   };
 
-  // 设置分析成功
-  const handleSetAnalyzed = (id: number) => {
-    const list = documentList.map((item) => {
+  // 设置分析成功（自动重试,如果有分段,问答,向量化有失败的话, status为空）
+  const handleSetAnalyzed = (id: number, status: KnowledgeDocumentStatus) => {
+    // 修改当前文档
+    if (currentDocumentInfo?.id === id) {
+      // 修改当前文档状态
+      const _documentInfo = status
+        ? {
+            ...currentDocumentInfo,
+            ...status,
+          }
+        : {
+            ...currentDocumentInfo,
+            docStatusCode: DocStatusCodeEnum.ANALYZED,
+          };
+      setCurrentDocumentInfo(_documentInfo);
+    }
+    // 修改文档列表
+    const _documentList = cloneDeep(documentList);
+    const list = _documentList.map((item) => {
       if (item.id === id) {
-        item.docStatusCode = DocStatusCodeEnum.ANALYZED;
+        if (status) {
+          item.docStatus = status.docStatus;
+          item.docStatusCode = status.docStatusCode;
+          item.docStatusDesc = status.docStatusDesc;
+          item.docStatusReason = status.docStatusReason;
+        } else {
+          item.docStatusCode = DocStatusCodeEnum.ANALYZED;
+        }
       }
       return item;
     });

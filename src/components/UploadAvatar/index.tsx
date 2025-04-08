@@ -18,7 +18,6 @@ const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
     props;
 
   const handleChange: UploadProps['onChange'] = (info) => {
-    console.log(info, 'info');
     if (info.file.status === 'uploading') {
       return;
     }
