@@ -200,8 +200,7 @@ export interface NodeDrawerProps {
   visible: boolean;
   // 关闭
   onClose: () => void;
-  // 当前的数据
-  foldWrapItem: ChildNode;
+
   // 将节点信息返回给父组件
   onGetNodeConfig: (config: ChildNode, update?: boolean) => void;
 

@@ -117,7 +117,7 @@ const TestRun: React.FC<TestRunProps> = ({
                             <CodeEditor
                               value={form.getFieldValue(item.name) || ''}
                               codeLanguage={'JSON'}
-                              changeCode={(code) => {
+                              onChange={(code) => {
                                 form.setFieldsValue({ [item.name]: code }); // 更新表单值
                               }}
                               height="180px"
@@ -148,7 +148,8 @@ const TestRun: React.FC<TestRunProps> = ({
                 </Form>
               </div>
             )}
-          {(!node.nodeConfig.inputArgs ||
+          {(!node ||
+            !node.nodeConfig.inputArgs ||
             !node.nodeConfig.inputArgs.length) && (
             <Empty description="本次试运行无需输入" />
           )}

@@ -1,27 +1,21 @@
 import CodeEditor from '@/components/CodeEditor';
 import { ICON_WORKFLOW_CODE } from '@/constants/images.constants';
-import type { NodeConfig } from '@/types/interfaces/node';
 import { CloseOutlined } from '@ant-design/icons';
-import { Select } from 'antd';
+import type { FormInstance } from 'antd';
+import { Form, Select } from 'antd';
 import React from 'react';
 import './index.less';
 interface MonacoProps {
   // 当前节点的参数
-  params: NodeConfig;
-  // 修改节点信息
-  Modified: (params: NodeConfig) => void;
+  form: FormInstance;
   // 是否显示
   isShow: boolean;
   // 关闭
   close: () => void;
 }
 
-const Monaco: React.FC<MonacoProps> = ({ params, Modified, isShow, close }) => {
-  // 修改模型的入参和出参
-  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
-    Modified({ ...params, ...newNodeConfig });
-  };
-
+const Monaco: React.FC<MonacoProps> = ({ form, isShow, close }) => {
+  console.log(form);
   return (
     <>
       {isShow && (
@@ -33,18 +27,16 @@ const Monaco: React.FC<MonacoProps> = ({ params, Modified, isShow, close }) => {
               {/* 图标 */}
               <ICON_WORKFLOW_CODE className="mr-6" />
               <span className="mr-16">代码</span>
-              <Select
-                value={params.codeLanguage}
-                style={{ width: 100 }}
-                options={[
-                  { value: 'JavaScript', label: 'JavaScript' },
-                  { value: 'Python', label: 'Python' },
-                ]}
-                placeholder="请选择语言"
-                onChange={(value) => {
-                  handleChangeNodeConfig({ ...params, codeLanguage: value });
-                }}
-              />
+              <Form.Item name={'codeLanguage'}>
+                <Select
+                  style={{ width: 100 }}
+                  options={[
+                    { value: 'JavaScript', label: 'JavaScript' },
+                    { value: 'Python', label: 'Python' },
+                  ]}
+                  placeholder="请选择语言"
+                />
+              </Form.Item>
             </div>
             {/* 右侧的关闭按钮和试运行 */}
             <div>
@@ -53,20 +45,14 @@ const Monaco: React.FC<MonacoProps> = ({ params, Modified, isShow, close }) => {
           </div>
           <div className="monaco-editor-content">
             <CodeEditor
-              codeLanguage={params.codeLanguage || 'JavaScript'}
-              height={'790px'}
               value={
-                params.codeLanguage === 'Python'
-                  ? params.codePython
-                  : params.codeJavaScript
+                form.getFieldValue('codeLanguage') === 'Python'
+                  ? form.getFieldValue('codePython')
+                  : form.getFieldValue('codeJavaScript')
               }
-              changeCode={(value) => {
-                if (params.codeLanguage === 'Python') {
-                  handleChangeNodeConfig({ ...params, codePython: value });
-                } else {
-                  handleChangeNodeConfig({ ...params, codeJavaScript: value });
-                }
-              }}
+              codeLanguage={form.getFieldValue('codeLanguage') || 'JavaScript'}
+              onChange={(e: string) => form.setFieldValue('code', e)}
+              height="790px"
             />
           </div>
         </div>

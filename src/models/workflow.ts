@@ -1,10 +1,28 @@
-// import { NodeTypeEnum } from '@/types/enums/common';
+import service from '@/services/workflow';
+import { NodeTypeEnum } from '@/types/enums/common';
+import { ChildNode } from '@/types/interfaces/graph';
 import { NodePreviousAndArgMap } from '@/types/interfaces/node';
+import { message } from 'antd';
 import { useState } from 'react';
-
 const useWorkflow = () => {
   // 是否要校验当前的数据
   const [volid, setVolid] = useState<boolean>(false);
+
+  // 当前被选中的节点
+  const [foldWrapItem, setFoldWrapItem] = useState<ChildNode>({
+    type: NodeTypeEnum.Start,
+    nodeConfig: {
+      inputArgs: [], // 输入参数
+    },
+    id: 0,
+    name: '测试',
+    description: '测试',
+    workflowId: 0,
+    icon: '',
+  });
+
+  // 当前节点是否修改了参数
+  const [isModified, setIsModified] = useState(false);
 
   const [referenceList, setReferenceList] = useState<NodePreviousAndArgMap>({
     previousNodes: [],
@@ -51,6 +69,16 @@ const useWorkflow = () => {
     return '';
   };
 
+  // 重新获取当前节点的数据
+  const getCurrentNodeData = async () => {
+    try {
+      const _res = await service.getNodeConfig(foldWrapItem?.id as number);
+      setFoldWrapItem(_res.data);
+    } catch (error) {
+      message.error('获取当前节点数据失败');
+    }
+  };
+
   return {
     volid,
     setVolid,
@@ -58,6 +86,11 @@ const useWorkflow = () => {
     setReferenceList,
     getValue,
     getLoopValue,
+    isModified,
+    setIsModified,
+    foldWrapItem,
+    setFoldWrapItem,
+    getCurrentNodeData,
   };
 };
 

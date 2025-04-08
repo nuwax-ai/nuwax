@@ -24,7 +24,7 @@ import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-import InputOrReference from './InputOrReference';
+// import InputOrReference from './InputOrReference';
 import { TreeFormProps } from './type';
 interface TreeNodeConfig extends InputAndOutConfig {
   key: string;
@@ -38,13 +38,13 @@ const CustomTree: React.FC<TreeFormProps> = ({
   inputItemName = 'inputArgs',
   notShowTitle,
   showCheck,
-  isBody,
+  // isBody,
 }) => {
   const [treeData, setTreeData] = useState<TreeNodeConfig[]>(params || []);
 
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { volid } = useModel('workflow');
+  const { volid, setIsModified } = useModel('workflow');
 
   useEffect(() => {
     if (params && !_.isEqual(params, treeData)) {
@@ -55,6 +55,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
   const updateTreeData = (newData: TreeNodeConfig[]) => {
     setTreeData(newData);
     form.setFieldValue(inputItemName, newData);
+    setIsModified(true);
   };
 
   const getNodeDepth = (
@@ -222,16 +223,11 @@ const CustomTree: React.FC<TreeFormProps> = ({
             </div>
           )}
         </div>
-        {isBody && (
+        {/* {isBody && (
           <div style={{ width: '80px', position: 'relative' }}>
-            <InputOrReference
-              value={nodeData.bindValue}
-              onChange={(e) => {
-                updateNodeField(nodeData.key, 'bindValue', e);
-              }}
-            />
+            <InputOrReference />
           </div>
-        )}
+        )} */}
 
         <div className="flex" style={{ width: showCheck ? 60 : 40 }}>
           <Popover

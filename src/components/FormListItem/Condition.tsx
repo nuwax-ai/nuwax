@@ -1,7 +1,7 @@
 import InputOrReference from '@/components/FormListItem/InputOrReference';
 import { ConditionProps } from '@/types/interfaces/workflow';
 import { Form, Select } from 'antd';
-import { useModel } from 'umi';
+// import { useModel } from 'umi';
 
 const options = [
   { label: '等于', value: 'EQUAL', displayValue: '=' },
@@ -39,40 +39,40 @@ const ConditionItem: React.FC<ConditionProps> = ({
   form,
   inputItemName,
 }) => {
-  const { referenceList } = useModel('workflow');
+  // const { referenceList } = useModel('workflow');
 
   // 将referenceList作为参数传递给changeInputValue
-  const changeInputValue = (
-    e: string,
-    fieldName: 'firstArg' | 'secondArg',
-    type?: 'Input' | 'Reference',
-  ) => {
-    let newValue;
-    if (type === 'Input') {
-      newValue = {
-        bindValue: e,
-        bindValueType: 'Input',
-        dataType: 'String',
-        name: '',
-      };
-    } else {
-      newValue = {
-        bindValue: referenceList.argMap[e as string].key,
-        bindValueType: 'Reference',
-        name: referenceList.argMap[e as string].name,
-        dataType: referenceList.argMap[e as string].dataType || 'String',
-      };
-    }
+  // const changeInputValue = (
+  //   e: string,
+  //   fieldName: 'firstArg' | 'secondArg',
+  //   type?: 'Input' | 'Reference',
+  // ) => {
+  //   let newValue;
+  //   if (type === 'Input') {
+  //     newValue = {
+  //       bindValue: e,
+  //       bindValueType: 'Input',
+  //       dataType: 'String',
+  //       name: '',
+  //     };
+  //   } else {
+  //     newValue = {
+  //       bindValue: referenceList.argMap[e as string].key,
+  //       bindValueType: 'Reference',
+  //       name: referenceList.argMap[e as string].name,
+  //       dataType: referenceList.argMap[e as string].dataType || 'String',
+  //     };
+  //   }
 
-    form.setFieldsValue({
-      [inputItemName]: {
-        [field.name]: {
-          [fieldName]: newValue,
-        },
-      },
-    });
-    onChange?.();
-  };
+  //   form.setFieldsValue({
+  //     [inputItemName]: {
+  //       [field.name]: {
+  //         [fieldName]: newValue,
+  //       },
+  //     },
+  //   });
+  //   onChange?.();
+  // };
 
   const changeConditionType = (e: string) => {
     form.setFieldsValue({
@@ -104,10 +104,6 @@ const ConditionItem: React.FC<ConditionProps> = ({
       <Form.Item style={{ marginRight: '8px', flex: 1 }}>
         <Form.Item name={[field.name, 'firstArg', 'bindValue']}>
           <InputOrReference
-            value={form.getFieldValue([field.name, 'firstArg', 'bindValue'])}
-            onChange={(value, type) =>
-              changeInputValue(value, 'firstArg', type)
-            }
             fieldName={['conditionArgs', field.name, 'firstArg', 'bindValue']}
             form={form}
             isDisabled
@@ -115,11 +111,7 @@ const ConditionItem: React.FC<ConditionProps> = ({
         </Form.Item>
         <Form.Item name={[field.name, 'secondArg', 'bindValue']}>
           <InputOrReference
-            value={form.getFieldValue([field.name, 'secondArg', 'bindValue'])}
             fieldName={['conditionArgs', field.name, 'secondArg', 'bindValue']}
-            onChange={(value, type) =>
-              changeInputValue(value, 'secondArg', type)
-            }
             form={form}
             referenceType={
               // 修正路径，从conditionArgs层级获取

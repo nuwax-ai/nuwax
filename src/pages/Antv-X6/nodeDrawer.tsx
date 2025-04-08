@@ -6,8 +6,9 @@ import { NodeConfig, NodeDrawerProps } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
 import { Form, FormInstance } from 'antd';
 import React, { useEffect, useState } from 'react';
+import { useModel } from 'umi';
 import ComplexNode from './component/complexNode';
-import { ConditionNode } from './component/condition';
+import ConditionNode from './component/condition';
 import Library from './component/library';
 import NodeItem from './component/nodeItem';
 import ReferenceNode from './component/pluginNode';
@@ -41,13 +42,12 @@ const LoopBreak: React.FC = () => {
 const NodeDrawer: React.FC<NodeDrawerProps> = ({
   visible,
   onClose,
-  foldWrapItem,
   onGetNodeConfig, // 新增这一行
   handleNodeChange,
-  getRefernece,
 }) => {
   // 当前节点是否修改了参数
-  const [isModified, setIsModified] = useState(false);
+  const { isModified, setIsModified, foldWrapItem } = useModel('workflow');
+
   // 将节点的数据 保存到 state 中,维持数据双向绑定,便于管理
   const [currentNodeConfig, setCurrentNodeConfig] =
     useState<ChildNode>(foldWrapItem);
@@ -60,43 +60,24 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   // form表单校验完毕后提交数据
   const onFinish = () => {
     const values = form.getFieldsValue(true);
-
-    if (
-      !visible ||
-      (foldWrapItem.id !== currentNodeConfig.id && currentNodeConfig.id !== 0)
-    ) {
-      const newNodeConfig = {
-        ...currentNodeConfig,
-        nodeConfig: {
-          ...currentNodeConfig.nodeConfig,
-          ...values,
-        },
-      };
-      onGetNodeConfig(newNodeConfig);
-    }
+    const newNodeConfig = {
+      ...currentNodeConfig,
+      nodeConfig: {
+        ...currentNodeConfig.nodeConfig,
+        ...values,
+      },
+    };
+    onGetNodeConfig(newNodeConfig);
   };
 
-  const onFinishFailed = () => {
-    if (
-      !visible ||
-      (foldWrapItem.id !== currentNodeConfig.id && currentNodeConfig.id !== 0)
-    ) {
-      const values = form.getFieldsValue(true);
-      console.log(values, 'onFinishFailed');
-      const newNodeConfig = {
-        ...currentNodeConfig,
-        nodeConfig: {
-          ...currentNodeConfig.nodeConfig,
-          ...values,
-        },
-      };
-      onGetNodeConfig(newNodeConfig);
-    }
-  };
-
-  const submit = () => {
-    form.submit();
-  };
+  // 立刻更新当前的数据，提交给后台
+  // 重新获取当前节点的数据
+  // const retrieveCurrentNodeConfig = async () => {
+  //   const _data = await getCurrentNodeData();
+  //   if (_data) {
+  //     form.setFieldsValue(_data.nodeConfig);
+  //   }
+  // };
 
   // 修改节点的名称和描述
   const changeFoldWrap = ({
@@ -113,195 +94,51 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
     });
     setIsModified(true);
   };
-  // 修改节点数据
-  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
-    if (
-      JSON.stringify(currentNodeConfig.nodeConfig) !==
-      JSON.stringify(newNodeConfig)
-    ) {
-      setCurrentNodeConfig({ ...currentNodeConfig, nodeConfig: newNodeConfig });
-      setIsModified(true);
-    }
-  };
 
   // 重新获取当前的上级节点参数
-  const retrieveRefernece = () => {
-    getRefernece(foldWrapItem.id);
-  };
+  // const retrieveRefernece = () => {
+  //   getRefernece(foldWrapItem.id);
+  // };
 
   // 根据类型返回指定的 ReactNode
   const renderNodeContent = (params: ChildNode, form: FormInstance) => {
     switch (params.type) {
       case 'Start':
         // 如果这和 'Start' 是同样的组件，请考虑重用组件或创建一个新的组件。
-        return (
-          <StartNode
-            params={currentNodeConfig.nodeConfig}
-            Modified={handleChangeNodeConfig}
-            type={currentNodeConfig.type}
-            form={form}
-          />
-        );
+        return <StartNode type={currentNodeConfig.type} form={form} />;
       case 'DocumentExtraction':
         return (
-          <DocumentExtractionNode
-            form={form}
-            params={currentNodeConfig.nodeConfig}
-            Modified={handleChangeNodeConfig}
-            type={currentNodeConfig.type}
-          />
+          <DocumentExtractionNode form={form} type={currentNodeConfig.type} />
         );
       case 'End':
       case 'Output':
-        return (
-          <EndNode
-            form={form}
-            params={currentNodeConfig.nodeConfig}
-            Modified={handleChangeNodeConfig}
-            type={currentNodeConfig.type}
-          />
-        );
+        return <EndNode form={form} type={currentNodeConfig.type} />;
       case 'Loop':
-        return (
-          <CycleNode
-            form={form}
-            params={currentNodeConfig.nodeConfig}
-            Modified={handleChangeNodeConfig}
-            retrieveRefernece={retrieveRefernece}
-          />
-        );
+        return <CycleNode form={form} />;
       case 'Variable':
-        return (
-          <VariableNode
-            form={form}
-            params={currentNodeConfig.nodeConfig}
-            Modified={handleChangeNodeConfig}
-          />
-        );
+        return <VariableNode form={form} />;
       case 'TextProcessing':
-        return (
-          <TextProcessingNode
-            form={form}
-            params={currentNodeConfig.nodeConfig}
-            Modified={handleChangeNodeConfig}
-          />
-        );
+        return <TextProcessingNode form={form} />;
       case 'LLM':
-        return (
-          <ModelNode
-            form={form}
-            params={currentNodeConfig.nodeConfig}
-            Modified={handleChangeNodeConfig}
-            updateNode={(newNodeConfig) => {
-              onGetNodeConfig(
-                {
-                  ...currentNodeConfig,
-                  nodeConfig: newNodeConfig,
-                },
-                true,
-              );
-              setCurrentNodeConfig({
-                ...currentNodeConfig,
-                nodeConfig: newNodeConfig,
-              });
-            }}
-          />
-        );
+        return <ModelNode form={form} />;
 
       case 'Plugin':
       case 'Workflow':
       case 'LongTermMemory':
-        return (
-          <PluginInNode
-            params={currentNodeConfig.nodeConfig}
-            Modified={handleChangeNodeConfig}
-            type={currentNodeConfig.type}
-            form={form}
-          />
-        );
+        return <PluginInNode type={currentNodeConfig.type} form={form} />;
       case 'Code':
-        return (
-          <CodeNode
-            form={form}
-            params={currentNodeConfig.nodeConfig}
-            Modified={handleChangeNodeConfig}
-          />
-        );
+        return <CodeNode form={form} />;
       case 'QA':
-        return (
-          <QuestionsNode
-            form={form}
-            params={currentNodeConfig.nodeConfig}
-            Modified={handleChangeNodeConfig}
-            updateNode={(newNodeConfig) => {
-              onGetNodeConfig(
-                {
-                  ...currentNodeConfig,
-                  nodeConfig: newNodeConfig,
-                },
-                true,
-              );
-              setCurrentNodeConfig({
-                ...currentNodeConfig,
-                nodeConfig: newNodeConfig,
-              });
-            }}
-          />
-        );
+        return <QuestionsNode form={form} />;
       case 'HTTPRequest':
-        return (
-          <HttpToolNode
-            params={currentNodeConfig.nodeConfig}
-            Modified={handleChangeNodeConfig}
-            form={form}
-          />
-        );
+        return <HttpToolNode form={form} />;
       case 'Knowledge':
-        return (
-          <KnowledgeNode
-            form={form}
-            params={currentNodeConfig.nodeConfig}
-            Modified={handleChangeNodeConfig}
-            updateNode={(newNodeConfig) =>
-              onGetNodeConfig(
-                {
-                  ...currentNodeConfig,
-                  nodeConfig: newNodeConfig,
-                },
-                true,
-              )
-            }
-          />
-        );
+        return <KnowledgeNode form={form} />;
       // 条件分支需要实时的调用接口
       case 'Condition':
-        return (
-          <ConditionNode
-            params={currentNodeConfig.nodeConfig}
-            Modified={handleChangeNodeConfig}
-            updateNode={(newNodeConfig) => {
-              onGetNodeConfig(
-                {
-                  ...currentNodeConfig,
-                  nodeConfig: newNodeConfig,
-                },
-                true,
-              );
-              setCurrentNodeConfig({
-                ...currentNodeConfig,
-                nodeConfig: newNodeConfig,
-              });
-            }}
-          />
-        );
+        return <ConditionNode form={form} />;
       case 'IntentRecognition':
-        return (
-          <IntentionNode
-            params={currentNodeConfig.nodeConfig}
-            Modified={handleChangeNodeConfig}
-            form={form}
-          />
-        );
+        return <IntentionNode form={form} />;
       case 'LoopBreak':
         return <LoopBreak />;
       case 'LoopContinue':
@@ -340,10 +177,16 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   //   }
   //   getRefernece(foldWrapItem.id);
   // };
+  useEffect(() => {
+    const currentValues = form.getFieldsValue();
+    if (currentValues !== currentNodeConfig.nodeConfig) {
+      setIsModified(true);
+    }
+  }, [form]);
 
   useEffect(() => {
     if (!visible && isModified && currentNodeConfig.id !== 0) {
-      submit();
+      form.submit();
       setIsModified(false); // 重置修改状态
     }
   }, [visible]);
@@ -351,8 +194,17 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   useEffect(() => {
     if (foldWrapItem.id && foldWrapItem.id !== 0) {
       setCurrentNodeConfig(foldWrapItem);
+      // 这里根据当前节点的类型，设置表单的初始值
       // 直接设置表单值而不是通过initialValues
       form.setFieldsValue(foldWrapItem.nodeConfig);
+      if (foldWrapItem.type === 'HTTPRequest') {
+        if (form.getFieldValue('method') === undefined) {
+          form.setFieldValue('method', 'GET');
+        }
+        if (form.getFieldValue('contentType') === undefined) {
+          form.setFieldValue('contentType', 'JSON');
+        }
+      }
     }
 
     if (
@@ -361,7 +213,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
       foldWrapItem.id !== currentNodeConfig.id &&
       isModified
     ) {
-      submit();
+      form.submit();
       setIsModified(false); // 重置修改状态
     }
   }, [foldWrapItem.id]);
@@ -389,7 +241,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
         <Form
           form={form}
           layout={'vertical'}
-          onFinishFailed={onFinishFailed}
+          onFinishFailed={onFinish}
           onFinish={onFinish}
           onValuesChange={() => setIsModified(true)}
         >

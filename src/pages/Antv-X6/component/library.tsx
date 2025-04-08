@@ -4,7 +4,6 @@ import type { HasIdsType } from '@/components/Created/type';
 import { SkillList } from '@/components/Skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreatedNodeItem } from '@/types/interfaces/common';
-import type { NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Empty, Form, Popover, Select, Slider } from 'antd';
@@ -14,10 +13,7 @@ import { TreeOutput } from './commonNode';
 import { InputList } from './pluginNode';
 // 定义知识库
 const KnowledgeNode: React.FC<NodeDisposeProps> = ({
-  form,
-  params,
-  Modified,
-  // updateNode,
+  form, // updateNode,
 }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
@@ -30,16 +26,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   const onAddedSkill = (item: CreatedNodeItem) => {
     item.type = item.targetType;
     item.knowledgeBaseId = item.targetId;
-    const knowledgeBaseConfigs = params.knowledgeBaseConfigs || [];
-    Modified({
-      ...params,
-      knowledgeBaseConfigs: [...knowledgeBaseConfigs, item],
-    });
     setOpen(false);
-  };
-  // 修改模型的入参和出参
-  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
-    Modified({ ...params, ...newNodeConfig });
   };
 
   const hasIds: HasIdsType = {
@@ -49,7 +36,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   };
 
   // 遍历 skillComponentConfigs 并填充 hasIds
-  for (const item of params.knowledgeBaseConfigs || []) {
+  for (const item of form.getFieldValue('knowledgeBaseConfigs') || []) {
     if (item.type && item.knowledgeBaseId) {
       const type = item.type as AgentComponentTypeEnum; // 明确类型
       if (hasIds[type]) {
@@ -78,8 +65,8 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
             form.getFieldValue('knowledgeBaseConfigs') ? (
               <SkillList
                 skillName={'knowledgeBaseConfigs'}
-                params={params}
-                handleChange={handleChangeNodeConfig}
+                params={form.getFieldValue('knowledgeBaseConfigs')}
+                form={form}
               />
             ) : (
               <Empty />

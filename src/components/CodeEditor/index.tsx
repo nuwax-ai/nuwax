@@ -4,14 +4,14 @@ import React, { useEffect, useState } from 'react';
 
 interface Props {
   value: string | undefined;
-  changeCode: (code: string) => void;
+  onChange: (code: string) => void;
   codeLanguage: 'JavaScript' | 'Python' | 'JSON';
   height?: string;
 }
 
 const CodeEditor: React.FC<Props> = ({
   value,
-  changeCode,
+  onChange,
   height = '400px',
   codeLanguage,
 }) => {
@@ -73,7 +73,7 @@ const CodeEditor: React.FC<Props> = ({
   }
 
   const handleCodeChange = (newValue?: string) => {
-    changeCode(newValue || '');
+    onChange(newValue || '');
   };
 
   return (

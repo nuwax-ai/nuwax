@@ -34,24 +34,8 @@ import { Child } from './type';
 const Workflow: React.FC = () => {
   // 当前工作流的id
   const workflowId = Number(useParams().workflowId);
-
   // 显示隐藏右侧节点抽屉
   const [visible, setVisible] = useState(false);
-  // 右侧抽屉的部分信息
-  const [foldWrapItem, setFoldWrapItem] = useState<ChildNode>({
-    id: 0,
-    description: '',
-    workflowId: workflowId,
-    type: NodeTypeEnum.Start,
-    nodeConfig: {
-      extension: {
-        x: 0,
-        y: 0,
-      },
-    },
-    name: '',
-    icon: '',
-  });
   // 工作流左上角的详细信息
   const [info, setInfo] = useState<IgetDetails | null>();
   // 定义一个节点试运行返回值
@@ -60,7 +44,6 @@ const Workflow: React.FC = () => {
   const [stopWait, setStopWait] = useState<boolean>(false);
   // 打开和关闭发布弹窗
   const [showPublish, setShowPublish] = useState<boolean>(false);
-
   // const [isUpdate, setIsUpdate] = useState<boolean>(false)
   // 打开和关闭新增组件
   const [open, setOpen] = useState(false);
@@ -97,7 +80,8 @@ const Workflow: React.FC = () => {
   // 是否显示创建工作流，插件，知识库，数据库的弹窗和试运行的弹窗
   const { setTestRun } = useModel('model');
 
-  const { setReferenceList } = useModel('workflow');
+  const { setReferenceList, foldWrapItem, setFoldWrapItem } =
+    useModel('workflow');
   // 修改更新时间
   const changeUpdateTime = () => {
     const _time = new Date();
@@ -222,7 +206,7 @@ const Workflow: React.FC = () => {
   // 更新节点数据
   const changeNode = async (config: ChildNode, update?: boolean | string) => {
     // setIsUpdate(true)
-
+    console.log(config, 123456);
     graphRef.current.updateNode(config.id, config);
     const _res = await updateNode(config);
     if (_res.code === Constant.success) {
@@ -781,7 +765,6 @@ const Workflow: React.FC = () => {
       <NodeDrawer
         visible={visible}
         onClose={() => setVisible(false)}
-        foldWrapItem={foldWrapItem}
         onGetNodeConfig={changeNode} // 新增这一行
         handleNodeChange={handleNodeChange}
         getRefernece={getRefernece}

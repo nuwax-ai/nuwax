@@ -4,7 +4,6 @@ import Monaco from '@/components/CodeEditor/monaco';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum } from '@/types/enums/node';
-import type { NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { ExpandAltOutlined, SettingOutlined } from '@ant-design/icons';
 import {
@@ -19,7 +18,6 @@ import {
   Space,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { cycleOption, outPutConfigs } from '../params';
 import { InputAndOut, OtherFormList, TreeOutput } from './commonNode';
 import './nodeItem.less';
@@ -45,8 +43,7 @@ const StartNode: React.FC<NodeDisposeProps> = ({ form }) => {
 const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({ form }) => {
   return (
     <>
-      <InputAndOut
-        nodeKey={uuidv4()}
+      <OtherFormList
         title="输入"
         fieldConfigs={outPutConfigs}
         inputItemName={InputItemNameEnum.inputArgs}
@@ -71,7 +68,6 @@ const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({ form }) => {
 
 // 定义结束和过程输出的节点渲染
 const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
-  const [outputKey] = useState(() => uuidv4());
   const segOptions = [
     { label: '返回变量', value: 'VARIABLE' },
     { label: '返回文本', value: 'TEXT' },
@@ -80,7 +76,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
   return (
     <>
       {type === 'End' && (
-        <div className="node-item-style dis-center">
+        <div className="dis-center">
           <Form.Item name={'returnType'}>
             <Segmented<string>
               options={segOptions}
@@ -90,7 +86,6 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
         </div>
       )}
       <InputAndOut
-        nodeKey={outputKey}
         title="输出变量"
         form={form}
         fieldConfigs={outPutConfigs}
@@ -121,16 +116,10 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
 };
 
 // 定义循环的节点渲染
-const CycleNode: React.FC<NodeDisposeProps> = ({ form, params, Modified }) => {
-  // 添加状态保持稳定key
-  const [outputKey] = useState(() => uuidv4());
-  // 修改模型的入参和出参
-  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
-    Modified({ ...params, ...newNodeConfig });
-  };
+const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
   return (
     <div>
-      <div className=" node-item-style">
+      <div>
         <span className="node-title-style margin-bottom">循环设置</span>
         <Form.Item name={'loopType'}>
           <Select
@@ -139,38 +128,43 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form, params, Modified }) => {
           ></Select>
         </Form.Item>
       </div>
-      <Form.Item shouldUpdate>
-        {() =>
-          form.getFieldValue('loopType') !== 'INFINITE_LOOP' ? (
-            <div>
-              <div className="node-title-style margin-bottom">循环次数</div>
-              <InputNumber
-                size="small"
-                value={params.loopTimes}
-                onChange={(value) =>
-                  // 确保传入的 value 不为 null，如果为 null 则设置为 undefined
-                  handleChangeNodeConfig({
-                    ...params,
-                    loopTimes: value !== null ? value : undefined,
-                  })
-                }
-                style={{ width: '100%', marginBottom: '10px' }}
-              />
-            </div>
-          ) : (
-            <InputAndOut
-              nodeKey={outputKey}
-              title="循环数组"
-              fieldConfigs={outPutConfigs}
-              inputItemName={InputItemNameEnum.inputArgs}
-              form={form}
-            />
-          )
+
+      {/* 动态渲染循环次数 */}
+      <Form.Item
+        noStyle
+        shouldUpdate={(prevValues, currentValues) =>
+          prevValues.loopType !== currentValues.loopType
         }
+      >
+        {() => {
+          const loopType = form.getFieldValue('loopType');
+          if (loopType === 'SPECIFY_TIMES_LOOP') {
+            return (
+              <div>
+                <div className="node-title-style margin-bottom">循环次数</div>
+                <Form.Item name="loopTimes">
+                  <InputNumber
+                    size="small"
+                    style={{ width: '100%', marginBottom: '10px' }}
+                  />
+                </Form.Item>
+              </div>
+            );
+          } else if (loopType === 'ARRAY_LOOP') {
+            return (
+              <InputAndOut
+                title="循环数组"
+                fieldConfigs={outPutConfigs}
+                inputItemName={InputItemNameEnum.inputArgs}
+                form={form}
+              />
+            );
+          }
+          return null;
+        }}
       </Form.Item>
 
       <InputAndOut
-        nodeKey={outputKey}
         title="中间变量"
         fieldConfigs={outPutConfigs}
         inputItemName={InputItemNameEnum.variableArgs}
@@ -179,7 +173,6 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form, params, Modified }) => {
       />
 
       <InputAndOut
-        nodeKey={outputKey}
         title="输出"
         fieldConfigs={outPutConfigs}
         inputItemName={InputItemNameEnum.outputArgs}
@@ -209,7 +202,6 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
         {() =>
           form.getFieldValue('configType') === 'SET_VARIABLE' ? (
             <InputAndOut
-              nodeKey={uuidv4()}
               title={'设置变量'}
               fieldConfigs={outPutConfigs}
               inputItemName={InputItemNameEnum.inputArgs}
@@ -222,7 +214,6 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
         {() =>
           form.getFieldValue('configType') !== 'SET_VARIABLE' ? (
             <OtherFormList
-              nodeKey={uuidv4()}
               title={'输出变量'}
               fieldConfigs={outPutConfigs}
               inputItemName={InputItemNameEnum.outputArgs}
@@ -254,9 +245,6 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
 
 // 定义文本处理的节点渲染
 const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
-  // 添加状态保持稳定key
-  const [outputKey] = useState(() => uuidv4());
-
   const textTypeOptions = [
     { label: '字符串拼接', value: 'CONCAT' },
     { label: '字符串分割', value: 'SPLIT' },
@@ -315,7 +303,6 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
       </Form.Item>
 
       <InputAndOut
-        nodeKey={outputKey}
         title="输入"
         fieldConfigs={outPutConfigs}
         inputItemName={InputItemNameEnum.inputArgs}
@@ -333,47 +320,52 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
                       <p className="node-title-style">数组连接符设置</p>
                       <p>使用以下符号来自动连接数组中的每个项目</p>
                       <p className="array-link-setting-select-label">连接符</p>
-                      <Select
-                        options={options}
-                        allowClear
-                        placeholder={'请选择连接符号'}
-                        dropdownRender={(menu) => (
-                          <>
-                            {menu}
-                            <Divider style={{ margin: '8px 0' }} />
-                            <div style={{ padding: '8px' }} className="dis-sb">
-                              <Space>
-                                <Input
-                                  value={newItem.label}
-                                  placeholder="选项名称"
-                                  onChange={(e) =>
-                                    setNewItem({
-                                      value: newItem.value,
-                                      label: e.target.value,
-                                    })
-                                  }
-                                  onKeyDown={(e) => e.stopPropagation()} // 阻止键盘事件冒泡
-                                />
-                                <Input
-                                  value={newItem.value}
-                                  placeholder="选项值"
-                                  onChange={(e) =>
-                                    setNewItem({
-                                      label: newItem.label,
-                                      value: e.target.value,
-                                    })
-                                  }
-                                  onKeyDown={(e) => e.stopPropagation()} // 阻止键盘事件冒泡
-                                />
-                                <Button type="primary" onClick={addItem}>
-                                  添加
-                                </Button>
-                              </Space>
-                            </div>
-                          </>
-                        )}
-                        style={{ width: '100%', marginBottom: '10px' }}
-                      />
+                      <Form.Item name="join">
+                        <Select
+                          options={options}
+                          allowClear
+                          placeholder={'请选择连接符号'}
+                          dropdownRender={(menu) => (
+                            <>
+                              {menu}
+                              <Divider style={{ margin: '8px 0' }} />
+                              <div
+                                style={{ padding: '8px' }}
+                                className="dis-sb"
+                              >
+                                <Space>
+                                  <Input
+                                    value={newItem.label}
+                                    placeholder="选项名称"
+                                    onChange={(e) =>
+                                      setNewItem({
+                                        value: newItem.value,
+                                        label: e.target.value,
+                                      })
+                                    }
+                                    onKeyDown={(e) => e.stopPropagation()} // 阻止键盘事件冒泡
+                                  />
+                                  <Input
+                                    value={newItem.value}
+                                    placeholder="选项值"
+                                    onChange={(e) =>
+                                      setNewItem({
+                                        label: newItem.label,
+                                        value: e.target.value,
+                                      })
+                                    }
+                                    onKeyDown={(e) => e.stopPropagation()} // 阻止键盘事件冒泡
+                                  />
+                                  <Button type="primary" onClick={addItem}>
+                                    添加
+                                  </Button>
+                                </Space>
+                              </div>
+                            </>
+                          )}
+                          style={{ width: '100%', marginBottom: '10px' }}
+                        />
+                      </Form.Item>
                     </>
                   }
                   trigger="click"
@@ -459,15 +451,12 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
 };
 
 // 定义代码节点
-const CodeNode: React.FC<NodeDisposeProps> = ({ form, Modified }) => {
+const CodeNode: React.FC<NodeDisposeProps> = ({ form }) => {
   const [show, setShow] = useState(false);
-  // 添加状态保持稳定key
-  const [outputKey] = useState(() => uuidv4());
 
   return (
     <>
       <InputAndOut
-        nodeKey={outputKey}
         title="输入"
         fieldConfigs={outPutConfigs}
         inputItemName={InputItemNameEnum.inputArgs}
@@ -486,12 +475,12 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ form, Modified }) => {
                 : form.getFieldValue('codeJavaScript')
             }
             codeLanguage={form.getFieldValue('codeLanguage') || 'JavaScript'}
-            changeCode={(e: string) => form.setFieldValue('code', e)}
+            onChange={(e: string) => form.setFieldValue('code', e)}
             height="180px"
           />
         </>
       </Form.Item>
-
+      <p style={{ height: '10px' }}></p>
       <CustomTree
         title={'输出'}
         params={form.getFieldValue('outputArgs') || []} // 改为直接读取表单最新值
@@ -499,12 +488,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ form, Modified }) => {
         inputItemName={'outputArgs'}
       />
 
-      <Monaco
-        params={form.getFieldsValue()}
-        Modified={Modified}
-        isShow={show}
-        close={() => setShow(false)}
-      />
+      <Monaco form={form} isShow={show} close={() => setShow(false)} />
     </>
   );
 };

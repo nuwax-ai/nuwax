@@ -75,19 +75,19 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
 
   return (
     <div className={'form-list-style'}>
-      <div className="dis-sb margin-bottom">
-        <span className="node-title-style">{title}</span>
-        {!disabledAdd && (
-          <Button
-            icon={<PlusOutlined />}
-            size={'small'}
-            onClick={addInputItem}
-          ></Button>
-        )}
-      </div>
       <Form.List name={inputItemName}>
         {(fields) => (
           <>
+            <div className="dis-sb margin-bottom">
+              <span className="node-title-style">{title}</span>
+              {!disabledAdd && (
+                <Button
+                  icon={<PlusOutlined />}
+                  size={'small'}
+                  onClick={addInputItem}
+                ></Button>
+              )}
+            </div>
             {fields.map((item, index) => {
               const fieldValue = form.getFieldValue([
                 inputItemName,
@@ -119,7 +119,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                         />
                       </Form.Item>
                       <Form.Item
-                        label="参数值"
                         name={[item.name, 'bindValue']}
                         noStyle
                         rules={[
@@ -127,17 +126,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                         ]}
                       >
                         <InputOrReference
-                          onChange={(value) => {
-                            form.setFieldValue(
-                              [inputItemName, item.name, 'bindValue'],
-                              value,
-                            );
-                          }}
-                          value={form.getFieldValue([
-                            inputItemName,
-                            item.name,
-                            'bindValue',
-                          ])}
                           form={form}
                           fieldName={[inputItemName, item.name, 'bindValue']}
                           style={{ flex: 1, marginRight: '10px' }}
@@ -188,6 +176,9 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
 export const OtherFormList: React.FC<NodeRenderProps> = ({
   title,
   inputItemName = 'conditionArgs',
+  disabledAdd,
+  disabledDelete,
+  disabledInput,
 }) => {
   return (
     <>
@@ -196,18 +187,20 @@ export const OtherFormList: React.FC<NodeRenderProps> = ({
           <>
             <div className="dis-sb margin-bottom">
               <span className="node-title-style">{title}</span>
-              <Button
-                icon={<PlusOutlined />}
-                size={'small'}
-                onClick={() =>
-                  add({
-                    key: uuidv4(),
-                    name: '',
-                    bindValue: '',
-                    dataType: DataTypeEnum.String,
-                  })
-                }
-              ></Button>
+              {!disabledAdd && (
+                <Button
+                  icon={<PlusOutlined />}
+                  size={'small'}
+                  onClick={() =>
+                    add({
+                      key: uuidv4(),
+                      name: '',
+                      bindValue: '',
+                      dataType: DataTypeEnum.String,
+                    })
+                  }
+                ></Button>
+              )}
             </div>
             {fields.map((item, index) => {
               return (
@@ -230,6 +223,7 @@ export const OtherFormList: React.FC<NodeRenderProps> = ({
                           size="small"
                           style={{ width: '30%', marginRight: '10px' }}
                           placeholder="请输入参数名"
+                          disabled={disabledInput}
                         />
                       </Form.Item>
                       <Form.Item
@@ -246,9 +240,11 @@ export const OtherFormList: React.FC<NodeRenderProps> = ({
                           style={{ width: '55%', marginRight: '10px' }}
                         />
                       </Form.Item>
-                      <Form.Item noStyle>
-                        <DeleteOutlined onClick={() => remove(item.name)} />
-                      </Form.Item>
+                      {!disabledDelete && (
+                        <Form.Item noStyle>
+                          <DeleteOutlined onClick={() => remove(item.name)} />
+                        </Form.Item>
+                      )}
                     </div>
                   </Form.Item>
                 </div>
@@ -396,9 +392,10 @@ export const FormList: React.FC<FormListProps> = ({
               size={'small'}
               onClick={() => {
                 const currentFields = form.getFieldValue(inputItemName) || [];
-                // 计算插入位置（倒数第二个位置）
+
                 const insertIndex = Math.max(0, currentFields.length - 1);
                 add({}, insertIndex);
+                form.submit();
               }}
             ></Button>
           </div>

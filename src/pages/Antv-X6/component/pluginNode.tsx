@@ -60,18 +60,6 @@ export const InputList: React.FC<InputListProps> = ({
                       </Form.Item>
                       <Form.Item name={[item.name, 'bindValue']} noStyle>
                         <InputOrReference
-                          onChange={(value) => {
-                            console.log(123123213);
-                            form.setFieldValue(
-                              [inputItemName, item.name, 'bindValue'],
-                              value,
-                            );
-                          }}
-                          value={form.getFieldValue([
-                            inputItemName,
-                            item.name,
-                            'bindValue',
-                          ])}
                           form={form}
                           fieldName={[inputItemName, item.name, 'bindValue']}
                           style={{ width: '65%' }}
