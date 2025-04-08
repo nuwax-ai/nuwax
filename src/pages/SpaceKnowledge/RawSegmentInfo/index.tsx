@@ -69,6 +69,11 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
         // 知识库分段配置 - 数据列表查询
         handleRawSegmentList(id);
       }
+      // 分析中状态为：1时,此状态可能是由于一些脏数据引起的，此时分段信息显示为空
+      if (docStatusCode === DocStatusCodeEnum.ANALYZING) {
+        // 文档分段数组清空
+        setRawSegmentInfoList([]);
+      }
     } else {
       // 文档分段数组清空
       setRawSegmentInfoList([]);

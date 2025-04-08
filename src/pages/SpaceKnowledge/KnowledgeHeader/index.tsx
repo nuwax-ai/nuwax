@@ -2,6 +2,7 @@ import knowledgeImage from '@/assets/images/knowledge_image.png';
 import CustomPopover from '@/components/CustomPopover';
 import { KNOWLEDGE_TEXT_IMPORT_TYPE } from '@/constants/library.constants';
 import type { KnowledgeHeaderProps } from '@/types/interfaces/knowledge';
+import { formatBytes } from '@/utils/byteConverter';
 import { DownOutlined, EditOutlined, LeftOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
@@ -22,10 +23,9 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
   const handleBack = () => {
     history.back();
   };
-
   const fileSize = knowledgeInfo?.fileSize
-    ? (knowledgeInfo?.fileSize / 1024).toFixed(1)
-    : 0;
+    ? formatBytes(knowledgeInfo.fileSize)
+    : '0KB';
 
   return (
     <header className={cx('flex', 'items-center', 'w-full', styles.header)}>
@@ -55,7 +55,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
           />
         </div>
         <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
-          <span className={cx(styles.box)}>{`${fileSize}kb`}</span>
+          <span className={cx(styles.box)}>{`${fileSize}`}</span>
           <span className={cx(styles.box)}>{`${docCount}个文档`}</span>
         </div>
       </section>

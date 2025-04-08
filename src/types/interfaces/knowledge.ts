@@ -174,7 +174,7 @@ export interface KnowledgeDocumentListParams extends KnowledgeListBaseInfo {
 }
 
 export interface KnowledgeDocumentStatus {
-  // 知识库文档状态,1:分析中;2:分析成功;10:分析失败;,可用值:ANALYZING,ANALYZED,ANALYZE_FAILED
+  // 知识库文档状态,ANALYZING(1, "分析中", "分析中"), ANALYZED(2, "分析成功", "分析成功"), ANALYZING_RAW(3, "分析中", "分段生成中"),ANALYZED_QA(4, "分析中", "问答生成中"),ANALYZED_EMBEDDING(5, "分析中", "向量化中"),ANALYZE_FAILED(10, "分析失败", "分析失败");
   docStatus: DocStatusEnum;
   // 知识库文档状态
   docStatusCode: DocStatusCodeEnum;
@@ -248,6 +248,11 @@ export interface KnowledgeDocumentAddParams {
   autoSegmentConfigFlag: boolean;
   // 分段配置
   segmentConfig: SegmentConfigModel;
+}
+
+// 查询文档状态输入参数
+export interface KnowledgeQueryDocStatusParams {
+  docIds: number[];
 }
 
 // 知识库分段配置 - 数据更新接口
@@ -430,7 +435,7 @@ export interface DocWrapProps {
   documentList: KnowledgeDocumentInfo[];
   onChange: (value: string) => void;
   onClick: (info: KnowledgeDocumentInfo) => void;
-  onSetAnalyzed: (id: number, status?: KnowledgeDocumentStatus) => void;
+  onSetAnalyzed: (id: number, status: KnowledgeDocumentStatus) => void;
 }
 
 // 文档列表项
@@ -438,7 +443,7 @@ export interface DocItemProps {
   currentDocId?: number;
   info: KnowledgeDocumentInfo;
   onClick: (info: KnowledgeDocumentInfo) => void;
-  onSetAnalyzed: (id: number, status?: KnowledgeDocumentStatus) => void;
+  onSetAnalyzed: (id: number, status: KnowledgeDocumentStatus) => void;
 }
 
 // 分段信息

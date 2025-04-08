@@ -5,10 +5,7 @@ import {
   apiKnowledgeDocumentList,
 } from '@/services/knowledge';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import {
-  DocStatusCodeEnum,
-  KnowledgeTextImportEnum,
-} from '@/types/enums/library';
+import { KnowledgeTextImportEnum } from '@/types/enums/library';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type {
   KnowledgeBaseInfo,
@@ -183,32 +180,28 @@ const SpaceKnowledge: React.FC = () => {
 
   // 设置分析成功（自动重试,如果有分段,问答,向量化有失败的话, status为空）
   const handleSetAnalyzed = (id: number, status: KnowledgeDocumentStatus) => {
+    // console.log(id, status, 2333333, currentDocumentInfo)
+
     // 修改当前文档
-    if (currentDocumentInfo?.id === id) {
+    if (
+      currentDocumentInfo?.id === id &&
+      status.docStatusCode !== currentDocumentInfo?.docStatusCode
+    ) {
       // 修改当前文档状态
-      const _documentInfo = status
-        ? {
-            ...currentDocumentInfo,
-            ...status,
-          }
-        : {
-            ...currentDocumentInfo,
-            docStatusCode: DocStatusCodeEnum.ANALYZED,
-          };
+      const _documentInfo = {
+        ...currentDocumentInfo,
+        ...status,
+      };
       setCurrentDocumentInfo(_documentInfo);
     }
     // 修改文档列表
     const _documentList = cloneDeep(documentList);
     const list = _documentList.map((item) => {
       if (item.id === id) {
-        if (status) {
-          item.docStatus = status.docStatus;
-          item.docStatusCode = status.docStatusCode;
-          item.docStatusDesc = status.docStatusDesc;
-          item.docStatusReason = status.docStatusReason;
-        } else {
-          item.docStatusCode = DocStatusCodeEnum.ANALYZED;
-        }
+        item.docStatus = status.docStatus;
+        item.docStatusCode = status.docStatusCode;
+        item.docStatusDesc = status.docStatusDesc;
+        item.docStatusReason = status.docStatusReason;
       }
       return item;
     });

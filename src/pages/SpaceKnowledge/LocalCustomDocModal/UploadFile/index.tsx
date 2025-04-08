@@ -21,10 +21,11 @@ const UploadFile: React.FC<UploadFileProps> = ({
   beforeUpload,
 }) => {
   const handleChange: UploadProps['onChange'] = (info) => {
-    if (info.file.status === 'uploading') {
+    const { status } = info.file;
+    if (status === 'uploading') {
       return;
     }
-    if (info.file.status === 'done') {
+    if (status === 'done') {
       // Get this url from response in real world.
       const data: UploadFileInfo = info.file.response?.data;
       // Get this url from response in real world.

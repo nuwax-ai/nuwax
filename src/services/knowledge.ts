@@ -15,6 +15,7 @@ import type {
   KnowledgeQAListParams,
   KnowledgeQASearchParams,
   KnowledgeQAUpdateParams,
+  KnowledgeQueryDocStatusParams,
   KnowledgeRawSegmentAddParams,
   KnowledgeRawSegmentInfo,
   KnowledgeRawSegmentListParams,
@@ -179,6 +180,16 @@ export async function apiKnowledgeDocumentDetail(
     params: {
       dataId,
     },
+  });
+}
+
+// 知识库文档配置 - 查询文档状态
+export async function apiKnowledgeQueryDocStatus(
+  data: KnowledgeQueryDocStatusParams,
+): Promise<RequestResponse<KnowledgeDocumentInfo[]>> {
+  return request('/api/knowledge/document/queryDocStatus', {
+    method: 'POST',
+    data,
   });
 }
 

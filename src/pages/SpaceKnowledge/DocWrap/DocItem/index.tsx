@@ -2,13 +2,14 @@ import {
   apiDocAutoRetryTaskByDocId,
   apiKnowledgeDocumentDetail,
 } from '@/services/knowledge';
-import { DocStatusCodeEnum } from '@/types/enums/library';
+import { DocStatusCodeEnum, DocStatusEnum } from '@/types/enums/library';
 import type {
   DocItemProps,
   KnowledgeDocumentInfo,
 } from '@/types/interfaces/knowledge';
+import { KnowledgeDocumentStatus } from '@/types/interfaces/knowledge';
 import { FileSearchOutlined } from '@ant-design/icons';
-import { Button, message, Tooltip } from 'antd';
+import { Button, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
 import { useRequest } from 'umi';
@@ -28,9 +29,14 @@ const DocItem: React.FC<DocItemProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: (_, params) => {
-      message.success('成功重新构建');
       const id = params[0];
-      onSetAnalyzed(id);
+      const status: KnowledgeDocumentStatus = {
+        docStatus: DocStatusEnum.ANALYZING_RAW,
+        docStatusCode: DocStatusCodeEnum.ANALYZING_RAW,
+        docStatusDesc: '分析中',
+        docStatusReason: '分段生成中',
+      };
+      onSetAnalyzed(id, status);
     },
   });
 
@@ -69,10 +75,18 @@ const DocItem: React.FC<DocItemProps> = ({
   });
 
   useEffect(() => {
-    // 分段生成中
-    if (info.docStatusCode === DocStatusCodeEnum.ANALYZING_RAW) {
+    const { docStatusCode } = info;
+    // 知识库文档状态：分析中
+    if (
+      docStatusCode !== DocStatusCodeEnum.ANALYZED &&
+      docStatusCode !== DocStatusCodeEnum.ANALYZE_FAILED
+    ) {
       runDetail(info.id);
     }
+
+    return () => {
+      cancel();
+    };
   }, [info]);
 
   // 重新构建

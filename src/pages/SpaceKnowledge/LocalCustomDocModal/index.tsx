@@ -315,7 +315,6 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
           <h3 className={cx('text-ellipsis', 'flex-1')}>
             {fileConfigRef.current?.name}
           </h3>
-          <span className={cx(styles.span)}>处理中.处理完成</span>
         </div>
       )}
     </Modal>
