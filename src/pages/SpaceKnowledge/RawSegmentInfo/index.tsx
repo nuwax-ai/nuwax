@@ -1,4 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
+import Loading from '@/components/Loading';
 import { apiKnowledgeRawSegmentList } from '@/services/knowledge';
 import { DocStatusCodeEnum } from '@/types/enums/library';
 import type {
@@ -6,11 +7,7 @@ import type {
   RawSegmentInfoProps,
 } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
-import {
-  DeleteOutlined,
-  FileSearchOutlined,
-  LoadingOutlined,
-} from '@ant-design/icons';
+import { DeleteOutlined, FileSearchOutlined } from '@ant-design/icons';
 import { Empty } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -33,20 +30,19 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
   const [rawSegmentInfoList, setRawSegmentInfoList] = useState<
     KnowledgeRawSegmentInfo[]
   >([]);
+  const [loading, setLoading] = useState<boolean>(false);
 
   // 知识库分段配置 - 数据列表查询
-  const { run: runRawSegmentList, loading } = useRequest(
-    apiKnowledgeRawSegmentList,
-    {
-      manual: true,
-      debounceInterval: 300,
-      // 设置显示 loading 的延迟时间，避免闪烁
-      loadingDelay: 300,
-      onSuccess: (result: Page<KnowledgeRawSegmentInfo>) => {
-        setRawSegmentInfoList(result.records);
-      },
+  const { run: runRawSegmentList } = useRequest(apiKnowledgeRawSegmentList, {
+    manual: true,
+    debounceInterval: 300,
+    // 设置显示 loading 的延迟时间，避免闪烁
+    loadingDelay: 300,
+    onSuccess: (result: Page<KnowledgeRawSegmentInfo>) => {
+      setRawSegmentInfoList(result.records);
+      setLoading(false);
     },
-  );
+  });
 
   // 知识库分段配置 - 数据列表查询
   const handleRawSegmentList = (docId: number, current: number = 1) => {
@@ -69,6 +65,7 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
         docStatusCode === DocStatusCodeEnum.ANALYZED_QA ||
         docStatusCode === DocStatusCodeEnum.ANALYZED_EMBEDDING
       ) {
+        setLoading(true);
         // 知识库分段配置 - 数据列表查询
         handleRawSegmentList(id);
       }
@@ -112,18 +109,7 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
           <span>分段正在处理中</span>
         </div>
       ) : loading ? (
-        <div
-          className={cx(
-            'flex',
-            'flex-1',
-            'items-center',
-            'content-center',
-            styles['loading-box'],
-          )}
-        >
-          <LoadingOutlined />
-          <span>加载中...</span>
-        </div>
+        <Loading />
       ) : rawSegmentInfoList?.length > 0 ? (
         <ul className={cx('px-16', 'py-16', 'flex-1', 'overflow-y')}>
           {rawSegmentInfoList?.map((info) => (

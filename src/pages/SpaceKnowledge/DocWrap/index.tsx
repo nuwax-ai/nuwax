@@ -1,3 +1,4 @@
+import Loading from '@/components/Loading';
 import type { DocWrapProps } from '@/types/interfaces/knowledge';
 import { SearchOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
@@ -14,6 +15,7 @@ const cx = classNames.bind(styles);
 const DocWrap: React.FC<DocWrapProps> = ({
   currentDocId,
   onChange,
+  loading,
   documentList,
   onClick,
   onSetAnalyzed,
@@ -27,17 +29,21 @@ const DocWrap: React.FC<DocWrapProps> = ({
         prefix={<SearchOutlined className={cx(styles['search-icon'])} />}
       />
       <p className={cx(styles['document-title'])}>文档列表</p>
-      <ul className={cx('flex-1', 'overflow-y')}>
-        {documentList?.map((item) => (
-          <DocItem
-            key={item.id}
-            currentDocId={currentDocId}
-            info={item}
-            onClick={onClick}
-            onSetAnalyzed={onSetAnalyzed}
-          />
-        ))}
-      </ul>
+      {loading ? (
+        <Loading />
+      ) : (
+        <ul className={cx('flex-1', 'overflow-y')}>
+          {documentList?.map((item) => (
+            <DocItem
+              key={item.id}
+              currentDocId={currentDocId}
+              info={item}
+              onClick={onClick}
+              onSetAnalyzed={onSetAnalyzed}
+            />
+          ))}
+        </ul>
+      )}
     </div>
   );
 };

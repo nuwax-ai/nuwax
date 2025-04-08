@@ -419,6 +419,7 @@ export interface KnowledgeHeaderProps {
 // 文档列表组件
 export interface DocWrapProps {
   currentDocId?: number;
+  loading: boolean;
   documentList: KnowledgeDocumentInfo[];
   onChange: (value: string) => void;
   onClick: (info: KnowledgeDocumentInfo) => void;

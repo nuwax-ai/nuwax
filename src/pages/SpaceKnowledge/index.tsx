@@ -44,6 +44,7 @@ const SpaceKnowledge: React.FC = () => {
   const [openKnowledge, setOpenKnowledge] = useState<boolean>(false);
   // 文档列表
   const [documentList, setDocumentList] = useState<KnowledgeDocumentInfo[]>([]);
+  const [loadingDoc, setLoadingDoc] = useState<boolean>(false);
   // 文档总数
   const [totalDocCount, setTotalDocCount] = useState<number>(0);
   // 当前文档信息
@@ -67,6 +68,7 @@ const SpaceKnowledge: React.FC = () => {
     debounceInterval: 300,
     onSuccess: (result: Page<KnowledgeDocumentInfo>) => {
       setTotalDocCount(result.total);
+      setLoadingDoc(false);
       if (result?.records?.length > 0) {
         const { records } = result;
         setDocumentList(records);
@@ -83,6 +85,7 @@ const SpaceKnowledge: React.FC = () => {
 
   // 文档数据列表查询
   const handleDocList = (kbId: number, current: number = 1) => {
+    setLoadingDoc(true);
     runDocList({
       queryFilter: {
         spaceId,
@@ -241,6 +244,7 @@ const SpaceKnowledge: React.FC = () => {
         {/*文档列表*/}
         <DocWrap
           currentDocId={currentDocumentInfo?.id}
+          loading={loadingDoc}
           documentList={documentList}
           onClick={setCurrentDocumentInfo}
           onChange={handleQueryDoc}

@@ -68,6 +68,12 @@ const DocItem: React.FC<DocItemProps> = ({
     }
   }, [info]);
 
+  // 重新构建
+  const handleAutoRetry = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    runAutoRetry(info.id);
+  };
+
   return (
     <li
       onClick={() => onClick(info)}
@@ -87,7 +93,7 @@ const DocItem: React.FC<DocItemProps> = ({
       {info.docStatusCode === DocStatusCodeEnum.ANALYZING_RAW ? (
         <span className={cx(styles.analyzing)}>构建中</span>
       ) : info.docStatusCode === DocStatusCodeEnum.ANALYZE_FAILED ? (
-        <Button type="primary" onClick={() => runAutoRetry(info.id)}>
+        <Button type="primary" onClick={handleAutoRetry}>
           构建失败,重新构建
         </Button>
       ) : null}
