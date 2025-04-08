@@ -87,12 +87,37 @@ export enum KnowledgeSegmentIdentifierEnum {
   Custom = 'Custom',
 }
 
-// 知识库文档状态,1:分析中;2:分析成功;10:分析失败;,可用值:ANALYZING,ANALYZED,ANALYZE_FAILED
-export enum KnowledgeDocStatusEnum {
+// 知识库文档状态
+export enum DocStatusEnum {
   // 分析中
   ANALYZING = 'ANALYZING',
   // 分析成功
   ANALYZED = 'ANALYZED',
+  // 分析中 - 分段生成中
+  ANALYZING_RAW = 'ANALYZING_RAW',
+  // 分析中 - 问答生成中
+  ANALYZED_QA = 'ANALYZED_QA',
+  // 分析中 - 向量化中
+  ANALYZED_EMBEDDING = 'ANALYZED_QA',
   // 分析失败
   ANALYZE_FAILED = 'ANALYZE_FAILED',
+}
+
+/*
+  知识库文档状态 ANALYZING(1, "分析中", "分析中"), ANALYZED(2, "分析成功", "分析成功"), ANALYZING_RAW(3, "分析中", "分段生成中"),ANALYZED_QA(4, "分析中", "问答生成中"),ANALYZED_EMBEDDING(5, "分析中", "向量化中"),ANALYZE_FAILED(10, "分析失败", "分析失败");
+  细化了下文档状态, 是:2,4,5 状态的任意一个状态,就是分段工作完成的
+ */
+export enum DocStatusCodeEnum {
+  // 分析中
+  ANALYZING = 1,
+  // 分析成功
+  ANALYZED = 2,
+  // 分析中 - 分段生成中
+  ANALYZING_RAW = 3,
+  // 分析中 - 问答生成中
+  ANALYZED_QA = 4,
+  // 分析中 - 向量化中
+  ANALYZED_EMBEDDING = 5,
+  // 分析失败
+  ANALYZE_FAILED = 10,
 }

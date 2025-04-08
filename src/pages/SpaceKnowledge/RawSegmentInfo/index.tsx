@@ -1,27 +1,21 @@
 import ConditionRender from '@/components/ConditionRender';
-import TooltipIcon from '@/components/TooltipIcon';
-import {
-  apiKnowledgeDocumentUpdateDocName,
-  apiKnowledgeRawSegmentList,
-} from '@/services/knowledge';
-import { TooltipTitleTypeEnum } from '@/types/enums/common';
-import { KnowledgeDocStatusEnum } from '@/types/enums/library';
+import { apiKnowledgeRawSegmentList } from '@/services/knowledge';
+import { DocStatusCodeEnum } from '@/types/enums/library';
 import type {
   KnowledgeRawSegmentInfo,
   RawSegmentInfoProps,
 } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
-import { customizeRequiredNoStarMark } from '@/utils/form';
 import {
   DeleteOutlined,
   FileSearchOutlined,
-  FormOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
-import { Button, Empty, Form, FormProps, Input, message, Popover } from 'antd';
+import { Empty } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRequest } from 'umi';
+import DocRename from './DocRename';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -35,9 +29,6 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
   documentInfo,
 }) => {
   const { spaceId } = useParams();
-  const [form] = Form.useForm();
-  const [hovered, setHovered] = useState<boolean>(false);
-
   // 知识库文档分段信息
   const [rawSegmentInfoList, setRawSegmentInfoList] = useState<
     KnowledgeRawSegmentInfo[]
@@ -71,8 +62,13 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
 
   useEffect(() => {
     if (!!documentInfo) {
-      const { id, docStatus } = documentInfo;
-      if (docStatus === KnowledgeDocStatusEnum.ANALYZED) {
+      const { id, docStatusCode } = documentInfo;
+      // 分析成功
+      if (
+        docStatusCode === DocStatusCodeEnum.ANALYZED ||
+        docStatusCode === DocStatusCodeEnum.ANALYZED_QA ||
+        docStatusCode === DocStatusCodeEnum.ANALYZED_EMBEDDING
+      ) {
         // 知识库分段配置 - 数据列表查询
         handleRawSegmentList(id);
       }
@@ -82,91 +78,16 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
     }
   }, [documentInfo]);
 
-  // const handleChange = (checked: boolean) => {
-  //   console.log(`switch to ${checked}`);
-  // };
-
-  // 知识库文档配置 - 更改文件名称
-  const { run: runUpdateDocName } = useRequest(
-    apiKnowledgeDocumentUpdateDocName,
-    {
-      manual: true,
-      debounceInterval: 300,
-      onSuccess: (_, params) => {
-        message.success('更新成功');
-        setHovered(false);
-        const { docId, name } = params[0];
-        onSuccessUpdateName(docId, name);
-      },
-    },
-  );
-
-  useEffect(() => {
-    if (hovered) {
-      form.setFieldValue('name', documentInfo?.name);
-    }
-  }, [documentInfo, hovered]);
-
-  const onFinish: FormProps<{
-    name: string;
-  }>['onFinish'] = (values) => {
-    const { name } = values;
-    runUpdateDocName({
-      docId: documentInfo.id,
-      name,
-    });
-  };
-
   return (
     <div className={cx('flex-1', 'flex', 'flex-col', 'overflow-hide')}>
       <header className={cx(styles.header, 'flex', 'items-center')}>
         <ConditionRender condition={!!documentInfo}>
           <FileSearchOutlined />
           <span>{documentInfo?.name}</span>
-          <TooltipIcon
-            title="重命名"
-            type={TooltipTitleTypeEnum.Blank}
-            icon={
-              <Popover
-                arrow={false}
-                trigger="click"
-                open={hovered}
-                onOpenChange={setHovered}
-                placement="bottom"
-                content={
-                  <Form
-                    form={form}
-                    layout="vertical"
-                    requiredMark={customizeRequiredNoStarMark}
-                    onFinish={onFinish}
-                  >
-                    <Form.Item
-                      className={cx(styles.input, 'mb-16')}
-                      name="name"
-                      label="重命名"
-                      rules={[
-                        {
-                          required: true,
-                          message: '文档名称不能为空',
-                        },
-                      ]}
-                    >
-                      <Input.TextArea
-                        placeholder={'请输入文档名称'}
-                        autoSize={{ minRows: 6, maxRows: 30 }}
-                      />
-                    </Form.Item>
-                    <Form.Item className={cx('flex', 'content-end', 'mb-6')}>
-                      <Button htmlType="submit" type="primary">
-                        确认
-                      </Button>
-                    </Form.Item>
-                  </Form>
-                }
-              >
-                <FormOutlined className={cx('cursor-pointer')} />
-              </Popover>
-            }
+          <DocRename
+            docId={documentInfo?.id}
+            docName={documentInfo?.name}
+            onSuccessUpdateName={onSuccessUpdateName}
           />
           <div className={cx(styles['extra-box'], 'flex', 'items-center')}>
             {/*<span className={cx(styles['switch-name'])}>预览原始文档</span>*/}
@@ -178,8 +99,19 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
           </div>
         </ConditionRender>
       </header>
-      {loading ||
-      documentInfo?.docStatus === KnowledgeDocStatusEnum.ANALYZING ? (
+      {documentInfo?.docStatusCode === DocStatusCodeEnum.ANALYZING_RAW ? (
+        <div
+          className={cx(
+            'flex',
+            'flex-1',
+            'items-center',
+            'content-center',
+            styles['segment-box'],
+          )}
+        >
+          <span>分段正在处理中</span>
+        </div>
+      ) : loading ? (
         <div
           className={cx(
             'flex',

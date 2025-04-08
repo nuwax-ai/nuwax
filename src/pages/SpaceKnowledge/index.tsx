@@ -6,7 +6,7 @@ import {
 } from '@/services/knowledge';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import {
-  KnowledgeDocStatusEnum,
+  DocStatusCodeEnum,
   KnowledgeTextImportEnum,
 } from '@/types/enums/library';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
@@ -180,7 +180,7 @@ const SpaceKnowledge: React.FC = () => {
   const handleSetAnalyzed = (id: number) => {
     const list = documentList.map((item) => {
       if (item.id === id) {
-        item.docStatus = KnowledgeDocStatusEnum.ANALYZED;
+        item.docStatusCode = DocStatusCodeEnum.ANALYZED;
       }
       return item;
     });
