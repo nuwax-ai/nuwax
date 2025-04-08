@@ -23,6 +23,10 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
     history.back();
   };
 
+  const fileSize = knowledgeInfo?.fileSize
+    ? (knowledgeInfo?.fileSize / 1024).toFixed(1)
+    : 0;
+
   return (
     <header className={cx('flex', 'items-center', 'w-full', styles.header)}>
       <LeftOutlined
@@ -51,9 +55,8 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
           />
         </div>
         <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
-          <span className={cx(styles.box, 'radius-6')}>
-            {`${docCount}个文档`}
-          </span>
+          <span className={cx(styles.box)}>{`${fileSize}kb`}</span>
+          <span className={cx(styles.box)}>{`${docCount}个文档`}</span>
         </div>
       </section>
       {/*添加内容*/}

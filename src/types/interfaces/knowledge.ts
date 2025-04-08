@@ -102,6 +102,8 @@ export interface KnowledgeConfigListParams extends KnowledgeListBaseInfo {
 export interface KnowledgeInfo extends KnowledgeConfigAddParams {
   // 主键id
   id: number;
+  // 文件大小,单位字节byte,用于预估对应知识库的参考大小值
+  fileSize: number;
   // 知识状态,可用值:Waiting,Published
   pubStatus: KnowledgePubStatusEnum;
   // 知识库的嵌入模型ID
@@ -239,6 +241,8 @@ export interface KnowledgeDocumentAddParams {
     name: string;
     // 文档URL
     docUrl: string;
+    // 文件大小,单位是字节Byte
+    fileSize: number;
   }[];
   // 快速自动分段与清洗,true:无需分段设置,自动使用默认值
   autoSegmentConfigFlag: boolean;

@@ -99,6 +99,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
       uploadFileList?.map((info) => ({
         name: info.fileName,
         docUrl: info.url,
+        fileSize: info.size,
       })) || [];
 
     const data = {
