@@ -182,20 +182,6 @@ const NodeDrawer = (
   useImperativeHandle(ref, () => ({
     getFormValues: () => form.getFieldsValue(true),
   }));
-  // 当切换节点之前，先保存当前节点的数据，再调用新节点的数据，刷新他的refernect
-  // const handleUpdate = async () => {
-  //   if (isModified) {
-  //     await onGetNodeConfig(currentNodeConfig);
-  //     setIsModified(false);
-  //   }
-  //   getRefernece(foldWrapItem.id);
-  // };
-  // useEffect(() => {
-  //   const currentValues = form.getFieldsValue();
-  //   if (currentValues !== currentNodeConfig.nodeConfig) {
-  //     setIsModified(true);
-  //   }
-  // }, [form]);
 
   useEffect(() => {
     if (!visible && isModified && currentNodeConfig.id !== 0) {

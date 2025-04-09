@@ -172,6 +172,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
         {data.type === 'Condition' && (
           <div className="condition-node-content-style">
             {data.nodeConfig.conditionBranchConfigs?.map((item) => {
+              console.log(item);
               return (
                 <div key={item.uuid} className="dis-left condition-item-style">
                   <span className="condition-title-sytle">

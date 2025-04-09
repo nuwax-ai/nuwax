@@ -228,12 +228,9 @@ const Workflow: React.FC = () => {
       if (update) {
         if (typeof update === 'string') {
           // 新增和删除边以后，如果当前的节点是被连接的节点，那么就要更新当前节点的参数
-          setFoldWrapItem((prev) => {
-            if (prev.id === Number(update)) {
-              getRefernece(Number(update));
-            }
-            return prev;
-          });
+          if (foldWrapItemRef.current.id === Number(update)) {
+            getRefernece(Number(update));
+          }
         } else {
           // 如果传递的是boolean，那么证明要更新这个节点
           getNodeConfig(Number(config.id));
@@ -340,7 +337,8 @@ const Workflow: React.FC = () => {
       _res.data.key = _res.data.type === 'Loop' ? 'loop-node' : 'general-Node';
       const extension = _res.data.nodeConfig.extension;
       graphRef.current.addNode(extension, _res.data);
-      setFoldWrapItem(_res.data);
+      // setFoldWrapItem(_res.data);
+      changeDrawer(_res.data);
       graphRef.current.selectNode(_res.data.id);
       changeUpdateTime();
     }
@@ -429,13 +427,7 @@ const Workflow: React.FC = () => {
     if (_res.code !== Constant.success) {
       graphRef.current.deleteEdge(id);
     } else {
-      setFoldWrapItem((prev) => {
-        // 这里的prev是最新值
-        if (Number(targetId) === prev.id) {
-          getRefernece(prev.id);
-        }
-        return prev; // 如果不修改状态就直接返回原值
-      });
+      getRefernece(foldWrapItemRef.current.id);
       graphRef.current.updateNode(sourceNode.id, _res.data);
       // getNodeConfig(sourceNode.id);
     }

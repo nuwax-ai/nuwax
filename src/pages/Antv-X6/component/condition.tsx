@@ -76,19 +76,25 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                   <Button
                     icon={<PlusOutlined />}
                     onClick={() => {
-                      add({
-                        uuid: uuidv4(),
-                        conditionType: 'AND',
-                        conditionArgs: [
-                          {
-                            compareType: 'EQUAL',
-                            firstArg: { bindValue: '' },
-                            secondArg: { bindValue: '' },
-                          },
-                        ],
-                        nextNodeIds: [],
-                        branchType: 'ELSE_IF',
-                      });
+                      const currentFields =
+                        form.getFieldValue('conditionBranchConfigs') || [];
+                      const insertIndex = Math.max(0, currentFields.length - 1); // 计算插入位置
+                      add(
+                        {
+                          uuid: uuidv4(),
+                          conditionType: 'AND',
+                          conditionArgs: [
+                            {
+                              compareType: 'EQUAL',
+                              firstArg: { bindValue: '' },
+                              secondArg: { bindValue: '' },
+                            },
+                          ],
+                          nextNodeIds: [],
+                          branchType: 'ELSE_IF',
+                        },
+                        insertIndex, // 指定插入位置
+                      );
                       form.submit();
                     }}
                   />
