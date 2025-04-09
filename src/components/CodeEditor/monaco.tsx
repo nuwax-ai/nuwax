@@ -10,12 +10,13 @@ interface MonacoProps {
   form: FormInstance;
   // 是否显示
   isShow: boolean;
+  value?: string | undefined;
+  onChange?: (code: string) => void;
   // 关闭
   close: () => void;
 }
 
 const Monaco: React.FC<MonacoProps> = ({ form, isShow, close }) => {
-  console.log(form);
   return (
     <>
       {isShow && (

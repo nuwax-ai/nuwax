@@ -9,6 +9,7 @@ import React, {
   forwardRef,
   useEffect,
   useImperativeHandle,
+  useRef,
   useState,
 } from 'react';
 import { useModel } from 'umi';
@@ -57,7 +58,8 @@ const NodeDrawer = (
 ) => {
   // 当前节点是否修改了参数
   const { isModified, setIsModified } = useModel('workflow');
-
+  // 新增定时器引用
+  const timerRef = useRef<NodeJS.Timeout>();
   // 将节点的数据 保存到 state 中,维持数据双向绑定,便于管理
   const [currentNodeConfig, setCurrentNodeConfig] =
     useState<ChildNode>(foldWrapItem);
@@ -183,11 +185,28 @@ const NodeDrawer = (
     getFormValues: () => form.getFieldsValue(true),
   }));
 
+  // 新增定时器逻辑
   useEffect(() => {
-    if (!visible && isModified && currentNodeConfig.id !== 0) {
-      form.submit();
+    // 清除已有定时器
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
     }
-  }, [visible]);
+
+    // 创建新定时器
+    timerRef.current = setInterval(() => {
+      if (isModified) {
+        form.submit();
+        setIsModified(false); // 重置修改状态
+      }
+    }, 3000);
+
+    // 清理函数
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [visible, currentNodeConfig, isModified]);
 
   // 封装表单更新逻辑
   const handleFormUpdate = async (child: ChildNode) => {

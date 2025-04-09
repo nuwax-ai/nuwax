@@ -396,11 +396,11 @@ const initGraph = ({
           }
         }
       }
-      changeCondition(_data);
+      changeCondition(_data, 'moved');
       return;
     }
     // node.prop('zIndex', 99);
-    changeCondition(data);
+    changeCondition(data, 'moved');
     changeZindex(node);
   });
 

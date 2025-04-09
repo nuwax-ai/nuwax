@@ -392,9 +392,16 @@ export const FormList: React.FC<FormListProps> = ({
               size={'small'}
               onClick={() => {
                 const currentFields = form.getFieldValue(inputItemName) || [];
-
+                console.log(inputItemName, field);
                 const insertIndex = Math.max(0, currentFields.length - 1);
-                add({}, insertIndex);
+                add(
+                  {
+                    [field]: '',
+
+                    uuid: uuidv4(),
+                  },
+                  insertIndex,
+                );
                 form.submit();
               }}
             ></Button>

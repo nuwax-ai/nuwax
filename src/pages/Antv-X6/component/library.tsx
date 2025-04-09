@@ -24,8 +24,14 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
 
   // 知识库
   const onAddedSkill = (item: CreatedNodeItem) => {
+    const knowledgeBaseConfigs =
+      form.getFieldValue('knowledgeBaseConfigs') || [];
     item.type = item.targetType;
     item.knowledgeBaseId = item.targetId;
+    form.setFieldValue(
+      'knowledgeBaseConfigs',
+      knowledgeBaseConfigs.concat(item),
+    );
     setOpen(false);
   };
 

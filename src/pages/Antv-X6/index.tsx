@@ -222,21 +222,37 @@ const Workflow: React.FC = () => {
 
   // 更新节点数据
   const changeNode = async (config: ChildNode, update?: boolean | string) => {
+    let params = JSON.parse(JSON.stringify(config));
+
+    if (update && update === 'moved') {
+      if (config.id === foldWrapItemRef.current.id) {
+        const values = nodeDrawerRef.current?.getFormValues();
+        params = {
+          ...config,
+          nodeConfig: {
+            ...config.nodeConfig,
+            ...values,
+          },
+        };
+        console.log(params);
+      }
+    }
     // setIsUpdate(true)
-    graphRef.current.updateNode(config.id, config);
-    const _res = await updateNode(config);
+    graphRef.current.updateNode(params.id, params);
+    const _res = await updateNode(params);
     if (_res.code === Constant.success) {
       if (update) {
-        if (typeof update === 'string') {
+        if (typeof update === 'string' && update !== 'moved') {
           // 新增和删除边以后，如果当前的节点是被连接的节点，那么就要更新当前节点的参数
           if (foldWrapItemRef.current.id === Number(update)) {
             getRefernece(Number(update));
           }
         }
-      }
-      if (config.id === foldWrapItemRef.current.id) {
-        // 如果传递的是boolean，那么证明要更新这个节点
-        getNodeConfig(Number(config.id));
+      } else {
+        if (config.id === foldWrapItemRef.current.id) {
+          // 如果传递的是boolean，那么证明要更新这个节点
+          getNodeConfig(Number(config.id));
+        }
       }
       changeUpdateTime();
     }
