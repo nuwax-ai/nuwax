@@ -114,6 +114,7 @@ const Workflow: React.FC = () => {
   // 在每次 foldWrapItem 更新时同步到 ref
   useEffect(() => {
     foldWrapItemRef.current = foldWrapItem;
+    console.log('change', foldWrapItemRef.current);
   }, [foldWrapItem]);
   // 获取当前画布的信息
   const getDetails = async () => {
@@ -231,10 +232,11 @@ const Workflow: React.FC = () => {
           if (foldWrapItemRef.current.id === Number(update)) {
             getRefernece(Number(update));
           }
-        } else {
-          // 如果传递的是boolean，那么证明要更新这个节点
-          getNodeConfig(Number(config.id));
         }
+      }
+      if (config.id === foldWrapItemRef.current.id) {
+        // 如果传递的是boolean，那么证明要更新这个节点
+        getNodeConfig(Number(config.id));
       }
       changeUpdateTime();
     }
@@ -246,21 +248,7 @@ const Workflow: React.FC = () => {
     setTestRunResult('');
 
     // console.log(isModified,foldWrapItem.id)
-    await setIsModified((prev) => {
-      if (prev) {
-        const values = nodeDrawerRef.current?.getFormValues();
-        const newNodeConfig = {
-          ...foldWrapItemRef.current,
-          nodeConfig: {
-            ...foldWrapItem.nodeConfig,
-            ...values,
-          },
-        };
-        console.log(newNodeConfig);
-        changeNode(newNodeConfig);
-      }
-      return false;
-    });
+
     // 当前有节点展示，并且当前的节点和选中的节点不一致，那么就要更新当前节点的参数
 
     if (child === null) {
@@ -281,6 +269,22 @@ const Workflow: React.FC = () => {
       });
       return;
     } else {
+      await setIsModified((prev) => {
+        if (prev === true) {
+          if (foldWrapItemRef.current && foldWrapItemRef.current.id !== 0) {
+            const values = nodeDrawerRef.current?.getFormValues();
+            const newNodeConfig = {
+              ...foldWrapItemRef.current,
+              nodeConfig: {
+                ...foldWrapItem.nodeConfig,
+                ...values,
+              },
+            };
+            changeNode(newNodeConfig);
+          }
+        }
+        return false;
+      });
       if (!visible) setVisible(true);
       setFoldWrapItem(child);
       getRefernece(child.id);
@@ -791,14 +795,14 @@ const Workflow: React.FC = () => {
       />
       <ControlPanel
         dragChild={dragChild}
-        foldWrapItem={foldWrapItemRef.current}
+        foldWrapItem={foldWrapItem}
         changeGraph={changeGraph}
         handleTestRun={() => testRunAll()}
         zoomSize={(info?.extension?.size as number) ?? 1}
       />
       <NodeDrawer
         visible={visible}
-        foldWrapItem={foldWrapItemRef.current}
+        foldWrapItem={foldWrapItem}
         onClose={() => setVisible(false)}
         onGetNodeConfig={changeNode} // 新增这一行
         handleNodeChange={handleNodeChange}
@@ -814,7 +818,7 @@ const Workflow: React.FC = () => {
         onCancel={() => setOpen(false)}
       />
       <TestRun
-        node={foldWrapItemRef.current}
+        node={foldWrapItem}
         run={runTest}
         visible={visible}
         testRunResult={testRunResult}

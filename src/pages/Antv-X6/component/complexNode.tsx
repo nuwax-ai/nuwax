@@ -40,7 +40,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
       'skillComponentConfigs',
       skillComponentConfigs.concat(item),
     );
-
+    form.submit();
     setOpen(false);
   };
 

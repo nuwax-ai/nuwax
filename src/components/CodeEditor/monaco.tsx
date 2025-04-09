@@ -44,16 +44,34 @@ const Monaco: React.FC<MonacoProps> = ({ form, isShow, close }) => {
             </div>
           </div>
           <div className="monaco-editor-content">
-            <CodeEditor
-              value={
-                form.getFieldValue('codeLanguage') === 'Python'
-                  ? form.getFieldValue('codePython')
-                  : form.getFieldValue('codeJavaScript')
+            <Form.Item
+              noStyle
+              name={
+                form.getFieldValue('codeLanguage') === 'JavaScript'
+                  ? 'codeJavaScript'
+                  : 'codePython'
               }
-              codeLanguage={form.getFieldValue('codeLanguage') || 'JavaScript'}
-              onChange={(e: string) => form.setFieldValue('code', e)}
-              height="790px"
-            />
+            >
+              <CodeEditor
+                value={form.getFieldValue(
+                  form.getFieldValue('codeLanguage') === 'JavaScript'
+                    ? 'codeJavaScript'
+                    : 'codePython',
+                )}
+                onChange={(value) => {
+                  form.setFieldValue(
+                    form.getFieldValue('codeLanguage') === 'JavaScript'
+                      ? 'codeJavaScript'
+                      : 'codePython',
+                    value,
+                  );
+                }}
+                codeLanguage={
+                  form.getFieldValue('codeLanguage') || 'JavaScript'
+                }
+                height="790px"
+              />
+            </Form.Item>
           </div>
         </div>
       )}

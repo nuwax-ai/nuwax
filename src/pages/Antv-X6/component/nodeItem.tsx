@@ -462,20 +462,34 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ form }) => {
         inputItemName={InputItemNameEnum.inputArgs}
         form={form}
       />
-      <Form.Item noStyle>
+      <Form.Item
+        noStyle
+        name={
+          form.getFieldValue('codeLanguage') === 'JavaScript'
+            ? 'codeJavaScript'
+            : 'codePython'
+        }
+      >
         <>
           <div className="dis-sb margin-bottom">
             <span className="node-title-style ">代码</span>
             <ExpandAltOutlined onClick={() => setShow(true)} />
           </div>
           <CodeEditor
-            value={
-              form.getFieldValue('codeLanguage') === 'Python'
-                ? form.getFieldValue('codePython')
-                : form.getFieldValue('codeJavaScript')
-            }
+            value={form.getFieldValue(
+              form.getFieldValue('codeLanguage') === 'JavaScript'
+                ? 'codeJavaScript'
+                : 'codePython',
+            )}
+            onChange={(value) => {
+              form.setFieldValue(
+                form.getFieldValue('codeLanguage') === 'JavaScript'
+                  ? 'codeJavaScript'
+                  : 'codePython',
+                value,
+              );
+            }}
             codeLanguage={form.getFieldValue('codeLanguage') || 'JavaScript'}
-            onChange={(e: string) => form.setFieldValue('code', e)}
             height="180px"
           />
         </>

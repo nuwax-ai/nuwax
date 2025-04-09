@@ -17,7 +17,6 @@ interface TreeOutput extends InputAndOutConfig {
 }
 // 定义技能的参数展示
 const SkillParamsContent: React.FC<{ params: TreeOutput[] }> = ({ params }) => {
-  console.log(params);
   return (
     <>
       {(params || []).map((item) => (
@@ -174,7 +173,7 @@ export const SkillList: React.FC<SkillProps> = ({
   skillName,
 }) => {
   // const [skillParams,setSkillParams] = useState<NodeConfig>(params);
-  console.log(params);
+
   // 使用useState钩子来管理每个项目的hover状态
   const [hoveredItem, setHoveredItem] = useState<CreatedNodeItem>({
     icon: '',
@@ -195,15 +194,11 @@ export const SkillList: React.FC<SkillProps> = ({
   const handleDelete = (item: CreatedNodeItem) => {
     let newParams;
     if (item.knowledgeBaseId) {
-      newParams = {
-        knowledgeBaseConfigs: params.filter(
-          (i) => i.knowledgeBaseId !== item.knowledgeBaseId,
-        ),
-      };
+      newParams = params.filter(
+        (i) => i.knowledgeBaseId !== item.knowledgeBaseId,
+      );
     } else {
-      newParams = {
-        skillComponentConfigs: params.filter((i) => i.typeId !== item.typeId),
-      };
+      newParams = params.filter((i) => i.typeId !== item.typeId);
     }
     form.setFieldValue(skillName, newParams);
   };

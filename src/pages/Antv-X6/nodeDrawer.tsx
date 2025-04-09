@@ -190,31 +190,48 @@ const NodeDrawer = (
   }, [visible]);
 
   // 封装表单更新逻辑
-  const handleFormUpdate = async () => {
-    // 更新为新的 foldWrapItem 数据
-    if (foldWrapItem.id && foldWrapItem.id !== 0) {
-      // 清空表单值
-      await form.resetFields();
-      // 设置新的表单值
-      await form.setFieldsValue(foldWrapItem.nodeConfig);
-      // 更新当前节点配置
-      setCurrentNodeConfig(foldWrapItem);
-
-      // 特殊处理 HTTPRequest 节点
-      if (foldWrapItem.type === 'HTTPRequest') {
-        if (form.getFieldValue('method') === undefined) {
-          form.setFieldValue('method', 'GET');
+  const handleFormUpdate = async (child: ChildNode) => {
+    if (child.id && child.id !== 0) {
+      // 对比新旧 foldWrapItem，仅在必要时更新
+      if (JSON.stringify(child) !== JSON.stringify(currentNodeConfig)) {
+        // 这里坐下区分，如果是更新当前节点的数据，那么只更新新增的
+        if (child.id === currentNodeConfig.id) {
+          const currentValues = form.getFieldsValue();
+          const newValues = { ...currentValues, ...child.nodeConfig };
+          await form.setFieldsValue(newValues);
+        } else {
+          // 否则就先清空表单值
+          // 清空表单值
+          await form.resetFields();
+          // 设置新的表单值
+          await form.setFieldsValue(child.nodeConfig);
         }
-        if (form.getFieldValue('contentType') === undefined) {
-          form.setFieldValue('contentType', 'JSON');
+
+        // 更新当前节点配置
+        setCurrentNodeConfig(child);
+        // 特殊处理 HTTPRequest 节点
+        if (child.type === 'HTTPRequest') {
+          if (form.getFieldValue('method') === undefined) {
+            form.setFieldValue('method', 'GET');
+          }
+          if (form.getFieldValue('contentType') === undefined) {
+            form.setFieldValue('contentType', 'JSON');
+          }
         }
       }
     }
   };
 
+  // 监听 foldWrapItem.id 的变化，而不是整个 foldWrapItem
   useEffect(() => {
-    handleFormUpdate();
-  }, [foldWrapItem.id]);
+    if (
+      foldWrapItem.id !== currentNodeConfig.id ||
+      JSON.stringify(foldWrapItem.nodeConfig) !==
+        JSON.stringify(currentNodeConfig.nodeConfig)
+    ) {
+      handleFormUpdate(foldWrapItem);
+    }
+  }, [foldWrapItem.id, foldWrapItem.nodeConfig]); // 监听 id 和 nodeConfig 的变化
 
   return (
     <FoldWrap
