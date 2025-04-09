@@ -48,7 +48,7 @@ const DocItem: React.FC<DocItemProps> = ({
     // 设置显示 loading 的延迟时间，避免闪烁
     loadingDelay: 300,
     // 进入轮询模式，定时触发函数执行。
-    pollingInterval: 3000,
+    pollingInterval: 5000,
     // 在屏幕不可见时，暂时暂停定时任务。
     pollingWhenHidden: false,
     // 轮询错误重试次数。如果设置为 -1，则无限次
@@ -59,8 +59,7 @@ const DocItem: React.FC<DocItemProps> = ({
       // 分析成功
       if (
         docStatusCode === DocStatusCodeEnum.ANALYZED ||
-        docStatusCode === DocStatusCodeEnum.ANALYZED_QA ||
-        docStatusCode === DocStatusCodeEnum.ANALYZED_EMBEDDING
+        docStatusCode === DocStatusCodeEnum.ANALYZE_FAILED
       ) {
         const status = {
           docStatus,
@@ -69,12 +68,19 @@ const DocItem: React.FC<DocItemProps> = ({
           docStatusReason,
         };
         onSetAnalyzed(id, status);
+      }
+
+      if (docStatusCode === DocStatusCodeEnum.ANALYZED) {
         cancel();
       }
+    },
+    onError: () => {
+      cancel();
     },
   });
 
   useEffect(() => {
+    cancel();
     const { docStatusCode } = info;
     // 知识库文档状态：分析中
     if (
@@ -87,7 +93,7 @@ const DocItem: React.FC<DocItemProps> = ({
     return () => {
       cancel();
     };
-  }, [info]);
+  }, [info?.docStatusCode]);
 
   // 重新构建
   const handleAutoRetry = (e: React.MouseEvent) => {

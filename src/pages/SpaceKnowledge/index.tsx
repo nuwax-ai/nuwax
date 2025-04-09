@@ -18,7 +18,7 @@ import { ExclamationCircleFilled } from '@ant-design/icons';
 import { message, Modal } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import DocWrap from './DocWrap';
 import KnowledgeHeader from './KnowledgeHeader';
@@ -179,34 +179,37 @@ const SpaceKnowledge: React.FC = () => {
   };
 
   // 设置分析成功（自动重试,如果有分段,问答,向量化有失败的话, status为空）
-  const handleSetAnalyzed = (id: number, status: KnowledgeDocumentStatus) => {
-    // console.log(id, status, 2333333, currentDocumentInfo)
+  const handleSetAnalyzed = useCallback(
+    (id: number, status: KnowledgeDocumentStatus) => {
+      // console.log(id, status, 2333333, currentDocumentInfo)
 
-    // 修改当前文档
-    if (
-      currentDocumentInfo?.id === id &&
-      status.docStatusCode !== currentDocumentInfo?.docStatusCode
-    ) {
-      // 修改当前文档状态
-      const _documentInfo = {
-        ...currentDocumentInfo,
-        ...status,
-      };
-      setCurrentDocumentInfo(_documentInfo);
-    }
-    // 修改文档列表
-    const _documentList = cloneDeep(documentList);
-    const list = _documentList.map((item) => {
-      if (item.id === id) {
-        item.docStatus = status.docStatus;
-        item.docStatusCode = status.docStatusCode;
-        item.docStatusDesc = status.docStatusDesc;
-        item.docStatusReason = status.docStatusReason;
+      // 修改当前文档
+      if (
+        currentDocumentInfo?.id === id &&
+        status.docStatusCode !== currentDocumentInfo?.docStatusCode
+      ) {
+        // 修改当前文档状态
+        const _documentInfo = {
+          ...currentDocumentInfo,
+          ...status,
+        };
+        setCurrentDocumentInfo(_documentInfo);
       }
-      return item;
-    });
-    setDocumentList(list);
-  };
+      // 修改文档列表
+      const _documentList = cloneDeep(documentList);
+      const list = _documentList.map((item) => {
+        if (item.id === id) {
+          item.docStatus = status.docStatus;
+          item.docStatusCode = status.docStatusCode;
+          item.docStatusDesc = status.docStatusDesc;
+          item.docStatusReason = status.docStatusReason;
+        }
+        return item;
+      });
+      setDocumentList(list);
+    },
+    [currentDocumentInfo, documentList],
+  );
 
   // 删除文档
   const handleDocDel = () => {
