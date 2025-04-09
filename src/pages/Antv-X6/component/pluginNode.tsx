@@ -26,6 +26,11 @@ export const InputList: React.FC<InputListProps> = ({
           <>
             <span className="node-title-style">{title}</span>
             {fields.map((item, index) => {
+              const bindValueType = form.getFieldValue([
+                inputItemName,
+                item.name,
+                'bindValueType',
+              ]);
               return (
                 <div key={item.name}>
                   {/* 只在第一个输入框组旁边显示标签 */}
@@ -63,6 +68,7 @@ export const InputList: React.FC<InputListProps> = ({
                           form={form}
                           fieldName={[inputItemName, item.name, 'bindValue']}
                           style={{ width: '65%' }}
+                          referenceType={bindValueType}
                         />
                       </Form.Item>
                     </div>

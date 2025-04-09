@@ -73,14 +73,14 @@ export interface NodeConfig {
   // 扩展信息，前端配置，设置节点的宽高，位置
   extension?: Extension | null;
   // 节点入参
-  inputArgs?: InputAndOutConfig[] | null;
+  inputArgs?: InputAndOutConfig[];
   // 节点出参
-  outputArgs?: InputAndOutConfig[] | null;
+  outputArgs?: InputAndOutConfig[];
   // 节点变量
-  variableArgs?: InputAndOutConfig[] | null;
+  variableArgs?: InputAndOutConfig[];
   // 技能列表
   // 条件分支
-  conditionBranchConfigs?: ConditionBranchConfigs[] | null;
+  conditionBranchConfigs?: ConditionBranchConfigs[];
   // 结束节点的
   returnType?: 'VARIABLE' | 'TEXT';
 
@@ -200,7 +200,7 @@ export interface NodeDrawerProps {
   visible: boolean;
   // 关闭
   onClose: () => void;
-
+  foldWrapItem: ChildNode;
   // 将节点信息返回给父组件
   onGetNodeConfig: (config: ChildNode, update?: boolean) => void;
 

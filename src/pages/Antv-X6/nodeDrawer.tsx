@@ -5,7 +5,12 @@ import { ChildNode } from '@/types/interfaces/graph';
 import { NodeConfig, NodeDrawerProps } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
 import { Form, FormInstance } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useState,
+} from 'react';
 import { useModel } from 'umi';
 import ComplexNode from './component/complexNode';
 import ConditionNode from './component/condition';
@@ -39,14 +44,19 @@ const LoopBreak: React.FC = () => {
   );
 };
 
-const NodeDrawer: React.FC<NodeDrawerProps> = ({
-  visible,
-  onClose,
-  onGetNodeConfig, // 新增这一行
-  handleNodeChange,
-}) => {
+// 移除 React.FC，直接使用函数组件定义
+const NodeDrawer = (
+  {
+    visible,
+    onClose,
+    onGetNodeConfig,
+    handleNodeChange,
+    foldWrapItem,
+  }: NodeDrawerProps,
+  ref: React.ForwardedRef<{ getFormValues: () => NodeConfig }>,
+) => {
   // 当前节点是否修改了参数
-  const { isModified, setIsModified, foldWrapItem } = useModel('workflow');
+  const { isModified, setIsModified } = useModel('workflow');
 
   // 将节点的数据 保存到 state 中,维持数据双向绑定,便于管理
   const [currentNodeConfig, setCurrentNodeConfig] =
@@ -88,7 +98,7 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
     description: string;
   }) => {
     setCurrentNodeConfig({
-      ...foldWrapItem,
+      ...currentNodeConfig,
       name: name,
       description: description,
     });
@@ -152,7 +162,6 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   const handleClose = () => {
     if (isModified) {
       onGetNodeConfig(currentNodeConfig);
-      setIsModified(false); // 重置修改状态
     }
     onClose();
   };
@@ -169,6 +178,10 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
       handleNodeChange(val, foldWrapItem);
     });
   };
+
+  useImperativeHandle(ref, () => ({
+    getFormValues: () => form.getFieldsValue(true),
+  }));
   // 当切换节点之前，先保存当前节点的数据，再调用新节点的数据，刷新他的refernect
   // const handleUpdate = async () => {
   //   if (isModified) {
@@ -177,26 +190,31 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   //   }
   //   getRefernece(foldWrapItem.id);
   // };
-  useEffect(() => {
-    const currentValues = form.getFieldsValue();
-    if (currentValues !== currentNodeConfig.nodeConfig) {
-      setIsModified(true);
-    }
-  }, [form]);
+  // useEffect(() => {
+  //   const currentValues = form.getFieldsValue();
+  //   if (currentValues !== currentNodeConfig.nodeConfig) {
+  //     setIsModified(true);
+  //   }
+  // }, [form]);
 
   useEffect(() => {
     if (!visible && isModified && currentNodeConfig.id !== 0) {
       form.submit();
-      setIsModified(false); // 重置修改状态
     }
   }, [visible]);
 
-  useEffect(() => {
+  // 封装表单更新逻辑
+  const handleFormUpdate = async () => {
+    // 更新为新的 foldWrapItem 数据
     if (foldWrapItem.id && foldWrapItem.id !== 0) {
+      // 清空表单值
+      await form.resetFields();
+      // 设置新的表单值
+      await form.setFieldsValue(foldWrapItem.nodeConfig);
+      // 更新当前节点配置
       setCurrentNodeConfig(foldWrapItem);
-      // 这里根据当前节点的类型，设置表单的初始值
-      // 直接设置表单值而不是通过initialValues
-      form.setFieldsValue(foldWrapItem.nodeConfig);
+
+      // 特殊处理 HTTPRequest 节点
       if (foldWrapItem.type === 'HTTPRequest') {
         if (form.getFieldValue('method') === undefined) {
           form.setFieldValue('method', 'GET');
@@ -206,16 +224,10 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
         }
       }
     }
+  };
 
-    if (
-      foldWrapItem.id !== 0 &&
-      currentNodeConfig.id !== 0 &&
-      foldWrapItem.id !== currentNodeConfig.id &&
-      isModified
-    ) {
-      form.submit();
-      setIsModified(false); // 重置修改状态
-    }
+  useEffect(() => {
+    handleFormUpdate();
   }, [foldWrapItem.id]);
 
   return (
@@ -243,7 +255,10 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
           layout={'vertical'}
           onFinishFailed={onFinish}
           onFinish={onFinish}
-          onValuesChange={() => setIsModified(true)}
+          onValuesChange={() => {
+            console.log('ismodify');
+            setIsModified(true);
+          }}
         >
           {renderNodeContent(foldWrapItem, form)}
         </Form>
@@ -252,4 +267,5 @@ const NodeDrawer: React.FC<NodeDrawerProps> = ({
   );
 };
 
-export default NodeDrawer;
+// 使用 forwardRef 包裹组件
+export default forwardRef(NodeDrawer);
