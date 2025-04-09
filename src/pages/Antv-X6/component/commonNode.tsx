@@ -33,7 +33,6 @@ import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
 import './commonNode.less';
-
 // 定义通用的输入输出
 export const InputAndOut: React.FC<NodeRenderProps> = ({
   title,
@@ -46,7 +45,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   disabledInput,
   isLoop,
 }) => {
-  const { volid } = useModel('workflow');
+  const { volid, setIsModified } = useModel('workflow');
   // 根据传递的fieldConfigs生成表单项
   const formItem = fieldConfigs.reduce(
     (acc: DefaultObjectType, field: FieldConfig) => {
@@ -59,12 +58,14 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   const addInputItem = () => {
     const nextItems = [...(form.getFieldValue(inputItemName) || []), formItem];
     form.setFieldsValue({ [inputItemName]: nextItems });
+    setIsModified(true);
   };
 
   const removeItem = (index: number) => {
     const formValue = form.getFieldsValue()[inputItemName];
     const _newValue = formValue.filter((_: unknown, i: number) => i !== index);
     form.setFieldsValue({ [inputItemName]: _newValue });
+    setIsModified(true);
   };
 
   useEffect(() => {
@@ -392,12 +393,11 @@ export const FormList: React.FC<FormListProps> = ({
               size={'small'}
               onClick={() => {
                 const currentFields = form.getFieldValue(inputItemName) || [];
-                console.log(inputItemName, field);
                 const insertIndex = Math.max(0, currentFields.length - 1);
                 add(
                   {
                     [field]: '',
-
+                    index: currentFields.length,
                     uuid: uuidv4(),
                   },
                   insertIndex,

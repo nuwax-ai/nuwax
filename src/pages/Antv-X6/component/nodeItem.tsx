@@ -253,10 +253,10 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
   const [options, setOptions] = useState([
     { value: '\\n', label: '换行 (\\n)' },
     { value: '\\t', label: '制表符 (\\t)' },
-    { value: '.', label: '句号 (。)' },
+    { value: '。', label: '句号 (。)' },
     { value: ',', label: '逗号 (,)' },
     { value: ';', label: '分号 (;)' },
-    { value: '|', label: '空格 ( )' },
+    { value: ' ', label: '空格 ( )' },
   ]);
 
   const [newItem, setNewItem] = useState({
@@ -441,7 +441,13 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
           form.getFieldValue('outputArgs') && (
             <>
               <div className="node-title-style margin-bottom">输出</div>
-              <TreeOutput treeData={form.getFieldValue('outputArgs')} />
+              <TreeOutput
+                treeData={
+                  form.getFieldValue('textHandleType') === 'CONCAT'
+                    ? [{ name: 'output', dataType: DataTypeEnum.String }]
+                    : [{ name: 'output', dataType: DataTypeEnum.Array_String }]
+                }
+              />
             </>
           )
         }

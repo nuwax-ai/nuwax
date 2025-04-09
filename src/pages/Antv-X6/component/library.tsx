@@ -32,6 +32,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
       'knowledgeBaseConfigs',
       knowledgeBaseConfigs.concat(item),
     );
+    form.submit();
     setOpen(false);
   };
 

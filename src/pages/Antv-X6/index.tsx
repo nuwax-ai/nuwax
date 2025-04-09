@@ -114,7 +114,6 @@ const Workflow: React.FC = () => {
   // 在每次 foldWrapItem 更新时同步到 ref
   useEffect(() => {
     foldWrapItemRef.current = foldWrapItem;
-    console.log('change', foldWrapItemRef.current);
   }, [foldWrapItem]);
   // 获取当前画布的信息
   const getDetails = async () => {
@@ -234,7 +233,6 @@ const Workflow: React.FC = () => {
             ...values,
           },
         };
-        console.log(params);
       }
     }
     // setIsUpdate(true)
@@ -262,10 +260,6 @@ const Workflow: React.FC = () => {
   const changeDrawer = async (child: ChildNode | null) => {
     setTestRun(false);
     setTestRunResult('');
-
-    // console.log(isModified,foldWrapItem.id)
-
-    // 当前有节点展示，并且当前的节点和选中的节点不一致，那么就要更新当前节点的参数
 
     if (child === null) {
       setVisible(false);
@@ -351,7 +345,6 @@ const Workflow: React.FC = () => {
         };
       }
     }
-
     const _res = await service.addNode(_params);
     if (_res.code === Constant.success) {
       _res.data.key = _res.data.type === 'Loop' ? 'loop-node' : 'general-Node';

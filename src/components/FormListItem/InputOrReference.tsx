@@ -7,6 +7,21 @@ import { useModel } from 'umi';
 import './index.less';
 import { InputOrReferenceProps } from './type';
 
+interface Event {
+  key: string;
+
+  keyPath: string[];
+
+  domEvent: React.MouseEvent;
+}
+// 定义 mapChildren 的返回值类型
+type MenuItem = {
+  key: string;
+  label: React.ReactNode;
+  onClick: (e: Event) => void; // 修改为接收事件参数
+  children?: MenuItem[];
+};
+
 const InputOrReference: React.FC<InputOrReferenceProps> = ({
   placeholder,
   form,
@@ -18,7 +33,8 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   value, // 接收注入的 value
   onChange, // 接收注入的 onChange
 }) => {
-  const { referenceList, getValue, getLoopValue } = useModel('workflow');
+  const { referenceList, getValue, getLoopValue, setIsModified } =
+    useModel('workflow');
   const [displayValue, setDisplayValue] = useState('');
 
   const updateValues = (newValue: string, valueType: 'Input' | 'Reference') => {
@@ -79,6 +95,33 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   //   updateValues(e.target.value, 'Input');
   // };
 
+  // 新增递归处理函数
+  const mapChildren = (items: InputAndOutConfig[], level = 0): MenuItem[] => {
+    return items.map((item) => ({
+      key: item.key!,
+      label: (
+        <div
+          className="reference-item-child"
+          style={{ marginLeft: level * 10 }}
+        >
+          <span>{item.name}</span>
+          <Tag className="ml-20" color="#C9CDD4">
+            {item.dataType}
+          </Tag>
+        </div>
+      ),
+      onClick: (e: Event) => {
+        e.domEvent.stopPropagation(); // 阻止事件冒泡
+        onChange?.(e.key!); // 使用注入的 onChange
+        updateValues(e.key!, 'Reference');
+        setDisplayValue(getValue(e.key!));
+      },
+      children: item.children
+        ? mapChildren(item.children, level + 1)
+        : undefined,
+    }));
+  };
+
   const changeMenuItem = (arr: PreviousList[]) => {
     if (arr.length > 0) {
       return arr.map((node) => ({
@@ -103,23 +146,8 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
               setDisplayValue(getValue(arg.key!));
             },
           },
-          // 子参数项
-          ...(arg.children || []).map((item: InputAndOutConfig) => ({
-            key: item.key,
-            label: (
-              <div className="reference-item-child ml-20">
-                <span>{item.name}</span>
-                <Tag className="ml-20" color="#C9CDD4">
-                  {item.dataType}
-                </Tag>
-              </div>
-            ),
-            onClick: () => {
-              onChange?.(item.key!); // 使用注入的 onChange
-              updateValues(item.key!, 'Reference');
-              setDisplayValue(getValue(item.key!));
-            },
-          })),
+          // 子参数项（递归处理）
+          ...(arg.children ? mapChildren(arg.children) : []),
         ]),
       }));
     } else {
@@ -177,6 +205,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           disabled={isDisabled}
           value={value}
           onChange={(e) => {
+            setIsModified(true);
             onChange?.(e.target.value);
             updateValues(e.target.value, 'Input');
           }}
@@ -184,9 +213,12 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
       )}
 
       <Dropdown
-        menu={{ items: getMenuItems() }}
+        menu={{
+          items: getMenuItems(), // 强制子菜单向左对齐
+        }}
         trigger={['click']}
         overlayStyle={{ width: 200 }}
+        placement="bottomLeft" // 设置弹窗向左对齐
       >
         <SettingOutlined
           style={{ cursor: 'pointer' }}

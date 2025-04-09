@@ -9,7 +9,7 @@ import React, {
   forwardRef,
   useEffect,
   useImperativeHandle,
-  useRef,
+  // useRef,
   useState,
 } from 'react';
 import { useModel } from 'umi';
@@ -59,7 +59,7 @@ const NodeDrawer = (
   // 当前节点是否修改了参数
   const { isModified, setIsModified } = useModel('workflow');
   // 新增定时器引用
-  const timerRef = useRef<NodeJS.Timeout>();
+  // const timerRef = useRef<NodeJS.Timeout>();
   // 将节点的数据 保存到 state 中,维持数据双向绑定,便于管理
   const [currentNodeConfig, setCurrentNodeConfig] =
     useState<ChildNode>(foldWrapItem);
@@ -186,28 +186,35 @@ const NodeDrawer = (
   }));
 
   // 新增定时器逻辑
+  // useEffect(() => {
+  //   // 清除已有定时器
+  //   if (timerRef.current) {
+  //     clearInterval(timerRef.current);
+  //   }
+
+  //   // 创建新定时器
+  //   timerRef.current = setInterval(() => {
+  //     if (isModified) {
+  //       form.submit();
+  //       setIsModified(false); // 重置修改状态
+  //     }
+  //   }, 3000);
+
+  //   // 清理函数
+  //   return () => {
+  //     if (timerRef.current) {
+  //       clearInterval(timerRef.current);
+  //     }
+  //   };
+  // }, [visible, currentNodeConfig, isModified]);
+
   useEffect(() => {
-    // 清除已有定时器
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
+    // 当 foldWrapItem.id 改变时，重新设置 currentNodeConfig
+    if (!visible && isModified) {
+      form.submit();
+      setIsModified(false);
     }
-
-    // 创建新定时器
-    timerRef.current = setInterval(() => {
-      if (isModified) {
-        form.submit();
-        setIsModified(false); // 重置修改状态
-      }
-    }, 3000);
-
-    // 清理函数
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [visible, currentNodeConfig, isModified]);
-
+  }, [visible]);
   // 封装表单更新逻辑
   const handleFormUpdate = async (child: ChildNode) => {
     if (child.id && child.id !== 0) {
@@ -278,7 +285,6 @@ const NodeDrawer = (
           onFinishFailed={onFinish}
           onFinish={onFinish}
           onValuesChange={() => {
-            console.log('ismodify');
             setIsModified(true);
           }}
         >

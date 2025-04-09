@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Input, Modal, Popover, Switch, Tag } from 'antd';
 import React, { useEffect, useState } from 'react';
+import { useModel } from 'umi';
 import './index.less';
 interface TreeOutput extends InputAndOutConfig {
   key: string;
@@ -173,7 +174,8 @@ export const SkillList: React.FC<SkillProps> = ({
   skillName,
 }) => {
   // const [skillParams,setSkillParams] = useState<NodeConfig>(params);
-
+  // 当前节点是否修改了参数
+  const { setIsModified } = useModel('workflow');
   // 使用useState钩子来管理每个项目的hover状态
   const [hoveredItem, setHoveredItem] = useState<CreatedNodeItem>({
     icon: '',
@@ -201,6 +203,7 @@ export const SkillList: React.FC<SkillProps> = ({
       newParams = params.filter((i) => i.typeId !== item.typeId);
     }
     form.setFieldValue(skillName, newParams);
+    setIsModified(true);
   };
 
   const handleConfirm = (val: CreatedNodeItem) => {
@@ -216,6 +219,7 @@ export const SkillList: React.FC<SkillProps> = ({
     }
     // setSkillParams((prev) => ())
     form.setFieldValue(skillName, newParams);
+    setIsModified(true);
   };
   return (
     <>
