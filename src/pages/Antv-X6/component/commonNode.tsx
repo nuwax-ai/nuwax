@@ -398,6 +398,7 @@ export const FormList: React.FC<FormListProps> = ({
                   {
                     [field]: '',
                     index: currentFields.length,
+                    nextNodeIds: [],
                     uuid: uuidv4(),
                   },
                   insertIndex,
@@ -430,8 +431,11 @@ export const FormList: React.FC<FormListProps> = ({
                     </Form.Item>
                   )}
                   <Form.Item name={[item.name, field]} noStyle>
-                    <Input disabled={fieldData}></Input>
+                    <Input disabled={fieldData} />
                   </Form.Item>
+                  {/* <Form.Item name={[item.name, 'nextNodeIds']} noStyle>
+                    <Input type="hidden"></Input>
+                  </Form.Item> */}
                   {!fieldData && (
                     <Form.Item noStyle>
                       <DeleteOutlined

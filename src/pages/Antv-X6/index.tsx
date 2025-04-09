@@ -235,16 +235,20 @@ const Workflow: React.FC = () => {
         };
       }
     }
+
     // setIsUpdate(true)
     graphRef.current.updateNode(params.id, params);
     const _res = await updateNode(params);
     if (_res.code === Constant.success) {
       if (update) {
         if (typeof update === 'string' && update !== 'moved') {
+          console.log('aaaa');
           // 新增和删除边以后，如果当前的节点是被连接的节点，那么就要更新当前节点的参数
           if (foldWrapItemRef.current.id === Number(update)) {
             getRefernece(Number(update));
           }
+        } else {
+          setFoldWrapItem(params);
         }
       } else {
         if (config.id === foldWrapItemRef.current.id) {
