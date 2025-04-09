@@ -146,6 +146,15 @@ const EditAgent: React.FC = () => {
     });
   };
 
+  // 调试
+  const handlePressDebug = () => {
+    if (showType === EditAgentShowType.Debug_Details) {
+      setShowType(EditAgentShowType.Hide);
+    } else {
+      setShowType(EditAgentShowType.Debug_Details);
+    }
+  };
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader
@@ -192,7 +201,7 @@ const EditAgent: React.FC = () => {
         <PreviewAndDebug
           agentConfigInfo={agentConfigInfo}
           agentId={agentId}
-          onPressDebug={() => setShowType(EditAgentShowType.Debug_Details)}
+          onPressDebug={handlePressDebug}
         />
         {/*调试详情*/}
         <DebugDetails
