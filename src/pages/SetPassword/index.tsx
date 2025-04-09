@@ -1,4 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
+import SiteFooter from '@/components/SiteFooter';
 import { apiSetPassword } from '@/services/account';
 import type { SetPasswordFieldType } from '@/types/interfaces/login';
 import { validatePassword } from '@/utils/common';
@@ -78,6 +79,7 @@ const SetPassword: React.FC = () => {
           <Input.Password
             rootClassName={cx(styles.input)}
             placeholder="请输入6位以上密码"
+            autoComplete="off"
           />
         </Form.Item>
         <Form.Item
@@ -104,6 +106,7 @@ const SetPassword: React.FC = () => {
           <Input.Password
             rootClassName={cx(styles.input)}
             placeholder="请再次输入密码"
+            autoComplete="off"
           />
         </Form.Item>
         <Form.Item className={cx(styles.login)}>
@@ -118,6 +121,7 @@ const SetPassword: React.FC = () => {
           </Button>
         </Form.Item>
       </Form>
+      <SiteFooter />
     </div>
   );
 };

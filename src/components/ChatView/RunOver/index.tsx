@@ -82,6 +82,8 @@ const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
           </>
         ) : messageInfo?.status === MessageStatusEnum.Incomplete ? (
           <LoadingOutlined />
+        ) : messageInfo?.status === MessageStatusEnum.Error ? (
+          <span>运行错误</span>
         ) : (
           <span>
             运行完毕

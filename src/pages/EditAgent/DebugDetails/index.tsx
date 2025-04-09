@@ -1,10 +1,14 @@
 import ToggleWrap from '@/components/ToggleWrap';
 import type { DebugDetailsProps } from '@/types/interfaces/agentConfig';
-import { Empty } from 'antd';
+import type { ExecuteResultInfo } from '@/types/interfaces/conversationInfo';
+import { CopyOutlined } from '@ant-design/icons';
+import { Empty, message } from 'antd';
 import classNames from 'classnames';
-import React, { memo } from 'react';
+import React, { memo, useEffect, useState } from 'react';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { useModel } from 'umi';
 import styles from './index.less';
+import { NodeDetails } from './NodeDetails';
 
 const cx = classNames.bind(styles);
 
@@ -12,18 +16,70 @@ const cx = classNames.bind(styles);
  * 调试详情组件
  */
 const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
-  const { executeResults } = useModel('conversationInfo');
+  const { requestId, finalResult } = useModel('conversationInfo');
+  const [executeInfo, setExecuteInfo] = useState<ExecuteResultInfo>();
+  // 输入参数
+  const [inputData, setInputData] = useState<string>();
+  // 输出参数
+  const [outputData, setOutputData] = useState<string>();
+
+  useEffect(() => {
+    if (finalResult?.componentExecuteResults?.length > 0) {
+      const _executeInfo = finalResult?.componentExecuteResults[0];
+      setExecuteInfo(_executeInfo);
+
+      if (!!_executeInfo) {
+        // 输入参数
+        const _inputData = JSON.stringify(_executeInfo.input, null, 2);
+        setInputData(_inputData);
+        // 输出参数
+        const _outputData = JSON.stringify(_executeInfo.data, null, 2);
+        setOutputData(_outputData);
+      }
+    }
+  }, [finalResult]);
+
+  const handleCopy = () => {
+    message.success('复制成功');
+  };
 
   return (
     <ToggleWrap title="调试详情" onClose={onClose} visible={visible}>
-      {executeResults?.length > 0 ? (
-        <div>
-          {executeResults?.map((item, index) => (
-            <div key={index}>
-              {item.success ? <div>{item.name}</div> : <div>{item.error}</div>}
+      {!!finalResult ? (
+        <>
+          <header className={cx(styles.header)}>
+            <div className={cx('flex', styles['time-box'])}>
+              <div className={cx(styles.num, 'flex', 'items-center')}>
+                <span>
+                  耗时{finalResult.endTime - finalResult.startTime} ms
+                </span>
+                <span className={cx(styles['vertical-line'])} />
+                <span>{finalResult.totalTokens} Tokens</span>
+              </div>
             </div>
-          ))}
-        </div>
+            <div className={cx('flex', styles.box)}>
+              <span>requestId:</span>
+              <span className={cx(styles.value, 'text-ellipsis')}>
+                {requestId}
+              </span>
+              <CopyToClipboard text={requestId || ''} onCopy={handleCopy}>
+                <CopyOutlined />
+              </CopyToClipboard>
+            </div>
+          </header>
+          <div className={cx(styles.wrap)}>
+            <h5 className={cx(styles.title)}>节点详情</h5>
+            <NodeDetails node={executeInfo} />
+          </div>
+          <div className={cx(styles.wrap)}>
+            <h5 className={cx(styles.title)}>输入</h5>
+            <pre>{inputData}</pre>
+          </div>
+          <div className={cx(styles.wrap)}>
+            <h5 className={cx(styles.title)}>输出</h5>
+            <pre>{outputData}</pre>
+          </div>
+        </>
       ) : (
         <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
           <Empty description="暂无数据" />

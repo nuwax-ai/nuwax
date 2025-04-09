@@ -1,3 +1,56 @@
-.container {
-  //min-width: 340px;
+@import '@/styles/color';
+
+.header {
+  padding: 24px 16px 20px;
+  border-bottom: 1px solid @GRAY01;
+
+  .time-box {
+    gap: 6px;
+    margin-bottom: 16px;
+
+    .num {
+      gap: 12px;
+      color: @BLANK14;
+      font-size: 14px;
+      font-weight: 600;
+      margin-right: 8px;
+
+      .vertical-line {
+        display: inline-block;
+        width: 1px;
+        height: 12px;
+        background-color: @GRAY05;
+      }
+    }
+  }
+
+  .box {
+    gap: 6px;
+    color: @GRAY05;
+    font-size: 12px;
+
+    .value {
+      color: @BLANK03;
+    }
+  }
+}
+
+.wrap {
+  padding: 24px 16px 20px;
+  border-bottom: 1px solid @GRAY01;
+
+  .title {
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+
+  pre {
+    min-height: 200px;
+    background-color: @GRAY01;
+    border-radius: 6px;
+    padding: 10px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
 }

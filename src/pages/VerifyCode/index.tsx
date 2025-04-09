@@ -1,14 +1,16 @@
 import logo from '@/assets/images/logo.png';
+import SiteFooter from '@/components/SiteFooter';
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useCountDown from '@/hooks/useCountDown';
-import { apiLoginCode, apiSendCode } from '@/services/account';
+import useSendCode from '@/hooks/useSendCode';
+import { apiLoginCode } from '@/services/account';
 import { SendCodeEnum } from '@/types/enums/login';
 import type { ILoginResult } from '@/types/interfaces/login';
 import { CodeLogin } from '@/types/interfaces/login';
 import { getNumbersOnly } from '@/utils/common';
 import type { InputRef } from 'antd';
-import { Button, Input, message } from 'antd';
+import { Button, Input } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -27,6 +29,7 @@ const VerifyCode: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { countDown, handleCount } = useCountDown();
+  const { runSendCode, sendLoading } = useSendCode();
   const [codeString, setCodeString] = useState<string>('');
   const [errorString, setErrorString] = useState<string>('');
   const inputRef = useRef<InputRef | null>(null);
@@ -39,18 +42,6 @@ const VerifyCode: React.FC = () => {
       cursor: 'end',
     });
   };
-
-  // 发送验证码
-  const { run, loading } = useRequest(apiSendCode, {
-    debounceInterval: 300,
-    defaultParams: {
-      type: SendCodeEnum.LOGIN_OR_REGISTER,
-      phone,
-    },
-    onSuccess: () => {
-      message.success('验证码已发送');
-    },
-  });
 
   // 验证码登录
   const { run: runLoginCode, loadingLoginCode } = useRequest(apiLoginCode, {
@@ -98,9 +89,10 @@ const VerifyCode: React.FC = () => {
     [codes, errorString],
   );
 
-  const handleSendCode = async () => {
+  // 发送验证码
+  const handleSendCode = () => {
     handleCount();
-    run({
+    runSendCode({
       type: SendCodeEnum.LOGIN_OR_REGISTER,
       phone,
     });
@@ -108,7 +100,8 @@ const VerifyCode: React.FC = () => {
 
   useEffect(() => {
     handleClick();
-    handleCount();
+    // 发送验证码
+    handleSendCode();
     // 设置页面title
     setTitle();
   }, []);
@@ -124,13 +117,13 @@ const VerifyCode: React.FC = () => {
   const handleEnter = useCallback(
     (e) => {
       if (e.keyCode === 13 || e.which === 13) {
-        if (codeString?.length !== VERIFICATION_CODE_LEN || loading) {
+        if (codeString?.length !== VERIFICATION_CODE_LEN || sendLoading) {
           return;
         }
         handleVerify();
       }
     },
-    [codeString, loading],
+    [codeString, sendLoading],
   );
 
   useEffect(() => {
@@ -186,6 +179,10 @@ const VerifyCode: React.FC = () => {
             重新发送
           </span>
         )}
+        <div className={cx(styles.tips)}>
+          您将在30秒内收到验证码语音电话，可能会被手机
+          标记为稍扰电话，请放心接听。
+        </div>
         <div className={cx('flex', 'content-between', 'w-full', styles.footer)}>
           <Button className={cx('flex-1')} onClick={() => history.back()}>
             上一步
@@ -209,8 +206,10 @@ const VerifyCode: React.FC = () => {
         ref={inputRef}
         onChange={handleChange}
         className={cx(styles.input)}
+        autoComplete="off"
         value={codes.join('')}
       />
+      <SiteFooter />
     </div>
   );
 };

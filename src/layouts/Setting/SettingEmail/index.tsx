@@ -1,6 +1,7 @@
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 import useCountDown from '@/hooks/useCountDown';
-import { apiBindEmail, apiSendCode } from '@/services/account';
+import useSendCode from '@/hooks/useSendCode';
+import { apiBindEmail } from '@/services/account';
 import { SendCodeEnum } from '@/types/enums/login';
 import type { BindEmailParams } from '@/types/interfaces/login';
 import { isValidEmail } from '@/utils/common';
@@ -18,6 +19,7 @@ const cx = classNames.bind(styles);
  */
 const SettingEmail: React.FC = () => {
   const { countDown, setCountDown, onClearTimer, handleCount } = useCountDown();
+  const { runSendCode } = useSendCode();
   const [form] = Form.useForm<BindEmailParams>();
 
   // 绑定邮箱
@@ -41,16 +43,7 @@ const SettingEmail: React.FC = () => {
     run(values);
   };
 
-  // 发送邮箱验证码
-  const { run: runSendCode } = useRequest(apiSendCode, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      message.success('验证码已发送');
-    },
-  });
-
-  const handleSendCode = async () => {
+  const handleSendCode = () => {
     form.validateFields(['email']).then(({ email }) => {
       handleCount();
       runSendCode({

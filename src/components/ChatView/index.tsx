@@ -76,7 +76,7 @@ const ChatView: React.FC<ChatViewProps> = ({
             <div
               className={cx(styles['chat-content'], styles.user, 'radius-6')}
               dangerouslySetInnerHTML={{
-                __html: md.render(messageInfo?.text),
+                __html: md.render(messageInfo.text),
               }}
             />
           )}
@@ -91,11 +91,11 @@ const ChatView: React.FC<ChatViewProps> = ({
           {(!!messageInfo?.think || !!messageInfo?.text) && (
             <div className={cx(styles['inner-container'], contentClassName)}>
               {/*think*/}
-              {!!messageInfo?.think && !!md.render(messageInfo?.think) && (
+              {!!messageInfo?.think && !!md.render(messageInfo.think) && (
                 <div
                   className={cx(styles['think-content'], 'radius-6', 'w-full')}
                   dangerouslySetInnerHTML={{
-                    __html: md.render(messageInfo?.think),
+                    __html: md.render(messageInfo.think),
                   }}
                 />
               )}
@@ -104,7 +104,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                 <div
                   className={cx(styles['chat-content'], 'radius-6', 'w-full')}
                   dangerouslySetInnerHTML={{
-                    __html: md.render(messageInfo?.text),
+                    __html: md.render(messageInfo.text),
                   }}
                 />
               )}

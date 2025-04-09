@@ -41,46 +41,49 @@ const DocItem: React.FC<DocItemProps> = ({
   });
 
   // 知识库文档配置 - 数据详情查询
-  const { run: runDetail, cancel } = useRequest(apiKnowledgeDocumentDetail, {
-    manual: true,
-    // 防抖
-    debounceInterval: 300,
-    // 设置显示 loading 的延迟时间，避免闪烁
-    loadingDelay: 300,
-    // 进入轮询模式，定时触发函数执行。
-    pollingInterval: 5000,
-    // 在屏幕不可见时，暂时暂停定时任务。
-    pollingWhenHidden: false,
-    // 轮询错误重试次数。如果设置为 -1，则无限次
-    pollingErrorRetryCount: 3,
-    onSuccess: (result: KnowledgeDocumentInfo) => {
-      const { docStatusCode, id, docStatus, docStatusDesc, docStatusReason } =
-        result;
-      // 分析成功
-      if (
-        docStatusCode === DocStatusCodeEnum.ANALYZED ||
-        docStatusCode === DocStatusCodeEnum.ANALYZE_FAILED
-      ) {
-        const status = {
-          docStatus,
-          docStatusCode,
-          docStatusDesc,
-          docStatusReason,
-        };
-        onSetAnalyzed(id, status);
-      }
+  const { run: runDetail, cancel: cancelDetail } = useRequest(
+    apiKnowledgeDocumentDetail,
+    {
+      manual: true,
+      // 防抖
+      debounceInterval: 300,
+      // 设置显示 loading 的延迟时间，避免闪烁
+      loadingDelay: 300,
+      // 进入轮询模式，定时触发函数执行。
+      pollingInterval: 5000,
+      // 在屏幕不可见时，暂时暂停定时任务。
+      pollingWhenHidden: false,
+      // 轮询错误重试次数。如果设置为 -1，则无限次
+      pollingErrorRetryCount: 3,
+      onSuccess: (result: KnowledgeDocumentInfo) => {
+        const { docStatusCode, id, docStatus, docStatusDesc, docStatusReason } =
+          result;
+        // 分析成功或者分析失败时，才更新文档列表状态，因为除了这两种状态外，其他状态都是"构建中"
+        if (
+          docStatusCode === DocStatusCodeEnum.ANALYZED ||
+          docStatusCode === DocStatusCodeEnum.ANALYZE_FAILED
+        ) {
+          const status = {
+            docStatus,
+            docStatusCode,
+            docStatusDesc,
+            docStatusReason,
+          };
+          onSetAnalyzed(id, status);
+        }
 
-      if (docStatusCode === DocStatusCodeEnum.ANALYZED) {
-        cancel();
-      }
+        if (docStatusCode === DocStatusCodeEnum.ANALYZED) {
+          cancelDetail();
+        }
+      },
+      onError: () => {
+        cancelDetail();
+      },
     },
-    onError: () => {
-      cancel();
-    },
-  });
+  );
 
   useEffect(() => {
-    cancel();
+    cancelDetail();
     const { docStatusCode } = info;
     // 知识库文档状态：分析中
     if (
@@ -91,7 +94,7 @@ const DocItem: React.FC<DocItemProps> = ({
     }
 
     return () => {
-      cancel();
+      cancelDetail();
     };
   }, [info?.docStatusCode]);
 

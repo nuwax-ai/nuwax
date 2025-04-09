@@ -63,12 +63,12 @@ export interface ProcessingData {
 // 调试结果
 export interface ExecuteResultInfo {
   data: unknown;
-  endTime: number;
   error: string;
   id: number;
   input: unknown;
   name: string;
   startTime: number;
+  endTime: number;
   success: boolean;
   type: AgentComponentTypeEnum;
 }
@@ -158,7 +158,7 @@ export interface MessageInfo {
   // 消息时间
   time: string;
   attachments?: AttachmentFile[];
-  id: number;
+  id: number | string;
   metadata?: unknown;
   // 可用值:USER,ASSISTANT,SYSTEM,TOOL
   messageType: MessageTypeEnum;

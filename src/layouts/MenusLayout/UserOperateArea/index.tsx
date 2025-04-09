@@ -20,27 +20,34 @@ const UserOperateArea: React.FC<UserOperateAreaType> = ({ onClick }) => {
   const { unreadCount, setUnreadCount } = useModel('layout');
   const [data, setData] = useState<UserOperateAreaItem[]>(USER_OPERATE_AREA);
   // 查询用户未读消息数量
-  const { run, cancel } = useRequest(apiNotifyMessageUnreadCount, {
-    manual: true,
-    debounceInterval: 300,
-    // 轮询间隔，单位为毫秒。
-    pollingInterval: 5000,
-    pollingWhenHidden: false,
-    // 轮询错误重试次数。如果设置为 -1，则无限次
-    pollingErrorRetryCount: 3,
-    onSuccess: (result: number) => {
-      if (result > 0) {
-        setUnreadCount(result);
-        const list = USER_OPERATE_AREA.map((item) => {
-          if (item.type === UserOperatorAreaEnum.Message) {
-            item.title = `${result} 条未读消息`;
-          }
-          return item;
-        });
-        setData(list);
-      }
+  const { run, cancel: cancelUnread } = useRequest(
+    apiNotifyMessageUnreadCount,
+    {
+      manual: true,
+      debounceInterval: 300,
+      // 轮询间隔，单位为毫秒。
+      pollingInterval: 5000,
+      pollingWhenHidden: false,
+      // 轮询错误重试次数。如果设置为 -1，则无限次
+      pollingErrorRetryCount: 3,
+      onSuccess: (result: number) => {
+        if (result > 0) {
+          setUnreadCount(result);
+          const list = USER_OPERATE_AREA.map((item) => {
+            if (item.type === UserOperatorAreaEnum.Message) {
+              item.title = `${result} 条未读消息`;
+            }
+            return item;
+          });
+          setData(list);
+        }
+      },
+      onError: () => {
+        // 停止轮询
+        cancelUnread();
+      },
     },
-  });
+  );
 
   useEffect(() => {
     // 启动轮询
@@ -48,7 +55,7 @@ const UserOperateArea: React.FC<UserOperateAreaType> = ({ onClick }) => {
 
     return () => {
       // 停止轮询
-      cancel();
+      cancelUnread();
     };
   }, []);
 

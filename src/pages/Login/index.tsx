@@ -1,4 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
+import SiteFooter from '@/components/SiteFooter';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import { apiLogin } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
@@ -20,6 +21,7 @@ import React, { useEffect, useState } from 'react';
 import { history, useModel, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
 import ModalSliderCaptcha from './ModalSliderCaptcha';
+import SiteProtocol from './SiteProtocol';
 
 const cx = classNames.bind(styles);
 
@@ -85,12 +87,7 @@ const Login: React.FC = () => {
       confirm({
         title: '服务协议及隐私保护',
         icon: <ExclamationCircleFilled />,
-        content: (
-          <div>
-            已阅读并同意以下协议：
-            <span style={{ color: '#0256FF' }}>女娲使用协议、女娲隐私协议</span>
-          </div>
-        ),
+        content: <SiteProtocol />,
         okText: '同意',
         cancelText: '不同意',
         onOk() {
@@ -193,6 +190,14 @@ const Login: React.FC = () => {
               />
             </Form.Item>
           )}
+          <Form.Item className={cx('mb-16')}>
+            <Checkbox
+              checked={checked}
+              onChange={(e) => setChecked(e.target.checked)}
+            >
+              <SiteProtocol />
+            </Checkbox>
+          </Form.Item>
           <Form.Item className={cx(styles.login)}>
             <Button
               className={cx(styles.btn)}
@@ -204,21 +209,12 @@ const Login: React.FC = () => {
             </Button>
           </Form.Item>
           <Form.Item className={cx(styles['code-login'])}>
-            <span className={'cursor-pointer'} onClick={handlerLink}>
+            <a className={'cursor-pointer'} onClick={handlerLink}>
               {loginType === LoginTypeEnum.Password
                 ? '验证码登录/注册'
                 : '密码登录'}
-            </span>
+            </a>
           </Form.Item>
-        </Form.Item>
-        <Form.Item noStyle>
-          <Checkbox
-            checked={checked}
-            onChange={(e) => setChecked(e.target.checked)}
-          >
-            已阅读并同意协议：
-            <span className={cx(styles.tips)}>女娲使用协议、女娲隐私政策</span>
-          </Checkbox>
         </Form.Item>
       </Form>
       <ModalSliderCaptcha
@@ -226,6 +222,7 @@ const Login: React.FC = () => {
         onCancel={setOpen}
         onSuccess={handlerSuccess}
       />
+      <SiteFooter />
     </div>
   );
 };

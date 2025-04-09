@@ -1,7 +1,8 @@
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 import { PHONE } from '@/constants/home.constants';
 import useCountDown from '@/hooks/useCountDown';
-import { apiResetPassword, apiSendCode } from '@/services/account';
+import useSendCode from '@/hooks/useSendCode';
+import { apiResetPassword } from '@/services/account';
 import { SendCodeEnum } from '@/types/enums/login';
 import type { ResetPasswordForm } from '@/types/interfaces/login';
 import { validatePassword } from '@/utils/common';
@@ -19,6 +20,7 @@ const cx = classNames.bind(styles);
  */
 const ResetPassword: React.FC = () => {
   const { countDown, setCountDown, onClearTimer, handleCount } = useCountDown();
+  const { runSendCode } = useSendCode();
   const [form] = Form.useForm<ResetPasswordForm>();
 
   const { run, loading } = useRequest(apiResetPassword, {
@@ -43,15 +45,6 @@ const ResetPassword: React.FC = () => {
       code,
     });
   };
-
-  // 发送邮箱验证码
-  const { run: runSendCode } = useRequest(apiSendCode, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      message.success('验证码已发送');
-    },
-  });
 
   const handleSendCode = async () => {
     handleCount();

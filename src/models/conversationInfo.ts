@@ -19,11 +19,13 @@ import type {
   ConversationChatParams,
   ConversationChatResponse,
   ConversationInfo,
-  ExecuteResultInfo,
   MessageInfo,
   ProcessingInfo,
 } from '@/types/interfaces/conversationInfo';
-import { CardInfo } from '@/types/interfaces/conversationInfo';
+import {
+  CardInfo,
+  ConversationFinalResult,
+} from '@/types/interfaces/conversationInfo';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { useRequest } from 'ahooks';
 import moment from 'moment/moment';
@@ -47,7 +49,8 @@ export default () => {
     EditAgentShowType.Hide,
   );
   // 调试结果
-  const [executeResults, setExecuteResults] = useState<ExecuteResultInfo[]>([]);
+  const [requestId, setRequestId] = useState<string>('');
+  const [finalResult, setFinalResult] = useState<ConversationFinalResult>();
   const needUpdateTopicRef = useRef<boolean>(true);
   // 展示台卡片列表
   const [cardList, setCardList] = useState<CardInfo[]>([]);
@@ -115,18 +118,15 @@ export default () => {
   const handleChangeMessageList = (
     params: ConversationChatParams,
     res: ConversationChatResponse,
-    currentMessageId: number,
+    currentMessageId: string,
   ) => {
     const { data, eventType } = res;
     timeoutRef.current = setTimeout(() => {
       setMessageList((messageList) => {
-        if (
-          !messageList?.length ||
-          eventType === ConversationEventTypeEnum.ERROR
-        ) {
+        if (!messageList?.length) {
           clearTimeout(timeoutRef.current);
           timeoutRef.current = 0;
-          return messageList;
+          return [];
         }
         // 深拷贝消息列表
         const list = [...messageList];
@@ -202,14 +202,14 @@ export default () => {
           }
         }
         if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
-          const { componentExecuteResults } = data;
           newMessage = {
             ...currentMessage,
             status: MessageStatusEnum.Complete,
             finalResult: data,
           };
           // 调试结果
-          setExecuteResults(componentExecuteResults);
+          setRequestId(res.requestId);
+          setFinalResult(data as ConversationFinalResult);
           clearTimeout(timeoutRef.current);
           timeoutRef.current = 0;
           // 是否开启问题建议,可用值:Open,Close
@@ -218,6 +218,12 @@ export default () => {
             handleScrollBottom();
             runChatSuggest(params);
           }
+        }
+        if (eventType === ConversationEventTypeEnum.ERROR) {
+          newMessage = {
+            ...currentMessage,
+            status: MessageStatusEnum.Error,
+          };
         }
 
         list.splice(index, 1, newMessage);
@@ -231,7 +237,7 @@ export default () => {
   // 会话处理
   const handleConversation = async (
     params: ConversationChatParams,
-    currentMessageId: number,
+    currentMessageId: string,
   ) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
     // 启动连接
@@ -341,9 +347,10 @@ export default () => {
   };
 
   const handleDebug = useCallback((item: MessageInfo) => {
-    const result = item?.finalResult?.componentExecuteResults;
+    const result = item?.finalResult;
     if (result) {
-      setExecuteResults(result as ExecuteResultInfo[]);
+      setRequestId(item.id as string);
+      setFinalResult(result);
     }
     setShowType(EditAgentShowType.Debug_Details);
   }, []);
@@ -354,7 +361,9 @@ export default () => {
     loadingConversation,
     messageList,
     setMessageList,
-    executeResults,
+    // executeResults,
+    requestId,
+    finalResult,
     chatSuggestList,
     setChatSuggestList,
     runQueryConversation,
