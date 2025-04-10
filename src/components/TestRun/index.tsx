@@ -20,7 +20,7 @@ interface TestRunProps {
   // 按钮是否处于加载
   loading: boolean;
   // 清除运行结果
-  clearRunResult?: () => void;
+  clearRunResult: () => void;
   // 运行结果
   testRunResult?: string;
   // 预设值
@@ -72,8 +72,17 @@ const TestRun: React.FC<TestRunProps> = ({
     if (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length) {
       const value = form.getFieldsValue();
       for (let item in value) {
-        if (typeof value[item] === 'string' && value[item].includes('\r\n')) {
-          value[item] = JSON.parse(value[item]);
+        if (
+          typeof value[item] === 'string' &&
+          (value[item].includes('\r\n') ||
+            value[item].includes('{') ||
+            value[item].includes('['))
+        ) {
+          try {
+            value[item] = JSON.parse(value[item]);
+          } catch (error) {
+            console.error('JSON 解析失败:', error);
+          }
         }
       }
       run(node.type, value);
@@ -102,7 +111,10 @@ const TestRun: React.FC<TestRunProps> = ({
                   className="test-run-form"
                 >
                   {node.nodeConfig.inputArgs.map((item) => {
-                    if (item.dataType === 'Object') {
+                    if (
+                      item.dataType === 'Object' ||
+                      item.dataType?.includes('Array')
+                    ) {
                       return (
                         <div key={item.name}>
                           <Form.Item

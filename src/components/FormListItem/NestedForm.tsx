@@ -18,6 +18,7 @@ import {
   Input,
   Popover,
   Select,
+  Tooltip,
   Tree,
 } from 'antd';
 import _ from 'lodash';
@@ -229,7 +230,10 @@ const CustomTree: React.FC<TreeFormProps> = ({
           </div>
         )} */}
 
-        <div className="flex" style={{ width: showCheck ? 60 : 40 }}>
+        <div
+          className="dis-left nested-form-icon-button"
+          style={{ width: showCheck ? 66 : 50 }}
+        >
           <Popover
             content={
               <Input.TextArea
@@ -243,43 +247,50 @@ const CustomTree: React.FC<TreeFormProps> = ({
             }
             trigger="click"
           >
-            <Button
-              type="text"
-              className="tree-icon-style"
-              disabled={nodeData.systemVariable}
-              icon={<FileDoneOutlined className="margin-right" />}
-            />
+            <Tooltip title="添加描述">
+              <Button
+                type="text"
+                className="tree-icon-style"
+                disabled={nodeData.systemVariable}
+                icon={<FileDoneOutlined />}
+              />
+            </Tooltip>
           </Popover>
 
           {showCheck && (
-            <Checkbox
-              checked={nodeData.require}
-              onChange={(e) =>
-                updateNodeField(nodeData.key!, 'require', e.target.checked)
-              }
-              className="margin-right tree-icon-style"
-              disabled={nodeData.systemVariable}
-            />
+            <Tooltip title="是否必须">
+              <Checkbox
+                checked={nodeData.require}
+                onChange={(e) =>
+                  updateNodeField(nodeData.key!, 'require', e.target.checked)
+                }
+                disabled={nodeData.systemVariable}
+              />
+            </Tooltip>
           )}
           {canAddChild && (
+            <Tooltip title="新增子节点">
+              <Button
+                type="text"
+                disabled={nodeData.systemVariable}
+                className="tree-icon-style"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addChildNode(nodeData.key!);
+                }}
+                icon={<ICON_ASSOCIATION />}
+              />
+            </Tooltip>
+          )}
+          <Tooltip title="删除">
             <Button
               type="text"
               disabled={nodeData.systemVariable}
               className="tree-icon-style"
-              onClick={(e) => {
-                e.stopPropagation();
-                addChildNode(nodeData.key!);
-              }}
-              icon={<ICON_ASSOCIATION />}
+              onClick={() => deleteNode(nodeData.key!)}
+              icon={<DeleteOutlined />}
             />
-          )}
-          <Button
-            type="text"
-            disabled={nodeData.systemVariable}
-            className="tree-icon-style"
-            onClick={() => deleteNode(nodeData.key!)}
-            icon={<DeleteOutlined />}
-          />
+          </Tooltip>
         </div>
       </div>
     );
@@ -364,8 +375,8 @@ const CustomTree: React.FC<TreeFormProps> = ({
             style={{
               marginLeft: `${
                 treeData.find((item) => item.subArgs && item.subArgs.length > 0)
-                  ? '38%'
-                  : '42%'
+                  ? '35%'
+                  : '40%'
               }`,
             }}
           >

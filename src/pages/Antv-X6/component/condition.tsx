@@ -159,9 +159,10 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                                             >
                                               <Select
                                                 style={{
-                                                  marginRight: '10px',
-                                                  width: 55,
+                                                  marginRight: '4px',
+                                                  width: 54,
                                                 }}
+                                                className="condition-type-select-style"
                                               >
                                                 <Select.Option value="AND">
                                                   且
@@ -204,7 +205,7 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                                                     optionLabelProp="displayValue"
                                                     style={{
                                                       marginRight: '10px',
-                                                      width: 55,
+                                                      width: 54,
                                                     }}
                                                   ></Select>
                                                 </Form.Item>
@@ -227,6 +228,13 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                                                         'firstArg',
                                                         'bindValue',
                                                       ]}
+                                                      placeholder="请引用参数"
+                                                      style={{
+                                                        width:
+                                                          subFields.length > 1
+                                                            ? 150
+                                                            : 180,
+                                                      }}
                                                     />
                                                   </Form.Item>
                                                   <Form.Item
@@ -241,6 +249,12 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                                                       referenceType={
                                                         bindValueType
                                                       }
+                                                      style={{
+                                                        width:
+                                                          subFields.length > 1
+                                                            ? 150
+                                                            : 180,
+                                                      }}
                                                       fieldName={[
                                                         'conditionBranchConfigs',
                                                         item.name,

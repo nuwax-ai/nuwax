@@ -257,11 +257,17 @@ const NodeDrawer = (
       form.setFieldsValue(foldWrapItem.nodeConfig);
       // 特殊处理 HTTPRequest 节点
       if (foldWrapItem.type === 'HTTPRequest') {
-        if (form.getFieldValue('method') === undefined) {
+        if (form.getFieldValue('method') === null) {
           form.setFieldValue('method', 'GET');
         }
-        if (form.getFieldValue('contentType') === undefined) {
+        if (form.getFieldValue('contentType') === null) {
           form.setFieldValue('contentType', 'JSON');
+        }
+      }
+      if (foldWrapItem.type === 'Variable') {
+        console.log('foldWrapItem.id', form.getFieldValue('configType'));
+        if (form.getFieldValue('configType') === null) {
+          form.setFieldValue('configType', 'SET_VARIABLE');
         }
       }
     }

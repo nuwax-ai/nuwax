@@ -307,3 +307,18 @@ export interface InputListProps {
   title: string;
   inputItemName: string;
 }
+
+export interface TreeFormProps {
+  params?: InputAndOutConfig[];
+  // 外部传递进来的form
+  form: FormInstance;
+  // 标题
+  title?: string;
+  inputItemName?:
+    | 'inputArgs'
+    | 'outputArgs'
+    | 'variableArgs'
+    | 'conditionBranchConfigs'
+    | 'skillComponentConfigs'
+    | 'body';
+}

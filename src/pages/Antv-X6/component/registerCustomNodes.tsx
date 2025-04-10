@@ -245,7 +245,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
                 <div key={index} className="dis-left mb-16">
                   <span className="text-right qa-title-style"></span>
                   <Tag>{optionsMap[index]}</Tag>
-                  <span style={{ width: 160 }}>
+                  <span className="qa-content-style">
                     {item.content || '未配置内容'}
                   </span>
                 </div>
@@ -258,7 +258,9 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
             {data.nodeConfig.intentConfigs?.map((item, index) => (
               <div className="dis-left" key={index}>
                 <span className="qa-title-style">选项{index + 1}</span>
-                <span>{item.intent || '未配置意图'}</span>
+                <span className="qa-content-style">
+                  {item.intent || '未配置意图'}
+                </span>
               </div>
             ))}
           </div>

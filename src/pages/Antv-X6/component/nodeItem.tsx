@@ -393,6 +393,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
                   allowClear
                   placeholder={'请选择连接符号'}
                   mode={'multiple'}
+                  maxTagCount={3}
                   dropdownRender={(menu) => (
                     <>
                       {menu}
