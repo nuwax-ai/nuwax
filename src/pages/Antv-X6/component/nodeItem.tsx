@@ -43,7 +43,7 @@ const StartNode: React.FC<NodeDisposeProps> = ({ form }) => {
 const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({ form }) => {
   return (
     <>
-      <OtherFormList
+      <InputAndOut
         title="输入"
         fieldConfigs={outPutConfigs}
         inputItemName={InputItemNameEnum.inputArgs}

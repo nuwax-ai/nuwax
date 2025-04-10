@@ -113,7 +113,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                         label="参数名"
                         name={[item.name, 'name']}
                         noStyle
-                        rules={[{ required: true, message: '请输入变量名' }]}
+                        // rules={[{ required: true, message: '请输入变量名' }]}
                       >
                         <Input
                           size="small"
@@ -125,9 +125,9 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                       <Form.Item
                         name={[item.name, 'bindValue']}
                         noStyle
-                        rules={[
-                          { required: true, message: '请选择或输入变量值' },
-                        ]}
+                        // rules={[
+                        //   { required: true, message: '请选择或输入变量值' },
+                        // ]}
                       >
                         <InputOrReference
                           form={form}
@@ -221,7 +221,7 @@ export const OtherFormList: React.FC<NodeRenderProps> = ({
                         label="参数名"
                         name={[item.name, 'name']}
                         noStyle
-                        rules={[{ required: true, message: '请输入变量名' }]}
+                        // rules={[{ required: true, message: '请输入变量名' }]}
                       >
                         <Input
                           size="small"
@@ -234,9 +234,9 @@ export const OtherFormList: React.FC<NodeRenderProps> = ({
                         label="变量名"
                         name={[item.name, 'bindValue']}
                         noStyle
-                        rules={[
-                          { required: true, message: '请选择或输入变量值' },
-                        ]}
+                        // rules={[
+                        //   { required: true, message: '请选择或输入变量值' },
+                        // ]}
                       >
                         <Input
                           placeholder="请输入参数值"

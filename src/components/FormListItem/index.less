@@ -98,9 +98,33 @@
 
 .tree-form-style {
   font-size: 12px;
-  // .ant-tree-switcher{
-  //   width: 6px;
-  // }
+  position: relative; /* 设置容器为相对定位 */
+  .ant-tree-switcher {
+    margin-left: -9px;
+
+    .ant-tree-switcher-icon {
+      margin-left: 0;
+    }
+  }
+
+  .ant-tree-indent-unit {
+    position: relative; /* 设置每个层级为相对定位 */
+    margin-left: -2px;
+  }
+
+  .ant-tree-indent-unit::before {
+    position: absolute; /* 使用绝对定位 */
+    content: ''; /* 必须定义 content 属性 */
+    top: -11px; /* 从顶部开始的位置 */
+    bottom: 0; /* 到底部结束 */
+    left: 4px; /* 从左侧开始 */
+    height: 47px;
+    inset-inline-end: 20px;
+  }
+
+  .ant-tree-node-content-wrapper {
+    padding-inline: 2px;
+  }
 
   svg {
     width: 14px;

@@ -229,6 +229,8 @@ const Created: React.FC<CreatedProp> = ({
   };
   // 点击左侧菜单，触发不同的事件
   const onMenuClick = (val: string) => {
+    // 清除搜索
+    setSearch('');
     // 切换左侧菜单时重置所有分页状态
     setSelectMenu(val);
     setPagination({ page: 1, pageSize: 10 });
