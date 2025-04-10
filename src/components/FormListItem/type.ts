@@ -84,3 +84,9 @@ export interface TreeFormItemProps {
   showCheck?: boolean;
   inputItemName?: string;
 }
+
+export interface TreeInputProps {
+  form: FormInstance;
+  title: string;
+  params: InputAndOutConfig[];
+}

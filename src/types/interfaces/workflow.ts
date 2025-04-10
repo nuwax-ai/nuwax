@@ -301,3 +301,9 @@ export interface ErrorParams {
   errorList: ErrorItem[];
   show: boolean;
 }
+
+export interface InputListProps {
+  form: FormInstance;
+  title: string;
+  inputItemName: string;
+}

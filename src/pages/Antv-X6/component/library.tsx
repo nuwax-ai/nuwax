@@ -1,6 +1,7 @@
 // 知识库，数据库等节点
 import Created from '@/components/Created';
 import type { HasIdsType } from '@/components/Created/type';
+import TreeInput from '@/components/FormListItem/TreeInput';
 import { SkillList } from '@/components/Skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreatedNodeItem } from '@/types/interfaces/common';
@@ -10,7 +11,6 @@ import { Button, Empty, Form, Popover, Select, Slider } from 'antd';
 import React, { useState } from 'react';
 import '../index.less';
 import { TreeOutput } from './commonNode';
-import { InputList } from './pluginNode';
 // 定义知识库
 const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   form, // updateNode,
@@ -55,7 +55,11 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   return (
     <div className="knowledge-node">
       {/* 输入参数 */}
-      <InputList title={'输入'} form={form} inputItemName={'inputArgs'} />
+      <TreeInput
+        title={'输入'}
+        form={form}
+        params={form.getFieldValue('inputArgs')}
+      />
 
       {/* 知识库选择 */}
       <div className="node-item-style">

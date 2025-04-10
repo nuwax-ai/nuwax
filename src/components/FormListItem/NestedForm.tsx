@@ -92,7 +92,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
       dataType: null,
       require: false,
       systemVariable: false,
-      bindValueType: null,
+      bindValueType: 'Input',
       bindValue: '',
     };
     updateTreeData([...treeData, newNode]);
@@ -109,7 +109,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
       dataType: null,
       require: false,
       systemVariable: false,
-      bindValueType: null,
+      bindValueType: 'Input',
       bindValue: '',
     };
 

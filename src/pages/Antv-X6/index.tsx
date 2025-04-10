@@ -835,6 +835,7 @@ const Workflow: React.FC = () => {
         run={runTest}
         visible={visible}
         testRunResult={testRunResult}
+        clearRunResult={() => setTestRunResult('')}
         loading={loading}
         stopWait={stopWait}
         formItemValue={formItemValue}

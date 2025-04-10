@@ -256,7 +256,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
     { value: '。', label: '句号 (。)' },
     { value: ',', label: '逗号 (,)' },
     { value: ';', label: '分号 (;)' },
-    { value: ' ', label: '空格 ( )' },
+    { value: '&nbsp;', label: '空格 ( )' },
   ]);
 
   const [newItem, setNewItem] = useState({

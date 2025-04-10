@@ -13,7 +13,7 @@ export interface InputAndOutConfig {
   // 是否为系统内置变量参数
   systemVariable: boolean;
   // 值引用类型
-  bindValueType: string | null;
+  bindValueType?: 'Input' | 'Reference';
   // 参数值
   bindValue: string;
   //  	下级参数

@@ -431,17 +431,10 @@ const initGraph = ({
   });
   // 监听节点点击事件，调用 changeDrawer 函数更新右侧抽屉的内容
   graph.on('node:click', ({ node }) => {
-    const nodes = graph.getNodes();
-    // 先将其他节点的zindex设置为4
-    nodes.forEach((n) => {
-      n.setData({ selected: false });
-    });
-    console.log(nodes);
     // 判断点击的是空白处还是节点
     if (node && node.isNode()) {
       // 设置当前节点为选中状态
       changeZindex(node);
-      console.log(node);
       node.setData({ selected: true }); // 保持当前节点层级999
       // 获取被点击节点的数据
       const latestData = {

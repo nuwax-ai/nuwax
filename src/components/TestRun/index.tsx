@@ -19,6 +19,8 @@ interface TestRunProps {
   run: (type: string, params?: DefaultObjectType) => void;
   // 按钮是否处于加载
   loading: boolean;
+  // 清除运行结果
+  clearRunResult?: () => void;
   // 运行结果
   testRunResult?: string;
   // 预设值
@@ -51,6 +53,7 @@ const TestRun: React.FC<TestRunProps> = ({
   run,
   loading,
   testRunResult,
+  clearRunResult,
   stopWait,
   formItemValue,
   testRunparams,
@@ -221,7 +224,10 @@ const TestRun: React.FC<TestRunProps> = ({
           <span>试运行</span>
           <CloseOutlined
             className={'cursor-pointer'}
-            onClick={() => setTestRun(false)}
+            onClick={() => {
+              setTestRun(false);
+              clearRunResult();
+            }}
           />
         </div>
         {/* 试运行的内容 */}

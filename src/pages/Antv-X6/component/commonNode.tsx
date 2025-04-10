@@ -6,6 +6,7 @@ import type { DefaultObjectType } from '@/types/interfaces/common';
 
 import {
   FormListProps,
+  InputListProps,
   KeyValuePairs,
   MultiSelectWithCheckboxProps,
   NodeRenderProps,
@@ -16,6 +17,7 @@ import {
   DeleteOutlined,
   DownOutlined,
   FileDoneOutlined,
+  InfoCircleOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
 import {
@@ -33,6 +35,7 @@ import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
 import './commonNode.less';
+
 // 定义通用的输入输出
 export const InputAndOut: React.FC<NodeRenderProps> = ({
   title,
@@ -454,5 +457,76 @@ export const FormList: React.FC<FormListProps> = ({
         </>
       )}
     </Form.List>
+  );
+};
+
+// 根据输入的list遍历创建输入框
+
+export const InputList: React.FC<InputListProps> = ({
+  form,
+  title,
+  inputItemName,
+}) => {
+  return (
+    <>
+      <Form.List name={inputItemName}>
+        {(fields) => (
+          <>
+            <span className="node-title-style">{title}</span>
+            {fields.map((item, index) => {
+              const bindValueType = form.getFieldValue([
+                inputItemName,
+                item.name,
+                'bindValueType',
+              ]);
+              return (
+                <div key={item.name}>
+                  {/* 只在第一个输入框组旁边显示标签 */}
+                  {index === 0 && (
+                    <>
+                      <span>参数名</span>
+                      <span style={{ marginLeft: '25%' }}>参数值</span>
+                    </>
+                  )}
+                  <Form.Item key={item.key}>
+                    <div className="dis-left">
+                      <Form.Item noStyle name={[item.name, 'bindValue']}>
+                        <div className="dis-left node-form-label-style">
+                          <span className="margin-right-6 font-12 form-name-style">
+                            {form.getFieldValue([
+                              inputItemName,
+                              item.name,
+                              'name',
+                            ])}
+                          </span>
+                          <Popover
+                            placement="right"
+                            content={form.getFieldValue([
+                              inputItemName,
+                              item.name,
+                              'description',
+                            ])}
+                          >
+                            <InfoCircleOutlined className="margin-right-6 font-12" />
+                          </Popover>
+                        </div>
+                      </Form.Item>
+                      <Form.Item name={[item.name, 'bindValue']} noStyle>
+                        <InputOrReference
+                          form={form}
+                          fieldName={[inputItemName, item.name, 'bindValue']}
+                          style={{ width: '65%' }}
+                          referenceType={bindValueType}
+                        />
+                      </Form.Item>
+                    </div>
+                  </Form.Item>
+                </div>
+              );
+            })}
+          </>
+        )}
+      </Form.List>
+    </>
   );
 };

@@ -278,7 +278,6 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({ form }) => {
               form={form}
               field="content"
               inputItemName={InputItemNameEnum.options}
-              showIndex
               hasUuid
             />
           ) : null
