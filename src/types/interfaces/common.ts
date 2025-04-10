@@ -424,3 +424,9 @@ export interface ChatBottomMoreProps {
 
 // 运行状态组件：进行中、运行完毕
 export type RunOverProps = ChatBottomMoreProps;
+
+// 'Tooltip省略号'组件
+export interface EllipsisTooltipProps {
+  className?: string;
+  text: string | number;
+}

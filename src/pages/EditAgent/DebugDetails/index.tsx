@@ -17,17 +17,23 @@ const cx = classNames.bind(styles);
  */
 const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
   const { requestId, finalResult } = useModel('conversationInfo');
+  // 当前执行结果
   const [executeInfo, setExecuteInfo] = useState<ExecuteResultInfo>();
+  // 当前执行结果索引，默认为0
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
   // 输入参数
   const [inputData, setInputData] = useState<string>();
   // 输出参数
   const [outputData, setOutputData] = useState<string>();
 
   useEffect(() => {
-    if (finalResult?.componentExecuteResults?.length > 0) {
-      const _executeInfo = finalResult?.componentExecuteResults[0];
+    // 执行结果列表
+    const result = finalResult?.componentExecuteResults || [];
+    if (result?.length > 0) {
+      // 当前执行结果
+      const _executeInfo = result[currentIndex];
       setExecuteInfo(_executeInfo);
-
+      // 当前执行结果不为空
       if (!!_executeInfo) {
         // 输入参数
         const _inputData = JSON.stringify(_executeInfo.input, null, 2);
@@ -37,7 +43,7 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
         setOutputData(_outputData);
       }
     }
-  }, [finalResult]);
+  }, [finalResult, currentIndex]);
 
   const handleCopy = () => {
     message.success('复制成功');
@@ -67,6 +73,21 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
               </CopyToClipboard>
             </div>
           </header>
+          <div className={cx(styles.wrap)}>
+            {finalResult?.componentExecuteResults?.map((info, index) => (
+              <React.Fragment key={info.id}>
+                <span
+                  className={cx(styles['execute-name'], 'cursor-pointer', {
+                    [styles.active]: currentIndex === index,
+                  })}
+                  onClick={() => setCurrentIndex(index)}
+                >
+                  {info.name}
+                </span>
+                <br />
+              </React.Fragment>
+            ))}
+          </div>
           <div className={cx(styles.wrap)}>
             <h5 className={cx(styles.title)}>节点详情</h5>
             <NodeDetails node={executeInfo} />

@@ -44,11 +44,31 @@
     font-weight: 600;
   }
 
+  .execute-name {
+    display: inline-block;
+    margin-bottom: 4px;
+    padding: 2px;
+    color: @BLANK14;
+    font-size: 12px;
+    border-radius: 2px;
+    transition: background-color 0.3s;
+
+    &.active {
+      background-color: @BLANK25;
+    }
+
+    &:hover {
+      background-color: @BLANK25;
+    }
+  }
+
   pre {
     min-height: 200px;
+    padding: 10px;
+    color: @BLANK14;
+    font-size: 12px;
     background-color: @GRAY01;
     border-radius: 6px;
-    padding: 10px;
     white-space: pre-wrap;
     word-wrap: break-word;
     overflow-wrap: break-word;

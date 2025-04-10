@@ -157,6 +157,11 @@ export interface DebugDetailsProps {
   onClose: () => void;
 }
 
+// 节点详情
+export interface NodeDetailsProps {
+  node?: ExecuteResultInfo;
+}
+
 // 知识库文本列表组件
 export interface KnowledgeTextListProps {
   list: AgentComponentInfo[];
