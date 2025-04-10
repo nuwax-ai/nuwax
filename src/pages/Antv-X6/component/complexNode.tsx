@@ -154,10 +154,11 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
       />
       {/* 意图匹配 */}
       <FormList
-        form={form}
         title={'意图匹配'}
+        form={form}
         field="intent"
         hasUuid
+        showIndex
         inputItemName={InputItemNameEnum.intentConfigs}
       />
       {/* 补充提示词 */}

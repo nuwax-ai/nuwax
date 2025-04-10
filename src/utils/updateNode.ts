@@ -1,7 +1,7 @@
 import service from '@/services/modifyNode';
 import { ChildNode } from '@/types/interfaces/graph';
-import { InputAndOutConfig } from '@/types/interfaces/node';
-
+import { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
+import { isEqual } from 'lodash';
 export const updateNode = async (params: ChildNode) => {
   const _params = {
     ...params,
@@ -138,3 +138,45 @@ export const getNodeRelationWithArgs = (
 // const validateNodeList =( nodes: ChildNode[])=>{
 //   const _arr
 // }
+export const changeNodeConfig = (
+  type: string,
+  values: NodeConfig,
+  config: NodeConfig,
+): NodeConfig => {
+  // 根据 type 来返回不同的字段
+  const filed =
+    type === 'QA'
+      ? 'options'
+      : type === 'IntentRecognition'
+      ? 'intentConfigs'
+      : 'conditionBranchConfigs';
+
+  // 确保 values[filed] 和 config[filed] 都是数组
+  const valuesArray = values[filed] || [];
+  const configArray = config[filed] || [];
+
+  // 更新 values[filed]
+  const updatedFiled = valuesArray.map((valueItem) => {
+    // 在 config[filed] 中找到对应 uuid 的项
+    const configItem = configArray.find(
+      (configItem) => configItem.uuid === valueItem.uuid,
+    );
+
+    // 如果找到匹配项，且 nextNodeIds 不同，则替换
+    if (configItem && !isEqual(configItem.nextNodeIds, valueItem.nextNodeIds)) {
+      return {
+        ...valueItem,
+        nextNodeIds: configItem.nextNodeIds,
+      };
+    }
+
+    // 否则保持原样
+    return valueItem;
+  });
+
+  // 返回新的 values，仅更新 filed 对应的字段
+  return {
+    ...values,
+    [filed]: updatedFiled,
+  };
+};

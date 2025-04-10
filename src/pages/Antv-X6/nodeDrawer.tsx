@@ -3,13 +3,15 @@ import OtherOperations from '@/components/OtherAction';
 import { testRunList } from '@/constants/node.constants';
 import { ChildNode } from '@/types/interfaces/graph';
 import { NodeConfig, NodeDrawerProps } from '@/types/interfaces/node';
+import { changeNodeConfig } from '@/utils/updateNode';
 import { returnImg } from '@/utils/workflow';
 import { Form, FormInstance } from 'antd';
+
 import React, {
   forwardRef,
   useEffect,
   useImperativeHandle,
-  // useRef,
+  useRef,
   useState,
 } from 'react';
 import { useModel } from 'umi';
@@ -59,7 +61,7 @@ const NodeDrawer = (
   // 当前节点是否修改了参数
   const { isModified, setIsModified } = useModel('workflow');
   // 新增定时器引用
-  // const timerRef = useRef<NodeJS.Timeout>();
+  const timerRef = useRef<NodeJS.Timeout>();
   // 将节点的数据 保存到 state 中,维持数据双向绑定,便于管理
   const [currentNodeConfig, setCurrentNodeConfig] =
     useState<ChildNode>(foldWrapItem);
@@ -72,24 +74,34 @@ const NodeDrawer = (
   // form表单校验完毕后提交数据
   const onFinish = () => {
     const values = form.getFieldsValue(true);
-    const newNodeConfig = {
-      ...currentNodeConfig,
-      nodeConfig: {
-        ...currentNodeConfig.nodeConfig,
-        ...values,
-      },
-    };
+    let newNodeConfig;
+    if (
+      currentNodeConfig.type === 'QA' ||
+      currentNodeConfig.type === 'IntentRecognition' ||
+      currentNodeConfig.type === 'Condition'
+    ) {
+      newNodeConfig = {
+        ...currentNodeConfig,
+        nodeConfig: {
+          ...currentNodeConfig.nodeConfig,
+          ...changeNodeConfig(
+            currentNodeConfig.type,
+            values,
+            currentNodeConfig.nodeConfig,
+          ),
+        },
+      };
+    } else {
+      newNodeConfig = {
+        ...currentNodeConfig,
+        nodeConfig: {
+          ...currentNodeConfig.nodeConfig,
+          ...values,
+        },
+      };
+    }
     onGetNodeConfig(newNodeConfig);
   };
-
-  // 立刻更新当前的数据，提交给后台
-  // 重新获取当前节点的数据
-  // const retrieveCurrentNodeConfig = async () => {
-  //   const _data = await getCurrentNodeData();
-  //   if (_data) {
-  //     form.setFieldsValue(_data.nodeConfig);
-  //   }
-  // };
 
   // 修改节点的名称和描述
   const changeFoldWrap = ({
@@ -186,27 +198,27 @@ const NodeDrawer = (
   }));
 
   // 新增定时器逻辑
-  // useEffect(() => {
-  //   // 清除已有定时器
-  //   if (timerRef.current) {
-  //     clearInterval(timerRef.current);
-  //   }
+  useEffect(() => {
+    // 清除已有定时器
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
 
-  //   // 创建新定时器
-  //   timerRef.current = setInterval(() => {
-  //     if (isModified) {
-  //       form.submit();
-  //       setIsModified(false); // 重置修改状态
-  //     }
-  //   }, 3000);
+    // 创建新定时器
+    timerRef.current = setInterval(() => {
+      if (isModified) {
+        form.submit();
+        setIsModified(false); // 重置修改状态
+      }
+    }, 3000);
 
-  //   // 清理函数
-  //   return () => {
-  //     if (timerRef.current) {
-  //       clearInterval(timerRef.current);
-  //     }
-  //   };
-  // }, [visible, currentNodeConfig, isModified]);
+    // 清理函数
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [visible, currentNodeConfig, isModified]);
 
   useEffect(() => {
     // 当 foldWrapItem.id 改变时，重新设置 currentNodeConfig
@@ -215,49 +227,45 @@ const NodeDrawer = (
       setIsModified(false);
     }
   }, [visible]);
-  // 封装表单更新逻辑
-  const handleFormUpdate = async (child: ChildNode) => {
-    if (child.id && child.id !== 0) {
+
+  useEffect(() => {
+    if (foldWrapItem.id && foldWrapItem.id !== 0) {
       // 对比新旧 foldWrapItem，仅在必要时更新
-      if (JSON.stringify(child) !== JSON.stringify(currentNodeConfig)) {
-        // 这里坐下区分，如果是更新当前节点的数据，那么只更新新增的
-        if (child.id === currentNodeConfig.id) {
-          const currentValues = form.getFieldsValue();
-          const newValues = { ...currentValues, ...child.nodeConfig };
-          await form.setFieldsValue(newValues);
-        } else {
-          // 否则就先清空表单值
-          // 清空表单值
-          await form.resetFields();
-          // 设置新的表单值
-          await form.setFieldsValue(child.nodeConfig);
+      if (JSON.stringify(foldWrapItem) !== JSON.stringify(currentNodeConfig)) {
+        if (foldWrapItem.id === currentNodeConfig.id) {
+          const currentValues = form.getFieldsValue(); // 获取当前表单值
+          const newValues = { ...currentValues }; // 创建一个副本用于更新
+
+          // 更新表单值（仅当节点类型匹配时）
+          if (['LLM', 'Knowledge'].includes(foldWrapItem.type)) {
+            form.setFieldsValue(newValues);
+          }
         }
 
         // 更新当前节点配置
-        setCurrentNodeConfig(child);
-        // 特殊处理 HTTPRequest 节点
-        if (child.type === 'HTTPRequest') {
-          if (form.getFieldValue('method') === undefined) {
-            form.setFieldValue('method', 'GET');
-          }
-          if (form.getFieldValue('contentType') === undefined) {
-            form.setFieldValue('contentType', 'JSON');
-          }
-        }
+        setCurrentNodeConfig(foldWrapItem);
       }
     }
-  };
+  }, [JSON.stringify(foldWrapItem)]); // 监听 foldWrapItem 的变化
 
   // 监听 foldWrapItem.id 的变化，而不是整个 foldWrapItem
   useEffect(() => {
-    if (
-      foldWrapItem.id !== currentNodeConfig.id ||
-      JSON.stringify(foldWrapItem.nodeConfig) !==
-        JSON.stringify(currentNodeConfig.nodeConfig)
-    ) {
-      handleFormUpdate(foldWrapItem);
+    if (foldWrapItem.id !== currentNodeConfig.id && foldWrapItem.id !== 0) {
+      // 清空表单值
+      form.resetFields();
+      // 设置新的表单值
+      form.setFieldsValue(foldWrapItem.nodeConfig);
+      // 特殊处理 HTTPRequest 节点
+      if (foldWrapItem.type === 'HTTPRequest') {
+        if (form.getFieldValue('method') === undefined) {
+          form.setFieldValue('method', 'GET');
+        }
+        if (form.getFieldValue('contentType') === undefined) {
+          form.setFieldValue('contentType', 'JSON');
+        }
+      }
     }
-  }, [foldWrapItem.id, foldWrapItem.nodeConfig]); // 监听 id 和 nodeConfig 的变化
+  }, [foldWrapItem.id]); // 监听 id 和 nodeConfig 的变化
 
   return (
     <FoldWrap

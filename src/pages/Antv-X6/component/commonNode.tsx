@@ -436,12 +436,13 @@ export const FormList: React.FC<FormListProps> = ({
                   {/* <Form.Item name={[item.name, 'nextNodeIds']} noStyle>
                     <Input type="hidden"></Input>
                   </Form.Item> */}
-                  {!fieldData && (
+                  {!fieldData && fields.length > 2 && (
                     <Form.Item noStyle>
                       <DeleteOutlined
                         className={'ml-10'}
                         onClick={() => {
                           remove(item.name);
+                          form.submit();
                         }}
                       />
                     </Form.Item>
