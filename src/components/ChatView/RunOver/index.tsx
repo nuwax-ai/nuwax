@@ -40,14 +40,17 @@ const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
   return (
     <Popover
       placement="bottomLeft"
-      overlayInnerStyle={{
-        padding: 0,
+      styles={{
+        body: {
+          padding: 0,
+        },
       }}
       content={
         <div className={cx(styles['pop-content'])}>
           {processingList?.map((info, index) => {
             return (
-              info.status === ProcessingEnum.FINISHED && (
+              // 状态不为执行中时：即完成或者失败状态
+              info.status !== ProcessingEnum.EXECUTING && (
                 <div
                   key={index}
                   className={cx(styles.row, 'flex', 'items-center')}

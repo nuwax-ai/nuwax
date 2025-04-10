@@ -44,21 +44,32 @@
     font-weight: 600;
   }
 
-  .execute-name {
-    display: inline-block;
+  .execute-box {
+    gap: 6px;
     margin-bottom: 4px;
-    padding: 2px;
-    color: @BLANK14;
-    font-size: 12px;
-    border-radius: 2px;
-    transition: background-color 0.3s;
 
-    &.active {
-      background-color: @BLANK25;
+    img {
+      width: 12px;
+      height: 12px;
+      object-fit: cover;
+      border-radius: 2px;
     }
 
-    &:hover {
-      background-color: @BLANK25;
+    .name {
+      display: inline-block;
+      padding: 2px;
+      color: @BLANK14;
+      font-size: 12px;
+      border-radius: 2px;
+      transition: background-color 0.3s;
+
+      &.active {
+        background-color: @BLANK25;
+      }
+
+      &:hover {
+        background-color: @BLANK25;
+      }
     }
   }
 

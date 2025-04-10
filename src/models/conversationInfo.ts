@@ -118,6 +118,7 @@ export default () => {
   const handleChangeMessageList = (
     params: ConversationChatParams,
     res: ConversationChatResponse,
+    // 自定义随机id
     currentMessageId: string,
   ) => {
     const { data, eventType } = res;
@@ -162,7 +163,7 @@ export default () => {
           ) {
             // 自动展开展示台
             setShowType(EditAgentShowType.Show_Stand);
-            setCardList(() => {
+            setCardList((cardList) => {
               // 竖向列表
               if (
                 data.cardBindConfig?.bindCardStyle === BindCardStyleEnum.LIST
@@ -172,15 +173,22 @@ export default () => {
                     ...item,
                     cardKey: data.cardBindConfig.cardKey,
                   })) || [];
-
-                return [...cardDataList];
+                // 如果是同一次会话请求，则追加，否则更新
+                return res.requestId === requestId
+                  ? [...cardList, ...cardDataList]
+                  : [...cardDataList];
               }
               // 单张卡片
               const cardInfo = {
                 ...data?.cardData,
                 cardKey: data.cardBindConfig?.cardKey,
               };
-              return [cardInfo] as CardInfo[];
+              // 如果是同一次会话请求，则追加，否则更新
+              return (
+                res.requestId === requestId
+                  ? [...cardList, cardInfo]
+                  : [cardInfo]
+              ) as CardInfo[];
             });
           }
         }

@@ -65,6 +65,7 @@ export interface ExecuteResultInfo {
   data: unknown;
   error: string;
   id: number;
+  icon: string;
   input: unknown;
   name: string;
   startTime: number;

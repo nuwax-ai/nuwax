@@ -1,4 +1,9 @@
+import knowledgeImage from '@/assets/images/knowledge_image.png';
+import pluginImage from '@/assets/images/plugin_image.png';
+import variableImage from '@/assets/images/variable_image.png';
+import workflowImage from '@/assets/images/workflow_image.png';
 import ToggleWrap from '@/components/ToggleWrap';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { DebugDetailsProps } from '@/types/interfaces/agentConfig';
 import type { ExecuteResultInfo } from '@/types/interfaces/conversationInfo';
 import { CopyOutlined } from '@ant-design/icons';
@@ -49,6 +54,23 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
     message.success('复制成功');
   };
 
+  // 获取图标，如果不存在则使用默认图
+  const getIcon = (info: ExecuteResultInfo) => {
+    if (info?.icon) {
+      return info.icon;
+    }
+    switch (info.type) {
+      case AgentComponentTypeEnum.Plugin:
+        return pluginImage as string;
+      case AgentComponentTypeEnum.Workflow:
+        return workflowImage as string;
+      case AgentComponentTypeEnum.Knowledge:
+        return knowledgeImage as string;
+      case AgentComponentTypeEnum.Variable:
+        return variableImage as string;
+    }
+  };
+
   return (
     <ToggleWrap title="调试详情" onClose={onClose} visible={visible}>
       {!!finalResult ? (
@@ -74,18 +96,22 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
             </div>
           </header>
           <div className={cx(styles.wrap)}>
+            <h5 className={cx(styles.title)}>调用组件</h5>
             {finalResult?.componentExecuteResults?.map((info, index) => (
-              <React.Fragment key={info.id}>
+              <div
+                key={info.id}
+                className={cx(styles['execute-box'], 'flex', 'items-center')}
+              >
+                <img src={getIcon(info)} alt="" />
                 <span
-                  className={cx(styles['execute-name'], 'cursor-pointer', {
+                  className={cx(styles.name, 'cursor-pointer', {
                     [styles.active]: currentIndex === index,
                   })}
                   onClick={() => setCurrentIndex(index)}
                 >
                   {info.name}
                 </span>
-                <br />
-              </React.Fragment>
+              </div>
             ))}
           </div>
           <div className={cx(styles.wrap)}>

@@ -1,4 +1,4 @@
-import { EllipsisTooltipProps } from '@/types/interfaces/common';
+import type { EllipsisTooltipProps } from '@/types/interfaces/common';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';

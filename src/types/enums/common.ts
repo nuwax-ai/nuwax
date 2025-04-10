@@ -210,4 +210,5 @@ export enum MessageStatusEnum {
 export enum ProcessingEnum {
   EXECUTING = 'EXECUTING',
   FINISHED = 'FINISHED',
+  FAILED = 'FAILED',
 }
