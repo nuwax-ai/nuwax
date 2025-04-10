@@ -265,9 +265,13 @@ const NodeDrawer = (
         }
       }
       if (foldWrapItem.type === 'Variable') {
-        console.log('foldWrapItem.id', form.getFieldValue('configType'));
         if (form.getFieldValue('configType') === null) {
           form.setFieldValue('configType', 'SET_VARIABLE');
+        }
+      }
+      if (foldWrapItem.type === 'QA') {
+        if (form.getFieldValue('answerType') === null) {
+          form.setFieldValue('answerType', 'TEXT');
         }
       }
     }
