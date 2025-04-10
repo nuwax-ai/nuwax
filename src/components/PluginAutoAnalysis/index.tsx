@@ -1,3 +1,4 @@
+import ParamsNameLabel from '@/components/ParamsNameLabel';
 import { ARRAY_ITEM } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
 import useTryRun from '@/hooks/useTryRun';
@@ -12,7 +13,6 @@ import React, { useEffect } from 'react';
 import { useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
-import ParamsNameLabel from './ParamsNameLabel';
 
 const cx = classNames.bind(styles);
 

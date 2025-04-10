@@ -1,19 +1,13 @@
 import ConditionRender from '@/components/ConditionRender';
-import type { DataTypeEnum } from '@/types/enums/common';
+import type { ParamsNameLabelProps } from '@/types/interfaces/common';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-export interface ParamsNameLabelProps {
-  require?: boolean;
-  paramName: string;
-  paramType: DataTypeEnum;
-}
-
 /**
- * 参数名称label
+ * 试运行表格 - 参数名称label
  */
 const ParamsNameLabel: React.FC<ParamsNameLabelProps> = ({
   require,

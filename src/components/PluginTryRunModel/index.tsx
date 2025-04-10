@@ -1,3 +1,4 @@
+import ParamsNameLabel from '@/components/ParamsNameLabel';
 import { ARRAY_ITEM } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
 import useTryRun from '@/hooks/useTryRun';
@@ -5,7 +6,7 @@ import { apiPluginTest } from '@/services/plugin';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PluginTryRunModelProps } from '@/types/interfaces/library';
-import { PluginTestResult } from '@/types/interfaces/plugin';
+import type { PluginTestResult } from '@/types/interfaces/plugin';
 import {
   CloseOutlined,
   DeleteOutlined,
@@ -16,7 +17,6 @@ import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
-import ParamsNameLabel from './ParamsNameLabel';
 
 const cx = classNames.bind(styles);
 

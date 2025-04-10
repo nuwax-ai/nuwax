@@ -1,7 +1,7 @@
 import type { SubmitButtonProps } from '@/types/interfaces/common';
 import { Button, Form } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -13,12 +13,12 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({
   okText,
   onConfirm,
 }) => {
-  const [submittable, setSubmittable] = React.useState<boolean>(false);
+  const [submittable, setSubmittable] = useState<boolean>(false);
 
   // Watch all values
   const values = Form.useWatch([], form);
 
-  React.useEffect(() => {
+  useEffect(() => {
     form
       ?.validateFields({ validateOnly: true })
       .then(() => setSubmittable(true))

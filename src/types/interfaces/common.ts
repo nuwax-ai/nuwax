@@ -1,5 +1,6 @@
 import type { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { CreateUpdateModeEnum } from '@/types/enums/common';
+import { DataTypeEnum } from '@/types/enums/common';
 import type {
   AgentBaseInfo,
   AgentConfigInfo,
@@ -429,4 +430,11 @@ export type RunOverProps = ChatBottomMoreProps;
 export interface EllipsisTooltipProps {
   className?: string;
   text: string | number;
+}
+
+// 参数名称label
+export interface ParamsNameLabelProps {
+  require?: boolean;
+  paramName: string;
+  paramType: DataTypeEnum;
 }
