@@ -19,6 +19,8 @@ interface TestRunProps {
   run: (type: string, params?: DefaultObjectType) => void;
   // 按钮是否处于加载
   loading: boolean;
+  // 清除运行结果
+  clearRunResult: () => void;
   // 运行结果
   testRunResult?: string;
   // 预设值
@@ -51,6 +53,7 @@ const TestRun: React.FC<TestRunProps> = ({
   run,
   loading,
   testRunResult,
+  clearRunResult,
   stopWait,
   formItemValue,
   testRunparams,
@@ -69,8 +72,17 @@ const TestRun: React.FC<TestRunProps> = ({
     if (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length) {
       const value = form.getFieldsValue();
       for (let item in value) {
-        if (typeof value[item] === 'string' && value[item].includes('\r\n')) {
-          value[item] = JSON.parse(value[item]);
+        if (
+          typeof value[item] === 'string' &&
+          (value[item].includes('\r\n') ||
+            value[item].includes('{') ||
+            value[item].includes('['))
+        ) {
+          try {
+            value[item] = JSON.parse(value[item]);
+          } catch (error) {
+            console.error('JSON 解析失败:', error);
+          }
         }
       }
       run(node.type, value);
@@ -99,7 +111,10 @@ const TestRun: React.FC<TestRunProps> = ({
                   className="test-run-form"
                 >
                   {node.nodeConfig.inputArgs.map((item) => {
-                    if (item.dataType === 'Object') {
+                    if (
+                      item.dataType === 'Object' ||
+                      item.dataType?.includes('Array')
+                    ) {
                       return (
                         <div key={item.name}>
                           <Form.Item
@@ -117,7 +132,7 @@ const TestRun: React.FC<TestRunProps> = ({
                             <CodeEditor
                               value={form.getFieldValue(item.name) || ''}
                               codeLanguage={'JSON'}
-                              changeCode={(code) => {
+                              onChange={(code) => {
                                 form.setFieldsValue({ [item.name]: code }); // 更新表单值
                               }}
                               height="180px"
@@ -148,7 +163,8 @@ const TestRun: React.FC<TestRunProps> = ({
                 </Form>
               </div>
             )}
-          {(!node.nodeConfig.inputArgs ||
+          {(!node ||
+            !node.nodeConfig.inputArgs ||
             !node.nodeConfig.inputArgs.length) && (
             <Empty description="本次试运行无需输入" />
           )}
@@ -220,7 +236,10 @@ const TestRun: React.FC<TestRunProps> = ({
           <span>试运行</span>
           <CloseOutlined
             className={'cursor-pointer'}
-            onClick={() => setTestRun(false)}
+            onClick={() => {
+              setTestRun(false);
+              clearRunResult();
+            }}
           />
         </div>
         {/* 试运行的内容 */}

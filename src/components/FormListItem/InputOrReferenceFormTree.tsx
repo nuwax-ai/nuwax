@@ -5,84 +5,60 @@ import { Dropdown, Input, Tag } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import './index.less';
-import { InputOrReferenceProps } from './type';
 
 interface Event {
   key: string;
-
   keyPath: string[];
-
   domEvent: React.MouseEvent;
 }
-// 定义 mapChildren 的返回值类型
+
 type MenuItem = {
   key: string;
   label: React.ReactNode;
-  onClick: (e: Event) => void; // 修改为接收事件参数
+  onClick: (e: Event) => void;
   children?: MenuItem[];
 };
 
+interface InputOrReferenceProps {
+  placeholder?: string;
+  style?: React.CSSProperties;
+  isDisabled?: boolean;
+  referenceType?: 'Input' | 'Reference';
+  isLoop?: boolean;
+  value?: string;
+  onChange?: (value: string, type: 'Input' | 'Reference') => void;
+}
+
 const InputOrReference: React.FC<InputOrReferenceProps> = ({
   placeholder,
-  form,
-  fieldName,
   style,
   isDisabled = false,
   referenceType = 'Reference',
-  isLoop,
-  value, // 接收注入的 value
-  onChange, // 接收注入的 onChange
+  value,
+  onChange,
 }) => {
-  const { referenceList, getValue, getLoopValue, setIsModified } =
-    useModel('workflow');
+  const { referenceList, getValue } = useModel('workflow');
   const [displayValue, setDisplayValue] = useState('');
-
+  const [inputValue, setInputValue] = useState(''); // 新增状态用于存储输入框的值
   const updateValues = (newValue: string, valueType: 'Input' | 'Reference') => {
-    if (fieldName && form) {
-      const basePath = fieldName.slice(0, -1);
-      form.setFieldValue([...basePath, 'bindValueType'], valueType);
-
-      if (valueType === 'Reference') {
-        const refDataType = referenceList?.argMap?.[newValue]?.dataType;
-        form.setFieldValue([...basePath, 'dataType'], refDataType || 'String');
-        form.setFieldValue(fieldName, newValue);
-        const _name = form.getFieldValue([...basePath, 'name']);
-        if (!_name) {
-          form.setFieldValue(
-            [...basePath, 'name'],
-            referenceList.argMap[newValue].name,
-          );
-        }
-      } else {
-        form.setFieldValue([...basePath, 'dataType'], 'String');
-        form.setFieldValue(fieldName, newValue);
-      }
+    onChange?.(newValue, valueType);
+    if (valueType === 'Reference') {
+      setDisplayValue(newValue);
     }
   };
 
-  // 监听表单值变化
+  // 监听值变化
   useEffect(() => {
-    if (fieldName && form) {
-      const value = form.getFieldValue(fieldName);
-      const bindValueType = form.getFieldValue([
-        ...fieldName.slice(0, -1),
-        'bindValueType',
-      ]);
-
-      if (bindValueType === 'Reference') {
-        const isReferenceKey = value && referenceList.argMap[value];
-        setDisplayValue(
-          isReferenceKey
-            ? isLoop
-              ? getLoopValue(value)
-              : getValue(value)
-            : '',
-        );
-      } else {
-        setDisplayValue(''); // Input类型时不显示Tag
+    if (referenceType === 'Reference' && value) {
+      const isReferenceKey = value && referenceList.argMap[value];
+      setDisplayValue(isReferenceKey ? getValue(value) : '');
+    } else {
+      setDisplayValue('');
+      if (referenceType === 'Input') {
+        setInputValue(value || '');
       }
     }
-  }, [form?.getFieldsValue(), referenceList.argMap]);
+  }, [value, referenceList.argMap, referenceType]);
 
   // 清除引用值
   const handleTagClose = () => {
@@ -90,12 +66,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
     setDisplayValue('');
   };
 
-  // 输入处理
-  // const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   updateValues(e.target.value, 'Input');
-  // };
-
-  // 新增递归处理函数
+  // 递归处理函数
   const mapChildren = (items: InputAndOutConfig[], level = 0): MenuItem[] => {
     return items.map((item) => ({
       key: item.key!,
@@ -111,8 +82,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         </div>
       ),
       onClick: (e: Event) => {
-        e.domEvent.stopPropagation(); // 阻止事件冒泡
-        onChange?.(e.key!); // 使用注入的 onChange
+        e.domEvent.stopPropagation();
         updateValues(e.key!, 'Reference');
         setDisplayValue(getValue(e.key!));
       },
@@ -129,7 +99,6 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         label: node.name,
         icon: returnImg(node.type),
         children: node.outputArgs?.flatMap((arg) => [
-          // 父级参数项
           {
             key: arg.key,
             label: (
@@ -141,12 +110,11 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
               </div>
             ),
             onClick: () => {
-              onChange?.(arg.key!); // 使用注入的 onChange
+              //   onChange?.(arg.key!);
               updateValues(arg.key!, 'Reference');
               setDisplayValue(getValue(arg.key!));
             },
           },
-          // 子参数项（递归处理）
           ...(arg.children ? mapChildren(arg.children) : []),
         ]),
       }));
@@ -166,59 +134,43 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   };
 
   const getMenuItems = () => {
-    if (isLoop) {
-      return changeMenuItem(referenceList.innerPreviousNodes);
-    } else {
-      return changeMenuItem(referenceList.previousNodes);
-    }
+    return changeMenuItem(referenceList.previousNodes);
   };
 
   return (
     <div className="input-or-reference dis-sb" style={style}>
-      {referenceType === 'Reference' ? (
-        displayValue ? (
-          <Tag
-            closable
-            onClose={handleTagClose}
-            className="input-or-reference-tag text-ellipsis"
-            color="#C9CDD4"
-          >
-            <span className="tag-text-style">{displayValue}</span>
-          </Tag>
-        ) : (
-          <Input
-            placeholder={placeholder || '请输入或引用参数'}
-            style={{ marginRight: 8 }}
-            size="small"
-            disabled={isDisabled}
-            onChange={(e) => {
-              onChange?.(e.target.value);
-              updateValues(e.target.value, 'Input');
-            }}
-          />
-        )
+      {referenceType === 'Reference' && displayValue !== '' ? (
+        <Tag
+          closable
+          onClose={handleTagClose}
+          className="input-or-reference-tag text-ellipsis"
+          color="#C9CDD4"
+        >
+          <span className="tag-text-style">{displayValue}</span>
+        </Tag>
       ) : (
         <Input
           placeholder={placeholder || '请输入或引用参数'}
           style={{ marginRight: 8 }}
           size="small"
           disabled={isDisabled}
-          value={value}
+          value={inputValue}
           onChange={(e) => {
-            setIsModified(true);
-            onChange?.(e.target.value);
-            updateValues(e.target.value, 'Input');
+            setInputValue(e.target.value);
+          }}
+          onBlur={() => {
+            updateValues(inputValue, 'Input');
           }}
         />
       )}
 
       <Dropdown
         menu={{
-          items: getMenuItems(), // 强制子菜单向左对齐
+          items: getMenuItems(),
         }}
         trigger={['click']}
         overlayStyle={{ width: 200 }}
-        placement="bottomLeft" // 设置弹窗向左对齐
+        placement="bottomLeft"
       >
         <SettingOutlined
           style={{ cursor: 'pointer' }}

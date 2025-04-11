@@ -1,23 +1,30 @@
 import Editor, { loader } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import React, { useEffect, useState } from 'react';
-
+import { useModel } from 'umi';
 interface Props {
-  value: string | undefined;
-  changeCode: (code: string) => void;
   codeLanguage: 'JavaScript' | 'Python' | 'JSON';
   height?: string;
+  value?: string | undefined;
+  onChange?: (code: string) => void;
 }
 
 const CodeEditor: React.FC<Props> = ({
   value,
-  changeCode,
+  onChange,
   height = '400px',
   codeLanguage,
 }) => {
   const [isMonacoReady, setIsMonacoReady] = useState(false);
-
+  const { setIsModified } = useModel('workflow');
   useEffect(() => {
+    loader.config({
+      monaco,
+      paths: {
+        vs: '/vs', // 确保与 webpack 配置一致
+      },
+    });
+
     const initializeMonaco = async () => {
       try {
         const { conf, language } = await import(
@@ -25,12 +32,12 @@ const CodeEditor: React.FC<Props> = ({
         );
         await loader.init();
 
-        // 先注册Python语言配置
+        // 注册 Python 语言配置
         monaco.languages.register({ id: 'python' });
         monaco.languages.setMonarchTokensProvider('python', language);
         monaco.languages.setLanguageConfiguration('python', conf);
 
-        // 最后设置worker路径
+        // 设置 worker 路径
         (window as any).MonacoEnvironment = {
           getWorkerUrl: function (moduleId: number, label: string) {
             if (label === 'json') {
@@ -40,15 +47,9 @@ const CodeEditor: React.FC<Props> = ({
               return '/vs/ts.worker.js';
             }
             if (label === 'python') {
-              return '/vs/ts.worker.js'; // Python使用TypeScript worker
+              return '/vs/ts.worker.js'; // Python 使用 TypeScript worker
             }
             return '/vs/editor.worker.js';
-          },
-          getWorker: function (moduleId: string, label: string) {
-            if (label === 'python') {
-              return new Worker('/vs/ts.worker.js');
-            }
-            return null;
           },
         };
 
@@ -58,13 +59,6 @@ const CodeEditor: React.FC<Props> = ({
       }
     };
 
-    loader.config({
-      monaco,
-      paths: {
-        vs: '/vs', // 确保与webpack配置一致
-      },
-    });
-
     initializeMonaco();
   }, []);
 
@@ -73,13 +67,15 @@ const CodeEditor: React.FC<Props> = ({
   }
 
   const handleCodeChange = (newValue?: string) => {
-    changeCode(newValue || '');
+    if (onChange) {
+      onChange(newValue || '');
+    }
+    setIsModified(true);
   };
 
   return (
     <Editor
       height={height}
-      // language={'python'}
       language={codeLanguage.toLowerCase()}
       theme="vs-dark"
       value={value}

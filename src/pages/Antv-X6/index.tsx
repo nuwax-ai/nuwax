@@ -14,7 +14,7 @@ import { NodeTypeEnum } from '@/types/enums/common';
 import { WorkflowModeEnum } from '@/types/enums/library';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
-import { TestRunparams } from '@/types/interfaces/node';
+import { NodeConfig, TestRunparams } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { updateNode } from '@/utils/updateNode';
@@ -34,23 +34,21 @@ import { Child } from './type';
 const Workflow: React.FC = () => {
   // 当前工作流的id
   const workflowId = Number(useParams().workflowId);
-  // 显示隐藏右侧节点抽屉
-  const [visible, setVisible] = useState(false);
-  // 右侧抽屉的部分信息
+  // 当前被选中的节点
   const [foldWrapItem, setFoldWrapItem] = useState<ChildNode>({
-    id: 0,
-    description: '',
-    workflowId: workflowId,
     type: NodeTypeEnum.Start,
     nodeConfig: {
-      extension: {
-        x: 0,
-        y: 0,
-      },
+      inputArgs: [], // 输入参数
     },
-    name: '',
+    id: 0,
+    name: '测试',
+    description: '测试',
+    workflowId: 0,
     icon: '',
   });
+  const foldWrapItemRef = useRef(foldWrapItem); // 使用 useRef 存储最新值
+  // 显示隐藏右侧节点抽屉
+  const [visible, setVisible] = useState(false);
   // 工作流左上角的详细信息
   const [info, setInfo] = useState<IgetDetails | null>();
   // 定义一个节点试运行返回值
@@ -59,7 +57,6 @@ const Workflow: React.FC = () => {
   const [stopWait, setStopWait] = useState<boolean>(false);
   // 打开和关闭发布弹窗
   const [showPublish, setShowPublish] = useState<boolean>(false);
-
   // const [isUpdate, setIsUpdate] = useState<boolean>(false)
   // 打开和关闭新增组件
   const [open, setOpen] = useState(false);
@@ -93,10 +90,12 @@ const Workflow: React.FC = () => {
   });
   // 画布的ref
   const graphRef = useRef<any>(null);
+  const nodeDrawerRef = useRef<{ getFormValues: () => NodeConfig }>(null);
   // 是否显示创建工作流，插件，知识库，数据库的弹窗和试运行的弹窗
   const { setTestRun } = useModel('model');
 
-  const { setReferenceList } = useModel('workflow');
+  const { setReferenceList, setIsModified, setSpaceId, spaceId } =
+    useModel('workflow');
   // 修改更新时间
   const changeUpdateTime = () => {
     const _time = new Date();
@@ -113,7 +112,10 @@ const Workflow: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   /** -----------------  需要调用接口的方法  --------------------- */
-
+  // 在每次 foldWrapItem 更新时同步到 ref
+  useEffect(() => {
+    foldWrapItemRef.current = foldWrapItem;
+  }, [foldWrapItem]);
   // 获取当前画布的信息
   const getDetails = async () => {
     try {
@@ -121,14 +123,14 @@ const Workflow: React.FC = () => {
       const _res = await service.getDetails(workflowId);
       // 获取左上角的信息
       setInfo(_res.data);
-      sessionStorage.setItem('spaceId', _res.data.spaceId.toString());
+      setSpaceId(_res.data.spaceId);
       sessionStorage.setItem('workfolwId', _res.data.id.toString());
       // 获取节点和边的数据
       const _nodeList = _res.data.nodes;
       const _edgeList = getEdges(_nodeList);
-      if (_res.data.extension && _res.data.extension.size) {
-        graphRef.current.changeGraphZoom(_res.data.extension.size);
-      }
+      // if (_res.data.extension && _res.data.extension.size) {
+      //   graphRef.current.changeGraphZoom(_res.data.extension.size);
+      // }
       // 修改数据，更新画布
       setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
     } catch (error) {
@@ -220,20 +222,37 @@ const Workflow: React.FC = () => {
 
   // 更新节点数据
   const changeNode = async (config: ChildNode, update?: boolean | string) => {
+    let params = JSON.parse(JSON.stringify(config));
+
+    if (update && update === 'moved') {
+      if (config.id === foldWrapItemRef.current.id) {
+        const values = nodeDrawerRef.current?.getFormValues();
+        params = {
+          ...config,
+          nodeConfig: {
+            ...config.nodeConfig,
+            ...values,
+          },
+        };
+      }
+    }
+
     // setIsUpdate(true)
-    graphRef.current.updateNode(config.id, config);
-    const _res = await updateNode(config);
+    graphRef.current.updateNode(params.id, params);
+    const _res = await updateNode(params);
     if (_res.code === Constant.success) {
       if (update) {
-        if (typeof update === 'string') {
+        if (typeof update === 'string' && update !== 'moved') {
+          console.log('aaaa');
           // 新增和删除边以后，如果当前的节点是被连接的节点，那么就要更新当前节点的参数
-          setFoldWrapItem((prev) => {
-            if (prev.id === Number(update)) {
-              getRefernece(Number(update));
-            }
-            return prev;
-          });
+          if (foldWrapItemRef.current.id === Number(update)) {
+            getRefernece(Number(update));
+          }
         } else {
+          setFoldWrapItem(params);
+        }
+      } else {
+        if (config.id === foldWrapItemRef.current.id) {
           // 如果传递的是boolean，那么证明要更新这个节点
           getNodeConfig(Number(config.id));
         }
@@ -242,11 +261,11 @@ const Workflow: React.FC = () => {
     }
     // setIsUpdate(false)
   };
-
   // 点击组件，显示抽屉
   const changeDrawer = async (child: ChildNode | null) => {
     setTestRun(false);
     setTestRunResult('');
+
     if (child === null) {
       setVisible(false);
       setFoldWrapItem({
@@ -265,8 +284,25 @@ const Workflow: React.FC = () => {
       });
       return;
     } else {
+      await setIsModified((prev) => {
+        if (prev === true) {
+          if (foldWrapItemRef.current && foldWrapItemRef.current.id !== 0) {
+            const values = nodeDrawerRef.current?.getFormValues();
+            const newNodeConfig = {
+              ...foldWrapItemRef.current,
+              nodeConfig: {
+                ...foldWrapItem.nodeConfig,
+                ...values,
+              },
+            };
+            changeNode(newNodeConfig);
+          }
+        }
+        return false;
+      });
       if (!visible) setVisible(true);
       setFoldWrapItem(child);
+      getRefernece(child.id);
     }
     if (child.nodeConfig.inputArgs === null) {
       child.nodeConfig.inputArgs = [];
@@ -314,13 +350,13 @@ const Workflow: React.FC = () => {
         };
       }
     }
-
     const _res = await service.addNode(_params);
     if (_res.code === Constant.success) {
       _res.data.key = _res.data.type === 'Loop' ? 'loop-node' : 'general-Node';
       const extension = _res.data.nodeConfig.extension;
       graphRef.current.addNode(extension, _res.data);
-      setFoldWrapItem(_res.data);
+      // setFoldWrapItem(_res.data);
+      changeDrawer(_res.data);
       graphRef.current.selectNode(_res.data.id);
       changeUpdateTime();
     }
@@ -409,13 +445,7 @@ const Workflow: React.FC = () => {
     if (_res.code !== Constant.success) {
       graphRef.current.deleteEdge(id);
     } else {
-      setFoldWrapItem((prev) => {
-        // 这里的prev是最新值
-        if (Number(targetId) === prev.id) {
-          getRefernece(prev.id);
-        }
-        return prev; // 如果不修改状态就直接返回原值
-      });
+      getRefernece(foldWrapItemRef.current.id);
       graphRef.current.updateNode(sourceNode.id, _res.data);
       // getNodeConfig(sourceNode.id);
     }
@@ -724,8 +754,17 @@ const Workflow: React.FC = () => {
           testRunAll();
           return;
         }
+        // 获取当前最新的表单值
+        const values = nodeDrawerRef.current?.getFormValues();
+        const newNodeConfig = {
+          ...foldWrapItemRef.current,
+          nodeConfig: {
+            ...foldWrapItem.nodeConfig,
+            ...values,
+          },
+        };
+        setFoldWrapItem(newNodeConfig);
         setTestRun(true);
-
         break;
       }
       case 'Duplicate':
@@ -777,17 +816,18 @@ const Workflow: React.FC = () => {
       />
       <NodeDrawer
         visible={visible}
-        onClose={() => setVisible(false)}
         foldWrapItem={foldWrapItem}
+        onClose={() => setVisible(false)}
         onGetNodeConfig={changeNode} // 新增这一行
         handleNodeChange={handleNodeChange}
         getRefernece={getRefernece}
+        ref={nodeDrawerRef}
       />
       <Created
         checkTag={createdItem as AgentComponentTypeEnum}
         onAdded={onAdded}
         targetId={info?.id}
-        spaceId={info?.spaceId || 0}
+        spaceId={spaceId}
         open={open}
         onCancel={() => setOpen(false)}
       />
@@ -796,6 +836,7 @@ const Workflow: React.FC = () => {
         run={runTest}
         visible={visible}
         testRunResult={testRunResult}
+        clearRunResult={() => setTestRunResult('')}
         loading={loading}
         stopWait={stopWait}
         formItemValue={formItemValue}

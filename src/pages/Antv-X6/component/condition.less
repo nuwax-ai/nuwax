@@ -3,6 +3,11 @@
   padding: 10px;
   border-radius: 8px;
   margin-bottom: 10px;
+  user-select: none; /* 必须设置 */
+  pointer-events: auto; /* 确保未被覆盖 */
+  &:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 10%);
+  }
 
   .condition-header-style {
     font-size: 16px;
@@ -25,6 +30,10 @@
   .condition-type-select-style {
     width: 50px;
   }
+}
+
+.position-relative {
+  position: relative;
 }
 
 .select-condition-border {

@@ -10,70 +10,55 @@ import {
   InfoCircleOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Button, Cascader, Checkbox, Input, Popover, Select, Tree } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import {
+  Button,
+  Cascader,
+  Checkbox,
+  Form,
+  Input,
+  Popover,
+  Select,
+  Tooltip,
+  Tree,
+} from 'antd';
+import _ from 'lodash';
+import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
+// import InputOrReference from './InputOrReference';
 import { TreeFormProps } from './type';
 interface TreeNodeConfig extends InputAndOutConfig {
   key: string;
   subArgs?: TreeNodeConfig[];
 }
+
 const CustomTree: React.FC<TreeFormProps> = ({
   params,
-  handleChangeNodeConfig,
+  form,
   title,
   inputItemName = 'inputArgs',
   notShowTitle,
   showCheck,
+  // isBody,
 }) => {
-  // 状态初始化（新增初始化逻辑）
-  const [treeData, setTreeData] = useState<TreeNodeConfig[]>(
-    (params[inputItemName] as TreeNodeConfig[]) || [],
-  );
-  // 在组件状态部分添加展开节点状态
+  const [treeData, setTreeData] = useState<TreeNodeConfig[]>(params || []);
+
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
-  // const [selectedKey, setSelectedKey] = useState<string | null>(null);
-
-  // 在组件顶部添加状态管理
   const [errors, setErrors] = useState<Record<string, string>>({});
-  // 保持最新 params 引用（新增 ref 逻辑）
-  const paramsRef = useRef(params);
-  useEffect(() => {
-    paramsRef.current = params;
-  }, [params]);
-  const { volid } = useModel('workflow');
-  // 同步父组件参数变化（新增同步逻辑）
-  useEffect(() => {
-    if (params[inputItemName]) {
-      const normalized = (params[inputItemName] as TreeNodeConfig[]).map(
-        (item) => ({
-          ...item,
-          // 转换遗留的 File 类型为 File_Default
-          dataType:
-            item.dataType === DataTypeEnum.File
-              ? DataTypeEnum.File_Default
-              : item.dataType,
-        }),
-      );
-      // console.log('123', normalized);
-      setTreeData(normalized);
-    }
-  }, [params[inputItemName]]);
+  const { volid, setIsModified } = useModel('workflow');
 
-  // 递归获取所有父节点的 key
-  const getAllParentKeys = (data: TreeNodeConfig[]): React.Key[] => {
-    const keys: React.Key[] = [];
-    data.forEach((node) => {
-      if (node.subArgs && node.subArgs.length > 0) {
-        keys.push(node.key);
-        keys.push(...getAllParentKeys(node.subArgs));
-      }
-    });
-    return keys;
+  useEffect(() => {
+    if (params && !_.isEqual(params, treeData)) {
+      setTreeData(params);
+    }
+  }, [params]);
+
+  const updateTreeData = (newData: TreeNodeConfig[]) => {
+    setTreeData(newData);
+    form.setFieldValue(inputItemName, newData);
+    setIsModified(true);
   };
 
-  // 递归计算节点深度
   const getNodeDepth = (
     data: TreeNodeConfig[],
     key: string,
@@ -89,7 +74,17 @@ const CustomTree: React.FC<TreeFormProps> = ({
     return 0;
   };
 
-  // 添加根节点
+  const getAllParentKeys = (data: TreeNodeConfig[]): React.Key[] => {
+    const keys: React.Key[] = [];
+    data.forEach((node) => {
+      if (node.subArgs && node.subArgs.length > 0) {
+        keys.push(node.key);
+        keys.push(...getAllParentKeys(node.subArgs));
+      }
+    });
+    return keys;
+  };
+
   const addRootNode = () => {
     const newNode: TreeNodeConfig = {
       key: uuidv4(),
@@ -98,17 +93,12 @@ const CustomTree: React.FC<TreeFormProps> = ({
       dataType: null,
       require: false,
       systemVariable: false,
-      bindValueType: null,
+      bindValueType: 'Input',
       bindValue: '',
     };
-    setTreeData([...treeData, newNode]);
-    handleChangeNodeConfig({
-      ...params,
-      [inputItemName]: [...treeData, newNode],
-    });
+    updateTreeData([...treeData, newNode]);
   };
 
-  // 添加子节点
   const addChildNode = (parentKey: string) => {
     const depth = getNodeDepth(treeData, parentKey);
     if (depth >= 4) return;
@@ -120,7 +110,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
       dataType: null,
       require: false,
       systemVariable: false,
-      bindValueType: null,
+      bindValueType: 'Input',
       bindValue: '',
     };
 
@@ -138,20 +128,11 @@ const CustomTree: React.FC<TreeFormProps> = ({
         return node;
       });
 
-    setTreeData(updateRecursive(treeData));
-    handleChangeNodeConfig({
-      ...params,
-      [inputItemName]: updateRecursive(treeData),
-    });
-
-    // 更新展开状态（新增展开逻辑）
-    setExpandedKeys((prevKeys) => {
-      // 如果父节点尚未展开则添加，同时保留已有展开项
-      return Array.from(new Set([...prevKeys, parentKey]));
-    });
+    const newData = updateRecursive(treeData);
+    updateTreeData(newData);
+    setExpandedKeys(Array.from(new Set([...expandedKeys, parentKey])));
   };
 
-  // 删除节点
   const deleteNode = (key: string) => {
     const filterRecursive = (data: TreeNodeConfig[]): TreeNodeConfig[] =>
       data.filter((node) => {
@@ -160,14 +141,10 @@ const CustomTree: React.FC<TreeFormProps> = ({
         return true;
       });
 
-    setTreeData(filterRecursive(treeData));
-    handleChangeNodeConfig({
-      ...params,
-      [inputItemName]: filterRecursive(treeData),
-    });
+    const newData = filterRecursive(treeData);
+    updateTreeData(newData);
   };
 
-  // 更新节点字段
   const updateNodeField = (key: string, field: string, value: any) => {
     const updateRecursive = (data: TreeNodeConfig[]): TreeNodeConfig[] =>
       data.map((node) => {
@@ -180,14 +157,10 @@ const CustomTree: React.FC<TreeFormProps> = ({
         return node;
       });
 
-    // setTreeData(updateRecursive(treeData));
-    handleChangeNodeConfig({
-      ...params,
-      [inputItemName]: updateRecursive(treeData),
-    });
+    const newData = updateRecursive(treeData);
+    updateTreeData(newData);
   };
 
-  // 自定义节点渲染
   const renderTitle = (nodeData: TreeNodeConfig) => {
     const canAddChild = [
       DataTypeEnum.Object,
@@ -203,11 +176,11 @@ const CustomTree: React.FC<TreeFormProps> = ({
           style={{ position: 'relative', marginRight: '6px' }}
         >
           <Input
-            key={nodeData.key} // 确保数据更新时重新渲染
+            key={nodeData.key}
             defaultValue={nodeData.name}
-            onBlur={(e) => {
-              updateNodeField(nodeData.key, 'name', e.target.value);
-            }}
+            onBlur={(e) =>
+              updateNodeField(nodeData.key, 'name', e.target.value)
+            }
             disabled={nodeData.systemVariable}
             placeholder="请输入参数名称"
             className="tree-form-name flex-1"
@@ -233,7 +206,6 @@ const CustomTree: React.FC<TreeFormProps> = ({
               updateNodeField(nodeData.key!, 'dataType', CascaderChange(value));
             }}
             changeOnSelect={true}
-            // expandTrigger="hover" // 改为悬停展开
             className="tree-form-name"
             disabled={nodeData.systemVariable}
             placement={'bottomLeft'}
@@ -252,12 +224,20 @@ const CustomTree: React.FC<TreeFormProps> = ({
             </div>
           )}
         </div>
+        {/* {isBody && (
+          <div style={{ width: '80px', position: 'relative' }}>
+            <InputOrReference />
+          </div>
+        )} */}
 
-        <div className="flex" style={{ width: showCheck ? 60 : 40 }}>
+        <div
+          className="dis-left nested-form-icon-button"
+          style={{ width: showCheck ? 66 : 50 }}
+        >
           <Popover
             content={
               <Input.TextArea
-                key={nodeData.key} // 确保数据更新时重新渲染
+                key={nodeData.key}
                 defaultValue={nodeData.description || ''}
                 onBlur={(e) =>
                   updateNodeField(nodeData.key!, 'description', e.target.value)
@@ -267,43 +247,50 @@ const CustomTree: React.FC<TreeFormProps> = ({
             }
             trigger="click"
           >
-            <Button
-              type="text"
-              className="tree-icon-style"
-              disabled={nodeData.systemVariable}
-              icon={<FileDoneOutlined className="margin-right" />}
-            />
+            <Tooltip title="添加描述">
+              <Button
+                type="text"
+                className="tree-icon-style"
+                disabled={nodeData.systemVariable}
+                icon={<FileDoneOutlined />}
+              />
+            </Tooltip>
           </Popover>
 
           {showCheck && (
-            <Checkbox
-              checked={nodeData.require}
-              onChange={(e) =>
-                updateNodeField(nodeData.key!, 'require', e.target.checked)
-              }
-              className="margin-right tree-icon-style"
-              disabled={nodeData.systemVariable}
-            />
+            <Tooltip title="是否必须">
+              <Checkbox
+                checked={nodeData.require}
+                onChange={(e) =>
+                  updateNodeField(nodeData.key!, 'require', e.target.checked)
+                }
+                disabled={nodeData.systemVariable}
+              />
+            </Tooltip>
           )}
           {canAddChild && (
+            <Tooltip title="新增子节点">
+              <Button
+                type="text"
+                disabled={nodeData.systemVariable}
+                className="tree-icon-style"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addChildNode(nodeData.key!);
+                }}
+                icon={<ICON_ASSOCIATION />}
+              />
+            </Tooltip>
+          )}
+          <Tooltip title="删除">
             <Button
               type="text"
               disabled={nodeData.systemVariable}
               className="tree-icon-style"
-              onClick={(e) => {
-                e.stopPropagation(); // 阻止事件冒泡
-                addChildNode(nodeData.key!);
-              }}
-              icon={<ICON_ASSOCIATION />}
+              onClick={() => deleteNode(nodeData.key!)}
+              icon={<DeleteOutlined />}
             />
-          )}
-          <Button
-            type="text"
-            disabled={nodeData.systemVariable}
-            className="tree-icon-style"
-            onClick={() => deleteNode(nodeData.key!)}
-            icon={<DeleteOutlined />}
-          />
+          </Tooltip>
         </div>
       </div>
     );
@@ -312,28 +299,23 @@ const CustomTree: React.FC<TreeFormProps> = ({
   useEffect(() => {
     if (volid) {
       const newErrors: Record<string, string> = {};
-
       treeData.forEach((node) => {
-        console.log(node);
-        // 校验节点名称
         if (!node.name?.trim()) {
           newErrors[`${node.key}-name`] = '请输入变量名称';
         }
-        // 校验数据类型
         if (!node.dataType) {
           newErrors[`${node.key}-type`] = '请选择';
         }
       });
-
       setErrors(newErrors);
     }
   }, [volid, treeData]);
 
   useEffect(() => {
-    // 初始化时展开所有父节点
     const parentKeys = getAllParentKeys(treeData);
     setExpandedKeys(parentKeys);
   }, [treeData]);
+
   return (
     <div>
       <div className="dis-sb margin-bottom">
@@ -342,62 +324,50 @@ const CustomTree: React.FC<TreeFormProps> = ({
         </span>
         <div>
           {notShowTitle && (
-            <Select
-              prefix={
-                <Popover
-                  content={
-                    <ul>
-                      <li>文本: 使用普通文本格式回复</li>
-                      <li>Markdown: 将引导模型使用 Markdown 格式输出回复</li>
-                      <li>JSON: 将引导模型使用 JSON 格式输出</li>
-                    </ul>
-                  }
-                >
-                  <div className="dis-left">
-                    <InfoCircleOutlined />
-                    <span className="ml-10">输出格式</span>
-                  </div>
-                </Popover>
-              }
-              value={params.outputType || 'JSON'}
-              options={[
-                { label: '文本', value: 'Text' },
-                { label: 'Markdown', value: 'Markdown' },
-                { label: 'JSON', value: 'JSON' },
-              ]}
-              onChange={(value: string) =>
-                handleChangeNodeConfig({ ...params, outputType: value })
-              }
-              style={{ width: 160 }}
-            ></Select>
+            <Form.Item name="outputType" noStyle>
+              <Select
+                prefix={
+                  <Popover
+                    content={
+                      <ul>
+                        <li>文本: 使用普通文本格式回复</li>
+                        <li>Markdown: 将引导模型使用 Markdown 格式输出回复</li>
+                        <li>JSON: 将引导模型使用 JSON 格式输出</li>
+                      </ul>
+                    }
+                  >
+                    <div className="dis-left">
+                      <InfoCircleOutlined />
+                      <span className="ml-10">输出格式</span>
+                    </div>
+                  </Popover>
+                }
+                options={[
+                  { label: '文本', value: 'Text' },
+                  { label: 'Markdown', value: 'Markdown' },
+                  { label: 'JSON', value: 'JSON' },
+                ]}
+                style={{ width: 160 }}
+              />
+            </Form.Item>
           )}
-          {(!notShowTitle || params.outputType === 'JSON') && (
+          {(!notShowTitle || form.getFieldValue('outputType') === 'JSON') && (
             <Button
               icon={<PlusOutlined />}
               size={'small'}
               onClick={addRootNode}
               className="ml-10"
-            ></Button>
+            />
           )}
         </div>
       </div>
 
       {treeData && treeData.length > 0 && (
-        <div
-          className={`${
-            treeData.find((item) => item.subArgs && item.subArgs.length > 0)
-              ? 'ml-34'
-              : 'ml-10'
-          } dis-left font-12 mb-6 font-color-gray07`}
-        >
-          <span>变量名</span>
+        <div className={'dis-left font-12 mb-6 font-color-gray07'}>
+          <span className="flex-1 ml-10">变量名</span>
           <span
             style={{
-              marginLeft: `${
-                treeData.find((item) => item.subArgs && item.subArgs.length > 0)
-                  ? '38%'
-                  : '42%'
-              }`,
+              width: 80 + (showCheck ? 66 : 50),
             }}
           >
             变量类型

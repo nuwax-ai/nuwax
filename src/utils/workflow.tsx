@@ -157,7 +157,7 @@ const handleSpecialNodes = (node: ChildNode, isLoopNode: boolean): Edge[] => {
       return config.nextNodeIds.map((nextNodeId) => ({
         source: `${node.id}-${config.uuid}`,
         target: nextNodeId.toString(),
-        zIndex: isLoopNode ? 15 : 1,
+        zIndex: isLoopNode ? 5 : 1,
       }));
     }) || []
   );
@@ -171,7 +171,7 @@ const handleLoopEdges = (node: ChildNode): Edge[] => {
     edges.push({
       source: `${node.id}-in`, // Loop 节点的 in 端口连接到内部起始节点
       target: node.innerStartNodeId.toString(),
-      zIndex: 15, // 新增层级设置
+      zIndex: 5, // 新增层级设置
     });
   }
 
@@ -179,14 +179,14 @@ const handleLoopEdges = (node: ChildNode): Edge[] => {
     edges.push({
       source: node.innerEndNodeId.toString(),
       target: `${node.id}-out`, // 内部结束节点连接到 Loop 节点的 out 端口
-      zIndex: 15, // 新增层级设置
+      zIndex: 5, // 新增层级设置
     });
   }
 
   const _edge = (node.nextNodeIds || []).map((item) => ({
     source: Number(node.id).toString(),
     target: Number(item).toString(),
-    zIndex: 1,
+    zIndex: 5,
   }));
   edges.push(..._edge);
   return edges;
@@ -215,7 +215,7 @@ export const getEdges = (nodes: ChildNode[]): Edge[] => {
         return {
           source: Number(node.id).toString(),
           target: Number(nextNodeId).toString(),
-          zIndex: isLoopNode ? 15 : 1,
+          zIndex: isLoopNode ? 5 : 1,
         };
       });
     }

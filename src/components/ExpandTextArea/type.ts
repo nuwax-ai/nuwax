@@ -3,9 +3,7 @@ export interface ExpandableInputTextareaProps {
   // 标题
   title: string;
   // 输入框的文字
-  value: string;
-  // 输入框的文字变化事件
-  onChange: (value: string) => void;
+  inputFieldName: string;
   // 输入框的提示文字
   placeholder?: string;
   // 输入框的行数
@@ -20,8 +18,8 @@ export interface ExpandableInputTextareaProps {
 export interface ExpandableInputTextareaState {
   marginRight: number;
   title: string;
-  value: string;
-  onChange: (value: string) => void;
+  // 输入框的文字
+  inputFieldName: string;
   onClose: () => void;
   // 输入框的提示文字
   placeholder?: string;
