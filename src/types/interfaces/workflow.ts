@@ -12,7 +12,6 @@ import type {
   ModelListItemProps,
 } from '@/types/interfaces/model';
 import {
-  ConditionBranchConfigs,
   HttpNodeConfig,
   IntentConfigs,
   NodeConfig,
@@ -78,20 +77,15 @@ export type FormListFieldData = {
  * 定义节点
  */
 export interface NodeDisposeProps {
-  // 当前节点的参数
-  params: NodeConfig;
-  // 修改节点信息
-  Modified: (params: NodeConfig) => void;
-  // 实时调用接口，修改节点
-  updateNode?: (params: NodeConfig) => void;
+  // 上级传递下来的form
+  form: FormInstance;
   // 当前节点的类型
   type?: string;
-  // 选项列表
-  options?: ModelListItemProps[];
+  // 直接修改modified
+  setModified?: () => void;
   // 分组的模型列表
   groupedOptionsData?: GroupModelItem[];
-  //
-  retrieveRefernece?: () => void;
+  retrieveCurrentNodeConfig?: () => void;
 }
 
 /**
@@ -173,17 +167,11 @@ export interface InitialValues {
 
 // 定义通用节点渲染逻辑的props类型
 export interface NodeRenderProps {
-  nodeKey: string;
   // 标题
   title: string;
   // 遍历渲染的字段配置
   fieldConfigs: FieldConfig[];
-  // 改变节点的入参和出参
-  handleChangeNodeConfig: (params: NodeConfig) => void;
-  // 渲染的内容(可以自定义，也可以使用默认的renderItem)
-  renderItem?: (props: RenderItemProps) => JSX.Element; // 可选，允许自定义renderItem
-  // 初始值（适用于已经编辑过的内容）
-  initialValues?: InitialValues;
+  form: FormInstance;
   // 如果有多个相同组件时，传递不同的inputListName区分
   inputItemName?: InputItemNameEnum;
   // 是否显示复制按钮
@@ -197,26 +185,19 @@ export interface NodeRenderProps {
   disabledInput?: boolean;
   // 当前是循环节点
   isLoop?: boolean;
-  // 是否是中间变量节点
   isVariable?: boolean;
-  // 重新获取上级节点的参数
-  retrieveRefernece?: () => void;
 }
 
 // 定义通用的formList的props类型
 export interface FormListProps {
-  nodeKey: string;
   // 标题
   title: string;
-  // 改变节点的入参和出参
-  handleChangeNodeConfig: (params: NodeConfig) => void;
+  form: FormInstance;
   updateNode?: (params: NodeConfig) => void;
   // 当前input的field
   field: string;
   // 如果有多个相同组件时，传递不同的inputListName区分
   inputItemName?: InputItemNameEnum;
-  // 初始值（适用于已经编辑过的内容）
-  initialValues?: InitialValues;
   // 是否要写入uuid
   hasUuid?: boolean;
   showIndex?: boolean;
@@ -224,8 +205,8 @@ export interface FormListProps {
 
 // 定义技能
 export interface SkillProps {
-  params: NodeConfig;
-  handleChange: (item: NodeConfig) => void;
+  form: FormInstance;
+  params: CreatedNodeItem[];
   // 当前既能的参数名称
   skillName: 'knowledgeBaseConfigs' | 'skillComponentConfigs';
 }
@@ -288,12 +269,9 @@ export interface ConditionListProps {
   index: number;
   title: string;
   // 改变节点的入参和出参
-  handleChangeNodeConfig: (params: ConditionBranchConfigs, key: string) => void;
+  form: FormInstance;
   // 删除当前的
   removeItem: (val: string) => void;
-  draggableId: string;
-  // 初始值（适用于已经编辑过的内容）
-  initialValues: ConditionBranchConfigs;
   // 如果有多个相同组件时，传递不同的inputListName区分
   inputItemName?: string;
 }
@@ -322,4 +300,25 @@ export interface ErrorItem {
 export interface ErrorParams {
   errorList: ErrorItem[];
   show: boolean;
+}
+
+export interface InputListProps {
+  form: FormInstance;
+  title: string;
+  inputItemName: string;
+}
+
+export interface TreeFormProps {
+  params?: InputAndOutConfig[];
+  // 外部传递进来的form
+  form: FormInstance;
+  // 标题
+  title?: string;
+  inputItemName?:
+    | 'inputArgs'
+    | 'outputArgs'
+    | 'variableArgs'
+    | 'conditionBranchConfigs'
+    | 'skillComponentConfigs'
+    | 'body';
 }

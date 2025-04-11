@@ -1,6 +1,7 @@
 // import { ICON_OPTIMIZE } from '@/constants/images.constants';
 import { CloseOutlined } from '@ant-design/icons';
 import { ConfigProvider, Input, Space } from 'antd';
+import { Form } from 'antd/lib';
 import React from 'react';
 import './index.less';
 import type { ExpandableInputTextareaState } from './type';
@@ -9,8 +10,7 @@ const ExpandTextArea: React.FC<
 > = ({
   marginRight,
   title,
-  value,
-  onChange,
+  inputFieldName,
   placeholder,
   visible, // 接收 visible 属性
   onClose,
@@ -29,14 +29,6 @@ const ExpandTextArea: React.FC<
             }}
           >
             <Space>
-              {/* <Button
-                size="small"
-                icon={<ICON_OPTIMIZE />}
-                type="primary"
-                className="gradient-button"
-              >
-                优化
-              </Button> */}
               {/* 通知父组件关闭我 */}
               <CloseOutlined
                 onClick={() => onClose()}
@@ -46,13 +38,13 @@ const ExpandTextArea: React.FC<
           </ConfigProvider>
         </div>
       </div>
-      <Input.TextArea
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        autoSize={{ minRows: 100, maxRows: 100 }}
-        className="expand-textarea-pre-style"
-      />
+      <Form.Item name={inputFieldName}>
+        <Input.TextArea
+          placeholder={placeholder}
+          autoSize={{ minRows: 30 }}
+          className="expand-textarea-pre-style"
+        />
+      </Form.Item>
     </div>
   );
 };

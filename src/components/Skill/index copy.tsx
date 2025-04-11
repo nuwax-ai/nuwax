@@ -11,7 +11,6 @@ import {
 } from '@ant-design/icons';
 import { Button, Input, Modal, Popover, Switch, Tag } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useModel } from 'umi';
 import './index.less';
 interface TreeOutput extends InputAndOutConfig {
   key: string;
@@ -20,7 +19,7 @@ interface TreeOutput extends InputAndOutConfig {
 const SkillParamsContent: React.FC<{ params: TreeOutput[] }> = ({ params }) => {
   return (
     <>
-      {(params || []).map((item) => (
+      {params.map((item) => (
         <div key={item.name}>
           <div className="dis-left">
             <span className="mr-16">{item.name}</span>
@@ -161,6 +160,64 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
               ))}
             </div>
           )}
+
+          {/* {selectMenu === 'output' && (
+            <>
+              <p className="skill-menu-style content-title-style output-style">
+                输出变量
+              </p>
+              <Input value={params.bindValueType}></Input>
+              <p className="output-remark-style">
+                当参数设置为不可见时，大模型将无法看到该参数。如果该参数设置了默认值并且不可见，则在调用插件时，智能体会默认只使用这个设定值
+              </p>
+              <div className="dis-sb">
+                <span>参数名称</span>
+                <p className="content-right-item-style flex">
+                  <span>开启</span>
+                  <Popover
+                    content={'当设置为不可见时，该参数将不会返回给大模型'}
+                    overlayInnerStyle={{ width: '300px' }}
+                  >
+                    <InfoCircleOutlined className="ml-12" />
+                  </Popover>
+                </p>
+              </div>
+              <div  className='skill-tree'>
+              <Tree<TreeOutput>
+                showLine
+                defaultExpandAll
+                switcherIcon={<DownOutlined />}
+                fieldNames={{ title: 'name', key: 'name', children: 'subArgs' }}
+                treeData={parameter.outputArgBindConfigs as TreeOutput[]}
+                titleRender={(nodeData) => {
+                  return (
+                    <div className="dis-sb tree-title-style">
+                      <div className='flex-1'>
+                        <span>{nodeData.name}</span>
+                        <Tag color="#C9CDD4" className="ml-12">
+                          {nodeData.dataType}
+                        </Tag>
+                      </div>
+                      <Switch
+                        size="small"
+                        checked={nodeData.enable}
+                        onChange={(checked) => {
+                          handleChangeValue(
+                            {
+                              ...nodeData,
+                              enable: checked, // 创建新对象
+                            },
+                            'output',
+                          );
+                        }}
+                      />
+                    </div>
+                  );
+                }}
+              />
+              </div>
+            </>
+          )} */}
         </div>
       </div>
     </Modal>
@@ -169,13 +226,12 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
 
 // 定义通用的技能显示
 export const SkillList: React.FC<SkillProps> = ({
-  form,
   params,
+  handleChange,
   skillName,
 }) => {
   // const [skillParams,setSkillParams] = useState<NodeConfig>(params);
-  // 当前节点是否修改了参数
-  const { setIsModified } = useModel('workflow');
+
   // 使用useState钩子来管理每个项目的hover状态
   const [hoveredItem, setHoveredItem] = useState<CreatedNodeItem>({
     icon: '',
@@ -196,34 +252,40 @@ export const SkillList: React.FC<SkillProps> = ({
   const handleDelete = (item: CreatedNodeItem) => {
     let newParams;
     if (item.knowledgeBaseId) {
-      newParams = params.filter(
-        (i) => i.knowledgeBaseId !== item.knowledgeBaseId,
-      );
+      newParams = {
+        ...params,
+        knowledgeBaseConfigs: params[skillName]?.filter(
+          (i) => i.knowledgeBaseId !== item.knowledgeBaseId,
+        ),
+      };
     } else {
-      newParams = params.filter((i) => i.typeId !== item.typeId);
+      newParams = {
+        ...params,
+        skillComponentConfigs: params[skillName]?.filter(
+          (i) => i.typeId !== item.typeId,
+        ),
+      };
     }
-    form.setFieldValue(skillName, newParams);
-    setIsModified(true);
+    handleChange(newParams);
   };
 
   const handleConfirm = (val: CreatedNodeItem) => {
     let newParams;
     if (skillName === 'skillComponentConfigs') {
-      newParams = params?.map((item) =>
+      newParams = params.skillComponentConfigs?.map((item) =>
         item.typeId === val.typeId ? val : item,
       );
     } else {
-      newParams = params?.map((item) =>
+      newParams = params.knowledgeBaseConfigs?.map((item) =>
         item.knowledgeBaseId === val.knowledgeBaseId ? val : item,
       );
     }
     // setSkillParams((prev) => ())
-    form.setFieldValue(skillName, newParams);
-    setIsModified(true);
+    handleChange({ ...params, [skillName]: newParams });
   };
   return (
     <>
-      {params?.map((item) => (
+      {params.skillComponentConfigs?.map((item) => (
         <div
           className="skill-item-style dis-left"
           key={item.typeId}
@@ -243,24 +305,21 @@ export const SkillList: React.FC<SkillProps> = ({
             <div className="skill-item-desc-style">{item.description}</div>
           </div>
           {hoveredItem?.typeId === item.typeId && showMask && (
-            <div className="mask-layer-style">
+            <div className="mask-layer-style" style={{}}>
               <div
                 className="skill-item-dispose-style"
                 style={{ color: '#fff', backgroundColor: 'transparent' }}
               >
-                {item.outputArgBindConfigs &&
-                  item.outputArgBindConfigs.length && (
-                    <Popover
-                      content={
-                        <SkillParamsContent
-                          params={item.outputArgBindConfigs as TreeOutput[]}
-                        />
-                      }
-                      trigger="hover"
-                    >
-                      <InfoCircleOutlined className="white" />
-                    </Popover>
-                  )}
+                <Popover
+                  content={
+                    <SkillParamsContent
+                      params={item.outputArgBindConfigs as TreeOutput[]}
+                    />
+                  }
+                  trigger="hover"
+                >
+                  <InfoCircleOutlined className="white" />
+                </Popover>
                 <Popover content={'编辑参数'} trigger="hover">
                   <SettingOutlined
                     className="ml-12 cursor-pointer white"
@@ -281,7 +340,43 @@ export const SkillList: React.FC<SkillProps> = ({
           )}
         </div>
       ))}
-
+      {params.knowledgeBaseConfigs?.map((item) => (
+        <div
+          className="skill-item-style dis-left"
+          key={item.knowledgeBaseId}
+          onMouseEnter={() => {
+            setHoveredItem(item);
+            setShowMask(true);
+          }}
+          onMouseLeave={() => setShowMask(false)}
+        >
+          <img
+            src={item.icon || getImg(AgentComponentTypeEnum.Knowledge)}
+            alt=""
+            className="skill-item-icon"
+          />
+          <div className="skill-item-content-style">
+            <div className="skill-item-title-style">{item.name}</div>
+            <div className="skill-item-desc-style">{item.description}</div>
+          </div>
+          {hoveredItem?.knowledgeBaseId === item.knowledgeBaseId &&
+            showMask && (
+              <div className="mask-layer-style" style={{}}>
+                <div
+                  className="skill-item-dispose-style"
+                  style={{ color: '#fff', backgroundColor: 'transparent' }}
+                >
+                  <Popover content={'移除'} trigger="hover">
+                    <DeleteOutlined
+                      className="ml-12  white"
+                      onClick={() => handleDelete(item)}
+                    />
+                  </Popover>
+                </div>
+              </div>
+            )}
+        </div>
+      ))}
       <SkillDispose
         open={open}
         onCancel={() => setOpen(false)}

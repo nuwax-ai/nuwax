@@ -4,16 +4,12 @@ import Monaco from '@/components/CodeEditor/monaco';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum } from '@/types/enums/node';
-import type { NodeConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
-import {
-  CheckOutlined,
-  ExpandAltOutlined,
-  SettingOutlined,
-} from '@ant-design/icons';
+import { ExpandAltOutlined, SettingOutlined } from '@ant-design/icons';
 import {
   Button,
   Divider,
+  Form,
   Input,
   InputNumber,
   Popover,
@@ -22,309 +18,260 @@ import {
   Space,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { cycleOption, outPutConfigs } from '../params';
 import { InputAndOut, OtherFormList, TreeOutput } from './commonNode';
 import './nodeItem.less';
 // 定义一些公共的数组
 
 // 定义开始节点
-const StartNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
-  // 修改模型的入参和出参
-  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
-    Modified({ ...params, ...newNodeConfig });
-  };
+const StartNode: React.FC<NodeDisposeProps> = ({ form }) => {
+  // 递归一下inputArgs，保证children都是数组而不是null
 
   return (
-    <>
+    <Form.Item name={'inputArgs'}>
       <CustomTree
         title={'输入'}
-        params={params}
+        inputItemName={'inputArgs'}
+        params={form.getFieldValue('inputArgs') || []} // 改为直接读取表单最新值
+        form={form}
         showCheck
-        handleChangeNodeConfig={handleChangeNodeConfig}
       />
-    </>
+    </Form.Item>
   );
 };
 // 定义文档提取节点
-const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({
-  params,
-  Modified,
-}) => {
-  // 添加状态保持稳定key
-  const [outputKey] = useState(() => uuidv4());
-  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
-    Modified({ ...params, ...newNodeConfig });
-  };
+const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({ form }) => {
   return (
     <>
-      <InputAndOut
-        nodeKey={outputKey}
-        title="输入"
-        fieldConfigs={outPutConfigs}
-        inputItemName={InputItemNameEnum.inputArgs}
-        initialValues={{ inputArgs: params.inputArgs || [] }}
-        handleChangeNodeConfig={handleChangeNodeConfig}
-        disabledAdd
-        disabledDelete
-        disabledInput
-      />
-      {params.outputArgs && (
-        <div>
-          <div className="node-title-style margin-bottom">输出</div>
-          <TreeOutput treeData={params.outputArgs} />
-        </div>
-      )}
+      <div className="node-item-style">
+        <InputAndOut
+          title="输入"
+          fieldConfigs={outPutConfigs}
+          inputItemName={InputItemNameEnum.inputArgs}
+          form={form}
+          disabledAdd
+          disabledDelete
+          disabledInput
+        />
+      </div>
+      <Form.Item shouldUpdate>
+        {() =>
+          form.getFieldValue('outputArgs') && (
+            <>
+              <div className="node-title-style margin-bottom">输出</div>
+              <TreeOutput treeData={form.getFieldValue('outputArgs')} />
+            </>
+          )
+        }
+      </Form.Item>
     </>
   );
 };
 
 // 定义结束和过程输出的节点渲染
-const EndNode: React.FC<NodeDisposeProps> = ({ params, Modified, type }) => {
-  // 修改模型的入参和出参
-  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
-    Modified({ ...params, ...newNodeConfig });
-  };
-  // 添加状态保持稳定key
-  const [outputKey] = useState(() => uuidv4());
+const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
   const segOptions = [
     { label: '返回变量', value: 'VARIABLE' },
     { label: '返回文本', value: 'TEXT' },
   ];
-  // 开关的状态
-  // const [checked, setChecked] = useState(true);
+
   return (
     <>
       {type === 'End' && (
-        <div className="node-item-style dis-center">
-          <Segmented<string>
-            options={segOptions}
-            value={params.returnType || 'VARIABLE'}
-            onChange={(value: string) => {
-              const validValues: ('VARIABLE' | 'TEXT')[] = ['VARIABLE', 'TEXT'];
-              if (validValues.includes(value as 'VARIABLE' | 'TEXT')) {
-                handleChangeNodeConfig({
-                  ...params,
-                  returnType: value as 'VARIABLE' | 'TEXT',
-                });
-              }
-            }}
-            style={{ marginBottom: '10px' }}
-          />
+        <div className="dis-center">
+          <Form.Item name={'returnType'}>
+            <Segmented<string>
+              options={segOptions}
+              style={{ marginBottom: '10px' }}
+            />
+          </Form.Item>
         </div>
       )}
-      <InputAndOut
-        nodeKey={outputKey}
-        title="输出变量"
-        fieldConfigs={outPutConfigs}
-        showCopy={true}
-        inputItemName={InputItemNameEnum.outputArgs}
-        initialValues={{ outputArgs: params.outputArgs || [] }}
-        handleChangeNodeConfig={handleChangeNodeConfig}
-      />
+      <div
+        className={
+          form.getFieldValue('returnType') !== 'VARIABLE'
+            ? 'node-item-style'
+            : ''
+        }
+      >
+        <InputAndOut
+          title="输出变量"
+          form={form}
+          fieldConfigs={outPutConfigs}
+          showCopy={true}
+          inputItemName={InputItemNameEnum.outputArgs}
+        />
+      </div>
 
-      {params.returnType !== 'VARIABLE' && (
-        <div className="margin-bottom mt-16">
-          <div className="dis-sb margin-bottom">
-            <span className="node-title-style">输出内容</span>
-            {/* <div>
-              <span className="node-title-grey-style">
-                {checked ? '流式输出' : '非流式输出'}
-              </span>
-              <Switch
-                defaultChecked
-                onChange={() => setChecked(!checked)}
-                size="small"
-              />
-            </div> */}
-          </div>
-          <Input.TextArea
-            placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
-            autoSize={{ minRows: 3, maxRows: 5 }}
-            style={{ marginBottom: '10px' }}
-            value={params.content}
-            onChange={(e) => {
-              const newValue = e.target.value; // 直接从事件对象中获取最新值
-              handleChangeNodeConfig({ ...params, content: newValue }); // 使用新值调用handleChangeNodeConfig
-            }}
-          />
-        </div>
-      )}
+      <Form.Item shouldUpdate>
+        {() =>
+          form.getFieldValue('returnType') !== 'VARIABLE' && (
+            <>
+              <div className="dis-sb margin-bottom">
+                <span className="node-title-style">输出内容</span>
+              </div>
+              <Form.Item name="content">
+                <Input.TextArea
+                  placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
+                  autoSize={{ minRows: 3, maxRows: 5 }}
+                  style={{ marginBottom: '10px' }}
+                />
+              </Form.Item>
+            </>
+          )
+        }
+      </Form.Item>
     </>
   );
 };
 
 // 定义循环的节点渲染
-const CycleNode: React.FC<NodeDisposeProps> = ({
-  params,
-  Modified,
-  retrieveRefernece,
-}) => {
-  // 添加状态保持稳定key
-  const [outputKey] = useState(() => uuidv4());
-  // 修改模型的入参和出参
-  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
-    Modified({ ...params, ...newNodeConfig });
-  };
+const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
   return (
     <div>
-      <div className=" node-item-style">
+      <div className="node-item-style">
         <span className="node-title-style margin-bottom">循环设置</span>
-        <Select
-          value={params.loopType}
-          options={cycleOption}
-          onChange={(value) =>
-            handleChangeNodeConfig({ ...params, loopType: value })
-          }
-          style={{ width: '100%', marginBottom: '10px' }}
-        ></Select>
+        <Form.Item name={'loopType'}>
+          <Select
+            options={cycleOption}
+            style={{ width: '100%', marginBottom: '10px' }}
+          ></Select>
+        </Form.Item>
       </div>
-      {params.loopType !== 'INFINITE_LOOP' && (
-        <div className=" node-item-style">
-          {params.loopType === 'ARRAY_LOOP' && (
-            <InputAndOut
-              nodeKey={outputKey}
-              title="循环数组"
-              fieldConfigs={outPutConfigs}
-              inputItemName={InputItemNameEnum.inputArgs}
-              handleChangeNodeConfig={handleChangeNodeConfig}
-              initialValues={{ inputArgs: params.inputArgs || [] }}
-            />
-          )}
-          {params.loopType === 'SPECIFY_TIMES_LOOP' && (
-            <div>
-              <div className="node-title-style margin-bottom">循环次数</div>
-              <InputNumber
-                size="small"
-                value={params.loopTimes}
-                onChange={(value) =>
-                  // 确保传入的 value 不为 null，如果为 null 则设置为 undefined
-                  handleChangeNodeConfig({
-                    ...params,
-                    loopTimes: value !== null ? value : undefined,
-                  })
-                }
-                style={{ width: '100%', marginBottom: '10px' }}
-              />
-            </div>
-          )}
-        </div>
-      )}
-      <div className=" node-item-style">
+
+      {/* 动态渲染循环次数 */}
+      <Form.Item
+        noStyle
+        shouldUpdate={(prevValues, currentValues) =>
+          prevValues.loopType !== currentValues.loopType
+        }
+      >
+        {() => {
+          const loopType = form.getFieldValue('loopType');
+          if (loopType === 'SPECIFY_TIMES_LOOP') {
+            return (
+              <div className="node-item-style">
+                <div className="node-title-style margin-bottom">循环次数</div>
+                <Form.Item name="loopTimes">
+                  <InputNumber
+                    size="small"
+                    style={{ width: '100%', marginBottom: '10px' }}
+                  />
+                </Form.Item>
+              </div>
+            );
+          } else if (loopType === 'ARRAY_LOOP') {
+            return (
+              <div className="node-item-style">
+                <InputAndOut
+                  title="循环数组"
+                  fieldConfigs={outPutConfigs}
+                  inputItemName={InputItemNameEnum.inputArgs}
+                  form={form}
+                />
+              </div>
+            );
+          }
+          return null;
+        }}
+      </Form.Item>
+      <div className="node-item-style">
         <InputAndOut
-          nodeKey={outputKey}
           title="中间变量"
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.variableArgs}
-          handleChangeNodeConfig={handleChangeNodeConfig}
-          initialValues={{ variableArgs: params.variableArgs || [] }}
+          form={form}
           isVariable
-          retrieveRefernece={retrieveRefernece}
         />
       </div>
-      <div className=" node-item-style">
-        <InputAndOut
-          nodeKey={outputKey}
-          title="输出"
-          fieldConfigs={outPutConfigs}
-          inputItemName={InputItemNameEnum.outputArgs}
-          handleChangeNodeConfig={handleChangeNodeConfig}
-          initialValues={{ outputArgs: params.outputArgs || [] }}
-          isLoop
-        />
-      </div>
+
+      <InputAndOut
+        title="输出"
+        fieldConfigs={outPutConfigs}
+        inputItemName={InputItemNameEnum.outputArgs}
+        form={form}
+        isLoop
+      />
     </div>
   );
 };
 
 // 定义变量的节点渲染
-const VariableNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
-  const outputArgs = params.outputArgs || null;
-  // 修改模型的入参和出参
-  // 添加状态保持稳定key
-  const [outputKey] = useState(() => uuidv4());
-  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
-    Modified({ ...params, ...newNodeConfig });
-  };
-
+const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
   const options = [
     { label: '设置变量值', value: 'SET_VARIABLE' },
     { label: '获取变量值', value: 'GET_VARIABLE' },
   ];
-  // useEffect(() => {
-  //   console.log('aaabbb', params.inputArgs);
-  // }, [params.inputArgs]);
-
-  useEffect(() => {
-    if (params.configType === null) {
-      handleChangeNodeConfig({ ...params, configType: 'SET_VARIABLE' });
-    }
-  }, [params.configType]);
   return (
     <>
-      <div className="node-item-style dis-center">
-        <Segmented
-          options={options}
-          value={params.configType}
-          onChange={(val) => {
-            handleChangeNodeConfig({
-              ...params,
-              configType: val as 'SET_VARIABLE' | 'GET_VARIABLE',
-            });
-          }}
-          style={{ marginBottom: '10px' }}
-        />
-      </div>
-      {params.configType === 'SET_VARIABLE' && (
-        <InputAndOut
-          nodeKey={outputKey}
-          title={'设置变量'}
-          fieldConfigs={outPutConfigs}
-          inputItemName={InputItemNameEnum.inputArgs}
-          handleChangeNodeConfig={handleChangeNodeConfig}
-          initialValues={{ inputArgs: params.inputArgs || [] }}
-        />
-      )}
-      {params.configType !== 'SET_VARIABLE' && (
-        <OtherFormList
-          nodeKey={outputKey}
-          title={'输出变量'}
-          fieldConfigs={outPutConfigs}
-          inputItemName={InputItemNameEnum.outputArgs}
-          handleChangeNodeConfig={handleChangeNodeConfig}
-          initialValues={{ outputArgs: params.outputArgs || [] }}
-        />
-      )}
-      {outputArgs && params.configType === 'SET_VARIABLE' && (
-        <div>
-          <div className="node-title-style margin-bottom">输出</div>
-          <TreeOutput
-            treeData={[
-              {
-                name: 'isSuccess',
-                dataType: DataTypeEnum.Boolean,
-              },
-            ]}
-          />
-        </div>
-      )}
+      <Form.Item
+        name={'configType'}
+        style={{ display: 'flex', justifyContent: 'center' }}
+      >
+        <Segmented options={options} />
+      </Form.Item>
+
+      <Form.Item shouldUpdate noStyle>
+        {() =>
+          form.getFieldValue('configType') === 'SET_VARIABLE' ? (
+            <div className="node-item-style">
+              <InputAndOut
+                title={'设置变量'}
+                fieldConfigs={outPutConfigs}
+                inputItemName={InputItemNameEnum.inputArgs}
+                form={form}
+              />
+            </div>
+          ) : null
+        }
+      </Form.Item>
+      <Form.Item shouldUpdate noStyle>
+        {() =>
+          form.getFieldValue('configType') !== 'SET_VARIABLE' ? (
+            <OtherFormList
+              title={'输出变量'}
+              fieldConfigs={outPutConfigs}
+              inputItemName={InputItemNameEnum.outputArgs}
+              form={form}
+            />
+          ) : null
+        }
+      </Form.Item>
+      <Form.Item shouldUpdate noStyle>
+        {() =>
+          form.getFieldValue('configType') === 'SET_VARIABLE' ? (
+            <>
+              <div className="node-title-style margin-bottom">输出</div>
+              <TreeOutput
+                treeData={[
+                  {
+                    name: 'isSuccess',
+                    dataType: DataTypeEnum.Boolean,
+                  },
+                ]}
+              />
+            </>
+          ) : null
+        }
+      </Form.Item>
     </>
   );
 };
 
-// 定义一个数组链接设置
-export const ArrayLinkSetting: React.FC<{
-  initValue: string | string[];
-  onChange: (value: string | string[]) => void;
-  multiple?: boolean;
-}> = ({ initValue, onChange, multiple }) => {
+// 定义文本处理的节点渲染
+const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
+  const textTypeOptions = [
+    { label: '字符串拼接', value: 'CONCAT' },
+    { label: '字符串分割', value: 'SPLIT' },
+  ];
+
   const [options, setOptions] = useState([
     { value: '\\n', label: '换行 (\\n)' },
     { value: '\\t', label: '制表符 (\\t)' },
-    { value: '.', label: '句号 (。)' },
+    { value: '。', label: '句号 (。)' },
     { value: ',', label: '逗号 (,)' },
     { value: ';', label: '分号 (;)' },
-    { value: '|', label: '空格 ( )' },
+    { value: '&nbsp;', label: '空格 ( )' },
   ]);
 
   const [newItem, setNewItem] = useState({
@@ -358,251 +305,229 @@ export const ArrayLinkSetting: React.FC<{
   }, []);
 
   return (
-    <div className="array-link-setting">
-      <Select
-        allowClear
-        placeholder={'请选择连接符号'}
-        mode={multiple ? 'multiple' : undefined}
-        value={multiple ? (initValue as string[]) : (initValue as string)}
-        onChange={onChange}
-        className={`array-link-setting-select ${
-          multiple ? '' : 'single-select'
-        }`}
-        dropdownRender={(menu) => (
-          <>
-            {menu}
-            <Divider style={{ margin: '8px 0' }} />
-            <div style={{ padding: '8px' }} className="dis-sb">
-              <Space>
-                <Input
-                  value={newItem.label}
-                  placeholder="选项名称"
-                  onChange={(e) =>
-                    setNewItem({ value: newItem.value, label: e.target.value })
-                  }
-                  onKeyDown={(e) => e.stopPropagation()} // 阻止键盘事件冒泡
-                />
-                <Input
-                  value={newItem.value}
-                  placeholder="选项值"
-                  onChange={(e) =>
-                    setNewItem({ label: newItem.label, value: e.target.value })
-                  }
-                  onKeyDown={(e) => e.stopPropagation()} // 阻止键盘事件冒泡
-                />
-                <Button type="primary" onClick={addItem}>
-                  添加
-                </Button>
-              </Space>
-            </div>
-          </>
-        )}
-        options={options}
-        optionRender={(option) => {
-          return (
-            <div className="dis-sb select-render-style">
-              <div>{option.data.label}</div>
-              <div className="array-link-setting-select-option-icon">
-                {initValue === option.data.value && (
-                  <CheckOutlined style={{ color: '#1677FF' }} />
-                )}
-              </div>
-            </div>
-          );
-        }}
-      ></Select>
-    </div>
-  );
-};
-// 定义文本处理的节点渲染
-const TextProcessingNode: React.FC<NodeDisposeProps> = ({
-  params,
-  Modified,
-}) => {
-  // 添加状态保持稳定key
-  const [outputKey] = useState(() => uuidv4());
-
-  // 修改模型的入参和出参
-  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
-    Modified({ ...params, ...newNodeConfig });
-  };
-
-  const changeTxetType = (val: 'CONCAT' | 'SPLIT') => {
-    if (val === 'SPLIT') {
-      handleChangeNodeConfig({
-        ...params,
-        textHandleType: 'SPLIT',
-        outputArgs: [
-          {
-            key: uuidv4(),
-            name: 'output',
-            description: '处理后的字符串输出结果',
-            dataType: DataTypeEnum.Array_String,
-            require: true,
-            enable: true,
-            systemVariable: true,
-            bindValueType: null,
-            bindValue: null,
-            subArgs: [],
-            children: [],
-          },
-        ],
-      });
-    } else {
-      handleChangeNodeConfig({
-        ...params,
-        textHandleType: 'CONCAT',
-        outputArgs: [
-          {
-            key: uuidv4(),
-            name: 'output',
-            description: '处理后的字符串输出结果',
-            dataType: DataTypeEnum.String,
-            require: true,
-            enable: true,
-            systemVariable: true,
-            bindValueType: null,
-            bindValue: null,
-            subArgs: [],
-            children: [],
-          },
-        ],
-      });
-    }
-  };
-
-  const textTypeOptions = [
-    { label: '字符串拼接', value: 'CONCAT' },
-    { label: '字符串分割', value: 'SPLIT' },
-  ];
-
-  return (
     <>
-      <div className="node-item-style dis-center">
+      <Form.Item
+        name={'textHandleType'}
+        style={{ display: 'flex', justifyContent: 'center' }}
+      >
         <Segmented
           options={
             textTypeOptions as { label: string; value: 'CONCAT' | 'SPLIT' }[]
           }
-          value={params.textHandleType ?? 'CONCAT'}
-          onChange={changeTxetType}
-          style={{ marginBottom: '10px' }}
+        />
+      </Form.Item>
+      <div className="node-item-style">
+        <InputAndOut
+          title="输入"
+          fieldConfigs={outPutConfigs}
+          inputItemName={InputItemNameEnum.inputArgs}
+          form={form}
         />
       </div>
-      <InputAndOut
-        nodeKey={outputKey}
-        title="输入"
-        fieldConfigs={outPutConfigs}
-        inputItemName={InputItemNameEnum.inputArgs}
-        handleChangeNodeConfig={handleChangeNodeConfig}
-        initialValues={{ inputArgs: params.inputArgs || [] }}
-      />
-      {params.textHandleType === 'CONCAT' && (
-        <div className="margin-bottom">
-          <div className="dis-sb margin-bottom">
-            <span className="node-title-style">字符串拼接</span>
-            <Popover
-              content={
-                <>
-                  <p className="node-title-style">数组连接符设置</p>
-                  <p>使用以下符号来自动连接数组中的每个项目</p>
-                  <p className="array-link-setting-select-label">连接符</p>
-                  <ArrayLinkSetting
-                    initValue={params.join || ''}
-                    onChange={(value) =>
-                      Modified({ ...params, join: value as string })
-                    }
-                  />
-                </>
-              }
-              trigger="click"
-            >
-              <SettingOutlined />
-            </Popover>
-          </div>
-          <Input.TextArea
-            value={params.text}
-            placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
-            autoSize={{ minRows: 3, maxRows: 5 }}
-            style={{ marginBottom: '10px' }}
-            onChange={(e) => {
-              const newValue = e.target.value; // 直接从事件对象中获取最新值
-              handleChangeNodeConfig({ ...params, text: newValue }); // 使用新值调用handleChangeNodeConfig
-            }}
-          />
-        </div>
-      )}
-      {params.textHandleType === 'SPLIT' && (
-        <div className=" node-item-style">
-          <span className="node-title-style">分隔符</span>
-          <ArrayLinkSetting
-            initValue={params.splits || []}
-            onChange={(value) =>
-              Modified({ ...params, splits: value as string[] | undefined })
-            }
-            multiple
-          />
-        </div>
-      )}
-      <div>
-        <div className="node-title-style margin-bottom">输出</div>
-        <TreeOutput treeData={params.outputArgs || []} />
-      </div>
+      <Form.Item shouldUpdate noStyle>
+        {() =>
+          form.getFieldValue('textHandleType') === 'CONCAT' ? (
+            <div className="node-item-style">
+              <div className="dis-sb margin-bottom">
+                <span className="node-title-style">字符串拼接</span>
+                <Popover
+                  content={
+                    <>
+                      <p className="node-title-style">数组连接符设置</p>
+                      <p>使用以下符号来自动连接数组中的每个项目</p>
+                      <p className="array-link-setting-select-label">连接符</p>
+                      <Form.Item name="join">
+                        <Select
+                          options={options}
+                          allowClear
+                          placeholder={'请选择连接符号'}
+                          dropdownRender={(menu) => (
+                            <>
+                              {menu}
+                              <Divider style={{ margin: '8px 0' }} />
+                              <div
+                                style={{ padding: '8px' }}
+                                className="dis-sb"
+                              >
+                                <Space>
+                                  <Input
+                                    value={newItem.label}
+                                    placeholder="选项名称"
+                                    onChange={(e) =>
+                                      setNewItem({
+                                        value: newItem.value,
+                                        label: e.target.value,
+                                      })
+                                    }
+                                    onKeyDown={(e) => e.stopPropagation()} // 阻止键盘事件冒泡
+                                  />
+                                  <Input
+                                    value={newItem.value}
+                                    placeholder="选项值"
+                                    onChange={(e) =>
+                                      setNewItem({
+                                        label: newItem.label,
+                                        value: e.target.value,
+                                      })
+                                    }
+                                    onKeyDown={(e) => e.stopPropagation()} // 阻止键盘事件冒泡
+                                  />
+                                  <Button type="primary" onClick={addItem}>
+                                    添加
+                                  </Button>
+                                </Space>
+                              </div>
+                            </>
+                          )}
+                          style={{ width: '100%', marginBottom: '10px' }}
+                        />
+                      </Form.Item>
+                    </>
+                  }
+                  trigger="click"
+                >
+                  <SettingOutlined />
+                </Popover>
+              </div>
+              <Form.Item name="text">
+                <Input.TextArea
+                  placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
+                  autoSize={{ minRows: 3, maxRows: 5 }}
+                />
+              </Form.Item>
+            </div>
+          ) : null
+        }
+      </Form.Item>
+      <Form.Item shouldUpdate noStyle>
+        {() =>
+          form.getFieldValue('textHandleType') === 'SPLIT' ? (
+            <div className="node-item-style">
+              <span className="node-title-style">分隔符</span>
+              <Form.Item name="splits">
+                <Select
+                  allowClear
+                  placeholder={'请选择连接符号'}
+                  mode={'multiple'}
+                  maxTagCount={3}
+                  dropdownRender={(menu) => (
+                    <>
+                      {menu}
+                      <Divider style={{ margin: '8px 0' }} />
+                      <div style={{ padding: '8px' }} className="dis-sb">
+                        <Space>
+                          <Input
+                            value={newItem.label}
+                            placeholder="选项名称"
+                            onChange={(e) =>
+                              setNewItem({
+                                value: newItem.value,
+                                label: e.target.value,
+                              })
+                            }
+                            onKeyDown={(e) => e.stopPropagation()} // 阻止键盘事件冒泡
+                          />
+                          <Input
+                            value={newItem.value}
+                            placeholder="选项值"
+                            onChange={(e) =>
+                              setNewItem({
+                                label: newItem.label,
+                                value: e.target.value,
+                              })
+                            }
+                            onKeyDown={(e) => e.stopPropagation()} // 阻止键盘事件冒泡
+                          />
+                          <Button type="primary" onClick={addItem}>
+                            添加
+                          </Button>
+                        </Space>
+                      </div>
+                    </>
+                  )}
+                  options={options}
+                ></Select>
+              </Form.Item>
+            </div>
+          ) : null
+        }
+      </Form.Item>
+
+      <Form.Item shouldUpdate>
+        {() =>
+          form.getFieldValue('outputArgs') && (
+            <>
+              <div className="node-title-style margin-bottom">输出</div>
+              <TreeOutput
+                treeData={
+                  form.getFieldValue('textHandleType') === 'CONCAT'
+                    ? [{ name: 'output', dataType: DataTypeEnum.String }]
+                    : [{ name: 'output', dataType: DataTypeEnum.Array_String }]
+                }
+              />
+            </>
+          )
+        }
+      </Form.Item>
     </>
   );
 };
 
 // 定义代码节点
-const CodeNode: React.FC<NodeDisposeProps> = ({ params, Modified }) => {
+const CodeNode: React.FC<NodeDisposeProps> = ({ form }) => {
   const [show, setShow] = useState(false);
-  // 添加状态保持稳定key
-  const [outputKey] = useState(() => uuidv4());
-  // 修改模型的代码
-  const changeCode = (code: string) => {
-    Modified({ ...params, code });
-  };
-  // 修改模型的入参和出参
-  const handleChangeNodeConfig = (newNodeConfig: NodeConfig) => {
-    Modified({ ...params, ...newNodeConfig });
-  };
+
   return (
     <>
-      <InputAndOut
-        nodeKey={outputKey}
-        title="输入"
-        fieldConfigs={outPutConfigs}
-        inputItemName={InputItemNameEnum.inputArgs}
-        handleChangeNodeConfig={handleChangeNodeConfig}
-        initialValues={{ inputArgs: params.inputArgs || [] }}
-      />
       <div className="node-item-style">
-        <div className="dis-sb margin-bottom">
-          <span className="node-title-style ">代码</span>
-          <ExpandAltOutlined onClick={() => setShow(true)} />
-        </div>
-        <CodeEditor
-          value={
-            params.codeLanguage === 'Python'
-              ? params.codePython
-              : params.codeJavaScript
-          }
-          codeLanguage={params.codeLanguage || 'JavaScript'}
-          changeCode={changeCode}
-          height="180px"
+        <InputAndOut
+          title="输入"
+          fieldConfigs={outPutConfigs}
+          inputItemName={InputItemNameEnum.inputArgs}
+          form={form}
         />
+      </div>
+      <div className="node-item-style">
+        <Form.Item
+          noStyle
+          name={
+            form.getFieldValue('codeLanguage') === 'JavaScript'
+              ? 'codeJavaScript'
+              : 'codePython'
+          }
+        >
+          <div>
+            <div className="dis-sb margin-bottom">
+              <span className="node-title-style ">代码</span>
+              <ExpandAltOutlined onClick={() => setShow(true)} />
+            </div>
+            <CodeEditor
+              value={form.getFieldValue(
+                form.getFieldValue('codeLanguage') === 'JavaScript'
+                  ? 'codeJavaScript'
+                  : 'codePython',
+              )}
+              onChange={(value) => {
+                form.setFieldValue(
+                  form.getFieldValue('codeLanguage') === 'JavaScript'
+                    ? 'codeJavaScript'
+                    : 'codePython',
+                  value,
+                );
+              }}
+              codeLanguage={form.getFieldValue('codeLanguage') || 'JavaScript'}
+              height="180px"
+            />
+          </div>
+        </Form.Item>
       </div>
       <CustomTree
         title={'输出'}
-        params={params}
-        handleChangeNodeConfig={handleChangeNodeConfig}
+        params={form.getFieldValue('outputArgs') || []} // 改为直接读取表单最新值
+        form={form}
         inputItemName={'outputArgs'}
       />
-
-      <Monaco
-        params={params}
-        Modified={Modified}
-        isShow={show}
-        close={() => setShow(false)}
-      />
+      <Monaco form={form} isShow={show} close={() => setShow(false)} />
     </>
   );
 };

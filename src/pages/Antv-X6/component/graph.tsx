@@ -96,6 +96,7 @@ const initGraph = ({
   const graph = new Graph({
     container: graphContainer, // 设置 DOM 容器
     // grid: true, // 启用网格背景
+    autoResize: true, // 自动调整大小
     panning: true, //允许拖拽画布
     mousewheel: {
       enabled: true, // 启用鼠标滚轮缩放
@@ -295,7 +296,7 @@ const initGraph = ({
     .use(new Keyboard()) // 启用键盘插件，支持快捷键操作
     .use(new Clipboard()) // 启用剪贴板插件，支持复制和粘贴
     .use(new History()) // 启用历史记录插件，支持撤销和重做
-    .use(new Selection()); // 启用历史记录插件，支持撤销和重做
+    .use(new Selection()); // 启用选择插件，并配置选择限制
 
   // 监听连接桩鼠标进入事件
   graph.on('node:mouseenter', ({ node }) => {
@@ -396,11 +397,11 @@ const initGraph = ({
           }
         }
       }
-      changeCondition(_data);
+      changeCondition(_data, 'moved');
       return;
     }
     // node.prop('zIndex', 99);
-    changeCondition(data);
+    changeCondition(data, 'moved');
     changeZindex(node);
   });
 

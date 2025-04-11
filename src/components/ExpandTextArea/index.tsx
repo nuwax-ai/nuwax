@@ -1,6 +1,6 @@
 import { ICON_OPTIMIZE } from '@/constants/images.constants';
 import { ExpandAltOutlined } from '@ant-design/icons';
-import { Input } from 'antd';
+import { Form, Input } from 'antd';
 import React, { useState } from 'react';
 import ExpandTextArea from './expandTextarea';
 import { ExpandableInputTextareaProps } from './type';
@@ -9,8 +9,7 @@ export const ExpandableInputTextarea: React.FC<
   ExpandableInputTextareaProps
 > = ({
   title,
-  value,
-  onChange,
+  inputFieldName,
   placeholder,
   rows = 3,
   onExpand,
@@ -19,7 +18,7 @@ export const ExpandableInputTextarea: React.FC<
   const [isExpanded, setIsExpanded] = useState(false); // 添加本地状态
 
   return (
-    <div className="node-item-style">
+    <div>
       <div className="dis-sb margin-bottom">
         {/* 名称 */}
         <span className="node-title-style">{title}</span>
@@ -33,19 +32,18 @@ export const ExpandableInputTextarea: React.FC<
         </div>
       </div>
       {/* 输入框 */}
-      <Input.TextArea
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        autoSize={{ minRows: rows, maxRows: rows }}
-        style={{ marginBottom: '10px' }}
-      />
+      <Form.Item name={inputFieldName}>
+        <Input.TextArea
+          placeholder={placeholder}
+          autoSize={{ minRows: rows, maxRows: rows }}
+          style={{ marginBottom: '10px' }}
+        />
+      </Form.Item>
       {/* 如果有展开，就要调用展开的组件 */}
       {isExpanded && ( // 使用本地状态控制显示
         <ExpandTextArea
           title={title}
-          value={value}
-          onChange={(newValue) => onChange(newValue)}
+          inputFieldName={inputFieldName}
           marginRight={374}
           placeholder={placeholder}
           visible={isExpanded}

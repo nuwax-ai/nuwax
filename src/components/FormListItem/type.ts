@@ -1,5 +1,5 @@
 import { DataTypeEnum } from '@/types/enums/common';
-import { NodeConfig } from '@/types/interfaces/node';
+import { InputAndOutConfig } from '@/types/interfaces/node';
 import { FormInstance } from 'antd';
 
 export interface KeyValueTree {
@@ -12,20 +12,16 @@ export interface KeyValueTree {
 
 // 定义输入或引用参数
 export interface InputOrReferenceProps {
-  // 与输入
   placeholder?: string;
-  // 新增：接受当前值
-  value: string;
-  // 父组件传递的方法，改变当前的值，渲染页面
-  onChange: (value: string, type?: 'Input' | 'Reference') => void;
-  // 新增类型定义
   form?: FormInstance; // 表单实例
-  fieldName?: (string | number)[]; // 当前字段完整路径（如 "inputItems[0].bindValue"）
-  inputItemName?: string; // 列表字段名称（默认 "inputItems"）
-  style?: any;
-  isDisabled?: boolean;
-  referenceType?: 'Input' | 'Reference';
-  isLoop?: boolean;
+  fieldName?: (string | number)[]; // 字段路径
+  inputItemName?: string; // 输入项名称
+  style?: React.CSSProperties; // 样式
+  isDisabled?: boolean; // 是否禁用
+  referenceType?: 'Input' | 'Reference'; // 引用类型
+  isLoop?: boolean; // 是否循环
+  value?: string; // 注入的值（由 Form.Item 提供）
+  onChange?: (value: string) => void; // 注入的变更事件（由 Form.Item 提供）
 }
 
 /**
@@ -50,17 +46,47 @@ export interface FieldConfig {
 }
 
 export interface TreeFormProps {
-  params: NodeConfig;
+  params?: InputAndOutConfig[];
   // 改变节点的入参和出参
-  handleChangeNodeConfig: (params: NodeConfig) => void;
+  // 外部传递进来的form
+  form: FormInstance;
   // 标题
-  title: string;
+  title?: string;
   inputItemName?:
     | 'inputArgs'
     | 'outputArgs'
     | 'variableArgs'
     | 'conditionBranchConfigs'
-    | 'skillComponentConfigs';
+    | 'skillComponentConfigs'
+    | 'body';
   notShowTitle?: boolean;
   showCheck?: boolean;
+  isBody?: boolean;
+}
+
+export interface TreeFormSubProps {
+  form: FormInstance;
+  fieldName: string | (string | number)[];
+  inputItemName: string;
+  showCheck?: boolean;
+  level: number;
+}
+
+export interface TreeFormSubRef {
+  addChild: () => void; // 子组件暴露的 add 方法
+}
+
+export interface TreeFormItemProps {
+  form: FormInstance;
+  field: FormListFieldData;
+  fieldName: (string | number)[];
+  remove: (index: number | number[]) => void;
+  showCheck?: boolean;
+  inputItemName?: string;
+}
+
+export interface TreeInputProps {
+  form: FormInstance;
+  title: string;
+  params: InputAndOutConfig[];
 }

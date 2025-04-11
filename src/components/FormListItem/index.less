@@ -98,6 +98,33 @@
 
 .tree-form-style {
   font-size: 12px;
+  position: relative; /* 设置容器为相对定位 */
+  .ant-tree-switcher {
+    margin-left: -9px;
+
+    .ant-tree-switcher-icon {
+      margin-left: 0;
+    }
+  }
+
+  .ant-tree-indent-unit {
+    position: relative; /* 设置每个层级为相对定位 */
+    margin-left: -2px;
+  }
+
+  .ant-tree-indent-unit::before {
+    position: absolute; /* 使用绝对定位 */
+    content: ''; /* 必须定义 content 属性 */
+    top: -11px; /* 从顶部开始的位置 */
+    bottom: 0; /* 到底部结束 */
+    left: 4px; /* 从左侧开始 */
+    height: 47px;
+    inset-inline-end: 20px;
+  }
+
+  .ant-tree-node-content-wrapper {
+    padding-inline: 2px;
+  }
 
   svg {
     width: 14px;
@@ -109,6 +136,10 @@
 
   .ant-tree-switcher {
     display: none;
+  }
+
+  .ant-tree-node-content-wrapper {
+    padding-inline: 2px;
   }
 
   svg {
@@ -128,4 +159,33 @@
 
 .ml-20 {
   margin-left: 20px;
+}
+
+.tree-input-style {
+  .ant-tree-switcher {
+    display: none;
+  }
+
+  .ant-tree-treenode {
+    width: 100%;
+
+    .ant-tree-node-content-wrapper {
+      width: 100%;
+    }
+  }
+}
+
+.nested-form-icon-button {
+  :where(.css-dev-only-do-not-override-77tu7h).ant-btn.ant-btn-icon-only {
+    width: 18px;
+  }
+
+  .ant-checkbox-inner {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.ant-tree-node-content-wrapper {
+  padding-inline: 0;
 }

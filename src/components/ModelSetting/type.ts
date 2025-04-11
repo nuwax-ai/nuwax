@@ -1,5 +1,6 @@
 import type { ModelListItemProps } from '@/types/interfaces/model';
 import { NodeConfig } from '@/types/interfaces/node';
+import type { FormInstance } from 'antd';
 // type.ts 或 types/index.ts
 interface GroupModelItem {
   // 分组的名称
@@ -20,7 +21,5 @@ export interface GroupModelListItemProps {
 }
 
 export interface ModelSettingProp {
-  nodeConfig: NodeConfig;
-  onChange: (newConfig: NodeConfig) => void;
-  groupedOptionsData?: GroupModelItem[];
+  form: FormInstance;
 }

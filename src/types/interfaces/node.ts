@@ -13,9 +13,9 @@ export interface InputAndOutConfig {
   // 是否为系统内置变量参数
   systemVariable: boolean;
   // 值引用类型
-  bindValueType: string | null;
+  bindValueType?: 'Input' | 'Reference';
   // 参数值
-  bindValue: string | null;
+  bindValue: string;
   //  	下级参数
   subArgs?: InputAndOutConfig[];
   // 有可能有children
@@ -73,14 +73,14 @@ export interface NodeConfig {
   // 扩展信息，前端配置，设置节点的宽高，位置
   extension?: Extension | null;
   // 节点入参
-  inputArgs?: InputAndOutConfig[] | null;
+  inputArgs?: InputAndOutConfig[];
   // 节点出参
-  outputArgs?: InputAndOutConfig[] | null;
+  outputArgs?: InputAndOutConfig[];
   // 节点变量
-  variableArgs?: InputAndOutConfig[] | null;
+  variableArgs?: InputAndOutConfig[];
   // 技能列表
   // 条件分支
-  conditionBranchConfigs?: ConditionBranchConfigs[] | null;
+  conditionBranchConfigs?: ConditionBranchConfigs[];
   // 结束节点的
   returnType?: 'VARIABLE' | 'TEXT';
 
@@ -200,7 +200,6 @@ export interface NodeDrawerProps {
   visible: boolean;
   // 关闭
   onClose: () => void;
-  // 当前的数据
   foldWrapItem: ChildNode;
   // 将节点信息返回给父组件
   onGetNodeConfig: (config: ChildNode, update?: boolean) => void;

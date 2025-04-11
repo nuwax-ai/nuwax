@@ -33,7 +33,7 @@ export default defineConfig({
               path.dirname(require.resolve('monaco-editor/package.json')),
               'min/vs',
             ),
-            to: 'dist/vs',
+            to: 'vs', // 修改为直接复制到 vs 目录
             force: true,
           },
         ],
@@ -43,10 +43,9 @@ export default defineConfig({
     config.plugin('monaco').use(MonacoWebpackPlugin, [
       {
         languages: ['javascript', 'typescript', 'json', 'python'],
-        publicPath: '/vs',
+        publicPath: '/', // 修改为根路径
         filename: 'vs/[name].worker.js',
         features: [
-          // 保留必要功能
           'accessibilityHelp',
           'bracketMatching',
           'clipboard',
