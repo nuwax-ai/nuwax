@@ -96,6 +96,7 @@ const initGraph = ({
   const graph = new Graph({
     container: graphContainer, // 设置 DOM 容器
     // grid: true, // 启用网格背景
+    autoResize: true, // 自动调整大小
     panning: true, //允许拖拽画布
     mousewheel: {
       enabled: true, // 启用鼠标滚轮缩放

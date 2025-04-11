@@ -120,12 +120,10 @@ const Created: React.FC<CreatedProp> = ({
   /**  -----------------  需要调用接口  -----------------   */
   // 获取右侧的list（关键修改）
   const getList = async (type: AgentComponentTypeEnum, params: IGetList) => {
-    // 新增请求锁定防止重复
+    if (spaceId === 0) return;
     if (params.page > sizes || isRequesting.current) return;
-
     isRequesting.current = true;
-    params.spaceId = spaceId;
-    const _res = await service.getList(type, params);
+    const _res = await service.getList(type, { ...params, spaceId });
     isRequesting.current = false;
 
     if (_res.code === Constant.success) {
@@ -204,21 +202,23 @@ const Created: React.FC<CreatedProp> = ({
   };
   //   搜索
   const onSearch = (value: string) => {
-    const _params = {
+    const _params: IGetList = {
       kw: value,
       page: 1,
       pageSize: 10,
     };
+    console.log(spaceId);
+    setSearch(value); // 更新搜索状态
+    setPagination({ page: 1, pageSize: 10 }); // 重置分页状态
+    setList([]); // 清空列表
+
+    // 只触发一次请求
     getList(selected.key, _params);
-    setPagination({ ...pagination, page: 1 });
   };
 
   const callInterface = (val: string, params: IGetList) => {
     // 通过左侧菜单决定调用哪个接口
     switch (val) {
-      case 'library':
-        getList(selected.key, { ...params, spaceId });
-        break;
       case 'collect':
         getCollectList(params);
         break;
@@ -227,25 +227,50 @@ const Created: React.FC<CreatedProp> = ({
         break;
     }
   };
-  // 点击左侧菜单，触发不同的事件
-  const onMenuClick = (val: string) => {
-    // 清除搜索
-    setSearch('');
-    // 切换左侧菜单时重置所有分页状态
-    setSelectMenu(val);
-    setPagination({ page: 1, pageSize: 10 });
-    setList([]);
 
-    const params: IGetList = {
-      page: 1,
-      pageSize: 10,
-    };
+  // 修改 onMenuClick 方法，确保切换左侧菜单时重置分页
+  const onMenuClick = useCallback(
+    (val: string) => {
+      setSearch('');
+      setSelectMenu(val);
+      setPagination({ page: 1, pageSize: 10 }); // 确保重置分页
+      setList([]);
 
-    if (selected.key === AgentComponentTypeEnum.Knowledge && val !== 'all') {
-      params.dataType = val;
+      const params: IGetList = {
+        page: 1,
+        pageSize: 10,
+      };
+
+      if (selected.key === AgentComponentTypeEnum.Knowledge && val !== 'all') {
+        params.dataType = val;
+      }
+
+      callInterface(val, params);
+    },
+    [selected.key],
+  );
+
+  // 修改 changeTitle 方法，确保切换顶部选项时重置分页
+  const changeTitle = (val: RadioChangeEvent | string) => {
+    if (!val) return;
+
+    const _select = typeof val === 'string' ? val : val.target.value;
+    const _item = buttonList.find((item) => item.key === _select);
+
+    if (_item) {
+      setSelectMenu('all');
+      setSearch('');
+      SetSelected(_item);
+      setPagination({ page: 1, pageSize: 10 }); // 重置分页状态
+      setSizes(100); // 重置数据大小
+      setList([]); // 清空列表
+
+      // 只触发一次请求
+      getList(_item.key, {
+        page: 1,
+        pageSize: 10,
+      });
     }
-
-    callInterface(val, params);
   };
 
   const handleScroll = useCallback(() => {
@@ -255,44 +280,22 @@ const Created: React.FC<CreatedProp> = ({
     if (node) {
       const remainingSpace =
         node.scrollHeight - node.scrollTop - node.clientHeight;
-      const shouldLoad = remainingSpace < 50 && pagination.page < sizes;
+      const shouldLoad =
+        list.length > 0 && remainingSpace < 50 && pagination.page < sizes;
 
       if (shouldLoad) {
         const nextPage = pagination.page + 1;
+
         const params: IGetList = {
           pageSize: 10,
           page: nextPage,
-          ...(selectMenu === 'library' && { spaceId }),
         };
 
         setPagination((prev) => ({ ...prev, page: nextPage }));
         getList(selected.key, params);
       }
     }
-  }, [pagination, selectMenu, sizes, isRequesting, selected.key]);
-
-  // 修改顶部选项
-  const changeTitle = (val: RadioChangeEvent | string) => {
-    if (!val) return;
-
-    // 重置所有相关状态
-    const _select = typeof val === 'string' ? val : val.target.value;
-    const _item = buttonList.find((item) => item.key === _select);
-
-    if (_item) {
-      setSelectMenu('all');
-      setSearch('');
-      SetSelected(_item);
-      setPagination({ page: 1, pageSize: 10 });
-      setSizes(100);
-      setList([]);
-
-      getList(_item.key, {
-        page: 1,
-        pageSize: 10,
-      });
-    }
-  };
+  }, [pagination, selectMenu, sizes, isRequesting, selected.key, list.length]);
 
   useEffect(() => {
     const node = scrollRef.current;
@@ -300,20 +303,20 @@ const Created: React.FC<CreatedProp> = ({
     if (open && node) {
       node.addEventListener('scroll', handleScroll);
 
-      // 初始化检查
-      handleScroll();
-
       return () => {
         node.removeEventListener('scroll', handleScroll);
       };
     }
-  }, [open, handleScroll]); // 只保留 open 依赖
+  }, [open, handleScroll]);
 
-  /**  -----------------  初始化时需要的  -----------------   */
-
+  // 修改 changeTitle 方法，确保 open 为 true 时才触发请求
   useEffect(() => {
-    changeTitle(checkTag);
-  }, [checkTag]);
+    if (open) {
+      setTimeout(() => {
+        changeTitle(checkTag);
+      }, 100);
+    }
+  }, [checkTag, open]); // 添加 open 依赖
   //   顶部的标题
   const title = (
     <div className="dis-left created-title">
@@ -404,7 +407,9 @@ const Created: React.FC<CreatedProp> = ({
               />
               <div className="flex-1 content-font">
                 <p className="label-font-style margin-bottom-6">{item.name}</p>
-                <p className="margin-bottom-6 ">{item.description}</p>
+                <p className="margin-bottom-6 created-description-style">
+                  {item.description}
+                </p>
                 {/* <Tag>{item.tag}</Tag> */}
                 <div className="dis-sb count-div-style">
                   <div className={'dis-left'}>

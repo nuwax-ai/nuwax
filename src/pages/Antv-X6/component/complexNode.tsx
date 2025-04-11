@@ -70,7 +70,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
       {/* 模型模块 */}
       <ModelSelected form={form} />
       {/* 技能模块 */}
-      <div className="dis-sb margin-bottom">
+      <div className="dis-sb margin-bottom ">
         <span className="node-title-style">技能</span>
         <Button
           icon={<PlusOutlined />}
@@ -81,38 +81,46 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
       <Form.Item shouldUpdate noStyle>
         {() =>
           form.getFieldValue('skillComponentConfigs') ? (
-            <SkillList
-              params={form.getFieldValue('skillComponentConfigs')}
-              skillName={'skillComponentConfigs'}
-              form={form}
-            />
+            <div className="node-item-style">
+              <SkillList
+                params={form.getFieldValue('skillComponentConfigs')}
+                skillName={'skillComponentConfigs'}
+                form={form}
+              />
+            </div>
           ) : (
             <Empty />
           )
         }
       </Form.Item>
       {/* 输入参数 */}
-      <InputAndOut
-        title="输入"
-        fieldConfigs={outPutConfigs}
-        inputItemName={InputItemNameEnum.inputArgs}
-        form={form}
-      />
+      <div className="node-item-style">
+        <InputAndOut
+          title="输入"
+          fieldConfigs={outPutConfigs}
+          inputItemName={InputItemNameEnum.inputArgs}
+          form={form}
+        />
+      </div>
       {/* 系统提示词 */}
-      <ExpandableInputTextarea
-        title="系统提示词"
-        inputFieldName="systemPrompt"
-        onExpand
-        // onOptimize
-        placeholder="系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
-      />
+      <div className="node-item-style">
+        <ExpandableInputTextarea
+          title="系统提示词"
+          inputFieldName="systemPrompt"
+          onExpand
+          // onOptimize
+          placeholder="系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
+        />
+      </div>
       {/* 用户提示词 */}
-      <ExpandableInputTextarea
-        title="用户提示词"
-        inputFieldName="userPrompt"
-        onExpand
-        placeholder="用户提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
-      />
+      <div className="node-item-style">
+        <ExpandableInputTextarea
+          title="用户提示词"
+          inputFieldName="userPrompt"
+          onExpand
+          placeholder="用户提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
+        />
+      </div>
       {/* 输出参数 */}
       <Form.Item shouldUpdate name={'outputArgs'}>
         <CustomTree
@@ -146,28 +154,34 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
         <ModelSelected form={form} />
       </Form.Item>
       {/* 输入参数 */}
-      <InputAndOut
-        title="输入"
-        fieldConfigs={outPutConfigs}
-        inputItemName={InputItemNameEnum.inputArgs}
-        form={form}
-      />
+      <div className="node-item-style">
+        <InputAndOut
+          title="输入"
+          fieldConfigs={outPutConfigs}
+          inputItemName={InputItemNameEnum.inputArgs}
+          form={form}
+        />
+      </div>
       {/* 意图匹配 */}
-      <FormList
-        title={'意图匹配'}
-        form={form}
-        field="intent"
-        hasUuid
-        showIndex
-        inputItemName={InputItemNameEnum.intentConfigs}
-      />
+      <div className="node-item-style">
+        <FormList
+          title={'意图匹配'}
+          form={form}
+          field="intent"
+          hasUuid
+          showIndex
+          inputItemName={InputItemNameEnum.intentConfigs}
+        />
+      </div>
       {/* 补充提示词 */}
-      <ExpandableInputTextarea
-        title="补充提示词"
-        inputFieldName="systemPrompt"
-        onExpand
-        placeholder="支持额外的系统提示词，如对意图选项做更详细的例子以增 强用户输出与意图匹配的成功率。"
-      />
+      <div className="node-item-style">
+        <ExpandableInputTextarea
+          title="补充提示词"
+          inputFieldName="systemPrompt"
+          onExpand
+          placeholder="支持额外的系统提示词，如对意图选项做更详细的例子以增 强用户输出与意图匹配的成功率。"
+        />
+      </div>
       {/* 输出 */}
       <Form.Item shouldUpdate>
         {() =>
@@ -237,23 +251,29 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({ form }) => {
         />
       </div>
       {/* 提问问题 */}
-      <ExpandableInputTextarea
-        title="提问问题"
-        inputFieldName="question"
-        onExpand
-        placeholder="可使用{{变量名}}的方式引用输入参数中的变量"
-      />
+      <div className="node-item-style">
+        <ExpandableInputTextarea
+          title="提问问题"
+          inputFieldName="question"
+          onExpand
+          placeholder="可使用{{变量名}}的方式引用输入参数中的变量"
+        />
+      </div>
       {/* 回答类型 */}
-      <Form.Item label="回答类型" name={'answerType'}>
-        <Radio.Group
-          onChange={(value: RadioChangeEvent) => changeType(value.target.value)}
-        >
-          <Space direction="vertical">
-            <Radio value={'TEXT'}>直接回答</Radio>
-            <Radio value={'SELECT'}>选项回答</Radio>
-          </Space>
-        </Radio.Group>
-      </Form.Item>
+      <div className="node-item-style">
+        <Form.Item label="回答类型" name={'answerType'}>
+          <Radio.Group
+            onChange={(value: RadioChangeEvent) =>
+              changeType(value.target.value)
+            }
+          >
+            <Space direction="vertical">
+              <Radio value={'TEXT'}>直接回答</Radio>
+              <Radio value={'SELECT'}>选项回答</Radio>
+            </Space>
+          </Radio.Group>
+        </Form.Item>
+      </div>
 
       {/* 输出参数 */}
       <Form.Item shouldUpdate noStyle>
@@ -308,58 +328,68 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ form }) => {
   return (
     <div>
       {/* 请求配置 */}
-      <Form.Item label="请求方法与路径">
-        <div className="dis-sb">
-          <Form.Item name="method" noStyle>
-            <Select
-              style={{ width: '30%', marginRight: '10px' }}
-              options={methodOption}
-              placeholder="请求方法"
-            />
-          </Form.Item>
-          <Form.Item name="url" noStyle>
-            <Input placeholder="请输入url地址" />
-          </Form.Item>
-        </div>
-      </Form.Item>
-      <Form.Item name="contentType" label="请求内容格式">
-        <Radio.Group className="margin-bottom" options={methodOptions} />
-      </Form.Item>
-      <Form.Item label="请求超时配置" name="timeout">
-        <Input placeholder="请输入超时配置时长"></Input>
-      </Form.Item>
+      <div className="node-item-style">
+        <Form.Item label="请求方法与路径">
+          <div className="dis-sb">
+            <Form.Item name="method" noStyle>
+              <Select
+                style={{ width: '30%', marginRight: '10px' }}
+                options={methodOption}
+                placeholder="请求方法"
+              />
+            </Form.Item>
+            <Form.Item name="url" noStyle>
+              <Input placeholder="请输入url地址" />
+            </Form.Item>
+          </div>
+        </Form.Item>
+      </div>
+      <div className="node-item-style">
+        <Form.Item name="contentType" label="请求内容格式">
+          <Radio.Group className="margin-bottom" options={methodOptions} />
+        </Form.Item>
+      </div>
+      <div className="node-item-style">
+        <Form.Item label="请求超时配置" name="timeout">
+          <Input placeholder="请输入超时配置时长"></Input>
+        </Form.Item>
+      </div>
       {/* 入参 */}
-      <div className="node-item-style has-child-node">
+      <div className="has-child-node">
         <p className="node-title-bold-style">入参</p>
-        <InputAndOut
-          title="Header"
-          fieldConfigs={outPutConfigs}
-          inputItemName={InputItemNameEnum.headers}
-          form={form}
-        />
-        <InputAndOut
-          title="Query"
-          form={form}
-          fieldConfigs={outPutConfigs}
-          inputItemName={InputItemNameEnum.queries}
-        />
-        <CustomTree
-          title={'body'}
-          form={form}
-          inputItemName="body"
-          isBody
-          params={form.getFieldValue('body') || []}
-        />
+        <div className="node-item-style">
+          <InputAndOut
+            title="Header"
+            fieldConfigs={outPutConfigs}
+            inputItemName={InputItemNameEnum.headers}
+            form={form}
+          />
+        </div>
+        <div className="node-item-style">
+          <InputAndOut
+            title="Query"
+            form={form}
+            fieldConfigs={outPutConfigs}
+            inputItemName={InputItemNameEnum.queries}
+          />
+        </div>
+        <div className="node-item-style">
+          <CustomTree
+            title={'body'}
+            form={form}
+            inputItemName="body"
+            isBody
+            params={form.getFieldValue('body') || []}
+          />
+        </div>
       </div>
       {/* 出参 */}
-      <div className="node-item-style">
-        <CustomTree
-          title={'出参'}
-          form={form}
-          inputItemName="outputArgs"
-          params={form.getFieldValue('outputArgs') || []}
-        />
-      </div>
+      <CustomTree
+        title={'出参'}
+        form={form}
+        inputItemName="outputArgs"
+        params={form.getFieldValue('outputArgs') || []}
+      />
     </div>
   );
 };

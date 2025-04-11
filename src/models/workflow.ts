@@ -8,6 +8,7 @@ const useWorkflow = () => {
   // 是否要校验当前的数据
   const [volid, setVolid] = useState<boolean>(false);
 
+  const [spaceId, setSpaceId] = useState<number>(0);
   // 当前节点是否修改了参数
   const [isModified, setIsModified] = useState(false);
 
@@ -77,6 +78,8 @@ const useWorkflow = () => {
     getLoopValue,
     isModified,
     setIsModified,
+    spaceId,
+    setSpaceId,
     // foldWrapItem,
     // setFoldWrapItem,
     // getCurrentNodeData,

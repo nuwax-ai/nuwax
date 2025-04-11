@@ -41,7 +41,7 @@ const ExpandTextArea: React.FC<
       <Form.Item name={inputFieldName}>
         <Input.TextArea
           placeholder={placeholder}
-          autoSize={{ minRows: 100, maxRows: 100 }}
+          autoSize={{ minRows: 30 }}
           className="expand-textarea-pre-style"
         />
       </Form.Item>

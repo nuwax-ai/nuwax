@@ -55,11 +55,13 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   return (
     <div className="knowledge-node">
       {/* 输入参数 */}
-      <TreeInput
-        title={'输入'}
-        form={form}
-        params={form.getFieldValue('inputArgs')}
-      />
+      <div className="node-item-style">
+        <TreeInput
+          title={'输入'}
+          form={form}
+          params={form.getFieldValue('inputArgs')}
+        />
+      </div>
 
       {/* 知识库选择 */}
       <div className="node-item-style">
@@ -85,7 +87,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
           }
         </Form.Item>
       </div>
-      <div className="knowledge-node-box">
+      <div className="knowledge-node-box node-item-style">
         <div className="dis-sb mb-16">
           <div className="knowlegenow-left-title">
             <span>搜索策略</span>
@@ -146,7 +148,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
               <InfoCircleOutlined className="margin-right-6" />
             </Popover>
           </div>
-          <Form.Item name={['matchingDegree']} noStyle>
+          <Form.Item name={'matchingDegree'} noStyle>
             <Slider
               min={0.01}
               max={0.99}

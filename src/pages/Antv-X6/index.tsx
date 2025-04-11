@@ -94,7 +94,8 @@ const Workflow: React.FC = () => {
   // 是否显示创建工作流，插件，知识库，数据库的弹窗和试运行的弹窗
   const { setTestRun } = useModel('model');
 
-  const { setReferenceList, setIsModified } = useModel('workflow');
+  const { setReferenceList, setIsModified, setSpaceId, spaceId } =
+    useModel('workflow');
   // 修改更新时间
   const changeUpdateTime = () => {
     const _time = new Date();
@@ -122,7 +123,7 @@ const Workflow: React.FC = () => {
       const _res = await service.getDetails(workflowId);
       // 获取左上角的信息
       setInfo(_res.data);
-      sessionStorage.setItem('spaceId', _res.data.spaceId.toString());
+      setSpaceId(_res.data.spaceId);
       sessionStorage.setItem('workfolwId', _res.data.id.toString());
       // 获取节点和边的数据
       const _nodeList = _res.data.nodes;
@@ -826,7 +827,7 @@ const Workflow: React.FC = () => {
         checkTag={createdItem as AgentComponentTypeEnum}
         onAdded={onAdded}
         targetId={info?.id}
-        spaceId={info?.spaceId || 0}
+        spaceId={spaceId}
         open={open}
         onCancel={() => setOpen(false)}
       />

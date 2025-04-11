@@ -43,15 +43,17 @@ const StartNode: React.FC<NodeDisposeProps> = ({ form }) => {
 const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({ form }) => {
   return (
     <>
-      <InputAndOut
-        title="输入"
-        fieldConfigs={outPutConfigs}
-        inputItemName={InputItemNameEnum.inputArgs}
-        form={form}
-        disabledAdd
-        disabledDelete
-        disabledInput
-      />
+      <div className="node-item-style">
+        <InputAndOut
+          title="输入"
+          fieldConfigs={outPutConfigs}
+          inputItemName={InputItemNameEnum.inputArgs}
+          form={form}
+          disabledAdd
+          disabledDelete
+          disabledInput
+        />
+      </div>
       <Form.Item shouldUpdate>
         {() =>
           form.getFieldValue('outputArgs') && (
@@ -85,13 +87,21 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
           </Form.Item>
         </div>
       )}
-      <InputAndOut
-        title="输出变量"
-        form={form}
-        fieldConfigs={outPutConfigs}
-        showCopy={true}
-        inputItemName={InputItemNameEnum.outputArgs}
-      />
+      <div
+        className={
+          form.getFieldValue('returnType') !== 'VARIABLE'
+            ? 'node-item-style'
+            : ''
+        }
+      >
+        <InputAndOut
+          title="输出变量"
+          form={form}
+          fieldConfigs={outPutConfigs}
+          showCopy={true}
+          inputItemName={InputItemNameEnum.outputArgs}
+        />
+      </div>
 
       <Form.Item shouldUpdate>
         {() =>
@@ -119,7 +129,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
 const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
   return (
     <div>
-      <div>
+      <div className="node-item-style">
         <span className="node-title-style margin-bottom">循环设置</span>
         <Form.Item name={'loopType'}>
           <Select
@@ -140,7 +150,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
           const loopType = form.getFieldValue('loopType');
           if (loopType === 'SPECIFY_TIMES_LOOP') {
             return (
-              <div>
+              <div className="node-item-style">
                 <div className="node-title-style margin-bottom">循环次数</div>
                 <Form.Item name="loopTimes">
                   <InputNumber
@@ -152,25 +162,28 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
             );
           } else if (loopType === 'ARRAY_LOOP') {
             return (
-              <InputAndOut
-                title="循环数组"
-                fieldConfigs={outPutConfigs}
-                inputItemName={InputItemNameEnum.inputArgs}
-                form={form}
-              />
+              <div className="node-item-style">
+                <InputAndOut
+                  title="循环数组"
+                  fieldConfigs={outPutConfigs}
+                  inputItemName={InputItemNameEnum.inputArgs}
+                  form={form}
+                />
+              </div>
             );
           }
           return null;
         }}
       </Form.Item>
-
-      <InputAndOut
-        title="中间变量"
-        fieldConfigs={outPutConfigs}
-        inputItemName={InputItemNameEnum.variableArgs}
-        form={form}
-        isVariable
-      />
+      <div className="node-item-style">
+        <InputAndOut
+          title="中间变量"
+          fieldConfigs={outPutConfigs}
+          inputItemName={InputItemNameEnum.variableArgs}
+          form={form}
+          isVariable
+        />
+      </div>
 
       <InputAndOut
         title="输出"
@@ -201,12 +214,14 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
       <Form.Item shouldUpdate noStyle>
         {() =>
           form.getFieldValue('configType') === 'SET_VARIABLE' ? (
-            <InputAndOut
-              title={'设置变量'}
-              fieldConfigs={outPutConfigs}
-              inputItemName={InputItemNameEnum.inputArgs}
-              form={form}
-            />
+            <div className="node-item-style">
+              <InputAndOut
+                title={'设置变量'}
+                fieldConfigs={outPutConfigs}
+                inputItemName={InputItemNameEnum.inputArgs}
+                form={form}
+              />
+            </div>
           ) : null
         }
       </Form.Item>
@@ -224,7 +239,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
       </Form.Item>
       <Form.Item shouldUpdate noStyle>
         {() =>
-          form.getFieldValue('outputArgs') && (
+          form.getFieldValue('configType') === 'SET_VARIABLE' ? (
             <>
               <div className="node-title-style margin-bottom">输出</div>
               <TreeOutput
@@ -236,7 +251,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
                 ]}
               />
             </>
-          )
+          ) : null
         }
       </Form.Item>
     </>
@@ -301,17 +316,18 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
           }
         />
       </Form.Item>
-
-      <InputAndOut
-        title="输入"
-        fieldConfigs={outPutConfigs}
-        inputItemName={InputItemNameEnum.inputArgs}
-        form={form}
-      />
+      <div className="node-item-style">
+        <InputAndOut
+          title="输入"
+          fieldConfigs={outPutConfigs}
+          inputItemName={InputItemNameEnum.inputArgs}
+          form={form}
+        />
+      </div>
       <Form.Item shouldUpdate noStyle>
         {() =>
           form.getFieldValue('textHandleType') === 'CONCAT' ? (
-            <>
+            <div className="node-item-style">
               <div className="dis-sb margin-bottom">
                 <span className="node-title-style">字符串拼接</span>
                 <Popover
@@ -379,14 +395,14 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
                   autoSize={{ minRows: 3, maxRows: 5 }}
                 />
               </Form.Item>
-            </>
+            </div>
           ) : null
         }
       </Form.Item>
       <Form.Item shouldUpdate noStyle>
         {() =>
           form.getFieldValue('textHandleType') === 'SPLIT' ? (
-            <>
+            <div className="node-item-style">
               <span className="node-title-style">分隔符</span>
               <Form.Item name="splits">
                 <Select
@@ -432,7 +448,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
                   options={options}
                 ></Select>
               </Form.Item>
-            </>
+            </div>
           ) : null
         }
       </Form.Item>
@@ -463,52 +479,54 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ form }) => {
 
   return (
     <>
-      <InputAndOut
-        title="输入"
-        fieldConfigs={outPutConfigs}
-        inputItemName={InputItemNameEnum.inputArgs}
-        form={form}
-      />
-      <Form.Item
-        noStyle
-        name={
-          form.getFieldValue('codeLanguage') === 'JavaScript'
-            ? 'codeJavaScript'
-            : 'codePython'
-        }
-      >
-        <>
-          <div className="dis-sb margin-bottom">
-            <span className="node-title-style ">代码</span>
-            <ExpandAltOutlined onClick={() => setShow(true)} />
-          </div>
-          <CodeEditor
-            value={form.getFieldValue(
-              form.getFieldValue('codeLanguage') === 'JavaScript'
-                ? 'codeJavaScript'
-                : 'codePython',
-            )}
-            onChange={(value) => {
-              form.setFieldValue(
+      <div className="node-item-style">
+        <InputAndOut
+          title="输入"
+          fieldConfigs={outPutConfigs}
+          inputItemName={InputItemNameEnum.inputArgs}
+          form={form}
+        />
+      </div>
+      <div className="node-item-style">
+        <Form.Item
+          noStyle
+          name={
+            form.getFieldValue('codeLanguage') === 'JavaScript'
+              ? 'codeJavaScript'
+              : 'codePython'
+          }
+        >
+          <div>
+            <div className="dis-sb margin-bottom">
+              <span className="node-title-style ">代码</span>
+              <ExpandAltOutlined onClick={() => setShow(true)} />
+            </div>
+            <CodeEditor
+              value={form.getFieldValue(
                 form.getFieldValue('codeLanguage') === 'JavaScript'
                   ? 'codeJavaScript'
                   : 'codePython',
-                value,
-              );
-            }}
-            codeLanguage={form.getFieldValue('codeLanguage') || 'JavaScript'}
-            height="180px"
-          />
-        </>
-      </Form.Item>
-      <p style={{ height: '10px' }}></p>
+              )}
+              onChange={(value) => {
+                form.setFieldValue(
+                  form.getFieldValue('codeLanguage') === 'JavaScript'
+                    ? 'codeJavaScript'
+                    : 'codePython',
+                  value,
+                );
+              }}
+              codeLanguage={form.getFieldValue('codeLanguage') || 'JavaScript'}
+              height="180px"
+            />
+          </div>
+        </Form.Item>
+      </div>
       <CustomTree
         title={'输出'}
         params={form.getFieldValue('outputArgs') || []} // 改为直接读取表单最新值
         form={form}
         inputItemName={'outputArgs'}
       />
-
       <Monaco form={form} isShow={show} close={() => setShow(false)} />
     </>
   );

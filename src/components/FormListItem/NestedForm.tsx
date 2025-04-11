@@ -363,21 +363,11 @@ const CustomTree: React.FC<TreeFormProps> = ({
       </div>
 
       {treeData && treeData.length > 0 && (
-        <div
-          className={`${
-            treeData.find((item) => item.subArgs && item.subArgs.length > 0)
-              ? 'ml-34'
-              : 'ml-10'
-          } dis-left font-12 mb-6 font-color-gray07`}
-        >
-          <span>变量名</span>
+        <div className={'dis-left font-12 mb-6 font-color-gray07'}>
+          <span className="flex-1 ml-10">变量名</span>
           <span
             style={{
-              marginLeft: `${
-                treeData.find((item) => item.subArgs && item.subArgs.length > 0)
-                  ? '35%'
-                  : '40%'
-              }`,
+              width: 80 + (showCheck ? 66 : 50),
             }}
           >
             变量类型

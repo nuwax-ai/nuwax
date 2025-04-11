@@ -13,13 +13,13 @@ const PluginInNode: React.FC<NodeDisposeProps> = ({ form }) => {
       <Form.Item shouldUpdate>
         {() =>
           form.getFieldValue('inputArgs') && (
-            <>
+            <div className="node-item-style">
               <TreeInput
                 form={form}
                 title={'输入'}
                 params={form.getFieldValue('inputArgs')}
               />
-            </>
+            </div>
           )
         }
       </Form.Item>
