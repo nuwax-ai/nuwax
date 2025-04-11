@@ -65,7 +65,7 @@ const SystemSection: React.FC = () => {
             onClick={() => handlerApplication(item.type)}
             className={cx(
               styles.row,
-              'hover-box',
+              'hover-deep',
               'flex',
               'items-center',
               'cursor-pointer',

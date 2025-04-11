@@ -56,7 +56,7 @@ const Header: React.FC = () => {
           'content-center',
           'items-center',
           'cursor-pointer',
-          'hover-box',
+          'hover-deep',
         )}
         onClick={handlerClick}
       >

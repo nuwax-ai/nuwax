@@ -1,5 +1,5 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { DOCUMENT_URL } from '@/constants/common.constants';
+import { DOCUMENT_URL, SITE_DOCUMENT_URL } from '@/constants/common.constants';
 import { SPACE_ID } from '@/constants/home.constants';
 import SystemSection from '@/layouts/MenusLayout/SystemSection';
 import { apiPublishedCategoryList } from '@/services/square';
@@ -28,7 +28,7 @@ const cx = classNames.bind(styles);
  */
 const MenusLayout: React.FC = () => {
   const location = useLocation();
-  const { setOpenHistoryModal, setOpenMessage } = useModel('layout');
+  const { setOpenMessage } = useModel('layout');
   const { currentSpaceInfo, runSpace, setSpaceList, setPersonalSpaceInfo } =
     useModel('spaceModel');
   const { setAgentInfoList, setPluginInfoList } = useModel('squareModel');
@@ -134,12 +134,8 @@ const MenusLayout: React.FC = () => {
   // 用户区域操作
   const handleUserClick = useCallback((type: UserOperatorAreaEnum) => {
     switch (type) {
-      // case UserOperatorAreaEnum.Document:
-      //   window.open(DOCUMENT_URL);
-      //   break;
-      // 会话记录
-      case UserOperatorAreaEnum.History_Conversation:
-        setOpenHistoryModal(true);
+      case UserOperatorAreaEnum.Document:
+        window.open(SITE_DOCUMENT_URL);
         break;
       case UserOperatorAreaEnum.Message:
         setOpenMessage(true);
@@ -169,7 +165,6 @@ const MenusLayout: React.FC = () => {
           'flex',
           'flex-col',
           'items-center',
-          'px-6',
           'py-16',
         )}
       >

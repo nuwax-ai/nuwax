@@ -1,0 +1,62 @@
+@import '@/styles/color';
+
+.container {
+  gap: 10px;
+  width: 100%;
+  height: 104px;
+  padding: 12px;
+  background-color: @BLANK12;
+  border-radius: 12px;
+  transition: background-color 0.3s;
+  cursor: pointer;
+
+  &:hover {
+    background-color: @BLANK30;
+
+    .icon-box {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+
+  .img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .info-box {
+    gap: 6px;
+
+    h3 {
+      font-size: 16px;
+    }
+
+    .desc {
+      color: @BLANK31;
+      font-size: 14px;
+    }
+
+    .source {
+      color: @GRAY05;
+      font-size: 12px;
+    }
+  }
+
+  .icon-box {
+    width: 22px;
+    height: 22px;
+    margin-inline-start: 6px;
+    border-radius: 6px;
+    background-color: @BLANK18;
+    color: @BLANK05;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s;
+
+    &.collected {
+      color: @YELLOW01;
+    }
+  }
+}

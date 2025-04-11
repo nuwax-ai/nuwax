@@ -1,4 +1,4 @@
-import squareImage from '@/assets/images/square_image.png';
+import squareBannerImage from '@/assets/images/square_banner_image.png';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import {
   apiPublishedAgentList,
@@ -116,7 +116,7 @@ const Square: React.FC = () => {
       <header className={cx(styles.header, 'relative')} onClick={handleLink}>
         <img
           className={'absolute'}
-          src={configInfo?.squareBanner || (squareImage as string)}
+          src={configInfo?.squareBanner || (squareBannerImage as string)}
           alt=""
         />
         <div className={cx(styles['cover-box'], 'h-full', 'relative')}>

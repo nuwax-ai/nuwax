@@ -1,39 +1,88 @@
 @import '@/styles/color';
 
 .container {
-  padding-top: 160px;
+  height: 100%;
+  padding-top: 40px;
 
   .title {
-    font-size: 36px;
+    font-size: 24px;
     font-weight: bold;
     color: @BLANK04;
   }
 
-  .tips {
-    margin-top: 30px;
-    font-size: 24px;
-    color: @GRAY05;
-  }
-
   .textarea {
-    width: 600px;
-    margin-top: 60px;
+    width: 780px;
+    margin-top: 45px;
   }
 
   .recommend {
-    width: 600px;
+    width: 780px;
     padding: 30px 0;
-    gap: 30px;
+    gap: 20px;
 
     .recommend-item {
-      line-height: 32px;
-      padding: 0 16px;
+      line-height: 36px;
+      padding: 0 20px;
       border-radius: 10px;
       box-sizing: border-box;
-      border: 1px solid @GRAY04;
+      border: 1px solid @GRAY17;
       font-size: 14px;
-      font-weight: normal;
       color: @BLANK04;
+      background-color: @WHITE;
+    }
+  }
+
+  .wrapper {
+    width: 780px;
+    border-radius: 10px;
+    padding: 20px;
+    background: @WHITE;
+
+    .tabs {
+      position: sticky;
+      overflow-x: auto;
+      height: 60px;
+      border-bottom: 1px solid @GRAY01;
+
+      .item {
+        display: inline-block;
+        padding: 16px 10px;
+        cursor: pointer;
+        color: @BLANK10;
+        transition: color 0.2s ease;
+        position: relative;
+
+        &.active {
+          color: @BLANK31;
+
+          &::after {
+            content: '';
+            display: block;
+            width: 24px;
+            height: 2px;
+            border-radius: 17px;
+            position: absolute;
+            background-color: @BLANK03;
+            left: 50%;
+            top: 57px;
+            transform: translateX(-12px);
+            animation: lineShow-7bff7df1 0.2s ease 1 alternate;
+            z-index: 99;
+          }
+        }
+      }
+    }
+
+    .category-name {
+      margin: 30px 0 16px;
+      color: @BLANK31;
+      font-size: 16px;
+    }
+
+    .category-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
     }
   }
 }

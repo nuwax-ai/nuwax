@@ -1,12 +1,14 @@
-import {
-  ICON_BOOK,
-  ICON_HISTORY,
-  ICON_HOME,
-  ICON_NOTIFICATION,
-  ICON_SETTING,
-  ICON_SQUARE,
-  ICON_WORKSPACE,
-} from '@/constants/images.constants';
+import homeImage from '@/assets/images/home_image.png';
+import homeImageActive from '@/assets/images/home_image_active.png';
+import squareImage from '@/assets/images/square_image.png';
+import squareImageActive from '@/assets/images/square_image_active.png';
+import systemImage from '@/assets/images/system_image.png';
+import systemImageActive from '@/assets/images/system_image_active.png';
+import teachMaterialImage from '@/assets/images/teach_material.png';
+import teachMaterialImageActive from '@/assets/images/teach_material_active.png';
+import workflowImage from '@/assets/images/workspace_image.png';
+import workflowImageActive from '@/assets/images/workspace_image_active.png';
+import { ICON_FILE, ICON_NOTIFICATION } from '@/constants/images.constants';
 import {
   MessageReadStatusEnum,
   SettingActionEnum,
@@ -23,27 +25,32 @@ import {
 // tabs
 export const TABS = [
   {
-    icon: <ICON_HOME />,
+    icon: homeImage,
+    iconActive: homeImageActive,
     text: '主页',
     type: TabsEnum.Home,
   },
   {
-    icon: <ICON_WORKSPACE />,
+    icon: workflowImage,
+    iconActive: workflowImageActive,
     text: '工作空间',
     type: TabsEnum.Space,
   },
   {
-    icon: <ICON_SQUARE />,
+    icon: squareImage,
+    iconActive: squareImageActive,
     text: '广场',
     type: TabsEnum.Square,
   },
   {
-    icon: <ICON_BOOK />,
+    icon: teachMaterialImage,
+    iconActive: teachMaterialImageActive,
     text: '教材体系',
     type: TabsEnum.Course_System,
   },
   {
-    icon: <ICON_SETTING />,
+    icon: systemImage,
+    iconActive: systemImageActive,
     text: '系统管理',
     type: TabsEnum.System_Manage,
   },
@@ -51,15 +58,10 @@ export const TABS = [
 
 // 用户操作区域
 export const USER_OPERATE_AREA = [
-  // {
-  //   title: '文档',
-  //   icon: <ICON_FILE />,
-  //   type: UserOperatorAreaEnum.Document,
-  // },
   {
-    title: '历史会话',
-    icon: <ICON_HISTORY />,
-    type: UserOperatorAreaEnum.History_Conversation,
+    title: '文档',
+    icon: <ICON_FILE />,
+    type: UserOperatorAreaEnum.Document,
   },
   {
     title: '消息',

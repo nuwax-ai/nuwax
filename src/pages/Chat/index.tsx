@@ -1,5 +1,5 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
-import ChatInput from '@/components/ChatInput';
+import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
 import { MessageTypeEnum } from '@/types/enums/agent';
@@ -134,7 +134,7 @@ const Chat: React.FC = () => {
           )}
         </div>
         {/*会话输入框*/}
-        <ChatInput
+        <ChatInputHome
           className={cx(styles['chat-input'])}
           onEnter={handleMessageSend}
         />

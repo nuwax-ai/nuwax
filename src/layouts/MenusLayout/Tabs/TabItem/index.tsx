@@ -9,6 +9,7 @@ const TabItem: React.FC<TabItemProps> = ({
   active,
   type,
   icon,
+  iconActive,
   text,
   onClick,
 }) => {
@@ -20,17 +21,12 @@ const TabItem: React.FC<TabItemProps> = ({
         'flex-col',
         'items-center',
         'content-center',
-        'hover-box',
         'cursor-pointer',
         styles.box,
         { [styles.active]: active },
       )}
     >
-      <span
-        className={cx(styles.icon, 'flex', 'items-center', 'content-center')}
-      >
-        {icon}
-      </span>
+      <img src={active ? iconActive : icon} alt="" />
       <span className={cx(styles.text)}>{text}</span>
     </div>
   );

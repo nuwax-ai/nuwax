@@ -1,22 +1,29 @@
 @import '@/styles/color';
 
 .box {
-  width: 60px;
-  height: 48px;
+  height: 65px;
   margin-top: 8px;
+  color: @BLANK17;
+  border-right: 1px solid transparent;
+  transition: background-color 0.3s;
 
-  &.active {
-    background: @WHITE03;
+  &:hover {
+    background-color: @WHITE18;
   }
 
-  .icon {
+  &.active {
+    background-color: @WHITE18;
+    border-color: @BLUE10;
+    color: @BLUE07;
+  }
+
+  .img {
     width: 20px;
     height: 20px;
   }
 
   .text {
     margin-top: 4px;
-    color: @BLANK03;
     font-size: 12px;
     transform: scale(0.85);
   }
