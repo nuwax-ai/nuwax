@@ -2,7 +2,11 @@ import FoldWrap from '@/components/FoldWrap';
 import OtherOperations from '@/components/OtherAction';
 import { testRunList } from '@/constants/node.constants';
 import { ChildNode } from '@/types/interfaces/graph';
-import { NodeConfig, NodeDrawerProps } from '@/types/interfaces/node';
+import {
+  NodeConfig,
+  NodeDrawerProps,
+  NodeDrawerRef,
+} from '@/types/interfaces/node';
 import { changeNodeConfig } from '@/utils/updateNode';
 import { returnImg } from '@/utils/workflow';
 import { Form, FormInstance } from 'antd';
@@ -56,7 +60,7 @@ const NodeDrawer = (
     handleNodeChange,
     foldWrapItem,
   }: NodeDrawerProps,
-  ref: React.ForwardedRef<{ getFormValues: () => NodeConfig }>,
+  ref: React.ForwardedRef<NodeDrawerRef>,
 ) => {
   // 当前节点是否修改了参数
   const { isModified, setIsModified } = useModel('workflow');
@@ -73,6 +77,8 @@ const NodeDrawer = (
 
   // form表单校验完毕后提交数据
   const onFinish = () => {
+    console.log('我被父组件出发啦');
+    if (!isModified) return; // 如果未修改，直接返回
     const values = form.getFieldsValue(true);
     let newNodeConfig;
     if (
@@ -101,6 +107,7 @@ const NodeDrawer = (
       };
     }
     onGetNodeConfig(newNodeConfig);
+    setIsModified(false);
   };
 
   // 修改节点的名称和描述
@@ -175,7 +182,8 @@ const NodeDrawer = (
   // 定义关闭逻辑，确保不会因 onGetNodeConfig 调用而陷入循环
   const handleClose = () => {
     if (isModified) {
-      onGetNodeConfig(currentNodeConfig);
+      onFinish(); // 直接调用 onFinish
+      setIsModified(false);
     }
     onClose();
   };
@@ -183,7 +191,10 @@ const NodeDrawer = (
   // 重命名，试运行等操作
   const handleChangeNode = (val: string) => {
     if (val === 'TestRun') {
-      onGetNodeConfig(currentNodeConfig, true);
+      if (isModified) {
+        onFinish(); // 直接调用 onFinish
+        setIsModified(false);
+      }
     } else if (val === 'Rename') {
       // 这里要触发展开input
       setShowNameInput(true);
@@ -195,19 +206,20 @@ const NodeDrawer = (
 
   useImperativeHandle(ref, () => ({
     getFormValues: () => form.getFieldsValue(true),
+    onFinish,
   }));
 
   // 新增定时器逻辑
   useEffect(() => {
     // 清除已有定时器
     if (timerRef.current) {
-      clearInterval(timerRef.current);
+      clearTimeout(timerRef.current);
     }
 
     // 创建新定时器
-    timerRef.current = setInterval(() => {
+    timerRef.current = setTimeout(() => {
       if (isModified) {
-        form.submit();
+        onFinish(); // 直接调用 onFinish
         setIsModified(false); // 重置修改状态
       }
     }, 3000);
@@ -215,15 +227,16 @@ const NodeDrawer = (
     // 清理函数
     return () => {
       if (timerRef.current) {
-        clearInterval(timerRef.current);
+        console.log(isModified, '清除定时器');
+        clearTimeout(timerRef.current);
       }
     };
-  }, [visible, currentNodeConfig, isModified]);
+  }, [isModified]);
 
   useEffect(() => {
     // 当 foldWrapItem.id 改变时，重新设置 currentNodeConfig
     if (!visible && isModified) {
-      form.submit();
+      onFinish(); // 直接调用 onFinish
       setIsModified(false);
     }
   }, [visible]);

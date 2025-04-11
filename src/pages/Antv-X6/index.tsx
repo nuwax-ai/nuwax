@@ -14,7 +14,7 @@ import { NodeTypeEnum } from '@/types/enums/common';
 import { WorkflowModeEnum } from '@/types/enums/library';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
-import { NodeConfig, TestRunparams } from '@/types/interfaces/node';
+import { NodeDrawerRef, TestRunparams } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { updateNode } from '@/utils/updateNode';
@@ -90,7 +90,7 @@ const Workflow: React.FC = () => {
   });
   // 画布的ref
   const graphRef = useRef<any>(null);
-  const nodeDrawerRef = useRef<{ getFormValues: () => NodeConfig }>(null);
+  const nodeDrawerRef = useRef<NodeDrawerRef>(null);
   // 是否显示创建工作流，插件，知识库，数据库的弹窗和试运行的弹窗
   const { setTestRun } = useModel('model');
 
@@ -236,10 +236,13 @@ const Workflow: React.FC = () => {
         };
       }
     }
-
     // setIsUpdate(true)
-    graphRef.current.updateNode(params.id, params);
     const _res = await updateNode(params);
+    if (graphRef.current) {
+      graphRef.current.updateNode(params.id, params);
+    } else {
+      return;
+    }
     if (_res.code === Constant.success) {
       if (update) {
         if (typeof update === 'string' && update !== 'moved') {
@@ -786,6 +789,7 @@ const Workflow: React.FC = () => {
   // 保存当前画布中节点的位置
   useEffect(() => {
     getDetails();
+    setIsModified(false); // 重置修改状态
   }, []);
 
   return (
