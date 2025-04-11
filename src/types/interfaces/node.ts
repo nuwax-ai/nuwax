@@ -213,3 +213,9 @@ export interface NodePreviousAndArgMap {
   innerPreviousNodes: PreviousList[];
   argMap: ArgMap;
 }
+
+export interface NodeDrawerRef {
+  // 新增节点
+  getFormValues: () => NodeConfig;
+  onFinish: () => void;
+}

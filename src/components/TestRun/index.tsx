@@ -189,7 +189,7 @@ const TestRun: React.FC<TestRunProps> = ({
                   ></Input>
                 ))}
                 <p className="collapse-title-style dis-left">输出</p>
-                <pre className="result-style">{testRunResult}</pre>
+                <pre className="result-style overflow-y">{testRunResult}</pre>
               </>
             ),
           },
@@ -230,7 +230,7 @@ const TestRun: React.FC<TestRunProps> = ({
       }}
     >
       {/* 根据testRun来控制当前组件的状态 */}
-      <div className="test-content-style dis-col overflow-y">
+      <div className="test-content-style dis-col ">
         {/* 试运行的头部 */}
         <div className="test-run-header dis-sb">
           <span>试运行</span>
@@ -245,7 +245,7 @@ const TestRun: React.FC<TestRunProps> = ({
         {/* 试运行的内容 */}
         {!stopWait && (
           <>
-            <div className="collapse-item-style flex-1">
+            <div className="collapse-item-style flex-1 ">
               <Collapse
                 items={items}
                 ghost
@@ -281,7 +281,7 @@ const TestRun: React.FC<TestRunProps> = ({
           </>
         )}
         {stopWait && (
-          <div className="stop-wait-style dis-col flex-1">
+          <div className="stop-wait-style dis-col flex-1 overflow-y">
             {/* 头部 */}
             <div className="stop-wait-header dis-center">
               {returnImg('QA')}
