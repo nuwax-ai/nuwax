@@ -1,0 +1,53 @@
+@import '@/styles/color';
+
+.container {
+  gap: 4px;
+  padding: 10px 16px;
+  border-radius: 20px;
+  background: @WHITE;
+  box-sizing: border-box;
+  box-shadow: 0 1px 5px 0 @BLANK29;
+  transition: box-shadow 0.3s;
+
+  .input {
+    border: none;
+    background-color: transparent;
+  }
+
+  :global {
+    .ant-input:focus {
+      border: none;
+      box-shadow: none;
+    }
+  }
+
+  .box {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+
+    &.plus-box {
+      background-color: @WHITE;
+      border: 1px solid @WHITE15;
+      color: @GRAY16;
+      font-size: 12px;
+      transition: background-color ease-in-out 0.2s;
+
+      &:hover {
+        background-color: @WHITE01;
+      }
+    }
+
+    &.send-box {
+      background-color: @BLANK;
+      color: @WHITE;
+      font-size: 16px;
+      transition: background-color ease-in-out 0.2s;
+
+      &.disabled {
+        cursor: not-allowed;
+        background-color: @GRAY06;
+      }
+    }
+  }
+}

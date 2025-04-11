@@ -1,10 +1,13 @@
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { DataTypeEnum } from '@/types/enums/common';
 import type { OpenCloseEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
   AgentComponentInfo,
   AgentConfigInfo,
+  AgentStatisticsInfo,
   BindConfigWithSub,
+  CreatorInfo,
   TriggerTimeZone,
 } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
@@ -181,4 +184,29 @@ export interface CreateVariablesProps {
   variablesInfo: AgentComponentInfo;
   onCancel: () => void;
   onConfirm: () => void;
+}
+
+// 智能体分类信息
+export interface CategoryInfo {
+  name: string;
+  type: string;
+}
+
+export interface CategoryItemInfo {
+  targetType: AgentComponentTypeEnum;
+  targetId: number;
+  name: string;
+  description: string;
+  icon: string;
+  statistics: AgentStatisticsInfo;
+  publishUser: CreatorInfo;
+  collect: boolean;
+}
+
+// 主页智能体分类列表
+export interface HomeAgentCategoryInfo {
+  // 首页分类
+  categories: CategoryInfo[];
+  // 首页分类数据列表
+  categoryItems: unknown;
 }

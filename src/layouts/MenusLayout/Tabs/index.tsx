@@ -27,20 +27,13 @@ const Tabs: React.FC<TabsType> = ({ onClick }) => {
   };
 
   return (
-    <div className={classNames('flex-1', 'overflow-y')}>
+    <div className={classNames('flex-1', 'overflow-y', 'w-full')}>
       {TABS.map((item, index) => {
-        if (item.type === TabsEnum.System_Manage) {
-          // 管理员
-          if (userInfo?.role === RoleEnum.Admin) {
-            return (
-              <TabItem
-                key={index}
-                {...item}
-                onClick={() => onClick(item.type)}
-                active={handleActive(item.type)}
-              />
-            );
-          }
+        // 管理员
+        if (
+          item.type === TabsEnum.System_Manage &&
+          userInfo?.role !== RoleEnum.Admin
+        ) {
           return null;
         }
         return (

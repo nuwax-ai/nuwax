@@ -34,7 +34,8 @@ export interface TabsType {
 export interface TabItemProps {
   active: boolean;
   type: TabsEnum;
-  icon: React.ReactNode;
+  icon: string;
+  iconActive: string;
   text: string;
   onClick: (type: TabsEnum) => void;
 }

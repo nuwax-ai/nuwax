@@ -23,7 +23,7 @@ const UserRelAgent: React.FC<UserRelAgentProps> = ({
         'flex',
         'items-center',
         'cursor-pointer',
-        'hover-box',
+        'hover-deep',
       )}
     >
       <img src={icon || (agentImage as string)} alt="" />

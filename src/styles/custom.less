@@ -216,6 +216,17 @@ each(range(2, 3, 1), {
   }
 }
 
+.hover-deep {
+  border-radius: 6px;
+  border-width: 0;
+  background-color: transparent;
+  transition: background-color ease-in-out 0.2s;
+
+  &:hover {
+    background-color: @WHITE18;
+  }
+}
+
 // felx 布局
 // 两端对齐且居中
 .dis-sb {

@@ -22,7 +22,7 @@ const HistoryConversation: React.FC = () => {
   );
 
   // 查询历史会话记录
-  const { run, loading } = useRequest(apiAgentConversationList, {
+  const { run: runHistory, loading } = useRequest(apiAgentConversationList, {
     manual: true,
     debounceInterval: 500,
     onSuccess: (result: ConversationInfo[]) => {
@@ -32,7 +32,7 @@ const HistoryConversation: React.FC = () => {
 
   useEffect(() => {
     if (openHistoryModal) {
-      run({
+      runHistory({
         agentId: null,
       });
     }

@@ -17,7 +17,7 @@ const SquareMenuItem: React.FC<SquareMenuItemProps> = ({
 }) => {
   return (
     <div
-      className={cx('flex', 'items-center', styles.row, {
+      className={cx('flex', 'items-center', styles.row, 'hover-deep', {
         [styles.active]: isActive,
       })}
       onClick={onClick}

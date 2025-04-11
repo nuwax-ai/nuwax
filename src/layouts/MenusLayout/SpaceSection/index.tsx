@@ -98,7 +98,7 @@ const SpaceSection: React.FC = () => {
               onClick={() => handlerApplication(item.type)}
               className={cx(
                 styles['space-item'],
-                'hover-box',
+                'hover-deep',
                 'flex',
                 'items-center',
                 'cursor-pointer',

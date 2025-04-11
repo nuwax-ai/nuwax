@@ -1,4 +1,5 @@
 import type { AgentInfo } from '@/types/interfaces/agent';
+import type { HomeAgentCategoryInfo } from '@/types/interfaces/agentConfig';
 import type { ListParams, PageParams } from '@/types/interfaces/common';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
@@ -93,6 +94,15 @@ export async function apiUserCollectAgentList(
 ): Promise<RequestResponse<AgentInfo[]>> {
   const { page, size } = params;
   return request(`/api/user/agent/collect/list/${page}/${size}`, {
+    method: 'GET',
+  });
+}
+
+// 主页智能体列表接口 - 数据列表查询
+export async function apiHomeCategoryList(): Promise<
+  RequestResponse<HomeAgentCategoryInfo>
+> {
+  return request('/api/home/list', {
     method: 'GET',
   });
 }

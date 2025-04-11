@@ -407,7 +407,7 @@ const SpacePluginCloudTool: React.FC = () => {
             <CodeEditor
               value={code}
               height={'100%'}
-              changeCode={setCode}
+              onChange={setCode}
               codeLanguage={pluginInfo?.config?.codeLang}
             />
           </div>

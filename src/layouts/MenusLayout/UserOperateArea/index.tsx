@@ -75,7 +75,7 @@ const UserOperateArea: React.FC<UserOperateAreaType> = ({ onClick }) => {
           'flex',
           'content-center',
           'items-center',
-          'hover-box',
+          'hover-deep',
           'cursor-pointer',
         )}
         onClick={() => onClick(item.type)}

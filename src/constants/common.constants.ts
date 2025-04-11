@@ -14,6 +14,10 @@ export const CONVERSATION_CONNECTION_URL = `${process.env.BASE_URL}/api/agent/co
 // 文档地址
 export const DOCUMENT_URL = 'https://nlp-book.swufenlp.group';
 
+// 平台文档地址
+export const SITE_DOCUMENT_URL =
+  'https://ucn1y31fvbx4.feishu.cn/docx/SUhtdYsyboh9xrxr5EZcX9jqnxg';
+
 // 可上传文件后缀类型：doc docx pdf md json txt
 export const UPLOAD_FILE_SUFFIX = ['doc', 'docx', 'pdf', 'md', 'json', 'txt'];
 

@@ -1,13 +1,12 @@
-import sendImage from '@/assets/images/send_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
-import { ClearOutlined, PlusCircleOutlined } from '@ant-design/icons';
+import { ArrowUpOutlined, PlusOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import { Input, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import ChatUploadFile from './ChatUploadFile';
 import styles from './index.less';
 
@@ -16,19 +15,22 @@ const cx = classNames.bind(styles);
 /**
  * 聊天输入组件
  */
-const ChatInput: React.FC<ChatInputProps> = ({
-  className,
-  disabled = false,
-  onClear,
-  onEnter,
-}) => {
+const ChatInput: React.FC<ChatInputProps> = ({ className, onEnter }) => {
   // 文档
   const [files, setFiles] = useState<UploadFileInfo[]>([]);
   const [message, setMessage] = useState<string>('');
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
+  // 发送按钮disabled
+  const disabledSend = useMemo(() => {
+    return !message && !files?.length;
+  }, [message, files]);
+
   // 点击发送事件
   const handleSendMessage = () => {
+    if (disabledSend) {
+      return;
+    }
     if (message || files?.length > 0) {
       // enter事件
       onEnter(message, files);
@@ -81,89 +83,63 @@ const ChatInput: React.FC<ChatInputProps> = ({
     setFiles(_files);
   };
 
-  const handleClear = () => {
-    if (disabled) {
-      return;
-    }
-    onClear?.();
-  };
-
   return (
-    <div className={cx(styles.footer, 'flex', 'items-center', className)}>
-      <ConditionRender condition={!!onClear}>
-        <Tooltip title="清空会话记录">
+    <div className={cx(styles.container, 'flex', 'flex-col', className)}>
+      {/*文件列表*/}
+      <ConditionRender condition={files?.length}>
+        <ChatUploadFile files={files} onDel={handleDelFile} />
+      </ConditionRender>
+      {/*输入框*/}
+      <Input.TextArea
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        rootClassName={cx(styles.input, 'flex-1')}
+        onPressEnter={handlePressEnter}
+        placeholder="直接输入指令；可通过回车发送"
+        autoSize={{ minRows: 1, maxRows: 3 }}
+      />
+      <div className={cx('flex', 'content-between')}>
+        {/*上传按钮*/}
+        <Upload
+          action={UPLOAD_FILE_ACTION}
+          onChange={handleChange}
+          headers={{
+            Authorization: token ? `Bearer ${token}` : '',
+          }}
+          data={{
+            type: 'tmp',
+          }}
+          showUploadList={false}
+        >
           <span
             className={cx(
-              styles.clear,
               'flex',
               'items-center',
               'content-center',
-              'hover-box',
               'cursor-pointer',
-              { [styles.disabled]: disabled },
+              styles.box,
+              styles['plus-box'],
             )}
-            onClick={handleClear}
           >
-            <ClearOutlined />
+            <PlusOutlined />
           </span>
-        </Tooltip>
-      </ConditionRender>
-      <div className={cx('flex-1', 'w-full')}>
-        {/*文件列表*/}
-        <ConditionRender condition={files?.length}>
-          <ChatUploadFile files={files} onDel={handleDelFile} />
-        </ConditionRender>
-        {/*输入框*/}
-        <div className={cx(styles['chat-input'], 'flex', 'items-center')}>
-          <Input.TextArea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            rootClassName={styles.input}
-            onPressEnter={handlePressEnter}
-            placeholder="直接输入指令；可通过回车发送"
-            autoSize={{ minRows: 1, maxRows: 3 }}
-          />
-          {/*上传按钮*/}
-          <Upload
-            action={UPLOAD_FILE_ACTION}
-            className={cx(styles['add-file'])}
-            onChange={handleChange}
-            headers={{
-              Authorization: token ? `Bearer ${token}` : '',
-            }}
-            data={{
-              type: 'tmp',
-            }}
-            showUploadList={false}
-            // beforeUpload={beforeUpload ?? beforeUploadDefault}
-          >
-            <span
-              className={cx(
-                styles['icon-box'],
-                'flex',
-                'items-center',
-                'content-center',
-              )}
-            >
-              <PlusCircleOutlined className={cx('cursor-pointer')} />
-            </span>
-          </Upload>
+        </Upload>
+        <Tooltip title={disabledSend ? '请输入你的问题' : ''}>
           <span
             onClick={handleSendMessage}
             className={cx(
-              styles['icon-box'],
               'flex',
               'items-center',
               'content-center',
+              'cursor-pointer',
+              styles.box,
+              styles['send-box'],
+              { [styles.disabled]: disabledSend },
             )}
           >
-            <img
-              className={cx(styles['send-image'], 'cursor-pointer')}
-              src={sendImage as string}
-              alt=""
-            />
+            <ArrowUpOutlined />
           </span>
-        </div>
+        </Tooltip>
       </div>
     </div>
   );
