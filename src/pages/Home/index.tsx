@@ -47,7 +47,9 @@ const Home: React.FC = () => {
     manual: true,
     debounceWait: 300,
     onSuccess: (result: RequestResponse<HomeAgentCategoryInfo>) => {
-      setHomeCategoryInfo(result?.data);
+      const { data } = result;
+      setHomeCategoryInfo(data);
+      setActiveTab(data?.categories?.[0].type);
     },
   });
 
