@@ -222,6 +222,9 @@ const Created: React.FC<CreatedProp> = ({
       case 'collect':
         getCollectList(params);
         break;
+      case 'library':
+        getList(selected.key, { ...params, justReturnSpaceData: true });
+        break;
       default:
         getList(selected.key, params);
         break;
@@ -229,26 +232,23 @@ const Created: React.FC<CreatedProp> = ({
   };
 
   // 修改 onMenuClick 方法，确保切换左侧菜单时重置分页
-  const onMenuClick = useCallback(
-    (val: string) => {
-      setSearch('');
-      setSelectMenu(val);
-      setPagination({ page: 1, pageSize: 10 }); // 确保重置分页
-      setList([]);
+  const onMenuClick = (val: string) => {
+    setSearch('');
+    setSelectMenu(val);
+    setPagination({ page: 1, pageSize: 10 }); // 确保重置分页
+    setList([]);
 
-      const params: IGetList = {
-        page: 1,
-        pageSize: 10,
-      };
+    const params: IGetList = {
+      page: 1,
+      pageSize: 10,
+    };
 
-      if (selected.key === AgentComponentTypeEnum.Knowledge && val !== 'all') {
-        params.dataType = val;
-      }
+    if (selected.key === AgentComponentTypeEnum.Knowledge && val !== 'all') {
+      params.dataType = val;
+    }
 
-      callInterface(val, params);
-    },
-    [selected.key],
-  );
+    callInterface(val, params);
+  };
 
   // 修改 changeTitle 方法，确保切换顶部选项时重置分页
   const changeTitle = (val: RadioChangeEvent | string) => {

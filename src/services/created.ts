@@ -18,6 +18,7 @@ export interface IGetList {
   kw?: string;
   spaceId?: number;
   dataType?: string;
+  justReturnSpaceData?: boolean;
 }
 
 export async function getList(
