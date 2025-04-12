@@ -24,7 +24,6 @@ const HomeSection: React.FC = () => {
   const [conversationList, setConversationList] =
     useState<ConversationInfo[]>();
   const { setOpenHistoryModal } = useModel('layout');
-  console.log('usedAgentList', usedAgentList);
   // 查询用户最近使用过的智能体列表
   const { run: runUsed } = useRequest(apiUserUsedAgentList, {
     manual: true,
@@ -61,7 +60,7 @@ const HomeSection: React.FC = () => {
 
   useEffect(() => {
     runUsed({
-      size: 5,
+      size: 8,
     });
     runHistory({
       agentId: null,
@@ -101,7 +100,7 @@ const HomeSection: React.FC = () => {
         <h3 className={cx(styles.title, 'mt-16')}>会话记录</h3>
         <ul>
           {conversationList?.length ? (
-            conversationList?.slice(0, 8)?.map((item) => (
+            conversationList?.slice(0, 5)?.map((item) => (
               <li
                 key={item.id}
                 className={cx(
