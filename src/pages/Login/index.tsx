@@ -6,16 +6,7 @@ import { LoginTypeEnum } from '@/types/enums/login';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
 import { isValidPhone, validatePassword } from '@/utils/common';
 import { ExclamationCircleFilled } from '@ant-design/icons';
-import {
-  Button,
-  Checkbox,
-  Form,
-  FormProps,
-  Input,
-  message,
-  Modal,
-  Select,
-} from 'antd';
+import { Button, Checkbox, Form, FormProps, Input, Modal, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useModel, useNavigate, useRequest } from 'umi';
@@ -48,7 +39,7 @@ const Login: React.FC = () => {
       localStorage.setItem(EXPIRE_DATE, expireDate);
       localStorage.setItem(PHONE, params[0].phone);
       navigate('/', { replace: true });
-      message.success('登录成功');
+      //message.success('登录成功');
     },
   });
 
