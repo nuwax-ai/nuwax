@@ -30,6 +30,8 @@ const Chat: React.FC = () => {
   const {
     conversationInfo,
     loadingConversation,
+    isLoadingConversation,
+    setIsLoadingConversation,
     messageList,
     setMessageList,
     chatSuggestList,
@@ -37,7 +39,6 @@ const Chat: React.FC = () => {
     loadingSuggest,
     onMessageSend,
     messageViewRef,
-    executeResults,
     needUpdateTopicRef,
     handleClearSideEffect,
     setCardList,
@@ -62,6 +63,7 @@ const Chat: React.FC = () => {
   useEffect(() => {
     if (id) {
       const asyncFun = async () => {
+        setIsLoadingConversation(true);
         // 同步查询会话, 此处必须先同步查询会话信息，因为成功后会设置消息列表，如果是异步查询，会导致发送消息时，清空消息列表的bug
         const res = await runAsync(id);
         // 会话消息列表
@@ -108,7 +110,7 @@ const Chat: React.FC = () => {
             >
               <LoadingOutlined className={cx(styles.loading)} />
             </div>
-          ) : messageList?.length > 0 ? (
+          ) : messageList?.length > 0 || chatSuggestList?.length > 0 ? (
             <>
               {messageList?.map((item, index) => (
                 <ChatView
@@ -128,11 +130,13 @@ const Chat: React.FC = () => {
               />
             </>
           ) : (
-            // Chat记录为空
-            <AgentChatEmpty
-              icon={conversationInfo?.agent?.icon}
-              name={conversationInfo?.agent?.name}
-            />
+            isLoadingConversation && (
+              // Chat记录为空
+              <AgentChatEmpty
+                icon={conversationInfo?.agent?.icon}
+                name={conversationInfo?.agent?.name}
+              />
+            )
           )}
         </div>
         {/*会话输入框*/}
@@ -142,7 +146,7 @@ const Chat: React.FC = () => {
         />
       </div>
       {/*展示台区域*/}
-      <ShowArea executeResults={executeResults} />
+      <ShowArea />
     </div>
   );
 };

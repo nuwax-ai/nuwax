@@ -32,8 +32,8 @@ const AgentMove: React.FC<AgentMoveProps> = ({
       destroyOnClose
       onCancel={onCancel}
       title={
-        <header>
-          <span className={cx('text-ellipsis')}>{`迁移智能体 - ${title}`}</span>
+        <header className={cx(styles.header, 'text-ellipsis')}>
+          {`迁移智能体 - ${title}`}
         </header>
       }
       footer={() => (
