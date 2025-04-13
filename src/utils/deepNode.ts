@@ -123,6 +123,10 @@ export const updateNodeField = (
         if (field === 'bindValueType') {
           node.bindValue = '';
         }
+        // 是否必须为true时，如果默认值为空，打开开启
+        if (field === 'require' && !!value && !node.bindValue) {
+          node.enable = true;
+        }
         // 返回节点
         return { ...node, [field]: value };
       }
