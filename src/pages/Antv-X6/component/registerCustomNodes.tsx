@@ -124,13 +124,13 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
           className="general-node-header"
           style={{ background: gradientBackground }}
         >
-          <div className="general-node-header-image">
+          <div className="general-node-header-image dis-left">
             {returnImg(data.type)}
             {this.state.isEditingTitle ? (
               <Input
                 value={this.state.editedTitle}
                 onChange={this.handleTitleChange}
-                onBlur={this.finishEditTitle}
+                // onBlur={this.finishEditTitle}
                 onPressEnter={this.finishEditTitle}
                 autoFocus
               />

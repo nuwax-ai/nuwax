@@ -223,7 +223,6 @@ const Workflow: React.FC = () => {
   // 更新节点数据
   const changeNode = async (config: ChildNode, update?: boolean | string) => {
     let params = JSON.parse(JSON.stringify(config));
-
     if (update && update === 'moved') {
       if (config.id === foldWrapItemRef.current.id) {
         const values = nodeDrawerRef.current?.getFormValues();
@@ -232,6 +231,9 @@ const Workflow: React.FC = () => {
           nodeConfig: {
             ...config.nodeConfig,
             ...values,
+            extension: {
+              ...config.nodeConfig.extension,
+            },
           },
         };
       }
@@ -287,7 +289,7 @@ const Workflow: React.FC = () => {
       });
       return;
     } else {
-      await setIsModified((prev) => {
+      await setIsModified((prev: boolean) => {
         if (prev === true) {
           if (foldWrapItemRef.current && foldWrapItemRef.current.id !== 0) {
             const values = nodeDrawerRef.current?.getFormValues();
@@ -741,6 +743,7 @@ const Workflow: React.FC = () => {
           requestId: uuidv4(), // 使用uuid生成唯一ID
         };
       }
+
       testRunAllNode(_params);
     } else {
       nodeTestRun(params);
@@ -789,7 +792,9 @@ const Workflow: React.FC = () => {
   // 保存当前画布中节点的位置
   useEffect(() => {
     getDetails();
-    setIsModified(false); // 重置修改状态
+    return () => {
+      setIsModified(false); // 重置修改状态
+    };
   }, []);
 
   return (

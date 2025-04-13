@@ -10,7 +10,7 @@ interface Props {
 }
 
 const CodeEditor: React.FC<Props> = ({
-  value,
+  value = '',
   onChange,
   height = '400px',
   codeLanguage,

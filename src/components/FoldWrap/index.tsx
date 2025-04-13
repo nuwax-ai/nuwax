@@ -1,6 +1,6 @@
 import type { FoldWrapType } from '@/types/interfaces/common';
 import { CloseOutlined } from '@ant-design/icons';
-import { Empty, Form, Input, InputRef } from 'antd';
+import { Empty, Form, Input, InputRef, Popover } from 'antd';
 import classNames from 'classnames';
 import React, { PropsWithChildren, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
@@ -90,6 +90,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
                     setIsEdit(false);
                   }
                 }}
+                maxLength={14}
                 onBlur={() => {
                   submitForm();
                   setIsEdit(false);
@@ -99,7 +100,13 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
               <div className="dis-sb">
                 <div className="dis-sa" onDoubleClick={() => setIsEdit(true)}>
                   {icon}
-                  <span className={cx('flex-1 text-ellipsis', iconMargin)}>
+                  <span
+                    className={cx(
+                      'flex-1 text-ellipsis ',
+                      styles['title-style'],
+                      iconMargin,
+                    )}
+                  >
                     {title}
                   </span>
                 </div>
@@ -129,16 +136,21 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
                   submitForm();
                   setIsEditDesc(false);
                 }}
-                rows={2}
-                style={{ marginTop: '10px' }}
+                rows={1}
+                style={{ marginTop: '10px', resize: 'none' }}
               />
             ) : (
-              <div
-                onDoubleClick={() => setIsEditDesc(true)}
-                className={`text-ellipsis ${styles['desc']}`}
+              <Popover
+                title={description}
+                overlayInnerStyle={{ width: '300px' }}
               >
-                {description}
-              </div>
+                <div
+                  onDoubleClick={() => setIsEditDesc(true)}
+                  className={`text-ellipsis ${styles['desc']}`}
+                >
+                  {description}
+                </div>
+              </Popover>
             )}
           </Form.Item>
         </Form>

@@ -96,8 +96,8 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   // };
 
   // 新增递归处理函数
-  const mapChildren = (items: InputAndOutConfig[], level = 0): MenuItem[] => {
-    return items.map((item) => ({
+  const mapChildren = (items: InputAndOutConfig[], level = 1): MenuItem[] => {
+    return items.flatMap((item) => ({
       key: item.key!,
       label: (
         <div
@@ -111,6 +111,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         </div>
       ),
       onClick: (e: Event) => {
+        console.log(123, e);
         e.domEvent.stopPropagation(); // 阻止事件冒泡
         onChange?.(e.key!); // 使用注入的 onChange
         updateValues(e.key!, 'Reference');
@@ -133,18 +134,21 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           {
             key: arg.key,
             label: (
-              <div className="reference-item-child">
+              <div
+                className="reference-item-child"
+                onClick={() => {
+                  console.log(123, arg.key);
+                  onChange?.(arg.key!); // 使用注入的 onChange
+                  updateValues(arg.key!, 'Reference');
+                  setDisplayValue(getValue(arg.key!));
+                }}
+              >
                 <span>{arg.name}</span>
                 <Tag className="ml-20" color="#C9CDD4">
                   {arg.dataType}
                 </Tag>
               </div>
             ),
-            onClick: () => {
-              onChange?.(arg.key!); // 使用注入的 onChange
-              updateValues(arg.key!, 'Reference');
-              setDisplayValue(getValue(arg.key!));
-            },
           },
           // 子参数项（递归处理）
           ...(arg.children ? mapChildren(arg.children) : []),

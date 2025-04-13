@@ -18,6 +18,7 @@ import {
 import { Button, Divider, Input, Menu, Modal, Radio } from 'antd';
 import { RadioChangeEvent } from 'antd/lib/radio';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useModel } from 'umi';
 import CreateKnowledge from '../CreateKnowledge';
 import CreateNewPlugin from '../CreateNewPlugin';
 import CreateWorkflow from '../CreateWorkflow';
@@ -39,10 +40,10 @@ const Created: React.FC<CreatedProp> = ({
   onAdded,
   hasIds = {},
   targetId,
-  spaceId,
+  // spaceId,
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
-
+  const { spaceId } = useModel('workflow');
   // 打开、关闭创建弹窗
   const [showCreate, setShowCreate] = useState(false);
   // 搜索栏的
@@ -118,6 +119,7 @@ const Created: React.FC<CreatedProp> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const isRequesting = useRef(false);
   /**  -----------------  需要调用接口  -----------------   */
+
   // 获取右侧的list（关键修改）
   const getList = async (type: AgentComponentTypeEnum, params: IGetList) => {
     if (spaceId === 0) return;
@@ -125,7 +127,7 @@ const Created: React.FC<CreatedProp> = ({
     isRequesting.current = true;
     const _res = await service.getList(type, { ...params, spaceId });
     isRequesting.current = false;
-
+    console.log(_res);
     if (_res.code === Constant.success) {
       setSizes(_res.data.pages);
       setPagination((prev) => ({
@@ -256,7 +258,7 @@ const Created: React.FC<CreatedProp> = ({
 
     const _select = typeof val === 'string' ? val : val.target.value;
     const _item = buttonList.find((item) => item.key === _select);
-
+    console.log(_item);
     if (_item) {
       setSelectMenu('all');
       setSearch('');

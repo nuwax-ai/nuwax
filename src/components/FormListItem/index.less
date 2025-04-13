@@ -99,51 +99,45 @@
 .tree-form-style {
   font-size: 12px;
   position: relative; /* 设置容器为相对定位 */
-  .ant-tree-switcher {
-    margin-left: -9px;
+  // .ant-tree-switcher {
+  //   // margin-left: -9px;
+  //   display: none;
 
-    .ant-tree-switcher-icon {
-      margin-left: 0;
-    }
-  }
+  //   // .ant-tree-switcher-icon {
+  //   //   margin-left: 0;
+  //   // }
+  // }
 
-  .ant-tree-indent-unit {
-    position: relative; /* 设置每个层级为相对定位 */
-    margin-left: -2px;
-  }
+  // .ant-tree-indent-unit {
+  //   position: relative; /* 设置每个层级为相对定位 */
+  //   margin-left: -2px;
+  // }
 
-  .ant-tree-indent-unit::before {
-    position: absolute; /* 使用绝对定位 */
-    content: ''; /* 必须定义 content 属性 */
-    top: -11px; /* 从顶部开始的位置 */
-    bottom: 0; /* 到底部结束 */
-    left: 4px; /* 从左侧开始 */
-    height: 47px;
-    inset-inline-end: 20px;
-  }
-
-  .ant-tree-node-content-wrapper {
-    padding-inline: 2px;
-  }
+  // .ant-tree-indent-unit::before {
+  //   position: absolute; /* 使用绝对定位 */
+  //   content: ''; /* 必须定义 content 属性 */
+  //   top: -11px; /* 从顶部开始的位置 */
+  //   bottom: 0; /* 到底部结束 */
+  //   left: 4px; /* 从左侧开始 */
+  //   height: 47px;
+  //   inset-inline-end: 20px;
+  // }
 
   svg {
-    width: 14px;
+    width: 12px;
   }
+}
+
+.ant-tree-switcher {
+  display: none;
 }
 
 .tree-form-style-no-child {
   font-size: 12px;
-
-  .ant-tree-switcher {
-    display: none;
-  }
-
-  .ant-tree-node-content-wrapper {
-    padding-inline: 2px;
-  }
+  width: 100%;
 
   svg {
-    width: 14px;
+    width: 12px;
   }
 }
 
@@ -176,16 +170,20 @@
 }
 
 .nested-form-icon-button {
+  display: flex;
+  justify-content: flex-start !important;
+  align-items: center;
+
+  .ant-btn-icon-only {
+    width: 16px;
+  }
+
   :where(.css-dev-only-do-not-override-77tu7h).ant-btn.ant-btn-icon-only {
-    width: 18px;
+    width: 16px;
   }
 
   .ant-checkbox-inner {
     width: 14px;
     height: 14px;
   }
-}
-
-.ant-tree-node-content-wrapper {
-  padding-inline: 0;
 }

@@ -67,8 +67,8 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   };
 
   // 递归处理函数
-  const mapChildren = (items: InputAndOutConfig[], level = 0): MenuItem[] => {
-    return items.map((item) => ({
+  const mapChildren = (items: InputAndOutConfig[], level = 1): MenuItem[] => {
+    return items.flatMap((item) => ({
       key: item.key!,
       label: (
         <div
@@ -110,7 +110,6 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
               </div>
             ),
             onClick: () => {
-              //   onChange?.(arg.key!);
               updateValues(arg.key!, 'Reference');
               setDisplayValue(getValue(arg.key!));
             },

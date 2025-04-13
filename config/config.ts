@@ -22,9 +22,7 @@ export default defineConfig({
     target: ['es2020'],
     format: 'iife',
   },
-  // publicPath: '/', // 保持根路径
-  // 修改复制配置和插件配置
-  chainWebpack(config) {
+  chainWebpack(config: any) {
     config.plugin('copy-monaco').use(CopyWebpackPlugin, [
       {
         patterns: [

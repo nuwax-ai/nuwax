@@ -43,7 +43,6 @@ const useWorkflow = () => {
 
   // 提取当前的数据
   const getValue = (val: string) => {
-    console.log(val, 'value');
     if (referenceList.previousNodes?.length && referenceList.argMap[val]) {
       return `${getName(val)} - ${referenceList.argMap[val].name}`;
     }

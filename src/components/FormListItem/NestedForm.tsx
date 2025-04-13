@@ -25,7 +25,7 @@ import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-// import InputOrReference from './InputOrReference';
+import InputOrReferenceFormTree from './InputOrReferenceFormTree';
 import { TreeFormProps } from './type';
 interface TreeNodeConfig extends InputAndOutConfig {
   key: string;
@@ -39,7 +39,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
   inputItemName = 'inputArgs',
   notShowTitle,
   showCheck,
-  // isBody,
+  isBody,
 }) => {
   const [treeData, setTreeData] = useState<TreeNodeConfig[]>(params || []);
 
@@ -197,7 +197,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
             </div>
           )}
         </div>
-        <div style={{ width: '80px', position: 'relative' }}>
+        <div style={{ width: isBody ? '40px' : '80px', position: 'relative' }}>
           <Cascader
             allowClear={false}
             options={dataTypes}
@@ -224,16 +224,43 @@ const CustomTree: React.FC<TreeFormProps> = ({
             </div>
           )}
         </div>
-        {/* {isBody && (
-          <div style={{ width: '80px', position: 'relative' }}>
-            <InputOrReference />
+        {isBody && (
+          <div
+            style={{ width: '100px', marginLeft: '6px', position: 'relative' }}
+          >
+            <InputOrReferenceFormTree
+              referenceType={nodeData.bindValueType}
+              value={nodeData.bindValue}
+              onChange={(value) => {
+                updateNodeField(nodeData.key!, 'bindValue', value);
+                if (value.includes('.')) {
+                  updateNodeField(nodeData.key!, 'bindValueType', 'Reference');
+                } else {
+                  updateNodeField(nodeData.key!, 'bindValueType', 'Input');
+                }
+              }}
+            />
           </div>
-        )} */}
+        )}
 
         <div
-          className="dis-left nested-form-icon-button"
-          style={{ width: showCheck ? 66 : 50 }}
+          className="nested-form-icon-button"
+          style={{ width: showCheck ? 60 : 48 }}
         >
+          {canAddChild && (
+            <Tooltip title="新增子节点">
+              <Button
+                type="text"
+                disabled={nodeData.systemVariable}
+                className="tree-icon-style"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addChildNode(nodeData.key!);
+                }}
+                icon={<ICON_ASSOCIATION />}
+              />
+            </Tooltip>
+          )}
           <Popover
             content={
               <Input.TextArea
@@ -268,20 +295,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
               />
             </Tooltip>
           )}
-          {canAddChild && (
-            <Tooltip title="新增子节点">
-              <Button
-                type="text"
-                disabled={nodeData.systemVariable}
-                className="tree-icon-style"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  addChildNode(nodeData.key!);
-                }}
-                icon={<ICON_ASSOCIATION />}
-              />
-            </Tooltip>
-          )}
+
           <Tooltip title="删除">
             <Button
               type="text"
@@ -367,7 +381,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
           <span className="flex-1 ml-10">变量名</span>
           <span
             style={{
-              width: 80 + (showCheck ? 66 : 50),
+              width: 80 + (showCheck ? 68 : 70) + (isBody ? 52 : 0),
             }}
           >
             变量类型
@@ -377,7 +391,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
 
       <Tree<TreeNodeConfig>
         treeData={treeData}
-        showLine
+        // showLine
         switcherIcon={<DownOutlined />}
         defaultExpandAll
         fieldNames={{ title: 'name', key: 'key', children: 'subArgs' }}
