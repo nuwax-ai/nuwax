@@ -32,6 +32,7 @@ import NodeDrawer from './nodeDrawer';
 import Published from './Published';
 import { Child } from './type';
 const Workflow: React.FC = () => {
+  const { spaceId } = useParams();
   // 当前工作流的id
   const workflowId = Number(useParams().workflowId);
   // 当前被选中的节点
@@ -94,8 +95,7 @@ const Workflow: React.FC = () => {
   // 是否显示创建工作流，插件，知识库，数据库的弹窗和试运行的弹窗
   const { setTestRun } = useModel('model');
 
-  const { setReferenceList, setIsModified, setSpaceId, spaceId } =
-    useModel('workflow');
+  const { setReferenceList, setIsModified, setSpaceId } = useModel('workflow');
   // 修改更新时间
   const changeUpdateTime = () => {
     const _time = new Date();

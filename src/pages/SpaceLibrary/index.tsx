@@ -66,7 +66,8 @@ const SpaceLibrary: React.FC = () => {
   const [openKnowledge, setOpenKnowledge] = useState<boolean>(false);
   // 打开创建模型弹窗
   const [openModel, setOpenModel] = useState<boolean>(false);
-  const [modelComponentInfo, setModelComponentInfo] = useState<ComponentInfo>();
+  const [modelComponentInfo, setModelComponentInfo] =
+    useState<ComponentInfo | null>();
   // 类型
   const [type, setType] = useState<ComponentTypeEnum>(
     ComponentTypeEnum.All_Type,
@@ -377,7 +378,7 @@ const SpaceLibrary: React.FC = () => {
     const { type, id, ext } = item;
     switch (type) {
       case ComponentTypeEnum.Workflow:
-        history.push(`/workflow/${id}`);
+        history.push(`/space/${spaceId}/workflow/${id}`);
         break;
       case ComponentTypeEnum.Plugin:
         handlePluginUrl(id, ext as PluginTypeEnum);

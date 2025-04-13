@@ -177,7 +177,6 @@ const PluginAutoAnalysis: React.FC<PluginAutoAnalysisProps> = ({
               scroll={{
                 y: 450,
               }}
-              // footer={null}
             />
           </div>
           <div className={cx('text-right')}>

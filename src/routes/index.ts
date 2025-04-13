@@ -52,7 +52,7 @@ const routes = [
     ],
   },
   {
-    path: '/workflow/:workflowId',
+    path: '/space/:spaceId/workflow/:workflowId',
     component: '@/pages/Antv-X6',
     // wrappers: ['@/wrappers/auth'],
     layout: false,
