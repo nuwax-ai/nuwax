@@ -20,7 +20,7 @@ const KnowledgeTextList: React.FC<KnowledgeTextListProps> = ({
 }) => {
   const [openKnowledgeModel, setOpenKnowledgeModel] = useState<boolean>(false);
   const [agentComponentInfo, setAgentComponentInfo] =
-    useState<AgentComponentInfo>(null);
+    useState<AgentComponentInfo | null>(null);
 
   const handleClick = (item: AgentComponentInfo) => {
     setOpenKnowledgeModel(true);
