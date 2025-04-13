@@ -77,7 +77,6 @@ const NodeDrawer = (
 
   // form表单校验完毕后提交数据
   const onFinish = () => {
-    console.log('我被父组件出发啦');
     if (!isModified) return; // 如果未修改，直接返回
     const values = form.getFieldsValue(true);
     let newNodeConfig;
@@ -227,7 +226,6 @@ const NodeDrawer = (
     // 清理函数
     return () => {
       if (timerRef.current) {
-        console.log(isModified, '清除定时器');
         clearTimeout(timerRef.current);
       }
     };

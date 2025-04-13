@@ -2,7 +2,7 @@
 declare module 'react-beautiful-dnd';
 declare module 'classnames';
 declare module 'lodash';
-
+declare module 'umi';
 // 修改为monaco-editor自带的类型声明
 // 修正路径声明
 declare module 'monaco-editor/esm/vs/basic-languages/python/python' {

@@ -400,6 +400,7 @@ const initGraph = ({
       changeCondition(_data, 'moved');
       return;
     }
+    console.log(x, y);
     // node.prop('zIndex', 99);
     changeCondition(data, 'moved');
     changeZindex(node);

@@ -10,6 +10,7 @@ import { Button, Collapse, Empty, Form, Input, Tag } from 'antd';
 import { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import './index.less';
+// import { stringify } from 'uuid';
 interface TestRunProps {
   // 当前节点的类型
   node: ChildNode;
@@ -72,16 +73,21 @@ const TestRun: React.FC<TestRunProps> = ({
     if (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length) {
       const value = form.getFieldsValue();
       for (let item in value) {
-        if (
-          typeof value[item] === 'string' &&
-          (value[item].includes('\r\n') ||
-            value[item].includes('{') ||
-            value[item].includes('['))
-        ) {
-          try {
-            value[item] = JSON.parse(value[item]);
-          } catch (error) {
-            console.error('JSON 解析失败:', error);
+        if (Object.prototype.hasOwnProperty.call(value, item)) {
+          // 过滤原型链属性
+          const inputArg = node.nodeConfig.inputArgs.find(
+            (arg) => arg.name === item,
+          );
+          if (
+            inputArg &&
+            (inputArg.dataType === 'Object' ||
+              inputArg.dataType?.includes('Array'))
+          ) {
+            try {
+              value[item] = JSON.parse(value[item]);
+            } catch (error) {
+              console.error('JSON 解析失败:', error);
+            }
           }
         }
       }
@@ -132,10 +138,11 @@ const TestRun: React.FC<TestRunProps> = ({
                             <CodeEditor
                               value={form.getFieldValue(item.name) || ''}
                               codeLanguage={'JSON'}
-                              onChange={(code) => {
-                                form.setFieldsValue({ [item.name]: code }); // 更新表单值
-                              }}
                               height="180px"
+                              onChange={(code: string) => {
+                                console.log(typeof code);
+                                form.setFieldValue(item.name, code); // 确保 code 是字符串
+                              }}
                             />
                           </Form.Item>
                         </div>
@@ -216,8 +223,16 @@ const TestRun: React.FC<TestRunProps> = ({
   }, [testRun, stopWait]);
 
   useEffect(() => {
-    if (JSON.stringify(formItemValue) !== '{}') {
-      form.setFieldsValue(formItemValue);
+    let _obj = JSON.parse(JSON.stringify(formItemValue || {})); // TOD
+    if (JSON.stringify(_obj) !== '{}') {
+      console.log('formItemValue', formItemValue);
+      for (let item in _obj) {
+        if (typeof _obj[item] !== 'string') {
+          _obj[item] = JSON.stringify(_obj[item]);
+        }
+      }
+      console.log(_obj);
+      form.setFieldsValue(_obj);
     }
   }, [formItemValue]);
 

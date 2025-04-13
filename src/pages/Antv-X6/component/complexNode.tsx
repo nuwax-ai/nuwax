@@ -126,7 +126,6 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
         <CustomTree
           title={'输出'}
           notShowTitle
-          showCheck
           form={form}
           params={form.getFieldValue('outputArgs') || []}
           inputItemName={'outputArgs'}
@@ -384,12 +383,15 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ form }) => {
         </div>
       </div>
       {/* 出参 */}
-      <CustomTree
-        title={'出参'}
-        form={form}
-        inputItemName="outputArgs"
-        params={form.getFieldValue('outputArgs') || []}
-      />
+
+      <Form.Item name={'outputArgs'}>
+        <CustomTree
+          title={'出参'}
+          form={form}
+          inputItemName="outputArgs"
+          params={form.getFieldValue('outputArgs') || []}
+        />
+      </Form.Item>
     </div>
   );
 };
