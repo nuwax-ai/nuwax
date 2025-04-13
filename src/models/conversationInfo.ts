@@ -111,7 +111,6 @@ export default () => {
       manual: true,
       debounceWait: 300,
       onSuccess: (result) => {
-        console.log(33333);
         setChatSuggestList(result.data);
         handleScrollBottom();
       },
