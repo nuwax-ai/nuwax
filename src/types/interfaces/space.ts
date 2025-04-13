@@ -90,7 +90,7 @@ export interface PublishAgentProps {
 
 export interface AgentMoveProps {
   open: boolean;
-  title: string;
+  title?: string;
   onCancel: () => void;
   onConfirm: (spaceId: string) => void;
 }

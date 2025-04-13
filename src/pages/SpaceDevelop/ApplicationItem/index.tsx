@@ -91,7 +91,8 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
         <div className={cx('flex-1', 'flex', 'overflow-hide')}>
           <UserOutlined />
           <span className={cx('flex-1', 'text-ellipsis', styles.author)}>
-            {agentConfigInfo.creator?.userName}
+            {agentConfigInfo.creator?.nickName ||
+              agentConfigInfo.creator?.userName}
           </span>
         </div>
         {/*收藏与取消收藏*/}

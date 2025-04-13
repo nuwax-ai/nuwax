@@ -1,8 +1,7 @@
 import agentImage from '@/assets/images/agent_image.png';
-import personal from '@/assets/images/personal.png';
 import { SPACE_ID } from '@/constants/home.constants';
 import type { AgentMoveProps } from '@/types/interfaces/space';
-import { CheckOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { CheckOutlined } from '@ant-design/icons';
 import { Button, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
@@ -33,10 +32,9 @@ const AgentMove: React.FC<AgentMoveProps> = ({
       destroyOnClose
       onCancel={onCancel}
       title={
-        <>
-          <span>{`迁移智能体至团队空间 - ${title}`}</span>
-          <InfoCircleOutlined />
-        </>
+        <header>
+          <span className={cx('text-ellipsis')}>{`迁移智能体 - ${title}`}</span>
+        </header>
       }
       footer={() => (
         <Button
@@ -50,13 +48,8 @@ const AgentMove: React.FC<AgentMoveProps> = ({
       )}
       width={475}
     >
-      <div className={cx(styles['analyze-wrapper'])}>
+      <>
         <div className={cx(styles['row-line'])} />
-        <span className={cx(styles.label)}>个人空间</span>
-        <div className={cx('flex', 'items-center', styles.box)}>
-          <img className={cx(styles.img)} src={personal as string} alt="" />
-          <span>个人空间</span>
-        </div>
         <span className={cx(styles.label)}>选择要迁移到的团队空间</span>
         {filterSpaceList.map((item) => (
           <div
@@ -81,7 +74,7 @@ const AgentMove: React.FC<AgentMoveProps> = ({
             )}
           </div>
         ))}
-      </div>
+      </>
     </Modal>
   );
 };

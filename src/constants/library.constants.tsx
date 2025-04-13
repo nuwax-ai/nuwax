@@ -64,7 +64,7 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
   {
     action: ComponentMoreActionEnum.Copy,
     label: '复制',
-    mode: ComponentTypeEnum.Workflow,
+    type: ComponentTypeEnum.Workflow,
   },
   {
     action: ComponentMoreActionEnum.Del,

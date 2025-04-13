@@ -1,6 +1,5 @@
 import pluginIcon from '@/assets/images/plugin_image.png';
 import ConditionRender from '@/components/ConditionRender';
-import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import SelectList from '@/components/SelectList';
 import UploadAvatar from '@/components/UploadAvatar';
@@ -15,7 +14,7 @@ import type { CreateNewPluginProps } from '@/types/interfaces/library';
 import type { PluginAddParams, PluginInfo } from '@/types/interfaces/plugin';
 import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps, RadioChangeEvent } from 'antd';
-import { Form, Input, message, Radio } from 'antd';
+import { Button, Form, Input, message, Modal, Radio } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
@@ -108,16 +107,27 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   };
 
   const handleChangeCreateTool = ({ target: { value } }: RadioChangeEvent) => {
+    if (value === PluginTypeEnum.HTTP) {
+      form.setFieldValue('codeLang', null);
+    }
     setPluginType(value);
   };
 
   return (
-    <CustomFormModal
-      form={form}
+    <Modal
       title={mode === CreateUpdateModeEnum.Create ? '新建插件' : '更新插件'}
       open={open}
+      classNames={classNames}
+      destroyOnClose
+      footer={
+        <>
+          <Button onClick={onCancel}>取消</Button>
+          <Button type="primary" onClick={handlerSubmit}>
+            确定
+          </Button>
+        </>
+      }
       onCancel={onCancel}
-      onConfirm={handlerSubmit}
     >
       <div className={cx('flex', 'flex-col', 'items-center', 'py-16')}>
         <UploadAvatar
@@ -175,7 +185,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
               <Form.Item
                 name="codeLang"
                 label="IDE 运行时"
-                rules={[{ required: true, message: '请输入插件名称' }]}
+                rules={[{ required: true, message: '请选择插件模式' }]}
               >
                 <SelectList options={CLOUD_BASE_CODE_OPTIONS} />
               </Form.Item>
@@ -183,7 +193,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
           </ConditionRender>
         </Form>
       </div>
-    </CustomFormModal>
+    </Modal>
   );
 };
 

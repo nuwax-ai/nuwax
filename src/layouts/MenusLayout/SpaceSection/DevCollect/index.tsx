@@ -9,19 +9,9 @@ const cx = classNames.bind(styles);
 
 // 开发收藏
 const DevCollect: React.FC = () => {
-  const { runCancelCollect, runDevCollect, devCollectAgentList } = useModel(
-    'devCollectAgent',
-    (model) => ({
-      runCancelCollect: model.runCancelCollect,
-      runDevCollect: model.runDevCollect,
-      devCollectAgentList: model.devCollectAgentList,
-    }),
-  );
-
-  const { agentList, handlerCollect } = useModel('applicationDev', (model) => ({
-    agentList: model.agentList,
-    handlerCollect: model.handlerCollect,
-  }));
+  const { runCancelCollect, runDevCollect, devCollectAgentList } =
+    useModel('devCollectAgent');
+  const { agentList, handlerCollect } = useModel('applicationDev');
 
   useEffect(() => {
     runDevCollect({

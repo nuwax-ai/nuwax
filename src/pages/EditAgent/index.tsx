@@ -40,7 +40,7 @@ const EditAgent: React.FC = () => {
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
   // 智能体配置信息
-  const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>(null);
+  const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>();
   // 历史版本信息
   const [versionHistory, setVersionHistory] = useState<HistoryData[]>([]);
   const { cardList, showType, setShowType, setIsSuggest } =
@@ -87,7 +87,7 @@ const EditAgent: React.FC = () => {
     const _agentConfigInfo = {
       ...agentConfigInfo,
       ...info,
-    };
+    } as AgentConfigInfo;
     setAgentConfigInfo(_agentConfigInfo);
     setOpenEditAgent(false);
   };
@@ -110,7 +110,7 @@ const EditAgent: React.FC = () => {
     const _agentConfigInfo = {
       ...agentConfigInfo,
       [attr]: value,
-    };
+    } as AgentConfigInfo;
     setAgentConfigInfo(_agentConfigInfo);
     // 用户问题建议
     if (attr === 'openSuggest') {

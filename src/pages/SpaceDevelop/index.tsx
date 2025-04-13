@@ -15,7 +15,7 @@ import {
   CreateListEnum,
   FilterStatusEnum,
 } from '@/types/enums/space';
-import { AgentConfigInfo } from '@/types/interfaces/agent';
+import { AgentConfigInfo, AgentInfo } from '@/types/interfaces/agent';
 import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
 import type { UserInfo } from '@/types/interfaces/login';
 import {
@@ -43,6 +43,9 @@ const SpaceDevelop: React.FC = () => {
   const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
   // 迁移弹窗
   const [openMove, setOpenMove] = useState<boolean>(false);
+  const [currectAgentInfo, setCurrentAgentInfo] = useState<AgentInfo | null>(
+    null,
+  );
   const [openCreateAgent, setOpenCreateAgent] = useState<boolean>(false);
   const [status, setStatus] = useState<FilterStatusEnum>(FilterStatusEnum.All);
   const [agentStatistics, setAgentStatistics] = useState<
@@ -57,15 +60,10 @@ const SpaceDevelop: React.FC = () => {
   const createIdRef = useRef<number>(0);
   // 目标智能体ID
   const targetAgentIdRef = useRef<number>(0);
-  const { agentList, setAgentList, agentAllRef, handlerCollect } = useModel(
-    'applicationDev',
-    (model) => ({
-      agentList: model.agentList,
-      setAgentList: model.setAgentList,
-      agentAllRef: model.agentAllRef,
-      handlerCollect: model.handlerCollect,
-    }),
-  );
+  const { agentList, setAgentList, agentAllRef, handlerCollect } =
+    useModel('applicationDev');
+  const { runEdit, devCollectAgentList, runDevCollect } =
+    useModel('devCollectAgent');
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
@@ -123,9 +121,24 @@ const SpaceDevelop: React.FC = () => {
   const { run: runDel } = useRequest(apiAgentDelete, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
+    onSuccess: (_, params) => {
       message.success('已成功删除');
+      const id = params[0];
       handleDelAgent();
+      runEdit({
+        size: 8,
+      });
+      // 如果智能体开发收藏列表包含此删除智能体, 重新查询
+      const index = devCollectAgentList?.findIndex(
+        (item: AgentInfo) => item.agentId === id,
+      );
+      if (index > -1) {
+        // 更新开发智能体收藏列表
+        runDevCollect({
+          page: 1,
+          size: 8,
+        });
+      }
     },
   });
 
@@ -137,6 +150,7 @@ const SpaceDevelop: React.FC = () => {
       message.success('迁移成功');
       handleDelAgent();
       setOpenMove(false);
+      setCurrentAgentInfo(null);
     },
   });
 
@@ -224,6 +238,7 @@ const SpaceDevelop: React.FC = () => {
       // 迁移
       case ApplicationMoreActionEnum.Move:
         setOpenMove(true);
+        setCurrentAgentInfo(agentInfo);
         break;
       case ApplicationMoreActionEnum.Del:
         confirm({
@@ -307,7 +322,7 @@ const SpaceDevelop: React.FC = () => {
       {/*智能体迁移弹窗*/}
       <AgentMove
         open={openMove}
-        title="智能体名称"
+        title={currectAgentInfo?.name}
         onCancel={() => setOpenMove(false)}
         onConfirm={handlerConfirmMove}
       />

@@ -125,9 +125,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
           className={cx(styles['chat-wrapper'], 'flex-1')}
           ref={messageViewRef}
         >
-          {messageList?.length > 0 ? (
+          {messageList?.length > 0 || chatSuggestList?.length > 0 ? (
             <>
-              {messageList?.map((item, index) => (
+              {messageList?.map((item, index: number) => (
                 <ChatView key={index} messageInfo={item} roleInfo={roleInfo} />
               ))}
               {/*会话建议*/}
