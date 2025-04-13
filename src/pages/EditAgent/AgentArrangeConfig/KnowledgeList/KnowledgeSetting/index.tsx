@@ -17,7 +17,7 @@ import type { KnowledgeSettingProps } from '@/types/interfaces/agentConfig';
 import { Divider, Input, Modal, Radio } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { useModel, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -30,6 +30,8 @@ const KnowledgeSetting: React.FC<KnowledgeSettingProps> = ({
   agentComponentInfo,
   onCancel,
 }) => {
+  const { agentComponentList, setAgentComponentList } = useModel('spaceAgent');
+
   // 绑定组件配置，不同组件配置不一样
   const [componentBindConfig, setComponentBindConfig] =
     useState<KnowledgeBindConfig>({
@@ -65,9 +67,18 @@ const KnowledgeSetting: React.FC<KnowledgeSettingProps> = ({
       [attr]: value,
     };
     setComponentBindConfig(bindConfig);
+    if (attr === 'invokeType') {
+      const _newList = agentComponentList.map((item) => {
+        if (item.id === agentComponentInfo?.id) {
+          item.bindConfig['invokeType'] = value;
+        }
+        return item;
+      });
+      setAgentComponentList(_newList);
+    }
     runKnowledgeUpdate({
-      id: agentComponentInfo.id,
-      targetId: agentComponentInfo.targetId,
+      id: agentComponentInfo?.id,
+      targetId: agentComponentInfo?.targetId,
       bindConfig,
     });
   };

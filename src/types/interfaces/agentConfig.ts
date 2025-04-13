@@ -175,7 +175,7 @@ export interface KnowledgeTextListProps {
 // 知识库设置组件
 export interface KnowledgeSettingProps {
   open: boolean;
-  agentComponentInfo: AgentComponentInfo;
+  agentComponentInfo?: AgentComponentInfo;
   onCancel: () => void;
 }
 
