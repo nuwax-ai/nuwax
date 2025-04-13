@@ -39,7 +39,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     onSuccess: (result: number) => {
       message.success('工作流已创建成功');
       onCancel();
-      history.push(`/workflow/${result}`);
+      history.push(`/space/${spaceId}/workflow/${result}`);
     },
   });
 

@@ -101,7 +101,9 @@ const PublishManage: React.FC = () => {
       return;
     }
     if (record.targetType === SquareAgentTypeEnum.Workflow) {
-      history.push(`/workflow/${record.targetId}?publishId=${record.id}`);
+      history.push(
+        `/space/${record.spaceId}/workflow/${record.targetId}?publishId=${record.id}`,
+      );
       return;
     }
   };

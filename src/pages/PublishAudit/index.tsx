@@ -149,7 +149,9 @@ const PublishAudit: React.FC = () => {
       return;
     }
     if (record.targetType === SquareAgentTypeEnum.Workflow) {
-      history.push(`/workflow/${record.targetId}?applyId=${record.id}`);
+      history.push(
+        `/space/${record.spaceId}/workflow/${record.targetId}?applyId=${record.id}`,
+      );
       return;
     }
   };
