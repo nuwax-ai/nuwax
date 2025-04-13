@@ -177,18 +177,17 @@ const PluginAutoAnalysis: React.FC<PluginAutoAnalysisProps> = ({
               scroll={{
                 y: 450,
               }}
-              footer={() => (
-                <div className={cx('text-right')}>
-                  <Button
-                    type="primary"
-                    onClick={handleAutoResolve}
-                    loading={loadingAnalysis}
-                  >
-                    自动解析
-                  </Button>
-                </div>
-              )}
+              // footer={null}
             />
+          </div>
+          <div className={cx('text-right')}>
+            <Button
+              type="primary"
+              onClick={handleAutoResolve}
+              loading={loadingAnalysis}
+            >
+              自动解析
+            </Button>
           </div>
         </div>
       )}

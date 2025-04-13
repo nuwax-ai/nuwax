@@ -42,7 +42,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
       // 更新开发智能体收藏列表
       runDevCollect({
         page: 1,
-        size: 50,
+        size: 8,
       });
     },
   });
