@@ -490,7 +490,14 @@ const initGraph = ({
     }
     // 处理循环节点的逻辑
     if (sourceNode.type === 'Loop' || targetNode.type === 'Loop') {
-      console.log(targetNode);
+      if (
+        (sourceNode.type === 'Loop' && !targetNode.loopNodeId) ||
+        (targetNode.type === 'Loop' && !sourceNode.loopNodeId)
+      ) {
+        message.warning('不能连接外部的节点');
+        edge.remove();
+        return;
+      }
       // 确保传递正确的参数类型给 handleLoopEdge 函数
       const _params = handleLoopEdge(
         sourceNode as ChildNode,
