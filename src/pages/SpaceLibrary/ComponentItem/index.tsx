@@ -32,7 +32,6 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
     const list = COMPONENT_MORE_ACTION.filter(
       (item) => item.type === componentInfo.type,
     );
-    console.log(componentInfo.type, list);
     setActionList(list);
   }, [componentInfo]);
 

@@ -19,7 +19,7 @@ import React, { MouseEvent } from 'react';
 
 // 智能体header组件
 export interface AgentHeaderProps {
-  agentConfigInfo: AgentConfigInfo;
+  agentConfigInfo?: AgentConfigInfo;
   onToggleShowStand: () => void;
   onToggleVersionHistory: () => void;
   onEditAgent: () => void;
@@ -37,7 +37,7 @@ export interface ArrangeTitleProps {
 export interface AgentArrangeConfigProps {
   spaceId: number;
   agentId: number;
-  agentConfigInfo: AgentConfigInfo;
+  agentConfigInfo?: AgentConfigInfo;
   // 修改智能体基础配置信息
   onChangeAgent: (value: string | string[], attr: string) => void;
 }
@@ -134,7 +134,7 @@ export interface LongMemoryContentProps {
 
 // 开场白组件
 export interface OpenRemarksEditProps {
-  agentConfigInfo: AgentConfigInfo;
+  agentConfigInfo?: AgentConfigInfo;
   onChangeAgent: (value: string | string[], attr: string) => void;
 }
 
