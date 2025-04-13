@@ -91,7 +91,7 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
         />
         <div className={cx('flex-1', 'flex', 'item-center', 'overflow-hide')}>
           <div className={cx('flex-1', 'text-ellipsis')}>
-            {componentInfo.creator?.nickName}
+            {componentInfo.creator?.nickName || componentInfo.creator?.userName}
           </div>
           <div className={cx(styles['edit-time'], 'text-ellipsis')}>
             最近编辑 {moment(componentInfo.modified).format('MM-DD HH:mm')}
