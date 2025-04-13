@@ -92,6 +92,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
                       children: 'children',
                     }}
                     titleRender={renderTitle}
+                    style={{ maxHeight: '500px', overflow: 'auto' }} // 添加滚动条
                   />
                 ),
               },

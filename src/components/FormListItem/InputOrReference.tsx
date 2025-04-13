@@ -126,6 +126,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
                     }}
                     titleRender={renderTitle}
                     defaultSelectedKeys={selectKey}
+                    style={{ maxHeight: '500px', overflow: 'auto' }} // 添加滚动条
                   />
                 ),
               },

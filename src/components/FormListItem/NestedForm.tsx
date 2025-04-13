@@ -55,6 +55,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
 
   const updateTreeData = (newData: TreeNodeConfig[]) => {
     setTreeData(newData);
+    console.log(newData, 'newData');
     form.setFieldValue(inputItemName, newData);
     setIsModified(true);
   };
@@ -145,11 +146,21 @@ const CustomTree: React.FC<TreeFormProps> = ({
     updateTreeData(newData);
   };
 
-  const updateNodeField = (key: string, field: string, value: any) => {
+  const updateNodeField = (
+    key: string,
+    field: string,
+    value: any,
+    type?: 'Input' | 'Reference',
+  ) => {
     const updateRecursive = (data: TreeNodeConfig[]): TreeNodeConfig[] =>
       data.map((node) => {
         if (node.key === key) {
-          return { ...node, [field]: value };
+          const newObj = {
+            ...node,
+            [field]: value,
+            bindValueType: type || node.bindValueType,
+          };
+          return newObj;
         }
         if (node.subArgs) {
           return { ...node, subArgs: updateRecursive(node.subArgs) };
@@ -231,13 +242,8 @@ const CustomTree: React.FC<TreeFormProps> = ({
             <InputOrReferenceFormTree
               referenceType={nodeData.bindValueType}
               value={nodeData.bindValue}
-              onChange={(value) => {
-                updateNodeField(nodeData.key!, 'bindValue', value);
-                if (value.includes('.')) {
-                  updateNodeField(nodeData.key!, 'bindValueType', 'Reference');
-                } else {
-                  updateNodeField(nodeData.key!, 'bindValueType', 'Input');
-                }
+              onChange={(value, type) => {
+                updateNodeField(nodeData.key!, 'bindValue', value, type);
               }}
             />
           </div>

@@ -161,27 +161,44 @@ const bindEventHandlers = ({
 
             // 使用 createRoot 渲染 Popconfirm
             const root = ReactDOM.createRoot(popconfirmContainer);
+            // 清理 Popconfirm 容器的函数
+            const cleanupPopconfirm = () => {
+              if (root) {
+                root.unmount();
+              }
+              if (
+                popconfirmContainer &&
+                document.body.contains(popconfirmContainer)
+              ) {
+                document.body.removeChild(popconfirmContainer);
+              }
+            };
+
             const confirm = () => {
               removeNode(_cell.id, _cell.getData());
               graph.removeCells(cells);
               // 清理 Popconfirm 容器
-              document.body.removeChild(popconfirmContainer);
+              cleanupPopconfirm();
             };
             const cancel = () => {
               // 清理 Popconfirm 容器
-              document.body.removeChild(popconfirmContainer);
-              if (root) {
-                root.unmount();
-              }
+              cleanupPopconfirm();
               return false; // 取消删除操作
             };
 
+            // 监听画布的其他操作，确保 Popconfirm 被清理
+            graph.on('blank:click', cleanupPopconfirm);
+            graph.on('node:click', cleanupPopconfirm);
+            graph.on('edge:click', cleanupPopconfirm);
+            graph.on('node:moved', cleanupPopconfirm);
             root.render(
               <Popconfirm
                 title="确定要删除循环节点吗？"
                 onConfirm={confirm}
                 onCancel={cancel}
                 open={true} // 直接显示 Popconfirm
+                okText={'确认'}
+                cancelText={'取消'}
               ></Popconfirm>,
             );
 
