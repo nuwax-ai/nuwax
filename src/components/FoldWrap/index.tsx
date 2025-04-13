@@ -143,10 +143,11 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
               <Popover
                 title={description}
                 overlayInnerStyle={{ width: '300px' }}
+                trigger="click"
               >
                 <div
                   onDoubleClick={() => setIsEditDesc(true)}
-                  className={`text-ellipsis ${styles['desc']}`}
+                  className={`text-ellipsis cursor-pointer ${styles['desc']}`}
                 >
                   {description}
                 </div>

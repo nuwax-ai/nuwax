@@ -91,8 +91,9 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
                       key: 'key',
                       children: 'children',
                     }}
+                    blockNode
                     titleRender={renderTitle}
-                    style={{ maxHeight: '500px', overflow: 'auto' }} // 添加滚动条
+                    className="custom-tree-style" // 添加自定义样式类
                   />
                 ),
               },
