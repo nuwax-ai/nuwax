@@ -15,7 +15,7 @@ import {
   CreateListEnum,
   FilterStatusEnum,
 } from '@/types/enums/space';
-import { AgentConfigInfo } from '@/types/interfaces/agent';
+import { AgentConfigInfo, AgentInfo } from '@/types/interfaces/agent';
 import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
 import type { UserInfo } from '@/types/interfaces/login';
 import {
@@ -57,16 +57,10 @@ const SpaceDevelop: React.FC = () => {
   const createIdRef = useRef<number>(0);
   // 目标智能体ID
   const targetAgentIdRef = useRef<number>(0);
-  const { agentList, setAgentList, agentAllRef, handlerCollect } = useModel(
-    'applicationDev',
-    (model) => ({
-      agentList: model.agentList,
-      setAgentList: model.setAgentList,
-      agentAllRef: model.agentAllRef,
-      handlerCollect: model.handlerCollect,
-    }),
-  );
-  const { runEdit } = useModel('devCollectAgent');
+  const { agentList, setAgentList, agentAllRef, handlerCollect } =
+    useModel('applicationDev');
+  const { runEdit, devCollectAgentList, runDevCollect } =
+    useModel('devCollectAgent');
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
@@ -124,12 +118,24 @@ const SpaceDevelop: React.FC = () => {
   const { run: runDel } = useRequest(apiAgentDelete, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
+    onSuccess: (_, params) => {
       message.success('已成功删除');
+      const id = params[0];
       handleDelAgent();
       runEdit({
         size: 8,
       });
+      // 如果智能体开发收藏列表包含此删除智能体, 重新查询
+      const index = devCollectAgentList?.findIndex(
+        (item: AgentInfo) => item.agentId === id,
+      );
+      if (index > -1) {
+        // 更新开发智能体收藏列表
+        runDevCollect({
+          page: 1,
+          size: 8,
+        });
+      }
     },
   });
 

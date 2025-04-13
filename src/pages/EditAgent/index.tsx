@@ -40,8 +40,7 @@ const EditAgent: React.FC = () => {
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
   // 智能体配置信息
-  const [agentConfigInfo, setAgentConfigInfo] =
-    useState<AgentConfigInfo | null>(null);
+  const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>();
   // 历史版本信息
   const [versionHistory, setVersionHistory] = useState<HistoryData[]>([]);
   const { cardList, showType, setShowType, setIsSuggest } =

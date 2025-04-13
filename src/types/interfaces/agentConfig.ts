@@ -106,7 +106,7 @@ export interface CardModeSettingProps {
 // 预览与调试组件
 export interface PreviewAndDebugHeaderProps {
   agentId: number;
-  agentConfigInfo: AgentConfigInfo;
+  agentConfigInfo?: AgentConfigInfo;
   onExecuteResults?: (executeResults: ExecuteResultInfo[]) => void;
   onPressDebug: () => void;
 }

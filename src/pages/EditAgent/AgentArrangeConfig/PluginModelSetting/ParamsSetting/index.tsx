@@ -29,10 +29,7 @@ const cx = classNames.bind(styles);
 /**
  * 插件参数设置
  */
-const ParamsSetting: React.FC<ParamsSettingProps> = ({
-  // inputConfigArgs,
-  variables,
-}) => {
+const ParamsSetting: React.FC<ParamsSettingProps> = ({ variables }) => {
   // 入参配置 - 展开的行，控制属性
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   // 入参配置
@@ -129,48 +126,46 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       dataIndex: 'require',
       key: 'require',
       width: 85,
-      render: (value) => <span>{value ? '必填' : '非必填'}</span>,
+      render: (value: boolean) => <span>{value ? '必填' : '非必填'}</span>,
     },
     {
       title: '默认值',
       key: 'default',
       render: (_, record) => (
-        <>
-          <Space.Compact block>
-            <SelectList
+        <Space.Compact block>
+          <SelectList
+            rootClassName={cx(styles.select)}
+            disabled={!record.enable}
+            value={record.bindValueType}
+            onChange={(value) =>
+              handleInputValue(record.key, 'bindValueType', value)
+            }
+            options={ParamsSettingDefaultOptions}
+          />
+          {record.bindValueType === BindValueType.Input ? (
+            <Input
               rootClassName={cx(styles.select)}
+              placeholder="请填写"
               disabled={!record.enable}
-              value={record.bindValueType}
-              onChange={(value) =>
-                handleInputValue(record.key, 'bindValueType', value)
+              value={record.bindValue}
+              onChange={(e) =>
+                handleInputValue(record.key, 'bindValue', e.target.value)
               }
-              options={ParamsSettingDefaultOptions}
             />
-            {record.bindValueType === BindValueType.Input ? (
-              <Input
-                rootClassName={cx(styles.select)}
-                placeholder="请填写"
-                disabled={!record.enable}
-                value={record.bindValue}
-                onChange={(e) =>
-                  handleInputValue(record.key, 'bindValue', e.target.value)
-                }
-              />
-            ) : (
-              <Select
-                placeholder="请选择"
-                disabled={!record.enable}
-                rootClassName={cx(styles.select)}
-                popupMatchSelectWidth={false}
-                value={record.bindValue}
-                onChange={(value) =>
-                  handleInputValue(record.key, 'bindValue', value)
-                }
-                options={variableList}
-              />
-            )}
-          </Space.Compact>
-        </>
+          ) : (
+            <Select
+              placeholder="请选择"
+              disabled={!record.enable}
+              rootClassName={cx(styles.select)}
+              popupMatchSelectWidth={false}
+              value={record.bindValue}
+              onChange={(value) =>
+                handleInputValue(record.key, 'bindValue', value)
+              }
+              options={variableList}
+            />
+          )}
+        </Space.Compact>
       ),
     },
     {
