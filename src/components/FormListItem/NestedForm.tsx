@@ -55,6 +55,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
 
   const updateTreeData = (newData: TreeNodeConfig[]) => {
     setTreeData(newData);
+    console.log(newData, 'newData');
     form.setFieldValue(inputItemName, newData);
     setIsModified(true);
   };
@@ -231,13 +232,9 @@ const CustomTree: React.FC<TreeFormProps> = ({
             <InputOrReferenceFormTree
               referenceType={nodeData.bindValueType}
               value={nodeData.bindValue}
-              onChange={(value) => {
+              onChange={(value, type) => {
+                updateNodeField(nodeData.key!, 'bindValueType', type);
                 updateNodeField(nodeData.key!, 'bindValue', value);
-                if (value.includes('.')) {
-                  updateNodeField(nodeData.key!, 'bindValueType', 'Reference');
-                } else {
-                  updateNodeField(nodeData.key!, 'bindValueType', 'Input');
-                }
               }}
             />
           </div>

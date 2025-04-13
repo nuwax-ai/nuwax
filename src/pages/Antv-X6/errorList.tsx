@@ -2,6 +2,7 @@ import { ChildNode } from '@/types/interfaces/graph';
 import { ErrorItem } from '@/types/interfaces/workflow';
 import { returnImg } from '@/utils/workflow';
 import { CloseOutlined } from '@ant-design/icons';
+import { Popover } from 'antd'; // 引入 Popover
 import React from 'react';
 import { useModel } from 'umi';
 import './index.less';
@@ -67,7 +68,15 @@ const ErrorList: React.FC<ErrorListProps> = ({
                   {returnImg(node.type)}
                   <div className="ml-12">
                     <p>{node.name || '123'}</p>
-                    <p className="error-text">{item.error}</p>
+                    <Popover
+                      content={<p>{item.error}</p>} // Popover 内容
+                      trigger="hover" // 鼠标悬停触发
+                      mouseEnterDelay={0.5} // 延迟 0.5 秒显示
+                      placement="top" // 显示在顶部左侧
+                      open={undefined} // 移除 open 属性，由 hover 触发
+                    >
+                      <p className="error-text">{item.error}</p>
+                    </Popover>
                   </div>
                 </div>
               );
@@ -75,7 +84,15 @@ const ErrorList: React.FC<ErrorListProps> = ({
               if (item) {
                 return (
                   <div className="dis-left error-list-item" key={item.error}>
-                    <p className="error-text">{item.error}</p>
+                    <Popover
+                      content={<p>{item.error}</p>} // Popover 内容
+                      trigger="hover" // 鼠标悬停触发
+                      mouseEnterDelay={0.5} // 延迟 0.5 秒显示
+                      placement="top" // 显示在顶部左侧
+                      open={item.error.length > 50 ? true : false} // 如果内容不超过 50 字符，不显示 Popover
+                    >
+                      <p className="error-text">{item.error}</p>
+                    </Popover>
                   </div>
                 );
               }
