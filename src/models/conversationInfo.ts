@@ -35,8 +35,6 @@ import { v4 as uuidv4 } from 'uuid';
 export default () => {
   // 会话信息
   const [conversationInfo, setConversationInfo] = useState<ConversationInfo>();
-  const [isLoadingConversation, setIsLoadingConversation] =
-    useState<boolean>(false);
   // 是否用户问题建议
   const [isSuggest, setIsSuggest] = useState<boolean>(true);
   // 会话信息
@@ -100,7 +98,6 @@ export default () => {
       // 开场白预置问题
       setChatSuggestList(data?.agent?.openingGuidQuestions || []);
       handleScrollBottom();
-      setIsLoadingConversation(false);
     },
   });
 
@@ -370,8 +367,6 @@ export default () => {
     setIsSuggest,
     conversationInfo,
     loadingConversation,
-    isLoadingConversation,
-    setIsLoadingConversation,
     messageList,
     setMessageList,
     requestId,

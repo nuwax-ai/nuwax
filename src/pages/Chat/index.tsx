@@ -9,7 +9,7 @@ import type { RoleInfo } from '@/types/interfaces/conversationInfo';
 import { addBaseTarget } from '@/utils/common';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useModel, useParams } from 'umi';
 import styles from './index.less';
 import ShowArea from './ShowArea';
@@ -26,12 +26,12 @@ const Chat: React.FC = () => {
   // 附加state
   const message = location.state?.message;
   const files = location.state?.files;
+  const [isLoadingConversation, setIsLoadingConversation] =
+    useState<boolean>(false);
 
   const {
     conversationInfo,
     loadingConversation,
-    isLoadingConversation,
-    setIsLoadingConversation,
     messageList,
     setMessageList,
     chatSuggestList,
@@ -62,10 +62,11 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     if (id) {
+      setIsLoadingConversation(false);
       const asyncFun = async () => {
-        setIsLoadingConversation(true);
         // 同步查询会话, 此处必须先同步查询会话信息，因为成功后会设置消息列表，如果是异步查询，会导致发送消息时，清空消息列表的bug
         const res = await runAsync(id);
+        setIsLoadingConversation(true);
         // 会话消息列表
         const list = res?.data?.messageList || [];
         const len = list?.length || 0;
