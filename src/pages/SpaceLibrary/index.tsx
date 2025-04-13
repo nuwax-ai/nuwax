@@ -344,7 +344,6 @@ const SpaceLibrary: React.FC = () => {
 
     // 工作流
     if (type === ComponentTypeEnum.Workflow) {
-      console.log(item, action, 333);
       switch (action) {
         case ComponentMoreActionEnum.Copy:
           runWorkflowCopy(id);
