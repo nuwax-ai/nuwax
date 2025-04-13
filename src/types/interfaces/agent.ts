@@ -370,7 +370,7 @@ export interface AgentComponentInfo {
   // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model
   type: AgentComponentTypeEnum;
   // 绑定组件配置，不同组件配置不一样
-  bindConfig: unknown;
+  bindConfig: any;
   // 关联的组件ID
   targetId: number;
   // 组件原始配置
