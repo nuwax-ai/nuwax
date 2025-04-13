@@ -29,7 +29,7 @@ const UserOperateArea: React.FC<UserOperateAreaType> = ({ onClick }) => {
       pollingInterval: 5000,
       pollingWhenHidden: false,
       // 轮询错误重试次数。如果设置为 -1，则无限次
-      pollingErrorRetryCount: 3,
+      pollingErrorRetryCount: -1,
       onSuccess: (result: number) => {
         if (result > 0) {
           setUnreadCount(result);
