@@ -53,8 +53,8 @@ const OtherOperations: React.FC<OtherOperationsProps> = ({
         <Popover
           content={content}
           trigger="click"
-          visible={popoverVisible}
-          onVisibleChange={(visible) => setPopoverVisible(visible)}
+          open={popoverVisible}
+          onOpenChange={(visible) => setPopoverVisible(visible)}
         >
           <DashOutlined onClick={() => setPopoverVisible(true)} />
         </Popover>

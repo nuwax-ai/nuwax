@@ -21,6 +21,7 @@ import {
   Space,
 } from 'antd';
 import React, { useState } from 'react';
+import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
 import { outPutConfigs } from '../params';
@@ -30,6 +31,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
 
+  const { setSkillChange } = useModel('workflow');
   // 新增技能
   const onAddedSkill = (item: CreatedNodeItem) => {
     const skillComponentConfigs =
@@ -42,6 +44,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
     );
     form.submit();
     setOpen(false);
+    setSkillChange(true);
   };
 
   //   显示新增技能

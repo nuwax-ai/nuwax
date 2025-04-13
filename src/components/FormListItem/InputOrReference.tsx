@@ -1,26 +1,11 @@
 import { InputAndOutConfig, PreviousList } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
 import { SettingOutlined } from '@ant-design/icons';
-import { Dropdown, Input, Tag } from 'antd';
+import { Dropdown, Input, Tag, Tree } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import './index.less';
 import { InputOrReferenceProps } from './type';
-
-interface Event {
-  key: string;
-
-  keyPath: string[];
-
-  domEvent: React.MouseEvent;
-}
-// 定义 mapChildren 的返回值类型
-type MenuItem = {
-  key: string;
-  label: React.ReactNode;
-  onClick: (e: Event) => void; // 修改为接收事件参数
-  children?: MenuItem[];
-};
 
 const InputOrReference: React.FC<InputOrReferenceProps> = ({
   placeholder,
@@ -36,6 +21,8 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   const { referenceList, getValue, getLoopValue, setIsModified } =
     useModel('workflow');
   const [displayValue, setDisplayValue] = useState('');
+
+  const [selectKey, setSelectKey] = useState<React.Key[]>([value || '']);
 
   const updateValues = (newValue: string, valueType: 'Input' | 'Reference') => {
     if (fieldName && form) {
@@ -58,6 +45,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         form.setFieldValue(fieldName, newValue);
       }
     }
+    setIsModified(true); // 标记为已修改
   };
 
   // 监听表单值变化
@@ -95,64 +83,54 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   //   updateValues(e.target.value, 'Input');
   // };
 
-  // 新增递归处理函数
-  const mapChildren = (items: InputAndOutConfig[], level = 1): MenuItem[] => {
-    return items.flatMap((item) => ({
-      key: item.key!,
-      label: (
-        <div
-          className="reference-item-child"
-          style={{ marginLeft: level * 10 }}
-        >
-          <span>{item.name}</span>
-          <Tag className="ml-20" color="#C9CDD4">
-            {item.dataType}
-          </Tag>
-        </div>
-      ),
-      onClick: (e: Event) => {
-        console.log(123, e);
-        e.domEvent.stopPropagation(); // 阻止事件冒泡
-        onChange?.(e.key!); // 使用注入的 onChange
-        updateValues(e.key!, 'Reference');
-        setDisplayValue(getValue(e.key!));
-      },
-      children: item.children
-        ? mapChildren(item.children, level + 1)
-        : undefined,
-    }));
+  const renderTitle = (nodeData: InputAndOutConfig) => {
+    return (
+      <div>
+        <span>{nodeData.name}</span>
+        <Tag className="ml-20" color="#C9CDD4">
+          {nodeData.dataType}
+        </Tag>
+      </div>
+    );
   };
 
-  const changeMenuItem = (arr: PreviousList[]) => {
-    if (arr.length > 0) {
-      return arr.map((node) => ({
+  // 处理 TreeSelect 的选中事件
+  const handleTreeSelectChange = (key: React.Key[]) => {
+    updateValues(key[0] as string, 'Reference');
+    setDisplayValue(getValue(key[0]));
+    setSelectKey(key); // 更新 selectKey 状态
+  };
+  // 动态生成 Dropdown 的 items
+  // 动态生成 Dropdown 的 items
+  const getMenu = (nodes: PreviousList[]) => {
+    if (nodes && nodes.length) {
+      return nodes.map((node) => ({
         key: node.id,
         label: node.name,
         icon: returnImg(node.type),
-        children: node.outputArgs?.flatMap((arg) => [
-          // 父级参数项
-          {
-            key: arg.key,
-            label: (
-              <div
-                className="reference-item-child"
-                onClick={() => {
-                  console.log(123, arg.key);
-                  onChange?.(arg.key!); // 使用注入的 onChange
-                  updateValues(arg.key!, 'Reference');
-                  setDisplayValue(getValue(arg.key!));
-                }}
-              >
-                <span>{arg.name}</span>
-                <Tag className="ml-20" color="#C9CDD4">
-                  {arg.dataType}
-                </Tag>
-              </div>
-            ),
-          },
-          // 子参数项（递归处理）
-          ...(arg.children ? mapChildren(arg.children) : []),
-        ]),
+        children: node.outputArgs
+          ? [
+              {
+                key: `${node.id}-tree-select`,
+                label: (
+                  <Tree
+                    onSelect={(keys) => {
+                      handleTreeSelectChange(keys);
+                    }}
+                    defaultExpandAll
+                    treeData={node.outputArgs}
+                    fieldNames={{
+                      title: 'name',
+                      key: 'key',
+                      children: 'children',
+                    }}
+                    titleRender={renderTitle}
+                    defaultSelectedKeys={selectKey}
+                  />
+                ),
+              },
+            ]
+          : undefined,
       }));
     } else {
       return [
@@ -171,15 +149,15 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
 
   const getMenuItems = () => {
     if (isLoop) {
-      return changeMenuItem(referenceList.innerPreviousNodes);
+      return getMenu(referenceList.innerPreviousNodes);
     } else {
-      return changeMenuItem(referenceList.previousNodes);
+      return getMenu(referenceList.previousNodes);
     }
   };
 
   return (
     <div className="input-or-reference dis-sb" style={style}>
-      {referenceType === 'Reference' ? (
+      {referenceType === 'Reference' || referenceType === null ? (
         displayValue ? (
           <Tag
             closable

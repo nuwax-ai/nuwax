@@ -54,6 +54,10 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   }, [zoomSize]);
 
   const [open, setOpen] = useState(false);
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+  };
   return (
     <>
       <div className="absolute-box">
@@ -79,12 +83,12 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
               }}
             />
           }
-          trigger="click"
+          trigger={['click']} // 支持 hover 和 click 触发
           open={open}
-          onOpenChange={(visible) => setOpen(visible)}
+          onOpenChange={handleOpenChange}
         >
           <Button
-            onClick={() => setOpen(true)}
+            onMouseEnter={() => setOpen(true)}
             icon={<PlusOutlined />}
             type="primary"
           >

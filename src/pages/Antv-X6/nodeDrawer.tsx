@@ -63,7 +63,8 @@ const NodeDrawer = (
   ref: React.ForwardedRef<NodeDrawerRef>,
 ) => {
   // 当前节点是否修改了参数
-  const { isModified, setIsModified } = useModel('workflow');
+  const { isModified, setIsModified, skillChange } = useModel('workflow');
+  console.log('isModified', isModified);
   // 新增定时器引用
   const timerRef = useRef<NodeJS.Timeout>();
   // 将节点的数据 保存到 state 中,维持数据双向绑定,便于管理
@@ -240,32 +241,18 @@ const NodeDrawer = (
   }, [visible]);
 
   useEffect(() => {
-    if (foldWrapItem.id && foldWrapItem.id !== 0) {
-      // 对比新旧 foldWrapItem，仅在必要时更新
-      if (JSON.stringify(foldWrapItem) !== JSON.stringify(currentNodeConfig)) {
-        if (foldWrapItem.id === currentNodeConfig.id) {
-          const currentValues = form.getFieldsValue(); // 获取当前表单值
-          const newValues = { ...currentValues }; // 创建一个副本用于更新
-
-          // 更新表单值（仅当节点类型匹配时）
-          if (['LLM', 'Knowledge'].includes(foldWrapItem.type)) {
-            form.setFieldsValue(newValues);
-          }
-        }
-
-        // 更新当前节点配置
-        setCurrentNodeConfig(foldWrapItem);
+    // 监听 foldWrapItem.id 的变化
+    if (foldWrapItem.id && foldWrapItem.id !== currentNodeConfig.id) {
+      // 提交当前节点的数据
+      if (isModified) {
+        onFinish();
       }
-    }
-  }, [JSON.stringify(foldWrapItem)]); // 监听 foldWrapItem 的变化
-
-  // 监听 foldWrapItem.id 的变化，而不是整个 foldWrapItem
-  useEffect(() => {
-    if (foldWrapItem.id !== currentNodeConfig.id && foldWrapItem.id !== 0) {
-      // 清空表单值
-      form.resetFields();
-      // 设置新的表单值
-      form.setFieldsValue(foldWrapItem.nodeConfig);
+      // 深拷贝新的 foldWrapItem 数据
+      const newFoldWrapItem = JSON.parse(JSON.stringify(foldWrapItem));
+      // 更新为新的 foldWrapItem 数据
+      setCurrentNodeConfig(newFoldWrapItem);
+      form.resetFields(); // 清空表单
+      form.setFieldsValue(newFoldWrapItem.nodeConfig); // 设置新数据
       // 特殊处理 HTTPRequest 节点
       if (foldWrapItem.type === 'HTTPRequest') {
         if (form.getFieldValue('method') === null) {
@@ -285,8 +272,19 @@ const NodeDrawer = (
           form.setFieldValue('answerType', 'TEXT');
         }
       }
+    } else if (
+      foldWrapItem.id === currentNodeConfig.id &&
+      JSON.stringify(foldWrapItem) !== JSON.stringify(currentNodeConfig)
+    ) {
+      // 如果 foldWrapItem.id 相同但内容不同，仅更新表单值
+      const currentValues = form.getFieldsValue();
+      const newValues = { ...currentValues, ...foldWrapItem.nodeConfig };
+      if (['LLM', 'Knowledge'].includes(foldWrapItem.type) && skillChange) {
+        form.setFieldsValue(newValues);
+      }
+      setCurrentNodeConfig(foldWrapItem);
     }
-  }, [foldWrapItem.id]); // 监听 id 和 nodeConfig 的变化
+  }, [foldWrapItem.id, JSON.stringify(foldWrapItem)]); // 只监听 id 的变化
 
   return (
     <FoldWrap

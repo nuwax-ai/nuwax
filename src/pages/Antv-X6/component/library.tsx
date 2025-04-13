@@ -9,6 +9,7 @@ import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Empty, Form, Popover, Select, Slider } from 'antd';
 import React, { useState } from 'react';
+import { useModel } from 'umi';
 import '../index.less';
 import { TreeOutput } from './commonNode';
 // 定义知识库
@@ -17,6 +18,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
 }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
+  const { setSkillChange } = useModel('workflow');
   //   显示新增技能
   const showAdd = () => {
     setOpen(true);
@@ -34,6 +36,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
     );
     form.submit();
     setOpen(false);
+    setSkillChange(true);
   };
 
   const hasIds: HasIdsType = {

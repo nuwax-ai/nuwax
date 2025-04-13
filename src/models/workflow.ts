@@ -3,20 +3,35 @@
 // import { ChildNode } from '@/types/interfaces/graph';
 import { NodePreviousAndArgMap } from '@/types/interfaces/node';
 // import { message } from 'antd';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 const useWorkflow = () => {
   // 是否要校验当前的数据
   const [volid, setVolid] = useState<boolean>(false);
 
   const [spaceId, setSpaceId] = useState<number>(0);
-  // 当前节点是否修改了参数
-  const [isModified, setIsModified] = useState(false);
+
+  // 使用 useState 触发组件重新渲染
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, forceUpdate] = useState<boolean>(false);
 
   const [referenceList, setReferenceList] = useState<NodePreviousAndArgMap>({
     previousNodes: [],
     innerPreviousNodes: [],
     argMap: {},
   });
+
+  // 使用 useRef 存储 isModified 的状态
+  const isModifiedRef = useRef<boolean>(false);
+  // 获取 isModified 的最新值
+  const getIsModified = () => isModifiedRef.current;
+
+  // 设置 isModified 的值并触发重新渲染
+  const setIsModified = (value: boolean) => {
+    isModifiedRef.current = value;
+    forceUpdate((prev) => !prev); // 触发重新渲染
+  };
+
+  const [skillChange, setSkillChange] = useState<boolean>(false);
 
   // 获取父节点名称
   const getName = (value: string) => {
@@ -75,10 +90,13 @@ const useWorkflow = () => {
     setReferenceList,
     getValue,
     getLoopValue,
-    isModified,
+    isModified: isModifiedRef.current, // 返回最新的 isModified 值
+    getIsModified, // 导出
     setIsModified,
     spaceId,
     setSpaceId,
+    skillChange,
+    setSkillChange,
     // foldWrapItem,
     // setFoldWrapItem,
     // getCurrentNodeData,

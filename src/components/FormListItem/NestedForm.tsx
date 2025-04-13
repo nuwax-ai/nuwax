@@ -378,10 +378,10 @@ const CustomTree: React.FC<TreeFormProps> = ({
 
       {treeData && treeData.length > 0 && (
         <div className={'dis-left font-12 mb-6 font-color-gray07'}>
-          <span className="flex-1 ml-10">变量名</span>
+          <span className="flex-1 ">变量名</span>
           <span
             style={{
-              width: 80 + (showCheck ? 68 : 70) + (isBody ? 52 : 0),
+              width: 80 + (showCheck ? 60 : 50) + (isBody ? 62 : 0),
             }}
           >
             变量类型

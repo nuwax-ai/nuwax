@@ -296,7 +296,12 @@ const initGraph = ({
     .use(new Keyboard()) // 启用键盘插件，支持快捷键操作
     .use(new Clipboard()) // 启用剪贴板插件，支持复制和粘贴
     .use(new History()) // 启用历史记录插件，支持撤销和重做
-    .use(new Selection()); // 启用选择插件，并配置选择限制
+    .use(
+      new Selection({
+        multiple: false, // 是否允许多选
+        enabled: true, // 启用选中功能
+      }),
+    ); // 启用选择插件，并配置选择限制
 
   // 监听连接桩鼠标进入事件
   graph.on('node:mouseenter', ({ node }) => {
@@ -419,6 +424,10 @@ const initGraph = ({
   });
   // 点击空白处，取消所有的选中
   graph.on('blank:click', () => {
+    const nodes = graph.getNodes();
+    nodes.forEach((node) => {
+      node.setData({ selected: false });
+    });
     changeDrawer(null); // 调用回调函数以更新抽屉内容
     graph.cleanSelection();
   });
@@ -433,18 +442,19 @@ const initGraph = ({
   });
   // 监听节点点击事件，调用 changeDrawer 函数更新右侧抽屉的内容
   graph.on('node:click', ({ node }) => {
-    // 判断点击的是空白处还是节点
-    if (node && node.isNode()) {
-      // 设置当前节点为选中状态
-      changeZindex(node);
-      node.setData({ selected: true }); // 保持当前节点层级999
-      // 获取被点击节点的数据
-      const latestData = {
-        ...node.getData(), // 获取图形实例存储的数据
-        id: node.id, // 确保ID同步
-      };
-      changeDrawer(latestData); // 调用回调函数以更新抽屉内容
-    }
+    // 先取消所有节点的选中状态
+    graph.cleanSelection();
+
+    // 设置当前节点为选中状态
+    changeZindex(node);
+    node.setData({ selected: true });
+
+    // 获取被点击节点的数据
+    const latestData = {
+      ...node.getData(),
+      id: node.id,
+    };
+    changeDrawer(latestData);
   });
 
   graph.on('node:unselected', ({ node }: { node: Node }) => {

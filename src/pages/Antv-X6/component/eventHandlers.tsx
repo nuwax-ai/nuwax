@@ -1,5 +1,5 @@
 import { BindEventHandlers } from '@/types/interfaces/graph';
-import { message } from 'antd';
+import { message, Popconfirm } from 'antd';
 /**
  * 绑定图形编辑器的事件处理器
  * @param graph - AntV X6 图形实例
@@ -133,8 +133,32 @@ const bindEventHandlers = ({
           message.warning('不能删除开始节点和结束节点');
           return;
         }
+
         // 如果是删除循环节点或删除循环的子节点
         if (_cell.getData().loopNodeId || _cell.getData().type === 'Loop') {
+          if (_cell.getData().type === 'Loop') {
+            // 使用 JSX 形式的 Popconfirm
+            const confirm = () => {
+              removeNode(_cell.id, _cell.getData());
+              graph.removeCells(cells);
+            };
+            const cancel = () => {
+              return false; // 取消删除操作
+            };
+            message.warning({
+              content: (
+                <Popconfirm
+                  title="确定要删除循环节点吗？"
+                  onConfirm={confirm}
+                  onCancel={cancel}
+                >
+                  <span>确定要删除循环节点吗？</span>
+                </Popconfirm>
+              ),
+              duration: 0, // 设置为 0 表示不自动关闭
+            });
+            return false; // 阻止默认删除行为
+          }
           // 删除节点
           removeNode(_cell.id, _cell.getData());
         } else {
