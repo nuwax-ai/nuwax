@@ -490,6 +490,7 @@ const initGraph = ({
     }
     // 处理循环节点的逻辑
     if (sourceNode.type === 'Loop' || targetNode.type === 'Loop') {
+      console.log(targetNode);
       // 确保传递正确的参数类型给 handleLoopEdge 函数
       const _params = handleLoopEdge(
         sourceNode as ChildNode,

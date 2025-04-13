@@ -246,6 +246,7 @@ const Workflow: React.FC = () => {
     //   return;
     // }
     if (_res.code === Constant.success) {
+      console.log(update);
       if (update) {
         if (typeof update === 'string' && update !== 'moved') {
           // 新增和删除边以后，如果当前的节点是被连接的节点，那么就要更新当前节点的参数
@@ -254,6 +255,10 @@ const Workflow: React.FC = () => {
           }
         } else {
           setFoldWrapItem(params);
+        }
+        if (config.type === 'Loop') {
+          // 如果传递的是boolean，那么证明要更新这个节点
+          getNodeConfig(Number(config.id));
         }
       } else {
         if (config.id === foldWrapItemRef.current.id) {
