@@ -222,6 +222,7 @@ const Created: React.FC<CreatedProp> = ({
   };
 
   const callInterface = (val: string, params: IGetList) => {
+    setSizes(100);
     // 通过左侧菜单决定调用哪个接口
     switch (val) {
       case 'collect':
@@ -261,7 +262,6 @@ const Created: React.FC<CreatedProp> = ({
 
     const _select = typeof val === 'string' ? val : val.target.value;
     const _item = buttonList.find((item) => item.key === _select);
-    console.log(_item);
     if (_item) {
       setSelectMenu('all');
       setSearch('');

@@ -91,6 +91,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             onMouseEnter={() => setOpen(true)}
             icon={<PlusOutlined />}
             type="primary"
+            onClick={() => setOpen(true)}
           >
             添加节点
           </Button>

@@ -6,7 +6,7 @@ import { TestRunparams } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
 import { CaretRightOutlined, CloseOutlined } from '@ant-design/icons';
 import { Bubble, Prompts, Sender } from '@ant-design/x';
-import { Button, Collapse, Empty, Form, Input, Tag } from 'antd';
+import { Button, Collapse, Empty, Form, FormInstance, Input, Tag } from 'antd';
 import { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import './index.less';
@@ -47,36 +47,41 @@ interface QaItems {
 //   { label: 'coder', value: 'coder', img: squareImage },
 // ];
 
-const renderFormItem = (type: string, items: any[]) => {
+const renderFormItem = (type: string, items: any[], form: FormInstance) => {
   return (
-    <Form.List name={type}>
-      {(fields) => (
-        <>
-          {fields.map(({ key, name }) => {
-            const item = items[name]; // 获取对应的数据项
-            return (
-              <div key={key}>
-                <Form.Item
-                  name={[name, item.name]} // 动态设置 name
-                  label={
-                    <>
-                      {item.name}
-                      <Tag color="#C9CDD4" className="ml-10">
-                        {item.dataType}
-                      </Tag>
-                    </>
-                  }
-                >
-                  <Input />
-                </Form.Item>
-              </div>
-            );
-          })}
-        </>
-      )}
-    </Form.List>
+    <>
+      {items.map((item, index) => (
+        <div key={item.key || index}>
+          <Form.Item
+            name={[item.name]} // 绑定到 bindValue
+            label={
+              <>
+                {item.name}
+                <Tag color="#C9CDD4" className="ml-10">
+                  {item.dataType}
+                </Tag>
+              </>
+            }
+          >
+            {item.dataType === 'Object' || item.dataType?.includes('Array') ? (
+              <CodeEditor
+                value={form.getFieldValue(item.name) || ''}
+                codeLanguage={'JSON'}
+                onChange={(code: string) => {
+                  form.setFieldsValue({ [item.name]: code }); // 更新表单值
+                }}
+                height="180px"
+              />
+            ) : (
+              <Input />
+            )}
+          </Form.Item>
+        </div>
+      ))}
+    </>
   );
 };
+
 // 试运行
 const TestRun: React.FC<TestRunProps> = ({
   node,
@@ -100,26 +105,38 @@ const TestRun: React.FC<TestRunProps> = ({
   };
 
   const handlerSubmit = () => {
-    if (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length) {
-      const value = form.getFieldsValue();
-      for (let item in value) {
-        if (Object.prototype.hasOwnProperty.call(value, item)) {
-          // 过滤原型链属性
-          const inputArg = node.nodeConfig.inputArgs.find(
-            (arg) => arg.name === item,
-          );
-          if (
-            inputArg &&
-            (inputArg.dataType === 'Object' ||
-              inputArg.dataType?.includes('Array'))
-          ) {
-            try {
-              value[item] = JSON.parse(value[item]);
-            } catch (error) {
-              console.error('JSON 解析失败:', error);
+    let value = form.getFieldsValue();
+    if (
+      value &&
+      JSON.stringify(value) !== '{}'
+      // (node.nodeConfig.queries && node.nodeConfig.queries.length) ||
+      // (node.nodeConfig.headers && node.nodeConfig.headers.length) ||
+      // (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length)
+    ) {
+      // const value = form.getFieldsValue();
+      if (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length) {
+        for (let item in value) {
+          if (Object.prototype.hasOwnProperty.call(value, item)) {
+            // 过滤原型链属性
+            const inputArg = node.nodeConfig.inputArgs.find(
+              (arg) => arg.name === item,
+            );
+            if (
+              inputArg &&
+              (inputArg.dataType === 'Object' ||
+                inputArg.dataType?.includes('Array'))
+            ) {
+              try {
+                value[item] = JSON.parse(value[item]);
+              } catch (error) {
+                console.error('JSON 解析失败:', error);
+              }
             }
           }
         }
+      } else {
+        value = JSON.parse(value['params']);
+        console.log(value, 'value');
       }
       run(node.type, value);
     } else {
@@ -127,103 +144,94 @@ const TestRun: React.FC<TestRunProps> = ({
     }
   };
 
+  // else {
+  //   const _value =JSON.parse(JSON.stringify(value));
+  //   for (let item of ['body', 'headers', 'queries']) {
+  //     if (Object.prototype.hasOwnProperty.call(_value, item)) {
+  //       // 过滤原型链属性
+  //       const inputArg = node.nodeConfig[item].find((arg) => {
+  //         if (_value[item] && value[item].length > 0) {
+  //           return _value[item].some((entry: any) => arg.name === Object.keys(entry)[0]);
+  //         }
+  //         return false;
+  //       });
+
+  //       if (
+  //         inputArg &&
+  //         (inputArg.dataType === 'Object' ||
+  //           inputArg.dataType?.includes('Array'))
+  //       ) {
+  //         if (inputArg && (inputArg.dataType === 'Object' || inputArg.dataType?.includes('Array'))) {
+  //           _value[item] = _value[item].map((entry: any) => {
+  //             const key = inputArg.name; // 直接使用 inputArg.name 作为键
+  //              try {
+  //               entry[key] = JSON.parse(entry[key]);
+  //             } catch (error) {
+  //               console.error('JSON 解析失败:', error);
+  //             }
+  //             return entry;
+  //           });
+  //         }
+  //         console.log(_value,'value')
+  //       }
+  //     }
+  //   }
+
+  // }
+
   const items = [
     {
       key: 'inputArgs',
       label: '试运行输入',
       children: (
         <>
-          {node.nodeConfig.inputArgs &&
-            node.nodeConfig.inputArgs.length > 0 && (
-              <div className="border-bottom ">
-                <p className="collapse-title-style dis-left">
-                  {returnImg(node.type)}
-                  <span className="ml-10">{node.name}节点</span>
-                </p>
-                <Form
-                  form={form}
-                  layout={'vertical'}
-                  onFinish={onFinish}
-                  className="test-run-form"
-                >
-                  {node.nodeConfig.inputArgs.map((item) => {
-                    if (
-                      item.dataType === 'Object' ||
-                      item.dataType?.includes('Array')
-                    ) {
-                      return (
-                        <div key={item.name}>
-                          <Form.Item
-                            name={item.name}
-                            label={
-                              <>
-                                {item.name}
-                                <Tag color="#C9CDD4" className="ml-10">
-                                  {item.dataType}
-                                </Tag>
-                              </>
-                            }
-                            // rules={[{ required: true, message: '请输入' }]}
-                          >
-                            <CodeEditor
-                              value={form.getFieldValue(item.name) || ''}
-                              codeLanguage={'JSON'}
-                              height="180px"
-                              onChange={(code: string) => {
-                                console.log(typeof code);
-                                form.setFieldValue(item.name, code); // 确保 code 是字符串
-                              }}
-                            />
-                          </Form.Item>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div key={item.name}>
-                        <Form.Item
-                          name={item.name}
-                          label={
-                            <>
-                              {item.name}
-                              <Tag color="#C9CDD4" className="ml-10">
-                                {item.dataType}
-                              </Tag>
-                            </>
-                          }
-                          // rules={[{ required: true, message: '请输入' }]}
-                        >
-                          <Input />
-                        </Form.Item>
-                      </div>
-                    );
-                  })}
-                </Form>
-              </div>
+          <Form
+            form={form}
+            layout={'vertical'}
+            onFinish={onFinish}
+            className="test-run-form"
+          >
+            <div className="dis-left">
+              {returnImg(node.type)}
+              <span style={{ marginLeft: '10px' }}>{node.name}</span>
+            </div>
+            {node.type !== 'HTTPRequest' &&
+              (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length ? (
+                renderFormItem('inputArgs', node.nodeConfig.inputArgs, form)
+              ) : (
+                <Empty description="本次试运行无需输入" />
+              ))}
+            {node.type === 'HTTPRequest' && (
+              // <>
+              //   {node.nodeConfig.body &&
+              //     node.nodeConfig.body.length &&
+              //     renderFormList('body', node.nodeConfig.body, form)}
+              //   {node.nodeConfig.headers &&
+              //     node.nodeConfig.headers.length &&
+              //     renderFormList('headers', node.nodeConfig.headers, form)}
+              //   {node.nodeConfig.queries &&
+              //     node.nodeConfig.queries.length &&
+              //     renderFormList('queries', node.nodeConfig.queries, form)}
+              //   {!node.nodeConfig.body?.length &&
+              //     !node.nodeConfig.headers?.length &&
+              //     !node.nodeConfig.queries?.length && (
+              //       <Empty description="本次试运行无需输入" />
+              //     )}
+              // </>
+              <>
+                <Form.Item name="params">
+                  <CodeEditor
+                    value={form.getFieldValue('params') || ''}
+                    codeLanguage={'JSON'}
+                    onChange={(code: string) => {
+                      form.setFieldValue('params', code); // 更新表单值
+                    }}
+                    height="180px"
+                  />
+                </Form.Item>
+              </>
             )}
-          {node.type !== 'HTTPRequest' &&
-            (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length ? (
-              renderFormItem('inputArgs', node.nodeConfig.inputArgs)
-            ) : (
-              <Empty description="本次试运行无需输入" />
-            ))}
-          {node.type === 'HTTPRequest' && (
-            <>
-              {node.nodeConfig.body &&
-                node.nodeConfig.body.length &&
-                renderFormItem('body', node.nodeConfig.body)}
-              {node.nodeConfig.headers &&
-                node.nodeConfig.headers.length &&
-                renderFormItem('headers', node.nodeConfig.headers)}
-              {node.nodeConfig.queries &&
-                node.nodeConfig.queries.length &&
-                renderFormItem('queries', node.nodeConfig.queries)}
-              {!node.nodeConfig.body?.length &&
-                !node.nodeConfig.headers?.length &&
-                !node.nodeConfig.queries?.length && (
-                  <Empty description="本次试运行无需输入" />
-                )}
-            </>
-          )}
+          </Form>
         </>
       ),
     },
@@ -274,17 +282,32 @@ const TestRun: React.FC<TestRunProps> = ({
   useEffect(() => {
     let _obj = JSON.parse(JSON.stringify(formItemValue || {})); // TOD
     if (JSON.stringify(_obj) !== '{}') {
-      console.log('formItemValue', formItemValue);
       for (let item in _obj) {
         if (typeof _obj[item] !== 'string') {
           _obj[item] = JSON.stringify(_obj[item]);
         }
       }
-      console.log(_obj);
+      console.log(_obj, '_obj');
       form.setFieldsValue(_obj);
     }
   }, [formItemValue]);
 
+  // const initValue = (items: InputAndOutConfig[]) => {
+  //   return items.map((item) => ({ [item.name]: '' }));
+  // };
+  // useEffect(() => {
+  //   if (node.type === 'HTTPRequest') {
+  //     if (node.nodeConfig.body && node.nodeConfig.body.length) {
+  //       form.setFieldsValue({ body: initValue(node.nodeConfig.body) });
+  //     }
+  //     if (node.nodeConfig.headers && node.nodeConfig.headers.length) {
+  //       form.setFieldsValue({ headers: initValue(node.nodeConfig.headers) });
+  //     }
+  //     if (node.nodeConfig.queries && node.nodeConfig.queries.length) {
+  //       form.setFieldsValue({ queries: initValue(node.nodeConfig.queries) });
+  //     }
+  //   }
+  // }, [node]);
   return (
     <div
       className="test-run-style"
