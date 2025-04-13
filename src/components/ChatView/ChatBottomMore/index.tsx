@@ -1,5 +1,6 @@
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/TooltipIcon';
+import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { ChatBottomMoreProps } from '@/types/interfaces/common';
 import { CopyOutlined, PaperClipOutlined } from '@ant-design/icons';
 import { message, Tooltip } from 'antd';
@@ -73,7 +74,7 @@ const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({
             className={styles.icon}
             icon={<PaperClipOutlined onClick={handleDebug} />}
             title="调试"
-            type="white"
+            type={TooltipTitleTypeEnum.White}
           />
         </ConditionRender>
       </div>

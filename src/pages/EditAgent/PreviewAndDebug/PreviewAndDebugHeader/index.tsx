@@ -1,4 +1,4 @@
-import { KeyOutlined } from '@ant-design/icons';
+import { PaperClipOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -35,7 +35,7 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
           )}
           onClick={onPressDebug}
         >
-          <KeyOutlined />
+          <PaperClipOutlined />
           调试
         </span>
       </div>
