@@ -28,7 +28,6 @@ const KnowledgeTextList: React.FC<KnowledgeTextListProps> = ({
     setAgentComponentInfo(item);
   };
 
-  console.log(list, 8888);
   return !list?.length ? (
     <p>
       将文档、URL、三方数据源上传为文本知识库后，用户发送消息时，智能体能够引用文本知识中的内容回答用户问题。
@@ -52,7 +51,7 @@ const KnowledgeTextList: React.FC<KnowledgeTextListProps> = ({
               >
                 {item?.bindConfig?.invokeType === InvokeTypeEnum.AUTO
                   ? '自动调用'
-                  : '按需调用'}{' '}
+                  : '按需调用'}
                 <CaretDownOutlined />
               </span>
               <TooltipIcon
