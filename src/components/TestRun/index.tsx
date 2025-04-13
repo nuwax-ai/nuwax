@@ -47,6 +47,36 @@ interface QaItems {
 //   { label: 'coder', value: 'coder', img: squareImage },
 // ];
 
+const renderFormItem = (type: string, items: any[]) => {
+  return (
+    <Form.List name={type}>
+      {(fields) => (
+        <>
+          {fields.map(({ key, name }) => {
+            const item = items[name]; // 获取对应的数据项
+            return (
+              <div key={key}>
+                <Form.Item
+                  name={[name, item.name]} // 动态设置 name
+                  label={
+                    <>
+                      {item.name}
+                      <Tag color="#C9CDD4" className="ml-10">
+                        {item.dataType}
+                      </Tag>
+                    </>
+                  }
+                >
+                  <Input />
+                </Form.Item>
+              </div>
+            );
+          })}
+        </>
+      )}
+    </Form.List>
+  );
+};
 // 试运行
 const TestRun: React.FC<TestRunProps> = ({
   node,
@@ -170,10 +200,29 @@ const TestRun: React.FC<TestRunProps> = ({
                 </Form>
               </div>
             )}
-          {(!node ||
-            !node.nodeConfig.inputArgs ||
-            !node.nodeConfig.inputArgs.length) && (
-            <Empty description="本次试运行无需输入" />
+          {node.type !== 'HTTPRequest' &&
+            (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length ? (
+              renderFormItem('inputArgs', node.nodeConfig.inputArgs)
+            ) : (
+              <Empty description="本次试运行无需输入" />
+            ))}
+          {node.type === 'HTTPRequest' && (
+            <>
+              {node.nodeConfig.body &&
+                node.nodeConfig.body.length &&
+                renderFormItem('body', node.nodeConfig.body)}
+              {node.nodeConfig.headers &&
+                node.nodeConfig.headers.length &&
+                renderFormItem('headers', node.nodeConfig.headers)}
+              {node.nodeConfig.queries &&
+                node.nodeConfig.queries.length &&
+                renderFormItem('queries', node.nodeConfig.queries)}
+              {!node.nodeConfig.body?.length &&
+                !node.nodeConfig.headers?.length &&
+                !node.nodeConfig.queries?.length && (
+                  <Empty description="本次试运行无需输入" />
+                )}
+            </>
           )}
         </>
       ),

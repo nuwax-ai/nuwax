@@ -126,7 +126,8 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
                     }}
                     titleRender={renderTitle}
                     defaultSelectedKeys={selectKey}
-                    style={{ maxHeight: '500px', overflow: 'auto' }} // 添加滚动条
+                    blockNode
+                    className="custom-tree-style" // 添加自定义样式类
                   />
                 ),
               },
@@ -202,6 +203,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         trigger={['click']}
         overlayStyle={{ width: 200 }}
         placement="bottomLeft" // 设置弹窗向左对齐
+        className="input-reference-dropdown-style"
       >
         <SettingOutlined
           style={{ cursor: 'pointer' }}

@@ -18,7 +18,8 @@ import {
 import { Button, Divider, Input, Menu, Modal, Radio } from 'antd';
 import { RadioChangeEvent } from 'antd/lib/radio';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useModel } from 'umi';
+// import { useModel } from 'umi';
+import { useParams } from 'umi';
 import CreateKnowledge from '../CreateKnowledge';
 import CreateNewPlugin from '../CreateNewPlugin';
 import CreateWorkflow from '../CreateWorkflow';
@@ -43,7 +44,9 @@ const Created: React.FC<CreatedProp> = ({
   // spaceId,
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
-  const { spaceId } = useModel('workflow');
+  // const { spaceId } = useModel('workflow');
+  const { spaceId } = useParams();
+
   // 打开、关闭创建弹窗
   const [showCreate, setShowCreate] = useState(false);
   // 搜索栏的
