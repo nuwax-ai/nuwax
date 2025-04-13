@@ -107,6 +107,7 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                       'conditionBranchConfigs',
                       item.name,
                     ]);
+                    console.log(itemData);
                     return (
                       <Draggable
                         key={itemData.uuid} // 使用表单中的uuid作为key
@@ -143,162 +144,160 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                               )}
                             </div>
                             <Space>
+                              <Form.Item
+                                name={[item.name, 'conditionType']}
+                                style={{ marginTop: '-26px' }}
+                              >
+                                <Select
+                                  style={{
+                                    marginRight: '4px',
+                                    width: 54,
+                                  }}
+                                  options={[
+                                    {
+                                      label: '且',
+                                      value: 'AND',
+                                    },
+                                    {
+                                      label: '或',
+                                      value: 'OR',
+                                    },
+                                  ]}
+                                />
+                              </Form.Item>
+
                               {index !== fields.length - 1 && (
                                 <Form.List name={[item.name, 'conditionArgs']}>
-                                  {(subFields, subOpt) => (
-                                    <div className="position-relative">
-                                      <div className="dis-left">
-                                        {subFields.length > 1 && (
-                                          <div className="select-condition-border">
-                                            <Form.Item
-                                              name={[
-                                                item.name,
-                                                'conditionType',
-                                              ]}
-                                              noStyle
-                                            >
-                                              <Select
-                                                style={{
-                                                  marginRight: '4px',
-                                                  width: 54,
-                                                }}
-                                                className="condition-type-select-style"
-                                              >
-                                                <Select.Option value="AND">
-                                                  且
-                                                </Select.Option>
-                                                <Select.Option value="OR">
-                                                  或
-                                                </Select.Option>
-                                              </Select>
-                                            </Form.Item>
-                                          </div>
-                                        )}
-                                        <div className="dis-col">
-                                          {subFields.map((subField) => {
-                                            const bindValueType =
-                                              form.getFieldValue([
-                                                'conditionBranchConfigs',
-                                                item.name,
-                                                'conditionArgs',
-                                                subField.name,
-                                                'secondArg',
-                                                'bindValueType',
-                                              ]);
-                                            return (
-                                              <div
-                                                key={subField.name}
-                                                className="dis-sb"
-                                              >
-                                                <Form.Item
-                                                  name={[
-                                                    subField.name,
-                                                    'compareType',
-                                                  ]}
-                                                  noStyle
+                                  {(subFields, subOpt) => {
+                                    return (
+                                      <div className="position-relative">
+                                        <div className="dis-left">
+                                          <div className="dis-col">
+                                            {subFields.map((subField) => {
+                                              const bindValueType =
+                                                form.getFieldValue([
+                                                  'conditionBranchConfigs',
+                                                  item.name,
+                                                  'conditionArgs',
+                                                  subField.name,
+                                                  'secondArg',
+                                                  'bindValueType',
+                                                ]);
+                                              return (
+                                                <div
+                                                  key={subField.name}
+                                                  className="dis-sb"
                                                 >
-                                                  <Select
-                                                    popupMatchSelectWidth={
-                                                      false
-                                                    }
-                                                    options={options}
-                                                    optionLabelProp="displayValue"
-                                                    style={{
-                                                      marginRight: '10px',
-                                                      width: 54,
-                                                    }}
-                                                  ></Select>
-                                                </Form.Item>
-                                                <div>
                                                   <Form.Item
                                                     name={[
                                                       subField.name,
-                                                      'firstArg',
-                                                      'bindValue',
+                                                      'compareType',
                                                     ]}
+                                                    noStyle
                                                   >
-                                                    <InputOrReference
-                                                      isDisabled
-                                                      form={form}
-                                                      fieldName={[
-                                                        'conditionBranchConfigs',
-                                                        item.name,
-                                                        'conditionArgs',
+                                                    <Select
+                                                      popupMatchSelectWidth={
+                                                        false
+                                                      }
+                                                      options={options}
+                                                      optionLabelProp="displayValue"
+                                                      style={{
+                                                        marginRight: '10px',
+                                                        width: 54,
+                                                      }}
+                                                    ></Select>
+                                                  </Form.Item>
+                                                  <div>
+                                                    <Form.Item
+                                                      name={[
                                                         subField.name,
                                                         'firstArg',
                                                         'bindValue',
                                                       ]}
-                                                      placeholder="请引用参数"
-                                                      style={{
-                                                        width:
-                                                          subFields.length > 1
-                                                            ? 150
-                                                            : 180,
-                                                      }}
-                                                    />
-                                                  </Form.Item>
-                                                  <Form.Item
-                                                    name={[
-                                                      subField.name,
-                                                      'secondArg',
-                                                      'bindValue',
-                                                    ]}
-                                                  >
-                                                    <InputOrReference
-                                                      form={form}
-                                                      referenceType={
-                                                        bindValueType
-                                                      }
-                                                      style={{
-                                                        width:
-                                                          subFields.length > 1
-                                                            ? 150
-                                                            : 180,
-                                                      }}
-                                                      fieldName={[
-                                                        'conditionBranchConfigs',
-                                                        item.name,
-                                                        'conditionArgs',
+                                                    >
+                                                      <InputOrReference
+                                                        isDisabled
+                                                        form={form}
+                                                        fieldName={[
+                                                          'conditionBranchConfigs',
+                                                          item.name,
+                                                          'conditionArgs',
+                                                          subField.name,
+                                                          'firstArg',
+                                                          'bindValue',
+                                                        ]}
+                                                        placeholder="请引用参数"
+                                                        style={{
+                                                          width:
+                                                            subFields.length > 1
+                                                              ? 150
+                                                              : 180,
+                                                        }}
+                                                      />
+                                                    </Form.Item>
+                                                    <Form.Item
+                                                      name={[
                                                         subField.name,
                                                         'secondArg',
                                                         'bindValue',
                                                       ]}
+                                                    >
+                                                      <InputOrReference
+                                                        form={form}
+                                                        referenceType={
+                                                          bindValueType
+                                                        }
+                                                        style={{
+                                                          width:
+                                                            subFields.length > 1
+                                                              ? 150
+                                                              : 180,
+                                                        }}
+                                                        fieldName={[
+                                                          'conditionBranchConfigs',
+                                                          item.name,
+                                                          'conditionArgs',
+                                                          subField.name,
+                                                          'secondArg',
+                                                          'bindValue',
+                                                        ]}
+                                                      />
+                                                    </Form.Item>
+                                                  </div>
+                                                  {subFields.length > 1 && (
+                                                    <Button
+                                                      type="text"
+                                                      icon={
+                                                        <MinusCircleOutlined />
+                                                      }
+                                                      onClick={() => {
+                                                        subOpt.remove(
+                                                          subField.name,
+                                                        );
+                                                      }}
                                                     />
-                                                  </Form.Item>
+                                                  )}
                                                 </div>
-                                                {subFields.length > 1 && (
-                                                  <Button
-                                                    type="text"
-                                                    icon={
-                                                      <MinusCircleOutlined />
-                                                    }
-                                                    onClick={() => {
-                                                      subOpt.remove(
-                                                        subField.name,
-                                                      );
-                                                    }}
-                                                  />
-                                                )}
-                                              </div>
-                                            );
-                                          })}
+                                              );
+                                            })}
+                                          </div>
                                         </div>
+                                        <Button
+                                          type="primary"
+                                          onClick={() => {
+                                            subOpt.add({
+                                              compareType: 'EQUAL',
+                                              firstArg: null,
+                                              secondArg: null,
+                                            });
+                                          }}
+                                          icon={<PlusOutlined />}
+                                        >
+                                          新增
+                                        </Button>
                                       </div>
-                                      <Button
-                                        type="primary"
-                                        onClick={() => {
-                                          subOpt.add({
-                                            compareType: 'EQUAL',
-                                            firstArg: null,
-                                            secondArg: null,
-                                          });
-                                        }}
-                                        icon={<PlusOutlined />}
-                                      >
-                                        新增
-                                      </Button>
-                                    </div>
-                                  )}
+                                    );
+                                  }}
                                 </Form.List>
                               )}
                             </Space>

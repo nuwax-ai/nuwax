@@ -99,6 +99,21 @@
 .tree-form-style {
   font-size: 12px;
   position: relative; /* 设置容器为相对定位 */
+  .ant-tree-switcher {
+    display: none;
+  }
+
+  .ant-tree-treenode {
+    width: 100%;
+
+    .ant-tree-node-content-wrapper {
+      padding-inline: 0;
+      width: 100%;
+    }
+  }
+  // .ant-tree-node-content-wrapper{
+  //   padding-inline: 0;
+  // }
   // .ant-tree-switcher {
   //   // margin-left: -9px;
   //   display: none;
@@ -128,13 +143,22 @@
   }
 }
 
-.ant-tree-switcher {
-  display: none;
-}
-
 .tree-form-style-no-child {
   font-size: 12px;
   width: 100%;
+
+  .ant-tree-treenode {
+    width: 100%;
+
+    .ant-tree-node-content-wrapper {
+      padding-inline: 0;
+      width: 100%;
+    }
+  }
+
+  .ant-tree-switcher {
+    display: none;
+  }
 
   svg {
     width: 12px;

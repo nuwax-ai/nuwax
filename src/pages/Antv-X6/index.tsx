@@ -240,15 +240,14 @@ const Workflow: React.FC = () => {
     }
     // setIsUpdate(true)
     const _res = await updateNode(params);
-    if (graphRef.current) {
-      graphRef.current.updateNode(params.id, params);
-    } else {
-      return;
-    }
+    // if (graphRef.current) {
+    //   graphRef.current.updateNode(params.id, params);
+    // } else {
+    //   return;
+    // }
     if (_res.code === Constant.success) {
       if (update) {
         if (typeof update === 'string' && update !== 'moved') {
-          console.log('aaaa');
           // 新增和删除边以后，如果当前的节点是被连接的节点，那么就要更新当前节点的参数
           if (foldWrapItemRef.current.id === Number(update)) {
             getRefernece(Number(update));
@@ -262,8 +261,10 @@ const Workflow: React.FC = () => {
           getNodeConfig(Number(config.id));
         }
       }
+      setIsModified(false);
       changeUpdateTime();
     }
+
     // setIsUpdate(false)
   };
   // 点击组件，显示抽屉
@@ -289,26 +290,17 @@ const Workflow: React.FC = () => {
       });
       return;
     } else {
-      await setIsModified((prev: boolean) => {
-        if (prev === true) {
-          if (foldWrapItemRef.current && foldWrapItemRef.current.id !== 0) {
-            const values = nodeDrawerRef.current?.getFormValues();
-            const newNodeConfig = {
-              ...foldWrapItemRef.current,
-              nodeConfig: {
-                ...foldWrapItem.nodeConfig,
-                ...values,
-              },
-            };
-            changeNode(newNodeConfig);
-          }
-        }
-        return false;
-      });
+      // 先保存当前节点的数据
+      if (foldWrapItemRef.current && foldWrapItemRef.current.id !== 0) {
+        await nodeDrawerRef.current?.onFinish();
+      }
+      await getNodeConfig(child.id);
+      // 切换到新节点
       if (!visible) setVisible(true);
-      setFoldWrapItem(child);
+
       getRefernece(child.id);
     }
+
     if (child.nodeConfig.inputArgs === null) {
       child.nodeConfig.inputArgs = [];
     }
