@@ -12,7 +12,7 @@ import React from 'react';
 
 // 组件库单个组件项
 export interface ComponentItemProps {
-  ComponentInfo: ComponentInfo;
+  componentInfo: ComponentInfo;
   onClick: () => void;
   onClickMore: (item: CustomPopoverItem) => void;
 }
