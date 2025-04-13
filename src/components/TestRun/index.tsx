@@ -266,22 +266,6 @@ const TestRun: React.FC<TestRunProps> = ({
                 ghost
                 defaultActiveKey={['inputArgs', 'outputArgs']}
               />
-              {node.type === 'Start' ||
-                (node.type === 'Loop' && (
-                  <div>
-                    <div className="test-run-content-label">关联智能体</div>
-                    <div>
-                      <p>选择你需要的智能体</p>
-                      {/* <SelectList
-                    className={'selectItem'}
-                    prefix={<SearchOutlined />}
-                    value={value}
-                    options={mockOptions}
-                    onChange={setValue}
-                  /> */}
-                    </div>
-                  </div>
-                ))}
             </div>
             {/* 试运行的运行按钮 */}
             <Button
