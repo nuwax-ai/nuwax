@@ -1,6 +1,7 @@
 import {
   apiDevUnCollectAgent,
   apiUserDevCollectAgentList,
+  apiUserEditAgentList,
 } from '@/services/agentDev';
 import type { AgentInfo } from '@/types/interfaces/agent';
 import { message } from 'antd';
@@ -12,6 +13,7 @@ export default () => {
   const [devCollectAgentList, setDevCollectAgentList] = useState<AgentInfo[]>(
     [],
   );
+  const [editAgentList, setEditAgentList] = useState<AgentInfo[]>([]);
 
   // 查询用户开发智能体收藏列表
   const { run: runDevCollect } = useRequest(apiUserDevCollectAgentList, {
@@ -35,9 +37,20 @@ export default () => {
     },
   });
 
+  // 查询用户最近编辑的智能体列表
+  const { run: runEdit } = useRequest(apiUserEditAgentList, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: AgentInfo[]) => {
+      setEditAgentList(result);
+    },
+  });
+
   return {
     runDevCollect,
     runCancelCollect,
     devCollectAgentList,
+    editAgentList,
+    runEdit,
   };
 };

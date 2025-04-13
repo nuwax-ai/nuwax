@@ -66,6 +66,7 @@ const SpaceDevelop: React.FC = () => {
       handlerCollect: model.handlerCollect,
     }),
   );
+  const { runEdit } = useModel('devCollectAgent');
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
@@ -126,6 +127,9 @@ const SpaceDevelop: React.FC = () => {
     onSuccess: () => {
       message.success('已成功删除');
       handleDelAgent();
+      runEdit({
+        size: 8,
+      });
     },
   });
 
