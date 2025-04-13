@@ -175,7 +175,9 @@ const useTryRun = () => {
   const handleArrayObject = (data: BindConfigWithSub[]) => {
     return data?.map((item) => {
       const { subArgs } = item;
-      const _params = {};
+      const _params: {
+        [key: string]: any;
+      } = {};
       subArgs?.forEach((info) => {
         // 如果是非数组默认名称（Array_Item）对象
         if (info.dataType === DataTypeEnum.Object && info.name !== ARRAY_ITEM) {
@@ -211,7 +213,9 @@ const useTryRun = () => {
 
   // 处理入参列表数据
   const handleDataSource = (treeData: BindConfigWithSub[]) => {
-    const params = {};
+    const params: {
+      [key: string]: any;
+    } = {};
     treeData?.forEach((item) => {
       const { name, dataType, subArgs } = item;
       // 数据类型不是Array，也不是Object

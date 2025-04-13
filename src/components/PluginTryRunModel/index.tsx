@@ -29,7 +29,7 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
   open,
   onCancel,
 }) => {
-  const [result, setResult] = useState<string>(null);
+  const [result, setResult] = useState<string>('');
   const {
     handleInit,
     dataSource,
@@ -124,7 +124,7 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
   };
 
   const handleCancel = () => {
-    setResult(null);
+    setResult('');
     onCancel();
   };
 

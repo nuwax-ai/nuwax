@@ -178,7 +178,7 @@ const SpacePluginTool: React.FC = () => {
       key: 'inputType',
       width: 120,
       render: (value, record) =>
-        getNodeDepth(inputConfigArgs, record.key) === 1 && (
+        getNodeDepth(inputConfigArgs, record.key, 1) === 1 && (
           <Select
             rootClassName={styles.select}
             options={AFFERENT_MODE_LIST}

@@ -9,16 +9,28 @@ import { v4 as uuidv4 } from 'uuid';
 export const getNodeDepth = (
   treeData: BindConfigWithSub[],
   key: React.Key,
-  depth = 1,
+  currentDepth = 0,
 ): number => {
-  for (const node of treeData) {
-    if (node.key === key) return depth;
+  // 如果当前不是数组，直接返回-1表示未找到
+  if (!Array.isArray(treeData)) return -1;
+
+  // 遍历数组
+  for (let i = 0; i < treeData.length; i++) {
+    const node = treeData[i];
+    if (node.key === key) {
+      return currentDepth;
+    }
+
     if (node.subArgs) {
-      const found = getNodeDepth(node.subArgs, key, depth + 1);
-      if (found) return found;
+      const depth = getNodeDepth(node.subArgs, key, currentDepth + 1);
+      if (depth !== -1) {
+        return depth;
+      }
     }
   }
-  return depth;
+
+  // 如果遍历完都没有找到，返回-1
+  return -1;
 };
 
 // 添加子节点
