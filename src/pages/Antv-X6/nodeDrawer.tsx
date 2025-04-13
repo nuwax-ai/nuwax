@@ -64,7 +64,7 @@ const NodeDrawer = (
 ) => {
   // 当前节点是否修改了参数
   const { isModified, setIsModified, skillChange } = useModel('workflow');
-  console.log('isModified', isModified);
+
   // 新增定时器引用
   const timerRef = useRef<NodeJS.Timeout>();
   // 将节点的数据 保存到 state 中,维持数据双向绑定,便于管理

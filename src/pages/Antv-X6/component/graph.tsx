@@ -296,12 +296,7 @@ const initGraph = ({
     .use(new Keyboard()) // 启用键盘插件，支持快捷键操作
     .use(new Clipboard()) // 启用剪贴板插件，支持复制和粘贴
     .use(new History()) // 启用历史记录插件，支持撤销和重做
-    .use(
-      new Selection({
-        multiple: false, // 是否允许多选
-        enabled: true, // 启用选中功能
-      }),
-    ); // 启用选择插件，并配置选择限制
+    .use(new Selection()); // 启用选择插件，并配置选择限制
 
   // 监听连接桩鼠标进入事件
   graph.on('node:mouseenter', ({ node }) => {
@@ -444,11 +439,10 @@ const initGraph = ({
   graph.on('node:click', ({ node }) => {
     // 先取消所有节点的选中状态
     graph.cleanSelection();
-
     // 设置当前节点为选中状态
     changeZindex(node);
     node.setData({ selected: true });
-
+    graph.select(node); // 使用 AntV X6 的选中 API
     // 获取被点击节点的数据
     const latestData = {
       ...node.getData(),

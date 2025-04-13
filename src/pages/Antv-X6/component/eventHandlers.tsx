@@ -1,5 +1,6 @@
 import { BindEventHandlers } from '@/types/interfaces/graph';
 import { message, Popconfirm } from 'antd';
+import ReactDOM from 'react-dom/client'; // Update import to use createRoot
 /**
  * 绑定图形编辑器的事件处理器
  * @param graph - AntV X6 图形实例
@@ -48,6 +49,8 @@ const bindEventHandlers = ({
   // 快捷键绑定：删除选中的单元格
   graph.bindKey(['delete', 'backspace'], () => {
     const cells = graph.getSelectedCells(); // 获取当前选中的单元格
+
+    console.log(cells, 'cells');
     if (cells.length) {
       const _cell = cells[0];
       // 判定是删除节点还是边
@@ -137,26 +140,51 @@ const bindEventHandlers = ({
         // 如果是删除循环节点或删除循环的子节点
         if (_cell.getData().loopNodeId || _cell.getData().type === 'Loop') {
           if (_cell.getData().type === 'Loop') {
-            // 使用 JSX 形式的 Popconfirm
+            // 创建 Popconfirm 的容器
+            const popconfirmContainer = document.createElement('div');
+            document.body.appendChild(popconfirmContainer);
+
+            // 获取被选中元素的位置
+            const cellPosition = _cell.getBBox(); // 获取节点的边界框
+            const graphContainer = graph.container;
+            const graphOffset = graphContainer.getBoundingClientRect();
+
+            // 设置 Popconfirm 容器的位置
+            popconfirmContainer.style.position = 'absolute';
+            popconfirmContainer.style.left = `${
+              cellPosition.x + graphOffset.left
+            }px`;
+            popconfirmContainer.style.top = `${
+              cellPosition.y + graphOffset.top
+            }px`; // 向上偏移 50px
+            popconfirmContainer.style.zIndex = '9999'; // 确保在最上层
+
+            // 使用 createRoot 渲染 Popconfirm
+            const root = ReactDOM.createRoot(popconfirmContainer);
             const confirm = () => {
               removeNode(_cell.id, _cell.getData());
               graph.removeCells(cells);
+              // 清理 Popconfirm 容器
+              document.body.removeChild(popconfirmContainer);
             };
             const cancel = () => {
+              // 清理 Popconfirm 容器
+              document.body.removeChild(popconfirmContainer);
+              if (root) {
+                root.unmount();
+              }
               return false; // 取消删除操作
             };
-            message.warning({
-              content: (
-                <Popconfirm
-                  title="确定要删除循环节点吗？"
-                  onConfirm={confirm}
-                  onCancel={cancel}
-                >
-                  <span>确定要删除循环节点吗？</span>
-                </Popconfirm>
-              ),
-              duration: 0, // 设置为 0 表示不自动关闭
-            });
+
+            root.render(
+              <Popconfirm
+                title="确定要删除循环节点吗？"
+                onConfirm={confirm}
+                onCancel={cancel}
+                open={true} // 直接显示 Popconfirm
+              ></Popconfirm>,
+            );
+
             return false; // 阻止默认删除行为
           }
           // 删除节点
