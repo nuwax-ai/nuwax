@@ -43,6 +43,9 @@ const SpaceDevelop: React.FC = () => {
   const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
   // 迁移弹窗
   const [openMove, setOpenMove] = useState<boolean>(false);
+  const [currectAgentInfo, setCurrentAgentInfo] = useState<AgentInfo | null>(
+    null,
+  );
   const [openCreateAgent, setOpenCreateAgent] = useState<boolean>(false);
   const [status, setStatus] = useState<FilterStatusEnum>(FilterStatusEnum.All);
   const [agentStatistics, setAgentStatistics] = useState<
@@ -147,6 +150,7 @@ const SpaceDevelop: React.FC = () => {
       message.success('迁移成功');
       handleDelAgent();
       setOpenMove(false);
+      setCurrentAgentInfo(null);
     },
   });
 
@@ -234,6 +238,7 @@ const SpaceDevelop: React.FC = () => {
       // 迁移
       case ApplicationMoreActionEnum.Move:
         setOpenMove(true);
+        setCurrentAgentInfo(agentInfo);
         break;
       case ApplicationMoreActionEnum.Del:
         confirm({
@@ -317,7 +322,7 @@ const SpaceDevelop: React.FC = () => {
       {/*智能体迁移弹窗*/}
       <AgentMove
         open={openMove}
-        title="智能体名称"
+        title={currectAgentInfo?.name}
         onCancel={() => setOpenMove(false)}
         onConfirm={handlerConfirmMove}
       />
