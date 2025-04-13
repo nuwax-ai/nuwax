@@ -7,6 +7,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 const RecommendList: React.FC<RecommendListProps> = ({
+  className,
   loading,
   chatSuggestList,
   onClick,
@@ -28,6 +29,7 @@ const RecommendList: React.FC<RecommendListProps> = ({
               'radius-6',
               'cursor-pointer',
               'hover-box',
+              className,
             )}
           >
             {item}

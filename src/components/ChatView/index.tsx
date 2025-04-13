@@ -74,7 +74,12 @@ const ChatView: React.FC<ChatViewProps> = ({
         {messageInfo?.role === AssistantRoleEnum.USER &&
           !!messageInfo?.text && (
             <div
-              className={cx(styles['chat-content'], styles.user, 'radius-6')}
+              className={cx(
+                styles['chat-content'],
+                styles.user,
+                'radius-6',
+                contentClassName,
+              )}
               dangerouslySetInnerHTML={{
                 __html: md.render(messageInfo.text),
               }}

@@ -116,10 +116,12 @@ const Chat: React.FC = () => {
                   messageInfo={item}
                   roleInfo={roleInfo}
                   canDebug={false}
+                  contentClassName={styles['chat-inner']}
                 />
               ))}
               {/*会话建议*/}
               <RecommendList
+                className={styles['suggest-item']}
                 loading={loadingSuggest}
                 chatSuggestList={chatSuggestList}
                 onClick={handleMessageSend}

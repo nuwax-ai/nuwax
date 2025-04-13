@@ -121,6 +121,7 @@ export interface AgentChatEmptyProps {
 
 // 会话建议列表
 export interface RecommendListProps {
+  className?: string;
   loading: boolean;
   chatSuggestList: string[];
   onClick: (message: string) => void;
