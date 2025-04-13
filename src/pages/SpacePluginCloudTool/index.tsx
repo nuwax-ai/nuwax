@@ -17,7 +17,16 @@ import type { PluginInfo } from '@/types/interfaces/plugin';
 import { getActiveKeys } from '@/utils/deepNode';
 import { DeleteOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import { Button, Checkbox, Input, message, Select, Space, Table } from 'antd';
+import {
+  Button,
+  Checkbox,
+  Input,
+  message,
+  Select,
+  Space,
+  Table,
+  Tooltip,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
@@ -179,7 +188,9 @@ const SpacePluginCloudTool: React.FC = () => {
           disabled={
             [DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(
               record.dataType,
-            ) || record.dataType.includes('Array')
+            ) ||
+            record.dataType.includes('Array') ||
+            !record.enable
           }
           value={value}
           onChange={(e) =>
@@ -194,13 +205,21 @@ const SpacePluginCloudTool: React.FC = () => {
       key: 'enable',
       width: 70,
       align: 'center',
-      render: (value, record) => (
-        <Checkbox
-          checked={value}
-          onChange={(e) =>
-            handleInputValue(record.key, 'enable', e.target.checked)
+      render: (value: boolean, record) => (
+        <Tooltip
+          title={
+            (!record.require ? false : !record.bindValue) &&
+            '此参数是必填参数，填写默认值后，此开关可用'
           }
-        />
+        >
+          <Checkbox
+            disabled={!record.require ? false : !record.bindValue}
+            checked={value}
+            onChange={(e) =>
+              handleInputValue(record.key, 'enable', e.target.checked)
+            }
+          />
+        </Tooltip>
       ),
     },
     {
