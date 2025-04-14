@@ -444,6 +444,7 @@ const SpaceLibrary: React.FC = () => {
           prefix={<SearchOutlined />}
           allowClear
           onClear={handleClearKeyword}
+          size="middle"
         />
       </div>
       {componentList?.length > 0 ? (

@@ -299,6 +299,7 @@ const SpaceDevelop: React.FC = () => {
           prefix={<SearchOutlined />}
           allowClear
           onClear={handleClearKeyword}
+          size="middle"
         />
       </div>
       {agentList?.length > 0 ? (
