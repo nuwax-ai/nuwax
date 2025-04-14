@@ -1,15 +1,12 @@
 import ConditionRender from '@/components/ConditionRender';
-import {
-  apiAgentConversationCreate,
-  apiAgentConversationList,
-} from '@/services/agentConfig';
+import useConversation from '@/hooks/useConversation';
+import { apiAgentConversationList } from '@/services/agentConfig';
 import { apiUserUsedAgentList } from '@/services/agentDev';
 import type { AgentInfo } from '@/types/interfaces/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import { useModel } from '@@/exports';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { history, useRequest } from 'umi';
+import { history, useModel, useRequest } from 'umi';
 import UserRelAgent from '../UserRelAgent';
 import styles from './index.less';
 
@@ -24,6 +21,9 @@ const HomeSection: React.FC = () => {
   const [conversationList, setConversationList] =
     useState<ConversationInfo[]>();
   const { setOpenHistoryModal } = useModel('layout');
+  // 创建智能体会话
+  const { handleCreateConversation } = useConversation();
+
   // 查询用户最近使用过的智能体列表
   const { run: runUsed } = useRequest(apiUserUsedAgentList, {
     manual: true,
@@ -42,18 +42,6 @@ const HomeSection: React.FC = () => {
     },
   });
 
-  // 创建会话
-  const { run: runConversationCreate } = useRequest(
-    apiAgentConversationCreate,
-    {
-      manual: true,
-      debounceInterval: 300,
-      onSuccess: (result: ConversationInfo) => {
-        history.push(`/home/chat/${result.id}`);
-      },
-    },
-  );
-
   const handleLink = (id: number) => {
     history.push(`/home/chat/${id}`);
   };
@@ -67,24 +55,17 @@ const HomeSection: React.FC = () => {
     });
   }, []);
 
-  const handleToChat = (info: AgentInfo) => {
-    runConversationCreate({
-      agentId: info.agentId,
-      devMode: false,
-    });
-  };
-
   return (
     <div className={cx('px-6', 'py-16')}>
       <ConditionRender condition={usedAgentList !== undefined}>
         <h3 className={cx(styles.title)}>最近使用</h3>
         {usedAgentList?.length ? (
-          usedAgentList?.map((item) => (
+          usedAgentList?.map((info) => (
             <UserRelAgent
-              key={item.id}
-              onClick={() => handleToChat(item)}
-              icon={item.icon}
-              name={item.name}
+              key={info.id}
+              onClick={() => handleCreateConversation(info.agentId)}
+              icon={info.icon}
+              name={info.name}
             />
           ))
         ) : (
@@ -100,7 +81,7 @@ const HomeSection: React.FC = () => {
         <h3 className={cx(styles.title, 'mt-16')}>会话记录</h3>
         <ul>
           {conversationList?.length ? (
-            conversationList?.slice(0, 5)?.map((item) => (
+            conversationList?.slice(0, 8)?.map((item) => (
               <li
                 key={item.id}
                 className={cx(

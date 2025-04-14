@@ -31,6 +31,7 @@ const Chat: React.FC = () => {
 
   const {
     conversationInfo,
+    setConversationInfo,
     loadingConversation,
     messageList,
     setMessageList,
@@ -87,6 +88,7 @@ const Chat: React.FC = () => {
       handleClearSideEffect();
       setCardList([]);
       setMessageList([]);
+      setConversationInfo(null);
       needUpdateTopicRef.current = true;
     };
   }, [id, message, files]);

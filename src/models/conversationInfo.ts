@@ -366,6 +366,7 @@ export default () => {
   return {
     setIsSuggest,
     conversationInfo,
+    setConversationInfo,
     loadingConversation,
     messageList,
     setMessageList,
