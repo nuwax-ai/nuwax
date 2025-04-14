@@ -52,6 +52,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const [checkTag, setCheckTag] = useState<AgentComponentTypeEnum>(
     AgentComponentTypeEnum.Plugin,
   );
+  const [experienceActiveKey, setExperienceActiveKey] = useState<
+    AgentArrangeConfigEnum[]
+  >([AgentArrangeConfigEnum.Opening_Remarks]);
 
   // 打开、关闭弹窗
   const { show, setShow } = useModel('model');
@@ -379,7 +382,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       children: <p>在每次智能体回复后，不会提供任何用户问题建议</p>,
       extra: (
         <SelectList
-          className={styles.select}
+          className={cx(styles.select)}
           size={'small'}
           value={agentConfigInfo?.openSuggest}
           onChange={(value) =>
@@ -430,7 +433,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       <ConfigOptionsHeader title="对话体验" />
       <ConfigOptionCollapse
         items={ConversationalExperienceList}
-        defaultActiveKey={[AgentArrangeConfigEnum.Opening_Remarks]}
+        onChangeCollapse={setExperienceActiveKey}
+        defaultActiveKey={experienceActiveKey}
       />
       {/*添加插件、工作流、知识库、数据库弹窗*/}
       <Created

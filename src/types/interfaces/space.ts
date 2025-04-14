@@ -44,6 +44,7 @@ export interface ConfigOptionsHeaderProps {
 export interface ConfigOptionCollapseProps {
   items: CollapseProps['items'];
   defaultActiveKey: AgentArrangeConfigEnum[];
+  onChangeCollapse?: (key: AgentArrangeConfigEnum[]) => void;
 }
 
 // 自定义icon带提示组件， 默认加号（+）
