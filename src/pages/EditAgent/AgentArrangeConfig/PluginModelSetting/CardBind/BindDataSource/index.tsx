@@ -233,6 +233,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
                   bindArray?.length > 0 ? (
                     <Tree
                       treeData={bindArray}
+                      height={300}
                       onClick={(e) => {
                         e.stopPropagation();
                       }}
@@ -267,6 +268,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
                   dropdownRender={() => (
                     <Tree
                       treeData={dataSource}
+                      height={300}
                       onClick={(e) => {
                         e.stopPropagation();
                       }}
@@ -312,6 +314,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
               dropdownRender={() => (
                 <Tree
                   treeData={dataSource}
+                  height={300}
                   onClick={(e) => {
                     e.stopPropagation();
                   }}
