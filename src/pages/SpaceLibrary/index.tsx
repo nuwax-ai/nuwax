@@ -230,6 +230,12 @@ const SpaceLibrary: React.FC = () => {
     handleFilterList(type, status, create, _keyword);
   };
 
+  // 清除关键词
+  const handleClearKeyword = () => {
+    setKeyword('');
+    handleFilterList(type, status, create, '');
+  };
+
   // 根据type类型，判断插件跳转路径
   const handlePluginUrl = (id: number, type: PluginTypeEnum) => {
     if (type === PluginTypeEnum.CODE) {
@@ -436,6 +442,8 @@ const SpaceLibrary: React.FC = () => {
           value={keyword}
           onChange={handleQueryAgent}
           prefix={<SearchOutlined />}
+          allowClear
+          onClear={handleClearKeyword}
         />
       </div>
       {componentList?.length > 0 ? (

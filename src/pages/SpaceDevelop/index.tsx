@@ -43,7 +43,7 @@ const SpaceDevelop: React.FC = () => {
   const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
   // 迁移弹窗
   const [openMove, setOpenMove] = useState<boolean>(false);
-  const [currectAgentInfo, setCurrentAgentInfo] = useState<AgentInfo | null>(
+  const [currentAgentInfo, setCurrentAgentInfo] = useState<AgentInfo | null>(
     null,
   );
   const [openCreateAgent, setOpenCreateAgent] = useState<boolean>(false);
@@ -183,6 +183,12 @@ const SpaceDevelop: React.FC = () => {
     handleFilterList(status, create, _keyword);
   };
 
+  // 清除关键词
+  const handleClearKeyword = () => {
+    setKeyword('');
+    handleFilterList(status, create, '');
+  };
+
   // 确认迁移智能体
   const handlerConfirmMove = (targetSpaceId: string) => {
     runTransfer({
@@ -291,6 +297,8 @@ const SpaceDevelop: React.FC = () => {
           value={keyword}
           onChange={handleQueryAgent}
           prefix={<SearchOutlined />}
+          allowClear
+          onClear={handleClearKeyword}
         />
       </div>
       {agentList?.length > 0 ? (
@@ -322,7 +330,7 @@ const SpaceDevelop: React.FC = () => {
       {/*智能体迁移弹窗*/}
       <AgentMove
         open={openMove}
-        title={currectAgentInfo?.name}
+        title={currentAgentInfo?.name}
         onCancel={() => setOpenMove(false)}
         onConfirm={handlerConfirmMove}
       />
