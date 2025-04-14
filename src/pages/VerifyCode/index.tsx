@@ -92,6 +92,8 @@ const VerifyCode: React.FC = () => {
   // 发送验证码
   const handleSendCode = () => {
     handleCount();
+    return;
+
     runSendCode({
       type: SendCodeEnum.LOGIN_OR_REGISTER,
       phone,
@@ -180,8 +182,7 @@ const VerifyCode: React.FC = () => {
           </span>
         )}
         <div className={cx(styles.tips)}>
-          您将在30秒内收到验证码语音电话，可能会被手机
-          标记为稍扰电话，请放心接听。
+          您将在30秒内收到验证码语音电话，可能会被手机标记为稍扰电话，请放心接听。
         </div>
         <div className={cx('flex', 'content-between', 'w-full', styles.footer)}>
           <Button className={cx('flex-1')} onClick={() => history.back()}>

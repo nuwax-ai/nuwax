@@ -132,9 +132,13 @@ const SpaceLibrary: React.FC = () => {
     },
   });
 
+  // 删除成功后处理数据
   const handleDel = (id: number) => {
     const list = componentList.filter((info) => info.id !== id);
     setComponentList(list);
+    componentAllRef.current = componentAllRef.current.filter(
+      (info) => info.id !== id,
+    );
   };
 
   // 删除插件接口
