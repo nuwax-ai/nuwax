@@ -1,13 +1,7 @@
+import { PLUGIN_PUBLISH_OPTIONS } from '@/constants/agent.constants';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
-import {
-  Checkbox,
-  CheckboxChangeEvent,
-  Form,
-  FormProps,
-  Input,
-  Modal,
-} from 'antd';
-import React, { useEffect, useState } from 'react';
+import { Form, FormProps, Input, Modal, Radio } from 'antd';
+import React, { useEffect } from 'react';
 
 interface Values {
   scope: PluginPublishScopeEnum;
@@ -30,19 +24,12 @@ const Published: React.FC<PublishedProp> = ({
   loading,
 }) => {
   const [form] = Form.useForm();
-  const [scope, setScope] = useState<PluginPublishScopeEnum>(
-    PluginPublishScopeEnum.Tenant,
-  );
 
   const onFinish: FormProps<{
     scope: PluginPublishScopeEnum;
     remark: string;
   }>['onFinish'] = (values) => {
-    onSubmit({ id, scope, remark: values.remark });
-  };
-
-  const handleChangeScope = (e: CheckboxChangeEvent) => {
-    setScope(e.target.value as PluginPublishScopeEnum);
+    onSubmit({ id, ...values });
   };
 
   useEffect(() => {
@@ -68,25 +55,14 @@ const Published: React.FC<PublishedProp> = ({
         form={form}
         layout="vertical"
         onFinish={onFinish}
-        initialValues={{ id }}
+        initialValues={{
+          scope: PluginPublishScopeEnum.Tenant,
+        }}
       >
-        <Form.Item label="发布范围">
-          <Checkbox
-            value={PluginPublishScopeEnum.Tenant}
-            checked={scope === PluginPublishScopeEnum.Tenant}
-            onChange={handleChangeScope}
-          >
-            全局
-          </Checkbox>
-          <Checkbox
-            value={PluginPublishScopeEnum.Space}
-            checked={scope === PluginPublishScopeEnum.Space}
-            onChange={handleChangeScope}
-          >
-            工作空间
-          </Checkbox>
+        <Form.Item name="scope" label="发布范围">
+          <Radio.Group options={PLUGIN_PUBLISH_OPTIONS} />
         </Form.Item>
-        <Form.Item name={'remark'} label="发布记录">
+        <Form.Item name="remark" label="发布记录">
           <Input.TextArea
             autoSize={{ minRows: 3, maxRows: 5 }}
             placeholder="这里填写详细的发布记录，如果范围选择了全局，审核通过后，所有工作空间均可引用该工作流"

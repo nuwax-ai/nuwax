@@ -1,10 +1,11 @@
 import CustomFormModal from '@/components/CustomFormModal';
+import { PLUGIN_PUBLISH_OPTIONS } from '@/constants/agent.constants';
 import { apiPluginPublish } from '@/services/plugin';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import type { PluginPublishProps } from '@/types/interfaces/common';
 import type { FormProps } from 'antd';
-import { Checkbox, Form, Input, message } from 'antd';
-import React, { useState } from 'react';
+import { Form, Input, message, Radio } from 'antd';
+import React from 'react';
 import { useRequest } from 'umi';
 
 const PluginPublish: React.FC<PluginPublishProps> = ({
@@ -13,7 +14,6 @@ const PluginPublish: React.FC<PluginPublishProps> = ({
   onCancel,
 }) => {
   const [form] = Form.useForm();
-  const [scope, setScope] = useState<PluginPublishScopeEnum>();
 
   // 插件发布
   const { run: runPublish, loading } = useRequest(apiPluginPublish, {
@@ -25,18 +25,13 @@ const PluginPublish: React.FC<PluginPublishProps> = ({
     },
   });
 
-  const handleChangeScope = (e) => {
-    setScope(e.target.value);
-  };
-
   const onFinish: FormProps<{
     scope: PluginPublishScopeEnum;
     remark: string;
   }>['onFinish'] = (values) => {
     runPublish({
       pluginId,
-      scope,
-      remark: values.remark,
+      ...values,
     });
   };
 
@@ -53,22 +48,16 @@ const PluginPublish: React.FC<PluginPublishProps> = ({
       title="发布插件"
       onConfirm={handleConfirm}
     >
-      <Form form={form} layout="vertical" onFinish={onFinish}>
-        <Form.Item label="发布范围">
-          <Checkbox
-            value={PluginPublishScopeEnum.Tenant}
-            checked={scope === PluginPublishScopeEnum.Tenant}
-            onChange={handleChangeScope}
-          >
-            全局
-          </Checkbox>
-          <Checkbox
-            value={PluginPublishScopeEnum.Space}
-            checked={scope === PluginPublishScopeEnum.Space}
-            onChange={handleChangeScope}
-          >
-            工作空间
-          </Checkbox>
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={onFinish}
+        initialValues={{
+          scope: PluginPublishScopeEnum.Tenant,
+        }}
+      >
+        <Form.Item name="scope" label="发布范围">
+          <Radio.Group options={PLUGIN_PUBLISH_OPTIONS} />
         </Form.Item>
         <Form.Item name="remark" label="发布记录">
           <Input.TextArea

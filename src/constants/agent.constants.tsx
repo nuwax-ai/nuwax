@@ -6,7 +6,10 @@ import {
   TriggerTypeEnum,
 } from '@/types/enums/agent';
 import { UpdateModeComponentEnum } from '@/types/enums/library';
-import { BindCardStyleEnum } from '@/types/enums/plugin';
+import {
+  BindCardStyleEnum,
+  PluginPublishScopeEnum,
+} from '@/types/enums/plugin';
 import { InfoCircleOutlined } from '@ant-design/icons';
 
 // 调用方式
@@ -134,3 +137,15 @@ export const GENERATE_DIVERSITY_OPTION_VALUE = {
     maxTokens: 1024,
   },
 };
+
+// 插件发布选项
+export const PLUGIN_PUBLISH_OPTIONS = [
+  {
+    value: PluginPublishScopeEnum.Tenant,
+    label: '全局',
+  },
+  {
+    value: PluginPublishScopeEnum.Space,
+    label: '工作空间',
+  },
+];
