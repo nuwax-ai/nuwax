@@ -100,7 +100,9 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({ variables }) => {
       className: 'flex items-center',
       render: (_, record) => (
         <div className={cx('flex', 'flex-col', styles['params-td'])}>
-          <span className={cx(styles['params-name'])}>{record.name}</span>
+          <span className={cx(styles['params-name'], 'text-ellipsis-2')}>
+            {record.name}
+          </span>
           <Tooltip
             title={record.description?.length > 10 ? record.description : ''}
             placement={'top'}
@@ -118,7 +120,9 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({ variables }) => {
       key: 'dataType',
       width: 120,
       render: (value) => (
-        <>{VARIABLE_TYPE_LIST.find((item) => item.value === value)?.label}</>
+        <div className={cx('h-full', 'flex', 'items-center')}>
+          {VARIABLE_TYPE_LIST.find((item) => item.value === value)?.label}
+        </div>
       ),
     },
     {
@@ -126,7 +130,11 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({ variables }) => {
       dataIndex: 'require',
       key: 'require',
       width: 85,
-      render: (value: boolean) => <span>{value ? '必填' : '非必填'}</span>,
+      render: (value: boolean) => (
+        <div className={cx('h-full', 'flex', 'items-center')}>
+          {value ? '必填' : '非必填'}
+        </div>
+      ),
     },
     {
       title: '默认值',
@@ -201,10 +209,12 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({ variables }) => {
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       <Table<BindConfigWithSub>
-        className={cx('mb-16', 'flex-1', 'overflow-hide')}
+        className={cx('mb-16', 'flex-1')}
         columns={inputColumns}
         dataSource={configArgs}
         pagination={false}
+        virtual
+        scroll={{ y: 570 }}
         expandable={{
           childrenColumnName: 'subArgs',
           defaultExpandAllRows: true,

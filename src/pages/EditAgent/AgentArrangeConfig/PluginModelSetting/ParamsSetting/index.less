@@ -6,6 +6,12 @@
   background-color: @WHITE;
   overflow: hidden;
 
+  :global {
+    .ant-table-wrapper .ant-table-tbody-virtual .ant-table-cell {
+      border-bottom: none;
+    }
+  }
+
   .params-td {
     width: 170px;
 
@@ -14,12 +20,14 @@
       font-size: 14px;
       font-weight: 600;
       line-height: 20px;
+      word-break: break-word;
     }
 
     .desc {
       color: @BLANK16;
       font-size: 12px;
-      line-height: 16px;
+      height: 12px;
+      line-height: 12px;
     }
   }
 
