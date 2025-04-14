@@ -1,13 +1,10 @@
 import { USER_OPERATE_AREA } from '@/constants/menus.constants';
 import { apiNotifyMessageUnreadCount } from '@/services/message';
 import { UserOperatorAreaEnum } from '@/types/enums/menus';
-import type {
-  UserOperateAreaItem,
-  UserOperateAreaType,
-} from '@/types/interfaces/layouts';
+import type { UserOperateAreaType } from '@/types/interfaces/layouts';
 import { Badge, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useModel, useRequest } from 'umi';
 import styles from './index.less';
 
@@ -18,7 +15,6 @@ const cx = classNames.bind(styles);
  */
 const UserOperateArea: React.FC<UserOperateAreaType> = ({ onClick }) => {
   const { unreadCount, setUnreadCount } = useModel('layout');
-  const [data, setData] = useState<UserOperateAreaItem[]>(USER_OPERATE_AREA);
   // 查询用户未读消息数量
   const { run, cancel: cancelUnread } = useRequest(
     apiNotifyMessageUnreadCount,
@@ -33,13 +29,6 @@ const UserOperateArea: React.FC<UserOperateAreaType> = ({ onClick }) => {
       onSuccess: (result: number) => {
         if (result > 0) {
           setUnreadCount(result);
-          const list = USER_OPERATE_AREA.map((item) => {
-            if (item.type === UserOperatorAreaEnum.Message) {
-              item.title = `${result} 条未读消息`;
-            }
-            return item;
-          });
-          setData(list);
         }
       },
       onError: () => {
@@ -48,6 +37,19 @@ const UserOperateArea: React.FC<UserOperateAreaType> = ({ onClick }) => {
       },
     },
   );
+
+  const dataSource = useMemo(() => {
+    if (unreadCount === 0) {
+      return USER_OPERATE_AREA;
+    } else {
+      return USER_OPERATE_AREA.map((item) => {
+        if (item.type === UserOperatorAreaEnum.Message) {
+          item.title = `${unreadCount} 条未读消息`;
+        }
+        return item;
+      });
+    }
+  }, [unreadCount]);
 
   useEffect(() => {
     // 启动轮询
@@ -59,7 +61,7 @@ const UserOperateArea: React.FC<UserOperateAreaType> = ({ onClick }) => {
     };
   }, []);
 
-  return data.map((item, index) => (
+  return dataSource.map((item, index) => (
     <Tooltip
       key={index}
       placement="right"
