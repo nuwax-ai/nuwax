@@ -56,9 +56,17 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     },
   });
 
-  useEffect(() => {
+  const initForm = () => {
     setImageUrl(agentConfigInfo?.icon as string);
-  }, [agentConfigInfo?.icon]);
+    form.setFieldsValue({
+      name: agentConfigInfo?.name,
+      description: agentConfigInfo?.description,
+    });
+  };
+
+  useEffect(() => {
+    initForm();
+  }, [agentConfigInfo]);
 
   const onFinish: FormProps<AgentAddParams>['onFinish'] = (values) => {
     if (mode === CreateUpdateModeEnum.Create) {
@@ -82,10 +90,16 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     form.submit();
   };
 
+  // 取消操作
+  const handleCancel = () => {
+    onCancel();
+    initForm();
+  };
+
   return (
     <CustomFormModal
       form={form}
-      title="创建智能体"
+      title={mode === CreateUpdateModeEnum.Create ? '创建智能体' : '更新智能体'}
       open={open}
       // okText={createAgentType === CreateAgentEnum.Standard ? '' : '生成'}
       // okPrefixIcon={
@@ -95,7 +109,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       //     <ICON_CONFIRM_STAR />
       //   )
       // }
-      onCancel={onCancel}
+      onCancel={handleCancel}
       onConfirm={handlerSubmit}
     >
       {/*{mode === CreateUpdateModeEnum.Create && (*/}
@@ -111,10 +125,6 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         form={form}
         requiredMark={customizeRequiredMark}
         layout="vertical"
-        initialValues={{
-          name: agentConfigInfo?.name,
-          description: agentConfigInfo?.description,
-        }}
         onFinish={onFinish}
         autoComplete="off"
       >
@@ -123,7 +133,18 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         <Form.Item
           name="name"
           label="智能体名称"
-          rules={[{ required: true, message: '请输入智能体名称' }]}
+          validateTrigger="onBlur"
+          rules={[
+            { required: true, message: '请输入智能体名称' },
+            {
+              validator(_, value) {
+                if (!value || value?.length <= 20) {
+                  return Promise.resolve();
+                }
+                return Promise.reject(new Error('请输入智能体名称!'));
+              },
+            },
+          ]}
         >
           <Input
             placeholder="给智能体起一个独一无二的名字"
