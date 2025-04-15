@@ -1,11 +1,13 @@
 import CustomFormModal from '@/components/CustomFormModal';
+import { USER_INFO } from '@/constants/home.constants';
 import { apiGetSpaceUserList, apiTransferSpace } from '@/services/teamSetting';
 import styles from '@/styles/teamSetting.less';
+import type { SpaceUserInfo } from '@/types/interfaces/teamSetting';
 import { customizeRequiredNoStarMark } from '@/utils/form';
-import { useRequest } from 'ahooks';
 import { Form, FormProps, Select, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { useRequest } from 'umi';
 
 const cx = classNames.bind(styles);
 
@@ -23,6 +25,7 @@ const TransferSpace: React.FC<RemoveSpaceProps> = ({
   onConfirmTransfer,
 }) => {
   const [form] = Form.useForm();
+  const userInfo = JSON.parse(localStorage.getItem(USER_INFO));
   const [selectOptions, setSelectOptions] = useState<
     {
       label: string;
@@ -37,9 +40,12 @@ const TransferSpace: React.FC<RemoveSpaceProps> = ({
 
   const { run } = useRequest(apiGetSpaceUserList, {
     manual: true,
-    onSuccess: (res) => {
+    onSuccess: (res: SpaceUserInfo[]) => {
+      // 当前空间团队成员，过滤掉本人
+      const filterOwner =
+        res?.filter((item) => item.userId !== userInfo?.id) || [];
       setSelectOptions(
-        res.data.map((item) => {
+        filterOwner.map((item) => {
           return {
             label: item.nickName,
             value: item.userId,

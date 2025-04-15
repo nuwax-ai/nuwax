@@ -7,7 +7,7 @@ import { useRequest } from 'ahooks';
 import { ConfigProvider, Tabs, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useMatch } from 'umi';
+import { useParams } from 'umi';
 import MemberManageTab from './components/MemberManageTab';
 import ModifyTeam from './components/ModifyTeam';
 import SpaceSettingTab from './components/SpaceSettingTab';
@@ -28,9 +28,7 @@ const getStatusName = (status: string | undefined) => {
 };
 
 const TeamSetting: React.FC = () => {
-  const match = useMatch('/space/:spaceId/team');
-  const { spaceId } = match.params;
-
+  const { spaceId } = useParams();
   const [openModifyTeamModal, setOpenModifyTeamModal] =
     useState<boolean>(false);
 
