@@ -92,8 +92,6 @@ const VerifyCode: React.FC = () => {
   // 发送验证码
   const handleSendCode = () => {
     handleCount();
-    return;
-
     runSendCode({
       type: SendCodeEnum.LOGIN_OR_REGISTER,
       phone,
