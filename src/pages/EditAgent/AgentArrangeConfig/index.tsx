@@ -123,14 +123,34 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
   });
 
-  // 已选中的智能体组件id
-  const checkedIds = useMemo(() => {
+  const getTargetIds = (
+    list: AgentComponentInfo[],
+    type: AgentComponentTypeEnum,
+  ) => {
     return (
-      agentComponentList
-        ?.filter((item) => item.type === checkTag)
+      list
+        ?.filter((item) => item.type === type)
         ?.map((item) => item.targetId) || []
     );
-  }, [agentComponentList, checkTag]);
+  };
+
+  // 已选中的智能体组件id
+  const hasIds = useMemo(() => {
+    return {
+      [AgentComponentTypeEnum.Plugin]: getTargetIds(
+        agentComponentList,
+        AgentComponentTypeEnum.Plugin,
+      ),
+      [AgentComponentTypeEnum.Workflow]: getTargetIds(
+        agentComponentList,
+        AgentComponentTypeEnum.Workflow,
+      ),
+      [AgentComponentTypeEnum.Knowledge]: getTargetIds(
+        agentComponentList,
+        AgentComponentTypeEnum.Knowledge,
+      ),
+    };
+  }, [agentComponentList]);
 
   // 删除智能体组件配置
   const { run: runAgentComponentDel } = useRequest(apiAgentComponentDelete, {
@@ -275,7 +295,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     //   extra: <TooltipIcon title="添加触发器" onClick={handlerTriggerPlus} />,
     // },
   ];
-
+  // 知识库
   const KnowledgeList: CollapseProps['items'] = [
     {
       key: AgentArrangeConfigEnum.Text,
@@ -306,7 +326,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     //   extra: <TooltipIcon title="添加知识库" onClick={handlerTablePlus} />,
     // },
   ];
-
   // 记忆
   const MemoryList: CollapseProps['items'] = [
     {
@@ -363,7 +382,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     //   ),
     // },
   ];
-
   // 对话体验
   const ConversationalExperienceList: CollapseProps['items'] = [
     {
@@ -442,9 +460,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         onCancel={() => setShow(false)}
         spaceId={spaceId}
         checkTag={checkTag}
-        hasIds={{
-          [checkTag]: checkedIds,
-        }}
+        hasIds={hasIds}
         onAdded={handleAddComponent}
       />
       {/*添加触发器弹窗*/}
