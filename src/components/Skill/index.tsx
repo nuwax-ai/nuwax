@@ -203,6 +203,7 @@ export const SkillList: React.FC<SkillProps> = ({
       newParams = params.filter((i) => i.typeId !== item.typeId);
     }
     form.setFieldValue(skillName, newParams);
+
     setIsModified(true);
   };
 

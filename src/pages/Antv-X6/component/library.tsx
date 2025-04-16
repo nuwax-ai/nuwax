@@ -1,14 +1,17 @@
 // 知识库，数据库等节点
 import Created from '@/components/Created';
-import type { HasIdsType } from '@/components/Created/type';
 import TreeInput from '@/components/FormListItem/TreeInput';
 import { SkillList } from '@/components/Skill';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import {
+  AgentAddComponentStatusEnum,
+  AgentComponentTypeEnum,
+} from '@/types/enums/agent';
+import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Empty, Form, Popover, Select, Slider } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import '../index.less';
 import { TreeOutput } from './commonNode';
@@ -19,6 +22,11 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
   const { setSkillChange } = useModel('workflow');
+  // 处于loading状态的组件列表
+  const [addComponents, setAddComponents] = useState<
+    AgentAddComponentStatusInfo[]
+  >([]);
+
   //   显示新增技能
   const showAdd = () => {
     setOpen(true);
@@ -37,23 +45,28 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
     form.submit();
     setOpen(false);
     setSkillChange(true);
+    setAddComponents([
+      ...addComponents,
+      {
+        type: item.type,
+        targetId: item.targetId,
+        status: AgentAddComponentStatusEnum.Added,
+      },
+    ]);
   };
 
-  const hasIds: HasIdsType = {
-    [AgentComponentTypeEnum.Plugin]: [],
-    [AgentComponentTypeEnum.Workflow]: [],
-    [AgentComponentTypeEnum.Knowledge]: [],
-  };
-
-  // 遍历 skillComponentConfigs 并填充 hasIds
-  for (const item of form.getFieldValue('knowledgeBaseConfigs') || []) {
-    if (item.type && item.knowledgeBaseId) {
-      const type = item.type as AgentComponentTypeEnum; // 明确类型
-      if (hasIds[type]) {
-        hasIds[type]?.push(Number(item.knowledgeBaseId));
-      }
-    }
-  }
+  useEffect(() => {
+    const _list = form.getFieldValue('skillComponentConfigs');
+    const _arr =
+      _list?.map((item) => {
+        return {
+          type: item.type,
+          targetId: item.targetId,
+          status: AgentAddComponentStatusEnum.Added,
+        };
+      }) || [];
+    setAddComponents(_arr);
+  }, []);
 
   return (
     <div className="knowledge-node">
@@ -176,11 +189,10 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
       </Form.Item>
       <Created
         checkTag={AgentComponentTypeEnum.Knowledge}
-        spaceId={Number(sessionStorage.getItem('spaceId'))}
         onAdded={onAddedSkill}
         open={open}
         onCancel={() => setOpen(false)}
-        hasIds={hasIds}
+        addComponents={addComponents}
       />
     </div>
   );

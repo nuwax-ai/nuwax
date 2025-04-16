@@ -7,7 +7,10 @@ import {
   apiAgentComponentDelete,
   apiAgentComponentList,
 } from '@/services/agentConfig';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import {
+  AgentAddComponentStatusEnum,
+  AgentComponentTypeEnum,
+} from '@/types/enums/agent';
 import { AgentArrangeConfigEnum, OpenCloseEnum } from '@/types/enums/space';
 import type { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { AgentArrangeConfigProps } from '@/types/interfaces/agentConfig';
@@ -27,6 +30,7 @@ import KnowledgeTextList from './KnowledgeList';
 import LongMemoryContent from './LongMemoryContent';
 import PluginList from './PluginList';
 // import TriggerContent from './TriggerContent';
+import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import OpenRemarksEdit from './OpenRemarksEdit';
 import PluginModelSetting from './PluginModelSetting';
 import WorkflowList from './WorkflowList';
@@ -55,6 +59,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const [experienceActiveKey, setExperienceActiveKey] = useState<
     AgentArrangeConfigEnum[]
   >([AgentArrangeConfigEnum.Opening_Remarks]);
+  // 处于loading状态的组件列表
+  const [addComponents, setAddComponents] = useState<
+    AgentAddComponentStatusInfo[]
+  >([]);
 
   // 打开、关闭弹窗
   const { show, setShow } = useModel('model');
@@ -120,37 +128,46 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     debounceInterval: 300,
     onSuccess: (result: AgentComponentInfo[]) => {
       setAgentComponentList(result);
+      const list =
+        result?.map((item) => {
+          return {
+            type: item.type,
+            targetId: item.targetId,
+            status: AgentAddComponentStatusEnum.Added,
+          };
+        }) || [];
+      setAddComponents(list);
     },
   });
 
-  const getTargetIds = (
-    list: AgentComponentInfo[],
-    type: AgentComponentTypeEnum,
-  ) => {
-    return (
-      list
-        ?.filter((item) => item.type === type)
-        ?.map((item) => item.targetId) || []
-    );
-  };
-
-  // 已选中的智能体组件id
-  const hasIds = useMemo(() => {
-    return {
-      [AgentComponentTypeEnum.Plugin]: getTargetIds(
-        agentComponentList,
-        AgentComponentTypeEnum.Plugin,
-      ),
-      [AgentComponentTypeEnum.Workflow]: getTargetIds(
-        agentComponentList,
-        AgentComponentTypeEnum.Workflow,
-      ),
-      [AgentComponentTypeEnum.Knowledge]: getTargetIds(
-        agentComponentList,
-        AgentComponentTypeEnum.Knowledge,
-      ),
-    };
-  }, [agentComponentList]);
+  // const getTargetIds = (
+  //   list: AgentComponentInfo[],
+  //   type: AgentComponentTypeEnum,
+  // ) => {
+  //   return (
+  //     list
+  //       ?.filter((item) => item.type === type)
+  //       ?.map((item) => item.targetId) || []
+  //   );
+  // };
+  //
+  // // 已选中的智能体组件id
+  // const hasIds = useMemo(() => {
+  //   return {
+  //     [AgentComponentTypeEnum.Plugin]: getTargetIds(
+  //       agentComponentList,
+  //       AgentComponentTypeEnum.Plugin,
+  //     ),
+  //     [AgentComponentTypeEnum.Workflow]: getTargetIds(
+  //       agentComponentList,
+  //       AgentComponentTypeEnum.Workflow,
+  //     ),
+  //     [AgentComponentTypeEnum.Knowledge]: getTargetIds(
+  //       agentComponentList,
+  //       AgentComponentTypeEnum.Knowledge,
+  //     ),
+  //   };
+  // }, [agentComponentList]);
 
   // 删除智能体组件配置
   const { run: runAgentComponentDel } = useRequest(apiAgentComponentDelete, {
@@ -164,15 +181,33 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
   });
 
+  // 从组件列表中删除正在loading状态的组件
+  const handleDelLoadingComponents = (
+    type: AgentComponentTypeEnum,
+    targetId: number,
+  ) => {
+    setAddComponents((list) => {
+      return list.filter(
+        (item) => item.type === type && item.targetId !== targetId,
+      );
+    });
+  };
+
   // 新增智能体插件、工作流、知识库组件配置
   const { run: runComponentAdd } = useRequest(apiAgentComponentAdd, {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      setShow(false);
+      // setShow(false);
       message.success('已成功添加');
       // 查询智能体配置组件列表
       run(agentId);
+      // const {targetId, type} = params[0];
+      // handleDelLoadingComponents(type, targetId);
+    },
+    onError: (_, params) => {
+      const { targetId, type } = params[0];
+      handleDelLoadingComponents(type, targetId);
     },
   });
 
@@ -424,6 +459,16 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 添加插件、工作流、知识库、数据库
   const handleAddComponent = (info: CreatedNodeItem) => {
+    setAddComponents((list) => {
+      return [
+        ...list,
+        {
+          type: info.targetType,
+          targetId: info.targetId,
+          status: AgentAddComponentStatusEnum.Loading,
+        },
+      ];
+    });
     runComponentAdd({
       agentId,
       type: info.targetType,
@@ -460,7 +505,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         onCancel={() => setShow(false)}
         spaceId={spaceId}
         checkTag={checkTag}
-        hasIds={hasIds}
+        addComponents={addComponents}
         onAdded={handleAddComponent}
       />
       {/*添加触发器弹窗*/}
