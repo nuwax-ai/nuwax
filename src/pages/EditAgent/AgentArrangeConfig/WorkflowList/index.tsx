@@ -1,17 +1,12 @@
 import workflowImage from '@/assets/images/workflow_image.png';
 import TooltipIcon from '@/components/TooltipIcon';
 import { ICON_SETTING } from '@/constants/images.constants';
-import { AgentComponentInfo } from '@/types/interfaces/agent';
+import type { WorkflowListProps } from '@/types/interfaces/agentConfig';
 import { DeleteOutlined } from '@ant-design/icons';
 import React from 'react';
 import AgentModelComponent from '../AgentModelComponent';
 
-interface WorkflowListProps {
-  list: AgentComponentInfo[];
-  onSet: (id: number) => void;
-  onDel: (id: number) => void;
-}
-
+// 工作流组件列表
 const WorkflowList: React.FC<WorkflowListProps> = ({ list, onSet, onDel }) => {
   return !list?.length ? (
     <p>
@@ -39,7 +34,7 @@ const WorkflowList: React.FC<WorkflowListProps> = ({ list, onSet, onDel }) => {
               icon={
                 <DeleteOutlined
                   className={'cursor-pointer'}
-                  onClick={() => onDel(item.id)}
+                  onClick={() => onDel(item.id, item.targetId, item.type)}
                 />
               }
             />

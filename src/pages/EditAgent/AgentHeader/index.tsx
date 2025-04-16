@@ -1,6 +1,6 @@
 import agentImage from '@/assets/images/agent_image.png';
+import foldImage from '@/assets/images/fold_image.png';
 import ConditionRender from '@/components/ConditionRender';
-import { ICON_FOLD } from '@/constants/images.constants';
 import type { AgentHeaderProps } from '@/types/interfaces/agentConfig';
 import {
   ClockCircleOutlined,
@@ -68,9 +68,11 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
       </div>
       <h2 className={cx('absolute', styles['header-title'])}>编排</h2>
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
-        <ICON_FOLD
-          className={cx('cursor-pointer')}
+        <img
+          src={foldImage as string}
+          className={cx('cursor-pointer', styles.fold)}
           onClick={onToggleShowStand}
+          alt=""
         />
         <ClockCircleOutlined
           className={cx(styles.ico, 'cursor-pointer')}
