@@ -246,7 +246,6 @@ const Workflow: React.FC = () => {
     //   return;
     // }
     if (_res.code === Constant.success) {
-      console.log(update);
       if (update) {
         if (typeof update === 'string' && update !== 'moved') {
           // 新增和删除边以后，如果当前的节点是被连接的节点，那么就要更新当前节点的参数
@@ -295,22 +294,11 @@ const Workflow: React.FC = () => {
       });
       return;
     } else {
-      // 先保存当前节点的数据
-      if (foldWrapItemRef.current && foldWrapItemRef.current.id !== 0) {
-        await nodeDrawerRef.current?.onFinish();
-      }
-      await getNodeConfig(child.id);
+      setFoldWrapItem(child);
       // 切换到新节点
       if (!visible) setVisible(true);
 
       getRefernece(child.id);
-    }
-
-    if (child.nodeConfig.inputArgs === null) {
-      child.nodeConfig.inputArgs = [];
-    }
-    if (child.nodeConfig.outputArgs === null) {
-      child.nodeConfig.outputArgs = [];
     }
   };
   // 新增节点
@@ -832,7 +820,6 @@ const Workflow: React.FC = () => {
       <Created
         checkTag={createdItem as AgentComponentTypeEnum}
         onAdded={onAdded}
-        targetId={info?.id}
         spaceId={spaceId}
         open={open}
         onCancel={() => setOpen(false)}

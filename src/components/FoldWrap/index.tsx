@@ -78,7 +78,10 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
         className,
       )}
     >
-      <div className={cx(styles['stand-header'], 'flex', 'items-center')}>
+      <div
+        className={cx(styles['stand-header'], 'flex', 'items-center')}
+        style={{ height: isEdit ? '56px' : isEditDesc ? '90px' : '56px' }}
+      >
         <Form form={form} className={styles['form-style']}>
           <Form.Item name="name" className={styles['form-item-style']}>
             {isEdit ? (
@@ -136,7 +139,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
                   submitForm();
                   setIsEditDesc(false);
                 }}
-                rows={1}
+                rows={2}
                 style={{ marginTop: '10px', resize: 'none' }}
               />
             ) : (

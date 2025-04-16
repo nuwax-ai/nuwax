@@ -24,8 +24,6 @@ export interface CreatedProp {
   spaceId: number;
   // 当前工作流、工作空间已有的
   hasIds?: HasIdsType;
-  // 当前的工作流id
-  targetId?: number;
 }
 
 export type MenuItem = Required<MenuProps>['items'][number];

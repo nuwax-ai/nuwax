@@ -31,9 +31,10 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
 
-  const { setSkillChange } = useModel('workflow');
+  const { setSkillChange, setIsModified } = useModel('workflow');
   // 新增技能
   const onAddedSkill = (item: CreatedNodeItem) => {
+    setIsModified(true);
     const skillComponentConfigs =
       form.getFieldValue('skillComponentConfigs') || [];
     item.type = item.targetType;

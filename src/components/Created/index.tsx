@@ -40,7 +40,7 @@ const Created: React.FC<CreatedProp> = ({
   checkTag,
   onAdded,
   hasIds = {},
-  targetId,
+
   // spaceId,
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
@@ -130,7 +130,6 @@ const Created: React.FC<CreatedProp> = ({
     isRequesting.current = true;
     const _res = await service.getList(type, { ...params, spaceId });
     isRequesting.current = false;
-    console.log(_res);
     if (_res.code === Constant.success) {
       setSizes(_res.data.pages);
       setPagination((prev) => ({
@@ -403,8 +402,11 @@ const Created: React.FC<CreatedProp> = ({
         </div>
         {/* 右侧部分应该是变动的 */}
         <div className="main-style flex-1 overflow-y" ref={scrollRef}>
-          {list.map((item) => (
-            <div className="dis-sb list-item-style" key={item.targetId}>
+          {list.map((item, index) => (
+            <div
+              className="dis-sb list-item-style"
+              key={`${item.targetId}-${index}`}
+            >
               <img
                 src={item.icon || getImg(selected.key)}
                 alt=""
@@ -459,9 +461,8 @@ const Created: React.FC<CreatedProp> = ({
                 variant="outlined"
                 onClick={() => onAddNode(item)}
                 disabled={
-                  item.targetId === targetId ||
-                  (hasIds &&
-                    hasIds[selected.key]?.includes(item.targetId as number))
+                  hasIds &&
+                  hasIds[selected.key]?.includes(item.targetId as number)
                 }
               >
                 添加

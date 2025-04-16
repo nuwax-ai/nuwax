@@ -490,9 +490,14 @@ const initGraph = ({
     }
     // 处理循环节点的逻辑
     if (sourceNode.type === 'Loop' || targetNode.type === 'Loop') {
+      console.log(sourcePort);
       if (
-        (sourceNode.type === 'Loop' && !targetNode.loopNodeId) ||
-        (targetNode.type === 'Loop' && !sourceNode.loopNodeId)
+        (sourceNode.type === 'Loop' &&
+          !targetNode.loopNodeId &&
+          sourcePort.includes('in')) ||
+        (targetNode.type === 'Loop' &&
+          !sourceNode.loopNodeId &&
+          targetPort.includes('out'))
       ) {
         message.warning('不能连接外部的节点');
         edge.remove();

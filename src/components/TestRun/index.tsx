@@ -106,13 +106,7 @@ const TestRun: React.FC<TestRunProps> = ({
 
   const handlerSubmit = () => {
     let value = form.getFieldsValue();
-    if (
-      value &&
-      JSON.stringify(value) !== '{}'
-      // (node.nodeConfig.queries && node.nodeConfig.queries.length) ||
-      // (node.nodeConfig.headers && node.nodeConfig.headers.length) ||
-      // (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length)
-    ) {
+    if (value && JSON.stringify(value) !== '{}') {
       // const value = form.getFieldsValue();
       if (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length) {
         for (let item in value) {
@@ -134,50 +128,36 @@ const TestRun: React.FC<TestRunProps> = ({
             }
           }
         }
-      } else {
-        value = JSON.parse(value['params']);
-        console.log(value, 'value');
+      } else if (node.type === 'HTTPRequest') {
+        // 将body，queries，headers合并到一个对象中
+        const newList = [
+          ...(node.nodeConfig.body || []),
+          ...(node.nodeConfig.queries || []),
+          ...(node.nodeConfig.headers || []),
+        ];
+        // 直接处理表单中的单个元素
+        for (let item in value) {
+          if (Object.prototype.hasOwnProperty.call(value, item)) {
+            const inputArg = newList?.find((arg) => arg.name === item);
+            if (
+              inputArg &&
+              (inputArg.dataType === 'Object' ||
+                inputArg.dataType?.includes('Array'))
+            ) {
+              try {
+                value[item] = JSON.parse(value[item]);
+              } catch (error) {
+                console.error('JSON 解析失败:', error);
+              }
+            }
+          }
+        }
       }
       run(node.type, value);
     } else {
       run(node.type);
     }
   };
-
-  // else {
-  //   const _value =JSON.parse(JSON.stringify(value));
-  //   for (let item of ['body', 'headers', 'queries']) {
-  //     if (Object.prototype.hasOwnProperty.call(_value, item)) {
-  //       // 过滤原型链属性
-  //       const inputArg = node.nodeConfig[item].find((arg) => {
-  //         if (_value[item] && value[item].length > 0) {
-  //           return _value[item].some((entry: any) => arg.name === Object.keys(entry)[0]);
-  //         }
-  //         return false;
-  //       });
-
-  //       if (
-  //         inputArg &&
-  //         (inputArg.dataType === 'Object' ||
-  //           inputArg.dataType?.includes('Array'))
-  //       ) {
-  //         if (inputArg && (inputArg.dataType === 'Object' || inputArg.dataType?.includes('Array'))) {
-  //           _value[item] = _value[item].map((entry: any) => {
-  //             const key = inputArg.name; // 直接使用 inputArg.name 作为键
-  //              try {
-  //               entry[key] = JSON.parse(entry[key]);
-  //             } catch (error) {
-  //               console.error('JSON 解析失败:', error);
-  //             }
-  //             return entry;
-  //           });
-  //         }
-  //         console.log(_value,'value')
-  //       }
-  //     }
-  //   }
-
-  // }
 
   const items = [
     {
@@ -202,33 +182,21 @@ const TestRun: React.FC<TestRunProps> = ({
                 <Empty description="本次试运行无需输入" />
               ))}
             {node.type === 'HTTPRequest' && (
-              // <>
-              //   {node.nodeConfig.body &&
-              //     node.nodeConfig.body.length &&
-              //     renderFormList('body', node.nodeConfig.body, form)}
-              //   {node.nodeConfig.headers &&
-              //     node.nodeConfig.headers.length &&
-              //     renderFormList('headers', node.nodeConfig.headers, form)}
-              //   {node.nodeConfig.queries &&
-              //     node.nodeConfig.queries.length &&
-              //     renderFormList('queries', node.nodeConfig.queries, form)}
-              //   {!node.nodeConfig.body?.length &&
-              //     !node.nodeConfig.headers?.length &&
-              //     !node.nodeConfig.queries?.length && (
-              //       <Empty description="本次试运行无需输入" />
-              //     )}
-              // </>
               <>
-                <Form.Item name="params">
-                  <CodeEditor
-                    value={form.getFieldValue('params') || ''}
-                    codeLanguage={'JSON'}
-                    onChange={(code: string) => {
-                      form.setFieldValue('params', code); // 更新表单值
-                    }}
-                    height="180px"
-                  />
-                </Form.Item>
+                {node.nodeConfig.body &&
+                  node.nodeConfig.body.length &&
+                  renderFormItem('body', node.nodeConfig.body, form)}
+                {node.nodeConfig.headers &&
+                  node.nodeConfig.headers.length &&
+                  renderFormItem('headers', node.nodeConfig.headers, form)}
+                {node.nodeConfig.queries &&
+                  node.nodeConfig.queries.length &&
+                  renderFormItem('queries', node.nodeConfig.queries, form)}
+                {!node.nodeConfig.body?.length &&
+                  !node.nodeConfig.headers?.length &&
+                  !node.nodeConfig.queries?.length && (
+                    <Empty description="本次试运行无需输入" />
+                  )}
               </>
             )}
           </Form>
@@ -292,22 +260,6 @@ const TestRun: React.FC<TestRunProps> = ({
     }
   }, [formItemValue]);
 
-  // const initValue = (items: InputAndOutConfig[]) => {
-  //   return items.map((item) => ({ [item.name]: '' }));
-  // };
-  // useEffect(() => {
-  //   if (node.type === 'HTTPRequest') {
-  //     if (node.nodeConfig.body && node.nodeConfig.body.length) {
-  //       form.setFieldsValue({ body: initValue(node.nodeConfig.body) });
-  //     }
-  //     if (node.nodeConfig.headers && node.nodeConfig.headers.length) {
-  //       form.setFieldsValue({ headers: initValue(node.nodeConfig.headers) });
-  //     }
-  //     if (node.nodeConfig.queries && node.nodeConfig.queries.length) {
-  //       form.setFieldsValue({ queries: initValue(node.nodeConfig.queries) });
-  //     }
-  //   }
-  // }, [node]);
   return (
     <div
       className="test-run-style"

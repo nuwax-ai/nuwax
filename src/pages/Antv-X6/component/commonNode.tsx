@@ -48,7 +48,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   disabledInput,
   isLoop,
 }) => {
-  const { volid, setIsModified } = useModel('workflow');
+  const { volid } = useModel('workflow');
   // 根据传递的fieldConfigs生成表单项
   const formItem = fieldConfigs.reduce(
     (acc: DefaultObjectType, field: FieldConfig) => {
@@ -57,19 +57,6 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
     },
     {},
   );
-
-  const addInputItem = () => {
-    const nextItems = [...(form.getFieldValue(inputItemName) || []), formItem];
-    form.setFieldsValue({ [inputItemName]: nextItems });
-    setIsModified(true);
-  };
-
-  const removeItem = (index: number) => {
-    const formValue = form.getFieldsValue()[inputItemName];
-    const _newValue = formValue.filter((_: unknown, i: number) => i !== index);
-    form.setFieldsValue({ [inputItemName]: _newValue });
-    setIsModified(true);
-  };
 
   useEffect(() => {
     if (volid) {
@@ -80,7 +67,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   return (
     <div className={'form-list-style'}>
       <Form.List name={inputItemName}>
-        {(fields) => (
+        {(fields, { add, remove }) => (
           <>
             <div className="dis-sb margin-bottom">
               <span className="node-title-style">{title}</span>
@@ -88,7 +75,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                 <Button
                   icon={<PlusOutlined />}
                   size={'small'}
-                  onClick={addInputItem}
+                  onClick={() => add(formItem)}
                 ></Button>
               )}
             </div>
@@ -159,9 +146,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                       )}
                       {!disabledDelete && (
                         <Form.Item name={[item.name, 'require']} noStyle>
-                          <DeleteOutlined
-                            onClick={() => removeItem(item.name)}
-                          />
+                          <DeleteOutlined onClick={() => remove(item.name)} />
                         </Form.Item>
                       )}
                     </div>
@@ -263,8 +248,8 @@ export const OtherFormList: React.FC<NodeRenderProps> = ({
 
 // 定义树结构的输出
 export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
-  const { TreeNode } = Tree;
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+
   useEffect(() => {
     // 当 treeData 更新时，重新计算 expandedKeys
     const getAllParentKeys = (data: TreeNodeData[]): React.Key[] => {
@@ -280,40 +265,21 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
 
     setExpandedKeys(getAllParentKeys(treeData));
   }, [treeData]);
-  // 定义一个函数来递归生成带有标签的树节点
-  const renderTreeNode = (data: TreeNodeData[]) => {
-    return data.map((item) => {
-      if (item.subArgs) {
-        return (
-          <TreeNode
-            title={
-              <span>
-                {item.name}{' '}
-                <Tag color="#C9CDD4" style={{ marginLeft: '5px' }}>
-                  {DataTypeMap[item.dataType as DataTypeEnum]}
-                </Tag>
-              </span>
-            }
-            key={item.name}
-          >
-            {renderTreeNode(item.subArgs)}
-          </TreeNode>
-        );
-      }
-      return (
-        <TreeNode
-          title={
-            <span>
-              {item.name}{' '}
-              <Tag color="#C9CDD4" style={{ marginLeft: '5px' }}>
-                {DataTypeMap[item.dataType as DataTypeEnum]}
-              </Tag>
-            </span>
-          }
-          key={item.name}
-        />
-      );
-    });
+
+  // 将树结构数据转换为 treeData 格式
+  const convertToTreeData = (data: TreeNodeData[]): any[] => {
+    return data.map((item) => ({
+      title: (
+        <span>
+          {item.name}{' '}
+          <Tag color="#C9CDD4" style={{ marginLeft: '5px' }}>
+            {DataTypeMap[item.dataType as DataTypeEnum]}
+          </Tag>
+        </span>
+      ),
+      key: item.name,
+      children: item.subArgs ? convertToTreeData(item.subArgs) : undefined,
+    }));
   };
 
   return (
@@ -322,9 +288,8 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
       expandedKeys={expandedKeys} // 使用 expandedKeys 控制展开
       onExpand={(keys) => setExpandedKeys(keys)} // 更新 expandedKeys
       switcherIcon={<DownOutlined />}
-    >
-      {treeData && renderTreeNode(treeData)}
-    </Tree>
+      treeData={convertToTreeData(treeData)} // 使用 treeData 替代 children
+    />
   );
 };
 

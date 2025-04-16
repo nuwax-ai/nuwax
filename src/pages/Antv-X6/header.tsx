@@ -19,6 +19,7 @@ interface HeaderProp {
     modified?: string;
     id?: number;
     description?: string;
+    publishDate?: string | null;
   };
   showPublish: () => void;
   setShowCreateWorkflow: () => void;
@@ -29,7 +30,8 @@ const Header: React.FC<HeaderProp> = ({
   setShowCreateWorkflow,
   showPublish,
 }) => {
-  const { name, icon, publishStatus, modified, description } = info;
+  const { name, icon, publishStatus, modified, description, publishDate } =
+    info;
 
   // 返回上一级
   const bank = () => {
@@ -60,6 +62,16 @@ const Header: React.FC<HeaderProp> = ({
               </Popover>
             )}
             <EditOutlined onClick={setShowCreateWorkflow} />
+            {publishDate === null && (
+              <Tag color="default" style={{ marginLeft: '6px' }}>
+                未发布
+              </Tag>
+            )}
+            {publishDate !== null && publishDate !== modified && (
+              <Tag color="volcano" style={{ marginLeft: '6px' }}>
+                有更新,未发布
+              </Tag>
+            )}
             {/* <CheckCircleOutlined /> */}
           </div>
           <div className="header-tag-style">

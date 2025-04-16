@@ -1,7 +1,7 @@
 import Editor, { loader } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import React, { useEffect, useState } from 'react';
-import { useModel } from 'umi';
+
 interface Props {
   codeLanguage: 'JavaScript' | 'Python' | 'JSON';
   height?: string;
@@ -16,7 +16,7 @@ const CodeEditor: React.FC<Props> = ({
   codeLanguage,
 }) => {
   const [isMonacoReady, setIsMonacoReady] = useState(false);
-  const { setIsModified } = useModel('workflow');
+
   useEffect(() => {
     loader.config({
       monaco,
@@ -70,7 +70,7 @@ const CodeEditor: React.FC<Props> = ({
     if (onChange) {
       onChange(newValue || '');
     }
-    setIsModified(true);
+    // setIsModified(true);
   };
 
   return (
