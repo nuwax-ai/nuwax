@@ -21,7 +21,8 @@ const cx = classNames.bind(styles);
  * 调试详情组件
  */
 const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
-  const { requestId, finalResult } = useModel('conversationInfo');
+  const { requestId, finalResult, setFinalResult } =
+    useModel('conversationInfo');
   // 当前执行结果
   const [executeInfo, setExecuteInfo] = useState<ExecuteResultInfo>();
   // 当前执行结果索引，默认为0
@@ -48,6 +49,10 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
         setOutputData(_outputData);
       }
     }
+
+    return () => {
+      setFinalResult(null);
+    };
   }, [finalResult, currentIndex]);
 
   const handleCopy = () => {

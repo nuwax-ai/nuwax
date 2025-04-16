@@ -1,12 +1,10 @@
 import ConditionRender from '@/components/ConditionRender';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import { ICON_NEW_AGENT } from '@/constants/images.constants';
-import { apiAgentConversationCreate } from '@/services/agentConfig';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import useConversation from '@/hooks/useConversation';
 import type { TenantConfigInfo } from '@/types/interfaces/login';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { history, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -14,6 +12,8 @@ const cx = classNames.bind(styles);
 const Header: React.FC = () => {
   // 配置信息
   const [configInfo, setConfigInfo] = useState<TenantConfigInfo>();
+  // 创建智能体会话
+  const { handleCreateConversation } = useConversation();
 
   useEffect(() => {
     // 配置信息
@@ -21,28 +21,11 @@ const Header: React.FC = () => {
     setConfigInfo(JSON.parse(info));
   }, []);
 
-  // 创建会话
-  const { run: runConversationCreate } = useRequest(
-    apiAgentConversationCreate,
-    {
-      manual: true,
-      debounceInterval: 300,
-      onSuccess: (result: ConversationInfo) => {
-        history.push(`/home/chat/${result.id}`);
-      },
-    },
-  );
-
-  const handlerClick = () => {
-    // 配置信息
-    const info = JSON.parse(
-      localStorage.getItem(TENANT_CONFIG_INFO),
-    ) as TenantConfigInfo;
-
-    runConversationCreate({
-      agentId: info?.defaultAgentId,
-      devMode: false,
-    });
+  const handlerClick = async () => {
+    if (configInfo) {
+      // 创建智能体会话
+      await handleCreateConversation(configInfo.defaultAgentId);
+    }
   };
   return (
     <>

@@ -1,6 +1,6 @@
 import ChatInputHome from '@/components/ChatInputHome';
+import useConversation from '@/hooks/useConversation';
 import AgentItem from '@/pages/Home/AgentItem';
-import { apiAgentConversationCreate } from '@/services/agentConfig';
 import {
   apiCollectAgent,
   apiHomeCategoryList,
@@ -16,7 +16,7 @@ import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useModel } from 'umi';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -25,22 +25,13 @@ const Home: React.FC = () => {
   // 配置信息
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const [activeTab, setActiveTab] = useState<string>();
-  const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const tabsRef = useRef<HTMLDivElement | null>(null);
-
-  const currentAgentTypeRef = useRef<string>('');
-
   const [homeCategoryInfo, setHomeCategoryInfo] =
     useState<HomeAgentCategoryInfo>();
-
-  // 创建会话
-  const { runAsync: runConversationCreate } = useRequest(
-    apiAgentConversationCreate,
-    {
-      manual: true,
-      debounceWait: 300,
-    },
-  );
+  const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const tabsRef = useRef<HTMLDivElement | null>(null);
+  const currentAgentTypeRef = useRef<string>('');
+  // 创建智能体会话
+  const { handleCreateConversation } = useConversation();
 
   // 主页智能体分类列表
   const { run: runCategoryList } = useRequest(apiHomeCategoryList, {
@@ -82,28 +73,10 @@ const Home: React.FC = () => {
       return;
     }
 
-    const info = await runConversationCreate({
-      agentId: tenantConfigInfo.defaultAgentId,
-      devMode: false,
+    await handleCreateConversation(tenantConfigInfo.defaultAgentId, {
+      message: _message,
+      files,
     });
-
-    if (info.success) {
-      const id = info.data?.id;
-      history.push(`/home/chat/${id}`, { message: _message, files });
-    }
-  };
-
-  // 开始智能体会话
-  const handleConversation = async (targetId: number) => {
-    const info = await runConversationCreate({
-      agentId: targetId,
-      devMode: false,
-    });
-
-    if (info.success) {
-      const id = info.data?.id;
-      history.push(`/home/chat/${id}`);
-    }
   };
 
   // Handle tab click - scroll to section
@@ -177,7 +150,7 @@ const Home: React.FC = () => {
                   <AgentItem
                     key={info.targetId}
                     info={info}
-                    onClick={() => handleConversation(info.targetId)}
+                    onClick={() => handleCreateConversation(info.targetId)}
                     onCollect={() => handleToggleCollect(item.type, info)}
                   />
                 ))}

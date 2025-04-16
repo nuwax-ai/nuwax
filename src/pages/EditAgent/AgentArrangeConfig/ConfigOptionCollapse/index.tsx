@@ -14,6 +14,7 @@ const cx = classNames.bind(styles);
 const ConfigOptionCollapse: React.FC<ConfigOptionCollapseProps> = ({
   items,
   defaultActiveKey,
+  onChangeCollapse,
 }) => {
   // 当前激活 tab 面板的 key
   const [activeKey, setActiveKey] = useState<AgentArrangeConfigEnum[]>([]);
@@ -27,6 +28,7 @@ const ConfigOptionCollapse: React.FC<ConfigOptionCollapseProps> = ({
   // 切换面板的回调
   const onChange = (key: string | string[]) => {
     setActiveKey(key as AgentArrangeConfigEnum[]);
+    onChangeCollapse?.(key as AgentArrangeConfigEnum[]);
   };
 
   return (

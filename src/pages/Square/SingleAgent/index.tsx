@@ -2,14 +2,13 @@ import agentImage from '@/assets/images/agent_image.png';
 import avatar from '@/assets/images/avatar.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import ConditionRender from '@/components/ConditionRender';
-import { apiAgentConversationCreate } from '@/services/agentConfig';
+import useConversation from '@/hooks/useConversation';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
 import {
   apiPublishedPluginCollect,
   apiPublishedPluginUnCollect,
 } from '@/services/plugin';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { SingleAgentProps } from '@/types/interfaces/square';
 import {
   PlayCircleOutlined,
@@ -18,7 +17,7 @@ import {
 } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
-import { history, useRequest } from 'umi';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -44,17 +43,8 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   // 根据类型（目标对象（智能体、工作流、插件））显示不同的默认图标
   const defaultImage =
     targetType === SquareAgentTypeEnum.Agent ? agentImage : pluginImage;
-  // 创建会话
-  const { run: runConversationCreate } = useRequest(
-    apiAgentConversationCreate,
-    {
-      manual: true,
-      debounceInterval: 300,
-      onSuccess: (result: ConversationInfo) => {
-        history.push(`/home/chat/${result.id}`);
-      },
-    },
-  );
+  // 创建智能体会话
+  const { handleCreateConversation } = useConversation();
 
   // 智能体收藏
   const { run: runCollectAgent } = useRequest(apiCollectAgent, {
@@ -93,10 +83,8 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   });
 
   // 点击单个智能体，创建会话，并跳转到会话页面
-  const handleClick = () => {
-    runConversationCreate({
-      agentId: targetId,
-    });
+  const handleClick = async () => {
+    await handleCreateConversation(targetId);
   };
 
   // 切换收藏与取消收藏

@@ -64,7 +64,7 @@ export const USER_OPERATE_AREA = [
     type: UserOperatorAreaEnum.Document,
   },
   {
-    title: '消息',
+    title: '暂无未读消息',
     icon: <ICON_NOTIFICATION />,
     type: UserOperatorAreaEnum.Message,
   },

@@ -132,9 +132,13 @@ const SpaceLibrary: React.FC = () => {
     },
   });
 
+  // 删除成功后处理数据
   const handleDel = (id: number) => {
     const list = componentList.filter((info) => info.id !== id);
     setComponentList(list);
+    componentAllRef.current = componentAllRef.current.filter(
+      (info) => info.id !== id,
+    );
   };
 
   // 删除插件接口
@@ -224,6 +228,12 @@ const SpaceLibrary: React.FC = () => {
     const _keyword = e.target.value;
     setKeyword(_keyword);
     handleFilterList(type, status, create, _keyword);
+  };
+
+  // 清除关键词
+  const handleClearKeyword = () => {
+    setKeyword('');
+    handleFilterList(type, status, create, '');
   };
 
   // 根据type类型，判断插件跳转路径
@@ -432,6 +442,9 @@ const SpaceLibrary: React.FC = () => {
           value={keyword}
           onChange={handleQueryAgent}
           prefix={<SearchOutlined />}
+          allowClear
+          onClear={handleClearKeyword}
+          size="middle"
         />
       </div>
       {componentList?.length > 0 ? (

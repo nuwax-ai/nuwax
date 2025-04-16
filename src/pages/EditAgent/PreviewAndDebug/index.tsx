@@ -2,17 +2,14 @@ import AgentChatEmpty from '@/components/AgentChatEmpty';
 import ChatInput from '@/components/ChatInput';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
-import { apiAgentConversationCreate } from '@/services/agentConfig';
+import useConversation from '@/hooks/useConversation';
 import { EditAgentShowType } from '@/types/enums/space';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
-import type {
-  ConversationInfo,
-  RoleInfo,
-} from '@/types/interfaces/conversationInfo';
+import type { RoleInfo } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useModel, useRequest } from 'umi';
+import { useModel } from 'umi';
 import styles from './index.less';
 import PreviewAndDebugHeader from './PreviewAndDebugHeader';
 
@@ -29,6 +26,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
   // 会话ID
   const devConversationIdRef = useRef<number>(0);
   const {
+    setConversationInfo,
     messageList,
     setMessageList,
     chatSuggestList,
@@ -41,6 +39,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     setCardList,
     setShowType,
   } = useModel('conversationInfo');
+  // 创建智能体会话
+  const { runAsyncConversationCreate } = useConversation();
 
   // 角色信息（名称、头像）
   const roleInfo: RoleInfo = useMemo(() => {
@@ -56,20 +56,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     };
   }, [agentConfigInfo]);
 
-  // 创建会话
-  const { run: runConversationCreate } = useRequest(
-    apiAgentConversationCreate,
-    {
-      manual: true,
-      debounceInterval: 300,
-      onSuccess: (result: ConversationInfo) => {
-        devConversationIdRef.current = result.id;
-        // 查询会话
-        runQueryConversation(result.id);
-      },
-    },
-  );
-
   useEffect(() => {
     if (agentConfigInfo) {
       const { devConversationId } = agentConfigInfo;
@@ -83,19 +69,27 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       setCardList([]);
       handleClearSideEffect();
       setMessageList([]);
+      setConversationInfo(null);
       needUpdateTopicRef.current = true;
     };
   }, [agentConfigInfo?.devConversationId]);
 
   // 清空会话记录，实际上是创建新的会话
-  const handleClear = useCallback(() => {
+  const handleClear = useCallback(async () => {
     handleClearSideEffect();
     setMessageList([]);
-    // 创建会话
-    runConversationCreate({
+    // 创建智能体会话
+    const { success, data } = await runAsyncConversationCreate({
       agentId,
-      devMode: true,
+      devMode: false,
     });
+
+    if (success) {
+      const id = data?.id;
+      devConversationIdRef.current = id;
+      // 查询会话
+      runQueryConversation(id);
+    }
   }, [agentId]);
 
   // 消息发送

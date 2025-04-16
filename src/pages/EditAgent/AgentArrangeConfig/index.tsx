@@ -52,6 +52,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const [checkTag, setCheckTag] = useState<AgentComponentTypeEnum>(
     AgentComponentTypeEnum.Plugin,
   );
+  const [experienceActiveKey, setExperienceActiveKey] = useState<
+    AgentArrangeConfigEnum[]
+  >([AgentArrangeConfigEnum.Opening_Remarks]);
 
   // 打开、关闭弹窗
   const { show, setShow } = useModel('model');
@@ -120,14 +123,34 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
   });
 
-  // 已选中的智能体组件id
-  const checkedIds = useMemo(() => {
+  const getTargetIds = (
+    list: AgentComponentInfo[],
+    type: AgentComponentTypeEnum,
+  ) => {
     return (
-      agentComponentList
-        ?.filter((item) => item.type === checkTag)
+      list
+        ?.filter((item) => item.type === type)
         ?.map((item) => item.targetId) || []
     );
-  }, [agentComponentList, checkTag]);
+  };
+
+  // 已选中的智能体组件id
+  const hasIds = useMemo(() => {
+    return {
+      [AgentComponentTypeEnum.Plugin]: getTargetIds(
+        agentComponentList,
+        AgentComponentTypeEnum.Plugin,
+      ),
+      [AgentComponentTypeEnum.Workflow]: getTargetIds(
+        agentComponentList,
+        AgentComponentTypeEnum.Workflow,
+      ),
+      [AgentComponentTypeEnum.Knowledge]: getTargetIds(
+        agentComponentList,
+        AgentComponentTypeEnum.Knowledge,
+      ),
+    };
+  }, [agentComponentList]);
 
   // 删除智能体组件配置
   const { run: runAgentComponentDel } = useRequest(apiAgentComponentDelete, {
@@ -272,7 +295,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     //   extra: <TooltipIcon title="添加触发器" onClick={handlerTriggerPlus} />,
     // },
   ];
-
+  // 知识库
   const KnowledgeList: CollapseProps['items'] = [
     {
       key: AgentArrangeConfigEnum.Text,
@@ -303,7 +326,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     //   extra: <TooltipIcon title="添加知识库" onClick={handlerTablePlus} />,
     // },
   ];
-
   // 记忆
   const MemoryList: CollapseProps['items'] = [
     {
@@ -360,7 +382,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     //   ),
     // },
   ];
-
   // 对话体验
   const ConversationalExperienceList: CollapseProps['items'] = [
     {
@@ -379,7 +400,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       children: <p>在每次智能体回复后，不会提供任何用户问题建议</p>,
       extra: (
         <SelectList
-          className={styles.select}
+          className={cx(styles.select)}
           size={'small'}
           value={agentConfigInfo?.openSuggest}
           onChange={(value) =>
@@ -430,7 +451,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       <ConfigOptionsHeader title="对话体验" />
       <ConfigOptionCollapse
         items={ConversationalExperienceList}
-        defaultActiveKey={[AgentArrangeConfigEnum.Opening_Remarks]}
+        onChangeCollapse={setExperienceActiveKey}
+        defaultActiveKey={experienceActiveKey}
       />
       {/*添加插件、工作流、知识库、数据库弹窗*/}
       <Created
@@ -438,9 +460,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         onCancel={() => setShow(false)}
         spaceId={spaceId}
         checkTag={checkTag}
-        hasIds={{
-          [checkTag]: checkedIds,
-        }}
+        hasIds={hasIds}
         onAdded={handleAddComponent}
       />
       {/*添加触发器弹窗*/}
