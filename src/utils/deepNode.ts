@@ -86,6 +86,58 @@ export const deleteNode = (arr: BindConfigWithSub[], key: React.Key) => {
   return (filterRecursive(arr) as BindConfigWithSub[]) || [];
 };
 
+// 递归更新子级require值
+const updateRequireFieldFalse = (data: BindConfigWithSub[], value: boolean) => {
+  data.forEach((node) => {
+    node.require = value;
+    if (node.subArgs?.length) {
+      updateRequireFieldFalse(node.subArgs, value);
+    }
+  });
+};
+
+// 递归查找节点路径的函数
+function findParentPathByKey(tree: BindConfigWithSub[], targetKey, path = []) {
+  // 遍历当前层级的节点
+  for (const node of tree) {
+    // 如果当前节点的key等于目标key，返回路径
+    if (node.key === targetKey) {
+      return path;
+    }
+
+    // 如果当前节点有子节点，继续递归查找
+    if (node.subArgs && node.subArgs.length > 0) {
+      // 将当前节点添加到路径中
+      path.push(node.key);
+
+      // 递归调用，查找目标节点
+      const result = findParentPathByKey(node.subArgs, targetKey, path);
+
+      // 如果找到了目标节点，返回路径
+      if (result) {
+        return result;
+      }
+
+      // 如果没有找到目标节点，回溯：移除当前节点
+      path.pop();
+    }
+  }
+
+  // 如果所有节点都遍历完仍未找到目标节点，返回null
+  return null;
+}
+
+const updateRequireFieldTrue = (data: BindConfigWithSub[], pathKeys) => {
+  data.forEach((node) => {
+    if (pathKeys.includes(node.key)) {
+      node.require = true;
+    }
+    if (node?.subArgs?.length) {
+      return updateRequireFieldTrue(node.subArgs, pathKeys);
+    }
+  });
+};
+
 // 更新节点字段
 export const updateNodeField = (
   arr: BindConfigWithSub[],
@@ -93,6 +145,7 @@ export const updateNodeField = (
   field: string,
   value: React.Key | boolean | any,
 ) => {
+  let pathKeys = [];
   const updateRecursive = (data: BindConfigWithSub[]) => {
     return data.map((node) => {
       if (node.key === key) {
@@ -127,6 +180,15 @@ export const updateNodeField = (
         if (field === 'require' && !!value && !node.bindValue) {
           node.enable = true;
         }
+        if (field === 'require') {
+          // 选中, 父级以及父级以上，都设置为true
+          if (value) {
+            pathKeys = findParentPathByKey(arr, node.key);
+          } else if (node.subArgs) {
+            // 取消选中, 下级以及下下级等，都设置为false
+            updateRequireFieldFalse(node.subArgs, false);
+          }
+        }
         // 返回节点
         return { ...node, [field]: value };
       }
@@ -137,7 +199,10 @@ export const updateNodeField = (
     });
   };
 
-  return (updateRecursive(arr) as BindConfigWithSub[]) || [];
+  const newList = (updateRecursive(arr) as BindConfigWithSub[]) || [];
+  // 设置父级require为true
+  updateRequireFieldTrue(newList, pathKeys);
+  return newList;
 };
 
 // 过滤数组
