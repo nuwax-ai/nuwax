@@ -13,15 +13,14 @@ export const request: RequestConfig = {
   errorConfig: {
     // 错误抛出
     errorThrower: (res: RequestResponse<null>) => {
-      // console.log(res);
       const {
         code,
-        displayCode,
+        // displayCode,
         message: resMessage,
-        data,
-        debugInfo,
-        success,
-        tid,
+        // data,
+        // debugInfo,
+        // success,
+        // tid,
       } = res;
       //用户未登录 , 使用 history.push 进行跳转
       if (code === USER_NO_LOGIN) {
@@ -37,12 +36,12 @@ export const request: RequestConfig = {
       }
 
       message.warning(res.message);
-      if (!success) {
-        const error: any = new Error(resMessage);
-        error.name = 'BizError';
-        error.info = { code, displayCode, resMessage, data, debugInfo, tid };
-        throw error; // 抛出自制的错误
-      }
+      // if (!success) {
+      //   const error: any = new Error(resMessage);
+      //   error.name = 'BizError';
+      //   error.info = { code, displayCode, resMessage, data, debugInfo, tid };
+      //   throw error; // 抛出自制的错误
+      // }
     },
 
     // 错误接收及处理
@@ -95,11 +94,6 @@ export const request: RequestConfig = {
 
   responseInterceptors: [
     async (response) => {
-      // if (response.status === 301 || response.status === 302) {
-      //   const location = response?.headers?.location;
-      //   window.open(location);
-      //   return;
-      // }
       // 拦截响应数据，进行个性化处理
       const { data = {} as any } = response;
       if (data.code !== SUCCESS_CODE) {

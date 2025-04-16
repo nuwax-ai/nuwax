@@ -59,7 +59,7 @@ const KnowledgeTextList: React.FC<KnowledgeTextListProps> = ({
                 icon={
                   <DeleteOutlined
                     className={'cursor-pointer'}
-                    onClick={() => onDel(item.id)}
+                    onClick={() => onDel(item.id, item.targetId, item.type)}
                   />
                 }
               />

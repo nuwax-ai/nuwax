@@ -1,9 +1,7 @@
 import ConditionRender from '@/components/ConditionRender';
 import useConversation from '@/hooks/useConversation';
-import { apiAgentConversationList } from '@/services/agentConfig';
 import { apiUserUsedAgentList } from '@/services/agentDev';
 import type { AgentInfo } from '@/types/interfaces/agent';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useModel, useRequest } from 'umi';
@@ -17,10 +15,8 @@ const cx = classNames.bind(styles);
  */
 const HomeSection: React.FC = () => {
   const [usedAgentList, setUsedAgentList] = useState<AgentInfo[]>();
-  // 历史会话列表
-  const [conversationList, setConversationList] =
-    useState<ConversationInfo[]>();
   const { setOpenHistoryModal } = useModel('layout');
+  const { conversationList, runHistory } = useModel('conversationHistory');
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
 
@@ -30,15 +26,6 @@ const HomeSection: React.FC = () => {
     debounceInterval: 300,
     onSuccess: (result: AgentInfo[]) => {
       setUsedAgentList(result);
-    },
-  });
-
-  // 查询历史会话记录
-  const { run: runHistory } = useRequest(apiAgentConversationList, {
-    manual: true,
-    debounceInterval: 500,
-    onSuccess: (result: ConversationInfo[]) => {
-      setConversationList(result);
     },
   });
 

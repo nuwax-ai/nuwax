@@ -17,10 +17,11 @@ import type { AgentArrangeConfigProps } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
 import VariableList from './VariableList';
 // import { CaretDownOutlined } from '@ant-design/icons';
+import { useRequest } from 'ahooks';
 import { CollapseProps, message } from 'antd';
 import classNames from 'classnames';
 import React, { MouseEvent, useEffect, useMemo, useState } from 'react';
-import { useModel, useRequest } from 'umi';
+import { useModel } from 'umi';
 import ConfigOptionCollapse from './ConfigOptionCollapse';
 import ConfigOptionsHeader from './ConfigOptionsHeader';
 import CreateVariables from './CreateVariables';
@@ -85,22 +86,23 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const skillActiveKey = useMemo(() => {
     const skill: AgentArrangeConfigEnum[] = [];
     for (let i = 0; i < agentComponentList?.length; i++) {
-      if (agentComponentList[i].type === AgentComponentTypeEnum.Plugin) {
-        if (!skill.includes(AgentArrangeConfigEnum.Plugin)) {
-          skill.push(AgentArrangeConfigEnum.Plugin);
-        }
-        continue;
+      if (
+        agentComponentList[i].type === AgentComponentTypeEnum.Plugin &&
+        !skill.includes(AgentArrangeConfigEnum.Plugin)
+      ) {
+        skill.push(AgentArrangeConfigEnum.Plugin);
       }
-      if (agentComponentList[i].type === AgentComponentTypeEnum.Workflow) {
-        if (!skill.includes(AgentArrangeConfigEnum.Workflow)) {
-          skill.push(AgentArrangeConfigEnum.Workflow);
-        }
-        continue;
+      if (
+        agentComponentList[i].type === AgentComponentTypeEnum.Workflow &&
+        !skill.includes(AgentArrangeConfigEnum.Workflow)
+      ) {
+        skill.push(AgentArrangeConfigEnum.Workflow);
       }
-      if (agentComponentList[i].type === AgentComponentTypeEnum.Trigger) {
-        if (!skill.includes(AgentArrangeConfigEnum.Trigger)) {
-          skill.push(AgentArrangeConfigEnum.Trigger);
-        }
+      if (
+        agentComponentList[i].type === AgentComponentTypeEnum.Trigger &&
+        !skill.includes(AgentArrangeConfigEnum.Trigger)
+      ) {
+        skill.push(AgentArrangeConfigEnum.Trigger);
       }
     }
     return skill;
@@ -123,99 +125,81 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   }, [agentComponentList]);
 
   // 查询智能体配置组件列表
-  const { run } = useRequest(apiAgentComponentList, {
+  const { runAsync } = useRequest(apiAgentComponentList, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: AgentComponentInfo[]) => {
-      setAgentComponentList(result);
-      const list =
-        result?.map((item) => {
-          return {
-            type: item.type,
-            targetId: item.targetId,
-            status: AgentAddComponentStatusEnum.Added,
-          };
-        }) || [];
-      setAddComponents(list);
-    },
   });
-
-  // const getTargetIds = (
-  //   list: AgentComponentInfo[],
-  //   type: AgentComponentTypeEnum,
-  // ) => {
-  //   return (
-  //     list
-  //       ?.filter((item) => item.type === type)
-  //       ?.map((item) => item.targetId) || []
-  //   );
-  // };
-  //
-  // // 已选中的智能体组件id
-  // const hasIds = useMemo(() => {
-  //   return {
-  //     [AgentComponentTypeEnum.Plugin]: getTargetIds(
-  //       agentComponentList,
-  //       AgentComponentTypeEnum.Plugin,
-  //     ),
-  //     [AgentComponentTypeEnum.Workflow]: getTargetIds(
-  //       agentComponentList,
-  //       AgentComponentTypeEnum.Workflow,
-  //     ),
-  //     [AgentComponentTypeEnum.Knowledge]: getTargetIds(
-  //       agentComponentList,
-  //       AgentComponentTypeEnum.Knowledge,
-  //     ),
-  //   };
-  // }, [agentComponentList]);
 
   // 删除智能体组件配置
-  const { run: runAgentComponentDel } = useRequest(apiAgentComponentDelete, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (_, params) => {
-      message.success('已成功删除插件');
-      const id = params[0];
-      const list = agentComponentList?.filter((item) => item.id !== id) || [];
-      setAgentComponentList(list);
+  const { runAsync: runAgentComponentDel } = useRequest(
+    apiAgentComponentDelete,
+    {
+      manual: true,
+      debounceInterval: 300,
     },
-  });
+  );
 
-  // 从组件列表中删除正在loading状态的组件
-  const handleDelLoadingComponents = (
-    type: AgentComponentTypeEnum,
+  const handleAgentComponentDel = async (
+    id: number,
     targetId: number,
+    type: AgentComponentTypeEnum,
   ) => {
-    setAddComponents((list) => {
-      return list.filter(
-        (item) => item.type === type && item.targetId !== targetId,
-      );
-    });
+    await runAgentComponentDel(id);
+    message.success('已成功删除插件');
+    const list =
+      agentComponentList?.filter(
+        (item) => !(item.id === id && item.type === type),
+      ) || [];
+    setAgentComponentList(list);
+    const newList =
+      addComponents?.filter(
+        (item) => !(item.targetId === targetId && item.type === type),
+      ) || [];
+    setAddComponents(newList);
+  };
+
+  // 查询智能体配置组件列表,成功后设置state
+  const handleSuccess = (data: AgentComponentInfo[]) => {
+    setAgentComponentList(data);
+    const list =
+      data?.map((item) => {
+        return {
+          type: item.type,
+          targetId: item.targetId,
+          status: AgentAddComponentStatusEnum.Added,
+        };
+      }) || [];
+    setAddComponents(list);
+  };
+
+  const asyncFun = async () => {
+    const { data } = await runAsync(agentId);
+    handleSuccess(data);
   };
 
   // 新增智能体插件、工作流、知识库组件配置
   const { run: runComponentAdd } = useRequest(apiAgentComponentAdd, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
-      // setShow(false);
+    onSuccess: async () => {
       message.success('已成功添加');
-      // 查询智能体配置组件列表
-      run(agentId);
-      // const {targetId, type} = params[0];
-      // handleDelLoadingComponents(type, targetId);
+      // 重新查询智能体配置组件列表
+      await asyncFun();
     },
     onError: (_, params) => {
+      // 从组件列表中删除正在loading状态的组件
       const { targetId, type } = params[0];
-      handleDelLoadingComponents(type, targetId);
+      setAddComponents((list) => {
+        return list.filter(
+          (item) => item.type === type && item.targetId !== targetId,
+        );
+      });
     },
   });
 
   useEffect(() => {
-    if (agentId) {
-      run(agentId);
-    }
-  }, [agentId]);
+    asyncFun();
+  }, []);
 
   // 添加插件、工作流、知识库等
   const handlerComponentPlus = (
@@ -246,10 +230,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   };
 
   // 确定添加、更新变量
-  const handleConfirmVariables = () => {
+  const handleConfirmVariables = async () => {
     setOpenVariableModel(false);
     // 查询智能体配置组件列表
-    run(agentId);
+    await asyncFun();
   };
 
   // 添加数据库表
@@ -285,7 +269,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         <PluginList
           list={filterList(AgentComponentTypeEnum.Plugin)}
           onSet={handlePluginSet}
-          onDel={runAgentComponentDel}
+          onDel={handleAgentComponentDel}
         />
       ),
       extra: (
@@ -304,7 +288,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         <WorkflowList
           list={filterList(AgentComponentTypeEnum.Workflow)}
           onSet={handlePluginSet}
-          onDel={runAgentComponentDel}
+          onDel={handleAgentComponentDel}
         />
       ),
       extra: (
@@ -338,7 +322,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       children: (
         <KnowledgeTextList
           list={filterList(AgentComponentTypeEnum.Knowledge)}
-          onDel={runAgentComponentDel}
+          onDel={handleAgentComponentDel}
         />
       ),
       extra: (

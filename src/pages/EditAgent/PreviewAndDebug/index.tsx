@@ -7,6 +7,7 @@ import { EditAgentShowType } from '@/types/enums/space';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
+import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useModel } from 'umi';
@@ -30,7 +31,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     messageList,
     setMessageList,
     chatSuggestList,
+    loadingConversation,
     runQueryConversation,
+    isLoadingConversation,
+    setIsLoadingConversation,
     loadingSuggest,
     onMessageSend,
     messageViewRef,
@@ -60,6 +64,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     if (agentConfigInfo) {
       const { devConversationId } = agentConfigInfo;
       devConversationIdRef.current = devConversationId;
+      setIsLoadingConversation(false);
       // 查询会话
       runQueryConversation(devConversationId);
     }
@@ -78,10 +83,11 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
   const handleClear = useCallback(async () => {
     handleClearSideEffect();
     setMessageList([]);
-    // 创建智能体会话
+    setIsLoadingConversation(false);
+    // 创建智能体会话(智能体编排页面devMode为true)
     const { success, data } = await runAsyncConversationCreate({
       agentId,
-      devMode: false,
+      devMode: true,
     });
 
     if (success) {
@@ -99,7 +105,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       return;
     }
 
-    onMessageSend(id, message, files, true);
+    onMessageSend(id, message, files, true, false);
   };
 
   return (
@@ -119,7 +125,13 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
           className={cx(styles['chat-wrapper'], 'flex-1')}
           ref={messageViewRef}
         >
-          {messageList?.length > 0 || chatSuggestList?.length > 0 ? (
+          {loadingConversation ? (
+            <div
+              className={cx('flex', 'items-center', 'content-center', 'h-full')}
+            >
+              <LoadingOutlined className={cx(styles.loading)} />
+            </div>
+          ) : messageList?.length > 0 || chatSuggestList?.length > 0 ? (
             <>
               {messageList?.map((item, index: number) => (
                 <ChatView key={index} messageInfo={item} roleInfo={roleInfo} />
@@ -132,11 +144,13 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
               />
             </>
           ) : (
-            // Chat记录为空
-            <AgentChatEmpty
-              icon={agentConfigInfo?.icon}
-              name={agentConfigInfo?.name as string}
-            />
+            isLoadingConversation && (
+              // Chat记录为空
+              <AgentChatEmpty
+                icon={agentConfigInfo?.icon}
+                name={agentConfigInfo?.name as string}
+              />
+            )
           )}
         </div>
         {/*会话输入框*/}
