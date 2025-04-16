@@ -345,6 +345,15 @@ const Created: React.FC<CreatedProp> = ({
     </div>
   );
 
+  const isAdded = (item: CreatedNodeItem) => {
+    return addComponents?.some(
+      (info) =>
+        info.type === item.targetType &&
+        info.targetId === item.targetId &&
+        info.status === AgentAddComponentStatusEnum.Added,
+    );
+  };
+
   return (
     <Modal
       keyboard={false} //是否能使用sec关闭
@@ -466,14 +475,9 @@ const Created: React.FC<CreatedProp> = ({
                     info.targetId === item.targetId &&
                     info.status === AgentAddComponentStatusEnum.Loading,
                 )}
-                disabled={addComponents?.some(
-                  (info) =>
-                    info.type === item.targetType &&
-                    info.targetId === item.targetId &&
-                    info.status === AgentAddComponentStatusEnum.Added,
-                )}
+                disabled={isAdded(item)}
               >
-                添加
+                {isAdded(item) ? '已添加' : '添加'}
               </Button>
             </div>
           ))}
