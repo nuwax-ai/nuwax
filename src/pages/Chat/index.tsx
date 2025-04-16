@@ -9,7 +9,7 @@ import type { RoleInfo } from '@/types/interfaces/conversationInfo';
 import { addBaseTarget } from '@/utils/common';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useLocation, useModel, useParams } from 'umi';
 import styles from './index.less';
 import ShowArea from './ShowArea';
@@ -26,8 +26,6 @@ const Chat: React.FC = () => {
   // 附加state
   const message = location.state?.message;
   const files = location.state?.files;
-  const [isLoadingConversation, setIsLoadingConversation] =
-    useState<boolean>(false);
 
   const {
     conversationInfo,
@@ -37,6 +35,8 @@ const Chat: React.FC = () => {
     setMessageList,
     chatSuggestList,
     runAsync,
+    isLoadingConversation,
+    setIsLoadingConversation,
     loadingSuggest,
     onMessageSend,
     messageViewRef,
@@ -66,10 +66,9 @@ const Chat: React.FC = () => {
       setIsLoadingConversation(false);
       const asyncFun = async () => {
         // 同步查询会话, 此处必须先同步查询会话信息，因为成功后会设置消息列表，如果是异步查询，会导致发送消息时，清空消息列表的bug
-        const res = await runAsync(id);
-        setIsLoadingConversation(true);
+        const { data } = await runAsync(id);
         // 会话消息列表
-        const list = res?.data?.messageList || [];
+        const list = data?.messageList || [];
         const len = list?.length || 0;
         // 会话消息列表为空或者只有一条消息并且此消息时开场白时，可以发送消息
         const isCanMessage =

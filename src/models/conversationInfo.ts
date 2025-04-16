@@ -30,6 +30,7 @@ import { createSSEConnection } from '@/utils/fetchEventSource';
 import { useRequest } from 'ahooks';
 import moment from 'moment/moment';
 import { useCallback, useRef, useState } from 'react';
+import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 
 export default () => {
@@ -54,6 +55,10 @@ export default () => {
   const needUpdateTopicRef = useRef<boolean>(true);
   // 展示台卡片列表
   const [cardList, setCardList] = useState<CardInfo[]>([]);
+  const [isLoadingConversation, setIsLoadingConversation] =
+    useState<boolean>(false);
+
+  const { runHistory } = useModel('conversationHistory');
 
   const handleScrollBottom = () => {
     scrollTimeoutRef.current = setTimeout(() => {
@@ -66,7 +71,7 @@ export default () => {
   };
 
   // 根据用户消息更新会话主题
-  const { run: runUpdateTopic } = useRequest(apiAgentConversationUpdate, {
+  const { runAsync: runUpdateTopic } = useRequest(apiAgentConversationUpdate, {
     manual: true,
     debounceWait: 300,
     onSuccess: (result) => {
@@ -90,6 +95,7 @@ export default () => {
     manual: true,
     debounceWait: 300,
     onSuccess: (result) => {
+      setIsLoadingConversation(true);
       const { data } = result;
       setConversationInfo(data);
       // 是否开启用户问题建议
@@ -98,6 +104,9 @@ export default () => {
       // 开场白预置问题
       setChatSuggestList(data?.agent?.openingGuidQuestions || []);
       handleScrollBottom();
+    },
+    onError: () => {
+      setIsLoadingConversation(true);
     },
   });
 
@@ -285,7 +294,9 @@ export default () => {
     id: number,
     message: string,
     files: UploadFileInfo[] = [],
-    debug = false,
+    debug: boolean = false,
+    // 是否同步会话记录
+    isSync: boolean = true,
   ) => {
     // 清除副作用
     handleClearSideEffect();
@@ -347,10 +358,16 @@ export default () => {
     await handleConversation(params, currentMessageId);
     // 第一次发送消息后更新主题
     if (needUpdateTopicRef.current) {
-      runUpdateTopic({
+      await runUpdateTopic({
         id,
         firstMessage: message,
       });
+      if (isSync) {
+        // 如果是会话聊天页（chat页），同步更新会话记录
+        runHistory({
+          agentId: null,
+        });
+      }
     }
   };
 
@@ -367,7 +384,6 @@ export default () => {
     setIsSuggest,
     conversationInfo,
     setConversationInfo,
-    loadingConversation,
     messageList,
     setMessageList,
     requestId,
@@ -375,7 +391,10 @@ export default () => {
     setFinalResult,
     chatSuggestList,
     setChatSuggestList,
+    loadingConversation,
     runQueryConversation,
+    isLoadingConversation,
+    setIsLoadingConversation,
     runAsync,
     loadingSuggest,
     onMessageSend,
