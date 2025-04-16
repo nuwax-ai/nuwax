@@ -18,6 +18,7 @@ import {
   Space,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
+import { useModel } from 'umi';
 import { cycleOption, outPutConfigs } from '../params';
 import { InputAndOut, OtherFormList, TreeOutput } from './commonNode';
 import './nodeItem.less';
@@ -476,7 +477,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
 // 定义代码节点
 const CodeNode: React.FC<NodeDisposeProps> = ({ form }) => {
   const [show, setShow] = useState(false);
-
+  const { setIsModified } = useModel('workflow');
   return (
     <>
       <div className="node-item-style">
@@ -514,6 +515,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ form }) => {
                     : 'codePython',
                   value,
                 );
+                setIsModified(true);
               }}
               codeLanguage={form.getFieldValue('codeLanguage') || 'JavaScript'}
               height="180px"

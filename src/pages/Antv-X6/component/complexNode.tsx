@@ -38,9 +38,10 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
     AgentAddComponentStatusInfo[]
   >([]);
 
-  const { setSkillChange } = useModel('workflow');
+  const { setSkillChange, setIsModified } = useModel('workflow');
   // 新增技能
   const onAddedSkill = (item: CreatedNodeItem) => {
+    setIsModified(true);
     const skillComponentConfigs =
       form.getFieldValue('skillComponentConfigs') || [];
     item.type = item.targetType;

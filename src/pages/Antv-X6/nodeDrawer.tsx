@@ -71,6 +71,9 @@ const NodeDrawer = (
   const [currentNodeConfig, setCurrentNodeConfig] =
     useState<ChildNode>(foldWrapItem);
 
+  // 新增一个变量来保存当前节点的原始配置
+  const [originalNodeConfig, setOriginalNodeConfig] =
+    useState<ChildNode>(foldWrapItem);
   // 打开重命名的input
   const [showNameInput, setShowNameInput] = useState<boolean>(false);
   // 将form表单拿到最上层
@@ -82,32 +85,33 @@ const NodeDrawer = (
     const values = form.getFieldsValue(true);
     let newNodeConfig;
     if (
-      currentNodeConfig.type === 'QA' ||
-      currentNodeConfig.type === 'IntentRecognition' ||
-      currentNodeConfig.type === 'Condition'
+      originalNodeConfig.type === 'QA' ||
+      originalNodeConfig.type === 'IntentRecognition' ||
+      originalNodeConfig.type === 'Condition'
     ) {
       newNodeConfig = {
-        ...currentNodeConfig,
+        ...originalNodeConfig,
         nodeConfig: {
-          ...currentNodeConfig.nodeConfig,
+          ...originalNodeConfig.nodeConfig,
           ...changeNodeConfig(
-            currentNodeConfig.type,
+            originalNodeConfig.type,
             values,
-            currentNodeConfig.nodeConfig,
+            originalNodeConfig.nodeConfig,
           ),
         },
       };
     } else {
       newNodeConfig = {
-        ...currentNodeConfig,
+        ...originalNodeConfig,
         nodeConfig: {
-          ...currentNodeConfig.nodeConfig,
+          ...originalNodeConfig.nodeConfig,
           ...values,
         },
       };
     }
     onGetNodeConfig(newNodeConfig);
     setIsModified(false);
+    setOriginalNodeConfig(currentNodeConfig);
   };
 
   // 修改节点的名称和描述
@@ -123,7 +127,11 @@ const NodeDrawer = (
       name: name,
       description: description,
     });
-    setIsModified(true);
+    onGetNodeConfig({
+      ...currentNodeConfig,
+      name: name,
+      description: description,
+    });
   };
 
   // 重新获取当前的上级节点参数
@@ -243,12 +251,14 @@ const NodeDrawer = (
   useEffect(() => {
     // 监听 foldWrapItem.id 的变化
     if (foldWrapItem.id && foldWrapItem.id !== currentNodeConfig.id) {
+      // 深拷贝新的 foldWrapItem 数据
+      const newFoldWrapItem = JSON.parse(JSON.stringify(foldWrapItem));
       // 提交当前节点的数据
       if (isModified) {
         onFinish();
+      } else {
+        setOriginalNodeConfig(newFoldWrapItem);
       }
-      // 深拷贝新的 foldWrapItem 数据
-      const newFoldWrapItem = JSON.parse(JSON.stringify(foldWrapItem));
       // 更新为新的 foldWrapItem 数据
       setCurrentNodeConfig(newFoldWrapItem);
       form.resetFields(); // 清空表单
@@ -283,6 +293,7 @@ const NodeDrawer = (
         form.setFieldsValue(newValues);
       }
       setCurrentNodeConfig(foldWrapItem);
+      setOriginalNodeConfig(foldWrapItem);
     }
   }, [foldWrapItem.id, JSON.stringify(foldWrapItem)]); // 只监听 id 的变化
 
