@@ -63,6 +63,30 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
     ]);
   };
 
+  // 移出技能
+  const removeItem = (item: CreatedNodeItem) => {
+    const skillComponentConfigs = form.getFieldValue('skillComponentConfigs');
+    if (skillComponentConfigs) {
+      const newSkillComponentConfigs = skillComponentConfigs.filter(
+        (i: CreatedNodeItem) => i.typeId !== item.typeId,
+      );
+      form.setFieldValue('skillComponentConfigs', newSkillComponentConfigs);
+      setIsModified(true);
+    }
+  };
+
+  // 修改技能参数
+  const modifyItem = (item: CreatedNodeItem) => {
+    setIsModified(true);
+    const skillComponentConfigs = form.getFieldValue('skillComponentConfigs');
+    if (skillComponentConfigs) {
+      const newSkillComponentConfigs = skillComponentConfigs.map(
+        (i: CreatedNodeItem) => (i.typeId === item.typeId ? item : i),
+      );
+      form.setFieldValue('skillComponentConfigs', newSkillComponentConfigs);
+    }
+  };
+
   //   显示新增技能
   const showAdd = () => {
     setOpen(true);
@@ -71,7 +95,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
   useEffect(() => {
     const _list = form.getFieldValue('skillComponentConfigs');
     const _arr =
-      _list?.map((item) => {
+      _list?.map((item: CreatedNodeItem) => {
         return {
           type: item.type,
           targetId: item.targetId,
@@ -92,6 +116,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
           icon={<PlusOutlined />}
           size={'small'}
           onClick={showAdd}
+          type="text"
         ></Button>
       </div>
       <Form.Item shouldUpdate noStyle>
@@ -102,6 +127,8 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
                 params={form.getFieldValue('skillComponentConfigs')}
                 skillName={'skillComponentConfigs'}
                 form={form}
+                removeItem={removeItem}
+                modifyItem={modifyItem}
               />
             </div>
           ) : (

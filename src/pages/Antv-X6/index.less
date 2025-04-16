@@ -91,12 +91,12 @@
   top: 0;
   left: 0; // 改为视窗单位
   overflow: auto;
-  // min-width: 1400px;
+  min-width: 1200px;
 }
 
 #graph-container {
   width: 100%;
-  height: calc(100vh - 64px);
+  height: 100%;
   background-color: @WHITE01;
 }
 
@@ -240,6 +240,11 @@
 
 .dispose-node-style {
   padding: 12px;
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
 
   .ant-form-item {
     margin-bottom: 6px;

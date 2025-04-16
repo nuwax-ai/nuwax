@@ -38,12 +38,12 @@ const OtherOperations: React.FC<OtherOperationsProps> = ({
   );
 
   return (
-    <div className="dis-left" style={{ marginRight: '6px' }}>
+    <div className="dis-left">
       {/* 试运行 */}
       {testRun && (
         <Popover placement="top" content={'测试该节点'}>
           <PlayCircleOutlined
-            style={{ marginRight: '10px' }}
+            style={{ marginRight: '6px', fontSize: '12px' }}
             onClick={() => changeNode('TestRun')}
           />
         </Popover>
@@ -56,7 +56,10 @@ const OtherOperations: React.FC<OtherOperationsProps> = ({
           open={popoverVisible}
           onOpenChange={(visible) => setPopoverVisible(visible)}
         >
-          <DashOutlined onClick={() => setPopoverVisible(true)} />
+          <DashOutlined
+            style={{ fontSize: '12px' }}
+            onClick={() => setPopoverVisible(true)}
+          />
         </Popover>
       )}
     </div>

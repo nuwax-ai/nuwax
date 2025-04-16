@@ -76,6 +76,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                   icon={<PlusOutlined />}
                   size={'small'}
                   onClick={() => add(formItem)}
+                  type="text"
                 ></Button>
               )}
             </div>
@@ -180,6 +181,7 @@ export const OtherFormList: React.FC<NodeRenderProps> = ({
                 <Button
                   icon={<PlusOutlined />}
                   size={'small'}
+                  type={'text'}
                   onClick={() =>
                     add({
                       key: uuidv4(),
@@ -359,6 +361,7 @@ export const FormList: React.FC<FormListProps> = ({
             <Button
               icon={<PlusOutlined />}
               size={'small'}
+              type={'text'}
               onClick={() => {
                 const currentFields = form.getFieldValue(inputItemName) || [];
                 const insertIndex = Math.max(0, currentFields.length - 1);

@@ -242,11 +242,7 @@ const Workflow: React.FC = () => {
     }
     // setIsUpdate(true)
     const _res = await updateNode(params);
-    // if (graphRef.current) {
-    //   graphRef.current.updateNode(params.id, params);
-    // } else {
-    //   return;
-    // }
+
     if (_res.code === Constant.success) {
       if (update) {
         if (typeof update === 'string' && update !== 'moved') {
@@ -266,6 +262,11 @@ const Workflow: React.FC = () => {
           // 如果传递的是boolean，那么证明要更新这个节点
           getNodeConfig(Number(config.id));
         }
+      }
+      if (graphRef.current) {
+        graphRef.current.updateNode(params.id, params);
+      } else {
+        return;
       }
       setIsModified(false);
       changeUpdateTime();

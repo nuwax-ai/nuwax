@@ -75,6 +75,7 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                   <span className="node-title-style">条件分支</span>
                   <Button
                     icon={<PlusOutlined />}
+                    type={'text'}
                     onClick={() => {
                       const currentFields =
                         form.getFieldValue('conditionBranchConfigs') || [];

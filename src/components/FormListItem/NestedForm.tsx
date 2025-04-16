@@ -55,7 +55,6 @@ const CustomTree: React.FC<TreeFormProps> = ({
 
   const updateTreeData = (newData: TreeNodeConfig[]) => {
     setTreeData(newData);
-    console.log(newData, 'newData');
     form.setFieldValue(inputItemName, newData);
     setIsModified(true);
   };
@@ -170,6 +169,98 @@ const CustomTree: React.FC<TreeFormProps> = ({
 
     const newData = updateRecursive(treeData);
     updateTreeData(newData);
+  };
+
+  const updateRequireStatus = async (
+    nodeData: TreeNodeConfig,
+    checked: boolean,
+  ) => {
+    // 更新当前节点的 require 状态
+
+    // 如果当前节点被选中，递归更新所有父节点的 require 状态
+    if (checked) {
+      // 查找目标节点的所有父节点路径
+      const findPathToNode = (
+        tree: TreeNodeConfig[],
+        targetKey: string,
+        path: TreeNodeConfig[] = [],
+      ): TreeNodeConfig[] | null => {
+        for (const node of tree) {
+          const currentPath = [...path, node];
+
+          if (node.key === targetKey) {
+            return currentPath; // 找到目标节点，返回路径
+          }
+
+          if (node.subArgs) {
+            const result = findPathToNode(node.subArgs, targetKey, currentPath);
+            if (result) {
+              return result; // 如果子节点中找到目标节点，返回路径
+            }
+          }
+        }
+
+        return null; // 没有找到目标节点
+      };
+      // 查找目标节点的路径
+      const path = findPathToNode(treeData, nodeData.key!);
+      if (!path) {
+        return; // 如果没有找到目标节点，直接返回
+      }
+      // 递归treeData，更新路径上的所有节点的require状态为true
+      const updatePath = (
+        tree: TreeNodeConfig[],
+        path: TreeNodeConfig[],
+        level: number,
+      ): TreeNodeConfig[] => {
+        if (level > path.length) return tree;
+        return tree.map((item) => {
+          if (item.key === path[level].key) {
+            const updatedItem = { ...item, require: true };
+            if (level < path.length - 1 && item.subArgs) {
+              return {
+                ...updatedItem,
+                subArgs: updatePath(item.subArgs, path, level + 1),
+              };
+            }
+            return updatedItem;
+          }
+          return item;
+        });
+      };
+
+      const newData = updatePath(treeData, path, 0);
+      setTreeData(newData);
+      form.setFieldValue(inputItemName, newData); // 更新表单数据
+    } else {
+      // 递归获取更改当前数据require和所有子节点的require状态
+      const updateNode = (data: TreeNodeConfig): TreeNodeConfig => {
+        const updatedData = { ...data, require: false };
+        if (data.subArgs) {
+          updatedData.subArgs = data.subArgs.map((item) => updateNode(item));
+        }
+        return updatedData;
+      };
+
+      const newNodeData = await updateNode(nodeData);
+
+      const updateTree = (data: TreeNodeConfig[]): TreeNodeConfig[] =>
+        data.map((node) => {
+          if (node.key === newNodeData.key) {
+            return newNodeData; // 返回更新后的节点
+          }
+          if (node.subArgs) {
+            return { ...node, subArgs: updateTree(node.subArgs) };
+          }
+          return node;
+        });
+
+      const newData = updateTree(treeData);
+
+      setTreeData(newData); // 更新 treeData
+      form.setFieldValue(inputItemName, newData); // 更新表单数据
+    }
+    setIsModified(true); // 标记为已修改
   };
 
   const renderTitle = (nodeData: TreeNodeConfig) => {
@@ -295,7 +386,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
               <Checkbox
                 checked={nodeData.require}
                 onChange={(e) =>
-                  updateNodeField(nodeData.key!, 'require', e.target.checked)
+                  updateRequireStatus(nodeData, e.target.checked)
                 }
                 disabled={nodeData.systemVariable}
               />
@@ -377,6 +468,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
               size={'small'}
               onClick={addRootNode}
               className="ml-10"
+              type="text"
             />
           )}
         </div>

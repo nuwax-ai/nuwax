@@ -207,8 +207,12 @@ export interface FormListProps {
 export interface SkillProps {
   form: FormInstance;
   params: CreatedNodeItem[];
-  // 当前既能的参数名称
+  // 当前技能的参数名称
   skillName: 'knowledgeBaseConfigs' | 'skillComponentConfigs';
+  // 移出技能
+  removeItem: (id: CreatedNodeItem) => void;
+  // 修改技能参数
+  modifyItem: (id: CreatedNodeItem) => void;
 }
 
 export interface SkillDisposeProps {

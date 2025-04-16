@@ -21,7 +21,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
 }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
-  const { setSkillChange } = useModel('workflow');
+  const { setSkillChange, setIsModified } = useModel('workflow');
   // 处于loading状态的组件列表
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]
@@ -55,10 +55,34 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
     ]);
   };
 
+  // 移出技能
+  const removeItem = (item: CreatedNodeItem) => {
+    const knowledgeBaseConfigs = form.getFieldValue('knowledgeBaseConfigs');
+    if (knowledgeBaseConfigs) {
+      const newSkillComponentConfigs = knowledgeBaseConfigs.filter(
+        (i: CreatedNodeItem) => i.typeId !== item.typeId,
+      );
+      form.setFieldValue('knowledgeBaseConfigs', newSkillComponentConfigs);
+      setIsModified(true);
+    }
+  };
+
+  // 修改技能参数
+  const modifyItem = (item: CreatedNodeItem) => {
+    setIsModified(true);
+    const knowledgeBaseConfigs = form.getFieldValue('knowledgeBaseConfigs');
+    if (knowledgeBaseConfigs) {
+      const newSkillComponentConfigs = knowledgeBaseConfigs.map(
+        (i: CreatedNodeItem) => (i.typeId === item.typeId ? item : i),
+      );
+      form.setFieldValue('knowledgeBaseConfigs', newSkillComponentConfigs);
+    }
+  };
+
   useEffect(() => {
     const _list = form.getFieldValue('skillComponentConfigs');
     const _arr =
-      _list?.map((item) => {
+      _list?.map((item: CreatedNodeItem) => {
         return {
           type: item.type,
           targetId: item.targetId,
@@ -96,6 +120,8 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
                 skillName={'knowledgeBaseConfigs'}
                 params={form.getFieldValue('knowledgeBaseConfigs')}
                 form={form}
+                modifyItem={modifyItem}
+                removeItem={removeItem}
               />
             ) : (
               <Empty />

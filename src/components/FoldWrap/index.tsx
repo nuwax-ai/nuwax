@@ -80,7 +80,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
     >
       <div
         className={cx(styles['stand-header'], 'flex', 'items-center')}
-        style={{ height: isEdit ? '56px' : isEditDesc ? '90px' : '56px' }}
+        style={{ height: isEdit ? '66px' : isEditDesc ? '90px' : '66px' }}
       >
         <Form form={form} className={styles['form-style']}>
           <Form.Item name="name" className={styles['form-item-style']}>
@@ -113,7 +113,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
                     {title}
                   </span>
                 </div>
-                <div className="dis-left">
+                <div className="dis-left fold-action-style">
                   {otherAction}
                   <CloseOutlined
                     className={cx(styles.close, 'cursor-pointer')}
