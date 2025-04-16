@@ -93,3 +93,9 @@ export enum MessageTypeEnum {
   SYSTEM = 'SYSTEM',
   TOOL = 'TOOL',
 }
+
+// 智能体添加组件状态
+export enum AgentAddComponentStatusEnum {
+  Loading = 'Loading',
+  Added = 'Added',
+}

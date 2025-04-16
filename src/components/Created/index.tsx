@@ -1,7 +1,10 @@
 import Constant from '@/constants/codes.constants';
 import { ICON_TABLE, ICON_WORD } from '@/constants/images.constants';
 import service, { IGetList } from '@/services/created';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import {
+  AgentAddComponentStatusEnum,
+  AgentComponentTypeEnum,
+} from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { WorkflowModeEnum } from '@/types/enums/library';
 import { CreatedNodeItem } from '@/types/interfaces/common';
@@ -39,9 +42,7 @@ const Created: React.FC<CreatedProp> = ({
   onCancel,
   checkTag,
   onAdded,
-  hasIds = {},
-  targetId,
-  // spaceId,
+  addComponents,
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
   // const { spaceId } = useModel('workflow');
@@ -212,7 +213,6 @@ const Created: React.FC<CreatedProp> = ({
       page: 1,
       pageSize: 10,
     };
-    console.log(spaceId);
     setSearch(value); // 更新搜索状态
     setPagination({ page: 1, pageSize: 10 }); // 重置分页状态
     setList([]); // 清空列表
@@ -458,11 +458,18 @@ const Created: React.FC<CreatedProp> = ({
                 color="primary"
                 variant="outlined"
                 onClick={() => onAddNode(item)}
-                disabled={
-                  item.targetId === targetId ||
-                  (hasIds &&
-                    hasIds[selected.key]?.includes(item.targetId as number))
-                }
+                loading={addComponents?.some(
+                  (info) =>
+                    info.type === item.targetType &&
+                    info.targetId === item.targetId &&
+                    info.status === AgentAddComponentStatusEnum.Loading,
+                )}
+                disabled={addComponents?.some(
+                  (info) =>
+                    info.type === item.targetType &&
+                    info.targetId === item.targetId &&
+                    info.status === AgentAddComponentStatusEnum.Added,
+                )}
               >
                 添加
               </Button>

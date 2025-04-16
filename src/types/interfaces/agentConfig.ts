@@ -1,4 +1,7 @@
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import {
+  AgentAddComponentStatusEnum,
+  AgentComponentTypeEnum,
+} from '@/types/enums/agent';
 import type { DataTypeEnum } from '@/types/enums/common';
 import type { OpenCloseEnum } from '@/types/enums/space';
 import type {
@@ -210,4 +213,11 @@ export interface HomeAgentCategoryInfo {
   categories: CategoryInfo[];
   // 首页分类数据列表
   categoryItems: unknown;
+}
+
+// 智能体添加组件状态
+export interface AgentAddComponentStatusInfo {
+  type: AgentComponentTypeEnum;
+  targetId: number;
+  status: AgentAddComponentStatusEnum;
 }

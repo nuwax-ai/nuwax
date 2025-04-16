@@ -9,7 +9,10 @@ import service, {
   ITestRun,
   IUpdateDetails,
 } from '@/services/workflow';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import {
+  AgentAddComponentStatusEnum,
+  AgentComponentTypeEnum,
+} from '@/types/enums/agent';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { WorkflowModeEnum } from '@/types/enums/library';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
@@ -32,7 +35,6 @@ import NodeDrawer from './nodeDrawer';
 import Published from './Published';
 import { Child } from './type';
 const Workflow: React.FC = () => {
-  const { spaceId } = useParams();
   // 当前工作流的id
   const workflowId = Number(useParams().workflowId);
   // 当前被选中的节点
@@ -832,9 +834,14 @@ const Workflow: React.FC = () => {
       <Created
         checkTag={createdItem as AgentComponentTypeEnum}
         onAdded={onAdded}
-        targetId={info?.id}
-        spaceId={spaceId}
         open={open}
+        addComponents={[
+          {
+            type: AgentComponentTypeEnum.Workflow,
+            targetId: workflowId,
+            status: AgentAddComponentStatusEnum.Added,
+          },
+        ]}
         onCancel={() => setOpen(false)}
       />
       <TestRun

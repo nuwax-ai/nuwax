@@ -1,11 +1,14 @@
 import Created from '@/components/Created';
-import type { HasIdsType } from '@/components/Created/type';
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import { ModelSelected } from '@/components/ModelSetting';
 import { SkillList } from '@/components/Skill';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import {
+  AgentAddComponentStatusEnum,
+  AgentComponentTypeEnum,
+} from '@/types/enums/agent';
 import { InputItemNameEnum } from '@/types/enums/node';
+import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { QANodeOption } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
@@ -20,7 +23,7 @@ import {
   Select,
   Space,
 } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
@@ -30,6 +33,10 @@ import { FormList, InputAndOut, TreeOutput } from './commonNode';
 const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
+  // 处于loading状态的组件列表
+  const [addComponents, setAddComponents] = useState<
+    AgentAddComponentStatusInfo[]
+  >([]);
 
   const { setSkillChange } = useModel('workflow');
   // 新增技能
@@ -45,6 +52,14 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
     form.submit();
     setOpen(false);
     setSkillChange(true);
+    setAddComponents([
+      ...addComponents,
+      {
+        type: item.type,
+        targetId: item.targetId,
+        status: AgentAddComponentStatusEnum.Added,
+      },
+    ]);
   };
 
   //   显示新增技能
@@ -52,21 +67,18 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
     setOpen(true);
   };
 
-  const hasIds: HasIdsType = {
-    [AgentComponentTypeEnum.Plugin]: [],
-    [AgentComponentTypeEnum.Workflow]: [],
-    [AgentComponentTypeEnum.Knowledge]: [],
-  };
-
-  // 遍历 skillComponentConfigs 并填充 hasIds
-  for (const item of form.getFieldValue('skillComponentConfigs') || []) {
-    if (item.type) {
-      const type = item.type as AgentComponentTypeEnum; // 明确类型
-      if (hasIds[type]) {
-        hasIds[type]?.push(Number(item.typeId));
-      }
-    }
-  }
+  useEffect(() => {
+    const _list = form.getFieldValue('skillComponentConfigs');
+    const _arr =
+      _list?.map((item) => {
+        return {
+          type: item.type,
+          targetId: item.targetId,
+          status: AgentAddComponentStatusEnum.Added,
+        };
+      }) || [];
+    setAddComponents(_arr);
+  }, []);
 
   return (
     <div className="model-node-style">
@@ -134,14 +146,12 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
           inputItemName={'outputArgs'}
         />
       </Form.Item>
-
       <Created
         checkTag={AgentComponentTypeEnum.Plugin}
-        spaceId={Number(sessionStorage.getItem('spaceId'))}
         onAdded={onAddedSkill}
         open={open}
         onCancel={() => setOpen(false)}
-        hasIds={hasIds}
+        addComponents={addComponents}
       />
     </div>
   );
