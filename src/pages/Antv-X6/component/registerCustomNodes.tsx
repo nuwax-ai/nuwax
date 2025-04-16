@@ -124,7 +124,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
           className="general-node-header"
           style={{ background: gradientBackground }}
         >
-          <div className="general-node-header-image dis-left">
+          <div className="dis-left general-node-header-image">
             {returnImg(data.type)}
             {this.state.isEditingTitle ? (
               <Input
@@ -135,7 +135,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
                 autoFocus
               />
             ) : (
-              <span>{data.name}</span>
+              <span className="general-node-header-title">{data.name}</span>
             )}
           </div>
           <div className="other-action-style">
