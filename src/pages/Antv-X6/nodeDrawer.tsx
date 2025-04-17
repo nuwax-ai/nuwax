@@ -83,7 +83,8 @@ const NodeDrawer = (
   // form表单校验完毕后提交数据
   // 优化后的onFinish方法
   const onFinish = async () => {
-    if (!isModified || processingRef.current) return;
+    console.log('onFinish', isModified);
+    if (processingRef.current) return;
 
     try {
       processingRef.current = true;
@@ -237,7 +238,7 @@ const NodeDrawer = (
         foldWrapItem.id === currentNodeConfig.id &&
         JSON.stringify(foldWrapItem) !== JSON.stringify(currentNodeConfig)
       ) {
-        if (['LLM', 'Knowledge'].includes(foldWrapItem.type) && skillChange) {
+        if (foldWrapItem.type === 'LLM' && skillChange) {
           const currentValues = form.getFieldsValue();
           const newValues = { ...currentValues, ...foldWrapItem.nodeConfig };
           form.setFieldsValue(newValues);

@@ -1,4 +1,6 @@
 import InputOrReference from '@/components/FormListItem/InputOrReference';
+import { branchTypeMap } from '@/constants/node.constants';
+import { ConditionBranchConfigs } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Form, Select, Space, Tag } from 'antd';
@@ -104,11 +106,9 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                 {fields.map((item, index) => {
                   const isLast = index === fields.length - 1;
                   if (!isLast) {
-                    const itemData = form.getFieldValue([
-                      'conditionBranchConfigs',
-                      item.name,
-                    ]);
-                    console.log(itemData);
+                    const itemData: ConditionBranchConfigs = form.getFieldValue(
+                      ['conditionBranchConfigs', item.name],
+                    );
                     return (
                       <Draggable
                         key={itemData.uuid} // 使用表单中的uuid作为key
@@ -129,7 +129,7 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                                 style={{ cursor: 'grab', width: '100%' }}
                               >
                                 <span className="margin-right">
-                                  {index === 0 ? '如果' : '否则如果'}
+                                  {branchTypeMap[itemData.branchType]}
                                 </span>
                                 <Tag color="#C9CDD4">优先级{index + 1}</Tag>
                               </div>
@@ -139,33 +139,62 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                                   type="text"
                                   onClick={() => {
                                     remove(item.name);
+                                    // 这里删除了以后，需要重新理一下branchType,index为0的变为IF，index为1的变为ELSE_IF，index为fields.length - 1的变为ELSE
+                                    if (item.name === 0) {
+                                      const currentFields =
+                                        form.getFieldValue(
+                                          'conditionBranchConfigs',
+                                        ) || [];
+                                      const updatedFields = currentFields.map(
+                                        (
+                                          field: ConditionBranchConfigs,
+                                          index: number,
+                                        ) => ({
+                                          ...field,
+                                          branchType:
+                                            index === 0
+                                              ? 'IF'
+                                              : index ===
+                                                currentFields.length - 1
+                                              ? 'ELSE'
+                                              : 'ELSE_IF',
+                                        }),
+                                      );
+                                      // 更新表单值
+                                      form.setFieldsValue({
+                                        conditionBranchConfigs: updatedFields,
+                                      });
+                                    }
+
                                     form.submit();
                                   }}
                                 />
                               )}
                             </div>
                             <Space>
-                              <Form.Item
-                                name={[item.name, 'conditionType']}
-                                style={{ marginTop: '-26px' }}
-                              >
-                                <Select
-                                  style={{
-                                    marginRight: '4px',
-                                    width: 54,
-                                  }}
-                                  options={[
-                                    {
-                                      label: '且',
-                                      value: 'AND',
-                                    },
-                                    {
-                                      label: '或',
-                                      value: 'OR',
-                                    },
-                                  ]}
-                                />
-                              </Form.Item>
+                              {itemData.conditionArgs.length > 1 && (
+                                <Form.Item
+                                  name={[item.name, 'conditionType']}
+                                  style={{ marginTop: '-26px' }}
+                                >
+                                  <Select
+                                    style={{
+                                      marginRight: '4px',
+                                      width: 54,
+                                    }}
+                                    options={[
+                                      {
+                                        label: '且',
+                                        value: 'AND',
+                                      },
+                                      {
+                                        label: '或',
+                                        value: 'OR',
+                                      },
+                                    ]}
+                                  />
+                                </Form.Item>
+                              )}
 
                               {index !== fields.length - 1 && (
                                 <Form.List name={[item.name, 'conditionArgs']}>
