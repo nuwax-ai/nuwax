@@ -1,8 +1,18 @@
 @import '@/styles/color';
 // 去除当前model的padding
 .created-modal-style {
+  div:first-child {
+    height: 100%;
+  }
+
   .ant-modal-header {
     margin-bottom: 0;
+    height: 75px;
+    padding: 20px 0;
+  }
+
+  .ant-modal-body {
+    height: calc(100% - 75px);
   }
 
   .ant-modal-content {
@@ -27,7 +37,7 @@
 
 // 头部样式
 .created-title {
-  height: 75px;
+  height: 100%;
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
   background-color: @WHITE04;
@@ -57,9 +67,11 @@
 
 // 内容部分
 .created-container {
-  height: 680px;
+  height: 100%;
   border-top: 1px solid @GRAY06;
-
+  overflow: hidden;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
   // 侧边栏样式
   .aside-style {
     box-sizing: border-box;
@@ -82,7 +94,8 @@
   // 右侧主题内容
   .main-style {
     background-color: @WHITE04;
-    max-height: 679px;
+    height: 100%;
+    overflow-y: auto;
 
     // 每一个样式
     .list-item-style {

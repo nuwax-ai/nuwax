@@ -145,6 +145,7 @@ const NodeDrawer = (
     if (val === 'TestRun' && isModified && !processingRef.current) {
       await onFinish();
     } else if (val === 'Rename') {
+      console.log(12312313);
       setShowNameInput(true);
     }
     handleNodeChange(val, foldWrapItem);
@@ -158,16 +159,22 @@ const NodeDrawer = (
     name: string;
     description: string;
   }) => {
-    setCurrentNodeConfig({
-      ...currentNodeConfig,
-      name: name,
-      description: description,
-    });
-    onGetNodeConfig({
-      ...currentNodeConfig,
-      name: name,
-      description: description,
-    });
+    if (
+      name !== currentNodeConfig.name ||
+      description !== currentNodeConfig.description
+    ) {
+      setCurrentNodeConfig({
+        ...currentNodeConfig,
+        name: name,
+        description: description,
+      });
+      onGetNodeConfig({
+        ...currentNodeConfig,
+        name: name,
+        description: description,
+      });
+    }
+    setShowNameInput(false);
   };
 
   // 新增定时器逻辑

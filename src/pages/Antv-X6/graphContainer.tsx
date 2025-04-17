@@ -11,6 +11,7 @@ import {
   generatePorts,
   getHeight,
   getLength,
+  getWidthAndHeight,
 } from '@/utils/workflow';
 import { Node } from '@antv/x6';
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
@@ -53,17 +54,16 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
       const point = graphRef.current.clientToGraph(e.x, e.y);
 
-      const extension = child.nodeConfig.extension || {};
       const ports = generatePorts(child);
-
+      const { width, height } = getWidthAndHeight(child);
       // 根据情况，动态给予右侧的out连接桩
       const newNode = graphRef.current.addNode({
         shape: child.key,
         id: child.id,
         x: point.x,
         y: point.y,
-        width: extension.width ?? 304,
-        height: extension.height ?? 75,
+        width: width,
+        height: height,
         data: {
           ...child,
           onChange: handleNodeChange,
@@ -204,12 +204,12 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         // 创建主节点
         const mainNodes = notLoopChildrenNodes.map((node) => {
           const baseNode = createBaseNode(node);
-          // 从节点配置中获取实际尺寸
-          const extension = node.nodeConfig?.extension || {};
+
+          const { width, height } = getWidthAndHeight(node);
           return {
             ...baseNode,
-            width: extension.width || 304, // 显式设置宽度
-            height: extension.height || 76,
+            width: width, // 显式设置宽度
+            height: height,
             data: {
               ...node,
               onChange: handleNodeChange,

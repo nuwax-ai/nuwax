@@ -63,13 +63,21 @@ const Header: React.FC<HeaderProp> = ({
             )}
             <EditOutlined onClick={setShowCreateWorkflow} />
             {publishDate === null && (
-              <Tag color="default" style={{ marginLeft: '6px' }}>
+              <Tag
+                color="default"
+                bordered={false}
+                style={{ marginLeft: '6px' }}
+              >
                 未发布
               </Tag>
             )}
             {publishDate !== null && publishDate !== modified && (
-              <Tag color="volcano" style={{ marginLeft: '6px' }}>
-                有更新,未发布
+              <Tag
+                bordered={false}
+                color="volcano"
+                style={{ marginLeft: '6px' }}
+              >
+                有更新未发布
               </Tag>
             )}
             {/* <CheckCircleOutlined /> */}
