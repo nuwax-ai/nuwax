@@ -6,23 +6,24 @@ import PluginConfigTitle from '@/components/PluginConfigTitle';
 import PluginPublish from '@/components/PluginPublish';
 import PluginTryRunModel from '@/components/PluginTryRunModel';
 import VersionHistory from '@/components/VersionHistory';
-import { VARIABLE_TYPE_LIST } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
 import usePluginConfig from '@/hooks/usePluginConfig';
+import { dataTypes } from '@/pages/Antv-X6/params';
 import { apiPluginCodeUpdate, apiPluginInfo } from '@/services/plugin';
 import { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
 import { PluginCodeModeEnum, PluginTypeEnum } from '@/types/enums/plugin';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PluginInfo } from '@/types/interfaces/plugin';
+import { CascaderChange, CascaderValue } from '@/utils';
 import { getActiveKeys } from '@/utils/deepNode';
 import { DeleteOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import {
   Button,
+  Cascader,
   Checkbox,
   Input,
   message,
-  Select,
   Space,
   Table,
   Tooltip,
@@ -119,6 +120,9 @@ const SpacePluginCloudTool: React.FC = () => {
     runHistory(pluginId);
   }, [pluginId]);
 
+  // Just show the latest item.
+  const displayRender = (labels: string[]) => labels[labels.length - 1];
+
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub>['columns'] = [
     {
@@ -154,11 +158,17 @@ const SpacePluginCloudTool: React.FC = () => {
       key: 'dataType',
       width: 120,
       render: (value, record) => (
-        <Select
+        <Cascader
           rootClassName={styles.select}
-          value={value}
-          onChange={(value) => handleInputValue(record.key, 'dataType', value)}
-          options={VARIABLE_TYPE_LIST}
+          allowClear={false}
+          options={dataTypes}
+          expandTrigger="hover"
+          displayRender={displayRender}
+          defaultValue={CascaderValue(value)}
+          onChange={(value) => {
+            handleInputValue(record.key, 'dataType', CascaderChange(value));
+          }}
+          placeholder="请选择数据类型"
         />
       ),
     },
@@ -281,11 +291,17 @@ const SpacePluginCloudTool: React.FC = () => {
       key: 'dataType',
       width: 120,
       render: (value, record) => (
-        <Select
+        <Cascader
+          allowClear={false}
           rootClassName={styles.select}
-          value={value}
-          onChange={(value) => handleOutputValue(record.key, 'dataType', value)}
-          options={VARIABLE_TYPE_LIST}
+          options={dataTypes}
+          expandTrigger="hover"
+          displayRender={displayRender}
+          defaultValue={CascaderValue(value)}
+          onChange={(value) => {
+            handleOutputValue(record.key, 'dataType', CascaderChange(value));
+          }}
+          placeholder="请选择数据类型"
         />
       ),
     },

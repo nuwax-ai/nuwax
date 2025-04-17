@@ -22,6 +22,7 @@ const routes = [
     routes: [
       { path: '', component: '@/pages/Home' },
       { path: '/home/chat/:id', component: '@/pages/Chat' },
+      { path: '/space', component: '@/pages/Space' },
       { path: '/space/:spaceId/develop', component: '@/pages/SpaceDevelop' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
       { path: '/space/:spaceId/team', component: '@/pages/TeamSetting' },

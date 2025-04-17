@@ -1,8 +1,5 @@
 import SelectList from '@/components/SelectList';
-import {
-  ParamsSettingDefaultOptions,
-  VARIABLE_TYPE_LIST,
-} from '@/constants/common.constants';
+import { ParamsSettingDefaultOptions } from '@/constants/common.constants';
 import { AgentComponentTypeEnum, BindValueType } from '@/types/enums/agent';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { ParamsSettingProps } from '@/types/interfaces/agentConfig';
@@ -120,9 +117,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({ variables }) => {
       key: 'dataType',
       width: 120,
       render: (value) => (
-        <div className={cx('h-full', 'flex', 'items-center')}>
-          {VARIABLE_TYPE_LIST.find((item) => item.value === value)?.label}
-        </div>
+        <div className={cx('h-full', 'flex', 'items-center')}>{value}</div>
       ),
     },
     {

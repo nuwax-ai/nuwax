@@ -83,10 +83,10 @@ const TeamSetting: React.FC = () => {
       <section
         className={cx('flex', 'items-center', styles['team-summary-info'])}
       >
-        <img src={data?.data.icon || teamImage} alt="" />
+        <img src={data?.data?.icon || teamImage} alt="" />
         <section>
           <h1 className={cx('flex', 'items-center', 'font-16')}>
-            {data?.data.name}{' '}
+            {data?.data?.name}{' '}
             {data?.data?.currentUserRole !== TeamStatusEnum.User && (
               <FormOutlined className="ml-10" onClick={editTeam} />
             )}

@@ -1,12 +1,24 @@
 import { apiAgentConversationList } from '@/services/agentConfig';
+import { apiUserUsedAgentList } from '@/services/agentDev';
+import type { AgentInfo } from '@/types/interfaces/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { useState } from 'react';
 import { useRequest } from 'umi';
 
 export default () => {
+  const [usedAgentList, setUsedAgentList] = useState<AgentInfo[]>();
   // 历史会话列表
   const [conversationList, setConversationList] =
     useState<ConversationInfo[]>();
+
+  // 查询用户最近使用过的智能体列表
+  const { run: runUsed } = useRequest(apiUserUsedAgentList, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: AgentInfo[]) => {
+      setUsedAgentList(result);
+    },
+  });
 
   // 查询历史会话记录
   const { run: runHistory } = useRequest(apiAgentConversationList, {
@@ -18,6 +30,8 @@ export default () => {
   });
 
   return {
+    usedAgentList,
+    runUsed,
     conversationList,
     runHistory,
   };

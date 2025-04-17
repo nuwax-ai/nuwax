@@ -1,7 +1,8 @@
 import TooltipIcon from '@/components/TooltipIcon';
-import { VARIABLE_TYPE_LIST } from '@/constants/common.constants';
+import { dataTypes } from '@/pages/Antv-X6/params';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { TriggerRequireInputType } from '@/types/interfaces/agentConfig';
+import { CascaderChange, CascaderValue } from '@/utils';
 import {
   DownOutlined,
   InfoCircleOutlined,
@@ -9,7 +10,7 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import { Input, Select, Space, Table } from 'antd';
+import { Cascader, Input, Space, Table } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { forwardRef, useImperativeHandle, useState } from 'react';
@@ -102,6 +103,9 @@ const RequireParams: React.FC = forwardRef((_, ref) => {
     }
   };
 
+  // Just show the latest item.
+  const displayRender = (labels: string[]) => labels[labels.length - 1];
+
   // 入参配置columns
   const inputColumns: TableColumnsType<TriggerRequireInputType>['columns'] = [
     {
@@ -123,13 +127,17 @@ const RequireParams: React.FC = forwardRef((_, ref) => {
       title: '变量类型',
       dataIndex: 'dataType',
       key: 'dataType',
-      render: (_, record, index) => (
-        <Select
-          options={VARIABLE_TYPE_LIST}
+      render: (value, record, index) => (
+        <Cascader
+          allowClear={false}
+          options={dataTypes}
+          expandTrigger="hover"
+          displayRender={displayRender}
+          defaultValue={CascaderValue(value)}
+          onChange={(value) => {
+            handleInputValue(index, record, 'dataType', CascaderChange(value));
+          }}
           placeholder="请选择变量类型"
-          onChange={(value) =>
-            handleInputValue(index, record, 'dataType', value)
-          }
         />
       ),
     },

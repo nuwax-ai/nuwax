@@ -1,4 +1,5 @@
 import ChatInputHome from '@/components/ChatInputHome';
+import Loading from '@/components/Loading';
 import useConversation from '@/hooks/useConversation';
 import AgentItem from '@/pages/Home/AgentItem';
 import {
@@ -25,6 +26,7 @@ const Home: React.FC = () => {
   // 配置信息
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const [activeTab, setActiveTab] = useState<string>();
+  const [loading, setLoading] = useState<boolean>(false);
   const [homeCategoryInfo, setHomeCategoryInfo] =
     useState<HomeAgentCategoryInfo>();
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
@@ -41,6 +43,10 @@ const Home: React.FC = () => {
       const { data } = result;
       setHomeCategoryInfo(data);
       setActiveTab(data?.categories?.[0].type);
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
@@ -63,6 +69,7 @@ const Home: React.FC = () => {
   });
 
   useEffect(() => {
+    setLoading(true);
     runCategoryList();
   }, []);
 
@@ -122,42 +129,48 @@ const Home: React.FC = () => {
         })}
       </div>
       <div className={cx(styles.wrapper, 'flex-1')}>
-        <div ref={tabsRef} className={cx('flex', 'w-full', styles.tabs)}>
-          {homeCategoryInfo?.categories?.map((item) => {
-            return (
-              <span
-                key={item.type}
-                onClick={() => handleTabClick(item.type)}
-                className={cx(styles.item, {
-                  [styles.active]: item.type === activeTab,
-                })}
-              >
-                {item.name}
-              </span>
-            );
-          })}
-        </div>
-        {homeCategoryInfo?.categories?.map((item) => {
-          return (
-            <section
-              key={item.type}
-              ref={(el) => (sectionRefs.current[item.type] = el)}
-              id={item.type}
-            >
-              <h2 className={styles['category-name']}>{item.name}</h2>
-              <div className={cx(styles['category-list'])}>
-                {homeCategoryInfo?.categoryItems[item.type]?.map((info) => (
-                  <AgentItem
-                    key={info.targetId}
-                    info={info}
-                    onClick={() => handleCreateConversation(info.targetId)}
-                    onCollect={() => handleToggleCollect(item.type, info)}
-                  />
-                ))}
-              </div>
-            </section>
-          );
-        })}
+        {loading ? (
+          <Loading className={cx('h-full')} />
+        ) : (
+          <>
+            <div ref={tabsRef} className={cx('flex', 'w-full', styles.tabs)}>
+              {homeCategoryInfo?.categories?.map((item) => {
+                return (
+                  <span
+                    key={item.type}
+                    onClick={() => handleTabClick(item.type)}
+                    className={cx(styles.item, {
+                      [styles.active]: item.type === activeTab,
+                    })}
+                  >
+                    {item.name}
+                  </span>
+                );
+              })}
+            </div>
+            {homeCategoryInfo?.categories?.map((item) => {
+              return (
+                <section
+                  key={item.type}
+                  ref={(el) => (sectionRefs.current[item.type] = el)}
+                  id={item.type}
+                >
+                  <h2 className={styles['category-name']}>{item.name}</h2>
+                  <div className={cx(styles['category-list'])}>
+                    {homeCategoryInfo?.categoryItems[item.type]?.map((info) => (
+                      <AgentItem
+                        key={info.targetId}
+                        info={info}
+                        onClick={() => handleCreateConversation(info.targetId)}
+                        onCollect={() => handleToggleCollect(item.type, info)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+          </>
+        )}
       </div>
     </div>
   );

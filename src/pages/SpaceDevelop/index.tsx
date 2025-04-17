@@ -285,11 +285,13 @@ const SpaceDevelop: React.FC = () => {
           value={status}
           options={FILTER_STATUS}
           onChange={handlerChangeStatus}
+          size="middle"
         />
         <SelectList
           value={create}
           options={CREATE_LIST}
           onChange={handlerChangeCreate}
+          size="middle"
         />
         <Input
           rootClassName={cx(styles.input)}
@@ -299,7 +301,6 @@ const SpaceDevelop: React.FC = () => {
           prefix={<SearchOutlined />}
           allowClear
           onClear={handleClearKeyword}
-          size="middle"
         />
       </div>
       {agentList?.length > 0 ? (
