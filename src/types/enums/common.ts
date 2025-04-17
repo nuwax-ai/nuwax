@@ -26,56 +26,6 @@ export enum CreateUpdateModeEnum {
   Update,
 }
 
-// 变量类型枚举
-export enum VariableTypeEnum {
-  String,
-  Integer,
-  Boolean,
-  Number,
-  Object,
-  Array_String,
-  Array_Integer,
-  Array_Boolean,
-  Array_Number,
-  Array_Object,
-}
-
-// 参数类型枚举
-export enum ParamsTypeEnum {
-  String = 'String',
-  Integer = 'Integer',
-  Number = 'Number',
-  File = 'File',
-  Boolean = 'Boolean',
-  Object = 'Object',
-  Array_String = 'Array_String',
-  Array_Integer = 'Array_Integer',
-  Array_Number = 'Array_Number',
-  Array_Boolean = 'Array_Boolean',
-  Array_Object = 'Array_Object',
-  Array_File = 'Array_File',
-}
-
-// 文件类型枚举
-export enum FileTypeEnum {
-  Doc,
-  Excel,
-  PPT,
-  Txt,
-  Image,
-  Audio,
-  Video,
-  Other,
-  Array_Doc,
-  Array_Excel,
-  Array_PPT,
-  Array_Txt,
-  Array_Image,
-  Array_Audio,
-  Array_Video,
-  Array_Other,
-}
-
 export enum NodeTypeEnum {
   // 数据库
   Database = 'Database',

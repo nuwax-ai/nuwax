@@ -1,5 +1,5 @@
+import Loading from '@/components/Loading';
 import { SPACE_ID } from '@/constants/home.constants';
-import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
 import { history, useModel } from 'umi';
@@ -12,20 +12,7 @@ const Space: React.FC = () => {
     history.push(`/space/${spaceId}/develop`);
   }, [currentSpaceInfo]);
 
-  return (
-    loadingSpaceList && (
-      <div
-        className={classNames(
-          'h-full',
-          'flex',
-          'items-center',
-          'content-center',
-        )}
-      >
-        <LoadingOutlined />
-      </div>
-    )
-  );
+  return loadingSpaceList && <Loading className={classNames('h-full')} />;
 };
 
 export default Space;
