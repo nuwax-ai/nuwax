@@ -374,6 +374,7 @@ export const FormList: React.FC<FormListProps> = ({
                   },
                   insertIndex,
                 );
+
                 form.submit();
               }}
             ></Button>
@@ -413,6 +414,7 @@ export const FormList: React.FC<FormListProps> = ({
                         className={'ml-10'}
                         onClick={() => {
                           remove(item.name);
+
                           form.submit();
                         }}
                       />

@@ -83,7 +83,8 @@ const NodeDrawer = (
   // form表单校验完毕后提交数据
   // 优化后的onFinish方法
   const onFinish = async () => {
-    if (!isModified || processingRef.current) return;
+    console.log('onFinish', isModified);
+    if (processingRef.current) return;
 
     try {
       processingRef.current = true;
@@ -144,6 +145,7 @@ const NodeDrawer = (
     if (val === 'TestRun' && isModified && !processingRef.current) {
       await onFinish();
     } else if (val === 'Rename') {
+      console.log(12312313);
       setShowNameInput(true);
     }
     handleNodeChange(val, foldWrapItem);
@@ -157,16 +159,22 @@ const NodeDrawer = (
     name: string;
     description: string;
   }) => {
-    setCurrentNodeConfig({
-      ...currentNodeConfig,
-      name: name,
-      description: description,
-    });
-    onGetNodeConfig({
-      ...currentNodeConfig,
-      name: name,
-      description: description,
-    });
+    if (
+      name !== currentNodeConfig.name ||
+      description !== currentNodeConfig.description
+    ) {
+      setCurrentNodeConfig({
+        ...currentNodeConfig,
+        name: name,
+        description: description,
+      });
+      onGetNodeConfig({
+        ...currentNodeConfig,
+        name: name,
+        description: description,
+      });
+    }
+    setShowNameInput(false);
   };
 
   // 新增定时器逻辑
@@ -237,7 +245,7 @@ const NodeDrawer = (
         foldWrapItem.id === currentNodeConfig.id &&
         JSON.stringify(foldWrapItem) !== JSON.stringify(currentNodeConfig)
       ) {
-        if (['LLM', 'Knowledge'].includes(foldWrapItem.type) && skillChange) {
+        if (foldWrapItem.type === 'LLM' && skillChange) {
           const currentValues = form.getFieldsValue();
           const newValues = { ...currentValues, ...foldWrapItem.nodeConfig };
           form.setFieldsValue(newValues);

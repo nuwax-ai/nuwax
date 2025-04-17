@@ -157,6 +157,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
                   <InputNumber
                     size="small"
                     style={{ width: '100%', marginBottom: '10px' }}
+                    placeholder="请输入循环次数"
                   />
                 </Form.Item>
               </div>

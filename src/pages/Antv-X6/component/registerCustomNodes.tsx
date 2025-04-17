@@ -4,14 +4,12 @@ import {
   branchTypeMap,
   compareTypeMap,
   optionsMap,
-  testRunList,
 } from '@/constants/node.constants';
 import { ChildNode, NodeProps } from '@/types/interfaces/graph';
 import { returnBackgroundColor, returnImg } from '@/utils/workflow';
-import { DashOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
-import { Input, Popover, Tag } from 'antd';
+import { Input, Tag } from 'antd';
 import React from 'react';
 import '../index.less';
 
@@ -44,57 +42,57 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
    * changeNode 是一个事件处理函数，当用户点击操作菜单项时触发。
    * @param val - 操作名称（例如：'Rename', 'Duplicate', 'Delete'）
    */
-  changeNode = (val: string) => {
-    // 检查 onChange 是否存在并且是一个函数
-    const { node } = this.props;
-    const data = node.getData<NodeProps>();
-    if (typeof this.onChangeRef === 'function') {
-      this.onChangeRef(val, data);
-    }
-  };
+  // changeNode = (val: string) => {
+  //   // 检查 onChange 是否存在并且是一个函数
+  //   const { node } = this.props;
+  //   const data = node.getData<NodeProps>();
+  //   if (typeof this.onChangeRef === 'function') {
+  //     this.onChangeRef(val, data);
+  //   }
+  // };
   // 将输入的值替换掉节点名称
-  handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    this.setState({ editedTitle: e.target.value });
-  };
+  // handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   this.setState({ editedTitle: e.target.value });
+  // };
 
   // 将节点名称渲染为input框
-  startEditTitle = () => {
-    this.setState({ isEditingTitle: true });
-  };
+  // startEditTitle = () => {
+  //   this.setState({ isEditingTitle: true });
+  // };
 
   // 修改节点名称
-  finishEditTitle = () => {
-    this.setState({ isEditingTitle: false }, () => {
-      const { node } = this.props;
-      const data = node.getData<NodeProps>();
-      const updatedData = { ...data, name: this.state.editedTitle };
-      node.setData(updatedData);
-      // 使用缓存的回调引用
-      if (typeof this.onChangeRef === 'function') {
-        this.onChangeRef('Rename', updatedData);
-      }
-    });
-  };
+  // finishEditTitle = () => {
+  //   this.setState({ isEditingTitle: false }, () => {
+  //     const { node } = this.props;
+  //     const data = node.getData<NodeProps>();
+  //     const updatedData = { ...data, name: this.state.editedTitle };
+  //     node.setData(updatedData);
+  //     // 使用缓存的回调引用
+  //     if (typeof this.onChangeRef === 'function') {
+  //       this.onChangeRef('Rename', updatedData);
+  //     }
+  //   });
+  // };
 
   /**
    * 右侧三个点的操作列表。
    */
-  content = (
-    <>
-      <p onClick={() => this.startEditTitle()} className="cursor-pointer">
-        重命名
-      </p>
-      <p
-        onClick={() => this.changeNode('Duplicate')}
-        className="cursor-pointer"
-      >
-        创建副本
-      </p>
-      <p onClick={() => this.changeNode('Delete')} className="cursor-pointer">
-        删除
-      </p>
-    </>
-  );
+  // content = (
+  //   <>
+  //     <p onClick={() => this.startEditTitle()} className="cursor-pointer">
+  //       重命名
+  //     </p>
+  //     <p
+  //       onClick={() => this.changeNode('Duplicate')}
+  //       className="cursor-pointer"
+  //     >
+  //       创建副本
+  //     </p>
+  //     <p onClick={() => this.changeNode('Delete')} className="cursor-pointer">
+  //       删除
+  //     </p>
+  //   </>
+  // );
 
   /**
    * 通过render返回节点的样式和内容
@@ -122,11 +120,21 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
         {/* 节点头部，包含标题、图像和操作菜单 */}
         <div
           className="general-node-header"
-          style={{ background: gradientBackground }}
+          style={{
+            background: gradientBackground,
+            marginBottom: [
+              'QA',
+              'Condition',
+              'IntentRecognition',
+              'Loop',
+            ].includes(data.type)
+              ? '10px'
+              : '0',
+          }} // 应用渐变背景
         >
           <div className="dis-left general-node-header-image">
             {returnImg(data.type)}
-            {this.state.isEditingTitle ? (
+            {/* {this.state.isEditingTitle ? (
               <Input
                 value={this.state.editedTitle}
                 onChange={this.handleTitleChange}
@@ -135,10 +143,11 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
                 autoFocus
               />
             ) : (
-              <span className="general-node-header-title">{data.name}</span>
-            )}
+              
+            )} */}
+            <span className="general-node-header-title">{data.name}</span>
           </div>
-          <div className="other-action-style">
+          {/* <div className="other-action-style">
             {testRunList.includes(data.type) && (
               <Popover placement="top" content={'测试该节点'}>
                 <PlayCircleOutlined
@@ -159,16 +168,16 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
                 />
               </Popover>
             )}
-          </div>
+          </div> */}
         </div>
         {/* 节点内容区，根据 data.content 的类型显示不同的内容 */}
-        {data.type !== 'IntentRecognition' &&
+        {/* {data.type !== 'IntentRecognition' &&
           data.type !== 'Condition' &&
           data.type !== 'QA' && (
             <div className="general-node-content">
               <div className="text-ellipsis">{data.description}</div>
             </div>
-          )}
+          )} */}
         {data.type === 'Condition' && (
           <div className="condition-node-content-style">
             {data.nodeConfig.conditionBranchConfigs?.map((item) => {

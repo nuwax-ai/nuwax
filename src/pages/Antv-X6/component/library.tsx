@@ -21,7 +21,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
 }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
-  const { setSkillChange, setIsModified } = useModel('workflow');
+  const { setIsModified } = useModel('workflow');
   // 处于loading状态的组件列表
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]
@@ -38,13 +38,15 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
       form.getFieldValue('knowledgeBaseConfigs') || [];
     item.type = item.targetType;
     item.knowledgeBaseId = item.targetId;
+
     form.setFieldValue(
       'knowledgeBaseConfigs',
       knowledgeBaseConfigs.concat(item),
     );
-    form.submit();
+    setIsModified(true);
+    // form.submit();
     setOpen(false);
-    setSkillChange(true);
+    // setSkillChange(true);
     setAddComponents([
       ...addComponents,
       {
@@ -60,7 +62,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
     const knowledgeBaseConfigs = form.getFieldValue('knowledgeBaseConfigs');
     if (knowledgeBaseConfigs) {
       const newSkillComponentConfigs = knowledgeBaseConfigs.filter(
-        (i: CreatedNodeItem) => i.typeId !== item.typeId,
+        (i: CreatedNodeItem) => i.knowledgeBaseId !== item.knowledgeBaseId,
       );
       form.setFieldValue('knowledgeBaseConfigs', newSkillComponentConfigs);
       setIsModified(true);
@@ -73,7 +75,8 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
     const knowledgeBaseConfigs = form.getFieldValue('knowledgeBaseConfigs');
     if (knowledgeBaseConfigs) {
       const newSkillComponentConfigs = knowledgeBaseConfigs.map(
-        (i: CreatedNodeItem) => (i.typeId === item.typeId ? item : i),
+        (i: CreatedNodeItem) =>
+          i.knowledgeBaseId === item.knowledgeBaseId ? item : i,
       );
       form.setFieldValue('knowledgeBaseConfigs', newSkillComponentConfigs);
     }
@@ -89,6 +92,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
           status: AgentAddComponentStatusEnum.Added,
         };
       }) || [];
+    console.log(_arr);
     setAddComponents(_arr);
   }, []);
 

@@ -133,6 +133,21 @@ export const returnBackgroundColor = (type: string) => {
   }
 };
 
+// 根据节点动态给予宽高
+export const getWidthAndHeight = (node: ChildNode) => {
+  const { type, nodeConfig } = node;
+  const extension = nodeConfig?.extension || {};
+  if (
+    type !== 'QA' &&
+    type !== 'Condition' &&
+    type !== 'IntentRecognition' &&
+    type !== 'Loop'
+  ) {
+    return { width: 180, height: 42 }; // 通用节点的默认大小
+  } else {
+    return { width: extension.width || 304, height: extension.height || 83 }; // 通用节点的默认大小
+  }
+};
 // 处理 Condition 和 IntentRecognition 节点的边
 const handleSpecialNodes = (node: ChildNode, isLoopNode: boolean): Edge[] => {
   if (!node.nodeConfig) return [];
@@ -343,7 +358,7 @@ export const generatePorts = (data: ChildNode) => {
           ...specialPortConfig(
             'special',
             `${item.uuid || index}-out`,
-            88 + (index + 1) * 26,
+            80 + (index + 1) * 26,
           ),
         }));
       } else {
@@ -466,13 +481,14 @@ export const createBaseNode = (node: ChildNode) => {
 // 生成循环的子节点
 export const createChildNode = (parentId: string, child: ChildNode) => {
   const ext = child.nodeConfig?.extension || {};
+  const { width, height } = getWidthAndHeight(child);
   return {
     id: child.id.toString(),
     shape: 'general-Node',
     x: ext.x,
     y: ext.y,
-    width: ext.width || 304,
-    height: ext.height || 83,
+    width: width,
+    height: height,
     label: child.name,
     data: {
       ...child, // 先展开原有数据

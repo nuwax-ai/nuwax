@@ -223,64 +223,67 @@ export const SkillList: React.FC<SkillProps> = ({
   };
   return (
     <>
-      {params?.map((item) => (
-        <div
-          className="skill-item-style dis-left"
-          key={item.typeId}
-          onMouseEnter={() => {
-            setHoveredItem(item);
-            setShowMask(true);
-          }}
-          onMouseLeave={() => setShowMask(false)}
-        >
-          <img
-            src={item.icon || getImg(item.type)}
-            alt=""
-            className="skill-item-icon"
-          />
-          <div className="skill-item-content-style">
-            <div className="skill-item-title-style">{item.name}</div>
-            <div className="skill-item-desc-style">{item.description}</div>
-          </div>
-          {hoveredItem?.typeId === item.typeId && showMask && (
-            <div className="mask-layer-style">
-              <div
-                className="skill-item-dispose-style"
-                style={{ color: '#fff', backgroundColor: 'transparent' }}
-              >
-                {item.outputArgBindConfigs &&
-                  item.outputArgBindConfigs.length && (
-                    <Popover
-                      content={
-                        <SkillParamsContent
-                          params={item.outputArgBindConfigs as TreeOutput[]}
-                        />
-                      }
-                      trigger="hover"
-                    >
-                      <InfoCircleOutlined className="white" />
-                    </Popover>
-                  )}
-                <Popover content={'编辑参数'} trigger="hover">
-                  <SettingOutlined
-                    className="ml-12 cursor-pointer white"
-                    onClick={() => {
-                      setHoveredItem(item);
-                      setOpen(true);
-                    }}
-                  />
-                </Popover>
-                <Popover content={'移除'} trigger="hover">
-                  <DeleteOutlined
-                    className="ml-12  white"
-                    onClick={() => handleDelete(item)}
-                  />
-                </Popover>
-              </div>
+      {params?.map((item) => {
+        console.log(item.icon === '', 'item');
+        return (
+          <div
+            className="skill-item-style dis-left"
+            key={item.typeId}
+            onMouseEnter={() => {
+              setHoveredItem(item);
+              setShowMask(true);
+            }}
+            onMouseLeave={() => setShowMask(false)}
+          >
+            <img
+              src={item.icon === '' ? getImg(item.type) : item.icon}
+              alt=""
+              className="skill-item-icon"
+            />
+            <div className="skill-item-content-style">
+              <div className="skill-item-title-style">{item.name}</div>
+              <div className="skill-item-desc-style">{item.description}</div>
             </div>
-          )}
-        </div>
-      ))}
+            {hoveredItem?.typeId === item.typeId && showMask && (
+              <div className="mask-layer-style">
+                <div
+                  className="skill-item-dispose-style"
+                  style={{ color: '#fff', backgroundColor: 'transparent' }}
+                >
+                  {item.outputArgBindConfigs &&
+                    item.outputArgBindConfigs.length && (
+                      <Popover
+                        content={
+                          <SkillParamsContent
+                            params={item.outputArgBindConfigs as TreeOutput[]}
+                          />
+                        }
+                        trigger="hover"
+                      >
+                        <InfoCircleOutlined className="white" />
+                      </Popover>
+                    )}
+                  <Popover content={'编辑参数'} trigger="hover">
+                    <SettingOutlined
+                      className="ml-12 cursor-pointer white"
+                      onClick={() => {
+                        setHoveredItem(item);
+                        setOpen(true);
+                      }}
+                    />
+                  </Popover>
+                  <Popover content={'移除'} trigger="hover">
+                    <DeleteOutlined
+                      className="ml-12  white"
+                      onClick={() => handleDelete(item)}
+                    />
+                  </Popover>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
 
       <SkillDispose
         open={open}
