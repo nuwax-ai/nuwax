@@ -1,6 +1,5 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { DOCUMENT_URL, SITE_DOCUMENT_URL } from '@/constants/common.constants';
-import { SPACE_ID } from '@/constants/home.constants';
 import SystemSection from '@/layouts/MenusLayout/SystemSection';
 import { apiPublishedCategoryList } from '@/services/square';
 import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
@@ -29,11 +28,13 @@ const cx = classNames.bind(styles);
 const MenusLayout: React.FC = () => {
   const location = useLocation();
   const { setOpenMessage } = useModel('layout');
-  const { currentSpaceInfo, runSpace, setSpaceList, setPersonalSpaceInfo } =
+  const [tabType, setTabType] = useState<TabsEnum>();
+  const { runSpace, setLoadingSpaceList, setSpaceList, setPersonalSpaceInfo } =
     useModel('spaceModel');
   const { setAgentInfoList, setPluginInfoList } = useModel('squareModel');
   const { runTenantConfig } = useModel('tenantConfigInfo');
-  const [tabType, setTabType] = useState<TabsEnum>();
+  const { runEdit, runDevCollect } = useModel('devCollectAgent');
+  const { runHistory, runUsed } = useModel('conversationHistory');
 
   // 广场分类列表信息
   const handleCategoryList = (result: SquareCategoryInfo[]) => {
@@ -71,20 +72,56 @@ const MenusLayout: React.FC = () => {
     },
   });
 
+  // 点击主页
+  const handleClickHome = () => {
+    // 最近使用
+    runUsed({
+      size: 8,
+    });
+    // 会话记录
+    runHistory({
+      agentId: null,
+    });
+    history.push('/');
+  };
+
+  // 加载空间列表
+  const asyncSpaceListFun = async () => {
+    // 加载空间列表
+    setLoadingSpaceList(true);
+    // 查询空间列表
+    const { code, data } = await runSpace();
+    if (code === SUCCESS_CODE) {
+      setSpaceList(data || []);
+      // 设置个人空间为当前空间
+      setPersonalSpaceInfo(data || []);
+    }
+    setLoadingSpaceList(false);
+  };
+
   // 点击工作空间
-  const handleClickSpace = () => {
-    const spaceId = localStorage.getItem(SPACE_ID) ?? currentSpaceInfo?.id;
-    history.push(`/space/${spaceId}/develop`);
+  const handleClickSpace = async () => {
+    // 最近编辑
+    runEdit({
+      size: 8,
+    });
+    // 开发收藏
+    runDevCollect({
+      page: 1,
+      size: 8,
+    });
+    history.push('/space');
+    await asyncSpaceListFun();
   };
 
   // 切换tab
-  const handleTabsClick = useCallback((type: TabsEnum) => {
+  const handleTabsClick = useCallback(async (type: TabsEnum) => {
     switch (type) {
       case TabsEnum.Home:
-        history.push('/');
+        handleClickHome();
         break;
       case TabsEnum.Space:
-        handleClickSpace();
+        await handleClickSpace();
         break;
       case TabsEnum.Square:
         history.push(`/square?cate_type=${SquareAgentTypeEnum.Agent}`);
@@ -103,20 +140,7 @@ const MenusLayout: React.FC = () => {
     run();
     // 租户配置信息查询接口
     runTenantConfig();
-  }, []);
-
-  useEffect(() => {
-    const asyncFun = async () => {
-      // 查询空间列表
-      const res = await runSpace();
-      if (res.code === SUCCESS_CODE) {
-        setSpaceList(res.data || []);
-        // 设置个人空间为当前空间
-        setPersonalSpaceInfo(res.data || []);
-      }
-    };
-
-    asyncFun();
+    asyncSpaceListFun();
   }, []);
 
   useEffect(() => {

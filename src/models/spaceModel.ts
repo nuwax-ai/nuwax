@@ -8,6 +8,7 @@ import { useCallback, useState } from 'react';
 function Space() {
   const [spaceList, setSpaceList] = useState<SpaceInfo[]>([]);
   const [currentSpaceInfo, setCurrentSpaceInfo] = useState<SpaceInfo>();
+  const [loadingSpaceList, setLoadingSpaceList] = useState<boolean>(false);
 
   // 设置个人空间为当前空间
   const setPersonalSpaceInfo = useCallback((list: SpaceInfo[]) => {
@@ -47,6 +48,8 @@ function Space() {
     spaceList,
     setSpaceList,
     runSpace,
+    loadingSpaceList,
+    setLoadingSpaceList,
     handleCurrentSpaceInfo,
     setPersonalSpaceInfo,
     currentSpaceInfo,

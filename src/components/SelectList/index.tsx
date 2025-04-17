@@ -1,5 +1,4 @@
-import type { SelectListType } from '@/types/interfaces/common';
-import { SizeType } from '@/types/interfaces/common';
+import type { SelectListType, SizeType } from '@/types/interfaces/common';
 import { CheckOutlined } from '@ant-design/icons';
 import { Flex, Select } from 'antd';
 import classNames from 'classnames';

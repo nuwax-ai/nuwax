@@ -1,6 +1,5 @@
-import { SPACE_ID } from '@/constants/home.constants';
 import classNames from 'classnames';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { history, useModel } from 'umi';
 import UserRelAgent from '../../UserRelAgent';
 import styles from './index.less';
@@ -9,20 +8,11 @@ const cx = classNames.bind(styles);
 
 // 开发收藏
 const DevCollect: React.FC = () => {
-  const { runCancelCollect, runDevCollect, devCollectAgentList } =
-    useModel('devCollectAgent');
+  const { runCancelCollect, devCollectAgentList } = useModel('devCollectAgent');
   const { agentList, handlerCollect } = useModel('applicationDev');
 
-  useEffect(() => {
-    runDevCollect({
-      page: 1,
-      size: 8,
-    });
-  }, []);
-
   // 点击开发收藏的智能体
-  const handleDevCollect = (agentId: number) => {
-    const spaceId = localStorage.getItem(SPACE_ID);
+  const handleDevCollect = (agentId: number, spaceId: number) => {
     history.push(`/space/${spaceId}/agent/${agentId}`);
   };
 
@@ -39,7 +29,7 @@ const DevCollect: React.FC = () => {
     devCollectAgentList?.map((item) => (
       <UserRelAgent
         key={item.id}
-        onClick={() => handleDevCollect(item.agentId)}
+        onClick={() => handleDevCollect(item.agentId, item.spaceId)}
         icon={item.icon}
         name={item.name}
         onCancelCollect={() => handleCancelCollect(item.agentId)}

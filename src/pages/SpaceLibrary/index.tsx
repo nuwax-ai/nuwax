@@ -237,7 +237,11 @@ const SpaceLibrary: React.FC = () => {
   };
 
   // 根据type类型，判断插件跳转路径
-  const handlePluginUrl = (id: number, type: PluginTypeEnum) => {
+  const handlePluginUrl = (
+    id: number,
+    spaceId: number,
+    type: PluginTypeEnum,
+  ) => {
     if (type === PluginTypeEnum.CODE) {
       history.push(`/space/${spaceId}/plugin/${id}/cloud-tool`);
     } else if (type === PluginTypeEnum.HTTP) {
@@ -385,13 +389,13 @@ const SpaceLibrary: React.FC = () => {
 
   // 点击单个资源组件
   const handleClickComponent = (item: ComponentInfo) => {
-    const { type, id, ext } = item;
+    const { type, id, spaceId, ext } = item;
     switch (type) {
       case ComponentTypeEnum.Workflow:
         history.push(`/space/${spaceId}/workflow/${id}`);
         break;
       case ComponentTypeEnum.Plugin:
-        handlePluginUrl(id, ext as PluginTypeEnum);
+        handlePluginUrl(id, spaceId, ext as PluginTypeEnum);
         break;
       case ComponentTypeEnum.Knowledge:
         history.push(`/space/${spaceId}/knowledge/${id}`);
@@ -444,7 +448,6 @@ const SpaceLibrary: React.FC = () => {
           prefix={<SearchOutlined />}
           allowClear
           onClear={handleClearKeyword}
-          size="middle"
         />
       </div>
       {componentList?.length > 0 ? (

@@ -38,9 +38,9 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
       // 关闭弹窗
       onCancel();
       // 更新空间列表
-      const res = await runSpace();
-      if (res.code === SUCCESS_CODE) {
-        setSpaceList(res.data || []);
+      const { code, data } = await runSpace();
+      if (code === SUCCESS_CODE) {
+        setSpaceList(data || []);
       }
       if (result) {
         const spaceId = result;

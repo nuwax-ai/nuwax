@@ -1,10 +1,8 @@
 import ConditionRender from '@/components/ConditionRender';
 import useConversation from '@/hooks/useConversation';
-import { apiUserUsedAgentList } from '@/services/agentDev';
-import type { AgentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
-import { history, useModel, useRequest } from 'umi';
+import React, { useEffect } from 'react';
+import { history, useModel } from 'umi';
 import UserRelAgent from '../UserRelAgent';
 import styles from './index.less';
 
@@ -14,20 +12,12 @@ const cx = classNames.bind(styles);
  * 主页二级菜单栏
  */
 const HomeSection: React.FC = () => {
-  const [usedAgentList, setUsedAgentList] = useState<AgentInfo[]>();
   const { setOpenHistoryModal } = useModel('layout');
-  const { conversationList, runHistory } = useModel('conversationHistory');
+  const { conversationList, usedAgentList, runUsed, runHistory } = useModel(
+    'conversationHistory',
+  );
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
-
-  // 查询用户最近使用过的智能体列表
-  const { run: runUsed } = useRequest(apiUserUsedAgentList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: AgentInfo[]) => {
-      setUsedAgentList(result);
-    },
-  });
 
   const handleLink = (id: number) => {
     history.push(`/home/chat/${id}`);
