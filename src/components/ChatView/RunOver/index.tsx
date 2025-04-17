@@ -28,6 +28,15 @@ const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
     return 0;
   }, [finalResult]);
 
+  const getTime = (endTime: number, startTime: number) => {
+    const time = endTime - startTime;
+    if (time < 1000) {
+      return `${time}ms`;
+    } else {
+      return `${(time / 1000).toFixed(1)}s`;
+    }
+  };
+
   // 查询过程信息 - 最后一个
   const lastProcessInfo = useMemo(() => {
     const len = processingList?.length || 0;
@@ -57,9 +66,9 @@ const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
                 >
                   <SolutionOutlined />
                   <span className={cx('flex-1')}>{`已调用 ${info.name}`}</span>
-                  <span>{`${
-                    info.result?.endTime - info.result?.startTime
-                  }ms`}</span>
+                  <span>
+                    {getTime(info.result.endTime, info.result.startTime)}
+                  </span>
                 </div>
               )
             );

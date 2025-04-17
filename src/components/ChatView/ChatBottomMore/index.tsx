@@ -1,8 +1,9 @@
+import debugImage from '@/assets/images/debug_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/TooltipIcon';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { ChatBottomMoreProps } from '@/types/interfaces/common';
-import { CopyOutlined, PaperClipOutlined } from '@ant-design/icons';
+import { CopyOutlined } from '@ant-design/icons';
 import { message, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -72,7 +73,9 @@ const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({
         <ConditionRender condition={!!finalResult && canDebug}>
           <TooltipIcon
             className={styles.icon}
-            icon={<PaperClipOutlined onClick={handleDebug} />}
+            icon={
+              <img src={debugImage as string} alt="" onClick={handleDebug} />
+            }
             title="调试"
             type={TooltipTitleTypeEnum.White}
           />
