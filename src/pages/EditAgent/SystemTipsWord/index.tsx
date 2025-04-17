@@ -14,7 +14,7 @@ const { TextArea } = Input;
  */
 const SystemTipsWord: React.FC<SystemTipsWordProps> = ({ value, onChange }) => {
   return (
-    <div className={cx('flex-1', 'px-16', 'py-16')}>
+    <div className={cx('flex', 'flex-col', 'flex-1', 'px-16', 'py-16')}>
       <div
         className={cx(
           'flex',
@@ -35,6 +35,9 @@ const SystemTipsWord: React.FC<SystemTipsWordProps> = ({ value, onChange }) => {
         {/*</Tooltip>*/}
       </div>
       <TextArea
+        classNames={{
+          textarea: 'flex-1',
+        }}
         rootClassName={styles['text-area']}
         placeholder={'输入系统提示词，对大模型进行角色塑造'}
         variant="borderless"

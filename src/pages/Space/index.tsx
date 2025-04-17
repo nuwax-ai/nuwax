@@ -1,6 +1,5 @@
 import Loading from '@/components/Loading';
-import { SPACE_ID } from '@/constants/home.constants';
-import classNames from 'classnames';
+import { SPACE_ID, SPACE_URL } from '@/constants/home.constants';
 import React, { useEffect } from 'react';
 import { history, useModel } from 'umi';
 
@@ -9,10 +8,11 @@ const Space: React.FC = () => {
 
   useEffect(() => {
     const spaceId = localStorage.getItem(SPACE_ID) ?? currentSpaceInfo?.id;
-    history.push(`/space/${spaceId}/develop`);
+    const spaceUrl = localStorage.getItem(SPACE_URL) ?? 'develop';
+    history.push(`/space/${spaceId}/${spaceUrl}`);
   }, [currentSpaceInfo]);
 
-  return loadingSpaceList && <Loading className={classNames('h-full')} />;
+  return loadingSpaceList && <Loading className="h-full" />;
 };
 
 export default Space;
