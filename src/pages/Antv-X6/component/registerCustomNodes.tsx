@@ -112,7 +112,7 @@ export class GeneralNode extends React.Component<NodeProps, GeneralNodeState> {
     // 构造渐变背景字符串
     const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
       data.type,
-    )} 0%, white 70%)`;
+    )} 0%, white 100%)`;
     return (
       <div
         className={`general-node ${isSelected ? 'selected-general-node' : ''}`} // 根据选中状态应用类名
