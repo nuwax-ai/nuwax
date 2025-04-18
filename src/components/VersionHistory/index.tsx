@@ -36,7 +36,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
           <div key={item.id} className={cx(styles.box, 'py-6')}>
             <div className={cx('flex', 'items-center', styles.header)}>
               <span className={cx(styles.name, 'flex-1', 'text-ellipsis')}>
-                {item.opUser.nickName}
+                {item.opUser?.nickName || item.opUser?.userName}
               </span>
               <span className={cx(styles['author-update-time'])}>
                 {moment(item.created).format('YYYY-MM-DD HH:mm')}
