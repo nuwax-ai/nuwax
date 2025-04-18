@@ -54,6 +54,7 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.16",
     "@types/markdown-it": "^14.1.2",
     "@types/react": "^18.0.33",
     "@types/react-copy-to-clipboard": "^5.0.7",

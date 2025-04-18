@@ -7,6 +7,7 @@ import { useRequest } from 'umi';
 
 export default () => {
   const [usedAgentList, setUsedAgentList] = useState<AgentInfo[]>();
+  const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
   // 历史会话列表
   const [conversationList, setConversationList] =
     useState<ConversationInfo[]>();
@@ -26,6 +27,7 @@ export default () => {
     debounceInterval: 500,
     onSuccess: (result: ConversationInfo[]) => {
       setConversationList(result);
+      setLoadingHistory(false);
     },
   });
 
@@ -33,6 +35,9 @@ export default () => {
     usedAgentList,
     runUsed,
     conversationList,
+    setConversationList,
     runHistory,
+    loadingHistory,
+    setLoadingHistory,
   };
 };
