@@ -94,7 +94,7 @@ export interface ConversationChatResponse {
     | ConversationChatMessage
     | ConversationFinalResult
     | ProcessingData
-    | unknown;
+    | any;
   error: string;
   eventType: ConversationEventTypeEnum;
   requestId: string;

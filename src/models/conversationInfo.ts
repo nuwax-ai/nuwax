@@ -14,10 +14,12 @@ import {
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import { BindCardStyleEnum } from '@/types/enums/plugin';
 import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
+import { CardDataInfo } from '@/types/interfaces/cardInfo';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   ConversationChatParams,
   ConversationChatResponse,
+  ConversationChatSuggestParams,
   ConversationInfo,
   MessageInfo,
   ProcessingInfo,
@@ -26,6 +28,7 @@ import {
   CardInfo,
   ConversationFinalResult,
 } from '@/types/interfaces/conversationInfo';
+import { RequestResponse } from '@/types/interfaces/request';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { useRequest } from 'ahooks';
 import moment from 'moment/moment';
@@ -43,8 +46,8 @@ export default () => {
   // 会话问题建议
   const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
   const messageViewRef = useRef<HTMLDivElement | null>(null);
-  const timeoutRef = useRef<number>(0);
-  const scrollTimeoutRef = useRef<number>(0);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortConnectionRef = useRef<unknown>();
   const [showType, setShowType] = useState<EditAgentShowType>(
     EditAgentShowType.Hide,
@@ -74,7 +77,7 @@ export default () => {
   const { runAsync: runUpdateTopic } = useRequest(apiAgentConversationUpdate, {
     manual: true,
     debounceWait: 300,
-    onSuccess: (result) => {
+    onSuccess: (result: RequestResponse<ConversationInfo>) => {
       needUpdateTopicRef.current = false;
       setConversationInfo(
         (info) =>
@@ -94,7 +97,7 @@ export default () => {
   } = useRequest(apiAgentConversation, {
     manual: true,
     debounceWait: 300,
-    onSuccess: (result) => {
+    onSuccess: (result: RequestResponse<ConversationInfo>) => {
       setIsLoadingConversation(true);
       const { data } = result;
       setConversationInfo(data);
@@ -116,7 +119,7 @@ export default () => {
     {
       manual: true,
       debounceWait: 300,
-      onSuccess: (result) => {
+      onSuccess: (result: RequestResponse<string[]>) => {
         setChatSuggestList(result.data);
         handleScrollBottom();
       },
@@ -134,8 +137,10 @@ export default () => {
     timeoutRef.current = setTimeout(() => {
       setMessageList((messageList) => {
         if (!messageList?.length) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = 0;
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+          }
           return [];
         }
         // 深拷贝消息列表
@@ -147,8 +152,10 @@ export default () => {
         ) as MessageInfo;
         // 消息不存在时
         if (!currentMessage) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = 0;
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+          }
           return messageList;
         }
 
@@ -178,7 +185,7 @@ export default () => {
                 data.cardBindConfig?.bindCardStyle === BindCardStyleEnum.LIST
               ) {
                 const cardDataList =
-                  data?.cardData?.map((item) => ({
+                  data?.cardData?.map((item: CardDataInfo) => ({
                     ...item,
                     cardKey: data.cardBindConfig.cardKey,
                   })) || [];
@@ -227,13 +234,15 @@ export default () => {
           // 调试结果
           setRequestId(res.requestId);
           setFinalResult(data as ConversationFinalResult);
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = 0;
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+          }
           // 是否开启问题建议,可用值:Open,Close
           if (isSuggest) {
             // 滚动到底部
             handleScrollBottom();
-            runChatSuggest(params);
+            runChatSuggest(params as ConversationChatSuggestParams);
           }
         }
         if (eventType === ConversationEventTypeEnum.ERROR) {
@@ -243,7 +252,7 @@ export default () => {
           };
         }
 
-        list.splice(index, 1, newMessage);
+        list.splice(index, 1, newMessage as MessageInfo);
         return list;
       });
     }, 200);
@@ -271,20 +280,30 @@ export default () => {
       },
     });
     // 主动关闭连接
-    abortConnectionRef.current();
+    // 确保 abortConnectionRef.current 是一个可调用的函数
+    if (typeof abortConnectionRef.current === 'function') {
+      abortConnectionRef.current();
+    }
   };
 
   // 清除副作用
   const handleClearSideEffect = () => {
     setChatSuggestList([]);
-    timeoutRef.current = 0;
-    clearTimeout(timeoutRef.current);
-    // 清除滚动
-    clearTimeout(scrollTimeoutRef.current);
-    scrollTimeoutRef.current = 0;
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (scrollTimeoutRef.current) {
+      // 清除滚动
+      clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = null;
+    }
     // 主动关闭连接
     if (abortConnectionRef.current) {
-      abortConnectionRef.current();
+      // 确保 abortConnectionRef.current 是一个可调用的函数
+      if (typeof abortConnectionRef.current === 'function') {
+        abortConnectionRef.current();
+      }
       abortConnectionRef.current = null;
     }
   };
@@ -315,7 +334,7 @@ export default () => {
       role: AssistantRoleEnum.USER,
       type: MessageModeEnum.CHAT,
       text: message,
-      time: moment(),
+      time: moment().toString(),
       attachments,
       id: uuidv4(),
       messageType: MessageTypeEnum.USER,
@@ -328,7 +347,7 @@ export default () => {
       type: MessageModeEnum.CHAT,
       text: '',
       think: '',
-      time: moment(),
+      time: moment().toString(), // 将 moment 对象转换为字符串以匹配 MessageInfo 类型
       id: currentMessageId,
       messageType: MessageTypeEnum.ASSISTANT,
       status: MessageStatusEnum.Loading,
