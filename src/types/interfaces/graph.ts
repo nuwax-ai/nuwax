@@ -65,7 +65,6 @@ export interface NodeProps {
 
 export interface GraphContainerProps {
   graphParams: { nodeList: ChildNode[]; edgeList: Edge[] };
-  handleNodeChange: (action: string, data: ChildNode) => void;
   changeDrawer: (child: ChildNode | null) => void;
   changeEdge: (
     type: string,

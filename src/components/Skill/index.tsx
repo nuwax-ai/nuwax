@@ -224,11 +224,10 @@ export const SkillList: React.FC<SkillProps> = ({
   return (
     <>
       {params?.map((item) => {
-        console.log(item.icon === '', 'item');
         return (
           <div
             className="skill-item-style dis-left"
-            key={item.typeId}
+            key={item.typeId || item.knowledgeBaseId}
             onMouseEnter={() => {
               setHoveredItem(item);
               setShowMask(true);
