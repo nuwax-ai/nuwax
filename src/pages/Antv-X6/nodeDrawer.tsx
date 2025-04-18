@@ -83,7 +83,6 @@ const NodeDrawer = (
   // form表单校验完毕后提交数据
   // 优化后的onFinish方法
   const onFinish = async () => {
-    console.log('onFinish', isModified);
     if (processingRef.current) return;
 
     try {
@@ -103,17 +102,21 @@ const NodeDrawer = (
           currentNodeConfig.type,
         )
       ) {
+        console.log('foldWrapItem-node', currentNodeConfig);
+        const changeNode = changeNodeConfig(
+          currentNodeConfig.type,
+          values,
+          currentNodeConfig.nodeConfig,
+        );
+        console.log('changeNode', form.getFieldsValue(true));
         newNodeConfig = {
           ...currentNodeConfig,
           nodeConfig: {
             ...currentNodeConfig.nodeConfig,
-            ...changeNodeConfig(
-              currentNodeConfig.type,
-              values,
-              currentNodeConfig.nodeConfig,
-            ),
+            ...changeNode,
           },
         };
+        console.log('qa', newNodeConfig);
       } else {
         newNodeConfig = {
           ...currentNodeConfig,
@@ -250,6 +253,7 @@ const NodeDrawer = (
           const newValues = { ...currentValues, ...foldWrapItem.nodeConfig };
           form.setFieldsValue(newValues);
         }
+        console.log('foldWrapItem', foldWrapItem);
         setCurrentNodeConfig(foldWrapItem);
       }
     };
@@ -336,6 +340,7 @@ const NodeDrawer = (
           onFinishFailed={onFinish}
           onFinish={onFinish}
           onValuesChange={() => {
+            console.log('123456');
             setIsModified(true);
           }}
         >

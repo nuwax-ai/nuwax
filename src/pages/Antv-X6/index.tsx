@@ -268,7 +268,7 @@ const Workflow: React.FC = () => {
       } else {
         return;
       }
-      setIsModified(false);
+      // setIsModified(false);
       changeUpdateTime();
     }
 

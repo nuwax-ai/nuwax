@@ -350,7 +350,34 @@ export const FormList: React.FC<FormListProps> = ({
   inputItemName = 'inputArgs',
   showIndex,
 }) => {
-  const arr = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const arr = [
+    'A',
+    'B',
+    'C',
+    'D',
+    'E',
+    'F',
+    'G',
+    'H',
+    'I',
+    'J',
+    'K',
+    'L',
+    'M',
+    'N',
+    'O',
+    'P',
+    'Q',
+    'R',
+    'S',
+    'T',
+    'U',
+    'V',
+    'W',
+    'X',
+    'Y',
+    'Z',
+  ];
 
   return (
     <Form.List name={inputItemName}>
@@ -396,13 +423,13 @@ export const FormList: React.FC<FormListProps> = ({
 
             return (
               <Form.Item key={index}>
-                <div className="dis-sb">
+                <div className="dis-left">
                   {showIndex && (
                     <Form.Item noStyle name={[item.name, 'index']}>
                       <span className="mr-16">{arr[index]}</span>
                     </Form.Item>
                   )}
-                  <Form.Item name={[item.name, field]} noStyle>
+                  <Form.Item name={[item.name, field]} className="flex-1">
                     <Input disabled={fieldData} />
                   </Form.Item>
                   {/* <Form.Item name={[item.name, 'nextNodeIds']} noStyle>
@@ -414,7 +441,6 @@ export const FormList: React.FC<FormListProps> = ({
                         className={'ml-10'}
                         onClick={() => {
                           remove(item.name);
-
                           form.submit();
                         }}
                       />
