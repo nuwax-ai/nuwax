@@ -161,8 +161,6 @@ export const changeNodeConfig = (
     const configItem = configArray.find(
       (configItem) => configItem.uuid === valueItem.uuid,
     );
-
-    console.log('update', configItem, valueItem.nextNodeIds);
     // 如果找到匹配项，且 nextNodeIds 不同，则替换
     if (configItem && !isEqual(configItem.nextNodeIds, valueItem.nextNodeIds)) {
       return {
