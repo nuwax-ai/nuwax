@@ -273,11 +273,6 @@ const Workflow: React.FC = () => {
           getNodeConfig(Number(config.id));
         }
       }
-      if (graphRef.current) {
-        graphRef.current.updateNode(params.id, params);
-      } else {
-        return;
-      }
       // setIsModified(false);
       changeUpdateTime();
     }
@@ -314,6 +309,7 @@ const Workflow: React.FC = () => {
           },
         };
       }
+
       await changeNode(newNodeConfig);
       setIsModified(false);
     } catch (error) {
@@ -329,7 +325,7 @@ const Workflow: React.FC = () => {
       if (prev.id === 0 && child === null) {
         return prev;
       } else {
-        if (prev.id !== 0) {
+        if (prev.id !== 0 && isModified) {
           onFinish();
           if (timerRef.current) {
             clearTimeout(timerRef.current);
@@ -798,11 +794,25 @@ const Workflow: React.FC = () => {
     }
     setVisible(false);
   };
+
+  // 更改节点的名称
+  const changeFoldWrap = ({
+    name,
+    description,
+  }: {
+    name: string;
+    description: string;
+  }) => {
+    const newValue = { ...foldWrapItem, name, description };
+    changeNode(newValue);
+  };
   // 保存当前画布中节点的位置
   useEffect(() => {
     getDetails();
     return () => {
-      onFinish();
+      if (isModified) {
+        onFinish();
+      }
       setIsModified(false); // 重置修改状态
     };
   }, []);
@@ -885,6 +895,7 @@ const Workflow: React.FC = () => {
         description={foldWrapItem.description}
         icon={returnImg(foldWrapItem.type)}
         showNameInput={showNameInput}
+        changeFoldWrap={changeFoldWrap}
         otherAction={
           <OtherOperations
             onChange={handleChangeNode}

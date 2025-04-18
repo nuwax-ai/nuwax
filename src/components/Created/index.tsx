@@ -194,12 +194,12 @@ const Created: React.FC<CreatedProp> = ({
   // 新增工作流，插件，知识库，数据库
   const onConfirm = () => {
     setShowCreate(false);
-    const _params = {
-      page: 1,
-      pageSize: 10,
-    };
-    getList(selected.key, _params);
-    setPagination(_params);
+    // const _params = {
+    //   page: 1,
+    //   pageSize: 10,
+    // };
+    // getList(selected.key, _params);
+    // setPagination(_params);
   };
 
   /**  -----------------  无需调用接口的方法  -----------------   */
