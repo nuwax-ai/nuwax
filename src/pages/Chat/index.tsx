@@ -5,7 +5,10 @@ import RecommendList from '@/components/RecommendList';
 import { MessageTypeEnum } from '@/types/enums/agent';
 import { EditAgentShowType } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
-import type { RoleInfo } from '@/types/interfaces/conversationInfo';
+import type {
+  MessageInfo,
+  RoleInfo,
+} from '@/types/interfaces/conversationInfo';
 import { addBaseTarget } from '@/utils/common';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
@@ -40,6 +43,7 @@ const Chat: React.FC = () => {
     loadingSuggest,
     onMessageSend,
     messageViewRef,
+    allowAutoScrollRef,
     needUpdateTopicRef,
     handleClearSideEffect,
     setCardList,
@@ -60,6 +64,28 @@ const Chat: React.FC = () => {
       },
     };
   }, [conversationInfo]);
+
+  // 在组件挂载时添加滚动事件监听器
+  useEffect(() => {
+    const messageView = messageViewRef.current;
+    if (messageView) {
+      const handleScroll = () => {
+        // 当用户手动滚动时，暂停自动滚动
+        const { scrollTop, scrollHeight, clientHeight } = messageView;
+        if (scrollTop + clientHeight < scrollHeight) {
+          allowAutoScrollRef.current = false;
+        } else {
+          // 当用户滚动到底部时，重新允许自动滚动
+          allowAutoScrollRef.current = true;
+        }
+      };
+
+      messageView.addEventListener('scroll', handleScroll);
+      return () => {
+        messageView.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, []);
 
   useEffect(() => {
     if (id) {
@@ -114,7 +140,7 @@ const Chat: React.FC = () => {
             </div>
           ) : messageList?.length > 0 || chatSuggestList?.length > 0 ? (
             <>
-              {messageList?.map((item, index) => (
+              {messageList?.map((item: MessageInfo, index: number) => (
                 <ChatView
                   key={index}
                   messageInfo={item}

@@ -280,7 +280,7 @@ export async function apiAgentConversationCreate(
 // 智能体会话问题建议
 export async function apiAgentConversationChatSuggest(
   data: ConversationChatSuggestParams,
-): Promise<RequestResponse<null>> {
+): Promise<RequestResponse<string[]>> {
   return request('/api/agent/conversation/chat/suggest', {
     method: 'POST',
     data,

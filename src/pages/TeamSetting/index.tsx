@@ -7,7 +7,7 @@ import { useRequest } from 'ahooks';
 import { ConfigProvider, Tabs, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'umi';
+import { history, useModel, useParams } from 'umi';
 import MemberManageTab from './components/MemberManageTab';
 import ModifyTeam from './components/ModifyTeam';
 import SpaceSettingTab from './components/SpaceSettingTab';
@@ -31,13 +31,15 @@ const TeamSetting: React.FC = () => {
   const { spaceId } = useParams();
   const [openModifyTeamModal, setOpenModifyTeamModal] =
     useState<boolean>(false);
+  const { asyncSpaceListFun } = useModel('spaceModel');
 
   const { data, run } = useRequest(apiGetSpaceDetail, {
     manual: true,
   });
 
-  const handleTransferSuccess = () => {
-    run({ spaceId });
+  const handleTransferSuccess = async () => {
+    await asyncSpaceListFun();
+    history.push('/space');
   };
 
   const tabs: TabsProps['items'] = [

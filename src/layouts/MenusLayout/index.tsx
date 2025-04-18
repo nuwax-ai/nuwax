@@ -1,4 +1,3 @@
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { DOCUMENT_URL, SITE_DOCUMENT_URL } from '@/constants/common.constants';
 import SystemSection from '@/layouts/MenusLayout/SystemSection';
 import { apiPublishedCategoryList } from '@/services/square';
@@ -29,8 +28,7 @@ const MenusLayout: React.FC = () => {
   const location = useLocation();
   const { setOpenMessage } = useModel('layout');
   const [tabType, setTabType] = useState<TabsEnum>();
-  const { runSpace, setLoadingSpaceList, setSpaceList, setPersonalSpaceInfo } =
-    useModel('spaceModel');
+  const { asyncSpaceListFun } = useModel('spaceModel');
   const { setAgentInfoList, setPluginInfoList } = useModel('squareModel');
   const { runTenantConfig } = useModel('tenantConfigInfo');
   const { runEdit, runDevCollect } = useModel('devCollectAgent');
@@ -83,20 +81,6 @@ const MenusLayout: React.FC = () => {
       agentId: null,
     });
     history.push('/');
-  };
-
-  // 加载空间列表
-  const asyncSpaceListFun = async () => {
-    // 加载空间列表
-    setLoadingSpaceList(true);
-    // 查询空间列表
-    const { code, data } = await runSpace();
-    if (code === SUCCESS_CODE) {
-      setSpaceList(data || []);
-      // 设置个人空间为当前空间
-      setPersonalSpaceInfo(data || []);
-    }
-    setLoadingSpaceList(false);
   };
 
   // 点击工作空间

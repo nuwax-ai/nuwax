@@ -6,7 +6,10 @@ import useConversation from '@/hooks/useConversation';
 import { EditAgentShowType } from '@/types/enums/space';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
-import type { RoleInfo } from '@/types/interfaces/conversationInfo';
+import type {
+  MessageInfo,
+  RoleInfo,
+} from '@/types/interfaces/conversationInfo';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -38,6 +41,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     loadingSuggest,
     onMessageSend,
     messageViewRef,
+    allowAutoScrollRef,
     needUpdateTopicRef,
     handleClearSideEffect,
     setCardList,
@@ -59,6 +63,28 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       },
     };
   }, [agentConfigInfo]);
+
+  // 在组件挂载时添加滚动事件监听器
+  useEffect(() => {
+    const messageView = messageViewRef.current;
+    if (messageView) {
+      const handleScroll = () => {
+        // 当用户手动滚动时，暂停自动滚动
+        const { scrollTop, scrollHeight, clientHeight } = messageView;
+        if (scrollTop + clientHeight < scrollHeight) {
+          allowAutoScrollRef.current = false;
+        } else {
+          // 当用户滚动到底部时，重新允许自动滚动
+          allowAutoScrollRef.current = true;
+        }
+      };
+
+      messageView.addEventListener('scroll', handleScroll);
+      return () => {
+        messageView.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, []);
 
   useEffect(() => {
     if (agentConfigInfo) {
@@ -133,7 +159,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
             </div>
           ) : messageList?.length > 0 || chatSuggestList?.length > 0 ? (
             <>
-              {messageList?.map((item, index: number) => (
+              {messageList?.map((item: MessageInfo, index: number) => (
                 <ChatView key={index} messageInfo={item} roleInfo={roleInfo} />
               ))}
               {/*会话建议*/}

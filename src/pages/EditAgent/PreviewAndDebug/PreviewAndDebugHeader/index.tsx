@@ -1,4 +1,4 @@
-import { PaperClipOutlined } from '@ant-design/icons';
+import debugImage from '@/assets/images/debug_image.png';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -35,7 +35,7 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
           )}
           onClick={onPressDebug}
         >
-          <PaperClipOutlined />
+          <img src={debugImage as string} alt="" />
           调试
         </span>
       </div>

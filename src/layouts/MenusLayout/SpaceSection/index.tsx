@@ -1,4 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
+import { SPACE_URL } from '@/constants/home.constants';
 import { SPACE_APPLICATION_LIST } from '@/constants/space.constants';
 import { SpaceApplicationListEnum, SpaceTypeEnum } from '@/types/enums/space';
 import type { AgentInfo } from '@/types/interfaces/agent';
@@ -45,14 +46,17 @@ const SpaceSection: React.FC = () => {
       // 应用开发
       case SpaceApplicationListEnum.Application_Develop:
         history.push(`/space/${spaceId}/develop`);
+        localStorage.setItem(SPACE_URL, 'develop');
         break;
       // 组件库
       case SpaceApplicationListEnum.Component_Library:
         history.push(`/space/${spaceId}/library`);
+        localStorage.setItem(SPACE_URL, 'library');
         break;
       // 团队设置
       case SpaceApplicationListEnum.Team_Setting:
         history.push(`/space/${spaceId}/team`);
+        localStorage.setItem(SPACE_URL, 'team');
         break;
     }
   };

@@ -102,7 +102,7 @@ const SpacePluginTool: React.FC = () => {
         form.setFieldsValue({
           method: method || HttpMethodEnum.GET,
           url,
-          contentType: contentType || HttpContentTypeEnum.JSON,
+          contentType: contentType || HttpContentTypeEnum.OTHER,
           timeout: timeout || 10,
         });
         // 默认展开的入参配置key
@@ -427,7 +427,7 @@ const SpacePluginTool: React.FC = () => {
             form={form}
             initialValues={{
               method: HttpMethodEnum.GET,
-              contentType: HttpContentTypeEnum.JSON,
+              contentType: HttpContentTypeEnum.OTHER,
               timeout: 10,
             }}
             layout="vertical"

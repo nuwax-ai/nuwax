@@ -1,3 +1,4 @@
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { SPACE_ID } from '@/constants/home.constants';
 import { apiSpaceList } from '@/services/workspace';
 import { SpaceTypeEnum } from '@/types/enums/space';
@@ -44,6 +45,20 @@ function Space() {
     debounceWait: 300,
   });
 
+  // 加载空间列表
+  const asyncSpaceListFun = async () => {
+    // 加载空间列表
+    setLoadingSpaceList(true);
+    // 查询空间列表
+    const { code, data } = await runSpace();
+    if (code === SUCCESS_CODE) {
+      setSpaceList(data || []);
+      // 设置个人空间为当前空间
+      setPersonalSpaceInfo(data || []);
+    }
+    setLoadingSpaceList(false);
+  };
+
   return {
     spaceList,
     setSpaceList,
@@ -53,6 +68,7 @@ function Space() {
     handleCurrentSpaceInfo,
     setPersonalSpaceInfo,
     currentSpaceInfo,
+    asyncSpaceListFun,
   };
 }
 
