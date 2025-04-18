@@ -60,17 +60,22 @@ export default () => {
   const [cardList, setCardList] = useState<CardInfo[]>([]);
   const [isLoadingConversation, setIsLoadingConversation] =
     useState<boolean>(false);
+  // 添加一个 ref 来控制是否允许自动滚动
+  const allowAutoScrollRef = useRef<boolean>(true);
 
   const { runHistory } = useModel('conversationHistory');
 
+  // 修改 handleScrollBottom 函数，添加自动滚动控制
   const handleScrollBottom = () => {
-    scrollTimeoutRef.current = setTimeout(() => {
-      // 滚动到底部
-      messageViewRef.current?.scrollTo({
-        top: messageViewRef.current?.scrollHeight,
-        behavior: 'smooth',
-      });
-    }, 400);
+    if (allowAutoScrollRef.current) {
+      scrollTimeoutRef.current = setTimeout(() => {
+        // 滚动到底部
+        messageViewRef.current?.scrollTo({
+          top: messageViewRef.current?.scrollHeight,
+          behavior: 'smooth',
+        });
+      }, 400);
+    }
   };
 
   // 根据用户消息更新会话主题
@@ -419,6 +424,7 @@ export default () => {
     onMessageSend,
     handleDebug,
     messageViewRef,
+    allowAutoScrollRef,
     showType,
     setShowType,
     needUpdateTopicRef,
