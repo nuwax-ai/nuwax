@@ -109,8 +109,14 @@ const Workflow: React.FC = () => {
   // 是否显示创建工作流，插件，知识库，数据库的弹窗和试运行的弹窗
   const { setTestRun } = useModel('model');
   // 从useModel中获取到数据
-  const { setReferenceList, setIsModified, isModified, setSpaceId } =
-    useModel('workflow');
+  const {
+    setReferenceList,
+    setIsModified,
+    skillChange,
+    setSkillChange,
+    isModified,
+    setSpaceId,
+  } = useModel('workflow');
   // 修改更新时间
   const changeUpdateTime = () => {
     const _time = new Date();
@@ -130,6 +136,10 @@ const Workflow: React.FC = () => {
   // 在每次 foldWrapItem 更新时同步到 ref
   useEffect(() => {
     foldWrapItemRef.current = foldWrapItem;
+    if (skillChange) {
+      form.setFieldsValue(foldWrapItem.nodeConfig);
+      setSkillChange(false);
+    }
   }, [foldWrapItem]);
   // 获取当前画布的信息
   const getDetails = async () => {
@@ -250,9 +260,9 @@ const Workflow: React.FC = () => {
         };
       }
     }
+    graphRef.current.updateNode(params.id, params);
     // setIsUpdate(true)
     const _res = await updateNode(params);
-
     if (_res.code === Constant.success) {
       if (update) {
         if (typeof update === 'string' && update !== 'moved') {
@@ -260,9 +270,13 @@ const Workflow: React.FC = () => {
           if (foldWrapItemRef.current.id === Number(update)) {
             getRefernece(Number(update));
           }
+        } else if (typeof update === 'number') {
+          // 这里是在添加连线
+          graphRef.current.updateNode(params.id, params);
         } else {
           setFoldWrapItem(params);
         }
+
         if (config.type === 'Loop') {
           // 如果传递的是boolean，那么证明要更新这个节点
           getNodeConfig(Number(config.id));
@@ -273,10 +287,16 @@ const Workflow: React.FC = () => {
           getNodeConfig(Number(config.id));
         }
       }
+      // setVisible(prev=>{
+      //   if(!prev){
+      //       // 这里是在添加连线
+
+      //   }
+      //   return prev
+      // })
       // setIsModified(false);
       changeUpdateTime();
     }
-
     // setIsUpdate(false)
   };
   // 优化后的onFinish方法
@@ -325,18 +345,27 @@ const Workflow: React.FC = () => {
       if (prev.id === 0 && child === null) {
         return prev;
       } else {
-        if (prev.id !== 0 && isModified) {
-          onFinish();
-          if (timerRef.current) {
-            clearTimeout(timerRef.current);
-          }
+        if (prev.id !== 0) {
+          setIsModified((prev: boolean) => {
+            if (prev) {
+              onFinish();
+              if (timerRef.current) {
+                clearTimeout(timerRef.current);
+              }
+            }
+            return prev;
+          });
         }
         if (child !== null) {
           if (!visible) setVisible(true);
           getRefernece(child.id);
           return child;
         }
-        setVisible(false);
+        setVisible((prev) => {
+          console.log(prev);
+          onFinish();
+          return false;
+        });
         return {
           id: 0,
           description: '',
@@ -825,7 +854,10 @@ const Workflow: React.FC = () => {
     // 创建新定时器
     if (isModified) {
       timerRef.current = setTimeout(() => {
-        onFinish();
+        if (isModified) {
+          // 再次检查 isModified 状态
+          onFinish();
+        }
       }, 3000);
     }
     // 清理函数

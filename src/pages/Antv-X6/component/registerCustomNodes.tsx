@@ -60,7 +60,9 @@ export class GeneralNode extends React.Component<NodeProps> {
           <div className="dis-left general-node-header-image">
             {returnImg(data.type)}
 
-            <span className="general-node-header-title">{data.name}</span>
+            <span className="general-node-header-title text-ellipsis">
+              {data.name}
+            </span>
           </div>
         </div>
 

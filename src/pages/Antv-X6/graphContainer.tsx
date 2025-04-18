@@ -136,6 +136,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             node.prop('ports', generatePorts(newData));
           }
         }
+        console.log('newData', newData);
         node.updateData(newData);
       }
     };
