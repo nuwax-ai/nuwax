@@ -1,6 +1,10 @@
+import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
 import Editor, { loader } from '@monaco-editor/react';
+import { FloatButton } from 'antd';
 import * as monaco from 'monaco-editor';
 import React, { useEffect, useState } from 'react';
+import { useParams } from 'umi';
+import CodeOptimizeModal from '../CodeOptimizeModal';
 
 interface Props {
   codeLanguage: 'JavaScript' | 'Python' | 'JSON';
@@ -16,6 +20,8 @@ const CodeEditor: React.FC<Props> = ({
   codeLanguage,
 }) => {
   const [isMonacoReady, setIsMonacoReady] = useState(false);
+  const [open, setOpen] = useState<boolean>(false);
+  const { agentId } = useParams();
 
   useEffect(() => {
     loader.config({
@@ -74,18 +80,47 @@ const CodeEditor: React.FC<Props> = ({
   };
 
   return (
-    <Editor
-      height={height}
-      language={codeLanguage.toLowerCase()}
-      theme="vs-dark"
-      value={value}
-      onChange={handleCodeChange}
-      options={{
-        selectOnLineNumbers: true,
-        folding: true,
-        automaticLayout: true,
-      }}
-    />
+    <>
+      <Editor
+        height={height}
+        language={codeLanguage.toLowerCase()}
+        theme="vs-dark"
+        value={value}
+        onChange={handleCodeChange}
+        options={{
+          selectOnLineNumbers: true,
+          folding: true,
+          automaticLayout: true,
+        }}
+      />
+      <FloatButton
+        shape="circle"
+        type="primary"
+        style={{ insetInlineEnd: 94 }}
+        icon={<ICON_CONFIRM_STAR />}
+        tooltip="代码助手"
+        onClick={() => {
+          setOpen(true);
+        }}
+      />
+      <CodeOptimizeModal
+        id={agentId}
+        open={open}
+        onCancel={() => {
+          setOpen(false);
+        }}
+        onReplace={(newValue?: string) => {
+          if (!newValue) return;
+
+          if (newValue.includes('```')) {
+            newValue.replace(/```/g, '');
+          }
+
+          onChange?.(newValue || '');
+        }}
+        defaultValue={value}
+      />
+    </>
   );
 };
 

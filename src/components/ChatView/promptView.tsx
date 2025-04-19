@@ -27,9 +27,9 @@ type PromptViewProps = {
   contentClassName?: string;
   // 消息信息
   messageInfo: MessageInfo;
-
+  ifShowReplace?: boolean;
   // 替换
-  onReplace: (messageInfo?: string) => void;
+  onReplace?: (messageInfo?: string) => void;
 };
 
 const PromptView: React.FC<PromptViewProps> = ({
@@ -37,6 +37,7 @@ const PromptView: React.FC<PromptViewProps> = ({
   contentClassName,
   messageInfo,
   onReplace,
+  ifShowReplace,
 }) => {
   return (
     <div className={cx(styles.container, 'flex', className)}>
@@ -85,6 +86,7 @@ const PromptView: React.FC<PromptViewProps> = ({
           >
             <PromptViewBottomMore
               onReplace={onReplace}
+              ifShowReplace={ifShowReplace}
               messageInfo={messageInfo}
             />
           </ConditionRender>

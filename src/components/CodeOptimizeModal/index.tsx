@@ -2,7 +2,7 @@ import PromptView from '@/components/ChatView/promptView';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { SendOutlined } from '@ant-design/icons';
 import type { ModalProps } from 'antd';
-import { Button, Input, Modal } from 'antd';
+import { Input, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
@@ -10,13 +10,13 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const PromptOptimizeModal: React.FC<
+const CodeOptimizeModal: React.FC<
   ModalProps & {
     id: number;
-    onReplace: (text?: string) => void;
+    onReplace?: (text?: string) => void;
     defaultValue?: string;
   }
-> = ({ open, onCancel, id, onReplace, defaultValue }) => {
+> = ({ open, onCancel, id, onReplace }) => {
   const [message, setMessage] = useState<string>('');
   const {
     messageList,
@@ -50,28 +50,10 @@ const PromptOptimizeModal: React.FC<
   }, []);
 
   // 点击发送事件
-  const handleSendMessage = async (text?: string) => {
-    if (text) {
+  const handleSendMessage = async () => {
+    if (message) {
       setMessage('');
-      onMessageSend(id, text);
-    } else if (message) {
-      // const data = await promptOptimize({ prompt: message, requestId: '1' });
-      // console.log(message);
-
-      // const files = uploadFiles.map((file) => {
-      //   return {
-      //     uid: file.uid,
-      //     name: file.name,
-      //     url: file.url,
-      //   };
-      //
-
-      // enter事件
-      // onEnter(message, files);
-      // // 置空
-      // setFiles([]);
-      setMessage('');
-      onMessageSend(id, message);
+      onMessageSend(id, message, 'code');
     }
   };
 
@@ -79,7 +61,7 @@ const PromptOptimizeModal: React.FC<
 
   return (
     <Modal
-      title={false}
+      title={'代码助手'}
       open={open}
       onCancel={(e) => {
         setMessageList([]);
@@ -97,6 +79,7 @@ const PromptOptimizeModal: React.FC<
           <>
             {messageList?.map((item: MessageInfo, index: number) => (
               <PromptView
+                ifShowReplace={true}
                 onReplace={onReplace}
                 key={index}
                 messageInfo={item}
@@ -108,20 +91,7 @@ const PromptOptimizeModal: React.FC<
           <div />
         )}
       </div>
-      <Button
-        type="default"
-        className={cx(styles['btn'])}
-        onClick={() =>
-          // 如果有默认文本就优化默认文本
-          handleSendMessage(
-            defaultValue
-              ? defaultValue
-              : '一个能为你提供工作帮助和建议的智能机器人',
-          )
-        }
-      >
-        自动优化
-      </Button>
+
       <div className={cx(styles.footer, 'flex', 'items-center')}>
         <div
           className={cx(styles['chat-input'], 'flex', 'items-center', 'w-full')}
@@ -130,7 +100,7 @@ const PromptOptimizeModal: React.FC<
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rootClassName={styles.input}
-            placeholder="请描述你的提示词需求，比如角色定义、技能要求等"
+            placeholder="请描述你的具体业务需求，逻辑尽量描述详细"
             autoSize={{ minRows: 1, maxRows: 3 }}
           />
 
@@ -151,4 +121,4 @@ const PromptOptimizeModal: React.FC<
   );
 };
 
-export default PromptOptimizeModal;
+export default CodeOptimizeModal;

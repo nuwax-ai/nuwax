@@ -1,4 +1,7 @@
-import { PROMPT_OPTIMIZE_URL } from '@/constants/common.constants';
+import {
+  CODE_OPTIMIZE_URL,
+  PROMPT_OPTIMIZE_URL,
+} from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   AssistantRoleEnum,
@@ -122,11 +125,12 @@ export default () => {
   const handleConversation = async (
     params: PromptOptimizeParams,
     currentMessageId: string,
+    type: 'prompt' | 'code',
   ) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
     // 启动连接
     abortConnectionRef.current = await createSSEConnection({
-      url: PROMPT_OPTIMIZE_URL,
+      url: type === 'code' ? CODE_OPTIMIZE_URL : PROMPT_OPTIMIZE_URL,
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -169,7 +173,11 @@ export default () => {
   };
 
   // 发送消息
-  const onMessageSend = async (id: number, message: string) => {
+  const onMessageSend = async (
+    id: number,
+    message: string,
+    type: 'prompt' | 'code',
+  ) => {
     // 清除副作用
     handleClearSideEffect();
 
@@ -205,7 +213,7 @@ export default () => {
       prompt: message,
     };
     // 处理会话
-    await handleConversation(params, currentMessageId);
+    await handleConversation(params, currentMessageId, type);
   };
 
   return {

@@ -11,7 +11,8 @@ const cx = classNames.bind(styles);
 
 // 聊天框底部更多操作组件
 export interface PromptViewBottomMoreProps {
-  onReplace: (text?: string) => void;
+  onReplace?: (text?: string) => void;
+  ifShowReplace?: boolean;
   messageInfo: MessageInfo;
 }
 
@@ -19,6 +20,7 @@ export interface PromptViewBottomMoreProps {
 const PromptViewBottomMore: React.FC<PromptViewBottomMoreProps> = ({
   messageInfo,
   onReplace,
+  ifShowReplace = true,
 }) => {
   // finalResult 自定义添加字段：chat 会话结果
   const { text, finalResult } = messageInfo || {};
@@ -38,11 +40,13 @@ const PromptViewBottomMore: React.FC<PromptViewBottomMoreProps> = ({
     >
       <div className={cx('flex', 'items-center', styles['elapsed-time'])}>
         <ConditionRender condition={!!finalResult}>
-          <Button
-            onClick={() => onReplace(text)}
-            size="small"
-            type="primary"
-          >{`替换`}</Button>
+          {ifShowReplace && (
+            <Button
+              onClick={() => onReplace?.(text)}
+              size="small"
+              type="primary"
+            >{`替换`}</Button>
+          )}
           <ConditionRender condition={!!finalResult?.totalTokens}>
             <span className={cx(styles['vertical-line'])} />
             <span>{`${finalResult?.totalTokens} Tokens`}</span>
