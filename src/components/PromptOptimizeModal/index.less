@@ -1,0 +1,49 @@
+@import '@/styles/color';
+
+.btn {
+  // width: 100px;
+  background: #5768a114;
+}
+
+.chat-wrapper {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+.footer {
+  gap: 12px;
+  padding: 10px 16px;
+  border: 1px solid @GRAY01;
+  border-radius: 20px;
+  margin-top: 10px;
+}
+
+.chat-input {
+  gap: 8px;
+
+  .input {
+    flex: 1;
+    border: none;
+    background-color: transparent;
+  }
+
+  :global {
+    .ant-input:focus {
+      border: none;
+      box-shadow: none;
+    }
+  }
+
+  .icon-box {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: @WHITE01;
+    cursor: pointer;
+  }
+
+  .send-image {
+    width: 30px;
+  }
+}
