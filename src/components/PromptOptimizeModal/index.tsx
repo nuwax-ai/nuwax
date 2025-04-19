@@ -55,31 +55,33 @@ const PromptOptimizeModal: React.FC<
       setMessage('');
       onMessageSend(id, text);
     } else if (message) {
-      // const data = await promptOptimize({ prompt: message, requestId: '1' });
-      // console.log(message);
-
-      // const files = uploadFiles.map((file) => {
-      //   return {
-      //     uid: file.uid,
-      //     name: file.name,
-      //     url: file.url,
-      //   };
-      //
-
-      // enter事件
-      // onEnter(message, files);
-      // // 置空
-      // setFiles([]);
       setMessage('');
       onMessageSend(id, message);
     }
   };
 
-  console.log(messageList);
+  // enter事件
+  const handlePressEnter = (e: any) => {
+    e.preventDefault();
+    const { value } = e.target;
+    // shift+enter或者ctrl+enter时换行
+    if (
+      e.nativeEvent.keyCode === 13 &&
+      (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)
+    ) {
+      const enterValue = `${value}\n`;
+      setMessage(enterValue);
+    } else if (e.nativeEvent.keyCode === 13 && !!value.trim()) {
+      // enter事件
+      onMessageSend(id, message);
+      // 置空
+      setMessage('');
+    }
+  };
 
   return (
     <Modal
-      title={false}
+      title={' '}
       open={open}
       onCancel={(e) => {
         setMessageList([]);
@@ -130,6 +132,7 @@ const PromptOptimizeModal: React.FC<
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rootClassName={styles.input}
+            onPressEnter={handlePressEnter}
             placeholder="请描述你的提示词需求，比如角色定义、技能要求等"
             autoSize={{ minRows: 1, maxRows: 3 }}
           />

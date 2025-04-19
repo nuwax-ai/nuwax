@@ -39,6 +39,8 @@ const PromptView: React.FC<PromptViewProps> = ({
   onReplace,
   ifShowReplace,
 }) => {
+  console.log(messageInfo);
+
   return (
     <div className={cx(styles.container, 'flex', className)}>
       <div className={cx('flex-1')}>
@@ -51,9 +53,11 @@ const PromptView: React.FC<PromptViewProps> = ({
           condition={messageInfo?.role !== AssistantRoleEnum.USER}
         >
           {/*运行状态*/}
-          <ConditionRender condition={!!messageInfo?.status}>
-            <RunOver messageInfo={messageInfo} />
-          </ConditionRender>
+          {messageInfo.status !== 'complete' && (
+            <ConditionRender condition={!!messageInfo?.status}>
+              <RunOver messageInfo={messageInfo} />
+            </ConditionRender>
+          )}
           {(!!messageInfo?.think || !!messageInfo?.text) && (
             <div className={cx(styles['inner-container'], contentClassName)}>
               {/*think*/}

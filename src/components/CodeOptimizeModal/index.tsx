@@ -57,6 +57,25 @@ const CodeOptimizeModal: React.FC<
     }
   };
 
+  // enter事件
+  const handlePressEnter = (e: any) => {
+    e.preventDefault();
+    const { value } = e.target;
+    // shift+enter或者ctrl+enter时换行
+    if (
+      e.nativeEvent.keyCode === 13 &&
+      (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)
+    ) {
+      const enterValue = `${value}\n`;
+      setMessage(enterValue);
+    } else if (e.nativeEvent.keyCode === 13 && !!value.trim()) {
+      // enter事件
+      onMessageSend(id, message, 'code');
+      // 置空
+      setMessage('');
+    }
+  };
+
   console.log(messageList);
 
   return (
@@ -100,6 +119,7 @@ const CodeOptimizeModal: React.FC<
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rootClassName={styles.input}
+            onPressEnter={handlePressEnter}
             placeholder="请描述你的具体业务需求，逻辑尽量描述详细"
             autoSize={{ minRows: 1, maxRows: 3 }}
           />

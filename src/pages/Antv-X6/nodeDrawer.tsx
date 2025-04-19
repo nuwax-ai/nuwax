@@ -259,6 +259,8 @@ const NodeDrawer = (
 
   // 根据类型返回指定的 ReactNode
   const renderNodeContent = (params: ChildNode, form: FormInstance) => {
+    console.log(params.type);
+
     switch (params.type) {
       case 'Start':
         // 如果这和 'Start' 是同样的组件，请考虑重用组件或创建一个新的组件。

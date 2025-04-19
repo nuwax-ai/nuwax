@@ -490,39 +490,31 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ form }) => {
         />
       </div>
       <div className="node-item-style">
-        <Form.Item
-          noStyle
-          name={
-            form.getFieldValue('codeLanguage') === 'JavaScript'
-              ? 'codeJavaScript'
-              : 'codePython'
-          }
-        >
-          <div>
-            <div className="dis-sb margin-bottom">
-              <span className="node-title-style ">代码</span>
-              <ExpandAltOutlined onClick={() => setShow(true)} />
-            </div>
-            <CodeEditor
-              value={form.getFieldValue(
+        <div>
+          <div className="dis-sb margin-bottom">
+            <span className="node-title-style ">代码</span>
+            <ExpandAltOutlined onClick={() => setShow(true)} />
+          </div>
+          <CodeEditor
+            form={form}
+            value={form.getFieldValue(
+              form.getFieldValue('codeLanguage') === 'JavaScript'
+                ? 'codeJavaScript'
+                : 'codePython',
+            )}
+            onChange={(value) => {
+              form.setFieldValue(
                 form.getFieldValue('codeLanguage') === 'JavaScript'
                   ? 'codeJavaScript'
                   : 'codePython',
-              )}
-              onChange={(value) => {
-                form.setFieldValue(
-                  form.getFieldValue('codeLanguage') === 'JavaScript'
-                    ? 'codeJavaScript'
-                    : 'codePython',
-                  value,
-                );
-                setIsModified(true);
-              }}
-              codeLanguage={form.getFieldValue('codeLanguage') || 'JavaScript'}
-              height="180px"
-            />
-          </div>
-        </Form.Item>
+                value,
+              );
+              setIsModified(true);
+            }}
+            codeLanguage={form.getFieldValue('codeLanguage') || 'JavaScript'}
+            height="180px"
+          />
+        </div>
       </div>
       <CustomTree
         title={'输出'}
