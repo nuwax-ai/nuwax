@@ -112,11 +112,13 @@ const CodeEditor: React.FC<Props> = ({
         onReplace={(newValue?: string) => {
           if (!newValue) return;
 
-          if (newValue.includes('```')) {
-            newValue.replace(/```/g, '');
+          let text = newValue;
+
+          if (text.includes('```')) {
+            text = text.replace(/```/g, '');
           }
 
-          onChange?.(newValue || '');
+          onChange?.(text || '');
         }}
         defaultValue={value}
       />
