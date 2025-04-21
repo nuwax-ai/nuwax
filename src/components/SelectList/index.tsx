@@ -1,4 +1,4 @@
-import type { SelectListType, SizeType } from '@/types/interfaces/common';
+import type { SelectListType } from '@/types/interfaces/common';
 import { CheckOutlined } from '@ant-design/icons';
 import { Flex, Select } from 'antd';
 import classNames from 'classnames';
@@ -23,7 +23,7 @@ const SelectList: React.FC<SelectListType> = (props) => {
     <Select
       rootClassName={cx(styles.container, className)}
       value={value}
-      placeholder={placeholder}
+      placeholder={placeholder || '请选择'}
       disabled={disabled}
       onChange={onChange}
       // 阻止冒泡事件
@@ -31,7 +31,7 @@ const SelectList: React.FC<SelectListType> = (props) => {
         e.stopPropagation();
       }}
       options={options}
-      size={size as SizeType}
+      size={size}
       dropdownRender={(menu) => (
         <>
           {menu}
@@ -46,10 +46,11 @@ const SelectList: React.FC<SelectListType> = (props) => {
                 <CheckOutlined className={cx(styles.icon)} />
               )}
             </div>
-            {option.data.img && (
+            {!!option?.data?.img && (
               <img
                 className={cx(styles.image, 'radius-6')}
-                src={option.data.img}
+                // 确保 option.data.img 是字符串类型，若不是则转换为字符串
+                src={String(option.data.img)}
                 alt=""
               />
             )}
