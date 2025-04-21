@@ -139,9 +139,39 @@ export const asideList: StencilList[] = [
       },
     ],
   },
+  // {
+  //   name: '数据表',
+  //   key: 'group4',
+  //   children:[
+  //     {
+  //       name: '数据新增',
+  //       icon: <ICON_WORKFLOW_VARIABLE />,
+  //       type: 'DataAdd',
+  //       key: 'general-Node',
+  //       description:
+  //         '对选定的数据表进行数据写入',
+  //     },
+  //     {
+  //       name: '数据删除',
+  //       icon: <ICON_WORKFLOW_VARIABLE />,
+  //       type: 'DataDelete',
+  //       key: 'general-Node',
+  //       description:
+  //         '对选定的数据表根据指定ID进行数据删除',
+  //     },
+  //     {
+  //       name: '数据查询',
+  //       icon: <ICON_WORKFLOW_VARIABLE />,
+  //       type: 'DataQuery',
+  //       key: 'general-Node',
+  //       description:
+  //         '可支持对数据表的查询控制，用户可查询其他用户提交的数据，由开发者控制',
+  //     },
+  //   ]
+  // },
   {
     name: '组件&工具',
-    key: 'group4',
+    key: 'group5',
     children: [
       {
         name: '问答',
@@ -176,7 +206,7 @@ export const asideList: StencilList[] = [
   },
   {
     name: '输出',
-    key: 'group5',
+    key: 'group6',
     children: [
       {
         name: '过程输出',

@@ -271,11 +271,14 @@ const Workflow: React.FC = () => {
           if (foldWrapItemRef.current.id === Number(update)) {
             getRefernece(Number(update));
           }
-        } else if (typeof update === 'number') {
-          // 这里是在添加连线
-          graphRef.current.updateNode(params.id, params);
         } else {
-          setFoldWrapItem(params);
+          if (typeof update === 'number') {
+            // 这里是在添加连线
+            graphRef.current.updateNode(params.id, params);
+          }
+          if (config.id === foldWrapItemRef.current.id) {
+            setFoldWrapItem(params);
+          }
         }
 
         if (config.type === 'Loop') {
@@ -309,6 +312,7 @@ const Workflow: React.FC = () => {
         ['QA', 'IntentRecognition', 'Condition'].includes(foldWrapItem.type) &&
         foldWrapItemRef.current.id === foldWrapItem.id
       ) {
+        console.log('123', values, foldWrapItemRef.current.nodeConfig);
         const changeNode = changeNodeConfig(
           foldWrapItem.type,
           values,
@@ -363,7 +367,7 @@ const Workflow: React.FC = () => {
           return child;
         }
         setVisible((visible) => {
-          if (visible) {
+          if (visible && isModified) {
             onFinish();
           }
           return false;
@@ -858,14 +862,14 @@ const Workflow: React.FC = () => {
       clearTimeout(timerRef.current);
     }
     // 创建新定时器
-    if (isModified) {
-      timerRef.current = setTimeout(() => {
-        if (isModified) {
-          // 再次检查 isModified 状态
+    setIsModified((prev: boolean) => {
+      if (prev) {
+        timerRef.current = setTimeout(() => {
           onFinish();
-        }
-      }, 3000);
-    }
+        }, 3000);
+      }
+      return prev; // 返回当前的isModified状态，保持不变，避免重复se
+    });
     // 清理函数
     return () => {
       if (timerRef.current) {
