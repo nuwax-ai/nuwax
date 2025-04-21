@@ -429,7 +429,12 @@ export const FormList: React.FC<FormListProps> = ({
                     </Form.Item>
                   )}
                   <Form.Item name={[item.name, field]} className="flex-1">
-                    <Input disabled={fieldData} />
+                    <Input
+                      disabled={fieldData}
+                      onBlur={() => {
+                        form.submit();
+                      }}
+                    />
                   </Form.Item>
                   {/* <Form.Item name={[item.name, 'nextNodeIds']} noStyle>
                     <Input type="hidden"></Input>

@@ -458,6 +458,9 @@ const Workflow: React.FC = () => {
     if (_res.code === Constant.success) {
       // console.log(graphRef.current)
       graphRef.current.deleteNode(id.toString());
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
       changeUpdateTime();
       // 如果传递了node,证明时循环节点下的子节点
       if (node) {
