@@ -1,6 +1,7 @@
 import InputOrReference from '@/components/FormListItem/InputOrReference';
 import { FieldConfig } from '@/components/FormListItem/type';
 import { DataTypeMap } from '@/constants/common.constants';
+import { optionsMap } from '@/constants/node.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { DefaultObjectType } from '@/types/interfaces/common';
 import type { InputAndOutConfig } from '@/types/interfaces/node';
@@ -349,35 +350,6 @@ export const FormList: React.FC<FormListProps> = ({
   inputItemName = 'inputArgs',
   showIndex,
 }) => {
-  const arr = [
-    'A',
-    'B',
-    'C',
-    'D',
-    'E',
-    'F',
-    'G',
-    'H',
-    'I',
-    'J',
-    'K',
-    'L',
-    'M',
-    'N',
-    'O',
-    'P',
-    'Q',
-    'R',
-    'S',
-    'T',
-    'U',
-    'V',
-    'W',
-    'X',
-    'Y',
-    'Z',
-  ];
-
   return (
     <Form.List name={inputItemName}>
       {(fields, { add, remove }) => (
@@ -425,7 +397,7 @@ export const FormList: React.FC<FormListProps> = ({
                 <div className="dis-left">
                   {showIndex && (
                     <Form.Item noStyle name={[item.name, 'index']}>
-                      <span className="mr-16">{arr[index]}</span>
+                      <span className="mr-16">{optionsMap[index]}</span>
                     </Form.Item>
                   )}
                   <Form.Item name={[item.name, field]} className="flex-1">

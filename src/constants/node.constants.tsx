@@ -34,7 +34,34 @@ export const ansewerTypeMap = {
   TEXT: '直接回答',
   SELECT: '选项回答',
 };
-export const optionsMap = ['A', 'B', 'C', 'D', 'E'];
+export const optionsMap = [
+  'A',
+  'B',
+  'C',
+  'D',
+  'E',
+  'F',
+  'G',
+  'H',
+  'I',
+  'J',
+  'K',
+  'L',
+  'M',
+  'N',
+  'O',
+  'P',
+  'Q',
+  'R',
+  'S',
+  'T',
+  'U',
+  'V',
+  'W',
+  'X',
+  'Y',
+  'Z',
+];
 
 // export const StatusMap={
 //   Developing:"",

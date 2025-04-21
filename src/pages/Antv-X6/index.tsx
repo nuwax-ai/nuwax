@@ -149,7 +149,6 @@ const Workflow: React.FC = () => {
       // 获取左上角的信息
       setInfo(_res.data);
       setSpaceId(_res.data.spaceId);
-      sessionStorage.setItem('workfolwId', _res.data.id.toString());
       // 获取节点和边的数据
       const _nodeList = _res.data.nodes;
       const _edgeList = getEdges(_nodeList);
@@ -185,7 +184,7 @@ const Workflow: React.FC = () => {
 
       if (prev.extension.size !== numVal) {
         onConfirm({
-          id: sessionStorage.getItem('workfolwId')!,
+          id: workflowId,
           name: prev.name,
           extension: { size: numVal },
         });
@@ -204,7 +203,7 @@ const Workflow: React.FC = () => {
       }
       if (!prev.extension || prev.extension.size !== numVal) {
         onConfirm({
-          id: sessionStorage.getItem('workfolwId')!,
+          id: workflowId,
           name: prev.name,
           extension: { size: numVal },
         });
@@ -336,7 +335,6 @@ const Workflow: React.FC = () => {
           },
         };
       }
-      console.log(newNodeConfig);
       await changeNode(newNodeConfig);
       setIsModified(false);
     } catch (error) {
@@ -349,7 +347,6 @@ const Workflow: React.FC = () => {
     setTestRunResult('');
 
     setFoldWrapItem((prev) => {
-      console.log(123123213123123, prev);
       if (prev.id === 0 && child === null) {
         return prev;
       } else {
@@ -364,7 +361,6 @@ const Workflow: React.FC = () => {
             return false;
           });
         }
-
         if (child !== null) {
           if (!visible) setVisible(true);
           getRefernece(child.id);
@@ -469,7 +465,7 @@ const Workflow: React.FC = () => {
       if (node) {
         // 如果是删除循环节点
         if (node.type === 'Loop') {
-          setFoldWrapItem({ ...foldWrapItem, type: NodeTypeEnum.Start });
+          changeDrawer(null);
         } else {
           // 如果是删除循环的子节点,就要更新循环节点的数据
           getNodeConfig(node.loopNodeId as number);
@@ -818,6 +814,16 @@ const Workflow: React.FC = () => {
       }
       case 'Duplicate': {
         copyNode(foldWrapItem);
+        break;
+      }
+      case 'TestRun': {
+        // copyNode(foldWrapItem);
+        if (foldWrapItemRef.current.type === 'Start') {
+          testRunAll();
+        } else {
+          setTestRunResult('');
+          setTestRun(true);
+        }
         break;
       }
       default:

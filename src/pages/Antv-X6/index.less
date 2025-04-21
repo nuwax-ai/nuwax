@@ -35,6 +35,8 @@
 // 添加节点的样式
 .stencil-content {
   width: 240px;
+  max-height: calc(100vh - 100px); // 设置最大高度为视口高度减去100px
+  overflow-y: auto; // 内容超出时显示垂直滚动条
 
   .stencil-title {
     color: @GRAY07;
@@ -405,13 +407,15 @@
 
 .error-list-style {
   position: absolute;
-  top: 600px;
+  top: 70%;
   left: 10px;
   bottom: 10px;
   border-radius: 16px;
   padding: 10px 0;
   background-color: @WHITE;
   z-index: 99;
+  overflow: hidden;
+  overflow-y: auto;
 
   .error-list-header {
     height: 48px;
@@ -422,8 +426,7 @@
 
   .error-list-content {
     padding: 10px 20px;
-    max-height: 85%;
-    overflow-y: auto;
+    flex: 1;
 
     .error-list-item {
       width: 100%;
