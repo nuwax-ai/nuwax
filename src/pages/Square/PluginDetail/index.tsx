@@ -32,7 +32,7 @@ const SpacePluginDetail: React.FC = ({}) => {
 
   useEffect(() => {
     if (!pluginId) return;
-    runPluginInfo(54);
+    runPluginInfo(pluginId);
   }, [pluginId]);
   console.log(pluginInfo);
 
