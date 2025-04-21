@@ -40,12 +40,8 @@ const TriggerContent: React.FC<TriggerContentProps> = ({
               />
               <TooltipIcon
                 title="删除"
-                icon={
-                  <DeleteOutlined
-                    className={'cursor-pointer'}
-                    onClick={() => onDel(item.id)}
-                  />
-                }
+                icon={<DeleteOutlined className={'cursor-pointer'} />}
+                onClick={() => onDel(item.id)}
               />
             </>
           }

@@ -14,12 +14,8 @@ const CopyUrl: React.FC = () => {
         <h3>复制url到你的应用</h3>
         <TooltipIcon
           title="复制"
-          icon={
-            <CopyOutlined
-              className={cx(styles['copy-icon'])}
-              onClick={() => {}}
-            />
-          }
+          icon={<CopyOutlined className={cx(styles['copy-icon'])} />}
+          onClick={() => {}}
         />
       </div>
       <Tooltip

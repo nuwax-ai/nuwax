@@ -56,12 +56,8 @@ const KnowledgeTextList: React.FC<KnowledgeTextListProps> = ({
               </span>
               <TooltipIcon
                 title="取消知识库"
-                icon={
-                  <DeleteOutlined
-                    className={'cursor-pointer'}
-                    onClick={() => onDel(item.id, item.targetId, item.type)}
-                  />
-                }
+                icon={<DeleteOutlined className={'cursor-pointer'} />}
+                onClick={() => onDel(item.id, item.targetId, item.type)}
               />
             </>
           }

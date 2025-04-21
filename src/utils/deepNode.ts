@@ -59,7 +59,7 @@ export const addChildNode = (
 
 // 获取默认展开的配置key
 export const getActiveKeys = (arr: BindConfigWithSub[]) => {
-  const activeList = [];
+  const activeList: React.Key[] = [];
   const filterRecursive = (data: BindConfigWithSub[]) => {
     for (let info of data) {
       if (info.subArgs) {
@@ -97,7 +97,11 @@ const updateRequireFieldFalse = (data: BindConfigWithSub[], value: boolean) => {
 };
 
 // 递归查找节点路径的函数
-function findParentPathByKey(tree: BindConfigWithSub[], targetKey, path = []) {
+function findParentPathByKey(
+  tree: BindConfigWithSub[],
+  targetKey: React.Key,
+  path: React.Key[] = [],
+) {
   // 遍历当前层级的节点
   for (const node of tree) {
     // 如果当前节点的key等于目标key，返回路径
@@ -127,7 +131,10 @@ function findParentPathByKey(tree: BindConfigWithSub[], targetKey, path = []) {
   return null;
 }
 
-const updateRequireFieldTrue = (data: BindConfigWithSub[], pathKeys) => {
+const updateRequireFieldTrue = (
+  data: BindConfigWithSub[],
+  pathKeys: React.Key[],
+) => {
   data.forEach((node) => {
     if (pathKeys.includes(node.key)) {
       node.require = true;
@@ -145,7 +152,7 @@ export const updateNodeField = (
   field: string,
   value: React.Key | boolean | any,
 ) => {
-  let pathKeys = [];
+  let pathKeys: React.Key[] = [];
   const updateRecursive = (data: BindConfigWithSub[]) => {
     return data.map((node) => {
       if (node.key === key) {
@@ -236,8 +243,9 @@ export const loopOmitArray = (data: BindConfigWithSub[]) => {
 };
 
 // 设置disabled
-export const loopSetDisabled = (data: BindConfigWithSub[]) =>
-  data.map((item) => {
+export const loopSetDisabled = (data: BindConfigWithSub[]) => {
+  // 为确保类型安全，添加返回类型批注，这里假设返回类型与输入数据项类型一致
+  return data.map<BindConfigWithSub>((item) => {
     if (
       item.dataType === DataTypeEnum.Object ||
       item.dataType?.includes('Array')
@@ -250,13 +258,14 @@ export const loopSetDisabled = (data: BindConfigWithSub[]) =>
     }
     return item;
   });
+};
 
 // 查询节点
 export const findNode = (treeData: BindConfigWithSub[], key: React.Key) => {
   for (const node of treeData) {
     if (node.key === key) return node;
     if (node.subArgs) {
-      const _node = findNode(node.subArgs, key);
+      const _node = findNode(node.subArgs, key) as BindConfigWithSub;
       if (_node) return _node;
     }
   }

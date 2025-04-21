@@ -15,7 +15,7 @@ const CardModeSetting: React.FC<CardModeSettingProps> = ({
   onChoose,
 }) => {
   return (
-    <>
+    <div className={cx('h-full', 'overflow-y')}>
       {list?.map((item) => (
         <div
           key={item.id}
@@ -34,7 +34,7 @@ const CardModeSetting: React.FC<CardModeSettingProps> = ({
           />
         </div>
       ))}
-    </>
+    </div>
   );
 };
 

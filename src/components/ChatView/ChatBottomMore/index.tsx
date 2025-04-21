@@ -73,13 +73,8 @@ const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({
         <ConditionRender condition={!!finalResult && canDebug}>
           <TooltipIcon
             className={styles.icon}
-            icon={
-              <img
-                src={debugImage as string}
-                alt=""
-                onClick={() => handleDebug(messageInfo)}
-              />
-            }
+            icon={<img src={debugImage as string} alt="" />}
+            onClick={() => handleDebug(messageInfo)}
             title="调试"
             type={TooltipTitleTypeEnum.White}
           />

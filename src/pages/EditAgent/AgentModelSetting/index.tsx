@@ -1,12 +1,14 @@
 import LabelIcon from '@/components/LabelIcon';
 import SelectList from '@/components/SelectList';
 import SliderNumber from '@/components/SliderNumber';
+import TooltipIcon from '@/components/TooltipIcon';
 import {
   GENERATE_DIVERSITY_OPTION_VALUE,
   GENERATE_DIVERSITY_OPTIONS,
 } from '@/constants/agent.constants';
 import { apiAgentComponentModelUpdate } from '@/services/agentConfig';
 import { apiModelList } from '@/services/modelConfig';
+import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import { UpdateModeComponentEnum } from '@/types/enums/library';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
 import type { ComponentModelBindConfig } from '@/types/interfaces/agent';
@@ -164,9 +166,28 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           value={targetId}
         />
       </div>
-      <h3 className={cx(styles.title)}>
+      <h3 className={cx(styles.title, 'flex', 'items-center')}>
         生成多样性
-        <InfoCircleOutlined />
+        <TooltipIcon
+          title={
+            <>
+              <h4 className={cx(styles['generate-name'])}>精确模式:</h4>
+              <p>严格遵循指令生成内容</p>
+              <p>适用于需准确无误的场合，如正式文档、代码等</p>
+              <h4 className={cx(styles['generate-name'])}>平衡模式:</h4>
+              <p>在创新和精确之间寻求平衡</p>
+              <p>适用于大多数日常应用场景，生成有趣但不失严谨的内容</p>
+              <h4 className={cx(styles['generate-name'])}>创意模式:</h4>
+              <p>激发创意，提供新颖独特的想法</p>
+              <p>适合需要灵感和独特观点的场景，如头脑风暴、创意写作等</p>
+              <h4 className={cx(styles['generate-name'])}>自定义模式:</h4>
+              <p>通过高级设置，自定义生成方式</p>
+              <p>根据需求，进行精细调整，实现个性化优化</p>
+            </>
+          }
+          icon={<InfoCircleOutlined />}
+          type={TooltipTitleTypeEnum.White}
+        />
       </h3>
       <Segmented<UpdateModeComponentEnum>
         options={GENERATE_DIVERSITY_OPTIONS}

@@ -137,6 +137,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({ variables }) => {
     {
       title: '默认值',
       key: 'default',
+      width: 232,
       render: (_, record) => (
         <Space.Compact block>
           <SelectList
@@ -164,7 +165,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({ variables }) => {
               disabled={!record.enable}
               rootClassName={cx(styles.select)}
               popupMatchSelectWidth={false}
-              value={record.bindValue}
+              value={record.bindValue || null}
               onChange={(value) =>
                 handleInputValue(record.key, 'bindValue', value)
               }
@@ -182,7 +183,9 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({ variables }) => {
             content={
               '当参数设置为关闭时，大模型将无法看到该参数。如果该参数设置了默认值并且不可见，则在调用时，智能体会默认只使用这个设定值'
             }
-            overlayInnerStyle={{ width: '300px' }}
+            styles={{
+              body: { width: '300px' },
+            }}
           >
             <InfoCircleOutlined className="ml-12" />
           </Popover>

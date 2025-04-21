@@ -370,7 +370,7 @@ export default () => {
       return [..._list, chatMessage, currentMessage] as MessageInfo[];
     });
     // 滚动
-    await handleScrollBottom();
+    handleScrollBottom();
     // 会话请求参数
     const params: ConversationChatParams = {
       conversationId: id,

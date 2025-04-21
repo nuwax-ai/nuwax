@@ -8,6 +8,7 @@ import {
   ArgList,
   BindConfigWithSub,
 } from '@/types/interfaces/agent';
+import { CardArgsBindConfigInfo } from '@/types/interfaces/cardInfo';
 import {
   findNode,
   loopFilterArray,
@@ -46,7 +47,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
   );
   // 卡片列表最大长度
   const [cardListLen, setCardListLen] = useState<string>('5');
-  const [cardKey, setCardKey] = useState<string>(null);
+  const [cardKey, setCardKey] = useState<string>('');
   // 卡片整体绑定的数组
   const [bindArray, setBindArray] = useState<BindConfigWithSub[]>([]);
   // 展开、隐藏"为卡片整体绑定一个数组"下拉列表
@@ -57,7 +58,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
   const [urlVisible, setUrlVisible] = useState<boolean>(false);
   const [urlChecked, setUrlChecked] = useState<boolean>(false);
   // 绑定跳转链接地址
-  const [bindLinkUrl, setBindLinkUrl] = useState<string>(null);
+  const [bindLinkUrl, setBindLinkUrl] = useState<string>('');
 
   // 当前组件信息
   const { currentComponentInfo, onSaveSet } = useModel('spaceAgent');
@@ -92,28 +93,30 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
       }
 
       if (cardBindConfig?.cardArgsBindConfigs?.length) {
-        const list = cardBindConfig?.cardArgsBindConfigs?.map((item) => {
-          return {
-            // 字段名
-            key: item.key,
-            // 卡片key值
-            cardKey: item.bindValue,
-          };
-        });
+        const list = cardBindConfig?.cardArgsBindConfigs?.map(
+          (item: CardArgsBindConfigInfo) => {
+            return {
+              // 字段名
+              key: item.key,
+              // 卡片key值
+              cardKey: item.bindValue,
+            };
+          },
+        );
         setArgList(list);
       }
     } else {
       setCardStyle(BindCardStyleEnum.SINGLE);
-      setCardKey(null);
+      setCardKey('');
       setCardListLen('5');
       setUrlChecked(false);
-      setBindLinkUrl(null);
+      setBindLinkUrl('');
       setArgList(cardInfo?.argList || []);
     }
   }, [cardInfo, cardBindConfig]);
 
   // "为卡片内的列表项绑定数据"下拉数据源
-  const dataSource = useMemo(() => {
+  const dataSource: BindConfigWithSub[] = useMemo(() => {
     const _outputArgBindConfigs = cloneDeep(outputArgBindConfigs);
     if (cardStyle === BindCardStyleEnum.SINGLE) {
       return loopSetDisabled(_outputArgBindConfigs);
@@ -130,13 +133,16 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
     const { value } = e.target;
     setCardStyle(value);
     setUrlChecked(false);
-    setBindLinkUrl(null);
+    setBindLinkUrl('');
     setArgList(cardInfo?.argList || []);
   };
 
   // 为卡片整体绑定一个数组
-  const handleSelectBindArray = (_, { node }) => {
-    setCardKey(node.key);
+  const handleSelectBindArray = (
+    _: null,
+    { node }: { node: BindConfigWithSub },
+  ) => {
+    setCardKey(String(node.key));
     setOpenBindArray(false);
   };
 
@@ -159,7 +165,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
   const handleChangeUrl = (checked: boolean) => {
     setUrlChecked(checked);
     if (!checked) {
-      setBindLinkUrl(null);
+      setBindLinkUrl('');
     }
   };
 
@@ -223,7 +229,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
               <Select
                 popupMatchSelectWidth={false}
                 open={openBindArray}
-                value={cardKey}
+                value={cardKey || null}
                 onDropdownVisibleChange={(open) => {
                   setOpenBindArray(open);
                 }}
@@ -261,7 +267,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
                   rootClassName={cx('flex-1')}
                   popupMatchSelectWidth={false}
                   disabled={cardStyle === BindCardStyleEnum.LIST && !cardKey}
-                  open={info?.open}
+                  open={Boolean(info?.open)}
                   value={info?.cardKey}
                   onDropdownVisibleChange={(open) => handleArgList(index, open)}
                   onClick={() => handleArgList(index, true)}
@@ -282,7 +288,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
                       }}
                     />
                   )}
-                  placeholder={info.placeholder}
+                  placeholder={info.placeholder || '请选择'}
                 />
               </div>
             </Form.Item>
@@ -308,7 +314,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
               rootClassName={cx('flex-1')}
               popupMatchSelectWidth={false}
               open={urlVisible}
-              value={bindLinkUrl}
+              value={bindLinkUrl || null}
               onDropdownVisibleChange={(open) => setUrlVisible(open)}
               onClick={() => setUrlVisible(true)}
               dropdownRender={() => (
@@ -319,7 +325,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
                     e.stopPropagation();
                   }}
                   onSelect={(_, { node }) => {
-                    setBindLinkUrl(node.key);
+                    setBindLinkUrl(node.key as string);
                     setUrlVisible(false);
                   }}
                   fieldNames={{
