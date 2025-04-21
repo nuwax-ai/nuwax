@@ -23,21 +23,13 @@ const PluginList: React.FC<PluginListProps> = ({ list, onSet, onDel }) => {
           <>
             <TooltipIcon
               title="设置"
-              icon={
-                <ICON_SETTING
-                  className={'cursor-pointer'}
-                  onClick={() => onSet(item.id)}
-                />
-              }
+              icon={<ICON_SETTING className={'cursor-pointer'} />}
+              onClick={() => onSet(item.id)}
             />
             <TooltipIcon
               title="删除"
-              icon={
-                <DeleteOutlined
-                  className={'cursor-pointer'}
-                  onClick={() => onDel(item.id, item.targetId, item.type)}
-                />
-              }
+              icon={<DeleteOutlined className={'cursor-pointer'} />}
+              onClick={() => onDel(item.id, item.targetId, item.type)}
             />
           </>
         }

@@ -12,7 +12,10 @@ import {
   NoneRecallReplyTypeEnum,
   SearchStrategyEnum,
 } from '@/types/enums/agent';
-import type { KnowledgeBindConfig } from '@/types/interfaces/agent';
+import type {
+  AgentComponentInfo,
+  KnowledgeBindConfig,
+} from '@/types/interfaces/agent';
 import type { KnowledgeSettingProps } from '@/types/interfaces/agentConfig';
 import { Divider, Input, Modal, Radio } from 'antd';
 import classNames from 'classnames';
@@ -68,7 +71,7 @@ const KnowledgeSetting: React.FC<KnowledgeSettingProps> = ({
     };
     setComponentBindConfig(bindConfig);
     if (attr === 'invokeType') {
-      const _newList = agentComponentList.map((item) => {
+      const _newList = agentComponentList.map((item: AgentComponentInfo) => {
         if (item.id === agentComponentInfo?.id) {
           item.bindConfig['invokeType'] = value;
         }

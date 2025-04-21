@@ -1,6 +1,7 @@
 import TooltipIcon from '@/components/TooltipIcon';
 import { apiKnowledgeDocumentUpdateDocName } from '@/services/knowledge';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
+import type { KnowledgeDocumentUpdateDocNameParams } from '@/types/interfaces/knowledge';
 import { customizeRequiredNoStarMark } from '@/utils/form';
 import { FormOutlined } from '@ant-design/icons';
 import { Button, Form, FormProps, Input, message, Popover } from 'antd';
@@ -31,7 +32,7 @@ const DocRename: React.FC<DocRenameProps> = ({
     {
       manual: true,
       debounceInterval: 300,
-      onSuccess: (_, params) => {
+      onSuccess: (_: null, params: KnowledgeDocumentUpdateDocNameParams[]) => {
         message.success('更新成功');
         setHovered(false);
         const { docId, name } = params[0];

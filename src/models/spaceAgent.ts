@@ -6,6 +6,8 @@ import type { InvokeTypeEnum } from '@/types/enums/agent';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type {
   AgentComponentInfo,
+  AgentComponentPluginUpdateParams,
+  AgentComponentWorkflowUpdateParams,
   BindConfigWithSub,
 } from '@/types/interfaces/agent';
 import { useRequest } from 'ahooks';
@@ -46,7 +48,7 @@ export default () => {
   ) => {
     // 更新当前组件信息
     setCurrentComponentInfo((info) => {
-      if ('bindConfig' in info) {
+      if (info && 'bindConfig' in info) {
         info.bindConfig[attr] = value;
       }
       return info;
@@ -76,9 +78,9 @@ export default () => {
       },
     };
     if (currentComponentInfo?.type === AgentComponentTypeEnum.Plugin) {
-      await runPluginUpdate(params);
+      await runPluginUpdate(params as AgentComponentPluginUpdateParams);
     } else {
-      await runWorkflowUpdate(params);
+      await runWorkflowUpdate(params as AgentComponentWorkflowUpdateParams);
     }
     onSetSuccess(id, attr, value);
     message.success('保存成功');
