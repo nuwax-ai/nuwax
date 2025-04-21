@@ -1,7 +1,7 @@
 import { InputAndOutConfig, PreviousList } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
 import { SettingOutlined } from '@ant-design/icons';
-import { Dropdown, Input, Tag, Tree } from 'antd';
+import { Dropdown, Input, Popover, Tag, Tree } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import './index.less';
@@ -57,9 +57,11 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
     return (
       <div>
         <span>{nodeData.name}</span>
-        <Tag className="ml-20" color="#C9CDD4">
-          {nodeData.dataType}
-        </Tag>
+        <Popover content={nodeData.description} trigger="hover">
+          <Tag className="ml-20" color="#C9CDD4">
+            {nodeData.dataType}
+          </Tag>
+        </Popover>
       </div>
     );
   };

@@ -58,7 +58,7 @@ export interface Edge {
  */
 export interface NodeProps {
   // 节点实例，类型为 AntV X6 的 Node 类型，泛型参数可以是任何类型
-  node: Node<any>;
+  node: Node;
   // 图实例，类型为 AntV X6 的 Graph 类型
   graph: Graph;
 }
@@ -77,7 +77,7 @@ export interface GraphContainerProps {
   // 删除节点
   removeNode: (id: string) => void;
   // 改变画布大小
-  changeZoom: (val: number | string) => void;
+  changeZoom: (val: number) => void;
 }
 
 export interface GraphContainerRef {
@@ -136,5 +136,5 @@ export interface GraphProp {
     id: string,
   ) => void;
   changeCondition: (newData: ChildNode, targetNodeId?: string) => void;
-  changeZoom: (val: number | string) => void;
+  changeZoom: (val: number) => void;
 }

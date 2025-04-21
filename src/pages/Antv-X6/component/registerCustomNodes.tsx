@@ -23,10 +23,11 @@ export class GeneralNode extends React.Component<NodeProps> {
    * 通过render返回节点的样式和内容
    */
   render() {
-    const { node } = this.props;
+    const { node, graph } = this.props;
     // 明确告诉 getData 返回的数据类型
     const data = node.getData<ChildNode>();
-    const isSelected = !!data.selected; // 判断是否选中
+    // console.log(node.isSelected())
+    const isSelected = graph.isSelected(node); // 判断是否选中
     // 或者返回一个默认的内容，以防止渲染错误
     if (!data) {
       return null;

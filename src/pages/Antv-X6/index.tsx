@@ -163,7 +163,7 @@ const Workflow: React.FC = () => {
   };
   // 修改当前工作流的基础信息
   const onConfirm = async (value: IUpdateDetails) => {
-    if (!value.name) return;
+    // if (!value.name) return;
     if (showCreateWorkflow) {
       setShowCreateWorkflow(false);
     }
@@ -171,46 +171,22 @@ const Workflow: React.FC = () => {
     if (_res.code === Constant.success) {
       changeUpdateTime();
       // setInfo({ ...(info as IgetDetails), extension: value.extension });
-      if (value.description) {
-        getDetails();
-      }
+      getDetails();
     }
   };
-  // 调整画布的大小(滚轮)
+  // 调整画布的大小（左下角select）
   const changeGraph = (val: number) => {
-    setInfo((prev) => {
-      if (!prev || !prev.extension) return prev;
-      const numVal = typeof val === 'string' ? parseFloat(val) : val;
-
-      if (prev.extension.size !== numVal) {
-        onConfirm({
-          id: workflowId,
-          name: prev.name,
-          extension: { size: numVal },
-        });
-        return { ...prev, extension: { ...prev.extension, size: numVal } };
-      }
-      return prev;
+    onConfirm({
+      id: workflowId,
+      extension: { size: val },
     });
     graphRef.current.changeGraphZoom(val);
   };
-  // 调整画布的大小（左下角select）
-  const changeZoom = (val: number | string) => {
-    setInfo((prev) => {
-      const numVal = typeof val === 'string' ? parseFloat(val) : val;
-      if (!prev) {
-        return prev;
-      }
-      if (!prev.extension || prev.extension.size !== numVal) {
-        onConfirm({
-          id: workflowId,
-          name: prev.name,
-          extension: { size: numVal },
-        });
-        return { ...prev, extension: { ...prev.extension, size: numVal } };
-      }
-
-      return prev;
+  // 调整画布的大小(滚轮)
+  const changeZoom = (val: number) => {
+    onConfirm({
+      id: workflowId,
+      extension: { size: val },
     });
   };
   // 获取当前节点的参数
@@ -343,24 +319,25 @@ const Workflow: React.FC = () => {
   };
   // 点击组件，显示抽屉
   const changeDrawer = async (child: ChildNode | null) => {
-    setTestRun(false);
-    setTestRunResult('');
-
+    if (child && child.type !== 'Start') {
+      setTestRun(false);
+      setTestRunResult('');
+    }
+    if (foldWrapItemRef.current.id !== 0) {
+      setIsModified((modified: boolean) => {
+        if (modified) {
+          onFinish();
+          if (timerRef.current) {
+            clearTimeout(timerRef.current);
+          }
+        }
+        return false;
+      });
+    }
     setFoldWrapItem((prev) => {
       if (prev.id === 0 && child === null) {
         return prev;
       } else {
-        if (prev.id !== 0) {
-          setIsModified((modified: boolean) => {
-            if (modified) {
-              onFinish();
-              if (timerRef.current) {
-                clearTimeout(timerRef.current);
-              }
-            }
-            return false;
-          });
-        }
         if (child !== null) {
           if (!visible) setVisible(true);
           getRefernece(child.id);
@@ -756,19 +733,18 @@ const Workflow: React.FC = () => {
   };
   // 试运行所有节点
   const testRunAll = async () => {
-    setVisible(false);
-    setTimeout(async () => {
-      const _res = await service.getDetails(workflowId);
-      const _nodeList = _res.data.nodes;
-      setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
-      const volid = await volidWorkflow();
-      if (volid) {
-        setFoldWrapItem(_res.data.startNode);
-        setTestRunResult('');
-        setTestRun(true);
-        setVisible(true);
-      }
-    }, 100);
+    // 先将数据提交到后端
+    const _res = await service.getDetails(workflowId);
+    const _nodeList = _res.data.nodes;
+    setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
+
+    changeDrawer(_res.data.startNode);
+    graphRef.current.selectNode(_res.data.startNode.id);
+    const volid = await volidWorkflow();
+    if (volid) {
+      setTestRunResult('');
+      setTestRun(true);
+    }
   };
   // 节点试运行
   const runTest = async (type: string, params?: DefaultObjectType) => {

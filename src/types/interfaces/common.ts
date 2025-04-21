@@ -305,6 +305,11 @@ export interface CreateAgentProps {
 // 创建、编辑知识库
 export interface CreateKnowledgeProps {
   mode?: CreateUpdateModeEnum;
+  type?:
+    | AgentComponentTypeEnum.Database
+    | AgentComponentTypeEnum.Knowledge
+    | AgentComponentTypeEnum.Plugin
+    | AgentComponentTypeEnum.Workflow;
   spaceId: number;
   knowledgeInfo?: KnowledgeInfo;
   open: boolean;

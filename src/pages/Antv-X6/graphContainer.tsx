@@ -156,15 +156,16 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
     // 选中节点
     const selectNode = (id: string) => {
-      if (!graphRef.current) return;
-      graphRef.current
-        .getNodes()
-        .forEach((n: Node) => n.setData({ selected: false }));
-      // 获取到当前id对应的节点
       const node = graphRef.current.getCellById(id);
-      if (!node) return;
+      if (!node || !graphRef.current) return;
+
+      // 清除其他的节点选中
+      graphRef.current.cleanSelection();
       // 设置当前节点为选中状态
-      node.setData({ selected: true });
+      graphRef.current.select(node);
+      // 更新节点的 data 属性，触发重新渲染
+      const data = node.getData();
+      node.setData({ ...data, selected: true });
     };
 
     // 保存所有节点的位置

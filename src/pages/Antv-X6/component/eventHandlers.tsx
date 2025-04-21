@@ -50,7 +50,6 @@ const bindEventHandlers = ({
   graph.bindKey(['delete', 'backspace'], () => {
     const cells = graph.getSelectedCells(); // 获取当前选中的单元格
 
-    console.log(cells, 'cells');
     if (cells.length) {
       const _cell = cells[0];
       // 判定是删除节点还是边

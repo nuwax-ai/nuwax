@@ -3,6 +3,7 @@ import ConditionRender from '@/components/ConditionRender';
 import CreateKnowledge from '@/components/CreateKnowledge';
 import CreateNewPlugin from '@/components/CreateNewPlugin';
 import CreateWorkflow from '@/components/CreateWorkflow';
+import CreatedItem from '@/components/CreatedItem';
 import CustomPopover from '@/components/CustomPopover';
 import SelectList from '@/components/SelectList';
 import { USER_INFO } from '@/constants/home.constants';
@@ -20,6 +21,7 @@ import {
 } from '@/services/library';
 import { apiModelDelete } from '@/services/modelConfig';
 import { apiPluginCopy, apiPluginDelete } from '@/services/plugin';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ComponentMoreActionEnum } from '@/types/enums/library';
 import { PluginTypeEnum } from '@/types/enums/plugin';
@@ -60,6 +62,8 @@ const SpaceLibrary: React.FC = () => {
   const [openWorkflow, setOpenWorkflow] = useState<boolean>(false);
   // 新建插件弹窗
   const [openPlugin, setOpenPlugin] = useState<boolean>(false);
+  // 新建数据库弹窗
+  const [openDatabase, setOpenDatabase] = useState<boolean>(false);
   // 打开分析弹窗
   // const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
   // 打开创建知识库弹窗
@@ -273,7 +277,8 @@ const SpaceLibrary: React.FC = () => {
         setOpenKnowledge(true);
         break;
       case ComponentTypeEnum.Database:
-        message.warning('数据库此版本暂时未做');
+        setOpenDatabase(true);
+        // message.warning('数据库此版本暂时未做');
         break;
       case ComponentTypeEnum.Model:
         setModelComponentInfo(null);
@@ -489,6 +494,12 @@ const SpaceLibrary: React.FC = () => {
         spaceId={spaceId}
         open={openKnowledge}
         onCancel={() => setOpenKnowledge(false)}
+      />
+      <CreatedItem
+        spaceId={spaceId}
+        open={openDatabase}
+        type={AgentComponentTypeEnum.Database}
+        onCancel={() => setOpenDatabase(false)}
       />
       {/*创建工作流*/}
       <CreateWorkflow

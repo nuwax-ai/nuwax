@@ -45,7 +45,7 @@ export const ExpandableInputTextarea: React.FC<
         <ExpandTextArea
           title={title}
           inputFieldName={inputFieldName}
-          marginRight={374}
+          marginRight={388}
           placeholder={placeholder}
           visible={isExpanded}
           onClose={() => setIsExpanded(false)}

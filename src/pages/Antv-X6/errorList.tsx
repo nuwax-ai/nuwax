@@ -31,7 +31,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
   return (
     <div
       style={{
-        right: visible ? '374px' : '10px',
+        right: visible ? '388px' : '10px',
         display: show ? 'block' : 'none',
       }}
       className="error-list-style dis-col"

@@ -400,7 +400,7 @@ const initGraph = ({
       changeCondition(_data, 'moved');
       return;
     }
-    console.log(x, y);
+
     // node.prop('zIndex', 99);
     changeCondition(data, 'moved');
     changeZindex(node);
@@ -441,7 +441,7 @@ const initGraph = ({
     graph.cleanSelection();
     // 设置当前节点为选中状态
     changeZindex(node);
-    node.setData({ selected: true });
+    // node.setData({ selected: true });
     graph.select(node); // 使用 AntV X6 的选中 API
     // 获取被点击节点的数据
     const latestData = {
