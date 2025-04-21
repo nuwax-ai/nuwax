@@ -39,6 +39,7 @@ export const ExpandableInputTextarea: React.FC<
           style={{ marginBottom: '10px' }}
         />
       </Form.Item>
+
       {/* 如果有展开，就要调用展开的组件 */}
       {isExpanded && ( // 使用本地状态控制显示
         <ExpandTextArea

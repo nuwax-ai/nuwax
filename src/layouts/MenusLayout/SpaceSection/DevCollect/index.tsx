@@ -1,3 +1,4 @@
+import type { AgentConfigInfo, AgentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
 import React from 'react';
 import { history, useModel } from 'umi';
@@ -19,14 +20,16 @@ const DevCollect: React.FC = () => {
   // 取消收藏
   const handleCancelCollect = async (agentId: number) => {
     await runCancelCollect(agentId);
-    const index = agentList?.findIndex((item) => item.id === agentId);
+    const index = agentList?.findIndex(
+      (item: AgentConfigInfo) => item.id === agentId,
+    );
     if (index > -1) {
       handlerCollect(index, false);
     }
   };
 
   return devCollectAgentList?.length > 0 ? (
-    devCollectAgentList?.map((item) => (
+    devCollectAgentList?.map((item: AgentInfo) => (
       <UserRelAgent
         key={item.id}
         onClick={() => handleDevCollect(item.agentId, item.spaceId)}

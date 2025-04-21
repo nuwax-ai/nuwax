@@ -192,18 +192,6 @@ export interface ModelSelectProp {
   groupModelList: GroupModelListItemProps;
 }
 
-// 定义树节点的数据类型
-export interface TreeNodeData {
-  name: string;
-  dataType: string; // 可选的标签属性
-  children?: TreeNodeData[]; // 子节点数组，可选
-}
-
-// 定义树结构的输出
-export interface TreeOutputProps {
-  treeData: TreeNodeData[];
-}
-
 // 定义可以展开的inputTextarea
 export interface ExpandableInputTextareaProps {
   title: string;

@@ -1,12 +1,12 @@
-import { apiAgentConversationList } from '@/services/agentConfig';
+import CustomPopover from '@/components/CustomPopover';
+import { apiAgentConversationDelete } from '@/services/agentConfig';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import { history } from '@@/core/history';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Empty, Modal } from 'antd';
+import { Empty, message, Modal } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment';
-import React, { useEffect, useState } from 'react';
-import { useModel, useRequest } from 'umi';
+import React, { useEffect } from 'react';
+import { history, useModel, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -16,30 +16,34 @@ const cx = classNames.bind(styles);
  */
 const HistoryConversation: React.FC = () => {
   const { openHistoryModal, setOpenHistoryModal } = useModel('layout');
-  // 历史会话列表
-  const [conversationList, setConversationList] = useState<ConversationInfo[]>(
-    [],
-  );
+  const {
+    loadingHistory,
+    setLoadingHistory,
+    runHistory,
+    conversationList,
+    setConversationList,
+  } = useModel('conversationHistory');
 
-  // 查询历史会话记录
-  const { run: runHistory, loading } = useRequest(apiAgentConversationList, {
+  // 删除会话
+  const { run: runDel } = useRequest(apiAgentConversationDelete, {
     manual: true,
     debounceInterval: 500,
-    onSuccess: (result: ConversationInfo[]) => {
-      setConversationList(result);
+    onSuccess: (_: null, params: number[]) => {
+      const conversationId = params[0];
+      setConversationList((list: ConversationInfo[]) =>
+        list.filter((item) => item.id !== conversationId),
+      );
+      message.success('删除成功');
     },
   });
 
   useEffect(() => {
     if (openHistoryModal) {
+      setLoadingHistory(true);
       runHistory({
         agentId: null,
       });
     }
-
-    return () => {
-      setConversationList([]);
-    };
   }, [openHistoryModal]);
 
   const handleLink = (id: number) => {
@@ -58,32 +62,37 @@ const HistoryConversation: React.FC = () => {
       onCancel={() => setOpenHistoryModal(false)}
     >
       <div className={cx(styles.container, 'overflow-y')}>
-        {loading ? (
+        {loadingHistory ? (
           <div
             className={cx('flex', 'items-center', 'content-center', 'h-full')}
           >
             <LoadingOutlined />
           </div>
         ) : conversationList?.length > 0 ? (
-          <ul>
-            {conversationList?.map((item) => (
-              <li
+          <>
+            {conversationList?.map((item: ConversationInfo) => (
+              <CustomPopover
                 key={item.id}
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'radius-6',
-                  'cursor-pointer',
-                  'hover-box',
-                  styles.row,
-                )}
-                onClick={() => handleLink(item.id)}
+                list={[{ label: '删除' }]}
+                onClick={() => runDel(item.id)}
               >
-                <p className={cx('flex-1')}>{item.topic}</p>
-                <span>{moment(item.created).format('MM-DD HH:mm')}</span>
-              </li>
+                <div
+                  className={cx(
+                    'flex',
+                    'items-center',
+                    'radius-6',
+                    'cursor-pointer',
+                    'hover-box',
+                    styles.row,
+                  )}
+                  onClick={() => handleLink(item.id)}
+                >
+                  <p className={cx('flex-1')}>{item.topic}</p>
+                  <span>{moment(item.created).format('MM-DD HH:mm')}</span>
+                </div>
+              </CustomPopover>
             ))}
-          </ul>
+          </>
         ) : (
           <div
             className={cx('flex', 'items-center', 'content-center', 'h-full')}

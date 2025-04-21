@@ -7,7 +7,7 @@ import type { ComponentTypeEnum } from '@/types/enums/space';
 import type { BindConfigWithSub, CreatorInfo } from '@/types/interfaces/agent';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ModelSaveParams } from '@/types/interfaces/model';
-import type { PluginInfo } from '@/types/interfaces/plugin';
+import type { PluginHttpUpdateParams } from '@/types/interfaces/plugin';
 import React from 'react';
 
 // 组件库单个组件项
@@ -55,7 +55,7 @@ export interface CreateNewPluginProps {
   mode?: CreateUpdateModeEnum;
   open: boolean;
   onCancel: () => void;
-  onConfirm?: (info: PluginInfo) => void;
+  onConfirm?: (info: PluginHttpUpdateParams) => void;
 }
 
 // table头部header带*号标题

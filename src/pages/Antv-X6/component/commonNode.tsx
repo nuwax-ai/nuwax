@@ -3,14 +3,13 @@ import { FieldConfig } from '@/components/FormListItem/type';
 import { DataTypeMap } from '@/constants/common.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { DefaultObjectType } from '@/types/interfaces/common';
-
+import type { InputAndOutConfig } from '@/types/interfaces/node';
 import {
   FormListProps,
   InputListProps,
   KeyValuePairs,
   MultiSelectWithCheckboxProps,
   NodeRenderProps,
-  TreeNodeData,
   TreeOutputProps,
 } from '@/types/interfaces/workflow';
 import {
@@ -254,23 +253,23 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
 
   useEffect(() => {
     // 当 treeData 更新时，重新计算 expandedKeys
-    const getAllParentKeys = (data: TreeNodeData[]): React.Key[] => {
+    const getAllParentKeys = (data: InputAndOutConfig[]): React.Key[] => {
       const keys: React.Key[] = [];
       data.forEach((node) => {
         if (node.subArgs && node.subArgs.length > 0) {
-          keys.push(node.name);
+          keys.push(node.key);
           keys.push(...getAllParentKeys(node.subArgs));
         }
       });
       return keys;
     };
-
     setExpandedKeys(getAllParentKeys(treeData));
   }, [treeData]);
 
   // 将树结构数据转换为 treeData 格式
-  const convertToTreeData = (data: TreeNodeData[]): any[] => {
+  const convertToTreeData = (data: InputAndOutConfig[]): any[] => {
     return data.map((item) => ({
+      ...item,
       title: (
         <span>
           {item.name}{' '}
@@ -279,7 +278,6 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
           </Tag>
         </span>
       ),
-      key: item.name,
       children: item.subArgs ? convertToTreeData(item.subArgs) : undefined,
     }));
   };
@@ -291,6 +289,7 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
       onExpand={(keys) => setExpandedKeys(keys)} // 更新 expandedKeys
       switcherIcon={<DownOutlined />}
       treeData={convertToTreeData(treeData)} // 使用 treeData 替代 children
+      defaultExpandAll={true} // 初始时展开所有节点
     />
   );
 };
@@ -350,7 +349,34 @@ export const FormList: React.FC<FormListProps> = ({
   inputItemName = 'inputArgs',
   showIndex,
 }) => {
-  const arr = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const arr = [
+    'A',
+    'B',
+    'C',
+    'D',
+    'E',
+    'F',
+    'G',
+    'H',
+    'I',
+    'J',
+    'K',
+    'L',
+    'M',
+    'N',
+    'O',
+    'P',
+    'Q',
+    'R',
+    'S',
+    'T',
+    'U',
+    'V',
+    'W',
+    'X',
+    'Y',
+    'Z',
+  ];
 
   return (
     <Form.List name={inputItemName}>
@@ -396,14 +422,19 @@ export const FormList: React.FC<FormListProps> = ({
 
             return (
               <Form.Item key={index}>
-                <div className="dis-sb">
+                <div className="dis-left">
                   {showIndex && (
                     <Form.Item noStyle name={[item.name, 'index']}>
                       <span className="mr-16">{arr[index]}</span>
                     </Form.Item>
                   )}
-                  <Form.Item name={[item.name, field]} noStyle>
-                    <Input disabled={fieldData} />
+                  <Form.Item name={[item.name, field]} className="flex-1">
+                    <Input
+                      disabled={fieldData}
+                      onBlur={() => {
+                        form.submit();
+                      }}
+                    />
                   </Form.Item>
                   {/* <Form.Item name={[item.name, 'nextNodeIds']} noStyle>
                     <Input type="hidden"></Input>
@@ -414,7 +445,6 @@ export const FormList: React.FC<FormListProps> = ({
                         className={'ml-10'}
                         onClick={() => {
                           remove(item.name);
-
                           form.submit();
                         }}
                       />

@@ -22,7 +22,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
   (
     {
       graphParams,
-      handleNodeChange,
       changeDrawer,
       changeEdge,
       changeCondition,
@@ -66,7 +65,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         height: height,
         data: {
           ...child,
-          onChange: handleNodeChange,
         },
         resizable: true,
         zIndex: 99,
@@ -138,6 +136,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             node.prop('ports', generatePorts(newData));
           }
         }
+        console.log('newData', newData);
         node.updateData(newData);
       }
     };
@@ -212,7 +211,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             height: height,
             data: {
               ...node,
-              onChange: handleNodeChange,
             },
           };
         });

@@ -261,7 +261,7 @@ export async function apiAgentConversationList(
 // 删除会话
 export async function apiAgentConversationDelete(
   conversationId: number,
-): Promise<RequestResponse<ConversationInfo>> {
+): Promise<RequestResponse<null>> {
   return request(`/api/agent/conversation/delete/${conversationId}`, {
     method: 'POST',
   });

@@ -29,7 +29,7 @@ export default () => {
   const { run: runCancelCollect } = useRequest(apiDevUnCollectAgent, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_, params) => {
+    onSuccess: (_: null, params: number[]) => {
       message.success('取消收藏成功');
       const agentId = params[0];
       const list =

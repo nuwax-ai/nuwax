@@ -5,7 +5,10 @@ import {
 import { apiPluginConfigHistoryList } from '@/services/plugin';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
-import type { PluginInfo } from '@/types/interfaces/plugin';
+import type {
+  PluginHttpUpdateParams,
+  PluginInfo,
+} from '@/types/interfaces/plugin';
 import type { HistoryData } from '@/types/interfaces/space';
 import {
   addChildNode,
@@ -113,7 +116,7 @@ const usePluginConfig = () => {
   };
 
   // 入参配置 - 新增参数
-  const handleInputAddChild = (key: string) => {
+  const handleInputAddChild = (key: React.Key) => {
     const newNode = {
       key: uuidv4(),
       ...PLUGIN_INPUT_CONFIG,
@@ -130,7 +133,7 @@ const usePluginConfig = () => {
   };
 
   // 出参配置 - 新增参数
-  const handleOutputAddChild = (key: string) => {
+  const handleOutputAddChild = (key: React.Key) => {
     const newNode = {
       key: uuidv4(),
       ...PLUGIN_OUTPUT_CONFIG,
@@ -148,21 +151,21 @@ const usePluginConfig = () => {
   };
 
   // 出参配置删除操作
-  const handleInputDel = (key: string) => {
+  const handleInputDel = (key: React.Key) => {
     const _inputConfigArgs = deleteNode(inputConfigArgs, key);
     setInputConfigArgs(_inputConfigArgs);
   };
 
   // 出参配置删除操作
-  const handleOutputDel = (key: string) => {
+  const handleOutputDel = (key: React.Key) => {
     const _outputConfigArgs = deleteNode(outputConfigArgs, key);
     setOutputConfigArgs(_outputConfigArgs);
   };
 
   // 修改插件，更新信息
-  const handleConfirmUpdate = (info: PluginInfo) => {
+  const handleConfirmUpdate = (info: PluginHttpUpdateParams) => {
     const { icon, name, description } = info;
-    const _pluginInfo = cloneDeep(pluginInfo);
+    const _pluginInfo = cloneDeep(pluginInfo) as PluginInfo;
     _pluginInfo.icon = icon;
     _pluginInfo.name = name;
     _pluginInfo.description = description;

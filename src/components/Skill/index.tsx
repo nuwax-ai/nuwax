@@ -46,6 +46,7 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
     onConfirm(parameter);
     onCancel();
   };
+  console.log(params);
 
   useEffect(() => {
     setParameter(params);
@@ -119,14 +120,14 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
                   </Popover>
                 </p>
               </div>
-              {parameter.inputArgBindConfigs?.map((item) => (
+              {parameter.outputArgBindConfigs?.map((item) => (
                 <div className="dis-sb content-item-style" key={item.name}>
                   <div className="flex-1">
                     <p className="flex">
                       <span className="mr-16">{item.name}</span>
                       <Tag color="#C9CDD4">{item.dataType}</Tag>
                     </p>
-                    <p>{item.description}</p>
+                    {/* <p>{item.description}</p> */}
                   </div>
                   <Input
                     className="content-center-item-style"
@@ -224,11 +225,10 @@ export const SkillList: React.FC<SkillProps> = ({
   return (
     <>
       {params?.map((item) => {
-        console.log(item.icon === '', 'item');
         return (
           <div
             className="skill-item-style dis-left"
-            key={item.typeId}
+            key={item.typeId || item.knowledgeBaseId}
             onMouseEnter={() => {
               setHoveredItem(item);
               setShowMask(true);

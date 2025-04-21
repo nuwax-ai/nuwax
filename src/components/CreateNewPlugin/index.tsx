@@ -11,7 +11,10 @@ import { apiPluginAdd, apiPluginHttpUpdate } from '@/services/plugin';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { PluginTypeEnum } from '@/types/enums/plugin';
 import type { CreateNewPluginProps } from '@/types/interfaces/library';
-import type { PluginAddParams, PluginInfo } from '@/types/interfaces/plugin';
+import type {
+  PluginAddParams,
+  PluginHttpUpdateParams,
+} from '@/types/interfaces/plugin';
 import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps, RadioChangeEvent } from 'antd';
 import { Button, Form, Input, message, Modal, Radio } from 'antd';
@@ -59,17 +62,13 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   const { run: runCreate } = useRequest(apiPluginAdd, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result, params) => {
+    onSuccess: (result: number, params: PluginAddParams[]) => {
       setImageUrl('');
       // 关闭弹窗
       onCancel();
       // 跳转到插件配置页面
-      const info: PluginInfo = {
-        id: result,
-        ...params[0],
-      };
-      const { id, type } = info;
-      handlePluginUrl(id, type);
+      const { type } = params[0];
+      handlePluginUrl(result, type);
       message.success('插件已创建');
     },
   });
@@ -78,9 +77,10 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   const { run: runUpdate } = useRequest(apiPluginHttpUpdate, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_, params) => {
+    onSuccess: (_: null, params: PluginHttpUpdateParams[]) => {
       setImageUrl('');
-      onConfirm?.(...params);
+      const info = params[0];
+      onConfirm?.(info);
       message.success('插件更新成功');
     },
   });

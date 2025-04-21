@@ -77,7 +77,7 @@ export interface PluginHttpUpdateParams {
   // 插件图标
   icon: string;
   // 插件配置
-  config: PluginRequestConfig & {
+  config?: PluginRequestConfig & {
     // 节点入参
     inputArgs: BindConfigWithSub[];
     // 节点出参
@@ -143,7 +143,7 @@ export interface PluginInfo {
   codeLang: CodeLangEnum;
   // 插件发布状态,可用值:Developing,Applying,Published,Rejected
   publishStatus: PublishStatusEnum;
-  config: unknown;
+  config: any;
   modified: string;
   created: string;
   // 创建者信息

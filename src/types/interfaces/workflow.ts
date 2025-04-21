@@ -4,7 +4,6 @@ import {
 } from '@/types/interfaces/node';
 // 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
 import type { FieldConfig } from '@/components/FormListItem/type';
-import { DataTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum } from '@/types/enums/node';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import type {
@@ -247,16 +246,9 @@ export interface ModelSelectProp {
   groupModelList: GroupModelListItemProps;
 }
 
-// 定义树节点的数据类型
-export interface TreeNodeData {
-  name: string;
-  dataType: DataTypeEnum | null; // 可选的标签属性
-  subArgs?: TreeNodeData[]; // 子节点数组，可选
-}
-
 // 定义树结构的输出
 export interface TreeOutputProps {
-  treeData: TreeNodeData[];
+  treeData: InputAndOutConfig[];
 }
 
 // 定义可以展开的inputTextarea
