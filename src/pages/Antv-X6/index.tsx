@@ -260,6 +260,7 @@ const Workflow: React.FC = () => {
         };
       }
     }
+    if (params.id === 0) return;
     graphRef.current.updateNode(params.id, params);
     // setIsUpdate(true)
     const _res = await updateNode(params);
@@ -361,9 +362,10 @@ const Workflow: React.FC = () => {
           getRefernece(child.id);
           return child;
         }
-        setVisible((prev) => {
-          console.log(prev);
-          onFinish();
+        setVisible((visible) => {
+          if (visible) {
+            onFinish();
+          }
           return false;
         });
         return {
@@ -456,6 +458,9 @@ const Workflow: React.FC = () => {
     if (_res.code === Constant.success) {
       // console.log(graphRef.current)
       graphRef.current.deleteNode(id.toString());
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
       changeUpdateTime();
       // 如果传递了node,证明时循环节点下的子节点
       if (node) {
@@ -834,6 +839,7 @@ const Workflow: React.FC = () => {
   }) => {
     const newValue = { ...foldWrapItem, name, description };
     changeNode(newValue);
+    setShowNameInput(false);
   };
   // 保存当前画布中节点的位置
   useEffect(() => {
