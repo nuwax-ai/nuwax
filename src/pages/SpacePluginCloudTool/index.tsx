@@ -11,7 +11,7 @@ import usePluginConfig from '@/hooks/usePluginConfig';
 import { dataTypes } from '@/pages/Antv-X6/params';
 import { apiPluginCodeUpdate, apiPluginInfo } from '@/services/plugin';
 import { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
-import { PluginCodeModeEnum, PluginTypeEnum } from '@/types/enums/plugin';
+import { PluginCodeModeEnum } from '@/types/enums/plugin';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PluginInfo } from '@/types/interfaces/plugin';
 import { CascaderChange, CascaderValue } from '@/utils';
@@ -32,7 +32,7 @@ import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
-import PluginHeader from './PluginCodeHeader';
+import PluginCodeHeader from './PluginCodeHeader';
 
 const cx = classNames.bind(styles);
 
@@ -124,7 +124,7 @@ const SpacePluginCloudTool: React.FC = () => {
   const displayRender = (labels: string[]) => labels[labels.length - 1];
 
   // 入参配置columns
-  const inputColumns: TableColumnsType<BindConfigWithSub>['columns'] = [
+  const inputColumns: TableColumnsType<BindConfigWithSub> = [
     {
       title: <LabelStar label="参数名称" />,
       dataIndex: 'name',
@@ -196,10 +196,9 @@ const SpacePluginCloudTool: React.FC = () => {
         <Input
           placeholder="请输入默认值"
           disabled={
-            [DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(
-              record.dataType,
-            ) ||
-            record.dataType.includes('Array') ||
+            DataTypeEnum.Object === record.dataType ||
+            DataTypeEnum.Array_Object === record.dataType ||
+            record.dataType?.includes('Array') ||
             !record.enable
           }
           value={value}
@@ -239,9 +238,8 @@ const SpacePluginCloudTool: React.FC = () => {
       align: 'right',
       render: (_, record) => (
         <Space size="middle">
-          {[DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(
-            record.dataType,
-          ) && (
+          {(DataTypeEnum.Object === record.dataType ||
+            DataTypeEnum.Array_Object === record.dataType) && (
             <ICON_ADD_TR
               className={cx('cursor-pointer')}
               onClick={() => handleInputAddChild(record.key)}
@@ -254,7 +252,7 @@ const SpacePluginCloudTool: React.FC = () => {
   ];
 
   // 出参配置columns
-  const outputColumns: TableColumnsType<BindConfigWithSub>['columns'] = [
+  const outputColumns: TableColumnsType<BindConfigWithSub> = [
     {
       title: <LabelStar label="参数名称" />,
       dataIndex: 'name',
@@ -327,9 +325,8 @@ const SpacePluginCloudTool: React.FC = () => {
       align: 'right',
       render: (_, record) => (
         <Space size="middle">
-          {[DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(
-            record.dataType,
-          ) && (
+          {(DataTypeEnum.Object === record.dataType ||
+            DataTypeEnum.Array_Object === record.dataType) && (
             <ICON_ADD_TR
               className={cx('cursor-pointer')}
               onClick={() => handleOutputAddChild(record.key)}
@@ -354,9 +351,9 @@ const SpacePluginCloudTool: React.FC = () => {
   };
 
   // 单独点击保存按钮，提示保存成功
-  const handleSaveConfig = async () => {
+  const handleSaveConfig = () => {
     isClickSaveBtnRef.current = true;
-    await handleSave();
+    handleSave();
   };
 
   // 试运行
@@ -376,14 +373,19 @@ const SpacePluginCloudTool: React.FC = () => {
     setAutoAnalysisOpen(true);
   };
 
+  const handleChangeSegmented = (value: string | number) => {
+    const _value = value as PluginCodeModeEnum;
+    setCodeMode(_value);
+  };
+
   return (
     <div className={cx('flex', 'h-full')}>
       <div className={cx(styles.container, 'flex', 'flex-col', 'flex-1')}>
-        <PluginHeader
+        <PluginCodeHeader
           codeMode={codeMode}
           pluginInfo={pluginInfo as PluginInfo}
           onEdit={() => setOpenPlugin(true)}
-          onChange={setCodeMode}
+          onChange={handleChangeSegmented}
           onToggleHistory={() => setVisible(!visible)}
           onSave={handleSaveConfig}
           onTryRun={handleTryRun}
@@ -450,7 +452,6 @@ const SpacePluginCloudTool: React.FC = () => {
       </div>
       {/*试运行弹窗*/}
       <PluginTryRunModel
-        type={PluginTypeEnum.CODE}
         inputConfigArgs={inputConfigArgs}
         inputExpandedRowKeys={expandedRowKeys}
         pluginId={pluginId}

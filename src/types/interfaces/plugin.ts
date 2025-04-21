@@ -165,6 +165,7 @@ export interface PluginCodeHeaderProps {
   codeMode: PluginCodeModeEnum;
   pluginInfo: PluginInfo;
   onEdit: () => void;
+  onChange: (value: string | number) => void;
   onToggleHistory: () => void;
   onSave: () => void;
   onTryRun: () => void;

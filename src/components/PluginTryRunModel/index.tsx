@@ -12,7 +12,15 @@ import {
   DeleteOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
-import { Button, Input, message, Modal, Space, Table } from 'antd';
+import {
+  Button,
+  Input,
+  message,
+  Modal,
+  Space,
+  Table,
+  TableColumnsType,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -58,7 +66,7 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
   }, [inputConfigArgs, inputExpandedRowKeys]);
 
   // 入参配置columns
-  const inputColumns = [
+  const inputColumns: TableColumnsType<BindConfigWithSub> = [
     {
       title: '参数名称',
       dataIndex: 'name',
@@ -98,7 +106,7 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
       key: 'action',
       width: 60,
       align: 'center',
-      render: (_, record: BindConfigWithSub, index: number) => (
+      render: (_: null, record: BindConfigWithSub, index: number) => (
         <Space size="middle">
           {record.dataType?.includes('Array') ? (
             <ICON_ADD_TR

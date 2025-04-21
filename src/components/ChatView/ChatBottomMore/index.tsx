@@ -74,7 +74,11 @@ const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({
           <TooltipIcon
             className={styles.icon}
             icon={
-              <img src={debugImage as string} alt="" onClick={handleDebug} />
+              <img
+                src={debugImage as string}
+                alt=""
+                onClick={() => handleDebug(messageInfo)}
+              />
             }
             title="调试"
             type={TooltipTitleTypeEnum.White}

@@ -94,10 +94,10 @@ const EditAgent: React.FC = () => {
 
   // 更新智能体绑定模型
   const handleSelectMode = (id: number, name: string) => {
-    const _agentConfigInfo = cloneDeep(agentConfigInfo);
+    const _agentConfigInfo = cloneDeep(agentConfigInfo) as AgentConfigInfo;
     // 智能体组件模型信息可能为null
     if (!_agentConfigInfo?.modelComponentConfig) {
-      _agentConfigInfo.modelComponentConfig = {};
+      _agentConfigInfo.modelComponentConfig = {} as AgentComponentInfo;
     }
     _agentConfigInfo.modelComponentConfig.targetId = id;
     _agentConfigInfo.modelComponentConfig.name = name;
