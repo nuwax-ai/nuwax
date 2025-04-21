@@ -34,7 +34,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
         right: visible ? '374px' : '10px',
         display: show ? 'block' : 'none',
       }}
-      className="error-list-style"
+      className="error-list-style dis-col"
     >
       {/* 头部信息 */}
       <div className="dis-sb error-list-header">
