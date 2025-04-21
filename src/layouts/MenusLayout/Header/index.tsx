@@ -3,6 +3,7 @@ import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import { ICON_NEW_AGENT } from '@/constants/images.constants';
 import useConversation from '@/hooks/useConversation';
 import type { TenantConfigInfo } from '@/types/interfaces/login';
+import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';
@@ -18,7 +19,9 @@ const Header: React.FC = () => {
   useEffect(() => {
     // 配置信息
     const info = localStorage.getItem(TENANT_CONFIG_INFO);
-    setConfigInfo(JSON.parse(info));
+    if (!!info) {
+      setConfigInfo(JSON.parse(info));
+    }
   }, []);
 
   const handlerClick = async () => {
@@ -43,7 +46,16 @@ const Header: React.FC = () => {
         )}
         onClick={handlerClick}
       >
-        <ICON_NEW_AGENT />
+        <Tooltip
+          placement="right"
+          color={'#fff'}
+          styles={{
+            body: { color: '#000' },
+          }}
+          title={'新建会话'}
+        >
+          <ICON_NEW_AGENT />
+        </Tooltip>
       </span>
       <div className={cx(styles['divider-horizontal'])} />
     </>

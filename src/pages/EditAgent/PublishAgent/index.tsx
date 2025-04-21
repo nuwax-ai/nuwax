@@ -23,8 +23,8 @@ const PublishAgent: React.FC<PublishAgentProps> = ({
   const { run, loading } = useRequest(apiAgentPublishApply, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
-      message.success('发布成功');
+    onSuccess: (data: string) => {
+      message.success(data || '发布申请已提交，等待审核中');
       onCancel();
     },
   });
