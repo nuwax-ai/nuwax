@@ -4,7 +4,11 @@ import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { apiAddWorkflow, apiUpdateWorkflow } from '@/services/library';
 import { WorkflowModeEnum } from '@/types/enums/library';
-import type { CreateWorkflowProps } from '@/types/interfaces/library';
+import type {
+  CreateWorkflowProps,
+  UpdateWorkflowParams,
+  WorkflowBaseInfo,
+} from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps } from 'antd';
 import { Form, Input, message } from 'antd';
@@ -47,9 +51,10 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   const { run: runUpdate } = useRequest(apiUpdateWorkflow, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_, params) => {
+    onSuccess: (_: null, params: UpdateWorkflowParams[]) => {
       message.success('工作流更新成功');
-      onConfirm?.(...params);
+      const info = params[0];
+      onConfirm?.(info as WorkflowBaseInfo);
     },
   });
 
