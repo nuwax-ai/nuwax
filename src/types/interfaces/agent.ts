@@ -21,6 +21,7 @@ import type {
 } from '@/types/enums/space';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import React from 'react';
+import { CardArgsBindConfigInfo } from './cardInfo';
 
 // 知识库设置label
 export interface LabelIconProps {
@@ -134,12 +135,7 @@ export interface AgentComponentWorkflowUpdateParams
     // 卡片ID
     cardId: string;
     // 卡片参数绑定信息
-    cardArgsBindConfigs: {
-      // 卡片参数名称key
-      key: string;
-      // 卡片参数引用信息，例如插件的出参 data.xxx
-      bindValue: string;
-    }[];
+    cardArgsBindConfigs: CardArgsBindConfigInfo[];
   };
 }
 

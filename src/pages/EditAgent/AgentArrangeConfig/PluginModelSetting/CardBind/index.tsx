@@ -1,3 +1,4 @@
+import Loading from '@/components/Loading';
 import { apiAgentCardList } from '@/services/agentConfig';
 import type { AgentCardInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
@@ -15,6 +16,7 @@ const cx = classNames.bind(styles);
 const CardBind: React.FC = () => {
   // 当前卡片信息
   const [cardInfo, setCardInfo] = useState<AgentCardInfo>();
+  const [loading, setLoading] = useState<boolean>(false);
   // 卡片列表
   const [agentCardList, setAgentCardList] = useState<AgentCardInfo[]>([]);
   // 当前组件信息
@@ -38,27 +40,38 @@ const CardBind: React.FC = () => {
 
         setCardInfo(info);
       }
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
   useEffect(() => {
+    setLoading(true);
     runCard();
   }, []);
 
   return (
     <div className={cx('flex', 'h-full', styles.container)}>
-      <div className={cx('flex-1', 'px-16', 'py-16')}>
-        <h3 className={cx(styles.title)}>选择卡片样式</h3>
-        <CardModeSetting
-          cardKey={cardInfo?.cardKey}
-          list={agentCardList}
-          onChoose={setCardInfo}
-        />
-      </div>
-      <div className={cx('flex-1', 'flex', 'flex-col', 'px-16', 'py-16')}>
-        <h3 className={cx(styles.title)}>为卡片绑定数据源</h3>
-        <BindDataSource cardInfo={cardInfo} />
-      </div>
+      {loading ? (
+        <Loading className={cx('h-full')} />
+      ) : (
+        <>
+          <div className={cx('flex-1', 'px-16', 'py-16')}>
+            <h3 className={cx(styles.title)}>选择卡片样式</h3>
+            <CardModeSetting
+              cardKey={cardInfo?.cardKey}
+              list={agentCardList}
+              onChoose={setCardInfo}
+            />
+          </div>
+          <div className={cx('flex-1', 'flex', 'flex-col', 'px-16', 'py-16')}>
+            <h3 className={cx(styles.title)}>为卡片绑定数据源</h3>
+            <BindDataSource cardInfo={cardInfo} />
+          </div>
+        </>
+      )}
     </div>
   );
 };

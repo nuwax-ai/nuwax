@@ -1,6 +1,14 @@
 import type { CardStyleEnum } from '@/types/enums/common';
 import type { BindCardStyleEnum } from '@/types/enums/plugin';
 
+// 卡片参数绑定配置信息详情
+export interface CardArgsBindConfigInfo {
+  // 卡片参数名称key
+  key: string;
+  // 卡片参数引用信息，例如插件的出参 data.xxx
+  bindValue: string;
+}
+
 // 卡片绑定配置信息
 export interface CardBindConfig {
   cardId: number;
@@ -8,10 +16,7 @@ export interface CardBindConfig {
   bindCardStyle: BindCardStyleEnum;
   maxCardCount: number;
   bindArray: string;
-  cardArgsBindConfigs: {
-    key: string;
-    bindValue: string;
-  }[];
+  cardArgsBindConfigs: CardArgsBindConfigInfo[];
   bindLinkUrl: string;
 }
 
