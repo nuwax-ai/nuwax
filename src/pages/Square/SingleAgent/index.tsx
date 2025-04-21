@@ -17,7 +17,7 @@ import {
 } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
-import { useRequest } from 'umi';
+import { history, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -28,6 +28,7 @@ const cx = classNames.bind(styles);
 const SingleAgent: React.FC<SingleAgentProps> = ({
   publishedAgentInfo,
   onToggleCollectSuccess,
+  title,
 }) => {
   const {
     targetType,
@@ -84,7 +85,11 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
 
   // 点击单个智能体，创建会话，并跳转到会话页面
   const handleClick = async () => {
-    await handleCreateConversation(targetId);
+    if (title === '插件') {
+      history.push(`/square/publish/plugin/${targetId}`);
+    } else {
+      await handleCreateConversation(targetId);
+    }
   };
 
   // 切换收藏与取消收藏

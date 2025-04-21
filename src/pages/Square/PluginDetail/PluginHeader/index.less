@@ -1,0 +1,91 @@
+@import '@/styles/color';
+
+.header {
+  height: 72px;
+  padding: 0 10px;
+  gap: 12px;
+  border-bottom: 1px solid @WHITE07;
+
+  .icon-back {
+    color: @BLANK17;
+    font-size: 18px;
+  }
+
+  .info-author {
+    height: 26px;
+    font-size: 12px;
+    gap: 6px;
+
+    .avatar {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+    }
+
+    .author {
+      color: @BLANK04;
+    }
+
+    .nickname {
+      color: @GRAY07;
+    }
+  }
+
+  .logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 5px;
+    object-fit: cover;
+  }
+
+  .section {
+    gap: 4px;
+
+    .top-box {
+      gap: 10px;
+      color: @BLANK04;
+
+      .name {
+        font-size: 14px;
+        font-weight: bold;
+      }
+
+      .circle {
+        color: @GREEN03;
+      }
+    }
+
+    .bottom-box {
+      gap: 8px;
+      font-size: 12px;
+
+      .box {
+        display: inline-block;
+        padding: 0 10px;
+        line-height: 18px;
+        border-radius: 6px;
+        background: @BLANK18;
+        color: @BLANK04;
+      }
+
+      .update-time {
+        color: @GRAY05;
+      }
+    }
+  }
+
+  .history {
+    color: @GRAY10;
+  }
+
+  .try-btn {
+    background-color: @WHITE13;
+    color: @BLUE05;
+
+    &:hover {
+      background-color: @WHITE13 !important;
+      color: @BLUE05 !important;
+      opacity: 0.8;
+    }
+  }
+}

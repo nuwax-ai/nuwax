@@ -133,6 +133,7 @@ const Square: React.FC = () => {
           {agentList.map((item, index) => (
             <SingleAgent
               key={index}
+              title={title}
               publishedAgentInfo={item}
               onToggleCollectSuccess={handleToggleCollectSuccess}
             />

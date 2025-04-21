@@ -9,7 +9,11 @@ import type {
   PluginPublishScopeEnum,
   PluginTypeEnum,
 } from '@/types/enums/plugin';
-import type { BindConfigWithSub, CreatorInfo } from '@/types/interfaces/agent';
+import type {
+  AgentStatisticsInfo,
+  BindConfigWithSub,
+  CreatorInfo,
+} from '@/types/interfaces/agent';
 
 // 插件试运行输入参数
 export interface PluginTestParams {
@@ -148,6 +152,38 @@ export interface PluginInfo {
   created: string;
   // 创建者信息
   creator: CreatorInfo;
+}
+// 已发布插件信息
+export interface PublishPluginInfo {
+  id: number;
+  spaceId: number;
+  creatorId: number;
+  name: string;
+  description: string;
+  icon: string;
+  // 插件类型,可用值:HTTP,CODE
+  type: PluginTypeEnum;
+  // 插件代码语言,可用值:Python,JavaScript
+  codeLang: CodeLangEnum;
+  // 插件发布状态,可用值:Developing,Applying,Published,Rejected
+  publishStatus: PublishStatusEnum;
+  config: any;
+  modified: string;
+  created: string;
+  // 创建者信息
+  creator: CreatorInfo;
+  //版本信息
+  remark: string;
+  // 节点入参
+  inputArgs: BindConfigWithSub[];
+  // 节点出参
+  outputArgs: BindConfigWithSub[];
+  //插件示例输出
+  sampleOutput: string;
+  //发布者信息
+  publishUser: CreatorInfo;
+  statistics: AgentStatisticsInfo;
+  collect: boolean;
 }
 
 // 插件http头部组件
