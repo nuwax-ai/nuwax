@@ -306,35 +306,37 @@ const Workflow: React.FC = () => {
   // 优化后的onFinish方法
   const onFinish = async () => {
     try {
+      const currentFoldWrapItem = foldWrapItemRef.current; // 保存当前值
       const values = form.getFieldsValue(true);
       let newNodeConfig;
       if (
-        ['QA', 'IntentRecognition', 'Condition'].includes(foldWrapItem.type) &&
-        foldWrapItemRef.current.id === foldWrapItem.id
+        ['QA', 'IntentRecognition', 'Condition'].includes(
+          currentFoldWrapItem.type,
+        ) &&
+        currentFoldWrapItem.id === foldWrapItem.id
       ) {
-        console.log('123', values, foldWrapItemRef.current.nodeConfig);
         const changeNode = changeNodeConfig(
-          foldWrapItem.type,
+          currentFoldWrapItem.type,
           values,
-          foldWrapItemRef.current.nodeConfig,
+          currentFoldWrapItem.nodeConfig,
         );
         newNodeConfig = {
-          ...foldWrapItem,
+          ...currentFoldWrapItem,
           nodeConfig: {
-            ...foldWrapItem.nodeConfig,
+            ...currentFoldWrapItem.nodeConfig,
             ...changeNode,
           },
         };
       } else {
         newNodeConfig = {
-          ...foldWrapItemRef.current,
+          ...currentFoldWrapItem,
           nodeConfig: {
-            ...foldWrapItemRef.current.nodeConfig,
+            ...currentFoldWrapItem.nodeConfig,
             ...values,
           },
         };
       }
-
+      console.log(newNodeConfig);
       await changeNode(newNodeConfig);
       setIsModified(false);
     } catch (error) {
@@ -347,31 +349,28 @@ const Workflow: React.FC = () => {
     setTestRunResult('');
 
     setFoldWrapItem((prev) => {
+      console.log(123123213123123, prev);
       if (prev.id === 0 && child === null) {
         return prev;
       } else {
         if (prev.id !== 0) {
-          setIsModified((prev: boolean) => {
-            if (prev) {
+          setIsModified((modified: boolean) => {
+            if (modified) {
               onFinish();
               if (timerRef.current) {
                 clearTimeout(timerRef.current);
               }
             }
-            return prev;
+            return false;
           });
         }
+
         if (child !== null) {
           if (!visible) setVisible(true);
           getRefernece(child.id);
           return child;
         }
-        setVisible((visible) => {
-          if (visible && isModified) {
-            onFinish();
-          }
-          return false;
-        });
+        setVisible(false);
         return {
           id: 0,
           description: '',
@@ -862,14 +861,11 @@ const Workflow: React.FC = () => {
       clearTimeout(timerRef.current);
     }
     // 创建新定时器
-    setIsModified((prev: boolean) => {
-      if (prev) {
-        timerRef.current = setTimeout(() => {
-          onFinish();
-        }, 3000);
-      }
-      return prev; // 返回当前的isModified状态，保持不变，避免重复se
-    });
+    if (isModified) {
+      timerRef.current = setTimeout(() => {
+        onFinish();
+      }, 3000);
+    }
     // 清理函数
     return () => {
       if (timerRef.current) {

@@ -3,7 +3,7 @@
 // import { ChildNode } from '@/types/interfaces/graph';
 import { NodePreviousAndArgMap } from '@/types/interfaces/node';
 // import { message } from 'antd';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 const useWorkflow = () => {
   // 是否要校验当前的数据
   const [volid, setVolid] = useState<boolean>(false);
@@ -21,15 +21,7 @@ const useWorkflow = () => {
   });
 
   // 使用 useRef 存储 isModified 的状态
-  const isModifiedRef = useRef<boolean>(false);
-  // 获取 isModified 的最新值
-  const getIsModified = () => isModifiedRef.current;
-
-  // 设置 isModified 的值并触发重新渲染
-  const setIsModified = (value: boolean) => {
-    isModifiedRef.current = value;
-    forceUpdate((prev) => !prev); // 触发重新渲染
-  };
+  const [isModified, setIsModified] = useState<boolean>(false);
 
   const [skillChange, setSkillChange] = useState<boolean>(false);
 
@@ -90,8 +82,7 @@ const useWorkflow = () => {
     setReferenceList,
     getValue,
     getLoopValue,
-    isModified: isModifiedRef.current, // 返回最新的 isModified 值
-    getIsModified, // 导出
+    isModified, // 导出
     setIsModified,
     spaceId,
     setSpaceId,
