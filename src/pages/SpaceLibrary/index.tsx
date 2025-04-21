@@ -145,7 +145,7 @@ const SpaceLibrary: React.FC = () => {
   const { run: runPluginDel } = useRequest(apiPluginDelete, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_, params) => {
+    onSuccess: (_: null, params: number[]) => {
       message.success('插件删除成功');
       const id = params[0];
       handleDel(id);
@@ -156,7 +156,7 @@ const SpaceLibrary: React.FC = () => {
   const { run: runModelDel } = useRequest(apiModelDelete, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_, params) => {
+    onSuccess: (_: null, params: number[]) => {
       message.success('模型删除成功');
       const id = params[0];
       handleDel(id);
@@ -177,7 +177,7 @@ const SpaceLibrary: React.FC = () => {
   const { run: runWorkflowDel } = useRequest(apiWorkflowDelete, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_, params) => {
+    onSuccess: (_: null, params: number[]) => {
       message.success('工作流删除成功');
       const id = params[0];
       handleDel(id);
@@ -188,7 +188,7 @@ const SpaceLibrary: React.FC = () => {
   const { run: runKnowledgeDel } = useRequest(apiKnowledgeConfigDelete, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_, params) => {
+    onSuccess: (_: null, params: number[]) => {
       message.success('知识库删除成功');
       const id = params[0];
       handleDel(id);
@@ -197,8 +197,10 @@ const SpaceLibrary: React.FC = () => {
 
   useEffect(() => {
     const userInfoString = localStorage.getItem(USER_INFO);
-    const userInfo = (JSON.parse(userInfoString) || {}) as UserInfo;
-    createIdRef.current = userInfo.id;
+    if (!!userInfoString) {
+      const userInfo = JSON.parse(userInfoString) as UserInfo;
+      createIdRef.current = userInfo.id;
+    }
   }, []);
 
   useEffect(() => {
@@ -206,25 +208,28 @@ const SpaceLibrary: React.FC = () => {
   }, [spaceId]);
 
   // 切换类型
-  const handlerChangeType = (value: ComponentTypeEnum) => {
-    setType(value);
-    handleFilterList(value, status, create, keyword);
+  const handlerChangeType = (value: React.Key) => {
+    const _value = value as ComponentTypeEnum;
+    setType(_value);
+    handleFilterList(_value, status, create, keyword);
   };
 
   // 切换创建者
-  const handlerChangeCreate = (value: CreateListEnum) => {
-    setCreate(value);
-    handleFilterList(type, status, value, keyword);
+  const handlerChangeCreate = (value: React.Key) => {
+    const _value = value as CreateListEnum;
+    setCreate(_value);
+    handleFilterList(type, status, _value, keyword);
   };
 
   // 切换状态
-  const handlerChangeStatus = (value: FilterStatusEnum) => {
-    setStatus(value);
-    handleFilterList(type, value, create, keyword);
+  const handlerChangeStatus = (value: React.Key) => {
+    const _value = value as FilterStatusEnum;
+    setStatus(_value);
+    handleFilterList(type, _value, create, keyword);
   };
 
   // 智能体搜索
-  const handleQueryAgent = (e) => {
+  const handleQueryAgent = (e: React.ChangeEvent<HTMLInputElement>) => {
     const _keyword = e.target.value;
     setKeyword(_keyword);
     handleFilterList(type, status, create, _keyword);
@@ -255,7 +260,7 @@ const SpaceLibrary: React.FC = () => {
   };
 
   // 点击添加资源
-  const handleClickPopoverItem = (item) => {
+  const handleClickPopoverItem = (item: CustomPopoverItem) => {
     const { value: type } = item;
     switch (type) {
       case ComponentTypeEnum.Workflow:
@@ -331,7 +336,7 @@ const SpaceLibrary: React.FC = () => {
 
   // 点击更多操作 插件： 创建副本、删除 模型：删除 工作流：创建副本、删除 知识库： 删除
   const handleClickMore = (item: CustomPopoverItem, info: ComponentInfo) => {
-    const { action, type } = item as {
+    const { action, type } = item as unknown as {
       action: ComponentMoreActionEnum;
       type: ComponentTypeEnum;
     };

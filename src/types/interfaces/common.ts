@@ -12,16 +12,12 @@ import type {
   KnowledgeInfo,
 } from '@/types/interfaces/knowledge';
 import type { InputAndOutConfig } from '@/types/interfaces/node';
-import type {
-  ConfigProviderProps,
-  FormInstance,
-  GetProp,
-  UploadProps,
-} from 'antd';
+import type { FormInstance, GetProp, UploadProps } from 'antd';
 import React from 'react';
 
 export type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
-export type SizeType = ConfigProviderProps['componentSize'];
+// 原代码中 large、middle、small 未定义，将其改为字符串字面量类型
+export type SizeType = 'large' | 'middle' | 'small';
 
 /**
  * 定义键值对接口，用于表示具有标签和值的对象。

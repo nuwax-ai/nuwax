@@ -136,7 +136,7 @@ const SpacePluginTool: React.FC = () => {
   const displayRender = (labels: string[]) => labels[labels.length - 1];
 
   // 入参配置columns
-  const inputColumns: TableColumnsType<BindConfigWithSub>['columns'] = [
+  const inputColumns: TableColumnsType<BindConfigWithSub> = [
     {
       title: <LabelStar label="参数名称" />,
       dataIndex: 'name',
@@ -225,10 +225,9 @@ const SpacePluginTool: React.FC = () => {
         <Input
           placeholder="请输入默认值"
           disabled={
-            [DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(
-              record.dataType,
-            ) ||
-            record.dataType.includes('Array') ||
+            DataTypeEnum.Object === record.dataType ||
+            DataTypeEnum.Array_Object === record.dataType ||
+            record.dataType?.includes('Array') ||
             !record.enable
           }
           value={value}
@@ -268,9 +267,8 @@ const SpacePluginTool: React.FC = () => {
       align: 'right',
       render: (_, record) => (
         <Space size="middle">
-          {[DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(
-            record.dataType,
-          ) && (
+          {(DataTypeEnum.Object === record.dataType ||
+            DataTypeEnum.Array_Object === record.dataType) && (
             <ICON_ADD_TR
               className={cx('cursor-pointer')}
               onClick={() => handleInputAddChild(record.key)}
@@ -283,7 +281,7 @@ const SpacePluginTool: React.FC = () => {
   ];
 
   // 出参配置columns
-  const outputColumns: TableColumnsType<BindConfigWithSub>['columns'] = [
+  const outputColumns: TableColumnsType<BindConfigWithSub> = [
     {
       title: <LabelStar label="参数名称" />,
       dataIndex: 'name',
@@ -356,9 +354,8 @@ const SpacePluginTool: React.FC = () => {
       align: 'right',
       render: (_, record) => (
         <Space size="middle">
-          {[DataTypeEnum.Object, DataTypeEnum.Array_Object].includes(
-            record.dataType,
-          ) && (
+          {(DataTypeEnum.Object === record.dataType ||
+            DataTypeEnum.Array_Object === record.dataType) && (
             <ICON_ADD_TR
               className={cx('cursor-pointer')}
               onClick={() => handleOutputAddChild(record.key)}
