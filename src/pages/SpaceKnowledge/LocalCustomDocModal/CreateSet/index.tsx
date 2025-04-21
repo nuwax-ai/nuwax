@@ -26,8 +26,9 @@ const CreateSet: React.FC<CreateSetProps> = ({
       KnowledgeSegmentIdentifierEnum.Line_Feed,
     );
 
-  const handleChange = (value: KnowledgeSegmentIdentifierEnum) => {
-    setSegmentDelimiter(value);
+  const handleChange = (value: React.Key) => {
+    const _value = value as KnowledgeSegmentIdentifierEnum;
+    setSegmentDelimiter(_value);
   };
 
   return (

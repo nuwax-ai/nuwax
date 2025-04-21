@@ -38,7 +38,6 @@ export interface ArrangeTitleProps {
 
 // 智能体编排区域配置组件
 export interface AgentArrangeConfigProps {
-  spaceId: number;
   agentId: number;
   agentConfigInfo?: AgentConfigInfo;
   // 修改智能体基础配置信息

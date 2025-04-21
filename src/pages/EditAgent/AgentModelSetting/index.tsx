@@ -34,7 +34,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
 }) => {
   const [targetId, setTargetId] = useState<number>(0);
   // 模型列表
-  const [modelConfigList, setModelConfig] = useState<option[]>([]);
+  const [modelConfigList, setModelConfigList] = useState<option[]>([]);
   // 绑定组件配置，不同组件配置不一样
   const [componentBindConfig, setComponentBindConfig] =
     useState<ComponentModelBindConfig>({
@@ -60,7 +60,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           label: item.name,
           value: item.id,
         })) || [];
-      setModelConfig(list);
+      setModelConfigList(list);
     },
   });
 
@@ -101,12 +101,16 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   };
 
   // 下拉模型
-  const handleChangeModelTarget = (id: number) => {
-    setTargetId(id);
-    handleChangeModel(componentBindConfig, id);
+  const handleChangeModelTarget = (id: React.Key) => {
+    const _id = Number(id);
+    setTargetId(_id);
+    handleChangeModel(componentBindConfig, _id);
     // 更新智能体 - 绑定的模型名称
-    const { value, label } = modelConfigList?.find((item) => item.value === id);
-    onSelectMode(value, label);
+    const info = modelConfigList?.find((item) => item.value === _id);
+    if (!!info) {
+      const { value, label } = info;
+      onSelectMode(Number(value), String(label));
+    }
   };
 
   // 生成多样性
@@ -181,7 +185,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           min={0}
           max={1}
           step={0.1}
-          value={componentBindConfig?.temperature as string}
+          value={String(componentBindConfig?.temperature)}
           onChange={(value) => handleChange(value, 'temperature')}
         />
       </div>
@@ -195,7 +199,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           min={0}
           max={1}
           step={0.1}
-          value={componentBindConfig?.topP as string}
+          value={String(componentBindConfig?.topP)}
           onChange={(value) => handleChange(value, 'topP')}
         />
       </div>
@@ -210,7 +214,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           min={0}
           max={100}
           step={1}
-          value={componentBindConfig?.contextRounds as string}
+          value={String(componentBindConfig?.contextRounds)}
           onChange={(value) => handleChange(value, 'contextRounds')}
         />
       </div>
@@ -224,7 +228,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           min={1}
           max={4096}
           step={1}
-          value={componentBindConfig?.maxTokens as string}
+          value={String(componentBindConfig?.maxTokens)}
           onChange={(value) => handleChange(value, 'maxTokens')}
         />
       </div>

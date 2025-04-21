@@ -42,7 +42,6 @@ const cx = classNames.bind(styles);
  * 智能体编排区域配置
  */
 const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
-  spaceId,
   agentId,
   agentConfigInfo,
   onChangeAgent,
@@ -72,13 +71,18 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 根据组件类型，过滤组件
   const filterList = (type: AgentComponentTypeEnum) => {
-    return agentComponentList?.filter((item) => item.type === type) || [];
+    return (
+      agentComponentList?.filter(
+        (item: AgentComponentInfo) => item.type === type,
+      ) || []
+    );
   };
 
   // 绑定的变量信息
   const variablesInfo = useMemo(() => {
     return agentComponentList?.find(
-      (item) => item.type === AgentComponentTypeEnum.Variable,
+      (item: AgentComponentInfo) =>
+        item.type === AgentComponentTypeEnum.Variable,
     ) as AgentComponentInfo;
   }, [agentComponentList]);
 
@@ -111,7 +115,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 知识 - 当前激活 tab 面板的 key
   const knowledgeActiveKey = useMemo(() => {
     const index = agentComponentList?.findIndex(
-      (item) => item.type === AgentComponentTypeEnum.Knowledge,
+      (item: AgentComponentInfo) =>
+        item.type === AgentComponentTypeEnum.Knowledge,
     );
     return index > -1 ? [AgentArrangeConfigEnum.Text] : [];
   }, [agentComponentList]);
@@ -119,7 +124,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 记忆 - 当前激活 tab 面板的 key
   const memoryActiveKey = useMemo(() => {
     const index = agentComponentList?.findIndex(
-      (item) => item.type === AgentComponentTypeEnum.Variable,
+      (item: AgentComponentInfo) =>
+        item.type === AgentComponentTypeEnum.Variable,
     );
     return index > -1 ? [AgentArrangeConfigEnum.Variable] : [];
   }, [agentComponentList]);
@@ -127,7 +133,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 查询智能体配置组件列表
   const { runAsync } = useRequest(apiAgentComponentList, {
     manual: true,
-    debounceInterval: 300,
+    debounceWait: 300,
   });
 
   // 删除智能体组件配置
@@ -135,7 +141,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     apiAgentComponentDelete,
     {
       manual: true,
-      debounceInterval: 300,
+      debounceWait: 300,
     },
   );
 
@@ -148,7 +154,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     message.success('已成功删除插件');
     const list =
       agentComponentList?.filter(
-        (item) => !(item.id === id && item.type === type),
+        (item: AgentComponentInfo) => !(item.id === id && item.type === type),
       ) || [];
     setAgentComponentList(list);
     const newList =
@@ -180,7 +186,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 新增智能体插件、工作流、知识库组件配置
   const { run: runComponentAdd } = useRequest(apiAgentComponentAdd, {
     manual: true,
-    debounceInterval: 300,
+    debounceWait: 300,
     onSuccess: async () => {
       message.success('已成功添加');
       // 重新查询智能体配置组件列表
@@ -255,7 +261,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 插件设置
   const handlePluginSet = (id: number) => {
-    const componentInfo = agentComponentList?.find((info) => info.id === id);
+    const componentInfo = agentComponentList?.find(
+      (info: AgentComponentInfo) => info.id === id,
+    );
     setCurrentComponentInfo(componentInfo);
     setOpenPluginModel(true);
   };
@@ -487,7 +495,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       <Created
         open={show}
         onCancel={() => setShow(false)}
-        spaceId={spaceId}
         checkTag={checkTag}
         addComponents={addComponents}
         onAdded={handleAddComponent}
