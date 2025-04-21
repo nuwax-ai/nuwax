@@ -190,7 +190,6 @@ const EditAgent: React.FC = () => {
             <div className={cx(styles['h-line'])} />
             {/*配置区域*/}
             <AgentArrangeConfig
-              spaceId={Number(spaceId)}
               agentId={agentId}
               agentConfigInfo={agentConfigInfo}
               onChangeAgent={handleChangeAgent}

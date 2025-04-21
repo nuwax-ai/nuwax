@@ -42,12 +42,14 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({ variables }) => {
   useEffect(() => {
     if (!!inputConfigArgs?.length) {
       // 默认值：输入
-      const _inputConfigArgs = inputConfigArgs.map((info) => {
-        if (!info.bindValueType) {
-          info.bindValueType = BindValueType.Input;
-        }
-        return info;
-      });
+      const _inputConfigArgs = inputConfigArgs?.map(
+        (info: BindConfigWithSub) => {
+          if (!info.bindValueType) {
+            info.bindValueType = BindValueType.Input;
+          }
+          return info;
+        },
+      );
       setConfigArgs(_inputConfigArgs);
 
       // 默认展开的入参配置key
@@ -61,12 +63,13 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({ variables }) => {
 
   // 缓存变量列表
   const variableList = useMemo(() => {
-    return variables?.map(
-      (item) =>
-        ({
+    return (
+      variables?.map((item) => {
+        return {
           label: item.name,
           value: item.name,
-        } || []),
+        };
+      }) || []
     );
   }, [variables]);
 
@@ -89,7 +92,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({ variables }) => {
   };
 
   // 入参配置columns
-  const inputColumns: TableColumnsType<BindConfigWithSub>['columns'] = [
+  const inputColumns: TableColumnsType<BindConfigWithSub> = [
     {
       title: '参数名称',
       dataIndex: 'name',
@@ -137,7 +140,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({ variables }) => {
       render: (_, record) => (
         <Space.Compact block>
           <SelectList
-            rootClassName={cx(styles.select)}
+            className={cx(styles.select)}
             disabled={!record.enable}
             value={record.bindValueType}
             onChange={(value) =>

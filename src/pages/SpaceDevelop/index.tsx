@@ -72,7 +72,7 @@ const SpaceDevelop: React.FC = () => {
     filterKeyword: string,
     list = agentAllRef.current,
   ) => {
-    let _list = list;
+    let _list = list as AgentConfigInfo[];
     if (filterStatus === FilterStatusEnum.Published) {
       _list = _list.filter(
         (item) => item.publishStatus === PublishStatusEnum.Published,
@@ -110,10 +110,11 @@ const SpaceDevelop: React.FC = () => {
   // 删除或者迁移智能体后, 从列表移除智能体
   const handleDelAgent = () => {
     const agentId = targetAgentIdRef.current;
-    const _agentList = agentList?.filter((item) => item.id !== agentId) || [];
+    const _agentList =
+      agentList?.filter((item: AgentConfigInfo) => item.id !== agentId) || [];
     setAgentList(_agentList);
     agentAllRef.current = agentAllRef.current?.filter(
-      (item) => item.id !== agentId,
+      (item: AgentConfigInfo) => item.id !== agentId,
     );
   };
 
@@ -121,7 +122,7 @@ const SpaceDevelop: React.FC = () => {
   const { run: runDel } = useRequest(apiAgentDelete, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_, params) => {
+    onSuccess: (_: null, params: number[]) => {
       message.success('已成功删除');
       const id = params[0];
       handleDelAgent();
@@ -156,8 +157,10 @@ const SpaceDevelop: React.FC = () => {
 
   useEffect(() => {
     const userInfoString = localStorage.getItem(USER_INFO);
-    const userInfo = (JSON.parse(userInfoString) || {}) as UserInfo;
-    createIdRef.current = userInfo.id;
+    if (!!userInfoString) {
+      const userInfo = JSON.parse(userInfoString) as UserInfo;
+      createIdRef.current = userInfo.id;
+    }
   }, []);
 
   useEffect(() => {
@@ -165,19 +168,21 @@ const SpaceDevelop: React.FC = () => {
   }, [spaceId]);
 
   // 切换状态
-  const handlerChangeStatus = (value: FilterStatusEnum) => {
-    setStatus(value);
-    handleFilterList(value, create, keyword);
+  const handlerChangeStatus = (value: React.Key) => {
+    const _status = value as FilterStatusEnum;
+    setStatus(_status);
+    handleFilterList(_status, create, keyword);
   };
 
   // 切换创建者
-  const handlerChangeCreate = (value: CreateListEnum) => {
-    setCreate(value);
-    handleFilterList(status, value, keyword);
+  const handlerChangeCreate = (value: React.Key) => {
+    const _create = value as CreateListEnum;
+    setCreate(_create);
+    handleFilterList(status, _create, keyword);
   };
 
   // 智能体搜索
-  const handleQueryAgent = (e) => {
+  const handleQueryAgent = (e: React.ChangeEvent<HTMLInputElement>) => {
     const _keyword = e.target.value;
     setKeyword(_keyword);
     handleFilterList(status, create, _keyword);
@@ -305,7 +310,7 @@ const SpaceDevelop: React.FC = () => {
       </div>
       {agentList?.length > 0 ? (
         <div className={cx(styles['main-container'])}>
-          {agentList?.map((item, index) => (
+          {agentList?.map((item: AgentConfigInfo, index: number) => (
             <ApplicationItem
               key={item.id}
               agentConfigInfo={item}

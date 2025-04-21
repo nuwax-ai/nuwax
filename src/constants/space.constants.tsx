@@ -1,6 +1,7 @@
 import {
   ICON_APPLICATION_DEV,
   ICON_COMPONENT_LIBRARY,
+  ICON_DATABASE,
   ICON_GROUP_SET,
   ICON_KNOWLEDGE,
   ICON_MODEL,
@@ -36,11 +37,11 @@ export const LIBRARY_ALL_RESOURCE = [
     label: '知识库',
     icon: <ICON_KNOWLEDGE />,
   },
-  // {
-  //   value: ComponentTypeEnum.Database,
-  //   label: '数据库',
-  //   icon: <ICON_DATABASE />,
-  // },
+  {
+    value: ComponentTypeEnum.Database,
+    label: '数据表',
+    icon: <ICON_DATABASE />,
+  },
   {
     value: ComponentTypeEnum.Model,
     label: '模型',

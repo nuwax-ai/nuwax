@@ -38,6 +38,11 @@ const routes = [
         path: '/space/:spaceId/knowledge/:knowledgeId',
         component: '@/pages/SpaceKnowledge',
       },
+      {
+        path: '/space/:spaceId/database/:databaseId',
+        component: '@/pages/SpaceDatabase',
+      },
+
       { path: '/square', component: '@/pages/Square' },
       { path: '/system/publish/audit', component: '@/pages/PublishAudit' },
       {
