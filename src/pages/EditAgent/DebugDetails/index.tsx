@@ -49,11 +49,13 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
         setOutputData(_outputData);
       }
     }
+  }, [finalResult, currentIndex]);
 
+  useEffect(() => {
     return () => {
       setFinalResult(null);
     };
-  }, [finalResult, currentIndex]);
+  }, []);
 
   const handleCopy = () => {
     message.success('复制成功');
@@ -102,22 +104,24 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
           </header>
           <div className={cx(styles.wrap)}>
             <h5 className={cx(styles.title)}>调用组件</h5>
-            {finalResult?.componentExecuteResults?.map((info, index) => (
-              <div
-                key={info.id}
-                className={cx(styles['execute-box'], 'flex', 'items-center')}
-              >
-                <img src={getIcon(info)} alt="" />
-                <span
-                  className={cx(styles.name, 'cursor-pointer', {
-                    [styles.active]: currentIndex === index,
-                  })}
-                  onClick={() => setCurrentIndex(index)}
+            {finalResult?.componentExecuteResults?.map(
+              (info: ExecuteResultInfo, index: number) => (
+                <div
+                  key={info.id}
+                  className={cx(styles['execute-box'], 'flex', 'items-center')}
                 >
-                  {info.name}
-                </span>
-              </div>
-            ))}
+                  <img src={getIcon(info)} alt="" />
+                  <span
+                    className={cx(styles.name, 'cursor-pointer', {
+                      [styles.active]: currentIndex === index,
+                    })}
+                    onClick={() => setCurrentIndex(index)}
+                  >
+                    {info.name}
+                  </span>
+                </div>
+              ),
+            )}
           </div>
           <div className={cx(styles.wrap)}>
             <h5 className={cx(styles.title)}>节点详情</h5>

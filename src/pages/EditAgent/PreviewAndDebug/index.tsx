@@ -159,8 +159,12 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
             </div>
           ) : messageList?.length > 0 || chatSuggestList?.length > 0 ? (
             <>
-              {messageList?.map((item: MessageInfo, index: number) => (
-                <ChatView key={index} messageInfo={item} roleInfo={roleInfo} />
+              {messageList?.map((item: MessageInfo) => (
+                <ChatView
+                  key={item.id}
+                  messageInfo={item}
+                  roleInfo={roleInfo}
+                />
               ))}
               {/*会话建议*/}
               <RecommendList

@@ -395,10 +395,10 @@ export default () => {
     }
   };
 
-  const handleDebug = useCallback((item: MessageInfo) => {
-    const result = item?.finalResult;
+  const handleDebug = useCallback((info: MessageInfo) => {
+    const result = info?.finalResult;
     if (result) {
-      setRequestId(item.id as string);
+      setRequestId(info.id as string);
       setFinalResult(result);
     }
     setShowType(EditAgentShowType.Debug_Details);

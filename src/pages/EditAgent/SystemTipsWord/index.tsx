@@ -43,7 +43,7 @@ const SystemTipsWord: React.FC<SystemTipsWordProps> = ({ value, onChange }) => {
         variant="borderless"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        autoSize={{ minRows: 20, maxRows: 30 }}
+        // autoSize={{ minRows: 20, maxRows: 30 }}
       />
     </div>
   );
