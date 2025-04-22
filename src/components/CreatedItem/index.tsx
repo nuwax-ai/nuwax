@@ -31,8 +31,12 @@ interface CreatedItemProp extends CreateKnowledgeProps {
     | AgentComponentTypeEnum.Workflow
     | AgentComponentTypeEnum.Knowledge
     | AgentComponentTypeEnum.Database; // 组件类型，数据库、知识库、插件、工作流
-  info: Info;
-  onConfirm: (info: Info) => void;
+  info?: Info;
+  Confirm: (
+    info: Info,
+    type: AgentComponentTypeEnum,
+    mode: CreateUpdateModeEnum,
+  ) => void;
 }
 
 const CreatedItem: React.FC<CreatedItemProp> = ({
@@ -42,7 +46,7 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
   spaceId,
   open,
   onCancel,
-  onConfirm,
+  Confirm,
 }) => {
   console.log(spaceId);
   const [form] = Form.useForm();
@@ -78,7 +82,7 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
   };
   // 提交数据
   const onFinish = (values: any) => {
-    onConfirm(values);
+    Confirm(values, type, mode);
   };
 
   useEffect(() => {

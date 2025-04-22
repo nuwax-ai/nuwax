@@ -85,6 +85,7 @@ const SpaceLibrary: React.FC = () => {
   // const [componentStatistics, setComponentStatistics] = useState<
   //   AnalyzeStatisticsItem[]
   // >([]);
+
   // 创建
   const [create, setCreate] = useState<CreateListEnum>(
     CreateListEnum.All_Person,
@@ -285,6 +286,12 @@ const SpaceLibrary: React.FC = () => {
         setOpenModel(true);
         break;
     }
+  };
+
+  const Confirm = (value, type, mode) => {
+    console.log(value, type, mode);
+
+    history.push(`/space/${spaceId}/database/${1}`);
   };
 
   // 设置统计信息
@@ -500,6 +507,7 @@ const SpaceLibrary: React.FC = () => {
         open={openDatabase}
         type={AgentComponentTypeEnum.Database}
         onCancel={() => setOpenDatabase(false)}
+        Confirm={Confirm}
       />
       {/*创建工作流*/}
       <CreateWorkflow
