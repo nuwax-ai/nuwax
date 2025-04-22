@@ -1,22 +1,23 @@
-import personal from '@/assets/images/personal.png';
-import teamImage from '@/assets/images/team_image.png';
-import { SpaceTypeEnum } from '@/types/enums/space';
 import { DownOutlined } from '@ant-design/icons';
 import { Popover } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import { useModel } from 'umi';
 import CreateNewTeam from './CreateNewTeam';
 import styles from './index.less';
 import PersonalSpaceContent from './PersonalSpaceContent';
 
 const cx = classNames.bind(styles);
 
+interface SpaceTitleProps {
+  className?: string;
+  name: string;
+  avatar: string;
+}
+
 /**
  * Popover弹窗-空间主题
  */
-const SpaceTitle: React.FC = () => {
-  const { currentSpaceInfo } = useModel('spaceModel');
+const SpaceTitle: React.FC<SpaceTitleProps> = ({ name, avatar }) => {
   const [open, setOpen] = useState<boolean>(false);
   const [openModal, setOpenModal] = useState<boolean>(false);
 
@@ -24,12 +25,6 @@ const SpaceTitle: React.FC = () => {
     setOpen(false);
     setOpenModal(true);
   };
-
-  // 个人空间时，头像是默认的
-  const avatar =
-    currentSpaceInfo?.type === SpaceTypeEnum.Personal
-      ? personal
-      : currentSpaceInfo?.icon || (teamImage as string);
 
   return (
     <>
@@ -56,9 +51,11 @@ const SpaceTitle: React.FC = () => {
             styles.header,
           )}
         >
-          <img className={cx(styles.img, 'radius-6')} src={avatar} alt="" />
+          <span className={cx(styles['img-box'])}>
+            <img src={avatar} alt="" />
+          </span>
           <span className={cx('flex-1', styles.title)}>
-            {currentSpaceInfo?.name || '个人空间'}
+            {name || '个人空间'}
           </span>
           <DownOutlined className={cx(styles['icon-down'])} />
         </div>

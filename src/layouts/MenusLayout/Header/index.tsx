@@ -52,9 +52,11 @@ const Header: React.FC = () => {
           styles={{
             body: { color: '#000' },
           }}
-          title={'新建会话'}
+          title="新建会话"
         >
-          <ICON_NEW_AGENT />
+          <span>
+            <ICON_NEW_AGENT />
+          </span>
         </Tooltip>
       </span>
       <div className={cx(styles['divider-horizontal'])} />

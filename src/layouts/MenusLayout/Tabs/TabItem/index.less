@@ -6,6 +6,10 @@
   color: @BLANK17;
   border-right: 1px solid transparent;
   transition: background-color 0.3s;
+  user-select: none; /* 禁止选中 */
+  user-select: none; /* 兼容 Webkit 内核的浏览器 */
+  user-select: none; /* 兼容 Firefox */
+  user-select: none; /* 兼容 IE10+ */
 
   &:hover {
     background-color: @WHITE18;
@@ -20,11 +24,11 @@
   img {
     width: 20px;
     height: 20px;
+    object-fit: cover;
   }
 
   .text {
     margin-top: 4px;
     font-size: 12px;
-    // transform: scale(0.95);
   }
 }
