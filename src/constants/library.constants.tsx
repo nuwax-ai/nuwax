@@ -26,6 +26,7 @@ import {
 } from '@/types/enums/library';
 import {
   ModelApiProtocolEnum,
+  ModelFunctionCallEnum,
   ModelNetworkTypeEnum,
   ModelStrategyEnum,
   ModelTypeEnum,
@@ -320,12 +321,31 @@ export const MODEL_TYPE_LIST = [
     label: '向量嵌入',
   },
   {
+    value: ModelTypeEnum.Multi,
+    label: '多模态',
+  },
+  {
     value: ModelTypeEnum.Audio,
     label: '语音处理',
   },
   {
     value: ModelTypeEnum.Other,
     label: '其他',
+  },
+];
+// 函数调用支持
+export const MODEL_FUNCTION_CALL_LIST = [
+  {
+    value: ModelFunctionCallEnum.CallSupported,
+    label: '支持普通函数调用',
+  },
+  {
+    value: ModelFunctionCallEnum.StreamCallSupported,
+    label: '支持流式函数调用',
+  },
+  {
+    value: ModelFunctionCallEnum.Unsupported,
+    label: '不支持函数调用',
   },
 ];
 // 模型接口协议
