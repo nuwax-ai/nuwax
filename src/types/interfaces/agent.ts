@@ -131,7 +131,8 @@ export interface AgentComponentWorkflowUpdateParams
   // 绑定组件配置，不同组件配置不一样
   bindConfig: {
     // 出参绑定配置，插件、工作流有效
-    argBindConfigs: BindConfigWithSub[];
+    // argBindConfigs: BindConfigWithSub[];
+    inputArgBindConfigs: BindConfigWithSub[];
     // 卡片ID
     cardId: string;
     // 卡片参数绑定信息

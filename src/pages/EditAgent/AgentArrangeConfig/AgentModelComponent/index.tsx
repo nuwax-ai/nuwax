@@ -14,11 +14,9 @@ const AgentModelComponent: React.FC<AgentModelComponentProps> = ({
 }) => {
   return (
     <div className={cx('flex', 'items-center', styles.container)}>
-      <img
-        className={cx('radius-6', styles.img)}
-        src={agentComponentInfo.icon || defaultImage}
-        alt=""
-      />
+      <span className={cx('radius-6', styles['img-box'])}>
+        <img src={agentComponentInfo.icon || defaultImage} alt="" />
+      </span>
       <div
         className={cx(
           'flex-1',

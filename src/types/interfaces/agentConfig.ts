@@ -1,6 +1,7 @@
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
+  InvokeTypeEnum,
 } from '@/types/enums/agent';
 import type { DataTypeEnum } from '@/types/enums/common';
 import type { OpenCloseEnum } from '@/types/enums/space';
@@ -19,6 +20,7 @@ import type {
   ExecuteResultInfo,
 } from '@/types/interfaces/conversationInfo';
 import React, { MouseEvent } from 'react';
+import { CardBindConfig } from './cardInfo';
 
 // 智能体header组件
 export interface AgentHeaderProps {
@@ -47,6 +49,7 @@ export interface AgentArrangeConfigProps {
 // 插件模型设置
 export interface PluginModelSettingProps {
   open: boolean;
+  currentComponentInfo?: AgentComponentInfo;
   variables?: BindConfigWithSub[];
   onCancel: () => void;
 }
@@ -54,6 +57,16 @@ export interface PluginModelSettingProps {
 // 参数设置组件
 export interface ParamsSettingProps {
   variables?: BindConfigWithSub[];
+  inputArgBindConfigs?: BindConfigWithSub[];
+  onSaveSet: (attr: string, value: BindConfigWithSub[]) => void;
+}
+
+// 卡片绑定组件
+export interface CardBindProps {
+  loading?: boolean;
+  agentCardList: AgentCardInfo[];
+  componentInfo?: AgentComponentInfo;
+  onSaveSet: (attr: string, value: CardBindConfig) => void;
 }
 
 // 智能体模型组件，插件、工作流、触发器等组件通用显示组件
@@ -103,6 +116,18 @@ export interface CardModeSettingProps {
   cardKey?: string;
   list: AgentCardInfo[];
   onChoose: (info: AgentCardInfo) => void;
+}
+
+export interface BindDataSourceProps {
+  cardInfo?: AgentCardInfo;
+  componentInfo?: AgentComponentInfo;
+  onSaveSet: (attr: string, value: CardBindConfig) => void;
+}
+
+// 调用方式组件属性
+export interface InvokeTypeProps {
+  invokeType: InvokeTypeEnum;
+  onSaveSet: (attr: string, value: InvokeTypeEnum) => void;
 }
 
 // 预览与调试组件

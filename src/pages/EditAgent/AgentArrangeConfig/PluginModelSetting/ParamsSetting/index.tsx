@@ -1,6 +1,6 @@
 import SelectList from '@/components/SelectList';
 import { ParamsSettingDefaultOptions } from '@/constants/common.constants';
-import { AgentComponentTypeEnum, BindValueType } from '@/types/enums/agent';
+import { BindValueType } from '@/types/enums/agent';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { ParamsSettingProps } from '@/types/interfaces/agentConfig';
 import { getActiveKeys, updateNodeField } from '@/utils/deepNode';
@@ -18,7 +18,6 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -26,40 +25,24 @@ const cx = classNames.bind(styles);
 /**
  * 插件参数设置
  */
-const ParamsSetting: React.FC<ParamsSettingProps> = ({ variables }) => {
+const ParamsSetting: React.FC<ParamsSettingProps> = ({
+  inputArgBindConfigs,
+  variables,
+  onSaveSet,
+}) => {
   // 入参配置 - 展开的行，控制属性
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   // 入参配置
   const [configArgs, setConfigArgs] = useState<BindConfigWithSub[]>([]);
 
-  const { currentComponentInfo, onSaveSet } = useModel('spaceAgent');
-
-  const inputConfigArgs =
-    currentComponentInfo?.type === AgentComponentTypeEnum.Plugin
-      ? currentComponentInfo?.bindConfig?.inputArgBindConfigs
-      : currentComponentInfo?.bindConfig?.argBindConfigs;
-
   useEffect(() => {
-    if (!!inputConfigArgs?.length) {
-      // 默认值：输入
-      const _inputConfigArgs = inputConfigArgs?.map(
-        (info: BindConfigWithSub) => {
-          if (!info.bindValueType) {
-            info.bindValueType = BindValueType.Input;
-          }
-          return info;
-        },
-      );
-      setConfigArgs(_inputConfigArgs);
-
+    if (!!inputArgBindConfigs?.length) {
+      setConfigArgs(inputArgBindConfigs);
       // 默认展开的入参配置key
-      const _expandedRowKeys = getActiveKeys(inputConfigArgs || []);
+      const _expandedRowKeys = getActiveKeys(inputArgBindConfigs || []);
       setExpandedRowKeys(_expandedRowKeys);
-    } else {
-      setConfigArgs([]);
-      setExpandedRowKeys([]);
     }
-  }, [inputConfigArgs]);
+  }, [inputArgBindConfigs]);
 
   // 缓存变量列表
   const variableList = useMemo(() => {
@@ -81,14 +64,6 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({ variables }) => {
   ) => {
     const _configArgs = updateNodeField(configArgs, key, attr, value);
     setConfigArgs(_configArgs);
-  };
-
-  const handleSave = () => {
-    const attr =
-      currentComponentInfo?.type === AgentComponentTypeEnum.Plugin
-        ? 'inputArgBindConfigs'
-        : 'argBindConfigs';
-    onSaveSet(attr, configArgs);
   };
 
   // 入参配置columns
@@ -226,7 +201,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({ variables }) => {
       <footer className={cx(styles.footer)}>
         <Button
           type="primary"
-          onClick={handleSave}
+          onClick={() => onSaveSet('inputArgBindConfigs', configArgs)}
           disabled={!configArgs?.length}
         >
           保存

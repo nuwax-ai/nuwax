@@ -1,19 +1,16 @@
 import { CALL_METHOD_OPTIONS } from '@/constants/agent.constants';
 import { InvokeTypeEnum } from '@/types/enums/agent';
+import type { InvokeTypeProps } from '@/types/interfaces/agentConfig';
 import { Button, Radio, RadioChangeEvent } from 'antd';
 import classNames from 'classnames';
 import React, { memo, useEffect, useState } from 'react';
-import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 // 调用方式
-const InvokeType: React.FC = () => {
+const InvokeType: React.FC<InvokeTypeProps> = ({ invokeType, onSaveSet }) => {
   const [type, setType] = useState<InvokeTypeEnum>();
-  const { currentComponentInfo, onSaveSet } = useModel('spaceAgent');
-
-  const invokeType = currentComponentInfo?.bindConfig?.invokeType;
 
   useEffect(() => {
     setType(invokeType || InvokeTypeEnum.AUTO);
