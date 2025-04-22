@@ -39,9 +39,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   // enter事件
-  const handlePressEnter = (e) => {
+  const handlePressEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
-    const { value } = e.target;
+    const { value } = e.target as HTMLTextAreaElement;
     // shift+enter或者ctrl+enter时换行
     if (
       e.nativeEvent.keyCode === 13 &&
@@ -89,32 +89,34 @@ const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className={cx(styles.footer, 'flex', 'items-center', className)}>
-      <ConditionRender condition={!!onClear}>
-        <Tooltip title="清空会话记录">
-          <span
-            className={cx(
-              styles.clear,
-              'flex',
-              'items-center',
-              'content-center',
-              'hover-box',
-              'cursor-pointer',
-              { [styles.disabled]: disabled },
-            )}
-            onClick={handleClear}
-          >
-            <ClearOutlined />
-          </span>
-        </Tooltip>
+    <div className={cx(styles.footer, 'flex', 'flex-col', className)}>
+      {/*文件列表*/}
+      <ConditionRender condition={files?.length}>
+        <ChatUploadFile files={files} onDel={handleDelFile} />
       </ConditionRender>
-      <div className={cx('flex-1', 'w-full')}>
-        {/*文件列表*/}
-        <ConditionRender condition={files?.length}>
-          <ChatUploadFile files={files} onDel={handleDelFile} />
+      <div className={cx('flex-1', 'w-full', 'flex', 'items-center')}>
+        <ConditionRender condition={!!onClear}>
+          <Tooltip title="清空会话记录">
+            <span
+              className={cx(
+                styles.clear,
+                'flex',
+                'items-center',
+                'content-center',
+                'hover-box',
+                'cursor-pointer',
+                { [styles.disabled]: disabled },
+              )}
+              onClick={handleClear}
+            >
+              <ClearOutlined />
+            </span>
+          </Tooltip>
         </ConditionRender>
         {/*输入框*/}
-        <div className={cx(styles['chat-input'], 'flex', 'items-center')}>
+        <div
+          className={cx(styles['chat-input'], 'flex-1', 'flex', 'items-center')}
+        >
           <Input.TextArea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
