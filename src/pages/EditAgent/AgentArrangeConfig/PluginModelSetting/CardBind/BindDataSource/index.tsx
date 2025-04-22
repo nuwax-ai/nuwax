@@ -3,12 +3,12 @@ import CustomInputNumber from '@/components/CustomInputNumber';
 import LabelStar from '@/components/LabelStar';
 import { BIND_CARD_STYLE_LIST } from '@/constants/agent.constants';
 import { BindCardStyleEnum } from '@/types/enums/plugin';
+import { ArgList, BindConfigWithSub } from '@/types/interfaces/agent';
+import type { BindDataSourceProps } from '@/types/interfaces/agentConfig';
 import {
-  AgentCardInfo,
-  ArgList,
-  BindConfigWithSub,
-} from '@/types/interfaces/agent';
-import { CardArgsBindConfigInfo } from '@/types/interfaces/cardInfo';
+  CardArgsBindConfigInfo,
+  CardBindConfig,
+} from '@/types/interfaces/cardInfo';
 import {
   findNode,
   loopFilterArray,
@@ -30,17 +30,16 @@ import {
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-export interface BindDataSourceProps {
-  cardInfo?: AgentCardInfo;
-}
-
 // 为卡片绑定数据源组件
-const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
+const BindDataSource: React.FC<BindDataSourceProps> = ({
+  componentInfo,
+  cardInfo,
+  onSaveSet,
+}) => {
   // 卡片类型
   const [cardStyle, setCardStyle] = useState<BindCardStyleEnum>(
     BindCardStyleEnum.SINGLE,
@@ -60,14 +59,10 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
   // 绑定跳转链接地址
   const [bindLinkUrl, setBindLinkUrl] = useState<string>('');
 
-  // 当前组件信息
-  const { currentComponentInfo, onSaveSet } = useModel('spaceAgent');
   // 出参配置
-  const outputArgBindConfigs =
-    currentComponentInfo?.bindConfig?.outputArgBindConfigs;
-
-  // 出参配置
-  const cardBindConfig = currentComponentInfo?.bindConfig?.cardBindConfig;
+  const outputArgBindConfigs = componentInfo?.bindConfig?.outputArgBindConfigs;
+  // 卡片绑定配置
+  const cardBindConfig = componentInfo?.bindConfig?.cardBindConfig;
 
   useEffect(() => {
     // 卡片样式是竖向列表时，卡片整体绑定一个数组（需要从出参配置中过滤出数组）
@@ -139,7 +134,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
 
   // 为卡片整体绑定一个数组
   const handleSelectBindArray = (
-    _: null,
+    _: React.Key[],
     { node }: { node: BindConfigWithSub },
   ) => {
     setCardKey(String(node.key));
@@ -193,7 +188,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({ cardInfo }) => {
             maxCardCount: cardListLen,
             bindArray: cardKey,
           };
-    onSaveSet('cardBindConfig', config);
+    onSaveSet('cardBindConfig', config as CardBindConfig);
   };
 
   return (

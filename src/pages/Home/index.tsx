@@ -8,6 +8,7 @@ import {
   apiUnCollectAgent,
 } from '@/services/agentDev';
 import type {
+  CategoryInfo,
   CategoryItemInfo,
   HomeAgentCategoryInfo,
 } from '@/types/interfaces/agentConfig';
@@ -17,7 +18,7 @@ import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { useModel } from 'umi';
+import { history, useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -53,7 +54,7 @@ const Home: React.FC = () => {
   // 智能体收藏
   const { run: runCollectAgent } = useRequest(apiCollectAgent, {
     manual: true,
-    debounceInterval: 300,
+    debounceWait: 300,
     onSuccess: () => {
       runCategoryList();
     },
@@ -62,7 +63,7 @@ const Home: React.FC = () => {
   // 智能体取消收藏
   const { run: runUnCollectAgent } = useRequest(apiUnCollectAgent, {
     manual: true,
-    debounceInterval: 300,
+    debounceWait: 300,
     onSuccess: () => {
       runCategoryList();
     },
@@ -96,13 +97,23 @@ const Home: React.FC = () => {
   };
 
   // 切换收藏与取消收藏
-  const handleToggleCollect = (type, info: CategoryItemInfo) => {
+  const handleToggleCollect = (type: string, info: CategoryItemInfo) => {
     currentAgentTypeRef.current = type;
     if (info.collect) {
       runUnCollectAgent(info.targetId);
     } else {
       runCollectAgent(info.targetId);
     }
+  };
+
+  // 检查对象是否为空
+  const isEmptyObject = (obj: { [key: string]: CategoryItemInfo[] }) => {
+    if (!obj) return true;
+    return Object.keys(obj).length === 0;
+  };
+
+  const handleLink = () => {
+    history.push('/square?cate_type=Agent');
   };
 
   return (
@@ -112,21 +123,23 @@ const Home: React.FC = () => {
       <div
         className={cx(styles.recommend, 'flex', 'content-center', 'flex-wrap')}
       >
-        {tenantConfigInfo?.homeRecommendQuestions?.map((item, index) => {
-          return (
-            <div
-              key={index}
-              className={cx(
-                styles['recommend-item'],
-                'cursor-pointer',
-                'hover-box',
-              )}
-              onClick={() => handleEnter(item)}
-            >
-              {item}
-            </div>
-          );
-        })}
+        {tenantConfigInfo?.homeRecommendQuestions?.map(
+          (item: string, index: number) => {
+            return (
+              <div
+                key={index}
+                className={cx(
+                  styles['recommend-item'],
+                  'cursor-pointer',
+                  'hover-box',
+                )}
+                onClick={() => handleEnter(item)}
+              >
+                {item}
+              </div>
+            );
+          },
+        )}
       </div>
       <div className={cx(styles.wrapper, 'flex-1')}>
         {loading ? (
@@ -148,27 +161,48 @@ const Home: React.FC = () => {
                 );
               })}
             </div>
-            {homeCategoryInfo?.categories?.map((item) => {
-              return (
-                <section
-                  key={item.type}
-                  ref={(el) => (sectionRefs.current[item.type] = el)}
-                  id={item.type}
-                >
-                  <h2 className={styles['category-name']}>{item.name}</h2>
-                  <div className={cx(styles['category-list'])}>
-                    {homeCategoryInfo?.categoryItems[item.type]?.map((info) => (
-                      <AgentItem
-                        key={info.targetId}
-                        info={info}
-                        onClick={() => handleCreateConversation(info.targetId)}
-                        onCollect={() => handleToggleCollect(item.type, info)}
-                      />
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
+            {isEmptyObject(homeCategoryInfo?.categoryItems || {}) ? (
+              <div
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'content-center',
+                  styles['empty-box'],
+                )}
+              >
+                <a onClick={handleLink} className={cx('cursor-pointer')}>
+                  暂无数据，立即探索 {'>'} {'>'}
+                </a>
+              </div>
+            ) : (
+              homeCategoryInfo?.categories?.map((item: CategoryInfo) => {
+                return (
+                  <section
+                    key={item.type}
+                    ref={(el) => (sectionRefs.current[item.type] = el)}
+                    id={item.type}
+                  >
+                    <h2 className={styles['category-name']}>{item.name}</h2>
+                    <div className={cx(styles['category-list'])}>
+                      {homeCategoryInfo?.categoryItems[item.type]?.map(
+                        (info: CategoryItemInfo) => (
+                          <AgentItem
+                            key={info.targetId}
+                            info={info}
+                            onClick={() =>
+                              handleCreateConversation(info.targetId)
+                            }
+                            onCollect={() =>
+                              handleToggleCollect(item.type, info)
+                            }
+                          />
+                        ),
+                      )}
+                    </div>
+                  </section>
+                );
+              })
+            )}
           </>
         )}
       </div>

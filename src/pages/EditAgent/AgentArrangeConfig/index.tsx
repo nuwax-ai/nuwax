@@ -10,9 +10,13 @@ import {
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
+  BindValueType,
 } from '@/types/enums/agent';
 import { AgentArrangeConfigEnum, OpenCloseEnum } from '@/types/enums/space';
-import type { AgentComponentInfo } from '@/types/interfaces/agent';
+import type {
+  AgentComponentInfo,
+  BindConfigWithSub,
+} from '@/types/interfaces/agent';
 import type { AgentArrangeConfigProps } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
 import VariableList from './VariableList';
@@ -63,11 +67,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]
   >([]);
+  // 当前组件信息
+  const [currentComponentInfo, setCurrentComponentInfo] =
+    useState<AgentComponentInfo>();
 
   // 打开、关闭弹窗
   const { show, setShow } = useModel('model');
-  const { setCurrentComponentInfo, agentComponentList, setAgentComponentList } =
-    useModel('spaceAgent');
+  const { agentComponentList, setAgentComponentList } = useModel('spaceAgent');
 
   // 根据组件类型，过滤组件
   const filterList = (type: AgentComponentTypeEnum) => {
@@ -264,6 +270,20 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     const componentInfo = agentComponentList?.find(
       (info: AgentComponentInfo) => info.id === id,
     );
+
+    const inputConfigArgs = componentInfo?.bindConfig?.inputArgBindConfigs;
+    // 默认值：输入
+    const _inputConfigArgs = inputConfigArgs?.map((info: BindConfigWithSub) => {
+      if (!info.bindValueType) {
+        info.bindValueType = BindValueType.Input;
+      }
+      return info;
+    });
+    componentInfo.bindConfig.inputArgBindConfigs = _inputConfigArgs;
+    // 工作流组件，去掉属性配置（argBindConfigs属性是之前的，目前改为inputArgBindConfigs）
+    if (componentInfo?.type === AgentComponentTypeEnum.Workflow) {
+      componentInfo.bindConfig.argBindConfigs = null;
+    }
     setCurrentComponentInfo(componentInfo);
     setOpenPluginModel(true);
   };
@@ -518,6 +538,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       <PluginModelSetting
         open={openPluginModel}
         variables={variablesInfo?.bindConfig?.variables || []}
+        currentComponentInfo={currentComponentInfo}
         onCancel={() => setOpenPluginModel(false)}
       />
     </div>

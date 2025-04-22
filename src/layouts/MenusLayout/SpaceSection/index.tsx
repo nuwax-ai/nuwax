@@ -1,10 +1,12 @@
+import personal from '@/assets/images/personal.png';
+import teamImage from '@/assets/images/team_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import { SPACE_URL } from '@/constants/home.constants';
 import { SPACE_APPLICATION_LIST } from '@/constants/space.constants';
 import { SpaceApplicationListEnum, SpaceTypeEnum } from '@/types/enums/space';
 import type { AgentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 import UserRelAgent from '../UserRelAgent';
 import DevCollect from './DevCollect';
@@ -81,9 +83,17 @@ const SpaceSection: React.FC = () => {
     history.push(`/space/${spaceId}/agent/${agentId}`);
   };
 
+  // 个人空间时，头像是默认的
+  const avatar = useMemo(() => {
+    return (
+      currentSpaceInfo?.icon ||
+      (currentSpaceInfo?.type !== SpaceTypeEnum.Personal ? teamImage : personal)
+    );
+  }, [currentSpaceInfo]);
+
   return (
     <div className={cx('h-full', 'px-6', 'py-16', 'overflow-y')}>
-      <SpaceTitle />
+      <SpaceTitle avatar={avatar} name={currentSpaceInfo?.name} />
       <ul>
         {SPACE_APPLICATION_LIST.map((item) => {
           if (
