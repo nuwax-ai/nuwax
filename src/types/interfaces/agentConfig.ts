@@ -246,7 +246,9 @@ export interface HomeAgentCategoryInfo {
   // 首页分类
   categories: CategoryInfo[];
   // 首页分类数据列表
-  categoryItems: unknown;
+  categoryItems: {
+    [key: string]: CategoryItemInfo[];
+  };
 }
 
 // 智能体添加组件状态
