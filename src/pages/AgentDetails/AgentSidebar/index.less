@@ -1,0 +1,62 @@
+@import '@/styles/color';
+
+.container {
+  position: sticky;
+  top: 0;
+  right: 0;
+  width: 357px;
+  height: calc(100% - 40px);
+  margin-top: 20px;
+  margin-right: 20px;
+  padding: 0 20px;
+  background-color: @WHITE;
+  border-radius: 10px;
+
+  .header {
+    height: 40px;
+    gap: 8px;
+    font-size: 14px;
+    color: @GRAY18;
+
+    .text {
+      max-width: 60px;
+      line-height: 16px;
+      color: @BLANK06;
+      gap: 4px;
+    }
+
+    .close {
+      display: inline-block;
+      margin-left: auto;
+    }
+  }
+
+  .sidebar-content {
+    margin-top: 50px;
+
+    .avatar {
+      width: 90px;
+      height: 90px;
+      border-radius: 10px;
+    }
+
+    .title {
+      margin: 25px 0;
+      font-size: 18px;
+      font-weight: bold;
+      color: #636466;
+      text-align: center;
+    }
+
+    .content {
+      height: 98px;
+      padding: 16px 10px;
+      border-radius: 10px;
+      background: #fcfcff;
+      font-size: 14px;
+      line-height: 22px;
+      letter-spacing: 0;
+      color: #767676;
+    }
+  }
+}

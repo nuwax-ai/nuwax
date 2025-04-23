@@ -35,7 +35,9 @@ const getBase64 = (img: FileType, callback: (url: string) => void) => {
 // 获取url地址search中的参数
 const getURLParams = () => {
   const searchParams = window.location.search.substring(1).split('&');
-  const params = {};
+  // 为了解决元素隐式具有 "any" 类型的问题，将 params 的类型定义为 Record<string, string>
+  // 这样就可以使用 string 类型的 key 来索引 params 对象
+  const params: Record<string, string> = {};
   for (const param of searchParams) {
     const [key, value] = param.split('=');
     params[key] = value;
