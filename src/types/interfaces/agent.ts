@@ -407,3 +407,43 @@ export interface AgentCardInfo {
   imageUrl: string;
   argList: ArgList[];
 }
+
+export interface AgentDetailDto extends AgentBaseInfo {
+  spaceId: number;
+  // 智能体ID
+  agentId: number;
+  // 发布备注信息
+  remark: string;
+  // 智能体发布时间
+  publishDate: number;
+  statistics: AgentStatisticsInfo;
+  publishUser: CreatorInfo;
+  // 智能体分类名称
+  category: string;
+  // 是否开启问题建议,可用值:Open,Close
+  openSuggest: OpenCloseEnum;
+  // 开场白文案
+  openingChatMsg: string;
+  // 首次打开引导问题
+  openingGuidQuestions: string[];
+  // 是否开启定时任务,可用值:Open,Close
+  openScheduledTask: OpenCloseEnum;
+  // 参数
+  variables: BindConfigWithSub[];
+  // 分享链接
+  shareLink: string;
+  // 可手动选择的组件列表
+  manualComponents: {
+    // 组件ID
+    id: number;
+    // 组件名称
+    name: string;
+    // 组件图标
+    icon: string;
+    // 组件描述
+    description: string;
+    // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model,Agent
+    type: AgentComponentTypeEnum;
+  }[];
+  collect: boolean;
+}
