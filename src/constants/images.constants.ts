@@ -37,6 +37,10 @@ import { ReactComponent as ICON_WORKFLOW } from '@/assets/svg/workflow_icon.svg'
 import { ReactComponent as ICON_WORKFLOW_CODE } from '@/assets/workflow/workflow-Code.svg';
 import { ReactComponent as ICON_WORKFLOW_CONDITION } from '@/assets/workflow/workflow-Condition.svg';
 import { ReactComponent as ICON_WORKFLOW_DATABASE } from '@/assets/workflow/workflow-Database.svg';
+import { ReactComponent as ICON_WORKFLOW_DATABASEADD } from '@/assets/workflow/workflow-DataBaseAdd.svg';
+import { ReactComponent as ICON_WORKFLOW_DATABASEDELETE } from '@/assets/workflow/workflow-DataBaseDelete.svg';
+import { ReactComponent as ICON_WORKFLOW_DATABASEQUERY } from '@/assets/workflow/workflow-DatabaseQuery.svg';
+import { ReactComponent as ICON_WORKFLOW_DATABASEUPDATE } from '@/assets/workflow/workflow-DatabaseUpdate.svg';
 import { ReactComponent as ICON_WORKFLOW_DOCUMENT_EXTRACTION } from '@/assets/workflow/workflow-DocumentExtraction.svg';
 import { ReactComponent as ICON_WORKFLOW_HTTP_REQUEST } from '@/assets/workflow/workflow-HTTPRequest.svg';
 import { ReactComponent as ICON_WORKFLOW_INTENT_RECOGNITION } from '@/assets/workflow/workflow-IntentRecognition.svg';
@@ -52,6 +56,7 @@ import { ReactComponent as ICON_WORKFLOW_QA } from '@/assets/workflow/workflow-Q
 import { ReactComponent as ICON_WORKFLOW_TEXT_PROCESSING } from '@/assets/workflow/workflow-TextProcessing.svg';
 import { ReactComponent as ICON_WORKFLOW_VARIABLE } from '@/assets/workflow/workflow-Variable.svg';
 import { ReactComponent as ICON_WORKFLOW_WORKFLOW } from '@/assets/workflow/workflow-Workflow.svg';
+
 // 修改导入语句以正确导入图片
 
 export {
@@ -93,6 +98,10 @@ export {
   ICON_WORKFLOW_CODE,
   ICON_WORKFLOW_CONDITION,
   ICON_WORKFLOW_DATABASE,
+  ICON_WORKFLOW_DATABASEADD,
+  ICON_WORKFLOW_DATABASEDELETE,
+  ICON_WORKFLOW_DATABASEQUERY,
+  ICON_WORKFLOW_DATABASEUPDATE,
   ICON_WORKFLOW_DOCUMENT_EXTRACTION,
   ICON_WORKFLOW_HTTP_REQUEST,
   ICON_WORKFLOW_INTENT_RECOGNITION,

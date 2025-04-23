@@ -5,6 +5,10 @@ import {
   ICON_WORKFLOW_CODE,
   ICON_WORKFLOW_CONDITION,
   ICON_WORKFLOW_DATABASE,
+  ICON_WORKFLOW_DATABASEADD,
+  ICON_WORKFLOW_DATABASEDELETE,
+  ICON_WORKFLOW_DATABASEQUERY,
+  ICON_WORKFLOW_DATABASEUPDATE,
   ICON_WORKFLOW_DOCUMENT_EXTRACTION,
   ICON_WORKFLOW_HTTP_REQUEST,
   ICON_WORKFLOW_INTENT_RECOGNITION,
@@ -91,6 +95,16 @@ export const returnImg = (type: string) => {
       return <ICON_WORKFLOW_VARIABLE />;
     case 'Workflow':
       return <ICON_WORKFLOW_WORKFLOW />;
+    case 'TableDataAdd':
+      return <ICON_WORKFLOW_DATABASEADD />;
+    case 'TableDataDelete':
+      return <ICON_WORKFLOW_DATABASEDELETE />;
+    case 'TableDataUpdate':
+      return <ICON_WORKFLOW_DATABASEUPDATE />;
+    case 'TableDataQuery':
+      return <ICON_WORKFLOW_DATABASEQUERY />;
+    case 'TableSQL':
+      return <ICON_WORKFLOW_DATABASE />;
     default:
       return <ICON_NEW_AGENT />;
   }

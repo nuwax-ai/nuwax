@@ -33,7 +33,7 @@ const buttonList: ButtonList[] = [
   { label: '插件', key: AgentComponentTypeEnum.Plugin },
   { label: '工作流', key: AgentComponentTypeEnum.Workflow },
   { label: '知识库', key: AgentComponentTypeEnum.Knowledge },
-  // { label: '数据库', key: AgentComponentTypeEnum.Database },
+  { label: '数据库', key: AgentComponentTypeEnum.Database },
 ];
 
 // 创建插件、工作流、知识库、数据库
@@ -119,6 +119,26 @@ const Created: React.FC<CreatedProp> = ({
       label: '表格',
     },
   ];
+
+  const databaseItem = [
+    {
+      key: 'all', // 子项也需要唯一的 key
+      label: '组件库数据表',
+      icon: <ProductFilled />,
+    },
+  ];
+
+  const getItems = () => {
+    switch (selected.key) {
+      case AgentComponentTypeEnum.Knowledge:
+        return knowledgeItem;
+      case AgentComponentTypeEnum.Database:
+        return databaseItem;
+      default:
+        return items;
+    }
+  };
+
   // 添加ref引用
   const scrollRef = useRef<HTMLDivElement>(null);
   const isRequesting = useRef(false);
@@ -126,14 +146,14 @@ const Created: React.FC<CreatedProp> = ({
 
   // 获取右侧的list（关键修改）
   const getList = async (type: AgentComponentTypeEnum, params: IGetList) => {
-    console.log(sizes);
-    if (spaceId === 0) return;
-    if ((params.page > sizes && params.page !== 1) || isRequesting.current)
-      return;
-    isRequesting.current = true;
-    const _res = await service.getList(type, { ...params, spaceId });
-    isRequesting.current = false;
-    if (_res.code === Constant.success) {
+    try {
+      console.log(sizes);
+      if (spaceId === 0) return;
+      if ((params.page > sizes && params.page !== 1) || isRequesting.current)
+        return;
+      isRequesting.current = true;
+      const _res = await service.getList(type, { ...params, spaceId });
+      isRequesting.current = false;
       setSizes(_res.data.pages);
       setPagination((prev) => ({
         ...prev,
@@ -146,6 +166,9 @@ const Created: React.FC<CreatedProp> = ({
           ? [..._res.data.records]
           : [...prev, ..._res.data.records],
       );
+    } catch (error) {
+      isRequesting.current = false;
+      setSizes(100);
     }
   };
 
@@ -404,11 +427,7 @@ const Created: React.FC<CreatedProp> = ({
             onClick={(val) => onMenuClick(val.key)}
             selectedKeys={[selectMenu]}
             mode="inline"
-            items={
-              selected.key === AgentComponentTypeEnum.Knowledge
-                ? knowledgeItem
-                : items
-            }
+            items={getItems()}
           ></Menu>
         </div>
         {/* 右侧部分应该是变动的 */}
