@@ -38,7 +38,7 @@ const SpaceKnowledge: React.FC = () => {
   // 知识库资源-文本格式导入类型枚举： 本地文档、在线文档、自定义
   const [type, setType] = useState<KnowledgeTextImportEnum>();
   // 知识库详情信息
-  const [knowledgeInfo, setKnowledgeInfo] = useState<KnowledgeInfo>(null);
+  const [knowledgeInfo, setKnowledgeInfo] = useState<KnowledgeInfo>();
   // 打开创建知识库弹窗
   const [openKnowledge, setOpenKnowledge] = useState<boolean>(false);
   // 文档列表
@@ -48,7 +48,7 @@ const SpaceKnowledge: React.FC = () => {
   const [totalDocCount, setTotalDocCount] = useState<number>(0);
   // 当前文档信息
   const [currentDocumentInfo, setCurrentDocumentInfo] =
-    useState<KnowledgeDocumentInfo>(null);
+    useState<KnowledgeDocumentInfo | null>(null);
   // 所有的文档列表, 用于搜索
   const documentListRef = useRef<KnowledgeDocumentInfo[]>([]);
 
@@ -120,7 +120,7 @@ const SpaceKnowledge: React.FC = () => {
   const { run: runDocDelete } = useRequest(apiKnowledgeDocumentDelete, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_, params) => {
+    onSuccess: (_: null, params: number[]) => {
       message.success('删除文档成功');
       const delDocId = params[0];
       // 删除文档后，更新文档列表以及分段信息
@@ -166,7 +166,7 @@ const SpaceKnowledge: React.FC = () => {
   // 知识库新增确认事件
   const handleConfirmKnowledge = (info: KnowledgeBaseInfo) => {
     setOpenKnowledge(false);
-    const _knowledgeInfo = { ...knowledgeInfo, ...info };
+    const _knowledgeInfo = { ...knowledgeInfo, ...info } as KnowledgeInfo;
     setKnowledgeInfo(_knowledgeInfo);
   };
 
@@ -233,7 +233,7 @@ const SpaceKnowledge: React.FC = () => {
     const _documentInfo = {
       ...currentDocumentInfo,
       name,
-    };
+    } as KnowledgeDocumentInfo;
     setCurrentDocumentInfo(_documentInfo);
     // 修改文档列表中当前文档名称
     const _documentList = documentList.map((info) => {

@@ -190,7 +190,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
           words: formValues.words,
         };
       }
-      segmentConfigModelRef.current = data;
+      segmentConfigModelRef.current = data as SegmentConfigModel;
     }
     setCurrent(KnowledgeTextStepEnum.Data_Processing);
   };

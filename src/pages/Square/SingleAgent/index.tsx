@@ -2,7 +2,6 @@ import agentImage from '@/assets/images/agent_image.png';
 import avatar from '@/assets/images/avatar.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import ConditionRender from '@/components/ConditionRender';
-import useConversation from '@/hooks/useConversation';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
 import {
   apiPublishedPluginCollect,
@@ -17,7 +16,7 @@ import {
 } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
-import { useRequest } from 'umi';
+import { history, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -43,8 +42,8 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   // 根据类型（目标对象（智能体、工作流、插件））显示不同的默认图标
   const defaultImage =
     targetType === SquareAgentTypeEnum.Agent ? agentImage : pluginImage;
-  // 创建智能体会话
-  const { handleCreateConversation } = useConversation();
+  // // 创建智能体会话
+  // const { handleCreateConversation } = useConversation();
 
   // 智能体收藏
   const { run: runCollectAgent } = useRequest(apiCollectAgent, {
@@ -84,11 +83,12 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
 
   // 点击单个智能体，创建会话，并跳转到会话页面
   const handleClick = async () => {
-    await handleCreateConversation(targetId);
+    // await handleCreateConversation(targetId);
+    history.push(`/agent/details/${targetId}`);
   };
 
   // 切换收藏与取消收藏
-  const handleToggleCollect = (e) => {
+  const handleToggleCollect = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
     if (targetType === SquareAgentTypeEnum.Agent) {
       if (collect) {

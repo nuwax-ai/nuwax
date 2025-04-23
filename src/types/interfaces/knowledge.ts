@@ -423,7 +423,7 @@ export interface EmbeddingStatusInfo {
 export interface KnowledgeHeaderProps {
   // 文档数量
   docCount: number;
-  knowledgeInfo: KnowledgeInfo;
+  knowledgeInfo?: KnowledgeInfo;
   onEdit: () => void;
   onPopover: (item: CustomPopoverItem) => void;
 }
@@ -450,7 +450,7 @@ export interface DocItemProps {
 export interface RawSegmentInfoProps {
   onDel: () => void;
   onSuccessUpdateName: (id: number, name: string) => void;
-  documentInfo: KnowledgeDocumentInfo;
+  documentInfo?: KnowledgeDocumentInfo | null;
 }
 
 // 本地文档弹窗组件

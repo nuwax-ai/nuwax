@@ -11,7 +11,7 @@ import {
 } from '@/types/interfaces/cardInfo';
 import {
   findNode,
-  loopFilterArray,
+  loopFilterAndDisabledArray,
   loopOmitArray,
   loopSetDisabled,
 } from '@/utils/deepNode';
@@ -69,7 +69,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
     if (cardStyle === BindCardStyleEnum.LIST) {
       const _outputArgBindConfigs = cloneDeep(outputArgBindConfigs);
       // 过滤数组
-      const list = loopFilterArray(_outputArgBindConfigs);
+      const list = loopFilterAndDisabledArray(_outputArgBindConfigs);
       // 删除subArgs属性
       const _list = loopOmitArray(list);
       setBindArray(_list);

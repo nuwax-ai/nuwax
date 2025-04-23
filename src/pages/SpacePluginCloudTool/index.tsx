@@ -217,12 +217,13 @@ const SpacePluginCloudTool: React.FC = () => {
       render: (value: boolean, record) => (
         <Tooltip
           title={
-            (!record.require ? false : !record.bindValue) &&
+            record.require &&
+            !record.bindValue &&
             '此参数是必填参数，填写默认值后，此开关可用'
           }
         >
           <Checkbox
-            disabled={!record.require ? false : !record.bindValue}
+            disabled={record.require && !record.bindValue}
             checked={value}
             onChange={(e) =>
               handleInputValue(record.key, 'enable', e.target.checked)

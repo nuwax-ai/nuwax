@@ -1,6 +1,9 @@
 import { PLUGIN_INPUT_CONFIG } from '@/constants/space.constants';
 import { DataTypeEnum } from '@/types/enums/common';
-import type { BindConfigWithSub } from '@/types/interfaces/agent';
+import type {
+  BindConfigWithSub,
+  BindConfigWithSubDisabled,
+} from '@/types/interfaces/agent';
 import omit from 'lodash/omit';
 import React from 'react';
 import { v4 as uuidv4 } from 'uuid';
@@ -39,7 +42,7 @@ export const addChildNode = (
   key: React.Key,
   newNode: BindConfigWithSub,
 ) => {
-  const updateRecursive = (arr: BindConfigWithSub[]) => {
+  const updateRecursive = (arr: BindConfigWithSub[]): BindConfigWithSub[] => {
     return arr.map((node) => {
       if (node.key === key) {
         return {
@@ -97,11 +100,11 @@ const updateRequireFieldFalse = (data: BindConfigWithSub[], value: boolean) => {
 };
 
 // 递归查找节点路径的函数
-function findParentPathByKey(
+const findParentPathByKey = (
   tree: BindConfigWithSub[],
   targetKey: React.Key,
   path: React.Key[] = [],
-) {
+): React.Key[] | null => {
   // 遍历当前层级的节点
   for (const node of tree) {
     // 如果当前节点的key等于目标key，返回路径
@@ -129,7 +132,7 @@ function findParentPathByKey(
 
   // 如果所有节点都遍历完仍未找到目标节点，返回null
   return null;
-}
+};
 
 const updateRequireFieldTrue = (
   data: BindConfigWithSub[],
@@ -153,7 +156,7 @@ export const updateNodeField = (
   value: React.Key | boolean | any,
 ) => {
   let pathKeys: React.Key[] = [];
-  const updateRecursive = (data: BindConfigWithSub[]) => {
+  const updateRecursive = (data: BindConfigWithSub[]): BindConfigWithSub[] => {
     return data.map((node) => {
       if (node.key === key) {
         // 数据类型
@@ -190,7 +193,7 @@ export const updateNodeField = (
         if (field === 'require') {
           // 选中, 父级以及父级以上，都设置为true
           if (value) {
-            pathKeys = findParentPathByKey(arr, node.key);
+            pathKeys = findParentPathByKey(arr, node.key) as React.Key[];
           } else if (node.subArgs) {
             // 取消选中, 下级以及下下级等，都设置为false
             updateRequireFieldFalse(node.subArgs, false);
@@ -212,24 +215,51 @@ export const updateNodeField = (
   return newList;
 };
 
-// 过滤数组
-export const loopFilterArray = (data: BindConfigWithSub[]) =>
-  data.filter((item) => {
-    if (item.dataType === DataTypeEnum.Object) {
-      item['disabled'] = true;
-
-      if (!!item.subArgs?.length) {
-        return { ...item, subArgs: loopFilterArray(item.subArgs) };
+// 过滤数组, 只保留对象类型，且设置disabled为true
+export const loopFilterAndDisabledArray = (
+  data: BindConfigWithSub[],
+): BindConfigWithSubDisabled[] => {
+  // 过滤数组
+  const loopFilterArray = (arr: BindConfigWithSub[]): BindConfigWithSub[] => {
+    return arr.filter((item) => {
+      if (item.dataType === DataTypeEnum.Object) {
+        if (!!item.subArgs?.length) {
+          return { ...item, subArgs: loopFilterArray(item.subArgs) };
+        }
+        return true;
       }
+      return false;
+    });
+  };
 
-      return item;
-    }
+  // 设置disabled
+  const loopSetObjectDisabled = (
+    arr: BindConfigWithSub[],
+  ): BindConfigWithSubDisabled[] => {
+    // 为确保类型安全，添加返回类型批注，这里假设返回类型与输入数据项类型一致
+    return arr.map<BindConfigWithSubDisabled>((item) => {
+      const newItem = {
+        ...item,
+        // 确保每个元素都有 disabled 属性
+        disabled: item.dataType === DataTypeEnum.Object || false,
+      };
 
-    return null;
-  });
+      if (newItem.subArgs?.length) {
+        return { ...newItem, subArgs: loopSetObjectDisabled(newItem.subArgs) };
+      }
+      return newItem;
+    });
+  };
+  // 过滤数组
+  const loopFilterArrayData = loopFilterArray(data);
+  // 设置disabled
+  return loopSetObjectDisabled(loopFilterArrayData);
+};
 
 // 删除subArgs属性
-export const loopOmitArray = (data: BindConfigWithSub[]) => {
+export const loopOmitArray = (
+  data: BindConfigWithSub[],
+): BindConfigWithSub[] => {
   return data.map((item) => {
     if (item.dataType?.includes('Array')) {
       return omit(item, ['subArgs']);
@@ -243,20 +273,25 @@ export const loopOmitArray = (data: BindConfigWithSub[]) => {
 };
 
 // 设置disabled
-export const loopSetDisabled = (data: BindConfigWithSub[]) => {
+// 原类型 BindConfigWithSubDisabled 期望的是一个对象类型，而不是函数类型，这里将返回类型改为 BindConfigWithSubDisabled[] 以匹配函数返回值
+export const loopSetDisabled = (
+  data: BindConfigWithSub[],
+): BindConfigWithSubDisabled[] => {
   // 为确保类型安全，添加返回类型批注，这里假设返回类型与输入数据项类型一致
-  return data.map<BindConfigWithSub>((item) => {
-    if (
-      item.dataType === DataTypeEnum.Object ||
-      item.dataType?.includes('Array')
-    ) {
-      item['disabled'] = true;
-    }
+  return data.map<BindConfigWithSubDisabled>((item) => {
+    const newItem: BindConfigWithSubDisabled = {
+      ...item,
+      // 确保每个元素都有 disabled 属性
+      disabled:
+        item.dataType === DataTypeEnum.Object ||
+        item.dataType?.includes('Array') ||
+        false,
+    };
 
-    if (!!item.subArgs?.length) {
-      return { ...item, subArgs: loopSetDisabled(item.subArgs) };
+    if (newItem.subArgs?.length) {
+      return { ...newItem, subArgs: loopSetDisabled(newItem.subArgs) };
     }
-    return item;
+    return newItem;
   });
 };
 

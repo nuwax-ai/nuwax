@@ -11,6 +11,7 @@ import type { PublishedAgentInfo } from '@/types/interfaces/square';
 import { getURLParams } from '@/utils/common';
 import { Empty } from 'antd';
 import classNames from 'classnames';
+import { Location } from 'history';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
 import styles from './index.less';
@@ -74,10 +75,12 @@ const Square: React.FC = () => {
   useEffect(() => {
     // 配置信息
     const info = localStorage.getItem(TENANT_CONFIG_INFO);
-    setConfigInfo(JSON.parse(info));
+    if (info) {
+      setConfigInfo(JSON.parse(info));
+    }
     handleQuery();
 
-    const unlisten = history.listen(({ location }) => {
+    const unlisten = history.listen(({ location }: { location: Location }) => {
       if (location.pathname === '/square') {
         handleQuery();
       }
