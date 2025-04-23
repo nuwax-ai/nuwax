@@ -8,10 +8,6 @@
   }
 }
 
-.editing-cell {
-  padding: 11px 16px !important;
-}
-
 .add-button-style {
   margin-bottom: -10px;
 }
@@ -29,7 +25,7 @@
         height: 100%;
 
         .ant-table {
-          height: 100%;
+          height: calc(100% - 60px);
         }
       }
     }
@@ -39,4 +35,12 @@
 .pagination-style {
   padding: 10px 0;
   height: 52px;
+}
+
+.edit-table {
+  .ant-table-row {
+    td {
+      padding: 11px 16px !important;
+    }
+  }
 }

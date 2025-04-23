@@ -1,7 +1,9 @@
 import knowledgeImage from '@/assets/images/knowledge_image.png';
 import AddAndModify from '@/components/AddAndModify';
 import MyTable from '@/components/MyTable';
+import EditTable from '@/components/MyTable/EditTable';
 import {
+  DeleteOutlined,
   DownloadOutlined,
   EditOutlined,
   LeftOutlined,
@@ -9,7 +11,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Space, Tabs, Tag } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 // import { useParams } from 'umi';
 import './index.less';
 import { AddParams, mockColumns, mockTableData } from './params';
@@ -21,11 +23,15 @@ const SpaceDataBase = () => {
   // 当前显示的表结构还是表数据
   const [currentContent, setCurrentContent] = useState<string>('structure');
   // 当前表的columns
-  const [columns, setColumns] = useState<any[]>([]);
+  const [columns, setColumns] = useState<TableColumn[]>([]);
   // 当前表的数据
-  const [tableData, setTableData] = useState<any[]>([]);
+  const [tableData, setTableData] = useState<AnyObject[]>([]);
+  // 当前可以编辑表格的ref
+  const editTableRef = useRef<any>(null);
+  // 当前被点击行的数据
+  const [currentRow, setCurrentRow] = useState<AnyObject>({});
   // 当前分页的数据
-  const [pagination, setPagination] = useState<any>({
+  const [pagination, setPagination] = useState({
     total: 13,
     pageSize: 10,
     current: 1,
@@ -42,8 +48,9 @@ const SpaceDataBase = () => {
     setCurrentContent(key);
   };
   //   点击弹出编辑框
-  const onEdit = () => {
-    console.log('点击编辑');
+  const onEdit = (record: AnyObject) => {
+    setCurrentRow(record);
+    setVisible(true);
   };
 
   // 切换页码或者每页显示的条数
@@ -52,12 +59,11 @@ const SpaceDataBase = () => {
     setPagination({ ...pagination, current: page, pageSize });
   };
 
-  // 新增数据
+  // 新增和修改数据
   const onAdd = (values: AnyObject) => {
     console.log('新增数据', values);
     // setVisible(false);
   };
-
   // 获取当前浏览器的高度
   const getBrowserHeight = () => {
     return (
@@ -65,6 +71,17 @@ const SpaceDataBase = () => {
         document.documentElement.clientHeight ||
         document.body.clientHeight) - 220
     );
+  };
+  // 触发表格的提交数据
+  const onSave = () => {
+    if (editTableRef.current) {
+      editTableRef.current.submit();
+    }
+  };
+  // 获取最新的表格数据，提交
+  const onDataSourceChange = (data: any) => {
+    console.log('onDataSourceChange', data);
+    // setTableData(data);
   };
 
   useEffect(() => {
@@ -77,6 +94,24 @@ const SpaceDataBase = () => {
     setColumns(mockColumns);
     setTableData(mockTableData);
   }, []);
+
+  // 表数据的操作列
+  const actionColumn = [
+    {
+      name: 'edit',
+      icon: EditOutlined,
+      description: '编辑',
+      func: (record: any) => onEdit(record),
+    },
+    {
+      name: 'delete',
+      icon: DeleteOutlined,
+      description: '删除',
+      func: (record: any) => {
+        console.log('删除', record);
+      },
+    },
+  ];
 
   return (
     <div className="database-container">
@@ -109,6 +144,11 @@ const SpaceDataBase = () => {
             activeKey={currentContent}
             onChange={onChange}
           />
+          {currentContent === 'structure' && (
+            <Button icon={<PlusOutlined />} onClick={onSave}>
+              保存
+            </Button>
+          )}
           {currentContent === 'data' && (
             <Space>
               <Button icon={<DownloadOutlined />}>导出</Button>
@@ -119,16 +159,34 @@ const SpaceDataBase = () => {
           )}
         </div>
         <div className="flex-1">
-          <MyTable
-            columns={columns}
-            tableData={tableData}
-            showEditRow
-            showIndex
-            showAddRow={currentContent === 'data' ? false : true}
-            pagination={currentContent === 'data' ? pagination : null}
-            onPageChange={changePagination}
-            scrollHeight={getBrowserHeight()}
-          />
+          {currentContent === 'data' && (
+            <MyTable
+              columns={columns}
+              tableData={tableData}
+              showEditRow
+              showIndex
+              pagination={pagination}
+              showPagination
+              onPageChange={changePagination}
+              scrollHeight={getBrowserHeight() + 40}
+              actionColumn={actionColumn}
+            />
+          )}
+          {currentContent === 'structure' && (
+            <EditTable
+              dataEmptyFlag={true}
+              columns={columns}
+              tableData={tableData}
+              showIndex
+              showAddRow
+              pagination={pagination}
+              showPagination={false}
+              scrollHeight={getBrowserHeight()}
+              onDataSourceChange={onDataSourceChange}
+              formRef={editTableRef}
+              rowKey={'row_key_chao'}
+            />
+          )}
         </div>
       </div>
       <AddAndModify
@@ -137,6 +195,7 @@ const SpaceDataBase = () => {
         formList={AddParams}
         visible={visible}
         onSubmit={onAdd}
+        initialValues={currentRow}
       />
     </div>
   );

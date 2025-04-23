@@ -67,6 +67,12 @@ export enum NodeTypeEnum {
   LongTermMemory = 'LongTermMemory',
   // 条件分支
   Condition = 'Condition',
+  // 数据新增
+  TableDataAdd = 'TableDataAdd',
+  // 数据删除
+  TableDataDelete = 'TableDataDelete',
+  // sql自定义
+  TableSQL = 'TableSQL',
 }
 
 export enum DataTypeEnum {

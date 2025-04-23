@@ -1,17 +1,20 @@
 import { AnyObject } from 'antd/es/_util/type';
 import React from 'react';
 
-interface Column {
-  title: string;
-  dataIndex: string;
-  type?: 'checkbox' | 'tag' | 'text' | 'date';
-  editable?: boolean;
-  onCell?: (record: any) => {
-    record: AnyObject;
-    dataIndex: string;
+declare global {
+  interface TableColumn {
     title: string;
-    editing: boolean;
-  };
+    dataIndex: string;
+    type?: 'checkbox' | 'tag' | 'text' | 'date';
+    editable?: boolean;
+    edit?: boolean;
+    onCell?: (record: any) => {
+      record: AnyObject;
+      dataIndex: string;
+      title: string;
+      editing: boolean;
+    };
+  }
 }
 
 interface ActionColumn {
@@ -23,7 +26,7 @@ interface ActionColumn {
 
 export interface MyTableProp {
   // 表头
-  columns: Column[];
+  columns: TableColumn[];
   // 表数据
   tableData: any[];
   // 表格的滚动高度
@@ -47,10 +50,13 @@ export interface MyTableProp {
     current: number; // 当前页码
     pageSize: number; // 每页显示条数
     total: number; // 总条数
-    onChange?: (page: number, pageSize: number) => void;
   };
   // 分页或者排序发生变更，重新获取数据
   onPageChange?: (page: number, pageSize: number) => void;
-  // 某一行数据发生了变更，提交数据
-  onRowChange?: (record: AnyObject[]) => void;
+  // 当前表格是否有数据
+  dataEmptyFlag?: boolean;
+  // 当数据发生变化，同步修改数据源
+  onDataSourceChange?: (dataSource: AnyObject[]) => void;
+  // 可编辑表格的formRef
+  formRef?: React.Ref<{ submit: () => void }>; // 简化类型，只暴露submit方法
 }
