@@ -2,7 +2,11 @@ import ConditionRender from '@/components/ConditionRender';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
-import { ArrowUpOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  ArrowDownOutlined,
+  ArrowUpOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import { Input, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
@@ -15,7 +19,12 @@ const cx = classNames.bind(styles);
 /**
  * 聊天输入组件
  */
-const ChatInput: React.FC<ChatInputProps> = ({ className, onEnter }) => {
+const ChatInput: React.FC<ChatInputProps> = ({
+  className,
+  onEnter,
+  visible,
+  onScrollBottom,
+}) => {
   // 文档
   const [files, setFiles] = useState<UploadFileInfo[]>([]);
   const [message, setMessage] = useState<string>('');
@@ -41,9 +50,9 @@ const ChatInput: React.FC<ChatInputProps> = ({ className, onEnter }) => {
   };
 
   // enter事件
-  const handlePressEnter = (e) => {
+  const handlePressEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
-    const { value } = e.target;
+    const { value } = e.target as HTMLTextAreaElement;
     // shift+enter或者ctrl+enter时换行
     if (
       e.nativeEvent.keyCode === 13 &&
@@ -85,61 +94,71 @@ const ChatInput: React.FC<ChatInputProps> = ({ className, onEnter }) => {
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', className)}>
-      {/*文件列表*/}
-      <ConditionRender condition={files?.length}>
-        <ChatUploadFile files={files} onDel={handleDelFile} />
-      </ConditionRender>
-      {/*输入框*/}
-      <Input.TextArea
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        rootClassName={cx(styles.input, 'flex-1')}
-        onPressEnter={handlePressEnter}
-        placeholder="直接输入指令；可通过回车发送"
-        autoSize={{ minRows: 1, maxRows: 3 }}
-      />
-      <div className={cx('flex', 'content-between')}>
-        {/*上传按钮*/}
-        <Upload
-          action={UPLOAD_FILE_ACTION}
-          onChange={handleChange}
-          headers={{
-            Authorization: token ? `Bearer ${token}` : '',
-          }}
-          data={{
-            type: 'tmp',
-          }}
-          showUploadList={false}
+      <div className={cx(styles['chat-container'], 'flex', 'flex-col')}>
+        {/*文件列表*/}
+        <ConditionRender condition={files?.length}>
+          <ChatUploadFile files={files} onDel={handleDelFile} />
+        </ConditionRender>
+        {/*输入框*/}
+        <Input.TextArea
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          rootClassName={cx(styles.input, 'flex-1')}
+          onPressEnter={handlePressEnter}
+          placeholder="直接输入指令；可通过回车发送"
+          autoSize={{ minRows: 1, maxRows: 3 }}
+        />
+        <div className={cx('flex', 'content-between')}>
+          {/*上传按钮*/}
+          <Upload
+            action={UPLOAD_FILE_ACTION}
+            onChange={handleChange}
+            headers={{
+              Authorization: token ? `Bearer ${token}` : '',
+            }}
+            data={{
+              type: 'tmp',
+            }}
+            showUploadList={false}
+          >
+            <span
+              className={cx(
+                'flex',
+                'items-center',
+                'content-center',
+                'cursor-pointer',
+                styles.box,
+                styles['plus-box'],
+              )}
+            >
+              <PlusOutlined />
+            </span>
+          </Upload>
+          <Tooltip title={disabledSend ? '请输入你的问题' : ''}>
+            <span
+              onClick={handleSendMessage}
+              className={cx(
+                'flex',
+                'items-center',
+                'content-center',
+                'cursor-pointer',
+                styles.box,
+                styles['send-box'],
+                { [styles.disabled]: disabledSend },
+              )}
+            >
+              <ArrowUpOutlined />
+            </span>
+          </Tooltip>
+        </div>
+      </div>
+      <div className={cx(styles['chat-action'])}>
+        <div
+          className={cx(styles['to-bottom'], { [styles.visible]: visible })}
+          onClick={onScrollBottom}
         >
-          <span
-            className={cx(
-              'flex',
-              'items-center',
-              'content-center',
-              'cursor-pointer',
-              styles.box,
-              styles['plus-box'],
-            )}
-          >
-            <PlusOutlined />
-          </span>
-        </Upload>
-        <Tooltip title={disabledSend ? '请输入你的问题' : ''}>
-          <span
-            onClick={handleSendMessage}
-            className={cx(
-              'flex',
-              'items-center',
-              'content-center',
-              'cursor-pointer',
-              styles.box,
-              styles['send-box'],
-              { [styles.disabled]: disabledSend },
-            )}
-          >
-            <ArrowUpOutlined />
-          </span>
-        </Tooltip>
+          <ArrowDownOutlined />
+        </div>
       </div>
     </div>
   );

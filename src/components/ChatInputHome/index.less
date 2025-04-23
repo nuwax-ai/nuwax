@@ -1,6 +1,6 @@
 @import '@/styles/color';
 
-.container {
+.chat-container {
   gap: 4px;
   padding: 10px 16px;
   border-radius: 20px;
@@ -48,6 +48,40 @@
         cursor: not-allowed;
         background-color: @GRAY06;
       }
+    }
+  }
+}
+
+.chat-action {
+  position: absolute;
+  width: 100%;
+  top: 0;
+  max-width: 800px;
+
+  .to-bottom {
+    width: 44px;
+    height: 44px;
+    position: absolute;
+    bottom: 24px;
+    border: 1px solid @BLANK25;
+    background-color: @WHITE;
+    border-radius: 50%;
+    cursor: pointer;
+    left: 50%;
+    transform: translate(-50%);
+    display: flex;
+    align-items: center;
+    font-size: 20px;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 25%);
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+
+    &.visible {
+      opacity: 1;
+      visibility: visible;
     }
   }
 }

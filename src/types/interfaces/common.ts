@@ -414,6 +414,8 @@ export interface PluginConfigTitleProps {
 export interface ChatInputProps {
   className?: React.CSSProperties;
   disabled?: boolean;
+  visible?: boolean;
+  onScrollBottom?: () => void;
   onClear?: () => void;
   onEnter: (message: string, files: UploadFileInfo[]) => void;
 }

@@ -12,7 +12,7 @@ import type {
 import { addBaseTarget } from '@/utils/common';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useModel, useParams } from 'umi';
 import styles from './index.less';
 import ShowArea from './ShowArea';
@@ -29,6 +29,7 @@ const Chat: React.FC = () => {
   // 附加state
   const message = location.state?.message;
   const files = location.state?.files;
+  const [visible, setVisible] = useState<boolean>(false);
 
   const {
     conversationInfo,
@@ -44,6 +45,7 @@ const Chat: React.FC = () => {
     onMessageSend,
     messageViewRef,
     allowAutoScrollRef,
+    scrollTimeoutRef,
     needUpdateTopicRef,
     handleClearSideEffect,
     setCardList,
@@ -74,15 +76,30 @@ const Chat: React.FC = () => {
         const { scrollTop, scrollHeight, clientHeight } = messageView;
         if (scrollTop + clientHeight < scrollHeight) {
           allowAutoScrollRef.current = false;
+          // 清除滚动
+          if (scrollTimeoutRef.current) {
+            clearTimeout(scrollTimeoutRef.current);
+            scrollTimeoutRef.current = null;
+          }
+          setVisible(true);
         } else {
           // 当用户滚动到底部时，重新允许自动滚动
           allowAutoScrollRef.current = true;
+          setVisible(false);
         }
       };
 
       messageView.addEventListener('scroll', handleScroll);
+      // 组件卸载时移除滚动事件监听器
       return () => {
         messageView.removeEventListener('scroll', handleScroll);
+        setShowType(EditAgentShowType.Hide);
+        setCardList([]);
+        handleClearSideEffect();
+        setMessageList([]);
+        setConversationInfo(null);
+        needUpdateTopicRef.current = true;
+        allowAutoScrollRef.current = true;
       };
     }
   }, []);
@@ -107,15 +124,6 @@ const Chat: React.FC = () => {
       };
       asyncFun();
     }
-
-    return () => {
-      setShowType(EditAgentShowType.Hide);
-      handleClearSideEffect();
-      setCardList([]);
-      setMessageList([]);
-      setConversationInfo(null);
-      needUpdateTopicRef.current = true;
-    };
   }, [id, message, files]);
 
   useEffect(() => {
@@ -125,6 +133,17 @@ const Chat: React.FC = () => {
   // 消息发送
   const handleMessageSend = (message: string, files?: UploadFileInfo[]) => {
     onMessageSend(id, message, files);
+  };
+
+  // 修改 handleScrollBottom 函数，添加自动滚动控制
+  const onScrollBottom = () => {
+    allowAutoScrollRef.current = true;
+    // 滚动到底部
+    messageViewRef.current?.scrollTo({
+      top: messageViewRef.current?.scrollHeight,
+      behavior: 'smooth',
+    });
+    setVisible(false);
   };
 
   return (
@@ -171,6 +190,8 @@ const Chat: React.FC = () => {
         <ChatInputHome
           className={cx(styles['chat-input'])}
           onEnter={handleMessageSend}
+          visible={visible}
+          onScrollBottom={onScrollBottom}
         />
       </div>
       {/*展示台区域*/}

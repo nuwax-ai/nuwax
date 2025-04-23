@@ -3,7 +3,11 @@ import ConditionRender from '@/components/ConditionRender';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
-import { ClearOutlined, PlusCircleOutlined } from '@ant-design/icons';
+import {
+  ArrowDownOutlined,
+  ClearOutlined,
+  PlusCircleOutlined,
+} from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import { Input, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
@@ -19,6 +23,8 @@ const cx = classNames.bind(styles);
 const ChatInput: React.FC<ChatInputProps> = ({
   className,
   disabled = false,
+  visible,
+  onScrollBottom,
   onClear,
   onEnter,
 }) => {
@@ -89,57 +95,75 @@ const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className={cx(styles.footer, 'flex', 'flex-col', className)}>
-      {/*文件列表*/}
-      <ConditionRender condition={files?.length}>
-        <ChatUploadFile files={files} onDel={handleDelFile} />
-      </ConditionRender>
-      <div className={cx('flex-1', 'w-full', 'flex', 'items-center')}>
-        <ConditionRender condition={!!onClear}>
-          <Tooltip title="清空会话记录">
-            <span
-              className={cx(
-                styles.clear,
-                'flex',
-                'items-center',
-                'content-center',
-                'hover-box',
-                'cursor-pointer',
-                { [styles.disabled]: disabled },
-              )}
-              onClick={handleClear}
-            >
-              <ClearOutlined />
-            </span>
-          </Tooltip>
+    <div className={cx(styles.container, 'flex', 'flex-col', className)}>
+      <div className={cx(styles['chat-container'], 'flex', 'flex-col')}>
+        {/*文件列表*/}
+        <ConditionRender condition={files?.length}>
+          <ChatUploadFile files={files} onDel={handleDelFile} />
         </ConditionRender>
-        {/*输入框*/}
-        <div
-          className={cx(styles['chat-input'], 'flex-1', 'flex', 'items-center')}
-        >
-          <Input.TextArea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            rootClassName={styles.input}
-            onPressEnter={handlePressEnter}
-            placeholder="直接输入指令；可通过回车发送"
-            autoSize={{ minRows: 1, maxRows: 3 }}
-          />
-          {/*上传按钮*/}
-          <Upload
-            action={UPLOAD_FILE_ACTION}
-            className={cx(styles['add-file'])}
-            onChange={handleChange}
-            headers={{
-              Authorization: token ? `Bearer ${token}` : '',
-            }}
-            data={{
-              type: 'tmp',
-            }}
-            showUploadList={false}
-            // beforeUpload={beforeUpload ?? beforeUploadDefault}
+        <div className={cx('flex-1', 'w-full', 'flex', 'items-center')}>
+          <ConditionRender condition={!!onClear}>
+            <Tooltip title="清空会话记录">
+              <span
+                className={cx(
+                  styles.clear,
+                  'flex',
+                  'items-center',
+                  'content-center',
+                  'hover-box',
+                  'cursor-pointer',
+                  { [styles.disabled]: disabled },
+                )}
+                onClick={handleClear}
+              >
+                <ClearOutlined />
+              </span>
+            </Tooltip>
+          </ConditionRender>
+          {/*输入框*/}
+          <div
+            className={cx(
+              styles['chat-input'],
+              'flex-1',
+              'flex',
+              'items-center',
+            )}
           >
+            <Input.TextArea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rootClassName={styles.input}
+              onPressEnter={handlePressEnter}
+              placeholder="直接输入指令；可通过回车发送"
+              autoSize={{ minRows: 1, maxRows: 3 }}
+            />
+            {/*上传按钮*/}
+            <Upload
+              action={UPLOAD_FILE_ACTION}
+              className={cx(styles['add-file'])}
+              onChange={handleChange}
+              headers={{
+                Authorization: token ? `Bearer ${token}` : '',
+              }}
+              data={{
+                type: 'tmp',
+              }}
+              showUploadList={false}
+              // beforeUpload={beforeUpload ?? beforeUploadDefault}
+            >
+              <span
+                className={cx(
+                  styles['icon-box'],
+                  'flex',
+                  'items-center',
+                  'content-center',
+                )}
+              >
+                <PlusCircleOutlined className={cx('cursor-pointer')} />
+              </span>
+            </Upload>
             <span
+              onClick={handleSendMessage}
               className={cx(
                 styles['icon-box'],
                 'flex',
@@ -147,24 +171,21 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 'content-center',
               )}
             >
-              <PlusCircleOutlined className={cx('cursor-pointer')} />
+              <img
+                className={cx(styles['send-image'], 'cursor-pointer')}
+                src={sendImage as string}
+                alt=""
+              />
             </span>
-          </Upload>
-          <span
-            onClick={handleSendMessage}
-            className={cx(
-              styles['icon-box'],
-              'flex',
-              'items-center',
-              'content-center',
-            )}
-          >
-            <img
-              className={cx(styles['send-image'], 'cursor-pointer')}
-              src={sendImage as string}
-              alt=""
-            />
-          </span>
+          </div>
+        </div>
+      </div>
+      <div className={cx(styles['chat-action'])}>
+        <div
+          className={cx(styles['to-bottom'], { [styles.visible]: visible })}
+          onClick={onScrollBottom}
+        >
+          <ArrowDownOutlined />
         </div>
       </div>
     </div>

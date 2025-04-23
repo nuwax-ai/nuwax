@@ -298,8 +298,8 @@ export default () => {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
+    // 清除滚动
     if (scrollTimeoutRef.current) {
-      // 清除滚动
       clearTimeout(scrollTimeoutRef.current);
       scrollTimeoutRef.current = null;
     }
@@ -369,6 +369,8 @@ export default () => {
 
       return [..._list, chatMessage, currentMessage] as MessageInfo[];
     });
+    // 允许滚动
+    allowAutoScrollRef.current = true;
     // 滚动
     handleScrollBottom();
     // 会话请求参数
@@ -425,6 +427,7 @@ export default () => {
     handleDebug,
     messageViewRef,
     allowAutoScrollRef,
+    scrollTimeoutRef,
     showType,
     setShowType,
     needUpdateTopicRef,
