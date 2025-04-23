@@ -39,6 +39,8 @@ import { ReactComponent as ICON_WORKFLOW_CONDITION } from '@/assets/workflow/wor
 import { ReactComponent as ICON_WORKFLOW_DATABASE } from '@/assets/workflow/workflow-Database.svg';
 import { ReactComponent as ICON_WORKFLOW_DATABASEADD } from '@/assets/workflow/workflow-DataBaseAdd.svg';
 import { ReactComponent as ICON_WORKFLOW_DATABASEDELETE } from '@/assets/workflow/workflow-DataBaseDelete.svg';
+import { ReactComponent as ICON_WORKFLOW_DATABASEQUERY } from '@/assets/workflow/workflow-DatabaseQuery.svg';
+import { ReactComponent as ICON_WORKFLOW_DATABASEUPDATE } from '@/assets/workflow/workflow-DatabaseUpdate.svg';
 import { ReactComponent as ICON_WORKFLOW_DOCUMENT_EXTRACTION } from '@/assets/workflow/workflow-DocumentExtraction.svg';
 import { ReactComponent as ICON_WORKFLOW_HTTP_REQUEST } from '@/assets/workflow/workflow-HTTPRequest.svg';
 import { ReactComponent as ICON_WORKFLOW_INTENT_RECOGNITION } from '@/assets/workflow/workflow-IntentRecognition.svg';
@@ -98,6 +100,8 @@ export {
   ICON_WORKFLOW_DATABASE,
   ICON_WORKFLOW_DATABASEADD,
   ICON_WORKFLOW_DATABASEDELETE,
+  ICON_WORKFLOW_DATABASEQUERY,
+  ICON_WORKFLOW_DATABASEUPDATE,
   ICON_WORKFLOW_DOCUMENT_EXTRACTION,
   ICON_WORKFLOW_HTTP_REQUEST,
   ICON_WORKFLOW_INTENT_RECOGNITION,

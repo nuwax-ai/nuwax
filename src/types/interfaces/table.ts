@@ -2,12 +2,17 @@ import { AnyObject } from 'antd/es/_util/type';
 import React from 'react';
 
 declare global {
+  interface SelectOptions {
+    label: string;
+    value: string;
+  }
   interface TableColumn {
     title: string;
     dataIndex: string;
-    type?: 'checkbox' | 'tag' | 'text' | 'date';
+    type: 'checkbox' | 'tag' | 'text' | 'date' | 'select';
     editable?: boolean;
     edit?: boolean;
+    options?: SelectOptions[];
     onCell?: (record: any) => {
       record: AnyObject;
       dataIndex: string;

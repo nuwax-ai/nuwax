@@ -2,7 +2,16 @@
 import type { MyTableProp } from '@/types/interfaces/table';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import type { PaginationProps } from 'antd';
-import { Button, Checkbox, Flex, Form, Input, Pagination, Table } from 'antd';
+import {
+  Button,
+  Checkbox,
+  Flex,
+  Form,
+  Input,
+  Pagination,
+  Select,
+  Table,
+} from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import React, { useEffect, useState } from 'react';
 import './index.less';
@@ -105,6 +114,17 @@ const MyTable: React.FC<MyTableProp> = ({
     };
   });
 
+  const getItemType = (type: string, options?: SelectOptions[]) => {
+    switch (type) {
+      case 'checkbox':
+        return <Checkbox />;
+      case 'select':
+        return <Select options={options} />;
+      default:
+        return <Input />;
+    }
+  };
+
   useEffect(() => {
     // 处理传入的tableData，添加row_key_chao字段
     const processedTableData = tableData.map((item) => ({
@@ -168,11 +188,7 @@ const MyTable: React.FC<MyTableProp> = ({
                             }
                             initialValue={record[item.dataIndex]} // 添加这行设置初始值
                           >
-                            {item.type === 'checkbox' ? (
-                              <Checkbox />
-                            ) : (
-                              <Input />
-                            )}
+                            {getItemType(item.type, item.options)}
                           </Form.Item>
                         );
                       }

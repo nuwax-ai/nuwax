@@ -14,8 +14,15 @@ export const mockColumns = [
   {
     title: '参数类型',
     dataIndex: 'type',
-    type: 'text' as const,
+    type: 'select' as const,
     editable: true,
+    options: [
+      { label: 'String', value: 'String' },
+      { label: 'Integer', value: 'Integer' },
+      { label: 'boolean', value: 'boolean' },
+      { label: 'Number', value: 'Number' },
+      { label: 'Date', value: 'Date' },
+    ],
   },
   {
     title: '是否必须',
