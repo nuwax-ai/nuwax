@@ -76,8 +76,9 @@ const VerifyCode: React.FC = () => {
 
   const codeIndex = useMemo(() => codeString?.length || 0, [codeString]);
 
+  // 明确 HTMLInputElement 对应的事件对象类型
   const handleChange = useCallback(
-    (e) => {
+    (e: React.ChangeEvent<HTMLInputElement>) => {
       const { value } = e.target;
       const numberString = getNumbersOnly(value) as string;
       const _codeString = numberString.substring(0, VERIFICATION_CODE_LEN);
@@ -115,7 +116,7 @@ const VerifyCode: React.FC = () => {
   };
 
   const handleEnter = useCallback(
-    (e) => {
+    (e: KeyboardEvent): void => {
       if (e.keyCode === 13 || e.which === 13) {
         if (codeString?.length !== VERIFICATION_CODE_LEN || sendLoading) {
           return;

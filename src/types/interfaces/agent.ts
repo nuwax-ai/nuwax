@@ -109,6 +109,11 @@ export interface BindConfigWithSub {
   children?: BindConfigWithSub[];
 }
 
+// 自定义disabled类型，继承BindConfigWithSub，添加disabled属性，用于控制组件是否禁用
+export interface BindConfigWithSubDisabled extends BindConfigWithSub {
+  disabled: boolean;
+}
+
 // 智能体组件模型基础信息
 export interface AgentComponentBaseInfo {
   // 组件配置ID

@@ -171,13 +171,21 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       width: 100,
       align: 'center',
       render: (_, record) => (
-        <Switch
-          disabled={record.require && !record.bindValue}
-          checked={record.enable}
-          onChange={(checked) =>
-            handleInputValue(record.key, 'enable', checked)
+        <Tooltip
+          title={
+            record.require &&
+            !record.bindValue &&
+            '此参数是必填参数，填写默认值后，此开关可用'
           }
-        />
+        >
+          <Switch
+            disabled={record.require && !record.bindValue}
+            checked={record.enable}
+            onChange={(checked) =>
+              handleInputValue(record.key, 'enable', checked)
+            }
+          />
+        </Tooltip>
       ),
     },
   ];

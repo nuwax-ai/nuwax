@@ -50,13 +50,15 @@ const Login: React.FC = () => {
 
   // 账号密码登录
   const handlerPasswordLogin = () => {
-    const { phone, areaCode, password } = formValues;
+    // 为了避免 formValues 为 undefined 的情况，添加空值检查
+    const { phone, areaCode, password } = formValues || {};
     run({ phone, areaCode, password });
   };
 
   // 验证码登录
   const handlerCodeLogin = () => {
-    const { phone, areaCode } = formValues;
+    // 为了避免 formValues 为 undefined 的情况，添加空值检查
+    const { phone, areaCode } = formValues || {};
     history.push('/verify-code', {
       phone,
       areaCode,
