@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState } from 'react';
 export const EllipsisTooltip: React.FC<EllipsisTooltipProps> = ({
   className,
   text,
+  placement = 'top',
 }) => {
   const textRef = useRef(null);
   const [isOverflowed, setIsOverflowed] = useState(false);
@@ -14,7 +15,8 @@ export const EllipsisTooltip: React.FC<EllipsisTooltipProps> = ({
   useEffect(() => {
     // 检测文本是否溢出（单行）
     if (textRef.current) {
-      const element = textRef.current;
+      // 为 element 指定 HTMLElement 类型，解决类型“never”上不存在属性的问题
+      const element = textRef.current as HTMLElement;
       const isOverflow = element.scrollWidth > element.clientWidth;
       setIsOverflowed(isOverflow);
     }
@@ -22,7 +24,13 @@ export const EllipsisTooltip: React.FC<EllipsisTooltipProps> = ({
 
   return (
     <div className={classNames('text-ellipsis', className)} ref={textRef}>
-      {isOverflowed ? <Tooltip title={text}>{text}</Tooltip> : text}
+      {isOverflowed ? (
+        <Tooltip title={text} placement={placement}>
+          {text}
+        </Tooltip>
+      ) : (
+        text
+      )}
     </div>
   );
 };

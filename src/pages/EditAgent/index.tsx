@@ -126,6 +126,7 @@ const EditAgent: React.FC = () => {
       systemPrompt,
       suggestPrompt,
       openingChatMsg,
+      openScheduledTask,
       openingGuidQuestions,
       openLongMemory,
     } = _agentConfigInfo;
@@ -141,6 +142,7 @@ const EditAgent: React.FC = () => {
       openSuggest,
       suggestPrompt,
       openingChatMsg,
+      openScheduledTask,
       openingGuidQuestions,
       openLongMemory,
     });

@@ -7,7 +7,10 @@ import { SPACE_ID } from '@/constants/home.constants';
 // import { CREATE_AGENT_LIST } from '@/constants/space.constants';
 import { apiAgentAdd, apiAgentConfigUpdate } from '@/services/agentConfig';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import type { AgentAddParams } from '@/types/interfaces/agent';
+import type {
+  AgentAddParams,
+  AgentConfigUpdateParams,
+} from '@/types/interfaces/agent';
 import type { CreateAgentProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';
@@ -39,7 +42,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   const { run: runEdit } = useRequest(apiAgentAdd, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result) => {
+    onSuccess: (result: number) => {
       setImageUrl('');
       onConfirmCreate?.(result);
       message.success('智能体已创建');
@@ -50,9 +53,10 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_, params) => {
+    onSuccess: (_: null, params: AgentConfigUpdateParams[]) => {
       message.success('智能体编辑成功');
-      onConfirmUpdate?.(...params);
+      const info: AgentConfigUpdateParams = params[0];
+      onConfirmUpdate?.(info);
     },
   });
 

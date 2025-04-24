@@ -68,6 +68,8 @@ export enum AgentArrangeConfigEnum {
   User_Problem_Suggestion = 'User_Problem_Suggestion',
   // 快捷指令
   Shortcut_Instruction = 'Shortcut_Instruction',
+  // 定时任务
+  Open_Scheduled_Task = 'Open_Scheduled_Task',
 }
 
 // 是否开启问题建议,可用值:Open,Close

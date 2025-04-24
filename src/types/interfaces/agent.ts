@@ -288,6 +288,8 @@ export interface AgentConfigInfo {
   userPrompt: string;
   // 是否开启问题建议,可用值:Open,Close
   openSuggest: OpenCloseEnum;
+  // 是否开启定时任务,可用值:Open,Close
+  openScheduledTask: OpenCloseEnum;
   // 问题建议提示词
   suggestPrompt: string;
   // 首次打开聊天框自动回复消息
@@ -298,18 +300,30 @@ export interface AgentConfigInfo {
   openLongMemory: OpenCloseEnum;
   // 发布状态,可用值:Developing,Applying,Published,Rejected
   publishStatus: PublishStatusEnum;
+  // 最后编辑时间
   modified: string;
+  // 创建时间
   created: string;
   // 模型信息
   modelComponentConfig: AgentComponentInfo;
   // 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)
   agentStatistics: AgentStatisticsInfo;
+  // 发布者信息
+  publishUser: CreatorInfo;
   // 创建者信息
   creator: CreatorInfo;
+  // 返回的具体业务数据
   space: SpaceInfo;
   devCollected: boolean;
   // 会话ID
   devConversationId: number;
+  // 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布
+  publishDate: string;
+  // 发布备注
+  publishRemark: string;
+  // 智能体分类名称
+  category: string;
+  collected: boolean;
 }
 
 // 触发器时区
@@ -408,6 +422,7 @@ export interface AgentCardInfo {
   argList: ArgList[];
 }
 
+// Agent信息，已发布过的agent才有此信息
 export interface AgentDetailDto extends AgentBaseInfo {
   spaceId: number;
   // 智能体ID
@@ -445,5 +460,6 @@ export interface AgentDetailDto extends AgentBaseInfo {
     // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model,Agent
     type: AgentComponentTypeEnum;
   }[];
+  // 当前登录用户是否收藏
   collect: boolean;
 }

@@ -107,7 +107,7 @@ const RequireParams: React.FC = forwardRef((_, ref) => {
   const displayRender = (labels: string[]) => labels[labels.length - 1];
 
   // 入参配置columns
-  const inputColumns: TableColumnsType<TriggerRequireInputType>['columns'] = [
+  const inputColumns: TableColumnsType<TriggerRequireInputType> = [
     {
       title: '变量名',
       dataIndex: 'name',
@@ -180,7 +180,7 @@ const RequireParams: React.FC = forwardRef((_, ref) => {
 
   const handleAdd = () => {
     const newInputData = cloneDeep(inputData);
-    const keyList = newInputData?.map((item) => item.key);
+    const keyList = newInputData?.map((item) => item.key) || [];
     // 新key值：取table数据最大key值 + 1
     const _key = keyList?.length > 0 ? Math.max(...keyList) + 1 : 1;
     const newData: TriggerRequireInputType = {

@@ -168,7 +168,7 @@ export async function apiAgentComponentAdd(
 // 新增智能体接口
 export async function apiAgentAdd(
   data: AgentAddParams,
-): Promise<RequestResponse<null>> {
+): Promise<RequestResponse<number>> {
   return request('/api/agent/add', {
     method: 'POST',
     data,

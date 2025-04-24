@@ -1,4 +1,4 @@
-import { AgentStatisticsInfo } from '@/types/interfaces/agent';
+import { StatisticsInfoProps } from '@/types/interfaces/agentTask';
 import {
   CloseOutlined,
   PlayCircleOutlined,
@@ -10,11 +10,6 @@ import React from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-export interface StatisticsInfoProps {
-  statistics?: AgentStatisticsInfo;
-  onClose?: () => void;
-}
 
 // 统计信息
 const StatisticsInfo: React.FC<StatisticsInfoProps> = ({

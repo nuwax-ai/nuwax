@@ -22,7 +22,7 @@ const routes = [
     routes: [
       { path: '', component: '@/pages/Home' },
       { path: '/home/chat/:id', component: '@/pages/Chat' },
-      { path: '/agent/details/:agentId', component: '@/pages/AgentDetails' },
+      { path: '/agent/:agentId', component: '@/pages/AgentDetails' },
       { path: '/space', component: '@/pages/Space' },
       { path: '/space/:spaceId/develop', component: '@/pages/SpaceDevelop' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },

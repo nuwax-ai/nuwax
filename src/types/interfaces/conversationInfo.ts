@@ -147,22 +147,29 @@ export interface ProcessingInfo {
   type: AgentComponentTypeEnum;
 }
 
-// 会话消息信息
-export interface MessageInfo {
+// 会话消息列表，会话列表查询时不会返回该字段值
+export interface ChatMessageDto {
+  // 消息ID
+  id: number | string;
   // assistant 模型回复；user 用户消息,可用值:USER,ASSISTANT,SYSTEM,FUNCTION
   role: AssistantRoleEnum;
-  // 可用值:CHAT,THINK, GUID,QUESTION,ANSWER
+  // 可用值:CHAT,THINK,GUID,QUESTION,ANSWER
   type?: MessageModeEnum;
   // 消息内容，其中附件放在.*?标签中
   text?: string;
+  // 思考内容
   think?: string;
   // 消息时间
   time: string;
+  // 消息附件
   attachments?: AttachmentFile[];
-  id: number | string;
   metadata?: unknown;
   // 可用值:USER,ASSISTANT,SYSTEM,TOOL
   messageType: MessageTypeEnum;
+}
+
+// 会话消息信息
+export interface MessageInfo extends ChatMessageDto {
   // 消息状态，可选值为 loading | incomplete | complete | error
   status?: MessageStatusEnum;
   // 自定义添加字段：chat 会话结果
