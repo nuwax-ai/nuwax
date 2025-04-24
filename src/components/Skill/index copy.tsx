@@ -113,7 +113,11 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
                     content={
                       '当参数设置为不可见时，大模型将无法看到该参数。如果该参数设置了默认值并且不可见，则在调用插件时，智能体会默认只使用这个设定值'
                     }
-                    overlayInnerStyle={{ width: '300px' }}
+                    styles={{
+                      body: {
+                        width: '300px',
+                      },
+                    }}
                   >
                     <InfoCircleOutlined className="ml-12" />
                   </Popover>
@@ -176,7 +180,9 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
                   <span>开启</span>
                   <Popover
                     content={'当设置为不可见时，该参数将不会返回给大模型'}
-                    overlayInnerStyle={{ width: '300px' }}
+                    styles={{ body: {
+                  width: '300px'
+                } }}
                   >
                     <InfoCircleOutlined className="ml-12" />
                   </Popover>

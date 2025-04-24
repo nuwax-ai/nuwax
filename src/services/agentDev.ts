@@ -1,4 +1,4 @@
-import type { AgentInfo } from '@/types/interfaces/agent';
+import type { AgentDetailDto, AgentInfo } from '@/types/interfaces/agent';
 import type { HomeAgentCategoryInfo } from '@/types/interfaces/agentConfig';
 import type { ListParams, PageParams } from '@/types/interfaces/common';
 import type { RequestResponse } from '@/types/interfaces/request';
@@ -103,6 +103,15 @@ export async function apiHomeCategoryList(): Promise<
   RequestResponse<HomeAgentCategoryInfo>
 > {
   return request('/api/home/list', {
+    method: 'GET',
+  });
+}
+
+// 已发布的智能体详情接口
+export function apiPublishedAgentInfo(
+  agentId: number,
+): Promise<RequestResponse<AgentDetailDto>> {
+  return request(`/api/published/agent/${agentId}`, {
     method: 'GET',
   });
 }

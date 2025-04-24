@@ -146,7 +146,11 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
             ) : (
               <Popover
                 title={description}
-                overlayInnerStyle={{ width: '300px' }}
+                styles={{
+                  body: {
+                    width: '300px',
+                  },
+                }}
                 trigger="click"
               >
                 <div

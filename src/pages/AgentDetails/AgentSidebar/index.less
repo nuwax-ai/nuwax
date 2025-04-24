@@ -12,32 +12,15 @@
   background-color: @WHITE;
   border-radius: 10px;
 
-  .header {
-    height: 40px;
-    gap: 8px;
-    font-size: 14px;
-    color: @GRAY18;
-
-    .text {
-      max-width: 60px;
-      line-height: 16px;
-      color: @BLANK06;
-      gap: 4px;
-    }
-
-    .close {
-      display: inline-block;
-      margin-left: auto;
-    }
-  }
-
   .sidebar-content {
-    margin-top: 50px;
+    padding: 70px 0 30px;
+    box-shadow: 0 0.5px 0 @GRAY19;
 
     .avatar {
       width: 90px;
       height: 90px;
       border-radius: 10px;
+      user-select: none;
     }
 
     .title {
@@ -49,7 +32,7 @@
     }
 
     .content {
-      height: 98px;
+      width: 100%;
       padding: 16px 10px;
       border-radius: 10px;
       background: #fcfcff;
@@ -57,6 +40,31 @@
       line-height: 22px;
       letter-spacing: 0;
       color: #767676;
+      text-align: center;
+    }
+
+    .from {
+      height: 22px;
+      line-height: 22px;
+      padding: 0 40px;
+      margin: 10px 0;
+      font-size: 14px;
+      font-weight: bold;
+      color: #bababe;
+      text-align: center;
+    }
+
+    .action-box {
+      gap: 10px;
+      font-size: 20px;
+
+      .collected {
+        color: @YELLOW01;
+      }
+
+      .un-collect {
+        color: @GRAY05;
+      }
     }
   }
 }

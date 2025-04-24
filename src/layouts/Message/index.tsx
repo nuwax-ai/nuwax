@@ -111,7 +111,7 @@ const Message: React.FC = () => {
           {/*  <Tooltip*/}
           {/*    placement="top"*/}
           {/*    color={'#fff'}*/}
-          {/*    overlayInnerStyle={{ color: '#000' }}*/}
+          {/* styles={{ body: { color: '#000' } }} */}
           {/*    title={'清除所有未读消息'}*/}
           {/*  >*/}
           {/*    /!*根据是否有未读消息做图标切换*!/*/}

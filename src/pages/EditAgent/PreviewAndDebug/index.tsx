@@ -12,7 +12,13 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 import PreviewAndDebugHeader from './PreviewAndDebugHeader';
@@ -29,6 +35,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
 }) => {
   // 会话ID
   const devConversationIdRef = useRef<number>(0);
+  const [visible, setVisible] = useState<boolean>(false);
+
   const {
     setConversationInfo,
     messageList,
@@ -42,6 +50,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     onMessageSend,
     messageViewRef,
     allowAutoScrollRef,
+    scrollTimeoutRef,
     needUpdateTopicRef,
     handleClearSideEffect,
     setCardList,
@@ -73,15 +82,30 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
         const { scrollTop, scrollHeight, clientHeight } = messageView;
         if (scrollTop + clientHeight < scrollHeight) {
           allowAutoScrollRef.current = false;
+          // 清除滚动
+          if (scrollTimeoutRef.current) {
+            clearTimeout(scrollTimeoutRef.current);
+            scrollTimeoutRef.current = null;
+          }
+          setVisible(true);
         } else {
           // 当用户滚动到底部时，重新允许自动滚动
           allowAutoScrollRef.current = true;
+          setVisible(false);
         }
       };
 
       messageView.addEventListener('scroll', handleScroll);
+      // 组件卸载时移除滚动事件监听器
       return () => {
         messageView.removeEventListener('scroll', handleScroll);
+        setShowType(EditAgentShowType.Hide);
+        setCardList([]);
+        handleClearSideEffect();
+        setMessageList([]);
+        setConversationInfo(null);
+        needUpdateTopicRef.current = true;
+        allowAutoScrollRef.current = true;
       };
     }
   }, []);
@@ -94,15 +118,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       // 查询会话
       runQueryConversation(devConversationId);
     }
-
-    return () => {
-      setShowType(EditAgentShowType.Hide);
-      setCardList([]);
-      handleClearSideEffect();
-      setMessageList([]);
-      setConversationInfo(null);
-      needUpdateTopicRef.current = true;
-    };
   }, [agentConfigInfo?.devConversationId]);
 
   // 清空会话记录，实际上是创建新的会话
@@ -132,6 +147,17 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     }
 
     onMessageSend(id, message, files, true, false);
+  };
+
+  // 修改 handleScrollBottom 函数，添加自动滚动控制
+  const onScrollBottom = () => {
+    allowAutoScrollRef.current = true;
+    // 滚动到底部
+    messageViewRef.current?.scrollTo({
+      top: messageViewRef.current?.scrollHeight,
+      behavior: 'smooth',
+    });
+    setVisible(false);
   };
 
   return (
@@ -188,6 +214,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
           disabled={!messageList?.length}
           onEnter={handleMessageSend}
           onClear={handleClear}
+          visible={visible}
+          onScrollBottom={onScrollBottom}
         />
       </div>
     </div>

@@ -7,6 +7,7 @@ export enum AgentComponentTypeEnum {
   Variable = 'Variable',
   Database = 'Database',
   Model = 'Model',
+  Agent = 'Agent',
 }
 
 // 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
