@@ -157,6 +157,11 @@ export interface NodeConfig {
   maxRecallCount?: number;
   // 最小匹配度
   matchingDegree?: number;
+
+  // 数据表的配置
+  tableFields?: CreatedNodeItem[];
+  conditionType?: string;
+  conditionArgs?: InputAndOutConfig[];
 }
 
 export interface HttpNodeConfig extends NodeConfig {

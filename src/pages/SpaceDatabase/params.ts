@@ -1,19 +1,19 @@
 export const mockColumns = [
   {
     title: '字段名',
-    dataIndex: 'name',
+    dataIndex: 'fieldName',
     type: 'text' as const,
     editable: true,
   },
   {
     title: '字段详细描述',
-    dataIndex: 'description',
+    dataIndex: 'fieldDescription',
     type: 'text' as const,
     editable: true,
   },
   {
     title: '参数类型',
-    dataIndex: 'type',
+    dataIndex: 'fieldType',
     type: 'select' as const,
     editable: true,
     options: [
@@ -23,23 +23,30 @@ export const mockColumns = [
       { label: 'Number', value: 'Number' },
       { label: 'Date', value: 'Date' },
     ],
+    map: {
+      1: 'String',
+      2: 'Integer',
+      3: 'Number',
+      4: 'boolean',
+      5: 'Date',
+    },
   },
   {
     title: '是否必须',
-    dataIndex: 'require',
+    dataIndex: 'nullableFlag',
     type: 'checkbox' as const,
     editable: true,
     edit: true,
   },
   {
     title: '是否唯一',
-    dataIndex: 'only',
+    dataIndex: 'uniqueFlag',
     type: 'checkbox' as const,
     editable: true,
   },
   {
     title: '是否可见',
-    dataIndex: 'isShow',
+    dataIndex: 'enabledFlag',
     type: 'checkbox' as const,
     editable: true,
     edit: true,
@@ -243,3 +250,11 @@ export const AddParams = [
     type: 'TextArea',
   },
 ];
+
+export const typeMap: Record<number, string> = {
+  1: 'Input',
+  2: 'Number',
+  3: 'Number',
+  4: 'Checkbox',
+  5: 'DatePicker',
+};

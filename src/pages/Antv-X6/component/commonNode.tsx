@@ -69,7 +69,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
       <Form.List name={inputItemName}>
         {(fields, { add, remove }) => (
           <>
-            <div className="dis-sb margin-bottom">
+            <div className="dis-sb ">
               <span className="node-title-style">{title}</span>
               {!disabledAdd && (
                 <Button

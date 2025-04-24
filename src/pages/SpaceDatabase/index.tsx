@@ -1,7 +1,11 @@
-import knowledgeImage from '@/assets/images/knowledge_image.png';
+import knowledgeImage from '@/assets/images/database_image.png';
 import AddAndModify from '@/components/AddAndModify';
+import type { FormItem } from '@/components/AddAndModify/type';
+import CreatedItem from '@/components/CreatedItem';
 import MyTable from '@/components/MyTable';
 import EditTable from '@/components/MyTable/EditTable';
+import service, { IgetDetails } from '@/services/tableSql';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   DeleteOutlined,
   DownloadOutlined,
@@ -12,20 +16,21 @@ import {
 import { Button, Space, Tabs, Tag } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import { useEffect, useRef, useState } from 'react';
-// import { useParams } from 'umi';
+import { useParams } from 'umi';
 import './index.less';
-import { AddParams, mockColumns, mockTableData } from './params';
-import type { Detail } from './type';
+import { mockColumns, mockTableData, typeMap } from './params';
 
 const SpaceDataBase = () => {
-  // const { spaceId, databaseId } = useParams();
-  const [detail, setDetail] = useState<Detail | null>(null);
+  const { spaceId, databaseId } = useParams();
+  const [detail, setDetail] = useState<IgetDetails | null>(null);
+  const [AddParams, setAddParams] = useState<FormItem[]>([]);
   // 当前显示的表结构还是表数据
   const [currentContent, setCurrentContent] = useState<string>('structure');
   // 当前表的columns
   const [columns, setColumns] = useState<TableColumn[]>([]);
   // 当前表的数据
   const [tableData, setTableData] = useState<AnyObject[]>([]);
+  // 表结构的数据
   // 当前可以编辑表格的ref
   const editTableRef = useRef<any>(null);
   // 当前被点击行的数据
@@ -38,6 +43,9 @@ const SpaceDataBase = () => {
   });
   // 开启关闭新增的弹窗
   const [visible, setVisible] = useState<boolean>(false);
+  // 开启关闭编辑表的弹窗
+  const [open, setOpen] = useState<boolean>(false);
+
   // 返回上一级
   const handleBack = () => {
     history.back();
@@ -84,15 +92,79 @@ const SpaceDataBase = () => {
     // setTableData(data);
   };
 
+  // 获取当前的数据
+  const getDetails = async () => {
+    try {
+      const res = await service.getDetail(databaseId);
+      setDetail(res.data);
+    } catch (error) {}
+  };
+
+  // 获取表数据的数据
+  const getTable = async () => {
+    try {
+      const _params = {
+        tableId: databaseId,
+        pageNo: pagination.current,
+        pageSize: pagination.pageSize,
+      };
+      const res = await service.getTableData(_params);
+      setTableData(res.data.records);
+      const arr = res.data.columnDefines.map((item) => {
+        return {
+          title: item.fieldDescription,
+          dataIndex: item.fieldName,
+          key: item.fieldName,
+          type: 'text' as const,
+        };
+      });
+      const addParams = res.data.columnDefines.map((item) => {
+        return {
+          label: item.fieldDescription,
+          dataIndex: item.fieldName,
+          key: item.fieldName,
+          type: typeMap[item.fieldType],
+          rules: item.nullableFlag
+            ? undefined
+            : [{ required: true, message: '请输入' }],
+          options:
+            item.fieldType === 4
+              ? [
+                  { label: 'true', value: 'true' },
+                  { label: 'false', value: 'false' },
+                ]
+              : undefined,
+        };
+      });
+      setAddParams(addParams);
+      setColumns(arr);
+    } catch (error) {}
+  };
+
+  // 修改当前数据表的数据
+  const Confirm = async (value: AnyObject) => {
+    try {
+      const _params = {
+        tableName: value.name,
+        tableDescription: value.description,
+        spaceId: spaceId,
+        id: detail?.id,
+      };
+      await service.modifyTask(_params);
+      setDetail({
+        ...(detail as IgetDetails),
+        tableName: value.name,
+        tableDescription: value.description,
+      });
+      setOpen(false);
+    } catch (error) {}
+  };
+
   useEffect(() => {
-    // 获取详情数据
-    setDetail({
-      name: 'SpaceDataBase',
-      icon: knowledgeImage,
-      count: 10,
-    });
     setColumns(mockColumns);
     setTableData(mockTableData);
+    getDetails();
+    getTable();
   }, []);
 
   // 表数据的操作列
@@ -120,18 +192,18 @@ const SpaceDataBase = () => {
         <LeftOutlined className="icon-back" onClick={handleBack} />
         <img
           className="logo"
-          src={detail ? detail.icon : (knowledgeImage as string)}
+          src={detail && detail.icon ? detail.icon : (knowledgeImage as string)}
           alt=""
         />
         <div>
           <div className="dis-left database-header-title">
-            <h3 className="name">{detail?.name}</h3>
+            <h3 className="name ">{detail?.tableName}</h3>
             <EditOutlined
               className="cursor-pointer hover-box"
-              onClick={onEdit}
+              onClick={() => setOpen(true)}
             />
           </div>
-          <Tag className="tag-style">{`${detail?.count}条记录`}</Tag>
+          <Tag className="tag-style">{`${detail?.tableDescription}条记录`}</Tag>
         </div>
       </div>
       <div className="inner-container">
@@ -175,8 +247,8 @@ const SpaceDataBase = () => {
           {currentContent === 'structure' && (
             <EditTable
               dataEmptyFlag={true}
-              columns={columns}
-              tableData={tableData}
+              columns={mockColumns}
+              tableData={detail?.fieldList || []}
               showIndex
               showAddRow
               pagination={pagination}
@@ -196,6 +268,22 @@ const SpaceDataBase = () => {
         visible={visible}
         onSubmit={onAdd}
         initialValues={currentRow}
+      />
+      <CreatedItem
+        type={AgentComponentTypeEnum.Database}
+        spaceId={spaceId}
+        open={open}
+        onCancel={() => setOpen(false)}
+        Confirm={Confirm}
+        info={
+          detail
+            ? {
+                name: detail.tableName,
+                description: detail.tableDescription,
+                icon: detail.icon,
+              }
+            : undefined
+        }
       />
     </div>
   );

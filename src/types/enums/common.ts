@@ -71,6 +71,8 @@ export enum NodeTypeEnum {
   TableDataAdd = 'TableDataAdd',
   // 数据删除
   TableDataDelete = 'TableDataDelete',
+  TableDataUpdate = 'TableDataUpdate',
+  TableDataQuery = 'TableDataQuery',
   // sql自定义
   TableSQL = 'TableSQL',
 }

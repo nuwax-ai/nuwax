@@ -1,7 +1,5 @@
-import {
-  default as Database,
-  default as Knowledge,
-} from '@/assets/images/knowledge_image.png';
+import Database from '@/assets/images/database_image.png';
+import { default as Knowledge } from '@/assets/images/knowledge_image.png';
 import Plugin from '@/assets/images/plugin_image.png';
 import Workflow from '@/assets/images/workflow_image.png';
 import SelectList from '@/components/SelectList';
@@ -43,12 +41,11 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
   mode = CreateUpdateModeEnum.Create,
   type,
   info,
-  spaceId,
+  // spaceId,
   open,
   onCancel,
   Confirm,
 }) => {
-  console.log(spaceId);
   const [form] = Form.useForm();
   const [imageUrl] = useState<string>('');
 

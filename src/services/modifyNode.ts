@@ -32,6 +32,11 @@ const urlList = {
   LongTermMemory: '/api/workflow/node/update',
   Condition: '/api/workflow/node/condition/update',
   TextProcessing: '/api/workflow/node/text/update',
+  TableDataAdd: '/api/workflow/node/tableDataAdd/update',
+  TableDataUpdate: '/api/workflow/node/tableDataUpdate/update',
+  TableDataDelete: '/api/workflow/node/tableDataDelete/update',
+  TableDataQuery: '/api/workflow/node/tableDataQuery/update',
+  TableSQL: '/api/workflow/node/tableCustomSql/update',
 };
 // 更新节点信息
 export async function modifyNode(

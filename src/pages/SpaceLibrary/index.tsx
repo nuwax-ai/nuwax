@@ -21,6 +21,7 @@ import {
 } from '@/services/library';
 import { apiModelDelete } from '@/services/modelConfig';
 import { apiPluginCopy, apiPluginDelete } from '@/services/plugin';
+import service, { IAddTask } from '@/services/tableSql';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ComponentMoreActionEnum } from '@/types/enums/library';
@@ -39,13 +40,13 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 import { Button, Empty, Input, message, Modal } from 'antd';
+import { AnyObject } from 'antd/es/_util/type';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useParams, useRequest } from 'umi';
 import ComponentItem from './ComponentItem';
 import CreateModel from './CreateModel';
 import styles from './index.less';
-
 const cx = classNames.bind(styles);
 const { confirm } = Modal;
 
@@ -288,10 +289,19 @@ const SpaceLibrary: React.FC = () => {
     }
   };
 
-  const Confirm = (value, type, mode) => {
-    console.log(value, type, mode);
+  const Confirm = async (value: AnyObject) => {
+    try {
+      const params: IAddTask = {
+        tableName: value.name,
+        tableDescription: value.description,
+        spaceId: spaceId,
+      };
 
-    history.push(`/space/${spaceId}/database/${1}`);
+      const res = await service.addTask(params);
+      history.push(`/space/${spaceId}/database/${res.data}`);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   // 设置统计信息

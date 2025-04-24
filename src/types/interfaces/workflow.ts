@@ -207,7 +207,7 @@ export interface SkillProps {
   form: FormInstance;
   params: CreatedNodeItem[];
   // 当前技能的参数名称
-  skillName: 'knowledgeBaseConfigs' | 'skillComponentConfigs';
+  skillName: 'knowledgeBaseConfigs' | 'skillComponentConfigs' | 'tableFields';
   // 移出技能
   removeItem: (id: CreatedNodeItem) => void;
   // 修改技能参数
@@ -219,6 +219,15 @@ export interface SkillDisposeProps {
   onCancel: () => void;
   params: CreatedNodeItem;
   onConfirm: (val: CreatedNodeItem) => void;
+}
+
+export interface DataTableProps {
+  icon?: string;
+  name: string;
+  description: string;
+  handleDelete: () => void;
+  showParams?: boolean;
+  params?: string[];
 }
 
 // 定义分组的模型列表

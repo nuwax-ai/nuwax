@@ -5,11 +5,13 @@ import {
   DatePicker,
   Form,
   Input,
+  InputNumber,
   Modal,
   Radio,
   Select,
 } from 'antd';
 import React from 'react';
+import './index.less';
 import type { AddedProps, FormItem } from './type';
 const Added: React.FC<AddedProps> = ({
   visible,
@@ -27,21 +29,35 @@ const Added: React.FC<AddedProps> = ({
       case 'Checkbox':
         return <Checkbox.Group options={item.options} />;
       case 'DatePicker':
-        return <DatePicker />;
+        return (
+          <DatePicker showTime placeholder={item.placeholder || '请选择时间'} />
+        );
       case 'RangePicker':
         return <DatePicker.RangePicker />;
       case 'Select':
-        return <Select options={item.options} />;
+        return (
+          <Select
+            options={item.options}
+            placeholder={item.placeholder || '请选择'}
+          />
+        );
       case 'TextArea':
-        return <Input.TextArea />;
+        return <Input.TextArea placeholder={item.placeholder || '请输入'} />;
       case 'Cascader':
-        return <Cascader options={item.options} />;
+        return (
+          <Cascader
+            options={item.options}
+            placeholder={item.placeholder || '请选择'}
+          />
+        );
       case 'Radio':
         return <Radio.Group options={item.options} />;
       case 'Uplpad':
         return <Radio.Group options={item.options} />;
+      case 'Number':
+        return <InputNumber />;
       default:
-        return <Input />;
+        return <Input placeholder={item.placeholder || '请输入'} />;
     }
   };
 
@@ -82,6 +98,7 @@ const Added: React.FC<AddedProps> = ({
         initialValues={initialValues}
         onFinish={onFinish}
         requiredMark={customizeRequiredMark}
+        className="add-modify-form"
       >
         {formList.map((item) => {
           return (

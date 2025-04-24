@@ -249,6 +249,11 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
                   {
                     name: 'isSuccess',
                     dataType: DataTypeEnum.Boolean,
+                    description: '',
+                    require: true,
+                    systemVariable: false,
+                    bindValue: '',
+                    key: 'outputArray',
                   },
                 ]}
               />
@@ -463,8 +468,28 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
               <TreeOutput
                 treeData={
                   form.getFieldValue('textHandleType') === 'CONCAT'
-                    ? [{ name: 'output', dataType: DataTypeEnum.String }]
-                    : [{ name: 'output', dataType: DataTypeEnum.Array_String }]
+                    ? [
+                        {
+                          name: 'output',
+                          dataType: DataTypeEnum.String,
+                          description: '',
+                          require: true,
+                          systemVariable: false,
+                          bindValue: '',
+                          key: 'outputArray',
+                        },
+                      ]
+                    : [
+                        {
+                          name: 'output',
+                          dataType: DataTypeEnum.Array_String,
+                          description: '',
+                          require: true,
+                          systemVariable: false,
+                          bindValue: '',
+                          key: 'outputString',
+                        },
+                      ]
                 }
               />
             </>

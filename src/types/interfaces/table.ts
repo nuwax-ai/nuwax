@@ -10,6 +10,7 @@ declare global {
     title: string;
     dataIndex: string;
     type: 'checkbox' | 'tag' | 'text' | 'date' | 'select';
+    map?: AnyObject;
     editable?: boolean;
     edit?: boolean;
     options?: SelectOptions[];
