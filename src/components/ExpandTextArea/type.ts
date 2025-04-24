@@ -12,6 +12,8 @@ export interface ExpandableInputTextareaProps {
   onExpand?: boolean;
   // 是否有优化的按钮
   onOptimize?: boolean;
+  // 优化的回调函数
+  onOptimizeClick?: () => void;
 }
 
 //

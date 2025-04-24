@@ -861,22 +861,63 @@ const Workflow: React.FC = () => {
       // 重置表单状态
       form.resetFields();
       form.setFieldsValue(newFoldWrapItem.nodeConfig);
-      // 处理特殊节点的默认值
-      if (foldWrapItem.type === 'HTTPRequest') {
-        if (!form.getFieldValue('method')) {
-          form.setFieldValue('method', 'GET');
+
+      switch (foldWrapItem.type) {
+        case 'HTTPRequest': {
+          if (!newFoldWrapItem.method) {
+            form.setFieldValue('method', 'GET');
+          }
+          if (!newFoldWrapItem.contentType) {
+            form.setFieldValue('contentType', 'JSON');
+          }
+          break;
         }
-        if (!form.getFieldValue('contentType')) {
-          form.setFieldValue('contentType', 'JSON');
+        case 'Variable': {
+          if (!newFoldWrapItem.configType) {
+            form.setFieldValue('configType', 'SET_VARIABLE');
+          }
+          break;
         }
-      } else if (foldWrapItem.type === 'Variable') {
-        if (!form.getFieldValue('configType')) {
-          form.setFieldValue('configType', 'SET_VARIABLE');
+        case 'QA': {
+          if (!newFoldWrapItem.answerType) {
+            form.setFieldValue('answerType', 'TEXT');
+          }
+          break;
         }
-      } else if (foldWrapItem.type === 'QA') {
-        if (!form.getFieldValue('answerType')) {
-          form.setFieldValue('answerType', 'TEXT');
+        case 'TableDataUpdate':
+        case 'TableDataDelete': {
+          if (!newFoldWrapItem.conditionArgs) {
+            form.setFieldValue('conditionArgs', [
+              {
+                firstArg: {
+                  bindValue: null,
+                  bindValueType: null,
+                },
+                secondArg: {
+                  bindValue: null,
+                  bindValueType: null,
+                },
+                compareType: null,
+              },
+              {
+                firstArg: {
+                  bindValue: null,
+                  bindValueType: null,
+                },
+                secondArg: {
+                  bindValue: null,
+                  bindValueType: null,
+                },
+                compareType: null,
+              },
+            ]);
+            form.setFieldValue('conditionType', 'AND');
+            console.log('form', form.getFieldsValue(true));
+          }
+          break;
         }
+        default:
+          break;
       }
     }
   }, [foldWrapItem.id]);

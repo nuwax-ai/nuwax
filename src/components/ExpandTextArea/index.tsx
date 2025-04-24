@@ -14,6 +14,7 @@ export const ExpandableInputTextarea: React.FC<
   rows = 3,
   onExpand,
   onOptimize,
+  onOptimizeClick,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false); // 添加本地状态
 
@@ -23,12 +24,18 @@ export const ExpandableInputTextarea: React.FC<
         {/* 名称 */}
         <span className="node-title-style">{title}</span>
         <div>
+          {/* 是否有优化 */}
+          {onOptimize && onOptimizeClick && (
+            <ICON_OPTIMIZE
+              className="cursor-pointer"
+              onClick={() => onOptimizeClick()}
+              style={{ marginLeft: '10px' }}
+            />
+          )}
           {/* 是否有展开 */}
           {onExpand && (
             <ExpandAltOutlined onClick={() => setIsExpanded(true)} />
           )}
-          {/* 是否有优化 */}
-          {onOptimize && <ICON_OPTIMIZE style={{ marginLeft: '10px' }} />}
         </div>
       </div>
       {/* 输入框 */}

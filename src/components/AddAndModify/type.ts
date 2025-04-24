@@ -10,6 +10,7 @@ export interface FormItem {
   }>;
   // 表单校验规则
   rules?: AnyObject[];
+  placeholder?: string;
 }
 
 export interface AddedProps {

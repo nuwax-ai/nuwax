@@ -1,17 +1,19 @@
 import { InputAndOutConfig } from '@/types/interfaces/node';
-import { InfoCircleOutlined } from '@ant-design/icons';
-import { Popover, Tree } from 'antd';
+import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Popover, Tree } from 'antd';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import InputOrReferenceFormTree from './InputOrReferenceFormTree';
 import { TreeInputProps } from './type';
-interface TreeNodeConfig extends InputAndOutConfig {
-  key: string;
-  subArgs?: TreeNodeConfig[];
-}
-const TreeInput: React.FC<TreeInputProps> = ({ form, title, params }) => {
-  const [treeData, setTreeData] = useState<TreeNodeConfig[]>(params || []);
+
+const TreeInput: React.FC<TreeInputProps> = ({
+  form,
+  title,
+  params,
+  showAdd,
+}) => {
+  const [treeData, setTreeData] = useState<InputAndOutConfig[]>(params || []);
   const { setIsModified } = useModel('workflow');
   useEffect(() => {
     if (params && !_.isEqual(params, treeData)) {
@@ -19,7 +21,7 @@ const TreeInput: React.FC<TreeInputProps> = ({ form, title, params }) => {
     }
   }, [params]);
 
-  const updateTreeData = (newData: TreeNodeConfig[]) => {
+  const updateTreeData = (newData: InputAndOutConfig[]) => {
     setTreeData(newData);
     form.setFieldValue('inputArgs', newData);
     setIsModified(true);
@@ -29,7 +31,7 @@ const TreeInput: React.FC<TreeInputProps> = ({ form, title, params }) => {
     value: string,
     type: 'Input' | 'Reference',
   ) => {
-    const updateRecursive = (data: TreeNodeConfig[]): TreeNodeConfig[] =>
+    const updateRecursive = (data: InputAndOutConfig[]): InputAndOutConfig[] =>
       data.map((node) => {
         if (node.key === key) {
           return { ...node, bindValue: value, bindValueType: type };
@@ -44,7 +46,7 @@ const TreeInput: React.FC<TreeInputProps> = ({ form, title, params }) => {
     updateTreeData(newData);
   };
 
-  const renderTitle = (nodeData: TreeNodeConfig) => {
+  const renderTitle = (nodeData: InputAndOutConfig) => {
     return (
       <div className="dis-sb" style={{ width: '100%' }}>
         <div className="flex-1">
@@ -72,7 +74,12 @@ const TreeInput: React.FC<TreeInputProps> = ({ form, title, params }) => {
 
   return (
     <div>
-      <span className="node-title-style">{title}</span>
+      <div className="dis-sb">
+        <span className="node-title-style">{title}</span>
+        {showAdd && (
+          <Button type="text" size={'small'} icon={<PlusOutlined />} />
+        )}
+      </div>
       {treeData && treeData.length > 0 && (
         <div className={'dis-left font-12 mb-6 font-color-gray07'}>
           <span
@@ -91,7 +98,7 @@ const TreeInput: React.FC<TreeInputProps> = ({ form, title, params }) => {
           </span>
         </div>
       )}
-      <Tree<TreeNodeConfig>
+      <Tree<InputAndOutConfig>
         treeData={treeData}
         defaultExpandAll
         fieldNames={{ title: 'name', key: 'key', children: 'subArgs' }}

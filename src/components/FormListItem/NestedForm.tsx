@@ -348,7 +348,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
             <Tooltip title="新增子节点">
               <Button
                 type="text"
-                disabled={nodeData.systemVariable}
+                // disabled={nodeData.systemVariable}
                 className="tree-icon-style"
                 onClick={(e) => {
                   e.stopPropagation();

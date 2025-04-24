@@ -7,36 +7,8 @@ import { Button, Form, Select, Space, Tag } from 'antd';
 import React from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { v4 as uuidv4 } from 'uuid';
+import { options } from '../params';
 import './condition.less';
-const options = [
-  { label: '等于', value: 'EQUAL', displayValue: '=' },
-  { label: '不等于', value: 'NOT_EQUAL', displayValue: '≠' },
-  { label: '大于', value: 'GREATER_THAN', displayValue: '>' },
-  {
-    label: '大于等于',
-    value: 'GREATER_THAN_OR_EQUAL',
-    displayValue: '≥',
-  },
-  { label: '小于', value: 'LESS_THAN', displayValue: '<' },
-  { label: '小于等于', value: 'LESS_THAN_OR_EQUAL', displayValue: '≤' },
-  { label: '长度大于', value: 'LENGTH_GREATER_THAN', displayValue: '>' },
-  {
-    label: '长度大于等于',
-    value: 'LENGTH_GREATER_THAN_OR_EQUAL',
-    displayValue: '≥',
-  },
-  { label: '长度小于', value: 'LENGTH_LESS_THAN', displayValue: '<' },
-  {
-    label: '长度小于等于',
-    value: 'LENGTH_LESS_THAN_OR_EQUAL',
-    displayValue: '≤',
-  },
-  { label: '包含', value: 'CONTAINS', displayValue: '⊃' },
-  { label: '不包含', value: 'NOT_CONTAINS', displayValue: '⊅' },
-  { label: '匹配正则表达式', value: 'MATCH_REGEX', displayValue: '~' },
-  { label: '为空', value: 'IS_NULL', displayValue: '∅' },
-  { label: '不为空', value: 'NOT_NULL', displayValue: '!∅' },
-];
 
 const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
   const onDragEnd = (result: any) => {
