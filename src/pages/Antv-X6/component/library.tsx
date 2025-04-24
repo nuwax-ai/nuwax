@@ -138,7 +138,11 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
           <div className="knowlegenow-left-title">
             <span>搜索策略</span>
             <Popover
-              overlayInnerStyle={{ width: '300px' }}
+              styles={{
+                body: {
+                  width: '300px',
+                },
+              }}
               placement="right"
               content={
                 '从知识库中获取知识的检索方式，不同的检索策略可以更有效地找到正确的信息，提高其生成的答案的准确性和可用性'
@@ -162,7 +166,11 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
           <div className="knowlegenow-left-title">
             <span>最大召回数量</span>
             <Popover
-              overlayInnerStyle={{ width: '300px' }}
+              styles={{
+                body: {
+                  width: '300px',
+                },
+              }}
               placement="right"
               content={
                 '从知识库中返回给大模型的最大段落数，数值越大返回的内容越多'
@@ -185,7 +193,11 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
           <div className="knowlegenow-left-title">
             <span>最小匹配度</span>
             <Popover
-              overlayInnerStyle={{ width: '300px' }}
+              styles={{
+                body: {
+                  width: '300px',
+                },
+              }}
               placement="right"
               content={
                 '根据设置的匹配度选取段落返回给大模型，低于设定匹配度的内容不会被召回'

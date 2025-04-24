@@ -47,8 +47,10 @@ const User: React.FC = () => {
     <Popover
       placement="rightBottom"
       title={null}
-      overlayInnerStyle={{
-        padding: 0,
+      styles={{
+        body: {
+          padding: 0,
+        },
       }}
       content={
         <div className={cx(styles.container)}>
