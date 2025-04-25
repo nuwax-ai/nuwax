@@ -9,7 +9,7 @@ declare global {
   interface TableColumn {
     title: string;
     dataIndex: string;
-    type: 'checkbox' | 'tag' | 'text' | 'date' | 'select';
+    type: 'checkbox' | 'tag' | 'text' | 'date' | 'select' | 'time';
     map?: AnyObject;
     editable?: boolean;
     edit?: boolean;

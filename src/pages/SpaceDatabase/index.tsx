@@ -1,19 +1,20 @@
 import knowledgeImage from '@/assets/images/database_image.png';
-import AddAndModify from '@/components/AddAndModify';
+import AddAndModify, { AddAndModifyRef } from '@/components/AddAndModify';
 import type { FormItem } from '@/components/AddAndModify/type';
 import CreatedItem from '@/components/CreatedItem';
 import MyTable from '@/components/MyTable';
-import EditTable from '@/components/MyTable/EditTable';
+import EditTable, { EditTableRef } from '@/components/MyTable/EditTable';
 import service, { IgetDetails } from '@/services/tableSql';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   DeleteOutlined,
   DownloadOutlined,
   EditOutlined,
+  ExclamationCircleFilled,
   LeftOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Button, Space, Tabs, Tag } from 'antd';
+import { Button, message, Modal, Space, Tabs, Tag } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'umi';
@@ -32,17 +33,16 @@ const SpaceDataBase = () => {
   const [tableData, setTableData] = useState<AnyObject[]>([]);
   // 表结构的数据
   // 当前可以编辑表格的ref
-  const editTableRef = useRef<any>(null);
-  // 当前被点击行的数据
-  const [currentRow, setCurrentRow] = useState<AnyObject>({});
+  const editTableRef = useRef<EditTableRef>(null);
+  // 当前新增和删除的ref
+  const addedRef = useRef<AddAndModifyRef>(null);
   // 当前分页的数据
   const [pagination, setPagination] = useState({
     total: 13,
     pageSize: 10,
     current: 1,
   });
-  // 开启关闭新增的弹窗
-  const [visible, setVisible] = useState<boolean>(false);
+
   // 开启关闭编辑表的弹窗
   const [open, setOpen] = useState<boolean>(false);
 
@@ -56,9 +56,14 @@ const SpaceDataBase = () => {
     setCurrentContent(key);
   };
   //   点击弹出编辑框
-  const onEdit = (record: AnyObject) => {
-    setCurrentRow(record);
-    setVisible(true);
+  const onShow = (record?: AnyObject) => {
+    if (addedRef.current) {
+      if (record && record.id) {
+        addedRef.current?.onShow('修改数据', AddParams, record);
+      } else {
+        addedRef.current?.onShow('新增数据', AddParams);
+      }
+    }
   };
 
   // 切换页码或者每页显示的条数
@@ -67,11 +72,6 @@ const SpaceDataBase = () => {
     setPagination({ ...pagination, current: page, pageSize });
   };
 
-  // 新增和修改数据
-  const onAdd = (values: AnyObject) => {
-    console.log('新增数据', values);
-    // setVisible(false);
-  };
   // 获取当前浏览器的高度
   const getBrowserHeight = () => {
     return (
@@ -110,14 +110,16 @@ const SpaceDataBase = () => {
       };
       const res = await service.getTableData(_params);
       setTableData(res.data.records);
-      const arr = res.data.columnDefines.map((item) => {
-        return {
-          title: item.fieldDescription,
-          dataIndex: item.fieldName,
-          key: item.fieldName,
-          type: 'text' as const,
-        };
-      });
+      const arr = res.data.columnDefines
+        .filter((item) => !item.systemFieldFlag)
+        .map((item) => {
+          return {
+            title: item.fieldDescription,
+            dataIndex: item.fieldName,
+            key: item.fieldName,
+            type: item.fieldType === 5 ? ('time' as const) : ('text' as const),
+          };
+        });
       const addParams = res.data.columnDefines.map((item) => {
         return {
           label: item.fieldDescription,
@@ -136,9 +138,33 @@ const SpaceDataBase = () => {
               : undefined,
         };
       });
+      console.log(arr);
       setAddParams(addParams);
       setColumns(arr);
     } catch (error) {}
+  };
+  // 新增和修改数据
+  const onAdd = (values: AnyObject) => {
+    try {
+      const _params = {
+        tableId: databaseId,
+        rowData: values,
+        rowId: values.id,
+      };
+      //
+
+      if (_params.rowId) {
+        service.modifyTableData(_params);
+      } else {
+        service.addTableData(_params);
+      }
+      message.success('操作成功');
+      getTable();
+      addedRef.current?.onClose();
+    } catch (error) {
+      message.success('操作失败');
+    }
+    // setVisible(false);
   };
 
   // 修改当前数据表的数据
@@ -160,6 +186,28 @@ const SpaceDataBase = () => {
     } catch (error) {}
   };
 
+  // 删除当前的数据
+  const onDelete = async (id: number) => {
+    try {
+      Modal.confirm({
+        title: '删除确认',
+        content: '确定要删除吗？',
+        okText: '确定',
+        cancelText: '取消',
+        icon: <ExclamationCircleFilled />,
+        onOk: async () => {
+          const _params = {
+            rowId: id,
+            tableId: databaseId,
+          };
+          await service.deleteTableData(_params);
+          message.success('删除成功');
+          getTable();
+        },
+      });
+    } catch (error) {}
+  };
+
   useEffect(() => {
     setColumns(mockColumns);
     setTableData(mockTableData);
@@ -173,14 +221,14 @@ const SpaceDataBase = () => {
       name: 'edit',
       icon: EditOutlined,
       description: '编辑',
-      func: (record: any) => onEdit(record),
+      func: (record: any) => onShow(record),
     },
     {
       name: 'delete',
       icon: DeleteOutlined,
       description: '删除',
       func: (record: any) => {
-        console.log('删除', record);
+        onDelete(record.id);
       },
     },
   ];
@@ -224,7 +272,7 @@ const SpaceDataBase = () => {
           {currentContent === 'data' && (
             <Space>
               <Button icon={<DownloadOutlined />}>导出</Button>
-              <Button icon={<PlusOutlined />} onClick={() => setVisible(true)}>
+              <Button icon={<PlusOutlined />} onClick={onShow}>
                 新增
               </Button>
             </Space>
@@ -261,14 +309,7 @@ const SpaceDataBase = () => {
           )}
         </div>
       </div>
-      <AddAndModify
-        onCancel={() => setVisible(false)}
-        title="新增数据"
-        formList={AddParams}
-        visible={visible}
-        onSubmit={onAdd}
-        initialValues={currentRow}
-      />
+      <AddAndModify ref={addedRef} onSubmit={onAdd} />
       <CreatedItem
         type={AgentComponentTypeEnum.Database}
         spaceId={spaceId}

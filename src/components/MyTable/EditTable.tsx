@@ -15,6 +15,11 @@ import {
 import { AnyObject } from 'antd/es/_util/type';
 import React, { useEffect, useState } from 'react';
 import './index.less';
+
+export interface EditTableRef {
+  submit: () => void;
+}
+
 const MyTable: React.FC<MyTableProp> = ({
   columns,
   tableData,
