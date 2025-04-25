@@ -1,4 +1,5 @@
 import type { RequestResponse } from '@/types/interfaces/request';
+import { AnyObject } from 'antd/es/_util/type';
 import { request } from 'umi';
 
 interface IGetModelList {
@@ -48,6 +49,7 @@ interface IGetModelList {
     fieldName: string;
     /*字段描述 */
     fieldDescription: string;
+    systemFieldFlag: boolean;
     /*字段类型：1:String;2:Integer;3:Number;4:Boolean;5:Date */
     fieldType: number;
     /*是否可为空：1-可空 -1-非空 */
@@ -104,7 +106,7 @@ export interface IgetDetails {
 
     /*字段类型：1:String;2:Integer;3:Number;4:Boolean;5:Date */
     fieldType: number;
-
+    systemFieldFlag: boolean;
     /*是否可为空：1-可空 -1-非空 */
     nullableFlag: number;
 
@@ -153,12 +155,20 @@ interface ColumnDefines {
   uniqueFlag: boolean;
   enabledFlag: boolean;
   sortIndex: number;
+  systemFieldFlag: boolean;
 }
 
 // 表数据返回参数的结构
 export interface ITableData {
   columnDefines: ColumnDefines[];
   records: any[];
+}
+
+// 新增和修改表数据
+interface IAddTableData {
+  tableId: number;
+  rowId?: number; // 可选参数，用于修改已有行的ID，新增时可以不传递此参数，由后端自动生成唯一ID
+  rowData: AnyObject;
 }
 
 // 查询列表
@@ -214,6 +224,50 @@ async function getTableData(params: {
   });
 }
 
+// 新增表数据
+async function addTableData(
+  data: IAddTableData,
+): Promise<RequestResponse<null>> {
+  return request(`/api/compose/db/table/addBusinessData`, {
+    method: 'POST',
+    data,
+  });
+}
+// 修改表数据
+async function modifyTableData(
+  data: IAddTableData,
+): Promise<RequestResponse<null>> {
+  return request(`/api/compose/db/table/updateBusinessData`, {
+    method: 'POST',
+    data,
+  });
+}
+
+// 删除表数据
+async function deleteTableData(params: {
+  tableId: number;
+  rowId: number;
+}): Promise<RequestResponse<null>> {
+  return request(`/api/compose/db/table/deleteBusinessData`, {
+    method: 'POST',
+    data: params,
+  });
+}
+
+// 清除表数据
+async function clearTableData(id: number): Promise<RequestResponse<null>> {
+  return request(`/api/compose/db/table/clearBusinessData/${id}`, {
+    method: 'POST',
+  });
+}
+
+// 导出表数据
+async function exportTableData(id: number): Promise<RequestResponse<null>> {
+  return request(`/api/compose/db/table/exportExcel/${id}`, {
+    method: 'POST',
+  });
+}
+
 export default {
   getList,
   addTask,
@@ -221,4 +275,9 @@ export default {
   deleteTask,
   getDetail,
   getTableData,
+  addTableData,
+  modifyTableData,
+  deleteTableData,
+  clearTableData,
+  exportTableData,
 };

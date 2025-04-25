@@ -64,6 +64,10 @@ const MyTable: React.FC<MyTableProp> = ({
               switch (item.type) {
                 case 'checkbox':
                   return <Checkbox checked={value} disabled={!record.isNew} />;
+                case 'time':
+                  return new Date(value).toLocaleString('zh-CN', {
+                    hour12: false,
+                  }); // 转换为 '2024-08-07 16:24:27' 格式
                 default:
                   return value; // 其他类型的单元格直接返回原始值，不做任何处理
               }

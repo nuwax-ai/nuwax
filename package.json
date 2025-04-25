@@ -40,6 +40,7 @@
     "classnames": "2.0.0",
     "copy-webpack-plugin": "11.0.0",
     "create-puzzle": "^3.0.2",
+    "dayjs": "^1.11.13",
     "insert-css": "^2.0.0",
     "lodash": "^4.17.21",
     "markdown-it": "^13.0.2",
