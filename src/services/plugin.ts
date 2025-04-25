@@ -7,6 +7,7 @@ import type {
   PluginPublishParams,
   PluginTestParams,
   PluginTestResult,
+  PublishPluginInfo,
 } from '@/types/interfaces/plugin';
 import { PluginAnalysisOutputParams } from '@/types/interfaces/plugin';
 import type { RequestResponse } from '@/types/interfaces/request';
@@ -96,6 +97,15 @@ export async function apiPluginInfo(
   pluginId: number,
 ): Promise<RequestResponse<PluginInfo>> {
   return request(`/api/plugin/${pluginId}`, {
+    method: 'GET',
+  });
+}
+
+// 查询已发布插件信息
+export async function apiPublishedPluginInfo(
+  pluginId: number,
+): Promise<RequestResponse<PublishPluginInfo>> {
+  return request(`/api/published/plugin/${pluginId}`, {
     method: 'GET',
   });
 }

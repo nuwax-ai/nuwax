@@ -7,6 +7,11 @@ export const UPLOAD_FILE_ACTION = `${process.env.BASE_URL}/api/file/upload`;
 // 会话 Connection地址
 export const CONVERSATION_CONNECTION_URL = `${process.env.BASE_URL}/api/agent/conversation/chat`;
 
+// 提示词优化地址
+export const PROMPT_OPTIMIZE_URL = `${process.env.BASE_URL}/api/assistant/prompt/optimize`;
+
+// 代码优化地址
+export const CODE_OPTIMIZE_URL = `${process.env.BASE_URL}/api/assistant/code/optimize`;
 // 文档地址
 export const DOCUMENT_URL = 'https://nlp-book.swufenlp.group';
 

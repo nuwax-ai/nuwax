@@ -5,6 +5,7 @@ export enum ModelTypeEnum {
   Edits = 'Edits',
   Images = 'Images',
   Embeddings = 'Embeddings',
+  Multi = 'Multi',
   Audio = 'Audio',
   Other = 'Other',
 }
