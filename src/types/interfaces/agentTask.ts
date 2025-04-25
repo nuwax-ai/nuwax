@@ -13,9 +13,12 @@ export interface TimedTaskProps {
 
 // 定时任务列表组件属性
 export interface TaskListProps {
+  className?: string;
   loading?: boolean;
   taskStatus: TaskStatus;
   taskList: TimedConversationTaskInfo[];
+  onCancelTask?: (info: TimedConversationTaskInfo) => void;
+  onEditTask?: (info: TimedConversationTaskInfo) => void;
 }
 
 // 创建定时任务弹窗组件属性
@@ -23,6 +26,8 @@ export interface CreateTimedTaskProps {
   agentId: number;
   mode?: CreateUpdateModeEnum;
   open: boolean;
+  // 当前任务信息
+  currentTask?: TimedConversationTaskInfo;
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -37,6 +42,11 @@ export interface AgentContentProps {
 export interface StatisticsInfoProps {
   statistics?: AgentStatisticsInfo;
   onClose?: () => void;
+}
+
+// 智能体相关会话组件
+export interface AgentConversationProps {
+  agentId: number;
 }
 
 // 创建定时会话添加或更新请求参数
@@ -119,7 +129,7 @@ export interface TaskCronInfo {
   /**
    * 具体类型下可选项
    */
-  items?: TaskCronItemDto[];
+  items: TaskCronItemDto[];
   /**
    * 类型，比如 每周 每月 每天
    */

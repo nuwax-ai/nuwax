@@ -1,12 +1,13 @@
-import { apiAgentTaskList } from '@/services/agentTask';
+import { apiAgentTaskCancel, apiAgentTaskList } from '@/services/agentTask';
 import { TaskStatus } from '@/types/enums/agent';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import {
   TimedConversationTaskInfo,
   TimedConversationTaskParams,
   TimedTaskProps,
 } from '@/types/interfaces/agentTask';
 import { PlusOutlined } from '@ant-design/icons';
-import { Tabs, TabsProps } from 'antd';
+import { message, Tabs, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -20,6 +21,14 @@ const cx = classNames.bind(styles);
 const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
   // 新建任务弹窗
   const [openTask, setOpenTask] = useState<boolean>(false);
+  // 任务模式：创建、更新
+  const [mode, setMode] = useState<CreateUpdateModeEnum>();
+  // 更新时,当前任务信息
+  const [currentTask, setCurrentTask] = useState<TimedConversationTaskInfo>();
+  // 当前激活active: 任务状态
+  const [currentTaskStatus, setCurrentTaskStatus] = useState<TaskStatus>(
+    TaskStatus.EXECUTING,
+  );
   // 加载中状态
   const [loading, setLoading] = useState<boolean>(false);
   // 执行中任务列表
@@ -40,7 +49,7 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
       params: TimedConversationTaskParams[],
     ) => {
       const { taskStatus } = params[0];
-      if (taskStatus) {
+      if (taskStatus === TaskStatus.EXECUTING) {
         setExecutingTaskList(result || []);
       } else {
         setCancelTaskList(result || []);
@@ -52,22 +61,52 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
     },
   });
 
-  useEffect(() => {
+  // 取消定时会话
+  const { run: runCancelTask } = useRequest(apiAgentTaskCancel, {
+    manual: true,
+    debounceInterval: 500,
+    onSuccess: (_: null, params: number[]) => {
+      const [id] = params;
+      message.success('定时任务已取消');
+      setExecutingTaskList((prev) => {
+        return prev.filter((item) => item.id !== id);
+      });
+    },
+  });
+
+  // 查询任务列表
+  const handleQueryTaskList = (taskStatus: TaskStatus) => {
     setLoading(true);
     runTaskList({
       agentId,
-      taskStatus: TaskStatus.EXECUTING, // 进行中
+      taskStatus,
     });
+  };
+
+  useEffect(() => {
+    // 查询"进行中"定时任务列表
+    handleQueryTaskList(TaskStatus.EXECUTING);
   }, []);
 
   // tab 被点击的回调
   const handleTabClick = (activeKey: string) => {
-    console.log(activeKey);
-    setLoading(true);
-    runTaskList({
-      agentId,
-      taskStatus: activeKey as TaskStatus,
-    });
+    const status = activeKey as TaskStatus;
+    setCurrentTaskStatus(status);
+    // 查询任务列表
+    handleQueryTaskList(status);
+  };
+
+  // 取消定时任务
+  const handleCancelTask = (info: TimedConversationTaskInfo) => {
+    const { id } = info;
+    runCancelTask(id);
+  };
+
+  // 编辑任务
+  const handleEditTask = (info: TimedConversationTaskInfo) => {
+    setCurrentTask(info);
+    setMode(CreateUpdateModeEnum.Update);
+    setOpenTask(true);
   };
 
   const items: TabsProps['items'] = [
@@ -79,6 +118,8 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
           loading={loading}
           taskStatus={TaskStatus.EXECUTING}
           taskList={executingTaskList}
+          onCancelTask={handleCancelTask}
+          onEditTask={handleEditTask}
         />
       ),
     },
@@ -95,13 +136,24 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
     },
   ];
 
+  // 创建定时任务
   const handleTaskCreate = () => {
-    console.log('handleTaskCreate');
+    setMode(CreateUpdateModeEnum.Create);
     setOpenTask(true);
   };
 
+  // 确认创建、更新定时任务
+  const handleConfirmCreateTask = () => {
+    console.log('mode', currentTaskStatus);
+    setOpenTask(false);
+    if (currentTaskStatus === TaskStatus.EXECUTING) {
+      // 重新查询"进行中"定时任务列表
+      handleQueryTaskList(TaskStatus.EXECUTING);
+    }
+  };
+
   return (
-    <div className={cx(styles.container)}>
+    <div className={cx(styles.container, 'flex-1', 'flex', 'flex-col')}>
       <div className={cx('flex', 'items-center', 'content-between')}>
         <h3 className={cx(styles.title)}>定时任务</h3>
         <span
@@ -123,8 +175,10 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
       <CreateTimedTask
         agentId={agentId}
         open={openTask}
+        mode={mode}
+        currentTask={currentTask}
         onCancel={() => setOpenTask(false)}
-        onConfirm={() => setOpenTask(false)}
+        onConfirm={handleConfirmCreateTask}
       />
     </div>
   );

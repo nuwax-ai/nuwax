@@ -6,20 +6,30 @@ import {
 } from '@/types/interfaces/agentTask';
 import {
   DeleteOutlined,
+  ExclamationCircleFilled,
   FormOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
-import { Empty } from 'antd';
+import { Empty, Modal } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { memo } from 'react';
+import { history } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+const { confirm } = Modal;
+
+/**
+ * 定时任务列表
+ */
 const TaskList: React.FC<TaskListProps> = ({
+  className,
   loading,
   taskStatus,
   taskList,
+  onCancelTask,
+  onEditTask,
 }) => {
   const emptyDesc =
     taskStatus === TaskStatus.EXECUTING
@@ -33,29 +43,70 @@ const TaskList: React.FC<TaskListProps> = ({
     );
   }
 
+  // 点击任务项
   const handleClick = (info: TimedConversationTaskInfo) => {
     if (info.taskStatus === TaskStatus.EXECUTING) {
-      console.log('handleClick');
+      const { id } = info;
+      history.push(`/home/chat/${id}`);
     }
   };
 
+  // 取消定时任务
+  const handleCancelTimedTask = (
+    e: React.MouseEvent,
+    info: TimedConversationTaskInfo,
+  ) => {
+    e.stopPropagation();
+    confirm({
+      title: '您确定要取消此定时任务吗?',
+      icon: <ExclamationCircleFilled />,
+      content: info.topic,
+      okText: '确定',
+      maskClosable: true,
+      cancelText: '取消',
+      onOk() {
+        onCancelTask?.(info);
+      },
+    });
+  };
+
+  // 编辑任务
+  const handleEditTask = (
+    e: React.MouseEvent,
+    info: TimedConversationTaskInfo,
+  ) => {
+    e.stopPropagation();
+    onEditTask?.(info);
+  };
+
   return taskList?.length > 0 ? (
-    <div className={cx(styles['task-wrapper'])}>
+    <div className={cx(styles['task-wrapper'], className)}>
       {taskList?.map((item: TimedConversationTaskInfo) => (
         <div
-          key={item.taskId}
-          className={cx(styles['task-item'], 'flex', 'items-center')}
+          key={item.id}
+          className={cx(
+            styles['task-item'],
+            'flex',
+            'items-center',
+            'cursor-pointer',
+          )}
           onClick={() => handleClick(item)}
         >
           <EllipsisTooltip
             text={String(item?.topic)}
-            className={cx('flex-1', styles.name)}
+            className={cx('flex-1')}
             placement="topLeft"
           />
           {item.taskStatus === TaskStatus.EXECUTING && (
             <>
-              <FormOutlined className={cx(styles.icon, 'cursor-pointer')} />
-              <DeleteOutlined className={cx(styles.icon, 'cursor-pointer')} />
+              <FormOutlined
+                className={cx(styles.icon, 'cursor-pointer')}
+                onClick={(e) => handleEditTask(e, item)}
+              />
+              <DeleteOutlined
+                className={cx(styles.icon, 'cursor-pointer')}
+                onClick={(e) => handleCancelTimedTask(e, item)}
+              />
               <span className={cx(styles.time)}>{item.taskCronDesc}</span>
             </>
           )}
@@ -67,4 +118,4 @@ const TaskList: React.FC<TaskListProps> = ({
   );
 };
 
-export default TaskList;
+export default memo(TaskList);

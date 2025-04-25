@@ -9,7 +9,7 @@ const useConversation = () => {
     apiAgentConversationCreate,
     {
       manual: true,
-      debounceInterval: 300,
+      debounceMaxWait: 300,
     },
   );
 
