@@ -126,7 +126,7 @@ export interface ComponentInfo {
   id: number;
   // 空间ID
   spaceId: number;
-  // 组件类型,可用值:Variable,Workflow,Plugin,Model,KnowledgeBase,Database
+  // 组件类型,可用值:Variable,Workflow,Plugin,Model,KnowledgeBase,Table
   type: ComponentTypeEnum;
   // 组件名称
   name: string;

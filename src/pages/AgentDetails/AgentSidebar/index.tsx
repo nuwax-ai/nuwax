@@ -1,11 +1,9 @@
 import Loading from '@/components/Loading';
-import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { OpenCloseEnum } from '@/types/enums/space';
-import { AgentDetailDto } from '@/types/interfaces/agent';
+import { AgentSidebarProps } from '@/types/interfaces/agentTask';
 import classNames from 'classnames';
-import cloneDeep from 'lodash/cloneDeep';
-import React, { useEffect, useState } from 'react';
-import { useParams, useRequest } from 'umi';
+import React from 'react';
+import { useParams } from 'umi';
 import AgentContent from './AgentContent';
 import AgentConversation from './AgentConversation';
 import styles from './index.less';
@@ -15,37 +13,15 @@ import TimedTask from './TimedTask';
 const cx = classNames.bind(styles);
 
 // 智能体详情页侧边栏
-const AgentSidebar: React.FC = () => {
+const AgentSidebar: React.FC<AgentSidebarProps> = ({
+  loading,
+  agentDetail,
+  onToggleCollectSuccess,
+}) => {
   const { agentId } = useParams();
-  const [collect, setCollect] = useState<boolean>(false);
-  const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
-
-  const { run: runDetail, loading } = useRequest(apiPublishedAgentInfo, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: AgentDetailDto) => {
-      setAgentDetail(result);
-    },
-  });
-
-  useEffect(() => {
-    runDetail(agentId);
-  }, []);
 
   const handleClose = () => {
-    setCollect(!collect);
-  };
-
-  // 切换收藏与取消收藏
-  const handleToggleCollectSuccess = (isCollect: boolean) => {
-    const _agentDetail = cloneDeep(agentDetail);
-    if (!_agentDetail) {
-      return;
-    }
-    const count = _agentDetail?.statistics?.collectCount || 0;
-    _agentDetail.statistics.collectCount = isCollect ? count + 1 : count - 1;
-    _agentDetail.collect = isCollect;
-    setAgentDetail(_agentDetail);
+    console.log('close');
   };
 
   return (
@@ -60,7 +36,7 @@ const AgentSidebar: React.FC = () => {
           />
           <AgentContent
             agentDetail={agentDetail}
-            onToggleCollectSuccess={handleToggleCollectSuccess}
+            onToggleCollectSuccess={onToggleCollectSuccess}
           />
           <AgentConversation agentId={agentId} />
           {agentDetail?.openScheduledTask === OpenCloseEnum.Open && (

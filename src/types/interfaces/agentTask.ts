@@ -6,6 +6,13 @@ import type {
 } from '@/types/interfaces/agent';
 import type { ChatMessageDto } from '@/types/interfaces/conversationInfo';
 
+// 智能体详情页侧边栏
+export interface AgentSidebarProps {
+  loading?: boolean;
+  agentDetail?: AgentDetailDto;
+  onToggleCollectSuccess: (isCollect: boolean) => void;
+}
+
 // 定时任务组件属性
 export interface TimedTaskProps {
   agentId: number;

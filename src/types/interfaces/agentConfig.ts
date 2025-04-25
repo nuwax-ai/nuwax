@@ -144,12 +144,14 @@ export interface AgentChatEmptyProps {
   icon?: string;
   // 智能体名称
   name: string;
+  extra?: React.ReactNode;
 }
 
 // 会话建议列表
 export interface RecommendListProps {
   className?: string;
-  loading: boolean;
+  itemClassName?: string;
+  loading?: boolean;
   chatSuggestList: string[];
   onClick: (message: string) => void;
 }

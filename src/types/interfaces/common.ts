@@ -433,6 +433,7 @@ export type RunOverProps = ChatBottomMoreProps;
 export interface EllipsisTooltipProps {
   className?: string;
   text: string | number;
+  onClick?: () => void;
   // 气泡框位置，可选
   placement?:
     | 'top'

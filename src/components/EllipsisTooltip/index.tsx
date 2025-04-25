@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState } from 'react';
 export const EllipsisTooltip: React.FC<EllipsisTooltipProps> = ({
   className,
   text,
+  onClick,
   placement = 'top',
 }) => {
   const textRef = useRef(null);
@@ -23,7 +24,11 @@ export const EllipsisTooltip: React.FC<EllipsisTooltipProps> = ({
   }, [text]); // 当文本变化时重新检测
 
   return (
-    <div className={classNames('text-ellipsis', className)} ref={textRef}>
+    <div
+      className={classNames('text-ellipsis', className)}
+      ref={textRef}
+      onClick={onClick}
+    >
       {isOverflowed ? (
         <Tooltip title={text} placement={placement}>
           {text}
