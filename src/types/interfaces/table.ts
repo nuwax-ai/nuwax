@@ -4,7 +4,7 @@ import React from 'react';
 declare global {
   interface SelectOptions {
     label: string;
-    value: string;
+    value: string | number;
   }
   interface TableColumn {
     title: string;

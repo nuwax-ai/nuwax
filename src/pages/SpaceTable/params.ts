@@ -17,11 +17,11 @@ export const mockColumns = [
     type: 'select' as const,
     editable: true,
     options: [
-      { label: 'String', value: 'String' },
-      { label: 'Integer', value: 'Integer' },
-      { label: 'boolean', value: 'boolean' },
-      { label: 'Number', value: 'Number' },
-      { label: 'Date', value: 'Date' },
+      { label: 'String', value: 1 },
+      { label: 'Integer', value: 2 },
+      { label: 'Number', value: 3 },
+      { label: 'boolean', value: 4 },
+      { label: 'Date', value: 5 },
     ],
     map: {
       1: 'String',
@@ -32,7 +32,7 @@ export const mockColumns = [
     },
   },
   {
-    title: '是否必须',
+    title: '是否可为空',
     dataIndex: 'nullableFlag',
     type: 'checkbox' as const,
     editable: true,
@@ -45,7 +45,7 @@ export const mockColumns = [
     editable: true,
   },
   {
-    title: '是否可见',
+    title: '是否启用',
     dataIndex: 'enabledFlag',
     type: 'checkbox' as const,
     editable: true,
@@ -255,6 +255,6 @@ export const typeMap: Record<number, string> = {
   1: 'Input',
   2: 'Number',
   3: 'Number',
-  4: 'Checkbox',
+  4: 'Radio',
   5: 'DatePicker',
 };

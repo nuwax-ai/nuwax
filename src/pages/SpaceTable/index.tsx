@@ -19,7 +19,7 @@ import { AnyObject } from 'antd/es/_util/type';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'umi';
 import './index.less';
-import { mockColumns, mockTableData, typeMap } from './params';
+import { mockColumns, typeMap } from './params';
 
 const SpaceTable = () => {
   const { spaceId, tableId } = useParams();
@@ -86,18 +86,50 @@ const SpaceTable = () => {
       editTableRef.current.submit();
     }
   };
-  // 获取最新的表格数据，提交
-  const onDataSourceChange = (data: any) => {
-    console.log('onDataSourceChange', data);
-    // setTableData(data);
-  };
 
   // 获取当前的数据
   const getDetails = async () => {
     try {
       const res = await service.getDetail(tableId);
+      const addParams = res.data.fieldList
+        .filter((item) => !item.systemFieldFlag)
+        .map((item) => {
+          return {
+            label: item.fieldDescription,
+            dataIndex: item.fieldName,
+            key: item.fieldName,
+            type: typeMap[item.fieldType],
+            rules: item.nullableFlag
+              ? undefined
+              : [{ required: true, message: '请输入' }],
+            options:
+              item.fieldType === 4
+                ? [
+                    { label: 'true', value: 'true' },
+                    { label: 'false', value: 'false' },
+                  ]
+                : undefined,
+          };
+        });
+      setAddParams(addParams);
       setDetail(res.data);
     } catch (error) {}
+  };
+
+  // 获取最新的表格数据，提交
+  const onDataSourceChange = async (data: any) => {
+    try {
+      const _params = {
+        id: tableId,
+        fieldList: data,
+      };
+      await service.modifyTableStructure(_params);
+      getDetails();
+      message.success('操作成功');
+    } catch (error) {
+      message.success('数据校验失败');
+    }
+    // setTableData(data);
   };
 
   // 获取表数据的数据
@@ -111,7 +143,12 @@ const SpaceTable = () => {
       const res = await service.getTableData(_params);
       setTableData(res.data.records);
       const arr = res.data.columnDefines
-        .filter((item) => !item.systemFieldFlag)
+        .filter(
+          (item) =>
+            !item.systemFieldFlag ||
+            item.fieldName === 'id' ||
+            item.fieldName === 'created',
+        )
         .map((item) => {
           return {
             title: item.fieldDescription,
@@ -120,26 +157,6 @@ const SpaceTable = () => {
             type: item.fieldType === 5 ? ('time' as const) : ('text' as const),
           };
         });
-      const addParams = res.data.columnDefines.map((item) => {
-        return {
-          label: item.fieldDescription,
-          dataIndex: item.fieldName,
-          key: item.fieldName,
-          type: typeMap[item.fieldType],
-          rules: item.nullableFlag
-            ? undefined
-            : [{ required: true, message: '请输入' }],
-          options:
-            item.fieldType === 4
-              ? [
-                  { label: 'true', value: 'true' },
-                  { label: 'false', value: 'false' },
-                ]
-              : undefined,
-        };
-      });
-      console.log(arr);
-      setAddParams(addParams);
       setColumns(arr);
     } catch (error) {}
   };
@@ -209,8 +226,6 @@ const SpaceTable = () => {
   };
 
   useEffect(() => {
-    setColumns(mockColumns);
-    setTableData(mockTableData);
     getDetails();
     getTable();
   }, []);

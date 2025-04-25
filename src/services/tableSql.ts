@@ -2,6 +2,27 @@ import type { RequestResponse } from '@/types/interfaces/request';
 import { AnyObject } from 'antd/es/_util/type';
 import { request } from 'umi';
 
+interface FieldList {
+  /*主键ID */
+  id: number;
+
+  /*字段名 */
+  fieldName: string;
+  /*字段描述 */
+  fieldDescription: string;
+  systemFieldFlag?: boolean;
+  /*字段类型：1:String;2:Integer;3:Number;4:Boolean;5:Date */
+  fieldType: number;
+  /*是否可为空：1-可空 -1-非空 */
+  nullableFlag: number;
+  /*默认值 */
+  defaultValue: string;
+  /*是否唯一：1-唯一 -1-非唯一 */
+  uniqueFlag: number;
+  /*是否启用：1-启用 -1-禁用 */
+  enabledFlag: number;
+}
+
 interface IGetModelList {
   /*主键ID */
   id: number;
@@ -36,45 +57,7 @@ interface IGetModelList {
   /* */
   sumCount: number;
   /*表字段列表 */
-  fieldList: {
-    /*主键ID */
-    id: number;
-    /*租户ID */
-    tenantId: number;
-    /*所属空间ID */
-    spaceId: number;
-    /*关联的表ID */
-    tableId: number;
-    /*字段名 */
-    fieldName: string;
-    /*字段描述 */
-    fieldDescription: string;
-    systemFieldFlag: boolean;
-    /*字段类型：1:String;2:Integer;3:Number;4:Boolean;5:Date */
-    fieldType: number;
-    /*是否可为空：1-可空 -1-非空 */
-    nullableFlag: number;
-    /*默认值 */
-    defaultValue: string;
-    /*是否唯一：1-唯一 -1-非唯一 */
-    uniqueFlag: number;
-    /*是否启用：1-启用 -1-禁用 */
-    enabledFlag: number;
-    /*字段顺序 */
-    sortIndex: number;
-    /*创建时间 */
-    created: Record<string, unknown>;
-    /*创建人id */
-    creatorId: number;
-    /*创建人 */
-    creatorName: string;
-    /*更新时间 */
-    modified: Record<string, unknown>;
-    /*最后修改人id */
-    modifiedId: number;
-    /*最后修改人 */
-    modifiedName: string;
-  };
+  fieldList: FieldList[];
 }
 
 // 响应接口
@@ -96,29 +79,7 @@ export interface IgetDetails {
   /*Doris表名 */
   dorisTable: string;
   /*表下面的字段定义列表 */
-  fieldList: {
-    /*主键ID */
-    id: number;
-    /*字段名 */
-    fieldName: string;
-    /*字段描述 */
-    fieldDescription: string;
-
-    /*字段类型：1:String;2:Integer;3:Number;4:Boolean;5:Date */
-    fieldType: number;
-    systemFieldFlag: boolean;
-    /*是否可为空：1-可空 -1-非空 */
-    nullableFlag: number;
-
-    /*默认值 */
-    defaultValue: string;
-
-    /*是否唯一：1-唯一 -1-非唯一 */
-    uniqueFlag: number;
-
-    /*是否启用：1-启用 -1-禁用 */
-    enabledFlag: number;
-  }[];
+  fieldList: FieldList[];
 
   /*原始建表DDL */
   createTableDdl: string;
@@ -189,9 +150,19 @@ async function addTask(data: IAddTask): Promise<RequestResponse<number>> {
   });
 }
 
-// 修改
+// 修改表单的基本信息
 async function modifyTask(data: IAddTask): Promise<RequestResponse<number>> {
   return request(`/api/compose/db/table/update`, {
+    method: 'POST',
+    data,
+  });
+}
+// 修改表的表结构
+async function modifyTableStructure(data: {
+  id: number;
+  fieldList: FieldList[];
+}): Promise<RequestResponse<number>> {
+  return request(`/api/compose/db/table/updateTableDefinition`, {
     method: 'POST',
     data,
   });
@@ -280,4 +251,5 @@ export default {
   deleteTableData,
   clearTableData,
   exportTableData,
+  modifyTableStructure,
 };
