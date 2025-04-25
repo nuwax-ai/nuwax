@@ -16,7 +16,7 @@ const DataTable: React.FC<DataTableProps> = ({
       <div className="skill-item-style  dis-sb">
         <div className="dis-left">
           <img
-            src={icon === '' ? getImg(AgentComponentTypeEnum.Database) : icon}
+            src={icon === '' ? getImg(AgentComponentTypeEnum.Table) : icon}
             alt=""
             className="skill-item-icon"
           />

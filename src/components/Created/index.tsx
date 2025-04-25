@@ -33,7 +33,7 @@ const buttonList: ButtonList[] = [
   { label: '插件', key: AgentComponentTypeEnum.Plugin },
   { label: '工作流', key: AgentComponentTypeEnum.Workflow },
   { label: '知识库', key: AgentComponentTypeEnum.Knowledge },
-  { label: '数据库', key: AgentComponentTypeEnum.Database },
+  { label: '数据库', key: AgentComponentTypeEnum.Table },
 ];
 
 // 创建插件、工作流、知识库、数据库
@@ -132,7 +132,7 @@ const Created: React.FC<CreatedProp> = ({
     switch (selected.key) {
       case AgentComponentTypeEnum.Knowledge:
         return knowledgeItem;
-      case AgentComponentTypeEnum.Database:
+      case AgentComponentTypeEnum.Table:
         return databaseItem;
       default:
         return items;

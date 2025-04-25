@@ -251,7 +251,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 添加数据库表
   // const handlerDatabasePlus = (e: MouseEvent) => {
   //   e.stopPropagation();
-  //   setCheckTag(AgentComponentTypeEnum.Database);
+  //   setCheckTag(AgentComponentTypeEnum.Table);
   //   setShow(true);
   // };
 

@@ -5,7 +5,7 @@ export enum AgentComponentTypeEnum {
   Trigger = 'Trigger',
   Knowledge = 'Knowledge',
   Variable = 'Variable',
-  Database = 'Database',
+  Table = 'Table',
   Model = 'Model',
   Agent = 'Agent',
 }

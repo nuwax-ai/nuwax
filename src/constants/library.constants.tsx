@@ -250,7 +250,7 @@ export const COMPONENT_LIST = [
     text: '工作流',
   },
   {
-    type: ComponentTypeEnum.Database,
+    type: ComponentTypeEnum.Table,
     defaultImage: databaseImage,
     icon: <ICON_DATABASE />,
     text: '数据库',

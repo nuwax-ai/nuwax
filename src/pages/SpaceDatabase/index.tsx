@@ -311,7 +311,7 @@ const SpaceDataBase = () => {
       </div>
       <AddAndModify ref={addedRef} onSubmit={onAdd} />
       <CreatedItem
-        type={AgentComponentTypeEnum.Database}
+        type={AgentComponentTypeEnum.Table}
         spaceId={spaceId}
         open={open}
         onCancel={() => setOpen(false)}

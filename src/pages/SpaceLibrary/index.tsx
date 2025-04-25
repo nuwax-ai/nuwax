@@ -278,9 +278,8 @@ const SpaceLibrary: React.FC = () => {
       case ComponentTypeEnum.Knowledge:
         setOpenKnowledge(true);
         break;
-      case ComponentTypeEnum.Database:
+      case ComponentTypeEnum.Table:
         setOpenDatabase(true);
-        // message.warning('数据库此版本暂时未做');
         break;
       case ComponentTypeEnum.Model:
         setModelComponentInfo(null);
@@ -427,8 +426,8 @@ const SpaceLibrary: React.FC = () => {
       case ComponentTypeEnum.Knowledge:
         history.push(`/space/${spaceId}/knowledge/${id}`);
         break;
-      case ComponentTypeEnum.Database:
-        message.warning('数据库此版本暂时未做');
+      case ComponentTypeEnum.Table:
+        history.push(`/space/${spaceId}/database/${id}`);
         break;
       case ComponentTypeEnum.Model:
         setModelComponentInfo(item);
@@ -515,7 +514,7 @@ const SpaceLibrary: React.FC = () => {
       <CreatedItem
         spaceId={spaceId}
         open={openDatabase}
-        type={AgentComponentTypeEnum.Database}
+        type={AgentComponentTypeEnum.Table}
         onCancel={() => setOpenDatabase(false)}
         Confirm={Confirm}
       />
