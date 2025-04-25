@@ -28,7 +28,7 @@ interface CreatedItemProp extends CreateKnowledgeProps {
     | AgentComponentTypeEnum.Plugin
     | AgentComponentTypeEnum.Workflow
     | AgentComponentTypeEnum.Knowledge
-    | AgentComponentTypeEnum.Database; // 组件类型，数据库、知识库、插件、工作流
+    | AgentComponentTypeEnum.Table; // 组件类型，数据库、知识库、插件、工作流
   info?: Info;
   Confirm: (
     info: Info,
@@ -60,7 +60,7 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
       [CreateUpdateModeEnum.Update]: '编辑',
     };
     const _type = {
-      [AgentComponentTypeEnum.Database]: '数据库',
+      [AgentComponentTypeEnum.Table]: '数据库',
       [AgentComponentTypeEnum.Knowledge]: '知识库',
       [AgentComponentTypeEnum.Plugin]: '插件',
       [AgentComponentTypeEnum.Workflow]: '工作流',
@@ -70,7 +70,7 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
   //   默认图片
   const getDefaultImage = () => {
     const _type = {
-      [AgentComponentTypeEnum.Database]: Database,
+      [AgentComponentTypeEnum.Table]: Database,
       [AgentComponentTypeEnum.Knowledge]: Knowledge,
       [AgentComponentTypeEnum.Plugin]: Plugin,
       [AgentComponentTypeEnum.Workflow]: Workflow,
@@ -107,7 +107,7 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
         requiredMark={customizeRequiredMark}
       >
         {(type === AgentComponentTypeEnum.Plugin ||
-          type === AgentComponentTypeEnum.Database) && (
+          type === AgentComponentTypeEnum.Table) && (
           <Form.Item name="icon">
             <div className="dis-center">
               <UploadAvatar

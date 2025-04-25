@@ -28,6 +28,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
   agentId,
   mode = CreateUpdateModeEnum.Create,
   open,
+  currentTask,
   onCancel,
   onConfirm,
 }) => {
@@ -42,7 +43,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
   const taskCronListRef = useRef<TaskCronInfo[]>([]);
 
   // 设置子项
-  const handleSetTypeCron = (cronList: TaskCronItemDto[]) => {
+  const handleSetTypeCron = (cronList: TaskCronItemDto[], cron?: string) => {
     // 子项
     const list =
       cronList?.map((item) => ({
@@ -50,7 +51,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
         value: item.cron,
       })) || [];
     setTypeCronList(list as option[]);
-    setTypeCron(list[0]?.value || '');
+    setTypeCron(cron || list[0]?.value || '');
   };
 
   // 处理定时信息
@@ -85,13 +86,15 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
     },
   });
 
-  // 创建定时会话
+  // 创建定时任务
   const { run: runCreate } = useRequest(apiAgentTaskCreate, {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
       message.success('定时任务创建成功');
       onConfirm();
+      // 重置定时周期
+      handleTimedInfo(taskCronListRef.current);
     },
   });
 
@@ -102,6 +105,8 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
     onSuccess: () => {
       message.success('定时任务更新成功');
       onConfirm();
+      // 重置定时周期
+      handleTimedInfo(taskCronListRef.current);
     },
   });
 
@@ -109,13 +114,42 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
     runCron();
   }, []);
 
+  useEffect(() => {
+    // 更新任务信息
+    if (mode === CreateUpdateModeEnum.Update && currentTask) {
+      // 回显任务名称和任务内容
+      form.setFieldsValue({
+        topic: currentTask?.topic,
+        summary: currentTask?.summary,
+      });
+      // 回显定时周期
+      if (taskCronListRef.current?.length > 0) {
+        const currentItem = taskCronListRef.current?.find(
+          (info: TaskCronInfo) => {
+            return info.items.some(
+              (subItem) => subItem.cron === currentTask?.taskCron,
+            );
+          },
+        );
+        // 设置定时范围以及cron
+        if (currentItem) {
+          setTypeName(currentItem.typeName);
+          handleSetTypeCron(currentItem.items, currentTask.taskCron);
+        }
+      }
+    }
+  }, [mode, currentTask, taskCronListRef.current]);
+
   // 创建、更新定时任务
   const onFinish: FormProps<any>['onFinish'] = (values) => {
     const data = { ...values, taskCron: typeCron, agentId };
     if (mode === CreateUpdateModeEnum.Create) {
       runCreate(data);
     } else {
-      runUpdate(data);
+      runUpdate({
+        ...data,
+        id: currentTask?.id,
+      });
     }
   };
 
@@ -138,6 +172,12 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
     setTypeCron(value as string);
   };
 
+  const onCancelCreate = () => {
+    // 重置定时周期
+    handleTimedInfo(taskCronListRef.current);
+    onCancel();
+  };
+
   return (
     <CustomFormModal
       form={form}
@@ -145,7 +185,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
       title={
         mode === CreateUpdateModeEnum.Create ? '创建定时任务' : '更新定时任务'
       }
-      onCancel={onCancel}
+      onCancel={onCancelCreate}
       onConfirm={handlerConfirm}
     >
       <Form
@@ -183,7 +223,6 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
           name="summary"
           label="任务内容"
           rules={[{ required: true, message: '请输入任务内容' }]}
-          // initialValue={agentConfigInfo?.description}
           placeholder="请输入你要执行的任务信息，信息提供的越详细执行成功率越高"
           maxLength={2000}
         />

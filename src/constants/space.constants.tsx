@@ -38,7 +38,7 @@ export const LIBRARY_ALL_RESOURCE = [
     icon: <ICON_KNOWLEDGE />,
   },
   {
-    value: ComponentTypeEnum.Database,
+    value: ComponentTypeEnum.Table,
     label: '数据表',
     icon: <ICON_DATABASE />,
   },

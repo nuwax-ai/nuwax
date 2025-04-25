@@ -14,6 +14,7 @@ import TimedTask from './TimedTask';
 
 const cx = classNames.bind(styles);
 
+// 智能体详情页侧边栏
 const AgentSidebar: React.FC = () => {
   const { agentId } = useParams();
   const [collect, setCollect] = useState<boolean>(false);
@@ -48,7 +49,7 @@ const AgentSidebar: React.FC = () => {
   };
 
   return (
-    <div className={cx(styles.container)}>
+    <div className={cx(styles.container, 'flex', 'flex-col')}>
       {loading ? (
         <Loading />
       ) : (
@@ -61,7 +62,7 @@ const AgentSidebar: React.FC = () => {
             agentDetail={agentDetail}
             onToggleCollectSuccess={handleToggleCollectSuccess}
           />
-          <AgentConversation />
+          <AgentConversation agentId={agentId} />
           {agentDetail?.openScheduledTask === OpenCloseEnum.Open && (
             <TimedTask agentId={agentId} />
           )}

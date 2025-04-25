@@ -1,22 +1,25 @@
 @import '@/styles/color.less';
 
 .task-wrapper {
+  max-height: 300px;
   gap: 5px;
+  overflow-y: auto;
+  padding-bottom: 10px;
 
   .task-item {
-    gap: 4px;
+    gap: 6px;
     height: 28px;
+    font-size: 14px;
+    color: @GRAY15;
+    transition: color 0.3s;
 
     &:hover {
+      color: @BLANK14;
+
       .icon {
         visibility: visible;
         opacity: 1;
       }
-    }
-
-    .name {
-      font-size: 14px;
-      color: @GRAY15;
     }
 
     .icon {

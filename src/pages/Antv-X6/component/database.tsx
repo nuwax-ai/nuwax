@@ -303,7 +303,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
       )}
 
       <Created
-        checkTag={AgentComponentTypeEnum.Database}
+        checkTag={AgentComponentTypeEnum.Table}
         onAdded={onAddedSkill}
         open={open}
         onCancel={() => setOpen(false)}

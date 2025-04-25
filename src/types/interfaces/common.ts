@@ -306,7 +306,7 @@ export interface CreateAgentProps {
 export interface CreateKnowledgeProps {
   mode?: CreateUpdateModeEnum;
   type?:
-    | AgentComponentTypeEnum.Database
+    | AgentComponentTypeEnum.Table
     | AgentComponentTypeEnum.Knowledge
     | AgentComponentTypeEnum.Plugin
     | AgentComponentTypeEnum.Workflow;
