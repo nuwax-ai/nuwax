@@ -266,14 +266,6 @@ const Workflow: React.FC = () => {
           getNodeConfig(Number(config.id));
         }
       }
-      // setVisible(prev=>{
-      //   if(!prev){
-      //       // 这里是在添加连线
-
-      //   }
-      //   return prev
-      // })
-      // setIsModified(false);
       changeUpdateTime();
     }
     // setIsUpdate(false)
@@ -412,9 +404,24 @@ const Workflow: React.FC = () => {
             knowledgeBaseConfigs: child.nodeConfig.knowledgeBaseConfigs,
           },
         });
-      } else {
-        changeDrawer(_res.data);
+      } else if (
+        child.type === 'TableDataQuery' &&
+        child.nodeConfig?.knowledgeBaseConfigs
+      ) {
+        setFoldWrapItem(_res.data);
+        const table = child.nodeConfig.knowledgeBaseConfigs[0];
+        changeNode({
+          ..._res.data,
+          nodeConfig: {
+            ..._res.data.nodeConfig,
+            tableId: table.targetId,
+            name: table.name,
+            description: table.description,
+            icon: table.icon,
+          },
+        });
       }
+      changeDrawer(_res.data);
       // setFoldWrapItem(_res.data);
       graphRef.current.selectNode(_res.data.id);
       changeUpdateTime();
@@ -512,14 +519,11 @@ const Workflow: React.FC = () => {
   // 添加工作流，插件，知识库，数据库
   const onAdded = (val: CreatedNodeItem, parentFC?: string) => {
     if (parentFC && parentFC !== 'workflow') return;
-    if (val.type === 'Database' || val.type === 'Knowledge') {
-      message.warning(
-        '数据表只能添加在数据新增，数据删除，数据更新，数据查询和SQL自定义节点中',
-      );
-      return;
-    }
     let _child: Child;
-    if (val.targetType === AgentComponentTypeEnum.Knowledge) {
+    if (
+      val.targetType === AgentComponentTypeEnum.Knowledge ||
+      val.targetType === AgentComponentTypeEnum.Table
+    ) {
       const knowledgeBaseConfigs = [
         { ...val, type: val.targetType, knowledgeBaseId: val.targetId },
       ];
@@ -527,7 +531,10 @@ const Workflow: React.FC = () => {
         name: val.name,
         key: 'general-Node',
         description: val.description,
-        type: val.targetType,
+        type:
+          val.targetType === AgentComponentTypeEnum.Knowledge
+            ? val.targetType
+            : 'TableDataQuery',
         typeId: val.targetId,
         nodeConfig: {
           knowledgeBaseConfigs: knowledgeBaseConfigs,
@@ -908,6 +915,7 @@ const Workflow: React.FC = () => {
           break;
         }
         case 'TableDataUpdate':
+        case 'TableDataQuery':
         case 'TableDataDelete': {
           if (!newFoldWrapItem.nodeConfig.conditionArgs) {
             form.setFieldValue('conditionArgs', [

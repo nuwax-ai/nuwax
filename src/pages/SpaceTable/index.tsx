@@ -168,9 +168,8 @@ const SpaceTable = () => {
         rowData: values,
         rowId: values.id,
       };
-      //
-
-      if (_params.rowId) {
+      console.log(_params);
+      if (_params && _params.rowId) {
         service.modifyTableData(_params);
       } else {
         service.addTableData(_params);
@@ -222,6 +221,14 @@ const SpaceTable = () => {
           getTable();
         },
       });
+    } catch (error) {}
+  };
+
+  // 导出数据
+  const exportData = async () => {
+    try {
+      const _res = await service.exportTableData(tableId);
+      console.log(_res);
     } catch (error) {}
   };
 
@@ -286,7 +293,9 @@ const SpaceTable = () => {
           )}
           {currentContent === 'data' && (
             <Space>
-              <Button icon={<DownloadOutlined />}>导出</Button>
+              <Button icon={<DownloadOutlined />} onClick={exportData}>
+                导出
+              </Button>
               <Button icon={<PlusOutlined />} onClick={onShow}>
                 新增
               </Button>

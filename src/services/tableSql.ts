@@ -233,9 +233,11 @@ async function clearTableData(id: number): Promise<RequestResponse<null>> {
 }
 
 // 导出表数据
-async function exportTableData(id: number): Promise<RequestResponse<null>> {
+async function exportTableData(id: number): Promise<Blob> {
   return request(`/api/compose/db/table/exportExcel/${id}`, {
-    method: 'POST',
+    method: 'GET',
+    responseType: 'blob', // 指定响应类型为blob
+    getResponse: true, // 获取完整响应对象
   });
 }
 
