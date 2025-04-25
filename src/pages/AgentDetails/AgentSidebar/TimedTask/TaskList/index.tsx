@@ -56,7 +56,7 @@ const TaskList: React.FC<TaskListProps> = ({
             <>
               <FormOutlined className={cx(styles.icon, 'cursor-pointer')} />
               <DeleteOutlined className={cx(styles.icon, 'cursor-pointer')} />
-              <span className={cx(styles.time)}>{item.created}</span>
+              <span className={cx(styles.time)}>{item.taskCronDesc}</span>
             </>
           )}
         </div>

@@ -14,7 +14,6 @@ const cx = classNames.bind(styles);
  */
 const PublishAgent: React.FC<PublishAgentProps> = ({
   agentId,
-  publishRemark,
   open,
   onCancel,
 }) => {
@@ -62,7 +61,6 @@ const PublishAgent: React.FC<PublishAgentProps> = ({
         layout="vertical"
         initialValues={{
           channels: ['Square'],
-          remark: publishRemark,
         }}
         onFinish={onFinish}
       >

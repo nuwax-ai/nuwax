@@ -15,7 +15,7 @@ export interface TimedTaskProps {
 export interface TaskListProps {
   loading?: boolean;
   taskStatus: TaskStatus;
-  taskList: any[];
+  taskList: TimedConversationTaskInfo[];
 }
 
 // 创建定时任务弹窗组件属性
@@ -90,6 +90,7 @@ export interface TimedConversationTaskInfo {
   summary?: string;
   // 任务会话定时配置
   taskCron?: string;
+  taskCronDesc?: string;
   taskId?: string;
   // 任务状态
   taskStatus?: TaskStatus;

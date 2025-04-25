@@ -85,7 +85,6 @@ export interface VersionHistoryProps {
 // 发布智能体弹窗组件
 export interface PublishAgentProps {
   agentId: number;
-  publishRemark?: string;
   open: boolean;
   onCancel: () => void;
 }
