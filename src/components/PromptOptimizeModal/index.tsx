@@ -1,22 +1,22 @@
+import sendImage from '@/assets/images/send_image_gray.png';
 import PromptView from '@/components/ChatView/promptView';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import { SendOutlined } from '@ant-design/icons';
 import type { ModalProps } from 'antd';
 import { Button, Input, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 const PromptOptimizeModal: React.FC<
   ModalProps & {
-    id: number;
     onReplace: (text?: string) => void;
     defaultValue?: string;
   }
-> = ({ open, onCancel, id, onReplace, defaultValue }) => {
+> = ({ open, onCancel, onReplace, defaultValue }) => {
   const [message, setMessage] = useState<string>('');
   const {
     messageList,
@@ -26,6 +26,11 @@ const PromptOptimizeModal: React.FC<
     allowAutoScrollRef,
   } = useModel('assistantOptimize');
   // 智能体会话问题建议
+  const [id, setId] = useState<string>('');
+
+  useEffect(() => {
+    setId(uuidv4());
+  }, []);
 
   // 在组件挂载时添加滚动事件监听器
   useEffect(() => {
@@ -51,6 +56,7 @@ const PromptOptimizeModal: React.FC<
 
   // 点击发送事件
   const handleSendMessage = async (text?: string) => {
+    setMessageList([]);
     if (text) {
       setMessage('');
       onMessageSend(id, text);
@@ -78,6 +84,8 @@ const PromptOptimizeModal: React.FC<
       setMessage('');
     }
   };
+
+  console.log(messageList);
 
   return (
     <Modal
@@ -110,20 +118,48 @@ const PromptOptimizeModal: React.FC<
           <div />
         )}
       </div>
-      <Button
-        type="default"
-        className={cx(styles['btn'])}
-        onClick={() =>
-          // 如果有默认文本就优化默认文本
-          handleSendMessage(
-            defaultValue
-              ? defaultValue
-              : '一个能为你提供工作帮助和建议的智能机器人',
-          )
-        }
-      >
-        自动优化
-      </Button>
+      {messageList?.length > 0 ? (
+        <div className={cx('flex')}>
+          <Button
+            className={cx(styles['replace-btn'], styles['btn'])}
+            loading={
+              messageList?.[messageList?.length - 1]?.status !== 'complete'
+            }
+            disabled={
+              messageList?.[messageList?.length - 1]?.status !== 'complete'
+            }
+            onClick={() =>
+              onReplace?.(messageList?.[messageList?.length - 1]?.text)
+            }
+          >
+            替换
+          </Button>
+          <Button
+            onClick={(e) => {
+              setMessageList([]);
+              onCancel?.(e as any);
+            }}
+            className={cx(styles['btn'], 'ml-10 ')}
+          >
+            退出
+          </Button>
+        </div>
+      ) : (
+        <Button
+          type="default"
+          className={cx(styles['btn'])}
+          onClick={() =>
+            // 如果有默认文本就优化默认文本
+            handleSendMessage(
+              defaultValue
+                ? defaultValue
+                : '一个能为你提供工作帮助和建议的智能机器人',
+            )
+          }
+        >
+          自动优化
+        </Button>
+      )}
       <div className={cx(styles.footer, 'flex', 'items-center')}>
         <div
           className={cx(styles['chat-input'], 'flex', 'items-center', 'w-full')}
@@ -137,17 +173,12 @@ const PromptOptimizeModal: React.FC<
             autoSize={{ minRows: 1, maxRows: 3 }}
           />
 
-          <span
+          <img
             onClick={() => handleSendMessage()}
-            className={cx(
-              styles['icon-box'],
-              'flex',
-              'items-center',
-              'content-center',
-            )}
-          >
-            <SendOutlined />
-          </span>
+            className={cx(styles['send-image'], 'cursor-pointer')}
+            src={sendImage as string}
+            alt=""
+          />
         </div>
       </div>
     </Modal>

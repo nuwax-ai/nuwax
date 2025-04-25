@@ -15,8 +15,8 @@ const { TextArea } = Input;
  */
 const SystemTipsWord: React.FC<SystemTipsWordProps> = ({
   value,
+  agentConfigInfo,
   onChange,
-  agentId,
   onReplace,
 }) => {
   const [open, setOpen] = useState<boolean>(false);
@@ -57,11 +57,14 @@ const SystemTipsWord: React.FC<SystemTipsWordProps> = ({
         // autoSize={{ minRows: 20, maxRows: 30 }}
       />
       <PromptOptimizeModal
-        id={agentId}
         open={open}
         onCancel={() => setOpen(false)}
         onReplace={onReplace}
-        defaultValue={value}
+        defaultValue={
+          value ||
+          `${agentConfigInfo?.name || ''}` +
+            `${agentConfigInfo?.description || ''}`
+        }
       />
     </div>
   );

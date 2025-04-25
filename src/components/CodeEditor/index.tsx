@@ -138,6 +138,7 @@ const CodeEditor: React.FC<Props> = ({
       <CodeOptimizeModal
         id={agentId}
         open={open}
+        codeLanguage={codeLanguage}
         onCancel={() => {
           setOpen(false);
         }}

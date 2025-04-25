@@ -177,6 +177,7 @@ export default () => {
     id: number,
     message: string,
     type: 'prompt' | 'code',
+    codeLanguage?: string,
   ) => {
     // 清除副作用
     handleClearSideEffect();
@@ -211,6 +212,7 @@ export default () => {
     const params: PromptOptimizeParams = {
       requestId: `${id}`,
       prompt: message,
+      codeLanguage: codeLanguage,
     };
     // 处理会话
     await handleConversation(params, currentMessageId, type);

@@ -1,7 +1,7 @@
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
 import { AssistantRoleEnum } from '@/types/enums/agent';
-import { MessageStatusEnum } from '@/types/enums/common';
+// import { MessageStatusEnum } from '@/types/enums/common';
 import type {
   AttachmentFile,
   MessageInfo,
@@ -10,7 +10,6 @@ import classNames from 'classnames';
 import markdown from 'markdown-it';
 import React from 'react';
 import styles from './promptView.less';
-import PromptViewBottomMore from './PromptViewBottomMore';
 import RunOver from './RunOver';
 
 const cx = classNames.bind(styles);
@@ -36,11 +35,7 @@ const PromptView: React.FC<PromptViewProps> = ({
   className,
   contentClassName,
   messageInfo,
-  onReplace,
-  ifShowReplace,
 }) => {
-  console.log(messageInfo);
-
   return (
     <div className={cx(styles.container, 'flex', className)}>
       <div className={cx('flex-1')}>
@@ -81,7 +76,7 @@ const PromptView: React.FC<PromptViewProps> = ({
             </div>
           )}
           {/*底部区域*/}
-          <ConditionRender
+          {/* <ConditionRender
             condition={
               messageInfo &&
               (messageInfo?.status === MessageStatusEnum.Complete ||
@@ -93,7 +88,7 @@ const PromptView: React.FC<PromptViewProps> = ({
               ifShowReplace={ifShowReplace}
               messageInfo={messageInfo}
             />
-          </ConditionRender>
+          </ConditionRender> */}
         </ConditionRender>
       </div>
     </div>
