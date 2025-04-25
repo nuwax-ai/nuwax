@@ -457,6 +457,22 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         />
       ),
     },
+    {
+      key: AgentArrangeConfigEnum.Open_Scheduled_Task,
+      label: '定时任务',
+      children: <p>开启后，用户可以通过设置定时任务的方式让智能体执行任务</p>,
+      extra: (
+        <SelectList
+          className={cx(styles.select)}
+          size={'small'}
+          value={agentConfigInfo?.openScheduledTask || OpenCloseEnum.Close}
+          onChange={(value) =>
+            onChangeAgent(value as OpenCloseEnum, 'openScheduledTask')
+          }
+          options={ENABLE_LIST}
+        />
+      ),
+    },
     // {
     //   key: AgentArrangeConfigEnum.Shortcut_Instruction,
     //   label: '快捷指令',

@@ -102,12 +102,8 @@ const Square: React.FC = () => {
     const _agentList = agentList.map((item) => {
       if (item.targetId === id) {
         item.collect = isCollect;
-        if (!item.statistics?.collectCount) {
-          item.statistics.collectCount = 0;
-        }
-        item.statistics.collectCount = isCollect
-          ? item.statistics.collectCount + 1
-          : item.statistics.collectCount - 1;
+        const count = item?.statistics?.collectCount || 0;
+        item.statistics.collectCount = isCollect ? count + 1 : count - 1;
       }
       return item;
     });
@@ -136,6 +132,7 @@ const Square: React.FC = () => {
           {agentList.map((item, index) => (
             <SingleAgent
               key={index}
+              title={title}
               publishedAgentInfo={item}
               onToggleCollectSuccess={handleToggleCollectSuccess}
             />

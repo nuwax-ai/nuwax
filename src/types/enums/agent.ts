@@ -100,3 +100,15 @@ export enum AgentAddComponentStatusEnum {
   Loading = 'Loading',
   Added = 'Added',
 }
+
+// 任务状态 可用值:EXECUTING,CANCEL
+export enum TaskStatus {
+  CANCEL = 'CANCEL',
+  EXECUTING = 'EXECUTING',
+}
+
+// 可用值:Chat,TASK
+export enum TaskTypeEnum {
+  Chat = 'Chat',
+  TASK = 'TASK',
+}

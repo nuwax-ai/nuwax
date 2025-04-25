@@ -1,0 +1,41 @@
+@import '@/styles/color.less';
+
+.container {
+  padding: 20px 0 0;
+  box-shadow: 0 -0.5px 0 @GRAY19;
+
+  .title {
+    font-size: 16px;
+    font-weight: bold;
+    color: @GRAY05;
+  }
+
+  .create {
+    font-size: 14px;
+    color: @GRAY16;
+  }
+
+  .tab {
+    :global {
+      .ant-tabs-tab {
+        font-size: 14px;
+        color: @GRAY05;
+        user-select: none; // 禁止选中文字
+      }
+
+      .ant-tabs-tab.ant-tabs-tab-focus .ant-tabs-tab-btn {
+        outline: none;
+      }
+
+      .ant-tabs-tab-active .ant-tabs-tab-btn {
+        font-size: 14px;
+        font-weight: bold;
+        color: @GRAY15;
+      }
+
+      .ant-tabs-ink-bar {
+        background: @GRAY15;
+      }
+    }
+  }
+}

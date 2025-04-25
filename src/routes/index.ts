@@ -22,7 +22,7 @@ const routes = [
     routes: [
       { path: '', component: '@/pages/Home' },
       { path: '/home/chat/:id', component: '@/pages/Chat' },
-      { path: '/agent/details/:agentId', component: '@/pages/AgentDetails' },
+      { path: '/agent/:agentId', component: '@/pages/AgentDetails' },
       { path: '/space', component: '@/pages/Space' },
       { path: '/space/:spaceId/develop', component: '@/pages/SpaceDevelop' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
@@ -46,6 +46,10 @@ const routes = [
 
       { path: '/square', component: '@/pages/Square' },
       { path: '/system/publish/audit', component: '@/pages/PublishAudit' },
+      {
+        path: '/square/publish/plugin/:pluginId',
+        component: '@/pages/Square/PluginDetail',
+      },
       {
         path: '/system/published/manage',
         component: '@/pages/PublishedManage',

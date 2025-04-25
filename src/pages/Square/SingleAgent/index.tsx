@@ -27,6 +27,7 @@ const cx = classNames.bind(styles);
 const SingleAgent: React.FC<SingleAgentProps> = ({
   publishedAgentInfo,
   onToggleCollectSuccess,
+  title,
 }) => {
   const {
     targetType,
@@ -42,8 +43,6 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   // 根据类型（目标对象（智能体、工作流、插件））显示不同的默认图标
   const defaultImage =
     targetType === SquareAgentTypeEnum.Agent ? agentImage : pluginImage;
-  // // 创建智能体会话
-  // const { handleCreateConversation } = useConversation();
 
   // 智能体收藏
   const { run: runCollectAgent } = useRequest(apiCollectAgent, {
@@ -81,10 +80,15 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
     },
   });
 
-  // 点击单个智能体，创建会话，并跳转到会话页面
+  // 点击单个智能体
   const handleClick = async () => {
-    // await handleCreateConversation(targetId);
-    history.push(`/agent/details/${targetId}`);
+    if (title === '插件') {
+      history.push(`/square/publish/plugin/${targetId}`);
+    } else {
+      history.push(`/agent/${targetId}`);
+
+      // await handleCreateConversation(targetId);
+    }
   };
 
   // 切换收藏与取消收藏

@@ -230,6 +230,7 @@ export interface CategoryInfo {
   type: string;
 }
 
+// 智能体分类项详细信息
 export interface CategoryItemInfo {
   targetType: AgentComponentTypeEnum;
   targetId: number;

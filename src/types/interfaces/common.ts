@@ -298,7 +298,7 @@ export interface CreateAgentProps {
   agentConfigInfo?: AgentConfigInfo;
   open: boolean;
   onCancel: () => void;
-  onConfirmCreate?: (agentId: string) => void;
+  onConfirmCreate?: (agentId: number) => void;
   onConfirmUpdate?: (info: AgentBaseInfo) => void;
 }
 
@@ -433,6 +433,20 @@ export type RunOverProps = ChatBottomMoreProps;
 export interface EllipsisTooltipProps {
   className?: string;
   text: string | number;
+  // 气泡框位置，可选
+  placement?:
+    | 'top'
+    | 'left'
+    | 'right'
+    | 'bottom'
+    | 'topLeft'
+    | 'topRight'
+    | 'bottomLeft'
+    | 'bottomRight'
+    | 'leftTop'
+    | 'leftBottom'
+    | 'rightTop'
+    | 'rightBottom';
 }
 
 // 参数名称label

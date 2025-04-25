@@ -126,6 +126,7 @@ const EditAgent: React.FC = () => {
       systemPrompt,
       suggestPrompt,
       openingChatMsg,
+      openScheduledTask,
       openingGuidQuestions,
       openLongMemory,
     } = _agentConfigInfo;
@@ -141,6 +142,7 @@ const EditAgent: React.FC = () => {
       openSuggest,
       suggestPrompt,
       openingChatMsg,
+      openScheduledTask,
       openingGuidQuestions,
       openLongMemory,
     });
@@ -184,8 +186,10 @@ const EditAgent: React.FC = () => {
           <div className={cx('flex-1', 'flex', 'overflow-y')}>
             {/*系统提示词*/}
             <SystemTipsWord
+              agentId={agentId}
               value={agentConfigInfo?.systemPrompt}
               onChange={(value) => handleChangeAgent(value, 'systemPrompt')}
+              onReplace={(value) => handleChangeAgent(value!, 'systemPrompt')}
             />
             <div className={cx(styles['h-line'])} />
             {/*配置区域*/}

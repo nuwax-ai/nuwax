@@ -7,7 +7,7 @@ import {
   FormOutlined,
   LeftOutlined,
 } from '@ant-design/icons';
-import { Button } from 'antd';
+import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment';
 import React from 'react';
@@ -53,6 +53,19 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
             className={cx(styles['edit-ico'])}
             onClick={onEditAgent}
           />
+          {/* 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布 */}
+          {agentConfigInfo?.publishDate !== null &&
+            moment(agentConfigInfo?.publishDate).isBefore(
+              agentConfigInfo?.modified,
+            ) && (
+              <Tag
+                bordered={false}
+                color="volcano"
+                style={{ marginLeft: '6px' }}
+              >
+                有更新未发布
+              </Tag>
+            )}
         </div>
         <div className={cx('flex', 'items-center', styles['agent-rel-info'])}>
           <ConditionRender condition={agentConfigInfo?.space?.icon}>

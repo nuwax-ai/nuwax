@@ -1,0 +1,39 @@
+@import '@/styles/color.less';
+
+.task-wrapper {
+  gap: 5px;
+
+  .task-item {
+    gap: 4px;
+    height: 28px;
+
+    &:hover {
+      .icon {
+        visibility: visible;
+        opacity: 1;
+      }
+    }
+
+    .name {
+      font-size: 14px;
+      color: @GRAY15;
+    }
+
+    .icon {
+      font-size: 12px;
+      color: @GRAY20;
+      visibility: hidden;
+      opacity: 0;
+      transition: visibility 0.3s, opacity 0.3s, color 0.3s;
+
+      &:hover {
+        color: @BLANK03;
+      }
+    }
+
+    .time {
+      font-size: 12px;
+      color: @GRAY20;
+    }
+  }
+}
