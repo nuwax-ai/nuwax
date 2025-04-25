@@ -110,8 +110,11 @@ const requestInterceptors = [
 const responseInterceptors = [
   async (response: any) => {
     // 拦截响应数据，进行个性化处理
-    const { data = {} as any } = response;
-    console.log(response);
+    const { data = {} as any, config } = response;
+    // 如果响应类型是 blob，直接返回响应对象
+    if (config?.responseType === 'blob') {
+      return response;
+    }
     if (data.code !== SUCCESS_CODE) {
       // 使用 errorConfig 中的 errorThrower 处理错误
       const error = errorThrower?.(data);
