@@ -159,6 +159,10 @@ export interface NodeConfig {
   matchingDegree?: number;
 
   // 数据表的配置
+  tableId?: number;
+  name?: string;
+  description?: string;
+  icon?: string;
   tableFields?: CreatedNodeItem[];
   conditionType?: string;
   conditionArgs?: InputAndOutConfig[];

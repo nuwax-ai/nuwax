@@ -19,7 +19,7 @@ import { InputAndOut, TreeOutput } from './commonNode';
 const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
-  const { setIsModified } = useModel('workflow');
+  const { setSkillChange, setIsModified } = useModel('workflow');
 
   const defautlConditionArgs = [
     {
@@ -49,10 +49,13 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
   // 新增技能
   const onAddedSkill = (item: CreatedNodeItem) => {
     setIsModified(true);
-    // form.setFieldValue('tableId', item.id);
-    console.log(item);
-    // form.submit();
-    // setOpen(false);
+    setSkillChange(true);
+    form.setFieldValue('tableId', item.targetId);
+    form.setFieldValue('name', item.name);
+    form.setFieldValue('description', item.description);
+    form.setFieldValue('icon', item.icon || '');
+    form.submit();
+    setOpen(false);
   };
 
   // 打开自动生成弹窗
@@ -64,11 +67,14 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
   // 移出技能
   const removeItem = () => {
     form.setFieldValue('tableId', 0);
+    form.submit();
   };
   //   显示新增技能
   const showAdd = () => {
     setOpen(true);
   };
+
+  console.log(form.getFieldsValue(true));
 
   return (
     <div>
@@ -240,14 +246,16 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
             disabled={form.getFieldValue('tableId')}
           ></Button>
         </div>
-        <DataTable
-          icon={''}
-          name={'123'}
-          description={'456'}
-          handleDelete={removeItem}
-          params={['123', '456']}
-          showParams={type === 'TableSQL'}
-        />
+        {form.getFieldValue('tableId') ? (
+          <DataTable
+            icon={form.getFieldValue('icon')}
+            name={form.getFieldValue('name')}
+            description={form.getFieldValue('description')}
+            handleDelete={removeItem}
+            params={['123', '456']}
+            showParams={type === 'TableSQL'}
+          />
+        ) : null}
       </div>
       {/* SQL */}
       {type === 'TableSQL' && (

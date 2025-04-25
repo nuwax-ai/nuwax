@@ -111,7 +111,7 @@ const responseInterceptors = [
   async (response: any) => {
     // 拦截响应数据，进行个性化处理
     const { data = {} as any } = response;
-
+    console.log(response);
     if (data.code !== SUCCESS_CODE) {
       // 使用 errorConfig 中的 errorThrower 处理错误
       const error = errorThrower?.(data);

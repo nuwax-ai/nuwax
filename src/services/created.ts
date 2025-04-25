@@ -5,7 +5,7 @@ const itemList = {
   [AgentComponentTypeEnum.Plugin]: '/api/published/plugin/list',
   [AgentComponentTypeEnum.Workflow]: '/api/published/workflow/list',
   [AgentComponentTypeEnum.Knowledge]: '/api/published/knowledge/list',
-  [AgentComponentTypeEnum.Table]: '/api/published/dataBase/list',
+  [AgentComponentTypeEnum.Table]: '/api/published/composeTable/list',
   [AgentComponentTypeEnum.Variable]: '/api/published/dataBase/list',
   [AgentComponentTypeEnum.Model]: '/api/published/dataBase/list',
   [AgentComponentTypeEnum.Trigger]: '/api/published/dataBase/list',

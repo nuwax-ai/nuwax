@@ -32,7 +32,7 @@ export const mockColumns = [
     },
   },
   {
-    title: '是否可为空',
+    title: '可为空',
     dataIndex: 'nullableFlag',
     type: 'checkbox' as const,
     editable: true,
