@@ -400,8 +400,22 @@ const Workflow: React.FC = () => {
       _res.data.key = _res.data.type === 'Loop' ? 'loop-node' : 'general-Node';
       const extension = _res.data.nodeConfig.extension;
       graphRef.current.addNode(extension, _res.data);
+      // 如果是通过created创建的知识库节点或者数据库节点，那么就要更新当前节点，因为添加节点不接收knowledgeBaseConfigs
+      if (
+        child.type === 'Knowledge' &&
+        child.nodeConfig?.knowledgeBaseConfigs
+      ) {
+        changeNode({
+          ..._res.data,
+          nodeConfig: {
+            ..._res.data.nodeConfig,
+            knowledgeBaseConfigs: child.nodeConfig.knowledgeBaseConfigs,
+          },
+        });
+      } else {
+        changeDrawer(_res.data);
+      }
       // setFoldWrapItem(_res.data);
-      changeDrawer(_res.data);
       graphRef.current.selectNode(_res.data.id);
       changeUpdateTime();
     }
@@ -498,8 +512,17 @@ const Workflow: React.FC = () => {
   // 添加工作流，插件，知识库，数据库
   const onAdded = (val: CreatedNodeItem, parentFC?: string) => {
     if (parentFC && parentFC !== 'workflow') return;
+    if (val.type === 'Database' || val.type === 'Knowledge') {
+      message.warning(
+        '数据表只能添加在数据新增，数据删除，数据更新，数据查询和SQL自定义节点中',
+      );
+      return;
+    }
     let _child: Child;
     if (val.targetType === AgentComponentTypeEnum.Knowledge) {
+      const knowledgeBaseConfigs = [
+        { ...val, type: val.targetType, knowledgeBaseId: val.targetId },
+      ];
       _child = {
         name: val.name,
         key: 'general-Node',
@@ -507,7 +530,7 @@ const Workflow: React.FC = () => {
         type: val.targetType,
         typeId: val.targetId,
         nodeConfig: {
-          knowledgeBaseConfigs: [val],
+          knowledgeBaseConfigs: knowledgeBaseConfigs,
           extension: {},
         },
       };
@@ -864,29 +887,29 @@ const Workflow: React.FC = () => {
 
       switch (foldWrapItem.type) {
         case 'HTTPRequest': {
-          if (!newFoldWrapItem.method) {
+          if (!newFoldWrapItem.nodeConfig.method) {
             form.setFieldValue('method', 'GET');
           }
-          if (!newFoldWrapItem.contentType) {
+          if (!newFoldWrapItem.nodeConfig.contentType) {
             form.setFieldValue('contentType', 'JSON');
           }
           break;
         }
         case 'Variable': {
-          if (!newFoldWrapItem.configType) {
+          if (!newFoldWrapItem.nodeConfig.configType) {
             form.setFieldValue('configType', 'SET_VARIABLE');
           }
           break;
         }
         case 'QA': {
-          if (!newFoldWrapItem.answerType) {
+          if (!newFoldWrapItem.nodeConfig.answerType) {
             form.setFieldValue('answerType', 'TEXT');
           }
           break;
         }
         case 'TableDataUpdate':
         case 'TableDataDelete': {
-          if (!newFoldWrapItem.conditionArgs) {
+          if (!newFoldWrapItem.nodeConfig.conditionArgs) {
             form.setFieldValue('conditionArgs', [
               {
                 firstArg: {
