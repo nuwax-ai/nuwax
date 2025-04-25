@@ -21,8 +21,8 @@ import { useParams } from 'umi';
 import './index.less';
 import { mockColumns, mockTableData, typeMap } from './params';
 
-const SpaceDataBase = () => {
-  const { spaceId, databaseId } = useParams();
+const SpaceTable = () => {
+  const { spaceId, tableId } = useParams();
   const [detail, setDetail] = useState<IgetDetails | null>(null);
   const [AddParams, setAddParams] = useState<FormItem[]>([]);
   // 当前显示的表结构还是表数据
@@ -95,7 +95,7 @@ const SpaceDataBase = () => {
   // 获取当前的数据
   const getDetails = async () => {
     try {
-      const res = await service.getDetail(databaseId);
+      const res = await service.getDetail(tableId);
       setDetail(res.data);
     } catch (error) {}
   };
@@ -104,7 +104,7 @@ const SpaceDataBase = () => {
   const getTable = async () => {
     try {
       const _params = {
-        tableId: databaseId,
+        tableId: tableId,
         pageNo: pagination.current,
         pageSize: pagination.pageSize,
       };
@@ -147,7 +147,7 @@ const SpaceDataBase = () => {
   const onAdd = (values: AnyObject) => {
     try {
       const _params = {
-        tableId: databaseId,
+        tableId: tableId,
         rowData: values,
         rowId: values.id,
       };
@@ -198,7 +198,7 @@ const SpaceDataBase = () => {
         onOk: async () => {
           const _params = {
             rowId: id,
-            tableId: databaseId,
+            tableId: tableId,
           };
           await service.deleteTableData(_params);
           message.success('删除成功');
@@ -330,4 +330,4 @@ const SpaceDataBase = () => {
   );
 };
 
-export default SpaceDataBase;
+export default SpaceTable;

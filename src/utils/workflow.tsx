@@ -28,7 +28,7 @@ import {
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
 // 引用默认图标
-import Database from '@/assets/images/database_image.png';
+import Table from '@/assets/images/database_image.png';
 import Knowledge from '@/assets/images/knowledge_image.png';
 import Plugin from '@/assets/images/plugin_image.png';
 import {
@@ -40,13 +40,15 @@ import {
 import { adjustParentSize } from '@/utils/graph';
 import { Graph, Node } from '@antv/x6';
 const imageList = {
-  Database,
+  Table,
   Knowledge,
   Plugin,
   Workflow,
   Trigger,
   Variable,
   Model,
+} as {
+  [key in AgentComponentTypeEnum]: string;
 };
 // 根据type返回图片，用作技能和知识库等节点中的
 export const getImg = (data: AgentComponentTypeEnum) => {
@@ -65,8 +67,8 @@ export const returnImg = (type: string) => {
       return <ICON_WORKFLOW_CODE />;
     case 'Condition':
       return <ICON_WORKFLOW_CONDITION />;
-    case 'Database':
-      return <ICON_WORKFLOW_DATABASE />;
+    // case 'Database':
+    //   return <ICON_WORKFLOW_DATABASE />;
     case 'DocumentExtraction':
       return <ICON_WORKFLOW_DOCUMENT_EXTRACTION />;
     case 'HTTPRequest':
@@ -124,7 +126,7 @@ export const returnBackgroundColor = (type: string) => {
     case 'IntentRecognition':
       return '#C8FFFF';
     case 'Knowledge':
-    case 'Database':
+    // case 'Database':
     case 'Variable':
     case 'LongTermMemory':
       return '#FFF0DF';

@@ -40,8 +40,8 @@ const routes = [
         component: '@/pages/SpaceKnowledge',
       },
       {
-        path: '/space/:spaceId/database/:databaseId',
-        component: '@/pages/SpaceDatabase',
+        path: '/space/:spaceId/table/:tableId',
+        component: '@/pages/SpaceTable',
       },
 
       { path: '/square', component: '@/pages/Square' },

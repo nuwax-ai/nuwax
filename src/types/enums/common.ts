@@ -28,7 +28,7 @@ export enum CreateUpdateModeEnum {
 
 export enum NodeTypeEnum {
   // 数据库
-  Database = 'Database',
+  // Database = 'Database',
   // 知识库
   Knowledge = 'Knowledge',
   // http

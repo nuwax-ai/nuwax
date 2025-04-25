@@ -3,7 +3,7 @@ import { ChildNode } from '@/types/interfaces/graph';
 import { FormInstance } from 'antd';
 import ComplexNode from './component/complexNode';
 import ConditionNode from './component/condition';
-import DatabaseNode from './component/database';
+import Database from './component/database';
 import Library from './component/library';
 import NodeItem from './component/nodeItem';
 import ReferenceNode from './component/pluginNode';
@@ -20,7 +20,6 @@ const {
 const { ModelNode, IntentionNode, QuestionsNode, HttpToolNode } = ComplexNode;
 const { PluginInNode } = ReferenceNode;
 const { KnowledgeNode } = Library;
-const { Database } = DatabaseNode;
 // 定义试运行,后面删除
 const LoopContinue: React.FC = () => {
   return <div className="node-title-style">用于终止当前循环，执行下次循环</div>;

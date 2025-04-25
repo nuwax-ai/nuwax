@@ -312,4 +312,4 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
   );
 };
 
-export default { Database };
+export default Database;

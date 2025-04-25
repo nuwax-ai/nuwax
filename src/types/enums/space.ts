@@ -57,7 +57,7 @@ export enum AgentArrangeConfigEnum {
   // 文本
   Text = 'Text',
   Variable = 'Variable',
-  Database = 'Database',
+  Table = 'Table',
   // 长期记忆
   Long_Memory = 'Long_Memory',
   // 文件盒子

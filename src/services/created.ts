@@ -9,6 +9,8 @@ const itemList = {
   [AgentComponentTypeEnum.Variable]: '/api/published/dataBase/list',
   [AgentComponentTypeEnum.Model]: '/api/published/dataBase/list',
   [AgentComponentTypeEnum.Trigger]: '/api/published/dataBase/list',
+} as {
+  [key in AgentComponentTypeEnum]: string;
 };
 
 export interface IGetList {

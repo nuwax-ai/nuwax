@@ -12,7 +12,7 @@ interface IUpdateLLMNode {
 
 // 各个节点不同的路径
 const urlList = {
-  Database: '/api/workflow/node/update',
+  // Database: '/api/workflow/node/update',
   Knowledge: '/api/workflow/node/knowledge/update',
   HTTPRequest: '/api/workflow/node/http/update',
   QA: '/api/workflow/node/qa/update',

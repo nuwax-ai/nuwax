@@ -297,7 +297,7 @@ const SpaceLibrary: React.FC = () => {
       };
 
       const res = await service.addTask(params);
-      history.push(`/space/${spaceId}/database/${res.data}`);
+      history.push(`/space/${spaceId}/table/${res.data}`);
     } catch (error) {
       console.log(error);
     }
@@ -427,7 +427,7 @@ const SpaceLibrary: React.FC = () => {
         history.push(`/space/${spaceId}/knowledge/${id}`);
         break;
       case ComponentTypeEnum.Table:
-        history.push(`/space/${spaceId}/database/${id}`);
+        history.push(`/space/${spaceId}/table/${id}`);
         break;
       case ComponentTypeEnum.Model:
         setModelComponentInfo(item);
