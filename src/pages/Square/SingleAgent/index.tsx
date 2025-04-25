@@ -27,6 +27,7 @@ const cx = classNames.bind(styles);
 const SingleAgent: React.FC<SingleAgentProps> = ({
   publishedAgentInfo,
   onToggleCollectSuccess,
+  title,
 }) => {
   const {
     targetType,
@@ -81,7 +82,13 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
 
   // 点击单个智能体
   const handleClick = async () => {
-    history.push(`/agent/${targetId}`);
+    if (title === '插件') {
+      history.push(`/square/publish/plugin/${targetId}`);
+    } else {
+      history.push(`/agent/${targetId}`);
+
+      // await handleCreateConversation(targetId);
+    }
   };
 
   // 切换收藏与取消收藏

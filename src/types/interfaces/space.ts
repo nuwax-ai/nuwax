@@ -33,6 +33,8 @@ export interface CollectStarProps {
 export interface SystemTipsWordProps {
   value?: string;
   onChange: (value: string) => void;
+  onReplace: (value?: string) => void;
+  agentId: number;
 }
 
 // 智能体编排-单个配置选项header组件属性

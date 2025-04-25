@@ -3,39 +3,31 @@ import CustomFormModal from '@/components/CustomFormModal';
 import LabelStar from '@/components/LabelStar';
 import {
   MODEL_API_PROTOCOL_LIST,
+  MODEL_FUNCTION_CALL_LIST,
   MODEL_NETWORK_TYPE_LIST,
   MODEL_STRATEGY_LIST,
   MODEL_TYPE_LIST,
 } from '@/constants/library.constants';
 import { apiModelInfo, apiModelSave } from '@/services/modelConfig';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import {
-  ModelApiInfoColumnNameEnum,
-  ModelNetworkTypeEnum,
-  ModelTypeEnum,
-} from '@/types/enums/modelConfig';
-import type {
-  CreateModelProps,
-  ModelConfigDataType,
-} from '@/types/interfaces/library';
+import { ModelNetworkTypeEnum, ModelTypeEnum } from '@/types/enums/modelConfig';
+import type { CreateModelProps } from '@/types/interfaces/library';
 import type { ModelConfigInfo, ModelFormData } from '@/types/interfaces/model';
-import { getNumbersOnly } from '@/utils/common';
 import { customizeRequiredMark } from '@/utils/form';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import {
   Form,
   FormProps,
   Input,
+  InputNumber,
   message,
   Radio,
   Select,
-  Table,
-  TableColumnsType,
+  Space,
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
-import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 import IntranetModel from './IntranetModel';
 import IntranetServerCommand from './IntranetServerCommand';
@@ -56,43 +48,19 @@ const CreateModel: React.FC<CreateModelProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [visible, setVisible] = useState<boolean>(false);
+  const [modelType, setModelType] = useState<ModelTypeEnum | undefined>();
   const [shouldRenderDimension, setShouldRenderDimension] = useState(false);
   const [networkType, setNetworkType] = useState<ModelNetworkTypeEnum>(
     ModelNetworkTypeEnum.Internet,
   );
-  // 入参源数据
-  const [apiInfoList, setApiInfoList] = useState<ModelConfigDataType[]>([
-    {
-      key: uuidv4(),
-      [ModelApiInfoColumnNameEnum.Url]: '',
-      [ModelApiInfoColumnNameEnum.Apikey]: '',
-      [ModelApiInfoColumnNameEnum.Weight]: '',
-    },
-  ]);
 
   // 查询指定模型配置信息
   const { run: runQuery } = useRequest(apiModelInfo, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: ModelConfigInfo) => {
-      form.setFieldsValue({
-        name: result?.name,
-        description: result?.description,
-        model: result?.model,
-        apiProtocol: result?.apiProtocol,
-        networkType: result?.networkType,
-        strategy: result?.strategy,
-        type: result?.type,
-        dimension: result?.dimension,
-      });
-      const _apiInfoList =
-        result?.apiInfoList?.map((item) => ({
-          key: uuidv4(),
-          url: item.url,
-          apikey: item.key,
-          weight: item.weight,
-        })) || [];
-      setApiInfoList(_apiInfoList as ModelConfigDataType[]);
+      form.setFieldsValue(result);
+      setModelType(result?.type);
     },
   });
 
@@ -107,35 +75,25 @@ const CreateModel: React.FC<CreateModelProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: (_, params) => {
-      message.success('模型已创建成功');
+      message.success(
+        mode === CreateUpdateModeEnum.Create
+          ? '模型已创建成功'
+          : '模型已更新成功',
+      );
       onConfirm(...params);
     },
   });
 
   const onFinish: FormProps<ModelFormData>['onFinish'] = (values) => {
-    const _apiInfoList = apiInfoList?.map((item) => {
-      return {
-        url: item.url,
-        key: item.apikey,
-        weight: item.weight,
-      };
-    });
-    // 模型类型和联网类型此版本先固定写死
-    const data = {
-      type: ModelTypeEnum.Chat,
-      apiInfoList: _apiInfoList,
-      ...values,
-      networkType: ModelNetworkTypeEnum.Internet,
-    };
     if (mode === CreateUpdateModeEnum.Create) {
       run({
-        ...data,
+        ...values,
         spaceId,
       });
     } else {
       // 更新模型
       run({
-        ...data,
+        ...values,
         id,
         spaceId,
       });
@@ -146,111 +104,16 @@ const CreateModel: React.FC<CreateModelProps> = ({
     await form.submit();
   };
 
-  const handleAdd = () => {
-    const _apiInfoList = [...apiInfoList];
-    _apiInfoList.push({
-      key: uuidv4(),
-      [ModelApiInfoColumnNameEnum.Url]: '',
-      [ModelApiInfoColumnNameEnum.Apikey]: '',
-      [ModelApiInfoColumnNameEnum.Weight]: '',
-    });
-    setApiInfoList(_apiInfoList);
-  };
-
-  // 删除
-  const handleDel = (index: number) => {
-    const _apiInfoList = [...apiInfoList];
-    _apiInfoList.splice(index, 1);
-    setApiInfoList(_apiInfoList);
-  };
-
-  // 修改value值
-  const handleChange = (
-    index: number,
-    attr: ModelApiInfoColumnNameEnum,
-    value: string,
-  ) => {
-    const _apiInfoList = [...apiInfoList];
-    _apiInfoList[index][attr as string] =
-      attr === ModelApiInfoColumnNameEnum.Weight
-        ? getNumbersOnly(value)
-        : value;
-    setApiInfoList(_apiInfoList);
-  };
-
-  // 入参配置columns
-  const inputColumns: TableColumnsType<ModelConfigDataType>['columns'] = [
-    {
-      title: 'URL',
-      dataIndex: ModelApiInfoColumnNameEnum.Url,
-      key: ModelApiInfoColumnNameEnum.Url,
-      className: styles['table-bg'],
-      render: (_, record, index) => (
-        <Input
-          placeholder="输入接口URL"
-          value={record.url}
-          onChange={(e) =>
-            handleChange(index, ModelApiInfoColumnNameEnum.Url, e.target.value)
-          }
-        />
-      ),
-    },
-    {
-      title: 'API KEY',
-      dataIndex: ModelApiInfoColumnNameEnum.Apikey,
-      key: ModelApiInfoColumnNameEnum.Apikey,
-      className: styles['table-bg'],
-      render: (_, record, index) => (
-        <Input
-          placeholder="输入接口API KEY"
-          value={record.apikey}
-          onChange={(e) =>
-            handleChange(
-              index,
-              ModelApiInfoColumnNameEnum.Apikey,
-              e.target.value,
-            )
-          }
-        />
-      ),
-    },
-    {
-      title: '权重',
-      dataIndex: ModelApiInfoColumnNameEnum.Weight,
-      key: ModelApiInfoColumnNameEnum.Weight,
-      className: styles['table-bg'],
-      render: (_, record, index) => (
-        <Input
-          placeholder="输入权重值"
-          value={record.weight}
-          onChange={(e) =>
-            handleChange(
-              index,
-              ModelApiInfoColumnNameEnum.Weight,
-              e.target.value,
-            )
-          }
-        />
-      ),
-    },
-    {
-      title: <PlusOutlined onClick={handleAdd} />,
-      key: 'action',
-      width: 40,
-      className: styles['table-bg'],
-      align: 'center',
-      render: (_, record, index) => (
-        <DeleteOutlined onClick={() => handleDel(index)} />
-      ),
-    },
-  ];
-
   const handleValuesChange = (changedValues: ModelFormData) => {
     const { networkType } = changedValues;
     setNetworkType(networkType);
     if (action !== apiModelSave) {
       setShouldRenderDimension(changedValues.type === ModelTypeEnum.Embeddings);
     }
+  };
+
+  const onTypeChanege = (value: ModelTypeEnum) => {
+    setModelType(value);
   };
 
   return (
@@ -273,6 +136,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
         onValuesChange={handleValuesChange}
         initialValues={{
           networkType: ModelNetworkTypeEnum.Internet,
+          apiInfoList: [{ weight: 1 }],
         }}
         autoComplete="off"
       >
@@ -304,22 +168,64 @@ const CreateModel: React.FC<CreateModelProps> = ({
             autoSize={{ minRows: 3, maxRows: 5 }}
           />
         </Form.Item>
-        <ConditionRender condition={action !== apiModelSave}>
+        <div className={cx('flex', styles['gap-16'])}>
+          <ConditionRender condition={action !== apiModelSave}>
+            <Form.Item
+              name="type"
+              label="模型类型"
+              className={cx('flex-1')}
+              rules={[{ required: true, message: '请选择模型类型' }]}
+            >
+              <Select
+                onChange={onTypeChanege}
+                options={MODEL_TYPE_LIST.filter((v) =>
+                  [
+                    ModelTypeEnum.Chat,
+                    ModelTypeEnum.Embeddings,
+                    ModelTypeEnum.Multi,
+                  ].includes(v.value),
+                )}
+                placeholder="选择模型接口协议"
+              />
+            </Form.Item>
+          </ConditionRender>
+          {modelType !== ModelTypeEnum.Embeddings && (
+            <Form.Item
+              name="isReasonModel"
+              className={cx('flex-1')}
+              label="推理模型"
+            >
+              <Radio.Group
+                options={[
+                  { label: '是', value: 1 },
+                  { label: '否', value: 0 },
+                ]}
+              />
+            </Form.Item>
+          )}
+        </div>
+        <ConditionRender condition={modelType === ModelTypeEnum.Embeddings}>
           <Form.Item
-            name="type"
-            label="模型类型"
-            rules={[{ required: true, message: '请选择模型类型' }]}
+            name="dimension"
+            label="向量维度"
+            rules={[{ required: false, message: '填写向量维度' }]}
+          >
+            <InputNumber />
+          </Form.Item>
+        </ConditionRender>
+        <ConditionRender condition={modelType !== ModelTypeEnum.Embeddings}>
+          <Form.Item
+            name="functionCall"
+            label="函数调用支持"
+            rules={[{ required: true, message: '函数调用支持' }]}
           >
             <Select
-              options={MODEL_TYPE_LIST.filter((v) =>
-                [ModelTypeEnum.Chat, ModelTypeEnum.Embeddings].includes(
-                  v.value,
-                ),
-              )}
-              placeholder="选择模型接口协议"
+              options={MODEL_FUNCTION_CALL_LIST}
+              placeholder="选择函数调用支持"
             />
           </Form.Item>
         </ConditionRender>
+
         <Form.Item
           name="apiProtocol"
           label="接口协议"
@@ -368,21 +274,68 @@ const CreateModel: React.FC<CreateModelProps> = ({
               placeholder="请选择调用策略"
             />
           </Form.Item>
-          <Form.Item noStyle>
-            <Table<ModelConfigDataType>
-              rowClassName={cx(styles['table-bg'])}
-              columns={inputColumns}
-              dataSource={apiInfoList}
-              pagination={false}
-            />
-          </Form.Item>
         </Form.Item>
+
+        <Form.List name="apiInfoList">
+          {(fields, { add, remove }) => (
+            <>
+              {fields.map(({ key, name, ...restField }) => (
+                <Space
+                  key={key}
+                  style={{ display: 'flex', marginBottom: 8 }}
+                  align="baseline"
+                >
+                  <Form.Item
+                    {...restField}
+                    label={key === 0 ? 'URL' : ''}
+                    name={[name, 'url']}
+                    rules={[{ required: true, message: '输入URL' }]}
+                  >
+                    <Input placeholder="输入URL" />
+                  </Form.Item>
+                  <Form.Item
+                    {...restField}
+                    label={key === 0 ? 'API KEY' : ''}
+                    name={[name, 'key']}
+                    rules={[{ required: true, message: '输入API KEY' }]}
+                  >
+                    <Input placeholder="输入API KEY" />
+                  </Form.Item>
+                  <Form.Item
+                    {...restField}
+                    label={key === 0 ? '权重' : ''}
+                    name={[name, 'weight']}
+                    rules={[{ required: true, message: '输入权重值' }]}
+                  >
+                    <InputNumber placeholder="输入权重值" />
+                  </Form.Item>
+                  <Form.Item
+                    label={
+                      key === 0 ? (
+                        <PlusCircleOutlined
+                          onClick={() => add({ weight: 1 })}
+                        />
+                      ) : (
+                        ''
+                      )
+                    }
+                    rules={[{ required: true, message: '输入权重值' }]}
+                  >
+                    {key !== 0 && (
+                      <DeleteOutlined onClick={() => remove(name)} />
+                    )}
+                  </Form.Item>
+                </Space>
+              ))}
+            </>
+          )}
+        </Form.List>
+        {/*内网服务器执行命令弹窗*/}
+        <IntranetServerCommand
+          visible={visible}
+          onCancel={() => setVisible(false)}
+        />
       </Form>
-      {/*内网服务器执行命令弹窗*/}
-      <IntranetServerCommand
-        visible={visible}
-        onCancel={() => setVisible(false)}
-      />
     </CustomFormModal>
   );
 };

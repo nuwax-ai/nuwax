@@ -1,12 +1,18 @@
+import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
 import Editor, { loader } from '@monaco-editor/react';
+import { FloatButton, Form } from 'antd';
+import { FormInstance } from 'antd/lib/form/Form';
 import * as monaco from 'monaco-editor';
 import React, { useEffect, useState } from 'react';
+import { useParams } from 'umi';
+import CodeOptimizeModal from '../CodeOptimizeModal';
 
 interface Props {
   codeLanguage: 'JavaScript' | 'Python' | 'JSON';
   height?: string;
   value?: string | undefined;
   onChange?: (code: string) => void;
+  form?: FormInstance;
 }
 
 const CodeEditor: React.FC<Props> = ({
@@ -14,8 +20,11 @@ const CodeEditor: React.FC<Props> = ({
   onChange,
   height = '400px',
   codeLanguage,
+  form,
 }) => {
   const [isMonacoReady, setIsMonacoReady] = useState(false);
+  const [open, setOpen] = useState<boolean>(false);
+  const { agentId } = useParams();
 
   useEffect(() => {
     loader.config({
@@ -67,25 +76,84 @@ const CodeEditor: React.FC<Props> = ({
   }
 
   const handleCodeChange = (newValue?: string) => {
+    console.log(newValue);
+
     if (onChange) {
       onChange(newValue || '');
     }
     // setIsModified(true);
   };
+  console.log(form);
 
   return (
-    <Editor
-      height={height}
-      language={codeLanguage.toLowerCase()}
-      theme="vs-dark"
-      value={value}
-      onChange={handleCodeChange}
-      options={{
-        selectOnLineNumbers: true,
-        folding: true,
-        automaticLayout: true,
-      }}
-    />
+    <>
+      {form ? (
+        <Form.Item
+          noStyle
+          name={
+            form?.getFieldValue('codeLanguage') === 'JavaScript'
+              ? 'codeJavaScript'
+              : 'codePython'
+          }
+        >
+          <Editor
+            height={height}
+            language={codeLanguage.toLowerCase()}
+            theme="vs-dark"
+            value={value}
+            onChange={handleCodeChange}
+            options={{
+              selectOnLineNumbers: true,
+              folding: true,
+              automaticLayout: true,
+            }}
+          />
+        </Form.Item>
+      ) : (
+        <Editor
+          height={height}
+          language={codeLanguage.toLowerCase()}
+          theme="vs-dark"
+          value={value}
+          onChange={handleCodeChange}
+          options={{
+            selectOnLineNumbers: true,
+            folding: true,
+            automaticLayout: true,
+          }}
+        />
+      )}
+
+      {/* 代码辅助生成，增加复用写在这个文件里面 */}
+      <FloatButton
+        shape="circle"
+        type="primary"
+        style={{ insetInlineEnd: 94 }}
+        icon={<ICON_CONFIRM_STAR />}
+        tooltip="代码助手"
+        onClick={() => {
+          setOpen(true);
+        }}
+      />
+      <CodeOptimizeModal
+        id={agentId}
+        open={open}
+        onCancel={() => {
+          setOpen(false);
+        }}
+        onReplace={(newValue?: string) => {
+          if (!newValue) return;
+
+          let text = newValue;
+
+          if (text.includes('```')) {
+            text = text.replace(/```/g, '');
+          }
+
+          onChange?.(text || '');
+        }}
+      />
+    </>
   );
 };
 

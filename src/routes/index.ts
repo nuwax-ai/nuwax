@@ -47,6 +47,10 @@ const routes = [
       { path: '/square', component: '@/pages/Square' },
       { path: '/system/publish/audit', component: '@/pages/PublishAudit' },
       {
+        path: '/square/publish/plugin/:pluginId',
+        component: '@/pages/Square/PluginDetail',
+      },
+      {
         path: '/system/published/manage',
         component: '@/pages/PublishedManage',
       },
