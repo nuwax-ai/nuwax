@@ -141,7 +141,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
         initialValues={{
           networkType: ModelNetworkTypeEnum.Internet,
           apiInfoList: [{ weight: 1 }],
-          isReasonModel: 1,
+          isReasonModel: 0,
           functionCall: ModelFunctionCallEnum.CallSupported,
           apiProtocol: ModelApiProtocolEnum.OpenAI,
           strategy: ModelStrategyEnum.RoundRobin,
@@ -193,7 +193,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
                   ModelTypeEnum.Multi,
                 ].includes(v.value),
               )}
-              placeholder="选择模型接口协议"
+              placeholder="请选择模型类型"
             />
           </Form.Item>
           {/* </ConditionRender> */}
