@@ -1,7 +1,6 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { DataTableProps } from '@/types/interfaces/workflow';
 import { getImg } from '@/utils/workflow';
-import { DeleteOutlined } from '@ant-design/icons';
 import './index.less';
 const DataTable: React.FC<DataTableProps> = ({
   icon,
@@ -9,14 +8,15 @@ const DataTable: React.FC<DataTableProps> = ({
   description,
   showParams,
   params,
-  handleDelete,
 }) => {
   return (
     <div>
       <div className="skill-item-style  dis-sb">
         <div className="dis-left">
           <img
-            src={icon === '' ? getImg(AgentComponentTypeEnum.Table) : icon}
+            src={
+              !icon || icon === '' ? getImg(AgentComponentTypeEnum.Table) : icon
+            }
             alt=""
             className="skill-item-icon"
           />
@@ -25,10 +25,6 @@ const DataTable: React.FC<DataTableProps> = ({
             <div className="skill-item-desc-style">{description}</div>
           </div>
         </div>
-        <DeleteOutlined
-          className="ml-12  white"
-          onClick={() => handleDelete()}
-        />
       </div>
       {showParams && params && (
         <div className="dis-wrap-sa margin-bottom">

@@ -388,6 +388,7 @@ const Workflow: React.FC = () => {
       }
     }
     const _res = await service.addNode(_params);
+
     if (_res.code === Constant.success) {
       _res.data.key = _res.data.type === 'Loop' ? 'loop-node' : 'general-Node';
       const extension = _res.data.nodeConfig.extension;
@@ -397,27 +398,12 @@ const Workflow: React.FC = () => {
         child.type === 'Knowledge' &&
         child.nodeConfig?.knowledgeBaseConfigs
       ) {
+        setSkillChange(true);
         changeNode({
           ..._res.data,
           nodeConfig: {
             ..._res.data.nodeConfig,
             knowledgeBaseConfigs: child.nodeConfig.knowledgeBaseConfigs,
-          },
-        });
-      } else if (
-        child.type === 'TableDataQuery' &&
-        child.nodeConfig?.knowledgeBaseConfigs
-      ) {
-        setFoldWrapItem(_res.data);
-        const table = child.nodeConfig.knowledgeBaseConfigs[0];
-        changeNode({
-          ..._res.data,
-          nodeConfig: {
-            ..._res.data.nodeConfig,
-            tableId: table.targetId,
-            name: table.name,
-            description: table.description,
-            icon: table.icon,
           },
         });
       }
@@ -527,6 +513,7 @@ const Workflow: React.FC = () => {
       const knowledgeBaseConfigs = [
         { ...val, type: val.targetType, knowledgeBaseId: val.targetId },
       ];
+      const tableType = sessionStorage.getItem('tableType');
       _child = {
         name: val.name,
         key: 'general-Node',
@@ -534,7 +521,7 @@ const Workflow: React.FC = () => {
         type:
           val.targetType === AgentComponentTypeEnum.Knowledge
             ? val.targetType
-            : 'TableDataQuery',
+            : tableType || 'TableDataQuery',
         typeId: val.targetId,
         nodeConfig: {
           knowledgeBaseConfigs: knowledgeBaseConfigs,
@@ -551,6 +538,9 @@ const Workflow: React.FC = () => {
       };
     }
     addNode(_child, dragEvent);
+    if (sessionStorage.getItem('tableType')) {
+      sessionStorage.removeItem('tableType');
+    }
     // graphRef.current.addNode(dragEvent, _child);
     setOpen(false);
   };
@@ -576,11 +566,23 @@ const Workflow: React.FC = () => {
 
     // 判断是否需要显示特定类型的创建面板
     const isSpecialType = ['Plugin', 'Workflow'].includes(child.type);
-
+    // 数据库新增
+    const isTableNode = [
+      'TableDataAdd',
+      'TableDataDelete',
+      'TableDataUpdate',
+      'TableDataQuery',
+      'TableSQL',
+    ].includes(child.type);
     if (isSpecialType) {
       setCreatedItem(child.type as AgentComponentTypeEnum);
       setOpen(true);
       setDragEvent(getCoordinates(e));
+    } else if (isTableNode) {
+      setCreatedItem(AgentComponentTypeEnum.Table);
+      setOpen(true);
+      setDragEvent(getCoordinates(e));
+      sessionStorage.setItem('tableType', child.type);
     } else {
       const coordinates = getCoordinates(e);
       if (e) {
@@ -943,7 +945,6 @@ const Workflow: React.FC = () => {
               },
             ]);
             form.setFieldValue('conditionType', 'AND');
-            console.log('form', form.getFieldsValue(true));
           }
           break;
         }

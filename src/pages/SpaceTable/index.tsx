@@ -168,7 +168,6 @@ const SpaceTable = () => {
         rowData: values,
         rowId: values.id,
       };
-      console.log(_params);
       if (_params && _params.rowId) {
         service.modifyTableData(_params);
       } else {
@@ -324,7 +323,7 @@ const SpaceTable = () => {
           )}
           {currentContent === 'structure' && (
             <EditTable
-              dataEmptyFlag={true}
+              dataEmptyFlag={detail ? detail.existTableDataFlag : false}
               columns={mockColumns}
               tableData={detail?.fieldList || []}
               showIndex

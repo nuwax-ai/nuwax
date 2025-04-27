@@ -9,4 +9,5 @@ export enum InputItemNameEnum {
   options = 'options',
   intentConfigs = 'intentConfigs',
   headers = 'headers',
+  tableFields = 'tableFields',
 }

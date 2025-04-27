@@ -46,7 +46,7 @@ const MyTable: React.FC<MyTableProp> = ({
       [rowKey]: `newRow${dataSource.length + 1}`,
       isNew: true, // 标记为新增行
       systemFieldFlag: false,
-      sortIndex: dataSource.length - 1,
+      sortIndex: dataSource.length + 1,
     };
     columns.forEach((column) => {
       switch (column.type) {
