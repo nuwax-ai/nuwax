@@ -170,7 +170,7 @@ const Chat: React.FC = () => {
               ))}
               {/*会话建议*/}
               <RecommendList
-                className={styles['suggest-item']}
+                itemClassName={styles['suggest-item']}
                 loading={loadingSuggest}
                 chatSuggestList={chatSuggestList}
                 onClick={handleMessageSend}

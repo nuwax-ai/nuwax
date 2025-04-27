@@ -79,23 +79,22 @@ const TaskList: React.FC<TaskListProps> = ({
     onEditTask?.(info);
   };
 
+  // 手掌样式
+  const cursor =
+    taskStatus === TaskStatus.EXECUTING ? 'cursor-pointer' : 'cursor-default';
+
   return taskList?.length > 0 ? (
     <div className={cx(styles['task-wrapper'], className)}>
       {taskList?.map((item: TimedConversationTaskInfo) => (
         <div
           key={item.id}
-          className={cx(
-            styles['task-item'],
-            'flex',
-            'items-center',
-            'cursor-pointer',
-          )}
-          onClick={() => handleClick(item)}
+          className={cx(styles['task-item'], 'flex', 'items-center', cursor)}
         >
           <EllipsisTooltip
             text={String(item?.topic)}
             className={cx('flex-1')}
             placement="topLeft"
+            onClick={() => handleClick(item)}
           />
           {item.taskStatus === TaskStatus.EXECUTING && (
             <>

@@ -115,8 +115,12 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({ pluginInfo }) => {
       <div className={cx('flex')}>
         {/*收藏与取消收藏*/}
         <CollectStar devCollected={collect} onClick={handlerCollect} />
-        <span className={cx('ml-10')}>收藏</span>
-        {`(${count})`}
+        <span
+          className={cx('ml-10', styles['collect'])}
+          // onClick={handlerCollect}
+        >
+          收藏 {`(${count})`}
+        </span>
       </div>
     </header>
   );

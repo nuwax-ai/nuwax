@@ -4,13 +4,18 @@ import LabelStar from '@/components/LabelStar';
 import {
   MODEL_API_PROTOCOL_LIST,
   MODEL_FUNCTION_CALL_LIST,
-  MODEL_NETWORK_TYPE_LIST,
   MODEL_STRATEGY_LIST,
   MODEL_TYPE_LIST,
 } from '@/constants/library.constants';
 import { apiModelInfo, apiModelSave } from '@/services/modelConfig';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { ModelNetworkTypeEnum, ModelTypeEnum } from '@/types/enums/modelConfig';
+import {
+  ModelApiProtocolEnum,
+  ModelFunctionCallEnum,
+  ModelNetworkTypeEnum,
+  ModelStrategyEnum,
+  ModelTypeEnum,
+} from '@/types/enums/modelConfig';
 import type { CreateModelProps } from '@/types/interfaces/library';
 import type { ModelConfigInfo, ModelFormData } from '@/types/interfaces/model';
 import { customizeRequiredMark } from '@/utils/form';
@@ -29,7 +34,6 @@ import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
-import IntranetModel from './IntranetModel';
 import IntranetServerCommand from './IntranetServerCommand';
 
 const cx = classNames.bind(styles);
@@ -49,10 +53,10 @@ const CreateModel: React.FC<CreateModelProps> = ({
   const [form] = Form.useForm();
   const [visible, setVisible] = useState<boolean>(false);
   const [modelType, setModelType] = useState<ModelTypeEnum | undefined>();
-  const [shouldRenderDimension, setShouldRenderDimension] = useState(false);
-  const [networkType, setNetworkType] = useState<ModelNetworkTypeEnum>(
-    ModelNetworkTypeEnum.Internet,
-  );
+  // const [shouldRenderDimension, setShouldRenderDimension] = useState(false);
+  // const [networkType, setNetworkType] = useState<ModelNetworkTypeEnum>(
+  //   ModelNetworkTypeEnum.Internet,
+  // );
 
   // 查询指定模型配置信息
   const { run: runQuery } = useRequest(apiModelInfo, {
@@ -104,13 +108,13 @@ const CreateModel: React.FC<CreateModelProps> = ({
     await form.submit();
   };
 
-  const handleValuesChange = (changedValues: ModelFormData) => {
-    const { networkType } = changedValues;
-    setNetworkType(networkType);
-    if (action !== apiModelSave) {
-      setShouldRenderDimension(changedValues.type === ModelTypeEnum.Embeddings);
-    }
-  };
+  // const handleValuesChange = (changedValues: ModelFormData) => {
+  //   // const { networkType } = changedValues;
+  //   // setNetworkType(networkType);
+  //   if (action !== apiModelSave) {
+  //     setShouldRenderDimension(changedValues.type === ModelTypeEnum.Embeddings);
+  //   }
+  // };
 
   const onTypeChanege = (value: ModelTypeEnum) => {
     setModelType(value);
@@ -133,10 +137,14 @@ const CreateModel: React.FC<CreateModelProps> = ({
         requiredMark={customizeRequiredMark}
         layout="vertical"
         onFinish={onFinish}
-        onValuesChange={handleValuesChange}
+        // onValuesChange={handleValuesChange}
         initialValues={{
           networkType: ModelNetworkTypeEnum.Internet,
           apiInfoList: [{ weight: 1 }],
+          isReasonModel: 0,
+          functionCall: ModelFunctionCallEnum.CallSupported,
+          apiProtocol: ModelApiProtocolEnum.OpenAI,
+          strategy: ModelStrategyEnum.RoundRobin,
         }}
         autoComplete="off"
       >
@@ -169,26 +177,26 @@ const CreateModel: React.FC<CreateModelProps> = ({
           />
         </Form.Item>
         <div className={cx('flex', styles['gap-16'])}>
-          <ConditionRender condition={action !== apiModelSave}>
-            <Form.Item
-              name="type"
-              label="模型类型"
-              className={cx('flex-1')}
-              rules={[{ required: true, message: '请选择模型类型' }]}
-            >
-              <Select
-                onChange={onTypeChanege}
-                options={MODEL_TYPE_LIST.filter((v) =>
-                  [
-                    ModelTypeEnum.Chat,
-                    ModelTypeEnum.Embeddings,
-                    ModelTypeEnum.Multi,
-                  ].includes(v.value),
-                )}
-                placeholder="选择模型接口协议"
-              />
-            </Form.Item>
-          </ConditionRender>
+          {/* <ConditionRender condition={action !== apiModelSave}> */}
+          <Form.Item
+            name="type"
+            label="模型类型"
+            className={cx('flex-1')}
+            rules={[{ required: true, message: '请选择模型类型' }]}
+          >
+            <Select
+              onChange={onTypeChanege}
+              options={MODEL_TYPE_LIST.filter((v) =>
+                [
+                  ModelTypeEnum.Chat,
+                  ModelTypeEnum.Embeddings,
+                  ModelTypeEnum.Multi,
+                ].includes(v.value),
+              )}
+              placeholder="请选择模型类型"
+            />
+          </Form.Item>
+          {/* </ConditionRender> */}
           {modelType !== ModelTypeEnum.Embeddings && (
             <Form.Item
               name="isReasonModel"
@@ -203,16 +211,18 @@ const CreateModel: React.FC<CreateModelProps> = ({
               />
             </Form.Item>
           )}
+          <ConditionRender condition={modelType === ModelTypeEnum.Embeddings}>
+            <Form.Item
+              name="dimension"
+              label="向量维度"
+              className={cx('flex-1')}
+              rules={[{ required: false, message: '填写向量维度' }]}
+            >
+              <InputNumber />
+            </Form.Item>
+          </ConditionRender>
         </div>
-        <ConditionRender condition={modelType === ModelTypeEnum.Embeddings}>
-          <Form.Item
-            name="dimension"
-            label="向量维度"
-            rules={[{ required: false, message: '填写向量维度' }]}
-          >
-            <InputNumber />
-          </Form.Item>
-        </ConditionRender>
+
         <ConditionRender condition={modelType !== ModelTypeEnum.Embeddings}>
           <Form.Item
             name="functionCall"
@@ -236,7 +246,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
             placeholder="请选择模型接口协议"
           />
         </Form.Item>
-        <ConditionRender condition={shouldRenderDimension}>
+        {/* <ConditionRender condition={shouldRenderDimension}>
           <Form.Item
             name="dimension"
             label="向量维度"
@@ -244,8 +254,8 @@ const CreateModel: React.FC<CreateModelProps> = ({
           >
             <Input placeholder="输入向量维度" />
           </Form.Item>
-        </ConditionRender>
-        <ConditionRender condition={action === apiModelSave}>
+        </ConditionRender> */}
+        {/* <ConditionRender condition={action === apiModelSave}>
           <Form.Item name="networkType" label="联网类型">
             <Radio.Group options={MODEL_NETWORK_TYPE_LIST} />
           </Form.Item>
@@ -259,12 +269,13 @@ const CreateModel: React.FC<CreateModelProps> = ({
           <Form.Item>
             <IntranetModel onOpen={() => setVisible(true)} />
           </Form.Item>
-        </ConditionRender>
+        </ConditionRender> */}
         <Form.Item label={<LabelStar label="接口配置" />}>
           <Form.Item className={cx('mb-0')}>
             <p>调用策略</p>
           </Form.Item>
           <Form.Item
+            className={cx('mb-0')}
             name="strategy"
             rules={[{ required: true, message: '接口配置' }]}
           >

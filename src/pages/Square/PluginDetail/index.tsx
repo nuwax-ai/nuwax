@@ -42,7 +42,7 @@ const SpacePluginDetail: React.FC = ({}) => {
       title: '参数名称',
       dataIndex: 'name',
       key: 'name',
-      className: 'flex items-center',
+      // className: 'flex items-center',
     },
     {
       title: '参数描述',
@@ -92,7 +92,7 @@ const SpacePluginDetail: React.FC = ({}) => {
       dataIndex: 'name',
       key: 'name',
       width: 430,
-      className: 'flex items-center',
+      // className: 'flex items-center',
     },
     {
       title: '参数描述',
@@ -121,19 +121,20 @@ const SpacePluginDetail: React.FC = ({}) => {
           />
         )}
         <div className={cx(styles['main-container'], 'overflow-y')}>
-          <h3>插件描述</h3>
+          <span className={cx(styles.title)}>插件描述</span>
           <p className={cx(styles.desc, 'text-ellipsis-2')}>
             {pluginInfo?.description}
           </p>
-          <Divider style={{ margin: '12px 0' }} />
-          <h3>入参配置</h3>
+          <Divider style={{ margin: '20px 0' }} />
+          <span className={cx(styles.title)}>入参配置</span>
           <Table
             className={cx(styles['table-wrap'], 'overflow-hide')}
             columns={inputColumns}
+            // bordered={false}
             dataSource={pluginInfo?.inputArgs || []}
             pagination={false}
           />
-          <h3>出参配置</h3>
+          <span className={cx(styles.title)}>出参配置</span>
           {pluginInfo?.outputArgs?.length > 0 ? (
             <Table<BindConfigWithSub>
               className={cx(styles['table-wrap'], 'overflow-hide')}

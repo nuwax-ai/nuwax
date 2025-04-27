@@ -227,7 +227,13 @@ const SpaceTable = () => {
   const exportData = async () => {
     try {
       const _res = await service.exportTableData(tableId);
-      console.log(_res);
+      const blob = new Blob([_res?.data]); // 将响应数据转换为 Blob 对象
+      const objectURL = URL.createObjectURL(blob); // 创建一个 URL 对象
+      const link = document.createElement('a'); // 创建一个 a 标签
+      link.href = objectURL;
+      link.download = '文件名.xlsx'; // 设置下载文件的名称
+      link.click(); // 模拟点击下载
+      URL.revokeObjectURL(objectURL); // 释放 URL 对象
     } catch (error) {}
   };
 

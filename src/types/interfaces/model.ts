@@ -6,10 +6,8 @@ import type {
   ModelStrategyEnum,
   ModelTypeEnum,
 } from '@/types/enums/modelConfig';
-import type {
-  ConversationChatResponse,
-  CreatorInfo,
-} from '@/types/interfaces/agent';
+import type { CreatorInfo } from '@/types/interfaces/agent';
+import type { ConversationChatResponse } from './conversationInfo';
 
 // 定义模型列表
 export interface ModelListItemProps {

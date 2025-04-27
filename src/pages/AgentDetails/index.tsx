@@ -2,6 +2,14 @@ import AgentChatEmpty from '@/components/AgentChatEmpty';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
+import useConversation from '@/hooks/useConversation';
+import { apiPublishedAgentInfo } from '@/services/agentDev';
+import {
+  AssistantRoleEnum,
+  MessageModeEnum,
+  MessageTypeEnum,
+} from '@/types/enums/agent';
+import { AgentDetailDto } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   MessageInfo,
@@ -9,8 +17,11 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
-import { useModel, useParams } from 'umi';
+import cloneDeep from 'lodash/cloneDeep';
+import moment from 'moment';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useParams, useRequest } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
 import AgentSidebar from './AgentSidebar';
 import styles from './index.less';
 
@@ -22,52 +33,92 @@ const cx = classNames.bind(styles);
 const AgentDetails: React.FC = () => {
   // 智能体ID
   const { agentId } = useParams();
+  // 会话信息
+  const [messageList, setMessageList] = useState<MessageInfo[]>([]);
+  // 会话问题建议
+  const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
+  const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
+  const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
-  console.log(agentId);
+  // 创建智能体会话
+  const { handleCreateConversation } = useConversation();
 
-  const {
-    conversationInfo,
-    loadingConversation,
-    messageList,
-    chatSuggestList,
-    isLoadingConversation,
-    loadingSuggest,
-    messageViewRef,
-  } = useModel('conversationInfo');
+  const { run: runDetail, loading } = useRequest(apiPublishedAgentInfo, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: AgentDetailDto) => {
+      setAgentDetail(result);
+      // 会话问题建议
+      setChatSuggestList(result?.openingGuidQuestions || []);
+      // 初始化会话信息: 开场白
+      if (result?.openingChatMsg) {
+        const currentMessage = {
+          role: AssistantRoleEnum.ASSISTANT,
+          type: MessageModeEnum.CHAT,
+          text: result?.openingChatMsg,
+          time: moment().toString(), // 将 moment 对象转换为字符串以匹配 MessageInfo 类型
+          id: uuidv4(),
+          messageType: MessageTypeEnum.ASSISTANT,
+        } as MessageInfo;
+        setMessageList([currentMessage]);
+      }
+      setIsLoaded(true);
+    },
+  });
+
+  useEffect(() => {
+    runDetail(agentId);
+  }, []);
+
+  // 切换收藏与取消收藏
+  const handleToggleCollectSuccess = (isCollect: boolean) => {
+    const _agentDetail = cloneDeep(agentDetail);
+    if (!_agentDetail) {
+      return;
+    }
+    const count = _agentDetail?.statistics?.collectCount || 0;
+    _agentDetail.statistics.collectCount = isCollect ? count + 1 : count - 1;
+    _agentDetail.collect = isCollect;
+    setAgentDetail(_agentDetail);
+  };
 
   // 角色信息（名称、头像）
   const roleInfo: RoleInfo = useMemo(() => {
-    const agent = conversationInfo?.agent;
     return {
       assistant: {
-        name: agent?.name as string,
-        avatar: agent?.icon as string,
+        name: agentDetail?.name as string,
+        avatar: agentDetail?.icon as string,
       },
       system: {
-        name: agent?.name as string,
-        avatar: agent?.icon as string,
+        name: agentDetail?.name as string,
+        avatar: agentDetail?.icon as string,
       },
     };
-  }, [conversationInfo]);
+  }, [agentDetail]);
 
   // 消息发送
   const handleMessageSend = (message: string, files?: UploadFileInfo[]) => {
-    // onMessageSend(message, files);
-    console.log(message, files);
+    if (!agentDetail) {
+      return;
+    }
+    // 创建智能体会话
+    handleCreateConversation(agentDetail.agentId, {
+      message,
+      files,
+    });
   };
 
   return (
-    <div className={cx('flex', 'h-full', 'overflow-y')} ref={messageViewRef}>
+    <div className={cx('flex', 'h-full', 'overflow-y')}>
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
-        <h3 className={cx(styles.title)}>{conversationInfo?.topic}</h3>
         <div className={cx(styles['chat-wrapper'], 'flex-1')}>
-          {loadingConversation ? (
+          {loading ? (
             <div
               className={cx('flex', 'items-center', 'content-center', 'h-full')}
             >
               <LoadingOutlined className={cx(styles.loading)} />
             </div>
-          ) : messageList?.length > 0 || chatSuggestList?.length > 0 ? (
+          ) : messageList?.length > 0 ? (
             <>
               {messageList?.map((item: MessageInfo, index: number) => (
                 <ChatView
@@ -80,18 +131,28 @@ const AgentDetails: React.FC = () => {
               ))}
               {/*会话建议*/}
               <RecommendList
-                className={styles['suggest-item']}
-                loading={loadingSuggest}
+                itemClassName={styles['suggest-item']}
+                loading={loading}
                 chatSuggestList={chatSuggestList}
                 onClick={handleMessageSend}
               />
             </>
           ) : (
-            isLoadingConversation && (
+            isLoaded && (
               // Chat记录为空
               <AgentChatEmpty
-                icon={conversationInfo?.agent?.icon}
-                name={conversationInfo?.agent?.name}
+                icon={agentDetail?.icon}
+                name={agentDetail?.name || ''}
+                // 会话建议
+                extra={
+                  <RecommendList
+                    className="mt-16"
+                    itemClassName={cx(styles['suggest-item'])}
+                    loading={loading}
+                    chatSuggestList={chatSuggestList}
+                    onClick={handleMessageSend}
+                  />
+                }
               />
             )
           )}
@@ -102,7 +163,10 @@ const AgentDetails: React.FC = () => {
           onEnter={handleMessageSend}
         />
       </div>
-      <AgentSidebar />
+      <AgentSidebar
+        agentDetail={agentDetail}
+        onToggleCollectSuccess={handleToggleCollectSuccess}
+      />
     </div>
   );
 };

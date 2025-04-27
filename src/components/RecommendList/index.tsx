@@ -8,12 +8,13 @@ const cx = classNames.bind(styles);
 
 const RecommendList: React.FC<RecommendListProps> = ({
   className,
+  itemClassName,
   loading,
   chatSuggestList,
   onClick,
 }) => {
   return (
-    <div className={cx(styles.container, 'flex', 'flex-col')}>
+    <div className={cx(styles.container, 'flex', 'flex-col', className)}>
       {loading ? (
         <div className={cx('flex')}>
           <LoadingOutlined />
@@ -26,10 +27,9 @@ const RecommendList: React.FC<RecommendListProps> = ({
             className={cx(
               styles.box,
               'px-16',
-              'radius-6',
               'cursor-pointer',
               'hover-box',
-              className,
+              itemClassName,
             )}
           >
             {item}

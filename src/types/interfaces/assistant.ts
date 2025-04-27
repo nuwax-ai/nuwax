@@ -13,6 +13,8 @@ export interface PromptOptimizeParams {
 
   /*提示词 */
   prompt: string;
+
+  codeLanguage?: string;
 }
 
 // 响应接口

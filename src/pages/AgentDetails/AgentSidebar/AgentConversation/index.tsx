@@ -6,13 +6,15 @@ import { Empty } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { history, useRequest } from 'umi';
+import HistoryConversation from './HistoryConversation';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 // 智能体相关会话
 const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
+  const [open, setOpen] = useState<boolean>(false);
   const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
   // 历史会话列表
   const [conversationList, setConversationList] =
@@ -38,21 +40,40 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
     });
   }, [agentId]);
 
+  const handleLink = (id: number) => {
+    history.push(`/home/chat/${id}`);
+  };
+
+  const handleDel = (id: number) => {
+    setConversationList((list) => {
+      return list?.filter((item) => item.id !== id);
+    });
+  };
+
   return (
     <div className={cx(styles.container)}>
       <div className={cx('flex', 'items-center', 'content-between')}>
         <h3 className={cx(styles.title)}>相关会话</h3>
-        <span className={cx(styles.more, 'cursor-pointer')}>查看更多</span>
+        <span
+          className={cx(styles.more, 'cursor-pointer')}
+          onClick={() => setOpen(true)}
+        >
+          查看更多
+        </span>
       </div>
       <div className={cx(styles['chat-wrapper'])}>
         {loadingHistory ? (
           <Loading className={cx(styles['loading-box'])} />
         ) : conversationList?.length ? (
           conversationList?.slice(0, 5)?.map((item) => (
-            <div key={item.id} className={cx(styles['chat-item'])}>
-              <p className={cx('text-ellipsis')}>{item.topic}</p>
+            <div
+              key={item.id}
+              className={cx(styles['chat-item'], 'cursor-pointer', 'hover-box')}
+              onClick={() => handleLink(item.id)}
+            >
+              <p className={cx('text-ellipsis', 'flex-1')}>{item.topic}</p>
               <span className={cx(styles.time)}>
-                {moment(item.created).format('YYYY-MM-DD')}
+                {moment(item.created).format('YYYY-MM-DD : HH:mm')}
               </span>
             </div>
           ))
@@ -60,6 +81,12 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
           <Empty description="暂无相关会话" />
         )}
       </div>
+      <HistoryConversation
+        conversationList={conversationList}
+        isOpen={open}
+        onCancel={() => setOpen(false)}
+        onDel={handleDel}
+      />
     </div>
   );
 };

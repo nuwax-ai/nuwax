@@ -34,6 +34,8 @@ export enum ApplicationMoreActionEnum {
   Create_Copy,
   // 迁移
   Move,
+  // 下架
+  Off_Shelf,
   // 删除
   Del,
 }
@@ -50,13 +52,17 @@ export enum SpaceApplicationListEnum {
 
 // 智能体配置 - 编排类型枚举
 export enum AgentArrangeConfigEnum {
+  // 插件
   Plugin = 'Plugin',
+  // 工作流
   Workflow = 'Workflow',
   // 触发器
   Trigger = 'Trigger',
   // 文本
   Text = 'Text',
+  // 变量
   Variable = 'Variable',
+  // 数据表
   Table = 'Table',
   // 长期记忆
   Long_Memory = 'Long_Memory',

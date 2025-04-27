@@ -269,6 +269,8 @@ export default () => {
   const handleConversation = async (
     params: ConversationChatParams,
     currentMessageId: string,
+    // 是否同步会话记录
+    isSync: boolean = true,
   ) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
     // 启动连接
@@ -282,6 +284,21 @@ export default () => {
       body: params,
       onMessage: (res: ConversationChatResponse) => {
         handleChangeMessageList(params, res, currentMessageId);
+      },
+      onClose: () => {
+        // 第一次发送消息后更新主题
+        if (needUpdateTopicRef.current) {
+          runUpdateTopic({
+            id: params.conversationId,
+            firstMessage: params.message,
+          });
+          if (isSync) {
+            // 如果是会话聊天页（chat页），同步更新会话记录
+            runHistory({
+              agentId: null,
+            });
+          }
+        }
       },
     });
     // 主动关闭连接
@@ -381,20 +398,7 @@ export default () => {
       debug,
     };
     // 处理会话
-    await handleConversation(params, currentMessageId);
-    // 第一次发送消息后更新主题
-    if (needUpdateTopicRef.current) {
-      await runUpdateTopic({
-        id,
-        firstMessage: message,
-      });
-      if (isSync) {
-        // 如果是会话聊天页（chat页），同步更新会话记录
-        runHistory({
-          agentId: null,
-        });
-      }
-    }
+    handleConversation(params, currentMessageId, isSync);
   };
 
   const handleDebug = useCallback((info: MessageInfo) => {

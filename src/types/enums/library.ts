@@ -2,6 +2,8 @@
 export enum ComponentMoreActionEnum {
   Copy = 'Copy',
   Statistics = 'Statistics',
+  // 下架
+  Off_Shelf = 'Off_Shelf',
   Del = 'Del',
 }
 

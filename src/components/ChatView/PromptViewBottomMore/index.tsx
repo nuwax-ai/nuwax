@@ -1,7 +1,7 @@
 import ConditionRender from '@/components/ConditionRender';
 import { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { CopyOutlined } from '@ant-design/icons';
-import { Button, message, Tooltip } from 'antd';
+import { message, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
@@ -11,16 +11,12 @@ const cx = classNames.bind(styles);
 
 // 聊天框底部更多操作组件
 export interface PromptViewBottomMoreProps {
-  onReplace?: (text?: string) => void;
-  ifShowReplace?: boolean;
   messageInfo: MessageInfo;
 }
 
 // 优化提示词框底部更多操作组件
 const PromptViewBottomMore: React.FC<PromptViewBottomMoreProps> = ({
   messageInfo,
-  onReplace,
-  ifShowReplace = true,
 }) => {
   // finalResult 自定义添加字段：chat 会话结果
   const { text, finalResult } = messageInfo || {};
@@ -40,13 +36,9 @@ const PromptViewBottomMore: React.FC<PromptViewBottomMoreProps> = ({
     >
       <div className={cx('flex', 'items-center', styles['elapsed-time'])}>
         <ConditionRender condition={!!finalResult}>
-          {ifShowReplace && (
-            <Button
-              onClick={() => onReplace?.(text)}
-              size="small"
-              type="primary"
-            >{`替换`}</Button>
-          )}
+          {/* {ifShowReplace && (
+            <Button className={cx(styles['replace-btn'])} onClick={() => onReplace?.(text)}>{`替换`}</Button>
+          )} */}
           <ConditionRender condition={!!finalResult?.totalTokens}>
             <span className={cx(styles['vertical-line'])} />
             <span>{`${finalResult?.totalTokens} Tokens`}</span>

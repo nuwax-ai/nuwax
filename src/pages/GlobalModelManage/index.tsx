@@ -27,6 +27,7 @@ const GlobalModelManage: React.FC = () => {
     { label: '全部', value: '' },
     { label: '会话', value: ModelTypeEnum.Chat },
     { label: '嵌入(向量化)', value: ModelTypeEnum.Embeddings },
+    { label: '多模态', value: ModelTypeEnum.Multi },
   ];
   const [visible, setVisible] = useState<boolean>(false);
   const [modelId, setModelId] = useState<number>();

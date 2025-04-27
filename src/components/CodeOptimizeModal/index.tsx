@@ -1,22 +1,23 @@
+import sendImage from '@/assets/images/send_image_gray.png';
 import PromptView from '@/components/ChatView/promptView';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import { SendOutlined } from '@ant-design/icons';
 import type { ModalProps } from 'antd';
-import { Input, Modal } from 'antd';
+import { Button, Input, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 const CodeOptimizeModal: React.FC<
   ModalProps & {
-    id: number;
+    codeLanguage?: string;
     onReplace?: (text?: string) => void;
     defaultValue?: string;
   }
-> = ({ open, onCancel, id, onReplace }) => {
+> = ({ open, onCancel, onReplace, codeLanguage }) => {
   const [message, setMessage] = useState<string>('');
   const {
     messageList,
@@ -25,6 +26,13 @@ const CodeOptimizeModal: React.FC<
     messageViewRef,
     allowAutoScrollRef,
   } = useModel('assistantOptimize');
+
+  const [id, setId] = useState<string>('');
+
+  useEffect(() => {
+    setId(uuidv4());
+  }, []);
+
   // 智能体会话问题建议
 
   // 在组件挂载时添加滚动事件监听器
@@ -51,9 +59,11 @@ const CodeOptimizeModal: React.FC<
 
   // 点击发送事件
   const handleSendMessage = async () => {
+    setMessageList([]);
+
     if (message) {
       setMessage('');
-      onMessageSend(id, message, 'code');
+      onMessageSend(id, message, 'code', codeLanguage);
     }
   };
 
@@ -70,13 +80,11 @@ const CodeOptimizeModal: React.FC<
       setMessage(enterValue);
     } else if (e.nativeEvent.keyCode === 13 && !!value.trim()) {
       // enter事件
-      onMessageSend(id, message, 'code');
+      onMessageSend(id, message, 'code', codeLanguage);
       // 置空
       setMessage('');
     }
   };
-
-  console.log(messageList);
 
   return (
     <Modal
@@ -110,7 +118,35 @@ const CodeOptimizeModal: React.FC<
           <div />
         )}
       </div>
-
+      {messageList?.length > 0 ? (
+        <div className={cx('flex')}>
+          <Button
+            className={cx(styles['replace-btn'], styles['btn'])}
+            loading={
+              messageList?.[messageList?.length - 1]?.status !== 'complete'
+            }
+            disabled={
+              messageList?.[messageList?.length - 1]?.status !== 'complete'
+            }
+            onClick={() =>
+              onReplace?.(messageList?.[messageList?.length - 1]?.text)
+            }
+          >
+            替换
+          </Button>
+          <Button
+            onClick={(e) => {
+              setMessageList([]);
+              onCancel?.(e as any);
+            }}
+            className={cx(styles['btn'], 'ml-10 ')}
+          >
+            退出
+          </Button>
+        </div>
+      ) : (
+        <div />
+      )}
       <div className={cx(styles.footer, 'flex', 'items-center')}>
         <div
           className={cx(styles['chat-input'], 'flex', 'items-center', 'w-full')}
@@ -124,17 +160,12 @@ const CodeOptimizeModal: React.FC<
             autoSize={{ minRows: 1, maxRows: 3 }}
           />
 
-          <span
+          <img
             onClick={() => handleSendMessage()}
-            className={cx(
-              styles['icon-box'],
-              'flex',
-              'items-center',
-              'content-center',
-            )}
-          >
-            <SendOutlined />
-          </span>
+            className={cx(styles['send-image'], 'cursor-pointer')}
+            src={sendImage as string}
+            alt=""
+          />
         </div>
       </div>
     </Modal>

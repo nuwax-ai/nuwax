@@ -1,25 +1,34 @@
 @import '@/styles/color';
 
 .container {
-  padding: 0 5px;
+  padding: 19px 16px;
 
   .main-container {
     flex: 1;
-    padding: 16px 20px;
+    padding: 34px 37px;
 
     .title {
-      font-size: 18px;
-      font-weight: bold;
-      color: @BLANK04;
+      font-family: 'Alimama Agile VF';
+      font-size: 14px;
+      font-weight: normal;
+      line-height: 22px;
+      letter-spacing: 0;
+      font-variation-settings: 'opsz' auto;
+      font-feature-settings: 'kern' on;
+      color: #393e4f;
     }
 
     .desc {
-      height: 60px;
+      // height: 60px;
       margin-top: 4px;
+      font-family: 'Alimama Agile VF';
       font-size: 14px;
-      font-weight: 400;
-      line-height: 20px;
-      color: @BLANK07;
+      font-weight: normal;
+      line-height: 22px;
+      letter-spacing: 0;
+      font-variation-settings: 'opsz' auto;
+      font-feature-settings: 'kern' on;
+      color: #3d3d3d;
       white-space: pre-wrap;
       word-break: break-word;
     }
@@ -32,7 +41,37 @@
     .table-wrap {
       border-radius: 5px;
       border: 1px solid @BLANK19;
-      margin: 10px 0;
+      margin-top: 12px;
+      margin-bottom: 50px;
+
+      th {
+        font-family: 'Alimama Agile VF';
+        font-size: 12px;
+        font-weight: bold;
+        line-height: 22px;
+        letter-spacing: 0;
+        color: #666e84;
+        padding: 12px;
+      }
+
+      td {
+        font-family: 'Alimama Agile VF';
+        font-size: 14px;
+        font-weight: normal;
+        line-height: 22px;
+        letter-spacing: 0;
+        padding: 12px;
+        font-feature-settings: 'kern' on;
+        color: #3d3d3d;
+
+        &:nth-child(2) {
+          font-family: 'Alimama Agile VF';
+          font-size: 10px;
+          font-weight: normal;
+          line-height: 18px;
+          letter-spacing: 0;
+        }
+      }
     }
 
     .select {

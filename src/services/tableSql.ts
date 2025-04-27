@@ -170,7 +170,7 @@ async function modifyTableStructure(data: {
 
 // 删除
 async function deleteTask(id: number): Promise<RequestResponse<null>> {
-  return request(`/api/compose/db/table/delete${id}`, {
+  return request(`/api/compose/db/table/delete/${id}`, {
     method: 'POST',
   });
 }
