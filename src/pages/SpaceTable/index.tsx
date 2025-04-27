@@ -142,21 +142,14 @@ const SpaceTable = () => {
       };
       const res = await service.getTableData(_params);
       setTableData(res.data.records);
-      const arr = res.data.columnDefines
-        .filter(
-          (item) =>
-            !item.systemFieldFlag ||
-            item.fieldName === 'id' ||
-            item.fieldName === 'created',
-        )
-        .map((item) => {
-          return {
-            title: item.fieldDescription,
-            dataIndex: item.fieldName,
-            key: item.fieldName,
-            type: item.fieldType === 5 ? ('time' as const) : ('text' as const),
-          };
-        });
+      const arr = res.data.columnDefines.map((item) => {
+        return {
+          title: item.fieldDescription,
+          dataIndex: item.fieldName,
+          key: item.fieldName,
+          type: item.fieldType === 5 ? ('time' as const) : ('text' as const),
+        };
+      });
       setColumns(arr);
     } catch (error) {}
   };
@@ -231,7 +224,7 @@ const SpaceTable = () => {
       const objectURL = URL.createObjectURL(blob); // 创建一个 URL 对象
       const link = document.createElement('a'); // 创建一个 a 标签
       link.href = objectURL;
-      link.download = '文件名.xlsx'; // 设置下载文件的名称
+      link.download = `${detail?.tableName}.xlsx`; // 设置下载文件的名称
       link.click(); // 模拟点击下载
       URL.revokeObjectURL(objectURL); // 释放 URL 对象
     } catch (error) {}

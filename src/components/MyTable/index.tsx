@@ -7,6 +7,7 @@ const MyTable: React.FC<MyTableProp> = ({
   columns,
   tableData,
   actionColumn,
+  actionColumnFixed,
   scrollHeight,
   showIndex,
   rowKey = 'id',
@@ -80,6 +81,7 @@ const MyTable: React.FC<MyTableProp> = ({
             title={'操作'}
             dataIndex="action"
             width={actionColumnWidth}
+            fixed={actionColumnFixed ? 'right' : undefined} // 设置为固定列
             render={(_, record) => {
               return (
                 <Space>

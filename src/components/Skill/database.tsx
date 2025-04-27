@@ -11,7 +11,7 @@ const DataTable: React.FC<DataTableProps> = ({
 }) => {
   return (
     <div>
-      <div className="skill-item-style  dis-sb">
+      <div className="skill-item-style background-c9 dis-sb">
         <div className="dis-left">
           <img
             src={

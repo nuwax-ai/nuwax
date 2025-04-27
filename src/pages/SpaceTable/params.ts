@@ -56,6 +56,7 @@ export const mockColumns = [
     dataIndex: 'defaultValue',
     type: 'text' as const,
     editable: true,
+    defaultValue: '系统变量',
   },
 ];
 

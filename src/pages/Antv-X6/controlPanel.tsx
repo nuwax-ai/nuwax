@@ -6,9 +6,9 @@ import {
 } from '@ant-design/icons';
 import { Button, Popover, Select } from 'antd';
 import React, { useEffect, useState } from 'react';
+import { useModel } from 'umi';
 import StencilContent from './component/stencil';
 import { Child } from './type';
-
 interface ControlPanelProps {
   // 拖拽节点到画布
   dragChild: (child: Child, e?: React.DragEvent<HTMLDivElement>) => void;
@@ -58,6 +58,9 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
   };
+
+  const { isModified } = useModel('workflow');
+
   return (
     <>
       <div className="absolute-box">
@@ -103,6 +106,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           icon={<CaretRightOutlined />}
           type="primary"
           onClick={handleTestRun}
+          disabled={isModified}
         >
           试运行
         </Button>
