@@ -18,8 +18,8 @@ function Space() {
     );
     setCurrentSpaceInfo(defaultSpace);
     // 保存spaceId
-    const id = (defaultSpace?.id as string) || (list?.[0]?.id as string);
-    localStorage.setItem(SPACE_ID, id);
+    const id = defaultSpace?.id || list?.[0]?.id;
+    localStorage.setItem(SPACE_ID, String(id));
   }, []);
 
   // 设置当前工作空间

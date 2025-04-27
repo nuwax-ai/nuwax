@@ -17,6 +17,7 @@ import { ReactComponent as ICON_MODEL } from '@/assets/svg/icon_model.svg';
 import { ReactComponent as ICON_MODEL_WHITE } from '@/assets/svg/icon_model_white.svg';
 import { ReactComponent as ICON_NOTIFICATION } from '@/assets/svg/icon_notification.svg';
 import { ReactComponent as ICON_PLUGIN } from '@/assets/svg/icon_plugin.svg';
+import { ReactComponent as ICON_PLUGIN_BOLD } from '@/assets/svg/icon_plugin_bold.svg';
 import { ReactComponent as ICON_PUBLISHED } from '@/assets/svg/icon_published.svg';
 import { ReactComponent as ICON_SETTING_SMALL } from '@/assets/svg/icon_setting_small.svg';
 import { ReactComponent as ICON_SHARE } from '@/assets/svg/icon_share.svg';
@@ -84,6 +85,7 @@ export {
   ICON_ONLINE_DOC,
   ICON_OPTIMIZE,
   ICON_PLUGIN,
+  ICON_PLUGIN_BOLD,
   ICON_PUBLISHED,
   ICON_SETTING,
   ICON_SETTING_SMALL,
