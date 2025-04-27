@@ -1,6 +1,7 @@
 import type {
   AddWorkflowParams,
   ComponentInfo,
+  PublishedOffShelfParams,
   UpdateWorkflowParams,
 } from '@/types/interfaces/library';
 import type { RequestResponse } from '@/types/interfaces/request';
@@ -50,5 +51,15 @@ export async function apiComponentList(
 ): Promise<RequestResponse<ComponentInfo[]>> {
   return request(`/api/component/list/${spaceId}`, {
     method: 'GET',
+  });
+}
+
+// 智能体、插件、工作流下架
+export async function apiPublishedOffShelf(
+  data: PublishedOffShelfParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/published/offShelf', {
+    method: 'POST',
+    data,
   });
 }

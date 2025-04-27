@@ -111,6 +111,7 @@ const AgentDetails: React.FC = () => {
   return (
     <div className={cx('flex', 'h-full', 'overflow-y')}>
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
+        <h3 className={cx(styles.title)}>{`和${agentDetail?.name}开始会话`}</h3>
         <div className={cx(styles['chat-wrapper'], 'flex-1')}>
           {loading ? (
             <div
