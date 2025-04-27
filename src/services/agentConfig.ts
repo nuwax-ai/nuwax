@@ -6,6 +6,7 @@ import type {
   AgentComponentKnowledgeUpdateParams,
   AgentComponentModelUpdateParams,
   AgentComponentPluginUpdateParams,
+  AgentComponentTableUpdateParams,
   AgentComponentTriggerAddParams,
   AgentComponentTriggerUpdateParams,
   AgentComponentVariableUpdateParams,
@@ -81,6 +82,16 @@ export async function apiAgentComponentWorkflowUpdate(
   data: AgentComponentWorkflowUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/workflow/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 更新数据表组件配置
+export async function apiAgentComponentTableUpdate(
+  data: AgentComponentTableUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/table/update', {
     method: 'POST',
     data,
   });

@@ -38,10 +38,18 @@ export enum TriggerComponentType {
   WORKFLOW = 'WORKFLOW',
 }
 
-// 调用方式,可用值:AUTO,ON_DEMAND
+// 调用方式,可用值:AUTO,ON_DEMAND,MANUAL,MANUAL_ON_DEMAND
 export enum InvokeTypeEnum {
   AUTO = 'AUTO',
   ON_DEMAND = 'ON_DEMAND',
+  MANUAL = 'MANUAL',
+  MANUAL_ON_DEMAND = 'MANUAL_ON_DEMAND',
+}
+
+// 是否默认选中，0-否，1-是
+export enum DefaultSelectedEnum {
+  No = 0,
+  Yes = 1,
 }
 
 // 搜索策略,可用值:SEMANTIC,MIXED,FULL_TEXT

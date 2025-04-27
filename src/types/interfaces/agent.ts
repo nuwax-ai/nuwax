@@ -1,6 +1,7 @@
 import type {
   AgentComponentTypeEnum,
   BindValueType,
+  DefaultSelectedEnum,
   InputTypeEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
@@ -135,11 +136,28 @@ export interface AgentComponentWorkflowUpdateParams
   extends AgentComponentBaseInfo {
   // 绑定组件配置，不同组件配置不一样
   bindConfig: {
-    // 出参绑定配置，插件、工作流有效
-    // argBindConfigs: BindConfigWithSub[];
+    // 入参绑定配置，插件、工作流有效
     inputArgBindConfigs: BindConfigWithSub[];
-    // 卡片ID
-    cardId: string;
+    // 出参绑定配置，插件、工作流有效
+    outputArgBindConfigs: BindConfigWithSub[];
+    // 调用方式
+    invokeType: InvokeTypeEnum;
+    // 是否默认选中，0-否，1-是
+    defaultSelected: DefaultSelectedEnum;
+    // 卡片参数绑定信息
+    cardArgsBindConfigs: CardArgsBindConfigInfo[];
+  };
+}
+
+// 更新数据表组件配置输入参数
+export interface AgentComponentTableUpdateParams
+  extends AgentComponentBaseInfo {
+  // 绑定组件配置，不同组件配置不一样
+  bindConfig: {
+    // 入参绑定配置，插件、工作流有效
+    inputArgBindConfigs: BindConfigWithSub[];
+    // 出参绑定配置，插件、工作流有效
+    outputArgBindConfigs: BindConfigWithSub[];
     // 卡片参数绑定信息
     cardArgsBindConfigs: CardArgsBindConfigInfo[];
   };

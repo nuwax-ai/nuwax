@@ -2,6 +2,7 @@ import { PLUGIN_SETTING_ACTIONS } from '@/constants/space.constants';
 import {
   apiAgentCardList,
   apiAgentComponentPluginUpdate,
+  apiAgentComponentTableUpdate,
   apiAgentComponentWorkflowUpdate,
 } from '@/services/agentConfig';
 import { AgentComponentTypeEnum, InvokeTypeEnum } from '@/types/enums/agent';
@@ -10,6 +11,7 @@ import {
   AgentCardInfo,
   AgentComponentInfo,
   AgentComponentPluginUpdateParams,
+  AgentComponentTableUpdateParams,
   AgentComponentWorkflowUpdateParams,
   BindConfigWithSub,
 } from '@/types/interfaces/agent';
@@ -66,6 +68,15 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
   // 更新工作流组件配置
   const { runAsync: runWorkflowUpdate } = useRequest(
     apiAgentComponentWorkflowUpdate,
+    {
+      manual: true,
+      debounceWait: 300,
+    },
+  );
+
+  // 更新数据表组件配置
+  const { runAsync: runTableUpdate } = useRequest(
+    apiAgentComponentTableUpdate,
     {
       manual: true,
       debounceWait: 300,
@@ -129,11 +140,17 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
         [attr]: value,
       },
     };
-
+    // 插件
     if (componentInfo?.type === AgentComponentTypeEnum.Plugin) {
       await runPluginUpdate(params as AgentComponentPluginUpdateParams);
-    } else {
+    }
+    // 工作流
+    if (componentInfo?.type === AgentComponentTypeEnum.Workflow) {
       await runWorkflowUpdate(params as AgentComponentWorkflowUpdateParams);
+    }
+    // 数据表
+    if (componentInfo?.type === AgentComponentTypeEnum.Table) {
+      await runTableUpdate(params as AgentComponentTableUpdateParams);
     }
     onSetSuccess(id, attr, value);
     message.success('保存成功');
@@ -179,17 +196,26 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
           <div className={cx(styles.left)}>
             <h3>设置</h3>
             <ul>
-              {PLUGIN_SETTING_ACTIONS.map((item) => (
-                <li
-                  key={item.type}
-                  className={cx(styles.item, 'cursor-pointer', {
-                    [styles.checked]: action === item.type,
-                  })}
-                  onClick={() => setAction(item.type)}
-                >
-                  {item.label}
-                </li>
-              ))}
+              {PLUGIN_SETTING_ACTIONS.map((item) => {
+                // 表格组件不展示方法调用
+                if (
+                  currentComponentInfo?.type === AgentComponentTypeEnum.Table &&
+                  item.type === PluginSettingEnum.Method_Call
+                ) {
+                  return null;
+                }
+                return (
+                  <li
+                    key={item.type}
+                    className={cx(styles.item, 'cursor-pointer', {
+                      [styles.checked]: action === item.type,
+                    })}
+                    onClick={() => setAction(item.type)}
+                  >
+                    {item.label}
+                  </li>
+                );
+              })}
             </ul>
           </div>
           <div className={cx('flex-1', styles.right)}>{getContent()}</div>
