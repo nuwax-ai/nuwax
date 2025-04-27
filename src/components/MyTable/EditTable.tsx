@@ -46,7 +46,6 @@ const MyTable: React.FC<MyTableProp> = ({
       [rowKey]: `newRow${dataSource.length + 1}`,
       isNew: true, // 标记为新增行
       systemFieldFlag: false,
-      sortIndex: dataSource.length + 1,
     };
     columns.forEach((column) => {
       switch (column.type) {
@@ -90,14 +89,15 @@ const MyTable: React.FC<MyTableProp> = ({
 
   // 提交表单数据
   const onFinish = (values: AnyObject) => {
-    console.log('提交表单数据', values);
     if (onDataSourceChange) {
       // 合并表单数据和dataSource
       const mergedData = dataSource.map((item, index) => ({
         ...item,
         ...values.tableData?.[index],
       }));
-      console.log('mergedData', mergedData);
+      mergedData.forEach((item, index) => {
+        item.sortIndex = index;
+      });
       onDataSourceChange(mergedData);
     }
   };
@@ -185,10 +185,11 @@ const MyTable: React.FC<MyTableProp> = ({
                     title={item.title}
                     dataIndex={item.dataIndex}
                     render={(value, record, index) => {
-                      if (
-                        (item.edit || !dataEmptyFlag || record.isNew) &&
-                        !record.systemFieldFlag
-                      ) {
+                      const shouldEdit =
+                        (item.edit || dataEmptyFlag || record?.isNew) &&
+                        !record?.systemFieldFlag;
+
+                      if (shouldEdit) {
                         return (
                           <Form.Item
                             name={[index, item.dataIndex]}
@@ -196,7 +197,7 @@ const MyTable: React.FC<MyTableProp> = ({
                             valuePropName={
                               item.type === 'checkbox' ? 'checked' : 'value'
                             }
-                            initialValue={record[item.dataIndex]} // 添加这行设置初始值
+                            initialValue={record[item.dataIndex]}
                           >
                             {getItemType(item.type, item.options)}
                           </Form.Item>
@@ -205,7 +206,11 @@ const MyTable: React.FC<MyTableProp> = ({
                       return item.type === 'checkbox' ? (
                         <Checkbox checked={value} disabled />
                       ) : (
-                        <span>{item.map ? item.map[value] : value}</span>
+                        <span>
+                          {item.map
+                            ? item.map[value]
+                            : value || item.defaultValue}
+                        </span>
                       );
                     }}
                   />

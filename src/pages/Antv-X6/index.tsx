@@ -765,11 +765,16 @@ const Workflow: React.FC = () => {
   };
   // 试运行所有节点
   const testRunAll = async () => {
+    setIsModified((prev: boolean) => {
+      if (prev) {
+        onFinish();
+      }
+      return false;
+    });
     // 先将数据提交到后端
     const _res = await service.getDetails(workflowId);
     const _nodeList = _res.data.nodes;
     setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
-
     changeDrawer(_res.data.startNode);
     graphRef.current.selectNode(_res.data.startNode.id);
     const volid = await volidWorkflow();
@@ -825,6 +830,9 @@ const Workflow: React.FC = () => {
         break;
       }
       case 'TestRun': {
+        if (isModified) {
+          onFinish();
+        }
         // copyNode(foldWrapItem);
         if (foldWrapItemRef.current.type === 'Start') {
           testRunAll();
@@ -832,6 +840,7 @@ const Workflow: React.FC = () => {
           setTestRunResult('');
           setTestRun(true);
         }
+
         break;
       }
       default:

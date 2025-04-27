@@ -14,6 +14,7 @@ declare global {
     editable?: boolean;
     edit?: boolean;
     options?: SelectOptions[];
+    defaultValue?: string;
     onCell?: (record: any) => {
       record: AnyObject;
       dataIndex: string;
@@ -39,6 +40,8 @@ export interface MyTableProp {
   scrollHeight: number;
   // 操作栏
   actionColumn?: ActionColumn[];
+  // 操作栏是否固定在右侧
+  actionColumnFixed?: boolean;
   // 是否显示分页
   showPagination?: boolean;
   // 是否显示序号

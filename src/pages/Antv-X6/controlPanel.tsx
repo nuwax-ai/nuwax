@@ -6,9 +6,9 @@ import {
 } from '@ant-design/icons';
 import { Button, Popover, Select } from 'antd';
 import React, { useEffect, useState } from 'react';
+
 import StencilContent from './component/stencil';
 import { Child } from './type';
-
 interface ControlPanelProps {
   // 拖拽节点到画布
   dragChild: (child: Child, e?: React.DragEvent<HTMLDivElement>) => void;
@@ -58,6 +58,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
   };
+
   return (
     <>
       <div className="absolute-box">

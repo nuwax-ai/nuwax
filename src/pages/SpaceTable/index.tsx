@@ -127,7 +127,7 @@ const SpaceTable = () => {
       getDetails();
       message.success('操作成功');
     } catch (error) {
-      message.success('数据校验失败');
+      // message.success('数据校验失败');
     }
     // setTableData(data);
   };
@@ -142,26 +142,20 @@ const SpaceTable = () => {
       };
       const res = await service.getTableData(_params);
       setTableData(res.data.records);
-      const arr = res.data.columnDefines
-        .filter(
-          (item) =>
-            !item.systemFieldFlag ||
-            item.fieldName === 'id' ||
-            item.fieldName === 'created',
-        )
-        .map((item) => {
-          return {
-            title: item.fieldDescription,
-            dataIndex: item.fieldName,
-            key: item.fieldName,
-            type: item.fieldType === 5 ? ('time' as const) : ('text' as const),
-          };
-        });
+      const arr = res.data.columnDefines.map((item) => {
+        return {
+          title: item.fieldDescription,
+          dataIndex: item.fieldName,
+          key: item.fieldName,
+          type: item.fieldType === 5 ? ('time' as const) : ('text' as const),
+        };
+      });
       setColumns(arr);
+      setPagination({ ...pagination, total: res.data.total });
     } catch (error) {}
   };
   // 新增和修改数据
-  const onAdd = (values: AnyObject) => {
+  const onAdd = async (values: AnyObject) => {
     try {
       const _params = {
         tableId: tableId,
@@ -169,9 +163,9 @@ const SpaceTable = () => {
         rowId: values.id,
       };
       if (_params && _params.rowId) {
-        service.modifyTableData(_params);
+        await service.modifyTableData(_params);
       } else {
-        service.addTableData(_params);
+        await service.addTableData(_params);
       }
       message.success('操作成功');
       getTable();
@@ -231,7 +225,7 @@ const SpaceTable = () => {
       const objectURL = URL.createObjectURL(blob); // 创建一个 URL 对象
       const link = document.createElement('a'); // 创建一个 a 标签
       link.href = objectURL;
-      link.download = '文件名.xlsx'; // 设置下载文件的名称
+      link.download = `${detail?.tableName}.xlsx`; // 设置下载文件的名称
       link.click(); // 模拟点击下载
       URL.revokeObjectURL(objectURL); // 释放 URL 对象
     } catch (error) {}
@@ -278,7 +272,7 @@ const SpaceTable = () => {
               onClick={() => setOpen(true)}
             />
           </div>
-          <Tag className="tag-style">{`${detail?.tableDescription}条记录`}</Tag>
+          <Tag className="tag-style">{`${pagination.total}条记录`}</Tag>
         </div>
       </div>
       <div className="inner-container">
