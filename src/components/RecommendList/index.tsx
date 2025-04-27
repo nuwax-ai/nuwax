@@ -27,7 +27,6 @@ const RecommendList: React.FC<RecommendListProps> = ({
             className={cx(
               styles.box,
               'px-16',
-              'radius-6',
               'cursor-pointer',
               'hover-box',
               itemClassName,

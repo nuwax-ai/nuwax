@@ -21,7 +21,11 @@ import {
 } from '@/services/library';
 import { apiModelDelete } from '@/services/modelConfig';
 import { apiPluginCopy, apiPluginDelete } from '@/services/plugin';
-import service, { IAddTask } from '@/services/tableSql';
+import {
+  IAddTask,
+  default as service,
+  default as tableSql,
+} from '@/services/tableSql';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ComponentMoreActionEnum } from '@/types/enums/library';
@@ -201,6 +205,17 @@ const SpaceLibrary: React.FC = () => {
     },
   });
 
+  // Table - 数据删除接口
+  const { run: runTableDel } = useRequest(tableSql.deleteTask, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (_: null, params: number[]) => {
+      message.success('数据表删除成功');
+      const id = params[0];
+      handleDel(id);
+    },
+  });
+
   useEffect(() => {
     const userInfoString = localStorage.getItem(USER_INFO);
     if (!!userInfoString) {
@@ -350,6 +365,9 @@ const SpaceLibrary: React.FC = () => {
           case ComponentTypeEnum.Knowledge:
             runKnowledgeDel(id);
             break;
+          case ComponentTypeEnum.Table:
+            runTableDel(id);
+            break;
         }
       },
     });
@@ -367,6 +385,9 @@ const SpaceLibrary: React.FC = () => {
       switch (action) {
         case ComponentMoreActionEnum.Copy:
           runPluginCopy(id);
+          break;
+        case ComponentMoreActionEnum.Off_Shelf:
+          console.log('插件下架');
           break;
         case ComponentMoreActionEnum.Del:
           showDeleteConfirm(type, info);
@@ -388,6 +409,9 @@ const SpaceLibrary: React.FC = () => {
         case ComponentMoreActionEnum.Copy:
           runWorkflowCopy(id);
           break;
+        case ComponentMoreActionEnum.Off_Shelf:
+          console.log('工作流下架');
+          break;
         case ComponentMoreActionEnum.Del:
           showDeleteConfirm(type, info);
           break;
@@ -401,6 +425,15 @@ const SpaceLibrary: React.FC = () => {
     ) {
       showDeleteConfirm(type, info);
     }
+
+    // 数据表
+    if (
+      type === ComponentTypeEnum.Table &&
+      action === ComponentMoreActionEnum.Del
+    ) {
+      showDeleteConfirm(type, info);
+    }
+
     // switch (action) {
     //   case ComponentMoreActionEnum.Copy:
     //     break;

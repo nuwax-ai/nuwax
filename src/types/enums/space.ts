@@ -34,6 +34,8 @@ export enum ApplicationMoreActionEnum {
   Create_Copy,
   // 迁移
   Move,
+  // 下架
+  Off_Shelf,
   // 删除
   Del,
 }

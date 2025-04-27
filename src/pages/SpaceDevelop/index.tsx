@@ -251,6 +251,19 @@ const SpaceDevelop: React.FC = () => {
         setOpenMove(true);
         setCurrentAgentInfo(agentInfo);
         break;
+      case ApplicationMoreActionEnum.Off_Shelf:
+        confirm({
+          title: '您确定要下架此智能体吗?',
+          icon: <ExclamationCircleFilled />,
+          content: agentInfo?.name,
+          okText: '确定',
+          maskClosable: true,
+          cancelText: '取消',
+          onOk() {
+            console.log('下架');
+          },
+        });
+        break;
       case ApplicationMoreActionEnum.Del:
         confirm({
           title: '您确定要删除此智能体吗?',
@@ -268,7 +281,7 @@ const SpaceDevelop: React.FC = () => {
   };
 
   // 确认创建智能体
-  const handlerConfirmCreateAgent = (agentId: string) => {
+  const handlerConfirmCreateAgent = (agentId: number) => {
     setOpenCreateAgent(false);
     history.push(`/space/${spaceId}/agent/${agentId}`);
   };

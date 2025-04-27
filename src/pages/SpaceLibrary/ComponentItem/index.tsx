@@ -5,6 +5,8 @@ import {
   COMPONENT_MORE_ACTION,
 } from '@/constants/library.constants';
 import { PublishStatusEnum } from '@/types/enums/common';
+import { ComponentMoreActionEnum } from '@/types/enums/library';
+import { ComponentTypeEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentItemProps } from '@/types/interfaces/library';
 import { CheckCircleTwoTone, MoreOutlined } from '@ant-design/icons';
@@ -22,6 +24,7 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
   onClick,
   onClickMore,
 }) => {
+  // 更多操作列表
   const [actionList, setActionList] = useState<CustomPopoverItem[]>([]);
   // 组件默认信息
   const info = useMemo(() => {
@@ -29,9 +32,23 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
   }, [componentInfo.type]);
 
   useEffect(() => {
-    const list = COMPONENT_MORE_ACTION.filter(
-      (item) => item.type === componentInfo.type,
-    );
+    // 根据组件类型，过滤更多操作
+    const list = COMPONENT_MORE_ACTION.filter((item) => {
+      const type = item.type as ComponentTypeEnum;
+      if (type === componentInfo.type) {
+        // 已发布的插件和工作流才显示下架按钮
+        if (
+          [ComponentTypeEnum.Plugin, ComponentTypeEnum.Workflow].includes(
+            type,
+          ) &&
+          item.action === ComponentMoreActionEnum.Off_Shelf
+        ) {
+          return componentInfo.publishStatus === PublishStatusEnum.Published;
+        }
+        return true;
+      }
+      return false;
+    });
     setActionList(list);
   }, [componentInfo]);
 

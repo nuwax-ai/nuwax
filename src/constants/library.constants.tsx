@@ -49,6 +49,11 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
     type: ComponentTypeEnum.Plugin,
   },
   {
+    action: ComponentMoreActionEnum.Off_Shelf,
+    label: '下架',
+    type: ComponentTypeEnum.Plugin,
+  },
+  {
     action: ComponentMoreActionEnum.Del,
     label: '删除',
     isDel: true,
@@ -68,6 +73,11 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
     type: ComponentTypeEnum.Workflow,
   },
   {
+    action: ComponentMoreActionEnum.Off_Shelf,
+    label: '下架',
+    type: ComponentTypeEnum.Workflow,
+  },
+  {
     action: ComponentMoreActionEnum.Del,
     label: '删除',
     isDel: true,
@@ -80,6 +90,12 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
     label: '删除',
     isDel: true,
     type: ComponentTypeEnum.Knowledge,
+  },
+  {
+    action: ComponentMoreActionEnum.Del,
+    label: '删除',
+    isDel: true,
+    type: ComponentTypeEnum.Table,
   },
 ];
 
