@@ -1,26 +1,18 @@
-import Created from '@/components/Created';
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import InputOrReference from '@/components/FormListItem/InputOrReference';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import TreeInput from '@/components/FormListItem/TreeInput';
 import DataTable from '@/components/Skill/database';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { InputItemNameEnum } from '@/types/enums/node';
-import { CreatedNodeItem } from '@/types/interfaces/common';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Form, Select, Space } from 'antd';
-import React, { useState } from 'react';
-import { useModel } from 'umi';
+import { Button, Form, InputNumber, Select, Space } from 'antd';
+import React, { useEffect, useState } from 'react';
 import { options, outPutConfigs } from '../params';
 import { InputAndOut, TreeOutput } from './commonNode';
 
 // 定义数据增，删，改的节点
 const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
-  // 打开、关闭弹窗
-  const [open, setOpen] = useState(false);
-  const { setSkillChange, setIsModified } = useModel('workflow');
-
   const defautlConditionArgs = [
     {
       firstArg: {
@@ -46,17 +38,9 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
     },
   ];
 
-  // 新增技能
-  const onAddedSkill = (item: CreatedNodeItem) => {
-    setIsModified(true);
-    setSkillChange(true);
-    form.setFieldValue('tableId', item.targetId);
-    form.setFieldValue('name', item.name);
-    form.setFieldValue('description', item.description);
-    form.setFieldValue('icon', item.icon || '');
-    form.submit();
-    setOpen(false);
-  };
+  const [conditionOptions, setConditionOptions] = useState(
+    form.getFieldValue('tableFields'),
+  );
 
   // 打开自动生成弹窗
   const onOpenCreated = () => {
@@ -64,17 +48,10 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
     console.log('打开自动生成弹窗');
   };
 
-  // 移出技能
-  const removeItem = () => {
-    form.setFieldValue('tableId', 0);
-    form.submit();
-  };
-  //   显示新增技能
-  const showAdd = () => {
-    setOpen(true);
-  };
-
-  console.log(form.getFieldsValue(true));
+  useEffect(() => {
+    const fields = form.getFieldValue('tableFields');
+    setConditionOptions(fields);
+  }, [form.getFieldValue('tableFields')]);
 
   return (
     <div>
@@ -84,7 +61,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
           <InputAndOut
             title="输入"
             fieldConfigs={outPutConfigs}
-            inputItemName={InputItemNameEnum.inputArgs}
+            inputItemName={InputItemNameEnum.tableFields}
             form={form}
           />
         </div>
@@ -162,6 +139,11 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
                                   >
                                     <Select
                                       placeholder="请选择"
+                                      options={conditionOptions}
+                                      fieldNames={{
+                                        label: 'name',
+                                        value: 'key',
+                                      }}
                                       style={{
                                         width: subFields.length > 1 ? 150 : 180,
                                       }}
@@ -181,7 +163,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
                                         width: subFields.length > 1 ? 150 : 180,
                                       }}
                                       fieldName={[
-                                        'conditionBranchConfigs',
+                                        'conditionArgs',
                                         subField.name,
                                         'secondArg',
                                         'bindValue',
@@ -225,33 +207,37 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
         </div>
       )}
       {/* 更新字段 */}
-      {type !== 'TableDataDelete' && type !== 'TableSQL' && (
+      {(type === 'TableDataAdd' || type === 'TableDataUpdate') && (
         <div className="node-item-style">
           <TreeInput
             title={type === 'TableDataAdd' ? '输入' : '选择更新字段'}
             form={form}
-            params={form.getFieldValue('inputArgs')}
+            options={form.getFieldValue('tableFields') || []}
+            showAdd
+            params={form.getFieldValue('inputArgs') || []}
           />
+        </div>
+      )}
+      {type === 'TableDataQuery' && (
+        <div className="node-item-style">
+          <div className=" margin-bottom">
+            <span className="node-title-style ">查询上限</span>
+          </div>
+          <Form.Item name="limit">
+            <InputNumber min={1} max={100} />
+          </Form.Item>
         </div>
       )}
       {/* 数据表 */}
       <div className="node-item-style">
         <div className="dis-sb margin-bottom ">
           <span className="node-title-style">数据表</span>
-          <Button
-            icon={<PlusOutlined />}
-            size={'small'}
-            onClick={showAdd}
-            type="text"
-            disabled={form.getFieldValue('tableId')}
-          ></Button>
         </div>
         {form.getFieldValue('tableId') ? (
           <DataTable
             icon={form.getFieldValue('icon')}
             name={form.getFieldValue('name')}
             description={form.getFieldValue('description')}
-            handleDelete={removeItem}
             params={['123', '456']}
             showParams={type === 'TableSQL'}
           />
@@ -309,13 +295,6 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
           }
         </Form.Item>
       )}
-
-      <Created
-        checkTag={AgentComponentTypeEnum.Table}
-        onAdded={onAddedSkill}
-        open={open}
-        onCancel={() => setOpen(false)}
-      />
     </div>
   );
 };

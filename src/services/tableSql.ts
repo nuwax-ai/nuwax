@@ -80,7 +80,7 @@ export interface IgetDetails {
   dorisTable: string;
   /*表下面的字段定义列表 */
   fieldList: FieldList[];
-
+  existTableDataFlag: boolean;
   /*原始建表DDL */
   createTableDdl: string;
 }

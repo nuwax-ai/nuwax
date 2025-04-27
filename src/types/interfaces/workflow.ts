@@ -225,7 +225,6 @@ export interface DataTableProps {
   icon?: string;
   name: string;
   description: string;
-  handleDelete: () => void;
   showParams?: boolean;
   params?: string[];
 }

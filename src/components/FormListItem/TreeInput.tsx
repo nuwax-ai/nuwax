@@ -11,10 +11,15 @@ const TreeInput: React.FC<TreeInputProps> = ({
   form,
   title,
   params,
+  options,
   showAdd,
 }) => {
   const [treeData, setTreeData] = useState<InputAndOutConfig[]>(params || []);
   const { setIsModified } = useModel('workflow');
+
+  // 显示与关闭新增选项
+  const [showOpen, setShowOpen] = useState(false);
+
   useEffect(() => {
     if (params && !_.isEqual(params, treeData)) {
       setTreeData(params);
@@ -46,6 +51,36 @@ const TreeInput: React.FC<TreeInputProps> = ({
     updateTreeData(newData);
   };
 
+  // 新增子节点
+  const addOptions = (val: InputAndOutConfig) => {
+    setTreeData((prevData) => {
+      const newData = [...prevData, val];
+      updateTreeData(newData);
+      return newData;
+    });
+    setShowOpen(false);
+  };
+
+  // 被添加的数据样式
+  const content = (
+    <>
+      {options
+        ?.filter((option) => !treeData.some((item) => item.name === option.key))
+        .map((item) => {
+          return (
+            <div
+              className="dis-sb cursor-pointer"
+              key={item.key}
+              onClick={() => addOptions(item)}
+            >
+              <span>{item.name}</span>
+              <span>{item.dataType}</span>
+            </div>
+          );
+        })}
+    </>
+  );
+
   const renderTitle = (nodeData: InputAndOutConfig) => {
     return (
       <div className="dis-sb" style={{ width: '100%' }}>
@@ -59,7 +94,7 @@ const TreeInput: React.FC<TreeInputProps> = ({
           </Popover>
         </div>
 
-        <div style={{ width: '160px' }}>
+        <div style={{ width: '175px' }}>
           <InputOrReferenceFormTree
             referenceType={nodeData.bindValueType || 'Input'}
             onChange={(value, type) => {
@@ -74,10 +109,17 @@ const TreeInput: React.FC<TreeInputProps> = ({
 
   return (
     <div>
-      <div className="dis-sb">
+      <div className="dis-sb margin-bottom">
         <span className="node-title-style">{title}</span>
         {showAdd && (
-          <Button type="text" size={'small'} icon={<PlusOutlined />} />
+          <Popover content={content} trigger="click" open={showOpen}>
+            <Button
+              type="text"
+              size={'small'}
+              icon={<PlusOutlined />}
+              onClick={() => setShowOpen(true)}
+            />
+          </Popover>
         )}
       </div>
       {treeData && treeData.length > 0 && (

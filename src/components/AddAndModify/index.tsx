@@ -38,42 +38,52 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
     const [form] = Form.useForm();
 
     const inputNode = (item: FormItem) => {
-      switch (item.type) {
-        case 'Checkbox':
-          return <Checkbox.Group options={item.options} />;
-        case 'DatePicker':
-          return (
-            <DatePicker
-              showTime
-              placeholder={item.placeholder || '请选择时间'}
-            />
-          );
-        case 'RangePicker':
-          return <DatePicker.RangePicker />;
-        case 'Select':
-          return (
-            <Select
-              options={item.options}
-              placeholder={item.placeholder || '请选择'}
-            />
-          );
-        case 'TextArea':
-          return <Input.TextArea placeholder={item.placeholder || '请输入'} />;
-        case 'Cascader':
-          return (
-            <Cascader
-              options={item.options}
-              placeholder={item.placeholder || '请选择'}
-            />
-          );
-        case 'Radio':
-          return <Radio.Group options={item.options} />;
-        case 'Uplpad':
-          return <Radio.Group options={item.options} />;
-        case 'Number':
-          return <InputNumber />;
-        default:
-          return <Input placeholder={item.placeholder || '请输入'} />;
+      if (item.isSpan) {
+        return (
+          <span className="disabled-field">
+            {initialValues[item.dataIndex] || item.dataIndex}
+          </span>
+        );
+      } else {
+        switch (item.type) {
+          case 'Checkbox':
+            return <Checkbox.Group options={item.options} />;
+          case 'DatePicker':
+            return (
+              <DatePicker
+                showTime
+                placeholder={item.placeholder || '请选择时间'}
+              />
+            );
+          case 'RangePicker':
+            return <DatePicker.RangePicker />;
+          case 'Select':
+            return (
+              <Select
+                options={item.options}
+                placeholder={item.placeholder || '请选择'}
+              />
+            );
+          case 'TextArea':
+            return (
+              <Input.TextArea placeholder={item.placeholder || '请输入'} />
+            );
+          case 'Cascader':
+            return (
+              <Cascader
+                options={item.options}
+                placeholder={item.placeholder || '请选择'}
+              />
+            );
+          case 'Radio':
+            return <Radio.Group options={item.options} />;
+          case 'Uplpad':
+            return <Radio.Group options={item.options} />;
+          case 'Number':
+            return <InputNumber />;
+          default:
+            return <Input placeholder={item.placeholder || '请输入'} />;
+        }
       }
     };
 

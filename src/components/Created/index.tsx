@@ -147,7 +147,6 @@ const Created: React.FC<CreatedProp> = ({
   // 获取右侧的list（关键修改）
   const getList = async (type: AgentComponentTypeEnum, params: IGetList) => {
     try {
-      console.log(sizes);
       if (spaceId === 0) return;
       if ((params.page > sizes && params.page !== 1) || isRequesting.current)
         return;

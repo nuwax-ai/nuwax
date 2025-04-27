@@ -89,5 +89,6 @@ export interface TreeInputProps {
   form: FormInstance;
   title: string;
   params: InputAndOutConfig[];
+  options?: InputAndOutConfig[];
   showAdd?: boolean;
 }
