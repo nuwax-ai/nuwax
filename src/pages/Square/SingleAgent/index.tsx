@@ -3,10 +3,6 @@ import avatar from '@/assets/images/avatar.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
-import {
-  apiPublishedPluginCollect,
-  apiPublishedPluginUnCollect,
-} from '@/services/plugin';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { SingleAgentProps } from '@/types/interfaces/square';
 import {
@@ -27,7 +23,6 @@ const cx = classNames.bind(styles);
 const SingleAgent: React.FC<SingleAgentProps> = ({
   publishedAgentInfo,
   onToggleCollectSuccess,
-  title,
 }) => {
   const {
     targetType,
@@ -62,50 +57,18 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
     },
   });
 
-  // 收藏插件接口
-  const { run: runPluginCollect } = useRequest(apiPublishedPluginCollect, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      onToggleCollectSuccess(targetId, true);
-    },
-  });
-
-  // 取消收藏插件接口
-  const { run: runPluginUnCollect } = useRequest(apiPublishedPluginUnCollect, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      onToggleCollectSuccess(targetId, false);
-    },
-  });
-
   // 点击单个智能体
   const handleClick = async () => {
-    if (title === '插件') {
-      history.push(`/square/publish/plugin/${targetId}`);
-    } else {
-      history.push(`/agent/${targetId}`);
-
-      // await handleCreateConversation(targetId);
-    }
+    history.push(`/agent/${targetId}`);
   };
 
   // 切换收藏与取消收藏
   const handleToggleCollect = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
-    if (targetType === SquareAgentTypeEnum.Agent) {
-      if (collect) {
-        runUnCollectAgent(targetId);
-      } else {
-        runCollectAgent(targetId);
-      }
-    } else if (targetType === SquareAgentTypeEnum.Plugin) {
-      if (collect) {
-        runPluginUnCollect(targetId);
-      } else {
-        runPluginCollect(targetId);
-      }
+    if (collect) {
+      runUnCollectAgent(targetId);
+    } else {
+      runCollectAgent(targetId);
     }
   };
 

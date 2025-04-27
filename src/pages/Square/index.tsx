@@ -3,19 +3,22 @@ import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import {
   apiPublishedAgentList,
   apiPublishedPluginList,
+  apiPublishedWorkflowList,
 } from '@/services/square';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { TenantConfigInfo } from '@/types/interfaces/login';
 import type { Page } from '@/types/interfaces/request';
 import type { PublishedAgentInfo } from '@/types/interfaces/square';
 import { getURLParams } from '@/utils/common';
-import { Empty } from 'antd';
+import { Empty, Input } from 'antd';
+import { SearchProps } from 'antd/es/input';
 import classNames from 'classnames';
 import { Location } from 'history';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
 import styles from './index.less';
 import SingleAgent from './SingleAgent';
+import SquareComponentInfo from './SquareComponentInfo';
 
 const cx = classNames.bind(styles);
 
@@ -47,28 +50,39 @@ const Square: React.FC = () => {
     },
   });
 
-  const handleQuery = () => {
+  // 已发布工作流列表接口（广场以及弹框选择中全部插件）
+  const { run: runWorkflow } = useRequest(apiPublishedWorkflowList, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: Page<PublishedAgentInfo>) => {
+      setAgentList(result?.records || []);
+    },
+  });
+
+  const handleQuery = (page: number = 1, keyword: string = '') => {
     const params = getURLParams() as {
       cate_type: string;
       cate_name: string;
     };
     const { cate_type, cate_name } = params;
+    const data = {
+      page,
+      pageSize: 100,
+      // 分类名称
+      category: cate_name ?? cate_type,
+      kw: keyword,
+    };
     if (cate_type === SquareAgentTypeEnum.Agent) {
       setTitle('智能体');
-      runAgent({
-        page: 1,
-        pageSize: 100,
-        // 分类名称
-        category: cate_name ?? cate_type,
-      });
-    } else {
+      runAgent(data);
+    }
+    if (cate_type === SquareAgentTypeEnum.Plugin) {
       setTitle('插件');
-      runPlugin({
-        page: 1,
-        pageSize: 100,
-        // 分类名称
-        category: cate_name ?? cate_type,
-      });
+      runPlugin(data);
+    }
+    if (cate_type === SquareAgentTypeEnum.Workflow) {
+      setTitle('工作流');
+      runWorkflow(data);
     }
   };
 
@@ -110,6 +124,11 @@ const Square: React.FC = () => {
     setAgentList(_agentList);
   };
 
+  // 搜索
+  const onSearch: SearchProps['onSearch'] = (value) => {
+    handleQuery(1, value);
+  };
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <header className={cx(styles.header, 'relative')} onClick={handleLink}>
@@ -126,17 +145,43 @@ const Square: React.FC = () => {
           </p>
         </div>
       </header>
-      <h6 className={cx(styles['theme-title'])}>{title}</h6>
+      <div
+        className={cx(
+          'flex',
+          'items-center',
+          'content-between',
+          styles['title-box'],
+        )}
+      >
+        <h6 className={cx(styles['theme-title'])}>{title}</h6>
+        <Input.Search
+          placeholder="搜索"
+          allowClear
+          onSearch={onSearch}
+          style={{ width: 200 }}
+        />
+      </div>
       {agentList?.length > 0 ? (
         <div className={cx(styles['list-section'])}>
-          {agentList.map((item, index) => (
-            <SingleAgent
-              key={index}
-              title={title}
-              publishedAgentInfo={item}
-              onToggleCollectSuccess={handleToggleCollectSuccess}
-            />
-          ))}
+          {agentList.map((item, index) => {
+            if (item?.targetType === SquareAgentTypeEnum.Agent) {
+              return (
+                <SingleAgent
+                  key={index}
+                  publishedAgentInfo={item}
+                  onToggleCollectSuccess={handleToggleCollectSuccess}
+                />
+              );
+            } else {
+              return (
+                <SquareComponentInfo
+                  key={index}
+                  publishedAgentInfo={item}
+                  onToggleCollectSuccess={handleToggleCollectSuccess}
+                />
+              );
+            }
+          })}
         </div>
       ) : (
         <div className={cx('flex', 'flex-1', 'items-center', 'content-center')}>

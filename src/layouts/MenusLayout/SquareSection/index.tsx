@@ -1,7 +1,12 @@
 import ConditionRender from '@/components/ConditionRender';
-import { ICON_AGENT, ICON_PLUGIN } from '@/constants/images.constants';
+import {
+  ICON_AGENT,
+  ICON_PLUGIN_BOLD,
+  ICON_WORKFLOW,
+} from '@/constants/images.constants';
 import SquareMenuItem from '@/layouts/MenusLayout/SquareSection/SquareMenuItem';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
+import { SquareAgentInfo } from '@/types/interfaces/square';
 import { getURLParams } from '@/utils/common';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -13,7 +18,8 @@ const cx = classNames.bind(styles);
  * 广场第二菜单栏
  */
 const SquareSection: React.FC = () => {
-  const { agentInfoList, pluginInfoList } = useModel('squareModel');
+  const { agentInfoList, pluginInfoList, workflowInfoList } =
+    useModel('squareModel');
   // active项
   const [activeKey, setActiveKey] = useState<string>('');
   // menu显隐
@@ -55,7 +61,7 @@ const SquareSection: React.FC = () => {
               [styles.visible]: visibleMenu === SquareAgentTypeEnum.Agent,
             })}
           >
-            {agentInfoList?.map((item) => (
+            {agentInfoList?.map((item: SquareAgentInfo) => (
               <SquareMenuItem
                 key={item.name}
                 name={item.description}
@@ -72,7 +78,7 @@ const SquareSection: React.FC = () => {
         <div className={cx('py-6 px-6')}>
           <SquareMenuItem
             name="插件"
-            icon={<ICON_PLUGIN />}
+            icon={<ICON_PLUGIN_BOLD />}
             isDown
             isActive={activeKey === SquareAgentTypeEnum.Plugin}
             onClick={() => handleClick(SquareAgentTypeEnum.Plugin)}
@@ -82,13 +88,40 @@ const SquareSection: React.FC = () => {
               [styles.visible]: visibleMenu === SquareAgentTypeEnum.Plugin,
             })}
           >
-            {pluginInfoList?.map((item) => (
+            {pluginInfoList?.map((item: SquareAgentInfo) => (
               <SquareMenuItem
                 key={item.name}
                 name={item.description}
                 isActive={activeKey === item.name}
                 onClick={() =>
                   handleClick(SquareAgentTypeEnum.Plugin, item.name)
+                }
+              />
+            ))}
+          </div>
+        </div>
+      </ConditionRender>
+      <ConditionRender condition={workflowInfoList?.length}>
+        <div className={cx('py-6 px-6')}>
+          <SquareMenuItem
+            name="工作流"
+            icon={<ICON_WORKFLOW />}
+            isDown
+            isActive={activeKey === SquareAgentTypeEnum.Workflow}
+            onClick={() => handleClick(SquareAgentTypeEnum.Workflow)}
+          />
+          <div
+            className={cx(styles['box-hidden'], {
+              [styles.visible]: visibleMenu === SquareAgentTypeEnum.Workflow,
+            })}
+          >
+            {workflowInfoList?.map((item: SquareAgentInfo) => (
+              <SquareMenuItem
+                key={item.name}
+                name={item.description}
+                isActive={activeKey === item.name}
+                onClick={() =>
+                  handleClick(SquareAgentTypeEnum.Workflow, item.name)
                 }
               />
             ))}

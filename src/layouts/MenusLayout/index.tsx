@@ -29,7 +29,8 @@ const MenusLayout: React.FC = () => {
   const { setOpenMessage } = useModel('layout');
   const [tabType, setTabType] = useState<TabsEnum>();
   const { asyncSpaceListFun } = useModel('spaceModel');
-  const { setAgentInfoList, setPluginInfoList } = useModel('squareModel');
+  const { setAgentInfoList, setPluginInfoList, setWorkflowInfoList } =
+    useModel('squareModel');
   const { runTenantConfig } = useModel('tenantConfigInfo');
   const { runEdit, runDevCollect } = useModel('devCollectAgent');
   const { runHistory, runUsed } = useModel('conversationHistory');
@@ -38,27 +39,29 @@ const MenusLayout: React.FC = () => {
   const handleCategoryList = (result: SquareCategoryInfo[]) => {
     let _agentInfoList: SquareAgentInfo[] = [];
     let _pluginInfoList: SquareAgentInfo[] = [];
+    let _workflowInfoList: SquareAgentInfo[] = [];
     result?.forEach((info) => {
+      const list = info?.children?.map((item) => {
+        return {
+          name: item.key,
+          description: item.label,
+        };
+      }) as SquareAgentInfo[];
       if (info.type === SquareAgentTypeEnum.Agent) {
-        _agentInfoList = info?.children?.map((item) => {
-          return {
-            name: item.key,
-            description: item.label,
-          };
-        }) as SquareAgentInfo[];
+        _agentInfoList = list;
       }
 
       if (info.type === SquareAgentTypeEnum.Plugin) {
-        _pluginInfoList = info.children?.map((item) => {
-          return {
-            name: item.key,
-            description: item.label,
-          };
-        }) as SquareAgentInfo[];
+        _pluginInfoList = list;
+      }
+
+      if (info.type === SquareAgentTypeEnum.Workflow) {
+        _workflowInfoList = list;
       }
     });
     setAgentInfoList(_agentInfoList);
     setPluginInfoList(_pluginInfoList);
+    setWorkflowInfoList(_workflowInfoList);
   };
 
   // 广场-智能体与插件分类
