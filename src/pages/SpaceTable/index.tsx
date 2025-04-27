@@ -127,7 +127,7 @@ const SpaceTable = () => {
       getDetails();
       message.success('操作成功');
     } catch (error) {
-      message.success('数据校验失败');
+      // message.success('数据校验失败');
     }
     // setTableData(data);
   };
@@ -151,10 +151,11 @@ const SpaceTable = () => {
         };
       });
       setColumns(arr);
+      setPagination({ ...pagination, total: res.data.total });
     } catch (error) {}
   };
   // 新增和修改数据
-  const onAdd = (values: AnyObject) => {
+  const onAdd = async (values: AnyObject) => {
     try {
       const _params = {
         tableId: tableId,
@@ -162,9 +163,9 @@ const SpaceTable = () => {
         rowId: values.id,
       };
       if (_params && _params.rowId) {
-        service.modifyTableData(_params);
+        await service.modifyTableData(_params);
       } else {
-        service.addTableData(_params);
+        await service.addTableData(_params);
       }
       message.success('操作成功');
       getTable();
@@ -271,7 +272,7 @@ const SpaceTable = () => {
               onClick={() => setOpen(true)}
             />
           </div>
-          <Tag className="tag-style">{`${detail?.tableDescription}条记录`}</Tag>
+          <Tag className="tag-style">{`${pagination.total}条记录`}</Tag>
         </div>
       </div>
       <div className="inner-container">

@@ -249,6 +249,21 @@ export async function validWorkflow(
     method: 'GET',
   });
 }
+
+interface IOptimizeSql {
+  requestId: string;
+  tableId: number;
+  prompt: string;
+}
+// 优化当前sql
+export async function optimizeSql(
+  data: IOptimizeSql,
+): Promise<RequestResponse<IVolidWorkfow[]>> {
+  return request(`/api/assistant/sql/optimize`, {
+    method: 'Data',
+    data,
+  });
+}
 export default {
   getDetails,
   updateDetails,

@@ -20,7 +20,7 @@ export const mockColumns = [
       { label: 'String', value: 1 },
       { label: 'Integer', value: 2 },
       { label: 'Number', value: 3 },
-      { label: 'boolean', value: 4 },
+      { label: 'Boolean', value: 4 },
       { label: 'Date', value: 5 },
     ],
     map: {

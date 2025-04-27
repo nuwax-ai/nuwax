@@ -3,16 +3,75 @@ import InputOrReference from '@/components/FormListItem/InputOrReference';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import TreeInput from '@/components/FormListItem/TreeInput';
 import DataTable from '@/components/Skill/database';
+import { ICON_OPTIMIZE } from '@/constants/images.constants';
+import { optimizeSql } from '@/services/workflow';
 import { InputItemNameEnum } from '@/types/enums/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Form, InputNumber, Select, Space } from 'antd';
+import { Button, Form, Input, InputNumber, Modal, Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { options, outPutConfigs } from '../params';
 import { InputAndOut, TreeOutput } from './commonNode';
 
+interface AutoCreateSQLProps {
+  open: boolean; // 自动生成sql的弹窗
+  onCancel: () => void; // 取消
+  tableId: number; // 表id
+}
+// 自动生成sql
+const AutoCreateSQL: React.FC<AutoCreateSQLProps> = ({
+  open,
+  onCancel,
+  tableId,
+}) => {
+  const [inputStr, setInputStr] = useState<string>('');
+  const [aiInputStr, setAiInputStr] = useState<string>('');
+
+  const optimize = async () => {
+    // console.log('优化');
+    const params = {
+      requestId: uuidv4(),
+      prompt: inputStr,
+      tableId: tableId,
+    };
+    const res = optimizeSql(params);
+    console.log(res);
+  };
+
+  return (
+    <Modal
+      title="自动生成"
+      open={open}
+      keyboard={false} //是否能使用sec关闭
+      maskClosable={false} //点击蒙版层是否可以关闭
+      onCancel={() => onCancel()}
+    >
+      <>
+        <div className="node-title-style margin-bottom">查询目标</div>
+        <Input.TextArea
+          rows={4}
+          value={inputStr}
+          onChange={(e) => setInputStr(e.target.value)}
+        />
+        <div className="dis-sb">
+          <div className="node-title-style margin-bottom">SQL</div>
+          <ICON_OPTIMIZE onClick={optimize} />
+        </div>
+        <Input.TextArea
+          rows={4}
+          value={aiInputStr}
+          onChange={(e) => setAiInputStr(e.target.value)}
+        />
+      </>
+    </Modal>
+  );
+};
+
 // 定义数据增，删，改的节点
 const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
+  const [open, setOpen] = useState(false); // 自动生成sql的弹窗
+
   const defautlConditionArgs = [
     {
       firstArg: {
@@ -44,7 +103,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
 
   // 打开自动生成弹窗
   const onOpenCreated = () => {
-    // setOpen(true);
+    setOpen(true);
     console.log('打开自动生成弹窗');
   };
 
@@ -74,29 +133,38 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
           </p>
           <Form.Item>
             <Space>
-              {form.getFieldValue('conditionArgs')?.length > 1 && (
-                <Form.Item
-                  name={'conditionType'}
-                  style={{ marginTop: '-26px' }}
-                >
-                  <Select
-                    style={{
-                      marginRight: '4px',
-                      width: 54,
-                    }}
-                    options={[
-                      {
-                        label: '且',
-                        value: 'AND',
-                      },
-                      {
-                        label: '或',
-                        value: 'OR',
-                      },
-                    ]}
-                  />
-                </Form.Item>
-              )}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prev, curr) =>
+                  prev.conditionArgs !== curr.conditionArgs
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue('conditionArgs')?.length > 1 && (
+                    <Form.Item
+                      name={'conditionType'}
+                      style={{ marginTop: '-26px' }}
+                    >
+                      <Select
+                        style={{
+                          marginRight: '4px',
+                          width: 54,
+                        }}
+                        options={[
+                          {
+                            label: '且',
+                            value: 'AND',
+                          },
+                          {
+                            label: '或',
+                            value: 'OR',
+                          },
+                        ]}
+                      />
+                    </Form.Item>
+                  )
+                }
+              </Form.Item>
               <Form.List
                 name={'conditionArgs'}
                 initialValue={defautlConditionArgs}
@@ -295,6 +363,11 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
           }
         </Form.Item>
       )}
+      <AutoCreateSQL
+        tableId={form.getFieldValue('tableId')}
+        open={open}
+        onCancel={() => setOpen(false)}
+      />
     </div>
   );
 };

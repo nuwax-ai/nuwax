@@ -6,7 +6,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Popover, Select } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useModel } from 'umi';
+
 import StencilContent from './component/stencil';
 import { Child } from './type';
 interface ControlPanelProps {
@@ -59,8 +59,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     setOpen(newOpen);
   };
 
-  const { isModified } = useModel('workflow');
-
   return (
     <>
       <div className="absolute-box">
@@ -106,7 +104,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           icon={<CaretRightOutlined />}
           type="primary"
           onClick={handleTestRun}
-          disabled={isModified}
         >
           试运行
         </Button>

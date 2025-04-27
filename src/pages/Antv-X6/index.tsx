@@ -765,11 +765,17 @@ const Workflow: React.FC = () => {
   };
   // 试运行所有节点
   const testRunAll = async () => {
+    setIsModified((prev: boolean) => {
+      if (prev) {
+        onFinish();
+      }
+      return false;
+    });
     // 先将数据提交到后端
     const _res = await service.getDetails(workflowId);
     const _nodeList = _res.data.nodes;
     setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
-    await changeDrawer(_res.data.startNode);
+    changeDrawer(_res.data.startNode);
     graphRef.current.selectNode(_res.data.startNode.id);
     const volid = await volidWorkflow();
     if (volid) {

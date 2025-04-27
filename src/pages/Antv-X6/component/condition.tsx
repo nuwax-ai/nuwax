@@ -146,25 +146,46 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                             <Space>
                               {itemData.conditionArgs.length > 1 && (
                                 <Form.Item
-                                  name={[item.name, 'conditionType']}
-                                  style={{ marginTop: '-26px' }}
+                                  noStyle
+                                  shouldUpdate={(prev, curr) =>
+                                    prev.conditionBranchConfigs?.[item.name]
+                                      ?.conditionArgs !==
+                                    curr.conditionBranchConfigs?.[item.name]
+                                      ?.conditionArgs
+                                  }
                                 >
-                                  <Select
-                                    style={{
-                                      marginRight: '4px',
-                                      width: 54,
-                                    }}
-                                    options={[
-                                      {
-                                        label: '且',
-                                        value: 'AND',
-                                      },
-                                      {
-                                        label: '或',
-                                        value: 'OR',
-                                      },
-                                    ]}
-                                  />
+                                  {({ getFieldValue }) => {
+                                    const conditionArgs = getFieldValue([
+                                      'conditionBranchConfigs',
+                                      item.name,
+                                      'conditionArgs',
+                                    ]);
+                                    return (
+                                      conditionArgs?.length > 1 && (
+                                        <Form.Item
+                                          name={[item.name, 'conditionType']}
+                                          style={{ marginTop: '-26px' }}
+                                        >
+                                          <Select
+                                            style={{
+                                              marginRight: '4px',
+                                              width: 54,
+                                            }}
+                                            options={[
+                                              {
+                                                label: '且',
+                                                value: 'AND',
+                                              },
+                                              {
+                                                label: '或',
+                                                value: 'OR',
+                                              },
+                                            ]}
+                                          />
+                                        </Form.Item>
+                                      )
+                                    );
+                                  }}
                                 </Form.Item>
                               )}
 
