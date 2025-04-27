@@ -12,7 +12,7 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
   const renderDetailItem = (label: string, value: string | number) => {
     return (
       <div className={cx('flex', styles.box)}>
-        <span>{label}：</span>
+        <span className={cx(styles.label)}>{label}：</span>
         <EllipsisTooltip
           text={value || '--'}
           className={cx(styles.value, 'flex-1')}

@@ -14,6 +14,7 @@ import markdown from 'markdown-it';
 import React, { useMemo } from 'react';
 import { useModel } from 'umi';
 import ChatBottomMore from './ChatBottomMore';
+import ChatSampleBottom from './ChatSampleBottom';
 import styles from './index.less';
 import RunOver from './RunOver';
 
@@ -30,7 +31,7 @@ const ChatView: React.FC<ChatViewProps> = ({
   contentClassName,
   roleInfo,
   messageInfo,
-  canDebug,
+  mode = 'chat',
 }) => {
   const { userInfo } = useModel('userInfo');
   // 当前用户信息
@@ -123,7 +124,11 @@ const ChatView: React.FC<ChatViewProps> = ({
                 !messageInfo?.status)
             }
           >
-            <ChatBottomMore messageInfo={messageInfo} canDebug={canDebug} />
+            {mode === 'chat' ? (
+              <ChatBottomMore messageInfo={messageInfo} />
+            ) : mode === 'home' ? (
+              <ChatSampleBottom messageInfo={messageInfo} />
+            ) : null}
           </ConditionRender>
         </ConditionRender>
       </div>

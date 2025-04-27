@@ -68,7 +68,7 @@ const AgentDetails: React.FC = () => {
 
   useEffect(() => {
     runDetail(agentId);
-  }, []);
+  }, [agentId]);
 
   // 切换收藏与取消收藏
   const handleToggleCollectSuccess = (isCollect: boolean) => {
@@ -125,8 +125,8 @@ const AgentDetails: React.FC = () => {
                   key={index}
                   messageInfo={item}
                   roleInfo={roleInfo}
-                  canDebug={false}
                   contentClassName={styles['chat-inner']}
+                  mode={'none'}
                 />
               ))}
               {/*会话建议*/}

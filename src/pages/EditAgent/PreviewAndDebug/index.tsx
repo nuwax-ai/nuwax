@@ -190,6 +190,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
                   key={item.id}
                   messageInfo={item}
                   roleInfo={roleInfo}
+                  mode={'chat'}
                 />
               ))}
               {/*会话建议*/}

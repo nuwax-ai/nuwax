@@ -254,8 +254,8 @@ export interface ChatViewProps {
   messageInfo: MessageInfo;
   // 角色信息
   roleInfo: RoleInfo;
-  // 能否调试
-  canDebug?: boolean;
+  // 聊天框底部样式 none: 不显示底部 home: 聊天主页底部 chat: 智能体编排页底部
+  mode?: 'none' | 'home' | 'chat';
 }
 
 // 卡片信息
@@ -267,4 +267,9 @@ export interface CardInfo {
   cardKey: string;
   // 跳转url
   bindLinkUrl: string;
+}
+
+// 聊天框底部更多操作组件
+export interface ChatSampleBottomProps {
+  messageInfo: MessageInfo;
 }

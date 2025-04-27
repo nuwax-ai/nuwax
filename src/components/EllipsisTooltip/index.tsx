@@ -10,17 +10,26 @@ export const EllipsisTooltip: React.FC<EllipsisTooltipProps> = ({
   onClick,
   placement = 'top',
 }) => {
-  const textRef = useRef(null);
-  const [isOverflowed, setIsOverflowed] = useState(false);
+  const textRef = useRef<HTMLDivElement>(null);
+  const [isOverflowed, setIsOverflowed] = useState<boolean>(false);
 
   useEffect(() => {
-    // 检测文本是否溢出（单行）
-    if (textRef.current) {
-      // 为 element 指定 HTMLElement 类型，解决类型“never”上不存在属性的问题
-      const element = textRef.current as HTMLElement;
-      const isOverflow = element.scrollWidth > element.clientWidth;
-      setIsOverflowed(isOverflow);
-    }
+    const checkOverflow = () => {
+      // 检测文本是否溢出（单行）
+      if (textRef.current) {
+        // 为 element 指定 HTMLElement 类型，解决类型“never”上不存在属性的问题
+        const element = textRef.current as HTMLElement;
+        const isOverflow = element.scrollWidth > element.clientWidth;
+        setIsOverflowed(isOverflow);
+      }
+    };
+
+    // 使用 requestAnimationFrame 确保在渲染完成后进行计算
+    const frameId = requestAnimationFrame(checkOverflow);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+    };
   }, [text]); // 当文本变化时重新检测
 
   return (
