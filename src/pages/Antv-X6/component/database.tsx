@@ -11,7 +11,7 @@ import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Form, InputNumber, Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
-import { options, outPutConfigs } from '../params';
+import { outPutConfigs, tableOptions } from '../params';
 import { InputAndOut, TreeOutput } from './commonNode';
 
 // 定义数据增，删，改的节点
@@ -137,7 +137,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
                                 >
                                   <Select
                                     popupMatchSelectWidth={false}
-                                    options={options}
+                                    options={tableOptions}
                                     optionLabelProp="displayValue"
                                     style={{
                                       marginRight: '10px',

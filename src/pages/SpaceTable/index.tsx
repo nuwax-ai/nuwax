@@ -6,13 +6,16 @@ import MyTable from '@/components/MyTable';
 import EditTable, { EditTableRef } from '@/components/MyTable/EditTable';
 import service, { IgetDetails } from '@/services/tableSql';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import {
+  ClearOutlined,
   DeleteOutlined,
   DownloadOutlined,
   EditOutlined,
   ExclamationCircleFilled,
   LeftOutlined,
   PlusOutlined,
+  SaveOutlined,
 } from '@ant-design/icons';
 import { Button, message, Modal, Space, Tabs, Tag } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
@@ -32,6 +35,7 @@ const SpaceTable = () => {
   // 当前表的数据
   const [tableData, setTableData] = useState<AnyObject[]>([]);
   // 表结构的数据
+  const [tableStructure, setTableStructure] = useState<AnyObject[]>([]);
   // 当前可以编辑表格的ref
   const editTableRef = useRef<EditTableRef>(null);
   // 当前新增和删除的ref
@@ -43,6 +47,7 @@ const SpaceTable = () => {
     current: 1,
   });
 
+  const [loading, setLoading] = useState(false);
   // 开启关闭编辑表的弹窗
   const [open, setOpen] = useState<boolean>(false);
 
@@ -82,8 +87,21 @@ const SpaceTable = () => {
   };
   // 触发表格的提交数据
   const onSave = () => {
+    setLoading(true);
     if (editTableRef.current) {
       editTableRef.current.submit();
+    }
+  };
+
+  // 触发表格新增行
+  const onAddRow = () => {
+    if (editTableRef.current) {
+      editTableRef.current.handleAddRow({
+        nullableFlag: true,
+        enabledFlag: true,
+        fieldType: 1,
+        dataLength: 1,
+      });
     }
   };
 
@@ -113,19 +131,41 @@ const SpaceTable = () => {
         });
       setAddParams(addParams);
       setDetail(res.data);
+      const arr = res.data.fieldList.map((item) => {
+        return {
+          title: item.fieldDescription,
+          dataIndex: item.fieldName,
+          key: item.fieldName,
+          type: item.fieldType === 5 ? ('time' as const) : ('text' as const),
+        };
+      });
+      const table = res.data.fieldList.map((item) => {
+        return { ...item, dataLength: item.fieldType };
+      });
+      setTableStructure(table);
+      setColumns(arr);
     } catch (error) {}
   };
 
   // 获取最新的表格数据，提交
   const onDataSourceChange = async (data: any) => {
     try {
+      const arr = data.map((item: AnyObject) => {
+        if (item.fieldType === 1 && item.dataLength === 7) {
+          return {
+            ...item,
+            fieldType: 7,
+          };
+        }
+        return item;
+      });
       const _params = {
         id: tableId,
-        fieldList: data,
+        fieldList: arr,
       };
       await service.modifyTableStructure(_params);
+      setLoading(false);
       getDetails();
-      message.success('操作成功');
     } catch (error) {
       // message.success('数据校验失败');
     }
@@ -142,15 +182,6 @@ const SpaceTable = () => {
       };
       const res = await service.getTableData(_params);
       setTableData(res.data.records);
-      const arr = res.data.columnDefines.map((item) => {
-        return {
-          title: item.fieldDescription,
-          dataIndex: item.fieldName,
-          key: item.fieldName,
-          type: item.fieldType === 5 ? ('time' as const) : ('text' as const),
-        };
-      });
-      setColumns(arr);
       setPagination({ ...pagination, total: res.data.total });
     } catch (error) {}
   };
@@ -167,12 +198,9 @@ const SpaceTable = () => {
       } else {
         await service.addTableData(_params);
       }
-      message.success('操作成功');
       getTable();
       addedRef.current?.onClose();
-    } catch (error) {
-      message.success('操作失败');
-    }
+    } catch (error) {}
     // setVisible(false);
   };
 
@@ -215,6 +243,22 @@ const SpaceTable = () => {
         },
       });
     } catch (error) {}
+  };
+
+  // 清除所有数据
+  const clearData = async () => {
+    Modal.confirm({
+      title: '删除确认',
+      content: '确定要删除吗？',
+      okText: '确定',
+      cancelText: '取消',
+      icon: <ExclamationCircleFilled />,
+      onOk: async () => {
+        await service.clearAllData(tableId);
+        message.success('删除成功');
+        setTableData([]);
+      },
+    });
   };
 
   // 导出数据
@@ -286,12 +330,24 @@ const SpaceTable = () => {
             onChange={onChange}
           />
           {currentContent === 'structure' && (
-            <Button icon={<PlusOutlined />} onClick={onSave}>
-              保存
-            </Button>
+            <Space>
+              <Button icon={<PlusOutlined />} onClick={onAddRow}>
+                新增
+              </Button>
+              <Button
+                loading={loading}
+                icon={<SaveOutlined />}
+                onClick={onSave}
+              >
+                保存
+              </Button>
+            </Space>
           )}
           {currentContent === 'data' && (
             <Space>
+              <Button icon={<ClearOutlined />} onClick={clearData}>
+                清除所有数据
+              </Button>
               <Button icon={<DownloadOutlined />} onClick={exportData}>
                 导出
               </Button>
@@ -307,9 +363,10 @@ const SpaceTable = () => {
               columns={columns}
               tableData={tableData}
               showEditRow
-              showIndex
+              // showIndex
               pagination={pagination}
               showPagination
+              actionColumnFixed
               onPageChange={changePagination}
               scrollHeight={getBrowserHeight() + 40}
               actionColumn={actionColumn}
@@ -319,7 +376,7 @@ const SpaceTable = () => {
             <EditTable
               dataEmptyFlag={detail ? detail.existTableDataFlag : false}
               columns={mockColumns}
-              tableData={detail?.fieldList || []}
+              tableData={tableStructure || []}
               showIndex
               showAddRow
               pagination={pagination}
@@ -335,6 +392,7 @@ const SpaceTable = () => {
       <AddAndModify ref={addedRef} onSubmit={onAdd} />
       <CreatedItem
         type={AgentComponentTypeEnum.Table}
+        mode={CreateUpdateModeEnum.Update}
         spaceId={spaceId}
         open={open}
         onCancel={() => setOpen(false)}

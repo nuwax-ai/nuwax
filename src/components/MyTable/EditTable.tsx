@@ -1,35 +1,22 @@
 // 可以编辑的表格
 import type { MyTableProp } from '@/types/interfaces/table';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import type { PaginationProps } from 'antd';
-import {
-  Button,
-  Checkbox,
-  Flex,
-  Form,
-  Input,
-  Pagination,
-  Select,
-  Table,
-} from 'antd';
+import { DeleteOutlined } from '@ant-design/icons';
+import { Button, Checkbox, Form, Input, Select, Table } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import React, { useEffect, useState } from 'react';
 import './index.less';
-
 export interface EditTableRef {
   submit: () => void;
+  handleAddRow: (obj?: AnyObject) => void;
 }
 
 const MyTable: React.FC<MyTableProp> = ({
   columns,
   tableData,
   showIndex,
-  showAddRow,
   rowKey = 'id',
   actionColumnWidth = 160,
-  showPagination,
   pagination,
-  onPageChange,
   dataEmptyFlag,
   onDataSourceChange,
   formRef,
@@ -41,8 +28,8 @@ const MyTable: React.FC<MyTableProp> = ({
   const [form] = Form.useForm();
 
   //   新增行
-  const handleAddRow = () => {
-    const newRow: Record<string, any> = {
+  const handleAddRow = (obj?: AnyObject) => {
+    let newRow: Record<string, any> = {
       [rowKey]: `newRow${dataSource.length + 1}`,
       isNew: true, // 标记为新增行
       systemFieldFlag: false,
@@ -61,6 +48,7 @@ const MyTable: React.FC<MyTableProp> = ({
           newRow[column.dataIndex] = '';
       }
     });
+    newRow = { ...newRow, ...obj };
     setDataSource([...dataSource, newRow]);
 
     // 滚动到表格底部
@@ -77,14 +65,6 @@ const MyTable: React.FC<MyTableProp> = ({
       (record) => record[rowKey] !== key[rowKey],
     );
     setDataSource(newArr);
-  };
-
-  // 改变分页
-  const changePagination: PaginationProps['onChange'] = (page, pageSize) => {
-    console.log(page, pageSize);
-    if (onPageChange) {
-      onPageChange(page, pageSize);
-    }
   };
 
   // 提交表单数据
@@ -121,14 +101,18 @@ const MyTable: React.FC<MyTableProp> = ({
     };
   });
 
-  const getItemType = (type: string, options?: SelectOptions[]) => {
+  const getItemType = (
+    type: string,
+    name: string,
+    options?: SelectOptions[],
+  ) => {
     switch (type) {
       case 'checkbox':
         return <Checkbox />;
       case 'select':
         return <Select options={options} />;
       default:
-        return <Input />;
+        return <Input placeholder={`请输入${name}`} />;
     }
   };
 
@@ -144,6 +128,7 @@ const MyTable: React.FC<MyTableProp> = ({
   // 暴露form给父组件
   React.useImperativeHandle(formRef, () => ({
     submit: () => form.submit(),
+    handleAddRow,
   }));
   return (
     <div className="dis-col edit-table">
@@ -170,6 +155,7 @@ const MyTable: React.FC<MyTableProp> = ({
                 {showIndex && (
                   <Table.Column
                     title={'序号'}
+                    width={70}
                     dataIndex="serial"
                     render={(_, __, index) => {
                       const current = pagination?.current || 1;
@@ -181,12 +167,13 @@ const MyTable: React.FC<MyTableProp> = ({
                 {/* 显示的列 */}
                 {mergedColumns.map((item) => (
                   <Table.Column
+                    width={item.width}
                     key={item.dataIndex}
                     title={item.title}
                     dataIndex={item.dataIndex}
                     render={(value, record, index) => {
                       const shouldEdit =
-                        (item.edit || dataEmptyFlag || record?.isNew) &&
+                        (item.edit || !dataEmptyFlag || record?.isNew) &&
                         !record?.systemFieldFlag;
 
                       if (shouldEdit) {
@@ -199,7 +186,7 @@ const MyTable: React.FC<MyTableProp> = ({
                             }
                             initialValue={record[item.dataIndex]}
                           >
-                            {getItemType(item.type, item.options)}
+                            {getItemType(item.type, item.title, item.options)}
                           </Form.Item>
                         );
                       }
@@ -209,7 +196,10 @@ const MyTable: React.FC<MyTableProp> = ({
                         <span>
                           {item.map
                             ? item.map[value]
-                            : value || item.defaultValue}
+                            : value ||
+                              (!value && record?.systemFieldFlag
+                                ? item.defaultValue
+                                : '')}
                         </span>
                       );
                     }}
@@ -223,7 +213,9 @@ const MyTable: React.FC<MyTableProp> = ({
                   render={(_, record) => (
                     <Button
                       type="text"
-                      disabled={!record.isNew}
+                      disabled={
+                        dataEmptyFlag ? !record.isNew : record?.systemFieldFlag
+                      }
                       onClick={() => handleDeleteRow(record)}
                       title={'删除'}
                       icon={<DeleteOutlined />}
@@ -235,28 +227,6 @@ const MyTable: React.FC<MyTableProp> = ({
           </Form.List>
         </Form>
       </div>
-      <Flex justify="space-between" className="pagination-style">
-        {showAddRow ? (
-          <Button
-            className="add-button-style"
-            onClick={handleAddRow}
-            icon={<PlusOutlined />}
-          >
-            新增
-          </Button>
-        ) : (
-          <span></span>
-        )}
-        {showPagination && (
-          <Pagination
-            showSizeChanger
-            current={pagination?.current}
-            total={pagination?.total}
-            onChange={changePagination}
-            showTotal={(e) => `共${e}条`}
-          />
-        )}
-      </Flex>
     </div>
   );
 };
