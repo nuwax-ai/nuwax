@@ -16,6 +16,8 @@ import {
 import { apiKnowledgeConfigDelete } from '@/services/knowledge';
 import {
   apiComponentList,
+  apiCopyTable,
+  apiPublishedOffShelf,
   apiWorkflowCopy,
   apiWorkflowDelete,
 } from '@/services/library';
@@ -36,7 +38,10 @@ import {
   FilterStatusEnum,
 } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
-import type { ComponentInfo } from '@/types/interfaces/library';
+import type {
+  ComponentInfo,
+  PublishedOffShelfParams,
+} from '@/types/interfaces/library';
 import type { UserInfo } from '@/types/interfaces/login';
 import {
   ExclamationCircleFilled,
@@ -216,6 +221,42 @@ const SpaceLibrary: React.FC = () => {
     },
   });
 
+  // Table - 数据表复制
+  const { run: runCopyTable } = useRequest(apiCopyTable, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      message.success('数据表复制成功');
+      runComponent(spaceId);
+    },
+  });
+
+  // 智能体、插件、工作流下架
+  const { run: runOffShelf } = useRequest(apiPublishedOffShelf, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (_: null, params: PublishedOffShelfParams[]) => {
+      message.success('已成功下架');
+      const { targetId } = params[0];
+
+      const _componentList =
+        componentList?.map((item: ComponentInfo) => {
+          if (item.id === targetId) {
+            return { ...item, publishStatus: PublishStatusEnum.Developing };
+          }
+          return item;
+        }) || [];
+      setComponentList(_componentList);
+      componentAllRef.current =
+        componentAllRef.current?.map((item: ComponentInfo) => {
+          if (item.id === targetId) {
+            return { ...item, publishStatus: PublishStatusEnum.Developing };
+          }
+          return item;
+        }) || [];
+    },
+  });
+
   useEffect(() => {
     const userInfoString = localStorage.getItem(USER_INFO);
     if (!!userInfoString) {
@@ -387,7 +428,20 @@ const SpaceLibrary: React.FC = () => {
           runPluginCopy(id);
           break;
         case ComponentMoreActionEnum.Off_Shelf:
-          console.log('插件下架');
+          confirm({
+            title: '您确定要删除此插件吗?',
+            icon: <ExclamationCircleFilled />,
+            content: info.name,
+            okText: '确定',
+            maskClosable: true,
+            cancelText: '取消',
+            onOk() {
+              runOffShelf({
+                targetId: id,
+                targetType: AgentComponentTypeEnum.Plugin,
+              });
+            },
+          });
           break;
         case ComponentMoreActionEnum.Del:
           showDeleteConfirm(type, info);
@@ -410,7 +464,20 @@ const SpaceLibrary: React.FC = () => {
           runWorkflowCopy(id);
           break;
         case ComponentMoreActionEnum.Off_Shelf:
-          console.log('工作流下架');
+          confirm({
+            title: '您确定要删除此工作流吗?',
+            icon: <ExclamationCircleFilled />,
+            content: info.name,
+            okText: '确定',
+            maskClosable: true,
+            cancelText: '取消',
+            onOk() {
+              runOffShelf({
+                targetId: id,
+                targetType: AgentComponentTypeEnum.Workflow,
+              });
+            },
+          });
           break;
         case ComponentMoreActionEnum.Del:
           showDeleteConfirm(type, info);
@@ -427,23 +494,16 @@ const SpaceLibrary: React.FC = () => {
     }
 
     // 数据表
-    if (
-      type === ComponentTypeEnum.Table &&
-      action === ComponentMoreActionEnum.Del
-    ) {
-      showDeleteConfirm(type, info);
+    if (type === ComponentTypeEnum.Table) {
+      switch (action) {
+        case ComponentMoreActionEnum.Del:
+          showDeleteConfirm(type, info);
+          break;
+        case ComponentMoreActionEnum.Copy:
+          runCopyTable({ tableId: id });
+          break;
+      }
     }
-
-    // switch (action) {
-    //   case ComponentMoreActionEnum.Copy:
-    //     break;
-    //   case ComponentMoreActionEnum.Statistics:
-    //     handleSetStatistics();
-    //     setOpenAnalyze(true);
-    //     break;
-    //   case ComponentMoreActionEnum.Del:
-    //     break;
-    // }
   };
 
   // 点击单个资源组件

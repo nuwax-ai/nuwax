@@ -1,6 +1,6 @@
 import agentImage from '@/assets/images/agent_image.png'; // 智能体默认图标
+import shareImage from '@/assets/images/share.png';
 import ConditionRender from '@/components/ConditionRender';
-import { ICON_SHARE } from '@/constants/images.constants';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
 import { AgentContentProps } from '@/types/interfaces/agentTask';
 import { StarFilled, StarOutlined } from '@ant-design/icons';
@@ -94,9 +94,11 @@ const AgentContent: React.FC<AgentContentProps> = ({
           onCopy={handleCopy}
         >
           <Tooltip title="分享">
-            <span>
-              <ICON_SHARE className={cx('cursor-pointer')} />
-            </span>
+            <img
+              className={cx(styles.share, 'cursor-pointer')}
+              src={shareImage}
+              alt=""
+            />
           </Tooltip>
         </CopyToClipboard>
       </span>

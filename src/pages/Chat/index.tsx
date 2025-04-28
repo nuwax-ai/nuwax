@@ -164,8 +164,8 @@ const Chat: React.FC = () => {
                   key={index}
                   messageInfo={item}
                   roleInfo={roleInfo}
-                  canDebug={false}
                   contentClassName={styles['chat-inner']}
+                  mode={'home'}
                 />
               ))}
               {/*会话建议*/}

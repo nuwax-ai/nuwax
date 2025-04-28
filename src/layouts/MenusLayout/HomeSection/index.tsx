@@ -1,5 +1,6 @@
 import ConditionRender from '@/components/ConditionRender';
-import useConversation from '@/hooks/useConversation';
+import { AgentInfo } from '@/types/interfaces/agent';
+import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
 import { history, useModel } from 'umi';
@@ -16,9 +17,13 @@ const HomeSection: React.FC = () => {
   const { conversationList, usedAgentList, runUsed, runHistory } = useModel(
     'conversationHistory',
   );
-  // 创建智能体会话
-  const { handleCreateConversation } = useConversation();
 
+  // 智能体主页
+  const handleAgentHome = (id: number) => {
+    history.push(`/agent/${id}`);
+  };
+
+  // 会话跳转
   const handleLink = (id: number) => {
     history.push(`/home/chat/${id}`);
   };
@@ -37,10 +42,10 @@ const HomeSection: React.FC = () => {
       <ConditionRender condition={usedAgentList !== undefined}>
         <h3 className={cx(styles.title)}>最近使用</h3>
         {usedAgentList?.length ? (
-          usedAgentList?.map((info) => (
+          usedAgentList?.map((info: AgentInfo) => (
             <UserRelAgent
               key={info.id}
-              onClick={() => handleCreateConversation(info.agentId)}
+              onClick={() => handleAgentHome(info.agentId)}
               icon={info.icon}
               name={info.name}
             />
@@ -58,7 +63,7 @@ const HomeSection: React.FC = () => {
         <h3 className={cx(styles.title, 'mt-16')}>会话记录</h3>
         <ul>
           {conversationList?.length ? (
-            conversationList?.slice(0, 8)?.map((item) => (
+            conversationList?.slice(0, 8)?.map((item: ConversationInfo) => (
               <li
                 key={item.id}
                 className={cx(

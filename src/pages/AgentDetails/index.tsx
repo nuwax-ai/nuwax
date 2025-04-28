@@ -68,7 +68,7 @@ const AgentDetails: React.FC = () => {
 
   useEffect(() => {
     runDetail(agentId);
-  }, []);
+  }, [agentId]);
 
   // 切换收藏与取消收藏
   const handleToggleCollectSuccess = (isCollect: boolean) => {
@@ -111,6 +111,7 @@ const AgentDetails: React.FC = () => {
   return (
     <div className={cx('flex', 'h-full', 'overflow-y')}>
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
+        <h3 className={cx(styles.title)}>{`和${agentDetail?.name}开始会话`}</h3>
         <div className={cx(styles['chat-wrapper'], 'flex-1')}>
           {loading ? (
             <div
@@ -125,8 +126,8 @@ const AgentDetails: React.FC = () => {
                   key={index}
                   messageInfo={item}
                   roleInfo={roleInfo}
-                  canDebug={false}
                   contentClassName={styles['chat-inner']}
+                  mode={'none'}
                 />
               ))}
               {/*会话建议*/}

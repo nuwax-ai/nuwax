@@ -9,6 +9,34 @@
   margin-top: 20px;
   margin-right: 20px;
   padding: 0 20px;
+  box-sizing: border-box;
   background-color: @WHITE;
   border-radius: 10px;
+  transition: visibility 0.3s ease, opacity 0.3s ease, width 0.5s ease;
+  overflow: hidden;
+  z-index: 99;
+  visibility: visible;
+  opacity: 1;
+
+  &.hide {
+    width: 0;
+    padding: 0;
+    visibility: hidden;
+    opacity: 0;
+  }
+}
+
+.fold {
+  position: absolute;
+  top: 30px;
+  right: 40px;
+  width: 16px;
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0.3s ease, opacity 0.3s ease;
+
+  &.show {
+    visibility: visible;
+    opacity: 1;
+  }
 }

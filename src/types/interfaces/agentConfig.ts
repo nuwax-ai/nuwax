@@ -195,15 +195,13 @@ export interface NodeDetailsProps {
   node?: ExecuteResultInfo;
 }
 
-// 插件组件列表
-export interface PluginListProps {
+// 组件列表
+export interface ComponentListProps {
+  type: AgentComponentTypeEnum;
   list: AgentComponentInfo[];
   onSet: (id: number) => void;
   onDel: (id: number, targetId: number, type: AgentComponentTypeEnum) => void;
 }
-
-// 工作流组件列表
-export type WorkflowListProps = PluginListProps;
 
 // 知识库文本列表组件
 export interface KnowledgeTextListProps {

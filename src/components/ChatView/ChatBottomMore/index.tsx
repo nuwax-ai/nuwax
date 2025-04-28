@@ -14,10 +14,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 // 聊天框底部更多操作组件
-const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({
-  canDebug = true,
-  messageInfo,
-}) => {
+const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({ messageInfo }) => {
   // finalResult 自定义添加字段：chat 会话结果
   const { text, finalResult } = messageInfo || {};
   const { handleDebug } = useModel('conversationInfo');
@@ -70,7 +67,7 @@ const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({
             </span>
           </Tooltip>
         </CopyToClipboard>
-        <ConditionRender condition={!!finalResult && canDebug}>
+        <ConditionRender condition={!!finalResult}>
           <TooltipIcon
             className={styles.icon}
             icon={<img src={debugImage as string} alt="" />}

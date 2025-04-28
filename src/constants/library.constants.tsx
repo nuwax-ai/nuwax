@@ -91,6 +91,12 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
     isDel: true,
     type: ComponentTypeEnum.Knowledge,
   },
+  // 数据表
+  {
+    action: ComponentMoreActionEnum.Copy,
+    label: '复制',
+    type: ComponentTypeEnum.Table,
+  },
   {
     action: ComponentMoreActionEnum.Del,
     label: '删除',

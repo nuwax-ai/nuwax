@@ -33,12 +33,11 @@ import CreateVariables from './CreateVariables';
 import styles from './index.less';
 import KnowledgeTextList from './KnowledgeList';
 import LongMemoryContent from './LongMemoryContent';
-import PluginList from './PluginList';
 // import TriggerContent from './TriggerContent';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
+import ComponentList from './ComponentList';
 import OpenRemarksEdit from './OpenRemarksEdit';
 import PluginModelSetting from './PluginModelSetting';
-import WorkflowList from './WorkflowList';
 
 const cx = classNames.bind(styles);
 
@@ -92,48 +91,47 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     ) as AgentComponentInfo;
   }, [agentComponentList]);
 
+  // 是否存在组件
+  const isExistComponent = (type: AgentComponentTypeEnum) => {
+    return agentComponentList?.some(
+      (item: AgentComponentInfo) => item.type === type,
+    );
+  };
+
   // 技能列表 - 当前激活 tab 面板的 key
   const skillActiveKey = useMemo(() => {
     const skill: AgentArrangeConfigEnum[] = [];
-    for (let i = 0; i < agentComponentList?.length; i++) {
-      if (
-        agentComponentList[i].type === AgentComponentTypeEnum.Plugin &&
-        !skill.includes(AgentArrangeConfigEnum.Plugin)
-      ) {
-        skill.push(AgentArrangeConfigEnum.Plugin);
-      }
-      if (
-        agentComponentList[i].type === AgentComponentTypeEnum.Workflow &&
-        !skill.includes(AgentArrangeConfigEnum.Workflow)
-      ) {
-        skill.push(AgentArrangeConfigEnum.Workflow);
-      }
-      if (
-        agentComponentList[i].type === AgentComponentTypeEnum.Trigger &&
-        !skill.includes(AgentArrangeConfigEnum.Trigger)
-      ) {
-        skill.push(AgentArrangeConfigEnum.Trigger);
-      }
+    if (isExistComponent(AgentComponentTypeEnum.Plugin)) {
+      skill.push(AgentArrangeConfigEnum.Plugin);
+    }
+    if (isExistComponent(AgentComponentTypeEnum.Workflow)) {
+      skill.push(AgentArrangeConfigEnum.Workflow);
+    }
+    if (isExistComponent(AgentComponentTypeEnum.Trigger)) {
+      skill.push(AgentArrangeConfigEnum.Trigger);
     }
     return skill;
   }, [agentComponentList]);
 
   // 知识 - 当前激活 tab 面板的 key
   const knowledgeActiveKey = useMemo(() => {
-    const index = agentComponentList?.findIndex(
-      (item: AgentComponentInfo) =>
-        item.type === AgentComponentTypeEnum.Knowledge,
-    );
-    return index > -1 ? [AgentArrangeConfigEnum.Text] : [];
+    if (isExistComponent(AgentComponentTypeEnum.Knowledge)) {
+      return [AgentArrangeConfigEnum.Text];
+    }
+    return [];
   }, [agentComponentList]);
 
   // 记忆 - 当前激活 tab 面板的 key
   const memoryActiveKey = useMemo(() => {
-    const index = agentComponentList?.findIndex(
-      (item: AgentComponentInfo) =>
-        item.type === AgentComponentTypeEnum.Variable,
-    );
-    return index > -1 ? [AgentArrangeConfigEnum.Variable] : [];
+    const keyList: AgentArrangeConfigEnum[] = [];
+    if (isExistComponent(AgentComponentTypeEnum.Variable)) {
+      keyList.push(AgentArrangeConfigEnum.Variable);
+    }
+    if (isExistComponent(AgentComponentTypeEnum.Table)) {
+      keyList.push(AgentArrangeConfigEnum.Table);
+    }
+
+    return keyList;
   }, [agentComponentList]);
 
   // 查询智能体配置组件列表
@@ -157,7 +155,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     type: AgentComponentTypeEnum,
   ) => {
     await runAgentComponentDel(id);
-    message.success('已成功删除插件');
+    message.success('已成功删除');
     const list =
       agentComponentList?.filter(
         (item: AgentComponentInfo) => !(item.id === id && item.type === type),
@@ -294,7 +292,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       key: AgentArrangeConfigEnum.Plugin,
       label: '插件',
       children: (
-        <PluginList
+        <ComponentList
+          type={AgentComponentTypeEnum.Plugin}
           list={filterList(AgentComponentTypeEnum.Plugin)}
           onSet={handlePluginSet}
           onDel={handleAgentComponentDel}
@@ -313,7 +312,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       key: AgentArrangeConfigEnum.Workflow,
       label: '工作流',
       children: (
-        <WorkflowList
+        <ComponentList
+          type={AgentComponentTypeEnum.Workflow}
           list={filterList(AgentComponentTypeEnum.Workflow)}
           onSet={handlePluginSet}
           onDel={handleAgentComponentDel}
@@ -385,6 +385,26 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         />
       ),
       extra: <TooltipIcon title="添加变量" onClick={handlerVariablePlus} />,
+    },
+    {
+      key: AgentArrangeConfigEnum.Table,
+      label: '数据表',
+      children: (
+        <ComponentList
+          type={AgentComponentTypeEnum.Table}
+          list={filterList(AgentComponentTypeEnum.Table)}
+          onSet={handlePluginSet}
+          onDel={handleAgentComponentDel}
+        />
+      ),
+      extra: (
+        <TooltipIcon
+          title="添加插件"
+          onClick={(e: MouseEvent) =>
+            handlerComponentPlus(e, AgentComponentTypeEnum.Table)
+          }
+        />
+      ),
     },
     // {
     //   key: AgentArrangeConfigEnum.Data_Base,

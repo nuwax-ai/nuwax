@@ -2,9 +2,9 @@ import Loading from '@/components/Loading';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { AgentConversationProps } from '@/types/interfaces/agentTask';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import { formatTimeAgo } from '@/utils/common';
 import { Empty } from 'antd';
 import classNames from 'classnames';
-import moment from 'moment';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
 import HistoryConversation from './HistoryConversation';
@@ -73,7 +73,7 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
             >
               <p className={cx('text-ellipsis', 'flex-1')}>{item.topic}</p>
               <span className={cx(styles.time)}>
-                {moment(item.created).format('YYYY-MM-DD : HH:mm')}
+                {formatTimeAgo(item.created)}
               </span>
             </div>
           ))
