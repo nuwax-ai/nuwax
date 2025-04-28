@@ -287,6 +287,22 @@
     color: @GRAY04;
     margin-right: 16px;
   }
+
+  .ant-empty {
+    width: 340px;
+    text-align: center;
+    height: 74px;
+    margin: 0 auto;
+
+    .ant-empty-image {
+      height: 45px;
+    }
+
+    svg {
+      width: 100px;
+      height: 50px;
+    }
+  }
 }
 
 .node-item-style {
@@ -433,7 +449,7 @@
     flex: 1;
 
     .error-list-item {
-      width: 100%;
+      width: 90%;
       height: 48px;
       border-radius: 8px;
       border: 1px solid #ccc;
@@ -445,20 +461,30 @@
       cursor: pointer;
       margin-bottom: 6px;
 
-      img {
+      .image-div-style {
         width: 32px;
-        height: 32px;
-        margin-right: 16px;
+        height: 100%;
+        padding: 8px 0;
+
+        img {
+          width: 32px;
+          height: 32px;
+          margin-right: 16px;
+        }
       }
 
-      .error-text {
-        font-weight: 400;
-        color: #ff441e;
-        font-size: 14px;
-        white-space: nowrap; // 不换行
-        overflow: hidden; // 超出隐藏
-        text-overflow: ellipsis; // 显示省略号
-        max-width: 1480px; // 最大宽度
+      .content-error-item-width {
+        width: 100%;
+
+        .error-text {
+          font-weight: 400;
+          color: #ff441e;
+          font-size: 14px;
+          white-space: nowrap; // 不换行
+          overflow: hidden; // 超出隐藏
+          text-overflow: ellipsis; // 显示省略号
+          width: 95%;
+        }
       }
     }
   }

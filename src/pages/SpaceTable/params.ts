@@ -10,19 +10,21 @@ export const mockColumns = [
     dataIndex: 'fieldDescription',
     type: 'text' as const,
     editable: true,
+    edit: true,
+    width: 180,
   },
   {
     title: '参数类型',
     dataIndex: 'fieldType',
     type: 'select' as const,
     editable: true,
+    width: 140,
     options: [
       { label: 'String', value: 1 },
       { label: 'Integer', value: 2 },
       { label: 'Number', value: 3 },
       { label: 'Boolean', value: 4 },
       { label: 'Date', value: 5 },
-      { label: 'String', value: 7 },
     ],
     map: {
       1: 'String',
@@ -53,9 +55,10 @@ export const mockColumns = [
       6: '--',
       7: '长文本（0-16M）',
     },
+    placeholder: '参数类型为string才会生效',
   },
   {
-    title: '可为空',
+    title: '是否必须',
     dataIndex: 'nullableFlag',
     type: 'checkbox' as const,
     editable: true,
@@ -82,6 +85,7 @@ export const mockColumns = [
     dataIndex: 'defaultValue',
     type: 'text' as const,
     editable: true,
+    edit: true,
     defaultValue: '系统变量',
   },
 ];

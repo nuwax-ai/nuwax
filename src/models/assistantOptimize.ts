@@ -151,6 +151,10 @@ export default () => {
         // console.log(res);
         handleChangeMessageList(params, res, currentMessageId);
       },
+      onError: (error) => {
+        console.error('Error:', error);
+        // 处理错误
+      },
     });
 
     // 主动关闭连接

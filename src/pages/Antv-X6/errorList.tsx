@@ -65,18 +65,22 @@ const ErrorList: React.FC<ErrorListProps> = ({
                   }}
                   key={item.nodeId}
                 >
-                  {returnImg(node.type)}
-                  <div className="ml-12">
+                  <div className="image-div-style">{returnImg(node.type)}</div>
+                  <div className="ml-12 content-error-item-width">
                     <p>{node.name || '123'}</p>
-                    <Popover
-                      content={<p>{item.error}</p>} // Popover 内容
-                      trigger="hover" // 鼠标悬停触发
-                      mouseEnterDelay={0.5} // 延迟 0.5 秒显示
-                      placement="top" // 显示在顶部左侧
-                      open={undefined} // 移除 open 属性，由 hover 触发
-                    >
+                    {item.error.length > 110 ? (
+                      <Popover
+                        content={<p>{item.error}</p>} // Popover 内容
+                        trigger="hover" // 鼠标悬停触发
+                        mouseEnterDelay={0.5} // 延迟 0.5 秒显示
+                        placement="top" // 显示在顶部左侧
+                        open={undefined} // 移除 open 属性，由 hover 触发
+                      >
+                        <p className="error-text">{item.error}</p>
+                      </Popover>
+                    ) : (
                       <p className="error-text">{item.error}</p>
-                    </Popover>
+                    )}
                   </div>
                 </div>
               );
@@ -84,15 +88,19 @@ const ErrorList: React.FC<ErrorListProps> = ({
               if (item) {
                 return (
                   <div className="dis-left error-list-item" key={item.error}>
-                    <Popover
-                      content={<p>{item.error}</p>} // Popover 内容
-                      trigger="hover" // 鼠标悬停触发
-                      mouseEnterDelay={0.5} // 延迟 0.5 秒显示
-                      placement="top" // 显示在顶部左侧
-                      open={undefined} // 如果内容不超过 50 字符，不显示 Popover
-                    >
+                    {item.error.length > 3000 ? (
+                      <Popover
+                        content={<p>{item.error}</p>} // Popover 内容
+                        trigger="hover" // 鼠标悬停触发
+                        mouseEnterDelay={0.5} // 延迟 0.5 秒显示
+                        placement="top" // 显示在顶部左侧
+                        open={undefined} // 移除 open 属性，由 hover 触发
+                      >
+                        <p className="error-text">{item.error}</p>
+                      </Popover>
+                    ) : (
                       <p className="error-text">{item.error}</p>
-                    </Popover>
+                    )}
                   </div>
                 );
               }

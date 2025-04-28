@@ -8,7 +8,7 @@ import { InputItemNameEnum } from '@/types/enums/node';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Form, InputNumber, Select, Space } from 'antd';
+import { Button, Empty, Form, InputNumber, Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import { outPutConfigs, tableOptions } from '../params';
@@ -77,7 +77,11 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
       {type !== 'TableDataAdd' && type !== 'TableSQL' && (
         <div className="node-item-style">
           <p className="node-title-style">
-            {type === 'TableDataDelete' ? '删除条件' : '更新条件'}
+            {type === 'TableDataDelete'
+              ? '删除条件'
+              : type === 'TableDataUpdate'
+              ? '更新条件'
+              : '查询条件'}
           </p>
           <Form.Item>
             <Space>
@@ -120,87 +124,104 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
                 {(subFields, subOpt) => {
                   return (
                     <div className="position-relative">
-                      <div className="dis-left">
-                        <div className="dis-col">
-                          {subFields.map((subField) => {
-                            const bindValueType = form.getFieldValue([
-                              'conditionArgs',
-                              subField.name,
-                              'secondArg',
-                              'bindValueType',
-                            ]);
-                            return (
-                              <div key={subField.name} className="dis-sb">
-                                <Form.Item
-                                  name={[subField.name, 'compareType']}
-                                  noStyle
-                                >
-                                  <Select
-                                    popupMatchSelectWidth={false}
-                                    options={tableOptions}
-                                    optionLabelProp="displayValue"
-                                    style={{
-                                      marginRight: '10px',
-                                      width: 54,
-                                    }}
-                                  ></Select>
-                                </Form.Item>
-                                <div>
+                      {subFields.length >= 1 ? (
+                        <div className="dis-left">
+                          <div className="dis-col">
+                            {subFields.map((subField) => {
+                              const bindValueType = form.getFieldValue([
+                                'conditionArgs',
+                                subField.name,
+                                'secondArg',
+                                'bindValueType',
+                              ]);
+                              return (
+                                <div key={subField.name} className="dis-sb">
                                   <Form.Item
-                                    name={[
-                                      subField.name,
-                                      'firstArg',
-                                      'bindValue',
-                                    ]}
+                                    name={[subField.name, 'compareType']}
+                                    noStyle
                                   >
                                     <Select
-                                      placeholder="请选择"
-                                      options={conditionOptions}
-                                      fieldNames={{
-                                        label: 'name',
-                                        value: 'key',
-                                      }}
+                                      popupMatchSelectWidth={false}
+                                      options={tableOptions}
+                                      optionLabelProp="displayValue"
                                       style={{
-                                        width: subFields.length > 1 ? 150 : 180,
+                                        marginRight: '10px',
+                                        width: 54,
                                       }}
-                                    />
+                                    ></Select>
                                   </Form.Item>
-                                  <Form.Item
-                                    name={[
-                                      subField.name,
-                                      'secondArg',
-                                      'bindValue',
-                                    ]}
-                                  >
-                                    <InputOrReference
-                                      form={form}
-                                      referenceType={bindValueType}
-                                      style={{
-                                        width: subFields.length > 1 ? 150 : 180,
-                                      }}
-                                      fieldName={[
-                                        'conditionArgs',
+                                  <div>
+                                    <Form.Item
+                                      name={[
+                                        subField.name,
+                                        'firstArg',
+                                        'bindValue',
+                                      ]}
+                                    >
+                                      <Select
+                                        placeholder="请选择"
+                                        options={conditionOptions}
+                                        fieldNames={{
+                                          label: 'name',
+                                          value: 'key',
+                                        }}
+                                        style={{
+                                          width:
+                                            subFields.length > 1 ? 150 : 180,
+                                        }}
+                                      />
+                                    </Form.Item>
+                                    <Form.Item
+                                      name={[
                                         subField.name,
                                         'secondArg',
                                         'bindValue',
                                       ]}
+                                    >
+                                      <InputOrReference
+                                        form={form}
+                                        referenceType={bindValueType}
+                                        style={{
+                                          width:
+                                            subFields.length > 1 ? 150 : 180,
+                                        }}
+                                        fieldName={[
+                                          'conditionArgs',
+                                          subField.name,
+                                          'secondArg',
+                                          'bindValue',
+                                        ]}
+                                      />
+                                    </Form.Item>
+                                  </div>
+                                  {type !== 'TableDataQuery' &&
+                                    subFields.length > 1 && (
+                                      <Button
+                                        type="text"
+                                        icon={<MinusCircleOutlined />}
+                                        onClick={() => {
+                                          subOpt.remove(subField.name);
+                                        }}
+                                      />
+                                    )}
+                                  {type === 'TableDataQuery' && (
+                                    <Button
+                                      type="text"
+                                      icon={<MinusCircleOutlined />}
+                                      onClick={() => {
+                                        subOpt.remove(subField.name);
+                                      }}
                                     />
-                                  </Form.Item>
+                                  )}
                                 </div>
-                                {subFields.length > 1 && (
-                                  <Button
-                                    type="text"
-                                    icon={<MinusCircleOutlined />}
-                                    onClick={() => {
-                                      subOpt.remove(subField.name);
-                                    }}
-                                  />
-                                )}
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <Empty description={'当前查询数据为空'} />
+                      )}
+
                       <Button
                         type="primary"
                         onClick={() => {
@@ -269,7 +290,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
           <ExpandableInputTextarea
             title="SQL"
             inputFieldName="sql"
-            // onExpand
+            onExpand
             onOptimize
             onOptimizeClick={onOpenCreated}
             placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
@@ -312,7 +333,9 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
           if (text.includes('```')) {
             text = text.replace(/```/g, '');
           }
-          form.setFieldsValue({ sql: text || '' });
+          // 只取第二个SQL语句
+          const finalSql = text.replace('sql', '');
+          form.setFieldsValue({ sql: finalSql || '' });
           setIsModified(true);
         }}
         optimizeType="sql"

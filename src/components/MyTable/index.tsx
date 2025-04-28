@@ -61,13 +61,14 @@ const MyTable: React.FC<MyTableProp> = ({
           <Table.Column
             key={item.dataIndex}
             title={item.title}
+            ellipsis
             fixed={actionColumnFixed && index === 0 ? 'left' : undefined} // 设置为固定列
             width={item.title.length * 26} // 假设每个字符宽度为 16px
             dataIndex={item.dataIndex}
-            render={(value, record) => {
+            render={(value) => {
               switch (item.type) {
                 case 'checkbox':
-                  return <Checkbox checked={value} disabled={!record.isNew} />;
+                  return <Checkbox checked={value} />;
                 case 'time':
                   return value
                     ? new Date(value).toLocaleString('zh-CN', {

@@ -16,8 +16,9 @@ import {
   LeftOutlined,
   PlusOutlined,
   SaveOutlined,
+  UploadOutlined,
 } from '@ant-design/icons';
-import { Button, message, Modal, Space, Tabs, Tag } from 'antd';
+import { Button, message, Modal, Space, Tabs, Tag, Upload } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'umi';
@@ -82,7 +83,7 @@ const SpaceTable = () => {
     return (
       (window.innerHeight ||
         document.documentElement.clientHeight ||
-        document.body.clientHeight) - 220
+        document.body.clientHeight) - 120
     );
   };
   // 触发表格的提交数据
@@ -140,7 +141,10 @@ const SpaceTable = () => {
         };
       });
       const table = res.data.fieldList.map((item) => {
-        return { ...item, dataLength: item.fieldType };
+        if (item.fieldType === 1 || item.fieldType === 7) {
+          return { ...item, dataLength: item.fieldType, fieldType: 1 };
+        }
+        return item;
       });
       setTableStructure(table);
       setColumns(arr);
@@ -166,8 +170,9 @@ const SpaceTable = () => {
       await service.modifyTableStructure(_params);
       setLoading(false);
       getDetails();
-    } catch (error) {
-      // message.success('数据校验失败');
+      message.success('修改成功');
+    } finally {
+      setLoading(false);
     }
     // setTableData(data);
   };
@@ -199,6 +204,7 @@ const SpaceTable = () => {
         await service.addTableData(_params);
       }
       getTable();
+      getDetails();
       addedRef.current?.onClose();
     } catch (error) {}
     // setVisible(false);
@@ -248,19 +254,31 @@ const SpaceTable = () => {
   // 清除所有数据
   const clearData = async () => {
     Modal.confirm({
-      title: '删除确认',
-      content: '确定要删除吗？',
+      title: '清除确认',
+      content: '确定要清除所有数据吗？',
       okText: '确定',
       cancelText: '取消',
       icon: <ExclamationCircleFilled />,
       onOk: async () => {
         await service.clearAllData(tableId);
-        message.success('删除成功');
+        message.success('清除成功');
         setTableData([]);
       },
     });
   };
 
+  // 导入数据
+  const handleChangeFile = async (info: any) => {
+    if (info.file.status !== 'done') return;
+    try {
+      console.log(info);
+      await service.importTableData(tableId, info.file.originFileObj);
+      message.success('导入成功');
+      getTable();
+    } catch (error) {
+      console.log(error);
+    }
+  };
   // 导出数据
   const exportData = async () => {
     try {
@@ -348,6 +366,14 @@ const SpaceTable = () => {
               <Button icon={<ClearOutlined />} onClick={clearData}>
                 清除所有数据
               </Button>
+              <Upload
+                accept={'.xlsx'}
+                action={''}
+                onChange={handleChangeFile}
+                showUploadList={false}
+              >
+                <Button icon={<UploadOutlined />}>导入</Button>
+              </Upload>
               <Button icon={<DownloadOutlined />} onClick={exportData}>
                 导出
               </Button>

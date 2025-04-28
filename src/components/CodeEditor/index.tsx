@@ -83,7 +83,6 @@ const CodeEditor: React.FC<Props> = ({
     }
     // setIsModified(true);
   };
-  console.log(form);
 
   return (
     <>
