@@ -59,10 +59,10 @@ const PromptOptimizeModal: React.FC<
     setMessageList([]);
     if (text) {
       setMessage('');
-      onMessageSend(id, text);
+      onMessageSend(id, text, 'prompt');
     } else if (message) {
       setMessage('');
-      onMessageSend(id, message);
+      onMessageSend(id, message, 'prompt');
     }
   };
 
@@ -79,7 +79,7 @@ const PromptOptimizeModal: React.FC<
       setMessage(enterValue);
     } else if (e.nativeEvent.keyCode === 13 && !!value.trim()) {
       // enter事件
-      onMessageSend(id, message);
+      onMessageSend(id, message, 'prompt');
       // 置空
       setMessage('');
     }
