@@ -198,7 +198,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
         dataSource={configArgs}
         pagination={false}
         virtual
-        scroll={{ y: 570 }}
+        scroll={{ y: 480 }}
         expandable={{
           childrenColumnName: 'subArgs',
           defaultExpandAllRows: true,

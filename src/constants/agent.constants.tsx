@@ -1,5 +1,6 @@
 import TooltipIcon from '@/components/TooltipIcon';
 import {
+  DefaultSelectedEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
   SearchStrategyEnum,
@@ -21,6 +22,26 @@ export const CALL_METHOD_OPTIONS = [
   {
     value: InvokeTypeEnum.ON_DEMAND,
     label: '按需调用',
+  },
+  {
+    value: InvokeTypeEnum.MANUAL,
+    label: '手动选择',
+  },
+  {
+    value: InvokeTypeEnum.MANUAL_ON_DEMAND,
+    label: '手动选择+按需调用',
+  },
+];
+
+// 调用方式 - 是否默认选中
+export const CALL_DEFAULT_SELECTED = [
+  {
+    value: DefaultSelectedEnum.No,
+    label: '否',
+  },
+  {
+    value: DefaultSelectedEnum.Yes,
+    label: '是',
   },
 ];
 

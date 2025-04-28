@@ -1,6 +1,7 @@
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
+  DefaultSelectedEnum,
   InvokeTypeEnum,
 } from '@/types/enums/agent';
 import type { DataTypeEnum } from '@/types/enums/common';
@@ -124,10 +125,17 @@ export interface BindDataSourceProps {
   onSaveSet: (attr: string, value: CardBindConfig) => void;
 }
 
+// 调用方式保存形参
+export interface InvokeTypeSaveParams {
+  invokeType: InvokeTypeEnum;
+  defaultSelected: DefaultSelectedEnum;
+}
+
 // 调用方式组件属性
 export interface InvokeTypeProps {
   invokeType: InvokeTypeEnum;
-  onSaveSet: (attr: string, value: InvokeTypeEnum) => void;
+  defaultSelected?: DefaultSelectedEnum;
+  onSaveSet: (data: InvokeTypeSaveParams) => void;
 }
 
 // 预览与调试组件
