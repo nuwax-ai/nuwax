@@ -1,4 +1,5 @@
 import { apiAgentConversationCreate } from '@/services/agentConfig';
+import { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import { useRequest } from 'ahooks';
 import { history } from 'umi';
@@ -19,6 +20,7 @@ const useConversation = () => {
     attach?: {
       message: string;
       files?: UploadFileInfo[];
+      infos?: AgentSelectedComponentInfo[];
     },
   ) => {
     const { success, data } = await runAsyncConversationCreate({

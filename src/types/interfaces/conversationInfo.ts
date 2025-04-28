@@ -10,6 +10,8 @@ import { ProcessingEnum } from '@/types/enums/common';
 import type { OpenCloseEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
+  AgentManualComponentInfo,
+  AgentSelectedComponentInfo,
   AgentStatisticsInfo,
   CreatorInfo,
 } from '@/types/interfaces/agent';
@@ -121,6 +123,7 @@ export interface ConversationChatParams {
   attachments: AttachmentFile[];
   // 是否调试模式
   debug: boolean;
+  selectedComponents: AgentSelectedComponentInfo[];
 }
 
 // 智能体会话问题建议输入参数
@@ -216,6 +219,7 @@ export interface ConversationInfo {
     description: string;
     // 图标
     icon: string;
+    manualComponents: AgentManualComponentInfo[];
     remark: string;
     // 智能体发布修改时间
     modified: string;

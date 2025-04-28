@@ -4,6 +4,8 @@ import { DataTypeEnum } from '@/types/enums/common';
 import type {
   AgentBaseInfo,
   AgentConfigInfo,
+  AgentManualComponentInfo,
+  AgentSelectedComponentInfo,
   CreatorInfo,
 } from '@/types/interfaces/agent';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
@@ -415,9 +417,18 @@ export interface ChatInputProps {
   className?: React.CSSProperties;
   disabled?: boolean;
   visible?: boolean;
+  // 可手动选择的组件列表
+  manualComponents?: AgentManualComponentInfo[];
+  infos?: AgentSelectedComponentInfo[];
+  // 发送消息后是否清空输入框, 默认true
+  isClearInput?: boolean;
   onScrollBottom?: () => void;
   onClear?: () => void;
-  onEnter: (message: string, files: UploadFileInfo[]) => void;
+  onEnter: (
+    message: string,
+    files: UploadFileInfo[],
+    infos: AgentSelectedComponentInfo[],
+  ) => void;
 }
 
 // 聊天框底部更多操作组件

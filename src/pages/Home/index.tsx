@@ -5,20 +5,23 @@ import AgentItem from '@/pages/Home/AgentItem';
 import {
   apiCollectAgent,
   apiHomeCategoryList,
+  apiPublishedAgentInfo,
   apiUnCollectAgent,
 } from '@/services/agentDev';
+import {
+  AgentDetailDto,
+  AgentSelectedComponentInfo,
+} from '@/types/interfaces/agent';
 import type {
   CategoryInfo,
   CategoryItemInfo,
   HomeAgentCategoryInfo,
 } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
-import type { RequestResponse } from '@/types/interfaces/request';
-import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useModel } from 'umi';
+import { history, useModel, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -33,17 +36,17 @@ const Home: React.FC = () => {
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const tabsRef = useRef<HTMLDivElement | null>(null);
   const currentAgentTypeRef = useRef<string>('');
+  const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
 
   // 主页智能体分类列表
   const { run: runCategoryList } = useRequest(apiHomeCategoryList, {
     manual: true,
-    debounceWait: 300,
-    onSuccess: (result: RequestResponse<HomeAgentCategoryInfo>) => {
-      const { data } = result;
-      setHomeCategoryInfo(data);
-      setActiveTab(data?.categories?.[0].type);
+    debounceInterval: 300,
+    onSuccess: (result: HomeAgentCategoryInfo) => {
+      setHomeCategoryInfo(result);
+      setActiveTab(result?.categories?.[0].type);
       setLoading(false);
     },
     onError: () => {
@@ -54,7 +57,7 @@ const Home: React.FC = () => {
   // 智能体收藏
   const { run: runCollectAgent } = useRequest(apiCollectAgent, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       runCategoryList();
     },
@@ -63,19 +66,39 @@ const Home: React.FC = () => {
   // 智能体取消收藏
   const { run: runUnCollectAgent } = useRequest(apiUnCollectAgent, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       runCategoryList();
     },
   });
 
+  const { run: runDetail } = useRequest(apiPublishedAgentInfo, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: AgentDetailDto) => {
+      setAgentDetail(result);
+    },
+  });
+
   useEffect(() => {
     setLoading(true);
+    // 主页智能体分类列表
     runCategoryList();
   }, []);
 
+  useEffect(() => {
+    console.log('tenantConfigInfo', tenantConfigInfo);
+    if (tenantConfigInfo) {
+      runDetail(tenantConfigInfo?.defaultAgentId);
+    }
+  }, [tenantConfigInfo]);
+
   // 跳转页面
-  const handleEnter = async (_message: string, files?: UploadFileInfo[]) => {
+  const handleEnter = async (
+    _message: string,
+    files?: UploadFileInfo[],
+    infos?: AgentSelectedComponentInfo[],
+  ) => {
     if (!tenantConfigInfo) {
       message.warning('租户信息不存在');
       return;
@@ -84,6 +107,7 @@ const Home: React.FC = () => {
     await handleCreateConversation(tenantConfigInfo.defaultAgentId, {
       message: _message,
       files,
+      infos,
     });
   };
 
@@ -119,7 +143,12 @@ const Home: React.FC = () => {
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'items-center')}>
       <h2 className={cx(styles.title)}>嗨，有什么我可以帮忙的吗？</h2>
-      <ChatInputHome className={cx(styles.textarea)} onEnter={handleEnter} />
+      <ChatInputHome
+        className={cx(styles.textarea)}
+        onEnter={handleEnter}
+        isClearInput={false}
+        manualComponents={agentDetail?.manualComponents || []}
+      />
       <div
         className={cx(styles.recommend, 'flex', 'content-center', 'flex-wrap')}
       >
