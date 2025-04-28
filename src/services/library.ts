@@ -1,6 +1,7 @@
 import type {
   AddWorkflowParams,
   ComponentInfo,
+  CopyTableParams,
   PublishedOffShelfParams,
   UpdateWorkflowParams,
 } from '@/types/interfaces/library';
@@ -61,5 +62,15 @@ export async function apiPublishedOffShelf(
   return request('/api/published/offShelf', {
     method: 'POST',
     data,
+  });
+}
+
+// 数据表复制(请求类型 - query)
+export function apiCopyTable(
+  data: CopyTableParams,
+): Promise<RequestResponse<number>> {
+  return request('/api/compose/db/table/copyTableDefinition', {
+    method: 'POST',
+    params: data,
   });
 }

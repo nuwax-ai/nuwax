@@ -160,3 +160,8 @@ export interface PublishedOffShelfParams {
   // 智能体、插件或工作流ID
   targetId: number;
 }
+
+// 复制参数
+export interface CopyTableParams {
+  tableId: number;
+}

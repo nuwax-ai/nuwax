@@ -16,6 +16,7 @@ import {
 import { apiKnowledgeConfigDelete } from '@/services/knowledge';
 import {
   apiComponentList,
+  apiCopyTable,
   apiPublishedOffShelf,
   apiWorkflowCopy,
   apiWorkflowDelete,
@@ -217,6 +218,16 @@ const SpaceLibrary: React.FC = () => {
       message.success('数据表删除成功');
       const id = params[0];
       handleDel(id);
+    },
+  });
+
+  // Table - 数据表复制
+  const { run: runCopyTable } = useRequest(apiCopyTable, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      message.success('数据表复制成功');
+      runComponent(spaceId);
     },
   });
 
@@ -483,11 +494,15 @@ const SpaceLibrary: React.FC = () => {
     }
 
     // 数据表
-    if (
-      type === ComponentTypeEnum.Table &&
-      action === ComponentMoreActionEnum.Del
-    ) {
-      showDeleteConfirm(type, info);
+    if (type === ComponentTypeEnum.Table) {
+      switch (action) {
+        case ComponentMoreActionEnum.Del:
+          showDeleteConfirm(type, info);
+          break;
+        case ComponentMoreActionEnum.Copy:
+          runCopyTable({ tableId: id });
+          break;
+      }
     }
   };
 
