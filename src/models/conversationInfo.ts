@@ -485,6 +485,7 @@ export default () => {
     allowAutoScrollRef,
     scrollTimeoutRef,
     showType,
+    setShowType,
     handleClearSideEffect,
     cardList,
     showScrollBtn,
