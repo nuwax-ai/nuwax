@@ -105,6 +105,7 @@ const MyTable: React.FC<MyTableProp> = ({
     type: string,
     name: string,
     options?: SelectOptions[],
+    placeholder?: string,
   ) => {
     switch (type) {
       case 'checkbox':
@@ -112,7 +113,7 @@ const MyTable: React.FC<MyTableProp> = ({
       case 'select':
         return <Select options={options} />;
       default:
-        return <Input placeholder={`请输入${name}`} />;
+        return <Input placeholder={placeholder || `请输入${name}`} />;
     }
   };
 
@@ -167,6 +168,7 @@ const MyTable: React.FC<MyTableProp> = ({
                 {/* 显示的列 */}
                 {mergedColumns.map((item) => (
                   <Table.Column
+                    ellipsis
                     width={item.width}
                     key={item.dataIndex}
                     title={item.title}
@@ -186,14 +188,19 @@ const MyTable: React.FC<MyTableProp> = ({
                             }
                             initialValue={record[item.dataIndex]}
                           >
-                            {getItemType(item.type, item.title, item.options)}
+                            {getItemType(
+                              item.type,
+                              item.title,
+                              item.options,
+                              item.placeholder,
+                            )}
                           </Form.Item>
                         );
                       }
                       return (
                         <span>
                           {item.map
-                            ? item.map[value]
+                            ? item.map[value] || '--'
                             : value ||
                               (!value && record?.systemFieldFlag
                                 ? item.defaultValue

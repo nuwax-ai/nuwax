@@ -15,6 +15,7 @@ declare global {
     editable?: boolean;
     edit?: boolean;
     options?: SelectOptions[];
+    placeholder?: string;
     defaultValue?: string;
     onCell?: (record: any) => {
       record: AnyObject;

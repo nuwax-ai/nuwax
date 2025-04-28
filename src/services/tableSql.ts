@@ -155,7 +155,7 @@ async function addTask(data: IAddTask): Promise<RequestResponse<number>> {
 
 // 修改表单的基本信息
 async function modifyTask(data: IAddTask): Promise<RequestResponse<number>> {
-  return request(`/api/compose/db/table/updateTableDefinition`, {
+  return request(`/api/compose/db/table/updateTableName`, {
     method: 'POST',
     data,
   });

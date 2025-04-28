@@ -141,7 +141,10 @@ const SpaceTable = () => {
         };
       });
       const table = res.data.fieldList.map((item) => {
-        return { ...item, dataLength: item.fieldType };
+        if (item.fieldType === 1 || item.fieldType === 7) {
+          return { ...item, dataLength: item.fieldType, fieldType: 1 };
+        }
+        return item;
       });
       setTableStructure(table);
       setColumns(arr);
