@@ -51,6 +51,10 @@ const routes = [
         component: '@/pages/Square/PluginDetail',
       },
       {
+        path: '/square/publish/workflow/:workflowId',
+        component: '@/pages/Square/WorkflowIdDetail',
+      },
+      {
         path: '/system/published/manage',
         component: '@/pages/PublishedManage',
       },

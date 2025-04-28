@@ -17,7 +17,7 @@ const CodeOptimizeModal: React.FC<
     onReplace?: (text?: string) => void;
     defaultValue?: string;
   }
-> = ({ open, onCancel, onReplace, codeLanguage }) => {
+> = ({ title, open, onCancel, onReplace, codeLanguage }) => {
   const [message, setMessage] = useState<string>('');
   const {
     messageList,
@@ -88,7 +88,7 @@ const CodeOptimizeModal: React.FC<
 
   return (
     <Modal
-      title={'代码助手'}
+      title={title}
       open={open}
       onCancel={(e) => {
         setMessageList([]);

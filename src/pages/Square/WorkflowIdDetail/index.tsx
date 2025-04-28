@@ -1,30 +1,30 @@
-import { apiPublishedPluginInfo } from '@/services/plugin';
+import { apiPublishedWorkflowInfo } from '@/services/plugin';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { BindConfigWithSub } from '@/types/interfaces/agent';
-import type { PublishPluginInfo } from '@/types/interfaces/plugin';
+import type { PublishWorkflowInfo } from '@/types/interfaces/plugin';
 import type { TableColumnsType } from 'antd';
 import { Divider, Empty, Table } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
 import { useParams, useRequest } from 'umi';
-import PluginHeader from './PluginHeader';
+import PluginHeader from '../PluginDetail/PluginHeader';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 /**
- * 测试插件头部组件
+ * 工作流详情
  */
-const SpacePluginDetail: React.FC = ({}) => {
-  const { pluginId } = useParams();
+const WorkflowIdDetail: React.FC = ({}) => {
+  const { workflowId } = useParams();
 
   // 查询插件信息
-  const { run: runPluginInfo, data: pluginInfo } = useRequest(
-    apiPublishedPluginInfo,
+  const { run: runWorkflowInfo, data: workflowInfo } = useRequest(
+    apiPublishedWorkflowInfo,
     {
       manual: true,
       debounceInterval: 300,
-      onSuccess: (result: PublishPluginInfo) => {
+      onSuccess: (result: PublishWorkflowInfo) => {
         console.log(result);
         return result;
       },
@@ -32,10 +32,10 @@ const SpacePluginDetail: React.FC = ({}) => {
   );
 
   useEffect(() => {
-    if (!pluginId) return;
-    runPluginInfo(pluginId);
-  }, [pluginId]);
-  console.log(pluginInfo);
+    if (!workflowId) return;
+    runWorkflowInfo(workflowId);
+  }, [workflowId]);
+  console.log(workflowInfo);
 
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [
@@ -113,16 +113,16 @@ const SpacePluginDetail: React.FC = ({}) => {
       <div
         className={cx(styles.container, 'flex', 'flex-col', 'flex-1', 'h-full')}
       >
-        {pluginInfo?.id && (
+        {workflowInfo?.id && (
           <PluginHeader
-            targetInfo={pluginInfo as PublishPluginInfo}
-            targetType={SquareAgentTypeEnum.Plugin}
+            targetInfo={workflowInfo as PublishWorkflowInfo}
+            targetType={SquareAgentTypeEnum.Workflow}
           />
         )}
         <div className={cx(styles['main-container'], 'overflow-y')}>
           <span className={cx(styles.title)}>插件描述</span>
           <p className={cx(styles.desc, 'text-ellipsis-2')}>
-            {pluginInfo?.description}
+            {workflowInfo?.description}
           </p>
           <Divider style={{ margin: '20px 0' }} />
           <span className={cx(styles.title)}>入参配置</span>
@@ -130,15 +130,15 @@ const SpacePluginDetail: React.FC = ({}) => {
             className={cx(styles['table-wrap'], 'overflow-hide')}
             columns={inputColumns}
             // bordered={false}
-            dataSource={pluginInfo?.inputArgs || []}
+            dataSource={workflowInfo?.inputArgs || []}
             pagination={false}
           />
           <span className={cx(styles.title)}>出参配置</span>
-          {pluginInfo?.outputArgs?.length > 0 ? (
+          {workflowInfo?.outputArgs?.length > 0 ? (
             <Table<BindConfigWithSub>
               className={cx(styles['table-wrap'], 'overflow-hide')}
               columns={outputColumns}
-              dataSource={pluginInfo?.outputArgs || []}
+              dataSource={workflowInfo?.outputArgs || []}
               pagination={false}
               expandable={{
                 // childrenColumnName: 'subArgs',
@@ -167,4 +167,4 @@ const SpacePluginDetail: React.FC = ({}) => {
   );
 };
 
-export default SpacePluginDetail;
+export default WorkflowIdDetail;

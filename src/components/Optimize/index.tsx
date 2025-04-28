@@ -11,12 +11,26 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const PromptOptimizeModal: React.FC<
-  ModalProps & {
-    onReplace: (text?: string) => void;
-    defaultValue?: string;
-  }
-> = ({ open, onCancel, onReplace, defaultValue }) => {
+export type OptimizeType = 'prompt' | 'code' | 'sql';
+
+export interface AssistantOptimizeModalProps extends ModalProps {
+  optimizeType: OptimizeType;
+  onReplace: (text?: string) => void;
+  defaultValue?: string;
+  codeLanguage?: string;
+  tableId?: number;
+}
+
+const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
+  open,
+  onCancel,
+  onReplace,
+  defaultValue,
+  optimizeType,
+  codeLanguage,
+  title,
+  tableId,
+}) => {
   const [message, setMessage] = useState<string>('');
   const {
     messageList,
@@ -25,7 +39,7 @@ const PromptOptimizeModal: React.FC<
     messageViewRef,
     allowAutoScrollRef,
   } = useModel('assistantOptimize');
-  // 智能体会话问题建议
+
   const [id, setId] = useState<string>('');
 
   useEffect(() => {
@@ -54,15 +68,15 @@ const PromptOptimizeModal: React.FC<
     }
   }, []);
 
-  // 点击发送事件
   const handleSendMessage = async (text?: string) => {
     setMessageList([]);
     if (text) {
       setMessage('');
-      onMessageSend(id, text, 'prompt');
+      onMessageSend(id, text, optimizeType, codeLanguage);
     } else if (message) {
       setMessage('');
-      onMessageSend(id, message, 'prompt');
+      console.log('message', message, optimizeType, tableId);
+      onMessageSend(id, message, optimizeType, codeLanguage, tableId);
     }
   };
 
@@ -79,15 +93,26 @@ const PromptOptimizeModal: React.FC<
       setMessage(enterValue);
     } else if (e.nativeEvent.keyCode === 13 && !!value.trim()) {
       // enter事件
-      onMessageSend(id, message, 'prompt');
+      onMessageSend(id, message, 'code', codeLanguage);
       // 置空
       setMessage('');
     }
   };
 
+  // ... existing handlePressEnter code ...
+
+  const getPlaceholder = () => {
+    const params = {
+      prompt: '请描述你的提示词需求，比如角色定义、技能要求等',
+      code: '请描述你的具体业务需求，逻辑尽量描述详细',
+      sql: '请输入你的SQL查询需求，逻辑尽量描述详细',
+    };
+    return params[optimizeType];
+  };
+
   return (
     <Modal
-      title={' '}
+      title={title}
       open={open}
       onCancel={(e) => {
         setMessageList([]);
@@ -105,6 +130,7 @@ const PromptOptimizeModal: React.FC<
           <>
             {messageList?.map((item: MessageInfo, index: number) => (
               <PromptView
+                ifShowReplace={true}
                 onReplace={onReplace}
                 key={index}
                 messageInfo={item}
@@ -116,7 +142,7 @@ const PromptOptimizeModal: React.FC<
           <div />
         )}
       </div>
-      {messageList?.length > 0 ? (
+      {messageList?.length > 0 && (
         <div className={cx('flex')}>
           <Button
             className={cx(styles['replace-btn'], styles['btn'])}
@@ -142,7 +168,8 @@ const PromptOptimizeModal: React.FC<
             退出
           </Button>
         </div>
-      ) : (
+      )}
+      {messageList?.length > 0 && optimizeType === 'prompt' && (
         <Button
           type="default"
           className={cx(styles['btn'])}
@@ -167,7 +194,7 @@ const PromptOptimizeModal: React.FC<
             onChange={(e) => setMessage(e.target.value)}
             rootClassName={styles.input}
             onPressEnter={handlePressEnter}
-            placeholder="请描述你的提示词需求，比如角色定义、技能要求等"
+            placeholder={getPlaceholder()}
             autoSize={{ minRows: 1, maxRows: 3 }}
           />
 
@@ -183,4 +210,4 @@ const PromptOptimizeModal: React.FC<
   );
 };
 
-export default PromptOptimizeModal;
+export default AssistantOptimizeModal;

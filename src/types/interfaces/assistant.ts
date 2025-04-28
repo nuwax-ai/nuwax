@@ -15,6 +15,8 @@ export interface PromptOptimizeParams {
   prompt: string;
 
   codeLanguage?: string;
+
+  tableId?: number;
 }
 
 // 响应接口

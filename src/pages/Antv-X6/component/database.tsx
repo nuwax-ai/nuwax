@@ -2,75 +2,23 @@ import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import InputOrReference from '@/components/FormListItem/InputOrReference';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import TreeInput from '@/components/FormListItem/TreeInput';
+import Optimize from '@/components/Optimize';
 import DataTable from '@/components/Skill/database';
-import { ICON_OPTIMIZE } from '@/constants/images.constants';
-import { optimizeSql } from '@/services/workflow';
 import { InputItemNameEnum } from '@/types/enums/node';
+import { InputAndOutConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Form, Input, InputNumber, Modal, Select, Space } from 'antd';
+import { Button, Form, InputNumber, Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { useModel } from 'umi';
 import { options, outPutConfigs } from '../params';
 import { InputAndOut, TreeOutput } from './commonNode';
-
-interface AutoCreateSQLProps {
-  open: boolean; // 自动生成sql的弹窗
-  onCancel: () => void; // 取消
-  tableId: number; // 表id
-}
-// 自动生成sql
-const AutoCreateSQL: React.FC<AutoCreateSQLProps> = ({
-  open,
-  onCancel,
-  tableId,
-}) => {
-  const [inputStr, setInputStr] = useState<string>('');
-  const [aiInputStr, setAiInputStr] = useState<string>('');
-
-  const optimize = async () => {
-    // console.log('优化');
-    const params = {
-      requestId: uuidv4(),
-      prompt: inputStr,
-      tableId: tableId,
-    };
-    const res = optimizeSql(params);
-    console.log(res);
-  };
-
-  return (
-    <Modal
-      title="自动生成"
-      open={open}
-      keyboard={false} //是否能使用sec关闭
-      maskClosable={false} //点击蒙版层是否可以关闭
-      onCancel={() => onCancel()}
-    >
-      <>
-        <div className="node-title-style margin-bottom">查询目标</div>
-        <Input.TextArea
-          rows={4}
-          value={inputStr}
-          onChange={(e) => setInputStr(e.target.value)}
-        />
-        <div className="dis-sb">
-          <div className="node-title-style margin-bottom">SQL</div>
-          <ICON_OPTIMIZE onClick={optimize} />
-        </div>
-        <Input.TextArea
-          rows={4}
-          value={aiInputStr}
-          onChange={(e) => setAiInputStr(e.target.value)}
-        />
-      </>
-    </Modal>
-  );
-};
 
 // 定义数据增，删，改的节点
 const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
   const [open, setOpen] = useState(false); // 自动生成sql的弹窗
+
+  const { setIsModified } = useModel('workflow');
 
   const defautlConditionArgs = [
     {
@@ -120,7 +68,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
           <InputAndOut
             title="输入"
             fieldConfigs={outPutConfigs}
-            inputItemName={InputItemNameEnum.tableFields}
+            inputItemName={InputItemNameEnum.inputArgs}
             form={form}
           />
         </div>
@@ -306,7 +254,11 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
             icon={form.getFieldValue('icon')}
             name={form.getFieldValue('name')}
             description={form.getFieldValue('description')}
-            params={['123', '456']}
+            params={
+              form
+                .getFieldValue('tableFields')
+                .map((item: InputAndOutConfig) => item.name) || []
+            }
             showParams={type === 'TableSQL'}
           />
         ) : null}
@@ -316,7 +268,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
         <div className="node-item-style">
           <ExpandableInputTextarea
             title="SQL"
-            inputFieldName="systemPrompt"
+            inputFieldName="sql"
             // onExpand
             onOptimize
             onOptimizeClick={onOpenCreated}
@@ -324,22 +276,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
           />
         </div>
       )}
-      {/* <Form.Item>
-        {() =>
-          form.getFieldValue('tableFields') ? (
-            <div className="node-item-style">
-              <DataTable
-                icon={''}
-                name={form.getFieldValue('name')}
-                description={form.getFieldValue('description')}
-                handleDelete={removeItem}
-              />
-            </div>
-          ) : (
-            <Empty />
-          )
-        }
-      </Form.Item> */}
+
       {/* 输出参数 */}
       {type === 'TableSQL' || type === 'TableDataQuery' ? (
         <Form.Item name={'inputArgs'}>
@@ -363,10 +300,23 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
           }
         </Form.Item>
       )}
-      <AutoCreateSQL
-        tableId={form.getFieldValue('tableId')}
+      <Optimize
+        title="生成sql语句"
         open={open}
-        onCancel={() => setOpen(false)}
+        onCancel={() => {
+          setOpen(false);
+        }}
+        onReplace={(newValue?: string) => {
+          if (!newValue) return;
+          let text = newValue;
+          if (text.includes('```')) {
+            text = text.replace(/```/g, '');
+          }
+          form.setFieldsValue({ sql: text || '' });
+          setIsModified(true);
+        }}
+        optimizeType="sql"
+        tableId={form.getFieldValue('tableId')}
       />
     </div>
   );

@@ -22,7 +22,9 @@ import { Button, Divider, Input, Menu, Modal, Radio } from 'antd';
 import { RadioChangeEvent } from 'antd/lib/radio';
 import { useCallback, useEffect, useRef, useState } from 'react';
 // import { useModel } from 'umi';
-import { useParams } from 'umi';
+import { AnyObject } from 'antd/es/_util/type';
+import { history, useParams } from 'umi';
+import CreatedItem from '../CreatedItem';
 import CreateKnowledge from '../CreateKnowledge';
 import CreateNewPlugin from '../CreateNewPlugin';
 import CreateWorkflow from '../CreateWorkflow';
@@ -214,14 +216,19 @@ const Created: React.FC<CreatedProp> = ({
   };
 
   // 新增工作流，插件，知识库，数据库
-  const onConfirm = () => {
-    setShowCreate(false);
-    // const _params = {
-    //   page: 1,
-    //   pageSize: 10,
-    // };
-    // getList(selected.key, _params);
-    // setPagination(_params);
+  const onConfirm = async (value: AnyObject) => {
+    if (selected.key === AgentComponentTypeEnum.Table) {
+      try {
+        const params = {
+          tableName: value.name,
+          tableDescription: value.description,
+          spaceId: spaceId,
+        };
+        const res = await service.addTask(params);
+        history.push(`/space/${spaceId}/table/${res.data}`);
+        // setShowCreate(false);
+      } catch (error) {}
+    }
   };
 
   /**  -----------------  无需调用接口的方法  -----------------   */
@@ -523,6 +530,14 @@ const Created: React.FC<CreatedProp> = ({
         onCancel={() => setShowCreate(false)}
         open={showCreate && selected.key === AgentComponentTypeEnum.Knowledge}
         mode={CreateUpdateModeEnum.Create}
+      />
+      <CreatedItem
+        spaceId={spaceId}
+        type={AgentComponentTypeEnum.Table}
+        mode={CreateUpdateModeEnum.Create}
+        Confirm={onConfirm}
+        onCancel={() => setShowCreate(false)}
+        open={showCreate && selected.key === AgentComponentTypeEnum.Table}
       />
     </Modal>
   );

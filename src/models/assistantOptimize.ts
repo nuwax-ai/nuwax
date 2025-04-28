@@ -1,6 +1,7 @@
 import {
   CODE_OPTIMIZE_URL,
   PROMPT_OPTIMIZE_URL,
+  SQL_OPTIMIZE_URL,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
@@ -121,16 +122,25 @@ export default () => {
     handleScrollBottom();
   };
 
+  const returnUrl = (type: 'prompt' | 'code' | 'sql') => {
+    const obj = {
+      prompt: PROMPT_OPTIMIZE_URL,
+      code: CODE_OPTIMIZE_URL,
+      sql: SQL_OPTIMIZE_URL,
+    };
+    return obj[type];
+  };
+
   // 会话处理
   const handleConversation = async (
     params: PromptOptimizeParams,
     currentMessageId: string,
-    type: 'prompt' | 'code',
+    type: 'prompt' | 'code' | 'sql',
   ) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
     // 启动连接
     abortConnectionRef.current = await createSSEConnection({
-      url: type === 'code' ? CODE_OPTIMIZE_URL : PROMPT_OPTIMIZE_URL,
+      url: returnUrl(type),
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -139,7 +149,6 @@ export default () => {
       body: params,
       onMessage: (res: PromptOptimizeRes) => {
         // console.log(res);
-
         handleChangeMessageList(params, res, currentMessageId);
       },
     });
@@ -176,8 +185,9 @@ export default () => {
   const onMessageSend = async (
     id: number,
     message: string,
-    type: 'prompt' | 'code',
+    type: 'prompt' | 'code' | 'sql',
     codeLanguage?: string,
+    tableId?: number,
   ) => {
     // 清除副作用
     handleClearSideEffect();
@@ -213,6 +223,7 @@ export default () => {
       requestId: `${id}`,
       prompt: message,
       codeLanguage: codeLanguage,
+      tableId: tableId,
     };
     // 处理会话
     await handleConversation(params, currentMessageId, type);

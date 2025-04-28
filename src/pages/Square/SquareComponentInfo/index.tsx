@@ -88,7 +88,7 @@ const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
     }
     // 工作流
     if (targetType === SquareAgentTypeEnum.Workflow) {
-      console.log('workflow');
+      history.push(`/square/publish/workflow/${targetId}`);
     }
   };
 

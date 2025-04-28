@@ -4,8 +4,14 @@ import CollectStar from '@/pages/SpaceDevelop/ApplicationItem/CollectStar';
 import {
   apiPublishedPluginCollect,
   apiPublishedPluginUnCollect,
+  apiPublishedWorkflowCollect,
+  apiPublishedWorkflowUnCollect,
 } from '@/services/plugin';
-import type { PublishPluginInfo } from '@/types/interfaces/plugin';
+import { SquareAgentTypeEnum } from '@/types/enums/square';
+import type {
+  PublishPluginInfo,
+  PublishWorkflowInfo,
+} from '@/types/interfaces/plugin';
 import { LeftOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 import classNames from 'classnames';
@@ -17,44 +23,55 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 // 插件http头部组件
 interface PluginHeaderProps {
-  pluginInfo: PublishPluginInfo;
-  onSave: () => void;
-  onTryRun: () => void;
-  onPublish: () => void;
+  targetInfo: PublishPluginInfo | PublishWorkflowInfo;
+  targetType: SquareAgentTypeEnum.Workflow | SquareAgentTypeEnum.Plugin;
 }
 
 /**
  * 测试插件头部组件
  */
-const PluginHeader: React.FC<PluginHeaderProps> = ({ pluginInfo }) => {
+const PluginHeader: React.FC<PluginHeaderProps> = ({
+  targetInfo,
+  targetType,
+}) => {
   const handleBack = () => {
     history.back();
   };
-  const [collect, setCollect] = useState(pluginInfo?.collect);
-  const [count, setCount] = useState(pluginInfo?.statistics?.collectCount || 0);
+  const [collect, setCollect] = useState(targetInfo?.collect);
+  const [count, setCount] = useState(targetInfo?.statistics?.collectCount || 0);
 
-  const { publishUser } = pluginInfo;
+  const { publishUser } = targetInfo;
 
   // 开发智能体收藏
-  const { run: runCancelCollect } = useRequest(apiPublishedPluginUnCollect, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      message.success('取消收藏成功');
+  const { run: runCancelCollect } = useRequest(
+    targetType === SquareAgentTypeEnum.Plugin
+      ? apiPublishedPluginUnCollect
+      : apiPublishedWorkflowUnCollect,
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: () => {
+        message.success('取消收藏成功');
+      },
     },
-  });
+  );
   // 开发智能体收藏
-  const { run: runDevCollect } = useRequest(apiPublishedPluginCollect, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      message.success('收藏成功');
+  const { run: runDevCollect } = useRequest(
+    targetType === SquareAgentTypeEnum.Plugin
+      ? apiPublishedPluginCollect
+      : apiPublishedWorkflowCollect,
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: () => {
+        message.success('收藏成功');
+      },
     },
-  });
+  );
 
   // 收藏、取消收藏事件
   const handlerCollect = async () => {
-    const { id } = pluginInfo;
+    const { id } = targetInfo;
     if (collect) {
       await runCancelCollect(id);
       setCount(count - 1);
@@ -73,7 +90,7 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({ pluginInfo }) => {
       />
       <img
         className={cx(styles.logo)}
-        src={pluginInfo?.icon || (pluginImage as string)}
+        src={targetInfo?.icon || (pluginImage as string)}
         alt=""
       />
       <section
@@ -86,7 +103,7 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({ pluginInfo }) => {
         )}
       >
         <div className={cx('flex', styles['top-box'])}>
-          <h3 className={cx(styles.name)}>{pluginInfo?.name}</h3>
+          <h3 className={cx(styles.name)}>{targetInfo?.name}</h3>
         </div>
         <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
           <div className={cx('flex', 'items-center', styles['info-author'])}>
@@ -107,7 +124,7 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({ pluginInfo }) => {
             </ConditionRender>
           </div>
           <span className={cx(styles['update-time'])}>
-            发布于{moment(pluginInfo?.created).format('HH:mm')}
+            发布于{moment(targetInfo?.created).format('HH:mm')}
           </span>
         </div>
       </section>

@@ -123,6 +123,9 @@ interface ColumnDefines {
 export interface ITableData {
   columnDefines: ColumnDefines[];
   records: any[];
+  total: number;
+  size: number;
+  current: number;
 }
 
 // 新增和修改表数据
