@@ -8,6 +8,7 @@ import type {
   PluginTestParams,
   PluginTestResult,
   PublishPluginInfo,
+  PublishWorkflowInfo,
 } from '@/types/interfaces/plugin';
 import { PluginAnalysisOutputParams } from '@/types/interfaces/plugin';
 import type { RequestResponse } from '@/types/interfaces/request';
@@ -109,6 +110,14 @@ export async function apiPublishedPluginInfo(
     method: 'GET',
   });
 }
+// 查询已发布工作流信息
+export async function apiPublishedWorkflowInfo(
+  workflowId: number,
+): Promise<RequestResponse<PublishWorkflowInfo>> {
+  return request(`/api/published/workflow/${workflowId}`, {
+    method: 'GET',
+  });
+}
 
 // 查询插件历史配置信息接口
 export async function apiPluginConfigHistoryList(
@@ -133,6 +142,23 @@ export async function apiPublishedPluginUnCollect(
   pluginId: number,
 ): Promise<RequestResponse<null>> {
   return request(`/api/published/plugin/unCollect/${pluginId}`, {
+    method: 'POST',
+  });
+}
+// 收藏工作流接口
+export async function apiPublishedWorkflowCollect(
+  pluginId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/published/workflow/collect/${pluginId}`, {
+    method: 'POST',
+  });
+}
+
+// 取消收藏工作流接口
+export async function apiPublishedWorkflowUnCollect(
+  pluginId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/published/workflow/unCollect/${pluginId}`, {
     method: 'POST',
   });
 }
