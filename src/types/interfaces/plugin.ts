@@ -185,6 +185,24 @@ export interface PublishPluginInfo {
   statistics: AgentStatisticsInfo;
   collect: boolean;
 }
+// 已发布工作流信息
+export interface PublishWorkflowInfo {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  remark: string;
+  // 节点入参
+  inputArgs: BindConfigWithSub[];
+  // 节点出参
+  outputArgs: BindConfigWithSub[];
+  //插件示例输出
+  sampleOutput: string;
+  //发布者信息
+  publishUser: CreatorInfo;
+  statistics: AgentStatisticsInfo;
+  collect: boolean;
+}
 
 // 插件http头部组件
 export interface PluginHeaderProps {

@@ -1,0 +1,87 @@
+@import '@/styles/color';
+
+.container {
+  padding: 19px 16px;
+
+  .main-container {
+    flex: 1;
+    padding: 34px 37px;
+
+    .title {
+      font-family: 'Alimama Agile VF';
+      font-size: 14px;
+      font-weight: normal;
+      line-height: 22px;
+      letter-spacing: 0;
+      font-variation-settings: 'opsz' auto;
+      font-feature-settings: 'kern' on;
+      color: #393e4f;
+    }
+
+    .desc {
+      // height: 60px;
+      margin-top: 4px;
+      font-family: 'Alimama Agile VF';
+      font-size: 14px;
+      font-weight: normal;
+      line-height: 22px;
+      letter-spacing: 0;
+      font-variation-settings: 'opsz' auto;
+      font-feature-settings: 'kern' on;
+      color: #3d3d3d;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .request-select {
+      width: 98px;
+      margin-right: 16px;
+    }
+
+    .table-wrap {
+      border-radius: 5px;
+      border: 1px solid @BLANK19;
+      margin-top: 12px;
+      margin-bottom: 50px;
+
+      th {
+        font-family: 'Alimama Agile VF';
+        font-size: 12px;
+        font-weight: bold;
+        line-height: 22px;
+        letter-spacing: 0;
+        color: #666e84;
+        padding: 12px;
+      }
+
+      td {
+        font-family: 'Alimama Agile VF';
+        font-size: 14px;
+        font-weight: normal;
+        line-height: 22px;
+        letter-spacing: 0;
+        padding: 12px;
+        font-feature-settings: 'kern' on;
+        color: #3d3d3d;
+
+        &:nth-child(2) {
+          font-family: 'Alimama Agile VF';
+          font-size: 10px;
+          font-weight: normal;
+          line-height: 18px;
+          letter-spacing: 0;
+        }
+      }
+    }
+
+    .select {
+      width: 120px;
+    }
+  }
+
+  .empty-container {
+    background-color: white;
+    padding: 16px 20px;
+    margin: 16px 0;
+  }
+}
