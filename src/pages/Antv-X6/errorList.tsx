@@ -89,7 +89,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
                       trigger="hover" // 鼠标悬停触发
                       mouseEnterDelay={0.5} // 延迟 0.5 秒显示
                       placement="top" // 显示在顶部左侧
-                      open={item.error.length > 50 ? true : false} // 如果内容不超过 50 字符，不显示 Popover
+                      open={undefined} // 如果内容不超过 50 字符，不显示 Popover
                     >
                       <p className="error-text">{item.error}</p>
                     </Popover>

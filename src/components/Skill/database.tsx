@@ -1,6 +1,7 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { DataTableProps } from '@/types/interfaces/workflow';
 import { getImg } from '@/utils/workflow';
+import React, { useState } from 'react';
 import './index.less';
 const DataTable: React.FC<DataTableProps> = ({
   icon,
@@ -9,6 +10,7 @@ const DataTable: React.FC<DataTableProps> = ({
   showParams,
   params,
 }) => {
+  const [isExpand, setIsExpand] = useState(false); // 控制是否展开的状态
   return (
     <div>
       <div className="skill-item-style background-c9 dis-sb">
@@ -27,12 +29,38 @@ const DataTable: React.FC<DataTableProps> = ({
         </div>
       </div>
       {showParams && params && (
-        <div className="dis-wrap-sa margin-bottom">
-          {params?.map((item) => (
-            <div className="database-tag-style" key={item}>
-              {item}
+        <div>
+          {isExpand ? (
+            <div className="dis-wrap-sa margin-bottom">
+              {params?.map((item) => (
+                <div className="database-tag-style" key={item}>
+                  {item}
+                </div>
+              ))}
+              <div
+                onClick={() => setIsExpand(false)}
+                className="database-tag-style cursor-pointer"
+              >
+                {'收起'}
+              </div>
             </div>
-          ))}
+          ) : (
+            <div className="dis-left">
+              <div className="flex-1 dis-left dis-no-wrap">
+                {params?.map((item) => (
+                  <div className="database-tag-style" key={item}>
+                    {item}
+                  </div>
+                ))}
+              </div>
+              <div
+                onClick={() => setIsExpand(true)}
+                className="database-tag-style cursor-pointer"
+              >
+                ...
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
