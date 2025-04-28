@@ -30,7 +30,7 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
       {renderDetailItem('名称', node?.name as string)}
       {renderDetailItem('耗时', time)}
       {renderDetailItem(
-        '请求发起时间',
+        '发起时间',
         moment(node?.startTime).format('YYYY-MM-DD HH:mm'),
       )}
       {renderDetailItem(

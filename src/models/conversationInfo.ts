@@ -22,6 +22,7 @@ import type {
   ConversationChatSuggestParams,
   ConversationInfo,
   MessageInfo,
+  MessageQuestionExtInfo,
   ProcessingInfo,
 } from '@/types/interfaces/conversationInfo';
 import {
@@ -38,7 +39,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 export default () => {
   // 会话信息
-  const [conversationInfo, setConversationInfo] = useState<ConversationInfo>();
+  const [conversationInfo, setConversationInfo] =
+    useState<ConversationInfo | null>();
   // 是否用户问题建议
   const [isSuggest, setIsSuggest] = useState<boolean>(true);
   // 会话信息
@@ -62,7 +64,9 @@ export default () => {
     useState<boolean>(false);
   // 添加一个 ref 来控制是否允许自动滚动
   const allowAutoScrollRef = useRef<boolean>(true);
-
+  // 是否显示点击下滚按钮
+  const [showScrollBtn, setShowScrollBtn] = useState<boolean>(false);
+  // 历史记录
   const { runHistory } = useModel('conversationHistory');
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
@@ -108,9 +112,27 @@ export default () => {
       setConversationInfo(data);
       // 是否开启用户问题建议
       setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
-      setMessageList(data?.messageList || []);
-      // 开场白预置问题
-      setChatSuggestList(data?.agent?.openingGuidQuestions || []);
+      // 消息列表
+      const _messageList = data?.messageList || [];
+      // 问题建议列表
+      let suggestList: string[] = [];
+      if (_messageList?.length) {
+        setMessageList(_messageList || []);
+        // 最后一条消息为"问答"时，获取问题建议
+        const lastMessage = _messageList?.[_messageList.length - 1];
+        if (
+          lastMessage.type === MessageModeEnum.QUESTION &&
+          lastMessage.ext?.length
+        ) {
+          suggestList = lastMessage.ext.map((item) => item.content) || [];
+        }
+      }
+      if (suggestList?.length) {
+        setChatSuggestList(suggestList);
+      } else {
+        // 开场白预置问题
+        setChatSuggestList(data?.agent?.openingGuidQuestions || []);
+      }
       handleScrollBottom();
     },
     onError: () => {
@@ -184,6 +206,7 @@ export default () => {
           ) {
             // 自动展开展示台
             setShowType(EditAgentShowType.Show_Stand);
+            // 卡片列表
             setCardList((cardList) => {
               // 竖向列表
               if (
@@ -213,8 +236,9 @@ export default () => {
             });
           }
         }
+        // MESSAGE事件
         if (eventType === ConversationEventTypeEnum.MESSAGE) {
-          const { text, type } = data;
+          const { text, type, ext } = data;
           // 思考think
           if (type === MessageModeEnum.THINK) {
             newMessage = {
@@ -222,6 +246,21 @@ export default () => {
               think: `${currentMessage.think}${text}`,
               status: MessageStatusEnum.Incomplete,
             };
+          }
+          // 问答
+          else if (type === MessageModeEnum.QUESTION) {
+            newMessage = {
+              ...currentMessage,
+              text: `${currentMessage.text}${text}`,
+              status: MessageStatusEnum.Incomplete,
+            };
+            if (ext?.length) {
+              // 问题建议
+              setChatSuggestList(
+                ext.map((extItem: MessageQuestionExtInfo) => extItem.content) ||
+                  [],
+              );
+            }
           } else {
             newMessage = {
               ...currentMessage,
@@ -230,6 +269,7 @@ export default () => {
             };
           }
         }
+        // FINAL_RESULT事件
         if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
           newMessage = {
             ...currentMessage,
@@ -245,11 +285,10 @@ export default () => {
           }
           // 是否开启问题建议,可用值:Open,Close
           if (isSuggest) {
-            // 滚动到底部
-            handleScrollBottom();
             runChatSuggest(params as ConversationChatSuggestParams);
           }
         }
+        // ERROR事件
         if (eventType === ConversationEventTypeEnum.ERROR) {
           newMessage = {
             ...currentMessage,
@@ -261,8 +300,6 @@ export default () => {
         return list;
       });
     }, 200);
-    // 滚动到底部
-    handleScrollBottom();
   };
 
   // 会话处理
@@ -284,6 +321,8 @@ export default () => {
       body: params,
       onMessage: (res: ConversationChatResponse) => {
         handleChangeMessageList(params, res, currentMessageId);
+        // 滚动到底部
+        handleScrollBottom();
       },
       onClose: () => {
         // 第一次发送消息后更新主题
@@ -328,6 +367,18 @@ export default () => {
       }
       abortConnectionRef.current = null;
     }
+  };
+
+  // 重置初始化
+  const resetInit = () => {
+    handleClearSideEffect();
+    setShowType(EditAgentShowType.Hide);
+    setCardList([]);
+    setMessageList([]);
+    setConversationInfo(null);
+    needUpdateTopicRef.current = true;
+    allowAutoScrollRef.current = true;
+    setShowScrollBtn(false);
   };
 
   // 发送消息
@@ -388,6 +439,8 @@ export default () => {
     });
     // 允许滚动
     allowAutoScrollRef.current = true;
+    // 隐藏点击下滚按钮
+    setShowScrollBtn(false);
     // 滚动
     handleScrollBottom();
     // 会话请求参数
@@ -413,7 +466,6 @@ export default () => {
   return {
     setIsSuggest,
     conversationInfo,
-    setConversationInfo,
     messageList,
     setMessageList,
     requestId,
@@ -433,10 +485,10 @@ export default () => {
     allowAutoScrollRef,
     scrollTimeoutRef,
     showType,
-    setShowType,
-    needUpdateTopicRef,
     handleClearSideEffect,
     cardList,
-    setCardList,
+    showScrollBtn,
+    setShowScrollBtn,
+    resetInit,
   };
 };
