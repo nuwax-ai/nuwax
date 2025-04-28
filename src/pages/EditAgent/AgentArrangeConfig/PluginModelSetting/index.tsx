@@ -5,7 +5,11 @@ import {
   apiAgentComponentTableUpdate,
   apiAgentComponentWorkflowUpdate,
 } from '@/services/agentConfig';
-import { AgentComponentTypeEnum, InvokeTypeEnum } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  DefaultSelectedEnum,
+  InvokeTypeEnum,
+} from '@/types/enums/agent';
 import { PluginSettingEnum } from '@/types/enums/space';
 import {
   AgentCardInfo,
@@ -15,8 +19,14 @@ import {
   AgentComponentWorkflowUpdateParams,
   BindConfigWithSub,
 } from '@/types/interfaces/agent';
-import type { PluginModelSettingProps } from '@/types/interfaces/agentConfig';
-import { CardBindConfig } from '@/types/interfaces/cardInfo';
+import type {
+  InvokeTypeSaveParams,
+  PluginModelSettingProps,
+} from '@/types/interfaces/agentConfig';
+import {
+  CardArgsBindConfigInfo,
+  CardBindConfig,
+} from '@/types/interfaces/cardInfo';
 import { RequestResponse } from '@/types/interfaces/request';
 import { CloseOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
@@ -44,8 +54,6 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
     PluginSettingEnum.Params,
   );
   const [componentInfo, setComponentInfo] = useState<AgentComponentInfo>();
-  // 当前卡片信息
-  // const [cardInfo, setCardInfo] = useState<AgentCardInfo>();
   const [loading, setLoading] = useState<boolean>(false);
   // 卡片列表
   const [agentCardList, setAgentCardList] = useState<AgentCardInfo[]>([]);
@@ -127,19 +135,17 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
     });
   };
 
-  // 保存设置
-  const onSaveSet = async (
-    attr: string,
-    value: BindConfigWithSub[] | InvokeTypeEnum | CardBindConfig,
-  ) => {
-    const id = componentInfo?.id || 0;
-    const params = {
-      id,
-      bindConfig: {
-        ...componentInfo?.bindConfig,
-        [attr]: value,
-      },
+  // 保存动作
+  const handleSaveAction = async (params: {
+    id: number;
+    bindConfig: {
+      [key: string]:
+        | BindConfigWithSub[]
+        | CardArgsBindConfigInfo[]
+        | InvokeTypeEnum
+        | DefaultSelectedEnum;
     };
+  }) => {
     // 插件
     if (componentInfo?.type === AgentComponentTypeEnum.Plugin) {
       await runPluginUpdate(params as AgentComponentPluginUpdateParams);
@@ -152,7 +158,59 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
     if (componentInfo?.type === AgentComponentTypeEnum.Table) {
       await runTableUpdate(params as AgentComponentTableUpdateParams);
     }
+  };
+
+  // 保存设置
+  const onSaveSet = async (
+    attr: string,
+    value: BindConfigWithSub[] | CardBindConfig,
+  ) => {
+    const id = componentInfo?.id || 0;
+    const params = {
+      id,
+      bindConfig: {
+        ...componentInfo?.bindConfig,
+        [attr]: value,
+      },
+    };
+    await handleSaveAction(params);
     onSetSuccess(id, attr, value);
+    message.success('保存成功');
+  };
+
+  // 保存方法调用类型
+  const onSaveInvokeType = async (data: InvokeTypeSaveParams) => {
+    const id = componentInfo?.id || 0;
+    const params = {
+      id,
+      bindConfig: {
+        ...componentInfo?.bindConfig,
+        ...data,
+      },
+    };
+    await handleSaveAction(params);
+    // 更新当前组件信息
+    setComponentInfo((info) => {
+      if (info && 'bindConfig' in info) {
+        info.bindConfig = {
+          ...info.bindConfig,
+          ...data,
+        };
+      }
+      return info;
+    });
+    // 更新智能体模型组件列表
+    setAgentComponentList((list: AgentComponentInfo[]) => {
+      return list.map((item) => {
+        if (item.id === id) {
+          item.bindConfig = {
+            ...item.bindConfig,
+            ...data,
+          };
+        }
+        return item;
+      });
+    });
     message.success('保存成功');
   };
 
@@ -170,7 +228,8 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
         return (
           <InvokeType
             invokeType={componentInfo?.bindConfig?.invokeType}
-            onSaveSet={onSaveSet}
+            defaultSelected={componentInfo?.bindConfig?.defaultSelected}
+            onSaveSet={onSaveInvokeType}
           />
         );
       case PluginSettingEnum.Card_Bind:
