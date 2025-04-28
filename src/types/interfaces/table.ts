@@ -11,6 +11,7 @@ declare global {
     dataIndex: string;
     type: 'checkbox' | 'tag' | 'text' | 'date' | 'select' | 'time';
     map?: AnyObject;
+    width?: number;
     editable?: boolean;
     edit?: boolean;
     options?: SelectOptions[];

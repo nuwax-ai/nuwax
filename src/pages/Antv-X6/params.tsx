@@ -537,3 +537,20 @@ export const options = [
   { label: '为空', value: 'IS_NULL', displayValue: '∅' },
   { label: '不为空', value: 'NOT_NULL', displayValue: '!∅' },
 ];
+
+export const tableOptions = [
+  { label: '等于', value: 'EQUAL', displayValue: '=' },
+  { label: '不等于', value: 'NOT_EQUAL', displayValue: '≠' },
+  { label: '大于', value: 'GREATER_THAN', displayValue: '>' },
+  {
+    label: '大于等于',
+    value: 'GREATER_THAN_OR_EQUAL',
+    displayValue: '≥',
+  },
+  { label: '小于', value: 'LESS_THAN', displayValue: '<' },
+  { label: '小于等于', value: 'LESS_THAN_OR_EQUAL', displayValue: '≤' },
+  { label: '属于', value: 'IN', displayValue: '⊃' },
+  { label: '不属于', value: 'NOT_IN', displayValue: '⊅' },
+  { label: '为空', value: 'IS_NULL', displayValue: '∅' },
+  { label: '不为空', value: 'NOT_NULL', displayValue: '!∅' },
+];

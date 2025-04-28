@@ -244,6 +244,13 @@ async function exportTableData(id: number): Promise<Blob> {
   });
 }
 
+// 清除所有数据
+async function clearAllData(tableId: number): Promise<RequestResponse<null>> {
+  return request(`/api/compose/db/table/clearBusinessData/${tableId}`, {
+    method: 'GET',
+  });
+}
+
 export default {
   getList,
   addTask,
@@ -257,4 +264,5 @@ export default {
   clearTableData,
   exportTableData,
   modifyTableStructure,
+  clearAllData,
 };

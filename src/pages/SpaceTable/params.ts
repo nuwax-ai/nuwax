@@ -22,6 +22,7 @@ export const mockColumns = [
       { label: 'Number', value: 3 },
       { label: 'Boolean', value: 4 },
       { label: 'Date', value: 5 },
+      { label: 'String', value: 7 },
     ],
     map: {
       1: 'String',
@@ -30,6 +31,27 @@ export const mockColumns = [
       4: 'boolean',
       5: 'Date',
       6: 'Number',
+      7: 'String',
+    },
+  },
+  {
+    title: '数据长度',
+    dataIndex: 'dataLength',
+    type: 'select' as const,
+    editable: true,
+    width: 140,
+    options: [
+      { label: '短文本（0-255）', value: 1 },
+      { label: '长文本（0-16M）', value: 7 },
+    ],
+    map: {
+      1: '短文本（0-255）',
+      2: '--',
+      3: '--',
+      4: '--',
+      5: '--',
+      6: '--',
+      7: '长文本（0-16M）',
     },
   },
   {
@@ -38,12 +60,14 @@ export const mockColumns = [
     type: 'checkbox' as const,
     editable: true,
     edit: true,
+    width: 140,
   },
   {
     title: '是否唯一',
     dataIndex: 'uniqueFlag',
     type: 'checkbox' as const,
     editable: true,
+    width: 140,
   },
   {
     title: '是否启用',
@@ -51,6 +75,7 @@ export const mockColumns = [
     type: 'checkbox' as const,
     editable: true,
     edit: true,
+    width: 140,
   },
   {
     title: '默认值',

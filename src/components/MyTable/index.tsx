@@ -25,7 +25,7 @@ const MyTable: React.FC<MyTableProp> = ({
         dataSource={tableData}
         rowKey={rowKey}
         scroll={{
-          x: true,
+          x: 'max-content',
           y:
             (pagination?.pageSize || 10) * 54 > scrollHeight - 114
               ? scrollHeight - 114
@@ -47,6 +47,7 @@ const MyTable: React.FC<MyTableProp> = ({
           <Table.Column
             title={'序号'}
             dataIndex="serial"
+            width={70}
             render={(_, __, index) => {
               const current = pagination?.current || 1;
               const pageSize = pagination?.pageSize || 10;
@@ -56,21 +57,25 @@ const MyTable: React.FC<MyTableProp> = ({
         )}
         {/* 显示的列 */}
 
-        {columns.map((item) => (
+        {columns.map((item, index) => (
           <Table.Column
             key={item.dataIndex}
             title={item.title}
+            fixed={actionColumnFixed && index === 0 ? 'left' : undefined} // 设置为固定列
+            width={item.title.length * 26} // 假设每个字符宽度为 16px
             dataIndex={item.dataIndex}
             render={(value, record) => {
               switch (item.type) {
                 case 'checkbox':
                   return <Checkbox checked={value} disabled={!record.isNew} />;
                 case 'time':
-                  return new Date(value).toLocaleString('zh-CN', {
-                    hour12: false,
-                  }); // 转换为 '2024-08-07 16:24:27' 格式
+                  return value
+                    ? new Date(value).toLocaleString('zh-CN', {
+                        hour12: false,
+                      })
+                    : '--'; // 转换为 '2024-08-07 16:24:27' 格式
                 default:
-                  return value; // 其他类型的单元格直接返回原始值，不做任何处理
+                  return value || '--'; // 其他类型的单元格直接返回原始值，不做任何处理
               }
             }}
           />
@@ -81,6 +86,7 @@ const MyTable: React.FC<MyTableProp> = ({
             title={'操作'}
             dataIndex="action"
             width={actionColumnWidth}
+            className={'table-action-column-fiexd'}
             fixed={actionColumnFixed ? 'right' : undefined} // 设置为固定列
             render={(_, record) => {
               return (
@@ -100,6 +106,7 @@ const MyTable: React.FC<MyTableProp> = ({
                 </Space>
               );
             }}
+            onCell={() => ({ style: { zIndex: 100 } })}
           ></Table.Column>
         )}
       </Table>
