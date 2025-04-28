@@ -29,6 +29,7 @@ export const mockColumns = [
       3: 'Number',
       4: 'boolean',
       5: 'Date',
+      6: 'Number',
     },
   },
   {

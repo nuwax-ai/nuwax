@@ -11,13 +11,26 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const CodeOptimizeModal: React.FC<
-  ModalProps & {
-    codeLanguage?: string;
-    onReplace?: (text?: string) => void;
-    defaultValue?: string;
-  }
-> = ({ title, open, onCancel, onReplace, codeLanguage }) => {
+export type OptimizeType = 'prompt' | 'code' | 'sql';
+
+export interface AssistantOptimizeModalProps extends ModalProps {
+  optimizeType: OptimizeType;
+  onReplace: (text?: string) => void;
+  defaultValue?: string;
+  codeLanguage?: string;
+  tableId?: number;
+}
+
+const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
+  open,
+  onCancel,
+  onReplace,
+  defaultValue,
+  optimizeType,
+  codeLanguage,
+  title,
+  tableId,
+}) => {
   const [message, setMessage] = useState<string>('');
   const {
     messageList,
@@ -32,8 +45,6 @@ const CodeOptimizeModal: React.FC<
   useEffect(() => {
     setId(uuidv4());
   }, []);
-
-  // 智能体会话问题建议
 
   // 在组件挂载时添加滚动事件监听器
   useEffect(() => {
@@ -57,13 +68,15 @@ const CodeOptimizeModal: React.FC<
     }
   }, []);
 
-  // 点击发送事件
-  const handleSendMessage = async () => {
+  const handleSendMessage = async (text?: string) => {
     setMessageList([]);
-
-    if (message) {
+    if (text) {
       setMessage('');
-      onMessageSend(id, message, 'code', codeLanguage);
+      onMessageSend(id, text, optimizeType, codeLanguage);
+    } else if (message) {
+      setMessage('');
+      console.log('message', message, optimizeType, tableId);
+      onMessageSend(id, message, optimizeType, codeLanguage, tableId);
     }
   };
 
@@ -84,6 +97,17 @@ const CodeOptimizeModal: React.FC<
       // 置空
       setMessage('');
     }
+  };
+
+  // ... existing handlePressEnter code ...
+
+  const getPlaceholder = () => {
+    const params = {
+      prompt: '请描述你的提示词需求，比如角色定义、技能要求等',
+      code: '请描述你的具体业务需求，逻辑尽量描述详细',
+      sql: '请输入你的SQL查询需求，逻辑尽量描述详细',
+    };
+    return params[optimizeType];
   };
 
   return (
@@ -118,7 +142,7 @@ const CodeOptimizeModal: React.FC<
           <div />
         )}
       </div>
-      {messageList?.length > 0 ? (
+      {messageList?.length > 0 && (
         <div className={cx('flex')}>
           <Button
             className={cx(styles['replace-btn'], styles['btn'])}
@@ -144,8 +168,22 @@ const CodeOptimizeModal: React.FC<
             退出
           </Button>
         </div>
-      ) : (
-        <div />
+      )}
+      {messageList?.length > 0 && optimizeType === 'prompt' && (
+        <Button
+          type="default"
+          className={cx(styles['btn'])}
+          onClick={() =>
+            // 如果有默认文本就优化默认文本
+            handleSendMessage(
+              defaultValue
+                ? defaultValue
+                : '一个能为你提供工作帮助和建议的智能机器人',
+            )
+          }
+        >
+          自动优化
+        </Button>
       )}
       <div className={cx(styles.footer, 'flex', 'items-center')}>
         <div
@@ -156,7 +194,7 @@ const CodeOptimizeModal: React.FC<
             onChange={(e) => setMessage(e.target.value)}
             rootClassName={styles.input}
             onPressEnter={handlePressEnter}
-            placeholder="请描述你的具体业务需求，逻辑尽量描述详细"
+            placeholder={getPlaceholder()}
             autoSize={{ minRows: 1, maxRows: 3 }}
           />
 
@@ -172,4 +210,4 @@ const CodeOptimizeModal: React.FC<
   );
 };
 
-export default CodeOptimizeModal;
+export default AssistantOptimizeModal;

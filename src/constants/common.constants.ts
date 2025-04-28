@@ -12,6 +12,9 @@ export const PROMPT_OPTIMIZE_URL = `${process.env.BASE_URL}/api/assistant/prompt
 
 // 代码优化地址
 export const CODE_OPTIMIZE_URL = `${process.env.BASE_URL}/api/assistant/code/optimize`;
+
+// Sql优化地址
+export const SQL_OPTIMIZE_URL = `${process.env.BASE_URL}/api/assistant/sql/optimize`;
 // 文档地址
 export const DOCUMENT_URL = 'https://nlp-book.swufenlp.group';
 

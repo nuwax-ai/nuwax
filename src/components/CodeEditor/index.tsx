@@ -137,6 +137,7 @@ const CodeEditor: React.FC<Props> = ({
       />
       <CodeOptimizeModal
         id={agentId}
+        title="代码助手"
         open={open}
         codeLanguage={codeLanguage}
         onCancel={() => {
