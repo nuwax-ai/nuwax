@@ -93,7 +93,8 @@ const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
       setMessage(enterValue);
     } else if (e.nativeEvent.keyCode === 13 && !!value.trim()) {
       // enter事件
-      onMessageSend(id, message, 'code', codeLanguage);
+
+      onMessageSend(id, message, optimizeType, codeLanguage, tableId);
       // 置空
       setMessage('');
     }

@@ -29,12 +29,15 @@ export const ExpandableInputTextarea: React.FC<
             <ICON_OPTIMIZE
               className="cursor-pointer"
               onClick={() => onOptimizeClick()}
-              style={{ marginLeft: '10px' }}
             />
           )}
           {/* 是否有展开 */}
           {onExpand && (
-            <ExpandAltOutlined onClick={() => setIsExpanded(true)} />
+            <ExpandAltOutlined
+              className="cursor-pointer"
+              style={{ marginLeft: '10px' }}
+              onClick={() => setIsExpanded(true)}
+            />
           )}
         </div>
       </div>

@@ -155,7 +155,7 @@ async function addTask(data: IAddTask): Promise<RequestResponse<number>> {
 
 // 修改表单的基本信息
 async function modifyTask(data: IAddTask): Promise<RequestResponse<number>> {
-  return request(`/api/compose/db/table/update`, {
+  return request(`/api/compose/db/table/updateTableDefinition`, {
     method: 'POST',
     data,
   });
@@ -234,7 +234,18 @@ async function clearTableData(id: number): Promise<RequestResponse<null>> {
     method: 'POST',
   });
 }
-
+// 导入表数据
+async function importTableData(
+  id: number,
+  file: File,
+): Promise<RequestResponse<null>> {
+  const formData = new FormData();
+  formData.append('file', file); // 假设文件名为 'file'，根据实际情况调整
+  return request(`/api/compose/db/table/importExcel/${id}`, {
+    method: 'POST',
+    data: formData,
+  });
+}
 // 导出表数据
 async function exportTableData(id: number): Promise<Blob> {
   return request(`/api/compose/db/table/exportExcel/${id}`, {
@@ -265,4 +276,5 @@ export default {
   exportTableData,
   modifyTableStructure,
   clearAllData,
+  importTableData,
 };

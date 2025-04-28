@@ -10,12 +10,14 @@ export const mockColumns = [
     dataIndex: 'fieldDescription',
     type: 'text' as const,
     editable: true,
+    width: 180,
   },
   {
     title: '参数类型',
     dataIndex: 'fieldType',
     type: 'select' as const,
     editable: true,
+    width: 140,
     options: [
       { label: 'String', value: 1 },
       { label: 'Integer', value: 2 },

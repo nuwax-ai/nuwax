@@ -9,6 +9,11 @@ export const testRunList = [
   'Workflow',
   'DocumentExtraction',
   'Knowledge',
+  'TableSQL',
+  'TableDataQuery',
+  'TableDataUpdate',
+  'TableDataDelete',
+  'TableDataAdd',
 ];
 
 export const branchTypeMap = {

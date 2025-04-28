@@ -251,21 +251,23 @@ const Workflow: React.FC = () => {
             // 这里是在添加连线
             graphRef.current.updateNode(params.id, params);
           }
-          if (config.id === foldWrapItemRef.current.id) {
-            setFoldWrapItem(params);
-          }
         }
-
         if (config.type === 'Loop') {
           // 如果传递的是boolean，那么证明要更新这个节点
           getNodeConfig(Number(config.id));
         }
-      } else {
-        if (config.id === foldWrapItemRef.current.id) {
-          // 如果传递的是boolean，那么证明要更新这个节点
-          getNodeConfig(Number(config.id));
-        }
       }
+
+      if (config.id === foldWrapItemRef.current.id) {
+        setFoldWrapItem(params);
+      }
+      // else {
+      //   console.log('更新成功',config.id,foldWrapItemRef.current.id);
+      //   if (config.id === foldWrapItemRef.current.id) {
+      //     // 如果传递的是boolean，那么证明要更新这个节点
+      //     getNodeConfig(Number(config.id));
+      //   }
+      // }
       changeUpdateTime();
     }
     // setIsUpdate(false)

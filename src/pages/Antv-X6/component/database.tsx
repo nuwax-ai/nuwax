@@ -269,7 +269,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
           <ExpandableInputTextarea
             title="SQL"
             inputFieldName="sql"
-            // onExpand
+            onExpand
             onOptimize
             onOptimizeClick={onOpenCreated}
             placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
@@ -312,7 +312,9 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
           if (text.includes('```')) {
             text = text.replace(/```/g, '');
           }
-          form.setFieldsValue({ sql: text || '' });
+          // 只取第二个SQL语句
+          const finalSql = text.replace('sql', '');
+          form.setFieldsValue({ sql: finalSql || '' });
           setIsModified(true);
         }}
         optimizeType="sql"

@@ -190,9 +190,7 @@ const MyTable: React.FC<MyTableProp> = ({
                           </Form.Item>
                         );
                       }
-                      return item.type === 'checkbox' ? (
-                        <Checkbox checked={value} disabled />
-                      ) : (
+                      return (
                         <span>
                           {item.map
                             ? item.map[value]
