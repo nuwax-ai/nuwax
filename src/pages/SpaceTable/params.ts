@@ -10,6 +10,7 @@ export const mockColumns = [
     dataIndex: 'fieldDescription',
     type: 'text' as const,
     editable: true,
+    edit: true,
     width: 180,
   },
   {
@@ -57,7 +58,7 @@ export const mockColumns = [
     placeholder: '参数类型为string才会生效',
   },
   {
-    title: '可为空',
+    title: '是否必须',
     dataIndex: 'nullableFlag',
     type: 'checkbox' as const,
     editable: true,
@@ -84,6 +85,7 @@ export const mockColumns = [
     dataIndex: 'defaultValue',
     type: 'text' as const,
     editable: true,
+    edit: true,
     defaultValue: '系统变量',
   },
 ];

@@ -188,25 +188,30 @@ const MyTable: React.FC<MyTableProp> = ({
                             }
                             initialValue={record[item.dataIndex]}
                           >
-                            {getItemType(
-                              item.type,
-                              item.title,
-                              item.options,
-                              item.placeholder,
-                            )}
+                            {getItemType(item.type, item.title, item.options)}
                           </Form.Item>
                         );
+                      } else {
+                        if (item.type === 'checkbox') {
+                          return (
+                            <Checkbox
+                              checked={value}
+                              disabled={!record.isNew}
+                            />
+                          );
+                        } else {
+                          return (
+                            <span>
+                              {item.map
+                                ? item.map[value] || '--'
+                                : value ||
+                                  (!value && record?.systemFieldFlag
+                                    ? item.defaultValue
+                                    : '')}
+                            </span>
+                          );
+                        }
                       }
-                      return (
-                        <span>
-                          {item.map
-                            ? item.map[value] || '--'
-                            : value ||
-                              (!value && record?.systemFieldFlag
-                                ? item.defaultValue
-                                : '')}
-                        </span>
-                      );
                     }}
                   />
                 ))}

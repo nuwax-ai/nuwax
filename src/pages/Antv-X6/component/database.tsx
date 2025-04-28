@@ -74,7 +74,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
         </div>
       )}
       {/* 条件 */}
-      {type !== 'TableDataDelete' && type !== 'TableDataUpdate' && (
+      {type !== 'TableDataAdd' && type !== 'TableSQL' && (
         <div className="node-item-style">
           <p className="node-title-style">
             {type === 'TableDataDelete'
