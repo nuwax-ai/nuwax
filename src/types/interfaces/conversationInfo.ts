@@ -147,6 +147,14 @@ export interface ProcessingInfo {
   type: AgentComponentTypeEnum;
 }
 
+// 消息问答扩展信息
+export interface MessageQuestionExtInfo {
+  uuid: string;
+  index: string;
+  content: string;
+  nextNodeIds: string;
+}
+
 // 会话消息列表，会话列表查询时不会返回该字段值
 export interface ChatMessageDto {
   // 消息ID
@@ -163,6 +171,9 @@ export interface ChatMessageDto {
   time: string;
   // 消息附件
   attachments?: AttachmentFile[];
+  // 消息问答扩展信息
+  ext?: MessageQuestionExtInfo[];
+  finished?: boolean;
   metadata?: unknown;
   // 可用值:USER,ASSISTANT,SYSTEM,TOOL
   messageType: MessageTypeEnum;

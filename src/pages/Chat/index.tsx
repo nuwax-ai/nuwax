@@ -3,7 +3,6 @@ import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
 import { MessageTypeEnum } from '@/types/enums/agent';
-import { EditAgentShowType } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   MessageInfo,
@@ -12,7 +11,8 @@ import type {
 import { addBaseTarget } from '@/utils/common';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import { throttle } from 'lodash';
+import React, { useEffect, useMemo } from 'react';
 import { useLocation, useModel, useParams } from 'umi';
 import styles from './index.less';
 import ShowArea from './ShowArea';
@@ -29,14 +29,11 @@ const Chat: React.FC = () => {
   // 附加state
   const message = location.state?.message;
   const files = location.state?.files;
-  const [visible, setVisible] = useState<boolean>(false);
 
   const {
     conversationInfo,
-    setConversationInfo,
     loadingConversation,
     messageList,
-    setMessageList,
     chatSuggestList,
     runAsync,
     isLoadingConversation,
@@ -46,10 +43,9 @@ const Chat: React.FC = () => {
     messageViewRef,
     allowAutoScrollRef,
     scrollTimeoutRef,
-    needUpdateTopicRef,
-    handleClearSideEffect,
-    setCardList,
-    setShowType,
+    showScrollBtn,
+    setShowScrollBtn,
+    resetInit,
   } = useModel('conversationInfo');
 
   // 角色信息（名称、头像）
@@ -81,25 +77,19 @@ const Chat: React.FC = () => {
             clearTimeout(scrollTimeoutRef.current);
             scrollTimeoutRef.current = null;
           }
-          setVisible(true);
+          setShowScrollBtn(true);
         } else {
           // 当用户滚动到底部时，重新允许自动滚动
           allowAutoScrollRef.current = true;
-          setVisible(false);
+          setShowScrollBtn(false);
         }
       };
 
-      messageView.addEventListener('scroll', handleScroll);
+      messageView.addEventListener('wheel', throttle(handleScroll, 300));
       // 组件卸载时移除滚动事件监听器
       return () => {
-        messageView.removeEventListener('scroll', handleScroll);
-        setShowType(EditAgentShowType.Hide);
-        setCardList([]);
-        handleClearSideEffect();
-        setMessageList([]);
-        setConversationInfo(null);
-        needUpdateTopicRef.current = true;
-        allowAutoScrollRef.current = true;
+        messageView.removeEventListener('wheel', throttle(handleScroll, 300));
+        resetInit();
       };
     }
   }, []);
@@ -143,7 +133,7 @@ const Chat: React.FC = () => {
       top: messageViewRef.current?.scrollHeight,
       behavior: 'smooth',
     });
-    setVisible(false);
+    setShowScrollBtn(false);
   };
 
   return (
@@ -190,7 +180,7 @@ const Chat: React.FC = () => {
         <ChatInputHome
           className={cx(styles['chat-input'])}
           onEnter={handleMessageSend}
-          visible={visible}
+          visible={showScrollBtn}
           onScrollBottom={onScrollBottom}
         />
       </div>

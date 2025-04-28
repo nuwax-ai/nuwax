@@ -85,8 +85,6 @@ const PromptOptimizeModal: React.FC<
     }
   };
 
-  console.log(messageList);
-
   return (
     <Modal
       title={' '}

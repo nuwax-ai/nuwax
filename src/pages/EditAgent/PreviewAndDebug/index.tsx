@@ -3,7 +3,6 @@ import ChatInput from '@/components/ChatInput';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
 import useConversation from '@/hooks/useConversation';
-import { EditAgentShowType } from '@/types/enums/space';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
@@ -12,13 +11,8 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { throttle } from 'lodash';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 import PreviewAndDebugHeader from './PreviewAndDebugHeader';
@@ -35,10 +29,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
 }) => {
   // 会话ID
   const devConversationIdRef = useRef<number>(0);
-  const [visible, setVisible] = useState<boolean>(false);
 
   const {
-    setConversationInfo,
     messageList,
     setMessageList,
     chatSuggestList,
@@ -51,10 +43,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     messageViewRef,
     allowAutoScrollRef,
     scrollTimeoutRef,
-    needUpdateTopicRef,
     handleClearSideEffect,
-    setCardList,
-    setShowType,
+    showScrollBtn,
+    setShowScrollBtn,
+    resetInit,
   } = useModel('conversationInfo');
   // 创建智能体会话
   const { runAsyncConversationCreate } = useConversation();
@@ -87,25 +79,19 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
             clearTimeout(scrollTimeoutRef.current);
             scrollTimeoutRef.current = null;
           }
-          setVisible(true);
+          setShowScrollBtn(true);
         } else {
           // 当用户滚动到底部时，重新允许自动滚动
           allowAutoScrollRef.current = true;
-          setVisible(false);
+          setShowScrollBtn(false);
         }
       };
 
-      messageView.addEventListener('scroll', handleScroll);
+      messageView.addEventListener('wheel', throttle(handleScroll, 300));
       // 组件卸载时移除滚动事件监听器
       return () => {
-        messageView.removeEventListener('scroll', handleScroll);
-        setShowType(EditAgentShowType.Hide);
-        setCardList([]);
-        handleClearSideEffect();
-        setMessageList([]);
-        setConversationInfo(null);
-        needUpdateTopicRef.current = true;
-        allowAutoScrollRef.current = true;
+        messageView.removeEventListener('wheel', throttle(handleScroll, 300));
+        resetInit();
       };
     }
   }, []);
@@ -157,7 +143,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       top: messageViewRef.current?.scrollHeight,
       behavior: 'smooth',
     });
-    setVisible(false);
+    setShowScrollBtn(false);
   };
 
   return (
@@ -215,7 +201,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
           disabled={!messageList?.length}
           onEnter={handleMessageSend}
           onClear={handleClear}
-          visible={visible}
+          visible={showScrollBtn}
           onScrollBottom={onScrollBottom}
         />
       </div>
