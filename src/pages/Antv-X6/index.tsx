@@ -314,7 +314,6 @@ const Workflow: React.FC = () => {
   // 点击组件，显示抽屉
   const changeDrawer = async (child: ChildNode | null) => {
     // 先完全重置表单
-    form.resetFields();
     if (child && child.type !== 'Start') {
       setTestRun(false);
       setTestRunResult('');
@@ -330,6 +329,7 @@ const Workflow: React.FC = () => {
         return false;
       });
     }
+    form.resetFields();
     setFoldWrapItem((prev) => {
       if (prev.id === 0 && child === null) {
         return prev;
