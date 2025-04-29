@@ -100,7 +100,7 @@ const SpaceTable = () => {
       editTableRef.current.handleAddRow({
         nullableFlag: true,
         enabledFlag: true,
-        fieldType: 2,
+        fieldType: 1,
         dataLength: 1,
       });
     }
