@@ -3,6 +3,8 @@ import type {
   ConversationEventTypeEnum,
   MessageModeEnum,
   MessageTypeEnum,
+  TaskStatus,
+  TaskTypeEnum,
 } from '@/types/enums/agent';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { MessageStatusEnum } from '@/types/enums/common';
@@ -13,6 +15,7 @@ import type {
   AgentManualComponentInfo,
   AgentSelectedComponentInfo,
   AgentStatisticsInfo,
+  BindConfigWithSub,
   CreatorInfo,
 } from '@/types/interfaces/agent';
 import { CardBindConfig, CardDataInfo } from '@/types/interfaces/cardInfo';
@@ -129,7 +132,9 @@ export interface ConversationChatParams {
 // 智能体会话问题建议输入参数
 export interface ConversationChatSuggestParams extends ConversationChatParams {
   // 变量参数，前端需要根据agent配置组装参数
-  variableParams: object;
+  variableParams?: {
+    [key: string]: any;
+  };
 }
 
 // 创建会话输入参数
@@ -196,6 +201,7 @@ export interface MessageInfo extends ChatMessageDto {
 export interface ConversationInfo {
   // 会话ID
   id: number;
+  tenantId: number;
   userId: number;
   // 会话UUID
   uid: string;
@@ -207,6 +213,7 @@ export interface ConversationInfo {
   summary: string;
   modified: string;
   created: string;
+  // Agent信息，已发布过的agent才有此信息
   agent: {
     spaceId: number;
     // 目标对象（智能体、工作流、插件）ID,可用值:Agent,Plugin,Workflow,Knowledge
@@ -219,8 +226,12 @@ export interface ConversationInfo {
     description: string;
     // 图标
     icon: string;
+    // 可手动选择的组件列表
     manualComponents: AgentManualComponentInfo[];
+    // 发布备注信息
     remark: string;
+    // 智能体发布时间
+    publishDate: string;
     // 智能体发布修改时间
     modified: string;
     // 智能体发布创建时间
@@ -229,7 +240,7 @@ export interface ConversationInfo {
     statistics: AgentStatisticsInfo;
     // 发布者信息
     publishUser: CreatorInfo;
-    // 分类名称
+    // 智能体分类名称
     category: string;
     // 是否开启问题建议,可用值:Open,Close
     openSuggest: OpenCloseEnum;
@@ -237,10 +248,24 @@ export interface ConversationInfo {
     openingChatMsg: string;
     // 引导问题
     openingGuidQuestions: string[];
+    // 是否开启定时任务,可用值:Open,Close
+    openScheduledTask: OpenCloseEnum;
+    variables: BindConfigWithSub[];
+    // 分享链接
+    shareLink: string;
     collect: boolean;
   };
   // 会话消息列表，会话列表查询时不会返回该字段值
   messageList: MessageInfo[];
+  // 可用值:Chat,TASK
+  type: TaskTypeEnum;
+  taskId: string;
+  // 可用值:EXECUTING,CANCEL
+  taskStatus: TaskStatus;
+  taskCron: string;
+  taskCronDesc: string;
+  // 开发模式
+  devMode: boolean;
 }
 
 // 查询用户历史会话输入参数
