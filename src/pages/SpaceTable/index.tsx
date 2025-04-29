@@ -322,7 +322,7 @@ const SpaceTable = () => {
     setLoading(true);
     try {
       const _res = await service.exportTableData(tableId);
-      const blob = new Blob([_res], {
+      const blob = new Blob([_res.data], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       }); // 将响应数据转换为 Blob 对象
       const objectURL = URL.createObjectURL(blob); // 创建一个 URL 对象
