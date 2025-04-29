@@ -85,7 +85,6 @@ const MyTable: React.FC<MyTableProp> = ({
             width={item.title.length * 20} // 假设每个字符宽度为 16px
             dataIndex={item.dataIndex}
             render={(value) => {
-              console.log('item.type', item.type);
               switch (item.type) {
                 case 'checkbox':
                   return <Checkbox checked={value} />;

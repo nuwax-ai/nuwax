@@ -268,10 +268,15 @@ const SpaceTable = () => {
           };
           await service.deleteTableData(_params);
           message.success('删除成功');
-          getTable({
-            pageNo: pagination.current,
-            pageSize: pagination.pageSize,
-          });
+          console.log(tableData.length);
+          if (tableData.length === 1) {
+            getDetails();
+          } else {
+            getTable({
+              pageNo: pagination.current,
+              pageSize: pagination.pageSize,
+            });
+          }
         },
       });
     } catch (error) {}
@@ -294,6 +299,7 @@ const SpaceTable = () => {
       setTableData([]);
       setPagination({ total: 0, current: 1, pageSize: 10 });
       setOpenDelete(false);
+      getDetails();
     } catch (error) {}
   };
 

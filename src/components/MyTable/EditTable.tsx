@@ -116,9 +116,6 @@ const MyTable: React.FC<MyTableProp> = ({
     record: AnyObject,
     value: string | number | boolean,
   ) => {
-    if (item.defaultValue) {
-      console.log('getValue', item, record, value);
-    }
     if (item.map && typeof value !== 'boolean') {
       return item.map[value] || '--';
     }
@@ -180,7 +177,9 @@ const MyTable: React.FC<MyTableProp> = ({
           style={{ margin: 0 }}
           valuePropName={item.type === 'checkbox' ? 'checked' : 'value'}
           initialValue={
-            fieldValue === 5
+            fieldValue === 5 &&
+            record[item.dataIndex] &&
+            record[item.dataIndex].length > 0
               ? dayjs(record[item.dataIndex])
               : record[item.dataIndex]
           }
