@@ -3,6 +3,7 @@ import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
 import { MessageTypeEnum } from '@/types/enums/agent';
+import { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   MessageInfo,
@@ -29,9 +30,11 @@ const Chat: React.FC = () => {
   // 附加state
   const message = location.state?.message;
   const files = location.state?.files;
+  const infos = location.state?.infos;
 
   const {
     conversationInfo,
+    manualComponents,
     loadingConversation,
     messageList,
     chatSuggestList,
@@ -109,20 +112,24 @@ const Chat: React.FC = () => {
           (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
         // 如果message或者附件不为空,可以发送消息，但刷新页面时，不重新发送消息
         if (isCanMessage && (message || files?.length > 0)) {
-          onMessageSend(id, message, files);
+          onMessageSend(id, message, files, infos);
         }
       };
       asyncFun();
     }
-  }, [id, message, files]);
+  }, [id, message, files, infos]);
 
   useEffect(() => {
     addBaseTarget();
   }, []);
 
   // 消息发送
-  const handleMessageSend = (message: string, files?: UploadFileInfo[]) => {
-    onMessageSend(id, message, files);
+  const handleMessageSend = (
+    message: string,
+    files?: UploadFileInfo[],
+    selectedComponentInfos?: AgentSelectedComponentInfo[],
+  ) => {
+    onMessageSend(id, message, files, selectedComponentInfos);
   };
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
@@ -181,6 +188,8 @@ const Chat: React.FC = () => {
           className={cx(styles['chat-input'])}
           onEnter={handleMessageSend}
           visible={showScrollBtn}
+          manualComponents={manualComponents}
+          infos={infos}
           onScrollBottom={onScrollBottom}
         />
       </div>

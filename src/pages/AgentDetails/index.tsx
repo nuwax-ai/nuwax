@@ -9,7 +9,10 @@ import {
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
-import { AgentDetailDto } from '@/types/interfaces/agent';
+import {
+  AgentDetailDto,
+  AgentSelectedComponentInfo,
+} from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   MessageInfo,
@@ -97,7 +100,11 @@ const AgentDetails: React.FC = () => {
   }, [agentDetail]);
 
   // 消息发送
-  const handleMessageSend = (message: string, files?: UploadFileInfo[]) => {
+  const handleMessageSend = (
+    message: string,
+    files?: UploadFileInfo[],
+    infos?: AgentSelectedComponentInfo[],
+  ) => {
     if (!agentDetail) {
       return;
     }
@@ -105,13 +112,14 @@ const AgentDetails: React.FC = () => {
     handleCreateConversation(agentDetail.agentId, {
       message,
       files,
+      infos,
     });
   };
 
   return (
     <div className={cx('flex', 'h-full', 'overflow-y')}>
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
-        <h3 className={cx(styles.title)}>
+        <h3 className={cx(styles.title, 'text-ellipsis')}>
           {agentDetail?.name ? `和${agentDetail?.name}开始会话` : '开始会话'}
         </h3>
         <div className={cx(styles['chat-wrapper'], 'flex-1')}>
@@ -164,6 +172,8 @@ const AgentDetails: React.FC = () => {
         <ChatInputHome
           className={cx(styles['chat-input'])}
           onEnter={handleMessageSend}
+          isClearInput={false}
+          manualComponents={agentDetail?.manualComponents || []}
         />
       </div>
       <AgentSidebar

@@ -440,6 +440,30 @@ export interface AgentCardInfo {
   argList: ArgList[];
 }
 
+// 配置手动选择组件信息
+export interface AgentManualComponentInfo {
+  // 组件ID
+  id: number;
+  // 组件名称
+  name: string;
+  // 组件图标
+  icon: string;
+  // 组件描述
+  description: string;
+  // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model,Agent,Table,Agent
+  type: AgentComponentTypeEnum;
+  // 是否默认选中，0-否，1-是
+  defaultSelected: DefaultSelectedEnum;
+}
+
+// 配置已选择组件信息
+export interface AgentSelectedComponentInfo {
+  // 组件ID
+  id: number;
+  // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model,Agent,Table,Agent
+  type: AgentComponentTypeEnum;
+}
+
 // Agent信息，已发布过的agent才有此信息
 export interface AgentDetailDto extends AgentBaseInfo {
   spaceId: number;
@@ -466,18 +490,7 @@ export interface AgentDetailDto extends AgentBaseInfo {
   // 分享链接
   shareLink: string;
   // 可手动选择的组件列表
-  manualComponents: {
-    // 组件ID
-    id: number;
-    // 组件名称
-    name: string;
-    // 组件图标
-    icon: string;
-    // 组件描述
-    description: string;
-    // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model,Agent
-    type: AgentComponentTypeEnum;
-  }[];
+  manualComponents: AgentManualComponentInfo[];
   // 当前登录用户是否收藏
   collect: boolean;
 }

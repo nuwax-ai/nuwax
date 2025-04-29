@@ -132,7 +132,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       return;
     }
 
-    onMessageSend(id, message, files, true, false);
+    onMessageSend(id, message, files, [], true, false);
   };
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制

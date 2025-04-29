@@ -21,6 +21,33 @@
     }
   }
 
+  .manual-container {
+    padding: 0 10px;
+    gap: 10px;
+    overflow-x: auto;
+
+    .manual-box {
+      height: 32px;
+      padding: 0 10px;
+      border-radius: 10px;
+      box-sizing: border-box;
+      border: 0.5px solid @WHITE15;
+      color: @GRAY15;
+      font-size: 12px;
+      transition: background-color ease-in-out 0.3s;
+
+      &:hover {
+        background-color: @WHITE10;
+      }
+
+      &.active {
+        color: @BLUE10;
+        background-color: @BLUE11;
+        border-color: @GRAY25;
+      }
+    }
+  }
+
   .box {
     width: 32px;
     height: 32px;

@@ -34,6 +34,8 @@ export enum ApplicationMoreActionEnum {
   Create_Copy,
   // 迁移
   Move,
+  // 临时会话
+  Temporary_Session,
   // 下架
   Off_Shelf,
   // 删除

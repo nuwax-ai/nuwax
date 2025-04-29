@@ -1,6 +1,8 @@
 import ConditionRender from '@/components/ConditionRender';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { DefaultSelectedEnum } from '@/types/enums/agent';
+import { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import {
   ArrowDownOutlined,
@@ -10,7 +12,7 @@ import {
 import type { UploadProps } from 'antd';
 import { Input, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import ChatUploadFile from './ChatUploadFile';
 import styles from './index.less';
 
@@ -23,12 +25,34 @@ const ChatInput: React.FC<ChatInputProps> = ({
   className,
   onEnter,
   visible,
+  infos,
+  isClearInput = true,
+  manualComponents,
   onScrollBottom,
 }) => {
   // 文档
   const [files, setFiles] = useState<UploadFileInfo[]>([]);
   const [message, setMessage] = useState<string>('');
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
+  const [selectedComponentList, setSelectedComponentList] = useState<
+    AgentSelectedComponentInfo[]
+  >([]);
+
+  useEffect(() => {
+    // 初始化选中的组件列表
+    if (infos?.length) {
+      setSelectedComponentList(infos || []);
+    } else if (manualComponents?.length) {
+      // 手动组件默认选中的组件
+      const _manualComponents = manualComponents
+        .filter((item) => item.defaultSelected === DefaultSelectedEnum.Yes)
+        .map((item) => ({
+          id: item.id,
+          type: item.type,
+        }));
+      setSelectedComponentList(_manualComponents || []);
+    }
+  }, [infos, manualComponents]);
 
   // 发送按钮disabled
   const disabledSend = useMemo(() => {
@@ -42,10 +66,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
     }
     if (message || files?.length > 0) {
       // enter事件
-      onEnter(message, files);
-      // 置空
-      setFiles([]);
-      setMessage('');
+      onEnter(message, files, selectedComponentList);
+      if (isClearInput) {
+        // 置空
+        setFiles([]);
+        setMessage('');
+      }
     }
   };
 
@@ -65,10 +91,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
       (!!value.trim() || !!files?.length)
     ) {
       // enter事件
-      onEnter(value, files);
-      // 置空
-      setFiles([]);
-      setMessage('');
+      onEnter(value, files, selectedComponentList);
+      if (isClearInput) {
+        // 置空
+        setFiles([]);
+        setMessage('');
+      }
     }
   };
 
@@ -92,6 +120,22 @@ const ChatInput: React.FC<ChatInputProps> = ({
     setFiles(_files);
   };
 
+  const handleSelect = (item: AgentSelectedComponentInfo) => {
+    const _selectedComponentList = [...selectedComponentList];
+    // 已存在则删除
+    if (_selectedComponentList.some((c) => c.id === item.id)) {
+      const index = _selectedComponentList.findIndex((c) => c.id === item.id);
+      _selectedComponentList.splice(index, 1);
+    } else {
+      _selectedComponentList.push({
+        id: item.id,
+        type: item.type,
+      });
+    }
+
+    setSelectedComponentList(_selectedComponentList);
+  };
+
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', className)}>
       <div className={cx(styles['chat-container'], 'flex', 'flex-col')}>
@@ -108,7 +152,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           placeholder="直接输入指令；可通过回车发送"
           autoSize={{ minRows: 1, maxRows: 3 }}
         />
-        <div className={cx('flex', 'content-between')}>
+        <div className={cx('flex')}>
           {/*上传按钮*/}
           <Upload
             action={UPLOAD_FILE_ACTION}
@@ -134,6 +178,36 @@ const ChatInput: React.FC<ChatInputProps> = ({
               <PlusOutlined />
             </span>
           </Upload>
+          <div
+            className={cx(
+              'flex-1',
+              'flex',
+              'items-center',
+              styles['manual-container'],
+            )}
+          >
+            {manualComponents?.map((item, index) => {
+              return (
+                <span
+                  key={index}
+                  className={cx(
+                    styles['manual-box'],
+                    'flex',
+                    'items-center',
+                    'cursor-pointer',
+                    {
+                      [styles.active]: selectedComponentList?.some(
+                        (c) => c.id === item.id,
+                      ),
+                    },
+                  )}
+                  onClick={() => handleSelect(item)}
+                >
+                  {item.name}
+                </span>
+              );
+            })}
+          </div>
           <Tooltip title={disabledSend ? '请输入你的问题' : ''}>
             <span
               onClick={handleSendMessage}
@@ -152,6 +226,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           </Tooltip>
         </div>
       </div>
+      {/* 滚动到底部按钮 */}
       <div className={cx(styles['chat-action'])}>
         <div
           className={cx(styles['to-bottom'], { [styles.visible]: visible })}

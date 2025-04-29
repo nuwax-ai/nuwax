@@ -14,6 +14,10 @@ import {
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import { BindCardStyleEnum } from '@/types/enums/plugin';
 import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
+import {
+  AgentManualComponentInfo,
+  AgentSelectedComponentInfo,
+} from '@/types/interfaces/agent';
 import { CardDataInfo } from '@/types/interfaces/cardInfo';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
@@ -66,6 +70,10 @@ export default () => {
   const allowAutoScrollRef = useRef<boolean>(true);
   // 是否显示点击下滚按钮
   const [showScrollBtn, setShowScrollBtn] = useState<boolean>(false);
+  // 可手动选择的组件列表
+  const [manualComponents, setManualComponents] = useState<
+    AgentManualComponentInfo[]
+  >([]);
   // 历史记录
   const { runHistory } = useModel('conversationHistory');
 
@@ -114,6 +122,8 @@ export default () => {
       setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
       // 消息列表
       const _messageList = data?.messageList || [];
+      // 可手动选择的组件列表
+      setManualComponents(data?.agent?.manualComponents || []);
       // 问题建议列表
       let suggestList: string[] = [];
       if (_messageList?.length) {
@@ -386,6 +396,7 @@ export default () => {
     id: number,
     message: string,
     files: UploadFileInfo[] = [],
+    infos: AgentSelectedComponentInfo[] = [],
     debug: boolean = false,
     // 是否同步会话记录
     isSync: boolean = true,
@@ -449,6 +460,7 @@ export default () => {
       message,
       attachments,
       debug,
+      selectedComponents: infos,
     };
     // 处理会话
     handleConversation(params, currentMessageId, isSync);
@@ -466,6 +478,7 @@ export default () => {
   return {
     setIsSuggest,
     conversationInfo,
+    manualComponents,
     messageList,
     setMessageList,
     requestId,
