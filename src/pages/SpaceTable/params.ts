@@ -4,6 +4,7 @@ export const mockColumns = [
     dataIndex: 'fieldName',
     type: 'text' as const,
     editable: true,
+    width: 160,
   },
   {
     title: '字段详细描述',
@@ -41,7 +42,7 @@ export const mockColumns = [
     dataIndex: 'dataLength',
     type: 'select' as const,
     editable: true,
-    width: 140,
+    width: 180,
     shouldUpdate: {
       name: 'fieldType', // 依赖的字段名
       value: 1, // 当依赖字段的值为1时，才显示该men

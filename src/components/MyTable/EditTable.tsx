@@ -12,6 +12,7 @@ import {
   Table,
 } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
+import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import './index.less';
 export interface EditTableRef {
@@ -115,9 +116,6 @@ const MyTable: React.FC<MyTableProp> = ({
     record: AnyObject,
     value: string | number | boolean,
   ) => {
-    if (item.defaultValue) {
-      console.log('getValue', item, record, value);
-    }
     if (item.map && typeof value !== 'boolean') {
       return item.map[value] || '--';
     }
@@ -178,7 +176,13 @@ const MyTable: React.FC<MyTableProp> = ({
           name={[index, item.dataIndex]}
           style={{ margin: 0 }}
           valuePropName={item.type === 'checkbox' ? 'checked' : 'value'}
-          initialValue={record[item.dataIndex]}
+          initialValue={
+            fieldValue === 5 &&
+            record[item.dataIndex] &&
+            record[item.dataIndex].length > 0
+              ? dayjs(record[item.dataIndex])
+              : record[item.dataIndex]
+          }
         >
           {componentMap[fieldValue] || <Input />}
         </Form.Item>

@@ -313,6 +313,7 @@ const Workflow: React.FC = () => {
   };
   // 点击组件，显示抽屉
   const changeDrawer = async (child: ChildNode | null) => {
+    // 先完全重置表单
     if (child && child.type !== 'Start') {
       setTestRun(false);
       setTestRunResult('');
@@ -328,6 +329,7 @@ const Workflow: React.FC = () => {
         return false;
       });
     }
+    form.resetFields();
     setFoldWrapItem((prev) => {
       if (prev.id === 0 && child === null) {
         return prev;
@@ -900,9 +902,8 @@ const Workflow: React.FC = () => {
   }, [isModified]);
   useEffect(() => {
     if (foldWrapItem.id !== 0) {
+      // 使用setTimeout确保重置完成后再设置新值
       const newFoldWrapItem = JSON.parse(JSON.stringify(foldWrapItem));
-      // 重置表单状态
-      form.resetFields();
       form.setFieldsValue(newFoldWrapItem.nodeConfig);
 
       switch (foldWrapItem.type) {
@@ -927,27 +928,27 @@ const Workflow: React.FC = () => {
           }
           break;
         }
-        case 'TableDataUpdate':
-        case 'TableDataQuery':
-        case 'TableDataDelete': {
-          if (!newFoldWrapItem.nodeConfig.conditionArgs) {
-            form.setFieldValue('conditionArgs', [
-              {
-                firstArg: {
-                  bindValue: null,
-                  bindValueType: null,
-                },
-                secondArg: {
-                  bindValue: null,
-                  bindValueType: null,
-                },
-                compareType: null,
-              },
-            ]);
-            form.setFieldValue('conditionType', 'AND');
-          }
-          break;
-        }
+        // case 'TableDataUpdate':
+        // case 'TableDataQuery':
+        // case 'TableDataDelete': {
+        //   if (!newFoldWrapItem.nodeConfig.conditionArgs) {
+        //     form.setFieldValue('conditionArgs', [
+        //       {
+        //         firstArg: {
+        //           bindValue: null,
+        //           bindValueType: null,
+        //         },
+        //         secondArg: {
+        //           bindValue: null,
+        //           bindValueType: null,
+        //         },
+        //         compareType: null,
+        //       },
+        //     ]);
+        //     form.setFieldValue('conditionType', 'AND');
+        //   }
+        //   break;
+        // }
         default:
           break;
       }

@@ -65,7 +65,6 @@ const SpaceTable = () => {
   };
   // 切换表结构还是表数据
   const onChange = (key: string) => {
-    console.log(key);
     setCurrentContent(key);
   };
   //   点击弹出编辑框
@@ -101,7 +100,7 @@ const SpaceTable = () => {
       editTableRef.current.handleAddRow({
         nullableFlag: true,
         enabledFlag: true,
-        fieldType: 2,
+        fieldType: 1,
         dataLength: 1,
       });
     }
@@ -226,7 +225,7 @@ const SpaceTable = () => {
         await service.addTableData(_params);
       }
       getTable({ pageNo: pagination.current, pageSize: pagination.pageSize });
-      getDetails();
+      // getDetails();
       addedRef.current?.onClose();
     } catch (error) {}
     // setVisible(false);
@@ -269,10 +268,15 @@ const SpaceTable = () => {
           };
           await service.deleteTableData(_params);
           message.success('删除成功');
-          getTable({
-            pageNo: pagination.current,
-            pageSize: pagination.pageSize,
-          });
+          console.log(tableData.length);
+          if (tableData.length === 1) {
+            getDetails();
+          } else {
+            getTable({
+              pageNo: pagination.current,
+              pageSize: pagination.pageSize,
+            });
+          }
         },
       });
     } catch (error) {}
@@ -295,6 +299,7 @@ const SpaceTable = () => {
       setTableData([]);
       setPagination({ total: 0, current: 1, pageSize: 10 });
       setOpenDelete(false);
+      getDetails();
     } catch (error) {}
   };
 
@@ -317,7 +322,7 @@ const SpaceTable = () => {
     setLoading(true);
     try {
       const _res = await service.exportTableData(tableId);
-      const blob = new Blob([_res], {
+      const blob = new Blob([_res.data], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       }); // 将响应数据转换为 Blob 对象
       const objectURL = URL.createObjectURL(blob); // 创建一个 URL 对象
@@ -390,7 +395,7 @@ const SpaceTable = () => {
           {currentContent === 'structure' && (
             <Space>
               <Button icon={<PlusOutlined />} onClick={onAddRow}>
-                新增
+                新增字段
               </Button>
               <Button
                 loading={loading}
