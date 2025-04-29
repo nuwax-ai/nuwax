@@ -91,9 +91,18 @@ export interface PublishAgentProps {
   onCancel: () => void;
 }
 
+// 智能体迁移弹窗组件
 export interface AgentMoveProps {
   open: boolean;
   title?: string;
   onCancel: () => void;
   onConfirm: (spaceId: string) => void;
+}
+
+// 创建临时会话弹窗属性
+export interface CreateTempChatModelProps {
+  agentId?: number;
+  open: boolean;
+  name?: string;
+  onCancel: () => void;
 }

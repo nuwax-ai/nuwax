@@ -32,6 +32,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
 import AgentMove from './AgentMove';
 import ApplicationItem from './ApplicationItem';
+import CreateTempChatModel from './CreateTempChatModel';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -46,9 +47,10 @@ const SpaceDevelop: React.FC = () => {
   const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
   // 迁移弹窗
   const [openMove, setOpenMove] = useState<boolean>(false);
-  const [currentAgentInfo, setCurrentAgentInfo] = useState<AgentInfo | null>(
-    null,
-  );
+  // 打开创建临时会话弹窗
+  const [openTempChat, setOpenTempChat] = useState<boolean>(false);
+  const [currentAgentInfo, setCurrentAgentInfo] =
+    useState<AgentConfigInfo | null>(null);
   const [openCreateAgent, setOpenCreateAgent] = useState<boolean>(false);
   const [status, setStatus] = useState<FilterStatusEnum>(FilterStatusEnum.All);
   const [agentStatistics, setAgentStatistics] = useState<
@@ -279,6 +281,12 @@ const SpaceDevelop: React.FC = () => {
         setOpenMove(true);
         setCurrentAgentInfo(agentInfo);
         break;
+      // 临时会话
+      case ApplicationMoreActionEnum.Temporary_Session:
+        setOpenTempChat(true);
+        setCurrentAgentInfo(agentInfo);
+        break;
+      // 下架
       case ApplicationMoreActionEnum.Off_Shelf:
         confirm({
           title: '您确定要下架此智能体吗?',
@@ -390,6 +398,12 @@ const SpaceDevelop: React.FC = () => {
         open={openCreateAgent}
         onCancel={() => setOpenCreateAgent(false)}
         onConfirmCreate={handlerConfirmCreateAgent}
+      />
+      <CreateTempChatModel
+        agentId={currentAgentInfo?.id}
+        open={openTempChat}
+        name={currentAgentInfo?.name}
+        onCancel={() => setOpenTempChat(false)}
       />
     </div>
   );

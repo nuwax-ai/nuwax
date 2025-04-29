@@ -1,6 +1,7 @@
 import agentImage from '@/assets/images/agent_image.png';
 import { SPACE_ID } from '@/constants/home.constants';
 import type { AgentMoveProps } from '@/types/interfaces/space';
+import type { SpaceInfo } from '@/types/interfaces/workspace';
 import { CheckOutlined } from '@ant-design/icons';
 import { Button, Modal } from 'antd';
 import classNames from 'classnames';
@@ -24,7 +25,7 @@ const AgentMove: React.FC<AgentMoveProps> = ({
   const spaceId = Number(localStorage.getItem(SPACE_ID));
 
   const filterSpaceList =
-    spaceList?.filter((item) => item.id !== spaceId) || [];
+    spaceList?.filter((item: SpaceInfo) => item.id !== spaceId) || [];
 
   return (
     <Modal
@@ -51,7 +52,7 @@ const AgentMove: React.FC<AgentMoveProps> = ({
       <>
         <div className={cx(styles['row-line'])} />
         <span className={cx(styles.label)}>选择要迁移到的团队空间</span>
-        {filterSpaceList.map((item) => (
+        {filterSpaceList.map((item: SpaceInfo) => (
           <div
             key={item.id}
             className={cx(
@@ -61,7 +62,7 @@ const AgentMove: React.FC<AgentMoveProps> = ({
               'cursor-pointer',
               styles.box,
             )}
-            onClick={() => setTargetSpaceId(item.id)}
+            onClick={() => setTargetSpaceId(item.id.toString())}
           >
             <img
               className={cx(styles.img)}
@@ -69,7 +70,7 @@ const AgentMove: React.FC<AgentMoveProps> = ({
               alt=""
             />
             <span className={cx('flex-1')}>{item.name}</span>
-            {targetSpaceId === item.id && (
+            {targetSpaceId === item.id.toString() && (
               <CheckOutlined className={cx(styles['selected-ico'])} />
             )}
           </div>
