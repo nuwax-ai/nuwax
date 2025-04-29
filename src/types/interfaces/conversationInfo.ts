@@ -129,6 +129,20 @@ export interface ConversationChatParams {
   selectedComponents: AgentSelectedComponentInfo[];
 }
 
+// 临时会话参数
+export interface TempConversationChatParams {
+  // 链接Key
+  chatKey: string;
+  // 会话唯一标识
+  conversationUid: string;
+  variableParams?: any;
+  // chat消息
+  message: string;
+  // 附件列表
+  attachments: AttachmentFile[];
+  selectedComponents: AgentSelectedComponentInfo[];
+}
+
 // 智能体会话问题建议输入参数
 export interface ConversationChatSuggestParams extends ConversationChatParams {
   // 变量参数，前端需要根据agent配置组装参数

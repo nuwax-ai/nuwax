@@ -6,6 +6,8 @@ export const UPLOAD_FILE_ACTION = `${process.env.BASE_URL}/api/file/upload`;
 
 // 会话 Connection地址
 export const CONVERSATION_CONNECTION_URL = `${process.env.BASE_URL}/api/agent/conversation/chat`;
+// 临时会话 Connection地址
+export const TEMP_CONVERSATION_CONNECTION_URL = `${process.env.BASE_URL}/api/temp/chat/completions`;
 
 // 提示词优化地址
 export const PROMPT_OPTIMIZE_URL = `${process.env.BASE_URL}/api/assistant/prompt/optimize`;
@@ -33,6 +35,9 @@ export const COUNT_DOWN_LEN = 60;
 
 // 插件处理时，新增的字段默认名称
 export const ARRAY_ITEM = '[Array_Item]';
+
+// 临时会话的uid, 用于区分临时会话和普通会话, 缓存在sessionStorage中，key为TEMP_CONVERSATION_UID, value为uid
+export const TEMP_CONVERSATION_UID = 'TEMP_CONVERSATION_UID';
 
 export const DataTypeMap = {
   [DataTypeEnum.String]: 'String',

@@ -1,0 +1,59 @@
+@import '@/styles/color';
+
+.main-content {
+  width: 800px;
+  padding-top: 60px;
+  margin: 0 auto;
+  box-sizing: border-box;
+
+  .title {
+    position: sticky;
+    top: 0;
+    line-height: 60px;
+    padding: 0 60px;
+    color: @BLANK17;
+    font-size: 16px;
+    text-align: center;
+    background-color: @WHITE16;
+    mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
+    z-index: 99;
+    box-sizing: border-box;
+  }
+
+  .chat-wrapper {
+    padding-top: 30px;
+    padding-bottom: 30px;
+    box-sizing: border-box;
+
+    .loading {
+      color: @BLUE08;
+    }
+  }
+
+  .chat-input {
+    position: sticky;
+    bottom: 20px;
+    z-index: 10;
+  }
+}
+
+/* 当屏幕宽度小于等于 600px 时应用的样式 */
+@media screen and (max-width: 600px) {
+  .main-content {
+    width: 100%;
+  }
+}
+
+/* 当屏幕宽度大于 600px 且小于等于 900px 时应用的样式 */
+@media screen and (min-width: 601px) and (max-width: 900px) {
+  .main-content {
+    width: 80%;
+  }
+}
+
+/* 当屏幕宽度大于 900px 时应用的样式 */
+@media screen and (min-width: 1200px) {
+  .main-content {
+    max-width: 800px;
+  }
+}
