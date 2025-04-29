@@ -42,6 +42,10 @@ export const mockColumns = [
     type: 'select' as const,
     editable: true,
     width: 140,
+    shouldUpdate: {
+      name: 'fieldType', // 依赖的字段名
+      value: 1, // 当依赖字段的值为1时，才显示该men
+    },
     options: [
       { label: '短文本（0-255）', value: 1 },
       { label: '长文本（0-16M）', value: 7 },
@@ -87,6 +91,9 @@ export const mockColumns = [
     editable: true,
     edit: true,
     defaultValue: '系统变量',
+    shouldUpdate: {
+      name: 'fieldType', // 依赖的字段名
+    },
   },
 ];
 
@@ -283,9 +290,10 @@ export const AddParams = [
 ];
 
 export const typeMap: Record<number, string> = {
-  1: 'Input',
+  1: 'TextArea',
   2: 'Number',
   3: 'Number',
   4: 'Radio',
   5: 'DatePicker',
+  7: 'TextArea',
 };

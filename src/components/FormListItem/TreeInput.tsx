@@ -1,6 +1,6 @@
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Popover, Tree } from 'antd';
+import { Button, Popover, Tag, Tree } from 'antd';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
@@ -69,12 +69,13 @@ const TreeInput: React.FC<TreeInputProps> = ({
         .map((item) => {
           return (
             <div
-              className="dis-sb cursor-pointer"
+              className="dis-sb cursor-pointer mb-6"
               key={item.key}
               onClick={() => addOptions(item)}
+              style={{ width: 220 }}
             >
               <span>{item.name}</span>
-              <span>{item.dataType}</span>
+              <Tag color="#C9CDD4">{item.dataType}</Tag>
             </div>
           );
         })}
@@ -87,6 +88,11 @@ const TreeInput: React.FC<TreeInputProps> = ({
         <div className="flex-1">
           <span className="margin-right-6 font-12 ">{nodeData.name}</span>
           <Popover
+            styles={{
+              body: {
+                width: '300px',
+              },
+            }}
             placement="right"
             content={nodeData.description || '暂无描述'}
           >

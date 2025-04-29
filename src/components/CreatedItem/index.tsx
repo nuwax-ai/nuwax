@@ -47,7 +47,7 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
   Confirm,
 }) => {
   const [form] = Form.useForm();
-  const [imageUrl] = useState<string>('');
+  const [imageUrl, setImageUrl] = useState<string>('');
 
   const handlerSubmit = async () => {
     await form.submit();
@@ -114,8 +114,9 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
                 className={'upload-box'}
                 onUploadSuccess={(e) => {
                   form.setFieldValue('icon', e);
+                  setImageUrl(e);
                 }}
-                imageUrl={imageUrl}
+                imageUrl={form.getFieldValue('icon') || imageUrl} // 传入imageUrl作为默认图片，或者使用getDefaultImage()作为默认图片提供
                 defaultImage={getDefaultImage()}
               />
             </div>
@@ -126,12 +127,19 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
           label="名称"
           rules={[{ required: true, message: '请输入名称' }]}
         >
-          <Input placeholder="请输入名称" />
+          <Input placeholder="请输入名称" showCount maxLength={30} />
         </Form.Item>
-        <Form.Item name="description" label="描述">
+        <Form.Item
+          name="description"
+          label="描述"
+          className="position-relative"
+        >
           <Input.TextArea
             placeholder="请输入描述"
             autoSize={{ minRows: 3, maxRows: 6 }}
+            maxLength={1000}
+            showCount
+            className="dispose-textarea-count"
           />
         </Form.Item>
         {(type === AgentComponentTypeEnum.Workflow ||

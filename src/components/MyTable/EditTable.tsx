@@ -1,7 +1,16 @@
 // 可以编辑的表格
 import type { MyTableProp } from '@/types/interfaces/table';
 import { DeleteOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Form, Input, Select, Table } from 'antd';
+import {
+  Button,
+  Checkbox,
+  DatePicker,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  Table,
+} from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import React, { useEffect, useState } from 'react';
 import './index.less';
@@ -101,6 +110,23 @@ const MyTable: React.FC<MyTableProp> = ({
     };
   });
 
+  const getValue = (
+    item: TableColumn,
+    record: AnyObject,
+    value: string | number | boolean,
+  ) => {
+    if (item.defaultValue) {
+      console.log('getValue', item, record, value);
+    }
+    if (item.map && typeof value !== 'boolean') {
+      return item.map[value] || '--';
+    }
+    if (item.defaultValue && record?.systemFieldFlag) {
+      return item.defaultValue;
+    }
+    return value || '--';
+  };
+
   const getItemType = (
     type: string,
     name: string,
@@ -115,6 +141,50 @@ const MyTable: React.FC<MyTableProp> = ({
       default:
         return <Input placeholder={placeholder || `请输入${name}`} />;
     }
+  };
+
+  const getItem = (
+    index: number,
+    item: TableColumn,
+    record: AnyObject,
+    fieldValue: number,
+  ) => {
+    if (
+      item.shouldUpdate?.value !== undefined &&
+      fieldValue === item.shouldUpdate.value
+    ) {
+      return (
+        <Form.Item
+          name={[index, item.dataIndex]}
+          style={{ margin: 0 }}
+          valuePropName={item.type === 'checkbox' ? 'checked' : 'value'}
+          initialValue={record[item.dataIndex]}
+        >
+          {getItemType(item.type, item.title, item.options)}
+        </Form.Item>
+      );
+    }
+    if (item.shouldUpdate?.value === undefined) {
+      const componentMap: Record<number, JSX.Element> = {
+        1: <Input />,
+        2: <InputNumber />,
+        3: <InputNumber />,
+        4: <Checkbox />,
+        5: <DatePicker />,
+        6: <Input />,
+      };
+      return (
+        <Form.Item
+          name={[index, item.dataIndex]}
+          style={{ margin: 0 }}
+          valuePropName={item.type === 'checkbox' ? 'checked' : 'value'}
+          initialValue={record[item.dataIndex]}
+        >
+          {componentMap[fieldValue] || <Input />}
+        </Form.Item>
+      );
+    }
+    return <span>--</span>;
   };
 
   useEffect(() => {
@@ -175,21 +245,56 @@ const MyTable: React.FC<MyTableProp> = ({
                     dataIndex={item.dataIndex}
                     render={(value, record, index) => {
                       const shouldEdit =
-                        (item.edit || !dataEmptyFlag || record?.isNew) &&
+                        (item.edit || dataEmptyFlag || record?.isNew) &&
                         !record?.systemFieldFlag;
-
                       if (shouldEdit) {
                         return (
-                          <Form.Item
-                            name={[index, item.dataIndex]}
-                            style={{ margin: 0 }}
-                            valuePropName={
-                              item.type === 'checkbox' ? 'checked' : 'value'
-                            }
-                            initialValue={record[item.dataIndex]}
-                          >
-                            {getItemType(item.type, item.title, item.options)}
-                          </Form.Item>
+                          <>
+                            {item.shouldUpdate ? (
+                              <Form.Item
+                                noStyle
+                                shouldUpdate={(prevValues, currentValues) => {
+                                  return (
+                                    prevValues.tableData[index]?.[
+                                      item.shouldUpdate!.name
+                                    ] !==
+                                    currentValues.tableData[index]?.[
+                                      item.shouldUpdate!.name
+                                    ]
+                                  );
+                                }}
+                              >
+                                {({ getFieldValue }) => {
+                                  const fieldValue = getFieldValue([
+                                    'tableData',
+                                    index,
+                                    item.shouldUpdate!.name,
+                                  ]);
+                                  return getItem(
+                                    index,
+                                    item,
+                                    record,
+                                    fieldValue,
+                                  );
+                                }}
+                              </Form.Item>
+                            ) : (
+                              <Form.Item
+                                name={[index, item.dataIndex]}
+                                style={{ margin: 0 }}
+                                valuePropName={
+                                  item.type === 'checkbox' ? 'checked' : 'value'
+                                }
+                                initialValue={record[item.dataIndex]}
+                              >
+                                {getItemType(
+                                  item.type,
+                                  item.title,
+                                  item.options,
+                                )}
+                              </Form.Item>
+                            )}
+                          </>
                         );
                       } else {
                         if (item.type === 'checkbox') {
@@ -200,16 +305,7 @@ const MyTable: React.FC<MyTableProp> = ({
                             />
                           );
                         } else {
-                          return (
-                            <span>
-                              {item.map
-                                ? item.map[value] || '--'
-                                : value ||
-                                  (!value && record?.systemFieldFlag
-                                    ? item.defaultValue
-                                    : '')}
-                            </span>
-                          );
+                          return <span>{getValue(item, record, value)}</span>;
                         }
                       }
                     }}

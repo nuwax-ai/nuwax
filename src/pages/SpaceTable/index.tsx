@@ -2,6 +2,7 @@ import knowledgeImage from '@/assets/images/database_image.png';
 import AddAndModify, { AddAndModifyRef } from '@/components/AddAndModify';
 import type { FormItem } from '@/components/AddAndModify/type';
 import CreatedItem from '@/components/CreatedItem';
+import DeleteSure from '@/components/DeleteSure';
 import MyTable from '@/components/MyTable';
 import EditTable, { EditTableRef } from '@/components/MyTable/EditTable';
 import service, { IgetDetails } from '@/services/tableSql';
@@ -28,6 +29,7 @@ import { mockColumns, typeMap } from './params';
 const SpaceTable = () => {
   const { spaceId, tableId } = useParams();
   const [detail, setDetail] = useState<IgetDetails | null>(null);
+
   const [AddParams, setAddParams] = useState<FormItem[]>([]);
   // 当前显示的表结构还是表数据
   const [currentContent, setCurrentContent] = useState<string>('structure');
@@ -47,10 +49,15 @@ const SpaceTable = () => {
     pageSize: 10,
     current: 1,
   });
+  // 导入的loading
+  const [importLoading, setImportLoading] = useState(false);
 
+  // 导出和保存的loading
   const [loading, setLoading] = useState(false);
   // 开启关闭编辑表的弹窗
   const [open, setOpen] = useState<boolean>(false);
+  // 开启关闭清除的弹窗
+  const [openDelete, setOpenDelete] = useState<boolean>(false);
 
   // 返回上一级
   const handleBack = () => {
@@ -70,12 +77,6 @@ const SpaceTable = () => {
         addedRef.current?.onShow('新增数据', AddParams);
       }
     }
-  };
-
-  // 切换页码或者每页显示的条数
-  const changePagination = (page: number, pageSize: number) => {
-    console.log(page, pageSize);
-    setPagination({ ...pagination, current: page, pageSize });
   };
 
   // 获取当前浏览器的高度
@@ -100,7 +101,7 @@ const SpaceTable = () => {
       editTableRef.current.handleAddRow({
         nullableFlag: true,
         enabledFlag: true,
-        fieldType: 1,
+        fieldType: 2,
         dataLength: 1,
       });
     }
@@ -128,23 +129,40 @@ const SpaceTable = () => {
                     { label: 'false', value: 'false' },
                   ]
                 : undefined,
+            maxLength:
+              item.fieldType === 1
+                ? 255
+                : item.fieldType === 7
+                ? 1000
+                : undefined,
           };
         });
       setAddParams(addParams);
       setDetail(res.data);
       const arr = res.data.fieldList.map((item) => {
         return {
-          title: item.fieldDescription,
+          title: item.fieldName,
+          description: item.fieldDescription,
           dataIndex: item.fieldName,
           key: item.fieldName,
-          type: item.fieldType === 5 ? ('time' as const) : ('text' as const),
+          type:
+            item.fieldType === 5
+              ? ('time' as const)
+              : item.fieldType === 4
+              ? ('checkbox' as const)
+              : ('text' as const),
         };
       });
       const table = res.data.fieldList.map((item) => {
         if (item.fieldType === 1 || item.fieldType === 7) {
-          return { ...item, dataLength: item.fieldType, fieldType: 1 };
+          return {
+            ...item,
+            dataLength: item.fieldType,
+            fieldType: 1,
+            nullableFlag: !item.nullableFlag,
+          };
         }
-        return item;
+        return { ...item, nullableFlag: !item.nullableFlag };
       });
       setTableStructure(table);
       setColumns(arr);
@@ -159,9 +177,10 @@ const SpaceTable = () => {
           return {
             ...item,
             fieldType: 7,
+            nullableFlag: !item.nullableFlag,
           };
         }
-        return item;
+        return { ...item, nullableFlag: !item.nullableFlag };
       });
       const _params = {
         id: tableId,
@@ -178,16 +197,19 @@ const SpaceTable = () => {
   };
 
   // 获取表数据的数据
-  const getTable = async () => {
+  const getTable = async (params: Global.IGetList) => {
+    const _params = {
+      tableId: tableId,
+      ...params,
+    };
     try {
-      const _params = {
-        tableId: tableId,
-        pageNo: pagination.current,
-        pageSize: pagination.pageSize,
-      };
       const res = await service.getTableData(_params);
       setTableData(res.data.records);
-      setPagination({ ...pagination, total: res.data.total });
+      setPagination({
+        ...pagination,
+        total: res.data.total,
+        current: res.data.current,
+      });
     } catch (error) {}
   };
   // 新增和修改数据
@@ -203,7 +225,7 @@ const SpaceTable = () => {
       } else {
         await service.addTableData(_params);
       }
-      getTable();
+      getTable({ pageNo: pagination.current, pageSize: pagination.pageSize });
       getDetails();
       addedRef.current?.onClose();
     } catch (error) {}
@@ -216,6 +238,7 @@ const SpaceTable = () => {
       const _params = {
         tableName: value.name,
         tableDescription: value.description,
+        icon: value.icon,
         spaceId: spaceId,
         id: detail?.id,
       };
@@ -224,6 +247,7 @@ const SpaceTable = () => {
         ...(detail as IgetDetails),
         tableName: value.name,
         tableDescription: value.description,
+        icon: value.icon,
       });
       setOpen(false);
     } catch (error) {}
@@ -245,57 +269,72 @@ const SpaceTable = () => {
           };
           await service.deleteTableData(_params);
           message.success('删除成功');
-          getTable();
+          getTable({
+            pageNo: pagination.current,
+            pageSize: pagination.pageSize,
+          });
         },
       });
     } catch (error) {}
   };
 
+  // 切换页码或者每页显示的条数
+  const changePagination = (page: number, pageSize: number) => {
+    setPagination({ ...pagination, current: page, pageSize });
+    getTable({ pageNo: page, pageSize: pageSize });
+  };
   // 清除所有数据
   const clearData = async () => {
-    Modal.confirm({
-      title: '清除确认',
-      content: '确定要清除所有数据吗？',
-      okText: '确定',
-      cancelText: '取消',
-      icon: <ExclamationCircleFilled />,
-      onOk: async () => {
-        await service.clearAllData(tableId);
-        message.success('清除成功');
-        setTableData([]);
-      },
-    });
+    setOpenDelete(true);
+  };
+
+  const onSureClear = async () => {
+    try {
+      await service.clearTableData(tableId);
+      message.success('清除成功');
+      setTableData([]);
+      setPagination({ total: 0, current: 1, pageSize: 10 });
+      setOpenDelete(false);
+    } catch (error) {}
   };
 
   // 导入数据
   const handleChangeFile = async (info: any) => {
     if (info.file.status !== 'done') return;
+    setImportLoading(true);
     try {
-      console.log(info);
       await service.importTableData(tableId, info.file.originFileObj);
       message.success('导入成功');
-      getTable();
-    } catch (error) {
-      console.log(error);
+      getTable({ pageNo: 1, pageSize: 10 });
+      setPagination({ ...pagination, current: 1, pageSize: 10 });
+      setImportLoading(false);
+    } finally {
+      setImportLoading(false);
     }
   };
   // 导出数据
   const exportData = async () => {
+    setLoading(true);
     try {
       const _res = await service.exportTableData(tableId);
-      const blob = new Blob([_res?.data]); // 将响应数据转换为 Blob 对象
+      const blob = new Blob([_res], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      }); // 将响应数据转换为 Blob 对象
       const objectURL = URL.createObjectURL(blob); // 创建一个 URL 对象
       const link = document.createElement('a'); // 创建一个 a 标签
       link.href = objectURL;
       link.download = `${detail?.tableName}.xlsx`; // 设置下载文件的名称
       link.click(); // 模拟点击下载
       URL.revokeObjectURL(objectURL); // 释放 URL 对象
-    } catch (error) {}
+      setLoading(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     getDetails();
-    getTable();
+    getTable({ pageNo: 1, pageSize: 10 });
   }, []);
 
   // 表数据的操作列
@@ -346,6 +385,7 @@ const SpaceTable = () => {
             ]}
             activeKey={currentContent}
             onChange={onChange}
+            className="tabs-style"
           />
           {currentContent === 'structure' && (
             <Space>
@@ -372,9 +412,15 @@ const SpaceTable = () => {
                 onChange={handleChangeFile}
                 showUploadList={false}
               >
-                <Button icon={<UploadOutlined />}>导入</Button>
+                <Button icon={<UploadOutlined />} loading={importLoading}>
+                  导入
+                </Button>
               </Upload>
-              <Button icon={<DownloadOutlined />} onClick={exportData}>
+              <Button
+                icon={<DownloadOutlined />}
+                loading={loading}
+                onClick={exportData}
+              >
                 导出
               </Button>
               <Button icon={<PlusOutlined />} onClick={onShow}>
@@ -389,6 +435,7 @@ const SpaceTable = () => {
               columns={columns}
               tableData={tableData}
               showEditRow
+              showDescription
               // showIndex
               pagination={pagination}
               showPagination
@@ -396,6 +443,7 @@ const SpaceTable = () => {
               onPageChange={changePagination}
               scrollHeight={getBrowserHeight() + 40}
               actionColumn={actionColumn}
+              actionColumnWidth={100}
             />
           )}
           {currentContent === 'structure' && (
@@ -411,6 +459,7 @@ const SpaceTable = () => {
               onDataSourceChange={onDataSourceChange}
               formRef={editTableRef}
               rowKey={'row_key_chao'}
+              actionColumnWidth={60}
             />
           )}
         </div>
@@ -432,6 +481,13 @@ const SpaceTable = () => {
               }
             : undefined
         }
+      />
+      <DeleteSure
+        onSure={onSureClear}
+        onCancel={() => setOpenDelete(false)}
+        open={openDelete}
+        title={'清除确认'}
+        sureText={detail?.tableName || '人之初性本善'}
       />
     </div>
   );

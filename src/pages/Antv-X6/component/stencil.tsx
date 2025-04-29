@@ -53,13 +53,13 @@ const StencilContent = ({ dragChild, foldWrapItem }: Prop) => {
                 return (
                   shouldShow && (
                     <div
-                      className="child-content"
+                      className="child-content dis-left"
                       draggable="true"
                       key={child.type}
                       onDragEnd={(e) => handleDragStart(child, e)}
                       onClick={() => handleDragStart(child)}
                     >
-                      {child.icon}
+                      <div className="icon-box-style">{child.icon}</div>
                       <span>{child.name}</span>
                     </div>
                   )

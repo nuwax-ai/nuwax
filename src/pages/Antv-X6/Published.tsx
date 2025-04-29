@@ -14,6 +14,7 @@ interface PublishedProp {
   onCancel: () => void;
   onSubmit: (params: Values) => void;
   loading: boolean;
+  scope?: PluginPublishScopeEnum | null;
 }
 
 const Published: React.FC<PublishedProp> = ({
@@ -22,6 +23,7 @@ const Published: React.FC<PublishedProp> = ({
   onCancel,
   onSubmit,
   loading,
+  scope = PluginPublishScopeEnum.Tenant,
 }) => {
   const [form] = Form.useForm();
 
@@ -56,7 +58,7 @@ const Published: React.FC<PublishedProp> = ({
         layout="vertical"
         onFinish={onFinish}
         initialValues={{
-          scope: PluginPublishScopeEnum.Tenant,
+          scope: scope,
         }}
       >
         <Form.Item name="scope" label="发布范围">

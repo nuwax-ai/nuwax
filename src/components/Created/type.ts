@@ -17,6 +17,8 @@ export interface CreatedProp {
   // 点击添加后,通知父组件添加节点
   onAdded: (val: CreatedNodeItem) => void;
   addComponents?: AgentAddComponentStatusInfo[];
+  // 隐藏顶部
+  hideTop?: AgentComponentTypeEnum[];
 }
 
 export type MenuItem = Required<MenuProps>['items'][number];

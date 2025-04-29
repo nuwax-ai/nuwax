@@ -261,7 +261,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
             <span className="node-title-style ">查询上限</span>
           </div>
           <Form.Item name="limit">
-            <InputNumber min={1} max={100} />
+            <InputNumber min={1} max={1000} placeholder="请输入查询上限" />
           </Form.Item>
         </div>
       )}
@@ -333,8 +333,11 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
           if (text.includes('```')) {
             text = text.replace(/```/g, '');
           }
+          console.log('text', text);
           // 只取第二个SQL语句
-          const finalSql = text.replace('sql', '');
+          const finalSql = text.startsWith('sql')
+            ? text.replace('sql', '').trim()
+            : text.trim();
           form.setFieldsValue({ sql: finalSql || '' });
           setIsModified(true);
         }}

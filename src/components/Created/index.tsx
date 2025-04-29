@@ -35,7 +35,7 @@ const buttonList: ButtonList[] = [
   { label: '插件', key: AgentComponentTypeEnum.Plugin },
   { label: '工作流', key: AgentComponentTypeEnum.Workflow },
   { label: '知识库', key: AgentComponentTypeEnum.Knowledge },
-  { label: '数据库', key: AgentComponentTypeEnum.Table },
+  { label: '数据表', key: AgentComponentTypeEnum.Table },
 ];
 
 // 创建插件、工作流、知识库、数据库
@@ -45,6 +45,7 @@ const Created: React.FC<CreatedProp> = ({
   checkTag,
   onAdded,
   addComponents,
+  hideTop,
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
   // const { spaceId } = useModel('workflow');
@@ -360,18 +361,20 @@ const Created: React.FC<CreatedProp> = ({
         onChange={changeTitle}
         defaultValue="plugInNode"
       >
-        {buttonList.map((item, index) => (
-          <span key={item.key} className="radio-title-style">
-            <Radio.Button
-              value={item.key}
-              className={`radio-button-style ${
-                index === 0 ? 'first-radio-style' : ''
-              }`}
-            >
-              {item.label}
-            </Radio.Button>
-          </span>
-        ))}
+        {buttonList
+          .filter((item) => !hideTop?.includes(item.key))
+          .map((item, index) => (
+            <span key={item.key} className="radio-title-style">
+              <Radio.Button
+                value={item.key}
+                className={`radio-button-style ${
+                  index === 0 ? 'first-radio-style' : ''
+                }`}
+              >
+                {item.label}
+              </Radio.Button>
+            </span>
+          ))}
       </Radio.Group>
     </div>
   );

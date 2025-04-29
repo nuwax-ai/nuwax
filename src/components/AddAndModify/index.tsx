@@ -35,6 +35,8 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
     const [title, setTitle] = useState<string>('新增');
     // 表单渲染的数据格式
     const [formList, setFormList] = useState<FormItem[]>([]);
+    // loading状态
+    const [confirmLoading, setConfirmLoading] = useState(false);
     const [form] = Form.useForm();
 
     const inputNode = (item: FormItem) => {
@@ -66,7 +68,13 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
             );
           case 'TextArea':
             return (
-              <Input.TextArea placeholder={item.placeholder || '请输入'} />
+              <Input.TextArea
+                placeholder={item.placeholder || '请输入'}
+                className="dispose-textarea-count"
+                showCount
+                maxLength={item.maxLength || 200}
+                autoSize={{ minRows: 3, maxRows: 6 }}
+              />
             );
           case 'Cascader':
             return (
@@ -82,7 +90,13 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
           case 'Number':
             return <InputNumber />;
           default:
-            return <Input placeholder={item.placeholder || '请输入'} />;
+            return (
+              <Input
+                showCount
+                maxLength={item.maxLength || 30}
+                placeholder={item.placeholder || '请输入'}
+              />
+            );
         }
       }
     };
@@ -99,6 +113,7 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
     };
 
     const onFinish = (values: AnyObject) => {
+      setConfirmLoading(true);
       const _values = { ...initialValues, ...values };
       onSubmit(_values);
     };
@@ -127,6 +142,7 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
     const onClose = () => {
       form.resetFields();
       setOpen(false);
+      setConfirmLoading(false);
     };
 
     // 使用useImperativeHandle暴露方法
@@ -143,18 +159,20 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
           form.submit();
         }}
         onCancel={() => {
-          onClose();
           form.resetFields();
+          onClose();
         }}
         width={width}
         okText="提交"
         cancelText="取消"
+        confirmLoading={confirmLoading}
       >
         <Form
           form={form}
           layout="vertical"
           initialValues={initialValues}
           onFinish={onFinish}
+          onFinishFailed={() => setConfirmLoading(false)}
           requiredMark={customizeRequiredMark}
           className="add-modify-form"
         >
