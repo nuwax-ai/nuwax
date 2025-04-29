@@ -65,7 +65,6 @@ const SpaceTable = () => {
   };
   // 切换表结构还是表数据
   const onChange = (key: string) => {
-    console.log(key);
     setCurrentContent(key);
   };
   //   点击弹出编辑框
@@ -226,7 +225,7 @@ const SpaceTable = () => {
         await service.addTableData(_params);
       }
       getTable({ pageNo: pagination.current, pageSize: pagination.pageSize });
-      getDetails();
+      // getDetails();
       addedRef.current?.onClose();
     } catch (error) {}
     // setVisible(false);
@@ -390,7 +389,7 @@ const SpaceTable = () => {
           {currentContent === 'structure' && (
             <Space>
               <Button icon={<PlusOutlined />} onClick={onAddRow}>
-                新增
+                新增字段
               </Button>
               <Button
                 loading={loading}
