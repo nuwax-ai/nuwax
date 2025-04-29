@@ -928,27 +928,27 @@ const Workflow: React.FC = () => {
           }
           break;
         }
-        case 'TableDataUpdate':
-        case 'TableDataQuery':
-        case 'TableDataDelete': {
-          if (!newFoldWrapItem.nodeConfig.conditionArgs) {
-            form.setFieldValue('conditionArgs', [
-              {
-                firstArg: {
-                  bindValue: null,
-                  bindValueType: null,
-                },
-                secondArg: {
-                  bindValue: null,
-                  bindValueType: null,
-                },
-                compareType: null,
-              },
-            ]);
-            form.setFieldValue('conditionType', 'AND');
-          }
-          break;
-        }
+        // case 'TableDataUpdate':
+        // case 'TableDataQuery':
+        // case 'TableDataDelete': {
+        //   if (!newFoldWrapItem.nodeConfig.conditionArgs) {
+        //     form.setFieldValue('conditionArgs', [
+        //       {
+        //         firstArg: {
+        //           bindValue: null,
+        //           bindValueType: null,
+        //         },
+        //         secondArg: {
+        //           bindValue: null,
+        //           bindValueType: null,
+        //         },
+        //         compareType: null,
+        //       },
+        //     ]);
+        //     form.setFieldValue('conditionType', 'AND');
+        //   }
+        //   break;
+        // }
         default:
           break;
       }

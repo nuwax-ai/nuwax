@@ -194,25 +194,13 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
                                       />
                                     </Form.Item>
                                   </div>
-                                  {type !== 'TableDataQuery' &&
-                                    subFields.length > 1 && (
-                                      <Button
-                                        type="text"
-                                        icon={<MinusCircleOutlined />}
-                                        onClick={() => {
-                                          subOpt.remove(subField.name);
-                                        }}
-                                      />
-                                    )}
-                                  {type === 'TableDataQuery' && (
-                                    <Button
-                                      type="text"
-                                      icon={<MinusCircleOutlined />}
-                                      onClick={() => {
-                                        subOpt.remove(subField.name);
-                                      }}
-                                    />
-                                  )}
+                                  <Button
+                                    type="text"
+                                    icon={<MinusCircleOutlined />}
+                                    onClick={() => {
+                                      subOpt.remove(subField.name);
+                                    }}
+                                  />
                                 </div>
                               );
                             })}
