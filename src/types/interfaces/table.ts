@@ -10,6 +10,7 @@ declare global {
     title: string;
     dataIndex: string;
     type: 'checkbox' | 'tag' | 'text' | 'date' | 'select' | 'time';
+    description?: string;
     map?: AnyObject;
     width?: number;
     editable?: boolean;
@@ -17,6 +18,11 @@ declare global {
     options?: SelectOptions[];
     placeholder?: string;
     defaultValue?: string;
+    // 当form时是否需要更新展示
+    shouldUpdate?: {
+      name: string; // 依赖的字段名
+      value?: string | number; // 当依赖字段的值为1时，才显示该menu
+    };
     onCell?: (record: any) => {
       record: AnyObject;
       dataIndex: string;
@@ -40,6 +46,8 @@ export interface MyTableProp {
   tableData: any[];
   // 表格的滚动高度
   scrollHeight: number;
+  // 表头是否有描述
+  showDescription?: boolean;
   // 操作栏
   actionColumn?: ActionColumn[];
   // 操作栏是否固定在右侧

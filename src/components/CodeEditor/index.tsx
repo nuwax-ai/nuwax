@@ -4,7 +4,7 @@ import { FloatButton, Form } from 'antd';
 import { FormInstance } from 'antd/lib/form/Form';
 import * as monaco from 'monaco-editor';
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'umi';
+import { useModel, useParams } from 'umi';
 import CodeOptimizeModal from '../CodeOptimizeModal';
 
 interface Props {
@@ -25,7 +25,7 @@ const CodeEditor: React.FC<Props> = ({
   const [isMonacoReady, setIsMonacoReady] = useState(false);
   const [open, setOpen] = useState<boolean>(false);
   const { agentId } = useParams();
-
+  const { testRun } = useModel('model');
   useEffect(() => {
     loader.config({
       monaco,
@@ -127,7 +127,7 @@ const CodeEditor: React.FC<Props> = ({
       <FloatButton
         shape="circle"
         type="primary"
-        style={{ insetInlineEnd: 94 }}
+        style={{ insetInlineEnd: 94, display: testRun ? 'none' : 'block' }}
         icon={<ICON_CONFIRM_STAR />}
         tooltip="代码助手"
         onClick={() => {

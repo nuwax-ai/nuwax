@@ -93,6 +93,7 @@ export interface IgetDetails {
   extension: {
     size?: number | string;
   };
+  scope: PluginPublishScopeEnum | null;
 }
 // 试运行所有节点
 export interface ITestRun {

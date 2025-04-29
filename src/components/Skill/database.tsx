@@ -45,8 +45,8 @@ const DataTable: React.FC<DataTableProps> = ({
               </div>
             </div>
           ) : (
-            <div className="dis-left">
-              <div className="flex-1 dis-left dis-no-wrap">
+            <div className="dis-left margin-bottom">
+              <div className="flex-1 dis-left dis-no-wrap ">
                 {params?.map((item) => (
                   <div className="database-tag-style" key={item}>
                     {item}

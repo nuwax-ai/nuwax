@@ -188,7 +188,7 @@ async function getDetail(id: number): Promise<RequestResponse<IgetDetails>> {
 
 // 查询表的业务数据
 async function getTableData(params: {
-  tableId: number;
+  tableId?: number;
   pageNo: number;
   pageSize: number;
 }): Promise<RequestResponse<ITableData>> {
@@ -231,7 +231,7 @@ async function deleteTableData(params: {
 // 清除表数据
 async function clearTableData(id: number): Promise<RequestResponse<null>> {
   return request(`/api/compose/db/table/clearBusinessData/${id}`, {
-    method: 'POST',
+    method: 'GET',
   });
 }
 // 导入表数据

@@ -63,13 +63,6 @@
         justify-content: left;
         flex-wrap: wrap;
 
-        svg {
-          width: 20px;
-          height: 20px;
-          margin-right: 6px;
-          margin-bottom: -5px;
-        }
-
         .child-content {
           width: 50%;
           // margin-top: 4px;
@@ -77,6 +70,18 @@
           letter-spacing: 1px;
           line-height: 22px;
           margin: 6px 0;
+
+          .icon-box-style {
+            width: 20px;
+            height: 20px;
+            margin-right: 6px;
+
+            svg {
+              width: 20px;
+              height: 20px;
+              border-radius: 6px;
+            }
+          }
         }
       }
     }
@@ -293,14 +298,15 @@
     text-align: center;
     height: 74px;
     margin: 0 auto;
+    font-size: 12px;
 
     .ant-empty-image {
-      height: 45px;
+      height: 30px;
     }
 
     svg {
-      width: 100px;
-      height: 50px;
+      width: 50px;
+      height: 30px;
     }
   }
 }
@@ -449,7 +455,7 @@
     flex: 1;
 
     .error-list-item {
-      width: 90%;
+      width: 95%;
       height: 48px;
       border-radius: 8px;
       border: 1px solid #ccc;

@@ -560,8 +560,8 @@ const Workflow: React.FC = () => {
         return { x: e.clientX, y: e.clientY };
       } else {
         return {
-          x: Math.floor(canvasWidth / 2),
-          y: Math.floor(canvasHeight / 2),
+          x: Math.floor(canvasWidth / 2) + Math.floor(Math.random() * 100),
+          y: Math.floor(canvasHeight / 2) + Math.floor(Math.random() * 100),
         };
       }
     };
@@ -943,17 +943,6 @@ const Workflow: React.FC = () => {
                 },
                 compareType: null,
               },
-              {
-                firstArg: {
-                  bindValue: null,
-                  bindValueType: null,
-                },
-                secondArg: {
-                  bindValue: null,
-                  bindValueType: null,
-                },
-                compareType: null,
-              },
             ]);
             form.setFieldValue('conditionType', 'AND');
           }
@@ -1074,6 +1063,7 @@ const Workflow: React.FC = () => {
         onCancel={() => setShowPublish(false)}
         onSubmit={onSubmit}
         loading={loading}
+        scope={info && info.scope ? info.scope : undefined}
       />
     </div>
   );

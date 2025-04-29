@@ -235,6 +235,11 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
         open={open}
         onCancel={() => setOpen(false)}
         addComponents={addComponents}
+        hideTop={[
+          AgentComponentTypeEnum.Table,
+          AgentComponentTypeEnum.Plugin,
+          AgentComponentTypeEnum.Workflow,
+        ]}
       />
     </div>
   );

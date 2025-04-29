@@ -2,6 +2,7 @@ import Created from '@/components/Created';
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import { ModelSelected } from '@/components/ModelSetting';
+import Optimize from '@/components/Optimize';
 import { SkillList } from '@/components/Skill';
 import {
   AgentAddComponentStatusEnum,
@@ -33,6 +34,8 @@ import { FormList, InputAndOut, TreeOutput } from './commonNode';
 const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
+  // 打开关闭优化
+  const [show, setShow] = useState(false);
   // 处于loading状态的组件列表
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]
@@ -151,7 +154,8 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
           title="系统提示词"
           inputFieldName="systemPrompt"
           onExpand
-          // onOptimize
+          onOptimize
+          onOptimizeClick={() => setShow(true)}
           placeholder="系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
         />
       </div>
@@ -161,6 +165,8 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
           title="用户提示词"
           inputFieldName="userPrompt"
           onExpand
+          // onOptimize
+          // onOptimizeClick={() => setShow(true)}
           placeholder="用户提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
         />
       </div>
@@ -180,6 +186,27 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
         open={open}
         onCancel={() => setOpen(false)}
         addComponents={addComponents}
+        hideTop={[AgentComponentTypeEnum.Table]}
+      />
+      <Optimize
+        title="提示词优化"
+        open={show}
+        onCancel={() => {
+          setShow(false);
+        }}
+        onReplace={(newValue?: string) => {
+          if (!newValue) return;
+          let text = newValue;
+          if (text.includes('```')) {
+            text = text.replace(/```/g, '');
+          }
+          console.log('text', text);
+          // 只取第二个SQL语句
+
+          form.setFieldsValue({ systemPrompt: text || '' });
+          setIsModified(true);
+        }}
+        optimizeType="prompt"
       />
     </div>
   );

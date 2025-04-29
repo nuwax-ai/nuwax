@@ -1,6 +1,7 @@
 // 可以编辑的表格
 import type { MyTableProp } from '@/types/interfaces/table';
-import { Button, Checkbox, Space, Table } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
+import { Button, Checkbox, Popover, Space, Table } from 'antd';
 import React from 'react';
 import './index.less';
 const MyTable: React.FC<MyTableProp> = ({
@@ -8,6 +9,7 @@ const MyTable: React.FC<MyTableProp> = ({
   tableData,
   actionColumn,
   actionColumnFixed,
+  showDescription,
   scrollHeight,
   showIndex,
   rowKey = 'id',
@@ -38,6 +40,9 @@ const MyTable: React.FC<MyTableProp> = ({
                 onChange: onPageChange,
                 showTotal: (total) => `共 ${total} 条`,
                 showSizeChanger: true,
+                locale: {
+                  items_per_page: '条 / 页',
+                },
               }
             : false
         }
@@ -60,12 +65,27 @@ const MyTable: React.FC<MyTableProp> = ({
         {columns.map((item, index) => (
           <Table.Column
             key={item.dataIndex}
-            title={item.title}
+            title={
+              <div className="dis-left">
+                <span>{item.title}</span>
+                {showDescription && item.description && (
+                  <Popover
+                    content={<p>{item.description}</p>}
+                    trigger="hover"
+                    mouseEnterDelay={0.5}
+                    placement="top"
+                  >
+                    <InfoCircleOutlined style={{ marginLeft: '10px' }} />
+                  </Popover>
+                )}
+              </div>
+            }
             ellipsis
             fixed={actionColumnFixed && index === 0 ? 'left' : undefined} // 设置为固定列
-            width={item.title.length * 26} // 假设每个字符宽度为 16px
+            width={item.title.length * 20} // 假设每个字符宽度为 16px
             dataIndex={item.dataIndex}
             render={(value) => {
+              console.log('item.type', item.type);
               switch (item.type) {
                 case 'checkbox':
                   return <Checkbox checked={value} />;
@@ -84,7 +104,7 @@ const MyTable: React.FC<MyTableProp> = ({
         {/* 操作列 */}
         {actionColumn && (
           <Table.Column
-            title={'操作'}
+            title={<span style={{ marginLeft: '10px' }}>操作</span>}
             dataIndex="action"
             width={actionColumnWidth}
             className={'table-action-column-fiexd'}

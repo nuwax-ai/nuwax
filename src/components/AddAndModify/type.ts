@@ -11,6 +11,7 @@ export interface FormItem {
   rules?: AnyObject[];
   placeholder?: string;
   isSpan?: boolean;
+  maxLength?: number;
 }
 
 export interface AddedProps {
