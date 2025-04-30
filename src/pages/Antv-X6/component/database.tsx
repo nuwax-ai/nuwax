@@ -295,6 +295,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
             params={form.getFieldValue('outputArgs') || []} // 改为直接读取表单最新值
             form={form}
             showCheck
+            isNotAdd
           />
         </Form.Item>
       ) : (

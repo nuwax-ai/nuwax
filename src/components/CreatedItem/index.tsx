@@ -137,7 +137,7 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
           <Input.TextArea
             placeholder="请输入描述"
             autoSize={{ minRows: 3, maxRows: 6 }}
-            maxLength={1000}
+            maxLength={100}
             showCount
             className="dispose-textarea-count"
           />

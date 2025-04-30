@@ -62,6 +62,7 @@ export interface TreeFormProps {
   notShowTitle?: boolean;
   showCheck?: boolean;
   isBody?: boolean;
+  isNotAdd?: boolean;
 }
 
 export interface TreeFormSubProps {

@@ -16,6 +16,7 @@ import {
   ExclamationCircleFilled,
   LeftOutlined,
   PlusOutlined,
+  ReloadOutlined,
   SaveOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
@@ -98,7 +99,7 @@ const SpaceTable = () => {
   const onAddRow = () => {
     if (editTableRef.current) {
       editTableRef.current.handleAddRow({
-        nullableFlag: true,
+        nullableFlag: false,
         enabledFlag: true,
         fieldType: 1,
         dataLength: 1,
@@ -268,9 +269,9 @@ const SpaceTable = () => {
           };
           await service.deleteTableData(_params);
           message.success('删除成功');
-          console.log(tableData.length);
           if (tableData.length === 1) {
             getDetails();
+            setTableData([]);
           } else {
             getTable({
               pageNo: pagination.current,
@@ -392,47 +393,59 @@ const SpaceTable = () => {
             onChange={onChange}
             className="tabs-style"
           />
-          {currentContent === 'structure' && (
-            <Space>
-              <Button icon={<PlusOutlined />} onClick={onAddRow}>
-                新增字段
-              </Button>
-              <Button
-                loading={loading}
-                icon={<SaveOutlined />}
-                onClick={onSave}
-              >
-                保存
-              </Button>
-            </Space>
-          )}
-          {currentContent === 'data' && (
-            <Space>
-              <Button icon={<ClearOutlined />} onClick={clearData}>
-                清除所有数据
-              </Button>
-              <Upload
-                accept={'.xlsx'}
-                action={''}
-                onChange={handleChangeFile}
-                showUploadList={false}
-              >
-                <Button icon={<UploadOutlined />} loading={importLoading}>
-                  导入
+          <Space>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                getDetails();
+                getTable({ pageNo: 1, pageSize: 10 });
+                setPagination({ ...pagination, current: 1, pageSize: 10 });
+              }}
+            >
+              刷新
+            </Button>
+            {currentContent === 'structure' && (
+              <>
+                <Button icon={<PlusOutlined />} onClick={onAddRow}>
+                  新增字段
                 </Button>
-              </Upload>
-              <Button
-                icon={<DownloadOutlined />}
-                loading={loading}
-                onClick={exportData}
-              >
-                导出
-              </Button>
-              <Button icon={<PlusOutlined />} onClick={onShow}>
-                新增
-              </Button>
-            </Space>
-          )}
+                <Button
+                  loading={loading}
+                  icon={<SaveOutlined />}
+                  onClick={onSave}
+                >
+                  保存
+                </Button>
+              </>
+            )}
+            {currentContent === 'data' && (
+              <>
+                <Button icon={<ClearOutlined />} onClick={clearData}>
+                  清除所有数据
+                </Button>
+                <Upload
+                  accept={'.xlsx'}
+                  action={''}
+                  onChange={handleChangeFile}
+                  showUploadList={false}
+                >
+                  <Button icon={<UploadOutlined />} loading={importLoading}>
+                    导入
+                  </Button>
+                </Upload>
+                <Button
+                  icon={<DownloadOutlined />}
+                  loading={loading}
+                  onClick={exportData}
+                >
+                  导出
+                </Button>
+                <Button icon={<PlusOutlined />} onClick={onShow}>
+                  新增
+                </Button>
+              </>
+            )}
+          </Space>
         </div>
         <div className="flex-1">
           {currentContent === 'data' && (

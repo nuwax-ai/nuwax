@@ -46,7 +46,6 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
     onConfirm(parameter);
     onCancel();
   };
-  console.log(params);
 
   useEffect(() => {
     setParameter(params);

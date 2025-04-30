@@ -249,7 +249,7 @@ const MyTable: React.FC<MyTableProp> = ({
                     dataIndex={item.dataIndex}
                     render={(value, record, index) => {
                       const shouldEdit =
-                        (item.edit || dataEmptyFlag || record?.isNew) &&
+                        (item.edit || !dataEmptyFlag || record?.isNew) &&
                         !record?.systemFieldFlag;
                       if (shouldEdit) {
                         return (

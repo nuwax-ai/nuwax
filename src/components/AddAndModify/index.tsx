@@ -135,14 +135,17 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
           }
         });
         setInitialValues(initialValues);
+        form.setFieldsValue(initialValues);
+      } else {
+        setInitialValues({});
+        form.setFieldsValue({});
       }
       setOpen(true);
     };
 
     const onClose = () => {
-      form.resetFields();
+      Modal.destroyAll();
       setOpen(false);
-      setConfirmLoading(false);
     };
 
     // 使用useImperativeHandle暴露方法
@@ -166,6 +169,7 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
         okText="提交"
         cancelText="取消"
         confirmLoading={confirmLoading}
+        className="add-modal-style"
       >
         <Form
           form={form}
