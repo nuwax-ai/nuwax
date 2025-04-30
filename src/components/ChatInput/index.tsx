@@ -1,4 +1,5 @@
 import sendImage from '@/assets/images/send_image.png';
+import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
@@ -12,7 +13,6 @@ import type { UploadProps } from 'antd';
 import { Input, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import ChatUploadFile from './ChatUploadFile';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

@@ -1,3 +1,4 @@
+import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
@@ -13,15 +14,14 @@ import type { UploadProps } from 'antd';
 import { Input, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
-import ChatUploadFile from './ChatUploadFile';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 /**
- * 聊天输入组件
+ * 手机端聊天输入组件
  */
-const ChatInput: React.FC<ChatInputProps> = ({
+const ChatInputHome: React.FC<ChatInputProps> = ({
   className,
   onEnter,
   visible,
@@ -137,7 +137,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className={cx(styles.container, 'flex', 'flex-col', className)}>
+    <div className={cx('w-full', className)}>
       <div className={cx(styles['chat-container'], 'flex', 'flex-col')}>
         {/*文件列表*/}
         <ConditionRender condition={files?.length}>
@@ -239,4 +239,4 @@ const ChatInput: React.FC<ChatInputProps> = ({
   );
 };
 
-export default ChatInput;
+export default ChatInputHome;

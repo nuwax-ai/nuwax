@@ -154,7 +154,7 @@ const Chat: React.FC = () => {
             >
               <LoadingOutlined className={cx(styles.loading)} />
             </div>
-          ) : messageList?.length > 0 || chatSuggestList?.length > 0 ? (
+          ) : messageList?.length > 0 ? (
             <>
               {messageList?.map((item: MessageInfo, index: number) => (
                 <ChatView
@@ -179,13 +179,22 @@ const Chat: React.FC = () => {
               <AgentChatEmpty
                 icon={conversationInfo?.agent?.icon}
                 name={conversationInfo?.agent?.name}
+                // 会话建议
+                extra={
+                  <RecommendList
+                    className="mt-16"
+                    itemClassName={cx(styles['suggest-item'])}
+                    chatSuggestList={chatSuggestList}
+                    onClick={handleMessageSend}
+                  />
+                }
               />
             )
           )}
         </div>
         {/*会话输入框*/}
         <ChatInputHome
-          className={cx(styles['chat-input'])}
+          className={cx(styles['chat-input-container'])}
           onEnter={handleMessageSend}
           visible={showScrollBtn}
           manualComponents={manualComponents}
