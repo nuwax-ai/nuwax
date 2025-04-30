@@ -92,4 +92,7 @@ export interface TreeInputProps {
   params: InputAndOutConfig[];
   options?: InputAndOutConfig[];
   showAdd?: boolean;
+  showDelete?: boolean;
+  descText?: string;
+  nameText?: string;
 }

@@ -170,9 +170,8 @@ const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
           </Button>
         </div>
       )}
-      {messageList?.length > 0 && optimizeType === 'prompt' && (
+      {messageList?.length === 0 && optimizeType === 'prompt' && (
         <Button
-          style={{ marginTop: '10px' }}
           type="default"
           className={cx(styles['btn'])}
           onClick={() =>

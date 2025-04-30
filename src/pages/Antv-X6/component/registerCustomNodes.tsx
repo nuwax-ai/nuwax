@@ -9,7 +9,7 @@ import { ChildNode, NodeProps } from '@/types/interfaces/graph';
 import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
-import { Input, Tag } from 'antd';
+import { Tag } from 'antd';
 import React from 'react';
 import '../index.less';
 
@@ -75,15 +75,12 @@ export class GeneralNode extends React.Component<NodeProps> {
                   <span className="condition-title-sytle">
                     {branchTypeMap[item.branchType || 'ELSE_IF']}
                   </span>
-                  <Input
-                    value={
-                      item.conditionArgs
-                        ? item.conditionArgs[0]?.firstArg?.name
-                        : ''
-                    }
-                    className="flex-1"
-                    disabled
-                  />
+
+                  <div className="flex-1 border-box">
+                    {item.conditionArgs
+                      ? item.conditionArgs[0]?.firstArg?.name
+                      : ''}
+                  </div>
                   {item.conditionArgs && item.conditionArgs.length > 0 && (
                     <div className="dis-left">
                       {/* 添加空值检查，确保 compareType 不是 null 或 undefined */}
@@ -95,15 +92,11 @@ export class GeneralNode extends React.Component<NodeProps> {
                             ]
                           : ''}
                       </span>
-                      <Input
-                        disabled
-                        value={
-                          item.conditionArgs[0]?.secondArg?.name ||
+                      <div className="condition-right-input border-box">
+                        {item.conditionArgs[0]?.secondArg?.name ||
                           item.conditionArgs[0]?.secondArg?.bindValue ||
-                          ''
-                        }
-                        className="condition-right-input"
-                      />
+                          ''}
+                      </div>
                     </div>
                   )}
                 </div>

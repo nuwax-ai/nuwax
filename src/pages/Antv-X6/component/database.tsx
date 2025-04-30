@@ -244,6 +244,8 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
             options={form.getFieldValue('tableFields') || []}
             showAdd={type === 'TableDataUpdate'}
             params={form.getFieldValue('inputArgs') || []}
+            showDelete={type === 'TableDataUpdate'}
+            descText="变量值"
           />
         </div>
       )}

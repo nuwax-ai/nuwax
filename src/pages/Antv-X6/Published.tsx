@@ -26,7 +26,6 @@ const Published: React.FC<PublishedProp> = ({
   scope = PluginPublishScopeEnum.Tenant,
 }) => {
   const [form] = Form.useForm();
-
   const onFinish: FormProps<{
     scope: PluginPublishScopeEnum;
     remark: string;
@@ -37,6 +36,8 @@ const Published: React.FC<PublishedProp> = ({
   useEffect(() => {
     if (!open) {
       form.resetFields();
+    } else {
+      form.setFieldsValue({ scope: scope });
     }
   }, [open]);
   return (
@@ -53,14 +54,7 @@ const Published: React.FC<PublishedProp> = ({
         form.submit();
       }}
     >
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={onFinish}
-        initialValues={{
-          scope: scope,
-        }}
-      >
+      <Form form={form} layout="vertical" onFinish={onFinish}>
         <Form.Item name="scope" label="发布范围">
           <Radio.Group options={PLUGIN_PUBLISH_OPTIONS} />
         </Form.Item>

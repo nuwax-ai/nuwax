@@ -1,5 +1,9 @@
 import { InputAndOutConfig } from '@/types/interfaces/node';
-import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  InfoCircleOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import { Button, Popover, Tag, Tree } from 'antd';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
@@ -13,6 +17,9 @@ const TreeInput: React.FC<TreeInputProps> = ({
   params,
   options,
   showAdd,
+  showDelete,
+  descText = '变量类型',
+  nameText = '变量名',
 }) => {
   const [treeData, setTreeData] = useState<InputAndOutConfig[]>(params || []);
   const { setIsModified } = useModel('workflow');
@@ -55,6 +62,14 @@ const TreeInput: React.FC<TreeInputProps> = ({
       updateTreeData(newData);
       return newData;
     });
+  };
+
+  // 删除节点
+  const removeItem = (item: string) => {
+    // 根据key删除节点
+    const newTreeData = treeData.filter((node) => node.key !== item);
+    updateTreeData(newTreeData);
+    setIsModified(true); // 标记为修改状态，用于保存修改后的数据
   };
 
   // 被添加的数据样式
@@ -108,6 +123,13 @@ const TreeInput: React.FC<TreeInputProps> = ({
             value={nodeData.bindValue}
           />
         </div>
+
+        {showDelete && (
+          <DeleteOutlined
+            style={{ marginLeft: '6px' }}
+            onClick={() => removeItem(nodeData.key)}
+          />
+        )}
       </div>
     );
   };
@@ -129,14 +151,14 @@ const TreeInput: React.FC<TreeInputProps> = ({
               marginLeft: `1%`,
             }}
           >
-            变量名
+            {nameText}
           </span>
           <span
             style={{
-              marginLeft: `35%`,
+              marginLeft: showDelete ? '30%' : `35%`,
             }}
           >
-            变量类型
+            {descText}
           </span>
         </div>
       )}
