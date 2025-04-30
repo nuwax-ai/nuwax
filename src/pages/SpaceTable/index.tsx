@@ -133,7 +133,7 @@ const SpaceTable = () => {
               item.fieldType === 1
                 ? 255
                 : item.fieldType === 7
-                ? 1000
+                ? 4194304
                 : undefined,
           };
         });

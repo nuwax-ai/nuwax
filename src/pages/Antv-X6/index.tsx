@@ -30,7 +30,7 @@ import { createSSEConnection } from '@/utils/fetchEventSource';
 import { changeNodeConfig, updateNode } from '@/utils/updateNode';
 import { getEdges, returnImg } from '@/utils/workflow';
 import { Form, message } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import ControlPanel from './controlPanel';
@@ -152,11 +152,11 @@ const Workflow: React.FC = () => {
       // 获取节点和边的数据
       const _nodeList = _res.data.nodes;
       const _edgeList = getEdges(_nodeList);
-      // if (_res.data.extension && _res.data.extension.size) {
-      //   graphRef.current.changeGraphZoom(_res.data.extension.size);
-      // }
       // 修改数据，更新画布
       setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
+      if (_res.data.extension?.size) {
+        graphRef.current.changeGraphZoom(_res.data.extension?.size);
+      }
     } catch (error) {
       console.error('Failed to fetch graph data:', error);
     }
@@ -183,12 +183,19 @@ const Workflow: React.FC = () => {
     graphRef.current.changeGraphZoom(val);
   };
   // 调整画布的大小(滚轮)
-  const changeZoom = (val: number) => {
-    onConfirm({
-      id: workflowId,
-      extension: { size: val },
-    });
-  };
+  const changeZoom = useMemo(() => {
+    let timer: NodeJS.Timeout;
+    return (val: number) => {
+      if (!val) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        onConfirm({
+          id: workflowId,
+          extension: { size: val },
+        });
+      }, 1000);
+    };
+  }, [workflowId]);
   // 获取当前节点的参数
   const getRefernece = async (id: number) => {
     // 获取节点需要的引用参数
@@ -217,7 +224,8 @@ const Workflow: React.FC = () => {
       graphRef.current.updateNode(_res.data.id, _res.data);
     }
   };
-  // 更新节点数据
+  // 更新节点
+
   const changeNode = async (config: ChildNode, update?: boolean | string) => {
     let params = JSON.parse(JSON.stringify(config));
     if (update && update === 'moved') {
@@ -241,33 +249,19 @@ const Workflow: React.FC = () => {
     const _res = await updateNode(params);
     if (_res.code === Constant.success) {
       if (update) {
-        if (typeof update === 'string' && update !== 'moved') {
+        if (update !== 'moved') {
           // 新增和删除边以后，如果当前的节点是被连接的节点，那么就要更新当前节点的参数
-          if (foldWrapItemRef.current.id === Number(update)) {
-            getRefernece(Number(update));
-          }
-        } else {
-          if (typeof update === 'number') {
-            // 这里是在添加连线
-            graphRef.current.updateNode(params.id, params);
-          }
+          getRefernece(Number(foldWrapItemRef.current.id));
         }
         if (config.type === 'Loop') {
           // 如果传递的是boolean，那么证明要更新这个节点
           getNodeConfig(Number(config.id));
         }
       }
-
+      // 如果是修改节点的参数，那么就要更新当前节点的参数
       if (config.id === foldWrapItemRef.current.id) {
         setFoldWrapItem(params);
       }
-      // else {
-      //   console.log('更新成功',config.id,foldWrapItemRef.current.id);
-      //   if (config.id === foldWrapItemRef.current.id) {
-      //     // 如果传递的是boolean，那么证明要更新这个节点
-      //     getNodeConfig(Number(config.id));
-      //   }
-      // }
       changeUpdateTime();
     }
     // setIsUpdate(false)
@@ -277,7 +271,6 @@ const Workflow: React.FC = () => {
     try {
       const currentFoldWrapItem = foldWrapItemRef.current; // 保存当前值
       const values = form.getFieldsValue(true);
-      console.log(values);
       let newNodeConfig;
       if (
         ['QA', 'IntentRecognition', 'Condition'].includes(
@@ -316,9 +309,9 @@ const Workflow: React.FC = () => {
   const changeDrawer = async (child: ChildNode | null) => {
     // 先完全重置表单
     if (foldWrapItemRef.current.id !== 0) {
-      setIsModified((modified: boolean) => {
+      setIsModified(async (modified: boolean) => {
         if (modified) {
-          onFinish();
+          await onFinish();
           if (timerRef.current) {
             clearTimeout(timerRef.current);
           }
@@ -330,7 +323,7 @@ const Workflow: React.FC = () => {
       setTestRun(false);
       setTestRunResult('');
     }
-
+    // form.resetFields();
     setFoldWrapItem((prev) => {
       if (prev.id === 0 && child === null) {
         return prev;
@@ -632,7 +625,7 @@ const Workflow: React.FC = () => {
         setLoading(false);
         setShowPublish(false);
         // 更新时间
-        getDetails();
+        setInfo({ ...(info as IgetDetails), ...values });
       }
     }
   };
@@ -908,8 +901,8 @@ const Workflow: React.FC = () => {
     };
   }, [isModified]);
   useEffect(() => {
-    form.resetFields();
     if (foldWrapItem.id !== 0) {
+      form.resetFields();
       // 使用setTimeout确保重置完成后再设置新值
       const newFoldWrapItem = JSON.parse(JSON.stringify(foldWrapItem));
       form.setFieldsValue(newFoldWrapItem.nodeConfig);
@@ -936,27 +929,6 @@ const Workflow: React.FC = () => {
           }
           break;
         }
-        // case 'TableDataUpdate':
-        // case 'TableDataQuery':
-        // case 'TableDataDelete': {
-        //   if (!newFoldWrapItem.nodeConfig.conditionArgs) {
-        //     form.setFieldValue('conditionArgs', [
-        //       {
-        //         firstArg: {
-        //           bindValue: null,
-        //           bindValueType: null,
-        //         },
-        //         secondArg: {
-        //           bindValue: null,
-        //           bindValueType: null,
-        //         },
-        //         compareType: null,
-        //       },
-        //     ]);
-        //     form.setFieldValue('conditionType', 'AND');
-        //   }
-        //   break;
-        // }
         default:
           break;
       }
