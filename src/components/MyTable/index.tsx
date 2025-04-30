@@ -24,13 +24,14 @@ const MyTable: React.FC<MyTableProp> = ({
       style={{ maxHeight: scrollHeight, overflow: 'hidden' }}
     >
       <Table
+        className="my-table-style"
         dataSource={tableData}
         rowKey={rowKey}
         scroll={{
           x: 'max-content',
           y:
             (pagination?.pageSize || 10) * 54 > scrollHeight - 114
-              ? scrollHeight - 114
+              ? scrollHeight - 144
               : undefined,
         }}
         pagination={
