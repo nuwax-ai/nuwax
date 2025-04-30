@@ -129,15 +129,15 @@ const MyTable: React.FC<MyTableProp> = ({
     type: string,
     name: string,
     options?: SelectOptions[],
-    placeholder?: string,
+    // placeholder?: string,
   ) => {
     switch (type) {
       case 'checkbox':
         return <Checkbox />;
       case 'select':
-        return <Select options={options} />;
+        return <Select options={options} placeholder={'请选择'} />;
       default:
-        return <Input placeholder={placeholder || `请输入${name}`} />;
+        return <Input placeholder={`请输入${name}`} />;
     }
   };
 
@@ -163,6 +163,7 @@ const MyTable: React.FC<MyTableProp> = ({
       );
     }
     if (item.shouldUpdate?.value === undefined) {
+      console.log(fieldValue);
       const componentMap: Record<number, JSX.Element> = {
         1: <Input placeholder="请输入" />,
         2: <InputNumber placeholder="仅支持输入数字，否则不会保存" />,
@@ -184,7 +185,9 @@ const MyTable: React.FC<MyTableProp> = ({
               : record[item.dataIndex]
           }
         >
-          {componentMap[fieldValue] || <Input />}
+          {componentMap[fieldValue] || (
+            <Input placeholder={`请输入${item.title}`} />
+          )}
         </Form.Item>
       );
     }
@@ -272,8 +275,9 @@ const MyTable: React.FC<MyTableProp> = ({
                                   const fieldValue = getFieldValue([
                                     'tableData',
                                     index,
-                                    item.shouldUpdate!.name,
+                                    'fieldType',
                                   ]);
+
                                   return getItem(
                                     index,
                                     item,

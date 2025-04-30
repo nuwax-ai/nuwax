@@ -118,7 +118,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
           label="名称"
           rules={[{ required: true, message: '请输入工作流名称' }]}
         >
-          <Input placeholder="输入工作流名称" showCount maxLength={100} />
+          <Input placeholder="输入工作流名称" showCount maxLength={30} />
         </Form.Item>
         <OverrideTextArea
           name="description"

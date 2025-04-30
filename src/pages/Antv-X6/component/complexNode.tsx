@@ -194,6 +194,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
         onCancel={() => {
           setShow(false);
         }}
+        defaultValue={form.getFieldValue('systemPrompt') || ''}
         onReplace={(newValue?: string) => {
           if (!newValue) return;
           let text = newValue;
