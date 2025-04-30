@@ -54,7 +54,7 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       <div className={cx('flex-1')}>
         <h3>
-          调用方式{' '}
+          <span>调用方式 </span>
           <Tooltip
             title={
               <div>
