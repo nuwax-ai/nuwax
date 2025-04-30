@@ -65,7 +65,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     }
     if (message || files?.length > 0) {
       // enter事件
-      onEnter(message, files, selectedComponentList);
+      onEnter(message, files);
       if (isClearInput) {
         // 置空
         setFiles([]);
@@ -90,7 +90,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       (!!value.trim() || !!files?.length)
     ) {
       // enter事件
-      onEnter(value, files, selectedComponentList);
+      onEnter(value, files);
       if (isClearInput) {
         // 置空
         setFiles([]);

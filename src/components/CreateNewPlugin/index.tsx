@@ -167,7 +167,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
               { required: true, message: '请输入插件的主要功能和使用场景' },
             ]}
             placeholder="请输入插件的主要功能和使用场景，确保内容符合平台规范。帮助用户/大模型更好地理解"
-            maxLength={600}
+            maxLength={100}
           />
           <ConditionRender condition={mode === CreateUpdateModeEnum.Create}>
             <Form.Item
