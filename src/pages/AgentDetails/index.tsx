@@ -6,6 +6,7 @@ import useConversation from '@/hooks/useConversation';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import {
   AssistantRoleEnum,
+  DefaultSelectedEnum,
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
@@ -42,6 +43,9 @@ const AgentDetails: React.FC = () => {
   const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
+  const [selectedComponentList, setSelectedComponentList] = useState<
+    AgentSelectedComponentInfo[]
+  >([]);
 
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
@@ -73,6 +77,37 @@ const AgentDetails: React.FC = () => {
     runDetail(agentId);
   }, [agentId]);
 
+  useEffect(() => {
+    // 初始化选中的组件列表
+    if (agentDetail?.manualComponents?.length) {
+      // 手动组件默认选中的组件
+      const _manualComponents = agentDetail?.manualComponents
+        .filter((item) => item.defaultSelected === DefaultSelectedEnum.Yes)
+        .map((item) => ({
+          id: item.id,
+          type: item.type,
+        }));
+      setSelectedComponentList(_manualComponents || []);
+    }
+  }, [agentDetail?.manualComponents]);
+
+  // 选中配置组件
+  const handleSelectComponent = (item: AgentSelectedComponentInfo) => {
+    const _selectedComponentList = [...selectedComponentList];
+    // 已存在则删除
+    if (_selectedComponentList.some((c) => c.id === item.id)) {
+      const index = _selectedComponentList.findIndex((c) => c.id === item.id);
+      _selectedComponentList.splice(index, 1);
+    } else {
+      _selectedComponentList.push({
+        id: item.id,
+        type: item.type,
+      });
+    }
+
+    setSelectedComponentList(_selectedComponentList);
+  };
+
   // 切换收藏与取消收藏
   const handleToggleCollectSuccess = (isCollect: boolean) => {
     const _agentDetail = cloneDeep(agentDetail);
@@ -100,11 +135,7 @@ const AgentDetails: React.FC = () => {
   }, [agentDetail]);
 
   // 消息发送
-  const handleMessageSend = (
-    message: string,
-    files?: UploadFileInfo[],
-    infos?: AgentSelectedComponentInfo[],
-  ) => {
+  const handleMessageSend = (message: string, files?: UploadFileInfo[]) => {
     if (!agentDetail) {
       return;
     }
@@ -112,7 +143,7 @@ const AgentDetails: React.FC = () => {
     handleCreateConversation(agentDetail.agentId, {
       message,
       files,
-      infos,
+      infos: selectedComponentList,
     });
   };
 
@@ -175,6 +206,8 @@ const AgentDetails: React.FC = () => {
           onEnter={handleMessageSend}
           isClearInput={false}
           manualComponents={agentDetail?.manualComponents || []}
+          selectedComponentList={selectedComponentList}
+          onSelectComponent={handleSelectComponent}
         />
       </div>
       <AgentSidebar

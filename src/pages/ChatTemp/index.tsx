@@ -15,6 +15,7 @@ import {
 import {
   AssistantRoleEnum,
   ConversationEventTypeEnum,
+  DefaultSelectedEnum,
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
@@ -77,6 +78,10 @@ const ChatTemp: React.FC = () => {
   const [manualComponents, setManualComponents] = useState<
     AgentManualComponentInfo[]
   >([]);
+  const [selectedComponentList, setSelectedComponentList] = useState<
+    AgentSelectedComponentInfo[]
+  >([]);
+
   // 会话UID
   const conversationUid = useRef<string>();
 
@@ -457,13 +462,40 @@ const ChatTemp: React.FC = () => {
     addBaseTarget();
   }, []);
 
+  useEffect(() => {
+    // 初始化选中的组件列表
+    if (manualComponents?.length) {
+      // 手动组件默认选中的组件
+      const _manualComponents = manualComponents
+        .filter((item) => item.defaultSelected === DefaultSelectedEnum.Yes)
+        .map((item) => ({
+          id: item.id,
+          type: item.type,
+        }));
+      setSelectedComponentList(_manualComponents || []);
+    }
+  }, [manualComponents]);
+
+  // 选中配置组件
+  const handleSelectComponent = (item: AgentSelectedComponentInfo) => {
+    const _selectedComponentList = [...selectedComponentList];
+    // 已存在则删除
+    if (_selectedComponentList.some((c) => c.id === item.id)) {
+      const index = _selectedComponentList.findIndex((c) => c.id === item.id);
+      _selectedComponentList.splice(index, 1);
+    } else {
+      _selectedComponentList.push({
+        id: item.id,
+        type: item.type,
+      });
+    }
+
+    setSelectedComponentList(_selectedComponentList);
+  };
+
   // 消息发送
-  const handleMessageSend = (
-    message: string,
-    files?: UploadFileInfo[],
-    selectedComponentInfos?: AgentSelectedComponentInfo[],
-  ) => {
-    onMessageSend(message, files, selectedComponentInfos);
+  const handleMessageSend = (message: string, files: UploadFileInfo[] = []) => {
+    onMessageSend(message, files, selectedComponentList);
   };
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
@@ -488,7 +520,15 @@ const ChatTemp: React.FC = () => {
       )}
       ref={messageViewRef}
     >
-      <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
+      <div
+        className={cx(
+          'w-full',
+          'flex-1',
+          'flex',
+          'flex-col',
+          styles['main-content'],
+        )}
+      >
         <ConditionRender condition={messageList?.length > 0}>
           <h3 className={cx(styles.title, 'text-ellipsis')}>
             {conversationInfo?.agent?.name
@@ -546,13 +586,14 @@ const ChatTemp: React.FC = () => {
             onEnter={handleMessageSend}
             visible={showScrollBtn}
             manualComponents={manualComponents}
+            selectedComponentList={selectedComponentList}
+            onSelectComponent={handleSelectComponent}
             onScrollBottom={onScrollBottom}
           />
           <ChatInputPhone
             className={cx(styles['phone-container'])}
             onEnter={handleMessageSend}
             visible={showScrollBtn}
-            manualComponents={manualComponents}
             onScrollBottom={onScrollBottom}
           />
           <p

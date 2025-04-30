@@ -8,6 +8,7 @@ import {
   apiPublishedAgentInfo,
   apiUnCollectAgent,
 } from '@/services/agentDev';
+import { DefaultSelectedEnum } from '@/types/enums/agent';
 import {
   AgentDetailDto,
   AgentSelectedComponentInfo,
@@ -37,6 +38,9 @@ const Home: React.FC = () => {
   const tabsRef = useRef<HTMLDivElement | null>(null);
   const currentAgentTypeRef = useRef<string>('');
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
+  const [selectedComponentList, setSelectedComponentList] = useState<
+    AgentSelectedComponentInfo[]
+  >([]);
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
 
@@ -92,11 +96,42 @@ const Home: React.FC = () => {
     }
   }, [tenantConfigInfo]);
 
+  useEffect(() => {
+    // 初始化选中的组件列表
+    if (agentDetail?.manualComponents?.length) {
+      // 手动组件默认选中的组件
+      const _manualComponents = agentDetail?.manualComponents
+        .filter((item) => item.defaultSelected === DefaultSelectedEnum.Yes)
+        .map((item) => ({
+          id: item.id,
+          type: item.type,
+        }));
+      setSelectedComponentList(_manualComponents || []);
+    }
+  }, [agentDetail?.manualComponents]);
+
+  // 选中配置组件
+  const handleSelectComponent = (item: AgentSelectedComponentInfo) => {
+    const _selectedComponentList = [...selectedComponentList];
+    // 已存在则删除
+    if (_selectedComponentList.some((c) => c.id === item.id)) {
+      const index = _selectedComponentList.findIndex((c) => c.id === item.id);
+      _selectedComponentList.splice(index, 1);
+    } else {
+      _selectedComponentList.push({
+        id: item.id,
+        type: item.type,
+      });
+    }
+
+    setSelectedComponentList(_selectedComponentList);
+  };
+
   // 跳转页面
   const handleEnter = async (
     _message: string,
     files?: UploadFileInfo[],
-    infos?: AgentSelectedComponentInfo[],
+    // infos?: AgentSelectedComponentInfo[],
   ) => {
     if (!tenantConfigInfo) {
       message.warning('租户信息不存在');
@@ -106,7 +141,7 @@ const Home: React.FC = () => {
     await handleCreateConversation(tenantConfigInfo.defaultAgentId, {
       message: _message,
       files,
-      infos,
+      infos: selectedComponentList,
     });
   };
 
@@ -152,6 +187,8 @@ const Home: React.FC = () => {
         onEnter={handleEnter}
         isClearInput={false}
         manualComponents={agentDetail?.manualComponents || []}
+        selectedComponentList={selectedComponentList}
+        onSelectComponent={handleSelectComponent}
       />
       <div
         className={cx(styles.recommend, 'flex', 'content-center', 'flex-wrap')}
