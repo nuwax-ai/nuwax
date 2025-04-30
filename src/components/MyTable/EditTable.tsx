@@ -164,12 +164,12 @@ const MyTable: React.FC<MyTableProp> = ({
     }
     if (item.shouldUpdate?.value === undefined) {
       const componentMap: Record<number, JSX.Element> = {
-        1: <Input />,
-        2: <InputNumber />,
-        3: <InputNumber />,
+        1: <Input placeholder="请输入" />,
+        2: <InputNumber placeholder="仅支持输入数字，否则不会保存" />,
+        3: <InputNumber placeholder="仅支持输入数字，否则不会保存" />,
         4: <Checkbox />,
-        5: <DatePicker />,
-        6: <Input />,
+        5: <DatePicker placeholder="请选择时间" />,
+        6: <Input placeholder="请输入" />,
       };
       return (
         <Form.Item

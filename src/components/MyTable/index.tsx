@@ -82,8 +82,16 @@ const MyTable: React.FC<MyTableProp> = ({
             }
             ellipsis
             fixed={actionColumnFixed && index === 0 ? 'left' : undefined} // 设置为固定列
-            width={item.title.length * 20} // 假设每个字符宽度为 16px
+            width={item.width}
             dataIndex={item.dataIndex}
+            onCell={() => ({
+              style: {
+                maxWidth: item.width,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              },
+            })}
             render={(value) => {
               switch (item.type) {
                 case 'checkbox':
@@ -126,7 +134,6 @@ const MyTable: React.FC<MyTableProp> = ({
                 </Space>
               );
             }}
-            onCell={() => ({ style: { zIndex: 100 } })}
           ></Table.Column>
         )}
       </Table>

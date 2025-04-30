@@ -23,6 +23,7 @@ export interface AddAndModifyRef {
     initialValues?: AnyObject,
   ) => void;
   onClose: () => void;
+  stopLoading: () => void;
 }
 // 新增和修改的组件
 const Added = forwardRef<AddAndModifyRef, AddedProps>(
@@ -123,6 +124,7 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
       formList: FormItem[],
       initialValues?: AnyObject,
     ) => {
+      form.resetFields();
       setTitle(title);
       setFormList(formList);
       if (initialValues) {
@@ -145,13 +147,19 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
 
     const onClose = () => {
       Modal.destroyAll();
+      setConfirmLoading(false);
       setOpen(false);
     };
 
+    // 结束loading
+    const stopLoading = () => {
+      setConfirmLoading(!confirmLoading);
+    };
     // 使用useImperativeHandle暴露方法
     useImperativeHandle(ref, () => ({
       onShow,
       onClose,
+      stopLoading,
     }));
 
     return (

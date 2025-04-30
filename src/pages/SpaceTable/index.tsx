@@ -84,7 +84,7 @@ const SpaceTable = () => {
     return (
       (window.innerHeight ||
         document.documentElement.clientHeight ||
-        document.body.clientHeight) - 120
+        document.body.clientHeight) - 160
     );
   };
   // 触发表格的提交数据
@@ -151,6 +151,7 @@ const SpaceTable = () => {
               : item.fieldType === 4
               ? ('checkbox' as const)
               : ('text' as const),
+          width: 180,
         };
       });
       const table = res.data.fieldList.map((item) => {
@@ -209,6 +210,7 @@ const SpaceTable = () => {
         ...pagination,
         total: res.data.total,
         current: res.data.current,
+        pageSize: res.data.size,
       });
     } catch (error) {}
   };
@@ -228,7 +230,9 @@ const SpaceTable = () => {
       getTable({ pageNo: pagination.current, pageSize: pagination.pageSize });
       // getDetails();
       addedRef.current?.onClose();
-    } catch (error) {}
+    } finally {
+      addedRef.current?.stopLoading();
+    }
     // setVisible(false);
   };
 
@@ -285,7 +289,7 @@ const SpaceTable = () => {
 
   // 切换页码或者每页显示的条数
   const changePagination = (page: number, pageSize: number) => {
-    setPagination({ ...pagination, current: page, pageSize });
+    // setPagination({ ...pagination, current: page, pageSize });
     getTable({ pageNo: page, pageSize: pageSize });
   };
   // 清除所有数据
@@ -425,7 +429,7 @@ const SpaceTable = () => {
                 </Button>
                 <Upload
                   accept={'.xlsx'}
-                  action={''}
+                  // action={''}
                   onChange={handleChangeFile}
                   showUploadList={false}
                 >

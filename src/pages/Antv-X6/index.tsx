@@ -854,9 +854,8 @@ const Workflow: React.FC = () => {
   };
   // 关闭右侧抽屉
   const handleClose = () => {
-    if (isModified) {
-      onFinish();
-    }
+    // 清除所有选中
+    changeDrawer(null);
     setVisible(false);
   };
 
@@ -1063,7 +1062,7 @@ const Workflow: React.FC = () => {
         onClose={() =>
           setErrorParams({ ...errorParams, errorList: [], show: false })
         }
-        changeDrawer={changeDrawer}
+        changeDrawer={handleNodeClick}
         nodeList={graphParams.nodeList}
       />
 
