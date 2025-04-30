@@ -310,10 +310,9 @@ const SpaceTable = () => {
 
   // 导入数据
   const handleChangeFile = async (info: any) => {
-    if (info.file.status !== 'done') return;
     setImportLoading(true);
     try {
-      await service.importTableData(tableId, info.file.originFileObj);
+      await service.importTableData(tableId, info.file);
       message.success('导入成功');
       getTable({ pageNo: 1, pageSize: 10 });
       setPagination({ ...pagination, current: 1, pageSize: 10 });
@@ -432,6 +431,7 @@ const SpaceTable = () => {
                   // action={''}
                   onChange={handleChangeFile}
                   showUploadList={false}
+                  beforeUpload={() => false}
                 >
                   <Button icon={<UploadOutlined />} loading={importLoading}>
                     导入
