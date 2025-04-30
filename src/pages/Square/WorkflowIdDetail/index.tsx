@@ -18,7 +18,7 @@ const cx = classNames.bind(styles);
 const WorkflowIdDetail: React.FC = ({}) => {
   const { workflowId } = useParams();
 
-  // 查询插件信息
+  // 查询工作流信息
   const { run: runWorkflowInfo, data: workflowInfo } = useRequest(
     apiPublishedWorkflowInfo,
     {
@@ -120,7 +120,7 @@ const WorkflowIdDetail: React.FC = ({}) => {
           />
         )}
         <div className={cx(styles['main-container'], 'overflow-y')}>
-          <span className={cx(styles.title)}>插件描述</span>
+          <span className={cx(styles.title)}>工作流描述</span>
           <p className={cx(styles.desc, 'text-ellipsis-2')}>
             {workflowInfo?.description}
           </p>
