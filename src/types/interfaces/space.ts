@@ -89,6 +89,7 @@ export interface PublishAgentProps {
   agentId: number;
   open: boolean;
   onCancel: () => void;
+  onConfirm: () => void;
 }
 
 // 智能体迁移弹窗组件

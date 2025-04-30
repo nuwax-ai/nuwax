@@ -36,9 +36,6 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
   // 切换调用方式
   const handleChangeType = ({ target: { value } }: RadioChangeEvent) => {
     setType(value);
-    if (value === InvokeTypeEnum.AUTO || value === InvokeTypeEnum.ON_DEMAND) {
-      setSelected(DefaultSelectedEnum.No);
-    }
   };
 
   // 保存
