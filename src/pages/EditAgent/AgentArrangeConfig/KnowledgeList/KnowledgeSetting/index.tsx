@@ -117,7 +117,11 @@ const KnowledgeSetting: React.FC<KnowledgeSettingProps> = ({
               handleChangeKnowledge('invokeType', e.target.value)
             }
             value={componentBindConfig.invokeType}
-            options={CALL_METHOD_OPTIONS}
+            options={CALL_METHOD_OPTIONS.filter(
+              (item) =>
+                item.value !== InvokeTypeEnum.MANUAL &&
+                item.value !== InvokeTypeEnum.MANUAL_ON_DEMAND,
+            )}
           />
         </div>
         {/*搜索策略*/}
