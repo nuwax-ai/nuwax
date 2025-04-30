@@ -17,6 +17,7 @@ import type { HistoryData } from '@/types/interfaces/space';
 import { addBaseTarget } from '@/utils/common';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
+import moment from 'moment';
 import React, { useEffect, useState } from 'react';
 import { useModel, useParams, useRequest } from 'umi';
 import AgentArrangeConfig from './AgentArrangeConfig';
@@ -157,6 +158,20 @@ const EditAgent: React.FC = () => {
     }
   };
 
+  // 发布智能体
+  const handleConfirmPublish = () => {
+    setOpen(false);
+    // 同步发布时间和修改时间
+    const time = moment().toString();
+    // 更新智能体配置信息
+    const _agentConfigInfo = {
+      ...agentConfigInfo,
+      publishDate: time,
+      modified: time,
+    } as AgentConfigInfo;
+    setAgentConfigInfo(_agentConfigInfo);
+  };
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader
@@ -230,6 +245,7 @@ const EditAgent: React.FC = () => {
         open={open}
         // 取消发布
         onCancel={() => setOpen(false)}
+        onConfirm={handleConfirmPublish}
       />
       {/*编辑智能体弹窗*/}
       <CreateAgent

@@ -16,6 +16,7 @@ const PublishAgent: React.FC<PublishAgentProps> = ({
   agentId,
   open,
   onCancel,
+  onConfirm,
 }) => {
   const [form] = Form.useForm();
 
@@ -25,7 +26,7 @@ const PublishAgent: React.FC<PublishAgentProps> = ({
     debounceInterval: 300,
     onSuccess: (data: string) => {
       message.success(data || '发布申请已提交，等待审核中');
-      onCancel();
+      onConfirm();
     },
   });
 
