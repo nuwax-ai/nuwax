@@ -2,7 +2,7 @@ import ConditionRender from '@/components/ConditionRender';
 import {
   ICON_AGENT,
   ICON_PLUGIN_BOLD,
-  ICON_WORKFLOW,
+  ICON_WORKFLOW_SQUARE,
 } from '@/constants/images.constants';
 import SquareMenuItem from '@/layouts/MenusLayout/SquareSection/SquareMenuItem';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
@@ -105,7 +105,7 @@ const SquareSection: React.FC = () => {
         <div className={cx('py-6 px-6')}>
           <SquareMenuItem
             name="工作流"
-            icon={<ICON_WORKFLOW />}
+            icon={<ICON_WORKFLOW_SQUARE />}
             isDown
             isActive={activeKey === SquareAgentTypeEnum.Workflow}
             onClick={() => handleClick(SquareAgentTypeEnum.Workflow)}

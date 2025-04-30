@@ -165,6 +165,7 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
       width: 210,
       render: (_, record) => (
         <DatePicker
+          minDate={dayjs()}
           value={record.expire ? dayjs(record.expire) : null}
           allowClear={false}
           showTime
