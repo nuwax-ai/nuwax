@@ -71,7 +71,8 @@ const SpaceSection: React.FC = () => {
       (type === SpaceApplicationListEnum.Component_Library &&
         (pathname.includes('library') ||
           pathname.includes('knowledge') ||
-          pathname.includes('plugin'))) ||
+          pathname.includes('plugin') ||
+          pathname.includes('table'))) ||
       (type === SpaceApplicationListEnum.Team_Setting &&
         pathname.includes('team'))
     );
