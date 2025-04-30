@@ -2,8 +2,6 @@ import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { DefaultSelectedEnum } from '@/types/enums/agent';
-import { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import {
   ArrowDownOutlined,
@@ -13,7 +11,7 @@ import {
 import type { UploadProps } from 'antd';
 import { Input, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -25,7 +23,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   className,
   onEnter,
   visible,
-  infos,
+  selectedComponentList,
+  onSelectComponent,
   isClearInput = true,
   manualComponents,
   onScrollBottom,
@@ -34,25 +33,25 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   const [files, setFiles] = useState<UploadFileInfo[]>([]);
   const [message, setMessage] = useState<string>('');
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-  const [selectedComponentList, setSelectedComponentList] = useState<
-    AgentSelectedComponentInfo[]
-  >([]);
+  // const [selectedComponentList, setSelectedComponentList] = useState<
+  //   AgentSelectedComponentInfo[]
+  // >([]);
 
-  useEffect(() => {
-    // 初始化选中的组件列表
-    if (infos?.length) {
-      setSelectedComponentList(infos || []);
-    } else if (manualComponents?.length) {
-      // 手动组件默认选中的组件
-      const _manualComponents = manualComponents
-        .filter((item) => item.defaultSelected === DefaultSelectedEnum.Yes)
-        .map((item) => ({
-          id: item.id,
-          type: item.type,
-        }));
-      setSelectedComponentList(_manualComponents || []);
-    }
-  }, [infos, manualComponents]);
+  // useEffect(() => {
+  //   // 初始化选中的组件列表
+  //   if (infos?.length) {
+  //     setSelectedComponentList(infos || []);
+  //   } else if (manualComponents?.length) {
+  //     // 手动组件默认选中的组件
+  //     const _manualComponents = manualComponents
+  //       .filter((item) => item.defaultSelected === DefaultSelectedEnum.Yes)
+  //       .map((item) => ({
+  //         id: item.id,
+  //         type: item.type,
+  //       }));
+  //     setSelectedComponentList(_manualComponents || []);
+  //   }
+  // }, [infos, manualComponents]);
 
   // 发送按钮disabled
   const disabledSend = useMemo(() => {
@@ -66,7 +65,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     }
     if (message || files?.length > 0) {
       // enter事件
-      onEnter(message, files, selectedComponentList);
+      onEnter(message, files);
       if (isClearInput) {
         // 置空
         setFiles([]);
@@ -91,7 +90,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       (!!value.trim() || !!files?.length)
     ) {
       // enter事件
-      onEnter(value, files, selectedComponentList);
+      onEnter(value, files);
       if (isClearInput) {
         // 置空
         setFiles([]);
@@ -118,22 +117,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     const _files = [...files];
     _files.splice(index, 1);
     setFiles(_files);
-  };
-
-  const handleSelect = (item: AgentSelectedComponentInfo) => {
-    const _selectedComponentList = [...selectedComponentList];
-    // 已存在则删除
-    if (_selectedComponentList.some((c) => c.id === item.id)) {
-      const index = _selectedComponentList.findIndex((c) => c.id === item.id);
-      _selectedComponentList.splice(index, 1);
-    } else {
-      _selectedComponentList.push({
-        id: item.id,
-        type: item.type,
-      });
-    }
-
-    setSelectedComponentList(_selectedComponentList);
   };
 
   return (
@@ -201,7 +184,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                       ),
                     },
                   )}
-                  onClick={() => handleSelect(item)}
+                  onClick={() => onSelectComponent?.(item)}
                 >
                   {item.name}
                 </span>

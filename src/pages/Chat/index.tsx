@@ -13,7 +13,7 @@ import { addBaseTarget } from '@/utils/common';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useModel, useParams } from 'umi';
 import styles from './index.less';
 import ShowArea from './ShowArea';
@@ -31,6 +31,9 @@ const Chat: React.FC = () => {
   const message = location.state?.message;
   const files = location.state?.files;
   const infos = location.state?.infos;
+  const [selectedComponentList, setSelectedComponentList] = useState<
+    AgentSelectedComponentInfo[]
+  >([]);
 
   const {
     conversationInfo,
@@ -127,13 +130,33 @@ const Chat: React.FC = () => {
     addBaseTarget();
   }, []);
 
+  useEffect(() => {
+    // 初始化选中的组件列表
+    if (infos?.length) {
+      setSelectedComponentList(infos || []);
+    }
+  }, [infos]);
+
+  // 选中配置组件
+  const handleSelectComponent = (item: AgentSelectedComponentInfo) => {
+    const _selectedComponentList = [...selectedComponentList];
+    // 已存在则删除
+    if (_selectedComponentList.some((c) => c.id === item.id)) {
+      const index = _selectedComponentList.findIndex((c) => c.id === item.id);
+      _selectedComponentList.splice(index, 1);
+    } else {
+      _selectedComponentList.push({
+        id: item.id,
+        type: item.type,
+      });
+    }
+
+    setSelectedComponentList(_selectedComponentList);
+  };
+
   // 消息发送
-  const handleMessageSend = (
-    message: string,
-    files?: UploadFileInfo[],
-    selectedComponentInfos?: AgentSelectedComponentInfo[],
-  ) => {
-    onMessageSend(id, message, files, selectedComponentInfos);
+  const handleMessageSend = (message: string, files: UploadFileInfo[] = []) => {
+    onMessageSend(id, message, files, selectedComponentList);
   };
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
@@ -202,7 +225,8 @@ const Chat: React.FC = () => {
           onEnter={handleMessageSend}
           visible={showScrollBtn}
           manualComponents={manualComponents}
-          infos={infos}
+          selectedComponentList={selectedComponentList}
+          onSelectComponent={handleSelectComponent}
           onScrollBottom={onScrollBottom}
         />
       </div>

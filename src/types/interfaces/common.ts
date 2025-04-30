@@ -419,16 +419,13 @@ export interface ChatInputProps {
   visible?: boolean;
   // 可手动选择的组件列表
   manualComponents?: AgentManualComponentInfo[];
-  infos?: AgentSelectedComponentInfo[];
+  selectedComponentList?: AgentSelectedComponentInfo[];
+  onSelectComponent?: (infos: AgentSelectedComponentInfo) => void;
   // 发送消息后是否清空输入框, 默认true
   isClearInput?: boolean;
   onScrollBottom?: () => void;
   onClear?: () => void;
-  onEnter: (
-    message: string,
-    files: UploadFileInfo[],
-    infos?: AgentSelectedComponentInfo[],
-  ) => void;
+  onEnter: (message: string, files: UploadFileInfo[]) => void;
 }
 
 // 聊天框底部更多操作组件

@@ -10,7 +10,10 @@ import {
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { KnowledgeDataTypeEnum } from '@/types/enums/library';
 import type { CreateKnowledgeProps } from '@/types/interfaces/common';
-import type { KnowledgeBaseInfo } from '@/types/interfaces/knowledge';
+import type {
+  KnowledgeBaseInfo,
+  KnowledgeConfigUpdateParams,
+} from '@/types/interfaces/knowledge';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
@@ -52,9 +55,10 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
   const { run: runUpdate } = useRequest(apiKnowledgeConfigUpdate, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_, params) => {
+    onSuccess: (_: null, params: KnowledgeConfigUpdateParams[]) => {
       message.success('知识库更新成功');
-      onConfirm?.(...params);
+      const info = params[0];
+      onConfirm?.(info);
     },
   });
 
@@ -149,7 +153,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
           label="描述"
           initialValue={knowledgeInfo?.description}
           placeholder="输入知识库内容的描述"
-          maxLength={2000}
+          maxLength={100}
         />
         <Form.Item name="icon" label="图标">
           <UploadAvatar
