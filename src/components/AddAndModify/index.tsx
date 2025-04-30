@@ -73,7 +73,7 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
                 placeholder={item.placeholder || '请输入'}
                 className="dispose-textarea-count"
                 showCount
-                maxLength={item.maxLength || 200}
+                maxLength={item.maxLength || 30}
                 autoSize={{ minRows: 3, maxRows: 6 }}
               />
             );
