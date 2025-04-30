@@ -16,6 +16,7 @@ import {
   ExclamationCircleFilled,
   LeftOutlined,
   PlusOutlined,
+  ReloadOutlined,
   SaveOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
@@ -83,7 +84,7 @@ const SpaceTable = () => {
     return (
       (window.innerHeight ||
         document.documentElement.clientHeight ||
-        document.body.clientHeight) - 120
+        document.body.clientHeight) - 160
     );
   };
   // 触发表格的提交数据
@@ -98,7 +99,7 @@ const SpaceTable = () => {
   const onAddRow = () => {
     if (editTableRef.current) {
       editTableRef.current.handleAddRow({
-        nullableFlag: true,
+        nullableFlag: false,
         enabledFlag: true,
         fieldType: 1,
         dataLength: 1,
@@ -150,6 +151,7 @@ const SpaceTable = () => {
               : item.fieldType === 4
               ? ('checkbox' as const)
               : ('text' as const),
+          width: 180,
         };
       });
       const table = res.data.fieldList.map((item) => {
@@ -208,6 +210,7 @@ const SpaceTable = () => {
         ...pagination,
         total: res.data.total,
         current: res.data.current,
+        pageSize: res.data.size,
       });
     } catch (error) {}
   };
@@ -227,7 +230,9 @@ const SpaceTable = () => {
       getTable({ pageNo: pagination.current, pageSize: pagination.pageSize });
       // getDetails();
       addedRef.current?.onClose();
-    } catch (error) {}
+    } finally {
+      addedRef.current?.stopLoading();
+    }
     // setVisible(false);
   };
 
@@ -268,9 +273,9 @@ const SpaceTable = () => {
           };
           await service.deleteTableData(_params);
           message.success('删除成功');
-          console.log(tableData.length);
           if (tableData.length === 1) {
             getDetails();
+            setTableData([]);
           } else {
             getTable({
               pageNo: pagination.current,
@@ -284,7 +289,7 @@ const SpaceTable = () => {
 
   // 切换页码或者每页显示的条数
   const changePagination = (page: number, pageSize: number) => {
-    setPagination({ ...pagination, current: page, pageSize });
+    // setPagination({ ...pagination, current: page, pageSize });
     getTable({ pageNo: page, pageSize: pageSize });
   };
   // 清除所有数据
@@ -305,10 +310,9 @@ const SpaceTable = () => {
 
   // 导入数据
   const handleChangeFile = async (info: any) => {
-    if (info.file.status !== 'done') return;
     setImportLoading(true);
     try {
-      await service.importTableData(tableId, info.file.originFileObj);
+      await service.importTableData(tableId, info.file);
       message.success('导入成功');
       getTable({ pageNo: 1, pageSize: 10 });
       setPagination({ ...pagination, current: 1, pageSize: 10 });
@@ -392,47 +396,60 @@ const SpaceTable = () => {
             onChange={onChange}
             className="tabs-style"
           />
-          {currentContent === 'structure' && (
-            <Space>
-              <Button icon={<PlusOutlined />} onClick={onAddRow}>
-                新增字段
-              </Button>
-              <Button
-                loading={loading}
-                icon={<SaveOutlined />}
-                onClick={onSave}
-              >
-                保存
-              </Button>
-            </Space>
-          )}
-          {currentContent === 'data' && (
-            <Space>
-              <Button icon={<ClearOutlined />} onClick={clearData}>
-                清除所有数据
-              </Button>
-              <Upload
-                accept={'.xlsx'}
-                action={''}
-                onChange={handleChangeFile}
-                showUploadList={false}
-              >
-                <Button icon={<UploadOutlined />} loading={importLoading}>
-                  导入
+          <Space>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                getDetails();
+                getTable({ pageNo: 1, pageSize: 10 });
+                setPagination({ ...pagination, current: 1, pageSize: 10 });
+              }}
+            >
+              刷新
+            </Button>
+            {currentContent === 'structure' && (
+              <>
+                <Button icon={<PlusOutlined />} onClick={onAddRow}>
+                  新增字段
                 </Button>
-              </Upload>
-              <Button
-                icon={<DownloadOutlined />}
-                loading={loading}
-                onClick={exportData}
-              >
-                导出
-              </Button>
-              <Button icon={<PlusOutlined />} onClick={onShow}>
-                新增
-              </Button>
-            </Space>
-          )}
+                <Button
+                  loading={loading}
+                  icon={<SaveOutlined />}
+                  onClick={onSave}
+                >
+                  保存
+                </Button>
+              </>
+            )}
+            {currentContent === 'data' && (
+              <>
+                <Button icon={<ClearOutlined />} onClick={clearData}>
+                  清除所有数据
+                </Button>
+                <Upload
+                  accept={'.xlsx'}
+                  // action={''}
+                  onChange={handleChangeFile}
+                  showUploadList={false}
+                  beforeUpload={() => false}
+                >
+                  <Button icon={<UploadOutlined />} loading={importLoading}>
+                    导入
+                  </Button>
+                </Upload>
+                <Button
+                  icon={<DownloadOutlined />}
+                  loading={loading}
+                  onClick={exportData}
+                >
+                  导出
+                </Button>
+                <Button icon={<PlusOutlined />} onClick={onShow}>
+                  新增
+                </Button>
+              </>
+            )}
+          </Space>
         </div>
         <div className="flex-1">
           {currentContent === 'data' && (

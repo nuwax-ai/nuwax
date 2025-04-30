@@ -17,9 +17,6 @@ const TreeInput: React.FC<TreeInputProps> = ({
   const [treeData, setTreeData] = useState<InputAndOutConfig[]>(params || []);
   const { setIsModified } = useModel('workflow');
 
-  // 显示与关闭新增选项
-  const [showOpen, setShowOpen] = useState(false);
-
   useEffect(() => {
     if (params && !_.isEqual(params, treeData)) {
       setTreeData(params);
@@ -58,14 +55,17 @@ const TreeInput: React.FC<TreeInputProps> = ({
       updateTreeData(newData);
       return newData;
     });
-    setShowOpen(false);
   };
 
   // 被添加的数据样式
   const content = (
     <>
       {options
-        ?.filter((option) => !treeData.some((item) => item.name === option.key))
+        ?.filter(
+          (option) =>
+            !treeData.some((item) => item.name === option.key) &&
+            !option.systemVariable,
+        )
         .map((item) => {
           return (
             <div
@@ -93,7 +93,6 @@ const TreeInput: React.FC<TreeInputProps> = ({
                 width: '300px',
               },
             }}
-            placement="right"
             content={nodeData.description || '暂无描述'}
           >
             <InfoCircleOutlined className="margin-right-6 font-12" />
@@ -118,13 +117,8 @@ const TreeInput: React.FC<TreeInputProps> = ({
       <div className="dis-sb margin-bottom">
         <span className="node-title-style">{title}</span>
         {showAdd && (
-          <Popover content={content} trigger="click" open={showOpen}>
-            <Button
-              type="text"
-              size={'small'}
-              icon={<PlusOutlined />}
-              onClick={() => setShowOpen(true)}
-            />
+          <Popover content={content} trigger="click">
+            <Button type="text" size={'small'} icon={<PlusOutlined />} />
           </Popover>
         )}
       </div>

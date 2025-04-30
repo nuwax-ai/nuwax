@@ -86,9 +86,9 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   const renderTitle = (nodeData: InputAndOutConfig) => {
     return (
       <div>
-        <span>{nodeData.name}</span>
-        <Popover content={nodeData.description}>
-          <InfoCircleOutlined style={{ marginLeft: '4px' }} />
+        <span title="">{nodeData.name}</span>
+        <Popover content={nodeData.description || '暂无描述'}>
+          <InfoCircleOutlined title="" style={{ marginLeft: '4px' }} />
         </Popover>
         <Tag className="ml-20" color="#C9CDD4">
           {nodeData.dataType}

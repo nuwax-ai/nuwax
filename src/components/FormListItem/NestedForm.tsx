@@ -40,6 +40,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
   notShowTitle,
   showCheck,
   isBody,
+  isNotAdd,
 }) => {
   const [treeData, setTreeData] = useState<TreeNodeConfig[]>(params || []);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
@@ -461,15 +462,16 @@ const CustomTree: React.FC<TreeFormProps> = ({
               />
             </Form.Item>
           )}
-          {(!notShowTitle || form.getFieldValue('outputType') === 'JSON') && (
-            <Button
-              icon={<PlusOutlined />}
-              size={'small'}
-              onClick={addRootNode}
-              className="ml-10"
-              type="text"
-            />
-          )}
+          {!isNotAdd &&
+            (!notShowTitle || form.getFieldValue('outputType') === 'JSON') && (
+              <Button
+                icon={<PlusOutlined />}
+                size={'small'}
+                onClick={addRootNode}
+                className="ml-10"
+                type="text"
+              />
+            )}
         </div>
       </div>
 

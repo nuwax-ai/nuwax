@@ -45,10 +45,6 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
     },
   ];
 
-  const [conditionOptions, setConditionOptions] = useState(
-    form.getFieldValue('tableFields'),
-  );
-
   // 打开自动生成弹窗
   const onOpenCreated = () => {
     setOpen(true);
@@ -56,9 +52,10 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
   };
 
   useEffect(() => {
-    const fields = form.getFieldValue('tableFields');
-    setConditionOptions(fields);
-  }, [form.getFieldValue('tableFields')]);
+    if (!form.getFieldValue('conditionType')) {
+      form.setFieldValue('conditionType', 'AND');
+    }
+  }, [form.getFieldValue('conditionType')]);
 
   return (
     <div>
@@ -91,31 +88,36 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
                   prev.conditionArgs !== curr.conditionArgs
                 }
               >
-                {({ getFieldValue }) =>
-                  getFieldValue('conditionArgs')?.length > 1 && (
-                    <Form.Item
-                      name={'conditionType'}
-                      style={{ marginTop: '-26px' }}
-                    >
-                      <Select
-                        style={{
-                          marginRight: '4px',
-                          width: 54,
-                        }}
-                        options={[
-                          {
-                            label: '且',
-                            value: 'AND',
-                          },
-                          {
-                            label: '或',
-                            value: 'OR',
-                          },
-                        ]}
-                      />
-                    </Form.Item>
-                  )
-                }
+                {({ getFieldValue }) => {
+                  const conditionArgs = getFieldValue('conditionArgs');
+
+                  return (
+                    conditionArgs?.length > 1 && (
+                      <Form.Item
+                        name={'conditionType'}
+                        style={{ marginTop: '-26px' }}
+                        initialValue="AND"
+                      >
+                        <Select
+                          style={{
+                            marginRight: '4px',
+                            width: 54,
+                          }}
+                          options={[
+                            {
+                              label: '且',
+                              value: 'AND',
+                            },
+                            {
+                              label: '或',
+                              value: 'OR',
+                            },
+                          ]}
+                        />
+                      </Form.Item>
+                    )
+                  );
+                }}
               </Form.Item>
               <Form.List
                 name={'conditionArgs'}
@@ -160,7 +162,9 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
                                     >
                                       <Select
                                         placeholder="请选择"
-                                        options={conditionOptions}
+                                        options={form.getFieldValue(
+                                          'tableFields',
+                                        )}
                                         fieldNames={{
                                           label: 'name',
                                           value: 'key',
@@ -295,6 +299,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
             params={form.getFieldValue('outputArgs') || []} // 改为直接读取表单最新值
             form={form}
             showCheck
+            isNotAdd
           />
         </Form.Item>
       ) : (

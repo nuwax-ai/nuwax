@@ -277,6 +277,7 @@ const Workflow: React.FC = () => {
     try {
       const currentFoldWrapItem = foldWrapItemRef.current; // 保存当前值
       const values = form.getFieldsValue(true);
+      console.log(values);
       let newNodeConfig;
       if (
         ['QA', 'IntentRecognition', 'Condition'].includes(
@@ -314,10 +315,6 @@ const Workflow: React.FC = () => {
   // 点击组件，显示抽屉
   const changeDrawer = async (child: ChildNode | null) => {
     // 先完全重置表单
-    if (child && child.type !== 'Start') {
-      setTestRun(false);
-      setTestRunResult('');
-    }
     if (foldWrapItemRef.current.id !== 0) {
       setIsModified((modified: boolean) => {
         if (modified) {
@@ -329,7 +326,11 @@ const Workflow: React.FC = () => {
         return false;
       });
     }
-    form.resetFields();
+    if (child && child.type !== 'Start') {
+      setTestRun(false);
+      setTestRunResult('');
+    }
+
     setFoldWrapItem((prev) => {
       if (prev.id === 0 && child === null) {
         return prev;
@@ -853,9 +854,8 @@ const Workflow: React.FC = () => {
   };
   // 关闭右侧抽屉
   const handleClose = () => {
-    if (isModified) {
-      onFinish();
-    }
+    // 清除所有选中
+    changeDrawer(null);
     setVisible(false);
   };
 
@@ -871,6 +871,13 @@ const Workflow: React.FC = () => {
     changeNode(newValue);
     setShowNameInput(false);
   };
+
+  // 点击画布中的节点
+  const handleNodeClick = (node: ChildNode | null) => {
+    if (node && node.id === foldWrapItemRef.current.id) return;
+    changeDrawer(node);
+  };
+
   // 保存当前画布中节点的位置
   useEffect(() => {
     getDetails();
@@ -901,6 +908,7 @@ const Workflow: React.FC = () => {
     };
   }, [isModified]);
   useEffect(() => {
+    form.resetFields();
     if (foldWrapItem.id !== 0) {
       // 使用setTimeout确保重置完成后再设置新值
       const newFoldWrapItem = JSON.parse(JSON.stringify(foldWrapItem));
@@ -966,7 +974,7 @@ const Workflow: React.FC = () => {
       <GraphContainer
         graphParams={graphParams}
         ref={graphRef}
-        changeDrawer={changeDrawer}
+        changeDrawer={handleNodeClick}
         changeEdge={nodeChangeEdge}
         changeCondition={changeNode}
         removeNode={deleteNode}
@@ -1054,7 +1062,7 @@ const Workflow: React.FC = () => {
         onClose={() =>
           setErrorParams({ ...errorParams, errorList: [], show: false })
         }
-        changeDrawer={changeDrawer}
+        changeDrawer={handleNodeClick}
         nodeList={graphParams.nodeList}
       />
 

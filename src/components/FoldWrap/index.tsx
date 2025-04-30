@@ -103,7 +103,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
             ) : (
               <div className="dis-sb">
                 <div className="dis-sa" onDoubleClick={() => setIsEdit(true)}>
-                  {icon}
+                  <div className={styles['icon-box-style']}>{icon}</div>
                   <span
                     className={cx(
                       'flex-1 text-ellipsis ',
