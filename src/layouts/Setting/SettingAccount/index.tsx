@@ -2,7 +2,10 @@ import avatarImage from '@/assets/images/avatar.png';
 import UploadAvatar from '@/components/UploadAvatar';
 import { USER_INFO } from '@/constants/home.constants';
 import { apiUserUpdate } from '@/services/account';
-import type { SetUserAccountInfo } from '@/types/interfaces/login';
+import type {
+  SetUserAccountInfo,
+  UserUpdateParams,
+} from '@/types/interfaces/login';
 import { customizeRequiredNoStarMark } from '@/utils/form';
 import type { FormProps } from 'antd';
 import { Button, Form, Input, message } from 'antd';
@@ -25,7 +28,7 @@ const SettingAccount: React.FC = () => {
   const { run, loading } = useRequest(apiUserUpdate, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_, params) => {
+    onSuccess: (_: null, params: UserUpdateParams[]) => {
       message.success('保存成功');
       const _userInfo = cloneDeep(userInfo);
       if (params[0]?.avatar) {

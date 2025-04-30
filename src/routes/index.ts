@@ -15,6 +15,11 @@ const routes = [
     layout: false,
   },
   {
+    path: '/chat-temp/:chatKey',
+    component: '@/pages/ChatTemp',
+    layout: false,
+  },
+  {
     path: '/',
     component: '@/layouts',
     // wrappers: ['@/wrappers/auth'],

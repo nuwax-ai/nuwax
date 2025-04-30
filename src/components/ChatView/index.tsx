@@ -45,7 +45,7 @@ const ChatView: React.FC<ChatViewProps> = ({
       // 用户信息
       case AssistantRoleEnum.USER:
         return {
-          name: _userInfo?.nickName || _userInfo?.userName,
+          name: _userInfo?.nickName || _userInfo?.userName || '游客',
           avatar: _userInfo?.avatar || avatar,
         };
       // 助手信息
