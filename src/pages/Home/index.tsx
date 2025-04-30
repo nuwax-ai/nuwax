@@ -87,7 +87,6 @@ const Home: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    console.log('tenantConfigInfo', tenantConfigInfo);
     if (tenantConfigInfo) {
       runDetail(tenantConfigInfo?.defaultAgentId);
     }
@@ -138,6 +137,11 @@ const Home: React.FC = () => {
 
   const handleLink = () => {
     history.push('/square?cate_type=Agent');
+  };
+
+  // 点击单个智能体
+  const handleClick = async (targetId: number) => {
+    history.push(`/agent/${targetId}`);
   };
 
   return (
@@ -218,9 +222,7 @@ const Home: React.FC = () => {
                           <AgentItem
                             key={info.targetId}
                             info={info}
-                            onClick={() =>
-                              handleCreateConversation(info.targetId)
-                            }
+                            onClick={() => handleClick(info.targetId)}
                             onCollect={() =>
                               handleToggleCollect(item.type, info)
                             }

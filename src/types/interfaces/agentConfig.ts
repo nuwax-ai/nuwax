@@ -266,3 +266,10 @@ export interface AgentAddComponentStatusInfo {
   targetId: number;
   status: AgentAddComponentStatusEnum;
 }
+
+// 首页智能体列表项组件
+export interface AgentItemProps {
+  info: CategoryItemInfo;
+  onClick: () => void;
+  onCollect: () => void;
+}
