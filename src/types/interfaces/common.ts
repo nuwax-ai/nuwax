@@ -427,7 +427,7 @@ export interface ChatInputProps {
   onEnter: (
     message: string,
     files: UploadFileInfo[],
-    infos: AgentSelectedComponentInfo[],
+    infos?: AgentSelectedComponentInfo[],
   ) => void;
 }
 

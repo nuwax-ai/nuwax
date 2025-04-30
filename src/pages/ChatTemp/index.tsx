@@ -1,5 +1,6 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import ChatInputHome from '@/components/ChatInputHome';
+import ChatInputPhone from '@/components/ChatInputPhone';
 import ChatView from '@/components/ChatView';
 import ConditionRender from '@/components/ConditionRender';
 import RecommendList from '@/components/RecommendList';
@@ -477,15 +478,24 @@ const ChatTemp: React.FC = () => {
   };
 
   return (
-    <div className={cx('h-full', 'overflow-y')} ref={messageViewRef}>
-      <ConditionRender condition={messageList?.length > 0}>
-        <h3 className={cx(styles.title, 'text-ellipsis')}>
-          {conversationInfo?.agent?.name
-            ? `和${conversationInfo?.agent?.name}开始会话`
-            : '开始会话'}
-        </h3>
-      </ConditionRender>
+    <div
+      className={cx(
+        styles.container,
+        'flex',
+        'flex-col',
+        'h-full',
+        'overflow-y',
+      )}
+      ref={messageViewRef}
+    >
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
+        <ConditionRender condition={messageList?.length > 0}>
+          <h3 className={cx(styles.title, 'text-ellipsis')}>
+            {conversationInfo?.agent?.name
+              ? `和${conversationInfo?.agent?.name}开始会话`
+              : '开始会话'}
+          </h3>
+        </ConditionRender>
         <div className={cx(styles['chat-wrapper'], 'flex-1')}>
           {isLoadingConversation ? (
             <div
@@ -497,6 +507,7 @@ const ChatTemp: React.FC = () => {
             <>
               {messageList?.map((item: MessageInfo, index: number) => (
                 <ChatView
+                  className={cx(styles['phone-chat-item'])}
                   key={index}
                   messageInfo={item}
                   roleInfo={roleInfo}
@@ -528,14 +539,26 @@ const ChatTemp: React.FC = () => {
             )
           )}
         </div>
-        {/*会话输入框*/}
-        <ChatInputHome
-          className={cx(styles['chat-input'])}
-          onEnter={handleMessageSend}
-          visible={showScrollBtn}
-          manualComponents={manualComponents}
-          onScrollBottom={onScrollBottom}
-        />
+        <div className={cx(styles['chat-input-container'])}>
+          {/*会话输入框*/}
+          <ChatInputHome
+            className={cx(styles['input-container'])}
+            onEnter={handleMessageSend}
+            visible={showScrollBtn}
+            manualComponents={manualComponents}
+            onScrollBottom={onScrollBottom}
+          />
+          <ChatInputPhone
+            className={cx(styles['phone-container'])}
+            onEnter={handleMessageSend}
+            visible={showScrollBtn}
+            manualComponents={manualComponents}
+            onScrollBottom={onScrollBottom}
+          />
+          <p
+            className={cx(styles['welcome-text'], 'text-ellipsis')}
+          >{`欢迎使用${conversationInfo?.agent?.name}平台，快速搭建你的个性化智能体`}</p>
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,6 @@
 .title {
   position: sticky;
   top: 0;
-  height: 60px;
   line-height: 60px;
   padding: 0 60px;
   color: @BLANK17;
@@ -29,15 +28,28 @@
     }
   }
 
-  .chat-input {
+  .chat-input-container {
     position: sticky;
-    bottom: 20px;
+    bottom: 0;
+    padding-top: 20px;
+    width: 100%;
+    background-color: @WHITE;
     z-index: 10;
+    box-sizing: border-box;
+
+    .welcome-text {
+      height: 40px;
+      line-height: 40px;
+      padding: 0 60px;
+      color: @GRAY27;
+      font-size: 12px;
+      text-align: center;
+    }
   }
 }
 
-/* 当屏幕宽度小于等于 600px 时应用的样式 */
-@media screen and (max-width: 600px) {
+/* 当屏幕宽度小于等于 720px 时应用的样式 */
+@media screen and (max-width: 720px) {
   .main-content {
     width: 100%;
   }
@@ -47,10 +59,28 @@
     height: 100%;
     min-width: 100% !important;
   }
+
+  .phone-chat-item {
+    padding: 0 15px;
+  }
+
+  .input-container {
+    display: none;
+  }
+
+  .phone-container {
+    display: block;
+    padding: 0 15px;
+    box-sizing: border-box;
+  }
+
+  .welcome-text {
+    font-size: 10px;
+  }
 }
 
-/* 当屏幕宽度大于 600px 且小于等于 900px 时应用的样式 */
-@media screen and (min-width: 601px) and (max-width: 1200px) {
+/* 当屏幕宽度大于 720px 且小于等于 900px 时应用的样式 */
+@media screen and (min-width: 721px) and (max-width: 1200px) {
   .main-content {
     width: 80%;
   }
@@ -60,9 +90,17 @@
     height: 100%;
     min-width: 100% !important;
   }
+
+  .input-container {
+    display: block;
+  }
+
+  .phone-container {
+    display: none;
+  }
 }
 
-/* 当屏幕宽度大于 900px 时应用的样式 */
+/* 当屏幕宽度大于 1200px 时应用的样式 */
 @media screen and (min-width: 1200px) {
   .main-content {
     max-width: 800px;
@@ -72,5 +110,13 @@
     width: 100%;
     height: 100%;
     min-width: 100% !important;
+  }
+
+  .input-container {
+    display: block;
+  }
+
+  .phone-container {
+    display: none;
   }
 }
