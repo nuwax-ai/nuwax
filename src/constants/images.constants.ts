@@ -27,6 +27,7 @@ import { ReactComponent as ICON_NEW_AGENT } from '@/assets/svg/new_agent.svg';
 import { ReactComponent as ICON_ONLINE_DOC } from '@/assets/svg/online_doc.svg';
 import { ReactComponent as ICON_OPTIMIZE } from '@/assets/svg/optimize.svg';
 import { ReactComponent as ICON_SETTING } from '@/assets/svg/setting.svg';
+import { ReactComponent as ICON_WORKFLOW_SQUARE } from '@/assets/svg/square_icon_workflow.svg';
 import { ReactComponent as ICON_START } from '@/assets/svg/start.svg';
 import { ReactComponent as ICON_SUCCESS } from '@/assets/svg/success_rate.svg';
 import { ReactComponent as ICON_TABLE } from '@/assets/svg/table.svg';
@@ -116,6 +117,7 @@ export {
   ICON_WORKFLOW_OUTPUT,
   ICON_WORKFLOW_PLUGIN,
   ICON_WORKFLOW_QA,
+  ICON_WORKFLOW_SQUARE,
   ICON_WORKFLOW_TEXT_PROCESSING,
   ICON_WORKFLOW_VARIABLE,
   ICON_WORKFLOW_WORKFLOW,
