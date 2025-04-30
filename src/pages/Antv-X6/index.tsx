@@ -336,6 +336,7 @@ const Workflow: React.FC = () => {
           return child;
         }
         setVisible(false);
+
         return {
           id: 0,
           description: '',
