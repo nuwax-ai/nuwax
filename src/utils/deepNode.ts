@@ -222,7 +222,10 @@ export const loopFilterAndDisabledArray = (
   // 过滤数组
   const loopFilterArray = (arr: BindConfigWithSub[]): BindConfigWithSub[] => {
     return arr.filter((item) => {
-      if (item.dataType === DataTypeEnum.Object) {
+      if (
+        item.dataType === DataTypeEnum.Object ||
+        item.dataType?.includes('Array')
+      ) {
         if (!!item.subArgs?.length) {
           return { ...item, subArgs: loopFilterArray(item.subArgs) };
         }
