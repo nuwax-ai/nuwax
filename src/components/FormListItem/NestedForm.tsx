@@ -44,8 +44,9 @@ const CustomTree: React.FC<TreeFormProps> = ({
 }) => {
   const [treeData, setTreeData] = useState<TreeNodeConfig[]>(params || []);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const { volid, setIsModified } = useModel('workflow');
+  // const [errors, setErrors] = useState<Record<string, string>>({});
+  const { setIsModified } = useModel('workflow');
+  // const { volid, setIsModified } = useModel('workflow');
 
   useEffect(() => {
     if (params && !_.isEqual(params, treeData)) {
@@ -287,17 +288,17 @@ const CustomTree: React.FC<TreeFormProps> = ({
             placeholder="请输入参数名称"
             className="tree-form-name flex-1"
             style={{
-              borderColor: errors[`${nodeData.key}-name`]
-                ? '#ff4d4f'
-                : undefined,
+              // borderColor: errors[`${nodeData.key}-name`]
+              //   ? '#ff4d4f'
+              //   : undefined,
               backgroundColor: nodeData.systemVariable ? '#f5f5f5' : undefined,
             }}
           />
-          {errors[`${nodeData.key}-name`] && (
+          {/* {errors[`${nodeData.key}-name`] && (
             <div style={{ color: '#ff4d4f', fontSize: 12 }}>
               {errors[`${nodeData.key}-name`]}
             </div>
-          )}
+          )} */}
         </div>
         <div style={{ width: isBody ? '40px' : '80px', position: 'relative' }}>
           <Cascader
@@ -314,17 +315,17 @@ const CustomTree: React.FC<TreeFormProps> = ({
             placeholder="请选择数据类型"
             style={{
               width: '100%',
-              borderColor: errors[`${nodeData.key}-type`]
-                ? '#ff4d4f'
-                : undefined,
+              // borderColor: errors[`${nodeData.key}-type`]
+              //   ? '#ff4d4f'
+              //   : undefined,
               backgroundColor: nodeData.systemVariable ? '#f5f5f5' : undefined,
             }}
           />
-          {errors[`${nodeData.key}-type`] && (
+          {/* {errors[`${nodeData.key}-type`] && (
             <div style={{ color: '#ff4d4f', fontSize: 12 }}>
               {errors[`${nodeData.key}-type`]}
             </div>
-          )}
+          )} */}
         </div>
         {isBody && (
           <div
@@ -407,20 +408,20 @@ const CustomTree: React.FC<TreeFormProps> = ({
     );
   };
 
-  useEffect(() => {
-    if (volid) {
-      const newErrors: Record<string, string> = {};
-      treeData.forEach((node) => {
-        if (!node.name?.trim()) {
-          newErrors[`${node.key}-name`] = '请输入变量名称';
-        }
-        if (!node.dataType) {
-          newErrors[`${node.key}-type`] = '请选择';
-        }
-      });
-      setErrors(newErrors);
-    }
-  }, [volid, treeData]);
+  // useEffect(() => {
+  //   if (volid) {
+  //     const newErrors: Record<string, string> = {};
+  //     treeData.forEach((node) => {
+  //       if (!node.name?.trim()) {
+  //         newErrors[`${node.key}-name`] = '请输入变量名称';
+  //       }
+  //       if (!node.dataType) {
+  //         newErrors[`${node.key}-type`] = '请选择';
+  //       }
+  //     });
+  //     setErrors(newErrors);
+  //   }
+  // }, [volid, treeData]);
 
   useEffect(() => {
     const parentKeys = getAllParentKeys(treeData);

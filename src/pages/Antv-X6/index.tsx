@@ -30,7 +30,7 @@ import { createSSEConnection } from '@/utils/fetchEventSource';
 import { changeNodeConfig, updateNode } from '@/utils/updateNode';
 import { getEdges, returnImg } from '@/utils/workflow';
 import { Form, message } from 'antd';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import ControlPanel from './controlPanel';
@@ -183,19 +183,21 @@ const Workflow: React.FC = () => {
     graphRef.current.changeGraphZoom(val);
   };
   // 调整画布的大小(滚轮)
-  const changeZoom = useMemo(() => {
-    let timer: NodeJS.Timeout;
-    return (val: number) => {
-      if (!val) return;
-      clearTimeout(timer);
-      timer = setTimeout(() => {
+  const changeZoom = (val: number) => {
+    setInfo((prev) => {
+      if (!prev) return null;
+      if (prev.extension?.size !== val) {
         onConfirm({
           id: workflowId,
           extension: { size: val },
         });
-      }, 1000);
-    };
-  }, [workflowId]);
+      }
+      return {
+        ...prev,
+        extension: { size: val },
+      };
+    });
+  };
   // 获取当前节点的参数
   const getRefernece = async (id: number) => {
     // 获取节点需要的引用参数
@@ -902,9 +904,10 @@ const Workflow: React.FC = () => {
   }, [isModified]);
   useEffect(() => {
     if (foldWrapItem.id !== 0) {
-      form.resetFields();
+      // form.resetFields();
       // 使用setTimeout确保重置完成后再设置新值
       const newFoldWrapItem = JSON.parse(JSON.stringify(foldWrapItem));
+      form.resetFields();
       form.setFieldsValue(newFoldWrapItem.nodeConfig);
 
       switch (foldWrapItem.type) {

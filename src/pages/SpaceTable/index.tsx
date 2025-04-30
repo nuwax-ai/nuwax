@@ -125,8 +125,8 @@ const SpaceTable = () => {
             options:
               item.fieldType === 4
                 ? [
-                    { label: 'true', value: 'true' },
-                    { label: 'false', value: 'false' },
+                    { label: 'true', value: true },
+                    { label: 'false', value: false },
                   ]
                 : undefined,
             maxLength:
