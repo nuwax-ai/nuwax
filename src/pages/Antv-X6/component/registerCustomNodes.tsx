@@ -111,9 +111,13 @@ export class GeneralNode extends React.Component<NodeProps> {
               <span className="text-right qa-title-style">输入</span>
 
               {data.nodeConfig.inputArgs &&
-                data.nodeConfig?.inputArgs.map((item) => {
+                data.nodeConfig?.inputArgs.slice(0, 2).map((item) => {
                   return <Tag key={item.name}>{item.name}</Tag>;
                 })}
+              {data.nodeConfig.inputArgs &&
+                data.nodeConfig.inputArgs?.length > 2 && (
+                  <Tag>+{data.nodeConfig.inputArgs?.length - 2}</Tag>
+                )}
               {!data.nodeConfig.inputArgs && <span>未配置输入内容</span>}
             </div>
             <div className="dis-left">
