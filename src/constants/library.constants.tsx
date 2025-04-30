@@ -275,7 +275,7 @@ export const COMPONENT_LIST = [
     type: ComponentTypeEnum.Table,
     defaultImage: databaseImage,
     icon: <ICON_DATABASE />,
-    text: '数据库',
+    text: '数据表',
   },
   {
     type: ComponentTypeEnum.Model,
