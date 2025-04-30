@@ -334,10 +334,10 @@ export default () => {
         // 滚动到底部
         handleScrollBottom();
       },
-      onClose: () => {
+      onClose: async () => {
         // 第一次发送消息后更新主题
         if (needUpdateTopicRef.current) {
-          runUpdateTopic({
+          await runUpdateTopic({
             id: params.conversationId,
             firstMessage: params.message,
           });

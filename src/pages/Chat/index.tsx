@@ -117,6 +117,10 @@ const Chat: React.FC = () => {
       };
       asyncFun();
     }
+
+    return () => {
+      resetInit();
+    };
   }, [id, message, files, infos]);
 
   useEffect(() => {

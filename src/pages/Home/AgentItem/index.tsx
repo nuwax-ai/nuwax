@@ -1,5 +1,5 @@
 import agentImage from '@/assets/images/agent_image.png';
-import { CategoryItemInfo } from '@/types/interfaces/agentConfig';
+import { AgentItemProps } from '@/types/interfaces/agentConfig';
 import { StarFilled } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
@@ -7,15 +7,10 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-export interface AgentItemProps {
-  info: CategoryItemInfo;
-  onClick: () => void;
-  onCollect: () => void;
-}
-
+// 首页智能体列表项
 const AgentItem: React.FC<AgentItemProps> = ({ info, onClick, onCollect }) => {
   // 收藏、取消收藏事件
-  const handlerCollect = async (e) => {
+  const handlerCollect = async (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
     onCollect();
   };

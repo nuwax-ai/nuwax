@@ -3,7 +3,7 @@ import { AgentInfo } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
-import { history, useModel } from 'umi';
+import { history, useModel, useParams } from 'umi';
 import UserRelAgent from '../UserRelAgent';
 import styles from './index.less';
 
@@ -13,6 +13,7 @@ const cx = classNames.bind(styles);
  * 主页二级菜单栏
  */
 const HomeSection: React.FC = () => {
+  const { id: chatId } = useParams();
   const { setOpenHistoryModal } = useModel('layout');
   const { conversationList, usedAgentList, runUsed, runHistory } = useModel(
     'conversationHistory',
@@ -63,7 +64,7 @@ const HomeSection: React.FC = () => {
         <h3 className={cx(styles.title, 'mt-16')}>会话记录</h3>
         <ul>
           {conversationList?.length ? (
-            conversationList?.slice(0, 8)?.map((item: ConversationInfo) => (
+            conversationList?.slice(0, 5)?.map((item: ConversationInfo) => (
               <li
                 key={item.id}
                 className={cx(
@@ -71,6 +72,7 @@ const HomeSection: React.FC = () => {
                   'hover-deep',
                   'text-ellipsis',
                   styles.row,
+                  { [styles.active]: chatId === item.id?.toString() },
                 )}
                 onClick={() => handleLink(item.id)}
               >

@@ -8,7 +8,8 @@ import type {
   InvokeTypeProps,
   InvokeTypeSaveParams,
 } from '@/types/interfaces/agentConfig';
-import { Button, Radio, RadioChangeEvent } from 'antd';
+import { ExclamationCircleOutlined } from '@ant-design/icons';
+import { Button, Radio, RadioChangeEvent, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { memo, useEffect, useState } from 'react';
 import styles from './index.less';
@@ -52,7 +53,25 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       <div className={cx('flex-1')}>
-        <h3>调用方式</h3>
+        <h3>
+          <span>调用方式 </span>
+          <Tooltip
+            title={
+              <div>
+                <p>自动调用：用户每次发送消息后都会触发调用一次</p>
+                <p>按需调用：由模型根据任务情况决定是否需要调用</p>
+                <p>
+                  手动选择：由用户决定是否使用该工具，在用户选择的情况下和自动调用效果一样
+                </p>
+                <p>
+                  手动选择+按需调用：用户选择后，由模型根据任务情况选择是否需要调用；用户不选择则不会调用
+                </p>
+              </div>
+            }
+          >
+            <ExclamationCircleOutlined />
+          </Tooltip>
+        </h3>
         <Radio.Group
           options={CALL_METHOD_OPTIONS}
           onChange={handleChangeType}
