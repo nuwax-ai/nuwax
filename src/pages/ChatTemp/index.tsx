@@ -477,15 +477,15 @@ const ChatTemp: React.FC = () => {
   };
 
   return (
-    <div className={cx('flex', 'h-full', 'overflow-y')} ref={messageViewRef}>
+    <div className={cx('h-full', 'overflow-y')} ref={messageViewRef}>
+      <ConditionRender condition={messageList?.length > 0}>
+        <h3 className={cx(styles.title, 'text-ellipsis')}>
+          {conversationInfo?.agent?.name
+            ? `和${conversationInfo?.agent?.name}开始会话`
+            : '开始会话'}
+        </h3>
+      </ConditionRender>
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
-        <ConditionRender condition={messageList?.length > 0}>
-          <h3 className={cx(styles.title, 'text-ellipsis')}>
-            {conversationInfo?.agent?.name
-              ? `和${conversationInfo?.agent?.name}开始会话`
-              : '开始会话'}
-          </h3>
-        </ConditionRender>
         <div className={cx(styles['chat-wrapper'], 'flex-1')}>
           {isLoadingConversation ? (
             <div

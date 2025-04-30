@@ -6,7 +6,7 @@ import { SendCodeEnum } from '@/types/enums/login';
 import type { BindEmailParams } from '@/types/interfaces/login';
 import { isValidEmail } from '@/utils/common';
 import { customizeRequiredNoStarMark } from '@/utils/form';
-import { Button, Form, Input, message } from 'antd';
+import { Button, Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { useRequest } from 'umi';
@@ -39,7 +39,10 @@ const SettingEmail: React.FC = () => {
   });
 
   // 绑定事件
-  const handlerBindEmail = (values) => {
+  const handlerBindEmail: FormProps<{
+    email: string;
+    code: string;
+  }>['onFinish'] = (values) => {
     run(values);
   };
 
