@@ -11,7 +11,7 @@ const cx = classNames.bind(styles);
  */
 const CollectStar: React.FC<CollectStarProps> = ({ devCollected, onClick }) => {
   // 收藏、取消收藏事件
-  const handlerCollect = async (e) => {
+  const handlerCollect = async (e: React.MouseEvent<HTMLSpanElement>) => {
     e.stopPropagation();
     onClick();
   };
