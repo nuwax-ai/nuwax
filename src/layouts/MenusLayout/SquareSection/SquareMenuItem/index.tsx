@@ -32,7 +32,7 @@ const SquareMenuItem: React.FC<SquareMenuItemProps> = ({
       >
         {icon}
       </span>
-      <h4 className={cx('flex-1')}>{name}</h4>
+      <h4 className={cx('flex-1', styles.title)}>{name}</h4>
       <ConditionRender condition={isDown}>
         <DownOutlined className={cx(styles['icon-dropdown'])} />
       </ConditionRender>

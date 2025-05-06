@@ -108,6 +108,7 @@ export interface BindConfigWithSub {
   inputType?: InputTypeEnum;
   subArgs?: BindConfigWithSub[];
   children?: BindConfigWithSub[];
+  [key: string]: any;
 }
 
 // 自定义disabled类型，继承BindConfigWithSub，添加disabled属性，用于控制组件是否禁用

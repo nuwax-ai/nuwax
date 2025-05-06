@@ -54,7 +54,7 @@ const SpaceTitle: React.FC<SpaceTitleProps> = ({ name, avatar }) => {
           <span className={cx(styles['img-box'])}>
             <img src={avatar} alt="" />
           </span>
-          <span className={cx('flex-1', styles.title)}>
+          <span className={cx('flex-1', styles.title, 'text-ellipsis')}>
             {name || '个人空间'}
           </span>
           <DownOutlined className={cx(styles['icon-down'])} />

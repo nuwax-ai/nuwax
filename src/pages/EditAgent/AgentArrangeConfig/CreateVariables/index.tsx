@@ -1,10 +1,11 @@
+import LabelStar from '@/components/LabelStar';
 import { apiAgentComponentVariableUpdate } from '@/services/agentConfig';
 import { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { CreateVariablesProps } from '@/types/interfaces/agentConfig';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Input, message, Modal, Space, Table } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
@@ -47,7 +48,16 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
     },
   );
 
-  const handleInputValue = (index: number, attr: string, value: React.Key) => {
+  // 确定按钮是否禁用
+  const okDisabled = useMemo(() => {
+    return inputData?.some((item) => !item.name);
+  }, [inputData]);
+
+  const handleInputValue = (
+    index: number,
+    attr: string,
+    value: React.Key | boolean,
+  ) => {
     const _inputData = [...inputData];
     _inputData[index][attr] = value;
     setInputData(_inputData);
@@ -85,7 +95,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
   // 入参配置columns
   const inputColumns = [
     {
-      title: '名称',
+      title: <LabelStar label="名称" />,
       dataIndex: 'name',
       key: 'name',
       width: 150,
@@ -97,6 +107,10 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
             <Input
               placeholder="输入变量名称"
               value={value}
+              className={cx({ 'input-required': record?.nameRequired })}
+              onBlur={(e) =>
+                handleInputValue(index, 'nameRequired', !e.target.value)
+              }
               onChange={(e) => handleInputValue(index, 'name', e.target.value)}
             />
           )}
@@ -170,6 +184,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       open={open}
       cancelText="取消"
       okText="保存"
+      okButtonProps={{ disabled: okDisabled }}
       onCancel={onCancel}
       onOk={handleOk}
     >

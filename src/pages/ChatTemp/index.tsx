@@ -8,6 +8,7 @@ import {
   TEMP_CONVERSATION_CONNECTION_URL,
   TEMP_CONVERSATION_UID,
 } from '@/constants/common.constants';
+import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import {
   apiTempChatConversationCreate,
   apiTempChatConversationQuery,
@@ -109,12 +110,27 @@ const ChatTemp: React.FC = () => {
         const { data } = result;
         setConversationInfo(data);
         setIsLoaded(true);
+        // 设置标题和图标
+        document.title = `和${data?.agent?.name}开始会话` || '';
+        if (data?.agent?.icon) {
+          // 创建一个新的link元素
+          const link = document.createElement('link');
+          link.rel = 'shortcut icon';
+          link.href = data?.agent?.icon;
+          link.type = 'image/x-icon';
+
+          // 获取head元素并添加link元素
+          const head =
+            document.head || document.getElementsByTagName('head')[0];
+          head.appendChild(link);
+        }
         // 消息列表
         const _messageList = data?.messageList || [];
         // 可手动选择的组件列表
         setManualComponents(data?.agent?.manualComponents || []);
         // 问题建议列表
         let suggestList: string[] = [];
+        // 存在消息列表时，设置消息列表
         if (_messageList?.length) {
           setMessageList(_messageList || []);
           // 最后一条消息为"问答"时，获取问题建议
@@ -126,6 +142,19 @@ const ChatTemp: React.FC = () => {
             suggestList = lastMessage.ext.map((item) => item.content) || [];
           }
         }
+        // 初始化会话信息: 开场白
+        else if (data?.agent?.openingChatMsg) {
+          const currentMessage = {
+            role: AssistantRoleEnum.ASSISTANT,
+            type: MessageModeEnum.CHAT,
+            text: data?.agent?.openingChatMsg,
+            time: moment().toString(), // 将 moment 对象转换为字符串以匹配 MessageInfo 类型
+            id: uuidv4(),
+            messageType: MessageTypeEnum.ASSISTANT,
+          } as MessageInfo;
+          setMessageList([currentMessage]);
+        }
+
         if (suggestList?.length) {
           setChatSuggestList(suggestList);
         } else {
@@ -509,6 +538,15 @@ const ChatTemp: React.FC = () => {
     setShowScrollBtn(false);
   };
 
+  // 点击页脚跳转到租户官网
+  const handleSiteLink = () => {
+    const tenantConfigInfo = localStorage.getItem(TENANT_CONFIG_INFO);
+    if (tenantConfigInfo) {
+      const { siteUrl } = JSON.parse(tenantConfigInfo);
+      window.open(siteUrl, '_blank');
+    }
+  };
+
   return (
     <div
       className={cx(
@@ -597,7 +635,12 @@ const ChatTemp: React.FC = () => {
             onScrollBottom={onScrollBottom}
           />
           <p
-            className={cx(styles['welcome-text'], 'text-ellipsis')}
+            className={cx(
+              styles['welcome-text'],
+              'text-ellipsis',
+              'cursor-pointer',
+            )}
+            onClick={handleSiteLink}
           >{`欢迎使用${conversationInfo?.agent?.name}平台，快速搭建你的个性化智能体`}</p>
         </div>
       </div>

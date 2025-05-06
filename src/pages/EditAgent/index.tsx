@@ -6,7 +6,7 @@ import {
   apiAgentConfigInfo,
   apiAgentConfigUpdate,
 } from '@/services/agentConfig';
-import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import {
   AgentBaseInfo,
@@ -112,6 +112,12 @@ const EditAgent: React.FC = () => {
       ...agentConfigInfo,
       [attr]: value,
     } as AgentConfigInfo;
+
+    // 已发布的智能体，修改时需要更新修改时间
+    if (_agentConfigInfo.publishStatus === PublishStatusEnum.Published) {
+      _agentConfigInfo.modified = moment().toISOString();
+    }
+
     setAgentConfigInfo(_agentConfigInfo);
     // 用户问题建议
     if (attr === 'openSuggest') {
@@ -162,7 +168,7 @@ const EditAgent: React.FC = () => {
   const handleConfirmPublish = () => {
     setOpen(false);
     // 同步发布时间和修改时间
-    const time = moment().toString();
+    const time = moment().toISOString();
     // 更新智能体配置信息
     const _agentConfigInfo = {
       ...agentConfigInfo,
