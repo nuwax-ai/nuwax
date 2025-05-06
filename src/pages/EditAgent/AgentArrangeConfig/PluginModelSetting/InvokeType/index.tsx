@@ -22,7 +22,7 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
   onSaveSet,
   defaultSelected,
 }) => {
-  const [type, setType] = useState<InvokeTypeEnum>(InvokeTypeEnum.AUTO);
+  const [type, setType] = useState<InvokeTypeEnum>();
   // 是否默认选中
   const [selected, setSelected] = useState<DefaultSelectedEnum>(
     DefaultSelectedEnum.No,
@@ -41,7 +41,7 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
   // 保存
   const handleSave = () => {
     const data: InvokeTypeSaveParams = {
-      invokeType: type,
+      invokeType: type as InvokeTypeEnum,
       defaultSelected: selected,
     };
     onSaveSet(data);
