@@ -175,7 +175,7 @@ const usePluginConfig = () => {
 
   // 入参配置新增操作
   const handleInputConfigAdd = () => {
-    const _inputConfigArgs = cloneDeep(inputConfigArgs);
+    const _inputConfigArgs = cloneDeep(inputConfigArgs) || [];
     _inputConfigArgs.push({
       key: uuidv4(),
       ...PLUGIN_INPUT_CONFIG,
@@ -185,7 +185,7 @@ const usePluginConfig = () => {
 
   // 出参配置新增操作
   const handleOutputConfigAdd = () => {
-    const _outputConfigArgs = cloneDeep(outputConfigArgs);
+    const _outputConfigArgs = cloneDeep(outputConfigArgs) || [];
     _outputConfigArgs.push({
       key: uuidv4(),
       ...PLUGIN_OUTPUT_CONFIG,
@@ -220,6 +220,7 @@ const usePluginConfig = () => {
     inputConfigArgs,
     setInputConfigArgs,
     outputConfigArgs,
+    setOutputConfigArgs,
     expandedRowKeys,
     setExpandedRowKeys,
     outputExpandedRowKeys,
