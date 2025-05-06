@@ -8,6 +8,7 @@ import {
   TEMP_CONVERSATION_CONNECTION_URL,
   TEMP_CONVERSATION_UID,
 } from '@/constants/common.constants';
+import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import {
   apiTempChatConversationCreate,
   apiTempChatConversationQuery,
@@ -537,6 +538,15 @@ const ChatTemp: React.FC = () => {
     setShowScrollBtn(false);
   };
 
+  // 点击页脚跳转到租户官网
+  const handleSiteLink = () => {
+    const tenantConfigInfo = localStorage.getItem(TENANT_CONFIG_INFO);
+    if (tenantConfigInfo) {
+      const { siteUrl } = JSON.parse(tenantConfigInfo);
+      window.open(siteUrl, '_blank');
+    }
+  };
+
   return (
     <div
       className={cx(
@@ -625,7 +635,12 @@ const ChatTemp: React.FC = () => {
             onScrollBottom={onScrollBottom}
           />
           <p
-            className={cx(styles['welcome-text'], 'text-ellipsis')}
+            className={cx(
+              styles['welcome-text'],
+              'text-ellipsis',
+              'cursor-pointer',
+            )}
+            onClick={handleSiteLink}
           >{`欢迎使用${conversationInfo?.agent?.name}平台，快速搭建你的个性化智能体`}</p>
         </div>
       </div>
