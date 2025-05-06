@@ -90,6 +90,7 @@ export interface IgetDetails {
   spaceId: number;
   startNode: ChildNode;
   innerEndNode?: boolean;
+  publishDate?: string;
   extension: {
     size?: number | string;
   };

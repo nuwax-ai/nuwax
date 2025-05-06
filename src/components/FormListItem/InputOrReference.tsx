@@ -34,7 +34,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         form.setFieldValue([...basePath, 'dataType'], refDataType || 'String');
         form.setFieldValue(fieldName, newValue);
         const _name = form.getFieldValue([...basePath, 'name']);
-        if (!_name) {
+        if (!_name||isDisabled) {
           form.setFieldValue(
             [...basePath, 'name'],
             referenceList.argMap[newValue].name,

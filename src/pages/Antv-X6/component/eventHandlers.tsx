@@ -1,6 +1,6 @@
 import { BindEventHandlers } from '@/types/interfaces/graph';
-import { message, Popconfirm } from 'antd';
-import ReactDOM from 'react-dom/client'; // Update import to use createRoot
+import { message, Modal } from 'antd';
+
 /**
  * 绑定图形编辑器的事件处理器
  * @param graph - AntV X6 图形实例
@@ -139,69 +139,20 @@ const bindEventHandlers = ({
         // 如果是删除循环节点或删除循环的子节点
         if (_cell.getData().loopNodeId || _cell.getData().type === 'Loop') {
           if (_cell.getData().type === 'Loop') {
-            // 创建 Popconfirm 的容器
-            const popconfirmContainer = document.createElement('div');
-            document.body.appendChild(popconfirmContainer);
-
-            // 获取被选中元素的位置
-            const cellPosition = _cell.getBBox(); // 获取节点的边界框
-            const graphContainer = graph.container;
-            const graphOffset = graphContainer.getBoundingClientRect();
-
-            // 设置 Popconfirm 容器的位置
-            popconfirmContainer.style.position = 'absolute';
-            popconfirmContainer.style.left = `${
-              cellPosition.x + graphOffset.left
-            }px`;
-            popconfirmContainer.style.top = `${
-              cellPosition.y + graphOffset.top
-            }px`; // 向上偏移 50px
-            popconfirmContainer.style.zIndex = '9999'; // 确保在最上层
-
-            // 使用 createRoot 渲染 Popconfirm
-            const root = ReactDOM.createRoot(popconfirmContainer);
-            // 清理 Popconfirm 容器的函数
-            const cleanupPopconfirm = () => {
-              if (root) {
-                root.unmount();
-              }
-              if (
-                popconfirmContainer &&
-                document.body.contains(popconfirmContainer)
-              ) {
-                document.body.removeChild(popconfirmContainer);
-              }
-            };
-
-            const confirm = () => {
-              removeNode(_cell.id, _cell.getData());
-              graph.removeCells(cells);
-              // 清理 Popconfirm 容器
-              cleanupPopconfirm();
-            };
-            const cancel = () => {
-              // 清理 Popconfirm 容器
-              cleanupPopconfirm();
-              return false; // 取消删除操作
-            };
-
-            // 监听画布的其他操作，确保 Popconfirm 被清理
-            graph.on('blank:click', cleanupPopconfirm);
-            graph.on('node:click', cleanupPopconfirm);
-            graph.on('edge:click', cleanupPopconfirm);
-            graph.on('node:moved', cleanupPopconfirm);
-            root.render(
-              <Popconfirm
-                title="确定要删除循环节点吗？"
-                onConfirm={confirm}
-                onCancel={cancel}
-                open={true} // 直接显示 Popconfirm
-                okText={'确认'}
-                cancelText={'取消'}
-              ></Popconfirm>,
-            );
-
-            return false; // 阻止默认删除行为
+            // 弹出确认框
+            Modal.confirm({
+              title: '确定要删除循环节点吗？',
+              okText: '确认',
+              cancelText: '取消',
+              onOk: () => {
+                removeNode(_cell.id, _cell.getData()); // 调用删除节点的函数
+                graph.removeCells(cells); // 删除选中的单元格
+              },
+              onCancel: () => {
+                return false; // 取消删除操作
+              },
+            });
+            return;
           }
           // 删除节点
           removeNode(_cell.id, _cell.getData());

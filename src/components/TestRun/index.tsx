@@ -1,12 +1,27 @@
 // import squareImage from '@/assets/images/square_bg.png';
 import CodeEditor from '@/components/CodeEditor';
+import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
+import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
-import { TestRunparams } from '@/types/interfaces/node';
+import { InputAndOutConfig, TestRunparams } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
 import { CaretRightOutlined, CloseOutlined } from '@ant-design/icons';
 import { Bubble, Prompts, Sender } from '@ant-design/x';
-import { Button, Collapse, Empty, Form, FormInstance, Input, Tag } from 'antd';
+import {
+  Button,
+  Radio,
+  Collapse,
+  Empty,
+  Form,
+  FormInstance,
+  Input,
+  InputNumber,
+  Tag,
+  Upload,
+  UploadProps,
+  message
+} from 'antd';
 import { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import './index.less';
@@ -47,7 +62,67 @@ interface QaItems {
 //   { label: 'coder', value: 'coder', img: squareImage },
 // ];
 
-const renderFormItem = (type: string, items: any[], form: FormInstance) => {
+
+
+const token = localStorage.getItem(ACCESS_TOKEN)?? '';
+// 根据type返回不同的输入项
+const getInputBox = (item: InputAndOutConfig, form: FormInstance) => {
+  const handleChange: UploadProps['onChange'] = (info) => {
+    if (info.file.status === 'uploading') {
+      return;
+    }
+    if (info.file.status === 'done') {
+      try {
+        const data = info.file.response?.data;
+        // console.log(data)
+        form.setFieldValue(item.name, data?.url);
+      } catch (error) {
+        message.warning(info.file.response?.message);
+      }
+  
+    }
+  };
+  switch (true) {
+    case item.dataType?.includes('File'):
+      return (
+        <Upload
+        action={UPLOAD_FILE_ACTION}
+        onChange={handleChange}
+        headers={{
+          Authorization: token ? `Bearer ${token}` : '',
+        }}
+        >
+          <Button>上传文件</Button>
+        </Upload>
+      );
+    case item.dataType === 'Object' || item.dataType?.includes('Array'):
+      return (
+        <CodeEditor
+          value={form.getFieldValue(item.name) || ''}
+          codeLanguage={'JSON'}
+          onChange={(code: string) => {
+            form.setFieldsValue({ [item.name]: code }); // 更新表单值
+          }}
+          height="180px"
+        />
+      );
+    case item.dataType === 'Number':
+      return <InputNumber />;
+    case item.dataType === 'Integer':
+      return <InputNumber precision={0} />;
+    case item.dataType === 'Boolean':
+      return <Radio.Group options={[{label:'true',value:'true'},{label:'false',value:'false'}]} />;
+    default: {
+      return <Input />;
+    }
+  }
+}
+
+const renderFormItem = (
+  type: string,
+  items: InputAndOutConfig[],
+  form: FormInstance,
+) => {
   return (
     <>
       {items.map((item, index) => (
@@ -63,18 +138,7 @@ const renderFormItem = (type: string, items: any[], form: FormInstance) => {
               </>
             }
           >
-            {item.dataType === 'Object' || item.dataType?.includes('Array') ? (
-              <CodeEditor
-                value={form.getFieldValue(item.name) || ''}
-                codeLanguage={'JSON'}
-                onChange={(code: string) => {
-                  form.setFieldsValue({ [item.name]: code }); // 更新表单值
-                }}
-                height="180px"
-              />
-            ) : (
-              <Input />
-            )}
+            {getInputBox(item, form)}
           </Form.Item>
         </div>
       ))}

@@ -227,7 +227,6 @@ const Workflow: React.FC = () => {
     }
   };
   // 更新节点
-
   const changeNode = async (config: ChildNode, update?: boolean | string) => {
     let params = JSON.parse(JSON.stringify(config));
     if (update && update === 'moved') {
@@ -445,6 +444,15 @@ const Workflow: React.FC = () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
+      setFoldWrapItem({
+        id: 0,
+        description: '',
+        workflowId: workflowId,
+        type: NodeTypeEnum.Start,
+        nodeConfig: {},
+        name: '',
+        icon: '',
+      });
       changeUpdateTime();
       // 如果传递了node,证明时循环节点下的子节点
       if (node) {
@@ -547,9 +555,17 @@ const Workflow: React.FC = () => {
   };
   // 拖拽组件到画布中
   const dragChild = (child: Child, e?: React.DragEvent<HTMLDivElement>) => {
-    // 定义画布大小或获取自父组件/全局状态
-    const canvasWidth = 1400;
-    const canvasHeight = 600;
+    // 获取当前画布可视区域中心点
+    const getViewportCenter = () => {
+      if (graphRef.current) {
+        const viewGraph = graphRef.current.getCurrentViewPort();
+        return {
+          x: viewGraph.x + viewGraph.width / 2 + Math.random() * 100 - 50,
+          y: viewGraph.y + viewGraph.height / 2 + Math.random() * 100 - 50,
+        };
+      }
+      return { x: 0, y: 0 };
+    };
 
     // 获取坐标函数：优先使用拖拽事件坐标，否则生成随机坐标
     const getCoordinates = (
@@ -558,10 +574,7 @@ const Workflow: React.FC = () => {
       if (e) {
         return { x: e.clientX, y: e.clientY };
       } else {
-        return {
-          x: Math.floor(canvasWidth / 2) + Math.floor(Math.random() * 100),
-          y: Math.floor(canvasHeight / 2) + Math.floor(Math.random() * 100),
-        };
+        return getViewportCenter();
       }
     };
 
@@ -627,8 +640,14 @@ const Workflow: React.FC = () => {
         message.success('发布成功');
         setLoading(false);
         setShowPublish(false);
+        const _time = new Date();
         // 更新时间
-        setInfo({ ...(info as IgetDetails), ...values });
+        setInfo({
+          ...(info as IgetDetails),
+          ...values,
+          modified: _time.toString(),
+          publishDate: _time.toString(),
+        });
       }
     }
   };

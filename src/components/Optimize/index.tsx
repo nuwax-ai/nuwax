@@ -1,6 +1,7 @@
 import sendImage from '@/assets/images/send_image_gray.png';
 import PromptView from '@/components/ChatView/promptView';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import { InputAndOutConfig } from '@/types/interfaces/node';
 import type { ModalProps } from 'antd';
 import { Button, Input, Modal } from 'antd';
 import classNames from 'classnames';
@@ -19,6 +20,7 @@ export interface AssistantOptimizeModalProps extends ModalProps {
   defaultValue?: string;
   codeLanguage?: string;
   tableId?: number;
+  inputArgs?: InputAndOutConfig[];
 }
 
 const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
@@ -30,6 +32,7 @@ const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
   codeLanguage,
   title,
   tableId,
+  inputArgs,
 }) => {
   const [message, setMessage] = useState<string>('');
   const {
@@ -76,7 +79,14 @@ const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
     } else if (message) {
       setMessage('');
       console.log('message', message, optimizeType, tableId);
-      onMessageSend(id, message, optimizeType, codeLanguage, tableId);
+      onMessageSend(
+        id,
+        message,
+        optimizeType,
+        codeLanguage,
+        tableId,
+        inputArgs,
+      );
     }
   };
 
@@ -94,7 +104,14 @@ const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
     } else if (e.nativeEvent.keyCode === 13 && !!value.trim()) {
       // enter事件
 
-      onMessageSend(id, message, optimizeType, codeLanguage, tableId);
+      onMessageSend(
+        id,
+        message,
+        optimizeType,
+        codeLanguage,
+        tableId,
+        inputArgs,
+      );
       // 置空
       setMessage('');
     }

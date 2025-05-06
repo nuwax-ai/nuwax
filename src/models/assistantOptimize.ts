@@ -16,6 +16,7 @@ import {
   PromptOptimizeRes,
 } from '@/types/interfaces/assistant';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import { InputAndOutConfig } from '@/types/interfaces/node';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import moment from 'moment/moment';
 import { useRef, useState } from 'react';
@@ -192,6 +193,7 @@ export default () => {
     type: 'prompt' | 'code' | 'sql',
     codeLanguage?: string,
     tableId?: number,
+    inputArgs?: InputAndOutConfig[],
   ) => {
     // 清除副作用
     handleClearSideEffect();
@@ -228,6 +230,7 @@ export default () => {
       prompt: message,
       codeLanguage: codeLanguage,
       tableId: tableId,
+      inputArgs: inputArgs,
     };
     // 处理会话
     await handleConversation(params, currentMessageId, type);

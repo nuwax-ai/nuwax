@@ -37,6 +37,7 @@ import {
   default as Variable,
   default as Workflow,
 } from '@/assets/images/workflow_image.png';
+import PlusIcon from '@/assets/svg/plus.svg';
 import { adjustParentSize } from '@/utils/graph';
 import { Graph, Node } from '@antv/x6';
 const imageList = {
@@ -302,6 +303,16 @@ export const generatePorts = (data: ChildNode) => {
     idSuffix: string,
   ) => ({
     group,
+    // markup:[
+    //   {
+    //     tagName: 'circle',
+    //     selector: 'circle',
+    //   },
+    //   {
+    //     tagName: 'image', // 新增图标元素
+    //     selector: 'icon', // 新增选择器
+    //   }
+    // ],
     id: `${data.id}-${idSuffix}`,
     zIndex: 99,
     magnet: true,
@@ -315,7 +326,16 @@ export const generatePorts = (data: ChildNode) => {
         pointerEvents: 'all', // 强制启用指针事件
         event: 'mouseenter', // 明确事件类型
         // // 新增磁吸区域扩展
-        // magnetRadius: 1, // 将磁吸半径从默认15px增大到24px
+        magnetRadius: 32, // 将磁吸半径从默认15px增大到24px
+      },
+      icon: {
+        xlinkHref: PlusIcon, // 图标引用
+        width: 0, // 默认隐藏
+        height: 0,
+        x: -6,
+        y: -6,
+        event: 'mouseenter',
+        fill: '#fff',
       },
     },
   });
@@ -393,7 +413,7 @@ export const generatePorts = (data: ChildNode) => {
       // 通用端口组配置
       in: {
         position: 'left',
-        attrs: { circle: { r: basePortSize } },
+        attrs: { circle: { r: basePortSize, magnet: true, magnetRadius: 50 } },
         connectable: {
           source: isLoopNode, // Loop 节点的 in 端口允许作为 source
           target: true, // 非 Loop 节点的 in 端口只能作为 target
@@ -401,7 +421,7 @@ export const generatePorts = (data: ChildNode) => {
       },
       out: {
         position: 'right',
-        attrs: { circle: { r: basePortSize } },
+        attrs: { circle: { r: basePortSize, magnet: true, magnetRadius: 50 } },
         connectable: {
           source: true, // 非 Loop 节点的 out 端口只能作为 source
           target: isLoopNode, // Loop 节点的 out 端口允许作为 target
@@ -412,7 +432,7 @@ export const generatePorts = (data: ChildNode) => {
           name: 'absolute',
           // args: { x: 0, y: 0 },
         },
-        attrs: { circle: { r: basePortSize } },
+        attrs: { circle: { r: basePortSize, magnet: true, magnetRadius: 50 } },
         connectable: {
           source: true, // 非 Loop 节点的 out 端口只能作为 source
           target: isLoopNode, // Loop 节点的 out 端口允许作为 target
