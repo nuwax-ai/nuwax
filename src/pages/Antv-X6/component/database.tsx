@@ -48,7 +48,6 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
   // 打开自动生成弹窗
   const onOpenCreated = () => {
     setOpen(true);
-    console.log('打开自动生成弹窗');
   };
 
   useEffect(() => {
@@ -328,7 +327,6 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
           if (text.includes('```')) {
             text = text.replace(/```/g, '');
           }
-          console.log('text', text);
           // 只取第二个SQL语句
           const finalSql = text.startsWith('sql')
             ? text.replace('sql', '').trim()
@@ -338,6 +336,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
         }}
         optimizeType="sql"
         tableId={form.getFieldValue('tableId')}
+        inputArgs={form.getFieldValue('inputArgs')}
       />
     </div>
   );

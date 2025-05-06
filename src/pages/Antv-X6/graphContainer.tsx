@@ -254,8 +254,20 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       }
     };
 
+    // 获取当前可视区域的x，y，width，height
+    const getCurrentViewPort = () => {
+      if (!graphRef.current) return { x: 0, y: 0, width: 0, height: 0 };
+      const viewport = graphRef.current.getGraphArea();
+      return {
+        x: viewport.x as number,
+        y: viewport.y as number,
+        width: viewport.width as number,
+        height: viewport.height as number,
+      };
+    };
     // 将子组件的方法暴露给父组件
     useImperativeHandle(ref, () => ({
+      getCurrentViewPort,
       addNode,
       updateNode,
       saveAllNodes,

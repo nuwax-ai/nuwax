@@ -7,18 +7,21 @@ import { History } from '@antv/x6-plugin-history';
 // 键盘快捷键插件，提供快捷键操作
 import { Keyboard } from '@antv/x6-plugin-keyboard';
 // 对齐辅助线插件，帮助对齐节点
-import { Snapline } from '@antv/x6-plugin-snapline';
-
 import { Selection } from '@antv/x6-plugin-selection';
+import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
 // import { Transform } from '@antv/x6-plugin-transform';
 import { ChildNode } from '@/types/interfaces/graph';
+// import { Child, ChildNode } from '@/types/interfaces/graph';
+
 import { adjustParentSize } from '@/utils/graph';
 import { message } from 'antd';
+// import { message, Modal } from 'antd';
 // 自定义类型定义
 import { GraphProp } from '@/types/interfaces/graph';
 import { createCurvePath } from './registerCustomNodes';
-
+// import StencilContent from './stencil';
+// import PlusIcon from '@/assets/svg/plus.svg';
 import {
   handleLoopEdge,
   handleSpecialNodeTypes,
@@ -90,7 +93,7 @@ const initGraph = ({
     },
   });
   // 注册自定义边类型
-  Graph.registerEdge('data-processing-curve', Edge, true);
+  // Graph.registerEdge('data-processing-curve', Edge, true);
 
   // 创建图形实例，并配置相关属性
   const graph = new Graph({
@@ -124,7 +127,7 @@ const initGraph = ({
       },
       createEdge() {
         return new Shape.Edge({
-          shape: 'data-processing-curve', // 更改为使用注册的自定义边样式
+          // shape: 'data-processing-curve', // 更改为使用注册的自定义边样式
           attrs: {
             line: {
               strokeDasharray: '5 5', // 示例：添加虚线效果
@@ -318,12 +321,19 @@ const initGraph = ({
           fill: '#5147FF',
           // strokeWidth: 1,
         },
+        // icon: {
+        //   ...(p.attrs?.icon || {}),
+        //   width: 12, // 显示图标
+        //   height: 12,
+        //   opacity: 0.7, // 降低透明度减少干扰
+        //   pointerEvents: 'none', // 禁用图标交互
+        // },
       },
     }));
     node.prop('ports/items', updatedPorts);
   });
 
-  graph.on('node:port:mouseenter', ({ node }) => {
+  graph.on('node:mouseleave', ({ node }) => {
     const ports = node.getPorts();
     const updatedPorts = ports.map((p) => ({
       ...p,
@@ -335,10 +345,35 @@ const initGraph = ({
           stroke: '#5147FF',
           fill: '#5147FF',
         },
+        // icon: {
+        //   ...(p.attrs?.icon || {}),
+        //   width: 0, // 隐藏图标
+        //   height: 0,
+        // },
       },
     }));
     node.prop('ports/items', updatedPorts);
   });
+
+  // graph.on('node:port:click', ({ e, node, port }) => {
+  //   console.log(e, node, port);
+  //   const dragChild = (child: Child, e?: React.DragEvent<HTMLDivElement>) => {
+  //     console.log(12312312, child, e);
+  //   };
+  //   const popoverContent = (
+  //     <div className='confirm-popover'>
+  //       <StencilContent
+  //         foldWrapItem={node.getData()}
+  //         dragChild={(child: Child, e?: React.DragEvent<HTMLDivElement>) =>
+  //           dragChild(child, e)
+  //         }
+  //       />
+  //     </div>
+  //   );
+  //   Modal.confirm({
+  //     content: popoverContent,
+  //   });
+  // });
 
   // 监听节点的拖拽移动位置
   graph.on('node:moved', ({ node, e }) => {

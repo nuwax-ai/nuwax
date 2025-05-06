@@ -81,6 +81,12 @@ export interface GraphContainerProps {
 }
 
 export interface GraphContainerRef {
+  getCurrentViewPort: () => {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
   // 新增节点
   addNode: (e: { x: number; y: number }, child: ChildNode) => void;
   // 修改节点

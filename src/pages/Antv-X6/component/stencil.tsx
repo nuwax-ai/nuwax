@@ -11,6 +11,8 @@ interface Prop {
   // dragChild 是一个回调函数，用于处理拖拽开始事件。
   // 它接收 React 的原生 DragEvent 和当前被拖拽的子项 (Child) 对象作为参数。
   dragChild: (child: Child, e?: React.DragEvent<HTMLDivElement>) => void;
+  // 当前端口的名称
+  portName?: string;
 }
 // StencilContent 组件用于渲染 stencil 内容，并允许用户拖拽子项（Child）到画布上。
 const StencilContent = ({ dragChild, foldWrapItem }: Prop) => {

@@ -6,6 +6,8 @@
  * @returns
  */
 
+import { InputAndOutConfig } from './node';
+
 // 参数接口
 export interface PromptOptimizeParams {
   /*请求ID，必须传，效果不理想时用于多论对话 */
@@ -17,6 +19,8 @@ export interface PromptOptimizeParams {
   codeLanguage?: string;
 
   tableId?: number;
+
+  inputArgs?: InputAndOutConfig[];
 }
 
 // 响应接口
