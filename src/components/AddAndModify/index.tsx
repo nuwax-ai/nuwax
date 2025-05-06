@@ -75,6 +75,7 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
                 showCount
                 maxLength={item.maxLength || 30}
                 autoSize={{ minRows: 3, maxRows: 6 }}
+               
               />
             );
           case 'Cascader':
@@ -86,7 +87,7 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
             );
           case 'Radio':
             return <Radio.Group options={item.options} />;
-          case 'Uplpad':
+          case 'Upload':
             return <Radio.Group options={item.options} />;
           case 'Number':
             return <InputNumber />;
