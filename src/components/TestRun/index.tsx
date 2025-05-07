@@ -2,9 +2,11 @@
 import CodeEditor from '@/components/CodeEditor';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { DataTypeEnum } from '@/types/enums/common';
 import { DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
 import { InputAndOutConfig, TestRunparams } from '@/types/interfaces/node';
+import { getAccept } from '@/utils';
 import { returnImg } from '@/utils/workflow';
 import { CaretRightOutlined, CloseOutlined } from '@ant-design/icons';
 import { Bubble, Prompts, Sender } from '@ant-design/x';
@@ -72,13 +74,13 @@ const getInputBox = (item: InputAndOutConfig, form: FormInstance) => {
     if (info.file.status === 'done') {
       try {
         const data = info.file.response?.data;
-        // console.log(data)
         form.setFieldValue(item.name, data?.url);
       } catch (error) {
         message.warning(info.file.response?.message);
       }
     }
   };
+
   switch (true) {
     case item.dataType?.includes('File'):
       return (
@@ -88,6 +90,7 @@ const getInputBox = (item: InputAndOutConfig, form: FormInstance) => {
           headers={{
             Authorization: token ? `Bearer ${token}` : '',
           }}
+          accept={getAccept(item.dataType as DataTypeEnum)}
         >
           <Button>上传文件</Button>
         </Upload>

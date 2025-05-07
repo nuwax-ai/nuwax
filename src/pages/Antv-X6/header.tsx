@@ -30,7 +30,6 @@ const Header: React.FC<HeaderProp> = ({
   setShowCreateWorkflow,
   showPublish,
 }) => {
-  console.log(info);
   const { name, icon, publishStatus, modified, description, publishDate } =
     info;
 

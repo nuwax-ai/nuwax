@@ -127,6 +127,7 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
       form.resetFields();
       setTitle(title);
       setFormList(formList);
+
       if (initialValues) {
         // 根据formList，找出type为DatePicker的字段，将值转换为dayjs对象
         formList.forEach((item) => {
@@ -139,6 +140,7 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
         setInitialValues(initialValues);
         form.setFieldsValue(initialValues);
       } else {
+        console.log('initialValues', initialValues);
         setInitialValues({});
         form.setFieldsValue({});
       }
@@ -182,7 +184,7 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
         <Form
           form={form}
           layout="vertical"
-          initialValues={initialValues}
+          // initialValues={initialValues}
           onFinish={onFinish}
           onFinishFailed={() => setConfirmLoading(false)}
           requiredMark={customizeRequiredMark}
