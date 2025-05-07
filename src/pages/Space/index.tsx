@@ -4,10 +4,18 @@ import React, { useEffect } from 'react';
 import { history, useModel } from 'umi';
 
 const Space: React.FC = () => {
-  const { currentSpaceInfo, loadingSpaceList } = useModel('spaceModel');
+  const { currentSpaceInfo, loadingSpaceList, asyncSpaceListFun } =
+    useModel('spaceModel');
+
+  useEffect(() => {
+    asyncSpaceListFun();
+  }, []);
 
   useEffect(() => {
     const spaceId = localStorage.getItem(SPACE_ID) ?? currentSpaceInfo?.id;
+    if (!spaceId) {
+      return;
+    }
     const spaceUrl = localStorage.getItem(SPACE_URL) ?? 'develop';
     history.push(`/space/${spaceId}/${spaceUrl}`);
   }, [currentSpaceInfo]);

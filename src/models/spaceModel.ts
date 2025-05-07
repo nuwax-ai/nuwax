@@ -66,8 +66,8 @@ function Space() {
     loadingSpaceList,
     setLoadingSpaceList,
     handleCurrentSpaceInfo,
-    setPersonalSpaceInfo,
     currentSpaceInfo,
+    setCurrentSpaceInfo,
     asyncSpaceListFun,
   };
 }

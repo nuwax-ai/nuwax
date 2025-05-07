@@ -75,7 +75,6 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
                 showCount
                 maxLength={item.maxLength || 30}
                 autoSize={{ minRows: 3, maxRows: 6 }}
-               
               />
             );
           case 'Cascader':

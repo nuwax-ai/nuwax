@@ -8,11 +8,10 @@ import { apiCreateSpaceTeam } from '@/services/workspace';
 import type { CreateNewTeamProps } from '@/types/interfaces/layouts';
 import type { CreateSpaceTeamParams } from '@/types/interfaces/workspace';
 import { customizeRequiredMark } from '@/utils/form';
-import { history, useLocation } from '@@/exports';
 import { Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import { useModel, useRequest } from 'umi';
+import { history, useLocation, useModel, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

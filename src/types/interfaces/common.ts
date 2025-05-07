@@ -296,6 +296,7 @@ export interface CreatedNodeItem {
 
 // 创建、编辑智能体
 export interface CreateAgentProps {
+  spaceId: number;
   mode?: CreateUpdateModeEnum;
   agentConfigInfo?: AgentConfigInfo;
   open: boolean;
