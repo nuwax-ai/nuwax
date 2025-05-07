@@ -47,7 +47,6 @@ function Space() {
 
   // 加载空间列表
   const asyncSpaceListFun = async () => {
-    // 加载空间列表
     setLoadingSpaceList(true);
     // 查询空间列表
     const { code, data } = await runSpace();
