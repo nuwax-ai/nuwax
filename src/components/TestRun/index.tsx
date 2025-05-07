@@ -2,25 +2,27 @@
 import CodeEditor from '@/components/CodeEditor';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { DataTypeEnum } from '@/types/enums/common';
 import { DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
 import { InputAndOutConfig, TestRunparams } from '@/types/interfaces/node';
+import { getAccept } from '@/utils';
 import { returnImg } from '@/utils/workflow';
 import { CaretRightOutlined, CloseOutlined } from '@ant-design/icons';
 import { Bubble, Prompts, Sender } from '@ant-design/x';
 import {
   Button,
-  Radio,
   Collapse,
   Empty,
   Form,
   FormInstance,
   Input,
   InputNumber,
+  Radio,
   Tag,
   Upload,
   UploadProps,
-  message
+  message,
 } from 'antd';
 import { useEffect, useState } from 'react';
 import { useModel } from 'umi';
@@ -62,9 +64,7 @@ interface QaItems {
 //   { label: 'coder', value: 'coder', img: squareImage },
 // ];
 
-
-
-const token = localStorage.getItem(ACCESS_TOKEN)?? '';
+const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 // 根据type返回不同的输入项
 const getInputBox = (item: InputAndOutConfig, form: FormInstance) => {
   const handleChange: UploadProps['onChange'] = (info) => {
@@ -79,18 +79,19 @@ const getInputBox = (item: InputAndOutConfig, form: FormInstance) => {
       } catch (error) {
         message.warning(info.file.response?.message);
       }
-  
     }
   };
+
   switch (true) {
     case item.dataType?.includes('File'):
       return (
         <Upload
-        action={UPLOAD_FILE_ACTION}
-        onChange={handleChange}
-        headers={{
-          Authorization: token ? `Bearer ${token}` : '',
-        }}
+          action={UPLOAD_FILE_ACTION}
+          onChange={handleChange}
+          headers={{
+            Authorization: token ? `Bearer ${token}` : '',
+          }}
+          accept={getAccept(item.dataType as DataTypeEnum)}
         >
           <Button>上传文件</Button>
         </Upload>
@@ -111,12 +112,19 @@ const getInputBox = (item: InputAndOutConfig, form: FormInstance) => {
     case item.dataType === 'Integer':
       return <InputNumber precision={0} />;
     case item.dataType === 'Boolean':
-      return <Radio.Group options={[{label:'true',value:'true'},{label:'false',value:'false'}]} />;
+      return (
+        <Radio.Group
+          options={[
+            { label: 'true', value: 'true' },
+            { label: 'false', value: 'false' },
+          ]}
+        />
+      );
     default: {
       return <Input />;
     }
   }
-}
+};
 
 const renderFormItem = (
   type: string,

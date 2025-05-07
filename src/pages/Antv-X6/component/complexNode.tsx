@@ -287,21 +287,21 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({ form }) => {
         },
       ];
     }
-    // 添加变更检查
-    const typeChanged = val !== form.getFieldValue('answerType');
-    const optionsChanged = options !== form.getFieldValue('options');
-    if (typeChanged || optionsChanged) {
-      if (val !== 'SELECT') {
-        options = options?.map((item: QANodeOption) => ({
-          ...item,
-          nextNodeIds: [],
-        }));
-      }
+
+    console.log('bb',val,form.getFieldValue('answerType'))
+    if (val === 'TEXT') {
+      options = options?.map((item: QANodeOption) => ({
+        ...item,
+        nextNodeIds: [],
+      }));
+
     }
+
     form.setFieldsValue({
       answerType: val,
       options,
     });
+
     form.submit();
   };
 

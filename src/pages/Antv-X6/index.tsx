@@ -200,6 +200,7 @@ const Workflow: React.FC = () => {
   };
   // 获取当前节点的参数
   const getRefernece = async (id: number) => {
+    if (id === 0) return;
     // 获取节点需要的引用参数
     const _res = await service.getOutputArgs(id);
     if (_res.code === Constant.success) {
@@ -228,6 +229,7 @@ const Workflow: React.FC = () => {
   };
   // 更新节点
   const changeNode = async (config: ChildNode, update?: boolean | string) => {
+    console.log('update',update)
     let params = JSON.parse(JSON.stringify(config));
     if (update && update === 'moved') {
       if (config.id === foldWrapItemRef.current.id) {
@@ -274,9 +276,11 @@ const Workflow: React.FC = () => {
       const values = form.getFieldsValue(true);
       let newNodeConfig;
       if (
-        ['QA', 'IntentRecognition', 'Condition'].includes(
+        (['IntentRecognition', 'Condition'].includes(
           currentFoldWrapItem.type,
-        ) &&
+        ) ||
+          (currentFoldWrapItem.type === 'QA' &&
+            values.answerType === 'SELECT')) &&
         currentFoldWrapItem.id === foldWrapItem.id
       ) {
         const changeNode = changeNodeConfig(
@@ -299,6 +303,9 @@ const Workflow: React.FC = () => {
             ...values,
           },
         };
+        if (currentFoldWrapItem.type === 'QA') {
+          newNodeConfig.nextNodeIds = [];
+        }
       }
       await changeNode(newNodeConfig);
       setIsModified(false);
@@ -311,7 +318,8 @@ const Workflow: React.FC = () => {
     // 先完全重置表单
     if (foldWrapItemRef.current.id !== 0) {
       setIsModified(async (modified: boolean) => {
-        if (modified) {
+        console.log('isModified', modified);
+        if (modified===true) {
           await onFinish();
           if (timerRef.current) {
             clearTimeout(timerRef.current);
@@ -830,7 +838,15 @@ const Workflow: React.FC = () => {
 
       testRunAllNode(_params);
     } else {
-      nodeTestRun(params);
+      if (type === 'Code') {
+        setIsModified(async (prev: boolean) => {
+          if (prev) await onFinish();
+          nodeTestRun(params);
+          return false;
+        });
+      } else {
+        nodeTestRun(params);
+      }
     }
     setLoading(true);
   };

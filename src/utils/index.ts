@@ -56,3 +56,34 @@ export const CascaderChange = (values: string[]): DataTypeEnum => {
     ? (lastValue as DataTypeEnum)
     : DataTypeEnum.String;
 };
+
+// 根据类型返回不同的accpet类型
+export const getAccept = (type: DataTypeEnum) => {
+  switch (type) {
+    case DataTypeEnum.File_Image:
+      return 'image/*';
+    case DataTypeEnum.File_PPT:
+      return '.ppt,.pptx';
+    case DataTypeEnum.File_Doc:
+      return '.doc,.docx';
+    case DataTypeEnum.File_PDF:
+      return '.pdf';
+    case DataTypeEnum.File_Txt:
+      return '.txt';
+    case DataTypeEnum.File_Zip:
+      return '.zip,.rar,.7z';
+    case DataTypeEnum.File_Excel:
+      return '.xls,.xlsx,.csv';
+    case DataTypeEnum.File_Video:
+      return 'video/*';
+    case DataTypeEnum.File_Audio:
+    case DataTypeEnum.File_Voice:
+      return 'audio/*';
+    case DataTypeEnum.File_Code:
+      return '.js,.txt,.ts,.jsx,.tsx,.py,.java,.c,.cpp,.cs,.go,.php,.rb,.sh';
+    case DataTypeEnum.File_Svg:
+      return '.svg';
+    default:
+      return '';
+  }
+};
