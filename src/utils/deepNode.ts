@@ -62,6 +62,9 @@ export const addChildNode = (
 
 // 获取默认展开的配置key
 export const getActiveKeys = (arr: BindConfigWithSub[]) => {
+  if (!arr) {
+    return [];
+  }
   const activeList: React.Key[] = [];
   const filterRecursive = (data: BindConfigWithSub[]) => {
     for (let info of data) {
@@ -91,7 +94,7 @@ export const deleteNode = (arr: BindConfigWithSub[], key: React.Key) => {
 
 // 递归更新子级require值
 const updateRequireFieldFalse = (data: BindConfigWithSub[], value: boolean) => {
-  data.forEach((node) => {
+  data?.forEach((node) => {
     node.require = value;
     if (node.subArgs?.length) {
       updateRequireFieldFalse(node.subArgs, value);
@@ -143,7 +146,7 @@ const updateRequireFieldTrue = (
       node.require = true;
     }
     if (node?.subArgs?.length) {
-      return updateRequireFieldTrue(node.subArgs, pathKeys);
+      updateRequireFieldTrue(node.subArgs, pathKeys);
     }
   });
 };
@@ -221,7 +224,7 @@ export const loopFilterAndDisabledArray = (
 ): BindConfigWithSubDisabled[] => {
   // 过滤数组
   const loopFilterArray = (arr: BindConfigWithSub[]): BindConfigWithSub[] => {
-    return arr.filter((item) => {
+    return arr?.filter((item) => {
       if (
         item.dataType === DataTypeEnum.Object ||
         item.dataType?.includes('Array')
@@ -265,7 +268,14 @@ export const loopOmitArray = (
 ): BindConfigWithSub[] => {
   return data.map((item) => {
     if (item.dataType?.includes('Array')) {
-      return omit(item, ['subArgs']);
+      // 手动补充缺失的属性，确保类型兼容
+      const omittedItem = omit(item, ['subArgs']);
+      return {
+        ...omittedItem,
+        key: item.key,
+        name: item.name,
+        description: item.description,
+      };
     }
     if (!!item.subArgs?.length) {
       return { ...item, subArgs: loopOmitArray(item.subArgs) };
@@ -307,4 +317,30 @@ export const findNode = (treeData: BindConfigWithSub[], key: React.Key) => {
       if (_node) return _node;
     }
   }
+};
+
+// 循环设置nameRequired、descRequired, 并获取flag
+// flag: true 表示存在未填写的字段，false 表示不存在未填写的字段
+export const loopInputRequired = (data: BindConfigWithSub[]) => {
+  let isAllRequired = true;
+  const updateRequiredRecursive = (arr: BindConfigWithSub[]) => {
+    // 为 map 函数的回调添加返回类型，假设 item 的类型为 BindConfigWithSub，返回类型也为 BindConfigWithSub
+    return arr?.map((item): BindConfigWithSub => {
+      item.nameRequired = !item.name;
+      item.descRequired = !item.description;
+      // 如果存在未填写的字段，设置isAllRequired为false
+      if (isAllRequired) {
+        isAllRequired = !!item.name && !!item.description;
+      }
+
+      if (item?.subArgs?.length) {
+        return { ...item, subArgs: updateRequiredRecursive(item.subArgs) };
+      }
+
+      return item;
+    });
+  };
+
+  const list = updateRequiredRecursive(data);
+  return { list, isAllRequired };
 };
