@@ -429,7 +429,7 @@ const SpaceLibrary: React.FC = () => {
           break;
         case ComponentMoreActionEnum.Off_Shelf:
           confirm({
-            title: '您确定要删除此插件吗?',
+            title: '您确定要下架此插件吗?',
             icon: <ExclamationCircleFilled />,
             content: info.name,
             okText: '确定',
@@ -465,7 +465,7 @@ const SpaceLibrary: React.FC = () => {
           break;
         case ComponentMoreActionEnum.Off_Shelf:
           confirm({
-            title: '您确定要删除此工作流吗?',
+            title: '您确定要下架此工作流吗?',
             icon: <ExclamationCircleFilled />,
             content: info.name,
             okText: '确定',

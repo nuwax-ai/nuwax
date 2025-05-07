@@ -35,6 +35,7 @@ import type {
   RoleInfo,
   TempConversationChatParams,
 } from '@/types/interfaces/conversationInfo';
+import { TenantConfigInfo } from '@/types/interfaces/login';
 import { RequestResponse } from '@/types/interfaces/request';
 import { addBaseTarget } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
@@ -85,6 +86,7 @@ const ChatTemp: React.FC = () => {
 
   // 会话UID
   const conversationUid = useRef<string>();
+  const tenantConfigInfoRef = useRef<TenantConfigInfo>();
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const handleScrollBottom = () => {
@@ -425,6 +427,14 @@ const ChatTemp: React.FC = () => {
   }, [conversationInfo]);
 
   useEffect(() => {
+    // 初始化租户配置信息
+    const tenantConfigInfo = localStorage.getItem(TENANT_CONFIG_INFO);
+    if (tenantConfigInfo) {
+      tenantConfigInfoRef.current = JSON.parse(tenantConfigInfo);
+    }
+  }, []);
+
+  useEffect(() => {
     const asyncFun = async () => {
       if (chatKey) {
         setIsLoadingConversation(true);
@@ -540,9 +550,8 @@ const ChatTemp: React.FC = () => {
 
   // 点击页脚跳转到租户官网
   const handleSiteLink = () => {
-    const tenantConfigInfo = localStorage.getItem(TENANT_CONFIG_INFO);
-    if (tenantConfigInfo) {
-      const { siteUrl } = JSON.parse(tenantConfigInfo);
+    if (tenantConfigInfoRef.current) {
+      const { siteUrl } = tenantConfigInfoRef.current;
       window.open(siteUrl, '_blank');
     }
   };
@@ -641,7 +650,7 @@ const ChatTemp: React.FC = () => {
               'cursor-pointer',
             )}
             onClick={handleSiteLink}
-          >{`欢迎使用${conversationInfo?.agent?.name}平台，快速搭建你的个性化智能体`}</p>
+          >{`欢迎使用${tenantConfigInfoRef.current?.siteName}平台，快速搭建你的个性化智能体`}</p>
         </div>
       </div>
     </div>
