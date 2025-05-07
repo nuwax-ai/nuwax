@@ -10,6 +10,7 @@ import { useRequest } from 'umi';
 
 const PluginPublish: React.FC<PluginPublishProps> = ({
   pluginId,
+  scope,
   open,
   onCancel,
 }) => {
@@ -53,7 +54,7 @@ const PluginPublish: React.FC<PluginPublishProps> = ({
         layout="vertical"
         onFinish={onFinish}
         initialValues={{
-          scope: PluginPublishScopeEnum.Tenant,
+          scope: scope || PluginPublishScopeEnum.Tenant,
         }}
       >
         <Form.Item name="scope" label="发布范围">

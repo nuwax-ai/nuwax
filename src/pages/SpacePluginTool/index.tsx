@@ -520,8 +520,10 @@ const SpacePluginTool: React.FC = () => {
           />
         </div>
       </div>
+      {/* 插件发布弹窗 */}
       <PluginPublish
         pluginId={pluginId}
+        scope={pluginInfo?.scope}
         open={openModal}
         onCancel={() => setOpenModal(false)}
       />

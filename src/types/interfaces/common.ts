@@ -16,6 +16,7 @@ import type {
 import type { InputAndOutConfig } from '@/types/interfaces/node';
 import type { FormInstance, GetProp, UploadProps } from 'antd';
 import React from 'react';
+import { PluginPublishScopeEnum } from '../enums/plugin';
 
 export type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
 // 原代码中 large、middle、small 未定义，将其改为字符串字面量类型
@@ -402,6 +403,7 @@ export interface ListParams {
 // 插件发布弹窗组件
 export interface PluginPublishProps {
   pluginId: number;
+  scope?: PluginPublishScopeEnum;
   open: boolean;
   onCancel: () => void;
 }
