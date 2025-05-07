@@ -155,14 +155,15 @@ const ChatTemp: React.FC = () => {
             messageType: MessageTypeEnum.ASSISTANT,
           } as MessageInfo;
           setMessageList([currentMessage]);
+          // 问答模式
+          if (suggestList?.length) {
+            setChatSuggestList(suggestList);
+          } else {
+            // 开场白预置问题
+            setChatSuggestList(data?.agent?.openingGuidQuestions || []);
+          }
         }
 
-        if (suggestList?.length) {
-          setChatSuggestList(suggestList);
-        } else {
-          // 开场白预置问题
-          setChatSuggestList(data?.agent?.openingGuidQuestions || []);
-        }
         handleScrollBottom();
       },
       onError: () => {

@@ -98,7 +98,6 @@ const Chat: React.FC = () => {
       // 组件卸载时移除滚动事件监听器
       return () => {
         messageView.removeEventListener('wheel', throttle(handleScroll, 300));
-        resetInit();
       };
     }
   }, []);
