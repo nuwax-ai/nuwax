@@ -181,8 +181,6 @@ const SpaceKnowledge: React.FC = () => {
   // 设置分析成功（自动重试,如果有分段,问答,向量化有失败的话, status为空）
   const handleSetAnalyzed = useCallback(
     (id: number, status: KnowledgeDocumentStatus) => {
-      // console.log(id, status, 2333333, currentDocumentInfo)
-
       // 修改当前文档
       if (
         currentDocumentInfo?.id === id &&

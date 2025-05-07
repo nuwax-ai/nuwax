@@ -174,6 +174,7 @@ const EditAgent: React.FC = () => {
       ...agentConfigInfo,
       publishDate: time,
       modified: time,
+      publishStatus: PublishStatusEnum.Published,
     } as AgentConfigInfo;
     setAgentConfigInfo(_agentConfigInfo);
   };

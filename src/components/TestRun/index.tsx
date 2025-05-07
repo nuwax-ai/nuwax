@@ -326,7 +326,6 @@ const TestRun: React.FC<TestRunProps> = ({
           _obj[item] = JSON.stringify(_obj[item]);
         }
       }
-      console.log(_obj, '_obj');
       form.setFieldsValue(_obj);
     }
   }, [formItemValue]);

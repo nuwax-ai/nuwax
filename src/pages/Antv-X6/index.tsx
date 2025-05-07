@@ -229,7 +229,6 @@ const Workflow: React.FC = () => {
   };
   // 更新节点
   const changeNode = async (config: ChildNode, update?: boolean | string) => {
-    console.log('update', update);
     let params = JSON.parse(JSON.stringify(config));
     if (update && update === 'moved') {
       if (config.id === foldWrapItemRef.current.id) {

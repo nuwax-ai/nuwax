@@ -58,7 +58,6 @@ const ChatInputPhone: React.FC<ChatInputProps> = ({
       e.nativeEvent.keyCode === 13 &&
       (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)
     ) {
-      console.log(e.nativeEvent, 111999);
       const enterValue = `${value}\n`;
       setMessage(enterValue);
     } else if (
