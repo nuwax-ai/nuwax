@@ -2,7 +2,6 @@ import agentImage from '@/assets/images/agent_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
-import { SPACE_ID } from '@/constants/home.constants';
 // import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
 // import { CREATE_AGENT_LIST } from '@/constants/space.constants';
 import { apiAgentAdd, apiAgentConfigUpdate } from '@/services/agentConfig';
@@ -24,6 +23,7 @@ import { useRequest } from 'umi';
 // const { TextArea } = Input;
 
 const CreateAgent: React.FC<CreateAgentProps> = ({
+  spaceId,
   mode = CreateUpdateModeEnum.Create,
   agentConfigInfo,
   open,
@@ -74,7 +74,6 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
 
   const onFinish: FormProps<AgentAddParams>['onFinish'] = (values) => {
     if (mode === CreateUpdateModeEnum.Create) {
-      const spaceId = localStorage.getItem(SPACE_ID);
       runEdit({
         ...values,
         icon: imageUrl,

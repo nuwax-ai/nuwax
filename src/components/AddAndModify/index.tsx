@@ -75,7 +75,6 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
                 showCount
                 maxLength={item.maxLength || 30}
                 autoSize={{ minRows: 3, maxRows: 6 }}
-               
               />
             );
           case 'Cascader':
@@ -128,7 +127,7 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
       form.resetFields();
       setTitle(title);
       setFormList(formList);
- 
+
       if (initialValues) {
         // 根据formList，找出type为DatePicker的字段，将值转换为dayjs对象
         formList.forEach((item) => {

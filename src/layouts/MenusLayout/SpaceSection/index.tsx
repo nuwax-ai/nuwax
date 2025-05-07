@@ -44,23 +44,24 @@ const SpaceSection: React.FC = () => {
   }, []);
 
   const handlerApplication = (type: SpaceApplicationListEnum) => {
+    let url = '';
     switch (type) {
       // 应用开发
       case SpaceApplicationListEnum.Application_Develop:
-        history.push(`/space/${spaceId}/develop`);
-        localStorage.setItem(SPACE_URL, 'develop');
+        url = 'develop';
         break;
       // 组件库
       case SpaceApplicationListEnum.Component_Library:
-        history.push(`/space/${spaceId}/library`);
-        localStorage.setItem(SPACE_URL, 'library');
+        url = 'library';
         break;
       // 团队设置
       case SpaceApplicationListEnum.Team_Setting:
-        history.push(`/space/${spaceId}/team`);
-        localStorage.setItem(SPACE_URL, 'team');
+        url = 'team';
         break;
     }
+
+    history.push(`/space/${spaceId}/${url}`);
+    localStorage.setItem(SPACE_URL, url);
   };
 
   // 判断是否active

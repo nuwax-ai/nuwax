@@ -1,5 +1,4 @@
 import agentImage from '@/assets/images/agent_image.png';
-import { SPACE_ID } from '@/constants/home.constants';
 import type { AgentMoveProps } from '@/types/interfaces/space';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import { CheckOutlined } from '@ant-design/icons';
@@ -15,6 +14,7 @@ const cx = classNames.bind(styles);
  * 智能体迁移
  */
 const AgentMove: React.FC<AgentMoveProps> = ({
+  spaceId,
   open,
   title,
   onCancel,
@@ -22,7 +22,6 @@ const AgentMove: React.FC<AgentMoveProps> = ({
 }) => {
   const [targetSpaceId, setTargetSpaceId] = useState<string>('');
   const { spaceList } = useModel('spaceModel');
-  const spaceId = Number(localStorage.getItem(SPACE_ID));
 
   const filterSpaceList =
     spaceList?.filter((item: SpaceInfo) => item.id !== spaceId) || [];

@@ -288,13 +288,12 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({ form }) => {
       ];
     }
 
-    console.log('bb',val,form.getFieldValue('answerType'))
+    console.log('bb', val, form.getFieldValue('answerType'));
     if (val === 'TEXT') {
       options = options?.map((item: QANodeOption) => ({
         ...item,
         nextNodeIds: [],
       }));
-
     }
 
     form.setFieldsValue({

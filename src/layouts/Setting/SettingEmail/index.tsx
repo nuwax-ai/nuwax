@@ -9,7 +9,7 @@ import { customizeRequiredNoStarMark } from '@/utils/form';
 import { Button, Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { useRequest } from 'umi';
+import { useModel, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -21,16 +21,22 @@ const SettingEmail: React.FC = () => {
   const { countDown, setCountDown, onClearTimer, handleCount } = useCountDown();
   const { runSendCode } = useSendCode();
   const [form] = Form.useForm<BindEmailParams>();
+  const { setUserInfo } = useModel('userInfo');
 
   // 绑定邮箱
   const { run, loading } = useRequest(apiBindEmail, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
+    onSuccess: (_: null, params: BindEmailParams[]) => {
       message.success('绑定成功');
       form.resetFields();
       setCountDown(0);
       onClearTimer();
+      // 更新用户信息
+      setUserInfo({
+        ...setUserInfo,
+        email: params[0].email,
+      });
     },
     onError: () => {
       setCountDown(0);

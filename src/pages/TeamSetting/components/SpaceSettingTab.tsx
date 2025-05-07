@@ -2,7 +2,6 @@ import styles from '@/styles/teamSetting.less';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import { history, useModel } from 'umi';
 import RemoveSpace from './RemoveSpace';
 import TransferSpace from './TransferSpace';
 
@@ -11,7 +10,7 @@ const cx = classNames.bind(styles);
 interface SpaceSettingTabProps {
   spaceId: number;
   name: string | undefined;
-  onTransferSuccess?: () => void;
+  onTransferSuccess: () => void;
 }
 
 const SpaceSettingTab: React.FC<SpaceSettingTabProps> = ({
@@ -21,7 +20,6 @@ const SpaceSettingTab: React.FC<SpaceSettingTabProps> = ({
 }) => {
   const [openRemoveModal, setOpenRemoveModal] = useState<boolean>(false);
   const [openTransferModal, setOpenTransferModal] = useState<boolean>(false);
-  const { asyncSpaceListFun } = useModel('spaceModel');
 
   const transferSpace = () => {
     setOpenTransferModal(true);
@@ -29,11 +27,13 @@ const SpaceSettingTab: React.FC<SpaceSettingTabProps> = ({
   const removeSpace = () => {
     setOpenRemoveModal(true);
   };
+
+  // 确认删除空间
   const handlerConfirmRemove = async () => {
     setOpenRemoveModal(false);
-    await asyncSpaceListFun();
-    history.push('/space');
+    onTransferSuccess?.();
   };
+
   const handlerConfirmTransfer = () => {
     setOpenTransferModal(false);
     onTransferSuccess?.();

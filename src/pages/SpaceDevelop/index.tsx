@@ -388,6 +388,7 @@ const SpaceDevelop: React.FC = () => {
       />
       {/*智能体迁移弹窗*/}
       <AgentMove
+        spaceId={spaceId}
         open={openMove}
         title={currentAgentInfo?.name}
         onCancel={() => setOpenMove(false)}
@@ -395,6 +396,7 @@ const SpaceDevelop: React.FC = () => {
       />
       {/*创建智能体*/}
       <CreateAgent
+        spaceId={spaceId}
         open={openCreateAgent}
         onCancel={() => setOpenCreateAgent(false)}
         onConfirmCreate={handlerConfirmCreateAgent}

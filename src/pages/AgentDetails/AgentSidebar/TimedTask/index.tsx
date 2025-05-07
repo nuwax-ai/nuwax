@@ -86,7 +86,12 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
   useEffect(() => {
     // 查询"进行中"定时任务列表
     handleQueryTaskList(TaskStatus.EXECUTING);
-  }, []);
+
+    return () => {
+      setExecutingTaskList([]);
+      setCancelTaskList([]);
+    };
+  }, [agentId]);
 
   // tab 被点击的回调
   const handleTabClick = (activeKey: string) => {
@@ -144,7 +149,6 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
 
   // 确认创建、更新定时任务
   const handleConfirmCreateTask = () => {
-    console.log('mode', currentTaskStatus);
     setOpenTask(false);
     if (currentTaskStatus === TaskStatus.EXECUTING) {
       // 重新查询"进行中"定时任务列表

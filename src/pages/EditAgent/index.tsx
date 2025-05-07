@@ -255,6 +255,7 @@ const EditAgent: React.FC = () => {
       />
       {/*编辑智能体弹窗*/}
       <CreateAgent
+        spaceId={spaceId}
         mode={CreateUpdateModeEnum.Update}
         agentConfigInfo={agentConfigInfo}
         open={openEditAgent}

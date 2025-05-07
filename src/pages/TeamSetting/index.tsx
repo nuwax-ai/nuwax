@@ -1,7 +1,10 @@
 import teamImage from '@/assets/images/team_image.png';
+import { SPACE_ID } from '@/constants/home.constants';
 import { apiGetSpaceDetail } from '@/services/teamSetting';
 import styles from '@/styles/teamSetting.less';
+import { SpaceTypeEnum } from '@/types/enums/space';
 import { TeamStatusEnum } from '@/types/enums/teamSetting';
+import { SpaceInfo } from '@/types/interfaces/workspace';
 import { FormOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { ConfigProvider, Tabs, TabsProps } from 'antd';
@@ -31,15 +34,29 @@ const TeamSetting: React.FC = () => {
   const { spaceId } = useParams();
   const [openModifyTeamModal, setOpenModifyTeamModal] =
     useState<boolean>(false);
-  const { asyncSpaceListFun } = useModel('spaceModel');
+  const { spaceList, setSpaceList, setCurrentSpaceInfo } =
+    useModel('spaceModel');
 
   const { data, run } = useRequest(apiGetSpaceDetail, {
     manual: true,
   });
 
+  // 删除、转移团队成功后，删除本地缓存的spaceId和spaceUrl，并且跳转到个人类型空间或第一个空间
   const handleTransferSuccess = async () => {
-    await asyncSpaceListFun();
-    history.push('/space');
+    localStorage.removeItem('SPACE_ID');
+    localStorage.removeItem('SPACE_URL');
+    // 删除空间后，默认跳转到第一个空间
+    const newSpaceList =
+      spaceList?.filter((item: SpaceInfo) => item.id !== Number(spaceId)) || [];
+    setSpaceList(newSpaceList);
+    const defaultSpace = newSpaceList?.find(
+      (item: SpaceInfo) => item.type === SpaceTypeEnum.Personal,
+    );
+    setCurrentSpaceInfo(defaultSpace);
+    // 保存spaceId
+    const id = defaultSpace?.id || newSpaceList?.[0]?.id;
+    localStorage.setItem(SPACE_ID, String(id));
+    history.push(`/space/${id}/develop`);
   };
 
   const tabs: TabsProps['items'] = [

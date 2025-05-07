@@ -74,7 +74,6 @@ const getInputBox = (item: InputAndOutConfig, form: FormInstance) => {
     if (info.file.status === 'done') {
       try {
         const data = info.file.response?.data;
-        // console.log(data)
         form.setFieldValue(item.name, data?.url);
       } catch (error) {
         message.warning(info.file.response?.message);
