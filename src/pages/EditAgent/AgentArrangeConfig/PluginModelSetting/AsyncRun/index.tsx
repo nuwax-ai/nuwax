@@ -7,25 +7,49 @@ import {
 } from '@/types/interfaces/agentConfig';
 import { Button, Input, Switch } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const AsyncRun: React.FC<AsyncRunProps> = ({ onSaveSet }) => {
-  const [async, setAsync] = useState<DefaultSelectedEnum>(
-    DefaultSelectedEnum.No,
-  );
-  const [asyncReplyContent, setAsyncReplyContent] =
-    useState<string>('已经开始为您处理，请耐心等待运行结果');
+// 异步运行
+const AsyncRun: React.FC<AsyncRunProps> = ({
+  async,
+  asyncReplyContent,
+  onSaveSet,
+}) => {
+  // 是否默认选中
+  const [selected, setSelected] = useState<DefaultSelectedEnum>();
+  const [content, setContent] = useState<string>('');
+
+  useEffect(() => {
+    setContent(asyncReplyContent || '已经开始为您处理，请耐心等待运行结果');
+    setSelected(async || DefaultSelectedEnum.No);
+  }, [async, asyncReplyContent]);
+
+  // 禁用保存按钮
+  const disabled = useMemo(() => {
+    if (selected === DefaultSelectedEnum.Yes && !content) {
+      return true;
+    }
+    return false;
+  }, [selected, content]);
 
   // 保存
   const handleSave = () => {
     const data: AsyncRunSaveParams = {
-      async,
-      asyncReplyContent,
+      async: selected as DefaultSelectedEnum,
+      asyncReplyContent: content,
     };
     onSaveSet(data);
+  };
+
+  // 切换异步运行状态
+  const onChange = (checked: boolean) => {
+    const isSelected = checked
+      ? DefaultSelectedEnum.Yes
+      : DefaultSelectedEnum.No;
+    setSelected(isSelected);
   };
 
   return (
@@ -34,18 +58,14 @@ const AsyncRun: React.FC<AsyncRunProps> = ({ onSaveSet }) => {
         <header className={cx('flex', 'items-center', styles.header)}>
           <div className={cx('flex-1')}>异步运行</div>
           <Switch
-            checked={async === DefaultSelectedEnum.Yes}
-            onChange={(checked) =>
-              setAsync(
-                checked ? DefaultSelectedEnum.Yes : DefaultSelectedEnum.No,
-              )
-            }
+            checked={selected === DefaultSelectedEnum.Yes}
+            onChange={onChange}
           />
         </header>
         <p className={cx(styles.desc)}>
           任务进入异步运行时默认返回一条回复内容，用户可以继续对话，任务在后台运行完成后会通知用户
         </p>
-        <ConditionRender condition={async}>
+        <ConditionRender condition={selected}>
           <LabelStar className={cx(styles['reply-content'])} label="回复内容" />
           <Input.TextArea
             className={cx('dispose-textarea-count')}
@@ -56,16 +76,21 @@ const AsyncRun: React.FC<AsyncRunProps> = ({ onSaveSet }) => {
             autoSize={{ minRows: 5, maxRows: 6 }}
             maxLength={1000}
             showCount
-            value={asyncReplyContent}
-            onChange={(e) => setAsyncReplyContent(e.target.value)}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
           />
-          <ConditionRender condition={!asyncReplyContent}>
+          <ConditionRender condition={!content}>
             <p className={cx(styles.tips)}>回复内容必须设置</p>
           </ConditionRender>
         </ConditionRender>
       </div>
       <footer className={cx(styles.footer)}>
-        <Button type="primary" onClick={handleSave}>
+        <Button
+          type="primary"
+          onClick={handleSave}
+          className={cx({ [styles['btn-disabled']]: disabled })}
+          disabled={disabled}
+        >
           保存
         </Button>
       </footer>

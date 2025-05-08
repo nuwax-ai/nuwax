@@ -585,7 +585,7 @@ export const createEdge = (edge: Edge) => {
             {
               tagName: 'circle',
               selector: 'button',
-              r: 8,  // 增大半径
+              r: 8, // 增大半径
               fill: '#5147FF',
               stroke: '#5147FF',
               strokeWidth: 1,
@@ -595,7 +595,7 @@ export const createEdge = (edge: Edge) => {
             {
               tagName: 'image',
               selector: 'icon',
-              refX: -3,  // 调整位置
+              refX: -3, // 调整位置
               refY: -3,
               width: 6,
               height: 6,

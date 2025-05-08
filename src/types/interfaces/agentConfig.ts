@@ -146,6 +146,8 @@ export interface AsyncRunSaveParams {
 
 // 异步运行组件属性
 export interface AsyncRunProps {
+  async: DefaultSelectedEnum;
+  asyncReplyContent: string;
   onSaveSet: (data: AsyncRunSaveParams) => void;
 }
 

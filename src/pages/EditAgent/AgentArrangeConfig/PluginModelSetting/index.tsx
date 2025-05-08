@@ -180,7 +180,7 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
     message.success('保存成功');
   };
 
-  // 保存方法调用类型
+  // 保存方法调用类型或异步运行配置
   const onSaveInvokeType = async (
     data: InvokeTypeSaveParams | AsyncRunSaveParams,
   ) => {
@@ -237,7 +237,13 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
           />
         );
       case PluginSettingEnum.Async_Run:
-        return <AsyncRun onSaveSet={onSaveInvokeType} />;
+        return (
+          <AsyncRun
+            async={componentInfo?.bindConfig?.async}
+            asyncReplyContent={componentInfo?.bindConfig?.asyncReplyContent}
+            onSaveSet={onSaveInvokeType}
+          />
+        );
       case PluginSettingEnum.Card_Bind:
         return (
           <CardBind
