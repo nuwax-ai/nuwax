@@ -8,7 +8,11 @@ import {
 } from '@/services/tempChat';
 import type { CreateTempChatModelProps } from '@/types/interfaces/space';
 import { AgentTempChatDto } from '@/types/interfaces/tempChat';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  ExclamationCircleFilled,
+  PlusOutlined,
+} from '@ant-design/icons';
 import {
   Button,
   Checkbox,
@@ -119,6 +123,7 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
     runUpdate({ id, agentId, [attr]: _value });
   };
 
+  // 删除会话链接
   const handleDel = (id: number, agentId: number) => {
     const _dataSource = dataSource?.filter(
       (item: AgentTempChatDto) => item.id !== id,
@@ -126,6 +131,19 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
     setDataSource(_dataSource || []);
 
     runDel(id, agentId);
+  };
+
+  // 删除确认
+  const handleDelConfirm = (id: number, agentId: number, chatUrl: string) => {
+    Modal.confirm({
+      title: '您确定要删除该链接吗?',
+      icon: <ExclamationCircleFilled />,
+      content: chatUrl,
+      okText: '确定',
+      maskClosable: true,
+      cancelText: '取消',
+      onOk: () => handleDel(id, agentId),
+    });
   };
 
   // 入参配置columns
@@ -192,7 +210,9 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center', 'content-center')}>
           <DeleteOutlined
-            onClick={() => handleDel(record.id, record.agentId)}
+            onClick={() =>
+              handleDelConfirm(record.id, record.agentId, record.chatUrl)
+            }
           />
         </div>
       ),
