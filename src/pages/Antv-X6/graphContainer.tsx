@@ -28,6 +28,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       copyNode,
       removeNode,
       changeZoom,
+      createNodeToPortOrEdge
     },
     ref,
   ) => {
@@ -154,6 +155,14 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       graphRef.current.removeCell(id);
     };
 
+    // 创建边
+    const createNewEdge = (source:string,target:string) => {
+      // graphRef.current.addEdge({source,target})
+      const edge = createEdge({source,target})
+      if (!graphRef.current) return;
+      graphRef.current.addEdge(edge)
+    }
+
     // 选中节点
     const selectNode = (id: string) => {
       const node = graphRef.current.getCellById(id);
@@ -276,6 +285,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       changeGraphZoom,
       drawGraph,
       selectNode,
+      createNewEdge
     }));
 
     useEffect(() => {
@@ -287,6 +297,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         changeEdge: changeEdge,
         changeCondition: changeCondition,
         changeZoom: changeZoom,
+        createNodeToPortOrEdge:createNodeToPortOrEdge
       });
 
       const cleanup = EventHandlers({

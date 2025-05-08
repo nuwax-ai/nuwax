@@ -38,6 +38,11 @@ import {
   default as Workflow,
 } from '@/assets/images/workflow_image.png';
 import PlusIcon from '@/assets/svg/plus.svg';
+import {
+  ConditionBranchConfigs,
+  IntentConfigs,
+  QANodeOption,
+} from '@/types/interfaces/node';
 import { adjustParentSize } from '@/utils/graph';
 import { Graph, Node } from '@antv/x6';
 const imageList = {
@@ -559,6 +564,7 @@ export const createChildNode = (parentId: string, child: ChildNode) => {
 
 // 构造边
 export const createEdge = (edge: Edge) => {
+  console.log(edge)
   const parseEndpoint = (endpoint: string, type: string) => {
     const isLoop = endpoint.includes('in') || endpoint.includes('out');
     const isNotGraent = endpoint.includes('-');
@@ -577,45 +583,6 @@ export const createEdge = (edge: Edge) => {
         strokeWidth: 1,
       },
     },
-    tools: [
-      {
-        name: 'button',
-        args: {
-          markup: [
-            {
-              tagName: 'circle',
-              selector: 'button',
-              r: 8,  // 增大半径
-              fill: '#5147FF',
-              stroke: '#5147FF',
-              strokeWidth: 1,
-              cursor: 'pointer',
-              pointerEvents: 'visiblePainted',
-            },
-            {
-              tagName: 'image',
-              selector: 'icon',
-              refX: -3,  // 调整位置
-              refY: -3,
-              width: 6,
-              height: 6,
-              xlinkHref: PlusIcon,
-              pointerEvents: 'none',
-            },
-          ],
-          distance: '50%',
-          offset: { x: 0, y: 0 },
-          x: 0,
-          y: 0,
-          attrs: {
-            button: {
-              fill: '#5147FF',
-              stroke: '#5147FF',
-            },
-          },
-        },
-      },
-    ],
     source: parseEndpoint(edge.source, 'out'),
     target: parseEndpoint(edge.target, 'in'),
     zIndex: edge.zIndex,
@@ -641,4 +608,64 @@ export const processLoopNode = (loopNode: Node, graph: Graph) => {
   });
 
   adjustParentSize(loopNode); // 初始调整父节点大小
+};
+
+// 三个特殊节点处理nextIndex
+export const handleSpecialNodesNextIndex = (
+  node: ChildNode,
+  uuid: string,
+  id: number,
+  targetId?: number,
+  isPort?: boolean,
+) => {
+  let configs: ConditionBranchConfigs[] | IntentConfigs[] | QANodeOption[];
+  switch (node.type) {
+    case 'Condition': {
+      configs = node.nodeConfig?.conditionBranchConfigs as ConditionBranchConfigs[];
+      break;
+    }
+    case 'IntentRecognition': {
+      configs = node.nodeConfig?.intentConfigs as IntentConfigs[];
+      break;
+    }
+    case 'QA': {
+      configs = node.nodeConfig?.options as QANodeOption[];
+      break;
+    }
+    default: {
+      configs = [];
+      break;
+    }
+  }
+  configs.forEach((config) => {
+    const nextNodeIds = config.nextNodeIds || []; // 获取当前配置的 nextNodeIds 数组
+    if (config.uuid === uuid) {
+      if (isPort) {
+        // 这里需要将原来的nextNodeIds中和targetId相同的元素替换成id
+        config.nextNodeIds = nextNodeIds.map(
+          (item: number) => {
+            if (item === targetId) {
+              return id; // 替换为新的id
+            } else {
+              return item; // 保持不变
+            }
+          },
+        );
+      } else {
+        config.nextNodeIds =  [...nextNodeIds, id] 
+      }
+    }
+  });
+
+  const newNode ={
+    ...node,
+    nodeConfig: {
+     ...node.nodeConfig,
+      // 根据节点类型更新对应的配置数组
+      ...(node.type === 'Condition' && { conditionBranchConfigs: configs }),
+      ...(node.type === 'IntentRecognition' && { intentConfigs: configs }),
+      ...(node.type === 'QA' && { options: configs })
+    },
+  }
+  return newNode;
 };

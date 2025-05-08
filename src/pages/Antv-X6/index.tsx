@@ -28,7 +28,11 @@ import {
 import { ErrorParams } from '@/types/interfaces/workflow';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { changeNodeConfig, updateNode } from '@/utils/updateNode';
-import { getEdges, returnImg } from '@/utils/workflow';
+import {
+  getEdges,
+  handleSpecialNodesNextIndex,
+  returnImg,
+} from '@/utils/workflow';
 import { Form, message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
@@ -80,6 +84,12 @@ const Workflow: React.FC = () => {
     x: 0,
     y: 0,
   });
+  // 当点击连接桩和边时，存储一些数据
+  const currentNodeRef = useRef<{
+    sourceNode: ChildNode;
+    portId: string;
+    targetNode?: ChildNode;
+  } | null>(null);
   // 节点的form表单
   const [form] = Form.useForm<NodeConfig>();
   // 修改右侧抽屉的名称
@@ -227,6 +237,52 @@ const Workflow: React.FC = () => {
       graphRef.current.updateNode(_res.data.id, _res.data);
     }
   };
+
+  // 节点添加或移除边
+  const nodeChangeEdge = async (
+    type: string,
+    targetId: string,
+    sourceNode: ChildNode,
+    id?: string,
+  ) => {
+    // 获取当前节点的nextNodeIds
+    const _nextNodeIds =
+      sourceNode.nextNodeIds === null
+        ? []
+        : (sourceNode.nextNodeIds as number[]);
+    let _params = {
+      nodeId: _nextNodeIds,
+      sourceId: Number(sourceNode.id),
+    };
+
+    // 根据类型判断，如果type是created，那么就添加边，如果type是deleted，那么就删除边
+    if (type === 'created') {
+      // 如果有这条边了
+      if (_nextNodeIds.includes(Number(targetId))) {
+        return;
+      } else {
+        // 组装参数
+        _params.nodeId.push(Number(targetId));
+      }
+    } else {
+      _params.nodeId = _params.nodeId.filter(
+        (item) => item !== Number(targetId),
+      );
+      graphRef.current.updateNode(sourceNode.id, {
+        ...sourceNode,
+        nextNodeIds: _params.nodeId,
+      });
+    }
+    const _res = await service.addEdge(_params);
+    // 如果接口不成功，就需要删除掉那一条添加的线
+    if (_res.code !== Constant.success) {
+      graphRef.current.deleteEdge(id);
+    } else {
+      getRefernece(foldWrapItemRef.current.id);
+      graphRef.current.updateNode(sourceNode.id, _res.data);
+      // getNodeConfig(sourceNode.id);
+    }
+  };
   // 更新节点
   const changeNode = async (config: ChildNode, update?: boolean | string) => {
     console.log('update', update);
@@ -318,7 +374,6 @@ const Workflow: React.FC = () => {
     // 先完全重置表单
     if (foldWrapItemRef.current.id !== 0) {
       setIsModified(async (modified: boolean) => {
-        console.log('isModified', modified);
         if (modified === true) {
           await onFinish();
           if (timerRef.current) {
@@ -415,10 +470,51 @@ const Workflow: React.FC = () => {
           },
         });
       }
-      changeDrawer(_res.data);
+      await changeDrawer(_res.data);
       // setFoldWrapItem(_res.data);
       graphRef.current.selectNode(_res.data.id);
       changeUpdateTime();
+
+      if (currentNodeRef.current) {
+        const { sourceNode, portId, targetNode } = currentNodeRef.current;
+        const id = portId.split('-')[0];
+        const uuid = portId.split('-')[1];
+        const isOut = portId.endsWith('out');
+        if (portId.length > 15) {
+          // 通过中间的数据找到对应的index
+          const _params = handleSpecialNodesNextIndex(
+            sourceNode,
+            uuid,
+            Number(id),
+          );
+          changeNode(_params);
+        } else {
+          // 如果当前源端口是out
+          if (isOut) {
+          await  nodeChangeEdge(
+              'created',
+              _res.data.id.toString(),
+              sourceNode,
+            );
+            graphRef.current.createNewEdge(sourceNode.id.toString(),_res.data.id.toString())
+          } else {
+            await nodeChangeEdge('created', id, _res.data);
+            graphRef.current.createNewEdge(_res.data.id.toString(),id.toString())
+          }
+        }
+        // 如果有targetNode,证明是通过边创建的，这里需要连接上下游
+        if (targetNode) {
+          nodeChangeEdge(
+            'created',
+            targetNode.id.toString(),
+            _res.data,
+          );
+          graphRef.current.createNewEdge(_res.data.id.toString(),targetNode.id.toString())
+        }
+
+        // 清空currentNodeRef
+        currentNodeRef.current = null;
+      }
     }
   };
   // 复制节点
@@ -474,51 +570,7 @@ const Workflow: React.FC = () => {
       }
     }
   };
-  // 节点添加或移除边
-  const nodeChangeEdge = async (
-    type: string,
-    targetId: string,
-    sourceNode: ChildNode,
-    id?: string,
-  ) => {
-    // 获取当前节点的nextNodeIds
-    const _nextNodeIds =
-      sourceNode.nextNodeIds === null
-        ? []
-        : (sourceNode.nextNodeIds as number[]);
-    let _params = {
-      nodeId: _nextNodeIds,
-      sourceId: Number(sourceNode.id),
-    };
 
-    // 根据类型判断，如果type是created，那么就添加边，如果type是deleted，那么就删除边
-    if (type === 'created') {
-      // 如果有这条边了
-      if (_nextNodeIds.includes(Number(targetId))) {
-        return;
-      } else {
-        // 组装参数
-        _params.nodeId.push(Number(targetId));
-      }
-    } else {
-      _params.nodeId = _params.nodeId.filter(
-        (item) => item !== Number(targetId),
-      );
-      graphRef.current.updateNode(sourceNode.id, {
-        ...sourceNode,
-        nextNodeIds: _params.nodeId,
-      });
-    }
-    const _res = await service.addEdge(_params);
-    // 如果接口不成功，就需要删除掉那一条添加的线
-    if (_res.code !== Constant.success) {
-      graphRef.current.deleteEdge(id);
-    } else {
-      getRefernece(foldWrapItemRef.current.id);
-      graphRef.current.updateNode(sourceNode.id, _res.data);
-      // getNodeConfig(sourceNode.id);
-    }
-  };
   // 添加工作流，插件，知识库，数据库
   const onAdded = (val: CreatedNodeItem, parentFC?: string) => {
     if (parentFC && parentFC !== 'workflow') return;
@@ -562,7 +614,10 @@ const Workflow: React.FC = () => {
     setOpen(false);
   };
   // 拖拽组件到画布中
-  const dragChild = (child: Child, e?: React.DragEvent<HTMLDivElement>) => {
+  const dragChild = async (
+    child: Child,
+    e?: React.DragEvent<HTMLDivElement> | { x: number; y: number },
+  ) => {
     // 获取当前画布可视区域中心点
     const getViewportCenter = () => {
       if (graphRef.current) {
@@ -577,13 +632,20 @@ const Workflow: React.FC = () => {
 
     // 获取坐标函数：优先使用拖拽事件坐标，否则生成随机坐标
     const getCoordinates = (
-      e?: React.DragEvent<HTMLDivElement>,
+      e?: React.DragEvent<HTMLDivElement> | { x: number; y: number },
     ): { x: number; y: number } => {
-      if (e) {
-        return { x: e.clientX, y: e.clientY };
-      } else {
+      if (!e) {
         return getViewportCenter();
       }
+      // 检查是否是{x,y}对象
+      if ('x' in e && 'y' in e) {
+        return { x: e.x, y: e.y };
+      }
+      // 处理React拖拽事件
+      if (e.clientX && e.clientY) {
+        return { x: e.clientX, y: e.clientY };
+      }
+      return getViewportCenter();
     };
 
     // 判断是否需要显示特定类型的创建面板
@@ -607,10 +669,10 @@ const Workflow: React.FC = () => {
       sessionStorage.setItem('tableType', child.type);
     } else {
       const coordinates = getCoordinates(e);
-      if (e) {
-        e.preventDefault();
-      }
-      addNode(child, coordinates);
+      // if (e) {
+      //   e.preventDefault();
+      // }
+      await addNode(child, coordinates);
     }
   };
   // 校验当前工作流
@@ -909,6 +971,34 @@ const Workflow: React.FC = () => {
     changeDrawer(node);
   };
 
+  // 通过连接桩或者边创建节点
+  const createNodeToPortOrEdge = async (
+    child: Child,
+    sourceNode: ChildNode,
+    portId: string,
+    targetNode?: ChildNode,
+  ) => {
+    // 获取当前节点的位置
+    const _position = sourceNode.nodeConfig.extension as {
+      x: number;
+      y: number;
+    };
+    // 根据portid的最后的out和in来判定当前新增的节点是source还是target
+    const isOut = portId.endsWith('out');
+
+    const dragPosition = {
+      x: _position.x + (isOut ? 300 : -300),
+      y: _position?.y,
+    };
+    // 首先创建节点
+    currentNodeRef.current = {
+      sourceNode: sourceNode,
+      portId: portId,
+      targetNode: targetNode,
+    };
+    await dragChild(child, dragPosition);
+  };
+
   // 保存当前画布中节点的位置
   useEffect(() => {
     getDetails();
@@ -991,6 +1081,7 @@ const Workflow: React.FC = () => {
         removeNode={deleteNode}
         copyNode={copyNode}
         changeZoom={changeZoom}
+        createNodeToPortOrEdge={createNodeToPortOrEdge}
       />
       <ControlPanel
         dragChild={dragChild}
