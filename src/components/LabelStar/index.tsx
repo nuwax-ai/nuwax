@@ -5,9 +5,9 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const LabelStar: React.FC<LabelStarProps> = ({ label }) => {
+const LabelStar: React.FC<LabelStarProps> = ({ className, label }) => {
   return (
-    <span className={cx(styles.container, 'flex')}>
+    <span className={cx(styles.container, 'flex', className)}>
       <span>{label}</span>
       <span className={cx(styles.star)}>*</span>
     </span>

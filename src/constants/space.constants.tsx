@@ -148,6 +148,10 @@ export const PLUGIN_SETTING_ACTIONS = [
     label: '调用方式',
   },
   {
+    type: PluginSettingEnum.Async_Run,
+    label: '异步运行',
+  },
+  {
     type: PluginSettingEnum.Card_Bind,
     label: '卡片绑定',
   },

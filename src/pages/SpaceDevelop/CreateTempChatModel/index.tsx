@@ -81,11 +81,11 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
   };
 
   useEffect(() => {
-    if (!agentId) {
+    if (!open || !agentId) {
       return;
     }
     runList(agentId);
-  }, [agentId]);
+  }, [agentId, open]);
 
   const handleUpdate = (id: number, attr: string, value: string | boolean) => {
     const _dataSource = dataSource?.map((item: AgentTempChatDto) => {
@@ -210,6 +210,7 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
       }
       open={open}
       width={700}
+      destroyOnClose
       footer={null}
       onCancel={handleCancel}
     >

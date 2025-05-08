@@ -20,6 +20,7 @@ import {
   BindConfigWithSub,
 } from '@/types/interfaces/agent';
 import type {
+  AsyncRunSaveParams,
   InvokeTypeSaveParams,
   PluginModelSettingProps,
 } from '@/types/interfaces/agentConfig';
@@ -34,6 +35,7 @@ import { message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
+import AsyncRun from './AsyncRun';
 import CardBind from './CardBind';
 import styles from './index.less';
 import InvokeType from './InvokeType';
@@ -179,7 +181,9 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
   };
 
   // 保存方法调用类型
-  const onSaveInvokeType = async (data: InvokeTypeSaveParams) => {
+  const onSaveInvokeType = async (
+    data: InvokeTypeSaveParams | AsyncRunSaveParams,
+  ) => {
     const id = componentInfo?.id || 0;
     const params = {
       id,
@@ -232,6 +236,8 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
             onSaveSet={onSaveInvokeType}
           />
         );
+      case PluginSettingEnum.Async_Run:
+        return <AsyncRun onSaveSet={onSaveInvokeType} />;
       case PluginSettingEnum.Card_Bind:
         return (
           <CardBind
