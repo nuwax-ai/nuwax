@@ -211,7 +211,7 @@ export interface DebugDetailsProps {
 
 // 节点详情
 export interface NodeDetailsProps {
-  node?: ExecuteResultInfo;
+  node?: ExecuteResultInfo | null;
 }
 
 // 组件列表
