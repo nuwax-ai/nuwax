@@ -37,7 +37,7 @@ import {
   default as Variable,
   default as Workflow,
 } from '@/assets/images/workflow_image.png';
-import PlusIcon from '@/assets/svg/plus.svg';
+import PlusIcon from '@/assets/svg/plus_icon.svg';
 import {
   ConditionBranchConfigs,
   IntentConfigs,
@@ -564,7 +564,7 @@ export const createChildNode = (parentId: string, child: ChildNode) => {
 
 // 构造边
 export const createEdge = (edge: Edge) => {
-  console.log(edge)
+  if(edge.source === edge.target) return
   const parseEndpoint = (endpoint: string, type: string) => {
     const isLoop = endpoint.includes('in') || endpoint.includes('out');
     const isNotGraent = endpoint.includes('-');
@@ -615,8 +615,7 @@ export const handleSpecialNodesNextIndex = (
   node: ChildNode,
   uuid: string,
   id: number,
-  targetId?: number,
-  isPort?: boolean,
+  targetNode?: ChildNode,
 ) => {
   let configs: ConditionBranchConfigs[] | IntentConfigs[] | QANodeOption[];
   switch (node.type) {
@@ -640,11 +639,11 @@ export const handleSpecialNodesNextIndex = (
   configs.forEach((config) => {
     const nextNodeIds = config.nextNodeIds || []; // 获取当前配置的 nextNodeIds 数组
     if (config.uuid === uuid) {
-      if (isPort) {
+      if (targetNode) {
         // 这里需要将原来的nextNodeIds中和targetId相同的元素替换成id
         config.nextNodeIds = nextNodeIds.map(
           (item: number) => {
-            if (item === targetId) {
+            if (item === targetNode.id) {
               return id; // 替换为新的id
             } else {
               return item; // 保持不变
@@ -653,6 +652,7 @@ export const handleSpecialNodesNextIndex = (
         );
       } else {
         config.nextNodeIds =  [...nextNodeIds, id] 
+        console.log([...nextNodeIds, id])
       }
     }
   });

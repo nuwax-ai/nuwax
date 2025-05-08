@@ -27,6 +27,7 @@ import {
 } from '@/utils/graph';
 import { createCurvePath } from './registerCustomNodes';
 import StencilContent from './stencil';
+import PlusIcon from '@/assets/svg/plus_icon.svg';
 // import { PlusOutlined,} from '@ant-design/icons';
 /**
  * 初始化图形编辑器的函数，接收一个包含容器 ID 和改变抽屉内容回调的对象作为参数。
@@ -88,13 +89,14 @@ const initGraph = ({
     sourceNode: ChildNode,
     portId: string,
     targetNode?: ChildNode,
+    edgeId?:string
   ) => {
     const dragChild = (child: Child) => {
-      createNodeToPortOrEdge(child, sourceNode, portId, targetNode);
+      createNodeToPortOrEdge(child, sourceNode, portId, targetNode,edgeId);
     };
     const popoverContent = (
       <div className="confirm-popover">
-        <StencilContent dragChild={(child: Child) => dragChild(child)} />
+        <StencilContent dragChild={(child: Child) => {dragChild(child);Modal.destroyAll()} } />
       </div>
     );
     Modal.confirm({
@@ -407,11 +409,12 @@ const initGraph = ({
           distance: '50%',
           offset: { x: 0, y: 0 },
           onClick() {
+        
             const source = edge.getSourceCell()?.getData();
             const target = edge.getTargetCell()?.getData();
             const sourcePort = edge.getSourcePortId();
             if (!source || !target) return;
-            createNodeAndEdge(source, sourcePort as string, target);
+            createNodeAndEdge(source, sourcePort as string, target,edge.id);
           },
         },
       },

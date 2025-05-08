@@ -89,6 +89,7 @@ const Workflow: React.FC = () => {
     sourceNode: ChildNode;
     portId: string;
     targetNode?: ChildNode;
+    edgeId?:string
   } | null>(null);
   // 节点的form表单
   const [form] = Form.useForm<NodeConfig>();
@@ -475,7 +476,7 @@ const Workflow: React.FC = () => {
       changeUpdateTime();
 
       if (currentNodeRef.current) {
-        const { sourceNode, portId, targetNode } = currentNodeRef.current;
+        const { sourceNode, portId, targetNode ,edgeId} = currentNodeRef.current;
         const id = portId.split('-')[0];
         const uuid = portId.split('-')[1];
         const isOut = portId.endsWith('out');
@@ -484,31 +485,41 @@ const Workflow: React.FC = () => {
           const _params = handleSpecialNodesNextIndex(
             sourceNode,
             uuid,
-            Number(id),
+            _res.data.id,
+            targetNode
           );
           changeNode(_params);
+          const sourcePortId = portId.split('-').slice(0, -1).join('-');
+          graphRef.current.createNewEdge(sourcePortId, _res.data.id.toString());
+          
         } else {
           // 如果当前源端口是out
           if (isOut) {
-          await  nodeChangeEdge(
+            await nodeChangeEdge(
               'created',
               _res.data.id.toString(),
               sourceNode,
             );
-            graphRef.current.createNewEdge(sourceNode.id.toString(),_res.data.id.toString())
+            graphRef.current.createNewEdge(
+              sourceNode.id.toString(),
+              _res.data.id.toString(),
+            );
           } else {
             await nodeChangeEdge('created', id, _res.data);
-            graphRef.current.createNewEdge(_res.data.id.toString(),id.toString())
+            graphRef.current.createNewEdge(
+              _res.data.id.toString(),
+              id.toString(),
+            );
           }
         }
         // 如果有targetNode,证明是通过边创建的，这里需要连接上下游
         if (targetNode) {
-          nodeChangeEdge(
-            'created',
+          nodeChangeEdge('created', targetNode.id.toString(), _res.data);
+          graphRef.current.createNewEdge(
+            _res.data.id.toString(),
             targetNode.id.toString(),
-            _res.data,
           );
-          graphRef.current.createNewEdge(_res.data.id.toString(),targetNode.id.toString())
+          graphRef.current.deleteEdge(edgeId);
         }
 
         // 清空currentNodeRef
@@ -976,6 +987,7 @@ const Workflow: React.FC = () => {
     sourceNode: ChildNode,
     portId: string,
     targetNode?: ChildNode,
+    edgeId?:string
   ) => {
     // 获取当前节点的位置
     const _position = sourceNode.nodeConfig.extension as {
@@ -994,6 +1006,7 @@ const Workflow: React.FC = () => {
       sourceNode: sourceNode,
       portId: portId,
       targetNode: targetNode,
+      edgeId: edgeId,
     };
     await dragChild(child, dragPosition);
   };
