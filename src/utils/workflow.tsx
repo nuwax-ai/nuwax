@@ -572,10 +572,50 @@ export const createEdge = (edge: Edge) => {
     shape: 'edge',
     router: { name: 'orth' },
     attrs: {
-      line: { stroke: '#5147FF', strokeWidth: 1 },
-     
+      line: {
+        stroke: '#5147FF',
+        strokeWidth: 1,
+      },
     },
-
+    tools: [
+      {
+        name: 'button',
+        args: {
+          markup: [
+            {
+              tagName: 'circle',
+              selector: 'button',
+              r: 8,  // 增大半径
+              fill: '#5147FF',
+              stroke: '#5147FF',
+              strokeWidth: 1,
+              cursor: 'pointer',
+              pointerEvents: 'visiblePainted',
+            },
+            {
+              tagName: 'image',
+              selector: 'icon',
+              refX: -3,  // 调整位置
+              refY: -3,
+              width: 6,
+              height: 6,
+              xlinkHref: PlusIcon,
+              pointerEvents: 'none',
+            },
+          ],
+          distance: '50%',
+          offset: { x: 0, y: 0 },
+          x: 0,
+          y: 0,
+          attrs: {
+            button: {
+              fill: '#5147FF',
+              stroke: '#5147FF',
+            },
+          },
+        },
+      },
+    ],
     source: parseEndpoint(edge.source, 'out'),
     target: parseEndpoint(edge.target, 'in'),
     zIndex: edge.zIndex,

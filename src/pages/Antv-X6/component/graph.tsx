@@ -11,7 +11,7 @@ import { Selection } from '@antv/x6-plugin-selection';
 import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
 // import { Transform } from '@antv/x6-plugin-transform';
-
+import PlusIcon from '@/assets/svg/plus.svg';
 import { Child, ChildNode } from '@/types/interfaces/graph';
 
 import { adjustParentSize } from '@/utils/graph';
@@ -57,21 +57,10 @@ const initGraph = ({
       {
         tagName: 'path',
         selector: 'wrap',
-        attrs: {
-          fill: 'none',
-          cursor: 'pointer',
-          stroke: 'transparent',
-          strokeLinecap: 'round',
-          pointerEvents: 'none', // 确保边不拦截事件
-        },
       },
       {
         tagName: 'path',
         selector: 'line',
-        attrs: {
-          fill: 'none',
-          pointerEvents: 'none',
-        },
       },
     ],
     connector: { name: 'curveConnector' }, // 使用自定义的connector
@@ -80,17 +69,20 @@ const initGraph = ({
         connection: true,
         strokeWidth: 10,
         strokeLinejoin: 'round',
+        cursor: 'pointer',
+        pointerEvents: 'none',
       },
       line: {
         connection: true,
-        stroke: '#5147FF',
         strokeWidth: 1,
+        pointerEvents: 'none',
         targetMarker: {
           name: 'classic',
           size: 6,
         },
       },
     },
+   
   });
   // 注册自定义边类型
   // Graph.registerEdge('data-processing-curve', Edge, true);
@@ -133,6 +125,9 @@ const initGraph = ({
               strokeDasharray: '5 5', // 示例：添加虚线效果
               strokeWidth: 1,
               targetMarker: null, // 初始不显示箭头
+              style: {
+                animation: 'ant-line 30s infinite linear',
+              },
             },
           },
         });
@@ -466,7 +461,7 @@ const initGraph = ({
   });
 
   graph.on('edge:mouseenter', ({ edge }) => {
-    console.log(edge);
+    edge.attr('icon/visibility', 'visible');
   });
 
   // 监听边选中
