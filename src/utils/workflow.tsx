@@ -303,39 +303,54 @@ export const generatePorts = (data: ChildNode) => {
     idSuffix: string,
   ) => ({
     group,
-    // markup:[
-    //   {
-    //     tagName: 'circle',
-    //     selector: 'circle',
-    //   },
-    //   {
-    //     tagName: 'image', // 新增图标元素
-    //     selector: 'icon', // 新增选择器
-    //   }
-    // ],
+    markup: [
+      {
+        tagName: 'circle',
+        selector: 'circle',
+        attrs: {
+          magnet: true, // 显式声明磁吸源
+          pointerEvents: 'auto',
+        },
+      },
+      {
+        tagName: 'image',
+        selector: 'icon',
+        attrs: {
+          magnet: false,
+        },
+      },
+      {
+        tagName: 'circle', // 隐藏的感应区域
+        selector: 'hoverCircle',
+        attrs: {
+          r: basePortSize + 10, // 感应区域更大
+          opacity: 0, // 完全透明
+          pointerEvents: 'visiblePainted', // 允许鼠标事件
+          zIndex: -1, // 置于底层，避免覆盖主要元素
+          magnet: false,
+        },
+      },
+    ],
     id: `${data.id}-${idSuffix}`,
     zIndex: 99,
     magnet: true,
     attrs: {
       circle: {
         r: basePortSize,
-        magnet: true,
+        magnet: true, // 必须设为 true 才能作为连接磁点
         stroke: '#5147FF',
-        // strokeWidth: 2,
         fill: '#5147FF',
-        pointerEvents: 'all', // 强制启用指针事件
-        event: 'mouseenter', // 明确事件类型
-        // // 新增磁吸区域扩展
-        magnetRadius: 32, // 将磁吸半径从默认15px增大到24px
+        magnetRadius: 30, // 减小磁吸半径
+        zIndex: 2, // 圆在上
       },
       icon: {
-        xlinkHref: PlusIcon, // 图标引用
-        width: 0, // 默认隐藏
+        xlinkHref: PlusIcon,
+        magnet: false,
+        width: 0,
         height: 0,
-        x: -6,
-        y: -6,
-        event: 'mouseenter',
         fill: '#fff',
+        zIndex: -2, // 图标在下面
+        pointerEvents: 'none',
       },
     },
   });
@@ -413,7 +428,9 @@ export const generatePorts = (data: ChildNode) => {
       // 通用端口组配置
       in: {
         position: 'left',
-        attrs: { circle: { r: basePortSize, magnet: true, magnetRadius: 50 } },
+        attrs: {
+          circle: { r: basePortSize, magnet: true, magnetRadius: 50 },
+        },
         connectable: {
           source: isLoopNode, // Loop 节点的 in 端口允许作为 source
           target: true, // 非 Loop 节点的 in 端口只能作为 target
@@ -554,7 +571,11 @@ export const createEdge = (edge: Edge) => {
   return {
     shape: 'edge',
     router: { name: 'orth' },
-    attrs: { line: { stroke: '#5147FF', strokeWidth: 1 } },
+    attrs: {
+      line: { stroke: '#5147FF', strokeWidth: 1 },
+     
+    },
+
     source: parseEndpoint(edge.source, 'out'),
     target: parseEndpoint(edge.target, 'in'),
     zIndex: edge.zIndex,

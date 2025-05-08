@@ -11,16 +11,16 @@ import { Selection } from '@antv/x6-plugin-selection';
 import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
 // import { Transform } from '@antv/x6-plugin-transform';
-import { ChildNode } from '@/types/interfaces/graph';
-// import { Child, ChildNode } from '@/types/interfaces/graph';
+
+import { Child, ChildNode } from '@/types/interfaces/graph';
 
 import { adjustParentSize } from '@/utils/graph';
-import { message } from 'antd';
-// import { message, Modal } from 'antd';
+
+import { message, Modal } from 'antd';
 // 自定义类型定义
 import { GraphProp } from '@/types/interfaces/graph';
 import { createCurvePath } from './registerCustomNodes';
-// import StencilContent from './stencil';
+import StencilContent from './stencil';
 // import PlusIcon from '@/assets/svg/plus.svg';
 import {
   handleLoopEdge,
@@ -151,14 +151,17 @@ const initGraph = ({
         if (sourceCell === targetCell) {
           return false;
         }
-
+        const targetMagnetElement = targetMagnet.closest(
+          '.x6-port-body',
+        ) as HTMLElement;
         // 提取端口组信息 (关键修复：添加空值保护)
         const sourcePortGroup = sourceMagnet.getAttribute('port-group') || '';
-        const targetPortGroup = targetMagnet.getAttribute('port-group') || '';
+        const targetPortGroup =
+          targetMagnetElement.getAttribute('port-group') || '';
 
         // 获取源端口和目标端口的唯一标识符
         const sourcePortId = sourceMagnet.getAttribute('port');
-        const targetPortId = targetMagnet.getAttribute('port');
+        const targetPortId = targetMagnetElement.getAttribute('port');
         // 如果端口ID缺失，则阻止连接
         if (!sourcePortId || !targetPortId) {
           return false;
@@ -304,11 +307,6 @@ const initGraph = ({
   // 监听连接桩鼠标进入事件
   graph.on('node:mouseenter', ({ node }) => {
     const currentPorts = node.getPorts();
-    // 保存原始端口状态到节点数据
-    node.setData({
-      originalPorts: currentPorts.map((p) => ({ ...(p.attrs?.circle || {}) })),
-    });
-
     // 更新当前节点端口
     const updatedPorts = currentPorts.map((p) => ({
       ...p,
@@ -319,15 +317,17 @@ const initGraph = ({
           r: 8,
           stroke: '#5147FF',
           fill: '#5147FF',
-          // strokeWidth: 1,
         },
-        // icon: {
-        //   ...(p.attrs?.icon || {}),
-        //   width: 12, // 显示图标
-        //   height: 12,
-        //   opacity: 0.7, // 降低透明度减少干扰
-        //   pointerEvents: 'none', // 禁用图标交互
-        // },
+        icon: {
+          ...(p.attrs?.icon || {}),
+          width: 10, // 显示图标
+          height: 10,
+          x: -5, // 图标居中
+          y: -5,
+        },
+        hoverCircle: {
+          pointerEvents: 'none',
+        },
       },
     }));
     node.prop('ports/items', updatedPorts);
@@ -345,35 +345,38 @@ const initGraph = ({
           stroke: '#5147FF',
           fill: '#5147FF',
         },
-        // icon: {
-        //   ...(p.attrs?.icon || {}),
-        //   width: 0, // 隐藏图标
-        //   height: 0,
-        // },
+        icon: {
+          ...(p.attrs?.icon || {}),
+          width: 0, // 显示图标
+          height: 0,
+        },
+        hoverCircle: {
+          pointerEvents: 'visiblePainted',
+        },
       },
     }));
     node.prop('ports/items', updatedPorts);
   });
 
-  // graph.on('node:port:click', ({ e, node, port }) => {
-  //   console.log(e, node, port);
-  //   const dragChild = (child: Child, e?: React.DragEvent<HTMLDivElement>) => {
-  //     console.log(12312312, child, e);
-  //   };
-  //   const popoverContent = (
-  //     <div className='confirm-popover'>
-  //       <StencilContent
-  //         foldWrapItem={node.getData()}
-  //         dragChild={(child: Child, e?: React.DragEvent<HTMLDivElement>) =>
-  //           dragChild(child, e)
-  //         }
-  //       />
-  //     </div>
-  //   );
-  //   Modal.confirm({
-  //     content: popoverContent,
-  //   });
-  // });
+  graph.on('node:port:click', ({ e, node, port }) => {
+    console.log(e, node, port);
+    const dragChild = (child: Child, e?: React.DragEvent<HTMLDivElement>) => {
+      console.log(12312312, child, e);
+    };
+    const popoverContent = (
+      <div className="confirm-popover">
+        <StencilContent
+          foldWrapItem={node.getData()}
+          dragChild={(child: Child, e?: React.DragEvent<HTMLDivElement>) =>
+            dragChild(child, e)
+          }
+        />
+      </div>
+    );
+    Modal.confirm({
+      content: popoverContent,
+    });
+  });
 
   // 监听节点的拖拽移动位置
   graph.on('node:moved', ({ node, e }) => {
@@ -460,6 +463,10 @@ const initGraph = ({
     });
     changeDrawer(null); // 调用回调函数以更新抽屉内容
     graph.cleanSelection();
+  });
+
+  graph.on('edge:mouseenter', ({ edge }) => {
+    console.log(edge);
   });
 
   // 监听边选中
