@@ -140,7 +140,6 @@ const Added = forwardRef<AddAndModifyRef, AddedProps>(
         setInitialValues(initialValues);
         form.setFieldsValue(initialValues);
       } else {
-        console.log('initialValues', initialValues);
         setInitialValues({});
         form.setFieldsValue({});
       }

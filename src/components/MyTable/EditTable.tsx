@@ -163,7 +163,6 @@ const MyTable: React.FC<MyTableProp> = ({
       );
     }
     if (item.shouldUpdate?.value === undefined) {
-      console.log(fieldValue);
       const componentMap: Record<number, JSX.Element> = {
         1: <Input placeholder="请输入" />,
         2: <InputNumber placeholder="仅支持输入数字，否则不会保存" />,

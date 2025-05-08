@@ -11,7 +11,6 @@ import { Selection } from '@antv/x6-plugin-selection';
 import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
 // import { Transform } from '@antv/x6-plugin-transform';
-import PlusIcon from '@/assets/svg/plus.svg';
 import { Child, ChildNode } from '@/types/interfaces/graph';
 import { adjustParentSize } from '@/utils/graph';
 import { message, Modal } from 'antd';

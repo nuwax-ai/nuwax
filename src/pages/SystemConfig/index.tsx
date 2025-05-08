@@ -79,7 +79,6 @@ const SystemConfig: React.FC = () => {
     },
   ];
   const onChange = (key: TabKey) => {
-    console.log(key);
     setTab(key);
   };
   useEffect(() => {

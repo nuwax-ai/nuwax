@@ -54,7 +54,6 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
   }, [isEditDesc]);
 
   useEffect(() => {
-    console.log(showNameInput);
     if (showNameInput) {
       setIsEdit(true);
     }

@@ -138,6 +138,19 @@ export interface InvokeTypeProps {
   onSaveSet: (data: InvokeTypeSaveParams) => void;
 }
 
+// 异步运行保存形参
+export interface AsyncRunSaveParams {
+  async: DefaultSelectedEnum;
+  asyncReplyContent: string;
+}
+
+// 异步运行组件属性
+export interface AsyncRunProps {
+  async: DefaultSelectedEnum;
+  asyncReplyContent: string;
+  onSaveSet: (data: AsyncRunSaveParams) => void;
+}
+
 // 预览与调试组件
 export interface PreviewAndDebugHeaderProps {
   agentId: number;
@@ -200,7 +213,7 @@ export interface DebugDetailsProps {
 
 // 节点详情
 export interface NodeDetailsProps {
-  node?: ExecuteResultInfo;
+  node?: ExecuteResultInfo | null;
 }
 
 // 组件列表

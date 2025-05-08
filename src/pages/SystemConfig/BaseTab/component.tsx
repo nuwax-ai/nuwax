@@ -33,7 +33,6 @@ export default function BaseTab({
     setAgentList(res.data);
   };
   useEffect(() => {
-    console.log(config, currentTab);
     if (currentTab === 'ModelSetting') {
       fetchModelList();
     }
