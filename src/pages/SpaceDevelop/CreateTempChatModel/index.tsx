@@ -12,6 +12,7 @@ import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   Button,
   Checkbox,
+  ConfigProvider,
   DatePicker,
   Empty,
   message,
@@ -19,6 +20,7 @@ import {
   Table,
   TableColumnsType,
 } from 'antd';
+import locale from 'antd/locale/zh_CN';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import moment, { Moment } from 'moment';
@@ -27,6 +29,10 @@ import CopyToClipboard from 'react-copy-to-clipboard';
 import { useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
+
+import 'dayjs/locale/zh-cn';
+
+dayjs.locale('zh-cn');
 
 const cx = classNames.bind(styles);
 
@@ -146,7 +152,7 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
       title: '登录可用',
       dataIndex: 'requireLogin',
       key: 'requireLogin',
-      width: 80,
+      width: 85,
       align: 'center',
       render: (_: boolean, record: AgentTempChatDto) => (
         <div className={cx('h-full', 'flex', 'items-center', 'content-center')}>
@@ -164,16 +170,18 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
       key: 'expire',
       width: 210,
       render: (_, record) => (
-        <DatePicker
-          minDate={dayjs()}
-          value={record.expire ? dayjs(record.expire) : null}
-          allowClear={false}
-          showTime
-          format={'YYYY-MM-DD HH:mm:ss'}
-          onChange={(_, dateString) =>
-            handleUpdate(record.id, 'expire', dateString.toString())
-          }
-        />
+        <ConfigProvider locale={locale}>
+          <DatePicker
+            minDate={dayjs()}
+            value={record.expire ? dayjs(record.expire) : null}
+            allowClear={false}
+            showTime
+            format={'YYYY-MM-DD HH:mm:ss'}
+            onChange={(_, dateString) =>
+              handleUpdate(record.id, 'expire', dateString.toString())
+            }
+          />
+        </ConfigProvider>
       ),
     },
     {
@@ -209,7 +217,7 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
         </div>
       }
       open={open}
-      width={700}
+      width={710}
       destroyOnClose
       footer={null}
       onCancel={handleCancel}
