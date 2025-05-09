@@ -26,8 +26,9 @@ export class GeneralNode extends React.Component<NodeProps> {
     const { node, graph } = this.props;
     // 明确告诉 getData 返回的数据类型
     const data = node.getData<ChildNode>();
-    // console.log(node.isSelected())
+
     let isSelected = graph.isSelected(node); // 判断是否选中
+
 
     graph.on('blank:click', () => {
       if (isSelected) {
