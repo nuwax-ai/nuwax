@@ -9,7 +9,7 @@ import type { ChatMessageDto } from '@/types/interfaces/conversationInfo';
 // 智能体详情页侧边栏
 export interface AgentSidebarProps {
   loading?: boolean;
-  agentDetail?: AgentDetailDto;
+  agentDetail?: AgentDetailDto | null;
   onToggleCollectSuccess: (isCollect: boolean) => void;
 }
 
@@ -41,7 +41,7 @@ export interface CreateTimedTaskProps {
 
 // 智能体内容
 export interface AgentContentProps {
-  agentDetail?: AgentDetailDto;
+  agentDetail?: AgentDetailDto | null;
   onToggleCollectSuccess: (isCollect: boolean) => void;
 }
 

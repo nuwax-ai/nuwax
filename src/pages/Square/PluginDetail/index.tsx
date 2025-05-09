@@ -25,7 +25,6 @@ const SpacePluginDetail: React.FC = ({}) => {
       manual: true,
       debounceInterval: 300,
       onSuccess: (result: PublishPluginInfo) => {
-        console.log(result);
         return result;
       },
     },
@@ -35,7 +34,6 @@ const SpacePluginDetail: React.FC = ({}) => {
     if (!pluginId) return;
     runPluginInfo(pluginId);
   }, [pluginId]);
-  console.log(pluginInfo);
 
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [

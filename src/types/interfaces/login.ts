@@ -95,6 +95,7 @@ export type ModalSliderCaptchaType = {
 export interface TenantConfigInfo {
   // 站点名称
   siteName: string;
+  siteUrl: string;
   // 站点描述
   siteDescription: string;
   // 站点LOGO，为空使用现有默认的

@@ -68,7 +68,6 @@ export const getNodeRelation = async (
     nodes.map((node) => [Number(node.id), node]),
   );
   const relationList = findAllPaths(nodeMap, startNodeId, targetNodeId);
-  console.log(relationList);
   return relationList;
 };
 

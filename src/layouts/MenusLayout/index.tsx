@@ -98,7 +98,6 @@ const MenusLayout: React.FC = () => {
       size: 8,
     });
     history.push('/space');
-    await asyncSpaceListFun();
   };
 
   // 切换tab

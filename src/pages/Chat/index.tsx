@@ -2,8 +2,11 @@ import AgentChatEmpty from '@/components/AgentChatEmpty';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
-import { MessageTypeEnum } from '@/types/enums/agent';
-import { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
+import { DefaultSelectedEnum, MessageTypeEnum } from '@/types/enums/agent';
+import {
+  AgentManualComponentInfo,
+  AgentSelectedComponentInfo,
+} from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   MessageInfo,
@@ -95,7 +98,6 @@ const Chat: React.FC = () => {
       // 组件卸载时移除滚动事件监听器
       return () => {
         messageView.removeEventListener('wheel', throttle(handleScroll, 300));
-        resetInit();
       };
     }
   }, []);
@@ -134,8 +136,20 @@ const Chat: React.FC = () => {
     // 初始化选中的组件列表
     if (infos?.length) {
       setSelectedComponentList(infos || []);
+    } else if (manualComponents?.length) {
+      // 手动组件默认选中的组件
+      const _manualComponents = manualComponents
+        .filter(
+          (item: AgentManualComponentInfo) =>
+            item.defaultSelected === DefaultSelectedEnum.Yes,
+        )
+        .map((item: AgentManualComponentInfo) => ({
+          id: item.id,
+          type: item.type,
+        }));
+      setSelectedComponentList(_manualComponents || []);
     }
-  }, [infos]);
+  }, [infos, manualComponents]);
 
   // 选中配置组件
   const handleSelectComponent = (item: AgentSelectedComponentInfo) => {

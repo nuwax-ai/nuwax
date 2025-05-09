@@ -138,8 +138,11 @@ export interface PluginInfo {
   id: number;
   spaceId: number;
   creatorId: number;
+  // 插件名称
   name: string;
+  // 插件描述
   description: string;
+  // 插件图标
   icon: string;
   // 插件类型,可用值:HTTP,CODE
   type: PluginTypeEnum;
@@ -147,8 +150,12 @@ export interface PluginInfo {
   codeLang: CodeLangEnum;
   // 插件发布状态,可用值:Developing,Applying,Published,Rejected
   publishStatus: PublishStatusEnum;
+  // 已发布的范围，用于发布时做默认选中,可用值:Space,Tenant,Global
+  scope: PluginPublishScopeEnum;
   config: any;
   modified: string;
+  // 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布
+  publishDate: string;
   created: string;
   // 创建者信息
   creator: CreatorInfo;

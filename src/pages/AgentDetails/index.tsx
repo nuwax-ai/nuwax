@@ -41,7 +41,7 @@ const AgentDetails: React.FC = () => {
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 会话问题建议
   const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
-  const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
+  const [agentDetail, setAgentDetail] = useState<AgentDetailDto | null>();
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [selectedComponentList, setSelectedComponentList] = useState<
     AgentSelectedComponentInfo[]
@@ -75,6 +75,14 @@ const AgentDetails: React.FC = () => {
 
   useEffect(() => {
     runDetail(agentId);
+
+    return () => {
+      setIsLoaded(false);
+      setMessageList([]);
+      setChatSuggestList([]);
+      setAgentDetail(null);
+      setSelectedComponentList([]);
+    };
   }, [agentId]);
 
   useEffect(() => {

@@ -71,6 +71,7 @@ const PublishAgent: React.FC<PublishAgentProps> = ({
               {
                 label: '广场',
                 value: 'Square',
+                disabled: true,
               },
             ]}
           />

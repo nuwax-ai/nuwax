@@ -74,7 +74,6 @@ const getInputBox = (item: InputAndOutConfig, form: FormInstance) => {
     if (info.file.status === 'done') {
       try {
         const data = info.file.response?.data;
-        // console.log(data)
         form.setFieldValue(item.name, data?.url);
       } catch (error) {
         message.warning(info.file.response?.message);
@@ -126,6 +125,37 @@ const getInputBox = (item: InputAndOutConfig, form: FormInstance) => {
   }
 };
 
+<<<<<<< HEAD
+=======
+const renderFormItem = (
+  type: string,
+  items: InputAndOutConfig[],
+  form: FormInstance,
+) => {
+  return (
+    <>
+      {items.map((item, index) => (
+        <div key={item.key || index} className='margin-bottom'>
+          <Form.Item
+            name={[item.name]} // 绑定到 bindValue
+            label={
+              <>
+                {item.name}
+                <Tag color="#C9CDD4" className="ml-10">
+                  {item.dataType}
+                </Tag>
+              </>
+            }
+          >
+            {getInputBox(item, form)}
+          </Form.Item>
+        </div>
+      ))}
+    </>
+  );
+};
+
+>>>>>>> 77bd40c59d6f51d3705d4754417cb40d7ff6548b
 // 试运行
 const TestRun: React.FC<TestRunProps> = ({
   node,
@@ -336,7 +366,6 @@ const TestRun: React.FC<TestRunProps> = ({
           _obj[item] = JSON.stringify(_obj[item]);
         }
       }
-      console.log(_obj, '_obj');
       form.setFieldsValue(_obj);
     }
   }, [formItemValue]);

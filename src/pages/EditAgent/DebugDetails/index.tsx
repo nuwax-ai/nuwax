@@ -1,3 +1,4 @@
+import databaseImage from '@/assets/images/database_image.png';
 import knowledgeImage from '@/assets/images/knowledge_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import variableImage from '@/assets/images/variable_image.png';
@@ -24,13 +25,13 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
   const { requestId, finalResult, setFinalResult } =
     useModel('conversationInfo');
   // 当前执行结果
-  const [executeInfo, setExecuteInfo] = useState<ExecuteResultInfo>();
+  const [executeInfo, setExecuteInfo] = useState<ExecuteResultInfo | null>();
   // 当前执行结果索引，默认为0
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   // 输入参数
-  const [inputData, setInputData] = useState<string>();
+  const [inputData, setInputData] = useState<string>('');
   // 输出参数
-  const [outputData, setOutputData] = useState<string>();
+  const [outputData, setOutputData] = useState<string>('');
 
   useEffect(() => {
     // 执行结果列表
@@ -48,6 +49,11 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
         const _outputData = JSON.stringify(_executeInfo.data, null, 2);
         setOutputData(_outputData);
       }
+    } else {
+      setExecuteInfo(null);
+      setCurrentIndex(0);
+      setInputData('');
+      setOutputData('');
     }
   }, [finalResult, currentIndex]);
 
@@ -68,13 +74,15 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
     }
     switch (info.type) {
       case AgentComponentTypeEnum.Plugin:
-        return pluginImage as string;
+        return pluginImage;
       case AgentComponentTypeEnum.Workflow:
-        return workflowImage as string;
+        return workflowImage;
       case AgentComponentTypeEnum.Knowledge:
-        return knowledgeImage as string;
+        return knowledgeImage;
       case AgentComponentTypeEnum.Variable:
-        return variableImage as string;
+        return variableImage;
+      case AgentComponentTypeEnum.Table:
+        return databaseImage;
     }
   };
 

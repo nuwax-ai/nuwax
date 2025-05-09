@@ -94,6 +94,7 @@ export interface PublishAgentProps {
 
 // 智能体迁移弹窗组件
 export interface AgentMoveProps {
+  spaceId: number;
   open: boolean;
   title?: string;
   onCancel: () => void;

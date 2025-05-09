@@ -26,6 +26,7 @@ const DeleteSure: React.FC<DeleteSureProps> = ({
       await form.validateFields(); // 先校验表单
       setLoading(true);
       onSure();
+      form.resetFields();
     } catch (error) {
       setLoading(false); // 校验失败时重置loading状态
     }
@@ -84,7 +85,6 @@ const DeleteSure: React.FC<DeleteSureProps> = ({
           rules={[
             {
               required: true,
-              message: `请输入"${sureText}"确认删除`,
             },
             {
               validator: (_, value) =>

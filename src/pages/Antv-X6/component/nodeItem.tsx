@@ -159,6 +159,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
                     style={{ width: '100%', marginBottom: '10px' }}
                     placeholder="请输入循环次数，并且值为正整数"
                     min={1}
+                    max={214783647}
                     precision={0}
                   />
                 </Form.Item>

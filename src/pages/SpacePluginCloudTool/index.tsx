@@ -472,6 +472,7 @@ const SpacePluginCloudTool: React.FC = () => {
       />
       <PluginPublish
         pluginId={pluginId}
+        scope={pluginInfo?.scope}
         open={openModal}
         onCancel={() => setOpenModal(false)}
       />

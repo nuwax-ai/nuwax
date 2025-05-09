@@ -174,6 +174,7 @@ const EditAgent: React.FC = () => {
       ...agentConfigInfo,
       publishDate: time,
       modified: time,
+      publishStatus: PublishStatusEnum.Published,
     } as AgentConfigInfo;
     setAgentConfigInfo(_agentConfigInfo);
   };
@@ -255,6 +256,7 @@ const EditAgent: React.FC = () => {
       />
       {/*编辑智能体弹窗*/}
       <CreateAgent
+        spaceId={spaceId}
         mode={CreateUpdateModeEnum.Update}
         agentConfigInfo={agentConfigInfo}
         open={openEditAgent}
