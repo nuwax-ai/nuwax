@@ -18,6 +18,8 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import EventHandlers from './component/eventHandlers';
 import InitGraph from './component/graph';
 import { registerCustomNodes } from './component/registerCustomNodes';
+
+
 const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
   (
     {
@@ -78,6 +80,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         const childNodeInstance = graphRef.current.getCellById(newNode.id);
         // 直接在graph实例中添加子节点并设置父子关系
         const parentNode = graphRef.current.getCellById(child.loopNodeId);
+
         parentNode.addChild(childNodeInstance);
       }
     };
@@ -213,15 +216,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         // 创建主节点
         const mainNodes = notLoopChildrenNodes.map((node) => {
           const baseNode = createBaseNode(node);
-
-          const { width, height } = getWidthAndHeight(node);
           return {
             ...baseNode,
-            width: width, // 显式设置宽度
-            height: height,
-            data: {
-              ...node,
-            },
           };
         });
         graphRef.current.fromJSON({
@@ -243,7 +239,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             data.innerNodes.forEach((childDef: ChildNode) => {
               const child = createChildNode(data.id, childDef); // 创建子节点配置
               const childNode = graphRef.current.addNode(child); // 添加子节点到图中
-              // childNode.setZIndex(6);  // 新增显式层级设置方法
               // 更新父节点的子节点列表（如果必要）
               element.addChild(childNode);
             });

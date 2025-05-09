@@ -287,6 +287,7 @@ const Workflow: React.FC = () => {
   // 更新节点
   const changeNode = async (config: ChildNode, update?: boolean | string) => {
     let params = JSON.parse(JSON.stringify(config));
+    
     if (update && update === 'moved') {
       if (config.id === foldWrapItemRef.current.id) {
         const values = nodeDrawerRef.current?.getFormValues();
@@ -304,6 +305,7 @@ const Workflow: React.FC = () => {
     }
     if (params.id === 0) return;
     graphRef.current.updateNode(params.id, params);
+
     // setIsUpdate(true)
     const _res = await updateNode(params);
     if (_res.code === Constant.success) {
@@ -438,6 +440,7 @@ const Workflow: React.FC = () => {
       }
       _params.loopNodeId =
         Number(foldWrapItem.loopNodeId) || Number(foldWrapItem.id);
+        // 获取当前循环节点的位置
       // 点击增加的节点，需要通过接口获取父节点的数据
       const _parent = await service.getNodeConfig(_params.loopNodeId);
       if (_parent.code === Constant.success) {
