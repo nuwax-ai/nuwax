@@ -11,10 +11,14 @@ import type {
   KnowledgeDocumentUpdateParams,
   KnowledgeInfo,
   KnowledgeQAAddParams,
+  KnowledgeQaAddParams,
+  KnowledgeQaDeleteParams,
   KnowledgeQAInfo,
   KnowledgeQAListParams,
+  KnowledgeQaListParams,
   KnowledgeQASearchParams,
   KnowledgeQAUpdateParams,
+  KnowledgeQaUpdateParams,
   KnowledgeQueryDocStatusParams,
   KnowledgeRawSegmentAddParams,
   KnowledgeRawSegmentInfo,
@@ -337,5 +341,45 @@ export async function apiKnowledgeQADelete(
     params: {
       id,
     },
+  });
+}
+
+// 知识库问答 - 数据新增接口
+export async function apiKnowledgeQaAdd(
+  data: KnowledgeQaAddParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/knowledge/qa/add', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 知识库问答 - 数据列表查询
+export async function apiKnowledgeQaList(
+  data: KnowledgeQaListParams,
+): Promise<RequestResponse<Page<KnowledgeQAInfo>>> {
+  return request('/api/knowledge/qa/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 知识库问答 - 数据删除接口
+export async function apiKnowledgeQaDelete(
+  data: KnowledgeQaDeleteParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/knowledge/qa/deleteById', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 知识库问答 - 数据更新接口
+export async function apiKnowledgeQaUpdate(
+  data: KnowledgeQaUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/knowledge/qa/update', {
+    method: 'POST',
+    data,
   });
 }

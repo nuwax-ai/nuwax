@@ -3,6 +3,9 @@ import {
   apiKnowledgeConfigDetail,
   apiKnowledgeDocumentDelete,
   apiKnowledgeDocumentList,
+  apiKnowledgeQaAdd,
+  apiKnowledgeQaDelete,
+  apiKnowledgeQaUpdate,
 } from '@/services/knowledge';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { KnowledgeTextImportEnum } from '@/types/enums/library';
@@ -11,6 +14,7 @@ import type {
   KnowledgeBaseInfo,
   KnowledgeDocumentInfo,
   KnowledgeInfo,
+  KnowledgeQAInfo,
 } from '@/types/interfaces/knowledge';
 import { KnowledgeDocumentStatus } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
@@ -21,10 +25,12 @@ import cloneDeep from 'lodash/cloneDeep';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import DocWrap from './DocWrap';
+import styles from './index.less';
 import KnowledgeHeader from './KnowledgeHeader';
 import LocalDocModal from './LocalCustomDocModal';
+import QaModal from './QaModal';
+import QaTableList from './QaTableList';
 import RawSegmentInfo from './RawSegmentInfo';
-import styles from './index.less';
 
 const cx = classNames.bind(styles);
 const { confirm } = Modal;
@@ -242,15 +248,37 @@ const SpaceKnowledge: React.FC = () => {
     });
     setDocumentList(_documentList);
   };
+  const [docType, setDocType] = useState<number>(1);
+  const qaTableListRef = useRef<typeof QaTableList>(null);
+  const [qaInfo, setQaInfo] = useState<KnowledgeQAInfo>();
+  // 根据docType 判断是否显示QA问答
+  const showDocContent = docType === 1;
+  const [qaOpen, setQaOpen] = useState<boolean>(false);
 
-  return (
-    <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <KnowledgeHeader
-        docCount={totalDocCount}
-        knowledgeInfo={knowledgeInfo}
-        onEdit={() => setOpenKnowledge(true)}
-        onPopover={handleClickPopoverItem}
-      />
+  // 知识库问答 - 数据列表查询
+  const handleQaList = () => {
+    qaTableListRef.current?.refresh();
+  };
+  // 切换类型
+  const handleChangeDocType = (value: number) => {
+    setDocType(value);
+    // 切换类型后，查询文档列表
+    if (value === 1) {
+      handleDocList(knowledgeId);
+    } else {
+      // 切换类型后，查询QA问答列表
+      handleQaList();
+    }
+  };
+
+  // 点击QA问答下拉
+  const handleClickQaPopoverItem = (item: CustomPopoverItem) => {
+    setType(item.value as KnowledgeTextImportEnum);
+    setQaOpen(true);
+  };
+  // 文档内容
+  const renderDocContent = () => {
+    return (
       <div
         className={cx(
           'flex',
@@ -276,6 +304,104 @@ const SpaceKnowledge: React.FC = () => {
           onSuccessUpdateName={handleSuccessUpdateName}
         />
       </div>
+    );
+  };
+
+  // 编辑QA问答
+  const handleEditQa = (record: KnowledgeQAInfo) => {
+    console.log(record);
+    setQaOpen(true);
+    setQaInfo(record);
+  };
+  // 删除QA问答
+  const handleDeleteQa = (record: KnowledgeQAInfo) => {
+    console.log(record);
+    confirm({
+      title: '您确定要删除此QA问答吗?',
+      icon: <ExclamationCircleFilled />,
+      content: record.question,
+      okText: '确定',
+      maskClosable: true,
+      cancelText: '取消',
+      onOk() {
+        apiKnowledgeQaDelete({
+          id: record.id,
+        });
+      },
+    });
+  };
+
+  const renderQaContent = () => {
+    return (
+      <div
+        className={cx(
+          'flex',
+          'flex-1',
+          'radius-6',
+          'overflow-hide',
+          styles['inner-container'],
+        )}
+      >
+        {/* QA问答 */}
+        <div className={cx('flex', 'flex-1', 'items-center', 'justify-center')}>
+          {/* 修改为表格 远程加载数据 */}
+          <QaTableList
+            ref={qaTableListRef}
+            spaceId={Number(spaceId)}
+            question={''}
+            kbId={Number(knowledgeId)}
+            onEdit={handleEditQa}
+            onDelete={handleDeleteQa}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  // 确认QA问答
+  const handleConfirmQa = (values: any) => {
+    console.log(values);
+    setQaOpen(false);
+    // 把数据添加到后端
+    let doAction;
+    if (values.id) {
+      doAction = apiKnowledgeQaUpdate({
+        id: values.id,
+        question: values.question,
+        answer: values.answer,
+      });
+    } else {
+      doAction = apiKnowledgeQaAdd({
+        kbId: knowledgeId,
+        question: values.question,
+        answer: values.answer,
+        spaceId: spaceId,
+      });
+
+      doAction.then((res) => {
+        if (res.code === '0000') {
+          message.success('添加QA问答成功');
+          // 添加成功后，查询文档列表
+          handleQaList();
+        }
+      });
+    }
+  };
+  return (
+    <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
+      {/* 知识库头部  根据type 判断是否显示QA问答 */}
+      <KnowledgeHeader
+        docCount={totalDocCount}
+        knowledgeInfo={knowledgeInfo}
+        docType={docType}
+        onChangeDocType={handleChangeDocType}
+        onEdit={() => setOpenKnowledge(true)}
+        onPopover={handleClickPopoverItem}
+        onQaPopover={handleClickQaPopoverItem}
+      />
+      {/* 根据docType 判断是否显示QA问答 */}
+      {showDocContent ? renderDocContent() : renderQaContent()}
+
       {/*本地文档弹窗*/}
       <LocalDocModal
         id={knowledgeId}
@@ -292,6 +418,14 @@ const SpaceKnowledge: React.FC = () => {
         open={openKnowledge}
         onCancel={() => setOpenKnowledge(false)}
         onConfirm={handleConfirmKnowledge}
+      />
+      {/* QA问答弹窗*/}
+      <QaModal
+        id={qaInfo?.id}
+        type={type as KnowledgeTextImportEnum}
+        open={qaOpen}
+        onCancel={() => setQaOpen(false)}
+        onConfirm={handleConfirmQa}
       />
     </div>
   );

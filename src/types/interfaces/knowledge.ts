@@ -13,7 +13,6 @@ import type {
 } from '@/types/interfaces/common';
 import type { Sort } from '@/types/interfaces/request';
 import type { FormInstance } from 'antd';
-
 // 数据新增输入参数
 export interface KnowledgeConfigAddParams {
   spaceId: number;
@@ -426,6 +425,9 @@ export interface KnowledgeHeaderProps {
   knowledgeInfo?: KnowledgeInfo;
   onEdit: () => void;
   onPopover: (item: CustomPopoverItem) => void;
+  onQaPopover: (item: CustomPopoverItem) => void;
+  docType: number;
+  onChangeDocType: (value: number) => void;
 }
 
 // 文档列表组件
@@ -487,4 +489,45 @@ export interface DataProcessProps {
 // 文本填写组件
 export interface TextFillProps {
   form: FormInstance;
+}
+
+// 知识库问答 - 新增请求参数
+export interface KnowledgeQaAddParams {
+  // 空间ID
+  spaceId: number;
+  // 知识库ID
+  kbId: number;
+  // 问题
+  question: string;
+  // 答案
+  answer: string;
+}
+
+// 知识库问答 - 数据列表查询输入参数
+export interface KnowledgeQaListParams extends KnowledgeListBaseInfo {
+  // 知识库问答-新增请求参数
+  queryFilter: {
+    // 当前页,示例值(1)
+    spaceId: number;
+    // 分页pageSize,示例值(10)
+    question: string;
+    // 知识库ID
+    kbId: number;
+  };
+}
+
+// 知识库问答 - 数据更新请求参数
+export interface KnowledgeQaUpdateParams {
+  // 主键id
+  id: number;
+  // 问题
+  question: string;
+  // 答案
+  answer: string;
+}
+
+// 知识库问答 - 数据删除请求参数
+export interface KnowledgeQaDeleteParams {
+  // 主键id
+  id: number;
 }
