@@ -357,7 +357,7 @@ export const generatePorts = (data: ChildNode) => {
       inputPorts = [defaultPortConfig('in', 'in')];
       outputPorts = []; // End 节点没有输出端口
       break;
-    
+
     case 'Condition':
     case 'IntentRecognition': {
       // 假设 heights 数组与 conditionBranchConfigs 的顺序一致

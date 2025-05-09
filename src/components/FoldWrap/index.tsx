@@ -69,8 +69,6 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
     setIsEditDesc(false); // 关闭编辑状态
   };
 
-
-
   return (
     <div
       className={cx(
@@ -85,20 +83,22 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
         style={{ height: isEdit ? '66px' : isEditDesc ? '90px' : '66px' }}
       >
         <Form form={form} onFinish={onFinish} className={styles['form-style']}>
-          <Form.Item name="name" className={styles['form-item-style']} rules={[{required:true,message:'请输入节点名称'}]}>
+          <Form.Item
+            name="name"
+            className={styles['form-item-style']}
+            rules={[{ required: true, message: '请输入节点名称' }]}
+          >
             {isEdit ? (
               <Input
                 ref={inputRef}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     form.submit();
-                  
                   }
                 }}
                 maxLength={14}
                 onBlur={() => {
                   form.submit();
-
                 }}
               />
             ) : (
@@ -125,7 +125,11 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
               </div>
             )}
           </Form.Item>
-          <Form.Item name="description" className={styles['form-item-style']} rules={[{required:true,message:'请输入节点描述'}]}>
+          <Form.Item
+            name="description"
+            className={styles['form-item-style']}
+            rules={[{ required: true, message: '请输入节点描述' }]}
+          >
             {isEditDesc ? (
               <Input.TextArea
                 ref={textareaRef}

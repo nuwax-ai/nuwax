@@ -131,9 +131,9 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           className="input-or-reference-tag text-ellipsis"
           color="#C9CDD4"
         >
-         <Popover content={displayValue}>
-              <span className="tag-text-style">{displayValue}</span>
-            </Popover>
+          <Popover content={displayValue}>
+            <span className="tag-text-style">{displayValue}</span>
+          </Popover>
         </Tag>
       ) : (
         <Input

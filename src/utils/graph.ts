@@ -66,8 +66,6 @@ export const adjustParentSize = (parentNode: Node) => {
     },
     { skipParentHandler: true },
   );
-
- 
 };
 
 // 辅助函数：设置边的属性

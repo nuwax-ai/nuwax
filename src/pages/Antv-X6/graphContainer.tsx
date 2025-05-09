@@ -19,7 +19,6 @@ import EventHandlers from './component/eventHandlers';
 import InitGraph from './component/graph';
 import { registerCustomNodes } from './component/registerCustomNodes';
 
-
 const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
   (
     {

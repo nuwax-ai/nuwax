@@ -137,7 +137,7 @@ const TestRun: React.FC<TestRunProps> = ({
   formItemValue,
   testRunparams,
 }) => {
-  const { referenceList } =useModel('workflow') ;
+  const { referenceList } = useModel('workflow');
 
   const { testRun, setTestRun } = useModel('model');
   // const [value, setValue] = useState('');
@@ -212,10 +212,9 @@ const TestRun: React.FC<TestRunProps> = ({
     return (
       <>
         {items.map((item, index) => {
-
-          const isReference = referenceList.argMap[item.bindValue]
-          if(isReference){
-            item.dataType=isReference.dataType
+          const isReference = referenceList.argMap[item.bindValue];
+          if (isReference) {
+            item.dataType = isReference.dataType;
           }
           return (
             <div key={item.key || index}>
