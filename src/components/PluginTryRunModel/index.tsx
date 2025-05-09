@@ -7,6 +7,7 @@ import { DataTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PluginTryRunModelProps } from '@/types/interfaces/library';
 import type { PluginTestResult } from '@/types/interfaces/plugin';
+import { getNumbersOnly } from '@/utils/common';
 import {
   CloseOutlined,
   DeleteOutlined,
@@ -65,6 +66,20 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
     handleInit(inputConfigArgs, inputExpandedRowKeys);
   }, [inputConfigArgs, inputExpandedRowKeys]);
 
+  // 输入框值改变时触发, 如果是数字类型，需要过滤掉非数字字符，并转换为数字类型
+  const handleChangeInputValue = (record: BindConfigWithSub, value: string) => {
+    let _value: string | number = value;
+    if (
+      (record.dataType === DataTypeEnum.Integer ||
+        record.dataType === DataTypeEnum.Number) &&
+      value
+    ) {
+      _value =
+        getNumbersOnly(value) === '' ? '' : Number(getNumbersOnly(value));
+    }
+    handleInputValue(record.key, 'bindValue', _value);
+  };
+
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [
     {
@@ -91,9 +106,7 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
           record.dataType?.includes('Array') ? null : (
             <Input
               value={record.bindValue}
-              onChange={(e) =>
-                handleInputValue(record.key, 'bindValue', e.target.value)
-              }
+              onChange={(e) => handleChangeInputValue(record, e.target.value)}
               placeholder="请输入参数值"
             />
           )}
