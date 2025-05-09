@@ -201,6 +201,10 @@ const Workflow: React.FC = () => {
   // 获取当前节点的参数
   const getRefernece = async (id: number) => {
     if (id === 0) return;
+    // 这里等0.5秒再执行
+    await new Promise((resolve) => {
+      setTimeout(resolve, 500);
+    });
     // 获取节点需要的引用参数
     const _res = await service.getOutputArgs(id);
     if (_res.code === Constant.success) {
