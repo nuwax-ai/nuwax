@@ -45,10 +45,8 @@ const TaskList: React.FC<TaskListProps> = ({
 
   // 点击任务项
   const handleClick = (info: TimedConversationTaskInfo) => {
-    if (info.taskStatus === TaskStatus.EXECUTING) {
-      const { id } = info;
-      history.push(`/home/chat/${id}`);
-    }
+    const { id } = info;
+    history.push(`/home/chat/${id}`);
   };
 
   // 取消定时任务
@@ -79,16 +77,17 @@ const TaskList: React.FC<TaskListProps> = ({
     onEditTask?.(info);
   };
 
-  // 手掌样式
-  const cursor =
-    taskStatus === TaskStatus.EXECUTING ? 'cursor-pointer' : 'cursor-default';
-
   return taskList?.length > 0 ? (
     <div className={cx(styles['task-wrapper'], className)}>
       {taskList?.map((item: TimedConversationTaskInfo) => (
         <div
           key={item.id}
-          className={cx(styles['task-item'], 'flex', 'items-center', cursor)}
+          className={cx(
+            styles['task-item'],
+            'flex',
+            'items-center',
+            'cursor-pointer',
+          )}
         >
           <EllipsisTooltip
             text={String(item?.topic)}
@@ -99,11 +98,11 @@ const TaskList: React.FC<TaskListProps> = ({
           {item.taskStatus === TaskStatus.EXECUTING && (
             <>
               <FormOutlined
-                className={cx(styles.icon, 'cursor-pointer')}
+                className={cx(styles.icon)}
                 onClick={(e) => handleEditTask(e, item)}
               />
               <DeleteOutlined
-                className={cx(styles.icon, 'cursor-pointer')}
+                className={cx(styles.icon)}
                 onClick={(e) => handleCancelTimedTask(e, item)}
               />
               <span className={cx(styles.time)}>{item.taskCronDesc}</span>
