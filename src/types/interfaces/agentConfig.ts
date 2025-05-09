@@ -146,6 +146,8 @@ export interface AsyncRunSaveParams {
 
 // 异步运行组件属性
 export interface AsyncRunProps {
+  async: DefaultSelectedEnum;
+  asyncReplyContent: string;
   onSaveSet: (data: AsyncRunSaveParams) => void;
 }
 
@@ -211,7 +213,7 @@ export interface DebugDetailsProps {
 
 // 节点详情
 export interface NodeDetailsProps {
-  node?: ExecuteResultInfo;
+  node?: ExecuteResultInfo | null;
 }
 
 // 组件列表

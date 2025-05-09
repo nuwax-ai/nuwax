@@ -11,17 +11,12 @@ import { Selection } from '@antv/x6-plugin-selection';
 import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
 // import { Transform } from '@antv/x6-plugin-transform';
-import PlusIcon from '@/assets/svg/plus.svg';
 import { Child, ChildNode } from '@/types/interfaces/graph';
-
 import { adjustParentSize } from '@/utils/graph';
-
 import { message, Modal } from 'antd';
 // 自定义类型定义
+import PlusIcon from '@/assets/svg/plus_icon.svg';
 import { GraphProp } from '@/types/interfaces/graph';
-import { createCurvePath } from './registerCustomNodes';
-import StencilContent from './stencil';
-// import PlusIcon from '@/assets/svg/plus.svg';
 import {
   handleLoopEdge,
   handleSpecialNodeTypes,
@@ -31,6 +26,8 @@ import {
   updateEdgeArrows,
   validatePortConnection,
 } from '@/utils/graph';
+import { createCurvePath } from './registerCustomNodes';
+import StencilContent from './stencil';
 // import { PlusOutlined,} from '@ant-design/icons';
 /**
  * 初始化图形编辑器的函数，接收一个包含容器 ID 和改变抽屉内容回调的对象作为参数。
@@ -43,6 +40,7 @@ const initGraph = ({
   changeEdge,
   changeCondition,
   changeZoom,
+  createNodeToPortOrEdge,
 }: GraphProp) => {
   const graphContainer = document.getElementById(containerId);
   // 如果找不到容器，则抛出错误
@@ -82,10 +80,34 @@ const initGraph = ({
         },
       },
     },
-   
   });
   // 注册自定义边类型
   // Graph.registerEdge('data-processing-curve', Edge, true);
+
+  // 通过边和连接桩创捷节点并添加连线
+  const createNodeAndEdge = (
+    sourceNode: ChildNode,
+    portId: string,
+    targetNode?: ChildNode,
+    edgeId?: string,
+  ) => {
+    const dragChild = (child: Child) => {
+      createNodeToPortOrEdge(child, sourceNode, portId, targetNode, edgeId);
+    };
+    const popoverContent = (
+      <div className="confirm-popover">
+        <StencilContent
+          dragChild={(child: Child) => {
+            dragChild(child);
+            Modal.destroyAll();
+          }}
+        />
+      </div>
+    );
+    Modal.confirm({
+      content: popoverContent,
+    });
+  };
 
   // 创建图形实例，并配置相关属性
   const graph = new Graph({
@@ -353,26 +375,59 @@ const initGraph = ({
     node.prop('ports/items', updatedPorts);
   });
 
-  graph.on('node:port:click', ({ e, node, port }) => {
-    console.log(e, node, port);
-    const dragChild = (child: Child, e?: React.DragEvent<HTMLDivElement>) => {
-      console.log(12312312, child, e);
-    };
-    const popoverContent = (
-      <div className="confirm-popover">
-        <StencilContent
-          foldWrapItem={node.getData()}
-          dragChild={(child: Child, e?: React.DragEvent<HTMLDivElement>) =>
-            dragChild(child, e)
-          }
-        />
-      </div>
-    );
-    Modal.confirm({
-      content: popoverContent,
-    });
+  graph.on('node:port:click', ({ node, port }) => {
+    createNodeAndEdge(node.getData(), port as string);
   });
 
+  // 在创建图形实例后添加事件监听
+  graph.on('edge:mouseenter', ({ edge }) => {
+    // 获取边缘的所有工具视图
+    edge.addTools([
+      {
+        name: 'button',
+        args: {
+          markup: [
+            {
+              tagName: 'circle',
+              selector: 'button',
+              attrs: {
+                r: 6,
+                stroke: '#5147FF',
+                strokeWidth: 1,
+                fill: '#5147FF',
+                cursor: 'pointer',
+              },
+            },
+            {
+              tagName: 'image',
+              selector: 'icon',
+              attrs: {
+                href: PlusIcon,
+                width: 8,
+                height: 8,
+                x: -4,
+                y: -4,
+                pointerEvents: 'none',
+              },
+            },
+          ],
+          distance: '50%',
+          offset: { x: 0, y: 0 },
+          onClick() {
+            const source = edge.getSourceCell()?.getData();
+            const target = edge.getTargetCell()?.getData();
+            const sourcePort = edge.getSourcePortId();
+            if (!source || !target) return;
+            createNodeAndEdge(source, sourcePort as string, target, edge.id);
+          },
+        },
+      },
+    ]);
+  });
+
+  graph.on('edge:mouseleave', ({ cell }) => {
+    cell.removeTools();
+  });
   // 监听节点的拖拽移动位置
   graph.on('node:moved', ({ node, e }) => {
     e.stopPropagation(); // 阻止事件冒泡
@@ -459,11 +514,6 @@ const initGraph = ({
     changeDrawer(null); // 调用回调函数以更新抽屉内容
     graph.cleanSelection();
   });
-
-  graph.on('edge:mouseenter', ({ edge }) => {
-    edge.attr('icon/visibility', 'visible');
-  });
-
   // 监听边选中
   graph.on('edge:click', ({ edge }) => {
     edge.attr('line/stroke', '#37D0FF'); // 悬停时改为蓝色

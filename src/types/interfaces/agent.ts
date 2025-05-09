@@ -137,6 +137,10 @@ export interface AgentComponentWorkflowUpdateParams
   extends AgentComponentBaseInfo {
   // 绑定组件配置，不同组件配置不一样
   bindConfig: {
+    // 是否默认选中，0-否，1-是
+    async: DefaultSelectedEnum;
+    // 异步执行时回复内容
+    asyncReplyContent: string;
     // 入参绑定配置，插件、工作流有效
     inputArgBindConfigs: BindConfigWithSub[];
     // 出参绑定配置，插件、工作流有效
