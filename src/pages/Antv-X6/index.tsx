@@ -318,7 +318,7 @@ const Workflow: React.FC = () => {
     // 先完全重置表单
     if (foldWrapItemRef.current.id !== 0) {
       setIsModified(async (modified: boolean) => {
-        console.log('isModified', modified);
+
         if (modified===true) {
           await onFinish();
           if (timerRef.current) {
@@ -926,7 +926,7 @@ const Workflow: React.FC = () => {
       clearTimeout(timerRef.current);
     }
     // 创建新定时器
-    if (isModified) {
+    if (isModified===true) {
       timerRef.current = setTimeout(() => {
         onFinish();
       }, 3000);

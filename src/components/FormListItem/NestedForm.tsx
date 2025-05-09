@@ -434,7 +434,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
         <span className="node-title-style">
           <span>{title}</span>
         </span>
-        <div>
+        <div className={'dis-left'}>
           {notShowTitle && (
             <Form.Item name="outputType" noStyle>
               <Select
@@ -463,16 +463,24 @@ const CustomTree: React.FC<TreeFormProps> = ({
               />
             </Form.Item>
           )}
-          {!isNotAdd &&
-            (!notShowTitle || form.getFieldValue('outputType') === 'JSON') && (
-              <Button
-                icon={<PlusOutlined />}
-                size={'small'}
-                onClick={addRootNode}
-                className="ml-10"
-                type="text"
-              />
-            )}
+          {!isNotAdd && (
+            <Form.Item shouldUpdate={(prev, next) => 
+              prev.outputType !== next.outputType || 
+              prev.notShowTitle !== next.notShowTitle
+            }>
+              {({ getFieldValue }) => 
+                (!notShowTitle || getFieldValue('outputType') === 'JSON') && (
+                  <Button
+                    icon={<PlusOutlined />}
+                    size={'small'}
+                    onClick={addRootNode}
+                    className="ml-10"
+                    type="text"
+                  />
+                )
+              }
+            </Form.Item>
+          )}
         </div>
       </div>
 
