@@ -51,11 +51,14 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
       }
     } else {
       setExecuteInfo(null);
-      setCurrentIndex(0);
       setInputData('');
       setOutputData('');
     }
   }, [finalResult, currentIndex]);
+
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [finalResult]);
 
   useEffect(() => {
     return () => {
