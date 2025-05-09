@@ -89,7 +89,7 @@ const Workflow: React.FC = () => {
     sourceNode: ChildNode;
     portId: string;
     targetNode?: ChildNode;
-    edgeId?:string
+    edgeId?: string;
   } | null>(null);
   // 节点的form表单
   const [form] = Form.useForm<NodeConfig>();
@@ -476,7 +476,8 @@ const Workflow: React.FC = () => {
       changeUpdateTime();
 
       if (currentNodeRef.current) {
-        const { sourceNode, portId, targetNode ,edgeId} = currentNodeRef.current;
+        const { sourceNode, portId, targetNode, edgeId } =
+          currentNodeRef.current;
         const id = portId.split('-')[0];
         const uuid = portId.split('-')[1];
         const isOut = portId.endsWith('out');
@@ -486,12 +487,11 @@ const Workflow: React.FC = () => {
             sourceNode,
             uuid,
             _res.data.id,
-            targetNode
+            targetNode,
           );
           changeNode(_params);
           const sourcePortId = portId.split('-').slice(0, -1).join('-');
           graphRef.current.createNewEdge(sourcePortId, _res.data.id.toString());
-          
         } else {
           // 如果当前源端口是out
           if (isOut) {
@@ -987,7 +987,7 @@ const Workflow: React.FC = () => {
     sourceNode: ChildNode,
     portId: string,
     targetNode?: ChildNode,
-    edgeId?:string
+    edgeId?: string,
   ) => {
     // 获取当前节点的位置
     const _position = sourceNode.nodeConfig.extension as {

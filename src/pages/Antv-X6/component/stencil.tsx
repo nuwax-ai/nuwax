@@ -1,4 +1,3 @@
-
 // import { SearchOutlined } from '@ant-design/icons';
 // import { Input } from 'antd';
 import '../index.less';
@@ -49,9 +48,7 @@ const StencilContent = ({ dragChild, isLoop }: Prop) => {
                 const isLoopControl = ['LoopBreak', 'LoopContinue'].includes(
                   child.type,
                 );
-                const shouldShow = isLoopControl
-                  ? isLoop
-                  : true;
+                const shouldShow = isLoopControl ? isLoop : true;
                 return (
                   shouldShow && (
                     <div

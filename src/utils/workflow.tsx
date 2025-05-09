@@ -564,7 +564,7 @@ export const createChildNode = (parentId: string, child: ChildNode) => {
 
 // 构造边
 export const createEdge = (edge: Edge) => {
-  if(edge.source === edge.target) return
+  if (edge.source === edge.target) return;
   const parseEndpoint = (endpoint: string, type: string) => {
     const isLoop = endpoint.includes('in') || endpoint.includes('out');
     const isNotGraent = endpoint.includes('-');
@@ -620,7 +620,8 @@ export const handleSpecialNodesNextIndex = (
   let configs: ConditionBranchConfigs[] | IntentConfigs[] | QANodeOption[];
   switch (node.type) {
     case 'Condition': {
-      configs = node.nodeConfig?.conditionBranchConfigs as ConditionBranchConfigs[];
+      configs = node.nodeConfig
+        ?.conditionBranchConfigs as ConditionBranchConfigs[];
       break;
     }
     case 'IntentRecognition': {
@@ -641,31 +642,29 @@ export const handleSpecialNodesNextIndex = (
     if (config.uuid === uuid) {
       if (targetNode) {
         // 这里需要将原来的nextNodeIds中和targetId相同的元素替换成id
-        config.nextNodeIds = nextNodeIds.map(
-          (item: number) => {
-            if (item === targetNode.id) {
-              return id; // 替换为新的id
-            } else {
-              return item; // 保持不变
-            }
-          },
-        );
+        config.nextNodeIds = nextNodeIds.map((item: number) => {
+          if (item === targetNode.id) {
+            return id; // 替换为新的id
+          } else {
+            return item; // 保持不变
+          }
+        });
       } else {
-        config.nextNodeIds =  [...nextNodeIds, id] 
-        console.log([...nextNodeIds, id])
+        config.nextNodeIds = [...nextNodeIds, id];
+        console.log([...nextNodeIds, id]);
       }
     }
   });
 
-  const newNode ={
+  const newNode = {
     ...node,
     nodeConfig: {
-     ...node.nodeConfig,
+      ...node.nodeConfig,
       // 根据节点类型更新对应的配置数组
       ...(node.type === 'Condition' && { conditionBranchConfigs: configs }),
       ...(node.type === 'IntentRecognition' && { intentConfigs: configs }),
-      ...(node.type === 'QA' && { options: configs })
+      ...(node.type === 'QA' && { options: configs }),
     },
-  }
+  };
   return newNode;
 };

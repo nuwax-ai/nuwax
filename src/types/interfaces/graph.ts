@@ -84,7 +84,7 @@ export interface GraphContainerProps {
     sourceNode: ChildNode,
     portId: string,
     targetNode?: ChildNode,
-    edgeId?:string
+    edgeId?: string,
   ) => void;
 }
 
@@ -150,7 +150,6 @@ export interface GraphProp {
     targetId: string,
     sourceNode: ChildNode,
     id: string,
-
   ) => void;
   changeCondition: (newData: ChildNode, targetNodeId?: string) => void;
   changeZoom: (val: number) => void;
@@ -160,6 +159,6 @@ export interface GraphProp {
     sourceNode: ChildNode,
     portId: string,
     targetNode?: ChildNode,
-    edgeId?:string
+    edgeId?: string,
   ) => void;
 }
