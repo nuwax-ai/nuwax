@@ -355,28 +355,10 @@ const initGraph = ({
     node.prop('ports/items', updatedPorts);
   });
 
-  // graph.on('node:port:click', ({ e, node, port }) => {
-  //   console.log(e, node, port);
-  //   const dragChild = (child: Child, e?: React.DragEvent<HTMLDivElement>) => {
-  //     console.log(12312312, child, e);
-  //   };
-  //   const popoverContent = (
-  //     <div className='confirm-popover'>
-  //       <StencilContent
-  //         foldWrapItem={node.getData()}
-  //         dragChild={(child: Child, e?: React.DragEvent<HTMLDivElement>) =>
-  //           dragChild(child, e)
-  //         }
-  //       />
-  //     </div>
-  //   );
-  //   Modal.confirm({
-  //     content: popoverContent,
-  //   });
-  // });
 
   // 监听节点的拖拽移动位置
   graph.on('node:moved', ({ node, e }) => {
+
     e.stopPropagation(); // 阻止事件冒泡
     // 获取节点被拖拽到的位置
     const { x, y } = node.getPosition();
@@ -391,52 +373,71 @@ const initGraph = ({
         y,
       };
     }
-    // 如果时移动循环节点，且节点内有子节点
-    if (data.type === 'Loop' && data.innerNodes && data.innerNodes.length > 0) {
-      // 更新内部节点的位置信息
-      data.innerNodes.forEach((innerNode: ChildNode) => {
-        const childNode = graph.getCellById(innerNode.id.toString()) as Node;
-        if (childNode) {
-          const { x, y } = childNode.getPosition();
-          if (innerNode.nodeConfig.extension) {
-            innerNode.nodeConfig.extension.x = x;
-            innerNode.nodeConfig.extension.y = y;
-          } else {
-            innerNode.nodeConfig.extension = { x, y };
-          }
-        }
-      });
-    }
 
-    // 如果时循环内部的节点，要一并修改循环的宽度和位置
+
+    // 如果是循环内部的节点，要一并修改循环的宽度和位置
     if (data.loopNodeId) {
       const parentNode = graph.getCellById(data.loopNodeId) as Node;
-      const _size = parentNode.getSize();
       const _position = parentNode.getPosition();
-      const extension = {
-        x: _position.x,
-        y: _position.y,
-        width: _size.width,
-        height: _size.height,
-      };
-      const _data = parentNode.getData();
-      if (_data.nodeConfig) {
-        _data.nodeConfig.extension = extension;
-      }
-      if (_data.innerNodes && _data.innerNodes.length > 0) {
-        // 找到循环节点中当前被移动的节点
-        for (let item of _data.innerNodes) {
-          if (item.id === data.id) {
-            item.nodeConfig.extension.x = x;
-            item.nodeConfig.extension.y = y;
+      const children = parentNode.getChildren();
+      if (children && children.length) {
+        // // 找到循环节点中当前被移动的节点
+        for (let item of children) {
+          const childrenData = item.getData();
+          if (childrenData.id === data.id) {
+            childrenData.nodeConfig.extension.x =x;
+            childrenData.nodeConfig.extension.y =y;
+            changeCondition(childrenData, 'moved');
           }
         }
       }
-      changeCondition(_data, 'moved');
+
+      const _size =parentNode.getSize();
+
+      // 更新当前循环节点的大小和位置
+      const parent = parentNode.getData();
+      if (parent) {
+        parent.nodeConfig.extension.width = _size.width;
+        parent.nodeConfig.extension.height = _size.height;
+        parent.nodeConfig.extension.x = _position.x;
+        parent.nodeConfig.extension.y = _position.y;
+        changeCondition(parent,'moved');
+      }
       return;
     }
 
-    // node.prop('zIndex', 99);
+    if(data.type==='Loop'){
+      const children = node.getChildren();
+      const innerNodes = data.innerNodes||[]
+      if (children && children.length) {
+         // 找到循环节点中当前被移动的节点
+         for (let item  of children) {
+          // console.log(item.isNode())
+          if(!item.isNode()) return
+           const position =item.getPosition() ;
+           const childrenData = item.getData();
+           
+           childrenData.nodeConfig.extension.x =position.x;
+           childrenData.nodeConfig.extension.y =position.y;
+          //  如果当前innerNodes没有这个节点，就添加进去
+          if(!innerNodes.find((node:ChildNode)=>node.id===childrenData.id)){
+            innerNodes.push(childrenData)
+          }else{
+            // 如果当前innerNodes有这个节点，就更新
+            const index = innerNodes.findIndex((node:ChildNode)=>node.id===childrenData.id)
+            innerNodes[index]=childrenData;
+          }
+         }
+      }
+      data.innerNodes = innerNodes;
+      data.nodeConfig.extension.x=x;
+      data.nodeConfig.extension.y=y;
+      changeCondition(data, 'moved')
+      return
+    }
+
+  
+
     changeCondition(data, 'moved');
     changeZindex(node);
   });
@@ -611,12 +612,7 @@ const initGraph = ({
     changeZoom(sx);
   });
 
-  graph.on('node:change:size', ({ node }) => {
-    const children = node.getChildren();
-    if (children && children.length) {
-      node.prop('originSize', node.getSize());
-    }
-  });
+
 
   graph.on('node:change:position', ({ node }) => {
     if (node.getData().type !== 'Loop') {
@@ -644,6 +640,7 @@ const initGraph = ({
       parentNode.getData()?.type === 'Loop'
     ) {
       adjustParentSize(parentNode);
+
     }
   });
 

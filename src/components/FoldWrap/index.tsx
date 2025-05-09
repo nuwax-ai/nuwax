@@ -63,11 +63,13 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
     description: string;
   }
 
-  // 提交当前编辑后的数据
-  const submitForm = () => {
-    const values: Values = form.getFieldsValue();
+  const onFinish = (values: Values) => {
     changeFoldWrap?.(values);
+    setIsEdit(false); // 关闭编辑状态
+    setIsEditDesc(false); // 关闭编辑状态
   };
+
+
 
   return (
     <div
@@ -82,21 +84,21 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
         className={cx(styles['stand-header'], 'flex', 'items-center')}
         style={{ height: isEdit ? '66px' : isEditDesc ? '90px' : '66px' }}
       >
-        <Form form={form} className={styles['form-style']}>
-          <Form.Item name="name" className={styles['form-item-style']}>
+        <Form form={form} onFinish={onFinish} className={styles['form-style']}>
+          <Form.Item name="name" className={styles['form-item-style']} rules={[{required:true,message:'请输入节点名称'}]}>
             {isEdit ? (
               <Input
                 ref={inputRef}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    submitForm();
-                    setIsEdit(false);
+                    form.submit();
+                  
                   }
                 }}
                 maxLength={14}
                 onBlur={() => {
-                  submitForm();
-                  setIsEdit(false);
+                  form.submit();
+
                 }}
               />
             ) : (
@@ -123,7 +125,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
               </div>
             )}
           </Form.Item>
-          <Form.Item name="description" className={styles['form-item-style']}>
+          <Form.Item name="description" className={styles['form-item-style']} rules={[{required:true,message:'请输入节点描述'}]}>
             {isEditDesc ? (
               <Input.TextArea
                 ref={textareaRef}
@@ -131,13 +133,11 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
                 placeholder={description}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    submitForm();
-                    setIsEditDesc(false);
+                    form.submit();
                   }
                 }}
                 onBlur={() => {
-                  submitForm();
-                  setIsEditDesc(false);
+                  form.submit();
                 }}
                 rows={2}
                 style={{ marginTop: '10px', resize: 'none' }}

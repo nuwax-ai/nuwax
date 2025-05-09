@@ -133,7 +133,7 @@ const renderFormItem = (
   return (
     <>
       {items.map((item, index) => (
-        <div key={item.key || index}>
+        <div key={item.key || index} className='margin-bottom'>
           <Form.Item
             name={[item.name]} // 绑定到 bindValue
             label={
