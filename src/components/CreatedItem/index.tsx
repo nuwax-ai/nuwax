@@ -125,7 +125,17 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
         <Form.Item
           name="name"
           label="名称"
-          rules={[{ required: true, message: '请输入名称' }]}
+          rules={[
+            { required: true, message: '请输入名称' },
+            {
+              validator(_, value) {
+                if (!value || value?.length <= 30) {
+                  return Promise.resolve();
+                }
+                return Promise.reject(new Error('请输入名称!'));
+              },
+            },
+          ]}
         >
           <Input placeholder="请输入名称" showCount maxLength={30} />
         </Form.Item>

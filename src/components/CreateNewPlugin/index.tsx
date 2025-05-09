@@ -44,19 +44,14 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   const [pluginType, setPluginType] = useState<PluginTypeEnum>();
 
   useEffect(() => {
-    if (icon) {
-      setImageUrl(icon);
-    }
-  }, [icon]);
-
-  useEffect(() => {
     if (open) {
+      setImageUrl(icon || '');
       form.setFieldsValue({
         name,
         description,
       });
     }
-  }, [open, name, description]);
+  }, [open, icon, name, description]);
 
   // 根据type类型，判断插件跳转路径
   const handlePluginUrl = (id: number, type: PluginTypeEnum) => {
