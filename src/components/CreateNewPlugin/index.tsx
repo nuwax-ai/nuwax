@@ -49,6 +49,15 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
     }
   }, [icon]);
 
+  useEffect(() => {
+    if (open) {
+      form.setFieldsValue({
+        name,
+        description,
+      });
+    }
+  }, [open, name, description]);
+
   // 根据type类型，判断插件跳转路径
   const handlePluginUrl = (id: number, type: PluginTypeEnum) => {
     if (type === PluginTypeEnum.CODE) {
@@ -59,7 +68,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   };
 
   // 新增插件接口
-  const { run: runCreate } = useRequest(apiPluginAdd, {
+  const { run: runCreate, loading: loadingCreate } = useRequest(apiPluginAdd, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: number, params: PluginAddParams[]) => {
@@ -74,16 +83,19 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   });
 
   // 更新HTTP插件配置接口
-  const { run: runUpdate } = useRequest(apiPluginHttpUpdate, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (_: null, params: PluginHttpUpdateParams[]) => {
-      setImageUrl('');
-      const info = params[0];
-      onConfirm?.(info);
-      message.success('插件更新成功');
+  const { run: runUpdate, loading: loadingUpdate } = useRequest(
+    apiPluginHttpUpdate,
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: (_: null, params: PluginHttpUpdateParams[]) => {
+        setImageUrl('');
+        const info = params[0];
+        onConfirm?.(info);
+        message.success('插件更新成功');
+      },
     },
-  });
+  );
 
   const onFinish: FormProps<PluginAddParams>['onFinish'] = (values) => {
     if (mode === CreateUpdateModeEnum.Create) {
@@ -121,8 +133,15 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
       destroyOnClose
       footer={
         <>
-          <Button onClick={onCancel}>取消</Button>
-          <Button type="primary" onClick={handlerSubmit}>
+          <Button className={cx(styles.btn)} onClick={onCancel}>
+            取消
+          </Button>
+          <Button
+            type="primary"
+            className={cx(styles.btn)}
+            loading={loadingCreate || loadingUpdate}
+            onClick={handlerSubmit}
+          >
             确定
           </Button>
         </>
@@ -139,10 +158,6 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
         <Form
           form={form}
           requiredMark={customizeRequiredMark}
-          initialValues={{
-            name,
-            description,
-          }}
           layout="vertical"
           onFinish={onFinish}
           rootClassName={cx(styles['create-team-form'])}
