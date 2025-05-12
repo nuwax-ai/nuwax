@@ -55,6 +55,13 @@ export interface UserAvatarType {
   onClick: () => void;
 }
 
+// 菜单栏~用户操作区域单项类型
+export interface UserOperateAreaItemType {
+  title: string;
+  icon: React.ReactNode;
+  type: UserOperatorAreaEnum;
+}
+
 // 菜单栏~用户操作区域类型
 export interface UserOperateAreaType {
   onClick: (type: UserOperatorAreaEnum) => void;
