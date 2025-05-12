@@ -178,9 +178,9 @@ export class GeneralNode extends React.Component<NodeProps> {
 
 // 添加循环体节点
 // 优化后的 LoopNode 组件
-export const LoopNode: React.FC<NodeProps> = ({ node }) => {
+export const LoopNode: React.FC<NodeProps> = ({ node,graph }) => {
   const data = node.getData<ChildNode>();
-  const isSelected = !!data.selected; // 判断是否选中
+  let isSelected = graph.isSelected(node); // 判断是否选中
   const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
     data.type,
   )} 0%, white 70%)`;

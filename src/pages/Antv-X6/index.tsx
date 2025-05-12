@@ -212,12 +212,8 @@ const Workflow: React.FC = () => {
   // 获取当前节点的参数
   const getRefernece = async (id: number) => {
     if (id === 0) return;
-<<<<<<< HEAD
-=======
-    // 这里等0.5秒再执行
     // 如果选中后立刻删除了，那么就不需要再获取参数了
     if (foldWrapItemRef.current.id === 0) return;
->>>>>>> bin
     // 获取节点需要的引用参数
     const _res = await service.getOutputArgs(id);
     if (_res.code === Constant.success) {
@@ -496,7 +492,7 @@ const Workflow: React.FC = () => {
             _res.data.id,
             targetNode,
           );
-          changeNode(_params);
+          changeNode(_params as ChildNode);
           const sourcePortId = portId.split('-').slice(0, -1).join('-');
           graphRef.current.createNewEdge(sourcePortId, _res.data.id.toString());
         } else {
