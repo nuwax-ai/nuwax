@@ -456,7 +456,7 @@ const initGraph = ({
       if (children && children.length) {
         // // 找到循环节点中当前被移动的节点
         for (let item of children) {
-          if(!item.isNode()) return
+          if (!item.isNode()) return;
           const childrenData = item.getData();
           if (childrenData.id === data.id) {
             childrenData.nodeConfig.extension.x =x;
