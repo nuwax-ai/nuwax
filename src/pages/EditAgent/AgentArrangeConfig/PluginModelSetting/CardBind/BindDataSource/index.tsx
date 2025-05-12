@@ -235,6 +235,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
                     <Tree
                       treeData={bindArray}
                       height={300}
+                      blockNode
                       onClick={(e) => {
                         e.stopPropagation();
                       }}
@@ -270,6 +271,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
                     <Tree
                       treeData={dataSource}
                       height={300}
+                      blockNode
                       onClick={(e) => {
                         e.stopPropagation();
                       }}
@@ -316,6 +318,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
                 <Tree
                   treeData={dataSource}
                   height={300}
+                  blockNode
                   onClick={(e) => {
                     e.stopPropagation();
                   }}

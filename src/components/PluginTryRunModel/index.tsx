@@ -38,6 +38,8 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
   open,
   onCancel,
 }) => {
+  const [loading, setLoading] = useState<boolean>(false);
+  // 试运行结果
   const [result, setResult] = useState<string>('');
   const {
     handleInit,
@@ -50,15 +52,19 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
   } = useTryRun();
 
   // 插件试运行接口
-  const { run: runTest, loading } = useRequest(apiPluginTest, {
+  const { run: runTest } = useRequest(apiPluginTest, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (res: PluginTestResult) => {
+      setLoading(false);
       if (!res.success) {
         message.warning(res.error);
       } else {
         setResult(JSON.stringify(res.result, null, 2));
       }
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
@@ -137,6 +143,8 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
 
   // 试运行
   const handleRunTest = () => {
+    setResult('');
+    setLoading(true);
     const params = handleDataSource(dataSource);
     runTest({
       pluginId,
@@ -144,6 +152,7 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
     });
   };
 
+  // 取消试运行
   const handleCancel = () => {
     setResult('');
     onCancel();

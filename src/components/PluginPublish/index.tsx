@@ -13,6 +13,7 @@ const PluginPublish: React.FC<PluginPublishProps> = ({
   scope,
   open,
   onCancel,
+  onConfirm,
 }) => {
   const [form] = Form.useForm();
 
@@ -22,7 +23,7 @@ const PluginPublish: React.FC<PluginPublishProps> = ({
     debounceInterval: 300,
     onSuccess: (data: string) => {
       message.success(data || '插件发布成功');
-      onCancel();
+      onConfirm();
     },
   });
 

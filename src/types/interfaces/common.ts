@@ -406,6 +406,7 @@ export interface PluginPublishProps {
   scope?: PluginPublishScopeEnum;
   open: boolean;
   onCancel: () => void;
+  onConfirm: () => void;
 }
 
 // 插件入参、出参配置title组件
