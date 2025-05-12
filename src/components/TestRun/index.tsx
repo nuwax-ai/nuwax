@@ -64,67 +64,6 @@ interface QaItems {
 //   { label: 'coder', value: 'coder', img: squareImage },
 // ];
 
-const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-// 根据type返回不同的输入项
-const getInputBox = (item: InputAndOutConfig, form: FormInstance) => {
-  const handleChange: UploadProps['onChange'] = (info) => {
-    if (info.file.status === 'uploading') {
-      return;
-    }
-    if (info.file.status === 'done') {
-      try {
-        const data = info.file.response?.data;
-        form.setFieldValue(item.name, data?.url);
-      } catch (error) {
-        message.warning(info.file.response?.message);
-      }
-    }
-  };
-
-  switch (true) {
-    case item.dataType?.includes('File'):
-      return (
-        <Upload
-          action={UPLOAD_FILE_ACTION}
-          onChange={handleChange}
-          headers={{
-            Authorization: token ? `Bearer ${token}` : '',
-          }}
-          accept={getAccept(item.dataType as DataTypeEnum)}
-        >
-          <Button>上传文件</Button>
-        </Upload>
-      );
-    case item.dataType === 'Object' || item.dataType?.includes('Array'):
-      return (
-        <CodeEditor
-          value={form.getFieldValue(item.name) || ''}
-          codeLanguage={'JSON'}
-          onChange={(code: string) => {
-            form.setFieldsValue({ [item.name]: code }); // 更新表单值
-          }}
-          height="180px"
-        />
-      );
-    case item.dataType === 'Number':
-      return <InputNumber />;
-    case item.dataType === 'Integer':
-      return <InputNumber precision={0} />;
-    case item.dataType === 'Boolean':
-      return (
-        <Radio.Group
-          options={[
-            { label: 'true', value: 'true' },
-            { label: 'false', value: 'false' },
-          ]}
-        />
-      );
-    default: {
-      return <Input />;
-    }
-  }
-};
-
 // 试运行
 const TestRun: React.FC<TestRunProps> = ({
   node,
@@ -201,6 +140,71 @@ const TestRun: React.FC<TestRunProps> = ({
       run(node.type, value);
     } else {
       run(node.type);
+    }
+  };
+
+  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
+  // 根据type返回不同的输入项
+  const getInputBox = (item: InputAndOutConfig, form: FormInstance) => {
+    const handleChange: UploadProps['onChange'] = (info) => {
+      if (info.file.status === 'uploading') {
+        return;
+      }
+      if (info.file.status === 'done') {
+        try {
+          const data = info.file.response?.data;
+          form.setFieldValue(item.name, data?.url);
+        } catch (error) {
+          message.warning(info.file.response?.message);
+        }
+      }
+    };
+
+    switch (true) {
+      case item.dataType?.includes('File'):
+        return (
+          <Upload
+            action={UPLOAD_FILE_ACTION}
+            onChange={handleChange}
+            headers={{
+              Authorization: token ? `Bearer ${token}` : '',
+            }}
+            accept={getAccept(item.dataType as DataTypeEnum)}
+            disabled={loading}
+          >
+            <Button>上传文件</Button>
+          </Upload>
+        );
+      case item.dataType === 'Object' || item.dataType?.includes('Array'):
+        return (
+          <CodeEditor
+            value={form.getFieldValue(item.name) || ''}
+            codeLanguage={'JSON'}
+            onChange={(code: string) => {
+              form.setFieldsValue({ [item.name]: code }); // 更新表单值
+            }}
+            height="180px"
+          />
+        );
+      case item.dataType === 'Number':
+        return <InputNumber disabled={loading} />;
+      case item.dataType === 'Integer':
+        return <InputNumber precision={0} disabled={loading} />;
+      case item.dataType === 'Boolean':
+        return (
+          <Radio.Group
+            disabled={loading}
+            options={[
+              { label: 'true', value: 'true' },
+              { label: 'false', value: 'false' },
+            ]}
+          />
+        );
+      case item.dataType === 'String':
+        return <Input />;
+      default: {
+        return <Input disabled={loading} />;
+      }
     }
   };
 

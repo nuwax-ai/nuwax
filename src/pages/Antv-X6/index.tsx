@@ -347,7 +347,7 @@ const Workflow: React.FC = () => {
           return child;
         }
         setVisible(false);
-
+        setTestRun(false);
         return {
           id: 0,
           description: '',
@@ -808,9 +808,9 @@ const Workflow: React.FC = () => {
   };
   // 试运行所有节点
   const testRunAll = async () => {
-    setIsModified((prev: boolean) => {
+    setIsModified(async (prev: boolean) => {
       if (prev) {
-        onFinish();
+        await onFinish();
       }
       return false;
     });
@@ -861,7 +861,7 @@ const Workflow: React.FC = () => {
     setLoading(true);
   };
   // 右上角的相关操作
-  const handleChangeNode = (val: string) => {
+  const handleChangeNode = async (val: string) => {
     switch (val) {
       case 'Rename': {
         setShowNameInput(true);
@@ -877,7 +877,10 @@ const Workflow: React.FC = () => {
       }
       case 'TestRun': {
         if (isModified) {
-          onFinish();
+          await onFinish();
+          if (timerRef.current) {
+            clearTimeout(timerRef.current);
+          }
         }
         // copyNode(foldWrapItem);
         if (foldWrapItemRef.current.type === 'Start') {
