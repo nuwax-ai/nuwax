@@ -347,7 +347,7 @@ const Workflow: React.FC = () => {
           return child;
         }
         setVisible(false);
-
+        setTestRun(false);
         return {
           id: 0,
           description: '',
@@ -621,18 +621,27 @@ const Workflow: React.FC = () => {
   // 校验当前工作流
   const volidWorkflow = async () => {
     setLoading(false);
+
+    // 先将数据提交到后端
+    const _detail = await service.getDetails(workflowId);
+    const _nodeList = _detail.data.nodes;
+    setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
+    changeDrawer(_detail.data.startNode);
+    graphRef.current.selectNode(_detail.data.startNode.id);
+
     const _res = await service.validWorkflow(info?.id as number);
     if (_res.code === Constant.success) {
       const _arr = _res.data.filter((item) => !item.success);
       if (_arr.length === 0) {
         return true;
       } else {
+        const _errorList = _arr.map((child) => ({
+          nodeId: child.nodeId,
+          error: child.messages.join(','),
+        }));
         setErrorParams({
           show: true,
-          errorList: _arr.map((child) => ({
-            nodeId: child.nodeId,
-            error: child.messages.join(','),
-          })),
+          errorList: _errorList,
         });
 
         return false;
@@ -660,6 +669,7 @@ const Workflow: React.FC = () => {
           ...values,
           modified: _time.toString(),
           publishDate: _time.toString(),
+          publishStatus: 'Published',
         });
       }
     }
@@ -798,18 +808,13 @@ const Workflow: React.FC = () => {
   };
   // 试运行所有节点
   const testRunAll = async () => {
-    setIsModified((prev: boolean) => {
+    setIsModified(async (prev: boolean) => {
       if (prev) {
-        onFinish();
+        await onFinish();
       }
       return false;
     });
-    // 先将数据提交到后端
-    const _res = await service.getDetails(workflowId);
-    const _nodeList = _res.data.nodes;
-    setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
-    changeDrawer(_res.data.startNode);
-    graphRef.current.selectNode(_res.data.startNode.id);
+
     const volid = await volidWorkflow();
     if (volid) {
       setTestRunResult('');
@@ -856,7 +861,7 @@ const Workflow: React.FC = () => {
     setLoading(true);
   };
   // 右上角的相关操作
-  const handleChangeNode = (val: string) => {
+  const handleChangeNode = async (val: string) => {
     switch (val) {
       case 'Rename': {
         setShowNameInput(true);
@@ -872,7 +877,10 @@ const Workflow: React.FC = () => {
       }
       case 'TestRun': {
         if (isModified) {
-          onFinish();
+          await onFinish();
+          if (timerRef.current) {
+            clearTimeout(timerRef.current);
+          }
         }
         // copyNode(foldWrapItem);
         if (foldWrapItemRef.current.type === 'Start') {
@@ -910,7 +918,8 @@ const Workflow: React.FC = () => {
 
   // 点击画布中的节点
   const handleNodeClick = (node: ChildNode | null) => {
-    if (node && node.id === foldWrapItemRef.current.id) return;
+    // 如果右侧抽屉是再展示的，且就是当前选中的节点，那么就不做任何操作
+    if (visible && node && node.id === foldWrapItemRef.current.id) return;
     changeDrawer(node);
   };
 
@@ -922,6 +931,8 @@ const Workflow: React.FC = () => {
         onFinish();
       }
       setIsModified(false); // 重置修改状态
+      setVisible(false);
+      setTestRun(false);
     };
   }, []);
   // 新增定时器逻辑
