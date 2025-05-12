@@ -28,6 +28,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
   nodeList,
 }) => {
   const { setVolid } = useModel('workflow');
+  console.log('errorList', errorList);
   return (
     <div
       style={{
