@@ -123,6 +123,9 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
                 if (!value || value?.length <= 30) {
                   return Promise.resolve();
                 }
+                if (value?.length > 30) {
+                  return Promise.reject(new Error('名称不能超过30个字符!'));
+                }
                 return Promise.reject(new Error('输入工作流名称!'));
               },
             },
