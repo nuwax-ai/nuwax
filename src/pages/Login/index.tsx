@@ -9,7 +9,6 @@ import { ExclamationCircleFilled } from '@ant-design/icons';
 import {
   Button,
   Checkbox,
-  Divider,
   Form,
   FormProps,
   Input,
@@ -36,7 +35,7 @@ const Login: React.FC = () => {
   const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
   const [formValues, setFormValues] = useState<LoginFieldType>();
-  const [loginToPhone, setLoginToPhone] = useState<boolean>(true);
+
 
   const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
 
@@ -47,15 +46,13 @@ const Login: React.FC = () => {
       const { expireDate, token } = result;
       localStorage.setItem(ACCESS_TOKEN, token);
       localStorage.setItem(EXPIRE_DATE, expireDate);
-      localStorage.setItem(PHONE, params[0].phone);
+      localStorage.setItem(PHONE, params[0].phoneOrEmail);
       navigate('/', { replace: true });
       //message.success('登录成功');
     },
   });
 
-  const changeLoginMethod = () => {
-    setLoginToPhone(!loginToPhone);
-  };
+
 
   useEffect(() => {
     // 租户配置信息查询接口
@@ -159,32 +156,32 @@ const Login: React.FC = () => {
           rules={[
             {
               required: true,
-              message: loginToPhone ? '请输入手机号码!' : '请输入邮箱账号!',
+              message: tenantConfigInfo && tenantConfigInfo.authType === 3 ? '请输入手机号码!' : '请输入邮箱验证码!',
             },
             {
               validator(_, value) {
                 if (!value) return Promise.resolve();
-                if (loginToPhone) {
-                  return isValidPhone(value)
-                    ? Promise.resolve()
-                    : Promise.reject(new Error('请输入正确的手机号码!'));
-                } else {
+                if (tenantConfigInfo && tenantConfigInfo.authType === 3) {
                   return isValidEmail(value)
                     ? Promise.resolve()
                     : Promise.reject(new Error('请输入正确的邮箱账号!'));
+                } else {
+                  return isValidPhone(value)
+                    ? Promise.resolve()
+                    : Promise.reject(new Error('请输入正确的手机号码!'));
                 }
               },
             },
           ]}
         >
-          {loginToPhone ? (
+          {tenantConfigInfo && tenantConfigInfo.authType === 3 ? (
+            <Input placeholder="请输入邮箱号码" size={'large'} />
+          ) : (
             <Input
               placeholder="请输入手机号"
               addonBefore={selectBefore}
               size={'large'}
             />
-          ) : (
-            <Input placeholder="请输入邮箱号码" size={'large'} />
           )}
         </Form.Item>
 
@@ -237,15 +234,7 @@ const Login: React.FC = () => {
                 : '密码登录'}
             </a>
           </Form.Item>
-          <Divider />
-          <p
-            className={cx(styles['other-lotin'])}
-            onClick={() => {
-              changeLoginMethod();
-            }}
-          >
-            {loginToPhone?'邮箱登录':'手机号码登录'}
-          </p>
+         
         </Form.Item>
       </Form>
 

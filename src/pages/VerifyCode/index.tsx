@@ -156,7 +156,7 @@ const VerifyCode: React.FC = () => {
       />
       <div className={cx(styles.inner, 'flex', 'flex-col', 'items-center')}>
         <h3>{ phoneOrEmail?.includes('@') ?"输入邮箱验证码":"输入短信验证码"}</h3>
-        <p>{`验证码已发送至${ phoneOrEmail?.includes('@') ?'邮箱':'手机号'}`}</p>
+        <p>{`验证码已发送至${ phoneOrEmail?.includes('@') ?'你的邮箱':'手机号'}`}</p>
         <span className={styles.phone}>{`${ !phoneOrEmail?.includes('@') ?areaCode:''} ${phoneOrEmail}`}</span>
         <div className={cx(styles['code-container'])}>
           {codes.map((code, index) => {
@@ -185,9 +185,9 @@ const VerifyCode: React.FC = () => {
             重新发送
           </span>
         )}
-        <div className={cx(styles.tips)}>
-          您将在30秒内收到验证码语音电话，可能会被手机标记为稍扰电话，请放心接听。
-        </div>
+        {/* <div className={cx(styles.tips)}>
+          您秒内收到验证码语音电话，可能会被手机标记为稍扰电话，请放心接听。
+        </div> */}
         <div className={cx('flex', 'content-between', 'w-full', styles.footer)}>
           <Button className={cx('flex-1')} onClick={() => history.back()}>
             上一步
