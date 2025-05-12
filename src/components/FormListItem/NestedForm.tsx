@@ -472,11 +472,13 @@ const CustomTree: React.FC<TreeFormProps> = ({
             </Form.Item>
           )}
           {!isNotAdd && (
-            <Form.Item shouldUpdate={(prev, next) => 
-              prev.outputType !== next.outputType || 
-              prev.notShowTitle !== next.notShowTitle
-            }>
-              {({ getFieldValue }) => 
+            <Form.Item
+              shouldUpdate={(prev, next) =>
+                prev.outputType !== next.outputType ||
+                prev.notShowTitle !== next.notShowTitle
+              }
+            >
+              {({ getFieldValue }) =>
                 (!notShowTitle || getFieldValue('outputType') === 'JSON') && (
                   <Button
                     icon={<PlusOutlined />}
