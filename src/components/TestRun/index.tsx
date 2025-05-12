@@ -125,6 +125,34 @@ const getInputBox = (item: InputAndOutConfig, form: FormInstance) => {
   }
 };
 
+const renderFormItem = (
+  type: string,
+  items: InputAndOutConfig[],
+  form: FormInstance,
+) => {
+  return (
+    <>
+      {items.map((item, index) => (
+        <div key={item.key || index}>
+          <Form.Item
+            name={[item.name]} // 绑定到 bindValue
+            label={
+              <>
+                {item.name}
+                <Tag color="#C9CDD4" className="ml-10">
+                  {item.dataType}
+                </Tag>
+              </>
+            }
+          >
+            {getInputBox(item, form)}
+          </Form.Item>
+        </div>
+      ))}
+    </>
+  );
+};
+
 // 试运行
 const TestRun: React.FC<TestRunProps> = ({
   node,
@@ -137,8 +165,6 @@ const TestRun: React.FC<TestRunProps> = ({
   formItemValue,
   testRunparams,
 }) => {
-  const { referenceList } =useModel('workflow') ;
-
   const { testRun, setTestRun } = useModel('model');
   // const [value, setValue] = useState('');
 
@@ -202,41 +228,6 @@ const TestRun: React.FC<TestRunProps> = ({
     } else {
       run(node.type);
     }
-  };
-
-  const renderFormItem = (
-    type: string,
-    items: InputAndOutConfig[],
-    form: FormInstance,
-  ) => {
-    return (
-      <>
-        {items.map((item, index) => {
-
-          const isReference = referenceList.argMap[item.bindValue]
-          if(isReference){
-            item.dataType=isReference.dataType
-          }
-          return (
-            <div key={item.key || index}>
-              <Form.Item
-                name={[item.name]} // 绑定到 bindValue
-                label={
-                  <>
-                    {item.name}
-                    <Tag color="#C9CDD4" className="ml-10">
-                      {item.dataType}
-                    </Tag>
-                  </>
-                }
-              >
-                {getInputBox(item, form)}
-              </Form.Item>
-            </div>
-          );
-        })}
-      </>
-    );
   };
 
   const items = [

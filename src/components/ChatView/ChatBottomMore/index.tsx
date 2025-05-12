@@ -4,7 +4,7 @@ import TooltipIcon from '@/components/TooltipIcon';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { ChatBottomMoreProps } from '@/types/interfaces/common';
 import { CopyOutlined } from '@ant-design/icons';
-import { message } from 'antd';
+import { message, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
@@ -53,12 +53,19 @@ const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({ messageInfo }) => {
       </div>
       <div className={cx('flex', styles['more-action'])}>
         <CopyToClipboard text={text || ''} onCopy={handleCopy}>
-          <TooltipIcon
-            className={styles.icon}
-            icon={<CopyOutlined />}
-            title="复制"
-            type={TooltipTitleTypeEnum.White}
-          />
+          <Tooltip title="复制">
+            <span
+              className={cx(
+                'hover-box',
+                'flex',
+                'content-center',
+                'items-center',
+                'cursor-pointer',
+              )}
+            >
+              <CopyOutlined />
+            </span>
+          </Tooltip>
         </CopyToClipboard>
         <ConditionRender condition={!!finalResult}>
           <TooltipIcon

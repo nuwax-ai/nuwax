@@ -159,7 +159,6 @@ export const returnBackgroundColor = (type: string) => {
 export const getWidthAndHeight = (node: ChildNode) => {
   const { type, nodeConfig } = node;
   const extension = nodeConfig?.extension || {};
-
   if (
     type !== 'QA' &&
     type !== 'Condition' &&
@@ -387,7 +386,6 @@ export const generatePorts = (data: ChildNode) => {
       inputPorts = [defaultPortConfig('in', 'in')];
       outputPorts = []; // End 节点没有输出端口
       break;
-    
     case 'Condition':
     case 'IntentRecognition': {
       // 假设 heights 数组与 conditionBranchConfigs 的顺序一致
@@ -525,14 +523,13 @@ function getRandomPosition(maxWidth = 800, maxHeight = 600) {
 export const createBaseNode = (node: ChildNode) => {
   const extension = node.nodeConfig?.extension || {};
   const isLoopChild = node.loopNodeId;
-  const { width, height } = getWidthAndHeight(node);
   return {
     id: node.id,
     shape: node.type === 'Loop' ? 'loop-node' : 'general-Node',
     x: extension.x ?? getRandomPosition().x,
     y: extension.y ?? getRandomPosition().y,
-    width: width,
-    height: height,
+    width: extension.width || 304,
+    height: extension.height || 83,
     label: node.name,
     data: node,
     ports: generatePorts(node),
@@ -546,8 +543,8 @@ export const createChildNode = (parentId: string, child: ChildNode) => {
   return {
     id: child.id.toString(),
     shape: 'general-Node',
-    x: ext.x || 0,
-    y: ext.y || 0,
+    x: ext.x,
+    y: ext.y,
     width: width,
     height: height,
     label: child.name,

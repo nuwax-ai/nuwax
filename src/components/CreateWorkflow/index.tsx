@@ -59,14 +59,10 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   });
 
   useEffect(() => {
-    if (open) {
-      setImageUrl(icon || '');
-      form.setFieldsValue({
-        name,
-        description,
-      });
+    if (icon) {
+      setImageUrl(icon);
     }
-  }, [open, icon, name, description]);
+  }, [icon]);
 
   const onFinish: FormProps<{
     name: string;
@@ -111,22 +107,16 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
         requiredMark={customizeRequiredMark}
         layout="vertical"
         onFinish={onFinish}
+        initialValues={{
+          name,
+          description,
+        }}
         autoComplete="off"
       >
         <Form.Item
           name="name"
           label="名称"
-          rules={[
-            { required: true, message: '请输入工作流名称' },
-            {
-              validator(_, value) {
-                if (!value || value?.length <= 30) {
-                  return Promise.resolve();
-                }
-                return Promise.reject(new Error('输入工作流名称!'));
-              },
-            },
-          ]}
+          rules={[{ required: true, message: '请输入工作流名称' }]}
         >
           <Input placeholder="输入工作流名称" showCount maxLength={30} />
         </Form.Item>

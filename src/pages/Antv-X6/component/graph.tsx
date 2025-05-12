@@ -430,7 +430,6 @@ const initGraph = ({
   });
   // 监听节点的拖拽移动位置
   graph.on('node:moved', ({ node, e }) => {
-
     e.stopPropagation(); // 阻止事件冒泡
     // 获取节点被拖拽到的位置
     const { x, y } = node.getPosition();
@@ -445,8 +444,6 @@ const initGraph = ({
         y,
       };
     }
-
-
     // 如果是循环内部的节点，要一并修改循环的宽度和位置
     if (data.loopNodeId) {
       const parentNode = graph.getCellById(data.loopNodeId) as Node;
@@ -509,8 +506,7 @@ const initGraph = ({
       return
     }
 
-  
-
+    // node.prop('zIndex', 99);
     changeCondition(data, 'moved');
     changeZindex(node);
   });
@@ -684,7 +680,12 @@ const initGraph = ({
     changeZoom(sx);
   });
 
-
+  graph.on('node:change:size', ({ node }) => {
+    const children = node.getChildren();
+    if (children && children.length) {
+      node.prop('originSize', node.getSize());
+    }
+  });
 
   graph.on('node:change:position', ({ node }) => {
     if (node.getData().type !== 'Loop') {
@@ -712,7 +713,6 @@ const initGraph = ({
       parentNode.getData()?.type === 'Loop'
     ) {
       adjustParentSize(parentNode);
-
     }
   });
 

@@ -272,7 +272,6 @@ const CustomTree: React.FC<TreeFormProps> = ({
 
     const _dataType = CascaderValue(nodeData.dataType || undefined);
 
-    console.log(form.getFieldValue('outputType'))
     return (
       <div className="dis-left" style={{ width: '100%' }}>
         <div
@@ -311,7 +310,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
             }}
             changeOnSelect={true}
             className="tree-form-name"
-            disabled={nodeData.systemVariable|| (!isNotAdd&& form.getFieldValue('outputType')==='Text')}
+            disabled={nodeData.systemVariable}
             placement={'bottomLeft'}
             placeholder="请选择数据类型"
             style={{
@@ -435,7 +434,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
         <span className="node-title-style">
           <span>{title}</span>
         </span>
-        <div className={'dis-left'}>
+        <div>
           {notShowTitle && (
             <Form.Item name="outputType" noStyle>
               <Select
@@ -461,34 +460,19 @@ const CustomTree: React.FC<TreeFormProps> = ({
                   { label: 'JSON', value: 'JSON' },
                 ]}
                 style={{ width: 160 }}
-                onChange={(e)=>{
-                  if(e!=='JSON'){
-                    form.setFieldValue('outputType', e)
-                    form.setFieldValue('outputArgs', [{name: 'output', description: '输出结果', dataType: DataTypeEnum.String, require: false, systemVariable: false, bindValueType: 'Input', bindValue: ''}])
-                    form.submit()
-                  }
-                }}
               />
             </Form.Item>
           )}
-          {!isNotAdd && (
-            <Form.Item shouldUpdate={(prev, next) => 
-              prev.outputType !== next.outputType || 
-              prev.notShowTitle !== next.notShowTitle
-            }>
-              {({ getFieldValue }) => 
-                (!notShowTitle || getFieldValue('outputType') === 'JSON') && (
-                  <Button
-                    icon={<PlusOutlined />}
-                    size={'small'}
-                    onClick={addRootNode}
-                    className="ml-10"
-                    type="text"
-                  />
-                )
-              }
-            </Form.Item>
-          )}
+          {!isNotAdd &&
+            (!notShowTitle || form.getFieldValue('outputType') === 'JSON') && (
+              <Button
+                icon={<PlusOutlined />}
+                size={'small'}
+                onClick={addRootNode}
+                className="ml-10"
+                type="text"
+              />
+            )}
         </div>
       </div>
 

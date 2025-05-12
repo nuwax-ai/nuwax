@@ -26,9 +26,8 @@ export class GeneralNode extends React.Component<NodeProps> {
     const { node, graph } = this.props;
     // 明确告诉 getData 返回的数据类型
     const data = node.getData<ChildNode>();
-
+    // console.log(node.isSelected())
     let isSelected = graph.isSelected(node); // 判断是否选中
-
 
     graph.on('blank:click', () => {
       if (isSelected) {
@@ -179,10 +178,9 @@ export class GeneralNode extends React.Component<NodeProps> {
 
 // 添加循环体节点
 // 优化后的 LoopNode 组件
-export const LoopNode: React.FC<NodeProps> = ({ node,graph }) => {
+export const LoopNode: React.FC<NodeProps> = ({ node }) => {
   const data = node.getData<ChildNode>();
- 
-  const isSelected = graph.isSelected(node); // 判断是否选中
+  const isSelected = !!data.selected; // 判断是否选中
   const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
     data.type,
   )} 0%, white 70%)`;
@@ -191,7 +189,6 @@ export const LoopNode: React.FC<NodeProps> = ({ node,graph }) => {
       className={`loop-node-style general-node ${
         isSelected ? 'selected-general-node' : ''
       }`}
-    
     >
       <div
         className="loop-node-title-style dis-left"

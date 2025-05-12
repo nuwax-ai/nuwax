@@ -5,7 +5,7 @@ import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import type { PluginPublishProps } from '@/types/interfaces/common';
 import type { FormProps } from 'antd';
 import { Form, Input, message, Radio } from 'antd';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useRequest } from 'umi';
 
 const PluginPublish: React.FC<PluginPublishProps> = ({
@@ -25,12 +25,6 @@ const PluginPublish: React.FC<PluginPublishProps> = ({
       onCancel();
     },
   });
-
-  useEffect(() => {
-    if (open) {
-      form.resetFields();
-    }
-  }, [open]);
 
   const onFinish: FormProps<{
     scope: PluginPublishScopeEnum;
@@ -61,7 +55,6 @@ const PluginPublish: React.FC<PluginPublishProps> = ({
         onFinish={onFinish}
         initialValues={{
           scope: scope || PluginPublishScopeEnum.Tenant,
-          remark: '',
         }}
       >
         <Form.Item name="scope" label="发布范围">
@@ -69,9 +62,6 @@ const PluginPublish: React.FC<PluginPublishProps> = ({
         </Form.Item>
         <Form.Item name="remark" label="发布记录">
           <Input.TextArea
-            className="dispose-textarea-count"
-            showCount
-            maxLength={600}
             autoSize={{ minRows: 6, maxRows: 8 }}
             placeholder="这里填写详细的发布记录，如果范围选择了全局，审核通过后将在广场进行展示，同时所有工作空间均可引用该插件"
           />
