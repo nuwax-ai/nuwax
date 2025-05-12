@@ -93,11 +93,15 @@ export const deleteNode = (arr: BindConfigWithSub[], key: React.Key) => {
 };
 
 // 递归更新子级require值
-const updateRequireFieldFalse = (data: BindConfigWithSub[], value: boolean) => {
+const updateRequireFieldFalse = (
+  field: string,
+  data: BindConfigWithSub[],
+  value: boolean,
+) => {
   data?.forEach((node) => {
-    node.require = value;
+    node[field] = value;
     if (node.subArgs?.length) {
-      updateRequireFieldFalse(node.subArgs, value);
+      updateRequireFieldFalse(field, node.subArgs, value);
     }
   });
 };
@@ -138,15 +142,16 @@ const findParentPathByKey = (
 };
 
 const updateRequireFieldTrue = (
+  field: string,
   data: BindConfigWithSub[],
   pathKeys: React.Key[],
 ) => {
   data.forEach((node) => {
     if (pathKeys.includes(node.key)) {
-      node.require = true;
+      node[field] = true;
     }
     if (node?.subArgs?.length) {
-      updateRequireFieldTrue(node.subArgs, pathKeys);
+      updateRequireFieldTrue(field, node.subArgs, pathKeys);
     }
   });
 };
@@ -193,13 +198,13 @@ export const updateNodeField = (
         if (field === 'require' && !!value && !node.bindValue) {
           node.enable = true;
         }
-        if (field === 'require') {
+        if (field === 'require' || field === 'enable') {
           // 选中, 父级以及父级以上，都设置为true
           if (value) {
             pathKeys = findParentPathByKey(arr, node.key) as React.Key[];
           } else if (node.subArgs) {
             // 取消选中, 下级以及下下级等，都设置为false
-            updateRequireFieldFalse(node.subArgs, false);
+            updateRequireFieldFalse(field, node.subArgs, false);
           }
         }
         // 返回节点
@@ -214,7 +219,7 @@ export const updateNodeField = (
 
   const newList = updateRecursive(arr) || [];
   // 设置父级require为true
-  updateRequireFieldTrue(newList, pathKeys);
+  updateRequireFieldTrue(field, newList, pathKeys);
   return newList;
 };
 
