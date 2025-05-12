@@ -28,7 +28,7 @@ interface CreatedItemProp extends CreateKnowledgeProps {
     | AgentComponentTypeEnum.Plugin
     | AgentComponentTypeEnum.Workflow
     | AgentComponentTypeEnum.Knowledge
-    | AgentComponentTypeEnum.Table; // 组件类型，数据库、知识库、插件、工作流
+    | AgentComponentTypeEnum.Table; // 组件类型，数据表、知识库、插件、工作流
   info?: Info;
   Confirm: (
     info: Info,
@@ -60,7 +60,7 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
       [CreateUpdateModeEnum.Update]: '编辑',
     };
     const _type = {
-      [AgentComponentTypeEnum.Table]: '数据库',
+      [AgentComponentTypeEnum.Table]: '数据表',
       [AgentComponentTypeEnum.Knowledge]: '知识库',
       [AgentComponentTypeEnum.Plugin]: '插件',
       [AgentComponentTypeEnum.Workflow]: '工作流',
@@ -131,6 +131,9 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
               validator(_, value) {
                 if (!value || value?.length <= 30) {
                   return Promise.resolve();
+                }
+                if (value?.length > 30) {
+                  return Promise.reject(new Error('名称不能超过30个字符!'));
                 }
                 return Promise.reject(new Error('请输入名称!'));
               },
