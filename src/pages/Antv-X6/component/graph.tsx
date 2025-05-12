@@ -106,6 +106,10 @@ const initGraph = ({
     );
     Modal.confirm({
       content: popoverContent,
+      footer:null,
+      icon: null,
+      width:260,
+      maskClosable: true
     });
   };
 
