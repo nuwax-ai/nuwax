@@ -212,7 +212,7 @@ export const updateNodeField = (
     });
   };
 
-  const newList = (updateRecursive(arr) as BindConfigWithSub[]) || [];
+  const newList = updateRecursive(arr) || [];
   // 设置父级require为true
   updateRequireFieldTrue(newList, pathKeys);
   return newList;

@@ -256,7 +256,7 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
             <h3>设置</h3>
             <ul>
               {PLUGIN_SETTING_ACTIONS.map((item) => {
-                // 表格组件不展示方法调用
+                // 数据表组件不展示方法调用
                 if (
                   currentComponentInfo?.type === AgentComponentTypeEnum.Table &&
                   item.type === PluginSettingEnum.Method_Call
