@@ -931,6 +931,8 @@ const Workflow: React.FC = () => {
         onFinish();
       }
       setIsModified(false); // 重置修改状态
+      setVisible(false);
+      setTestRun(false);
     };
   }, []);
   // 新增定时器逻辑
