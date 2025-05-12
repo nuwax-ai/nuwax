@@ -25,6 +25,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   const [selectKey, setSelectKey] = useState<React.Key[]>([value || '']);
 
   const updateValues = (newValue: string, valueType: 'Input' | 'Reference') => {
+
     if (fieldName && form) {
       const basePath = fieldName.slice(0, -1);
       form.setFieldValue([...basePath, 'bindValueType'], valueType);
@@ -99,6 +100,8 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
 
   // 处理 TreeSelect 的选中事件
   const handleTreeSelectChange = (key: React.Key[]) => {
+    console.log(key, 'key'); // 打印选中的节点 key 以进行调试
+    if(!key || !key.length) return
     updateValues(key[0] as string, 'Reference');
     setDisplayValue(getValue(key[0]));
     setSelectKey(key); // 更新 selectKey 状态
@@ -109,7 +112,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
     if (nodes && nodes.length) {
       return nodes.map((node) => ({
         key: node.id,
-        label: node.name,
+        label: node.name.length > 10 ? node.name.slice(0, 10) + '...' : node.name,
         icon: returnImg(node.type),
         children: node.outputArgs
           ? [

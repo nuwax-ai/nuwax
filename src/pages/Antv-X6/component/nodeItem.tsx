@@ -401,7 +401,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
               </div>
               <Form.Item name="text">
                 <Input.TextArea
-                  placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
+                  placeholder="可以使用{{变量名}}的方式引用输入参数中的变量"
                   autoSize={{ minRows: 3, maxRows: 5 }}
                 />
               </Form.Item>
@@ -417,7 +417,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
               <Form.Item name="splits">
                 <Select
                   allowClear
-                  placeholder={'请选择连接符号'}
+                  placeholder={'请选择分割符号'}
                   mode={'multiple'}
                   maxTagCount={3}
                   dropdownRender={(menu) => (

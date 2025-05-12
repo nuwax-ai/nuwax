@@ -87,9 +87,11 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
             name="name"
             className={styles['form-item-style']}
             rules={[{ required: true, message: '请输入节点名称' }]}
+            style={{height: isEdit? '32px' :'24px'}}
           >
             {isEdit ? (
               <Input
+                value={title}
                 ref={inputRef}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -129,6 +131,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
             name="description"
             className={styles['form-item-style']}
             rules={[{ required: true, message: '请输入节点描述' }]}
+            
           >
             {isEditDesc ? (
               <Input.TextArea

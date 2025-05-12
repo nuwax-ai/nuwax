@@ -55,7 +55,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
   }, [params]);
 
   const updateTreeData = (newData: TreeNodeConfig[]) => {
-    setTreeData(newData);
+    setTreeData([...newData]);
     form.setFieldValue(inputItemName, newData);
     setIsModified(true);
   };
@@ -151,7 +151,9 @@ const CustomTree: React.FC<TreeFormProps> = ({
     field: string,
     value: any,
     type?: 'Input' | 'Reference',
+    dataType?: DataTypeEnum,
   ) => {
+    console.log(dataType, 'dataType');
     const updateRecursive = (data: TreeNodeConfig[]): TreeNodeConfig[] =>
       data.map((node) => {
         if (node.key === key) {
@@ -160,6 +162,9 @@ const CustomTree: React.FC<TreeFormProps> = ({
             [field]: value,
             bindValueType: type || node.bindValueType,
           };
+          if(dataType){
+            newObj.dataType = dataType;
+          }
           return newObj;
         }
         if (node.subArgs) {
@@ -169,6 +174,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
       });
 
     const newData = updateRecursive(treeData);
+    console.log(newData, 'newData');
     updateTreeData(newData);
   };
 
@@ -272,7 +278,6 @@ const CustomTree: React.FC<TreeFormProps> = ({
 
     const _dataType = CascaderValue(nodeData.dataType || undefined);
 
-    console.log(form.getFieldValue('outputType'))
     return (
       <div className="dis-left" style={{ width: '100%' }}>
         <div
@@ -310,8 +315,12 @@ const CustomTree: React.FC<TreeFormProps> = ({
               updateNodeField(nodeData.key!, 'dataType', CascaderChange(value));
             }}
             changeOnSelect={true}
-            className="tree-form-name"
-            disabled={nodeData.systemVariable|| (!isNotAdd&& form.getFieldValue('outputType')==='Text')}
+            disabled={
+              nodeData.systemVariable ||
+              isBody ||
+              (!isNotAdd && (form.getFieldValue('outputType') === 'Text')||form.getFieldValue('outputType')==='Markdown') ||
+              (nodeData.subArgs && nodeData.subArgs.length > 0)
+            }
             placement={'bottomLeft'}
             placeholder="请选择数据类型"
             style={{
@@ -321,6 +330,9 @@ const CustomTree: React.FC<TreeFormProps> = ({
               //   : undefined,
               backgroundColor: nodeData.systemVariable ? '#f5f5f5' : undefined,
             }}
+            className={
+              isBody ? 'tree-form-name is-body-cascader' : 'tree-form-name'
+            }
           />
           {/* {errors[`${nodeData.key}-type`] && (
             <div style={{ color: '#ff4d4f', fontSize: 12 }}>
@@ -335,8 +347,14 @@ const CustomTree: React.FC<TreeFormProps> = ({
             <InputOrReferenceFormTree
               referenceType={nodeData.bindValueType}
               value={nodeData.bindValue}
-              onChange={(value, type) => {
-                updateNodeField(nodeData.key!, 'bindValue', value, type);
+              onChange={(value, type, dataType) => {
+                updateNodeField(
+                  nodeData.key!,
+                  'bindValue',
+                  value,
+                  type,
+                  dataType,
+                );
               }}
             />
           </div>
@@ -461,11 +479,21 @@ const CustomTree: React.FC<TreeFormProps> = ({
                   { label: 'JSON', value: 'JSON' },
                 ]}
                 style={{ width: 160 }}
-                onChange={(e)=>{
-                  if(e!=='JSON'){
-                    form.setFieldValue('outputType', e)
-                    form.setFieldValue('outputArgs', [{name: 'output', description: '输出结果', dataType: DataTypeEnum.String, require: false, systemVariable: false, bindValueType: 'Input', bindValue: ''}])
-                    form.submit()
+                onChange={(e) => {
+                  if (e !== 'JSON') {
+                    form.setFieldValue('outputType', e);
+                    form.setFieldValue('outputArgs', [
+                      {
+                        name: 'output',
+                        description: '输出结果',
+                        dataType: DataTypeEnum.String,
+                        require: false,
+                        systemVariable: false,
+                        bindValueType: 'Input',
+                        bindValue: '',
+                      },
+                    ]);
+                    form.submit();
                   }
                 }}
               />
