@@ -11,17 +11,12 @@ import { Selection } from '@antv/x6-plugin-selection';
 import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
 // import { Transform } from '@antv/x6-plugin-transform';
-import { ChildNode } from '@/types/interfaces/graph';
-// import { Child, ChildNode } from '@/types/interfaces/graph';
-
+import { Child, ChildNode } from '@/types/interfaces/graph';
 import { adjustParentSize } from '@/utils/graph';
-import { message } from 'antd';
-// import { message, Modal } from 'antd';
+import { message, Modal } from 'antd';
 // 自定义类型定义
+import PlusIcon from '@/assets/svg/plus_icon.svg';
 import { GraphProp } from '@/types/interfaces/graph';
-import { createCurvePath } from './registerCustomNodes';
-// import StencilContent from './stencil';
-// import PlusIcon from '@/assets/svg/plus.svg';
 import {
   handleLoopEdge,
   handleSpecialNodeTypes,
@@ -31,6 +26,8 @@ import {
   updateEdgeArrows,
   validatePortConnection,
 } from '@/utils/graph';
+import { createCurvePath } from './registerCustomNodes';
+import StencilContent from './stencil';
 // import { PlusOutlined,} from '@ant-design/icons';
 /**
  * 初始化图形编辑器的函数，接收一个包含容器 ID 和改变抽屉内容回调的对象作为参数。
@@ -43,6 +40,7 @@ const initGraph = ({
   changeEdge,
   changeCondition,
   changeZoom,
+  createNodeToPortOrEdge,
 }: GraphProp) => {
   const graphContainer = document.getElementById(containerId);
   // 如果找不到容器，则抛出错误
@@ -57,21 +55,10 @@ const initGraph = ({
       {
         tagName: 'path',
         selector: 'wrap',
-        attrs: {
-          fill: 'none',
-          cursor: 'pointer',
-          stroke: 'transparent',
-          strokeLinecap: 'round',
-          pointerEvents: 'none', // 确保边不拦截事件
-        },
       },
       {
         tagName: 'path',
         selector: 'line',
-        attrs: {
-          fill: 'none',
-          pointerEvents: 'none',
-        },
       },
     ],
     connector: { name: 'curveConnector' }, // 使用自定义的connector
@@ -80,11 +67,13 @@ const initGraph = ({
         connection: true,
         strokeWidth: 10,
         strokeLinejoin: 'round',
+        cursor: 'pointer',
+        pointerEvents: 'none',
       },
       line: {
         connection: true,
-        stroke: '#5147FF',
         strokeWidth: 1,
+        pointerEvents: 'none',
         targetMarker: {
           name: 'classic',
           size: 6,
@@ -94,6 +83,31 @@ const initGraph = ({
   });
   // 注册自定义边类型
   // Graph.registerEdge('data-processing-curve', Edge, true);
+
+  // 通过边和连接桩创捷节点并添加连线
+  const createNodeAndEdge = (
+    sourceNode: ChildNode,
+    portId: string,
+    targetNode?: ChildNode,
+    edgeId?: string,
+  ) => {
+    const dragChild = (child: Child) => {
+      createNodeToPortOrEdge(child, sourceNode, portId, targetNode, edgeId);
+    };
+    const popoverContent = (
+      <div className="confirm-popover">
+        <StencilContent
+          dragChild={(child: Child) => {
+            dragChild(child);
+            Modal.destroyAll();
+          }}
+        />
+      </div>
+    );
+    Modal.confirm({
+      content: popoverContent,
+    });
+  };
 
   // 创建图形实例，并配置相关属性
   const graph = new Graph({
@@ -133,6 +147,9 @@ const initGraph = ({
               strokeDasharray: '5 5', // 示例：添加虚线效果
               strokeWidth: 1,
               targetMarker: null, // 初始不显示箭头
+              style: {
+                animation: 'ant-line 30s infinite linear',
+              },
             },
           },
         });
@@ -151,14 +168,17 @@ const initGraph = ({
         if (sourceCell === targetCell) {
           return false;
         }
-
+        const targetMagnetElement = targetMagnet.closest(
+          '.x6-port-body',
+        ) as HTMLElement;
         // 提取端口组信息 (关键修复：添加空值保护)
         const sourcePortGroup = sourceMagnet.getAttribute('port-group') || '';
-        const targetPortGroup = targetMagnet.getAttribute('port-group') || '';
+        const targetPortGroup =
+          targetMagnetElement.getAttribute('port-group') || '';
 
         // 获取源端口和目标端口的唯一标识符
         const sourcePortId = sourceMagnet.getAttribute('port');
-        const targetPortId = targetMagnet.getAttribute('port');
+        const targetPortId = targetMagnetElement.getAttribute('port');
         // 如果端口ID缺失，则阻止连接
         if (!sourcePortId || !targetPortId) {
           return false;
@@ -304,11 +324,6 @@ const initGraph = ({
   // 监听连接桩鼠标进入事件
   graph.on('node:mouseenter', ({ node }) => {
     const currentPorts = node.getPorts();
-    // 保存原始端口状态到节点数据
-    node.setData({
-      originalPorts: currentPorts.map((p) => ({ ...(p.attrs?.circle || {}) })),
-    });
-
     // 更新当前节点端口
     const updatedPorts = currentPorts.map((p) => ({
       ...p,
@@ -319,15 +334,17 @@ const initGraph = ({
           r: 8,
           stroke: '#5147FF',
           fill: '#5147FF',
-          // strokeWidth: 1,
         },
-        // icon: {
-        //   ...(p.attrs?.icon || {}),
-        //   width: 12, // 显示图标
-        //   height: 12,
-        //   opacity: 0.7, // 降低透明度减少干扰
-        //   pointerEvents: 'none', // 禁用图标交互
-        // },
+        icon: {
+          ...(p.attrs?.icon || {}),
+          width: 10, // 显示图标
+          height: 10,
+          x: -5, // 图标居中
+          y: -5,
+        },
+        hoverCircle: {
+          pointerEvents: 'none',
+        },
       },
     }));
     node.prop('ports/items', updatedPorts);
@@ -345,16 +362,72 @@ const initGraph = ({
           stroke: '#5147FF',
           fill: '#5147FF',
         },
-        // icon: {
-        //   ...(p.attrs?.icon || {}),
-        //   width: 0, // 隐藏图标
-        //   height: 0,
-        // },
+        icon: {
+          ...(p.attrs?.icon || {}),
+          width: 0, // 显示图标
+          height: 0,
+        },
+        hoverCircle: {
+          pointerEvents: 'visiblePainted',
+        },
       },
     }));
     node.prop('ports/items', updatedPorts);
   });
 
+  graph.on('node:port:click', ({ node, port }) => {
+    createNodeAndEdge(node.getData(), port as string);
+  });
+
+  // 在创建图形实例后添加事件监听
+  graph.on('edge:mouseenter', ({ edge }) => {
+    // 获取边缘的所有工具视图
+    edge.addTools([
+      {
+        name: 'button',
+        args: {
+          markup: [
+            {
+              tagName: 'circle',
+              selector: 'button',
+              attrs: {
+                r: 6,
+                stroke: '#5147FF',
+                strokeWidth: 1,
+                fill: '#5147FF',
+                cursor: 'pointer',
+              },
+            },
+            {
+              tagName: 'image',
+              selector: 'icon',
+              attrs: {
+                href: PlusIcon,
+                width: 8,
+                height: 8,
+                x: -4,
+                y: -4,
+                pointerEvents: 'none',
+              },
+            },
+          ],
+          distance: '50%',
+          offset: { x: 0, y: 0 },
+          onClick() {
+            const source = edge.getSourceCell()?.getData();
+            const target = edge.getTargetCell()?.getData();
+            const sourcePort = edge.getSourcePortId();
+            if (!source || !target) return;
+            createNodeAndEdge(source, sourcePort as string, target, edge.id);
+          },
+        },
+      },
+    ]);
+  });
+
+  graph.on('edge:mouseleave', ({ cell }) => {
+    cell.removeTools();
+  });
   // 监听节点的拖拽移动位置
   graph.on('node:moved', ({ node, e }) => {
     e.stopPropagation(); // 阻止事件冒泡
@@ -461,7 +534,6 @@ const initGraph = ({
     changeDrawer(null); // 调用回调函数以更新抽屉内容
     graph.cleanSelection();
   });
-
   // 监听边选中
   graph.on('edge:click', ({ edge }) => {
     edge.attr('line/stroke', '#37D0FF'); // 悬停时改为蓝色

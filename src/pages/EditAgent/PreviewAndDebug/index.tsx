@@ -173,7 +173,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
             <>
               {messageList?.map((item: MessageInfo) => (
                 <ChatView
-                  key={item.id}
+                  key={item?.id}
                   messageInfo={item}
                   roleInfo={roleInfo}
                   mode={'chat'}
