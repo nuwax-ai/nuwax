@@ -35,6 +35,7 @@
     "@tiptap/react": "^2.11.5",
     "@tiptap/starter-kit": "^2.11.5",
     "@umijs/max": "^4.4.2",
+    "@vscode/markdown-it-katex": "^1.1.1",
     "ahooks": "^3.8.4",
     "antd": "^5.4.0",
     "classnames": "2.0.0",

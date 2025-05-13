@@ -9,6 +9,7 @@ import type {
   AttachmentFile,
   ChatViewProps,
 } from '@/types/interfaces/conversationInfo';
+import mk from '@vscode/markdown-it-katex';
 import classNames from 'classnames';
 import markdown from 'markdown-it';
 import Prism from 'prismjs';
@@ -38,6 +39,8 @@ const md = markdown({
     return `<pre><code>${md.utils.escapeHtml(str)}</code></pre>`;
   },
 });
+
+md.use(mk);
 
 const ChatView: React.FC<ChatViewProps> = ({
   className,
