@@ -135,7 +135,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
               rootClassName={styles.input}
               onPressEnter={handlePressEnter}
               placeholder="直接输入指令；可通过回车发送"
-              autoSize={{ minRows: 1, maxRows: 3 }}
+              autoSize={{ minRows: 1, maxRows: 4 }}
             />
             {/*上传按钮*/}
             <Upload

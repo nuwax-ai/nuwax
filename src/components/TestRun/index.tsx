@@ -198,6 +198,8 @@ const TestRun: React.FC<TestRunProps> = ({
             ]}
           />
         );
+      case item.dataType === 'String':
+        return <Input />;
       default: {
         return <Input disabled={loading} />;
       }

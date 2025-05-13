@@ -116,7 +116,20 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
         <Form.Item
           name="name"
           label="名称"
-          rules={[{ required: true, message: '请输入工作流名称' }]}
+          rules={[
+            { required: true, message: '请输入工作流名称' },
+            {
+              validator(_, value) {
+                if (!value || value?.length <= 30) {
+                  return Promise.resolve();
+                }
+                if (value?.length > 30) {
+                  return Promise.reject(new Error('名称不能超过30个字符!'));
+                }
+                return Promise.reject(new Error('输入工作流名称!'));
+              },
+            },
+          ]}
         >
           <Input placeholder="输入工作流名称" showCount maxLength={30} />
         </Form.Item>
