@@ -101,6 +101,8 @@ export enum PluginSettingEnum {
   Params,
   // 调用方式
   Method_Call,
+  // 异步运行
+  Async_Run,
   // 卡片绑定
   Card_Bind,
 }

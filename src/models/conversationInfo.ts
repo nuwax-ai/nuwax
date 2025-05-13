@@ -58,8 +58,11 @@ export default () => {
   const [showType, setShowType] = useState<EditAgentShowType>(
     EditAgentShowType.Hide,
   );
-  // 调试结果
+  // 会话请求ID
   const [requestId, setRequestId] = useState<string>('');
+  // 会话消息ID
+  const messageIdRef = useRef<string>('');
+  // 调试结果
   const [finalResult, setFinalResult] = useState<ConversationFinalResult>();
   const needUpdateTopicRef = useRef<boolean>(true);
   // 展示台卡片列表
@@ -183,6 +186,8 @@ export default () => {
         // 深拷贝消息列表
         const list = [...messageList];
         const index = list.findIndex((item) => item.id === currentMessageId);
+        // 数组splice方法的第二个参数表示删除的数量，这里我们只需要删除一个元素，所以设置为1， 如果为0，则表示不删除元素。
+        let arraySpliceAction = 1;
         // 当前消息
         const currentMessage = list.find(
           (item) => item.id === currentMessageId,
@@ -197,6 +202,7 @@ export default () => {
         }
 
         let newMessage = null;
+
         // 更新UI状态...
         if (eventType === ConversationEventTypeEnum.PROCESSING) {
           newMessage = {
@@ -248,7 +254,7 @@ export default () => {
         }
         // MESSAGE事件
         if (eventType === ConversationEventTypeEnum.MESSAGE) {
-          const { text, type, ext } = data;
+          const { text, type, ext, id, finished } = data;
           // 思考think
           if (type === MessageModeEnum.THINK) {
             newMessage = {
@@ -272,11 +278,24 @@ export default () => {
               );
             }
           } else {
-            newMessage = {
-              ...currentMessage,
-              text: `${currentMessage.text}${text}`,
-              status: MessageStatusEnum.Incomplete,
-            };
+            // 工作流过程输出
+            if (!messageIdRef.current && finished) {
+              newMessage = {
+                ...currentMessage,
+                id,
+                text: `${currentMessage.text}${text}`,
+                status: MessageStatusEnum.Complete,
+              };
+              // 插入新的消息
+              arraySpliceAction = 0;
+            } else if (!messageIdRef.current || messageIdRef.current === id) {
+              messageIdRef.current = id;
+              newMessage = {
+                ...currentMessage,
+                text: `${currentMessage.text}${text}`,
+                status: MessageStatusEnum.Incomplete,
+              };
+            }
           }
         }
         // FINAL_RESULT事件
@@ -306,7 +325,7 @@ export default () => {
           };
         }
 
-        list.splice(index, 1, newMessage as MessageInfo);
+        list.splice(index, arraySpliceAction, newMessage as MessageInfo);
         return list;
       });
     }, 200);

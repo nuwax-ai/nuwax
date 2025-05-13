@@ -35,6 +35,8 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   // 入参配置
   const [configArgs, setConfigArgs] = useState<BindConfigWithSub[]>([]);
+  // 是否禁用button
+  const [disabled, setDisabled] = useState<boolean>(false);
 
   useEffect(() => {
     if (!!inputArgBindConfigs?.length) {
@@ -42,6 +44,8 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       // 默认展开的入参配置key
       const _expandedRowKeys = getActiveKeys(inputArgBindConfigs || []);
       setExpandedRowKeys(_expandedRowKeys);
+    } else {
+      setDisabled(true);
     }
   }, [inputArgBindConfigs]);
 
@@ -212,7 +216,8 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
         <Button
           type="primary"
           onClick={() => onSaveSet('inputArgBindConfigs', configArgs)}
-          disabled={!configArgs?.length}
+          className={cx({ [styles['btn-disabled']]: disabled })}
+          disabled={disabled}
         >
           保存
         </Button>

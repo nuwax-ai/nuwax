@@ -156,7 +156,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
           onExpand
           onOptimize
           onOptimizeClick={() => setShow(true)}
-          placeholder="系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输入参数中的变量"
+          placeholder="系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
         />
       </div>
       {/* 用户提示词 */}
@@ -167,7 +167,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
           onExpand
           // onOptimize
           // onOptimizeClick={() => setShow(true)}
-          placeholder="用户提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输入参数中的变量"
+          placeholder="用户提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
         />
       </div>
       {/* 输出参数 */}

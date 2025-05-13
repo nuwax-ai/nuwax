@@ -76,9 +76,7 @@ const TestRun: React.FC<TestRunProps> = ({
   formItemValue,
   testRunparams,
 }) => {
-  const { referenceList } = useModel('workflow');
-
-  const { testRun, setTestRun } = useModel('model');
+  const { testRun, setTestRun,referenceList } = useModel('model');
   // const [value, setValue] = useState('');
 
   const [form] = Form.useForm();
@@ -216,6 +214,7 @@ const TestRun: React.FC<TestRunProps> = ({
     return (
       <>
         {items.map((item, index) => {
+          if(!referenceList) return []
           const isReference = referenceList.argMap[item.bindValue];
           if (isReference) {
             item.dataType = isReference.dataType;
@@ -267,13 +266,13 @@ const TestRun: React.FC<TestRunProps> = ({
             {node.type === 'HTTPRequest' && (
               <>
                 {node.nodeConfig.body &&
-                  node.nodeConfig.body.length &&
+                  node.nodeConfig.body.length > 0 &&
                   renderFormItem('body', node.nodeConfig.body, form)}
                 {node.nodeConfig.headers &&
-                  node.nodeConfig.headers.length &&
+                  node.nodeConfig.headers.length > 0 &&
                   renderFormItem('headers', node.nodeConfig.headers, form)}
                 {node.nodeConfig.queries &&
-                  node.nodeConfig.queries.length &&
+                  node.nodeConfig.queries.length > 0 &&
                   renderFormItem('queries', node.nodeConfig.queries, form)}
                 {!node.nodeConfig.body?.length &&
                   !node.nodeConfig.headers?.length &&

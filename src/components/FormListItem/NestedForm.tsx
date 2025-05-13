@@ -55,7 +55,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
   }, [params]);
 
   const updateTreeData = (newData: TreeNodeConfig[]) => {
-    setTreeData(newData);
+    setTreeData([...newData]);
     form.setFieldValue(inputItemName, newData);
     setIsModified(true);
   };
@@ -151,7 +151,9 @@ const CustomTree: React.FC<TreeFormProps> = ({
     field: string,
     value: any,
     type?: 'Input' | 'Reference',
+    dataType?: DataTypeEnum,
   ) => {
+    console.log(dataType, 'dataType');
     const updateRecursive = (data: TreeNodeConfig[]): TreeNodeConfig[] =>
       data.map((node) => {
         if (node.key === key) {
@@ -160,6 +162,9 @@ const CustomTree: React.FC<TreeFormProps> = ({
             [field]: value,
             bindValueType: type || node.bindValueType,
           };
+          if(dataType){
+            newObj.dataType = dataType;
+          }
           return newObj;
         }
         if (node.subArgs) {
@@ -169,6 +174,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
       });
 
     const newData = updateRecursive(treeData);
+    console.log(newData, 'newData');
     updateTreeData(newData);
   };
 
@@ -272,7 +278,6 @@ const CustomTree: React.FC<TreeFormProps> = ({
 
     const _dataType = CascaderValue(nodeData.dataType || undefined);
 
-    console.log(form.getFieldValue('outputType'))
     return (
       <div className="dis-left" style={{ width: '100%' }}>
         <div
@@ -310,7 +315,6 @@ const CustomTree: React.FC<TreeFormProps> = ({
               updateNodeField(nodeData.key!, 'dataType', CascaderChange(value));
             }}
             changeOnSelect={true}
-            className="tree-form-name"
             disabled={nodeData.systemVariable|| (!isNotAdd&& form.getFieldValue('outputType')==='Text')}
             placement={'bottomLeft'}
             placeholder="请选择数据类型"
@@ -321,6 +325,9 @@ const CustomTree: React.FC<TreeFormProps> = ({
               //   : undefined,
               backgroundColor: nodeData.systemVariable ? '#f5f5f5' : undefined,
             }}
+            className={
+              isBody ? 'tree-form-name is-body-cascader' : 'tree-form-name'
+            }
           />
           {/* {errors[`${nodeData.key}-type`] && (
             <div style={{ color: '#ff4d4f', fontSize: 12 }}>
@@ -335,8 +342,14 @@ const CustomTree: React.FC<TreeFormProps> = ({
             <InputOrReferenceFormTree
               referenceType={nodeData.bindValueType}
               value={nodeData.bindValue}
-              onChange={(value, type) => {
-                updateNodeField(nodeData.key!, 'bindValue', value, type);
+              onChange={(value, type, dataType) => {
+                updateNodeField(
+                  nodeData.key!,
+                  'bindValue',
+                  value,
+                  type,
+                  dataType,
+                );
               }}
             />
           </div>
@@ -435,7 +448,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
         <span className="node-title-style">
           <span>{title}</span>
         </span>
-        <div className={'dis-left'}>
+        <div>
           {notShowTitle && (
             <Form.Item name="outputType" noStyle>
               <Select
@@ -471,26 +484,16 @@ const CustomTree: React.FC<TreeFormProps> = ({
               />
             </Form.Item>
           )}
-          {!isNotAdd && (
-            <Form.Item
-              shouldUpdate={(prev, next) =>
-                prev.outputType !== next.outputType ||
-                prev.notShowTitle !== next.notShowTitle
-              }
-            >
-              {({ getFieldValue }) =>
-                (!notShowTitle || getFieldValue('outputType') === 'JSON') && (
-                  <Button
-                    icon={<PlusOutlined />}
-                    size={'small'}
-                    onClick={addRootNode}
-                    className="ml-10"
-                    type="text"
-                  />
-                )
-              }
-            </Form.Item>
-          )}
+          {!isNotAdd &&
+            (!notShowTitle || form.getFieldValue('outputType') === 'JSON') && (
+              <Button
+                icon={<PlusOutlined />}
+                size={'small'}
+                onClick={addRootNode}
+                className="ml-10"
+                type="text"
+              />
+            )}
         </div>
       </div>
 

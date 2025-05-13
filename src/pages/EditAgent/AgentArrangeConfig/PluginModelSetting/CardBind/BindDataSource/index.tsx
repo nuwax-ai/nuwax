@@ -267,24 +267,27 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
                   value={info?.cardKey}
                   onDropdownVisibleChange={(open) => handleArgList(index, open)}
                   onClick={() => handleArgList(index, true)}
-                  dropdownRender={() => (
-                    <Tree
-                      treeData={dataSource}
-                      height={300}
-                      blockNode
-                      onClick={(e) => {
-                        e.stopPropagation();
-                      }}
-                      onSelect={(_, { node }) =>
-                        handleSelectDataSource(node, index)
-                      }
-                      fieldNames={{
-                        title: 'name',
-                        key: 'key',
-                        children: 'subArgs',
-                      }}
-                    />
-                  )}
+                  dropdownRender={() =>
+                    dataSource?.length > 0 ? (
+                      <Tree
+                        treeData={dataSource}
+                        height={300}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                        onSelect={(_, { node }) =>
+                          handleSelectDataSource(node, index)
+                        }
+                        fieldNames={{
+                          title: 'name',
+                          key: 'key',
+                          children: 'subArgs',
+                        }}
+                      />
+                    ) : (
+                      <Empty description="暂无数据" />
+                    )
+                  }
                   placeholder={info.placeholder || '请选择'}
                 />
               </div>

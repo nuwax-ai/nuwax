@@ -63,8 +63,10 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
     description: string;
   }
 
+
+
   const onFinish = (values: Values) => {
-    changeFoldWrap?.(values);
+    changeFoldWrap?.(values); // 调用父组件的回调函数并传递新的 title 和 description 值
     setIsEdit(false); // 关闭编辑状态
     setIsEditDesc(false); // 关闭编辑状态
   };
@@ -87,18 +89,22 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
             name="name"
             className={styles['form-item-style']}
             rules={[{ required: true, message: '请输入节点名称' }]}
+            style={{ height: isEdit ? '32px' : '24px' }}
           >
             {isEdit ? (
               <Input
+                value={title}
                 ref={inputRef}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     form.submit();
+                    setIsEdit(false);
                   }
                 }}
                 maxLength={14}
                 onBlur={() => {
                   form.submit();
+                  setIsEdit(false);
                 }}
               />
             ) : (
@@ -138,10 +144,12 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     form.submit();
+                    setIsEditDesc(false);
                   }
                 }}
                 onBlur={() => {
                   form.submit();
+                  setIsEditDesc(false);
                 }}
                 rows={2}
                 style={{ marginTop: '10px', resize: 'none' }}

@@ -8,10 +8,15 @@ import {
 } from '@/services/tempChat';
 import type { CreateTempChatModelProps } from '@/types/interfaces/space';
 import { AgentTempChatDto } from '@/types/interfaces/tempChat';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  ExclamationCircleFilled,
+  PlusOutlined,
+} from '@ant-design/icons';
 import {
   Button,
   Checkbox,
+  ConfigProvider,
   DatePicker,
   Empty,
   message,
@@ -19,6 +24,7 @@ import {
   Table,
   TableColumnsType,
 } from 'antd';
+import locale from 'antd/locale/zh_CN';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import moment, { Moment } from 'moment';
@@ -27,6 +33,10 @@ import CopyToClipboard from 'react-copy-to-clipboard';
 import { useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
+
+import 'dayjs/locale/zh-cn';
+
+dayjs.locale('zh-cn');
 
 const cx = classNames.bind(styles);
 
@@ -113,6 +123,7 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
     runUpdate({ id, agentId, [attr]: _value });
   };
 
+  // 删除会话链接
   const handleDel = (id: number, agentId: number) => {
     const _dataSource = dataSource?.filter(
       (item: AgentTempChatDto) => item.id !== id,
@@ -120,6 +131,19 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
     setDataSource(_dataSource || []);
 
     runDel(id, agentId);
+  };
+
+  // 删除确认
+  const handleDelConfirm = (id: number, agentId: number, chatUrl: string) => {
+    Modal.confirm({
+      title: '您确定要删除该链接吗?',
+      icon: <ExclamationCircleFilled />,
+      content: chatUrl,
+      okText: '确定',
+      maskClosable: true,
+      cancelText: '取消',
+      onOk: () => handleDel(id, agentId),
+    });
   };
 
   // 入参配置columns
@@ -146,7 +170,7 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
       title: '登录可用',
       dataIndex: 'requireLogin',
       key: 'requireLogin',
-      width: 80,
+      width: 85,
       align: 'center',
       render: (_: boolean, record: AgentTempChatDto) => (
         <div className={cx('h-full', 'flex', 'items-center', 'content-center')}>
@@ -164,16 +188,18 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
       key: 'expire',
       width: 210,
       render: (_, record) => (
-        <DatePicker
-          minDate={dayjs()}
-          value={record.expire ? dayjs(record.expire) : null}
-          allowClear={false}
-          showTime
-          format={'YYYY-MM-DD HH:mm:ss'}
-          onChange={(_, dateString) =>
-            handleUpdate(record.id, 'expire', dateString.toString())
-          }
-        />
+        <ConfigProvider locale={locale}>
+          <DatePicker
+            minDate={dayjs()}
+            value={record.expire ? dayjs(record.expire) : null}
+            allowClear={false}
+            showTime
+            format={'YYYY-MM-DD HH:mm:ss'}
+            onChange={(_, dateString) =>
+              handleUpdate(record.id, 'expire', dateString.toString())
+            }
+          />
+        </ConfigProvider>
       ),
     },
     {
@@ -184,7 +210,9 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center', 'content-center')}>
           <DeleteOutlined
-            onClick={() => handleDel(record.id, record.agentId)}
+            onClick={() =>
+              handleDelConfirm(record.id, record.agentId, record.chatUrl)
+            }
           />
         </div>
       ),
@@ -209,7 +237,7 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
         </div>
       }
       open={open}
-      width={700}
+      width={710}
       destroyOnClose
       footer={null}
       onCancel={handleCancel}

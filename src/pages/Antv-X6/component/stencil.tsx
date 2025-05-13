@@ -1,4 +1,3 @@
-import { ChildNode } from '@/types/interfaces/graph';
 // import { SearchOutlined } from '@ant-design/icons';
 // import { Input } from 'antd';
 import '../index.less';
@@ -7,15 +6,15 @@ import { Child } from '../type';
 // 定义组件的属性接口，规定了组件接受的属性及其类型
 interface Prop {
   // 当前正在展示的节点
-  foldWrapItem: ChildNode;
   // dragChild 是一个回调函数，用于处理拖拽开始事件。
   // 它接收 React 的原生 DragEvent 和当前被拖拽的子项 (Child) 对象作为参数。
   dragChild: (child: Child, e?: React.DragEvent<HTMLDivElement>) => void;
+  isLoop?: boolean;
   // 当前端口的名称
   portName?: string;
 }
 // StencilContent 组件用于渲染 stencil 内容，并允许用户拖拽子项（Child）到画布上。
-const StencilContent = ({ dragChild, foldWrapItem }: Prop) => {
+const StencilContent = ({ dragChild, isLoop }: Prop) => {
   /**
    * handleDragStart 处理拖拽开始事件。
    * 当用户开始拖拽时，它会调用父组件传递过来的 dragChild 回调，
@@ -49,9 +48,7 @@ const StencilContent = ({ dragChild, foldWrapItem }: Prop) => {
                 const isLoopControl = ['LoopBreak', 'LoopContinue'].includes(
                   child.type,
                 );
-                const shouldShow = isLoopControl
-                  ? foldWrapItem.type === 'Loop'
-                  : true;
+                const shouldShow = isLoopControl ? isLoop : true;
                 return (
                   shouldShow && (
                     <div

@@ -5,6 +5,7 @@ import { Dropdown, Input, Popover, Tag, Tree } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import './index.less';
+import { DataTypeEnum } from '@/types/enums/common';
 
 interface InputOrReferenceProps {
   placeholder?: string;
@@ -13,7 +14,7 @@ interface InputOrReferenceProps {
   referenceType?: 'Input' | 'Reference';
   isLoop?: boolean;
   value?: string;
-  onChange?: (value: string, type: 'Input' | 'Reference') => void;
+  onChange?: (value: string, type: 'Input' | 'Reference',dataType:DataTypeEnum) => void;
 }
 
 const InputOrReference: React.FC<InputOrReferenceProps> = ({
@@ -27,8 +28,8 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   const { referenceList, getValue, setIsModified } = useModel('workflow');
   const [displayValue, setDisplayValue] = useState('');
   const [inputValue, setInputValue] = useState(''); // 新增状态用于存储输入框的值
-  const updateValues = (newValue: string, valueType: 'Input' | 'Reference') => {
-    onChange?.(newValue, valueType);
+  const updateValues = (newValue: string, valueType: 'Input' | 'Reference',dataType:DataTypeEnum) => {
+    onChange?.(newValue, valueType,dataType);
     if (valueType === 'Reference') {
       setDisplayValue(newValue);
     }
@@ -50,7 +51,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
 
   // 清除引用值
   const handleTagClose = () => {
-    updateValues('', 'Input');
+    updateValues('', 'Input',DataTypeEnum.String);
     setDisplayValue('');
   };
   const renderTitle = (nodeData: InputAndOutConfig) => {
@@ -68,7 +69,12 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   };
   // 处理 TreeSelect 的选中事件
   const handleTreeSelectChange = (key: React.Key[]) => {
-    updateValues(key[0] as string, 'Reference');
+    const value = key[0]; // 获取选中的节点的 key 值
+    if(!value) return
+    // 获取当前选中的节点类型
+    const dataType = referenceList?.argMap?.[value]?.dataType; // 获取当前选中节点的dataType
+ 
+    updateValues(key[0] as string, 'Reference',dataType as DataTypeEnum);
     setDisplayValue(getValue(key[0]));
   };
   // 动态生成 Dropdown 的 items
@@ -76,7 +82,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
     if (nodes && nodes.length) {
       return nodes.map((node) => ({
         key: node.id,
-        label: node.name,
+        label: node.name.length > 10 ? node.name.slice(0, 10) + '...' : node.name,
         icon: returnImg(node.type),
         children: node.outputArgs
           ? [
@@ -85,6 +91,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
                 label: (
                   <Tree
                     onSelect={(keys) => {
+                      
                       handleTreeSelectChange(keys);
                     }}
                     defaultExpandAll
@@ -131,9 +138,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           className="input-or-reference-tag text-ellipsis"
           color="#C9CDD4"
         >
-          <Popover content={displayValue}>
-            <span className="tag-text-style">{displayValue}</span>
-          </Popover>
+          <span className="tag-text-style">{displayValue}</span>
         </Tag>
       ) : (
         <Input
@@ -146,7 +151,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
             setInputValue(e.target.value);
           }}
           onBlur={() => {
-            updateValues(inputValue, 'Input');
+            updateValues(inputValue, 'Input',DataTypeEnum.String);
           }}
         />
       )}

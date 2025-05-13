@@ -78,6 +78,14 @@ export interface GraphContainerProps {
   removeNode: (id: string) => void;
   // 改变画布大小
   changeZoom: (val: number) => void;
+  // 通过连接桩或者边创建节点
+  createNodeToPortOrEdge: (
+    child: Child,
+    sourceNode: ChildNode,
+    portId: string,
+    targetNode?: ChildNode,
+    edgeId?: string,
+  ) => void;
 }
 
 export interface GraphContainerRef {
@@ -99,6 +107,8 @@ export interface GraphContainerRef {
   selectNode: (id: string) => void;
   // 删除边
   deleteEdge: (id: string) => void;
+  // 创建新的边
+  createNewEdge: (source: string, target: string) => void;
   changeGraphZoom: (val: number) => void;
   drawGraph: () => void;
 }
@@ -143,4 +153,12 @@ export interface GraphProp {
   ) => void;
   changeCondition: (newData: ChildNode, targetNodeId?: string) => void;
   changeZoom: (val: number) => void;
+  // 通过连接桩或者边创建节点
+  createNodeToPortOrEdge: (
+    child: Child,
+    sourceNode: ChildNode,
+    portId: string,
+    targetNode?: ChildNode,
+    edgeId?: string,
+  ) => void;
 }

@@ -4,7 +4,7 @@ import useSendCode from '@/hooks/useSendCode';
 import { apiBindEmail } from '@/services/account';
 import { SendCodeEnum } from '@/types/enums/login';
 import type { BindEmailParams } from '@/types/interfaces/login';
-import { isValidEmail } from '@/utils/common';
+import {isValidPhone, isValidEmail } from '@/utils/common';
 import { customizeRequiredNoStarMark } from '@/utils/form';
 import { Button, Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
@@ -23,6 +23,8 @@ const SettingEmail: React.FC = () => {
   const [form] = Form.useForm<BindEmailParams>();
   const { setUserInfo } = useModel('userInfo');
 
+    // 获取当前登录方式,如果有@证明是邮箱登录,否则是手机登录
+    const phone = localStorage.getItem('PHONE')?.includes('@');
   // 绑定邮箱
   const { run, loading } = useRequest(apiBindEmail, {
     manual: true,
@@ -64,7 +66,7 @@ const SettingEmail: React.FC = () => {
 
   return (
     <div className={cx(styles.container)}>
-      <h3>邮箱绑定</h3>
+      <h3>{phone?'手机号绑定':'邮箱绑定'}</h3>
       <Form
         layout="vertical"
         form={form}
@@ -72,22 +74,29 @@ const SettingEmail: React.FC = () => {
         requiredMark={customizeRequiredNoStarMark}
         onFinish={handlerBindEmail}
       >
+ 
         <Form.Item
-          name="email"
-          label="邮箱地址"
+          name={phone ? "phone" : "email"}
+          label={phone ? "手机号码" : "邮箱地址"}
           rules={[
-            { required: true, message: '请输入邮箱地址' },
+            { required: true, message: phone ? '请输入手机号码' : '请输入邮箱地址' },
             {
               validator(_, value) {
-                if (!value || isValidEmail(value)) {
-                  return Promise.resolve();
+                if (!value) return Promise.resolve();
+                if (phone) {
+                  return isValidPhone(value)
+                    ? Promise.resolve()
+                    : Promise.reject(new Error('请输入正确的手机号码!'));
+                } else {
+                  return isValidEmail(value)
+                    ? Promise.resolve()
+                    : Promise.reject(new Error('请输入正确的邮箱地址!'));
                 }
-                return Promise.reject(new Error('请输入正确的邮箱地址!'));
               },
             },
           ]}
         >
-          <Input placeholder="请输入邮箱地址" />
+          <Input placeholder={phone ? "请输入手机号码" : "请输入邮箱地址"} />
         </Form.Item>
         <Form.Item
           name="code"
