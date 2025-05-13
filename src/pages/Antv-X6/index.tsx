@@ -203,7 +203,7 @@ const Workflow: React.FC = () => {
     if (id === 0) return;
     // 这里等0.5秒再执行
     // 如果选中后立刻删除了，那么就不需要再获取参数了
-    if (foldWrapItemRef.current.id === 0) return;
+    // if (foldWrapItemRef.current.id === 0) return;
     // 获取节点需要的引用参数
     const _res = await service.getOutputArgs(id);
     if (_res.code === Constant.success) {
@@ -342,7 +342,7 @@ const Workflow: React.FC = () => {
       } else {
         if (child !== null) {
           if (!visible) setVisible(true);
-          getRefernece(child.id);
+         
           return child;
         }
         setVisible(false);
@@ -961,7 +961,7 @@ const Workflow: React.FC = () => {
       const newFoldWrapItem = JSON.parse(JSON.stringify(foldWrapItem));
       form.resetFields();
       form.setFieldsValue(newFoldWrapItem.nodeConfig);
-
+      getRefernece(newFoldWrapItem.id);
       switch (foldWrapItem.type) {
         case 'HTTPRequest': {
           if (!newFoldWrapItem.nodeConfig.method) {
