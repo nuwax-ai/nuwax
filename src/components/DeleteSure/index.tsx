@@ -84,9 +84,6 @@ const DeleteSure: React.FC<DeleteSureProps> = ({
           name="inputStr"
           rules={[
             {
-              required: true,
-            },
-            {
               validator: (_, value) =>
                 value === sureText
                   ? Promise.resolve()
