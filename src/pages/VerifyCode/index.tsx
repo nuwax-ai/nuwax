@@ -33,11 +33,8 @@ const VerifyCode: React.FC = () => {
   const [codeString, setCodeString] = useState<string>('');
   const [errorString, setErrorString] = useState<string>('');
   const inputRef = useRef<InputRef | null>(null);
-  const { phoneOrEmail, areaCode, } = location.state;
+  const { phoneOrEmail, areaCode } = location.state;
   const { tenantConfigInfo, setTitle } = useModel('tenantConfigInfo');
-
-
-  
 
   const handleClick = () => {
     inputRef.current!.focus({
@@ -137,7 +134,7 @@ const VerifyCode: React.FC = () => {
     };
   }, [handleEnter]);
 
-  console.log( phoneOrEmail?.includes('@') )
+  console.log(phoneOrEmail?.includes('@'));
 
   return (
     <div
@@ -155,9 +152,15 @@ const VerifyCode: React.FC = () => {
         alt=""
       />
       <div className={cx(styles.inner, 'flex', 'flex-col', 'items-center')}>
-        <h3>{ phoneOrEmail?.includes('@') ?"输入邮箱验证码":"输入短信验证码"}</h3>
-        <p>{`验证码已发送至${ phoneOrEmail?.includes('@') ?'你的邮箱':'手机号'}`}</p>
-        <span className={styles.phone}>{`${ !phoneOrEmail?.includes('@') ?areaCode:''} ${phoneOrEmail}`}</span>
+        <h3>
+          {phoneOrEmail?.includes('@') ? '输入邮箱验证码' : '输入短信验证码'}
+        </h3>
+        <p>{`验证码已发送至${
+          phoneOrEmail?.includes('@') ? '你的邮箱' : '手机号'
+        }`}</p>
+        <span className={styles.phone}>{`${
+          !phoneOrEmail?.includes('@') ? areaCode : ''
+        } ${phoneOrEmail}`}</span>
         <div className={cx(styles['code-container'])}>
           {codes.map((code, index) => {
             return (

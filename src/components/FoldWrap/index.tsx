@@ -63,8 +63,6 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
     description: string;
   }
 
-
-
   const onFinish = (values: Values) => {
     changeFoldWrap?.(values); // 调用父组件的回调函数并传递新的 title 和 description 值
     setIsEdit(false); // 关闭编辑状态

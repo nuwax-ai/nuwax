@@ -162,7 +162,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
             [field]: value,
             bindValueType: type || node.bindValueType,
           };
-          if(dataType){
+          if (dataType) {
             newObj.dataType = dataType;
           }
           return newObj;
@@ -315,7 +315,10 @@ const CustomTree: React.FC<TreeFormProps> = ({
               updateNodeField(nodeData.key!, 'dataType', CascaderChange(value));
             }}
             changeOnSelect={true}
-            disabled={nodeData.systemVariable|| (!isNotAdd&& form.getFieldValue('outputType')==='Text')}
+            disabled={
+              nodeData.systemVariable ||
+              (!isNotAdd && form.getFieldValue('outputType') === 'Text')
+            }
             placement={'bottomLeft'}
             placeholder="请选择数据类型"
             style={{
@@ -474,11 +477,21 @@ const CustomTree: React.FC<TreeFormProps> = ({
                   { label: 'JSON', value: 'JSON' },
                 ]}
                 style={{ width: 160 }}
-                onChange={(e)=>{
-                  if(e!=='JSON'){
-                    form.setFieldValue('outputType', e)
-                    form.setFieldValue('outputArgs', [{name: 'output', description: '输出结果', dataType: DataTypeEnum.String, require: false, systemVariable: false, bindValueType: 'Input', bindValue: ''}])
-                    form.submit()
+                onChange={(e) => {
+                  if (e !== 'JSON') {
+                    form.setFieldValue('outputType', e);
+                    form.setFieldValue('outputArgs', [
+                      {
+                        name: 'output',
+                        description: '输出结果',
+                        dataType: DataTypeEnum.String,
+                        require: false,
+                        systemVariable: false,
+                        bindValueType: 'Input',
+                        bindValue: '',
+                      },
+                    ]);
+                    form.submit();
                   }
                 }}
               />

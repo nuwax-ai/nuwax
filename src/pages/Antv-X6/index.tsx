@@ -373,7 +373,6 @@ const Workflow: React.FC = () => {
   };
   // 点击组件，显示抽屉
   const changeDrawer = async (child: ChildNode | null) => {
-
     // 先完全重置表单
     if (foldWrapItemRef.current.id !== 0) {
       setIsModified(async (modified: boolean) => {
@@ -570,7 +569,7 @@ const Workflow: React.FC = () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
-     
+
       changeUpdateTime();
       // 如果传递了node,证明时循环节点下的子节点
       if (node) {

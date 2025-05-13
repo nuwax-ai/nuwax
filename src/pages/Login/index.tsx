@@ -6,15 +6,7 @@ import { LoginTypeEnum } from '@/types/enums/login';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
 import { isValidEmail, isValidPhone, validatePassword } from '@/utils/common';
 import { ExclamationCircleFilled } from '@ant-design/icons';
-import {
-  Button,
-  Checkbox,
-  Form,
-  FormProps,
-  Input,
-  Modal,
-  Select,
-} from 'antd';
+import { Button, Checkbox, Form, FormProps, Input, Modal, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useModel, useNavigate, useRequest } from 'umi';
@@ -36,7 +28,6 @@ const Login: React.FC = () => {
   const [form] = Form.useForm();
   const [formValues, setFormValues] = useState<LoginFieldType>();
 
-
   const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
 
   const { run } = useRequest(apiLogin, {
@@ -51,8 +42,6 @@ const Login: React.FC = () => {
       //message.success('登录成功');
     },
   });
-
-
 
   useEffect(() => {
     // 租户配置信息查询接口
@@ -156,7 +145,10 @@ const Login: React.FC = () => {
           rules={[
             {
               required: true,
-              message: tenantConfigInfo && tenantConfigInfo.authType === 3 ? '请输入手机号码!' : '请输入邮箱验证码!',
+              message:
+                tenantConfigInfo && tenantConfigInfo.authType === 3
+                  ? '请输入手机号码!'
+                  : '请输入邮箱验证码!',
             },
             {
               validator(_, value) {
@@ -234,7 +226,6 @@ const Login: React.FC = () => {
                 : '密码登录'}
             </a>
           </Form.Item>
-         
         </Form.Item>
       </Form>
 

@@ -106,10 +106,10 @@ const initGraph = ({
     );
     Modal.confirm({
       content: popoverContent,
-      footer:null,
+      footer: null,
       icon: null,
-      width:260,
-      maskClosable: true
+      width: 260,
+      maskClosable: true,
     });
   };
 
@@ -459,14 +459,14 @@ const initGraph = ({
           if (!item.isNode()) return;
           const childrenData = item.getData();
           if (childrenData.id === data.id) {
-            childrenData.nodeConfig.extension.x =x;
-            childrenData.nodeConfig.extension.y =y;
+            childrenData.nodeConfig.extension.x = x;
+            childrenData.nodeConfig.extension.y = y;
             changeCondition(childrenData, 'moved');
           }
         }
       }
 
-      const _size =parentNode.getSize();
+      const _size = parentNode.getSize();
 
       // 更新当前循环节点的大小和位置
       const parent = parentNode.getData();
@@ -475,39 +475,43 @@ const initGraph = ({
         parent.nodeConfig.extension.height = _size.height;
         parent.nodeConfig.extension.x = _position.x;
         parent.nodeConfig.extension.y = _position.y;
-        changeCondition(parent,'moved');
+        changeCondition(parent, 'moved');
       }
       return;
     }
 
-    if(data.type==='Loop'){
+    if (data.type === 'Loop') {
       const children = node.getChildren();
-      const innerNodes = data.innerNodes||[]
+      const innerNodes = data.innerNodes || [];
       if (children && children.length) {
-         // 找到循环节点中当前被移动的节点
-         for (let item  of children) {
+        // 找到循环节点中当前被移动的节点
+        for (let item of children) {
           // console.log(item.isNode())
-          if(!item.isNode()) return
-           const position =item.getPosition() ;
-           const childrenData = item.getData();
-           
-           childrenData.nodeConfig.extension.x =position.x;
-           childrenData.nodeConfig.extension.y =position.y;
+          if (!item.isNode()) return;
+          const position = item.getPosition();
+          const childrenData = item.getData();
+
+          childrenData.nodeConfig.extension.x = position.x;
+          childrenData.nodeConfig.extension.y = position.y;
           //  如果当前innerNodes没有这个节点，就添加进去
-          if(!innerNodes.find((node:ChildNode)=>node.id===childrenData.id)){
-            innerNodes.push(childrenData)
-          }else{
+          if (
+            !innerNodes.find((node: ChildNode) => node.id === childrenData.id)
+          ) {
+            innerNodes.push(childrenData);
+          } else {
             // 如果当前innerNodes有这个节点，就更新
-            const index = innerNodes.findIndex((node:ChildNode)=>node.id===childrenData.id)
-            innerNodes[index]=childrenData;
+            const index = innerNodes.findIndex(
+              (node: ChildNode) => node.id === childrenData.id,
+            );
+            innerNodes[index] = childrenData;
           }
-         }
+        }
       }
       data.innerNodes = innerNodes;
-      data.nodeConfig.extension.x=x;
-      data.nodeConfig.extension.y=y;
-      changeCondition(data, 'moved')
-      return
+      data.nodeConfig.extension.x = x;
+      data.nodeConfig.extension.y = y;
+      changeCondition(data, 'moved');
+      return;
     }
 
     // node.prop('zIndex', 99);

@@ -22,10 +22,10 @@ import {
   Slider,
 } from 'antd';
 import { useEffect, useState } from 'react';
+import { useParams } from 'umi';
 import './index.less';
 import ModelListItem from './listItem/index';
 import { ModelSettingProp } from './type';
-import {  useParams } from 'umi';
 
 // 类型定义需要移到组件外部或使用内联类型
 interface ContentProps {

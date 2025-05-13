@@ -21,8 +21,10 @@ import {
   Empty,
   message,
   Modal,
+  QRCode,
   Table,
   TableColumnsType,
+  Tooltip,
 } from 'antd';
 import locale from 'antd/locale/zh_CN';
 import classNames from 'classnames';
@@ -49,6 +51,10 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
 }) => {
   // 临时会话链接列表
   const [dataSource, setDataSource] = useState<AgentTempChatDto[]>([]);
+  // 二维码链接
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  // 二维码弹窗是否显示
+  const [qrCodeVisible, setQrCodeVisible] = useState<boolean>(false);
 
   // 新增智能体临时会话链接接口
   const { run: runTempChatCreate, loading } = useRequest(apiTempChatCreate, {
@@ -146,6 +152,12 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
     });
   };
 
+  // 显示二维码弹窗
+  const handleQrCodeVisible = (url: string) => {
+    setQrCodeVisible(true);
+    setQrCodeUrl(url);
+  };
+
   // 入参配置columns
   const inputColumns: TableColumnsType<AgentTempChatDto> = [
     {
@@ -153,16 +165,33 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
       dataIndex: 'chatUrl',
       key: 'chatUrl',
       className: 'flex',
-      render: (value: string) => (
-        <div className={cx('flex', 'items-center', 'overflow-hide')}>
+      render: (value: string, record) => (
+        <div
+          className={cx(
+            'flex',
+            'items-center',
+            'overflow-hide',
+            styles['url-box'],
+          )}
+        >
           <EllipsisTooltip text={value} className={cx(styles['chat-url'])} />
           <CopyToClipboard text={value || ''} onCopy={handleCopy}>
+            <Tooltip title="复制">
+              <img
+                className={cx('cursor-pointer', styles.img)}
+                src={copyImage}
+                alt=""
+              />
+            </Tooltip>
+          </CopyToClipboard>
+          <Tooltip title="二维码">
             <img
               className={cx('cursor-pointer', styles.img)}
-              src={copyImage}
-              alt=""
+              src={record.qrCodeUrl}
+              onClick={() => handleQrCodeVisible(record.qrCodeUrl)}
+              alt="二维码"
             />
-          </CopyToClipboard>
+          </Tooltip>
         </div>
       ),
     },
@@ -219,53 +248,64 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
     },
   ];
 
+  // 关闭弹窗
   const handleCancel = () => {
     setDataSource([]);
     onCancel();
   };
 
   return (
-    <Modal
-      classNames={{
-        content: cx(styles.container),
-        header: cx(styles.container),
-        body: cx(styles.container),
-      }}
-      title={
-        <div className={cx('text-ellipsis')} style={{ width: '400px' }}>
-          {name}-临时会话链接管理
-        </div>
-      }
-      open={open}
-      width={710}
-      destroyOnClose
-      footer={null}
-      onCancel={handleCancel}
-    >
-      <Table<AgentTempChatDto>
-        className={cx(styles['table-wrap'])}
-        columns={inputColumns}
-        dataSource={dataSource}
-        pagination={false}
-        loading={loadingList}
-        virtual
-        scroll={{
-          y: 450,
+    <>
+      <Modal
+        classNames={{
+          content: cx(styles.container),
+          header: cx(styles.container),
+          body: cx(styles.container),
         }}
-        locale={{
-          emptyText: <Empty description="暂无数据" />,
-        }}
-        footer={() => (
-          <Button
-            onClick={() => runTempChatCreate(agentId)}
-            loading={loading}
-            icon={<PlusOutlined />}
-          >
-            新增链接
-          </Button>
-        )}
+        title={
+          <div className={cx('text-ellipsis')} style={{ width: '400px' }}>
+            {name}-临时会话链接管理
+          </div>
+        }
+        open={open}
+        width={710}
+        destroyOnClose
+        footer={null}
+        onCancel={handleCancel}
+      >
+        <Table<AgentTempChatDto>
+          className={cx(styles['table-wrap'])}
+          columns={inputColumns}
+          dataSource={dataSource}
+          pagination={false}
+          loading={loadingList}
+          virtual
+          scroll={{
+            y: 450,
+          }}
+          locale={{
+            emptyText: <Empty description="暂无数据" />,
+          }}
+          footer={() => (
+            <Button
+              onClick={() => runTempChatCreate(agentId)}
+              loading={loading}
+              icon={<PlusOutlined />}
+            >
+              新增链接
+            </Button>
+          )}
+        />
+      </Modal>
+      <Modal
+        open={qrCodeVisible}
+        destroyOnClose
+        footer={null}
+        className={styles['qr-code-modal']}
+        onCancel={() => setQrCodeVisible(false)}
+        modalRender={() => <QRCode size={500} value={qrCodeUrl || '-'} />}
       />
-    </Modal>
+    </>
   );
 };
 

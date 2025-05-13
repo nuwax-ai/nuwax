@@ -130,7 +130,9 @@ export class GeneralNode extends React.Component<NodeProps> {
             </div>
             <div className="dis-left">
               <span className="text-right qa-title-style">提问内容</span>
-              <span className='question-content-style'>{data.nodeConfig.question || '未配置提问内容'}</span>
+              <span className="question-content-style">
+                {data.nodeConfig.question || '未配置提问内容'}
+              </span>
             </div>
             <div className="dis-left">
               <span className="text-right qa-title-style">问答类型</span>
@@ -178,7 +180,7 @@ export class GeneralNode extends React.Component<NodeProps> {
 
 // 添加循环体节点
 // 优化后的 LoopNode 组件
-export const LoopNode: React.FC<NodeProps> = ({ node,graph }) => {
+export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
   const data = node.getData<ChildNode>();
   let isSelected = graph.isSelected(node); // 判断是否选中
   const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(

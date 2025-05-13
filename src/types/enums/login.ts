@@ -3,7 +3,6 @@ export enum LoginTypeEnum {
   Password,
   // 手机验证码登录、注册
   Code,
-  
 }
 
 export enum LoginMethodEnum {
@@ -11,7 +10,6 @@ export enum LoginMethodEnum {
   Phone,
   // 邮箱登录
   Email,
-  
 }
 
 // 发送验证码枚举
