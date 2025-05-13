@@ -130,7 +130,9 @@ export class GeneralNode extends React.Component<NodeProps> {
             </div>
             <div className="dis-left">
               <span className="text-right qa-title-style">提问内容</span>
-              <span>{data.nodeConfig.question || '未配置提问内容'}</span>
+              <span className="question-content-style">
+                {data.nodeConfig.question || '未配置提问内容'}
+              </span>
             </div>
             <div className="dis-left">
               <span className="text-right qa-title-style">问答类型</span>

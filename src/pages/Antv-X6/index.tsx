@@ -202,9 +202,8 @@ const Workflow: React.FC = () => {
   const getRefernece = async (id: number) => {
     if (id === 0) return;
     // 这里等0.5秒再执行
-    await new Promise((resolve) => {
-      setTimeout(resolve, 500);
-    });
+    // 如果选中后立刻删除了，那么就不需要再获取参数了
+    if (foldWrapItemRef.current.id === 0) return;
     // 获取节点需要的引用参数
     const _res = await service.getOutputArgs(id);
     if (_res.code === Constant.success) {
@@ -450,6 +449,15 @@ const Workflow: React.FC = () => {
     setVisible(false);
     // if(Number(id)===Number(foldWrapItem.id)){
     // }
+    setFoldWrapItem({
+      id: 0,
+      description: '',
+      workflowId: workflowId,
+      type: NodeTypeEnum.Start,
+      nodeConfig: {},
+      name: '',
+      icon: '',
+    });
     const _res = await service.deleteNode(id);
     if (_res.code === Constant.success) {
       // console.log(graphRef.current)
@@ -457,15 +465,7 @@ const Workflow: React.FC = () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
-      setFoldWrapItem({
-        id: 0,
-        description: '',
-        workflowId: workflowId,
-        type: NodeTypeEnum.Start,
-        nodeConfig: {},
-        name: '',
-        icon: '',
-      });
+
       changeUpdateTime();
       // 如果传递了node,证明时循环节点下的子节点
       if (node) {
