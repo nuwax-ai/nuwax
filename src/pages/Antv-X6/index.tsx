@@ -342,7 +342,7 @@ const Workflow: React.FC = () => {
       } else {
         if (child !== null) {
           if (!visible) setVisible(true);
-          getRefernece(child.id);
+         
           return child;
         }
         setVisible(false);
@@ -961,7 +961,7 @@ const Workflow: React.FC = () => {
       const newFoldWrapItem = JSON.parse(JSON.stringify(foldWrapItem));
       form.resetFields();
       form.setFieldsValue(newFoldWrapItem.nodeConfig);
-
+      getRefernece(newFoldWrapItem.id);
       switch (foldWrapItem.type) {
         case 'HTTPRequest': {
           if (!newFoldWrapItem.nodeConfig.method) {
