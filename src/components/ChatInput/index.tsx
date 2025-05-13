@@ -152,7 +152,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 type: 'tmp',
               }}
               showUploadList={false}
-              // beforeUpload={beforeUpload ?? beforeUploadDefault}
             >
               <span
                 className={cx(
