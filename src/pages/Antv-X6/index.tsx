@@ -481,16 +481,17 @@ const Workflow: React.FC = () => {
         const { sourceNode, portId, targetNode, edgeId } =
           currentNodeRef.current;
         const id = portId.split('-')[0];
-        const uuid = portId.split('-')[1];
+
         const isOut = portId.endsWith('out');
         if (portId.length > 15) {
           // 通过中间的数据找到对应的index
           const _params = handleSpecialNodesNextIndex(
             sourceNode,
-            uuid,
+            portId,
             _res.data.id,
             targetNode,
           );
+          console.log(_params);
           changeNode(_params as ChildNode);
           const sourcePortId = portId.split('-').slice(0, -1).join('-');
           graphRef.current.createNewEdge(sourcePortId, _res.data.id.toString());
@@ -998,6 +999,7 @@ const Workflow: React.FC = () => {
     child: Child,
     sourceNode: ChildNode,
     portId: string,
+    nodeWidth: number,
     targetNode?: ChildNode,
     edgeId?: string,
   ) => {
@@ -1006,11 +1008,17 @@ const Workflow: React.FC = () => {
       x: number;
       y: number;
     };
+
     // 根据portid的最后的out和in来判定当前新增的节点是source还是target
     const isOut = portId.endsWith('out');
 
+    // 计算新增节点的位置
+    const computedX = isOut
+      ? _position.x + nodeWidth + 100
+      : _position.x - nodeWidth - 100;
+
     const dragPosition = {
-      x: _position.x + (isOut ? 300 : -300),
+      x: computedX,
       y: _position?.y,
     };
     // 首先创建节点

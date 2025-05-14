@@ -83,6 +83,7 @@ export interface GraphContainerProps {
     child: Child,
     sourceNode: ChildNode,
     portId: string,
+    nodeWidth: number,
     targetNode?: ChildNode,
     edgeId?: string,
   ) => void;
@@ -158,6 +159,7 @@ export interface GraphProp {
     child: Child,
     sourceNode: ChildNode,
     portId: string,
+    nodeWidth: number,
     targetNode?: ChildNode,
     edgeId?: string,
   ) => void;
