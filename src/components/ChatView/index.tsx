@@ -11,8 +11,9 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import mk from '@vscode/markdown-it-katex';
 import classNames from 'classnames';
-import markdown from 'markdown-it';
+import markdownIt from 'markdown-it';
 import Prism from 'prismjs';
+import 'prismjs/themes/prism.css';
 import React, { useMemo } from 'react';
 import { useModel } from 'umi';
 import ChatBottomMore from './ChatBottomMore';
@@ -22,7 +23,7 @@ import RunOver from './RunOver';
 
 const cx = classNames.bind(styles);
 
-const md = markdown({
+const md = markdownIt({
   html: true,
   breaks: true,
   linkify: true,

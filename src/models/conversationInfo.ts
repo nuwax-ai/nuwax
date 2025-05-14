@@ -185,11 +185,12 @@ export default () => {
         }
         // 深拷贝消息列表
         const list = [...messageList];
-        const index = list.findIndex((item) => item.id === currentMessageId);
+        console.log(messageList, 'messageList', list);
+        const index = list?.findIndex((item) => item.id === currentMessageId);
         // 数组splice方法的第二个参数表示删除的数量，这里我们只需要删除一个元素，所以设置为1， 如果为0，则表示不删除元素。
         let arraySpliceAction = 1;
         // 当前消息
-        const currentMessage = list.find(
+        const currentMessage = list?.find(
           (item) => item.id === currentMessageId,
         ) as MessageInfo;
         // 消息不存在时
@@ -279,7 +280,10 @@ export default () => {
             }
           } else {
             // 工作流过程输出
-            if (!messageIdRef.current && finished) {
+            if (
+              (!messageIdRef.current || messageIdRef.current !== id) &&
+              finished
+            ) {
               newMessage = {
                 ...currentMessage,
                 id,
@@ -288,7 +292,7 @@ export default () => {
               };
               // 插入新的消息
               arraySpliceAction = 0;
-            } else if (!messageIdRef.current || messageIdRef.current === id) {
+            } else {
               messageIdRef.current = id;
               newMessage = {
                 ...currentMessage,
