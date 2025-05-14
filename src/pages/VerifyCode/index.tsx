@@ -33,7 +33,8 @@ const VerifyCode: React.FC = () => {
   const [codeString, setCodeString] = useState<string>('');
   const [errorString, setErrorString] = useState<string>('');
   const inputRef = useRef<InputRef | null>(null);
-  const { phoneOrEmail, areaCode, authType } = location.state;
+  const { phoneOrEmail, areaCode, authType, captchaVerifyParam } =
+    location.state;
   const { tenantConfigInfo, setTitle } = useModel('tenantConfigInfo');
 
   const handleClick = () => {
@@ -93,12 +94,12 @@ const VerifyCode: React.FC = () => {
   // 发送验证码
   const handleSendCode = () => {
     handleCount();
-    const isPhone = authType === '1';
+    const isPhone = authType === 1;
     const _params = {
-      type: SendCodeEnum.RESET_PASSWORD,
+      type: SendCodeEnum.LOGIN_OR_REGISTER,
       [isPhone ? 'phone' : 'email']: phoneOrEmail,
+      ...(captchaVerifyParam && { captchaVerifyParam }),
     };
-    runSendCode(_params);
     runSendCode(_params);
   };
 

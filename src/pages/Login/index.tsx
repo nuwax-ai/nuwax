@@ -1,3 +1,4 @@
+import AliyunCaptcha from '@/components/AliyunCaptcha';
 import ConditionRender from '@/components/ConditionRender';
 import SiteFooter from '@/components/SiteFooter';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
@@ -8,10 +9,9 @@ import { isValidEmail, isValidPhone, validatePassword } from '@/utils/common';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { Button, Checkbox, Form, FormProps, Input, Modal, Select } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
-import ModalSliderCaptcha from './ModalSliderCaptcha';
 import SiteProtocol from './SiteProtocol';
 
 const cx = classNames.bind(styles);
@@ -20,15 +20,28 @@ const { confirm } = Modal;
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const [open, setOpen] = useState<boolean>(false);
-  const [loginType, setLoginType] = useState<LoginTypeEnum>(
-    LoginTypeEnum.Password,
-  );
+  const [loginType, setLoginType] = useState<LoginTypeEnum>(LoginTypeEnum.Code);
   const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
-  const [formValues, setFormValues] = useState<LoginFieldType>();
-
+  const [needAliyuanCaptcha, setNeedAliyuanCaptcha] = useState<boolean>(false);
   const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
+  // 使用 useRef 存储最新的 submittable 值
+  const submittableRef = useRef<boolean>(false);
+  const captchaVerifyParamRef = useRef<string>('');
+
+  // Watch all values
+  const values = Form.useWatch([], form);
+
+  useEffect(() => {
+    form
+      .validateFields({ validateOnly: true })
+      .then(() => {
+        submittableRef.current = true;
+      })
+      .catch(() => {
+        submittableRef.current = false;
+      });
+  }, [form, values]);
 
   const { run } = useRequest(apiLogin, {
     manual: true,
@@ -49,36 +62,48 @@ const Login: React.FC = () => {
   }, []);
 
   // 账号密码登录
-  const handlerPasswordLogin = () => {
+  const handlerPasswordLogin = (captchaVerifyParam: string) => {
     // 为了避免 formValues 为 undefined 的情况，添加空值检查
-    const { phoneOrEmail, areaCode, password } = formValues || {};
-    run({ phoneOrEmail, areaCode, password });
+    const { phoneOrEmail, areaCode, password } = form.getFieldsValue() || {};
+    run({ phoneOrEmail, areaCode, password, captchaVerifyParam });
   };
 
   // 验证码登录
-  const handlerCodeLogin = () => {
+  const handlerCodeLogin = (captchaVerifyParam: string) => {
     // 为了避免 formValues 为 undefined 的情况，添加空值检查
-    const { phoneOrEmail, areaCode } = formValues || {};
+    const { phoneOrEmail, areaCode } = form.getFieldsValue() || {};
     history.push('/verify-code', {
       phoneOrEmail,
       areaCode,
       authType: tenantConfigInfo.authType,
+      captchaVerifyParam,
     });
   };
 
   const handlerSuccess = () => {
-    setOpen(false);
+    // 使用 ref 中存储的最新值，而不是闭包中捕获的旧值
+    if (!submittableRef.current || !checked) {
+      console.log('submit condition not met:', {
+        submittable: submittableRef.current,
+        checked,
+      });
+      return;
+    }
+    console.log(
+      'handlerSuccess running with submittable:',
+      submittableRef.current,
+    );
+    const captchaVerifyParam = captchaVerifyParamRef.current;
     if (loginType === LoginTypeEnum.Password) {
-      handlerPasswordLogin();
+      handlerPasswordLogin(captchaVerifyParam);
     } else {
-      handlerCodeLogin();
+      handlerCodeLogin(captchaVerifyParam);
     }
   };
 
-  const onFinish: FormProps<LoginFieldType>['onFinish'] = (values) => {
-    setFormValues(values);
+  const onFinish: FormProps<LoginFieldType>['onFinish'] = () => {
     if (!checked) {
-      confirm({
+      return confirm({
         title: '服务协议及隐私保护',
         icon: <ExclamationCircleFilled />,
         content: <SiteProtocol />,
@@ -86,11 +111,12 @@ const Login: React.FC = () => {
         cancelText: '不同意',
         onOk() {
           setChecked(true);
-          setOpen(true);
+          handlerSuccess();
         },
       });
-    } else {
-      setOpen(true);
+    }
+    if (!needAliyuanCaptcha) {
+      handlerSuccess();
     }
   };
 
@@ -101,7 +127,7 @@ const Login: React.FC = () => {
         : LoginTypeEnum.Password;
     setLoginType(type);
   };
-
+  const captchaButtonId = 'aliyun-captcha-button';
   const selectBefore = (
     <Form.Item name="areaCode" noStyle>
       <Select style={{ width: 80 }}>
@@ -109,6 +135,19 @@ const Login: React.FC = () => {
       </Select>
     </Form.Item>
   );
+  useEffect(() => {
+    if (
+      tenantConfigInfo &&
+      tenantConfigInfo.captchaSceneId !== '' &&
+      tenantConfigInfo.captchaPrefix !== '' &&
+      tenantConfigInfo.openCaptcha
+    ) {
+      setNeedAliyuanCaptcha(true);
+    } else {
+      setNeedAliyuanCaptcha(false);
+    }
+  }, [tenantConfigInfo]);
+
   return (
     <div
       className={cx(
@@ -216,6 +255,7 @@ const Login: React.FC = () => {
               block
               type="primary"
               htmlType="submit"
+              id="aliyun-captcha-button"
             >
               {loginType === LoginTypeEnum.Password ? '登录' : '下一步'}
             </Button>
@@ -229,12 +269,21 @@ const Login: React.FC = () => {
           </Form.Item>
         </Form.Item>
       </Form>
-
-      <ModalSliderCaptcha
+      {needAliyuanCaptcha && (
+        <AliyunCaptcha
+          config={tenantConfigInfo}
+          doAction={(captchaVerifyParam) => {
+            captchaVerifyParamRef.current = captchaVerifyParam;
+            handlerSuccess();
+          }}
+          elementId={captchaButtonId}
+        />
+      )}
+      {/* <ModalSliderCaptcha
         open={open}
         onCancel={setOpen}
         onSuccess={handlerSuccess}
-      />
+      /> */}
       <SiteFooter />
     </div>
   );
