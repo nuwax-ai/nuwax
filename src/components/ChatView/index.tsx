@@ -103,7 +103,7 @@ const ChatView: React.FC<ChatViewProps> = ({
   return (
     <div className={cx(styles.container, 'flex', className)}>
       <img className={cx(styles.avatar)} src={info?.avatar as string} alt="" />
-      <div className={cx('flex-1')}>
+      <div className={cx('flex-1', 'overflow-hide')}>
         <div className={cx(styles.author)}>{info?.name}</div>
         {!!messageInfo?.attachments?.length && (
           <AttachFile files={messageInfo?.attachments as AttachmentFile[]} />
