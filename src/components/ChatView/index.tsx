@@ -11,6 +11,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
 import markdown from 'markdown-it';
+import Prism from 'prismjs';
 import React, { useMemo } from 'react';
 import { useModel } from 'umi';
 import ChatBottomMore from './ChatBottomMore';
@@ -24,6 +25,18 @@ const md = markdown({
   html: true,
   breaks: true,
   linkify: true,
+  highlight: function (str: string, lang: string | undefined): string {
+    if (lang && Prism.languages[lang]) {
+      try {
+        return `<pre class="language-${lang}"><code class="language-${lang}">${Prism.highlight(
+          str,
+          Prism.languages[lang],
+          lang,
+        )}</code></pre>`;
+      } catch (__) {}
+    }
+    return `<pre><code>${md.utils.escapeHtml(str)}</code></pre>`;
+  },
 });
 
 const ChatView: React.FC<ChatViewProps> = ({

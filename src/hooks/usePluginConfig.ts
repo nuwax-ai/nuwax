@@ -3,7 +3,7 @@ import {
   PLUGIN_OUTPUT_CONFIG,
 } from '@/constants/space.constants';
 import { apiPluginConfigHistoryList } from '@/services/plugin';
-import { DataTypeEnum } from '@/types/enums/common';
+import { DataTypeEnum, PublishStatusEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type {
   PluginHttpUpdateParams,
@@ -17,6 +17,7 @@ import {
   updateNodeField,
 } from '@/utils/deepNode';
 import cloneDeep from 'lodash/cloneDeep';
+import moment from 'moment';
 import React, { useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
@@ -201,6 +202,21 @@ const usePluginConfig = () => {
     setOutputConfigArgs(list);
   };
 
+  // 发布插件
+  const handleConfirmPublishPlugin = () => {
+    setOpenModal(false);
+    // 同步发布时间和修改时间
+    const time = moment().toISOString();
+    // 更新插件配置信息
+    const _pluginInfo = {
+      ...pluginInfo,
+      publishDate: time,
+      modified: time,
+      publishStatus: PublishStatusEnum.Published,
+    } as PluginInfo;
+    setPluginInfo(_pluginInfo);
+  };
+
   return {
     isModalOpen,
     setIsModalOpen,
@@ -234,6 +250,7 @@ const usePluginConfig = () => {
     handleInputConfigAdd,
     handleOutputConfigAdd,
     handleOutputConfigArgs,
+    handleConfirmPublishPlugin,
   };
 };
 

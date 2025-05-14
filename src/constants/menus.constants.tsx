@@ -16,6 +16,7 @@ import {
   UserAvatarEnum,
   UserOperatorAreaEnum,
 } from '@/types/enums/menus';
+import { UserOperateAreaItemType } from '@/types/interfaces/layouts';
 import {
   PoweroffOutlined,
   SettingOutlined,
@@ -57,7 +58,7 @@ export const TABS = [
 ];
 
 // 用户操作区域
-export const USER_OPERATE_AREA = [
+export const USER_OPERATE_AREA: UserOperateAreaItemType[] = [
   {
     title: '文档',
     icon: <ICON_FILE />,
@@ -111,6 +112,7 @@ export const SETTING_ACTIONS = [
     type: SettingActionEnum.Email_Bind,
     label: '邮箱绑定',
   },
+
   {
     type: SettingActionEnum.Reset_Password,
     label: '重置密码',

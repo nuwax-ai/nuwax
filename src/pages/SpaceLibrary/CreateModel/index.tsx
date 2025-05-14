@@ -17,7 +17,11 @@ import {
   ModelTypeEnum,
 } from '@/types/enums/modelConfig';
 import type { CreateModelProps } from '@/types/interfaces/library';
-import type { ModelConfigInfo, ModelFormData } from '@/types/interfaces/model';
+import type {
+  ModelConfigInfo,
+  ModelFormData,
+  ModelSaveParams,
+} from '@/types/interfaces/model';
 import { customizeRequiredMark } from '@/utils/form';
 import { DeleteOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import {
@@ -52,7 +56,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [visible, setVisible] = useState<boolean>(false);
-  const [modelType, setModelType] = useState<ModelTypeEnum | undefined>();
+  const [modelType, setModelType] = useState<ModelTypeEnum>();
   // const [shouldRenderDimension, setShouldRenderDimension] = useState(false);
   // const [networkType, setNetworkType] = useState<ModelNetworkTypeEnum>(
   //   ModelNetworkTypeEnum.Internet,
@@ -78,13 +82,14 @@ const CreateModel: React.FC<CreateModelProps> = ({
   const { run } = useRequest(action, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_, params) => {
+    onSuccess: (_: null, params: ModelSaveParams[]) => {
       message.success(
         mode === CreateUpdateModeEnum.Create
           ? '模型已创建成功'
           : '模型已更新成功',
       );
-      onConfirm(...params);
+      const info = params[0];
+      onConfirm(info);
     },
   });
 
@@ -104,8 +109,8 @@ const CreateModel: React.FC<CreateModelProps> = ({
     }
   };
 
-  const handlerSubmit = async () => {
-    await form.submit();
+  const handlerSubmit = () => {
+    form.submit();
   };
 
   // const handleValuesChange = (changedValues: ModelFormData) => {
@@ -115,10 +120,6 @@ const CreateModel: React.FC<CreateModelProps> = ({
   //     setShouldRenderDimension(changedValues.type === ModelTypeEnum.Embeddings);
   //   }
   // };
-
-  const onTypeChanege = (value: ModelTypeEnum) => {
-    setModelType(value);
-  };
 
   return (
     <CustomFormModal
@@ -173,6 +174,9 @@ const CreateModel: React.FC<CreateModelProps> = ({
         >
           <Input.TextArea
             placeholder="输入模型介绍"
+            className="dispose-textarea-count"
+            showCount
+            maxLength={100}
             autoSize={{ minRows: 3, maxRows: 5 }}
           />
         </Form.Item>
@@ -185,7 +189,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
             rules={[{ required: true, message: '请选择模型类型' }]}
           >
             <Select
-              onChange={onTypeChanege}
+              onChange={setModelType}
               options={MODEL_TYPE_LIST.filter((v) =>
                 [
                   ModelTypeEnum.Chat,

@@ -144,6 +144,9 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
                 if (!value || value?.length <= 20) {
                   return Promise.resolve();
                 }
+                if (value?.length > 20) {
+                  return Promise.reject(new Error('名称不能超过20个字符!'));
+                }
                 return Promise.reject(new Error('请输入智能体名称!'));
               },
             },

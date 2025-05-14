@@ -8,10 +8,10 @@ import {
   ArrowUpOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import type { UploadProps } from 'antd';
+import type { InputRef, UploadProps } from 'antd';
 import { Input, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -33,25 +33,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   const [files, setFiles] = useState<UploadFileInfo[]>([]);
   const [message, setMessage] = useState<string>('');
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-  // const [selectedComponentList, setSelectedComponentList] = useState<
-  //   AgentSelectedComponentInfo[]
-  // >([]);
-
-  // useEffect(() => {
-  //   // 初始化选中的组件列表
-  //   if (infos?.length) {
-  //     setSelectedComponentList(infos || []);
-  //   } else if (manualComponents?.length) {
-  //     // 手动组件默认选中的组件
-  //     const _manualComponents = manualComponents
-  //       .filter((item) => item.defaultSelected === DefaultSelectedEnum.Yes)
-  //       .map((item) => ({
-  //         id: item.id,
-  //         type: item.type,
-  //       }));
-  //     setSelectedComponentList(_manualComponents || []);
-  //   }
-  // }, [infos, manualComponents]);
+  const textareaRef = useRef<InputRef>(null);
 
   // 发送按钮disabled
   const disabledSend = useMemo(() => {
@@ -77,14 +59,17 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   // enter事件
   const handlePressEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
-    const { value } = e.target as HTMLTextAreaElement;
+    const { value, selectionStart, selectionEnd } =
+      e.target as HTMLTextAreaElement;
     // shift+enter或者ctrl+enter时换行
     if (
       e.nativeEvent.keyCode === 13 &&
       (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)
     ) {
-      const enterValue = `${value}\n`;
-      setMessage(enterValue);
+      // 在光标位置插入换行符
+      const newValue =
+        value.slice(0, selectionStart) + '\n' + value.slice(selectionEnd);
+      setMessage(newValue);
     } else if (
       e.nativeEvent.keyCode === 13 &&
       (!!value.trim() || !!files?.length)
@@ -128,12 +113,13 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         </ConditionRender>
         {/*输入框*/}
         <Input.TextArea
+          ref={textareaRef}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          rootClassName={cx(styles.input, 'flex-1')}
+          rootClassName={cx(styles.input)}
           onPressEnter={handlePressEnter}
           placeholder="直接输入指令；可通过回车发送"
-          autoSize={{ minRows: 1, maxRows: 3 }}
+          autoSize={{ minRows: 2, maxRows: 6 }}
         />
         <div className={cx('flex')}>
           {/*上传按钮*/}

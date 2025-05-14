@@ -17,6 +17,7 @@ import {
   Tooltip,
 } from 'antd';
 import classNames from 'classnames';
+import { cloneDeep } from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
 
@@ -66,7 +67,8 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
     attr: string,
     value: React.Key | boolean,
   ) => {
-    const _configArgs = updateNodeField(configArgs, key, attr, value);
+    const cloneArr = cloneDeep(configArgs) || [];
+    const _configArgs = updateNodeField(cloneArr, key, attr, value);
     setConfigArgs(_configArgs);
   };
 

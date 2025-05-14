@@ -3,7 +3,7 @@ import type { SendCodeEnum } from '@/types/enums/login';
 
 // 账号密码登录请求参数
 export type LoginFieldType = {
-  phone: string;
+  phoneOrEmail: string;
   areaCode: string;
   password?: string;
 };

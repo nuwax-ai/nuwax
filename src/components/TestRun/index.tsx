@@ -64,95 +64,6 @@ interface QaItems {
 //   { label: 'coder', value: 'coder', img: squareImage },
 // ];
 
-const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-// 根据type返回不同的输入项
-const getInputBox = (item: InputAndOutConfig, form: FormInstance) => {
-  const handleChange: UploadProps['onChange'] = (info) => {
-    if (info.file.status === 'uploading') {
-      return;
-    }
-    if (info.file.status === 'done') {
-      try {
-        const data = info.file.response?.data;
-        form.setFieldValue(item.name, data?.url);
-      } catch (error) {
-        message.warning(info.file.response?.message);
-      }
-    }
-  };
-
-  switch (true) {
-    case item.dataType?.includes('File'):
-      return (
-        <Upload
-          action={UPLOAD_FILE_ACTION}
-          onChange={handleChange}
-          headers={{
-            Authorization: token ? `Bearer ${token}` : '',
-          }}
-          accept={getAccept(item.dataType as DataTypeEnum)}
-        >
-          <Button>上传文件</Button>
-        </Upload>
-      );
-    case item.dataType === 'Object' || item.dataType?.includes('Array'):
-      return (
-        <CodeEditor
-          value={form.getFieldValue(item.name) || ''}
-          codeLanguage={'JSON'}
-          onChange={(code: string) => {
-            form.setFieldsValue({ [item.name]: code }); // 更新表单值
-          }}
-          height="180px"
-        />
-      );
-    case item.dataType === 'Number':
-      return <InputNumber />;
-    case item.dataType === 'Integer':
-      return <InputNumber precision={0} />;
-    case item.dataType === 'Boolean':
-      return (
-        <Radio.Group
-          options={[
-            { label: 'true', value: 'true' },
-            { label: 'false', value: 'false' },
-          ]}
-        />
-      );
-    default: {
-      return <Input />;
-    }
-  }
-};
-
-const renderFormItem = (
-  type: string,
-  items: InputAndOutConfig[],
-  form: FormInstance,
-) => {
-  return (
-    <>
-      {items.map((item, index) => (
-        <div key={item.key || index}>
-          <Form.Item
-            name={[item.name]} // 绑定到 bindValue
-            label={
-              <>
-                {item.name}
-                <Tag color="#C9CDD4" className="ml-10">
-                  {item.dataType}
-                </Tag>
-              </>
-            }
-          >
-            {getInputBox(item, form)}
-          </Form.Item>
-        </div>
-      ))}
-    </>
-  );
-};
-
 // 试运行
 const TestRun: React.FC<TestRunProps> = ({
   node,
@@ -165,7 +76,7 @@ const TestRun: React.FC<TestRunProps> = ({
   formItemValue,
   testRunparams,
 }) => {
-  const { testRun, setTestRun } = useModel('model');
+  const { testRun, setTestRun, referenceList } = useModel('model');
   // const [value, setValue] = useState('');
 
   const [form] = Form.useForm();
@@ -230,6 +141,106 @@ const TestRun: React.FC<TestRunProps> = ({
     }
   };
 
+  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
+  // 根据type返回不同的输入项
+  const getInputBox = (item: InputAndOutConfig, form: FormInstance) => {
+    const handleChange: UploadProps['onChange'] = (info) => {
+      if (info.file.status === 'uploading') {
+        return;
+      }
+      if (info.file.status === 'done') {
+        try {
+          const data = info.file.response?.data;
+          form.setFieldValue(item.name, data?.url);
+        } catch (error) {
+          message.warning(info.file.response?.message);
+        }
+      }
+    };
+
+    switch (true) {
+      case item.dataType?.includes('File'):
+        return (
+          <Upload
+            action={UPLOAD_FILE_ACTION}
+            onChange={handleChange}
+            headers={{
+              Authorization: token ? `Bearer ${token}` : '',
+            }}
+            accept={getAccept(item.dataType as DataTypeEnum)}
+            disabled={loading}
+          >
+            <Button>上传文件</Button>
+          </Upload>
+        );
+      case item.dataType === 'Object' || item.dataType?.includes('Array'):
+        return (
+          <CodeEditor
+            value={form.getFieldValue(item.name) || ''}
+            codeLanguage={'JSON'}
+            onChange={(code: string) => {
+              form.setFieldsValue({ [item.name]: code }); // 更新表单值
+            }}
+            height="180px"
+          />
+        );
+      case item.dataType === 'Number':
+        return <InputNumber disabled={loading} />;
+      case item.dataType === 'Integer':
+        return <InputNumber precision={0} disabled={loading} />;
+      case item.dataType === 'Boolean':
+        return (
+          <Radio.Group
+            disabled={loading}
+            options={[
+              { label: 'true', value: 'true' },
+              { label: 'false', value: 'false' },
+            ]}
+          />
+        );
+      case item.dataType === 'String':
+        return <Input />;
+      default: {
+        return <Input disabled={loading} />;
+      }
+    }
+  };
+
+  const renderFormItem = (
+    type: string,
+    items: InputAndOutConfig[],
+    form: FormInstance,
+  ) => {
+    return (
+      <>
+        {items.map((item, index) => {
+          if (!referenceList) return [];
+          const isReference = referenceList.argMap[item.bindValue];
+          if (isReference) {
+            item.dataType = isReference.dataType;
+          }
+          return (
+            <div key={item.key || index}>
+              <Form.Item
+                name={[item.name]} // 绑定到 bindValue
+                label={
+                  <>
+                    {item.name}
+                    <Tag color="#C9CDD4" className="ml-10">
+                      {item.dataType}
+                    </Tag>
+                  </>
+                }
+              >
+                {getInputBox(item, form)}
+              </Form.Item>
+            </div>
+          );
+        })}
+      </>
+    );
+  };
+
   const items = [
     {
       key: 'inputArgs',
@@ -255,13 +266,13 @@ const TestRun: React.FC<TestRunProps> = ({
             {node.type === 'HTTPRequest' && (
               <>
                 {node.nodeConfig.body &&
-                  node.nodeConfig.body.length &&
+                  node.nodeConfig.body.length > 0 &&
                   renderFormItem('body', node.nodeConfig.body, form)}
                 {node.nodeConfig.headers &&
-                  node.nodeConfig.headers.length &&
+                  node.nodeConfig.headers.length > 0 &&
                   renderFormItem('headers', node.nodeConfig.headers, form)}
                 {node.nodeConfig.queries &&
-                  node.nodeConfig.queries.length &&
+                  node.nodeConfig.queries.length > 0 &&
                   renderFormItem('queries', node.nodeConfig.queries, form)}
                 {!node.nodeConfig.body?.length &&
                   !node.nodeConfig.headers?.length &&

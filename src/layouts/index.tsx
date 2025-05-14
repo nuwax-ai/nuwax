@@ -1,3 +1,4 @@
+import useEventPolling from '@/hooks/useEventPolling';
 import classNames from 'classnames';
 import { Outlet } from 'umi';
 import HistoryConversation from './HistoryConversation';
@@ -5,10 +6,11 @@ import styles from './index.less';
 import MenusLayout from './MenusLayout';
 import Message from './Message';
 import Setting from './Setting';
-
 const cx = classNames.bind(styles);
 
 export default function Layout() {
+  // 全局消息事件轮询
+  useEventPolling();
   return (
     <div className={cx('flex', 'h-full', styles.container)}>
       {/*菜单栏*/}

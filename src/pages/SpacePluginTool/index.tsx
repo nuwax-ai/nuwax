@@ -85,6 +85,7 @@ const SpacePluginTool: React.FC = () => {
     handleInputConfigAdd,
     handleOutputConfigAdd,
     handleOutputConfigArgs,
+    handleConfirmPublishPlugin,
   } = usePluginConfig();
 
   const isClickSaveBtnRef = useRef<boolean>(false);
@@ -526,6 +527,7 @@ const SpacePluginTool: React.FC = () => {
         scope={pluginInfo?.scope}
         open={openModal}
         onCancel={() => setOpenModal(false)}
+        onConfirm={handleConfirmPublishPlugin}
       />
       {/*版本历史*/}
       <VersionHistory

@@ -212,6 +212,8 @@ const Workflow: React.FC = () => {
   // 获取当前节点的参数
   const getRefernece = async (id: number) => {
     if (id === 0) return;
+    // 如果选中后立刻删除了，那么就不需要再获取参数了
+    if (foldWrapItemRef.current.id === 0) return;
     // 获取节点需要的引用参数
     const _res = await service.getOutputArgs(id);
     if (_res.code === Constant.success) {
@@ -398,7 +400,7 @@ const Workflow: React.FC = () => {
           return child;
         }
         setVisible(false);
-
+        setTestRun(false);
         return {
           id: 0,
           description: '',
@@ -489,7 +491,7 @@ const Workflow: React.FC = () => {
             _res.data.id,
             targetNode,
           );
-          changeNode(_params);
+          changeNode(_params as ChildNode);
           const sourcePortId = portId.split('-').slice(0, -1).join('-');
           graphRef.current.createNewEdge(sourcePortId, _res.data.id.toString());
         } else {
@@ -551,6 +553,15 @@ const Workflow: React.FC = () => {
     setVisible(false);
     // if(Number(id)===Number(foldWrapItem.id)){
     // }
+    setFoldWrapItem({
+      id: 0,
+      description: '',
+      workflowId: workflowId,
+      type: NodeTypeEnum.Start,
+      nodeConfig: {},
+      name: '',
+      icon: '',
+    });
     const _res = await service.deleteNode(id);
     if (_res.code === Constant.success) {
       // console.log(graphRef.current)
@@ -558,15 +569,7 @@ const Workflow: React.FC = () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
-      setFoldWrapItem({
-        id: 0,
-        description: '',
-        workflowId: workflowId,
-        type: NodeTypeEnum.Start,
-        nodeConfig: {},
-        name: '',
-        icon: '',
-      });
+
       changeUpdateTime();
       // 如果传递了node,证明时循环节点下的子节点
       if (node) {
@@ -688,18 +691,27 @@ const Workflow: React.FC = () => {
   // 校验当前工作流
   const volidWorkflow = async () => {
     setLoading(false);
+
+    // 先将数据提交到后端
+    const _detail = await service.getDetails(workflowId);
+    const _nodeList = _detail.data.nodes;
+    setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
+    changeDrawer(_detail.data.startNode);
+    graphRef.current.selectNode(_detail.data.startNode.id);
+
     const _res = await service.validWorkflow(info?.id as number);
     if (_res.code === Constant.success) {
       const _arr = _res.data.filter((item) => !item.success);
       if (_arr.length === 0) {
         return true;
       } else {
+        const _errorList = _arr.map((child) => ({
+          nodeId: child.nodeId,
+          error: child.messages.join(','),
+        }));
         setErrorParams({
           show: true,
-          errorList: _arr.map((child) => ({
-            nodeId: child.nodeId,
-            error: child.messages.join(','),
-          })),
+          errorList: _errorList,
         });
 
         return false;
@@ -727,6 +739,7 @@ const Workflow: React.FC = () => {
           ...values,
           modified: _time.toString(),
           publishDate: _time.toString(),
+          publishStatus: 'Published',
         });
       }
     }
@@ -865,18 +878,13 @@ const Workflow: React.FC = () => {
   };
   // 试运行所有节点
   const testRunAll = async () => {
-    setIsModified((prev: boolean) => {
+    setIsModified(async (prev: boolean) => {
       if (prev) {
-        onFinish();
+        await onFinish();
       }
       return false;
     });
-    // 先将数据提交到后端
-    const _res = await service.getDetails(workflowId);
-    const _nodeList = _res.data.nodes;
-    setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
-    changeDrawer(_res.data.startNode);
-    graphRef.current.selectNode(_res.data.startNode.id);
+
     const volid = await volidWorkflow();
     if (volid) {
       setTestRunResult('');
@@ -923,7 +931,7 @@ const Workflow: React.FC = () => {
     setLoading(true);
   };
   // 右上角的相关操作
-  const handleChangeNode = (val: string) => {
+  const handleChangeNode = async (val: string) => {
     switch (val) {
       case 'Rename': {
         setShowNameInput(true);
@@ -939,7 +947,10 @@ const Workflow: React.FC = () => {
       }
       case 'TestRun': {
         if (isModified) {
-          onFinish();
+          await onFinish();
+          if (timerRef.current) {
+            clearTimeout(timerRef.current);
+          }
         }
         // copyNode(foldWrapItem);
         if (foldWrapItemRef.current.type === 'Start') {
@@ -977,7 +988,8 @@ const Workflow: React.FC = () => {
 
   // 点击画布中的节点
   const handleNodeClick = (node: ChildNode | null) => {
-    if (node && node.id === foldWrapItemRef.current.id) return;
+    // 如果右侧抽屉是再展示的，且就是当前选中的节点，那么就不做任何操作
+    if (visible && node && node.id === foldWrapItemRef.current.id) return;
     changeDrawer(node);
   };
 
@@ -1019,6 +1031,8 @@ const Workflow: React.FC = () => {
         onFinish();
       }
       setIsModified(false); // 重置修改状态
+      setVisible(false);
+      setTestRun(false);
     };
   }, []);
   // 新增定时器逻辑
