@@ -1,47 +1,98 @@
-import { useEffect } from 'react';
+import { FC, useCallback, useEffect } from 'react';
 
-// 为window对象添加阿里云验证码方法的类型声明
+// 阿里云验证码配置类型定义
+interface AliyunCaptchaConfig {
+  captchaSceneId: string; // 场景ID
+  captchaPrefix: string; // 身份标
+  openCaptcha?: boolean; // 是否开启验证码
+  // 其他可能的配置项
+}
+
+// 阿里云验证码初始化选项
+interface CaptchaOptions {
+  SceneId: string; // 场景ID
+  prefix: string; // 身份标
+  mode: 'popup' | 'embed'; // 验证码模式：弹出式或嵌入式
+  element: string; // 渲染验证码的元素
+  button: string; // 触发验证码弹窗的元素
+  captchaVerifyCallback: (param: any) => {
+    captchaResult: boolean;
+    bizResult: boolean;
+  };
+  onBizResultCallback: () => void;
+  getInstance: () => void;
+  slideStyle?: {
+    width: number;
+    height: number;
+  };
+  language?: 'cn' | 'tw' | 'en'; // 验证码语言类型
+}
+
+// 全局类型声明
 declare global {
   interface Window {
-    initAliyunCaptcha: (options: any) => void;
+    initAliyunCaptcha: (options: CaptchaOptions) => void;
   }
 }
 
-const AliyunCaptcha: React.FC<{
-  config: any;
+interface AliyunCaptchaProps {
+  config: AliyunCaptchaConfig;
   elementId: string;
   doAction: (captchaVerifyParam: any) => void;
-}> = ({ config, elementId, doAction }) => {
-  const captchaVerifyCallback = (captchaVerifyParam: any) => {
-    doAction(captchaVerifyParam);
-    return {
-      captchaResult: true,
-      bizResult: true,
-    };
-  };
-  useEffect(() => {
-    //如果 有场景ID 或者 身份标 或者 关闭验证码
-    window.initAliyunCaptcha({
-      SceneId: config.captchaSceneId, // 场景ID。根据步骤二新建验证场景后，您可以在验证码场景列表，获取该场景的场景ID
-      prefix: config.captchaPrefix, // 身份标。开通阿里云验证码2.0后，您可以在控制台概览页面的实例基本信息卡片区域，获取身份标
-      mode: 'popup', // 验证码模式。popup表示要集成的验证码模式为弹出式。无需修改
-      element: '#captcha-element', // 页面上预留的渲染验证码的元素，与原代码中预留的页面元素保持一致。
-      button: '#' + elementId, // 触发验证码弹窗的元素。button表示单击登录按钮后，触发captchaVerifyCallback函数。您可以根据实际使用的元素修改element的值
-      captchaVerifyCallback: captchaVerifyCallback, // 业务请求(带验证码校验)回调函数，无需修改
-      onBizResultCallback: () => {}, // 业务请求结果回调函数，无需修改
-      getInstance: () => {}, // 绑定验证码实例函数，无需修改
-      slideStyle: {
-        width: 360,
-        height: 40,
-      }, // 滑块验证码样式，支持自定义宽度和高度，单位为px。其中，width最小值为320 px
-      language: 'cn', // 验证码语言类型，支持简体中文（cn）、繁体中文（tw）、英文（en）
-    });
-    return () => {
-      // 必须删除相关元素，否则再次mount多次调用 initAliyunCaptcha 会导致多次回调 captchaVerifyCallback
-      document.getElementById('aliyunCaptcha-mask')?.remove();
-      document.getElementById('aliyunCaptcha-window-popup')?.remove();
-    };
+}
+
+/**
+ * 阿里云验证码组件
+ * @param config - 验证码配置信息
+ * @param elementId - 触发验证码的元素ID
+ * @param doAction - 验证成功后的回调函数
+ */
+const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
+  config,
+  elementId,
+  doAction,
+}) => {
+  // 使用useCallback缓存回调函数，避免不必要的重新渲染
+  const captchaVerifyCallback = useCallback(
+    (captchaVerifyParam: any) => {
+      doAction(captchaVerifyParam);
+      return {
+        captchaResult: true,
+        bizResult: true,
+      };
+    },
+    [doAction],
+  );
+
+  // 清理验证码相关DOM元素
+  const cleanupCaptchaElements = useCallback(() => {
+    document.getElementById('aliyunCaptcha-mask')?.remove();
+    document.getElementById('aliyunCaptcha-window-popup')?.remove();
   }, []);
+
+  useEffect(() => {
+    // 初始化阿里云验证码
+    if (config?.captchaSceneId && config?.captchaPrefix) {
+      window.initAliyunCaptcha({
+        SceneId: config.captchaSceneId, // 场景ID
+        prefix: config.captchaPrefix, // 身份标
+        mode: 'popup', // 验证码模式：弹出式
+        element: '#captcha-element', // 渲染验证码的元素
+        button: `#${elementId}`, // 触发验证码弹窗的元素
+        captchaVerifyCallback, // 业务请求回调函数
+        onBizResultCallback: () => {}, // 业务请求结果回调函数
+        getInstance: () => {}, // 绑定验证码实例函数
+        slideStyle: {
+          width: 360,
+          height: 40,
+        }, // 滑块验证码样式
+        language: 'cn', // 验证码语言类型
+      });
+    }
+
+    // 组件卸载时清理DOM元素
+    return cleanupCaptchaElements;
+  }, [config, elementId, captchaVerifyCallback, cleanupCaptchaElements]);
 
   return (
     <div className="captcha-a">

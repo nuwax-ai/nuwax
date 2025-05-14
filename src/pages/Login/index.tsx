@@ -23,11 +23,11 @@ const Login: React.FC = () => {
   const [loginType, setLoginType] = useState<LoginTypeEnum>(LoginTypeEnum.Code);
   const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
-  const [needAliyuanCaptcha, setNeedAliyuanCaptcha] = useState<boolean>(false);
+  const [needAliyunCaptcha, setNeedAliyunCaptcha] = useState<boolean>(false);
   const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
   // 使用 useRef 存储最新的 submittable 值
   const submittableRef = useRef<boolean>(false);
-  const captchaVerifyParamRef = useRef<string>('');
+  const captchaVerifyParamRef = useRef<any>('');
 
   // Watch all values
   const values = Form.useWatch([], form);
@@ -61,15 +61,52 @@ const Login: React.FC = () => {
     runTenantConfig();
   }, []);
 
+  // 表单验证规则 - 抽取为常量避免重复
+  const getPhoneOrEmailRules = () => {
+    const isEmailAuth = tenantConfigInfo?.authType === 3;
+    return [
+      {
+        required: true,
+        message: isEmailAuth ? '请输入邮箱地址!' : '请输入手机号码!',
+      },
+      {
+        validator(_: any, value: string) {
+          if (!value) return Promise.resolve();
+          if (isEmailAuth) {
+            return isValidEmail(value)
+              ? Promise.resolve()
+              : Promise.reject(new Error('请输入正确的邮箱账号!'));
+          } else {
+            return isValidPhone(value)
+              ? Promise.resolve()
+              : Promise.reject(new Error('请输入正确的手机号码!'));
+          }
+        },
+      },
+    ];
+  };
+
+  const passwordRules = [
+    { required: true, message: '请输入6位以上密码!' },
+    {
+      validator(_: any, value: string) {
+        if (!value || validatePassword(value)) {
+          return Promise.resolve();
+        }
+        return Promise.reject(new Error('请输入正确格式的密码!'));
+      },
+    },
+  ];
+
   // 账号密码登录
-  const handlerPasswordLogin = (captchaVerifyParam: string) => {
+  const handlerPasswordLogin = (captchaVerifyParam: any) => {
     // 为了避免 formValues 为 undefined 的情况，添加空值检查
     const { phoneOrEmail, areaCode, password } = form.getFieldsValue() || {};
     run({ phoneOrEmail, areaCode, password, captchaVerifyParam });
   };
 
   // 验证码登录
-  const handlerCodeLogin = (captchaVerifyParam: string) => {
+  const handlerCodeLogin = (captchaVerifyParam: any) => {
     // 为了避免 formValues 为 undefined 的情况，添加空值检查
     const { phoneOrEmail, areaCode } = form.getFieldsValue() || {};
     history.push('/verify-code', {
@@ -83,16 +120,13 @@ const Login: React.FC = () => {
   const handlerSuccess = () => {
     // 使用 ref 中存储的最新值，而不是闭包中捕获的旧值
     if (!submittableRef.current || !checked) {
-      console.log('submit condition not met:', {
+      console.log('提交条件未满足:', {
         submittable: submittableRef.current,
         checked,
       });
       return;
     }
-    console.log(
-      'handlerSuccess running with submittable:',
-      submittableRef.current,
-    );
+
     const captchaVerifyParam = captchaVerifyParamRef.current;
     if (loginType === LoginTypeEnum.Password) {
       handlerPasswordLogin(captchaVerifyParam);
@@ -115,7 +149,8 @@ const Login: React.FC = () => {
         },
       });
     }
-    if (!needAliyuanCaptcha) {
+    // 如果不需要阿里云验证码，直接执行登录/验证码逻辑
+    if (!needAliyunCaptcha) {
       handlerSuccess();
     }
   };
@@ -136,16 +171,18 @@ const Login: React.FC = () => {
     </Form.Item>
   );
   useEffect(() => {
-    if (
-      tenantConfigInfo &&
-      tenantConfigInfo.captchaSceneId !== '' &&
-      tenantConfigInfo.captchaPrefix !== '' &&
-      tenantConfigInfo.openCaptcha
-    ) {
-      setNeedAliyuanCaptcha(true);
-    } else {
-      setNeedAliyuanCaptcha(false);
-    }
+    const { captchaSceneId, captchaPrefix, openCaptcha } =
+      tenantConfigInfo || {};
+    // 只有同时满足三个条件才启用验证码：场景ID存在、身份标存在、开启验证码
+    setNeedAliyunCaptcha(
+      !!(
+        captchaSceneId &&
+        captchaSceneId !== '' &&
+        captchaPrefix &&
+        captchaPrefix !== '' &&
+        openCaptcha
+      ),
+    );
   }, [tenantConfigInfo]);
 
   return (
@@ -180,33 +217,8 @@ const Login: React.FC = () => {
             tenantConfigInfo?.siteName || ''
           }`}</h3>
         </Form.Item>
-        <Form.Item
-          name="phoneOrEmail"
-          rules={[
-            {
-              required: true,
-              message:
-                tenantConfigInfo && tenantConfigInfo.authType === 3
-                  ? '请输入邮箱验证码!'
-                  : '请输入手机号码!',
-            },
-            {
-              validator(_, value) {
-                if (!value) return Promise.resolve();
-                if (tenantConfigInfo && tenantConfigInfo.authType === 3) {
-                  return isValidEmail(value)
-                    ? Promise.resolve()
-                    : Promise.reject(new Error('请输入正确的邮箱账号!'));
-                } else {
-                  return isValidPhone(value)
-                    ? Promise.resolve()
-                    : Promise.reject(new Error('请输入正确的手机号码!'));
-                }
-              },
-            },
-          ]}
-        >
-          {tenantConfigInfo && tenantConfigInfo.authType === 3 ? (
+        <Form.Item name="phoneOrEmail" rules={getPhoneOrEmailRules()}>
+          {tenantConfigInfo?.authType === 3 ? (
             <Input placeholder="请输入邮箱号码" size={'large'} />
           ) : (
             <Input
@@ -219,20 +231,7 @@ const Login: React.FC = () => {
 
         <Form.Item className={'flex-1'}>
           {loginType === LoginTypeEnum.Password && (
-            <Form.Item
-              name="password"
-              rules={[
-                { required: true, message: '请输入6位以上密码!' },
-                {
-                  validator(_, value) {
-                    if (!value || validatePassword(value)) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(new Error('请输入正确格式的密码!'));
-                  },
-                },
-              ]}
-            >
+            <Form.Item name="password" rules={passwordRules}>
               <Input
                 size={'large'}
                 type="password"
@@ -269,7 +268,7 @@ const Login: React.FC = () => {
           </Form.Item>
         </Form.Item>
       </Form>
-      {needAliyuanCaptcha && (
+      {needAliyunCaptcha && (
         <AliyunCaptcha
           config={tenantConfigInfo}
           doAction={(captchaVerifyParam) => {
