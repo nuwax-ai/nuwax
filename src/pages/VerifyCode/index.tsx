@@ -6,7 +6,7 @@ import useCountDown from '@/hooks/useCountDown';
 import useSendCode from '@/hooks/useSendCode';
 import { apiLoginCode } from '@/services/account';
 import { SendCodeEnum } from '@/types/enums/login';
-import type { ILoginResult, SendCode } from '@/types/interfaces/login';
+import type { ILoginResult } from '@/types/interfaces/login';
 import { CodeLogin } from '@/types/interfaces/login';
 import { getNumbersOnly } from '@/utils/common';
 import type { InputRef } from 'antd';
@@ -93,15 +93,12 @@ const VerifyCode: React.FC = () => {
   // 发送验证码
   const handleSendCode = () => {
     handleCount();
-
-    let _params: SendCode = {
-      type: SendCodeEnum.LOGIN_OR_REGISTER,
+    const isPhone = authType === '1';
+    const _params = {
+      type: SendCodeEnum.RESET_PASSWORD,
+      [isPhone ? 'phone' : 'email']: phoneOrEmail,
     };
-    if (authType === 1) {
-      _params.phone = phoneOrEmail;
-    } else {
-      _params.email = phoneOrEmail;
-    }
+    runSendCode(_params);
     runSendCode(_params);
   };
 

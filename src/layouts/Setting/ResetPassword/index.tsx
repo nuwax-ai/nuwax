@@ -20,7 +20,7 @@ const cx = classNames.bind(styles);
  */
 const ResetPassword: React.FC = () => {
   // 获取当前登录方式,如果有@证明是邮箱登录,否则是手机登录
-  const phone = localStorage.getItem(PHONE)?.includes('@');
+  const phone = localStorage.getItem(PHONE);
 
   const { countDown, setCountDown, onClearTimer, handleCount } = useCountDown();
   const { runSendCode } = useSendCode();
@@ -51,10 +51,12 @@ const ResetPassword: React.FC = () => {
 
   const handleSendCode = async () => {
     handleCount();
-    runSendCode({
+    const authType = localStorage.getItem('AUTH_TYPE') === '1';
+    const _params = {
       type: SendCodeEnum.RESET_PASSWORD,
-      phoneOrEmail: localStorage.getItem(PHONE),
-    });
+      [authType ? 'phone' : 'email']: phone,
+    };
+    runSendCode(_params);
   };
 
   return (

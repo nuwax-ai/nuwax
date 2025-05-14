@@ -1,5 +1,6 @@
 // 引入 AntV X6 的核心库和必要的插件。
 import { Cell, Edge, Graph, Node, Shape } from '@antv/x6';
+
 // 剪贴板插件，用于复制和粘贴节点
 import { Clipboard } from '@antv/x6-plugin-clipboard';
 // 历史记录插件，支持撤销/重做操作
@@ -86,13 +87,28 @@ const initGraph = ({
 
   // 通过边和连接桩创捷节点并添加连线
   const createNodeAndEdge = (
+    event: any,
+    // 源节点
     sourceNode: ChildNode,
+    // 源端口的id
     portId: string,
+    // 源节点的宽度，用于计算节点的位置
+    nodeWidth: number,
     targetNode?: ChildNode,
     edgeId?: string,
   ) => {
+    const eventTarget =
+      event.originalEvent.originalEvent || event.originalEvent;
+
     const dragChild = (child: Child) => {
-      createNodeToPortOrEdge(child, sourceNode, portId, targetNode, edgeId);
+      createNodeToPortOrEdge(
+        child,
+        sourceNode,
+        portId,
+        nodeWidth,
+        targetNode,
+        edgeId,
+      );
     };
     const popoverContent = (
       <div className="confirm-popover">
@@ -110,6 +126,11 @@ const initGraph = ({
       icon: null,
       width: 260,
       maskClosable: true,
+      getContainer: () => document.body,
+      style: {
+        position: 'fixed',
+        left: eventTarget?.clientX,
+      },
     });
   };
 
@@ -379,8 +400,9 @@ const initGraph = ({
     node.prop('ports/items', updatedPorts);
   });
 
-  graph.on('node:port:click', ({ node, port }) => {
-    createNodeAndEdge(node.getData(), port as string);
+  graph.on('node:port:click', ({ node, port, e }) => {
+    const nodeWidth = node.getSize().width;
+    createNodeAndEdge(e, node.getData(), port as string, nodeWidth);
   });
 
   // 在创建图形实例后添加事件监听
@@ -417,12 +439,21 @@ const initGraph = ({
           ],
           distance: '50%',
           offset: { x: 0, y: 0 },
-          onClick() {
+          onClick({ e }: { e: MouseEvent }) {
             const source = edge.getSourceCell()?.getData();
             const target = edge.getTargetCell()?.getData();
             const sourcePort = edge.getSourcePortId();
+            const width = edge.getSourceNode()?.getSize().width || 180;
+
             if (!source || !target) return;
-            createNodeAndEdge(source, sourcePort as string, target, edge.id);
+            createNodeAndEdge(
+              e,
+              source,
+              sourcePort as string,
+              width,
+              target,
+              edge.id,
+            );
           },
         },
       },

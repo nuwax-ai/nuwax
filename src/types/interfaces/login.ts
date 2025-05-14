@@ -43,7 +43,8 @@ export type SetPasswordFieldType = {
 
 // 绑定邮箱输入参数
 export interface BindEmailParams {
-  email: string;
+  email?: string;
+  phone?: string;
   code: string;
 }
 
@@ -93,6 +94,8 @@ export type ModalSliderCaptchaType = {
 
 // 租户配置信息
 export interface TenantConfigInfo {
+  // 登录的是邮箱还是手机
+  authType: number;
   // 站点名称
   siteName: string;
   siteUrl: string;

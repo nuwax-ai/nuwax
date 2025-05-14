@@ -639,7 +639,7 @@ export const handleSpecialNodesNextIndex = (
   }
   configs.forEach((config) => {
     const nextNodeIds = config.nextNodeIds || []; // 获取当前配置的 nextNodeIds 数组
-    if (config.uuid === uuid) {
+    if (uuid.includes(config.uuid)) {
       if (targetNode) {
         // 这里需要将原来的nextNodeIds中和targetId相同的元素替换成id
         config.nextNodeIds = nextNodeIds.map((item: number) => {
@@ -651,7 +651,6 @@ export const handleSpecialNodesNextIndex = (
         });
       } else {
         config.nextNodeIds = [...nextNodeIds, id];
-        console.log([...nextNodeIds, id]);
       }
     }
   });
