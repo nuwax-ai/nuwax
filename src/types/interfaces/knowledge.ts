@@ -531,3 +531,11 @@ export interface KnowledgeQaDeleteParams {
   // 主键id
   id: number;
 }
+
+// 知识库问答 - 上传QA批量excel模板请求参数
+export interface KnowledgeQaUploadParams {
+  // 文件
+  file: File;
+  // 知识库ID
+  kbId: number;
+}

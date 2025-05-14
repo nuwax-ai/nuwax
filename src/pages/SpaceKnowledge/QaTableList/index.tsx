@@ -3,8 +3,12 @@ import {
   KnowledgeQAInfo,
   KnowledgeQaListParams,
 } from '@/types/interfaces/knowledge';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { Button, Table, TableProps } from 'antd';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  ExclamationCircleFilled,
+} from '@ant-design/icons';
+import { Button, Popconfirm, Table, TableProps } from 'antd';
 import cx from 'classnames';
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 
@@ -15,7 +19,7 @@ const QaTableList = forwardRef(
       question: string;
       kbId: number;
       onEdit: (record: KnowledgeQAInfo) => void;
-      onDelete: (record: KnowledgeQAInfo) => void;
+      onDelete: (record: KnowledgeQAInfo) => Promise<null>;
     },
     ref,
   ) => {
@@ -24,36 +28,55 @@ const QaTableList = forwardRef(
       {
         title: 'ID',
         dataIndex: 'id',
+        width: 150,
       },
       {
         title: '问题',
         dataIndex: 'question',
+        render: (text: string) => {
+          return (
+            <div className={cx('text-ellipsis', 'max-w-[200px]')}>{text}</div>
+          );
+        },
       },
       {
         title: '答案',
         dataIndex: 'answer',
+        render: (text: string) => {
+          return (
+            <div className={cx('text-ellipsis', 'max-w-[200px]')} title={text}>
+              {text}
+            </div>
+          );
+        },
       },
       {
         title: '操作',
         dataIndex: 'action',
+        width: 200,
         render: (text: string, record: KnowledgeQAInfo) => {
           return (
             <div className={cx('flex', 'flex-row', 'gap-2')}>
               <Button
-                type="link"
+                variant="link"
                 icon={<EditOutlined />}
+                color="primary"
                 onClick={() => props.onEdit(record)}
               >
                 编辑
               </Button>
-              <Button
-                type="link"
-                icon={<DeleteOutlined />}
-                color="danger"
-                onClick={() => props.onDelete(record)}
+              <Popconfirm
+                title="您确定要删除此QA问答吗?"
+                description={record.question}
+                icon={<ExclamationCircleFilled />}
+                onConfirm={() => props.onDelete(record)}
+                okText="确定"
+                cancelText="取消"
               >
-                删除
-              </Button>
+                <Button variant="link" icon={<DeleteOutlined />} color="danger">
+                  删除
+                </Button>
+              </Popconfirm>
             </div>
           );
         },
@@ -64,7 +87,7 @@ const QaTableList = forwardRef(
     const [total, setTotal] = useState(0);
     const [tableParams, setTableParams] = useState<KnowledgeQaListParams>({
       current: 1,
-      pageSize: 10,
+      pageSize: 20,
       queryFilter: {
         spaceId: props.spaceId,
         question: props.question,
@@ -120,6 +143,7 @@ const QaTableList = forwardRef(
         )}
       >
         <Table
+          className={cx('w-full', 'h-full')}
           ref={ref as any}
           rowKey="id"
           columns={columns}
@@ -130,7 +154,7 @@ const QaTableList = forwardRef(
             current: tableParams.current,
             pageSize: tableParams.pageSize,
           }}
-          onChange={handleTableChange}
+          onChange={handleTableChange as any}
           scroll={{ x: 'max-content', y: 'calc(100vh - 230px)' }}
         />
       </div>

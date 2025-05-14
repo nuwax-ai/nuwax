@@ -237,7 +237,7 @@ export const KNOWLEDGE_QA_IMPORT_TYPE = [
     value: KnowledgeTextImportEnum.Local_Doc,
     label: '批量导入',
     icon: <ICON_LOCAL_DOC />,
-    desc: '上传 CSV 格式的本地文件',
+    desc: '上传 Excel 格式的本地文件',
   },
 ];
 // 知识库-本地文档添加内容-步骤列表

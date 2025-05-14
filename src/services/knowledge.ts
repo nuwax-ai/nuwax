@@ -19,6 +19,7 @@ import type {
   KnowledgeQASearchParams,
   KnowledgeQAUpdateParams,
   KnowledgeQaUpdateParams,
+  KnowledgeQaUploadParams,
   KnowledgeQueryDocStatusParams,
   KnowledgeRawSegmentAddParams,
   KnowledgeRawSegmentInfo,
@@ -320,30 +321,6 @@ export async function apiKnowledgeQAEmbeddingStatus(
   });
 }
 
-// 知识库问答 - 数据详情查询
-export async function apiKnowledgeQADetail(
-  dataId: number,
-): Promise<RequestResponse<KnowledgeQAInfo>> {
-  return request('/api/knowledge/qa/detailById', {
-    method: 'GET',
-    params: {
-      dataId,
-    },
-  });
-}
-
-// 知识库问答 - 数据删除接口
-export async function apiKnowledgeQADelete(
-  id: number,
-): Promise<RequestResponse<null>> {
-  return request('/api/knowledge/qa/deleteById', {
-    method: 'GET',
-    params: {
-      id,
-    },
-  });
-}
-
 // 知识库问答 - 数据新增接口
 export async function apiKnowledgeQaAdd(
   data: KnowledgeQaAddParams,
@@ -368,9 +345,11 @@ export async function apiKnowledgeQaList(
 export async function apiKnowledgeQaDelete(
   data: KnowledgeQaDeleteParams,
 ): Promise<RequestResponse<null>> {
+  const formData = new FormData();
+  formData.append('id', data.id.toString());
   return request('/api/knowledge/qa/deleteById', {
     method: 'POST',
-    data,
+    data: formData,
   });
 }
 
@@ -381,5 +360,29 @@ export async function apiKnowledgeQaUpdate(
   return request('/api/knowledge/qa/update', {
     method: 'POST',
     data,
+  });
+}
+
+// 知识库问答 - 下载QA批量excel模板
+export async function apiKnowledgeQaDownloadTemplate(): Promise<
+  RequestResponse<Blob>
+> {
+  return request('/api/knowledge/qa/downloadExcelTemplate', {
+    method: 'GET',
+    responseType: 'blob',
+  });
+}
+
+// 知识库问答 - 上传QA批量excel模板
+export async function apiKnowledgeQaUpload(
+  data: KnowledgeQaUploadParams,
+): Promise<RequestResponse<null>> {
+  const formData = new FormData();
+  formData.append('file', data.file);
+  formData.append('kbId', data.kbId.toString());
+
+  return request('/api/knowledge/qa/importExcel', {
+    method: 'POST',
+    data: formData,
   });
 }

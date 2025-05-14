@@ -5,6 +5,7 @@ import {
   apiKnowledgeDocumentList,
   apiKnowledgeQaAdd,
   apiKnowledgeQaDelete,
+  apiKnowledgeQaDownloadTemplate,
   apiKnowledgeQaUpdate,
 } from '@/services/knowledge';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
@@ -18,8 +19,8 @@ import type {
 } from '@/types/interfaces/knowledge';
 import { KnowledgeDocumentStatus } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
-import { ExclamationCircleFilled } from '@ant-design/icons';
-import { message, Modal } from 'antd';
+import { DownloadOutlined, ExclamationCircleFilled } from '@ant-design/icons';
+import { Button, message, Modal, Space } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -28,6 +29,7 @@ import DocWrap from './DocWrap';
 import styles from './index.less';
 import KnowledgeHeader from './KnowledgeHeader';
 import LocalDocModal from './LocalCustomDocModal';
+import QaBatchModal from './QaBatchModal';
 import QaModal from './QaModal';
 import QaTableList from './QaTableList';
 import RawSegmentInfo from './RawSegmentInfo';
@@ -57,6 +59,8 @@ const SpaceKnowledge: React.FC = () => {
     useState<KnowledgeDocumentInfo | null>(null);
   // 所有的文档列表, 用于搜索
   const documentListRef = useRef<KnowledgeDocumentInfo[]>([]);
+  // QA问答批量弹窗
+  const [qaBatchOpen, setQaBatchOpen] = useState<boolean>(false);
 
   // 知识库基础配置接口 - 数据详情查询
   const { run } = useRequest(apiKnowledgeConfigDetail, {
@@ -273,8 +277,18 @@ const SpaceKnowledge: React.FC = () => {
 
   // 点击QA问答下拉
   const handleClickQaPopoverItem = (item: CustomPopoverItem) => {
-    setType(item.value as KnowledgeTextImportEnum);
-    setQaOpen(true);
+    switch (item.value) {
+      case KnowledgeTextImportEnum.Custom:
+        setType(item.value as KnowledgeTextImportEnum);
+        setQaOpen(true);
+        break;
+      case KnowledgeTextImportEnum.Local_Doc:
+        //QA批量弹窗添加文件上传
+        setQaBatchOpen(true);
+        break;
+      default:
+        break;
+    }
   };
   // 文档内容
   const renderDocContent = () => {
@@ -314,54 +328,84 @@ const SpaceKnowledge: React.FC = () => {
     setQaInfo(record);
   };
   // 删除QA问答
-  const handleDeleteQa = (record: KnowledgeQAInfo) => {
+  const handleDeleteQa = async (record: KnowledgeQAInfo) => {
     console.log(record);
-    confirm({
-      title: '您确定要删除此QA问答吗?',
-      icon: <ExclamationCircleFilled />,
-      content: record.question,
-      okText: '确定',
-      maskClosable: true,
-      cancelText: '取消',
-      onOk() {
-        apiKnowledgeQaDelete({
-          id: record.id,
-        });
-      },
-    });
+    try {
+      const res = await apiKnowledgeQaDelete({
+        id: record.id,
+      });
+      if (res.code === '0000') {
+        message.success('删除QA问答成功');
+        handleQaList();
+      } else {
+        message.error('删除QA问答失败');
+      }
+    } catch (error) {
+      console.error(error);
+      message.error('删除QA问答失败');
+    }
+    return null;
   };
-
+  // 下载QA批量excel模板
+  const handleDownloadQaTemplate = async () => {
+    console.log('下载QA批量excel模板');
+    try {
+      const blob = await apiKnowledgeQaDownloadTemplate();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'QA批量excel模板.xlsx';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(error);
+      message.error('下载QA批量excel模板失败');
+    }
+  };
   const renderQaContent = () => {
     return (
-      <div
-        className={cx(
-          'flex',
-          'flex-1',
-          'radius-6',
-          'overflow-hide',
-          styles['inner-container'],
-        )}
-      >
+      <div className="flex flex-col h-full">
         {/* QA问答 */}
-        <div className={cx('flex', 'flex-1', 'items-center', 'justify-center')}>
-          {/* 修改为表格 远程加载数据 */}
-          <QaTableList
-            ref={qaTableListRef}
-            spaceId={Number(spaceId)}
-            question={''}
-            kbId={Number(knowledgeId)}
-            onEdit={handleEditQa}
-            onDelete={handleDeleteQa}
-          />
+        {/* 在表格总结栏 最左侧添加下载 QA 批量 excel模板 按钮 */}
+        <Space direction="vertical" align="start" style={{ marginTop: '12px' }}>
+          <Button
+            type="link"
+            icon={<DownloadOutlined />}
+            onClick={handleDownloadQaTemplate}
+          >
+            下载QA批量excel模板
+          </Button>
+        </Space>
+        <div
+          className={cx(
+            'flex',
+            'flex-1',
+            'radius-6',
+            'overflow-hide',
+            styles['inner-container'],
+          )}
+          style={{ marginTop: '6px' }}
+        >
+          <div
+            className={cx('flex', 'flex-1', 'items-center', 'justify-center')}
+          >
+            {/* 修改为表格 远程加载数据 */}
+            <QaTableList
+              ref={qaTableListRef}
+              spaceId={Number(spaceId)}
+              question={''}
+              kbId={Number(knowledgeId)}
+              onEdit={handleEditQa}
+              onDelete={handleDeleteQa}
+            />
+          </div>
         </div>
       </div>
     );
   };
 
   // 确认QA问答
-  const handleConfirmQa = (values: any) => {
-    console.log(values);
-    setQaOpen(false);
+  const handleConfirmQa = async (values: any): Promise<null> => {
     // 把数据添加到后端
     let doAction;
     if (values.id) {
@@ -377,16 +421,24 @@ const SpaceKnowledge: React.FC = () => {
         answer: values.answer,
         spaceId: spaceId,
       });
-
-      doAction.then((res) => {
-        if (res.code === '0000') {
-          message.success('添加QA问答成功');
-          // 添加成功后，查询文档列表
-          handleQaList();
-        }
-      });
     }
+    try {
+      const res = await doAction;
+      if (res.code === '0000') {
+        message.success(values.id ? 'QA问答更新成功' : '添加QA问答成功');
+        // 添加成功后，查询文档列表
+        handleQaList();
+        setQaOpen(false);
+      } else {
+        message.error(values.id ? 'QA问答更新失败' : '添加QA问答失败');
+      }
+    } catch (error) {
+      console.error(error);
+      message.error(values.id ? 'QA问答更新失败' : '添加QA问答失败');
+    }
+    return null;
   };
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       {/* 知识库头部  根据type 判断是否显示QA问答 */}
@@ -421,11 +473,21 @@ const SpaceKnowledge: React.FC = () => {
       />
       {/* QA问答弹窗*/}
       <QaModal
-        id={qaInfo?.id}
+        data={qaInfo}
         type={type as KnowledgeTextImportEnum}
         open={qaOpen}
         onCancel={() => setQaOpen(false)}
         onConfirm={handleConfirmQa}
+      />
+      {/* QA问答批量弹窗*/}
+      <QaBatchModal
+        open={qaBatchOpen}
+        kbId={Number(knowledgeId)}
+        onCancel={() => setQaBatchOpen(false)}
+        onConfirm={() => {
+          setQaBatchOpen(false);
+          handleQaList();
+        }}
       />
     </div>
   );
