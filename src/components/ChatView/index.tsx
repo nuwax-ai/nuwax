@@ -13,13 +13,33 @@ import mk from '@vscode/markdown-it-katex';
 import classNames from 'classnames';
 import markdownIt from 'markdown-it';
 import Prism from 'prismjs';
-import 'prismjs/themes/prism.css';
+// 可选：添加更多语言支持 Prism.js 默认只支持少量语言。如果需要支持更多语言，可以导入相应的语言组件：
+import 'prismjs/components/prism-bash.js';
+import 'prismjs/components/prism-icon.js';
+import 'prismjs/components/prism-java.js';
+import 'prismjs/components/prism-javascript.js';
+import 'prismjs/components/prism-jq.js';
+import 'prismjs/components/prism-json.js';
+import 'prismjs/components/prism-jsx.js';
+import 'prismjs/components/prism-kotlin.js';
+import 'prismjs/components/prism-log.js';
+import 'prismjs/components/prism-markdown.js';
+import 'prismjs/components/prism-perl.js';
+import 'prismjs/components/prism-powershell.js';
+import 'prismjs/components/prism-python.js';
+import 'prismjs/components/prism-regex.js';
+import 'prismjs/components/prism-sass.js';
+import 'prismjs/components/prism-sql.js';
+import 'prismjs/components/prism-tsx.js';
+import 'prismjs/components/prism-typescript.js';
+
+import 'prismjs/themes/prism-okaidia.css';
 import React, { useMemo } from 'react';
 import { useModel } from 'umi';
 import ChatBottomMore from './ChatBottomMore';
 import ChatSampleBottom from './ChatSampleBottom';
-import styles from './index.less';
 import RunOver from './RunOver';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
