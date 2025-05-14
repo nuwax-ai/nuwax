@@ -26,7 +26,7 @@ import './nodeItem.less';
 
 // 定义开始节点
 const StartNode: React.FC<NodeDisposeProps> = ({ form }) => {
-  // 递归一下inputArgs，保证children都是数组而不是null
+  console.log(form.getFieldsValue(true));
 
   return (
     <Form.Item name={'inputArgs'}>
