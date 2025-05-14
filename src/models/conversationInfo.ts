@@ -279,7 +279,10 @@ export default () => {
             }
           } else {
             // 工作流过程输出
-            if (!messageIdRef.current && finished) {
+            if (
+              (!messageIdRef.current || messageIdRef.current !== id) &&
+              finished
+            ) {
               newMessage = {
                 ...currentMessage,
                 id,
@@ -288,7 +291,7 @@ export default () => {
               };
               // 插入新的消息
               arraySpliceAction = 0;
-            } else if (!messageIdRef.current || messageIdRef.current === id) {
+            } else {
               messageIdRef.current = id;
               newMessage = {
                 ...currentMessage,
