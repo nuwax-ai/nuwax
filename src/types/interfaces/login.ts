@@ -18,7 +18,7 @@ export interface ILoginResult {
 // 发送验证码
 export interface SendCode {
   type: SendCodeEnum;
-  phone: string;
+  phone?: string;
   email?: string;
   // 验证票据
   ticket?: string;

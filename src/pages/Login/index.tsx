@@ -62,6 +62,7 @@ const Login: React.FC = () => {
     history.push('/verify-code', {
       phoneOrEmail,
       areaCode,
+      authType: tenantConfigInfo.authType,
     });
   };
 
@@ -147,8 +148,8 @@ const Login: React.FC = () => {
               required: true,
               message:
                 tenantConfigInfo && tenantConfigInfo.authType === 3
-                  ? '请输入手机号码!'
-                  : '请输入邮箱验证码!',
+                  ? '请输入邮箱验证码!'
+                  : '请输入手机号码!',
             },
             {
               validator(_, value) {
