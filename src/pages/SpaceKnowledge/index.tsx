@@ -5,7 +5,6 @@ import {
   apiKnowledgeDocumentList,
   apiKnowledgeQaAdd,
   apiKnowledgeQaDelete,
-  apiKnowledgeQaDownloadTemplate,
   apiKnowledgeQaUpdate,
 } from '@/services/knowledge';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
@@ -19,8 +18,8 @@ import type {
 } from '@/types/interfaces/knowledge';
 import { KnowledgeDocumentStatus } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
-import { DownloadOutlined, ExclamationCircleFilled } from '@ant-design/icons';
-import { Button, message, Modal, Space } from 'antd';
+import { ExclamationCircleFilled } from '@ant-design/icons';
+import { message, Modal } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -254,7 +253,7 @@ const SpaceKnowledge: React.FC = () => {
   };
   const [docType, setDocType] = useState<number>(1);
   const qaTableListRef = useRef<typeof QaTableList>(null);
-  const [qaInfo, setQaInfo] = useState<KnowledgeQAInfo>();
+  const [qaInfo, setQaInfo] = useState<KnowledgeQAInfo | null>(null);
   // 根据docType 判断是否显示QA问答
   const showDocContent = docType === 1;
   const [qaOpen, setQaOpen] = useState<boolean>(false);
@@ -280,6 +279,7 @@ const SpaceKnowledge: React.FC = () => {
     switch (item.value) {
       case KnowledgeTextImportEnum.Custom:
         setType(item.value as KnowledgeTextImportEnum);
+        setQaInfo(null);
         setQaOpen(true);
         break;
       case KnowledgeTextImportEnum.Local_Doc:
@@ -324,8 +324,8 @@ const SpaceKnowledge: React.FC = () => {
   // 编辑QA问答
   const handleEditQa = (record: KnowledgeQAInfo) => {
     console.log(record);
-    setQaOpen(true);
     setQaInfo(record);
+    setQaOpen(true);
   };
   // 删除QA问答
   const handleDeleteQa = async (record: KnowledgeQAInfo) => {
@@ -346,36 +346,11 @@ const SpaceKnowledge: React.FC = () => {
     }
     return null;
   };
-  // 下载QA批量excel模板
-  const handleDownloadQaTemplate = async () => {
-    console.log('下载QA批量excel模板');
-    try {
-      const blob = await apiKnowledgeQaDownloadTemplate();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'QA批量excel模板.xlsx';
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error(error);
-      message.error('下载QA批量excel模板失败');
-    }
-  };
+
   const renderQaContent = () => {
     return (
       <div className="flex flex-col h-full">
         {/* QA问答 */}
-        {/* 在表格总结栏 最左侧添加下载 QA 批量 excel模板 按钮 */}
-        <Space direction="vertical" align="start" style={{ marginTop: '12px' }}>
-          <Button
-            type="link"
-            icon={<DownloadOutlined />}
-            onClick={handleDownloadQaTemplate}
-          >
-            下载QA批量excel模板
-          </Button>
-        </Space>
         <div
           className={cx(
             'flex',
@@ -384,7 +359,6 @@ const SpaceKnowledge: React.FC = () => {
             'overflow-hide',
             styles['inner-container'],
           )}
-          style={{ marginTop: '6px' }}
         >
           <div
             className={cx('flex', 'flex-1', 'items-center', 'justify-center')}
@@ -393,7 +367,6 @@ const SpaceKnowledge: React.FC = () => {
             <QaTableList
               ref={qaTableListRef}
               spaceId={Number(spaceId)}
-              question={''}
               kbId={Number(knowledgeId)}
               onEdit={handleEditQa}
               onDelete={handleDeleteQa}
@@ -476,7 +449,10 @@ const SpaceKnowledge: React.FC = () => {
         data={qaInfo}
         type={type as KnowledgeTextImportEnum}
         open={qaOpen}
-        onCancel={() => setQaOpen(false)}
+        onCancel={() => {
+          setQaOpen(false);
+          setQaInfo(null);
+        }}
         onConfirm={handleConfirmQa}
       />
       {/* QA问答批量弹窗*/}
