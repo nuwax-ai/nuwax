@@ -1,4 +1,4 @@
-import { FC, useCallback, useEffect } from 'react';
+import { FC, memo, useCallback, useEffect, useRef, useState } from 'react';
 
 // 阿里云验证码配置类型定义
 interface AliyunCaptchaConfig {
@@ -20,7 +20,7 @@ interface CaptchaOptions {
     bizResult: boolean;
   };
   onBizResultCallback: () => void;
-  getInstance: () => void;
+  getInstance: (instance: any) => void;
   slideStyle?: {
     width: number;
     height: number;
@@ -39,6 +39,7 @@ interface AliyunCaptchaProps {
   config: AliyunCaptchaConfig;
   elementId: string;
   doAction: (captchaVerifyParam: any) => void;
+  onReady?: () => void; // 使用可选属性避免undefined调用
 }
 
 /**
@@ -46,20 +47,29 @@ interface AliyunCaptchaProps {
  * @param config - 验证码配置信息
  * @param elementId - 触发验证码的元素ID
  * @param doAction - 验证成功后的回调函数
+ * @param onReady - 验证码准备就绪的回调函数
  */
 const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
   config,
   elementId,
   doAction,
+  onReady,
 }) => {
+  const [captchaInited, setCaptchaInited] = useState<boolean>(false);
+  // 使用ref记录onReady是否已经调用过，避免重复调用
+  const onReadyCalledRef = useRef<boolean>(false);
+
   // 使用useCallback缓存回调函数，避免不必要的重新渲染
-  const captchaVerifyCallback = (captchaVerifyParam: any) => {
-    doAction(captchaVerifyParam);
-    return {
-      captchaResult: true,
-      bizResult: true,
-    };
-  };
+  const captchaVerifyCallback = useCallback(
+    (captchaVerifyParam: any) => {
+      doAction(captchaVerifyParam);
+      return {
+        captchaResult: true,
+        bizResult: true,
+      };
+    },
+    [doAction],
+  );
 
   // 清理验证码相关DOM元素
   const cleanupCaptchaElements = useCallback(() => {
@@ -67,7 +77,18 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
     document.getElementById('aliyunCaptcha-window-popup')?.remove();
   }, []);
 
+  // 获取验证码实例
+  const getInstance = useCallback((instance: any) => {
+    if (instance) {
+      setCaptchaInited(true);
+    }
+  }, []);
+
+  // 初始化验证码
   useEffect(() => {
+    // 重置onReady调用状态
+    onReadyCalledRef.current = false;
+
     // 初始化阿里云验证码
     if (
       config?.captchaSceneId &&
@@ -82,7 +103,7 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
         button: `#${elementId}`, // 触发验证码弹窗的元素
         captchaVerifyCallback, // 业务请求回调函数
         onBizResultCallback: () => {}, // 业务请求结果回调函数
-        getInstance: () => {}, // 绑定验证码实例函数
+        getInstance, // 绑定验证码实例函数
         slideStyle: {
           width: 360,
           height: 40,
@@ -95,6 +116,18 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
     return cleanupCaptchaElements;
   }, [config, elementId]);
 
+  // 处理onReady回调
+  useEffect(() => {
+    // 只有当captchaInited为true且onReady回调未被调用过时才调用
+    if (captchaInited) {
+      onReady?.();
+      console.log('验证码初始化完成，onReady已调用');
+    }
+
+    // 组件卸载时重置状态
+    return () => {};
+  }, [captchaInited]);
+
   return (
     <div className="captcha-a">
       <div id="captcha-element"></div>
@@ -102,4 +135,4 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
   );
 };
 
-export default AliyunCaptcha;
+export default memo(AliyunCaptcha);

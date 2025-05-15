@@ -462,12 +462,8 @@ const ChatTemp: React.FC = () => {
       // 是否需要阿里云验证码, 只有同时满足三个条件才启用验证码：场景ID存在、身份标存在、开启验证码
       const isNeedCaptcha = !!(captchaSceneId && captchaPrefix && openCaptcha);
 
-      // 需要阿里云验证码时，设置阿里云验证码配置信息
-      if (isNeedCaptcha) {
-        setTimeout(() => {
-          document.getElementById(buttonId)?.click();
-        }, 1000);
-      } else {
+      // 不需要阿里云验证码时，直接调用接口
+      if (!isNeedCaptcha) {
         asyncFun();
       }
     }
@@ -563,6 +559,9 @@ const ChatTemp: React.FC = () => {
       const { siteUrl } = tenantConfigInfo;
       window.open(siteUrl, '_blank');
     }
+  };
+  const handleCaptchaReady = () => {
+    document.getElementById(buttonId)?.click();
   };
 
   return (
@@ -671,6 +670,7 @@ const ChatTemp: React.FC = () => {
         config={tenantConfigInfo}
         doAction={asyncFun}
         elementId={buttonId}
+        onReady={handleCaptchaReady}
       />
     </div>
   );
