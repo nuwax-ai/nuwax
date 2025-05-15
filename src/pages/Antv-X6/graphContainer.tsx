@@ -273,6 +273,15 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         graphRef.current.addEdges(edges);
 
         updateEdgeArrows(graphRef.current);
+
+        // 添加zoomToFit调用，确保在绘制完成后自动调整视图
+        setTimeout(() => {
+          graphRef.current?.zoomToFit({
+            padding: 20,
+            maxScale: 1,
+            allowNewOrigin: 'negative',
+          });
+        }, 100);
       }
     };
 

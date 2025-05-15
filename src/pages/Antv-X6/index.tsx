@@ -167,9 +167,6 @@ const Workflow: React.FC = () => {
       const _edgeList = getEdges(_nodeList);
       // 修改数据，更新画布
       setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
-      if (_res.data.extension?.size) {
-        graphRef.current.changeGraphZoom(_res.data.extension?.size);
-      }
     } catch (error) {
       console.error('Failed to fetch graph data:', error);
     }
@@ -189,22 +186,12 @@ const Workflow: React.FC = () => {
   };
   // 调整画布的大小（左下角select）
   const changeGraph = (val: number) => {
-    onConfirm({
-      id: workflowId,
-      extension: { size: val },
-    });
     graphRef.current.changeGraphZoom(val);
   };
   // 调整画布的大小(滚轮)
   const changeZoom = (val: number) => {
     setInfo((prev) => {
       if (!prev) return null;
-      if (prev.extension?.size !== val) {
-        onConfirm({
-          id: workflowId,
-          extension: { size: val },
-        });
-      }
       return {
         ...prev,
         extension: { size: val },
