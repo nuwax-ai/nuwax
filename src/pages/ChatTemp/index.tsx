@@ -1,4 +1,5 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
+import AliyunCaptcha from '@/components/AliyunCaptcha';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatInputPhone from '@/components/ChatInputPhone';
 import ChatView from '@/components/ChatView';
@@ -8,7 +9,6 @@ import {
   TEMP_CONVERSATION_CONNECTION_URL,
   TEMP_CONVERSATION_UID,
 } from '@/constants/common.constants';
-import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import {
   apiTempChatConversationCreate,
   apiTempChatConversationQuery,
@@ -35,7 +35,6 @@ import type {
   RoleInfo,
   TempConversationChatParams,
 } from '@/types/interfaces/conversationInfo';
-import { TenantConfigInfo } from '@/types/interfaces/login';
 import { RequestResponse } from '@/types/interfaces/request';
 import { addBaseTarget } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
@@ -46,7 +45,7 @@ import classNames from 'classnames';
 import { throttle } from 'lodash';
 import moment from 'moment';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'umi';
+import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
@@ -84,9 +83,11 @@ const ChatTemp: React.FC = () => {
     AgentSelectedComponentInfo[]
   >([]);
 
+  const buttonId = 'aliyun-captcha-id';
+  const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
+
   // 会话UID
   const conversationUid = useRef<string>();
-  const tenantConfigInfoRef = useRef<TenantConfigInfo>();
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const handleScrollBottom = () => {
@@ -427,45 +428,50 @@ const ChatTemp: React.FC = () => {
     };
   }, [conversationInfo]);
 
-  useEffect(() => {
-    // 初始化租户配置信息
-    const tenantConfigInfo = localStorage.getItem(TENANT_CONFIG_INFO);
-    if (tenantConfigInfo) {
-      tenantConfigInfoRef.current = JSON.parse(tenantConfigInfo);
-    }
-  }, []);
-
-  useEffect(() => {
-    const asyncFun = async () => {
-      if (chatKey) {
-        setIsLoadingConversation(true);
-        const uid = sessionStorage.getItem(TEMP_CONVERSATION_UID);
-        if (uid) {
-          // 查询临时会话详细
-          runQueryConversation({ chatKey, conversationUid: uid });
-          conversationUid.current = uid;
-          return;
-        }
-        // 创建临时会话
-        const {
-          data,
-          success,
-          message: _message,
-        } = await runTempChatCreate({ chatKey });
-        if (success) {
-          conversationUid.current = data.uid;
-          sessionStorage.setItem(TEMP_CONVERSATION_UID, data.uid);
-          // 查询临时会话详细
-          runQueryConversation({ chatKey, conversationUid: data.uid });
-        } else {
-          setIsLoadingConversation(false);
-          message.warning(_message);
-        }
+  const asyncFun = async (captchaVerifyParam: string = '') => {
+    if (chatKey) {
+      setIsLoadingConversation(true);
+      const uid = sessionStorage.getItem(TEMP_CONVERSATION_UID);
+      if (uid) {
+        // 查询临时会话详细
+        runQueryConversation({ chatKey, conversationUid: uid });
+        conversationUid.current = uid;
+        return;
       }
-    };
+      // 创建临时会话
+      const {
+        data,
+        success,
+        message: _message,
+      } = await runTempChatCreate({ chatKey, captchaVerifyParam });
+      if (success) {
+        conversationUid.current = data.uid;
+        sessionStorage.setItem(TEMP_CONVERSATION_UID, data.uid);
+        // 查询临时会话详细
+        runQueryConversation({ chatKey, conversationUid: data.uid });
+      } else {
+        setIsLoadingConversation(false);
+        message.warning(_message);
+      }
+    }
+  };
 
-    asyncFun();
-  }, [chatKey]);
+  useEffect(() => {
+    if (tenantConfigInfo) {
+      const { captchaSceneId, captchaPrefix, openCaptcha } = tenantConfigInfo;
+      // 是否需要阿里云验证码, 只有同时满足三个条件才启用验证码：场景ID存在、身份标存在、开启验证码
+      const isNeedCaptcha = !!(captchaSceneId && captchaPrefix && openCaptcha);
+
+      // 需要阿里云验证码时，设置阿里云验证码配置信息
+      if (isNeedCaptcha) {
+        setTimeout(() => {
+          document.getElementById(buttonId)?.click();
+        }, 1000);
+      } else {
+        asyncFun();
+      }
+    }
+  }, [tenantConfigInfo]);
 
   // 在组件挂载时添加滚动事件监听器
   useEffect(() => {
@@ -499,6 +505,8 @@ const ChatTemp: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // 租户配置信息查询接口
+    runTenantConfig();
     addBaseTarget();
   }, []);
 
@@ -551,8 +559,8 @@ const ChatTemp: React.FC = () => {
 
   // 点击页脚跳转到租户官网
   const handleSiteLink = () => {
-    if (tenantConfigInfoRef.current) {
-      const { siteUrl } = tenantConfigInfoRef.current;
+    if (tenantConfigInfo) {
+      const { siteUrl } = tenantConfigInfo;
       window.open(siteUrl, '_blank');
     }
   };
@@ -651,9 +659,19 @@ const ChatTemp: React.FC = () => {
               'cursor-pointer',
             )}
             onClick={handleSiteLink}
-          >{`欢迎使用${tenantConfigInfoRef.current?.siteName}平台，快速搭建你的个性化智能体`}</p>
+          >{`欢迎使用${tenantConfigInfo?.siteName}平台，快速搭建你的个性化智能体`}</p>
         </div>
       </div>
+      <button
+        id={buttonId}
+        type="button"
+        className={cx(styles['captcha-button'])}
+      />
+      <AliyunCaptcha
+        config={tenantConfigInfo}
+        doAction={asyncFun}
+        elementId={buttonId}
+      />
     </div>
   );
 };
