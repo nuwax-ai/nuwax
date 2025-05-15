@@ -487,6 +487,7 @@ const initGraph = ({
     // 获取节点被拖拽到的位置
     const { x, y } = node.getPosition();
     const data = node.getData();
+
     // 将节点的extension属性设置为拖拽后的位置
     if (data.nodeConfig && data.nodeConfig.extension) {
       data.nodeConfig.extension.x = x;
@@ -532,33 +533,40 @@ const initGraph = ({
     if (data.type === 'Loop') {
       const children = node.getChildren();
       const innerNodes = data.innerNodes || [];
+
       if (children && children.length) {
         // 找到循环节点中当前被移动的节点
         for (let item of children) {
           // console.log(item.isNode())
-          if (!item.isNode()) return;
-          const position = item.getPosition();
-          const childrenData = item.getData();
+          if (item.isNode()) {
+            const position = item.getPosition();
+            const childrenData = item.getData();
 
-          childrenData.nodeConfig.extension.x = position.x;
-          childrenData.nodeConfig.extension.y = position.y;
-          //  如果当前innerNodes没有这个节点，就添加进去
-          if (
-            !innerNodes.find((node: ChildNode) => node.id === childrenData.id)
-          ) {
-            innerNodes.push(childrenData);
-          } else {
-            // 如果当前innerNodes有这个节点，就更新
-            const index = innerNodes.findIndex(
-              (node: ChildNode) => node.id === childrenData.id,
-            );
-            innerNodes[index] = childrenData;
+            childrenData.nodeConfig.extension.x = position.x;
+            childrenData.nodeConfig.extension.y = position.y;
+            //  如果当前innerNodes没有这个节点，就添加进去
+            if (
+              !innerNodes.find((node: ChildNode) => node.id === childrenData.id)
+            ) {
+              innerNodes.push(childrenData);
+            } else {
+              // 如果当前innerNodes有这个节点，就更新
+              const index = innerNodes.findIndex(
+                (node: ChildNode) => node.id === childrenData.id,
+              );
+              innerNodes[index] = childrenData;
+            }
           }
         }
       }
+
       data.innerNodes = innerNodes;
       data.nodeConfig.extension.x = x;
       data.nodeConfig.extension.y = y;
+      const _size = node.getSize();
+      data.nodeConfig.extension.width = _size.width;
+      data.nodeConfig.extension.height = _size.height;
+
       changeCondition(data, 'moved');
       return;
     }
@@ -773,9 +781,9 @@ const initGraph = ({
     }
   });
 
+  //
+
   return graph; // 返回初始化好的图形实例
 };
 
 export default initGraph;
-
-// 在graph初始化后添加工具
