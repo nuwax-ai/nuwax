@@ -53,7 +53,7 @@ const SettingEmail: React.FC = () => {
   };
 
   const handleSendCode = () => {
-    const fieldName: 'phone' | 'email' = authType ? 'phone' : 'email';
+    const fieldName: 'phone' | 'email' = authType ? 'email' : 'phone';
     form.validateFields([fieldName]).then((values) => {
       handleCount();
       runSendCode({
@@ -65,7 +65,7 @@ const SettingEmail: React.FC = () => {
 
   return (
     <div className={cx(styles.container)}>
-      <h3>{authType ? '手机号绑定' : '邮箱绑定'}</h3>
+      <h3>{authType ? '邮箱绑定' : '手机号绑定'}</h3>
       <Form
         layout="vertical"
         form={form}
@@ -74,30 +74,30 @@ const SettingEmail: React.FC = () => {
         onFinish={handlerBindEmail}
       >
         <Form.Item
-          name={authType ? 'phone' : 'email'}
-          label={authType ? '手机号码' : '邮箱地址'}
+          name={authType ? 'email' : 'phone'}
+          label={authType ? '邮箱地址' : '手机号码'}
           rules={[
             {
               required: true,
-              message: authType ? '请输入手机号码' : '请输入邮箱地址',
+              message: authType ? '请输入邮箱地址' : '请输入手机号码',
             },
             {
               validator(_, value) {
                 if (!value) return Promise.resolve();
                 if (authType) {
-                  return isValidPhone(value)
-                    ? Promise.resolve()
-                    : Promise.reject(new Error('请输入正确的手机号码!'));
-                } else {
                   return isValidEmail(value)
                     ? Promise.resolve()
                     : Promise.reject(new Error('请输入正确的邮箱地址!'));
+                } else {
+                  return isValidPhone(value)
+                    ? Promise.resolve()
+                    : Promise.reject(new Error('请输入正确的手机号码!'));
                 }
               },
             },
           ]}
         >
-          <Input placeholder={authType ? '请输入手机号码' : '请输入邮箱地址'} />
+          <Input placeholder={authType ? '请输入邮箱地址' : '请输入手机号码'} />
         </Form.Item>
         <Form.Item
           name="code"

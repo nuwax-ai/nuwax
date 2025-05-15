@@ -26,8 +26,6 @@ import './nodeItem.less';
 
 // 定义开始节点
 const StartNode: React.FC<NodeDisposeProps> = ({ form }) => {
-  console.log(form.getFieldsValue(true));
-
   return (
     <Form.Item name={'inputArgs'}>
       <CustomTree

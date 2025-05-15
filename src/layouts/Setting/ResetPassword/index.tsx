@@ -123,10 +123,7 @@ const ResetPassword: React.FC = () => {
           ]}
         >
           <div className={cx('flex', 'content-between')}>
-            <Input
-              rootClassName={styles.input}
-              placeholder={phone ? '请输入邮箱验证码' : '请输入手机验证码'}
-            />
+            <Input rootClassName={styles.input} placeholder={'请输入验证码'} />
             {countDown < 60 && countDown > 0 ? (
               <Button rootClassName={styles.btn} disabled type="primary">
                 {`${countDown}s`}

@@ -524,7 +524,9 @@ const Workflow: React.FC = () => {
             _res.data.id.toString(),
             targetNode.id.toString(),
           );
+          nodeChangeEdge('deleted', targetNode.id.toString(), sourceNode);
           graphRef.current.deleteEdge(edgeId);
+          // 还需要删除原来的那条边
         }
 
         // 清空currentNodeRef

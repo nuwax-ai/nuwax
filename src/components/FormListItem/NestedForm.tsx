@@ -49,7 +49,6 @@ const CustomTree: React.FC<TreeFormProps> = ({
   // const { volid, setIsModified } = useModel('workflow');
 
   useEffect(() => {
-    console.log(123123213, params);
     if (params && !_.isEqual(params, treeData)) {
       setTreeData(params);
     }
