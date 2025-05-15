@@ -1,5 +1,5 @@
 // 引入 AntV X6 的核心库和必要的插件。
-import { Cell, Edge, Graph, Node, Shape } from '@antv/x6';
+import { Cell, Edge, Graph, Node, Shape, ToolsView } from '@antv/x6';
 
 // 剪贴板插件，用于复制和粘贴节点
 import { Clipboard } from '@antv/x6-plugin-clipboard';
@@ -366,6 +366,7 @@ const initGraph = ({
           height: 10,
           x: -5, // 图标居中
           y: -5,
+          opacity: 1, // 通过设置透明度来控制显示
         },
         hoverCircle: {
           pointerEvents: 'none',
@@ -383,7 +384,7 @@ const initGraph = ({
         ...p.attrs,
         circle: {
           ...(p.attrs?.circle || {}),
-          r: 8, // 仅修改当前端口
+          r: 3, // 仅修改当前端口
           stroke: '#5147FF',
           fill: '#5147FF',
         },
@@ -391,6 +392,7 @@ const initGraph = ({
           ...(p.attrs?.icon || {}),
           width: 0, // 显示图标
           height: 0,
+          opacity: 0, // 设置为完全透明
         },
         hoverCircle: {
           pointerEvents: 'visiblePainted',
@@ -405,9 +407,14 @@ const initGraph = ({
     createNodeAndEdge(e, node.getData(), port as string, nodeWidth);
   });
 
-  // 在创建图形实例后添加事件监听
+  // // 在创建图形实例后添加事件监听
   graph.on('edge:mouseenter', ({ edge }) => {
-    // 获取边缘的所有工具视图
+    edge.setTools('button', {
+      attrs: {
+        button: { opacity: 1 },
+        icon: { opacity: 1 },
+      },
+    });
     edge.addTools([
       {
         name: 'button',
@@ -460,8 +467,19 @@ const initGraph = ({
     ]);
   });
 
-  graph.on('edge:mouseleave', ({ cell }) => {
-    cell.removeTools();
+  graph.on('edge:mouseleave', ({ edge }) => {
+    edge.removeTools();
+    // 获取指定名称的工具
+    const tools = edge.getTools();
+    console.log(ToolsView.isToolsView(tools));
+
+    // if (tool) {
+    //   if (Array.isArray(tool.items)) {
+    //     tool.items.forEach(t => t.hide());
+    //   } else {
+    //     tool.hide();
+    //   }
+    // }
   });
   // 监听节点的拖拽移动位置
   graph.on('node:moved', ({ node, e }) => {
@@ -759,3 +777,5 @@ const initGraph = ({
 };
 
 export default initGraph;
+
+// 在graph初始化后添加工具
