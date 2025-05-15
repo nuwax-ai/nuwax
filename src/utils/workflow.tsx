@@ -356,6 +356,7 @@ export const generatePorts = (data: ChildNode) => {
         fill: '#fff',
         zIndex: -2, // 图标在下面
         pointerEvents: 'none',
+        opacity: 0, // 设置为完全透明
       },
     },
   });

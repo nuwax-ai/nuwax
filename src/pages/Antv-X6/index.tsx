@@ -167,9 +167,6 @@ const Workflow: React.FC = () => {
       const _edgeList = getEdges(_nodeList);
       // 修改数据，更新画布
       setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
-      if (_res.data.extension?.size) {
-        graphRef.current.changeGraphZoom(_res.data.extension?.size);
-      }
     } catch (error) {
       console.error('Failed to fetch graph data:', error);
     }
@@ -189,22 +186,12 @@ const Workflow: React.FC = () => {
   };
   // 调整画布的大小（左下角select）
   const changeGraph = (val: number) => {
-    onConfirm({
-      id: workflowId,
-      extension: { size: val },
-    });
     graphRef.current.changeGraphZoom(val);
   };
   // 调整画布的大小(滚轮)
   const changeZoom = (val: number) => {
     setInfo((prev) => {
       if (!prev) return null;
-      if (prev.extension?.size !== val) {
-        onConfirm({
-          id: workflowId,
-          extension: { size: val },
-        });
-      }
       return {
         ...prev,
         extension: { size: val },
@@ -454,6 +441,13 @@ const Workflow: React.FC = () => {
         };
       }
     }
+
+    if (currentNodeRef.current) {
+      const { sourceNode } = currentNodeRef.current;
+      if (sourceNode.loopNodeId) {
+        _params.loopNodeId = sourceNode.loopNodeId;
+      }
+    }
     const _res = await service.addNode(_params);
 
     if (_res.code === Constant.success) {
@@ -493,7 +487,6 @@ const Workflow: React.FC = () => {
             _res.data.id,
             targetNode,
           );
-          console.log(_params);
           changeNode(_params as ChildNode);
           const sourcePortId = portId.split('-').slice(0, -1).join('-');
           graphRef.current.createNewEdge(sourcePortId, _res.data.id.toString());

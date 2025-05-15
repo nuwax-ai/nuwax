@@ -38,8 +38,8 @@ export interface TempConversationQueryDto {
 export interface TempConversationCreateDto {
   // 链接Key
   chatKey: string;
-  // 校验Token，暂时不传，后续真人校验时传递
-  checkToken?: string;
+  // 验证码参数
+  captchaVerifyParam?: string;
 }
 
 /**

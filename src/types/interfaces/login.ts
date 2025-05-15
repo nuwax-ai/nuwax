@@ -96,37 +96,138 @@ export type ModalSliderCaptchaType = {
 
 // 租户配置信息
 export interface TenantConfigInfo {
-  // 登录的是邮箱还是手机
-  authType: number;
-  // 站点名称
+  workflowPublishAudit?: number;
+  /*站点名称 */
   siteName: string;
+
+  /* */
   siteUrl: string;
-  // 站点描述
+
+  /*站点描述 */
   siteDescription: string;
-  // 站点LOGO，为空使用现有默认的
+
+  /*站点LOGO，为空使用现有默认的 */
   siteLogo: string;
-  // 站点Favicon，为空使用现有默认的
+
+  /* */
   faviconUrl: string;
-  // 登录页banner
+
+  /*登录页banner */
   loginBanner: string;
-  // 登录页banner文案
+
+  /*登录页banner文案 */
   loginBannerText: string;
-  // 广场Banner地址，为空使用现有默认的
+
+  /*广场Banner地址，为空使用现有默认的 */
   squareBanner: string;
-  // 广场Banner文案标题
+
+  /*广场Banner文案标题 */
   squareBannerText: string;
-  // 广场Banner文案副标题
+
+  /*广场Banner文案副标题 */
   squareBannerSubText: string;
-  // 广场Banner链接，如果链接不为空，点击跳转
+
+  /*广场Banner链接，如果链接不为空，点击跳转 */
   squareBannerLinkUrl: string;
-  // 开启注册, 0 关闭；1 开启，如果为0，前端不展示注册入口
+
+  /*开启注册, 0 关闭；1 开启，如果为0，前端不展示注册入口 */
   openRegister: number;
-  // 默认站点Agent
+
+  /*默认会话模型 */
+  defaultChatModelId: number;
+
+  /*默认嵌入模型 */
+  defaultEmbedModelId: number;
+
+  /*默认知识库模型 */
+  defaultKnowledgeModelId: number;
+
+  /*默认站点Agent */
   defaultAgentId: number;
-  // 首页会话框下的推荐问题
-  homeRecommendQuestions: string[];
-  // 站点域名
-  domainNames: string[];
+
+  /*首页会话框下的推荐问题 */
+  homeRecommendQuestions: Record<string, unknown>[];
+
+  /*官方智能体配置 */
+  officialAgentIds: Record<string, unknown>[];
+
+  /*官方用户名 */
+  officialUserName: string;
+
+  /*站点域名 */
+  domainNames: Record<string, unknown>[];
+
+  /* */
+  casClientHostUrl: string;
+
+  /* */
+  casValidateUrl: string;
+
+  /* */
+  casLoginUrl: string;
+
+  /* */
+  authType: number;
+
+  /* */
+  agentPublishAudit: number;
+
+  /* */
+  pluginPublishAudit: number;
+
+  /* */
+  userWhiteList: Record<string, unknown>[];
+
+  /* */
+  codeSafeCheckPrompt: string;
+
+  /* */
+  openCodeSafeCheck: number;
+
+  /* */
+  globalSystemPrompt: string;
+
+  /* */
+  smtpHost: string;
+
+  /* */
+  smtpPort: number;
+
+  /* */
+  smtpUsername: string;
+
+  /* */
+  smtpPassword: string;
+
+  /* */
+  smsAccessKeyId: string;
+
+  /* */
+  smsAccessKeySecret: string;
+
+  /* */
+  smsSignName: string;
+
+  /* */
+  smsTemplateCode: string;
+
+  /* */
+  authExpire: number;
+
+  /* */
+  openCaptcha: number;
+
+  /* */
+  captchaAccessKeyId: string;
+
+  /* */
+  captchaAccessKeySecret: string;
+
+  /* */
+  captchaPrefix: string;
+
+  /* */
+  captchaSceneId: string;
 }
 
 // 设置用户账号信息
