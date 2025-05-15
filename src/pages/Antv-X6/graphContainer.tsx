@@ -3,7 +3,7 @@ import type {
   GraphContainerProps,
   GraphContainerRef,
 } from '@/types/interfaces/graph';
-import { updateEdgeArrows } from '@/utils/graph';
+import { adjustParentSize, updateEdgeArrows } from '@/utils/graph';
 import {
   createBaseNode,
   createChildNode,
@@ -79,6 +79,19 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         // 直接在graph实例中添加子节点并设置父子关系
         const parentNode = graphRef.current.getCellById(child.loopNodeId);
         parentNode.addChild(childNodeInstance);
+        // 更改循环节点的大小
+        adjustParentSize(parentNode);
+        const size = parentNode.getSize();
+        const position = parentNode.getPosition();
+        const _params = parentNode.getData() as ChildNode;
+        _params.nodeConfig.extension = {
+          ..._params.nodeConfig.extension,
+          width: size.width,
+          height: size.height,
+          x: position.x,
+          y: position.y,
+        };
+        changeCondition(_params);
       }
     };
 

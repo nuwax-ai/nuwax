@@ -454,6 +454,13 @@ const Workflow: React.FC = () => {
         };
       }
     }
+
+    if (currentNodeRef.current) {
+      const { sourceNode } = currentNodeRef.current;
+      if (sourceNode.loopNodeId) {
+        _params.loopNodeId = sourceNode.loopNodeId;
+      }
+    }
     const _res = await service.addNode(_params);
 
     if (_res.code === Constant.success) {
@@ -493,7 +500,6 @@ const Workflow: React.FC = () => {
             _res.data.id,
             targetNode,
           );
-          console.log(_params);
           changeNode(_params as ChildNode);
           const sourcePortId = portId.split('-').slice(0, -1).join('-');
           graphRef.current.createNewEdge(sourcePortId, _res.data.id.toString());

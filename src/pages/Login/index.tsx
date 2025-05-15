@@ -164,7 +164,6 @@ const Login: React.FC = () => {
         : LoginTypeEnum.Password;
     setLoginType(type);
   };
-  const captchaButtonId = 'aliyun-captcha-button';
   const selectBefore = (
     <Form.Item name="areaCode" noStyle>
       <Select style={{ width: 80 }}>
@@ -186,6 +185,12 @@ const Login: React.FC = () => {
       ),
     );
   }, [tenantConfigInfo]);
+  const captchaButtonId = useRef<string>(`aliyun-captcha-button-${loginType}`);
+  useEffect(() => {
+    if (loginType) {
+      captchaButtonId.current = `aliyun-captcha-button-${loginType}`;
+    }
+  }, [loginType]);
 
   return (
     <div
@@ -256,7 +261,7 @@ const Login: React.FC = () => {
               block
               type="primary"
               htmlType="submit"
-              id="aliyun-captcha-button"
+              id={captchaButtonId.current}
             >
               {loginType === LoginTypeEnum.Password ? '登录' : '下一步'}
             </Button>
@@ -270,21 +275,14 @@ const Login: React.FC = () => {
           </Form.Item>
         </Form.Item>
       </Form>
-      {needAliyunCaptcha && (
-        <AliyunCaptcha
-          config={tenantConfigInfo}
-          doAction={(captchaVerifyParam) => {
-            captchaVerifyParamRef.current = captchaVerifyParam;
-            handlerSuccess();
-          }}
-          elementId={captchaButtonId}
-        />
-      )}
-      {/* <ModalSliderCaptcha
-        open={open}
-        onCancel={setOpen}
-        onSuccess={handlerSuccess}
-      /> */}
+      <AliyunCaptcha
+        config={tenantConfigInfo}
+        doAction={(captchaVerifyParam) => {
+          captchaVerifyParamRef.current = captchaVerifyParam;
+          handlerSuccess();
+        }}
+        elementId={captchaButtonId.current}
+      />
       <SiteFooter />
     </div>
   );
