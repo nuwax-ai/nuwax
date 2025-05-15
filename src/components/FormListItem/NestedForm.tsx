@@ -317,7 +317,10 @@ const CustomTree: React.FC<TreeFormProps> = ({
             changeOnSelect={true}
             disabled={
               nodeData.systemVariable ||
-              (!isNotAdd && form.getFieldValue('outputType') === 'Text')
+              isBody ||
+              (!isNotAdd && form.getFieldValue('outputType') === 'Text') ||
+              form.getFieldValue('outputType') === 'Markdown' ||
+              (nodeData.subArgs && nodeData.subArgs.length > 0)
             }
             placement={'bottomLeft'}
             placeholder="请选择数据类型"

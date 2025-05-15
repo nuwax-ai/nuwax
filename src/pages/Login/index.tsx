@@ -20,7 +20,9 @@ const { confirm } = Modal;
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const [loginType, setLoginType] = useState<LoginTypeEnum>(LoginTypeEnum.Code);
+  const [loginType, setLoginType] = useState<LoginTypeEnum>(
+    LoginTypeEnum.Password,
+  );
   const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
   const [needAliyunCaptcha, setNeedAliyunCaptcha] = useState<boolean>(false);
@@ -268,21 +270,14 @@ const Login: React.FC = () => {
           </Form.Item>
         </Form.Item>
       </Form>
-      {needAliyunCaptcha && (
-        <AliyunCaptcha
-          config={tenantConfigInfo}
-          doAction={(captchaVerifyParam) => {
-            captchaVerifyParamRef.current = captchaVerifyParam;
-            handlerSuccess();
-          }}
-          elementId={captchaButtonId}
-        />
-      )}
-      {/* <ModalSliderCaptcha
-        open={open}
-        onCancel={setOpen}
-        onSuccess={handlerSuccess}
-      /> */}
+      <AliyunCaptcha
+        config={tenantConfigInfo}
+        doAction={(captchaVerifyParam) => {
+          captchaVerifyParamRef.current = captchaVerifyParam;
+          handlerSuccess();
+        }}
+        elementId={captchaButtonId}
+      />
       <SiteFooter />
     </div>
   );

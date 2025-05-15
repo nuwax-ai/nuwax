@@ -11,10 +11,15 @@ import type {
   KnowledgeDocumentUpdateParams,
   KnowledgeInfo,
   KnowledgeQAAddParams,
+  KnowledgeQaAddParams,
+  KnowledgeQaDeleteParams,
   KnowledgeQAInfo,
   KnowledgeQAListParams,
+  KnowledgeQaListParams,
   KnowledgeQASearchParams,
   KnowledgeQAUpdateParams,
+  KnowledgeQaUpdateParams,
+  KnowledgeQaUploadParams,
   KnowledgeQueryDocStatusParams,
   KnowledgeRawSegmentAddParams,
   KnowledgeRawSegmentInfo,
@@ -316,26 +321,68 @@ export async function apiKnowledgeQAEmbeddingStatus(
   });
 }
 
-// 知识库问答 - 数据详情查询
-export async function apiKnowledgeQADetail(
-  dataId: number,
-): Promise<RequestResponse<KnowledgeQAInfo>> {
-  return request('/api/knowledge/qa/detailById', {
-    method: 'GET',
-    params: {
-      dataId,
-    },
+// 知识库问答 - 数据新增接口
+export async function apiKnowledgeQaAdd(
+  data: KnowledgeQaAddParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/knowledge/qa/add', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 知识库问答 - 数据列表查询
+export async function apiKnowledgeQaList(
+  data: KnowledgeQaListParams,
+): Promise<RequestResponse<Page<KnowledgeQAInfo>>> {
+  return request('/api/knowledge/qa/list', {
+    method: 'POST',
+    data,
   });
 }
 
 // 知识库问答 - 数据删除接口
-export async function apiKnowledgeQADelete(
-  id: number,
+export async function apiKnowledgeQaDelete(
+  data: KnowledgeQaDeleteParams,
 ): Promise<RequestResponse<null>> {
+  const formData = new FormData();
+  formData.append('id', data.id.toString());
   return request('/api/knowledge/qa/deleteById', {
+    method: 'POST',
+    data: formData,
+  });
+}
+
+// 知识库问答 - 数据更新接口
+export async function apiKnowledgeQaUpdate(
+  data: KnowledgeQaUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/knowledge/qa/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 知识库问答 - 下载QA批量excel模板
+export async function apiKnowledgeQaDownloadTemplate(): Promise<
+  RequestResponse<Blob>
+> {
+  return request('/api/knowledge/qa/downloadExcelTemplate', {
     method: 'GET',
-    params: {
-      id,
-    },
+    responseType: 'blob',
+  });
+}
+
+// 知识库问答 - 上传QA批量excel模板
+export async function apiKnowledgeQaUpload(
+  data: KnowledgeQaUploadParams,
+): Promise<RequestResponse<null>> {
+  const formData = new FormData();
+  formData.append('file', data.file);
+  formData.append('kbId', data.kbId.toString());
+
+  return request('/api/knowledge/qa/importExcel', {
+    method: 'POST',
+    data: formData,
   });
 }
