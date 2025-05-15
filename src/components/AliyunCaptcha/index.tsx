@@ -53,16 +53,13 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
   doAction,
 }) => {
   // 使用useCallback缓存回调函数，避免不必要的重新渲染
-  const captchaVerifyCallback = useCallback(
-    (captchaVerifyParam: any) => {
-      doAction(captchaVerifyParam);
-      return {
-        captchaResult: true,
-        bizResult: true,
-      };
-    },
-    [doAction],
-  );
+  const captchaVerifyCallback = (captchaVerifyParam: any) => {
+    doAction(captchaVerifyParam);
+    return {
+      captchaResult: true,
+      bizResult: true,
+    };
+  };
 
   // 清理验证码相关DOM元素
   const cleanupCaptchaElements = useCallback(() => {
@@ -72,7 +69,11 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
 
   useEffect(() => {
     // 初始化阿里云验证码
-    if (config?.captchaSceneId && config?.captchaPrefix) {
+    if (
+      config?.captchaSceneId &&
+      config?.captchaPrefix &&
+      config?.openCaptcha
+    ) {
       window.initAliyunCaptcha({
         SceneId: config.captchaSceneId, // 场景ID
         prefix: config.captchaPrefix, // 身份标
@@ -92,7 +93,7 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
 
     // 组件卸载时清理DOM元素
     return cleanupCaptchaElements;
-  }, [config, elementId, captchaVerifyCallback, cleanupCaptchaElements]);
+  }, [config, elementId]);
 
   return (
     <div className="captcha-a">

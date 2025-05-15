@@ -270,21 +270,14 @@ const Login: React.FC = () => {
           </Form.Item>
         </Form.Item>
       </Form>
-      {needAliyunCaptcha && (
-        <AliyunCaptcha
-          config={tenantConfigInfo}
-          doAction={(captchaVerifyParam) => {
-            captchaVerifyParamRef.current = captchaVerifyParam;
-            handlerSuccess();
-          }}
-          elementId={captchaButtonId}
-        />
-      )}
-      {/* <ModalSliderCaptcha
-        open={open}
-        onCancel={setOpen}
-        onSuccess={handlerSuccess}
-      /> */}
+      <AliyunCaptcha
+        config={tenantConfigInfo}
+        doAction={(captchaVerifyParam) => {
+          captchaVerifyParamRef.current = captchaVerifyParam;
+          handlerSuccess();
+        }}
+        elementId={captchaButtonId}
+      />
       <SiteFooter />
     </div>
   );
