@@ -781,9 +781,9 @@ const initGraph = ({
     }
   });
 
+  //
+
   return graph; // 返回初始化好的图形实例
 };
 
 export default initGraph;
-
-// 在graph初始化后添加工具
