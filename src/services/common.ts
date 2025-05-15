@@ -10,7 +10,25 @@ import { RequestConfig } from '@@/plugin-request/request';
 import { message } from 'antd';
 import { history } from 'umi';
 
-// 错误抛出函数
+/**
+ * 判断请求是否为不需要显示错误消息的API
+ * @param url 请求URL
+ * @returns 是否应该隐藏错误提示
+ */
+const doNotShowAnyMsgRequestList = (url: string): boolean => {
+  // 不展示错误消息的API路径列表
+  const list = [
+    '/api/notify/event/collect/batch', // 事件轮询
+    '/api/notify/event/clear', // 事件清除
+    // 可以在此添加其他不需要显示错误消息的API
+  ];
+  return list.some((api) => url.includes(api));
+};
+
+/**
+ * 错误抛出函数
+ * 将API错误包装成标准格式的错误对象
+ */
 const errorThrower = (res: RequestResponse<null>) => {
   const {
     code,
@@ -32,98 +50,144 @@ const errorThrower = (res: RequestResponse<null>) => {
       debugInfo,
       tid,
     };
-    // 不直接抛出自制的错误，而是返回它
-    return error;
+    return error; // 返回错误对象，而不是直接抛出
   }
 };
 
-// 错误处理器
+/**
+ * 全局错误处理器
+ * 处理所有请求的错误情况，并显示适当的错误消息
+ */
 const errorHandler = (error: any, opts: any) => {
   if (!error) {
     return;
   }
+
   if (opts?.skipErrorHandler) throw error;
 
-  // 我们的 errorThrower 抛出的错误
+  // 检查是否为不需要显示错误消息的请求
+  const isDoNotShowAnyMsg =
+    opts?.config?.url && doNotShowAnyMsgRequestList(opts.config.url);
+
+  // 处理业务错误
   if (error.name === 'BizError') {
     const errorInfo: RequestResponse<null> | undefined = error.info;
     if (errorInfo) {
       const { code, message: errorMessage } = errorInfo;
+
+      // 根据错误码处理不同情况
       switch (code) {
-        // 用户未登录，使用 history.push 进行跳转
+        // 用户未登录，跳转到登录页
         case USER_NO_LOGIN:
           localStorage.clear();
           history.push('/login');
           break;
+
         // 重定向到登录页
         case REDIRECT_LOGIN:
           window.location.href = errorMessage;
           break;
+
         // 智能体不存在或已下架
         case AGENT_NOT_EXIST:
-          message.warning(errorMessage);
+          if (!isDoNotShowAnyMsg) {
+            message.warning(errorMessage);
+          }
           break;
+
+        // 默认错误处理
         default:
-          message.warning(errorMessage);
+          // 只有当请求不在过滤列表中才显示错误消息
+          if (!isDoNotShowAnyMsg) {
+            message.warning(errorMessage);
+          } else {
+            console.warn('API错误（已隐藏提示）:', errorMessage);
+          }
       }
-      // 返回一个空的 Promise.reject 以防止错误继续传播
+
+      // 返回一个空的Promise.reject以防止错误继续传播
       return Promise.reject();
     }
   } else if (error.response) {
-    // Axios 的错误
-    // 请求成功发出且服务器也响应了状态码，但状态代码超出了 2xx 的范围
-    message.error(`请求错误 ${error.response.status}`);
-    // 返回一个空的 Promise.reject 以防止错误继续传播
+    // 处理HTTP错误
+    if (!isDoNotShowAnyMsg) {
+      message.error(`请求错误 ${error.response.status}`);
+    } else {
+      console.warn(
+        `API错误（已隐藏提示）: HTTP状态码 ${error.response.status}`,
+      );
+    }
     return Promise.reject();
   } else if (error.request) {
-    // 请求已经成功发起，但没有收到响应
-    message.error('服务器无响应，请重试');
+    // 处理请求超时
+    if (!isDoNotShowAnyMsg) {
+      message.error('服务器无响应，请重试');
+    } else {
+      console.warn('API错误（已隐藏提示）: 服务器无响应');
+    }
     return Promise.reject();
   } else {
-    // 发送请求时出了点问题
-    message.error('您的网络发生异常，无法连接服务器');
-    // 返回一个空的 Promise.reject 以防止错误继续传播
+    // 处理网络错误
+    if (!isDoNotShowAnyMsg) {
+      message.error('网络异常，无法连接服务器');
+    } else {
+      console.warn('API错误（已隐藏提示）: 网络异常');
+    }
     return Promise.reject();
   }
 };
 
-// 请求拦截器
+/**
+ * 请求拦截器列表
+ * 对所有请求进行预处理
+ */
 const requestInterceptors = [
-  // 添加基础 URL
+  // 添加基础URL
   (url: string, options: any) => {
     const newUrl = process.env.BASE_URL + url;
     return { url: newUrl, options };
   },
-  // 添加认证头
+
+  // 添加认证头和通用头信息
   (config: any) => {
+    // 添加token认证
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // 添加通用头信息
     config.headers['Content-Type'] = 'application/json';
     config.headers['Accept'] = 'application/json, text/plain, */*';
+
     return { ...config };
   },
 ];
 
-// 响应拦截器
+/**
+ * 响应拦截器列表
+ * 对所有响应进行预处理
+ */
 const responseInterceptors = [
   async (response: any) => {
-    // 拦截响应数据，进行个性化处理
+    // 拦截响应数据，进行错误处理
     const { data = {} as any, config } = response;
-    // 如果响应类型是 blob，直接返回响应对象
+
+    // 如果响应类型是blob，直接返回响应对象
     if (config?.responseType === 'blob') {
       return response;
     }
+
+    // 当响应码不是成功时，进行错误处理
     if (data.code !== SUCCESS_CODE) {
-      // 使用 errorConfig 中的 errorThrower 处理错误
       const error = errorThrower?.(data);
 
       if (error) {
-        // 如果 errorThrower 返回了错误对象，使用 errorHandler 处理它
-        return errorHandler?.(error, {}) || response;
+        // 如果errorThrower返回了错误对象，使用errorHandler处理它
+        return errorHandler?.(error, { config }) || response;
       }
     }
+
     return response;
   },
 ];
