@@ -281,7 +281,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             maxScale: 1,
             allowNewOrigin: 'negative',
           });
-        }, 100);
+        }, 0);
       }
     };
 
