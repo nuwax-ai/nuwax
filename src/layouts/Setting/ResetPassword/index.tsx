@@ -19,6 +19,9 @@ const cx = classNames.bind(styles);
  * 重置密码
  */
 const ResetPassword: React.FC = () => {
+  // 获取当前登录方式,如果有@证明是邮箱登录,否则是手机登录
+  const phone = localStorage.getItem(PHONE);
+
   const { countDown, setCountDown, onClearTimer, handleCount } = useCountDown();
   const { runSendCode } = useSendCode();
   const [form] = Form.useForm<ResetPasswordForm>();
@@ -48,10 +51,12 @@ const ResetPassword: React.FC = () => {
 
   const handleSendCode = async () => {
     handleCount();
-    runSendCode({
+    const authType = localStorage.getItem('AUTH_TYPE') === '1';
+    const _params = {
       type: SendCodeEnum.RESET_PASSWORD,
-      phone: localStorage.getItem(PHONE),
-    });
+      [authType ? 'phone' : 'email']: phone,
+    };
+    runSendCode(_params);
   };
 
   return (
@@ -118,10 +123,7 @@ const ResetPassword: React.FC = () => {
           ]}
         >
           <div className={cx('flex', 'content-between')}>
-            <Input
-              rootClassName={styles.input}
-              placeholder="请输入手机验证码"
-            />
+            <Input rootClassName={styles.input} placeholder={'请输入验证码'} />
             {countDown < 60 && countDown > 0 ? (
               <Button rootClassName={styles.btn} disabled type="primary">
                 {`${countDown}s`}

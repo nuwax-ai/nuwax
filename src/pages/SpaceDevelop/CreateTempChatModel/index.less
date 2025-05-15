@@ -21,19 +21,32 @@
       }
 
       .ant-table-thead > tr > th {
-        // padding-left: 0;
         color: @GRAY07 !important;
         font-size: 12px !important;
       }
     }
 
-    .chat-url {
-      color: @GRAY26;
-      font-size: 12px;
+    .url-box {
+      gap: 4px;
+
+      .chat-url {
+        color: @GRAY26;
+        font-size: 12px;
+      }
+
+      .img {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        object-fit: contain;
+      }
     }
   }
 }
 
-.img {
-  width: 16px;
+.qr-code-modal {
+  background-color: @WHITE12;
+  padding-bottom: 0;
+  width: 500px !important;
+  border-radius: 10px;
 }

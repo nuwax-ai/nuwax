@@ -14,6 +14,7 @@ export default () => {
     onSuccess: (result: TenantConfigInfo) => {
       setTenantConfigInfo(result);
       localStorage.setItem(TENANT_CONFIG_INFO, JSON.stringify(result));
+      localStorage.setItem('AUTH_TYPE', result.authType.toString());
       const { siteName, siteDescription, faviconUrl } = result;
       document.title = siteDescription
         ? `${siteName} - ${siteDescription}`

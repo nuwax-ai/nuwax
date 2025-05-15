@@ -43,6 +43,15 @@ const ModalSliderCaptcha: React.FC<ModalSliderCaptchaType> = ({
     const start = offsetXRef.current - 5;
     const end = offsetXRef.current + 5;
     if (data && inRange(data.x, start, end)) {
+      //  // 生成验证参数
+      //  const captchaVerifyParam = {
+      //   sessionId: Date.now().toString(), // 使用时间戳作为临时sessionId
+      //   sig: '临时签名', // 实际应从阿里云服务端获取
+      //   token: '临时token', // 实际应从阿里云服务端获取
+      //   scene: 'login' // 根据业务场景设置
+      // };
+      // console.log('验证码验证参数:', captchaVerifyParam); // 打印验证参数，实际应发送到后端验证
+      // return
       onSuccess();
       return Promise.resolve();
     }

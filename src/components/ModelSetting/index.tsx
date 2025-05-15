@@ -22,10 +22,10 @@ import {
   Slider,
 } from 'antd';
 import { useEffect, useState } from 'react';
+import { useParams } from 'umi';
 import './index.less';
 import ModelListItem from './listItem/index';
 import { ModelSettingProp } from './type';
-import {useParams} from 'umi'
 // 类型定义需要移到组件外部或使用内联类型
 interface ContentProps {
   title: string;
@@ -44,13 +44,13 @@ export const GroupedOptionSelect: React.FC<ModelSettingProp> = ({ form }) => {
     GroupModelItem[]
   >([]);
 
-  const {spaceId} = useParams()
+  const { spaceId } = useParams();
   // 获取当前模型的列表数据
   const getModelList = async () => {
     try {
       const _res = await service.getModelListByWorkflowId({
         modelType: 'Chat',
-        spaceId
+        spaceId,
       });
       setModelList(_res.data);
       setGroupedOptionsData(groupModelsByApiProtocol(_res.data));

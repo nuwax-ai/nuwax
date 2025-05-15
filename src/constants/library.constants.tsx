@@ -225,6 +225,21 @@ export const KNOWLEDGE_TEXT_IMPORT_TYPE = [
   },
 ];
 
+// 知识库QA问答格式导入类型
+export const KNOWLEDGE_QA_IMPORT_TYPE = [
+  {
+    value: KnowledgeTextImportEnum.Custom,
+    label: '手动添加',
+    icon: <ICON_CUSTOM_DOC />,
+    desc: '手动添加',
+  },
+  {
+    value: KnowledgeTextImportEnum.Local_Doc,
+    label: '批量导入',
+    icon: <ICON_LOCAL_DOC />,
+    desc: '上传 Excel 格式的本地文件',
+  },
+];
 // 知识库-本地文档添加内容-步骤列表
 export const KNOWLEDGE_LOCAL_DOC_LIST = [
   {

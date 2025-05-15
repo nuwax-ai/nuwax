@@ -33,6 +33,8 @@ const Setting: React.FC = () => {
     }
   };
 
+  // 获取当前登录方式是否为手机登录,如果是手机登录,则为true,否则为false
+  const authType = localStorage.getItem('AUTH_TYPE') === '1';
   return (
     <Modal
       centered
@@ -53,7 +55,11 @@ const Setting: React.FC = () => {
                   })}
                   onClick={() => handlerClick(item.type)}
                 >
-                  {item.label}
+                  {item.label === '邮箱绑定'
+                    ? authType
+                      ? '邮箱绑定'
+                      : '手机绑定'
+                    : item.label}
                 </li>
               ))}
             </ul>

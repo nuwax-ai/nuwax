@@ -4,7 +4,7 @@ import useSendCode from '@/hooks/useSendCode';
 import { apiBindEmail } from '@/services/account';
 import { SendCodeEnum } from '@/types/enums/login';
 import type { BindEmailParams } from '@/types/interfaces/login';
-import { isValidEmail } from '@/utils/common';
+import { isValidEmail, isValidPhone } from '@/utils/common';
 import { customizeRequiredNoStarMark } from '@/utils/form';
 import { Button, Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
@@ -22,6 +22,9 @@ const SettingEmail: React.FC = () => {
   const { runSendCode } = useSendCode();
   const [form] = Form.useForm<BindEmailParams>();
   const { setUserInfo } = useModel('userInfo');
+
+  // 获取当前登录方式是否为手机登录,如果是手机登录,则为true,否则为false
+  const authType = localStorage.getItem('AUTH_TYPE') === '1';
 
   // 绑定邮箱
   const { run, loading } = useRequest(apiBindEmail, {
@@ -45,26 +48,24 @@ const SettingEmail: React.FC = () => {
   });
 
   // 绑定事件
-  const handlerBindEmail: FormProps<{
-    email: string;
-    code: string;
-  }>['onFinish'] = (values) => {
+  const handlerBindEmail: FormProps<BindEmailParams>['onFinish'] = (values) => {
     run(values);
   };
 
   const handleSendCode = () => {
-    form.validateFields(['email']).then(({ email }) => {
+    const fieldName: 'phone' | 'email' = authType ? 'email' : 'phone';
+    form.validateFields([fieldName]).then((values) => {
       handleCount();
       runSendCode({
         type: SendCodeEnum.BIND_EMAIL,
-        email,
+        [fieldName]: values[fieldName],
       });
     });
   };
 
   return (
     <div className={cx(styles.container)}>
-      <h3>邮箱绑定</h3>
+      <h3>{authType ? '邮箱绑定' : '手机号绑定'}</h3>
       <Form
         layout="vertical"
         form={form}
@@ -73,21 +74,30 @@ const SettingEmail: React.FC = () => {
         onFinish={handlerBindEmail}
       >
         <Form.Item
-          name="email"
-          label="邮箱地址"
+          name={authType ? 'email' : 'phone'}
+          label={authType ? '邮箱地址' : '手机号码'}
           rules={[
-            { required: true, message: '请输入邮箱地址' },
+            {
+              required: true,
+              message: authType ? '请输入邮箱地址' : '请输入手机号码',
+            },
             {
               validator(_, value) {
-                if (!value || isValidEmail(value)) {
-                  return Promise.resolve();
+                if (!value) return Promise.resolve();
+                if (authType) {
+                  return isValidEmail(value)
+                    ? Promise.resolve()
+                    : Promise.reject(new Error('请输入正确的邮箱地址!'));
+                } else {
+                  return isValidPhone(value)
+                    ? Promise.resolve()
+                    : Promise.reject(new Error('请输入正确的手机号码!'));
                 }
-                return Promise.reject(new Error('请输入正确的邮箱地址!'));
               },
             },
           ]}
         >
-          <Input placeholder="请输入邮箱地址" />
+          <Input placeholder={authType ? '请输入邮箱地址' : '请输入手机号码'} />
         </Form.Item>
         <Form.Item
           name="code"
@@ -105,10 +115,7 @@ const SettingEmail: React.FC = () => {
           ]}
         >
           <div className={cx('flex', 'content-between')}>
-            <Input
-              rootClassName={styles.input}
-              placeholder="请输入邮箱验证码"
-            />
+            <Input rootClassName={styles.input} placeholder="请输入验证码" />
             {countDown < 60 && countDown > 0 ? (
               <Button rootClassName={styles.btn} disabled type="primary">
                 {`${countDown}s`}

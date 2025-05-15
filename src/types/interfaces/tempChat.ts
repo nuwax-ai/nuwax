@@ -4,29 +4,20 @@ import { AttachmentFile } from './conversationInfo';
 
 /**
  * 返回的具体业务数据
- * AgentTempChatDto
  */
 export interface AgentTempChatDto {
   key?: React.Key;
-  /**
-   * 智能体ID
-   */
+  // 智能体ID
   agentId: number;
-  /**
-   * 链接地址
-   */
+  // 链接地址
   chatUrl: string;
-  /**
-   * 链接过期时间
-   */
+  // 二维码地址
+  qrCodeUrl: string;
+  // 链接过期时间
   expire?: string;
-  /**
-   * 链接ID
-   */
+  // 链接ID
   id: number;
-  /**
-   * 是否需要登录
-   */
+  // 是否需要登录
   requireLogin?: number;
   userId?: number;
 }
@@ -35,13 +26,9 @@ export interface AgentTempChatDto {
  * 查询临时会话详细输入参数
  */
 export interface TempConversationQueryDto {
-  /**
-   * 链接Key
-   */
+  // 链接Key
   chatKey: string;
-  /**
-   * 会话唯一标识
-   */
+  // 会话唯一标识
   conversationUid?: string;
 }
 
@@ -49,13 +36,9 @@ export interface TempConversationQueryDto {
  * 创建临时会话输入参数
  */
 export interface TempConversationCreateDto {
-  /**
-   * 链接Key
-   */
+  // 链接Key
   chatKey: string;
-  /**
-   * 校验Token，暂时不传，后续真人校验时传递
-   */
+  // 校验Token，暂时不传，后续真人校验时传递
   checkToken?: string;
 }
 
@@ -63,26 +46,16 @@ export interface TempConversationCreateDto {
  * TempChatMessage
  */
 export interface TempChatCompletionsParams {
-  /**
-   * 附件列表
-   */
+  // 附件列表
   attachments?: AttachmentFile[];
-  /**
-   * 链接Key
-   */
+  // 链接Key
   chatKey: string;
-  /**
-   * 会话唯一标识
-   */
+  // 会话唯一标识
   conversationUid: number;
-  /**
-   * chat消息
-   */
+  // chat消息
   message?: string;
   selectedComponents?: AgentSelectedComponentInfo[];
-  /**
-   * 变量参数，前端需要根据agent配置组装参数
-   */
+  // 变量参数，前端需要根据agent配置组装参数
   variableParams?: {
     [key: string]: any;
   };

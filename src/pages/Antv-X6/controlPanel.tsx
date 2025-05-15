@@ -74,7 +74,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         <Popover
           content={
             <StencilContent
-              foldWrapItem={foldWrapItem}
+              isLoop={foldWrapItem.type === 'Loop'}
               dragChild={(
                 child: Child,
                 e?: React.DragEvent<HTMLDivElement>,

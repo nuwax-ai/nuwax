@@ -26,7 +26,7 @@ export class GeneralNode extends React.Component<NodeProps> {
     const { node, graph } = this.props;
     // 明确告诉 getData 返回的数据类型
     const data = node.getData<ChildNode>();
-
+    // console.log(node.isSelected())
     let isSelected = graph.isSelected(node); // 判断是否选中
 
     graph.on('blank:click', () => {
@@ -182,8 +182,7 @@ export class GeneralNode extends React.Component<NodeProps> {
 // 优化后的 LoopNode 组件
 export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
   const data = node.getData<ChildNode>();
-
-  const isSelected = graph.isSelected(node); // 判断是否选中
+  let isSelected = graph.isSelected(node); // 判断是否选中
   const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
     data.type,
   )} 0%, white 70%)`;

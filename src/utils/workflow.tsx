@@ -37,7 +37,12 @@ import {
   default as Variable,
   default as Workflow,
 } from '@/assets/images/workflow_image.png';
-import PlusIcon from '@/assets/svg/plus.svg';
+import PlusIcon from '@/assets/svg/plus_icon.svg';
+import {
+  ConditionBranchConfigs,
+  IntentConfigs,
+  QANodeOption,
+} from '@/types/interfaces/node';
 import { adjustParentSize } from '@/utils/graph';
 import { Graph, Node } from '@antv/x6';
 const imageList = {
@@ -154,7 +159,6 @@ export const returnBackgroundColor = (type: string) => {
 export const getWidthAndHeight = (node: ChildNode) => {
   const { type, nodeConfig } = node;
   const extension = nodeConfig?.extension || {};
-
   if (
     type !== 'QA' &&
     type !== 'Condition' &&
@@ -304,29 +308,54 @@ export const generatePorts = (data: ChildNode) => {
     idSuffix: string,
   ) => ({
     group,
+    markup: [
+      {
+        tagName: 'circle',
+        selector: 'circle',
+        attrs: {
+          magnet: true, // 显式声明磁吸源
+          pointerEvents: 'auto',
+        },
+      },
+      {
+        tagName: 'image',
+        selector: 'icon',
+        attrs: {
+          magnet: false,
+        },
+      },
+      {
+        tagName: 'circle', // 隐藏的感应区域
+        selector: 'hoverCircle',
+        attrs: {
+          r: basePortSize + 10, // 感应区域更大
+          opacity: 0, // 完全透明
+          pointerEvents: 'visiblePainted', // 允许鼠标事件
+          zIndex: -1, // 置于底层，避免覆盖主要元素
+          magnet: false,
+        },
+      },
+    ],
     id: `${data.id}-${idSuffix}`,
     zIndex: 99,
     magnet: true,
     attrs: {
       circle: {
         r: basePortSize,
-        magnet: true,
+        magnet: true, // 必须设为 true 才能作为连接磁点
         stroke: '#5147FF',
-        // strokeWidth: 2,
         fill: '#5147FF',
-        pointerEvents: 'all', // 强制启用指针事件
-        event: 'mouseenter', // 明确事件类型
-        // // 新增磁吸区域扩展
-        magnetRadius: 32, // 将磁吸半径从默认15px增大到24px
+        magnetRadius: 30, // 减小磁吸半径
+        zIndex: 2, // 圆在上
       },
       icon: {
-        xlinkHref: PlusIcon, // 图标引用
-        width: 0, // 默认隐藏
+        xlinkHref: PlusIcon,
+        magnet: false,
+        width: 0,
         height: 0,
-        x: -6,
-        y: -6,
-        event: 'mouseenter',
         fill: '#fff',
+        zIndex: -2, // 图标在下面
+        pointerEvents: 'none',
       },
     },
   });
@@ -357,7 +386,6 @@ export const generatePorts = (data: ChildNode) => {
       inputPorts = [defaultPortConfig('in', 'in')];
       outputPorts = []; // End 节点没有输出端口
       break;
-
     case 'Condition':
     case 'IntentRecognition': {
       // 假设 heights 数组与 conditionBranchConfigs 的顺序一致
@@ -405,7 +433,9 @@ export const generatePorts = (data: ChildNode) => {
       // 通用端口组配置
       in: {
         position: 'left',
-        attrs: { circle: { r: basePortSize, magnet: true, magnetRadius: 50 } },
+        attrs: {
+          circle: { r: basePortSize, magnet: true, magnetRadius: 50 },
+        },
         connectable: {
           source: isLoopNode, // Loop 节点的 in 端口允许作为 source
           target: true, // 非 Loop 节点的 in 端口只能作为 target
@@ -493,14 +523,13 @@ function getRandomPosition(maxWidth = 800, maxHeight = 600) {
 export const createBaseNode = (node: ChildNode) => {
   const extension = node.nodeConfig?.extension || {};
   const isLoopChild = node.loopNodeId;
-  const { width, height } = getWidthAndHeight(node);
   return {
     id: node.id,
     shape: node.type === 'Loop' ? 'loop-node' : 'general-Node',
     x: extension.x ?? getRandomPosition().x,
     y: extension.y ?? getRandomPosition().y,
-    width: width,
-    height: height,
+    width: extension.width || 304,
+    height: extension.height || 83,
     label: node.name,
     data: node,
     ports: generatePorts(node),
@@ -514,8 +543,8 @@ export const createChildNode = (parentId: string, child: ChildNode) => {
   return {
     id: child.id.toString(),
     shape: 'general-Node',
-    x: ext.x || 0,
-    y: ext.y || 0,
+    x: ext.x,
+    y: ext.y,
     width: width,
     height: height,
     label: child.name,
@@ -535,6 +564,7 @@ export const createChildNode = (parentId: string, child: ChildNode) => {
 
 // 构造边
 export const createEdge = (edge: Edge) => {
+  if (edge.source === edge.target) return;
   const parseEndpoint = (endpoint: string, type: string) => {
     const isLoop = endpoint.includes('in') || endpoint.includes('out');
     const isNotGraent = endpoint.includes('-');
@@ -547,7 +577,12 @@ export const createEdge = (edge: Edge) => {
   return {
     shape: 'edge',
     router: { name: 'orth' },
-    attrs: { line: { stroke: '#5147FF', strokeWidth: 1 } },
+    attrs: {
+      line: {
+        stroke: '#5147FF',
+        strokeWidth: 1,
+      },
+    },
     source: parseEndpoint(edge.source, 'out'),
     target: parseEndpoint(edge.target, 'in'),
     zIndex: edge.zIndex,
@@ -573,4 +608,62 @@ export const processLoopNode = (loopNode: Node, graph: Graph) => {
   });
 
   adjustParentSize(loopNode); // 初始调整父节点大小
+};
+
+// 三个特殊节点处理nextIndex
+export const handleSpecialNodesNextIndex = (
+  node: ChildNode,
+  uuid: string,
+  id: number,
+  targetNode?: ChildNode,
+) => {
+  let configs: ConditionBranchConfigs[] | IntentConfigs[] | QANodeOption[];
+  switch (node.type) {
+    case 'Condition': {
+      configs = node.nodeConfig
+        ?.conditionBranchConfigs as ConditionBranchConfigs[];
+      break;
+    }
+    case 'IntentRecognition': {
+      configs = node.nodeConfig?.intentConfigs as IntentConfigs[];
+      break;
+    }
+    case 'QA': {
+      configs = node.nodeConfig?.options as QANodeOption[];
+      break;
+    }
+    default: {
+      configs = [];
+      break;
+    }
+  }
+  configs.forEach((config) => {
+    const nextNodeIds = config.nextNodeIds || []; // 获取当前配置的 nextNodeIds 数组
+    if (uuid.includes(config.uuid)) {
+      if (targetNode) {
+        // 这里需要将原来的nextNodeIds中和targetId相同的元素替换成id
+        config.nextNodeIds = nextNodeIds.map((item: number) => {
+          if (item === targetNode.id) {
+            return id; // 替换为新的id
+          } else {
+            return item; // 保持不变
+          }
+        });
+      } else {
+        config.nextNodeIds = [...nextNodeIds, id];
+      }
+    }
+  });
+
+  const newNode = {
+    ...node,
+    nodeConfig: {
+      ...node.nodeConfig,
+      // 根据节点类型更新对应的配置数组
+      ...(node.type === 'Condition' && { conditionBranchConfigs: configs }),
+      ...(node.type === 'IntentRecognition' && { intentConfigs: configs }),
+      ...(node.type === 'QA' && { options: configs }),
+    },
+  };
+  return newNode;
 };

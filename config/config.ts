@@ -15,6 +15,13 @@ export default defineConfig({
   request: {},
   routes,
   npmClient: 'pnpm',
+  // 添加阿里云验证码脚本
+  headScripts: [
+    {
+      src: 'https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js',
+      type: 'text/javascript',
+    },
+  ],
   // 添加在顶层配置中
   jsMinifier: 'esbuild',
   jsMinifierOptions: {

@@ -5,6 +5,13 @@ export enum LoginTypeEnum {
   Code,
 }
 
+export enum LoginMethodEnum {
+  // 手机号码登录
+  Phone,
+  // 邮箱登录
+  Email,
+}
+
 // 发送验证码枚举
 export enum SendCodeEnum {
   LOGIN_OR_REGISTER = 'LOGIN_OR_REGISTER',

@@ -61,6 +61,7 @@ export interface CreateNewPluginProps {
 
 // table头部header带*号标题
 export interface LabelStarProps {
+  className?: string;
   label: string;
 }
 

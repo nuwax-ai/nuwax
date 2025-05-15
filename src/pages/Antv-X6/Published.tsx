@@ -26,6 +26,7 @@ const Published: React.FC<PublishedProp> = ({
   scope = PluginPublishScopeEnum.Tenant,
 }) => {
   const [form] = Form.useForm();
+
   const onFinish: FormProps<{
     scope: PluginPublishScopeEnum;
     remark: string;

@@ -9,22 +9,59 @@ import type {
   AttachmentFile,
   ChatViewProps,
 } from '@/types/interfaces/conversationInfo';
+import mk from '@vscode/markdown-it-katex';
 import classNames from 'classnames';
-import markdown from 'markdown-it';
+import markdownIt from 'markdown-it';
+import Prism from 'prismjs';
+// 可选：添加更多语言支持 Prism.js 默认只支持少量语言。如果需要支持更多语言，可以导入相应的语言组件：
+import 'prismjs/components/prism-bash.js';
+import 'prismjs/components/prism-icon.js';
+import 'prismjs/components/prism-java.js';
+import 'prismjs/components/prism-javascript.js';
+import 'prismjs/components/prism-jq.js';
+import 'prismjs/components/prism-json.js';
+import 'prismjs/components/prism-jsx.js';
+import 'prismjs/components/prism-kotlin.js';
+import 'prismjs/components/prism-log.js';
+import 'prismjs/components/prism-markdown.js';
+import 'prismjs/components/prism-perl.js';
+import 'prismjs/components/prism-powershell.js';
+import 'prismjs/components/prism-python.js';
+import 'prismjs/components/prism-regex.js';
+import 'prismjs/components/prism-sass.js';
+import 'prismjs/components/prism-sql.js';
+import 'prismjs/components/prism-tsx.js';
+import 'prismjs/components/prism-typescript.js';
+
+import 'prismjs/themes/prism-okaidia.css';
 import React, { useMemo } from 'react';
 import { useModel } from 'umi';
 import ChatBottomMore from './ChatBottomMore';
 import ChatSampleBottom from './ChatSampleBottom';
-import styles from './index.less';
 import RunOver from './RunOver';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const md = markdown({
+const md = markdownIt({
   html: true,
   breaks: true,
   linkify: true,
+  highlight: function (str: string, lang: string | undefined): string {
+    if (lang && Prism.languages[lang]) {
+      try {
+        return `<pre class="language-${lang}"><code class="language-${lang}">${Prism.highlight(
+          str,
+          Prism.languages[lang],
+          lang,
+        )}</code></pre>`;
+      } catch (__) {}
+    }
+    return `<pre><code>${md.utils.escapeHtml(str)}</code></pre>`;
+  },
 });
+
+md.use(mk);
 
 const ChatView: React.FC<ChatViewProps> = ({
   className,
@@ -66,7 +103,7 @@ const ChatView: React.FC<ChatViewProps> = ({
   return (
     <div className={cx(styles.container, 'flex', className)}>
       <img className={cx(styles.avatar)} src={info?.avatar as string} alt="" />
-      <div className={cx('flex-1')}>
+      <div className={cx('flex-1', 'overflow-hide')}>
         <div className={cx(styles.author)}>{info?.name}</div>
         {!!messageInfo?.attachments?.length && (
           <AttachFile files={messageInfo?.attachments as AttachmentFile[]} />
