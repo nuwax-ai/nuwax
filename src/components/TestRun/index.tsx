@@ -84,16 +84,12 @@ const TestRun: React.FC<TestRunProps> = ({
   // 问答的选项
   const [qaItems, setQaItem] = useState<QaItems[]>([]);
   const onFinish = (values: DefaultObjectType) => {
-    run(node.type, values);
-  };
-
-  const handlerSubmit = () => {
-    let value = form.getFieldsValue();
-    if (value && JSON.stringify(value) !== '{}') {
+    console.log('values', values);
+    if (values && JSON.stringify(values) !== '{}') {
       // const value = form.getFieldsValue();
       if (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length) {
-        for (let item in value) {
-          if (Object.prototype.hasOwnProperty.call(value, item)) {
+        for (let item in values) {
+          if (Object.prototype.hasOwnProperty.call(values, item)) {
             // 过滤原型链属性
             const inputArg = node.nodeConfig.inputArgs.find(
               (arg) => arg.name === item,
@@ -104,7 +100,7 @@ const TestRun: React.FC<TestRunProps> = ({
                 inputArg.dataType?.includes('Array'))
             ) {
               try {
-                value[item] = JSON.parse(value[item]);
+                values[item] = JSON.parse(values[item]);
               } catch (error) {
                 console.error('JSON 解析失败:', error);
               }
@@ -119,8 +115,8 @@ const TestRun: React.FC<TestRunProps> = ({
           ...(node.nodeConfig.headers || []),
         ];
         // 直接处理表单中的单个元素
-        for (let item in value) {
-          if (Object.prototype.hasOwnProperty.call(value, item)) {
+        for (let item in values) {
+          if (Object.prototype.hasOwnProperty.call(values, item)) {
             const inputArg = newList?.find((arg) => arg.name === item);
             if (
               inputArg &&
@@ -128,7 +124,7 @@ const TestRun: React.FC<TestRunProps> = ({
                 inputArg.dataType?.includes('Array'))
             ) {
               try {
-                value[item] = JSON.parse(value[item]);
+                values[item] = JSON.parse(values[item]);
               } catch (error) {
                 console.error('JSON 解析失败:', error);
               }
@@ -136,11 +132,16 @@ const TestRun: React.FC<TestRunProps> = ({
           }
         }
       }
-      run(node.type, value);
+      run(node.type, values);
     } else {
       run(node.type);
     }
   };
+
+  // const handlerSubmit = () => {
+  //   let value = form.getFieldsValue();
+
+  // };
 
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
   // 根据type返回不同的输入项
@@ -236,6 +237,16 @@ const TestRun: React.FC<TestRunProps> = ({
                       {item.dataType}
                     </Tag>
                   </>
+                }
+                rules={
+                  item.require
+                    ? [
+                        {
+                          required: true,
+                          message: `${item.name}是必填项`,
+                        },
+                      ]
+                    : []
                 }
               >
                 {getInputBox(item, form)}
@@ -339,7 +350,7 @@ const TestRun: React.FC<TestRunProps> = ({
     let _obj = JSON.parse(JSON.stringify(formItemValue || {})); // TOD
     if (JSON.stringify(_obj) !== '{}') {
       for (let item in _obj) {
-        if (typeof _obj[item] !== 'string') {
+        if (typeof _obj[item] !== 'string' && _obj[item] !== null) {
           _obj[item] = JSON.stringify(_obj[item]);
         }
       }
@@ -382,7 +393,9 @@ const TestRun: React.FC<TestRunProps> = ({
             <Button
               icon={<CaretRightOutlined />}
               type="primary"
-              onClick={handlerSubmit}
+              onClick={() => {
+                form.submit();
+              }}
               loading={loading}
               className="mt-16"
             >
