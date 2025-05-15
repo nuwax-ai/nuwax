@@ -6,6 +6,7 @@ export type LoginFieldType = {
   phoneOrEmail: string;
   areaCode: string;
   password?: string;
+  captchaVerifyParam?: string;
 };
 
 // 登录响应数据
@@ -18,6 +19,7 @@ export interface ILoginResult {
 // 发送验证码
 export interface SendCode {
   type: SendCodeEnum;
+  captchaVerifyParam?: string;
   phone?: string;
   email?: string;
   // 验证票据
