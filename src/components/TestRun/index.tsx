@@ -215,9 +215,11 @@ const TestRun: React.FC<TestRunProps> = ({
     return (
       <>
         {items.map((item, index) => {
-          console.log(referenceList);
           // if (!referenceList) return [];
-          if (referenceList !== undefined) {
+          if (
+            referenceList !== undefined &&
+            JSON.stringify(referenceList.argMap) !== '{}'
+          ) {
             const isReference = referenceList.argMap[item.bindValue];
             if (isReference) {
               item.dataType = isReference.dataType;
