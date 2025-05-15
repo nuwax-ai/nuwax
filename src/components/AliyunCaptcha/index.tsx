@@ -60,16 +60,13 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
   const onReadyCalledRef = useRef<boolean>(false);
 
   // 使用useCallback缓存回调函数，避免不必要的重新渲染
-  const captchaVerifyCallback = useCallback(
-    (captchaVerifyParam: any) => {
-      doAction(captchaVerifyParam);
-      return {
-        captchaResult: true,
-        bizResult: true,
-      };
-    },
-    [doAction],
-  );
+  const captchaVerifyCallback = (captchaVerifyParam: any) => {
+    doAction(captchaVerifyParam);
+    return {
+      captchaResult: true,
+      bizResult: true,
+    };
+  };
 
   // 清理验证码相关DOM元素
   const cleanupCaptchaElements = useCallback(() => {
