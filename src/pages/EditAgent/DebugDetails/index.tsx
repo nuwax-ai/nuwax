@@ -1,3 +1,4 @@
+import databaseImage from '@/assets/images/database_image.png';
 import knowledgeImage from '@/assets/images/knowledge_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import variableImage from '@/assets/images/variable_image.png';
@@ -50,11 +51,14 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
       }
     } else {
       setExecuteInfo(null);
-      setCurrentIndex(0);
       setInputData('');
       setOutputData('');
     }
   }, [finalResult, currentIndex]);
+
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [finalResult]);
 
   useEffect(() => {
     return () => {
@@ -73,13 +77,15 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
     }
     switch (info.type) {
       case AgentComponentTypeEnum.Plugin:
-        return pluginImage as string;
+        return pluginImage;
       case AgentComponentTypeEnum.Workflow:
-        return workflowImage as string;
+        return workflowImage;
       case AgentComponentTypeEnum.Knowledge:
-        return knowledgeImage as string;
+        return knowledgeImage;
       case AgentComponentTypeEnum.Variable:
-        return variableImage as string;
+        return variableImage;
+      case AgentComponentTypeEnum.Table:
+        return databaseImage;
     }
   };
 

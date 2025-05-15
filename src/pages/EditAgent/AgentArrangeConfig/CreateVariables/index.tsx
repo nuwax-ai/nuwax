@@ -141,16 +141,19 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       title: '类型',
       dataIndex: 'systemVariable',
       key: 'systemVariable',
-      width: 100,
+      width: 120,
+      className: 'flex',
       render: (value: boolean) => (
-        <span>{value ? '系统变量' : '自定义变量'}</span>
+        <span className={cx('flex', 'items-center')}>
+          {value ? '系统变量' : '自定义变量'}
+        </span>
       ),
     },
     {
       title: '默认值',
       dataIndex: 'bindValue',
       key: 'bindValue',
-      width: 150,
+      width: 155,
       render: (value: string, record: BindConfigWithSub, index: number) => (
         <>
           {record?.systemVariable ? (
@@ -193,6 +196,10 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
         columns={inputColumns}
         dataSource={inputData}
         pagination={false}
+        virtual
+        scroll={{
+          y: 560,
+        }}
         footer={() => (
           <Button icon={<PlusOutlined />} onClick={handleAddChildren}>
             新增

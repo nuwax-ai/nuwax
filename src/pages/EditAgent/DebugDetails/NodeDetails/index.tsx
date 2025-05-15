@@ -31,11 +31,13 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
       {renderDetailItem('耗时', time)}
       {renderDetailItem(
         '发起时间',
-        moment(node?.startTime).format('YYYY-MM-DD HH:mm'),
+        node?.startTime
+          ? moment(node?.startTime).format('YYYY-MM-DD HH:mm')
+          : '',
       )}
       {renderDetailItem(
         '结束时间',
-        moment(node?.endTime).format('YYYY-MM-DD HH:mm'),
+        node?.endTime ? moment(node?.endTime).format('YYYY-MM-DD HH:mm') : '',
       )}
     </div>
   );
