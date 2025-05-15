@@ -23,27 +23,10 @@ const Login: React.FC = () => {
   const [loginType, setLoginType] = useState<LoginTypeEnum>(
     LoginTypeEnum.Password,
   );
+  const loginTypeRef = useRef<LoginTypeEnum>(LoginTypeEnum.Password);
   const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
-  const [needAliyunCaptcha, setNeedAliyunCaptcha] = useState<boolean>(false);
   const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
-  // 使用 useRef 存储最新的 submittable 值
-  const submittableRef = useRef<boolean>(false);
-  const captchaVerifyParamRef = useRef<any>('');
-
-  // Watch all values
-  const values = Form.useWatch([], form);
-
-  useEffect(() => {
-    form
-      .validateFields({ validateOnly: true })
-      .then(() => {
-        submittableRef.current = true;
-      })
-      .catch(() => {
-        submittableRef.current = false;
-      });
-  }, [form, values]);
 
   const { run } = useRequest(apiLogin, {
     manual: true,
@@ -101,14 +84,14 @@ const Login: React.FC = () => {
   ];
 
   // 账号密码登录
-  const handlerPasswordLogin = (captchaVerifyParam: any) => {
+  const handlerPasswordLogin = (captchaVerifyParam: string) => {
     // 为了避免 formValues 为 undefined 的情况，添加空值检查
     const { phoneOrEmail, areaCode, password } = form.getFieldsValue() || {};
     run({ phoneOrEmail, areaCode, password, captchaVerifyParam });
   };
 
   // 验证码登录
-  const handlerCodeLogin = (captchaVerifyParam: any) => {
+  const handlerCodeLogin = (captchaVerifyParam: string) => {
     // 为了避免 formValues 为 undefined 的情况，添加空值检查
     const { phoneOrEmail, areaCode } = form.getFieldsValue() || {};
     history.push('/verify-code', {
@@ -119,21 +102,32 @@ const Login: React.FC = () => {
     });
   };
 
-  const handlerSuccess = () => {
-    // 使用 ref 中存储的最新值，而不是闭包中捕获的旧值
-    if (!submittableRef.current || !checked) {
-      console.log('提交条件未满足:', {
-        submittable: submittableRef.current,
-        checked,
-      });
-      return;
-    }
-
-    const captchaVerifyParam = captchaVerifyParamRef.current;
-    if (loginType === LoginTypeEnum.Password) {
+  // 使用 useCallback 包装 handlerSuccess，确保捕获最新的 loginType 值
+  const handlerSuccess = (captchaVerifyParam: string = '') => {
+    // 每次调用时都使用最新的 loginType 值
+    if (loginTypeRef.current === LoginTypeEnum.Password) {
       handlerPasswordLogin(captchaVerifyParam);
     } else {
       handlerCodeLogin(captchaVerifyParam);
+    }
+  }; // loginType 作为依赖项
+
+  const doLogin = () => {
+    const { captchaSceneId, captchaPrefix, openCaptcha } =
+      tenantConfigInfo || {};
+    // 只有同时满足三个条件才启用验证码：场景ID存在、身份标存在、开启验证码
+    const needAliyunCaptcha = !!(
+      tenantConfigInfo &&
+      captchaSceneId !== '' &&
+      captchaPrefix !== '' &&
+      openCaptcha
+    );
+    // 如果需要阿里云验证码，则点击按钮触发验证码
+    if (needAliyunCaptcha) {
+      document.getElementById('aliyun-captcha-login')?.click();
+    } else {
+      //不需要阿里云验证码，直接执行登录/验证码逻辑
+      handlerSuccess();
     }
   };
 
@@ -147,22 +141,21 @@ const Login: React.FC = () => {
         cancelText: '不同意',
         onOk() {
           setChecked(true);
-          handlerSuccess();
+          doLogin();
         },
       });
     }
-    // 如果不需要阿里云验证码，直接执行登录/验证码逻辑
-    if (!needAliyunCaptcha) {
-      handlerSuccess();
-    }
+    doLogin();
   };
 
   const handlerLink = () => {
+    // 切换登录类型
     const type =
       loginType === LoginTypeEnum.Password
         ? LoginTypeEnum.Code
         : LoginTypeEnum.Password;
     setLoginType(type);
+    loginTypeRef.current = type;
   };
   const selectBefore = (
     <Form.Item name="areaCode" noStyle>
@@ -171,26 +164,6 @@ const Login: React.FC = () => {
       </Select>
     </Form.Item>
   );
-  useEffect(() => {
-    const { captchaSceneId, captchaPrefix, openCaptcha } =
-      tenantConfigInfo || {};
-    // 只有同时满足三个条件才启用验证码：场景ID存在、身份标存在、开启验证码
-    setNeedAliyunCaptcha(
-      !!(
-        captchaSceneId &&
-        captchaSceneId !== '' &&
-        captchaPrefix &&
-        captchaPrefix !== '' &&
-        openCaptcha
-      ),
-    );
-  }, [tenantConfigInfo]);
-  const captchaButtonId = useRef<string>(`aliyun-captcha-button-${loginType}`);
-  useEffect(() => {
-    if (loginType) {
-      captchaButtonId.current = `aliyun-captcha-button-${loginType}`;
-    }
-  }, [loginType]);
 
   return (
     <div
@@ -261,7 +234,6 @@ const Login: React.FC = () => {
               block
               type="primary"
               htmlType="submit"
-              id={captchaButtonId.current}
             >
               {loginType === LoginTypeEnum.Password ? '登录' : '下一步'}
             </Button>
@@ -275,13 +247,11 @@ const Login: React.FC = () => {
           </Form.Item>
         </Form.Item>
       </Form>
+      <Button id="aliyun-captcha-login" style={{ display: 'none' }} />
       <AliyunCaptcha
         config={tenantConfigInfo}
-        doAction={(captchaVerifyParam) => {
-          captchaVerifyParamRef.current = captchaVerifyParam;
-          handlerSuccess();
-        }}
-        elementId={captchaButtonId.current}
+        doAction={handlerSuccess}
+        elementId="aliyun-captcha-login"
       />
       <SiteFooter />
     </div>
