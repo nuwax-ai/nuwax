@@ -12,15 +12,12 @@ import {
   ICON_MODEL,
   // ICON_ONLINE_DOC,
   ICON_PLUGIN,
-  // ICON_TABLE_FORMAT,
-  ICON_TEXT_FORMAT,
   ICON_WORKFLOW,
 } from '@/constants/images.constants';
 import { InputTypeEnum } from '@/types/enums/agent';
 import { HttpContentTypeEnum, HttpMethodEnum } from '@/types/enums/common';
 import {
   ComponentMoreActionEnum,
-  KnowledgeDataTypeEnum,
   KnowledgeSegmentIdentifierEnum,
   KnowledgeTextImportEnum,
 } from '@/types/enums/library';
@@ -187,20 +184,6 @@ export const AFFERENT_MODE_LIST = [
     value: InputTypeEnum.Header,
     label: 'Header',
   },
-];
-
-// 知识库资源格式
-export const KNOWLEDGE_RESOURCE_FORMAT = [
-  {
-    value: KnowledgeDataTypeEnum.Text,
-    label: '文本格式',
-    icon: <ICON_TEXT_FORMAT />,
-  },
-  // {
-  //   value: KnowledgeDataTypeEnum.Table,
-  //   label: '表格格式',
-  //   icon: <ICON_TABLE_FORMAT />,
-  // },
 ];
 
 // 知识库文本格式导入类型
