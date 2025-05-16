@@ -2,7 +2,6 @@ import knowledgeIcon from '@/assets/images/knowledge_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
-import { KNOWLEDGE_RESOURCE_FORMAT } from '@/constants/library.constants';
 import {
   apiKnowledgeConfigAdd,
   apiKnowledgeConfigUpdate,
@@ -69,15 +68,6 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
     }
   }, [knowledgeInfo]);
 
-  // 切换资源文件格式类型
-  const handleDataType = (value: KnowledgeDataTypeEnum) => {
-    if (value === KnowledgeDataTypeEnum.Table) {
-      message.warning('表格格式此版本暂时未做');
-      return;
-    }
-    setResourceFormat(value);
-  };
-
   const onFinish: FormProps<KnowledgeBaseInfo>['onFinish'] = (values) => {
     const params = {
       spaceId,
@@ -110,28 +100,9 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
       onCancel={onCancel}
       onConfirm={handlerSubmit}
     >
-      <div className={cx('flex', styles.header)}>
-        {KNOWLEDGE_RESOURCE_FORMAT.map((item) => (
-          <div
-            key={item.value}
-            className={cx(
-              'flex',
-              'flex-col',
-              'items-center',
-              'content-center',
-              'cursor-pointer',
-              styles.box,
-              { [styles.active]: resourceFormat === item.value },
-            )}
-            onClick={() => handleDataType(item.value)}
-          >
-            {item.icon}
-            <span>{item.label}</span>
-          </div>
-        ))}
-      </div>
       <Form
         form={form}
+        className={cx('mt-16')}
         requiredMark={customizeRequiredMark}
         layout="vertical"
         onFinish={onFinish}

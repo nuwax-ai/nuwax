@@ -17,7 +17,8 @@ const useTryRun = () => {
     keys: React.Key[],
   ) => {
     const deepArrayObject = (arr: BindConfigWithSub[]) => {
-      return arr.map((node) => {
+      // 为 map 函数添加返回类型注解，确保函数有明确的返回类型，避免隐式的 "any" 类型
+      return arr.map((node): BindConfigWithSub => {
         const { dataType, subArgs } = node;
         if (dataType === DataTypeEnum.Array_Object) {
           const key = uuidv4();
@@ -181,7 +182,7 @@ const useTryRun = () => {
       subArgs?.forEach((info) => {
         // 如果是非数组默认名称（Array_Item）对象
         if (info.dataType === DataTypeEnum.Object && info.name !== ARRAY_ITEM) {
-          const obj = {};
+          const obj = {} as { [key: string]: any };
           info.subArgs?.forEach((info) => {
             obj[info.name] = info.bindValue;
           });

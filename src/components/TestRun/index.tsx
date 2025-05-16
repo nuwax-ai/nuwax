@@ -138,6 +138,11 @@ const TestRun: React.FC<TestRunProps> = ({
     }
   };
 
+  // const handlerSubmit = () => {
+  //   let value = form.getFieldsValue();
+
+  // };
+
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
   // 根据type返回不同的输入项
   const getInputBox = (item: InputAndOutConfig, form: FormInstance) => {

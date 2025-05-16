@@ -866,6 +866,7 @@ const Workflow: React.FC = () => {
               setTestRunResult(data.data.output);
               localStorage.removeItem('testRun');
             }
+
             setFormItemValue(
               data.nodeExecuteResultMap[
                 (info?.startNode.id as number).toString()

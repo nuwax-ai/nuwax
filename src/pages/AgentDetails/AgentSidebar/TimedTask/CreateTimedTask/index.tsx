@@ -116,7 +116,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
 
   useEffect(() => {
     // 更新任务信息
-    if (mode === CreateUpdateModeEnum.Update && currentTask) {
+    if (open && mode === CreateUpdateModeEnum.Update && currentTask) {
       // 回显任务名称和任务内容
       form.setFieldsValue({
         topic: currentTask?.topic,
@@ -138,7 +138,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
         }
       }
     }
-  }, [mode, currentTask, taskCronListRef.current]);
+  }, [mode, currentTask, taskCronListRef.current, open]);
 
   // 创建、更新定时任务
   const onFinish: FormProps<any>['onFinish'] = (values) => {
@@ -216,8 +216,12 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
             </Form.Item>
           </Space>
         </Form.Item>
-        <Form.Item name="topic" label="任务名称" rules={[{ required: true }]}>
-          <Input placeholder="请输入任务摘要名称" showCount maxLength={100} />
+        <Form.Item
+          name="topic"
+          label="任务名称"
+          rules={[{ required: true, message: '请输入任务名称' }]}
+        >
+          <Input placeholder="请输入任务名称" showCount maxLength={100} />
         </Form.Item>
         <OverrideTextArea
           name="summary"

@@ -59,10 +59,14 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   });
 
   useEffect(() => {
-    if (icon) {
-      setImageUrl(icon);
+    if (open) {
+      setImageUrl(icon || '');
+      form.setFieldsValue({
+        name,
+        description,
+      });
     }
-  }, [icon]);
+  }, [open, icon, name, description]);
 
   const onFinish: FormProps<{
     name: string;
@@ -107,10 +111,6 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
         requiredMark={customizeRequiredMark}
         layout="vertical"
         onFinish={onFinish}
-        initialValues={{
-          name,
-          description,
-        }}
         autoComplete="off"
       >
         <Form.Item
