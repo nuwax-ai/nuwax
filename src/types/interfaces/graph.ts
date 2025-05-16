@@ -109,7 +109,7 @@ export interface GraphContainerRef {
   // 删除边
   deleteEdge: (id: string) => void;
   // 创建新的边
-  createNewEdge: (source: string, target: string) => void;
+  createNewEdge: (source: string, target: string, isLoop?: boolean) => void;
   changeGraphZoom: (val: number) => void;
   drawGraph: () => void;
 }

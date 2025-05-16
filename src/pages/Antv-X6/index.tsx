@@ -481,7 +481,7 @@ const Workflow: React.FC = () => {
         const { sourceNode, portId, targetNode, edgeId } =
           currentNodeRef.current;
         const id = portId.split('-')[0];
-
+        const isLoop = _res.data.loopNodeId ? true : false;
         const isOut = portId.endsWith('out');
         if (portId.length > 15) {
           // 通过中间的数据找到对应的index
@@ -493,7 +493,12 @@ const Workflow: React.FC = () => {
           );
           changeNode(_params as ChildNode);
           const sourcePortId = portId.split('-').slice(0, -1).join('-');
-          graphRef.current.createNewEdge(sourcePortId, _res.data.id.toString());
+
+          graphRef.current.createNewEdge(
+            sourcePortId,
+            _res.data.id.toString(),
+            isLoop,
+          );
         } else {
           // 如果当前源端口是out
           if (isOut) {
@@ -505,6 +510,7 @@ const Workflow: React.FC = () => {
             graphRef.current.createNewEdge(
               sourceNode.id.toString(),
               _res.data.id.toString(),
+              isLoop,
             );
           } else {
             // 如果是条件分支或者意图识别节点，就需要给其中一个子端口添加一个边
@@ -520,12 +526,14 @@ const Workflow: React.FC = () => {
               graphRef.current.createNewEdge(
                 sourcePortId,
                 sourceNode.id.toString(),
+                isLoop,
               );
             } else {
               await nodeChangeEdge('created', id, _res.data);
               graphRef.current.createNewEdge(
                 _res.data.id.toString(),
                 id.toString(),
+                isLoop,
               );
             }
           }
@@ -545,12 +553,14 @@ const Workflow: React.FC = () => {
             graphRef.current.createNewEdge(
               sourcePortId,
               targetNode.id.toString(),
+              isLoop,
             );
           } else {
             nodeChangeEdge('created', targetNode.id.toString(), _res.data);
             graphRef.current.createNewEdge(
               _res.data.id.toString(),
               targetNode.id.toString(),
+              isLoop,
             );
           }
           nodeChangeEdge('deleted', targetNode.id.toString(), sourceNode);

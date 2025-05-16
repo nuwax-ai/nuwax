@@ -169,9 +169,14 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     };
 
     // 创建边
-    const createNewEdge = (source: string, target: string) => {
+    const createNewEdge = (
+      source: string,
+      target: string,
+      isLoop?: boolean,
+    ) => {
       // graphRef.current.addEdge({source,target})
-      const edge = createEdge({ source, target });
+      const edge = createEdge({ source, target, zIndex: isLoop ? 25 : 1 });
+
       if (!graphRef.current) return;
       graphRef.current.addEdge(edge);
     };
