@@ -15,7 +15,7 @@ import { history } from 'umi';
  * @param url 请求URL
  * @returns 是否应该隐藏错误提示
  */
-const doNotShowAnyMsgRequestList = (url: string): boolean => {
+const beSilentRequestList = (url: string): boolean => {
   // 不展示错误消息的API路径列表
   const list = [
     '/api/notify/event/collect/batch', // 事件轮询
@@ -62,15 +62,18 @@ const errorHandler = (error: any, opts: any) => {
   if (!error) {
     return;
   }
+  // 检查是否为不需要显示错误消息的请求
+  const isSilentRequest =
+    opts?.config?.url && beSilentRequestList(opts.config.url);
+
+  if (isSilentRequest) {
+    return;
+  }
 
   if (opts?.skipErrorHandler) throw error;
 
-  // 检查是否为不需要显示错误消息的请求
-  const isDoNotShowAnyMsg =
-    opts?.config?.url && doNotShowAnyMsgRequestList(opts.config.url);
-
-  // 处理业务错误
   if (error.name === 'BizError') {
+    // 处理业务错误
     const errorInfo: RequestResponse<null> | undefined = error.info;
     if (errorInfo) {
       const { code, message: errorMessage } = errorInfo;
@@ -90,19 +93,13 @@ const errorHandler = (error: any, opts: any) => {
 
         // 智能体不存在或已下架
         case AGENT_NOT_EXIST:
-          if (!isDoNotShowAnyMsg) {
-            message.warning(errorMessage);
-          }
+          message.warning(errorMessage);
           break;
 
         // 默认错误处理
         default:
           // 只有当请求不在过滤列表中才显示错误消息
-          if (!isDoNotShowAnyMsg) {
-            message.warning(errorMessage);
-          } else {
-            console.warn('API错误（已隐藏提示）:', errorMessage);
-          }
+          console.warn('API错误（已隐藏提示）:', errorMessage);
       }
 
       // 返回一个空的Promise.reject以防止错误继续传播
@@ -110,29 +107,15 @@ const errorHandler = (error: any, opts: any) => {
     }
   } else if (error.response) {
     // 处理HTTP错误
-    if (!isDoNotShowAnyMsg) {
-      message.error(`请求错误 ${error.response.status}`);
-    } else {
-      console.warn(
-        `API错误（已隐藏提示）: HTTP状态码 ${error.response.status}`,
-      );
-    }
+    message.error(`请求错误 ${error.response.status}`);
     return Promise.reject();
   } else if (error.request) {
     // 处理请求超时
-    if (!isDoNotShowAnyMsg) {
-      message.error('服务器无响应，请重试');
-    } else {
-      console.warn('API错误（已隐藏提示）: 服务器无响应');
-    }
+    message.error('服务器无响应，请重试');
     return Promise.reject();
   } else {
     // 处理网络错误
-    if (!isDoNotShowAnyMsg) {
-      message.error('网络异常，无法连接服务器');
-    } else {
-      console.warn('API错误（已隐藏提示）: 网络异常');
-    }
+    message.error('网络异常，无法连接服务器');
     return Promise.reject();
   }
 };

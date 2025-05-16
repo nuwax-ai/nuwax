@@ -59,9 +59,54 @@ import { ReactComponent as ICON_WORKFLOW_TEXT_PROCESSING } from '@/assets/workfl
 import { ReactComponent as ICON_WORKFLOW_VARIABLE } from '@/assets/workflow/workflow-Variable.svg';
 import { ReactComponent as ICON_WORKFLOW_WORKFLOW } from '@/assets/workflow/workflow-Workflow.svg';
 
+// 用作背景图片
+import BG_ICON_WORKFLOW_CODE from '@/assets/workflow/workflow-Code.svg';
+import BG_ICON_WORKFLOW_CONDITION from '@/assets/workflow/workflow-Condition.svg';
+import BG_ICON_WORKFLOW_DATABASE from '@/assets/workflow/workflow-Database.svg';
+import BG_ICON_WORKFLOW_DATABASEADD from '@/assets/workflow/workflow-DataBaseAdd.svg';
+import BG_ICON_WORKFLOW_DATABASEDELETE from '@/assets/workflow/workflow-DataBaseDelete.svg';
+import BG_ICON_WORKFLOW_DATABASEQUERY from '@/assets/workflow/workflow-DatabaseQuery.svg';
+import BG_ICON_WORKFLOW_DATABASEUPDATE from '@/assets/workflow/workflow-DatabaseUpdate.svg';
+import BG_ICON_WORKFLOW_DOCUMENT_EXTRACTION from '@/assets/workflow/workflow-DocumentExtraction.svg';
+import BG_ICON_WORKFLOW_HTTP_REQUEST from '@/assets/workflow/workflow-HTTPRequest.svg';
+import BG_ICON_WORKFLOW_INTENT_RECOGNITION from '@/assets/workflow/workflow-IntentRecognition.svg';
+import BG_ICON_WORKFLOW_KNOWLEDGE_BASE from '@/assets/workflow/workflow-Knowledge.svg';
+import BG_ICON_WORKFLOW_LLM from '@/assets/workflow/workflow-LLM.svg';
+import BG_ICON_WORKFLOW_LONG_TERM_MEMORY from '@/assets/workflow/workflow-LongTermMemory.svg';
+import BG_ICON_WORKFLOW_LOOP from '@/assets/workflow/workflow-Loop.svg';
+import BG_ICON_WORKFLOW_LOOPBREAK from '@/assets/workflow/workflow-LoopBreak.svg';
+import BG_ICON_WORKFLOW_LOOPCONTINUE from '@/assets/workflow/workflow-LoopContinue.svg';
+import BG_ICON_WORKFLOW_OUTPUT from '@/assets/workflow/workflow-Output.svg';
+import BG_ICON_WORKFLOW_PLUGIN from '@/assets/workflow/workflow-Plugin.svg';
+import BG_ICON_WORKFLOW_QA from '@/assets/workflow/workflow-QA.svg';
+import BG_ICON_WORKFLOW_TEXT_PROCESSING from '@/assets/workflow/workflow-TextProcessing.svg';
+import BG_ICON_WORKFLOW_VARIABLE from '@/assets/workflow/workflow-Variable.svg';
+import BG_ICON_WORKFLOW_WORKFLOW from '@/assets/workflow/workflow-Workflow.svg';
 // 修改导入语句以正确导入图片
 
 export {
+  BG_ICON_WORKFLOW_CODE,
+  BG_ICON_WORKFLOW_CONDITION,
+  BG_ICON_WORKFLOW_DATABASE,
+  BG_ICON_WORKFLOW_DATABASEADD,
+  BG_ICON_WORKFLOW_DATABASEDELETE,
+  BG_ICON_WORKFLOW_DATABASEQUERY,
+  BG_ICON_WORKFLOW_DATABASEUPDATE,
+  BG_ICON_WORKFLOW_DOCUMENT_EXTRACTION,
+  BG_ICON_WORKFLOW_HTTP_REQUEST,
+  BG_ICON_WORKFLOW_INTENT_RECOGNITION,
+  BG_ICON_WORKFLOW_KNOWLEDGE_BASE,
+  BG_ICON_WORKFLOW_LLM,
+  BG_ICON_WORKFLOW_LONG_TERM_MEMORY,
+  BG_ICON_WORKFLOW_LOOP,
+  BG_ICON_WORKFLOW_LOOPBREAK,
+  BG_ICON_WORKFLOW_LOOPCONTINUE,
+  BG_ICON_WORKFLOW_OUTPUT,
+  BG_ICON_WORKFLOW_PLUGIN,
+  BG_ICON_WORKFLOW_QA,
+  BG_ICON_WORKFLOW_TEXT_PROCESSING,
+  BG_ICON_WORKFLOW_VARIABLE,
+  BG_ICON_WORKFLOW_WORKFLOW,
   ICON_ADD_TR,
   ICON_ADJUSTMENT,
   ICON_AGENT,

@@ -8,7 +8,7 @@ import {
   EditOutlined,
   ExclamationCircleFilled,
 } from '@ant-design/icons';
-import { Button, Popconfirm, Table, TableProps } from 'antd';
+import { Button, Popconfirm, Table, TableProps, Tag } from 'antd';
 import cx from 'classnames';
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 
@@ -55,20 +55,29 @@ const QaTableList = forwardRef(
         },
       },
       {
+        title: '向量化',
+        dataIndex: 'hasEmbedding',
+        width: 100,
+        render: (value: boolean) => {
+          if (value) {
+            return <Tag color="success">已完成</Tag>;
+          }
+          return <Tag color="processing">构建中</Tag>;
+        },
+      },
+      {
         title: '操作',
         dataIndex: 'action',
-        width: 200,
+        width: 100,
+        align: 'center',
         render: (text: string, record: KnowledgeQAInfo) => {
           return (
-            <div className={cx('flex', 'flex-row', 'gap-2')}>
+            <div className={cx('flex', 'flex-row', 'content-around')}>
               <Button
-                variant="link"
+                type="text"
                 icon={<EditOutlined />}
-                color="primary"
                 onClick={() => props.onEdit(record)}
-              >
-                编辑
-              </Button>
+              />
               <Popconfirm
                 title="您确定要删除此QA问答吗?"
                 description={record.question}
@@ -77,9 +86,7 @@ const QaTableList = forwardRef(
                 okText="确定"
                 cancelText="取消"
               >
-                <Button variant="link" icon={<DeleteOutlined />} color="danger">
-                  删除
-                </Button>
+                <Button type="text" icon={<DeleteOutlined />} />
               </Popconfirm>
             </div>
           );
@@ -182,18 +189,9 @@ const QaTableList = forwardRef(
             total,
             current: tableParams.current,
             pageSize: tableParams.pageSize,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total) => `共 ${total} 条记录`,
           }}
           onChange={handleTableChange as any}
           scroll={{ x: 'max-content', y: 'calc(100vh - 230px)' }}
-          locale={{
-            emptyText: '暂无数据',
-            triggerDesc: '点击降序排列',
-            triggerAsc: '点击升序排列',
-            cancelSort: '取消排序',
-          }}
         />
       </div>
     );
