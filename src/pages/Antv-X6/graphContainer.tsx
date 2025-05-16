@@ -54,8 +54,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
       const point = graphRef.current.clientToGraph(e.x, e.y);
 
-      const ports = generatePorts(child);
       const { width, height } = getWidthAndHeight(child);
+
       // 根据情况，动态给予右侧的out连接桩
       const newNode = graphRef.current.addNode({
         shape: child.key,
@@ -69,7 +69,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         },
         resizable: true,
         zIndex: 99,
-        ports: ports,
+        ports: generatePorts(child),
       });
       // 添加节点
       graphRef.current.addNode(newNode);

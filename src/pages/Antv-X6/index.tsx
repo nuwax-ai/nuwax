@@ -412,10 +412,13 @@ const Workflow: React.FC = () => {
     _params.extension = dragEvent;
     // 如果是条件分支，需要增加高度
     if (child.type === 'Condition') {
-      _params.extension = { ...dragEvent, height: 120 };
+      _params.extension = { ...dragEvent, height: 120, width: 300 };
     }
     if (child.type === 'QA') {
-      _params.extension = { ...dragEvent, height: 110 };
+      _params.extension = { ...dragEvent, height: 110, width: 300 };
+    }
+    if (child.type === 'IntentRecognition') {
+      _params.extension = { ...dragEvent, height: 74, width: 300 };
     }
     if (child.type === 'Loop') {
       _params.extension = { ...dragEvent, height: 240, width: 600 };
@@ -512,11 +515,37 @@ const Workflow: React.FC = () => {
         }
         // 如果有targetNode,证明是通过边创建的，这里需要连接上下游
         if (targetNode) {
-          nodeChangeEdge('created', targetNode.id.toString(), _res.data);
-          graphRef.current.createNewEdge(
-            _res.data.id.toString(),
-            targetNode.id.toString(),
-          );
+          // 如果是条件分支或者意图识别节点，就需要给其中一个子端口添加一个边
+          if (
+            _res.data.type === 'Condition' ||
+            _res.data.type === 'IntentRecognition'
+          ) {
+            const nodeData = JSON.parse(JSON.stringify(_res.data));
+            let _arr =
+              nodeData.nodeConfig.conditionBranchConfigs ||
+              nodeData.nodeConfig.intentConfigs;
+            _arr[_arr.length - 1].nextNodeIds = [targetNode.id];
+            // 获取端口的id
+            let sourcePortId: string = `${nodeData.id}-${
+              _arr[_arr.length - 1].uuid
+            }`;
+            if (_res.data.type === 'Condition') {
+              nodeData.nodeConfig.conditionBranchConfigs = _arr;
+            } else {
+              nodeData.nodeConfig.intentConfigs = _arr;
+            }
+            changeNode(nodeData as ChildNode);
+            graphRef.current.createNewEdge(
+              sourcePortId,
+              targetNode.id.toString(),
+            );
+          } else {
+            nodeChangeEdge('created', targetNode.id.toString(), _res.data);
+            graphRef.current.createNewEdge(
+              _res.data.id.toString(),
+              targetNode.id.toString(),
+            );
+          }
           nodeChangeEdge('deleted', targetNode.id.toString(), sourceNode);
           graphRef.current.deleteEdge(edgeId);
           // 还需要删除原来的那条边
@@ -1012,12 +1041,12 @@ const Workflow: React.FC = () => {
 
     // 计算新增节点的位置
     const computedX = isOut
-      ? _position.x + nodeWidth + 100
-      : _position.x - nodeWidth - 100;
+      ? _position.x + nodeWidth + 100 + Math.random() * 100 - 50
+      : _position.x - nodeWidth - 100 - Math.random() * 100 - 50;
 
     const dragPosition = {
       x: computedX,
-      y: _position?.y,
+      y: _position?.y + Math.random() * 100 - 50,
     };
     // 首先创建节点
     currentNodeRef.current = {

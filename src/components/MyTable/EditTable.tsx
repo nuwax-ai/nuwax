@@ -18,6 +18,7 @@ import './index.less';
 export interface EditTableRef {
   submit: () => void;
   handleAddRow: (obj?: AnyObject) => void;
+  resetFields: () => void;
 }
 
 const MyTable: React.FC<MyTableProp> = ({
@@ -202,10 +203,15 @@ const MyTable: React.FC<MyTableProp> = ({
     setDataSource(processedTableData);
   }, [tableData]);
 
+  const resetFields = () => {
+    form.resetFields();
+  };
+
   // 暴露form给父组件
   React.useImperativeHandle(formRef, () => ({
     submit: () => form.submit(),
     handleAddRow,
+    resetFields,
   }));
   return (
     <div className="dis-col edit-table">

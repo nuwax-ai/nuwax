@@ -586,7 +586,7 @@ export const createEdge = (edge: Edge) => {
     },
     source: parseEndpoint(edge.source, 'out'),
     target: parseEndpoint(edge.target, 'in'),
-    zIndex: edge.zIndex,
+    zIndex: edge.zIndex || 1,
   };
 };
 

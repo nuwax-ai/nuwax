@@ -403,6 +403,9 @@ const SpaceTable = () => {
                 getDetails();
                 getTable({ pageNo: 1, pageSize: 10 });
                 setPagination({ ...pagination, current: 1, pageSize: 10 });
+                if (currentContent !== 'data') {
+                  editTableRef.current?.resetFields();
+                }
               }}
             >
               刷新
