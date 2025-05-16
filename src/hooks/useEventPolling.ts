@@ -20,6 +20,7 @@ export default function useEventPolling(): void {
       pollingWhenHidden: false,
       // 轮询错误重试次数。如果设置为 -1，则无限次
       pollingErrorRetryCount: -1,
+      throwOnError: true,
       onSuccess: async (data: ApiCollectEventResponse) => {
         // 如果已经在处理事件，则跳过本次回调
         if (isProcessingRef.current) {
@@ -52,6 +53,7 @@ export default function useEventPolling(): void {
           }
         }
       },
+      onError: () => {},
     },
   );
 }

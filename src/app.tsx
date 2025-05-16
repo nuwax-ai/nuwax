@@ -22,7 +22,7 @@ export function rootContainer(container: React.ReactNode) {
   return (
     <React.Fragment>
       {/* 只有用户已登录时才启动事件轮询 */}
-      {localStorage.getItem(ACCESS_TOKEN) && <GlobalEventPolling />}
+      <GlobalEventPolling />
       {container}
     </React.Fragment>
   );
