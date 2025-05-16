@@ -99,7 +99,7 @@ const errorHandler = (error: any, opts: any) => {
         // 默认错误处理
         default:
           // 只有当请求不在过滤列表中才显示错误消息
-          console.warn('API错误（已隐藏提示）:', errorMessage);
+          message.warning(errorMessage);
       }
 
       // 返回一个空的Promise.reject以防止错误继续传播
