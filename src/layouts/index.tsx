@@ -18,7 +18,7 @@ export default function Layout() {
       <Message />
       {/*设置弹窗*/}
       <Setting />
-      <div className={cx('flex-1', 'overflow-y')}>
+      <div className={cx('flex-1')}>
         <Outlet />
       </div>
     </div>

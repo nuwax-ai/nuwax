@@ -158,10 +158,14 @@ const AgentDetails: React.FC = () => {
   return (
     <div className={cx('flex', 'h-full', 'overflow-y')}>
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
-        <h3 className={cx(styles.title, 'text-ellipsis')}>
-          {isLoaded &&
-            (agentDetail?.name ? `和${agentDetail?.name}开始会话` : '开始会话')}
-        </h3>
+        <div className={cx(styles['title-box'])}>
+          <h3 className={cx(styles.title, 'text-ellipsis')}>
+            {isLoaded &&
+              (agentDetail?.name
+                ? `和${agentDetail?.name}开始会话`
+                : '开始会话')}
+          </h3>
+        </div>
         <div className={cx(styles['chat-wrapper'], 'flex-1')}>
           {loading ? (
             <div
@@ -210,7 +214,7 @@ const AgentDetails: React.FC = () => {
         </div>
         {/*会话输入框*/}
         <ChatInputHome
-          className={cx(styles['chat-input'])}
+          className={cx(styles['chat-input-container'])}
           onEnter={handleMessageSend}
           isClearInput={false}
           manualComponents={agentDetail?.manualComponents || []}

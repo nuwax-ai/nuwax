@@ -85,7 +85,7 @@ const SystemConfig: React.FC = () => {
     fetchConfig();
   }, []);
   return (
-    <div className={cx(styles.container)}>
+    <div className={cx(styles.container, 'overflow-y')}>
       <div className={cx(styles.title)}>系统配置页面</div>
       <ConfigProvider
         theme={{
