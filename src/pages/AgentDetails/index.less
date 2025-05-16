@@ -5,17 +5,23 @@
   margin: 0 auto;
   padding: 0 10px;
 
-  .title {
+  .title-box {
     position: sticky;
     top: 0;
-    line-height: 60px;
-    padding: 0 60px;
-    color: @BLANK17;
-    font-size: 16px;
-    text-align: center;
-    background-color: @WHITE03;
-    mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
-    z-index: 99;
+
+    .title {
+      position: sticky;
+      top: 0;
+      height: 60px;
+      line-height: 60px;
+      padding: 0 30px;
+      color: @BLANK17;
+      font-size: 16px;
+      text-align: center;
+      background-color: @WHITE03;
+      mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
+      z-index: 99;
+    }
   }
 
   .chat-wrapper {
@@ -38,9 +44,11 @@
     }
   }
 
-  .chat-input {
+  .chat-input-container {
     position: sticky;
-    bottom: 20px;
+    bottom: 0;
     z-index: 10;
+    padding-bottom: 20px;
+    background-color: @WHITE03;
   }
 }

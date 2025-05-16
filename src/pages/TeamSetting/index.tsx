@@ -98,7 +98,7 @@ const TeamSetting: React.FC = () => {
   }, [spaceId]);
 
   return (
-    <div className={cx(styles['team-setting-container'])}>
+    <div className={cx(styles['team-setting-container'], 'overflow-y')}>
       <section
         className={cx('flex', 'items-center', styles['team-summary-info'])}
       >

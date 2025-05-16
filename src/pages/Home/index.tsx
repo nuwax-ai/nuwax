@@ -180,7 +180,15 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className={cx(styles.container, 'flex', 'flex-col', 'items-center')}>
+    <div
+      className={cx(
+        styles.container,
+        'flex',
+        'flex-col',
+        'items-center',
+        'overflow-y',
+      )}
+    >
       <h2 className={cx(styles.title)}>嗨，有什么我可以帮忙的吗？</h2>
       <ChatInputHome
         className={cx(styles.textarea)}

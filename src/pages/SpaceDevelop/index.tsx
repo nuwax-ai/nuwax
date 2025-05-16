@@ -326,7 +326,7 @@ const SpaceDevelop: React.FC = () => {
   };
 
   return (
-    <div className={cx(styles.container, 'h-full')}>
+    <div className={cx(styles.container, 'h-full', 'overflow-y')}>
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>智能体开发</h3>
         <Button
