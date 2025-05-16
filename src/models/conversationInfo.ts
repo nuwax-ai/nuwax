@@ -287,7 +287,7 @@ export default () => {
                 ...currentMessage,
                 id,
                 text: `${currentMessage.text}${text}`,
-                status: MessageStatusEnum.Complete,
+                status: null, // 隐藏运行状态
               };
               // 插入新的消息
               arraySpliceAction = 0;
