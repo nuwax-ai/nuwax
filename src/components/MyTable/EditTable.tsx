@@ -14,6 +14,7 @@ import {
 import { AnyObject } from 'antd/es/_util/type';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import './index.less';
 export interface EditTableRef {
   submit: () => void;
@@ -41,7 +42,7 @@ const MyTable: React.FC<MyTableProp> = ({
   //   新增行
   const handleAddRow = (obj?: AnyObject) => {
     let newRow: Record<string, any> = {
-      [rowKey]: `newRow${dataSource.length + 1}`,
+      [rowKey]: `newRow${uuidv4()}`,
       isNew: true, // 标记为新增行
       systemFieldFlag: false,
     };
@@ -71,11 +72,14 @@ const MyTable: React.FC<MyTableProp> = ({
     }, 0);
   };
   // 删除行
-  const handleDeleteRow = (key: AnyObject) => {
-    const newArr = dataSource.filter(
-      (record) => record[rowKey] !== key[rowKey],
-    );
+  const handleDeleteRow = (key: string) => {
+    const newArr = dataSource.filter((record) => {
+      console.log(record[rowKey] === key);
+      return record[rowKey] !== key;
+    });
+    // console.log(key,newArr);
     setDataSource(newArr);
+    form.setFieldsValue({ tableData: newArr });
   };
 
   // 提交表单数据
@@ -335,7 +339,7 @@ const MyTable: React.FC<MyTableProp> = ({
                       disabled={
                         dataEmptyFlag ? !record.isNew : record?.systemFieldFlag
                       }
-                      onClick={() => handleDeleteRow(record)}
+                      onClick={() => handleDeleteRow(record[rowKey])}
                       title={'删除'}
                       icon={<DeleteOutlined />}
                     ></Button>
