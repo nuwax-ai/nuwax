@@ -28,6 +28,7 @@ export interface Child {
   name: string;
   // 子节点显示的图像路径
   icon?: string | React.ReactNode; // 直接使用 SVGProps
+  bgIcon?: string; // 用作背景图片
   // 唯一标识符
   type: string;
   // 子节点的类型，可能用于区分不同种类的节点

@@ -1,5 +1,27 @@
 import InputOrReference from '@/components/FormListItem/InputOrReference';
 import {
+  BG_ICON_WORKFLOW_CODE,
+  BG_ICON_WORKFLOW_CONDITION,
+  BG_ICON_WORKFLOW_DATABASE,
+  BG_ICON_WORKFLOW_DATABASEADD,
+  BG_ICON_WORKFLOW_DATABASEDELETE,
+  BG_ICON_WORKFLOW_DATABASEQUERY,
+  BG_ICON_WORKFLOW_DATABASEUPDATE,
+  BG_ICON_WORKFLOW_DOCUMENT_EXTRACTION,
+  BG_ICON_WORKFLOW_HTTP_REQUEST,
+  BG_ICON_WORKFLOW_INTENT_RECOGNITION,
+  BG_ICON_WORKFLOW_KNOWLEDGE_BASE,
+  BG_ICON_WORKFLOW_LLM,
+  BG_ICON_WORKFLOW_LONG_TERM_MEMORY,
+  BG_ICON_WORKFLOW_LOOP,
+  BG_ICON_WORKFLOW_LOOPBREAK,
+  BG_ICON_WORKFLOW_LOOPCONTINUE,
+  BG_ICON_WORKFLOW_OUTPUT,
+  BG_ICON_WORKFLOW_PLUGIN,
+  BG_ICON_WORKFLOW_QA,
+  BG_ICON_WORKFLOW_TEXT_PROCESSING,
+  BG_ICON_WORKFLOW_VARIABLE,
+  BG_ICON_WORKFLOW_WORKFLOW,
   ICON_START,
   ICON_WORKFLOW_CODE,
   ICON_WORKFLOW_CONDITION,
@@ -37,6 +59,7 @@ export const asideList: StencilList[] = [
       {
         name: '大模型',
         icon: <ICON_WORKFLOW_LLM />,
+        bgIcon: BG_ICON_WORKFLOW_LLM,
         type: 'LLM',
         key: 'general-Node',
         description: '调用大语言模型，使用变量和提示词生成回复',
@@ -45,6 +68,7 @@ export const asideList: StencilList[] = [
       {
         name: '插件',
         icon: <ICON_WORKFLOW_PLUGIN />,
+        bgIcon: BG_ICON_WORKFLOW_PLUGIN,
         type: 'Plugin',
         key: 'general-Node',
         description: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气...',
@@ -52,6 +76,7 @@ export const asideList: StencilList[] = [
       {
         name: '工作流',
         icon: <ICON_WORKFLOW_WORKFLOW />,
+        bgIcon: BG_ICON_WORKFLOW_WORKFLOW,
         type: 'Workflow',
         key: 'general-Node',
         description: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气...',
@@ -65,6 +90,7 @@ export const asideList: StencilList[] = [
       {
         name: '代码',
         icon: <ICON_WORKFLOW_CODE />,
+        bgIcon: BG_ICON_WORKFLOW_CODE,
         type: 'Code',
         key: 'general-Node',
         description: '编写代码，处理输入变量来生成返回值',
@@ -72,6 +98,7 @@ export const asideList: StencilList[] = [
       {
         name: '条件分支',
         icon: <ICON_WORKFLOW_CONDITION />,
+        bgIcon: BG_ICON_WORKFLOW_CONDITION,
         type: 'Condition',
         key: 'general-Node',
         description:
@@ -80,6 +107,7 @@ export const asideList: StencilList[] = [
       {
         name: '意图识别',
         icon: <ICON_WORKFLOW_INTENT_RECOGNITION />,
+        bgIcon: BG_ICON_WORKFLOW_INTENT_RECOGNITION,
         type: 'IntentRecognition',
         key: 'general-Node',
         description: '用于用户输入的意图识别，并将其与预设意图选项进行匹配。',
@@ -87,6 +115,7 @@ export const asideList: StencilList[] = [
       {
         name: '循环',
         icon: <ICON_WORKFLOW_LOOP />,
+        bgIcon: BG_ICON_WORKFLOW_LOOP,
         type: 'Loop',
         key: 'general-Node',
         description: '用于通过设定循环次数和逻辑，重复执行一系列任务。',
@@ -94,6 +123,7 @@ export const asideList: StencilList[] = [
       {
         name: '继续循环',
         icon: <ICON_WORKFLOW_LOOPCONTINUE />,
+        bgIcon: BG_ICON_WORKFLOW_LOOPCONTINUE,
         type: 'LoopContinue',
         key: 'general-Node',
         description: '',
@@ -101,6 +131,7 @@ export const asideList: StencilList[] = [
       {
         name: '终止循环',
         icon: <ICON_WORKFLOW_LOOPBREAK />,
+        bgIcon: BG_ICON_WORKFLOW_LOOPBREAK,
         type: 'LoopBreak',
         key: 'general-Node',
         description: '',
@@ -114,6 +145,7 @@ export const asideList: StencilList[] = [
       {
         name: '知识库',
         icon: <ICON_WORKFLOW_KNOWLEDGE_BASE />,
+        bgIcon: BG_ICON_WORKFLOW_KNOWLEDGE_BASE,
         type: 'Knowledge',
         key: 'general-Node',
         description: '在选定的知识中，根据输入变量召回最匹配的信息',
@@ -129,6 +161,7 @@ export const asideList: StencilList[] = [
       {
         name: '变量',
         icon: <ICON_WORKFLOW_VARIABLE />,
+        bgIcon: BG_ICON_WORKFLOW_VARIABLE,
         type: 'Variable',
         key: 'general-Node',
         description:
@@ -137,6 +170,7 @@ export const asideList: StencilList[] = [
       {
         name: '长期记忆',
         icon: <ICON_WORKFLOW_LONG_TERM_MEMORY />,
+        bgIcon: BG_ICON_WORKFLOW_LONG_TERM_MEMORY,
         type: 'LongTermMemory',
         key: 'general-Node',
         description: '用于调用长期记忆，获取用户的个性化信息',
@@ -150,6 +184,7 @@ export const asideList: StencilList[] = [
       {
         name: '数据新增',
         icon: <ICON_WORKFLOW_DATABASEADD />,
+        bgIcon: BG_ICON_WORKFLOW_DATABASEADD,
         type: 'TableDataAdd',
         key: 'general-Node',
         description: '对选定的数据表进行数据写入',
@@ -157,6 +192,7 @@ export const asideList: StencilList[] = [
       {
         name: '数据删除',
         icon: <ICON_WORKFLOW_DATABASEDELETE />,
+        bgIcon: BG_ICON_WORKFLOW_DATABASEDELETE,
         type: 'TableDataDelete',
         key: 'general-Node',
         description: '对选定的数据表根据指定ID进行数据删除',
@@ -164,6 +200,7 @@ export const asideList: StencilList[] = [
       {
         name: '数据更新',
         icon: <ICON_WORKFLOW_DATABASEUPDATE />,
+        bgIcon: BG_ICON_WORKFLOW_DATABASEUPDATE,
         type: 'TableDataUpdate',
         key: 'general-Node',
         description: '对选定的数据表根据指定条件进行数据更新',
@@ -171,6 +208,7 @@ export const asideList: StencilList[] = [
       {
         name: '数据查询',
         icon: <ICON_WORKFLOW_DATABASEQUERY />,
+        bgIcon: BG_ICON_WORKFLOW_DATABASEQUERY,
         type: 'TableDataQuery',
         key: 'general-Node',
         description: '对选定的数据表根据指定条件进行数据查询',
@@ -178,6 +216,7 @@ export const asideList: StencilList[] = [
       {
         name: 'SQL自定义',
         icon: <ICON_WORKFLOW_DATABASE />,
+        bgIcon: BG_ICON_WORKFLOW_DATABASE,
         type: 'TableSQL',
         key: 'general-Node',
         description:
@@ -192,6 +231,7 @@ export const asideList: StencilList[] = [
       {
         name: '问答',
         icon: <ICON_WORKFLOW_QA />,
+        bgIcon: BG_ICON_WORKFLOW_QA,
         type: 'QA',
         key: 'general-Node',
         description: '支持中间向用户提问问题',
@@ -199,6 +239,7 @@ export const asideList: StencilList[] = [
       {
         name: '文本处理',
         icon: <ICON_WORKFLOW_TEXT_PROCESSING />,
+        bgIcon: BG_ICON_WORKFLOW_TEXT_PROCESSING,
         type: 'TextProcessing',
         key: 'general-Node',
         description: '用于处理多个字符串类型变量的格式',
@@ -206,6 +247,7 @@ export const asideList: StencilList[] = [
       {
         name: '文档提取',
         icon: <ICON_WORKFLOW_DOCUMENT_EXTRACTION />,
+        bgIcon: BG_ICON_WORKFLOW_DOCUMENT_EXTRACTION,
         type: 'DocumentExtraction',
         key: 'general-Node',
         description:
@@ -214,6 +256,7 @@ export const asideList: StencilList[] = [
       {
         name: 'http请求',
         icon: <ICON_WORKFLOW_HTTP_REQUEST />,
+        bgIcon: BG_ICON_WORKFLOW_HTTP_REQUEST,
         type: 'HTTPRequest',
         key: 'general-Node',
         description: '用于配置http请求调用已有的服务',
@@ -227,6 +270,7 @@ export const asideList: StencilList[] = [
       {
         name: '过程输出',
         icon: <ICON_WORKFLOW_OUTPUT />,
+        bgIcon: BG_ICON_WORKFLOW_OUTPUT,
         type: 'Output',
         key: 'general-Node',
         description: '支持中间过程的消息输出，支持流式和非流式两种方式',

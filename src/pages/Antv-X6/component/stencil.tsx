@@ -13,6 +13,22 @@ interface Prop {
   // 当前端口的名称
   portName?: string;
 }
+const renderIcon = (url: string) => {
+  return (
+    <div
+      className="icon-box-style"
+      style={{
+        width: '20px',
+        height: '20px',
+        backgroundSize: '100% 100%',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+        ...(url && { backgroundImage: `url("${url}")` }),
+      }}
+    ></div>
+  );
+};
+
 // StencilContent 组件用于渲染 stencil 内容，并允许用户拖拽子项（Child）到画布上。
 const StencilContent = ({ dragChild, isLoop }: Prop) => {
   /**
@@ -58,7 +74,7 @@ const StencilContent = ({ dragChild, isLoop }: Prop) => {
                       onDragEnd={(e) => handleDragStart(child, e)}
                       onClick={() => handleDragStart(child)}
                     >
-                      <div className="icon-box-style">{child.icon}</div>
+                      {renderIcon(child.bgIcon || '')}
                       <span>{child.name}</span>
                     </div>
                   )
