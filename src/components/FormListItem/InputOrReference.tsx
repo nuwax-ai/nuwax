@@ -21,8 +21,38 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   const { referenceList, getValue, getLoopValue, setIsModified } =
     useModel('workflow');
   const [displayValue, setDisplayValue] = useState('');
-
   const [selectKey, setSelectKey] = useState<React.Key[]>([value || '']);
+  // 添加状态来存储 Tree 的最大高度
+  const [treeMaxHeight, setTreeMaxHeight] = useState(300);
+
+  // 计算 Tree 的最大高度
+  useEffect(() => {
+    const calculateTreeHeight = () => {
+      // 获取视窗高度
+      const windowHeight = window.innerHeight;
+      // 获取当前元素的位置信息
+      const element = document.querySelector('.input-or-reference');
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        // 计算可用高度：视窗高度 - 元素顶部位置 - 底部边距(20px)
+        const availableHeight = windowHeight - rect.top - 20;
+        // 设置最大高度，最小 200px，最大 400px
+        setTreeMaxHeight(Math.min(Math.max(availableHeight, 150), 400));
+      }
+    };
+
+    // 初始计算
+    calculateTreeHeight();
+    // 监听窗口大小变化
+    window.addEventListener('resize', calculateTreeHeight);
+    // 监听滚动事件
+    window.addEventListener('scroll', calculateTreeHeight);
+
+    return () => {
+      window.removeEventListener('resize', calculateTreeHeight);
+      window.removeEventListener('scroll', calculateTreeHeight);
+    };
+  }, []);
 
   const updateValues = (newValue: string, valueType: 'Input' | 'Reference') => {
     if (fieldName && form) {
@@ -106,9 +136,9 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
     setSelectKey(key); // 更新 selectKey 状态
   };
   // 动态生成 Dropdown 的 items
-  // 动态生成 Dropdown 的 items
   const getMenu = (nodes: PreviousList[]) => {
     if (nodes && nodes.length) {
+      let isHitSelect = false;
       return nodes.map((node) => ({
         key: node.id,
         label:
@@ -119,22 +149,37 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
               {
                 key: `${node.id}-tree-select`,
                 label: (
-                  <Tree
-                    onSelect={(keys) => {
-                      handleTreeSelectChange(keys);
+                  <div
+                    onClick={(e) => {
+                      // 阻止所有点击事件的冒泡，除了 onSelect
+                      if (!isHitSelect) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }
                     }}
-                    defaultExpandAll
-                    treeData={node.outputArgs}
-                    fieldNames={{
-                      title: 'name',
-                      key: 'key',
-                      children: 'children',
-                    }}
-                    titleRender={renderTitle}
-                    defaultSelectedKeys={selectKey}
-                    blockNode
-                    className="custom-tree-style" // 添加自定义样式类
-                  />
+                  >
+                    <Tree
+                      onSelect={(keys) => {
+                        handleTreeSelectChange(keys);
+                        isHitSelect = true;
+                      }}
+                      defaultExpandAll
+                      treeData={node.outputArgs}
+                      fieldNames={{
+                        title: 'name',
+                        key: 'key',
+                        children: 'children',
+                      }}
+                      titleRender={renderTitle}
+                      defaultSelectedKeys={selectKey}
+                      blockNode
+                      className="custom-tree-style"
+                      style={{
+                        maxHeight: `${treeMaxHeight}px`,
+                        overflow: 'auto',
+                      }}
+                    />
+                  </div>
                 ),
               },
             ]
