@@ -174,7 +174,10 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
             styles['url-box'],
           )}
         >
-          <EllipsisTooltip text={value} className={cx(styles['chat-url'])} />
+          <EllipsisTooltip
+            text={value}
+            className={cx(styles['chat-url'], 'flex-1')}
+          />
           <CopyToClipboard text={value || ''} onCopy={handleCopy}>
             <Tooltip title="复制">
               <img
@@ -185,12 +188,16 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
             </Tooltip>
           </CopyToClipboard>
           <Tooltip title="二维码">
-            <img
-              className={cx('cursor-pointer', styles.img)}
-              src={record.qrCodeUrl}
-              onClick={() => handleQrCodeVisible(record.qrCodeUrl)}
-              alt="二维码"
-            />
+            <span
+              className={cx(styles['img-box'])}
+              onClick={() => handleQrCodeVisible(record.chatUrl)}
+            >
+              <img
+                className={cx('cursor-pointer', styles.img)}
+                src={record.qrCodeUrl}
+                alt=""
+              />
+            </span>
           </Tooltip>
         </div>
       ),
