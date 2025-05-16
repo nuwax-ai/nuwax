@@ -146,7 +146,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           color="#C9CDD4"
         >
           {displayValue.length > 10 ? (
-            <Popover content={displayValue}>
+            <Popover content={displayValue} placement="topRight">
               <span className="tag-text-style">{displayValue}</span>
             </Popover>
           ) : (

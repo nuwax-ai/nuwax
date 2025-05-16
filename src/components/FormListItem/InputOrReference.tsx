@@ -99,7 +99,6 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
 
   // 处理 TreeSelect 的选中事件
   const handleTreeSelectChange = (key: React.Key[]) => {
-    console.log(key, 'key'); // 打印选中的节点 key 以进行调试
     if (!key || !key.length) return;
     updateValues(key[0] as string, 'Reference');
     setDisplayValue(getValue(key[0]));
@@ -173,7 +172,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
             color="#C9CDD4"
           >
             {displayValue.length > 10 ? (
-              <Popover content={displayValue}>
+              <Popover content={displayValue} placement="topRight">
                 <span className="tag-text-style">{displayValue}</span>
               </Popover>
             ) : (
