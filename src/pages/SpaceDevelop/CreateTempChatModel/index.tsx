@@ -195,7 +195,7 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
               <img
                 className={cx('cursor-pointer', styles.img)}
                 src={record.qrCodeUrl}
-                alt=""
+                alt="qrCode"
               />
             </span>
           </Tooltip>
