@@ -136,7 +136,6 @@ const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
         setMessageList([]);
         onCancel?.(e);
       }}
-      mask={false}
       maskClosable={false}
       footer={null}
     >
