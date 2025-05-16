@@ -2,6 +2,7 @@ import AgentChatEmpty from '@/components/AgentChatEmpty';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
+import { EVENT_TYPE } from '@/constants/event.constants';
 import { DefaultSelectedEnum, MessageTypeEnum } from '@/types/enums/agent';
 import {
   AgentManualComponentInfo,
@@ -13,6 +14,7 @@ import type {
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
 import { addBaseTarget } from '@/utils/common';
+import eventBus from '@/utils/eventBus';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
@@ -43,6 +45,7 @@ const Chat: React.FC = () => {
     manualComponents,
     loadingConversation,
     messageList,
+    setMessageList,
     chatSuggestList,
     runAsync,
     isLoadingConversation,
@@ -150,6 +153,34 @@ const Chat: React.FC = () => {
       setSelectedComponentList(_manualComponents || []);
     }
   }, [infos, manualComponents]);
+
+  // 监听会话更新事件，更新会话记录
+  const handleConversationUpdate = (data: {
+    conversationId: string;
+    message: MessageInfo;
+  }) => {
+    const { conversationId, message } = data;
+    if (Number(id) === Number(conversationId)) {
+      setMessageList((list: MessageInfo[]) => [...list, message]);
+      // 当用户手动滚动时，暂停自动滚动
+      if (allowAutoScrollRef.current) {
+        // 滚动到底部
+        messageViewRef.current?.scrollTo({
+          top: messageViewRef.current?.scrollHeight,
+          behavior: 'smooth',
+        });
+      }
+    }
+  };
+
+  useEffect(() => {
+    // 监听新消息事件
+    eventBus.on(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
+
+    return () => {
+      eventBus.off(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
+    };
+  }, []);
 
   // 选中配置组件
   const handleSelectComponent = (item: AgentSelectedComponentInfo) => {
