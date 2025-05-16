@@ -31,7 +31,7 @@ import '../index.less';
 import { outPutConfigs } from '../params';
 import { FormList, InputAndOut, TreeOutput } from './commonNode';
 // 定义大模型节点
-const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
+const ModelNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
   // 打开关闭优化
@@ -208,6 +208,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form }) => {
           setIsModified(true);
         }}
         optimizeType="prompt"
+        tableId={id}
       />
     </div>
   );

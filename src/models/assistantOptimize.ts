@@ -228,8 +228,9 @@ export default () => {
     const params: PromptOptimizeParams = {
       requestId: `${id}`,
       prompt: message,
+      type: type === 'prompt' ? 'WORKFLOW_LLM_NODE' : '',
       codeLanguage: codeLanguage,
-      tableId: tableId,
+      [type === 'prompt' ? 'id' : 'tableId']: tableId,
       inputArgs: inputArgs,
     };
     // 处理会话
@@ -239,7 +240,6 @@ export default () => {
   return {
     messageList,
     setMessageList,
-
     onMessageSend,
     messageViewRef,
     allowAutoScrollRef,
