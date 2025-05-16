@@ -36,7 +36,7 @@ import 'prismjs/components/prism-typescript.js';
 import copyImage from '@/assets/images/copy.png';
 import { message } from 'antd';
 import 'prismjs/themes/prism.css';
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useModel } from 'umi';
 import ChatBottomMore from './ChatBottomMore';
 import ChatSampleBottom from './ChatSampleBottom';
@@ -45,15 +45,20 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-// 复制代码
-const handleClipboard = (e: Event): void => {
-  e.stopPropagation();
+// 为了避免 "类型“Window & typeof globalThis”上不存在属性“handleClipboard”" 错误，
+// 可以使用自定义类型扩展 Window 类型。
+declare global {
+  interface Window {
+    handleClipboard: (span: HTMLElement) => void;
+  }
+}
+
+// 全局点击处理函数 - 复制代码
+window.handleClipboard = function (span: HTMLElement) {
   const textContent =
-    (
-      e.target as HTMLElement
-    )?.parentElement?.parentElement?.parentElement?.querySelector(
-      '.code-content',
-    )?.textContent || '';
+    span?.parentElement?.parentElement?.querySelector('.code-content')
+      ?.textContent || '';
+
   navigator.clipboard.writeText(textContent).then(() => {
     message.success('复制成功');
   });
@@ -93,7 +98,7 @@ md.renderer.rules.fence = (tokens, idx) => {
     <div class="${styles['code-block-wrapper']}">
       <div class="${styles['code-header']} flex items-center content-between">
         <span class="${styles['code-lang']}">${lang}</span>
-        <span class='flex content-center items-center cursor-pointer copy-btn ${styles['ext-box']}'>
+        <span class='flex content-center items-center cursor-pointer copy-btn ${styles['ext-box']}' onclick="handleClipboard(this)">
           <img class="${styles['copy-img']}" src="${copyImage}" alt="" />
           <span>复制</span>
         </span>
@@ -142,15 +147,6 @@ const ChatView: React.FC<ChatViewProps> = ({
         };
     }
   }, [roleInfo, _userInfo, messageInfo?.role]);
-
-  useEffect(() => {
-    // 为所有复制按钮添加事件监听器
-    const copyBtns = document.querySelectorAll('.copy-btn');
-    copyBtns.forEach((btn) => {
-      btn.removeEventListener('click', handleClipboard); // 先移除旧的
-      btn.addEventListener('click', handleClipboard);
-    });
-  }, []);
 
   return (
     <div className={cx(styles.container, 'flex', className)}>
