@@ -2,6 +2,7 @@ import AgentChatEmpty from '@/components/AgentChatEmpty';
 import ChatInput from '@/components/ChatInput';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
+import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
@@ -9,6 +10,7 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
+import eventBus from '@/utils/eventBus';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
@@ -105,6 +107,34 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       runQueryConversation(devConversationId);
     }
   }, [agentConfigInfo?.devConversationId]);
+
+  // 监听会话更新事件，更新会话记录
+  const handleConversationUpdate = (data: {
+    conversationId: string;
+    message: MessageInfo;
+  }) => {
+    const { conversationId, message } = data;
+    if (devConversationIdRef.current === Number(conversationId)) {
+      setMessageList((list: MessageInfo[]) => [...list, message]);
+      // 当用户手动滚动时，暂停自动滚动
+      if (allowAutoScrollRef.current) {
+        // 滚动到底部
+        messageViewRef.current?.scrollTo({
+          top: messageViewRef.current?.scrollHeight,
+          behavior: 'smooth',
+        });
+      }
+    }
+  };
+
+  useEffect(() => {
+    // 监听新消息事件
+    eventBus.on(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
+
+    return () => {
+      eventBus.off(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
+    };
+  }, []);
 
   // 清空会话记录，实际上是创建新的会话
   const handleClear = useCallback(async () => {
