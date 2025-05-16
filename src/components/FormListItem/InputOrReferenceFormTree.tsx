@@ -90,8 +90,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
     if (nodes && nodes.length) {
       return nodes.map((node) => ({
         key: node.id,
-        label:
-          node.name.length > 10 ? node.name.slice(0, 10) + '...' : node.name,
+        label: node.name.length > 8 ? node.name.slice(0, 8) + '...' : node.name,
         icon: returnImg(node.type),
         children: node.outputArgs
           ? [
@@ -146,7 +145,13 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           className="input-or-reference-tag text-ellipsis"
           color="#C9CDD4"
         >
-          <span className="tag-text-style">{displayValue}</span>
+          {displayValue.length > 10 ? (
+            <Popover content={displayValue} placement="topRight">
+              <span className="tag-text-style">{displayValue}</span>
+            </Popover>
+          ) : (
+            <span className="tag-text-style">{displayValue}</span>
+          )}
         </Tag>
       ) : (
         <Input

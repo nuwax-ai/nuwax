@@ -530,7 +530,15 @@ const SpaceLibrary: React.FC = () => {
   };
 
   return (
-    <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
+    <div
+      className={cx(
+        styles.container,
+        'flex',
+        'flex-col',
+        'h-full',
+        'overflow-y',
+      )}
+    >
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>组件库</h3>
         {/*添加资源*/}

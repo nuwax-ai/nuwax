@@ -43,10 +43,10 @@ const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
     allowAutoScrollRef,
   } = useModel('assistantOptimize');
 
-  const [id, setId] = useState<string>('');
+  const [requestId, setRequestIdId] = useState<string>('');
 
   useEffect(() => {
-    setId(uuidv4());
+    setRequestIdId(uuidv4());
   }, []);
 
   // 在组件挂载时添加滚动事件监听器
@@ -75,12 +75,12 @@ const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
     setMessageList([]);
     if (text) {
       setMessage('');
-      onMessageSend(id, text, optimizeType, codeLanguage);
+      onMessageSend(requestId, text, optimizeType, codeLanguage);
     } else if (message) {
       setMessage('');
       console.log('message', message, optimizeType, tableId);
       onMessageSend(
-        id,
+        requestId,
         message,
         optimizeType,
         codeLanguage,
@@ -105,7 +105,7 @@ const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
       // enter事件
 
       onMessageSend(
-        id,
+        requestId,
         message,
         optimizeType,
         codeLanguage,

@@ -80,6 +80,8 @@ export interface NodeDisposeProps {
   form: FormInstance;
   // 当前节点的类型
   type?: string;
+  // 当前节点的id
+  id?: number;
   // 直接修改modified
   setModified?: () => void;
   // 分组的模型列表

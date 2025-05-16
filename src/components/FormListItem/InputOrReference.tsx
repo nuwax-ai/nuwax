@@ -129,7 +129,6 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
 
   // 处理 TreeSelect 的选中事件
   const handleTreeSelectChange = (key: React.Key[]) => {
-    console.log(key, 'key'); // 打印选中的节点 key 以进行调试
     if (!key || !key.length) return;
     updateValues(key[0] as string, 'Reference');
     setDisplayValue(getValue(key[0]));
@@ -141,8 +140,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
       let isHitSelect = false;
       return nodes.map((node) => ({
         key: node.id,
-        label:
-          node.name.length > 10 ? node.name.slice(0, 10) + '...' : node.name,
+        label: node.name.length > 8 ? node.name.slice(0, 8) + '...' : node.name,
         icon: returnImg(node.type),
         children: node.outputArgs
           ? [
@@ -218,7 +216,13 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
             className="input-or-reference-tag text-ellipsis"
             color="#C9CDD4"
           >
-            <span className="tag-text-style">{displayValue}</span>
+            {displayValue.length > 10 ? (
+              <Popover content={displayValue} placement="topRight">
+                <span className="tag-text-style">{displayValue}</span>
+              </Popover>
+            ) : (
+              <span className="tag-text-style">{displayValue}</span>
+            )}
           </Tag>
         ) : (
           <Input

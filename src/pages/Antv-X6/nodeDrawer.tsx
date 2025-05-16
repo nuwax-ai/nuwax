@@ -51,7 +51,7 @@ export const renderNodeContent = (params: ChildNode, form: FormInstance) => {
     case 'TextProcessing':
       return <TextProcessingNode form={form} />;
     case 'LLM':
-      return <ModelNode form={form} />;
+      return <ModelNode form={form} id={params.id} />;
 
     case 'Plugin':
     case 'Workflow':

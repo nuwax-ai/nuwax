@@ -585,11 +585,13 @@ const ChatTemp: React.FC = () => {
         )}
       >
         <ConditionRender condition={messageList?.length > 0}>
-          <h3 className={cx(styles.title, 'text-ellipsis')}>
-            {conversationInfo?.agent?.name
-              ? `和${conversationInfo?.agent?.name}开始会话`
-              : '开始会话'}
-          </h3>
+          <div className={cx(styles['title-box'])}>
+            <h3 className={cx(styles.title, 'text-ellipsis')}>
+              {conversationInfo?.agent?.name
+                ? `和${conversationInfo?.agent?.name}开始会话`
+                : '开始会话'}
+            </h3>
+          </div>
         </ConditionRender>
         <div className={cx(styles['chat-wrapper'], 'flex-1')}>
           {isLoadingConversation ? (

@@ -1,17 +1,22 @@
 @import '@/styles/color';
 
-.title {
+.title-box {
   position: sticky;
   top: 0;
-  line-height: 60px;
-  padding: 0 60px;
-  color: @BLANK17;
-  font-size: 16px;
-  text-align: center;
-  background-color: @WHITE16;
-  mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
   z-index: 99;
-  box-sizing: border-box;
+
+  .title {
+    position: sticky;
+    top: 0;
+    height: 60px;
+    line-height: 60px;
+    padding: 0 60px;
+    color: @BLANK17;
+    font-size: 16px;
+    text-align: center;
+    background-color: @WHITE16;
+    mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
+  }
 }
 
 .main-content {

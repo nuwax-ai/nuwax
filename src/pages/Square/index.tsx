@@ -130,7 +130,15 @@ const Square: React.FC = () => {
   };
 
   return (
-    <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
+    <div
+      className={cx(
+        styles.container,
+        'h-full',
+        'flex',
+        'flex-col',
+        'overflow-y',
+      )}
+    >
       <header className={cx(styles.header, 'relative')} onClick={handleLink}>
         <img
           className={'absolute'}

@@ -16,10 +16,11 @@ export interface PromptOptimizeParams {
   /*提示词 */
   prompt: string;
 
+  type?: string;
   codeLanguage?: string;
 
   tableId?: number;
-
+  id?: number;
   inputArgs?: InputAndOutConfig[];
 }
 

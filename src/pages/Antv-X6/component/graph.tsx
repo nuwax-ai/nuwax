@@ -1,5 +1,5 @@
 // 引入 AntV X6 的核心库和必要的插件。
-import { Cell, Edge, Graph, Node, Shape, ToolsView } from '@antv/x6';
+import { Cell, Edge, Graph, Node, Shape } from '@antv/x6';
 
 // 剪贴板插件，用于复制和粘贴节点
 import { Clipboard } from '@antv/x6-plugin-clipboard';
@@ -87,25 +87,29 @@ const initGraph = ({
 
   // 通过边和连接桩创捷节点并添加连线
   const createNodeAndEdge = (
+    graph: Graph,
     event: any,
     // 源节点
     sourceNode: ChildNode,
     // 源端口的id
     portId: string,
-    // 源节点的宽度，用于计算节点的位置
-    nodeWidth: number,
     targetNode?: ChildNode,
     edgeId?: string,
   ) => {
     const eventTarget =
       event.originalEvent.originalEvent || event.originalEvent;
 
+    const position = graph.clientToLocal({
+      x: eventTarget.clientX,
+      y: eventTarget.clientY + 50,
+    });
+
     const dragChild = (child: Child) => {
       createNodeToPortOrEdge(
         child,
         sourceNode,
         portId,
-        nodeWidth,
+        position,
         targetNode,
         edgeId,
       );
@@ -403,18 +407,34 @@ const initGraph = ({
   });
 
   graph.on('node:port:click', ({ node, port, e }) => {
-    const nodeWidth = node.getSize().width;
-    createNodeAndEdge(e, node.getData(), port as string, nodeWidth);
+    // 查看当前节点是否为循环的子节点
+    const isLoopNode = node.getData()?.loopNodeId;
+    if (isLoopNode) {
+      const isIn = port?.includes('in');
+      // 找到当前节点的父节点
+      const parentNode = node.getParent()?.getData();
+      // 查看当前节点是否为循环节点的开始的子节点或者结束的子节点
+      const isStartNode = node.getData()?.id === parentNode.innerStartNodeId;
+      const isEndNode = node.getData()?.id === parentNode.innerEndNodeId;
+
+      if ((isStartNode && isIn) || (isEndNode && !isIn)) {
+        message.warning('循环节点的开始和结束节点不能快捷添加其他节点');
+        return;
+      }
+    }
+    createNodeAndEdge(graph, e, node.getData(), port as string);
   });
 
   // // 在创建图形实例后添加事件监听
   graph.on('edge:mouseenter', ({ edge }) => {
-    edge.setTools('button', {
-      attrs: {
-        button: { opacity: 1 },
-        icon: { opacity: 1 },
-      },
-    });
+    const sourceNode = edge.getSourceCell()?.getData();
+    const targetNode = edge.getTargetCell()?.getData();
+    if (
+      (sourceNode.type === 'Loop' && targetNode.loopNodeId) ||
+      (sourceNode.loopNodeId && targetNode?.type === 'Loop')
+    )
+      return;
+
     edge.addTools([
       {
         name: 'button',
@@ -424,7 +444,7 @@ const initGraph = ({
               tagName: 'circle',
               selector: 'button',
               attrs: {
-                r: 6,
+                r: 8,
                 stroke: '#5147FF',
                 strokeWidth: 1,
                 fill: '#5147FF',
@@ -436,10 +456,10 @@ const initGraph = ({
               selector: 'icon',
               attrs: {
                 href: PlusIcon,
-                width: 8,
-                height: 8,
-                x: -4,
-                y: -4,
+                width: 10,
+                height: 10,
+                x: -5,
+                y: -5,
                 pointerEvents: 'none',
               },
             },
@@ -450,14 +470,13 @@ const initGraph = ({
             const source = edge.getSourceCell()?.getData();
             const target = edge.getTargetCell()?.getData();
             const sourcePort = edge.getSourcePortId();
-            const width = edge.getSourceNode()?.getSize().width || 180;
 
             if (!source || !target) return;
             createNodeAndEdge(
+              graph,
               e,
               source,
               sourcePort as string,
-              width,
               target,
               edge.id,
             );
@@ -469,17 +488,6 @@ const initGraph = ({
 
   graph.on('edge:mouseleave', ({ edge }) => {
     edge.removeTools();
-    // 获取指定名称的工具
-    const tools = edge.getTools();
-    console.log(ToolsView.isToolsView(tools));
-
-    // if (tool) {
-    //   if (Array.isArray(tool.items)) {
-    //     tool.items.forEach(t => t.hide());
-    //   } else {
-    //     tool.hide();
-    //   }
-    // }
   });
   // 监听节点的拖拽移动位置
   graph.on('node:moved', ({ node, e }) => {
