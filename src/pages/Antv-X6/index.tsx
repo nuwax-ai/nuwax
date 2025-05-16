@@ -31,6 +31,7 @@ import { changeNodeConfig, updateNode } from '@/utils/updateNode';
 import {
   getEdges,
   handleSpecialNodesNextIndex,
+  QuicklyCreate,
   returnImg,
 } from '@/utils/workflow';
 import { Form, message } from 'antd';
@@ -506,11 +507,27 @@ const Workflow: React.FC = () => {
               _res.data.id.toString(),
             );
           } else {
-            await nodeChangeEdge('created', id, _res.data);
-            graphRef.current.createNewEdge(
-              _res.data.id.toString(),
-              id.toString(),
-            );
+            // 如果是条件分支或者意图识别节点，就需要给其中一个子端口添加一个边
+            if (
+              _res.data.type === 'Condition' ||
+              _res.data.type === 'IntentRecognition'
+            ) {
+              const { nodeData, sourcePortId } = QuicklyCreate(
+                _res.data,
+                sourceNode,
+              );
+              changeNode(nodeData as ChildNode);
+              graphRef.current.createNewEdge(
+                sourcePortId,
+                sourceNode.id.toString(),
+              );
+            } else {
+              await nodeChangeEdge('created', id, _res.data);
+              graphRef.current.createNewEdge(
+                _res.data.id.toString(),
+                id.toString(),
+              );
+            }
           }
         }
         // 如果有targetNode,证明是通过边创建的，这里需要连接上下游
@@ -520,20 +537,10 @@ const Workflow: React.FC = () => {
             _res.data.type === 'Condition' ||
             _res.data.type === 'IntentRecognition'
           ) {
-            const nodeData = JSON.parse(JSON.stringify(_res.data));
-            let _arr =
-              nodeData.nodeConfig.conditionBranchConfigs ||
-              nodeData.nodeConfig.intentConfigs;
-            _arr[_arr.length - 1].nextNodeIds = [targetNode.id];
-            // 获取端口的id
-            let sourcePortId: string = `${nodeData.id}-${
-              _arr[_arr.length - 1].uuid
-            }`;
-            if (_res.data.type === 'Condition') {
-              nodeData.nodeConfig.conditionBranchConfigs = _arr;
-            } else {
-              nodeData.nodeConfig.intentConfigs = _arr;
-            }
+            const { nodeData, sourcePortId } = QuicklyCreate(
+              _res.data,
+              targetNode,
+            );
             changeNode(nodeData as ChildNode);
             graphRef.current.createNewEdge(
               sourcePortId,
@@ -678,6 +685,7 @@ const Workflow: React.FC = () => {
       }
       // 检查是否是{x,y}对象
       if ('x' in e && 'y' in e) {
+        console.log('e', e);
         return { x: e.x, y: e.y };
       }
       // 处理React拖拽事件
@@ -1027,28 +1035,10 @@ const Workflow: React.FC = () => {
     child: Child,
     sourceNode: ChildNode,
     portId: string,
-    nodeWidth: number,
+    position: { x: number; y: number },
     targetNode?: ChildNode,
     edgeId?: string,
   ) => {
-    // 获取当前节点的位置
-    const _position = sourceNode.nodeConfig.extension as {
-      x: number;
-      y: number;
-    };
-
-    // 根据portid的最后的out和in来判定当前新增的节点是source还是target
-    const isOut = portId.endsWith('out');
-
-    // 计算新增节点的位置
-    const computedX = isOut
-      ? _position.x + nodeWidth + 100 + Math.random() * 100 - 50
-      : _position.x - nodeWidth - 100 - Math.random() * 100 - 50;
-
-    const dragPosition = {
-      x: computedX,
-      y: _position?.y + Math.random() * 100 - 50,
-    };
     // 首先创建节点
     currentNodeRef.current = {
       sourceNode: sourceNode,
@@ -1056,7 +1046,30 @@ const Workflow: React.FC = () => {
       targetNode: targetNode,
       edgeId: edgeId,
     };
-    await dragChild(child, dragPosition);
+
+    const _position = position;
+
+    let width = 300;
+    if (child.type === 'Loop') {
+      width = 700;
+    } else if (
+      child.type === 'Condition' ||
+      child.type === 'Interval' ||
+      child.type === 'QA'
+    ) {
+      width = 400;
+    }
+
+    if (!targetNode) {
+      const isout = portId.endsWith('out');
+      if (isout) {
+        _position.x = _position.x + 100;
+      } else {
+        _position.x = _position.x - width;
+      }
+    }
+
+    await dragChild(child, _position);
   };
 
   // 保存当前画布中节点的位置

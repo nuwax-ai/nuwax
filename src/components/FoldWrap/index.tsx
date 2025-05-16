@@ -99,7 +99,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
                     setIsEdit(false);
                   }
                 }}
-                maxLength={14}
+                maxLength={25}
                 onBlur={() => {
                   form.submit();
                   setIsEdit(false);

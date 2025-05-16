@@ -111,8 +111,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
     if (nodes && nodes.length) {
       return nodes.map((node) => ({
         key: node.id,
-        label:
-          node.name.length > 10 ? node.name.slice(0, 10) + '...' : node.name,
+        label: node.name.length > 8 ? node.name.slice(0, 8) + '...' : node.name,
         icon: returnImg(node.type),
         children: node.outputArgs
           ? [

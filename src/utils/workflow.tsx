@@ -668,3 +668,23 @@ export const handleSpecialNodesNextIndex = (
   };
   return newNode;
 };
+
+// 连接桩和边便捷添加节点
+export const QuicklyCreate = (
+  newNodeData: ChildNode,
+  targetNode: ChildNode,
+) => {
+  const nodeData = JSON.parse(JSON.stringify(newNodeData));
+  let _arr =
+    nodeData.nodeConfig.conditionBranchConfigs ||
+    nodeData.nodeConfig.intentConfigs;
+  _arr[_arr.length - 1].nextNodeIds = [targetNode.id];
+  // 获取端口的id
+  let sourcePortId: string = `${nodeData.id}-${_arr[_arr.length - 1].uuid}`;
+  if (newNodeData.type === 'Condition') {
+    nodeData.nodeConfig.conditionBranchConfigs = _arr;
+  } else {
+    nodeData.nodeConfig.intentConfigs = _arr;
+  }
+  return { nodeData, sourcePortId };
+};
