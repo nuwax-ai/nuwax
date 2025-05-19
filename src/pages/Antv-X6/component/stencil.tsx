@@ -30,7 +30,7 @@ const renderIcon = (url: string) => {
 };
 
 // StencilContent 组件用于渲染 stencil 内容，并允许用户拖拽子项（Child）到画布上。
-const StencilContent = ({ dragChild, isLoop }: Prop) => {
+const StencilContent = ({ dragChild, isLoop = false }: Prop) => {
   /**
    * handleDragStart 处理拖拽开始事件。
    * 当用户开始拖拽时，它会调用父组件传递过来的 dragChild 回调，
@@ -58,28 +58,30 @@ const StencilContent = ({ dragChild, isLoop }: Prop) => {
             {/* 如果有组名，则显示组标题 */}
             {item.name && <p className="stencil-list-title">{item.name}</p>}
             <div className="stencil-list-content">
-              {/* 渲染该组内的所有子项 */}
-              {item.children.map((child) => {
-                // 特殊类型处理：LoopBreak/LoopContinue 只在 Loop 节点时显示
-                const isLoopControl = ['LoopBreak', 'LoopContinue'].includes(
-                  child.type,
-                );
-                const shouldShow = isLoopControl ? isLoop : true;
-                return (
-                  shouldShow && (
-                    <div
-                      className="child-content dis-left"
-                      draggable="true"
-                      key={child.type}
-                      onDragEnd={(e) => handleDragStart(child, e)}
-                      onClick={() => handleDragStart(child)}
-                    >
-                      {renderIcon(child.bgIcon || '')}
-                      <span>{child.name}</span>
-                    </div>
-                  )
-                );
-              })}
+              {/* 渲染该组内的所有子项  其中循环节点不添加 循环节点*/}
+              {item.children
+                .filter((child) => (isLoop ? child.type !== 'Loop' : true))
+                .map((child) => {
+                  // 特殊类型处理：LoopBreak/LoopContinue 只在 Loop 节点时显示
+                  const isLoopControl = ['LoopBreak', 'LoopContinue'].includes(
+                    child.type,
+                  );
+                  const shouldShow = isLoopControl ? isLoop : true;
+                  return (
+                    shouldShow && (
+                      <div
+                        className="child-content dis-left"
+                        draggable="true"
+                        key={child.type}
+                        onDragEnd={(e) => handleDragStart(child, e)}
+                        onClick={() => handleDragStart(child)}
+                      >
+                        {renderIcon(child.bgIcon || '')}
+                        <span>{child.name}</span>
+                      </div>
+                    )
+                  );
+                })}
             </div>
           </div>
         ))}

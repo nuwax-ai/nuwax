@@ -111,6 +111,8 @@ const initGraph = ({
         edgeId,
       );
     };
+    // 如果当前节点在循环内，则不展示循环节点
+    const isInLoop = !!(sourceNode?.loopNodeId || false);
     const popoverContent = (
       <div className="confirm-popover">
         <StencilContent
@@ -118,6 +120,7 @@ const initGraph = ({
             dragChild(child);
             Modal.destroyAll();
           }}
+          isLoop={isInLoop}
         />
       </div>
     );
