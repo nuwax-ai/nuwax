@@ -88,34 +88,36 @@ export const GroupedOptionSelect: React.FC<ModelSettingProp> = ({ form }) => {
         placement={'bottomLeft'}
         popupMatchSelectWidth={false}
       >
-        {groupedOptionsData?.map((group, groupIndex: number) => (
-          <Select.OptGroup key={groupIndex} label={group.label}>
-            {group.options.map((opt, index) => (
-              <Select.Option
-                key={`${groupIndex}-${index}`}
-                value={opt.id}
-                label={
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    {opt.icon && (
-                      <img
-                        src={opt.icon}
-                        alt=""
-                        style={{
-                          width: '20px',
-                          height: '20px',
-                          marginRight: '8px',
-                        }}
-                      />
-                    )}
-                    <span>{opt.name}</span>
-                  </div>
-                }
-              >
-                <ModelListItem item={opt} />
-              </Select.Option>
-            ))}
-          </Select.OptGroup>
-        ))}
+        {groupedOptionsData?.map((group, groupIndex: number) => {
+          return (
+            <>
+              {group.options.map((opt, index) => (
+                <Select.Option
+                  key={`${groupIndex}-${index}`}
+                  value={opt.id}
+                  label={
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      {opt.icon && (
+                        <img
+                          src={opt.icon}
+                          alt=""
+                          style={{
+                            width: '20px',
+                            height: '20px',
+                            marginRight: '8px',
+                          }}
+                        />
+                      )}
+                      <span>{opt.name}</span>
+                    </div>
+                  }
+                >
+                  <ModelListItem item={opt} />
+                </Select.Option>
+              ))}
+            </>
+          );
+        })}
       </Select>
     </Form.Item>
   );

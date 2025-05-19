@@ -105,38 +105,19 @@ export function handleLoopEdge(sourceNode: ChildNode, targetNode: ChildNode) {
   if (sourceNode.type === 'Loop') {
     // 源节点是循环节点
     if (targetNode.loopNodeId && targetNode.loopNodeId === sourceNode.id) {
-      // 目标节点是循环内部节点
-      if (sourceNode.innerStartNodeId && sourceNode.innerStartNodeId !== -1) {
-        message.warning('当前循环已有对子节点的连线，请先删除该连线');
-
-        return 'error';
-      }
       const _params = { ...sourceNode };
       _params.innerStartNodeId = targetNode.id;
       return _params;
     }
   }
   if (targetNode.type === 'Loop') {
-    if (
-      (sourceNode.type === 'IntentRecognition' ||
-        sourceNode.type === 'Condition' ||
-        sourceNode.type === 'QA') &&
-      sourceNode.loopNodeId
-    ) {
-      message.warning('条件分支，意图识别，问答不能作为循环的出口连接节点');
-      return 'error';
-    }
     if (sourceNode.loopNodeId && sourceNode.loopNodeId === targetNode.id) {
-      // 源节点是循环内部节点
-      if (targetNode.innerEndNodeId && targetNode.innerEndNodeId !== -1) {
-        message.warning('当前已有对子节点连接循环的出口，请先删除该连线');
-        return 'error';
-      }
       const _params = { ...targetNode };
       _params.innerEndNodeId = sourceNode.id;
       return _params;
     }
   }
+  return false;
 }
 
 // 辅助函数：处理特殊节点类型（Condition、IntentRecognition、QA）
@@ -233,4 +214,111 @@ export const updateEdgeArrows = (graph: Graph) => {
       // edge.setZIndex(isLast ? 3 : 1);
     });
   });
+};
+const _validateLoopInnerNode = (
+  sourceNode: ChildNode,
+  targetNode: ChildNode,
+): string | boolean => {
+  if (targetNode.type === 'Loop') {
+    const isInvalidSource = ['IntentRecognition', 'Condition', 'QA'];
+    if (isInvalidSource.includes(sourceNode.type) && sourceNode.loopNodeId) {
+      return '条件分支，意图识别，问答不能作为循环的出口连接节点';
+    }
+    if (sourceNode.loopNodeId && sourceNode.loopNodeId === targetNode.id) {
+      // 源节点是循环内部节点
+      if (targetNode.innerEndNodeId && targetNode.innerEndNodeId !== -1) {
+        return '当前已有对子节点连接循环的出口，请先删除该连线';
+      }
+    }
+  }
+
+  if (sourceNode.type === 'Loop') {
+    // 源节点是循环节点
+    if (targetNode.loopNodeId && targetNode.loopNodeId === sourceNode.id) {
+      // 目标节点是循环内部节点
+      if (sourceNode.innerStartNodeId && sourceNode.innerStartNodeId !== -1) {
+        return '当前循环已有对子节点的连线，请先删除该连线';
+      }
+    }
+  }
+
+  return false;
+};
+
+// 把是否可以连线连接桩 规则抽成一个函数
+export const validateConnect = (
+  edge: Edge,
+  allEdges: Edge[],
+): string | boolean => {
+  const sourceCellId = edge.getSourceCellId();
+  const targetNodeId = edge.getTargetCellId();
+  // 获取边的两个连接桩
+  const sourcePort = edge.getSourcePortId() || '';
+  const targetPort = edge.getTargetPortId() || '';
+  const sourceNode = edge.getSourceNode()?.getData();
+  const targetNode = edge.getTargetNode()?.getData();
+  const edgeId = edge.id;
+
+  const isLoopNode = sourceNode.type === 'Loop' || targetNode.type === 'Loop';
+  // 检查是否存在具有相同source和target的边
+  if (
+    hasDuplicateEdge(
+      allEdges,
+      sourceCellId,
+      targetNodeId,
+      sourcePort,
+      targetPort,
+      edgeId,
+    )
+  ) {
+    return '不能创建重复的边';
+  }
+
+  // Loop 节点逻辑
+  if (isLoopNode) {
+    if (
+      (sourceNode.type === 'Loop' &&
+        !targetNode.loopNodeId &&
+        sourcePort.includes('in')) ||
+      (targetNode.type === 'Loop' &&
+        !sourceNode.loopNodeId &&
+        targetPort.includes('out'))
+    ) {
+      return '不能连接外部的节点';
+    }
+    const result = _validateLoopInnerNode(sourceNode, targetNode);
+    if (result !== false) {
+      return result;
+    }
+  }
+
+  // 如果当前节点不是循环节点，in 就不能拉连线
+  if (sourceNode.type !== 'Loop' && sourcePort?.includes('in')) {
+    return '';
+  }
+
+  // 校验是否从右侧连接桩连入，左侧连接桩连出 不展示错误消息
+  if (sourcePort?.includes('left') || targetPort?.includes('right')) {
+    return '';
+  }
+  // 如果是循环内部的节点被外部的节点连接或者内部的节点连接外部的节点，就告知不能连接
+  const currentLoopNodeId = sourceNode.loopNodeId || targetNode.loopNodeId;
+  if (currentLoopNodeId) {
+    if (
+      !isValidLoopConnection(sourceNode, currentLoopNodeId) ||
+      !isValidLoopConnection(targetNode, currentLoopNodeId)
+    ) {
+      return '不能连接外部节点';
+    }
+  }
+
+  // sourceNode 为 Loop 节点 为出，targetNode 为出 不能连线
+  if (
+    sourceNode.type === 'Loop' &&
+    (sourcePort?.includes('out') || targetPort?.includes('out'))
+  ) {
+    return '';
+  }
+
+  return false;
 };

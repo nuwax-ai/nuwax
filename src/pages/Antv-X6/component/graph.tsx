@@ -13,7 +13,7 @@ import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
 // import { Transform } from '@antv/x6-plugin-transform';
 import { Child, ChildNode } from '@/types/interfaces/graph';
-import { adjustParentSize } from '@/utils/graph';
+import { adjustParentSize, validateConnect } from '@/utils/graph';
 import { message, Modal } from 'antd';
 // 自定义类型定义
 import PlusIcon from '@/assets/svg/plus_icon.svg';
@@ -21,11 +21,8 @@ import { GraphProp } from '@/types/interfaces/graph';
 import {
   handleLoopEdge,
   handleSpecialNodeTypes,
-  hasDuplicateEdge,
-  isValidLoopConnection,
   setEdgeAttributes,
   updateEdgeArrows,
-  validatePortConnection,
 } from '@/utils/graph';
 import { createCurvePath } from './registerCustomNodes';
 import StencilContent from './stencil';
@@ -114,6 +111,8 @@ const initGraph = ({
         edgeId,
       );
     };
+    // 如果当前节点在循环内，则不展示循环节点
+    const isInLoop = !!(sourceNode?.loopNodeId || false);
     const popoverContent = (
       <div className="confirm-popover">
         <StencilContent
@@ -121,6 +120,7 @@ const initGraph = ({
             dragChild(child);
             Modal.destroyAll();
           }}
+          isLoop={isInLoop}
         />
       </div>
     );
@@ -640,7 +640,6 @@ const initGraph = ({
     if (!isNew) return;
     // 查看当前的边是否已经有了
     const edges = graph.getEdges();
-    const sourceCellId = edge.getSourceCellId();
     const targetNodeId = edge.getTargetCellId();
     // 获取边的两个连接桩
     const sourcePort = edge.getSourcePortId();
@@ -649,46 +648,24 @@ const initGraph = ({
     const targetNode = edge.getTargetNode()?.getData();
 
     if (!sourceNode || !targetNode || !sourcePort || !targetPort) return;
-    // 检查是否存在具有相同source和target的边
-    if (
-      hasDuplicateEdge(
-        edges,
-        sourceCellId,
-        targetNodeId,
-        sourcePort,
-        targetPort,
-        edge.id,
-      )
-    ) {
-      // [!code ++]
+    // 校验是否可以连接
+    const result = validateConnect(edge, edges);
+    if (result !== false) {
       edge.remove();
-      message.warning('不能创建重复的边');
+      if (result && typeof result === 'string') {
+        message.warning(result);
+      }
       return;
     }
+
     // 处理循环节点的逻辑
     if (sourceNode.type === 'Loop' || targetNode.type === 'Loop') {
       console.log(sourcePort);
-      if (
-        (sourceNode.type === 'Loop' &&
-          !targetNode.loopNodeId &&
-          sourcePort.includes('in')) ||
-        (targetNode.type === 'Loop' &&
-          !sourceNode.loopNodeId &&
-          targetPort.includes('out'))
-      ) {
-        message.warning('不能连接外部的节点');
-        edge.remove();
-        return;
-      }
       // 确保传递正确的参数类型给 handleLoopEdge 函数
       const _params = handleLoopEdge(
         sourceNode as ChildNode,
         targetNode as ChildNode,
       );
-      if (typeof _params === 'string' && _params === 'error') {
-        edge.remove();
-        return;
-      }
       if (_params && typeof _params !== 'string') {
         changeCondition(_params, targetNode.id);
         graph.addEdge(edge);
@@ -697,24 +674,7 @@ const initGraph = ({
         return;
       }
     }
-    // 校验是否从右侧连接桩连入，左侧连接桩连出
-    if (!validatePortConnection(sourcePort, targetPort)) {
-      edge.remove();
-      return;
-    }
 
-    // 如果是循环内部的节点被外部的节点连接或者内部的节点连接外部的节点，就告知不能连接
-    const currentLoopNodeId = sourceNode.loopNodeId || targetNode.loopNodeId;
-    if (currentLoopNodeId) {
-      if (
-        !isValidLoopConnection(sourceNode, currentLoopNodeId) ||
-        !isValidLoopConnection(targetNode, currentLoopNodeId)
-      ) {
-        message.warning('不能连接外部节点');
-        edge.remove();
-        return;
-      }
-    }
     // 处理特殊的三个节点
     if (
       sourceNode.type === 'Condition' ||
@@ -734,6 +694,7 @@ const initGraph = ({
       // 通知父组件创建边
       changeEdge('created', targetNodeId, sourceNode, edge.id);
     }
+
     graph.addEdge(edge);
     setEdgeAttributes(edge);
     // edge.toFront()

@@ -7,7 +7,6 @@ import {
   DeleteOutlined,
   // DownOutlined,
   InfoCircleOutlined,
-  SettingOutlined,
 } from '@ant-design/icons';
 import { Button, Input, Modal, Popover, Switch, Tag } from 'antd';
 import React, { useEffect, useState } from 'react';
@@ -266,7 +265,7 @@ export const SkillList: React.FC<SkillProps> = ({
                         <InfoCircleOutlined className="white" />
                       </Popover>
                     )}
-                  <Popover content={'编辑参数'} trigger="hover">
+                  {/* <Popover content={'编辑参数'} trigger="hover">
                     <SettingOutlined
                       className="ml-12 cursor-pointer white"
                       onClick={() => {
@@ -274,7 +273,7 @@ export const SkillList: React.FC<SkillProps> = ({
                         setOpen(true);
                       }}
                     />
-                  </Popover>
+                  </Popover> */}
                   <Popover content={'移除'} trigger="hover">
                     <DeleteOutlined
                       className="ml-12  white"

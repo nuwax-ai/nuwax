@@ -447,7 +447,8 @@ const CustomTree: React.FC<TreeFormProps> = ({
     const parentKeys = getAllParentKeys(treeData);
     setExpandedKeys(parentKeys);
   }, [treeData]);
-
+  const showAddButton =
+    !isNotAdd && (!notShowTitle || form.getFieldValue('outputType') === 'JSON');
   return (
     <div>
       <div className="dis-sb margin-bottom">
@@ -459,27 +460,32 @@ const CustomTree: React.FC<TreeFormProps> = ({
             <Form.Item name="outputType" noStyle>
               <Select
                 prefix={
-                  <Popover
-                    content={
-                      <ul>
-                        <li>文本: 使用普通文本格式回复</li>
-                        <li>Markdown: 将引导模型使用 Markdown 格式输出回复</li>
-                        <li>JSON: 将引导模型使用 JSON 格式输出</li>
-                      </ul>
-                    }
-                  >
-                    <div className="dis-left">
+                  <div className="dis-left">
+                    <Popover
+                      align={{
+                        offset: [-12, -12],
+                      }}
+                      content={
+                        <ul>
+                          <li>文本: 使用普通文本格式回复</li>
+                          <li>
+                            Markdown: 将引导模型使用 Markdown 格式输出回复
+                          </li>
+                          <li>JSON: 将引导模型使用 JSON 格式输出</li>
+                        </ul>
+                      }
+                    >
                       <InfoCircleOutlined />
-                      <span className="ml-10">输出格式</span>
-                    </div>
-                  </Popover>
+                    </Popover>
+                    <span className="ml-10">输出格式</span>
+                  </div>
                 }
                 options={[
                   { label: '文本', value: 'Text' },
                   { label: 'Markdown', value: 'Markdown' },
                   { label: 'JSON', value: 'JSON' },
                 ]}
-                style={{ width: 160 }}
+                style={{ width: `calc(100% - ${showAddButton ? 34 : 0}px)` }}
                 onChange={(e) => {
                   if (e !== 'JSON') {
                     form.setFieldValue('outputType', e);
@@ -500,16 +506,15 @@ const CustomTree: React.FC<TreeFormProps> = ({
               />
             </Form.Item>
           )}
-          {!isNotAdd &&
-            (!notShowTitle || form.getFieldValue('outputType') === 'JSON') && (
-              <Button
-                icon={<PlusOutlined />}
-                size={'small'}
-                onClick={addRootNode}
-                className="ml-10"
-                type="text"
-              />
-            )}
+          {showAddButton && (
+            <Button
+              icon={<PlusOutlined />}
+              size={'small'}
+              onClick={addRootNode}
+              className="ml-10"
+              type="text"
+            />
+          )}
         </div>
       </div>
 
