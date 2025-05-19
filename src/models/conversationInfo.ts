@@ -123,27 +123,25 @@ export default () => {
       setConversationInfo(data);
       // 是否开启用户问题建议
       setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
-      // 消息列表
-      const _messageList = data?.messageList || [];
       // 可手动选择的组件列表
       setManualComponents(data?.agent?.manualComponents || []);
-      // 问题建议列表
-      let suggestList: string[] = [];
+      // 消息列表
+      const _messageList = data?.messageList || [];
       if (_messageList?.length) {
         setMessageList(_messageList || []);
         // 最后一条消息为"问答"时，获取问题建议
-        const lastMessage = _messageList?.[_messageList.length - 1];
+        const lastMessage = _messageList[_messageList.length - 1];
         if (
           lastMessage.type === MessageModeEnum.QUESTION &&
           lastMessage.ext?.length
         ) {
-          suggestList = lastMessage.ext.map((item) => item.content) || [];
+          // 问题建议列表
+          const suggestList = lastMessage.ext.map((item) => item.content) || [];
+          setChatSuggestList(suggestList);
         }
       }
-      if (suggestList?.length) {
-        setChatSuggestList(suggestList);
-      } else {
-        // 开场白预置问题
+      // 不存在会话消息时，才显示开场白预置问题
+      else {
         setChatSuggestList(data?.agent?.openingGuidQuestions || []);
       }
       handleScrollBottom();

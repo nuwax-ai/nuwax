@@ -109,8 +109,19 @@ function formatTimeAgo(targetTime: string) {
   }
 }
 
+// html自定义转义
+function encodeHTML(str: string) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export {
   addBaseTarget,
+  encodeHTML,
   formatTimeAgo,
   getBase64,
   getNumbersOnly,
