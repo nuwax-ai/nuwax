@@ -127,7 +127,7 @@ const CreateSet: React.FC<CreateSetProps> = ({
             </Form.Item>
             <Form.Item
               name="overlaps"
-              label="分段重叠数%"
+              label="分段重叠度%"
               rules={[
                 { required: true, message: '请输入0-100的数值' },
                 {
@@ -142,7 +142,7 @@ const CreateSet: React.FC<CreateSetProps> = ({
                       return Promise.reject(new Error('请输入正确的数字!'));
                     }
                     return Promise.reject(
-                      new Error('分段重叠数不得小于0，大于100!'),
+                      new Error('分段重叠度不得小于0，大于100!'),
                     );
                   },
                 },
