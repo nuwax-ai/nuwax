@@ -130,7 +130,7 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
             </ConditionRender>
           </div>
           <span className={cx(styles['update-time'])}>
-            发布于{moment(targetInfo?.created).format('HH:mm')}
+            发布于{moment(targetInfo?.created).format('YYYY-MM-DD HH:mm')}
           </span>
         </div>
       </section>

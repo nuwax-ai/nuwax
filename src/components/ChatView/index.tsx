@@ -34,6 +34,7 @@ import 'prismjs/components/prism-tsx.min.js';
 import 'prismjs/components/prism-typescript.min.js';
 // import 'prismjs/themes/prism-okaidia.css';
 import copyImage from '@/assets/images/copy.png';
+import { encodeHTML } from '@/utils/common';
 import { message } from 'antd';
 import 'prismjs/themes/prism.css';
 import React, { useMemo } from 'react';
@@ -65,10 +66,17 @@ window.handleClipboard = function (span: HTMLElement) {
 };
 
 const md = markdownIt({
-  html: true,
-  breaks: true,
-  linkify: true,
+  html: true, // 启用原始HTML解析
+  xhtmlOut: true, // 使用 XHTML 兼容语法
+  breaks: true, // 换行转换为 <br>
+  linkify: true, // 自动识别链接
+  typographer: true, // 优化排版
 });
+
+// html自定义转义
+md.renderer.rules.html_block = (tokens, idx) => {
+  return encodeHTML(tokens[idx].content);
+};
 
 // 修改代码块渲染函数
 md.renderer.rules.fence = (tokens, idx) => {

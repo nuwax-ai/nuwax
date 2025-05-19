@@ -199,7 +199,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
             >
               <LoadingOutlined className={cx(styles.loading)} />
             </div>
-          ) : messageList?.length > 0 || chatSuggestList?.length > 0 ? (
+          ) : messageList?.length > 0 ? (
             <>
               {messageList?.map((item: MessageInfo) => (
                 <ChatView
@@ -222,6 +222,16 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
               <AgentChatEmpty
                 icon={agentConfigInfo?.icon}
                 name={agentConfigInfo?.name as string}
+                // 会话建议
+                extra={
+                  <RecommendList
+                    className="mt-16"
+                    // itemClassName={cx(styles['suggest-item'])}
+                    loading={loadingSuggest}
+                    chatSuggestList={chatSuggestList}
+                    onClick={handleMessageSend}
+                  />
+                }
               />
             )
           )}
