@@ -186,8 +186,8 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
         // 选择下拉‘分段标识符’
         data = {
           delimiter: formValues?.selectDelimiter,
-          overlaps: formValues.overlaps,
-          words: formValues.words,
+          overlaps: Number(formValues.overlaps),
+          words: Number(formValues.words),
         };
       }
       segmentConfigModelRef.current = data as SegmentConfigModel;
