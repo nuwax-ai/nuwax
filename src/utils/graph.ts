@@ -291,6 +291,12 @@ export const validateConnect = (
       return result;
     }
   }
+
+  // 如果当前节点不是循环节点，in 就不能拉连线
+  if (sourceNode.type !== 'Loop' && sourcePort?.includes('in')) {
+    return '';
+  }
+
   // 校验是否从右侧连接桩连入，左侧连接桩连出 不展示错误消息
   if (sourcePort?.includes('left') || targetPort?.includes('right')) {
     return '';
