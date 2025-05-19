@@ -1,4 +1,6 @@
+import avatarImage from '@/assets/images/avatar.png';
 import pluginImage from '@/assets/images/plugin_image.png';
+import workflowImage from '@/assets/images/workflow_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import CollectStar from '@/pages/SpaceDevelop/ApplicationItem/CollectStar';
 import {
@@ -82,6 +84,10 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
     setCollect(!collect);
   };
 
+  // 默认图片
+  const defaultImage =
+    targetType === SquareAgentTypeEnum.Plugin ? pluginImage : workflowImage;
+
   return (
     <header className={cx('flex', 'items-center', 'w-full', styles.header)}>
       <LeftOutlined
@@ -90,7 +96,7 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
       />
       <img
         className={cx(styles.logo)}
-        src={targetInfo?.icon || (pluginImage as string)}
+        src={targetInfo?.icon || defaultImage}
         alt=""
       />
       <section
@@ -109,7 +115,7 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
           <div className={cx('flex', 'items-center', styles['info-author'])}>
             <img
               className={cx(styles.avatar)}
-              src={publishUser?.avatar}
+              src={publishUser?.avatar || avatarImage}
               alt=""
             />
             <ConditionRender condition={publishUser?.userName}>

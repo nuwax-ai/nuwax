@@ -199,6 +199,7 @@ export interface PublishWorkflowInfo {
   description: string;
   icon: string;
   remark: string;
+  created: string;
   // 节点入参
   inputArgs: BindConfigWithSub[];
   // 节点出参

@@ -24,9 +24,6 @@ const SpacePluginDetail: React.FC = ({}) => {
     {
       manual: true,
       debounceInterval: 300,
-      onSuccess: (result: PublishPluginInfo) => {
-        return result;
-      },
     },
   );
 
