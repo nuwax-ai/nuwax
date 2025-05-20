@@ -137,7 +137,11 @@ const PublishAgent: React.FC<PublishAgentProps> = ({
       title: (
         <LabelIcon
           label="允许复制（模板）"
-          title={<p>允许复制（模板）</p>}
+          title={
+            <p>
+              选中后将出现在广场模版中，用户可直接复制到自己的工作空间中去。复制可选的前提是发布已选。
+            </p>
+          }
           type={TooltipTitleTypeEnum.White}
         />
       ),
@@ -173,12 +177,16 @@ const PublishAgent: React.FC<PublishAgentProps> = ({
           <SelectList className={styles.select} options={classifyList} />
         </Form.Item>
         <Form.Item
-          noStyle
           label={
             <h4 className={cx(styles.scope, 'flex', 'items-center')}>
               选择发布范围
               <TooltipIcon
-                title={<p>发布范围</p>}
+                title={
+                  <>
+                    <p>1. 系统广场：智能体将出现在系统广场中。</p>
+                    <p>2. 空间广场：智能体将出现在选择的空间广场中。</p>
+                  </>
+                }
                 icon={<InfoCircleOutlined />}
                 type={TooltipTitleTypeEnum.White}
               />
@@ -197,7 +205,11 @@ const PublishAgent: React.FC<PublishAgentProps> = ({
               <Checkbox>
                 <LabelIcon
                   label="允许复制（模板）"
-                  title={<p>允许复制（模板）</p>}
+                  title={
+                    <p>
+                      选中后将出现在广场模版中，用户可直接复制到自己的工作空间中去。复制可选的前提是发布已选。
+                    </p>
+                  }
                   type={TooltipTitleTypeEnum.White}
                 />
               </Checkbox>

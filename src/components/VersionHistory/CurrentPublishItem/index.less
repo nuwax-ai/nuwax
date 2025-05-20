@@ -1,0 +1,41 @@
+@import '@/styles/color';
+
+.container {
+  gap: 10px;
+  padding: 6px 8px;
+  font-weight: 400;
+  font-size: 14px;
+  border-bottom: 1px solid @WHITE15;
+
+  &:last-child {
+    border-bottom-color: transparent;
+  }
+
+  .p-info {
+    gap: 4px;
+
+    .p-name {
+      font-size: 14px;
+      color: @BLANK04;
+    }
+
+    .p-time {
+      color: @GRAY05;
+      font-size: 12px;
+    }
+  }
+
+  .off-btn {
+    width: 56px;
+    height: 28px;
+    color: @BLANK17;
+    font-size: 12px;
+    background: @GRAY01;
+    border: none;
+    transition: background 0.3s ease;
+
+    &:hover {
+      background: @WHITE11;
+    }
+  }
+}
