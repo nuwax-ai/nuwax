@@ -270,6 +270,7 @@ const Chat: React.FC = () => {
         </div>
         {/*会话输入框*/}
         <ChatInputHome
+          key={id}
           className={cx(styles['chat-input-container'])}
           onEnter={handleMessageSend}
           visible={showScrollBtn}
