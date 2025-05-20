@@ -1,7 +1,6 @@
 import CustomPopover from '@/components/CustomPopover';
 import { APPLICATION_MORE_ACTION } from '@/constants/space.constants';
 import { apiDevCollectAgent } from '@/services/agentDev';
-import { PublishStatusEnum } from '@/types/enums/common';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ApplicationItemProps } from '@/types/interfaces/space';
@@ -100,13 +99,15 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
           onClick={handlerClickMore}
           list={APPLICATION_MORE_ACTION.filter((item) => {
             const type = item.type as ApplicationMoreActionEnum;
+            console.log('item', type);
             // 未发布的应用，不展示下架
-            if (
-              agentConfigInfo.publishStatus !== PublishStatusEnum.Published &&
-              type === ApplicationMoreActionEnum.Off_Shelf
-            ) {
-              return false;
-            }
+            // if (
+            //   agentConfigInfo.publishStatus !== PublishStatusEnum.Published &&
+            //   type === ApplicationMoreActionEnum.Off_Shelf
+            // ) {
+            //   return false;
+            // }
+            // todo 过滤迁移（仅创建者和管理员展示迁移）
             return true;
           })}
         >

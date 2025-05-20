@@ -9,8 +9,6 @@ import {
   apiAgentDelete,
   apiAgentTransfer,
 } from '@/services/agentConfig';
-import { apiPublishedOffShelf } from '@/services/library';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
 import {
   ApplicationMoreActionEnum,
@@ -19,7 +17,6 @@ import {
 } from '@/types/enums/space';
 import { AgentConfigInfo, AgentInfo } from '@/types/interfaces/agent';
 import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
-import { PublishedOffShelfParams } from '@/types/interfaces/library';
 import type { UserInfo } from '@/types/interfaces/login';
 import {
   ExclamationCircleFilled,
@@ -109,31 +106,6 @@ const SpaceDevelop: React.FC = () => {
     onSuccess: () => {
       message.success('已成功创建副本');
       run(spaceId);
-    },
-  });
-
-  // 智能体、插件、工作流下架
-  const { run: runOffShelf } = useRequest(apiPublishedOffShelf, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (_: null, params: PublishedOffShelfParams[]) => {
-      message.success('已成功下架');
-      const { targetId } = params[0];
-      const _agentList =
-        agentList?.map((item: AgentConfigInfo) => {
-          if (item.id === targetId) {
-            return { ...item, publishStatus: null };
-          }
-          return item;
-        }) || [];
-      setAgentList(_agentList);
-      agentAllRef.current =
-        agentAllRef.current?.map((item: AgentConfigInfo) => {
-          if (item.id === targetId) {
-            return { ...item, publishStatus: null };
-          }
-          return item;
-        }) || [];
     },
   });
 
@@ -285,23 +257,6 @@ const SpaceDevelop: React.FC = () => {
       case ApplicationMoreActionEnum.Temporary_Session:
         setOpenTempChat(true);
         setCurrentAgentInfo(agentInfo);
-        break;
-      // 下架
-      case ApplicationMoreActionEnum.Off_Shelf:
-        confirm({
-          title: '您确定要下架此智能体吗?',
-          icon: <ExclamationCircleFilled />,
-          content: agentInfo?.name,
-          okText: '确定',
-          maskClosable: true,
-          cancelText: '取消',
-          onOk() {
-            runOffShelf({
-              targetType: AgentComponentTypeEnum.Agent,
-              targetId: id,
-            });
-          },
-        });
         break;
       case ApplicationMoreActionEnum.Del:
         confirm({
