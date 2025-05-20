@@ -50,10 +50,10 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       container?.appendChild(graphContainer);
     }
     // 绘制画布
-    const addLoopChildNode = (): Node[] => {
+    const addLoopChildNode = (callback: (data: any) => boolean): Node[] => {
       const loopNodeList = graphRef.current.getNodes().filter((item: Node) => {
         const data = item.getData();
-        return data.type === 'Loop';
+        return callback(data);
       });
       // 创建循环的子节点
       if (loopNodeList.length) {
@@ -136,11 +136,15 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       if (!graphRef.current) return;
       doAddNode(e, child);
       // 找出循环节点 子节点如果有就添加
-      const LoopNodeList = addLoopChildNode();
+      const LoopNodeList = addLoopChildNode((data) => {
+        return data.id === child.id && data.type === 'Loop';
+      });
       if (LoopNodeList.length) {
         let edgeList: Edge[] = [];
         LoopNodeList.forEach((element: Node) => {
-          edgeList = edgeList.concat(getEdges([element.getData()], false));
+          const data = element.getData();
+          edgeList = edgeList.concat(getEdges([data], false));
+          edgeList = edgeList.concat(getEdges(data.innerNodes, false));
         });
         // 5. 批量添加边
         batchAddEdges(edgeList);
@@ -297,7 +301,9 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           nodes: mainNodes, // X6 会自动实例化节点
         });
         // 找出循环节点 子节点如果有就添加
-        addLoopChildNode();
+        addLoopChildNode((node) => {
+          return node.type === 'Loop';
+        });
 
         // 批量添加边
         batchAddEdges(graphParams.edgeList);
