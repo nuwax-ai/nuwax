@@ -64,8 +64,10 @@ export const getImg = (data: AgentComponentTypeEnum) => {
 export const returnImg = (type: string) => {
   switch (type) {
     case 'Start':
+    case 'LoopStart':
       return <ICON_START />;
     case 'End':
+    case 'LoopEnd':
       return <ICON_END />;
     case 'Output':
       return <ICON_WORKFLOW_OUTPUT />;
