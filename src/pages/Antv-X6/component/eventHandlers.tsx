@@ -46,10 +46,72 @@ const bindEventHandlers = ({
     }
     return false; // 阻止默认行为
   });
+
+  const handleSpecialNodeEdge = (cells: any[]): void => {
+    const _cell = cells[0];
+    const _targetNodeId = _cell.getTargetNode()?.id;
+    const sourceNode = _cell.getSourceNode()?.getData();
+    const _index: string = _cell.getSourcePortId() as string;
+
+    // 修改当前的数据
+    const newNodeParams = JSON.parse(JSON.stringify(sourceNode));
+    if (sourceNode.type === 'Condition') {
+      for (let item of newNodeParams.nodeConfig.conditionBranchConfigs) {
+        if (_index.includes(item.uuid)) {
+          item.nextNodeIds = item.nextNodeIds.filter((item: number) => {
+            return item !== Number(_targetNodeId);
+          });
+        }
+      }
+    } else if (sourceNode.type === 'QA') {
+      if (newNodeParams.nodeConfig.answerType === 'SELECT') {
+        for (let item of newNodeParams.nodeConfig.options) {
+          if (_index.includes(item.uuid)) {
+            item.nextNodeIds = item.nextNodeIds.filter((item: number) => {
+              return item !== Number(_targetNodeId);
+            });
+          }
+        }
+      } else {
+        changeEdge('delete', _targetNodeId as string, sourceNode, '0');
+        graph.removeCells(cells); // 删除选中的单元格
+        return;
+      }
+    } else {
+      for (let item of newNodeParams.nodeConfig.intentConfigs) {
+        if (_index.includes(item.uuid)) {
+          item.nextNodeIds = item.nextNodeIds.filter((item: number) => {
+            return item !== Number(_targetNodeId);
+          });
+        }
+      }
+    }
+    changeCondition(newNodeParams, _targetNodeId);
+  };
+
+  /**
+   * 判断连线是否允许删除
+   * @param sourceNode - 源节点
+   * @param targetNode - 目标节点
+   * @returns boolean - 是否允许删除连线
+   */
+  const isEdgeDeletable = (sourceNode: any, targetNode: any): boolean => {
+    // 当 sourceNode.type 是 Loop 节点时，targetNode.type 为 LoopStart 不能删除连线
+    if (sourceNode.type === 'Loop' && targetNode.type === 'LoopStart') {
+      return false;
+    }
+
+    // 当 sourceNode.type 是 LoopEnd 节点时，targetNode.type 为 Loop 不能删除连线
+    if (sourceNode.type === 'LoopEnd' && targetNode.type === 'Loop') {
+      return false;
+    }
+
+    return true;
+  };
+
   // 快捷键绑定：删除选中的单元格
   graph.bindKey(['delete', 'backspace'], () => {
     const cells = graph.getSelectedCells(); // 获取当前选中的单元格
-
     if (cells.length) {
       const _cell = cells[0];
       // 判定是删除节点还是边
@@ -59,6 +121,11 @@ const bindEventHandlers = ({
         const targetNode = _cell.getTargetNode()?.getData();
         // 获取连接点的节点id
         const _targetNodeId = _cell.getTargetNode()?.id;
+
+        if (!isEdgeDeletable(sourceNode, targetNode)) {
+          message.warning('不能删除循环节点连线');
+          return;
+        }
 
         // 查看当前的边是否是loop或者他的子节点
         if (sourceNode.type === 'Loop' || targetNode.type === 'Loop') {
@@ -72,6 +139,7 @@ const bindEventHandlers = ({
             graph.removeCells([_cell]); // 新增行：实际移除边元素
             return;
           }
+
           if (
             targetNode.type === 'Loop' &&
             sourceNode.loopNodeId &&
@@ -83,55 +151,19 @@ const bindEventHandlers = ({
             return;
           }
         }
+
         if (
           sourceNode.type === 'Condition' ||
           sourceNode.type === 'IntentRecognition' ||
           sourceNode.type === 'QA'
         ) {
-          const _index: string = _cell.getSourcePortId() as string;
-
-          // 修改当前的数据
-          const newNodeParams = JSON.parse(JSON.stringify(sourceNode));
-          if (sourceNode.type === 'Condition') {
-            for (let item of newNodeParams.nodeConfig.conditionBranchConfigs) {
-              if (_index.includes(item.uuid)) {
-                item.nextNodeIds = item.nextNodeIds.filter((item: number) => {
-                  return item !== Number(_targetNodeId);
-                });
-              }
-            }
-          } else if (sourceNode.type === 'QA') {
-            if (newNodeParams.nodeConfig.answerType === 'SELECT') {
-              for (let item of newNodeParams.nodeConfig.options) {
-                if (_index.includes(item.uuid)) {
-                  item.nextNodeIds = item.nextNodeIds.filter((item: number) => {
-                    return item !== Number(_targetNodeId);
-                  });
-                }
-              }
-            } else {
-              changeEdge('delete', _targetNodeId as string, sourceNode, '0');
-              graph.removeCells(cells); // 删除选中的单元格
-              return;
-            }
-          } else {
-            for (let item of newNodeParams.nodeConfig.intentConfigs) {
-              if (_index.includes(item.uuid)) {
-                item.nextNodeIds = item.nextNodeIds.filter((item: number) => {
-                  return item !== Number(_targetNodeId);
-                });
-              }
-            }
-          }
-          changeCondition(newNodeParams, _targetNodeId);
+          handleSpecialNodeEdge(cells);
         } else {
           changeEdge('delete', _targetNodeId as string, sourceNode, '0');
         }
       } else {
-        if (
-          _cell.getData().type === 'Start' ||
-          _cell.getData().type === 'End'
-        ) {
+        const isResistNodeType = ['Start', 'End', 'LoopStart', 'LoopEnd'];
+        if (isResistNodeType.includes(_cell.getData().type)) {
           message.warning('不能删除开始节点和结束节点');
           return;
         }
