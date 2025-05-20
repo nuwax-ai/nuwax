@@ -28,6 +28,34 @@ import { createCurvePath } from './registerCustomNodes';
 import StencilContent from './stencil';
 // import { PlusOutlined,} from '@ant-design/icons';
 /**
+ * 端口配置接口
+ */
+interface PortConfig {
+  attrs: {
+    circle?: {
+      r: number;
+      stroke: string;
+      fill: string;
+    };
+    icon?: {
+      width: number;
+      height: number;
+      x?: number;
+      y?: number;
+      opacity: number;
+    };
+    hoverCircle?: {
+      pointerEvents: string;
+    };
+  };
+}
+
+/**
+ * 端口状态类型
+ */
+type PortStatus = 'normal' | 'active';
+
+/**
  * 初始化图形编辑器的函数，接收一个包含容器 ID 和改变抽屉内容回调的对象作为参数。
  * @param param0 - 包含容器 ID 和改变抽屉内容回调的对象
  * @returns 返回初始化后的图形实例
@@ -350,59 +378,105 @@ const initGraph = ({
     .use(new History()) // 启用历史记录插件，支持撤销和重做
     .use(new Selection()); // 启用选择插件，并配置选择限制
 
-  // 监听连接桩鼠标进入事件
-  graph.on('node:mouseenter', ({ node }) => {
-    const currentPorts = node.getPorts();
-    // 更新当前节点端口
-    const updatedPorts = currentPorts.map((p) => ({
-      ...p,
+  /**
+   * 处理端口配置
+   * @param port - 端口配置对象
+   * @param portStatus - 端口状态，默认为 'active'
+   * @returns 更新后的端口配置
+   */
+  const handlePortConfig = (
+    port: PortConfig,
+    portStatus: PortStatus = 'active',
+  ): PortConfig => {
+    // 基础配置
+    const baseConfig = {
+      ...port,
       attrs: {
-        ...p.attrs,
+        ...port.attrs,
         circle: {
-          ...(p.attrs?.circle || {}),
-          r: 8,
+          ...(port.attrs?.circle || {}),
           stroke: '#5147FF',
           fill: '#5147FF',
         },
-        icon: {
-          ...(p.attrs?.icon || {}),
-          width: 10, // 显示图标
-          height: 10,
-          x: -5, // 图标居中
-          y: -5,
-          opacity: 1, // 通过设置透明度来控制显示
-        },
-        hoverCircle: {
-          pointerEvents: 'none',
+      },
+    };
+
+    // 根据状态返回不同的配置
+    const configs = {
+      normal: {
+        ...baseConfig,
+        attrs: {
+          ...baseConfig.attrs,
+          circle: {
+            ...baseConfig.attrs.circle,
+            r: 3,
+          },
+          icon: {
+            ...(port.attrs?.icon || {}),
+            width: 0,
+            height: 0,
+            opacity: 0,
+          },
+          hoverCircle: {
+            pointerEvents: 'visiblePainted',
+          },
         },
       },
-    }));
+      active: {
+        ...baseConfig,
+        attrs: {
+          ...baseConfig.attrs,
+          circle: {
+            ...baseConfig.attrs.circle,
+            r: 8,
+          },
+          icon: {
+            ...(port.attrs?.icon || {}),
+            width: 10,
+            height: 10,
+            x: -5,
+            y: -5,
+            opacity: 1,
+          },
+          hoverCircle: {
+            pointerEvents: 'none',
+          },
+        },
+      },
+    };
+
+    return configs[portStatus];
+  };
+  // 监听连接桩鼠标进入事件
+  graph.on('node:mouseenter', ({ node }) => {
+    const currentPorts = node.getPorts();
+    const portStatusList: Record<string, PortStatus> = {
+      in: 'active',
+      out: 'active',
+    };
+    // 这里需要根据节点类型来展示
+    if (node.getData()?.type === 'LoopStart') {
+      portStatusList.in = 'normal';
+    }
+    if (node.getData()?.type === 'LoopEnd') {
+      portStatusList.out = 'normal';
+    }
+    // 更新当前节点端口
+    const updatedPorts = currentPorts.map((port) => {
+      const portConfig = handlePortConfig(
+        port as PortConfig,
+        portStatusList[port.group || 'in'],
+      );
+      return portConfig;
+    });
     node.prop('ports/items', updatedPorts);
   });
 
   graph.on('node:mouseleave', ({ node }) => {
     const ports = node.getPorts();
-    const updatedPorts = ports.map((p) => ({
-      ...p,
-      attrs: {
-        ...p.attrs,
-        circle: {
-          ...(p.attrs?.circle || {}),
-          r: 3, // 仅修改当前端口
-          stroke: '#5147FF',
-          fill: '#5147FF',
-        },
-        icon: {
-          ...(p.attrs?.icon || {}),
-          width: 0, // 显示图标
-          height: 0,
-          opacity: 0, // 设置为完全透明
-        },
-        hoverCircle: {
-          pointerEvents: 'visiblePainted',
-        },
-      },
-    }));
+    const updatedPorts = ports.map((port) =>
+      handlePortConfig(port as PortConfig, 'normal'),
+    );
     node.prop('ports/items', updatedPorts);
   });
 

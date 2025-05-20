@@ -291,7 +291,6 @@ export const validateConnect = (
       return result;
     }
   }
-
   // 如果当前节点不是循环节点，in 就不能拉连线
   if (sourceNode.type !== 'Loop' && sourcePort?.includes('in')) {
     return '';
@@ -315,7 +314,8 @@ export const validateConnect = (
   // sourceNode 为 Loop 节点 为出，targetNode 为出 不能连线
   if (
     sourceNode.type === 'Loop' &&
-    (sourcePort?.includes('out') || targetPort?.includes('out'))
+    sourcePort?.includes('out') &&
+    targetPort?.includes('out')
   ) {
     return '';
   }

@@ -11,7 +11,11 @@ import StencilContent from './component/stencil';
 import { Child } from './type';
 interface ControlPanelProps {
   // 拖拽节点到画布
-  dragChild: (child: Child, e?: React.DragEvent<HTMLDivElement>) => void;
+  dragChild: (
+    child: Child,
+    position?: React.DragEvent<HTMLDivElement>,
+    continueDragCount?: number,
+  ) => void;
   //   试运行
   handleTestRun: () => void;
   // 切换画布大小
@@ -54,9 +58,10 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   }, [zoomSize]);
 
   const [open, setOpen] = useState(false);
-
+  const [continueDragCount, setContinueDragCount] = useState(0);
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
+    setContinueDragCount(0);
   };
 
   return (
@@ -77,10 +82,11 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
               isLoop={foldWrapItem.type === 'Loop'}
               dragChild={(
                 child: Child,
-                e?: React.DragEvent<HTMLDivElement>,
+                position?: React.DragEvent<HTMLDivElement>,
               ) => {
-                dragChild(child, e);
-                setOpen(false);
+                setContinueDragCount(continueDragCount + 1);
+                dragChild(child, position, continueDragCount);
+                // setOpen(false);
               }}
             />
           }

@@ -64,8 +64,10 @@ export const getImg = (data: AgentComponentTypeEnum) => {
 export const returnImg = (type: string) => {
   switch (type) {
     case 'Start':
+    case 'LoopStart':
       return <ICON_START />;
     case 'End':
+    case 'LoopEnd':
       return <ICON_END />;
     case 'Output':
       return <ICON_WORKFLOW_OUTPUT />;
@@ -230,7 +232,10 @@ const handleLoopEdges = (node: ChildNode): Edge[] => {
 };
 
 // 递归获取节点的边
-export const getEdges = (nodes: ChildNode[]): Edge[] => {
+export const getEdges = (
+  nodes: ChildNode[],
+  needValidate: boolean = true,
+): Edge[] => {
   const allEdges: Edge[] = nodes.flatMap((node) => {
     let isLoopNode: boolean = false;
     if (node.loopNodeId) {
@@ -261,10 +266,12 @@ export const getEdges = (nodes: ChildNode[]): Edge[] => {
   });
 
   // 过滤目标节点不存在的边（新增过滤逻辑）
-  const validEdges = allEdges.filter((edge) => {
-    // 检查目标节点是否存在于节点列表中
-    return nodes.some((n) => edge.target.includes(n.id.toString()));
-  });
+  const validEdges = needValidate
+    ? allEdges.filter((edge) => {
+        // 检查目标节点是否存在于节点列表中
+        return nodes.some((n) => edge.target.includes(n.id.toString()));
+      })
+    : allEdges;
   // 使用 Set 来移除重复的边
   const uniqueEdges = new Set<string>();
   const resultEdges: Edge[] = [];

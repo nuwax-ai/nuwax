@@ -672,15 +672,17 @@ const Workflow: React.FC = () => {
   // 拖拽组件到画布中
   const dragChild = async (
     child: Child,
-    e?: React.DragEvent<HTMLDivElement> | { x: number; y: number },
+    position?: React.DragEvent<HTMLDivElement> | { x: number; y: number },
+    continueDragCount?: number,
   ) => {
     // 获取当前画布可视区域中心点
     const getViewportCenter = () => {
       if (graphRef.current) {
         const viewGraph = graphRef.current.getCurrentViewPort();
+        const _continueDragCount = continueDragCount || 0;
         return {
-          x: viewGraph.x + viewGraph.width / 2 + Math.random() * 100 - 50,
-          y: viewGraph.y + viewGraph.height / 2 + Math.random() * 100 - 50,
+          x: viewGraph.x + viewGraph.width / 2 + _continueDragCount * 16,
+          y: viewGraph.y + viewGraph.height / 2 + _continueDragCount * 16,
         };
       }
       return { x: 0, y: 0 };
@@ -688,19 +690,18 @@ const Workflow: React.FC = () => {
 
     // 获取坐标函数：优先使用拖拽事件坐标，否则生成随机坐标
     const getCoordinates = (
-      e?: React.DragEvent<HTMLDivElement> | { x: number; y: number },
+      position?: React.DragEvent<HTMLDivElement> | { x: number; y: number },
     ): { x: number; y: number } => {
-      if (!e) {
+      if (!position) {
         return getViewportCenter();
       }
       // 检查是否是{x,y}对象
-      if ('x' in e && 'y' in e) {
-        console.log('e', e);
-        return { x: e.x, y: e.y };
+      if ('x' in position && 'y' in position) {
+        return { x: position.x, y: position.y };
       }
       // 处理React拖拽事件
-      if (e.clientX && e.clientY) {
-        return { x: e.clientX, y: e.clientY };
+      if (position.clientX && position.clientY) {
+        return { x: position.clientX, y: position.clientY };
       }
       return getViewportCenter();
     };
@@ -718,14 +719,14 @@ const Workflow: React.FC = () => {
     if (isSpecialType) {
       setCreatedItem(child.type as AgentComponentTypeEnum);
       setOpen(true);
-      setDragEvent(getCoordinates(e));
+      setDragEvent(getCoordinates(position));
     } else if (isTableNode) {
       setCreatedItem(AgentComponentTypeEnum.Table);
       setOpen(true);
-      setDragEvent(getCoordinates(e));
+      setDragEvent(getCoordinates(position));
       sessionStorage.setItem('tableType', child.type);
     } else {
-      const coordinates = getCoordinates(e);
+      const coordinates = getCoordinates(position);
       // if (e) {
       //   e.preventDefault();
       // }
