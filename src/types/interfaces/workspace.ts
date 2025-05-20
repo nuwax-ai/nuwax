@@ -38,6 +38,7 @@ export interface SpaceInfo {
   creatorId: number;
   modified: string;
   created: string;
+  [key: string]: any;
 }
 
 // 增加团队成员输入参数

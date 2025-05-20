@@ -1,3 +1,4 @@
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type {
   AgentArrangeConfigEnum,
@@ -86,6 +87,7 @@ export interface VersionHistoryProps {
 
 // 发布智能体弹窗组件
 export interface PublishAgentProps {
+  mode?: AgentComponentTypeEnum;
   agentId: number;
   open: boolean;
   onCancel: () => void;

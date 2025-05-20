@@ -26,7 +26,7 @@ import { CardArgsBindConfigInfo } from './cardInfo';
 
 // 知识库设置label
 export interface LabelIconProps {
-  label: string;
+  label: React.ReactNode;
   title: React.ReactNode;
   type?: TooltipTitleTypeEnum;
 }
