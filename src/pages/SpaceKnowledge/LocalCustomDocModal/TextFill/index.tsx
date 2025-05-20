@@ -23,11 +23,15 @@ const TextFill: React.FC<TextFillProps> = ({ form }) => {
       <Form.Item
         name="name"
         label="文档名称"
-        rules={[{ required: true, message: '输入文档名称' }]}
+        rules={[{ required: true, message: '请输入文档名称' }]}
       >
         <Input placeholder="输入文档名称" showCount maxLength={100} />
       </Form.Item>
-      <Form.Item name="fileContent" label="文档内容">
+      <Form.Item
+        name="fileContent"
+        label="文档内容"
+        rules={[{ required: true, message: '请输入文档内容' }]}
+      >
         <TextArea
           placeholder="输入文档内容"
           autoSize={{ minRows: 6, maxRows: 8 }}
