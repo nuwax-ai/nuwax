@@ -71,7 +71,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           options={options}
           value={zoomSize}
           onChange={changeGraph}
-          style={{ width: 80 }}
+          style={{ width: 80, marginRight: 12, height: 28 }}
           popupMatchSelectWidth={false}
           optionLabelProp="displayValue"
         />
@@ -105,10 +105,14 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         </Popover>
       </div>
       <div className="absolute-test">
-        <ToolOutlined title="调试" />
+        <ToolOutlined
+          title="调试"
+          style={{ paddingRight: 12, paddingLeft: 12 }}
+        />
         <Button
           icon={<CaretRightOutlined />}
-          type="primary"
+          variant="solid"
+          color="green"
           onClick={handleTestRun}
         >
           试运行
