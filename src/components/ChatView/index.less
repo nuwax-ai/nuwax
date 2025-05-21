@@ -47,6 +47,7 @@
     }
   }
 
+  // 聊天内容
   .chat-content {
     display: inline-block;
     line-height: 28px;
@@ -102,8 +103,6 @@
       box-sizing: border-box;
       white-space: pre-wrap;
       word-break: break-word;
-      // background: @BLANK26;
-      // color: @WHITE;
       background-color: #fafafa;
       padding: 10px;
       margin: 0;
@@ -112,6 +111,7 @@
   }
 }
 
+// 代码块
 .code-block-wrapper {
   color: rgb(73, 73, 73);
   background: @WHITE;
@@ -151,5 +151,29 @@
         height: 16px;
       }
     }
+  }
+}
+
+// 图片放大效果
+.image-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 60%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+
+  img {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
   }
 }

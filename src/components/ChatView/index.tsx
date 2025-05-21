@@ -52,6 +52,7 @@ const cx = classNames.bind(styles);
 declare global {
   interface Window {
     handleClipboard: (span: HTMLElement) => void;
+    showImageInModal: (src: string) => void;
   }
 }
 
@@ -63,6 +64,36 @@ window.handleClipboard = function (span: HTMLElement) {
 
   navigator.clipboard.writeText(textContent).then(() => {
     message.success('复制成功');
+  });
+};
+
+// 创建放大查看的浮层
+window.showImageInModal = function (imgSrc: string) {
+  // 创建遮罩层
+  const overlay = document.createElement('div');
+  overlay.className = styles['image-overlay'];
+
+  // 创建放大的图片
+  const zoomedImg = document.createElement('img');
+  zoomedImg.src = imgSrc;
+
+  // 添加到DOM中
+  overlay.appendChild(zoomedImg);
+  document.body.appendChild(overlay);
+
+  // 触发动画
+  setTimeout(() => {
+    overlay.style.opacity = '1';
+    zoomedImg.style.transform = 'scale(1)';
+  }, 10);
+
+  // 点击关闭
+  overlay.addEventListener('click', function () {
+    overlay.style.opacity = '0';
+    zoomedImg.style.transform = 'scale(0.9)';
+    setTimeout(() => {
+      overlay?.remove();
+    }, 300);
   });
 };
 
@@ -115,6 +146,18 @@ md.renderer.rules.fence = (tokens, idx) => {
       ${code}
     </div>
   `;
+};
+
+// 自定义图片渲染器
+md.renderer.rules.image = function (tokens, idx, options, env, self) {
+  // 调用原始渲染器获取默认HTML
+  const imgHtml = self.renderToken(tokens, idx, options);
+
+  // 添加点击事件处理
+  return imgHtml.replace(
+    '<img',
+    '<img onclick="window.showImageInModal(this.src)"',
+  );
 };
 
 // 添加 KaTeX 支持
