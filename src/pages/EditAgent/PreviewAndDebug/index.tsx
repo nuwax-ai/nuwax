@@ -1,5 +1,5 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
-import ChatInput from '@/components/ChatInput';
+import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
 import { EVENT_TYPE } from '@/constants/event.constants';
@@ -237,7 +237,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
           )}
         </div>
         {/*会话输入框*/}
-        <ChatInput
+        <ChatInputHome
           disabled={!messageList?.length}
           onEnter={handleMessageSend}
           onClear={handleClear}

@@ -21,65 +21,57 @@
   }
 
   :global {
-    .ant-input:focus {
+    .ant-input-outlined:focus,
+    .ant-input-outlined:focus-within {
       border: none;
       box-shadow: none;
     }
   }
 
-  .manual-container {
-    padding: 0 10px;
+  .footer {
     gap: 10px;
-    overflow-x: auto;
 
-    .manual-box {
+    .clear {
+      width: 32px;
       height: 32px;
-      padding: 0 10px;
-      border-radius: 10px;
-      box-sizing: border-box;
-      border: 0.5px solid @WHITE15;
-      color: @GRAY15;
-      font-size: 12px;
-      transition: background-color ease-in-out 0.3s;
-
-      &:hover {
-        background-color: @WHITE10;
-      }
-
-      &.active {
-        color: @BLUE10;
-        background-color: @BLUE11;
-        border-color: @GRAY25;
-      }
-    }
-  }
-
-  .box {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-
-    &.plus-box {
-      background-color: @WHITE;
-      border: 1px solid @WHITE15;
-      color: @GRAY16;
-      font-size: 12px;
-      transition: background-color ease-in-out 0.2s;
-
-      &:hover {
-        background-color: @WHITE01;
-      }
-    }
-
-    &.send-box {
-      background-color: @BLANK;
-      color: @WHITE;
-      font-size: 16px;
-      transition: background-color ease-in-out 0.2s;
+      border-radius: 50%;
+      color: @GRAY05;
+      border: 1px solid @GRAY01;
 
       &.disabled {
         cursor: not-allowed;
-        background-color: @GRAY06;
+        color: @BLANK25;
+        background-color: @BLANK12;
+      }
+    }
+
+    .box {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+
+      &.plus-box {
+        background-color: @WHITE;
+        border: 1px solid @WHITE15;
+        color: @GRAY16;
+        font-size: 12px;
+        transition: background-color ease-in-out 0.2s;
+
+        &:hover {
+          background-color: @WHITE01;
+        }
+      }
+
+      &.send-box {
+        background-color: @BLANK;
+        color: @WHITE;
+        font-size: 16px;
+        transition: background-color ease-in-out 0.2s;
+
+        &.disabled {
+          cursor: not-allowed;
+          background-color: @GRAY06;
+        }
       }
     }
   }
