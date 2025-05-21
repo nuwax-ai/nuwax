@@ -9,9 +9,10 @@ import type {
   AttachmentFile,
   ChatViewProps,
 } from '@/types/interfaces/conversationInfo';
-import mk from '@vscode/markdown-it-katex';
 import classNames from 'classnames';
 import markdownIt from 'markdown-it';
+// 方程式支持
+import markdownItKatexGpt from 'markdown-it-katex-gpt';
 import Prism from 'prismjs';
 // 可选：添加更多语言支持 Prism.js 默认只支持少量语言。如果需要支持更多语言，可以导入相应的语言组件：
 import 'prismjs/components/prism-bash.min.js';
@@ -116,7 +117,14 @@ md.renderer.rules.fence = (tokens, idx) => {
   `;
 };
 
-md.use(mk);
+// 添加 KaTeX 支持
+md.use(markdownItKatexGpt, {
+  delimiters: [
+    { left: '\\[', right: '\\]', display: true },
+    { left: '\\(', right: '\\)', display: false },
+    { left: '$$', right: '$$', display: false },
+  ],
+});
 
 // 聊天视图组件
 const ChatView: React.FC<ChatViewProps> = ({
