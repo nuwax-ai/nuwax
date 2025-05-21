@@ -70,7 +70,7 @@ const HistoryConversation: React.FC<HistoryConversationProps> = ({
                 )}
                 onClick={() => handleLink(item.id)}
               >
-                <p className={cx('flex-1')}>{item.topic}</p>
+                <p className={cx('flex-1', 'text-ellipsis')}>{item.topic}</p>
                 <span>{moment(item.created).format('MM-DD HH:mm')}</span>
               </div>
             </CustomPopover>
