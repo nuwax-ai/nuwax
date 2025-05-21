@@ -416,15 +416,19 @@ export interface PluginConfigTitleProps {
   onClick: () => void;
 }
 
-// 聊天输入框组件
-export interface ChatInputProps {
-  className?: React.CSSProperties;
-  disabled?: boolean;
-  visible?: boolean;
+// 手动选择组件属性
+export interface ManualComponentItemProps {
   // 可手动选择的组件列表
   manualComponents?: AgentManualComponentInfo[];
   selectedComponentList?: AgentSelectedComponentInfo[];
   onSelectComponent?: (infos: AgentSelectedComponentInfo) => void;
+}
+
+// 聊天输入框组件
+export interface ChatInputProps extends ManualComponentItemProps {
+  className?: React.CSSProperties;
+  disabled?: boolean;
+  visible?: boolean;
   // 发送消息后是否清空输入框, 默认true
   isClearInput?: boolean;
   onScrollBottom?: () => void;
