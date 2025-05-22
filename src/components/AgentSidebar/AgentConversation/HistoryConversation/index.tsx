@@ -10,6 +10,7 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+// 历史会话弹窗
 export interface HistoryConversationProps {
   conversationList?: ConversationInfo[];
   isOpen?: boolean;
@@ -37,8 +38,9 @@ const HistoryConversation: React.FC<HistoryConversationProps> = ({
     },
   });
 
-  const handleLink = (id: number) => {
-    history.push(`/home/chat/${id}`);
+  const handleLink = (id: number, agentId: number) => {
+    onCancel?.();
+    history.push(`/home/chat/${id}/${agentId}`);
   };
 
   return (
@@ -68,7 +70,7 @@ const HistoryConversation: React.FC<HistoryConversationProps> = ({
                   'hover-box',
                   styles.row,
                 )}
-                onClick={() => handleLink(item.id)}
+                onClick={() => handleLink(item.id, item.agentId)}
               >
                 <p className={cx('flex-1', 'text-ellipsis')}>{item.topic}</p>
                 <span>{moment(item.created).format('MM-DD HH:mm')}</span>

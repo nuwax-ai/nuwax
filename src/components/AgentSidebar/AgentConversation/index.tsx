@@ -40,8 +40,8 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
     });
   }, [agentId]);
 
-  const handleLink = (id: number) => {
-    history.push(`/home/chat/${id}`);
+  const handleLink = (id: number, agentId: number) => {
+    history.push(`/home/chat/${id}/${agentId}`);
   };
 
   const handleDel = (id: number) => {
@@ -69,7 +69,7 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
             <div
               key={item.id}
               className={cx(styles['chat-item'], 'cursor-pointer', 'hover-box')}
-              onClick={() => handleLink(item.id)}
+              onClick={() => handleLink(item.id, item.agentId)}
             >
               <p className={cx('text-ellipsis', 'flex-1')}>{item.topic}</p>
               <span className={cx(styles.time)}>
