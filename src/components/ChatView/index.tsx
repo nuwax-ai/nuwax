@@ -13,6 +13,7 @@ import classNames from 'classnames';
 import markdownIt from 'markdown-it';
 // 方程式支持
 import markdownItKatexGpt from 'markdown-it-katex-gpt';
+import markdownItMultimdTable from 'markdown-it-multimd-table';
 import Prism from 'prismjs';
 // 可选：添加更多语言支持 Prism.js 默认只支持少量语言。如果需要支持更多语言，可以导入相应的语言组件：
 import 'prismjs/components/prism-bash.min.js';
@@ -160,6 +161,23 @@ md.renderer.rules.image = function (tokens, idx, options, env, self) {
   );
 };
 
+// 自定义 table_open 渲染规则
+md.renderer.rules.table_open = function (tokens, idx, options, env, self) {
+  // 调用默认的 table_open 渲染规则
+  const contentHtml = self.renderToken(tokens, idx, options);
+  // 添加父级 div 的开始标签
+  return `<div class=${styles['custom-table']}>` + contentHtml;
+};
+
+// 自定义 table_close 渲染规则
+md.renderer.rules.table_close = function (tokens, idx, options, env, self) {
+  // 调用默认的 table_close 渲染规则
+  const contentHtml = self.renderToken(tokens, idx, options);
+
+  // 添加父级 div 的结束标签
+  return contentHtml + '</div>';
+};
+
 // 添加 KaTeX 支持
 md.use(markdownItKatexGpt, {
   delimiters: [
@@ -167,6 +185,15 @@ md.use(markdownItKatexGpt, {
     { left: '\\(', right: '\\)', display: false },
     { left: '$$', right: '$$', display: false },
   ],
+});
+
+// 添加表格支持
+md.use(markdownItMultimdTable, {
+  multiline: true,
+  rowspan: true,
+  headerless: false,
+  multibody: true,
+  aotolabel: true,
 });
 
 // 聊天视图组件
