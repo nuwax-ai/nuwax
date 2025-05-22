@@ -177,3 +177,49 @@
     transition: transform 0.3s ease;
   }
 }
+
+/* 基础表格样式 */
+.custom-table {
+  margin: 1em 0;
+  border: 1px solid rgba(0, 0, 0, 8%);
+  border-radius: 12px;
+  max-width: 100%;
+  overflow: auto;
+  scrollbar-color: #ccc transparent;
+  width: fit-content;
+
+  table {
+    max-width: max-content;
+    text-align: left;
+    width: max-content;
+    border-collapse: collapse;
+    border-spacing: 0;
+    display: block;
+    overflow: auto;
+
+    thead tr:first-child {
+      background-color: rgba(0, 0, 0, 6%);
+    }
+  }
+
+  /* 表头样式 */
+  th {
+    background-color: #f5f5f5;
+    text-align: left;
+    border: 1px solid rgba(0, 0, 0, 8%);
+    max-width: 400px;
+    padding: 12px 18px;
+  }
+
+  /* 单元格样式 */
+  td {
+    max-width: 400px;
+    padding: 12px 18px;
+    border: 1px solid rgba(0, 0, 0, 8%);
+  }
+
+  /* 斑马纹效果 */
+  tr:nth-child(even) {
+    background-color: @WHITE10;
+  }
+}
