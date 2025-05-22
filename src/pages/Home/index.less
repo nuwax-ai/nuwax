@@ -92,3 +92,25 @@
     }
   }
 }
+
+@media (max-width: 768px) {
+  .container {
+    padding: 48px 12px 16px;
+
+    .textarea {
+      width: 100%;
+    }
+
+    .recommend {
+      width: 100%;
+    }
+
+    .wrapper {
+      width: 100%;
+
+      .category-list {
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+      }
+    }
+  }
+}

@@ -17,7 +17,9 @@ const cx = classNames.bind(styles);
 /**
  * 广场第二菜单栏
  */
-const SquareSection: React.FC = () => {
+const SquareSection: React.FC<{
+  style?: React.CSSProperties;
+}> = ({ style }) => {
   const { agentInfoList, pluginInfoList, workflowInfoList } =
     useModel('squareModel');
   // active项
@@ -46,7 +48,7 @@ const SquareSection: React.FC = () => {
     history.push(url);
   };
   return (
-    <div className={cx('h-full', 'py-12', 'overflow-y')}>
+    <div className={cx('h-full', 'py-16', 'overflow-y')} style={style}>
       <ConditionRender condition={agentInfoList?.length}>
         <div className={cx('py-6 px-6')}>
           <SquareMenuItem
