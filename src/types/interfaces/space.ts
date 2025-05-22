@@ -85,8 +85,8 @@ export interface VersionHistoryProps {
   onClose: () => void;
 }
 
-// 发布智能体弹窗组件
-export interface PublishAgentProps {
+// 发布智能体、插件、工作流等弹窗组件
+export interface PublishComponentModalProps {
   mode?: AgentComponentTypeEnum;
   agentId: number;
   open: boolean;

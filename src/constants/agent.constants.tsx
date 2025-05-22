@@ -170,15 +170,3 @@ export const PLUGIN_PUBLISH_OPTIONS = [
     label: '工作空间',
   },
 ];
-
-// 发布范围选项
-export const PUBLISH_SCOPE_OPTIONS = [
-  {
-    value: PluginPublishScopeEnum.Tenant,
-    label: '系统广场',
-  },
-  {
-    value: PluginPublishScopeEnum.Space,
-    label: '空间广场',
-  },
-];

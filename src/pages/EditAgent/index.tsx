@@ -1,4 +1,5 @@
 import CreateAgent from '@/components/CreateAgent';
+import PublishAgent from '@/components/PublishComponentModal';
 import ShowStand from '@/components/ShowStand';
 import VersionHistory from '@/components/VersionHistory';
 import {
@@ -27,7 +28,6 @@ import ArrangeTitle from './ArrangeTitle';
 import DebugDetails from './DebugDetails';
 import styles from './index.less';
 import PreviewAndDebug from './PreviewAndDebug';
-import PublishAgent from './PublishAgent';
 import SystemTipsWord from './SystemTipsWord';
 
 const cx = classNames.bind(styles);

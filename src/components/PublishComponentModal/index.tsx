@@ -2,24 +2,22 @@ import CustomFormModal from '@/components/CustomFormModal';
 import LabelIcon from '@/components/LabelIcon';
 import SelectList from '@/components/SelectList';
 import TooltipIcon from '@/components/TooltipIcon';
-import { PUBLISH_SCOPE_OPTIONS } from '@/constants/agent.constants';
 import useCategory from '@/hooks/useCategory';
 import { apiAgentPublishApply } from '@/services/agentConfig';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { option } from '@/types/interfaces/common';
-import type { PublishAgentProps } from '@/types/interfaces/space';
+import { PublishComponentModalProps } from '@/types/interfaces/space';
 import { SquareAgentInfo } from '@/types/interfaces/square';
 import { SpaceInfo } from '@/types/interfaces/workspace';
-import { InfoCircleOutlined } from '@ant-design/icons';
+import { DownOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import {
   Checkbox,
   Form,
   FormProps,
   Input,
   message,
-  Radio,
   Table,
   TableColumnsType,
 } from 'antd';
@@ -31,10 +29,18 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+// 智能体、插件、工作流等发布范围属性
+export interface PublishScope {
+  name: string;
+  key: string;
+  children?: PublishScope[];
+  [key: string]: string | PublishScope[] | undefined;
+}
+
 /**
- * 发布智能体弹窗组件
+ * 发布智能体、插件、工作流等弹窗组件
  */
-const PublishAgent: React.FC<PublishAgentProps> = ({
+const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   mode = AgentComponentTypeEnum.Agent,
   agentId,
   open,
@@ -45,21 +51,29 @@ const PublishAgent: React.FC<PublishAgentProps> = ({
   const [title, setTitle] = useState<string>('');
   // 分类选择列表
   const [classifyList, setClassifyList] = useState<option[]>([]);
-  const [selectScope, setSelectScope] = useState<PluginPublishScopeEnum>(
-    PluginPublishScopeEnum.Tenant,
-  );
   const { agentInfoList, pluginInfoList, workflowInfoList } =
     useModel('squareModel');
   const { spaceList, asyncSpaceListFun } = useModel('spaceModel');
   const { runQueryCategory } = useCategory();
 
   const filterSpaceList = useMemo(() => {
-    return (
+    const list =
       spaceList?.map((item: SpaceInfo) => {
         item.key = uuidv4();
         return item;
-      }) || []
-    );
+      }) || [];
+
+    return [
+      {
+        name: '系统广场',
+        key: PluginPublishScopeEnum.Tenant,
+      },
+      {
+        name: '空间',
+        key: PluginPublishScopeEnum.Space,
+        children: list,
+      },
+    ] as PublishScope[];
   }, [spaceList]);
 
   useEffect(() => {
@@ -118,20 +132,31 @@ const PublishAgent: React.FC<PublishAgentProps> = ({
   };
 
   // 入参配置columns
-  const inputColumns: TableColumnsType<SpaceInfo> = [
+  const inputColumns: TableColumnsType<PublishScope> = [
     {
       title: (
         <LabelIcon
           label="发布空间"
-          title={<p>发布空间</p>}
+          title={
+            <>
+              <p>1. 系统广场：智能体将出现在系统广场中。</p>
+              <p>2. 空间广场：智能体将出现在选择的空间广场中。</p>
+            </>
+          }
           type={TooltipTitleTypeEnum.White}
         />
       ),
       dataIndex: 'name',
       key: 'name',
-      render: (_: string, record: SpaceInfo) => (
-        <Checkbox>{record.name}</Checkbox>
-      ),
+      render: (_: null, record: PublishScope) =>
+        record?.children?.length ? (
+          <>
+            <DownOutlined className={cx(styles['font-12'])} />
+            <span className={cx(styles['ml-8'])}>{record.name}</span>
+          </>
+        ) : (
+          <Checkbox>{record.name}</Checkbox>
+        ),
     },
     {
       title: (
@@ -148,7 +173,10 @@ const PublishAgent: React.FC<PublishAgentProps> = ({
       dataIndex: 'description',
       key: 'description',
       width: 180,
-      render: () => <Checkbox className={cx(styles['table-copy'])} />,
+      render: (_: null, record: PublishScope) =>
+        record?.children?.length ? null : (
+          <Checkbox className={cx(styles['table-copy'])} />
+        ),
     },
   ];
 
@@ -193,46 +221,26 @@ const PublishAgent: React.FC<PublishAgentProps> = ({
             </h4>
           }
         >
-          <Form.Item noStyle>
-            <Radio.Group
-              options={PUBLISH_SCOPE_OPTIONS}
-              value={selectScope}
-              onChange={(e) => setSelectScope(e.target.value)}
-            />
-          </Form.Item>
-          {selectScope === PluginPublishScopeEnum.Tenant ? (
-            <Form.Item name="copy">
-              <Checkbox>
-                <LabelIcon
-                  label="允许复制（模板）"
-                  title={
-                    <p>
-                      选中后将出现在广场模版中，用户可直接复制到自己的工作空间中去。复制可选的前提是发布已选。
-                    </p>
-                  }
-                  type={TooltipTitleTypeEnum.White}
-                />
-              </Checkbox>
-            </Form.Item>
-          ) : (
-            <Table<SpaceInfo>
-              className={cx(styles['table-wrap'])}
-              columns={inputColumns}
-              dataSource={filterSpaceList}
-              pagination={false}
-              virtual
-              expandable={{
-                childrenColumnName: 'subArgs',
-              }}
-              scroll={{
-                y: 200,
-              }}
-            />
-          )}
+          <Table<PublishScope>
+            className={cx(styles['table-wrap'])}
+            columns={inputColumns}
+            dataSource={filterSpaceList}
+            pagination={false}
+            virtual
+            expandable={{
+              childrenColumnName: 'children',
+              defaultExpandAllRows: true,
+              expandedRowKeys: [PluginPublishScopeEnum.Space],
+              expandIcon: () => null,
+            }}
+            scroll={{
+              y: 200,
+            }}
+          />
         </Form.Item>
       </Form>
     </CustomFormModal>
   );
 };
 
-export default PublishAgent;
+export default PublishComponentModal;

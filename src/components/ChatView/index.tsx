@@ -9,7 +9,7 @@ import type {
   AttachmentFile,
   ChatViewProps,
 } from '@/types/interfaces/conversationInfo';
-import mk from '@vscode/markdown-it-katex';
+// import mk from '@vscode/markdown-it-katex';
 import classNames from 'classnames';
 import markdownIt from 'markdown-it';
 import Prism from 'prismjs';
@@ -116,7 +116,7 @@ md.renderer.rules.fence = (tokens, idx) => {
   `;
 };
 
-md.use(mk);
+// md.use(mk);
 
 // 聊天视图组件
 const ChatView: React.FC<ChatViewProps> = ({
