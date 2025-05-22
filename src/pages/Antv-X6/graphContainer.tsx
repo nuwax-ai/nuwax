@@ -279,7 +279,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       if (!graphRef.current) return;
       graphRef.current.zoomToFit({
         padding: 20,
-        maxScale: 2,
+        maxScale: 1,
         minScale: 0.2,
         allowNewOrigin: 'negative',
       });
