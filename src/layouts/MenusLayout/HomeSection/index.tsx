@@ -25,8 +25,8 @@ const HomeSection: React.FC = () => {
   };
 
   // 会话跳转
-  const handleLink = (id: number) => {
-    history.push(`/home/chat/${id}`);
+  const handleLink = (id: number, agentId: number) => {
+    history.push(`/home/chat/${id}/${agentId}`);
   };
 
   useEffect(() => {
@@ -74,7 +74,7 @@ const HomeSection: React.FC = () => {
                   styles.row,
                   { [styles.active]: chatId === item.id?.toString() },
                 )}
-                onClick={() => handleLink(item.id)}
+                onClick={() => handleLink(item.id, item.agentId)}
               >
                 {item.topic}
               </li>

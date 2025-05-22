@@ -46,9 +46,9 @@ const HistoryConversation: React.FC = () => {
     }
   }, [openHistoryModal]);
 
-  const handleLink = (id: number) => {
+  const handleLink = (id: number, agentId: number) => {
     setOpenHistoryModal(false);
-    history.push(`/home/chat/${id}`);
+    history.push(`/home/chat/${id}/${agentId}`);
   };
 
   return (
@@ -85,7 +85,7 @@ const HistoryConversation: React.FC = () => {
                     'hover-box',
                     styles.row,
                   )}
-                  onClick={() => handleLink(item.id)}
+                  onClick={() => handleLink(item.id, item.agentId)}
                 >
                   <p className={cx('flex-1', 'text-ellipsis')}>{item.topic}</p>
                   <span>{moment(item.created).format('MM-DD HH:mm')}</span>

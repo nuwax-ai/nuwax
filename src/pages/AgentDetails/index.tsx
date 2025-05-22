@@ -1,4 +1,5 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
+import AgentSidebar from '@/components/AgentSidebar';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
@@ -26,7 +27,6 @@ import moment from 'moment';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-import AgentSidebar from './AgentSidebar';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -223,6 +223,7 @@ const AgentDetails: React.FC = () => {
         />
       </div>
       <AgentSidebar
+        agentId={agentId}
         agentDetail={agentDetail}
         onToggleCollectSuccess={handleToggleCollectSuccess}
       />
