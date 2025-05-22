@@ -1,35 +1,34 @@
 @import '@/styles/color.less';
+@import '@/styles/cssVariables.less';
 
 .absolute-box {
   position: absolute;
-  width: 240px;
-  height: 50px;
-  border-radius: 10px;
+  height: 42px;
+  border-radius: @xagi-border-radius;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  bottom: 10px;
-  left: 10px;
+  bottom: 12px;
+  left: 12px;
   background: #fff;
-  padding: 0 20px;
+  padding: 0 6px;
   z-index: 99;
-  border: 1px solid #969799;
+  border: 1px solid @xagi-border-color-base;
 }
 
 .absolute-test {
   position: absolute;
-  width: 170px;
-  height: 50px;
-  border-radius: 10px;
+  height: 42px;
+  border-radius: @xagi-border-radius;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  bottom: 10px;
-  left: 280px;
+  bottom: 12px;
+  left: 240px;
   background: #fff;
-  padding: 0 20px;
+  padding: 0 6px;
   z-index: 99;
-  border: 1px solid #969799;
+  border: 1px solid @xagi-border-color-base;
 }
 
 // 添加节点的样式
@@ -226,7 +225,7 @@
 }
 
 .selected-general-node {
-  border: 2px solid #5f95ff !important;
+  border: 1px solid @xagi-primary-color !important;
 }
 
 .fold-wrap-style {
@@ -277,17 +276,15 @@
 
   // 右侧的foldWrap里面的内容
   .node-title-style {
-    font-family: 'Alimama Agile VF';
     font-size: 14px;
-    font-weight: bold;
+    font-weight: 500;
     line-height: 22px;
     color: @BLANK04;
   }
 
   .node-title-grey-style {
-    font-family: 'Alimama Agile VF';
     font-size: 14px;
-    font-weight: bold;
+    font-weight: 500;
     line-height: 22px;
     color: @GRAY04;
     margin-right: 16px;
@@ -312,6 +309,7 @@
 }
 
 .node-item-style {
+  padding-bottom: 8px;
   border-bottom: 1px solid @WHITE03;
   margin-bottom: 10px;
 
@@ -542,6 +540,8 @@
 .general-node-header-title {
   color: @BLANK04;
   max-width: 124px;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .border-box {

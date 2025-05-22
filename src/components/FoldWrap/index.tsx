@@ -1,6 +1,6 @@
 import type { FoldWrapType } from '@/types/interfaces/common';
 import { CloseOutlined } from '@ant-design/icons';
-import { Empty, Form, Input, InputRef, Popover } from 'antd';
+import { Button, Empty, Form, Input, InputRef, Popover } from 'antd';
 import classNames from 'classnames';
 import React, { PropsWithChildren, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
@@ -23,6 +23,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
     children,
     changeFoldWrap,
     showNameInput,
+    backgroundColor,
   } = props;
 
   const styleHide = !visible ? styles.hidden : '';
@@ -68,7 +69,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
     setIsEdit(false); // 关闭编辑状态
     setIsEditDesc(false); // 关闭编辑状态
   };
-
+  const gradientBackground = `linear-gradient(to bottom, ${backgroundColor} 0, white 42px)`;
   return (
     <div
       className={cx(
@@ -77,6 +78,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
         styleHide,
         className,
       )}
+      style={{ background: gradientBackground, paddingTop: '3px' }}
     >
       <div
         className={cx(styles['stand-header'], 'flex', 'items-center')}
@@ -106,7 +108,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
                 }}
               />
             ) : (
-              <div className="dis-sb">
+              <div className="dis-sb" style={{ color: backgroundColor }}>
                 <div className="dis-sa" onDoubleClick={() => setIsEdit(true)}>
                   <div className={styles['icon-box-style']}>{icon}</div>
                   <span
@@ -121,8 +123,10 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
                 </div>
                 <div className="dis-left fold-action-style">
                   {otherAction}
-                  <CloseOutlined
-                    className={cx(styles.close, 'cursor-pointer')}
+                  <Button
+                    type="text"
+                    icon={<CloseOutlined />}
+                    size="small"
                     onClick={onClose}
                   />
                 </div>

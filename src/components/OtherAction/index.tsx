@@ -1,5 +1,5 @@
-import { DashOutlined, PlayCircleOutlined } from '@ant-design/icons';
-import { Popover } from 'antd';
+import { CaretRightFilled, EllipsisOutlined } from '@ant-design/icons';
+import { Button, Popover } from 'antd';
 import React from 'react';
 interface OtherOperationsProps {
   //   提交方法给父组件
@@ -25,13 +25,25 @@ const OtherOperations: React.FC<OtherOperationsProps> = ({
 
   const content = (
     <>
-      <p onClick={() => changeNode('Rename')} className="cursor-pointer">
+      <p
+        onClick={() => changeNode('Rename')}
+        className="cursor-pointer"
+        style={{ padding: '3px 0' }}
+      >
         重命名
       </p>
-      <p onClick={() => changeNode('Duplicate')} className="cursor-pointer">
+      <p
+        onClick={() => changeNode('Duplicate')}
+        className="cursor-pointer"
+        style={{ padding: '3px 0' }}
+      >
         创建副本
       </p>
-      <p onClick={() => changeNode('Delete')} className="cursor-pointer">
+      <p
+        onClick={() => changeNode('Delete')}
+        className="cursor-pointer"
+        style={{ padding: '3px 0' }}
+      >
         删除
       </p>
     </>
@@ -42,8 +54,11 @@ const OtherOperations: React.FC<OtherOperationsProps> = ({
       {/* 试运行 */}
       {testRun && (
         <Popover placement="top" content={'测试该节点'}>
-          <PlayCircleOutlined
+          <Button
+            type="text"
+            icon={<CaretRightFilled />}
             style={{ marginRight: '6px', fontSize: '12px' }}
+            size="small"
             onClick={() => changeNode('TestRun')}
           />
         </Popover>
@@ -56,8 +71,11 @@ const OtherOperations: React.FC<OtherOperationsProps> = ({
           open={popoverVisible}
           onOpenChange={(visible) => setPopoverVisible(visible)}
         >
-          <DashOutlined
-            style={{ fontSize: '12px' }}
+          <Button
+            type="text"
+            icon={<EllipsisOutlined />}
+            style={{ marginRight: '6px', fontSize: '12px' }}
+            size="small"
             onClick={() => setPopoverVisible(true)}
           />
         </Popover>

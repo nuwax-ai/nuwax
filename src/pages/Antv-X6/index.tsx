@@ -32,6 +32,7 @@ import {
   getEdges,
   handleSpecialNodesNextIndex,
   QuicklyCreate,
+  returnBackgroundColor,
   returnImg,
 } from '@/utils/workflow';
 import { Form, message } from 'antd';
@@ -186,8 +187,12 @@ const Workflow: React.FC = () => {
     }
   };
   // 调整画布的大小（左下角select）
-  const changeGraph = (val: number) => {
-    graphRef.current.changeGraphZoom(val);
+  const changeGraph = (val: number | string) => {
+    if (val === -1) {
+      graphRef.current.changeGraphZoomToFit();
+    } else {
+      graphRef.current.changeGraphZoom(val);
+    }
   };
   // 调整画布的大小(滚轮)
   const changeZoom = (val: number) => {
@@ -1188,6 +1193,7 @@ const Workflow: React.FC = () => {
         visible={visible}
         onClose={handleClose}
         description={foldWrapItem.description}
+        backgroundColor={returnBackgroundColor(foldWrapItem.type)}
         icon={returnImg(foldWrapItem.type)}
         showNameInput={showNameInput}
         changeFoldWrap={changeFoldWrap}

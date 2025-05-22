@@ -41,6 +41,7 @@ export interface ConditionRenderProps {
 export interface FoldWrapType {
   className?: string;
   icon?: React.ReactNode;
+  backgroundColor?: string;
   title: string;
   description?: string;
   visible?: boolean;

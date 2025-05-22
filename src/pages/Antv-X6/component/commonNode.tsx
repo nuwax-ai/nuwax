@@ -90,7 +90,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                 <div key={item.name}>
                   {/* 只在第一个输入框组旁边显示标签 */}
                   {index === 0 && (
-                    <div className="font-color-gray07  font-12">
+                    <div className="font-color-gray07 font-12 mt-6">
                       <span>参数名</span>
                       <span style={{ marginLeft: '22%' }}>变量值</span>
                     </div>
