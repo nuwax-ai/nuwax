@@ -4,7 +4,6 @@ import { OpenCloseEnum } from '@/types/enums/space';
 import { AgentSidebarProps } from '@/types/interfaces/agentTask';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import { useParams } from 'umi';
 import AgentContent from './AgentContent';
 import AgentConversation from './AgentConversation';
 import styles from './index.less';
@@ -15,11 +14,12 @@ const cx = classNames.bind(styles);
 
 // 智能体详情页侧边栏
 const AgentSidebar: React.FC<AgentSidebarProps> = ({
+  className,
+  agentId,
   loading,
   agentDetail,
   onToggleCollectSuccess,
 }) => {
-  const { agentId } = useParams();
   const [visible, setVisible] = useState<boolean>(true);
   const [foldVisible, setFoldVisible] = useState<boolean>(false);
 
@@ -33,7 +33,7 @@ const AgentSidebar: React.FC<AgentSidebarProps> = ({
   return (
     <>
       <div
-        className={cx(styles.container, 'flex', 'flex-col', {
+        className={cx(styles.container, 'flex', 'flex-col', className, {
           [styles.hide]: !visible,
         })}
       >
@@ -41,15 +41,19 @@ const AgentSidebar: React.FC<AgentSidebarProps> = ({
           <Loading />
         ) : (
           <>
+            {/* 统计信息 */}
             <StatisticsInfo
               statistics={agentDetail?.statistics}
               onClose={handleClose}
             />
+            {/* 智能体内容 */}
             <AgentContent
               agentDetail={agentDetail}
               onToggleCollectSuccess={onToggleCollectSuccess}
             />
+            {/* 智能体相关会话 */}
             <AgentConversation agentId={agentId} />
+            {/* 定时任务 */}
             {agentDetail?.openScheduledTask === OpenCloseEnum.Open && (
               <TimedTask agentId={agentId} />
             )}

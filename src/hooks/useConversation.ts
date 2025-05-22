@@ -30,7 +30,7 @@ const useConversation = () => {
 
     if (success) {
       const id = data?.id;
-      history.push(`/home/chat/${id}`, attach);
+      history.push(`/home/chat/${id}/${agentId}`, attach);
     }
   };
 
