@@ -172,7 +172,7 @@ const initGraph = ({
     grid: {
       visible: true,
       type: 'dot',
-      size: 20,
+      size: 24,
       args: {
         color: '#606060',
         thickness: 1,
@@ -185,6 +185,7 @@ const initGraph = ({
       zoomAtMousePosition: true, // 在鼠标位置进行缩放
       minScale: 0.2, // 最小缩放比例
       maxScale: 3, // 最大缩放比例
+      modifiers: ['ctrl', 'meta'],
     },
     background: {
       color: '#f2f2f2', // 设置背景颜色

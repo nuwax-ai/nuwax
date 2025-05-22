@@ -12,6 +12,7 @@ import {
 } from '@ant-design/icons';
 import type { FormInstance } from 'antd';
 import {
+  Button,
   Divider,
   Flex,
   Form,
@@ -67,9 +68,7 @@ export const GroupedOptionSelect: React.FC<ModelSettingProp> = ({ form }) => {
     if (_item === undefined) return;
     return (
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <span style={{ marginLeft: '8px' }}>
-          {(_item as ModelListItemProps).name}
-        </span>
+        <span>{(_item as ModelListItemProps).name}</span>
       </div>
     );
   };
@@ -304,7 +303,7 @@ export const ModelSelected: React.FC<ModelSettingProp> = ({ form }) => {
           trigger="click"
           placement="left"
         >
-          <SettingOutlined />
+          <Button type="text" icon={<SettingOutlined />} size="small" />
         </Popover>
       </div>
       <GroupedOptionSelect form={form} />

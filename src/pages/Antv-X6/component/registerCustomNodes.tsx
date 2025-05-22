@@ -185,17 +185,15 @@ export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
   let isSelected = graph.isSelected(node); // 判断是否选中
   const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
     data.type,
-  )} 0%, white 70%)`;
+  )} 0%, white 42px)`;
   return (
     <div
       className={`loop-node-style general-node ${
         isSelected ? 'selected-general-node' : ''
       }`}
+      style={{ background: gradientBackground }}
     >
-      <div
-        className="loop-node-title-style dis-left"
-        style={{ background: gradientBackground }}
-      >
+      <div className="loop-node-title-style dis-left">
         <ICON_WORKFLOW_LOOP style={{ marginRight: '6px' }} />
         <span>{data.name}</span>
       </div>

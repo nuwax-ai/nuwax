@@ -274,6 +274,17 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       graphRef.current.zoomTo(Number(val));
     };
 
+    // 缩放适配
+    const changeGraphZoomToFit = () => {
+      if (!graphRef.current) return;
+      graphRef.current.zoomToFit({
+        padding: 20,
+        maxScale: 2,
+        minScale: 0.2,
+        allowNewOrigin: 'negative',
+      });
+    };
+
     const drawGraph = () => {
       if (graphRef.current && graphParams.nodeList.length > 0) {
         // 清除现有元素，防止重复渲染
@@ -310,11 +321,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
         // 添加zoomToFit调用，确保在绘制完成后自动调整视图
         setTimeout(() => {
-          graphRef.current?.zoomToFit({
-            padding: 20,
-            maxScale: 1,
-            allowNewOrigin: 'negative',
-          });
+          changeGraphZoomToFit();
         }, 0);
       }
     };
@@ -339,6 +346,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       deleteNode,
       deleteEdge,
       changeGraphZoom,
+      changeGraphZoomToFit,
       drawGraph,
       selectNode,
       createNewEdge,
