@@ -313,6 +313,7 @@ const Chat: React.FC = () => {
         />
       </div>
       <AgentSidebar
+        key={agentId}
         className={cx(styles['agent-sidebar'])}
         agentId={agentId}
         loading={loading}
