@@ -21,7 +21,7 @@ export interface TimedTaskProps {
 }
 
 // 定时任务列表组件属性
-export interface TaskListProps extends TimedTaskProps {
+export interface TaskListProps {
   className?: string;
   loading?: boolean;
   taskStatus: TaskStatus;

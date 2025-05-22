@@ -25,7 +25,6 @@ const { confirm } = Modal;
  */
 const TaskList: React.FC<TaskListProps> = ({
   className,
-  agentId,
   loading,
   taskStatus,
   taskList,
@@ -46,7 +45,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
   // 点击任务项
   const handleClick = (info: TimedConversationTaskInfo) => {
-    const { id } = info;
+    const { id, agentId } = info;
     history.push(`/home/chat/${id}/${agentId}`);
   };
 
