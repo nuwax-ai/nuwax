@@ -15,7 +15,9 @@ import SpaceTitle from './SpaceTitle';
 
 const cx = classNames.bind(styles);
 
-const SpaceSection: React.FC = () => {
+const SpaceSection: React.FC<{
+  style?: React.CSSProperties;
+}> = ({ style }) => {
   const location = useLocation();
   const { spaceId } = useParams();
   const { pathname } = location;
@@ -94,7 +96,7 @@ const SpaceSection: React.FC = () => {
   }, [currentSpaceInfo]);
 
   return (
-    <div className={cx('h-full', 'px-6', 'py-16', 'overflow-y')}>
+    <div className={cx('h-full', 'px-6', 'py-16', 'overflow-y')} style={style}>
       <SpaceTitle avatar={avatar} name={currentSpaceInfo?.name} />
       <ul>
         {SPACE_APPLICATION_LIST.map((item) => {

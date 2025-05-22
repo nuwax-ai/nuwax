@@ -13,7 +13,6 @@ import { getURLParams } from '@/utils/common';
 import { Empty, Input } from 'antd';
 import { SearchProps } from 'antd/es/input';
 import classNames from 'classnames';
-import { Location } from 'history';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
 import styles from './index.less';

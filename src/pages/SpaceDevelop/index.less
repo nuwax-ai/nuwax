@@ -44,3 +44,17 @@
     padding-top: 50px;
   }
 }
+
+@media (max-width: 768px) {
+  .container {
+    padding: 48px 12px 16px;
+
+    .select-search-area {
+      gap: 6px;
+    }
+
+    .main-container {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+  }
+}
