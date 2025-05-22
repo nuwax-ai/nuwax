@@ -120,7 +120,7 @@ export enum DataTypeEnum {
 
 // 角色类型
 export enum RoleEnum {
-  // Owner = 'Owner',
+  Owner = 'Owner',
   Admin = 'Admin',
   User = 'User',
 }
