@@ -1,5 +1,6 @@
 @import 'styles/color.less';
 @import 'styles/custom.less';
+@import 'styles/themeCssVariables.less';
 
 html {
   width: 100%;
@@ -58,18 +59,6 @@ body {
 ::-webkit-scrollbar-thumb {
   background: @GRAY;
   border-radius: 6px; /* 滚动条滑块圆角 */
-}
-
-// 定义全局css 变量
-:root {
-  --xagi-primary-color: rgb(81, 71, 255);
-  --xagi-primary-color-hover: rgb(69, 56, 255);
-  --xagi-primary-color-active: rgb(65, 43, 255);
-  --xagi-primary-color-disabled: rgba(150, 159, 255, 50%);
-  --xagi-border-color-base: rgba(68, 83, 130, 25%);
-  --xagi-success-color: rgb(0, 178, 60);
-  --xagi-success-color-hover: rgb(0, 168, 56);
-  --xagi-border-radius: 12px;
 }
 
 @media (max-width: 768px) {

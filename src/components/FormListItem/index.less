@@ -1,3 +1,5 @@
+@import '@/styles/themeVariables.less';
+
 .action-form-item-style {
   display: flex;
   justify-content: left;
@@ -10,7 +12,7 @@
 .input-or-reference {
   border: 1px solid #d9d9d9;
   border-radius: 6px;
-  padding: 0 4px 0 0;
+  padding: 0;
   height: 28px;
   width: 100%;
   background-color: rgb(252, 252, 252);
@@ -68,17 +70,20 @@
 }
 
 .input-reference-icon-style {
-  width: 12px;
-  height: 12px;
+  width: 24px;
+  height: calc(100% - 6px);
+  padding-right: 6px;
+  padding-left: 6px;
+  min-height: 12px;
 }
 
 // .ant-tree-switcher::before {
 //   width: 12px;
 // }
 
-.ant-tree-node-selected {
-  background-color: #fff !important;
-}
+// .ant-tree-node-selected {
+//   background-color: #fff !important;
+// }
 
 .tree-icon-style {
   width: 18px;
@@ -209,6 +214,25 @@
   max-height: 400px;
   overflow-y: auto;
   // width: 100%;
+  .ant-tree-switcher-noop {
+    display: none;
+  }
+
+  .ant-tree-node-content-wrapper {
+    cursor: pointer;
+
+    &.ant-tree-node-selected {
+      background: @xagi-primary-color-selected;
+      cursor: default;
+    }
+  }
+  // .ant-tree-treenode-leaf-last{
+  //   margin-bottom: 0;
+  // }
+
+  .tree-custom-title-style {
+    padding: 2px;
+  }
 }
 
 .ant-dropdown-menu-item:hover {

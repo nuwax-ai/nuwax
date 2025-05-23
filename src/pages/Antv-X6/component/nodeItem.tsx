@@ -518,7 +518,12 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ form }) => {
         <div>
           <div className="dis-sb margin-bottom">
             <span className="node-title-style ">代码</span>
-            <ExpandAltOutlined onClick={() => setShow(true)} />
+            <Button
+              icon={<ExpandAltOutlined />}
+              size="small"
+              type="text"
+              onClick={() => setShow(true)}
+            ></Button>
           </div>
           <CodeEditor
             form={form}

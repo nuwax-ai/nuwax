@@ -334,6 +334,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
             className={
               isBody ? 'tree-form-name is-body-cascader' : 'tree-form-name'
             }
+            size="small"
           />
           {/* {errors[`${nodeData.key}-type`] && (
             <div style={{ color: '#ff4d4f', fontSize: 12 }}>

@@ -74,8 +74,8 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
               {!disabledAdd && (
                 <Button
                   icon={<PlusOutlined />}
-                  size={'small'}
                   onClick={() => add(formItem)}
+                  size="small"
                   type="text"
                 ></Button>
               )}
@@ -142,12 +142,22 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                           }
                           trigger="click"
                         >
-                          <FileDoneOutlined className="margin-right cursor-pointer" />
+                          <Button
+                            icon={<FileDoneOutlined />}
+                            className="margin-right"
+                            size="small"
+                            type="text"
+                          ></Button>
                         </Popover>
                       )}
                       {!disabledDelete && (
                         <Form.Item name={[item.name, 'require']} noStyle>
-                          <DeleteOutlined onClick={() => remove(item.name)} />
+                          <Button
+                            icon={<DeleteOutlined />}
+                            size="small"
+                            type="text"
+                            onClick={() => remove(item.name)}
+                          ></Button>
                         </Form.Item>
                       )}
                     </div>
