@@ -152,6 +152,7 @@ const AgentDetails: React.FC = () => {
       message,
       files,
       infos: selectedComponentList,
+      defaultAgentDetail: agentDetail,
     });
   };
 

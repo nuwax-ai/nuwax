@@ -1,9 +1,10 @@
 import foldImage from '@/assets/images/fold_image.png';
 import Loading from '@/components/Loading';
-import { OpenCloseEnum } from '@/types/enums/space';
+import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import { AgentSidebarProps } from '@/types/interfaces/agentTask';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useModel } from 'umi';
 import AgentContent from './AgentContent';
 import AgentConversation from './AgentConversation';
 import styles from './index.less';
@@ -22,6 +23,7 @@ const AgentSidebar: React.FC<AgentSidebarProps> = ({
 }) => {
   const [visible, setVisible] = useState<boolean>(true);
   const [foldVisible, setFoldVisible] = useState<boolean>(false);
+  const { showType } = useModel('conversationInfo');
 
   const handleClose = () => {
     setVisible(!visible);
@@ -29,6 +31,13 @@ const AgentSidebar: React.FC<AgentSidebarProps> = ({
       setFoldVisible(!foldVisible);
     }, 300);
   };
+
+  useEffect(() => {
+    if (showType === EditAgentShowType.Show_Stand) {
+      setVisible(false);
+      setFoldVisible(true);
+    }
+  }, [showType]);
 
   return (
     <>

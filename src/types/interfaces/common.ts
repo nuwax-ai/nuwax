@@ -1,6 +1,7 @@
 import type { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { CreateUpdateModeEnum } from '@/types/enums/common';
 import { DataTypeEnum } from '@/types/enums/common';
+import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import type {
   AgentBaseInfo,
   AgentConfigInfo,
@@ -8,6 +9,7 @@ import type {
   AgentSelectedComponentInfo,
   CreatorInfo,
 } from '@/types/interfaces/agent';
+import { CardDataInfo } from '@/types/interfaces/cardInfo';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import type {
   KnowledgeBaseInfo,
@@ -16,7 +18,6 @@ import type {
 import type { InputAndOutConfig } from '@/types/interfaces/node';
 import type { FormInstance, GetProp, UploadProps } from 'antd';
 import React from 'react';
-import { PluginPublishScopeEnum } from '../enums/plugin';
 
 export type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
 // 原代码中 large、middle、small 未定义，将其改为字符串字面量类型
@@ -470,4 +471,12 @@ export interface ParamsNameLabelProps {
   require?: boolean;
   paramName: string;
   paramType: DataTypeEnum;
+}
+
+// 展示台组件
+export interface ShowStandProps {
+  className?: string;
+  cardList: CardDataInfo[];
+  visible: boolean;
+  onClose: () => void;
 }

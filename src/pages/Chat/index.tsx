@@ -40,6 +40,8 @@ const Chat: React.FC = () => {
   const message = location.state?.message;
   const files = location.state?.files;
   const infos = location.state?.infos;
+  // 默认的智能体详情信息
+  const defaultAgentDetail = location.state?.defaultAgentDetail;
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto | null>();
   const [selectedComponentList, setSelectedComponentList] = useState<
     AgentSelectedComponentInfo[]
@@ -89,11 +91,14 @@ const Chat: React.FC = () => {
   });
 
   useEffect(() => {
+    const _agentId = Number(agentId);
     // 查询智能体详情信息
-    if (agentId) {
-      runDetail(agentId);
+    if (_agentId !== defaultAgentDetail?.agentId) {
+      runDetail(_agentId);
+    } else {
+      setAgentDetail(defaultAgentDetail);
     }
-  }, [agentId]);
+  }, [agentId, defaultAgentDetail]);
 
   // 在组件挂载时添加滚动事件监听器
   useEffect(() => {
@@ -313,7 +318,6 @@ const Chat: React.FC = () => {
         />
       </div>
       <AgentSidebar
-        key={agentId}
         className={cx(styles['agent-sidebar'])}
         agentId={agentId}
         loading={loading}
