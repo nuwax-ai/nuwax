@@ -5,7 +5,7 @@ import TooltipIcon from '@/components/TooltipIcon';
 import useCategory from '@/hooks/useCategory';
 import { apiAgentPublishApply } from '@/services/agentConfig';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { TooltipTitleTypeEnum } from '@/types/enums/common';
+import { RoleEnum, TooltipTitleTypeEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { option } from '@/types/interfaces/common';
 import { PublishComponentModalProps } from '@/types/interfaces/space';
@@ -56,12 +56,16 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   const { spaceList, asyncSpaceListFun } = useModel('spaceModel');
   const { runQueryCategory } = useCategory();
 
+  // 当前登录用户在空间的角色,可用值:Owner,Admin,User
   const filterSpaceList = useMemo(() => {
+    // 过滤用户角色为用户的空间列表
     const list =
-      spaceList?.map((item: SpaceInfo) => {
-        item.key = uuidv4();
-        return item;
-      }) || [];
+      spaceList
+        ?.map((item: SpaceInfo) => ({
+          key: uuidv4(),
+          ...item,
+        }))
+        .filter((item: SpaceInfo) => item.spaceRole !== RoleEnum.User) || [];
 
     return [
       {
