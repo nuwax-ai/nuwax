@@ -1,5 +1,5 @@
 import CreateAgent from '@/components/CreateAgent';
-import PublishAgent from '@/components/PublishComponentModal';
+import PublishComponentModal from '@/components/PublishComponentModal';
 import ShowStand from '@/components/ShowStand';
 import VersionHistory from '@/components/VersionHistory';
 import {
@@ -247,8 +247,8 @@ const EditAgent: React.FC = () => {
         />
       </section>
       {/*发布智能体弹窗*/}
-      <PublishAgent
-        agentId={agentId}
+      <PublishComponentModal
+        agentId={Number(agentId)}
         open={open}
         // 取消发布
         onCancel={() => setOpen(false)}

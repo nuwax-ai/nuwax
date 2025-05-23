@@ -467,3 +467,12 @@ export interface ParamsNameLabelProps {
   paramName: string;
   paramType: DataTypeEnum;
 }
+
+// 智能体、插件、工作流等发布范围属性
+export interface PublishScope {
+  key: string;
+  name: string;
+  spaceId?: number;
+  scope: PluginPublishScopeEnum;
+  children?: PublishScope[];
+}
