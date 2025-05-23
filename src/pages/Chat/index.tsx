@@ -23,7 +23,7 @@ import classNames from 'classnames';
 import { throttle } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useLocation, useModel, useParams, useRequest } from 'umi';
+import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import styles from './index.less';
 import ShowArea from './ShowArea';
 
@@ -224,6 +224,11 @@ const Chat: React.FC = () => {
     setSelectedComponentList(_selectedComponentList);
   };
 
+  // 清空会话记录，实际上是跳转到智能体详情页面
+  const handleClear = () => {
+    history.push(`/agent/${agentId}`);
+  };
+
   // 消息发送
   const handleMessageSend = (message: string, files: UploadFileInfo[] = []) => {
     onMessageSend(id, message, files, selectedComponentList);
@@ -311,6 +316,7 @@ const Chat: React.FC = () => {
           className={cx(styles['chat-input-container'])}
           onEnter={handleMessageSend}
           visible={showScrollBtn}
+          onClear={handleClear}
           manualComponents={manualComponents}
           selectedComponentList={selectedComponentList}
           onSelectComponent={handleSelectComponent}
