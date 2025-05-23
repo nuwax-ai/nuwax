@@ -1,12 +1,13 @@
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import useEventPolling from '@/hooks/useEventPolling';
 import { request as requestCommon } from '@/services/common';
-import { components, token } from '@/utils/themeOverride';
 import { RequestConfig } from '@@/plugin-request/request';
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/es/locale/zh_CN';
 import 'dayjs/locale/zh-cn';
 import React from 'react';
+import componentThemes from './utils/componentThemes';
+import themeTokens from './utils/themeTokens';
 /**
  * 全局轮询组件
  * 在应用运行期间保持活跃，处理全局事件
@@ -28,9 +29,11 @@ export function rootContainer(container: React.ReactNode) {
       theme={{
         cssVar: {
           prefix: 'xagi',
+          key: 'default',
         },
-        token,
-        components,
+        token: themeTokens,
+        components: componentThemes,
+        algorithm: [],
       }}
     >
       {/* 只有用户已登录时才启动事件轮询 */}

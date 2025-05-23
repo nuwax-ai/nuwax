@@ -115,7 +115,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
 
   const renderTitle = (nodeData: InputAndOutConfig) => {
     return (
-      <div>
+      <div className="tree-custom-title-style">
         <span title="">{nodeData.name}</span>
         <Popover content={nodeData.description || '暂无描述'}>
           <InfoCircleOutlined title="" style={{ marginLeft: '4px' }} />
@@ -256,9 +256,8 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           items: getMenuItems(), // 强制子菜单向左对齐
         }}
         trigger={['click']}
-        overlayStyle={{ width: 200 }}
-        placement="bottomLeft" // 设置弹窗向左对齐
-        className="input-reference-dropdown-style"
+        overlayStyle={{ minWidth: 200 }}
+        placement="bottomRight" // 设置弹窗向左对齐
       >
         <SettingOutlined
           style={{ cursor: 'pointer' }}

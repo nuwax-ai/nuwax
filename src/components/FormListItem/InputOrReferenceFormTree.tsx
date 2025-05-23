@@ -64,7 +64,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   };
   const renderTitle = (nodeData: InputAndOutConfig) => {
     return (
-      <div>
+      <div className="tree-custom-title-style">
         <span title="">{nodeData.name}</span>
         <Popover content={nodeData.description || '暂无描述'}>
           <InfoCircleOutlined title="" style={{ marginLeft: '4px' }} />
@@ -88,6 +88,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   // 动态生成 Dropdown 的 items
   const getMenu = (nodes: PreviousList[]) => {
     if (nodes && nodes.length) {
+      let isHitSelect = false;
       return nodes.map((node) => ({
         key: node.id,
         label: node.name.length > 8 ? node.name.slice(0, 8) + '...' : node.name,
@@ -97,21 +98,33 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
               {
                 key: `${node.id}-tree-select`,
                 label: (
-                  <Tree
-                    onSelect={(keys) => {
-                      handleTreeSelectChange(keys);
+                  <div
+                    onClick={(e) => {
+                      // 阻止所有点击事件的冒泡，除了 onSelect
+                      if (!isHitSelect) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }
                     }}
-                    defaultExpandAll
-                    treeData={node.outputArgs}
-                    fieldNames={{
-                      title: 'name',
-                      key: 'key',
-                      children: 'children',
-                    }}
-                    blockNode
-                    titleRender={renderTitle}
-                    className="custom-tree-style" // 添加自定义样式类
-                  />
+                  >
+                    <Tree
+                      onSelect={(keys) => {
+                        handleTreeSelectChange(keys);
+                        isHitSelect = true;
+                      }}
+                      defaultExpandAll
+                      treeData={node.outputArgs}
+                      fieldNames={{
+                        title: 'name',
+                        key: 'key',
+                        children: 'children',
+                      }}
+                      blockNode
+                      showIcon
+                      titleRender={renderTitle}
+                      className="custom-tree-style" // 添加自定义样式类
+                    />
+                  </div>
                 ),
               },
             ]
@@ -174,8 +187,8 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           items: getMenuItems(), // 强制子菜单向左对齐
         }}
         trigger={['click']}
-        overlayStyle={{ width: 200 }}
-        placement="bottomLeft" // 设置弹窗向左对齐
+        overlayStyle={{ minWidth: 200 }}
+        placement="bottomRight" // 设置弹窗向左对齐
       >
         <SettingOutlined
           style={{ cursor: 'pointer' }}
