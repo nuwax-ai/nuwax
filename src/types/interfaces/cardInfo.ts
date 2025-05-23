@@ -31,7 +31,9 @@ export interface CardDataInfo {
 }
 
 // 单张卡片
-export interface CardProps extends CardDataInfo {
+export type CardProps = CardDataInfo;
+
+export interface CardChildProps extends CardDataInfo {
   className?: string;
   onClick: () => void;
 }

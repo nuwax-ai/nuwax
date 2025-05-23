@@ -1,5 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
-import { CardProps } from '@/types/interfaces/cardInfo';
+import { CardChildProps } from '@/types/interfaces/cardInfo';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -9,7 +9,7 @@ const cx = classNames.bind(styles);
 /**
  * 卡片三
  */
-const CardThree: React.FC<CardProps> = ({
+const CardThree: React.FC<CardChildProps> = ({
   className,
   title,
   content,

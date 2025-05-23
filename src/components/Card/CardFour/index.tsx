@@ -1,4 +1,4 @@
-import { CardProps } from '@/types/interfaces/cardInfo';
+import { CardChildProps } from '@/types/interfaces/cardInfo';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -8,7 +8,7 @@ const cx = classNames.bind(styles);
 /**
  * 卡片四
  */
-const CardFour: React.FC<CardProps> = ({
+const CardFour: React.FC<CardChildProps> = ({
   className,
   title,
   content,
