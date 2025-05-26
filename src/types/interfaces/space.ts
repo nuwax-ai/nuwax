@@ -71,6 +71,7 @@ export interface PublishComponentModalProps {
 // 智能体迁移弹窗组件
 export interface AgentMoveProps {
   spaceId: number;
+  type?: ApplicationMoreActionEnum;
   open: boolean;
   title?: string;
   onCancel: () => void;

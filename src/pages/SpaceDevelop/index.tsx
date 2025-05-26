@@ -1,3 +1,4 @@
+import AgentMove from '@/components/AgentMove';
 import AnalyzeStatistics from '@/components/AnalyzeStatistics';
 import CreateAgent from '@/components/CreateAgent';
 import SelectList from '@/components/SelectList';
@@ -5,7 +6,7 @@ import { USER_INFO } from '@/constants/home.constants';
 import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.constants';
 import {
   apiAgentConfigList,
-  apiAgentCopy,
+  apiAgentCopyToSpace,
   apiAgentDelete,
   apiAgentTransfer,
 } from '@/services/agentConfig';
@@ -27,7 +28,6 @@ import { Button, Input, message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
-import AgentMove from './AgentMove';
 import ApplicationItem from './ApplicationItem';
 import CreateTempChatModel from './CreateTempChatModel';
 import styles from './index.less';
@@ -39,7 +39,8 @@ const { confirm } = Modal;
  * 工作空间 - 应用开发
  */
 const SpaceDevelop: React.FC = () => {
-  const { spaceId } = useParams();
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
   // 打开分析弹窗
   const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
   // 迁移弹窗
@@ -63,6 +64,7 @@ const SpaceDevelop: React.FC = () => {
   const createIdRef = useRef<number>(0);
   // 目标智能体ID
   const targetAgentIdRef = useRef<number>(0);
+  const currentClickTypeRef = useRef<ApplicationMoreActionEnum>();
   const { agentList, setAgentList, agentAllRef, handlerCollect } =
     useModel('applicationDev');
   const { runEdit, devCollectAgentList, runDevCollect } =
@@ -100,8 +102,8 @@ const SpaceDevelop: React.FC = () => {
     },
   });
 
-  // 创建副本
-  const { run: runCopy } = useRequest(apiAgentCopy, {
+  // 复制到空间
+  const { run: runCopyToSpace } = useRequest(apiAgentCopyToSpace, {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
@@ -200,10 +202,19 @@ const SpaceDevelop: React.FC = () => {
 
   // 确认迁移智能体
   const handlerConfirmMove = (targetSpaceId: string) => {
-    runTransfer({
-      agentId: targetAgentIdRef.current,
-      targetSpaceId,
-    });
+    if (currentClickTypeRef.current === ApplicationMoreActionEnum.Move) {
+      // 迁移
+      runTransfer({
+        agentId: targetAgentIdRef.current,
+        targetSpaceId,
+      });
+    }
+    // 复制到空间
+    else if (
+      currentClickTypeRef.current === ApplicationMoreActionEnum.Copy_To_Space
+    ) {
+      runCopyToSpace(targetAgentIdRef.current, targetSpaceId);
+    }
   };
 
   // 点击跳转到智能体
@@ -241,15 +252,16 @@ const SpaceDevelop: React.FC = () => {
     const agentInfo = agentList[index];
     const { id } = agentInfo;
     targetAgentIdRef.current = id;
+    currentClickTypeRef.current = type;
     switch (type) {
       case ApplicationMoreActionEnum.Analyze:
         handleSetStatistics(agentInfo);
         setOpenAnalyze(true);
         break;
-      // 创建副本
-      case ApplicationMoreActionEnum.Create_Copy:
-        runCopy(id);
-        break;
+      // 复制到空间
+      case ApplicationMoreActionEnum.Copy_To_Space:
+      // runCopy(id);
+      // break;
       // 迁移
       case ApplicationMoreActionEnum.Move:
         setOpenMove(true);
@@ -351,6 +363,7 @@ const SpaceDevelop: React.FC = () => {
       {/*智能体迁移弹窗*/}
       <AgentMove
         spaceId={spaceId}
+        type={currentClickTypeRef.current} // 默认为迁移
         open={openMove}
         title={currentAgentInfo?.name}
         onCancel={() => setOpenMove(false)}

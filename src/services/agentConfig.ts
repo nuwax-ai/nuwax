@@ -58,11 +58,12 @@ export async function apiAgentDelete(
   });
 }
 
-// 创建副本接口
-export async function apiAgentCopy(
+// 复制到空间接口
+export async function apiAgentCopyToSpace(
   agentId: number,
-): Promise<RequestResponse<null>> {
-  return request(`/api/agent/copy/${agentId}`, {
+  targetSpaceId: number,
+): Promise<RequestResponse<number>> {
+  return request(`/api/agent/copy/${agentId}/${targetSpaceId}`, {
     method: 'POST',
   });
 }

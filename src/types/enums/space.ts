@@ -30,8 +30,8 @@ export enum CreateListEnum {
 export enum ApplicationMoreActionEnum {
   // 分析
   Analyze,
-  // 创建副本
-  Create_Copy,
+  // 复制到空间
+  Copy_To_Space,
   // 迁移
   Move,
   // 临时会话
