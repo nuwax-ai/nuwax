@@ -29,7 +29,20 @@ const themeTokens = {
 };
 
 /**
- * 检查文件是否存在并比较内容
+ * 从内容中移除生成时间行，以便进行纯内容比较
+ * @param {string} content - 文件内容
+ * @returns {string} - 移除时间后的内容
+ */
+const removeGenerationTimeLine = (content) => {
+  // 移除包含"生成时间"的行
+  return content.replace(
+    /\/\* 生成时间: .*? \*\//g,
+    '/* 生成时间: [TIMESTAMP] */',
+  );
+};
+
+/**
+ * 检查文件是否存在并比较内容(排除生成时间的影响)
  * @param {string} filePath - 文件路径
  * @param {string} newContent - 新内容
  * @returns {boolean} - 是否需要更新文件
@@ -41,9 +54,16 @@ const shouldUpdateFile = (filePath, newContent) => {
     return true;
   }
 
-  // 文件存在，比较内容
+  // 文件存在，比较内容（排除生成时间的影响）
   const existingContent = fs.readFileSync(filePath, 'utf-8');
-  if (existingContent.trim() === newContent.trim()) {
+
+  // 移除生成时间行后再比较
+  const normalizedExistingContent = removeGenerationTimeLine(
+    existingContent.trim(),
+  );
+  const normalizedNewContent = removeGenerationTimeLine(newContent.trim());
+
+  if (normalizedExistingContent === normalizedNewContent) {
     console.log(`🔄 文件内容一致，无需更新: ${filePath}`);
     return false;
   }
@@ -77,10 +97,13 @@ const writeFileIfNeeded = (filePath, content) => {
 };
 
 const generateThemeCssVariables = () => {
+  // 当前时间戳（所有文件使用相同的时间戳）
+  const timestamp = new Date().toLocaleString();
+
   // 1. 生成 CSS 变量文件（:root）
   const cssVariablesContent = `
 /* 自动生成的 CSS 变量文件 - 请勿手动修改 */
-/* 生成时间: ${new Date().toLocaleString()} */
+/* 生成时间: ${timestamp} */
 
 :root {
   /* 主色调 */
@@ -128,7 +151,7 @@ const generateThemeCssVariables = () => {
   // 2. 生成 Less 变量文件
   const lessVariablesContent = `
 /* 自动生成的 Less 变量文件 - 请勿手动修改 */
-/* 生成时间: ${new Date().toLocaleString()} */
+/* 生成时间: ${timestamp} */
 /* 使用方式: @import 'styles/themeVariables.less'; */
 
 /* 主色调变量 */
