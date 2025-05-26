@@ -8,10 +8,12 @@ import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { CollapseProps } from 'antd';
 import type { MouseEventHandler } from 'react';
 import React from 'react';
+import { UserInfo } from './login';
 
 // 单个应用项
 export interface ApplicationItemProps {
   agentConfigInfo: AgentConfigInfo;
+  userInfo: UserInfo | null;
   onClick: (agentId: number) => void;
   onCollect: (isCollect: boolean) => void;
   onClickMore: (type: ApplicationMoreActionEnum) => void;

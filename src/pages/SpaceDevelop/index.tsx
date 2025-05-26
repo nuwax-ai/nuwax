@@ -58,6 +58,7 @@ const SpaceDevelop: React.FC = () => {
   );
   // 搜索关键词
   const [keyword, setKeyword] = useState<string>('');
+  const userInfoRef = useRef<UserInfo | null>(null);
   // 创建者ID
   const createIdRef = useRef<number>(0);
   // 目标智能体ID
@@ -162,6 +163,7 @@ const SpaceDevelop: React.FC = () => {
     if (!!userInfoString) {
       const userInfo = JSON.parse(userInfoString) as UserInfo;
       createIdRef.current = userInfo.id;
+      userInfoRef.current = userInfo;
     }
   }, []);
 
@@ -321,6 +323,7 @@ const SpaceDevelop: React.FC = () => {
             <ApplicationItem
               key={item.id}
               agentConfigInfo={item}
+              userInfo={userInfoRef.current}
               onClickMore={(type) => handlerClickMore(type, index)}
               onCollect={(isCollect: boolean) =>
                 handlerCollect(index, isCollect)
