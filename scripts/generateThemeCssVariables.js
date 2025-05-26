@@ -28,11 +28,82 @@ const themeTokens = {
   boxShadowSecondary: '0 4px 12px rgba(0, 0, 0, 0.15)',
 };
 
+/**
+ * 从内容中移除生成时间行，以便进行纯内容比较
+ * @param {string} content - 文件内容
+ * @returns {string} - 移除时间后的内容
+ */
+const removeGenerationTimeLine = (content) => {
+  // 移除包含"生成时间"的行
+  return content.replace(
+    /\/\* 生成时间: .*? \*\//g,
+    '/* 生成时间: [TIMESTAMP] */',
+  );
+};
+
+/**
+ * 检查文件是否存在并比较内容(排除生成时间的影响)
+ * @param {string} filePath - 文件路径
+ * @param {string} newContent - 新内容
+ * @returns {boolean} - 是否需要更新文件
+ */
+const shouldUpdateFile = (filePath, newContent) => {
+  // 检查文件是否存在
+  if (!fs.existsSync(filePath)) {
+    console.log(`📁 文件不存在，将创建新文件: ${filePath}`);
+    return true;
+  }
+
+  // 文件存在，比较内容（排除生成时间的影响）
+  const existingContent = fs.readFileSync(filePath, 'utf-8');
+
+  // 移除生成时间行后再比较
+  const normalizedExistingContent = removeGenerationTimeLine(
+    existingContent.trim(),
+  );
+  const normalizedNewContent = removeGenerationTimeLine(newContent.trim());
+
+  if (normalizedExistingContent === normalizedNewContent) {
+    console.log(`🔄 文件内容一致，无需更新: ${filePath}`);
+    return false;
+  }
+
+  console.log(`📝 文件内容不一致，需要更新: ${filePath}`);
+  return true;
+};
+
+/**
+ * 写入文件，如果需要更新
+ * @param {string} filePath - 文件路径
+ * @param {string} content - 文件内容
+ * @returns {boolean} - 是否写入了文件
+ */
+const writeFileIfNeeded = (filePath, content) => {
+  // 确保目录存在
+  const dirPath = path.dirname(filePath);
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+    console.log(`📁 创建目录: ${dirPath}`);
+  }
+
+  // 检查是否需要更新文件
+  if (shouldUpdateFile(filePath, content)) {
+    fs.writeFileSync(filePath, content);
+    console.log(`✅ 文件已更新: ${filePath}`);
+    return true;
+  }
+
+  return false;
+};
+
 const generateThemeCssVariables = () => {
+  // 当前时间戳（所有文件使用相同的时间戳）
+  const timestamp = new Date().toLocaleString();
+
   // 1. 生成 CSS 变量文件（:root）
   const cssVariablesContent = `
 /* 自动生成的 CSS 变量文件 - 请勿手动修改 */
-/* 生成时间: ${new Date().toLocaleString()} */
+/* 生成时间: ${timestamp} */
 
 :root {
   /* 主色调 */
@@ -80,7 +151,7 @@ const generateThemeCssVariables = () => {
   // 2. 生成 Less 变量文件
   const lessVariablesContent = `
 /* 自动生成的 Less 变量文件 - 请勿手动修改 */
-/* 生成时间: ${new Date().toLocaleString()} */
+/* 生成时间: ${timestamp} */
 /* 使用方式: @import 'styles/themeVariables.less'; */
 
 /* 主色调变量 */
@@ -137,7 +208,7 @@ const generateThemeCssVariables = () => {
 @xagi-screen-xxl: 1600px;
 `;
 
-  // 3. 写入文件
+  // 3. 确定文件路径
   const cssVariablesPath = path.join(
     __dirname,
     '../src/styles/themeCssVariables.less',
@@ -147,11 +218,22 @@ const generateThemeCssVariables = () => {
     '../src/styles/themeVariables.less',
   );
 
-  fs.writeFileSync(cssVariablesPath, cssVariablesContent.trim());
-  fs.writeFileSync(lessVariablesPath, lessVariablesContent.trim());
+  // 4. 写入文件（如果需要）
+  let cssUpdated = writeFileIfNeeded(
+    cssVariablesPath,
+    cssVariablesContent.trim(),
+  );
+  let lessUpdated = writeFileIfNeeded(
+    lessVariablesPath,
+    lessVariablesContent.trim(),
+  );
 
-  console.log('✅ CSS 变量文件已生成:', cssVariablesPath);
-  console.log('✅ Less 变量文件已生成:', lessVariablesPath);
+  // 5. 输出总结
+  if (cssUpdated || lessUpdated) {
+    console.log('🎉 主题变量文件已更新');
+  } else {
+    console.log('✨ 所有文件内容已是最新，无需更新');
+  }
 };
 
 generateThemeCssVariables();
