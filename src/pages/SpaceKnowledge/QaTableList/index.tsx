@@ -12,6 +12,10 @@ import { Button, Popconfirm, Table, TableProps, Tag } from 'antd';
 import cx from 'classnames';
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 
+export interface QaTableListRef {
+  refresh: (value: string) => void;
+}
+
 /**
  * 知识库QA问答列表组件
  */
@@ -22,6 +26,7 @@ const QaTableList = forwardRef(
       kbId: number;
       onEdit: (record: KnowledgeQAInfo) => void;
       onDelete: (record: KnowledgeQAInfo) => Promise<null>;
+      question: string;
     },
     ref,
   ) => {
@@ -101,7 +106,7 @@ const QaTableList = forwardRef(
       pageSize: 20,
       queryFilter: {
         spaceId: props.spaceId,
-        question: '',
+        question: props.question,
         kbId: props.kbId,
       },
       orders: [],
@@ -131,7 +136,11 @@ const QaTableList = forwardRef(
     // 监听分页和筛选变化
     useEffect(() => {
       fetchQaList();
-    }, [tableParams.current, tableParams.pageSize, tableParams.filters]);
+    }, [
+      tableParams.current,
+      tableParams.pageSize,
+      tableParams.queryFilter.question,
+    ]);
 
     // 监听props变化，更新查询条件
     useEffect(() => {
@@ -140,12 +149,12 @@ const QaTableList = forwardRef(
         ...prev,
         queryFilter: {
           spaceId: props.spaceId,
-          question: '',
+          question: props.question,
           kbId: props.kbId,
         },
         current: 1, // 重置到第一页
       }));
-    }, [props.spaceId, props.kbId]);
+    }, [props.spaceId, props.kbId, props.question]);
 
     // 暴露刷新方法给父组件
     useImperativeHandle(ref, () => ({
