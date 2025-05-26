@@ -1,6 +1,42 @@
 import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
+import { HistoryActionTypeEnum } from '@/types/enums/space';
+import { CreatorInfo } from '@/types/interfaces/agent';
+
+// 历史记录数据
+export interface HistoryData {
+  id: number;
+  // 可用值:Agent,Plugin,Workflow
+  targetType: AgentComponentTypeEnum;
+  targetId: number;
+  // 操作类型,Add 新增, Edit 编辑, Publish 发布,可用值:Add,Edit,Publish,PublishApply,PublishApplyReject,OffShelf,AddComponent,EditComponent,DeleteComponent,AddNode,EditNode,DeleteNode
+  type: HistoryActionTypeEnum;
+  // 当时的配置信息
+  config: undefined;
+  // 操作描述
+  description: string;
+  // 操作人
+  opUser: CreatorInfo;
+  modified: string;
+  // 创建时间
+  created: string;
+}
+
+// 版本历史组件
+export interface VersionHistoryProps {
+  targetId: number;
+  targetName?: string;
+  targetType?: AgentComponentTypeEnum;
+  visible: boolean;
+  onClose: () => void;
+}
+
+// 当前发布组件属性
+export interface CurrentPublishItemProps {
+  info: PublishItemInfo;
+  onOffShelf: () => void;
+}
 
 // 智能体、插件、工作流下架请求参数
 export interface PublishOffShelfParams {
@@ -26,7 +62,7 @@ export interface PublishItemInfo {
   publishId: number;
 
   /*发布状态,可用值:Developing,Applying,Published,Rejected */
-  publishStatus: PublishStatusEnum;
+  publishStatus: PublishStatusEnum | null;
 
   /*发布范围,Tenant 系统广场；Space空间广场,可用值:Space,Tenant,Global */
   scope: PluginPublishScopeEnum;
@@ -42,6 +78,8 @@ export interface PublishItemInfo {
 
   /*描述信息 */
   description: string;
+  // 发布者信息
+  publishUser: CreatorInfo;
 }
 
 // 发布项

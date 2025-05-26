@@ -114,13 +114,6 @@ export enum SpaceTypeEnum {
   Class = 'Class',
 }
 
-// 可用值:Agent,Plugin,Workflow
-export enum HistoryTargetTypeEnum {
-  Agent = 'Agent',
-  Plugin = 'Plugin',
-  Workflow = 'Workflow',
-}
-
 // 操作类型,Add 新增, Edit 编辑, Publish 发布,可用值:Add,Edit,Publish,PublishApply,PublishApplyReject,OffShelf,AddComponent,EditComponent,DeleteComponent,AddNode,EditNode,DeleteNode
 export enum HistoryActionTypeEnum {
   Add = 'Add',

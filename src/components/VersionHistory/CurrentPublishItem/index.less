@@ -25,17 +25,26 @@
     }
   }
 
-  .off-btn {
+  .btn {
     width: 56px;
     height: 28px;
-    color: @BLANK17;
     font-size: 12px;
-    background: @GRAY01;
     border: none;
+    color: @BLANK17;
+    background: @GRAY01;
+  }
+
+  .off-btn {
     transition: background 0.3s ease;
 
     &:hover {
       background: @WHITE11;
     }
+  }
+
+  .disabled-btn {
+    color: @GRAY08;
+    background: @GRAY04;
+    cursor: not-allowed; // 禁用光标;
   }
 }

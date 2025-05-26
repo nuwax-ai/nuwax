@@ -15,11 +15,7 @@ import type {
   TooltipTitleTypeEnum,
 } from '@/types/enums/common';
 import type { UpdateModeComponentEnum } from '@/types/enums/library';
-import type {
-  HistoryActionTypeEnum,
-  HistoryTargetTypeEnum,
-  OpenCloseEnum,
-} from '@/types/enums/space';
+import type { HistoryActionTypeEnum, OpenCloseEnum } from '@/types/enums/space';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import React from 'react';
 import { CardArgsBindConfigInfo } from './cardInfo';
@@ -379,7 +375,7 @@ export interface TriggerTimeZone {
 export interface AgentConfigHistoryInfo {
   id: number;
   // 可用值:Agent,Plugin,Workflow
-  targetType: HistoryTargetTypeEnum;
+  targetType: AgentComponentTypeEnum;
   targetId: number;
   // 操作类型,Add 新增, Edit 编辑, Publish 发布,可用值:Add,Edit,Publish,PublishApply,PublishApplyReject,OffShelf,AddComponent,EditComponent,DeleteComponent,AddNode,EditNode,DeleteNode
   type: HistoryActionTypeEnum;

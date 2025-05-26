@@ -10,7 +10,7 @@ import { request } from 'umi';
 // 智能体、插件、工作流下架
 export async function apiPublishOffShelf(
   data: PublishOffShelfParams,
-): Promise<RequestResponse<number>> {
+): Promise<RequestResponse<null>> {
   return request('/api/publish/offShelf', {
     method: 'POST',
     data,

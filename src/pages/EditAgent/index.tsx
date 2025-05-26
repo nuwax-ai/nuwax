@@ -3,10 +3,10 @@ import PublishComponentModal from '@/components/PublishComponentModal';
 import ShowStand from '@/components/ShowStand';
 import VersionHistory from '@/components/VersionHistory';
 import {
-  apiAgentConfigHistoryList,
   apiAgentConfigInfo,
   apiAgentConfigUpdate,
 } from '@/services/agentConfig';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import {
@@ -14,7 +14,6 @@ import {
   AgentComponentInfo,
   AgentConfigInfo,
 } from '@/types/interfaces/agent';
-import type { HistoryData } from '@/types/interfaces/space';
 import { addBaseTarget } from '@/utils/common';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
@@ -36,14 +35,14 @@ const cx = classNames.bind(styles);
  * 编辑智能体
  */
 const EditAgent: React.FC = () => {
-  const { spaceId, agentId } = useParams();
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
+  const agentId = Number(params.agentId);
   const [open, setOpen] = useState<boolean>(false);
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
   // 智能体配置信息
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>();
-  // 历史版本信息
-  const [versionHistory, setVersionHistory] = useState<HistoryData[]>([]);
   const { cardList, showType, setShowType, setIsSuggest } =
     useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
@@ -63,18 +62,8 @@ const EditAgent: React.FC = () => {
     debounceInterval: 1000,
   });
 
-  // 版本历史记录
-  const { run: runHistory } = useRequest(apiAgentConfigHistoryList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: HistoryData[]) => {
-      setVersionHistory(result);
-    },
-  });
-
   useEffect(() => {
     run(agentId);
-    runHistory(agentId);
     // 设置页面title
     setTitle();
   }, [agentId]);
@@ -241,7 +230,9 @@ const EditAgent: React.FC = () => {
         />
         {/*版本历史*/}
         <VersionHistory
-          list={versionHistory}
+          targetId={agentId}
+          targetName={agentConfigInfo?.name}
+          targetType={AgentComponentTypeEnum.Agent}
           visible={showType === EditAgentShowType.Version_History}
           onClose={() => setShowType(EditAgentShowType.Hide)}
         />

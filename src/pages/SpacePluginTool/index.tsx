@@ -14,6 +14,7 @@ import {
 import usePluginConfig from '@/hooks/usePluginConfig';
 import { dataTypes } from '@/pages/Antv-X6/params';
 import { apiPluginHttpUpdate, apiPluginInfo } from '@/services/plugin';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   CreateUpdateModeEnum,
   DataTypeEnum,
@@ -62,13 +63,11 @@ const SpacePluginTool: React.FC = () => {
     setVisible,
     openModal,
     setOpenModal,
-    runHistory,
     pluginId,
     pluginInfo,
     setPluginInfo,
     openPlugin,
     setOpenPlugin,
-    historyData,
     inputConfigArgs,
     setInputConfigArgs,
     outputConfigArgs,
@@ -130,7 +129,6 @@ const SpacePluginTool: React.FC = () => {
 
   useEffect(() => {
     runPluginInfo(pluginId);
-    runHistory(pluginId);
   }, [pluginId]);
 
   // Just show the latest item.
@@ -531,7 +529,9 @@ const SpacePluginTool: React.FC = () => {
       />
       {/*版本历史*/}
       <VersionHistory
-        list={historyData}
+        targetId={pluginId}
+        targetName={pluginInfo?.name}
+        targetType={AgentComponentTypeEnum.Plugin}
         visible={visible}
         onClose={() => setVisible(false)}
       />

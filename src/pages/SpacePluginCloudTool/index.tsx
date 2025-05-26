@@ -10,6 +10,7 @@ import { ICON_ADD_TR } from '@/constants/images.constants';
 import usePluginConfig from '@/hooks/usePluginConfig';
 import { dataTypes } from '@/pages/Antv-X6/params';
 import { apiPluginCodeUpdate, apiPluginInfo } from '@/services/plugin';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
 import { PluginCodeModeEnum } from '@/types/enums/plugin';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
@@ -43,6 +44,7 @@ const SpacePluginCloudTool: React.FC = () => {
   const [codeMode, setCodeMode] = useState<PluginCodeModeEnum>(
     PluginCodeModeEnum.Metadata,
   );
+  // 代码
   const [code, setCode] = useState<string>('');
 
   const {
@@ -54,13 +56,11 @@ const SpacePluginCloudTool: React.FC = () => {
     setVisible,
     openModal,
     setOpenModal,
-    runHistory,
     pluginId,
     pluginInfo,
     setPluginInfo,
     openPlugin,
     setOpenPlugin,
-    historyData,
     inputConfigArgs,
     setInputConfigArgs,
     outputConfigArgs,
@@ -118,7 +118,6 @@ const SpacePluginCloudTool: React.FC = () => {
 
   useEffect(() => {
     runPluginInfo(pluginId);
-    runHistory(pluginId);
   }, [pluginId]);
 
   // Just show the latest item.
@@ -480,7 +479,9 @@ const SpacePluginCloudTool: React.FC = () => {
       />
       {/*版本历史*/}
       <VersionHistory
-        list={historyData}
+        targetId={pluginId}
+        targetName={pluginInfo?.name}
+        targetType={AgentComponentTypeEnum.Plugin}
         visible={visible}
         onClose={() => setVisible(false)}
       />
