@@ -260,6 +260,10 @@ const SpaceDevelop: React.FC = () => {
         setOpenTempChat(true);
         setCurrentAgentInfo(agentInfo);
         break;
+      // 日志
+      case ApplicationMoreActionEnum.Log:
+        history.push(`/home/log/${id}`);
+        break;
       case ApplicationMoreActionEnum.Del:
         confirm({
           title: '您确定要删除此智能体吗?',

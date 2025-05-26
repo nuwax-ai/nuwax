@@ -78,6 +78,7 @@ export const APPLICATION_MORE_ACTION = [
   { type: ApplicationMoreActionEnum.Create_Copy, label: '复制到空间' },
   { type: ApplicationMoreActionEnum.Move, label: '迁移' },
   { type: ApplicationMoreActionEnum.Temporary_Session, label: '临时会话' },
+  { type: ApplicationMoreActionEnum.Log, label: '日志' },
   { type: ApplicationMoreActionEnum.Del, label: '删除', isDel: true },
 ];
 

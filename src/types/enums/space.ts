@@ -36,6 +36,8 @@ export enum ApplicationMoreActionEnum {
   Move,
   // 临时会话
   Temporary_Session,
+  // 日志
+  Log,
   // 下架
   Off_Shelf,
   // 删除
