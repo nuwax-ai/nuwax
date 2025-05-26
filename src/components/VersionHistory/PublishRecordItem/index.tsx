@@ -1,5 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
-import { HistoryData } from '@/types/interfaces/space';
+import { HistoryData } from '@/types/interfaces/publish';
 import classNames from 'classnames';
 import moment from 'moment';
 import React from 'react';

@@ -49,15 +49,6 @@ const usePluginConfig = () => {
     [],
   );
 
-  // // 查询插件历史配置信息接口
-  // const { run: runHistory } = useRequest(apiPluginConfigHistoryList, {
-  //   manual: true,
-  //   debounceInterval: 300,
-  //   onSuccess: (result: HistoryData[]) => {
-  //     setHistoryData(result);
-  //   },
-  // });
-
   // 入参配置 - changeValue
   const handleInputValue = (
     key: React.Key,
