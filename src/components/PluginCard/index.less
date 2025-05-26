@@ -1,0 +1,78 @@
+@import '@/styles/color';
+
+.pluginCard {
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 1px solid @GRAY08;
+  background: #fff;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 10%);
+  }
+}
+
+.cardContent {
+  display: flex;
+  padding: 20px;
+  align-items: flex-start;
+}
+
+.iconWrapper {
+  position: relative;
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.tagWrapper {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  z-index: 1;
+}
+
+.tag {
+  border-radius: 4px;
+  padding: 0 4px;
+  height: 18px;
+  line-height: 18px;
+  font-size: 12px;
+  margin: 0;
+}
+
+.infoWrapper {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: @BLUE08;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.description {
+  margin: 0;
+  color: @GRAY05;
+  font-size: 14px;
+  line-height: 1.5;
+  display: box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

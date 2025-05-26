@@ -10,6 +10,7 @@ import type {
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import { history, useLocation, useModel, useRequest } from 'umi';
+import EcosystemMarketSection from './EcosystemMarketSection';
 import Header from './Header';
 import HomeSection from './HomeSection';
 import SpaceSection from './SpaceSection';
@@ -117,6 +118,9 @@ const MenusLayout: React.FC<{
       case TabsEnum.System_Manage:
         history.push('/system/user/manage');
         break;
+      case TabsEnum.Ecosystem_Market:
+        history.push('/ecosystem/plugin');
+        break;
       case TabsEnum.Course_System:
         window.open(DOCUMENT_URL);
         break;
@@ -138,6 +142,8 @@ const MenusLayout: React.FC<{
       setTabType(TabsEnum.Square);
     } else if (location.pathname.includes('/system')) {
       setTabType(TabsEnum.System_Manage);
+    } else if (location.pathname.includes('/ecosystem')) {
+      setTabType(TabsEnum.Ecosystem_Market);
     } else {
       setTabType(TabsEnum.Home);
     }
@@ -165,6 +171,8 @@ const MenusLayout: React.FC<{
         return <SquareSection style={overrideContainerStyle} />;
       case TabsEnum.System_Manage:
         return <SystemSection style={overrideContainerStyle} />;
+      case TabsEnum.Ecosystem_Market:
+        return <EcosystemMarketSection style={overrideContainerStyle} />;
     }
   }, [tabType]);
 

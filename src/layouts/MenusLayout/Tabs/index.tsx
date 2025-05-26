@@ -17,15 +17,18 @@ const Tabs: React.FC<TabsType> = ({ onClick }) => {
   }, []);
 
   const handleActive = (type: TabsEnum) => {
-    return (
+    const isActive =
       (type === TabsEnum.Home &&
         (location.pathname === '/' ||
           location.pathname.includes('home') ||
           location.pathname.includes('agent'))) ||
-      (type === TabsEnum.Space && location.pathname.includes('space')) ||
-      (type === TabsEnum.Square && location.pathname.includes('square')) ||
-      (type === TabsEnum.System_Manage && location.pathname.includes('system'))
-    );
+      (type === TabsEnum.Space && location.pathname.includes('/space/')) ||
+      (type === TabsEnum.Square && location.pathname.includes('/square')) ||
+      (type === TabsEnum.Ecosystem_Market &&
+        location.pathname.includes('/ecosystem/')) ||
+      (type === TabsEnum.System_Manage &&
+        location.pathname.includes('/system/'));
+    return isActive;
   };
 
   return (

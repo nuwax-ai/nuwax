@@ -69,6 +69,11 @@ const routes = [
         path: '/system/model/manage',
         component: '@/pages/GlobalModelManage',
       },
+      // 生态市场
+      { path: '/ecosystem', redirect: '/ecosystem/plugin' },
+      { path: '/ecosystem/plugin', component: '@/pages/EcosystemPlugin' },
+      { path: '/ecosystem/template', component: '@/pages/EcosystemTemplate' },
+      { path: '/ecosystem/mcp', component: '@/pages/EcosystemMcp' },
     ],
   },
   {
