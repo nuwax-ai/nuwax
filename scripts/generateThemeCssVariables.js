@@ -3,14 +3,14 @@ const path = require('path');
 
 // 手动导入主题配置（因为是 JS 文件，需要转换）
 const themeTokens = {
-  colorPrimary: '#5147FF',
-  colorSuccess: '#00B23C',
-  colorWarning: '#FF8C00',
-  colorError: '#FF4D4F',
-  colorInfo: '#1890FF',
-  colorPrimaryHover: '#4538FF',
-  colorPrimaryActive: '#412BFF',
-  colorSuccessHover: '#00A838',
+  colorPrimary: '#5147ff',
+  colorSuccess: '#00b23c',
+  colorWarning: '#ff8c00',
+  colorError: '#ff4d4f',
+  colorInfo: '#1890ff',
+  colorPrimaryHover: '#4538ff',
+  colorPrimaryActive: '#412bff',
+  colorSuccessHover: '#00a838',
   borderRadius: 8,
   borderRadiusLG: 12,
   borderRadiusSM: 4,
@@ -24,21 +24,24 @@ const themeTokens = {
   controlHeight: 32,
   controlHeightLG: 40,
   controlHeightSM: 24,
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-  boxShadowSecondary: '0 4px 12px rgba(0, 0, 0, 0.15)',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 15%)',
+  boxShadowSecondary: '0 4px 12px rgba(0, 0, 0, 15%)',
 };
 
 /**
- * 从内容中移除生成时间行，以便进行纯内容比较
- * @param {string} content - 文件内容
- * @returns {string} - 移除时间后的内容
+ * 标准化内容，移除多余的空格和换行符
+ * @param {string} content - 原始内容
+ * @returns {string} - 标准化后的内容
  */
-const removeGenerationTimeLine = (content) => {
-  // 移除包含"生成时间"的行
-  return content.replace(
-    /\/\* 生成时间: .*? \*\//g,
-    '/* 生成时间: [TIMESTAMP] */',
-  );
+const normalizeContent = (content) => {
+  return content
+    .replace(/\s+/g, ' ') // 将多个空白字符（包括换行、制表符等）替换为单个空格
+    .replace(/\s*{\s*/g, '{') // 移除大括号前后的空格
+    .replace(/\s*}\s*/g, '}') // 移除大括号前后的空格
+    .replace(/\s*:\s*/g, ':') // 移除冒号前后的空格
+    .replace(/\s*;\s*/g, ';') // 移除分号前后的空格
+    .replace(/\s*,\s*/g, ',') // 移除逗号前后的空格
+    .trim(); // 移除首尾空格
 };
 
 /**
@@ -54,14 +57,12 @@ const shouldUpdateFile = (filePath, newContent) => {
     return true;
   }
 
-  // 文件存在，比较内容（排除生成时间的影响）
+  // 文件存在，比较内容（忽略空格和换行符差异）
   const existingContent = fs.readFileSync(filePath, 'utf-8');
 
-  // 移除生成时间行后再比较
-  const normalizedExistingContent = removeGenerationTimeLine(
-    existingContent.trim(),
-  );
-  const normalizedNewContent = removeGenerationTimeLine(newContent.trim());
+  // 标准化内容后再比较
+  const normalizedExistingContent = normalizeContent(existingContent);
+  const normalizedNewContent = normalizeContent(newContent);
 
   if (normalizedExistingContent === normalizedNewContent) {
     console.log(`🔄 文件内容一致，无需更新: ${filePath}`);
@@ -69,6 +70,8 @@ const shouldUpdateFile = (filePath, newContent) => {
   }
 
   console.log(`📝 文件内容不一致，需要更新: ${filePath}`);
+  console.log(`📊 现有内容长度: ${normalizedExistingContent.length}`);
+  console.log(`📊 新内容长度: ${normalizedNewContent.length}`);
   return true;
 };
 
@@ -97,21 +100,17 @@ const writeFileIfNeeded = (filePath, content) => {
 };
 
 const generateThemeCssVariables = () => {
-  // 当前时间戳（所有文件使用相同的时间戳）
-  const timestamp = new Date().toLocaleString();
-
   // 1. 生成 CSS 变量文件（:root）
   const cssVariablesContent = `
 /* 自动生成的 CSS 变量文件 - 请勿手动修改 */
-/* 生成时间: ${timestamp} */
 
 :root {
   /* 主色调 */
   --xagi-primary-color: ${themeTokens.colorPrimary};
   --xagi-primary-color-hover: ${themeTokens.colorPrimaryHover};
   --xagi-primary-color-active: ${themeTokens.colorPrimaryActive};
-  --xagi-primary-color-selected: rgba(81, 71, 255, 0.1);
-  --xagi-primary-color-disabled: rgba(150, 159, 255, 0.5);
+  --xagi-primary-color-selected: rgba(81, 71, 255, 10%);
+  --xagi-primary-color-disabled: rgba(150, 159, 255, 50%);
   
   /* 功能色 */
   --xagi-success-color: ${themeTokens.colorSuccess};
@@ -124,7 +123,7 @@ const generateThemeCssVariables = () => {
   --xagi-border-radius: ${themeTokens.borderRadius}px;
   --xagi-border-radius-lg: ${themeTokens.borderRadiusLG}px;
   --xagi-border-radius-sm: ${themeTokens.borderRadiusSM}px;
-  --xagi-border-color-base: rgba(68, 83, 130, 0.25);
+  --xagi-border-color-base: rgba(68, 83, 130, 25%);
   
   /* 字体 */
   --xagi-font-size: ${themeTokens.fontSize}px;
@@ -151,7 +150,6 @@ const generateThemeCssVariables = () => {
   // 2. 生成 Less 变量文件
   const lessVariablesContent = `
 /* 自动生成的 Less 变量文件 - 请勿手动修改 */
-/* 生成时间: ${timestamp} */
 /* 使用方式: @import 'styles/themeVariables.less'; */
 
 /* 主色调变量 */
