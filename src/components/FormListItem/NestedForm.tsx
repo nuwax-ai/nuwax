@@ -1,37 +1,24 @@
-import { ICON_ASSOCIATION } from '@/constants/images.constants';
-import { dataTypes } from '@/pages/Antv-X6/params';
-import { DataTypeEnum } from '@/types/enums/common';
-import { InputAndOutConfig } from '@/types/interfaces/node';
-import { CascaderChange, CascaderValue } from '@/utils';
-import {
-  DeleteOutlined,
-  DownOutlined,
-  FileDoneOutlined,
-  InfoCircleOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
-import {
-  Button,
-  Cascader,
-  Checkbox,
-  Form,
-  Input,
-  Popover,
-  Select,
-  Tooltip,
-  Tree,
-} from 'antd';
-import _ from 'lodash';
-import React, { useEffect, useState } from 'react';
-import { useModel } from 'umi';
-import { v4 as uuidv4 } from 'uuid';
-import InputOrReferenceFormTree from './InputOrReferenceFormTree';
+import { DownOutlined } from '@ant-design/icons';
+import { Tree } from 'antd';
+import React, { useCallback } from 'react';
+import TreeColumnHeader from './components/TreeColumnHeader';
+import TreeHeader from './components/TreeHeader';
+import TreeNodeTitle from './components/TreeNodeTitle';
+import TreeNodeTitleBody from './components/TreeNodeTitleBody';
+import { useRequireStatus } from './hooks/useRequireStatus';
+import { TreeNodeConfig, useTreeData } from './hooks/useTreeData';
 import { TreeFormProps } from './type';
-interface TreeNodeConfig extends InputAndOutConfig {
-  key: string;
-  subArgs?: TreeNodeConfig[];
-}
 
+/**
+ * 嵌套表单树组件
+ * 用于渲染可嵌套的树形表单结构，支持动态添加、删除节点
+ *
+ * 主要功能：
+ * - 树形数据的增删改查
+ * - 节点的必填状态管理
+ * - 支持不同的输出格式（Text、Markdown、JSON）
+ * - 支持Body类型的输入或引用（使用专门的TreeNodeTitleBody组件）
+ */
 const CustomTree: React.FC<TreeFormProps> = ({
   params,
   form,
@@ -42,499 +29,100 @@ const CustomTree: React.FC<TreeFormProps> = ({
   isBody,
   isNotAdd,
 }) => {
-  const [treeData, setTreeData] = useState<TreeNodeConfig[]>(params || []);
-  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
-  // const [errors, setErrors] = useState<Record<string, string>>({});
-  const { setIsModified } = useModel('workflow');
-  // const { volid, setIsModified } = useModel('workflow');
+  // 使用自定义Hook管理树形数据
+  const {
+    treeData,
+    expandedKeys,
+    setExpandedKeys,
+    addRootNode,
+    addChildNode,
+    deleteNode,
+    updateNodeField,
+    updateTreeData,
+  } = useTreeData(params, form, inputItemName);
 
-  useEffect(() => {
-    if (params && !_.isEqual(params, treeData)) {
-      setTreeData(params);
-    }
-  }, [params]);
+  // 使用自定义Hook管理必填状态
+  const { updateRequireStatus } = useRequireStatus(treeData, updateTreeData);
 
-  const updateTreeData = (newData: TreeNodeConfig[]) => {
-    setTreeData([...newData]);
-    form.setFieldValue(inputItemName, newData);
-    setIsModified(true);
-  };
+  // 使用useCallback优化回调函数，避免子组件不必要的重渲染
+  const handleUpdateField = useCallback(updateNodeField, [updateNodeField]);
+  const handleAddChild = useCallback(addChildNode, [addChildNode]);
+  const handleDelete = useCallback(deleteNode, [deleteNode]);
+  const handleUpdateRequire = useCallback(updateRequireStatus, [
+    updateRequireStatus,
+  ]);
+  const handleAddRoot = useCallback(addRootNode, [addRootNode]);
 
-  const getNodeDepth = (
-    data: TreeNodeConfig[],
-    key: string,
-    depth = 1,
-  ): number => {
-    for (const node of data) {
-      if (node.key === key) return depth;
-      if (node.subArgs) {
-        const found = getNodeDepth(node.subArgs, key, depth + 1);
-        if (found) return found;
-      }
-    }
-    return 0;
-  };
-
-  const getAllParentKeys = (data: TreeNodeConfig[]): React.Key[] => {
-    const keys: React.Key[] = [];
-    data.forEach((node) => {
-      if (node.subArgs && node.subArgs.length > 0) {
-        keys.push(node.key);
-        keys.push(...getAllParentKeys(node.subArgs));
-      }
-    });
-    return keys;
-  };
-
-  const addRootNode = () => {
-    const newNode: TreeNodeConfig = {
-      key: uuidv4(),
-      name: '',
-      description: '',
-      dataType: DataTypeEnum.String,
-      require: false,
-      systemVariable: false,
-      bindValueType: 'Input',
-      bindValue: '',
-    };
-    updateTreeData([...treeData, newNode]);
-  };
-
-  const addChildNode = (parentKey: string) => {
-    const depth = getNodeDepth(treeData, parentKey);
-    if (depth >= 4) return;
-
-    const newNode: TreeNodeConfig = {
-      key: uuidv4(),
-      name: '',
-      description: null,
-      dataType: DataTypeEnum.String,
-      require: false,
-      systemVariable: false,
-      bindValueType: 'Input',
-      bindValue: '',
-    };
-
-    const updateRecursive = (data: TreeNodeConfig[]): TreeNodeConfig[] =>
-      data.map((node) => {
-        if (node.key === parentKey) {
-          return {
-            ...node,
-            subArgs: [...(node.subArgs || []), newNode],
-          };
-        }
-        if (node.subArgs) {
-          return { ...node, subArgs: updateRecursive(node.subArgs) };
-        }
-        return node;
-      });
-
-    const newData = updateRecursive(treeData);
-    updateTreeData(newData);
-    setExpandedKeys(Array.from(new Set([...expandedKeys, parentKey])));
-  };
-
-  const deleteNode = (key: string) => {
-    const filterRecursive = (data: TreeNodeConfig[]): TreeNodeConfig[] =>
-      data.filter((node) => {
-        if (node.key === key) return false;
-        if (node.subArgs) node.subArgs = filterRecursive(node.subArgs);
-        return true;
-      });
-
-    const newData = filterRecursive(treeData);
-    updateTreeData(newData);
-  };
-
-  const updateNodeField = (
-    key: string,
-    field: string,
-    value: any,
-    type?: 'Input' | 'Reference',
-    dataType?: DataTypeEnum,
-  ) => {
-    console.log(dataType, 'dataType');
-    const updateRecursive = (data: TreeNodeConfig[]): TreeNodeConfig[] =>
-      data.map((node) => {
-        if (node.key === key) {
-          const newObj = {
-            ...node,
-            [field]: value,
-            bindValueType: type || node.bindValueType,
-          };
-          if (dataType) {
-            newObj.dataType = dataType;
-          }
-          return newObj;
-        }
-        if (node.subArgs) {
-          return { ...node, subArgs: updateRecursive(node.subArgs) };
-        }
-        return node;
-      });
-
-    const newData = updateRecursive(treeData);
-    console.log(newData, 'newData');
-    updateTreeData(newData);
-  };
-
-  const updateRequireStatus = async (
-    nodeData: TreeNodeConfig,
-    checked: boolean,
-  ) => {
-    // 更新当前节点的 require 状态
-
-    // 如果当前节点被选中，递归更新所有父节点的 require 状态
-    if (checked) {
-      // 查找目标节点的所有父节点路径
-      const findPathToNode = (
-        tree: TreeNodeConfig[],
-        targetKey: string,
-        path: TreeNodeConfig[] = [],
-      ): TreeNodeConfig[] | null => {
-        for (const node of tree) {
-          const currentPath = [...path, node];
-
-          if (node.key === targetKey) {
-            return currentPath; // 找到目标节点，返回路径
-          }
-
-          if (node.subArgs) {
-            const result = findPathToNode(node.subArgs, targetKey, currentPath);
-            if (result) {
-              return result; // 如果子节点中找到目标节点，返回路径
-            }
-          }
-        }
-
-        return null; // 没有找到目标节点
-      };
-      // 查找目标节点的路径
-      const path = findPathToNode(treeData, nodeData.key!);
-      if (!path) {
-        return; // 如果没有找到目标节点，直接返回
-      }
-      // 递归treeData，更新路径上的所有节点的require状态为true
-      const updatePath = (
-        tree: TreeNodeConfig[],
-        path: TreeNodeConfig[],
-        level: number,
-      ): TreeNodeConfig[] => {
-        if (level > path.length) return tree;
-        return tree.map((item) => {
-          if (item.key === path[level].key) {
-            const updatedItem = { ...item, require: true };
-            if (level < path.length - 1 && item.subArgs) {
-              return {
-                ...updatedItem,
-                subArgs: updatePath(item.subArgs, path, level + 1),
-              };
-            }
-            return updatedItem;
-          }
-          return item;
-        });
-      };
-
-      const newData = updatePath(treeData, path, 0);
-      setTreeData(newData);
-      form.setFieldValue(inputItemName, newData); // 更新表单数据
-    } else {
-      // 递归获取更改当前数据require和所有子节点的require状态
-      const updateNode = (data: TreeNodeConfig): TreeNodeConfig => {
-        const updatedData = { ...data, require: false };
-        if (data.subArgs) {
-          updatedData.subArgs = data.subArgs.map((item) => updateNode(item));
-        }
-        return updatedData;
-      };
-
-      const newNodeData = await updateNode(nodeData);
-
-      const updateTree = (data: TreeNodeConfig[]): TreeNodeConfig[] =>
-        data.map((node) => {
-          if (node.key === newNodeData.key) {
-            return newNodeData; // 返回更新后的节点
-          }
-          if (node.subArgs) {
-            return { ...node, subArgs: updateTree(node.subArgs) };
-          }
-          return node;
-        });
-
-      const newData = updateTree(treeData);
-
-      setTreeData(newData); // 更新 treeData
-      form.setFieldValue(inputItemName, newData); // 更新表单数据
-    }
-    setIsModified(true); // 标记为已修改
-  };
-
-  const renderTitle = (nodeData: TreeNodeConfig) => {
-    const canAddChild = [
-      DataTypeEnum.Object,
-      DataTypeEnum.Array_Object,
-    ].includes(nodeData.dataType!);
-
-    const _dataType = CascaderValue(nodeData.dataType || undefined);
-
-    return (
-      <div className="dis-left" style={{ width: '100%' }}>
-        <div
-          className="flex-1"
-          style={{ position: 'relative', marginRight: '6px' }}
-        >
-          <Input
-            key={nodeData.key}
-            defaultValue={nodeData.name}
-            onBlur={(e) =>
-              updateNodeField(nodeData.key, 'name', e.target.value)
-            }
-            disabled={nodeData.systemVariable}
-            placeholder="请输入参数名称"
-            className="tree-form-name flex-1"
-            style={{
-              // borderColor: errors[`${nodeData.key}-name`]
-              //   ? '#ff4d4f'
-              //   : undefined,
-              backgroundColor: nodeData.systemVariable ? '#f5f5f5' : undefined,
-            }}
+  /**
+   * 渲染树节点标题
+   * 根据isBody属性选择使用不同的组件
+   * @param nodeData 节点数据
+   * @returns 渲染的节点标题组件
+   */
+  const renderTitle = useCallback(
+    (nodeData: TreeNodeConfig) => {
+      // 根据isBody属性选择不同的组件
+      if (isBody) {
+        return (
+          <TreeNodeTitleBody
+            nodeData={nodeData}
+            showCheck={showCheck}
+            onUpdateField={handleUpdateField}
+            onAddChild={handleAddChild}
+            onDelete={handleDelete}
+            onUpdateRequire={handleUpdateRequire}
           />
-          {/* {errors[`${nodeData.key}-name`] && (
-            <div style={{ color: '#ff4d4f', fontSize: 12 }}>
-              {errors[`${nodeData.key}-name`]}
-            </div>
-          )} */}
-        </div>
-        <div style={{ width: isBody ? '40px' : '80px', position: 'relative' }}>
-          <Cascader
-            allowClear={false}
-            options={dataTypes}
-            defaultValue={_dataType}
-            onChange={(value) => {
-              updateNodeField(nodeData.key!, 'dataType', CascaderChange(value));
-            }}
-            changeOnSelect={true}
-            disabled={
-              nodeData.systemVariable ||
-              isBody ||
-              (!isNotAdd && form.getFieldValue('outputType') === 'Text') ||
-              form.getFieldValue('outputType') === 'Markdown' ||
-              (nodeData.subArgs && nodeData.subArgs.length > 0)
-            }
-            placement={'bottomLeft'}
-            placeholder="请选择数据类型"
-            style={{
-              width: '100%',
-              // borderColor: errors[`${nodeData.key}-type`]
-              //   ? '#ff4d4f'
-              //   : undefined,
-              backgroundColor: nodeData.systemVariable ? '#f5f5f5' : undefined,
-            }}
-            className={
-              isBody ? 'tree-form-name is-body-cascader' : 'tree-form-name'
-            }
-            size="small"
-          />
-          {/* {errors[`${nodeData.key}-type`] && (
-            <div style={{ color: '#ff4d4f', fontSize: 12 }}>
-              {errors[`${nodeData.key}-type`]}
-            </div>
-          )} */}
-        </div>
-        {isBody && (
-          <div
-            style={{ width: '100px', marginLeft: '6px', position: 'relative' }}
-          >
-            <InputOrReferenceFormTree
-              referenceType={nodeData.bindValueType}
-              value={nodeData.bindValue}
-              onChange={(value, type, dataType) => {
-                updateNodeField(
-                  nodeData.key!,
-                  'bindValue',
-                  value,
-                  type,
-                  dataType,
-                );
-              }}
-            />
-          </div>
-        )}
+        );
+      }
 
-        <div
-          className="nested-form-icon-button"
-          style={{ width: showCheck ? 60 : 48 }}
-        >
-          {canAddChild && (
-            <Tooltip title="新增子节点">
-              <Button
-                type="text"
-                // disabled={nodeData.systemVariable}
-                className="tree-icon-style"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  addChildNode(nodeData.key!);
-                }}
-                icon={<ICON_ASSOCIATION />}
-              />
-            </Tooltip>
-          )}
-          <Popover
-            content={
-              <Input.TextArea
-                key={nodeData.key}
-                defaultValue={nodeData.description || ''}
-                onBlur={(e) =>
-                  updateNodeField(nodeData.key!, 'description', e.target.value)
-                }
-                rows={3}
-              />
-            }
-            trigger="click"
-          >
-            <Tooltip title="添加描述">
-              <Button
-                type="text"
-                className="tree-icon-style"
-                disabled={nodeData.systemVariable}
-                icon={<FileDoneOutlined />}
-              />
-            </Tooltip>
-          </Popover>
+      return (
+        <TreeNodeTitle
+          nodeData={nodeData}
+          form={form}
+          showCheck={showCheck}
+          isNotAdd={isNotAdd}
+          onUpdateField={handleUpdateField}
+          onAddChild={handleAddChild}
+          onDelete={handleDelete}
+          onUpdateRequire={handleUpdateRequire}
+        />
+      );
+    },
+    [
+      isBody,
+      form,
+      showCheck,
+      isNotAdd,
+      handleUpdateField,
+      handleAddChild,
+      handleDelete,
+      handleUpdateRequire,
+    ],
+  );
 
-          {showCheck && (
-            <Tooltip title="是否必须">
-              <Checkbox
-                checked={nodeData.require}
-                onChange={(e) =>
-                  updateRequireStatus(nodeData, e.target.checked)
-                }
-                disabled={nodeData.systemVariable}
-              />
-            </Tooltip>
-          )}
-
-          <Tooltip title="删除">
-            <Button
-              type="text"
-              disabled={nodeData.systemVariable}
-              className="tree-icon-style"
-              onClick={() => deleteNode(nodeData.key!)}
-              icon={<DeleteOutlined />}
-            />
-          </Tooltip>
-        </div>
-      </div>
-    );
-  };
-
-  // useEffect(() => {
-  //   if (volid) {
-  //     const newErrors: Record<string, string> = {};
-  //     treeData.forEach((node) => {
-  //       if (!node.name?.trim()) {
-  //         newErrors[`${node.key}-name`] = '请输入变量名称';
-  //       }
-  //       if (!node.dataType) {
-  //         newErrors[`${node.key}-type`] = '请选择';
-  //       }
-  //     });
-  //     setErrors(newErrors);
-  //   }
-  // }, [volid, treeData]);
-
-  useEffect(() => {
-    const parentKeys = getAllParentKeys(treeData);
-    setExpandedKeys(parentKeys);
-  }, [treeData]);
+  // 判断是否显示添加按钮
   const showAddButton =
     !isNotAdd && (!notShowTitle || form.getFieldValue('outputType') === 'JSON');
+
   return (
     <div>
-      <div className="dis-sb margin-bottom">
-        <span className="node-title-style">
-          <span>{title}</span>
-        </span>
-        <div>
-          {notShowTitle && (
-            <Form.Item name="outputType" noStyle>
-              <Select
-                prefix={
-                  <div className="dis-left">
-                    <Popover
-                      align={{
-                        offset: [-12, -12],
-                      }}
-                      content={
-                        <ul>
-                          <li>文本: 使用普通文本格式回复</li>
-                          <li>
-                            Markdown: 将引导模型使用 Markdown 格式输出回复
-                          </li>
-                          <li>JSON: 将引导模型使用 JSON 格式输出</li>
-                        </ul>
-                      }
-                    >
-                      <InfoCircleOutlined />
-                    </Popover>
-                    <span className="ml-10">输出格式</span>
-                  </div>
-                }
-                options={[
-                  { label: '文本', value: 'Text' },
-                  { label: 'Markdown', value: 'Markdown' },
-                  { label: 'JSON', value: 'JSON' },
-                ]}
-                style={{ width: `calc(100% - ${showAddButton ? 34 : 0}px)` }}
-                onChange={(e) => {
-                  if (e !== 'JSON') {
-                    form.setFieldValue('outputType', e);
-                    form.setFieldValue('outputArgs', [
-                      {
-                        name: 'output',
-                        description: '输出结果',
-                        dataType: DataTypeEnum.String,
-                        require: false,
-                        systemVariable: false,
-                        bindValueType: 'Input',
-                        bindValue: '',
-                      },
-                    ]);
-                    form.submit();
-                  }
-                }}
-              />
-            </Form.Item>
-          )}
-          {showAddButton && (
-            <Button
-              icon={<PlusOutlined />}
-              size={'small'}
-              onClick={addRootNode}
-              className="ml-10"
-              type="text"
-            />
-          )}
-        </div>
-      </div>
+      {/* 树头部 */}
+      <TreeHeader
+        title={title}
+        form={form}
+        notShowTitle={notShowTitle}
+        showAddButton={showAddButton}
+        onAddRoot={handleAddRoot}
+      />
 
+      {/* 列头 */}
       {treeData && treeData.length > 0 && (
-        <div className={'dis-left font-12 mb-6 font-color-gray07'}>
-          <span className="flex-1 ">变量名</span>
-          <span
-            style={{
-              width: 80 + (showCheck ? 60 : 50) + (isBody ? 62 : 0),
-            }}
-          >
-            变量类型
-          </span>
-        </div>
+        <TreeColumnHeader showCheck={showCheck} isBody={isBody} />
       )}
 
+      {/* 树形结构 */}
       <Tree<TreeNodeConfig>
         treeData={treeData}
-        // showLine
         switcherIcon={<DownOutlined />}
         defaultExpandAll
         fieldNames={{ title: 'name', key: 'key', children: 'subArgs' }}

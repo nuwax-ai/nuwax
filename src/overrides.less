@@ -99,3 +99,13 @@
     border-color: @WHITE;
   }
 }
+
+// 在文件末尾添加
+// 特别针对 Modal 确认对话框
+.ant-modal-root .ant-btn {
+  outline: none !important;
+
+  &:focus-visible {
+    outline: none !important;
+  }
+}

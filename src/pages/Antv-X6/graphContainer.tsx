@@ -16,6 +16,7 @@ import {
   getWidthAndHeight,
 } from '@/utils/workflow';
 import { Node } from '@antv/x6';
+import { App } from 'antd';
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import EventHandlers from './component/eventHandlers';
 import InitGraph from './component/graph';
@@ -34,6 +35,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     },
     ref,
   ) => {
+    const { modal, message } = App.useApp();
     registerCustomNodes();
     const containerRef = useRef<HTMLDivElement>(null);
     const graphRef = useRef<any>(null);
@@ -144,7 +146,9 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         LoopNodeList.forEach((element: Node) => {
           const data = element.getData();
           edgeList = edgeList.concat(getEdges([data], false));
-          edgeList = edgeList.concat(getEdges(data.innerNodes, false));
+          if (data.innerNodes && data.innerNodes.length > 0) {
+            edgeList = edgeList.concat(getEdges(data.innerNodes, false));
+          }
         });
         // 5. 批量添加边
         batchAddEdges(edgeList);
@@ -212,10 +216,19 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     };
 
     // 删除节点
-    const deleteNode = (nodeId: string) => {
+    const deleteNode = (nodeId: string, node?: ChildNode) => {
       if (!graphRef.current) return;
 
+      // 删除节点
       graphRef.current.removeCell(nodeId);
+
+      // 删除后需要重新计算 父级节点(循环节点)的大小
+      if (node && node.loopNodeId) {
+        const parentNode = graphRef.current.getCellById(
+          node.loopNodeId,
+        ) as Node;
+        adjustParentSize(parentNode);
+      }
     };
 
     // 删除边
@@ -278,10 +291,16 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     const changeGraphZoomToFit = () => {
       if (!graphRef.current) return;
       graphRef.current.zoomToFit({
-        padding: 20,
+        padding: {
+          top: 128 + 18,
+          left: 18,
+          right: 18,
+          bottom: 18,
+        },
         maxScale: 1,
         minScale: 0.2,
-        allowNewOrigin: 'negative',
+        preserveAspectRatio: true,
+        useCellGeometry: true,
       });
     };
 
@@ -370,6 +389,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         copyNode,
         changeCondition,
         removeNode,
+        modal,
+        message,
       });
 
       return () => {

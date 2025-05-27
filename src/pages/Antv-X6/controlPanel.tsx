@@ -1,6 +1,7 @@
 import { ChildNode } from '@/types/interfaces/graph';
 import {
   CaretRightOutlined,
+  CompressOutlined,
   PlusOutlined,
   ToolOutlined,
 } from '@ant-design/icons';
@@ -28,7 +29,7 @@ interface ControlPanelProps {
 const options = [
   { label: '放大 10%', value: '+' },
   { label: '缩小 10%', value: '-' },
-  { label: '缩放到适配', value: -1 },
+  { label: '缩放到适配画布', value: -1 },
   //添加分割线
   {
     label: (
@@ -68,69 +69,83 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   return (
     <>
       <div className="absolute-box">
-        <Select
-          options={options}
-          value={`${Math.floor(zoomSize * 100)}%`}
-          onChange={(val) => {
-            let newVal;
-            if (typeof val === 'string' && ['+', '-'].includes(val)) {
-              const factor = val === '+' ? 0.1 : -0.1;
-              const _val = zoomSize + factor;
-              newVal = _val > 3 ? 3 : _val < 0.2 ? 0.2 : _val;
-              //保留两位小数
-              newVal = Math.floor(newVal * 100) / 100;
-            } else {
-              newVal = val;
-            }
-            changeGraph(Number(newVal));
-          }}
-          style={{ width: 80, marginRight: 12, height: 28 }}
-          popupMatchSelectWidth={false}
-          optionLabelProp="displayValue"
-          size="small"
-        />
-        {/* <HomeOutlined /> */}
-        <Popover
-          content={
-            <StencilContent
-              isLoop={foldWrapItem.type === 'Loop'}
-              dragChild={(
-                child: Child,
-                position?: React.DragEvent<HTMLDivElement>,
-              ) => {
-                setContinueDragCount(continueDragCount + 1);
-                dragChild(child, position, continueDragCount);
-                // setOpen(false);
-              }}
-            />
-          }
-          trigger={['click']} // 支持 hover 和 click 触发
-          open={open}
-          onOpenChange={handleOpenChange}
-        >
-          <Button
-            onMouseEnter={() => setOpen(true)}
-            icon={<PlusOutlined />}
-            type="primary"
-            onClick={() => setOpen(true)}
+        <div className="action-section">
+          <Select
+            options={options}
+            value={`${Math.floor(zoomSize * 100)}%`}
+            onChange={(val) => {
+              let newVal;
+              if (typeof val === 'string' && ['+', '-'].includes(val)) {
+                const factor = val === '+' ? 0.1 : -0.1;
+                const _val = zoomSize + factor;
+                newVal = _val > 3 ? 3 : _val < 0.2 ? 0.2 : _val;
+                //保留两位小数
+                newVal = Math.floor(newVal * 100) / 100;
+              } else {
+                newVal = val;
+              }
+              changeGraph(Number(newVal));
+            }}
+            style={{ width: 80, marginRight: 12, height: 28 }}
+            popupMatchSelectWidth={false}
+            optionLabelProp="displayValue"
+            size="small"
+          />
+          {/* 添加缩放到适配画布 */}
+          <Popover
+            content={'缩放到适配画布'}
+            trigger={['hover']}
+            mouseEnterDelay={1}
           >
-            添加节点
+            <Button
+              type="text"
+              style={{ marginRight: 12 }}
+              icon={<CompressOutlined />}
+              onClick={() => changeGraph(-1)}
+            />
+          </Popover>
+          <Popover
+            content={
+              <StencilContent
+                isLoop={foldWrapItem.type === 'Loop'}
+                dragChild={(
+                  child: Child,
+                  position?: React.DragEvent<HTMLDivElement>,
+                ) => {
+                  setContinueDragCount(continueDragCount + 1);
+                  dragChild(child, position, continueDragCount);
+                  // setOpen(false);
+                }}
+              />
+            }
+            trigger={['click']} // 支持 hover 和 click 触发
+            open={open}
+            onOpenChange={handleOpenChange}
+          >
+            <Button
+              onMouseEnter={() => setOpen(true)}
+              icon={<PlusOutlined />}
+              type="primary"
+              onClick={() => setOpen(true)}
+            >
+              添加节点
+            </Button>
+          </Popover>
+        </div>
+        <div className="action-section" style={{ marginLeft: 18 }}>
+          <ToolOutlined
+            title="调试"
+            style={{ paddingRight: 12, paddingLeft: 12 }}
+          />
+          <Button
+            icon={<CaretRightOutlined />}
+            variant="solid"
+            color="green"
+            onClick={handleTestRun}
+          >
+            试运行
           </Button>
-        </Popover>
-      </div>
-      <div className="absolute-test">
-        <ToolOutlined
-          title="调试"
-          style={{ paddingRight: 12, paddingLeft: 12 }}
-        />
-        <Button
-          icon={<CaretRightOutlined />}
-          variant="solid"
-          color="green"
-          onClick={handleTestRun}
-        >
-          试运行
-        </Button>
+        </div>
       </div>
     </>
   );

@@ -314,8 +314,8 @@ const SpaceTable = () => {
     try {
       await service.importTableData(tableId, info.file);
       message.success('导入成功');
-      getTable({ pageNo: 1, pageSize: 10 });
-      setPagination({ ...pagination, current: 1, pageSize: 10 });
+      getTable({ pageNo: 1, pageSize: pagination.pageSize });
+      setPagination({ ...pagination, current: 1 });
       setImportLoading(false);
     } finally {
       setImportLoading(false);
@@ -343,7 +343,7 @@ const SpaceTable = () => {
 
   useEffect(() => {
     getDetails();
-    getTable({ pageNo: 1, pageSize: 10 });
+    getTable({ pageNo: 1, pageSize: pagination.pageSize });
   }, []);
 
   // 表数据的操作列
@@ -401,8 +401,8 @@ const SpaceTable = () => {
               icon={<ReloadOutlined />}
               onClick={() => {
                 getDetails();
-                getTable({ pageNo: 1, pageSize: 10 });
-                setPagination({ ...pagination, current: 1, pageSize: 10 });
+                getTable({ pageNo: 1, pageSize: pagination.pageSize });
+                setPagination({ ...pagination, current: 1 });
                 if (currentContent !== 'data') {
                   editTableRef.current?.resetFields();
                 }
