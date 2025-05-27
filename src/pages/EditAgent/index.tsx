@@ -13,6 +13,7 @@ import {
   AgentBaseInfo,
   AgentComponentInfo,
   AgentConfigInfo,
+  ComponentModelBindConfig,
 } from '@/types/interfaces/agent';
 import { addBaseTarget } from '@/utils/common';
 import classNames from 'classnames';
@@ -82,14 +83,23 @@ const EditAgent: React.FC = () => {
     setOpenEditAgent(false);
   };
 
-  // 更新智能体绑定模型
-  const handleSelectMode = (id: number, name: string) => {
+  /**
+   * 更新智能体绑定模型
+   * @param targetId: 会话模型ID
+   * @param name: 会话模型名称
+   * @param config: 模型配置信息
+   */
+  const handleSetModel = (
+    targetId: number,
+    name: string,
+    config: ComponentModelBindConfig,
+  ) => {
+    // 关闭弹窗
+    setOpenAgentModel(false);
+    // 更新智能体配置信息
     const _agentConfigInfo = cloneDeep(agentConfigInfo) as AgentConfigInfo;
-    // 智能体组件模型信息可能为null
-    if (!_agentConfigInfo?.modelComponentConfig) {
-      _agentConfigInfo.modelComponentConfig = {} as AgentComponentInfo;
-    }
-    _agentConfigInfo.modelComponentConfig.targetId = id;
+    _agentConfigInfo.modelComponentConfig.bindConfig = config;
+    _agentConfigInfo.modelComponentConfig.targetId = targetId;
     _agentConfigInfo.modelComponentConfig.name = name;
     setAgentConfigInfo(_agentConfigInfo);
   };
@@ -261,8 +271,7 @@ const EditAgent: React.FC = () => {
           agentConfigInfo?.modelComponentConfig as AgentComponentInfo
         }
         open={openAgentModel}
-        onCancel={() => setOpenAgentModel(false)}
-        onSelectMode={handleSelectMode}
+        onCancel={handleSetModel}
       />
     </div>
   );

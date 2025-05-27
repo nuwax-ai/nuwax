@@ -16,9 +16,9 @@ import type { AgentModelSettingProps } from '@/types/interfaces/agentConfig';
 import { option } from '@/types/interfaces/common';
 import type { ModelConfigInfo } from '@/types/interfaces/model';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { Modal, Segmented } from 'antd';
+import { Flex, Modal, Segmented } from 'antd';
 import classnames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
@@ -32,11 +32,12 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   modelComponentConfig,
   open,
   onCancel,
-  onSelectMode,
 }) => {
   const [targetId, setTargetId] = useState<number>(0);
   // 模型列表
   const [modelConfigList, setModelConfigList] = useState<option[]>([]);
+  // 模型列表缓存
+  const modelConfigListRef = useRef<ModelConfigInfo[]>([]);
   // 绑定组件配置，不同组件配置不一样
   const [componentBindConfig, setComponentBindConfig] =
     useState<ComponentModelBindConfig>({
@@ -49,6 +50,8 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
       temperature: 0,
       // 累计概率: 模型在生成输出时会从概率最高的词汇开始选择;0-1
       topP: 0,
+      // 推理模型ID
+      reasoningModelId: null,
     });
   const componentIdRef = useRef<number>(0);
 
@@ -57,6 +60,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: ModelConfigInfo[]) => {
+      modelConfigListRef.current = result;
       const list: option[] =
         result?.map((item) => ({
           label: item.name,
@@ -73,14 +77,15 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   });
 
   useEffect(() => {
-    if (modelComponentConfig) {
+    if (open && modelComponentConfig) {
+      console.log('modelComponentConfig3333', modelComponentConfig);
       componentIdRef.current = modelComponentConfig.id;
       setComponentBindConfig(
         modelComponentConfig.bindConfig as ComponentModelBindConfig,
       );
       setTargetId(modelComponentConfig.targetId);
     }
-  }, [modelComponentConfig]);
+  }, [open, modelComponentConfig]);
 
   useEffect(() => {
     // 查询可使用模型列表接口
@@ -89,6 +94,18 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
       modelType: ModelTypeEnum.Chat,
     });
   }, [spaceId]);
+
+  // 推理模型列表
+  const reasonModelList: option[] = useMemo(() => {
+    return (
+      modelConfigListRef.current
+        ?.filter((item) => item.isReasonModel === 1 && item.id !== targetId)
+        ?.map((item) => ({
+          label: item.name,
+          value: item.id,
+        })) || []
+    );
+  }, [modelConfigListRef.current, targetId]);
 
   // 更新模型配置
   const handleChangeModel = (
@@ -106,13 +123,17 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   const handleChangeModelTarget = (id: React.Key) => {
     const _id = Number(id);
     setTargetId(_id);
-    handleChangeModel(componentBindConfig, _id);
-    // 更新智能体 - 绑定的模型名称
-    const info = modelConfigList?.find((item) => item.value === _id);
-    if (!!info) {
-      const { value, label } = info;
-      onSelectMode(Number(value), String(label));
+    let _componentBindConfig = { ...componentBindConfig };
+    // 如果当前模型是推理模型，需要重置推理模型ID，并且设置推理模型ID为null， 因为会话模型和推理模型如果相同，没意义
+    if (_id === componentBindConfig.reasoningModelId) {
+      _componentBindConfig = {
+        ..._componentBindConfig,
+        reasoningModelId: null,
+      };
+      setComponentBindConfig(_componentBindConfig);
     }
+
+    handleChangeModel(_componentBindConfig, _id);
   };
 
   // 生成多样性
@@ -129,6 +150,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
       _componentBindConfig = {
         ...GENERATE_DIVERSITY_OPTION_VALUE[newValue],
         mode: newValue,
+        reasoningModelId: componentBindConfig.reasoningModelId,
       };
     }
 
@@ -140,11 +162,19 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   const handleChange = (newValue: React.Key, attr: string) => {
     const _componentBindConfig: ComponentModelBindConfig = {
       ...componentBindConfig,
-      [attr]: Number(newValue),
+      [attr]: newValue ? Number(newValue) : null,
       mode: UpdateModeComponentEnum.Customization,
     };
     setComponentBindConfig(_componentBindConfig);
     handleChangeModel(_componentBindConfig);
+  };
+
+  // 关闭按钮
+  const handleCancel = () => {
+    // 更新智能体 - 绑定的模型名称
+    const info = modelConfigList?.find((item) => item.value === targetId);
+    const name = String(info?.label) || '';
+    onCancel(targetId, name, componentBindConfig);
   };
 
   return (
@@ -155,17 +185,31 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
       }}
       open={open}
       footer={null}
-      onCancel={onCancel}
+      onCancel={handleCancel}
     >
-      <h3 className={cx(styles.title)}>模型</h3>
-      <div>
-        <SelectList
-          className={cx(styles.select)}
-          onChange={handleChangeModelTarget}
-          options={modelConfigList}
-          value={targetId}
-        />
-      </div>
+      <Flex gap={20}>
+        <div className="flex-1">
+          <h3 className={cx(styles.title)}>会话模型</h3>
+          <SelectList
+            placeholder="请选择会话模型"
+            className={cx(styles.select)}
+            onChange={handleChangeModelTarget}
+            options={modelConfigList}
+            value={targetId}
+          />
+        </div>
+        <div className="flex-1">
+          <h3 className={cx(styles.title)}>推理模型(可选)</h3>
+          <SelectList
+            placeholder="请选择推理模型"
+            className={cx(styles.select)}
+            onChange={(value) => handleChange(value, 'reasoningModelId')}
+            options={reasonModelList}
+            value={componentBindConfig.reasoningModelId}
+            allowClear
+          />
+        </div>
+      </Flex>
       <h3 className={cx(styles.title, 'flex', 'items-center')}>
         生成多样性
         <TooltipIcon

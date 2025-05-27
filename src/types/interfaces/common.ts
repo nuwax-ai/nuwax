@@ -80,7 +80,7 @@ export interface option {
 // 下拉选择框组件
 export interface SelectListType {
   className?: string;
-  value?: React.Key;
+  value?: React.Key | null;
   // 自定义前缀
   prefix?: React.ReactNode;
   // 自定义的选择框后缀图标
@@ -89,6 +89,7 @@ export interface SelectListType {
   dropdownRenderComponent?: React.ReactNode;
   placeholder?: string;
   disabled?: boolean;
+  allowClear?: boolean;
   options: option[];
   onChange?: (value: React.Key) => void;
   size?: SizeType;

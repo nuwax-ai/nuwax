@@ -199,6 +199,7 @@ export type AgentComponentPluginUpdateParams =
 
 // 智能体组件模型设置
 export interface ComponentModelBindConfig {
+  // 模式：Precision 精确模式；Balanced 平衡模式；Creative 创意模式；Customization 自定义,可用值:Precision,Balanced,Creative,Customization
   mode: UpdateModeComponentEnum;
   // 生成随机性;0-1
   temperature: number;
@@ -208,6 +209,8 @@ export interface ComponentModelBindConfig {
   maxTokens: number;
   // 上下文轮数
   contextRounds: number;
+  // 推理模型ID
+  reasoningModelId: number | null;
 }
 
 // 更新模型组件配置输入参数
