@@ -1,6 +1,6 @@
-import AgentMove from '@/components/AgentMove';
 import AnalyzeStatistics from '@/components/AnalyzeStatistics';
 import CreateAgent from '@/components/CreateAgent';
+import MoveCopyComponent from '@/components/MoveCopyComponent';
 import SelectList from '@/components/SelectList';
 import { USER_INFO } from '@/constants/home.constants';
 import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.constants';
@@ -43,7 +43,7 @@ const SpaceDevelop: React.FC = () => {
   const spaceId = Number(params.spaceId);
   // 打开分析弹窗
   const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
-  // 迁移弹窗
+  // 迁移、复制弹窗
   const [openMove, setOpenMove] = useState<boolean>(false);
   // 打开创建临时会话弹窗
   const [openTempChat, setOpenTempChat] = useState<boolean>(false);
@@ -106,9 +106,17 @@ const SpaceDevelop: React.FC = () => {
   const { run: runCopyToSpace } = useRequest(apiAgentCopyToSpace, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
+    onSuccess: (_: null, params: number[]) => {
+      console.log('复制到空间成功', params);
       message.success('已成功创建副本');
-      run(spaceId);
+      // 关闭弹窗
+      setOpenMove(false);
+      // 目标空间ID
+      const targetSpaceId = params[1];
+      // 如果目标空间ID和当前空间ID相同, 则重新查询当前空间智能体列表
+      if (targetSpaceId === spaceId) {
+        run(spaceId);
+      }
     },
   });
 
@@ -201,13 +209,10 @@ const SpaceDevelop: React.FC = () => {
   };
 
   // 确认迁移智能体
-  const handlerConfirmMove = (targetSpaceId: string) => {
+  const handlerConfirmMove = (targetSpaceId: number) => {
+    // 迁移
     if (currentClickTypeRef.current === ApplicationMoreActionEnum.Move) {
-      // 迁移
-      runTransfer({
-        agentId: targetAgentIdRef.current,
-        targetSpaceId,
-      });
+      runTransfer(targetAgentIdRef.current, targetSpaceId);
     }
     // 复制到空间
     else if (
@@ -361,7 +366,7 @@ const SpaceDevelop: React.FC = () => {
         list={agentStatistics}
       />
       {/*智能体迁移弹窗*/}
-      <AgentMove
+      <MoveCopyComponent
         spaceId={spaceId}
         type={currentClickTypeRef.current} // 默认为迁移
         open={openMove}

@@ -16,7 +16,6 @@ import type {
   AgentConfigUpdateParams,
   AgentConversationUpdateParams,
   AgentPublishApplyParams,
-  AgentTransferParams,
   TriggerTimeZone,
 } from '@/types/interfaces/agent';
 import type {
@@ -29,10 +28,10 @@ import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
 // 智能体迁移接口
-export async function apiAgentTransfer(
-  data: AgentTransferParams,
+export function apiAgentTransfer(
+  agentId: number,
+  targetSpaceId: number,
 ): Promise<RequestResponse<null>> {
-  const { agentId, targetSpaceId } = data;
   return request(`/api/agent/transfer/${agentId}/space/${targetSpaceId}`, {
     method: 'POST',
   });

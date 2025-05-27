@@ -1,31 +1,42 @@
 import agentImage from '@/assets/images/agent_image.png';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { RoleEnum } from '@/types/enums/common';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
-import type { AgentMoveProps } from '@/types/interfaces/space';
+import { MoveCopyComponentProps } from '@/types/interfaces/common';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import { CheckOutlined } from '@ant-design/icons';
 import { Button, Modal } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 /**
- * 智能体迁移
+ * 智能体、插件、工作流等迁移和复制组件
  */
-const AgentMove: React.FC<AgentMoveProps> = ({
+const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
   spaceId,
   // 默认为迁移
   type = ApplicationMoreActionEnum.Move,
+  mode = AgentComponentTypeEnum.Agent,
   open,
   title,
   onCancel,
   onConfirm,
 }) => {
-  const [targetSpaceId, setTargetSpaceId] = useState<string>('');
+  const [targetSpaceId, setTargetSpaceId] = useState<number>(0);
   const { spaceList } = useModel('spaceModel');
+  // 迁移或复制的标题
+  const actionText = type === ApplicationMoreActionEnum.Move ? '迁移' : '复制';
+  // 组件类型
+  const componentType =
+    mode === AgentComponentTypeEnum.Agent
+      ? '智能体'
+      : AgentComponentTypeEnum.Plugin
+      ? '插件'
+      : '工作流';
 
   const filterSpaceList = useMemo(() => {
     if (type === ApplicationMoreActionEnum.Move) {
@@ -46,6 +57,12 @@ const AgentMove: React.FC<AgentMoveProps> = ({
     }
   }, [type, spaceId, spaceList]);
 
+  useEffect(() => {
+    if (open) {
+      setTargetSpaceId(0);
+    }
+  }, [open]);
+
   return (
     <Modal
       open={open}
@@ -53,7 +70,7 @@ const AgentMove: React.FC<AgentMoveProps> = ({
       onCancel={onCancel}
       title={
         <header className={cx(styles.header, 'text-ellipsis')}>
-          {`迁移智能体 - ${title}`}
+          {`${actionText}${componentType} - ${title}`}
         </header>
       }
       footer={() => (
@@ -63,14 +80,16 @@ const AgentMove: React.FC<AgentMoveProps> = ({
           onClick={() => onConfirm(targetSpaceId)}
           disabled={!targetSpaceId}
         >
-          迁移
+          {actionText}
         </Button>
       )}
       width={475}
     >
       <>
         <div className={cx(styles['row-line'])} />
-        <span className={cx(styles.label)}>选择要迁移到的团队空间</span>
+        <span
+          className={cx(styles.label)}
+        >{`选择要${actionText}到的团队空间`}</span>
         {filterSpaceList.map((item: SpaceInfo) => (
           <div
             key={item.id}
@@ -81,7 +100,7 @@ const AgentMove: React.FC<AgentMoveProps> = ({
               'cursor-pointer',
               styles.box,
             )}
-            onClick={() => setTargetSpaceId(item.id.toString())}
+            onClick={() => setTargetSpaceId(item.id)}
           >
             <img
               className={cx(styles.img)}
@@ -89,7 +108,7 @@ const AgentMove: React.FC<AgentMoveProps> = ({
               alt=""
             />
             <span className={cx('flex-1')}>{item.name}</span>
-            {targetSpaceId === item.id.toString() && (
+            {targetSpaceId === item.id && (
               <CheckOutlined className={cx(styles['selected-ico'])} />
             )}
           </div>
@@ -99,4 +118,4 @@ const AgentMove: React.FC<AgentMoveProps> = ({
   );
 };
 
-export default AgentMove;
+export default MoveCopyComponent;

@@ -49,12 +49,6 @@ export interface AgentAddParams extends AgentBaseInfo {
   spaceId: number;
 }
 
-// 智能体迁移接口输入参数
-export interface AgentTransferParams {
-  agentId: number;
-  targetSpaceId: number;
-}
-
 // 智能体发布申请输入参数
 export interface AgentPublishApplyParams {
   agentId: number;
