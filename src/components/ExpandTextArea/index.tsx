@@ -1,7 +1,8 @@
 import { ICON_OPTIMIZE } from '@/constants/images.constants';
 import { ExpandAltOutlined } from '@ant-design/icons';
-import { Button, Form, Input } from 'antd';
+import { Button, Form } from 'antd';
 import React, { useState } from 'react';
+import SmartVariableInput from '../SmartVariableInput';
 import ExpandTextArea from './expandTextarea';
 import { ExpandableInputTextareaProps } from './type';
 
@@ -11,7 +12,7 @@ export const ExpandableInputTextarea: React.FC<
   title,
   inputFieldName,
   placeholder,
-  rows = 3,
+  // rows = 3,
   onExpand,
   onOptimize,
   onOptimizeClick,
@@ -45,11 +46,11 @@ export const ExpandableInputTextarea: React.FC<
           )}
         </div>
       </div>
-      {/* 输入框 */}
+      {/* 输入框 实现一个功能就是用户在输入 {{}} 的时候，popover自动提示可输入变量名，变量名是知识库的输出参数 */}
       <Form.Item name={inputFieldName}>
-        <Input.TextArea
+        <SmartVariableInput
+          variables={['abc', 'bcd', 'cde']}
           placeholder={placeholder}
-          autoSize={{ minRows: rows, maxRows: rows }}
         />
       </Form.Item>
 
