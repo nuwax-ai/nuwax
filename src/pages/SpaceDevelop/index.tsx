@@ -107,7 +107,6 @@ const SpaceDevelop: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: number[]) => {
-      console.log('复制到空间成功', params);
       message.success('已成功创建副本');
       // 关闭弹窗
       setOpenMove(false);

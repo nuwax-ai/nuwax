@@ -489,3 +489,112 @@ export interface AgentDetailDto extends AgentBaseInfo {
   // 当前登录用户是否收藏
   collect: boolean;
 }
+
+// 日志查询过滤条件
+export interface LogQueryFilter {
+  agentId: number;
+  /* */
+  requestId?: string;
+
+  // 消息ID
+  messageId?: string;
+
+  /* */
+  conversationId?: string;
+
+  /* */
+  userUid?: string;
+
+  /* */
+  userInput?: string;
+
+  /* */
+  output?: string;
+
+  /* */
+  startTime?: string;
+
+  /* */
+  endTime?: string;
+
+  /* */
+  tenantId?: string;
+
+  /* */
+  spaceId?: number;
+}
+
+// 日志查询请求参数
+export interface apiAgentLogListParams {
+  /*分页查询过滤条件 */
+  queryFilter?: LogQueryFilter;
+  // 当前页,示例值(1)
+  current: number;
+  // 分页pageSize,示例值(10)
+  pageSize: number;
+}
+
+// 日志信息
+export interface logInfo {
+  // 请求ID
+  requestId: string;
+
+  // 消息ID
+  messageId: string;
+
+  // 会话ID
+  conversationId: string;
+
+  /* */
+  userUid: string;
+
+  // 商户ID
+  tenantId: number;
+
+  /* */
+  spaceId: number;
+
+  // 用户输入
+  userInput: string;
+
+  /* */
+  output: string;
+
+  // 执行结果
+  executeResult: string;
+
+  /* */
+  inputToken: number;
+
+  /* */
+  outputToken: number;
+
+  // 请求时间
+  requestStartTime: string;
+
+  // 请求结束时间
+  requestEndTime: string;
+
+  // 整体耗时
+  elapsedTimeMs: number;
+  /* */
+  nodeType: string;
+
+  /* */
+  status: string;
+
+  /* */
+  nodeName: string;
+
+  /* */
+  createdAt: string;
+
+  /* */
+  updatedAt: string;
+
+  /* */
+  userId: number;
+
+  /* */
+  userName: string;
+}
