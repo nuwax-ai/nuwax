@@ -87,8 +87,11 @@ const DocRename: React.FC<DocRenameProps> = ({
                 ]}
               >
                 <Input.TextArea
+                  className="dispose-textarea-count"
                   placeholder={'请输入文档名称'}
-                  autoSize={{ minRows: 6, maxRows: 30 }}
+                  maxLength={100}
+                  showCount
+                  autoSize={{ minRows: 6, maxRows: 8 }}
                 />
               </Form.Item>
               <Form.Item className={cx('flex', 'content-end', 'mb-6')}>
