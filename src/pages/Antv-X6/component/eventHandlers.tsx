@@ -1,5 +1,4 @@
 import { BindEventHandlers } from '@/types/interfaces/graph';
-import { message, Modal } from 'antd';
 
 /**
  * 绑定图形编辑器的事件处理器
@@ -12,6 +11,8 @@ const bindEventHandlers = ({
   copyNode,
   changeCondition,
   removeNode,
+  modal,
+  message,
 }: BindEventHandlers) => {
   // 快捷键绑定：复制选中的单元格
   graph.bindKey(['meta+c', 'ctrl+c'], () => {
@@ -172,7 +173,7 @@ const bindEventHandlers = ({
         if (_cell.getData().loopNodeId || _cell.getData().type === 'Loop') {
           if (_cell.getData().type === 'Loop') {
             // 弹出确认框
-            Modal.confirm({
+            modal.confirm({
               title: '确定要删除循环节点吗？',
               okText: '确认',
               cancelText: '取消',
