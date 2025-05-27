@@ -3,15 +3,15 @@ import type { AliasToken } from 'antd/es/theme/interface';
 
 const themeTokens: Partial<AliasToken> = {
   // 主色调配置
-  colorPrimary: '#5147FF', // 主色
-  colorSuccess: '#00B23C', // 成功色
-  colorWarning: '#FF8C00', // 警告色
-  colorError: '#FF4D4F', // 错误色
-  colorInfo: '#1890FF', // 信息色
+  colorPrimary: '#5147ff', // 主色
+  colorSuccess: '#00b23c', // 成功色
+  colorWarning: '#ff8c00', // 警告色
+  colorError: '#ff4d4f', // 错误色
+  colorInfo: '#1890ff', // 信息色
 
-  colorPrimaryHover: '#4538FF',
-  colorPrimaryActive: '#412BFF',
-  colorSuccessHover: '#00A838',
+  colorPrimaryHover: '#4538ff',
+  colorPrimaryActive: '#412bff',
+  colorSuccessHover: '#00a838',
 
   // 边框和圆角
   borderRadius: 8, // 全局圆角
@@ -32,8 +32,8 @@ const themeTokens: Partial<AliasToken> = {
   margin: 16, // 基础外边距
 
   // 阴影配置
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-  boxShadowSecondary: '0 4px 12px rgba(0, 0, 0, 0.15)',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 15%)',
+  boxShadowSecondary: '0 4px 12px rgba(0, 0, 0, 15%)',
 
   // 线条配置
   lineWidth: 1, // 边框宽度
