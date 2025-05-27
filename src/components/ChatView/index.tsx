@@ -104,6 +104,7 @@ const md = markdownIt({
   breaks: true, // 换行转换为 <br>
   linkify: true, // 自动识别链接
   typographer: true, // 优化排版
+  quotes: '""\'\'', // 双引号和单引号都不替换
 });
 
 // html自定义转义

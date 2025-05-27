@@ -92,7 +92,7 @@ const TreeNodeTitleBody: React.FC<TreeNodeTitleBodyProps> = memo(
               onUpdateField(nodeData.key!, 'dataType', CascaderChange(value));
             }}
             changeOnSelect={true}
-            placement={'bottomLeft'}
+            placement={'bottomRight'}
             placeholder="请选择数据类型"
             style={{
               width: '100%',

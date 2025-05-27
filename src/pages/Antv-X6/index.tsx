@@ -35,7 +35,7 @@ import {
   returnBackgroundColor,
   returnImg,
 } from '@/utils/workflow';
-import { Form, message } from 'antd';
+import { App, Form } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
@@ -48,6 +48,7 @@ import { renderNodeContent } from './nodeDrawer';
 import Published from './Published';
 import { Child } from './type';
 const Workflow: React.FC = () => {
+  const { message } = App.useApp();
   // 当前工作流的id
   const workflowId = Number(useParams().workflowId);
   // 当前被选中的节点
@@ -382,15 +383,13 @@ const Workflow: React.FC = () => {
       setTestRun(false);
       setTestRunResult('');
     }
-    // form.resetFields();
+
     setFoldWrapItem((prev) => {
-      console.log('aaaabbb');
       setTestRun(false);
       if (prev.id === 0 && child === null) {
         setVisible(false);
         return prev;
       } else {
-        console.log('dddeeafer');
         if (child !== null) {
           if (!visible) setVisible(true);
           return child;
@@ -408,6 +407,256 @@ const Workflow: React.FC = () => {
       }
     });
   };
+
+  // ==================== 节点创建相关辅助函数 ====================
+
+  /**
+   * 检查节点类型是否为条件分支或意图识别节点
+   * @param nodeType 节点类型
+   * @returns 是否为特殊节点类型
+   */
+  const isConditionalNode = (nodeType: string): boolean => {
+    return nodeType === 'Condition' || nodeType === 'IntentRecognition';
+  };
+
+  /**
+   * 处理知识库节点的特殊配置
+   * @param nodeData 节点数据
+   * @param child 子节点配置
+   */
+  const handleKnowledgeNodeConfig = async (
+    nodeData: ChildNode,
+    child: Child,
+  ) => {
+    if (child.type === 'Knowledge' && child.nodeConfig?.knowledgeBaseConfigs) {
+      setSkillChange(true);
+      await changeNode({
+        ...nodeData,
+        nodeConfig: {
+          ...nodeData.nodeConfig,
+          knowledgeBaseConfigs: child.nodeConfig.knowledgeBaseConfigs,
+        },
+      });
+    }
+  };
+
+  /**
+   * 处理特殊端口连接（长端口ID）
+   * @param sourceNode 源节点
+   * @param portId 端口ID
+   * @param newNodeId 新节点ID
+   * @param targetNode 目标节点
+   * @param isLoop 是否为循环节点
+   */
+  const handleSpecialPortConnection = async (
+    sourceNode: ChildNode,
+    portId: string,
+    newNodeId: number,
+    targetNode: ChildNode | undefined,
+    isLoop: boolean,
+  ) => {
+    const params = handleSpecialNodesNextIndex(
+      sourceNode,
+      portId,
+      newNodeId,
+      targetNode,
+    );
+    await changeNode(params as ChildNode);
+
+    const sourcePortId = portId.split('-').slice(0, -1).join('-');
+    graphRef.current.createNewEdge(sourcePortId, newNodeId.toString(), isLoop);
+  };
+
+  /**
+   * 处理输出端口连接
+   * @param newNodeId 新节点ID
+   * @param sourceNode 源节点
+   * @param isLoop 是否为循环节点
+   */
+  const handleOutputPortConnection = async (
+    newNodeId: number,
+    sourceNode: ChildNode,
+    isLoop: boolean,
+  ) => {
+    await nodeChangeEdge('created', newNodeId.toString(), sourceNode);
+    graphRef.current.createNewEdge(
+      sourceNode.id.toString(),
+      newNodeId.toString(),
+      isLoop,
+    );
+  };
+
+  /**
+   * 处理条件分支节点连接
+   * @param newNode 新节点
+   * @param targetNode 目标节点
+   * @param isLoop 是否为循环节点
+   */
+  const handleConditionalNodeConnection = async (
+    newNode: ChildNode,
+    targetNode: ChildNode,
+    isLoop: boolean,
+  ) => {
+    const { nodeData, sourcePortId } = QuicklyCreate(newNode, targetNode);
+    await changeNode(nodeData as ChildNode);
+    graphRef.current.createNewEdge(
+      sourcePortId,
+      targetNode.id.toString(),
+      isLoop,
+    );
+  };
+
+  /**
+   * 处理普通节点连接
+   * @param newNodeId 新节点ID
+   * @param targetNodeId 目标节点ID
+   * @param newNode 新节点数据
+   * @param isLoop 是否为循环节点
+   */
+  const handleNormalNodeConnection = async (
+    newNodeId: number,
+    targetNodeId: string,
+    newNode: ChildNode,
+    isLoop: boolean,
+  ) => {
+    await nodeChangeEdge('created', targetNodeId, newNode);
+    graphRef.current.createNewEdge(newNodeId.toString(), targetNodeId, isLoop);
+  };
+
+  /**
+   * 处理输入端口连接
+   * @param newNode 新节点
+   * @param sourceNode 源节点
+   * @param portId 端口ID
+   * @param isLoop 是否为循环节点
+   */
+  const handleInputPortConnection = async (
+    newNode: ChildNode,
+    sourceNode: ChildNode,
+    portId: string,
+    isLoop: boolean,
+  ) => {
+    const id = portId.split('-')[0];
+
+    if (isConditionalNode(newNode.type)) {
+      const { nodeData, sourcePortId } = QuicklyCreate(newNode, sourceNode);
+      await changeNode(nodeData as ChildNode);
+      graphRef.current.createNewEdge(
+        sourcePortId,
+        sourceNode.id.toString(),
+        isLoop,
+      );
+    } else {
+      await nodeChangeEdge('created', id, newNode);
+      graphRef.current.createNewEdge(
+        newNode.id.toString(),
+        id.toString(),
+        isLoop,
+      );
+    }
+  };
+
+  /**
+   * 处理目标节点连接
+   * @param newNode 新节点
+   * @param targetNode 目标节点
+   * @param sourceNode 源节点
+   * @param edgeId 边ID
+   * @param isLoop 是否为循环节点
+   */
+  const handleTargetNodeConnection = async (
+    newNode: ChildNode,
+    targetNode: ChildNode,
+    sourceNode: ChildNode,
+    edgeId: string,
+    isLoop: boolean,
+  ) => {
+    if (isConditionalNode(newNode.type)) {
+      await handleConditionalNodeConnection(newNode, targetNode, isLoop);
+    } else {
+      await handleNormalNodeConnection(
+        newNode.id,
+        targetNode.id.toString(),
+        newNode,
+        isLoop,
+      );
+    }
+
+    // 删除原有连接
+    await nodeChangeEdge('deleted', targetNode.id.toString(), sourceNode);
+    graphRef.current.deleteEdge(edgeId);
+  };
+
+  /**
+   * 处理节点创建成功后的所有操作
+   * @param nodeData 创建成功的节点数据
+   * @param child 原始子节点配置
+   */
+  const handleNodeCreationSuccess = async (
+    nodeData: ChildNode,
+    child: Child,
+  ) => {
+    // 设置节点基本属性
+    nodeData.key = nodeData.type === 'Loop' ? 'loop-node' : 'general-Node';
+    const extension = nodeData.nodeConfig.extension;
+
+    // 添加节点到图形中
+    graphRef.current.addNode(extension, nodeData);
+
+    // 处理知识库节点特殊配置
+    await handleKnowledgeNodeConfig(nodeData, child);
+
+    // 更新抽屉和选中状态
+    await changeDrawer(nodeData);
+    graphRef.current.selectNode(nodeData.id);
+    changeUpdateTime();
+
+    // 处理节点连接逻辑
+    if (currentNodeRef.current) {
+      const { sourceNode, portId, targetNode, edgeId } = currentNodeRef.current;
+      const isLoop = Boolean(nodeData.loopNodeId);
+      const isOut = portId.endsWith('out');
+
+      try {
+        if (portId.length > 15) {
+          // 处理特殊端口连接
+          await handleSpecialPortConnection(
+            sourceNode,
+            portId,
+            nodeData.id,
+            targetNode,
+            isLoop,
+          );
+        } else if (isOut) {
+          // 处理输出端口连接
+          await handleOutputPortConnection(nodeData.id, sourceNode, isLoop);
+        } else {
+          // 处理输入端口连接
+          await handleInputPortConnection(nodeData, sourceNode, portId, isLoop);
+        }
+
+        // 处理目标节点连接
+        if (targetNode) {
+          await handleTargetNodeConnection(
+            nodeData,
+            targetNode,
+            sourceNode,
+            edgeId!,
+            isLoop,
+          );
+        }
+      } catch (error) {
+        console.error('处理节点连接时发生错误:', error);
+        throw error;
+      } finally {
+        // 清空当前节点引用
+        currentNodeRef.current = null;
+      }
+    }
+  };
+
+  // ==================== 节点创建相关辅助函数结束 ====================
+
   // 新增节点
   const addNode = async (
     child: Child,
@@ -460,121 +709,11 @@ const Workflow: React.FC = () => {
     const _res = await service.addNode(_params);
 
     if (_res.code === Constant.success) {
-      _res.data.key = _res.data.type === 'Loop' ? 'loop-node' : 'general-Node';
-      const extension = _res.data.nodeConfig.extension;
-      graphRef.current.addNode(extension, _res.data);
-      // 如果是通过created创建的知识库节点或者数据库节点，那么就要更新当前节点，因为添加节点不接收knowledgeBaseConfigs
-      if (
-        child.type === 'Knowledge' &&
-        child.nodeConfig?.knowledgeBaseConfigs
-      ) {
-        setSkillChange(true);
-        changeNode({
-          ..._res.data,
-          nodeConfig: {
-            ..._res.data.nodeConfig,
-            knowledgeBaseConfigs: child.nodeConfig.knowledgeBaseConfigs,
-          },
-        });
-      }
-      await changeDrawer(_res.data);
-      // setFoldWrapItem(_res.data);
-      graphRef.current.selectNode(_res.data.id);
-      changeUpdateTime();
-
-      if (currentNodeRef.current) {
-        const { sourceNode, portId, targetNode, edgeId } =
-          currentNodeRef.current;
-        const id = portId.split('-')[0];
-        const isLoop = _res.data.loopNodeId ? true : false;
-        const isOut = portId.endsWith('out');
-        if (portId.length > 15) {
-          // 通过中间的数据找到对应的index
-          const _params = handleSpecialNodesNextIndex(
-            sourceNode,
-            portId,
-            _res.data.id,
-            targetNode,
-          );
-          changeNode(_params as ChildNode);
-          const sourcePortId = portId.split('-').slice(0, -1).join('-');
-
-          graphRef.current.createNewEdge(
-            sourcePortId,
-            _res.data.id.toString(),
-            isLoop,
-          );
-        } else {
-          // 如果当前源端口是out
-          if (isOut) {
-            await nodeChangeEdge(
-              'created',
-              _res.data.id.toString(),
-              sourceNode,
-            );
-            graphRef.current.createNewEdge(
-              sourceNode.id.toString(),
-              _res.data.id.toString(),
-              isLoop,
-            );
-          } else {
-            // 如果是条件分支或者意图识别节点，就需要给其中一个子端口添加一个边
-            if (
-              _res.data.type === 'Condition' ||
-              _res.data.type === 'IntentRecognition'
-            ) {
-              const { nodeData, sourcePortId } = QuicklyCreate(
-                _res.data,
-                sourceNode,
-              );
-              changeNode(nodeData as ChildNode);
-              graphRef.current.createNewEdge(
-                sourcePortId,
-                sourceNode.id.toString(),
-                isLoop,
-              );
-            } else {
-              await nodeChangeEdge('created', id, _res.data);
-              graphRef.current.createNewEdge(
-                _res.data.id.toString(),
-                id.toString(),
-                isLoop,
-              );
-            }
-          }
-        }
-        // 如果有targetNode,证明是通过边创建的，这里需要连接上下游
-        if (targetNode) {
-          // 如果是条件分支或者意图识别节点，就需要给其中一个子端口添加一个边
-          if (
-            _res.data.type === 'Condition' ||
-            _res.data.type === 'IntentRecognition'
-          ) {
-            const { nodeData, sourcePortId } = QuicklyCreate(
-              _res.data,
-              targetNode,
-            );
-            changeNode(nodeData as ChildNode);
-            graphRef.current.createNewEdge(
-              sourcePortId,
-              targetNode.id.toString(),
-              isLoop,
-            );
-          } else {
-            nodeChangeEdge('created', targetNode.id.toString(), _res.data);
-            graphRef.current.createNewEdge(
-              _res.data.id.toString(),
-              targetNode.id.toString(),
-              isLoop,
-            );
-          }
-          nodeChangeEdge('deleted', targetNode.id.toString(), sourceNode);
-          graphRef.current.deleteEdge(edgeId);
-          // 还需要删除原来的那条边
-        }
-
-        // 清空currentNodeRef
-        currentNodeRef.current = null;
+      try {
+        await handleNodeCreationSuccess(_res.data, child);
+      } catch (error) {
+        console.error('处理节点创建成功后的操作失败:', error);
+        // 可以添加用户友好的错误提示
       }
     }
   };
@@ -612,20 +751,15 @@ const Workflow: React.FC = () => {
     });
     const _res = await service.deleteNode(id);
     if (_res.code === Constant.success) {
-      // console.log(graphRef.current)
-      graphRef.current.deleteNode(id.toString());
+      graphRef.current.deleteNode(id.toString(), node);
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
-
       changeUpdateTime();
-      // 如果传递了node,证明时循环节点下的子节点
       if (node) {
-        // 如果是删除循环节点
         if (node.type === 'Loop') {
           changeDrawer(null);
         } else {
-          // 如果是删除循环的子节点,就要更新循环节点的数据
           getNodeConfig(node.loopNodeId as number);
         }
       }
@@ -1005,14 +1139,12 @@ const Workflow: React.FC = () => {
             clearTimeout(timerRef.current);
           }
         }
-        // copyNode(foldWrapItem);
         if (foldWrapItemRef.current.type === 'Start') {
           testRunAll();
         } else {
           setTestRunResult('');
           setTestRun(true);
         }
-
         break;
       }
       default:
@@ -1124,11 +1256,15 @@ const Workflow: React.FC = () => {
   }, [isModified]);
   useEffect(() => {
     if (foldWrapItem.id !== 0) {
-      // form.resetFields();
-      // 使用setTimeout确保重置完成后再设置新值
       const newFoldWrapItem = JSON.parse(JSON.stringify(foldWrapItem));
+
+      // 先重置表单，清除所有字段
       form.resetFields();
+
+      // 然后设置当前节点的配置
       form.setFieldsValue(newFoldWrapItem.nodeConfig);
+
+      // 设置默认值
       switch (foldWrapItem.type) {
         case 'HTTPRequest': {
           if (!newFoldWrapItem.nodeConfig.method) {
@@ -1155,7 +1291,7 @@ const Workflow: React.FC = () => {
           break;
       }
     }
-  }, [foldWrapItem.id]);
+  }, [foldWrapItem.id, foldWrapItem.type]);
 
   return (
     <div id="container">
@@ -1201,6 +1337,7 @@ const Workflow: React.FC = () => {
           <OtherOperations
             onChange={handleChangeNode}
             testRun={testRunList.includes(foldWrapItem.type)}
+            nodeType={foldWrapItem.type}
             action={
               foldWrapItem.type !== 'Start' && foldWrapItem.type !== 'End'
             }
