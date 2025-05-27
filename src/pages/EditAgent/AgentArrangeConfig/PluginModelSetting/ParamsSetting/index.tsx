@@ -40,6 +40,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
 
   useEffect(() => {
     if (!!inputArgBindConfigs?.length) {
+      setDisabled(false);
       setConfigArgs(inputArgBindConfigs);
       // 默认展开的入参配置key
       const _expandedRowKeys = getActiveKeys(inputArgBindConfigs || []);
