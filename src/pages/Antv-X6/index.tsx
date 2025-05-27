@@ -1337,6 +1337,7 @@ const Workflow: React.FC = () => {
           <OtherOperations
             onChange={handleChangeNode}
             testRun={testRunList.includes(foldWrapItem.type)}
+            nodeType={foldWrapItem.type}
             action={
               foldWrapItem.type !== 'Start' && foldWrapItem.type !== 'End'
             }
