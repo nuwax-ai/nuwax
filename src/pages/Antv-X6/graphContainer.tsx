@@ -146,7 +146,9 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         LoopNodeList.forEach((element: Node) => {
           const data = element.getData();
           edgeList = edgeList.concat(getEdges([data], false));
-          edgeList = edgeList.concat(getEdges(data.innerNodes, false));
+          if (data.innerNodes && data.innerNodes.length > 0) {
+            edgeList = edgeList.concat(getEdges(data.innerNodes, false));
+          }
         });
         // 5. 批量添加边
         batchAddEdges(edgeList);
@@ -289,10 +291,16 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     const changeGraphZoomToFit = () => {
       if (!graphRef.current) return;
       graphRef.current.zoomToFit({
-        padding: 20,
+        padding: {
+          top: 128 + 18,
+          left: 18,
+          right: 18,
+          bottom: 18,
+        },
         maxScale: 1,
         minScale: 0.2,
-        allowNewOrigin: 'negative',
+        preserveAspectRatio: true,
+        useCellGeometry: true,
       });
     };
 
