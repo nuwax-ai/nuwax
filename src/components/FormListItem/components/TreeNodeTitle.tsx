@@ -107,7 +107,7 @@ const TreeNodeTitle: React.FC<TreeNodeTitleProps> = memo(
               form.getFieldValue('outputType') === 'Markdown' ||
               (nodeData.subArgs && nodeData.subArgs.length > 0)
             }
-            placement={'bottomLeft'}
+            placement={'bottomRight'}
             placeholder="请选择数据类型"
             style={{
               width: '100%',
