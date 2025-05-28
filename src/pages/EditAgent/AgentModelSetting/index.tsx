@@ -78,7 +78,6 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
 
   useEffect(() => {
     if (open && modelComponentConfig) {
-      console.log('modelComponentConfig3333', modelComponentConfig);
       componentIdRef.current = modelComponentConfig.id;
       setComponentBindConfig(
         modelComponentConfig.bindConfig as ComponentModelBindConfig,

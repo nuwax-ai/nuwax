@@ -495,36 +495,38 @@ export interface AgentDetailDto extends AgentBaseInfo {
 
 // 日志查询过滤条件
 export interface LogQueryFilter {
+  // 智能体ID
   agentId: number;
-  /* */
+
+  // 请求ID
   requestId?: string;
 
   // 消息ID
   messageId?: string;
 
-  /* */
+  // 会话ID
   conversationId?: string;
 
-  /* */
+  // 用户UID
   userUid?: string;
 
-  /* */
-  userInput?: string;
+  // 用户输入,需要支持全文检索，支持多个关键字（AND关系）
+  userInput?: string[];
 
-  /* */
-  output?: string;
+  // 系统输出,需要支持全文检索，支持多个关键字（AND关系）
+  output?: string[];
 
-  /* */
+  // 开始时间
   startTime?: string;
 
-  /* */
+  // 结束时间
   endTime?: string;
 
-  /* */
+  // 租户ID，用于租户隔离，确保只查询特定租户的日志
   tenantId?: string;
 
-  /* */
-  spaceId?: number;
+  // 空间ID，可选，用于查询特定空间的日志，支持多个ID（OR关系）
+  spaceId?: string[];
 }
 
 // 日志查询请求参数
@@ -539,37 +541,40 @@ export interface apiAgentLogListParams {
 
 // 日志信息
 export interface logInfo {
-  // 请求ID
+  // 请求ID，唯一标识一次请求
   requestId: string;
 
   // 消息ID
   messageId: string;
 
+  // 智能体ID
+  agentId: string;
+
   // 会话ID
   conversationId: string;
 
-  /* */
+  // 用户UID（必填）
   userUid: string;
 
   // 商户ID
-  tenantId: number;
+  tenantId: string;
 
-  /* */
-  spaceId: number;
+  // 空间ID，用户可以有多个空间
+  spaceId: string;
 
   // 用户输入
   userInput: string;
 
-  /* */
+  // 系统输出的内容
   output: string;
 
   // 执行结果
   executeResult: string;
 
-  /* */
+  // 输入token数量
   inputToken: number;
 
-  /* */
+  // 输出token数量
   outputToken: number;
 
   // 请求时间
@@ -580,24 +585,25 @@ export interface logInfo {
 
   // 整体耗时
   elapsedTimeMs: number;
-  /* */
+
+  // 节点类型
   nodeType: string;
 
-  /* */
+  // 节点状态
   status: string;
 
-  /* */
+  // 节点名称
   nodeName: string;
 
-  /* */
+  // 创建时间
   createdAt: string;
 
-  /* */
+  // 更新时间
   updatedAt: string;
 
-  /* */
+  // 用户ID
   userId: number;
 
-  /* */
+  // 用户名称
   userName: string;
 }
