@@ -1,231 +1,214 @@
-import { useRef, useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useMemo } from 'react';
+import VariablePopover from './components/VariablePopover';
+import { useKeyboardSelection } from './hooks/useKeyboardSelection';
+import { usePopoverControl } from './hooks/usePopoverControl';
+import { usePopoverPosition } from './hooks/usePopoverPosition';
+import { useVariableInput } from './hooks/useVariableInput';
 import './index.less';
+import {
+  PathBuildOptions,
+  TreeNodeData,
+  buildAdvancedVariablePath,
+  formatTreeData,
+} from './utils';
 
-export default function SmartVariableInput({
-  variables = [],
-  placeholder = '请输入内容...',
-}: {
-  variables: string[];
-  placeholder?: string;
-}) {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const [popoverVisible, setPopoverVisible] = useState(false);
-  const [filteredVars, setFilteredVars] = useState<string[]>([]);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [position, setPosition] = useState({ top: 0, left: 0 });
-  const [isEmpty, setIsEmpty] = useState(true);
-
-  // 获取当前光标前面的内容
-  const getWordBeforeCursor = (): string => {
-    const selection = window.getSelection();
-    if (!selection || !selection.anchorNode) return '';
-    const text = selection.anchorNode.textContent;
-    const offset = selection.anchorOffset;
-    return text?.slice(0, offset) || '';
-  };
-  // 当用户输入"{"时自动补全"}" 并把光标放在中间
-  const updatePopover = () => {
-    const word = getWordBeforeCursor();
-    // 支持 { 或 {{ 开头的变量输入
-    const match = word.match(/\{+(\w*)$/);
-    if (match) {
-      const query = match[1].toLowerCase();
-      const filtered = variables.filter((v) => v.toLowerCase().includes(query));
-      setFilteredVars(filtered);
-      setPopoverVisible(true);
-      setActiveIndex(0);
-      // 更新 Popover 位置
-      setTimeout(() => {
-        const range = window.getSelection()?.getRangeAt(0);
-        const rect = range?.getBoundingClientRect();
-        if (rect) {
-          setPosition({
-            top: rect.bottom + window.scrollY,
-            left: rect.left + window.scrollX,
-          });
-        }
-      }, 0);
-    } else {
-      setPopoverVisible(false);
-    }
-  };
-
-  // 插入变量
-  const insertVariable = (variable: string) => {
-    const sel = window.getSelection();
-    if (!sel || !sel.getRangeAt) return;
-
-    const range = sel.getRangeAt(0);
-    const node = range.startContainer;
-    const offset = range.startOffset;
-
-    const text = node.textContent || '';
-    const before = text.slice(0, offset).replace(/\{+\w*$/, ''); // 删除 "{..." 或 "{{..." 部分
-    const after = text.slice(offset);
-
-    // 创建新的文本内容
-    const variableText = `{{${variable}}}`;
-    const newText = `${before}${variableText}${after}`;
-    const newNode = document.createTextNode(newText);
-    node.parentNode?.replaceChild(newNode, node);
-
-    // 先设置光标到变量后面
-    const cursorPosition = before.length + variableText.length;
-    const newRange = document.createRange();
-    newRange.setStart(
-      newNode,
-      Math.min(cursorPosition, newNode.textContent?.length || 0),
-    );
-    newRange.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(newRange);
-
-    setPopoverVisible(false);
-
-    // 插入变量后更新状态
-    setTimeout(() => {
-      const content = editorRef.current?.textContent || '';
-      setIsEmpty(content.trim() === '');
-    }, 0);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!popoverVisible) return;
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setActiveIndex((prev) => (prev + 1) % filteredVars.length);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setActiveIndex(
-        (prev) => (prev - 1 + filteredVars.length) % filteredVars.length,
-      );
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (filteredVars[activeIndex]) {
-        insertVariable(filteredVars[activeIndex]);
-      }
-    } else if (e.key === 'Escape') {
-      setPopoverVisible(false);
-    }
-  };
-
-  const handleInput = () => {
-    // 检查编辑器内容是否为空
-    const content = editorRef.current?.textContent || '';
-    setIsEmpty(content.trim() === '');
-
-    // 延迟执行弹窗更新
-    setTimeout(() => {
-      updatePopover();
-      // const div = editorRef.current;
-      // if (!div) return;
-
-      // // 获取纯文本内容，避免重复包裹
-      // const text = div.textContent || '';
-      // const html = text.replace(/\{\{(\w+)\}\}/g, (_, varName) => {
-      //   return `<span class="highlight-var">{{${varName}}}</span>`;
-      // });
-
-      // // 替换内容为高亮后的 HTML
-      // const selection = window.getSelection();
-      // const range = selection?.getRangeAt(0);
-      // div.innerHTML = html;
-
-      // // 重新设置光标
-      // if (range && selection) {
-      //   selection.removeAllRanges();
-      //   selection.addRange(range); // 尽量恢复原光标（可以进一步精细定位）
-      // }
-    }, 0);
-  };
-
-  const renderContent = (
-    <div style={{ minWidth: 160, maxHeight: 200, overflow: 'auto' }}>
-      {filteredVars.map((item, idx) => (
-        <div
-          key={item}
-          style={{
-            padding: '4px 8px',
-            cursor: 'pointer',
-            backgroundColor: idx === activeIndex ? '#e6f7ff' : undefined,
-          }}
-          onMouseEnter={() => setActiveIndex(idx)}
-          onMouseDown={(e) => {
-            e.preventDefault();
-            insertVariable(item);
-          }}
-        >
-          {item}
-        </div>
-      ))}
-      {filteredVars.length === 0 && (
-        <div style={{ padding: 8, color: '#999' }}>无匹配变量</div>
-      )}
-    </div>
-  );
-
-  return (
-    <>
-      <div
-        style={{
-          position: 'relative',
-        }}
-      >
-        <div
-          ref={editorRef}
-          contentEditable
-          suppressContentEditableWarning
-          style={{
-            border: '1px solid #ccc',
-            borderRadius: 4,
-            minHeight: 100,
-            padding: 8,
-            outline: 'none',
-          }}
-          onInput={handleInput}
-          onKeyDown={handleKeyDown}
-          onFocus={() => {
-            // 聚焦时检查内容是否为空
-            const content = editorRef.current?.textContent || '';
-            setIsEmpty(content.trim() === '');
-          }}
-          onBlur={() => {
-            // 失焦时检查内容是否为空
-            const content = editorRef.current?.textContent || '';
-            setIsEmpty(content.trim() === '');
-          }}
-        />
-        {isEmpty && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 9,
-              left: 9,
-              color: '#999',
-              pointerEvents: 'none',
-              userSelect: 'none',
-            }}
-          >
-            {placeholder}
-          </div>
-        )}
-      </div>
-      {popoverVisible && (
-        <div
-          style={{
-            position: 'fixed',
-            top: position.top,
-            left: position.left,
-            zIndex: 999,
-            background: '#fff',
-            border: '1px solid #ccc',
-            borderRadius: 4,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          }}
-        >
-          {renderContent}
-        </div>
-      )}
-    </>
-  );
+// 定义 ref 暴露的方法类型
+export interface SmartVariableInputRef {
+  showPopover: () => void;
+  hidePopover: () => void;
+  insertVariable: (variable: string) => void;
+  getContent: () => string;
+  setContent: (content: string) => void;
 }
+
+interface SmartVariableInputProps {
+  variables: TreeNodeData[];
+  placeholder?: string;
+  pathOptions?: PathBuildOptions;
+}
+
+const SmartVariableInput = forwardRef<
+  SmartVariableInputRef,
+  SmartVariableInputProps
+>(
+  (
+    { variables = [], placeholder = '请输入内容...', pathOptions = {} },
+    ref,
+  ) => {
+    // 使用自定义 Hooks
+    const { popoverVisible, showPopover, hidePopover } = usePopoverControl();
+    const { position, updatePositionFromCursor, updatePositionFromEditor } =
+      usePopoverPosition();
+    const {
+      editorRef,
+      isEmpty,
+      shouldShowVariableSelector,
+      insertVariable,
+      handleInput,
+      handleFocus,
+      handleBlur,
+      getContent,
+      setContent,
+    } = useVariableInput();
+
+    // 格式化变量数据
+    const formattedVariables = useMemo(() => {
+      return formatTreeData(variables);
+    }, [variables]);
+
+    // 获取所有节点的扁平列表（包括父节点）
+    const flatAllNodes = useMemo(() => {
+      const getAllNodes = (nodes: TreeNodeData[]): TreeNodeData[] => {
+        const allNodes: TreeNodeData[] = [];
+
+        const traverse = (nodeList: TreeNodeData[]) => {
+          nodeList.forEach((node) => {
+            allNodes.push(node);
+            if (node.children && node.children.length > 0) {
+              traverse(node.children);
+            }
+          });
+        };
+
+        traverse(nodes);
+        return allNodes;
+      };
+
+      return getAllNodes(formattedVariables);
+    }, [formattedVariables]);
+
+    // 键盘选择管理
+    const {
+      selectedTreeKey,
+      resetSelection,
+      handleKeyboardSelect,
+      getCurrentSelectedNode,
+    } = useKeyboardSelection(flatAllNodes);
+
+    // 更新弹窗显示状态和位置
+    const updatePopover = () => {
+      if (shouldShowVariableSelector()) {
+        showPopover();
+        resetSelection();
+        updatePositionFromCursor();
+      } else {
+        hidePopover();
+      }
+    };
+
+    // 处理键盘确认选择
+    const handleKeyboardConfirm = () => {
+      const selectedNode = getCurrentSelectedNode();
+      if (selectedNode) {
+        const fullPath = buildAdvancedVariablePath(
+          selectedNode,
+          formattedVariables,
+          pathOptions,
+        );
+
+        if (fullPath && fullPath.trim() !== '') {
+          insertVariable(fullPath);
+          hidePopover();
+        }
+      }
+    };
+
+    // 处理键盘事件
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!popoverVisible) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        handleKeyboardSelect('down');
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        handleKeyboardSelect('up');
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        handleKeyboardConfirm();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        hidePopover();
+      }
+    };
+
+    // 处理输入事件
+    const onInput = () => {
+      handleInput();
+      setTimeout(() => {
+        updatePopover();
+      }, 0);
+    };
+
+    // Tree 节点选择处理
+    const handleTreeSelect = (selectedKeys: React.Key[], info: any) => {
+      if (selectedKeys.length > 0) {
+        const selectedNode = info.node;
+
+        try {
+          const fullPath = buildAdvancedVariablePath(
+            selectedNode,
+            formattedVariables,
+            pathOptions,
+          );
+
+          if (fullPath && fullPath.trim() !== '') {
+            insertVariable(fullPath);
+            hidePopover();
+          }
+        } catch (error) {
+          console.error('构建路径时出错:', error);
+        }
+      }
+    };
+
+    // API 方法：动态显示 Popover
+    const apiShowPopover = () => {
+      showPopover();
+      resetSelection();
+
+      if (editorRef.current) {
+        updatePositionFromEditor(editorRef.current);
+      }
+    };
+
+    // 暴露 API 方法
+    useImperativeHandle(ref, () => ({
+      showPopover: apiShowPopover,
+      hidePopover,
+      insertVariable,
+      getContent,
+      setContent,
+    }));
+
+    return (
+      <>
+        <div className="smart-variable-input">
+          <div
+            ref={editorRef}
+            className="editor"
+            contentEditable
+            suppressContentEditableWarning
+            onInput={onInput}
+            onKeyDown={handleKeyDown}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+          />
+          {isEmpty && <div className="placeholder">{placeholder}</div>}
+        </div>
+
+        <VariablePopover
+          visible={popoverVisible}
+          position={position}
+          treeData={formattedVariables}
+          selectedKeys={[selectedTreeKey]}
+          onSelect={handleTreeSelect}
+        />
+      </>
+    );
+  },
+);
+
+SmartVariableInput.displayName = 'SmartVariableInput';
+
+export default SmartVariableInput;

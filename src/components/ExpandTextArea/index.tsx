@@ -49,7 +49,28 @@ export const ExpandableInputTextarea: React.FC<
       {/* 输入框 实现一个功能就是用户在输入 {{}} 的时候，popover自动提示可输入变量名，变量名是知识库的输出参数 */}
       <Form.Item name={inputFieldName}>
         <SmartVariableInput
-          variables={['abc', 'bcd', 'cde']}
+          variables={[
+            {
+              key: 'abc',
+              title: 'abc',
+              children: [
+                {
+                  key: 'abc1',
+                  title: 'abc1',
+                },
+              ],
+            },
+            {
+              key: 'bcd',
+              title: 'bcd',
+              children: [
+                {
+                  key: 'bcd1',
+                  title: 'bcd1',
+                },
+              ],
+            },
+          ]}
           placeholder={placeholder}
         />
       </Form.Item>
