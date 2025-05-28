@@ -27,7 +27,7 @@ export async function apiPublishItemList(
   });
 }
 
-// 提交发布申请
+// 智能体、插件、工作流等 - 提交发布申请
 export async function apiPublishApply(
   data: PublishApplyParams,
 ): Promise<RequestResponse<number>> {

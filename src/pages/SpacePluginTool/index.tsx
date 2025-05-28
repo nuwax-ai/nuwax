@@ -2,8 +2,8 @@ import CreateNewPlugin from '@/components/CreateNewPlugin';
 import LabelStar from '@/components/LabelStar';
 import PluginAutoAnalysis from '@/components/PluginAutoAnalysis';
 import PluginConfigTitle from '@/components/PluginConfigTitle';
-import PluginPublish from '@/components/PluginPublish';
 import PluginTryRunModel from '@/components/PluginTryRunModel';
+import PublishComponentModal from '@/components/PublishComponentModal';
 import VersionHistory from '@/components/VersionHistory';
 import { ICON_ADD_TR } from '@/constants/images.constants';
 import {
@@ -519,11 +519,12 @@ const SpacePluginTool: React.FC = () => {
           />
         </div>
       </div>
-      {/* 插件发布弹窗 */}
-      <PluginPublish
-        pluginId={pluginId}
-        scope={pluginInfo?.scope}
+      {/*插件发布弹窗*/}
+      <PublishComponentModal
+        mode={AgentComponentTypeEnum.Plugin}
+        targetId={pluginId}
         open={openModal}
+        // 取消发布
         onCancel={() => setOpenModal(false)}
         onConfirm={handleConfirmPublishPlugin}
       />

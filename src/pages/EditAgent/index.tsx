@@ -249,7 +249,7 @@ const EditAgent: React.FC = () => {
       </section>
       {/*发布智能体弹窗*/}
       <PublishComponentModal
-        agentId={Number(agentId)}
+        targetId={agentId}
         open={open}
         // 取消发布
         onCancel={() => setOpen(false)}

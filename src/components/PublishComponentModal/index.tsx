@@ -35,7 +35,7 @@ const cx = classNames.bind(styles);
  */
 const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   mode = AgentComponentTypeEnum.Agent,
-  agentId,
+  targetId,
   open,
   onCancel,
   onConfirm,
@@ -113,7 +113,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     setClassifyList(list);
   }, [mode, agentInfoList, pluginInfoList, workflowInfoList]);
 
-  // 智能体发布申请
+  // 智能体、插件、工作流等 - 提交发布申请
   const { run, loading } = useRequest(apiPublishApply, {
     manual: true,
     debounceInterval: 300,
@@ -130,7 +130,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     run({
       ...values,
       targetType: mode,
-      targetId: agentId,
+      targetId,
       items: publishItemList,
     });
   };
