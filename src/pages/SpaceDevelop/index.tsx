@@ -256,7 +256,6 @@ const SpaceDevelop: React.FC = () => {
     const agentInfo = agentList[index];
     const { id } = agentInfo;
     targetAgentIdRef.current = id;
-    currentClickTypeRef.current = type;
     switch (type) {
       case ApplicationMoreActionEnum.Analyze:
         handleSetStatistics(agentInfo);
@@ -264,10 +263,10 @@ const SpaceDevelop: React.FC = () => {
         break;
       // 复制到空间
       case ApplicationMoreActionEnum.Copy_To_Space:
-      // runCopy(id);
-      // break;
       // 迁移
       case ApplicationMoreActionEnum.Move:
+        // 记录当前点击操作的类型
+        currentClickTypeRef.current = type;
         setOpenMove(true);
         setCurrentAgentInfo(agentInfo);
         break;
