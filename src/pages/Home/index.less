@@ -37,59 +37,6 @@
     border-radius: 10px;
     padding: 20px;
     background: @WHITE;
-
-    .tabs {
-      position: sticky;
-      overflow-x: auto;
-      height: 60px;
-      border-bottom: 1px solid @GRAY01;
-
-      .item {
-        display: inline-block;
-        padding: 16px 10px;
-        cursor: pointer;
-        color: @BLANK10;
-        transition: color 0.2s ease;
-        position: relative;
-
-        &.active {
-          color: @BLANK31;
-
-          &::after {
-            content: '';
-            display: block;
-            width: 24px;
-            height: 2px;
-            border-radius: 17px;
-            position: absolute;
-            background-color: @BLANK03;
-            left: 50%;
-            top: 57px;
-            transform: translateX(-12px);
-            animation: lineShow-7bff7df1 0.2s ease 1 alternate;
-            z-index: 99;
-          }
-        }
-      }
-    }
-
-    .empty-box {
-      height: 400px;
-      font-size: 16px;
-      color: #3d3d3d;
-    }
-
-    .category-name {
-      margin: 30px 0 16px;
-      color: @BLANK31;
-      font-size: 16px;
-    }
-
-    .category-list {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
-    }
   }
 }
 
@@ -107,10 +54,6 @@
 
     .wrapper {
       width: 100%;
-
-      .category-list {
-        grid-template-columns: repeat(1, minmax(0, 1fr));
-      }
     }
   }
 }
