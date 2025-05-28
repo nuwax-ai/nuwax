@@ -38,22 +38,23 @@ export interface CurrentPublishItemProps {
   onOffShelf: () => void;
 }
 
-// 智能体、插件、工作流下架请求参数
-export interface PublishOffShelfParams {
-  // 类型，智能体、插件、工作流可以下架,可用值:Agent,Plugin,Workflow,Knowledge,Table
-  targetType: AgentComponentTypeEnum;
-  // 智能体、插件或工作流ID
-  targetId: number;
-  // 发布ID，下架时必填
-  publishId: number;
-}
-
 // 查询指定智能体插件或工作流已发布列表请求参数
 export interface PublishItemListParams {
   // 类型，智能体、插件、工作流可以下架,可用值:Agent,Plugin,Workflow,Knowledge,Table
   targetType: AgentComponentTypeEnum;
   // 智能体、插件或工作流ID
   targetId: number;
+}
+
+// 智能体、插件、工作流模板复制请求参数
+export interface PublishTemplateCopyParams extends PublishItemListParams {
+  targetSpaceId: number;
+}
+
+// 智能体、插件、工作流下架请求参数
+export interface PublishOffShelfParams extends PublishItemListParams {
+  // 发布ID，下架时必填
+  publishId: number;
 }
 
 // 查询指定智能体插件或工作流已发布列表返回结果

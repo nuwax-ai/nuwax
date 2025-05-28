@@ -4,14 +4,19 @@ import { SquareAgentInfo, SquareCategoryInfo } from '@/types/interfaces/square';
 import { useModel, useRequest } from 'umi';
 
 const useCategory = () => {
-  const { setAgentInfoList, setPluginInfoList, setWorkflowInfoList } =
-    useModel('squareModel');
+  const {
+    setAgentInfoList,
+    setPluginInfoList,
+    setWorkflowInfoList,
+    setTemplateList,
+  } = useModel('squareModel');
 
   // 广场分类列表信息
   const handleCategoryList = (result: SquareCategoryInfo[]) => {
     let _agentInfoList: SquareAgentInfo[] = [];
     let _pluginInfoList: SquareAgentInfo[] = [];
     let _workflowInfoList: SquareAgentInfo[] = [];
+    let _templateList: SquareAgentInfo[] = [];
     result?.forEach((info) => {
       const list = info?.children?.map((item) => {
         return {
@@ -30,10 +35,14 @@ const useCategory = () => {
       if (info.type === SquareAgentTypeEnum.Workflow) {
         _workflowInfoList = list;
       }
+      if (info.type === SquareAgentTypeEnum.Template) {
+        _templateList = list;
+      }
     });
     setAgentInfoList(_agentInfoList);
     setPluginInfoList(_pluginInfoList);
     setWorkflowInfoList(_workflowInfoList);
+    setTemplateList(_templateList);
   };
 
   // 广场-智能体与插件分类

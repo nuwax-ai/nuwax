@@ -3,9 +3,20 @@ import {
   PublishItemInfo,
   PublishItemListParams,
   PublishOffShelfParams,
+  PublishTemplateCopyParams,
 } from '@/types/interfaces/publish';
 import { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
+
+// 智能体、插件、工作流模板复制
+export async function apiPublishTemplateCopy(
+  data: PublishTemplateCopyParams,
+): Promise<RequestResponse<number>> {
+  return request('/api/publish/template/copy', {
+    method: 'POST',
+    data,
+  });
+}
 
 // 智能体、插件、工作流下架
 export async function apiPublishOffShelf(

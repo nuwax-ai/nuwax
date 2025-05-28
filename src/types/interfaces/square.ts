@@ -1,3 +1,5 @@
+import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
+import { PluginTypeEnum } from '@/types/enums/plugin';
 import type { SquareAgentTypeEnum } from '@/types/enums/square';
 import type {
   AgentStatisticsInfo,
@@ -7,7 +9,11 @@ import React from 'react';
 
 // 已发布插件列表输入参数
 export interface PublishedPluginListParams {
+  // 目标类型，Agent,Plugin,Workflow,可用值:Agent,Plugin,Workflow,Knowledge,Table
+  targetType: AgentComponentTypeEnum;
+  // 页码，从1开始
   page: number;
+  // 每页数量
   pageSize: number;
   // 分类名称
   category: string;
@@ -15,6 +21,12 @@ export interface PublishedPluginListParams {
   kw?: string;
   // 空间ID（可选）需要通过空间过滤时有用
   spaceId?: number;
+  // 只返回空间的组件
+  justReturnSpaceData: boolean;
+  // 空间ID列表（可选）,查询用户有权限的空间,限制访问空间,比如工作流查询全部知识库,要限制用户有权限的空间下的知识库
+  authSpaceIds: number[];
+  // 允许复制过滤（模板），1 允许
+  allowCopy: AllowCopyEnum;
 }
 
 // 已发布知识库列表输入参数
@@ -25,6 +37,9 @@ export type PublishedAgentListParams = PublishedPluginListParams;
 
 // 已发布的智能体信息
 export interface PublishedAgentInfo {
+  // 发布ID
+  id: number;
+  tenantId: number;
   spaceId: number;
   // 目标对象（智能体、工作流、插件）ID,可用值:Agent,Plugin,Workflow,KNOWLEDGE
   targetType: SquareAgentTypeEnum;
@@ -47,6 +62,10 @@ export interface PublishedAgentInfo {
   publishUser: CreatorInfo;
   // 分类名称
   category: string;
+  // 是否允许复制, 1 允许
+  allowCopy: AllowCopyEnum;
+  // 可用值:HTTP,CODE
+  pluginType: PluginTypeEnum;
   collect: boolean;
 }
 
@@ -78,6 +97,14 @@ export interface SingleAgentProps {
 export interface SquareComponentInfoProps {
   publishedAgentInfo: PublishedAgentInfo;
   onToggleCollectSuccess: (id: number, isCollect: boolean) => void;
+}
+
+// 广场菜单项属性
+export interface SquareMenuComponentInfo {
+  name: string;
+  icon: React.ReactNode;
+  list: SquareAgentInfo[];
+  type: SquareAgentTypeEnum;
 }
 
 // 广场菜单项组件
