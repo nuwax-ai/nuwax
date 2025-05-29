@@ -1,20 +1,15 @@
 import { TABS } from '@/constants/menus.constants';
 import TabItem from '@/layouts/MenusLayout/Tabs/TabItem';
-import { RoleEnum } from '@/types/enums/common';
 import { TabsEnum } from '@/types/enums/menus';
 import type { TabsType } from '@/types/interfaces/layouts';
 import classNames from 'classnames';
-import React, { useEffect } from 'react';
-import { useLocation, useModel } from 'umi';
+import React from 'react';
+import { useAccess, useLocation } from 'umi';
 
 const Tabs: React.FC<TabsType> = ({ onClick }) => {
   const location = useLocation();
-  const { userInfo, runUserInfo } = useModel('userInfo');
-
-  useEffect(() => {
-    // 获取用户信息
-    runUserInfo();
-  }, []);
+  const access = useAccess();
+  const isAdminRole = access.canAdmin;
 
   const handleActive = (type: TabsEnum) => {
     const isActive =
@@ -35,12 +30,14 @@ const Tabs: React.FC<TabsType> = ({ onClick }) => {
     <div className={classNames('flex-1', 'overflow-y', 'w-full')}>
       {TABS.map((item, index) => {
         // 管理员
-        if (
-          item.type === TabsEnum.System_Manage &&
-          userInfo?.role !== RoleEnum.Admin
-        ) {
+        if (item.type === TabsEnum.System_Manage && !isAdminRole) {
           return null;
         }
+        // 非管理员不能访问生态市场
+        if (item.type === TabsEnum.Ecosystem_Market && !isAdminRole) {
+          return null;
+        }
+
         return (
           <TabItem
             key={index}
