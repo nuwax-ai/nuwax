@@ -2,6 +2,7 @@ import type { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { CreateUpdateModeEnum } from '@/types/enums/common';
 import { DataTypeEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
+import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type {
   AgentBaseInfo,
   AgentConfigInfo,
@@ -81,7 +82,7 @@ export interface option {
 // 下拉选择框组件
 export interface SelectListType {
   className?: string;
-  value?: React.Key;
+  value?: React.Key | null;
   // 自定义前缀
   prefix?: React.ReactNode;
   // 自定义的选择框后缀图标
@@ -90,6 +91,7 @@ export interface SelectListType {
   dropdownRenderComponent?: React.ReactNode;
   placeholder?: string;
   disabled?: boolean;
+  allowClear?: boolean;
   options: option[];
   onChange?: (value: React.Key) => void;
   size?: SizeType;
@@ -480,4 +482,26 @@ export interface ShowStandProps {
   cardList: CardDataInfo[];
   visible: boolean;
   onClose: () => void;
+}
+
+// 智能体、插件、工作流等发布范围属性
+export interface PublishScope {
+  key: string;
+  name: string;
+  spaceId?: number;
+  scope: PluginPublishScopeEnum;
+  children?: PublishScope[];
+}
+
+// 智能体、插件、工作流等迁移和复制组件
+export interface MoveCopyComponentProps {
+  spaceId: number;
+  // 迁移、复制
+  type?: ApplicationMoreActionEnum;
+  // 组件类型: 智能体、插件、工作流， 默认智能体
+  mode?: AgentComponentTypeEnum;
+  open: boolean;
+  title?: string;
+  onCancel: () => void;
+  onConfirm: (spaceId: number) => void;
 }

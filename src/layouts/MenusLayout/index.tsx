@@ -1,15 +1,11 @@
 import { DOCUMENT_URL, SITE_DOCUMENT_URL } from '@/constants/common.constants';
+import useCategory from '@/hooks/useCategory';
 import SystemSection from '@/layouts/MenusLayout/SystemSection';
-import { apiPublishedCategoryList } from '@/services/square';
 import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
-import type {
-  SquareAgentInfo,
-  SquareCategoryInfo,
-} from '@/types/interfaces/square';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
-import { history, useLocation, useModel, useRequest } from 'umi';
+import { history, useLocation, useModel } from 'umi';
 import Header from './Header';
 import HomeSection from './HomeSection';
 import SpaceSection from './SpaceSection';
@@ -31,49 +27,10 @@ const MenusLayout: React.FC<{
   const { setOpenMessage } = useModel('layout');
   const [tabType, setTabType] = useState<TabsEnum>();
   const { asyncSpaceListFun } = useModel('spaceModel');
-  const { setAgentInfoList, setPluginInfoList, setWorkflowInfoList } =
-    useModel('squareModel');
   const { runTenantConfig } = useModel('tenantConfigInfo');
   const { runEdit, runDevCollect } = useModel('devCollectAgent');
   const { runHistory, runUsed } = useModel('conversationHistory');
-
-  // 广场分类列表信息
-  const handleCategoryList = (result: SquareCategoryInfo[]) => {
-    let _agentInfoList: SquareAgentInfo[] = [];
-    let _pluginInfoList: SquareAgentInfo[] = [];
-    let _workflowInfoList: SquareAgentInfo[] = [];
-    result?.forEach((info) => {
-      const list = info?.children?.map((item) => {
-        return {
-          name: item.key,
-          description: item.label,
-        };
-      }) as SquareAgentInfo[];
-      if (info.type === SquareAgentTypeEnum.Agent) {
-        _agentInfoList = list;
-      }
-
-      if (info.type === SquareAgentTypeEnum.Plugin) {
-        _pluginInfoList = list;
-      }
-
-      if (info.type === SquareAgentTypeEnum.Workflow) {
-        _workflowInfoList = list;
-      }
-    });
-    setAgentInfoList(_agentInfoList);
-    setPluginInfoList(_pluginInfoList);
-    setWorkflowInfoList(_workflowInfoList);
-  };
-
-  // 广场-智能体与插件分类
-  const { run } = useRequest(apiPublishedCategoryList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: SquareCategoryInfo[]) => {
-      handleCategoryList(result);
-    },
-  });
+  const { runQueryCategory } = useCategory();
 
   // 点击主页
   const handleClickHome = () => {
@@ -125,9 +82,10 @@ const MenusLayout: React.FC<{
 
   useEffect(() => {
     // 查询广场menus列表
-    run();
+    runQueryCategory();
     // 租户配置信息查询接口
     runTenantConfig();
+    // 工作空间列表查询接口
     asyncSpaceListFun();
   }, []);
 
@@ -155,6 +113,7 @@ const MenusLayout: React.FC<{
     }
   }, []);
 
+  // 内容区域
   const Content: React.FC = useCallback(() => {
     switch (tabType) {
       case TabsEnum.Home:

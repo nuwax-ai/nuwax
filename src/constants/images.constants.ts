@@ -21,6 +21,7 @@ import { ReactComponent as ICON_PLUGIN_BOLD } from '@/assets/svg/icon_plugin_bol
 import { ReactComponent as ICON_PUBLISHED } from '@/assets/svg/icon_published.svg';
 import { ReactComponent as ICON_SETTING_SMALL } from '@/assets/svg/icon_setting_small.svg';
 import { ReactComponent as ICON_SHARE } from '@/assets/svg/icon_share.svg';
+import { ReactComponent as ICON_TEMPLATE } from '@/assets/svg/icon_template.svg';
 import { ReactComponent as ICON_KNOWLEDGE } from '@/assets/svg/knowledge_icon.svg';
 import { ReactComponent as ICON_LOCAL_DOC } from '@/assets/svg/local_doc.svg';
 import { ReactComponent as ICON_NEW_AGENT } from '@/assets/svg/new_agent.svg';
@@ -140,6 +141,7 @@ export {
   ICON_SUCCESS,
   ICON_TABLE,
   ICON_TABLE_FORMAT,
+  ICON_TEMPLATE,
   ICON_TEXT_FORMAT,
   ICON_WORD,
   ICON_WORKFLOW,

@@ -12,6 +12,7 @@ import type {
   AgentConfigInfo,
   AgentStatisticsInfo,
   BindConfigWithSub,
+  ComponentModelBindConfig,
   CreatorInfo,
   TriggerTimeZone,
 } from '@/types/interfaces/agent';
@@ -108,8 +109,11 @@ export interface AgentModelSettingProps {
   spaceId: number;
   modelComponentConfig: AgentComponentInfo;
   open: boolean;
-  onCancel: () => void;
-  onSelectMode: (value: number, label: string) => void;
+  onCancel: (
+    targetId: number,
+    name: string,
+    data: ComponentModelBindConfig,
+  ) => void;
 }
 
 // 卡片设置组件

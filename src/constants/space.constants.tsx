@@ -75,10 +75,10 @@ export const CREATE_LIST = [
 // 应用开发更多操作
 export const APPLICATION_MORE_ACTION = [
   { type: ApplicationMoreActionEnum.Analyze, label: '分析' },
-  { type: ApplicationMoreActionEnum.Create_Copy, label: '创建副本' },
+  { type: ApplicationMoreActionEnum.Copy_To_Space, label: '复制到空间' },
   { type: ApplicationMoreActionEnum.Move, label: '迁移' },
   { type: ApplicationMoreActionEnum.Temporary_Session, label: '临时会话' },
-  { type: ApplicationMoreActionEnum.Off_Shelf, label: '下架' },
+  { type: ApplicationMoreActionEnum.Log, label: '日志' },
   { type: ApplicationMoreActionEnum.Del, label: '删除', isDel: true },
 ];
 

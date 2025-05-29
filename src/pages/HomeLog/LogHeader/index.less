@@ -1,0 +1,39 @@
+@import '@/styles/color';
+
+.header {
+  gap: 16px;
+  border-bottom: 1px solid @BLANK01;
+
+  .agent-logo {
+    width: 42px;
+    height: 42px;
+    object-fit: cover;
+  }
+
+  .header-info {
+    gap: 6px;
+
+    .agent-name {
+      font-size: 14px;
+      font-weight: bold;
+      color: @BLANK04;
+    }
+
+    .user-info {
+      gap: 6px;
+
+      .avatar {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .name {
+        max-width: 200px;
+        color: @GRAY05;
+        font-size: 12px;
+      }
+    }
+  }
+}
