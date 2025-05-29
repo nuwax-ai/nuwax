@@ -4,7 +4,11 @@ import SelectList from '@/components/SelectList';
 import TooltipIcon from '@/components/TooltipIcon';
 import useCategory from '@/hooks/useCategory';
 import { apiPublishApply } from '@/services/publish';
-import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  AllowCopyEnum,
+  OnlyTemplateEnum,
+} from '@/types/enums/agent';
 import { RoleEnum, TooltipTitleTypeEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { option, PublishScope } from '@/types/interfaces/common';
@@ -65,7 +69,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
           spaceId: item.id,
         })) || [];
 
-    const _dataSource = [
+    const _dataSource: PublishScope[] = [
       {
         key: PluginPublishScopeEnum.Tenant,
         name: '系统广场',
@@ -89,6 +93,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     asyncSpaceListFun();
   }, []);
 
+  // 设置title以及分类选择列表
   useEffect(() => {
     let _classifyList: SquareAgentInfo[] = [];
     switch (mode) {
@@ -163,6 +168,12 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     return item?.allowCopy === AllowCopyEnum.Yes;
   };
 
+  // 是否已选中“”仅模板“”选项
+  const isOnlyTemplate = (scope: PluginPublishScopeEnum, spaceId?: number) => {
+    const item = findPublishItem(scope, spaceId);
+    return item?.onlyTemplate === OnlyTemplateEnum.Yes;
+  };
+
   // 切换选中状态
   const handleChecked = (record: PublishScope, checked: boolean) => {
     const { scope, spaceId } = record;
@@ -173,6 +184,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
           scope,
           spaceId,
           allowCopy: AllowCopyEnum.No,
+          onlyTemplate: OnlyTemplateEnum.No,
         },
       ]);
     } else {
@@ -193,6 +205,23 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
         return {
           ...item,
           allowCopy: checked ? AllowCopyEnum.Yes : AllowCopyEnum.No,
+          onlyTemplate: OnlyTemplateEnum.No,
+        };
+      }
+
+      return item;
+    });
+    setPublishItemList(list);
+  };
+
+  // 切换“仅模板”选项
+  const handleOnlyTemplate = (record: PublishScope, checked: boolean) => {
+    const { scope, spaceId } = record;
+    const list = publishItemList?.map((item: PublishItem) => {
+      if (item.scope === scope && item.spaceId === spaceId) {
+        return {
+          ...item,
+          onlyTemplate: checked ? OnlyTemplateEnum.Yes : OnlyTemplateEnum.No,
         };
       }
 
@@ -217,7 +246,6 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
         />
       ),
       dataIndex: 'name',
-      key: 'name',
       render: (_: null, record: PublishScope) =>
         record?.children?.length ? (
           <>
@@ -245,8 +273,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
           type={TooltipTitleTypeEnum.White}
         />
       ),
-      dataIndex: 'description',
-      key: 'description',
+      dataIndex: 'allowCopy',
       width: 180,
       render: (_: null, record: PublishScope) =>
         record?.children?.length ? null : (
@@ -255,6 +282,28 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
             checked={isAllCopy(record.scope, record.spaceId)}
             disabled={!isChecked(record.scope, record.spaceId)}
             onChange={(e) => handleAllowCopy(record, e.target.checked)}
+          />
+        ),
+    },
+    {
+      title: (
+        <LabelIcon
+          label="仅模板"
+          title={
+            '“仅模板”tips：选择后仅在模板广场展示，仅模板只有在允许复制选择后才可选'
+          }
+          type={TooltipTitleTypeEnum.White}
+        />
+      ),
+      dataIndex: 'onlyTemplate',
+      width: 180,
+      render: (_: null, record: PublishScope) =>
+        record?.children?.length ? null : (
+          <Checkbox
+            className={cx(styles['table-copy'])}
+            checked={isOnlyTemplate(record.scope, record.spaceId)}
+            disabled={!isAllCopy(record.scope, record.spaceId)}
+            onChange={(e) => handleOnlyTemplate(record, e.target.checked)}
           />
         ),
     },
