@@ -138,7 +138,7 @@ const MemberManageTab: React.FC<MemberManageTabProps> = ({ spaceId, role }) => {
             key: 'action',
             align: 'center',
             width: '160px',
-            render: (_, record: SpaceUserInfo) => (
+            render: (_: null, record: SpaceUserInfo) => (
               <>
                 <Button
                   type="link"
