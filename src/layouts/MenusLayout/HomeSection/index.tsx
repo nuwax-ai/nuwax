@@ -12,7 +12,9 @@ const cx = classNames.bind(styles);
 /**
  * 主页二级菜单栏
  */
-const HomeSection: React.FC = () => {
+const HomeSection: React.FC<{
+  style?: React.CSSProperties;
+}> = ({ style }) => {
   const { id: chatId } = useParams();
   const { setOpenHistoryModal } = useModel('layout');
   const { conversationList, usedAgentList, runUsed, runHistory } = useModel(
@@ -25,8 +27,8 @@ const HomeSection: React.FC = () => {
   };
 
   // 会话跳转
-  const handleLink = (id: number) => {
-    history.push(`/home/chat/${id}`);
+  const handleLink = (id: number, agentId: number) => {
+    history.push(`/home/chat/${id}/${agentId}`);
   };
 
   useEffect(() => {
@@ -39,7 +41,7 @@ const HomeSection: React.FC = () => {
   }, []);
 
   return (
-    <div className={cx('px-6', 'py-16')}>
+    <div className={cx('px-6', 'py-16')} style={style}>
       <ConditionRender condition={usedAgentList !== undefined}>
         <h3 className={cx(styles.title)}>最近使用</h3>
         {usedAgentList?.length ? (
@@ -74,7 +76,7 @@ const HomeSection: React.FC = () => {
                   styles.row,
                   { [styles.active]: chatId === item.id?.toString() },
                 )}
-                onClick={() => handleLink(item.id)}
+                onClick={() => handleLink(item.id, item.agentId)}
               >
                 {item.topic}
               </li>

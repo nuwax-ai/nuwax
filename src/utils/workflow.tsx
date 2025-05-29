@@ -61,61 +61,87 @@ export const getImg = (data: AgentComponentTypeEnum) => {
   return imageList[data];
 };
 // 根据type返回图片
-export const returnImg = (type: string) => {
-  switch (type) {
-    case 'Start':
-      return <ICON_START />;
-    case 'End':
-      return <ICON_END />;
-    case 'Output':
-      return <ICON_WORKFLOW_OUTPUT />;
-    case 'Code':
-      return <ICON_WORKFLOW_CODE />;
-    case 'Condition':
-      return <ICON_WORKFLOW_CONDITION />;
-    // case 'Database':
-    //   return <ICON_WORKFLOW_DATABASE />;
-    case 'DocumentExtraction':
-      return <ICON_WORKFLOW_DOCUMENT_EXTRACTION />;
-    case 'HTTPRequest':
-      return <ICON_WORKFLOW_HTTP_REQUEST />;
-    case 'IntentRecognition':
-      return <ICON_WORKFLOW_INTENT_RECOGNITION />;
-    case 'Knowledge':
-      return <ICON_WORKFLOW_KNOWLEDGE_BASE />;
-    case 'LLM':
-      return <ICON_WORKFLOW_LLM />;
-    case 'LongTermMemory':
-      return <ICON_WORKFLOW_LONG_TERM_MEMORY />;
-    case 'Loop':
-      return <ICON_WORKFLOW_LOOP />;
-    case 'LoopContinue':
-      return <ICON_WORKFLOW_LOOPCONTINUE />;
-    case 'LoopBreak':
-      return <ICON_WORKFLOW_LOOPBREAK />;
-    case 'Plugin':
-      return <ICON_WORKFLOW_PLUGIN />;
-    case 'QA':
-      return <ICON_WORKFLOW_QA />;
-    case 'TextProcessing':
-      return <ICON_WORKFLOW_TEXT_PROCESSING />;
-    case 'Variable':
-      return <ICON_WORKFLOW_VARIABLE />;
-    case 'Workflow':
-      return <ICON_WORKFLOW_WORKFLOW />;
-    case 'TableDataAdd':
-      return <ICON_WORKFLOW_DATABASEADD />;
-    case 'TableDataDelete':
-      return <ICON_WORKFLOW_DATABASEDELETE />;
-    case 'TableDataUpdate':
-      return <ICON_WORKFLOW_DATABASEUPDATE />;
-    case 'TableDataQuery':
-      return <ICON_WORKFLOW_DATABASEQUERY />;
-    case 'TableSQL':
-      return <ICON_WORKFLOW_DATABASE />;
-    default:
-      return <ICON_NEW_AGENT />;
+export const returnImg = (
+  type: string,
+  options: {
+    className?: string | undefined;
+    style?: React.CSSProperties | undefined;
+  } = {},
+): React.ReactNode => {
+  const getImg = (type: string) => {
+    switch (type) {
+      case 'Start':
+      case 'LoopStart':
+        return <ICON_START />;
+      case 'End':
+      case 'LoopEnd':
+        return <ICON_END />;
+      case 'Output':
+        return <ICON_WORKFLOW_OUTPUT />;
+      case 'Code':
+        return <ICON_WORKFLOW_CODE />;
+      case 'Condition':
+        return <ICON_WORKFLOW_CONDITION />;
+      // case 'Database':
+      //   return <ICON_WORKFLOW_DATABASE />;
+      case 'DocumentExtraction':
+        return <ICON_WORKFLOW_DOCUMENT_EXTRACTION />;
+      case 'HTTPRequest':
+        return <ICON_WORKFLOW_HTTP_REQUEST />;
+      case 'IntentRecognition':
+        return <ICON_WORKFLOW_INTENT_RECOGNITION />;
+      case 'Knowledge':
+        return <ICON_WORKFLOW_KNOWLEDGE_BASE />;
+      case 'LLM':
+        return <ICON_WORKFLOW_LLM />;
+      case 'LongTermMemory':
+        return <ICON_WORKFLOW_LONG_TERM_MEMORY />;
+      case 'Loop':
+        return <ICON_WORKFLOW_LOOP />;
+      case 'LoopContinue':
+        return <ICON_WORKFLOW_LOOPCONTINUE />;
+      case 'LoopBreak':
+        return <ICON_WORKFLOW_LOOPBREAK />;
+      case 'Plugin':
+        return <ICON_WORKFLOW_PLUGIN />;
+      case 'QA':
+        return <ICON_WORKFLOW_QA />;
+      case 'TextProcessing':
+        return <ICON_WORKFLOW_TEXT_PROCESSING />;
+      case 'Variable':
+        return <ICON_WORKFLOW_VARIABLE />;
+      case 'Workflow':
+        return <ICON_WORKFLOW_WORKFLOW />;
+      case 'TableDataAdd':
+        return <ICON_WORKFLOW_DATABASEADD />;
+      case 'TableDataDelete':
+        return <ICON_WORKFLOW_DATABASEDELETE />;
+      case 'TableDataUpdate':
+        return <ICON_WORKFLOW_DATABASEUPDATE />;
+      case 'TableDataQuery':
+        return <ICON_WORKFLOW_DATABASEQUERY />;
+      case 'TableSQL':
+        return <ICON_WORKFLOW_DATABASE />;
+      default:
+        return <ICON_NEW_AGENT />;
+    }
+  };
+  return getImg(type);
+  let finalStyle = options.style;
+  if (!options.className && !options.style) {
+    // 设置默认值
+    finalStyle = { fontSize: '20px' };
   }
+  return (
+    <div
+      role="img"
+      aria-label={type}
+      className={options.className}
+      style={finalStyle}
+    >
+      {getImg(type)}
+    </div>
+  );
 };
 
 // 根据type返回背景色
@@ -130,7 +156,7 @@ export const returnBackgroundColor = (type: string) => {
     case 'LoopBreak':
     case 'Condition':
     case 'IntentRecognition':
-      return '#C8FFFF';
+      return '#ebf9f9';
     case 'Knowledge':
     // case 'Database':
     case 'Variable':
@@ -140,7 +166,7 @@ export const returnBackgroundColor = (type: string) => {
     case 'DocumentExtraction':
     case 'TextProcessing':
     case 'HTTPRequest':
-      return '#B7DAF7';
+      return '#fef9eb';
 
     case 'LLM':
       return '#E9EBED';
@@ -230,7 +256,10 @@ const handleLoopEdges = (node: ChildNode): Edge[] => {
 };
 
 // 递归获取节点的边
-export const getEdges = (nodes: ChildNode[]): Edge[] => {
+export const getEdges = (
+  nodes: ChildNode[],
+  needValidate: boolean = true,
+): Edge[] => {
   const allEdges: Edge[] = nodes.flatMap((node) => {
     let isLoopNode: boolean = false;
     if (node.loopNodeId) {
@@ -261,10 +290,12 @@ export const getEdges = (nodes: ChildNode[]): Edge[] => {
   });
 
   // 过滤目标节点不存在的边（新增过滤逻辑）
-  const validEdges = allEdges.filter((edge) => {
-    // 检查目标节点是否存在于节点列表中
-    return nodes.some((n) => edge.target.includes(n.id.toString()));
-  });
+  const validEdges = needValidate
+    ? allEdges.filter((edge) => {
+        // 检查目标节点是否存在于节点列表中
+        return nodes.some((n) => edge.target.includes(n.id.toString()));
+      })
+    : allEdges;
   // 使用 Set 来移除重复的边
   const uniqueEdges = new Set<string>();
   const resultEdges: Edge[] = [];

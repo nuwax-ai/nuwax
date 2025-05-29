@@ -22,7 +22,9 @@ const cx = classNames.bind(styles);
 /**
  * 广场第二菜单栏
  */
-const SquareSection: React.FC = () => {
+const SquareSection: React.FC<{
+  style?: React.CSSProperties;
+}> = ({ style }) => {
   const { agentInfoList, pluginInfoList, workflowInfoList, templateList } =
     useModel('squareModel');
   // active项
@@ -80,7 +82,7 @@ const SquareSection: React.FC = () => {
   ];
 
   return (
-    <div className={cx('h-full', 'py-12', 'overflow-y')}>
+    <div className={cx('h-full', 'py-16', 'overflow-y')} style={style}>
       {dataSource.map((info: SquareMenuComponentInfo, index) => (
         <ConditionRender key={index} condition={info.list?.length}>
           <div className={cx('py-6 px-6')}>

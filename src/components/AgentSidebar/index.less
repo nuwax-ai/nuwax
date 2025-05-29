@@ -1,12 +1,10 @@
 @import '@/styles/color';
 
 .container {
-  position: sticky;
-  top: 20px;
-  right: 20px;
   width: 357px;
   height: calc(100% - 40px);
   padding: 0 20px;
+  margin: 20px 20px 0 0;
   box-sizing: border-box;
   background-color: @WHITE;
   border-radius: 10px;
@@ -36,5 +34,11 @@
   &.show {
     visibility: visible;
     opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    display: none;
   }
 }

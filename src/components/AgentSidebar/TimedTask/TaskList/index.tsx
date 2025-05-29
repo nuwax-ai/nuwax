@@ -45,8 +45,8 @@ const TaskList: React.FC<TaskListProps> = ({
 
   // 点击任务项
   const handleClick = (info: TimedConversationTaskInfo) => {
-    const { id } = info;
-    history.push(`/home/chat/${id}`);
+    const { id, agentId } = info;
+    history.push(`/home/chat/${id}/${agentId}`);
   };
 
   // 取消定时任务

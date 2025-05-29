@@ -1,5 +1,8 @@
 import { apiAgentConversationCreate } from '@/services/agentConfig';
-import { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
+import {
+  AgentDetailDto,
+  AgentSelectedComponentInfo,
+} from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import { useRequest } from 'ahooks';
 import { history } from 'umi';
@@ -21,6 +24,8 @@ const useConversation = () => {
       message: string;
       files?: UploadFileInfo[];
       infos?: AgentSelectedComponentInfo[];
+      // 默认智能体详情
+      defaultAgentDetail?: AgentDetailDto;
     },
   ) => {
     const { success, data } = await runAsyncConversationCreate({
@@ -30,7 +35,7 @@ const useConversation = () => {
 
     if (success) {
       const id = data?.id;
-      history.push(`/home/chat/${id}`, attach);
+      history.push(`/home/chat/${id}/${agentId}`, attach);
     }
   };
 

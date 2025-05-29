@@ -326,7 +326,10 @@ export default () => {
           };
         }
 
-        list.splice(index, arraySpliceAction, newMessage as MessageInfo);
+        // 会话事件兼容处理，防止消息为空时，页面渲染报length错误
+        if (newMessage) {
+          list.splice(index, arraySpliceAction, newMessage as MessageInfo);
+        }
         return list;
       });
     }, 200);

@@ -24,6 +24,8 @@ const urlList = {
   LoopBreak: '/api/workflow/node/loop/update',
   LoopContinue: '/api/workflow/node/loop/update',
   Loop: '/api/workflow/node/loop/update',
+  LoopStart: '/api/workflow/node/update',
+  LoopEnd: '/api/workflow/node/update',
   Start: '/api/workflow/node/update',
   End: '/api/workflow/node/end/update',
   DocumentExtraction: '/api/workflow/node/update',

@@ -10,6 +10,7 @@ import type {
   AgentSelectedComponentInfo,
   CreatorInfo,
 } from '@/types/interfaces/agent';
+import { CardDataInfo } from '@/types/interfaces/cardInfo';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import type {
   KnowledgeBaseInfo,
@@ -42,6 +43,7 @@ export interface ConditionRenderProps {
 export interface FoldWrapType {
   className?: string;
   icon?: React.ReactNode;
+  backgroundColor?: string;
   title: string;
   description?: string;
   visible?: boolean;
@@ -418,15 +420,19 @@ export interface PluginConfigTitleProps {
   onClick: () => void;
 }
 
-// 聊天输入框组件
-export interface ChatInputProps {
-  className?: React.CSSProperties;
-  disabled?: boolean;
-  visible?: boolean;
+// 手动选择组件属性
+export interface ManualComponentItemProps {
   // 可手动选择的组件列表
   manualComponents?: AgentManualComponentInfo[];
   selectedComponentList?: AgentSelectedComponentInfo[];
   onSelectComponent?: (infos: AgentSelectedComponentInfo) => void;
+}
+
+// 聊天输入框组件
+export interface ChatInputProps extends ManualComponentItemProps {
+  className?: React.CSSProperties;
+  disabled?: boolean;
+  visible?: boolean;
   // 发送消息后是否清空输入框, 默认true
   isClearInput?: boolean;
   onScrollBottom?: () => void;
@@ -468,6 +474,14 @@ export interface ParamsNameLabelProps {
   require?: boolean;
   paramName: string;
   paramType: DataTypeEnum;
+}
+
+// 展示台组件
+export interface ShowStandProps {
+  className?: string;
+  cardList: CardDataInfo[];
+  visible: boolean;
+  onClose: () => void;
 }
 
 // 智能体、插件、工作流等发布范围属性

@@ -32,12 +32,18 @@ const ErrorList: React.FC<ErrorListProps> = ({
     <div
       style={{
         right: visible ? '388px' : '10px',
-        display: show ? 'block' : 'none',
+        display: show ? 'flex' : 'none',
+        flexDirection: 'column',
       }}
       className="error-list-style dis-col"
     >
       {/* 头部信息 */}
-      <div className="dis-sb error-list-header">
+      <div
+        className="dis-sb error-list-header"
+        style={{
+          height: '40px',
+        }}
+      >
         <span>错误列表</span>
         <CloseOutlined
           onClick={() => {
@@ -49,7 +55,13 @@ const ErrorList: React.FC<ErrorListProps> = ({
 
       {/* 遍历当前的错误信息列表 */}
       {errorList && (
-        <div className="error-list-content">
+        <div
+          className="error-list-content"
+          style={{
+            flex: 1,
+            overflow: 'auto',
+          }}
+        >
           {errorList.map((item) => {
             if (item && item.nodeId) {
               const node = nodeList.find((node) => node.id === item.nodeId);

@@ -1,6 +1,6 @@
 import { ICON_OPTIMIZE } from '@/constants/images.constants';
 import { ExpandAltOutlined } from '@ant-design/icons';
-import { Form, Input } from 'antd';
+import { Button, Form, Input } from 'antd';
 import React, { useState } from 'react';
 import ExpandTextArea from './expandTextarea';
 import { ExpandableInputTextareaProps } from './type';
@@ -26,16 +26,20 @@ export const ExpandableInputTextarea: React.FC<
         <div>
           {/* 是否有优化 */}
           {onOptimize && onOptimizeClick && (
-            <ICON_OPTIMIZE
-              className="cursor-pointer"
+            <Button
+              type="text"
+              icon={<ICON_OPTIMIZE />}
+              size="small"
+              style={{ marginRight: '6px' }}
               onClick={() => onOptimizeClick()}
             />
           )}
           {/* 是否有展开 */}
           {onExpand && (
-            <ExpandAltOutlined
-              className="cursor-pointer"
-              style={{ marginLeft: '10px' }}
+            <Button
+              type="text"
+              icon={<ExpandAltOutlined />}
+              size="small"
               onClick={() => setIsExpanded(true)}
             />
           )}
@@ -46,7 +50,6 @@ export const ExpandableInputTextarea: React.FC<
         <Input.TextArea
           placeholder={placeholder}
           autoSize={{ minRows: rows, maxRows: rows }}
-          style={{ marginBottom: '10px' }}
         />
       </Form.Item>
 

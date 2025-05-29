@@ -6,6 +6,7 @@ import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
+  ClearOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
 import type { InputRef, UploadProps } from 'antd';
@@ -13,6 +14,7 @@ import { Input, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useRef, useState } from 'react';
 import styles from './index.less';
+import ManualComponentItem from './ManualComponentItem';
 
 const cx = classNames.bind(styles);
 
@@ -21,10 +23,12 @@ const cx = classNames.bind(styles);
  */
 const ChatInputHome: React.FC<ChatInputProps> = ({
   className,
+  disabled = false,
   onEnter,
   visible,
   selectedComponentList,
   onSelectComponent,
+  onClear,
   isClearInput = true,
   manualComponents,
   onScrollBottom,
@@ -104,8 +108,15 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     setFiles(_files);
   };
 
+  const handleClear = () => {
+    if (disabled) {
+      return;
+    }
+    onClear?.();
+  };
+
   return (
-    <div className={cx('w-full', className)}>
+    <div className={cx('w-full', 'relative', className)}>
       <div className={cx(styles['chat-container'], 'flex', 'flex-col')}>
         {/*文件列表*/}
         <ConditionRender condition={files?.length}>
@@ -121,7 +132,25 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           placeholder="直接输入指令；可通过回车发送"
           autoSize={{ minRows: 2, maxRows: 6 }}
         />
-        <div className={cx('flex')}>
+        <footer className={cx('flex', styles.footer)}>
+          <ConditionRender condition={!!onClear}>
+            <Tooltip title="清空会话记录">
+              <span
+                className={cx(
+                  styles.clear,
+                  'flex',
+                  'items-center',
+                  'content-center',
+                  'hover-box',
+                  'cursor-pointer',
+                  { [styles.disabled]: disabled },
+                )}
+                onClick={handleClear}
+              >
+                <ClearOutlined />
+              </span>
+            </Tooltip>
+          </ConditionRender>
           {/*上传按钮*/}
           <Upload
             action={UPLOAD_FILE_ACTION}
@@ -147,36 +176,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               <PlusOutlined />
             </span>
           </Upload>
-          <div
-            className={cx(
-              'flex-1',
-              'flex',
-              'items-center',
-              styles['manual-container'],
-            )}
-          >
-            {manualComponents?.map((item, index) => {
-              return (
-                <span
-                  key={index}
-                  className={cx(
-                    styles['manual-box'],
-                    'flex',
-                    'items-center',
-                    'cursor-pointer',
-                    {
-                      [styles.active]: selectedComponentList?.some(
-                        (c) => c.id === item.id,
-                      ),
-                    },
-                  )}
-                  onClick={() => onSelectComponent?.(item)}
-                >
-                  {item.name}
-                </span>
-              );
-            })}
-          </div>
+          {/*手动选择组件*/}
+          <ManualComponentItem
+            manualComponents={manualComponents}
+            selectedComponentList={selectedComponentList}
+            onSelectComponent={onSelectComponent}
+          />
           <Tooltip title={disabledSend ? '请输入你的问题' : ''}>
             <span
               onClick={handleSendMessage}
@@ -193,7 +198,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               <ArrowUpOutlined />
             </span>
           </Tooltip>
-        </div>
+        </footer>
       </div>
       {/* 滚动到底部按钮 */}
       <div className={cx(styles['chat-action'])}>

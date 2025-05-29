@@ -26,7 +26,7 @@ const routes = [
     layout: false,
     routes: [
       { path: '', component: '@/pages/Home' },
-      { path: '/home/chat/:id', component: '@/pages/Chat' },
+      { path: '/home/chat/:id/:agentId', component: '@/pages/Chat' },
       { path: '/home/log/:agentId', component: '@/pages/HomeLog' },
       { path: '/agent/:agentId', component: '@/pages/AgentDetails' },
       { path: '/space', component: '@/pages/Space' },

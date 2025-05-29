@@ -20,7 +20,9 @@ const cx = classNames.bind(styles);
 /**
  * 菜单布局组件
  */
-const MenusLayout: React.FC = () => {
+const MenusLayout: React.FC<{
+  overrideContainerStyle?: React.CSSProperties;
+}> = ({ overrideContainerStyle }) => {
   const location = useLocation();
   const { setOpenMessage } = useModel('layout');
   const [tabType, setTabType] = useState<TabsEnum>();
@@ -115,13 +117,13 @@ const MenusLayout: React.FC = () => {
   const Content: React.FC = useCallback(() => {
     switch (tabType) {
       case TabsEnum.Home:
-        return <HomeSection />;
+        return <HomeSection style={overrideContainerStyle} />;
       case TabsEnum.Space:
-        return <SpaceSection />;
+        return <SpaceSection style={overrideContainerStyle} />;
       case TabsEnum.Square:
-        return <SquareSection />;
+        return <SquareSection style={overrideContainerStyle} />;
       case TabsEnum.System_Manage:
-        return <SystemSection />;
+        return <SystemSection style={overrideContainerStyle} />;
     }
   }, [tabType]);
 

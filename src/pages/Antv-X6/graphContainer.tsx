@@ -1,5 +1,6 @@
 import type {
   ChildNode,
+  Edge,
   GraphContainerProps,
   GraphContainerRef,
 } from '@/types/interfaces/graph';
@@ -9,11 +10,13 @@ import {
   createChildNode,
   createEdge,
   generatePorts,
+  getEdges,
   getHeight,
   getLength,
   getWidthAndHeight,
 } from '@/utils/workflow';
 import { Node } from '@antv/x6';
+import { App } from 'antd';
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import EventHandlers from './component/eventHandlers';
 import InitGraph from './component/graph';
@@ -32,6 +35,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     },
     ref,
   ) => {
+    const { modal, message } = App.useApp();
     registerCustomNodes();
     const containerRef = useRef<HTMLDivElement>(null);
     const graphRef = useRef<any>(null);
@@ -47,11 +51,45 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       graphContainer.id = 'graph-container';
       container?.appendChild(graphContainer);
     }
+    // 绘制画布
+    const addLoopChildNode = (callback: (data: any) => boolean): Node[] => {
+      const loopNodeList = graphRef.current.getNodes().filter((item: Node) => {
+        const data = item.getData();
+        return callback(data);
+      });
+      // 创建循环的子节点
+      if (loopNodeList.length) {
+        loopNodeList.forEach((element: Node) => {
+          element.prop('zIndex', 4);
+          const data = element.getData();
+          if (!data.innerNodes?.length) return;
+          data.innerNodes.forEach((childDef: ChildNode) => {
+            const child = createChildNode(data.id, childDef); // 创建子节点配置
+            const childNode = graphRef.current.addNode(child); // 添加子节点到图中
+            // childNode.setZIndex(6);  // 新增显式层级设置方法
+            // 更新父节点的子节点列表（如果必要）
+            element.addChild(childNode);
+          });
+        });
+      }
+      return loopNodeList;
+    };
 
-    // 新增节点
-    const addNode = (e: { x: number; y: number }, child: ChildNode) => {
-      if (!graphRef.current) return;
+    const batchAddEdges = (edgeList: Edge[]) => {
+      // 4. 创建边（需要验证节点存在性）
+      const edges = edgeList
+        .map((edge: Edge) => {
+          return createEdge(edge);
+        })
+        .filter(Boolean);
 
+      // 5. 批量添加边
+      graphRef.current.addEdges(edges);
+
+      updateEdgeArrows(graphRef.current);
+    };
+
+    const doAddNode = (e: { x: number; y: number }, child: ChildNode) => {
       const point = graphRef.current.clientToGraph(e.x, e.y);
 
       const { width, height } = getWidthAndHeight(child);
@@ -92,6 +130,28 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           y: position.y,
         };
         changeCondition(_params);
+      }
+    };
+
+    // 新增节点
+    const addNode = (e: { x: number; y: number }, child: ChildNode) => {
+      if (!graphRef.current) return;
+      doAddNode(e, child);
+      // 找出循环节点 子节点如果有就添加
+      const LoopNodeList = addLoopChildNode((data) => {
+        return data.id === child.id && data.type === 'Loop';
+      });
+      if (LoopNodeList.length) {
+        let edgeList: Edge[] = [];
+        LoopNodeList.forEach((element: Node) => {
+          const data = element.getData();
+          edgeList = edgeList.concat(getEdges([data], false));
+          if (data.innerNodes && data.innerNodes.length > 0) {
+            edgeList = edgeList.concat(getEdges(data.innerNodes, false));
+          }
+        });
+        // 5. 批量添加边
+        batchAddEdges(edgeList);
       }
     };
 
@@ -156,10 +216,19 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     };
 
     // 删除节点
-    const deleteNode = (nodeId: string) => {
+    const deleteNode = (nodeId: string, node?: ChildNode) => {
       if (!graphRef.current) return;
 
+      // 删除节点
       graphRef.current.removeCell(nodeId);
+
+      // 删除后需要重新计算 父级节点(循环节点)的大小
+      if (node && node.loopNodeId) {
+        const parentNode = graphRef.current.getCellById(
+          node.loopNodeId,
+        ) as Node;
+        adjustParentSize(parentNode);
+      }
     };
 
     // 删除边
@@ -218,7 +287,23 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       graphRef.current.zoomTo(Number(val));
     };
 
-    // 绘制画布
+    // 缩放适配
+    const changeGraphZoomToFit = () => {
+      if (!graphRef.current) return;
+      graphRef.current.zoomToFit({
+        padding: {
+          top: 128 + 18,
+          left: 18,
+          right: 18,
+          bottom: 18,
+        },
+        maxScale: 1,
+        minScale: 0.2,
+        preserveAspectRatio: true,
+        useCellGeometry: true,
+      });
+    };
+
     const drawGraph = () => {
       if (graphRef.current && graphParams.nodeList.length > 0) {
         // 清除现有元素，防止重复渲染
@@ -245,47 +330,17 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         graphRef.current.fromJSON({
           nodes: mainNodes, // X6 会自动实例化节点
         });
-        // 找出循环节点
-        const loopNodeList = graphRef.current
-          .getNodes()
-          .filter((item: Node) => {
-            const data = item.getData();
-            return data.type === 'Loop';
-          });
-        // 创建循环的子节点
-        if (loopNodeList.length) {
-          loopNodeList.forEach((element: Node) => {
-            element.prop('zIndex', 4);
-            const data = element.getData();
-            if (!data.innerNodes?.length) return;
-            data.innerNodes.forEach((childDef: ChildNode) => {
-              const child = createChildNode(data.id, childDef); // 创建子节点配置
-              const childNode = graphRef.current.addNode(child); // 添加子节点到图中
-              // childNode.setZIndex(6);  // 新增显式层级设置方法
-              // 更新父节点的子节点列表（如果必要）
-              element.addChild(childNode);
-            });
-          });
-        }
-        // 4. 创建边（需要验证节点存在性）
-        const edges = graphParams.edgeList
-          .map((edge) => {
-            return createEdge(edge);
-          })
-          .filter(Boolean);
+        // 找出循环节点 子节点如果有就添加
+        addLoopChildNode((node) => {
+          return node.type === 'Loop';
+        });
 
-        // 5. 批量添加边
-        graphRef.current.addEdges(edges);
-
-        updateEdgeArrows(graphRef.current);
+        // 批量添加边
+        batchAddEdges(graphParams.edgeList);
 
         // 添加zoomToFit调用，确保在绘制完成后自动调整视图
         setTimeout(() => {
-          graphRef.current?.zoomToFit({
-            padding: 20,
-            maxScale: 1,
-            allowNewOrigin: 'negative',
-          });
+          changeGraphZoomToFit();
         }, 0);
       }
     };
@@ -310,6 +365,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       deleteNode,
       deleteEdge,
       changeGraphZoom,
+      changeGraphZoomToFit,
       drawGraph,
       selectNode,
       createNewEdge,
@@ -333,6 +389,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         copyNode,
         changeCondition,
         removeNode,
+        modal,
+        message,
       });
 
       return () => {

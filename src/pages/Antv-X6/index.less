@@ -1,35 +1,23 @@
 @import '@/styles/color.less';
+@import '@/styles/themeVariables.less';
 
 .absolute-box {
   position: absolute;
-  width: 240px;
-  height: 50px;
-  border-radius: 10px;
+  height: 42px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  bottom: 10px;
-  left: 10px;
-  background: #fff;
-  padding: 0 20px;
+  bottom: 12px;
+  left: 12px;
   z-index: 99;
-  border: 1px solid #969799;
-}
 
-.absolute-test {
-  position: absolute;
-  width: 170px;
-  height: 50px;
-  border-radius: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  bottom: 10px;
-  left: 280px;
-  background: #fff;
-  padding: 0 20px;
-  z-index: 99;
-  border: 1px solid #969799;
+  .action-section {
+    padding: 0 6px;
+    background: #fff;
+    border: 1px solid @xagi-border-color-base;
+    border-radius: @xagi-border-radius;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 }
 
 // 添加节点的样式
@@ -99,12 +87,6 @@
   left: 0; // 改为视窗单位
   overflow: auto;
   min-width: 1200px;
-}
-
-#graph-container {
-  width: 100%;
-  height: 100%;
-  background-color: @WHITE01;
 }
 
 .x6-widget-transform {
@@ -226,7 +208,7 @@
 }
 
 .selected-general-node {
-  border: 2px solid #5f95ff !important;
+  border: 1px solid @xagi-primary-color !important;
 }
 
 .fold-wrap-style {
@@ -266,10 +248,10 @@
 .dispose-node-style {
   padding: 12px;
 
-  svg {
-    width: 12px;
-    height: 12px;
-  }
+  // svg {
+  //   width: 20px;
+  //   height: 20px;
+  // }
 
   .ant-form-item {
     margin-bottom: 6px;
@@ -277,17 +259,15 @@
 
   // 右侧的foldWrap里面的内容
   .node-title-style {
-    font-family: 'Alimama Agile VF';
     font-size: 14px;
-    font-weight: bold;
+    font-weight: 500;
     line-height: 22px;
     color: @BLANK04;
   }
 
   .node-title-grey-style {
-    font-family: 'Alimama Agile VF';
     font-size: 14px;
-    font-weight: bold;
+    font-weight: 500;
     line-height: 22px;
     color: @GRAY04;
     margin-right: 16px;
@@ -312,6 +292,7 @@
 }
 
 .node-item-style {
+  padding-bottom: 8px;
   border-bottom: 1px solid @WHITE03;
   margin-bottom: 10px;
 
@@ -373,6 +354,12 @@
   padding: 0 16px;
   background-color: @WHITE02;
   box-sizing: border-box;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  min-width: 1200px;
 
   .back-icon-style {
     font-size: 14px;
@@ -542,6 +529,8 @@
 .general-node-header-title {
   color: @BLANK04;
   max-width: 124px;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .border-box {

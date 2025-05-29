@@ -1,10 +1,13 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
+import AgentSidebar from '@/components/AgentSidebar';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
 import { EVENT_TYPE } from '@/constants/event.constants';
+import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { DefaultSelectedEnum, MessageTypeEnum } from '@/types/enums/agent';
 import {
+  AgentDetailDto,
   AgentManualComponentInfo,
   AgentSelectedComponentInfo,
 } from '@/types/interfaces/agent';
@@ -18,8 +21,9 @@ import eventBus from '@/utils/eventBus';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
+import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useLocation, useModel, useParams } from 'umi';
+import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import styles from './index.less';
 import ShowArea from './ShowArea';
 
@@ -31,11 +35,14 @@ const cx = classNames.bind(styles);
 const Chat: React.FC = () => {
   const location = useLocation();
   // 会话ID
-  const { id } = useParams();
+  const { id, agentId } = useParams();
   // 附加state
   const message = location.state?.message;
   const files = location.state?.files;
   const infos = location.state?.infos;
+  // 默认的智能体详情信息
+  const defaultAgentDetail = location.state?.defaultAgentDetail;
+  const [agentDetail, setAgentDetail] = useState<AgentDetailDto | null>();
   const [selectedComponentList, setSelectedComponentList] = useState<
     AgentSelectedComponentInfo[]
   >([]);
@@ -74,6 +81,24 @@ const Chat: React.FC = () => {
       },
     };
   }, [conversationInfo]);
+
+  const { run: runDetail, loading } = useRequest(apiPublishedAgentInfo, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: AgentDetailDto) => {
+      setAgentDetail(result);
+    },
+  });
+
+  useEffect(() => {
+    const _agentId = Number(agentId);
+    // 查询智能体详情信息
+    if (_agentId !== defaultAgentDetail?.agentId) {
+      runDetail(_agentId);
+    } else {
+      setAgentDetail(defaultAgentDetail);
+    }
+  }, [agentId, defaultAgentDetail]);
 
   // 在组件挂载时添加滚动事件监听器
   useEffect(() => {
@@ -199,6 +224,11 @@ const Chat: React.FC = () => {
     setSelectedComponentList(_selectedComponentList);
   };
 
+  // 清空会话记录，实际上是跳转到智能体详情页面
+  const handleClear = () => {
+    history.push(`/agent/${agentId}`);
+  };
+
   // 消息发送
   const handleMessageSend = (message: string, files: UploadFileInfo[] = []) => {
     onMessageSend(id, message, files, selectedComponentList);
@@ -213,6 +243,18 @@ const Chat: React.FC = () => {
       behavior: 'smooth',
     });
     setShowScrollBtn(false);
+  };
+
+  // 切换收藏与取消收藏
+  const handleToggleCollectSuccess = (isCollect: boolean) => {
+    const _agentDetail = cloneDeep(agentDetail);
+    if (!_agentDetail) {
+      return;
+    }
+    const count = _agentDetail?.statistics?.collectCount || 0;
+    _agentDetail.statistics.collectCount = isCollect ? count + 1 : count - 1;
+    _agentDetail.collect = isCollect;
+    setAgentDetail(_agentDetail);
   };
 
   return (
@@ -274,12 +316,20 @@ const Chat: React.FC = () => {
           className={cx(styles['chat-input-container'])}
           onEnter={handleMessageSend}
           visible={showScrollBtn}
+          onClear={handleClear}
           manualComponents={manualComponents}
           selectedComponentList={selectedComponentList}
           onSelectComponent={handleSelectComponent}
           onScrollBottom={onScrollBottom}
         />
       </div>
+      <AgentSidebar
+        className={cx(styles['agent-sidebar'])}
+        agentId={agentId}
+        loading={loading}
+        agentDetail={agentDetail}
+        onToggleCollectSuccess={handleToggleCollectSuccess}
+      />
       {/*展示台区域*/}
       <ShowArea />
     </div>

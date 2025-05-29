@@ -90,16 +90,6 @@
   font-weight: 600;
 }
 
-.ant-btn-variant-solid {
-  background-color: #5147ff;
-}
-
-:where(.css-dev-only-do-not-override-77tu7h).ant-btn-variant-solid:not(
-    :disabled
-  ):not(.ant-btn-disabled):hover {
-  background-color: #5147ff;
-}
-
 .ant-checkbox-checked.ant-checkbox-disabled .ant-checkbox-inner {
   background-color: @BLUE04;
   border-color: @BLUE04;
@@ -107,5 +97,15 @@
 
   &::after {
     border-color: @WHITE;
+  }
+}
+
+// 在文件末尾添加
+// 特别针对 Modal 确认对话框
+.ant-modal-root .ant-btn {
+  outline: none !important;
+
+  &:focus-visible {
+    outline: none !important;
   }
 }

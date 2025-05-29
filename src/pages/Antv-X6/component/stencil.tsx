@@ -8,7 +8,7 @@ interface Prop {
   // 当前正在展示的节点
   // dragChild 是一个回调函数，用于处理拖拽开始事件。
   // 它接收 React 的原生 DragEvent 和当前被拖拽的子项 (Child) 对象作为参数。
-  dragChild: (child: Child, e?: React.DragEvent<HTMLDivElement>) => void;
+  dragChild: (child: Child, position?: React.DragEvent<HTMLDivElement>) => void;
   isLoop?: boolean;
   // 当前端口的名称
   portName?: string;
@@ -41,9 +41,9 @@ const StencilContent = ({ dragChild, isLoop = false }: Prop) => {
    */
   const handleDragStart = (
     child: Child,
-    e?: React.DragEvent<HTMLDivElement>,
+    position?: React.DragEvent<HTMLDivElement>,
   ) => {
-    dragChild(child, e);
+    dragChild(child, position);
   };
 
   return (

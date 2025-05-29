@@ -10,7 +10,9 @@ const cx = classNames.bind(styles);
 /**
  * 主页二级菜单栏
  */
-const SystemSection: React.FC = () => {
+const SystemSection: React.FC<{
+  style?: React.CSSProperties;
+}> = ({ style }) => {
   const location = useLocation();
   const { pathname } = location;
 
@@ -56,7 +58,7 @@ const SystemSection: React.FC = () => {
   };
 
   return (
-    <div className={cx('px-6', 'py-16')}>
+    <div className={cx('px-6', 'py-16')} style={style}>
       <h3 className={cx(styles.title)}>系统管理</h3>
       <ul>
         {SYSTEM_MANAGE_LIST.map((item) => (

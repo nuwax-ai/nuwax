@@ -8,6 +8,8 @@ import type { ChatMessageDto } from '@/types/interfaces/conversationInfo';
 
 // 智能体详情页侧边栏
 export interface AgentSidebarProps {
+  className?: string;
+  agentId: number;
   loading?: boolean;
   agentDetail?: AgentDetailDto | null;
   onToggleCollectSuccess: (isCollect: boolean) => void;

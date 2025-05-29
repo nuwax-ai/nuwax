@@ -117,7 +117,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
         <span className="node-title-style">技能</span>
         <Button
           icon={<PlusOutlined />}
-          size={'small'}
+          size="small"
           onClick={showAdd}
           type="text"
         ></Button>

@@ -1,5 +1,6 @@
 @import 'styles/color.less';
 @import 'styles/custom.less';
+@import 'styles/themeCssVariables.less';
 
 html {
   width: 100%;
@@ -58,4 +59,10 @@ body {
 ::-webkit-scrollbar-thumb {
   background: @GRAY;
   border-radius: 6px; /* 滚动条滑块圆角 */
+}
+
+@media (max-width: 768px) {
+  html {
+    min-width: unset;
+  }
 }
