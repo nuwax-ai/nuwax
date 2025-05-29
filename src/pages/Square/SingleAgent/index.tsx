@@ -21,7 +21,7 @@ const cx = classNames.bind(styles);
  * 单个智能体组件
  */
 const SingleAgent: React.FC<SingleAgentProps> = ({
-  publishedAgentInfo,
+  publishedItemInfo,
   onToggleCollectSuccess,
 }) => {
   const {
@@ -33,7 +33,7 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
     description,
     statistics,
     collect,
-  } = publishedAgentInfo;
+  } = publishedItemInfo;
 
   // 根据类型（目标对象（智能体、工作流、插件））显示不同的默认图标
   const defaultImage =
