@@ -85,7 +85,9 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
       <header className={cx(styles.header, 'flex', 'items-center')}>
         <ConditionRender condition={!!documentInfo}>
           <FileSearchOutlined />
-          <span>{documentInfo?.name}</span>
+          <span className={cx('text-ellipsis', styles['file-name'])}>
+            {documentInfo?.name}
+          </span>
           <DocRename
             docId={documentInfo?.id}
             docName={documentInfo?.name}

@@ -94,6 +94,8 @@ export interface KnowledgeConfigListParams extends KnowledgeListBaseInfo {
     name: string;
     // 数据类型,默认文本,1:文本;2:表格
     dataType: KnowledgeDataTypeEnum;
+    // 问题
+    question: string;
   };
 }
 

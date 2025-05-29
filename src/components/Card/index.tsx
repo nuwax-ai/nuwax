@@ -10,7 +10,7 @@ import CardTwo from './CardTwo';
  * 卡片
  */
 const Card: React.FC<CardProps> = (props) => {
-  const { cardKey, bindLinkUrl, ...info } = props;
+  const { cardKey, bindLinkUrl } = props;
 
   const handleClick = () => {
     if (bindLinkUrl) {
@@ -20,13 +20,13 @@ const Card: React.FC<CardProps> = (props) => {
 
   switch (cardKey) {
     case CardStyleEnum.ONE:
-      return <CardOne {...info} onClick={handleClick} />;
+      return <CardOne {...props} onClick={handleClick} />;
     case CardStyleEnum.TWO:
-      return <CardTwo {...info} onClick={handleClick} />;
+      return <CardTwo {...props} onClick={handleClick} />;
     case CardStyleEnum.THREE:
-      return <CardThree {...info} onClick={handleClick} />;
+      return <CardThree {...props} onClick={handleClick} />;
     case CardStyleEnum.FOUR:
-      return <CardFour {...info} onClick={handleClick} />;
+      return <CardFour {...props} onClick={handleClick} />;
   }
 };
 

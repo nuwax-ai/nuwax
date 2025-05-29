@@ -203,7 +203,7 @@ const initGraph = ({
       allowEdge: false,
       highlight: true, //当用户尝试创建连接且鼠标悬停在一个有效的连接点上时，该连接点会被高亮显示
       snap: {
-        radius: 50, // 设置自定义的吸附半径，例如从默认的50px改为24px或其他值
+        radius: 24, // 设置自定义的吸附半径，例如从默认的50px改为24px或其他值
         anchor: 'bbox', // 或者 'center'，决定计算距离时是基于节点中心还是包围盒
       },
       createEdge() {

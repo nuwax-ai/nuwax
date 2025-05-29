@@ -1,4 +1,6 @@
+import type { ThemeConfig } from 'antd/es/config-provider';
 import type { AliasToken, ComponentTokenMap } from 'antd/es/theme/interface';
+
 import themeTokens from './themeTokens';
 type ButtonToken = Partial<ComponentTokenMap['Button'] | AliasToken>;
 type SelectToken = Partial<ComponentTokenMap['Select'] | AliasToken>;
@@ -16,7 +18,7 @@ type CardToken = Partial<ComponentTokenMap['Card'] | AliasToken>;
 type TableToken = Partial<ComponentTokenMap['Table'] | AliasToken>;
 
 // 2. 定义组件级别的主题配置
-export default {
+const componentThemes: ThemeConfig['components'] = {
   // Button 组件
   Button: {
     colorPrimary: themeTokens.colorPrimary,
@@ -178,3 +180,5 @@ export default {
     iconMarginInlineEnd: 10,
   } as MenuToken,
 };
+
+export default componentThemes;

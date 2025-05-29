@@ -1,7 +1,8 @@
 import { NodeTypeEnum } from '@/types/enums/common';
 import { NodeConfig } from '@/types/interfaces/node';
 import { Graph, Node } from '@antv/x6';
-
+import type { MessageInstance } from 'antd/es/message/interface';
+import type { HookAPI as ModalHookAPI } from 'antd/es/modal/useModal';
 /**
  * 定义 Child 接口，用于描述子节点的数据结构。
  */
@@ -127,6 +128,8 @@ export interface BindEventHandlers {
   copyNode: (child: ChildNode) => void;
   // 删除节点
   removeNode: (id: string, node?: ChildNode) => void;
+  modal: ModalHookAPI;
+  message: MessageInstance;
 }
 
 export interface ControlPanelProps {

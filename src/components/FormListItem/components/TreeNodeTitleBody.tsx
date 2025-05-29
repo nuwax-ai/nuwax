@@ -92,7 +92,7 @@ const TreeNodeTitleBody: React.FC<TreeNodeTitleBodyProps> = memo(
               onUpdateField(nodeData.key!, 'dataType', CascaderChange(value));
             }}
             changeOnSelect={true}
-            placement={'bottomLeft'}
+            placement={'bottomRight'}
             placeholder="请选择数据类型"
             style={{
               width: '100%',
@@ -187,6 +187,9 @@ const TreeNodeTitleBody: React.FC<TreeNodeTitleBodyProps> = memo(
   },
   (prevProps, nextProps) => {
     // 自定义比较函数，Body场景下需要额外比较bindValueType
+    if (nextProps.nodeData.subArgs?.length === 0) {
+      return false;
+    }
     return (
       prevProps.nodeData.key === nextProps.nodeData.key &&
       prevProps.nodeData.name === nextProps.nodeData.name &&
@@ -196,6 +199,7 @@ const TreeNodeTitleBody: React.FC<TreeNodeTitleBodyProps> = memo(
       prevProps.nodeData.bindValue === nextProps.nodeData.bindValue &&
       prevProps.nodeData.bindValueType === nextProps.nodeData.bindValueType &&
       prevProps.nodeData.description === nextProps.nodeData.description &&
+      prevProps.nodeData.subArgs === nextProps.nodeData.subArgs &&
       prevProps.showCheck === nextProps.showCheck
     );
   },

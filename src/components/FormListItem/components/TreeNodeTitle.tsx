@@ -14,7 +14,6 @@ import {
 } from 'antd';
 import React, { memo } from 'react';
 import { TreeNodeConfig } from '../hooks/useTreeData';
-
 /**
  * 普通树节点标题组件的Props接口
  */
@@ -107,7 +106,7 @@ const TreeNodeTitle: React.FC<TreeNodeTitleProps> = memo(
               form.getFieldValue('outputType') === 'Markdown' ||
               (nodeData.subArgs && nodeData.subArgs.length > 0)
             }
-            placement={'bottomLeft'}
+            placement={'bottomRight'}
             placeholder="请选择数据类型"
             style={{
               width: '100%',
@@ -189,6 +188,9 @@ const TreeNodeTitle: React.FC<TreeNodeTitleProps> = memo(
   },
   (prevProps, nextProps) => {
     // 自定义比较函数，只有关键属性变化时才重新渲染
+    if (nextProps.nodeData.subArgs?.length === 0) {
+      return false;
+    }
     return (
       prevProps.nodeData.key === nextProps.nodeData.key &&
       prevProps.nodeData.name === nextProps.nodeData.name &&
@@ -196,6 +198,7 @@ const TreeNodeTitle: React.FC<TreeNodeTitleProps> = memo(
       prevProps.nodeData.require === nextProps.nodeData.require &&
       prevProps.nodeData.systemVariable === nextProps.nodeData.systemVariable &&
       prevProps.nodeData.description === nextProps.nodeData.description &&
+      prevProps.nodeData.subArgs === nextProps.nodeData.subArgs &&
       prevProps.showCheck === nextProps.showCheck &&
       prevProps.isNotAdd === nextProps.isNotAdd
     );

@@ -19,7 +19,7 @@ import type {
 import { KnowledgeDocumentStatus } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
 import { ExclamationCircleFilled } from '@ant-design/icons';
-import { message, Modal } from 'antd';
+import { Input, message, Modal } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -30,7 +30,7 @@ import KnowledgeHeader from './KnowledgeHeader';
 import LocalDocModal from './LocalCustomDocModal';
 import QaBatchModal from './QaBatchModal';
 import QaModal from './QaModal';
-import QaTableList from './QaTableList';
+import QaTableList, { QaTableListRef } from './QaTableList';
 import RawSegmentInfo from './RawSegmentInfo';
 
 const cx = classNames.bind(styles);
@@ -98,7 +98,7 @@ const SpaceKnowledge: React.FC = () => {
       queryFilter: {
         spaceId,
         kbId,
-        name: '',
+        question: '',
       },
       current,
       pageSize: 100,
@@ -252,11 +252,12 @@ const SpaceKnowledge: React.FC = () => {
     setDocumentList(_documentList);
   };
   const [docType, setDocType] = useState<number>(1);
-  const qaTableListRef = useRef<typeof QaTableList>(null);
+  const qaTableListRef = useRef<QaTableListRef>(null);
   const [qaInfo, setQaInfo] = useState<KnowledgeQAInfo | null>(null);
   // 根据docType 判断是否显示QA问答
   const showDocContent = docType === 1;
   const [qaOpen, setQaOpen] = useState<boolean>(false);
+  const [question, setQuestion] = useState<string>('');
 
   // 知识库问答 - 数据列表查询
   const handleQaList = () => {
@@ -348,18 +349,35 @@ const SpaceKnowledge: React.FC = () => {
   };
 
   const renderQaContent = () => {
+    // 添加问题搜索功能 点击按钮搜索
+    const handleSearchQa = (value: string) => {
+      setQuestion(value);
+    };
     return (
       <div className="flex flex-col h-full">
         {/* QA问答 */}
-        <div
-          className={cx(
-            'flex',
-            'flex-1',
-            'radius-6',
-            'overflow-hide',
-            styles['inner-container'],
-          )}
-        >
+        <div className={cx('flex', 'flex-1', 'flex-col')}>
+          {/* 添加问题搜索功能 */}
+          <div
+            style={{
+              height: '50px',
+            }}
+          >
+            <div
+              className={cx('flex', 'flex-1', 'items-end', 'justify-center')}
+              style={{
+                width: 240,
+                height: 42,
+              }}
+            >
+              <Input.Search
+                placeholder="请输入问题搜索"
+                allowClear
+                onSearch={handleSearchQa}
+                onPressEnter={(e) => handleSearchQa(e.currentTarget.value)}
+              />
+            </div>
+          </div>
           <div
             className={cx('flex', 'flex-1', 'items-center', 'justify-center')}
           >
@@ -370,6 +388,7 @@ const SpaceKnowledge: React.FC = () => {
               kbId={Number(knowledgeId)}
               onEdit={handleEditQa}
               onDelete={handleDeleteQa}
+              question={question}
             />
           </div>
         </div>
