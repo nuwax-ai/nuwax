@@ -235,6 +235,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     {
       title: (
         <LabelIcon
+          className={cx(styles['label-normal'])}
           label="发布空间"
           title={
             <>
@@ -257,13 +258,16 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
             checked={isChecked(record.scope, record.spaceId)}
             onChange={(e) => handleChecked(record, e.target.checked)}
           >
-            {record.name}
+            <div className="text-ellipsis" style={{ width: '148px' }}>
+              {record.name}萨嘎时光飞逝公司干啥噶的
+            </div>
           </Checkbox>
         ),
     },
     {
       title: (
         <LabelIcon
+          className={cx(styles['label-normal'])}
           label="允许复制（模板）"
           title={
             <p>
@@ -288,6 +292,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     {
       title: (
         <LabelIcon
+          className={cx(styles['label-normal'])}
           label="仅模板"
           title={
             '“仅模板”tips：选择后仅在模板广场展示，仅模板只有在允许复制选择后才可选'
@@ -296,11 +301,11 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
         />
       ),
       dataIndex: 'onlyTemplate',
-      width: 180,
+      width: 100,
+      align: 'center',
       render: (_: null, record: PublishScope) =>
         record?.children?.length ? null : (
           <Checkbox
-            className={cx(styles['table-copy'])}
             checked={isOnlyTemplate(record.scope, record.spaceId)}
             disabled={!isAllCopy(record.scope, record.spaceId)}
             onChange={(e) => handleOnlyTemplate(record, e.target.checked)}

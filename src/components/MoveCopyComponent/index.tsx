@@ -34,7 +34,7 @@ const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
   const componentType =
     mode === AgentComponentTypeEnum.Agent
       ? '智能体'
-      : AgentComponentTypeEnum.Plugin
+      : mode === AgentComponentTypeEnum.Plugin
       ? '插件'
       : '工作流';
 
