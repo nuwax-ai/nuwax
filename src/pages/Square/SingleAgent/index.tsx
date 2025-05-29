@@ -12,7 +12,7 @@ import {
 } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
-import { history, useRequest } from 'umi';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -21,6 +21,7 @@ const cx = classNames.bind(styles);
  * 单个智能体组件
  */
 const SingleAgent: React.FC<SingleAgentProps> = ({
+  onClick,
   publishedItemInfo,
   onToggleCollectSuccess,
 }) => {
@@ -57,11 +58,6 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
     },
   });
 
-  // 点击单个智能体
-  const handleClick = async () => {
-    history.push(`/agent/${targetId}`);
-  };
-
   // 切换收藏与取消收藏
   const handleToggleCollect = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
@@ -73,14 +69,11 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   };
 
   return (
-    <div
-      className={cx(styles.container, 'cursor-pointer')}
-      onClick={handleClick}
-    >
+    <div className={cx(styles.container, 'cursor-pointer')} onClick={onClick}>
       <div className={cx(styles.header, 'flex')}>
         <img
           className={cx(styles['a-logo'])}
-          src={icon || (defaultImage as string)}
+          src={icon || defaultImage}
           alt=""
         />
         <div className={cx(styles['info-container'], 'flex-1')}>

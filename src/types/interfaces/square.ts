@@ -83,12 +83,19 @@ export interface SquareAgentInfo {
 
 // 单个智能体组件
 export interface SingleAgentProps {
+  onClick: () => void;
   publishedItemInfo: SquarePublishedItemInfo;
   onToggleCollectSuccess: (id: number, isCollect: boolean) => void;
 }
 
 // 广场单个组件（插件、工作流等）
 export type SquareComponentInfoProps = SingleAgentProps;
+
+// 模板组件属性
+export interface TemplateItemProps {
+  publishedItemInfo: SquarePublishedItemInfo;
+  onClick: () => void;
+}
 
 // 广场菜单项属性
 export interface SquareMenuComponentInfo {

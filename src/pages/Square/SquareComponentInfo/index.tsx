@@ -14,7 +14,7 @@ import { StarFilled, StarOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import moment from 'moment';
 import React from 'react';
-import { history, useRequest } from 'umi';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -23,6 +23,7 @@ const cx = classNames.bind(styles);
  * 单个智能体组件
  */
 const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
+  onClick,
   publishedItemInfo,
   onToggleCollectSuccess,
 }) => {
@@ -81,17 +82,6 @@ const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
     },
   );
 
-  // 点击单项
-  const handleClick = async () => {
-    if (targetType === SquareAgentTypeEnum.Plugin) {
-      history.push(`/square/publish/plugin/${targetId}`);
-    }
-    // 工作流
-    if (targetType === SquareAgentTypeEnum.Workflow) {
-      history.push(`/square/publish/workflow/${targetId}`);
-    }
-  };
-
   // 切换收藏与取消收藏
   const handleToggleCollect = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
@@ -116,7 +106,7 @@ const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
   return (
     <div
       className={cx(styles.container, 'cursor-pointer', 'flex')}
-      onClick={handleClick}
+      onClick={onClick}
     >
       <img
         className={cx(styles['a-logo'])}

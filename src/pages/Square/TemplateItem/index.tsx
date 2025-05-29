@@ -2,7 +2,7 @@ import agentImage from '@/assets/images/agent_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
-import { SquarePublishedItemInfo } from '@/types/interfaces/square';
+import { TemplateItemProps } from '@/types/interfaces/square';
 import classNames from 'classnames';
 import moment from 'moment';
 import React, { useEffect, useState } from 'react';
@@ -10,11 +10,11 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface TemplateItemProps {
-  publishedItemInfo: SquarePublishedItemInfo;
-}
-
-const TemplateItem: React.FC<TemplateItemProps> = ({ publishedItemInfo }) => {
+// 模板组件
+const TemplateItem: React.FC<TemplateItemProps> = ({
+  publishedItemInfo,
+  onClick,
+}) => {
   const { targetType, icon, name, publishUser, description, created } =
     publishedItemInfo;
   // 组件图标
@@ -46,7 +46,7 @@ const TemplateItem: React.FC<TemplateItemProps> = ({ publishedItemInfo }) => {
   return (
     <div
       className={cx(styles.container, 'cursor-pointer', 'flex')}
-      //   onClick={handleClick}
+      onClick={onClick}
     >
       <img className={cx(styles['a-logo'])} src={icon || pluginImage} alt="" />
       <div

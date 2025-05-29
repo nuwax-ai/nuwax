@@ -146,6 +146,22 @@ const Square: React.FC = () => {
     handleQuery(1, value);
   };
 
+  // 点击单项
+  const handleClick = (targetId: number, targetType: SquareAgentTypeEnum) => {
+    // 智能体
+    if (targetType === SquareAgentTypeEnum.Agent) {
+      history.push(`/agent/${targetId}`);
+    }
+    // 插件
+    if (targetType === SquareAgentTypeEnum.Plugin) {
+      history.push(`/square/publish/plugin/${targetId}`);
+    }
+    // 工作流
+    if (targetType === SquareAgentTypeEnum.Workflow) {
+      history.push(`/square/publish/workflow/${targetId}`);
+    }
+  };
+
   return (
     <div
       className={cx(
@@ -195,18 +211,26 @@ const Square: React.FC = () => {
                   key={index}
                   publishedItemInfo={item}
                   onToggleCollectSuccess={handleToggleCollectSuccess}
+                  onClick={() => handleClick(item.targetId, item.targetType)}
                 />
               );
             } else if (
               categoryTypeRef.current === SquareAgentTypeEnum.Template
             ) {
-              return <TemplateItem key={index} publishedItemInfo={item} />;
+              return (
+                <TemplateItem
+                  key={index}
+                  publishedItemInfo={item}
+                  onClick={() => handleClick(item.targetId, item.targetType)}
+                />
+              );
             } else {
               return (
                 <SquareComponentInfo
                   key={index}
                   publishedItemInfo={item}
                   onToggleCollectSuccess={handleToggleCollectSuccess}
+                  onClick={() => handleClick(item.targetId, item.targetType)}
                 />
               );
             }
