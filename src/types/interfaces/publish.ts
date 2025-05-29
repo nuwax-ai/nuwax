@@ -50,7 +50,7 @@ export interface PublishItemListParams {
   targetId: number;
 }
 
-// 智能体、插件、工作流模板复制请求参数
+// 智能体、工作流模板复制请求参数
 export interface PublishTemplateCopyParams extends PublishItemListParams {
   targetSpaceId: number;
 }

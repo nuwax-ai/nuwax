@@ -1,11 +1,16 @@
+import ConditionRender from '@/components/ConditionRender';
+import MoveCopyComponent from '@/components/MoveCopyComponent';
 import { apiPublishedWorkflowInfo } from '@/services/plugin';
+import { apiPublishTemplateCopy } from '@/services/publish';
+import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
+import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PublishWorkflowInfo } from '@/types/interfaces/plugin';
 import type { TableColumnsType } from 'antd';
-import { Divider, Empty, Table } from 'antd';
+import { Button, Divider, Empty, message, Table } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import PluginHeader from '../PluginDetail/PluginHeader';
 import styles from './index.less';
@@ -16,7 +21,10 @@ const cx = classNames.bind(styles);
  * 工作流详情
  */
 const WorkflowIdDetail: React.FC = ({}) => {
-  const { workflowId } = useParams();
+  const params = useParams();
+  const workflowId = Number(params.workflowId);
+  // 复制弹窗
+  const [openMove, setOpenMove] = useState<boolean>(false);
 
   // 查询工作流信息
   const { run: runWorkflowInfo, data: workflowInfo } = useRequest(
@@ -24,18 +32,25 @@ const WorkflowIdDetail: React.FC = ({}) => {
     {
       manual: true,
       debounceInterval: 300,
-      onSuccess: (result: PublishWorkflowInfo) => {
-        console.log(result);
-        return result;
-      },
     },
   );
 
+  // 智能体、工作流模板复制
+  const { run: runCopyTemplate } = useRequest(apiPublishTemplateCopy, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      message.success('模板复制成功');
+      // 关闭弹窗
+      setOpenMove(false);
+    },
+  });
+
   useEffect(() => {
-    if (!workflowId) return;
-    runWorkflowInfo(workflowId);
+    if (workflowId) {
+      runWorkflowInfo(workflowId);
+    }
   }, [workflowId]);
-  console.log(workflowInfo);
 
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [
@@ -93,7 +108,6 @@ const WorkflowIdDetail: React.FC = ({}) => {
       dataIndex: 'name',
       key: 'name',
       width: 430,
-      // className: 'flex items-center',
     },
     {
       title: '参数描述',
@@ -108,6 +122,15 @@ const WorkflowIdDetail: React.FC = ({}) => {
     },
   ];
 
+  // 智能体、工作流模板复制
+  const handlerConfirmCopyTemplate = (targetSpaceId: number) => {
+    runCopyTemplate({
+      targetType: AgentComponentTypeEnum.Workflow,
+      targetId: workflowId,
+      targetSpaceId,
+    });
+  };
+
   return (
     <div className={cx('flex', 'h-full')}>
       <div
@@ -120,7 +143,29 @@ const WorkflowIdDetail: React.FC = ({}) => {
           />
         )}
         <div className={cx(styles['main-container'], 'overflow-y')}>
-          <span className={cx(styles.title)}>工作流描述</span>
+          <div className={cx('flex', 'items-center', 'content-between')}>
+            <span className={cx(styles.title)}>工作流描述</span>
+            <ConditionRender
+              condition={workflowInfo?.allowCopy === AllowCopyEnum.Yes}
+            >
+              <Button
+                type="primary"
+                className={cx(styles['copy-btn'])}
+                onClick={() => setOpenMove(true)}
+              >
+                复制模板
+              </Button>
+              {/*智能体迁移弹窗*/}
+              <MoveCopyComponent
+                spaceId={workflowInfo?.spaceId || 0}
+                type={ApplicationMoreActionEnum.Copy_To_Space}
+                open={openMove}
+                title={workflowInfo?.name}
+                onCancel={() => setOpenMove(false)}
+                onConfirm={handlerConfirmCopyTemplate}
+              />
+            </ConditionRender>
+          </div>
           <p className={cx(styles.desc, 'text-ellipsis-2')}>
             {workflowInfo?.description}
           </p>
@@ -129,7 +174,6 @@ const WorkflowIdDetail: React.FC = ({}) => {
           <Table
             className={cx(styles['table-wrap'], 'overflow-hide')}
             columns={inputColumns}
-            // bordered={false}
             dataSource={workflowInfo?.inputArgs || []}
             pagination={false}
           />
@@ -144,8 +188,6 @@ const WorkflowIdDetail: React.FC = ({}) => {
                 // childrenColumnName: 'subArgs',
                 // 初始时，是否展开所有行
                 defaultExpandAllRows: true,
-                // expandedRowKeys: outputExpandedRowKeys,
-                // expandIcon: () => null,
               }}
             />
           ) : (

@@ -1,5 +1,6 @@
 import type {
   AgentComponentTypeEnum,
+  AllowCopyEnum,
   BindValueType,
   DefaultSelectedEnum,
   InputTypeEnum,
@@ -472,7 +473,9 @@ export interface AgentDetailDto extends AgentBaseInfo {
   remark: string;
   // 智能体发布时间
   publishDate: number;
+  // 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)
   statistics: AgentStatisticsInfo;
+  // 发布者信息
   publishUser: CreatorInfo;
   // 智能体分类名称
   category: string;
@@ -490,6 +493,8 @@ export interface AgentDetailDto extends AgentBaseInfo {
   shareLink: string;
   // 可手动选择的组件列表
   manualComponents: AgentManualComponentInfo[];
+  // 是否允许复制, 1 允许
+  allowCopy: AllowCopyEnum;
   // 当前登录用户是否收藏
   collect: boolean;
 }

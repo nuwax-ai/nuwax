@@ -14,6 +14,7 @@ import type {
   BindConfigWithSub,
   CreatorInfo,
 } from '@/types/interfaces/agent';
+import { AllowCopyEnum } from '../enums/agent';
 
 // 插件试运行输入参数
 export interface PluginTestParams {
@@ -209,6 +210,8 @@ export interface PublishWorkflowInfo {
   //发布者信息
   publishUser: CreatorInfo;
   statistics: AgentStatisticsInfo;
+  // 是否允许复制, 1 允许
+  allowCopy: AllowCopyEnum;
   collect: boolean;
 }
 
