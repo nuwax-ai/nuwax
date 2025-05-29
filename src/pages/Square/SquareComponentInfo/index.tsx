@@ -23,7 +23,7 @@ const cx = classNames.bind(styles);
  * 单个智能体组件
  */
 const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
-  publishedAgentInfo,
+  publishedItemInfo,
   onToggleCollectSuccess,
 }) => {
   const {
@@ -36,7 +36,7 @@ const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
     collect,
     statistics,
     created,
-  } = publishedAgentInfo;
+  } = publishedItemInfo;
 
   // 根据类型（目标对象（工作流、插件））显示不同的默认图标
   const defaultImage =

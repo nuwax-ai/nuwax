@@ -8,7 +8,7 @@ import {
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { TenantConfigInfo } from '@/types/interfaces/login';
 import type { Page } from '@/types/interfaces/request';
-import type { PublishedAgentInfo } from '@/types/interfaces/square';
+import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import { getURLParams } from '@/utils/common';
 import { Empty, Input } from 'antd';
 import { SearchProps } from 'antd/es/input';
@@ -28,14 +28,14 @@ const Square: React.FC = () => {
   // 配置信息
   const [configInfo, setConfigInfo] = useState<TenantConfigInfo>();
   // 智能体列表
-  const [agentList, setAgentList] = useState<PublishedAgentInfo[]>([]);
+  const [agentList, setAgentList] = useState<SquarePublishedItemInfo[]>([]);
   const [title, setTitle] = useState<string>('智能体');
 
   // 广场-已发布智能体列表接口
   const { run: runAgent } = useRequest(apiPublishedAgentList, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: Page<PublishedAgentInfo>) => {
+    onSuccess: (result: Page<SquarePublishedItemInfo>) => {
       setAgentList(result?.records || []);
     },
   });
@@ -44,7 +44,7 @@ const Square: React.FC = () => {
   const { run: runPlugin } = useRequest(apiPublishedPluginList, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: Page<PublishedAgentInfo>) => {
+    onSuccess: (result: Page<SquarePublishedItemInfo>) => {
       setAgentList(result?.records || []);
     },
   });
@@ -53,7 +53,7 @@ const Square: React.FC = () => {
   const { run: runWorkflow } = useRequest(apiPublishedWorkflowList, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: Page<PublishedAgentInfo>) => {
+    onSuccess: (result: Page<SquarePublishedItemInfo>) => {
       setAgentList(result?.records || []);
     },
   });
@@ -175,7 +175,7 @@ const Square: React.FC = () => {
               return (
                 <SingleAgent
                   key={index}
-                  publishedAgentInfo={item}
+                  publishedItemInfo={item}
                   onToggleCollectSuccess={handleToggleCollectSuccess}
                 />
               );
@@ -183,7 +183,7 @@ const Square: React.FC = () => {
               return (
                 <SquareComponentInfo
                   key={index}
-                  publishedAgentInfo={item}
+                  publishedItemInfo={item}
                   onToggleCollectSuccess={handleToggleCollectSuccess}
                 />
               );
