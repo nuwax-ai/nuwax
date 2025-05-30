@@ -1,5 +1,8 @@
 import { SkillList } from '@/components/Skill';
-import { apiPublishedPluginInfo } from '@/services/plugin';
+import {
+  apiPublishedPluginInfo,
+  apiPublishedWorkflowInfo,
+} from '@/services/plugin';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { BindConfigWithSub } from '@/types/interfaces/agent';
 import {
@@ -101,7 +104,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
   const [form] = Form.useForm();
   const [configParam, setConfigParam] = useState<PluginParam[]>([]);
   const { run: runGetPlugDetail, data: pluginDetail } = useRequest(
-    apiPublishedPluginInfo,
+    isPlugin ? apiPublishedPluginInfo : apiPublishedWorkflowInfo,
     {
       manual: true,
       debounceInterval: 300,

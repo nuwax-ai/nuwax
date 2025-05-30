@@ -289,8 +289,8 @@ export default function EcosystemTemplate() {
       const params: ClientConfigSaveReqDTO | ClientConfigUpdateDraftReqDTO = {
         name: values.name,
         description: values.description,
-        dataType: EcosystemDataTypeEnum.PLUGIN,
-        targetType: values.targetType || AgentComponentTypeEnum.Plugin,
+        dataType: EcosystemDataTypeEnum.TEMPLATE,
+        targetType: values.targetType || AgentComponentTypeEnum.Workflow,
         targetId: values.targetId,
         categoryCode: values.categoryCode,
         categoryName: values.categoryName,
@@ -467,7 +467,7 @@ export default function EcosystemTemplate() {
     // 下线插件
     const result = await offlineClientConfig(uid);
     if (result) {
-      message.success('插件已下线');
+      message.success('模板已下线');
       fetchPluginList();
     } else {
       message.error('下线失败');
