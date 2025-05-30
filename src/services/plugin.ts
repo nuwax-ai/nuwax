@@ -11,8 +11,8 @@ import type {
   PublishWorkflowInfo,
 } from '@/types/interfaces/plugin';
 import { PluginAnalysisOutputParams } from '@/types/interfaces/plugin';
+import { HistoryData } from '@/types/interfaces/publish';
 import type { RequestResponse } from '@/types/interfaces/request';
-import type { HistoryData } from '@/types/interfaces/space';
 import { request } from 'umi';
 
 // 插件试运行接口
@@ -54,11 +54,12 @@ export async function apiPluginDelete(
   });
 }
 
-// 创建副本接口
-export async function apiPluginCopy(
+// 插件 - 复制到空间接口
+export async function apiPluginCopyToSpace(
   pluginId: number,
-): Promise<RequestResponse<null>> {
-  return request(`/api/plugin/copy/${pluginId}`, {
+  targetSpaceId: number,
+): Promise<RequestResponse<number>> {
+  return request(`/api/plugin/copy/${pluginId}/${targetSpaceId}`, {
     method: 'POST',
   });
 }

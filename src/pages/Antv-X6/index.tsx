@@ -2,13 +2,13 @@ import Created from '@/components/Created';
 import CreateWorkflow from '@/components/CreateWorkflow';
 import FoldWrap from '@/components/FoldWrap';
 import OtherOperations from '@/components/OtherAction';
+import PublishComponentModal from '@/components/PublishComponentModal';
 import TestRun from '@/components/TestRun';
 import Constant from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { testRunList } from '@/constants/node.constants';
 import service, {
   IgetDetails,
-  IPublish,
   ITestRun,
   IUpdateDetails,
 } from '@/services/workflow';
@@ -45,7 +45,6 @@ import GraphContainer from './graphContainer';
 import Header from './header';
 import './index.less';
 import { renderNodeContent } from './nodeDrawer';
-import Published from './Published';
 import { Child } from './type';
 const Workflow: React.FC = () => {
   const { message } = App.useApp();
@@ -115,6 +114,8 @@ const Workflow: React.FC = () => {
     errorList: [],
     show: false,
   });
+  // 发布前的校验
+  const [isValidLoading, setIsValidLoading] = useState<boolean>(false);
   // 画布的ref
   const graphRef = useRef<any>(null);
   // 阻止获取当前节点的上级参数
@@ -873,7 +874,7 @@ const Workflow: React.FC = () => {
     }
   };
   // 校验当前工作流
-  const volidWorkflow = async () => {
+  const validWorkflow = async () => {
     setLoading(false);
 
     // 先将数据提交到后端
@@ -904,31 +905,43 @@ const Workflow: React.FC = () => {
       return false;
     }
   };
-  // 发布，保存数据
-  const onSubmit = async (values: IPublish) => {
-    const volid = await volidWorkflow();
-    if (volid) {
-      // 获取所有节点,保存位置
-      setLoading(true);
-      const _params = { ...values, workflowId: info?.id };
-      const _res = await service.publishWorkflow(_params);
-      if (_res.code === Constant.success) {
-        message.success('发布成功');
-        setLoading(false);
-        setShowPublish(false);
-        const _time = new Date();
-        // 更新时间
-        setInfo({
-          ...(info as IgetDetails),
-          ...values,
-          modified: _time.toString(),
-          publishDate: _time.toString(),
-          publishStatus: 'Published',
-        });
-      }
-    } else {
-      setShowPublish(false);
-    }
+  // // 发布，保存数据
+  // const onSubmit = async (values: IPublish) => {
+  //   const volid = await validWorkflow();
+  //   if (volid) {
+  //     // 获取所有节点,保存位置
+  //     setLoading(true);
+  //     const _params = { ...values, workflowId: info?.id };
+  //     const _res = await service.publishWorkflow(_params);
+  //     if (_res.code === Constant.success) {
+  //       message.success('发布成功');
+  //       setLoading(false);
+  //       setShowPublish(false);
+  //       const _time = new Date();
+  //       // 更新时间
+  //       setInfo({
+  //         ...(info as IgetDetails),
+  //         ...values,
+  //         modified: _time.toString(),
+  //         publishDate: _time.toString(),
+  //         publishStatus: 'Published',
+  //       });
+  //     }
+  //   } else {
+  //     setShowPublish(false);
+  //   }
+  // };
+
+  const handleConfirmPublishWorkflow = () => {
+    setShowPublish(false);
+    const _time = new Date();
+    // 更新时间
+    setInfo({
+      ...(info as IgetDetails),
+      modified: _time.toString(),
+      publishDate: _time.toString(),
+      publishStatus: 'Published',
+    });
   };
   // 节点试运行
   const nodeTestRun = async (params?: DefaultObjectType) => {
@@ -1072,7 +1085,7 @@ const Workflow: React.FC = () => {
       return false;
     });
 
-    const volid = await volidWorkflow();
+    const volid = await validWorkflow();
     if (volid) {
       setTestRunResult('');
       setTestRun(true);
@@ -1293,16 +1306,25 @@ const Workflow: React.FC = () => {
     }
   }, [foldWrapItem.id, foldWrapItem.type]);
 
+  // 发布
+  const handleShowPublish = async () => {
+    setIsValidLoading(true);
+    const valid = await validWorkflow();
+    if (valid) {
+      setShowPublish(true);
+      setErrorParams({ ...errorParams, errorList: [], show: false });
+    }
+    setIsValidLoading(false);
+  };
+
   return (
     <div id="container">
       {/* 顶部的名称和发布等按钮 */}
       <Header
+        isValidLoading={isValidLoading}
         info={info ?? {}}
         setShowCreateWorkflow={() => setShowCreateWorkflow(true)}
-        showPublish={() => {
-          setShowPublish(true);
-          setErrorParams({ ...errorParams, errorList: [], show: false });
-        }}
+        showPublish={handleShowPublish}
       />
       <GraphContainer
         graphParams={graphParams}
@@ -1402,14 +1424,23 @@ const Workflow: React.FC = () => {
         nodeList={graphParams.nodeList}
       />
 
-      <Published
+      {/*工作流发布弹窗*/}
+      <PublishComponentModal
+        mode={AgentComponentTypeEnum.Workflow}
+        targetId={workflowId}
+        open={showPublish}
+        // 取消发布
+        onCancel={() => setShowPublish(false)}
+        onConfirm={handleConfirmPublishWorkflow}
+      />
+      {/* <Published
         id={info?.id || 0}
         open={showPublish}
         onCancel={() => setShowPublish(false)}
         onSubmit={onSubmit}
         loading={loading}
         scope={info && info.scope ? info.scope : undefined}
-      />
+      /> */}
     </div>
   );
 };

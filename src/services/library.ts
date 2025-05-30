@@ -28,11 +28,12 @@ export async function apiUpdateWorkflow(
   });
 }
 
-// 工作流 - 创建副本接口
-export async function apiWorkflowCopy(
+// 工作流 - 复制工作流到空间
+export async function apiWorkflowCopyToSpace(
   workflowId: number,
+  targetSpaceId: number,
 ): Promise<RequestResponse<number>> {
-  return request(`/api/workflow/copy/${workflowId}`, {
+  return request(`/api/workflow/copy/${workflowId}/${targetSpaceId}`, {
     method: 'POST',
   });
 }

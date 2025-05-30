@@ -1,7 +1,6 @@
 import agentImage from '@/assets/images/agent_image.png';
 import avatar from '@/assets/images/avatar.png';
 import pluginImage from '@/assets/images/plugin_image.png';
-import ConditionRender from '@/components/ConditionRender';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { SingleAgentProps } from '@/types/interfaces/square';
@@ -12,7 +11,7 @@ import {
 } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
-import { history, useRequest } from 'umi';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -21,7 +20,9 @@ const cx = classNames.bind(styles);
  * 单个智能体组件
  */
 const SingleAgent: React.FC<SingleAgentProps> = ({
-  publishedAgentInfo,
+  onClick,
+  extra,
+  publishedItemInfo,
   onToggleCollectSuccess,
 }) => {
   const {
@@ -33,7 +34,7 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
     description,
     statistics,
     collect,
-  } = publishedAgentInfo;
+  } = publishedItemInfo;
 
   // 根据类型（目标对象（智能体、工作流、插件））显示不同的默认图标
   const defaultImage =
@@ -57,11 +58,6 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
     },
   });
 
-  // 点击单个智能体
-  const handleClick = async () => {
-    history.push(`/agent/${targetId}`);
-  };
-
   // 切换收藏与取消收藏
   const handleToggleCollect = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
@@ -73,21 +69,19 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   };
 
   return (
-    <div
-      className={cx(styles.container, 'cursor-pointer')}
-      onClick={handleClick}
-    >
+    <div className={cx(styles.container, 'cursor-pointer')} onClick={onClick}>
       <div className={cx(styles.header, 'flex')}>
         <img
           className={cx(styles['a-logo'])}
-          src={icon || (defaultImage as string)}
+          src={icon || defaultImage}
           alt=""
         />
         <div className={cx(styles['info-container'], 'flex-1')}>
-          <div className={cx('flex')}>
+          <div className={cx('flex', 'gap-10')}>
             <span className={cx('flex-1', styles['a-name'], 'text-ellipsis')}>
               {name}
             </span>
+            {extra}
           </div>
           <div className={cx('flex', 'items-center', styles['info-author'])}>
             <img
@@ -95,16 +89,9 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
               src={publishUser?.avatar || (avatar as string)}
               alt=""
             />
-            <ConditionRender condition={publishUser?.userName}>
-              <span className={cx(styles.author, 'text-ellipsis')}>
-                {publishUser?.userName}
-              </span>
-            </ConditionRender>
-            <ConditionRender condition={publishUser?.nickName}>
-              <span className={cx(styles.nickname, 'text-ellipsis', 'flex-1')}>
-                {publishUser?.nickName}
-              </span>
-            </ConditionRender>
+            <span className={cx(styles.author, 'text-ellipsis', 'flex-1')}>
+              {publishUser?.nickName || publishUser?.userName}
+            </span>
           </div>
           <p className={cx(styles.desc, 'text-ellipsis-3')}>{description}</p>
         </div>

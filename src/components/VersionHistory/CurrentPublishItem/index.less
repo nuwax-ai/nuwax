@@ -1,0 +1,50 @@
+@import '@/styles/color';
+
+.container {
+  gap: 10px;
+  padding: 6px 8px;
+  font-weight: 400;
+  font-size: 14px;
+  border-bottom: 1px solid @WHITE15;
+
+  &:last-child {
+    border-bottom-color: transparent;
+  }
+
+  .p-info {
+    gap: 4px;
+
+    .p-name {
+      font-size: 14px;
+      color: @BLANK04;
+    }
+
+    .p-time {
+      color: @GRAY05;
+      font-size: 12px;
+    }
+  }
+
+  .btn {
+    width: 56px;
+    height: 28px;
+    font-size: 12px;
+    border: none;
+    color: @BLANK17;
+    background: @GRAY01;
+  }
+
+  .off-btn {
+    transition: background 0.3s ease;
+
+    &:hover {
+      background: @WHITE11;
+    }
+  }
+
+  .disabled-btn {
+    color: @GRAY08;
+    background: @GRAY04;
+    cursor: not-allowed; // 禁用光标;
+  }
+}

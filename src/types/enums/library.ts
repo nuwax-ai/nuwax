@@ -1,12 +1,3 @@
-// 组件库更多操作枚举
-export enum ComponentMoreActionEnum {
-  Copy = 'Copy',
-  Statistics = 'Statistics',
-  // 下架
-  Off_Shelf = 'Off_Shelf',
-  Del = 'Del',
-}
-
 // 工作流操作枚举
 export enum WorkflowModeEnum {
   // 新建

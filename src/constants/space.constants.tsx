@@ -6,6 +6,7 @@ import {
   ICON_KNOWLEDGE,
   ICON_MODEL,
   ICON_PLUGIN,
+  ICON_SPACE_SQUARE,
   ICON_WORKFLOW,
 } from '@/constants/images.constants';
 import { InputTypeEnum, TriggerComponentType } from '@/types/enums/agent';
@@ -75,10 +76,10 @@ export const CREATE_LIST = [
 // 应用开发更多操作
 export const APPLICATION_MORE_ACTION = [
   { type: ApplicationMoreActionEnum.Analyze, label: '分析' },
-  { type: ApplicationMoreActionEnum.Create_Copy, label: '创建副本' },
+  { type: ApplicationMoreActionEnum.Copy_To_Space, label: '复制到空间' },
   { type: ApplicationMoreActionEnum.Move, label: '迁移' },
   { type: ApplicationMoreActionEnum.Temporary_Session, label: '临时会话' },
-  { type: ApplicationMoreActionEnum.Off_Shelf, label: '下架' },
+  { type: ApplicationMoreActionEnum.Log, label: '日志' },
   { type: ApplicationMoreActionEnum.Del, label: '删除', isDel: true },
 ];
 
@@ -95,9 +96,14 @@ export const SPACE_APPLICATION_LIST = [
     text: '组件库',
   },
   {
+    type: SpaceApplicationListEnum.Space_Square,
+    icon: <ICON_SPACE_SQUARE />,
+    text: '空间广场',
+  },
+  {
     type: SpaceApplicationListEnum.Team_Setting,
     icon: <ICON_GROUP_SET />,
-    text: '团队设置',
+    text: '成员与设置',
   },
 ];
 

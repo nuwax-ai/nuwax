@@ -1,5 +1,6 @@
 import databaseImage from '@/assets/images/database_image.png';
 import knowledgeImage from '@/assets/images/knowledge_image.png';
+import modelImage from '@/assets/images/model_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import variableImage from '@/assets/images/variable_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
@@ -86,6 +87,10 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
         return variableImage;
       case AgentComponentTypeEnum.Table:
         return databaseImage;
+      case AgentComponentTypeEnum.Model:
+        return modelImage;
+      default:
+        return pluginImage;
     }
   };
 
@@ -117,8 +122,9 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
             <h5 className={cx(styles.title)}>调用组件</h5>
             {finalResult?.componentExecuteResults?.map(
               (info: ExecuteResultInfo, index: number) => (
+                // 模型可能不存在id，所以使用index作为key
                 <div
-                  key={info.id}
+                  key={info?.id || index}
                   className={cx(styles['execute-box'], 'flex', 'items-center')}
                 >
                   <img src={getIcon(info)} alt="" />

@@ -1,12 +1,16 @@
 import agentImage from '@/assets/images/agent_image.png'; // 智能体默认图标
 import shareImage from '@/assets/images/share.png';
 import ConditionRender from '@/components/ConditionRender';
+import MoveCopyComponent from '@/components/MoveCopyComponent';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
+import { apiPublishTemplateCopy } from '@/services/publish';
+import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
+import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { AgentContentProps } from '@/types/interfaces/agentTask';
 import { StarFilled, StarOutlined } from '@ant-design/icons';
-import { message, Tooltip } from 'antd';
+import { Button, message, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useState } from 'react';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { useRequest } from 'umi';
 import styles from './index.less';
@@ -18,6 +22,9 @@ const AgentContent: React.FC<AgentContentProps> = ({
   agentDetail,
   onToggleCollectSuccess,
 }) => {
+  // 复制弹窗
+  const [openMove, setOpenMove] = useState<boolean>(false);
+
   const handleCopy = () => {
     message.success('复制成功');
   };
@@ -40,6 +47,17 @@ const AgentContent: React.FC<AgentContentProps> = ({
     },
   });
 
+  // 智能体、工作流模板复制
+  const { run: runCopyTemplate, loading } = useRequest(apiPublishTemplateCopy, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      message.success('模板复制成功');
+      // 关闭弹窗
+      setOpenMove(false);
+    },
+  });
+
   // 切换收藏与取消收藏
   const handleToggleCollect = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
@@ -48,6 +66,15 @@ const AgentContent: React.FC<AgentContentProps> = ({
     } else {
       runCollectAgent(agentDetail?.agentId);
     }
+  };
+
+  // 智能体、工作流模板复制
+  const handlerConfirmCopyTemplate = (targetSpaceId: number) => {
+    runCopyTemplate({
+      targetType: AgentComponentTypeEnum.Agent,
+      targetId: agentDetail?.agentId,
+      targetSpaceId,
+    });
   };
 
   return (
@@ -102,6 +129,26 @@ const AgentContent: React.FC<AgentContentProps> = ({
           </Tooltip>
         </CopyToClipboard>
       </span>
+      <ConditionRender condition={agentDetail?.allowCopy === AllowCopyEnum.Yes}>
+        <Button
+          className="mt-16"
+          type="primary"
+          block
+          onClick={() => setOpenMove(true)}
+        >
+          复制模板
+        </Button>
+        {/*智能体迁移弹窗*/}
+        <MoveCopyComponent
+          spaceId={agentDetail?.spaceId || 0}
+          loading={loading}
+          type={ApplicationMoreActionEnum.Copy_To_Space}
+          open={openMove}
+          title={agentDetail?.name}
+          onCancel={() => setOpenMove(false)}
+          onConfirm={handlerConfirmCopyTemplate}
+        />
+      </ConditionRender>
     </div>
   );
 };

@@ -8,11 +8,6 @@ export interface CreateSpaceTeamParams {
   icon: string;
 }
 
-// 更新新团队传入参数
-export interface UpdateSpaceTeamParams extends CreateSpaceTeamParams {
-  id: number;
-}
-
 // 删除工作空间
 export interface DeleteSpaceParams {
   spaceId: number;
@@ -35,9 +30,15 @@ export interface SpaceInfo {
   icon: string;
   // 空间类型
   type: SpaceTypeEnum;
+  // 创建者ID
   creatorId: number;
+  // 更新时间
   modified: string;
+  // 创建时间
   created: string;
+  // 当前登录用户在空间的角色,可用值:Owner,Admin,User
+  currentUserRole: RoleEnum;
+  [key: string]: any;
 }
 
 // 增加团队成员输入参数
@@ -56,11 +57,4 @@ export interface UserSpaceInfo {
   role: RoleEnum;
   modified: string;
   created: string;
-}
-
-// 空间转让接口传入参数
-export interface TransferSpaceParams {
-  spaceId: number;
-  // 目标用户ID
-  targetUserId: number;
 }

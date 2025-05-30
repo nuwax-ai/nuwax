@@ -10,14 +10,12 @@ import {
   ICON_KNOWLEDGE,
   ICON_LOCAL_DOC,
   ICON_MODEL,
-  // ICON_ONLINE_DOC,
   ICON_PLUGIN,
   ICON_WORKFLOW,
 } from '@/constants/images.constants';
 import { InputTypeEnum } from '@/types/enums/agent';
 import { HttpContentTypeEnum, HttpMethodEnum } from '@/types/enums/common';
 import {
-  ComponentMoreActionEnum,
   KnowledgeSegmentIdentifierEnum,
   KnowledgeTextImportEnum,
 } from '@/types/enums/library';
@@ -33,7 +31,10 @@ import {
   PluginCodeModeEnum,
   PluginTypeEnum,
 } from '@/types/enums/plugin';
-import { ComponentTypeEnum } from '@/types/enums/space';
+import {
+  ApplicationMoreActionEnum,
+  ComponentTypeEnum,
+} from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { BarsOutlined } from '@ant-design/icons';
 
@@ -41,61 +42,61 @@ import { BarsOutlined } from '@ant-design/icons';
 export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
   // 插件
   {
-    action: ComponentMoreActionEnum.Copy,
-    label: '复制',
+    action: ApplicationMoreActionEnum.Copy_To_Space,
+    label: '复制到空间',
     type: ComponentTypeEnum.Plugin,
   },
   {
-    action: ComponentMoreActionEnum.Off_Shelf,
+    action: ApplicationMoreActionEnum.Off_Shelf,
     label: '下架',
     type: ComponentTypeEnum.Plugin,
   },
   {
-    action: ComponentMoreActionEnum.Del,
+    action: ApplicationMoreActionEnum.Del,
     label: '删除',
     isDel: true,
     type: ComponentTypeEnum.Plugin,
   },
   // 模型
   {
-    action: ComponentMoreActionEnum.Del,
+    action: ApplicationMoreActionEnum.Del,
     label: '删除',
     isDel: true,
     type: ComponentTypeEnum.Model,
   },
   // 工作流
   {
-    action: ComponentMoreActionEnum.Copy,
-    label: '复制',
+    action: ApplicationMoreActionEnum.Copy_To_Space,
+    label: '复制到空间',
     type: ComponentTypeEnum.Workflow,
   },
   {
-    action: ComponentMoreActionEnum.Off_Shelf,
+    action: ApplicationMoreActionEnum.Off_Shelf,
     label: '下架',
     type: ComponentTypeEnum.Workflow,
   },
   {
-    action: ComponentMoreActionEnum.Del,
+    action: ApplicationMoreActionEnum.Del,
     label: '删除',
     isDel: true,
     type: ComponentTypeEnum.Workflow,
   },
   // 知识库
-  // { type: ComponentMoreActionEnum.Statistics, label: '统计' },
+  // { type: ApplicationMoreActionEnum.Statistics, label: '统计' },
   {
-    action: ComponentMoreActionEnum.Del,
+    action: ApplicationMoreActionEnum.Del,
     label: '删除',
     isDel: true,
     type: ComponentTypeEnum.Knowledge,
   },
   // 数据表
   {
-    action: ComponentMoreActionEnum.Copy,
+    action: ApplicationMoreActionEnum.Copy,
     label: '复制',
     type: ComponentTypeEnum.Table,
   },
   {
-    action: ComponentMoreActionEnum.Del,
+    action: ApplicationMoreActionEnum.Del,
     label: '删除',
     isDel: true,
     type: ComponentTypeEnum.Table,

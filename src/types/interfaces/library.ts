@@ -138,6 +138,7 @@ export interface ComponentInfo {
   icon: string;
   // 发布状态，工作流、插件有效,可用值:Developing,Applying,Published,Rejected
   publishStatus: PublishStatusEnum;
+  // 最后编辑时间
   modified: string;
   // 创建时间
   created: string;
@@ -145,7 +146,7 @@ export interface ComponentInfo {
   // 创建者信息
   creator: CreatorInfo;
   // 扩展字段
-  ext: string;
+  ext: any;
 }
 
 // box组件

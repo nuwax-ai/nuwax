@@ -2,14 +2,12 @@ import {
   PLUGIN_INPUT_CONFIG,
   PLUGIN_OUTPUT_CONFIG,
 } from '@/constants/space.constants';
-import { apiPluginConfigHistoryList } from '@/services/plugin';
 import { DataTypeEnum, PublishStatusEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type {
   PluginHttpUpdateParams,
   PluginInfo,
 } from '@/types/interfaces/plugin';
-import type { HistoryData } from '@/types/interfaces/space';
 import {
   addChildNode,
   deleteNode,
@@ -19,11 +17,12 @@ import {
 import cloneDeep from 'lodash/cloneDeep';
 import moment from 'moment';
 import React, { useState } from 'react';
-import { useParams, useRequest } from 'umi';
+import { useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 
 const usePluginConfig = () => {
-  const { pluginId } = useParams();
+  const params = useParams();
+  const pluginId = Number(params.pluginId);
   // 试运行弹窗
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   // 自动解析弹窗
@@ -41,8 +40,6 @@ const usePluginConfig = () => {
   const [outputExpandedRowKeys, setOutputExpandedRowKeys] = useState<
     React.Key[]
   >([]);
-  // 历史版本数据
-  const [historyData, setHistoryData] = useState<HistoryData[]>([]);
   // 入参配置
   const [inputConfigArgs, setInputConfigArgs] = useState<BindConfigWithSub[]>(
     [],
@@ -51,15 +48,6 @@ const usePluginConfig = () => {
   const [outputConfigArgs, setOutputConfigArgs] = useState<BindConfigWithSub[]>(
     [],
   );
-
-  // 查询插件历史配置信息接口
-  const { run: runHistory } = useRequest(apiPluginConfigHistoryList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: HistoryData[]) => {
-      setHistoryData(result);
-    },
-  });
 
   // 入参配置 - changeValue
   const handleInputValue = (
@@ -226,13 +214,11 @@ const usePluginConfig = () => {
     setVisible,
     openModal,
     setOpenModal,
-    runHistory,
     pluginId,
     pluginInfo,
     setPluginInfo,
     openPlugin,
     setOpenPlugin,
-    historyData,
     inputConfigArgs,
     setInputConfigArgs,
     outputConfigArgs,

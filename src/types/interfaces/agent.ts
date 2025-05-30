@@ -1,5 +1,6 @@
 import type {
   AgentComponentTypeEnum,
+  AllowCopyEnum,
   BindValueType,
   DefaultSelectedEnum,
   InputTypeEnum,
@@ -15,18 +16,15 @@ import type {
   TooltipTitleTypeEnum,
 } from '@/types/enums/common';
 import type { UpdateModeComponentEnum } from '@/types/enums/library';
-import type {
-  HistoryActionTypeEnum,
-  HistoryTargetTypeEnum,
-  OpenCloseEnum,
-} from '@/types/enums/space';
+import type { HistoryActionTypeEnum, OpenCloseEnum } from '@/types/enums/space';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import React from 'react';
 import { CardArgsBindConfigInfo } from './cardInfo';
 
 // 知识库设置label
 export interface LabelIconProps {
-  label: string;
+  className?: string;
+  label: React.ReactNode;
   title: React.ReactNode;
   type?: TooltipTitleTypeEnum;
 }
@@ -51,12 +49,6 @@ export interface AgentInfo extends AgentBaseInfo {
 // 新增智能体输入参数
 export interface AgentAddParams extends AgentBaseInfo {
   spaceId: number;
-}
-
-// 智能体迁移接口输入参数
-export interface AgentTransferParams {
-  agentId: number;
-  targetSpaceId: number;
 }
 
 // 智能体发布申请输入参数
@@ -209,6 +201,7 @@ export type AgentComponentPluginUpdateParams =
 
 // 智能体组件模型设置
 export interface ComponentModelBindConfig {
+  // 模式：Precision 精确模式；Balanced 平衡模式；Creative 创意模式；Customization 自定义,可用值:Precision,Balanced,Creative,Customization
   mode: UpdateModeComponentEnum;
   // 生成随机性;0-1
   temperature: number;
@@ -218,6 +211,8 @@ export interface ComponentModelBindConfig {
   maxTokens: number;
   // 上下文轮数
   contextRounds: number;
+  // 推理模型ID
+  reasoningModelId: number | null;
 }
 
 // 更新模型组件配置输入参数
@@ -379,7 +374,7 @@ export interface TriggerTimeZone {
 export interface AgentConfigHistoryInfo {
   id: number;
   // 可用值:Agent,Plugin,Workflow
-  targetType: HistoryTargetTypeEnum;
+  targetType: AgentComponentTypeEnum;
   targetId: number;
   // 操作类型,Add 新增, Edit 编辑, Publish 发布,可用值:Add,Edit,Publish,PublishApply,PublishApplyReject,OffShelf,AddComponent,EditComponent,DeleteComponent,AddNode,EditNode,DeleteNode
   type: HistoryActionTypeEnum;
@@ -478,7 +473,9 @@ export interface AgentDetailDto extends AgentBaseInfo {
   remark: string;
   // 智能体发布时间
   publishDate: number;
+  // 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)
   statistics: AgentStatisticsInfo;
+  // 发布者信息
   publishUser: CreatorInfo;
   // 智能体分类名称
   category: string;
@@ -496,6 +493,123 @@ export interface AgentDetailDto extends AgentBaseInfo {
   shareLink: string;
   // 可手动选择的组件列表
   manualComponents: AgentManualComponentInfo[];
+  // 是否允许复制, 1 允许
+  allowCopy: AllowCopyEnum;
   // 当前登录用户是否收藏
   collect: boolean;
+}
+
+// 日志查询过滤条件
+export interface LogQueryFilter {
+  // 智能体ID
+  agentId: number;
+
+  // 请求ID
+  requestId?: string;
+
+  // 消息ID
+  messageId?: string;
+
+  // 会话ID
+  conversationId?: string;
+
+  // 用户UID
+  userUid?: string;
+
+  // 用户输入,需要支持全文检索，支持多个关键字（AND关系）
+  userInput?: string[];
+
+  // 系统输出,需要支持全文检索，支持多个关键字（AND关系）
+  output?: string[];
+
+  // 开始时间
+  startTime?: string;
+
+  // 结束时间
+  endTime?: string;
+
+  // 租户ID，用于租户隔离，确保只查询特定租户的日志
+  tenantId?: string;
+
+  // 空间ID，可选，用于查询特定空间的日志，支持多个ID（OR关系）
+  spaceId?: string[];
+}
+
+// 日志查询请求参数
+export interface apiAgentLogListParams {
+  /*分页查询过滤条件 */
+  queryFilter?: LogQueryFilter;
+  // 当前页,示例值(1)
+  current: number;
+  // 分页pageSize,示例值(10)
+  pageSize: number;
+}
+
+// 日志信息
+export interface logInfo {
+  // 请求ID，唯一标识一次请求
+  requestId: string;
+
+  // 消息ID
+  messageId: string;
+
+  // 智能体ID
+  agentId: string;
+
+  // 会话ID
+  conversationId: string;
+
+  // 用户UID（必填）
+  userUid: string;
+
+  // 商户ID
+  tenantId: string;
+
+  // 空间ID，用户可以有多个空间
+  spaceId: string;
+
+  // 用户输入
+  userInput: string;
+
+  // 系统输出的内容
+  output: string;
+
+  // 执行结果
+  executeResult: string;
+
+  // 输入token数量
+  inputToken: number;
+
+  // 输出token数量
+  outputToken: number;
+
+  // 请求时间
+  requestStartTime: string;
+
+  // 请求结束时间
+  requestEndTime: string;
+
+  // 整体耗时
+  elapsedTimeMs: number;
+
+  // 节点类型
+  nodeType: string;
+
+  // 节点状态
+  status: string;
+
+  // 节点名称
+  nodeName: string;
+
+  // 创建时间
+  createdAt: string;
+
+  // 更新时间
+  updatedAt: string;
+
+  // 用户ID
+  userId: number;
+
+  // 用户名称
+  userName: string;
 }

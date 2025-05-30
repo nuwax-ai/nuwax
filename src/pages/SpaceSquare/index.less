@@ -1,0 +1,62 @@
+@import '@/styles/color';
+
+.container {
+  height: 100%;
+  padding: 20px 30px;
+
+  .title {
+    line-height: 22px;
+    margin-bottom: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    color: @BLANK04;
+  }
+
+  .tab {
+    :global {
+      .ant-tabs-tab {
+        font-size: 16px;
+        color: @GRAY05;
+        font-weight: bold;
+        user-select: none; // 禁止选中文字
+      }
+
+      .ant-tabs-tab.ant-tabs-tab-focus .ant-tabs-tab-btn {
+        outline: none;
+      }
+
+      .ant-tabs-tab-active .ant-tabs-tab-btn {
+        font-size: 16px;
+        font-weight: bold;
+        color: @BLUE13;
+        text-shadow: none;
+      }
+
+      .ant-tabs-ink-bar {
+        background: @BLUE13;
+      }
+    }
+  }
+
+  .list-section {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+
+    .icon {
+      color: @BLANK04;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .list-section {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .list-section {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+}
