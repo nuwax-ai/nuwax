@@ -283,7 +283,7 @@ const SpaceDevelop: React.FC = () => {
         break;
       // 日志
       case ApplicationMoreActionEnum.Log:
-        history.push(`/home/log/${id}`);
+        history.push(`/space/${id}/log`);
         break;
       case ApplicationMoreActionEnum.Del:
         confirm({

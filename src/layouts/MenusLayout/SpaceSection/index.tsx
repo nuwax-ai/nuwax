@@ -76,7 +76,7 @@ const SpaceSection: React.FC<{
   const handleActive = (type: SpaceApplicationListEnum) => {
     return (
       (type === SpaceApplicationListEnum.Application_Develop &&
-        pathname.includes('develop')) ||
+        (pathname.includes('develop') || pathname.includes('log'))) ||
       (type === SpaceApplicationListEnum.Component_Library &&
         (pathname.includes('library') ||
           pathname.includes('knowledge') ||

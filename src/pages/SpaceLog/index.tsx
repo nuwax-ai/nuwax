@@ -6,6 +6,7 @@ import {
   LogQueryFilter,
 } from '@/types/interfaces/agent';
 import { Page } from '@/types/interfaces/request';
+import { AgentLogFormProps } from '@/types/interfaces/space';
 import {
   Button,
   Col,
@@ -27,17 +28,8 @@ const cx = classNames.bind(styles);
 
 const { RangePicker } = DatePicker;
 
-interface AgentLogFormProps {
-  messageId: string;
-  userUid: string;
-  conversationId: string;
-  timeRange?: Date[];
-  outputString: string;
-  userInputString: string;
-}
-
 // 日志
-const HomeLog: React.FC = () => {
+const SpaceLog: React.FC = () => {
   const params = useParams();
   const agentId = Number(params.agentId);
   const [form] = Form.useForm();
@@ -274,4 +266,4 @@ const HomeLog: React.FC = () => {
   );
 };
 
-export default HomeLog;
+export default SpaceLog;
