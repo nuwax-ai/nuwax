@@ -1,10 +1,33 @@
 import { ICON_OPTIMIZE } from '@/constants/images.constants';
 import { ExpandAltOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import SmartVariableInput from '../SmartVariableInput';
 import ExpandTextArea from './expandTextarea';
 import { ExpandableInputTextareaProps } from './type';
+const convertVariables = (inputVariables: any[]): any[] => {
+  return inputVariables.reduce((acc, item) => {
+    const { key, name: title, subArgs } = item;
+    const _key = key || title;
+    if (_key === null || _key === undefined) {
+      return acc;
+    }
+    //同级 title 相同要去重
+    const isExist = acc.find(
+      (item: any) => item.key === _key || item.title === _key,
+    );
+    if (isExist) {
+      return acc;
+    }
+
+    acc.push({
+      key: _key,
+      title: title,
+      children: convertVariables(subArgs || []),
+    });
+    return acc;
+  }, []);
+};
 
 export const ExpandableInputTextarea: React.FC<
   ExpandableInputTextareaProps
@@ -13,11 +36,21 @@ export const ExpandableInputTextarea: React.FC<
   inputFieldName,
   placeholder,
   // rows = 3,
+  value,
   onExpand,
   onOptimize,
   onOptimizeClick,
+  inputVariables, // 输入参数
+  form,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false); // 添加本地状态
+  const [variables, setVariables] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (inputVariables) {
+      setVariables(convertVariables(inputVariables));
+    }
+  }, [inputVariables]);
 
   return (
     <div>
@@ -49,29 +82,12 @@ export const ExpandableInputTextarea: React.FC<
       {/* 输入框 实现一个功能就是用户在输入 {{}} 的时候，popover自动提示可输入变量名，变量名是知识库的输出参数 */}
       <Form.Item name={inputFieldName}>
         <SmartVariableInput
-          variables={[
-            {
-              key: 'abc',
-              title: 'abc',
-              children: [
-                {
-                  key: 'abc1',
-                  title: 'abc1',
-                },
-              ],
-            },
-            {
-              key: 'bcd',
-              title: 'bcd',
-              children: [
-                {
-                  key: 'bcd1',
-                  title: 'bcd1',
-                },
-              ],
-            },
-          ]}
+          value={value}
+          variables={variables}
           placeholder={placeholder}
+          onChange={(value) => {
+            form?.setFieldValue(inputFieldName, value);
+          }}
         />
       </Form.Item>
 
