@@ -16,6 +16,7 @@ import { Empty, Modal, Tabs, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
 import { useParams, useRequest } from 'umi';
+// 复用广场中的组件
 import SingleAgent from '../Square/SingleAgent';
 import SquareComponentInfo from '../Square/SquareComponentInfo';
 import TemplateItem from '../Square/TemplateItem';
