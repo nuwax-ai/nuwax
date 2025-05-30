@@ -84,6 +84,7 @@ export interface SquareAgentInfo {
 // 单个智能体组件
 export interface SingleAgentProps {
   onClick: () => void;
+  extra?: React.ReactNode;
   publishedItemInfo: SquarePublishedItemInfo;
   onToggleCollectSuccess: (id: number, isCollect: boolean) => void;
 }
@@ -95,6 +96,7 @@ export type SquareComponentInfoProps = SingleAgentProps;
 export interface TemplateItemProps {
   publishedItemInfo: SquarePublishedItemInfo;
   onClick: () => void;
+  extra?: React.ReactNode;
 }
 
 // 广场菜单项属性

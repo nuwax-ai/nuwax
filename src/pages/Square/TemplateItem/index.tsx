@@ -14,6 +14,7 @@ const cx = classNames.bind(styles);
 const TemplateItem: React.FC<TemplateItemProps> = ({
   publishedItemInfo,
   onClick,
+  extra,
 }) => {
   const { targetType, icon, name, publishUser, description, created } =
     publishedItemInfo;
@@ -52,13 +53,18 @@ const TemplateItem: React.FC<TemplateItemProps> = ({
       <div
         className={cx(styles['info-container'], 'flex-1', 'flex', 'flex-col')}
       >
-        <div className={cx('flex', styles.header)}>
-          <span className={cx(styles['a-name'], 'text-ellipsis')}>{name}</span>
-          <span className={cx('flex', 'items-center', styles['type-name'])}>
-            <img src={componentIcon} className={cx(styles.icon)} alt="" />
-            <span>{typeName}</span>
-          </span>
-        </div>
+        <header className={cx('flex', styles.header)}>
+          <div className={cx('flex-1', 'flex', 'gap-10', 'overflow-hide')}>
+            <span className={cx(styles['a-name'], 'text-ellipsis')}>
+              {name}
+            </span>
+            <span className={cx('flex', 'items-center', styles['type-name'])}>
+              <img src={componentIcon} className={cx(styles.icon)} alt="" />
+              <span>{typeName}</span>
+            </span>
+          </div>
+          {extra}
+        </header>
         <div className={cx(styles.nickname, 'text-ellipsis')}>
           {publishUser?.nickName || publishUser?.userName}发布于
           {moment(created).format('YYYY-MM-DD')}

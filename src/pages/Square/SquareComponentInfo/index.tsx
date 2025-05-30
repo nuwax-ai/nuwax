@@ -24,6 +24,7 @@ const cx = classNames.bind(styles);
  */
 const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
   onClick,
+  extra,
   publishedItemInfo,
   onToggleCollectSuccess,
 }) => {
@@ -116,28 +117,31 @@ const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
       <div
         className={cx(styles['info-container'], 'flex-1', 'flex', 'flex-col')}
       >
-        <div className={cx('flex', styles.header)}>
-          <span className={cx('flex-1', styles['a-name'], 'text-ellipsis')}>
-            {name}
-          </span>
-          {/*收藏次数*/}
-          <span
-            className={cx(
-              styles.collect,
-              'flex',
-              'items-center',
-              'cursor-pointer',
-            )}
-            onClick={handleToggleCollect}
-          >
-            {collect ? (
-              <StarFilled className={cx(styles['collected-star'])} />
-            ) : (
-              <StarOutlined />
-            )}
-            <span>{statistics?.collectCount || 0}</span>
-          </span>
-        </div>
+        <header className={cx('flex', styles.header)}>
+          <div className={cx('flex-1', 'flex', 'overflow-hide')}>
+            <span className={cx('flex-1', styles['a-name'], 'text-ellipsis')}>
+              {name}
+            </span>
+            {/*收藏次数*/}
+            <span
+              className={cx(
+                styles.collect,
+                'flex',
+                'items-center',
+                'cursor-pointer',
+              )}
+              onClick={handleToggleCollect}
+            >
+              {collect ? (
+                <StarFilled className={cx(styles['collected-star'])} />
+              ) : (
+                <StarOutlined />
+              )}
+              <span>{statistics?.collectCount || 0}</span>
+            </span>
+          </div>
+          {extra}
+        </header>
         <div className={cx(styles.nickname, 'text-ellipsis')}>
           {publishUser?.nickName || publishUser?.userName}发布于
           {moment(created).format('YYYY-MM-DD')}

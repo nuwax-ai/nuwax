@@ -82,6 +82,8 @@ const SpaceSection: React.FC<{
           pathname.includes('knowledge') ||
           pathname.includes('plugin') ||
           pathname.includes('table'))) ||
+      (type === SpaceApplicationListEnum.Space_Square &&
+        pathname.includes('space-square')) ||
       (type === SpaceApplicationListEnum.Team_Setting &&
         pathname.includes('team'))
     );

@@ -59,6 +59,8 @@ export interface PublishTemplateCopyParams extends PublishItemListParams {
 export interface PublishOffShelfParams extends PublishItemListParams {
   // 发布ID，下架时必填
   publishId: number;
+  // 是否仅下架模板，默认为false
+  justOffShelfTemplate?: boolean;
 }
 
 // 查询指定智能体插件或工作流已发布列表返回结果
