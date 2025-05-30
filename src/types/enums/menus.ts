@@ -9,6 +9,8 @@ export enum TabsEnum {
   System_Manage = 'system_manage',
   //课程体系
   Course_System = 'course_system',
+  //生态市场
+  Ecosystem_Market = 'ecosystem_market',
 }
 
 // 菜单栏，用户操作区域点击事件枚举

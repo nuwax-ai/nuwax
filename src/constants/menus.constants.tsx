@@ -1,3 +1,5 @@
+import ecosystemMarketImage from '@/assets/images/ecosystem_market.png';
+import ecosystemMarketImageActive from '@/assets/images/ecosystem_market_active.png';
 import homeImage from '@/assets/images/home_image.png';
 import homeImageActive from '@/assets/images/home_image_active.png';
 import squareImage from '@/assets/images/square_image.png';
@@ -42,6 +44,12 @@ export const TABS = [
     iconActive: squareImageActive,
     text: '广场',
     type: TabsEnum.Square,
+  },
+  {
+    icon: ecosystemMarketImage,
+    iconActive: ecosystemMarketImageActive,
+    text: '生态市场',
+    type: TabsEnum.Ecosystem_Market,
   },
   {
     icon: teachMaterialImage,
