@@ -42,7 +42,6 @@ const LogDetails: React.FC<LogDetailsProps> = ({
       return;
     }
     const _finalResult = JSON.parse(executeResult);
-    console.log('finalResult', _finalResult);
     setFinalResult(_finalResult);
     // 执行结果列表
     const result = _finalResult?.componentExecuteResults || [];

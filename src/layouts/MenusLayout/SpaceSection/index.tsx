@@ -3,6 +3,7 @@ import teamImage from '@/assets/images/team_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import { SPACE_URL } from '@/constants/home.constants';
 import { SPACE_APPLICATION_LIST } from '@/constants/space.constants';
+import { RoleEnum } from '@/types/enums/common';
 import { SpaceApplicationListEnum, SpaceTypeEnum } from '@/types/enums/space';
 import type { AgentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
@@ -25,6 +26,7 @@ const SpaceSection: React.FC<{
   const { spaceList, currentSpaceInfo, handleCurrentSpaceInfo } =
     useModel('spaceModel');
   const { editAgentList, runEdit, runDevCollect } = useModel('devCollectAgent');
+  const { userInfo } = useModel('userInfo');
 
   useEffect(() => {
     // 根据url地址中的spaceId来重置当前空间信息，因为用户可能手动修改url地址栏中的空间id，也可能是复制来的url
@@ -111,6 +113,17 @@ const SpaceSection: React.FC<{
           if (
             currentSpaceInfo?.type === SpaceTypeEnum.Personal &&
             item.type === SpaceApplicationListEnum.Team_Setting
+          ) {
+            return null;
+          }
+          // “开发者功能”【tips：关闭后，用户将无法看见“智能体开发”和“组件库”，创建者和管理员不受影响】
+          if (
+            userInfo?.role === RoleEnum.User &&
+            currentSpaceInfo.allowDevelop === 0 &&
+            [
+              SpaceApplicationListEnum.Application_Develop,
+              SpaceApplicationListEnum.Component_Library,
+            ].includes(item.type)
           ) {
             return null;
           }
