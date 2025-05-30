@@ -1,3 +1,5 @@
+import { FormInstance } from 'antd';
+
 // 定义可以展开的inputTextarea
 export interface ExpandableInputTextareaProps {
   // 标题
@@ -14,6 +16,12 @@ export interface ExpandableInputTextareaProps {
   onOptimize?: boolean;
   // 优化的回调函数
   onOptimizeClick?: () => void;
+  // 输入参数
+  inputVariables?: any;
+  // 输入框的值
+  value?: string;
+  // 表单
+  form?: FormInstance;
 }
 
 //

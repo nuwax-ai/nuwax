@@ -63,8 +63,8 @@ const errorHandler = (error: any, opts: any) => {
     return;
   }
   // 检查是否为不需要显示错误消息的请求
-  const isSilentRequest =
-    opts?.config?.url && beSilentRequestList(opts.config.url);
+  const url = error?.config?.url || opts?.config?.url;
+  const isSilentRequest = url && beSilentRequestList(url);
 
   if (isSilentRequest) {
     return;
