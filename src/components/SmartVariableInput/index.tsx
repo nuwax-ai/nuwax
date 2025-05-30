@@ -3,8 +3,10 @@ import React, {
   useEffect,
   useImperativeHandle,
   useMemo,
+  useRef,
 } from 'react';
 import VariablePopover from './components/VariablePopover';
+import useClickOutside from './hooks/useClickOutside';
 import { useKeyboardSelection } from './hooks/useKeyboardSelection';
 import { usePopoverControl } from './hooks/usePopoverControl';
 import { usePopoverPosition } from './hooks/usePopoverPosition';
@@ -149,6 +151,7 @@ const SmartVariableInput = forwardRef<
     // 处理输入事件
     const onInput = () => {
       handleInput();
+      onChange?.(getContent());
       setTimeout(() => {
         updatePopover();
       }, 0);
@@ -198,11 +201,20 @@ const SmartVariableInput = forwardRef<
     useEffect(() => {
       setContent(value || '');
     }, [value]);
-    useEffect(() => {
-      if (editorRef.current) {
-        onChange?.(editorRef.current?.textContent || '');
-      }
-    }, [editorRef.current?.textContent]);
+
+    // 添加容器和弹窗的 ref
+    const popoverRef = useRef<HTMLDivElement>(null);
+
+    // 使用 useClickOutside 处理点击外部关闭弹窗
+    useClickOutside(
+      popoverRef, // 监听容器外部的点击
+      () => {
+        if (popoverVisible) {
+          hidePopover();
+        }
+      },
+      [], // 排除弹窗区域，避免点击弹窗内部也关闭
+    );
 
     return (
       <>
@@ -211,6 +223,10 @@ const SmartVariableInput = forwardRef<
             ref={editorRef}
             className="editor"
             contentEditable
+            role="textbox"
+            aria-label={placeholder}
+            aria-expanded={popoverVisible}
+            aria-haspopup="listbox"
             suppressContentEditableWarning
             onInput={onInput}
             onKeyDown={handleKeyDown}
@@ -221,6 +237,7 @@ const SmartVariableInput = forwardRef<
         </div>
 
         <VariablePopover
+          ref={popoverRef}
           visible={popoverVisible}
           position={position}
           treeData={formattedVariables}
