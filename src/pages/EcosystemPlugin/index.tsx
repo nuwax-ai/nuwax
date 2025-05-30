@@ -218,68 +218,6 @@ export default function EcosystemPlugin() {
     setSelectedPlugin(null);
     setDrawerVisible(false);
   };
-
-  /**
-   * 处理插件启用/禁用切换
-   */
-  // const handleToggleEnable = async () => {
-  //   if (!selectedPlugin?.uid) return;
-
-  //   try {
-  //     // 这里需要调用启用/禁用的API
-  //     // 目前后端接口中没有提供，可以通过更新草稿的方式实现
-  //     const newUseStatus =
-  //       selectedPlugin.useStatus === EcosystemUseStatusEnum.ENABLED
-  //         ? EcosystemUseStatusEnum.DISABLED
-  //         : EcosystemUseStatusEnum.ENABLED;
-
-  //     // 如果是草稿状态，可以直接更新
-  //     if (selectedPlugin.shareStatus === EcosystemShareStatusEnum.DRAFT) {
-  //       const updateParams: ClientConfigUpdateDraftReqDTO = {
-  //         uid: selectedPlugin.uid,
-  //         name: selectedPlugin.name || '',
-  //         description: selectedPlugin.description,
-  //         dataType: selectedPlugin.dataType || EcosystemDataTypeEnum.PLUGIN,
-  //         targetType: selectedPlugin.targetType,
-  //         targetId: selectedPlugin.targetId,
-  //         categoryCode: selectedPlugin.categoryCode,
-  //         categoryName: selectedPlugin.categoryName,
-  //         useStatus: newUseStatus,
-  //         author: selectedPlugin.author,
-  //         publishDoc: selectedPlugin.publishDoc,
-  //         configParamJson:
-  //           typeof selectedPlugin.configParamJson === 'string'
-  //             ? selectedPlugin.configParamJson
-  //             : JSON.stringify(selectedPlugin.configParamJson || {}),
-  //         configJson:
-  //           typeof selectedPlugin.configJson === 'string'
-  //             ? selectedPlugin.configJson
-  //             : JSON.stringify(selectedPlugin.configJson || {}),
-  //         icon: selectedPlugin.icon,
-  //       };
-
-  //       const result = await updateClientConfigDraft(updateParams);
-  //       if (result) {
-  //         setSelectedPlugin(result);
-  //         message.success(
-  //           newUseStatus === EcosystemUseStatusEnum.ENABLED
-  //             ? '插件已启用'
-  //             : '插件已禁用',
-  //         );
-  //         // 刷新列表
-  //         fetchPluginList();
-  //       } else {
-  //         message.error('操作失败');
-  //       }
-  //     } else {
-  //       message.info('只有草稿状态的插件可以修改启用状态');
-  //     }
-  //   } catch (error) {
-  //     console.error('切换插件状态失败:', error);
-  //     message.error('操作失败');
-  //   }
-  // };
-
   /**
    * 更新配置处理函数
    */

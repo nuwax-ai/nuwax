@@ -294,7 +294,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                   style={{ marginLeft: 10 }}
                   icon={<PlusOutlined />}
                   onClick={() => {
-                    onAddPlugin(AgentComponentTypeEnum.Plugin);
+                    onAddPlugin();
                   }}
                 />
               </Popover>
@@ -344,7 +344,9 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                           icon: pluginValue.icon,
                           targetId: pluginValue.targetId || '',
                           targetType: pluginValue.targetType || '',
-                          type: AgentComponentTypeEnum.Plugin,
+                          type: isPlugin
+                            ? AgentComponentTypeEnum.Plugin
+                            : AgentComponentTypeEnum.Workflow,
                           statistics: null,
                         },
                       ]}

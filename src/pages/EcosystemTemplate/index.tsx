@@ -1,14 +1,18 @@
 import Created from '@/components/Created';
-import EcosystemShareModal from '@/components/EcosystemShareModal';
+import EcosystemShareModal, {
+  EcosystemShareModalProps,
+} from '@/components/EcosystemShareModal';
 import type { PluginCardProps } from '@/components/PluginCard';
 import PluginCard from '@/components/PluginCard';
 import PluginDetailDrawer from '@/components/PluginDetailDrawer';
 import {
   createClientConfigDraft,
+  disableClientConfig,
   getClientConfigDetail,
   getClientConfigList,
   offlineClientConfig,
   saveAndPublishClientConfig,
+  updateAndEnableClientConfig,
   updateAndPublishClientConfig,
   updateClientConfigDraft,
 } from '@/services/ecosystem';
@@ -190,8 +194,8 @@ export default function EcosystemTemplate() {
       tag,
       tagColor,
       isNewVersion: config.isNewVersion,
-      configParamJson: config.configParamJson,
-      localConfigParamJson: config.configParamJson,
+      configParamJson: config.serverConfigParamJson,
+      localConfigParamJson: config.localConfigParamJson,
       isEnabled: config.useStatus === EcosystemUseStatusEnum.ENABLED,
       shareStatus: isMyShare ? config.shareStatus : undefined, // 仅在我的分享中使用
       publishDoc: config.publishDoc,
@@ -214,78 +218,22 @@ export default function EcosystemTemplate() {
     setSelectedPlugin(null);
     setDrawerVisible(false);
   };
-
-  /**
-   * 处理插件启用/禁用切换
-   */
-  const handleToggleEnable = async () => {
-    if (!selectedPlugin?.uid) return;
-
-    try {
-      // 这里需要调用启用/禁用的API
-      // 目前后端接口中没有提供，可以通过更新草稿的方式实现
-      const newUseStatus =
-        selectedPlugin.useStatus === EcosystemUseStatusEnum.ENABLED
-          ? EcosystemUseStatusEnum.DISABLED
-          : EcosystemUseStatusEnum.ENABLED;
-
-      // 如果是草稿状态，可以直接更新
-      if (selectedPlugin.shareStatus === EcosystemShareStatusEnum.DRAFT) {
-        const updateParams: ClientConfigUpdateDraftReqDTO = {
-          uid: selectedPlugin.uid,
-          name: selectedPlugin.name || '',
-          description: selectedPlugin.description,
-          dataType: selectedPlugin.dataType || EcosystemDataTypeEnum.PLUGIN,
-          targetType: selectedPlugin.targetType,
-          targetId: selectedPlugin.targetId,
-          categoryCode: selectedPlugin.categoryCode,
-          categoryName: selectedPlugin.categoryName,
-          useStatus: newUseStatus,
-          author: selectedPlugin.author,
-          publishDoc: selectedPlugin.publishDoc,
-          configParamJson:
-            typeof selectedPlugin.configParamJson === 'string'
-              ? selectedPlugin.configParamJson
-              : JSON.stringify(selectedPlugin.configParamJson || {}),
-          configJson:
-            typeof selectedPlugin.configJson === 'string'
-              ? selectedPlugin.configJson
-              : JSON.stringify(selectedPlugin.configJson || {}),
-          icon: selectedPlugin.icon,
-        };
-
-        const result = await updateClientConfigDraft(updateParams);
-        if (result) {
-          setSelectedPlugin(result);
-          message.success(
-            newUseStatus === EcosystemUseStatusEnum.ENABLED
-              ? '插件已启用'
-              : '插件已禁用',
-          );
-          // 刷新列表
-          fetchPluginList();
-        } else {
-          message.error('操作失败');
-        }
-      } else {
-        message.info('只有草稿状态的插件可以修改启用状态');
-      }
-    } catch (error) {
-      console.error('切换插件状态失败:', error);
-      message.error('操作失败');
-    }
-  };
-
   /**
    * 更新配置处理函数
    */
-  const handleUpdate = () => {
+  const handleUpdateAndEnable = async (values: any[]) => {
     if (!selectedPlugin) return;
-
-    setEditingPlugin(selectedPlugin);
-    setIsEditMode(true);
     setDrawerVisible(false);
-    setShareModalVisible(true);
+    const result = await updateAndEnableClientConfig({
+      uid: selectedPlugin.uid,
+      configParamJson: JSON.stringify(values),
+    });
+    if (result) {
+      message.success('更新成功');
+      fetchPluginList();
+    } else {
+      message.error('更新失败');
+    }
   };
 
   /**
@@ -296,18 +244,13 @@ export default function EcosystemTemplate() {
 
     try {
       // 如果是已发布状态，调用下线接口
-      if (selectedPlugin.shareStatus === EcosystemShareStatusEnum.PUBLISHED) {
-        const result = await offlineClientConfig(selectedPlugin.uid);
-        if (result) {
-          message.success('插件已下线');
-          setDrawerVisible(false);
-          fetchPluginList();
-        } else {
-          message.error('下线失败');
-        }
+      const result = await disableClientConfig(selectedPlugin.uid);
+      if (result) {
+        message.success('插件已下线');
+        setDrawerVisible(false);
+        fetchPluginList();
       } else {
-        // 其他状态可以考虑删除或禁用
-        message.info('当前状态无法下线');
+        message.error('下线失败');
       }
     } catch (error) {
       console.error('停用插件失败:', error);
@@ -449,7 +392,7 @@ export default function EcosystemTemplate() {
   ];
 
   const [show, setShow] = useState(false);
-  const [pluginInfo, setPluginInfo] = useState<PluginShareModalData | null>(
+  const [pluginInfo, setPluginInfo] = useState<EcosystemShareModalProps | null>(
     null,
   );
   const [addComponents, setAddComponents] = useState<
@@ -487,7 +430,7 @@ export default function EcosystemTemplate() {
       setShareModalVisible(true);
       setShow(false);
       const targetType = config.targetType;
-      const item: PluginShareModalData = {
+      const item: EcosystemShareModalProps = {
         uid: config.uid,
         name: config.name || '',
         description: config.description || '',
@@ -559,11 +502,7 @@ export default function EcosystemTemplate() {
           <div className={cx(styles.pluginList)}>
             <Row gutter={[16, 16]}>
               {pluginData.records?.map((config, index) => (
-                <Col
-                  span={6}
-                  key={config.uid || index}
-                  className={cx(styles.pluginCol)}
-                >
+                <Col span={6} key={config.uid || index}>
                   <PluginCard
                     {...convertToPluginCard(config)}
                     onClick={() => handlePluginClick(config)}
@@ -614,8 +553,7 @@ export default function EcosystemTemplate() {
             : undefined
         }
         onClose={handleDetailClose}
-        onToggleEnable={handleToggleEnable}
-        onUpdate={handleUpdate}
+        onUpdateAndEnable={handleUpdateAndEnable}
         onDisable={handleDisable}
       />
 
@@ -638,7 +576,7 @@ export default function EcosystemTemplate() {
       />
       {/*添加插件、工作流、知识库、数据库弹窗*/}
       <Created
-        checkTag={AgentComponentTypeEnum.Agent}
+        checkTag={AgentComponentTypeEnum.Workflow}
         onAdded={onAddedPlugin}
         open={show}
         onCancel={() => setShow(false)}
