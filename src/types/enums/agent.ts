@@ -120,3 +120,9 @@ export enum TaskTypeEnum {
   Chat = 'Chat',
   TASK = 'TASK',
 }
+
+// 是否允许复制,0不允许，1允许
+export enum AllowCopyEnum {
+  No = 0,
+  Yes = 1,
+}

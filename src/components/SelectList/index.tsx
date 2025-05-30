@@ -14,6 +14,7 @@ const SelectList: React.FC<SelectListType> = (props) => {
     dropdownRenderComponent,
     placeholder,
     disabled,
+    allowClear = false,
     options,
     onChange,
     size = 'middle',
@@ -26,6 +27,7 @@ const SelectList: React.FC<SelectListType> = (props) => {
       placeholder={placeholder || '请选择'}
       disabled={disabled}
       onChange={onChange}
+      allowClear={allowClear}
       // 阻止冒泡事件
       onClick={(e) => {
         e.stopPropagation();

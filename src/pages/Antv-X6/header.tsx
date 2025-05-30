@@ -11,6 +11,7 @@ import {
 import { Button, Popover, Tag } from 'antd';
 import React from 'react';
 interface HeaderProp {
+  isValidLoading?: boolean;
   info: {
     name?: string;
     icon?: string;
@@ -26,6 +27,7 @@ interface HeaderProp {
 }
 
 const Header: React.FC<HeaderProp> = ({
+  isValidLoading,
   info,
   setShowCreateWorkflow,
   showPublish,
@@ -92,8 +94,8 @@ const Header: React.FC<HeaderProp> = ({
           </div>
         </div>
       </div>
-      <Button onClick={showPublish} type={'primary'}>
-        发布
+      <Button onClick={showPublish} type={'primary'} loading={isValidLoading}>
+        {isValidLoading ? '校验中' : '发布'}
       </Button>
     </div>
   );

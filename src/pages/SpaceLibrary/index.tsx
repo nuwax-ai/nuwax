@@ -5,6 +5,7 @@ import CreateNewPlugin from '@/components/CreateNewPlugin';
 import CreateWorkflow from '@/components/CreateWorkflow';
 import CreatedItem from '@/components/CreatedItem';
 import CustomPopover from '@/components/CustomPopover';
+import MoveCopyComponent from '@/components/MoveCopyComponent';
 import SelectList from '@/components/SelectList';
 import { USER_INFO } from '@/constants/home.constants';
 import {
@@ -18,11 +19,11 @@ import {
   apiComponentList,
   apiCopyTable,
   apiPublishedOffShelf,
-  apiWorkflowCopy,
+  apiWorkflowCopyToSpace,
   apiWorkflowDelete,
 } from '@/services/library';
 import { apiModelDelete } from '@/services/modelConfig';
-import { apiPluginCopy, apiPluginDelete } from '@/services/plugin';
+import { apiPluginCopyToSpace, apiPluginDelete } from '@/services/plugin';
 import {
   IAddTask,
   default as service,
@@ -30,9 +31,9 @@ import {
 } from '@/services/tableSql';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
-import { ComponentMoreActionEnum } from '@/types/enums/library';
 import { PluginTypeEnum } from '@/types/enums/plugin';
 import {
+  ApplicationMoreActionEnum,
   ComponentTypeEnum,
   CreateListEnum,
   FilterStatusEnum,
@@ -63,11 +64,15 @@ const { confirm } = Modal;
  * 工作空间 - 组件库
  */
 const SpaceLibrary: React.FC = () => {
-  const { spaceId } = useParams();
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
   // 组件列表
   const [componentList, setComponentList] = useState<ComponentInfo[]>([]);
   // 所有智能体列表
   const componentAllRef = useRef<ComponentInfo[]>([]);
+  // 当前组件信息
+  const [currentComponentInfo, setCurrentComponentInfo] =
+    useState<ComponentInfo | null>(null);
   // 新建工作流弹窗
   const [openWorkflow, setOpenWorkflow] = useState<boolean>(false);
   // 新建插件弹窗
@@ -76,6 +81,8 @@ const SpaceLibrary: React.FC = () => {
   const [openDatabase, setOpenDatabase] = useState<boolean>(false);
   // 打开分析弹窗
   // const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
+  // 迁移、复制弹窗
+  const [openMove, setOpenMove] = useState<boolean>(false);
   // 打开创建知识库弹窗
   const [openKnowledge, setOpenKnowledge] = useState<boolean>(false);
   // 打开创建模型弹窗
@@ -137,13 +144,26 @@ const SpaceLibrary: React.FC = () => {
     },
   });
 
-  // 创建副本接口
-  const { run: runPluginCopy } = useRequest(apiPluginCopy, {
+  // 复制到空间成功后处理数据
+  const handleCopyToSpaceSuccess = (params: number[]) => {
+    // 关闭弹窗
+    setOpenMove(false);
+    // 目标空间ID
+    const targetSpaceId = params[1];
+    // 如果目标空间ID和当前空间ID相同, 则重新查询当前空间智能体列表
+    if (targetSpaceId === spaceId) {
+      runComponent(spaceId);
+    }
+  };
+
+  // 插件 - 复制到空间接口
+  const { run: runPluginCopyToSpace } = useRequest(apiPluginCopyToSpace, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
+    onSuccess: (_: null, params: number[]) => {
       message.success('插件复制成功');
-      runComponent(spaceId);
+      // 复制到空间成功后处理数据
+      handleCopyToSpaceSuccess(params);
     },
   });
 
@@ -178,13 +198,14 @@ const SpaceLibrary: React.FC = () => {
     },
   });
 
-  // 工作流 - 创建副本接口
-  const { run: runWorkflowCopy } = useRequest(apiWorkflowCopy, {
+  // 工作流 - 复制工作流到空间
+  const { run: runWorkflowCopyToSpace } = useRequest(apiWorkflowCopyToSpace, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
+    onSuccess: (_: null, params: number[]) => {
       message.success('工作流复制成功');
-      runComponent(spaceId);
+      // 复制到空间成功后处理数据
+      handleCopyToSpaceSuccess(params);
     },
   });
 
@@ -414,20 +435,30 @@ const SpaceLibrary: React.FC = () => {
     });
   };
 
+  // 确认复制到空间
+  const handlerConfirmCopyToSpace = (targetSpaceId: number) => {
+    if (currentComponentInfo?.type === ComponentTypeEnum.Plugin) {
+      runPluginCopyToSpace(currentComponentInfo.id, targetSpaceId);
+    } else if (currentComponentInfo?.type === ComponentTypeEnum.Workflow) {
+      runWorkflowCopyToSpace(currentComponentInfo.id, targetSpaceId);
+    }
+  };
+
   // 点击更多操作 插件： 创建副本、删除 模型：删除 工作流：创建副本、删除 知识库： 删除
   const handleClickMore = (item: CustomPopoverItem, info: ComponentInfo) => {
     const { action, type } = item as unknown as {
-      action: ComponentMoreActionEnum;
+      action: ApplicationMoreActionEnum;
       type: ComponentTypeEnum;
     };
     const { id } = info;
     // 插件
     if (type === ComponentTypeEnum.Plugin) {
       switch (action) {
-        case ComponentMoreActionEnum.Copy:
-          runPluginCopy(id);
+        case ApplicationMoreActionEnum.Copy_To_Space:
+          setOpenMove(true);
+          setCurrentComponentInfo(info);
           break;
-        case ComponentMoreActionEnum.Off_Shelf:
+        case ApplicationMoreActionEnum.Off_Shelf:
           confirm({
             title: '您确定要下架此插件吗?',
             icon: <ExclamationCircleFilled />,
@@ -443,7 +474,7 @@ const SpaceLibrary: React.FC = () => {
             },
           });
           break;
-        case ComponentMoreActionEnum.Del:
+        case ApplicationMoreActionEnum.Del:
           showDeleteConfirm(type, info);
           break;
       }
@@ -452,7 +483,7 @@ const SpaceLibrary: React.FC = () => {
     // 模型
     if (
       type === ComponentTypeEnum.Model &&
-      action === ComponentMoreActionEnum.Del
+      action === ApplicationMoreActionEnum.Del
     ) {
       showDeleteConfirm(type, info);
     }
@@ -460,10 +491,11 @@ const SpaceLibrary: React.FC = () => {
     // 工作流
     if (type === ComponentTypeEnum.Workflow) {
       switch (action) {
-        case ComponentMoreActionEnum.Copy:
-          runWorkflowCopy(id);
+        case ApplicationMoreActionEnum.Copy_To_Space:
+          setOpenMove(true);
+          setCurrentComponentInfo(info);
           break;
-        case ComponentMoreActionEnum.Off_Shelf:
+        case ApplicationMoreActionEnum.Off_Shelf:
           confirm({
             title: '您确定要下架此工作流吗?',
             icon: <ExclamationCircleFilled />,
@@ -479,7 +511,7 @@ const SpaceLibrary: React.FC = () => {
             },
           });
           break;
-        case ComponentMoreActionEnum.Del:
+        case ApplicationMoreActionEnum.Del:
           showDeleteConfirm(type, info);
           break;
       }
@@ -488,7 +520,7 @@ const SpaceLibrary: React.FC = () => {
     // 知识库
     if (
       type === ComponentTypeEnum.Knowledge &&
-      action === ComponentMoreActionEnum.Del
+      action === ApplicationMoreActionEnum.Del
     ) {
       showDeleteConfirm(type, info);
     }
@@ -496,10 +528,10 @@ const SpaceLibrary: React.FC = () => {
     // 数据表
     if (type === ComponentTypeEnum.Table) {
       switch (action) {
-        case ComponentMoreActionEnum.Del:
+        case ApplicationMoreActionEnum.Del:
           showDeleteConfirm(type, info);
           break;
-        case ComponentMoreActionEnum.Copy:
+        case ApplicationMoreActionEnum.Copy:
           runCopyTable({ tableId: id });
           break;
       }
@@ -618,6 +650,16 @@ const SpaceLibrary: React.FC = () => {
         type={AgentComponentTypeEnum.Table}
         onCancel={() => setOpenDatabase(false)}
         Confirm={Confirm}
+      />
+      {/*复制到空间弹窗*/}
+      <MoveCopyComponent
+        spaceId={spaceId}
+        type={ApplicationMoreActionEnum.Copy_To_Space}
+        mode={currentComponentInfo?.type as unknown as AgentComponentTypeEnum}
+        open={openMove}
+        title={currentComponentInfo?.name}
+        onCancel={() => setOpenMove(false)}
+        onConfirm={handlerConfirmCopyToSpace}
       />
       {/*创建工作流*/}
       <CreateWorkflow

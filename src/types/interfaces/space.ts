@@ -1,18 +1,19 @@
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type {
   AgentArrangeConfigEnum,
   ApplicationMoreActionEnum,
-  HistoryActionTypeEnum,
-  HistoryTargetTypeEnum,
 } from '@/types/enums/space';
-import type { AgentConfigInfo, CreatorInfo } from '@/types/interfaces/agent';
+import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { CollapseProps } from 'antd';
 import type { MouseEventHandler } from 'react';
 import React from 'react';
+import { UserInfo } from './login';
 
 // 单个应用项
 export interface ApplicationItemProps {
   agentConfigInfo: AgentConfigInfo;
+  userInfo: UserInfo | null;
   onClick: (agentId: number) => void;
   onCollect: (isCollect: boolean) => void;
   onClickMore: (type: ApplicationMoreActionEnum) => void;
@@ -58,47 +59,14 @@ export interface TooltipIconProps {
   onClick?: MouseEventHandler<HTMLSpanElement>;
 }
 
-// 历史记录数据
-export interface HistoryData {
-  id: number;
-  // 可用值:Agent,Plugin,Workflow
-  targetType: HistoryTargetTypeEnum;
+// 发布智能体、插件、工作流等弹窗组件
+export interface PublishComponentModalProps {
+  mode?: AgentComponentTypeEnum;
+  // 发布目标ID，例如智能体ID；工作流ID；插件ID
   targetId: number;
-  // 操作类型,Add 新增, Edit 编辑, Publish 发布,可用值:Add,Edit,Publish,PublishApply,PublishApplyReject,OffShelf,AddComponent,EditComponent,DeleteComponent,AddNode,EditNode,DeleteNode
-  type: HistoryActionTypeEnum;
-  // 当时的配置信息
-  config: object;
-  // 操作描述
-  description: string;
-  // 操作人
-  opUser: CreatorInfo;
-  modified: string;
-  // 创建时间
-  created: string;
-}
-
-// 版本历史组件
-export interface VersionHistoryProps {
-  list: HistoryData[];
-  visible: boolean;
-  onClose: () => void;
-}
-
-// 发布智能体弹窗组件
-export interface PublishAgentProps {
-  agentId: number;
   open: boolean;
   onCancel: () => void;
   onConfirm: () => void;
-}
-
-// 智能体迁移弹窗组件
-export interface AgentMoveProps {
-  spaceId: number;
-  open: boolean;
-  title?: string;
-  onCancel: () => void;
-  onConfirm: (spaceId: string) => void;
 }
 
 // 创建临时会话弹窗属性

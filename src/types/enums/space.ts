@@ -11,6 +11,7 @@ export enum ComponentTypeEnum {
 
 // 过滤状态枚举
 export enum FilterStatusEnum {
+  // 全部
   All,
   // 已发布
   Published,
@@ -26,20 +27,26 @@ export enum CreateListEnum {
   Me,
 }
 
-// 应用开发更多操作枚举
+// 应用开发、组件库等更多操作枚举
 export enum ApplicationMoreActionEnum {
   // 分析
-  Analyze,
-  // 创建副本
-  Create_Copy,
+  Analyze = 'Analyze',
+  // 复制
+  Copy = 'Copy',
+  // 统计数据
+  Statistics = 'Statistics',
+  // 复制到空间
+  Copy_To_Space = 'Copy_To_Space',
   // 迁移
-  Move,
+  Move = 'Move',
   // 临时会话
-  Temporary_Session,
+  Temporary_Session = 'Temporary_Session',
+  // 日志
+  Log = 'Log',
   // 下架
-  Off_Shelf,
+  Off_Shelf = 'Off_Shelf',
   // 删除
-  Del,
+  Del = 'Del',
 }
 
 // 工作空间应用列表枚举
@@ -90,7 +97,9 @@ export enum OpenCloseEnum {
 export enum EditAgentShowType {
   // 隐藏
   Hide = 'Hide',
+  // 调试详情
   Debug_Details = 'Debug_Details',
+  // 版本历史
   Version_History = 'Version_History',
   // 展示台
   Show_Stand = 'Show_Stand',
@@ -98,6 +107,7 @@ export enum EditAgentShowType {
 
 // 插件设置类型
 export enum PluginSettingEnum {
+  // 参数
   Params,
   // 调用方式
   Method_Call,
@@ -112,13 +122,6 @@ export enum SpaceTypeEnum {
   Personal = 'Personal',
   Team = 'Team',
   Class = 'Class',
-}
-
-// 可用值:Agent,Plugin,Workflow
-export enum HistoryTargetTypeEnum {
-  Agent = 'Agent',
-  Plugin = 'Plugin',
-  Workflow = 'Workflow',
 }
 
 // 操作类型,Add 新增, Edit 编辑, Publish 发布,可用值:Add,Edit,Publish,PublishApply,PublishApplyReject,OffShelf,AddComponent,EditComponent,DeleteComponent,AddNode,EditNode,DeleteNode
