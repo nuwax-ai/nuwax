@@ -1,4 +1,9 @@
-import React, { forwardRef, useImperativeHandle, useMemo } from 'react';
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+} from 'react';
 import VariablePopover from './components/VariablePopover';
 import { useKeyboardSelection } from './hooks/useKeyboardSelection';
 import { usePopoverControl } from './hooks/usePopoverControl';
@@ -23,8 +28,10 @@ export interface SmartVariableInputRef {
 
 interface SmartVariableInputProps {
   variables: TreeNodeData[];
+  value?: string;
   placeholder?: string;
   pathOptions?: PathBuildOptions;
+  onChange?: (value: string) => void;
 }
 
 const SmartVariableInput = forwardRef<
@@ -32,11 +39,18 @@ const SmartVariableInput = forwardRef<
   SmartVariableInputProps
 >(
   (
-    { variables = [], placeholder = '请输入内容...', pathOptions = {} },
+    {
+      variables = [],
+      value,
+      placeholder = '请输入内容...',
+      pathOptions = {},
+      onChange,
+    },
     ref,
   ) => {
     // 使用自定义 Hooks
-    const { popoverVisible, showPopover, hidePopover } = usePopoverControl();
+    const { popoverVisible, showPopover, hidePopover } =
+      usePopoverControl(variables);
     const { position, updatePositionFromCursor, updatePositionFromEditor } =
       usePopoverPosition();
     const {
@@ -180,6 +194,15 @@ const SmartVariableInput = forwardRef<
       getContent,
       setContent,
     }));
+
+    useEffect(() => {
+      setContent(value || '');
+    }, [value]);
+    useEffect(() => {
+      if (editorRef.current) {
+        onChange?.(editorRef.current?.textContent || '');
+      }
+    }, [editorRef.current?.textContent]);
 
     return (
       <>

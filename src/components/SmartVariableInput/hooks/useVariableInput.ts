@@ -5,7 +5,7 @@ import { useRef, useState } from 'react';
  */
 export const useVariableInput = () => {
   const editorRef = useRef<HTMLDivElement>(null);
-  const [isEmpty, setIsEmpty] = useState(true);
+  const [isEmpty, setIsEmpty] = useState(false);
 
   // 获取当前光标前面的内容
   const getWordBeforeCursor = (): string => {

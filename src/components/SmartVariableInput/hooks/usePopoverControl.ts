@@ -3,7 +3,7 @@ import { useState } from 'react';
 /**
  * 弹窗控制 Hook
  */
-export const usePopoverControl = () => {
+export const usePopoverControl = (variables: any[]) => {
   const [popoverVisible, setPopoverVisible] = useState(false);
 
   const showPopover = () => {
@@ -19,7 +19,7 @@ export const usePopoverControl = () => {
   };
 
   return {
-    popoverVisible,
+    popoverVisible: variables && variables.length > 0 && popoverVisible,
     showPopover,
     hidePopover,
     togglePopover,
