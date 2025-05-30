@@ -56,10 +56,16 @@ const SpaceSection: React.FC<{
       case SpaceApplicationListEnum.Component_Library:
         url = 'library';
         break;
-      // 团队设置
+      // 空间广场
+      case SpaceApplicationListEnum.Space_Square:
+        url = 'space-square';
+        break;
+      // 成员与设置
       case SpaceApplicationListEnum.Team_Setting:
         url = 'team';
         break;
+      default:
+        url = 'develop';
     }
 
     history.push(`/space/${spaceId}/${url}`);

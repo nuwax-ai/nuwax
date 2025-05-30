@@ -36,15 +36,18 @@ const WorkflowIdDetail: React.FC = ({}) => {
   );
 
   // 智能体、工作流模板复制
-  const { run: runCopyTemplate } = useRequest(apiPublishTemplateCopy, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      message.success('模板复制成功');
-      // 关闭弹窗
-      setOpenMove(false);
+  const { run: runCopyTemplate, loading: loadingCopyTemplate } = useRequest(
+    apiPublishTemplateCopy,
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: () => {
+        message.success('模板复制成功');
+        // 关闭弹窗
+        setOpenMove(false);
+      },
     },
-  });
+  );
 
   useEffect(() => {
     if (workflowId) {
@@ -158,6 +161,7 @@ const WorkflowIdDetail: React.FC = ({}) => {
               {/*智能体迁移弹窗*/}
               <MoveCopyComponent
                 spaceId={workflowInfo?.spaceId || 0}
+                loading={loadingCopyTemplate}
                 type={ApplicationMoreActionEnum.Copy_To_Space}
                 open={openMove}
                 title={workflowInfo?.name}

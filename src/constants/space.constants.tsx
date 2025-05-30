@@ -6,6 +6,7 @@ import {
   ICON_KNOWLEDGE,
   ICON_MODEL,
   ICON_PLUGIN,
+  ICON_SPACE_SQUARE,
   ICON_WORKFLOW,
 } from '@/constants/images.constants';
 import { InputTypeEnum, TriggerComponentType } from '@/types/enums/agent';
@@ -95,9 +96,14 @@ export const SPACE_APPLICATION_LIST = [
     text: '组件库',
   },
   {
+    type: SpaceApplicationListEnum.Space_Square,
+    icon: <ICON_SPACE_SQUARE />,
+    text: '空间广场',
+  },
+  {
     type: SpaceApplicationListEnum.Team_Setting,
     icon: <ICON_GROUP_SET />,
-    text: '团队设置',
+    text: '成员与设置',
   },
 ];
 

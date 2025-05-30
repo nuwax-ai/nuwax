@@ -48,7 +48,7 @@ const AgentContent: React.FC<AgentContentProps> = ({
   });
 
   // 智能体、工作流模板复制
-  const { run: runCopyTemplate } = useRequest(apiPublishTemplateCopy, {
+  const { run: runCopyTemplate, loading } = useRequest(apiPublishTemplateCopy, {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
@@ -141,6 +141,7 @@ const AgentContent: React.FC<AgentContentProps> = ({
         {/*智能体迁移弹窗*/}
         <MoveCopyComponent
           spaceId={agentDetail?.spaceId || 0}
+          loading={loading}
           type={ApplicationMoreActionEnum.Copy_To_Space}
           open={openMove}
           title={agentDetail?.name}

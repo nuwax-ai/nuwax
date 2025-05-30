@@ -18,6 +18,7 @@ const cx = classNames.bind(styles);
  */
 const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
   spaceId,
+  loading,
   // 默认为迁移
   type = ApplicationMoreActionEnum.Move,
   mode = AgentComponentTypeEnum.Agent,
@@ -77,6 +78,7 @@ const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
         <Button
           type="primary"
           block
+          loading={loading}
           onClick={() => onConfirm(targetSpaceId)}
           disabled={!targetSpaceId}
         >

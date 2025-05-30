@@ -496,6 +496,7 @@ export interface PublishScope {
 // 智能体、插件、工作流等迁移和复制组件
 export interface MoveCopyComponentProps {
   spaceId: number;
+  loading?: boolean;
   // 迁移、复制
   type?: ApplicationMoreActionEnum;
   // 组件类型: 智能体、插件、工作流， 默认智能体

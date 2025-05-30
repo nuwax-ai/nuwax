@@ -1,5 +1,6 @@
 import squareBannerImage from '@/assets/images/square_banner_image.png';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
+import useSpaceSquare from '@/hooks/useSpaceSquare';
 import {
   apiPublishedAgentList,
   apiPublishedPluginList,
@@ -8,8 +9,8 @@ import {
 } from '@/services/square';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { TenantConfigInfo } from '@/types/interfaces/login';
-import type { Page } from '@/types/interfaces/request';
-import type {
+import { Page } from '@/types/interfaces/request';
+import {
   SquarePublishedItemInfo,
   SquarePublishedListParams,
 } from '@/types/interfaces/square';
@@ -32,25 +33,27 @@ const cx = classNames.bind(styles);
 const Square: React.FC = () => {
   // 配置信息
   const [configInfo, setConfigInfo] = useState<TenantConfigInfo>();
-  // 智能体列表
-  const [agentList, setAgentList] = useState<SquarePublishedItemInfo[]>([]);
   const [title, setTitle] = useState<string>('智能体');
   const categoryNameRef = useRef<string>('');
-  // 接口地址， 默认智能体列表
-  const apiUrlRef = useRef<(data: SquarePublishedListParams) => void>(
-    apiPublishedAgentList,
-  );
   // 分类类型，默认智能体
   const categoryTypeRef = useRef<SquareAgentTypeEnum>(
     SquareAgentTypeEnum.Agent,
   );
 
+  // 接口地址， 默认智能体列表
+  const apiUrlRef = useRef<(data: SquarePublishedListParams) => void>(
+    apiPublishedAgentList,
+  );
+
+  const { squareComponentList, setSquareComponentList, handleClick } =
+    useSpaceSquare();
+
   // 广场-已发布列表接口
-  const { run: runAgent } = useRequest(apiUrlRef.current, {
+  const { run: runSquareList } = useRequest(apiUrlRef.current, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: Page<SquarePublishedItemInfo>) => {
-      setAgentList(result?.records || []);
+      setSquareComponentList(result?.records || []);
     },
   });
 
@@ -96,7 +99,7 @@ const Square: React.FC = () => {
       kw: keyword,
     };
 
-    runAgent(data);
+    runSquareList(data);
   };
 
   useEffect(() => {
@@ -130,7 +133,7 @@ const Square: React.FC = () => {
 
   // 切换收藏与取消收藏
   const handleToggleCollectSuccess = (id: number, isCollect: boolean) => {
-    const _agentList = agentList.map((item) => {
+    const list = squareComponentList.map((item) => {
       if (item.targetId === id) {
         item.collect = isCollect;
         const count = item?.statistics?.collectCount || 0;
@@ -138,28 +141,12 @@ const Square: React.FC = () => {
       }
       return item;
     });
-    setAgentList(_agentList);
+    setSquareComponentList(list);
   };
 
   // 搜索
   const onSearch: SearchProps['onSearch'] = (value) => {
     handleQuery(1, value);
-  };
-
-  // 点击单项
-  const handleClick = (targetId: number, targetType: SquareAgentTypeEnum) => {
-    // 智能体
-    if (targetType === SquareAgentTypeEnum.Agent) {
-      history.push(`/agent/${targetId}`);
-    }
-    // 插件
-    if (targetType === SquareAgentTypeEnum.Plugin) {
-      history.push(`/square/publish/plugin/${targetId}`);
-    }
-    // 工作流
-    if (targetType === SquareAgentTypeEnum.Workflow) {
-      history.push(`/square/publish/workflow/${targetId}`);
-    }
   };
 
   return (
@@ -202,9 +189,9 @@ const Square: React.FC = () => {
           style={{ width: 200 }}
         />
       </div>
-      {agentList?.length > 0 ? (
+      {squareComponentList?.length > 0 ? (
         <div className={cx(styles['list-section'])}>
-          {agentList.map((item, index) => {
+          {squareComponentList.map((item, index) => {
             if (categoryTypeRef.current === SquareAgentTypeEnum.Agent) {
               return (
                 <SingleAgent
