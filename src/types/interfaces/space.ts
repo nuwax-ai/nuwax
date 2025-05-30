@@ -91,3 +91,11 @@ export interface AgentLogFormProps {
 export interface LogHeaderProps {
   agentConfigInfo?: AgentConfigInfo;
 }
+
+// 日志详情组件
+export interface LogDetailsProps {
+  requestId?: string;
+  executeResult?: string;
+  visible?: boolean;
+  onClose: () => void;
+}

@@ -6,27 +6,30 @@ import variableImage from '@/assets/images/variable_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
 import ToggleWrap from '@/components/ToggleWrap';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import type { DebugDetailsProps } from '@/types/interfaces/agentConfig';
 import type { ExecuteResultInfo } from '@/types/interfaces/conversationInfo';
+import { LogDetailsProps } from '@/types/interfaces/space';
 import { CopyOutlined } from '@ant-design/icons';
 import { Empty, message } from 'antd';
 import classNames from 'classnames';
 import React, { memo, useEffect, useState } from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
-import { useModel } from 'umi';
 import styles from './index.less';
 import { NodeDetails } from './NodeDetails';
 
 const cx = classNames.bind(styles);
 
 /**
- * 调试详情组件
+ * 日志详情组件
  */
-const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
-  const { requestId, finalResult, setFinalResult } =
-    useModel('conversationInfo');
+const LogDetails: React.FC<LogDetailsProps> = ({
+  visible,
+  requestId,
+  executeResult,
+  onClose,
+}) => {
   // 当前执行结果
   const [executeInfo, setExecuteInfo] = useState<ExecuteResultInfo | null>();
+  const [finalResult, setFinalResult] = useState<any>();
   // 当前执行结果索引，默认为0
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   // 输入参数
@@ -35,8 +38,14 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
   const [outputData, setOutputData] = useState<string>('');
 
   useEffect(() => {
+    if (!executeResult) {
+      return;
+    }
+    const _finalResult = JSON.parse(executeResult);
+    console.log('finalResult', _finalResult);
+    setFinalResult(_finalResult);
     // 执行结果列表
-    const result = finalResult?.componentExecuteResults || [];
+    const result = _finalResult?.componentExecuteResults || [];
     if (result?.length > 0) {
       // 当前执行结果
       const _executeInfo = result[currentIndex];
@@ -55,7 +64,7 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
       setInputData('');
       setOutputData('');
     }
-  }, [finalResult, currentIndex]);
+  }, [executeResult, currentIndex]);
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -95,7 +104,7 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
   };
 
   return (
-    <ToggleWrap title="调试详情" onClose={onClose} visible={visible}>
+    <ToggleWrap title="日志详情" onClose={onClose} visible={visible}>
       {!!finalResult ? (
         <>
           <header className={cx(styles.header)}>
@@ -162,4 +171,4 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
   );
 };
 
-export default memo(DebugDetails);
+export default memo(LogDetails);
