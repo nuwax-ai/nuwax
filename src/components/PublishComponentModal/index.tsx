@@ -259,7 +259,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
             onChange={(e) => handleChecked(record, e.target.checked)}
           >
             <div className="text-ellipsis" style={{ width: '148px' }}>
-              {record.name}萨嘎时光飞逝公司干啥噶的
+              {record.name}
             </div>
           </Checkbox>
         ),
