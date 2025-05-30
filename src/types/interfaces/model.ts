@@ -46,11 +46,13 @@ export interface ModelFormData {
   description: string;
   // 模型标识,示例值(gpt-3.5-turbo)
   model: string;
+  // 网络类型，可选值：Internet 公网; Intranet 内网,可用值:Internet,Intranet
   networkType: ModelNetworkTypeEnum;
   // 模型接口协议，可选值：OpenAI, Ollama
   apiProtocol: ModelApiProtocolEnum;
   // 接口调用策略，可选值：RoundRobin, WeightedRoundRobin, LeastConnections, WeightedLeastConnections, Random, ResponseTime
   strategy: ModelStrategyEnum;
+  // 模型类型，可选值：Completions, Chat, Edits, Images, Embeddings, Audio, Other
   type?: ModelTypeEnum;
 }
 
@@ -60,8 +62,6 @@ export interface ModelSaveParams extends ModelFormData {
   id: number;
   // 空间ID（可选，在空间中添加模型组件时传递该参数）
   spaceId: number;
-  // 模型类型，可选值：Completions, Chat, Edits, Images, Embeddings, Audio, Other
-  type: ModelTypeEnum;
   // 最大输出token数, token上限
   maxTokens: number;
   // API列表
@@ -91,13 +91,19 @@ export interface ModelListParams {
 
 // 模型配置信息
 export interface ModelConfigInfo extends ModelSaveParams {
+  // 商户ID
   tenantId: number;
   // 模型生效范围，可选值：Space, Tenant, Global,可用值:Space,Tenant,Global
   scope: ModelScopeEnum;
+  // 是否是推理模型，可选值：0,1,可用值:0,1
+  isReasonModel: number;
+  // 网络类型，可选值：Internet 公网; Intranet 内网,可用值:Internet,Intranet
   networkType: ModelNetworkTypeEnum;
   // 函数调用支持程度，可选值：Unsupported, CallSupported, StreamCallSupported
   functionCall: ModelFunctionCallEnum;
+  // 修改时间
   modified: string;
+  // 创建时间
   created: string;
   // 创建者信息
   creator: CreatorInfo;

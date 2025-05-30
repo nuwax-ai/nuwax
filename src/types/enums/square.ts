@@ -4,4 +4,6 @@ export enum SquareAgentTypeEnum {
   Plugin = 'Plugin',
   Workflow = 'Workflow',
   Knowledge = 'Knowledge',
+  // 模板
+  Template = 'Template',
 }

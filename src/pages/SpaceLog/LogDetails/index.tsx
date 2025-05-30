@@ -1,0 +1,173 @@
+import databaseImage from '@/assets/images/database_image.png';
+import knowledgeImage from '@/assets/images/knowledge_image.png';
+import modelImage from '@/assets/images/model_image.png';
+import pluginImage from '@/assets/images/plugin_image.png';
+import variableImage from '@/assets/images/variable_image.png';
+import workflowImage from '@/assets/images/workflow_image.png';
+import ToggleWrap from '@/components/ToggleWrap';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import type { ExecuteResultInfo } from '@/types/interfaces/conversationInfo';
+import { LogDetailsProps } from '@/types/interfaces/space';
+import { CopyOutlined } from '@ant-design/icons';
+import { Empty, message } from 'antd';
+import classNames from 'classnames';
+import React, { memo, useEffect, useState } from 'react';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
+import styles from './index.less';
+import { NodeDetails } from './NodeDetails';
+
+const cx = classNames.bind(styles);
+
+/**
+ * 日志详情组件
+ */
+const LogDetails: React.FC<LogDetailsProps> = ({
+  visible,
+  requestId,
+  executeResult,
+  onClose,
+}) => {
+  // 当前执行结果
+  const [executeInfo, setExecuteInfo] = useState<ExecuteResultInfo | null>();
+  const [finalResult, setFinalResult] = useState<any>();
+  // 当前执行结果索引，默认为0
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  // 输入参数
+  const [inputData, setInputData] = useState<string>('');
+  // 输出参数
+  const [outputData, setOutputData] = useState<string>('');
+
+  useEffect(() => {
+    if (!executeResult) {
+      return;
+    }
+    const _finalResult = JSON.parse(executeResult);
+    setFinalResult(_finalResult);
+    // 执行结果列表
+    const result = _finalResult?.componentExecuteResults || [];
+    if (result?.length > 0) {
+      // 当前执行结果
+      const _executeInfo = result[currentIndex];
+      setExecuteInfo(_executeInfo);
+      // 当前执行结果不为空
+      if (!!_executeInfo) {
+        // 输入参数
+        const _inputData = JSON.stringify(_executeInfo.input, null, 2);
+        setInputData(_inputData);
+        // 输出参数
+        const _outputData = JSON.stringify(_executeInfo.data, null, 2);
+        setOutputData(_outputData);
+      }
+    } else {
+      setExecuteInfo(null);
+      setInputData('');
+      setOutputData('');
+    }
+  }, [executeResult, currentIndex]);
+
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [finalResult]);
+
+  useEffect(() => {
+    return () => {
+      setFinalResult(null);
+    };
+  }, []);
+
+  const handleCopy = () => {
+    message.success('复制成功');
+  };
+
+  // 获取图标，如果不存在则使用默认图
+  const getIcon = (info: ExecuteResultInfo) => {
+    if (info?.icon) {
+      return info.icon;
+    }
+    switch (info.type) {
+      case AgentComponentTypeEnum.Plugin:
+        return pluginImage;
+      case AgentComponentTypeEnum.Workflow:
+        return workflowImage;
+      case AgentComponentTypeEnum.Knowledge:
+        return knowledgeImage;
+      case AgentComponentTypeEnum.Variable:
+        return variableImage;
+      case AgentComponentTypeEnum.Table:
+        return databaseImage;
+      case AgentComponentTypeEnum.Model:
+        return modelImage;
+      default:
+        return pluginImage;
+    }
+  };
+
+  return (
+    <ToggleWrap title="日志详情" onClose={onClose} visible={visible}>
+      {!!finalResult ? (
+        <>
+          <header className={cx(styles.header)}>
+            <div className={cx('flex', styles['time-box'])}>
+              <div className={cx(styles.num, 'flex', 'items-center')}>
+                <span>
+                  耗时{finalResult.endTime - finalResult.startTime} ms
+                </span>
+                <span className={cx(styles['vertical-line'])} />
+                <span>{finalResult.totalTokens} Tokens</span>
+              </div>
+            </div>
+            <div className={cx('flex', styles.box)}>
+              <span>requestId:</span>
+              <span className={cx(styles.value, 'text-ellipsis')}>
+                {requestId}
+              </span>
+              <CopyToClipboard text={requestId || ''} onCopy={handleCopy}>
+                <CopyOutlined />
+              </CopyToClipboard>
+            </div>
+          </header>
+          <div className={cx(styles.wrap)}>
+            <h5 className={cx(styles.title)}>调用组件</h5>
+            {finalResult?.componentExecuteResults?.map(
+              (info: ExecuteResultInfo, index: number) => (
+                // 模型可能不存在id，所以使用index作为key
+                <div
+                  key={info?.id || index}
+                  className={cx(styles['execute-box'], 'flex', 'items-center')}
+                >
+                  <img src={getIcon(info)} alt="" />
+                  <span
+                    className={cx(styles.name, 'cursor-pointer', {
+                      [styles.active]: currentIndex === index,
+                    })}
+                    onClick={() => setCurrentIndex(index)}
+                  >
+                    {info.name}
+                  </span>
+                </div>
+              ),
+            )}
+          </div>
+          <div className={cx(styles.wrap)}>
+            <h5 className={cx(styles.title)}>节点详情</h5>
+            <NodeDetails node={executeInfo} />
+          </div>
+          <div className={cx(styles.wrap)}>
+            <h5 className={cx(styles.title)}>输入</h5>
+            <pre>{inputData}</pre>
+          </div>
+          <div className={cx(styles.wrap)}>
+            <h5 className={cx(styles.title)}>输出</h5>
+            <pre>{outputData}</pre>
+          </div>
+        </>
+      ) : (
+        <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
+          <Empty description="暂无数据" />
+        </div>
+      )}
+    </ToggleWrap>
+  );
+};
+
+export default memo(LogDetails);

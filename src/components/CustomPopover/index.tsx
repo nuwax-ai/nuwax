@@ -20,7 +20,10 @@ const CustomPopover: React.FC<PropsWithChildren<CustomPopoverProps>> = ({
     setHovered(open);
   };
 
-  const handleClick = (e, item: CustomPopoverItem) => {
+  const handleClick = (
+    e: React.MouseEvent<HTMLElement>,
+    item: CustomPopoverItem,
+  ) => {
     e.stopPropagation();
     onClick(item);
     setHovered(false);
@@ -28,7 +31,9 @@ const CustomPopover: React.FC<PropsWithChildren<CustomPopoverProps>> = ({
 
   return (
     <Popover
-      overlayClassName={cx(styles['popover-box'])}
+      classNames={{
+        root: styles['popover-box'],
+      }}
       content={
         <ul className={cx(styles['popover-list'])}>
           {list.map((item, index) => (
@@ -52,12 +57,11 @@ const CustomPopover: React.FC<PropsWithChildren<CustomPopoverProps>> = ({
       }
       trigger="hover"
       open={hovered}
-      onClick={(e) => e.stopPropagation()}
       onOpenChange={handleHoverChange}
       placement="bottomRight"
       arrow={false}
     >
-      {children}
+      <div onClick={(e) => e.stopPropagation()}>{children}</div>
     </Popover>
   );
 };

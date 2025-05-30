@@ -1,16 +1,15 @@
 import AnalyzeStatistics from '@/components/AnalyzeStatistics';
 import CreateAgent from '@/components/CreateAgent';
+import MoveCopyComponent from '@/components/MoveCopyComponent';
 import SelectList from '@/components/SelectList';
 import { USER_INFO } from '@/constants/home.constants';
 import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.constants';
 import {
   apiAgentConfigList,
-  apiAgentCopy,
+  apiAgentCopyToSpace,
   apiAgentDelete,
   apiAgentTransfer,
 } from '@/services/agentConfig';
-import { apiPublishedOffShelf } from '@/services/library';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
 import {
   ApplicationMoreActionEnum,
@@ -19,7 +18,6 @@ import {
 } from '@/types/enums/space';
 import { AgentConfigInfo, AgentInfo } from '@/types/interfaces/agent';
 import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
-import { PublishedOffShelfParams } from '@/types/interfaces/library';
 import type { UserInfo } from '@/types/interfaces/login';
 import {
   ExclamationCircleFilled,
@@ -30,7 +28,6 @@ import { Button, Input, message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
-import AgentMove from './AgentMove';
 import ApplicationItem from './ApplicationItem';
 import CreateTempChatModel from './CreateTempChatModel';
 import styles from './index.less';
@@ -42,10 +39,11 @@ const { confirm } = Modal;
  * 工作空间 - 应用开发
  */
 const SpaceDevelop: React.FC = () => {
-  const { spaceId } = useParams();
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
   // 打开分析弹窗
   const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
-  // 迁移弹窗
+  // 迁移、复制弹窗
   const [openMove, setOpenMove] = useState<boolean>(false);
   // 打开创建临时会话弹窗
   const [openTempChat, setOpenTempChat] = useState<boolean>(false);
@@ -61,10 +59,12 @@ const SpaceDevelop: React.FC = () => {
   );
   // 搜索关键词
   const [keyword, setKeyword] = useState<string>('');
+  const userInfoRef = useRef<UserInfo | null>(null);
   // 创建者ID
   const createIdRef = useRef<number>(0);
   // 目标智能体ID
   const targetAgentIdRef = useRef<number>(0);
+  const currentClickTypeRef = useRef<ApplicationMoreActionEnum>();
   const { agentList, setAgentList, agentAllRef, handlerCollect } =
     useModel('applicationDev');
   const { runEdit, devCollectAgentList, runDevCollect } =
@@ -102,40 +102,25 @@ const SpaceDevelop: React.FC = () => {
     },
   });
 
-  // 创建副本
-  const { run: runCopy } = useRequest(apiAgentCopy, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      message.success('已成功创建副本');
-      run(spaceId);
+  // 复制到空间
+  const { run: runCopyToSpace, loading: loadingCopyToSpace } = useRequest(
+    apiAgentCopyToSpace,
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: (_: null, params: number[]) => {
+        message.success('已成功创建副本');
+        // 关闭弹窗
+        setOpenMove(false);
+        // 目标空间ID
+        const targetSpaceId = params[1];
+        // 如果目标空间ID和当前空间ID相同, 则重新查询当前空间智能体列表
+        if (targetSpaceId === spaceId) {
+          run(spaceId);
+        }
+      },
     },
-  });
-
-  // 智能体、插件、工作流下架
-  const { run: runOffShelf } = useRequest(apiPublishedOffShelf, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (_: null, params: PublishedOffShelfParams[]) => {
-      message.success('已成功下架');
-      const { targetId } = params[0];
-      const _agentList =
-        agentList?.map((item: AgentConfigInfo) => {
-          if (item.id === targetId) {
-            return { ...item, publishStatus: null };
-          }
-          return item;
-        }) || [];
-      setAgentList(_agentList);
-      agentAllRef.current =
-        agentAllRef.current?.map((item: AgentConfigInfo) => {
-          if (item.id === targetId) {
-            return { ...item, publishStatus: null };
-          }
-          return item;
-        }) || [];
-    },
-  });
+  );
 
   // 删除或者迁移智能体后, 从列表移除智能体
   const handleDelAgent = () => {
@@ -174,22 +159,26 @@ const SpaceDevelop: React.FC = () => {
   });
 
   // 智能体迁移接口
-  const { run: runTransfer } = useRequest(apiAgentTransfer, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      message.success('迁移成功');
-      handleDelAgent();
-      setOpenMove(false);
-      setCurrentAgentInfo(null);
+  const { run: runTransfer, loading: loadingTransfer } = useRequest(
+    apiAgentTransfer,
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: () => {
+        message.success('迁移成功');
+        handleDelAgent();
+        setOpenMove(false);
+        setCurrentAgentInfo(null);
+      },
     },
-  });
+  );
 
   useEffect(() => {
     const userInfoString = localStorage.getItem(USER_INFO);
     if (!!userInfoString) {
       const userInfo = JSON.parse(userInfoString) as UserInfo;
       createIdRef.current = userInfo.id;
+      userInfoRef.current = userInfo;
     }
   }, []);
 
@@ -225,11 +214,17 @@ const SpaceDevelop: React.FC = () => {
   };
 
   // 确认迁移智能体
-  const handlerConfirmMove = (targetSpaceId: string) => {
-    runTransfer({
-      agentId: targetAgentIdRef.current,
-      targetSpaceId,
-    });
+  const handlerConfirmMove = (targetSpaceId: number) => {
+    // 迁移
+    if (currentClickTypeRef.current === ApplicationMoreActionEnum.Move) {
+      runTransfer(targetAgentIdRef.current, targetSpaceId);
+    }
+    // 复制到空间
+    else if (
+      currentClickTypeRef.current === ApplicationMoreActionEnum.Copy_To_Space
+    ) {
+      runCopyToSpace(targetAgentIdRef.current, targetSpaceId);
+    }
   };
 
   // 点击跳转到智能体
@@ -272,12 +267,12 @@ const SpaceDevelop: React.FC = () => {
         handleSetStatistics(agentInfo);
         setOpenAnalyze(true);
         break;
-      // 创建副本
-      case ApplicationMoreActionEnum.Create_Copy:
-        runCopy(id);
-        break;
+      // 复制到空间
+      case ApplicationMoreActionEnum.Copy_To_Space:
       // 迁移
       case ApplicationMoreActionEnum.Move:
+        // 记录当前点击操作的类型
+        currentClickTypeRef.current = type;
         setOpenMove(true);
         setCurrentAgentInfo(agentInfo);
         break;
@@ -286,22 +281,9 @@ const SpaceDevelop: React.FC = () => {
         setOpenTempChat(true);
         setCurrentAgentInfo(agentInfo);
         break;
-      // 下架
-      case ApplicationMoreActionEnum.Off_Shelf:
-        confirm({
-          title: '您确定要下架此智能体吗?',
-          icon: <ExclamationCircleFilled />,
-          content: agentInfo?.name,
-          okText: '确定',
-          maskClosable: true,
-          cancelText: '取消',
-          onOk() {
-            runOffShelf({
-              targetType: AgentComponentTypeEnum.Agent,
-              targetId: id,
-            });
-          },
-        });
+      // 日志
+      case ApplicationMoreActionEnum.Log:
+        history.push(`/space/${spaceId}/${id}/log`);
         break;
       case ApplicationMoreActionEnum.Del:
         confirm({
@@ -366,6 +348,7 @@ const SpaceDevelop: React.FC = () => {
             <ApplicationItem
               key={item.id}
               agentConfigInfo={item}
+              userInfo={userInfoRef.current}
               onClickMore={(type) => handlerClickMore(type, index)}
               onCollect={(isCollect: boolean) =>
                 handlerCollect(index, isCollect)
@@ -387,8 +370,10 @@ const SpaceDevelop: React.FC = () => {
         list={agentStatistics}
       />
       {/*智能体迁移弹窗*/}
-      <AgentMove
+      <MoveCopyComponent
         spaceId={spaceId}
+        loading={loadingCopyToSpace || loadingTransfer}
+        type={currentClickTypeRef.current} // 默认为迁移
         open={openMove}
         title={currentAgentInfo?.name}
         onCancel={() => setOpenMove(false)}

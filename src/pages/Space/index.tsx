@@ -6,6 +6,7 @@ import { history, useModel } from 'umi';
 const Space: React.FC = () => {
   const { currentSpaceInfo, loadingSpaceList, asyncSpaceListFun } =
     useModel('spaceModel');
+  const { userInfo } = useModel('userInfo');
 
   useEffect(() => {
     asyncSpaceListFun();
@@ -16,7 +17,10 @@ const Space: React.FC = () => {
     if (!spaceId) {
       return;
     }
-    const spaceUrl = localStorage.getItem(SPACE_URL) ?? 'develop';
+    // 开发者功能如果关闭，首次进入空间菜单选中“空间广场”；
+    const defaultUrl =
+      userInfo?.allowDevelop === 0 ? 'space-square' : 'develop';
+    const spaceUrl = localStorage.getItem(SPACE_URL) ?? defaultUrl;
     history.push(`/space/${spaceId}/${spaceUrl}`);
   }, [currentSpaceInfo]);
 

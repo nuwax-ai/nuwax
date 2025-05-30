@@ -1,7 +1,12 @@
-import type { AgentDetailDto, AgentInfo } from '@/types/interfaces/agent';
+import type {
+  AgentDetailDto,
+  AgentInfo,
+  apiAgentLogListParams,
+  logInfo,
+} from '@/types/interfaces/agent';
 import type { HomeAgentCategoryInfo } from '@/types/interfaces/agentConfig';
 import type { ListParams, PageParams } from '@/types/interfaces/common';
-import type { RequestResponse } from '@/types/interfaces/request';
+import type { Page, RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
 // 取消点赞智能体
@@ -127,5 +132,15 @@ export async function apiUpdateAgentSort(
       types,
       typeAgentIds,
     },
+  });
+}
+
+// 日志查询
+export async function apiAgentLogList(
+  data: apiAgentLogListParams,
+): Promise<RequestResponse<Page<logInfo>>> {
+  return request('/api/logPlatform/agent/list', {
+    method: 'POST',
+    data,
   });
 }

@@ -1,0 +1,135 @@
+@import '@/styles/color';
+
+.container {
+  padding: 0;
+  background-color: #f3f5fa;
+  min-height: calc(100vh - 56px); // 减去顶部导航高度
+}
+
+.contentCard {
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+  background-color: transparent;
+
+  :global {
+    .ant-card-body {
+      padding: 0 24px 24px;
+    }
+
+    .ant-card-head {
+      border-bottom: none;
+    }
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: none;
+  margin-bottom: 16px;
+}
+
+.tabs {
+  flex: 1;
+
+  :global {
+    .ant-tabs-nav {
+      margin-bottom: 0;
+
+      &::before {
+        content: none;
+        display: none;
+      }
+    }
+
+    .ant-tabs-nav-list {
+      margin-left: 0;
+    }
+
+    .ant-tabs-tab {
+      padding: 8px 0;
+      margin: 0 16px 0 0;
+      font-size: 15px;
+    }
+
+    .ant-tabs-tab-active .ant-tabs-tab-btn {
+      color: @BLUE08;
+      font-weight: 500;
+    }
+
+    .ant-tabs-ink-bar {
+      background-color: @BLUE08;
+    }
+  }
+}
+
+.searchInput {
+  width: 240px;
+  margin-left: 16px;
+
+  :global {
+    .ant-input {
+      border-radius: 16px;
+    }
+
+    .ant-input-search-button {
+      border-radius: 0 16px 16px 0;
+      height: 32px;
+    }
+  }
+}
+
+.pluginList {
+  padding-top: 8px;
+}
+
+.pluginCol {
+  @media (max-width: 1400px) {
+    flex: 0 0 25%;
+    max-width: 25%;
+  }
+
+  @media (max-width: 1200px) {
+    flex: 0 0 33.33%;
+    max-width: 33.33%;
+  }
+
+  @media (max-width: 992px) {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+
+  @media (max-width: 576px) {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
+
+// 响应式布局调整
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tabs {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+
+  .searchInput {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+}
+
+.createShareButton {
+  margin-right: 16px;
+}

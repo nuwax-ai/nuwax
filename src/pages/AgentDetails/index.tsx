@@ -50,6 +50,7 @@ const AgentDetails: React.FC = () => {
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
 
+  // 已发布的智能体详情接口
   const { run: runDetail, loading } = useRequest(apiPublishedAgentInfo, {
     manual: true,
     debounceInterval: 300,

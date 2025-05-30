@@ -1,19 +1,20 @@
 import CreateAgent from '@/components/CreateAgent';
+import PublishComponentModal from '@/components/PublishComponentModal';
 import ShowStand from '@/components/ShowStand';
 import VersionHistory from '@/components/VersionHistory';
 import {
-  apiAgentConfigHistoryList,
   apiAgentConfigInfo,
   apiAgentConfigUpdate,
 } from '@/services/agentConfig';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import {
   AgentBaseInfo,
   AgentComponentInfo,
   AgentConfigInfo,
+  ComponentModelBindConfig,
 } from '@/types/interfaces/agent';
-import type { HistoryData } from '@/types/interfaces/space';
 import { addBaseTarget } from '@/utils/common';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
@@ -27,7 +28,6 @@ import ArrangeTitle from './ArrangeTitle';
 import DebugDetails from './DebugDetails';
 import styles from './index.less';
 import PreviewAndDebug from './PreviewAndDebug';
-import PublishAgent from './PublishAgent';
 import SystemTipsWord from './SystemTipsWord';
 
 const cx = classNames.bind(styles);
@@ -36,14 +36,14 @@ const cx = classNames.bind(styles);
  * 编辑智能体
  */
 const EditAgent: React.FC = () => {
-  const { spaceId, agentId } = useParams();
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
+  const agentId = Number(params.agentId);
   const [open, setOpen] = useState<boolean>(false);
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
   // 智能体配置信息
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>();
-  // 历史版本信息
-  const [versionHistory, setVersionHistory] = useState<HistoryData[]>([]);
   const { cardList, showType, setShowType, setIsSuggest } =
     useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
@@ -63,18 +63,8 @@ const EditAgent: React.FC = () => {
     debounceInterval: 1000,
   });
 
-  // 版本历史记录
-  const { run: runHistory } = useRequest(apiAgentConfigHistoryList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: HistoryData[]) => {
-      setVersionHistory(result);
-    },
-  });
-
   useEffect(() => {
     run(agentId);
-    runHistory(agentId);
     // 设置页面title
     setTitle();
   }, [agentId]);
@@ -93,14 +83,23 @@ const EditAgent: React.FC = () => {
     setOpenEditAgent(false);
   };
 
-  // 更新智能体绑定模型
-  const handleSelectMode = (id: number, name: string) => {
+  /**
+   * 更新智能体绑定模型
+   * @param targetId: 会话模型ID
+   * @param name: 会话模型名称
+   * @param config: 模型配置信息
+   */
+  const handleSetModel = (
+    targetId: number,
+    name: string,
+    config: ComponentModelBindConfig,
+  ) => {
+    // 关闭弹窗
+    setOpenAgentModel(false);
+    // 更新智能体配置信息
     const _agentConfigInfo = cloneDeep(agentConfigInfo) as AgentConfigInfo;
-    // 智能体组件模型信息可能为null
-    if (!_agentConfigInfo?.modelComponentConfig) {
-      _agentConfigInfo.modelComponentConfig = {} as AgentComponentInfo;
-    }
-    _agentConfigInfo.modelComponentConfig.targetId = id;
+    _agentConfigInfo.modelComponentConfig.bindConfig = config;
+    _agentConfigInfo.modelComponentConfig.targetId = targetId;
     _agentConfigInfo.modelComponentConfig.name = name;
     setAgentConfigInfo(_agentConfigInfo);
   };
@@ -241,14 +240,16 @@ const EditAgent: React.FC = () => {
         />
         {/*版本历史*/}
         <VersionHistory
-          list={versionHistory}
+          targetId={agentId}
+          targetName={agentConfigInfo?.name}
+          targetType={AgentComponentTypeEnum.Agent}
           visible={showType === EditAgentShowType.Version_History}
           onClose={() => setShowType(EditAgentShowType.Hide)}
         />
       </section>
       {/*发布智能体弹窗*/}
-      <PublishAgent
-        agentId={agentId}
+      <PublishComponentModal
+        targetId={agentId}
         open={open}
         // 取消发布
         onCancel={() => setOpen(false)}
@@ -270,8 +271,7 @@ const EditAgent: React.FC = () => {
           agentConfigInfo?.modelComponentConfig as AgentComponentInfo
         }
         open={openAgentModel}
-        onCancel={() => setOpenAgentModel(false)}
-        onSelectMode={handleSelectMode}
+        onCancel={handleSetModel}
       />
     </div>
   );
