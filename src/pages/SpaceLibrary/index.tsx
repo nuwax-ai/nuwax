@@ -157,15 +157,18 @@ const SpaceLibrary: React.FC = () => {
   };
 
   // 插件 - 复制到空间接口
-  const { run: runPluginCopyToSpace } = useRequest(apiPluginCopyToSpace, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (_: null, params: number[]) => {
-      message.success('插件复制成功');
-      // 复制到空间成功后处理数据
-      handleCopyToSpaceSuccess(params);
+  const { run: runPluginCopyToSpace, loading: loadingPlugin } = useRequest(
+    apiPluginCopyToSpace,
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: (_: null, params: number[]) => {
+        message.success('插件复制成功');
+        // 复制到空间成功后处理数据
+        handleCopyToSpaceSuccess(params);
+      },
     },
-  });
+  );
 
   // 删除成功后处理数据
   const handleDel = (id: number) => {
@@ -199,15 +202,18 @@ const SpaceLibrary: React.FC = () => {
   });
 
   // 工作流 - 复制工作流到空间
-  const { run: runWorkflowCopyToSpace } = useRequest(apiWorkflowCopyToSpace, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (_: null, params: number[]) => {
-      message.success('工作流复制成功');
-      // 复制到空间成功后处理数据
-      handleCopyToSpaceSuccess(params);
+  const { run: runWorkflowCopyToSpace, loading: loadingWorkflow } = useRequest(
+    apiWorkflowCopyToSpace,
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: (_: null, params: number[]) => {
+        message.success('工作流复制成功');
+        // 复制到空间成功后处理数据
+        handleCopyToSpaceSuccess(params);
+      },
     },
-  });
+  );
 
   // 工作流 - 删除工作流接口
   const { run: runWorkflowDel } = useRequest(apiWorkflowDelete, {
@@ -654,6 +660,7 @@ const SpaceLibrary: React.FC = () => {
       {/*复制到空间弹窗*/}
       <MoveCopyComponent
         spaceId={spaceId}
+        loading={loadingPlugin || loadingWorkflow}
         type={ApplicationMoreActionEnum.Copy_To_Space}
         mode={currentComponentInfo?.type as unknown as AgentComponentTypeEnum}
         open={openMove}

@@ -76,3 +76,26 @@ export interface CreateTempChatModelProps {
   name?: string;
   onCancel: () => void;
 }
+
+// 智能体日志查询表单
+export interface AgentLogFormProps {
+  messageId: string;
+  userUid: string;
+  conversationId: string;
+  timeRange?: Date[];
+  outputString: string;
+  userInputString: string;
+}
+
+// 日志头部组件
+export interface LogHeaderProps {
+  agentConfigInfo?: AgentConfigInfo;
+}
+
+// 日志详情组件
+export interface LogDetailsProps {
+  requestId?: string;
+  executeResult?: string;
+  visible?: boolean;
+  onClose: () => void;
+}

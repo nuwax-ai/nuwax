@@ -7,8 +7,8 @@ import type {
 } from '@/types/interfaces/agent';
 import React from 'react';
 
-// 已发布插件列表输入参数
-export interface PublishedPluginListParams {
+// 广场 - 已发布列表请求参数
+export interface SquarePublishedListParams {
   // 目标类型，Agent,Plugin,Workflow,可用值:Agent,Plugin,Workflow,Knowledge,Table
   targetType: AgentComponentTypeEnum;
   // 页码，从1开始
@@ -29,14 +29,8 @@ export interface PublishedPluginListParams {
   allowCopy: AllowCopyEnum;
 }
 
-// 已发布知识库列表输入参数
-export type PublishedKnowledgeListParams = PublishedPluginListParams;
-
-// 广场-已发布智能体列表输入参数
-export type PublishedAgentListParams = PublishedPluginListParams;
-
-// 已发布的智能体信息
-export interface PublishedAgentInfo {
+// 广场-已发布的组件单项信息
+export interface SquarePublishedItemInfo {
   // 发布ID
   id: number;
   tenantId: number;
@@ -89,14 +83,20 @@ export interface SquareAgentInfo {
 
 // 单个智能体组件
 export interface SingleAgentProps {
-  publishedAgentInfo: PublishedAgentInfo;
+  onClick: () => void;
+  extra?: React.ReactNode;
+  publishedItemInfo: SquarePublishedItemInfo;
   onToggleCollectSuccess: (id: number, isCollect: boolean) => void;
 }
 
 // 广场单个组件（插件、工作流等）
-export interface SquareComponentInfoProps {
-  publishedAgentInfo: PublishedAgentInfo;
-  onToggleCollectSuccess: (id: number, isCollect: boolean) => void;
+export type SquareComponentInfoProps = SingleAgentProps;
+
+// 模板组件属性
+export interface TemplateItemProps {
+  publishedItemInfo: SquarePublishedItemInfo;
+  onClick: () => void;
+  extra?: React.ReactNode;
 }
 
 // 广场菜单项属性

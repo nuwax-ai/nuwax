@@ -1,23 +1,29 @@
 import squareBannerImage from '@/assets/images/square_banner_image.png';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
+import useSpaceSquare from '@/hooks/useSpaceSquare';
 import {
   apiPublishedAgentList,
   apiPublishedPluginList,
+  apiPublishedTemplateList,
   apiPublishedWorkflowList,
 } from '@/services/square';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { TenantConfigInfo } from '@/types/interfaces/login';
-import type { Page } from '@/types/interfaces/request';
-import type { PublishedAgentInfo } from '@/types/interfaces/square';
+import { Page } from '@/types/interfaces/request';
+import {
+  SquarePublishedItemInfo,
+  SquarePublishedListParams,
+} from '@/types/interfaces/square';
 import { getURLParams } from '@/utils/common';
 import { Empty, Input } from 'antd';
 import { SearchProps } from 'antd/es/input';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { history, useRequest } from 'umi';
 import styles from './index.less';
 import SingleAgent from './SingleAgent';
 import SquareComponentInfo from './SquareComponentInfo';
+import TemplateItem from './TemplateItem';
 
 const cx = classNames.bind(styles);
 
@@ -27,62 +33,73 @@ const cx = classNames.bind(styles);
 const Square: React.FC = () => {
   // 配置信息
   const [configInfo, setConfigInfo] = useState<TenantConfigInfo>();
-  // 智能体列表
-  const [agentList, setAgentList] = useState<PublishedAgentInfo[]>([]);
   const [title, setTitle] = useState<string>('智能体');
+  const categoryNameRef = useRef<string>('');
+  // 分类类型，默认智能体
+  const categoryTypeRef = useRef<SquareAgentTypeEnum>(
+    SquareAgentTypeEnum.Agent,
+  );
 
-  // 广场-已发布智能体列表接口
-  const { run: runAgent } = useRequest(apiPublishedAgentList, {
+  // 接口地址， 默认智能体列表
+  const apiUrlRef = useRef<(data: SquarePublishedListParams) => void>(
+    apiPublishedAgentList,
+  );
+
+  const { squareComponentList, setSquareComponentList, handleClick } =
+    useSpaceSquare();
+
+  // 广场-已发布列表接口
+  const { run: runSquareList } = useRequest(apiUrlRef.current, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: Page<PublishedAgentInfo>) => {
-      setAgentList(result?.records || []);
+    onSuccess: (result: Page<SquarePublishedItemInfo>) => {
+      setSquareComponentList(result?.records || []);
     },
   });
 
-  // 已发布插件列表接口（广场以及弹框选择中全部插件）
-  const { run: runPlugin } = useRequest(apiPublishedPluginList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: Page<PublishedAgentInfo>) => {
-      setAgentList(result?.records || []);
-    },
-  });
-
-  // 已发布工作流列表接口（广场以及弹框选择中全部插件）
-  const { run: runWorkflow } = useRequest(apiPublishedWorkflowList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: Page<PublishedAgentInfo>) => {
-      setAgentList(result?.records || []);
-    },
-  });
-
-  const handleQuery = (page: number = 1, keyword: string = '') => {
+  // 初始化配置信息
+  const initValues = () => {
     const params = getURLParams() as {
       cate_type: string;
       cate_name: string;
     };
     const { cate_type, cate_name } = params;
+    // 分类类型
+    categoryTypeRef.current = cate_type as SquareAgentTypeEnum;
+    // 分类名称
+    categoryNameRef.current = cate_name ?? cate_type;
+    // 分类类型
+    switch (cate_type) {
+      case SquareAgentTypeEnum.Agent:
+        setTitle('智能体');
+        apiUrlRef.current = apiPublishedAgentList;
+        break;
+      case SquareAgentTypeEnum.Plugin:
+        setTitle('插件');
+        apiUrlRef.current = apiPublishedPluginList;
+        break;
+      case SquareAgentTypeEnum.Workflow:
+        setTitle('工作流');
+        apiUrlRef.current = apiPublishedWorkflowList;
+        break;
+      case SquareAgentTypeEnum.Template:
+        setTitle('模板');
+        apiUrlRef.current = apiPublishedTemplateList;
+        break;
+    }
+  };
+
+  // 查询列表
+  const handleQuery = (page: number = 1, keyword: string = '') => {
     const data = {
       page,
       pageSize: 100,
       // 分类名称
-      category: cate_name ?? cate_type,
+      category: categoryNameRef.current,
       kw: keyword,
     };
-    if (cate_type === SquareAgentTypeEnum.Agent) {
-      setTitle('智能体');
-      runAgent(data);
-    }
-    if (cate_type === SquareAgentTypeEnum.Plugin) {
-      setTitle('插件');
-      runPlugin(data);
-    }
-    if (cate_type === SquareAgentTypeEnum.Workflow) {
-      setTitle('工作流');
-      runWorkflow(data);
-    }
+
+    runSquareList(data);
   };
 
   useEffect(() => {
@@ -91,10 +108,13 @@ const Square: React.FC = () => {
     if (info) {
       setConfigInfo(JSON.parse(info));
     }
+    initValues();
+    // 查询列表
     handleQuery();
 
     const unlisten = history.listen(({ location }: { location: Location }) => {
       if (location.pathname === '/square') {
+        initValues();
         handleQuery();
       }
     });
@@ -111,8 +131,9 @@ const Square: React.FC = () => {
     }
   };
 
+  // 切换收藏与取消收藏
   const handleToggleCollectSuccess = (id: number, isCollect: boolean) => {
-    const _agentList = agentList.map((item) => {
+    const list = squareComponentList.map((item) => {
       if (item.targetId === id) {
         item.collect = isCollect;
         const count = item?.statistics?.collectCount || 0;
@@ -120,7 +141,7 @@ const Square: React.FC = () => {
       }
       return item;
     });
-    setAgentList(_agentList);
+    setSquareComponentList(list);
   };
 
   // 搜索
@@ -140,7 +161,7 @@ const Square: React.FC = () => {
     >
       <header className={cx(styles.header, 'relative')} onClick={handleLink}>
         <img
-          className={'absolute'}
+          className={cx('absolute', styles['banner-image'])}
           src={configInfo?.squareBanner || (squareBannerImage as string)}
           alt=""
         />
@@ -168,23 +189,35 @@ const Square: React.FC = () => {
           style={{ width: 200 }}
         />
       </div>
-      {agentList?.length > 0 ? (
+      {squareComponentList?.length > 0 ? (
         <div className={cx(styles['list-section'])}>
-          {agentList.map((item, index) => {
-            if (item?.targetType === SquareAgentTypeEnum.Agent) {
+          {squareComponentList.map((item, index) => {
+            if (categoryTypeRef.current === SquareAgentTypeEnum.Agent) {
               return (
                 <SingleAgent
                   key={index}
-                  publishedAgentInfo={item}
+                  publishedItemInfo={item}
                   onToggleCollectSuccess={handleToggleCollectSuccess}
+                  onClick={() => handleClick(item.targetId, item.targetType)}
+                />
+              );
+            } else if (
+              categoryTypeRef.current === SquareAgentTypeEnum.Template
+            ) {
+              return (
+                <TemplateItem
+                  key={index}
+                  publishedItemInfo={item}
+                  onClick={() => handleClick(item.targetId, item.targetType)}
                 />
               );
             } else {
               return (
                 <SquareComponentInfo
                   key={index}
-                  publishedAgentInfo={item}
+                  publishedItemInfo={item}
                   onToggleCollectSuccess={handleToggleCollectSuccess}
+                  onClick={() => handleClick(item.targetId, item.targetType)}
                 />
               );
             }

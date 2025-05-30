@@ -8,7 +8,7 @@ import {
 import { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
-// 智能体、插件、工作流模板复制
+// 智能体、工作流模板复制
 export async function apiPublishTemplateCopy(
   data: PublishTemplateCopyParams,
 ): Promise<RequestResponse<number>> {

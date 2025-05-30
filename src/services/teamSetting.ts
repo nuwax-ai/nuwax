@@ -3,17 +3,16 @@ import type {
   SearchUserInfo,
   SpaceUserInfo,
   TeamDetailInfo,
-  UpdateSpaceParams,
+  UpdateSpaceTeamParams,
 } from '@/types/interfaces/teamSetting';
 import { request } from 'umi';
 
 // 查询指定空间信息
-export async function apiGetSpaceDetail(data: {
-  spaceId: number;
-}): Promise<RequestResponse<TeamDetailInfo>> {
-  return request(`/api/space/get/${data.spaceId}`, {
+export async function apiGetSpaceDetail(
+  spaceId: number,
+): Promise<RequestResponse<TeamDetailInfo>> {
+  return request(`/api/space/get/${spaceId}`, {
     method: 'GET',
-    data,
   });
 }
 
@@ -54,9 +53,9 @@ export async function apiAddSpaceMember(
   });
 }
 
-// 更新空间
-export async function apiUpdateSpace(
-  data: UpdateSpaceParams,
+// 更新工作空间新团队
+export async function apiUpdateSpaceTeam(
+  data: UpdateSpaceTeamParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/space/update', {
     method: 'POST',

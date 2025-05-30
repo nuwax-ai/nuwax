@@ -27,11 +27,15 @@ const routes = [
     routes: [
       { path: '', component: '@/pages/Home' },
       { path: '/home/chat/:id/:agentId', component: '@/pages/Chat' },
-      { path: '/home/log/:agentId', component: '@/pages/HomeLog' },
       { path: '/agent/:agentId', component: '@/pages/AgentDetails' },
       { path: '/space', component: '@/pages/Space' },
       { path: '/space/:spaceId/develop', component: '@/pages/SpaceDevelop' },
+      { path: '/space/:spaceId/:agentId/log', component: '@/pages/SpaceLog' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
+      {
+        path: '/space/:spaceId/space-square',
+        component: '@/pages/SpaceSquare',
+      },
       { path: '/space/:spaceId/team', component: '@/pages/TeamSetting' },
       {
         path: '/space/:spaceId/plugin/:pluginId',

@@ -103,21 +103,24 @@ const SpaceDevelop: React.FC = () => {
   });
 
   // 复制到空间
-  const { run: runCopyToSpace } = useRequest(apiAgentCopyToSpace, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (_: null, params: number[]) => {
-      message.success('已成功创建副本');
-      // 关闭弹窗
-      setOpenMove(false);
-      // 目标空间ID
-      const targetSpaceId = params[1];
-      // 如果目标空间ID和当前空间ID相同, 则重新查询当前空间智能体列表
-      if (targetSpaceId === spaceId) {
-        run(spaceId);
-      }
+  const { run: runCopyToSpace, loading: loadingCopyToSpace } = useRequest(
+    apiAgentCopyToSpace,
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: (_: null, params: number[]) => {
+        message.success('已成功创建副本');
+        // 关闭弹窗
+        setOpenMove(false);
+        // 目标空间ID
+        const targetSpaceId = params[1];
+        // 如果目标空间ID和当前空间ID相同, 则重新查询当前空间智能体列表
+        if (targetSpaceId === spaceId) {
+          run(spaceId);
+        }
+      },
     },
-  });
+  );
 
   // 删除或者迁移智能体后, 从列表移除智能体
   const handleDelAgent = () => {
@@ -156,16 +159,19 @@ const SpaceDevelop: React.FC = () => {
   });
 
   // 智能体迁移接口
-  const { run: runTransfer } = useRequest(apiAgentTransfer, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      message.success('迁移成功');
-      handleDelAgent();
-      setOpenMove(false);
-      setCurrentAgentInfo(null);
+  const { run: runTransfer, loading: loadingTransfer } = useRequest(
+    apiAgentTransfer,
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: () => {
+        message.success('迁移成功');
+        handleDelAgent();
+        setOpenMove(false);
+        setCurrentAgentInfo(null);
+      },
     },
-  });
+  );
 
   useEffect(() => {
     const userInfoString = localStorage.getItem(USER_INFO);
@@ -277,7 +283,7 @@ const SpaceDevelop: React.FC = () => {
         break;
       // 日志
       case ApplicationMoreActionEnum.Log:
-        history.push(`/home/log/${id}`);
+        history.push(`/space/${spaceId}/${id}/log`);
         break;
       case ApplicationMoreActionEnum.Del:
         confirm({
@@ -366,6 +372,7 @@ const SpaceDevelop: React.FC = () => {
       {/*智能体迁移弹窗*/}
       <MoveCopyComponent
         spaceId={spaceId}
+        loading={loadingCopyToSpace || loadingTransfer}
         type={currentClickTypeRef.current} // 默认为迁移
         open={openMove}
         title={currentAgentInfo?.name}

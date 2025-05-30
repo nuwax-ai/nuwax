@@ -55,7 +55,9 @@ export enum SpaceApplicationListEnum {
   Application_Develop,
   // 组件库
   Component_Library,
-  // 团队设置
+  // 空间广场
+  Space_Square,
+  // 成员与设置
   Team_Setting,
 }
 

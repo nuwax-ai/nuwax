@@ -2,11 +2,11 @@ import teamImage from '@/assets/images/team_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
-import { apiUpdateSpace } from '@/services/teamSetting';
+import { apiUpdateSpaceTeam } from '@/services/teamSetting';
 import styles from '@/styles/teamSetting.less';
 import type {
   TeamDetailInfo,
-  UpdateSpaceParams,
+  UpdateSpaceTeamParams,
 } from '@/types/interfaces/teamSetting';
 import { customizeRequiredMark } from '@/utils/form';
 import { useRequest } from 'ahooks';
@@ -54,7 +54,7 @@ const ModifyTeam: React.FC<EditSpaceProps> = ({
     onCancel();
   };
 
-  const { run: runEdit } = useRequest(apiUpdateSpace, {
+  const { run: runEdit } = useRequest(apiUpdateSpaceTeam, {
     manual: true,
     onSuccess: () => {
       message.success('修改成功');
@@ -62,7 +62,7 @@ const ModifyTeam: React.FC<EditSpaceProps> = ({
     },
   });
 
-  const onFinish: FormProps<UpdateSpaceParams>['onFinish'] = (values) => {
+  const onFinish: FormProps<UpdateSpaceTeamParams>['onFinish'] = (values) => {
     runEdit({
       ...values,
       id: spaceId,

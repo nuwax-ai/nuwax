@@ -1,5 +1,8 @@
+import TooltipIcon from '@/components/TooltipIcon';
 import styles from '@/styles/teamSetting.less';
-import { Button } from 'antd';
+import { TeamDetailInfo } from '@/types/interfaces/teamSetting';
+import { InfoCircleOutlined } from '@ant-design/icons';
+import { Button, Switch } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import RemoveSpace from './RemoveSpace';
@@ -9,14 +12,16 @@ const cx = classNames.bind(styles);
 
 interface SpaceSettingTabProps {
   spaceId: number;
-  name: string | undefined;
+  spaceDetailInfo?: TeamDetailInfo;
   onTransferSuccess: () => void;
+  onChange: (attr: string, checked: boolean) => void;
 }
 
 const SpaceSettingTab: React.FC<SpaceSettingTabProps> = ({
   spaceId,
-  name,
+  spaceDetailInfo,
   onTransferSuccess,
+  onChange,
 }) => {
   const [openRemoveModal, setOpenRemoveModal] = useState<boolean>(false);
   const [openTransferModal, setOpenTransferModal] = useState<boolean>(false);
@@ -50,12 +55,35 @@ const SpaceSettingTab: React.FC<SpaceSettingTabProps> = ({
       </Button>
       <h3 className={cx('font-weight', 'mb-6')}>删除空间</h3>
       <p className={cx('mb-6')}>空间删除后所有资产将无法恢复，请谨慎操作</p>
-      <Button type="primary" onClick={removeSpace}>
+      <Button type="primary" className={cx('mb-16')} onClick={removeSpace}>
         删除空间
       </Button>
+      <h3 className={cx('font-weight', 'mb-6', 'flex', 'items-center')}>
+        开发者功能
+        <TooltipIcon
+          icon={<InfoCircleOutlined />}
+          title="tips：关闭后，用户将无法看见“智能体开发”和“组件库”，创建者和管理员不受影响"
+        />
+      </h3>
+      <Switch
+        checked={spaceDetailInfo?.allowDevelop === 1}
+        className={cx('mb-16')}
+        onChange={(checked) => onChange('allowDevelop', checked)}
+      />
+      <h3 className={cx('font-weight', 'mb-6', 'flex', 'items-center')}>
+        接受来自外部空间的发布
+        <TooltipIcon
+          icon={<InfoCircleOutlined />}
+          title="tips：打开后，拥有该空间权限的用户在其他空间完成开发的智能体、插件、工作流，可以发布到该空间的广场上"
+        />
+      </h3>
+      <Switch
+        checked={spaceDetailInfo?.receivePublish === 1}
+        onChange={(checked) => onChange('receivePublish', checked)}
+      />
       <RemoveSpace
         spaceId={spaceId}
-        name={name}
+        name={spaceDetailInfo?.name}
         open={openRemoveModal}
         onCancel={() => setOpenRemoveModal(false)}
         onConfirmRemove={handlerConfirmRemove}

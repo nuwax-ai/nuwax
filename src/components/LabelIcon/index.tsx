@@ -12,12 +12,15 @@ const cx = classNames.bind(styles);
  * 知识库设置label组件
  */
 const LabelIcon: React.FC<LabelIconProps> = ({
+  className,
   label,
   title,
   type = TooltipTitleTypeEnum.Blank,
 }) => {
   return (
-    <div className={cx(styles['label-wrapper'], 'flex', 'items-center')}>
+    <div
+      className={cx(styles['label-wrapper'], 'flex', 'items-center', className)}
+    >
       <span>{label}</span>
       <TooltipIcon title={title} icon={<InfoCircleOutlined />} type={type} />
     </div>

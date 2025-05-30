@@ -2,10 +2,7 @@ import type { RequestResponse } from '@/types/interfaces/request';
 import type {
   AddSpaceUserParams,
   CreateSpaceTeamParams,
-  DeleteSpaceParams,
   SpaceInfo,
-  TransferSpaceParams,
-  UpdateSpaceTeamParams,
   UserSpaceInfo,
   UserSpaceInfoParams,
   UserSpaceListParams,
@@ -17,26 +14,6 @@ export async function apiCreateSpaceTeam(
   data: CreateSpaceTeamParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/space/add', {
-    method: 'POST',
-    data,
-  });
-}
-
-// 更新工作空间新团队
-export async function apiUpdateSpaceTeam(
-  data: UpdateSpaceTeamParams,
-): Promise<RequestResponse<null>> {
-  return request('/api/space/update', {
-    method: 'POST',
-    data,
-  });
-}
-
-// 删除工作空间
-export async function apiDeleteSpace(
-  data: DeleteSpaceParams,
-): Promise<RequestResponse<null>> {
-  return request('/api/space/delete', {
     method: 'POST',
     data,
   });
@@ -76,15 +53,5 @@ export async function apiUserSpaceList(
   return request('/api/space/user/list', {
     method: 'GET',
     params,
-  });
-}
-
-// 空间转让接口
-export async function apiUserSpaceTransfer(
-  data: TransferSpaceParams,
-): Promise<RequestResponse<null>> {
-  return request('/api/space/transfer', {
-    method: 'POST',
-    data,
   });
 }

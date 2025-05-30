@@ -1,6 +1,6 @@
 import agentImage from '@/assets/images/agent_image.png';
 import avatarImage from '@/assets/images/avatar.png';
-import { AgentConfigInfo } from '@/types/interfaces/agent';
+import { LogHeaderProps } from '@/types/interfaces/space';
 import { LeftOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
@@ -8,10 +8,7 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface LogHeaderProps {
-  agentConfigInfo?: AgentConfigInfo;
-}
-
+// 日志头部组件
 const LogHeader: React.FC<LogHeaderProps> = ({ agentConfigInfo }) => {
   const handleBack = () => {
     history.back();

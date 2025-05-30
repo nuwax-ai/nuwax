@@ -1,4 +1,8 @@
-import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  AllowCopyEnum,
+  OnlyTemplateEnum,
+} from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { HistoryActionTypeEnum } from '@/types/enums/space';
@@ -46,7 +50,7 @@ export interface PublishItemListParams {
   targetId: number;
 }
 
-// 智能体、插件、工作流模板复制请求参数
+// 智能体、工作流模板复制请求参数
 export interface PublishTemplateCopyParams extends PublishItemListParams {
   targetSpaceId: number;
 }
@@ -55,6 +59,8 @@ export interface PublishTemplateCopyParams extends PublishItemListParams {
 export interface PublishOffShelfParams extends PublishItemListParams {
   // 发布ID，下架时必填
   publishId: number;
+  // 是否仅下架模板，默认为false
+  justOffShelfTemplate?: boolean;
 }
 
 // 查询指定智能体插件或工作流已发布列表返回结果
@@ -93,6 +99,9 @@ export interface PublishItem {
 
   /*是否允许复制,0不允许；1允许 */
   allowCopy?: AllowCopyEnum;
+
+  // 仅展示模板, 0 否，1 是
+  onlyTemplate: OnlyTemplateEnum;
 }
 
 // 提交发布申请请求参数

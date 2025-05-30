@@ -1,17 +1,15 @@
 import type { Page, RequestResponse } from '@/types/interfaces/request';
 import type {
-  PublishedAgentInfo,
-  PublishedAgentListParams,
-  PublishedKnowledgeListParams,
-  PublishedPluginListParams,
   SquareCategoryInfo,
+  SquarePublishedItemInfo,
+  SquarePublishedListParams,
 } from '@/types/interfaces/square';
 import { request } from 'umi';
 
 // 已发布插件列表接口（广场以及弹框选择中全部插件）
 export async function apiPublishedPluginList(
-  data: PublishedPluginListParams,
-): Promise<RequestResponse<Page<PublishedAgentInfo>>> {
+  data: SquarePublishedListParams,
+): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
   return request('/api/published/plugin/list', {
     method: 'POST',
     data,
@@ -20,8 +18,8 @@ export async function apiPublishedPluginList(
 
 // 已发布工作流列表接口（广场以及弹框选择中全部插件）
 export async function apiPublishedWorkflowList(
-  data: PublishedPluginListParams,
-): Promise<RequestResponse<Page<PublishedAgentInfo>>> {
+  data: SquarePublishedListParams,
+): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
   return request('/api/published/workflow/list', {
     method: 'POST',
     data,
@@ -30,8 +28,8 @@ export async function apiPublishedWorkflowList(
 
 // 已发布知识库列表接口（广场以及弹框选择中全部插件）
 export async function apiPublishedKnowledgeList(
-  data: PublishedKnowledgeListParams,
-): Promise<RequestResponse<Page<PublishedAgentInfo>>> {
+  data: SquarePublishedListParams,
+): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
   return request('/api/published/knowledge/list', {
     method: 'POST',
     data,
@@ -40,8 +38,8 @@ export async function apiPublishedKnowledgeList(
 
 // 广场-已发布智能体列表接口
 export async function apiPublishedAgentList(
-  data: PublishedAgentListParams,
-): Promise<RequestResponse<Page<PublishedAgentInfo>>> {
+  data: SquarePublishedListParams,
+): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
   return request('/api/published/agent/list', {
     method: 'POST',
     data,
@@ -72,5 +70,15 @@ export async function apiPublishedWorkflowUnCollect(
 ): Promise<RequestResponse<null>> {
   return request(`/api/published/workflow/unCollect/${workflowId}`, {
     method: 'POST',
+  });
+}
+
+// 广场-已发布模板列表接口
+export async function apiPublishedTemplateList(
+  data: SquarePublishedListParams,
+): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
+  return request('/api/published/template/list', {
+    method: 'POST',
+    data,
   });
 }
