@@ -7,6 +7,7 @@
   margin-bottom: 16px;
   border: 1px solid @GRAY08;
   background: #fff;
+  position: relative;
 
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 10%);
@@ -75,4 +76,23 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.sharedIcon {
+  position: absolute;
+  top: 50%;
+  right: 50%;
+  transform: translate(50%, -50%);
+  width: 40px;
+  height: 40px;
+  z-index: 1;
+}
+
+.newVersionIcon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1;
+  color: #f44c76;
+  font-size: 12px;
 }

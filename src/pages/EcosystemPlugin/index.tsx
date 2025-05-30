@@ -1,14 +1,19 @@
 import Created from '@/components/Created';
+import EcosystemShareModal, {
+  EcosystemShareModalProps,
+} from '@/components/EcosystemShareModal';
 import type { PluginCardProps } from '@/components/PluginCard';
 import PluginCard from '@/components/PluginCard';
 import PluginDetailDrawer from '@/components/PluginDetailDrawer';
-import PluginShareModal from '@/components/PluginShareModal';
 import {
   createClientConfigDraft,
+  disableClientConfig,
   getClientConfigDetail,
   getClientConfigList,
   offlineClientConfig,
   saveAndPublishClientConfig,
+  updateAndEnableClientConfig,
+  updateAndPublishClientConfig,
   updateClientConfigDraft,
 } from '@/services/ecosystem';
 import {
@@ -31,10 +36,12 @@ import {
 } from '@/types/interfaces/ecosystem';
 import { PlusOutlined } from '@ant-design/icons';
 import type { TabsProps } from 'antd';
-import { Button, Card, Col, Input, message, Row, Spin, Tabs } from 'antd';
+import { App, Button, Card, Col, Input, Row, Spin, Tabs } from 'antd';
+import classNames from 'classnames';
 import { useCallback, useEffect, useState } from 'react';
 import styles from './index.less';
 
+const cx = classNames.bind(styles);
 const { Search } = Input;
 
 /**
@@ -54,6 +61,7 @@ interface ExtendedPluginProps extends PluginCardProps {
  * 展示插件列表，包括全部、已启用和我的分享三个标签页
  */
 export default function EcosystemPlugin() {
+  const { message } = App.useApp();
   // 搜索关键词
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   // 当前激活的标签页
@@ -176,7 +184,7 @@ export default function EcosystemPlugin() {
       tag = '官方推荐';
       tagColor = '#1890ff';
     }
-
+    const isMyShare = activeTab === 'shared';
     return {
       icon:
         config.icon ||
@@ -185,31 +193,13 @@ export default function EcosystemPlugin() {
       description: config.description || '暂无描述',
       tag,
       tagColor,
+      isNewVersion: config.isNewVersion,
+      configParamJson: config.serverConfigParamJson,
+      localConfigParamJson: config.localConfigParamJson,
       isEnabled: config.useStatus === EcosystemUseStatusEnum.ENABLED,
+      shareStatus: isMyShare ? config.shareStatus : undefined, // 仅在我的分享中使用
+      publishDoc: config.publishDoc,
     };
-  };
-
-  /**
-   * 处理插件卡片点击事件
-   */
-  const handlePluginClick = async (config: ClientConfigVo) => {
-    // 如果是我的分享标签页，则进入编辑模式
-    if (activeTab === 'shared') {
-      setEditingPlugin(config);
-      setIsEditMode(true);
-      setShareModalVisible(true);
-    } else {
-      // 获取详细信息
-      if (config.uid) {
-        const detail = await getClientConfigDetail(config.uid);
-        if (detail) {
-          setSelectedPlugin(detail);
-          setDrawerVisible(true);
-        } else {
-          message.error('获取插件详情失败');
-        }
-      }
-    }
   };
 
   /**
@@ -232,74 +222,80 @@ export default function EcosystemPlugin() {
   /**
    * 处理插件启用/禁用切换
    */
-  const handleToggleEnable = async () => {
-    if (!selectedPlugin?.uid) return;
+  // const handleToggleEnable = async () => {
+  //   if (!selectedPlugin?.uid) return;
 
-    try {
-      // 这里需要调用启用/禁用的API
-      // 目前后端接口中没有提供，可以通过更新草稿的方式实现
-      const newUseStatus =
-        selectedPlugin.useStatus === EcosystemUseStatusEnum.ENABLED
-          ? EcosystemUseStatusEnum.DISABLED
-          : EcosystemUseStatusEnum.ENABLED;
+  //   try {
+  //     // 这里需要调用启用/禁用的API
+  //     // 目前后端接口中没有提供，可以通过更新草稿的方式实现
+  //     const newUseStatus =
+  //       selectedPlugin.useStatus === EcosystemUseStatusEnum.ENABLED
+  //         ? EcosystemUseStatusEnum.DISABLED
+  //         : EcosystemUseStatusEnum.ENABLED;
 
-      // 如果是草稿状态，可以直接更新
-      if (selectedPlugin.shareStatus === EcosystemShareStatusEnum.DRAFT) {
-        const updateParams: ClientConfigUpdateDraftReqDTO = {
-          uid: selectedPlugin.uid,
-          name: selectedPlugin.name || '',
-          description: selectedPlugin.description,
-          dataType: selectedPlugin.dataType || EcosystemDataTypeEnum.PLUGIN,
-          targetType: selectedPlugin.targetType,
-          targetId: selectedPlugin.targetId,
-          categoryCode: selectedPlugin.categoryCode,
-          categoryName: selectedPlugin.categoryName,
-          useStatus: newUseStatus,
-          author: selectedPlugin.author,
-          publishDoc: selectedPlugin.publishDoc,
-          configParamJson:
-            typeof selectedPlugin.configParamJson === 'string'
-              ? selectedPlugin.configParamJson
-              : JSON.stringify(selectedPlugin.configParamJson || {}),
-          configJson:
-            typeof selectedPlugin.configJson === 'string'
-              ? selectedPlugin.configJson
-              : JSON.stringify(selectedPlugin.configJson || {}),
-          icon: selectedPlugin.icon,
-        };
+  //     // 如果是草稿状态，可以直接更新
+  //     if (selectedPlugin.shareStatus === EcosystemShareStatusEnum.DRAFT) {
+  //       const updateParams: ClientConfigUpdateDraftReqDTO = {
+  //         uid: selectedPlugin.uid,
+  //         name: selectedPlugin.name || '',
+  //         description: selectedPlugin.description,
+  //         dataType: selectedPlugin.dataType || EcosystemDataTypeEnum.PLUGIN,
+  //         targetType: selectedPlugin.targetType,
+  //         targetId: selectedPlugin.targetId,
+  //         categoryCode: selectedPlugin.categoryCode,
+  //         categoryName: selectedPlugin.categoryName,
+  //         useStatus: newUseStatus,
+  //         author: selectedPlugin.author,
+  //         publishDoc: selectedPlugin.publishDoc,
+  //         configParamJson:
+  //           typeof selectedPlugin.configParamJson === 'string'
+  //             ? selectedPlugin.configParamJson
+  //             : JSON.stringify(selectedPlugin.configParamJson || {}),
+  //         configJson:
+  //           typeof selectedPlugin.configJson === 'string'
+  //             ? selectedPlugin.configJson
+  //             : JSON.stringify(selectedPlugin.configJson || {}),
+  //         icon: selectedPlugin.icon,
+  //       };
 
-        const result = await updateClientConfigDraft(updateParams);
-        if (result) {
-          setSelectedPlugin(result);
-          message.success(
-            newUseStatus === EcosystemUseStatusEnum.ENABLED
-              ? '插件已启用'
-              : '插件已禁用',
-          );
-          // 刷新列表
-          fetchPluginList();
-        } else {
-          message.error('操作失败');
-        }
-      } else {
-        message.info('只有草稿状态的插件可以修改启用状态');
-      }
-    } catch (error) {
-      console.error('切换插件状态失败:', error);
-      message.error('操作失败');
-    }
-  };
+  //       const result = await updateClientConfigDraft(updateParams);
+  //       if (result) {
+  //         setSelectedPlugin(result);
+  //         message.success(
+  //           newUseStatus === EcosystemUseStatusEnum.ENABLED
+  //             ? '插件已启用'
+  //             : '插件已禁用',
+  //         );
+  //         // 刷新列表
+  //         fetchPluginList();
+  //       } else {
+  //         message.error('操作失败');
+  //       }
+  //     } else {
+  //       message.info('只有草稿状态的插件可以修改启用状态');
+  //     }
+  //   } catch (error) {
+  //     console.error('切换插件状态失败:', error);
+  //     message.error('操作失败');
+  //   }
+  // };
 
   /**
    * 更新配置处理函数
    */
-  const handleUpdate = () => {
+  const handleUpdateAndEnable = async (values: any[]) => {
     if (!selectedPlugin) return;
-
-    setEditingPlugin(selectedPlugin);
-    setIsEditMode(true);
     setDrawerVisible(false);
-    setShareModalVisible(true);
+    const result = await updateAndEnableClientConfig({
+      uid: selectedPlugin.uid,
+      configParamJson: JSON.stringify(values),
+    });
+    if (result) {
+      message.success('更新成功');
+      fetchPluginList();
+    } else {
+      message.error('更新失败');
+    }
   };
 
   /**
@@ -310,18 +306,13 @@ export default function EcosystemPlugin() {
 
     try {
       // 如果是已发布状态，调用下线接口
-      if (selectedPlugin.shareStatus === EcosystemShareStatusEnum.PUBLISHED) {
-        const result = await offlineClientConfig(selectedPlugin.uid);
-        if (result) {
-          message.success('插件已下线');
-          setDrawerVisible(false);
-          fetchPluginList();
-        } else {
-          message.error('下线失败');
-        }
+      const result = await disableClientConfig(selectedPlugin.uid);
+      if (result) {
+        message.success('插件已下线');
+        setDrawerVisible(false);
+        fetchPluginList();
       } else {
-        // 其他状态可以考虑删除或禁用
-        message.info('当前状态无法下线');
+        message.error('下线失败');
       }
     } catch (error) {
       console.error('停用插件失败:', error);
@@ -355,13 +346,13 @@ export default function EcosystemPlugin() {
   /**
    * 保存分享
    */
-  const handleSaveShare = async (values: any) => {
+  const handleSaveShare = async (values: any, isDraft: boolean) => {
     try {
       const params: ClientConfigSaveReqDTO | ClientConfigUpdateDraftReqDTO = {
         name: values.name,
         description: values.description,
         dataType: EcosystemDataTypeEnum.PLUGIN,
-        targetType: values.targetType || '插件',
+        targetType: values.targetType || AgentComponentTypeEnum.Plugin,
         targetId: values.targetId,
         categoryCode: values.categoryCode,
         categoryName: values.categoryName,
@@ -380,11 +371,14 @@ export default function EcosystemPlugin() {
           ...params,
           uid: editingPlugin.uid,
         } as ClientConfigUpdateDraftReqDTO;
-
-        result = await updateClientConfigDraft(updateParams);
+        if (isDraft) {
+          result = await updateClientConfigDraft(updateParams);
+        } else {
+          result = await updateAndPublishClientConfig(updateParams);
+        }
       } else {
         // 创建新草稿或发布
-        if (values.isDraft) {
+        if (isDraft) {
           result = await createClientConfigDraft(
             params as ClientConfigSaveReqDTO,
           );
@@ -434,7 +428,7 @@ export default function EcosystemPlugin() {
           type="primary"
           icon={<PlusOutlined />}
           onClick={handleCreateShare}
-          className={styles.createShareButton}
+          className={cx(styles.createShareButton)}
         >
           创建分享
         </Button>
@@ -447,22 +441,22 @@ export default function EcosystemPlugin() {
   const tabItems: TabsProps['items'] = [
     {
       key: 'all',
-      label: `全部 (${activeTab === 'all' ? pluginData.total || 0 : ''})`,
+      label: `全部`,
     },
     {
       key: 'enabled',
-      label: `已启用 (${activeTab === 'enabled' ? pluginData.total || 0 : ''})`,
+      label: `已启用`,
     },
     {
       key: 'shared',
-      label: `我的分享 (${
-        activeTab === 'shared' ? pluginData.total || 0 : ''
-      })`,
+      label: `我的分享`,
     },
   ];
 
   const [show, setShow] = useState(false);
-  const [pluginInfo, setPluginInfo] = useState<CreatedNodeItem | null>(null);
+  const [pluginInfo, setPluginInfo] = useState<EcosystemShareModalProps | null>(
+    null,
+  );
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]
   >([]);
@@ -471,7 +465,13 @@ export default function EcosystemPlugin() {
     item.type = item.targetType;
     item.typeId = item.targetId;
     setShow(false);
-    setPluginInfo(item);
+    setPluginInfo({
+      name: item.name,
+      description: item.description,
+      targetType: item.targetType,
+      targetId: item.targetId.toString(),
+      shareStatus: EcosystemShareStatusEnum.DRAFT,
+    });
     setAddComponents([
       {
         type: item.type,
@@ -481,27 +481,76 @@ export default function EcosystemPlugin() {
     ]);
   };
 
-  const handleOffline = (uid: string) => {
-    console.log('uid', uid);
+  /**
+   * 处理插件卡片点击事件
+   */
+  const handlePluginClick = async (config: ClientConfigVo) => {
+    // 如果是我的分享标签页，则进入编辑模式
+    if (activeTab === 'shared') {
+      setEditingPlugin(config);
+      setIsEditMode(true);
+      setShareModalVisible(true);
+      setShow(false);
+      const targetType = config.targetType;
+      const item: EcosystemShareModalProps = {
+        uid: config.uid,
+        name: config.name || '',
+        description: config.description || '',
+        targetType,
+        targetId: (config.targetId || '').toString(),
+        author: config.author || '',
+        publishDoc: config.publishDoc || '',
+        shareStatus: config.shareStatus,
+        configParamJson: config.configParamJson,
+      };
+      setPluginInfo(item);
+      setAddComponents([
+        {
+          type: targetType as AgentComponentTypeEnum,
+          targetId: Number(item.targetId) || 0,
+          status: AgentAddComponentStatusEnum.Added,
+        },
+      ]);
+    } else {
+      // 获取详细信息
+      if (config.uid) {
+        const detail = await getClientConfigDetail(config.uid);
+        if (detail) {
+          setSelectedPlugin(detail);
+          setDrawerVisible(true);
+        } else {
+          message.error('获取插件详情失败');
+        }
+      }
+    }
+  };
+
+  const handleOffline = async (uid: string) => {
     // 下线插件
-    offlineClientConfig(uid);
+    const result = await offlineClientConfig(uid);
+    if (result) {
+      message.success('插件已下线');
+      fetchPluginList();
+    } else {
+      message.error('下线失败');
+    }
   };
 
   return (
-    <div className={styles.container}>
-      <Card className={styles.contentCard} variant="outlined">
-        <div className={styles.header}>
+    <div className={cx(styles.container)}>
+      <Card className={cx(styles.contentCard)} title="插件" variant="outlined">
+        <div className={cx(styles.header)}>
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
-            className={styles.tabs}
+            className={cx(styles.tabs)}
             items={tabItems}
           />
 
-          <div className={styles.headerRight}>
+          <div className={cx(styles.headerRight)}>
             {renderExtraContent()}
             <Search
-              className={styles.searchInput}
+              className={cx(styles.searchInput)}
               placeholder="搜索插件"
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
@@ -512,14 +561,10 @@ export default function EcosystemPlugin() {
         </div>
 
         <Spin spinning={loading}>
-          <div className={styles.pluginList}>
+          <div className={cx(styles.pluginList)}>
             <Row gutter={[16, 16]}>
               {pluginData.records?.map((config, index) => (
-                <Col
-                  span={6}
-                  key={config.uid || index}
-                  className={styles.pluginCol}
-                >
+                <Col span={6} key={config.uid || index}>
                   <PluginCard
                     {...convertToPluginCard(config)}
                     onClick={() => handlePluginClick(config)}
@@ -570,13 +615,13 @@ export default function EcosystemPlugin() {
             : undefined
         }
         onClose={handleDetailClose}
-        onToggleEnable={handleToggleEnable}
-        onUpdate={handleUpdate}
+        onUpdateAndEnable={handleUpdateAndEnable}
         onDisable={handleDisable}
       />
 
       {/* 插件分享弹窗 */}
-      <PluginShareModal
+      <EcosystemShareModal
+        type={EcosystemDataTypeEnum.PLUGIN}
         visible={shareModalVisible}
         isEdit={isEditMode}
         onClose={handleCloseShareModal}

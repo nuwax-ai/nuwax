@@ -153,8 +153,12 @@ export interface ClientConfigVo {
   author?: string;
   /** 发布文档 */
   publishDoc?: string;
+  /** 服务器端最新版本号 */
+  serverConfigParamJson?: any;
   /** 请求参数配置json */
   configParamJson?: any;
+  /** 本地配置参数json */
+  localConfigParamJson?: any;
   /** 配置json，存储插件的配置信息如果有其他额外的信息保存放这里 */
   configJson?: any;
   /** 图标图片地址 */
@@ -325,6 +329,8 @@ export interface ClientConfigSaveReqDTO {
   // configJson?: string;
   /** 图标图片地址 */
   icon?: string;
+  /** 配置唯一标识 */
+  uid?: string;
 }
 
 /**

@@ -1,7 +1,10 @@
+import { EcosystemShareStatusEnum } from '@/types/interfaces/ecosystem';
 import { Card, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
+import NewVersionIcon from './NewVersionIcon';
+import SharedIcon from './SharedIcon';
 
 /**
  * 插件卡片组件接口
@@ -23,6 +26,16 @@ export interface PluginCardProps {
   className?: string;
   /** 是否启用 */
   isEnabled?: boolean;
+  /** 分享状态 */
+  shareStatus?: EcosystemShareStatusEnum | undefined;
+  /** 使用文档 */
+  publishDoc?: string;
+  /** 是否是新版本 */
+  isNewVersion?: boolean;
+  /** 配置信息 */
+  configParamJson: string;
+  /** 本地配置信息(之前 版本) */
+  localConfigParamJson?: string;
 }
 
 /**
@@ -40,12 +53,13 @@ const PluginCard: React.FC<PluginCardProps> = ({
   onClick,
   className,
   isEnabled,
+  shareStatus,
+  isNewVersion,
 }) => {
   return (
     <Card
       className={classNames(styles.pluginCard, className)}
       hoverable
-      bodyStyle={{ padding: 0 }}
       onClick={onClick}
     >
       <div className={styles.cardContent}>
@@ -63,6 +77,8 @@ const PluginCard: React.FC<PluginCardProps> = ({
           <h3 className={styles.title}>{title}</h3>
           <p className={styles.description}>{description}</p>
         </div>
+        {shareStatus && <SharedIcon shareStatus={shareStatus} />}
+        {isNewVersion && <NewVersionIcon />}
       </div>
     </Card>
   );

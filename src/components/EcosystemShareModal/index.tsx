@@ -2,6 +2,10 @@ import { SkillList } from '@/components/Skill';
 import { apiPublishedPluginInfo } from '@/services/plugin';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { BindConfigWithSub } from '@/types/interfaces/agent';
+import {
+  EcosystemDataTypeEnum,
+  EcosystemShareStatusEnum,
+} from '@/types/interfaces/ecosystem';
 import { PlusOutlined } from '@ant-design/icons';
 import {
   Button,
@@ -25,27 +29,31 @@ export interface PluginParam {
   value: string;
 }
 
-export interface PluginShareModalProps {
+export interface EcosystemShareModalProps {
+  type: EcosystemDataTypeEnum;
   visible: boolean;
   isEdit?: boolean;
   onClose: () => void;
   onSave: (values: any, isDraft: boolean) => void;
-  onAddPlugin: (type: AgentComponentTypeEnum) => void;
+  onAddPlugin: () => void;
   onRemovePlugin: () => void;
   onOffline: (uid: string) => void;
-  data?: {
-    uid?: string;
-    name?: string;
-    description?: string;
-    targetType?: string;
-    targetId?: string;
-    categoryCode?: string;
-    categoryName?: string;
-    author?: string;
-    publishDoc?: string;
-    configParamJson?: string;
-    icon?: string;
-  } | null;
+  data?: EcosystemShareModalData | null;
+}
+
+export interface EcosystemShareModalData {
+  uid?: string;
+  name?: string;
+  description?: string;
+  targetType?: string;
+  targetId?: string;
+  categoryCode?: string;
+  categoryName?: string;
+  author?: string;
+  publishDoc?: string;
+  configParamJson?: string;
+  shareStatus?: EcosystemShareStatusEnum;
+  icon?: string;
 }
 
 const addParentName = (inputArgs: any[]): any[] => {
@@ -78,7 +86,8 @@ const setFullName = (parentName: string, inputArgs: any[]): any[] => {
   });
 };
 
-const PluginShareModal: React.FC<PluginShareModalProps> = ({
+const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
+  type,
   visible,
   isEdit = false,
   onClose,
@@ -88,6 +97,7 @@ const PluginShareModal: React.FC<PluginShareModalProps> = ({
   onRemovePlugin,
   data,
 }) => {
+  const isPlugin = type === EcosystemDataTypeEnum.PLUGIN;
   const [form] = Form.useForm();
   const [configParam, setConfigParam] = useState<PluginParam[]>([]);
   const { run: runGetPlugDetail, data: pluginDetail } = useRequest(
@@ -107,7 +117,7 @@ const PluginShareModal: React.FC<PluginShareModalProps> = ({
         plugin: {
           name: data.name,
           description: data.description,
-          targetType: data.targetType || '插件',
+          targetType: data.targetType,
           targetId: data.targetId,
           icon: data.icon,
         },
@@ -139,8 +149,8 @@ const PluginShareModal: React.FC<PluginShareModalProps> = ({
         {
           ...rest,
           ...plugin,
-          categoryCode: pluginDetail?.categoryCode,
-          categoryName: pluginDetail?.categoryName,
+          categoryCode: pluginDetail?.category,
+          categoryName: pluginDetail?.category,
           configParamJson: JSON.stringify(configParam),
         },
         isDraft,
@@ -219,6 +229,42 @@ const PluginShareModal: React.FC<PluginShareModalProps> = ({
     }
   }, [pluginDetail]);
 
+  useEffect(() => {
+    if (configParam.length > 0 && tableData.length > 0) {
+      // 校验一下数据在tableData中是否存在 如果不存在要删除
+      const newConfigParam = configParam.filter((item) => {
+        return tableData.some((tableItem) => tableItem.fullName === item.name);
+      });
+      setConfigParam(newConfigParam);
+    }
+  }, [tableData]);
+
+  const renderActionButton = (data: EcosystemShareModalData) => {
+    const isPublished =
+      data?.shareStatus === EcosystemShareStatusEnum.PUBLISHED;
+    const isDraft = data?.shareStatus === EcosystemShareStatusEnum.DRAFT;
+    return (
+      <Space>
+        <Button onClick={onClose}>取消</Button>
+        {isEdit && isPublished && (
+          <Button
+            onClick={() => {
+              if (data?.uid) {
+                onOffline(data.uid);
+              }
+            }}
+          >
+            下线
+          </Button>
+        )}
+        {isDraft && <Button onClick={() => handleSave(true)}>保存草稿</Button>}
+        <Button type="primary" onClick={() => handleSave(false)}>
+          保存并发布分享
+        </Button>
+      </Space>
+    );
+  };
+
   return (
     <Modal
       title={
@@ -281,7 +327,7 @@ const PluginShareModal: React.FC<PluginShareModalProps> = ({
                     <div
                       className={cx(styles.pluginItemStyle)}
                       onClick={() => {
-                        onAddPlugin(AgentComponentTypeEnum.Plugin);
+                        onAddPlugin();
                       }}
                     >
                       请先选择插件
@@ -326,20 +372,21 @@ const PluginShareModal: React.FC<PluginShareModalProps> = ({
               />
             </Form.Item>
           </div>
-
-          <div className={cx(styles.section)}>
-            <div className={cx(styles.sectionTitle)}>插件参数</div>
-            <Table<BindConfigWithSub>
-              className={cx(styles['table-wrap'], 'overflow-hide')}
-              columns={inputColumns}
-              dataSource={tableData}
-              pagination={false}
-              scroll={{ x: 670, y: 55 * 3 }}
-              expandable={{
-                defaultExpandAllRows: true,
-              }}
-            />
-          </div>
+          {isPlugin && (
+            <div className={cx(styles.section)}>
+              <div className={cx(styles.sectionTitle)}>插件参数</div>
+              <Table<BindConfigWithSub>
+                className={cx(styles['table-wrap'], 'overflow-hide')}
+                columns={inputColumns}
+                dataSource={tableData}
+                pagination={false}
+                scroll={{ x: 670, y: 55 * 3 }}
+                expandable={{
+                  defaultExpandAllRows: true,
+                }}
+              />
+            </div>
+          )}
 
           <div className={cx(styles.section)}>
             <div className={cx(styles.sectionTitle)}>使用文档</div>
@@ -356,29 +403,10 @@ const PluginShareModal: React.FC<PluginShareModalProps> = ({
           </div>
         </Form>
 
-        <div className={cx(styles.footer)}>
-          <Space>
-            <Button onClick={onClose}>取消</Button>
-            {isEdit && (
-              <Button
-                onClick={() => {
-                  if (data?.uid) {
-                    onOffline(data.uid);
-                  }
-                }}
-              >
-                下线
-              </Button>
-            )}
-            <Button onClick={() => handleSave(true)}>保存草稿</Button>
-            <Button type="primary" onClick={() => handleSave(false)}>
-              保存并发布分享
-            </Button>
-          </Space>
-        </div>
+        <div className={cx(styles.footer)}>{renderActionButton(data)}</div>
       </div>
     </Modal>
   );
 };
 
-export default PluginShareModal;
+export default EcosystemShareModal;
