@@ -47,14 +47,17 @@ const PluginDetailDrawer: React.FC<PluginDetailDrawerProps> = ({
     publishDoc,
     configParamJson,
     localConfigParamJson,
+    author,
   } = plugin || {};
   const [configParam, setConfigParam] = useState<any>([]);
+  const [showToolSection, setShowToolSection] = useState(false);
   const [form] = Form.useForm();
 
   // 监听抽屉关闭，重置表单
   useEffect(() => {
     if (!visible) {
       form.resetFields();
+      setShowToolSection(false);
     }
   }, [visible, form]);
 
@@ -108,6 +111,10 @@ const PluginDetailDrawer: React.FC<PluginDetailDrawerProps> = ({
   }, [configParamJson]);
   const handleEnable = () => {
     if (configParam && configParam.length > 0) {
+      if (!showToolSection) {
+        setShowToolSection(true);
+        return;
+      }
       form.validateFields().then((values) => {
         console.log(values);
         onUpdateAndEnable?.(
@@ -132,6 +139,8 @@ const PluginDetailDrawer: React.FC<PluginDetailDrawerProps> = ({
       closeIcon={false}
       onClose={handleClose}
       className={cx(styles.pluginDetailDrawer)}
+      maskClassName={cx(styles.resetMask)}
+      rootClassName={cx(styles.resetRoot)}
     >
       <div className={cx(styles.drawerHeader)}>
         <div className={cx(styles.titleArea)}>
@@ -140,7 +149,7 @@ const PluginDetailDrawer: React.FC<PluginDetailDrawerProps> = ({
             <Title level={5} className={cx(styles.title)}>
               {title}
             </Title>
-            <div className={cx(styles.subtitle)}>来自女娲官方</div>
+            <div className={cx(styles.subtitle)}>{author}</div>
           </div>
         </div>
         <Button
@@ -162,27 +171,30 @@ const PluginDetailDrawer: React.FC<PluginDetailDrawerProps> = ({
           </Title>
           <Paragraph className={cx(styles.docContent)}>{publishDoc}</Paragraph>
         </div>
-
-        <div className={cx(styles.toolSection)}>
-          {/* 这部分可以根据实际需求自定义，截图中显示的是一个工具列表 */}
-          {configParam && configParam.length > 0 && (
-            <Form form={form} layout="vertical">
-              {configParam.map((item: any) => (
-                <Form.Item
-                  key={item.name}
-                  label={item.name}
-                  name={item.name}
-                  tooltip={item.description}
-                  rules={[{ required: true, message: '请输入' + item.name }]}
-                >
-                  <Input placeholder={'请输入' + item.name} />
-                </Form.Item>
-              ))}
-            </Form>
-          )}
-        </div>
       </div>
-
+      <div
+        className={cx(
+          styles.toolSection,
+          showToolSection && styles.enabledToolSection,
+        )}
+      >
+        {/* 这部分可以根据实际需求自定义，截图中显示的是一个工具列表 */}
+        {configParam && configParam.length > 0 && (
+          <Form form={form} layout="vertical">
+            {configParam.map((item: any) => (
+              <Form.Item
+                key={item.name}
+                label={item.name}
+                name={item.name}
+                tooltip={item.description}
+                rules={[{ required: true, message: '请输入' + item.name }]}
+              >
+                <Input placeholder={'请输入' + item.name} />
+              </Form.Item>
+            ))}
+          </Form>
+        )}
+      </div>
       <div className={cx(styles.actions)}>
         <Button
           type="primary"
@@ -190,7 +202,13 @@ const PluginDetailDrawer: React.FC<PluginDetailDrawerProps> = ({
           size="large"
           onClick={handleEnable}
         >
-          {isEnabled ? '更新配置' : '启用'}
+          {isEnabled
+            ? showToolSection
+              ? '更新配置'
+              : '更新'
+            : showToolSection
+            ? '保存配置并启用'
+            : '启用'}
         </Button>
         {isEnabled && (
           <Button

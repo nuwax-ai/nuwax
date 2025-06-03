@@ -1,25 +1,25 @@
 import { EcosystemShareStatusEnum } from '@/types/interfaces/ecosystem';
-import { Card, Tag } from 'antd';
+import { Card } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
+import ActivatedIcon from './ActivatedIcon';
 import styles from './index.less';
 import NewVersionIcon from './NewVersionIcon';
 import SharedIcon from './SharedIcon';
 
+const cx = classNames.bind(styles);
 /**
  * 插件卡片组件接口
  */
 export interface PluginCardProps {
   /** 插件图标URL */
   icon: string;
+  /** 插件作者 */
+  author: string;
   /** 插件标题 */
   title: string;
   /** 插件描述 */
   description: string;
-  /** 标签文本（如"官方推荐"等） */
-  tag?: string;
-  /** 标签颜色 */
-  tagColor?: string;
   /** 点击卡片事件 */
   onClick?: () => void;
   /** 自定义类名 */
@@ -46,10 +46,9 @@ export interface PluginCardProps {
  */
 const PluginCard: React.FC<PluginCardProps> = ({
   icon,
+  author,
   title,
   description,
-  tag,
-  tagColor = '#ff4d4f',
   onClick,
   className,
   isEnabled,
@@ -58,24 +57,21 @@ const PluginCard: React.FC<PluginCardProps> = ({
 }) => {
   return (
     <Card
-      className={classNames(styles.pluginCard, className)}
+      className={cx(styles.pluginCard, className)}
       hoverable
       onClick={onClick}
     >
-      <div className={styles.cardContent}>
-        <div className={styles.iconWrapper}>
+      <div className={cx(styles.cardContent)}>
+        <div className={cx(styles.iconWrapper)}>
           <img src={icon} alt={title} className={styles.icon} />
-          {tag && isEnabled && (
-            <div className={styles.tagWrapper}>
-              <Tag color={tagColor} className={styles.tag}>
-                {tag}
-              </Tag>
-            </div>
-          )}
+          {isEnabled && <ActivatedIcon enabled={isEnabled} />}
         </div>
-        <div className={styles.infoWrapper}>
-          <h3 className={styles.title}>{title}</h3>
-          <p className={styles.description}>{description}</p>
+        <div className={cx(styles.infoWrapper)}>
+          <h3 className={cx(styles.title)}>{title}</h3>
+          <p className={cx(styles.author)}>{author}</p>
+          <div className={cx(styles.descriptionWrapper)}>
+            <p className={cx(styles.description)}>{description}</p>
+          </div>
         </div>
         {shareStatus && <SharedIcon shareStatus={shareStatus} />}
         {isNewVersion && <NewVersionIcon />}
