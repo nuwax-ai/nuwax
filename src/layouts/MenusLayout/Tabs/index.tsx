@@ -3,13 +3,17 @@ import TabItem from '@/layouts/MenusLayout/Tabs/TabItem';
 import { TabsEnum } from '@/types/enums/menus';
 import type { TabsType } from '@/types/interfaces/layouts';
 import classNames from 'classnames';
-import React from 'react';
-import { useAccess, useLocation } from 'umi';
+import React, { useEffect } from 'react';
+import { useLocation, useModel } from 'umi';
 
 const Tabs: React.FC<TabsType> = ({ onClick }) => {
   const location = useLocation();
-  const access = useAccess();
-  const isAdminRole = access.canAdmin;
+  const { userInfo, refreshUserInfo } = useModel('userInfo');
+
+  useEffect(() => {
+    // 获取用户信息
+    refreshUserInfo();
+  }, []);
 
   const handleActive = (type: TabsEnum) => {
     const isActive =
@@ -29,6 +33,7 @@ const Tabs: React.FC<TabsType> = ({ onClick }) => {
   return (
     <div className={classNames('flex-1', 'overflow-y', 'w-full')}>
       {TABS.map((item, index) => {
+        const isAdminRole = userInfo?.role === 'Admin';
         // 管理员
         if (item.type === TabsEnum.System_Manage && !isAdminRole) {
           return null;

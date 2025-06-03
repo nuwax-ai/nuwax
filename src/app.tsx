@@ -1,7 +1,6 @@
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import useEventPolling from '@/hooks/useEventPolling';
 import { request as requestCommon } from '@/services/common';
-import { UserService } from '@/services/userService';
 import { RequestConfig } from '@@/plugin-request/request';
 import { App, ConfigProvider } from 'antd';
 import zhCN from 'antd/es/locale/zh_CN';
@@ -66,17 +65,3 @@ export function onRouteChange({ location }: any) {
 }
 
 export const request: RequestConfig = requestCommon;
-
-export async function getInitialState() {
-  try {
-    const userInfo = await UserService.getUserInfo();
-    return {
-      userInfo,
-    };
-  } catch (error) {
-    console.error('获取初始用户信息失败:', error);
-    return {
-      userInfo: null,
-    };
-  }
-}
