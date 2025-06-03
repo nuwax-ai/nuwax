@@ -174,29 +174,21 @@ export default function EcosystemPlugin() {
    */
   const convertToPluginCard = (config: ClientConfigVo): PluginCardProps => {
     // 根据分享状态确定标签
-    let tag: string | undefined;
-    let tagColor: string | undefined;
-
-    if (config.isNewVersion) {
-      tag = '有新版本';
-      tagColor = '#ff4d4f';
-    } else if (config.shareStatus === EcosystemShareStatusEnum.PUBLISHED) {
-      tag = '官方推荐';
-      tagColor = '#1890ff';
-    }
     const isMyShare = activeTab === 'shared';
+    const isAll = activeTab === 'all';
     return {
       icon:
         config.icon ||
         'https://agent-1251073634.cos.ap-chengdu.myqcloud.com/store/b5fdb62e8b994a418d0fdfae723ee827.png',
       title: config.name || '未命名插件',
       description: config.description || '暂无描述',
-      tag,
-      tagColor,
       isNewVersion: config.isNewVersion,
+      author: config.author || '',
       configParamJson: config.serverConfigParamJson,
       localConfigParamJson: config.localConfigParamJson,
-      isEnabled: config.useStatus === EcosystemUseStatusEnum.ENABLED,
+      isEnabled: isAll
+        ? config.useStatus === EcosystemUseStatusEnum.ENABLED
+        : undefined,
       shareStatus: isMyShare ? config.shareStatus : undefined, // 仅在我的分享中使用
       publishDoc: config.publishDoc,
     };
@@ -546,7 +538,7 @@ export default function EcosystemPlugin() {
                 ...convertToPluginCard(selectedPlugin),
                 // 添加额外的详情信息
                 version: selectedPlugin.versionNumber?.toString(),
-                author: selectedPlugin.author,
+                author: selectedPlugin.author || '',
                 publishTime: selectedPlugin.publishTime,
                 shareStatus: selectedPlugin.shareStatus,
               } as ExtendedPluginProps)

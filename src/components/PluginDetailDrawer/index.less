@@ -12,6 +12,20 @@
   }
 }
 
+.resetRoot {
+  :global {
+    .ant-drawer-content-wrapper {
+      border-radius: 16px;
+      overflow: hidden !important;
+      margin: 16px;
+    }
+  }
+}
+
+.resetMask {
+  background-color: transparent !important;
+}
+
 .drawerHeader {
   display: flex;
   justify-content: space-between;
@@ -91,10 +105,6 @@
   margin-bottom: 12px !important;
 }
 
-.toolSection {
-  margin-top: 24px;
-}
-
 .footer {
   padding: 16px 24px;
   border-top: 1px solid @GRAY08;
@@ -115,7 +125,26 @@
 .actions {
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 10;
   gap: 12px;
-  padding: 16px;
-  border-top: 1px solid #f0f0f0;
+  padding: 16px 24px;
+}
+
+.toolSection {
+  width: calc(100% - 24px);
+  margin-left: 12px;
+  margin-right: 12px;
+  padding: 16px 12px 125px;
+  position: absolute;
+  border-radius: 16px 16px 0 0;
+  background-color: #f3f5f9;
+  z-index: 9;
+  left: 0;
+  bottom: -999px;
+  transition: bottom 0.3s ease-in-out;
+}
+
+.enabledToolSection {
+  bottom: 0;
 }
