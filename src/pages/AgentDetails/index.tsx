@@ -3,6 +3,7 @@ import AgentSidebar from '@/components/AgentSidebar';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
+import useAgentDetails from '@/hooks/useAgentDetails';
 import useConversation from '@/hooks/useConversation';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import {
@@ -11,10 +12,7 @@ import {
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
-import {
-  AgentDetailDto,
-  AgentSelectedComponentInfo,
-} from '@/types/interfaces/agent';
+import { AgentDetailDto } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   MessageInfo,
@@ -22,7 +20,6 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import cloneDeep from 'lodash/cloneDeep';
 import moment from 'moment';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useRequest } from 'umi';
@@ -36,19 +33,24 @@ const cx = classNames.bind(styles);
  */
 const AgentDetails: React.FC = () => {
   // 智能体ID
-  const { agentId } = useParams();
+  const params = useParams();
+  const agentId = Number(params.agentId);
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 会话问题建议
   const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
-  const [agentDetail, setAgentDetail] = useState<AgentDetailDto | null>();
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
-  const [selectedComponentList, setSelectedComponentList] = useState<
-    AgentSelectedComponentInfo[]
-  >([]);
-
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
+  // 智能体详情
+  const {
+    agentDetail,
+    setAgentDetail,
+    selectedComponentList,
+    setSelectedComponentList,
+    handleSelectComponent,
+    handleToggleCollectSuccess,
+  } = useAgentDetails();
 
   // 已发布的智能体详情接口
   const { run: runDetail, loading } = useRequest(apiPublishedAgentInfo, {
@@ -99,35 +101,6 @@ const AgentDetails: React.FC = () => {
       setSelectedComponentList(_manualComponents || []);
     }
   }, [agentDetail?.manualComponents]);
-
-  // 选中配置组件
-  const handleSelectComponent = (item: AgentSelectedComponentInfo) => {
-    const _selectedComponentList = [...selectedComponentList];
-    // 已存在则删除
-    if (_selectedComponentList.some((c) => c.id === item.id)) {
-      const index = _selectedComponentList.findIndex((c) => c.id === item.id);
-      _selectedComponentList.splice(index, 1);
-    } else {
-      _selectedComponentList.push({
-        id: item.id,
-        type: item.type,
-      });
-    }
-
-    setSelectedComponentList(_selectedComponentList);
-  };
-
-  // 切换收藏与取消收藏
-  const handleToggleCollectSuccess = (isCollect: boolean) => {
-    const _agentDetail = cloneDeep(agentDetail);
-    if (!_agentDetail) {
-      return;
-    }
-    const count = _agentDetail?.statistics?.collectCount || 0;
-    _agentDetail.statistics.collectCount = isCollect ? count + 1 : count - 1;
-    _agentDetail.collect = isCollect;
-    setAgentDetail(_agentDetail);
-  };
 
   // 角色信息（名称、头像）
   const roleInfo: RoleInfo = useMemo(() => {

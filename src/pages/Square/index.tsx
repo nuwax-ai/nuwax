@@ -45,8 +45,12 @@ const Square: React.FC = () => {
     apiPublishedAgentList,
   );
 
-  const { squareComponentList, setSquareComponentList, handleClick } =
-    useSpaceSquare();
+  const {
+    squareComponentList,
+    setSquareComponentList,
+    handleClick,
+    handleToggleCollectSuccess,
+  } = useSpaceSquare();
 
   // 广场-已发布列表接口
   const { run: runSquareList } = useRequest(apiUrlRef.current, {
@@ -129,19 +133,6 @@ const Square: React.FC = () => {
     if (configInfo?.squareBannerLinkUrl) {
       window.open(configInfo.squareBannerLinkUrl, '_blank');
     }
-  };
-
-  // 切换收藏与取消收藏
-  const handleToggleCollectSuccess = (id: number, isCollect: boolean) => {
-    const list = squareComponentList.map((item) => {
-      if (item.targetId === id) {
-        item.collect = isCollect;
-        const count = item?.statistics?.collectCount || 0;
-        item.statistics.collectCount = isCollect ? count + 1 : count - 1;
-      }
-      return item;
-    });
-    setSquareComponentList(list);
   };
 
   // 搜索

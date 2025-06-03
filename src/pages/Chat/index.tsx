@@ -4,12 +4,12 @@ import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
 import { EVENT_TYPE } from '@/constants/event.constants';
+import useAgentDetails from '@/hooks/useAgentDetails';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { DefaultSelectedEnum, MessageTypeEnum } from '@/types/enums/agent';
 import {
   AgentDetailDto,
   AgentManualComponentInfo,
-  AgentSelectedComponentInfo,
 } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
@@ -21,8 +21,7 @@ import eventBus from '@/utils/eventBus';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
-import cloneDeep from 'lodash/cloneDeep';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import styles from './index.less';
 import ShowArea from './ShowArea';
@@ -34,18 +33,26 @@ const cx = classNames.bind(styles);
  */
 const Chat: React.FC = () => {
   const location = useLocation();
+  const params = useParams();
   // 会话ID
-  const { id, agentId } = useParams();
+  const id = Number(params.id);
+  const agentId = Number(params.agentId);
   // 附加state
   const message = location.state?.message;
   const files = location.state?.files;
   const infos = location.state?.infos;
   // 默认的智能体详情信息
   const defaultAgentDetail = location.state?.defaultAgentDetail;
-  const [agentDetail, setAgentDetail] = useState<AgentDetailDto | null>();
-  const [selectedComponentList, setSelectedComponentList] = useState<
-    AgentSelectedComponentInfo[]
-  >([]);
+
+  // 智能体详情
+  const {
+    agentDetail,
+    setAgentDetail,
+    selectedComponentList,
+    setSelectedComponentList,
+    handleSelectComponent,
+    handleToggleCollectSuccess,
+  } = useAgentDetails();
 
   const {
     conversationInfo,
@@ -91,10 +98,9 @@ const Chat: React.FC = () => {
   });
 
   useEffect(() => {
-    const _agentId = Number(agentId);
     // 查询智能体详情信息
-    if (_agentId !== defaultAgentDetail?.agentId) {
-      runDetail(_agentId);
+    if (agentId !== defaultAgentDetail?.agentId) {
+      runDetail(agentId);
     } else {
       setAgentDetail(defaultAgentDetail);
     }
@@ -207,23 +213,6 @@ const Chat: React.FC = () => {
     };
   }, []);
 
-  // 选中配置组件
-  const handleSelectComponent = (item: AgentSelectedComponentInfo) => {
-    const _selectedComponentList = [...selectedComponentList];
-    // 已存在则删除
-    if (_selectedComponentList.some((c) => c.id === item.id)) {
-      const index = _selectedComponentList.findIndex((c) => c.id === item.id);
-      _selectedComponentList.splice(index, 1);
-    } else {
-      _selectedComponentList.push({
-        id: item.id,
-        type: item.type,
-      });
-    }
-
-    setSelectedComponentList(_selectedComponentList);
-  };
-
   // 清空会话记录，实际上是跳转到智能体详情页面
   const handleClear = () => {
     history.push(`/agent/${agentId}`);
@@ -243,18 +232,6 @@ const Chat: React.FC = () => {
       behavior: 'smooth',
     });
     setShowScrollBtn(false);
-  };
-
-  // 切换收藏与取消收藏
-  const handleToggleCollectSuccess = (isCollect: boolean) => {
-    const _agentDetail = cloneDeep(agentDetail);
-    if (!_agentDetail) {
-      return;
-    }
-    const count = _agentDetail?.statistics?.collectCount || 0;
-    _agentDetail.statistics.collectCount = isCollect ? count + 1 : count - 1;
-    _agentDetail.collect = isCollect;
-    setAgentDetail(_agentDetail);
   };
 
   return (

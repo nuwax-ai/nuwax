@@ -32,6 +32,19 @@ const useSpaceSquare = () => {
       if (item.targetId === id) {
         item.collect = isCollect;
         const count = item?.statistics?.collectCount || 0;
+        if (!item.statistics) {
+          item.statistics = {
+            targetId: id,
+            userCount: 0,
+            convCount: 0,
+            collectCount: 0,
+            likeCount: 0,
+            referenceCount: 0,
+            callCount: 0,
+            failCallCount: 0,
+            totalCallDuration: 0,
+          };
+        }
         item.statistics.collectCount = isCollect ? count + 1 : count - 1;
       }
       return item;
