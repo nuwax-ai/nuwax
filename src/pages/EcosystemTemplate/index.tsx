@@ -1,10 +1,9 @@
 import Created from '@/components/Created';
+import EcosystemCard, { EcosystemCardProps } from '@/components/EcosystemCard';
+import PluginDetailDrawer from '@/components/EcosystemDetailDrawer';
 import EcosystemShareModal, {
   EcosystemShareModalProps,
 } from '@/components/EcosystemShareModal';
-import type { PluginCardProps } from '@/components/PluginCard';
-import PluginCard from '@/components/PluginCard';
-import PluginDetailDrawer from '@/components/PluginDetailDrawer';
 import {
   createClientConfigDraft,
   disableClientConfig,
@@ -36,7 +35,7 @@ import {
 } from '@/types/interfaces/ecosystem';
 import { PlusOutlined } from '@ant-design/icons';
 import type { TabsProps } from 'antd';
-import { App, Button, Card, Col, Input, Row, Spin, Tabs } from 'antd';
+import { App, Button, Card, Col, Empty, Input, Row, Spin, Tabs } from 'antd';
 import classNames from 'classnames';
 import { useCallback, useEffect, useState } from 'react';
 import styles from './index.less';
@@ -47,7 +46,7 @@ const { Search } = Input;
 /**
  * 扩展的插件详情类型，包含额外的详情信息
  */
-interface ExtendedPluginProps extends PluginCardProps {
+interface ExtendedPluginProps extends EcosystemCardProps {
   version?: string;
   author?: string;
   publishTime?: string;
@@ -172,7 +171,7 @@ export default function EcosystemTemplate() {
   /**
    * 将后端数据转换为插件卡片数据
    */
-  const convertToPluginCard = (config: ClientConfigVo): PluginCardProps => {
+  const convertToPluginCard = (config: ClientConfigVo): EcosystemCardProps => {
     const isAll = activeTab === 'all';
     const isMyShare = activeTab === 'shared';
     return {
@@ -256,14 +255,6 @@ export default function EcosystemTemplate() {
     setIsEditMode(false);
     setEditingPlugin(null);
     setShareModalVisible(true);
-  };
-
-  /**
-   * 关闭分享弹窗
-   */
-  const handleCloseShareModal = () => {
-    setShareModalVisible(false);
-    setEditingPlugin(null);
   };
 
   const refreshPluginListAndReset = () => {
@@ -464,6 +455,15 @@ export default function EcosystemTemplate() {
       message.error('下线失败');
     }
   };
+  /**
+   * 关闭分享弹窗
+   */
+  const handleCloseShareModal = () => {
+    setShareModalVisible(false);
+    setEditingPlugin(null);
+    setPluginInfo(null);
+    setAddComponents([]);
+  };
 
   return (
     <div className={cx(styles.container)}>
@@ -494,7 +494,7 @@ export default function EcosystemTemplate() {
             <Row gutter={[16, 16]}>
               {pluginData.records?.map((config, index) => (
                 <Col span={6} key={config.uid || index}>
-                  <PluginCard
+                  <EcosystemCard
                     {...convertToPluginCard(config)}
                     onClick={() => handlePluginClick(config)}
                   />
@@ -503,7 +503,7 @@ export default function EcosystemTemplate() {
             </Row>
 
             {/* 分页组件 */}
-            {pluginData.total && pluginData.total > 0 && (
+            {pluginData.total && pluginData.total > 0 ? (
               <div style={{ textAlign: 'center', marginTop: 24 }}>
                 <Button
                   disabled={pagination.current <= 1}
@@ -523,6 +523,8 @@ export default function EcosystemTemplate() {
                   下一页
                 </Button>
               </div>
+            ) : (
+              <Empty description="暂无数据" />
             )}
           </div>
         </Spin>

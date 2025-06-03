@@ -1,6 +1,6 @@
 import { Col, Empty, Row, Typography } from 'antd';
 import React from 'react';
-import PluginCard, { PluginCardProps } from '../PluginCard';
+import PluginCard, { PluginCardProps } from '../EcosystemCard';
 import styles from './index.less';
 
 const { Title } = Typography;

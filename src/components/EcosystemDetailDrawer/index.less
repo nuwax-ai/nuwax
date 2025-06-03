@@ -36,13 +36,7 @@
 .titleArea {
   display: flex;
   align-items: center;
-}
-
-.icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  margin-right: 12px;
+  position: relative;
 }
 
 .titleContent {
@@ -147,4 +141,24 @@
 
 .enabledToolSection {
   bottom: 0;
+}
+
+.newVersion {
+  color: #f44c76;
+  font-size: 12px;
+  font-weight: normal;
+  margin-left: 12px;
+}
+
+.iconWrapper {
+  position: relative;
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
 }
