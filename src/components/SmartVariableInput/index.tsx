@@ -159,23 +159,21 @@ const SmartVariableInput = forwardRef<
 
     // Tree 节点选择处理
     const handleTreeSelect = (selectedKeys: React.Key[], info: any) => {
-      if (selectedKeys.length > 0) {
-        const selectedNode = info.node;
+      const selectedNode = info.node;
 
-        try {
-          const fullPath = buildAdvancedVariablePath(
-            selectedNode,
-            formattedVariables,
-            pathOptions,
-          );
+      try {
+        const fullPath = buildAdvancedVariablePath(
+          selectedNode,
+          formattedVariables,
+          pathOptions,
+        );
 
-          if (fullPath && fullPath.trim() !== '') {
-            insertVariable(fullPath);
-            hidePopover();
-          }
-        } catch (error) {
-          console.error('构建路径时出错:', error);
+        if (fullPath && fullPath.trim() !== '') {
+          insertVariable(fullPath);
+          hidePopover();
         }
+      } catch (error) {
+        console.error('构建路径时出错:', error);
       }
     };
 
