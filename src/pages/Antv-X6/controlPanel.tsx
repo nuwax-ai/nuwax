@@ -66,21 +66,23 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     setOpen(newOpen);
     setContinueDragCount(0);
   };
+
   return (
     <>
       <div className="absolute-box">
         <div className="action-section">
           <Select
             options={options}
-            value={`${Math.floor(zoomSize * 100)}%`}
+            value={`${Math.round(zoomSize * 100)}%`}
             onChange={(val) => {
               let newVal;
               if (typeof val === 'string' && ['+', '-'].includes(val)) {
-                const factor = val === '+' ? 0.1 : -0.1;
-                const _val = zoomSize + factor;
-                newVal = _val > 3 ? 3 : _val < 0.2 ? 0.2 : _val;
-                //保留两位小数
-                newVal = Math.floor(newVal * 100) / 100;
+                const factor = val === '+' ? 10 : -10;
+                const currentPercent = Math.round(zoomSize * 100);
+                const newPercent = currentPercent + factor;
+
+                const clampedPercent = Math.max(20, Math.min(300, newPercent));
+                newVal = clampedPercent / 100;
               } else {
                 newVal = val;
               }
