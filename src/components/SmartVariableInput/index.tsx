@@ -151,7 +151,6 @@ const SmartVariableInput = forwardRef<
     // 处理输入事件
     const onInput = () => {
       handleInput();
-      onChange?.(getContent());
       setTimeout(() => {
         updatePopover();
       }, 0);
@@ -199,6 +198,12 @@ const SmartVariableInput = forwardRef<
     useEffect(() => {
       setContent(value || '');
     }, [value]);
+
+    useEffect(() => {
+      if (editorRef.current) {
+        onChange?.(editorRef.current.textContent || '');
+      }
+    }, [editorRef.current?.textContent]);
 
     // 添加容器和弹窗的 ref
     const popoverRef = useRef<HTMLDivElement>(null);
