@@ -58,8 +58,7 @@
 }
 
 .title {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 14px;
   color: '#3A3F4F';
   white-space: nowrap;
   overflow: hidden;
@@ -68,20 +67,22 @@
 
 .author {
   margin: 0;
-  color: @GRAY05;
-  font-size: 14px;
+  color: #757b8d;
+  font-size: 12px;
   line-height: 1.5;
 }
 
 .description {
   margin: 0;
-  color: @GRAY05;
-  font-size: 14px;
+  font-size: 12px;
+  color: #b8bcc5;
   line-height: 1.5;
+  //超过三行显示省略号
   display: box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sharedIcon {
