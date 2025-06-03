@@ -238,7 +238,9 @@ const Chat: React.FC = () => {
     <div className={cx('flex', 'h-full', 'overflow-y')} ref={messageViewRef}>
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
         <div className={cx(styles['title-box'])}>
-          <h3 className={cx(styles.title, 'text-ellipsis')}>
+          <h3
+            className={cx(styles.title, 'text-ellipsis', 'clip-path-animation')}
+          >
             {conversationInfo?.topic}
           </h3>
         </div>

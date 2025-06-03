@@ -193,13 +193,13 @@ const Login: React.FC = () => {
         onFinish={onFinish}
       >
         <Form.Item>
-          <h3 className={cx(styles.title)}>{`欢迎使用${
+          <h3 className={cx(styles.title, 'clip-path-animation')}>{`欢迎使用${
             tenantConfigInfo?.siteName || ''
           }`}</h3>
         </Form.Item>
         <Form.Item name="phoneOrEmail" rules={getPhoneOrEmailRules()}>
           {tenantConfigInfo?.authType === 3 ? (
-            <Input placeholder="请输入邮箱号码" size={'large'} />
+            <Input placeholder="请输入邮箱地址" size={'large'} />
           ) : (
             <Input
               placeholder="请输入手机号"

@@ -134,7 +134,9 @@ const AgentDetails: React.FC = () => {
     <div className={cx('flex', 'h-full', 'overflow-y')}>
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
         <div className={cx(styles['title-box'])}>
-          <h3 className={cx(styles.title, 'text-ellipsis')}>
+          <h3
+            className={cx(styles.title, 'text-ellipsis', 'clip-path-animation')}
+          >
             {isLoaded &&
               (agentDetail?.name
                 ? `和${agentDetail?.name}开始会话`
