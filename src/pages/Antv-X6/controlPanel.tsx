@@ -2,6 +2,7 @@ import { ChildNode } from '@/types/interfaces/graph';
 import {
   CaretRightOutlined,
   CompressOutlined,
+  MinusOutlined,
   PlusOutlined,
   ToolOutlined,
 } from '@ant-design/icons';
@@ -71,6 +72,19 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     <>
       <div className="absolute-box">
         <div className="action-section">
+          <Button
+            type="text"
+            style={{ marginRight: 2 }}
+            icon={<MinusOutlined />}
+            onClick={() => {
+              const factor = -10;
+              const currentPercent = Math.round(zoomSize * 100);
+              const newPercent = currentPercent + factor;
+              const clampedPercent = Math.max(20, Math.min(300, newPercent));
+              const newVal = clampedPercent / 100;
+              changeGraph(Number(newVal));
+            }}
+          />
           <Select
             options={options}
             value={`${Math.round(zoomSize * 100)}%`}
@@ -88,10 +102,23 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
               }
               changeGraph(Number(newVal));
             }}
-            style={{ width: 80, marginRight: 12, height: 28 }}
+            style={{ width: 80, marginRight: 2, height: 28 }}
             popupMatchSelectWidth={false}
             optionLabelProp="displayValue"
             size="small"
+          />
+          <Button
+            type="text"
+            style={{ marginRight: 12 }}
+            icon={<PlusOutlined />}
+            onClick={() => {
+              const factor = 10;
+              const currentPercent = Math.round(zoomSize * 100);
+              const newPercent = currentPercent + factor;
+              const clampedPercent = Math.max(20, Math.min(300, newPercent));
+              const newVal = clampedPercent / 100;
+              changeGraph(Number(newVal));
+            }}
           />
           {/* 添加缩放到适配画布 */}
           <Popover
