@@ -1,8 +1,8 @@
 import AnalyzeStatistics from '@/components/AnalyzeStatistics';
 import CreateAgent from '@/components/CreateAgent';
+import Loading from '@/components/Loading';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import SelectList from '@/components/SelectList';
-import { USER_INFO } from '@/constants/home.constants';
 import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.constants';
 import {
   apiAgentConfigList,
@@ -18,13 +18,12 @@ import {
 } from '@/types/enums/space';
 import { AgentConfigInfo, AgentInfo } from '@/types/interfaces/agent';
 import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
-import type { UserInfo } from '@/types/interfaces/login';
 import {
   ExclamationCircleFilled,
   PlusOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
-import { Button, Input, message, Modal } from 'antd';
+import { Button, Empty, Input, message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
@@ -59,9 +58,7 @@ const SpaceDevelop: React.FC = () => {
   );
   // 搜索关键词
   const [keyword, setKeyword] = useState<string>('');
-  const userInfoRef = useRef<UserInfo | null>(null);
-  // 创建者ID
-  const createIdRef = useRef<number>(0);
+  const [loading, setLoading] = useState<boolean>(false);
   // 目标智能体ID
   const targetAgentIdRef = useRef<number>(0);
   const currentClickTypeRef = useRef<ApplicationMoreActionEnum>();
@@ -69,6 +66,8 @@ const SpaceDevelop: React.FC = () => {
     useModel('applicationDev');
   const { runEdit, devCollectAgentList, runDevCollect } =
     useModel('devCollectAgent');
+  // 获取用户信息
+  const { userInfo } = useModel('userInfo');
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
@@ -84,7 +83,7 @@ const SpaceDevelop: React.FC = () => {
       );
     }
     if (filterCreate === CreateListEnum.Me) {
-      _list = _list.filter((item) => item.creatorId === createIdRef.current);
+      _list = _list.filter((item) => item.creatorId === userInfo.id);
     }
     if (filterKeyword) {
       _list = _list.filter((item) => item.name.includes(filterKeyword));
@@ -99,6 +98,10 @@ const SpaceDevelop: React.FC = () => {
     onSuccess: (result: AgentConfigInfo[]) => {
       handleFilterList(status, create, keyword, result);
       agentAllRef.current = result;
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
@@ -174,15 +177,7 @@ const SpaceDevelop: React.FC = () => {
   );
 
   useEffect(() => {
-    const userInfoString = localStorage.getItem(USER_INFO);
-    if (!!userInfoString) {
-      const userInfo = JSON.parse(userInfoString) as UserInfo;
-      createIdRef.current = userInfo.id;
-      userInfoRef.current = userInfo;
-    }
-  }, []);
-
-  useEffect(() => {
+    setLoading(true);
     run(spaceId);
   }, [spaceId]);
 
@@ -308,7 +303,7 @@ const SpaceDevelop: React.FC = () => {
   };
 
   return (
-    <div className={cx(styles.container, 'h-full', 'overflow-y')}>
+    <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>智能体开发</h3>
         <Button
@@ -342,26 +337,33 @@ const SpaceDevelop: React.FC = () => {
           onClear={handleClearKeyword}
         />
       </div>
-      {agentList?.length > 0 ? (
-        <div className={cx(styles['main-container'])}>
-          {agentList?.map((item: AgentConfigInfo, index: number) => (
-            <ApplicationItem
-              key={item.id}
-              agentConfigInfo={item}
-              userInfo={userInfoRef.current}
-              onClickMore={(type) => handlerClickMore(type, index)}
-              onCollect={(isCollect: boolean) =>
-                handlerCollect(index, isCollect)
-              }
-              onClick={handleClick}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className={cx('flex', 'content-center', styles['no-data'])}>
-          <span>未能找到相关结果</span>
-        </div>
-      )}
+      <div className={cx('flex-1', 'overflow-y')}>
+        {loading ? (
+          <Loading className="h-full" />
+        ) : agentList?.length > 0 ? (
+          <div className={cx(styles['main-container'])}>
+            {agentList?.map((item: AgentConfigInfo, index: number) => (
+              <ApplicationItem
+                key={item.id}
+                agentConfigInfo={item}
+                userInfo={userInfo}
+                onClickMore={(type) => handlerClickMore(type, index)}
+                onCollect={(isCollect: boolean) =>
+                  handlerCollect(index, isCollect)
+                }
+                onClick={handleClick}
+              />
+            ))}
+          </div>
+        ) : (
+          <div
+            className={cx('flex', 'items-center', 'content-center', 'h-full')}
+          >
+            <Empty description="未能找到相关结果" />
+          </div>
+        )}
+      </div>
+
       {/*分析统计弹窗*/}
       <AnalyzeStatistics
         open={openAnalyze}

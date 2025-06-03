@@ -6,11 +6,11 @@ import systemManageStyles from '@/styles/systemManage.less';
 import styles from '@/styles/teamSetting.less';
 import { TeamStatusEnum } from '@/types/enums/teamSetting';
 import type { SpaceUserInfo } from '@/types/interfaces/teamSetting';
-import { transformTDate } from '@/utils/getTime';
 import { CheckOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { Button, Input, message, Modal, Select, Table } from 'antd';
 import classNames from 'classnames';
+import moment from 'moment';
 import React, { useEffect, useState } from 'react';
 import AddMember from './AddMember';
 
@@ -128,7 +128,7 @@ const MemberManageTab: React.FC<MemberManageTabProps> = ({ spaceId, role }) => {
       key: 'created',
       width: '180px',
       render: (created: string) => {
-        return transformTDate(created);
+        return moment(created).format('YYYY-MM-DD HH:mm:ss');
       },
     },
     ...(role !== TeamStatusEnum.User

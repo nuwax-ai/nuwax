@@ -346,3 +346,22 @@ each(range(2, 3, 1), {
 .hidden-with-width-0 {
   width: 0 !important;
 }
+
+.clip-path-animation {
+  clip-path: inset(0 50% 0 50%); /* 初始状态，裁剪掉左右两边 */
+  animation: unfold 2s forwards; /* 应用动画 */
+}
+
+@keyframes unfold {
+  0% {
+    clip-path: inset(0 50% 0 50%);
+  }
+
+  50% {
+    clip-path: inset(0 25% 0 25%);
+  }
+
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}

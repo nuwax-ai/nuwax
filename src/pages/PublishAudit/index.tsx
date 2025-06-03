@@ -3,11 +3,11 @@ import styles from '@/styles/systemManage.less';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { PublishApplyListInfo } from '@/types/interfaces/publishManage';
-import { transformTDate } from '@/utils/getTime';
 import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { Button, Input, Select, Table, message } from 'antd';
 import classNames from 'classnames';
+import moment from 'moment';
 import React, { useState } from 'react';
 import { history } from 'umi';
 import RejectAuditModal from './components/RejectAuditModal';
@@ -78,7 +78,7 @@ const PublishAudit: React.FC = () => {
   };
 
   const handlePublishStatusSelectChange = (value: string) => {
-    setSelectedPublishStatusValue(value);
+    setSelectedPublishStatusValue(value as PublishStatusEnum);
     setCurrentPage(1);
     const params = getParams(1, selectedValue, value, inputValue);
     run(params);
@@ -229,7 +229,7 @@ const PublishAudit: React.FC = () => {
       dataIndex: 'created',
       key: 'created',
       render: (created: string) => {
-        return transformTDate(created);
+        return moment(created).format('YYYY-MM-DD HH:mm:ss');
       },
     },
     {

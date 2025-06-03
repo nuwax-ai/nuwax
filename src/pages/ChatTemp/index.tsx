@@ -586,7 +586,13 @@ const ChatTemp: React.FC = () => {
       >
         <ConditionRender condition={messageList?.length > 0}>
           <div className={cx(styles['title-box'])}>
-            <h3 className={cx(styles.title, 'text-ellipsis')}>
+            <h3
+              className={cx(
+                styles.title,
+                'text-ellipsis',
+                'clip-path-animation',
+              )}
+            >
               {conversationInfo?.agent?.name
                 ? `和${conversationInfo?.agent?.name}开始会话`
                 : '开始会话'}

@@ -138,16 +138,14 @@ const VerifyCode: React.FC = () => {
     };
   }, [handleEnter]);
 
-  console.log(phoneOrEmail?.includes('@'));
-
   return (
     <div
       className={cx(
         styles.container,
         'h-full',
         'flex',
-        'items-center',
-        'content-center',
+        'flex-col',
+        'overflow-y',
       )}
     >
       <img
@@ -155,63 +153,67 @@ const VerifyCode: React.FC = () => {
         className={cx(styles.logo)}
         alt=""
       />
-      <div className={cx(styles.inner, 'flex', 'flex-col', 'items-center')}>
-        <h3>
-          {phoneOrEmail?.includes('@') ? '输入邮箱验证码' : '输入短信验证码'}
-        </h3>
-        <p>{`验证码已发送至${
-          phoneOrEmail?.includes('@') ? '你的邮箱' : '手机号'
-        }`}</p>
-        <span className={styles.phone}>{`${
-          !phoneOrEmail?.includes('@') ? areaCode : ''
-        } ${phoneOrEmail}`}</span>
-        <div className={cx(styles['code-container'])}>
-          {codes.map((code, index) => {
-            return (
-              <span
-                onClick={handleClick}
-                key={index}
-                className={cx(
-                  styles['code-item'],
-                  codeIndex === index ? styles.active : null,
-                  errorString ? styles.error : null,
-                )}
-              >
-                {code}
-              </span>
-            );
-          })}
-        </div>
-        {countDown > 0 ? (
-          <span className={styles['count-down']}>{countDown}s</span>
-        ) : (
-          <span
-            className={cx(styles['resend-btn'], 'cursor-pointer')}
-            onClick={handleSendCode}
+      <div className={cx('flex-1', 'flex', 'items-center', 'content-center')}>
+        <div className={cx(styles.inner, 'flex', 'flex-col', 'items-center')}>
+          <h3>
+            {phoneOrEmail?.includes('@') ? '输入邮箱验证码' : '输入短信验证码'}
+          </h3>
+          <p>{`验证码已发送至${
+            phoneOrEmail?.includes('@') ? '你的邮箱' : '手机号'
+          }`}</p>
+          <span className={styles.phone}>{`${
+            !phoneOrEmail?.includes('@') ? areaCode : ''
+          } ${phoneOrEmail}`}</span>
+          <div className={cx(styles['code-container'])}>
+            {codes.map((code, index) => {
+              return (
+                <span
+                  onClick={handleClick}
+                  key={index}
+                  className={cx(
+                    styles['code-item'],
+                    codeIndex === index ? styles.active : null,
+                    errorString ? styles.error : null,
+                  )}
+                >
+                  {code}
+                </span>
+              );
+            })}
+          </div>
+          {countDown > 0 ? (
+            <span className={styles['count-down']}>{countDown}s</span>
+          ) : (
+            <span
+              className={cx(styles['resend-btn'], 'cursor-pointer')}
+              onClick={handleSendCode}
+            >
+              重新发送
+            </span>
+          )}
+          {/* <div className={cx(styles.tips)}>
+            您秒内收到验证码语音电话，可能会被手机标记为稍扰电话，请放心接听。
+          </div> */}
+          <div
+            className={cx('flex', 'content-between', 'w-full', styles.footer)}
           >
-            重新发送
-          </span>
-        )}
-        {/* <div className={cx(styles.tips)}>
-          您秒内收到验证码语音电话，可能会被手机标记为稍扰电话，请放心接听。
-        </div> */}
-        <div className={cx('flex', 'content-between', 'w-full', styles.footer)}>
-          <Button className={cx('flex-1')} onClick={() => history.back()}>
-            上一步
-          </Button>
-          <Button
-            loading={loadingLoginCode}
-            className={cx(
-              'flex-1',
-              codeString?.length !== VERIFICATION_CODE_LEN &&
-                styles['next-step'],
-            )}
-            type="primary"
-            disabled={codeString?.length !== VERIFICATION_CODE_LEN}
-            onClick={handleVerify}
-          >
-            下一步
-          </Button>
+            <Button className={cx('flex-1')} onClick={() => history.back()}>
+              上一步
+            </Button>
+            <Button
+              loading={loadingLoginCode}
+              className={cx(
+                'flex-1',
+                codeString?.length !== VERIFICATION_CODE_LEN &&
+                  styles['next-step'],
+              )}
+              type="primary"
+              disabled={codeString?.length !== VERIFICATION_CODE_LEN}
+              onClick={handleVerify}
+            >
+              下一步
+            </Button>
+          </div>
         </div>
       </div>
       <Input
