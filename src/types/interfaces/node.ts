@@ -63,7 +63,7 @@ export interface QANodeOption {
   disabled?: boolean;
 }
 
-export interface TestRunparams {
+export interface TestRunParams {
   question: string;
   options: QANodeOption[];
 }

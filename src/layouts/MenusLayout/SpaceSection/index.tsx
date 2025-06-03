@@ -4,7 +4,11 @@ import ConditionRender from '@/components/ConditionRender';
 import { SPACE_URL } from '@/constants/home.constants';
 import { SPACE_APPLICATION_LIST } from '@/constants/space.constants';
 import { RoleEnum } from '@/types/enums/common';
-import { SpaceApplicationListEnum, SpaceTypeEnum } from '@/types/enums/space';
+import {
+  AllowDevelopEnum,
+  SpaceApplicationListEnum,
+  SpaceTypeEnum,
+} from '@/types/enums/space';
 import type { AgentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
 import React, { useEffect, useMemo } from 'react';
@@ -119,7 +123,7 @@ const SpaceSection: React.FC<{
           // “开发者功能”【tips：关闭后，用户将无法看见“智能体开发”和“组件库”，创建者和管理员不受影响】
           if (
             userInfo?.role === RoleEnum.User &&
-            currentSpaceInfo.allowDevelop === 0 &&
+            currentSpaceInfo.allowDevelop === AllowDevelopEnum.Not_Allow &&
             [
               SpaceApplicationListEnum.Application_Develop,
               SpaceApplicationListEnum.Component_Library,
