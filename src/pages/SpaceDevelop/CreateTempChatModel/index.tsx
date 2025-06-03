@@ -189,7 +189,13 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
           </CopyToClipboard>
           <Tooltip title="二维码">
             <span
-              className={cx(styles['img-box'])}
+              className={cx(
+                styles['img-box'],
+                'flex',
+                'content-center',
+                'items-center',
+                'cursor-pointer',
+              )}
               onClick={() => handleQrCodeVisible(record.chatUrl)}
             >
               <img
