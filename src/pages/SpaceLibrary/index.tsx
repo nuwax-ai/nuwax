@@ -5,9 +5,9 @@ import CreateNewPlugin from '@/components/CreateNewPlugin';
 import CreateWorkflow from '@/components/CreateWorkflow';
 import CreatedItem from '@/components/CreatedItem';
 import CustomPopover from '@/components/CustomPopover';
+import Loading from '@/components/Loading';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import SelectList from '@/components/SelectList';
-import { USER_INFO } from '@/constants/home.constants';
 import {
   CREATE_LIST,
   FILTER_STATUS,
@@ -43,7 +43,6 @@ import type {
   ComponentInfo,
   PublishedOffShelfParams,
 } from '@/types/interfaces/library';
-import type { UserInfo } from '@/types/interfaces/login';
 import {
   ExclamationCircleFilled,
   PlusOutlined,
@@ -53,7 +52,7 @@ import { Button, Empty, Input, message, Modal } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useParams, useRequest } from 'umi';
+import { history, useModel, useParams, useRequest } from 'umi';
 import ComponentItem from './ComponentItem';
 import CreateModel from './CreateModel';
 import styles from './index.less';
@@ -97,8 +96,7 @@ const SpaceLibrary: React.FC = () => {
   const [status, setStatus] = useState<FilterStatusEnum>(FilterStatusEnum.All);
   // 搜索关键词
   const [keyword, setKeyword] = useState<string>('');
-  // 创建者ID
-  const createIdRef = useRef<number>(0);
+  const [loading, setLoading] = useState<boolean>(false);
   // const [componentStatistics, setComponentStatistics] = useState<
   //   AnalyzeStatisticsItem[]
   // >([]);
@@ -107,6 +105,8 @@ const SpaceLibrary: React.FC = () => {
   const [create, setCreate] = useState<CreateListEnum>(
     CreateListEnum.All_Person,
   );
+  // 获取用户信息
+  const { userInfo } = useModel('userInfo');
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
@@ -126,7 +126,7 @@ const SpaceLibrary: React.FC = () => {
       );
     }
     if (filterCreate === CreateListEnum.Me) {
-      _list = _list.filter((item) => item.creatorId === createIdRef.current);
+      _list = _list.filter((item) => item.creatorId === userInfo.id);
     }
     if (filterKeyword) {
       _list = _list.filter((item) => item.name.includes(filterKeyword));
@@ -141,6 +141,10 @@ const SpaceLibrary: React.FC = () => {
     onSuccess: (result: ComponentInfo[]) => {
       handleFilterList(type, status, create, keyword, result);
       componentAllRef.current = result;
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
@@ -285,14 +289,7 @@ const SpaceLibrary: React.FC = () => {
   });
 
   useEffect(() => {
-    const userInfoString = localStorage.getItem(USER_INFO);
-    if (!!userInfoString) {
-      const userInfo = JSON.parse(userInfoString) as UserInfo;
-      createIdRef.current = userInfo.id;
-    }
-  }, []);
-
-  useEffect(() => {
+    setLoading(true);
     runComponent(spaceId);
   }, [spaceId]);
 
@@ -615,22 +612,28 @@ const SpaceLibrary: React.FC = () => {
           onClear={handleClearKeyword}
         />
       </div>
-      {componentList?.length > 0 ? (
-        <div className={cx(styles['main-container'])}>
-          {componentList?.map((info) => (
-            <ComponentItem
-              key={`${info.id}${info.type}`}
-              componentInfo={info}
-              onClick={() => handleClickComponent(info)}
-              onClickMore={(item) => handleClickMore(item, info)}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className={cx('flex', 'flex-1', 'items-center', 'content-center')}>
-          <Empty description="未能找到相关结果" />
-        </div>
-      )}
+      <div className={cx('flex-1', 'overflow-y')}>
+        {loading ? (
+          <Loading className="h-full" />
+        ) : componentList?.length > 0 ? (
+          <div className={cx(styles['main-container'])}>
+            {componentList?.map((info) => (
+              <ComponentItem
+                key={`${info.id}${info.type}`}
+                componentInfo={info}
+                onClick={() => handleClickComponent(info)}
+                onClickMore={(item) => handleClickMore(item, info)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div
+            className={cx('flex', 'h-full', 'items-center', 'content-center')}
+          >
+            <Empty description="未能找到相关结果" />
+          </div>
+        )}
+      </div>
       {/*统计概览*/}
       {/*<AnalyzeStatistics*/}
       {/*  open={openAnalyze}*/}
