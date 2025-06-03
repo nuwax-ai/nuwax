@@ -294,9 +294,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
         <LabelIcon
           className={cx(styles['label-normal'])}
           label="仅模板"
-          title={
-            '“仅模板”tips：选择后仅在模板广场展示，仅模板只有在允许复制选择后才可选'
-          }
+          title={'选择后仅在模板广场展示，仅模板只有在允许复制选择后才可选'}
           type={TooltipTitleTypeEnum.White}
         />
       ),

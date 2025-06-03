@@ -141,3 +141,19 @@ export enum HistoryActionTypeEnum {
   EditNode = 'EditNode',
   DeleteNode = 'DeleteNode',
 }
+
+// 空间是否接收来自外部的发布
+export enum ReceivePublishEnum {
+  // 不接收
+  Not_Receive = 0,
+  // 接收
+  Receive = 1,
+}
+
+// 空间是否开启开发功能
+export enum AllowDevelopEnum {
+  // 不开启
+  Not_Allow = 0,
+  // 开启
+  Allow = 1,
+}

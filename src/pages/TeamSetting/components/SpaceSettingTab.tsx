@@ -1,5 +1,6 @@
 import TooltipIcon from '@/components/TooltipIcon';
 import styles from '@/styles/teamSetting.less';
+import { AllowDevelopEnum, ReceivePublishEnum } from '@/types/enums/space';
 import { TeamDetailInfo } from '@/types/interfaces/teamSetting';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Switch } from 'antd';
@@ -62,11 +63,11 @@ const SpaceSettingTab: React.FC<SpaceSettingTabProps> = ({
         开发者功能
         <TooltipIcon
           icon={<InfoCircleOutlined />}
-          title="tips：关闭后，用户将无法看见“智能体开发”和“组件库”，创建者和管理员不受影响"
+          title="关闭后，用户将无法看见“智能体开发”和“组件库”，创建者和管理员不受影响"
         />
       </h3>
       <Switch
-        checked={spaceDetailInfo?.allowDevelop === 1}
+        checked={spaceDetailInfo?.allowDevelop === AllowDevelopEnum.Allow}
         className={cx('mb-16')}
         onChange={(checked) => onChange('allowDevelop', checked)}
       />
@@ -74,11 +75,11 @@ const SpaceSettingTab: React.FC<SpaceSettingTabProps> = ({
         接受来自外部空间的发布
         <TooltipIcon
           icon={<InfoCircleOutlined />}
-          title="tips：打开后，拥有该空间权限的用户在其他空间完成开发的智能体、插件、工作流，可以发布到该空间的广场上"
+          title="打开后，拥有该空间权限的用户在其他空间完成开发的智能体、插件、工作流，可以发布到该空间的广场上"
         />
       </h3>
       <Switch
-        checked={spaceDetailInfo?.receivePublish === 1}
+        checked={spaceDetailInfo?.receivePublish === ReceivePublishEnum.Receive}
         onChange={(checked) => onChange('receivePublish', checked)}
       />
       <RemoveSpace
