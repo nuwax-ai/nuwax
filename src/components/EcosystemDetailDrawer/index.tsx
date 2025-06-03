@@ -10,12 +10,12 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import ActivatedIcon from '../EcosystemCard/ActivatedIcon';
 import styles from './index.less';
-
 const cx = classNames.bind(styles);
 const { Title, Paragraph } = Typography;
 
-export interface PluginDetailDrawerProps {
+export interface EcosystemDetailDrawerProps {
   /** 是否显示抽屉 */
   visible: boolean;
   /** 插件详情数据 */
@@ -32,7 +32,7 @@ export interface PluginDetailDrawerProps {
  * 插件详情抽屉组件
  * 右侧划出的插件详情展示
  */
-const PluginDetailDrawer: React.FC<PluginDetailDrawerProps> = ({
+const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   visible,
   plugin,
   onClose,
@@ -47,10 +47,12 @@ const PluginDetailDrawer: React.FC<PluginDetailDrawerProps> = ({
     publishDoc,
     configParamJson,
     localConfigParamJson,
+    isNewVersion,
     author,
   } = plugin || {};
   const [configParam, setConfigParam] = useState<any>([]);
   const [showToolSection, setShowToolSection] = useState(false);
+  const [needUpdateButton, setNeedUpdateButton] = useState(false);
   const [form] = Form.useForm();
 
   // 监听抽屉关闭，重置表单
@@ -58,6 +60,7 @@ const PluginDetailDrawer: React.FC<PluginDetailDrawerProps> = ({
     if (!visible) {
       form.resetFields();
       setShowToolSection(false);
+      setNeedUpdateButton(false);
     }
   }, [visible, form]);
 
@@ -128,6 +131,17 @@ const PluginDetailDrawer: React.FC<PluginDetailDrawerProps> = ({
       onUpdateAndEnable?.([]);
     }
   };
+  useEffect(() => {
+    if (!isNewVersion && isEnabled && !configParam?.length) {
+      //没有新版本，且已启用，且没有配置参数
+      setNeedUpdateButton(false);
+    } else {
+      setNeedUpdateButton(true);
+    }
+    return () => {
+      setNeedUpdateButton(false);
+    };
+  }, [isNewVersion, isEnabled, configParam]);
 
   if (!plugin) return null;
 
@@ -144,10 +158,16 @@ const PluginDetailDrawer: React.FC<PluginDetailDrawerProps> = ({
     >
       <div className={cx(styles.drawerHeader)}>
         <div className={cx(styles.titleArea)}>
-          <img src={icon} alt={title} className={cx(styles.icon)} />
+          <div className={cx(styles.iconWrapper)}>
+            <img src={icon} alt={title} className={cx(styles.icon)} />
+            {isEnabled && <ActivatedIcon enabled={isEnabled} />}
+          </div>
           <div className={cx(styles.titleContent)}>
             <Title level={5} className={cx(styles.title)}>
               {title}
+              {isNewVersion && (
+                <span className={cx(styles.newVersion)}>新版本更新</span>
+              )}
             </Title>
             <div className={cx(styles.subtitle)}>{author}</div>
           </div>
@@ -196,20 +216,22 @@ const PluginDetailDrawer: React.FC<PluginDetailDrawerProps> = ({
         )}
       </div>
       <div className={cx(styles.actions)}>
-        <Button
-          type="primary"
-          className={cx(styles.actionButton)}
-          size="large"
-          onClick={handleEnable}
-        >
-          {isEnabled
-            ? showToolSection
-              ? '更新配置'
-              : '更新'
-            : showToolSection
-            ? '保存配置并启用'
-            : '启用'}
-        </Button>
+        {needUpdateButton && (
+          <Button
+            type="primary"
+            className={cx(styles.actionButton)}
+            size="large"
+            onClick={handleEnable}
+          >
+            {isEnabled
+              ? showToolSection
+                ? '更新配置'
+                : '更新'
+              : showToolSection
+              ? '保存配置并启用'
+              : '启用'}
+          </Button>
+        )}
         {isEnabled && (
           <Button
             className={cx(styles.actionButton)}
@@ -230,4 +252,4 @@ const PluginDetailDrawer: React.FC<PluginDetailDrawerProps> = ({
   );
 };
 
-export default PluginDetailDrawer;
+export default EcosystemDetailDrawer;

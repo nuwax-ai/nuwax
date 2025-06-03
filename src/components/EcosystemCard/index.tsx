@@ -11,7 +11,7 @@ const cx = classNames.bind(styles);
 /**
  * 插件卡片组件接口
  */
-export interface PluginCardProps {
+export interface EcosystemCardProps {
   /** 插件图标URL */
   icon: string;
   /** 插件作者 */
@@ -44,7 +44,7 @@ export interface PluginCardProps {
  * @param props 组件属性
  * @returns 插件卡片组件
  */
-const PluginCard: React.FC<PluginCardProps> = ({
+const EcosystemCard: React.FC<EcosystemCardProps> = ({
   icon,
   author,
   title,
@@ -57,7 +57,7 @@ const PluginCard: React.FC<PluginCardProps> = ({
 }) => {
   return (
     <Card
-      className={cx(styles.pluginCard, className)}
+      className={cx(styles.ecosystemCard, className)}
       hoverable
       onClick={onClick}
     >
@@ -80,4 +80,4 @@ const PluginCard: React.FC<PluginCardProps> = ({
   );
 };
 
-export default PluginCard;
+export default EcosystemCard;

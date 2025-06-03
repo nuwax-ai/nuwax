@@ -1,10 +1,12 @@
 import Created from '@/components/Created';
+import type { EcosystemCardProps } from '@/components/EcosystemCard';
+import EcosystemCard from '@/components/EcosystemCard';
+import PluginDetailDrawer, {
+  EcosystemDetailDrawerProps,
+} from '@/components/EcosystemDetailDrawer';
 import EcosystemShareModal, {
   EcosystemShareModalProps,
 } from '@/components/EcosystemShareModal';
-import type { PluginCardProps } from '@/components/PluginCard';
-import PluginCard from '@/components/PluginCard';
-import PluginDetailDrawer from '@/components/PluginDetailDrawer';
 import {
   createClientConfigDraft,
   disableClientConfig,
@@ -36,25 +38,13 @@ import {
 } from '@/types/interfaces/ecosystem';
 import { PlusOutlined } from '@ant-design/icons';
 import type { TabsProps } from 'antd';
-import { App, Button, Card, Col, Input, Row, Spin, Tabs } from 'antd';
+import { App, Button, Card, Col, Empty, Input, Row, Spin, Tabs } from 'antd';
 import classNames from 'classnames';
 import { useCallback, useEffect, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 const { Search } = Input;
-
-/**
- * 扩展的插件详情类型，包含额外的详情信息
- */
-interface ExtendedPluginProps extends PluginCardProps {
-  version?: string;
-  author?: string;
-  publishTime?: string;
-  shareStatus?: number;
-  uid?: string;
-  [key: string]: any; // 允许其他属性
-}
 
 /**
  * 生态市场插件页面
@@ -172,7 +162,7 @@ export default function EcosystemPlugin() {
   /**
    * 将后端数据转换为插件卡片数据
    */
-  const convertToPluginCard = (config: ClientConfigVo): PluginCardProps => {
+  const convertToPluginCard = (config: ClientConfigVo): EcosystemCardProps => {
     // 根据分享状态确定标签
     const isMyShare = activeTab === 'shared';
     const isAll = activeTab === 'all';
@@ -190,6 +180,24 @@ export default function EcosystemPlugin() {
         ? config.useStatus === EcosystemUseStatusEnum.ENABLED
         : undefined,
       shareStatus: isMyShare ? config.shareStatus : undefined, // 仅在我的分享中使用
+      publishDoc: config.publishDoc,
+    };
+  };
+  const convertToDetailDrawer = (
+    config: ClientConfigVo,
+  ): EcosystemDetailDrawerProps['plugin'] => {
+    return {
+      icon:
+        config.icon ||
+        'https://agent-1251073634.cos.ap-chengdu.myqcloud.com/store/b5fdb62e8b994a418d0fdfae723ee827.png',
+      title: config.name || '未命名插件',
+      description: config.description || '暂无描述',
+      // isNewVersion: true,
+      isNewVersion: config.isNewVersion || false,
+      author: config.author || '',
+      configParamJson: config.serverConfigParamJson,
+      localConfigParamJson: config.localConfigParamJson,
+      isEnabled: config.useStatus === EcosystemUseStatusEnum.ENABLED,
       publishDoc: config.publishDoc,
     };
   };
@@ -257,14 +265,6 @@ export default function EcosystemPlugin() {
     setIsEditMode(false);
     setEditingPlugin(null);
     setShareModalVisible(true);
-  };
-
-  /**
-   * 关闭分享弹窗
-   */
-  const handleCloseShareModal = () => {
-    setShareModalVisible(false);
-    setEditingPlugin(null);
   };
 
   const refreshPluginListAndReset = () => {
@@ -414,7 +414,7 @@ export default function EcosystemPlugin() {
   /**
    * 处理插件卡片点击事件
    */
-  const handlePluginClick = async (config: ClientConfigVo) => {
+  const handleCardClick = async (config: ClientConfigVo) => {
     // 如果是我的分享标签页，则进入编辑模式
     if (activeTab === 'shared') {
       setEditingPlugin(config);
@@ -466,6 +466,16 @@ export default function EcosystemPlugin() {
     }
   };
 
+  /**
+   * 关闭分享弹窗
+   */
+  const handleCloseShareModal = () => {
+    setShareModalVisible(false);
+    setEditingPlugin(null);
+    setPluginInfo(null);
+    setAddComponents([]);
+  };
+
   return (
     <div className={cx(styles.container)}>
       <Card className={cx(styles.contentCard)} title="插件" variant="outlined">
@@ -493,18 +503,20 @@ export default function EcosystemPlugin() {
         <Spin spinning={loading}>
           <div className={cx(styles.pluginList)}>
             <Row gutter={[16, 16]}>
-              {pluginData.records?.map((config, index) => (
-                <Col span={6} key={config.uid || index}>
-                  <PluginCard
-                    {...convertToPluginCard(config)}
-                    onClick={() => handlePluginClick(config)}
-                  />
-                </Col>
-              ))}
+              {pluginData.records && pluginData.records.length > 0
+                ? pluginData.records?.map((config, index) => (
+                    <Col span={6} key={config.uid || index}>
+                      <EcosystemCard
+                        {...convertToPluginCard(config)}
+                        onClick={() => handleCardClick(config)}
+                      />
+                    </Col>
+                  ))
+                : null}
             </Row>
 
             {/* 分页组件 */}
-            {pluginData.total && pluginData.total > 0 && (
+            {pluginData.total && pluginData.total > 0 ? (
               <div style={{ textAlign: 'center', marginTop: 24 }}>
                 <Button
                   disabled={pagination.current <= 1}
@@ -524,6 +536,8 @@ export default function EcosystemPlugin() {
                   下一页
                 </Button>
               </div>
+            ) : (
+              <Empty description="暂无数据" />
             )}
           </div>
         </Spin>
@@ -533,16 +547,7 @@ export default function EcosystemPlugin() {
       <PluginDetailDrawer
         visible={drawerVisible}
         plugin={
-          selectedPlugin
-            ? ({
-                ...convertToPluginCard(selectedPlugin),
-                // 添加额外的详情信息
-                version: selectedPlugin.versionNumber?.toString(),
-                author: selectedPlugin.author || '',
-                publishTime: selectedPlugin.publishTime,
-                shareStatus: selectedPlugin.shareStatus,
-              } as ExtendedPluginProps)
-            : undefined
+          selectedPlugin ? convertToDetailDrawer(selectedPlugin) : undefined
         }
         onClose={handleDetailClose}
         onUpdateAndEnable={handleUpdateAndEnable}

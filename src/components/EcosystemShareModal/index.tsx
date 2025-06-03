@@ -112,37 +112,59 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
   );
   const [tableData, setTableData] = useState<any[]>([]);
 
+  // 完整的重置函数
+  const handleReset = () => {
+    form.resetFields();
+    setTableData([]);
+    setConfigParam([]);
+  };
+
+  // 监听弹窗显示状态变化
   useEffect(() => {
-    if (visible && data) {
-      // 当弹窗显示并且有插件数据时，初始化表单
-      form.setFieldsValue({
-        uid: data.uid,
-        plugin: {
-          name: data.name,
-          description: data.description,
-          targetType: data.targetType,
-          targetId: data.targetId,
-          icon: data.icon,
-        },
-        author: data.author,
-        publishDoc: data.publishDoc,
-      });
-      if (data.configParamJson) {
-        setConfigParam(
-          JSON.parse(data.configParamJson).map((item: any) => ({
-            name: item.name,
-            description: item.description,
-            value: '',
-          })),
-        );
+    console.log('visible', visible);
+    if (visible) {
+      console.log('data', data);
+
+      // 弹窗打开时，如果有数据则初始化，否则清空
+      if (data) {
+        // 初始化表单数据
+        form.setFieldsValue({
+          uid: data.uid,
+          plugin: {
+            name: data.name,
+            description: data.description,
+            targetType: data.targetType,
+            targetId: data.targetId,
+            icon: data.icon,
+          },
+          author: data.author,
+          publishDoc: data.publishDoc,
+        });
+
+        if (data.configParamJson) {
+          try {
+            const parsedConfig = JSON.parse(data.configParamJson);
+            setConfigParam(
+              parsedConfig.map((item: any) => ({
+                name: item.name,
+                description: item.description,
+                value: item.value || '',
+              })),
+            );
+          } catch (error) {
+            console.error('解析配置参数失败:', error);
+            setConfigParam([]);
+          }
+        }
       }
     }
-    if (visible && !data) {
-      form.resetFields();
-      setTableData([]);
-      setConfigParam([]);
-    }
   }, [visible, data, form]);
+
+  const handleClose = () => {
+    // 关闭前立即清除数据
+    handleReset();
+    onClose();
+  };
 
   const handleSave = async (isDraft: boolean) => {
     try {
@@ -242,17 +264,28 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
     }
   }, [tableData]);
 
-  const renderActionButton = (data: EcosystemShareModalData) => {
-    const isPublished =
-      data?.shareStatus === EcosystemShareStatusEnum.PUBLISHED;
-    const isDraft = data?.shareStatus === EcosystemShareStatusEnum.DRAFT;
+  const renderActionButton = (data?: EcosystemShareModalData | null) => {
+    if (!data) {
+      return (
+        <Space>
+          <Button onClick={handleClose}>取消</Button>
+          <Button type="primary" onClick={() => handleSave(false)}>
+            保存并发布分享
+          </Button>
+        </Space>
+      );
+    }
+
+    const isPublished = data.shareStatus === EcosystemShareStatusEnum.PUBLISHED;
+    const isDraft = data.shareStatus === EcosystemShareStatusEnum.DRAFT;
+
     return (
       <Space>
-        <Button onClick={onClose}>取消</Button>
+        <Button onClick={handleClose}>取消</Button>
         {isEdit && isPublished && (
           <Button
             onClick={() => {
-              if (data?.uid) {
+              if (data.uid) {
                 onOffline(data.uid);
               }
             }}
@@ -276,11 +309,10 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
         </div>
       }
       open={visible}
-      onCancel={onClose}
+      onCancel={handleClose}
       width={720}
       footer={null}
       className={cx(styles.pluginShareModal)}
-      destroyOnClose
     >
       <div className={cx(styles.modalContent)}>
         <Form form={form} layout="vertical" className={cx(styles.form)}>
