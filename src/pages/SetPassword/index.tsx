@@ -42,8 +42,8 @@ const SetPassword: React.FC = () => {
         styles.container,
         'h-full',
         'flex',
-        'content-center',
-        'items-center',
+        'flex-col',
+        'overflow-y',
       )}
     >
       <ConditionRender condition={!!tenantConfigInfo?.siteLogo}>
@@ -53,74 +53,84 @@ const SetPassword: React.FC = () => {
           alt=""
         />
       </ConditionRender>
-      <Form
-        rootClassName={cx(styles.form, 'flex', 'flex-col')}
-        name="login"
-        validateTrigger="onBlur"
-        onFinish={onFinish}
+      <div
+        className={cx(
+          'flex-1',
+          'flex',
+          'flex-col',
+          'content-center',
+          'items-center',
+        )}
       >
-        <Form.Item>
-          <h3 className={cx(styles.title)}>密码设置</h3>
-        </Form.Item>
-        <Form.Item
-          name="password"
-          rules={[
-            { required: true, message: '请输入6位以上密码!' },
-            {
-              validator(_, value) {
-                if (!value || validatePassword(value)) {
-                  return Promise.resolve();
-                }
-                return Promise.reject(new Error('请输入正确格式的密码!'));
-              },
-            },
-          ]}
+        <Form
+          rootClassName={cx(styles.form, 'flex', 'flex-col')}
+          name="login"
+          validateTrigger="onBlur"
+          onFinish={onFinish}
         >
-          <Input.Password
-            rootClassName={cx(styles.input)}
-            placeholder="请输入6位以上密码"
-            autoComplete="off"
-          />
-        </Form.Item>
-        <Form.Item
-          name="confirmPassword"
-          rules={[
-            {
-              required: true,
-              message: '请再次输入密码!',
-            },
-            ({ getFieldValue }) => ({
-              validator(_, value) {
-                const _password = getFieldValue('password');
-                if (!value || _password === value) {
-                  return Promise.resolve();
-                }
-                if (_password && _password !== value) {
-                  return Promise.reject(new Error('两次密码不一致!'));
-                }
-                return Promise.reject(new Error('请输入正确的密码!'));
+          <Form.Item>
+            <h3 className={cx(styles.title)}>密码设置</h3>
+          </Form.Item>
+          <Form.Item
+            name="password"
+            rules={[
+              { required: true, message: '请输入6位以上密码!' },
+              {
+                validator(_, value) {
+                  if (!value || validatePassword(value)) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error('请输入正确格式的密码!'));
+                },
               },
-            }),
-          ]}
-        >
-          <Input.Password
-            rootClassName={cx(styles.input)}
-            placeholder="请再次输入密码"
-            autoComplete="off"
-          />
-        </Form.Item>
-        <Form.Item className={cx(styles.login)}>
-          <Button
-            className={cx(styles.btn)}
-            block
-            type="primary"
-            loading={loading}
-            htmlType="submit"
+            ]}
           >
-            确定
-          </Button>
-        </Form.Item>
-      </Form>
+            <Input.Password
+              rootClassName={cx(styles.input)}
+              placeholder="请输入6位以上密码"
+              autoComplete="off"
+            />
+          </Form.Item>
+          <Form.Item
+            name="confirmPassword"
+            rules={[
+              {
+                required: true,
+                message: '请再次输入密码!',
+              },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const _password = getFieldValue('password');
+                  if (!value || _password === value) {
+                    return Promise.resolve();
+                  }
+                  if (_password && _password !== value) {
+                    return Promise.reject(new Error('两次密码不一致!'));
+                  }
+                  return Promise.reject(new Error('请输入正确的密码!'));
+                },
+              }),
+            ]}
+          >
+            <Input.Password
+              rootClassName={cx(styles.input)}
+              placeholder="请再次输入密码"
+              autoComplete="off"
+            />
+          </Form.Item>
+          <Form.Item className={cx(styles.login)}>
+            <Button
+              className={cx(styles.btn)}
+              block
+              type="primary"
+              loading={loading}
+              htmlType="submit"
+            >
+              确定
+            </Button>
+          </Form.Item>
+        </Form>
+      </div>
       <SiteFooter />
     </div>
   );
