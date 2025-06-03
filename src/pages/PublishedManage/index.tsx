@@ -2,11 +2,11 @@ import { apiPublishList } from '@/services/publishManage';
 import styles from '@/styles/systemManage.less';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { PublishListInfo } from '@/types/interfaces/publishManage';
-import { transformTDate } from '@/utils/getTime';
 import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { Button, Input, Select, Table } from 'antd';
 import classNames from 'classnames';
+import moment from 'moment';
 import React, { useState } from 'react';
 import { history } from 'umi';
 import OffshelfModal from './components/OffshelfModal';
@@ -157,7 +157,7 @@ const PublishManage: React.FC = () => {
       key: 'created',
       width: '180px',
       render: (created: string) => {
-        return transformTDate(created);
+        return moment(created).format('YYYY-MM-DD HH:mm:ss');
       },
     },
     {
@@ -165,7 +165,7 @@ const PublishManage: React.FC = () => {
       key: 'action',
       align: 'center',
       width: '160px',
-      render: (_, record: PublishListInfo) => (
+      render: (_: null, record: PublishListInfo) => (
         <>
           <Button
             type="link"

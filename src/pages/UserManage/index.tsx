@@ -6,11 +6,11 @@ import {
 import styles from '@/styles/systemManage.less';
 import { UserRoleEnum, UserStatusEnum } from '@/types/enums/systemManage';
 import type { SystemUserListInfo } from '@/types/interfaces/systemManage';
-import { transformTDate } from '@/utils/getTime';
 import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { Button, Input, Select, Table, message } from 'antd';
 import classNames from 'classnames';
+import moment from 'moment';
 import React, { useState } from 'react';
 import CreateModifyUser from './components/createModifyUser';
 
@@ -196,7 +196,7 @@ const UserManage: React.FC = () => {
       dataIndex: 'created',
       key: 'created',
       render: (created: string) => {
-        return transformTDate(created);
+        return moment(created).format('YYYY-MM-DD HH:mm:ss');
       },
     },
     {
@@ -204,7 +204,7 @@ const UserManage: React.FC = () => {
       key: 'action',
       width: 150,
       align: 'center',
-      render: (_, record: SystemUserListInfo) => (
+      render: (_: null, record: SystemUserListInfo) => (
         <>
           {record.status === UserStatusEnum.Enabled ? (
             <Button
