@@ -1,5 +1,6 @@
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
@@ -9,7 +10,7 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
-import { Input, Upload } from 'antd';
+import { Input, message, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
 import styles from './index.less';
@@ -27,25 +28,25 @@ const ChatInputPhone: React.FC<ChatInputProps> = ({
 }) => {
   // 文档
   const [files, setFiles] = useState<UploadFileInfo[]>([]);
-  const [message, setMessage] = useState<string>('');
+  const [messageInfo, setMessageInfo] = useState<string>('');
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
   // 发送按钮disabled
   const disabledSend = useMemo(() => {
-    return !message && !files?.length;
-  }, [message, files]);
+    return !messageInfo && !files?.length;
+  }, [messageInfo, files]);
 
   // 点击发送事件
   const handleSendMessage = () => {
     if (disabledSend) {
       return;
     }
-    if (message || files?.length > 0) {
+    if (messageInfo || files?.length > 0) {
       // enter事件
-      onEnter(message, files);
+      onEnter(messageInfo, files);
       // 置空
       setFiles([]);
-      setMessage('');
+      setMessageInfo('');
     }
   };
 
@@ -59,7 +60,7 @@ const ChatInputPhone: React.FC<ChatInputProps> = ({
       (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)
     ) {
       const enterValue = `${value}\n`;
-      setMessage(enterValue);
+      setMessageInfo(enterValue);
     } else if (
       e.nativeEvent.keyCode === 13 &&
       (!!value.trim() || !!files?.length)
@@ -68,7 +69,7 @@ const ChatInputPhone: React.FC<ChatInputProps> = ({
       onEnter(value, files);
       // 置空
       setFiles([]);
-      setMessage('');
+      setMessageInfo('');
     }
   };
 
@@ -78,6 +79,11 @@ const ChatInputPhone: React.FC<ChatInputProps> = ({
       return;
     }
     if (info.file.status === 'done') {
+      // 接口上传失败
+      if (info.file.response?.code !== SUCCESS_CODE) {
+        message.warning(info.file.response?.message);
+        return;
+      }
       const data: UploadFileInfo = info.file.response?.data;
       const _files = [...files];
       _files.push(data);
@@ -128,8 +134,8 @@ const ChatInputPhone: React.FC<ChatInputProps> = ({
           {/*输入框*/}
           <Input
             className={cx('flex-1')}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            value={messageInfo}
+            onChange={(e) => setMessageInfo(e.target.value)}
             rootClassName={cx(styles.input, 'flex-1')}
             onPressEnter={handlePressEnter}
             placeholder="直接输入指令；可通过回车换行"
