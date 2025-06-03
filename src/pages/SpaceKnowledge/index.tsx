@@ -363,16 +363,13 @@ const SpaceKnowledge: React.FC = () => {
               height: '50px',
             }}
           >
-            <div
-              className={cx('flex', 'flex-1', 'items-end', 'justify-center')}
-              style={{
-                width: 240,
-                height: 42,
-              }}
-            >
+            <div className={cx(styles.inputSearch)}>
               <Input.Search
                 placeholder="请输入问题搜索"
                 allowClear
+                style={{
+                  width: 240,
+                }}
                 onSearch={handleSearchQa}
                 onPressEnter={(e) => handleSearchQa(e.currentTarget.value)}
               />
