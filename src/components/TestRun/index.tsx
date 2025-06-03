@@ -5,7 +5,7 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import { DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
-import { InputAndOutConfig, TestRunparams } from '@/types/interfaces/node';
+import { InputAndOutConfig, TestRunParams } from '@/types/interfaces/node';
 import { getAccept } from '@/utils';
 import { returnImg } from '@/utils/workflow';
 import { CaretRightOutlined, CloseOutlined } from '@ant-design/icons';
@@ -49,7 +49,7 @@ interface TestRunProps {
   stopWait?: boolean;
   //
   formItemValue?: DefaultObjectType;
-  testRunparams?: TestRunparams;
+  testRunParams?: TestRunParams;
 }
 
 interface QaItems {
@@ -74,13 +74,12 @@ const TestRun: React.FC<TestRunProps> = ({
   clearRunResult,
   stopWait,
   formItemValue,
-  testRunparams,
+  testRunParams,
 }) => {
   const { testRun, setTestRun } = useModel('model');
   const { referenceList } = useModel('workflow');
-  // const [value, setValue] = useState('');
-
   const [form] = Form.useForm();
+
   // 问答的选项
   const [qaItems, setQaItem] = useState<QaItems[]>([]);
   const onFinish = (values: DefaultObjectType) => {
@@ -338,7 +337,7 @@ const TestRun: React.FC<TestRunProps> = ({
   useEffect(() => {
     form.resetFields();
     if (stopWait) {
-      const newItem = (testRunparams?.options || []).map((item) => ({
+      const newItem = (testRunParams?.options || []).map((item) => ({
         key: item.uuid,
         description: item.content,
       }));
@@ -428,12 +427,10 @@ const TestRun: React.FC<TestRunProps> = ({
               }
               header={<span>机器人</span>}
               content={
-                testRunparams &&
-                testRunparams.options &&
-                testRunparams.options.length ? (
+                testRunParams?.options?.length ? (
                   <div className="qa-question-style">
                     <Prompts
-                      title={testRunparams.question}
+                      title={testRunParams?.question}
                       items={qaItems}
                       vertical
                       onItemClick={(info) => {
@@ -443,7 +440,7 @@ const TestRun: React.FC<TestRunProps> = ({
                   </div>
                 ) : (
                   <div className="qa-question-style">
-                    {testRunparams?.question}
+                    {testRunParams?.question}
                   </div>
                 )
               }

@@ -16,14 +16,13 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
-import { NodeTypeEnum } from '@/types/enums/common';
-import { WorkflowModeEnum } from '@/types/enums/library';
+import { CreateUpdateModeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
 import {
   NodeConfig,
   NodeDrawerRef,
-  TestRunparams,
+  TestRunParams,
 } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
 import { createSSEConnection } from '@/utils/fetchEventSource';
@@ -103,7 +102,7 @@ const Workflow: React.FC = () => {
     edgeList: Edge[];
   }>({ nodeList: [], edgeList: [] });
   // 针对问答节点，试运行的问答参数
-  const [testRunparams, setTestRunparams] = useState<TestRunparams>({
+  const [testRunParams, setTestRunParams] = useState<TestRunParams>({
     question: '',
     options: [],
   });
@@ -1051,7 +1050,7 @@ const Workflow: React.FC = () => {
             setStopWait(true);
             localStorage.setItem('testRun', JSON.stringify(params));
             if (data.data.result) {
-              setTestRunparams(data.data.result.data);
+              setTestRunParams(data.data.result.data);
             }
           }
         }
@@ -1222,8 +1221,8 @@ const Workflow: React.FC = () => {
     }
 
     if (!targetNode) {
-      const isout = portId.endsWith('out');
-      if (isout) {
+      const isOut = portId.endsWith('out');
+      if (isOut) {
         _position.x = _position.x + 100;
       } else {
         _position.x = _position.x - width;
@@ -1402,14 +1401,14 @@ const Workflow: React.FC = () => {
         loading={loading}
         stopWait={stopWait}
         formItemValue={formItemValue}
-        testRunparams={testRunparams}
+        testRunParams={testRunParams}
       />
 
       <CreateWorkflow
         onConfirm={onConfirm}
         onCancel={() => setShowCreateWorkflow(false)}
         open={showCreateWorkflow}
-        type={WorkflowModeEnum.Update}
+        type={CreateUpdateModeEnum.Update}
         {...info}
       />
 

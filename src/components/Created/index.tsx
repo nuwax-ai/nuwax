@@ -6,7 +6,6 @@ import {
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { WorkflowModeEnum } from '@/types/enums/library';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { getTime } from '@/utils';
 import { getImg } from '@/utils/workflow';
@@ -517,7 +516,7 @@ const Created: React.FC<CreatedProp> = ({
         onConfirm={onConfirm}
         onCancel={() => setShowCreate(false)}
         open={showCreate && selected.key === AgentComponentTypeEnum.Workflow}
-        type={WorkflowModeEnum.Create}
+        type={CreateUpdateModeEnum.Create}
         spaceId={spaceId}
       />
       <CreateNewPlugin

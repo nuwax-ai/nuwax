@@ -3,7 +3,7 @@ import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { apiAddWorkflow, apiUpdateWorkflow } from '@/services/library';
-import { WorkflowModeEnum } from '@/types/enums/library';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type {
   CreateWorkflowProps,
   UpdateWorkflowParams,
@@ -23,7 +23,7 @@ const cx = classNames.bind(styles);
  * 创建工作流弹窗
  */
 const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
-  type = WorkflowModeEnum.Create,
+  type = CreateUpdateModeEnum.Create,
   name,
   spaceId,
   id,
@@ -77,7 +77,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
       description: values?.description,
       icon: imageUrl,
     };
-    if (type === WorkflowModeEnum.Create) {
+    if (type === CreateUpdateModeEnum.Create) {
       run({
         spaceId,
         ...params,
@@ -97,7 +97,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title={type === WorkflowModeEnum.Create ? '创建工作流' : '更新工作流'}
+      title={type === CreateUpdateModeEnum.Create ? '创建工作流' : '更新工作流'}
       classNames={{
         content: cx(styles.container),
         header: cx(styles.header),

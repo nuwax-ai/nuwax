@@ -2,7 +2,6 @@ import type {
   CreateUpdateModeEnum,
   PublishStatusEnum,
 } from '@/types/enums/common';
-import type { WorkflowModeEnum } from '@/types/enums/library';
 import type { ComponentTypeEnum } from '@/types/enums/space';
 import type { BindConfigWithSub, CreatorInfo } from '@/types/interfaces/agent';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
@@ -34,7 +33,7 @@ export interface WorkflowBaseInfo {
 
 // 更新、创建工作流弹窗
 export interface CreateWorkflowProps {
-  type?: WorkflowModeEnum;
+  type?: CreateUpdateModeEnum;
   spaceId?: number;
   id?: number;
   name?: string;

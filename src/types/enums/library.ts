@@ -1,11 +1,3 @@
-// 工作流操作枚举
-export enum WorkflowModeEnum {
-  // 新建
-  Create,
-  // 更新
-  Update,
-}
-
 // 知识库资源文件格式枚举 数据类型,默认文本,1:文本;2:表格
 export enum KnowledgeDataTypeEnum {
   // 文本格式
