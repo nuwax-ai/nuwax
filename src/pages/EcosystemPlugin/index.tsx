@@ -1,12 +1,12 @@
-import Created from '@/components/Created';
 import type { EcosystemCardProps } from '@/components/EcosystemCard';
 import EcosystemCard from '@/components/EcosystemCard';
 import PluginDetailDrawer, {
-  EcosystemDetailDrawerProps,
+  EcosystemDetailDrawerData,
 } from '@/components/EcosystemDetailDrawer';
 import EcosystemShareModal, {
-  EcosystemShareModalProps,
+  EcosystemShareModalData,
 } from '@/components/EcosystemShareModal';
+import SelectComponent from '@/components/SelectComponent';
 import {
   createClientConfigDraft,
   disableClientConfig,
@@ -42,10 +42,8 @@ import { App, Button, Card, Col, Empty, Input, Row, Spin, Tabs } from 'antd';
 import classNames from 'classnames';
 import { useCallback, useEffect, useState } from 'react';
 import styles from './index.less';
-
 const cx = classNames.bind(styles);
 const { Search } = Input;
-
 /**
  * 生态市场插件页面
  * 展示插件列表，包括全部、已启用和我的分享三个标签页
@@ -167,13 +165,12 @@ export default function EcosystemPlugin() {
     const isMyShare = activeTab === 'shared';
     const isAll = activeTab === 'all';
     return {
-      icon:
-        config.icon ||
-        'https://agent-1251073634.cos.ap-chengdu.myqcloud.com/store/b5fdb62e8b994a418d0fdfae723ee827.png',
+      icon: config.icon || '',
       title: config.name || '未命名插件',
       description: config.description || '暂无描述',
       isNewVersion: config.isNewVersion,
       author: config.author || '',
+      targetType: config.targetType as AgentComponentTypeEnum,
       configParamJson: config.serverConfigParamJson,
       localConfigParamJson: config.localConfigParamJson,
       isEnabled: isAll
@@ -185,16 +182,16 @@ export default function EcosystemPlugin() {
   };
   const convertToDetailDrawer = (
     config: ClientConfigVo,
-  ): EcosystemDetailDrawerProps['plugin'] => {
+  ): EcosystemDetailDrawerData => {
     return {
-      icon:
-        config.icon ||
-        'https://agent-1251073634.cos.ap-chengdu.myqcloud.com/store/b5fdb62e8b994a418d0fdfae723ee827.png',
+      icon: config.icon || '',
       title: config.name || '未命名插件',
       description: config.description || '暂无描述',
       // isNewVersion: true,
       isNewVersion: config.isNewVersion || false,
       author: config.author || '',
+      ownedFlag: config.ownedFlag,
+      targetType: config.targetType as AgentComponentTypeEnum,
       configParamJson: config.serverConfigParamJson,
       localConfigParamJson: config.localConfigParamJson,
       isEnabled: config.useStatus === EcosystemUseStatusEnum.ENABLED,
@@ -384,18 +381,18 @@ export default function EcosystemPlugin() {
   ];
 
   const [show, setShow] = useState(false);
-  const [pluginInfo, setPluginInfo] = useState<EcosystemShareModalProps | null>(
-    null,
-  );
+  const [shareModalData, setShareModalData] =
+    useState<EcosystemShareModalData | null>(null);
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]
   >([]);
   // 查询智能体配置组件列表
-  const onAddedPlugin = (item: CreatedNodeItem) => {
+  const onSelectedComponent = (item: CreatedNodeItem) => {
     item.type = item.targetType;
     item.typeId = item.targetId;
     setShow(false);
-    setPluginInfo({
+    setShareModalData({
+      icon: item.icon,
       name: item.name,
       description: item.description,
       targetType: item.targetType,
@@ -422,18 +419,19 @@ export default function EcosystemPlugin() {
       setShareModalVisible(true);
       setShow(false);
       const targetType = config.targetType;
-      const item: EcosystemShareModalProps = {
+      const item: EcosystemShareModalData = {
+        icon: config.icon || '',
         uid: config.uid,
         name: config.name || '',
         description: config.description || '',
-        targetType,
+        targetType: targetType || '',
         targetId: (config.targetId || '').toString(),
         author: config.author || '',
         publishDoc: config.publishDoc || '',
         shareStatus: config.shareStatus,
-        configParamJson: config.configParamJson,
+        configParamJson: config.configParamJson || '',
       };
-      setPluginInfo(item);
+      setShareModalData(item);
       setAddComponents([
         {
           type: targetType as AgentComponentTypeEnum,
@@ -472,7 +470,7 @@ export default function EcosystemPlugin() {
   const handleCloseShareModal = () => {
     setShareModalVisible(false);
     setEditingPlugin(null);
-    setPluginInfo(null);
+    setShareModalData(null);
     setAddComponents([]);
   };
 
@@ -546,7 +544,7 @@ export default function EcosystemPlugin() {
       {/* 插件详情抽屉 */}
       <PluginDetailDrawer
         visible={drawerVisible}
-        plugin={
+        data={
           selectedPlugin ? convertToDetailDrawer(selectedPlugin) : undefined
         }
         onClose={handleDetailClose}
@@ -562,19 +560,19 @@ export default function EcosystemPlugin() {
         onClose={handleCloseShareModal}
         onOffline={handleOffline}
         onSave={handleSaveShare}
-        data={pluginInfo}
-        onAddPlugin={() => {
+        data={shareModalData}
+        onAddComponent={() => {
           setShow(true);
         }}
-        onRemovePlugin={() => {
-          setPluginInfo(null);
+        onRemoveComponent={() => {
+          setShareModalData(null);
           setAddComponents([]);
         }}
       />
       {/*添加插件、工作流、知识库、数据库弹窗*/}
-      <Created
+      <SelectComponent
         checkTag={AgentComponentTypeEnum.Plugin}
-        onAdded={onAddedPlugin}
+        onAdded={onSelectedComponent}
         open={show}
         onCancel={() => setShow(false)}
         addComponents={addComponents}
@@ -582,6 +580,7 @@ export default function EcosystemPlugin() {
           AgentComponentTypeEnum.Table,
           AgentComponentTypeEnum.Workflow,
           AgentComponentTypeEnum.Knowledge,
+          AgentComponentTypeEnum.Agent,
         ]}
       />
     </div>
