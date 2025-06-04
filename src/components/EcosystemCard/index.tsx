@@ -1,9 +1,9 @@
-import { COMPONENT_LIST } from '@/constants/ecosystem.constants';
+import { COMPONENT_LIST, TAG_ICON_LIST } from '@/constants/ecosystem.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { EcosystemShareStatusEnum } from '@/types/interfaces/ecosystem';
-import { Card } from 'antd';
+import { Card, Tag } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ActivatedIcon from './ActivatedIcon';
 import styles from './index.less';
 import NewVersionIcon from './NewVersionIcon';
@@ -60,6 +60,35 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
   isNewVersion,
   targetType,
 }) => {
+  const [targetInfo, setTargetInfo] = useState<any>({
+    icon: icon,
+    name: '',
+    tagIcon: null,
+  });
+  useEffect(() => {
+    if (!targetType) {
+      return;
+    }
+    const hitInfo = COMPONENT_LIST.find((item) => item.type === targetType);
+    const iconUrl =
+      icon ||
+      hitInfo?.defaultImage ||
+      'https://agent-1251073634.cos.ap-chengdu.myqcloud.com/store/b5fdb62e8b994a418d0fdfae723ee827.png';
+    const tagIcon = TAG_ICON_LIST[targetType];
+    const name = hitInfo?.text || '';
+    setTargetInfo({
+      icon: iconUrl,
+      name,
+      tagIcon,
+    });
+    return () => {
+      setTargetInfo({
+        icon: '',
+        name: '',
+        tagIcon: null,
+      });
+    };
+  }, [targetType, icon]);
   return (
     <Card
       className={cx(styles.ecosystemCard, className)}
@@ -68,20 +97,18 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
     >
       <div className={cx(styles.cardContent)}>
         <div className={cx(styles.iconWrapper)}>
-          <img
-            src={
-              icon ||
-              COMPONENT_LIST.find((item) => item.type === targetType)
-                ?.defaultImage ||
-              'https://agent-1251073634.cos.ap-chengdu.myqcloud.com/store/b5fdb62e8b994a418d0fdfae723ee827.png'
-            }
-            alt={title}
-            className={styles.icon}
-          />
+          <img src={targetInfo.icon} alt={title} className={styles.icon} />
           {isEnabled && <ActivatedIcon enabled={isEnabled} />}
         </div>
         <div className={cx(styles.infoWrapper)}>
-          <h3 className={cx(styles.title)}>{title}</h3>
+          <h3 className={cx(styles.title)}>
+            {title}{' '}
+            {targetInfo.tagIcon && (
+              <Tag icon={targetInfo.tagIcon} bordered={false}>
+                {targetInfo.name}
+              </Tag>
+            )}
+          </h3>
           <p className={cx(styles.author)}>来自{author}</p>
           <div className={cx(styles.descriptionWrapper)}>
             <p className={cx(styles.description)}>{description}</p>

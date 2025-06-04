@@ -5,7 +5,12 @@ import modelImage from '@/assets/images/model_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import variableImage from '@/assets/images/variable_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
-import { ICON_PLUGIN_BOLD, ICON_TEMPLATE } from '@/constants/images.constants';
+import {
+  ICON_AGENT,
+  ICON_PLUGIN_BOLD,
+  ICON_TEMPLATE,
+  ICON_WORKFLOW,
+} from '@/constants/images.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { EcosystemMarketEnum } from '@/types/enums/ecosystemMarket';
 import { EcosystemTabTypeEnum } from '@/types/interfaces/ecosystem';
@@ -72,6 +77,33 @@ export const COMPONENT_LIST: {
     text: '变量',
   },
 ];
+
+export const TAG_ICON_LIST: Partial<
+  Record<AgentComponentTypeEnum, React.ReactNode>
+> = {
+  [AgentComponentTypeEnum.Workflow]: (
+    <ICON_WORKFLOW
+      style={{
+        width: 14,
+        height: 14,
+        display: 'inline-block',
+        verticalAlign: 'middle',
+        marginRight: 4,
+      }}
+    />
+  ),
+  [AgentComponentTypeEnum.Agent]: (
+    <ICON_AGENT
+      style={{
+        width: 14,
+        height: 14,
+        display: 'inline-block',
+        verticalAlign: 'middle',
+        marginRight: 4,
+      }}
+    />
+  ),
+};
 
 export const TabTypeEnum: {
   ALL: EcosystemTabTypeEnum;
