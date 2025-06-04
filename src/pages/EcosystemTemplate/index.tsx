@@ -614,7 +614,7 @@ export default function EcosystemTemplate() {
             onSearch={handleSearch}
             allowClear
           />
-          <Dropdown menu={menuProps} style={{ marginLeft: 12 }}>
+          <Dropdown menu={menuProps} className={cx(styles.createShareButton)}>
             <Button type="primary">
               <Space>
                 创建分享
