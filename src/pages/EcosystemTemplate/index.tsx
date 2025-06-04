@@ -614,7 +614,7 @@ export default function EcosystemTemplate() {
             onSearch={handleSearch}
             allowClear
           />
-          <Dropdown menu={menuProps}>
+          <Dropdown menu={menuProps} style={{ marginLeft: 12 }}>
             <Button type="primary">
               <Space>
                 创建分享
