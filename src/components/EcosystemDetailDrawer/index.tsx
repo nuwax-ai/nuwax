@@ -25,9 +25,9 @@ export interface EcosystemDetailDrawerProps {
   /** 关闭抽屉回调 */
   onClose: () => void;
   /** 更新配置并启用回调 */
-  onUpdateAndEnable?: (values: any) => void;
+  onUpdateAndEnable?: (values: any) => Promise<boolean>;
   /** 停用回调 */
-  onDisable?: () => void;
+  onDisable?: () => Promise<boolean>;
 }
 
 enum OwnedFlagEnum {
