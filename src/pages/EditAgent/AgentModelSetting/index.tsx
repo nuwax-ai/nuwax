@@ -106,6 +106,11 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
     );
   }, [modelConfigListRef.current, targetId]);
 
+  // 当前模型信息
+  const currentModelInfo = useMemo(() => {
+    return modelConfigListRef.current?.find((item) => item.id === targetId);
+  }, [modelConfigListRef.current, targetId]);
+
   // 更新模型配置
   const handleChangeModel = (
     bindConfig: ComponentModelBindConfig,
@@ -122,16 +127,29 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   const handleChangeModelTarget = (id: React.Key) => {
     const _id = Number(id);
     setTargetId(_id);
+    const _currentModelInfo = modelConfigListRef.current?.find(
+      (item) => item.id === _id,
+    );
     let _componentBindConfig = { ...componentBindConfig };
+    // 如果当前模型的最大生成长度小于组件的最大生成长度，需要重置最大生成长度
+    if (
+      _currentModelInfo &&
+      _currentModelInfo.maxTokens < _componentBindConfig.maxTokens
+    ) {
+      _componentBindConfig = {
+        ..._componentBindConfig,
+        maxTokens: _currentModelInfo.maxTokens,
+      };
+    }
     // 如果当前模型是推理模型，需要重置推理模型ID，并且设置推理模型ID为null， 因为会话模型和推理模型如果相同，没意义
     if (_id === componentBindConfig.reasoningModelId) {
       _componentBindConfig = {
         ..._componentBindConfig,
         reasoningModelId: null,
       };
-      setComponentBindConfig(_componentBindConfig);
     }
-
+    setComponentBindConfig(_componentBindConfig);
+    // 更新模型配置
     handleChangeModel(_componentBindConfig, _id);
   };
 
@@ -290,7 +308,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
         />
         <SliderNumber
           min={1}
-          max={4096}
+          max={currentModelInfo?.maxTokens || 4096}
           step={1}
           value={String(componentBindConfig?.maxTokens)}
           onChange={(value) => handleChange(value, 'maxTokens')}
