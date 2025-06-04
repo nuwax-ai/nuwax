@@ -43,7 +43,7 @@ export interface EcosystemShareModalProps {
   onSave: (values: any, isDraft: boolean) => Promise<boolean>;
   onAddComponent: () => void;
   onRemoveComponent: () => void;
-  onOffline: (uid: string) => void;
+  onOffline: (uid: string) => Promise<boolean>;
   data?: EcosystemShareModalData | null;
 }
 
@@ -111,6 +111,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
     name: '插件',
     targetType: AgentComponentTypeEnum.Plugin,
   });
+  const [disabledSkill, setDisabledSkill] = useState(false);
   const getDetailApi = (targetType: string | undefined) => {
     if (targetType === AgentComponentTypeEnum.Plugin) {
       return apiPublishedPluginInfo;
@@ -216,6 +217,16 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
     }
   };
 
+  const handleOffline = async (uid: string) => {
+    if (uid) {
+      const result = await onOffline(uid);
+      if (result) {
+        handleClose();
+      }
+      return result;
+    }
+  };
+
   // 入参配置columns
   const inputColumns: any = [
     {
@@ -314,9 +325,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
         {isEdit && isPublished && (
           <Button
             onClick={() => {
-              if (data.uid) {
-                onOffline(data.uid);
-              }
+              handleOffline(data.uid);
             }}
           >
             下线
@@ -329,6 +338,13 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
       </Space>
     );
   };
+
+  useEffect(() => {
+    setDisabledSkill(isEdit);
+    return () => {
+      setDisabledSkill(false);
+    };
+  }, [isEdit]);
 
   return (
     <Modal
@@ -351,20 +367,22 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
               style={{ display: 'flex', alignItems: 'center' }}
             >
               <div>{`${suffixInfo.name}信息`}</div>
-              <Popover
-                content={<div>添加{suffixInfo.name}</div>}
-                trigger="hover"
-              >
-                <Button
-                  type="text"
-                  size="small"
-                  style={{ marginLeft: 10 }}
-                  icon={<PlusOutlined />}
-                  onClick={() => {
-                    onAddComponent();
-                  }}
-                />
-              </Popover>
+              {!disabledSkill && (
+                <Popover
+                  content={<div>添加{suffixInfo.name}</div>}
+                  trigger="hover"
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    style={{ marginLeft: 10 }}
+                    icon={<PlusOutlined />}
+                    onClick={() => {
+                      onAddComponent();
+                    }}
+                  />
+                </Popover>
+              )}
             </div>
             {isEdit && (
               <Form.Item name="uid" hidden>
@@ -415,6 +433,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                           statistics: null,
                         },
                       ]}
+                      disabled={disabledSkill}
                       skillName={'skillComponentConfigs'}
                       form={form}
                       removeItem={onRemoveComponent}

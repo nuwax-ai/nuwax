@@ -207,6 +207,7 @@ export interface FormListProps {
 // 定义技能
 export interface SkillProps {
   form: FormInstance;
+  disabled?: boolean;
   params: CreatedNodeItem[];
   // 当前技能的参数名称
   skillName: 'knowledgeBaseConfigs' | 'skillComponentConfigs' | 'tableFields';
