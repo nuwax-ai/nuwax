@@ -57,7 +57,7 @@ import { useCallback, useEffect, useState } from 'react';
 import styles from './index.less';
 const cx = classNames.bind(styles);
 const { Search } = Input;
-
+const PAGE_SIZE = 24;
 /**
  * 生态市场插件页面
  * 展示插件列表，包括全部、已启用和我的分享三个标签页
@@ -98,7 +98,7 @@ export default function EcosystemPlugin() {
   // 分页参数
   const [pagination, setPagination] = useState({
     current: 1,
-    pageSize: 12,
+    pageSize: PAGE_SIZE,
   });
 
   /**
@@ -110,7 +110,7 @@ export default function EcosystemPlugin() {
         tabType,
         keyword = '',
         page = 1,
-        pageSize = 12,
+        pageSize = PAGE_SIZE,
         shareStatus = -1,
         categoryCode = '',
       }: FetchPluginListParams = {} as FetchPluginListParams,
@@ -151,7 +151,13 @@ export default function EcosystemPlugin() {
             },
           ],
         };
-
+        setPluginData({
+          size: pageSize,
+          records: [],
+          total: 0,
+          current: page,
+          pages: 0,
+        });
         const result = await getClientConfigList(params);
         setPluginData(result);
       } catch (error) {
@@ -164,24 +170,31 @@ export default function EcosystemPlugin() {
     [activeTab, searchKeyword, pagination.current, pagination.pageSize],
   );
 
+  const refreshPluginList = (
+    options?: Partial<FetchPluginListParams> | undefined,
+  ) => {
+    setPagination({ current: 1, pageSize: PAGE_SIZE });
+    fetchPluginList({
+      tabType: activeTab,
+      keyword: searchKeyword,
+      page: 1,
+      pageSize: PAGE_SIZE,
+      ...(options || {}),
+    });
+  };
+
   /**
    * 初始化数据
    */
   useEffect(() => {
-    fetchPluginList();
-  }, [fetchPluginList]);
+    refreshPluginList();
+  }, []);
 
   /**
    * 标签页切换时重新获取数据
    */
   useEffect(() => {
-    setPagination({ current: 1, pageSize: 12 });
-    fetchPluginList({
-      tabType: activeTab,
-      keyword: searchKeyword,
-      page: 1,
-      pageSize: 12,
-    });
+    refreshPluginList();
   }, [activeTab]);
 
   /**
@@ -231,13 +244,7 @@ export default function EcosystemPlugin() {
    */
   const handleSearch = (value: string) => {
     setSearchKeyword(value);
-    setPagination({ current: 1, pageSize: 12 });
-    fetchPluginList({
-      tabType: activeTab,
-      keyword: value,
-      page: 1,
-      pageSize: 12,
-    });
+    refreshPluginList();
   };
 
   /**
@@ -250,41 +257,51 @@ export default function EcosystemPlugin() {
   /**
    * 更新配置处理函数
    */
-  const handleUpdateAndEnable = async (values: any[]) => {
-    if (!selectedPlugin) return;
-    setDrawerVisible(false);
-    const result = await updateAndEnableClientConfig({
-      uid: selectedPlugin.uid,
-      configParamJson: JSON.stringify(values),
-    });
+  const handleUpdateAndEnable = async (values: any[]): Promise<boolean> => {
+    if (!selectedPlugin) return false;
+    let result = null;
+    try {
+      setDrawerVisible(false);
+      result = await updateAndEnableClientConfig({
+        uid: selectedPlugin.uid,
+        configParamJson: JSON.stringify(values),
+      });
+    } catch (error) {
+      message.error('操作失败');
+      return false;
+    }
     if (result) {
       message.success('更新成功');
-      fetchPluginList();
-    } else {
-      message.error('更新失败');
+      refreshPluginList();
+      return true;
     }
+    message.error('更新失败');
+    return false;
   };
 
   /**
    * 停用插件处理函数
    */
-  const handleDisable = async () => {
-    if (!selectedPlugin?.uid) return;
+  const handleDisable = async (): Promise<boolean> => {
+    if (!selectedPlugin?.uid) return false;
+
+    let result = null;
 
     try {
       // 如果是已发布状态，调用下线接口
-      const result = await disableClientConfig(selectedPlugin.uid);
-      if (result) {
-        message.success('插件已下线');
-        setDrawerVisible(false);
-        fetchPluginList();
-      } else {
-        message.error('下线失败');
-      }
+      result = await disableClientConfig(selectedPlugin.uid);
     } catch (error) {
-      console.error('停用插件失败:', error);
-      message.error('操作失败');
+      message.error('下线失败');
+      return false;
     }
+    if (result) {
+      message.success('已下线');
+      setDrawerVisible(false);
+      refreshPluginList();
+      return true;
+    }
+    message.error('下线失败');
+    return false;
   };
 
   /**
@@ -297,7 +314,7 @@ export default function EcosystemPlugin() {
   };
 
   const refreshPluginListAndReset = () => {
-    fetchPluginList();
+    refreshPluginList();
     setShareModalVisible(false);
     setEditingPlugin(null);
   };
@@ -383,23 +400,13 @@ export default function EcosystemPlugin() {
     });
   };
   const handleShareStatusChange = (value: number) => {
-    setPagination({ current: 1, pageSize: 12 });
-    fetchPluginList({
-      tabType: activeTab,
-      keyword: searchKeyword,
-      page: 1,
-      pageSize: 12,
+    refreshPluginList({
       shareStatus: value,
     });
   };
 
   const handleCategoryChange = (value: string) => {
-    setPagination({ current: 1, pageSize: 12 });
-    fetchPluginList({
-      tabType: activeTab,
-      keyword: searchKeyword,
-      page: 1,
-      pageSize: 12,
+    refreshPluginList({
       categoryCode: value === '' ? undefined : value,
     });
   };
@@ -546,7 +553,7 @@ export default function EcosystemPlugin() {
     const result = await offlineClientConfig(uid);
     if (result) {
       message.success('插件已下线');
-      fetchPluginList();
+      refreshPluginList();
     } else {
       message.error('下线失败');
     }
@@ -613,6 +620,8 @@ export default function EcosystemPlugin() {
                   下一页
                 </Button>
               </div>
+            ) : loading ? (
+              <div style={{ width: '100%', height: 240 }}></div>
             ) : (
               <Empty description="暂无数据" />
             )}
