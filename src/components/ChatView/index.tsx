@@ -82,6 +82,21 @@ window.showImageInModal = function (imgSrc: string) {
   overlay.appendChild(zoomedImg);
   document.body.appendChild(overlay);
 
+  // 监听滚轮事件
+  overlay.addEventListener('wheel', (e) => {
+    e.preventDefault(); // 阻止默认页面滚动行为
+    const defaultScale = String(
+      window
+        .getComputedStyle(zoomedImg)
+        .transform.match(/scale\(([\d.]+)\)/)?.[1],
+    ); // 默认缩放比例
+    // 获取当前缩放比例（若无transform，则默认为1）
+    const currentScale = parseFloat(defaultScale) || 1;
+    // 滚轮向上则放大，向下则缩小（deltaY 为负是向上滚动）
+    const newScale = e.deltaY < 0 ? currentScale + 0.3 : currentScale - 0.4;
+    zoomedImg.style.transform = `scale(${newScale})`;
+  });
+
   // 触发动画
   setTimeout(() => {
     overlay.style.opacity = '1';

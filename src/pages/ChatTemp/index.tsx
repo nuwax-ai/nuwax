@@ -664,6 +664,7 @@ const ChatTemp: React.FC = () => {
               styles['welcome-text'],
               'text-ellipsis',
               'cursor-pointer',
+              'clip-path-animation',
             )}
             onClick={handleSiteLink}
           >{`欢迎使用${tenantConfigInfo?.siteName}平台，快速搭建你的个性化智能体`}</p>

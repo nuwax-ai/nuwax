@@ -407,8 +407,9 @@ export interface AgentComponentInfo {
   bindConfig: any;
   // 关联的组件ID
   targetId: number;
+  spaceId: number;
   // 组件原始配置
-  targetConfig: string;
+  targetConfig: any;
   exceptionOut: string;
   fallbackMsg: string;
   modified: string;
