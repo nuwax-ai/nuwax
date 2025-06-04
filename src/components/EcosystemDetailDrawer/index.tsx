@@ -111,10 +111,22 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     }
   }, [visible, data, form]);
 
+  useEffect(() => {
+    //fix: 打开抽屉时，隐藏横向滚动条
+    if (visible) {
+      document.body.style.overflowX = 'hidden';
+    } else {
+      document.body.style.overflowX = '';
+    }
+    return () => {
+      document.body.style.overflowX = '';
+    };
+  }, [visible]);
+
   const handleClose = () => {
     form.resetFields(); // 关闭时重置表单
-    onClose();
     setConfigParam([]);
+    onClose();
   };
 
   useEffect(() => {
