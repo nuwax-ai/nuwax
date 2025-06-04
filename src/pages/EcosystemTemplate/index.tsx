@@ -35,9 +35,21 @@ import {
   EcosystemSubTabTypeEnum,
   EcosystemUseStatusEnum,
 } from '@/types/interfaces/ecosystem';
-import { PlusOutlined } from '@ant-design/icons';
-import type { TabsProps } from 'antd';
-import { App, Button, Card, Col, Empty, Input, Row, Spin, Tabs } from 'antd';
+import { DownOutlined } from '@ant-design/icons';
+import {
+  App,
+  Button,
+  Card,
+  Col,
+  Dropdown,
+  Empty,
+  Input,
+  Row,
+  Space,
+  Spin,
+  Tabs,
+  TabsProps,
+} from 'antd';
 import classNames from 'classnames';
 import { useCallback, useEffect, useState } from 'react';
 import styles from './index.less';
@@ -69,6 +81,24 @@ export default function EcosystemTemplate() {
   const [editingPlugin, setEditingPlugin] = useState<ClientConfigVo | null>(
     null,
   );
+  const [selectComponentProps, setSelectComponentProps] = useState<{
+    checkTag: AgentComponentTypeEnum;
+    hideTop: AgentComponentTypeEnum[];
+  }>({
+    checkTag: AgentComponentTypeEnum.Workflow,
+    hideTop: [
+      AgentComponentTypeEnum.Table,
+      AgentComponentTypeEnum.Knowledge,
+      AgentComponentTypeEnum.Plugin,
+    ],
+  });
+  const [shareModalProps, setShareModalProps] = useState<{
+    targetType: AgentComponentTypeEnum;
+    type: EcosystemDataTypeEnum;
+  }>({
+    targetType: AgentComponentTypeEnum.Workflow,
+    type: EcosystemDataTypeEnum.TEMPLATE,
+  });
 
   // 数据状态
   const [loading, setLoading] = useState<boolean>(false);
@@ -259,7 +289,28 @@ export default function EcosystemTemplate() {
   /**
    * 创建分享
    */
-  const handleCreateShare = () => {
+  const handleCreateShare = (type: AgentComponentTypeEnum) => {
+    setSelectComponentProps({
+      checkTag: type,
+      hideTop:
+        type === AgentComponentTypeEnum.Workflow
+          ? [
+              AgentComponentTypeEnum.Table,
+              AgentComponentTypeEnum.Knowledge,
+              AgentComponentTypeEnum.Plugin,
+              AgentComponentTypeEnum.Agent,
+            ]
+          : [
+              AgentComponentTypeEnum.Workflow,
+              AgentComponentTypeEnum.Table,
+              AgentComponentTypeEnum.Knowledge,
+              AgentComponentTypeEnum.Plugin,
+            ],
+    });
+    setShareModalProps({
+      targetType: type,
+      type: EcosystemDataTypeEnum.TEMPLATE,
+    });
     setIsEditMode(false);
     setEditingPlugin(null);
     setShareModalVisible(true);
@@ -274,7 +325,10 @@ export default function EcosystemTemplate() {
   /**
    * 保存分享
    */
-  const handleSaveShare = async (values: any, isDraft: boolean) => {
+  const handleSaveShare = async (
+    values: any,
+    isDraft: boolean,
+  ): Promise<boolean> => {
     try {
       const params: ClientConfigSaveReqDTO | ClientConfigUpdateDraftReqDTO = {
         name: values.name,
@@ -320,12 +374,15 @@ export default function EcosystemTemplate() {
       if (result) {
         message.success(isEditMode ? '更新成功' : '创建成功');
         refreshPluginListAndReset();
+        return true;
       } else {
         message.error('操作失败');
+        return false;
       }
     } catch (error) {
       console.error('保存分享失败:', error);
       message.error('操作失败');
+      return false;
     }
   };
 
@@ -349,17 +406,33 @@ export default function EcosystemTemplate() {
   /**
    * 渲染右侧操作区域
    */
+  const menuProps = {
+    items: [
+      {
+        key: AgentComponentTypeEnum.Workflow,
+        label: '工作流',
+      },
+      {
+        key: AgentComponentTypeEnum.Agent,
+        label: '智能体',
+      },
+    ],
+    onClick: (e: any) => {
+      handleCreateShare(e.key);
+    },
+  };
   const renderExtraContent = () => {
     if (activeTab === 'shared') {
+      // 支持两种类型 工作流 与 智能体
       return (
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleCreateShare}
-          className={cx(styles.createShareButton)}
-        >
-          创建分享
-        </Button>
+        <Dropdown menu={menuProps}>
+          <Button type="primary">
+            <Space>
+              创建分享
+              <DownOutlined />
+            </Space>
+          </Button>
+        </Dropdown>
       );
     }
     return null;
@@ -392,7 +465,6 @@ export default function EcosystemTemplate() {
     item.type = item.targetType;
     item.typeId = item.targetId;
     setShow(false);
-    // TODO 设置 工作流 默认图标
     setShareModalData({
       icon: item.icon,
       name: item.name,
@@ -426,7 +498,7 @@ export default function EcosystemTemplate() {
         uid: config.uid,
         name: config.name || '',
         description: config.description || '',
-        targetType: targetType || '',
+        targetType: targetType as AgentComponentTypeEnum,
         targetId: (config.targetId || '').toString(),
         author: config.author || '',
         publishDoc: config.publishDoc || '',
@@ -553,7 +625,6 @@ export default function EcosystemTemplate() {
 
       {/* 插件分享弹窗 */}
       <EcosystemShareModal
-        type={EcosystemDataTypeEnum.TEMPLATE}
         visible={shareModalVisible}
         isEdit={isEditMode}
         onClose={handleCloseShareModal}
@@ -567,19 +638,15 @@ export default function EcosystemTemplate() {
           setShareModalData(null);
           setAddComponents([]);
         }}
+        {...shareModalProps}
       />
       {/*添加插件、工作流、知识库、数据库弹窗*/}
       <SelectComponent
-        checkTag={AgentComponentTypeEnum.Workflow}
         onAdded={onSelectedComponent}
         open={show}
         onCancel={() => setShow(false)}
         addComponents={addComponents}
-        hideTop={[
-          AgentComponentTypeEnum.Table,
-          AgentComponentTypeEnum.Knowledge,
-          AgentComponentTypeEnum.Plugin,
-        ]}
+        {...selectComponentProps}
       />
     </div>
   );

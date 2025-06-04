@@ -273,7 +273,10 @@ export default function EcosystemPlugin() {
   /**
    * 保存分享
    */
-  const handleSaveShare = async (values: any, isDraft: boolean) => {
+  const handleSaveShare = async (
+    values: any,
+    isDraft: boolean,
+  ): Promise<boolean> => {
     try {
       const params: ClientConfigSaveReqDTO | ClientConfigUpdateDraftReqDTO = {
         name: values.name,
@@ -319,12 +322,15 @@ export default function EcosystemPlugin() {
       if (result) {
         message.success(isEditMode ? '更新成功' : '创建成功');
         refreshPluginListAndReset();
+        return true;
       } else {
         message.error('操作失败');
+        return false;
       }
     } catch (error) {
       console.error('保存分享失败:', error);
       message.error('操作失败');
+      return false;
     }
   };
 
@@ -555,6 +561,7 @@ export default function EcosystemPlugin() {
       {/* 插件分享弹窗 */}
       <EcosystemShareModal
         type={EcosystemDataTypeEnum.PLUGIN}
+        targetType={AgentComponentTypeEnum.Plugin}
         visible={shareModalVisible}
         isEdit={isEditMode}
         onClose={handleCloseShareModal}
