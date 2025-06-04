@@ -1,3 +1,5 @@
+import { COMPONENT_LIST } from '@/constants/ecosystem.constants';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CloseOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import {
   Button,
@@ -19,7 +21,7 @@ export interface EcosystemDetailDrawerProps {
   /** 是否显示抽屉 */
   visible: boolean;
   /** 插件详情数据 */
-  plugin?: any;
+  data?: EcosystemDetailDrawerData;
   /** 关闭抽屉回调 */
   onClose: () => void;
   /** 更新配置并启用回调 */
@@ -28,13 +30,44 @@ export interface EcosystemDetailDrawerProps {
   onDisable?: () => void;
 }
 
+enum OwnedFlagEnum {
+  NO = 0,
+  YES = 1,
+}
+
+export interface EcosystemDetailDrawerData {
+  /** 插件图标URL */
+  icon: string;
+  /** 插件作者 */
+  author: string;
+  /** 插件标题 */
+  title: string;
+  /** 插件描述 */
+  description: string;
+  /** 自定义类名 */
+  className?: string;
+  /** 是否启用 */
+  isEnabled?: boolean;
+  /** 使用文档 */
+  publishDoc?: string;
+  /** 是否是新版本 */
+  isNewVersion?: boolean;
+  /** 配置信息 */
+  configParamJson: string;
+  /** 本地配置信息(之前 版本) */
+  localConfigParamJson?: string;
+  /** 是否我的分享,0:否(生态市场获取的);1:是(我的分享)*/
+  ownedFlag?: OwnedFlagEnum;
+  /** 组件类型 */
+  targetType: AgentComponentTypeEnum;
+}
 /**
  * 插件详情抽屉组件
  * 右侧划出的插件详情展示
  */
 const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   visible,
-  plugin,
+  data,
   onClose,
   onUpdateAndEnable,
   onDisable,
@@ -49,7 +82,9 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     localConfigParamJson,
     isNewVersion,
     author,
-  } = plugin || {};
+    ownedFlag,
+    targetType,
+  } = data || {};
   const [configParam, setConfigParam] = useState<any>([]);
   const [showToolSection, setShowToolSection] = useState(false);
   const [needUpdateButton, setNeedUpdateButton] = useState(false);
@@ -66,15 +101,15 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
 
   // 监听插件数据变化，设置表单初始值
   useEffect(() => {
-    if (visible && plugin?.configParamJson) {
+    if (visible && data?.configParamJson) {
       try {
-        const configParams = JSON.parse(plugin.configParamJson);
+        const configParams = JSON.parse(data.configParamJson);
         form.setFieldsValue(configParams);
       } catch (error) {
         console.error('解析配置参数失败:', error);
       }
     }
-  }, [visible, plugin, form]);
+  }, [visible, data, form]);
 
   const handleClose = () => {
     form.resetFields(); // 关闭时重置表单
@@ -143,7 +178,48 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     };
   }, [isNewVersion, isEnabled, configParam]);
 
-  if (!plugin) return null;
+  if (!data) return null;
+
+  const renderButton = () => {
+    if (ownedFlag === OwnedFlagEnum.YES) {
+      return <></>;
+    }
+    return (
+      <>
+        {needUpdateButton && (
+          <Button
+            type="primary"
+            className={cx(styles.actionButton)}
+            size="large"
+            onClick={handleEnable}
+          >
+            {isEnabled
+              ? showToolSection
+                ? '更新配置'
+                : '更新'
+              : showToolSection
+              ? '保存配置并启用'
+              : '启用'}
+          </Button>
+        )}
+        {isEnabled && (
+          <Button
+            className={cx(styles.actionButton)}
+            size="large"
+            onClick={onDisable}
+            iconPosition="end"
+            icon={
+              <Tooltip title="停用">
+                <InfoCircleOutlined />
+              </Tooltip>
+            }
+          >
+            停用
+          </Button>
+        )}
+      </>
+    );
+  };
 
   return (
     <Drawer
@@ -159,7 +235,16 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
       <div className={cx(styles.drawerHeader)}>
         <div className={cx(styles.titleArea)}>
           <div className={cx(styles.iconWrapper)}>
-            <img src={icon} alt={title} className={cx(styles.icon)} />
+            <img
+              src={
+                icon ||
+                COMPONENT_LIST.find((item: any) => item.type === targetType)
+                  ?.defaultImage ||
+                'https://agent-1251073634.cos.ap-chengdu.myqcloud.com/store/b5fdb62e8b994a418d0fdfae723ee827.png'
+              }
+              alt={title}
+              className={cx(styles.icon)}
+            />
             {isEnabled && <ActivatedIcon enabled={isEnabled} />}
           </div>
           <div className={cx(styles.titleContent)}>
@@ -215,39 +300,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
           </Form>
         )}
       </div>
-      <div className={cx(styles.actions)}>
-        {needUpdateButton && (
-          <Button
-            type="primary"
-            className={cx(styles.actionButton)}
-            size="large"
-            onClick={handleEnable}
-          >
-            {isEnabled
-              ? showToolSection
-                ? '更新配置'
-                : '更新'
-              : showToolSection
-              ? '保存配置并启用'
-              : '启用'}
-          </Button>
-        )}
-        {isEnabled && (
-          <Button
-            className={cx(styles.actionButton)}
-            size="large"
-            onClick={onDisable}
-            iconPosition="end"
-            icon={
-              <Tooltip title="停用">
-                <InfoCircleOutlined />
-              </Tooltip>
-            }
-          >
-            停用
-          </Button>
-        )}
-      </div>
+      <div className={cx(styles.actions)}>{renderButton()}</div>
     </Drawer>
   );
 };

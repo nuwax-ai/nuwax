@@ -1,3 +1,5 @@
+import { COMPONENT_LIST } from '@/constants/ecosystem.constants';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { EcosystemShareStatusEnum } from '@/types/interfaces/ecosystem';
 import { Card } from 'antd';
 import classNames from 'classnames';
@@ -36,6 +38,8 @@ export interface EcosystemCardProps {
   configParamJson: string;
   /** 本地配置信息(之前 版本) */
   localConfigParamJson?: string;
+  /** 组件类型 */
+  targetType: AgentComponentTypeEnum;
 }
 
 /**
@@ -54,6 +58,7 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
   isEnabled,
   shareStatus,
   isNewVersion,
+  targetType,
 }) => {
   return (
     <Card
@@ -63,7 +68,16 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
     >
       <div className={cx(styles.cardContent)}>
         <div className={cx(styles.iconWrapper)}>
-          <img src={icon} alt={title} className={styles.icon} />
+          <img
+            src={
+              icon ||
+              COMPONENT_LIST.find((item) => item.type === targetType)
+                ?.defaultImage ||
+              'https://agent-1251073634.cos.ap-chengdu.myqcloud.com/store/b5fdb62e8b994a418d0fdfae723ee827.png'
+            }
+            alt={title}
+            className={styles.icon}
+          />
           {isEnabled && <ActivatedIcon enabled={isEnabled} />}
         </div>
         <div className={cx(styles.infoWrapper)}>

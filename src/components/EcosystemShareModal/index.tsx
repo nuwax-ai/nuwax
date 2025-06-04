@@ -1,4 +1,5 @@
 import { SkillList } from '@/components/Skill';
+import { apiPublishedAgentInfo } from '@/services/agentDev';
 import {
   apiPublishedPluginInfo,
   apiPublishedWorkflowInfo,
@@ -38,8 +39,8 @@ export interface EcosystemShareModalProps {
   isEdit?: boolean;
   onClose: () => void;
   onSave: (values: any, isDraft: boolean) => void;
-  onAddPlugin: () => void;
-  onRemovePlugin: () => void;
+  onAddComponent: () => void;
+  onRemoveComponent: () => void;
   onOffline: (uid: string) => void;
   data?: EcosystemShareModalData | null;
 }
@@ -48,8 +49,8 @@ export interface EcosystemShareModalData {
   uid?: string;
   name?: string;
   description?: string;
-  targetType?: string;
-  targetId?: string;
+  targetType: string;
+  targetId: string;
   categoryCode?: string;
   categoryName?: string;
   author?: string;
@@ -95,21 +96,35 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
   isEdit = false,
   onClose,
   onSave,
-  onAddPlugin,
+  onAddComponent,
   onOffline,
-  onRemovePlugin,
+  onRemoveComponent,
   data,
 }) => {
   const isPlugin = type === EcosystemDataTypeEnum.PLUGIN;
   const [form] = Form.useForm();
   const [configParam, setConfigParam] = useState<PluginParam[]>([]);
-  const { run: runGetPlugDetail, data: pluginDetail } = useRequest(
-    isPlugin ? apiPublishedPluginInfo : apiPublishedWorkflowInfo,
+  const getDetailApi = (targetType: string | undefined) => {
+    if (targetType === AgentComponentTypeEnum.Plugin) {
+      return apiPublishedPluginInfo;
+    }
+    if (targetType === AgentComponentTypeEnum.Agent) {
+      return apiPublishedAgentInfo;
+    }
+    if (targetType === AgentComponentTypeEnum.Workflow) {
+      return apiPublishedWorkflowInfo;
+    }
+    return apiPublishedWorkflowInfo;
+  };
+
+  const { run: runGetDetail, data: detail } = useRequest(
+    getDetailApi(data?.targetType),
     {
       manual: true,
       debounceInterval: 300,
     },
   );
+
   const [tableData, setTableData] = useState<any[]>([]);
 
   // 完整的重置函数
@@ -174,12 +189,13 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
         {
           ...rest,
           ...plugin,
-          categoryCode: pluginDetail?.category,
-          categoryName: pluginDetail?.category,
+          categoryCode: detail?.category,
+          categoryName: detail?.category,
           configParamJson: JSON.stringify(configParam),
         },
         isDraft,
       );
+      handleReset();
     } catch (error) {
       console.log('保存失败', error);
     }
@@ -242,17 +258,15 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
 
   useEffect(() => {
     if (visible && data?.targetId) {
-      runGetPlugDetail(data?.targetId);
+      runGetDetail(data?.targetId);
     }
-  }, [visible, data?.targetId, runGetPlugDetail]);
+  }, [visible, data?.targetId, runGetDetail]);
 
   useEffect(() => {
-    if (pluginDetail) {
-      setTableData(
-        setFullName('', addParentName(pluginDetail?.inputArgs || [])),
-      );
+    if (detail) {
+      setTableData(setFullName('', addParentName(detail?.inputArgs || [])));
     }
-  }, [pluginDetail]);
+  }, [detail]);
 
   useEffect(() => {
     if (configParam.length > 0 && tableData.length > 0) {
@@ -329,7 +343,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                   style={{ marginLeft: 10 }}
                   icon={<PlusOutlined />}
                   onClick={() => {
-                    onAddPlugin();
+                    onAddComponent();
                   }}
                 />
               </Popover>
@@ -362,7 +376,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                     <div
                       className={cx(styles.pluginItemStyle)}
                       onClick={() => {
-                        onAddPlugin();
+                        onAddComponent();
                       }}
                     >
                       请先选择插件
@@ -387,7 +401,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                       ]}
                       skillName={'skillComponentConfigs'}
                       form={form}
-                      removeItem={onRemovePlugin}
+                      removeItem={onRemoveComponent}
                       modifyItem={() => {}}
                     />
                   </div>
