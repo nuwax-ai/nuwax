@@ -1,4 +1,5 @@
 import { SkillList } from '@/components/Skill';
+import { COMPONENT_LIST } from '@/constants/ecosystem.constants';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import {
   apiPublishedPluginInfo,
@@ -35,10 +36,11 @@ export interface PluginParam {
 
 export interface EcosystemShareModalProps {
   type: EcosystemDataTypeEnum;
+  targetType: AgentComponentTypeEnum;
   visible: boolean;
   isEdit?: boolean;
   onClose: () => void;
-  onSave: (values: any, isDraft: boolean) => void;
+  onSave: (values: any, isDraft: boolean) => Promise<boolean>;
   onAddComponent: () => void;
   onRemoveComponent: () => void;
   onOffline: (uid: string) => void;
@@ -49,7 +51,7 @@ export interface EcosystemShareModalData {
   uid?: string;
   name?: string;
   description?: string;
-  targetType: string;
+  targetType: AgentComponentTypeEnum;
   targetId: string;
   categoryCode?: string;
   categoryName?: string;
@@ -92,6 +94,7 @@ const setFullName = (parentName: string, inputArgs: any[]): any[] => {
 
 const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
   type,
+  targetType,
   visible,
   isEdit = false,
   onClose,
@@ -104,6 +107,10 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
   const isPlugin = type === EcosystemDataTypeEnum.PLUGIN;
   const [form] = Form.useForm();
   const [configParam, setConfigParam] = useState<PluginParam[]>([]);
+  const [suffixInfo, setSuffixInfo] = useState<any>({
+    name: '插件',
+    targetType: AgentComponentTypeEnum.Plugin,
+  });
   const getDetailApi = (targetType: string | undefined) => {
     if (targetType === AgentComponentTypeEnum.Plugin) {
       return apiPublishedPluginInfo;
@@ -118,7 +125,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
   };
 
   const { run: runGetDetail, data: detail } = useRequest(
-    getDetailApi(data?.targetType),
+    getDetailApi(targetType),
     {
       manual: true,
       debounceInterval: 300,
@@ -129,51 +136,57 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
 
   // 完整的重置函数
   const handleReset = () => {
-    form.resetFields();
+    form?.resetFields();
     setTableData([]);
     setConfigParam([]);
   };
 
   // 监听弹窗显示状态变化
   useEffect(() => {
-    console.log('visible', visible);
-    if (visible) {
-      console.log('data', data);
-
-      // 弹窗打开时，如果有数据则初始化，否则清空
-      if (data) {
-        // 初始化表单数据
-        form.setFieldsValue({
-          uid: data.uid,
-          plugin: {
-            name: data.name,
-            description: data.description,
-            targetType: data.targetType,
-            targetId: data.targetId,
-            icon: data.icon,
-          },
-          author: data.author,
-          publishDoc: data.publishDoc,
-        });
-
-        if (data.configParamJson) {
-          try {
-            const parsedConfig = JSON.parse(data.configParamJson);
-            setConfigParam(
-              parsedConfig.map((item: any) => ({
-                name: item.name,
-                description: item.description,
-                value: item.value || '',
-              })),
-            );
-          } catch (error) {
-            console.error('解析配置参数失败:', error);
-            setConfigParam([]);
-          }
+    if (visible && data) {
+      // 初始化表单数据
+      form.setFieldsValue({
+        uid: data.uid,
+        plugin: {
+          name: data.name,
+          description: data.description,
+          targetType: data.targetType,
+          targetId: data.targetId,
+          icon: data.icon,
+        },
+        author: data.author,
+        publishDoc: data.publishDoc,
+      });
+      if (data.configParamJson) {
+        try {
+          const parsedConfig = JSON.parse(data.configParamJson);
+          setConfigParam(
+            parsedConfig.map((item: any) => ({
+              name: item.name,
+              description: item.description,
+              value: item.value || '',
+            })),
+          );
+        } catch (error) {
+          console.error('解析配置参数失败:', error);
+          setConfigParam([]);
         }
       }
     }
+    return () => {
+      handleReset();
+    };
   }, [visible, data, form]);
+
+  useEffect(() => {
+    if (targetType && visible) {
+      setSuffixInfo({
+        name: COMPONENT_LIST.find((item: any) => item.type === targetType)
+          ?.text,
+        targetType,
+      });
+    }
+  }, [targetType, visible]);
 
   const handleClose = () => {
     // 关闭前立即清除数据
@@ -185,7 +198,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
     try {
       const values = await form.validateFields();
       const { plugin, ...rest } = values;
-      onSave(
+      const result = await onSave(
         {
           ...rest,
           ...plugin,
@@ -195,7 +208,9 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
         },
         isDraft,
       );
-      handleReset();
+      if (result) {
+        handleClose();
+      }
     } catch (error) {
       console.log('保存失败', error);
     }
@@ -276,7 +291,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
       });
       setConfigParam(newConfigParam);
     }
-  }, [tableData]);
+  }, [tableData, configParam]);
 
   const renderActionButton = (data?: EcosystemShareModalData | null) => {
     if (!data) {
@@ -335,8 +350,11 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
               className={cx(styles.sectionTitle)}
               style={{ display: 'flex', alignItems: 'center' }}
             >
-              <div>插件信息</div>
-              <Popover content={<div>添加插件</div>} trigger="hover">
+              <div>{`${suffixInfo.name}信息`}</div>
+              <Popover
+                content={<div>添加{suffixInfo.name}</div>}
+                trigger="hover"
+              >
                 <Button
                   type="text"
                   size="small"
@@ -356,7 +374,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
             {/* 隐藏的表单项用于存储 plugin 值 */}
             <Form.Item
               name="plugin"
-              rules={[{ required: true, message: '请选择插件' }]}
+              rules={[{ required: true, message: `请选择${suffixInfo.name}` }]}
               hidden
             >
               <Input type="hidden" />
@@ -379,7 +397,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                         onAddComponent();
                       }}
                     >
-                      请先选择插件
+                      {`请先选择${suffixInfo.name}`}
                     </div>
                   );
                 }
@@ -393,9 +411,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                           icon: pluginValue.icon,
                           targetId: pluginValue.targetId || '',
                           targetType: pluginValue.targetType || '',
-                          type: isPlugin
-                            ? AgentComponentTypeEnum.Plugin
-                            : AgentComponentTypeEnum.Workflow,
+                          type: pluginValue.targetType,
                           statistics: null,
                         },
                       ]}

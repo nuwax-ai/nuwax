@@ -1,3 +1,4 @@
+import agentImage from '@/assets/images/agent_image.png';
 import databaseImage from '@/assets/images/database_image.png';
 import knowledgeImage from '@/assets/images/knowledge_image.png';
 import modelImage from '@/assets/images/model_image.png';
@@ -61,6 +62,11 @@ export const COMPONENT_LIST: {
     type: AgentComponentTypeEnum.Model,
     defaultImage: modelImage,
     text: '模型',
+  },
+  {
+    type: AgentComponentTypeEnum.Agent,
+    defaultImage: agentImage,
+    text: '智能体',
   },
   {
     type: AgentComponentTypeEnum.Variable,
