@@ -3,10 +3,12 @@ import EcosystemCard from '@/components/EcosystemCard';
 import PluginDetailDrawer, {
   EcosystemDetailDrawerData,
 } from '@/components/EcosystemDetailDrawer';
+import SelectCategory from '@/components/EcosystemSelectCategory';
 import EcosystemShareModal, {
   EcosystemShareModalData,
 } from '@/components/EcosystemShareModal';
 import SelectComponent from '@/components/SelectComponent';
+import { TabItems, TabTypeEnum } from '@/constants/ecosystem.constants';
 import {
   createClientConfigDraft,
   disableClientConfig,
@@ -28,6 +30,8 @@ import type {
   ClientConfigSaveReqDTO,
   ClientConfigUpdateDraftReqDTO,
   ClientConfigVo,
+  EcosystemTabTypeEnum,
+  FetchPluginListParams,
   IPageClientConfigVo,
 } from '@/types/interfaces/ecosystem';
 import {
@@ -36,14 +40,24 @@ import {
   EcosystemSubTabTypeEnum,
   EcosystemUseStatusEnum,
 } from '@/types/interfaces/ecosystem';
-import { PlusOutlined } from '@ant-design/icons';
-import type { TabsProps } from 'antd';
-import { App, Button, Card, Col, Empty, Input, Row, Spin, Tabs } from 'antd';
+import {
+  App,
+  Button,
+  Card,
+  Col,
+  Empty,
+  Input,
+  Row,
+  Select,
+  Spin,
+  Tabs,
+} from 'antd';
 import classNames from 'classnames';
 import { useCallback, useEffect, useState } from 'react';
 import styles from './index.less';
 const cx = classNames.bind(styles);
 const { Search } = Input;
+
 /**
  * 生态市场插件页面
  * 展示插件列表，包括全部、已启用和我的分享三个标签页
@@ -53,7 +67,9 @@ export default function EcosystemPlugin() {
   // 搜索关键词
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   // 当前激活的标签页
-  const [activeTab, setActiveTab] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<EcosystemTabTypeEnum>(
+    TabTypeEnum.ALL,
+  );
   // 插件详情抽屉是否可见
   const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
   // 当前选中的插件
@@ -90,10 +106,14 @@ export default function EcosystemPlugin() {
    */
   const fetchPluginList = useCallback(
     async (
-      tabType: string = activeTab,
-      keyword: string = searchKeyword,
-      page: number = pagination.current,
-      pageSize: number = pagination.pageSize,
+      {
+        tabType,
+        keyword = '',
+        page = 1,
+        pageSize = 12,
+        shareStatus = -1,
+        categoryCode = '',
+      }: FetchPluginListParams = {} as FetchPluginListParams,
     ) => {
       setLoading(true);
 
@@ -101,13 +121,13 @@ export default function EcosystemPlugin() {
         // 根据标签页类型确定查询参数
         let subTabType: number;
         switch (tabType) {
-          case 'all':
+          case TabTypeEnum.ALL:
             subTabType = EcosystemSubTabTypeEnum.ALL;
             break;
-          case 'enabled':
+          case TabTypeEnum.ENABLED:
             subTabType = EcosystemSubTabTypeEnum.ENABLED;
             break;
-          case 'shared':
+          case TabTypeEnum.SHARED:
             subTabType = EcosystemSubTabTypeEnum.MY_SHARE;
             break;
           default:
@@ -119,6 +139,8 @@ export default function EcosystemPlugin() {
             dataType: EcosystemDataTypeEnum.PLUGIN, // 只查询插件类型
             subTabType,
             name: keyword || undefined,
+            shareStatus: shareStatus === -1 ? undefined : shareStatus,
+            categoryCode: categoryCode || undefined,
           },
           current: page,
           pageSize,
@@ -154,7 +176,12 @@ export default function EcosystemPlugin() {
    */
   useEffect(() => {
     setPagination({ current: 1, pageSize: 12 });
-    fetchPluginList(activeTab, searchKeyword, 1, 12);
+    fetchPluginList({
+      tabType: activeTab,
+      keyword: searchKeyword,
+      page: 1,
+      pageSize: 12,
+    });
   }, [activeTab]);
 
   /**
@@ -162,8 +189,8 @@ export default function EcosystemPlugin() {
    */
   const convertToPluginCard = (config: ClientConfigVo): EcosystemCardProps => {
     // 根据分享状态确定标签
-    const isMyShare = activeTab === 'shared';
-    const isAll = activeTab === 'all';
+    const isMyShare = activeTab === TabTypeEnum.SHARED;
+    const isAll = activeTab === TabTypeEnum.ALL;
     return {
       icon: config.icon || '',
       title: config.name || '未命名插件',
@@ -205,7 +232,12 @@ export default function EcosystemPlugin() {
   const handleSearch = (value: string) => {
     setSearchKeyword(value);
     setPagination({ current: 1, pageSize: 12 });
-    fetchPluginList(activeTab, value, 1, 12);
+    fetchPluginList({
+      tabType: activeTab,
+      keyword: value,
+      page: 1,
+      pageSize: 12,
+    });
   };
 
   /**
@@ -343,49 +375,99 @@ export default function EcosystemPlugin() {
       pageSize: pageSize || pagination.pageSize,
     };
     setPagination(newPagination);
-    fetchPluginList(
-      activeTab,
-      searchKeyword,
+    fetchPluginList({
+      tabType: activeTab,
+      keyword: searchKeyword,
       page,
-      pageSize || pagination.pageSize,
-    );
+      pageSize: pageSize || pagination.pageSize,
+    });
+  };
+  const handleShareStatusChange = (value: number) => {
+    setPagination({ current: 1, pageSize: 12 });
+    fetchPluginList({
+      tabType: activeTab,
+      keyword: searchKeyword,
+      page: 1,
+      pageSize: 12,
+      shareStatus: value,
+    });
   };
 
+  const handleCategoryChange = (value: string) => {
+    setPagination({ current: 1, pageSize: 12 });
+    fetchPluginList({
+      tabType: activeTab,
+      keyword: searchKeyword,
+      page: 1,
+      pageSize: 12,
+      categoryCode: value === '' ? undefined : value,
+    });
+  };
   /**
    * 渲染右侧操作区域
    */
   const renderExtraContent = () => {
-    if (activeTab === 'shared') {
+    if (activeTab === TabTypeEnum.SHARED) {
       return (
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleCreateShare}
-          className={cx(styles.createShareButton)}
-        >
-          创建分享
-        </Button>
+        <div className={cx(styles.headerRight)}>
+          <Select
+            options={[
+              {
+                label: '全部',
+                value: -1,
+              },
+              {
+                label: '已发布',
+                value: 3,
+              },
+              {
+                label: '审核中',
+                value: 2,
+              },
+              {
+                label: '已下线',
+                value: 4,
+              },
+            ]}
+            defaultValue={-1}
+            onChange={(value) => handleShareStatusChange(value)}
+            className={cx(styles.select)}
+          />
+          <Search
+            className={cx(styles.searchInput)}
+            placeholder="搜索插件"
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            onSearch={handleSearch}
+            allowClear
+          />
+          <Button
+            type="primary"
+            onClick={handleCreateShare}
+            className={cx(styles.createShareButton)}
+          >
+            创建分享
+          </Button>
+        </div>
       );
     }
-    return null;
+    return (
+      <div className={cx(styles.headerRight)}>
+        <SelectCategory
+          targetType={AgentComponentTypeEnum.Plugin}
+          onChange={(value) => handleCategoryChange(value)}
+        />
+        <Search
+          className={cx(styles.searchInput)}
+          placeholder="搜索插件"
+          value={searchKeyword}
+          onChange={(e) => setSearchKeyword(e.target.value)}
+          onSearch={handleSearch}
+          allowClear
+        />
+      </div>
+    );
   };
-
-  // 配置 Tabs 的 items
-  const tabItems: TabsProps['items'] = [
-    {
-      key: 'all',
-      label: `全部`,
-    },
-    {
-      key: 'enabled',
-      label: `已启用`,
-    },
-    {
-      key: 'shared',
-      label: `我的分享`,
-    },
-  ];
-
   const [show, setShow] = useState(false);
   const [shareModalData, setShareModalData] =
     useState<EcosystemShareModalData | null>(null);
@@ -430,7 +512,7 @@ export default function EcosystemPlugin() {
         uid: config.uid,
         name: config.name || '',
         description: config.description || '',
-        targetType: targetType || '',
+        targetType: targetType as AgentComponentTypeEnum,
         targetId: (config.targetId || '').toString(),
         author: config.author || '',
         publishDoc: config.publishDoc || '',
@@ -486,22 +568,13 @@ export default function EcosystemPlugin() {
         <div className={cx(styles.header)}>
           <Tabs
             activeKey={activeTab}
-            onChange={setActiveTab}
+            onChange={(value: string) =>
+              setActiveTab(value as EcosystemTabTypeEnum)
+            }
             className={cx(styles.tabs)}
-            items={tabItems}
+            items={TabItems}
           />
-
-          <div className={cx(styles.headerRight)}>
-            {renderExtraContent()}
-            <Search
-              className={cx(styles.searchInput)}
-              placeholder="搜索插件"
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              onSearch={handleSearch}
-              allowClear
-            />
-          </div>
+          {renderExtraContent()}
         </div>
 
         <Spin spinning={loading}>

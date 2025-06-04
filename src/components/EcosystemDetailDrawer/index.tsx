@@ -254,7 +254,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
                 <span className={cx(styles.newVersion)}>新版本更新</span>
               )}
             </Title>
-            <div className={cx(styles.subtitle)}>{author}</div>
+            <div className={cx(styles.subtitle)}>来自{author}</div>
           </div>
         </div>
         <Button
