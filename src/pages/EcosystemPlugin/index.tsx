@@ -548,15 +548,22 @@ export default function EcosystemPlugin() {
     }
   };
 
-  const handleOffline = async (uid: string) => {
-    // 下线插件
-    const result = await offlineClientConfig(uid);
+  const handleOffline = async (uid: string): Promise<boolean> => {
+    let result = null;
+    try {
+      // 下线插件
+      result = await offlineClientConfig(uid);
+    } catch (error) {
+      message.error('下线失败');
+      return false;
+    }
     if (result) {
       message.success('插件已下线');
       refreshPluginList();
-    } else {
-      message.error('下线失败');
+      return true;
     }
+    message.error('下线失败');
+    return false;
   };
 
   /**
