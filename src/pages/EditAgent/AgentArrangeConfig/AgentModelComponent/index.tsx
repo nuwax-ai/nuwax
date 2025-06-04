@@ -42,7 +42,6 @@ const AgentModelComponent: React.FC<AgentModelComponentProps> = ({
     <div className={cx('flex', 'items-center', styles.container)}>
       <Link
         to={link}
-        target="_blank"
         className={cx('flex-1', 'flex', 'overflow-hide', styles['gap-6'])}
       >
         <span className={cx('radius-6', styles['img-box'])}>
