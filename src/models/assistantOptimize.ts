@@ -86,7 +86,7 @@ export default () => {
 
         let newMessage = null;
 
-        if (finished === false) {
+        if (!finished) {
           const { text, type } = data;
           // 思考think
           if (type === MessageModeEnum.THINK) {
@@ -102,8 +102,7 @@ export default () => {
               status: MessageStatusEnum.Incomplete,
             };
           }
-        }
-        if (finished === true) {
+        } else {
           newMessage = {
             ...currentMessage,
             status: MessageStatusEnum.Complete,
