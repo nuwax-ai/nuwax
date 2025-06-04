@@ -24,7 +24,14 @@ export interface ComparisonExpression {
   /** 筛选值 */
   value: any;
 }
-
+export interface FetchPluginListParams {
+  tabType: EcosystemTabTypeEnum;
+  keyword: string;
+  page: number;
+  pageSize: number;
+  shareStatus?: number;
+  categoryCode?: string;
+}
 /**
  * 表格列扩展配置
  */
@@ -261,6 +268,15 @@ export enum EcosystemSubTabTypeEnum {
   ENABLED = 2,
   /** 我的分享 */
   MY_SHARE = 3,
+}
+
+/**
+ * Tab类型枚举
+ */
+export enum EcosystemTabTypeEnum {
+  ALL = 'all',
+  ENABLED = 'enabled',
+  SHARED = 'shared',
 }
 
 /**

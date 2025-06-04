@@ -82,7 +82,7 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
         </div>
         <div className={cx(styles.infoWrapper)}>
           <h3 className={cx(styles.title)}>{title}</h3>
-          <p className={cx(styles.author)}>{author}</p>
+          <p className={cx(styles.author)}>来自{author}</p>
           <div className={cx(styles.descriptionWrapper)}>
             <p className={cx(styles.description)}>{description}</p>
           </div>

@@ -5,31 +5,29 @@ import modelImage from '@/assets/images/model_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import variableImage from '@/assets/images/variable_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
-import {
-  ICON_AUDIT,
-  ICON_GROUP_SET,
-  ICON_PUBLISHED,
-} from '@/constants/images.constants';
+import { ICON_PLUGIN_BOLD, ICON_TEMPLATE } from '@/constants/images.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { EcosystemMarketEnum } from '@/types/enums/ecosystemMarket';
+import { EcosystemTabTypeEnum } from '@/types/interfaces/ecosystem';
+import { TabsProps } from 'antd';
 
 // 生态市场应用列表（layout二级菜单）
 export const ECOSYSTEM_MARKET_LIST = [
   {
     type: EcosystemMarketEnum.Plugin,
-    icon: <ICON_GROUP_SET />,
+    icon: <ICON_PLUGIN_BOLD />,
     text: '插件',
   },
   {
     type: EcosystemMarketEnum.Template,
-    icon: <ICON_AUDIT />,
+    icon: <ICON_TEMPLATE />,
     text: '模板',
   },
-  {
-    type: EcosystemMarketEnum.MCP,
-    icon: <ICON_PUBLISHED />,
-    text: 'MCP',
-  },
+  // {
+  //   type: EcosystemMarketEnum.MCP,
+  //   icon: <ICON_PUBLISHED />,
+  //   text: 'MCP',
+  // },
 ];
 
 // 组件列表常量数据
@@ -72,5 +70,30 @@ export const COMPONENT_LIST: {
     type: AgentComponentTypeEnum.Variable,
     defaultImage: variableImage,
     text: '变量',
+  },
+];
+
+export const TabTypeEnum: {
+  ALL: EcosystemTabTypeEnum;
+  ENABLED: EcosystemTabTypeEnum;
+  SHARED: EcosystemTabTypeEnum;
+} = {
+  ALL: EcosystemTabTypeEnum.ALL,
+  ENABLED: EcosystemTabTypeEnum.ENABLED,
+  SHARED: EcosystemTabTypeEnum.SHARED,
+};
+
+export const TabItems: TabsProps['items'] = [
+  {
+    key: TabTypeEnum.ALL,
+    label: '全部',
+  },
+  {
+    key: TabTypeEnum.ENABLED,
+    label: `已启用`,
+  },
+  {
+    key: TabTypeEnum.SHARED,
+    label: `我的分享`,
   },
 ];
