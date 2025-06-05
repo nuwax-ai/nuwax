@@ -17,7 +17,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 /**
- * 创建新团队组件
+ * 创建新工作空间组件
  */
 const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
   const location = useLocation();
@@ -73,7 +73,7 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
   return (
     <CustomFormModal
       form={form}
-      title="创建新团队"
+      title="创建新工作空间"
       open={open}
       onCancel={onCancel}
       loading={loading}

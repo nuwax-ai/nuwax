@@ -60,7 +60,7 @@ const SpaceTitle: React.FC<SpaceTitleProps> = ({ name, avatar }) => {
           <DownOutlined className={cx(styles['icon-down'])} />
         </div>
       </Popover>
-      {/*创建新团队*/}
+      {/*创建新工作空间*/}
       <CreateNewTeam open={openModal} onCancel={() => setOpenModal(false)} />
     </>
   );

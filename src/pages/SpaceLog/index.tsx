@@ -235,6 +235,9 @@ const SpaceLog: React.FC = () => {
       key: 'elapsedTimeMs',
       width: 100,
       align: 'center',
+      render: (text: number) => {
+        return <span>{text} ms</span>;
+      },
     },
   ];
 
