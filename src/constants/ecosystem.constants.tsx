@@ -9,7 +9,7 @@ import {
   ICON_AGENT,
   ICON_PLUGIN_BOLD,
   ICON_TEMPLATE,
-  ICON_WORKFLOW,
+  ICON_WORKFLOW_SQUARE,
 } from '@/constants/images.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { EcosystemMarketEnum } from '@/types/enums/ecosystemMarket';
@@ -82,12 +82,12 @@ export const TAG_ICON_LIST: Partial<
   Record<AgentComponentTypeEnum, React.ReactNode>
 > = {
   [AgentComponentTypeEnum.Workflow]: (
-    <ICON_WORKFLOW
+    <ICON_WORKFLOW_SQUARE
       style={{
         width: 14,
         height: 14,
         display: 'inline-block',
-        verticalAlign: 'middle',
+        verticalAlign: '-0.3em',
         marginRight: 4,
       }}
     />
@@ -98,7 +98,7 @@ export const TAG_ICON_LIST: Partial<
         width: 14,
         height: 14,
         display: 'inline-block',
-        verticalAlign: 'middle',
+        verticalAlign: '-0.3em',
         marginRight: 4,
       }}
     />
