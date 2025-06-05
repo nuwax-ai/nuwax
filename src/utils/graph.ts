@@ -322,3 +322,85 @@ export const validateConnect = (
 
   return false;
 };
+
+const getCellById = (nodeId: string, graph: Graph): Node | null => {
+  if (!nodeId) return null;
+  const cell = graph.getCellById(nodeId);
+  return cell as Node;
+};
+
+const getLatestPeerNodeId = (
+  edgeIds: string[],
+  data: { [key: string | number]: string[] | undefined },
+  graph: Graph,
+): string => {
+  if (!edgeIds.length || !data) return '';
+  let hitNodeIds: string[] = [];
+  Object.keys(data).forEach((key) => {
+    const result = (data[key] || ['']).some((item: string) => {
+      if (!item) return false;
+      return edgeIds.includes(item);
+    });
+    if (result) {
+      hitNodeIds.push(key);
+    }
+  });
+  if (hitNodeIds.length === 1) {
+    return hitNodeIds[0];
+  }
+  if (hitNodeIds.length > 1) {
+    const hitNodesData = hitNodeIds.map((item) => {
+      const cell = getCellById(item, graph);
+      return cell?.getData() || {};
+    });
+    const validNodes = hitNodesData.filter((item) => {
+      const { modified = '' } = item;
+      return modified && !isNaN(new Date(modified).getTime());
+    });
+    if (validNodes.length === 1) {
+      return validNodes[0]?.id || '';
+    }
+    if (validNodes.length > 1) {
+      return (
+        validNodes.sort((a, b) => {
+          const timeA = new Date(a.modified || '').getTime();
+          const timeB = new Date(b.modified || '').getTime();
+          return timeB - timeA;
+        })[0]?.id || ''
+      );
+    }
+  }
+  return '';
+};
+
+/**
+ * 通过当前节点 获取上一个节点或者下一个节点
+ * 如果有一个或者多个 取出最后一个节点 并取到对应位置与 节点Id
+ * 如果没有命中就新增偏移，如果命中就通过上一个节点或者下一个节点 计算偏移位置
+ * 返回计算后的新节点的位置
+ */
+export const getPeerNodePosition = (
+  currentId: string,
+  graph: Graph,
+  type: 'previous' | 'next',
+): { x: number; y: number } | null => {
+  const currentNode = getCellById(currentId, graph);
+  const { outgoings = {}, incomings = {} } = currentNode?.model as any;
+  let edgeIds: string[] = [];
+  let peerNodeId = '';
+  let position = null;
+  let peerNodePosition = null;
+  if (type === 'previous') {
+    edgeIds = incomings[currentId] || [];
+    peerNodeId = getLatestPeerNodeId(edgeIds, outgoings, graph);
+    peerNodePosition = getCellById(peerNodeId, graph)?.getPosition();
+  } else if (type === 'next') {
+    edgeIds = outgoings[currentId] || [];
+    peerNodeId = getLatestPeerNodeId(edgeIds, incomings, graph);
+    peerNodePosition = getCellById(peerNodeId, graph)?.getPosition();
+  }
+  if (peerNodePosition) {
+    position = peerNodePosition;
+  }
+  return position;
+};

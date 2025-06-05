@@ -121,14 +121,17 @@ const initGraph = ({
     targetNode?: ChildNode,
     edgeId?: string,
   ) => {
-    const eventTarget =
-      event.originalEvent.originalEvent || event.originalEvent;
+    // const eventTarget =
+    //   event.originalEvent.originalEvent || event.originalEvent;
+    const targetRect = event.target.getBoundingClientRect();
+    // 计算中心点
+    const centerX = targetRect.left + targetRect.width / 2;
+    const centerY = targetRect.top + targetRect.height / 2;
 
     const position = graph.clientToLocal({
-      x: eventTarget.clientX,
-      y: eventTarget.clientY + 50,
+      x: centerX,
+      y: centerY,
     });
-
     const dragChild = (child: Child) => {
       createNodeToPortOrEdge(
         child,
@@ -161,7 +164,7 @@ const initGraph = ({
       getContainer: () => document.body,
       style: {
         position: 'fixed',
-        left: eventTarget?.clientX,
+        left: centerX,
       },
     });
   };
@@ -172,7 +175,7 @@ const initGraph = ({
     grid: {
       visible: true,
       type: 'dot',
-      size: 24,
+      size: 22,
       args: {
         color: '#606060',
         thickness: 1,
@@ -203,7 +206,7 @@ const initGraph = ({
       allowEdge: false,
       highlight: true, //当用户尝试创建连接且鼠标悬停在一个有效的连接点上时，该连接点会被高亮显示
       snap: {
-        radius: 24, // 设置自定义的吸附半径，例如从默认的50px改为24px或其他值
+        radius: 22, // 设置自定义的吸附半径，例如从默认的50px改为24px或其他值
         anchor: 'bbox', // 或者 'center'，决定计算距离时是基于节点中心还是包围盒
       },
       createEdge() {
@@ -386,7 +389,16 @@ const initGraph = ({
     .use(new Keyboard()) // 启用键盘插件，支持快捷键操作
     .use(new Clipboard()) // 启用剪贴板插件，支持复制和粘贴
     .use(new History()) // 启用历史记录插件，支持撤销和重做
-    .use(new Selection()); // 启用选择插件，并配置选择限制
+    .use(
+      new Selection({
+        // enabled: true,
+        // multiple: true,
+        // rubberband: true,
+        // showNodeSelectionBox: true,
+        // showEdgeSelectionBox: true,
+        // modifiers: ['alt'],
+      }),
+    ); // 启用选择插件，并配置选择限制
 
   /**
    * 处理端口配置

@@ -26,6 +26,7 @@ import {
 } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
 import { createSSEConnection } from '@/utils/fetchEventSource';
+import { getPeerNodePosition } from '@/utils/graph';
 import { changeNodeConfig, updateNode } from '@/utils/updateNode';
 import {
   getEdges,
@@ -45,6 +46,22 @@ import Header from './header';
 import './index.less';
 import { renderNodeContent } from './nodeDrawer';
 import { Child } from './type';
+const DEFAULT_NODE_CONFIG = {
+  generalNode: {
+    defaultWidth: 180, // 通用节点宽度
+  },
+  loopNode: {
+    defaultWidth: 800, // 循环节点宽度
+  },
+  conditionNode: {
+    defaultWidth: 300, // 条件节点宽度
+  },
+  newNodeOffsetX: 100, // 新增节点时，x轴的间距
+  newNodeOffsetY: 100, // 新增节点时，y轴的间距
+  offsetGapX: 15, // 新增节点时，x轴的偏移量
+  offsetGapY: 15, // 新增节点时，y轴的偏移量
+};
+
 const Workflow: React.FC = () => {
   const { message } = App.useApp();
   // 当前工作流的id
@@ -599,6 +616,9 @@ const Workflow: React.FC = () => {
     // 设置节点基本属性
     nodeData.key = nodeData.type === 'Loop' ? 'loop-node' : 'general-Node';
     const extension = nodeData.nodeConfig.extension;
+
+    console.log('log:extension', extension);
+    console.log('log:nodeData', nodeData);
 
     // 添加节点到图形中
     graphRef.current.addNode(extension, nodeData);
@@ -1207,29 +1227,50 @@ const Workflow: React.FC = () => {
       edgeId: edgeId,
     };
 
-    const _position = position;
+    const calculateNodePosition = (_position: { x: number; y: number }) => {
+      //1. 根据添加源判断添加类型为 start、middle、end 并取到对应位置与 节点Id
+      //2.通过当前节点id 取出上一个节点或者下一个节点 如果有一个或者多个 取出最后一个节点 并取到对应位置与 节点Id
+      //3. 如果没有命中就新增偏移，如果命中就通过上一个节点或者下一个节点 计算偏移位置
+      //4. 返回计算后的新节点的位置
 
-    let width = 300;
-    if (child.type === 'Loop') {
-      width = 700;
-    } else if (
-      child.type === 'Condition' ||
-      child.type === 'Interval' ||
-      child.type === 'QA'
-    ) {
-      width = 400;
-    }
-
-    if (!targetNode) {
-      const isOut = portId.endsWith('out');
-      if (isOut) {
-        _position.x = _position.x + 100;
-      } else {
-        _position.x = _position.x - width;
+      let newNodeWidth = DEFAULT_NODE_CONFIG.generalNode.defaultWidth;
+      if (child.type === 'Loop') {
+        newNodeWidth = DEFAULT_NODE_CONFIG.loopNode.defaultWidth;
+      } else if (
+        child.type === 'Condition' ||
+        child.type === 'Interval' ||
+        child.type === 'QA'
+      ) {
+        newNodeWidth = DEFAULT_NODE_CONFIG.conditionNode.defaultWidth;
       }
-    }
 
-    await dragChild(child, _position);
+      if (!targetNode) {
+        const isOut = portId.endsWith('out');
+        const peerPosition = getPeerNodePosition(
+          sourceNode.id.toString(),
+          graphRef.current.getGraphRef(),
+          isOut ? 'next' : 'previous',
+        );
+
+        if (isOut) {
+          _position.x = _position.x + DEFAULT_NODE_CONFIG.newNodeOffsetX;
+          if (peerPosition !== null && peerPosition.x >= _position.x) {
+            _position.x = peerPosition.x + DEFAULT_NODE_CONFIG.offsetGapX;
+            _position.y = peerPosition.y + DEFAULT_NODE_CONFIG.offsetGapX;
+          }
+        } else {
+          _position.x =
+            _position.x - newNodeWidth - DEFAULT_NODE_CONFIG.newNodeOffsetX;
+          if (peerPosition !== null && peerPosition.x <= _position.x) {
+            _position.x = peerPosition.x - DEFAULT_NODE_CONFIG.offsetGapX;
+            _position.y = peerPosition.y + DEFAULT_NODE_CONFIG.offsetGapX;
+          }
+        }
+      }
+      return _position;
+    };
+
+    await dragChild(child, calculateNodePosition(position));
   };
 
   // 保存当前画布中节点的位置
