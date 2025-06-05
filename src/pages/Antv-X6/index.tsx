@@ -31,7 +31,7 @@ import { changeNodeConfig, updateNode } from '@/utils/updateNode';
 import {
   getEdges,
   handleSpecialNodesNextIndex,
-  QuicklyCreate,
+  QuicklyCreateEdgeConditionConfig,
   returnBackgroundColor,
   returnImg,
 } from '@/utils/workflow';
@@ -439,22 +439,20 @@ const Workflow: React.FC = () => {
   /**
    * 处理知识库节点的特殊配置
    * @param nodeData 节点数据
-   * @param child 子节点配置
+   * @param knowledgeBaseConfigs 知识库配置
    */
   const handleKnowledgeNodeConfig = async (
     nodeData: ChildNode,
-    child: Child,
+    knowledgeBaseConfigs: CreatedNodeItem[],
   ) => {
-    if (child.type === 'Knowledge' && child.nodeConfig?.knowledgeBaseConfigs) {
-      setSkillChange(true);
-      await changeNode({
-        ...nodeData,
-        nodeConfig: {
-          ...nodeData.nodeConfig,
-          knowledgeBaseConfigs: child.nodeConfig.knowledgeBaseConfigs,
-        },
-      });
-    }
+    setSkillChange(true);
+    await changeNode({
+      ...nodeData,
+      nodeConfig: {
+        ...nodeData.nodeConfig,
+        knowledgeBaseConfigs,
+      },
+    });
   };
 
   /**
@@ -514,7 +512,10 @@ const Workflow: React.FC = () => {
     targetNode: ChildNode,
     isLoop: boolean,
   ) => {
-    const { nodeData, sourcePortId } = QuicklyCreate(newNode, targetNode);
+    const { nodeData, sourcePortId } = QuicklyCreateEdgeConditionConfig(
+      newNode,
+      targetNode,
+    );
     await changeNode(nodeData as ChildNode);
     graphRef.current.createNewEdge(
       sourcePortId,
@@ -556,7 +557,10 @@ const Workflow: React.FC = () => {
     const id = portId.split('-')[0];
 
     if (isConditionalNode(newNode.type)) {
-      const { nodeData, sourcePortId } = QuicklyCreate(newNode, sourceNode);
+      const { nodeData, sourcePortId } = QuicklyCreateEdgeConditionConfig(
+        newNode,
+        sourceNode,
+      );
       await changeNode(nodeData as ChildNode);
       graphRef.current.createNewEdge(
         sourcePortId,
@@ -621,8 +625,12 @@ const Workflow: React.FC = () => {
     graphRef.current.addNode(extension, nodeData);
 
     // 处理知识库节点特殊配置
-    await handleKnowledgeNodeConfig(nodeData, child);
-
+    if (child.type === 'Knowledge' && child.nodeConfig?.knowledgeBaseConfigs) {
+      await handleKnowledgeNodeConfig(
+        nodeData,
+        child.nodeConfig.knowledgeBaseConfigs,
+      );
+    }
     // 更新抽屉和选中状态
     await changeDrawer(nodeData);
     graphRef.current.selectNode(nodeData.id);
