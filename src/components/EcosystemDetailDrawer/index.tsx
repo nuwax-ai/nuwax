@@ -286,7 +286,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
               alt={title}
               className={cx(styles.icon)}
             />
-            {isEnabled && <ActivatedIcon enabled={isEnabled} />}
+            {isEnabled && <ActivatedIcon size={30} enabled={isEnabled} />}
           </div>
           <div className={cx(styles.titleContent)}>
             <Title level={5} className={cx(styles.title)}>
