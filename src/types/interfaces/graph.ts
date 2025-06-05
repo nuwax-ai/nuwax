@@ -113,6 +113,8 @@ export interface GraphContainerRef {
   createNewEdge: (source: string, target: string, isLoop?: boolean) => void;
   changeGraphZoom: (val: number) => void;
   drawGraph: () => void;
+  getGraphRef: () => Graph;
+  clearSelection: () => void;
 }
 
 export interface BindEventHandlers {
