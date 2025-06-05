@@ -369,6 +369,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       drawGraph,
       selectNode,
       createNewEdge,
+      getGraphRef: () => graphRef?.current,
     }));
 
     useEffect(() => {
