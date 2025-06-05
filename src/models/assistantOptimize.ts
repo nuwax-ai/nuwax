@@ -10,7 +10,6 @@ import {
   MessageTypeEnum,
 } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
-import { EditAgentShowType } from '@/types/enums/space';
 import {
   CodeCreateParams,
   OptimizeTypeEnum,
@@ -32,9 +31,6 @@ export default () => {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortConnectionRef = useRef<unknown>();
-  const [showType, setShowType] = useState<EditAgentShowType>(
-    EditAgentShowType.Hide,
-  );
 
   // 添加一个 ref 来控制是否允许自动滚动
   const allowAutoScrollRef = useRef<boolean>(true);
@@ -218,14 +214,19 @@ export default () => {
     await handleConversation(params, currentMessageId, type);
   };
 
+  // 重置初始化
+  const resetInit = () => {
+    handleClearSideEffect();
+    setMessageList([]);
+    allowAutoScrollRef.current = true;
+  };
+
   return {
     messageList,
     setMessageList,
     onMessageSend,
     messageViewRef,
     allowAutoScrollRef,
-    showType,
-    setShowType,
-    handleClearSideEffect,
+    resetInit,
   };
 };

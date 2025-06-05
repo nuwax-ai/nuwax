@@ -40,12 +40,17 @@ const PromptOptimizeModal: React.FC<
     onMessageSend,
     messageViewRef,
     allowAutoScrollRef,
+    resetInit,
   } = useModel('assistantOptimize');
   // 智能体会话问题建议
   const [id, setId] = useState<string>('');
 
   useEffect(() => {
     setId(uuidv4());
+
+    return () => {
+      resetInit();
+    };
   }, []);
 
   // 在组件挂载时添加滚动事件监听器

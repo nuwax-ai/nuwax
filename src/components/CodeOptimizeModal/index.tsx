@@ -30,12 +30,17 @@ const CodeOptimizeModal: React.FC<
     onMessageSend,
     messageViewRef,
     allowAutoScrollRef,
+    resetInit,
   } = useModel('assistantOptimize');
 
   const [id, setId] = useState<string>('');
 
   useEffect(() => {
     setId(uuidv4());
+
+    return () => {
+      resetInit();
+    };
   }, []);
 
   // 智能体会话问题建议
@@ -78,16 +83,19 @@ const CodeOptimizeModal: React.FC<
   };
 
   // enter事件
-  const handlePressEnter = (e: any) => {
+  const handlePressEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
-    const { value } = e.target;
+    const { value, selectionStart, selectionEnd } =
+      e.target as HTMLTextAreaElement;
     // shift+enter或者ctrl+enter时换行
     if (
       e.nativeEvent.keyCode === 13 &&
       (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)
     ) {
-      const enterValue = `${value}\n`;
-      setMessage(enterValue);
+      // 在光标位置插入换行符
+      const newValue =
+        value.slice(0, selectionStart) + '\n' + value.slice(selectionEnd);
+      setMessage(newValue);
     } else if (e.nativeEvent.keyCode === 13 && !!value.trim()) {
       // enter事件
       const params: CodeCreateParams = {
