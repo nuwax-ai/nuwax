@@ -23,7 +23,7 @@ import {
   Table,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
@@ -112,7 +112,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
     targetType: AgentComponentTypeEnum.Plugin,
   });
   const [disabledSkill, setDisabledSkill] = useState(false);
-  const getDetailApi = (targetType: string | undefined) => {
+  const getDetailApi = useCallback(() => {
     if (targetType === AgentComponentTypeEnum.Plugin) {
       return apiPublishedPluginInfo;
     }
@@ -123,15 +123,12 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
       return apiPublishedWorkflowInfo;
     }
     return apiPublishedWorkflowInfo;
-  };
+  }, [targetType]);
 
-  const { run: runGetDetail, data: detail } = useRequest(
-    getDetailApi(targetType),
-    {
-      manual: true,
-      debounceInterval: 300,
-    },
-  );
+  const { run: runGetDetail, data: detail } = useRequest(getDetailApi(), {
+    manual: true,
+    debounceInterval: 300,
+  });
 
   const [tableData, setTableData] = useState<any[]>([]);
 
@@ -426,7 +423,12 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                         {
                           name: pluginValue.name || '',
                           description: pluginValue.description || '',
-                          icon: pluginValue.icon,
+                          icon:
+                            pluginValue.icon ||
+                            COMPONENT_LIST.find(
+                              (item: any) =>
+                                item.type === pluginValue.targetType,
+                            )?.defaultImage,
                           targetId: pluginValue.targetId || '',
                           targetType: pluginValue.targetType || '',
                           type: pluginValue.targetType,
