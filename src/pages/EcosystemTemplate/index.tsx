@@ -539,15 +539,23 @@ export default function EcosystemTemplate() {
     }
   };
 
-  const handleOffline = async (uid: string) => {
+  const handleOffline = async (uid: string): Promise<boolean> => {
     // 下线插件
-    const result = await offlineClientConfig(uid);
+    let result = null;
+    try {
+      result = await offlineClientConfig(uid);
+    } catch (error) {
+      message.error('下线失败');
+      return false;
+    }
+
     if (result) {
       message.success('模板已下线');
       refreshPluginList();
-    } else {
-      message.error('下线失败');
+      return true;
     }
+    message.error('下线失败');
+    return false;
   };
   /**
    * 关闭分享弹窗

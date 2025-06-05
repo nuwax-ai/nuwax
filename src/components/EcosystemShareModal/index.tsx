@@ -466,7 +466,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                 columns={inputColumns}
                 dataSource={tableData}
                 pagination={false}
-                scroll={{ x: 670, y: 55 * 3 }}
+                scroll={{ x: 'max-content', y: 55 * 4 }}
                 expandable={{
                   defaultExpandAllRows: true,
                 }}
