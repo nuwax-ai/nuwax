@@ -40,7 +40,9 @@ const SpaceLog: React.FC = () => {
   const [dataSource, setDataSource] = useState<logInfo[]>([]);
   const [visible, setVisible] = useState<boolean>(false);
   const [currentLog, setCurrentLog] = useState<logInfo | null>(null);
+  const [loadingLogList, setLoadingLogList] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [pageIndex, setPageIndex] = useState<number>(1);
 
   // 日志查询
   const { run: runLogList } = useRequest(apiAgentLogList, {
@@ -56,6 +58,7 @@ const SpaceLog: React.FC = () => {
         key: uuidv4(),
       }));
       setDataSource(list);
+      setLoadingLogList(false);
     },
   });
 
@@ -82,10 +85,11 @@ const SpaceLog: React.FC = () => {
 
   // 查询日志
   const handleQuery = (queryFilter: LogQueryFilter, current: number = 1) => {
+    setLoadingLogList(true);
     runLogList({
       queryFilter,
       current,
-      pageSize: 20,
+      pageSize: 10,
     });
   };
 
@@ -131,6 +135,7 @@ const SpaceLog: React.FC = () => {
 
   // 分页
   const handlePaginationChange = (page: number) => {
+    setPageIndex(page);
     const values = form.getFieldsValue();
     handleDataSearch(values, page);
   };
@@ -138,6 +143,7 @@ const SpaceLog: React.FC = () => {
   const onFinish: FormProps<AgentLogFormProps>['onFinish'] = (values) => {
     // 关闭详情
     handleClose();
+    setPageIndex(1);
     handleDataSearch(values);
   };
 
@@ -145,6 +151,7 @@ const SpaceLog: React.FC = () => {
   const handleReset = () => {
     // 关闭详情
     handleClose();
+    setPageIndex(1);
     // 查询日志
     handleQuery({ agentId });
   };
@@ -155,7 +162,7 @@ const SpaceLog: React.FC = () => {
       title: '消息ID',
       dataIndex: 'messageId',
       key: 'messageId',
-      width: 100,
+      width: 150,
       ellipsis: true,
     },
     {
@@ -183,14 +190,18 @@ const SpaceLog: React.FC = () => {
       title: '用户输入',
       dataIndex: 'userInput',
       key: 'userInput',
+      minWidth: 150,
+      width: 200,
       render: (text: string) => {
-        return <div className={'text-ellipsis-2'}>{text}</div>;
+        return <div className={cx('text-ellipsis-2')}>{text}</div>;
       },
     },
     {
       title: '输出',
       dataIndex: 'output',
       key: 'output',
+      minWidth: 150,
+      width: 200,
       render: (text: string) => {
         return <div className={'text-ellipsis-2'}>{text}</div>;
       },
@@ -325,8 +336,11 @@ const SpaceLog: React.FC = () => {
         <Table<logInfo>
           columns={inputColumns}
           dataSource={dataSource}
+          tableLayout="fixed"
           virtual
-          scroll={{ y: 480, x: 'max-content' }}
+          sticky
+          loading={loadingLogList}
+          scroll={{ x: 'max-content' }}
           onRow={(record) => {
             return {
               onClick: () => handleClick(record), // 点击行
@@ -334,6 +348,8 @@ const SpaceLog: React.FC = () => {
           }}
           pagination={{
             total: total,
+            current: pageIndex,
+            defaultPageSize: 10,
             onChange: handlePaginationChange,
             showTotal: (total) => `共 ${total} 条`,
           }}
