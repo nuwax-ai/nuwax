@@ -1193,6 +1193,8 @@ const Workflow: React.FC = () => {
     // 清除所有选中
     changeDrawer(null);
     setVisible(false);
+    // TODO 排除 Loop 节点 触发空白区域点击事件 清空选择状态
+    graphRef.current?.clearSelection();
   };
 
   // 更改节点的名称

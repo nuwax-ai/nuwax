@@ -263,6 +263,10 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       const data = node.getData();
       node.setData({ ...data, selected: true });
     };
+    const clearSelection = () => {
+      if (!graphRef.current) return;
+      graphRef.current.trigger('blank:click');
+    };
 
     // 保存所有节点的位置
     const saveAllNodes = () => {
@@ -356,6 +360,9 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         height: viewport.height as number,
       };
     };
+    const getGraphRef = () => {
+      return graphRef.current;
+    };
     // 将子组件的方法暴露给父组件
     useImperativeHandle(ref, () => ({
       getCurrentViewPort,
@@ -369,7 +376,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       drawGraph,
       selectNode,
       createNewEdge,
-      getGraphRef: () => graphRef?.current,
+      getGraphRef,
+      clearSelection,
     }));
 
     useEffect(() => {
