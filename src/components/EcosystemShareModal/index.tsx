@@ -1,4 +1,6 @@
 import { SkillList } from '@/components/Skill';
+import { COMPONENT_LIST } from '@/constants/ecosystem.constants';
+import { apiPublishedAgentInfo } from '@/services/agentDev';
 import {
   apiPublishedPluginInfo,
   apiPublishedWorkflowInfo,
@@ -34,13 +36,14 @@ export interface PluginParam {
 
 export interface EcosystemShareModalProps {
   type: EcosystemDataTypeEnum;
+  targetType: AgentComponentTypeEnum;
   visible: boolean;
   isEdit?: boolean;
   onClose: () => void;
-  onSave: (values: any, isDraft: boolean) => void;
-  onAddPlugin: () => void;
-  onRemovePlugin: () => void;
-  onOffline: (uid: string) => void;
+  onSave: (values: any, isDraft: boolean) => Promise<boolean>;
+  onAddComponent: () => void;
+  onRemoveComponent: () => void;
+  onOffline: (uid: string) => Promise<boolean>;
   data?: EcosystemShareModalData | null;
 }
 
@@ -48,8 +51,8 @@ export interface EcosystemShareModalData {
   uid?: string;
   name?: string;
   description?: string;
-  targetType?: string;
-  targetId?: string;
+  targetType: AgentComponentTypeEnum;
+  targetId: string;
   categoryCode?: string;
   categoryName?: string;
   author?: string;
@@ -91,30 +94,58 @@ const setFullName = (parentName: string, inputArgs: any[]): any[] => {
 
 const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
   type,
+  targetType,
   visible,
   isEdit = false,
   onClose,
   onSave,
-  onAddPlugin,
+  onAddComponent,
   onOffline,
-  onRemovePlugin,
+  onRemoveComponent,
   data,
 }) => {
   const isPlugin = type === EcosystemDataTypeEnum.PLUGIN;
   const [form] = Form.useForm();
   const [configParam, setConfigParam] = useState<PluginParam[]>([]);
-  const { run: runGetPlugDetail, data: pluginDetail } = useRequest(
-    isPlugin ? apiPublishedPluginInfo : apiPublishedWorkflowInfo,
+  const [suffixInfo, setSuffixInfo] = useState<any>({
+    name: '插件',
+    targetType: AgentComponentTypeEnum.Plugin,
+  });
+  const [disabledSkill, setDisabledSkill] = useState(false);
+  const getDetailApi = (targetType: string | undefined) => {
+    if (targetType === AgentComponentTypeEnum.Plugin) {
+      return apiPublishedPluginInfo;
+    }
+    if (targetType === AgentComponentTypeEnum.Agent) {
+      return apiPublishedAgentInfo;
+    }
+    if (targetType === AgentComponentTypeEnum.Workflow) {
+      return apiPublishedWorkflowInfo;
+    }
+    return apiPublishedWorkflowInfo;
+  };
+
+  const { run: runGetDetail, data: detail } = useRequest(
+    getDetailApi(targetType),
     {
       manual: true,
       debounceInterval: 300,
     },
   );
+
   const [tableData, setTableData] = useState<any[]>([]);
 
+  // 完整的重置函数
+  const handleReset = () => {
+    form?.resetFields();
+    setTableData([]);
+    setConfigParam([]);
+  };
+
+  // 监听弹窗显示状态变化
   useEffect(() => {
     if (visible && data) {
-      // 当弹窗显示并且有插件数据时，初始化表单
+      // 初始化表单数据
       form.setFieldsValue({
         uid: data.uid,
         plugin: {
@@ -128,38 +159,71 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
         publishDoc: data.publishDoc,
       });
       if (data.configParamJson) {
-        setConfigParam(
-          JSON.parse(data.configParamJson).map((item: any) => ({
-            name: item.name,
-            description: item.description,
-            value: '',
-          })),
-        );
+        try {
+          const parsedConfig = JSON.parse(data.configParamJson);
+          setConfigParam(
+            parsedConfig.map((item: any) => ({
+              name: item.name,
+              description: item.description,
+              value: item.value || '',
+            })),
+          );
+        } catch (error) {
+          console.error('解析配置参数失败:', error);
+          setConfigParam([]);
+        }
       }
     }
-    if (visible && !data) {
-      form.resetFields();
-      setTableData([]);
-      setConfigParam([]);
-    }
+    return () => {
+      handleReset();
+    };
   }, [visible, data, form]);
+
+  useEffect(() => {
+    if (targetType && visible) {
+      setSuffixInfo({
+        name: COMPONENT_LIST.find((item: any) => item.type === targetType)
+          ?.text,
+        targetType,
+      });
+    }
+  }, [targetType, visible]);
+
+  const handleClose = () => {
+    // 关闭前立即清除数据
+    handleReset();
+    onClose();
+  };
 
   const handleSave = async (isDraft: boolean) => {
     try {
       const values = await form.validateFields();
       const { plugin, ...rest } = values;
-      onSave(
+      const result = await onSave(
         {
           ...rest,
           ...plugin,
-          categoryCode: pluginDetail?.category,
-          categoryName: pluginDetail?.category,
+          categoryCode: detail?.category,
+          categoryName: detail?.category,
           configParamJson: JSON.stringify(configParam),
         },
         isDraft,
       );
+      if (result) {
+        handleClose();
+      }
     } catch (error) {
       console.log('保存失败', error);
+    }
+  };
+
+  const handleOffline = async (uid: string) => {
+    if (uid) {
+      const result = await onOffline(uid);
+      if (result) {
+        handleClose();
+      }
+      return result;
     }
   };
 
@@ -220,17 +284,15 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
 
   useEffect(() => {
     if (visible && data?.targetId) {
-      runGetPlugDetail(data?.targetId);
+      runGetDetail(data?.targetId);
     }
-  }, [visible, data?.targetId, runGetPlugDetail]);
+  }, [visible, data?.targetId, runGetDetail]);
 
   useEffect(() => {
-    if (pluginDetail) {
-      setTableData(
-        setFullName('', addParentName(pluginDetail?.inputArgs || [])),
-      );
+    if (detail) {
+      setTableData(setFullName('', addParentName(detail?.inputArgs || [])));
     }
-  }, [pluginDetail]);
+  }, [detail]);
 
   useEffect(() => {
     if (configParam.length > 0 && tableData.length > 0) {
@@ -240,21 +302,30 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
       });
       setConfigParam(newConfigParam);
     }
-  }, [tableData]);
+  }, [tableData, configParam]);
 
-  const renderActionButton = (data: EcosystemShareModalData) => {
-    const isPublished =
-      data?.shareStatus === EcosystemShareStatusEnum.PUBLISHED;
-    const isDraft = data?.shareStatus === EcosystemShareStatusEnum.DRAFT;
+  const renderActionButton = (data?: EcosystemShareModalData | null) => {
+    if (!data) {
+      return (
+        <Space>
+          <Button onClick={handleClose}>取消</Button>
+          <Button type="primary" onClick={() => handleSave(false)}>
+            保存并发布分享
+          </Button>
+        </Space>
+      );
+    }
+
+    const isPublished = data.shareStatus === EcosystemShareStatusEnum.PUBLISHED;
+    const isDraft = data.shareStatus === EcosystemShareStatusEnum.DRAFT;
+
     return (
       <Space>
-        <Button onClick={onClose}>取消</Button>
+        <Button onClick={handleClose}>取消</Button>
         {isEdit && isPublished && (
           <Button
             onClick={() => {
-              if (data?.uid) {
-                onOffline(data.uid);
-              }
+              handleOffline(data.uid);
             }}
           >
             下线
@@ -268,6 +339,13 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
     );
   };
 
+  useEffect(() => {
+    setDisabledSkill(isEdit);
+    return () => {
+      setDisabledSkill(false);
+    };
+  }, [isEdit]);
+
   return (
     <Modal
       title={
@@ -276,11 +354,10 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
         </div>
       }
       open={visible}
-      onCancel={onClose}
+      onCancel={handleClose}
       width={720}
       footer={null}
       className={cx(styles.pluginShareModal)}
-      destroyOnClose
     >
       <div className={cx(styles.modalContent)}>
         <Form form={form} layout="vertical" className={cx(styles.form)}>
@@ -289,18 +366,23 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
               className={cx(styles.sectionTitle)}
               style={{ display: 'flex', alignItems: 'center' }}
             >
-              <div>插件信息</div>
-              <Popover content={<div>添加插件</div>} trigger="hover">
-                <Button
-                  type="text"
-                  size="small"
-                  style={{ marginLeft: 10 }}
-                  icon={<PlusOutlined />}
-                  onClick={() => {
-                    onAddPlugin();
-                  }}
-                />
-              </Popover>
+              <div>{`${suffixInfo.name}信息`}</div>
+              {!disabledSkill && (
+                <Popover
+                  content={<div>添加{suffixInfo.name}</div>}
+                  trigger="hover"
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    style={{ marginLeft: 10 }}
+                    icon={<PlusOutlined />}
+                    onClick={() => {
+                      onAddComponent();
+                    }}
+                  />
+                </Popover>
+              )}
             </div>
             {isEdit && (
               <Form.Item name="uid" hidden>
@@ -310,7 +392,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
             {/* 隐藏的表单项用于存储 plugin 值 */}
             <Form.Item
               name="plugin"
-              rules={[{ required: true, message: '请选择插件' }]}
+              rules={[{ required: true, message: `请选择${suffixInfo.name}` }]}
               hidden
             >
               <Input type="hidden" />
@@ -330,10 +412,10 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                     <div
                       className={cx(styles.pluginItemStyle)}
                       onClick={() => {
-                        onAddPlugin();
+                        onAddComponent();
                       }}
                     >
-                      请先选择插件
+                      {`请先选择${suffixInfo.name}`}
                     </div>
                   );
                 }
@@ -347,15 +429,14 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                           icon: pluginValue.icon,
                           targetId: pluginValue.targetId || '',
                           targetType: pluginValue.targetType || '',
-                          type: isPlugin
-                            ? AgentComponentTypeEnum.Plugin
-                            : AgentComponentTypeEnum.Workflow,
+                          type: pluginValue.targetType,
                           statistics: null,
                         },
                       ]}
+                      disabled={disabledSkill}
                       skillName={'skillComponentConfigs'}
                       form={form}
-                      removeItem={onRemovePlugin}
+                      removeItem={onRemoveComponent}
                       modifyItem={() => {}}
                     />
                   </div>
@@ -385,7 +466,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                 columns={inputColumns}
                 dataSource={tableData}
                 pagination={false}
-                scroll={{ x: 670, y: 55 * 3 }}
+                scroll={{ x: 'max-content', y: 55 * 4 }}
                 expandable={{
                   defaultExpandAllRows: true,
                 }}

@@ -587,3 +587,10 @@ export async function updateAndEnableClientConfig(params: {
     return null;
   }
 }
+
+export async function getCategoryListApi(): Promise<any> {
+  const response = (await request('/api/published/category/list', {
+    method: 'GET',
+  })) as RequestResponse<any>;
+  return response.data || [];
+}

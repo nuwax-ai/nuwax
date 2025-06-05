@@ -15,6 +15,8 @@ import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import '../index.less';
 import { TreeOutput } from './commonNode';
+
+const DEFAULT_INPUT_ARGS_DESC = '检索关键词';
 // 定义知识库
 const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   form, // updateNode,
@@ -95,16 +97,17 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
     console.log(_arr);
     setAddComponents(_arr);
   }, []);
-
+  const inputArgs = (form.getFieldValue('inputArgs') || []).map((item: any) => {
+    return {
+      ...item,
+      description: item.description || DEFAULT_INPUT_ARGS_DESC,
+    };
+  });
   return (
     <div className="knowledge-node">
       {/* 输入参数 */}
       <div className="node-item-style">
-        <TreeInput
-          title={'输入'}
-          form={form}
-          params={form.getFieldValue('inputArgs')}
-        />
+        <TreeInput title={'输入'} form={form} params={inputArgs} />
       </div>
 
       {/* 知识库选择 */}

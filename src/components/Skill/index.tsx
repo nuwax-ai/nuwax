@@ -172,6 +172,7 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
 // 定义通用的技能显示
 export const SkillList: React.FC<SkillProps> = ({
   params,
+  disabled = false,
   removeItem,
   modifyItem,
 }) => {
@@ -230,6 +231,12 @@ export const SkillList: React.FC<SkillProps> = ({
         return (
           <div
             className="skill-item-style dis-left"
+            style={{
+              //设置为整体为灰色
+              opacity: disabled ? 0.5 : 1,
+              //设置为不可点击
+              cursor: disabled ? 'not-allowed' : 'pointer',
+            }}
             key={item.typeId || item.knowledgeBaseId}
             onMouseEnter={() => {
               setHoveredItem(item);
@@ -274,12 +281,14 @@ export const SkillList: React.FC<SkillProps> = ({
                       }}
                     />
                   </Popover> */}
-                  <Popover content={'移除'} trigger="hover">
-                    <DeleteOutlined
-                      className="ml-12  white"
-                      onClick={() => handleDelete(item)}
-                    />
-                  </Popover>
+                  {!disabled && (
+                    <Popover content={'移除'} trigger="hover">
+                      <DeleteOutlined
+                        className="ml-12  white"
+                        onClick={() => handleDelete(item)}
+                      />
+                    </Popover>
+                  )}
                 </div>
               </div>
             )}

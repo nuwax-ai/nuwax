@@ -95,15 +95,6 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
   const showAdd = () => {
     setOpen(true);
   };
-  const inputArgsValues = Form.useWatch(InputItemNameEnum.inputArgs, form);
-  useEffect(() => {
-    if (inputArgsValues) {
-      form.setFieldValue('outputArgs', inputArgsValues);
-    }
-  }, [inputArgsValues]);
-
-  const systemPrompt = Form.useWatch('systemPrompt', form);
-  const userPrompt = Form.useWatch('userPrompt', form);
 
   useEffect(() => {
     const _list = form.getFieldValue('skillComponentConfigs');
@@ -163,8 +154,6 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
         <ExpandableInputTextarea
           title="系统提示词"
           inputFieldName="systemPrompt"
-          value={systemPrompt}
-          inputVariables={inputArgsValues}
           onExpand
           onOptimize
           onOptimizeClick={() => setShow(true)}
@@ -176,8 +165,6 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
         <ExpandableInputTextarea
           title="用户提示词"
           inputFieldName="userPrompt"
-          value={userPrompt}
-          inputVariables={inputArgsValues}
           onExpand
           // onOptimize
           // onOptimizeClick={() => setShow(true)}

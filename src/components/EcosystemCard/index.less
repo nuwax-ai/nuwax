@@ -1,6 +1,6 @@
 @import '@/styles/color';
 
-.pluginCard {
+.ecosystemCard {
   width: 100%;
   border-radius: 8px;
   overflow: hidden;
@@ -8,15 +8,22 @@
   border: 1px solid @GRAY08;
   background: #fff;
   position: relative;
+  height: 124px;
 
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 10%);
+  }
+
+  :global {
+    .ant-card-body {
+      padding: 22px 22px 10px !important;
+    }
   }
 }
 
 .cardContent {
   display: flex;
-  padding: 20px;
+  // padding: 20px;
   align-items: flex-start;
 }
 
@@ -27,26 +34,17 @@
 }
 
 .icon {
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
   border-radius: 8px;
   object-fit: cover;
 }
 
-.tagWrapper {
+.activatedIcon {
   position: absolute;
-  top: -8px;
-  right: -8px;
+  top: 0;
+  right: 0;
   z-index: 1;
-}
-
-.tag {
-  border-radius: 4px;
-  padding: 0 4px;
-  height: 18px;
-  line-height: 18px;
-  font-size: 12px;
-  margin: 0;
 }
 
 .infoWrapper {
@@ -58,24 +56,34 @@
 }
 
 .title {
-  margin: 0 0 8px;
-  font-size: 16px;
-  font-weight: 500;
-  color: @BLUE08;
+  font-size: 14px;
+  color: '#3A3F4F';
+  line-height: 22px;
+  font-weight: normal;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.author {
+  margin: 0;
+  color: #757b8d;
+  font-size: 12px;
+  line-height: 22px;
+}
+
 .description {
   margin: 0;
-  color: @GRAY05;
-  font-size: 14px;
-  line-height: 1.5;
-  display: box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  font-size: 12px;
+  color: #b8bcc5;
+  line-height: 16px;
+  //超过三行显示省略号 不校验
+
+  display: box; /* eslint-disable-line */
+  -webkit-box-orient: vertical; /* eslint-disable-line */
+  -webkit-line-clamp: 3; /* eslint-disable-line */
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sharedIcon {

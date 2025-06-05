@@ -36,13 +36,14 @@ const QaTableList = forwardRef(
         title: 'ID',
         dataIndex: 'id',
         width: 150,
+        fixed: 'left',
       },
       {
         title: '问题',
         dataIndex: 'question',
         render: (text: string) => {
           return (
-            <div className={cx('text-ellipsis', 'max-w-[200px]')} title={text}>
+            <div className={cx('text-ellipsis')} title={text}>
               {text}
             </div>
           );
@@ -53,7 +54,7 @@ const QaTableList = forwardRef(
         dataIndex: 'answer',
         render: (text: string) => {
           return (
-            <div className={cx('text-ellipsis', 'max-w-[200px]')} title={text}>
+            <div className={cx('text-ellipsis')} title={text}>
               {text}
             </div>
           );
@@ -63,6 +64,7 @@ const QaTableList = forwardRef(
         title: '向量化',
         dataIndex: 'hasEmbedding',
         width: 100,
+        fixed: 'right',
         render: (value: boolean) => {
           if (value) {
             return <Tag color="success">已完成</Tag>;
@@ -75,6 +77,7 @@ const QaTableList = forwardRef(
         dataIndex: 'action',
         width: 100,
         align: 'center',
+        fixed: 'right',
         render: (text: string, record: KnowledgeQAInfo) => {
           return (
             <div className={cx('flex', 'flex-row', 'content-around')}>
@@ -187,11 +190,18 @@ const QaTableList = forwardRef(
           'justify-center',
           'h-full',
         )}
+        style={{
+          width: '100%',
+        }}
       >
         <Table
-          className={cx('w-full', 'h-full')}
+          className={cx('h-full')}
+          style={{
+            width: '100%',
+          }}
           rowKey="id"
           columns={columns}
+          rowHoverable={false}
           dataSource={data}
           loading={loading}
           pagination={{

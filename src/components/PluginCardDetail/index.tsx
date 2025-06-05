@@ -8,7 +8,7 @@ import {
   Typography,
 } from 'antd';
 import React from 'react';
-import type { PluginCardProps } from '../PluginCard';
+import type { PluginCardProps } from '../EcosystemCard';
 import styles from './index.less';
 
 const { Title, Paragraph, Text } = Typography;
