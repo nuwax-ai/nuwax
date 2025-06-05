@@ -1,5 +1,5 @@
 import { apiAgentConfigInfo } from '@/services/agentConfig';
-import { apiAgentLogList } from '@/services/agentDev';
+import { apiAgentLogDetail, apiAgentLogList } from '@/services/agentDev';
 import {
   AgentConfigInfo,
   logInfo,
@@ -40,8 +40,9 @@ const SpaceLog: React.FC = () => {
   const [dataSource, setDataSource] = useState<logInfo[]>([]);
   const [visible, setVisible] = useState<boolean>(false);
   const [currentLog, setCurrentLog] = useState<logInfo | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  // 知识库分段配置 - 数据列表查询
+  // 日志查询
   const { run: runLogList } = useRequest(apiAgentLogList, {
     manual: true,
     debounceWait: 300,
@@ -55,6 +56,18 @@ const SpaceLog: React.FC = () => {
         key: uuidv4(),
       }));
       setDataSource(list);
+    },
+  });
+
+  // 日志详情
+  const { run: runLogDetail } = useRequest(apiAgentLogDetail, {
+    manual: true,
+    debounceWait: 300,
+    // 设置显示 loading 的延迟时间，避免闪烁
+    loadingDelay: 300,
+    onSuccess: (result: logInfo) => {
+      setCurrentLog(result);
+      setLoading(false);
     },
   });
 
@@ -123,13 +136,16 @@ const SpaceLog: React.FC = () => {
   };
 
   const onFinish: FormProps<AgentLogFormProps>['onFinish'] = (values) => {
+    // 关闭详情
     handleClose();
     handleDataSearch(values);
   };
 
   // 重置
   const handleReset = () => {
+    // 关闭详情
     handleClose();
+    // 查询日志
     handleQuery({ agentId });
   };
 
@@ -213,7 +229,14 @@ const SpaceLog: React.FC = () => {
 
   // 点击行
   const handleClick = (record: logInfo) => {
-    setCurrentLog(record);
+    setLoading(true);
+    const { requestId, agentId } = record;
+    const data = {
+      requestId,
+      agentId,
+    };
+    // 查询日志详情
+    runLogDetail(data);
     setVisible(true);
   };
 
@@ -317,6 +340,7 @@ const SpaceLog: React.FC = () => {
         />
       </div>
       <LogDetails
+        loading={loading}
         visible={visible}
         requestId={currentLog?.requestId}
         executeResult={currentLog?.executeResult}

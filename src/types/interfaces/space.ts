@@ -94,6 +94,7 @@ export interface LogHeaderProps {
 
 // 日志详情组件
 export interface LogDetailsProps {
+  loading: boolean;
   requestId?: string;
   executeResult?: string;
   visible?: boolean;

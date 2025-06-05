@@ -71,6 +71,7 @@ export interface ExecuteResultInfo {
   error: string;
   id: number;
   icon: string;
+  // 可能是字符串，也可能是object，需要根据具体情况处理
   input: unknown;
   name: string;
   startTime: number;
