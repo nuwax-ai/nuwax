@@ -148,6 +148,7 @@ const CodeEditor: React.FC<Props> = ({
           }
 
           onChange?.(text || '');
+          setOpen(false);
         }}
       />
     </>

@@ -218,6 +218,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
           // 只取第二个SQL语句
           form.setFieldsValue({ systemPrompt: text || '' });
           setIsModified(true);
+          setShow(false);
         }}
         targetId={id}
         type={PromptOptimizeTypeEnum.WORKFLOW_LLM_NODE}
