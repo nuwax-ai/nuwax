@@ -338,6 +338,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
               <div className="dis-sb margin-bottom">
                 <span className="node-title-style">字符串拼接</span>
                 <Popover
+                  placement="topRight"
                   content={
                     <>
                       <p className="node-title-style">数组连接符设置</p>
@@ -393,7 +394,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
                   }
                   trigger="click"
                 >
-                  <SettingOutlined />
+                  <Button type="text" icon={<SettingOutlined />} size="small" />
                 </Popover>
               </div>
               <Form.Item name="text">
