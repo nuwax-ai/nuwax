@@ -52,16 +52,16 @@ export const TABS = [
     type: TabsEnum.Ecosystem_Market,
   },
   {
-    icon: teachMaterialImage,
-    iconActive: teachMaterialImageActive,
-    text: '教材体系',
-    type: TabsEnum.Course_System,
-  },
-  {
     icon: systemImage,
     iconActive: systemImageActive,
     text: '系统管理',
     type: TabsEnum.System_Manage,
+  },
+  {
+    icon: teachMaterialImage,
+    iconActive: teachMaterialImageActive,
+    text: '教材体系',
+    type: TabsEnum.Course_System,
   },
 ];
 

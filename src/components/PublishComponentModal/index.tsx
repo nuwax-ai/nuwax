@@ -41,6 +41,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   mode = AgentComponentTypeEnum.Agent,
   targetId,
   open,
+  onlyShowTemplate = true,
   onCancel,
   onConfirm,
 }) => {
@@ -289,28 +290,38 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
           />
         ),
     },
-    {
-      title: (
-        <LabelIcon
-          className={cx(styles['label-normal'])}
-          label="仅模板"
-          title={'选择后仅在模板广场展示，仅模板只有在允许复制选择后才可选'}
-          type={TooltipTitleTypeEnum.White}
-        />
-      ),
-      dataIndex: 'onlyTemplate',
-      width: 100,
-      align: 'center',
-      render: (_: null, record: PublishScope) =>
-        record?.children?.length ? null : (
-          <Checkbox
-            checked={isOnlyTemplate(record.scope, record.spaceId)}
-            disabled={!isAllCopy(record.scope, record.spaceId)}
-            onChange={(e) => handleOnlyTemplate(record, e.target.checked)}
-          />
-        ),
-    },
-  ];
+  ].concat(
+    onlyShowTemplate
+      ? [
+          {
+            title: (
+              <LabelIcon
+                className={cx(styles['label-normal'])}
+                label="仅模板"
+                title={
+                  '选择后仅在模板广场展示，仅模板只有在允许复制选择后才可选'
+                }
+                type={TooltipTitleTypeEnum.White}
+              />
+            ),
+            dataIndex: 'onlyTemplate',
+            width: 100,
+            render: (_: null, record: PublishScope) =>
+              record?.children?.length ? null : (
+                <div className={cx(styles['text-center'])}>
+                  <Checkbox
+                    checked={isOnlyTemplate(record.scope, record.spaceId)}
+                    disabled={!isAllCopy(record.scope, record.spaceId)}
+                    onChange={(e) =>
+                      handleOnlyTemplate(record, e.target.checked)
+                    }
+                  />
+                </div>
+              ),
+          },
+        ]
+      : [],
+  );
 
   return (
     <CustomFormModal
