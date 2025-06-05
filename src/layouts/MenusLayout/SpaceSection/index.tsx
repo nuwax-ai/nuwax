@@ -114,8 +114,10 @@ const SpaceSection: React.FC<{
       <SpaceTitle avatar={avatar} name={currentSpaceInfo?.name} />
       <ul>
         {SPACE_APPLICATION_LIST.map((item) => {
+          // 个人空间时，不显示"成员与设置", 普通用户也不显示"成员与设置"
           if (
-            currentSpaceInfo?.type === SpaceTypeEnum.Personal &&
+            (currentSpaceInfo?.type === SpaceTypeEnum.Personal ||
+              currentSpaceInfo.currentUserRole === RoleEnum.User) &&
             item.type === SpaceApplicationListEnum.Team_Setting
           ) {
             return null;
