@@ -617,9 +617,6 @@ const Workflow: React.FC = () => {
     nodeData.key = nodeData.type === 'Loop' ? 'loop-node' : 'general-Node';
     const extension = nodeData.nodeConfig.extension;
 
-    console.log('log:extension', extension);
-    console.log('log:nodeData', nodeData);
-
     // 添加节点到图形中
     graphRef.current.addNode(extension, nodeData);
 
@@ -1228,11 +1225,6 @@ const Workflow: React.FC = () => {
     };
 
     const calculateNodePosition = (_position: { x: number; y: number }) => {
-      //1. 根据添加源判断添加类型为 start、middle、end 并取到对应位置与 节点Id
-      //2.通过当前节点id 取出上一个节点或者下一个节点 如果有一个或者多个 取出最后一个节点 并取到对应位置与 节点Id
-      //3. 如果没有命中就新增偏移，如果命中就通过上一个节点或者下一个节点 计算偏移位置
-      //4. 返回计算后的新节点的位置
-
       let newNodeWidth = DEFAULT_NODE_CONFIG.generalNode.defaultWidth;
       if (child.type === 'Loop') {
         newNodeWidth = DEFAULT_NODE_CONFIG.loopNode.defaultWidth;
@@ -1253,12 +1245,14 @@ const Workflow: React.FC = () => {
         );
 
         if (isOut) {
+          // port 为 out 出边，需要向右偏移
           _position.x = _position.x + DEFAULT_NODE_CONFIG.newNodeOffsetX;
           if (peerPosition !== null && peerPosition.x >= _position.x) {
             _position.x = peerPosition.x + DEFAULT_NODE_CONFIG.offsetGapX;
             _position.y = peerPosition.y + DEFAULT_NODE_CONFIG.offsetGapX;
           }
         } else {
+          // port 为 in 入边，需要向左偏移
           _position.x =
             _position.x - newNodeWidth - DEFAULT_NODE_CONFIG.newNodeOffsetX;
           if (peerPosition !== null && peerPosition.x <= _position.x) {
