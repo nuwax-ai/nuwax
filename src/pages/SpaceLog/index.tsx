@@ -1,5 +1,5 @@
 import { apiAgentConfigInfo } from '@/services/agentConfig';
-import { apiAgentLogList } from '@/services/agentDev';
+import { apiAgentLogDetail, apiAgentLogList } from '@/services/agentDev';
 import {
   AgentConfigInfo,
   logInfo,
@@ -40,8 +40,11 @@ const SpaceLog: React.FC = () => {
   const [dataSource, setDataSource] = useState<logInfo[]>([]);
   const [visible, setVisible] = useState<boolean>(false);
   const [currentLog, setCurrentLog] = useState<logInfo | null>(null);
+  const [loadingLogList, setLoadingLogList] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [pageIndex, setPageIndex] = useState<number>(1);
 
-  // 知识库分段配置 - 数据列表查询
+  // 日志查询
   const { run: runLogList } = useRequest(apiAgentLogList, {
     manual: true,
     debounceWait: 300,
@@ -55,6 +58,19 @@ const SpaceLog: React.FC = () => {
         key: uuidv4(),
       }));
       setDataSource(list);
+      setLoadingLogList(false);
+    },
+  });
+
+  // 日志详情
+  const { run: runLogDetail } = useRequest(apiAgentLogDetail, {
+    manual: true,
+    debounceWait: 300,
+    // 设置显示 loading 的延迟时间，避免闪烁
+    loadingDelay: 300,
+    onSuccess: (result: logInfo) => {
+      setCurrentLog(result);
+      setLoading(false);
     },
   });
 
@@ -69,10 +85,11 @@ const SpaceLog: React.FC = () => {
 
   // 查询日志
   const handleQuery = (queryFilter: LogQueryFilter, current: number = 1) => {
+    setLoadingLogList(true);
     runLogList({
       queryFilter,
       current,
-      pageSize: 20,
+      pageSize: 10,
     });
   };
 
@@ -118,18 +135,24 @@ const SpaceLog: React.FC = () => {
 
   // 分页
   const handlePaginationChange = (page: number) => {
+    setPageIndex(page);
     const values = form.getFieldsValue();
     handleDataSearch(values, page);
   };
 
   const onFinish: FormProps<AgentLogFormProps>['onFinish'] = (values) => {
+    // 关闭详情
     handleClose();
+    setPageIndex(1);
     handleDataSearch(values);
   };
 
   // 重置
   const handleReset = () => {
+    // 关闭详情
     handleClose();
+    setPageIndex(1);
+    // 查询日志
     handleQuery({ agentId });
   };
 
@@ -139,7 +162,7 @@ const SpaceLog: React.FC = () => {
       title: '消息ID',
       dataIndex: 'messageId',
       key: 'messageId',
-      width: 100,
+      width: 150,
       ellipsis: true,
     },
     {
@@ -167,14 +190,18 @@ const SpaceLog: React.FC = () => {
       title: '用户输入',
       dataIndex: 'userInput',
       key: 'userInput',
+      minWidth: 150,
+      width: 200,
       render: (text: string) => {
-        return <div className={'text-ellipsis-2'}>{text}</div>;
+        return <div className={cx('text-ellipsis-2')}>{text}</div>;
       },
     },
     {
       title: '输出',
       dataIndex: 'output',
       key: 'output',
+      minWidth: 150,
+      width: 200,
       render: (text: string) => {
         return <div className={'text-ellipsis-2'}>{text}</div>;
       },
@@ -213,7 +240,14 @@ const SpaceLog: React.FC = () => {
 
   // 点击行
   const handleClick = (record: logInfo) => {
-    setCurrentLog(record);
+    setLoading(true);
+    const { requestId, agentId } = record;
+    const data = {
+      requestId,
+      agentId,
+    };
+    // 查询日志详情
+    runLogDetail(data);
     setVisible(true);
   };
 
@@ -302,8 +336,11 @@ const SpaceLog: React.FC = () => {
         <Table<logInfo>
           columns={inputColumns}
           dataSource={dataSource}
+          tableLayout="fixed"
           virtual
-          scroll={{ y: 480, x: 'max-content' }}
+          sticky
+          loading={loadingLogList}
+          scroll={{ x: 'max-content' }}
           onRow={(record) => {
             return {
               onClick: () => handleClick(record), // 点击行
@@ -311,12 +348,15 @@ const SpaceLog: React.FC = () => {
           }}
           pagination={{
             total: total,
+            current: pageIndex,
+            defaultPageSize: 10,
             onChange: handlePaginationChange,
             showTotal: (total) => `共 ${total} 条`,
           }}
         />
       </div>
       <LogDetails
+        loading={loading}
         visible={visible}
         requestId={currentLog?.requestId}
         executeResult={currentLog?.executeResult}

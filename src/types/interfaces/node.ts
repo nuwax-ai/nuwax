@@ -1,4 +1,5 @@
 import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
+import { BindConfigWithSub } from '@/types/interfaces/agent';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
 export interface InputAndOutConfig {
@@ -29,9 +30,9 @@ export interface InputAndOutConfig {
 }
 
 interface ConditionArgs {
-  secondArg: InputAndOutConfig | null;
+  secondArg: BindConfigWithSub | null;
   compareType: string | null;
-  firstArg: InputAndOutConfig | null;
+  firstArg: BindConfigWithSub | null;
 }
 export interface ConditionBranchConfigs {
   branchType: 'IF' | 'ELSE_IF' | 'ELSE';

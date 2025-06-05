@@ -1,14 +1,15 @@
+import CodeOptimizeModal from '@/components/CodeOptimizeModal';
 import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
+import { CodeLangEnum } from '@/types/enums/plugin';
 import Editor, { loader } from '@monaco-editor/react';
 import { FloatButton, Form } from 'antd';
 import { FormInstance } from 'antd/lib/form/Form';
 import * as monaco from 'monaco-editor';
 import React, { useEffect, useState } from 'react';
-import { useModel, useParams } from 'umi';
-import CodeOptimizeModal from '../CodeOptimizeModal';
+import { useModel } from 'umi';
 
 interface Props {
-  codeLanguage: 'JavaScript' | 'Python' | 'JSON';
+  codeLanguage: CodeLangEnum;
   height?: string;
   value?: string | undefined;
   onChange?: (code: string) => void;
@@ -24,7 +25,6 @@ const CodeEditor: React.FC<Props> = ({
 }) => {
   const [isMonacoReady, setIsMonacoReady] = useState(false);
   const [open, setOpen] = useState<boolean>(false);
-  const { agentId } = useParams();
   const { testRun } = useModel('model');
   useEffect(() => {
     loader.config({
@@ -76,12 +76,9 @@ const CodeEditor: React.FC<Props> = ({
   }
 
   const handleCodeChange = (newValue?: string) => {
-    console.log(newValue);
-
     if (onChange) {
       onChange(newValue || '');
     }
-    // setIsModified(true);
   };
 
   return (
@@ -135,7 +132,6 @@ const CodeEditor: React.FC<Props> = ({
         }}
       />
       <CodeOptimizeModal
-        id={agentId}
         title="代码助手"
         open={open}
         codeLanguage={codeLanguage}
@@ -152,6 +148,7 @@ const CodeEditor: React.FC<Props> = ({
           }
 
           onChange?.(text || '');
+          setOpen(false);
         }}
       />
     </>

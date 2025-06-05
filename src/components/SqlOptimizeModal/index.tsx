@@ -1,7 +1,8 @@
 import sendImage from '@/assets/images/send_image_gray.png';
 import PromptView from '@/components/ChatView/promptView';
+import { BindConfigWithSub } from '@/types/interfaces/agent';
+import { OptimizeTypeEnum } from '@/types/interfaces/assistant';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import { InputAndOutConfig } from '@/types/interfaces/node';
 import type { ModalProps } from 'antd';
 import { Button, Input, Modal } from 'antd';
 import classNames from 'classnames';
@@ -12,24 +13,17 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-export type OptimizeType = 'prompt' | 'code' | 'sql';
-
-export interface AssistantOptimizeModalProps extends ModalProps {
-  optimizeType: OptimizeType;
+export interface SqlOptimizeModalProps extends ModalProps {
   onReplace: (text?: string) => void;
-  defaultValue?: string;
-  codeLanguage?: string;
   tableId?: number;
-  inputArgs?: InputAndOutConfig[];
+  inputArgs?: BindConfigWithSub[];
 }
 
-const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
+// sql生成优化
+const SqlOptimizeModal: React.FC<SqlOptimizeModalProps> = ({
   open,
   onCancel,
   onReplace,
-  defaultValue,
-  optimizeType,
-  codeLanguage,
   title,
   tableId,
   inputArgs,
@@ -41,12 +35,17 @@ const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
     onMessageSend,
     messageViewRef,
     allowAutoScrollRef,
+    resetInit,
   } = useModel('assistantOptimize');
 
   const [requestId, setRequestIdId] = useState<string>('');
 
   useEffect(() => {
     setRequestIdId(uuidv4());
+
+    return () => {
+      resetInit();
+    };
   }, []);
 
   // 在组件挂载时添加滚动事件监听器
@@ -73,59 +72,44 @@ const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
 
   const handleSendMessage = async (text?: string) => {
     setMessageList([]);
-    if (text) {
-      setMessage('');
-      onMessageSend(requestId, text, optimizeType, codeLanguage);
-    } else if (message) {
-      setMessage('');
-      console.log('message', message, optimizeType, tableId);
-      onMessageSend(
-        requestId,
-        message,
-        optimizeType,
-        codeLanguage,
-        tableId,
-        inputArgs,
-      );
-    }
+    setMessage('');
+    const params = {
+      requestId,
+      prompt: text || message,
+      tableId,
+      inputArgs,
+    };
+
+    onMessageSend(params, OptimizeTypeEnum.sql);
   };
 
   // enter事件
-  const handlePressEnter = (e: any) => {
+  const handlePressEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
-    const { value } = e.target;
+    const { value, selectionStart, selectionEnd } =
+      e.target as HTMLTextAreaElement;
     // shift+enter或者ctrl+enter时换行
     if (
       e.nativeEvent.keyCode === 13 &&
       (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)
     ) {
-      const enterValue = `${value}\n`;
-      setMessage(enterValue);
+      // 在光标位置插入换行符
+      const newValue =
+        value.slice(0, selectionStart) + '\n' + value.slice(selectionEnd);
+      setMessage(newValue);
     } else if (e.nativeEvent.keyCode === 13 && !!value.trim()) {
       // enter事件
-
-      onMessageSend(
+      const params = {
         requestId,
-        message,
-        optimizeType,
-        codeLanguage,
+        prompt: message,
         tableId,
         inputArgs,
-      );
+      };
+
+      onMessageSend(params, OptimizeTypeEnum.sql);
       // 置空
       setMessage('');
     }
-  };
-
-  // ... existing handlePressEnter code ...
-
-  const getPlaceholder = () => {
-    const params = {
-      prompt: '请描述你的提示词需求，比如角色定义、技能要求等',
-      code: '请描述你的具体业务需求，逻辑尽量描述详细',
-      sql: '请输入你的SQL查询需求，逻辑尽量描述详细',
-    };
-    return params[optimizeType];
   };
 
   return (
@@ -143,7 +127,7 @@ const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
         ref={messageViewRef}
         className={cx(styles['chat-wrapper'], 'flex-1')}
       >
-        {messageList?.length > 0 ? (
+        {messageList?.length > 0 && (
           <>
             {messageList?.map((item: MessageInfo, index: number) => (
               <PromptView
@@ -154,9 +138,6 @@ const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
               />
             ))}
           </>
-        ) : (
-          // Chat记录为空
-          <div />
         )}
       </div>
       {messageList?.length > 0 && (
@@ -186,22 +167,6 @@ const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
           </Button>
         </div>
       )}
-      {messageList?.length === 0 && optimizeType === 'prompt' && (
-        <Button
-          type="default"
-          className={cx(styles['btn'])}
-          onClick={() =>
-            // 如果有默认文本就优化默认文本
-            handleSendMessage(
-              defaultValue
-                ? defaultValue
-                : '一个能为你提供工作帮助和建议的智能机器人',
-            )
-          }
-        >
-          自动优化
-        </Button>
-      )}
       <div className={cx(styles.footer, 'flex', 'items-center')}>
         <div
           className={cx(styles['chat-input'], 'flex', 'items-center', 'w-full')}
@@ -211,7 +176,7 @@ const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
             onChange={(e) => setMessage(e.target.value)}
             rootClassName={styles.input}
             onPressEnter={handlePressEnter}
-            placeholder={getPlaceholder()}
+            placeholder={'请输入你的SQL查询需求，逻辑尽量描述详细'}
             autoSize={{ minRows: 1, maxRows: 3 }}
           />
 
@@ -227,4 +192,4 @@ const AssistantOptimizeModal: React.FC<AssistantOptimizeModalProps> = ({
   );
 };
 
-export default AssistantOptimizeModal;
+export default SqlOptimizeModal;

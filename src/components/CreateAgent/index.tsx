@@ -69,8 +69,10 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   };
 
   useEffect(() => {
-    initForm();
-  }, [agentConfigInfo]);
+    if (open) {
+      initForm();
+    }
+  }, [open, agentConfigInfo]);
 
   const onFinish: FormProps<AgentAddParams>['onFinish'] = (values) => {
     if (mode === CreateUpdateModeEnum.Create) {

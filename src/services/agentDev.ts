@@ -1,6 +1,7 @@
 import type {
   AgentDetailDto,
   AgentInfo,
+  AgentLogDetailParams,
   apiAgentLogListParams,
   logInfo,
 } from '@/types/interfaces/agent';
@@ -140,6 +141,16 @@ export async function apiAgentLogList(
   data: apiAgentLogListParams,
 ): Promise<RequestResponse<Page<logInfo>>> {
   return request('/api/logPlatform/agent/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 日志详情
+export async function apiAgentLogDetail(
+  data: AgentLogDetailParams,
+): Promise<RequestResponse<logInfo>> {
+  return request('/api/logPlatform/agent/detail', {
     method: 'POST',
     data,
   });

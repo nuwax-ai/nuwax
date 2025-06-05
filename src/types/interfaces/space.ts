@@ -65,6 +65,8 @@ export interface PublishComponentModalProps {
   // 发布目标ID，例如智能体ID；工作流ID；插件ID
   targetId: number;
   open: boolean;
+  // 是否展示“仅模板”，默认为true, 插件不显示, 智能体、工作流显示
+  onlyShowTemplate?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -94,6 +96,7 @@ export interface LogHeaderProps {
 
 // 日志详情组件
 export interface LogDetailsProps {
+  loading: boolean;
   requestId?: string;
   executeResult?: string;
   visible?: boolean;

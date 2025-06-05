@@ -475,6 +475,7 @@ const SpacePluginCloudTool: React.FC = () => {
         mode={AgentComponentTypeEnum.Plugin}
         targetId={pluginId}
         open={openModal}
+        onlyShowTemplate={false}
         // 取消发布
         onCancel={() => setOpenModal(false)}
         onConfirm={handleConfirmPublishPlugin}

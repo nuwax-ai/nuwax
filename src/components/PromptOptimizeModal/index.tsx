@@ -1,5 +1,10 @@
 import sendImage from '@/assets/images/send_image_gray.png';
 import PromptView from '@/components/ChatView/promptView';
+import {
+  OptimizeTypeEnum,
+  PromptOptimizeParams,
+  PromptOptimizeTypeEnum,
+} from '@/types/interfaces/assistant';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import type { ModalProps } from 'antd';
 import { Button, Input, Modal } from 'antd';
@@ -13,10 +18,21 @@ const cx = classNames.bind(styles);
 
 const PromptOptimizeModal: React.FC<
   ModalProps & {
+    title?: string;
+    targetId?: number;
+    type?: PromptOptimizeTypeEnum;
     onReplace: (text?: string) => void;
     defaultValue?: string;
   }
-> = ({ open, onCancel, onReplace, defaultValue }) => {
+> = ({
+  title,
+  open,
+  onCancel,
+  onReplace,
+  defaultValue,
+  targetId,
+  type = PromptOptimizeTypeEnum.AGENT,
+}) => {
   const [message, setMessage] = useState<string>('');
   const {
     messageList,
@@ -24,12 +40,17 @@ const PromptOptimizeModal: React.FC<
     onMessageSend,
     messageViewRef,
     allowAutoScrollRef,
+    resetInit,
   } = useModel('assistantOptimize');
   // 智能体会话问题建议
   const [id, setId] = useState<string>('');
 
   useEffect(() => {
     setId(uuidv4());
+
+    return () => {
+      resetInit();
+    };
   }, []);
 
   // 在组件挂载时添加滚动事件监听器
@@ -57,29 +78,42 @@ const PromptOptimizeModal: React.FC<
   // 点击发送事件
   const handleSendMessage = async (text?: string) => {
     setMessageList([]);
-    if (text) {
-      setMessage('');
-      onMessageSend(id, text, 'prompt');
-    } else if (message) {
-      setMessage('');
-      onMessageSend(id, message, 'prompt');
-    }
+    setMessage('');
+    // 参数
+    const params: PromptOptimizeParams = {
+      requestId: id,
+      prompt: text || message,
+      type,
+      // 智能体ID或工作流节点ID，可选
+      id: targetId,
+    };
+    onMessageSend(params, OptimizeTypeEnum.prompt);
   };
 
   // enter事件
-  const handlePressEnter = (e: any) => {
+  const handlePressEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
-    const { value } = e.target;
+    const { value, selectionStart, selectionEnd } =
+      e.target as HTMLTextAreaElement;
     // shift+enter或者ctrl+enter时换行
     if (
       e.nativeEvent.keyCode === 13 &&
       (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)
     ) {
-      const enterValue = `${value}\n`;
-      setMessage(enterValue);
+      // 在光标位置插入换行符
+      const newValue =
+        value.slice(0, selectionStart) + '\n' + value.slice(selectionEnd);
+      setMessage(newValue);
     } else if (e.nativeEvent.keyCode === 13 && !!value.trim()) {
       // enter事件
-      onMessageSend(id, message, 'prompt');
+      const params: PromptOptimizeParams = {
+        requestId: id,
+        prompt: message,
+        type,
+        // 智能体ID或工作流节点ID，可选
+        id: targetId,
+      };
+      onMessageSend(params, OptimizeTypeEnum.prompt);
       // 置空
       setMessage('');
     }
@@ -87,7 +121,7 @@ const PromptOptimizeModal: React.FC<
 
   return (
     <Modal
-      title={' '}
+      title={title}
       open={open}
       onCancel={(e) => {
         setMessageList([]);
@@ -101,7 +135,7 @@ const PromptOptimizeModal: React.FC<
         ref={messageViewRef}
         className={cx(styles['chat-wrapper'], 'flex-1')}
       >
-        {messageList?.length > 0 ? (
+        {messageList?.length > 0 && (
           <>
             {messageList?.map((item: MessageInfo, index: number) => (
               <PromptView
@@ -111,9 +145,6 @@ const PromptOptimizeModal: React.FC<
               />
             ))}
           </>
-        ) : (
-          // Chat记录为空
-          <div />
         )}
       </div>
       {messageList?.length > 0 ? (
@@ -149,9 +180,7 @@ const PromptOptimizeModal: React.FC<
           onClick={() =>
             // 如果有默认文本就优化默认文本
             handleSendMessage(
-              defaultValue
-                ? defaultValue
-                : '一个能为你提供工作帮助和建议的智能机器人',
+              defaultValue || '一个能为你提供工作帮助和建议的智能机器人',
             )
           }
         >

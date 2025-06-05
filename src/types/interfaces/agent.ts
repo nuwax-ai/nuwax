@@ -99,6 +99,7 @@ export interface BindConfigWithSub {
   // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
   inputType?: InputTypeEnum;
   subArgs?: BindConfigWithSub[];
+  loopId: number;
   children?: BindConfigWithSub[];
   [key: string]: any;
 }
@@ -546,6 +547,12 @@ export interface apiAgentLogListParams {
   pageSize: number;
 }
 
+// 日志详情请求参数
+export interface AgentLogDetailParams {
+  requestId: string;
+  agentId: number;
+}
+
 // 日志信息
 export interface logInfo {
   // 请求ID，唯一标识一次请求
@@ -575,7 +582,7 @@ export interface logInfo {
   // 系统输出的内容
   output: string;
 
-  // 执行结果
+  // 执行结果,扩展字段,字段类型存储的是json文本
   executeResult: string;
 
   // 输入token数量

@@ -68,6 +68,8 @@ const ChatTemp: React.FC = () => {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortConnectionRef = useRef<unknown>();
+  // 会话消息ID
+  const messageIdRef = useRef<string>('');
   const [isLoadingConversation, setIsLoadingConversation] =
     useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
@@ -201,6 +203,8 @@ const ChatTemp: React.FC = () => {
         // 深拷贝消息列表
         const list = [...messageList];
         const index = list.findIndex((item) => item.id === currentMessageId);
+        // 数组splice方法的第二个参数表示删除的数量，这里我们只需要删除一个元素，所以设置为1， 如果为0，则表示不删除元素。
+        let arraySpliceAction = 1;
         // 当前消息
         const currentMessage = list.find(
           (item) => item.id === currentMessageId,
@@ -228,7 +232,7 @@ const ChatTemp: React.FC = () => {
         }
         // MESSAGE事件
         if (eventType === ConversationEventTypeEnum.MESSAGE) {
-          const { text, type, ext } = data;
+          const { text, type, ext, id, finished } = data;
           // 思考think
           if (type === MessageModeEnum.THINK) {
             newMessage = {
@@ -252,11 +256,27 @@ const ChatTemp: React.FC = () => {
               );
             }
           } else {
-            newMessage = {
-              ...currentMessage,
-              text: `${currentMessage.text}${text}`,
-              status: MessageStatusEnum.Incomplete,
-            };
+            // 工作流过程输出
+            if (
+              (!messageIdRef.current || messageIdRef.current !== id) &&
+              finished
+            ) {
+              newMessage = {
+                ...currentMessage,
+                id,
+                text: `${currentMessage.text}${text}`,
+                status: null, // 隐藏运行状态
+              };
+              // 插入新的消息
+              arraySpliceAction = 0;
+            } else {
+              messageIdRef.current = id;
+              newMessage = {
+                ...currentMessage,
+                text: `${currentMessage.text}${text}`,
+                status: MessageStatusEnum.Incomplete,
+              };
+            }
           }
         }
         // FINAL_RESULT事件
@@ -279,7 +299,11 @@ const ChatTemp: React.FC = () => {
           };
         }
 
-        list.splice(index, 1, newMessage as MessageInfo);
+        // 会话事件兼容处理，防止消息为空时，页面渲染报length错误
+        if (newMessage) {
+          list.splice(index, arraySpliceAction, newMessage as MessageInfo);
+        }
+
         return list;
       });
     }, 200);
