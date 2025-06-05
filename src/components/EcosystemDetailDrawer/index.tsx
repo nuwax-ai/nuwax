@@ -61,6 +61,10 @@ export interface EcosystemDetailDrawerData {
   /** 组件类型 */
   targetType: AgentComponentTypeEnum;
 }
+
+const DEFAULT_ICON =
+  'https://agent-1251073634.cos.ap-chengdu.myqcloud.com/store/b5fdb62e8b994a418d0fdfae723ee827.png';
+const DEFAULT_TEXT = '插件';
 /**
  * 插件详情抽屉组件
  * 右侧划出的插件详情展示
@@ -88,6 +92,10 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   const [configParam, setConfigParam] = useState<any>([]);
   const [showToolSection, setShowToolSection] = useState(false);
   const [needUpdateButton, setNeedUpdateButton] = useState(false);
+  const [targetInfo, setTargetInfo] = useState<any>({
+    icon: DEFAULT_ICON,
+    text: DEFAULT_TEXT,
+  });
   const [form] = Form.useForm();
 
   // 监听抽屉关闭，重置表单
@@ -110,6 +118,24 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
       }
     }
   }, [visible, data, form]);
+
+  useEffect(() => {
+    if (targetType) {
+      const hitInfo = COMPONENT_LIST.find(
+        (item: any) => item.type === targetType,
+      );
+      setTargetInfo({
+        icon: icon || hitInfo?.defaultImage,
+        text: hitInfo?.text || DEFAULT_TEXT,
+      });
+    }
+    return () => {
+      setTargetInfo({
+        icon: DEFAULT_ICON,
+        text: DEFAULT_TEXT,
+      });
+    };
+  }, [icon, targetType]);
 
   useEffect(() => {
     //fix: 打开抽屉时，隐藏横向滚动条
@@ -204,6 +230,14 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
             className={cx(styles.actionButton)}
             size="large"
             onClick={handleEnable}
+            iconPosition="end"
+            icon={
+              !isEnabled && !showToolSection ? (
+                <Tooltip title="启用后将发布到系统广场">
+                  <InfoCircleOutlined />
+                </Tooltip>
+              ) : null
+            }
           >
             {isEnabled
               ? showToolSection
@@ -221,7 +255,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
             onClick={onDisable}
             iconPosition="end"
             icon={
-              <Tooltip title="停用">
+              <Tooltip title={`停用后，广场${targetInfo.text}中将不可见`}>
                 <InfoCircleOutlined />
               </Tooltip>
             }
@@ -248,16 +282,11 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
         <div className={cx(styles.titleArea)}>
           <div className={cx(styles.iconWrapper)}>
             <img
-              src={
-                icon ||
-                COMPONENT_LIST.find((item: any) => item.type === targetType)
-                  ?.defaultImage ||
-                'https://agent-1251073634.cos.ap-chengdu.myqcloud.com/store/b5fdb62e8b994a418d0fdfae723ee827.png'
-              }
+              src={targetInfo.icon}
               alt={title}
               className={cx(styles.icon)}
             />
-            {isEnabled && <ActivatedIcon enabled={isEnabled} />}
+            {isEnabled && <ActivatedIcon size={30} enabled={isEnabled} />}
           </div>
           <div className={cx(styles.titleContent)}>
             <Title level={5} className={cx(styles.title)}>
