@@ -8,17 +8,21 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 // 首页智能体列表项
-const AgentItem: React.FC<AgentItemProps> = ({ info, onClick, onCollect }) => {
+const AgentItem: React.FC<AgentItemProps> = ({
+  info,
+  onItemClick,
+  onToggleCollect,
+}) => {
   // 收藏、取消收藏事件
   const handlerCollect = async (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
-    onCollect();
+    onToggleCollect();
   };
 
   return (
     <div
       className={cx(styles.container, 'flex', 'overflow-hide')}
-      onClick={onClick}
+      onClick={onItemClick}
     >
       <img
         className={cx(styles.img)}
