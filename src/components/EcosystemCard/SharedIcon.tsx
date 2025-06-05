@@ -21,9 +21,9 @@ export default function SharedIcon({
       case EcosystemShareStatusEnum.OFFLINE:
         return <Image preview={false} src={SharedOffline} alt="已下线" />;
       case EcosystemShareStatusEnum.DRAFT:
-        return '草稿';
+        return null;
       case EcosystemShareStatusEnum.REJECTED:
-        return '驳回';
+        return null;
       default:
         return null;
     }
