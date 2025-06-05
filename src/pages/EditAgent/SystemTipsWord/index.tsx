@@ -22,6 +22,11 @@ const SystemTipsWord: React.FC<SystemTipsWordProps> = ({
   const [open, setOpen] = useState<boolean>(false);
   const textareaRef = useRef<any | null>(null);
 
+  const handleReplace = (value?: string) => {
+    setOpen(false);
+    onReplace(value);
+  };
+
   return (
     <div className={cx('flex', 'flex-col', 'flex-1', 'px-16', 'py-16')}>
       <div
@@ -54,12 +59,12 @@ const SystemTipsWord: React.FC<SystemTipsWordProps> = ({
         variant="borderless"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        // autoSize={{ minRows: 20, maxRows: 30 }}
       />
       <PromptOptimizeModal
         open={open}
         onCancel={() => setOpen(false)}
-        onReplace={onReplace}
+        onReplace={handleReplace}
+        targetId={agentConfigInfo?.id}
         defaultValue={
           value ||
           `${agentConfigInfo?.name || ''}` +

@@ -2,7 +2,7 @@ import Created from '@/components/Created';
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import { ModelSelected } from '@/components/ModelSetting';
-import Optimize from '@/components/Optimize';
+import PromptOptimizeModal from '@/components/PromptOptimizeModal';
 import { SkillList } from '@/components/Skill';
 import {
   AgentAddComponentStatusEnum,
@@ -10,6 +10,7 @@ import {
 } from '@/types/enums/agent';
 import { InputItemNameEnum } from '@/types/enums/node';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
+import { PromptOptimizeTypeEnum } from '@/types/interfaces/assistant';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { QANodeOption } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
@@ -201,7 +202,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
         addComponents={addComponents}
         hideTop={[AgentComponentTypeEnum.Table]}
       />
-      <Optimize
+      <PromptOptimizeModal
         title="提示词优化"
         open={show}
         onCancel={() => {
@@ -214,14 +215,12 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
           if (text.includes('```')) {
             text = text.replace(/```/g, '');
           }
-          console.log('text', text);
           // 只取第二个SQL语句
-
           form.setFieldsValue({ systemPrompt: text || '' });
           setIsModified(true);
         }}
-        optimizeType="prompt"
-        tableId={id}
+        targetId={id}
+        type={PromptOptimizeTypeEnum.WORKFLOW_LLM_NODE}
       />
     </div>
   );

@@ -2,8 +2,8 @@ import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import InputOrReference from '@/components/FormListItem/InputOrReference';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import TreeInput from '@/components/FormListItem/TreeInput';
-import Optimize from '@/components/Optimize';
 import DataTable from '@/components/Skill/database';
+import SqlOptimizeModal from '@/components/SqlOptimizeModal';
 import { InputItemNameEnum } from '@/types/enums/node';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
@@ -20,7 +20,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
 
   const { setIsModified } = useModel('workflow');
 
-  const defautlConditionArgs = [
+  const defaultConditionArgs = [
     {
       firstArg: {
         bindValue: null,
@@ -120,7 +120,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
               </Form.Item>
               <Form.List
                 name={'conditionArgs'}
-                initialValue={defautlConditionArgs}
+                initialValue={defaultConditionArgs}
               >
                 {(subFields, subOpt) => {
                   return (
@@ -315,7 +315,7 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
           }
         </Form.Item>
       )}
-      <Optimize
+      <SqlOptimizeModal
         title="生成sql语句"
         open={open}
         onCancel={() => {
@@ -334,7 +334,6 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type }) => {
           form.setFieldsValue({ sql: finalSql || '' });
           setIsModified(true);
         }}
-        optimizeType="sql"
         tableId={form.getFieldValue('tableId')}
         inputArgs={form.getFieldValue('inputArgs')}
       />

@@ -1,5 +1,10 @@
 import sendImage from '@/assets/images/send_image_gray.png';
 import PromptView from '@/components/ChatView/promptView';
+import { CodeLangEnum } from '@/types/enums/plugin';
+import {
+  CodeCreateParams,
+  OptimizeTypeEnum,
+} from '@/types/interfaces/assistant';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import type { ModalProps } from 'antd';
 import { Button, Input, Modal } from 'antd';
@@ -13,7 +18,7 @@ const cx = classNames.bind(styles);
 
 const CodeOptimizeModal: React.FC<
   ModalProps & {
-    codeLanguage?: string;
+    codeLanguage: CodeLangEnum;
     onReplace?: (text?: string) => void;
     defaultValue?: string;
   }
@@ -63,7 +68,12 @@ const CodeOptimizeModal: React.FC<
 
     if (message) {
       setMessage('');
-      onMessageSend(id, message, 'code', codeLanguage);
+      const params: CodeCreateParams = {
+        requestId: id,
+        prompt: message,
+        codeLanguage,
+      };
+      onMessageSend(params, OptimizeTypeEnum.code);
     }
   };
 
@@ -80,7 +90,12 @@ const CodeOptimizeModal: React.FC<
       setMessage(enterValue);
     } else if (e.nativeEvent.keyCode === 13 && !!value.trim()) {
       // enter事件
-      onMessageSend(id, message, 'code', codeLanguage);
+      const params: CodeCreateParams = {
+        requestId: id,
+        prompt: message,
+        codeLanguage,
+      };
+      onMessageSend(params, OptimizeTypeEnum.code);
       // 置空
       setMessage('');
     }

@@ -12,11 +12,13 @@ import {
 import { MessageStatusEnum } from '@/types/enums/common';
 import { EditAgentShowType } from '@/types/enums/space';
 import {
+  CodeCreateParams,
+  OptimizeTypeEnum,
   PromptOptimizeParams,
   PromptOptimizeRes,
+  SqlCreateParams,
 } from '@/types/interfaces/assistant';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import { InputAndOutConfig } from '@/types/interfaces/node';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import moment from 'moment/moment';
 import { useRef, useState } from 'react';
@@ -52,13 +54,11 @@ export default () => {
 
   // 修改消息列表
   const handleChangeMessageList = (
-    params: PromptOptimizeParams,
     res: PromptOptimizeRes,
     // 自定义随机id
     currentMessageId: string,
   ) => {
     const { finished, ...data } = res;
-    // const { data, eventType } = res;
     timeoutRef.current = setTimeout(() => {
       setMessageList((messageList) => {
         if (!messageList?.length) {
@@ -122,7 +122,7 @@ export default () => {
     handleScrollBottom();
   };
 
-  const returnUrl = (type: 'prompt' | 'code' | 'sql') => {
+  const returnUrl = (type: OptimizeTypeEnum) => {
     const obj = {
       prompt: PROMPT_OPTIMIZE_URL,
       code: CODE_OPTIMIZE_URL,
@@ -133,9 +133,9 @@ export default () => {
 
   // 会话处理
   const handleConversation = async (
-    params: PromptOptimizeParams,
+    params: PromptOptimizeParams | SqlCreateParams | CodeCreateParams,
     currentMessageId: string,
-    type: 'prompt' | 'code' | 'sql',
+    type: OptimizeTypeEnum,
   ) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
     // 启动连接
@@ -148,12 +148,7 @@ export default () => {
       },
       body: params,
       onMessage: (res: PromptOptimizeRes) => {
-        // console.log(res);
-        handleChangeMessageList(params, res, currentMessageId);
-      },
-      onError: (error) => {
-        console.error('Error:', error);
-        // 处理错误
+        handleChangeMessageList(res, currentMessageId);
       },
     });
 
@@ -187,12 +182,8 @@ export default () => {
 
   // 发送消息
   const onMessageSend = async (
-    id: number,
-    message: string,
-    type: 'prompt' | 'code' | 'sql',
-    codeLanguage?: string,
-    tableId?: number,
-    inputArgs?: InputAndOutConfig[],
+    params: PromptOptimizeParams | SqlCreateParams | CodeCreateParams,
+    type: OptimizeTypeEnum,
   ) => {
     // 清除副作用
     handleClearSideEffect();
@@ -222,16 +213,7 @@ export default () => {
       return [..._list, currentMessage] as MessageInfo[];
     });
     // 滚动
-    await handleScrollBottom();
-    // 会话请求参数
-    const params: PromptOptimizeParams = {
-      requestId: `${id}`,
-      prompt: message,
-      type: type === 'prompt' ? 'WORKFLOW_LLM_NODE' : '',
-      codeLanguage: codeLanguage,
-      [type === 'prompt' ? 'id' : 'tableId']: tableId,
-      inputArgs: inputArgs,
-    };
+    handleScrollBottom();
     // 处理会话
     await handleConversation(params, currentMessageId, type);
   };
