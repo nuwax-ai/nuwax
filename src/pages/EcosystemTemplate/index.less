@@ -13,12 +13,12 @@
   background-color: transparent;
 
   :global {
-    .ant-card-body {
-      padding: 0 24px 24px;
-    }
-
     .ant-card-head {
       border-bottom: none;
+    }
+
+    .ant-card-body {
+      padding: 0;
     }
   }
 }
@@ -28,7 +28,8 @@
   justify-content: space-between;
   align-items: center;
   border-bottom: none;
-  margin-bottom: 16px;
+  padding-left: 24px;
+  padding-right: 24px;
 }
 
 .tabs {
@@ -67,29 +68,18 @@
 }
 
 .pluginList {
-  padding-top: 8px;
+  padding-top: 16px;
+  padding-left: 24px;
+  padding-right: 24px;
 }
 
-.pluginCol {
-  @media (max-width: 1400px) {
-    flex: 0 0 25%;
-    max-width: 25%;
-  }
-
-  @media (max-width: 1200px) {
-    flex: 0 0 33.33%;
-    max-width: 33.33%;
-  }
-
-  @media (max-width: 992px) {
-    flex: 0 0 50%;
-    max-width: 50%;
-  }
-
-  @media (max-width: 576px) {
-    flex: 0 0 100%;
-    max-width: 100%;
-  }
+.title {
+  padding-left: 24px;
+  padding-top: 16px;
+  padding-bottom: 16px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
 }
 
 .headerRight {

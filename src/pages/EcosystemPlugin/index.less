@@ -13,12 +13,12 @@
   background-color: transparent;
 
   :global {
-    .ant-card-body {
-      padding: 0 24px 24px;
-    }
-
     .ant-card-head {
       border-bottom: none;
+    }
+
+    .ant-card-body {
+      padding: 0;
     }
   }
 }
@@ -28,7 +28,8 @@
   justify-content: space-between;
   align-items: center;
   border-bottom: none;
-  margin-bottom: 16px;
+  padding-left: 24px;
+  padding-right: 24px;
 }
 
 .tabs {
@@ -67,7 +68,18 @@
 }
 
 .pluginList {
-  padding-top: 8px;
+  padding-top: 16px;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.title {
+  padding-left: 24px;
+  padding-top: 16px;
+  padding-bottom: 16px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
 }
 
 .headerRight {
