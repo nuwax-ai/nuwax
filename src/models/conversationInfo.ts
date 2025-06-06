@@ -305,6 +305,7 @@ export default () => {
             ...currentMessage,
             status: MessageStatusEnum.Complete,
             finalResult: data,
+            id: res.requestId,
           };
           // 调试结果
           setRequestId(res.requestId);
