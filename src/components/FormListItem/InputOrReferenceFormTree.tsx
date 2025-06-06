@@ -1,5 +1,9 @@
 import { DataTypeEnum } from '@/types/enums/common';
-import { InputAndOutConfig, PreviousList } from '@/types/interfaces/node';
+import {
+  InputAndOutConfig,
+  NodePreviousAndArgMap,
+  PreviousList,
+} from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
 import { InfoCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import { Dropdown, Input, Popover, Tag, Tree } from 'antd';
@@ -8,6 +12,7 @@ import { useModel } from 'umi';
 import './index.less';
 
 interface InputOrReferenceProps {
+  data: NodePreviousAndArgMap;
   placeholder?: string;
   style?: React.CSSProperties;
   isDisabled?: boolean;
@@ -23,13 +28,14 @@ interface InputOrReferenceProps {
 
 const InputOrReference: React.FC<InputOrReferenceProps> = ({
   placeholder,
+  data,
   style,
   isDisabled = false,
   referenceType = 'Reference',
   value,
   onChange,
 }) => {
-  const { referenceList, getValue, setIsModified } = useModel('workflow');
+  const { getValue, setIsModified } = useModel('workflow');
   const [displayValue, setDisplayValue] = useState('');
   const [inputValue, setInputValue] = useState(''); // 新增状态用于存储输入框的值
   const updateValues = (
@@ -47,15 +53,19 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   // 监听值变化
   useEffect(() => {
     if (referenceType === 'Reference' && value) {
-      const isReferenceKey = value && referenceList.argMap[value];
+      const isReferenceKey = value && data.argMap[value];
       setDisplayValue(isReferenceKey ? getValue(value) : '');
     } else {
       setDisplayValue('');
-      if (referenceType === 'Input') {
-        setInputValue(value || '');
-      }
     }
-  }, [value, referenceList.argMap, referenceType]);
+  }, [value, data.argMap, referenceType]);
+
+  //初始化
+  useEffect(() => {
+    if (referenceType === 'Input') {
+      setInputValue(value || '');
+    }
+  }, [value, referenceType]);
 
   // 清除引用值
   const handleTagClose = () => {
@@ -80,7 +90,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
     const value = key[0]; // 获取选中的节点的 key 值
     if (!value) return;
     // 获取当前选中的节点类型
-    const dataType = referenceList?.argMap?.[value]?.dataType; // 获取当前选中节点的dataType
+    const dataType = data?.argMap?.[value]?.dataType; // 获取当前选中节点的dataType
 
     updateValues(key[0] as string, 'Reference', dataType as DataTypeEnum);
     setDisplayValue(getValue(key[0]));
@@ -146,7 +156,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   };
 
   const getMenuItems = () => {
-    return getMenu(referenceList.previousNodes);
+    return getMenu(data.previousNodes);
   };
 
   return (
@@ -174,10 +184,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           disabled={isDisabled}
           value={inputValue}
           onChange={(e) => {
-            setInputValue(e.target.value);
-          }}
-          onBlur={() => {
-            updateValues(inputValue, 'Input', DataTypeEnum.String);
+            updateValues(e.target.value, 'Input', DataTypeEnum.String);
           }}
         />
       )}

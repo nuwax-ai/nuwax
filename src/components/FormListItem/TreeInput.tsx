@@ -22,7 +22,7 @@ const TreeInput: React.FC<TreeInputProps> = ({
   nameText = '变量名',
 }) => {
   const [treeData, setTreeData] = useState<InputAndOutConfig[]>(params || []);
-  const { setIsModified } = useModel('workflow');
+  const { setIsModified, referenceList } = useModel('workflow');
 
   useEffect(() => {
     if (params && !_.isEqual(params, treeData)) {
@@ -116,6 +116,7 @@ const TreeInput: React.FC<TreeInputProps> = ({
 
         <div style={{ width: '175px' }}>
           <InputOrReferenceFormTree
+            data={referenceList}
             referenceType={nodeData.bindValueType || 'Input'}
             onChange={(value, type) => {
               updateNodeField(nodeData.key!, value, type);

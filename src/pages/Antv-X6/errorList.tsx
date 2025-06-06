@@ -6,6 +6,13 @@ import { Popover } from 'antd'; // 引入 Popover
 import React from 'react';
 import { useModel } from 'umi';
 import './index.less';
+const MAX_ERROR_LENGTH = 500;
+
+const getDisplayErrorContent = (error: string) => {
+  return (error || '').length > MAX_ERROR_LENGTH
+    ? error.slice(0, MAX_ERROR_LENGTH) + '...'
+    : error;
+};
 
 interface ErrorListProps {
   // 右侧节点抽屉是否在显示，根据这个变量来处理div的宽度
@@ -82,7 +89,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
                     <p>{node.name || '123'}</p>
                     {item.error.length > 110 ? (
                       <Popover
-                        content={<p>{item.error}</p>} // Popover 内容
+                        content={<p>{getDisplayErrorContent(item.error)}</p>} // Popover 内容 超出 500 字符时 支持截断
                         trigger="hover" // 鼠标悬停触发
                         mouseEnterDelay={0.5} // 延迟 0.5 秒显示
                         placement="top" // 显示在顶部左侧

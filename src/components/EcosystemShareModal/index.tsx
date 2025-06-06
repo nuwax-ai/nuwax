@@ -23,7 +23,7 @@ import {
   Table,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
@@ -112,7 +112,16 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
     targetType: AgentComponentTypeEnum.Plugin,
   });
   const [disabledSkill, setDisabledSkill] = useState(false);
-  const getDetailApi = (targetType: string | undefined) => {
+
+  // 使用 useRef 保存当前的 configParam，避免依赖循环
+  const configParamRef = useRef<PluginParam[]>([]);
+
+  // 同步 configParam 到 ref
+  useEffect(() => {
+    configParamRef.current = configParam;
+  }, [configParam]);
+
+  const getDetailApi = useCallback(() => {
     if (targetType === AgentComponentTypeEnum.Plugin) {
       return apiPublishedPluginInfo;
     }
@@ -123,24 +132,21 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
       return apiPublishedWorkflowInfo;
     }
     return apiPublishedWorkflowInfo;
-  };
+  }, [targetType]);
 
-  const { run: runGetDetail, data: detail } = useRequest(
-    getDetailApi(targetType),
-    {
-      manual: true,
-      debounceInterval: 300,
-    },
-  );
+  const { run: runGetDetail, data: detail } = useRequest(getDetailApi(), {
+    manual: true,
+    debounceInterval: 300,
+  });
 
   const [tableData, setTableData] = useState<any[]>([]);
 
   // 完整的重置函数
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     form?.resetFields();
     setTableData([]);
     setConfigParam([]);
-  };
+  }, [form]);
 
   // 监听弹窗显示状态变化
   useEffect(() => {
@@ -177,7 +183,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
     return () => {
       handleReset();
     };
-  }, [visible, data, form]);
+  }, [visible, data, form, handleReset]);
 
   useEffect(() => {
     if (targetType && visible) {
@@ -225,6 +231,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
       }
       return result;
     }
+    return false;
   };
 
   // 入参配置columns
@@ -233,11 +240,19 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
       title: '参数名称',
       dataIndex: 'name',
       key: 'name',
+      width: '30%',
+      ellipsis: {
+        showTitle: true,
+      },
     },
     {
       title: '参数描述',
       dataIndex: 'description',
       key: 'description',
+      width: '50%',
+      ellipsis: {
+        showTitle: true,
+      },
     },
     {
       title: '启用必填',
@@ -249,15 +264,17 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
         if (record?.subArgs?.length > 0) {
           return null;
         }
+        // 直接使用 configParam 而不是 configParamRef.current
         const required = configParam.some(
           (item) => record.fullName === item.name,
         );
         return (
           <Checkbox
             checked={required}
+            style={{ fontSize: 12 }}
             onChange={() => {
               // 勾选 取消 同步到 configParam
-              let newParam = [...configParam];
+              let newParam = [...configParam]; // 使用当前状态而不是 ref
               const hasItem = newParam.some((item) => {
                 return record.fullName === item.name;
               });
@@ -290,54 +307,77 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
 
   useEffect(() => {
     if (detail) {
-      setTableData(setFullName('', addParentName(detail?.inputArgs || [])));
+      const newTableData = setFullName(
+        '',
+        addParentName(detail?.inputArgs || []),
+      );
+      setTableData(newTableData);
     }
   }, [detail]);
 
+  // 修复这个 useEffect，避免依赖循环
   useEffect(() => {
-    if (configParam.length > 0 && tableData.length > 0) {
-      // 校验一下数据在tableData中是否存在 如果不存在要删除
-      const newConfigParam = configParam.filter((item) => {
+    if (tableData.length > 0 && configParamRef.current.length > 0) {
+      // 使用 ref 读取当前值，避免依赖循环
+      const currentConfigParam = configParamRef.current;
+
+      // 过滤出在 tableData 中存在的配置项
+      const newConfigParam = currentConfigParam.filter((item) => {
         return tableData.some((tableItem) => tableItem.fullName === item.name);
       });
-      setConfigParam(newConfigParam);
-    }
-  }, [tableData, configParam]);
 
-  const renderActionButton = (data?: EcosystemShareModalData | null) => {
-    if (!data) {
+      // 只有当数据真正变化时才更新状态
+      if (
+        JSON.stringify(newConfigParam) !== JSON.stringify(currentConfigParam)
+      ) {
+        setConfigParam(newConfigParam);
+      }
+    }
+  }, [tableData]); // 只依赖 tableData
+
+  const renderActionButton = useCallback(
+    (data?: EcosystemShareModalData | null) => {
+      if (!data) {
+        return (
+          <Space>
+            <Button onClick={handleClose}>取消</Button>
+            <Button type="primary" onClick={() => handleSave(false)}>
+              保存并发布分享
+            </Button>
+          </Space>
+        );
+      }
+
+      const isPublished =
+        data.shareStatus === EcosystemShareStatusEnum.PUBLISHED;
+      const isDraft = data.shareStatus === EcosystemShareStatusEnum.DRAFT;
+
       return (
         <Space>
           <Button onClick={handleClose}>取消</Button>
+          {isEdit && isPublished && (
+            <Button
+              onClick={() => {
+                if (data.uid) {
+                  // 修复类型错误
+                  handleOffline(data.uid);
+                }
+              }}
+            >
+              下线
+            </Button>
+          )}
+          {isDraft && (
+            <Button onClick={() => handleSave(true)}>保存草稿</Button>
+          )}
           <Button type="primary" onClick={() => handleSave(false)}>
             保存并发布分享
           </Button>
         </Space>
       );
-    }
-
-    const isPublished = data.shareStatus === EcosystemShareStatusEnum.PUBLISHED;
-    const isDraft = data.shareStatus === EcosystemShareStatusEnum.DRAFT;
-
-    return (
-      <Space>
-        <Button onClick={handleClose}>取消</Button>
-        {isEdit && isPublished && (
-          <Button
-            onClick={() => {
-              handleOffline(data.uid);
-            }}
-          >
-            下线
-          </Button>
-        )}
-        {isDraft && <Button onClick={() => handleSave(true)}>保存草稿</Button>}
-        <Button type="primary" onClick={() => handleSave(false)}>
-          保存并发布分享
-        </Button>
-      </Space>
-    );
-  };
+    },
+    [handleClose, handleSave, isEdit, handleOffline],
+  );
 
   useEffect(() => {
     setDisabledSkill(isEdit);
@@ -353,11 +393,11 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
           {isEdit ? '编辑分享' : '创建分享'}
         </div>
       }
+      centered
       open={visible}
       onCancel={handleClose}
       width={720}
       footer={null}
-      className={cx(styles.pluginShareModal)}
     >
       <div className={cx(styles.modalContent)}>
         <Form form={form} layout="vertical" className={cx(styles.form)}>
@@ -411,6 +451,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                   return (
                     <div
                       className={cx(styles.pluginItemStyle)}
+                      style={{ marginBottom: 24 }}
                       onClick={() => {
                         onAddComponent();
                       }}
@@ -420,13 +461,21 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                   );
                 }
                 return (
-                  <div className={cx(styles.pluginItemStyle)}>
+                  <div
+                    key={`skill-list-${pluginValue.targetId || Date.now()}`}
+                    style={{ marginBottom: 24 }}
+                  >
                     <SkillList
                       params={[
                         {
                           name: pluginValue.name || '',
                           description: pluginValue.description || '',
-                          icon: pluginValue.icon,
+                          icon:
+                            pluginValue.icon ||
+                            COMPONENT_LIST.find(
+                              (item: any) =>
+                                item.type === pluginValue.targetType,
+                            )?.defaultImage,
                           targetId: pluginValue.targetId || '',
                           targetType: pluginValue.targetType || '',
                           type: pluginValue.targetType,
@@ -462,11 +511,13 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
             <div className={cx(styles.section)}>
               <div className={cx(styles.sectionTitle)}>插件参数</div>
               <Table<BindConfigWithSub>
-                className={cx(styles['table-wrap'], 'overflow-hide')}
+                size="small"
+                className={cx(styles.tableWrap, 'overflow-hide')}
                 columns={inputColumns}
                 dataSource={tableData}
                 pagination={false}
-                scroll={{ x: 'max-content', y: 55 * 4 }}
+                scroll={{ x: 600, y: 36 * 5 }}
+                rowKey="fullName"
                 expandable={{
                   defaultExpandAllRows: true,
                 }}
@@ -482,7 +533,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
             >
               <Input.TextArea
                 placeholder="请输入使用文档，支持markdown格式"
-                autoSize={{ minRows: 3, maxRows: 5 }}
+                autoSize={{ minRows: 5, maxRows: 5 }}
                 className={cx(styles.docTextarea)}
               />
             </Form.Item>

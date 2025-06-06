@@ -518,6 +518,10 @@ export default function EcosystemTemplate() {
         configParamJson: config.configParamJson || '',
       };
       setShareModalData(item);
+      setShareModalProps({
+        targetType: targetType as AgentComponentTypeEnum,
+        type: EcosystemDataTypeEnum.TEMPLATE,
+      });
       setAddComponents([
         {
           type: targetType as AgentComponentTypeEnum,

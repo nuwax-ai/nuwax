@@ -226,9 +226,9 @@ export const SkillList: React.FC<SkillProps> = ({
     modifyItem(val);
   };
   return (
-    <>
-      {params?.map((item) => {
-        return (
+    <div className="skill-list">
+      {params.map((item) => (
+        <div key={item.targetId || `skill-${item.name}-${Math.random()}`}>
           <div
             className="skill-item-style dis-left"
             style={{
@@ -237,7 +237,6 @@ export const SkillList: React.FC<SkillProps> = ({
               //设置为不可点击
               cursor: disabled ? 'not-allowed' : 'pointer',
             }}
-            key={item.typeId || item.knowledgeBaseId}
             onMouseEnter={() => {
               setHoveredItem(item);
               setShowMask(true);
@@ -293,8 +292,8 @@ export const SkillList: React.FC<SkillProps> = ({
               </div>
             )}
           </div>
-        );
-      })}
+        </div>
+      ))}
 
       <SkillDispose
         open={open}
@@ -302,6 +301,6 @@ export const SkillList: React.FC<SkillProps> = ({
         params={hoveredItem}
         onConfirm={handleConfirm}
       />
-    </>
+    </div>
   );
 };

@@ -8,6 +8,7 @@ import VersionHistory from '@/components/VersionHistory';
 import Constant from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { testRunList } from '@/constants/node.constants';
+import useAutoSave from '@/hooks/useAutoSave';
 import service, {
   IgetDetails,
   ITestRun,
@@ -26,18 +27,19 @@ import {
   TestRunParams,
 } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
+import { cloneDeep } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { getPeerNodePosition } from '@/utils/graph';
 import { changeNodeConfig, updateNode } from '@/utils/updateNode';
 import {
   getEdges,
   handleSpecialNodesNextIndex,
-  QuicklyCreate,
+  QuicklyCreateEdgeConditionConfig,
   returnBackgroundColor,
   returnImg,
 } from '@/utils/workflow';
 import { App, Form } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import ControlPanel from './controlPanel';
@@ -47,6 +49,7 @@ import Header from './header';
 import './index.less';
 import { renderNodeContent } from './nodeDrawer';
 import { Child } from './type';
+
 const DEFAULT_NODE_CONFIG = {
   generalNode: {
     defaultWidth: 180, // 通用节点宽度
@@ -226,11 +229,12 @@ const Workflow: React.FC = () => {
     });
   };
   // 获取当前节点的参数
-  const getRefernece = async (id: number) => {
-    if (id === 0 || preventGetReference.current === id) return;
+  const getReference = async (id: number): Promise<boolean> => {
+    if (id === 0 || preventGetReference.current === id) return false;
     // 获取节点需要的引用参数
     const _res = await service.getOutputArgs(id);
-    if (_res.code === Constant.success) {
+    const isSuccess = _res.code === Constant.success;
+    if (isSuccess) {
       if (
         _res.data &&
         _res.data.previousNodes &&
@@ -245,6 +249,7 @@ const Workflow: React.FC = () => {
         });
       }
     }
+    return isSuccess;
   };
   // 查询节点的指定信息
   const getNodeConfig = async (id: number) => {
@@ -295,11 +300,32 @@ const Workflow: React.FC = () => {
     if (_res.code !== Constant.success) {
       graphRef.current.deleteEdge(id);
     } else {
-      getRefernece(foldWrapItemRef.current.id);
+      getReference(foldWrapItemRef.current.id);
       graphRef.current.updateNode(sourceNode.id, _res.data);
       // getNodeConfig(sourceNode.id);
     }
   };
+  // 自动保存节点配置
+  const autoSaveNodeConfig = async (config: ChildNode): Promise<boolean> => {
+    if (config.id === 0) return false;
+
+    const params = cloneDeep(config);
+    graphRef.current.updateNode(params.id, params);
+    let result = false;
+    const _res = await updateNode(params);
+    if (_res.code === Constant.success) {
+      // 如果是修改节点的参数，那么就要更新当前节点的参数
+      if (config.id === foldWrapItemRef.current.id) {
+        setFoldWrapItem(params);
+      }
+      // 跟新当前节点的上级参数
+      await getReference(foldWrapItemRef.current.id);
+      changeUpdateTime();
+      result = true;
+    }
+    return result;
+  };
+
   // 更新节点
   const changeNode = async (config: ChildNode, update?: boolean | string) => {
     let params = JSON.parse(JSON.stringify(config));
@@ -334,13 +360,14 @@ const Workflow: React.FC = () => {
         setFoldWrapItem(params);
       }
       // 跟新当前节点的上级参数
-      getRefernece(foldWrapItemRef.current.id);
+      getReference(foldWrapItemRef.current.id);
       changeUpdateTime();
     }
     // setIsUpdate(false)
   };
   // 优化后的onFinish方法
-  const onFinish = async () => {
+  const onFinish = async (): Promise<boolean> => {
+    let result = false;
     try {
       const currentFoldWrapItem = foldWrapItemRef.current; // 保存当前值
       const values = form.getFieldsValue(true);
@@ -377,11 +404,12 @@ const Workflow: React.FC = () => {
           newNodeConfig.nextNodeIds = [];
         }
       }
-      await changeNode(newNodeConfig);
-      setIsModified(false);
+      result = await autoSaveNodeConfig(newNodeConfig);
     } catch (error) {
       console.error('表单提交失败:', error);
+      result = false;
     }
+    return result;
   };
   // 点击组件，显示抽屉
   const changeDrawer = (child: ChildNode | null) => {
@@ -393,7 +421,7 @@ const Workflow: React.FC = () => {
         }
       } else {
         if (child && child.id !== 0) {
-          getRefernece(child.id);
+          getReference(child.id);
         }
       }
       return false;
@@ -442,22 +470,20 @@ const Workflow: React.FC = () => {
   /**
    * 处理知识库节点的特殊配置
    * @param nodeData 节点数据
-   * @param child 子节点配置
+   * @param knowledgeBaseConfigs 知识库配置
    */
   const handleKnowledgeNodeConfig = async (
     nodeData: ChildNode,
-    child: Child,
+    knowledgeBaseConfigs: CreatedNodeItem[],
   ) => {
-    if (child.type === 'Knowledge' && child.nodeConfig?.knowledgeBaseConfigs) {
-      setSkillChange(true);
-      await changeNode({
-        ...nodeData,
-        nodeConfig: {
-          ...nodeData.nodeConfig,
-          knowledgeBaseConfigs: child.nodeConfig.knowledgeBaseConfigs,
-        },
-      });
-    }
+    setSkillChange(true);
+    await changeNode({
+      ...nodeData,
+      nodeConfig: {
+        ...nodeData.nodeConfig,
+        knowledgeBaseConfigs,
+      },
+    });
   };
 
   /**
@@ -517,7 +543,10 @@ const Workflow: React.FC = () => {
     targetNode: ChildNode,
     isLoop: boolean,
   ) => {
-    const { nodeData, sourcePortId } = QuicklyCreate(newNode, targetNode);
+    const { nodeData, sourcePortId } = QuicklyCreateEdgeConditionConfig(
+      newNode,
+      targetNode,
+    );
     await changeNode(nodeData as ChildNode);
     graphRef.current.createNewEdge(
       sourcePortId,
@@ -559,7 +588,10 @@ const Workflow: React.FC = () => {
     const id = portId.split('-')[0];
 
     if (isConditionalNode(newNode.type)) {
-      const { nodeData, sourcePortId } = QuicklyCreate(newNode, sourceNode);
+      const { nodeData, sourcePortId } = QuicklyCreateEdgeConditionConfig(
+        newNode,
+        sourceNode,
+      );
       await changeNode(nodeData as ChildNode);
       graphRef.current.createNewEdge(
         sourcePortId,
@@ -620,15 +652,16 @@ const Workflow: React.FC = () => {
     nodeData.key = nodeData.type === 'Loop' ? 'loop-node' : 'general-Node';
     const extension = nodeData.nodeConfig.extension;
 
-    console.log('log:extension', extension);
-    console.log('log:nodeData', nodeData);
-
     // 添加节点到图形中
     graphRef.current.addNode(extension, nodeData);
 
     // 处理知识库节点特殊配置
-    await handleKnowledgeNodeConfig(nodeData, child);
-
+    if (child.type === 'Knowledge' && child.nodeConfig?.knowledgeBaseConfigs) {
+      await handleKnowledgeNodeConfig(
+        nodeData,
+        child.nodeConfig.knowledgeBaseConfigs,
+      );
+    }
     // 更新抽屉和选中状态
     await changeDrawer(nodeData);
     graphRef.current.selectNode(nodeData.id);
@@ -1191,6 +1224,8 @@ const Workflow: React.FC = () => {
     // 清除所有选中
     changeDrawer(null);
     setVisible(false);
+    // TODO 排除 Loop 节点 触发空白区域点击事件 清空选择状态
+    graphRef.current?.clearSelection();
   };
 
   // 更改节点的名称
@@ -1231,11 +1266,6 @@ const Workflow: React.FC = () => {
     };
 
     const calculateNodePosition = (_position: { x: number; y: number }) => {
-      //1. 根据添加源判断添加类型为 start、middle、end 并取到对应位置与 节点Id
-      //2.通过当前节点id 取出上一个节点或者下一个节点 如果有一个或者多个 取出最后一个节点 并取到对应位置与 节点Id
-      //3. 如果没有命中就新增偏移，如果命中就通过上一个节点或者下一个节点 计算偏移位置
-      //4. 返回计算后的新节点的位置
-
       let newNodeWidth = DEFAULT_NODE_CONFIG.generalNode.defaultWidth;
       if (child.type === 'Loop') {
         newNodeWidth = DEFAULT_NODE_CONFIG.loopNode.defaultWidth;
@@ -1256,12 +1286,14 @@ const Workflow: React.FC = () => {
         );
 
         if (isOut) {
+          // port 为 out 出边，需要向右偏移
           _position.x = _position.x + DEFAULT_NODE_CONFIG.newNodeOffsetX;
           if (peerPosition !== null && peerPosition.x >= _position.x) {
             _position.x = peerPosition.x + DEFAULT_NODE_CONFIG.offsetGapX;
             _position.y = peerPosition.y + DEFAULT_NODE_CONFIG.offsetGapX;
           }
         } else {
+          // port 为 in 入边，需要向左偏移
           _position.x =
             _position.x - newNodeWidth - DEFAULT_NODE_CONFIG.newNodeOffsetX;
           if (peerPosition !== null && peerPosition.x <= _position.x) {
@@ -1292,24 +1324,13 @@ const Workflow: React.FC = () => {
     };
   }, []);
   // 新增定时器逻辑
-  useEffect(() => {
-    // 清除已有定时器
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
-    // 创建新定时器
-    if (isModified === true) {
-      timerRef.current = setTimeout(() => {
-        onFinish();
-      }, 3000);
-    }
-    // 清理函数
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, [isModified]);
+  const saveWorkflow = useCallback(async () => {
+    return await onFinish();
+  }, [onFinish]);
+  useAutoSave(saveWorkflow, 3000, () => {
+    setIsModified(false);
+  });
+
   useEffect(() => {
     if (foldWrapItem.id !== 0) {
       const newFoldWrapItem = JSON.parse(JSON.stringify(foldWrapItem));

@@ -1,5 +1,5 @@
 import type { FileType } from '@/types/interfaces/common';
-
+import cloneDeep from 'lodash/cloneDeep';
 // 过滤非数字
 const getNumbersOnly = (text: string) => {
   return text?.replace(/[^0-9]/g, '');
@@ -121,6 +121,7 @@ function encodeHTML(str: string) {
 
 export {
   addBaseTarget,
+  cloneDeep,
   encodeHTML,
   formatTimeAgo,
   getBase64,

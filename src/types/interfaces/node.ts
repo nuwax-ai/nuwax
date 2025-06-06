@@ -215,7 +215,7 @@ export interface NodeDrawerProps {
   onGetNodeConfig: (config: ChildNode, update?: boolean) => void;
 
   handleNodeChange: (action: string, data: ChildNode) => void;
-  getRefernece: (id: number) => void;
+  getReference: (id: number) => Promise<boolean>;
 }
 
 export interface NodePreviousAndArgMap {
