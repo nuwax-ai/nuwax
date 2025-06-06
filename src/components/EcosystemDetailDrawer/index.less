@@ -99,9 +99,61 @@
 
 .docContent {
   color: #6a7185;
-  line-height: 18px;
   font-size: 12px;
   margin-bottom: 12px !important;
+  line-height: 28px;
+  word-wrap: break-word;
+  word-break: break-all;
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: bold;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  h1 {
+    font-size: calc(1.143 * 24px);
+  }
+
+  h2 {
+    font-size: calc(1.143 * 20px);
+  }
+
+  h3 {
+    font-size: calc(1.143 * 16px);
+  }
+
+  img {
+    display: inline-block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  ol {
+    padding-inline-start: 10px;
+  }
+
+  hr {
+    visibility: hidden;
+  }
+
+  pre {
+    box-sizing: border-box;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background-color: #fafafa;
+    padding: 10px;
+    margin: 0;
+    overflow-x: auto;
+    border-radius: 4px;
+  }
 }
 
 .footer {
