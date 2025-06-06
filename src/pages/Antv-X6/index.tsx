@@ -332,7 +332,7 @@ const Workflow: React.FC = () => {
 
   // 更新节点
   const changeNode = async (config: ChildNode, update?: boolean | string) => {
-    let params = JSON.parse(JSON.stringify(config));
+    let params = cloneDeep(config);
     if (update && update === 'moved') {
       if (config.id === foldWrapItemRef.current.id) {
         const values = nodeDrawerRef.current?.getFormValues();
