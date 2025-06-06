@@ -1378,10 +1378,39 @@ const Workflow: React.FC = () => {
     }
   }, [foldWrapItem.id, foldWrapItem.type]);
 
+  const validPublishWorkflow = async () => {
+    setLoading(false);
+
+    if (isModified) {
+      // 如果当前有未保存的修改，则先保存一下
+      await doSubmitFormData();
+    }
+
+    const _res = await service.validWorkflow(info?.id as number);
+    if (_res.code === Constant.success) {
+      const _arr = _res.data.filter((item) => !item.success);
+      if (_arr.length === 0) {
+        return true;
+      } else {
+        const _errorList = _arr.map((child) => ({
+          nodeId: child.nodeId,
+          error: child.messages.join(','),
+        }));
+        setErrorParams({
+          show: true,
+          errorList: _errorList,
+        });
+
+        return false;
+      }
+    } else {
+      return false;
+    }
+  };
   // 发布
   const handleShowPublish = async () => {
     setIsValidLoading(true);
-    const valid = await validWorkflow();
+    const valid = await validPublishWorkflow();
     if (valid) {
       setShowPublish(true);
       setErrorParams({ ...errorParams, errorList: [], show: false });
