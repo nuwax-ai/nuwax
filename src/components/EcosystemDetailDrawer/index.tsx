@@ -12,10 +12,17 @@ import {
   Typography,
 } from 'antd';
 import classNames from 'classnames';
+import markdownIt from 'markdown-it';
 import React, { useEffect, useState } from 'react';
 import ActivatedIcon from '../EcosystemCard/ActivatedIcon';
 import styles from './index.less';
+// 方程式支持
+import { encodeHTML } from '@/utils/common';
+import markdownItKatexGpt from 'markdown-it-katex-gpt';
+import markdownItMultimdTable from 'markdown-it-multimd-table';
+
 const cx = classNames.bind(styles);
+
 const { Title, Paragraph } = Typography;
 
 export interface EcosystemDetailDrawerProps {
@@ -66,6 +73,39 @@ export interface EcosystemDetailDrawerData {
 const DEFAULT_ICON =
   'https://agent-1251073634.cos.ap-chengdu.myqcloud.com/store/b5fdb62e8b994a418d0fdfae723ee827.png';
 const DEFAULT_TEXT = '插件';
+
+const md = markdownIt({
+  html: true, // 启用原始HTML解析
+  xhtmlOut: true, // 使用 XHTML 兼容语法
+  breaks: true, // 换行转换为 <br>
+  linkify: true, // 自动识别链接
+  typographer: true, // 优化排版
+  quotes: '""\'\'', // 双引号和单引号都不替换
+});
+
+// html自定义转义
+md.renderer.rules.html_block = (tokens, idx) => {
+  return encodeHTML(tokens[idx].content);
+};
+
+// 添加 KaTeX 支持
+md.use(markdownItKatexGpt, {
+  delimiters: [
+    { left: '\\[', right: '\\]', display: true },
+    { left: '\\(', right: '\\)', display: false },
+    { left: '$$', right: '$$', display: false },
+  ],
+});
+
+// 添加表格支持
+md.use(markdownItMultimdTable, {
+  multiline: true,
+  rowspan: true,
+  headerless: false,
+  multibody: true,
+  aotolabel: true,
+});
+
 /**
  * 插件详情抽屉组件
  * 右侧划出的插件详情展示
@@ -307,7 +347,12 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
           <Title level={5} className={cx(styles.sectionTitle)}>
             使用文档
           </Title>
-          <Paragraph className={cx(styles.docContent)}>{publishDoc}</Paragraph>
+          <div
+            className={cx(styles.docContent)}
+            dangerouslySetInnerHTML={{
+              __html: publishDoc ? md.render(publishDoc) : '',
+            }}
+          />
         </div>
       </div>
       <div
