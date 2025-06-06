@@ -232,6 +232,7 @@ const SpaceSection: React.FC = () => {
 
   // 切换标签页 targetType: 组件类型，agent: 智能体，plugin: 插件，workflow: 工作流，template: 模板
   const handleTabClick = (targetType: string) => {
+    setSquareComponentList([]);
     handleQuery(targetType as SquareAgentTypeEnum);
   };
 
