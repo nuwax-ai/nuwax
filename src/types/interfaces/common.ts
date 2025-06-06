@@ -502,6 +502,8 @@ export interface MoveCopyComponentProps {
   type?: ApplicationMoreActionEnum;
   // 组件类型: 智能体、插件、工作流， 默认智能体
   mode?: AgentComponentTypeEnum;
+  // 是否是模板,如果是模板，”复制操作“展示所有空间列表，否则【空间创建者或空间管理员可复制到自己有权限的所有空间（这里涉及到会把关联的插件工作流一并发布到目标空间去），普通用户只能复制到本空间】
+  isTemplate?: boolean;
   open: boolean;
   title?: string;
   onCancel: () => void;
