@@ -7,6 +7,7 @@ import TestRun from '@/components/TestRun';
 import Constant from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { testRunList } from '@/constants/node.constants';
+import useAutoSave from '@/hooks/useAutoSave';
 import service, {
   IgetDetails,
   ITestRun,
@@ -37,7 +38,7 @@ import {
   returnImg,
 } from '@/utils/workflow';
 import { App, Form } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import ControlPanel from './controlPanel';
@@ -315,7 +316,7 @@ const Workflow: React.FC = () => {
         setFoldWrapItem(params);
       }
       // 跟新当前节点的上级参数
-      getReference(foldWrapItemRef.current.id);
+      await getReference(foldWrapItemRef.current.id);
       changeUpdateTime();
       result = true;
     }
@@ -362,7 +363,8 @@ const Workflow: React.FC = () => {
     // setIsUpdate(false)
   };
   // 优化后的onFinish方法
-  const onFinish = async () => {
+  const onFinish = async (): Promise<boolean> => {
+    let result = false;
     try {
       const currentFoldWrapItem = foldWrapItemRef.current; // 保存当前值
       const values = form.getFieldsValue(true);
@@ -399,11 +401,12 @@ const Workflow: React.FC = () => {
           newNodeConfig.nextNodeIds = [];
         }
       }
-      await autoSaveNodeConfig(newNodeConfig);
-      setIsModified(false);
+      result = await autoSaveNodeConfig(newNodeConfig);
     } catch (error) {
       console.error('表单提交失败:', error);
+      result = false;
     }
+    return result;
   };
   // 点击组件，显示抽屉
   const changeDrawer = (child: ChildNode | null) => {
@@ -1318,24 +1321,13 @@ const Workflow: React.FC = () => {
     };
   }, []);
   // 新增定时器逻辑
-  useEffect(() => {
-    // 清除已有定时器
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
-    // 创建新定时器
-    if (isModified === true) {
-      timerRef.current = setTimeout(() => {
-        onFinish();
-      }, 3000);
-    }
-    // 清理函数
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, [isModified]);
+  const saveWorkflow = useCallback(async () => {
+    return await onFinish();
+  }, [onFinish]);
+  useAutoSave(saveWorkflow, 3000, () => {
+    setIsModified(false);
+  });
+
   useEffect(() => {
     if (foldWrapItem.id !== 0) {
       const newFoldWrapItem = JSON.parse(JSON.stringify(foldWrapItem));

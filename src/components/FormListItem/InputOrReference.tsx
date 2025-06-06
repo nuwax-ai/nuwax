@@ -244,7 +244,6 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           disabled={isDisabled}
           value={value}
           onChange={(e) => {
-            setIsModified(true);
             onChange?.(e.target.value);
             updateValues(e.target.value, 'Input');
           }}
