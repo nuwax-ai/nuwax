@@ -9,6 +9,7 @@ import Constant from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { testRunList } from '@/constants/node.constants';
 import useAutoSave from '@/hooks/useAutoSave';
+import useDrawerScroll from '@/hooks/useDrawerScroll';
 import service, {
   IgetDetails,
   ITestRun,
@@ -170,6 +171,9 @@ const Workflow: React.FC = () => {
   };
   // 按钮是否处于loading
   const [loading, setLoading] = useState(false);
+
+  // 使用 Hook 控制抽屉打开时的滚动条
+  useDrawerScroll(showVersionHistory);
 
   /** -----------------  需要调用接口的方法  --------------------- */
   // 在每次 foldWrapItem 更新时同步到 ref
