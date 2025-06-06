@@ -8,7 +8,6 @@ import {
   apiPublishedWorkflowList,
 } from '@/services/square';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
-import { PublishOffShelfParams } from '@/types/interfaces/publish';
 import { Page } from '@/types/interfaces/request';
 import { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import { EllipsisOutlined, ExclamationCircleFilled } from '@ant-design/icons';
@@ -28,6 +27,8 @@ const cx = classNames.bind(styles);
 const SpaceSection: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
+  // 目标类型（智能体、插件、工作流、模板）
+  const targetComponentTypeRef = React.useRef<SquareAgentTypeEnum>();
   const {
     squareComponentList,
     setSquareComponentList,
@@ -102,28 +103,30 @@ const SpaceSection: React.FC = () => {
   const { run: runOffShelf } = useRequest(apiPublishOffShelf, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_: null, params: PublishOffShelfParams[]) => {
+    onSuccess: () => {
       // 刷新
-      const targetType = params[0].targetType;
-      handleQuery(targetType as unknown as SquareAgentTypeEnum);
+      const targetType = targetComponentTypeRef.current;
+      handleQuery(targetType as SquareAgentTypeEnum);
     },
   });
 
   // 下架
   const handleOffShelf = (
-    componentType: string,
+    componentTypeName: string,
     info: SquarePublishedItemInfo,
+    componentType: SquareAgentTypeEnum,
     justOffShelfTemplate: boolean = false,
   ) => {
     const { targetId, name, targetType, id: publishId } = info;
     Modal.confirm({
-      title: `您确定要下架此${componentType}吗?`,
+      title: `您确定要下架此${componentTypeName}吗?`,
       icon: <ExclamationCircleFilled />,
       content: name,
       okText: '确定',
       maskClosable: true,
       cancelText: '取消',
       onOk() {
+        targetComponentTypeRef.current = componentType;
         runOffShelf({
           targetType,
           targetId,
@@ -136,15 +139,21 @@ const SpaceSection: React.FC = () => {
 
   // 获取组件额外信息
   const getExtra = (
-    componentType: string,
+    componentTypeName: string,
     info: SquarePublishedItemInfo,
+    componentType: SquareAgentTypeEnum,
     justOffShelfTemplate: boolean = false,
   ) => {
     return (
       <CustomPopover
         list={[{ label: '下架' }]}
         onClick={() =>
-          handleOffShelf(componentType, info, justOffShelfTemplate)
+          handleOffShelf(
+            componentTypeName,
+            info,
+            componentType,
+            justOffShelfTemplate,
+          )
         }
       >
         <EllipsisOutlined className={cx(styles.icon)} />
@@ -162,7 +171,7 @@ const SpaceSection: React.FC = () => {
               <SingleAgent
                 key={index}
                 publishedItemInfo={item}
-                extra={getExtra('智能体', item)}
+                extra={getExtra('智能体', item, type)}
                 onToggleCollectSuccess={handleToggleCollectSuccess}
                 onClick={() => handleClick(item.targetId, item.targetType)}
               />
@@ -172,18 +181,18 @@ const SpaceSection: React.FC = () => {
               <TemplateItem
                 key={index}
                 publishedItemInfo={item}
-                extra={getExtra('模板', item, true)}
+                extra={getExtra('模板', item, type, true)}
                 onClick={() => handleClick(item.targetId, item.targetType)}
               />
             );
           } else {
-            const componentType =
+            const componentTypeName =
               type === SquareAgentTypeEnum.Plugin ? '插件' : '工作流';
             return (
               <SquareComponentInfo
                 key={index}
                 publishedItemInfo={item}
-                extra={getExtra(componentType, item)}
+                extra={getExtra(componentTypeName, item, type)}
                 onToggleCollectSuccess={handleToggleCollectSuccess}
                 onClick={() => handleClick(item.targetId, item.targetType)}
               />
