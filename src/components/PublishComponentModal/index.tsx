@@ -235,8 +235,8 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     setPublishItemList(list);
   };
 
-  // 入参配置columns
-  const inputColumns: TableColumnsType<PublishScope> = [
+  // 所有columns，包含“发布空间”、“允许复制”、“仅模板”等列, 插件组件时没有复制和模板选项
+  const allColumns: TableColumnsType<PublishScope> = [
     {
       title: (
         <LabelIcon
@@ -294,38 +294,34 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
           />
         ),
     },
-  ].concat(
-    onlyShowTemplate
-      ? [
-          {
-            title: (
-              <LabelIcon
-                className={cx(styles['label-normal'])}
-                label="仅模板"
-                title={
-                  '选择后仅在模板广场展示，仅模板只有在允许复制选择后才可选'
-                }
-                type={TooltipTitleTypeEnum.White}
-              />
-            ),
-            dataIndex: 'onlyTemplate',
-            width: 100,
-            render: (_: null, record: PublishScope) =>
-              record?.children?.length ? null : (
-                <div className={cx(styles['text-center'])}>
-                  <Checkbox
-                    checked={isOnlyTemplate(record.scope, record.spaceId)}
-                    disabled={!isAllCopy(record.scope, record.spaceId)}
-                    onChange={(e) =>
-                      handleOnlyTemplate(record, e.target.checked)
-                    }
-                  />
-                </div>
-              ),
-          },
-        ]
-      : [],
-  );
+    {
+      title: (
+        <LabelIcon
+          className={cx(styles['label-normal'])}
+          label="仅模板"
+          title={'选择后仅在模板广场展示，仅模板只有在允许复制选择后才可选'}
+          type={TooltipTitleTypeEnum.White}
+        />
+      ),
+      dataIndex: 'onlyTemplate',
+      width: 100,
+      render: (_: null, record: PublishScope) =>
+        record?.children?.length ? null : (
+          <div className={cx(styles['text-center'])}>
+            <Checkbox
+              checked={isOnlyTemplate(record.scope, record.spaceId)}
+              disabled={!isAllCopy(record.scope, record.spaceId)}
+              onChange={(e) => handleOnlyTemplate(record, e.target.checked)}
+            />
+          </div>
+        ),
+    },
+  ];
+
+  // 入参配置columns
+  const inputColumns: TableColumnsType<PublishScope> = onlyShowTemplate
+    ? allColumns
+    : allColumns.slice(0, 1);
 
   return (
     <CustomFormModal

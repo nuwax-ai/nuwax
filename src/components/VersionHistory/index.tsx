@@ -4,6 +4,7 @@ import { apiPluginConfigHistoryList } from '@/services/plugin';
 import { apiPublishItemList, apiPublishOffShelf } from '@/services/publish';
 import { apiWorkflowConfigHistoryList } from '@/services/workflow';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { PublishStatusEnum } from '@/types/enums/common';
 import {
   HistoryData,
   PublishItemInfo,
@@ -113,9 +114,10 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
 
   // 下架
   const handleOffShelf = (info: PublishItemInfo) => {
-    if (!info.publishStatus) {
+    if (info?.publishStatus !== PublishStatusEnum.Published) {
       return;
     }
+
     Modal.confirm({
       title: `您确定要下架此${componentType}吗?`,
       icon: <ExclamationCircleFilled />,
