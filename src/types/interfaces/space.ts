@@ -62,10 +62,11 @@ export interface TooltipIconProps {
 // 发布智能体、插件、工作流等弹窗组件
 export interface PublishComponentModalProps {
   mode?: AgentComponentTypeEnum;
+  spaceId: number;
   // 发布目标ID，例如智能体ID；工作流ID；插件ID
   targetId: number;
   open: boolean;
-  // 是否展示“仅模板”，默认为true, 插件不显示, 智能体、工作流显示
+  // 是否展示“允许复制（模板”、“仅模板”列，默认为true, 插件不显示, 智能体、工作流显示
   onlyShowTemplate?: boolean;
   onCancel: () => void;
   onConfirm: () => void;

@@ -11,6 +11,7 @@ import {
 } from '@/types/enums/agent';
 import { RoleEnum, TooltipTitleTypeEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
+import { ReceivePublishEnum } from '@/types/enums/space';
 import { option, PublishScope } from '@/types/interfaces/common';
 import { PublishItem } from '@/types/interfaces/publish';
 import { PublishComponentModalProps } from '@/types/interfaces/space';
@@ -39,6 +40,7 @@ const cx = classNames.bind(styles);
  */
 const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   mode = AgentComponentTypeEnum.Agent,
+  spaceId,
   targetId,
   open,
   onlyShowTemplate = true,
@@ -59,10 +61,19 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
 
   // 当前登录用户在空间的角色,可用值:Owner,Admin,User
   useEffect(() => {
-    // 过滤用户角色为用户的空间列表
     const list =
       spaceList
+        // 过滤用户角色为普通用户的空间列表
         .filter((item: SpaceInfo) => item.spaceRole !== RoleEnum.User)
+        // 已关闭“接口来自外部空间的发布”时在其他空间发布时不展示该空间
+        .filter((item: SpaceInfo) => {
+          // 当前空间或者允许来自外部空间的发布的空间列表
+          return (
+            item.id === spaceId ||
+            (item.id !== spaceId &&
+              item.receivePublish === ReceivePublishEnum.Receive)
+          );
+        })
         ?.map((item: SpaceInfo) => ({
           key: uuidv4(),
           name: item.name,
@@ -235,8 +246,8 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     setPublishItemList(list);
   };
 
-  // 入参配置columns
-  const inputColumns: TableColumnsType<PublishScope> = [
+  // 所有columns，包含“发布空间”、“允许复制”、“仅模板”等列, 插件组件时没有复制和模板选项
+  const allColumns: TableColumnsType<PublishScope> = [
     {
       title: (
         <LabelIcon
@@ -294,38 +305,34 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
           />
         ),
     },
-  ].concat(
-    onlyShowTemplate
-      ? [
-          {
-            title: (
-              <LabelIcon
-                className={cx(styles['label-normal'])}
-                label="仅模板"
-                title={
-                  '选择后仅在模板广场展示，仅模板只有在允许复制选择后才可选'
-                }
-                type={TooltipTitleTypeEnum.White}
-              />
-            ),
-            dataIndex: 'onlyTemplate',
-            width: 100,
-            render: (_: null, record: PublishScope) =>
-              record?.children?.length ? null : (
-                <div className={cx(styles['text-center'])}>
-                  <Checkbox
-                    checked={isOnlyTemplate(record.scope, record.spaceId)}
-                    disabled={!isAllCopy(record.scope, record.spaceId)}
-                    onChange={(e) =>
-                      handleOnlyTemplate(record, e.target.checked)
-                    }
-                  />
-                </div>
-              ),
-          },
-        ]
-      : [],
-  );
+    {
+      title: (
+        <LabelIcon
+          className={cx(styles['label-normal'])}
+          label="仅模板"
+          title={'选择后仅在模板广场展示，仅模板只有在允许复制选择后才可选'}
+          type={TooltipTitleTypeEnum.White}
+        />
+      ),
+      dataIndex: 'onlyTemplate',
+      width: 100,
+      render: (_: null, record: PublishScope) =>
+        record?.children?.length ? null : (
+          <div className={cx(styles['text-center'])}>
+            <Checkbox
+              checked={isOnlyTemplate(record.scope, record.spaceId)}
+              disabled={!isAllCopy(record.scope, record.spaceId)}
+              onChange={(e) => handleOnlyTemplate(record, e.target.checked)}
+            />
+          </div>
+        ),
+    },
+  ];
+
+  // 入参配置columns
+  const inputColumns: TableColumnsType<PublishScope> = onlyShowTemplate
+    ? allColumns
+    : allColumns.slice(0, 1);
 
   return (
     <CustomFormModal
