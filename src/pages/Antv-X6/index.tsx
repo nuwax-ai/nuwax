@@ -71,6 +71,7 @@ const Workflow: React.FC = () => {
   const params = useParams();
   // 当前工作流的id
   const workflowId = Number(params.workflowId);
+  const spaceId = Number(params.spaceId);
   // 当前被选中的节点
   const [foldWrapItem, setFoldWrapItem] = useState<ChildNode>({
     type: NodeTypeEnum.Start,
@@ -1502,6 +1503,7 @@ const Workflow: React.FC = () => {
       <PublishComponentModal
         mode={AgentComponentTypeEnum.Workflow}
         targetId={workflowId}
+        spaceId={spaceId}
         open={showPublish}
         // 取消发布
         onCancel={() => setShowPublish(false)}

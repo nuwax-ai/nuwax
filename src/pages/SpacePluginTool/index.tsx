@@ -43,7 +43,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef } from 'react';
-import { useRequest } from 'umi';
+import { useParams, useRequest } from 'umi';
 import styles from './index.less';
 import PluginHeader from './PluginHeader';
 
@@ -53,6 +53,9 @@ const cx = classNames.bind(styles);
  * 工作空间-组件库-测试插件组件（基于已有服务http接口创建）
  */
 const SpacePluginTool: React.FC = () => {
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
+
   const [form] = Form.useForm();
   const {
     isModalOpen,
@@ -523,6 +526,7 @@ const SpacePluginTool: React.FC = () => {
       <PublishComponentModal
         mode={AgentComponentTypeEnum.Plugin}
         targetId={pluginId}
+        spaceId={spaceId}
         open={openModal}
         onlyShowTemplate={false}
         // 取消发布

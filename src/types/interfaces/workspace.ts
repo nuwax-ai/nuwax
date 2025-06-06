@@ -1,5 +1,9 @@
 import type { RoleEnum } from '@/types/enums/common';
-import type { SpaceTypeEnum } from '@/types/enums/space';
+import type {
+  AllowDevelopEnum,
+  ReceivePublishEnum,
+  SpaceTypeEnum,
+} from '@/types/enums/space';
 
 // 创建新工作空间传入参数
 export interface CreateSpaceTeamParams {
@@ -28,7 +32,7 @@ export interface SpaceInfo {
   name: string;
   description: string;
   icon: string;
-  // 空间类型
+  // 空间类型,可用值:Personal,Team,Class
   type: SpaceTypeEnum;
   // 创建者ID
   creatorId: number;
@@ -38,6 +42,10 @@ export interface SpaceInfo {
   created: string;
   // 当前登录用户在空间的角色,可用值:Owner,Admin,User
   currentUserRole: RoleEnum;
+  // 空间是否接收来自外部的发布
+  receivePublish: ReceivePublishEnum;
+  // 空间是否开启开发功能
+  allowDevelop: AllowDevelopEnum;
   [key: string]: any;
 }
 

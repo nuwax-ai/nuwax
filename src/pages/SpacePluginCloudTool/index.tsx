@@ -31,7 +31,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { useRequest } from 'umi';
+import { useParams, useRequest } from 'umi';
 import styles from './index.less';
 import PluginCodeHeader from './PluginCodeHeader';
 
@@ -41,6 +41,9 @@ const cx = classNames.bind(styles);
  * 工作空间-组件库-测试插件组件（基于云端代码js、python创建）
  */
 const SpacePluginCloudTool: React.FC = () => {
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
+
   const [codeMode, setCodeMode] = useState<PluginCodeModeEnum>(
     PluginCodeModeEnum.Metadata,
   );
@@ -474,6 +477,7 @@ const SpacePluginCloudTool: React.FC = () => {
       <PublishComponentModal
         mode={AgentComponentTypeEnum.Plugin}
         targetId={pluginId}
+        spaceId={spaceId}
         open={openModal}
         onlyShowTemplate={false}
         // 取消发布

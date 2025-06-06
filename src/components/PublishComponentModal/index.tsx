@@ -11,6 +11,7 @@ import {
 } from '@/types/enums/agent';
 import { RoleEnum, TooltipTitleTypeEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
+import { ReceivePublishEnum } from '@/types/enums/space';
 import { option, PublishScope } from '@/types/interfaces/common';
 import { PublishItem } from '@/types/interfaces/publish';
 import { PublishComponentModalProps } from '@/types/interfaces/space';
@@ -39,6 +40,7 @@ const cx = classNames.bind(styles);
  */
 const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   mode = AgentComponentTypeEnum.Agent,
+  spaceId,
   targetId,
   open,
   onlyShowTemplate = true,
@@ -59,10 +61,19 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
 
   // 当前登录用户在空间的角色,可用值:Owner,Admin,User
   useEffect(() => {
-    // 过滤用户角色为用户的空间列表
     const list =
       spaceList
+        // 过滤用户角色为普通用户的空间列表
         .filter((item: SpaceInfo) => item.spaceRole !== RoleEnum.User)
+        // 已关闭“接口来自外部空间的发布”时在其他空间发布时不展示该空间
+        .filter((item: SpaceInfo) => {
+          // 当前空间或者允许来自外部空间的发布的空间列表
+          return (
+            item.id === spaceId ||
+            (item.id !== spaceId &&
+              item.receivePublish === ReceivePublishEnum.Receive)
+          );
+        })
         ?.map((item: SpaceInfo) => ({
           key: uuidv4(),
           name: item.name,

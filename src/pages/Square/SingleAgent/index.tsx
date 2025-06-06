@@ -1,8 +1,6 @@
 import agentImage from '@/assets/images/agent_image.png';
 import avatar from '@/assets/images/avatar.png';
-import pluginImage from '@/assets/images/plugin_image.png';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
-import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { SingleAgentProps } from '@/types/interfaces/square';
 import {
   PlayCircleOutlined,
@@ -26,7 +24,6 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   onToggleCollectSuccess,
 }) => {
   const {
-    targetType,
     targetId,
     icon,
     name,
@@ -35,10 +32,6 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
     statistics,
     collect,
   } = publishedItemInfo;
-
-  // 根据类型（目标对象（智能体、工作流、插件））显示不同的默认图标
-  const defaultImage =
-    targetType === SquareAgentTypeEnum.Agent ? agentImage : pluginImage;
 
   // 智能体收藏
   const { run: runCollectAgent } = useRequest(apiCollectAgent, {
@@ -71,11 +64,7 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   return (
     <div className={cx(styles.container, 'cursor-pointer')} onClick={onClick}>
       <div className={cx(styles.header, 'flex')}>
-        <img
-          className={cx(styles['a-logo'])}
-          src={icon || defaultImage}
-          alt=""
-        />
+        <img className={cx(styles['a-logo'])} src={icon || agentImage} alt="" />
         <div className={cx(styles['info-container'], 'flex-1')}>
           <div className={cx('flex', 'gap-10')}>
             <span className={cx('flex-1', styles['a-name'], 'text-ellipsis')}>
