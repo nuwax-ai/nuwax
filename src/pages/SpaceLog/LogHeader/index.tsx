@@ -1,5 +1,7 @@
 import agentImage from '@/assets/images/agent_image.png';
+import personalImage from '@/assets/images/personal.png';
 import teamImage from '@/assets/images/team_image.png';
+import { SpaceTypeEnum } from '@/types/enums/space';
 import { LogHeaderProps } from '@/types/interfaces/space';
 import { LeftOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
@@ -47,7 +49,12 @@ const LogHeader: React.FC<LogHeaderProps> = ({ agentConfigInfo }) => {
         <div className={cx('flex', 'items-center', styles['user-info'])}>
           <img
             className={cx(styles.avatar)}
-            src={agentConfigInfo?.space?.icon || teamImage}
+            src={
+              agentConfigInfo?.space?.icon ||
+              agentConfigInfo?.space?.type === SpaceTypeEnum.Personal
+                ? personalImage
+                : teamImage
+            }
             alt=""
           />
           <span className={cx(styles.name, 'text-ellipsis')}>
