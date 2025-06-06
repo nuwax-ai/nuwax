@@ -1,5 +1,6 @@
 import foldImage from '@/assets/images/fold_image.png';
 import Loading from '@/components/Loading';
+import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import { AgentSidebarProps } from '@/types/interfaces/agentTask';
 import classNames from 'classnames';
@@ -39,6 +40,8 @@ const AgentSidebar: React.FC<AgentSidebarProps> = ({
     }
   }, [showType]);
 
+  useDrawerScroll(visible);
+
   return (
     <>
       <div
@@ -53,6 +56,7 @@ const AgentSidebar: React.FC<AgentSidebarProps> = ({
             {/* 统计信息 */}
             <StatisticsInfo
               statistics={agentDetail?.statistics}
+              visible={visible}
               onClose={handleClose}
             />
             {/* 智能体内容 */}
@@ -71,11 +75,10 @@ const AgentSidebar: React.FC<AgentSidebarProps> = ({
       </div>
       <img
         className={cx(styles.fold, 'cursor-pointer', {
-          [styles.show]: foldVisible,
+          [styles.show]: !visible,
         })}
         src={foldImage}
         onClick={handleClose}
-        alt=""
       />
     </>
   );

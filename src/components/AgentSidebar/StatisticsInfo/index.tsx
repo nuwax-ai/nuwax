@@ -15,6 +15,7 @@ const cx = classNames.bind(styles);
 const StatisticsInfo: React.FC<StatisticsInfoProps> = ({
   statistics,
   onClose,
+  visible,
 }) => {
   return (
     <header className={cx(styles.header, 'flex', 'items-center')}>
@@ -36,6 +37,9 @@ const StatisticsInfo: React.FC<StatisticsInfoProps> = ({
       <CloseOutlined
         className={cx('cursor-pointer', styles.close)}
         onClick={onClose}
+        style={{
+          display: visible ? 'block' : 'none',
+        }}
       />
     </header>
   );
