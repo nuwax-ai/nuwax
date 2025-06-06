@@ -40,7 +40,10 @@ const CurrentPublishItem: React.FC<CurrentPublishItemProps> = ({
           'radius-6',
           'cursor-pointer',
           styles.btn,
-          { [styles['disabled-btn']]: !info?.publishStatus },
+          {
+            [styles['disabled-btn']]:
+              info?.publishStatus !== PublishStatusEnum.Published,
+          },
           {
             [styles['off-btn']]:
               info?.publishStatus === PublishStatusEnum.Published,
@@ -51,6 +54,8 @@ const CurrentPublishItem: React.FC<CurrentPublishItemProps> = ({
         {`${
           info?.publishStatus === PublishStatusEnum.Published
             ? '下架'
+            : info?.publishStatus === PublishStatusEnum.Applying
+            ? '审核中'
             : '已下架'
         }`}
       </div>

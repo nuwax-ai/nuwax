@@ -134,8 +134,11 @@ export enum UserStatus {
 // 发布状态
 export enum PublishStatusEnum {
   Developing = 'Developing',
+  // 审核中
   Applying = 'Applying',
+  // 已发布
   Published = 'Published',
+  // 已拒绝
   Rejected = 'Rejected',
 }
 
