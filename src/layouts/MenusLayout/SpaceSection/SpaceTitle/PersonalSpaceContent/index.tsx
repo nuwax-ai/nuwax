@@ -1,7 +1,8 @@
 import personal from '@/assets/images/personal.png';
 import teamImage from '@/assets/images/team_image.png';
 import { SPACE_ID } from '@/constants/home.constants';
-import { SpaceTypeEnum } from '@/types/enums/space';
+import { RoleEnum } from '@/types/enums/common';
+import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
 import type { PersonalSpaceContentType } from '@/types/interfaces/layouts';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import { CheckOutlined, PlusCircleOutlined } from '@ant-design/icons';
@@ -39,25 +40,45 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
     localStorage.setItem(SPACE_ID, spaceId.toString());
     onClosePopover(false);
 
-    // 路由跳转
+    // 普通用户开发者功能如果关闭，首次进入空间菜单选中“空间广场”；
+    const isUser_NotAllowDevelop =
+      info?.currentUserRole === RoleEnum.User &&
+      info?.allowDevelop === AllowDevelopEnum.Not_Allow;
+    // 智能体开发页以及子页
     if (pathname.includes('develop') || pathname.includes('log')) {
-      history.push(`/space/${spaceId}/develop`);
-    } else if (pathname.includes('space-square')) {
+      const defaultUrl = isUser_NotAllowDevelop ? 'space-square' : 'develop';
+      localStorage.setItem('SPACE_URL', defaultUrl);
+      history.push(`/space/${spaceId}/${defaultUrl}`);
+    }
+    // 空间广场页
+    else if (pathname.includes('space-square')) {
       history.push(`/space/${spaceId}/space-square`);
     }
     // 团队设置
     else if (pathname.includes('team')) {
       // 如果团队空间切换到个人空间，需要隐藏团队设置，同样需要切换到默认页'智能体开发'
       if (info.type === SpaceTypeEnum.Personal) {
-        history.push(`/space/${spaceId}/develop`);
+        const defaultUrl = isUser_NotAllowDevelop ? 'space-square' : 'develop';
+        localStorage.setItem('SPACE_URL', defaultUrl);
+        history.push(`/space/${spaceId}/${defaultUrl}`);
       } else {
+        // 个人空间时，不显示"成员与设置", 普通用户也不显示"成员与设置"
+        const isUser = info?.currentUserRole === RoleEnum.User;
+        // 如果不是普通用户，则跳转到本页面, 否则跳转
+        const defaultUrl = !isUser
+          ? 'team'
+          : isUser_NotAllowDevelop
+          ? 'space-square'
+          : 'develop';
         // 团队空间互相切换时，只更新空间id即可
-        history.push(`/space/${spaceId}/team`);
+        history.push(`/space/${spaceId}/${defaultUrl}`);
       }
     }
     // 组件库
     else {
-      history.push(`/space/${spaceId}/library`);
+      const defaultUrl = isUser_NotAllowDevelop ? 'space-square' : 'library';
+      localStorage.setItem('SPACE_URL', defaultUrl);
+      history.push(`/space/${spaceId}/${defaultUrl}`);
     }
   };
 

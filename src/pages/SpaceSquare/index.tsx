@@ -238,7 +238,7 @@ const SpaceSection: React.FC = () => {
 
   useEffect(() => {
     handleQuery(SquareAgentTypeEnum.Agent);
-  }, []);
+  }, [spaceId]);
   return (
     <div className={cx(styles.container)}>
       <h3 className={cx(styles.title)}>空间广场</h3>
