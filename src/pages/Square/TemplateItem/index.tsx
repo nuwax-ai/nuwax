@@ -49,7 +49,7 @@ const TemplateItem: React.FC<TemplateItemProps> = ({
       className={cx(styles.container, 'cursor-pointer', 'flex')}
       onClick={onClick}
     >
-      <img className={cx(styles['a-logo'])} src={icon || pluginImage} alt="" />
+      <img className={cx(styles['a-logo'])} src={componentIcon} alt="" />
       <div
         className={cx(styles['info-container'], 'flex-1', 'flex', 'flex-col')}
       >
