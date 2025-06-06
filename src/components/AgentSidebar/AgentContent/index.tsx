@@ -7,6 +7,7 @@ import { apiPublishTemplateCopy } from '@/services/publish';
 import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { AgentContentProps } from '@/types/interfaces/agentTask';
+import { jumpToAgent } from '@/utils/router';
 import { StarFilled, StarOutlined } from '@ant-design/icons';
 import { Button, message, Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -51,10 +52,21 @@ const AgentContent: React.FC<AgentContentProps> = ({
   const { run: runCopyTemplate, loading } = useRequest(apiPublishTemplateCopy, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
+    onSuccess: (
+      data: number,
+      params: {
+        targetSpaceId: number;
+        targetType: AgentComponentTypeEnum;
+        targetId: number;
+      }[],
+    ) => {
       message.success('模板复制成功');
       // 关闭弹窗
       setOpenMove(false);
+      // 目标空间ID
+      const { targetSpaceId } = params[0];
+      // 跳转
+      jumpToAgent(targetSpaceId, data);
     },
   });
 
