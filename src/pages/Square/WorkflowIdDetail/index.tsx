@@ -164,6 +164,7 @@ const WorkflowIdDetail: React.FC = ({}) => {
                 loading={loadingCopyTemplate}
                 type={ApplicationMoreActionEnum.Copy_To_Space}
                 open={openMove}
+                isTemplate={true}
                 title={workflowInfo?.name}
                 onCancel={() => setOpenMove(false)}
                 onConfirm={handlerConfirmCopyTemplate}

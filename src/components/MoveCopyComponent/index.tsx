@@ -1,4 +1,4 @@
-import agentImage from '@/assets/images/agent_image.png';
+import teamImage from '@/assets/images/team_image.png';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { RoleEnum } from '@/types/enums/common';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
@@ -22,6 +22,7 @@ const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
   // 默认为迁移
   type = ApplicationMoreActionEnum.Move,
   mode = AgentComponentTypeEnum.Agent,
+  isTemplate = false,
   open,
   title,
   onCancel,
@@ -40,12 +41,17 @@ const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
       : '工作流';
 
   const filterSpaceList = useMemo(() => {
+    // 迁移
     if (type === ApplicationMoreActionEnum.Move) {
-      // 迁移
       return spaceList?.filter((item: SpaceInfo) => item.id !== spaceId) || [];
-    } else {
-      // 复制
-      // 【空间创建者或空间管理员可复制到自己有权限的所有空间（这里涉及到会把关联的插件工作流一并发布到目标空间去），普通用户只能复制到本空间】
+    }
+    // 复制
+    else {
+      // 如果是模板，直接返回所有空间，否则根据当前空间的角色过滤
+      if (isTemplate) {
+        return spaceList || [];
+      }
+      // 非模板：【空间创建者或空间管理员可复制到自己有权限的所有空间（这里涉及到会把关联的插件工作流一并发布到目标空间去），普通用户只能复制到本空间】
       // 找到当前空间的信息
       const currentSpace = spaceList.find(
         (item: SpaceInfo) => item.id === spaceId,
@@ -56,7 +62,7 @@ const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
       }
       return spaceList;
     }
-  }, [type, spaceId, spaceList]);
+  }, [type, spaceId, spaceList, isTemplate]);
 
   useEffect(() => {
     if (open) {
@@ -69,6 +75,11 @@ const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
       open={open}
       destroyOnClose
       onCancel={onCancel}
+      classNames={{
+        content: cx(styles['modal-container']),
+        body: styles['modal-body'],
+      }}
+      centered
       title={
         <header className={cx(styles.header, 'text-ellipsis')}>
           {`${actionText}${componentType} - ${title}`}
@@ -85,13 +96,12 @@ const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
           {actionText}
         </Button>
       )}
-      width={475}
     >
       <>
         <div className={cx(styles['row-line'])} />
         <span
           className={cx(styles.label)}
-        >{`选择要${actionText}到的团队空间`}</span>
+        >{`选择要${actionText}到的空间`}</span>
         {filterSpaceList.map((item: SpaceInfo) => (
           <div
             key={item.id}
@@ -106,7 +116,7 @@ const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
           >
             <img
               className={cx(styles.img)}
-              src={item.icon || (agentImage as string)}
+              src={item.icon || (teamImage as string)}
               alt=""
             />
             <span className={cx('flex-1')}>{item.name}</span>

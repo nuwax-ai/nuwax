@@ -11,6 +11,7 @@ import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment';
 import React from 'react';
+import { history, useParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -25,8 +26,15 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
   onEditAgent,
   onPublish,
 }) => {
+  const { spaceId } = useParams();
+  // 返回上一页，如果没有referrer，则跳转到工作空间（智能体开发）页面
   const handleBack = () => {
-    history.back();
+    const referrer = document.referrer;
+    if (!referrer || window.history.length <= 1) {
+      history.push(`/space/${spaceId}/develop`);
+    } else {
+      history.back();
+    }
   };
 
   return (

@@ -33,6 +33,8 @@ export interface VersionHistoryProps {
   targetName?: string;
   targetType?: AgentComponentTypeEnum;
   visible: boolean;
+  // 是否是抽屉展示
+  isDrawer?: boolean;
   onClose: () => void;
 }
 

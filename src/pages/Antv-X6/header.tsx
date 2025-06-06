@@ -3,13 +3,14 @@ import { getTime } from '@/utils';
 import { getImg } from '@/utils/workflow';
 import {
   CheckCircleFilled,
-  // CheckCircleOutlined,
+  ClockCircleOutlined,
   EditOutlined,
   InfoCircleOutlined,
   LeftOutlined,
 } from '@ant-design/icons';
 import { Button, Popover, Tag } from 'antd';
 import React from 'react';
+import { history, useParams } from 'umi';
 interface HeaderProp {
   isValidLoading?: boolean;
   info: {
@@ -19,9 +20,11 @@ interface HeaderProp {
     created?: string;
     modified?: string;
     id?: number;
+    spaceId?: number;
     description?: string;
     publishDate?: string | null;
   };
+  onToggleVersionHistory: () => void;
   showPublish: () => void;
   setShowCreateWorkflow: () => void;
 }
@@ -29,20 +32,27 @@ interface HeaderProp {
 const Header: React.FC<HeaderProp> = ({
   isValidLoading,
   info,
+  onToggleVersionHistory,
   setShowCreateWorkflow,
   showPublish,
 }) => {
+  const { spaceId } = useParams();
   const { name, icon, publishStatus, modified, description, publishDate } =
     info;
 
   // 返回上一级
   const bank = () => {
-    history.back();
+    const referrer = document.referrer;
+    if (!referrer || window.history.length <= 1) {
+      history.push(`/space/${spaceId}/library`);
+    } else {
+      history.back();
+    }
   };
 
   return (
-    <div className="fold-header-style dis-sb">
-      <div className="dis-left">
+    <div className="fold-header-style flex items-center gap-20">
+      <div className="dis-left flex-1">
         <LeftOutlined className="back-icon-style" onClick={bank} />
         <img
           src={icon || getImg(AgentComponentTypeEnum.Workflow)}
@@ -94,6 +104,10 @@ const Header: React.FC<HeaderProp> = ({
           </div>
         </div>
       </div>
+      <ClockCircleOutlined
+        className={'ico cursor-pointer'}
+        onClick={onToggleVersionHistory}
+      />
       <Button onClick={showPublish} type={'primary'} loading={isValidLoading}>
         {isValidLoading ? '校验中' : '发布'}
       </Button>

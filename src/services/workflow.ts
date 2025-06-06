@@ -1,3 +1,4 @@
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { CreatorInfo } from '@/types/interfaces/agent';
@@ -123,6 +124,25 @@ export interface IVolidWorkfow {
   success: boolean;
   messages: string[];
 }
+
+// 工作流配置历史信息
+export interface IWorkflowConfigHistory {
+  id: number;
+  // 可用值:Agent,Plugin,Workflow,Knowledge,Table
+  targetType: AgentComponentTypeEnum;
+  targetId: number;
+  // 操作类型,Add 新增, Edit 编辑, Publish 发布,可用值:Add,Edit,Publish,PublishApply,PublishApplyReject,OffShelf,AddComponent,EditComponent,DeleteComponent,AddNode,EditNode,DeleteNode
+  type: string;
+  // 当时的配置信息
+  config: unknown;
+  // 操作描述
+  description: string;
+  // 操作人
+  opUser: CreatorInfo;
+  modified: string;
+  created: string;
+}
+
 // 获取工作流的详细信息
 export async function getDetails(
   id: number,
@@ -248,6 +268,15 @@ export async function validWorkflow(
   id: number,
 ): Promise<RequestResponse<IVolidWorkfow[]>> {
   return request(`/api/workflow/valid/${id}`, {
+    method: 'GET',
+  });
+}
+
+// 查询工作流历史配置信息接口
+export async function apiWorkflowConfigHistoryList(
+  workflowId: number,
+): Promise<RequestResponse<IWorkflowConfigHistory[]>> {
+  return request(`/api/workflow/config/history/list/${workflowId}`, {
     method: 'GET',
   });
 }

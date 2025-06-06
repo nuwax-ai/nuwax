@@ -105,7 +105,8 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
             if (
               type === ApplicationMoreActionEnum.Move &&
               (userInfo?.role === RoleEnum.User ||
-                agentConfigInfo?.creatorId !== userInfo?.id)
+                (userInfo?.role === RoleEnum.Owner &&
+                  agentConfigInfo?.creatorId !== userInfo?.id))
             ) {
               return false;
             }

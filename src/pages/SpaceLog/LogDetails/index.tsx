@@ -163,7 +163,7 @@ const LogDetails: React.FC<LogDetailsProps> = ({
               </div>
             </div>
             <div className={cx('flex', styles.box)}>
-              <span>requestId:</span>
+              <span>消息ID:</span>
               <span className={cx(styles.value, 'text-ellipsis')}>
                 {requestId}
               </span>

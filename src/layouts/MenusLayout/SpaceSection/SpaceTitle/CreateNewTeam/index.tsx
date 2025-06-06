@@ -17,7 +17,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 /**
- * 创建新团队组件
+ * 创建新工作空间组件
  */
 const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
   const location = useLocation();
@@ -45,11 +45,19 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
         const spaceId = result;
         localStorage.setItem(SPACE_ID, spaceId.toString());
         // 路由跳转
-        if (pathname.includes('develop')) {
+        if (pathname.includes('develop') || pathname.includes('log')) {
           history.push(`/space/${spaceId}/develop`);
         }
-        if (pathname.includes('library')) {
+        if (
+          pathname.includes('library') ||
+          pathname.includes('plugin') ||
+          pathname.includes('knowledge') ||
+          pathname.includes('table')
+        ) {
           history.push(`/space/${spaceId}/library`);
+        }
+        if (pathname.includes('space-square')) {
+          history.push(`/space/${spaceId}/space-square`);
         }
         if (pathname.includes('team')) {
           history.push(`/space/${spaceId}/team`);
@@ -73,7 +81,7 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
   return (
     <CustomFormModal
       form={form}
-      title="创建新团队"
+      title="创建新工作空间"
       open={open}
       onCancel={onCancel}
       loading={loading}

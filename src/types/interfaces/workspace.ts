@@ -1,7 +1,7 @@
 import type { RoleEnum } from '@/types/enums/common';
 import type { SpaceTypeEnum } from '@/types/enums/space';
 
-// 创建新团队传入参数
+// 创建新工作空间传入参数
 export interface CreateSpaceTeamParams {
   name: string;
   description: string;

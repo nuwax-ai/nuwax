@@ -21,11 +21,14 @@ const AgentModelComponent: React.FC<AgentModelComponentProps> = ({
     // 类型不同，跳转链接不同
     switch (type) {
       case AgentComponentTypeEnum.Plugin: {
-        // 插件类型不同，跳转链接不同
-        if (targetConfig?.type === PluginTypeEnum.HTTP) {
-          return `/space/${spaceId}/plugin/${targetId}`;
-        } else {
-          return `/space/${spaceId}/plugin/${targetId}/cloud-tool`;
+        // 判断插件是否在当前空间下
+        if (targetConfig && spaceId === targetConfig.spaceId) {
+          // 插件类型不同，跳转链接不同
+          if (targetConfig?.type === PluginTypeEnum.HTTP) {
+            return `/space/${spaceId}/plugin/${targetId}`;
+          } else {
+            return `/space/${spaceId}/plugin/${targetId}/cloud-tool`;
+          }
         }
       }
       // 工作流、表格、知识库等类型，跳转链接不同
@@ -42,6 +45,7 @@ const AgentModelComponent: React.FC<AgentModelComponentProps> = ({
     <div className={cx('flex', 'items-center', styles.container)}>
       <Link
         to={link}
+        target="_blank"
         className={cx('flex-1', 'flex', 'overflow-hide', styles['gap-6'])}
       >
         <span className={cx('radius-6', styles['img-box'])}>

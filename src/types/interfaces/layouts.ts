@@ -14,7 +14,7 @@ export interface UserRelAgentProps {
   onCancelCollect?: () => void;
 }
 
-// 创建新团队组件
+// 创建新工作空间组件
 export interface CreateNewTeamProps {
   open: boolean;
   onCancel: () => void;

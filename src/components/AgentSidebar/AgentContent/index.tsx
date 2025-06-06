@@ -144,6 +144,7 @@ const AgentContent: React.FC<AgentContentProps> = ({
           loading={loading}
           type={ApplicationMoreActionEnum.Copy_To_Space}
           open={openMove}
+          isTemplate={true}
           title={agentDetail?.name}
           onCancel={() => setOpenMove(false)}
           onConfirm={handlerConfirmCopyTemplate}

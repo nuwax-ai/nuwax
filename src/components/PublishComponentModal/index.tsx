@@ -117,6 +117,10 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       value: item.name,
     }));
     setClassifyList(list);
+    // 默认选中第一个分类
+    if (list?.length > 0) {
+      form.setFieldValue('category', list[0].value);
+    }
   }, [mode, agentInfoList, pluginInfoList, workflowInfoList]);
 
   // 智能体、插件、工作流等 - 提交发布申请
@@ -333,6 +337,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       }}
       loading={loading}
       title={`发布${title}`}
+      centered={true}
       open={open}
       onConfirm={handlerConfirm}
       onCancel={onCancel}
