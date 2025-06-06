@@ -1,5 +1,5 @@
 import agentImage from '@/assets/images/agent_image.png';
-import avatarImage from '@/assets/images/avatar.png';
+import teamImage from '@/assets/images/team_image.png';
 import { LogHeaderProps } from '@/types/interfaces/space';
 import { LeftOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
@@ -43,16 +43,15 @@ const LogHeader: React.FC<LogHeaderProps> = ({ agentConfigInfo }) => {
       <div className={cx('flex', 'flex-col', styles['header-info'])}>
         {/* 智能体名称 */}
         <h3 className={cx(styles['agent-name'])}>{agentConfigInfo?.name}</h3>
-        {/* 用户信息 */}
+        {/* 空间信息 */}
         <div className={cx('flex', 'items-center', styles['user-info'])}>
           <img
             className={cx(styles.avatar)}
-            src={agentConfigInfo?.creator?.avatar || avatarImage}
+            src={agentConfigInfo?.space?.icon || teamImage}
             alt=""
           />
           <span className={cx(styles.name, 'text-ellipsis')}>
-            {agentConfigInfo?.creator?.nickName ||
-              agentConfigInfo?.creator?.userName}
+            {agentConfigInfo?.space?.name}
           </span>
         </div>
       </div>
