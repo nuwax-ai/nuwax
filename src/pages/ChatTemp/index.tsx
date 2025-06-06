@@ -285,6 +285,7 @@ const ChatTemp: React.FC = () => {
             ...currentMessage,
             status: MessageStatusEnum.Complete,
             finalResult: data,
+            id: res.requestId,
           };
           if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
