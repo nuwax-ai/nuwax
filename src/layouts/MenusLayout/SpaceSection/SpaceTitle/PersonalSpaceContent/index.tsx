@@ -40,8 +40,10 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
     onClosePopover(false);
 
     // 路由跳转
-    if (pathname.includes('develop')) {
+    if (pathname.includes('develop') || pathname.includes('log')) {
       history.push(`/space/${spaceId}/develop`);
+    } else if (pathname.includes('space-square')) {
+      history.push(`/space/${spaceId}/space-square`);
     }
     // 团队设置
     else if (pathname.includes('team')) {
