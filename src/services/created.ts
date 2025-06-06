@@ -22,6 +22,7 @@ export interface IGetList {
   spaceId?: number;
   dataType?: string;
   justReturnSpaceData?: boolean;
+  allowCopy?: number; // 模板库 是否允许复制
 }
 
 export async function getList(

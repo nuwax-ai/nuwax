@@ -21,6 +21,7 @@ import { RadioChangeEvent } from 'antd/lib/radio';
 import { useCallback, useEffect, useRef, useState } from 'react';
 // import { useModel } from 'umi';
 import { ButtonList, CreatedProp, MenuItem } from '@/components/Created/type';
+import { COMPONENT_LIST } from '@/constants/ecosystem.constants';
 import { useParams } from 'umi';
 import './index.less';
 // 顶部的标签页名称
@@ -31,6 +32,18 @@ const buttonList: ButtonList[] = [
   { label: '数据表', key: AgentComponentTypeEnum.Table },
   { label: '智能体', key: AgentComponentTypeEnum.Agent },
 ];
+const getAllowCopy = (key: AgentComponentTypeEnum) => {
+  // 模板库 允许复制
+  if (
+    [AgentComponentTypeEnum.Workflow, AgentComponentTypeEnum.Agent].includes(
+      key,
+    )
+  ) {
+    // 模板库 允许复制
+    return 1;
+  }
+  return 0;
+};
 
 // 插件、工作流、知识库、数据库、智能体选择组件
 const SelectComponent: React.FC<CreatedProp> = ({
@@ -47,12 +60,12 @@ const SelectComponent: React.FC<CreatedProp> = ({
   // 搜索栏的
   const [search, setSearch] = useState<string>('');
   // 当前顶部被选中被选中的
-  const [selected, SetSelected] = useState<{
+  const [selected, setSelected] = useState<{
     label: string;
     key: AgentComponentTypeEnum;
   }>({
-    label: '插件',
-    key: AgentComponentTypeEnum.Plugin,
+    label: buttonList.find((item) => item.key === checkTag)?.label || '',
+    key: checkTag,
   });
   // 分页
   const [pagination, setPagination] = useState({
@@ -68,20 +81,6 @@ const SelectComponent: React.FC<CreatedProp> = ({
 
   // 左侧菜单栏
   const items: MenuItem[] = [
-    {
-      key: 'library',
-      icon: <SearchOutlined />,
-      label: `组件库${selected.label}`,
-    },
-    {
-      key: 'collect',
-      icon: <StarFilled />,
-      label: '收藏',
-    },
-    {
-      key: 'divider',
-      type: 'divider', // 确保分隔线项有 key 和 type 属性
-    },
     {
       key: 'group',
       label: `搜索${selected.label}`, // 如果需要动态内容，可以像这样使用模板字符串
@@ -145,7 +144,12 @@ const SelectComponent: React.FC<CreatedProp> = ({
       if ((params.page > sizes && params.page !== 1) || isRequesting.current)
         return;
       isRequesting.current = true;
-      const _res = await service.getList(type, { ...params, spaceId });
+      const allowCopy = getAllowCopy(selected.key);
+      const _res = await service.getList(type, {
+        ...params,
+        spaceId,
+        ...(allowCopy === 1 ? { allowCopy } : {}),
+      });
       isRequesting.current = false;
       setSizes(_res.data.pages);
       setPagination((prev) => ({
@@ -271,7 +275,7 @@ const SelectComponent: React.FC<CreatedProp> = ({
     if (_item) {
       setSelectMenu('all');
       setSearch('');
-      SetSelected(_item);
+      setSelected(_item);
       setPagination({ page: 1, pageSize: 10 }); // 重置分页状态
       setSizes(100); // 重置数据大小
       setList([]); // 清空列表
@@ -422,7 +426,12 @@ const SelectComponent: React.FC<CreatedProp> = ({
               key={`${item.targetId}-${index}`}
             >
               <img
-                src={item.icon || getImg(selected.key)}
+                src={
+                  item.icon ||
+                  getImg(selected.key) ||
+                  COMPONENT_LIST.find((item) => item.type === selected.key)
+                    ?.defaultImage
+                }
                 alt=""
                 className="left-image-style"
               />

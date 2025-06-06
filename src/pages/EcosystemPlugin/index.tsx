@@ -1,5 +1,4 @@
 import type { EcosystemCardProps } from '@/components/EcosystemCard';
-import EcosystemCard from '@/components/EcosystemCard';
 import PluginDetailDrawer, {
   EcosystemDetailDrawerData,
 } from '@/components/EcosystemDetailDrawer';
@@ -40,24 +39,15 @@ import {
   EcosystemSubTabTypeEnum,
   EcosystemUseStatusEnum,
 } from '@/types/interfaces/ecosystem';
-import {
-  App,
-  Button,
-  Card,
-  Col,
-  Empty,
-  Input,
-  Row,
-  Select,
-  Spin,
-  Tabs,
-} from 'antd';
+import { App, Button, Empty, Input, List, Select, Spin, Tabs } from 'antd';
 import classNames from 'classnames';
 import { useCallback, useEffect, useState } from 'react';
 import styles from './index.less';
 const cx = classNames.bind(styles);
 const { Search } = Input;
 const PAGE_SIZE = 24;
+
+import EcosystemCard from '@/components/EcosystemCard';
 /**
  * 生态市场插件页面
  * 展示插件列表，包括全部、已启用和我的分享三个标签页
@@ -383,22 +373,57 @@ export default function EcosystemPlugin() {
     }
   };
 
+  const fetchPluginData = async (
+    page: number,
+    pageSize: number,
+    append = false,
+  ) => {
+    setLoading(true);
+    try {
+      // 获取数据的API调用
+      const response = await getClientConfigList({
+        queryFilter: {
+          dataType: EcosystemDataTypeEnum.PLUGIN,
+        },
+        current: page,
+        pageSize,
+        orders: [
+          {
+            column: 'created',
+            asc: false,
+          },
+        ],
+      });
+
+      // 如果是追加模式，合并数据
+      if (append && pluginData.records) {
+        setPluginData({
+          ...response,
+          records: [...(pluginData.records || []), ...(response.records || [])],
+        });
+      } else {
+        setPluginData(response);
+      }
+    } catch (error) {
+      console.error('获取数据失败:', error);
+      message.error('获取数据失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /**
    * 处理分页变化
    */
-  const handlePageChange = (page: number, pageSize?: number) => {
-    const newPagination = {
-      current: page,
-      pageSize: pageSize || pagination.pageSize,
-    };
-    setPagination(newPagination);
-    fetchPluginList({
-      tabType: activeTab,
-      keyword: searchKeyword,
-      page,
-      pageSize: pageSize || pagination.pageSize,
-    });
+  const handlePageChange = (page: number, append = false) => {
+    if (loading) return;
+
+    setPagination((prev) => ({ ...prev, current: page }));
+
+    // 获取数据的函数需要修改，支持追加模式
+    fetchPluginData(page, pagination.pageSize, append);
   };
+
   const handleShareStatusChange = (value: number) => {
     refreshPluginList({
       shareStatus: value,
@@ -578,7 +603,8 @@ export default function EcosystemPlugin() {
 
   return (
     <div className={cx(styles.container)}>
-      <Card className={cx(styles.contentCard)} title="插件" variant="outlined">
+      <div className={cx(styles.contentCard)}>
+        <h3 className={cx(styles.title)}>插件</h3>
         <div className={cx(styles.header)}>
           <Tabs
             activeKey={activeTab}
@@ -591,50 +617,61 @@ export default function EcosystemPlugin() {
           {renderExtraContent()}
         </div>
 
-        <Spin spinning={loading}>
-          <div className={cx(styles.pluginList)}>
-            <Row gutter={[16, 16]}>
-              {pluginData.records && pluginData.records.length > 0
-                ? pluginData.records?.map((config, index) => (
-                    <Col span={6} key={config.uid || index}>
-                      <EcosystemCard
-                        {...convertToPluginCard(config)}
-                        onClick={() => handleCardClick(config)}
-                      />
-                    </Col>
-                  ))
-                : null}
-            </Row>
-
-            {/* 分页组件 */}
-            {pluginData.total && pluginData.total > 0 ? (
-              <div style={{ textAlign: 'center', marginTop: 24 }}>
-                <Button
-                  disabled={pagination.current <= 1}
-                  onClick={() => handlePageChange(pagination.current - 1)}
-                  style={{ marginRight: 8 }}
-                >
-                  上一页
-                </Button>
-                <span style={{ margin: '0 16px' }}>
-                  第 {pagination.current} 页，共 {pluginData.pages || 0}{' '}
-                  页，总计 {pluginData.total} 条
-                </span>
-                <Button
-                  disabled={pagination.current >= (pluginData.pages || 0)}
-                  onClick={() => handlePageChange(pagination.current + 1)}
-                >
-                  下一页
-                </Button>
-              </div>
-            ) : loading ? (
-              <div style={{ width: '100%', height: 240 }}></div>
-            ) : (
-              <Empty description="暂无数据" />
+        <div
+          className={cx(styles.pluginList)}
+          style={{
+            height: 'calc(100vh - 100px)',
+            overflowY: 'auto',
+          }}
+          onScroll={(e) => {
+            // 当滚动到距离底部100px时加载更多
+            const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+            if (
+              scrollHeight - scrollTop - clientHeight < 100 &&
+              !loading &&
+              pagination.current < (pluginData.pages || 0)
+            ) {
+              handlePageChange(pagination.current + 1, true); // 添加参数表示追加数据而不是替换
+            }
+          }}
+        >
+          <List
+            grid={{ gutter: 16, column: 4 }}
+            dataSource={pluginData.records || []}
+            renderItem={(config) => (
+              <List.Item>
+                <EcosystemCard
+                  {...convertToPluginCard(config)}
+                  onClick={() => handleCardClick(config)}
+                />
+              </List.Item>
             )}
-          </div>
-        </Spin>
-      </Card>
+            loadMore={
+              loading ? (
+                <div style={{ textAlign: 'center', margin: '12px 0' }}>
+                  <Spin />
+                </div>
+              ) : pluginData.total &&
+                pluginData.total > 0 &&
+                pagination.current >= (pluginData.pages || 0) ? (
+                <div
+                  style={{
+                    textAlign: 'center',
+                    padding: '12px 0',
+                    color: '#ccc',
+                  }}
+                >
+                  没有更多数据了
+                </div>
+              ) : null
+            }
+          />
+          {!pluginData.records ||
+          (pluginData.records.length === 0 && !loading) ? (
+            <Empty description="暂无数据" />
+          ) : null}
+        </div>
+      </div>
 
       {/* 插件详情抽屉 */}
       <PluginDetailDrawer

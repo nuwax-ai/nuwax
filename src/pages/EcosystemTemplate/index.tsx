@@ -43,12 +43,10 @@ import { DownOutlined } from '@ant-design/icons';
 import {
   App,
   Button,
-  Card,
-  Col,
   Dropdown,
   Empty,
   Input,
-  Row,
+  List,
   Select,
   Space,
   Spin,
@@ -61,8 +59,8 @@ const cx = classNames.bind(styles);
 const { Search } = Input;
 const PAGE_SIZE = 24;
 /**
- * 生态市场插件页面
- * 展示插件列表，包括全部、已启用和我的分享三个标签页
+ * 生态市场模板页面
+ * 展示模板列表，包括全部、已启用和我的分享三个标签页
  */
 export default function EcosystemTemplate() {
   const { message } = App.useApp();
@@ -72,9 +70,9 @@ export default function EcosystemTemplate() {
   const [activeTab, setActiveTab] = useState<EcosystemTabTypeEnum>(
     TabTypeEnum.ALL,
   );
-  // 插件详情抽屉是否可见
+  // 模板详情抽屉是否可见
   const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
-  // 当前选中的插件
+  // 当前选中的模板
   const [selectedPlugin, setSelectedPlugin] = useState<ClientConfigVo | null>(
     null,
   );
@@ -82,7 +80,7 @@ export default function EcosystemTemplate() {
   const [shareModalVisible, setShareModalVisible] = useState<boolean>(false);
   // 是否是编辑模式
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
-  // 当前编辑的插件
+  // 当前编辑的模板
   const [editingPlugin, setEditingPlugin] = useState<ClientConfigVo | null>(
     null,
   );
@@ -123,7 +121,7 @@ export default function EcosystemTemplate() {
   });
 
   /**
-   * 获取插件列表数据
+   * 获取模板列表数据
    */
   const fetchPluginList = useCallback(
     async (
@@ -142,13 +140,13 @@ export default function EcosystemTemplate() {
         // 根据标签页类型确定查询参数
         let subTabType: number;
         switch (tabType) {
-          case 'all':
+          case TabTypeEnum.ALL:
             subTabType = EcosystemSubTabTypeEnum.ALL;
             break;
-          case 'enabled':
+          case TabTypeEnum.ENABLED:
             subTabType = EcosystemSubTabTypeEnum.ENABLED;
             break;
-          case 'shared':
+          case TabTypeEnum.SHARED:
             subTabType = EcosystemSubTabTypeEnum.MY_SHARE;
             break;
           default:
@@ -189,8 +187,8 @@ export default function EcosystemTemplate() {
         const result = await getClientConfigList(params);
         setPluginData(result);
       } catch (error) {
-        console.error('获取插件列表失败:', error);
-        message.error('获取插件列表失败');
+        console.error('获取模板列表失败:', error);
+        message.error('获取模板列表失败');
       } finally {
         setLoading(false);
       }
@@ -231,8 +229,8 @@ export default function EcosystemTemplate() {
   const convertToTemplateCard = (
     config: ClientConfigVo,
   ): EcosystemCardProps => {
-    const isAll = activeTab === 'all';
-    const isMyShare = activeTab === 'shared';
+    const isAll = activeTab === TabTypeEnum.ALL;
+    const isMyShare = activeTab === TabTypeEnum.SHARED;
     return {
       icon: config.icon || '',
       title: config.name || '未命名插件',
@@ -276,7 +274,7 @@ export default function EcosystemTemplate() {
   };
 
   /**
-   * 处理插件详情抽屉关闭
+   * 处理模板详情抽屉关闭
    */
   const handleDetailClose = () => {
     setSelectedPlugin(null);
@@ -308,7 +306,7 @@ export default function EcosystemTemplate() {
   };
 
   /**
-   * 停用插件处理函数
+   * 停用模板处理函数
    */
   const handleDisable = async (): Promise<boolean> => {
     if (!selectedPlugin?.uid) return false;
@@ -430,21 +428,77 @@ export default function EcosystemTemplate() {
     }
   };
 
+  const fetchTemplateData = async (
+    page: number,
+    pageSize: number,
+    append = false,
+  ) => {
+    setLoading(true);
+    try {
+      // 根据标签页类型确定查询参数
+      let subTabType: number;
+      switch (activeTab) {
+        case TabTypeEnum.ALL:
+          subTabType = EcosystemSubTabTypeEnum.ALL;
+          break;
+        case TabTypeEnum.ENABLED:
+          subTabType = EcosystemSubTabTypeEnum.ENABLED;
+          break;
+        case TabTypeEnum.SHARED:
+          subTabType = EcosystemSubTabTypeEnum.MY_SHARE;
+          break;
+        default:
+          subTabType = EcosystemSubTabTypeEnum.ALL;
+      }
+
+      // 获取数据的API调用
+      const response = await getClientConfigList({
+        queryFilter: {
+          dataType: EcosystemDataTypeEnum.TEMPLATE,
+          subTabType,
+          targetType:
+            selectTargetTypeRef.current === ''
+              ? undefined
+              : selectTargetTypeRef.current,
+          name: searchKeyword || undefined,
+        },
+        current: page,
+        pageSize,
+        orders: [
+          {
+            column: 'created',
+            asc: false,
+          },
+        ],
+      });
+
+      // 如果是追加模式，合并数据
+      if (append && pluginData.records) {
+        setPluginData({
+          ...response,
+          records: [...(pluginData.records || []), ...(response.records || [])],
+        });
+      } else {
+        setPluginData(response);
+      }
+    } catch (error) {
+      console.error('获取数据失败:', error);
+      message.error('获取数据失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /**
    * 处理分页变化
    */
-  const handlePageChange = (page: number, pageSize?: number) => {
-    const newPagination = {
-      current: page,
-      pageSize: pageSize || pagination.pageSize,
-    };
-    setPagination(newPagination);
-    fetchPluginList({
-      tabType: activeTab,
-      keyword: searchKeyword,
-      page,
-      pageSize: pageSize || pagination.pageSize,
-    });
+  const handlePageChange = (page: number, append = false) => {
+    if (loading) return;
+
+    setPagination((prev) => ({ ...prev, current: page }));
+
+    // 获取数据的函数需要修改，支持追加模式
+    fetchTemplateData(page, pagination.pageSize, append);
   };
 
   /**
@@ -495,7 +549,7 @@ export default function EcosystemTemplate() {
   };
 
   /**
-   * 处理插件卡片点击事件
+   * 处理模板卡片点击事件
    */
   const handleCardClick = async (config: ClientConfigVo) => {
     // 如果是我的分享标签页，则进入编辑模式
@@ -677,7 +731,8 @@ export default function EcosystemTemplate() {
 
   return (
     <div className={cx(styles.container)}>
-      <Card className={cx(styles.contentCard)} title="模板" variant="outlined">
+      <div className={cx(styles.contentCard)}>
+        <h3 className={cx(styles.title)}>模板</h3>
         <div className={cx(styles.header)}>
           <Tabs
             activeKey={activeTab}
@@ -687,54 +742,66 @@ export default function EcosystemTemplate() {
             className={cx(styles.tabs)}
             items={TabItems}
           />
-
           {renderExtraContent()}
         </div>
 
-        <Spin spinning={loading}>
-          <div className={cx(styles.pluginList)}>
-            <Row gutter={[16, 16]}>
-              {pluginData.records?.map((config, index) => (
-                <Col span={6} key={config.uid || index}>
-                  <EcosystemCard
-                    {...convertToTemplateCard(config)}
-                    onClick={() => handleCardClick(config)}
-                  />
-                </Col>
-              ))}
-            </Row>
-
-            {/* 分页组件 */}
-            {pluginData.total && pluginData.total > 0 ? (
-              <div style={{ textAlign: 'center', marginTop: 24 }}>
-                <Button
-                  disabled={pagination.current <= 1}
-                  onClick={() => handlePageChange(pagination.current - 1)}
-                  style={{ marginRight: 8 }}
-                >
-                  上一页
-                </Button>
-                <span style={{ margin: '0 16px' }}>
-                  第 {pagination.current} 页，共 {pluginData.pages || 0}{' '}
-                  页，总计 {pluginData.total} 条
-                </span>
-                <Button
-                  disabled={pagination.current >= (pluginData.pages || 0)}
-                  onClick={() => handlePageChange(pagination.current + 1)}
-                >
-                  下一页
-                </Button>
-              </div>
-            ) : loading ? (
-              <div style={{ width: '100%', height: 240 }}></div>
-            ) : (
-              <Empty description="暂无数据" />
+        <div
+          className={cx(styles.pluginList)}
+          style={{
+            height: 'calc(100vh - 100px)',
+            overflowY: 'auto',
+          }}
+          onScroll={(e) => {
+            // 当滚动到距离底部100px时加载更多
+            const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+            if (
+              scrollHeight - scrollTop - clientHeight < 100 &&
+              !loading &&
+              pagination.current < (pluginData.pages || 0)
+            ) {
+              handlePageChange(pagination.current + 1, true); // 添加参数表示追加数据而不是替换
+            }
+          }}
+        >
+          <List
+            grid={{ gutter: 16, column: 4 }}
+            dataSource={pluginData.records || []}
+            renderItem={(config) => (
+              <List.Item>
+                <EcosystemCard
+                  {...convertToTemplateCard(config)}
+                  onClick={() => handleCardClick(config)}
+                />
+              </List.Item>
             )}
-          </div>
-        </Spin>
-      </Card>
+            loadMore={
+              loading ? (
+                <div style={{ textAlign: 'center', margin: '12px 0' }}>
+                  <Spin />
+                </div>
+              ) : pluginData.total &&
+                pluginData.total > 0 &&
+                pagination.current >= (pluginData.pages || 0) ? (
+                <div
+                  style={{
+                    textAlign: 'center',
+                    padding: '12px 0',
+                    color: '#ccc',
+                  }}
+                >
+                  没有更多数据了
+                </div>
+              ) : null
+            }
+          />
+          {!pluginData.records ||
+          (pluginData.records.length === 0 && !loading) ? (
+            <Empty description="暂无数据" />
+          ) : null}
+        </div>
+      </div>
 
-      {/* 插件详情抽屉 */}
+      {/* 模板详情抽屉 */}
       <PluginDetailDrawer
         visible={drawerVisible}
         data={
@@ -745,7 +812,7 @@ export default function EcosystemTemplate() {
         onDisable={handleDisable}
       />
 
-      {/* 插件分享弹窗 */}
+      {/* 模板分享弹窗 */}
       <EcosystemShareModal
         visible={shareModalVisible}
         isEdit={isEditMode}
@@ -762,7 +829,7 @@ export default function EcosystemTemplate() {
         }}
         {...shareModalProps}
       />
-      {/*添加插件、工作流、知识库、数据库弹窗*/}
+      {/*添加工作流、智能体弹窗*/}
       <SelectComponent
         onAdded={onSelectedComponent}
         open={show}

@@ -366,7 +366,7 @@ const Workflow: React.FC = () => {
     // setIsUpdate(false)
   };
   // 优化后的onFinish方法
-  const onFinish = async (): Promise<boolean> => {
+  const onSaveWorkflow = async (): Promise<boolean> => {
     let result = false;
     try {
       const currentFoldWrapItem = foldWrapItemRef.current; // 保存当前值
@@ -411,11 +411,25 @@ const Workflow: React.FC = () => {
     }
     return result;
   };
+
+  // 新增定时器逻辑
+  const saveWorkflow = useCallback(async () => {
+    return await onSaveWorkflow();
+  }, [onSaveWorkflow]);
+
+  const doSubmitFormData = async (): Promise<boolean> => {
+    const result = await onSaveWorkflow();
+    if (result) {
+      setIsModified(false);
+    }
+    return result;
+  };
+
   // 点击组件，显示抽屉
   const changeDrawer = (child: ChildNode | null) => {
     setIsModified(async (modified: boolean) => {
       if (modified === true && foldWrapItemRef.current.id !== 0) {
-        await onFinish();
+        await onSaveWorkflow();
         if (timerRef.current) {
           clearTimeout(timerRef.current);
         }
@@ -932,6 +946,10 @@ const Workflow: React.FC = () => {
   const validWorkflow = async () => {
     setLoading(false);
 
+    if (isModified) {
+      // 如果当前有未保存的修改，则先保存一下
+      await doSubmitFormData();
+    }
     // 先将数据提交到后端
     const _detail = await service.getDetails(workflowId);
     const _nodeList = _detail.data.nodes;
@@ -1131,15 +1149,9 @@ const Workflow: React.FC = () => {
     // }
     changeUpdateTime();
   };
+
   // 试运行所有节点
   const testRunAll = async () => {
-    setIsModified(async (prev: boolean) => {
-      if (prev === true) {
-        await onFinish();
-      }
-      return false;
-    });
-
     const volid = await validWorkflow();
     if (volid) {
       setTestRunResult('');
@@ -1175,7 +1187,7 @@ const Workflow: React.FC = () => {
     } else {
       if (type === 'Code') {
         setIsModified(async (prev: boolean) => {
-          if (prev === true) await onFinish();
+          if (prev === true) await onSaveWorkflow();
           nodeTestRun(params);
           return false;
         });
@@ -1202,10 +1214,8 @@ const Workflow: React.FC = () => {
       }
       case 'TestRun': {
         if (isModified) {
-          await onFinish();
-          if (timerRef.current) {
-            clearTimeout(timerRef.current);
-          }
+          await onSaveWorkflow();
+          setIsModified(false);
         }
         if (foldWrapItemRef.current.type === 'Start') {
           testRunAll();
@@ -1314,7 +1324,7 @@ const Workflow: React.FC = () => {
     return () => {
       setIsModified((prev: boolean) => {
         if (prev === true) {
-          onFinish();
+          onSaveWorkflow();
         }
         return false;
       });
@@ -1323,13 +1333,6 @@ const Workflow: React.FC = () => {
       setTestRun(false);
     };
   }, []);
-  // 新增定时器逻辑
-  const saveWorkflow = useCallback(async () => {
-    return await onFinish();
-  }, [onFinish]);
-  useAutoSave(saveWorkflow, 3000, () => {
-    setIsModified(false);
-  });
 
   useEffect(() => {
     if (foldWrapItem.id !== 0) {
@@ -1380,6 +1383,12 @@ const Workflow: React.FC = () => {
     }
     setIsValidLoading(false);
   };
+
+  // 自动保存
+  // 新增定时器逻辑
+  useAutoSave(saveWorkflow, 3000, () => {
+    setIsModified(false);
+  });
 
   return (
     <div id="container">
@@ -1435,8 +1444,8 @@ const Workflow: React.FC = () => {
           <Form
             form={form}
             layout={'vertical'}
-            onFinishFailed={onFinish}
-            onFinish={onFinish}
+            onFinishFailed={doSubmitFormData}
+            onFinish={doSubmitFormData}
             onValuesChange={() => {
               setIsModified(true);
             }}
