@@ -230,11 +230,19 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
       title: '参数名称',
       dataIndex: 'name',
       key: 'name',
+      width: '30%',
+      ellipsis: {
+        showTitle: true,
+      },
     },
     {
       title: '参数描述',
       dataIndex: 'description',
       key: 'description',
+      width: '50%',
+      ellipsis: {
+        showTitle: true,
+      },
     },
     {
       title: '启用必填',
@@ -252,6 +260,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
         return (
           <Checkbox
             checked={required}
+            style={{ fontSize: 12 }}
             onChange={() => {
               // 勾选 取消 同步到 configParam
               let newParam = [...configParam];
@@ -350,11 +359,11 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
           {isEdit ? '编辑分享' : '创建分享'}
         </div>
       }
+      centered
       open={visible}
       onCancel={handleClose}
       width={720}
       footer={null}
-      className={cx(styles.pluginShareModal)}
     >
       <div className={cx(styles.modalContent)}>
         <Form form={form} layout="vertical" className={cx(styles.form)}>
@@ -408,6 +417,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                   return (
                     <div
                       className={cx(styles.pluginItemStyle)}
+                      style={{ marginBottom: 24 }}
                       onClick={() => {
                         onAddComponent();
                       }}
@@ -417,7 +427,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                   );
                 }
                 return (
-                  <div className={cx(styles.pluginItemStyle)}>
+                  <div style={{ marginBottom: 24 }}>
                     <SkillList
                       params={[
                         {
@@ -464,11 +474,12 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
             <div className={cx(styles.section)}>
               <div className={cx(styles.sectionTitle)}>插件参数</div>
               <Table<BindConfigWithSub>
-                className={cx(styles['table-wrap'], 'overflow-hide')}
+                size="small"
+                className={cx(styles.tableWrap, 'overflow-hide')}
                 columns={inputColumns}
                 dataSource={tableData}
                 pagination={false}
-                scroll={{ x: 'max-content', y: 55 * 4 }}
+                scroll={{ x: 'max-content', y: 36 * 5 }}
                 expandable={{
                   defaultExpandAllRows: true,
                 }}
@@ -484,7 +495,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
             >
               <Input.TextArea
                 placeholder="请输入使用文档，支持markdown格式"
-                autoSize={{ minRows: 3, maxRows: 5 }}
+                autoSize={{ minRows: 5, maxRows: 5 }}
                 className={cx(styles.docTextarea)}
               />
             </Form.Item>
