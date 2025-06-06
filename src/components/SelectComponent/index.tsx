@@ -21,6 +21,7 @@ import { RadioChangeEvent } from 'antd/lib/radio';
 import { useCallback, useEffect, useRef, useState } from 'react';
 // import { useModel } from 'umi';
 import { ButtonList, CreatedProp, MenuItem } from '@/components/Created/type';
+import { COMPONENT_LIST } from '@/constants/ecosystem.constants';
 import { useParams } from 'umi';
 import './index.less';
 // 顶部的标签页名称
@@ -425,7 +426,12 @@ const SelectComponent: React.FC<CreatedProp> = ({
               key={`${item.targetId}-${index}`}
             >
               <img
-                src={item.icon || getImg(selected.key)}
+                src={
+                  item.icon ||
+                  getImg(selected.key) ||
+                  COMPONENT_LIST.find((item) => item.type === selected.key)
+                    ?.defaultImage
+                }
                 alt=""
                 className="left-image-style"
               />
