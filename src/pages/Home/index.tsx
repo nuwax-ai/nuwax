@@ -47,8 +47,8 @@ const Home: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: HomeAgentCategoryInfo) => {
-      if (!homeCategoryInfo) setHomeCategoryInfo(result);
-      if (!activeTab) setActiveTab(result?.categories?.[0].type);
+      setHomeCategoryInfo(result);
+      setActiveTab(result?.categories?.[0]?.type);
       setLoading(false);
     },
     onError: () => {

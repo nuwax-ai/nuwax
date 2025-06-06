@@ -29,8 +29,6 @@ interface AgentSectionProps {
   agents: CategoryItemInfo[];
   /** 拖拽提示文本 */
   dragHoverText: string;
-  /** 是否正在拖拽 */
-  isDragging: boolean;
   /** 智能体点击事件 */
   onAgentClick: (targetId: number) => void;
   /** 收藏切换事件 */
@@ -56,7 +54,6 @@ const AgentSection: React.FC<AgentSectionProps> = ({
   category,
   agents: propsAgents,
   dragHoverText,
-  isDragging,
   onAgentClick,
   onToggleCollect,
   onMouseEnter,
@@ -120,7 +117,7 @@ const AgentSection: React.FC<AgentSectionProps> = ({
     <div
       ref={sectionRef}
       className={cx(styles.section, {
-        [styles.dragging]: isDragging,
+        // [styles.dragging]: isDragging,
       })}
     >
       {/* 分类标题 */}

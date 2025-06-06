@@ -7,6 +7,7 @@ import {
   useSensor,
 } from '@dnd-kit/core';
 import {
+  arrayMove,
   horizontalListSortingStrategy,
   SortableContext,
   useSortable,
@@ -15,7 +16,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type { TabsProps } from 'antd';
 import { Tabs } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -82,6 +83,15 @@ const CategoryContainer: React.FC<CategoryContainerProps> = ({
   onMouseLeave,
   onDragStart,
 }) => {
+  // 添加内部状态，用于及时反映排序变化
+  const [localCategories, setLocalCategories] =
+    useState<CategoryInfo[]>(categories);
+
+  // 当父组件传入的 categories 变化时，更新本地状态
+  useEffect(() => {
+    setLocalCategories(categories);
+  }, [categories]);
+
   // 配置拖拽传感器
   const sensor = useSensor(PointerSensor, {
     activationConstraint: { distance: 8 },
@@ -89,15 +99,32 @@ const CategoryContainer: React.FC<CategoryContainerProps> = ({
 
   // 将分类数据转换为 Tabs 需要的格式
   const tabItems = useMemo<NonNullable<TabsProps['items']>>(() => {
-    return categories.map((category) => ({
+    return localCategories.map((category) => ({
       key: category.type,
       label: category.name,
       children: null, // 我们只需要标签，不需要内容
     }));
-  }, [categories]);
+  }, [localCategories]); // 使用 localCategories 而不是 categories
 
   // 处理拖拽结束
   const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      // 立即更新本地状态，提供即时反馈
+      setLocalCategories((prev) => {
+        const oldIndex = prev.findIndex((item) => item.type === active.id);
+        const newIndex = prev.findIndex((item) => item.type === over?.id);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          return arrayMove(prev, oldIndex, newIndex);
+        }
+
+        return prev;
+      });
+    }
+
+    // 调用父组件的回调，处理后端同步
     onCategoryDragEnd(event);
   };
 
@@ -106,9 +133,10 @@ const CategoryContainer: React.FC<CategoryContainerProps> = ({
     onTabClick(activeKey);
   };
 
-  if (!categories || categories.length === 0) {
+  if (!localCategories || localCategories.length === 0) {
     return null;
   }
+
   return (
     <div className={cx(styles.categoryContainer)}>
       <Tabs
