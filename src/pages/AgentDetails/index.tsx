@@ -131,7 +131,12 @@ const AgentDetails: React.FC = () => {
   };
 
   return (
-    <div className={cx('flex', 'h-full', 'overflow-y')}>
+    <div
+      className={cx('flex', 'h-full')}
+      style={{
+        overflowY: 'scroll',
+      }}
+    >
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
         <div className={cx(styles['title-box'])}>
           <h3

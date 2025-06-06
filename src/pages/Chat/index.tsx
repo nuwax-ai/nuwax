@@ -235,7 +235,13 @@ const Chat: React.FC = () => {
   };
 
   return (
-    <div className={cx('flex', 'h-full', 'overflow-y')} ref={messageViewRef}>
+    <div
+      className={cx('flex', 'h-full')}
+      style={{
+        overflowY: 'scroll',
+      }}
+      ref={messageViewRef}
+    >
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
         <div className={cx(styles['title-box'])}>
           <h3

@@ -20,7 +20,12 @@ const ShowArea: React.FC = () => {
   // };
 
   return (
-    <div className={cx('flex', 'flex-col', 'items-end', styles.container)}>
+    <div
+      className={cx('flex', 'flex-col', 'items-end', styles.container)}
+      style={{
+        display: showType === EditAgentShowType.Show_Stand ? 'block' : 'none',
+      }}
+    >
       {/*<ICON_FOLD onClick={handlerVisible} />*/}
       {/*展示台*/}
       <ShowStand
