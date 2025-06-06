@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRequest } from 'umi';
 
 export default () => {
+  const [loadEnd, setLoadEnd] = useState<boolean>(false);
   const [tenantConfigInfo, setTenantConfigInfo] = useState<TenantConfigInfo>();
 
   // 租户配置信息查询接口
@@ -12,6 +13,7 @@ export default () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: TenantConfigInfo) => {
+      setLoadEnd(true);
       setTenantConfigInfo(result);
       localStorage.setItem(TENANT_CONFIG_INFO, JSON.stringify(result));
       localStorage.setItem('AUTH_TYPE', result.authType.toString());
@@ -31,6 +33,9 @@ export default () => {
         head.appendChild(link);
       }
     },
+    onError: () => {
+      setLoadEnd(true);
+    },
   });
 
   // 从缓存中获取租户配置信息，设置页面title
@@ -46,6 +51,7 @@ export default () => {
   };
 
   return {
+    loadEnd,
     tenantConfigInfo,
     runTenantConfig,
     setTitle,

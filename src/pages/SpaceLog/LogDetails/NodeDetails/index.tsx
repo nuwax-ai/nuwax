@@ -1,8 +1,10 @@
 import { EllipsisTooltip } from '@/components/EllipsisTooltip';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { NodeDetailsProps } from '@/types/interfaces/agentConfig';
 import classNames from 'classnames';
 import moment from 'moment';
 import type React from 'react';
+import { useMemo } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -23,9 +25,28 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
   // 耗时
   const time = node ? `${node?.endTime - node?.startTime}ms` : '--';
 
+  const nodeTypeName = useMemo(() => {
+    switch (node?.type) {
+      case AgentComponentTypeEnum.Plugin:
+        return '插件';
+      case AgentComponentTypeEnum.Workflow:
+        return '工作流';
+      case AgentComponentTypeEnum.Knowledge:
+        return '知识库';
+      case AgentComponentTypeEnum.Variable:
+        return '变量';
+      case AgentComponentTypeEnum.Table:
+        return '数据表';
+      case AgentComponentTypeEnum.Model:
+        return '模型';
+      default:
+        return '--';
+    }
+  }, [node?.type]);
+
   return (
     <div className={cx(styles.container)}>
-      {renderDetailItem('类型', node?.type as string)}
+      {renderDetailItem('类型', nodeTypeName)}
       {renderDetailItem('状态', '成功')}
       {renderDetailItem('名称', node?.name as string)}
       {renderDetailItem('耗时', time)}
