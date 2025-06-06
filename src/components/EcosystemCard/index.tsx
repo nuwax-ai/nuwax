@@ -111,7 +111,9 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
           </h3>
           <p className={cx(styles.author)}>来自{author}</p>
           <div className={cx(styles.descriptionWrapper)}>
-            <p className={cx(styles.description)}>{description}</p>
+            <p className={cx(styles.description, 'text-ellipsis-3')}>
+              {description}
+            </p>
           </div>
         </div>
         {shareStatus && <SharedIcon shareStatus={shareStatus} />}
