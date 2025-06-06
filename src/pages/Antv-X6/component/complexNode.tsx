@@ -31,6 +31,24 @@ import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
 import { outPutConfigs } from '../params';
 import { FormList, InputAndOut, TreeOutput } from './commonNode';
+
+// 请求方法的选项
+const REQUEST_METHOD_OPTIONS = [
+  { label: 'GET', value: 'GET' },
+  { label: 'POST', value: 'POST' },
+  { label: 'PUT', value: 'PUT' },
+  { label: 'DELETE', value: 'DELETE' },
+  { label: 'PATCH', value: 'PATCH' },
+];
+
+// 各种方法的options
+const REQUEST_CONTENT_TYPE_OPTIONS = [
+  { label: 'json', value: 'JSON' },
+  { label: 'form-data', value: 'FORM_DATA' },
+  { label: 'x-www-form-urlencoded', value: 'X_WWW_FORM_URLENCODED' },
+  { label: '无', value: 'OTHER' },
+];
+
 // 定义大模型节点
 const ModelNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
   // 打开、关闭弹窗
@@ -377,23 +395,10 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({ form }) => {
 };
 
 // 定义http工具
-const HttpToolNode: React.FC<NodeDisposeProps> = ({ form }) => {
-  // 请求方法的选项
-  const methodOption = [
-    { label: 'GET', value: 'GET' },
-    { label: 'POST', value: 'POST' },
-    { label: 'PUT', value: 'PUT' },
-    { label: 'DELETE', value: 'DELETE' },
-    { label: 'PATCH', value: 'PATCH' },
-  ];
 
-  // 各种方法的options
-  const methodOptions = [
-    { label: 'json', value: 'JSON' },
-    { label: 'form-data', value: 'FORM_DATA' },
-    { label: 'x-www-form-urlencoded', value: 'X_WWW_FORM_URLENCODED' },
-    { label: '无', value: 'OTHER' },
-  ];
+const HttpToolNode: React.FC<NodeDisposeProps> = ({ form }) => {
+  const bodyParams = form.getFieldValue('body') || [];
+  const outputParams = form.getFieldValue('outputArgs') || [];
   return (
     <div>
       {/* 请求配置 */}
@@ -403,7 +408,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ form }) => {
             <Form.Item name="method" noStyle>
               <Select
                 style={{ width: '30%', marginRight: '10px' }}
-                options={methodOption}
+                options={REQUEST_METHOD_OPTIONS}
                 placeholder="请求方法"
               />
             </Form.Item>
@@ -415,7 +420,10 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ form }) => {
       </div>
       <div className="node-item-style">
         <Form.Item name="contentType" label="请求内容格式">
-          <Radio.Group className="margin-bottom" options={methodOptions} />
+          <Radio.Group
+            className="margin-bottom"
+            options={REQUEST_CONTENT_TYPE_OPTIONS}
+          />
         </Form.Item>
       </div>
       <div className="node-item-style">
@@ -444,11 +452,11 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ form }) => {
         </div>
         <div className="node-item-style">
           <CustomTree
-            title={'body'}
+            title={'Body'}
             form={form}
             inputItemName="body"
             isBody
-            params={form.getFieldValue('body') || []}
+            params={bodyParams}
           />
         </div>
       </div>
@@ -458,7 +466,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ form }) => {
           title={'出参'}
           form={form}
           inputItemName="outputArgs"
-          params={form.getFieldValue('outputArgs') || []}
+          params={outputParams}
         />
       </Form.Item>
     </div>

@@ -5,6 +5,7 @@ import { CascaderChange, CascaderValue } from '@/utils';
 import { DeleteOutlined, FileDoneOutlined } from '@ant-design/icons';
 import { Button, Cascader, Checkbox, Input, Popover, Tooltip } from 'antd';
 import React, { memo } from 'react';
+import { useModel } from 'umi';
 import InputOrReferenceFormTree from '../InputOrReferenceFormTree';
 import { TreeNodeConfig } from '../hooks/useTreeData';
 
@@ -61,7 +62,7 @@ const TreeNodeTitleBody: React.FC<TreeNodeTitleBodyProps> = memo(
 
     // 获取数据类型的级联值
     const _dataType = CascaderValue(nodeData.dataType || undefined);
-
+    const { referenceList } = useModel('workflow');
     return (
       <div className="dis-left" style={{ width: '100%' }}>
         {/* 参数名称输入框 */}
@@ -109,6 +110,7 @@ const TreeNodeTitleBody: React.FC<TreeNodeTitleBodyProps> = memo(
         >
           <InputOrReferenceFormTree
             referenceType={nodeData.bindValueType}
+            data={referenceList}
             value={nodeData.bindValue}
             onChange={(value, type) => {
               onUpdateField(nodeData.key!, 'bindValue', value, type);
