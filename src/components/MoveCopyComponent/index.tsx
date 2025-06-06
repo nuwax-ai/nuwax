@@ -1,7 +1,10 @@
 import teamImage from '@/assets/images/team_image.png';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { RoleEnum } from '@/types/enums/common';
-import { ApplicationMoreActionEnum } from '@/types/enums/space';
+import {
+  AllowDevelopEnum,
+  ApplicationMoreActionEnum,
+} from '@/types/enums/space';
 import { MoveCopyComponentProps } from '@/types/interfaces/common';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import { CheckOutlined } from '@ant-design/icons';
@@ -41,15 +44,25 @@ const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
       : '工作流';
 
   const filterSpaceList = useMemo(() => {
+    // 过滤掉当前空间的角色为普通用户且不允许开发的空间
+    const _spaceList =
+      spaceList?.filter(
+        (item: SpaceInfo) =>
+          !(
+            item.currentUserRole === RoleEnum.User &&
+            item.allowDevelop === AllowDevelopEnum.Not_Allow
+          ),
+      ) || [];
     // 迁移
     if (type === ApplicationMoreActionEnum.Move) {
-      return spaceList?.filter((item: SpaceInfo) => item.id !== spaceId) || [];
+      // 过滤掉当前空间
+      return _spaceList?.filter((item: SpaceInfo) => item.id !== spaceId) || [];
     }
     // 复制
     else {
       // 如果是模板，直接返回所有空间，否则根据当前空间的角色过滤
       if (isTemplate) {
-        return spaceList || [];
+        return _spaceList;
       }
       // 非模板：【空间创建者或空间管理员可复制到自己有权限的所有空间（这里涉及到会把关联的插件工作流一并发布到目标空间去），普通用户只能复制到本空间】
       // 找到当前空间的信息
@@ -60,7 +73,7 @@ const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
         // 如果当前空间是普通用户
         return [currentSpace]; // 只显示当前空间
       }
-      return spaceList;
+      return _spaceList;
     }
   }, [type, spaceId, spaceList, isTemplate]);
 
