@@ -43,6 +43,7 @@ import type {
   ComponentInfo,
   PublishedOffShelfParams,
 } from '@/types/interfaces/library';
+import { jumpToPlugin, jumpToWorkflow } from '@/utils/router';
 import {
   ExclamationCircleFilled,
   PlusOutlined,
@@ -149,14 +150,28 @@ const SpaceLibrary: React.FC = () => {
   });
 
   // 复制到空间成功后处理数据
-  const handleCopyToSpaceSuccess = (params: number[]) => {
+  const handleCopyToSpaceSuccess = ({
+    params,
+    data,
+    type,
+  }: {
+    params: number[];
+    data: number;
+    type: ComponentTypeEnum;
+  }) => {
     // 关闭弹窗
     setOpenMove(false);
     // 目标空间ID
     const targetSpaceId = params[1];
     // 如果目标空间ID和当前空间ID相同, 则重新查询当前空间智能体列表
-    if (targetSpaceId === spaceId) {
-      runComponent(spaceId);
+    // if (targetSpaceId === spaceId) {
+    //   runComponent(spaceId);
+    // }
+    // 跳转
+    if (type === ComponentTypeEnum.Plugin) {
+      jumpToPlugin(targetSpaceId, data);
+    } else if (type === ComponentTypeEnum.Workflow) {
+      jumpToWorkflow(targetSpaceId, data);
     }
   };
 
@@ -166,10 +181,14 @@ const SpaceLibrary: React.FC = () => {
     {
       manual: true,
       debounceInterval: 300,
-      onSuccess: (_: null, params: number[]) => {
+      onSuccess: (data: number, params: number[]) => {
         message.success('插件复制成功');
         // 复制到空间成功后处理数据
-        handleCopyToSpaceSuccess(params);
+        handleCopyToSpaceSuccess({
+          params,
+          data,
+          type: ComponentTypeEnum.Plugin,
+        });
       },
     },
   );
@@ -211,10 +230,14 @@ const SpaceLibrary: React.FC = () => {
     {
       manual: true,
       debounceInterval: 300,
-      onSuccess: (_: null, params: number[]) => {
+      onSuccess: (data: number, params: number[]) => {
         message.success('工作流复制成功');
         // 复制到空间成功后处理数据
-        handleCopyToSpaceSuccess(params);
+        handleCopyToSpaceSuccess({
+          params,
+          data,
+          type: ComponentTypeEnum.Workflow,
+        });
       },
     },
   );
