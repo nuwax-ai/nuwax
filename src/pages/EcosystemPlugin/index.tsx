@@ -39,7 +39,7 @@ import {
   EcosystemSubTabTypeEnum,
   EcosystemUseStatusEnum,
 } from '@/types/interfaces/ecosystem';
-import { App, Button, Empty, Input, List, Select, Spin, Tabs } from 'antd';
+import { App, Button, Input, List, Select, Spin, Tabs } from 'antd';
 import classNames from 'classnames';
 import { useCallback, useEffect, useState } from 'react';
 import styles from './index.less';
@@ -166,7 +166,7 @@ export default function EcosystemPlugin() {
     setPagination({ current: 1, pageSize: PAGE_SIZE });
     fetchPluginList({
       tabType: activeTab,
-      keyword: searchKeyword,
+      keyword: options?.keyword === undefined ? searchKeyword : options.keyword,
       page: 1,
       pageSize: PAGE_SIZE,
       ...(options || {}),
@@ -234,7 +234,7 @@ export default function EcosystemPlugin() {
    */
   const handleSearch = (value: string) => {
     setSearchKeyword(value);
-    refreshPluginList();
+    refreshPluginList({ keyword: value });
   };
 
   /**
@@ -471,6 +471,7 @@ export default function EcosystemPlugin() {
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             onSearch={handleSearch}
+            onClear={() => handleSearch('')}
             allowClear
           />
           <Button
@@ -495,6 +496,7 @@ export default function EcosystemPlugin() {
           value={searchKeyword}
           onChange={(e) => setSearchKeyword(e.target.value)}
           onSearch={handleSearch}
+          onClear={() => handleSearch('')}
           allowClear
         />
       </div>
@@ -666,10 +668,6 @@ export default function EcosystemPlugin() {
               ) : null
             }
           />
-          {!pluginData.records ||
-          (pluginData.records.length === 0 && !loading) ? (
-            <Empty description="暂无数据" />
-          ) : null}
         </div>
       </div>
 
