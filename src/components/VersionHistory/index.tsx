@@ -2,6 +2,7 @@ import ToggleWrap from '@/components/ToggleWrap';
 import { apiAgentConfigHistoryList } from '@/services/agentConfig';
 import { apiPluginConfigHistoryList } from '@/services/plugin';
 import { apiPublishItemList, apiPublishOffShelf } from '@/services/publish';
+import { apiWorkflowConfigHistoryList } from '@/services/workflow';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   HistoryData,
@@ -10,7 +11,7 @@ import {
   VersionHistoryProps,
 } from '@/types/interfaces/publish';
 import { ExclamationCircleFilled } from '@ant-design/icons';
-import { Empty, message, Modal } from 'antd';
+import { Drawer, Empty, message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -30,6 +31,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
   targetName,
   targetType = AgentComponentTypeEnum.Agent,
   visible,
+  isDrawer = false,
   onClose,
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -44,14 +46,17 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
   const componentType =
     targetType === AgentComponentTypeEnum.Agent
       ? '智能体'
-      : AgentComponentTypeEnum.Plugin
+      : targetType === AgentComponentTypeEnum.Plugin
       ? '插件'
       : '工作流';
+
   // 请求接口
   const apiUrl =
     targetType === AgentComponentTypeEnum.Agent
       ? apiAgentConfigHistoryList
-      : apiPluginConfigHistoryList;
+      : targetType === AgentComponentTypeEnum.Plugin
+      ? apiPluginConfigHistoryList
+      : apiWorkflowConfigHistoryList;
 
   // 版本历史记录
   const { run: runHistory } = useRequest(apiUrl, {
@@ -128,32 +133,53 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
     });
   };
 
+  // 内容区域
+  const content = loading ? (
+    <Loading className="h-full" />
+  ) : publishList?.length || versionHistoryList?.length ? (
+    <div className={cx(styles['main-wrap'])}>
+      <ConditionRender condition={publishList?.length}>
+        <h5 className={cx(styles.title)}>当前发布</h5>
+        {publishList?.map((info: PublishItemInfo) => (
+          <CurrentPublishItem
+            key={info.publishId}
+            info={info}
+            onOffShelf={() => handleOffShelf(info)}
+          />
+        ))}
+      </ConditionRender>
+      <h5 className={cx(styles.title)}>编排与发布记录</h5>
+      {versionHistoryList?.map((item) => (
+        <PublishRecordItem key={item.id} info={item} />
+      ))}
+    </div>
+  ) : (
+    <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
+      <Empty description="暂无历史记录" />
+    </div>
+  );
+
+  // 抽屉模式
+  if (isDrawer) {
+    return (
+      <Drawer
+        classNames={{
+          body: cx(styles['drawer-body']),
+        }}
+        closable
+        title={'版本历史'}
+        placement="right"
+        open={visible}
+        onClose={onClose}
+      >
+        {content}
+      </Drawer>
+    );
+  }
+
   return (
     <ToggleWrap title={'版本历史'} visible={visible} onClose={onClose}>
-      {loading ? (
-        <Loading className="h-full" />
-      ) : publishList?.length || versionHistoryList?.length ? (
-        <div className={cx(styles['main-wrap'])}>
-          <ConditionRender condition={publishList?.length}>
-            <h5 className={cx(styles.title)}>当前发布</h5>
-            {publishList?.map((info: PublishItemInfo) => (
-              <CurrentPublishItem
-                key={info.publishId}
-                info={info}
-                onOffShelf={() => handleOffShelf(info)}
-              />
-            ))}
-          </ConditionRender>
-          <h5 className={cx(styles.title)}>编排与发布记录</h5>
-          {versionHistoryList?.map((item) => (
-            <PublishRecordItem key={item.id} info={item} />
-          ))}
-        </div>
-      ) : (
-        <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
-          <Empty description="暂无历史记录" />
-        </div>
-      )}
+      {content}
     </ToggleWrap>
   );
 };

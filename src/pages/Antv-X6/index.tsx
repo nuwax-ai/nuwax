@@ -4,6 +4,7 @@ import FoldWrap from '@/components/FoldWrap';
 import OtherOperations from '@/components/OtherAction';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import TestRun from '@/components/TestRun';
+import VersionHistory from '@/components/VersionHistory';
 import Constant from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { testRunList } from '@/constants/node.constants';
@@ -64,8 +65,9 @@ const DEFAULT_NODE_CONFIG = {
 
 const Workflow: React.FC = () => {
   const { message } = App.useApp();
+  const params = useParams();
   // 当前工作流的id
-  const workflowId = Number(useParams().workflowId);
+  const workflowId = Number(params.workflowId);
   // 当前被选中的节点
   const [foldWrapItem, setFoldWrapItem] = useState<ChildNode>({
     type: NodeTypeEnum.Start,
@@ -139,6 +141,7 @@ const Workflow: React.FC = () => {
   // 新增定时器引用
   const timerRef = useRef<NodeJS.Timeout>();
   const nodeDrawerRef = useRef<NodeDrawerRef>(null);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
   // 是否显示创建工作流，插件，知识库，数据库的弹窗和试运行的弹窗
   const { setTestRun } = useModel('model');
   // 从useModel中获取到数据
@@ -1363,6 +1366,7 @@ const Workflow: React.FC = () => {
       <Header
         isValidLoading={isValidLoading}
         info={info ?? {}}
+        onToggleVersionHistory={() => setShowVersionHistory(true)}
         setShowCreateWorkflow={() => setShowCreateWorkflow(true)}
         showPublish={handleShowPublish}
       />
@@ -1473,14 +1477,15 @@ const Workflow: React.FC = () => {
         onCancel={() => setShowPublish(false)}
         onConfirm={handleConfirmPublishWorkflow}
       />
-      {/* <Published
-        id={info?.id || 0}
-        open={showPublish}
-        onCancel={() => setShowPublish(false)}
-        onSubmit={onSubmit}
-        loading={loading}
-        scope={info && info.scope ? info.scope : undefined}
-      /> */}
+      {/*版本历史*/}
+      <VersionHistory
+        targetId={workflowId}
+        targetName={info?.name}
+        targetType={AgentComponentTypeEnum.Workflow}
+        visible={showVersionHistory}
+        isDrawer={true}
+        onClose={() => setShowVersionHistory(false)}
+      />
     </div>
   );
 };

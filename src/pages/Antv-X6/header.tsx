@@ -3,6 +3,7 @@ import { getTime } from '@/utils';
 import { getImg } from '@/utils/workflow';
 import {
   CheckCircleFilled,
+  ClockCircleOutlined,
   EditOutlined,
   InfoCircleOutlined,
   LeftOutlined,
@@ -23,6 +24,7 @@ interface HeaderProp {
     description?: string;
     publishDate?: string | null;
   };
+  onToggleVersionHistory: () => void;
   showPublish: () => void;
   setShowCreateWorkflow: () => void;
 }
@@ -30,6 +32,7 @@ interface HeaderProp {
 const Header: React.FC<HeaderProp> = ({
   isValidLoading,
   info,
+  onToggleVersionHistory,
   setShowCreateWorkflow,
   showPublish,
 }) => {
@@ -48,8 +51,8 @@ const Header: React.FC<HeaderProp> = ({
   };
 
   return (
-    <div className="fold-header-style dis-sb">
-      <div className="dis-left">
+    <div className="fold-header-style flex items-center gap-20">
+      <div className="dis-left flex-1">
         <LeftOutlined className="back-icon-style" onClick={bank} />
         <img
           src={icon || getImg(AgentComponentTypeEnum.Workflow)}
@@ -101,6 +104,10 @@ const Header: React.FC<HeaderProp> = ({
           </div>
         </div>
       </div>
+      <ClockCircleOutlined
+        className={'ico cursor-pointer'}
+        onClick={onToggleVersionHistory}
+      />
       <Button onClick={showPublish} type={'primary'} loading={isValidLoading}>
         {isValidLoading ? '校验中' : '发布'}
       </Button>
