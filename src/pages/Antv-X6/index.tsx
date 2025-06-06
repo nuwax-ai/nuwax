@@ -25,6 +25,7 @@ import {
   TestRunParams,
 } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
+import { cloneDeep } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { getPeerNodePosition } from '@/utils/graph';
 import { changeNodeConfig, updateNode } from '@/utils/updateNode';
@@ -46,6 +47,7 @@ import Header from './header';
 import './index.less';
 import { renderNodeContent } from './nodeDrawer';
 import { Child } from './type';
+
 const DEFAULT_NODE_CONFIG = {
   generalNode: {
     defaultWidth: 180, // 通用节点宽度
@@ -223,11 +225,12 @@ const Workflow: React.FC = () => {
     });
   };
   // 获取当前节点的参数
-  const getRefernece = async (id: number) => {
-    if (id === 0 || preventGetReference.current === id) return;
+  const getReference = async (id: number): Promise<boolean> => {
+    if (id === 0 || preventGetReference.current === id) return false;
     // 获取节点需要的引用参数
     const _res = await service.getOutputArgs(id);
-    if (_res.code === Constant.success) {
+    const isSuccess = _res.code === Constant.success;
+    if (isSuccess) {
       if (
         _res.data &&
         _res.data.previousNodes &&
@@ -242,6 +245,7 @@ const Workflow: React.FC = () => {
         });
       }
     }
+    return isSuccess;
   };
   // 查询节点的指定信息
   const getNodeConfig = async (id: number) => {
@@ -292,11 +296,32 @@ const Workflow: React.FC = () => {
     if (_res.code !== Constant.success) {
       graphRef.current.deleteEdge(id);
     } else {
-      getRefernece(foldWrapItemRef.current.id);
+      getReference(foldWrapItemRef.current.id);
       graphRef.current.updateNode(sourceNode.id, _res.data);
       // getNodeConfig(sourceNode.id);
     }
   };
+  // 自动保存节点配置
+  const autoSaveNodeConfig = async (config: ChildNode): Promise<boolean> => {
+    if (config.id === 0) return false;
+
+    const params = cloneDeep(config);
+    graphRef.current.updateNode(params.id, params);
+    let result = false;
+    const _res = await updateNode(params);
+    if (_res.code === Constant.success) {
+      // 如果是修改节点的参数，那么就要更新当前节点的参数
+      if (config.id === foldWrapItemRef.current.id) {
+        setFoldWrapItem(params);
+      }
+      // 跟新当前节点的上级参数
+      getReference(foldWrapItemRef.current.id);
+      changeUpdateTime();
+      result = true;
+    }
+    return result;
+  };
+
   // 更新节点
   const changeNode = async (config: ChildNode, update?: boolean | string) => {
     let params = JSON.parse(JSON.stringify(config));
@@ -331,7 +356,7 @@ const Workflow: React.FC = () => {
         setFoldWrapItem(params);
       }
       // 跟新当前节点的上级参数
-      getRefernece(foldWrapItemRef.current.id);
+      getReference(foldWrapItemRef.current.id);
       changeUpdateTime();
     }
     // setIsUpdate(false)
@@ -374,7 +399,7 @@ const Workflow: React.FC = () => {
           newNodeConfig.nextNodeIds = [];
         }
       }
-      await changeNode(newNodeConfig);
+      await autoSaveNodeConfig(newNodeConfig);
       setIsModified(false);
     } catch (error) {
       console.error('表单提交失败:', error);
@@ -390,7 +415,7 @@ const Workflow: React.FC = () => {
         }
       } else {
         if (child && child.id !== 0) {
-          getRefernece(child.id);
+          getReference(child.id);
         }
       }
       return false;
