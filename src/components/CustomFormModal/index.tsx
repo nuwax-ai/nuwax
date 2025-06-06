@@ -15,6 +15,7 @@ const CustomFormModal: React.FC<PropsWithChildren<CustomFormModalProps>> = ({
   loading,
   okPrefixIcon,
   okText,
+  centered = false,
   onCancel,
   onConfirm,
   children,
@@ -23,6 +24,7 @@ const CustomFormModal: React.FC<PropsWithChildren<CustomFormModalProps>> = ({
     <Modal
       title={title}
       open={open}
+      centered={centered}
       classNames={classNames}
       destroyOnClose
       footer={

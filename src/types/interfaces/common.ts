@@ -163,6 +163,7 @@ export interface CustomFormModalProps {
   okPrefixIcon?: React.ReactNode;
   // 确定按钮文本
   okText?: string;
+  centered?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }
