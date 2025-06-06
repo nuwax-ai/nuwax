@@ -18,11 +18,11 @@ const AgentModelComponent: React.FC<AgentModelComponentProps> = ({
   // 跳转链接
   const link = useMemo(() => {
     const { targetId, type, targetConfig, spaceId } = agentComponentInfo;
-    // 类型不同，跳转链接不同
-    switch (type) {
-      case AgentComponentTypeEnum.Plugin: {
-        // 判断插件是否在当前空间下
-        if (targetConfig && spaceId === targetConfig.spaceId) {
+    // 判断是否在当前空间下
+    if (targetConfig && spaceId === targetConfig.spaceId) {
+      // 类型不同，跳转链接不同
+      switch (type) {
+        case AgentComponentTypeEnum.Plugin: {
           // 插件类型不同，跳转链接不同
           if (targetConfig?.type === PluginTypeEnum.HTTP) {
             return `/space/${spaceId}/plugin/${targetId}`;
@@ -30,46 +30,58 @@ const AgentModelComponent: React.FC<AgentModelComponentProps> = ({
             return `/space/${spaceId}/plugin/${targetId}/cloud-tool`;
           }
         }
+        // 工作流、表格、知识库等类型，跳转链接不同
+        case AgentComponentTypeEnum.Workflow:
+          return `/space/${spaceId}/workflow/${targetId}`;
+        case AgentComponentTypeEnum.Table:
+          return `/space/${spaceId}/table/${targetId}`;
+        case AgentComponentTypeEnum.Knowledge:
+          return `/space/${spaceId}/knowledge/${targetId}`;
       }
-      // 工作流、表格、知识库等类型，跳转链接不同
-      case AgentComponentTypeEnum.Workflow:
-        return `/space/${spaceId}/workflow/${targetId}`;
-      case AgentComponentTypeEnum.Table:
-        return `/space/${spaceId}/table/${targetId}`;
-      case AgentComponentTypeEnum.Knowledge:
-        return `/space/${spaceId}/knowledge/${targetId}`;
     }
   }, [agentComponentInfo]);
 
+  const innerContent = (
+    <>
+      <span className={cx('radius-6', styles['img-box'])}>
+        <img src={agentComponentInfo.icon || defaultImage} alt="" />
+      </span>
+      <div
+        className={cx(
+          'flex-1',
+          'flex',
+          'flex-col',
+          'content-center',
+          'overflow-hide',
+        )}
+      >
+        <h3 className={cx('text-ellipsis', styles.name)}>
+          {agentComponentInfo.name}
+        </h3>
+        <ConditionRender condition={agentComponentInfo.description}>
+          <p className={cx('text-ellipsis', styles.desc)}>
+            {agentComponentInfo.description}
+          </p>
+        </ConditionRender>
+      </div>
+    </>
+  );
+
   return (
     <div className={cx('flex', 'items-center', styles.container)}>
-      <Link
-        to={link}
-        target="_blank"
-        className={cx('flex-1', 'flex', 'overflow-hide', styles['gap-6'])}
-      >
-        <span className={cx('radius-6', styles['img-box'])}>
-          <img src={agentComponentInfo.icon || defaultImage} alt="" />
-        </span>
-        <div
-          className={cx(
-            'flex-1',
-            'flex',
-            'flex-col',
-            'content-center',
-            'overflow-hide',
-          )}
+      {link ? (
+        <Link
+          to={link}
+          target="_blank"
+          className={cx('flex-1', 'flex', 'overflow-hide', styles['gap-6'])}
         >
-          <h3 className={cx('text-ellipsis', styles.name)}>
-            {agentComponentInfo.name}
-          </h3>
-          <ConditionRender condition={agentComponentInfo.description}>
-            <p className={cx('text-ellipsis', styles.desc)}>
-              {agentComponentInfo.description}
-            </p>
-          </ConditionRender>
+          {innerContent}
+        </Link>
+      ) : (
+        <div className={cx('flex-1', 'flex', 'overflow-hide', styles['gap-6'])}>
+          {innerContent}
         </div>
-      </Link>
+      )}
       <div className={cx(styles['extra-box'], 'flex', 'items-center')}>
         {extra}
       </div>
