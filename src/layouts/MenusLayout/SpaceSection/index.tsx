@@ -30,7 +30,6 @@ const SpaceSection: React.FC<{
   const { spaceList, currentSpaceInfo, handleCurrentSpaceInfo } =
     useModel('spaceModel');
   const { editAgentList, runEdit, runDevCollect } = useModel('devCollectAgent');
-  const { userInfo } = useModel('userInfo');
 
   useEffect(() => {
     // 根据url地址中的spaceId来重置当前空间信息，因为用户可能手动修改url地址栏中的空间id，也可能是复制来的url
@@ -124,7 +123,7 @@ const SpaceSection: React.FC<{
           }
           // “开发者功能”【tips：关闭后，用户将无法看见“智能体开发”和“组件库”，创建者和管理员不受影响】
           if (
-            userInfo?.role === RoleEnum.User &&
+            currentSpaceInfo?.currentUserRole === RoleEnum.User &&
             currentSpaceInfo?.allowDevelop === AllowDevelopEnum.Not_Allow &&
             [
               SpaceApplicationListEnum.Application_Develop,
