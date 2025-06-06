@@ -23,7 +23,7 @@ import {
 import { Button, message, Modal, Space, Tabs, Tag, Upload } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'umi';
+import { history, useParams } from 'umi';
 import './index.less';
 import { mockColumns, typeMap } from './params';
 
@@ -62,8 +62,14 @@ const SpaceTable = () => {
 
   // 返回上一级
   const handleBack = () => {
-    history.back();
+    const referrer = document.referrer;
+    if (!referrer || window.history.length <= 1) {
+      history.push(`/space/${spaceId}/library`);
+    } else {
+      history.back();
+    }
   };
+
   // 切换表结构还是表数据
   const onChange = (key: string) => {
     setCurrentContent(key);

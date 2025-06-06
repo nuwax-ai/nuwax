@@ -117,7 +117,7 @@ const SpaceSection: React.FC<{
           // 个人空间时，不显示"成员与设置", 普通用户也不显示"成员与设置"
           if (
             (currentSpaceInfo?.type === SpaceTypeEnum.Personal ||
-              currentSpaceInfo.currentUserRole === RoleEnum.User) &&
+              currentSpaceInfo?.currentUserRole === RoleEnum.User) &&
             item.type === SpaceApplicationListEnum.Team_Setting
           ) {
             return null;
@@ -125,7 +125,7 @@ const SpaceSection: React.FC<{
           // “开发者功能”【tips：关闭后，用户将无法看见“智能体开发”和“组件库”，创建者和管理员不受影响】
           if (
             userInfo?.role === RoleEnum.User &&
-            currentSpaceInfo.allowDevelop === AllowDevelopEnum.Not_Allow &&
+            currentSpaceInfo?.allowDevelop === AllowDevelopEnum.Not_Allow &&
             [
               SpaceApplicationListEnum.Application_Develop,
               SpaceApplicationListEnum.Component_Library,

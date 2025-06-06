@@ -14,6 +14,7 @@ import { Button, Segmented, Tag } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment/moment';
 import React from 'react';
+import { history, useParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -31,8 +32,15 @@ const PluginCodeHeader: React.FC<PluginCodeHeaderProps> = ({
   onTryRun,
   onPublish,
 }) => {
+  const { spaceId } = useParams();
+  // 返回上一页，如果没有referrer，则跳转到工作空间（组件库）页面
   const handleBack = () => {
-    history.back();
+    const referrer = document.referrer;
+    if (!referrer || window.history.length <= 1) {
+      history.push(`/space/${spaceId}/library`);
+    } else {
+      history.back();
+    }
   };
   return (
     <header className={cx('flex', 'items-center', 'w-full', styles.header)}>

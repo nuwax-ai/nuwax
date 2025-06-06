@@ -3,13 +3,13 @@ import { getTime } from '@/utils';
 import { getImg } from '@/utils/workflow';
 import {
   CheckCircleFilled,
-  // CheckCircleOutlined,
   EditOutlined,
   InfoCircleOutlined,
   LeftOutlined,
 } from '@ant-design/icons';
 import { Button, Popover, Tag } from 'antd';
 import React from 'react';
+import { history, useParams } from 'umi';
 interface HeaderProp {
   isValidLoading?: boolean;
   info: {
@@ -19,6 +19,7 @@ interface HeaderProp {
     created?: string;
     modified?: string;
     id?: number;
+    spaceId?: number;
     description?: string;
     publishDate?: string | null;
   };
@@ -32,12 +33,18 @@ const Header: React.FC<HeaderProp> = ({
   setShowCreateWorkflow,
   showPublish,
 }) => {
+  const { spaceId } = useParams();
   const { name, icon, publishStatus, modified, description, publishDate } =
     info;
 
   // 返回上一级
   const bank = () => {
-    history.back();
+    const referrer = document.referrer;
+    if (!referrer || window.history.length <= 1) {
+      history.push(`/space/${spaceId}/library`);
+    } else {
+      history.back();
+    }
   };
 
   return (
