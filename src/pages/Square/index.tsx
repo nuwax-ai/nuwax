@@ -1,4 +1,5 @@
 import squareBannerImage from '@/assets/images/square_banner_image.png';
+import Loading from '@/components/Loading';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import useSpaceSquare from '@/hooks/useSpaceSquare';
 import {
@@ -33,6 +34,7 @@ const cx = classNames.bind(styles);
 const Square: React.FC = () => {
   // 配置信息
   const [configInfo, setConfigInfo] = useState<TenantConfigInfo>();
+  const [loading, setLoading] = useState<boolean>(false);
   const [title, setTitle] = useState<string>('智能体');
   const categoryNameRef = useRef<string>('');
   // 分类类型，默认智能体
@@ -58,6 +60,10 @@ const Square: React.FC = () => {
     debounceInterval: 300,
     onSuccess: (result: Page<SquarePublishedItemInfo>) => {
       setSquareComponentList(result?.records || []);
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
@@ -95,6 +101,7 @@ const Square: React.FC = () => {
 
   // 查询列表
   const handleQuery = (page: number = 1, keyword: string = '') => {
+    setLoading(true);
     const data = {
       page,
       pageSize: 100,
@@ -113,12 +120,14 @@ const Square: React.FC = () => {
       setConfigInfo(JSON.parse(info));
     }
     initValues();
+    setSquareComponentList([]);
     // 查询列表
     handleQuery();
 
     const unlisten = history.listen(({ location }: { location: Location }) => {
       if (location.pathname === '/square') {
         initValues();
+        setSquareComponentList([]);
         handleQuery();
       }
     });
@@ -180,7 +189,9 @@ const Square: React.FC = () => {
           style={{ width: 200 }}
         />
       </div>
-      {squareComponentList?.length > 0 ? (
+      {loading ? (
+        <Loading />
+      ) : squareComponentList?.length > 0 ? (
         <div className={cx(styles['list-section'])}>
           {squareComponentList.map((item, index) => {
             if (categoryTypeRef.current === SquareAgentTypeEnum.Agent) {
