@@ -18,6 +18,7 @@ import {
 } from '@/types/enums/space';
 import { AgentConfigInfo, AgentInfo } from '@/types/interfaces/agent';
 import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
+import { jumpToAgent } from '@/utils/router';
 import {
   ExclamationCircleFilled,
   PlusOutlined,
@@ -111,16 +112,18 @@ const SpaceDevelop: React.FC = () => {
     {
       manual: true,
       debounceInterval: 300,
-      onSuccess: (_: null, params: number[]) => {
+      onSuccess: (data: number, params: number[]) => {
         message.success('已成功创建副本');
         // 关闭弹窗
         setOpenMove(false);
         // 目标空间ID
         const targetSpaceId = params[1];
         // 如果目标空间ID和当前空间ID相同, 则重新查询当前空间智能体列表
-        if (targetSpaceId === spaceId) {
-          run(spaceId);
-        }
+        // if (targetSpaceId === spaceId) {
+        //   run(spaceId);
+        // }
+        // 跳转
+        jumpToAgent(targetSpaceId, data);
       },
     },
   );
