@@ -48,6 +48,9 @@ const AgentSidebar: React.FC<AgentSidebarProps> = ({
         className={cx(styles.container, 'flex', 'flex-col', className, {
           [styles.hide]: !visible,
         })}
+        style={{
+          overflowY: 'scroll',
+        }}
       >
         {loading ? (
           <Loading />
