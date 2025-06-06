@@ -41,7 +41,6 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
   const [versionHistoryList, setVersionHistoryList] = useState<HistoryData[]>(
     [],
   );
-
   // 组件类型
   const componentType =
     targetType === AgentComponentTypeEnum.Agent
