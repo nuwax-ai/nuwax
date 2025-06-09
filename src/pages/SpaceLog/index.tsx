@@ -19,6 +19,7 @@ import {
   TableColumnsType,
 } from 'antd';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
@@ -271,7 +272,7 @@ const SpaceLog: React.FC = () => {
           autoComplete="off"
         >
           <Form.Item className={cx('flex-1', 'mb-0')}>
-            <Row gutter={24}>
+            <Row gutter={16}>
               <Col span={8}>
                 <Form.Item
                   name="messageId"
@@ -312,7 +313,17 @@ const SpaceLog: React.FC = () => {
                   label="时间范围"
                   labelCol={{ flex: '70px' }}
                 >
-                  <RangePicker className="w-full" />
+                  <RangePicker
+                    className="w-full"
+                    showTime={{
+                      hideDisabledOptions: true,
+                      defaultValue: [
+                        dayjs('00:00:00', 'HH:mm:ss'),
+                        dayjs('23:59:59', 'HH:mm:ss'),
+                      ],
+                    }}
+                    format="YYYY-MM-DD HH:mm:ss"
+                  />
                 </Form.Item>
                 <Form.Item
                   name="outputString"

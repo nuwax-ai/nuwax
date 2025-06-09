@@ -1,4 +1,5 @@
 import { COMPONENT_LIST } from '@/constants/ecosystem.constants';
+import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CloseOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -177,17 +178,8 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     };
   }, [icon, targetType]);
 
-  useEffect(() => {
-    //fix: 打开抽屉时，隐藏横向滚动条
-    if (visible) {
-      document.body.style.overflowX = 'hidden';
-    } else {
-      document.body.style.overflowX = '';
-    }
-    return () => {
-      document.body.style.overflowX = '';
-    };
-  }, [visible]);
+  // 使用自定义 Hook 处理抽屉打开时的滚动条
+  useDrawerScroll(visible);
 
   const handleClose = () => {
     form.resetFields(); // 关闭时重置表单

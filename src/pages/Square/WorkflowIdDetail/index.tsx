@@ -7,6 +7,7 @@ import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { PublishWorkflowInfo } from '@/types/interfaces/plugin';
+import { jumpToWorkflow } from '@/utils/router';
 import type { TableColumnsType } from 'antd';
 import { Button, Divider, Empty, message, Table } from 'antd';
 import classNames from 'classnames';
@@ -41,10 +42,21 @@ const WorkflowIdDetail: React.FC = ({}) => {
     {
       manual: true,
       debounceInterval: 300,
-      onSuccess: () => {
+      onSuccess: (
+        data: number,
+        params: {
+          targetSpaceId: number;
+          targetType: AgentComponentTypeEnum;
+          targetId: number;
+        }[],
+      ) => {
         message.success('模板复制成功');
         // 关闭弹窗
         setOpenMove(false);
+        // 目标空间ID
+        const { targetSpaceId } = params[0];
+        // 跳转
+        jumpToWorkflow(targetSpaceId, data);
       },
     },
   );

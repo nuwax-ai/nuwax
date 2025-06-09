@@ -44,7 +44,6 @@ import {
   App,
   Button,
   Dropdown,
-  Empty,
   Input,
   List,
   Select,
@@ -201,7 +200,7 @@ export default function EcosystemTemplate() {
     setPagination({ current: 1, pageSize: PAGE_SIZE });
     fetchPluginList({
       tabType: activeTab,
-      keyword: searchKeyword,
+      keyword: options?.keyword === undefined ? searchKeyword : options.keyword,
       page: 1,
       pageSize: PAGE_SIZE,
       ...(options || {}),
@@ -270,7 +269,7 @@ export default function EcosystemTemplate() {
    */
   const handleSearch = (value: string) => {
     setSearchKeyword(value);
-    refreshPluginList();
+    refreshPluginList({ keyword: value });
   };
 
   /**
@@ -677,6 +676,7 @@ export default function EcosystemTemplate() {
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             onSearch={handleSearch}
+            onClear={() => handleSearch('')}
             allowClear
           />
           <Dropdown menu={menuProps} className={cx(styles.createShareButton)}>
@@ -723,6 +723,7 @@ export default function EcosystemTemplate() {
           value={searchKeyword}
           onChange={(e) => setSearchKeyword(e.target.value)}
           onSearch={handleSearch}
+          onClear={() => handleSearch('')}
           allowClear
         />
       </div>
@@ -794,10 +795,6 @@ export default function EcosystemTemplate() {
               ) : null
             }
           />
-          {!pluginData.records ||
-          (pluginData.records.length === 0 && !loading) ? (
-            <Empty description="暂无数据" />
-          ) : null}
         </div>
       </div>
 

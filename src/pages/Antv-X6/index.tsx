@@ -9,6 +9,7 @@ import Constant from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { testRunList } from '@/constants/node.constants';
 import useAutoSave from '@/hooks/useAutoSave';
+import useDrawerScroll from '@/hooks/useDrawerScroll';
 import service, {
   IgetDetails,
   ITestRun,
@@ -172,6 +173,9 @@ const Workflow: React.FC = () => {
   // 按钮是否处于loading
   const [loading, setLoading] = useState(false);
 
+  // 使用 Hook 控制抽屉打开时的滚动条
+  useDrawerScroll(showVersionHistory);
+
   /** -----------------  需要调用接口的方法  --------------------- */
   // 在每次 foldWrapItem 更新时同步到 ref
   useEffect(() => {
@@ -329,7 +333,7 @@ const Workflow: React.FC = () => {
 
   // 更新节点
   const changeNode = async (config: ChildNode, update?: boolean | string) => {
-    let params = JSON.parse(JSON.stringify(config));
+    let params = cloneDeep(config);
     if (update && update === 'moved') {
       if (config.id === foldWrapItemRef.current.id) {
         const values = nodeDrawerRef.current?.getFormValues();
@@ -1374,10 +1378,39 @@ const Workflow: React.FC = () => {
     }
   }, [foldWrapItem.id, foldWrapItem.type]);
 
+  const validPublishWorkflow = async () => {
+    setLoading(false);
+
+    if (isModified) {
+      // 如果当前有未保存的修改，则先保存一下
+      await doSubmitFormData();
+    }
+
+    const _res = await service.validWorkflow(info?.id as number);
+    if (_res.code === Constant.success) {
+      const _arr = _res.data.filter((item) => !item.success);
+      if (_arr.length === 0) {
+        return true;
+      } else {
+        const _errorList = _arr.map((child) => ({
+          nodeId: child.nodeId,
+          error: child.messages.join(','),
+        }));
+        setErrorParams({
+          show: true,
+          errorList: _errorList,
+        });
+
+        return false;
+      }
+    } else {
+      return false;
+    }
+  };
   // 发布
   const handleShowPublish = async () => {
     setIsValidLoading(true);
-    const valid = await validWorkflow();
+    const valid = await validPublishWorkflow();
     if (valid) {
       setShowPublish(true);
       setErrorParams({ ...errorParams, errorList: [], show: false });

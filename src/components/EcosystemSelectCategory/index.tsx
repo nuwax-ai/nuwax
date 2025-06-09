@@ -35,6 +35,7 @@ export default function SelectCategory({
   };
   useEffect(() => {
     if (targetType) {
+      setCategoryList([]);
       getCategoryList(targetType);
     }
     return () => {
@@ -47,6 +48,7 @@ export default function SelectCategory({
   };
   return (
     <Select
+      key={targetType}
       style={{ width: 120, marginLeft: 12 }}
       loading={loading}
       options={categoryList}

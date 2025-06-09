@@ -51,6 +51,7 @@ export interface AgentContentProps {
 export interface StatisticsInfoProps {
   statistics?: AgentStatisticsInfo;
   onClose?: () => void;
+  visible?: boolean;
 }
 
 // 智能体相关会话组件
