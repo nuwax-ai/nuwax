@@ -82,6 +82,9 @@ export interface PublishItemInfo {
   /*是否允许复制,0不允许，1允许 */
   allowCopy: AllowCopyEnum;
 
+  // 仅展示模板, 0 否，1 是
+  onlyTemplate: OnlyTemplateEnum;
+
   /*发布时间 */
   publishDate: string;
 
@@ -97,7 +100,7 @@ export interface PublishItem {
   scope?: PluginPublishScopeEnum;
 
   /*发布空间ID */
-  spaceId?: number;
+  spaceId?: number | null;
 
   /*是否允许复制,0不允许；1允许 */
   allowCopy?: AllowCopyEnum;

@@ -3,7 +3,8 @@ import LabelIcon from '@/components/LabelIcon';
 import SelectList from '@/components/SelectList';
 import TooltipIcon from '@/components/TooltipIcon';
 import useCategory from '@/hooks/useCategory';
-import { apiPublishApply } from '@/services/publish';
+import { apiPublishApply, apiPublishItemList } from '@/services/publish';
+import { apiSpaceList } from '@/services/workspace';
 import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
@@ -13,7 +14,7 @@ import { RoleEnum, TooltipTitleTypeEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { ReceivePublishEnum } from '@/types/enums/space';
 import { option, PublishScope } from '@/types/interfaces/common';
-import { PublishItem } from '@/types/interfaces/publish';
+import { PublishItem, PublishItemInfo } from '@/types/interfaces/publish';
 import { PublishComponentModalProps } from '@/types/interfaces/space';
 import { SquareAgentInfo } from '@/types/interfaces/square';
 import { SpaceInfo } from '@/types/interfaces/workspace';
@@ -48,25 +49,40 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   onConfirm,
 }) => {
   const [form] = Form.useForm();
+  // 标题
   const [title, setTitle] = useState<string>('');
   // 分类选择列表
   const [classifyList, setClassifyList] = useState<option[]>([]);
+  // 数据列表
   const [dataSource, setDataSource] = useState<PublishScope[]>([]);
+  // 已选择空间列表
   const [publishItemList, setPublishItemList] = useState<PublishItem[]>([]);
-
+  // 折叠行key值列表
+  const [expandedRowKeys, setExpandedRowKeys] = useState<
+    PluginPublishScopeEnum[]
+  >([PluginPublishScopeEnum.Space]);
+  // 已发布列表
+  const [publishList, setPublishList] = useState<PublishItemInfo[]>([]);
+  // 智能体、插件、工作流等信息列表
   const { agentInfoList, pluginInfoList, workflowInfoList } =
     useModel('squareModel');
-  const { spaceList, asyncSpaceListFun } = useModel('spaceModel');
+  // 查询分类列表信息
   const { runQueryCategory } = useCategory();
+
+  // 查询用户空间列表
+  const { run: runSpace, data: spaceList } = useRequest(apiSpaceList, {
+    manual: true,
+    debounceWait: 300,
+  });
 
   // 当前登录用户在空间的角色,可用值:Owner,Admin,User
   useEffect(() => {
     const list =
       spaceList
         // 过滤用户角色为普通用户的空间列表
-        .filter((item: SpaceInfo) => item.spaceRole !== RoleEnum.User)
+        ?.filter((item: SpaceInfo) => item.spaceRole !== RoleEnum.User)
         // 已关闭“接口来自外部空间的发布”时在其他空间发布时不展示该空间
-        .filter((item: SpaceInfo) => {
+        ?.filter((item: SpaceInfo) => {
           // 当前空间或者允许来自外部空间的发布的空间列表
           return (
             item.id === spaceId ||
@@ -99,11 +115,42 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   }, [spaceList]);
 
   useEffect(() => {
-    // 查询广场分类列表信息
-    runQueryCategory();
-    // 工作空间列表查询接口
-    asyncSpaceListFun();
-  }, []);
+    if (publishList?.length) {
+      const list = publishList.map((item: PublishItemInfo) => {
+        return {
+          allowCopy: item.allowCopy,
+          onlyTemplate: item.onlyTemplate,
+          scope: item.scope,
+          spaceId: item.spaceId || null,
+        };
+      });
+
+      setPublishItemList(list);
+    }
+  }, [publishList]);
+
+  // 查询指定智能体、插件或工作流已发布列表
+  const { run: runPublishList } = useRequest(apiPublishItemList, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: PublishItemInfo[]) => {
+      setPublishList(result);
+    },
+  });
+
+  useEffect(() => {
+    if (open) {
+      // 查询广场分类列表信息
+      runQueryCategory();
+      // 工作空间列表查询接口
+      runSpace();
+      // 查询指定智能体插件或工作流已发布列表
+      runPublishList({
+        targetId,
+        targetType: AgentComponentTypeEnum.Agent,
+      });
+    }
+  }, [open]);
 
   // 设置title以及分类选择列表
   useEffect(() => {
@@ -163,7 +210,10 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   // 查找发布项
   const findPublishItem = (scope: PluginPublishScopeEnum, spaceId?: number) => {
     return publishItemList?.find((item: PublishItem) => {
-      return item.scope === scope && item.spaceId === spaceId;
+      // 全等，需要避免item.spaceId为null时，但形参spaceId为undefined时，返回false
+      return (
+        item.scope === scope && (item.spaceId ?? null) === (spaceId ?? null)
+      );
     });
   };
 
@@ -207,7 +257,8 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       setPublishItemList(
         publishItemList.filter(
           (item: PublishItem) =>
-            item.scope !== scope || item.spaceId !== spaceId,
+            item.scope !== scope ||
+            (item.spaceId ?? null) !== (spaceId ?? null),
         ),
       );
     }
@@ -217,7 +268,11 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   const handleAllowCopy = (record: PublishScope, checked: boolean) => {
     const { scope, spaceId } = record;
     const list = publishItemList?.map((item: PublishItem) => {
-      if (item.scope === scope && item.spaceId === spaceId) {
+      // 全等，需要避免item.spaceId为null时，但形参spaceId为undefined时，返回false
+      if (
+        item.scope === scope &&
+        (item.spaceId ?? null) === (spaceId ?? null)
+      ) {
         return {
           ...item,
           allowCopy: checked ? AllowCopyEnum.Yes : AllowCopyEnum.No,
@@ -234,7 +289,11 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   const handleOnlyTemplate = (record: PublishScope, checked: boolean) => {
     const { scope, spaceId } = record;
     const list = publishItemList?.map((item: PublishItem) => {
-      if (item.scope === scope && item.spaceId === spaceId) {
+      // 全等，需要避免item.spaceId为null时，但形参spaceId为undefined时，返回false
+      if (
+        item.scope === scope &&
+        (item.spaceId ?? null) === (spaceId ?? null)
+      ) {
         return {
           ...item,
           onlyTemplate: checked ? OnlyTemplateEnum.Yes : OnlyTemplateEnum.No,
@@ -244,6 +303,17 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       return item;
     });
     setPublishItemList(list);
+  };
+
+  // 展开/收起“发布空间”选项
+  const handleCollapseExpand = () => {
+    setExpandedRowKeys((keys) => {
+      if (keys.includes(PluginPublishScopeEnum.Space)) {
+        return [];
+      } else {
+        return [PluginPublishScopeEnum.Space];
+      }
+    });
   };
 
   // 所有columns，包含“发布空间”、“允许复制”、“仅模板”等列, 插件组件时没有复制和模板选项
@@ -265,10 +335,17 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       dataIndex: 'name',
       render: (_: null, record: PublishScope) =>
         record?.children?.length ? (
-          <>
-            <DownOutlined className={cx(styles['font-12'])} />
+          <div onClick={handleCollapseExpand} className="cursor-pointer">
+            {/* 展开/收起图标 */}
+            <DownOutlined
+              className={cx(styles['font-12'], {
+                [styles['down-outlined']]: !expandedRowKeys.includes(
+                  PluginPublishScopeEnum.Space,
+                ),
+              })}
+            />
             <span className={cx(styles['ml-8'])}>{record.name}</span>
-          </>
+          </div>
         ) : (
           <Checkbox
             checked={isChecked(record.scope, record.spaceId)}
@@ -352,9 +429,14 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       <Form form={form} layout="vertical" onFinish={onFinish}>
         <Form.Item name="remark" label="发布记录">
           <Input.TextArea
-            rootClassName={cx(styles['input-textarea'])}
+            rootClassName={cx(
+              styles['input-textarea'],
+              'dispose-textarea-count',
+            )}
             placeholder="这里填写详细的发布记录"
             autoSize={{ minRows: 5, maxRows: 8 }}
+            maxLength={200}
+            showCount
           ></Input.TextArea>
         </Form.Item>
         <Form.Item name="category" label="分类选择">
@@ -386,7 +468,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
             expandable={{
               childrenColumnName: 'children',
               defaultExpandAllRows: true,
-              expandedRowKeys: [PluginPublishScopeEnum.Space],
+              expandedRowKeys,
               expandIcon: () => null,
             }}
           />

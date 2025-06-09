@@ -90,7 +90,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
   }, []);
 
   return (
-    <div className={styles.container}>
+    <div className={cx(styles.container, 'flex', 'flex-col', 'overflow-hide')}>
       <div className={cx(styles['p-header'], 'flex')}>
         <CheckOutlined className={styles.icon} />
         <img
@@ -103,7 +103,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
         </span>
       </div>
       <Divider className={styles['divider']} />
-      <ul>
+      <ul className={cx('flex-1', 'overflow-y')}>
         {filterSpaceList?.map((item: SpaceInfo) => (
           <li
             key={item.id}

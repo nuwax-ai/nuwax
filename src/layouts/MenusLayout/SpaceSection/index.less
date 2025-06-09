@@ -1,29 +1,33 @@
 @import '@/styles/color';
 
-.space-item {
-  height: 30px;
-  padding: 0 10px;
-  margin-bottom: 8px;
-  border-radius: 8px;
-  opacity: 1;
-  gap: 10px;
+.container {
+  padding-right: 8px;
 
-  &.active {
-    background: @WHITE18;
+  .space-item {
+    height: 30px;
+    padding: 0 10px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    opacity: 1;
+    gap: 10px;
+
+    &.active {
+      background: @WHITE18;
+    }
+
+    .text {
+      font-size: 14px;
+      font-weight: bold;
+      color: @BLANK04;
+    }
   }
 
-  .text {
+  .collection-title {
+    margin-top: 20px;
+    margin-bottom: 8px;
+    padding-left: 8px;
     font-size: 14px;
-    font-weight: bold;
-    color: @BLANK04;
+    font-weight: 600;
+    color: @GRAY05;
   }
-}
-
-.collection-title {
-  margin-top: 20px;
-  margin-bottom: 8px;
-  padding-left: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: @GRAY05;
 }

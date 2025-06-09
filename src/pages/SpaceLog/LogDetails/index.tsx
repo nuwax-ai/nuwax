@@ -80,6 +80,11 @@ const LogDetails: React.FC<LogDetailsProps> = ({
   // 输出参数
   const [outputData, setOutputData] = useState<string>('');
 
+  // 处理输入、输出参数数据
+  const handleData = (data: string | object) => {
+    return typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+  };
+
   useEffect(() => {
     if (!executeResult) {
       return;
@@ -95,15 +100,10 @@ const LogDetails: React.FC<LogDetailsProps> = ({
       // 当前执行结果不为空
       if (!!_executeInfo) {
         // 输入参数
-        let _inputData;
-        if (typeof _executeInfo.input === 'string') {
-          _inputData = _executeInfo.input;
-        } else {
-          _inputData = JSON.stringify(_executeInfo.input, null, 2);
-        }
+        let _inputData = handleData(_executeInfo.input);
         setInputData(_inputData);
         // 输出参数
-        const _outputData = _executeInfo.data;
+        const _outputData = handleData(_executeInfo.data);
         setOutputData(_outputData);
       }
     }

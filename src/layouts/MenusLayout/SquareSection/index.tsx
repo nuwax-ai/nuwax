@@ -31,17 +31,18 @@ const SquareSection: React.FC<{
   const [activeKey, setActiveKey] = useState<string>('');
   // menu显隐
   const [visibleMenu, setVisibleMenu] = useState<string>('');
+  // url search参数
+  const params = getURLParams() as {
+    cate_type: string;
+    cate_name: string;
+  };
 
   useEffect(() => {
-    const params = getURLParams() as {
-      cate_type: string;
-      cate_name: string;
-    };
     const { cate_type, cate_name } = params;
     setActiveKey(cate_name ?? cate_type);
     // 控制menu显隐
     setVisibleMenu(cate_type);
-  }, []);
+  }, [params]);
 
   const handleClick = (cateType: string, cateName?: string) => {
     setActiveKey(cateName ?? cateType);

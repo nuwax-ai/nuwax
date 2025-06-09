@@ -18,7 +18,6 @@ import { apiKnowledgeConfigDelete } from '@/services/knowledge';
 import {
   apiComponentList,
   apiCopyTable,
-  apiPublishedOffShelf,
   apiWorkflowCopyToSpace,
   apiWorkflowDelete,
 } from '@/services/library';
@@ -39,11 +38,7 @@ import {
   FilterStatusEnum,
 } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
-import type {
-  ComponentInfo,
-  PublishedOffShelfParams,
-} from '@/types/interfaces/library';
-import { jumpToPlugin, jumpToWorkflow } from '@/utils/router';
+import type { ComponentInfo } from '@/types/interfaces/library';
 import {
   ExclamationCircleFilled,
   PlusOutlined,
@@ -285,32 +280,6 @@ const SpaceLibrary: React.FC = () => {
     },
   });
 
-  // 智能体、插件、工作流下架
-  const { run: runOffShelf } = useRequest(apiPublishedOffShelf, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (_: null, params: PublishedOffShelfParams[]) => {
-      message.success('已成功下架');
-      const { targetId } = params[0];
-
-      const _componentList =
-        componentList?.map((item: ComponentInfo) => {
-          if (item.id === targetId) {
-            return { ...item, publishStatus: PublishStatusEnum.Developing };
-          }
-          return item;
-        }) || [];
-      setComponentList(_componentList);
-      componentAllRef.current =
-        componentAllRef.current?.map((item: ComponentInfo) => {
-          if (item.id === targetId) {
-            return { ...item, publishStatus: PublishStatusEnum.Developing };
-          }
-          return item;
-        }) || [];
-    },
-  });
-
   useEffect(() => {
     setLoading(true);
     runComponent(spaceId);
@@ -484,22 +453,6 @@ const SpaceLibrary: React.FC = () => {
           setOpenMove(true);
           setCurrentComponentInfo(info);
           break;
-        case ApplicationMoreActionEnum.Off_Shelf:
-          confirm({
-            title: '您确定要下架此插件吗?',
-            icon: <ExclamationCircleFilled />,
-            content: info.name,
-            okText: '确定',
-            maskClosable: true,
-            cancelText: '取消',
-            onOk() {
-              runOffShelf({
-                targetId: id,
-                targetType: AgentComponentTypeEnum.Plugin,
-              });
-            },
-          });
-          break;
         case ApplicationMoreActionEnum.Del:
           showDeleteConfirm(type, info);
           break;
@@ -520,22 +473,6 @@ const SpaceLibrary: React.FC = () => {
         case ApplicationMoreActionEnum.Copy_To_Space:
           setOpenMove(true);
           setCurrentComponentInfo(info);
-          break;
-        case ApplicationMoreActionEnum.Off_Shelf:
-          confirm({
-            title: '您确定要下架此工作流吗?',
-            icon: <ExclamationCircleFilled />,
-            content: info.name,
-            okText: '确定',
-            maskClosable: true,
-            cancelText: '取消',
-            onOk() {
-              runOffShelf({
-                targetId: id,
-                targetType: AgentComponentTypeEnum.Workflow,
-              });
-            },
-          });
           break;
         case ApplicationMoreActionEnum.Del:
           showDeleteConfirm(type, info);

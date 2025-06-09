@@ -13,7 +13,7 @@ import { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import { EllipsisOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import { Empty, Modal, Tabs, TabsProps } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 // 复用广场中的组件
 import SingleAgent from '../Square/SingleAgent';
@@ -29,6 +29,9 @@ const SpaceSection: React.FC = () => {
   const spaceId = Number(params.spaceId);
   // 目标类型（智能体、插件、工作流、模板）
   const targetComponentTypeRef = React.useRef<SquareAgentTypeEnum>();
+  const [activeKey, setActiveKey] = useState<SquareAgentTypeEnum>(
+    SquareAgentTypeEnum.Agent,
+  );
   const {
     squareComponentList,
     setSquareComponentList,
@@ -109,6 +112,17 @@ const SpaceSection: React.FC = () => {
       handleQuery(targetType as SquareAgentTypeEnum);
     },
   });
+
+  // 切换标签页 targetType: 组件类型，agent: 智能体，plugin: 插件，workflow: 工作流，template: 模板
+  const handleTabClick = (targetType: string) => {
+    setSquareComponentList([]);
+    setActiveKey(targetType as SquareAgentTypeEnum);
+    handleQuery(targetType as SquareAgentTypeEnum);
+  };
+
+  useEffect(() => {
+    handleTabClick(SquareAgentTypeEnum.Agent);
+  }, [spaceId]);
 
   // 下架
   const handleOffShelf = (
@@ -230,22 +244,13 @@ const SpaceSection: React.FC = () => {
     },
   ];
 
-  // 切换标签页 targetType: 组件类型，agent: 智能体，plugin: 插件，workflow: 工作流，template: 模板
-  const handleTabClick = (targetType: string) => {
-    setSquareComponentList([]);
-    handleQuery(targetType as SquareAgentTypeEnum);
-  };
-
-  useEffect(() => {
-    handleQuery(SquareAgentTypeEnum.Agent);
-  }, [spaceId]);
   return (
     <div className={cx(styles.container)}>
       <h3 className={cx(styles.title)}>空间广场</h3>
       <Tabs
         rootClassName={cx(styles.tab)}
         tabBarGutter={50}
-        defaultActiveKey={SquareAgentTypeEnum.Agent}
+        activeKey={activeKey}
         items={items}
         onTabClick={handleTabClick}
       />
