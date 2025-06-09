@@ -352,9 +352,14 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       <Form form={form} layout="vertical" onFinish={onFinish}>
         <Form.Item name="remark" label="发布记录">
           <Input.TextArea
-            rootClassName={cx(styles['input-textarea'])}
+            rootClassName={cx(
+              styles['input-textarea'],
+              'dispose-textarea-count',
+            )}
             placeholder="这里填写详细的发布记录"
             autoSize={{ minRows: 5, maxRows: 8 }}
+            maxLength={200}
+            showCount
           ></Input.TextArea>
         </Form.Item>
         <Form.Item name="category" label="分类选择">
