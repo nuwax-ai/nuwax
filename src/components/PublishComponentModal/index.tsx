@@ -53,6 +53,9 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   const [classifyList, setClassifyList] = useState<option[]>([]);
   const [dataSource, setDataSource] = useState<PublishScope[]>([]);
   const [publishItemList, setPublishItemList] = useState<PublishItem[]>([]);
+  const [expandedRowKeys, setExpandedRowKeys] = useState<
+    PluginPublishScopeEnum[]
+  >([PluginPublishScopeEnum.Space]);
 
   const { agentInfoList, pluginInfoList, workflowInfoList } =
     useModel('squareModel');
@@ -246,6 +249,17 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     setPublishItemList(list);
   };
 
+  // 展开/收起“发布空间”选项
+  const handleCollapseExpand = () => {
+    setExpandedRowKeys((keys) => {
+      if (keys.includes(PluginPublishScopeEnum.Space)) {
+        return [];
+      } else {
+        return [PluginPublishScopeEnum.Space];
+      }
+    });
+  };
+
   // 所有columns，包含“发布空间”、“允许复制”、“仅模板”等列, 插件组件时没有复制和模板选项
   const allColumns: TableColumnsType<PublishScope> = [
     {
@@ -265,10 +279,17 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       dataIndex: 'name',
       render: (_: null, record: PublishScope) =>
         record?.children?.length ? (
-          <>
-            <DownOutlined className={cx(styles['font-12'])} />
+          <div onClick={handleCollapseExpand} className="cursor-pointer">
+            {/* 展开/收起图标 */}
+            <DownOutlined
+              className={cx(styles['font-12'], {
+                [styles['down-outlined']]: !expandedRowKeys.includes(
+                  PluginPublishScopeEnum.Space,
+                ),
+              })}
+            />
             <span className={cx(styles['ml-8'])}>{record.name}</span>
-          </>
+          </div>
         ) : (
           <Checkbox
             checked={isChecked(record.scope, record.spaceId)}
@@ -391,7 +412,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
             expandable={{
               childrenColumnName: 'children',
               defaultExpandAllRows: true,
-              expandedRowKeys: [PluginPublishScopeEnum.Space],
+              expandedRowKeys,
               expandIcon: () => null,
             }}
           />
