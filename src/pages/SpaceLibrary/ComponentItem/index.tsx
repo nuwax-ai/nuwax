@@ -5,10 +5,7 @@ import {
   COMPONENT_MORE_ACTION,
 } from '@/constants/library.constants';
 import { PublishStatusEnum } from '@/types/enums/common';
-import {
-  ApplicationMoreActionEnum,
-  ComponentTypeEnum,
-} from '@/types/enums/space';
+import { ComponentTypeEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentItemProps } from '@/types/interfaces/library';
 import { CheckCircleTwoTone, MoreOutlined } from '@ant-design/icons';
@@ -38,19 +35,7 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
     const list = COMPONENT_MORE_ACTION.filter((item) => {
       const type = item.type as ComponentTypeEnum;
       // 只显示当前组件类型的更多操作
-      if (type === componentInfo.type) {
-        // 已发布的插件和工作流才显示下架按钮
-        if (
-          [ComponentTypeEnum.Plugin, ComponentTypeEnum.Workflow].includes(
-            type,
-          ) &&
-          item.action === ApplicationMoreActionEnum.Off_Shelf
-        ) {
-          return componentInfo.publishStatus === PublishStatusEnum.Published;
-        }
-        return true;
-      }
-      return false;
+      return type === componentInfo.type;
     });
     setActionList(list);
   }, [componentInfo]);

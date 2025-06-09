@@ -8,7 +8,6 @@ import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ModelSaveParams } from '@/types/interfaces/model';
 import type { PluginHttpUpdateParams } from '@/types/interfaces/plugin';
 import React from 'react';
-import { AgentComponentTypeEnum } from '../enums/agent';
 
 // 组件库单个组件项
 export interface ComponentItemProps {
@@ -152,14 +151,6 @@ export interface ComponentInfo {
 export interface BoxInfoProps {
   icon?: React.ReactNode;
   text: string;
-}
-
-// 智能体、插件、工作流下架输入参数
-export interface PublishedOffShelfParams {
-  // 类型，智能体、插件、工作流可以下架,可用值:Agent,Plugin,Workflow,Knowledge,Table
-  targetType: AgentComponentTypeEnum;
-  // 智能体、插件或工作流ID
-  targetId: number;
 }
 
 // 复制参数

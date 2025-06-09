@@ -47,11 +47,6 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
     type: ComponentTypeEnum.Plugin,
   },
   {
-    action: ApplicationMoreActionEnum.Off_Shelf,
-    label: '下架',
-    type: ComponentTypeEnum.Plugin,
-  },
-  {
     action: ApplicationMoreActionEnum.Del,
     label: '删除',
     isDel: true,
@@ -68,11 +63,6 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
   {
     action: ApplicationMoreActionEnum.Copy_To_Space,
     label: '复制到空间',
-    type: ComponentTypeEnum.Workflow,
-  },
-  {
-    action: ApplicationMoreActionEnum.Off_Shelf,
-    label: '下架',
     type: ComponentTypeEnum.Workflow,
   },
   {
