@@ -109,9 +109,12 @@ const SpaceSection: React.FC<{
   }, [currentSpaceInfo]);
 
   return (
-    <div className={cx('h-full', 'px-6', 'py-16', 'overflow-y')} style={style}>
+    <div
+      className={cx('h-full', 'px-6', 'py-16', 'overflow-y', styles.container)}
+      style={style}
+    >
       <SpaceTitle avatar={avatar} name={currentSpaceInfo?.name} />
-      <ul>
+      <ul className={cx('mt-6')}>
         {SPACE_APPLICATION_LIST.map((item) => {
           // 个人空间时，不显示"成员与设置", 普通用户也不显示"成员与设置"
           if (
