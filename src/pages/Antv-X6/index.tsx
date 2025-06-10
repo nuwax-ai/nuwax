@@ -19,7 +19,12 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
-import { CreateUpdateModeEnum, NodeTypeEnum } from '@/types/enums/common';
+import {
+  CreateUpdateModeEnum,
+  HttpContentTypeEnum,
+  HttpMethodEnum,
+  NodeTypeEnum,
+} from '@/types/enums/common';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
 import {
@@ -1353,10 +1358,10 @@ const Workflow: React.FC = () => {
       switch (foldWrapItem.type) {
         case 'HTTPRequest': {
           if (!newFoldWrapItem.nodeConfig.method) {
-            form.setFieldValue('method', 'GET');
+            form.setFieldValue('method', HttpMethodEnum.GET);
           }
           if (!newFoldWrapItem.nodeConfig.contentType) {
-            form.setFieldValue('contentType', 'JSON');
+            form.setFieldValue('contentType', HttpContentTypeEnum.JSON);
           }
           break;
         }
