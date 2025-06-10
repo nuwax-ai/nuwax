@@ -29,6 +29,15 @@ import { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import './index.less';
 // import { stringify } from 'uuid';
+
+function middleEllipsis(str: string, maxLength: number): string {
+  if (str.length <= maxLength) return str;
+  const keep = maxLength - 3; // 3 for '...'
+  const front = Math.ceil(keep / 2);
+  const back = Math.floor(keep / 2);
+  return str.slice(0, front) + '...' + str.slice(str.length - back);
+}
+
 interface TestRunProps {
   // 当前节点的类型
   node: ChildNode;
@@ -313,11 +322,11 @@ const TestRun: React.FC<TestRunProps> = ({
                 {node.nodeConfig.inputArgs?.map((item) => (
                   <Input
                     key={item.name}
-                    prefix={item.name + ':'}
+                    prefix={middleEllipsis(item.name + ':', 20)}
                     value={form.getFieldValue(item.name)}
                     disabled
-                    className="mb-12"
-                  ></Input>
+                    className="mb-12 override-input-style"
+                  />
                 ))}
                 <p className="collapse-title-style dis-left">输出</p>
                 <pre className="result-style overflow-y">{testRunResult}</pre>
