@@ -9,6 +9,8 @@ import { useRequireStatus } from './hooks/useRequireStatus';
 import { TreeNodeConfig, useTreeData } from './hooks/useTreeData';
 import { TreeFormProps } from './type';
 
+const { TreeNode } = Tree;
+
 /**
  * 嵌套表单树组件
  * 用于渲染可嵌套的树形表单结构，支持动态添加、删除节点
@@ -44,33 +46,21 @@ const CustomTree: React.FC<TreeFormProps> = ({
   // 使用自定义Hook管理必填状态
   const { updateRequireStatus } = useRequireStatus(treeData, updateTreeData);
 
-  // 使用useCallback优化回调函数，避免子组件不必要的重渲染
-  const handleUpdateField = useCallback(updateNodeField, [updateNodeField]);
-  const handleAddChild = useCallback(addChildNode, [addChildNode]);
-  const handleDelete = useCallback(deleteNode, [deleteNode]);
-  const handleUpdateRequire = useCallback(updateRequireStatus, [
-    updateRequireStatus,
-  ]);
+  // 只保留在JSX中使用的handle函数
   const handleAddRoot = useCallback(addRootNode, [addRootNode]);
 
-  /**
-   * 渲染树节点标题
-   * 根据isBody属性选择使用不同的组件
-   * @param nodeData 节点数据
-   * @returns 渲染的节点标题组件
-   */
-  const renderTitle = useCallback(
+  // 创建一个独立的渲染函数，避免循环依赖
+  const createNodeTitle = useCallback(
     (nodeData: TreeNodeConfig) => {
-      // 根据isBody属性选择不同的组件
       if (isBody) {
         return (
           <TreeNodeTitleBody
             nodeData={nodeData}
             showCheck={showCheck}
-            onUpdateField={handleUpdateField}
-            onAddChild={handleAddChild}
-            onDelete={handleDelete}
-            onUpdateRequire={handleUpdateRequire}
+            onUpdateField={updateNodeField}
+            onAddChild={addChildNode}
+            onDelete={deleteNode}
+            onUpdateRequire={updateRequireStatus}
           />
         );
       }
@@ -81,24 +71,33 @@ const CustomTree: React.FC<TreeFormProps> = ({
           form={form}
           showCheck={showCheck}
           isNotAdd={isNotAdd}
-          onUpdateField={handleUpdateField}
-          onAddChild={handleAddChild}
-          onDelete={handleDelete}
-          onUpdateRequire={handleUpdateRequire}
+          onUpdateField={updateNodeField}
+          onAddChild={addChildNode}
+          onDelete={deleteNode}
+          onUpdateRequire={updateRequireStatus}
         />
       );
     },
     [
       isBody,
-      form,
       showCheck,
+      form,
       isNotAdd,
-      handleUpdateField,
-      handleAddChild,
-      handleDelete,
-      handleUpdateRequire,
+      updateNodeField,
+      addChildNode,
+      deleteNode,
+      updateRequireStatus,
     ],
   );
+
+  // 使用独立的递归函数，避免在useCallback中递归调用
+  const renderNodes = (nodes: TreeNodeConfig[]): React.ReactNode[] => {
+    return nodes.map((node) => (
+      <TreeNode key={node.key} title={createNodeTitle(node)}>
+        {node.subArgs && node.subArgs.length > 0 && renderNodes(node.subArgs)}
+      </TreeNode>
+    ));
+  };
 
   // 判断是否显示添加按钮
   const showAddButton =
@@ -120,14 +119,12 @@ const CustomTree: React.FC<TreeFormProps> = ({
         <TreeColumnHeader showCheck={showCheck} isBody={isBody} />
       )}
 
-      {/* 树形结构 */}
+      {/* 树形结构 - 保持TreeNode结构 */}
       <Tree<TreeNodeConfig>
-        treeData={treeData}
         switcherIcon={<DownOutlined />}
         defaultExpandAll
-        fieldNames={{ title: 'name', key: 'key', children: 'subArgs' }}
-        titleRender={renderTitle}
         defaultExpandParent
+        blockNode
         expandedKeys={expandedKeys}
         onExpand={(keys) => setExpandedKeys(keys)}
         className={`${
@@ -135,7 +132,10 @@ const CustomTree: React.FC<TreeFormProps> = ({
             ? 'tree-form-style'
             : 'tree-form-style-no-child'
         }`}
-      />
+      >
+        {/* 渲染TreeNode节点 */}
+        {treeData && renderNodes(treeData)}
+      </Tree>
     </div>
   );
 };

@@ -87,13 +87,13 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   };
   // 处理 TreeSelect 的选中事件
   const handleTreeSelectChange = (key: React.Key[]) => {
-    const value = key[0]; // 获取选中的节点的 key 值
-    if (!value) return;
+    if (!key[0]) return;
+    const value = key[0].toString(); // 获取选中的节点的 key 值
     // 获取当前选中的节点类型
     const dataType = data?.argMap?.[value]?.dataType; // 获取当前选中节点的dataType
 
-    updateValues(key[0] as string, 'Reference', dataType as DataTypeEnum);
-    setDisplayValue(getValue(key[0]));
+    updateValues(value, 'Reference', dataType as DataTypeEnum);
+    setDisplayValue(getValue(value));
   };
   // 动态生成 Dropdown 的 items
   const getMenu = (nodes: PreviousList[]) => {
@@ -103,6 +103,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         key: node.id,
         label: node.name.length > 8 ? node.name.slice(0, 8) + '...' : node.name,
         icon: returnImg(node.type),
+        popupClassName: 'inputOrReferencePopup',
         children: node.outputArgs
           ? [
               {
@@ -144,6 +145,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
       return [
         {
           key: 'no-data',
+          popupClassName: 'inputOrReferencePopup',
           label: (
             <div style={{ padding: 8, color: 'red' }}>
               未添加上级节点连线或上级节点无参数

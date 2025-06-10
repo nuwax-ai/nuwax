@@ -142,6 +142,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         key: node.id,
         label: node.name.length > 8 ? node.name.slice(0, 8) + '...' : node.name,
         icon: returnImg(node.type),
+        popupClassName: 'inputOrReferencePopup',
         children: node.outputArgs
           ? [
               {
@@ -187,6 +188,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
       return [
         {
           key: 'no-data',
+          popupClassName: 'inputOrReferencePopup',
           label: (
             <div style={{ padding: 8, color: 'red' }}>
               未添加上级节点连线或上级节点无参数
