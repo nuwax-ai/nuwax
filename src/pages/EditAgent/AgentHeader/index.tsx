@@ -1,6 +1,7 @@
 import agentImage from '@/assets/images/agent_image.png';
 import foldImage from '@/assets/images/fold_image.png';
 import ConditionRender from '@/components/ConditionRender';
+import { PermissionsEnum } from '@/types/enums/common';
 import type { AgentHeaderProps } from '@/types/interfaces/agentConfig';
 import {
   ClockCircleOutlined,
@@ -10,7 +11,7 @@ import {
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { history, useParams } from 'umi';
 import styles from './index.less';
 
@@ -36,6 +37,15 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
       history.back();
     }
   };
+
+  // 发布按钮是否禁用
+  const disabledBtn = useMemo(() => {
+    if (agentConfigInfo) {
+      return !agentConfigInfo?.permissions?.includes(PermissionsEnum.Publish);
+    } else {
+      return false;
+    }
+  }, [agentConfigInfo]);
 
   return (
     <header
@@ -103,6 +113,7 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
           type="primary"
           className={cx(styles['publish-btn'])}
           onClick={onPublish}
+          disabled={disabledBtn}
         >
           发布
         </Button>

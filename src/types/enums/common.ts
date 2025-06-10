@@ -177,7 +177,7 @@ export enum ProcessingEnum {
 // 权限枚举
 export enum PermissionsEnum {
   Copy = 'Copy',
-  // 转移
+  // 迁移
   Transfer = 'Transfer',
   Delete = 'Delete',
   Publish = 'Publish',

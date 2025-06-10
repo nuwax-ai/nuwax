@@ -1,6 +1,6 @@
 import pluginImage from '@/assets/images/plugin_image.png';
 import { PLUGIN_CODE_SEGMENTED_LIST } from '@/constants/library.constants';
-import { PublishStatusEnum } from '@/types/enums/common';
+import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import { PluginTypeEnum } from '@/types/enums/plugin';
 import type { PluginCodeHeaderProps } from '@/types/interfaces/plugin';
 import {
@@ -13,7 +13,7 @@ import {
 import { Button, Segmented, Tag } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment/moment';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { history, useParams } from 'umi';
 import styles from './index.less';
 
@@ -42,6 +42,16 @@ const PluginCodeHeader: React.FC<PluginCodeHeaderProps> = ({
       history.back();
     }
   };
+
+  // 发布按钮是否禁用
+  const disabledBtn = useMemo(() => {
+    if (pluginInfo) {
+      return !pluginInfo?.permissions?.includes(PermissionsEnum.Publish);
+    } else {
+      return false;
+    }
+  }, [pluginInfo]);
+
   return (
     <header className={cx('flex', 'items-center', 'w-full', styles.header)}>
       <LeftOutlined
@@ -118,7 +128,7 @@ const PluginCodeHeader: React.FC<PluginCodeHeaderProps> = ({
       >
         试运行
       </Button>
-      <Button type="primary" onClick={onPublish}>
+      <Button type="primary" onClick={onPublish} disabled={disabledBtn}>
         发布
       </Button>
     </header>
