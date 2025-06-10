@@ -81,6 +81,40 @@ const CodeEditor: React.FC<Props> = ({
     }
   };
 
+  // 根据语言类型动态配置编辑器选项
+  const getEditorOptions = () => {
+    const baseOptions = {
+      selectOnLineNumbers: true,
+      folding: true,
+      automaticLayout: true,
+    };
+
+    // 如果是JSON语言，关闭代码输入提示相关功能
+    if (codeLanguage.toLowerCase() === 'json') {
+      return {
+        ...baseOptions,
+        // 关闭智能感知和自动完成
+        quickSuggestions: false,
+        suggestOnTriggerCharacters: false,
+        acceptSuggestionOnEnter: 'off' as const,
+        tabCompletion: 'off' as const,
+        wordBasedSuggestions: false,
+        // 关闭参数提示
+        parameterHints: {
+          enabled: false,
+        },
+        // 关闭悬停提示
+        hover: {
+          enabled: false,
+        },
+        // 关闭代码片段
+        snippetSuggestions: 'none' as const,
+      };
+    }
+
+    return baseOptions;
+  };
+
   return (
     <>
       {form ? (
@@ -98,11 +132,7 @@ const CodeEditor: React.FC<Props> = ({
             theme="vs-dark"
             value={value}
             onChange={handleCodeChange}
-            options={{
-              selectOnLineNumbers: true,
-              folding: true,
-              automaticLayout: true,
-            }}
+            options={getEditorOptions()}
           />
         </Form.Item>
       ) : (
@@ -112,11 +142,7 @@ const CodeEditor: React.FC<Props> = ({
           theme="vs-dark"
           value={value}
           onChange={handleCodeChange}
-          options={{
-            selectOnLineNumbers: true,
-            folding: true,
-            automaticLayout: true,
-          }}
+          options={getEditorOptions()}
         />
       )}
 

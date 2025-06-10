@@ -3,6 +3,7 @@ import CodeEditor from '@/components/CodeEditor';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { DataTypeEnum } from '@/types/enums/common';
+import { CodeLangEnum } from '@/types/enums/plugin';
 import { DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
 import { InputAndOutConfig, TestRunParams } from '@/types/interfaces/node';
@@ -178,7 +179,7 @@ const TestRun: React.FC<TestRunProps> = ({
         return (
           <CodeEditor
             value={form.getFieldValue(item.name) || ''}
-            codeLanguage={'JSON'}
+            codeLanguage={CodeLangEnum.JSON}
             onChange={(code: string) => {
               form.setFieldsValue({ [item.name]: code }); // 更新表单值
             }}
