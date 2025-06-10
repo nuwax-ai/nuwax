@@ -3,7 +3,7 @@ import {
   AllowCopyEnum,
   OnlyTemplateEnum,
 } from '@/types/enums/agent';
-import { PublishStatusEnum } from '@/types/enums/common';
+import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { HistoryActionTypeEnum } from '@/types/enums/space';
 import { CreatorInfo } from '@/types/interfaces/agent';
@@ -32,6 +32,8 @@ export interface VersionHistoryProps {
   targetId: number;
   targetName?: string;
   targetType?: AgentComponentTypeEnum;
+  // 权限列表
+  permissions?: PermissionsEnum[];
   visible: boolean;
   // 是否是抽屉展示
   isDrawer?: boolean;

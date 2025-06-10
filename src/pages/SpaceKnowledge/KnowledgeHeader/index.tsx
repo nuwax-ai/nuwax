@@ -6,11 +6,12 @@ import {
 } from '@/constants/library.constants';
 import type { KnowledgeHeaderProps } from '@/types/interfaces/knowledge';
 import { formatBytes } from '@/utils/byteConverter';
+import { jumpBack } from '@/utils/router';
 import { DownOutlined, EditOutlined, LeftOutlined } from '@ant-design/icons';
 import { Button, Radio, RadioChangeEvent } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { history, useParams } from 'umi';
+import { useParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -28,15 +29,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
   onChangeDocType,
 }) => {
   const { spaceId } = useParams();
-  // 返回上一页，如果没有referrer，则跳转到工作空间（组件库）页面
-  const handleBack = () => {
-    const referrer = document.referrer;
-    if (!referrer || window.history.length <= 1) {
-      history.push(`/space/${spaceId}/library`);
-    } else {
-      history.back();
-    }
-  };
+
   const fileSize = knowledgeInfo?.fileSize
     ? formatBytes(knowledgeInfo.fileSize)
     : '0KB';
@@ -48,7 +41,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
     <header className={cx('flex', 'items-center', 'w-full', styles.header)}>
       <LeftOutlined
         className={cx(styles['icon-back'], 'cursor-pointer')}
-        onClick={handleBack}
+        onClick={() => jumpBack(`/space/${spaceId}/library`)}
       />
       <img
         className={cx(styles.logo)}

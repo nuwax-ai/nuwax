@@ -202,11 +202,11 @@ const LogDetails: React.FC<LogDetailsProps> = ({
             <h5 className={cx(styles.title)}>节点详情</h5>
             <NodeDetails node={executeInfo} />
           </div>
-          <div className={cx(styles.wrap)}>
+          <div className={cx(styles.wrap, styles['render-container'])}>
             <h5 className={cx(styles.title)}>输入</h5>
             <pre>{inputData}</pre>
           </div>
-          <div className={cx(styles.wrap)}>
+          <div className={cx(styles.wrap, styles['render-container'])}>
             <h5 className={cx(styles.title)}>输出</h5>
             <pre
               dangerouslySetInnerHTML={{

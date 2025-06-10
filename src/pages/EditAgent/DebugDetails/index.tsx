@@ -169,7 +169,11 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
                   key={info?.id || index}
                   className={cx(styles['execute-box'], 'flex', 'items-center')}
                 >
-                  <img src={getIcon(info)} alt="" />
+                  <img
+                    className={cx(styles['component-img'])}
+                    src={getIcon(info)}
+                    alt=""
+                  />
                   <span
                     className={cx(styles.name, 'cursor-pointer', {
                       [styles.active]: currentIndex === index,
@@ -186,11 +190,11 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
             <h5 className={cx(styles.title)}>节点详情</h5>
             <NodeDetails node={executeInfo} />
           </div>
-          <div className={cx(styles.wrap)}>
+          <div className={cx(styles.wrap, styles['render-container'])}>
             <h5 className={cx(styles.title)}>输入</h5>
             <pre>{inputData}</pre>
           </div>
-          <div className={cx(styles.wrap)}>
+          <div className={cx(styles.wrap, styles['render-container'])}>
             <h5 className={cx(styles.title)}>输出</h5>
             <pre
               dangerouslySetInnerHTML={{

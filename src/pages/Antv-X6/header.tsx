@@ -1,5 +1,7 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { PermissionsEnum } from '@/types/enums/common';
 import { getTime } from '@/utils';
+import { jumpBack } from '@/utils/router';
 import { getImg } from '@/utils/workflow';
 import {
   CheckCircleFilled,
@@ -9,8 +11,8 @@ import {
   LeftOutlined,
 } from '@ant-design/icons';
 import { Button, Popover, Tag } from 'antd';
-import React from 'react';
-import { history, useParams } from 'umi';
+import React, { useMemo } from 'react';
+import { useParams } from 'umi';
 interface HeaderProp {
   isValidLoading?: boolean;
   info: {
@@ -23,6 +25,7 @@ interface HeaderProp {
     spaceId?: number;
     description?: string;
     publishDate?: string | null;
+    permissions?: PermissionsEnum[];
   };
   onToggleVersionHistory: () => void;
   showPublish: () => void;
@@ -40,20 +43,22 @@ const Header: React.FC<HeaderProp> = ({
   const { name, icon, publishStatus, modified, description, publishDate } =
     info;
 
-  // 返回上一级
-  const bank = () => {
-    const referrer = document.referrer;
-    if (!referrer || window.history.length <= 1) {
-      history.push(`/space/${spaceId}/library`);
+  // 发布按钮是否禁用
+  const disabledBtn = useMemo(() => {
+    if (info) {
+      return !info?.permissions?.includes(PermissionsEnum.Publish);
     } else {
-      history.back();
+      return false;
     }
-  };
+  }, [info]);
 
   return (
     <div className="fold-header-style flex items-center gap-20">
       <div className="dis-left flex-1">
-        <LeftOutlined className="back-icon-style" onClick={bank} />
+        <LeftOutlined
+          className="back-icon-style"
+          onClick={() => jumpBack(`/space/${spaceId}/library`)}
+        />
         <img
           src={icon || getImg(AgentComponentTypeEnum.Workflow)}
           alt=""
@@ -108,7 +113,12 @@ const Header: React.FC<HeaderProp> = ({
         className={'ico cursor-pointer'}
         onClick={onToggleVersionHistory}
       />
-      <Button onClick={showPublish} type={'primary'} loading={isValidLoading}>
+      <Button
+        disabled={disabledBtn}
+        onClick={showPublish}
+        type={'primary'}
+        loading={isValidLoading}
+      >
         {isValidLoading ? '校验中' : '发布'}
       </Button>
     </div>

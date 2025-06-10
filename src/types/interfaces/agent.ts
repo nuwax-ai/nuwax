@@ -12,6 +12,7 @@ import type {
 } from '@/types/enums/agent';
 import type {
   DataTypeEnum,
+  PermissionsEnum,
   PublishStatusEnum,
   TooltipTitleTypeEnum,
 } from '@/types/enums/common';
@@ -343,6 +344,8 @@ export interface AgentConfigInfo {
   // 智能体分类名称
   category: string;
   collected: boolean;
+  // 权限列表
+  permissions?: PermissionsEnum[];
 }
 
 // 触发器时区

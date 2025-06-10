@@ -63,6 +63,8 @@ export interface TooltipIconProps {
 export interface PublishComponentModalProps {
   mode?: AgentComponentTypeEnum;
   spaceId: number;
+  // 发布分类，用于回显
+  category?: string;
   // 发布目标ID，例如智能体ID；工作流ID；插件ID
   targetId: number;
   open: boolean;

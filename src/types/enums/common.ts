@@ -173,3 +173,12 @@ export enum ProcessingEnum {
   FINISHED = 'FINISHED',
   FAILED = 'FAILED',
 }
+
+// 权限枚举
+export enum PermissionsEnum {
+  Copy = 'Copy',
+  // 迁移
+  Transfer = 'Transfer',
+  Delete = 'Delete',
+  Publish = 'Publish',
+}

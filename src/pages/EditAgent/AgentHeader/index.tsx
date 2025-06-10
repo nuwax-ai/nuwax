@@ -1,7 +1,9 @@
 import agentImage from '@/assets/images/agent_image.png';
 import foldImage from '@/assets/images/fold_image.png';
 import ConditionRender from '@/components/ConditionRender';
+import { PermissionsEnum } from '@/types/enums/common';
 import type { AgentHeaderProps } from '@/types/interfaces/agentConfig';
+import { jumpBack } from '@/utils/router';
 import {
   ClockCircleOutlined,
   FormOutlined,
@@ -10,8 +12,8 @@ import {
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment';
-import React from 'react';
-import { history, useParams } from 'umi';
+import React, { useMemo } from 'react';
+import { useParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -27,15 +29,15 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
   onPublish,
 }) => {
   const { spaceId } = useParams();
-  // 返回上一页，如果没有referrer，则跳转到工作空间（智能体开发）页面
-  const handleBack = () => {
-    const referrer = document.referrer;
-    if (!referrer || window.history.length <= 1) {
-      history.push(`/space/${spaceId}/develop`);
+
+  // 发布按钮是否禁用
+  const disabledBtn = useMemo(() => {
+    if (agentConfigInfo) {
+      return !agentConfigInfo?.permissions?.includes(PermissionsEnum.Publish);
     } else {
-      history.back();
+      return false;
     }
-  };
+  }, [agentConfigInfo]);
 
   return (
     <header
@@ -48,7 +50,10 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
         styles.header,
       )}
     >
-      <LeftOutlined className={cx('hover-box')} onClick={handleBack} />
+      <LeftOutlined
+        className={cx('hover-box')}
+        onClick={() => jumpBack(`/space/${spaceId}/develop`)}
+      />
       <img
         className={cx('radius-6', styles.avatar)}
         src={agentConfigInfo?.icon || (agentImage as string)}
@@ -103,6 +108,7 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
           type="primary"
           className={cx(styles['publish-btn'])}
           onClick={onPublish}
+          disabled={disabledBtn}
         >
           发布
         </Button>

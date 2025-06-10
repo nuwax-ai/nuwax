@@ -42,6 +42,7 @@ const cx = classNames.bind(styles);
 const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   mode = AgentComponentTypeEnum.Agent,
   spaceId,
+  category,
   targetId,
   open,
   onlyShowTemplate = true,
@@ -115,19 +116,30 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   }, [spaceList]);
 
   useEffect(() => {
+    // 已发布列表
     if (publishList?.length) {
       const list = publishList.map((item: PublishItemInfo) => {
         return {
           allowCopy: item.allowCopy,
           onlyTemplate: item.onlyTemplate,
           scope: item.scope,
-          spaceId: item.spaceId || null,
+          spaceId: item.spaceId,
         };
       });
 
       setPublishItemList(list);
+    } else {
+      // 未发布过，默认选中当前空间
+      setPublishItemList([
+        {
+          allowCopy: AllowCopyEnum.No,
+          onlyTemplate: OnlyTemplateEnum.No,
+          scope: PluginPublishScopeEnum.Space,
+          spaceId,
+        },
+      ]);
     }
-  }, [publishList]);
+  }, [publishList, spaceId]);
 
   // 查询指定智能体、插件或工作流已发布列表
   const { run: runPublishList } = useRequest(apiPublishItemList, {
@@ -147,7 +159,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       // 查询指定智能体插件或工作流已发布列表
       runPublishList({
         targetId,
-        targetType: AgentComponentTypeEnum.Agent,
+        targetType: mode,
       });
     }
   }, [open]);
@@ -177,9 +189,10 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     setClassifyList(list);
     // 默认选中第一个分类
     if (list?.length > 0) {
-      form.setFieldValue('category', list[0].value);
+      const initCategory = category || list[0].value;
+      form.setFieldValue('category', initCategory);
     }
-  }, [mode, agentInfoList, pluginInfoList, workflowInfoList]);
+  }, [mode, category, agentInfoList, pluginInfoList, workflowInfoList]);
 
   // 智能体、插件、工作流等 - 提交发布申请
   const { run, loading } = useRequest(apiPublishApply, {
@@ -208,35 +221,73 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   };
 
   // 查找发布项
-  const findPublishItem = (scope: PluginPublishScopeEnum, spaceId?: number) => {
+  const findPublishItem = (
+    scope: PluginPublishScopeEnum,
+    currentSpaceId?: number,
+  ) => {
     return publishItemList?.find((item: PublishItem) => {
-      // 全等，需要避免item.spaceId为null时，但形参spaceId为undefined时，返回false
-      return (
-        item.scope === scope && (item.spaceId ?? null) === (spaceId ?? null)
-      );
+      // 全等，需要避免item.spaceId为null时，但形参currentSpaceId为undefined时，返回false
+      // 系统广场，不区分空间
+      if (scope === PluginPublishScopeEnum.Tenant) {
+        return item.scope === scope;
+      } else {
+        return item.scope === scope && item.spaceId === currentSpaceId;
+      }
     });
   };
 
   // 是否选中, 如果存在则为选中状态
   const isChecked = (
     scope: PluginPublishScopeEnum,
-    spaceId?: number,
+    currentSpaceId?: number,
   ): boolean => {
-    return !!findPublishItem(scope, spaceId);
+    return !!findPublishItem(scope, currentSpaceId);
+  };
+
+  // 空间"允许复制（模板）"列是否禁用
+  const isAllCopyDisabled = (
+    scope: PluginPublishScopeEnum,
+    currentSpaceId?: number,
+  ) => {
+    const currentSpaceInfo = findPublishItem(scope, currentSpaceId);
+    if (scope === PluginPublishScopeEnum.Tenant) {
+      // 系统广场
+      return !currentSpaceInfo;
+    } else {
+      // 空间
+      const tenantInfo = publishItemList?.find(
+        (item: PublishItem) => item.scope === PluginPublishScopeEnum.Tenant,
+      );
+      if (tenantInfo?.allowCopy === AllowCopyEnum.Yes) {
+        // 系统广场已允许复制
+        // 如果当前空间已选中，则根据当前空间的允许复制模板选项来判断是否禁用
+        if (currentSpaceInfo) {
+          return currentSpaceInfo?.allowCopy === AllowCopyEnum.Yes;
+        }
+        // 禁用
+        return true;
+      } else {
+        // 系统广场未允许复制
+        return !currentSpaceInfo;
+      }
+    }
   };
 
   // 是否允许复制
   const isAllCopy = (
     scope: PluginPublishScopeEnum,
-    spaceId?: number,
+    currentSpaceId?: number,
   ): boolean => {
-    const item = findPublishItem(scope, spaceId);
+    const item = findPublishItem(scope, currentSpaceId);
     return item?.allowCopy === AllowCopyEnum.Yes;
   };
 
   // 是否已选中“”仅模板“”选项
-  const isOnlyTemplate = (scope: PluginPublishScopeEnum, spaceId?: number) => {
-    const item = findPublishItem(scope, spaceId);
+  const isOnlyTemplate = (
+    scope: PluginPublishScopeEnum,
+    currentSpaceId?: number,
+  ) => {
+    const item = findPublishItem(scope, currentSpaceId);
     return item?.onlyTemplate === OnlyTemplateEnum.Yes;
   };
 
@@ -267,21 +318,42 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   // 切换允许复制
   const handleAllowCopy = (record: PublishScope, checked: boolean) => {
     const { scope, spaceId } = record;
-    const list = publishItemList?.map((item: PublishItem) => {
-      // 全等，需要避免item.spaceId为null时，但形参spaceId为undefined时，返回false
-      if (
-        item.scope === scope &&
-        (item.spaceId ?? null) === (spaceId ?? null)
-      ) {
-        return {
-          ...item,
-          allowCopy: checked ? AllowCopyEnum.Yes : AllowCopyEnum.No,
-          onlyTemplate: OnlyTemplateEnum.No,
-        };
-      }
+    let list;
+    // 系统广场
+    if (scope === PluginPublishScopeEnum.Tenant) {
+      list = publishItemList?.map((item: PublishItem) => {
+        if (item.scope === scope) {
+          return {
+            ...item,
+            allowCopy: checked ? AllowCopyEnum.Yes : AllowCopyEnum.No,
+            onlyTemplate: OnlyTemplateEnum.No,
+          };
+        } else if (checked) {
+          // 系统广场，选中允许复制模板时，需要将其他已选空间列表的允许复制模板选项置为选中状态
+          return {
+            ...item,
+            allowCopy: AllowCopyEnum.Yes,
+          };
+        }
 
-      return item;
-    });
+        return item;
+      });
+    } else {
+      // 空间广场
+      list = publishItemList?.map((item: PublishItem) => {
+        // 全等，需要避免item.spaceId为null时，但形参spaceId为undefined时，返回false
+        if (item.spaceId === spaceId) {
+          return {
+            ...item,
+            allowCopy: checked ? AllowCopyEnum.Yes : AllowCopyEnum.No,
+            onlyTemplate: OnlyTemplateEnum.No,
+          };
+        }
+
+        return item;
+      });
+    }
+
     setPublishItemList(list);
   };
 
@@ -349,6 +421,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
         ) : (
           <Checkbox
             checked={isChecked(record.scope, record.spaceId)}
+            disabled={record?.spaceId === spaceId}
             onChange={(e) => handleChecked(record, e.target.checked)}
           >
             <div className="text-ellipsis" style={{ width: '148px' }}>
@@ -377,7 +450,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
           <Checkbox
             className={cx(styles['table-copy'])}
             checked={isAllCopy(record.scope, record.spaceId)}
-            disabled={!isChecked(record.scope, record.spaceId)}
+            disabled={isAllCopyDisabled(record.scope, record.spaceId)}
             onChange={(e) => handleAllowCopy(record, e.target.checked)}
           />
         ),
