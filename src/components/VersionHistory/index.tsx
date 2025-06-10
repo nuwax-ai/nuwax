@@ -4,7 +4,7 @@ import { apiPluginConfigHistoryList } from '@/services/plugin';
 import { apiPublishItemList, apiPublishOffShelf } from '@/services/publish';
 import { apiWorkflowConfigHistoryList } from '@/services/workflow';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { PublishStatusEnum } from '@/types/enums/common';
+import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import {
   HistoryData,
   PublishItemInfo,
@@ -31,6 +31,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
   targetId,
   targetName,
   targetType = AgentComponentTypeEnum.Agent,
+  permissions = [],
   visible,
   isDrawer = false,
   onClose,
@@ -103,13 +104,18 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
     if (visible) {
       setLoading(true);
       runHistory(targetId);
+    }
+  }, [targetId, visible]);
+
+  useEffect(() => {
+    if (visible && permissions?.includes(PermissionsEnum.Publish)) {
       // 查询指定智能体插件或工作流已发布列表
       runPublishList({
         targetId,
         targetType,
       });
     }
-  }, [targetId, targetType, visible]);
+  }, [visible, targetId, targetType, permissions]);
 
   // 下架
   const handleOffShelf = (info: PublishItemInfo) => {
@@ -139,7 +145,11 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
     <Loading className="h-full" />
   ) : publishList?.length || versionHistoryList?.length ? (
     <div className={cx(styles['main-wrap'])}>
-      <ConditionRender condition={publishList?.length}>
+      <ConditionRender
+        condition={
+          permissions?.includes(PermissionsEnum.Publish) && publishList?.length
+        }
+      >
         <h5 className={cx(styles.title)}>当前发布</h5>
         {publishList?.map((info: PublishItemInfo) => (
           <CurrentPublishItem

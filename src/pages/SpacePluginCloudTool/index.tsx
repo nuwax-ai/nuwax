@@ -490,6 +490,7 @@ const SpacePluginCloudTool: React.FC = () => {
         targetId={pluginId}
         targetName={pluginInfo?.name}
         targetType={AgentComponentTypeEnum.Plugin}
+        permissions={pluginInfo?.permissions || []}
         visible={visible}
         onClose={() => setVisible(false)}
       />

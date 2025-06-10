@@ -1548,6 +1548,7 @@ const Workflow: React.FC = () => {
         targetId={workflowId}
         targetName={info?.name}
         targetType={AgentComponentTypeEnum.Workflow}
+        permissions={info?.permissions || []}
         visible={showVersionHistory}
         isDrawer={true}
         onClose={() => setShowVersionHistory(false)}

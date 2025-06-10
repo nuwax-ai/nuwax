@@ -243,6 +243,7 @@ const EditAgent: React.FC = () => {
           targetId={agentId}
           targetName={agentConfigInfo?.name}
           targetType={AgentComponentTypeEnum.Agent}
+          permissions={agentConfigInfo?.permissions || []}
           visible={showType === EditAgentShowType.Version_History}
           onClose={() => setShowType(EditAgentShowType.Hide)}
         />
