@@ -1,5 +1,6 @@
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputAndOutConfig } from '@/types/interfaces/node';
+import { cloneDeep } from '@/utils/common';
 import { FormInstance } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useModel } from 'umi';
@@ -111,9 +112,7 @@ export const useTreeData = (
 
   // 初始化和同步逻辑
   useEffect(() => {
-    if (params) {
-      setTreeData(params);
-    }
+    setTreeData(params ? cloneDeep(params) : []);
   }, [params]);
 
   /**
