@@ -1537,6 +1537,7 @@ const Workflow: React.FC = () => {
         mode={AgentComponentTypeEnum.Workflow}
         targetId={workflowId}
         spaceId={spaceId}
+        category={info?.category}
         open={showPublish}
         // 取消发布
         onCancel={() => setShowPublish(false)}

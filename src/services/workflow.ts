@@ -96,6 +96,8 @@ export interface IgetDetails {
     size?: number | string;
   };
   scope: PluginPublishScopeEnum | null;
+  // 发布分类
+  category?: string;
 }
 // 试运行所有节点
 export interface ITestRun {

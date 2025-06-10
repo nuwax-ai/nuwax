@@ -252,6 +252,7 @@ const EditAgent: React.FC = () => {
         targetId={agentId}
         open={open}
         spaceId={spaceId}
+        category={agentConfigInfo?.category}
         // 取消发布
         onCancel={() => setOpen(false)}
         onConfirm={handleConfirmPublish}

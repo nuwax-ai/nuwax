@@ -109,7 +109,7 @@ const usePluginConfig = () => {
     const newNode = {
       key: uuidv4(),
       ...PLUGIN_INPUT_CONFIG,
-    };
+    } as BindConfigWithSub;
 
     const _inputConfigArgs = addChildNode(inputConfigArgs, key, newNode);
     setInputConfigArgs(_inputConfigArgs);
@@ -126,7 +126,7 @@ const usePluginConfig = () => {
     const newNode = {
       key: uuidv4(),
       ...PLUGIN_OUTPUT_CONFIG,
-    };
+    } as BindConfigWithSub;
 
     const _outputConfigArgs = addChildNode(outputConfigArgs, key, newNode);
     setOutputConfigArgs(_outputConfigArgs);
@@ -168,7 +168,7 @@ const usePluginConfig = () => {
     _inputConfigArgs.push({
       key: uuidv4(),
       ...PLUGIN_INPUT_CONFIG,
-    });
+    } as BindConfigWithSub);
     setInputConfigArgs(_inputConfigArgs);
   };
 
@@ -178,7 +178,7 @@ const usePluginConfig = () => {
     _outputConfigArgs.push({
       key: uuidv4(),
       ...PLUGIN_OUTPUT_CONFIG,
-    });
+    } as BindConfigWithSub);
     setOutputConfigArgs(_outputConfigArgs);
   };
 

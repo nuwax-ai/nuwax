@@ -160,6 +160,8 @@ export interface PluginInfo {
   created: string;
   // 创建者信息
   creator: CreatorInfo;
+  // 发布分类
+  category?: string;
 }
 // 已发布插件信息
 export interface PublishPluginInfo {

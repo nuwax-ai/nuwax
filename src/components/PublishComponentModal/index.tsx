@@ -42,6 +42,7 @@ const cx = classNames.bind(styles);
 const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   mode = AgentComponentTypeEnum.Agent,
   spaceId,
+  category,
   targetId,
   open,
   onlyShowTemplate = true,
@@ -188,9 +189,10 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     setClassifyList(list);
     // 默认选中第一个分类
     if (list?.length > 0) {
-      form.setFieldValue('category', list[0].value);
+      const initCategory = category || list[0].value;
+      form.setFieldValue('category', initCategory);
     }
-  }, [mode, agentInfoList, pluginInfoList, workflowInfoList]);
+  }, [mode, category, agentInfoList, pluginInfoList, workflowInfoList]);
 
   // 智能体、插件、工作流等 - 提交发布申请
   const { run, loading } = useRequest(apiPublishApply, {

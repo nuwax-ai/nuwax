@@ -477,6 +477,7 @@ const SpacePluginCloudTool: React.FC = () => {
       <PublishComponentModal
         mode={AgentComponentTypeEnum.Plugin}
         targetId={pluginId}
+        category={pluginInfo?.category}
         spaceId={spaceId}
         open={openModal}
         onlyShowTemplate={false}
