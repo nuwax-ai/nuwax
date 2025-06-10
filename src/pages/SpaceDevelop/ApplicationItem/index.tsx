@@ -1,7 +1,7 @@
 import CustomPopover from '@/components/CustomPopover';
 import { APPLICATION_MORE_ACTION } from '@/constants/space.constants';
 import { apiDevCollectAgent } from '@/services/agentDev';
-import { RoleEnum } from '@/types/enums/common';
+import { PermissionsEnum, RoleEnum } from '@/types/enums/common';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ApplicationItemProps } from '@/types/interfaces/space';
@@ -109,6 +109,12 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
                   agentConfigInfo?.creatorId !== userInfo?.id))
             ) {
               return false;
+            }
+            // 过滤删除（只有空间创建者、空间管理员和智能体本身的创建者可删除）
+            if (type === ApplicationMoreActionEnum.Del) {
+              return agentConfigInfo?.permissions?.includes(
+                PermissionsEnum.Delete,
+              );
             }
             return true;
           })}
