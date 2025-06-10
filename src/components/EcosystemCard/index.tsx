@@ -23,7 +23,7 @@ export interface EcosystemCardProps {
   /** 插件描述 */
   description: string;
   /** 点击卡片事件 */
-  onClick?: () => void;
+  onClick?: () => Promise<boolean>;
   /** 自定义类名 */
   className?: string;
   /** 是否启用 */
@@ -65,6 +65,7 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
     name: '',
     tagIcon: null,
   });
+  const [cardLoading, setCardLoading] = useState(false);
   useEffect(() => {
     if (!targetType) {
       return;
@@ -93,7 +94,15 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
     <Card
       className={cx(styles.ecosystemCard, className)}
       hoverable
-      onClick={onClick}
+      style={{
+        opacity: cardLoading ? 0.5 : 1,
+      }}
+      onClick={() => {
+        setCardLoading(true);
+        onClick?.().finally(() => {
+          setCardLoading(false);
+        });
+      }}
     >
       <div className={cx(styles.cardContent)}>
         <div className={cx(styles.iconWrapper)}>

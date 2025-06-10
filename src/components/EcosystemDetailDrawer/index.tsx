@@ -33,7 +33,7 @@ export interface EcosystemDetailDrawerProps {
   /** 关闭抽屉回调 */
   onClose: () => void;
   /** 更新配置并启用回调 */
-  onUpdateAndEnable?: (values: any) => Promise<boolean>;
+  onUpdateAndEnable?: (values: any[]) => Promise<boolean>;
   /** 停用回调 */
   onDisable?: () => Promise<boolean>;
 }
@@ -217,23 +217,28 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
       setConfigParam([]);
     };
   }, [configParamJson]);
-  const handleEnable = () => {
+  const handleEnable = async () => {
     if (configParam && configParam.length > 0) {
       if (!showToolSection) {
         setShowToolSection(true);
-        return;
+        return false;
       }
-      form.validateFields().then((values) => {
-        console.log(values);
-        onUpdateAndEnable?.(
+      try {
+        const values = await form.validateFields();
+        const result = await onUpdateAndEnable?.(
           configParam.map((item: any) => ({
             ...item,
             value: values[item.name],
           })),
         );
-      });
+        return result;
+      } catch (error) {
+        console.error('更新配置失败:', error);
+      }
+      return false;
     } else {
-      onUpdateAndEnable?.([]);
+      const result = await onUpdateAndEnable?.([]);
+      return result;
     }
   };
   useEffect(() => {
@@ -248,8 +253,10 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     };
   }, [isNewVersion, isEnabled, configParam]);
 
-  if (!data) return null;
+  const [disableLoading, setDisableLoading] = useState(false);
+  const [enableLoading, setEnableLoading] = useState(false);
 
+  if (!data) return null;
   const renderButton = () => {
     if (ownedFlag === OwnedFlagEnum.YES) {
       return <></>;
@@ -261,7 +268,13 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
             type="primary"
             className={cx(styles.actionButton)}
             size="large"
-            onClick={handleEnable}
+            onClick={() => {
+              setEnableLoading(true);
+              handleEnable().finally(() => {
+                setEnableLoading(false);
+              });
+            }}
+            loading={enableLoading}
             iconPosition="end"
             icon={
               !isEnabled && !showToolSection ? (
@@ -284,7 +297,13 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
           <Button
             className={cx(styles.actionButton)}
             size="large"
-            onClick={onDisable}
+            loading={disableLoading}
+            onClick={() => {
+              setDisableLoading(true);
+              onDisable?.().finally(() => {
+                setDisableLoading(false);
+              });
+            }}
             iconPosition="end"
             icon={
               <Tooltip title={`停用后，广场${targetInfo.text}中将不可见`}>
