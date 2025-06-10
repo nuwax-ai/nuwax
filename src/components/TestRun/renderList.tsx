@@ -1,4 +1,5 @@
 import CodeEditor from '@/components/CodeEditor';
+import { CodeLangEnum } from '@/types/enums/plugin';
 import { Form, FormInstance, Input, Tag } from 'antd';
 
 const renderFormList = (name: string, items: any[], form: FormInstance) => {
@@ -29,7 +30,7 @@ const renderFormList = (name: string, items: any[], form: FormInstance) => {
                         value={
                           form.getFieldValue([name, fieldName, item.name]) || ''
                         }
-                        codeLanguage={'JSON'}
+                        codeLanguage={CodeLangEnum.JSON}
                         onChange={(code: string) => {
                           form.setFieldValue(
                             [name, fieldName, item.name],

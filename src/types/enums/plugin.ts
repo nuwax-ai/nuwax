@@ -15,6 +15,7 @@ export enum PluginTypeEnum {
 export enum CodeLangEnum {
   Python = 'Python',
   JavaScript = 'JavaScript',
+  JSON = 'JSON',
 }
 
 // 插件Code模式

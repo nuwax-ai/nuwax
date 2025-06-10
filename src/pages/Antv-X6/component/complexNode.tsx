@@ -8,6 +8,7 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
+import { HttpContentTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum } from '@/types/enums/node';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { PromptOptimizeTypeEnum } from '@/types/interfaces/assistant';
@@ -43,10 +44,13 @@ const REQUEST_METHOD_OPTIONS = [
 
 // 各种方法的options
 const REQUEST_CONTENT_TYPE_OPTIONS = [
-  { label: 'json', value: 'JSON' },
-  { label: 'form-data', value: 'FORM_DATA' },
-  { label: 'x-www-form-urlencoded', value: 'X_WWW_FORM_URLENCODED' },
-  { label: '无', value: 'OTHER' },
+  { label: 'json', value: HttpContentTypeEnum.JSON },
+  { label: 'form-data', value: HttpContentTypeEnum.FORM_DATA },
+  {
+    label: 'x-www-form-urlencoded',
+    value: HttpContentTypeEnum.X_WWW_FORM_URLENCODED,
+  },
+  { label: '无', value: HttpContentTypeEnum.OTHER },
 ];
 
 // 定义大模型节点

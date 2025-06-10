@@ -9,6 +9,7 @@ import Constant from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { testRunList } from '@/constants/node.constants';
 import useAutoSave from '@/hooks/useAutoSave';
+import useDisableSaveShortcut from '@/hooks/useDisableSaveShortcut';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
 import service, {
   IgetDetails,
@@ -19,7 +20,12 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
-import { CreateUpdateModeEnum, NodeTypeEnum } from '@/types/enums/common';
+import {
+  CreateUpdateModeEnum,
+  HttpContentTypeEnum,
+  HttpMethodEnum,
+  NodeTypeEnum,
+} from '@/types/enums/common';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
 import {
@@ -175,6 +181,9 @@ const Workflow: React.FC = () => {
 
   // 使用 Hook 控制抽屉打开时的滚动条
   useDrawerScroll(showVersionHistory);
+
+  // 全局禁用Ctrl+S/Cmd+S
+  useDisableSaveShortcut();
 
   /** -----------------  需要调用接口的方法  --------------------- */
   // 在每次 foldWrapItem 更新时同步到 ref
@@ -1353,10 +1362,10 @@ const Workflow: React.FC = () => {
       switch (foldWrapItem.type) {
         case 'HTTPRequest': {
           if (!newFoldWrapItem.nodeConfig.method) {
-            form.setFieldValue('method', 'GET');
+            form.setFieldValue('method', HttpMethodEnum.GET);
           }
           if (!newFoldWrapItem.nodeConfig.contentType) {
-            form.setFieldValue('contentType', 'JSON');
+            form.setFieldValue('contentType', HttpContentTypeEnum.JSON);
           }
           break;
         }
