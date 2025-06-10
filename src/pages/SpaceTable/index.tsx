@@ -8,6 +8,7 @@ import EditTable, { EditTableRef } from '@/components/MyTable/EditTable';
 import service, { IgetDetails } from '@/services/tableSql';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { jumpBack } from '@/utils/router';
 import {
   ClearOutlined,
   DeleteOutlined,
@@ -23,7 +24,7 @@ import {
 import { Button, message, Modal, Space, Tabs, Tag, Upload } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import { useEffect, useRef, useState } from 'react';
-import { history, useParams } from 'umi';
+import { useParams } from 'umi';
 import './index.less';
 import { mockColumns, typeMap } from './params';
 
@@ -59,16 +60,6 @@ const SpaceTable = () => {
   const [open, setOpen] = useState<boolean>(false);
   // 开启关闭清除的弹窗
   const [openDelete, setOpenDelete] = useState<boolean>(false);
-
-  // 返回上一级
-  const handleBack = () => {
-    const referrer = document.referrer;
-    if (!referrer || window.history.length <= 1) {
-      history.push(`/space/${spaceId}/library`);
-    } else {
-      history.back();
-    }
-  };
 
   // 切换表结构还是表数据
   const onChange = (key: string) => {
@@ -374,7 +365,10 @@ const SpaceTable = () => {
     <div className="database-container">
       {/* 头部内容 */}
       <div className="database-header dis-left">
-        <LeftOutlined className="icon-back" onClick={handleBack} />
+        <LeftOutlined
+          className="icon-back"
+          onClick={() => jumpBack(`/space/${spaceId}/library`)}
+        />
         <img
           className="logo"
           src={detail && detail.icon ? detail.icon : (knowledgeImage as string)}

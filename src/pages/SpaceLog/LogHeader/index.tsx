@@ -3,10 +3,11 @@ import personalImage from '@/assets/images/personal.png';
 import teamImage from '@/assets/images/team_image.png';
 import { SpaceTypeEnum } from '@/types/enums/space';
 import { LogHeaderProps } from '@/types/interfaces/space';
+import { jumpBack } from '@/utils/router';
 import { LeftOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
-import { history, useParams } from 'umi';
+import { useParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -14,15 +15,6 @@ const cx = classNames.bind(styles);
 // 日志头部组件
 const LogHeader: React.FC<LogHeaderProps> = ({ agentConfigInfo }) => {
   const { spaceId } = useParams();
-  // 返回上一页，如果没有referrer，则跳转到工作空间（智能体开发）页面
-  const handleBack = () => {
-    const referrer = document.referrer;
-    if (!referrer || window.history.length <= 1) {
-      history.push(`/space/${spaceId}/develop`);
-    } else {
-      history.back();
-    }
-  };
 
   return (
     <header
@@ -35,7 +27,10 @@ const LogHeader: React.FC<LogHeaderProps> = ({ agentConfigInfo }) => {
         styles.header,
       )}
     >
-      <LeftOutlined className={cx('hover-box')} onClick={handleBack} />
+      <LeftOutlined
+        className={cx('hover-box')}
+        onClick={() => jumpBack(`/space/${spaceId}/library`)}
+      />
       {/* 智能体图标 */}
       <img
         className={cx('radius-6', styles['agent-logo'])}

@@ -3,6 +3,7 @@ import { PLUGIN_CODE_SEGMENTED_LIST } from '@/constants/library.constants';
 import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import { PluginTypeEnum } from '@/types/enums/plugin';
 import type { PluginCodeHeaderProps } from '@/types/interfaces/plugin';
+import { jumpBack } from '@/utils/router';
 import {
   CaretRightOutlined,
   CheckCircleOutlined,
@@ -14,7 +15,7 @@ import { Button, Segmented, Tag } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment/moment';
 import React, { useMemo } from 'react';
-import { history, useParams } from 'umi';
+import { useParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -33,30 +34,20 @@ const PluginCodeHeader: React.FC<PluginCodeHeaderProps> = ({
   onPublish,
 }) => {
   const { spaceId } = useParams();
-  // 返回上一页，如果没有referrer，则跳转到工作空间（组件库）页面
-  const handleBack = () => {
-    const referrer = document.referrer;
-    if (!referrer || window.history.length <= 1) {
-      history.push(`/space/${spaceId}/library`);
-    } else {
-      history.back();
-    }
-  };
-
   // 发布按钮是否禁用
   const disabledBtn = useMemo(() => {
     if (pluginInfo) {
       return !pluginInfo?.permissions?.includes(PermissionsEnum.Publish);
-    } else {
-      return false;
     }
+
+    return false;
   }, [pluginInfo]);
 
   return (
     <header className={cx('flex', 'items-center', 'w-full', styles.header)}>
       <LeftOutlined
         className={cx(styles['icon-back'], 'cursor-pointer')}
-        onClick={handleBack}
+        onClick={() => jumpBack(`/space/${spaceId}/library`)}
       />
       <img
         className={cx(styles.logo)}

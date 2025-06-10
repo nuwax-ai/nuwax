@@ -1,6 +1,7 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PermissionsEnum } from '@/types/enums/common';
 import { getTime } from '@/utils';
+import { jumpBack } from '@/utils/router';
 import { getImg } from '@/utils/workflow';
 import {
   CheckCircleFilled,
@@ -11,7 +12,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Popover, Tag } from 'antd';
 import React, { useMemo } from 'react';
-import { history, useParams } from 'umi';
+import { useParams } from 'umi';
 interface HeaderProp {
   isValidLoading?: boolean;
   info: {
@@ -42,16 +43,6 @@ const Header: React.FC<HeaderProp> = ({
   const { name, icon, publishStatus, modified, description, publishDate } =
     info;
 
-  // 返回上一级
-  const bank = () => {
-    const referrer = document.referrer;
-    if (!referrer || window.history.length <= 1) {
-      history.push(`/space/${spaceId}/library`);
-    } else {
-      history.back();
-    }
-  };
-
   // 发布按钮是否禁用
   const disabledBtn = useMemo(() => {
     if (info) {
@@ -64,7 +55,10 @@ const Header: React.FC<HeaderProp> = ({
   return (
     <div className="fold-header-style flex items-center gap-20">
       <div className="dis-left flex-1">
-        <LeftOutlined className="back-icon-style" onClick={bank} />
+        <LeftOutlined
+          className="back-icon-style"
+          onClick={() => jumpBack(`/space/${spaceId}/library`)}
+        />
         <img
           src={icon || getImg(AgentComponentTypeEnum.Workflow)}
           alt=""
