@@ -77,14 +77,6 @@
   min-height: 12px;
 }
 
-// .ant-tree-switcher::before {
-//   width: 12px;
-// }
-
-// .ant-tree-node-selected {
-//   background-color: #fff !important;
-// }
-
 .tree-icon-style {
   width: 18px;
 
@@ -108,32 +100,6 @@
       width: 100%;
     }
   }
-  // .ant-tree-node-content-wrapper{
-  //   padding-inline: 0;
-  // }
-  // .ant-tree-switcher {
-  //   // margin-left: -9px;
-  //   display: none;
-
-  //   // .ant-tree-switcher-icon {
-  //   //   margin-left: 0;
-  //   // }
-  // }
-
-  // .ant-tree-indent-unit {
-  //   position: relative; /* 设置每个层级为相对定位 */
-  //   margin-left: -2px;
-  // }
-
-  // .ant-tree-indent-unit::before {
-  //   position: absolute; /* 使用绝对定位 */
-  //   content: ''; /* 必须定义 content 属性 */
-  //   top: -11px; /* 从顶部开始的位置 */
-  //   bottom: 0; /* 到底部结束 */
-  //   left: 4px; /* 从左侧开始 */
-  //   height: 47px;
-  //   inset-inline-end: 20px;
-  // }
 
   svg {
     width: 12px;
@@ -214,9 +180,9 @@
   max-height: 400px;
   overflow-y: auto;
   // width: 100%;
-  .ant-tree-switcher-noop {
-    display: none;
-  }
+  // .ant-tree-switcher-noop {
+  //   display: none;
+  // }
 
   .ant-tree-node-content-wrapper {
     cursor: pointer;
@@ -235,6 +201,16 @@
   }
 }
 
-.ant-dropdown-menu-item:hover {
-  background-color: #fff !important;
+.inputOrReferencePopup {
+  .ant-dropdown-menu-item:hover {
+    background-color: #fff !important;
+  }
+
+  .ant-dropdown-menu {
+    padding: 0;
+
+    .ant-dropdown-menu-item {
+      padding: 0;
+    }
+  }
 }
