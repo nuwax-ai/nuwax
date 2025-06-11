@@ -17,6 +17,7 @@ import '../index.less';
 import { TreeOutput } from './commonNode';
 
 const DEFAULT_INPUT_ARGS_DESC = '检索关键词';
+const KBC_FORM_KEY = 'knowledgeBaseConfigs';
 // 定义知识库
 const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   form, // updateNode,
@@ -36,15 +37,11 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
 
   // 知识库
   const onAddedSkill = (item: CreatedNodeItem) => {
-    const knowledgeBaseConfigs =
-      form.getFieldValue('knowledgeBaseConfigs') || [];
+    const knowledgeBaseConfigs = form.getFieldValue(KBC_FORM_KEY) || [];
     item.type = item.targetType;
     item.knowledgeBaseId = item.targetId;
 
-    form.setFieldValue(
-      'knowledgeBaseConfigs',
-      knowledgeBaseConfigs.concat(item),
-    );
+    form.setFieldValue(KBC_FORM_KEY, knowledgeBaseConfigs.concat(item));
     setIsModified(true);
     // form.submit();
     setOpen(false);
@@ -61,12 +58,12 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
 
   // 移出技能
   const removeItem = (item: CreatedNodeItem) => {
-    const knowledgeBaseConfigs = form.getFieldValue('knowledgeBaseConfigs');
+    const knowledgeBaseConfigs = form.getFieldValue(KBC_FORM_KEY);
     if (knowledgeBaseConfigs) {
       const newSkillComponentConfigs = knowledgeBaseConfigs.filter(
         (i: CreatedNodeItem) => i.knowledgeBaseId !== item.knowledgeBaseId,
       );
-      form.setFieldValue('knowledgeBaseConfigs', newSkillComponentConfigs);
+      form.setFieldValue(KBC_FORM_KEY, newSkillComponentConfigs);
       setIsModified(true);
     }
   };
@@ -74,35 +71,38 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   // 修改技能参数
   const modifyItem = (item: CreatedNodeItem) => {
     setIsModified(true);
-    const knowledgeBaseConfigs = form.getFieldValue('knowledgeBaseConfigs');
+    const knowledgeBaseConfigs = form.getFieldValue(KBC_FORM_KEY);
     if (knowledgeBaseConfigs) {
       const newSkillComponentConfigs = knowledgeBaseConfigs.map(
         (i: CreatedNodeItem) =>
           i.knowledgeBaseId === item.knowledgeBaseId ? item : i,
       );
-      form.setFieldValue('knowledgeBaseConfigs', newSkillComponentConfigs);
+      form.setFieldValue(KBC_FORM_KEY, newSkillComponentConfigs);
     }
   };
 
+  const knowledgeBaseConfigs = form.getFieldValue(KBC_FORM_KEY);
   useEffect(() => {
-    const _list = form.getFieldValue('skillComponentConfigs');
     const _arr =
-      _list?.map((item: CreatedNodeItem) => {
+      knowledgeBaseConfigs?.map((item: CreatedNodeItem) => {
         return {
           type: item.type,
-          targetId: item.targetId,
+          targetId: item.knowledgeBaseId,
           status: AgentAddComponentStatusEnum.Added,
         };
       }) || [];
-    console.log(_arr);
     setAddComponents(_arr);
-  }, []);
-  const inputArgs = (form.getFieldValue('inputArgs') || []).map((item: any) => {
-    return {
-      ...item,
-      description: item.description || DEFAULT_INPUT_ARGS_DESC,
-    };
-  });
+  }, [knowledgeBaseConfigs]);
+
+  const inputArgs = (form?.getFieldValue('inputArgs') || []).map(
+    (item: any) => {
+      return {
+        ...item,
+        description: item.description || DEFAULT_INPUT_ARGS_DESC,
+      };
+    },
+  );
+
   return (
     <div className="knowledge-node">
       {/* 输入参数 */}
@@ -122,10 +122,10 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
         </div>
         <Form.Item shouldUpdate noStyle>
           {() =>
-            form.getFieldValue('knowledgeBaseConfigs') ? (
+            form.getFieldValue(KBC_FORM_KEY) ? (
               <SkillList
-                skillName={'knowledgeBaseConfigs'}
-                params={form.getFieldValue('knowledgeBaseConfigs')}
+                skillName={KBC_FORM_KEY}
+                params={form.getFieldValue(KBC_FORM_KEY)}
                 form={form}
                 modifyItem={modifyItem}
                 removeItem={removeItem}
