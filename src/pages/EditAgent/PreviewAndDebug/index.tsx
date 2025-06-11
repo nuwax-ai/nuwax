@@ -4,6 +4,7 @@ import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
+import useSelectedComponent from '@/hooks/useSelectedComponent';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
@@ -49,9 +50,16 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     showScrollBtn,
     setShowScrollBtn,
     resetInit,
+    manualComponents,
   } = useModel('conversationInfo');
   // 创建智能体会话
   const { runAsyncConversationCreate } = useConversation();
+  // 会话输入框已选择组件
+  const {
+    selectedComponentList,
+    handleSelectComponent,
+    initSelectedComponentList,
+  } = useSelectedComponent();
 
   // 角色信息（名称、头像）
   const roleInfo: RoleInfo = useMemo(() => {
@@ -97,6 +105,11 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       };
     }
   }, []);
+
+  useEffect(() => {
+    // 初始化选中的组件列表
+    initSelectedComponentList(manualComponents);
+  }, [manualComponents]);
 
   useEffect(() => {
     if (agentConfigInfo) {
@@ -242,6 +255,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
           onEnter={handleMessageSend}
           onClear={handleClear}
           visible={showScrollBtn}
+          manualComponents={manualComponents}
+          selectedComponentList={selectedComponentList}
+          onSelectComponent={handleSelectComponent}
           onScrollBottom={onScrollBottom}
         />
       </div>

@@ -5,10 +5,10 @@ import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import useConversation from '@/hooks/useConversation';
+import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import {
   AssistantRoleEnum,
-  DefaultSelectedEnum,
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
@@ -43,14 +43,15 @@ const AgentDetails: React.FC = () => {
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
   // 智能体详情
+  const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
+    useAgentDetails();
+  // 会话输入框已选择组件
   const {
-    agentDetail,
-    setAgentDetail,
     selectedComponentList,
     setSelectedComponentList,
     handleSelectComponent,
-    handleToggleCollectSuccess,
-  } = useAgentDetails();
+    initSelectedComponentList,
+  } = useSelectedComponent();
 
   // 已发布的智能体详情接口
   const { run: runDetail, loading } = useRequest(apiPublishedAgentInfo, {
@@ -90,16 +91,7 @@ const AgentDetails: React.FC = () => {
 
   useEffect(() => {
     // 初始化选中的组件列表
-    if (agentDetail?.manualComponents?.length) {
-      // 手动组件默认选中的组件
-      const _manualComponents = agentDetail?.manualComponents
-        .filter((item) => item.defaultSelected === DefaultSelectedEnum.Yes)
-        .map((item) => ({
-          id: item.id,
-          type: item.type,
-        }));
-      setSelectedComponentList(_manualComponents || []);
-    }
+    initSelectedComponentList(agentDetail?.manualComponents);
   }, [agentDetail?.manualComponents]);
 
   // 角色信息（名称、头像）

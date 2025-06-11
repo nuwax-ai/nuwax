@@ -410,6 +410,7 @@ export default () => {
     setCardList([]);
     setMessageList([]);
     setConversationInfo(null);
+    setManualComponents([]);
     needUpdateTopicRef.current = true;
     allowAutoScrollRef.current = true;
     setShowScrollBtn(false);

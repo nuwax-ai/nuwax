@@ -291,16 +291,23 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     return item?.onlyTemplate === OnlyTemplateEnum.Yes;
   };
 
-  // 切换选中状态
+  // 切换“发布空间”选中状态
   const handleChecked = (record: PublishScope, checked: boolean) => {
     const { scope, spaceId } = record;
     if (checked) {
+      // 如果系统广场已选中，并且系统广场的"允许复制模板"选项为选中状态，则需要将当前操作空间的“允许复制模板”选项置为选中状态
+      const tenantSpaceInfo = findPublishItem(PluginPublishScopeEnum.Tenant);
+      // “允许复制模板”是否选中
+      const _allowCopy =
+        tenantSpaceInfo?.allowCopy === AllowCopyEnum.Yes
+          ? AllowCopyEnum.Yes
+          : AllowCopyEnum.No;
       setPublishItemList([
         ...publishItemList,
         {
           scope,
           spaceId,
-          allowCopy: AllowCopyEnum.No,
+          allowCopy: _allowCopy,
           onlyTemplate: OnlyTemplateEnum.No,
         },
       ]);
@@ -315,7 +322,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     }
   };
 
-  // 切换允许复制
+  // 切换“允许复制”
   const handleAllowCopy = (record: PublishScope, checked: boolean) => {
     const { scope, spaceId } = record;
     let list;
