@@ -12,7 +12,6 @@ import {
 } from '@/constants/images.constants';
 import { InputTypeEnum, TriggerComponentType } from '@/types/enums/agent';
 import { CreateAgentEnum, DataTypeEnum } from '@/types/enums/common';
-import { FilterDeployEnum } from '@/types/enums/mcp';
 import {
   ApplicationMoreActionEnum,
   ComponentTypeEnum,
@@ -72,12 +71,6 @@ export const FILTER_STATUS = [
 export const CREATE_LIST = [
   { value: CreateListEnum.All_Person, label: '所有人' },
   { value: CreateListEnum.Me, label: '由我创建' },
-];
-
-// 过滤部署状态
-export const FILTER_DEPLOY = [
-  { value: FilterDeployEnum.All, label: '全部' },
-  { value: FilterDeployEnum.Deployed, label: '已部署' },
 ];
 
 // 应用开发更多操作

@@ -2,6 +2,7 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PermissionsEnum } from '@/types/enums/common';
 import { DeployStatusEnum, McpInstallTypeEnum } from '@/types/enums/mcp';
 import { BindConfigWithSub, CreatorInfo } from './agent';
+import { CustomPopoverItem } from './common';
 
 // MCP配置信息
 export interface McpConfigInfo {
@@ -157,4 +158,11 @@ export interface McpCreateParams {
   mcpConfig: McpConfigInfo;
   // 是否部署
   withDeploy?: boolean;
+}
+
+// 组件库单个组件项
+export interface McpComponentItemProps {
+  info: McpDetailInfo;
+  onClick: () => void;
+  onClickMore: (item: CustomPopoverItem) => void;
 }

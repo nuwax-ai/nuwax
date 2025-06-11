@@ -1,8 +1,11 @@
 import Loading from '@/components/Loading';
 import SelectList from '@/components/SelectList';
-import { CREATE_LIST, FILTER_DEPLOY } from '@/constants/space.constants';
+import { FILTER_DEPLOY } from '@/constants/mcp.constants';
+import { CREATE_LIST } from '@/constants/space.constants';
 import { apiMcpList } from '@/services/mcp';
+import { DeployStatusEnum, FilterDeployEnum } from '@/types/enums/mcp';
 import { CreateListEnum } from '@/types/enums/space';
+import { CustomPopoverItem } from '@/types/interfaces/common';
 import { McpDetailInfo } from '@/types/interfaces/mcp';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input } from 'antd';
@@ -10,9 +13,8 @@ import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useModel, useParams, useRequest } from 'umi';
 import styles from './index.less';
-// import { FilterDeployEnum } from '@/types/enums/mcp';
+import McpComponentItem from './McpComponentItem';
 const cx = classNames.bind(styles);
-// const { confirm } = Modal;
 
 /**
  * 工作空间 - MCP管理
@@ -27,9 +29,13 @@ const SpaceLibrary: React.FC = () => {
   // 搜索关键词
   const [keyword, setKeyword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-  // 创建
+  // 创建者
   const [create, setCreate] = useState<CreateListEnum>(
     CreateListEnum.All_Person,
+  );
+  // 过滤部署状态
+  const [deployStatus, setDeployStatus] = useState<FilterDeployEnum>(
+    FilterDeployEnum.All,
   );
   // 获取用户信息
   const { userInfo } = useModel('userInfo');
@@ -37,7 +43,7 @@ const SpaceLibrary: React.FC = () => {
   // 过滤Mcp管理列表数据
   const handleFilterList = (
     filterCreate: CreateListEnum,
-    // filterDeploy: FilterDeployEnum,
+    filterDeploy: FilterDeployEnum,
     filterKeyword: string,
     list = mcpListAllRef.current,
   ) => {
@@ -45,11 +51,11 @@ const SpaceLibrary: React.FC = () => {
     if (filterCreate === CreateListEnum.Me) {
       _list = _list.filter((item) => item.creatorId === userInfo.id);
     }
-    // if (filterDeploy === FilterDeployEnum.Deployed) {
-    //   _list = _list.filter(
-    //     (item) => item.deployStatus === FilterDeployEnum.Deployed,
-    //   );
-    // }
+    if (filterDeploy === FilterDeployEnum.Deployed) {
+      _list = _list.filter(
+        (item) => item.deployStatus === DeployStatusEnum.Deployed,
+      );
+    }
     if (filterKeyword) {
       _list = _list.filter((item) => item.name.includes(filterKeyword));
     }
@@ -61,7 +67,7 @@ const SpaceLibrary: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: McpDetailInfo[]) => {
-      handleFilterList(create, keyword, result);
+      handleFilterList(create, deployStatus, keyword, result);
       mcpListAllRef.current = result;
       setLoading(false);
     },
@@ -79,20 +85,37 @@ const SpaceLibrary: React.FC = () => {
   const handlerChangeCreate = (value: React.Key) => {
     const _value = value as CreateListEnum;
     setCreate(_value);
-    handleFilterList(_value, keyword);
+    handleFilterList(_value, deployStatus, keyword);
+  };
+
+  // 切换部署状态
+  const handlerChangeDeployStatus = (value: React.Key) => {
+    const _value = value as FilterDeployEnum;
+    setDeployStatus(_value);
+    handleFilterList(create, _value, keyword);
   };
 
   // 智能体搜索
   const handleQueryAgent = (e: React.ChangeEvent<HTMLInputElement>) => {
     const _keyword = e.target.value;
     setKeyword(_keyword);
-    handleFilterList(create, _keyword);
+    handleFilterList(create, deployStatus, _keyword);
   };
 
   // 清除关键词
   const handleClearKeyword = () => {
     setKeyword('');
-    handleFilterList(create, '');
+    handleFilterList(create, deployStatus, '');
+  };
+
+  // 点击更多操作
+  const handleClickMore = (item: CustomPopoverItem, info: McpDetailInfo) => {
+    console.log(item, info);
+  };
+
+  // 点击单个资源组件
+  const handleClickComponent = (info: McpDetailInfo) => {
+    console.log(info);
   };
 
   return (
@@ -118,9 +141,9 @@ const SpaceLibrary: React.FC = () => {
           onChange={handlerChangeCreate}
         />
         <SelectList
-          value={status}
+          value={deployStatus}
           options={FILTER_DEPLOY}
-          // onChange={handlerChangeStatus}
+          onChange={handlerChangeDeployStatus}
         />
         <Input
           rootClassName={cx(styles.input)}
@@ -138,7 +161,12 @@ const SpaceLibrary: React.FC = () => {
         ) : mcpList?.length > 0 ? (
           <div className={cx(styles['main-container'])}>
             {mcpList?.map((info) => (
-              <div key={info.id}>{info.id}</div>
+              <McpComponentItem
+                key={info.id}
+                info={info}
+                onClick={() => handleClickComponent(info)}
+                onClickMore={(item) => handleClickMore(item, info)}
+              />
             ))}
           </div>
         ) : (
