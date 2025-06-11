@@ -87,6 +87,7 @@ export interface NodeDisposeProps {
   // 分组的模型列表
   groupedOptionsData?: GroupModelItem[];
   retrieveCurrentNodeConfig?: () => void;
+  maxTokensLimit?: number | undefined;
 }
 
 /**
