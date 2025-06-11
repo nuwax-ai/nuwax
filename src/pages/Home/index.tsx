@@ -1,6 +1,7 @@
 import ChatInputHome from '@/components/ChatInputHome';
 import Loading from '@/components/Loading';
 import useConversation from '@/hooks/useConversation';
+import useSelectedComponent from '@/hooks/useSelectedComponent';
 import DraggableHomeContent from '@/pages/Home/DraggableHomeContent';
 import {
   apiCollectAgent,
@@ -8,11 +9,7 @@ import {
   apiPublishedAgentInfo,
   apiUnCollectAgent,
 } from '@/services/agentDev';
-import { DefaultSelectedEnum } from '@/types/enums/agent';
-import {
-  AgentDetailDto,
-  AgentSelectedComponentInfo,
-} from '@/types/interfaces/agent';
+import { AgentDetailDto } from '@/types/interfaces/agent';
 import type {
   CategoryItemInfo,
   HomeAgentCategoryInfo,
@@ -36,11 +33,14 @@ const Home: React.FC = () => {
     useState<HomeAgentCategoryInfo>();
   const currentAgentTypeRef = useRef<string>('');
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
-  const [selectedComponentList, setSelectedComponentList] = useState<
-    AgentSelectedComponentInfo[]
-  >([]);
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
+  // 会话输入框已选择组件
+  const {
+    selectedComponentList,
+    handleSelectComponent,
+    initSelectedComponentList,
+  } = useSelectedComponent();
 
   // 主页智能体分类列表
   const { run: runCategoryList } = useRequest(apiHomeCategoryList, {
@@ -74,6 +74,7 @@ const Home: React.FC = () => {
     },
   });
 
+  // 已发布的智能体详情接口
   const { run: runDetail } = useRequest(apiPublishedAgentInfo, {
     manual: true,
     debounceInterval: 300,
@@ -96,34 +97,8 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     // 初始化选中的组件列表
-    if (agentDetail?.manualComponents?.length) {
-      // 手动组件默认选中的组件
-      const _manualComponents = agentDetail?.manualComponents
-        .filter((item) => item.defaultSelected === DefaultSelectedEnum.Yes)
-        .map((item) => ({
-          id: item.id,
-          type: item.type,
-        }));
-      setSelectedComponentList(_manualComponents || []);
-    }
+    initSelectedComponentList(agentDetail?.manualComponents);
   }, [agentDetail?.manualComponents]);
-
-  // 选中配置组件
-  const handleSelectComponent = (item: AgentSelectedComponentInfo) => {
-    const _selectedComponentList = [...selectedComponentList];
-    // 已存在则删除
-    if (_selectedComponentList.some((c) => c.id === item.id)) {
-      const index = _selectedComponentList.findIndex((c) => c.id === item.id);
-      _selectedComponentList.splice(index, 1);
-    } else {
-      _selectedComponentList.push({
-        id: item.id,
-        type: item.type,
-      });
-    }
-
-    setSelectedComponentList(_selectedComponentList);
-  };
 
   // 跳转页面
   const handleEnter = async (_message: string, files?: UploadFileInfo[]) => {
