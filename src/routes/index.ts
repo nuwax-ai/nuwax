@@ -34,6 +34,10 @@ const routes = [
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
       { path: '/space/:spaceId/mcp', component: '@/pages/SpaceMcpManage' },
       {
+        path: '/space/:spaceId/mcp/create',
+        component: '@/pages/SpaceMcpCreate',
+      },
+      {
         path: '/space/:spaceId/space-square',
         component: '@/pages/SpaceSquare',
       },

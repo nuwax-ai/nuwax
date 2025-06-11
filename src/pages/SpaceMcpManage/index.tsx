@@ -11,7 +11,7 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { useModel, useParams, useRequest } from 'umi';
+import { history, useModel, useParams, useRequest } from 'umi';
 import styles from './index.less';
 import McpComponentItem from './McpComponentItem';
 const cx = classNames.bind(styles);
@@ -118,6 +118,11 @@ const SpaceLibrary: React.FC = () => {
     console.log(info);
   };
 
+  // 创建MCP服务
+  const handleCreate = () => {
+    history.push(`/space/${spaceId}/mcp/create`);
+  };
+
   return (
     <div
       className={cx(
@@ -130,7 +135,7 @@ const SpaceLibrary: React.FC = () => {
     >
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>MCP管理</h3>
-        <Button type="primary" icon={<PlusOutlined />}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
           创建MCP服务
         </Button>
       </div>

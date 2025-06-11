@@ -166,3 +166,11 @@ export interface McpComponentItemProps {
   onClick: () => void;
   onClickMore: (item: CustomPopoverItem) => void;
 }
+
+// 创建MCP服务header组件
+export interface McpHeaderProps {
+  spaceId: number;
+  onCancel: () => void;
+  onSave: () => void;
+  onSaveAndDeploy: () => void;
+}
