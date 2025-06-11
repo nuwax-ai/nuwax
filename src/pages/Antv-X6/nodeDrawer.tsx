@@ -35,6 +35,7 @@ const LoopBreak: React.FC = () => {
 
 // 移除 React.FC，直接使用函数组件定义
 export const renderNodeContent = (params: ChildNode, form: FormInstance) => {
+  const { maxTokens: maxTokensLimit } = params.nodeConfig?.modelConfig || {};
   switch (params.type) {
     case 'Start':
       // 如果这和 'Start' 是同样的组件，请考虑重用组件或创建一个新的组件。
@@ -51,7 +52,9 @@ export const renderNodeContent = (params: ChildNode, form: FormInstance) => {
     case 'TextProcessing':
       return <TextProcessingNode form={form} />;
     case 'LLM':
-      return <ModelNode form={form} id={params.id} />;
+      return (
+        <ModelNode form={form} id={params.id} maxTokensLimit={maxTokensLimit} />
+      );
 
     case 'Plugin':
     case 'Workflow':
@@ -60,7 +63,7 @@ export const renderNodeContent = (params: ChildNode, form: FormInstance) => {
     case 'Code':
       return <CodeNode form={form} />;
     case 'QA':
-      return <QuestionsNode form={form} />;
+      return <QuestionsNode form={form} maxTokensLimit={maxTokensLimit} />;
     case 'HTTPRequest':
       return <HttpToolNode form={form} />;
     case 'Knowledge':
@@ -69,7 +72,7 @@ export const renderNodeContent = (params: ChildNode, form: FormInstance) => {
     case 'Condition':
       return <ConditionNode form={form} />;
     case 'IntentRecognition':
-      return <IntentionNode form={form} />;
+      return <IntentionNode form={form} maxTokensLimit={maxTokensLimit} />;
     case 'LoopBreak':
       return <LoopBreak />;
     case 'LoopContinue':

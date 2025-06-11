@@ -54,7 +54,11 @@ const REQUEST_CONTENT_TYPE_OPTIONS = [
 ];
 
 // 定义大模型节点
-const ModelNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
+const ModelNode: React.FC<NodeDisposeProps> = ({
+  form,
+  id,
+  maxTokensLimit,
+}) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
   // 打开关闭优化
@@ -134,7 +138,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
   return (
     <div className="model-node-style">
       {/* 模型模块 */}
-      <ModelSelected form={form} />
+      <ModelSelected form={form} maxTokensLimit={maxTokensLimit} />
       {/* 技能模块 */}
       <div className="dis-sb margin-bottom ">
         <span className="node-title-style">技能</span>
@@ -237,12 +241,15 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
 };
 
 // 定义意图识别
-const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
+const IntentionNode: React.FC<NodeDisposeProps> = ({
+  form,
+  maxTokensLimit,
+}) => {
   return (
     <div className="model-node-style">
       {/* 模型模块 */}
       <Form.Item noStyle>
-        <ModelSelected form={form} />
+        <ModelSelected form={form} maxTokensLimit={maxTokensLimit} />
       </Form.Item>
       {/* 输入参数 */}
       <div className="node-item-style">
@@ -289,7 +296,10 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
 };
 
 // 定义问答
-const QuestionsNode: React.FC<NodeDisposeProps> = ({ form }) => {
+const QuestionsNode: React.FC<NodeDisposeProps> = ({
+  form,
+  maxTokensLimit,
+}) => {
   // 更改问答方式
   const changeType = (val: string) => {
     // 首次选中
@@ -330,7 +340,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({ form }) => {
   return (
     <div className="node-title-style">
       {/* 模型模块 */}
-      <ModelSelected form={form} />
+      <ModelSelected form={form} maxTokensLimit={maxTokensLimit} />
       {/* 输入参数 */}
       <div className="node-item-style">
         <InputAndOut

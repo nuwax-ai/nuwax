@@ -1,12 +1,22 @@
 import { ICON_WORKFLOW_LOOP } from '@/constants/images.constants';
 import {
-  ansewerTypeMap,
+  answerTypeMap,
   branchTypeMap,
   compareTypeMap,
   optionsMap,
 } from '@/constants/node.constants';
-import { ChildNode, NodeProps } from '@/types/interfaces/graph';
-import { returnBackgroundColor, returnImg } from '@/utils/workflow';
+import { NodeTypeEnum } from '@/types/enums/common';
+import {
+  AnswerTypeEnum,
+  ChildNode,
+  CompareTypeEnum,
+  NodeProps,
+} from '@/types/interfaces/graph';
+import {
+  NodeShapeEnum,
+  returnBackgroundColor,
+  returnImg,
+} from '@/utils/workflow';
 import { Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
 import { Tag } from 'antd';
@@ -15,9 +25,101 @@ import '../index.less';
 
 // 定义那些节点有试运行
 
+// 条件节点
+const ConditionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
+  const conditionBranchConfigs = data.nodeConfig.conditionBranchConfigs;
+  const conditionArgs = conditionBranchConfigs?.[0]?.conditionArgs;
+  const compareType = conditionArgs?.[0]?.compareType as CompareTypeEnum;
+  const firstArg = conditionArgs?.[0]?.firstArg;
+  const secondArg = conditionArgs?.[0]?.secondArg;
+  return (
+    <div className="condition-node-content-style">
+      {conditionBranchConfigs?.map((item) => (
+        <div key={item.uuid} className="dis-left condition-item-style">
+          <span className="condition-title-sytle">
+            {branchTypeMap[item.branchType || 'ELSE_IF']}
+          </span>
+          <div className="flex-1 border-box">
+            {firstArg ? firstArg.name : ''}
+          </div>
+          {conditionArgs && conditionArgs.length > 0 && (
+            <div className="dis-left">
+              <span style={{ width: '18px', textAlign: 'center' }}>
+                {compareType ? compareTypeMap[compareType] : ''}
+              </span>
+              <div className="condition-right-input border-box">
+                {secondArg ? secondArg.name || secondArg.bindValue : ''}
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// 问答节点
+const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
+  const inputArgs = data.nodeConfig.inputArgs;
+  const question = data.nodeConfig.question;
+  const answerType = data.nodeConfig.answerType as AnswerTypeEnum;
+  return (
+    <div className="qa-node-content-style">
+      <div className="dis-left">
+        <span className="text-right qa-title-style">输入</span>
+        {inputArgs?.slice(0, 2).map((item) => (
+          <Tag key={item.name}>{item.name}</Tag>
+        ))}
+        {inputArgs && inputArgs.length > 2 && (
+          <Tag>+{inputArgs.length - 2}</Tag>
+        )}
+        {!inputArgs && <span>未配置输入内容</span>}
+      </div>
+      <div className="dis-left">
+        <span className="text-right qa-title-style">提问内容</span>
+        <span className="question-content-style">
+          {question || '未配置提问内容'}
+        </span>
+      </div>
+      <div className="dis-left">
+        <span className="text-right qa-title-style">问答类型</span>
+        <span>{answerTypeMap[answerType]}</span>
+      </div>
+      {answerType === AnswerTypeEnum.SELECT &&
+        data.nodeConfig.options?.map((item, index) => (
+          <div key={index} className="dis-left mb-16">
+            <span className="text-right qa-title-style"></span>
+            <Tag>{optionsMap[index]}</Tag>
+            <span className="qa-content-style">
+              {item.content || '未配置内容'}
+            </span>
+          </div>
+        ))}
+    </div>
+  );
+};
+
+// 意图识别节点
+const IntentRecognitionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
+  const intentConfigs = data.nodeConfig.intentConfigs;
+  return (
+    <div className="qa-node-content-style">
+      {intentConfigs?.map((item, index) => (
+        <div className="dis-left" key={index}>
+          <span className="qa-title-style">选项{index + 1}</span>
+          <span className="qa-content-style">
+            {item.intent || '未配置意图'}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 /**
  * 定义 GeneralNode 类组件，代表一个通用节点，该节点可以是流程图或其他图形编辑器中的元素。
  */
+
 export class GeneralNode extends React.Component<NodeProps> {
   /**
    * 通过render返回节点的样式和内容
@@ -47,6 +149,12 @@ export class GeneralNode extends React.Component<NodeProps> {
     const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
       data.type,
     )} 0%, white 100%)`;
+    const isSpecialNode = [
+      NodeTypeEnum.QA,
+      NodeTypeEnum.Condition,
+      NodeTypeEnum.IntentRecognition,
+    ].includes(data.type);
+    const marginBottom = isSpecialNode ? '10px' : '0';
     return (
       <div
         className={`general-node ${isSelected ? 'selected-general-node' : ''}`} // 根据选中状态应用类名
@@ -56,118 +164,23 @@ export class GeneralNode extends React.Component<NodeProps> {
           className="general-node-header"
           style={{
             background: gradientBackground,
-            marginBottom: [
-              'QA',
-              'Condition',
-              'IntentRecognition',
-              'Loop',
-            ].includes(data.type)
-              ? '10px'
-              : '0',
+            marginBottom,
           }} // 应用渐变背景
         >
           <div className="dis-left general-node-header-image">
             {returnImg(data.type)}
-
             <span className="general-node-header-title text-ellipsis">
               {data.name}
             </span>
           </div>
         </div>
 
-        {data.type === 'Condition' && (
-          <div className="condition-node-content-style">
-            {data.nodeConfig.conditionBranchConfigs?.map((item) => {
-              return (
-                <div key={item.uuid} className="dis-left condition-item-style">
-                  <span className="condition-title-sytle">
-                    {branchTypeMap[item.branchType || 'ELSE_IF']}
-                  </span>
+        {data.type === NodeTypeEnum.Condition && <ConditionNode data={data} />}
 
-                  <div className="flex-1 border-box">
-                    {item.conditionArgs
-                      ? item.conditionArgs[0]?.firstArg?.name
-                      : ''}
-                  </div>
-                  {item.conditionArgs && item.conditionArgs.length > 0 && (
-                    <div className="dis-left">
-                      {/* 添加空值检查，确保 compareType 不是 null 或 undefined */}
-                      <span style={{ width: '18px', textAlign: 'center' }}>
-                        {item.conditionArgs[0]?.compareType
-                          ? compareTypeMap[
-                              item.conditionArgs[0]
-                                .compareType as keyof typeof compareTypeMap
-                            ]
-                          : ''}
-                      </span>
-                      <div className="condition-right-input border-box">
-                        {item.conditionArgs[0]?.secondArg?.name ||
-                          item.conditionArgs[0]?.secondArg?.bindValue ||
-                          ''}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {data.type === NodeTypeEnum.QA && <QANode data={data} />}
 
-        {data.type === 'QA' && (
-          <div className="qa-node-content-style">
-            <div className="dis-left">
-              <span className="text-right qa-title-style">输入</span>
-
-              {data.nodeConfig.inputArgs &&
-                data.nodeConfig?.inputArgs.slice(0, 2).map((item) => {
-                  return <Tag key={item.name}>{item.name}</Tag>;
-                })}
-              {data.nodeConfig.inputArgs &&
-                data.nodeConfig.inputArgs?.length > 2 && (
-                  <Tag>+{data.nodeConfig.inputArgs?.length - 2}</Tag>
-                )}
-              {!data.nodeConfig.inputArgs && <span>未配置输入内容</span>}
-            </div>
-            <div className="dis-left">
-              <span className="text-right qa-title-style">提问内容</span>
-              <span className="question-content-style">
-                {data.nodeConfig.question || '未配置提问内容'}
-              </span>
-            </div>
-            <div className="dis-left">
-              <span className="text-right qa-title-style">问答类型</span>
-              <span>
-                {
-                  ansewerTypeMap[
-                    (data.nodeConfig.answerType as 'TEXT' | 'SELECT') ?? 'TEXT'
-                  ]
-                }
-              </span>
-            </div>
-            {data.nodeConfig.answerType === 'SELECT' &&
-              data.nodeConfig.options?.map((item, index) => (
-                <div key={index} className="dis-left mb-16">
-                  <span className="text-right qa-title-style"></span>
-                  <Tag>{optionsMap[index]}</Tag>
-                  <span className="qa-content-style">
-                    {item.content || '未配置内容'}
-                  </span>
-                </div>
-              ))}
-          </div>
-        )}
-
-        {data.type === 'IntentRecognition' && (
-          <div className="qa-node-content-style">
-            {data.nodeConfig.intentConfigs?.map((item, index) => (
-              <div className="dis-left" key={index}>
-                <span className="qa-title-style">选项{index + 1}</span>
-                <span className="qa-content-style">
-                  {item.intent || '未配置意图'}
-                </span>
-              </div>
-            ))}
-          </div>
+        {data.type === NodeTypeEnum.IntentRecognition && (
+          <IntentRecognitionNode data={data} />
         )}
       </div>
     );
@@ -212,11 +225,11 @@ export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
 export function registerCustomNodes() {
   // 将自定义节点正确注册
   register({
-    shape: 'general-Node',
+    shape: NodeShapeEnum.General,
     component: GeneralNode,
   });
   register({
-    shape: 'loop-node',
+    shape: NodeShapeEnum.Loop,
     component: LoopNode,
     resizable: true,
     draggable: true,

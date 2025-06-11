@@ -39,6 +39,7 @@ import {
 } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentInfo } from '@/types/interfaces/library';
+import { jumpToPlugin, jumpToWorkflow } from '@/utils/router';
 import {
   ExclamationCircleFilled,
   PlusOutlined,

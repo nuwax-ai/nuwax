@@ -205,7 +205,10 @@ const Content: React.FC<ContentProps> = ({
 };
 
 // 定义模型的设置弹窗
-export const ModelSetting: React.FC<ModelSettingProp> = ({ form }) => {
+export const ModelSetting: React.FC<ModelSettingProp> = ({
+  form,
+  maxTokensLimit = 4093,
+}) => {
   const [showMore, setShowMore] = useState(true);
 
   // 使用useWatch监听mode变化
@@ -281,7 +284,7 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({ form }) => {
         <Content
           form={form}
           min={5}
-          max={4093}
+          max={maxTokensLimit}
           step={1}
           title={'最大回复长度'}
           configKey="maxTokens"
@@ -293,13 +296,16 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({ form }) => {
 };
 
 // 定义模型模块
-export const ModelSelected: React.FC<ModelSettingProp> = ({ form }) => {
+export const ModelSelected: React.FC<ModelSettingProp> = ({
+  form,
+  maxTokensLimit,
+}) => {
   return (
     <div className="node-item-style">
       <div className="dis-sb">
         <span className="node-title-style">模型</span>
         <Popover
-          content={<ModelSetting form={form} />}
+          content={<ModelSetting form={form} maxTokensLimit={maxTokensLimit} />}
           trigger="click"
           placement="left"
         >

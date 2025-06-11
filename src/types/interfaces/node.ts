@@ -167,6 +167,10 @@ export interface NodeConfig {
   tableFields?: CreatedNodeItem[];
   conditionType?: string;
   conditionArgs?: InputAndOutConfig[];
+  modelConfig?: {
+    id?: number;
+    maxTokens?: number;
+  };
 }
 
 export interface HttpNodeConfig extends NodeConfig {
