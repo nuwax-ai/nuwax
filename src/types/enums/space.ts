@@ -15,8 +15,6 @@ export enum FilterStatusEnum {
   All,
   // 已发布
   Published,
-  // 最近打开
-  Recently_Open,
 }
 
 // 过滤创建者
@@ -55,6 +53,8 @@ export enum SpaceApplicationListEnum {
   Application_Develop,
   // 组件库
   Component_Library,
+  // MCP管理
+  MCP_Manage,
   // 空间广场
   Space_Square,
   // 成员与设置

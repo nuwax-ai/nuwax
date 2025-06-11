@@ -61,6 +61,10 @@ const SpaceSection: React.FC<{
       case SpaceApplicationListEnum.Component_Library:
         url = 'library';
         break;
+      // 组件库
+      case SpaceApplicationListEnum.MCP_Manage:
+        url = 'mcp';
+        break;
       // 空间广场
       case SpaceApplicationListEnum.Space_Square:
         url = 'space-square';
@@ -87,6 +91,8 @@ const SpaceSection: React.FC<{
           pathname.includes('knowledge') ||
           pathname.includes('plugin') ||
           pathname.includes('table'))) ||
+      (type === SpaceApplicationListEnum.MCP_Manage &&
+        pathname.includes('mcp')) ||
       (type === SpaceApplicationListEnum.Space_Square &&
         pathname.includes('space-square')) ||
       (type === SpaceApplicationListEnum.Team_Setting &&

@@ -4,6 +4,7 @@ import {
   ICON_DATABASE,
   ICON_GROUP_SET,
   ICON_KNOWLEDGE,
+  ICON_MCP_MANAGE,
   ICON_MODEL,
   ICON_PLUGIN,
   ICON_SPACE_SQUARE,
@@ -11,6 +12,7 @@ import {
 } from '@/constants/images.constants';
 import { InputTypeEnum, TriggerComponentType } from '@/types/enums/agent';
 import { CreateAgentEnum, DataTypeEnum } from '@/types/enums/common';
+import { FilterDeployEnum } from '@/types/enums/mcp';
 import {
   ApplicationMoreActionEnum,
   ComponentTypeEnum,
@@ -64,13 +66,18 @@ export const LIBRARY_ALL_TYPE = [
 export const FILTER_STATUS = [
   { value: FilterStatusEnum.All, label: '全部' },
   { value: FilterStatusEnum.Published, label: '已发布' },
-  // { value: FilterStatusEnum.Recently_Open, label: '最近打开' },
 ];
 
 // 过滤创建者
 export const CREATE_LIST = [
   { value: CreateListEnum.All_Person, label: '所有人' },
   { value: CreateListEnum.Me, label: '由我创建' },
+];
+
+// 过滤部署状态
+export const FILTER_DEPLOY = [
+  { value: FilterDeployEnum.All, label: '全部' },
+  { value: FilterDeployEnum.Deployed, label: '已部署' },
 ];
 
 // 应用开发更多操作
@@ -94,6 +101,11 @@ export const SPACE_APPLICATION_LIST = [
     type: SpaceApplicationListEnum.Component_Library,
     icon: <ICON_COMPONENT_LIBRARY />,
     text: '组件库',
+  },
+  {
+    type: SpaceApplicationListEnum.MCP_Manage,
+    icon: <ICON_MCP_MANAGE />,
+    text: 'MCP管理',
   },
   {
     type: SpaceApplicationListEnum.Space_Square,
