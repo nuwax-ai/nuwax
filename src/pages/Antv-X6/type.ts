@@ -1,5 +1,6 @@
 // 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
 import { FieldConfig } from '@/components/FormListItem/type';
+import type { NodeKeyEnum } from '@/types/interfaces/graph';
 import type {
   GroupModelItem,
   ModelListItemProps,
@@ -32,7 +33,7 @@ export interface Child {
   // 唯一标识符
   type: string;
   // 子节点的类型，可能用于区分不同种类的节点
-  key: string;
+  key: NodeKeyEnum;
   // 描述
   description: string;
   // 节点的id

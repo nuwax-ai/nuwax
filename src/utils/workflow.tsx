@@ -25,6 +25,7 @@ import {
   ICON_WORKFLOW_VARIABLE,
   ICON_WORKFLOW_WORKFLOW,
 } from '@/constants/images.constants';
+import { GENERAL_NODE, LOOP_NODE } from '@/constants/node.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
 // 引用默认图标
@@ -56,92 +57,74 @@ const imageList = {
 } as {
   [key in AgentComponentTypeEnum]: string;
 };
+
+export enum NodeShapeEnum {
+  General = GENERAL_NODE,
+  Loop = LOOP_NODE,
+}
+
 // 根据type返回图片，用作技能和知识库等节点中的
 export const getImg = (data: AgentComponentTypeEnum) => {
   return imageList[data];
 };
 // 根据type返回图片
-export const returnImg = (
-  type: string,
-  options: {
-    className?: string | undefined;
-    style?: React.CSSProperties | undefined;
-  } = {},
-): React.ReactNode => {
-  const getImg = (type: string) => {
-    switch (type) {
-      case 'Start':
-      case 'LoopStart':
-        return <ICON_START />;
-      case 'End':
-      case 'LoopEnd':
-        return <ICON_END />;
-      case 'Output':
-        return <ICON_WORKFLOW_OUTPUT />;
-      case 'Code':
-        return <ICON_WORKFLOW_CODE />;
-      case 'Condition':
-        return <ICON_WORKFLOW_CONDITION />;
-      // case 'Database':
-      //   return <ICON_WORKFLOW_DATABASE />;
-      case 'DocumentExtraction':
-        return <ICON_WORKFLOW_DOCUMENT_EXTRACTION />;
-      case 'HTTPRequest':
-        return <ICON_WORKFLOW_HTTP_REQUEST />;
-      case 'IntentRecognition':
-        return <ICON_WORKFLOW_INTENT_RECOGNITION />;
-      case 'Knowledge':
-        return <ICON_WORKFLOW_KNOWLEDGE_BASE />;
-      case 'LLM':
-        return <ICON_WORKFLOW_LLM />;
-      case 'LongTermMemory':
-        return <ICON_WORKFLOW_LONG_TERM_MEMORY />;
-      case 'Loop':
-        return <ICON_WORKFLOW_LOOP />;
-      case 'LoopContinue':
-        return <ICON_WORKFLOW_LOOPCONTINUE />;
-      case 'LoopBreak':
-        return <ICON_WORKFLOW_LOOPBREAK />;
-      case 'Plugin':
-        return <ICON_WORKFLOW_PLUGIN />;
-      case 'QA':
-        return <ICON_WORKFLOW_QA />;
-      case 'TextProcessing':
-        return <ICON_WORKFLOW_TEXT_PROCESSING />;
-      case 'Variable':
-        return <ICON_WORKFLOW_VARIABLE />;
-      case 'Workflow':
-        return <ICON_WORKFLOW_WORKFLOW />;
-      case 'TableDataAdd':
-        return <ICON_WORKFLOW_DATABASEADD />;
-      case 'TableDataDelete':
-        return <ICON_WORKFLOW_DATABASEDELETE />;
-      case 'TableDataUpdate':
-        return <ICON_WORKFLOW_DATABASEUPDATE />;
-      case 'TableDataQuery':
-        return <ICON_WORKFLOW_DATABASEQUERY />;
-      case 'TableSQL':
-        return <ICON_WORKFLOW_DATABASE />;
-      default:
-        return <ICON_NEW_AGENT />;
-    }
-  };
-  return getImg(type);
-  let finalStyle = options.style;
-  if (!options.className && !options.style) {
-    // 设置默认值
-    finalStyle = { fontSize: '20px' };
+export const returnImg = (type: string): React.ReactNode => {
+  switch (type) {
+    case 'Start':
+    case 'LoopStart':
+      return <ICON_START />;
+    case 'End':
+    case 'LoopEnd':
+      return <ICON_END />;
+    case 'Output':
+      return <ICON_WORKFLOW_OUTPUT />;
+    case 'Code':
+      return <ICON_WORKFLOW_CODE />;
+    case 'Condition':
+      return <ICON_WORKFLOW_CONDITION />;
+    // case 'Database':
+    //   return <ICON_WORKFLOW_DATABASE />;
+    case 'DocumentExtraction':
+      return <ICON_WORKFLOW_DOCUMENT_EXTRACTION />;
+    case 'HTTPRequest':
+      return <ICON_WORKFLOW_HTTP_REQUEST />;
+    case 'IntentRecognition':
+      return <ICON_WORKFLOW_INTENT_RECOGNITION />;
+    case 'Knowledge':
+      return <ICON_WORKFLOW_KNOWLEDGE_BASE />;
+    case 'LLM':
+      return <ICON_WORKFLOW_LLM />;
+    case 'LongTermMemory':
+      return <ICON_WORKFLOW_LONG_TERM_MEMORY />;
+    case 'Loop':
+      return <ICON_WORKFLOW_LOOP />;
+    case 'LoopContinue':
+      return <ICON_WORKFLOW_LOOPCONTINUE />;
+    case 'LoopBreak':
+      return <ICON_WORKFLOW_LOOPBREAK />;
+    case 'Plugin':
+      return <ICON_WORKFLOW_PLUGIN />;
+    case 'QA':
+      return <ICON_WORKFLOW_QA />;
+    case 'TextProcessing':
+      return <ICON_WORKFLOW_TEXT_PROCESSING />;
+    case 'Variable':
+      return <ICON_WORKFLOW_VARIABLE />;
+    case 'Workflow':
+      return <ICON_WORKFLOW_WORKFLOW />;
+    case 'TableDataAdd':
+      return <ICON_WORKFLOW_DATABASEADD />;
+    case 'TableDataDelete':
+      return <ICON_WORKFLOW_DATABASEDELETE />;
+    case 'TableDataUpdate':
+      return <ICON_WORKFLOW_DATABASEUPDATE />;
+    case 'TableDataQuery':
+      return <ICON_WORKFLOW_DATABASEQUERY />;
+    case 'TableSQL':
+      return <ICON_WORKFLOW_DATABASE />;
+    default:
+      return <ICON_NEW_AGENT />;
   }
-  return (
-    <div
-      role="img"
-      aria-label={type}
-      className={options.className}
-      style={finalStyle}
-    >
-      {getImg(type)}
-    </div>
-  );
 };
 
 // 根据type返回背景色
@@ -557,7 +540,7 @@ export const createBaseNode = (node: ChildNode) => {
   const isLoopChild = node.loopNodeId;
   return {
     id: node.id,
-    shape: node.type === 'Loop' ? 'loop-node' : 'general-Node',
+    shape: node.type === 'Loop' ? NodeShapeEnum.Loop : NodeShapeEnum.General,
     x: extension.x ?? getRandomPosition().x,
     y: extension.y ?? getRandomPosition().y,
     width: extension.width || 304,
@@ -574,7 +557,7 @@ export const createChildNode = (parentId: string, child: ChildNode) => {
   const { width, height } = getWidthAndHeight(child);
   return {
     id: child.id.toString(),
-    shape: 'general-Node',
+    shape: NodeShapeEnum.General,
     x: ext.x,
     y: ext.y,
     width: width,
