@@ -1272,6 +1272,22 @@ const Workflow: React.FC = () => {
     changeDrawer(node);
   };
 
+  const selectGraphNode = (nodeId: number) => {
+    const graph = graphRef.current.getGraphRef();
+    const _node = graph?.getCellById(nodeId.toString());
+    if (_node) {
+      graph.trigger('node:click', { node: _node });
+    }
+  };
+
+  const handleErrorNodeClick = (node: ChildNode | null) => {
+    // 如果右侧抽屉是再展示的，且就是当前选中的节点，那么就不做任何操作
+    if (visible && node && node.id === foldWrapItemRef.current.id) return;
+    if (node) {
+      selectGraphNode(node.id);
+    }
+  };
+
   // 通过连接桩或者边创建节点
   const createNodeToPortOrEdge = async (
     child: Child,
@@ -1537,7 +1553,7 @@ const Workflow: React.FC = () => {
         onClose={() =>
           setErrorParams({ ...errorParams, errorList: [], show: false })
         }
-        changeDrawer={handleNodeClick}
+        onClickItem={handleErrorNodeClick}
         nodeList={graphParams.nodeList}
       />
 

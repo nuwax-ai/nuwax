@@ -22,8 +22,8 @@ interface ErrorListProps {
   // 打开或者关闭
   show: boolean;
   onClose: () => void;
-  changeDrawer: (child: ChildNode) => void;
   nodeList: ChildNode[];
+  onClickItem: (node: ChildNode) => void;
 }
 
 const ErrorList: React.FC<ErrorListProps> = ({
@@ -31,7 +31,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
   errorList,
   show,
   onClose,
-  changeDrawer,
+  onClickItem,
   nodeList,
 }) => {
   const { setVolid } = useModel('workflow');
@@ -79,7 +79,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
                 <div
                   className="dis-left error-list-item"
                   onClick={() => {
-                    changeDrawer(node);
+                    onClickItem(node);
                     setVolid(true);
                   }}
                   key={item.nodeId}
