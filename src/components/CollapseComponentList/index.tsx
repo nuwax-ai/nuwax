@@ -11,6 +11,7 @@ import React from 'react';
 
 // 手风琴组件列表
 const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
+  textClassName,
   type,
   list,
   onSet,
@@ -36,7 +37,7 @@ const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
     }
   };
   return !list?.length ? (
-    <p>{getInfo(type)?.text}</p>
+    <p className={textClassName}>{getInfo(type)?.text}</p>
   ) : (
     list.map((item) => (
       <CollapseComponentItem

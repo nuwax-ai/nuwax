@@ -16,6 +16,7 @@ const cx = classNames.bind(styles);
  * 知识库文本列表
  */
 const KnowledgeTextList: React.FC<KnowledgeTextListProps> = ({
+  textClassName,
   list,
   onDel,
 }) => {
@@ -29,7 +30,7 @@ const KnowledgeTextList: React.FC<KnowledgeTextListProps> = ({
   };
 
   return !list?.length ? (
-    <p>
+    <p className={cx(textClassName)}>
       将文档、URL、三方数据源上传为文本知识库后，用户发送消息时，智能体能够引用文本知识中的内容回答用户问题。
     </p>
   ) : (

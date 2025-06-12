@@ -45,6 +45,7 @@ export interface ConfigOptionsHeaderProps {
 
 // 智能体编排-单个配置选项手风琴组件属性
 export interface ConfigOptionCollapseProps {
+  className?: string;
   items: CollapseProps['items'];
   defaultActiveKey: AgentArrangeConfigEnum[];
   onChangeCollapse?: (key: AgentArrangeConfigEnum[]) => void;

@@ -24,6 +24,7 @@ import { CollapseProps, Form, FormProps, Input, message, Radio } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
 import { useModel, useParams } from 'umi';
+import KnowledgeTextList from '../EditAgent/AgentArrangeConfig/KnowledgeTextList';
 import styles from './index.less';
 import McpHeader from './McpHeader';
 
@@ -173,6 +174,7 @@ const SpaceMcpCreate: React.FC = () => {
       label: '插件',
       children: (
         <CollapseComponentList
+          textClassName="px-16"
           type={AgentComponentTypeEnum.Plugin}
           list={filterList(AgentComponentTypeEnum.Plugin)}
           onSet={handlePluginSet}
@@ -193,6 +195,7 @@ const SpaceMcpCreate: React.FC = () => {
       label: '工作流',
       children: (
         <CollapseComponentList
+          textClassName="px-16"
           type={AgentComponentTypeEnum.Workflow}
           list={filterList(AgentComponentTypeEnum.Workflow)}
           onSet={handlePluginSet}
@@ -205,6 +208,44 @@ const SpaceMcpCreate: React.FC = () => {
           onClick={(e) =>
             handlerComponentPlus(e, AgentComponentTypeEnum.Workflow)
           }
+        />
+      ),
+    },
+    {
+      key: AgentArrangeConfigEnum.Text,
+      label: '知识库',
+      children: (
+        <KnowledgeTextList
+          textClassName="px-16"
+          list={filterList(AgentComponentTypeEnum.Knowledge)}
+          onDel={handleAgentComponentDel}
+        />
+      ),
+      extra: (
+        <TooltipIcon
+          title="添加知识库"
+          onClick={(e) =>
+            handlerComponentPlus(e, AgentComponentTypeEnum.Knowledge)
+          }
+        />
+      ),
+    },
+    {
+      key: AgentArrangeConfigEnum.Table,
+      label: '数据表',
+      children: (
+        <CollapseComponentList
+          textClassName="px-16"
+          type={AgentComponentTypeEnum.Table}
+          list={filterList(AgentComponentTypeEnum.Table)}
+          onSet={handlePluginSet}
+          onDel={handleAgentComponentDel}
+        />
+      ),
+      extra: (
+        <TooltipIcon
+          title="添加数据表"
+          onClick={(e) => handlerComponentPlus(e, AgentComponentTypeEnum.Table)}
         />
       ),
     },
@@ -307,6 +348,7 @@ const SpaceMcpCreate: React.FC = () => {
               rules={[{ required: true, message: '请选择组件' }]}
             >
               <ConfigOptionCollapse
+                className={cx(styles['collapse-container'])}
                 items={collapseList}
                 defaultActiveKey={collapseActiveKey}
               />

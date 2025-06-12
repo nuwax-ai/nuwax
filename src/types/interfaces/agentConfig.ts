@@ -222,6 +222,7 @@ export interface NodeDetailsProps {
 
 // 组件列表
 export interface CollapseComponentListProps {
+  textClassName?: string;
   type: AgentComponentTypeEnum;
   list: AgentComponentInfo[];
   onSet: (id: number) => void;
@@ -230,6 +231,7 @@ export interface CollapseComponentListProps {
 
 // 知识库文本列表组件
 export interface KnowledgeTextListProps {
+  textClassName?: string;
   list: AgentComponentInfo[];
   onDel: (id: number, targetId: number, type: AgentComponentTypeEnum) => void;
 }
