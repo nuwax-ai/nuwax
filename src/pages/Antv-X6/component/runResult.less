@@ -1,0 +1,197 @@
+// 运行结果组件样式
+.run-result-container {
+  width: 100%;
+  min-width: 220px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background-color: #fff;
+  overflow: hidden;
+  margin-top: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 6%);
+}
+
+// 头部样式
+.run-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #fafafa;
+}
+
+.run-result-status {
+  display: flex;
+  align-items: center;
+}
+
+.status-icon {
+  font-size: 20px;
+  margin-right: 8px;
+
+  &.success {
+    color: #52c41a;
+  }
+
+  &.error {
+    color: #ff4d4f;
+  }
+}
+
+.status-text {
+  font-size: 13px;
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+.run-time {
+  font-size: 12px;
+  color: #8c8c8c;
+  background: #f0f0f0;
+  padding: 1px 6px;
+  border-radius: 12px;
+  margin-left: 4px;
+}
+
+.collapse-icon {
+  cursor: pointer;
+  font-size: 14px;
+  color: #8c8c8c;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+
+  &:hover {
+    background-color: #f0f0f0;
+  }
+}
+
+// 内容样式
+.run-result-body {
+  padding: 10px;
+}
+
+// 总数和分页
+.run-result-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.total-count {
+  font-size: 12px;
+  margin-right: 8px;
+}
+
+.run-result-pagination {
+  display: flex;
+  align-items: center;
+}
+
+.run-result-page-item {
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
+  margin: 0 2px;
+}
+
+.run-result-page-select {
+  width: 48px;
+  margin-left: 4px;
+}
+
+.select-arrow {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.only-error-checkbox {
+  margin-left: auto;
+
+  .ant-checkbox-wrapper {
+    font-size: 12px;
+  }
+}
+
+// 批处理变量
+.run-result-batch {
+  margin-bottom: 10px;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+}
+
+.run-result-batch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background-color: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: 500;
+}
+
+.run-result-batch-content {
+  padding: 6px 8px;
+  background-color: #fff;
+}
+
+// 输入输出部分
+.run-result-section {
+  margin-bottom: 10px;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.run-result-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background-color: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: 500;
+}
+
+.copy-icon {
+  cursor: pointer;
+  color: #8c8c8c;
+
+  &:hover {
+    color: #1890ff;
+  }
+}
+
+.run-result-section-content {
+  padding: 6px 8px;
+  background-color: #fff;
+}
+
+.key-value-item {
+  display: flex;
+  margin-bottom: 4px;
+  font-size: 12px;
+  word-break: break-all;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.key {
+  color: #6366f1;
+  margin-right: 4px;
+  font-weight: 500;
+}
+
+.value {
+  color: #333;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

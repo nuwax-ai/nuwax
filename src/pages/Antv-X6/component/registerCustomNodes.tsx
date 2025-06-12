@@ -25,6 +25,7 @@ import { Tag } from 'antd';
 import React, { useEffect, useState } from 'react';
 import '../index.less';
 import './registerCustomNodes.less';
+import RunResult from './runResult';
 // 定义那些节点有试运行
 
 // 条件节点
@@ -160,52 +161,59 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
   };
 
   // 处理保存
-  const handleSave = (saveValue: string) => {
+  const handleSave = (saveValue: string): boolean => {
     // TODO 更新节点名称
     setEditValue(saveValue);
-    // node.setData({ name: saveValue });
     graph.trigger('node:custom:save', {
       data: node.getData<ChildNode>(),
       payload: { name: saveValue },
     });
-    console.log('handleSave', saveValue, node.getData());
     return true;
   };
 
   const canNotEditNode = DISABLE_EDIT_NODE_TYPES.includes(data.type);
 
   return (
-    <div
-      className={`general-node ${selected ? 'selected-general-node' : ''}`} // 根据选中状态应用类名
-    >
-      {/* 节点头部，包含标题、图像和操作菜单 */}
+    <>
       <div
-        className="general-node-header"
-        style={{
-          background: gradientBackground,
-          marginBottom,
-        }} // 应用渐变背景
+        className={`general-node ${selected ? 'selected-general-node' : ''}`} // 根据选中状态应用类名
       >
-        <div className="dis-left general-node-header-image">
-          {returnImg(data.type)}
-          <EditableTitle
-            key={data.id.toString()}
-            value={editValue}
-            onSave={handleSave}
-            disabled={canNotEditNode}
-            onEditingStatusChange={handleEditingStatusChange}
-          />
+        {/* 节点头部，包含标题、图像和操作菜单 */}
+        <div
+          className="general-node-header"
+          style={{
+            background: gradientBackground,
+            marginBottom,
+          }} // 应用渐变背景
+        >
+          <div className="dis-left general-node-header-image">
+            {returnImg(data.type)}
+            <EditableTitle
+              key={data.id.toString()}
+              value={editValue}
+              onSave={handleSave}
+              disabled={canNotEditNode}
+              onEditingStatusChange={handleEditingStatusChange}
+            />
+          </div>
         </div>
+
+        {data.type === NodeTypeEnum.Condition && <ConditionNode data={data} />}
+
+        {data.type === NodeTypeEnum.QA && <QANode data={data} />}
+
+        {data.type === NodeTypeEnum.IntentRecognition && (
+          <IntentRecognitionNode data={data} />
+        )}
       </div>
-
-      {data.type === NodeTypeEnum.Condition && <ConditionNode data={data} />}
-
-      {data.type === NodeTypeEnum.QA && <QANode data={data} />}
-
-      {data.type === NodeTypeEnum.IntentRecognition && (
-        <IntentRecognitionNode data={data} />
-      )}
-    </div>
+      <RunResult
+        success={true}
+        time="0.001s"
+        total={10}
+        current={1}
+        onlyError={false}
+      />
+    </>
   );
 };
 

@@ -28,10 +28,10 @@ const ClickableElement = ({
   );
 };
 interface IEditableTitleProps {
-  value: string | number;
+  value: any;
   disabled?: boolean;
-  onChange?: (value: string | number) => void;
-  onSave?: (value: string | number) => Promise<boolean> | boolean;
+  onChange?: (value: any) => void;
+  onSave?: (value: any) => boolean | Promise<boolean>;
   onEditingStatusChange?: (value: boolean) => void; // 编辑状态改变
 }
 const EditableTitle = memo(

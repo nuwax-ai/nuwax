@@ -47,7 +47,7 @@ export const answerTypeMap = {
 
 export const DEFAULT_NODE_CONFIG = {
   generalNode: {
-    defaultWidth: 200, // 通用节点宽度
+    defaultWidth: 220, // 通用节点宽度
     defaultHeight: 42, // 通用节点高度
   },
   loopNode: {

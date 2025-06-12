@@ -124,6 +124,11 @@ const routes = [
     layout: false,
   },
   {
+    path: '/examples/run-result',
+    component: '@/examples/RunResultExample',
+    layout: false,
+  },
+  {
     path: '/examples/workflow-node-edit',
     component: '@/examples/WorkflowNodeEdit',
     layout: false,
