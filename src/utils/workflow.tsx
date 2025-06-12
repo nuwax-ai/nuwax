@@ -25,7 +25,11 @@ import {
   ICON_WORKFLOW_VARIABLE,
   ICON_WORKFLOW_WORKFLOW,
 } from '@/constants/images.constants';
-import { GENERAL_NODE, LOOP_NODE } from '@/constants/node.constants';
+import {
+  DEFAULT_NODE_CONFIG,
+  GENERAL_NODE,
+  LOOP_NODE,
+} from '@/constants/node.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
 // 引用默认图标
@@ -168,13 +172,18 @@ export const returnBackgroundColor = (type: string) => {
 export const getWidthAndHeight = (node: ChildNode) => {
   const { type, nodeConfig } = node;
   const extension = nodeConfig?.extension || {};
+  const { defaultWidth, defaultHeight } = DEFAULT_NODE_CONFIG.generalNode;
   if (
     type !== 'QA' &&
     type !== 'Condition' &&
     type !== 'IntentRecognition' &&
     type !== 'Loop'
   ) {
-    return { width: 180, height: 42 }; // 通用节点的默认大小
+    // 通用节点
+    return {
+      width: defaultWidth,
+      height: defaultHeight,
+    }; // 通用节点的默认大小
   } else {
     return { width: extension.width || 304, height: extension.height || 83 }; // 通用节点的默认大小
   }

@@ -8,6 +8,7 @@ import VersionHistory from '@/components/VersionHistory';
 import Constant from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
+  DEFAULT_NODE_CONFIG,
   GENERAL_NODE,
   LOOP_NODE,
   testRunList,
@@ -60,22 +61,6 @@ import Header from './header';
 import './index.less';
 import { renderNodeContent } from './nodeDrawer';
 import { Child } from './type';
-
-const DEFAULT_NODE_CONFIG = {
-  generalNode: {
-    defaultWidth: 180, // 通用节点宽度
-  },
-  loopNode: {
-    defaultWidth: 800, // 循环节点宽度
-  },
-  conditionNode: {
-    defaultWidth: 300, // 条件节点宽度
-  },
-  newNodeOffsetX: 100, // 新增节点时，x轴的间距
-  newNodeOffsetY: 100, // 新增节点时，y轴的间距
-  offsetGapX: 15, // 新增节点时，x轴的偏移量
-  offsetGapY: 15, // 新增节点时，y轴的偏移量
-};
 
 const Workflow: React.FC = () => {
   const { message } = App.useApp();
@@ -756,16 +741,37 @@ const Workflow: React.FC = () => {
     _params.extension = dragEvent;
     // 如果是条件分支，需要增加高度
     if (child.type === 'Condition') {
-      _params.extension = { ...dragEvent, height: 120, width: 300 };
+      const { defaultWidth, defaultHeight } = DEFAULT_NODE_CONFIG.conditionNode;
+      _params.extension = {
+        ...dragEvent,
+        height: defaultHeight,
+        width: defaultWidth,
+      };
     }
     if (child.type === 'QA') {
-      _params.extension = { ...dragEvent, height: 110, width: 300 };
+      const { defaultWidth, defaultHeight } = DEFAULT_NODE_CONFIG.qaNode;
+      _params.extension = {
+        ...dragEvent,
+        height: defaultHeight,
+        width: defaultWidth,
+      };
     }
     if (child.type === 'IntentRecognition') {
-      _params.extension = { ...dragEvent, height: 74, width: 300 };
+      const { defaultWidth, defaultHeight } =
+        DEFAULT_NODE_CONFIG.intentRecognitionNode;
+      _params.extension = {
+        ...dragEvent,
+        height: defaultHeight,
+        width: defaultWidth,
+      };
     }
     if (child.type === 'Loop') {
-      _params.extension = { ...dragEvent, height: 240, width: 600 };
+      const { defaultWidth, defaultHeight } = DEFAULT_NODE_CONFIG.loopNode;
+      _params.extension = {
+        ...dragEvent,
+        height: defaultHeight,
+        width: defaultWidth,
+      };
     }
     // 查看当前是否有选中的节点以及被选中的节点的type是否是Loop
     // 如果当前选择的是循环节点或者循环内部的子节点，那么就要将他的位置放置于循环内部
@@ -1270,6 +1276,12 @@ const Workflow: React.FC = () => {
     setShowNameInput(false);
   };
 
+  const handleSaveNode = (data: ChildNode, payload: Partial<ChildNode>) => {
+    // 更新节点名称
+    const newValue = { ...data, ...payload };
+    changeNode(newValue);
+  };
+
   // 点击画布中的节点
   const handleNodeClick = (node: ChildNode | null) => {
     // 如果右侧抽屉是再展示的，且就是当前选中的节点，那么就不做任何操作
@@ -1281,7 +1293,7 @@ const Workflow: React.FC = () => {
     const graph = graphRef.current.getGraphRef();
     const _node = graph?.getCellById(nodeId.toString());
     if (_node) {
-      graph.trigger('node:click', { node: _node });
+      graphRef.current.selectNode(nodeId.toString());
     }
   };
 
@@ -1313,7 +1325,7 @@ const Workflow: React.FC = () => {
     const calculateNodePosition = (_position: { x: number; y: number }) => {
       let newNodeWidth = DEFAULT_NODE_CONFIG.generalNode.defaultWidth;
       if (child.type === 'Loop') {
-        newNodeWidth = DEFAULT_NODE_CONFIG.loopNode.defaultWidth;
+        newNodeWidth = DEFAULT_NODE_CONFIG.loopNode.defaultWidth + 200; // TODO 有疑问，为什么需要加200
       } else if (
         child.type === 'Condition' ||
         child.type === 'Interval' ||
@@ -1474,6 +1486,7 @@ const Workflow: React.FC = () => {
         copyNode={copyNode}
         changeZoom={changeZoom}
         createNodeToPortOrEdge={createNodeToPortOrEdge}
+        onSaveNode={handleSaveNode}
       />
       <ControlPanel
         dragChild={dragChild}
@@ -1499,7 +1512,8 @@ const Workflow: React.FC = () => {
             testRun={testRunList.includes(foldWrapItem.type)}
             nodeType={foldWrapItem.type}
             action={
-              foldWrapItem.type !== 'Start' && foldWrapItem.type !== 'End'
+              foldWrapItem.type !== NodeTypeEnum.Start &&
+              foldWrapItem.type !== NodeTypeEnum.End
             }
           />
         }

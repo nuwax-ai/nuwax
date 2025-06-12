@@ -67,6 +67,7 @@ const initGraph = ({
   changeCondition,
   changeZoom,
   createNodeToPortOrEdge,
+  onSaveNode,
 }: GraphProp) => {
   const graphContainer = document.getElementById(containerId);
   // 如果找不到容器，则抛出错误
@@ -323,6 +324,13 @@ const initGraph = ({
       // 这里设置为false，设置为true会导致重叠节点一起移动
       enabled: false,
     },
+    interacting: {
+      nodeMovable(view) {
+        const node = view.cell;
+        const { enableMove } = node.getData();
+        return enableMove;
+      },
+    },
   });
 
   const changePortSize = () => {
@@ -346,7 +354,7 @@ const initGraph = ({
     const nodes = graph.getNodes();
     // 先将其他节点的zindex设置为4
     nodes.forEach((n) => {
-      n.setData({ selected: false });
+      // n.setData({ selected: false });
       n.prop('zIndex', 4); // 正确设置层级
     });
     // 将loop节点设置为5
@@ -693,10 +701,8 @@ const initGraph = ({
   });
   // 点击空白处，取消所有的选中
   graph.on('blank:click', () => {
-    const nodes = graph.getNodes();
-    nodes.forEach((node) => {
-      node.setData({ selected: false });
-    });
+    const cells = graph.getSelectedCells();
+    graph.unselect(cells);
     changeDrawer(null); // 调用回调函数以更新抽屉内容
     graph.cleanSelection();
   });
@@ -708,14 +714,32 @@ const initGraph = ({
   graph.on('edge:unselected', ({ edge }) => {
     edge.attr('line/stroke', '#5147FF'); // 恢复默认颜色
   });
-  // 监听节点点击事件，调用 changeDrawer 函数更新右侧抽屉的内容
-  graph.on('node:click', ({ node }) => {
+
+  graph.on('node:change:data', (...args) => {
+    console.log('node:change:data', args);
+  });
+  graph.on(
+    'node:custom:save',
+    ({ data, payload }: { data: ChildNode; payload: Partial<ChildNode> }) => {
+      console.log('node:custom:save', data, payload);
+      onSaveNode(data, payload);
+    },
+  );
+  graph.on('node:dblclick', (...args) => {
+    console.log('node:dblclick', args);
+  });
+  graph.on('node:selected', ({ node }) => {
     // 先取消所有节点的选中状态
-    graph.cleanSelection();
+    // graph.cleanSelection();
+
+    // 仅取消选中节点的选中状态
+    // const cells = graph.getSelectedCells();
+    // graph.unselect(cells);
+
     // 设置当前节点为选中状态
     changeZindex(node);
-    // node.setData({ selected: true });
-    graph.select(node); // 使用 AntV X6 的选中 API
+    // graph.select(node); // 使用 AntV X6 的选中 API
+
     // 获取被点击节点的数据
     const latestData = {
       ...node.getData(),
@@ -723,10 +747,24 @@ const initGraph = ({
     };
     changeDrawer(latestData);
   });
-
-  graph.on('node:unselected', ({ node }: { node: Node }) => {
-    node.setData({ selected: false });
+  graph.on('node:unselected', (...args) => {
+    console.log('node:unselected', args);
   });
+  // 监听节点点击事件，调用 changeDrawer 函数更新右侧抽屉的内容
+  // graph.on('node:click', ({ node }) => {
+  //   if (graph.isSelected(graph.getCellById(node.id))) {
+  //     //已经是选中状态了
+  //     // setTimeout(() => {
+  //     //   if (node.getData().enableMove) {
+  //     //     debugger;
+  //     //     changeDrawer(node.getData());
+  //     //   }
+  //     // }, 300);
+  //     console.log('已经打开了');
+
+  //     return false;
+  //   }
+  // });
 
   // 新增连线
   graph.on('edge:connected', ({ isNew, edge }) => {
@@ -823,7 +861,6 @@ const initGraph = ({
     }
     // 优化点1：直接通过父子关系API获取父节点
     let parentNode = node.getParent();
-    //
     const data = node.getData();
     if (!parentNode && data.loopNodeId) {
       const cell = graph.getCellById(data.loopNodeId);

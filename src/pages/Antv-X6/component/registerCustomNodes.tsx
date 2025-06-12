@@ -1,3 +1,4 @@
+import EditableTitle from '@/components/editableTitle';
 import { ICON_WORKFLOW_LOOP } from '@/constants/images.constants';
 import {
   answerTypeMap,
@@ -5,6 +6,7 @@ import {
   compareTypeMap,
   optionsMap,
 } from '@/constants/node.constants';
+import useNodeSelection from '@/hooks/useNodeSelection';
 import { NodeTypeEnum } from '@/types/enums/common';
 import {
   AnswerTypeEnum,
@@ -20,9 +22,9 @@ import {
 import { Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
 import { Tag } from 'antd';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import '../index.less';
-
+import './registerCustomNodes.less';
 // 定义那些节点有试运行
 
 // 条件节点
@@ -119,73 +121,93 @@ const IntentRecognitionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
 /**
  * 定义 GeneralNode 类组件，代表一个通用节点，该节点可以是流程图或其他图形编辑器中的元素。
  */
+const DISABLE_EDIT_NODE_TYPES = [
+  NodeTypeEnum.LoopStart,
+  NodeTypeEnum.LoopEnd,
+  NodeTypeEnum.Start,
+  NodeTypeEnum.End,
+];
 
-export class GeneralNode extends React.Component<NodeProps> {
+export const GeneralNode: React.FC<NodeProps> = (props) => {
   /**
    * 通过render返回节点的样式和内容
    */
-  render() {
-    const { node, graph } = this.props;
-    // 明确告诉 getData 返回的数据类型
-    const data = node.getData<ChildNode>();
-    // console.log(node.isSelected())
-    let isSelected = graph.isSelected(node); // 判断是否选中
+  const { node, graph } = props;
+  const data = node.getData<ChildNode>();
+  const selected = useNodeSelection({ graph, nodeId: data?.id });
+  const [editValue, setEditValue] = useState(data?.name || '');
+  useEffect(() => {
+    setEditValue(data?.name || '');
+  }, [data?.name]);
 
-    graph.on('blank:click', () => {
-      if (isSelected) {
-        // console.log(graph.cleanSelection())
-        this.forceUpdate();
-        // graph.cleanSelection()
-      }
-    });
-    // 或者返回一个默认的内容，以防止渲染错误
-    if (!data) {
-      return null;
-    }
-    // 确保宽度和高度是有效的数字
-    // const width = data.nodeConfig?.extension?.width ?? 304;
-    // const height = data.nodeConfig?.extension?.height ?? 83;
-    // 构造渐变背景字符串
-    const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
-      data.type,
-    )} 0%, white 100%)`;
-    const isSpecialNode = [
-      NodeTypeEnum.QA,
-      NodeTypeEnum.Condition,
-      NodeTypeEnum.IntentRecognition,
-    ].includes(data.type);
-    const marginBottom = isSpecialNode ? '10px' : '0';
-    return (
-      <div
-        className={`general-node ${isSelected ? 'selected-general-node' : ''}`} // 根据选中状态应用类名
-      >
-        {/* 节点头部，包含标题、图像和操作菜单 */}
-        <div
-          className="general-node-header"
-          style={{
-            background: gradientBackground,
-            marginBottom,
-          }} // 应用渐变背景
-        >
-          <div className="dis-left general-node-header-image">
-            {returnImg(data.type)}
-            <span className="general-node-header-title text-ellipsis">
-              {data.name}
-            </span>
-          </div>
-        </div>
-
-        {data.type === NodeTypeEnum.Condition && <ConditionNode data={data} />}
-
-        {data.type === NodeTypeEnum.QA && <QANode data={data} />}
-
-        {data.type === NodeTypeEnum.IntentRecognition && (
-          <IntentRecognitionNode data={data} />
-        )}
-      </div>
-    );
+  if (!data) {
+    return null;
   }
-}
+
+  const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
+    data.type,
+  )} 0%, white 100%)`;
+  const isSpecialNode = [
+    NodeTypeEnum.QA,
+    NodeTypeEnum.Condition,
+    NodeTypeEnum.IntentRecognition,
+  ].includes(data.type);
+  const marginBottom = isSpecialNode ? '10px' : '0';
+
+  const handleEditingStatusChange = (val: boolean) => {
+    // 编辑中不能移动节点
+    node.setData({ enableMove: !val });
+  };
+
+  // 处理保存
+  const handleSave = (saveValue: string) => {
+    // TODO 更新节点名称
+    setEditValue(saveValue);
+    // node.setData({ name: saveValue });
+    graph.trigger('node:custom:save', {
+      data: node.getData<ChildNode>(),
+      payload: { name: saveValue },
+    });
+    console.log('handleSave', saveValue, node.getData());
+    return true;
+  };
+
+  const canNotEditNode = DISABLE_EDIT_NODE_TYPES.includes(data.type);
+
+  return (
+    <div
+      className={`general-node ${selected ? 'selected-general-node' : ''}`} // 根据选中状态应用类名
+    >
+      {/* 节点头部，包含标题、图像和操作菜单 */}
+      <div
+        className="general-node-header"
+        style={{
+          background: gradientBackground,
+          marginBottom,
+        }} // 应用渐变背景
+      >
+        <div className="dis-left general-node-header-image">
+          {returnImg(data.type)}
+          <EditableTitle
+            key={data.id.toString()}
+            value={editValue}
+            onSave={handleSave}
+            disabled={canNotEditNode}
+            onEditingStatusChange={handleEditingStatusChange}
+          />
+        </div>
+      </div>
+
+      {data.type === NodeTypeEnum.Condition && <ConditionNode data={data} />}
+
+      {data.type === NodeTypeEnum.QA && <QANode data={data} />}
+
+      {data.type === NodeTypeEnum.IntentRecognition && (
+        <IntentRecognitionNode data={data} />
+      )}
+    </div>
+  );
+};
 
 /**
  * 定义循环的节点
@@ -195,20 +217,37 @@ export class GeneralNode extends React.Component<NodeProps> {
 // 优化后的 LoopNode 组件
 export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
   const data = node.getData<ChildNode>();
-  let isSelected = graph.isSelected(node); // 判断是否选中
+  const [editValue, setEditValue] = useState(data?.name || '');
+  const selected = useNodeSelection({ graph, nodeId: data?.id });
   const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
     data.type,
   )} 0%, white 42px)`;
+  useEffect(() => {
+    setEditValue(data?.name || '');
+  }, [data?.name]);
+  const handleSave = () => {
+    setEditValue(editValue);
+    node.setData({ name: editValue });
+    return true;
+  };
   return (
     <div
       className={`loop-node-style general-node ${
-        isSelected ? 'selected-general-node' : ''
+        selected ? 'selected-general-node' : ''
       }`}
       style={{ background: gradientBackground }}
     >
       <div className="loop-node-title-style dis-left">
         <ICON_WORKFLOW_LOOP style={{ marginRight: '6px' }} />
-        <span>{data.name}</span>
+        <EditableTitle
+          key={data.id.toString()}
+          value={editValue}
+          onChange={(val) => {
+            console.log('onChange', val);
+            return true;
+          }}
+          onSave={handleSave}
+        />
       </div>
       <div className="loop-node-content" />
     </div>

@@ -66,8 +66,8 @@ export interface ChildNode {
   created?: string;
   key?: string;
   icon: string;
-  selected?: boolean;
   loopNodeId?: number;
+  isEditingName?: boolean; // 是否正在编辑名称
 }
 
 export interface Edge {
@@ -89,6 +89,7 @@ export interface NodeProps {
 export interface GraphContainerProps {
   graphParams: { nodeList: ChildNode[]; edgeList: Edge[] };
   changeDrawer: (child: ChildNode | null) => void;
+  onSaveNode: (data: ChildNode, payload: Partial<ChildNode>) => void;
   changeEdge: (
     type: string,
     targetId: string,
@@ -173,6 +174,7 @@ export interface GraphProp {
   containerId: string;
   // 改变抽屉内容的回调函数，接收一个 Child 类型的参数
   changeDrawer: (item: ChildNode | null) => void;
+  onSaveNode: (data: ChildNode, payload: Partial<ChildNode>) => void;
   changeEdge: (
     type: string,
     targetId: string,

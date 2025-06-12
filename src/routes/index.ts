@@ -123,6 +123,11 @@ const routes = [
     component: '@/pages/404',
     layout: false,
   },
+  {
+    path: '/examples/workflow-node-edit',
+    component: '@/examples/WorkflowNodeEdit',
+    layout: false,
+  },
 ];
 
 export default routes;

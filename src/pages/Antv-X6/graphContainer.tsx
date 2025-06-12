@@ -32,6 +32,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       removeNode,
       changeZoom,
       createNodeToPortOrEdge,
+      onSaveNode,
     },
     ref,
   ) => {
@@ -250,18 +251,17 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       graphRef.current.addEdge(edge);
     };
 
-    // 选中节点
+    // 选中节点 切换节点
     const selectNode = (id: string) => {
       const node = graphRef.current.getCellById(id);
       if (!node || !graphRef.current) return;
 
       // 清除其他的节点选中
       graphRef.current.cleanSelection();
+      const cells = graphRef.current.getSelectedCells();
+      graphRef.current.unselect(cells);
       // 设置当前节点为选中状态
       graphRef.current.select(node);
-      // 更新节点的 data 属性，触发重新渲染
-      const data = node.getData();
-      node.setData({ ...data, selected: true });
     };
     const clearSelection = () => {
       if (!graphRef.current) return;
@@ -390,6 +390,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         changeCondition: changeCondition,
         changeZoom: changeZoom,
         createNodeToPortOrEdge: createNodeToPortOrEdge,
+        onSaveNode: onSaveNode,
       });
 
       const cleanup = EventHandlers({
