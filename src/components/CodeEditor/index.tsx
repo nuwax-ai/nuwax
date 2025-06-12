@@ -9,6 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 
 interface Props {
+  className?: string;
   codeLanguage: CodeLangEnum;
   height?: string;
   value?: string | undefined;
@@ -18,6 +19,7 @@ interface Props {
 
 const CodeEditor: React.FC<Props> = ({
   value = '',
+  className,
   onChange,
   height = '400px',
   codeLanguage,
@@ -127,6 +129,7 @@ const CodeEditor: React.FC<Props> = ({
           }
         >
           <Editor
+            className={className}
             height={height}
             language={codeLanguage.toLowerCase()}
             theme="vs-dark"
@@ -137,6 +140,7 @@ const CodeEditor: React.FC<Props> = ({
         </Form.Item>
       ) : (
         <Editor
+          className={className}
           height={height}
           language={codeLanguage.toLowerCase()}
           theme="vs-dark"

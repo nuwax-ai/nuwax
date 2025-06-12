@@ -1,7 +1,7 @@
 import ConditionRender from '@/components/ConditionRender';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PluginTypeEnum } from '@/types/enums/plugin';
-import type { AgentModelComponentProps } from '@/types/interfaces/agentConfig';
+import type { CollapseComponentItemProps } from '@/types/interfaces/agentConfig';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { Link } from 'umi';
@@ -10,7 +10,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 // 智能体模型组件，插件、工作流、触发器等组件通用显示组件
-const AgentModelComponent: React.FC<AgentModelComponentProps> = ({
+const CollapseComponentItem: React.FC<CollapseComponentItemProps> = ({
   agentComponentInfo,
   defaultImage,
   extra,
@@ -89,4 +89,4 @@ const AgentModelComponent: React.FC<AgentModelComponentProps> = ({
   );
 };
 
-export default AgentModelComponent;
+export default CollapseComponentItem;

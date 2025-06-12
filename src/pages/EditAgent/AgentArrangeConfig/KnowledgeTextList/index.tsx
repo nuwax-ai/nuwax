@@ -1,4 +1,5 @@
 import knowledgeImage from '@/assets/images/knowledge_image.png';
+import CollapseComponentItem from '@/components/CollapseComponentItem';
 import TooltipIcon from '@/components/TooltipIcon';
 import { InvokeTypeEnum } from '@/types/enums/agent';
 import { AgentComponentInfo } from '@/types/interfaces/agent';
@@ -6,7 +7,6 @@ import type { KnowledgeTextListProps } from '@/types/interfaces/agentConfig';
 import { CaretDownOutlined, DeleteOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import AgentModelComponent from '../AgentModelComponent';
 import styles from './index.less';
 import KnowledgeSetting from './KnowledgeSetting';
 
@@ -35,7 +35,7 @@ const KnowledgeTextList: React.FC<KnowledgeTextListProps> = ({
   ) : (
     <>
       {list.map((item) => (
-        <AgentModelComponent
+        <CollapseComponentItem
           key={item.id}
           agentComponentInfo={item}
           defaultImage={knowledgeImage as string}

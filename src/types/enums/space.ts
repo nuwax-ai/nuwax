@@ -73,6 +73,8 @@ export enum AgentArrangeConfigEnum {
   Text = 'Text',
   // 变量
   Variable = 'Variable',
+  // 知识库
+  Knowledge = 'Knowledge',
   // 数据表
   Table = 'Table',
   // 长期记忆

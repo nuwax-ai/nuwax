@@ -72,7 +72,7 @@ export interface CardBindProps {
 }
 
 // 智能体模型组件，插件、工作流、触发器等组件通用显示组件
-export interface AgentModelComponentProps {
+export interface CollapseComponentItemProps {
   agentComponentInfo: AgentComponentInfo;
   defaultImage?: string;
   extra?: React.ReactNode;
@@ -221,7 +221,7 @@ export interface NodeDetailsProps {
 }
 
 // 组件列表
-export interface ComponentListProps {
+export interface CollapseComponentListProps {
   type: AgentComponentTypeEnum;
   list: AgentComponentInfo[];
   onSet: (id: number) => void;

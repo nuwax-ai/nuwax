@@ -21,23 +21,23 @@ import type { AgentArrangeConfigProps } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
 import VariableList from './VariableList';
 // import { CaretDownOutlined } from '@ant-design/icons';
+import ConfigOptionCollapse from '@/components/ConfigOptionCollapse';
 import { useRequest } from 'ahooks';
 import { CollapseProps, message } from 'antd';
 import classNames from 'classnames';
 import React, { MouseEvent, useEffect, useMemo, useState } from 'react';
 import { useModel } from 'umi';
-import ConfigOptionCollapse from './ConfigOptionCollapse';
 import ConfigOptionsHeader from './ConfigOptionsHeader';
 import CreateVariables from './CreateVariables';
 // import CreateTrigger from './CreateTrigger';
 import styles from './index.less';
-import KnowledgeTextList from './KnowledgeList';
+import KnowledgeTextList from './KnowledgeTextList';
 import LongMemoryContent from './LongMemoryContent';
 // import TriggerContent from './TriggerContent';
+import CollapseComponentList from '@/components/CollapseComponentList';
+import PluginModelSetting from '@/components/PluginModelSetting';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
-import ComponentList from './ComponentList';
 import OpenRemarksEdit from './OpenRemarksEdit';
-import PluginModelSetting from './PluginModelSetting';
 
 const cx = classNames.bind(styles);
 
@@ -213,7 +213,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 添加插件、工作流、知识库等
   const handlerComponentPlus = (
-    e: MouseEvent,
+    e: React.MouseEvent<HTMLElement>,
     type: AgentComponentTypeEnum,
   ) => {
     e.stopPropagation();
@@ -277,7 +277,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       }
       return info;
     });
-    componentInfo.bindConfig.inputArgBindConfigs = _inputConfigArgs;
+    if (componentInfo && componentInfo.bindConfig) {
+      componentInfo.bindConfig.inputArgBindConfigs = _inputConfigArgs;
+    }
     // 工作流组件，去掉属性配置（argBindConfigs属性是之前的，目前改为inputArgBindConfigs）
     if (componentInfo?.type === AgentComponentTypeEnum.Workflow) {
       componentInfo.bindConfig.argBindConfigs = null;
@@ -292,7 +294,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       key: AgentArrangeConfigEnum.Plugin,
       label: '插件',
       children: (
-        <ComponentList
+        <CollapseComponentList
           type={AgentComponentTypeEnum.Plugin}
           list={filterList(AgentComponentTypeEnum.Plugin)}
           onSet={handlePluginSet}
@@ -302,7 +304,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       extra: (
         <TooltipIcon
           title="添加插件"
-          onClick={(e: MouseEvent) =>
+          onClick={(e) =>
             handlerComponentPlus(e, AgentComponentTypeEnum.Plugin)
           }
         />
@@ -312,7 +314,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       key: AgentArrangeConfigEnum.Workflow,
       label: '工作流',
       children: (
-        <ComponentList
+        <CollapseComponentList
           type={AgentComponentTypeEnum.Workflow}
           list={filterList(AgentComponentTypeEnum.Workflow)}
           onSet={handlePluginSet}
@@ -322,7 +324,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       extra: (
         <TooltipIcon
           title="添加工作流"
-          onClick={(e: MouseEvent) =>
+          onClick={(e) =>
             handlerComponentPlus(e, AgentComponentTypeEnum.Workflow)
           }
         />
@@ -356,7 +358,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       extra: (
         <TooltipIcon
           title="添加知识库"
-          onClick={(e: MouseEvent) =>
+          onClick={(e) =>
             handlerComponentPlus(e, AgentComponentTypeEnum.Knowledge)
           }
         />
@@ -390,7 +392,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       key: AgentArrangeConfigEnum.Table,
       label: '数据表',
       children: (
-        <ComponentList
+        <CollapseComponentList
           type={AgentComponentTypeEnum.Table}
           list={filterList(AgentComponentTypeEnum.Table)}
           onSet={handlePluginSet}
@@ -399,10 +401,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       ),
       extra: (
         <TooltipIcon
-          title="添加插件"
-          onClick={(e: MouseEvent) =>
-            handlerComponentPlus(e, AgentComponentTypeEnum.Table)
-          }
+          title="添加数据表"
+          onClick={(e) => handlerComponentPlus(e, AgentComponentTypeEnum.Table)}
         />
       ),
     },
