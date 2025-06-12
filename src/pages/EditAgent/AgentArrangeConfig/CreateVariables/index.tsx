@@ -8,6 +8,7 @@ import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
+import CreateVariableModal from './CreateVariableModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -72,7 +73,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       bindValue: '',
     };
     const _inputData = [...inputData];
-    _inputData.push(data);
+    _inputData.push(data as BindConfigWithSub);
     setInputData(_inputData);
   };
   const handleDel = (index: number) => {
@@ -181,32 +182,35 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
   ];
 
   return (
-    <Modal
-      width={650}
-      title="变量"
-      open={open}
-      cancelText="取消"
-      okText="保存"
-      okButtonProps={{ disabled: okDisabled }}
-      onCancel={onCancel}
-      onOk={handleOk}
-    >
-      <Table<BindConfigWithSub>
-        className={cx(styles['table-container'], 'overflow-hide')}
-        columns={inputColumns}
-        dataSource={inputData}
-        pagination={false}
-        virtual
-        scroll={{
-          y: 560,
-        }}
-        footer={() => (
-          <Button icon={<PlusOutlined />} onClick={handleAddChildren}>
-            新增
-          </Button>
-        )}
-      />
-    </Modal>
+    <>
+      <Modal
+        width={650}
+        title="变量"
+        open={open}
+        cancelText="取消"
+        okText="保存"
+        okButtonProps={{ disabled: okDisabled }}
+        onCancel={onCancel}
+        onOk={handleOk}
+      >
+        <Table<BindConfigWithSub>
+          className={cx(styles['table-container'], 'overflow-hide')}
+          columns={inputColumns}
+          dataSource={inputData}
+          pagination={false}
+          virtual
+          scroll={{
+            y: 560,
+          }}
+          footer={() => (
+            <Button icon={<PlusOutlined />} onClick={handleAddChildren}>
+              新增
+            </Button>
+          )}
+        />
+        <CreateVariableModal open onCancel={() => {}} onOk={() => {}} />
+      </Modal>
+    </>
   );
 };
 

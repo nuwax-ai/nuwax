@@ -18,12 +18,25 @@ export enum BindValueType {
   Reference = 'Reference',
 }
 
-// 输入类型, Http插件有用,可用值:Query,Body,Header,Path
+// 输入类型 可用值:Query,Body,Header,Path,Text,Paragraph,Select,MultipleSelect,Number,AutoRecognition
 export enum InputTypeEnum {
+  // Http插件有用
   Query = 'Query',
   Body = 'Body',
   Header = 'Header',
   Path = 'Path',
+  // 行文本
+  Text = 'Text',
+  // 多行段落
+  Paragraph = 'Paragraph',
+  // 下拉单选
+  Select = 'Select',
+  // 下拉多选
+  MultipleSelect = 'MultipleSelect',
+  // 数字
+  Number = 'Number',
+  // 智能识别
+  AutoRecognition = 'AutoRecognition',
 }
 
 // 触发类型,TIME 定时触发, EVENT 事件触发,可用值:TIME,EVENT
@@ -131,4 +144,10 @@ export enum AllowCopyEnum {
 export enum OnlyTemplateEnum {
   No = 0,
   Yes = 1,
+}
+
+// 选项来源类型,可用值:MANUAL,PLUGIN
+export enum OptionDataSourceEnum {
+  MANUAL = 'MANUAL',
+  PLUGIN = 'PLUGIN',
 }

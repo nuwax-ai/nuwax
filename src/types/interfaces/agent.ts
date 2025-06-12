@@ -6,6 +6,7 @@ import type {
   InputTypeEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
+  OptionDataSourceEnum,
   SearchStrategyEnum,
   TriggerComponentType,
   TriggerTypeEnum,
@@ -78,6 +79,18 @@ export interface AgentConfigUpdateParams extends AgentBaseInfo {
   openLongMemory: OpenCloseEnum;
 }
 
+// 输入、输出下拉选项配置信息
+interface SelectConfigInfo {
+  // 下拉选项名称
+  label: string;
+  // 下拉选项列表
+  options: {
+    // 选项名称
+    name: string;
+    children: SelectConfigInfo[];
+  }[];
+}
+
 // 出参、入参绑定配置，带下级, 绑定组件配置，不同组件配置不一样
 export interface BindConfigWithSub {
   key: React.Key;
@@ -97,9 +110,20 @@ export interface BindConfigWithSub {
   bindValueType?: BindValueType;
   // 参数值，当类型为引用时，示例 1.xxx 绑定节点ID为1的xxx字段；当类型为输入时，该字段为最终使用的值
   bindValue?: string;
-  // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
+  // 输入类型 可用值:Query,Body,Header,Path,Text,Paragraph,Select,MultipleSelect,Number,AutoRecognition
   inputType?: InputTypeEnum;
   subArgs?: BindConfigWithSub[];
+  // 下拉参数配置
+  selectConfig?: {
+    // 数据源类型,可用值:MANUAL,PLUGIN
+    dataSource: OptionDataSourceEnum;
+    // 数据源类型,可用值:Agent,Plugin,Workflow,Knowledge,Table
+    targetType: AgentComponentTypeEnum;
+    // 插件或工作流ID，dataSource选择PLUGIN时有用
+    targetId: number;
+    // 下拉选项配置
+    config: SelectConfigInfo;
+  };
   loopId: number;
   children?: BindConfigWithSub[];
   [key: string]: any;
