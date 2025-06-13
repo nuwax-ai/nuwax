@@ -1301,6 +1301,14 @@ const Workflow: React.FC = () => {
     // 如果右侧抽屉是再展示的，且就是当前选中的节点，那么就不做任何操作
     if (visible && node && node.id === foldWrapItemRef.current.id) return;
     if (node) {
+      //分成二个步骤：
+      // 1. 先获取当前选中节点的位置，然后平移画布到当前选中节点在视口中间
+      const graph = graphRef.current.getGraphRef();
+      const cell = graph?.getCellById(node.id.toString());
+      if (cell) {
+        graph?.centerCell(cell);
+      }
+      // 2. 选中节点
       selectGraphNode(node.id);
     }
   };

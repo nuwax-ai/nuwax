@@ -2,7 +2,7 @@ import { ChildNode } from '@/types/interfaces/graph';
 import { ErrorItem } from '@/types/interfaces/workflow';
 import { returnImg } from '@/utils/workflow';
 import { CloseOutlined } from '@ant-design/icons';
-import { Popover } from 'antd'; // 引入 Popover
+import { Button, Popover } from 'antd'; // 引入 Popover
 import React from 'react';
 import { useModel } from 'umi';
 import './index.less';
@@ -52,7 +52,9 @@ const ErrorList: React.FC<ErrorListProps> = ({
         }}
       >
         <span>错误列表</span>
-        <CloseOutlined
+        <Button
+          type="text"
+          icon={<CloseOutlined />}
           onClick={() => {
             onClose();
             setVolid(false);
@@ -62,13 +64,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
 
       {/* 遍历当前的错误信息列表 */}
       {errorList && (
-        <div
-          className="error-list-content"
-          style={{
-            flex: 1,
-            overflow: 'auto',
-          }}
-        >
+        <div className="error-list-content">
           {errorList.map((item) => {
             if (item && item.nodeId) {
               const node = nodeList.find((node) => node.id === item.nodeId);
@@ -86,7 +82,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
                 >
                   <div className="image-div-style">{returnImg(node.type)}</div>
                   <div className="ml-12 content-error-item-width">
-                    <p>{node.name || '123'}</p>
+                    <p className="error-node-name">{node.name || '暂无'}</p>
                     {item.error.length > 110 ? (
                       <Popover
                         content={<p>{getDisplayErrorContent(item.error)}</p>} // Popover 内容 超出 500 字符时 支持截断
