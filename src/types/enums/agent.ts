@@ -146,8 +146,8 @@ export enum OnlyTemplateEnum {
   Yes = 1,
 }
 
-// 选项来源类型,可用值:MANUAL,PLUGIN
+// 选项来源类型,可用值:MANUAL,BINDING
 export enum OptionDataSourceEnum {
   MANUAL = 'MANUAL',
-  PLUGIN = 'PLUGIN',
+  BINDING = 'BINDING',
 }

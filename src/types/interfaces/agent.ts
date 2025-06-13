@@ -22,6 +22,7 @@ import type { HistoryActionTypeEnum, OpenCloseEnum } from '@/types/enums/space';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import React from 'react';
 import { CardArgsBindConfigInfo } from './cardInfo';
+import { CascaderOption } from './common';
 
 // 知识库设置label
 export interface LabelIconProps {
@@ -79,23 +80,13 @@ export interface AgentConfigUpdateParams extends AgentBaseInfo {
   openLongMemory: OpenCloseEnum;
 }
 
-// 输入、输出下拉选项配置信息
-interface SelectConfigInfo {
-  // 下拉选项名称
-  label: string;
-  // 下拉选项列表
-  options: {
-    // 选项名称
-    name: string;
-    children: SelectConfigInfo[];
-  }[];
-}
-
 // 出参、入参绑定配置，带下级, 绑定组件配置，不同组件配置不一样
 export interface BindConfigWithSub {
   key: React.Key;
   // 参数名称，符合函数命名规则
   name: string;
+  // 参数展示名称，供前端展示使用
+  displayName?: string;
   // 参数详细描述信息
   description: string;
   // 数据类型
@@ -122,7 +113,7 @@ export interface BindConfigWithSub {
     // 插件或工作流ID，dataSource选择PLUGIN时有用
     targetId: number;
     // 下拉选项配置
-    config: SelectConfigInfo;
+    options: CascaderOption[];
   };
   loopId: number;
   children?: BindConfigWithSub[];

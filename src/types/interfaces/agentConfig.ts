@@ -16,7 +16,10 @@ import type {
   CreatorInfo,
   TriggerTimeZone,
 } from '@/types/interfaces/agent';
-import type { UploadFileInfo } from '@/types/interfaces/common';
+import type {
+  CreatedNodeItem,
+  UploadFileInfo,
+} from '@/types/interfaces/common';
 import type {
   AttachmentFile,
   ExecuteResultInfo,
@@ -289,4 +292,27 @@ export interface AgentItemProps {
   info: CategoryItemInfo;
   onItemClick: () => void;
   onToggleCollect: () => void;
+}
+
+// 创建变量弹窗组件
+export interface CreateVariableModalProps {
+  id: number;
+  targetId: number;
+  inputData: BindConfigWithSub[];
+  open: boolean; // 控制弹窗的显示隐藏
+  onCancel: () => void; // 取消按钮的回调函数
+  onConfirm: (data: BindConfigWithSub[]) => void; // 确定按钮的回调函数，传入变量名称
+}
+
+// 可拖拽手动创建项组件的props
+export interface DragManualCreateItemProps {
+  id: string; // 唯一标识符
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onDelete: () => void;
+}
+
+// 插件绑定组件props
+export interface PluginBindingProps {
+  targetComponentInfo?: CreatedNodeItem | null; // 目标组件信息
+  onClick: () => void; // 点击绑定事件
 }

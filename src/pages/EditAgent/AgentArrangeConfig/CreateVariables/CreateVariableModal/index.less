@@ -1,6 +1,8 @@
-.container {
-  width: 100%;
-  height: 100%;
+@import '@/styles/color';
+
+.modal-body-container {
+  max-height: 600px;
+  overflow-y: auto;
 }
 
 .radio-group {
@@ -11,6 +13,33 @@
   :global {
     .ant-radio-wrapper-block {
       justify-content: flex-start;
+    }
+  }
+}
+
+.tab {
+  margin-bottom: 20px;
+
+  :global {
+    .ant-tabs-tab {
+      font-size: 14px;
+      color: @GRAY05;
+      user-select: none; // 禁止选中文字
+    }
+
+    .ant-tabs-tab.ant-tabs-tab-focus .ant-tabs-tab-btn {
+      outline: none;
+    }
+
+    .ant-tabs-tab-active .ant-tabs-tab-btn {
+      font-size: 14px;
+      font-weight: bold;
+      color: @GRAY15;
+      text-shadow: none;
+    }
+
+    .ant-tabs-ink-bar {
+      background: @BLUE13;
     }
   }
 }

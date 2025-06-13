@@ -233,11 +233,11 @@ export interface UseModelBoxProps {
 export interface PlugInItem {
   // 图标
   icon?: React.ReactNode;
-  //   名称
+  // 名称
   label: string;
   desc: string;
   id: string;
-  //   子选项
+  // 子选项
   children: PlugInItem[];
 }
 // 工作流的单个内容
@@ -374,7 +374,7 @@ export interface UploadAvatarProps {
 }
 
 export interface SubmitButtonProps {
-  form?: FormInstance;
+  form: FormInstance;
   loading?: boolean;
   // 确定按钮前缀icon
   okPrefixIcon?: React.ReactNode;

@@ -199,3 +199,20 @@ export const AGENT_VARIABLES_INPUT_OPTIONS = [
     label: '智能识别',
   },
 ];
+
+// 变量插件绑定配置默认值
+export const BINDING_DEFAULT_JSON_DATA = {
+  options: [
+    {
+      value: 'zhejiang',
+      label: 'Zhejiang',
+      children: [
+        {
+          value: 'hangzhou',
+          label: 'Hangzhou',
+          children: [],
+        },
+      ],
+    },
+  ],
+};
