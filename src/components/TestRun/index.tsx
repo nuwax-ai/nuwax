@@ -1,36 +1,19 @@
 // import squareImage from '@/assets/images/square_bg.png';
-import CodeEditor from '@/components/CodeEditor';
-import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
-import { CodeLangEnum } from '@/types/enums/plugin';
+import { NodeTypeEnum } from '@/types/enums/common';
 import { DefaultObjectType } from '@/types/interfaces/common';
 import { AnswerTypeEnum, ChildNode } from '@/types/interfaces/graph';
 import {
-  InputAndOutConfig,
   NodeConfig,
+  NodePreviousAndArgMap,
   TestRunParams,
 } from '@/types/interfaces/node';
-import { getAccept } from '@/utils';
 import { returnImg } from '@/utils/workflow';
 import { CaretRightOutlined, CloseOutlined } from '@ant-design/icons';
 import { Bubble, PromptProps, Prompts, Sender } from '@ant-design/x';
-import {
-  Button,
-  Collapse,
-  Empty,
-  Form,
-  FormInstance,
-  Input,
-  InputNumber,
-  Radio,
-  Tag,
-  Upload,
-  UploadProps,
-  message,
-} from 'antd';
+import { Button, Collapse, Empty, Form, FormInstance, Input } from 'antd';
 import { useEffect, useState } from 'react';
 import { useModel } from 'umi';
+import FormItemRender from './FormItemRender';
 import './index.less';
 // import { stringify } from 'uuid';
 
@@ -70,6 +53,12 @@ interface QaItems {
   key: string;
   description: string;
 }
+// mock的option数据
+// const mockOptions = [
+//   { label: '角色陪伴-苏瑶', value: 'su-yao', img: squareImage },
+//   { label: '智慧家具管家', value: 'su', img: squareImage },
+//   { label: 'coder', value: 'coder', img: squareImage },
+// ];
 
 const StopWaitNode: React.FC<{
   params?: TestRunParams;
@@ -123,14 +112,106 @@ const StopWaitNode: React.FC<{
     </div>
   );
 };
-// mock的option数据
-// const mockOptions = [
-//   { label: '角色陪伴-苏瑶', value: 'su-yao', img: squareImage },
-//   { label: '智慧家具管家', value: 'su', img: squareImage },
-//   { label: 'coder', value: 'coder', img: squareImage },
-// ];
 
-// 试运行
+const HttpArgs: React.FC<{
+  config: NodeConfig;
+  loading: boolean;
+  options: NodePreviousAndArgMap;
+}> = ({ config, loading, options }) => {
+  const { body, headers, queries } = config;
+  return (
+    <>
+      {body && body.length > 0 && (
+        <FormItemRender items={body} loading={loading} options={options} />
+      )}
+      {headers && headers.length > 0 && (
+        <FormItemRender items={headers} loading={loading} options={options} />
+      )}
+      {queries && queries.length > 0 && (
+        <FormItemRender items={queries} loading={loading} options={options} />
+      )}
+      {!body?.length && !headers?.length && !queries?.length && (
+        <Empty description="本次试运行无需输入" />
+      )}
+    </>
+  );
+};
+
+const renderInputArgs = ({
+  type,
+  name,
+  form,
+  config,
+  onFinish,
+  loading,
+  referenceList,
+}: {
+  type: NodeTypeEnum;
+  name: string;
+  form: FormInstance;
+  config: NodeConfig;
+  onFinish: (values: DefaultObjectType) => void;
+  loading: boolean;
+  referenceList: NodePreviousAndArgMap;
+}) => {
+  const { inputArgs } = config;
+  return (
+    <Form
+      form={form}
+      layout={'vertical'}
+      onFinish={onFinish}
+      className="test-run-form"
+    >
+      <div className="dis-left">
+        {returnImg(type)}
+        <span style={{ marginLeft: '10px' }}>{name}</span>
+      </div>
+      {type !== NodeTypeEnum.HTTPRequest &&
+        (inputArgs && inputArgs.length ? (
+          <FormItemRender
+            items={inputArgs}
+            loading={loading}
+            options={referenceList}
+          />
+        ) : (
+          <Empty description="本次试运行无需输入" />
+        ))}
+      {type === NodeTypeEnum.HTTPRequest && (
+        <HttpArgs config={config} loading={loading} options={referenceList} />
+      )}
+    </Form>
+  );
+};
+
+const renderOutputArgs = ({
+  form,
+  value,
+  config,
+}: {
+  form: FormInstance;
+  value: string;
+  config: NodeConfig;
+}) => {
+  const { inputArgs } = config;
+  return (
+    <>
+      <p className="collapse-title-style dis-left">输入</p>
+      {inputArgs?.map((item) => (
+        <Input
+          key={item.name}
+          prefix={middleEllipsis(item.name + ':', 20)}
+          value={form.getFieldValue(item.name)}
+          disabled
+          className="mb-12 override-input-style"
+        />
+      ))}
+      <p className="collapse-title-style dis-left">输出</p>
+      <pre className="result-style overflow-y">{value}</pre>
+    </>
+  );
+};
+
+// 试运行组件
 const TestRun: React.FC<TestRunProps> = ({
   node,
   visible,
@@ -208,196 +289,7 @@ const TestRun: React.FC<TestRunProps> = ({
 
   // };
 
-  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
   // 根据type返回不同的输入项
-  const getInputBox = (item: InputAndOutConfig, form: FormInstance) => {
-    const handleChange: UploadProps['onChange'] = (info) => {
-      if (info.file.status === 'uploading') {
-        return;
-      }
-      if (info.file.status === 'done') {
-        try {
-          const data = info.file.response?.data;
-          form.setFieldValue(item.name, data?.url);
-        } catch (error) {
-          message.warning(info.file.response?.message);
-        }
-      }
-    };
-
-    switch (true) {
-      case item.dataType?.includes('File'):
-        return (
-          <Upload
-            action={UPLOAD_FILE_ACTION}
-            onChange={handleChange}
-            headers={{
-              Authorization: token ? `Bearer ${token}` : '',
-            }}
-            accept={getAccept(item.dataType as DataTypeEnum)}
-            disabled={loading}
-          >
-            <Button>上传文件</Button>
-          </Upload>
-        );
-      case item.dataType === 'Object' || item.dataType?.includes('Array'):
-        return (
-          <CodeEditor
-            value={form.getFieldValue(item.name) || ''}
-            codeLanguage={CodeLangEnum.JSON}
-            onChange={(code: string) => {
-              form.setFieldsValue({ [item.name]: code }); // 更新表单值
-            }}
-            height="180px"
-          />
-        );
-      case item.dataType === 'Number':
-        return <InputNumber disabled={loading} />;
-      case item.dataType === 'Integer':
-        return <InputNumber precision={0} disabled={loading} />;
-      case item.dataType === 'Boolean':
-        return (
-          <Radio.Group
-            disabled={loading}
-            options={[
-              { label: 'true', value: 'true' },
-              { label: 'false', value: 'false' },
-            ]}
-          />
-        );
-      case item.dataType === 'String':
-        return <Input />;
-      default: {
-        return <Input disabled={loading} />;
-      }
-    }
-  };
-
-  const renderFormItem = (
-    type: string,
-    items: InputAndOutConfig[],
-    form: FormInstance,
-  ) => {
-    return (
-      <>
-        {items.map((item, index) => {
-          // if (!referenceList) return [];
-          if (
-            referenceList !== undefined &&
-            JSON.stringify(referenceList.argMap) !== '{}'
-          ) {
-            const isReference = referenceList.argMap[item.bindValue];
-            if (isReference) {
-              item.dataType = isReference.dataType;
-            }
-          }
-          return (
-            <div key={item.key || index}>
-              <Form.Item
-                name={[item.name]} // 绑定到 bindValue
-                label={
-                  <>
-                    {item.name}
-                    <Tag color="#C9CDD4" className="ml-10">
-                      {item.dataType}
-                    </Tag>
-                  </>
-                }
-                rules={
-                  item.require
-                    ? [
-                        {
-                          required: true,
-                          message: `${item.name}是必填项`,
-                        },
-                      ]
-                    : []
-                }
-              >
-                {getInputBox(item, form)}
-              </Form.Item>
-            </div>
-          );
-        })}
-      </>
-    );
-  };
-  const renderInputArgs = ({
-    type,
-    name,
-    form,
-    config,
-    onFinish,
-  }: {
-    type: NodeTypeEnum;
-    name: string;
-    form: FormInstance;
-    config: NodeConfig;
-    onFinish: (values: DefaultObjectType) => void;
-  }) => {
-    const { inputArgs, body, headers, queries } = config;
-    return (
-      <Form
-        form={form}
-        layout={'vertical'}
-        onFinish={onFinish}
-        className="test-run-form"
-      >
-        <div className="dis-left">
-          {returnImg(type)}
-          <span style={{ marginLeft: '10px' }}>{name}</span>
-        </div>
-        {type !== 'HTTPRequest' &&
-          (inputArgs && inputArgs.length ? (
-            renderFormItem('inputArgs', inputArgs, form)
-          ) : (
-            <Empty description="本次试运行无需输入" />
-          ))}
-        {type === 'HTTPRequest' && (
-          <>
-            {body && body.length > 0 && renderFormItem('body', body, form)}
-            {headers &&
-              headers.length > 0 &&
-              renderFormItem('headers', headers, form)}
-            {queries &&
-              queries.length > 0 &&
-              renderFormItem('queries', queries, form)}
-            {!body?.length && !headers?.length && !queries?.length && (
-              <Empty description="本次试运行无需输入" />
-            )}
-          </>
-        )}
-      </Form>
-    );
-  };
-
-  const renderOutputArgs = ({
-    form,
-    value,
-    config,
-  }: {
-    form: FormInstance;
-    value: string;
-    config: NodeConfig;
-  }) => {
-    const { inputArgs } = config;
-    return (
-      <>
-        <p className="collapse-title-style dis-left">输入</p>
-        {inputArgs?.map((item) => (
-          <Input
-            key={item.name}
-            prefix={middleEllipsis(item.name + ':', 20)}
-            value={form.getFieldValue(item.name)}
-            disabled
-            className="mb-12 override-input-style"
-          />
-        ))}
-        <p className="collapse-title-style dis-left">输出</p>
-        <pre className="result-style overflow-y">{value}</pre>
-      </>
-    );
-  };
 
   const items = [
     {
@@ -409,6 +301,8 @@ const TestRun: React.FC<TestRunProps> = ({
         name: node.name,
         config: node.nodeConfig,
         onFinish,
+        loading,
+        referenceList,
       }),
     },
     ...(testRunResult
