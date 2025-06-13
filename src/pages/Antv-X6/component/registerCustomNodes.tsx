@@ -4,14 +4,13 @@ import {
   answerTypeMap,
   branchTypeMap,
   compareTypeMap,
-  GENERAL_NODE,
-  LOOP_NODE,
   optionsMap,
 } from '@/constants/node.constants';
 import useNodeSelection from '@/hooks/useNodeSelection';
 import {
   AnswerTypeEnum,
   CompareTypeEnum,
+  NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
 import { ChildNode, NodeProps } from '@/types/interfaces/graph';
@@ -269,11 +268,11 @@ export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
 export function registerCustomNodes() {
   // 将自定义节点正确注册
   register({
-    shape: GENERAL_NODE,
+    shape: NodeShapeEnum.General,
     component: GeneralNode,
   });
   register({
-    shape: LOOP_NODE,
+    shape: NodeShapeEnum.Loop,
     component: LoopNode,
     resizable: true,
     draggable: true,

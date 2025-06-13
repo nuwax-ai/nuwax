@@ -97,7 +97,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
       // 根据情况，动态给予右侧的out连接桩
       const newNode = graphRef.current.addNode({
-        shape: child.key,
+        shape: child.shape,
         id: child.id,
         x: point.x,
         y: point.y,

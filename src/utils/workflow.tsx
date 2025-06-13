@@ -25,11 +25,7 @@ import {
   ICON_WORKFLOW_VARIABLE,
   ICON_WORKFLOW_WORKFLOW,
 } from '@/constants/images.constants';
-import {
-  DEFAULT_NODE_CONFIG,
-  GENERAL_NODE,
-  LOOP_NODE,
-} from '@/constants/node.constants';
+import { DEFAULT_NODE_CONFIG } from '@/constants/node.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
 // 引用默认图标
@@ -89,7 +85,12 @@ interface NodeMetadata extends Node.Metadata {
   };
   ports: PortMetadata[];
 }
-
+export const getShape = (type: NodeTypeEnum) => {
+  if (type === NodeTypeEnum.Loop) {
+    return NodeShapeEnum.Loop;
+  }
+  return NodeShapeEnum.General;
+};
 // 根据type返回图片，用作技能和知识库等节点中的
 export const getImg = (data: AgentComponentTypeEnum) => {
   return imageList[data];
@@ -572,7 +573,7 @@ export const createBaseNode = (node: ChildNode): NodeMetadata => {
   const isLoopChild = node.loopNodeId;
   return {
     id: node.id.toString(),
-    shape: node.type === NodeTypeEnum.Loop ? LOOP_NODE : GENERAL_NODE,
+    shape: getShape(node.type),
     x: extension.x ?? getRandomPosition().x,
     y: extension.y ?? getRandomPosition().y,
     width: extension.width || 304,
@@ -592,7 +593,7 @@ export const createChildNode = (
   const { width, height } = getWidthAndHeight(child);
   return {
     id: child.id.toString(),
-    shape: GENERAL_NODE,
+    shape: getShape(child.type),
     x: ext.x,
     y: ext.y,
     width: width,
@@ -666,7 +667,7 @@ export const handleSpecialNodesNextIndex = (
   uuid: string,
   id: number,
   targetNode?: ChildNode,
-) => {
+): ChildNode => {
   let configs: ConditionBranchConfigs[] | IntentConfigs[] | QANodeOption[];
   switch (node.type) {
     case 'Condition': {
@@ -713,7 +714,7 @@ export const handleSpecialNodesNextIndex = (
       ...(node.type === 'Condition' && { conditionBranchConfigs: configs }),
       ...(node.type === 'IntentRecognition' && { intentConfigs: configs }),
       ...(node.type === 'QA' && { options: configs }),
-    },
+    } as NodeConfig,
   };
   return newNode;
 };

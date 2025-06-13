@@ -7,12 +7,7 @@ import TestRun from '@/components/TestRun';
 import VersionHistory from '@/components/VersionHistory';
 import Constant from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import {
-  DEFAULT_NODE_CONFIG,
-  GENERAL_NODE,
-  LOOP_NODE,
-  testRunList,
-} from '@/constants/node.constants';
+import { DEFAULT_NODE_CONFIG, testRunList } from '@/constants/node.constants';
 import useAutoSave from '@/hooks/useAutoSave';
 import useDisableSaveShortcut from '@/hooks/useDisableSaveShortcut';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
@@ -47,6 +42,7 @@ import { getPeerNodePosition } from '@/utils/graph';
 import { changeNodeConfig, updateNode } from '@/utils/updateNode';
 import {
   getEdges,
+  getShape,
   handleSpecialNodesNextIndex,
   QuicklyCreateEdgeConditionConfig,
   returnBackgroundColor,
@@ -527,7 +523,7 @@ const Workflow: React.FC = () => {
       newNodeId,
       targetNode,
     );
-    await changeNode(params as ChildNode);
+    await changeNode(params);
 
     const sourcePortId = portId.split('-').slice(0, -1).join('-');
     graphRef.current.createNewEdge(sourcePortId, newNodeId.toString(), isLoop);
@@ -567,7 +563,7 @@ const Workflow: React.FC = () => {
       newNode,
       targetNode,
     );
-    await changeNode(nodeData as ChildNode);
+    await changeNode(nodeData);
     graphRef.current.createNewEdge(
       sourcePortId,
       targetNode.id.toString(),
@@ -669,8 +665,7 @@ const Workflow: React.FC = () => {
     child: Partial<ChildNode>,
   ) => {
     // 设置节点基本属性
-    const shape =
-      nodeData.type === NodeTypeEnum.Loop ? LOOP_NODE : GENERAL_NODE;
+    const shape = getShape(nodeData.type);
     const newNodeData = {
       ...nodeData,
       shape,
@@ -840,7 +835,12 @@ const Workflow: React.FC = () => {
       _newNode.nodeConfig.extension.y = _newNode.nodeConfig.extension.y + +32;
       _newNode.key = 'general-Node';
       graphRef.current.addNode(_dragEvent, _newNode);
-      changeNode(_res.data);
+      const shape = getShape(_res.data.type);
+      const newNode = {
+        ..._res.data,
+        shape,
+      };
+      changeNode(newNode);
       // 选中新增的节点
       graphRef.current.selectNode(_res.data.id);
       // changeUpdateTime();
@@ -853,6 +853,7 @@ const Workflow: React.FC = () => {
     setFoldWrapItem({
       id: 0,
       description: '',
+      shape: NodeShapeEnum.General,
       workflowId: workflowId,
       type: NodeTypeEnum.Start,
       nodeConfig: {},
@@ -902,15 +903,26 @@ const Workflow: React.FC = () => {
           extension: {},
         },
       };
-    } else {
+    } else if (
+      val.targetType === AgentComponentTypeEnum.Workflow ||
+      val.targetType === AgentComponentTypeEnum.Plugin
+    ) {
+      const type =
+        val.targetType === AgentComponentTypeEnum.Workflow
+          ? NodeTypeEnum.Workflow
+          : NodeTypeEnum.Plugin;
       _child = {
         name: val.name,
         shape: NodeShapeEnum.General,
         description: val.description,
-        type: val.targetType as NodeTypeEnum, // TODO 这里有疑问
+        type,
         // typeId: val.targetId,
       };
+    } else {
+      message.warning('暂不支持该类型组件');
+      return;
     }
+
     addNode(_child, dragEvent);
     if (sessionStorage.getItem('tableType')) {
       sessionStorage.removeItem('tableType');
