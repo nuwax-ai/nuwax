@@ -2,15 +2,19 @@
 import CodeEditor from '@/components/CodeEditor';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { DataTypeEnum } from '@/types/enums/common';
+import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import { DefaultObjectType } from '@/types/interfaces/common';
-import { ChildNode } from '@/types/interfaces/graph';
-import { InputAndOutConfig, TestRunParams } from '@/types/interfaces/node';
+import { AnswerTypeEnum, ChildNode } from '@/types/interfaces/graph';
+import {
+  InputAndOutConfig,
+  NodeConfig,
+  TestRunParams,
+} from '@/types/interfaces/node';
 import { getAccept } from '@/utils';
 import { returnImg } from '@/utils/workflow';
 import { CaretRightOutlined, CloseOutlined } from '@ant-design/icons';
-import { Bubble, Prompts, Sender } from '@ant-design/x';
+import { Bubble, PromptProps, Prompts, Sender } from '@ant-design/x';
 import {
   Button,
   Collapse,
@@ -67,6 +71,58 @@ interface QaItems {
   description: string;
 }
 
+const StopWaitNode: React.FC<{
+  params?: TestRunParams;
+  items: QaItems[];
+  value?: string;
+  answerType?: AnswerTypeEnum;
+  onAnswer: (val: string) => void;
+  onChange: (v: string | number | bigint | undefined) => void;
+  onSubmit: () => void;
+}> = ({ params, items, value, answerType, onAnswer, onChange, onSubmit }) => {
+  const handleAnswer = (info: { data: PromptProps }) => {
+    onAnswer?.(info.data.description as string);
+  };
+  return (
+    <div className="stop-wait-style dis-col flex-1 overflow-y">
+      {/* 头部 */}
+      <div className="stop-wait-header dis-center">
+        {returnImg('QA')}
+        <div></div>
+        <span className="ml-10">问答</span>
+        <span className="ml-10">回复以下问题后继续试运行</span>
+      </div>
+      {/* 对话气泡 */}
+      <Bubble
+        className="flex-1"
+        avatar={
+          <img
+            src={require('@/assets/images/robot.png')}
+            className="bubble-avatar"
+          />
+        }
+        variant={answerType === 'SELECT' ? 'borderless' : 'filled'}
+        header={<span>机器人</span>}
+        content={
+          params?.options?.length ? (
+            <div className="qa-question-style">
+              <Prompts
+                title={params?.question}
+                items={items}
+                vertical
+                onItemClick={handleAnswer}
+              />
+            </div>
+          ) : (
+            <div className="qa-question-style">{params?.question}</div>
+          )
+        }
+      />
+
+      <Sender value={value} onChange={onChange} onSubmit={onSubmit} />
+    </div>
+  );
+};
 // mock的option数据
 // const mockOptions = [
 //   { label: '角色陪伴-苏瑶', value: 'su-yao', img: squareImage },
@@ -266,72 +322,105 @@ const TestRun: React.FC<TestRunProps> = ({
       </>
     );
   };
+  const renderInputArgs = ({
+    type,
+    name,
+    form,
+    config,
+    onFinish,
+  }: {
+    type: NodeTypeEnum;
+    name: string;
+    form: FormInstance;
+    config: NodeConfig;
+    onFinish: (values: DefaultObjectType) => void;
+  }) => {
+    const { inputArgs, body, headers, queries } = config;
+    return (
+      <Form
+        form={form}
+        layout={'vertical'}
+        onFinish={onFinish}
+        className="test-run-form"
+      >
+        <div className="dis-left">
+          {returnImg(type)}
+          <span style={{ marginLeft: '10px' }}>{name}</span>
+        </div>
+        {type !== 'HTTPRequest' &&
+          (inputArgs && inputArgs.length ? (
+            renderFormItem('inputArgs', inputArgs, form)
+          ) : (
+            <Empty description="本次试运行无需输入" />
+          ))}
+        {type === 'HTTPRequest' && (
+          <>
+            {body && body.length > 0 && renderFormItem('body', body, form)}
+            {headers &&
+              headers.length > 0 &&
+              renderFormItem('headers', headers, form)}
+            {queries &&
+              queries.length > 0 &&
+              renderFormItem('queries', queries, form)}
+            {!body?.length && !headers?.length && !queries?.length && (
+              <Empty description="本次试运行无需输入" />
+            )}
+          </>
+        )}
+      </Form>
+    );
+  };
+
+  const renderOutputArgs = ({
+    form,
+    value,
+    config,
+  }: {
+    form: FormInstance;
+    value: string;
+    config: NodeConfig;
+  }) => {
+    const { inputArgs } = config;
+    return (
+      <>
+        <p className="collapse-title-style dis-left">输入</p>
+        {inputArgs?.map((item) => (
+          <Input
+            key={item.name}
+            prefix={middleEllipsis(item.name + ':', 20)}
+            value={form.getFieldValue(item.name)}
+            disabled
+            className="mb-12 override-input-style"
+          />
+        ))}
+        <p className="collapse-title-style dis-left">输出</p>
+        <pre className="result-style overflow-y">{value}</pre>
+      </>
+    );
+  };
 
   const items = [
     {
       key: 'inputArgs',
       label: '试运行输入',
-      children: (
-        <>
-          <Form
-            form={form}
-            layout={'vertical'}
-            onFinish={onFinish}
-            className="test-run-form"
-          >
-            <div className="dis-left">
-              {returnImg(node.type)}
-              <span style={{ marginLeft: '10px' }}>{node.name}</span>
-            </div>
-            {node.type !== 'HTTPRequest' &&
-              (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length ? (
-                renderFormItem('inputArgs', node.nodeConfig.inputArgs, form)
-              ) : (
-                <Empty description="本次试运行无需输入" />
-              ))}
-            {node.type === 'HTTPRequest' && (
-              <>
-                {node.nodeConfig.body &&
-                  node.nodeConfig.body.length > 0 &&
-                  renderFormItem('body', node.nodeConfig.body, form)}
-                {node.nodeConfig.headers &&
-                  node.nodeConfig.headers.length > 0 &&
-                  renderFormItem('headers', node.nodeConfig.headers, form)}
-                {node.nodeConfig.queries &&
-                  node.nodeConfig.queries.length > 0 &&
-                  renderFormItem('queries', node.nodeConfig.queries, form)}
-                {!node.nodeConfig.body?.length &&
-                  !node.nodeConfig.headers?.length &&
-                  !node.nodeConfig.queries?.length && (
-                    <Empty description="本次试运行无需输入" />
-                  )}
-              </>
-            )}
-          </Form>
-        </>
-      ),
+      children: renderInputArgs({
+        form,
+        type: node.type,
+        name: node.name,
+        config: node.nodeConfig,
+        onFinish,
+      }),
     },
     ...(testRunResult
       ? [
           {
             key: 'outputArgs',
             label: '运行结果',
-            children: (
-              <>
-                <p className="collapse-title-style dis-left">输入</p>
-                {node.nodeConfig.inputArgs?.map((item) => (
-                  <Input
-                    key={item.name}
-                    prefix={middleEllipsis(item.name + ':', 20)}
-                    value={form.getFieldValue(item.name)}
-                    disabled
-                    className="mb-12 override-input-style"
-                  />
-                ))}
-                <p className="collapse-title-style dis-left">输出</p>
-                <pre className="result-style overflow-y">{testRunResult}</pre>
-              </>
-            ),
+            children: renderOutputArgs({
+              form,
+              config: node.nodeConfig,
+              value: testRunResult,
+            }),
           },
         ]
       : []),
@@ -413,60 +502,19 @@ const TestRun: React.FC<TestRunProps> = ({
           </>
         )}
         {stopWait && (
-          <div className="stop-wait-style dis-col flex-1 overflow-y">
-            {/* 头部 */}
-            <div className="stop-wait-header dis-center">
-              {returnImg('QA')}
-              <div></div>
-              <span className="ml-10">问答</span>
-              <span className="ml-10">回复以下问题后继续试运行</span>
-            </div>
-            {/* 对话气泡 */}
-            <Bubble
-              className="flex-1"
-              avatar={
-                <img
-                  src={require('@/assets/images/robot.png')}
-                  className="bubble-avatar"
-                />
-              }
-              variant={
-                node.nodeConfig.answerType === 'SELECT'
-                  ? 'borderless'
-                  : 'filled'
-              }
-              header={<span>机器人</span>}
-              content={
-                testRunParams?.options?.length ? (
-                  <div className="qa-question-style">
-                    <Prompts
-                      title={testRunParams?.question}
-                      items={qaItems}
-                      vertical
-                      onItemClick={(info) => {
-                        answer(info.data.description as string);
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <div className="qa-question-style">
-                    {testRunParams?.question}
-                  </div>
-                )
-              }
-            />
-
-            <Sender
-              value={value}
-              onChange={(v) => {
-                setValue(v);
-              }}
-              onSubmit={() => {
-                answer(value);
-                setValue('');
-              }}
-            />
-          </div>
+          <StopWaitNode
+            params={testRunParams}
+            items={qaItems}
+            answerType={node.nodeConfig.answerType}
+            onAnswer={answer}
+            onChange={(v) => {
+              setValue(v as string);
+            }}
+            onSubmit={() => {
+              answer(value);
+              setValue('');
+            }}
+          />
         )}
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { BindConfigWithSub } from '@/types/interfaces/agent';
 import { CreatedNodeItem } from '@/types/interfaces/common';
-import { ChildNode } from '@/types/interfaces/graph';
+import { AnswerTypeEnum, ChildNode } from '@/types/interfaces/graph';
 export interface InputAndOutConfig {
   // 参数名称
   name: string;
@@ -145,7 +145,7 @@ export interface NodeConfig {
 
   // 问答节点
   question?: string;
-  answerType?: string;
+  answerType?: AnswerTypeEnum;
   extractField?: boolean;
   maxReplyCount?: number;
   options?: QANodeOption[];

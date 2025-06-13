@@ -182,7 +182,7 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
               styles.header,
             )}
           >
-            <h3>试运行</h3>
+            <h3>试运行2</h3>
             <CloseOutlined
               className={cx('cursor-pointer')}
               onClick={handleCancel}
