@@ -13,7 +13,7 @@ import { Bubble, PromptProps, Prompts, Sender } from '@ant-design/x';
 import { Button, Collapse, Empty, Form, FormInstance, Input } from 'antd';
 import { useEffect, useState } from 'react';
 import { useModel } from 'umi';
-import FormItemRender from './FormItemRender';
+import FormItemsRender from './FormItemsRender';
 import './index.less';
 // import { stringify } from 'uuid';
 
@@ -122,13 +122,13 @@ const HttpArgs: React.FC<{
   return (
     <>
       {body && body.length > 0 && (
-        <FormItemRender items={body} loading={loading} options={options} />
+        <FormItemsRender items={body} loading={loading} options={options} />
       )}
       {headers && headers.length > 0 && (
-        <FormItemRender items={headers} loading={loading} options={options} />
+        <FormItemsRender items={headers} loading={loading} options={options} />
       )}
       {queries && queries.length > 0 && (
-        <FormItemRender items={queries} loading={loading} options={options} />
+        <FormItemsRender items={queries} loading={loading} options={options} />
       )}
       {!body?.length && !headers?.length && !queries?.length && (
         <Empty description="本次试运行无需输入" />
@@ -139,47 +139,32 @@ const HttpArgs: React.FC<{
 
 const renderInputArgs = ({
   type,
-  name,
-  form,
   config,
-  onFinish,
   loading,
-  referenceList,
+  options,
 }: {
   type: NodeTypeEnum;
-  name: string;
-  form: FormInstance;
   config: NodeConfig;
-  onFinish: (values: DefaultObjectType) => void;
   loading: boolean;
-  referenceList: NodePreviousAndArgMap;
+  options: NodePreviousAndArgMap;
 }) => {
   const { inputArgs } = config;
   return (
-    <Form
-      form={form}
-      layout={'vertical'}
-      onFinish={onFinish}
-      className="test-run-form"
-    >
-      <div className="dis-left">
-        {returnImg(type)}
-        <span style={{ marginLeft: '10px' }}>{name}</span>
-      </div>
+    <>
       {type !== NodeTypeEnum.HTTPRequest &&
         (inputArgs && inputArgs.length ? (
-          <FormItemRender
+          <FormItemsRender
             items={inputArgs}
             loading={loading}
-            options={referenceList}
+            options={options}
           />
         ) : (
           <Empty description="本次试运行无需输入" />
         ))}
       {type === NodeTypeEnum.HTTPRequest && (
-        <HttpArgs config={config} loading={loading} options={referenceList} />
+        <HttpArgs config={config} loading={loading} options={options} />
       )}
-    </Form>
+    </>
   );
 };
 
@@ -193,6 +178,7 @@ const renderOutputArgs = ({
   config: NodeConfig;
 }) => {
   const { inputArgs } = config;
+
   return (
     <>
       <p className="collapse-title-style dis-left">输入</p>
@@ -253,7 +239,7 @@ const TestRun: React.FC<TestRunProps> = ({
             }
           }
         }
-      } else if (node.type === 'HTTPRequest') {
+      } else if (node.type === NodeTypeEnum.HTTPRequest) {
         // 将body，queries，headers合并到一个对象中
         const newList = [
           ...(node.nodeConfig.body || []),
@@ -283,27 +269,35 @@ const TestRun: React.FC<TestRunProps> = ({
       run(node.type);
     }
   };
-
-  // const handlerSubmit = () => {
-  //   let value = form.getFieldsValue();
-
-  // };
-
   // 根据type返回不同的输入项
-
+  const handleValuesChange = (changedFields: any, allFields: any) => {
+    console.log('changedFields', changedFields);
+    console.log('allFields', allFields);
+  };
   const items = [
     {
       key: 'inputArgs',
       label: '试运行输入',
-      children: renderInputArgs({
-        form,
-        type: node.type,
-        name: node.name,
-        config: node.nodeConfig,
-        onFinish,
-        loading,
-        referenceList,
-      }),
+      children: (
+        <Form
+          form={form}
+          layout={'vertical'}
+          onFinish={onFinish}
+          onValuesChange={handleValuesChange}
+          className="test-run-form"
+        >
+          <div className="dis-left">
+            {returnImg(node.type)}
+            <span style={{ marginLeft: '10px' }}>{node.name}</span>
+          </div>
+          {renderInputArgs({
+            loading,
+            type: node.type,
+            config: node.nodeConfig,
+            options: referenceList,
+          })}
+        </Form>
+      ),
     },
     ...(testRunResult
       ? [
@@ -328,7 +322,7 @@ const TestRun: React.FC<TestRunProps> = ({
 
   // 每次点开前应该要清除遗留数据
   useEffect(() => {
-    form.resetFields();
+    // form.resetFields();
     if (stopWait) {
       const newItem = (testRunParams?.options || []).map((item) => ({
         key: item.uuid,
@@ -346,6 +340,7 @@ const TestRun: React.FC<TestRunProps> = ({
           _obj[item] = JSON.stringify(_obj[item]);
         }
       }
+      console.log('formItemValue', _obj);
       form.setFieldsValue(_obj);
     }
   }, [formItemValue]);

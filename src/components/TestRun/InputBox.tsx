@@ -13,7 +13,7 @@ interface InputBoxProps {
   loading?: boolean;
 }
 
-const InputBox: React.FC<InputBoxProps> = ({ item, loading }) => {
+const InputBox: React.FC<InputBoxProps> = ({ item, loading, ...restProps }) => {
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
   const { message } = App.useApp();
   const form = Form.useFormInstance();
@@ -34,6 +34,7 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading }) => {
     case item.dataType?.includes('File'):
       return (
         <Upload
+          {...restProps}
           action={UPLOAD_FILE_ACTION}
           onChange={handleChange}
           headers={{
@@ -57,12 +58,13 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading }) => {
         />
       );
     case item.dataType === 'Number':
-      return <InputNumber disabled={loading} />;
+      return <InputNumber {...restProps} disabled={loading} />;
     case item.dataType === 'Integer':
-      return <InputNumber precision={0} disabled={loading} />;
+      return <InputNumber {...restProps} precision={0} disabled={loading} />;
     case item.dataType === 'Boolean':
       return (
         <Radio.Group
+          {...restProps}
           disabled={loading}
           options={[
             { label: 'true', value: 'true' },
@@ -71,9 +73,9 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading }) => {
         />
       );
     case item.dataType === 'String':
-      return <Input />;
+      return <Input {...restProps} />;
     default:
-      return <Input disabled={loading} />;
+      return <Input {...restProps} disabled={loading} />;
   }
 };
 

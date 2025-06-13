@@ -12,7 +12,7 @@ interface FormItemRenderProps {
   options?: NodePreviousAndArgMap;
 }
 
-const FormItemRender: React.FC<FormItemRenderProps> = ({
+const FormItemsRender: React.FC<FormItemRenderProps> = ({
   items,
   loading,
   options,
@@ -28,7 +28,7 @@ const FormItemRender: React.FC<FormItemRenderProps> = ({
           }
         }
         return (
-          <div key={item.key || index}>
+          <div key={item.key || `${item.name}-${index}`}>
             <Form.Item
               name={[item.name]}
               label={
@@ -59,4 +59,4 @@ const FormItemRender: React.FC<FormItemRenderProps> = ({
   );
 };
 
-export default FormItemRender;
+export default FormItemsRender;
