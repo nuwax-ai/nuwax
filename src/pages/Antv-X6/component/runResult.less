@@ -1,5 +1,5 @@
 // 运行结果组件样式
-.run-result-container {
+.runResultContainer {
   width: 100%;
   min-width: 220px;
   border: 1px solid #f0f0f0;
@@ -11,21 +11,21 @@
 }
 
 // 头部样式
-.run-result-header {
+.runResultHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 8px 10px;
-  border-bottom: 1px solid #f0f0f0;
-  background-color: #fafafa;
+  // border-bottom: 1px solid #f0f0f0;
+  // background-color: #fafafa;
 }
 
-.run-result-status {
+.runResultStatus {
   display: flex;
   align-items: center;
 }
 
-.status-icon {
+.statusIcon {
   font-size: 20px;
   margin-right: 8px;
 
@@ -38,22 +38,21 @@
   }
 }
 
-.status-text {
-  font-size: 13px;
+.statusText {
+  font-size: 14px;
   font-weight: 500;
-  margin-right: 8px;
 }
 
-.run-time {
+.runTime {
   font-size: 12px;
-  color: #8c8c8c;
-  background: #f0f0f0;
+  color: rgb(0, 178, 60);
+  background: rgba(105, 209, 140, 30%);
   padding: 1px 6px;
-  border-radius: 12px;
-  margin-left: 4px;
+  border-radius: 6px;
+  margin-left: 6px;
 }
 
-.collapse-icon {
+.collapseIcon {
   cursor: pointer;
   font-size: 14px;
   color: #8c8c8c;
@@ -70,60 +69,90 @@
 }
 
 // 内容样式
-.run-result-body {
-  padding: 10px;
+.runResultBody {
+  padding: 0 6px 6px;
 }
 
 // 总数和分页
-.run-result-info {
+.runResultInfo {
+  width: 100%;
   display: flex;
   align-items: center;
   margin-bottom: 10px;
 }
 
-.total-count {
+.totalCount {
   font-size: 12px;
   margin-right: 8px;
+  flex: 1;
 }
 
-.run-result-pagination {
+.runResultPagination {
+  width: 100%;
   display: flex;
   align-items: center;
 }
 
-.run-result-page-item {
+.runResultPaginationPages {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.runResultPageItem {
   width: 22px;
   height: 22px;
   font-size: 12px;
-  margin: 0 2px;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background-color: #f0f0f0;
+  }
+
+  &.active {
+    background-color: #f0f0f0;
+  }
 }
 
-.run-result-page-select {
-  width: 48px;
-  margin-left: 4px;
+.runResultPageSelect {
+  width: 60px;
+  margin-left: 12px;
 }
 
-.select-arrow {
+.selectArrow {
   font-size: 12px;
   color: #8c8c8c;
 }
 
-.only-error-checkbox {
+.onlyErrorCheckbox {
   margin-left: auto;
 
-  .ant-checkbox-wrapper {
-    font-size: 12px;
+  :global {
+    .ant-checkbox-inner {
+      width: 14px;
+      height: 14px;
+    }
+
+    .ant-checkbox-label {
+      font-size: 12px;
+    }
   }
 }
 
 // 批处理变量
-.run-result-batch {
+.runResultBatch {
   margin-bottom: 10px;
   border: 1px solid #f0f0f0;
   border-radius: 4px;
 }
 
-.run-result-batch-header {
+.runResultBatchHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -133,20 +162,20 @@
   font-weight: 500;
 }
 
-.run-result-batch-content {
+.runResultBatchContent {
   padding: 6px 8px;
   background-color: #fff;
 }
 
 // 输入输出部分
-.run-result-section {
-  margin-bottom: 10px;
+.runResultSection {
+  margin-top: 12px;
   border: 1px solid #f0f0f0;
   border-radius: 4px;
   overflow: hidden;
 }
 
-.run-result-section-header {
+.runResultSectionHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -156,7 +185,7 @@
   font-weight: 500;
 }
 
-.copy-icon {
+.copyIcon {
   cursor: pointer;
   color: #8c8c8c;
 
@@ -165,12 +194,12 @@
   }
 }
 
-.run-result-section-content {
+.runResultSectionContent {
   padding: 6px 8px;
   background-color: #fff;
 }
 
-.key-value-item {
+.keyValueItem {
   display: flex;
   margin-bottom: 4px;
   font-size: 12px;

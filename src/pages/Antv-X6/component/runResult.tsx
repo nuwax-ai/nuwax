@@ -1,7 +1,14 @@
-import { CheckCircleFilled, CopyOutlined } from '@ant-design/icons';
+import {
+  CheckCircleFilled,
+  CopyOutlined,
+  DownOutlined,
+  UpOutlined,
+} from '@ant-design/icons';
 import { Checkbox, Select, Tooltip } from 'antd';
+import classNames from 'classnames';
 import React, { useState } from 'react';
-import './runResult.less';
+import styles from './runResult.less';
+const cx = classNames.bind(styles);
 
 interface RunResultProps {
   /**
@@ -107,19 +114,19 @@ const RunResult: React.FC<RunResultProps> = ({
 
     for (let i = startPage; i <= endPage; i++) {
       pages.push(
-        <div
+        <span
           key={i}
-          className={`run-result-page-item ${current === i ? 'active' : ''}`}
+          className={cx(styles.runResultPageItem, { active: current === i })}
           onClick={() => handlePageChange(i)}
         >
           {i}
-        </div>,
+        </span>,
       );
     }
 
     return (
-      <div className="run-result-pagination">
-        {pages}
+      <div className={cx(styles.runResultPagination)}>
+        <div className={cx(styles.runResultPaginationPages)}>{pages}</div>
         <Select
           value={current}
           onChange={handlePageChange}
@@ -127,8 +134,8 @@ const RunResult: React.FC<RunResultProps> = ({
             value: i + 1,
             label: i + 1,
           }))}
-          className="run-result-page-select"
-          suffixIcon={<div className="select-arrow">▼</div>}
+          size="small"
+          className={cx(styles.runResultPageSelect)}
         />
       </div>
     );
@@ -137,23 +144,25 @@ const RunResult: React.FC<RunResultProps> = ({
   // 渲染键值对
   const renderKeyValue = (obj: Record<string, any>, title: string) => {
     return (
-      <div className="run-result-section">
-        <div className="run-result-section-header">
+      <div className={cx(styles.runResultSection)}>
+        <div className={cx(styles.runResultSectionHeader)}>
           <span>{title}</span>
           <Tooltip title="复制">
             <CopyOutlined
-              className="copy-icon"
+              className={cx(styles.copyIcon)}
               onClick={() => {
                 navigator.clipboard.writeText(JSON.stringify(obj, null, 2));
               }}
             />
           </Tooltip>
         </div>
-        <div className="run-result-section-content">
+        <div className={cx(styles.runResultSectionContent)}>
           {Object.entries(obj).map(([key, value]) => (
-            <div key={key} className="key-value-item">
-              <span className="key">{key} :</span>
-              <span className="value">&quot;{String(value)}&quot;</span>
+            <div key={key} className={cx(styles.keyValueItem)}>
+              <span className={cx(styles.key)}>{key} :</span>
+              <span className={cx(styles.value)}>
+                &quot;{String(value)}&quot;
+              </span>
             </div>
           ))}
         </div>
@@ -162,50 +171,51 @@ const RunResult: React.FC<RunResultProps> = ({
   };
 
   return (
-    <div className="run-result-container">
-      <div className="run-result-header">
-        <div className="run-result-status">
+    <div className={cx(styles.runResultContainer)}>
+      <div className={cx(styles.runResultHeader)}>
+        <div className={cx(styles.runResultStatus)}>
           <CheckCircleFilled
-            className={`status-icon ${success ? 'success' : 'error'}`}
+            className={cx(
+              styles.statusIcon,
+              success ? styles.success : styles.error,
+            )}
           />
-          <span className="status-text">
+          <span className={cx(styles.statusText)}>
             {success ? '运行成功' : '运行失败'}
           </span>
-          <span className="run-time">{time}</span>
+          <span className={cx(styles.runTime)}>{time}</span>
         </div>
         {collapsible && (
-          <div className="collapse-icon" onClick={handleToggleCollapse}>
-            {collapsed ? '▼' : '▲'}
+          <div
+            className={cx(styles.collapseIcon)}
+            onClick={handleToggleCollapse}
+          >
+            {collapsed ? <DownOutlined /> : <UpOutlined />}
           </div>
         )}
       </div>
 
       {!collapsed && (
-        <div className="run-result-body">
-          <div className="run-result-info">
-            <div className="total-count">总数: {total}</div>
+        <div className={cx(styles.runResultBody)}>
+          <div className={cx(styles.runResultInfo)}>
+            <div className={cx(styles.totalCount)}>总数: {total}</div>
             {total > 1 && (
-              <>
-                {renderPagination()}
-                <div className="only-error-checkbox">
-                  <Checkbox
-                    checked={onlyError}
-                    onChange={handleOnlyErrorChange}
-                  >
-                    只看错误
-                  </Checkbox>
-                </div>
-              </>
+              <div className={cx(styles.onlyErrorCheckbox)}>
+                <Checkbox checked={onlyError} onChange={handleOnlyErrorChange}>
+                  只看错误
+                </Checkbox>
+              </div>
             )}
           </div>
+          {(total > 1 && renderPagination()) || null}
 
           {Object.keys(batchVariables).length > 0 && (
-            <div className="run-result-batch">
-              <div className="run-result-batch-header">
+            <div className={cx(styles.runResultBatch)}>
+              <div className={cx(styles.runResultBatchHeader)}>
                 <span>本次批处理变量</span>
                 <Tooltip title="复制">
                   <CopyOutlined
-                    className="copy-icon"
+                    className={cx(styles.copyIcon)}
                     onClick={() => {
                       navigator.clipboard.writeText(
                         JSON.stringify(batchVariables, null, 2),
@@ -214,11 +224,13 @@ const RunResult: React.FC<RunResultProps> = ({
                   />
                 </Tooltip>
               </div>
-              <div className="run-result-batch-content">
+              <div className={cx(styles.runResultBatchContent)}>
                 {Object.entries(batchVariables).map(([key, value]) => (
-                  <div key={key} className="key-value-item">
-                    <span className="key">{key} :</span>
-                    <span className="value">&quot;{String(value)}&quot;</span>
+                  <div key={key} className={cx(styles.keyValueItem)}>
+                    <span className={cx(styles.key)}>{key} :</span>
+                    <span className={cx(styles.value)}>
+                      &quot;{String(value)}&quot;
+                    </span>
                   </div>
                 ))}
               </div>
