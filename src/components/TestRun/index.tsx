@@ -1,7 +1,7 @@
 // import squareImage from '@/assets/images/square_bg.png';
-import { NodeTypeEnum } from '@/types/enums/common';
+import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { DefaultObjectType } from '@/types/interfaces/common';
-import { AnswerTypeEnum, ChildNode } from '@/types/interfaces/graph';
+import { ChildNode } from '@/types/interfaces/graph';
 import {
   NodeConfig,
   NodePreviousAndArgMap,

@@ -1,4 +1,8 @@
-import { AnswerTypeEnum, CompareTypeEnum } from '@/types/interfaces/graph';
+import {
+  AnswerTypeEnum,
+  CompareTypeEnum,
+  NodeShapeEnum,
+} from '@/types/enums/common';
 
 // 有试运行的节点
 export const testRunList = [
@@ -23,8 +27,8 @@ export const branchTypeMap = {
   ELSE_IF: '否则如果',
   ELSE: '否则',
 };
-export const GENERAL_NODE = 'general-Node';
-export const LOOP_NODE = 'loop-node';
+export const GENERAL_NODE = NodeShapeEnum.General;
+export const LOOP_NODE = NodeShapeEnum.Loop;
 
 export const compareTypeMap = {
   [CompareTypeEnum.EQUAL]: '=',

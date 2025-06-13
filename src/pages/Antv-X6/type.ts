@@ -1,6 +1,6 @@
 // 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
 import { FieldConfig } from '@/components/FormListItem/type';
-import type { NodeKeyEnum } from '@/types/interfaces/graph';
+import { ChildNode } from '@/types/interfaces/graph';
 import type {
   GroupModelItem,
   ModelListItemProps,
@@ -22,31 +22,6 @@ export interface KeyValuePairs {
 }
 
 /**
- * 定义 Child 接口，用于描述子节点的数据结构。
- */
-export interface Child {
-  // 子节点标题
-  name: string;
-  // 子节点显示的图像路径
-  icon?: string | React.ReactNode; // 直接使用 SVGProps
-  bgIcon?: string; // 用作背景图片
-  // 唯一标识符
-  type: string;
-  // 子节点的类型，可能用于区分不同种类的节点
-  key: NodeKeyEnum;
-  // 描述
-  description: string;
-  // 节点的id
-  id?: number;
-  // 如果涉及工作流、插件、数据库、知识库需要typeId
-  typeId?: number;
-  // 如果涉及循环，需要提供循环的节点id
-  loopNodeId?: number;
-  //
-  nodeConfig?: NodeConfig;
-}
-
-/**
  * 定义 StencilList 接口，用于描述模板列表的数据结构。
  */
 export interface StencilList {
@@ -55,7 +30,9 @@ export interface StencilList {
   // 模板列表的唯一标识符
   key: string;
   // 模板列表中的子节点集合，遵循 Child 接口定义
-  children: Child[];
+  children: (Partial<ChildNode> & {
+    bgIcon: string;
+  })[];
 }
 
 /**

@@ -1,6 +1,6 @@
 import type { AgentComponentTypeEnum } from '@/types/enums/agent';
-import type { CreateUpdateModeEnum } from '@/types/enums/common';
-import { DataTypeEnum } from '@/types/enums/common';
+import type { CreateUpdateModeEnum, NodeShapeEnum } from '@/types/enums/common';
+import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type {
@@ -293,7 +293,8 @@ export interface CreatedNodeItem {
   // 发布人员信息
   publishUser?: CreatorInfo;
   collect?: boolean;
-  type: AgentComponentTypeEnum;
+  type: NodeTypeEnum;
+  shape?: NodeShapeEnum;
   typeId?: string | number;
   inputArgBindConfigs?: InputAndOutConfig[];
   outputArgBindConfigs?: InputAndOutConfig[];

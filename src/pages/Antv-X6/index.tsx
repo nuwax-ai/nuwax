@@ -16,6 +16,7 @@ import {
 import useAutoSave from '@/hooks/useAutoSave';
 import useDisableSaveShortcut from '@/hooks/useDisableSaveShortcut';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
+import type { AddNodeResponse } from '@/services/workflow';
 import service, {
   IgetDetails,
   ITestRun,
@@ -29,10 +30,11 @@ import {
   CreateUpdateModeEnum,
   HttpContentTypeEnum,
   HttpMethodEnum,
+  NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
-import { ChildNode, Edge } from '@/types/interfaces/graph';
+import { Child, ChildNode, Edge } from '@/types/interfaces/graph';
 import {
   NodeConfig,
   NodeDrawerRef,
@@ -60,7 +62,6 @@ import GraphContainer from './graphContainer';
 import Header from './header';
 import './index.less';
 import { renderNodeContent } from './nodeDrawer';
-import { Child } from './type';
 
 const Workflow: React.FC = () => {
   const { message } = App.useApp();
@@ -71,6 +72,7 @@ const Workflow: React.FC = () => {
   // 当前被选中的节点
   const [foldWrapItem, setFoldWrapItem] = useState<ChildNode>({
     type: NodeTypeEnum.Start,
+    shape: NodeShapeEnum.General,
     nodeConfig: {
       inputArgs: [], // 输入参数
     },
@@ -449,7 +451,7 @@ const Workflow: React.FC = () => {
       setTestRunResult('');
     }
 
-    setFoldWrapItem((prev) => {
+    setFoldWrapItem((prev: ChildNode) => {
       setTestRun(false);
       if (prev.id === 0 && child === null) {
         setVisible(false);
@@ -462,6 +464,7 @@ const Workflow: React.FC = () => {
         setVisible(false);
         return {
           id: 0,
+          shape: NodeShapeEnum.General,
           description: '',
           workflowId: workflowId,
           type: NodeTypeEnum.Start,
@@ -662,26 +665,33 @@ const Workflow: React.FC = () => {
    * @param child 原始子节点配置
    */
   const handleNodeCreationSuccess = async (
-    nodeData: ChildNode,
-    child: Child,
+    nodeData: AddNodeResponse,
+    child: Partial<ChildNode>,
   ) => {
     // 设置节点基本属性
-    nodeData.key =
+    const shape =
       nodeData.type === NodeTypeEnum.Loop ? LOOP_NODE : GENERAL_NODE;
-    const extension = nodeData.nodeConfig.extension;
+    const newNodeData = {
+      ...nodeData,
+      shape,
+    };
+    const extension = nodeData.nodeConfig?.extension || {};
 
     // 添加节点到图形中
-    graphRef.current.addNode(extension, nodeData);
+    graphRef.current.addNode(extension, newNodeData);
 
     // 处理知识库节点特殊配置
-    if (child.type === 'Knowledge' && child.nodeConfig?.knowledgeBaseConfigs) {
+    if (
+      child.type === NodeTypeEnum.Knowledge &&
+      child.nodeConfig?.knowledgeBaseConfigs
+    ) {
       await handleKnowledgeNodeConfig(
-        nodeData,
+        newNodeData,
         child.nodeConfig.knowledgeBaseConfigs,
       );
     }
     // 更新抽屉和选中状态
-    await changeDrawer(nodeData);
+    await changeDrawer(newNodeData);
     graphRef.current.selectNode(nodeData.id);
     changeUpdateTime();
 
@@ -706,13 +716,18 @@ const Workflow: React.FC = () => {
           await handleOutputPortConnection(nodeData.id, sourceNode, isLoop);
         } else {
           // 处理输入端口连接
-          await handleInputPortConnection(nodeData, sourceNode, portId, isLoop);
+          await handleInputPortConnection(
+            newNodeData,
+            sourceNode,
+            portId,
+            isLoop,
+          );
         }
 
         // 处理目标节点连接
         if (targetNode) {
           await handleTargetNodeConnection(
-            nodeData,
+            newNodeData,
             targetNode,
             sourceNode,
             edgeId!,
@@ -733,7 +748,7 @@ const Workflow: React.FC = () => {
 
   // 新增节点
   const addNode = async (
-    child: Child,
+    child: Partial<ChildNode>,
     dragEvent: { x: number; y: number; height?: number },
   ) => {
     let _params = JSON.parse(JSON.stringify(child));
@@ -864,24 +879,24 @@ const Workflow: React.FC = () => {
   // 添加工作流，插件，知识库，数据库
   const onAdded = (val: CreatedNodeItem, parentFC?: string) => {
     if (parentFC && parentFC !== 'workflow') return;
-    let _child: Child;
+    let _child: Partial<ChildNode>;
     if (
       val.targetType === AgentComponentTypeEnum.Knowledge ||
       val.targetType === AgentComponentTypeEnum.Table
     ) {
       const knowledgeBaseConfigs = [
-        { ...val, type: val.targetType, knowledgeBaseId: val.targetId },
+        { ...val, type: NodeTypeEnum.Knowledge, knowledgeBaseId: val.targetId },
       ];
       const tableType = sessionStorage.getItem('tableType');
       _child = {
         name: val.name,
-        key: GENERAL_NODE,
+        shape: NodeShapeEnum.General,
         description: val.description,
         type:
           val.targetType === AgentComponentTypeEnum.Knowledge
-            ? val.targetType
-            : tableType || 'TableDataQuery',
-        typeId: val.targetId,
+            ? NodeTypeEnum.Knowledge
+            : ((tableType || NodeTypeEnum.TableDataQuery) as NodeTypeEnum),
+        // typeId: val.targetId,
         nodeConfig: {
           knowledgeBaseConfigs: knowledgeBaseConfigs,
           extension: {},
@@ -890,10 +905,10 @@ const Workflow: React.FC = () => {
     } else {
       _child = {
         name: val.name,
-        key: GENERAL_NODE,
+        shape: NodeShapeEnum.General,
         description: val.description,
-        type: val.targetType,
-        typeId: val.targetId,
+        type: val.targetType as NodeTypeEnum, // TODO 这里有疑问
+        // typeId: val.targetId,
       };
     }
     addNode(_child, dragEvent);
@@ -905,7 +920,7 @@ const Workflow: React.FC = () => {
   };
   // 拖拽组件到画布中
   const dragChild = async (
-    child: Child,
+    child: ChildNode,
     position?: React.DragEvent<HTMLDivElement> | { x: number; y: number },
     continueDragCount?: number,
   ) => {
@@ -951,7 +966,11 @@ const Workflow: React.FC = () => {
       'TableSQL',
     ].includes(child.type);
     if (isSpecialType) {
-      setCreatedItem(child.type as AgentComponentTypeEnum);
+      setCreatedItem(
+        child.type === NodeTypeEnum.Workflow
+          ? AgentComponentTypeEnum.Workflow
+          : AgentComponentTypeEnum.Plugin,
+      );
       setOpen(true);
       setDragEvent(getCoordinates(position));
     } else if (isTableNode) {
@@ -1109,8 +1128,11 @@ const Workflow: React.FC = () => {
       body: params,
       onMessage: (data) => {
         if (data.data && data.data.nodeId) {
-          const _nodeId = data.data.nodeId;
-          graphRef.current.selectNode(_nodeId);
+          // const _nodeId = data.data.nodeId;
+          // graphRef.current.selectNode(_nodeId);
+          // TODO
+          // 1.运行到当前节点时 给聚焦样式 与 选择当前节点 两种逻辑 这里x6要支持聚焦focus
+          // 2.并显示运行状态
         }
         if (!data.success) {
           setErrorParams((prev: ErrorParams) => {
@@ -1177,8 +1199,8 @@ const Workflow: React.FC = () => {
 
   // 试运行所有节点
   const testRunAll = async () => {
-    const volid = await validWorkflow();
-    if (volid) {
+    const result = await validWorkflow();
+    if (result) {
       setTestRunResult('');
       setTestRun(true);
     }
@@ -1190,6 +1212,7 @@ const Workflow: React.FC = () => {
       show: false,
     });
     setTestRunResult('');
+
     if (type === 'Start') {
       let _params: ITestRun;
       let testRun = localStorage.getItem('testRun') || null;
@@ -1242,8 +1265,8 @@ const Workflow: React.FC = () => {
           await onSaveWorkflow();
           setIsModified(false);
         }
-        if (foldWrapItemRef.current.type === 'Start') {
-          testRunAll();
+        if (foldWrapItemRef.current.type === NodeTypeEnum.Start) {
+          await testRunAll();
         } else {
           setTestRunResult('');
           setTestRun(true);

@@ -1,29 +1,8 @@
-import { NodeTypeEnum } from '@/types/enums/common';
+import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { NodeConfig } from '@/types/interfaces/node';
 import { Graph, Node } from '@antv/x6';
 import type { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI as ModalHookAPI } from 'antd/es/modal/useModal';
-
-export type NodeKeyEnum = 'general-Node' | 'loop-node';
-
-export enum CompareTypeEnum {
-  EQUAL = 'EQUAL',
-  NOT_EQUAL = 'NOT_EQUAL',
-  GREATER_THAN = 'GREATER_THAN',
-  GREATER_THAN_OR_EQUAL = 'GREATER_THAN_OR_EQUAL',
-  LESS_THAN = 'LESS_THAN',
-  LESS_THAN_OR_EQUAL = 'LESS_THAN_OR_EQUAL',
-  CONTAINS = 'CONTAINS',
-  NOT_CONTAINS = 'NOT_CONTAINS',
-  MATCH_REGEX = 'MATCH_REGEX',
-  IS_NULL = 'IS_NULL',
-  NOT_NULL = 'NOT_NULL',
-}
-
-export enum AnswerTypeEnum {
-  TEXT = 'TEXT',
-  SELECT = 'SELECT',
-}
 
 /**
  * 定义 Child 接口，用于描述子节点的数据结构。
@@ -36,7 +15,8 @@ export interface Child {
   // 唯一标识符
   type: string;
   // 子节点的类型，可能用于区分不同种类的节点
-  key: NodeKeyEnum;
+  key: NodeTypeEnum;
+  // 子节点的形状
   // 描述
   description: string;
   // 节点的id
@@ -64,8 +44,8 @@ export interface ChildNode {
   unreachableNextNodeIds?: number[] | null;
   modified?: string;
   created?: string;
-  key?: string;
-  icon: string;
+  shape: NodeShapeEnum;
+  icon: string | React.ReactNode;
   loopNodeId?: number;
   isEditingName?: boolean; // 是否正在编辑名称
 }

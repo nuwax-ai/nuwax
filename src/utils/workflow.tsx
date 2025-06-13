@@ -43,13 +43,15 @@ import {
   default as Workflow,
 } from '@/assets/images/workflow_image.png';
 import PlusIcon from '@/assets/svg/plus_icon.svg';
+import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
 import {
   ConditionBranchConfigs,
   IntentConfigs,
+  NodeConfig,
   QANodeOption,
 } from '@/types/interfaces/node';
 import { adjustParentSize } from '@/utils/graph';
-import { Graph, Node } from '@antv/x6';
+import { Graph, Markup, Node } from '@antv/x6';
 const imageList = {
   Table,
   Knowledge,
@@ -62,9 +64,30 @@ const imageList = {
   [key in AgentComponentTypeEnum]: string;
 };
 
-export enum NodeShapeEnum {
-  General = GENERAL_NODE,
-  Loop = LOOP_NODE,
+interface PortMetadata {
+  markup?: Markup; // 连接桩 DOM 结构定义。
+  attrs?: any; // 属性和样式。
+  zIndex?: number | 'auto'; // 连接桩的 DOM 层级，值越大层级越高。
+  // 群组中连接桩的布局。
+  position?: [number, number] | string | { name: string; args?: object };
+  label?: {
+    // 连接桩标签
+    markup?: Markup;
+    position?: {
+      // 连接桩标签布局
+      name: string; // 布局名称
+      args?: object; // 布局参数
+    };
+  };
+}
+
+interface NodeMetadata extends Node.Metadata {
+  shape: NodeShapeEnum;
+  data: ChildNode & {
+    nodeConfig: NodeConfig;
+    parentId: string | null;
+  };
+  ports: PortMetadata[];
 }
 
 // 根据type返回图片，用作技能和知识库等节点中的
@@ -322,7 +345,7 @@ export const getHeight = (
 };
 
 // 获取节点端口
-export const generatePorts = (data: ChildNode) => {
+export const generatePorts = (data: ChildNode): PortMetadata[] => {
   const basePortSize = 3;
   const isLoopNode = data.type === 'Loop'; // 判断是否为 Loop 节点
   // 默认端口配置
@@ -544,29 +567,32 @@ function getRandomPosition(maxWidth = 800, maxHeight = 600) {
 }
 
 // 生成主节点
-export const createBaseNode = (node: ChildNode) => {
+export const createBaseNode = (node: ChildNode): NodeMetadata => {
   const extension = node.nodeConfig?.extension || {};
   const isLoopChild = node.loopNodeId;
   return {
-    id: node.id,
-    shape: node.type === 'Loop' ? NodeShapeEnum.Loop : NodeShapeEnum.General,
+    id: node.id.toString(),
+    shape: node.type === NodeTypeEnum.Loop ? LOOP_NODE : GENERAL_NODE,
     x: extension.x ?? getRandomPosition().x,
     y: extension.y ?? getRandomPosition().y,
     width: extension.width || 304,
     height: extension.height || 83,
     label: node.name,
-    data: node,
+    data: { ...node, parentId: null },
     ports: generatePorts(node),
     zIndex: isLoopChild ? 6 : 3,
   };
 };
 // 生成循环的子节点
-export const createChildNode = (parentId: string, child: ChildNode) => {
+export const createChildNode = (
+  parentId: string | null,
+  child: ChildNode,
+): NodeMetadata => {
   const ext = child.nodeConfig?.extension || {};
   const { width, height } = getWidthAndHeight(child);
   return {
     id: child.id.toString(),
-    shape: NodeShapeEnum.General,
+    shape: GENERAL_NODE,
     x: ext.x,
     y: ext.y,
     width: width,

@@ -326,9 +326,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             ...baseNode,
             width: width, // 显式设置宽度
             height: height,
-            data: {
-              ...node,
-            },
           };
         });
         graphRef.current.fromJSON({

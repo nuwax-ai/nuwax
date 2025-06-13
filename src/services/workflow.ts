@@ -51,7 +51,7 @@ interface IAddEdge {
 }
 
 // 新增节点的返回
-interface AddNodeResponse {
+export interface AddNodeResponse {
   created: string;
   description: string;
   id: number;

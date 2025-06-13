@@ -1,7 +1,11 @@
-import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
+import {
+  AnswerTypeEnum,
+  DataTypeEnum,
+  NodeTypeEnum,
+} from '@/types/enums/common';
 import { BindConfigWithSub } from '@/types/interfaces/agent';
 import { CreatedNodeItem } from '@/types/interfaces/common';
-import { AnswerTypeEnum, ChildNode } from '@/types/interfaces/graph';
+import { ChildNode } from '@/types/interfaces/graph';
 export interface InputAndOutConfig {
   // 参数名称
   name: string;
