@@ -34,7 +34,6 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import {
-  Button,
   Checkbox,
   Form,
   FormProps,
@@ -250,14 +249,10 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
               })}
             </SortableContext>
           </DndContext>
-          <Button
-            type="primary"
-            block
-            onClick={handleAddItem}
-            icon={<PlusOutlined />}
-          >
+          <div className={cx(styles['add-item-btn'])} onClick={handleAddItem}>
+            <PlusOutlined />
             添加选项
-          </Button>
+          </div>
         </div>
       ),
     },
@@ -299,6 +294,21 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
     if (
       [InputTypeEnum.Select, InputTypeEnum.MultipleSelect].includes(inputType)
     ) {
+      // tabs切换到"插件绑定"时，需要选择绑定组件才能提交
+      if (activeTabKey === OptionDataSourceEnum.MANUAL && !dataSource?.length) {
+        message.error('请添加选项');
+        return;
+      }
+
+      // tabs切换到"插件绑定"时，需要选择绑定组件才能提交
+      if (
+        activeTabKey === OptionDataSourceEnum.BINDING &&
+        !targetComponentInfo
+      ) {
+        message.error('请选择绑定组件');
+        return;
+      }
+
       selectConfig = {
         dataSourceType: activeTabKey,
         targetType: targetComponentInfo?.targetType,

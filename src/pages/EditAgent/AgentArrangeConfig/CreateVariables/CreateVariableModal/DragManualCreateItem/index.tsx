@@ -67,9 +67,12 @@ const DragManualCreateItem: React.FC<DragManualCreateItemProps> = ({
         style={style}
         className={'flex items-center gap-10'}
       >
-        <DragHandle />
-        <Input onChange={onChange} defaultValue={value} />
-        <DeleteOutlined onClick={onDelete} />
+        <Input
+          onChange={onChange}
+          defaultValue={value}
+          prefix={<DragHandle />}
+          suffix={<DeleteOutlined onClick={onDelete} />}
+        />
       </div>
     </RowContext.Provider>
   );

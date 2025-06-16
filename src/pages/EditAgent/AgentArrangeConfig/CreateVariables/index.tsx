@@ -1,13 +1,15 @@
 import LabelStar from '@/components/LabelStar';
 import { AGENT_VARIABLES_INPUT_OPTIONS } from '@/constants/agent.constants';
+import { apiAgentComponentVariableUpdate } from '@/services/agentConfig';
 import { InputTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { CreateVariablesProps } from '@/types/interfaces/agentConfig';
 import { DeleteOutlined, FormOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Modal, Space, Table } from 'antd';
+import { Button, message, Modal, Space, Table } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
+import { useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import CreateVariableModal from './CreateVariableModal';
 import styles from './index.less';
@@ -35,6 +37,8 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
   // 是否新增、更新变量了， 如果是，关闭弹窗后，刷新变量列表，如果没有，仅关闭弹窗
   const isAddedNewVariable = useRef<boolean>(false);
   const tableRef = useRef<HTMLDivElement>(null);
+  // 缓存输入数据，用于重置父级组件table表单
+  const inputDataRef = useRef<BindConfigWithSub[]>([]);
 
   useEffect(() => {
     const variables: BindConfigWithSub[] =
@@ -62,6 +66,34 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
     setVariableModalOpen(true);
     setMode(CreateUpdateModeEnum.Create);
     setCurrentVariable(null);
+  };
+
+  // 更新变量配置
+  const { run: runVariableUpdate } = useRequest(
+    apiAgentComponentVariableUpdate,
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: () => {
+        message.success('删除成功');
+        setInputData(inputDataRef.current);
+      },
+    },
+  );
+
+  // 删除变量
+  const handleDel = (key: string) => {
+    const newInputData = inputData.filter((item) => item.key !== key);
+    inputDataRef.current = newInputData;
+
+    const data = {
+      id: variablesInfo?.id,
+      targetId: variablesInfo?.targetId,
+      bindConfig: {
+        variables: newInputData,
+      },
+    };
+    runVariableUpdate(data);
   };
 
   // 入参配置columns
@@ -128,7 +160,10 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
                 className={cx('cursor-pointer')}
                 onClick={() => handleEditVariable(record)}
               />
-              <DeleteOutlined className={cx('cursor-pointer')} />
+              <DeleteOutlined
+                className={cx('cursor-pointer')}
+                onClick={() => handleDel(record.key as string)}
+              />
             </Space>
           )}
         </>
