@@ -87,7 +87,6 @@ const EditableTitle = memo(
         handleCancel();
       }
     };
-    console.log('EditableTitle render', editValue);
     return (
       <div>
         {isEditing ? (

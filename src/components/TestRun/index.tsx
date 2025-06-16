@@ -269,11 +269,7 @@ const TestRun: React.FC<TestRunProps> = ({
       run(node.type);
     }
   };
-  // 根据type返回不同的输入项
-  const handleValuesChange = (changedFields: any, allFields: any) => {
-    console.log('changedFields', changedFields);
-    console.log('allFields', allFields);
-  };
+
   const items = [
     {
       key: 'inputArgs',
@@ -283,7 +279,6 @@ const TestRun: React.FC<TestRunProps> = ({
           form={form}
           layout={'vertical'}
           onFinish={onFinish}
-          onValuesChange={handleValuesChange}
           className="test-run-form"
         >
           <div className="dis-left">

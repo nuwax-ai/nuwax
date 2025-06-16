@@ -27,6 +27,20 @@ export interface Child {
   loopNodeId?: number;
 }
 
+export interface RunResultItem {
+  options: {
+    data: object | null;
+    nodeName: string;
+    nodeId: number;
+    startTime: number;
+    input: any[];
+    endTime: number;
+    error: object | null;
+    success: boolean;
+  };
+  status: 'FINISHED' | 'FAILED' | 'EXECUTING';
+}
+
 // 节点的数据
 export interface ChildNode {
   id: number;
@@ -48,6 +62,23 @@ export interface ChildNode {
   icon: string | React.ReactNode;
   loopNodeId?: number;
   isEditingName?: boolean; // 是否正在编辑名称
+  isFocus?: boolean; // 是否聚焦
+  runResult?: RunResultItem | null; // 运行结果
+}
+
+export interface StencilChildNode extends Partial<ChildNode> {
+  bgIcon: string;
+}
+/**
+ * 定义 StencilList 接口，用于描述模板列表的数据结构。
+ */
+export interface StencilList {
+  // 模板列表名称
+  name: string;
+  // 模板列表的唯一标识符
+  key: string;
+  // 模板列表中的子节点集合，遵循 Child 接口定义
+  children: StencilChildNode[];
 }
 
 export interface Edge {
@@ -84,7 +115,7 @@ export interface GraphContainerProps {
   changeZoom: (val: number) => void;
   // 通过连接桩或者边创建节点
   createNodeToPortOrEdge: (
-    child: Child,
+    child: StencilChildNode,
     sourceNode: ChildNode,
     portId: string,
     position: { x: number; y: number },
@@ -165,7 +196,7 @@ export interface GraphProp {
   changeZoom: (val: number) => void;
   // 通过连接桩或者边创建节点
   createNodeToPortOrEdge: (
-    child: Child,
+    child: StencilChildNode,
     sourceNode: ChildNode,
     portId: string,
     position: { x: number; y: number },

@@ -1,14 +1,17 @@
 // import { SearchOutlined } from '@ant-design/icons';
 // import { Input } from 'antd';
+import { StencilChildNode } from '@/types/interfaces/graph';
 import '../index.less';
 import { asideList } from '../params';
-import { Child } from '../type';
 // 定义组件的属性接口，规定了组件接受的属性及其类型
 interface Prop {
   // 当前正在展示的节点
   // dragChild 是一个回调函数，用于处理拖拽开始事件。
   // 它接收 React 的原生 DragEvent 和当前被拖拽的子项 (Child) 对象作为参数。
-  dragChild: (child: Child, position?: React.DragEvent<HTMLDivElement>) => void;
+  dragChild: (
+    child: StencilChildNode,
+    position?: React.DragEvent<HTMLDivElement>,
+  ) => void;
   isLoop?: boolean;
   // 当前端口的名称
   portName?: string;
@@ -40,7 +43,7 @@ const StencilContent = ({ dragChild, isLoop = false }: Prop) => {
    * @param child - 被拖拽的子项对象
    */
   const handleDragStart = (
-    child: Child,
+    child: StencilChildNode,
     position?: React.DragEvent<HTMLDivElement>,
   ) => {
     dragChild(child, position);
@@ -64,7 +67,7 @@ const StencilContent = ({ dragChild, isLoop = false }: Prop) => {
                 .map((child) => {
                   // 特殊类型处理：LoopBreak/LoopContinue 只在 Loop 节点时显示
                   const isLoopControl = ['LoopBreak', 'LoopContinue'].includes(
-                    child.type,
+                    child?.type || '',
                   );
                   const shouldShow = isLoopControl ? isLoop : true;
                   return (

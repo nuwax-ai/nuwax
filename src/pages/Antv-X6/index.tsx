@@ -29,7 +29,12 @@ import {
   NodeTypeEnum,
 } from '@/types/enums/common';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
-import { Child, ChildNode, Edge } from '@/types/interfaces/graph';
+import {
+  ChildNode,
+  Edge,
+  RunResultItem,
+  StencilChildNode,
+} from '@/types/interfaces/graph';
 import {
   NodeConfig,
   NodeDrawerRef,
@@ -932,10 +937,11 @@ const Workflow: React.FC = () => {
   };
   // 拖拽组件到画布中
   const dragChild = async (
-    child: ChildNode,
+    child: StencilChildNode,
     position?: React.DragEvent<HTMLDivElement> | { x: number; y: number },
     continueDragCount?: number,
   ) => {
+    const childType = child?.type || '';
     // 获取当前画布可视区域中心点
     const getViewportCenter = () => {
       if (graphRef.current) {
@@ -968,7 +974,7 @@ const Workflow: React.FC = () => {
     };
 
     // 判断是否需要显示特定类型的创建面板
-    const isSpecialType = ['Plugin', 'Workflow'].includes(child.type);
+    const isSpecialType = ['Plugin', 'Workflow'].includes(childType);
     // 数据库新增
     const isTableNode = [
       'TableDataAdd',
@@ -976,10 +982,10 @@ const Workflow: React.FC = () => {
       'TableDataUpdate',
       'TableDataQuery',
       'TableSQL',
-    ].includes(child.type);
+    ].includes(childType);
     if (isSpecialType) {
       setCreatedItem(
-        child.type === NodeTypeEnum.Workflow
+        childType === NodeTypeEnum.Workflow
           ? AgentComponentTypeEnum.Workflow
           : AgentComponentTypeEnum.Plugin,
       );
@@ -989,13 +995,13 @@ const Workflow: React.FC = () => {
       setCreatedItem(AgentComponentTypeEnum.Table);
       setOpen(true);
       setDragEvent(getCoordinates(position));
-      sessionStorage.setItem('tableType', child.type);
+      sessionStorage.setItem('tableType', childType);
     } else {
       const coordinates = getCoordinates(position);
       // if (e) {
       //   e.preventDefault();
       // }
-      await addNode(child, coordinates);
+      await addNode(child as ChildNode, coordinates);
     }
   };
   // 校验当前工作流
@@ -1140,11 +1146,20 @@ const Workflow: React.FC = () => {
       body: params,
       onMessage: (data) => {
         if (data.data && data.data.nodeId) {
-          // const _nodeId = data.data.nodeId;
-          // graphRef.current.selectNode(_nodeId);
-          // TODO
           // 1.运行到当前节点时 给聚焦样式 与 选择当前节点 两种逻辑 这里x6要支持聚焦focus
           // 2.并显示运行状态
+          const runResult: RunResultItem = {
+            options: {
+              ...data.data.result,
+              nodeId: data.data.nodeId,
+              nodeName: data.data.nodeName,
+            },
+            status: data.data.status,
+          };
+          graphRef.current.activeNodeRunResult(
+            data.data.nodeId.toString(),
+            runResult,
+          );
         }
         if (!data.success) {
           setErrorParams((prev: ErrorParams) => {
@@ -1289,6 +1304,12 @@ const Workflow: React.FC = () => {
         break;
     }
   };
+
+  const handleClearRunResult = () => {
+    setTestRunResult('');
+    graphRef.current?.resetRunResult();
+  };
+
   // 关闭右侧抽屉
   const handleClose = () => {
     // 清除所有选中
@@ -1350,7 +1371,7 @@ const Workflow: React.FC = () => {
 
   // 通过连接桩或者边创建节点
   const createNodeToPortOrEdge = async (
-    child: Child,
+    child: StencilChildNode,
     sourceNode: ChildNode,
     portId: string,
     position: { x: number; y: number },
@@ -1593,7 +1614,7 @@ const Workflow: React.FC = () => {
         run={runTest}
         visible={visible}
         testRunResult={testRunResult}
-        clearRunResult={() => setTestRunResult('')}
+        clearRunResult={handleClearRunResult}
         loading={loading}
         stopWait={stopWait}
         formItemValue={formItemValue}

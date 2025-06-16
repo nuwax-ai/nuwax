@@ -51,9 +51,9 @@ import {
   NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
+import { StencilList } from '@/types/interfaces/graph';
 import { SwitcherFilled } from '@ant-design/icons';
 import { Cascader, Checkbox, Input } from 'antd';
-import { StencilList } from './type';
 
 // 定义左侧栏目的数据
 export const asideList: StencilList[] = [

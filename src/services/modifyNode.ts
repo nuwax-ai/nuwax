@@ -11,7 +11,7 @@ interface IUpdateLLMNode {
 }
 
 // 各个节点不同的路径
-const urlList = {
+const UrlList = {
   // Database: '/api/workflow/node/update',
   Knowledge: '/api/workflow/node/knowledge/update',
   HTTPRequest: '/api/workflow/node/http/update',
@@ -40,12 +40,14 @@ const urlList = {
   TableDataQuery: '/api/workflow/node/tableDataQuery/update',
   TableSQL: '/api/workflow/node/tableCustomSql/update',
 };
+export type UrlListType = keyof typeof UrlList;
+
 // 更新节点信息
 export async function modifyNode(
   params: IUpdateLLMNode,
-  type: keyof typeof urlList,
+  type: UrlListType,
 ): Promise<RequestResponse<any>> {
-  return request(`${urlList[type]}`, {
+  return request(`${UrlList[type]}`, {
     method: 'POST',
     data: params,
   });

@@ -3,6 +3,7 @@ import type {
   Edge,
   GraphContainerProps,
   GraphContainerRef,
+  RunResultItem,
 } from '@/types/interfaces/graph';
 import { adjustParentSize, updateEdgeArrows } from '@/utils/graph';
 import {
@@ -255,7 +256,10 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     const selectNode = (id: string) => {
       const node = graphRef.current.getCellById(id);
       if (!node || !graphRef.current) return;
-
+      node.setData({
+        ...node.getData(),
+        isFocus: false,
+      });
       // 清除其他的节点选中
       graphRef.current.cleanSelection();
       const cells = graphRef.current.getSelectedCells();
@@ -263,6 +267,31 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       // 设置当前节点为选中状态
       graphRef.current.select(node);
     };
+
+    // 激活节点
+    const activeNodeRunResult = (id: string, runResult: RunResultItem) => {
+      const node = graphRef.current.getCellById(id);
+      if (!node || !graphRef.current) return;
+      node.setData({
+        ...node.getData(),
+        isFocus: true,
+        runResult,
+      });
+      graphRef.current.select(node);
+    };
+
+    const resetRunResult = () => {
+      if (!graphRef.current) return;
+      const nodes = graphRef.current.getNodes();
+      nodes.forEach((node: Node) => {
+        node.setData({
+          ...node.getData(),
+          isFocus: false,
+          runResult: null,
+        });
+      });
+    };
+
     const clearSelection = () => {
       if (!graphRef.current) return;
       graphRef.current.trigger('blank:click');
@@ -375,6 +404,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       createNewEdge,
       getGraphRef,
       clearSelection,
+      activeNodeRunResult,
+      resetRunResult,
     }));
 
     useEffect(() => {
@@ -386,7 +417,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         changeEdge: changeEdge,
         changeCondition: changeCondition,
         changeZoom: changeZoom,
-        createNodeToPortOrEdge: createNodeToPortOrEdge,
+        createNodeToPortOrEdge,
         onSaveNode: onSaveNode,
       });
 

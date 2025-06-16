@@ -13,7 +13,7 @@ import {
   NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
-import { ChildNode, NodeProps } from '@/types/interfaces/graph';
+import { ChildNode, NodeProps, RunResultItem } from '@/types/interfaces/graph';
 import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
@@ -124,6 +124,66 @@ const DISABLE_EDIT_NODE_TYPES = [
   NodeTypeEnum.Start,
   NodeTypeEnum.End,
 ];
+const NodeRunResult: React.FC<{
+  options?: RunResultItem['options'];
+  status?: RunResultItem['status'];
+}> = ({ options, status }) => {
+  const time =
+    options?.startTime && options?.endTime
+      ? `${(options.endTime - options.startTime) / 1000}s`
+      : '0.000s';
+  const total = (options?.input || []).length;
+  // 当前页码
+  const [current, setCurrent] = useState(total > 1 ? 1 : 0);
+  // 是否只看错误
+  const [onlyError, setOnlyError] = useState(false);
+  // 是否展开
+  const [expanded, setExpanded] = useState(false);
+
+  if (!options || !status) {
+    return null;
+  }
+
+  const success = status === 'FINISHED';
+  const isExecuting = status === 'EXECUTING';
+
+  // 处理页码变化
+  const handlePageChange = (page: number) => {
+    console.log('页码变化：', page);
+    setCurrent(page);
+  };
+
+  // 处理只看错误变化
+  const handleOnlyErrorChange = (checked: boolean) => {
+    console.log('只看错误变化：', checked);
+    setOnlyError(checked);
+  };
+
+  // 处理展开/收起变化
+  const handleExpandChange = (expanded: boolean) => {
+    console.log('展开/收起变化：', expanded);
+    setExpanded(expanded);
+  };
+
+  return (
+    <RunResult
+      success={success}
+      loading={isExecuting}
+      collapsible={!isExecuting}
+      time={time}
+      total={total}
+      current={current}
+      onlyError={onlyError}
+      onPageChange={handlePageChange}
+      onOnlyErrorChange={handleOnlyErrorChange}
+      expanded={expanded}
+      onExpandChange={handleExpandChange}
+      batchVariables={options.data || {}}
+      inputParams={options.input || {}}
+      outputResult={options.data || {}}
+    />
+  );
+};
 
 export const GeneralNode: React.FC<NodeProps> = (props) => {
   /**
@@ -168,7 +228,7 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
   };
 
   const canNotEditNode = DISABLE_EDIT_NODE_TYPES.includes(data.type);
-
+  const showRunResult = data.runResult;
   return (
     <>
       <div
@@ -202,13 +262,12 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
           <IntentRecognitionNode data={data} />
         )}
       </div>
-      <RunResult
-        success={true}
-        time="0.001s"
-        total={10}
-        current={1}
-        onlyError={false}
-      />
+      {showRunResult && (
+        <NodeRunResult
+          options={data.runResult?.options}
+          status={data.runResult?.status}
+        />
+      )}
     </>
   );
 };
@@ -234,27 +293,36 @@ export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
     node.setData({ name: editValue });
     return true;
   };
+  const showRunResult = data.runResult;
   return (
-    <div
-      className={`loop-node-style general-node ${
-        selected ? 'selected-general-node' : ''
-      }`}
-      style={{ background: gradientBackground }}
-    >
-      <div className="loop-node-title-style dis-left">
-        <ICON_WORKFLOW_LOOP style={{ marginRight: '6px' }} />
-        <EditableTitle
-          key={data.id.toString()}
-          value={editValue}
-          onChange={(val) => {
-            console.log('onChange', val);
-            return true;
-          }}
-          onSave={handleSave}
-        />
+    <>
+      <div
+        className={`loop-node-style general-node ${
+          selected ? 'selected-general-node' : ''
+        }`}
+        style={{ background: gradientBackground }}
+      >
+        <div className="loop-node-title-style dis-left">
+          <ICON_WORKFLOW_LOOP style={{ marginRight: '6px' }} />
+          <EditableTitle
+            key={data.id.toString()}
+            value={editValue}
+            onChange={(val) => {
+              console.log('onChange', val);
+              return true;
+            }}
+            onSave={handleSave}
+          />
+        </div>
+        <div className="loop-node-content" />
       </div>
-      <div className="loop-node-content" />
-    </div>
+      {showRunResult && (
+        <NodeRunResult
+          options={data.runResult?.options}
+          status={data.runResult?.status}
+        />
+      )}
+    </>
   );
 };
 

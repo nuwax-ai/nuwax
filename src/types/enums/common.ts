@@ -55,6 +55,10 @@ export enum NodeTypeEnum {
   LoopStart = 'LoopStart',
   // 循环结束
   LoopEnd = 'LoopEnd',
+  // 循环条件
+  LoopCondition = 'LoopCondition',
+  // 间隔
+  Interval = 'Interval',
   // 开始
   Start = 'Start',
   // 结束

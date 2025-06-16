@@ -2,11 +2,13 @@ import {
   CheckCircleFilled,
   CopyOutlined,
   DownOutlined,
+  LoadingOutlined,
   UpOutlined,
 } from '@ant-design/icons';
-import { Checkbox, Select, Tooltip } from 'antd';
+import { App, Checkbox, Select, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
+import CopyToClipboard from 'react-copy-to-clipboard';
 import styles from './runResult.less';
 const cx = classNames.bind(styles);
 
@@ -63,6 +65,10 @@ interface RunResultProps {
    * 展开/收起回调
    */
   onExpandChange?: (expanded: boolean) => void;
+  /**
+   * 是否正在运行
+   */
+  loading?: boolean;
 }
 
 /**
@@ -70,6 +76,7 @@ interface RunResultProps {
  */
 const RunResult: React.FC<RunResultProps> = ({
   success = true,
+  loading = false,
   time = '0.001s',
   total = 10,
   current = 1,
@@ -83,6 +90,7 @@ const RunResult: React.FC<RunResultProps> = ({
   expanded = false,
   onExpandChange,
 }) => {
+  const { message } = App.useApp();
   const [collapsed, setCollapsed] = useState(!expanded);
 
   // 处理展开/收起
@@ -141,6 +149,10 @@ const RunResult: React.FC<RunResultProps> = ({
     );
   };
 
+  const handleCopy = () => {
+    message.success('复制成功');
+  };
+
   // 渲染键值对
   const renderKeyValue = (obj: Record<string, any>, title: string) => {
     return (
@@ -148,20 +160,36 @@ const RunResult: React.FC<RunResultProps> = ({
         <div className={cx(styles.runResultSectionHeader)}>
           <span>{title}</span>
           <Tooltip title="复制">
-            <CopyOutlined
-              className={cx(styles.copyIcon)}
-              onClick={() => {
-                navigator.clipboard.writeText(JSON.stringify(obj, null, 2));
-              }}
-            />
+            <CopyToClipboard
+              text={JSON.stringify(obj, null, 2)}
+              onCopy={handleCopy}
+            >
+              <CopyOutlined
+                className={cx(styles.copyIcon)}
+                onClick={() => {
+                  navigator.clipboard.writeText(JSON.stringify(obj, null, 2));
+                }}
+              />
+            </CopyToClipboard>
           </Tooltip>
         </div>
         <div className={cx(styles.runResultSectionContent)}>
           {Object.entries(obj).map(([key, value]) => (
             <div key={key} className={cx(styles.keyValueItem)}>
               <span className={cx(styles.key)}>{key} :</span>
-              <span className={cx(styles.value)}>
-                &quot;{String(value)}&quot;
+              <span
+                className={cx(styles.value)}
+                title={
+                  typeof value === 'string'
+                    ? value
+                    : JSON.stringify(value, null, 2)
+                }
+              >
+                &quot;
+                {typeof value === 'string'
+                  ? value
+                  : JSON.stringify(value, null, 2)}
+                &quot;
               </span>
             </div>
           ))}
@@ -171,19 +199,28 @@ const RunResult: React.FC<RunResultProps> = ({
   };
 
   return (
-    <div className={cx(styles.runResultContainer)}>
+    <div
+      className={cx(styles.runResultContainer)}
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
+    >
       <div className={cx(styles.runResultHeader)}>
         <div className={cx(styles.runResultStatus)}>
-          <CheckCircleFilled
-            className={cx(
-              styles.statusIcon,
-              success ? styles.success : styles.error,
-            )}
-          />
+          {loading ? (
+            <LoadingOutlined className={cx(styles.statusIcon)} />
+          ) : (
+            <CheckCircleFilled
+              className={cx(
+                styles.statusIcon,
+                success ? styles.success : styles.error,
+              )}
+            />
+          )}
           <span className={cx(styles.statusText)}>
-            {success ? '运行成功' : '运行失败'}
+            {loading ? '运行中' : success ? '运行成功' : '运行失败'}
           </span>
-          <span className={cx(styles.runTime)}>{time}</span>
+          {!loading && <span className={cx(styles.runTime)}>{time}</span>}
         </div>
         {collapsible && (
           <div

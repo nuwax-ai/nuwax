@@ -1,4 +1,4 @@
-import service from '@/services/modifyNode';
+import service, { UrlListType } from '@/services/modifyNode';
 import { ChildNode } from '@/types/interfaces/graph';
 import { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
 import { isEqual } from 'lodash';
@@ -7,7 +7,7 @@ export const updateNode = async (params: ChildNode) => {
     ...params,
     nodeId: params.id,
   };
-  return await service.modifyNode(_params, params.type);
+  return await service.modifyNode(_params, params.type as UrlListType);
 };
 
 /**

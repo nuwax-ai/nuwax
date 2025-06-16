@@ -1,6 +1,5 @@
 // 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
 import { FieldConfig } from '@/components/FormListItem/type';
-import { ChildNode } from '@/types/interfaces/graph';
 import type {
   GroupModelItem,
   ModelListItemProps,
@@ -19,20 +18,6 @@ export interface KeyValuePairs {
   label: string;
   // 键值对对应的值
   value: string;
-}
-
-/**
- * 定义 StencilList 接口，用于描述模板列表的数据结构。
- */
-export interface StencilList {
-  // 模板列表名称
-  name: string;
-  // 模板列表的唯一标识符
-  key: string;
-  // 模板列表中的子节点集合，遵循 Child 接口定义
-  children: (Partial<ChildNode> & {
-    bgIcon: string;
-  })[];
 }
 
 /**
