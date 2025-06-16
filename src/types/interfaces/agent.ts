@@ -107,7 +107,7 @@ export interface BindConfigWithSub {
   // 下拉参数配置
   selectConfig?: {
     // 数据源类型,可用值:MANUAL,PLUGIN
-    dataSource: OptionDataSourceEnum;
+    dataSourceType: OptionDataSourceEnum;
     // 数据源类型,可用值:Agent,Plugin,Workflow,Knowledge,Table
     targetType: AgentComponentTypeEnum;
     // 插件或工作流ID，dataSource选择PLUGIN时有用

@@ -31,6 +31,7 @@ const DragHandle: React.FC = () => {
 // 可拖拽手动创建项组件
 const DragManualCreateItem: React.FC<DragManualCreateItemProps> = ({
   id,
+  value,
   onChange,
   onDelete,
 }) => {
@@ -67,7 +68,7 @@ const DragManualCreateItem: React.FC<DragManualCreateItemProps> = ({
         className={'flex items-center gap-10'}
       >
         <DragHandle />
-        <Input onChange={onChange} />
+        <Input onChange={onChange} defaultValue={value} />
         <DeleteOutlined onClick={onDelete} />
       </div>
     </RowContext.Provider>

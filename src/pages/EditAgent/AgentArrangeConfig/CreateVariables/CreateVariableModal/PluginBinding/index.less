@@ -15,7 +15,7 @@
 }
 
 .example-box {
-  padding: 10px 20px 20px;
+  padding: 10px 20px;
   border-radius: 6px;
   background: @WHITE20;
   box-sizing: border-box;
@@ -28,5 +28,15 @@
   .e-header {
     height: 60px;
     font-size: 14px;
+  }
+
+  .icon-rotate {
+    transform: rotate(180deg);
+    transition: all 0.3s ease;
+  }
+
+  .rotate-box {
+    height: 0;
+    overflow: hidden;
   }
 }

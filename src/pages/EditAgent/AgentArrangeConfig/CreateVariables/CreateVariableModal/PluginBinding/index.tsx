@@ -12,6 +12,8 @@ const PluginBinding: React.FC<PluginBindingProps> = ({
   targetComponentInfo,
   onClick,
 }) => {
+  // 旋转图标
+  const [isRotate, setIsRotate] = React.useState(false);
   return (
     <>
       <div className={cx(styles['bind-box'], 'mb-16')}>
@@ -59,9 +61,12 @@ const PluginBinding: React.FC<PluginBindingProps> = ({
           )}
         >
           <span>插件或工作流返回数据结构以及示例</span>
-          <DownOutlined />
+          <DownOutlined
+            onClick={() => setIsRotate(!isRotate)}
+            className={cx({ [styles['icon-rotate']]: isRotate })}
+          />
         </div>
-        <div>
+        <div className={cx({ [styles['rotate-box']]: isRotate })}>
           <p>&#x2F;&#x2F;options 选项列表；</p>
           <p>&#x2F;&#x2F;value：选项值；label选项名称；children下级选项</p>
           <pre>

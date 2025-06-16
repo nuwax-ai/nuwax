@@ -1,6 +1,7 @@
 import LabelStar from '@/components/LabelStar';
 import { AGENT_VARIABLES_INPUT_OPTIONS } from '@/constants/agent.constants';
 import { InputTypeEnum } from '@/types/enums/agent';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { CreateVariablesProps } from '@/types/interfaces/agentConfig';
 import { DeleteOutlined, FormOutlined, PlusOutlined } from '@ant-design/icons';
@@ -20,10 +21,18 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
   onCancel,
   onConfirm,
 }) => {
+  // 变量列表数据
   const [inputData, setInputData] = useState<BindConfigWithSub[]>([]);
+  // 新增、编辑变量的模式，默认为新增
+  const [mode, setMode] = useState<CreateUpdateModeEnum>(
+    CreateUpdateModeEnum.Create,
+  );
+  // 当前编辑的变量
+  const [currentVariable, setCurrentVariable] =
+    useState<BindConfigWithSub | null>();
   // 创建变量弹窗
   const [variableModalOpen, setVariableModalOpen] = useState<boolean>(false);
-  // 是否新增变量了， 如果是，关闭弹窗后，刷新变量列表，如果没有，仅关闭弹窗
+  // 是否新增、更新变量了， 如果是，关闭弹窗后，刷新变量列表，如果没有，仅关闭弹窗
   const isAddedNewVariable = useRef<boolean>(false);
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -40,6 +49,20 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       setInputData(_variables);
     }
   }, [variablesInfo]);
+
+  // 编辑变量
+  const handleEditVariable = (record: BindConfigWithSub) => {
+    setVariableModalOpen(true);
+    setMode(CreateUpdateModeEnum.Update);
+    setCurrentVariable(record);
+  };
+
+  // 新增变量
+  const handleAddVariable = () => {
+    setVariableModalOpen(true);
+    setMode(CreateUpdateModeEnum.Create);
+    setCurrentVariable(null);
+  };
 
   // 入参配置columns
   const inputColumns = [
@@ -101,8 +124,11 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
             <span>--</span>
           ) : (
             <Space className={cx('flex', 'content-between')}>
-              <FormOutlined />
-              <DeleteOutlined />
+              <FormOutlined
+                className={cx('cursor-pointer')}
+                onClick={() => handleEditVariable(record)}
+              />
+              <DeleteOutlined className={cx('cursor-pointer')} />
             </Space>
           )}
         </>
@@ -166,10 +192,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
               y: 560,
             }}
             footer={() => (
-              <Button
-                icon={<PlusOutlined />}
-                onClick={() => setVariableModalOpen(true)}
-              >
+              <Button icon={<PlusOutlined />} onClick={handleAddVariable}>
                 新增
               </Button>
             )}
@@ -178,6 +201,8 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
         <CreateVariableModal
           id={variablesInfo?.id}
           targetId={variablesInfo?.targetId}
+          mode={mode}
+          currentVariable={currentVariable}
           inputData={inputData}
           open={variableModalOpen}
           onCancel={() => setVariableModalOpen(false)}

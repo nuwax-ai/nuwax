@@ -4,7 +4,7 @@ import {
   DefaultSelectedEnum,
   InvokeTypeEnum,
 } from '@/types/enums/agent';
-import type { DataTypeEnum } from '@/types/enums/common';
+import type { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
 import type { OpenCloseEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
@@ -296,6 +296,8 @@ export interface AgentItemProps {
 
 // 创建变量弹窗组件
 export interface CreateVariableModalProps {
+  mode?: CreateUpdateModeEnum;
+  currentVariable?: BindConfigWithSub | null;
   id: number;
   targetId: number;
   inputData: BindConfigWithSub[];
@@ -306,6 +308,7 @@ export interface CreateVariableModalProps {
 
 // 可拖拽手动创建项组件的props
 export interface DragManualCreateItemProps {
+  value?: string;
   id: string; // 唯一标识符
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDelete: () => void;

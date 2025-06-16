@@ -8,6 +8,7 @@ import {
   InputTypeEnum,
   OptionDataSourceEnum,
 } from '@/types/enums/agent';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { BindConfigWithSub } from '@/types/interfaces/agent';
 import {
   AgentAddComponentStatusInfo,
@@ -55,6 +56,8 @@ const cx = classNames.bind(styles);
 
 // 创建变量弹窗组件
 const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
+  mode = CreateUpdateModeEnum.Create,
+  currentVariable,
   id,
   targetId,
   inputData,
@@ -74,7 +77,7 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
     { id: uuidv4(), value: '', label: '' },
     { id: uuidv4(), value: '', label: '' },
   ]);
-  // 绑定值，默认为空字符串
+  // 绑定值，默认为空字符串 （为何不直接用Form.Item的name值呢？ 因为切换输入方式时，会导致footer确定按钮disabled会出现错误）
   const [bindValue, setBindValue] = useState<string>('');
   // 打开绑定组件弹窗
   const [show, setShow] = useState<boolean>(false);
@@ -87,15 +90,72 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
     useState<CreatedNodeItem | null>(null);
   // 缓存输入数据，用于重置父级组件table表单
   const inputDataRef = useRef<BindConfigWithSub[]>([]);
+  // 加载状态
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (open) {
-      setInputType(InputTypeEnum.Text); // 重置表单
-      form.setFieldValue('inputType', InputTypeEnum.Text); // 重置表单
-      setTargetComponentInfo(null);
+      // 新建模式
+      if (mode === CreateUpdateModeEnum.Create) {
+        setInputType(InputTypeEnum.Text);
+        form.setFieldValue('inputType', InputTypeEnum.Text);
+        setTargetComponentInfo(null);
+      }
+      // 编辑模式, 回显数据
+      else if (mode === CreateUpdateModeEnum.Update && currentVariable) {
+        const {
+          name,
+          displayName,
+          require,
+          inputType,
+          description,
+          selectConfig,
+          bindValue,
+        } = currentVariable;
+        // 输入方式，默认为文本
+        setInputType(inputType as InputTypeEnum);
+        // 选项数据源
+        setActiveTabKey(selectConfig?.dataSourceType as OptionDataSourceEnum);
+        // 如果绑定了组件（插件、工作流），回显绑定组件信息
+        if (
+          selectConfig?.dataSourceType === OptionDataSourceEnum.BINDING &&
+          selectConfig?.targetId
+        ) {
+          setAddComponents([
+            {
+              type: selectConfig?.targetType as AgentComponentTypeEnum,
+              targetId: selectConfig?.targetId as number,
+              status: AgentAddComponentStatusEnum.Added,
+            },
+          ]);
+        }
+        // 下拉参数配置列表存在
+        else if (selectConfig && selectConfig?.options?.length > 0) {
+          // 手动创建选项数据源
+          setDataSource(
+            selectConfig?.options?.map(
+              (item) =>
+                ({
+                  ...item,
+                  id: uuidv4(),
+                } as option),
+            ) || [],
+          );
+        }
+
+        // 默认值，默认为空字符串
+        setBindValue(bindValue || '');
+        // 绑定值，重置表单
+        form.setFieldsValue({
+          name,
+          displayName,
+          require,
+          inputType,
+          description,
+        });
+      }
     }
-  }, [open]);
+  }, [open, mode, currentVariable]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -175,14 +235,19 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
               items={dataSource.map((item) => item.id as string)}
               strategy={verticalListSortingStrategy}
             >
-              {dataSource?.map((item) => (
-                <DragManualCreateItem
-                  key={item.id as string}
-                  id={item.id as string}
-                  onChange={(e) => handleChange(e, item.id as string)}
-                  onDelete={() => handleDelete(item.id as string)}
-                />
-              ))}
+              {dataSource?.map((item) => {
+                const id = item.id as string;
+                const value = item.value as string;
+                return (
+                  <DragManualCreateItem
+                    key={id}
+                    id={id}
+                    value={value}
+                    onChange={(e) => handleChange(e, id)}
+                    onDelete={() => handleDelete(id)}
+                  />
+                );
+              })}
             </SortableContext>
           </DndContext>
           <Button
@@ -248,11 +313,30 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
     const newData = {
       ...values,
       bindValue: _bindValue,
-      key: uuidv4(),
       systemVariable: false,
       selectConfig,
     };
-    const newInputData = [...inputData, newData];
+
+    let newInputData;
+    // 编辑模式，需要更新数据
+    if (mode === CreateUpdateModeEnum.Update && currentVariable) {
+      newInputData = inputData.map((item) => {
+        if (item.key === currentVariable.key) {
+          return { ...item, ...newData };
+        }
+        return item;
+      });
+    } else {
+      // 新增变量，需要添加key
+      newInputData = [
+        ...inputData,
+        {
+          ...newData,
+          key: uuidv4(),
+        },
+      ];
+    }
+
     // 缓存最新的数据，用于更新变量配置
     inputDataRef.current = newInputData as BindConfigWithSub[];
     const data = {
