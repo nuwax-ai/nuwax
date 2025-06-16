@@ -17,6 +17,7 @@ import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import {
   AgentManualComponentInfo,
   AgentSelectedComponentInfo,
+  BindConfigWithSub,
 } from '@/types/interfaces/agent';
 import { CardDataInfo } from '@/types/interfaces/cardInfo';
 import type { UploadFileInfo } from '@/types/interfaces/common';
@@ -77,6 +78,8 @@ export default () => {
   const [manualComponents, setManualComponents] = useState<
     AgentManualComponentInfo[]
   >([]);
+  // 变量参数
+  const [variables, setVariables] = useState<BindConfigWithSub[]>([]);
   // 历史记录
   const { runHistory } = useModel('conversationHistory');
 
@@ -125,6 +128,8 @@ export default () => {
       setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
       // 可手动选择的组件列表
       setManualComponents(data?.agent?.manualComponents || []);
+      // 变量参数
+      setVariables(data?.agent?.variables || []);
       // 消息列表
       const _messageList = data?.messageList || [];
       if (_messageList?.length) {
@@ -529,5 +534,6 @@ export default () => {
     showScrollBtn,
     setShowScrollBtn,
     resetInit,
+    variables,
   };
 };

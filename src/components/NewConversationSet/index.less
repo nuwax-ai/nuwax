@@ -1,0 +1,32 @@
+@import '@/styles/color';
+
+.variables-box {
+  width: 100%;
+  border-radius: 10px;
+  background-color: @WHITE;
+  padding: 0 20px;
+  margin-bottom: 20px;
+  border: 1px solid @GRAY06;
+  box-shadow: inset 0 0 5px @GRAY01;
+
+  .header {
+    height: 60px;
+    font-weight: 600;
+
+    .text {
+      color: @GRAY05;
+      user-select: none;
+    }
+  }
+
+  .conversation-container {
+    padding-top: 20px;
+    border-top: 1px solid @GRAY06;
+  }
+
+  .close-form {
+    transition: height 0.3s ease-in-out;
+    height: 0;
+    overflow: hidden;
+  }
+}

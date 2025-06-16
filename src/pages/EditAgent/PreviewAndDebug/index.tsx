@@ -1,6 +1,7 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
+import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
@@ -15,7 +16,13 @@ import eventBus from '@/utils/eventBus';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 import PreviewAndDebugHeader from './PreviewAndDebugHeader';
@@ -32,6 +39,15 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
 }) => {
   // 会话ID
   const devConversationIdRef = useRef<number>(0);
+  // 是否开始会话， 如果开始会话，则不能再修改"新会话设置"
+  const isStartConversationRef = useRef<boolean>(false);
+  // 变量参数
+  const [variableParams, setVariableParams] = useState<Record<
+    string,
+    string | number
+  > | null>(null);
+
+  console.log('variableParams', variableParams);
 
   const {
     messageList,
@@ -51,6 +67,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     setShowScrollBtn,
     resetInit,
     manualComponents,
+    variables,
   } = useModel('conversationInfo');
   // 创建智能体会话
   const { runAsyncConversationCreate } = useConversation();
@@ -175,6 +192,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       return;
     }
 
+    // 已开始会话，不能再修改"新会话设置"
+    isStartConversationRef.current = true;
     onMessageSend(id, message, files, [], true, false);
   };
 
@@ -187,6 +206,13 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       behavior: 'smooth',
     });
     setShowScrollBtn(false);
+  };
+
+  const handleConfirmSet = (
+    variableParams: Record<string, string | number>,
+  ) => {
+    console.log('Received values of form22222: ', variableParams);
+    setVariableParams(variableParams);
   };
 
   return (
@@ -214,6 +240,12 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
             </div>
           ) : messageList?.length > 0 ? (
             <>
+              {/* 新对话设置 */}
+              <NewConversationSet
+                variables={variables}
+                disabled={isStartConversationRef.current}
+                onConfirm={handleConfirmSet}
+              />
               {messageList?.map((item: MessageInfo) => (
                 <ChatView
                   key={item?.id}

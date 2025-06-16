@@ -8,6 +8,7 @@ import type {
   AgentConfigInfo,
   AgentManualComponentInfo,
   AgentSelectedComponentInfo,
+  BindConfigWithSub,
   CreatorInfo,
 } from '@/types/interfaces/agent';
 import { CardDataInfo } from '@/types/interfaces/cardInfo';
@@ -508,4 +509,12 @@ export interface MoveCopyComponentProps {
   title?: string;
   onCancel: () => void;
   onConfirm: (spaceId: number) => void;
+}
+
+// 新对话设置组件属性
+export interface NewConversationSetProps {
+  className?: string;
+  disabled?: boolean;
+  variables: BindConfigWithSub[];
+  onConfirm: (variableParams: Record<string, string | number>) => void;
 }
