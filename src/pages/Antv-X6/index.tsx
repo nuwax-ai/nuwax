@@ -32,6 +32,8 @@ import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import {
   ChildNode,
   Edge,
+  GraphContainerRef,
+  GraphRect,
   RunResultItem,
   StencilChildNode,
 } from '@/types/interfaces/graph';
@@ -44,7 +46,7 @@ import { ErrorParams } from '@/types/interfaces/workflow';
 import { cloneDeep } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { getPeerNodePosition } from '@/utils/graph';
-import { changeNodeConfig, updateNode } from '@/utils/updateNode';
+import { apiUpdateNode, changeNodeConfig } from '@/utils/updateNode';
 import {
   getEdges,
   getShape,
@@ -53,6 +55,7 @@ import {
   returnBackgroundColor,
   returnImg,
 } from '@/utils/workflow';
+import { Graph } from '@antv/x6';
 import { App, Form } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
@@ -138,7 +141,7 @@ const Workflow: React.FC = () => {
   // 发布前的校验
   const [isValidLoading, setIsValidLoading] = useState<boolean>(false);
   // 画布的ref
-  const graphRef = useRef<any>(null);
+  const graphRef = useRef<GraphContainerRef>(null);
   // 阻止获取当前节点的上级参数
   const preventGetReference = useRef<number>(0);
   // 新增定时器引用
@@ -219,9 +222,9 @@ const Workflow: React.FC = () => {
   // 调整画布的大小（左下角select）
   const changeGraph = (val: number | string) => {
     if (val === -1) {
-      graphRef.current.changeGraphZoomToFit();
+      graphRef.current?.graphChangeZoomToFit();
     } else {
-      graphRef.current.changeGraphZoom(val);
+      graphRef.current?.graphChangeZoom(val as number);
     }
   };
   // 调整画布的大小(滚轮)
@@ -262,7 +265,7 @@ const Workflow: React.FC = () => {
     const _res = await service.getNodeConfig(id);
     if (_res.code === Constant.success) {
       setFoldWrapItem(_res.data);
-      graphRef.current.updateNode(_res.data.id, _res.data);
+      graphRef.current?.graphUpdateNode(String(_res.data.id), _res.data);
     }
   };
 
@@ -296,18 +299,18 @@ const Workflow: React.FC = () => {
       _params.nodeId = _params.nodeId.filter(
         (item) => item !== Number(targetId),
       );
-      graphRef.current.updateNode(sourceNode.id, {
+      graphRef.current?.graphUpdateNode(String(sourceNode.id), {
         ...sourceNode,
         nextNodeIds: _params.nodeId,
       });
     }
-    const _res = await service.addEdge(_params);
+    const _res = await service.apiAddEdge(_params);
     // 如果接口不成功，就需要删除掉那一条添加的线
     if (_res.code !== Constant.success) {
-      graphRef.current.deleteEdge(id);
+      graphRef.current?.graphDeleteEdge(String(id));
     } else {
       getReference(foldWrapItemRef.current.id);
-      graphRef.current.updateNode(sourceNode.id, _res.data);
+      graphRef.current?.graphUpdateNode(String(sourceNode.id), _res.data);
       // getNodeConfig(sourceNode.id);
     }
   };
@@ -316,9 +319,9 @@ const Workflow: React.FC = () => {
     if (config.id === 0) return false;
 
     const params = cloneDeep(config);
-    graphRef.current.updateNode(params.id, params);
+    graphRef.current?.graphUpdateNode(String(params.id), params);
     let result = false;
-    const _res = await updateNode(params);
+    const _res = await apiUpdateNode(params);
     if (_res.code === Constant.success) {
       // 如果是修改节点的参数，那么就要更新当前节点的参数
       if (config.id === foldWrapItemRef.current.id) {
@@ -351,9 +354,9 @@ const Workflow: React.FC = () => {
       }
     }
     if (params.id === 0) return;
-    graphRef.current.updateNode(params.id, params);
+    graphRef.current?.graphUpdateNode(String(params.id), params);
     // setIsUpdate(true)
-    const _res = await updateNode(params);
+    const _res = await apiUpdateNode(params);
     if (_res.code === Constant.success) {
       if (update) {
         if (config.type === 'Loop') {
@@ -531,7 +534,11 @@ const Workflow: React.FC = () => {
     await changeNode(params);
 
     const sourcePortId = portId.split('-').slice(0, -1).join('-');
-    graphRef.current.createNewEdge(sourcePortId, newNodeId.toString(), isLoop);
+    graphRef.current?.graphCreateNewEdge(
+      sourcePortId,
+      String(newNodeId),
+      isLoop,
+    );
   };
 
   /**
@@ -546,9 +553,9 @@ const Workflow: React.FC = () => {
     isLoop: boolean,
   ) => {
     await nodeChangeEdge('created', newNodeId.toString(), sourceNode);
-    graphRef.current.createNewEdge(
-      sourceNode.id.toString(),
-      newNodeId.toString(),
+    graphRef.current?.graphCreateNewEdge(
+      String(sourceNode.id),
+      String(newNodeId),
       isLoop,
     );
   };
@@ -569,9 +576,9 @@ const Workflow: React.FC = () => {
       targetNode,
     );
     await changeNode(nodeData);
-    graphRef.current.createNewEdge(
+    graphRef.current?.graphCreateNewEdge(
       sourcePortId,
-      targetNode.id.toString(),
+      String(targetNode.id),
       isLoop,
     );
   };
@@ -590,7 +597,11 @@ const Workflow: React.FC = () => {
     isLoop: boolean,
   ) => {
     await nodeChangeEdge('created', targetNodeId, newNode);
-    graphRef.current.createNewEdge(newNodeId.toString(), targetNodeId, isLoop);
+    graphRef.current?.graphCreateNewEdge(
+      String(newNodeId),
+      targetNodeId,
+      isLoop,
+    );
   };
 
   /**
@@ -614,14 +625,14 @@ const Workflow: React.FC = () => {
         sourceNode,
       );
       await changeNode(nodeData as ChildNode);
-      graphRef.current.createNewEdge(
+      graphRef.current?.graphCreateNewEdge(
         sourcePortId,
         sourceNode.id.toString(),
         isLoop,
       );
     } else {
       await nodeChangeEdge('created', id, newNode);
-      graphRef.current.createNewEdge(
+      graphRef.current?.graphCreateNewEdge(
         newNode.id.toString(),
         id.toString(),
         isLoop,
@@ -657,7 +668,7 @@ const Workflow: React.FC = () => {
 
     // 删除原有连接
     await nodeChangeEdge('deleted', targetNode.id.toString(), sourceNode);
-    graphRef.current.deleteEdge(edgeId);
+    graphRef.current?.graphDeleteEdge(edgeId);
   };
 
   /**
@@ -678,7 +689,7 @@ const Workflow: React.FC = () => {
     const extension = nodeData.nodeConfig?.extension || {};
 
     // 添加节点到图形中
-    graphRef.current.addNode(extension, newNodeData);
+    graphRef.current?.graphAddNode(extension as GraphRect, newNodeData);
 
     // 处理知识库节点特殊配置
     if (
@@ -692,7 +703,7 @@ const Workflow: React.FC = () => {
     }
     // 更新抽屉和选中状态
     await changeDrawer(newNodeData);
-    graphRef.current.selectNode(nodeData.id);
+    graphRef.current?.graphSelectNode(String(nodeData.id));
     changeUpdateTime();
 
     // 处理节点连接逻辑
@@ -747,10 +758,7 @@ const Workflow: React.FC = () => {
   // ==================== 节点创建相关辅助函数结束 ====================
 
   // 新增节点
-  const addNode = async (
-    child: Partial<ChildNode>,
-    dragEvent: { x: number; y: number; height?: number },
-  ) => {
+  const addNode = async (child: Partial<ChildNode>, dragEvent: GraphRect) => {
     let _params = JSON.parse(JSON.stringify(child));
     _params.workflowId = workflowId;
     _params.extension = dragEvent;
@@ -816,7 +824,7 @@ const Workflow: React.FC = () => {
         _params.loopNodeId = sourceNode.loopNodeId;
       }
     }
-    const _res = await service.addNode(_params);
+    const _res = await service.apiAddNode(_params);
 
     if (_res.code === Constant.success) {
       try {
@@ -829,7 +837,7 @@ const Workflow: React.FC = () => {
   };
   // 复制节点
   const copyNode = async (child: ChildNode) => {
-    const _res = await service.copyNode(child.id.toString());
+    const _res = await service.apiCopyNode(child.id.toString());
     if (_res.code === Constant.success) {
       const _newNode = JSON.parse(JSON.stringify(_res.data));
       const _dragEvent = {
@@ -839,7 +847,7 @@ const Workflow: React.FC = () => {
       _newNode.nodeConfig.extension.x = _newNode.nodeConfig.extension.x + 32;
       _newNode.nodeConfig.extension.y = _newNode.nodeConfig.extension.y + +32;
       _newNode.key = 'general-Node';
-      graphRef.current.addNode(_dragEvent, _newNode);
+      graphRef.current?.graphAddNode(_dragEvent as GraphRect, _newNode);
       const shape = getShape(_res.data.type);
       const newNode = {
         ..._res.data,
@@ -847,7 +855,7 @@ const Workflow: React.FC = () => {
       };
       changeNode(newNode);
       // 选中新增的节点
-      graphRef.current.selectNode(_res.data.id);
+      graphRef.current?.graphSelectNode(String(_res.data.id));
       // changeUpdateTime();
     }
   };
@@ -865,9 +873,9 @@ const Workflow: React.FC = () => {
       name: '',
       icon: '',
     });
-    const _res = await service.deleteNode(id);
+    const _res = await service.apiDeleteNode(id);
     if (_res.code === Constant.success) {
-      graphRef.current.deleteNode(id.toString(), node);
+      graphRef.current?.graphDeleteNode(String(id));
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
@@ -938,7 +946,7 @@ const Workflow: React.FC = () => {
   // 拖拽组件到画布中
   const dragChild = async (
     child: StencilChildNode,
-    position?: React.DragEvent<HTMLDivElement> | { x: number; y: number },
+    position?: React.DragEvent<HTMLDivElement> | GraphRect,
     continueDragCount?: number,
   ) => {
     const childType = child?.type || '';
@@ -957,7 +965,7 @@ const Workflow: React.FC = () => {
 
     // 获取坐标函数：优先使用拖拽事件坐标，否则生成随机坐标
     const getCoordinates = (
-      position?: React.DragEvent<HTMLDivElement> | { x: number; y: number },
+      position?: React.DragEvent<HTMLDivElement> | GraphRect,
     ): { x: number; y: number } => {
       if (!position) {
         return getViewportCenter();
@@ -1017,7 +1025,7 @@ const Workflow: React.FC = () => {
     const _nodeList = _detail.data.nodes;
     setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
     changeDrawer(_detail.data.startNode);
-    graphRef.current.selectNode(_detail.data.startNode.id);
+    graphRef.current?.graphSelectNode(String(_detail.data.startNode.id));
 
     const _res = await service.validWorkflow(info?.id as number);
     if (_res.code === Constant.success) {
@@ -1156,7 +1164,7 @@ const Workflow: React.FC = () => {
             },
             status: data.data.status,
           };
-          graphRef.current.activeNodeRunResult(
+          graphRef.current?.graphActiveNodeRunResult(
             data.data.nodeId.toString(),
             runResult,
           );
@@ -1307,7 +1315,7 @@ const Workflow: React.FC = () => {
 
   const handleClearRunResult = () => {
     setTestRunResult('');
-    graphRef.current?.resetRunResult();
+    graphRef.current?.graphResetRunResult();
   };
 
   // 关闭右侧抽屉
@@ -1316,7 +1324,7 @@ const Workflow: React.FC = () => {
     changeDrawer(null);
     setVisible(false);
     // TODO 排除 Loop 节点 触发空白区域点击事件 清空选择状态
-    graphRef.current?.clearSelection();
+    graphRef.current?.graphClearSelection();
   };
 
   // 更改节点的名称
@@ -1346,10 +1354,10 @@ const Workflow: React.FC = () => {
   };
 
   const selectGraphNode = (nodeId: number) => {
-    const graph = graphRef.current.getGraphRef();
+    const graph = graphRef.current?.getGraphRef();
     const _node = graph?.getCellById(nodeId.toString());
     if (_node) {
-      graphRef.current.selectNode(nodeId.toString());
+      graphRef.current?.graphSelectNode(nodeId.toString());
     }
   };
 
@@ -1359,7 +1367,7 @@ const Workflow: React.FC = () => {
     if (node) {
       //分成二个步骤：
       // 1. 先获取当前选中节点的位置，然后平移画布到当前选中节点在视口中间
-      const graph = graphRef.current.getGraphRef();
+      const graph = graphRef.current?.getGraphRef();
       const cell = graph?.getCellById(node.id.toString());
       if (cell) {
         graph?.centerCell(cell);
@@ -1374,7 +1382,7 @@ const Workflow: React.FC = () => {
     child: StencilChildNode,
     sourceNode: ChildNode,
     portId: string,
-    position: { x: number; y: number },
+    position: GraphRect,
     targetNode?: ChildNode,
     edgeId?: string,
   ) => {
@@ -1386,7 +1394,7 @@ const Workflow: React.FC = () => {
       edgeId: edgeId,
     };
 
-    const calculateNodePosition = (_position: { x: number; y: number }) => {
+    const calculateNodePosition = (_position: GraphRect) => {
       let newNodeWidth = DEFAULT_NODE_CONFIG.generalNode.defaultWidth;
       if (child.type === 'Loop') {
         newNodeWidth = DEFAULT_NODE_CONFIG.loopNode.defaultWidth + 200; // TODO 有疑问，为什么需要加200
@@ -1402,7 +1410,7 @@ const Workflow: React.FC = () => {
         const isOut = portId.endsWith('out');
         const peerPosition = getPeerNodePosition(
           sourceNode.id.toString(),
-          graphRef.current.getGraphRef(),
+          graphRef.current?.getGraphRef() as Graph,
           isOut ? 'next' : 'previous',
         );
 

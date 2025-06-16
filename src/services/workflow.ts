@@ -180,7 +180,7 @@ export async function getNodeList(id: number): Promise<RequestResponse<any>> {
 }
 
 // 给工作流添加节点
-export async function addNode(
+export async function apiAddNode(
   data: IAddNode,
 ): Promise<RequestResponse<AddNodeResponse>> {
   return request(`/api/workflow/node/add`, {
@@ -190,7 +190,7 @@ export async function addNode(
 }
 
 // 复制工作流
-export async function copyNode(
+export async function apiCopyNode(
   id: string | number,
 ): Promise<RequestResponse<AddNodeResponse>> {
   return request(`/api/workflow/node/copy/${id}`, {
@@ -199,7 +199,7 @@ export async function copyNode(
 }
 
 // 删除工作流的节点
-export async function deleteNode(
+export async function apiDeleteNode(
   id: string | number,
 ): Promise<RequestResponse<null>> {
   return request(`/api/workflow/node/delete/${id}`, {
@@ -208,7 +208,9 @@ export async function deleteNode(
 }
 
 // 添加连线
-export async function addEdge(data: IAddEdge): Promise<RequestResponse<null>> {
+export async function apiAddEdge(
+  data: IAddEdge,
+): Promise<RequestResponse<null>> {
   return request(`/api/workflow/node/${data.sourceId}/nextIds/update`, {
     method: 'POST',
     data: data.nodeId,
@@ -282,14 +284,14 @@ export async function apiWorkflowConfigHistoryList(
 }
 
 export default {
+  apiDeleteNode,
+  apiCopyNode,
+  apiAddEdge,
   getDetails,
+  apiAddNode,
   updateDetails,
   getNodeList,
-  addNode,
   getModelList,
-  deleteNode,
-  copyNode,
-  addEdge,
   getModelListByWorkflowId,
   getOutputArgs,
   getNodeConfig,

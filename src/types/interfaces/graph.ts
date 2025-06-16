@@ -124,6 +124,13 @@ export interface GraphContainerProps {
   ) => void;
 }
 
+export interface GraphRect {
+  x: number;
+  y: number;
+  height?: number;
+  width?: number;
+}
+
 export interface GraphContainerRef {
   getCurrentViewPort: () => {
     x: number;
@@ -132,23 +139,32 @@ export interface GraphContainerRef {
     height: number;
   };
   // 新增节点
-  addNode: (e: { x: number; y: number }, child: ChildNode) => void;
+  graphAddNode: (e: GraphRect, child: ChildNode) => void;
   // 修改节点
-  updateNode: (nodeId: string, newData: ChildNode) => void;
+  graphUpdateNode: (nodeId: string, newData: ChildNode | null) => void;
   // 保存节点
-  saveAllNodes: () => void;
+  // graphSaveAllNodes: () => void;
   // 删除节点
-  deleteNode: (id: string) => void;
+  graphDeleteNode: (id: string) => void;
   // 选中节点
-  selectNode: (id: string) => void;
+  graphSelectNode: (id: string) => void;
   // 删除边
-  deleteEdge: (id: string) => void;
+  graphDeleteEdge: (id: string) => void;
   // 创建新的边
-  createNewEdge: (source: string, target: string, isLoop?: boolean) => void;
-  changeGraphZoom: (val: number) => void;
+  graphCreateNewEdge: (
+    source: string,
+    target: string,
+    isLoop?: boolean,
+  ) => void;
+  graphChangeZoom: (val: number) => void;
+  graphChangeZoomToFit: () => void;
   drawGraph: () => void;
   getGraphRef: () => Graph;
-  clearSelection: () => void;
+  graphClearSelection: () => void;
+  // 清空运行结果
+  graphResetRunResult: () => void;
+  // 激活节点运行结果
+  graphActiveNodeRunResult: (id: string, runResult: RunResultItem) => void;
 }
 
 export interface BindEventHandlers {
