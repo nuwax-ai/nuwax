@@ -138,7 +138,7 @@ export interface TempConversationChatParams {
   chatKey: string;
   // 会话唯一标识
   conversationUid: string;
-  variableParams?: any;
+  variableParams?: Record<string, string | number> | null;
   // chat消息
   message: string;
   // 附件列表

@@ -4,6 +4,7 @@ import ChatInputHome from '@/components/ChatInputHome';
 import ChatInputPhone from '@/components/ChatInputPhone';
 import ChatView from '@/components/ChatView';
 import ConditionRender from '@/components/ConditionRender';
+import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import {
   TEMP_CONVERSATION_CONNECTION_URL,
@@ -24,6 +25,7 @@ import { MessageStatusEnum } from '@/types/enums/common';
 import {
   AgentManualComponentInfo,
   AgentSelectedComponentInfo,
+  BindConfigWithSub,
 } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
@@ -36,11 +38,11 @@ import type {
   TempConversationChatParams,
 } from '@/types/interfaces/conversationInfo';
 import { RequestResponse } from '@/types/interfaces/request';
-import { addBaseTarget } from '@/utils/common';
+import { addBaseTarget, arraysContainSameItems } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { message } from 'antd';
+import { Form, message } from 'antd';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
 import moment from 'moment';
@@ -84,12 +86,65 @@ const ChatTemp: React.FC = () => {
   const [selectedComponentList, setSelectedComponentList] = useState<
     AgentSelectedComponentInfo[]
   >([]);
+  // 变量参数
+  const [variables, setVariables] = useState<BindConfigWithSub[]>([]);
+  // 用户填写的变量参数
+  const [userFillVariables, setUserFillVariables] = useState<Record<
+    string,
+    string | number
+  > | null>(null);
+  // 必填变量参数name列表
+  const [requiredNameList, setRequiredNameList] = useState<string[]>([]);
 
   const buttonId = 'aliyun-captcha-id';
   const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
 
   // 会话UID
   const conversationUid = useRef<string>();
+
+  const [form] = Form.useForm();
+  // 变量参数
+  const [variableParams, setVariableParams] = useState<Record<
+    string,
+    string | number
+  > | null>(null);
+
+  const values = Form.useWatch([], { form, preserve: true });
+
+  React.useEffect(() => {
+    // 监听form表单值变化
+    if (values && Object.keys(values).length === 0) {
+      return;
+    }
+    form
+      .validateFields({ validateOnly: true })
+      .then(() => setVariableParams(values))
+      .catch(() => setVariableParams(null));
+  }, [form, values]);
+
+  useEffect(() => {
+    if (!!userFillVariables) {
+      form.setFieldsValue(userFillVariables);
+      setVariableParams(userFillVariables);
+    }
+  }, [userFillVariables]);
+
+  // 聊天会话框是否禁用，不能发送消息
+  const wholeDisabled = useMemo(() => {
+    // 变量参数为空，不发送消息
+    if (requiredNameList?.length > 0) {
+      // 未填写必填参数，禁用发送按钮
+      if (!variableParams) {
+        return true;
+      }
+      const isSameName = arraysContainSameItems(
+        requiredNameList,
+        Object.keys(variableParams),
+      );
+      return !isSameName;
+    }
+    return false;
+  }, [requiredNameList, variableParams]);
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const handleScrollBottom = () => {
@@ -133,6 +188,18 @@ const ChatTemp: React.FC = () => {
         const _messageList = data?.messageList || [];
         // 可手动选择的组件列表
         setManualComponents(data?.agent?.manualComponents || []);
+        // 变量参数
+        const _variables = data?.agent?.variables || [];
+        setVariables(_variables);
+        // 用户填写的变量参数
+        setUserFillVariables(data?.variables || null);
+        // 必填参数name列表
+        const _requiredNameList = _variables
+          ?.filter(
+            (item: BindConfigWithSub) => !item.systemVariable && item.require,
+          )
+          ?.map((item: BindConfigWithSub) => item.name);
+        setRequiredNameList(_requiredNameList || []);
         // 问题建议列表
         let suggestList: string[] = [];
         // 存在消息列表时，设置消息列表
@@ -372,6 +439,7 @@ const ChatTemp: React.FC = () => {
     message: string,
     files: UploadFileInfo[] = [],
     infos: AgentSelectedComponentInfo[] = [],
+    variableParams: Record<string, string | number> | null = null,
   ) => {
     // 清除副作用
     handleClearSideEffect();
@@ -432,6 +500,7 @@ const ChatTemp: React.FC = () => {
       conversationUid: conversationUid.current || '',
       message,
       attachments,
+      variableParams,
       selectedComponents: infos,
     };
     // 处理会话
@@ -563,8 +632,17 @@ const ChatTemp: React.FC = () => {
   };
 
   // 消息发送
-  const handleMessageSend = (message: string, files: UploadFileInfo[] = []) => {
-    onMessageSend(message, files, selectedComponentList);
+  const handleMessageSend = (
+    messageInfo: string,
+    files: UploadFileInfo[] = [],
+  ) => {
+    // 变量参数为空，不发送消息
+    if (wholeDisabled) {
+      form.validateFields(); // 触发表单验证以显示error
+      message.warning('请填写必填参数');
+      return;
+    }
+    onMessageSend(messageInfo, files, selectedComponentList, variableParams);
   };
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
@@ -633,6 +711,13 @@ const ChatTemp: React.FC = () => {
             </div>
           ) : messageList?.length > 0 ? (
             <>
+              {/* 新对话设置 */}
+              <NewConversationSet
+                className="mb-16"
+                form={form}
+                variables={variables}
+                disabled={!!userFillVariables}
+              />
               {messageList?.map((item: MessageInfo, index: number) => (
                 <ChatView
                   className={cx(styles['phone-chat-item'])}
@@ -673,11 +758,13 @@ const ChatTemp: React.FC = () => {
             className={cx(styles['input-container'])}
             onEnter={handleMessageSend}
             visible={showScrollBtn}
+            wholeDisabled={wholeDisabled}
             manualComponents={manualComponents}
             selectedComponentList={selectedComponentList}
             onSelectComponent={handleSelectComponent}
             onScrollBottom={onScrollBottom}
           />
+          {/*手机会话输入框*/}
           <ChatInputPhone
             className={cx(styles['phone-container'])}
             onEnter={handleMessageSend}
