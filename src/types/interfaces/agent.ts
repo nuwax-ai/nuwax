@@ -6,6 +6,7 @@ import type {
   InputTypeEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
+  OptionDataSourceEnum,
   SearchStrategyEnum,
   TriggerComponentType,
   TriggerTypeEnum,
@@ -21,6 +22,7 @@ import type { HistoryActionTypeEnum, OpenCloseEnum } from '@/types/enums/space';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import React from 'react';
 import { CardArgsBindConfigInfo } from './cardInfo';
+import { CascaderOption } from './common';
 
 // 知识库设置label
 export interface LabelIconProps {
@@ -83,6 +85,8 @@ export interface BindConfigWithSub {
   key: React.Key;
   // 参数名称，符合函数命名规则
   name: string;
+  // 参数展示名称，供前端展示使用
+  displayName?: string;
   // 参数详细描述信息
   description: string;
   // 数据类型
@@ -97,9 +101,20 @@ export interface BindConfigWithSub {
   bindValueType?: BindValueType;
   // 参数值，当类型为引用时，示例 1.xxx 绑定节点ID为1的xxx字段；当类型为输入时，该字段为最终使用的值
   bindValue?: string;
-  // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
+  // 输入类型 可用值:Query,Body,Header,Path,Text,Paragraph,Select,MultipleSelect,Number,AutoRecognition
   inputType?: InputTypeEnum;
   subArgs?: BindConfigWithSub[];
+  // 下拉参数配置
+  selectConfig?: {
+    // 数据源类型,可用值:MANUAL,PLUGIN
+    dataSourceType: OptionDataSourceEnum;
+    // 数据源类型,可用值:Agent,Plugin,Workflow,Knowledge,Table
+    targetType: AgentComponentTypeEnum;
+    // 插件或工作流ID，dataSource选择PLUGIN时有用
+    targetId: number;
+    // 下拉选项配置
+    options: CascaderOption[];
+  };
   loopId: number;
   children?: BindConfigWithSub[];
   [key: string]: any;
