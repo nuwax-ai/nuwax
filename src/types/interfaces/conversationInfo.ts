@@ -121,6 +121,8 @@ export interface AttachmentFile {
 export interface ConversationChatParams {
   // 会话唯一标识
   conversationId: number;
+  // 变量参数，前端需要根据agent配置组装参数
+  variableParams?: Record<string, string | number>;
   // chat消息
   message: string;
   // 附件列表

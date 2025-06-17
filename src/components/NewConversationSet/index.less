@@ -4,7 +4,6 @@
   width: 100%;
   border-radius: 10px;
   background-color: @WHITE;
-  padding: 0 20px;
   margin-bottom: 20px;
   border: 1px solid @GRAY06;
   box-shadow: inset 0 0 5px @GRAY01;
@@ -12,11 +11,18 @@
   .header {
     height: 60px;
     font-weight: 600;
+    padding: 0 20px;
 
     .text {
       color: @GRAY05;
       user-select: none;
     }
+  }
+
+  .form-box {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 0 20px;
   }
 
   .conversation-container {

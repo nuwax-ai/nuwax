@@ -2,6 +2,7 @@ import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar from '@/components/AgentSidebar';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
+import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
@@ -17,9 +18,10 @@ import type {
 import { addBaseTarget } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { LoadingOutlined } from '@ant-design/icons';
+import { Form } from 'antd';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import styles from './index.less';
 import ShowArea from './ShowArea';
@@ -41,6 +43,13 @@ const Chat: React.FC = () => {
   const infos = location.state?.infos;
   // 默认的智能体详情信息
   const defaultAgentDetail = location.state?.defaultAgentDetail;
+
+  const [form] = Form.useForm();
+  // 变量参数
+  const [variableParams, setVariableParams] = useState<Record<
+    string,
+    string | number
+  > | null>(null);
 
   // 智能体详情
   const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
@@ -72,6 +81,7 @@ const Chat: React.FC = () => {
     showScrollBtn,
     setShowScrollBtn,
     resetInit,
+    variables,
   } = useModel('conversationInfo');
 
   // 角色信息（名称、头像）
@@ -151,7 +161,7 @@ const Chat: React.FC = () => {
           (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
         // 如果message或者附件不为空,可以发送消息，但刷新页面时，不重新发送消息
         if (isCanMessage && (message || files?.length > 0)) {
-          onMessageSend(id, message, files, infos);
+          onMessageSend(id, message, files, infos, variableParams);
         }
       };
       asyncFun();
@@ -211,7 +221,7 @@ const Chat: React.FC = () => {
 
   // 消息发送
   const handleMessageSend = (message: string, files: UploadFileInfo[] = []) => {
-    onMessageSend(id, message, files, selectedComponentList);
+    onMessageSend(id, message, files, selectedComponentList, variableParams);
   };
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
@@ -223,6 +233,13 @@ const Chat: React.FC = () => {
       behavior: 'smooth',
     });
     setShowScrollBtn(false);
+  };
+
+  const handleConfirmSet = (
+    variableParams: Record<string, string | number>,
+  ) => {
+    console.log('Received values of form22222: ', variableParams);
+    setVariableParams(variableParams);
   };
 
   return (
@@ -250,6 +267,13 @@ const Chat: React.FC = () => {
             </div>
           ) : messageList?.length > 0 ? (
             <>
+              {/* 新对话设置 */}
+              <NewConversationSet
+                form={form}
+                variables={variables}
+                disabled
+                onConfirm={handleConfirmSet}
+              />
               {messageList?.map((item: MessageInfo, index: number) => (
                 <ChatView
                   key={index}

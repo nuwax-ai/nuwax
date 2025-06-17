@@ -427,6 +427,7 @@ export default () => {
     message: string,
     files: UploadFileInfo[] = [],
     infos: AgentSelectedComponentInfo[] = [],
+    variableParams?: Record<string, string | number>,
     debug: boolean = false,
     // 是否同步会话记录
     isSync: boolean = true,
@@ -487,6 +488,7 @@ export default () => {
     // 会话请求参数
     const params: ConversationChatParams = {
       conversationId: id,
+      variableParams,
       message,
       attachments,
       debug,
@@ -535,5 +537,6 @@ export default () => {
     setShowScrollBtn,
     resetInit,
     variables,
+    setVariables,
   };
 };

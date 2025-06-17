@@ -24,7 +24,8 @@ const cx = classNames.bind(styles);
  */
 const ChatInputHome: React.FC<ChatInputProps> = ({
   className,
-  disabled = false,
+  wholeDisabled = false,
+  clearDisabled = false,
   onEnter,
   visible,
   selectedComponentList,
@@ -115,7 +116,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   };
 
   const handleClear = () => {
-    if (disabled) {
+    if (clearDisabled || wholeDisabled) {
       return;
     }
     onClear?.();
@@ -131,6 +132,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         {/*输入框*/}
         <Input.TextArea
           ref={textareaRef}
+          disabled={wholeDisabled}
           value={messageInfo}
           onChange={(e) => setMessageInfo(e.target.value)}
           rootClassName={cx(styles.input)}
@@ -149,7 +151,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   'content-center',
                   'hover-box',
                   'cursor-pointer',
-                  { [styles.disabled]: disabled },
+                  { [styles.disabled]: clearDisabled || wholeDisabled },
                 )}
                 onClick={handleClear}
               >
@@ -160,6 +162,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           {/*上传按钮*/}
           <Upload
             action={UPLOAD_FILE_ACTION}
+            disabled={wholeDisabled}
             onChange={handleChange}
             headers={{
               Authorization: token ? `Bearer ${token}` : '',
@@ -177,6 +180,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                 'cursor-pointer',
                 styles.box,
                 styles['plus-box'],
+                { [styles['upload-box-disabled']]: wholeDisabled },
               )}
             >
               <PlusOutlined />

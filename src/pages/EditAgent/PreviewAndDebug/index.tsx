@@ -14,6 +14,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import eventBus from '@/utils/eventBus';
 import { LoadingOutlined } from '@ant-design/icons';
+import { Form } from 'antd';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
 import React, {
@@ -37,17 +38,26 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
   agentConfigInfo,
   onPressDebug,
 }) => {
+  const [form] = Form.useForm();
   // 会话ID
   const devConversationIdRef = useRef<number>(0);
-  // 是否开始会话， 如果开始会话，则不能再修改"新会话设置"
-  const isStartConversationRef = useRef<boolean>(false);
   // 变量参数
   const [variableParams, setVariableParams] = useState<Record<
     string,
     string | number
   > | null>(null);
 
-  console.log('variableParams', variableParams);
+  const values = Form.useWatch([], { form, preserve: true });
+
+  React.useEffect(() => {
+    if (values && Object.keys(values).length === 0) {
+      return;
+    }
+    form
+      .validateFields({ validateOnly: true })
+      .then(() => setVariableParams(values))
+      .catch(() => setVariableParams(null));
+  }, [form, values]);
 
   const {
     messageList,
@@ -192,9 +202,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       return;
     }
 
-    // 已开始会话，不能再修改"新会话设置"
-    isStartConversationRef.current = true;
-    onMessageSend(id, message, files, [], true, false);
+    onMessageSend(id, message, files, [], variableParams, true, false);
   };
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
@@ -208,13 +216,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     setShowScrollBtn(false);
   };
 
-  const handleConfirmSet = (
-    variableParams: Record<string, string | number>,
-  ) => {
-    console.log('Received values of form22222: ', variableParams);
-    setVariableParams(variableParams);
-  };
-
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <PreviewAndDebugHeader onPressDebug={onPressDebug} />
@@ -225,9 +226,11 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
           'flex-1',
           'flex',
           'flex-col',
-          'overflow-y',
+          'overflow-hide',
         )}
       >
+        {/* 新对话设置 */}
+        <NewConversationSet form={form} variables={variables} />
         <div
           className={cx(styles['chat-wrapper'], 'flex-1')}
           ref={messageViewRef}
@@ -240,12 +243,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
             </div>
           ) : messageList?.length > 0 ? (
             <>
-              {/* 新对话设置 */}
-              <NewConversationSet
-                variables={variables}
-                disabled={isStartConversationRef.current}
-                onConfirm={handleConfirmSet}
-              />
               {messageList?.map((item: MessageInfo) => (
                 <ChatView
                   key={item?.id}
@@ -271,7 +268,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
                 extra={
                   <RecommendList
                     className="mt-16"
-                    // itemClassName={cx(styles['suggest-item'])}
                     loading={loadingSuggest}
                     chatSuggestList={chatSuggestList}
                     onClick={handleMessageSend}
@@ -283,9 +279,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
         </div>
         {/*会话输入框*/}
         <ChatInputHome
-          disabled={!messageList?.length}
+          clearDisabled={!messageList?.length}
           onEnter={handleMessageSend}
           onClear={handleClear}
+          wholeDisabled={!variableParams}
           visible={showScrollBtn}
           manualComponents={manualComponents}
           selectedComponentList={selectedComponentList}

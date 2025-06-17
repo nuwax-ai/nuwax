@@ -13,11 +13,12 @@ const cx = classNames.bind(styles);
 // 新对话设置组件
 const NewConversationSet: React.FC<NewConversationSetProps> = ({
   className,
+  form,
   disabled = false,
+  showSubmitButton = false,
   variables,
   onConfirm,
 }) => {
-  const [form] = Form.useForm();
   // 是否打开表单
   const [isOpen, setIsOpen] = useState<boolean>(true);
   // 是否已填写表单
@@ -103,7 +104,7 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
           </span>
         </ConditionRender>
       </header>
-      <div className={cx(_className)}>
+      <div className={cx(_className, styles['form-box'])}>
         <Form
           form={form}
           disabled={disabled}
@@ -132,11 +133,13 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
               </Form.Item>
             );
           })}
-          <Form.Item>
-            <Button type="primary" htmlType="submit" block>
-              开始对话
-            </Button>
-          </Form.Item>
+          <ConditionRender condition={showSubmitButton}>
+            <Form.Item>
+              <Button type="primary" htmlType="submit" block>
+                开始对话
+              </Button>
+            </Form.Item>
+          </ConditionRender>
         </Form>
       </div>
     </div>

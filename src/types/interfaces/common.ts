@@ -433,7 +433,10 @@ export interface ManualComponentItemProps {
 // 聊天输入框组件
 export interface ChatInputProps extends ManualComponentItemProps {
   className?: React.CSSProperties;
-  disabled?: boolean;
+  // 所有组件禁用
+  wholeDisabled?: boolean;
+  // 清空按钮禁用
+  clearDisabled?: boolean;
   visible?: boolean;
   // 发送消息后是否清空输入框, 默认true
   isClearInput?: boolean;
@@ -514,7 +517,10 @@ export interface MoveCopyComponentProps {
 // 新对话设置组件属性
 export interface NewConversationSetProps {
   className?: string;
+  form: FormInstance;
   disabled?: boolean;
+  // 是否展示重置按钮
+  showSubmitButton?: boolean;
   variables: BindConfigWithSub[];
-  onConfirm: (variableParams: Record<string, string | number>) => void;
+  onConfirm?: (variableParams: Record<string, string | number>) => void;
 }
