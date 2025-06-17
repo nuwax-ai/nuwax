@@ -48,7 +48,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   // 点击发送事件
   const handleSendMessage = () => {
-    if (disabledSend) {
+    if (disabledSend || wholeDisabled) {
       return;
     }
     if (messageInfo || files?.length > 0) {
@@ -202,7 +202,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                 'cursor-pointer',
                 styles.box,
                 styles['send-box'],
-                { [styles.disabled]: disabledSend },
+                { [styles.disabled]: disabledSend || wholeDisabled },
               )}
             >
               <ArrowUpOutlined />
