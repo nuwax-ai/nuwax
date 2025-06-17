@@ -12,6 +12,7 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
+import { arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form } from 'antd';
@@ -49,16 +50,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
 
   const values = Form.useWatch([], { form, preserve: true });
 
-  React.useEffect(() => {
-    if (values && Object.keys(values).length === 0) {
-      return;
-    }
-    form
-      .validateFields({ validateOnly: true })
-      .then(() => setVariableParams(values))
-      .catch(() => setVariableParams(null));
-  }, [form, values]);
-
   const {
     messageList,
     setMessageList,
@@ -78,7 +69,36 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     resetInit,
     manualComponents,
     variables,
+    requiredNameList,
   } = useModel('conversationInfo');
+
+  React.useEffect(() => {
+    if (values && Object.keys(values).length === 0) {
+      return;
+    }
+    form
+      .validateFields({ validateOnly: true })
+      .then(() => setVariableParams(values))
+      .catch(() => setVariableParams(null));
+  }, [form, values]);
+
+  // 聊天会话框是否禁用，不能发送消息
+  const wholeDisabled = useMemo(() => {
+    // 变量参数为空，不发送消息
+    if (requiredNameList?.length > 0) {
+      // 未填写必填参数，禁用发送按钮
+      if (!variableParams) {
+        return true;
+      }
+      const isSameName = arraysContainSameItems(
+        requiredNameList,
+        Object.keys(variableParams),
+      );
+      return !isSameName;
+    }
+    return false;
+  }, [requiredNameList, variableParams]);
+
   // 创建智能体会话
   const { runAsyncConversationCreate } = useConversation();
   // 会话输入框已选择组件
@@ -282,7 +302,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
           clearDisabled={!messageList?.length}
           onEnter={handleMessageSend}
           onClear={handleClear}
-          wholeDisabled={!variableParams}
+          wholeDisabled={wholeDisabled}
           visible={showScrollBtn}
           manualComponents={manualComponents}
           selectedComponentList={selectedComponentList}

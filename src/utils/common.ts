@@ -119,8 +119,25 @@ function encodeHTML(str: string) {
     .replace(/'/g, '&#039;');
 }
 
+// 检查第一个数组每个元素是否都存在于第二个数组中。
+const arraysContainSameItems = (arr1: string[], arr2: string[]) => {
+  // 使用 Set 去重
+  const set1 = new Set(arr1);
+  const set2 = new Set(arr2);
+
+  // 检查 set1 中的每个元素是否都在 set2 中
+  for (let item of set1) {
+    if (!set2.has(item)) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 export {
   addBaseTarget,
+  arraysContainSameItems,
   cloneDeep,
   encodeHTML,
   formatTimeAgo,

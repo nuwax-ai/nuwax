@@ -80,6 +80,8 @@ export default () => {
   >([]);
   // 变量参数
   const [variables, setVariables] = useState<BindConfigWithSub[]>([]);
+  // 必填变量参数name列表
+  const [requiredNameList, setRequiredNameList] = useState<string[]>([]);
   // 历史记录
   const { runHistory } = useModel('conversationHistory');
 
@@ -129,7 +131,15 @@ export default () => {
       // 可手动选择的组件列表
       setManualComponents(data?.agent?.manualComponents || []);
       // 变量参数
-      setVariables(data?.agent?.variables || []);
+      const _variables = data?.agent?.variables || [];
+      setVariables(_variables);
+      // 必填参数name列表
+      const _requiredNameList = _variables
+        ?.filter(
+          (item: BindConfigWithSub) => !item.systemVariable && item.require,
+        )
+        ?.map((item: BindConfigWithSub) => item.name);
+      setRequiredNameList(_requiredNameList || []);
       // 消息列表
       const _messageList = data?.messageList || [];
       if (_messageList?.length) {
@@ -538,5 +548,7 @@ export default () => {
     resetInit,
     variables,
     setVariables,
+    requiredNameList,
+    setRequiredNameList,
   };
 };

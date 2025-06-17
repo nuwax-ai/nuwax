@@ -73,7 +73,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 打开、关闭弹窗
   const { show, setShow } = useModel('model');
   const { agentComponentList, setAgentComponentList } = useModel('spaceAgent');
-  const { setVariables } = useModel('conversationInfo');
+  const { setVariables, setRequiredNameList } = useModel('conversationInfo');
 
   // 根据组件类型，过滤组件
   const filterList = (type: AgentComponentTypeEnum) => {
@@ -194,12 +194,18 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     );
     // 绑定变量信息
     if (variablesInfo) {
-      const { bindConfig } = variablesInfo;
+      const _variables = variablesInfo.bindConfig?.variables || [];
       setVariables(
-        bindConfig?.variables?.filter(
-          (item: BindConfigWithSub) => !item.systemVariable,
-        ) || [],
+        _variables?.filter((item: BindConfigWithSub) => !item.systemVariable) ||
+          [],
       );
+      // 必填参数name列表
+      const _requiredNameList = _variables
+        ?.filter(
+          (item: BindConfigWithSub) => !item.systemVariable && item.require,
+        )
+        ?.map((item: BindConfigWithSub) => item.name);
+      setRequiredNameList(_requiredNameList || []);
     }
   };
 
