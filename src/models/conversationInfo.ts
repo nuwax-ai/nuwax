@@ -80,6 +80,11 @@ export default () => {
   >([]);
   // 变量参数
   const [variables, setVariables] = useState<BindConfigWithSub[]>([]);
+  // 用户填写的变量参数
+  const [userFillVariables, setUserFillVariables] = useState<Record<
+    string,
+    string | number
+  > | null>(null);
   // 必填变量参数name列表
   const [requiredNameList, setRequiredNameList] = useState<string[]>([]);
   // 历史记录
@@ -133,6 +138,8 @@ export default () => {
       // 变量参数
       const _variables = data?.agent?.variables || [];
       setVariables(_variables);
+      // 用户填写的变量参数
+      setUserFillVariables(data?.variables || null);
       // 必填参数name列表
       const _requiredNameList = _variables
         ?.filter(
@@ -548,6 +555,7 @@ export default () => {
     resetInit,
     variables,
     setVariables,
+    userFillVariables,
     requiredNameList,
     setRequiredNameList,
   };

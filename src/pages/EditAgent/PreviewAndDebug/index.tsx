@@ -15,7 +15,7 @@ import type {
 import { arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Form } from 'antd';
+import { Form, message } from 'antd';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
 import React, {
@@ -48,8 +48,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     string | number
   > | null>(null);
 
-  const values = Form.useWatch([], { form, preserve: true });
-
   const {
     messageList,
     setMessageList,
@@ -69,10 +67,14 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     resetInit,
     manualComponents,
     variables,
+    userFillVariables,
     requiredNameList,
   } = useModel('conversationInfo');
 
+  const values = Form.useWatch([], { form, preserve: true });
+
   React.useEffect(() => {
+    // 监听form表单值变化
     if (values && Object.keys(values).length === 0) {
       return;
     }
@@ -81,6 +83,13 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       .then(() => setVariableParams(values))
       .catch(() => setVariableParams(null));
   }, [form, values]);
+
+  useEffect(() => {
+    if (!!userFillVariables) {
+      form.setFieldsValue(userFillVariables);
+      setVariableParams(userFillVariables);
+    }
+  }, [userFillVariables]);
 
   // 聊天会话框是否禁用，不能发送消息
   const wholeDisabled = useMemo(() => {
@@ -216,13 +225,20 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
   }, [agentId]);
 
   // 消息发送
-  const handleMessageSend = (message: string, files?: UploadFileInfo[]) => {
+  const handleMessageSend = (messageInfo: string, files?: UploadFileInfo[]) => {
     const id = devConversationIdRef.current;
     if (!id) {
       return;
     }
 
-    onMessageSend(id, message, files, [], variableParams, true, false);
+    // 变量参数为空，不发送消息
+    if (wholeDisabled) {
+      form.validateFields(); // 触发表单验证以显示error
+      message.warning('请填写必填参数');
+      return;
+    }
+
+    onMessageSend(id, messageInfo, files, [], variableParams, true, false);
   };
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制

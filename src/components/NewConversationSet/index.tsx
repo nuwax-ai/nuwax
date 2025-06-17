@@ -35,12 +35,14 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
     isFilled.current = true;
     onConfirm?.(values);
   };
+
   // 对话容器样式
   const _className = isOpen
     ? styles['conversation-container']
     : isFilled.current
     ? styles['close-form']
     : null;
+
   // 根据输入方式获取内容
   const getContent = (item: BindConfigWithSub) => {
     const { inputType, description } = item;

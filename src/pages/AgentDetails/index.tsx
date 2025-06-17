@@ -39,16 +39,12 @@ const AgentDetails: React.FC = () => {
   const params = useParams();
   const agentId = Number(params.agentId);
   const [form] = Form.useForm();
+
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 会话问题建议
   const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
-  // 创建智能体会话
-  const { handleCreateConversation } = useConversation();
-  // 智能体详情
-  const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
-    useAgentDetails();
   // 变量参数
   const [variables, setVariables] = useState<BindConfigWithSub[]>([]);
   // 必填变量参数name列表
@@ -58,6 +54,7 @@ const AgentDetails: React.FC = () => {
     string,
     string | number
   > | null>(null);
+
   // 会话输入框已选择组件
   const {
     selectedComponentList,
@@ -65,10 +62,16 @@ const AgentDetails: React.FC = () => {
     handleSelectComponent,
     initSelectedComponentList,
   } = useSelectedComponent();
+  // 创建智能体会话
+  const { handleCreateConversation } = useConversation();
+  // 智能体详情
+  const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
+    useAgentDetails();
 
   const values = Form.useWatch([], { form, preserve: true });
 
   React.useEffect(() => {
+    // 监听form表单值变化
     if (values && Object.keys(values).length === 0) {
       return;
     }
@@ -210,7 +213,11 @@ const AgentDetails: React.FC = () => {
           ) : messageList?.length > 0 ? (
             <>
               {/* 新对话设置 */}
-              <NewConversationSet form={form} variables={variables} />
+              <NewConversationSet
+                className="mb-16"
+                form={form}
+                variables={variables}
+              />
               {messageList?.map((item: MessageInfo, index: number) => (
                 <ChatView
                   key={index}

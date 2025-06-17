@@ -160,6 +160,7 @@ export interface ConversationCreateParams {
   agentId: number;
   // 开发模式
   devMode: boolean;
+  variables?: Record<string, string | number> | null;
 }
 
 // 消息查询过程信息
@@ -230,6 +231,7 @@ export interface ConversationInfo {
   summary: string;
   modified: string;
   created: string;
+  variables?: Record<string, string | number> | null;
   // Agent信息，已发布过的agent才有此信息
   agent: {
     spaceId: number;

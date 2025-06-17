@@ -15,7 +15,7 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
-import { addBaseTarget } from '@/utils/common';
+import { addBaseTarget, arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form } from 'antd';
@@ -82,7 +82,46 @@ const Chat: React.FC = () => {
     setShowScrollBtn,
     resetInit,
     variables,
+    requiredNameList,
+    userFillVariables,
   } = useModel('conversationInfo');
+
+  const values = Form.useWatch([], { form, preserve: true });
+
+  React.useEffect(() => {
+    // 监听form表单值变化
+    if (values && Object.keys(values).length === 0) {
+      return;
+    }
+    form
+      .validateFields({ validateOnly: true })
+      .then(() => setVariableParams(values))
+      .catch(() => setVariableParams(null));
+  }, [form, values]);
+
+  useEffect(() => {
+    if (!!userFillVariables) {
+      form.setFieldsValue(userFillVariables);
+      setVariableParams(userFillVariables);
+    }
+  }, [userFillVariables]);
+
+  // 聊天会话框是否禁用，不能发送消息
+  const wholeDisabled = useMemo(() => {
+    // 变量参数为空，不发送消息
+    if (requiredNameList?.length > 0) {
+      // 未填写必填参数，禁用发送按钮
+      if (!variableParams) {
+        return true;
+      }
+      const isSameName = arraysContainSameItems(
+        requiredNameList,
+        Object.keys(variableParams),
+      );
+      return !isSameName;
+    }
+    return false;
+  }, [requiredNameList, variableParams]);
 
   // 角色信息（名称、头像）
   const roleInfo: RoleInfo = useMemo(() => {
@@ -220,8 +259,24 @@ const Chat: React.FC = () => {
   };
 
   // 消息发送
-  const handleMessageSend = (message: string, files: UploadFileInfo[] = []) => {
-    onMessageSend(id, message, files, selectedComponentList, variableParams);
+  const handleMessageSend = (
+    messageInfo: string,
+    files: UploadFileInfo[] = [],
+  ) => {
+    // 变量参数为空，不发送消息
+    if (wholeDisabled) {
+      form.validateFields(); // 触发表单验证以显示error
+      message.warning('请填写必填参数');
+      return;
+    }
+
+    onMessageSend(
+      id,
+      messageInfo,
+      files,
+      selectedComponentList,
+      variableParams,
+    );
   };
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
@@ -233,13 +288,6 @@ const Chat: React.FC = () => {
       behavior: 'smooth',
     });
     setShowScrollBtn(false);
-  };
-
-  const handleConfirmSet = (
-    variableParams: Record<string, string | number>,
-  ) => {
-    console.log('Received values of form22222: ', variableParams);
-    setVariableParams(variableParams);
   };
 
   return (
@@ -269,10 +317,10 @@ const Chat: React.FC = () => {
             <>
               {/* 新对话设置 */}
               <NewConversationSet
+                className="mb-16"
                 form={form}
                 variables={variables}
-                disabled
-                onConfirm={handleConfirmSet}
+                disabled={!!userFillVariables}
               />
               {messageList?.map((item: MessageInfo, index: number) => (
                 <ChatView
@@ -316,6 +364,7 @@ const Chat: React.FC = () => {
           className={cx(styles['chat-input-container'])}
           onEnter={handleMessageSend}
           visible={showScrollBtn}
+          wholeDisabled={wholeDisabled}
           onClear={handleClear}
           manualComponents={manualComponents}
           selectedComponentList={selectedComponentList}

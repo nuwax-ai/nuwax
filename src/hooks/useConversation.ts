@@ -30,9 +30,11 @@ const useConversation = () => {
       variableParams?: Record<string, string | number> | null;
     },
   ) => {
+    const variableParams = attach?.variableParams;
     const { success, data } = await runAsyncConversationCreate({
       agentId,
       devMode: false,
+      variables: variableParams,
     });
 
     if (success) {
