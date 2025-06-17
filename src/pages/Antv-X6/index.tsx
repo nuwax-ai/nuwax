@@ -65,7 +65,7 @@ import ErrorList from './errorList';
 import GraphContainer from './graphContainer';
 import Header from './header';
 import './index.less';
-import { renderNodeContent } from './nodeDrawer';
+import RenderNodeDrawer from './RenderNodeDrawer';
 
 const Workflow: React.FC = () => {
   const { message } = App.useApp();
@@ -1600,7 +1600,7 @@ const Workflow: React.FC = () => {
               setIsModified(true);
             }}
           >
-            {renderNodeContent(foldWrapItem, form)}
+            <RenderNodeDrawer params={foldWrapItem} />
           </Form>
         </div>
       </FoldWrap>

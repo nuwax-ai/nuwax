@@ -205,3 +205,9 @@ export enum AnswerTypeEnum {
   TEXT = 'TEXT',
   SELECT = 'SELECT',
 }
+
+export enum ExceptionHandleTypeEnum {
+  INTERRUPT = 'INTERRUPT',
+  SPECIFIC_CONTENT = 'SPECIFIC_CONTENT',
+  EXECUTE_EXCEPTION_FLOW = 'EXECUTE_EXCEPTION_FLOW',
+}

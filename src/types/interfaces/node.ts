@@ -1,6 +1,7 @@
 import {
   AnswerTypeEnum,
   DataTypeEnum,
+  ExceptionHandleTypeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
 import { BindConfigWithSub } from '@/types/interfaces/agent';
@@ -71,6 +72,13 @@ export interface QANodeOption {
 export interface TestRunParams {
   question: string;
   options: QANodeOption[];
+}
+export interface ExceptionHandleConfig {
+  exceptionHandleType: ExceptionHandleTypeEnum;
+  timeout: number;
+  retryCount: number;
+  specificContent?: string;
+  exceptionHandleNodeIds?: number[];
 }
 
 // 节点内部的config
@@ -175,6 +183,8 @@ export interface NodeConfig {
     id?: number;
     maxTokens?: number;
   };
+  // 异常处理配置
+  exceptionHandleConfig?: ExceptionHandleConfig;
 }
 
 export interface HttpNodeConfig extends NodeConfig {

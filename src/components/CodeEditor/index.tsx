@@ -14,6 +14,7 @@ interface Props {
   value?: string | undefined;
   onChange?: (code: string) => void;
   form?: FormInstance;
+  minimap?: boolean;
 }
 
 const CodeEditor: React.FC<Props> = ({
@@ -21,6 +22,7 @@ const CodeEditor: React.FC<Props> = ({
   onChange,
   height = '400px',
   codeLanguage,
+  minimap = false,
   form,
 }) => {
   const [isMonacoReady, setIsMonacoReady] = useState(false);
@@ -87,6 +89,9 @@ const CodeEditor: React.FC<Props> = ({
       selectOnLineNumbers: true,
       folding: true,
       automaticLayout: true,
+      minimap: {
+        enabled: minimap,
+      },
     };
 
     // 如果是JSON语言，关闭代码输入提示相关功能

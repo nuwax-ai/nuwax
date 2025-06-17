@@ -1,6 +1,7 @@
 import {
   AnswerTypeEnum,
   CompareTypeEnum,
+  ExceptionHandleTypeEnum,
   NodeShapeEnum,
 } from '@/types/enums/common';
 
@@ -29,6 +30,29 @@ export const branchTypeMap = {
 };
 export const GENERAL_NODE = NodeShapeEnum.General;
 export const LOOP_NODE = NodeShapeEnum.Loop;
+
+// 异常处理类型 label 映射
+export const EXCEPTION_HANDLE_OPTIONS = [
+  {
+    label: '中断流程',
+    value: ExceptionHandleTypeEnum.INTERRUPT,
+  },
+  {
+    label: '返回特定内容',
+    value: ExceptionHandleTypeEnum.SPECIFIC_CONTENT,
+  },
+  {
+    label: '执行异常流程',
+    value: ExceptionHandleTypeEnum.EXECUTE_EXCEPTION_FLOW,
+  },
+];
+
+export const RETRY_COUNT_OPTIONS = [
+  { label: '不重试', value: 0 },
+  { label: '1次', value: 1 },
+  { label: '2次', value: 2 },
+  { label: '3次', value: 3 },
+];
 
 export const compareTypeMap = {
   [CompareTypeEnum.EQUAL]: '=',

@@ -133,6 +133,11 @@ const routes = [
     component: '@/examples/WorkflowNodeEdit',
     layout: false,
   },
+  {
+    path: '/examples/exception-item',
+    component: '@/examples/ExceptionItemExample',
+    layout: false,
+  },
 ];
 
 export default routes;

@@ -1,5 +1,5 @@
 import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
-import { NodeConfig } from '@/types/interfaces/node';
+import { ExceptionHandleConfig, NodeConfig } from '@/types/interfaces/node';
 import { Graph, Node } from '@antv/x6';
 import type { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI as ModalHookAPI } from 'antd/es/modal/useModal';
@@ -219,4 +219,11 @@ export interface GraphProp {
     targetNode?: ChildNode,
     edgeId?: string,
   ) => void;
+}
+
+export interface ExceptionItemProps extends ExceptionHandleConfig {
+  /** 表单项名称 */
+  name: string;
+  /** 是否禁用 */
+  disabled?: boolean;
 }

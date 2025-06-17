@@ -1,9 +1,12 @@
-import { ChildNode } from '@/types/interfaces/graph';
-
-import { FormInstance } from 'antd';
+import { useSpecificContent } from '@/hooks/useSpecificContent';
+import { ExceptionHandleTypeEnum } from '@/types/enums/common';
+import { ChildNode, ExceptionItemProps } from '@/types/interfaces/graph';
+import { Form, FormInstance } from 'antd';
+import { useEffect, useState } from 'react';
 import ComplexNode from './component/complexNode';
 import ConditionNode from './component/condition';
 import Database from './component/database';
+import { ExceptionItem } from './component/ExceptionItem';
 import Library from './component/library';
 import NodeItem from './component/nodeItem';
 import ReferenceNode from './component/pluginNode';
@@ -33,8 +36,7 @@ const LoopBreak: React.FC = () => {
   );
 };
 
-// 移除 React.FC，直接使用函数组件定义
-export const renderNodeContent = (params: ChildNode, form: FormInstance) => {
+const nodeTemplate = (params: ChildNode, form: FormInstance) => {
   const { maxTokens: maxTokensLimit } = params.nodeConfig?.modelConfig || {};
   switch (params.type) {
     case 'Start':
@@ -87,3 +89,35 @@ export const renderNodeContent = (params: ChildNode, form: FormInstance) => {
       return;
   }
 };
+// 由于 所有节点支持异常配置根据后端返回的 nodeConfig.exceptionHandleConfig 来决定是否显示异常配置
+// 通过HOC 方案把所有组件包裹一层，然后根据后端返回的 nodeConfig.exceptionHandleConfig 来决定是否显示异常配置
+export default function RenderNodeDrawer({ params }: { params: ChildNode }) {
+  const form = Form.useFormInstance();
+  const { exceptionHandleConfig } = params.nodeConfig || {};
+  const [exceptionItemProps, setExceptionItemProps] =
+    useState<ExceptionItemProps>({
+      exceptionHandleType: ExceptionHandleTypeEnum.INTERRUPT,
+      timeout: 180,
+      retryCount: 0,
+      ...(exceptionHandleConfig || {}),
+      name: 'exceptionHandleConfig',
+    });
+  const { specificContent } = useSpecificContent({
+    exceptionItemProps,
+    watchField: 'outputArgs',
+  });
+
+  useEffect(() => {
+    setExceptionItemProps({
+      ...exceptionItemProps,
+      specificContent: JSON.stringify(specificContent, null, 2),
+    });
+  }, [specificContent]);
+
+  return (
+    <>
+      {nodeTemplate(params, form)}
+      {exceptionHandleConfig && <ExceptionItem {...exceptionItemProps} />}
+    </>
+  );
+}
