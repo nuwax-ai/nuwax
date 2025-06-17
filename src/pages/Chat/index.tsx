@@ -21,7 +21,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { Form } from 'antd';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import styles from './index.less';
 import ShowArea from './ShowArea';
@@ -50,6 +50,8 @@ const Chat: React.FC = () => {
     string,
     string | number
   > | null>(null);
+  // 是否发送过消息,如果是,则禁用变量参数
+  const isSendMessageRef = useRef<boolean>(false);
 
   // 智能体详情
   const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
@@ -270,6 +272,7 @@ const Chat: React.FC = () => {
       return;
     }
 
+    isSendMessageRef.current = true;
     onMessageSend(
       id,
       messageInfo,
@@ -320,7 +323,7 @@ const Chat: React.FC = () => {
                 className="mb-16"
                 form={form}
                 variables={variables}
-                disabled={!!userFillVariables}
+                disabled={!!userFillVariables || isSendMessageRef.current}
               />
               {messageList?.map((item: MessageInfo, index: number) => (
                 <ChatView

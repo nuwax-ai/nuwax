@@ -95,6 +95,8 @@ const ChatTemp: React.FC = () => {
   > | null>(null);
   // 必填变量参数name列表
   const [requiredNameList, setRequiredNameList] = useState<string[]>([]);
+  // 是否发送过消息,如果是,则禁用变量参数
+  const isSendMessageRef = useRef<boolean>(false);
 
   const buttonId = 'aliyun-captcha-id';
   const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
@@ -642,6 +644,7 @@ const ChatTemp: React.FC = () => {
       message.warning('请填写必填参数');
       return;
     }
+    isSendMessageRef.current = true;
     onMessageSend(messageInfo, files, selectedComponentList, variableParams);
   };
 
@@ -716,7 +719,7 @@ const ChatTemp: React.FC = () => {
                 className="mb-16"
                 form={form}
                 variables={variables}
-                disabled={!!userFillVariables}
+                disabled={!!userFillVariables || isSendMessageRef.current}
               />
               {messageList?.map((item: MessageInfo, index: number) => (
                 <ChatView
