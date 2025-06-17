@@ -76,6 +76,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       debounceInterval: 300,
       onSuccess: () => {
         message.success('删除成功');
+        isAddedNewVariable.current = true;
         setInputData(inputDataRef.current);
       },
     },
@@ -200,7 +201,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
   // 取消操作
   const handleCancel = () => {
     setVariableModalOpen(false);
-    // 是否新增变量了， 如果是，关闭弹窗后，刷新变量列表，如果没有，仅关闭弹窗
+    // 是否新增、编辑或删除变量了， 如果是，关闭弹窗后，刷新变量列表，如果没有，仅关闭弹窗
     if (isAddedNewVariable.current) {
       onConfirm();
     } else {
