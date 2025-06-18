@@ -3,6 +3,7 @@ import {
   CompareTypeEnum,
   ExceptionHandleTypeEnum,
   NodeShapeEnum,
+  NodeTypeEnum,
 } from '@/types/enums/common';
 
 // 有试运行的节点
@@ -45,6 +46,24 @@ export const EXCEPTION_HANDLE_OPTIONS = [
     label: '执行异常流程',
     value: ExceptionHandleTypeEnum.EXECUTE_EXCEPTION_FLOW,
   },
+];
+//  异常处理，支持节点包括：大模型、插件、工作流、MCP、代码、意图识别、知识库、数据表（相关五个节点）、问答、文档提取、HTTP请求
+export const EXCEPTION_NODES_TYPE = [
+  NodeTypeEnum.LLM,
+  NodeTypeEnum.Plugin,
+  NodeTypeEnum.Workflow,
+  NodeTypeEnum.MCP,
+  NodeTypeEnum.Code,
+  NodeTypeEnum.IntentRecognition,
+  NodeTypeEnum.Knowledge,
+  NodeTypeEnum.TableDataQuery,
+  NodeTypeEnum.TableDataUpdate,
+  NodeTypeEnum.TableDataDelete,
+  NodeTypeEnum.TableDataAdd,
+  NodeTypeEnum.TableSQL,
+  NodeTypeEnum.QA,
+  NodeTypeEnum.DocumentExtraction,
+  NodeTypeEnum.HTTPRequest,
 ];
 
 export const RETRY_COUNT_OPTIONS = [

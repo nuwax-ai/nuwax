@@ -17,8 +17,13 @@ import { adjustParentSize, validateConnect } from '@/utils/graph';
 import { message, Modal } from 'antd';
 // 自定义类型定义
 import PlusIcon from '@/assets/svg/plus_icon.svg';
+import { EXCEPTION_NODES_TYPE } from '@/constants/node.constants';
+import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
+import { PortGroupEnum } from '@/types/enums/node';
 import { GraphProp } from '@/types/interfaces/graph';
+import { cloneDeep } from '@/utils/common';
 import {
+  getPortGroup,
   handleLoopEdge,
   handleSpecialNodeTypes,
   setEdgeAttributes,
@@ -26,7 +31,6 @@ import {
 } from '@/utils/graph';
 import { createCurvePath } from './registerCustomNodes';
 import StencilContent from './stencil';
-// import { PlusOutlined,} from '@ant-design/icons';
 /**
  * 端口配置接口
  */
@@ -231,6 +235,8 @@ const initGraph = ({
         sourceCell,
         targetCell,
       }) {
+        //拉线连接校验，防止非法连接
+
         // 添加类型守卫，过滤 null/undefined
         if (!sourceMagnet || !targetMagnet || !sourceCell || !targetCell) {
           return false;
@@ -292,8 +298,10 @@ const initGraph = ({
         if (!isLoopNode(sourceCell) && !isLoopNode(targetCell)) {
           // 允许从 out 到 in 的正常连接
           if (
-            (sourcePortGroup === 'out' || sourcePortGroup === 'special') &&
-            targetPortGroup === 'in'
+            (sourcePortGroup === PortGroupEnum.out ||
+              sourcePortGroup === PortGroupEnum.special ||
+              sourcePortGroup === PortGroupEnum.exception) &&
+            targetPortGroup === PortGroupEnum.in
           ) {
             return true;
             // return validatePortConnection(sourcePortGroup, targetPortGroup);
@@ -417,6 +425,7 @@ const initGraph = ({
   const handlePortConfig = (
     port: PortConfig,
     portStatus: PortStatus = 'active',
+    color?: string,
   ): PortConfig => {
     // 基础配置
     const baseConfig = {
@@ -425,8 +434,8 @@ const initGraph = ({
         ...port.attrs,
         circle: {
           ...(port.attrs?.circle || {}),
-          stroke: '#5147FF',
-          fill: '#5147FF',
+          stroke: color || '#5147FF',
+          fill: color || '#5147FF',
         },
       },
     };
@@ -496,6 +505,7 @@ const initGraph = ({
       const portConfig = handlePortConfig(
         port as PortConfig,
         portStatusList[port.group || 'in'],
+        port.attrs?.circle?.fill as string,
       );
       return portConfig;
     });
@@ -505,7 +515,11 @@ const initGraph = ({
   graph.on('node:mouseleave', ({ node }) => {
     const ports = node.getPorts();
     const updatedPorts = ports.map((port) =>
-      handlePortConfig(port as PortConfig, 'normal'),
+      handlePortConfig(
+        port as PortConfig,
+        'normal',
+        port.attrs?.circle?.fill as string,
+      ),
     );
     node.prop('ports/items', updatedPorts);
   });
@@ -794,6 +808,33 @@ const initGraph = ({
       return;
     }
 
+    // 处理节点的异常处理 out port 连边的逻辑
+    const protGroup = getPortGroup(edge.getSourceNode() as Node, sourcePort);
+    if (
+      EXCEPTION_NODES_TYPE.includes(sourceNode.type) &&
+      protGroup === PortGroupEnum.exception
+    ) {
+      const newNodeParams = cloneDeep(sourceNode);
+      const { exceptionHandleNodeIds = [] } =
+        newNodeParams.nodeConfig?.exceptionHandleConfig || {};
+      if (exceptionHandleNodeIds.includes(targetNode.id)) {
+        // 不重复添加异常处理节点
+        return;
+      }
+      exceptionHandleNodeIds.push(targetNode.id);
+      newNodeParams.nodeConfig.exceptionHandleConfig.exceptionHandleNodeIds =
+        exceptionHandleNodeIds;
+      const _params = newNodeParams;
+      if (_params && typeof _params !== 'string') {
+        changeCondition(_params, targetNode.id);
+        graph.addEdge(edge);
+        setEdgeAttributes(edge);
+        edge.toFront();
+        return;
+      }
+      return;
+    }
+
     // 处理循环节点的逻辑
     if (sourceNode.type === 'Loop' || targetNode.type === 'Loop') {
       console.log(sourcePort);
@@ -813,10 +854,10 @@ const initGraph = ({
 
     // 处理特殊的三个节点
     if (
-      sourceNode.type === 'Condition' ||
-      sourceNode.type === 'IntentRecognition' ||
-      (sourceNode.type === 'QA' &&
-        sourceNode.nodeConfig.answerType === 'SELECT')
+      sourceNode.type === NodeTypeEnum.Condition ||
+      sourceNode.type === NodeTypeEnum.IntentRecognition ||
+      (sourceNode.type === NodeTypeEnum.QA &&
+        sourceNode.nodeConfig.answerType === AnswerTypeEnum.SELECT)
     ) {
       //
       const _params = handleSpecialNodeTypes(

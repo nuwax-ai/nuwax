@@ -1,3 +1,4 @@
+import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type {
   ChildNode,
   Edge,
@@ -180,14 +181,14 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         }
         // 处理特殊情况,如果是条件节点，需要调整子节点的大小并且重新绘制连接桩
         if (
-          newData.type === 'Condition' ||
-          newData.type === 'IntentRecognition'
+          newData.type === NodeTypeEnum.Condition ||
+          newData.type === NodeTypeEnum.IntentRecognition
         ) {
           const oldData = node.getData() as ChildNode;
           const _length = getLength(
             oldData,
             newData,
-            newData.type === 'Condition'
+            newData.type === NodeTypeEnum.Condition
               ? 'conditionBranchConfigs'
               : 'intentConfigs',
           );
@@ -199,15 +200,15 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             // node.updatePorts();
           }
         }
-        if (newData.type === 'QA') {
-          if (newData.nodeConfig.answerType !== 'SELECT') {
+        if (newData.type === NodeTypeEnum.QA) {
+          if (newData.nodeConfig.answerType !== AnswerTypeEnum.SELECT) {
             node.setSize(304, 110);
             node.prop('ports', generatePorts(newData));
           } else {
             const optionsLength = newData.nodeConfig?.options
               ? newData.nodeConfig.options.length
               : 0;
-            const newHeight = getHeight('QA', optionsLength);
+            const newHeight = getHeight(NodeTypeEnum.QA, optionsLength);
             // 确保在获取到新高度后设置节点大小和端口
             node.setSize(304, newHeight);
             node.prop('ports', generatePorts(newData));

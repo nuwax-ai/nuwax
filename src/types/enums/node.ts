@@ -11,3 +11,10 @@ export enum InputItemNameEnum {
   headers = 'headers',
   tableFields = 'tableFields',
 }
+
+export enum PortGroupEnum {
+  in = 'in',
+  out = 'out',
+  special = 'special',
+  exception = 'exception',
+}

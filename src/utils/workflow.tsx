@@ -39,14 +39,20 @@ import {
   default as Workflow,
 } from '@/assets/images/workflow_image.png';
 import PlusIcon from '@/assets/svg/plus_icon.svg';
-import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
+import { EXCEPTION_NODES_TYPE } from '@/constants/node.constants';
+import {
+  AnswerTypeEnum,
+  NodeShapeEnum,
+  NodeTypeEnum,
+} from '@/types/enums/common';
+import { PortGroupEnum } from '@/types/enums/node';
 import {
   ConditionBranchConfigs,
   IntentConfigs,
   NodeConfig,
   QANodeOption,
 } from '@/types/interfaces/node';
-import { adjustParentSize } from '@/utils/graph';
+import { adjustParentSize, generatePortGroupConfig } from '@/utils/graph';
 import { Graph, Markup, Node } from '@antv/x6';
 const imageList = {
   Table,
@@ -59,7 +65,6 @@ const imageList = {
 } as {
   [key in AgentComponentTypeEnum]: string;
 };
-
 interface PortMetadata {
   markup?: Markup; // 连接桩 DOM 结构定义。
   attrs?: any; // 属性和样式。
@@ -77,14 +82,35 @@ interface PortMetadata {
   };
 }
 
+// X6 端口配置格式
+interface PortsConfig {
+  groups: any; // 端口组配置
+  items: PortMetadata[]; // 端口项数组
+}
+
+interface PortConfig {
+  group: PortGroupEnum;
+  idSuffix: string;
+  yHeight?: number;
+  xWidth?: number;
+  offsetY?: number;
+  offsetX?: number;
+  color?: string;
+}
+
 interface NodeMetadata extends Node.Metadata {
   shape: NodeShapeEnum;
   data: ChildNode & {
     nodeConfig: NodeConfig;
     parentId: string | null;
   };
-  ports: PortMetadata[];
+  ports: PortsConfig;
 }
+type SpecialNode =
+  | NodeTypeEnum.Condition
+  | NodeTypeEnum.IntentRecognition
+  | NodeTypeEnum.QA;
+
 export const getShape = (type: NodeTypeEnum) => {
   if (type === NodeTypeEnum.Loop) {
     return NodeShapeEnum.Loop;
@@ -156,36 +182,36 @@ export const returnImg = (type: string): React.ReactNode => {
 };
 
 // 根据type返回背景色
-export const returnBackgroundColor = (type: string) => {
+export const returnBackgroundColor = (type: NodeTypeEnum) => {
   switch (type) {
-    case 'Start':
-    case 'End':
+    case NodeTypeEnum.Start:
+    case NodeTypeEnum.End:
       return '#EEEEFF';
-    case 'Code':
-    case 'Loop':
-    case 'LoopContinue':
-    case 'LoopBreak':
-    case 'Condition':
-    case 'IntentRecognition':
+    case NodeTypeEnum.Code:
+    case NodeTypeEnum.Loop:
+    case NodeTypeEnum.LoopContinue:
+    case NodeTypeEnum.LoopBreak:
+    case NodeTypeEnum.Condition:
+    case NodeTypeEnum.IntentRecognition:
       return '#ebf9f9';
-    case 'Knowledge':
+    case NodeTypeEnum.Knowledge:
     // case 'Database':
-    case 'Variable':
-    case 'LongTermMemory':
+    case NodeTypeEnum.Variable:
+    case NodeTypeEnum.LongTermMemory:
       return '#FFF0DF';
-    case 'QA':
-    case 'DocumentExtraction':
-    case 'TextProcessing':
-    case 'HTTPRequest':
+    case NodeTypeEnum.QA:
+    case NodeTypeEnum.DocumentExtraction:
+    case NodeTypeEnum.TextProcessing:
+    case NodeTypeEnum.HTTPRequest:
       return '#fef9eb';
 
-    case 'LLM':
+    case NodeTypeEnum.LLM:
       return '#E9EBED';
-    case 'Plugin':
+    case NodeTypeEnum.Plugin:
       return '#E7E1FF';
-    case 'Workflow':
+    case NodeTypeEnum.Workflow:
       return '#D0FFDB';
-    case 'Output':
+    case NodeTypeEnum.Output:
       return '#E7E1FF';
     default:
       return '#EEEEFF';
@@ -193,6 +219,7 @@ export const returnBackgroundColor = (type: string) => {
 };
 
 // 根据节点动态给予宽高
+// TODO 处理新场景 需要处理有异常节点的高度
 export const getWidthAndHeight = (node: ChildNode) => {
   const { type, nodeConfig } = node;
   const extension = nodeConfig?.extension || {};
@@ -219,10 +246,10 @@ const handleSpecialNodes = (node: ChildNode, isLoopNode: boolean): Edge[] => {
 
   let configs;
   switch (node.type) {
-    case 'Condition':
+    case NodeTypeEnum.Condition:
       configs = node.nodeConfig.conditionBranchConfigs;
       break;
-    case 'IntentRecognition':
+    case NodeTypeEnum.IntentRecognition:
       configs = node.nodeConfig.intentConfigs;
       break;
     default:
@@ -270,40 +297,69 @@ const handleLoopEdges = (node: ChildNode): Edge[] => {
   edges.push(..._edge);
   return edges;
 };
-
+const handleNodesExceptionItem = (
+  nodes: ChildNode[],
+  edges: Edge[],
+): Edge[] => {
+  let resultEdges = [...edges]; // 创建一个新数组，避免修改原参数
+  nodes.forEach((node) => {
+    const { exceptionHandleNodeIds = [] } =
+      node.nodeConfig?.exceptionHandleConfig || {};
+    if (
+      EXCEPTION_NODES_TYPE.includes(node.type) &&
+      exceptionHandleNodeIds.length
+    ) {
+      const isLoopNode = node.loopNodeId ? true : false;
+      resultEdges = resultEdges.concat([
+        ...exceptionHandleNodeIds.map((item) => {
+          return {
+            source: `${node.id}-exception-out`,
+            target: `${item}`,
+            zIndex: isLoopNode ? 5 : 1,
+          };
+        }),
+      ]);
+    }
+  });
+  return resultEdges;
+};
 // 递归获取节点的边
 export const getEdges = (
   nodes: ChildNode[],
   needValidate: boolean = true,
 ): Edge[] => {
-  const allEdges: Edge[] = nodes.flatMap((node) => {
-    let isLoopNode: boolean = false;
-    if (node.loopNodeId) {
-      isLoopNode = true;
-    }
-    if (
-      node.type === 'Condition' ||
-      node.type === 'IntentRecognition' ||
-      (node.type === 'QA' && node.nodeConfig.answerType === 'SELECT')
-    ) {
-      return handleSpecialNodes(node, isLoopNode);
-    } else if (node.type === 'Loop') {
-      return handleLoopEdges(node);
-    } else if (node.nextNodeIds && node.nextNodeIds.length > 0) {
-      const _arr = node.nextNodeIds.filter(
-        (item) => item !== node.loopNodeId && item !== node.id,
-      );
-      return _arr.map((nextNodeId) => {
-        return {
-          source: Number(node.id).toString(),
-          target: Number(nextNodeId).toString(),
-          zIndex: isLoopNode ? 5 : 1,
-        };
-      });
-    }
+  const allEdges: Edge[] = handleNodesExceptionItem(
+    nodes,
+    nodes.flatMap((node) => {
+      let isLoopNode: boolean = false;
+      if (node.loopNodeId) {
+        isLoopNode = true;
+      }
+      if (
+        node.type === NodeTypeEnum.Condition ||
+        node.type === NodeTypeEnum.IntentRecognition ||
+        (node.type === NodeTypeEnum.QA &&
+          node.nodeConfig.answerType === AnswerTypeEnum.SELECT)
+      ) {
+        return handleSpecialNodes(node, isLoopNode);
+      } else if (node.type === NodeTypeEnum.Loop) {
+        return handleLoopEdges(node);
+      } else if (node.nextNodeIds && node.nextNodeIds.length > 0) {
+        const _arr = node.nextNodeIds.filter(
+          (item) => item !== node.loopNodeId && item !== node.id,
+        );
+        return _arr.map((nextNodeId) => {
+          return {
+            source: Number(node.id).toString(),
+            target: Number(nextNodeId).toString(),
+            zIndex: isLoopNode ? 5 : 1,
+          };
+        });
+      }
 
-    return [];
-  });
+      return [];
+    }),
+  );
 
   // 过滤目标节点不存在的边（新增过滤逻辑）
   const validEdges = needValidate
@@ -323,37 +379,41 @@ export const getEdges = (
       resultEdges.push(edge);
     }
   });
-
+  console.log('getEdges:resultEdges', resultEdges);
   return resultEdges;
 };
 
 // 处理条件分支，意图识别，问答的高度
-export const getHeight = (
-  type: 'Condition' | 'IntentRecognition' | 'QA',
-  length: number,
-) => {
+
+export const getHeight = (type: SpecialNode, length: number) => {
   switch (type) {
-    case 'Condition': {
+    case NodeTypeEnum.Condition: {
       return 42 + 35 * length;
     }
-    case 'IntentRecognition': {
+    case NodeTypeEnum.IntentRecognition: {
       return 42 + 18 * length;
     }
-    case 'QA': {
+    case NodeTypeEnum.QA: {
       return 110 + 18 * length;
     }
   }
 };
-
 // 获取节点端口
-export const generatePorts = (data: ChildNode): PortMetadata[] => {
+export const generatePorts = (data: ChildNode): PortsConfig => {
   const basePortSize = 3;
-  const isLoopNode = data.type === 'Loop'; // 判断是否为 Loop 节点
+  const isLoopNode = data.type === NodeTypeEnum.Loop; // 判断是否为 Loop 节点
+  const defaultNodeHeaderHeight = 42;
+  const defaultNodeHeaderWidth = getWidthAndHeight(data).width;
   // 默认端口配置
-  const defaultPortConfig = (
-    group: 'in' | 'out' | 'special',
-    idSuffix: string,
-  ) => ({
+  const generatePortConfig = ({
+    group,
+    idSuffix,
+    color = '#5147FF',
+    yHeight = defaultNodeHeaderHeight,
+    xWidth = defaultNodeHeaderWidth,
+    offsetY = yHeight,
+    offsetX = xWidth,
+  }: PortConfig) => ({
     group,
     markup: [
       {
@@ -390,8 +450,8 @@ export const generatePorts = (data: ChildNode): PortMetadata[] => {
       circle: {
         r: basePortSize,
         magnet: true, // 必须设为 true 才能作为连接磁点
-        stroke: '#5147FF',
-        fill: '#5147FF',
+        stroke: color,
+        fill: color,
         magnetRadius: 30, // 减小磁吸半径
         zIndex: 2, // 圆在上
       },
@@ -406,109 +466,121 @@ export const generatePorts = (data: ChildNode): PortMetadata[] => {
         opacity: 0, // 设置为完全透明
       },
     },
-  });
-
-  const specialPortConfig = (
-    group: 'special',
-    idSuffix: string,
-    yHeight: number,
-  ) => ({
-    ...defaultPortConfig(group, idSuffix), // 继承默认配置
     args: {
-      x: 304,
+      x: xWidth,
       y: yHeight,
+      offsetY,
+      offsetX,
     },
   });
 
-  let inputPorts = [defaultPortConfig('in', 'in')];
-  let outputPorts: Array<
-    ReturnType<typeof defaultPortConfig> | ReturnType<typeof specialPortConfig>
-  > = [];
+  let inputPorts = [
+    generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }),
+  ];
+  let outputPorts: Array<ReturnType<typeof generatePortConfig>> = [];
 
   switch (data.type) {
-    case 'Start':
+    case NodeTypeEnum.Start:
       inputPorts = []; // Start 节点没有输入端口
-      outputPorts = [defaultPortConfig('out', 'out')];
+      outputPorts = [
+        generatePortConfig({ group: PortGroupEnum.out, idSuffix: 'out' }),
+      ];
       break;
-    case 'End':
-      inputPorts = [defaultPortConfig('in', 'in')];
+    case NodeTypeEnum.End:
+      inputPorts = [
+        generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }),
+      ];
       outputPorts = []; // End 节点没有输出端口
       break;
-    case 'Condition':
-    case 'IntentRecognition': {
+    case NodeTypeEnum.Condition:
+    case NodeTypeEnum.IntentRecognition: {
       // 假设 heights 数组与 conditionBranchConfigs 的顺序一致
       const configs =
         data.nodeConfig?.conditionBranchConfigs ||
         data.nodeConfig.intentConfigs ||
         [];
 
-      inputPorts = [{ ...defaultPortConfig('in', `in`) }];
-      const baseY = 30; // 节点头部固定高度
-      const itemHeight = data.type === 'Condition' ? 31 : 18; // 每个条件项高度
+      inputPorts = [
+        { ...generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }) },
+      ];
+      const baseY = defaultNodeHeaderHeight; // 节点头部固定高度
+      const itemHeight = data.type === NodeTypeEnum.Condition ? 32 : 24; // 每个条件项高度
+      const step = data.type === NodeTypeEnum.Condition ? 16 : 12;
       outputPorts = configs.map((item, index) => ({
-        ...specialPortConfig(
-          'special',
-          `${item.uuid || index}-out`,
-          baseY + (index + 1) * itemHeight,
-        ),
+        ...generatePortConfig({
+          group: PortGroupEnum.special,
+          idSuffix: `${item.uuid || index}-out`,
+          yHeight: baseY + (index + 1) * itemHeight - step,
+          xWidth: getWidthAndHeight(data).width,
+          offsetY: baseY + (index + 1) * itemHeight,
+        }),
       }));
       break;
     }
-    case 'QA': {
+    case NodeTypeEnum.QA: {
       const type = data.nodeConfig.answerType;
       const configs = data.nodeConfig?.options;
-      if (type === 'SELECT') {
+      const baseY = defaultNodeHeaderHeight; // 节点头部固定高度
+      if (type === AnswerTypeEnum.SELECT) {
         outputPorts = (configs || []).map((item, index) => ({
-          ...specialPortConfig(
-            'special',
-            `${item.uuid || index}-out`,
-            80 + (index + 1) * 26,
-          ),
+          ...generatePortConfig({
+            group: PortGroupEnum.special,
+            idSuffix: `${item.uuid || index}-out`,
+            yHeight: baseY + (index + 1) * 26,
+            xWidth: getWidthAndHeight(data).width,
+            offsetY: baseY + (index + 1) * 26,
+          }),
         }));
       } else {
-        outputPorts = [{ ...defaultPortConfig('out', `out`) }];
+        outputPorts = [
+          {
+            ...generatePortConfig({
+              group: PortGroupEnum.out,
+              idSuffix: 'out',
+            }),
+          },
+        ];
       }
       break;
     }
     default:
-      inputPorts = [defaultPortConfig('in', 'in')];
-      outputPorts = [defaultPortConfig('out', 'out')];
+      inputPorts = [
+        generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }),
+      ];
+      outputPorts = [
+        generatePortConfig({ group: PortGroupEnum.out, idSuffix: 'out' }),
+      ];
       break;
   }
 
+  if (EXCEPTION_NODES_TYPE.includes(data.type)) {
+    // 如果当前节点支持异常展示，则添加异常端口
+    const exceptionHandleConfig = data.nodeConfig?.exceptionHandleConfig;
+    if (exceptionHandleConfig) {
+      // const baseY = 30; // 节点头部固定高度
+      // const itemHeight = data.type === 'Condition' ? 31 : 18; // 每个条件项高度
+      const xWidth = getWidthAndHeight(data).width;
+      const baseY =
+        outputPorts[outputPorts.length - 1]?.args?.offsetY ||
+        defaultNodeHeaderHeight;
+
+      const itemHeight = 36;
+      const step = 10 + 13;
+
+      outputPorts = [
+        ...outputPorts,
+        generatePortConfig({
+          group: PortGroupEnum.exception,
+          idSuffix: `exception-out`,
+          yHeight: baseY + itemHeight - step,
+          xWidth,
+          color: '#e67e22',
+        }),
+      ];
+    }
+  }
   return {
-    groups: {
-      // 通用端口组配置
-      in: {
-        position: 'left',
-        attrs: {
-          circle: { r: basePortSize, magnet: true, magnetRadius: 50 },
-        },
-        connectable: {
-          source: isLoopNode, // Loop 节点的 in 端口允许作为 source
-          target: true, // 非 Loop 节点的 in 端口只能作为 target
-        },
-      },
-      out: {
-        position: 'right',
-        attrs: { circle: { r: basePortSize, magnet: true, magnetRadius: 50 } },
-        connectable: {
-          source: true, // 非 Loop 节点的 out 端口只能作为 source
-          target: isLoopNode, // Loop 节点的 out 端口允许作为 target
-        },
-      },
-      special: {
-        position: {
-          name: 'absolute',
-          // args: { x: 0, y: 0 },
-        },
-        attrs: { circle: { r: basePortSize, magnet: true, magnetRadius: 50 } },
-        connectable: {
-          source: true, // 非 Loop 节点的 out 端口只能作为 source
-          target: isLoopNode, // Loop 节点的 out 端口允许作为 target
-        },
-      },
-    },
+    groups: generatePortGroupConfig(basePortSize, isLoopNode),
     items: [...outputPorts, ...inputPorts],
   };
 };

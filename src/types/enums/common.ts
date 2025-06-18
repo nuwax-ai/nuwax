@@ -83,6 +83,8 @@ export enum NodeTypeEnum {
   TableDataQuery = 'TableDataQuery',
   // sql自定义
   TableSQL = 'TableSQL',
+  // mcp
+  MCP = 'MCP',
 }
 
 export enum DataTypeEnum {

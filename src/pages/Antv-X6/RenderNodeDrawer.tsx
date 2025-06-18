@@ -1,3 +1,4 @@
+import { EXCEPTION_NODES_TYPE } from '@/constants/node.constants';
 import { useSpecificContent } from '@/hooks/useSpecificContent';
 import { ExceptionHandleTypeEnum } from '@/types/enums/common';
 import { ChildNode, ExceptionItemProps } from '@/types/interfaces/graph';
@@ -113,11 +114,12 @@ export default function RenderNodeDrawer({ params }: { params: ChildNode }) {
       specificContent: JSON.stringify(specificContent, null, 2),
     });
   }, [specificContent]);
-
+  const showExceptionHandle =
+    exceptionHandleConfig && EXCEPTION_NODES_TYPE.includes(params.type);
   return (
     <>
       {nodeTemplate(params, form)}
-      {exceptionHandleConfig && <ExceptionItem {...exceptionItemProps} />}
+      {showExceptionHandle && <ExceptionItem {...exceptionItemProps} />}
     </>
   );
 }

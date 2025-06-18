@@ -4,6 +4,8 @@ import {
   answerTypeMap,
   branchTypeMap,
   compareTypeMap,
+  EXCEPTION_HANDLE_OPTIONS,
+  EXCEPTION_NODES_TYPE,
   optionsMap,
 } from '@/constants/node.constants';
 import useNodeSelection from '@/hooks/useNodeSelection';
@@ -14,6 +16,7 @@ import {
   NodeTypeEnum,
 } from '@/types/enums/common';
 import { ChildNode, NodeProps, RunResultItem } from '@/types/interfaces/graph';
+import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
@@ -185,6 +188,23 @@ const NodeRunResult: React.FC<{
   );
 };
 
+const ExceptionHandle: React.FC<{
+  data: ExceptionHandleConfig | undefined;
+}> = ({ data }) => {
+  return (
+    <div className="exception-handle-style">
+      <span className="exception-handle-title">异常时</span>
+      <p className="exception-handle-content">
+        {
+          EXCEPTION_HANDLE_OPTIONS.find(
+            (item) => item.value === data?.exceptionHandleType,
+          )?.label
+        }
+      </p>
+    </div>
+  );
+};
+
 export const GeneralNode: React.FC<NodeProps> = (props) => {
   /**
    * 通过render返回节点的样式和内容
@@ -229,6 +249,9 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
 
   const canNotEditNode = DISABLE_EDIT_NODE_TYPES.includes(data.type);
   const showRunResult = data.runResult;
+  const showExceptionHandle =
+    data.nodeConfig.exceptionHandleConfig &&
+    EXCEPTION_NODES_TYPE.includes(data.type);
   return (
     <>
       <div
@@ -261,7 +284,12 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
         {data.type === NodeTypeEnum.IntentRecognition && (
           <IntentRecognitionNode data={data} />
         )}
+        {/* 异常处理 */}
+        {showExceptionHandle && (
+          <ExceptionHandle data={data.nodeConfig.exceptionHandleConfig} />
+        )}
       </div>
+      {/* 运行结果 */}
       {showRunResult && (
         <NodeRunResult
           options={data.runResult?.options}
