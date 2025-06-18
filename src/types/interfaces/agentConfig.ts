@@ -168,6 +168,7 @@ export interface PreviewAndDebugHeaderProps {
 
 // 智能体聊天记录为空组件 - 展示智能体信息
 export interface AgentChatEmptyProps {
+  className?: string;
   // 智能体图标
   icon?: string;
   // 智能体名称

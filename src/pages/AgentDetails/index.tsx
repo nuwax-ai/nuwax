@@ -210,7 +210,7 @@ const AgentDetails: React.FC = () => {
             >
               <LoadingOutlined className={cx(styles.loading)} />
             </div>
-          ) : messageList?.length > 0 ? (
+          ) : (
             <>
               {/* 新对话设置 */}
               <NewConversationSet
@@ -218,41 +218,46 @@ const AgentDetails: React.FC = () => {
                 form={form}
                 variables={variables}
               />
-              {messageList?.map((item: MessageInfo, index: number) => (
-                <ChatView
-                  key={index}
-                  messageInfo={item}
-                  roleInfo={roleInfo}
-                  contentClassName={styles['chat-inner']}
-                  mode={'none'}
-                />
-              ))}
-              {/*会话建议*/}
-              <RecommendList
-                itemClassName={styles['suggest-item']}
-                loading={loading}
-                chatSuggestList={chatSuggestList}
-                onClick={handleMessageSend}
-              />
-            </>
-          ) : (
-            isLoaded && (
-              // Chat记录为空
-              <AgentChatEmpty
-                icon={agentDetail?.icon}
-                name={agentDetail?.name || ''}
-                // 会话建议
-                extra={
+              {messageList?.length > 0 ? (
+                <>
+                  {messageList?.map((item: MessageInfo, index: number) => (
+                    <ChatView
+                      key={index}
+                      messageInfo={item}
+                      roleInfo={roleInfo}
+                      contentClassName={styles['chat-inner']}
+                      mode={'none'}
+                    />
+                  ))}
+                  {/*会话建议*/}
                   <RecommendList
-                    className="mt-16"
-                    itemClassName={cx(styles['suggest-item'])}
+                    itemClassName={styles['suggest-item']}
                     loading={loading}
                     chatSuggestList={chatSuggestList}
                     onClick={handleMessageSend}
                   />
-                }
-              />
-            )
+                </>
+              ) : (
+                isLoaded && (
+                  // Chat记录为空
+                  <AgentChatEmpty
+                    className={cx({ 'h-full': !variables?.length })}
+                    icon={agentDetail?.icon}
+                    name={agentDetail?.name || ''}
+                    // 会话建议
+                    extra={
+                      <RecommendList
+                        className="mt-16"
+                        itemClassName={cx(styles['suggest-item'])}
+                        loading={loading}
+                        chatSuggestList={chatSuggestList}
+                        onClick={handleMessageSend}
+                      />
+                    }
+                  />
+                )
+              )}
+            </>
           )}
         </div>
         {/*会话输入框*/}
