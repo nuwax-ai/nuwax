@@ -1,6 +1,6 @@
 import { BINDING_DEFAULT_JSON_DATA } from '@/constants/agent.constants';
 import { PluginBindingProps } from '@/types/interfaces/agentConfig';
-import { DownOutlined } from '@ant-design/icons';
+import { UpOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -13,7 +13,7 @@ const PluginBinding: React.FC<PluginBindingProps> = ({
   onClick,
 }) => {
   // 旋转图标
-  const [isRotate, setIsRotate] = React.useState(false);
+  const [isRotate, setIsRotate] = React.useState(true);
   return (
     <>
       <div className={cx(styles['bind-box'], 'mb-16')}>
@@ -57,14 +57,13 @@ const PluginBinding: React.FC<PluginBindingProps> = ({
             'flex',
             'items-center',
             'content-between',
+            'cursor-pointer',
             styles['e-header'],
           )}
+          onClick={() => setIsRotate(!isRotate)}
         >
           <span>插件或工作流返回数据结构以及示例</span>
-          <DownOutlined
-            onClick={() => setIsRotate(!isRotate)}
-            className={cx({ [styles['icon-rotate']]: isRotate })}
-          />
+          <UpOutlined className={cx({ [styles['icon-rotate']]: isRotate })} />
         </div>
         <div className={cx({ [styles['rotate-box']]: isRotate })}>
           <p>&#x2F;&#x2F;options 选项列表；</p>
