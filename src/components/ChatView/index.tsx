@@ -40,6 +40,7 @@ import { encodeHTML } from '@/utils/common';
 import { message } from 'antd';
 import 'prismjs/themes/prism.css';
 import React, { useMemo } from 'react';
+import CopyToClipboard from 'react-copy-to-clipboard';
 import { useModel } from 'umi';
 import ChatBottomMore from './ChatBottomMore';
 import ChatSampleBottom from './ChatSampleBottom';
@@ -250,6 +251,10 @@ const ChatView: React.FC<ChatViewProps> = ({
     }
   }, [roleInfo, _userInfo, messageInfo?.role]);
 
+  const handleCopy = () => {
+    message.success('复制成功');
+  };
+
   return (
     <div className={cx(styles.container, 'flex', className)}>
       <img className={cx(styles.avatar)} src={info?.avatar as string} alt="" />
@@ -261,17 +266,47 @@ const ChatView: React.FC<ChatViewProps> = ({
         {/*用户信息*/}
         {messageInfo?.role === AssistantRoleEnum.USER &&
           !!messageInfo?.text && (
-            <div
-              className={cx(
-                styles['chat-content'],
-                styles.user,
-                'radius-6',
-                contentClassName,
-              )}
-              dangerouslySetInnerHTML={{
-                __html: md.render(messageInfo.text),
-              }}
-            />
+            <>
+              <div
+                className={cx(
+                  styles['chat-content'],
+                  styles.user,
+                  'radius-6',
+                  contentClassName,
+                )}
+                dangerouslySetInnerHTML={{
+                  __html: md.render(messageInfo.text),
+                }}
+              />
+              <div
+                className={cx(
+                  styles['user-action-box'],
+                  'flex',
+                  'items-center',
+                )}
+              >
+                <CopyToClipboard
+                  text={messageInfo.text || ''}
+                  onCopy={handleCopy}
+                >
+                  <span
+                    className={cx(
+                      'flex',
+                      'items-center',
+                      'cursor-pointer',
+                      styles['copy-btn'],
+                    )}
+                  >
+                    <img
+                      className={cx(styles['copy-image'])}
+                      src={copyImage}
+                      alt=""
+                    />
+                    <span>复制</span>
+                  </span>
+                </CopyToClipboard>
+              </div>
+            </>
           )}
         {/*助手信息或系统信息*/}
         <ConditionRender
