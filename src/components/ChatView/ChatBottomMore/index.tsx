@@ -1,9 +1,9 @@
+import copyImage from '@/assets/images/copy.png';
 import debugImage from '@/assets/images/debug_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/TooltipIcon';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { ChatBottomMoreProps } from '@/types/interfaces/common';
-import { CopyOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -55,7 +55,13 @@ const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({ messageInfo }) => {
         <CopyToClipboard text={text || ''} onCopy={handleCopy}>
           <TooltipIcon
             className={styles.icon}
-            icon={<CopyOutlined />}
+            icon={
+              <img
+                className={cx(styles['copy-image'])}
+                src={copyImage}
+                alt=""
+              />
+            }
             title="复制"
             type={TooltipTitleTypeEnum.White}
           />

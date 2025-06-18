@@ -202,8 +202,6 @@ const ChatTemp: React.FC = () => {
           )
           ?.map((item: BindConfigWithSub) => item.name);
         setRequiredNameList(_requiredNameList || []);
-        // 问题建议列表
-        let suggestList: string[] = [];
         // 存在消息列表时，设置消息列表
         if (_messageList?.length) {
           setMessageList(_messageList || []);
@@ -213,11 +211,18 @@ const ChatTemp: React.FC = () => {
             lastMessage.type === MessageModeEnum.QUESTION &&
             lastMessage.ext?.length
           ) {
-            suggestList = lastMessage.ext.map((item) => item.content) || [];
+            // 问答模式 - 问题建议列表
+            const suggestList =
+              lastMessage.ext.map((item) => item.content) || [];
+            setChatSuggestList(suggestList);
           }
         }
+        // 不存在会话消息时，才显示开场白预置问题
+        else {
+          setChatSuggestList(data?.agent?.openingGuidQuestions || []);
+        }
         // 初始化会话信息: 开场白
-        else if (data?.agent?.openingChatMsg) {
+        if (!_messageList?.length && data?.agent?.openingChatMsg) {
           const currentMessage = {
             role: AssistantRoleEnum.ASSISTANT,
             type: MessageModeEnum.CHAT,
@@ -227,13 +232,6 @@ const ChatTemp: React.FC = () => {
             messageType: MessageTypeEnum.ASSISTANT,
           } as MessageInfo;
           setMessageList([currentMessage]);
-          // 问答模式
-          if (suggestList?.length) {
-            setChatSuggestList(suggestList);
-          } else {
-            // 开场白预置问题
-            setChatSuggestList(data?.agent?.openingGuidQuestions || []);
-          }
         }
 
         handleScrollBottom();
