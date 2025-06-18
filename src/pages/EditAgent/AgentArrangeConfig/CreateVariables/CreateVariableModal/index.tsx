@@ -268,6 +268,9 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
       label: '插件绑定',
       children: (
         <PluginBinding
+          targetType={currentVariable?.selectConfig?.targetType}
+          targetIcon={currentVariable?.selectConfig?.targetIcon}
+          targetName={currentVariable?.selectConfig?.targetName}
           targetComponentInfo={targetComponentInfo}
           onClick={() => setShow(true)}
         />

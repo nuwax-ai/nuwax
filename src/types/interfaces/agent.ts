@@ -112,6 +112,12 @@ export interface BindConfigWithSub {
     targetType: AgentComponentTypeEnum;
     // 插件或工作流ID，dataSource选择PLUGIN时有用
     targetId: number;
+    // 插件或工作流名称
+    targetName: string;
+    // 插件或工作流描述
+    targetDescription: string;
+    // 插件或工作流图标
+    targetIcon: string;
     // 下拉选项配置
     options: CascaderOption[];
   };

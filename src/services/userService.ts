@@ -1,6 +1,5 @@
+import { USER_INFO } from '@/constants/home.constants';
 import { apiUserInfo } from '@/services/account';
-
-const USER_INFO = 'userInfo';
 
 /**
  * 用户信息服务

@@ -160,6 +160,9 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
             </Form.Item>
           </ConditionRender>
         </Form>
+        <ConditionRender condition={disabled}>
+          <p className={cx(styles.desc)}>对话开始后，对话设置将无法修改。</p>
+        </ConditionRender>
       </div>
     </div>
   );
