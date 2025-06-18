@@ -477,6 +477,7 @@ const SpacePluginCloudTool: React.FC = () => {
       <PublishComponentModal
         mode={AgentComponentTypeEnum.Plugin}
         targetId={pluginId}
+        category={pluginInfo?.category}
         spaceId={spaceId}
         open={openModal}
         onlyShowTemplate={false}
@@ -489,6 +490,7 @@ const SpacePluginCloudTool: React.FC = () => {
         targetId={pluginId}
         targetName={pluginInfo?.name}
         targetType={AgentComponentTypeEnum.Plugin}
+        permissions={pluginInfo?.permissions || []}
         visible={visible}
         onClose={() => setVisible(false)}
       />

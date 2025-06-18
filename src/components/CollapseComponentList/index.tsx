@@ -1,16 +1,17 @@
 import databaseImage from '@/assets/images/database_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
+import CollapseComponentItem from '@/components/CollapseComponentItem';
 import TooltipIcon from '@/components/TooltipIcon';
 import { ICON_SETTING } from '@/constants/images.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import type { ComponentListProps } from '@/types/interfaces/agentConfig';
+import type { CollapseComponentListProps } from '@/types/interfaces/agentConfig';
 import { DeleteOutlined } from '@ant-design/icons';
 import React from 'react';
-import AgentModelComponent from '../AgentModelComponent';
 
-// 插件组件列表
-const ComponentList: React.FC<ComponentListProps> = ({
+// 手风琴组件列表
+const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
+  textClassName,
   type,
   list,
   onSet,
@@ -36,10 +37,10 @@ const ComponentList: React.FC<ComponentListProps> = ({
     }
   };
   return !list?.length ? (
-    <p>{getInfo(type)?.text}</p>
+    <p className={textClassName}>{getInfo(type)?.text}</p>
   ) : (
     list.map((item) => (
-      <AgentModelComponent
+      <CollapseComponentItem
         key={item.id}
         agentComponentInfo={item}
         defaultImage={getInfo(type)?.image}
@@ -62,4 +63,4 @@ const ComponentList: React.FC<ComponentListProps> = ({
   );
 };
 
-export default ComponentList;
+export default CollapseComponentList;

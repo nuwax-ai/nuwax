@@ -13,6 +13,7 @@ import { ReactComponent as ICON_GROUP_SET } from '@/assets/svg/group_set.svg';
 import { ReactComponent as ICON_AGENT } from '@/assets/svg/icon_agent.svg';
 import { ReactComponent as ICON_AUDIT } from '@/assets/svg/icon_audit.svg';
 import { ReactComponent as ICON_FILE } from '@/assets/svg/icon_file.svg';
+import { ReactComponent as ICON_MCP_MANAGE } from '@/assets/svg/icon_mcp_manage.svg';
 import { ReactComponent as ICON_MODEL } from '@/assets/svg/icon_model.svg';
 import { ReactComponent as ICON_MODEL_WHITE } from '@/assets/svg/icon_model_white.svg';
 import { ReactComponent as ICON_NOTIFICATION } from '@/assets/svg/icon_notification.svg';
@@ -126,6 +127,7 @@ export {
   ICON_GROUP_SET,
   ICON_KNOWLEDGE,
   ICON_LOCAL_DOC,
+  ICON_MCP_MANAGE,
   ICON_MODEL,
   ICON_MODEL_WHITE,
   ICON_NEW_AGENT,

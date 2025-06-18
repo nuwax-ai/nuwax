@@ -527,6 +527,7 @@ const SpacePluginTool: React.FC = () => {
         mode={AgentComponentTypeEnum.Plugin}
         targetId={pluginId}
         spaceId={spaceId}
+        category={pluginInfo?.category}
         open={openModal}
         onlyShowTemplate={false}
         // 取消发布
@@ -538,6 +539,7 @@ const SpacePluginTool: React.FC = () => {
         targetId={pluginId}
         targetName={pluginInfo?.name}
         targetType={AgentComponentTypeEnum.Plugin}
+        permissions={pluginInfo?.permissions || []}
         visible={visible}
         onClose={() => setVisible(false)}
       />

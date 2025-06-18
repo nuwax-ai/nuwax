@@ -1,4 +1,5 @@
 import knowledgeImage from '@/assets/images/knowledge_image.png';
+import CollapseComponentItem from '@/components/CollapseComponentItem';
 import TooltipIcon from '@/components/TooltipIcon';
 import { InvokeTypeEnum } from '@/types/enums/agent';
 import { AgentComponentInfo } from '@/types/interfaces/agent';
@@ -6,7 +7,6 @@ import type { KnowledgeTextListProps } from '@/types/interfaces/agentConfig';
 import { CaretDownOutlined, DeleteOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import AgentModelComponent from '../AgentModelComponent';
 import styles from './index.less';
 import KnowledgeSetting from './KnowledgeSetting';
 
@@ -16,6 +16,7 @@ const cx = classNames.bind(styles);
  * 知识库文本列表
  */
 const KnowledgeTextList: React.FC<KnowledgeTextListProps> = ({
+  textClassName,
   list,
   onDel,
 }) => {
@@ -29,13 +30,13 @@ const KnowledgeTextList: React.FC<KnowledgeTextListProps> = ({
   };
 
   return !list?.length ? (
-    <p>
+    <p className={cx(textClassName)}>
       将文档、URL、三方数据源上传为文本知识库后，用户发送消息时，智能体能够引用文本知识中的内容回答用户问题。
     </p>
   ) : (
     <>
       {list.map((item) => (
-        <AgentModelComponent
+        <CollapseComponentItem
           key={item.id}
           agentComponentInfo={item}
           defaultImage={knowledgeImage as string}

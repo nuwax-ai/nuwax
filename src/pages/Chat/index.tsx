@@ -5,12 +5,10 @@ import ChatView from '@/components/ChatView';
 import RecommendList from '@/components/RecommendList';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
+import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
-import { DefaultSelectedEnum, MessageTypeEnum } from '@/types/enums/agent';
-import {
-  AgentDetailDto,
-  AgentManualComponentInfo,
-} from '@/types/interfaces/agent';
+import { MessageTypeEnum } from '@/types/enums/agent';
+import { AgentDetailDto } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   MessageInfo,
@@ -45,14 +43,16 @@ const Chat: React.FC = () => {
   const defaultAgentDetail = location.state?.defaultAgentDetail;
 
   // 智能体详情
+  const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
+    useAgentDetails();
+
+  // 会话输入框已选择组件
   const {
-    agentDetail,
-    setAgentDetail,
     selectedComponentList,
     setSelectedComponentList,
     handleSelectComponent,
-    handleToggleCollectSuccess,
-  } = useAgentDetails();
+    initSelectedComponentList,
+  } = useSelectedComponent();
 
   const {
     conversationInfo,
@@ -170,18 +170,9 @@ const Chat: React.FC = () => {
     // 初始化选中的组件列表
     if (infos?.length) {
       setSelectedComponentList(infos || []);
-    } else if (manualComponents?.length) {
-      // 手动组件默认选中的组件
-      const _manualComponents = manualComponents
-        .filter(
-          (item: AgentManualComponentInfo) =>
-            item.defaultSelected === DefaultSelectedEnum.Yes,
-        )
-        .map((item: AgentManualComponentInfo) => ({
-          id: item.id,
-          type: item.type,
-        }));
-      setSelectedComponentList(_manualComponents || []);
+    } else {
+      // 初始化选中的组件列表
+      initSelectedComponentList(manualComponents);
     }
   }, [infos, manualComponents]);
 

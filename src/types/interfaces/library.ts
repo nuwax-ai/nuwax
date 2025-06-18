@@ -1,5 +1,6 @@
 import type {
   CreateUpdateModeEnum,
+  PermissionsEnum,
   PublishStatusEnum,
 } from '@/types/enums/common';
 import type { ComponentTypeEnum } from '@/types/enums/space';
@@ -145,6 +146,8 @@ export interface ComponentInfo {
   creator: CreatorInfo;
   // 扩展字段
   ext: any;
+  // 权限列表
+  permissions?: PermissionsEnum[];
 }
 
 // box组件

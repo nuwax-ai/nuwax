@@ -1,5 +1,5 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { NodeTypeEnum } from '@/types/enums/common';
+import { NodeTypeEnum, PermissionsEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { CreatorInfo } from '@/types/interfaces/agent';
 import { DefaultObjectType } from '@/types/interfaces/common';
@@ -96,6 +96,10 @@ export interface IgetDetails {
     size?: number | string;
   };
   scope: PluginPublishScopeEnum | null;
+  // 发布分类
+  category?: string;
+  // 权限列表
+  permissions?: PermissionsEnum[];
 }
 // 试运行所有节点
 export interface ITestRun {

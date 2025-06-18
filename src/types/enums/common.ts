@@ -213,3 +213,12 @@ export enum ExceptionHandleTypeEnum {
   SPECIFIC_CONTENT = 'SPECIFIC_CONTENT',
   EXECUTE_EXCEPTION_FLOW = 'EXECUTE_EXCEPTION_FLOW',
 }
+
+// 权限枚举
+export enum PermissionsEnum {
+  Copy = 'Copy',
+  // 迁移
+  Transfer = 'Transfer',
+  Delete = 'Delete',
+  Publish = 'Publish',
+}

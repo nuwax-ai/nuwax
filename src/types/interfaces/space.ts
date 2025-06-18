@@ -45,6 +45,7 @@ export interface ConfigOptionsHeaderProps {
 
 // 智能体编排-单个配置选项手风琴组件属性
 export interface ConfigOptionCollapseProps {
+  className?: string;
   items: CollapseProps['items'];
   defaultActiveKey: AgentArrangeConfigEnum[];
   onChangeCollapse?: (key: AgentArrangeConfigEnum[]) => void;
@@ -63,6 +64,8 @@ export interface TooltipIconProps {
 export interface PublishComponentModalProps {
   mode?: AgentComponentTypeEnum;
   spaceId: number;
+  // 发布分类，用于回显
+  category?: string;
   // 发布目标ID，例如智能体ID；工作流ID；插件ID
   targetId: number;
   open: boolean;

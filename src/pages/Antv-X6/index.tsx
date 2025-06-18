@@ -1653,6 +1653,7 @@ const Workflow: React.FC = () => {
         mode={AgentComponentTypeEnum.Workflow}
         targetId={workflowId}
         spaceId={spaceId}
+        category={info?.category}
         open={showPublish}
         // 取消发布
         onCancel={() => setShowPublish(false)}
@@ -1663,6 +1664,7 @@ const Workflow: React.FC = () => {
         targetId={workflowId}
         targetName={info?.name}
         targetType={AgentComponentTypeEnum.Workflow}
+        permissions={info?.permissions || []}
         visible={showVersionHistory}
         isDrawer={true}
         onClose={() => setShowVersionHistory(false)}

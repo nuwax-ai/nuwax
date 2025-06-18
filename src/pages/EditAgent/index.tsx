@@ -243,6 +243,7 @@ const EditAgent: React.FC = () => {
           targetId={agentId}
           targetName={agentConfigInfo?.name}
           targetType={AgentComponentTypeEnum.Agent}
+          permissions={agentConfigInfo?.permissions || []}
           visible={showType === EditAgentShowType.Version_History}
           onClose={() => setShowType(EditAgentShowType.Hide)}
         />
@@ -252,6 +253,7 @@ const EditAgent: React.FC = () => {
         targetId={agentId}
         open={open}
         spaceId={spaceId}
+        category={agentConfigInfo?.category}
         // 取消发布
         onCancel={() => setOpen(false)}
         onConfirm={handleConfirmPublish}

@@ -12,6 +12,7 @@ const cx = classNames.bind(styles);
  * 单个配置项手风琴组件
  */
 const ConfigOptionCollapse: React.FC<ConfigOptionCollapseProps> = ({
+  className,
   items,
   defaultActiveKey,
   onChangeCollapse,
@@ -37,7 +38,7 @@ const ConfigOptionCollapse: React.FC<ConfigOptionCollapseProps> = ({
       expandIcon={({ isActive }) => (
         <RightOutlined rotate={isActive ? 90 : 0} />
       )}
-      className={cx(styles.header)}
+      className={cx(styles.header, className)}
       activeKey={activeKey}
       onChange={onChange}
       items={items}

@@ -1,11 +1,12 @@
 import avatar from '@/assets/images/avatar.png';
+import ConditionRender from '@/components/ConditionRender';
 import CustomPopover from '@/components/CustomPopover';
 import {
   COMPONENT_LIST,
   COMPONENT_MORE_ACTION,
 } from '@/constants/library.constants';
-import { PublishStatusEnum } from '@/types/enums/common';
-import { ComponentTypeEnum } from '@/types/enums/space';
+import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
+import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentItemProps } from '@/types/interfaces/library';
 import { CheckCircleTwoTone, MoreOutlined } from '@ant-design/icons';
@@ -30,12 +31,22 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
     return COMPONENT_LIST.find((item) => item.type === componentInfo.type);
   }, [componentInfo.type]);
 
+  // 检查是否有删除权限
+  const hasPermission = (action: ApplicationMoreActionEnum) => {
+    if (action === ApplicationMoreActionEnum.Del) {
+      return componentInfo?.permissions?.includes(PermissionsEnum.Delete);
+    }
+    return true;
+  };
+
   useEffect(() => {
     // 根据组件类型，过滤更多操作
     const list = COMPONENT_MORE_ACTION.filter((item) => {
-      const type = item.type as ComponentTypeEnum;
-      // 只显示当前组件类型的更多操作
-      return type === componentInfo.type;
+      const { type, action } = item;
+      return (
+        type === componentInfo.type &&
+        hasPermission(action as ApplicationMoreActionEnum)
+      );
     });
     setActionList(list);
   }, [componentInfo]);
@@ -102,19 +113,21 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
             最近编辑 {moment(componentInfo.modified).format('MM-DD HH:mm')}
           </div>
         </div>
-        <CustomPopover list={actionList} onClick={onClickMore}>
-          <span
-            className={cx(
-              styles['icon-box'],
-              'flex',
-              'content-center',
-              'items-center',
-              'hover-box',
-            )}
-          >
-            <MoreOutlined />
-          </span>
-        </CustomPopover>
+        <ConditionRender condition={actionList?.length}>
+          <CustomPopover list={actionList} onClick={onClickMore}>
+            <span
+              className={cx(
+                styles['icon-box'],
+                'flex',
+                'content-center',
+                'items-center',
+                'hover-box',
+              )}
+            >
+              <MoreOutlined />
+            </span>
+          </CustomPopover>
+        </ConditionRender>
       </div>
     </div>
   );
