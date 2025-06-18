@@ -1,8 +1,11 @@
 @import '@/styles/color';
 
 .container {
+  position: sticky;
+  top: 20px;
+  right: 20px;
   width: 357px;
-  height: calc(100% - 40px);
+  height: calc(100vh - 40px);
   padding: 0 20px;
   margin: 20px 20px 0 0;
   box-sizing: border-box;
@@ -10,7 +13,7 @@
   border-radius: 10px;
   transition: opacity 0.3s ease-in-out, width 0.2s ease-in-out;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: auto !important;
   z-index: 99;
   visibility: visible;
   opacity: 1;

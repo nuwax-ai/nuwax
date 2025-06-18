@@ -93,6 +93,7 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
         content = (
           <Cascader
             variant="filled"
+            expandTrigger="hover"
             multiple={inputType === InputTypeEnum.MultipleSelect}
             maxTagCount="responsive"
             showCheckedStrategy={SHOW_CHILD}
@@ -109,7 +110,7 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
     return { isSelect, content };
   };
   return (
-    <div className={cx(styles['variables-box'], className)}>
+    <div className={cx(styles['variables-box'], 'flex', 'flex-col', className)}>
       <header
         className={cx(styles.header, 'flex', 'items-center', 'content-between')}
       >
@@ -123,7 +124,7 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
           </span>
         </ConditionRender>
       </header>
-      <div className={cx(_className, styles['form-box'])}>
+      <div className={cx(_className, styles['form-box'], 'flex-1')}>
         <Form
           form={form}
           disabled={disabled}
