@@ -1,6 +1,9 @@
+import pluginImage from '@/assets/images/plugin_image.png'; // 插件图标
+import workflowImage from '@/assets/images/workflow_image.png'; // 插件图标
 import { BINDING_DEFAULT_JSON_DATA } from '@/constants/agent.constants';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PluginBindingProps } from '@/types/interfaces/agentConfig';
-import { DownOutlined } from '@ant-design/icons';
+import { UpOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -9,15 +12,25 @@ const cx = classNames.bind(styles);
 
 // 插件绑定组件
 const PluginBinding: React.FC<PluginBindingProps> = ({
+  targetType,
+  targetName,
+  targetIcon,
   targetComponentInfo,
   onClick,
 }) => {
   // 旋转图标
-  const [isRotate, setIsRotate] = React.useState(false);
+  const [isRotate, setIsRotate] = React.useState(true);
+  // 默认图标
+  const defaultIcon = [targetComponentInfo?.targetType, targetType].includes(
+    AgentComponentTypeEnum.Plugin,
+  )
+    ? pluginImage
+    : workflowImage;
+
   return (
     <>
       <div className={cx(styles['bind-box'], 'mb-16')}>
-        {!targetComponentInfo ? (
+        {!targetComponentInfo && !targetName ? (
           <div
             className={cx(
               'flex',
@@ -44,10 +57,10 @@ const PluginBinding: React.FC<PluginBindingProps> = ({
           >
             <img
               className={cx(styles['component-image'], 'radius-6')}
-              src={targetComponentInfo.icon}
+              src={targetComponentInfo?.icon || targetIcon || defaultIcon}
               alt=""
             />
-            <span>{targetComponentInfo.name}</span>
+            <span>{targetComponentInfo?.name || targetName}</span>
           </div>
         )}
       </div>
@@ -57,14 +70,13 @@ const PluginBinding: React.FC<PluginBindingProps> = ({
             'flex',
             'items-center',
             'content-between',
+            'cursor-pointer',
             styles['e-header'],
           )}
+          onClick={() => setIsRotate(!isRotate)}
         >
           <span>插件或工作流返回数据结构以及示例</span>
-          <DownOutlined
-            onClick={() => setIsRotate(!isRotate)}
-            className={cx({ [styles['icon-rotate']]: isRotate })}
-          />
+          <UpOutlined className={cx({ [styles['icon-rotate']]: isRotate })} />
         </div>
         <div className={cx({ [styles['rotate-box']]: isRotate })}>
           <p>&#x2F;&#x2F;options 选项列表；</p>

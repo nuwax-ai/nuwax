@@ -316,6 +316,12 @@ export interface DragManualCreateItemProps {
 
 // 插件绑定组件props
 export interface PluginBindingProps {
+  // 数据源类型,可用值:Agent,Plugin,Workflow,Knowledge,Table
+  targetType?: AgentComponentTypeEnum;
+  // 插件或工作流名称
+  targetName?: string;
+  // 插件或工作流图标
+  targetIcon?: string;
   targetComponentInfo?: CreatedNodeItem | null; // 目标组件信息
   onClick: () => void; // 点击绑定事件
 }

@@ -189,9 +189,11 @@ export interface OverrideTextAreaProps {
 
 // 级联选项类型
 export interface CascaderOption {
-  value: React.Key;
+  value?: string | number | null;
   label?: React.ReactNode;
   children?: CascaderOption[];
+  disabled?: boolean;
+  disableCheckbox?: boolean;
 }
 
 /**

@@ -98,7 +98,14 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
       if (mode === CreateUpdateModeEnum.Create) {
         setInputType(InputTypeEnum.Text);
         form.setFieldValue('inputType', InputTypeEnum.Text);
+        // 绑定组件重置
         setTargetComponentInfo(null);
+        setActiveTabKey(OptionDataSourceEnum.MANUAL);
+        setDataSource([
+          { id: uuidv4(), value: '', label: '' },
+          { id: uuidv4(), value: '', label: '' },
+        ]);
+        setBindValue('');
       }
       // 编辑模式, 回显数据
       else if (mode === CreateUpdateModeEnum.Update && currentVariable) {
@@ -261,6 +268,9 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
       label: '插件绑定',
       children: (
         <PluginBinding
+          targetType={currentVariable?.selectConfig?.targetType}
+          targetIcon={currentVariable?.selectConfig?.targetIcon}
+          targetName={currentVariable?.selectConfig?.targetName}
           targetComponentInfo={targetComponentInfo}
           onClick={() => setShow(true)}
         />

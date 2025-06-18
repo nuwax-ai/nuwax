@@ -2,13 +2,15 @@ import { InputTypeEnum } from '@/types/enums/agent';
 import { BindConfigWithSub } from '@/types/interfaces/agent';
 import { NewConversationSetProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
-import { Button, Form, FormProps, Input, InputNumber, Select } from 'antd';
+import { Button, Cascader, Form, FormProps, Input, InputNumber } from 'antd';
 import classNames from 'classnames';
 import React, { useRef, useState } from 'react';
 import ConditionRender from '../ConditionRender';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+const { SHOW_CHILD } = Cascader;
 
 // 新对话设置组件
 const NewConversationSet: React.FC<NewConversationSetProps> = ({
@@ -56,19 +58,30 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
     switch (inputType) {
       // 单行文本
       case InputTypeEnum.Text:
-        content = <Input placeholder={description || '请输入'} allowClear />;
+        content = (
+          <Input
+            variant="filled"
+            placeholder={description || '请输入'}
+            allowClear
+          />
+        );
         break;
       // 段落、智能识别
       case InputTypeEnum.Paragraph:
       case InputTypeEnum.AutoRecognition:
         content = (
-          <Input.TextArea placeholder={description || '请输入'} allowClear />
+          <Input.TextArea
+            variant="filled"
+            placeholder={description || '请输入'}
+            allowClear
+          />
         );
         break;
       // 数字
       case InputTypeEnum.Number:
         content = (
           <InputNumber
+            variant="filled"
             className="w-full"
             placeholder={description || '请输入'}
           />
@@ -78,7 +91,11 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
       case InputTypeEnum.Select:
       case InputTypeEnum.MultipleSelect:
         content = (
-          <Select
+          <Cascader
+            variant="filled"
+            multiple={inputType === InputTypeEnum.MultipleSelect}
+            maxTagCount="responsive"
+            showCheckedStrategy={SHOW_CHILD}
             placeholder={description || '请选择'}
             options={item.selectConfig?.options || []}
             allowClear
@@ -143,6 +160,9 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
             </Form.Item>
           </ConditionRender>
         </Form>
+        <ConditionRender condition={disabled}>
+          <p className={cx(styles.desc)}>对话开始后，对话设置将无法修改。</p>
+        </ConditionRender>
       </div>
     </div>
   );
