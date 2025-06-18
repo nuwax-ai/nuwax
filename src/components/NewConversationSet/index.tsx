@@ -2,7 +2,7 @@ import { InputTypeEnum } from '@/types/enums/agent';
 import { BindConfigWithSub } from '@/types/interfaces/agent';
 import { NewConversationSetProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
-import { Button, Form, FormProps, Input, InputNumber, Select } from 'antd';
+import { Button, Cascader, Form, FormProps, Input, InputNumber } from 'antd';
 import classNames from 'classnames';
 import React, { useRef, useState } from 'react';
 import ConditionRender from '../ConditionRender';
@@ -78,7 +78,7 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
       case InputTypeEnum.Select:
       case InputTypeEnum.MultipleSelect:
         content = (
-          <Select
+          <Cascader
             placeholder={description || '请选择'}
             options={item.selectConfig?.options || []}
             allowClear

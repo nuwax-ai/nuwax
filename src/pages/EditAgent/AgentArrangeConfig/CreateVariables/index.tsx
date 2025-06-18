@@ -36,7 +36,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
   const [variableModalOpen, setVariableModalOpen] = useState<boolean>(false);
   // 是否新增、更新变量了， 如果是，关闭弹窗后，刷新变量列表，如果没有，仅关闭弹窗
   const isAddedNewVariable = useRef<boolean>(false);
-  const tableRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<any>(null);
   // 缓存输入数据，用于重置父级组件table表单
   const inputDataRef = useRef<BindConfigWithSub[]>([]);
 
@@ -103,7 +103,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       title: <LabelStar label="名称" />,
       dataIndex: 'name',
       key: 'name',
-      width: 150,
+      width: 200,
       ellipsis: true,
     },
     {
@@ -150,7 +150,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
     {
       title: '',
       dataIndex: 'action',
-      width: 80,
+      width: 70,
       render: (_: string, record: BindConfigWithSub) => (
         <>
           {record?.systemVariable ? (
@@ -174,20 +174,18 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
 
   // 滚动到底部的函数
   const scrollToBottom = () => {
-    if (tableRef.current) {
-      const scrollElement = tableRef.current.querySelector('.ant-table-body');
-      if (scrollElement) {
-        scrollElement.scrollTop = scrollElement.scrollHeight;
-      }
-    }
+    // 滚动到底部
+    tableRef.current?.scrollTo({
+      top: tableRef.current?.scrollHeight,
+      behavior: 'smooth',
+    });
   };
 
   useEffect(() => {
-    if (!open) {
-      return;
+    if (open) {
+      // 滚动到底部的函数
+      scrollToBottom();
     }
-    // 滚动到底部的函数
-    scrollToBottom();
   }, [open]);
 
   // 更新变量配置数据
@@ -218,22 +216,22 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
         footer={null}
         onCancel={handleCancel}
       >
-        <div ref={tableRef}>
-          <Table<BindConfigWithSub>
-            className={cx(styles['table-container'], 'overflow-hide')}
-            columns={inputColumns}
-            dataSource={inputData}
-            pagination={false}
-            scroll={{
-              y: 560,
-            }}
-            footer={() => (
-              <Button icon={<PlusOutlined />} onClick={handleAddVariable}>
-                新增
-              </Button>
-            )}
-          />
-        </div>
+        <Table<BindConfigWithSub>
+          ref={tableRef}
+          className={cx(styles['table-container'], 'overflow-hide')}
+          columns={inputColumns}
+          dataSource={inputData}
+          pagination={false}
+          virtual
+          scroll={{
+            y: 560,
+          }}
+          footer={() => (
+            <Button icon={<PlusOutlined />} onClick={handleAddVariable}>
+              新增
+            </Button>
+          )}
+        />
         <CreateVariableModal
           id={variablesInfo?.id}
           targetId={variablesInfo?.targetId}
