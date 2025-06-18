@@ -106,9 +106,13 @@ export function updateNextNodeIds(item: any, targetNodeId: number) {
  * @param portId 端口id
  * @returns 端口组
  */
-export const getPortGroup = (node: Node | null, portId: string) => {
+export const getPortGroup = (
+  node: Node | null,
+  portId: string | undefined,
+): string => {
+  if (portId === undefined || node === null) return '';
   const port = node?.getPort(portId);
-  return port?.group;
+  return port?.group || '';
 };
 
 // 辅助函数：处理循环节点的逻辑
@@ -461,4 +465,30 @@ export const generatePortGroupConfig = (
       },
     },
   };
+};
+
+/**
+ * 判断连线是否允许删除
+ * @param sourceNode - 源节点
+ * @param targetNode - 目标节点
+ * @returns boolean - 是否允许删除连线
+ */
+export const isEdgeDeletable = (sourceNode: any, targetNode: any): boolean => {
+  // 当 sourceNode.type 是 Loop 节点时，targetNode.type 为 LoopStart 不能删除连线
+  if (
+    sourceNode.type === NodeTypeEnum.Loop &&
+    targetNode.type === NodeTypeEnum.LoopStart
+  ) {
+    return false;
+  }
+
+  // 当 sourceNode.type 是 LoopEnd 节点时，targetNode.type 为 Loop 不能删除连线
+  if (
+    sourceNode.type === NodeTypeEnum.LoopEnd &&
+    targetNode.type === NodeTypeEnum.Loop
+  ) {
+    return false;
+  }
+
+  return true;
 };

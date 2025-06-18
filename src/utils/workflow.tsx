@@ -297,7 +297,9 @@ const handleLoopEdges = (node: ChildNode): Edge[] => {
   edges.push(..._edge);
   return edges;
 };
-const handleNodesExceptionItem = (
+
+// 处理所有节点异常项目上的 port edge 连线
+const handleAllNodesExceptionItem = (
   nodes: ChildNode[],
   edges: Edge[],
 ): Edge[] => {
@@ -328,7 +330,7 @@ export const getEdges = (
   nodes: ChildNode[],
   needValidate: boolean = true,
 ): Edge[] => {
-  const allEdges: Edge[] = handleNodesExceptionItem(
+  const allEdges: Edge[] = handleAllNodesExceptionItem(
     nodes,
     nodes.flatMap((node) => {
       let isLoopNode: boolean = false;

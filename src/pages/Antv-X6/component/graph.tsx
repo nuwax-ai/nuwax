@@ -21,6 +21,7 @@ import { EXCEPTION_NODES_TYPE } from '@/constants/node.constants';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { PortGroupEnum } from '@/types/enums/node';
 import { GraphProp } from '@/types/interfaces/graph';
+import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { cloneDeep } from '@/utils/common';
 import {
   getPortGroup,
@@ -782,6 +783,42 @@ const initGraph = ({
     }
   });
 
+  // 处理异常处理节点连边的逻辑，返回是否是异常处理节点
+  const _handleExceptionItemEdgeAdd = (
+    edge: Edge,
+    doSuccess: (newNodeParams: ChildNode) => void,
+  ): boolean => {
+    // 获取边的两个连接桩
+    const sourcePort = edge.getSourcePortId();
+    const sourceNode = edge.getSourceNode()?.getData();
+    const targetNode = edge.getTargetNode()?.getData();
+
+    // 处理节点的异常处理 out port 连边的逻辑
+    const protGroup = getPortGroup(edge.getSourceNode(), sourcePort);
+    if (
+      EXCEPTION_NODES_TYPE.includes(sourceNode.type) &&
+      protGroup === PortGroupEnum.exception
+    ) {
+      const newNodeParams: ChildNode = cloneDeep(sourceNode);
+      const { exceptionHandleNodeIds = [] } =
+        newNodeParams.nodeConfig?.exceptionHandleConfig || {};
+      if (exceptionHandleNodeIds.includes(targetNode.id)) {
+        // 不重复添加异常处理节点
+        return true;
+      }
+      exceptionHandleNodeIds.push(targetNode.id);
+      const exceptionHandleConfig = {
+        ...(newNodeParams.nodeConfig?.exceptionHandleConfig || {}),
+        exceptionHandleNodeIds,
+      };
+      newNodeParams.nodeConfig.exceptionHandleConfig =
+        exceptionHandleConfig as ExceptionHandleConfig;
+      doSuccess(newNodeParams);
+      return true;
+    }
+    return false;
+  };
+
   // 新增连线
   graph.on('edge:connected', ({ isNew, edge }) => {
     changePortSize();
@@ -809,31 +846,16 @@ const initGraph = ({
     }
 
     // 处理节点的异常处理 out port 连边的逻辑
-    const protGroup = getPortGroup(edge.getSourceNode() as Node, sourcePort);
-    if (
-      EXCEPTION_NODES_TYPE.includes(sourceNode.type) &&
-      protGroup === PortGroupEnum.exception
-    ) {
-      const newNodeParams = cloneDeep(sourceNode);
-      const { exceptionHandleNodeIds = [] } =
-        newNodeParams.nodeConfig?.exceptionHandleConfig || {};
-      if (exceptionHandleNodeIds.includes(targetNode.id)) {
-        // 不重复添加异常处理节点
-        return;
-      }
-      exceptionHandleNodeIds.push(targetNode.id);
-      newNodeParams.nodeConfig.exceptionHandleConfig.exceptionHandleNodeIds =
-        exceptionHandleNodeIds;
-      const _params = newNodeParams;
-      if (_params && typeof _params !== 'string') {
-        changeCondition(_params, targetNode.id);
+    const isException = _handleExceptionItemEdgeAdd(
+      edge,
+      (newNodeParams: ChildNode) => {
+        changeCondition(newNodeParams, targetNode.id.toString());
         graph.addEdge(edge);
         setEdgeAttributes(edge);
         edge.toFront();
-        return;
-      }
-      return;
-    }
+      },
+    );
+    if (isException) return;
 
     // 处理循环节点的逻辑
     if (sourceNode.type === 'Loop' || targetNode.type === 'Loop') {
