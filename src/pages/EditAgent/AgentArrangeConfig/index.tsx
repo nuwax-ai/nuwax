@@ -153,17 +153,28 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     id: number,
     targetId: number,
     type: AgentComponentTypeEnum,
+    toolName?: string,
   ) => {
     await runAgentComponentDel(id);
     message.success('已成功删除');
     const list =
       agentComponentList?.filter(
-        (item: AgentComponentInfo) => !(item.id === id && item.type === type),
+        (item: AgentComponentInfo) =>
+          !(
+            item.id === id &&
+            item.type === type &&
+            (item.bindConfig?.toolName || '') === (toolName || '')
+          ),
       ) || [];
     setAgentComponentList(list);
     const newList =
       addComponents?.filter(
-        (item) => !(item.targetId === targetId && item.type === type),
+        (item) =>
+          !(
+            item.targetId === targetId &&
+            item.type === type &&
+            (item.toolName || '') === (toolName || '')
+          ),
       ) || [];
     setAddComponents(newList);
   };
@@ -173,10 +184,21 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     setAgentComponentList(data);
     const list =
       data?.map((item) => {
+        if (item.type === AgentComponentTypeEnum.MCP) {
+          const { toolName = '' } = item.bindConfig;
+          return {
+            type: item.type,
+            targetId: item.targetId,
+            status: AgentAddComponentStatusEnum.Added,
+            toolName: toolName,
+          };
+        }
+
         return {
           type: item.type,
           targetId: item.targetId,
           status: AgentAddComponentStatusEnum.Added,
+          toolName: '',
         };
       }) || [];
     setAddComponents(list);
@@ -211,7 +233,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     asyncFun();
   }, []);
 
-  // 添加插件、工作流、知识库等
+  // 添加插件、工作流、知识库、MCP等
   const handlerComponentPlus = (
     e: React.MouseEvent<HTMLElement>,
     type: AgentComponentTypeEnum,
@@ -327,6 +349,24 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           onClick={(e) =>
             handlerComponentPlus(e, AgentComponentTypeEnum.Workflow)
           }
+        />
+      ),
+    },
+    {
+      key: AgentArrangeConfigEnum.MCP,
+      label: 'MCP',
+      children: (
+        <CollapseComponentList
+          type={AgentComponentTypeEnum.MCP}
+          list={filterList(AgentComponentTypeEnum.MCP)}
+          onSet={handlePluginSet}
+          onDel={handleAgentComponentDel}
+        />
+      ),
+      extra: (
+        <TooltipIcon
+          title="添加MCP"
+          onClick={(e) => handlerComponentPlus(e, AgentComponentTypeEnum.MCP)}
         />
       ),
     },
@@ -514,6 +554,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           type: info.targetType,
           targetId: info.targetId,
           status: AgentAddComponentStatusEnum.Loading,
+          toolName: info.toolName || '',
         },
       ];
     });
@@ -521,6 +562,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       agentId,
       type: info.targetType,
       targetId: info.targetId,
+      toolName: info.toolName || '',
     });
   };
 

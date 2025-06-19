@@ -4,6 +4,7 @@ import type {
   AgentComponentAddParams,
   AgentComponentInfo,
   AgentComponentKnowledgeUpdateParams,
+  AgentComponentMcpUpdateParams,
   AgentComponentModelUpdateParams,
   AgentComponentPluginUpdateParams,
   AgentComponentTableUpdateParams,
@@ -132,6 +133,16 @@ export async function apiAgentComponentPluginUpdate(
   data: AgentComponentPluginUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/plugin/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 更新MCP组件配置
+export async function apiAgentComponentMcpUpdate(
+  data: AgentComponentMcpUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/mcp/update', {
     method: 'POST',
     data,
   });

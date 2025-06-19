@@ -201,6 +201,12 @@ export interface AgentComponentTriggerAddParams {
 export type AgentComponentPluginUpdateParams =
   AgentComponentWorkflowUpdateParams;
 
+// 更新MCP组件配置输入参数
+export interface AgentComponentMcpUpdateParams
+  extends AgentComponentWorkflowUpdateParams {
+  toolName: string;
+}
+
 // 智能体组件模型设置
 export interface ComponentModelBindConfig {
   // 模式：Precision 精确模式；Balanced 平衡模式；Creative 创意模式；Customization 自定义,可用值:Precision,Balanced,Creative,Customization
@@ -251,6 +257,7 @@ export interface AgentComponentAddParams {
   agentId: number;
   type: AgentComponentTypeEnum;
   targetId: number;
+  toolName?: string;
 }
 
 // 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)
@@ -418,6 +425,7 @@ export interface AgentComponentInfo {
   fallbackMsg: string;
   modified: string;
   created: string;
+  toolName?: string;
 }
 
 // 根据用户消息更新会话主题输入参数
