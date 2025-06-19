@@ -11,6 +11,7 @@ const cx = classNames.bind(styles);
 // 创建MCP服务header
 const McpHeader: React.FC<McpHeaderProps> = ({
   spaceId,
+  loading,
   onCancel,
   onSave,
   onSaveAndDeploy,
@@ -28,7 +29,11 @@ const McpHeader: React.FC<McpHeaderProps> = ({
       <div className={cx('flex-1')}></div>
       <div className={cx('flex', 'items-center', styles['extra-box'])}>
         <Button onClick={onCancel}>取消</Button>
-        <Button className={cx(styles['save-btn'])} onClick={onSave}>
+        <Button
+          className={cx(styles['save-btn'])}
+          onClick={onSave}
+          loading={loading}
+        >
           保存
         </Button>
         <Button type="primary" onClick={onSaveAndDeploy}>

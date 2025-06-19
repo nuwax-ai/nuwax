@@ -1,4 +1,8 @@
-import type { AgentComponentTypeEnum } from '@/types/enums/agent';
+import type {
+  AgentComponentTypeEnum,
+  AllowCopyEnum,
+  OnlyTemplateEnum,
+} from '@/types/enums/agent';
 import type { CreateUpdateModeEnum, NodeShapeEnum } from '@/types/enums/common';
 import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
@@ -271,8 +275,16 @@ export interface Statistics {
 }
 
 export interface CreatedNodeItem {
+  // 是否允许复制, 1 允许
+  allowCopy: AllowCopyEnum;
+  category: string;
+  config: any;
   // 图片
   icon: string;
+  id: number;
+  // 仅展示模板, 0 否，1 是
+  onlyTemplate: OnlyTemplateEnum;
+  publishedSpaceIds: number[];
   // 名称
   name: string;
   // 简介
@@ -283,12 +295,14 @@ export interface CreatedNodeItem {
   modified?: string;
   // 备注
   remark?: string;
+  scope?: PluginPublishScopeEnum;
   // 统计信息
   statistics: Statistics | null;
   // 当前id
   spaceId?: number;
   // 正在使用的
   targetId: number;
+  targetSubType: string;
   targetType: AgentComponentTypeEnum;
   // 发布人员信息
   publishUser?: CreatorInfo;

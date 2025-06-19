@@ -1,31 +1,30 @@
+import mcpImage from '@/assets/images/mcp_image.png';
 import CodeEditor from '@/components/CodeEditor';
-import CollapseComponentList from '@/components/CollapseComponentList';
 import ConfigOptionCollapse from '@/components/ConfigOptionCollapse';
 import Created from '@/components/Created';
-import PluginModelSetting from '@/components/PluginModelSetting';
+import LabelStar from '@/components/LabelStar';
 import TooltipIcon from '@/components/TooltipIcon';
+import UploadAvatar from '@/components/UploadAvatar';
 import { MCP_INSTALL_TYPE_LIST } from '@/constants/mcp.constants';
+import { apiMcpCreate } from '@/services/mcp';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
-  BindValueType,
 } from '@/types/enums/agent';
 import { McpInstallTypeEnum } from '@/types/enums/mcp';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import { AgentArrangeConfigEnum } from '@/types/enums/space';
-import {
-  AgentComponentInfo,
-  BindConfigWithSub,
-} from '@/types/interfaces/agent';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { CreatedNodeItem } from '@/types/interfaces/common';
+import { McpConfigComponentInfo, McpDetailInfo } from '@/types/interfaces/mcp';
 import { customizeRequiredMark } from '@/utils/form';
+import { jumpBack } from '@/utils/router';
 import { CollapseProps, Form, FormProps, Input, message, Radio } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo, useState } from 'react';
-import { useModel, useParams } from 'umi';
-import KnowledgeTextList from '../EditAgent/AgentArrangeConfig/KnowledgeTextList';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useModel, useParams, useRequest } from 'umi';
 import styles from './index.less';
+import McpCollapseComponentList from './McpCollapseComponentList';
 import McpHeader from './McpHeader';
 
 const cx = classNames.bind(styles);
@@ -35,99 +34,105 @@ const SpaceMcpCreate: React.FC = () => {
   const [form] = Form.useForm();
   const params = useParams();
   const spaceId = Number(params.spaceId);
-
+  const [imageUrl, setImageUrl] = useState<string>('');
+  // 安装方式
   const [installType, setInstallType] = useState<McpInstallTypeEnum>();
-  // 当前组件信息
-  const [currentComponentInfo, setCurrentComponentInfo] =
-    useState<AgentComponentInfo>();
-  const [agentComponentList, setAgentComponentList] = useState<
-    AgentComponentInfo[]
+  // MCP服务配置组件列表
+  const [mcpConfigComponentList, setMcpConfigComponentList] = useState<
+    McpConfigComponentInfo[]
   >([]);
-  // 插件弹窗
-  const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
   // 处于loading状态的组件列表
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]
   >([]);
+  const [loading, setLoading] = useState(false);
   const [checkTag, setCheckTag] = useState<AgentComponentTypeEnum>(
     AgentComponentTypeEnum.Plugin,
   );
+  // 是否部署
+  const withDeployRef = useRef<boolean>(false);
   // 打开、关闭弹窗
   const { show, setShow } = useModel('model');
 
-  // 取消创建MCP服务
-  const handleCancel = () => {
-    console.log('取消创建MCP服务');
-  };
+  useEffect(() => {
+    setInstallType(McpInstallTypeEnum.NPX);
+    // 获取MCP服务配置组件列表
+    form.setFieldsValue({
+      installType: McpInstallTypeEnum.NPX,
+    });
+  }, []);
+
+  // MCP服务创建
+  const { run: runCreate } = useRequest(apiMcpCreate, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: McpDetailInfo) => {
+      console.log('创建MCP服务成功', result);
+      message.success('创建MCP服务成功');
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
+    },
+  });
 
   // 保存MCP服务
-  const handleSave = () => {
-    console.log('保存MCP服务');
+  const handleSave = (withDeploy: boolean = false) => {
+    withDeployRef.current = withDeploy;
+    form.submit();
   };
 
-  // 保存并部署MCP服务
-  const handleSaveAndDeploy = () => {
-    console.log('保存并部署MCP服务');
+  const onFinish: FormProps<{
+    name: string;
+    description: string;
+    installType: McpInstallTypeEnum;
+    serverConfig: string;
+  }>['onFinish'] = (values) => {
+    const { serverConfig, ...rest } = values;
+    const mcpConfig =
+      installType === McpInstallTypeEnum.COMPONENT
+        ? {
+            serverConfig: '',
+            components: mcpConfigComponentList,
+          }
+        : {
+            serverConfig,
+            components: [],
+          };
+    const data = {
+      ...rest,
+      spaceId,
+      icon: imageUrl,
+      mcpConfig,
+      withDeploy: withDeployRef.current,
+    };
+    runCreate(data);
   };
-
-  const onFinish: FormProps<any>['onFinish'] = (values) => {
-    console.log('Success:', values);
-  };
-
-  // 绑定的变量信息
-  const variablesInfo = useMemo(() => {
-    return agentComponentList?.find(
-      (item: AgentComponentInfo) =>
-        item.type === AgentComponentTypeEnum.Variable,
-    ) as AgentComponentInfo;
-  }, [agentComponentList]);
 
   // 根据组件类型，过滤组件
   const filterList = (type: AgentComponentTypeEnum) => {
     return (
-      agentComponentList?.filter(
-        (item: AgentComponentInfo) => item.type === type,
+      mcpConfigComponentList?.filter(
+        (item: McpConfigComponentInfo) => item.type === type,
       ) || []
     );
   };
 
-  // 插件设置
-  const handlePluginSet = (id: number) => {
-    const componentInfo = agentComponentList?.find(
-      (info: AgentComponentInfo) => info.id === id,
-    );
-
-    const inputConfigArgs = componentInfo?.bindConfig?.inputArgBindConfigs;
-    // 默认值：输入
-    const _inputConfigArgs = inputConfigArgs?.map((info: BindConfigWithSub) => {
-      if (!info.bindValueType) {
-        info.bindValueType = BindValueType.Input;
-      }
-      return info;
-    });
-    if (componentInfo && componentInfo.bindConfig) {
-      componentInfo.bindConfig.inputArgBindConfigs = _inputConfigArgs;
-    }
-    // 工作流组件，去掉属性配置（argBindConfigs属性是之前的，目前改为inputArgBindConfigs）
-    if (componentInfo?.type === AgentComponentTypeEnum.Workflow) {
-      componentInfo.bindConfig.argBindConfigs = null;
-    }
-    setCurrentComponentInfo(componentInfo);
-    setOpenPluginModel(true);
-  };
-
+  /**
+   * 删除组件
+   * @param targetId: 关联的组件ID
+   * @param type: 组件类型
+   */
   const handleAgentComponentDel = async (
-    id: number,
     targetId: number,
     type: AgentComponentTypeEnum,
   ) => {
-    // await runAgentComponentDel(id);
-    message.success('已成功删除');
-    const list =
-      agentComponentList?.filter(
-        (item: AgentComponentInfo) => !(item.id === id && item.type === type),
-      ) || [];
-    setAgentComponentList(list);
+    // 从mcpConfigComponentList中删除组件
+    const list = mcpConfigComponentList?.filter(
+      (item: McpConfigComponentInfo) =>
+        !(item.targetId === targetId && item.type === type),
+    );
+    setMcpConfigComponentList(list);
     const newList =
       addComponents?.filter(
         (item) => !(item.targetId === targetId && item.type === type),
@@ -147,25 +152,28 @@ const SpaceMcpCreate: React.FC = () => {
 
   // 是否存在组件
   const isExistComponent = (type: AgentComponentTypeEnum) => {
-    return agentComponentList?.some(
-      (item: AgentComponentInfo) => item.type === type,
+    return mcpConfigComponentList?.some(
+      (item: McpConfigComponentInfo) => item.type === type,
     );
   };
 
   // 折叠面板 - 当前激活 tab 面板的 key
   const collapseActiveKey = useMemo(() => {
-    const skill: AgentArrangeConfigEnum[] = [];
+    const list: AgentArrangeConfigEnum[] = [];
     if (isExistComponent(AgentComponentTypeEnum.Plugin)) {
-      skill.push(AgentArrangeConfigEnum.Plugin);
+      list.push(AgentArrangeConfigEnum.Plugin);
     }
     if (isExistComponent(AgentComponentTypeEnum.Workflow)) {
-      skill.push(AgentArrangeConfigEnum.Workflow);
+      list.push(AgentArrangeConfigEnum.Workflow);
     }
-    if (isExistComponent(AgentComponentTypeEnum.Trigger)) {
-      skill.push(AgentArrangeConfigEnum.Trigger);
+    if (isExistComponent(AgentComponentTypeEnum.Knowledge)) {
+      list.push(AgentArrangeConfigEnum.Knowledge);
     }
-    return skill;
-  }, [agentComponentList]);
+    if (isExistComponent(AgentComponentTypeEnum.Table)) {
+      list.push(AgentArrangeConfigEnum.Table);
+    }
+    return list;
+  }, [mcpConfigComponentList]);
 
   // 折叠面板列表
   const collapseList: CollapseProps['items'] = [
@@ -173,11 +181,10 @@ const SpaceMcpCreate: React.FC = () => {
       key: AgentArrangeConfigEnum.Plugin,
       label: '插件',
       children: (
-        <CollapseComponentList
+        <McpCollapseComponentList
           textClassName="px-16"
           type={AgentComponentTypeEnum.Plugin}
           list={filterList(AgentComponentTypeEnum.Plugin)}
-          onSet={handlePluginSet}
           onDel={handleAgentComponentDel}
         />
       ),
@@ -194,11 +201,10 @@ const SpaceMcpCreate: React.FC = () => {
       key: AgentArrangeConfigEnum.Workflow,
       label: '工作流',
       children: (
-        <CollapseComponentList
+        <McpCollapseComponentList
           textClassName="px-16"
           type={AgentComponentTypeEnum.Workflow}
           list={filterList(AgentComponentTypeEnum.Workflow)}
-          onSet={handlePluginSet}
           onDel={handleAgentComponentDel}
         />
       ),
@@ -212,11 +218,12 @@ const SpaceMcpCreate: React.FC = () => {
       ),
     },
     {
-      key: AgentArrangeConfigEnum.Text,
+      key: AgentArrangeConfigEnum.Knowledge,
       label: '知识库',
       children: (
-        <KnowledgeTextList
+        <McpCollapseComponentList
           textClassName="px-16"
+          type={AgentComponentTypeEnum.Knowledge}
           list={filterList(AgentComponentTypeEnum.Knowledge)}
           onDel={handleAgentComponentDel}
         />
@@ -234,11 +241,10 @@ const SpaceMcpCreate: React.FC = () => {
       key: AgentArrangeConfigEnum.Table,
       label: '数据表',
       children: (
-        <CollapseComponentList
+        <McpCollapseComponentList
           textClassName="px-16"
           type={AgentComponentTypeEnum.Table}
           list={filterList(AgentComponentTypeEnum.Table)}
-          onSet={handlePluginSet}
           onDel={handleAgentComponentDel}
         />
       ),
@@ -259,26 +265,42 @@ const SpaceMcpCreate: React.FC = () => {
         {
           type: info.targetType,
           targetId: info.targetId,
-          status: AgentAddComponentStatusEnum.Loading,
+          status: AgentAddComponentStatusEnum.Added,
         },
       ];
     });
-    // runComponentAdd({
-    //   agentId,
-    //   type: info.targetType,
-    //   targetId: info.targetId,
-    // });
+    // MCP服务配置组件列表
+    setMcpConfigComponentList((list) => {
+      const newItem = {
+        name: info.name,
+        icon: info.icon,
+        description: info.description,
+        type: info.targetType,
+        targetId: info.targetId,
+        targetConfig: null,
+      };
+      return [...list, newItem];
+    });
   };
 
   return (
     <div className={cx(styles.container)}>
       <McpHeader
         spaceId={spaceId}
-        onCancel={handleCancel}
+        loading={loading}
+        onCancel={() => jumpBack(`/space/${spaceId}/mcp`)}
         onSave={handleSave}
-        onSaveAndDeploy={handleSaveAndDeploy}
+        onSaveAndDeploy={() => handleSave(true)}
       />
       <div className={cx(styles['main-container'])}>
+        <div className={cx('flex', 'items-center', 'content-center')}>
+          <UploadAvatar
+            className={styles['upload-box']}
+            onUploadSuccess={setImageUrl}
+            imageUrl={imageUrl}
+            defaultImage={mcpImage}
+          />
+        </div>
         <Form
           form={form}
           preserve={false}
@@ -326,14 +348,17 @@ const SpaceMcpCreate: React.FC = () => {
             <Form.Item
               name="serverConfig"
               label={
-                <div className={cx('flex', 'items-center')}>
-                  <span>MCP服务配置</span>
-                  <span className={cx(styles['sub-title'])}>
-                    MCP服务使用json配置，提交前确保格式正确
-                  </span>
-                </div>
+                <LabelStar
+                  label={
+                    <div className={cx('flex', 'items-center')}>
+                      <span>MCP服务配置</span>
+                      <span className={cx(styles['sub-title'])}>
+                        MCP服务使用json配置，提交前确保格式正确
+                      </span>
+                    </div>
+                  }
+                />
               }
-              rules={[{ required: true, message: '请输入MCP服务配置' }]}
             >
               <CodeEditor
                 className={cx('w-full', 'radius-10', 'overflow-hide')}
@@ -342,11 +367,7 @@ const SpaceMcpCreate: React.FC = () => {
               />
             </Form.Item>
           ) : (
-            <Form.Item
-              name="components"
-              label="组件选择"
-              rules={[{ required: true, message: '请选择组件' }]}
-            >
+            <Form.Item name="components" label={<LabelStar label="组件选择" />}>
               <ConfigOptionCollapse
                 className={cx(styles['collapse-container'])}
                 items={collapseList}
@@ -363,13 +384,6 @@ const SpaceMcpCreate: React.FC = () => {
         checkTag={checkTag}
         addComponents={addComponents}
         onAdded={handleAddComponent}
-      />
-      {/*插件设置弹窗*/}
-      <PluginModelSetting
-        open={openPluginModel}
-        variables={variablesInfo?.bindConfig?.variables || []}
-        currentComponentInfo={currentComponentInfo}
-        onCancel={() => setOpenPluginModel(false)}
       />
     </div>
   );

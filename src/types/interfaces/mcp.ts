@@ -4,27 +4,28 @@ import { DeployStatusEnum, McpInstallTypeEnum } from '@/types/enums/mcp';
 import { BindConfigWithSub, CreatorInfo } from './agent';
 import { CustomPopoverItem } from './common';
 
+// MCP配置组件信息
+export interface McpConfigComponentInfo {
+  // 组件名称
+  name: string;
+  // 组件图标
+  icon: string;
+  // 组件描述
+  description: string;
+  // 组件类型,可用值:Plugin,Workflow,Knowledge,Database
+  type: AgentComponentTypeEnum;
+  // 关联的组件ID
+  targetId: number;
+  // 组件原始配置
+  targetConfig: any;
+}
+
 // MCP配置信息
 export interface McpConfigInfo {
   // MCP服务配置，installType为npx、uvx、sse时有效
   serverConfig: string;
   // MCP组件配置，installType为component时有效
-  components: {
-    // 组件名称
-    name: string;
-    // 组件图标
-    icon: string;
-    // 组件描述
-    description: string;
-    // 组件类型,可用值:Plugin,Workflow,Knowledge,Database
-    type: AgentComponentTypeEnum;
-    // 绑定组件配置，不同组件配置不一样
-    bindConfig: any;
-    // 关联的组件ID
-    targetId: number;
-    // 组件原始配置
-    targetConfig: any;
-  }[];
+  components: McpConfigComponentInfo[];
   // MCP工具列表，无需前端传递
   tools: {
     // 工具名称
@@ -170,7 +171,23 @@ export interface McpComponentItemProps {
 // 创建MCP服务header组件
 export interface McpHeaderProps {
   spaceId: number;
+  loading?: boolean;
   onCancel: () => void;
   onSave: () => void;
   onSaveAndDeploy: () => void;
+}
+
+// Mcp组件列表
+export interface McpCollapseComponentListProps {
+  textClassName?: string;
+  type: AgentComponentTypeEnum;
+  list: McpConfigComponentInfo[];
+  onDel: (targetId: number, type: AgentComponentTypeEnum) => void;
+}
+
+// 智能体模型组件，插件、工作流、触发器等组件通用显示组件
+export interface McpCollapseComponentItemProps {
+  componentInfo: McpConfigComponentInfo;
+  defaultImage?: string;
+  extra?: React.ReactNode;
 }
