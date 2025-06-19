@@ -5,7 +5,7 @@ import {
   InvokeTypeEnum,
 } from '@/types/enums/agent';
 import type { DataTypeEnum } from '@/types/enums/common';
-import type { OpenCloseEnum } from '@/types/enums/space';
+import type { OpenCloseEnum, PluginSettingEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
   AgentComponentInfo,
@@ -53,6 +53,7 @@ export interface PluginModelSettingProps {
   open: boolean;
   currentComponentInfo?: AgentComponentInfo;
   variables?: BindConfigWithSub[];
+  settingActionList?: { type: PluginSettingEnum; label: string }[];
   onCancel: () => void;
 }
 
@@ -226,7 +227,12 @@ export interface CollapseComponentListProps {
   type: AgentComponentTypeEnum;
   list: AgentComponentInfo[];
   onSet: (id: number) => void;
-  onDel: (id: number, targetId: number, type: AgentComponentTypeEnum) => void;
+  onDel: (
+    id: number,
+    targetId: number,
+    type: AgentComponentTypeEnum,
+    toolName?: string,
+  ) => void;
 }
 
 // 知识库文本列表组件
@@ -284,6 +290,7 @@ export interface AgentAddComponentStatusInfo {
   type: AgentComponentTypeEnum;
   targetId: number;
   status: AgentAddComponentStatusEnum;
+  toolName?: string;
 }
 
 // 首页智能体列表项组件

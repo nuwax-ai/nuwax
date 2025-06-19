@@ -313,6 +313,31 @@ export interface CreatedNodeItem {
   inputArgBindConfigs?: InputAndOutConfig[];
   outputArgBindConfigs?: InputAndOutConfig[];
   knowledgeBaseId?: number;
+  config?: any;
+  toolName?: string;
+}
+
+export interface MCPNodeItem {
+  icon: string;
+  targetId: number;
+  targetType: AgentComponentTypeEnum.MCP;
+  name: string;
+  description: string;
+  created: string;
+  modified: string;
+  status: string;
+  deployedConfig: {
+    prompts: any[];
+    resources: any[];
+    tools:
+      | {
+          name: string;
+          inputArgs: InputAndOutConfig[];
+          outputArgs: InputAndOutConfig[];
+        }[]
+      | null;
+  };
+  publishUser: CreatorInfo;
 }
 
 // 创建、编辑智能体

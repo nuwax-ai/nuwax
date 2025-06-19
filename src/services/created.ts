@@ -24,11 +24,43 @@ export interface IGetList {
   justReturnSpaceData?: boolean;
   allowCopy?: number; // 模板库 是否允许复制
 }
+function _getMcpList(data?: IGetList): Promise<RequestResponse<any>> {
+  return request(`/api/mcp/deployed/list/${data?.spaceId}`, {
+    method: 'GET',
+  }).then((res: any) => {
+    const { data, ...rest } = res;
+    // MCP 适配智能体组件列表数据结构 注意 mcp 没有分页 为适配之前
+    return {
+      ...rest,
+      data: {
+        records: data.map((item: any) => {
+          const { deployedConfig, deployStatus, id, creator, ...rest } = item;
+          return {
+            ...rest,
+            status: deployStatus,
+            targetId: id,
+            targetType: AgentComponentTypeEnum.MCP,
+            publishUser: creator,
+            config: deployedConfig,
+          };
+        }),
+        pages: 1,
+        size: data.length,
+        total: data.length,
+        current: 1,
+      },
+    };
+  });
+}
 
 export async function getList(
   type: AgentComponentTypeEnum,
   data?: IGetList,
 ): Promise<RequestResponse<any>> {
+  if (type === AgentComponentTypeEnum.MCP) {
+    return _getMcpList(data);
+  }
+
   return request(`${itemList[type]}`, {
     method: 'POST',
     data,

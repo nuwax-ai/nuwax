@@ -21,6 +21,7 @@ import { Button, Divider, Input, Menu, Modal, Radio } from 'antd';
 import { RadioChangeEvent } from 'antd/lib/radio';
 import { useCallback, useEffect, useRef, useState } from 'react';
 // import { useModel } from 'umi';
+import { jumpToMcpCreate } from '@/utils/router';
 import { AnyObject } from 'antd/es/_util/type';
 import { history, useParams } from 'umi';
 import CreatedItem from '../CreatedItem';
@@ -28,6 +29,7 @@ import CreateKnowledge from '../CreateKnowledge';
 import CreateNewPlugin from '../CreateNewPlugin';
 import CreateWorkflow from '../CreateWorkflow';
 import './index.less';
+import MCPItem from './MCPItem';
 import { ButtonList, CreatedProp, MenuItem } from './type';
 // 顶部的标签页名称
 const buttonList: ButtonList[] = [
@@ -35,8 +37,8 @@ const buttonList: ButtonList[] = [
   { label: '工作流', key: AgentComponentTypeEnum.Workflow },
   { label: '知识库', key: AgentComponentTypeEnum.Knowledge },
   { label: '数据表', key: AgentComponentTypeEnum.Table },
+  { label: 'MCP', key: AgentComponentTypeEnum.MCP },
 ];
-
 // 创建插件、工作流、知识库、数据库
 const Created: React.FC<CreatedProp> = ({
   open,
@@ -136,6 +138,8 @@ const Created: React.FC<CreatedProp> = ({
         return knowledgeItem;
       case AgentComponentTypeEnum.Table:
         return databaseItem;
+      case AgentComponentTypeEnum.MCP:
+        return [];
       default:
         return items;
     }
@@ -358,7 +362,7 @@ const Created: React.FC<CreatedProp> = ({
       <Radio.Group
         value={selected.key}
         onChange={changeTitle}
-        defaultValue="plugInNode"
+        defaultValue={AgentComponentTypeEnum.Plugin}
       >
         {buttonList
           .filter((item) => !hideTop?.includes(item.key))
@@ -387,6 +391,110 @@ const Created: React.FC<CreatedProp> = ({
     );
   };
 
+  const renderMCPItem = (
+    item: CreatedNodeItem,
+    index: number,
+    selected: {
+      label: string;
+      key: AgentComponentTypeEnum;
+    },
+  ) => {
+    return (
+      <MCPItem
+        key={`${item.targetId}-${index}`}
+        item={item}
+        index={index}
+        selected={selected}
+        onAddNode={onAddNode}
+        addedComponents={addComponents || []}
+      />
+    );
+  };
+
+  const renderNormalItem = (item: CreatedNodeItem, index: number) => {
+    return (
+      <div className="dis-sb list-item-style" key={`${item.targetId}-${index}`}>
+        <img
+          src={item.icon || getImg(selected.key)}
+          alt=""
+          className="left-image-style"
+        />
+        <div className="flex-1 content-font">
+          <p className="label-font-style margin-bottom-6">{item.name}</p>
+          <p className="margin-bottom-6 created-description-style">
+            {item.description}
+          </p>
+          {/* <Tag>{item.tag}</Tag> */}
+          <div className="dis-sb count-div-style">
+            <div className={'dis-left'}>
+              <img
+                src={
+                  item.publishUser?.avatar ||
+                  require('@/assets/images/avatar.png')
+                }
+                style={{ borderRadius: '50%' }}
+                alt="用户头像"
+              />
+              <span>{item.publishUser?.nickName}</span>
+              <Divider type="vertical" />
+              <span className="margin-left-6">
+                {'发布于'}
+                {getTime(item.created!)}
+              </span>
+              {![
+                AgentComponentTypeEnum.Knowledge,
+                AgentComponentTypeEnum.MCP,
+              ].includes(selected.key) && (
+                <>
+                  <Divider type="vertical" />
+                  {item.collect && (
+                    <StarFilled
+                      className="collect-star icon-margin"
+                      onClick={() => collectAndUnCollect(item)}
+                    />
+                  )}
+                  {!item.collect && (
+                    <StarOutlined
+                      className="icon-margin"
+                      onClick={() => collectAndUnCollect(item)}
+                    />
+                  )}
+                  <span className="margin-left-6">
+                    {item.statistics ? item.statistics.collectCount : 0}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        <Button
+          color="primary"
+          variant="outlined"
+          onClick={() => onAddNode(item)}
+          loading={addComponents?.some(
+            (info) =>
+              info.type === item.targetType &&
+              info.targetId === item.targetId &&
+              info.status === AgentAddComponentStatusEnum.Loading,
+          )}
+          disabled={isAdded(item)}
+        >
+          {isAdded(item) ? '已添加' : '添加'}
+        </Button>
+      </div>
+    );
+  };
+
+  const handleClickCreate = (
+    selectedKey: AgentComponentTypeEnum,
+    spaceId: number,
+  ) => {
+    if (selectedKey === AgentComponentTypeEnum.MCP) {
+      jumpToMcpCreate(spaceId);
+    } else {
+      setShowCreate(true);
+    }
+  };
   return (
     <Modal
       keyboard={false} //是否能使用sec关闭
@@ -427,7 +535,7 @@ const Created: React.FC<CreatedProp> = ({
             type="primary"
             className="margin-bottom"
             style={{ width: '100%' }}
-            onClick={() => setShowCreate(true)}
+            onClick={() => handleClickCreate(selected.key, spaceId)}
           >{`创建${selected.label}`}</Button>
 
           {/* 下方的菜单 */}
@@ -440,76 +548,12 @@ const Created: React.FC<CreatedProp> = ({
         </div>
         {/* 右侧部分应该是变动的 */}
         <div className="main-style flex-1 overflow-y" ref={scrollRef}>
-          {list.map((item, index) => (
-            <div
-              className="dis-sb list-item-style"
-              key={`${item.targetId}-${index}`}
-            >
-              <img
-                src={item.icon || getImg(selected.key)}
-                alt=""
-                className="left-image-style"
-              />
-              <div className="flex-1 content-font">
-                <p className="label-font-style margin-bottom-6">{item.name}</p>
-                <p className="margin-bottom-6 created-description-style">
-                  {item.description}
-                </p>
-                {/* <Tag>{item.tag}</Tag> */}
-                <div className="dis-sb count-div-style">
-                  <div className={'dis-left'}>
-                    <img
-                      src={
-                        item.publishUser?.avatar ||
-                        require('@/assets/images/avatar.png')
-                      }
-                      style={{ borderRadius: '50%' }}
-                      alt="用户头像"
-                    />
-                    <span>{item.publishUser?.nickName}</span>
-                    <Divider type="vertical" />
-                    <span className="margin-left-6">
-                      发布于{getTime(item.created!)}
-                    </span>
-                    {selected.key !== AgentComponentTypeEnum.Knowledge && (
-                      <>
-                        <Divider type="vertical" />
-                        {item.collect && (
-                          <StarFilled
-                            className="collect-star icon-margin"
-                            onClick={() => collectAndUnCollect(item)}
-                          />
-                        )}
-                        {!item.collect && (
-                          <StarOutlined
-                            className="icon-margin"
-                            onClick={() => collectAndUnCollect(item)}
-                          />
-                        )}
-                        <span className="margin-left-6">
-                          {item.statistics ? item.statistics.collectCount : 0}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <Button
-                color="primary"
-                variant="outlined"
-                onClick={() => onAddNode(item)}
-                loading={addComponents?.some(
-                  (info) =>
-                    info.type === item.targetType &&
-                    info.targetId === item.targetId &&
-                    info.status === AgentAddComponentStatusEnum.Loading,
-                )}
-                disabled={isAdded(item)}
-              >
-                {isAdded(item) ? '已添加' : '添加'}
-              </Button>
-            </div>
-          ))}
+          {list.map((item: CreatedNodeItem, index: number) => {
+            if (selected.key === AgentComponentTypeEnum.MCP) {
+              return renderMCPItem(item, index, selected);
+            }
+            return renderNormalItem(item, index);
+          })}
         </div>
       </div>
       <CreateWorkflow

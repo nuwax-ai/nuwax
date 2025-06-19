@@ -89,6 +89,8 @@ export enum AgentArrangeConfigEnum {
   Shortcut_Instruction = 'Shortcut_Instruction',
   // 定时任务
   Open_Scheduled_Task = 'Open_Scheduled_Task',
+  // MCP
+  MCP = 'Mcp',
 }
 
 // 是否开启问题建议,可用值:Open,Close

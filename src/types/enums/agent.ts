@@ -8,6 +8,7 @@ export enum AgentComponentTypeEnum {
   Table = 'Table',
   Model = 'Model',
   Agent = 'Agent',
+  MCP = 'Mcp',
 }
 
 // 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
