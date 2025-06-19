@@ -1,3 +1,4 @@
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   FilterDeployEnum,
   McpInstallTypeEnum,
@@ -23,4 +24,27 @@ export const MCP_INSTALL_TYPE_LIST = [
   { value: McpInstallTypeEnum.UVX, label: 'uvx' },
   { value: McpInstallTypeEnum.SSE, label: 'sse' },
   { value: McpInstallTypeEnum.COMPONENT, label: '组件库' },
+];
+
+// MCP服务配置组件列表
+export const MCP_COLLAPSE_COMPONENT_LIST: {
+  type: AgentComponentTypeEnum;
+  label: string;
+}[] = [
+  {
+    type: AgentComponentTypeEnum.Plugin,
+    label: '插件',
+  },
+  {
+    type: AgentComponentTypeEnum.Workflow,
+    label: '工作流',
+  },
+  {
+    type: AgentComponentTypeEnum.Knowledge,
+    label: '知识库',
+  },
+  {
+    type: AgentComponentTypeEnum.Table,
+    label: '数据表',
+  },
 ];

@@ -26,7 +26,7 @@ import { jumpBack } from '@/utils/router';
 import { CollapseProps, Form, FormProps, Input, message, Radio } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { history, useModel, useParams, useRequest } from 'umi';
+import { useModel, useParams, useRequest } from 'umi';
 import styles from './index.less';
 import McpHeader from './McpHeader';
 
@@ -70,10 +70,9 @@ const SpaceMcpCreate: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: McpDetailInfo) => {
-      const text = withDeployRef.current ? '保存并部署' : '保存';
-      message.success(`${text}MCP服务成功`);
+      console.log('创建MCP服务成功', result);
+      message.success('创建MCP服务成功');
       setLoading(false);
-      history.replace(`/space/${spaceId}/mcp/edit/${result.id}`);
     },
     onError: () => {
       setLoading(false);
@@ -81,7 +80,7 @@ const SpaceMcpCreate: React.FC = () => {
   });
 
   // 保存MCP服务
-  const handleSave = (withDeploy: boolean) => {
+  const handleSave = (withDeploy: boolean = false) => {
     withDeployRef.current = withDeploy;
     form.submit();
   };
@@ -110,7 +109,6 @@ const SpaceMcpCreate: React.FC = () => {
       mcpConfig,
       withDeploy: withDeployRef.current,
     };
-
     runCreate(data);
   };
 
@@ -202,6 +200,7 @@ const SpaceMcpCreate: React.FC = () => {
     }),
   );
 
+  // 添加插件、工作流、知识库、数据库
   const handleAddComponent = (info: CreatedNodeItem) => {
     setAddComponents((list) => {
       return [
@@ -233,7 +232,7 @@ const SpaceMcpCreate: React.FC = () => {
         spaceId={spaceId}
         loading={loading}
         onCancel={() => jumpBack(`/space/${spaceId}/mcp`)}
-        onSave={() => handleSave(false)}
+        onSave={handleSave}
         onSaveAndDeploy={() => handleSave(true)}
       />
       <div className={cx(styles['main-container'])}>

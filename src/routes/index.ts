@@ -38,6 +38,10 @@ const routes = [
         component: '@/pages/SpaceMcpCreate',
       },
       {
+        path: '/space/:spaceId/mcp/edit/:mcpId',
+        component: '@/pages/SpaceMcpEdit',
+      },
+      {
         path: '/space/:spaceId/space-square',
         component: '@/pages/SpaceSquare',
       },

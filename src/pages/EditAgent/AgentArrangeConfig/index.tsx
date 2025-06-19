@@ -123,6 +123,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     if (isExistComponent(AgentComponentTypeEnum.Trigger)) {
       skill.push(AgentArrangeConfigEnum.Trigger);
     }
+    if (isExistComponent(AgentComponentTypeEnum.MCP)) {
+      skill.push(AgentArrangeConfigEnum.MCP);
+    }
     return skill;
   }, [agentComponentList]);
 

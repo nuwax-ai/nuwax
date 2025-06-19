@@ -26,6 +26,23 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
     setActionList(MCP_MORE_ACTION);
   }, []);
 
+  const getStatus = (status: DeployStatusEnum) => {
+    switch (status) {
+      case DeployStatusEnum.Initialization:
+        return '待部署';
+      case DeployStatusEnum.Deploying:
+        return '部署中';
+      case DeployStatusEnum.Deployed:
+        return '已部署';
+      case DeployStatusEnum.DeployFailed:
+        return '部署失败';
+      case DeployStatusEnum.Stopped:
+        return '已停止';
+      default:
+        return '';
+    }
+  };
+
   return (
     <div
       className={cx(
@@ -49,9 +66,7 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
             'overflow-hide',
           )}
         >
-          <h3 className={cx('text-ellipsis', styles['plugin-name'])}>
-            {info.name}
-          </h3>
+          <h3 className={cx('text-ellipsis', styles.name)}>{info.name}</h3>
           <p className={cx('text-ellipsis', styles.desc)}>{info.description}</p>
         </div>
         <img className={cx(styles.img)} src={info.icon} alt="" />
@@ -60,12 +75,10 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
       <div
         className={cx('flex', 'flex-wrap', 'items-center', styles['type-wrap'])}
       >
-        <BoxInfo icon={info?.icon} text={info?.name} />
+        <BoxInfo text={info?.installType} />
+        <BoxInfo text={getStatus(info.deployStatus)} />
         {info.deployStatus === DeployStatusEnum.Deployed && (
-          <>
-            <BoxInfo text="已发布" />
-            <CheckCircleTwoTone twoToneColor="#52c41a" />
-          </>
+          <CheckCircleTwoTone twoToneColor="#52c41a" />
         )}
       </div>
       <div className={cx(styles.footer, 'flex', 'items-center')}>
@@ -75,11 +88,13 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
           alt=""
         />
         <div className={cx('flex-1', 'flex', 'item-center', 'overflow-hide')}>
-          <div className={cx('flex-1', 'text-ellipsis')}>
+          <div className={cx('text-ellipsis', styles['user-name'])}>
             {info.creator?.nickName || info.creator?.userName}
           </div>
-          <div className={cx(styles['edit-time'], 'text-ellipsis')}>
-            最近编辑 {moment(info.modified).format('MM-DD HH:mm')}
+          <div className={cx(styles.time, 'text-ellipsis')}>
+            {info.deployStatus === DeployStatusEnum.Deployed
+              ? `发布于 ${moment(info.deployed).format('MM-DD HH:mm')}`
+              : `创建于 ${moment(info.created).format('MM-DD HH:mm')}`}
           </div>
         </div>
         <CustomPopover list={actionList} onClick={onClickMore}>

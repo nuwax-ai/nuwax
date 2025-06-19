@@ -115,7 +115,8 @@ const SpaceLibrary: React.FC = () => {
 
   // 点击单个资源组件
   const handleClickComponent = (info: McpDetailInfo) => {
-    console.log(info);
+    const { id, spaceId } = info;
+    history.push(`/space/${spaceId}/mcp/edit/${id}`);
   };
 
   // 创建MCP服务

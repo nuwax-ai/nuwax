@@ -6,6 +6,9 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 const BoxInfo: React.FC<BoxInfoProps> = ({ icon, text }) => {
+  if (!text) {
+    return null;
+  }
   return (
     <span
       className={cx(

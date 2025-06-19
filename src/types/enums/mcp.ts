@@ -8,10 +8,15 @@ export enum McpInstallTypeEnum {
 
 // MCP部署状态,可用值:Initialization,Deploying,Deployed,DeployFailed,Stopped
 export enum DeployStatusEnum {
+  // 待部署
   Initialization = 'Initialization',
+  // 部署中
   Deploying = 'Deploying',
+  // 已部署
   Deployed = 'Deployed',
+  // 部署失败
   DeployFailed = 'DeployFailed',
+  // 已停止
   Stopped = 'Stopped',
 }
 

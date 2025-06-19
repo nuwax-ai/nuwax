@@ -7,7 +7,7 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { McpCollapseComponentListProps } from '@/types/interfaces/mcp';
 import { DeleteOutlined } from '@ant-design/icons';
 import React from 'react';
-import McpCollapseComponentItem from '../McpCollapseComponentItem';
+import McpCollapseComponentItem from './McpCollapseComponentItem';
 
 // Mcp手风琴组件列表
 const McpCollapseComponentList: React.FC<McpCollapseComponentListProps> = ({
