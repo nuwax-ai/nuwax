@@ -360,7 +360,7 @@ const Created: React.FC<CreatedProp> = ({
       <Radio.Group
         value={selected.key}
         onChange={changeTitle}
-        defaultValue={AgentComponentTypeEnum.MCP}
+        defaultValue={AgentComponentTypeEnum.Plugin}
       >
         {buttonList
           .filter((item) => !hideTop?.includes(item.key))
