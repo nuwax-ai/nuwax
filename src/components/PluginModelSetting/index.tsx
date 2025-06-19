@@ -1,6 +1,7 @@
 import { PLUGIN_SETTING_ACTIONS } from '@/constants/space.constants';
 import {
   apiAgentCardList,
+  apiAgentComponentMcpUpdate,
   apiAgentComponentPluginUpdate,
   apiAgentComponentTableUpdate,
   apiAgentComponentWorkflowUpdate,
@@ -14,6 +15,7 @@ import { PluginSettingEnum } from '@/types/enums/space';
 import {
   AgentCardInfo,
   AgentComponentInfo,
+  AgentComponentMcpUpdateParams,
   AgentComponentPluginUpdateParams,
   AgentComponentTableUpdateParams,
   AgentComponentWorkflowUpdateParams,
@@ -51,6 +53,7 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
   currentComponentInfo,
   variables,
   onCancel,
+  settingActionList = PLUGIN_SETTING_ACTIONS,
 }) => {
   const [action, setAction] = useState<PluginSettingEnum>(
     PluginSettingEnum.Params,
@@ -92,6 +95,12 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
       debounceWait: 300,
     },
   );
+
+  // 更新MCP组件配置
+  const { runAsync: runMcpUpdate } = useRequest(apiAgentComponentMcpUpdate, {
+    manual: true,
+    debounceWait: 300,
+  });
 
   // 查询卡片列表
   const { run: runCard } = useRequest(apiAgentCardList, {
@@ -160,6 +169,10 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
     if (componentInfo?.type === AgentComponentTypeEnum.Table) {
       await runTableUpdate(params as AgentComponentTableUpdateParams);
     }
+    // MCP
+    if (componentInfo?.type === AgentComponentTypeEnum.MCP) {
+      await runMcpUpdate(params as AgentComponentMcpUpdateParams);
+    }
   };
 
   // 保存设置
@@ -168,6 +181,7 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
     value: BindConfigWithSub[] | CardBindConfig,
   ) => {
     const id = componentInfo?.id || 0;
+
     const params = {
       id,
       bindConfig: {
@@ -267,7 +281,7 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
           <div className={cx(styles.left)}>
             <h3>设置</h3>
             <ul>
-              {PLUGIN_SETTING_ACTIONS.map((item) => {
+              {settingActionList.map((item) => {
                 // 数据表组件不展示方法调用
                 if (
                   currentComponentInfo?.type === AgentComponentTypeEnum.Table &&

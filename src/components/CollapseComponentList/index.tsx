@@ -1,4 +1,5 @@
 import databaseImage from '@/assets/images/database_image.png';
+import mcpImage from '@/assets/images/mcp_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
 import CollapseComponentItem from '@/components/CollapseComponentItem';
@@ -29,6 +30,11 @@ const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
           text: '工作流支持通过可视化的方式，对插件、大语言模型、代码块等功能进行组合，从而实现复杂、稳定的业务流程编排，例如旅行规划、报告分析等。',
           image: workflowImage,
         };
+      case AgentComponentTypeEnum.MCP:
+        return {
+          text: 'MCP是基于Agent的微服务框架，可以为Agent提供丰富的功能，例如搜索信息、浏览网页、生成图片等。', // TODO 这里需要确认 mcp默认文本
+          image: mcpImage, // TODO 这里需要确认 mcp默认图片
+        };
       case AgentComponentTypeEnum.Table:
         return {
           text: '以表格结构组织数据，可实现类似书签和图书管理等功能。',
@@ -54,7 +60,14 @@ const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
             <TooltipIcon
               title="删除"
               icon={<DeleteOutlined className={'cursor-pointer'} />}
-              onClick={() => onDel(item.id, item.targetId, item.type)}
+              onClick={() =>
+                onDel(
+                  item.id,
+                  item.targetId,
+                  item.type,
+                  item.bindConfig?.toolName || '',
+                )
+              }
             />
           </>
         }
