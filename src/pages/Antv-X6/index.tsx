@@ -66,7 +66,6 @@ import GraphContainer from './graphContainer';
 import Header from './header';
 import './index.less';
 import RenderNodeDrawer from './RenderNodeDrawer';
-
 const Workflow: React.FC = () => {
   const { message } = App.useApp();
   const params = useParams();
@@ -910,7 +909,7 @@ const Workflow: React.FC = () => {
           val.targetType === AgentComponentTypeEnum.Knowledge
             ? NodeTypeEnum.Knowledge
             : ((tableType || NodeTypeEnum.TableDataQuery) as NodeTypeEnum),
-        // typeId: val.targetId,
+        typeId: val.targetId,
         nodeConfig: {
           knowledgeBaseConfigs: knowledgeBaseConfigs,
           extension: {},
@@ -929,7 +928,16 @@ const Workflow: React.FC = () => {
         shape: NodeShapeEnum.General,
         description: val.description,
         type,
-        // typeId: val.targetId,
+        typeId: val.targetId,
+      };
+    } else if (val.targetType === AgentComponentTypeEnum.MCP) {
+      _child = {
+        name: val.name,
+        shape: NodeShapeEnum.General,
+        description: val.description,
+        type: NodeTypeEnum.MCP,
+        typeId: val.targetId,
+        toolName: val.toolName,
       };
     } else {
       message.warning('暂不支持该类型组件');
@@ -982,7 +990,11 @@ const Workflow: React.FC = () => {
     };
 
     // 判断是否需要显示特定类型的创建面板
-    const isSpecialType = ['Plugin', 'Workflow'].includes(childType);
+    const isSpecialType = [
+      NodeTypeEnum.Plugin,
+      NodeTypeEnum.Workflow,
+      NodeTypeEnum.MCP,
+    ].includes(childType);
     // 数据库新增
     const isTableNode = [
       'TableDataAdd',
@@ -992,11 +1004,7 @@ const Workflow: React.FC = () => {
       'TableSQL',
     ].includes(childType);
     if (isSpecialType) {
-      setCreatedItem(
-        childType === NodeTypeEnum.Workflow
-          ? AgentComponentTypeEnum.Workflow
-          : AgentComponentTypeEnum.Plugin,
-      );
+      setCreatedItem(childType as unknown as AgentComponentTypeEnum); // 注意这个类型转换的前提是两个枚举的值相同
       setOpen(true);
       setDragEvent(getCoordinates(position));
     } else if (isTableNode) {

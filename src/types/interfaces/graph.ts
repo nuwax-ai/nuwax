@@ -64,10 +64,13 @@ export interface ChildNode {
   isEditingName?: boolean; // 是否正在编辑名称
   isFocus?: boolean; // 是否聚焦
   runResult?: RunResultItem | null; // 运行结果
+  toolName?: string;
+  typeId?: number;
 }
 
 export interface StencilChildNode extends Partial<ChildNode> {
   bgIcon: string;
+  type: NodeTypeEnum;
 }
 /**
  * 定义 StencilList 接口，用于描述模板列表的数据结构。
