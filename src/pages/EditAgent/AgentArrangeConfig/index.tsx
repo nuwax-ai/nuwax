@@ -1,7 +1,10 @@
 import Created from '@/components/Created';
 import SelectList from '@/components/SelectList';
 import TooltipIcon from '@/components/TooltipIcon';
-import { ENABLE_LIST } from '@/constants/space.constants';
+import {
+  ENABLE_LIST,
+  PLUGIN_SETTING_ACTIONS,
+} from '@/constants/space.constants';
 import {
   apiAgentComponentAdd,
   apiAgentComponentDelete,
@@ -12,7 +15,11 @@ import {
   AgentComponentTypeEnum,
   BindValueType,
 } from '@/types/enums/agent';
-import { AgentArrangeConfigEnum, OpenCloseEnum } from '@/types/enums/space';
+import {
+  AgentArrangeConfigEnum,
+  OpenCloseEnum,
+  PluginSettingEnum,
+} from '@/types/enums/space';
 import type {
   AgentComponentInfo,
   BindConfigWithSub,
@@ -25,7 +32,13 @@ import ConfigOptionCollapse from '@/components/ConfigOptionCollapse';
 import { useRequest } from 'ahooks';
 import { CollapseProps, message } from 'antd';
 import classNames from 'classnames';
-import React, { MouseEvent, useEffect, useMemo, useState } from 'react';
+import React, {
+  MouseEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { useModel } from 'umi';
 import ConfigOptionsHeader from './ConfigOptionsHeader';
 import CreateVariables from './CreateVariables';
@@ -566,6 +579,19 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     });
   };
 
+  const getSettingActionList = useCallback(
+    (type: AgentComponentTypeEnum | undefined) => {
+      if (type === AgentComponentTypeEnum.MCP) {
+        // MCP 不支持方法调用(调用方式)
+        return PLUGIN_SETTING_ACTIONS.filter(
+          (item) => item.type !== PluginSettingEnum.Method_Call,
+        );
+      }
+      return PLUGIN_SETTING_ACTIONS;
+    },
+    [],
+  );
+
   return (
     <div className={classNames('overflow-y', 'flex-1', 'px-16', 'py-12')}>
       <ConfigOptionsHeader title="技能" />
@@ -617,6 +643,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         open={openPluginModel}
         variables={variablesInfo?.bindConfig?.variables || []}
         currentComponentInfo={currentComponentInfo}
+        settingActionList={getSettingActionList(currentComponentInfo?.type)}
         onCancel={() => setOpenPluginModel(false)}
       />
     </div>
