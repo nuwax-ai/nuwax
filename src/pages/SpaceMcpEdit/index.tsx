@@ -37,6 +37,7 @@ const SpaceMcpCreate: React.FC = () => {
   const [form] = Form.useForm();
   const params = useParams();
   const spaceId = Number(params.spaceId);
+  const mcpId = Number(params.mcpId);
   const [imageUrl, setImageUrl] = useState<string>('');
   // 安装方式
   const [installType, setInstallType] = useState<McpInstallTypeEnum>();
@@ -58,12 +59,13 @@ const SpaceMcpCreate: React.FC = () => {
   const { show, setShow } = useModel('model');
 
   useEffect(() => {
-    setInstallType(McpInstallTypeEnum.NPX);
-    // 获取MCP服务配置组件列表
-    form.setFieldsValue({
-      installType: McpInstallTypeEnum.NPX,
-    });
-  }, []);
+    console.log('mcpId', mcpId);
+    // setInstallType(McpInstallTypeEnum.NPX);
+    // // 获取MCP服务配置组件列表
+    // form.setFieldsValue({
+    //   installType: McpInstallTypeEnum.NPX,
+    // });
+  }, [mcpId]);
 
   // MCP服务创建
   const { run: runCreate } = useRequest(apiMcpCreate, {
@@ -230,7 +232,7 @@ const SpaceMcpCreate: React.FC = () => {
     <div className={cx(styles.container)}>
       <McpHeader
         spaceId={spaceId}
-        loading={loading}
+        saveLoading={loading}
         onCancel={() => jumpBack(`/space/${spaceId}/mcp`)}
         onSave={handleSave}
         onSaveAndDeploy={() => handleSave(true)}

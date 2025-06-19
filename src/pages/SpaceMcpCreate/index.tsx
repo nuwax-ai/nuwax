@@ -48,7 +48,8 @@ const SpaceMcpCreate: React.FC = () => {
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]
   >([]);
-  const [loading, setLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveDeployLoading, setSaveDeployLoading] = useState(false);
   const [checkTag, setCheckTag] = useState<AgentComponentTypeEnum>(
     AgentComponentTypeEnum.Plugin,
   );
@@ -72,17 +73,22 @@ const SpaceMcpCreate: React.FC = () => {
     onSuccess: (result: McpDetailInfo) => {
       const text = withDeployRef.current ? '保存并部署' : '保存';
       message.success(`${text}MCP服务成功`);
-      setLoading(false);
       history.replace(`/space/${spaceId}/mcp/edit/${result.id}`);
     },
-    onError: () => {
-      setLoading(false);
+    onFinally: () => {
+      setSaveDeployLoading(false);
+      setSaveLoading(false);
     },
   });
 
   // 保存MCP服务
   const handleSave = (withDeploy: boolean) => {
     withDeployRef.current = withDeploy;
+    if (withDeploy) {
+      setSaveDeployLoading(true);
+    } else {
+      setSaveLoading(true);
+    }
     form.submit();
   };
 
@@ -231,7 +237,8 @@ const SpaceMcpCreate: React.FC = () => {
     <div className={cx(styles.container)}>
       <McpHeader
         spaceId={spaceId}
-        loading={loading}
+        saveLoading={saveLoading}
+        saveDeployLoading={saveDeployLoading}
         onCancel={() => jumpBack(`/space/${spaceId}/mcp`)}
         onSave={() => handleSave(false)}
         onSaveAndDeploy={() => handleSave(true)}

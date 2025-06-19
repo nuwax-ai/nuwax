@@ -171,7 +171,8 @@ export interface McpComponentItemProps {
 // 创建MCP服务header组件
 export interface McpHeaderProps {
   spaceId: number;
-  loading?: boolean;
+  saveLoading?: boolean;
+  saveDeployLoading?: boolean;
   onCancel: () => void;
   onSave: () => void;
   onSaveAndDeploy: () => void;

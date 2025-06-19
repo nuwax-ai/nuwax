@@ -278,7 +278,6 @@ export interface CreatedNodeItem {
   // 是否允许复制, 1 允许
   allowCopy: AllowCopyEnum;
   category: string;
-  config: any;
   // 图片
   icon: string;
   id: number;
