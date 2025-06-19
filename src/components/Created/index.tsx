@@ -21,6 +21,7 @@ import { Button, Divider, Input, Menu, Modal, Radio } from 'antd';
 import { RadioChangeEvent } from 'antd/lib/radio';
 import { useCallback, useEffect, useRef, useState } from 'react';
 // import { useModel } from 'umi';
+import { jumpToMcpCreate } from '@/utils/router';
 import { AnyObject } from 'antd/es/_util/type';
 import { history, useParams } from 'umi';
 import CreatedItem from '../CreatedItem';
@@ -38,7 +39,6 @@ const buttonList: ButtonList[] = [
   { label: '数据表', key: AgentComponentTypeEnum.Table },
   { label: 'MCP', key: AgentComponentTypeEnum.MCP },
 ];
-
 // 创建插件、工作流、知识库、数据库
 const Created: React.FC<CreatedProp> = ({
   open,
@@ -138,6 +138,8 @@ const Created: React.FC<CreatedProp> = ({
         return knowledgeItem;
       case AgentComponentTypeEnum.Table:
         return databaseItem;
+      case AgentComponentTypeEnum.MCP:
+        return [];
       default:
         return items;
     }
@@ -482,6 +484,17 @@ const Created: React.FC<CreatedProp> = ({
       </div>
     );
   };
+
+  const handleClickCreate = (
+    selectedKey: AgentComponentTypeEnum,
+    spaceId: number,
+  ) => {
+    if (selectedKey === AgentComponentTypeEnum.MCP) {
+      jumpToMcpCreate(spaceId);
+    } else {
+      setShowCreate(true);
+    }
+  };
   return (
     <Modal
       keyboard={false} //是否能使用sec关闭
@@ -522,7 +535,7 @@ const Created: React.FC<CreatedProp> = ({
             type="primary"
             className="margin-bottom"
             style={{ width: '100%' }}
-            onClick={() => setShowCreate(true)}
+            onClick={() => handleClickCreate(selected.key, spaceId)}
           >{`创建${selected.label}`}</Button>
 
           {/* 下方的菜单 */}
