@@ -9,7 +9,7 @@ import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
 // MCP服务更新
-export async function apiMcpUpdate(
+export function apiMcpUpdate(
   data: McpUpdateParams,
 ): Promise<RequestResponse<McpDetailInfo>> {
   return request('/api/mcp/update', {
@@ -19,7 +19,7 @@ export async function apiMcpUpdate(
 }
 
 // MCP试运行
-export async function apiMcpTryRun(
+export function apiMcpTryRun(
   data: McpTestParams,
 ): Promise<RequestResponse<McpTestResult>> {
   return request('/api/mcp/test', {
@@ -28,8 +28,15 @@ export async function apiMcpTryRun(
   });
 }
 
+// MCP停用
+export function apiMcpStop(id: number): Promise<RequestResponse<null>> {
+  return request(`/api/mcp/stop/${id}`, {
+    method: 'POST',
+  });
+}
+
 // MCP服务重新生成配置
-export async function apiMcpServerConfigRefresh(
+export function apiMcpServerConfigRefresh(
   id: number,
 ): Promise<RequestResponse<string>> {
   return request(`/api/mcp/server/config/refresh/${id}`, {
@@ -38,7 +45,7 @@ export async function apiMcpServerConfigRefresh(
 }
 
 // MCP服务导出
-export async function apiMcpServerConfigExport(
+export function apiMcpServerConfigExport(
   id: number,
 ): Promise<RequestResponse<string>> {
   return request(`/api/mcp/server/config/export/${id}`, {
@@ -47,14 +54,14 @@ export async function apiMcpServerConfigExport(
 }
 
 // MCP删除
-export async function apiMcpDelete(id: number): Promise<RequestResponse<null>> {
+export function apiMcpDelete(id: number): Promise<RequestResponse<null>> {
   return request(`/api/mcp/delete/${id}`, {
     method: 'POST',
   });
 }
 
 // MCP服务创建
-export async function apiMcpCreate(
+export function apiMcpCreate(
   data: McpCreateParams,
 ): Promise<RequestResponse<McpDetailInfo>> {
   return request('/api/mcp/create', {
@@ -64,7 +71,7 @@ export async function apiMcpCreate(
 }
 
 // MCP详情查询
-export async function apiMcpDetail(
+export function apiMcpDetail(
   id: number,
 ): Promise<RequestResponse<McpDetailInfo>> {
   return request(`/api/mcp/${id}`, {
@@ -73,7 +80,7 @@ export async function apiMcpDetail(
 }
 
 // MCP管理列表
-export async function apiMcpList(
+export function apiMcpList(
   spaceId: number,
 ): Promise<RequestResponse<McpDetailInfo[]>> {
   return request(`/api/mcp/list/${spaceId}`, {
@@ -82,7 +89,7 @@ export async function apiMcpList(
 }
 
 // MCP已发布服务列表（弹框使用）
-export async function apiMcpDeployedList(
+export function apiMcpDeployedList(
   spaceId: number,
 ): Promise<RequestResponse<McpDetailInfo[]>> {
   return request(`/api/mcp/deployed/list/${spaceId}`, {

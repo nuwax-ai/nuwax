@@ -41,6 +41,7 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
       // 停止服务按钮: 只有当前用户拥有停止权限，才可停止服务
       if (
         item.type === McpMoreActionEnum.Stop_Service &&
+        info.deployStatus !== DeployStatusEnum.Stopped &&
         info.permissions?.includes(McpPermissionsEnum.Stop)
       ) {
         list.push(item);

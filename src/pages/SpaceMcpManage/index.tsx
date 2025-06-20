@@ -2,7 +2,7 @@ import Loading from '@/components/Loading';
 import SelectList from '@/components/SelectList';
 import { FILTER_DEPLOY } from '@/constants/mcp.constants';
 import { CREATE_LIST } from '@/constants/space.constants';
-import { apiMcpList } from '@/services/mcp';
+import { apiMcpDelete, apiMcpList, apiMcpStop } from '@/services/mcp';
 import {
   DeployStatusEnum,
   FilterDeployEnum,
@@ -16,7 +16,7 @@ import {
   PlusOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
-import { Button, Empty, Input, Modal } from 'antd';
+import { Button, Empty, Input, message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
@@ -91,6 +91,54 @@ const SpaceLibrary: React.FC = () => {
     },
   });
 
+  // 修改状态为已停止
+  const handleMcpList = (id: number, list: McpDetailInfo[]) => {
+    return list.map((item) => {
+      if (item.id === id) {
+        return { ...item, deployStatus: DeployStatusEnum.Stopped };
+      }
+      return item;
+    });
+  };
+
+  // 停止服务成功后处理数据: 修改状态为已停止
+  const handleStopServiceSuccess = (id: number) => {
+    const list = handleMcpList(id, mcpList);
+    setMcpList(list);
+    mcpListAllRef.current = handleMcpList(id, mcpListAllRef.current);
+  };
+
+  // MCP停用服务
+  const { run: runMcpStop } = useRequest(apiMcpStop, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (_: null, params: number[]) => {
+      message.success('停用成功');
+      const [id] = params;
+      handleStopServiceSuccess(id);
+    },
+  });
+
+  // 删除服务成功后处理数据
+  const handleDelSuccess = (id: number) => {
+    const list = mcpList.filter((item) => item.id !== id);
+    setMcpList(list);
+    mcpListAllRef.current = mcpListAllRef.current.filter(
+      (item) => item.id !== id,
+    );
+  };
+
+  // MCP删除
+  const { run: runMcpDelete } = useRequest(apiMcpDelete, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (_: null, params: number[]) => {
+      message.success('删除成功');
+      const [id] = params;
+      handleDelSuccess(id);
+    },
+  });
+
   useEffect(() => {
     setLoading(true);
     runMcpList(spaceId);
@@ -139,12 +187,23 @@ const SpaceLibrary: React.FC = () => {
           maskClosable: true,
           cancelText: '取消',
           onOk() {
-            // todo: 停止服务，然后修改状态为已停止
+            runMcpStop(info.id);
           },
         });
         break;
       // 删除
       case McpMoreActionEnum.Del:
+        confirm({
+          title: '您确定要删除此服务吗?',
+          icon: <ExclamationCircleFilled />,
+          content: info.name,
+          okText: '确定',
+          maskClosable: true,
+          cancelText: '取消',
+          onOk() {
+            runMcpDelete(info.id);
+          },
+        });
         break;
       // 导出
       case McpMoreActionEnum.Service_Export:
