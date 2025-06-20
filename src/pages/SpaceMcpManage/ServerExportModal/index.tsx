@@ -6,6 +6,7 @@ import {
   apiMcpServerConfigRefresh,
 } from '@/services/mcp';
 import { ServerExportModalProps } from '@/types/interfaces/mcp';
+import { ExclamationCircleFilled } from '@ant-design/icons';
 import { Button, message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -14,6 +15,8 @@ import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+const { confirm } = Modal;
 
 /**
  * 服务导出弹窗
@@ -66,10 +69,25 @@ const ServerExportModal: React.FC<ServerExportModalProps> = ({
     },
   });
 
-  // 重新生成配置
-  const handleRebuildConfig = () => {
+  // 确认重新生成配置
+  const confirmRebuildConfig = () => {
     setLoading(true);
     runMcpReConfig(mcpId);
+  };
+
+  // 重新生成配置
+  const handleRebuildConfig = () => {
+    confirm({
+      title: '您确定要重新生成配置吗?',
+      icon: <ExclamationCircleFilled />,
+      content: name,
+      okText: '确定',
+      maskClosable: true,
+      cancelText: '取消',
+      onOk() {
+        confirmRebuildConfig();
+      },
+    });
   };
 
   useEffect(() => {
