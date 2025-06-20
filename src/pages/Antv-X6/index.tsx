@@ -762,7 +762,7 @@ const Workflow: React.FC = () => {
     _params.workflowId = workflowId;
     _params.extension = dragEvent;
     // 如果是条件分支，需要增加高度
-    if (child.type === 'Condition') {
+    if (child.type === NodeTypeEnum.Condition) {
       const { defaultWidth, defaultHeight } = DEFAULT_NODE_CONFIG.conditionNode;
       _params.extension = {
         ...dragEvent,
@@ -770,7 +770,7 @@ const Workflow: React.FC = () => {
         width: defaultWidth,
       };
     }
-    if (child.type === 'QA') {
+    if (child.type === NodeTypeEnum.QA) {
       const { defaultWidth, defaultHeight } = DEFAULT_NODE_CONFIG.qaNode;
       _params.extension = {
         ...dragEvent,
@@ -778,7 +778,7 @@ const Workflow: React.FC = () => {
         width: defaultWidth,
       };
     }
-    if (child.type === 'IntentRecognition') {
+    if (child.type === NodeTypeEnum.IntentRecognition) {
       const { defaultWidth, defaultHeight } =
         DEFAULT_NODE_CONFIG.intentRecognitionNode;
       _params.extension = {
@@ -787,7 +787,7 @@ const Workflow: React.FC = () => {
         width: defaultWidth,
       };
     }
-    if (child.type === 'Loop') {
+    if (child.type === NodeTypeEnum.Loop) {
       const { defaultWidth, defaultHeight } = DEFAULT_NODE_CONFIG.loopNode;
       _params.extension = {
         ...dragEvent,
@@ -797,8 +797,8 @@ const Workflow: React.FC = () => {
     }
     // 查看当前是否有选中的节点以及被选中的节点的type是否是Loop
     // 如果当前选择的是循环节点或者循环内部的子节点，那么就要将他的位置放置于循环内部
-    if (foldWrapItem.type === 'Loop' || foldWrapItem.loopNodeId) {
-      if (_params.type === 'Loop') {
+    if (foldWrapItem.type === NodeTypeEnum.Loop || foldWrapItem.loopNodeId) {
+      if (_params.type === NodeTypeEnum.Loop) {
         message.warning('循环体里请不要再添加循环体');
         return;
       }
