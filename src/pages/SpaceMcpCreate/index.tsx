@@ -234,7 +234,7 @@ const SpaceMcpCreate: React.FC = () => {
   };
 
   return (
-    <div className={cx(styles.container)}>
+    <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <McpHeader
         spaceId={spaceId}
         saveLoading={saveLoading}
@@ -243,90 +243,95 @@ const SpaceMcpCreate: React.FC = () => {
         onSave={() => handleSave(false)}
         onSaveAndDeploy={() => handleSave(true)}
       />
-      <div className={cx(styles['main-container'])}>
-        <div className={cx('flex', 'items-center', 'content-center')}>
-          <UploadAvatar
-            className={styles['upload-box']}
-            onUploadSuccess={setImageUrl}
-            imageUrl={imageUrl}
-            defaultImage={mcpImage}
-          />
-        </div>
-        <Form
-          form={form}
-          preserve={false}
-          layout="vertical"
-          requiredMark={customizeRequiredMark}
-          onFinish={onFinish}
-          autoComplete="off"
-        >
-          <Form.Item
-            name="name"
-            label="服务名称"
-            rules={[{ required: true, message: '请输入MCP服务名称' }]}
-          >
-            <Input placeholder="MCP服务名称" showCount maxLength={30} />
-          </Form.Item>
-          <Form.Item
-            name="description"
-            label="描述"
-            rules={[{ required: true, message: '请输入描述你的MCP服务' }]}
-          >
-            <Input.TextArea
-              className="dispose-textarea-count"
-              placeholder="描述你的MCP服务"
-              showCount
-              maxLength={500}
-              autoSize={{ minRows: 3, maxRows: 5 }}
+      <div className={cx('flex-1', 'overflow-y')}>
+        <div className={cx(styles['main-container'])}>
+          <div className={cx('flex', 'items-center', 'content-center')}>
+            <UploadAvatar
+              className={styles['upload-box']}
+              onUploadSuccess={setImageUrl}
+              imageUrl={imageUrl}
+              defaultImage={mcpImage}
             />
-          </Form.Item>
-          <Form.Item
-            name="installType"
-            label="安装方式"
-            rules={[{ required: true, message: '请选择安装方式' }]}
+          </div>
+          <Form
+            form={form}
+            preserve={false}
+            layout="vertical"
+            requiredMark={customizeRequiredMark}
+            onFinish={onFinish}
+            autoComplete="off"
           >
-            <Radio.Group
-              onChange={(e) =>
-                setInstallType(e.target.value as McpInstallTypeEnum)
-              }
-              value={installType}
-              options={MCP_INSTALL_TYPE_LIST}
-            />
-          </Form.Item>
-          {/* 安装方式切换 */}
-          {installType !== McpInstallTypeEnum.COMPONENT ? (
-            // MCP服务配置，installType为npx、uvx、sse时有效	类型：string
             <Form.Item
-              name="serverConfig"
-              label={
-                <LabelStar
-                  label={
-                    <div className={cx('flex', 'items-center')}>
-                      <span>MCP服务配置</span>
-                      <span className={cx(styles['sub-title'])}>
-                        MCP服务使用json配置，提交前确保格式正确
-                      </span>
-                    </div>
-                  }
-                />
-              }
+              name="name"
+              label="服务名称"
+              rules={[{ required: true, message: '请输入MCP服务名称' }]}
             >
-              <CodeEditor
-                className={cx('w-full', 'radius-10', 'overflow-hide')}
-                codeLanguage={CodeLangEnum.JSON}
-                height="400px"
+              <Input placeholder="MCP服务名称" showCount maxLength={30} />
+            </Form.Item>
+            <Form.Item
+              name="description"
+              label="描述"
+              rules={[{ required: true, message: '请输入描述你的MCP服务' }]}
+            >
+              <Input.TextArea
+                className="dispose-textarea-count"
+                placeholder="描述你的MCP服务"
+                showCount
+                maxLength={500}
+                autoSize={{ minRows: 3, maxRows: 5 }}
               />
             </Form.Item>
-          ) : (
-            <Form.Item name="components" label={<LabelStar label="组件选择" />}>
-              <ConfigOptionCollapse
-                className={cx(styles['collapse-container'])}
-                items={collapseList}
-                defaultActiveKey={collapseActiveKey}
+            <Form.Item
+              name="installType"
+              label="安装方式"
+              rules={[{ required: true, message: '请选择安装方式' }]}
+            >
+              <Radio.Group
+                onChange={(e) =>
+                  setInstallType(e.target.value as McpInstallTypeEnum)
+                }
+                value={installType}
+                options={MCP_INSTALL_TYPE_LIST}
               />
             </Form.Item>
-          )}
-        </Form>
+            {/* 安装方式切换 */}
+            {installType !== McpInstallTypeEnum.COMPONENT ? (
+              // MCP服务配置，installType为npx、uvx、sse时有效	类型：string
+              <Form.Item
+                name="serverConfig"
+                label={
+                  <LabelStar
+                    label={
+                      <div className={cx('flex', 'items-center')}>
+                        <span>MCP服务配置</span>
+                        <span className={cx(styles['sub-title'])}>
+                          MCP服务使用json配置，提交前确保格式正确
+                        </span>
+                      </div>
+                    }
+                  />
+                }
+              >
+                <CodeEditor
+                  className={cx('w-full', 'radius-10', 'overflow-hide')}
+                  codeLanguage={CodeLangEnum.JSON}
+                  height="400px"
+                />
+              </Form.Item>
+            ) : (
+              <Form.Item
+                name="components"
+                label={<LabelStar label="组件选择" />}
+              >
+                <ConfigOptionCollapse
+                  className={cx(styles['collapse-container'])}
+                  items={collapseList}
+                  defaultActiveKey={collapseActiveKey}
+                />
+              </Form.Item>
+            )}
+          </Form>
+        </div>
       </div>
       {/*添加插件、工作流、知识库、数据库弹窗*/}
       <Created
