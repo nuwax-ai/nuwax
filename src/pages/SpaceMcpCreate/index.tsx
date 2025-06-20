@@ -227,7 +227,7 @@ const SpaceMcpCreate: React.FC = () => {
         description: info.description,
         type: info.targetType,
         targetId: info.targetId,
-        targetConfig: null,
+        targetConfig: '',
       };
       return [...list, newItem];
     });
@@ -245,14 +245,12 @@ const SpaceMcpCreate: React.FC = () => {
       />
       <div className={cx('flex-1', 'overflow-y')}>
         <div className={cx(styles['main-container'])}>
-          <div className={cx('flex', 'items-center', 'content-center')}>
-            <UploadAvatar
-              className={styles['upload-box']}
-              onUploadSuccess={setImageUrl}
-              imageUrl={imageUrl}
-              defaultImage={mcpImage}
-            />
-          </div>
+          <UploadAvatar
+            className={styles['upload-box']}
+            onUploadSuccess={setImageUrl}
+            imageUrl={imageUrl}
+            defaultImage={mcpImage}
+          />
           <Form
             form={form}
             preserve={false}

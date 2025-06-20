@@ -20,7 +20,8 @@ export interface McpConfigComponentInfo {
   // 关联的组件ID
   targetId: number;
   // 组件原始配置
-  targetConfig: any;
+  targetConfig?: string;
+  toolName?: string;
 }
 
 // MCP配置信息
@@ -103,7 +104,7 @@ export interface McpDetailInfo {
   // MCP部署状态,可用值:Initialization,Deploying,Deployed,DeployFailed,Stopped
   deployStatus: DeployStatusEnum;
   // MCP配置
-  mcpConfig: McpConfigInfo;
+  mcpConfig?: McpConfigInfo;
   // MCP部署时间
   deployed: string;
   // MCP修改时间

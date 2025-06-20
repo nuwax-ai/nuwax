@@ -10,7 +10,7 @@ import {
   MCP_COLLAPSE_COMPONENT_LIST,
   MCP_INSTALL_TYPE_LIST,
 } from '@/constants/mcp.constants';
-import { apiMcpCreate } from '@/services/mcp';
+import { apiMcpDetail, apiMcpUpdate } from '@/services/mcp';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
@@ -50,6 +50,7 @@ const SpaceMcpCreate: React.FC = () => {
     AgentAddComponentStatusInfo[]
   >([]);
   const [loading, setLoading] = useState(false);
+  const [mcpDetailInfo, setMcpDetailInfo] = useState<McpDetailInfo>();
   const [checkTag, setCheckTag] = useState<AgentComponentTypeEnum>(
     AgentComponentTypeEnum.Plugin,
   );
@@ -58,28 +59,45 @@ const SpaceMcpCreate: React.FC = () => {
   // 打开、关闭弹窗
   const { show, setShow } = useModel('model');
 
-  useEffect(() => {
-    console.log('mcpId', mcpId);
-    // setInstallType(McpInstallTypeEnum.NPX);
-    // // 获取MCP服务配置组件列表
-    // form.setFieldsValue({
-    //   installType: McpInstallTypeEnum.NPX,
-    // });
-  }, [mcpId]);
+  // MCP详情查询
+  const { run: runDetail } = useRequest(apiMcpDetail, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: McpDetailInfo) => {
+      setMcpDetailInfo(result);
+      const { name, description, icon, installType, mcpConfig } = result;
+      form.setFieldsValue({
+        name,
+        description,
+        icon,
+        installType,
+        serverConfig: mcpConfig?.serverConfig,
+      });
+      setMcpConfigComponentList(mcpConfig?.components || []);
+      setImageUrl(icon);
+      setInstallType(installType);
+    },
+  });
 
-  // MCP服务创建
-  const { run: runCreate } = useRequest(apiMcpCreate, {
+  console.log('mcpDetailInfo', mcpDetailInfo);
+
+  // MCP服务更新
+  const { run: runUpdate } = useRequest(apiMcpUpdate, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: McpDetailInfo) => {
       console.log('创建MCP服务成功', result);
-      message.success('创建MCP服务成功');
+      message.success('更新MCP服务成功');
       setLoading(false);
     },
     onError: () => {
       setLoading(false);
     },
   });
+
+  useEffect(() => {
+    runDetail(mcpId);
+  }, [mcpId]);
 
   // 保存MCP服务
   const handleSave = (withDeploy: boolean = false) => {
@@ -111,7 +129,7 @@ const SpaceMcpCreate: React.FC = () => {
       mcpConfig,
       withDeploy: withDeployRef.current,
     };
-    runCreate(data);
+    runUpdate(data);
   };
 
   // 根据组件类型，过滤组件
@@ -222,7 +240,7 @@ const SpaceMcpCreate: React.FC = () => {
         description: info.description,
         type: info.targetType,
         targetId: info.targetId,
-        targetConfig: null,
+        targetConfig: '',
       };
       return [...list, newItem];
     });
@@ -239,14 +257,12 @@ const SpaceMcpCreate: React.FC = () => {
       />
       <div className={cx('flex-1', 'overflow-y')}>
         <div className={cx(styles['main-container'])}>
-          <div className={cx('flex', 'items-center', 'content-center')}>
-            <UploadAvatar
-              className={styles['upload-box']}
-              onUploadSuccess={setImageUrl}
-              imageUrl={imageUrl}
-              defaultImage={mcpImage}
-            />
-          </div>
+          <UploadAvatar
+            className={styles['upload-box']}
+            onUploadSuccess={setImageUrl}
+            imageUrl={imageUrl}
+            defaultImage={mcpImage}
+          />
           <Form
             form={form}
             preserve={false}
