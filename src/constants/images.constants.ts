@@ -55,6 +55,7 @@ import { ReactComponent as ICON_WORKFLOW_LONG_TERM_MEMORY } from '@/assets/workf
 import { ReactComponent as ICON_WORKFLOW_LOOP } from '@/assets/workflow/workflow-Loop.svg';
 import { ReactComponent as ICON_WORKFLOW_LOOPBREAK } from '@/assets/workflow/workflow-LoopBreak.svg';
 import { ReactComponent as ICON_WORKFLOW_LOOPCONTINUE } from '@/assets/workflow/workflow-LoopContinue.svg';
+import { ReactComponent as ICON_WORKFLOW_MCP } from '@/assets/workflow/workflow-MCP.svg';
 import { ReactComponent as ICON_WORKFLOW_OUTPUT } from '@/assets/workflow/workflow-Output.svg';
 import { ReactComponent as ICON_WORKFLOW_PLUGIN } from '@/assets/workflow/workflow-Plugin.svg';
 import { ReactComponent as ICON_WORKFLOW_QA } from '@/assets/workflow/workflow-QA.svg';
@@ -79,6 +80,7 @@ import BG_ICON_WORKFLOW_LONG_TERM_MEMORY from '@/assets/workflow/workflow-LongTe
 import BG_ICON_WORKFLOW_LOOP from '@/assets/workflow/workflow-Loop.svg';
 import BG_ICON_WORKFLOW_LOOPBREAK from '@/assets/workflow/workflow-LoopBreak.svg';
 import BG_ICON_WORKFLOW_LOOPCONTINUE from '@/assets/workflow/workflow-LoopContinue.svg';
+import BG_ICON_WORKFLOW_MCP from '@/assets/workflow/workflow-MCP.svg';
 import BG_ICON_WORKFLOW_OUTPUT from '@/assets/workflow/workflow-Output.svg';
 import BG_ICON_WORKFLOW_PLUGIN from '@/assets/workflow/workflow-Plugin.svg';
 import BG_ICON_WORKFLOW_QA from '@/assets/workflow/workflow-QA.svg';
@@ -104,6 +106,7 @@ export {
   BG_ICON_WORKFLOW_LOOP,
   BG_ICON_WORKFLOW_LOOPBREAK,
   BG_ICON_WORKFLOW_LOOPCONTINUE,
+  BG_ICON_WORKFLOW_MCP,
   BG_ICON_WORKFLOW_OUTPUT,
   BG_ICON_WORKFLOW_PLUGIN,
   BG_ICON_WORKFLOW_QA,
@@ -165,6 +168,7 @@ export {
   ICON_WORKFLOW_LOOP,
   ICON_WORKFLOW_LOOPBREAK,
   ICON_WORKFLOW_LOOPCONTINUE,
+  ICON_WORKFLOW_MCP,
   ICON_WORKFLOW_OUTPUT,
   ICON_WORKFLOW_PLUGIN,
   ICON_WORKFLOW_QA,

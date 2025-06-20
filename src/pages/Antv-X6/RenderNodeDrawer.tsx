@@ -103,6 +103,7 @@ export default function RenderNodeDrawer({ params }: { params: ChildNode }) {
       ...(exceptionHandleConfig || {}),
       name: 'exceptionHandleConfig',
     });
+  // 处理输入 编辑器 同步输出参数及同步之前录入内容
   const { specificContent } = useSpecificContent({
     exceptionItemProps,
     watchField: 'outputArgs',
@@ -119,6 +120,7 @@ export default function RenderNodeDrawer({ params }: { params: ChildNode }) {
   return (
     <>
       {nodeTemplate(params, form)}
+      {/* 处理节点异常项展示*/}
       {showExceptionHandle && <ExceptionItem {...exceptionItemProps} />}
     </>
   );

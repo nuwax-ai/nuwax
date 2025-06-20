@@ -37,7 +37,7 @@ const buttonList: ButtonList[] = [
   { label: '工作流', key: AgentComponentTypeEnum.Workflow },
   { label: '知识库', key: AgentComponentTypeEnum.Knowledge },
   { label: '数据表', key: AgentComponentTypeEnum.Table },
-  { label: 'MCP', key: AgentComponentTypeEnum.MCP },
+  { label: 'MCP服务', key: AgentComponentTypeEnum.MCP },
 ];
 // 创建插件、工作流、知识库、数据库
 const Created: React.FC<CreatedProp> = ({

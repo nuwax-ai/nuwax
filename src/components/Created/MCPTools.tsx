@@ -51,51 +51,19 @@ export default function MCPTools({
     return null;
   }
   return (
-    <div
-      key={`${item.targetId}-tools`}
-      style={{ marginLeft: 65, marginRight: 16 }}
-    >
+    <div key={`${item.targetId}-tools`} className="mcp-tools-style">
       {tools.map((tool: any, index: number) => (
         <div
           key={`${item.targetId}-${index}-tools-${tool.name}`}
-          style={{
-            width: '100%',
-            display: 'flex',
-            padding: '12px 0',
-            justifyContent: 'space-between',
-            borderBottom: '1px solid #e5e5e5',
-          }}
+          className="mcp-tools-item-style"
         >
-          <div
-            className="dis-sb"
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-            }}
-          >
-            <div
-              style={{
-                fontSize: '14px',
-                fontWeight: 500,
-                color: '#333',
-                lineHeight: '22px',
-              }}
-            >
-              {tool.name}
-            </div>
-            <div
-              style={{
-                fontSize: '12px',
-                color: '#666',
-                lineHeight: '22px',
-              }}
-            >
+          <div className="dis-sb mcp-tools-item-content-style">
+            <div className="mcp-tools-item-name-style">{tool.name}</div>
+            <div className="mcp-tools-item-description-style">
               {tool.description || '暂无描述'}
             </div>
           </div>
-          <div className="dis-sb">
+          <div className="dis-sb mcp-tools-item-button-style">
             <Button
               color="primary"
               variant="outlined"
