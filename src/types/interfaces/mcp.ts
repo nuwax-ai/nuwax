@@ -171,6 +171,15 @@ export interface McpComponentItemProps {
   onClickMore: (item: CustomPopoverItem) => void;
 }
 
+// 服务导出弹窗组件属性
+export interface ServerExportModalProps {
+  mcpId?: number;
+  // mcp服务名称
+  name?: string;
+  open: boolean;
+  onCancel: () => void;
+}
+
 // 创建MCP服务header组件
 export interface McpHeaderProps {
   spaceId: number;

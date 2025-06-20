@@ -2,4 +2,58 @@
 
 .container {
   background-color: @WHITE12 !important;
+
+  .title {
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 22px;
+    color: @BLANK04;
+  }
+
+  .desc {
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: @GRAY07;
+    font-weight: 350;
+
+    .rebuild-config {
+      padding: 0;
+      color: #4e30fb;
+      font-size: 12px;
+    }
+  }
+
+  .config-box {
+    padding: 24px;
+    background-color: @WHITE;
+    border-radius: 6px;
+
+    .loading-box {
+      min-height: 200px;
+    }
+
+    .copy-box {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      cursor: pointer;
+
+      .copy-img {
+        width: 14px;
+        height: 14px;
+      }
+    }
+
+    pre {
+      min-height: 200px;
+      margin-bottom: 0;
+      color: @BLANK14;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      overflow-x: auto;
+    }
+  }
 }

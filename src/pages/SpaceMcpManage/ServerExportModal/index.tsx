@@ -1,20 +1,19 @@
+import copyImage from '@/assets/images/copy.png';
 import Loading from '@/components/Loading';
-import { apiMcpServerConfigExport } from '@/services/mcp';
-import { Modal } from 'antd';
+import TooltipIcon from '@/components/TooltipIcon';
+import {
+  apiMcpServerConfigExport,
+  apiMcpServerConfigRefresh,
+} from '@/services/mcp';
+import { ServerExportModalProps } from '@/types/interfaces/mcp';
+import { Button, message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-// 服务导出弹窗组件属性
-export interface ServerExportModalProps {
-  mcpId: number;
-  name: string; // 服务名称
-  open: boolean;
-  onCancel: () => void;
-}
 
 /**
  * 服务导出弹窗
@@ -26,20 +25,52 @@ const ServerExportModal: React.FC<ServerExportModalProps> = ({
   onCancel,
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
-  // const [config, setConfig] = useState<string>('');
+  const [config, setConfig] = useState<string>('');
+
+  // 处理导出结果
+  const handleSuccessResult = (result: string) => {
+    try {
+      if (result) {
+        // 格式化json字符串
+        const _result = JSON.parse(result);
+        const configString = JSON.stringify(_result, null, 2);
+        setConfig(configString);
+      }
+    } catch {
+      setConfig(result);
+    }
+    setLoading(false);
+  };
 
   // MCP服务导出
   const { run: runMcpConfig } = useRequest(apiMcpServerConfigExport, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: string) => {
-      console.log(result);
-      setLoading(false);
+      handleSuccessResult(result);
     },
     onError: () => {
       setLoading(false);
     },
   });
+
+  // MCP服务重新生成配置
+  const { run: runMcpReConfig } = useRequest(apiMcpServerConfigRefresh, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: string) => {
+      handleSuccessResult(result);
+    },
+    onError: () => {
+      setLoading(false);
+    },
+  });
+
+  // 重新生成配置
+  const handleRebuildConfig = () => {
+    setLoading(true);
+    runMcpReConfig(mcpId);
+  };
 
   useEffect(() => {
     if (open && mcpId) {
@@ -48,8 +79,13 @@ const ServerExportModal: React.FC<ServerExportModalProps> = ({
     }
   }, [open, mcpId]);
 
+  const handleCopy = () => {
+    message.success('复制成功');
+  };
+
   return (
     <Modal
+      width={560}
       title={`${name}-服务导出管理`}
       classNames={{
         content: cx(styles.container),
@@ -61,17 +97,37 @@ const ServerExportModal: React.FC<ServerExportModalProps> = ({
       footer={null}
       onCancel={onCancel}
     >
-      {loading ? (
-        <Loading />
-      ) : (
-        <div className="flex flex-col items-center">
-          <div className="flex-1 flex flex-col content-around overflow-hide">
-            <h3 className="text-ellipsis">{name}</h3>
-            <p className="text-ellipsis">导出服务配置</p>
-          </div>
-          <div className="flex flex-col items-center"></div>
-        </div>
-      )}
+      <h5 className={cx(styles.title)}>配置服务</h5>
+      <div className={cx(styles.desc, 'flex', 'items-center')}>
+        <span>
+          复制以下配置，可以在任意支持mcp的客户端中使用，若有需要你可以点击
+        </span>
+        <Button
+          type="link"
+          className={cx(styles['rebuild-config'])}
+          onClick={handleRebuildConfig}
+        >
+          重新生成配置
+        </Button>
+      </div>
+      <div className={cx(styles['config-box'], 'relative')}>
+        {loading ? (
+          <Loading className={styles['loading-box']} />
+        ) : (
+          <>
+            <CopyToClipboard text={config} onCopy={handleCopy}>
+              <TooltipIcon
+                title="复制"
+                icon={
+                  <img className={styles['copy-img']} src={copyImage} alt="" />
+                }
+                className={styles['copy-box']}
+              />
+            </CopyToClipboard>
+            <pre>{config}</pre>
+          </>
+        )}
+      </div>
     </Modal>
   );
 };

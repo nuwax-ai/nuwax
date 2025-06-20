@@ -22,6 +22,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
 import styles from './index.less';
 import McpComponentItem from './McpComponentItem';
+import ServerExportModal from './ServerExportModal';
 const cx = classNames.bind(styles);
 const { confirm } = Modal;
 
@@ -46,6 +47,11 @@ const SpaceLibrary: React.FC = () => {
   const [deployStatus, setDeployStatus] = useState<FilterDeployEnum>(
     FilterDeployEnum.All,
   );
+  // 服务导出弹窗
+  const [serverExportModalVisible, setServerExportModalVisible] =
+    useState<boolean>(false);
+  // 当前Mcp信息
+  const currentMcpInfoRef = useRef<McpDetailInfo | null>(null);
   // 获取用户信息
   const { userInfo } = useModel('userInfo');
 
@@ -120,10 +126,11 @@ const SpaceLibrary: React.FC = () => {
   // 点击更多操作
   const handleClickMore = (item: CustomPopoverItem, info: McpDetailInfo) => {
     console.log(item, info);
+    currentMcpInfoRef.current = info;
     const type = item.type as McpMoreActionEnum;
     switch (type) {
+      // 停止服务
       case McpMoreActionEnum.Stop_Service:
-        // 删除
         confirm({
           title: '您确定要停止此服务吗?',
           icon: <ExclamationCircleFilled />,
@@ -132,9 +139,16 @@ const SpaceLibrary: React.FC = () => {
           maskClosable: true,
           cancelText: '取消',
           onOk() {
-            // runPluginDel(id);
+            // todo: 停止服务，然后修改状态为已停止
           },
         });
+        break;
+      // 删除
+      case McpMoreActionEnum.Del:
+        break;
+      // 导出
+      case McpMoreActionEnum.Service_Export:
+        setServerExportModalVisible(true);
         break;
     }
   };
@@ -209,6 +223,12 @@ const SpaceLibrary: React.FC = () => {
           </div>
         )}
       </div>
+      <ServerExportModal
+        open={serverExportModalVisible}
+        mcpId={currentMcpInfoRef.current?.id}
+        name={currentMcpInfoRef.current?.name}
+        onCancel={() => setServerExportModalVisible(false)}
+      />
     </div>
   );
 };
