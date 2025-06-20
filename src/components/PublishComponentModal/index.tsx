@@ -126,6 +126,18 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
           spaceId: item.spaceId,
         };
       });
+      // 兼容当前空间未发布过的情况
+      if (
+        !publishList.some((item: PublishItemInfo) => item.spaceId === spaceId)
+      ) {
+        // 选中当前空间
+        list.push({
+          allowCopy: AllowCopyEnum.No,
+          onlyTemplate: OnlyTemplateEnum.No,
+          scope: PluginPublishScopeEnum.Space,
+          spaceId,
+        });
+      }
 
       setPublishItemList(list);
     } else {
