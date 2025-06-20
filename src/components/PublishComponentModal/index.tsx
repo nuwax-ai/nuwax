@@ -312,13 +312,20 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
         },
       ]);
     } else {
-      setPublishItemList(
-        publishItemList.filter(
-          (item: PublishItem) =>
-            item.scope !== scope ||
-            (item.spaceId ?? null) !== (spaceId ?? null),
-        ),
-      );
+      let list;
+      // 系统广场
+      if (scope === PluginPublishScopeEnum.Tenant) {
+        list = publishItemList.filter(
+          (item: PublishItem) => item.scope !== scope,
+        );
+      } else {
+        // 空间广场
+        list = publishItemList.filter(
+          (item: PublishItem) => item.spaceId !== spaceId,
+        );
+      }
+
+      setPublishItemList(list);
     }
   };
 
@@ -368,10 +375,10 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   const handleOnlyTemplate = (record: PublishScope, checked: boolean) => {
     const { scope, spaceId } = record;
     const list = publishItemList?.map((item: PublishItem) => {
-      // 全等，需要避免item.spaceId为null时，但形参spaceId为undefined时，返回false
+      // 如果是系统广场, 只需要对比scope即可, 如果是空间广场，需要同时对比scope和spaceId
       if (
         item.scope === scope &&
-        (item.spaceId ?? null) === (spaceId ?? null)
+        (scope === PluginPublishScopeEnum.Tenant || item.spaceId === spaceId)
       ) {
         return {
           ...item,
