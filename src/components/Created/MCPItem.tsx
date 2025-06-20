@@ -4,7 +4,7 @@ import { CreatedNodeItem } from '@/types/interfaces/common';
 import { getTime } from '@/utils';
 import { getImg } from '@/utils/workflow';
 import { DownOutlined } from '@ant-design/icons';
-import { Button, Divider } from 'antd';
+import { Divider } from 'antd';
 import React, { useState } from 'react';
 import MCPTools from './MCPTools';
 
@@ -22,7 +22,8 @@ const MCPItem: React.FC<MCPItemProps> = ({
   onAddNode,
   addedComponents,
 }) => {
-  const [fold, setFold] = useState(false);
+  const isFirstItem = index === 0;
+  const [fold, setFold] = useState(isFirstItem ? false : true);
 
   return (
     <>
@@ -60,21 +61,12 @@ const MCPItem: React.FC<MCPItemProps> = ({
             </div>
           </div>
         </div>
-        <Button
-          type="text"
-          size="small"
-          icon={
-            <DownOutlined
-              style={{
-                color: '#666',
-                fontSize: 16,
-                transform: fold ? 'rotate(180deg)' : 'rotate(0deg)',
-                transition: 'transform 0.3s',
-              }}
-            />
-          }
-          style={{ marginRight: 16 }}
+        <DownOutlined
           onClick={() => setFold(!fold)}
+          className="fold-icon-style"
+          style={{
+            transform: fold ? 'rotate(180deg)' : 'rotate(0deg)',
+          }}
         />
       </div>
       <MCPTools
