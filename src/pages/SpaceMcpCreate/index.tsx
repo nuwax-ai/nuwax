@@ -315,7 +315,8 @@ const SpaceMcpCreate: React.FC = () => {
                 <CodeEditor
                   className={cx('w-full', 'radius-10', 'overflow-hide')}
                   codeLanguage={CodeLangEnum.JSON}
-                  height="400px"
+                  height="300px"
+                  codeOptimizeVisible={false}
                 />
               </Form.Item>
             ) : (

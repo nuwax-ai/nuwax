@@ -7,6 +7,7 @@ import { FormInstance } from 'antd/lib/form/Form';
 import * as monaco from 'monaco-editor';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
+import ConditionRender from '../ConditionRender';
 
 interface Props {
   className?: string;
@@ -16,6 +17,8 @@ interface Props {
   onChange?: (code: string) => void;
   form?: FormInstance;
   minimap?: boolean;
+  // 是否显示代码优化按钮
+  codeOptimizeVisible?: boolean;
 }
 
 const CodeEditor: React.FC<Props> = ({
@@ -26,6 +29,7 @@ const CodeEditor: React.FC<Props> = ({
   codeLanguage,
   minimap = false,
   form,
+  codeOptimizeVisible = true,
 }) => {
   const [isMonacoReady, setIsMonacoReady] = useState(false);
   const [open, setOpen] = useState<boolean>(false);
@@ -154,38 +158,39 @@ const CodeEditor: React.FC<Props> = ({
           options={getEditorOptions()}
         />
       )}
+      <ConditionRender condition={codeOptimizeVisible}>
+        {/* 代码辅助生成，增加复用写在这个文件里面 */}
+        <FloatButton
+          shape="circle"
+          type="primary"
+          style={{ insetInlineEnd: 94, display: testRun ? 'none' : 'block' }}
+          icon={<ICON_CONFIRM_STAR />}
+          tooltip="代码助手"
+          onClick={() => {
+            setOpen(true);
+          }}
+        />
+        <CodeOptimizeModal
+          title="代码助手"
+          open={open}
+          codeLanguage={codeLanguage}
+          onCancel={() => {
+            setOpen(false);
+          }}
+          onReplace={(newValue?: string) => {
+            if (!newValue) return;
 
-      {/* 代码辅助生成，增加复用写在这个文件里面 */}
-      <FloatButton
-        shape="circle"
-        type="primary"
-        style={{ insetInlineEnd: 94, display: testRun ? 'none' : 'block' }}
-        icon={<ICON_CONFIRM_STAR />}
-        tooltip="代码助手"
-        onClick={() => {
-          setOpen(true);
-        }}
-      />
-      <CodeOptimizeModal
-        title="代码助手"
-        open={open}
-        codeLanguage={codeLanguage}
-        onCancel={() => {
-          setOpen(false);
-        }}
-        onReplace={(newValue?: string) => {
-          if (!newValue) return;
+            let text = newValue;
 
-          let text = newValue;
+            if (text.includes('```')) {
+              text = text.replace(/```/g, '');
+            }
 
-          if (text.includes('```')) {
-            text = text.replace(/```/g, '');
-          }
-
-          onChange?.(text || '');
-          setOpen(false);
-        }}
-      />
+            onChange?.(text || '');
+            setOpen(false);
+          }}
+        />
+      </ConditionRender>
     </>
   );
 };
