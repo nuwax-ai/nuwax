@@ -185,6 +185,7 @@ export interface NodeConfig {
   };
   // 异常处理配置
   exceptionHandleConfig?: ExceptionHandleConfig;
+  toolName?: string;
 }
 
 export interface HttpNodeConfig extends NodeConfig {

@@ -823,7 +823,11 @@ const Workflow: React.FC = () => {
         _params.loopNodeId = sourceNode.loopNodeId;
       }
     }
-    const _res = await service.apiAddNode(_params);
+    const { nodeConfig, ...rest } = _params;
+    const _res = await service.apiAddNode({
+      nodeConfigDto: { ...nodeConfig },
+      ...rest,
+    });
 
     if (_res.code === Constant.success) {
       try {
@@ -937,7 +941,9 @@ const Workflow: React.FC = () => {
         description: val.description,
         type: NodeTypeEnum.MCP,
         typeId: val.targetId,
-        toolName: val.toolName,
+        nodeConfig: {
+          toolName: val.toolName,
+        },
       };
     } else {
       message.warning('暂不支持该类型组件');

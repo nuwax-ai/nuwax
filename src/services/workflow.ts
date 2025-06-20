@@ -43,6 +43,16 @@ interface IAddNode {
     width?: number;
     height?: number;
   };
+  nodeConfigDto?: {
+    knowledgeBaseConfigs?: {
+      knowledgeBaseId: number;
+      name: string;
+      description: string;
+      icon: string;
+      type: string;
+    }[];
+    toolName?: string;
+  };
 }
 
 interface IAddEdge {
