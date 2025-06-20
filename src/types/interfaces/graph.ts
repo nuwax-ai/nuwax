@@ -64,7 +64,6 @@ export interface ChildNode {
   isEditingName?: boolean; // 是否正在编辑名称
   isFocus?: boolean; // 是否聚焦
   runResult?: RunResultItem | null; // 运行结果
-  toolName?: string;
   typeId?: number;
 }
 

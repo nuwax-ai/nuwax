@@ -52,6 +52,7 @@ interface IAddNode {
       type: string;
     }[];
     toolName?: string;
+    mcpId?: number;
   };
 }
 

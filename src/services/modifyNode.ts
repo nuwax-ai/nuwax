@@ -1,3 +1,4 @@
+import { NodeTypeEnum } from '@/types/enums/common';
 import { NodeConfig } from '@/types/interfaces/node';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
@@ -39,6 +40,7 @@ const UrlList = {
   TableDataDelete: '/api/workflow/node/tableDataDelete/update',
   TableDataQuery: '/api/workflow/node/tableDataQuery/update',
   TableSQL: '/api/workflow/node/tableCustomSql/update',
+  [NodeTypeEnum.MCP]: '/api/workflow/node/mcp/update',
 };
 export type UrlListType = keyof typeof UrlList;
 

@@ -267,14 +267,14 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
         >
           <div className="dis-left general-node-header-image">
             {returnImg(data.type)}
-            <EditableTitle
-              key={data.id.toString()}
-              value={editValue}
-              onSave={handleSave}
-              disabled={canNotEditNode}
-              onEditingStatusChange={handleEditingStatusChange}
-            />
           </div>
+          <EditableTitle
+            key={data.id.toString()}
+            value={editValue}
+            onSave={handleSave}
+            disabled={canNotEditNode}
+            onEditingStatusChange={handleEditingStatusChange}
+          />
         </div>
 
         {data.type === NodeTypeEnum.Condition && <ConditionNode data={data} />}

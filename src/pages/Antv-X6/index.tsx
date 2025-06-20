@@ -681,11 +681,17 @@ const Workflow: React.FC = () => {
   ) => {
     // 设置节点基本属性
     const shape = getShape(nodeData.type);
+    const { nodeConfig, ...rest } = nodeData;
+    const { toolName, mcpId } = child.nodeConfig || {};
     const newNodeData = {
-      ...nodeData,
+      ...rest,
       shape,
+      nodeConfig: {
+        ...nodeConfig,
+        ...(toolName ? { toolName, mcpId } : {}),
+      },
     };
-    const extension = nodeData.nodeConfig?.extension || {};
+    const extension = nodeConfig?.extension || {};
 
     // 添加节点到图形中
     graphRef.current?.graphAddNode(extension as GraphRect, newNodeData);
@@ -842,15 +848,29 @@ const Workflow: React.FC = () => {
   const copyNode = async (child: ChildNode) => {
     const _res = await service.apiCopyNode(child.id.toString());
     if (_res.code === Constant.success) {
-      const _newNode = JSON.parse(JSON.stringify(_res.data));
-      const _dragEvent = {
-        x: _newNode.nodeConfig.extension.x + 20,
-        y: _newNode.nodeConfig.extension.y + 20,
+      const { nodeConfig, ...rest } = _res.data;
+      const resExtension = nodeConfig?.extension || {};
+      const { toolName, mcpId } = child.nodeConfig || {};
+      const _newNode = {
+        ...rest,
+        shape: getShape(_res.data.type),
+        nodeConfig: {
+          ...nodeConfig,
+          ...(toolName ? { toolName, mcpId } : {}),
+          extension: {
+            ...resExtension,
+            x: (resExtension.x || 0) + 32,
+            y: (resExtension.y || 0) + 32,
+          },
+        },
       };
-      _newNode.nodeConfig.extension.x = _newNode.nodeConfig.extension.x + 32;
-      _newNode.nodeConfig.extension.y = _newNode.nodeConfig.extension.y + +32;
-      _newNode.key = 'general-Node';
-      graphRef.current?.graphAddNode(_dragEvent as GraphRect, _newNode);
+
+      const extension = {
+        x: (resExtension.x || 0) + 20,
+        y: (resExtension.y || 0) + 20,
+      };
+
+      graphRef.current?.graphAddNode(extension as GraphRect, _newNode);
       const shape = getShape(_res.data.type);
       const newNode = {
         ..._res.data,
@@ -893,7 +913,7 @@ const Workflow: React.FC = () => {
     }
   };
 
-  // 添加工作流，插件，知识库，数据库
+  // 添加工作流，插件，知识库，数据库 mcp 节点
   const onAdded = (val: CreatedNodeItem, parentFC?: string) => {
     if (parentFC && parentFC !== 'workflow') return;
     let _child: Partial<ChildNode>;
@@ -943,6 +963,7 @@ const Workflow: React.FC = () => {
         typeId: val.targetId,
         nodeConfig: {
           toolName: val.toolName,
+          mcpId: val.targetId,
         },
       };
     } else {
