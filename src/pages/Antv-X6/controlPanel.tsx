@@ -1,3 +1,4 @@
+import { NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode, StencilChildNode } from '@/types/interfaces/graph';
 import {
   CaretRightOutlined,
@@ -135,7 +136,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           <Popover
             content={
               <StencilContent
-                isLoop={foldWrapItem.type === 'Loop'}
+                isLoop={foldWrapItem.type === NodeTypeEnum.Loop}
                 dragChild={(
                   child: StencilChildNode,
                   position?: React.DragEvent<HTMLDivElement>,

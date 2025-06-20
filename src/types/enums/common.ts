@@ -84,7 +84,7 @@ export enum NodeTypeEnum {
   // sql自定义
   TableSQL = 'TableSQL',
   // mcp
-  MCP = 'MCP',
+  MCP = 'Mcp',
 }
 
 export enum DataTypeEnum {

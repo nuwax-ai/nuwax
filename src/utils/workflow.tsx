@@ -18,6 +18,7 @@ import {
   ICON_WORKFLOW_LOOP,
   ICON_WORKFLOW_LOOPBREAK,
   ICON_WORKFLOW_LOOPCONTINUE,
+  ICON_WORKFLOW_MCP,
   ICON_WORKFLOW_OUTPUT,
   ICON_WORKFLOW_PLUGIN,
   ICON_WORKFLOW_QA,
@@ -122,60 +123,62 @@ export const getImg = (data: AgentComponentTypeEnum) => {
   return imageList[data];
 };
 // 根据type返回图片
-export const returnImg = (type: string): React.ReactNode => {
+export const returnImg = (type: NodeTypeEnum): React.ReactNode => {
   switch (type) {
-    case 'Start':
-    case 'LoopStart':
+    case NodeTypeEnum.Start:
+    case NodeTypeEnum.LoopStart:
       return <ICON_START />;
-    case 'End':
-    case 'LoopEnd':
+    case NodeTypeEnum.End:
+    case NodeTypeEnum.LoopEnd:
       return <ICON_END />;
-    case 'Output':
+    case NodeTypeEnum.Output:
       return <ICON_WORKFLOW_OUTPUT />;
-    case 'Code':
+    case NodeTypeEnum.Code:
       return <ICON_WORKFLOW_CODE />;
-    case 'Condition':
+    case NodeTypeEnum.Condition:
       return <ICON_WORKFLOW_CONDITION />;
     // case 'Database':
     //   return <ICON_WORKFLOW_DATABASE />;
-    case 'DocumentExtraction':
+    case NodeTypeEnum.DocumentExtraction:
       return <ICON_WORKFLOW_DOCUMENT_EXTRACTION />;
-    case 'HTTPRequest':
+    case NodeTypeEnum.HTTPRequest:
       return <ICON_WORKFLOW_HTTP_REQUEST />;
-    case 'IntentRecognition':
+    case NodeTypeEnum.IntentRecognition:
       return <ICON_WORKFLOW_INTENT_RECOGNITION />;
-    case 'Knowledge':
+    case NodeTypeEnum.Knowledge:
       return <ICON_WORKFLOW_KNOWLEDGE_BASE />;
-    case 'LLM':
+    case NodeTypeEnum.LLM:
       return <ICON_WORKFLOW_LLM />;
-    case 'LongTermMemory':
+    case NodeTypeEnum.LongTermMemory:
       return <ICON_WORKFLOW_LONG_TERM_MEMORY />;
-    case 'Loop':
+    case NodeTypeEnum.Loop:
       return <ICON_WORKFLOW_LOOP />;
-    case 'LoopContinue':
+    case NodeTypeEnum.LoopContinue:
       return <ICON_WORKFLOW_LOOPCONTINUE />;
-    case 'LoopBreak':
+    case NodeTypeEnum.LoopBreak:
       return <ICON_WORKFLOW_LOOPBREAK />;
-    case 'Plugin':
+    case NodeTypeEnum.Plugin:
       return <ICON_WORKFLOW_PLUGIN />;
-    case 'QA':
+    case NodeTypeEnum.QA:
       return <ICON_WORKFLOW_QA />;
-    case 'TextProcessing':
+    case NodeTypeEnum.TextProcessing:
       return <ICON_WORKFLOW_TEXT_PROCESSING />;
-    case 'Variable':
+    case NodeTypeEnum.Variable:
       return <ICON_WORKFLOW_VARIABLE />;
-    case 'Workflow':
+    case NodeTypeEnum.Workflow:
       return <ICON_WORKFLOW_WORKFLOW />;
-    case 'TableDataAdd':
+    case NodeTypeEnum.TableDataAdd:
       return <ICON_WORKFLOW_DATABASEADD />;
-    case 'TableDataDelete':
+    case NodeTypeEnum.TableDataDelete:
       return <ICON_WORKFLOW_DATABASEDELETE />;
-    case 'TableDataUpdate':
+    case NodeTypeEnum.TableDataUpdate:
       return <ICON_WORKFLOW_DATABASEUPDATE />;
-    case 'TableDataQuery':
+    case NodeTypeEnum.TableDataQuery:
       return <ICON_WORKFLOW_DATABASEQUERY />;
-    case 'TableSQL':
+    case NodeTypeEnum.TableSQL:
       return <ICON_WORKFLOW_DATABASE />;
+    case NodeTypeEnum.MCP:
+      return <ICON_WORKFLOW_MCP />;
     default:
       return <ICON_NEW_AGENT />;
   }
@@ -198,6 +201,7 @@ export const returnBackgroundColor = (type: NodeTypeEnum) => {
     // case 'Database':
     case NodeTypeEnum.Variable:
     case NodeTypeEnum.LongTermMemory:
+    case NodeTypeEnum.MCP:
       return '#FFF0DF';
     case NodeTypeEnum.QA:
     case NodeTypeEnum.DocumentExtraction:
@@ -225,10 +229,10 @@ export const getWidthAndHeight = (node: ChildNode) => {
   const extension = nodeConfig?.extension || {};
   const { defaultWidth, defaultHeight } = DEFAULT_NODE_CONFIG.generalNode;
   if (
-    type !== 'QA' &&
-    type !== 'Condition' &&
-    type !== 'IntentRecognition' &&
-    type !== 'Loop'
+    type !== NodeTypeEnum.QA &&
+    type !== NodeTypeEnum.Condition &&
+    type !== NodeTypeEnum.IntentRecognition &&
+    type !== NodeTypeEnum.Loop
   ) {
     // 通用节点
     return {

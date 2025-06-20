@@ -8,7 +8,7 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
-import { HttpContentTypeEnum } from '@/types/enums/common';
+import { HttpContentTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum } from '@/types/enums/node';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { PromptOptimizeTypeEnum } from '@/types/interfaces/assistant';
@@ -32,7 +32,6 @@ import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
 import { outPutConfigs } from '../params';
 import { FormList, InputAndOut, TreeOutput } from './commonNode';
-
 // 请求方法的选项
 const REQUEST_METHOD_OPTIONS = [
   { label: 'GET', value: 'GET' },
@@ -74,7 +73,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     setIsModified(true);
     const skillComponentConfigs =
       form.getFieldValue('skillComponentConfigs') || [];
-    item.type = item.targetType;
+    item.type = item.targetType as unknown as NodeTypeEnum; // TODO 这里需要优化
     item.typeId = item.targetId;
     form.setFieldValue(
       'skillComponentConfigs',
@@ -86,7 +85,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     setAddComponents([
       ...addComponents,
       {
-        type: item.type,
+        type: item.targetType,
         targetId: item.targetId,
         status: AgentAddComponentStatusEnum.Added,
       },

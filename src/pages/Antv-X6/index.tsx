@@ -66,7 +66,6 @@ import GraphContainer from './graphContainer';
 import Header from './header';
 import './index.less';
 import RenderNodeDrawer from './RenderNodeDrawer';
-
 const Workflow: React.FC = () => {
   const { message } = App.useApp();
   const params = useParams();
@@ -682,11 +681,17 @@ const Workflow: React.FC = () => {
   ) => {
     // 设置节点基本属性
     const shape = getShape(nodeData.type);
+    const { nodeConfig, ...rest } = nodeData;
+    const { toolName, mcpId } = child.nodeConfig || {};
     const newNodeData = {
-      ...nodeData,
+      ...rest,
       shape,
+      nodeConfig: {
+        ...nodeConfig,
+        ...(toolName ? { toolName, mcpId } : {}),
+      },
     };
-    const extension = nodeData.nodeConfig?.extension || {};
+    const extension = nodeConfig?.extension || {};
 
     // 添加节点到图形中
     graphRef.current?.graphAddNode(extension as GraphRect, newNodeData);
@@ -763,7 +768,7 @@ const Workflow: React.FC = () => {
     _params.workflowId = workflowId;
     _params.extension = dragEvent;
     // 如果是条件分支，需要增加高度
-    if (child.type === 'Condition') {
+    if (child.type === NodeTypeEnum.Condition) {
       const { defaultWidth, defaultHeight } = DEFAULT_NODE_CONFIG.conditionNode;
       _params.extension = {
         ...dragEvent,
@@ -771,7 +776,7 @@ const Workflow: React.FC = () => {
         width: defaultWidth,
       };
     }
-    if (child.type === 'QA') {
+    if (child.type === NodeTypeEnum.QA) {
       const { defaultWidth, defaultHeight } = DEFAULT_NODE_CONFIG.qaNode;
       _params.extension = {
         ...dragEvent,
@@ -779,7 +784,7 @@ const Workflow: React.FC = () => {
         width: defaultWidth,
       };
     }
-    if (child.type === 'IntentRecognition') {
+    if (child.type === NodeTypeEnum.IntentRecognition) {
       const { defaultWidth, defaultHeight } =
         DEFAULT_NODE_CONFIG.intentRecognitionNode;
       _params.extension = {
@@ -788,7 +793,7 @@ const Workflow: React.FC = () => {
         width: defaultWidth,
       };
     }
-    if (child.type === 'Loop') {
+    if (child.type === NodeTypeEnum.Loop) {
       const { defaultWidth, defaultHeight } = DEFAULT_NODE_CONFIG.loopNode;
       _params.extension = {
         ...dragEvent,
@@ -798,8 +803,8 @@ const Workflow: React.FC = () => {
     }
     // 查看当前是否有选中的节点以及被选中的节点的type是否是Loop
     // 如果当前选择的是循环节点或者循环内部的子节点，那么就要将他的位置放置于循环内部
-    if (foldWrapItem.type === 'Loop' || foldWrapItem.loopNodeId) {
-      if (_params.type === 'Loop') {
+    if (foldWrapItem.type === NodeTypeEnum.Loop || foldWrapItem.loopNodeId) {
+      if (_params.type === NodeTypeEnum.Loop) {
         message.warning('循环体里请不要再添加循环体');
         return;
       }
@@ -824,7 +829,11 @@ const Workflow: React.FC = () => {
         _params.loopNodeId = sourceNode.loopNodeId;
       }
     }
-    const _res = await service.apiAddNode(_params);
+    const { nodeConfig, ...rest } = _params;
+    const _res = await service.apiAddNode({
+      nodeConfigDto: { ...nodeConfig },
+      ...rest,
+    });
 
     if (_res.code === Constant.success) {
       try {
@@ -839,15 +848,29 @@ const Workflow: React.FC = () => {
   const copyNode = async (child: ChildNode) => {
     const _res = await service.apiCopyNode(child.id.toString());
     if (_res.code === Constant.success) {
-      const _newNode = JSON.parse(JSON.stringify(_res.data));
-      const _dragEvent = {
-        x: _newNode.nodeConfig.extension.x + 20,
-        y: _newNode.nodeConfig.extension.y + 20,
+      const { nodeConfig, ...rest } = _res.data;
+      const resExtension = nodeConfig?.extension || {};
+      const { toolName, mcpId } = child.nodeConfig || {};
+      const _newNode = {
+        ...rest,
+        shape: getShape(_res.data.type),
+        nodeConfig: {
+          ...nodeConfig,
+          ...(toolName ? { toolName, mcpId } : {}),
+          extension: {
+            ...resExtension,
+            x: (resExtension.x || 0) + 32,
+            y: (resExtension.y || 0) + 32,
+          },
+        },
       };
-      _newNode.nodeConfig.extension.x = _newNode.nodeConfig.extension.x + 32;
-      _newNode.nodeConfig.extension.y = _newNode.nodeConfig.extension.y + +32;
-      _newNode.key = 'general-Node';
-      graphRef.current?.graphAddNode(_dragEvent as GraphRect, _newNode);
+
+      const extension = {
+        x: (resExtension.x || 0) + 20,
+        y: (resExtension.y || 0) + 20,
+      };
+
+      graphRef.current?.graphAddNode(extension as GraphRect, _newNode);
       const shape = getShape(_res.data.type);
       const newNode = {
         ..._res.data,
@@ -890,7 +913,7 @@ const Workflow: React.FC = () => {
     }
   };
 
-  // 添加工作流，插件，知识库，数据库
+  // 添加工作流，插件，知识库，数据库 mcp 节点
   const onAdded = (val: CreatedNodeItem, parentFC?: string) => {
     if (parentFC && parentFC !== 'workflow') return;
     let _child: Partial<ChildNode>;
@@ -910,7 +933,7 @@ const Workflow: React.FC = () => {
           val.targetType === AgentComponentTypeEnum.Knowledge
             ? NodeTypeEnum.Knowledge
             : ((tableType || NodeTypeEnum.TableDataQuery) as NodeTypeEnum),
-        // typeId: val.targetId,
+        typeId: val.targetId,
         nodeConfig: {
           knowledgeBaseConfigs: knowledgeBaseConfigs,
           extension: {},
@@ -929,7 +952,19 @@ const Workflow: React.FC = () => {
         shape: NodeShapeEnum.General,
         description: val.description,
         type,
-        // typeId: val.targetId,
+        typeId: val.targetId,
+      };
+    } else if (val.targetType === AgentComponentTypeEnum.MCP) {
+      _child = {
+        name: val.name,
+        shape: NodeShapeEnum.General,
+        description: val.description,
+        type: NodeTypeEnum.MCP,
+        typeId: val.targetId,
+        nodeConfig: {
+          toolName: val.toolName,
+          mcpId: val.targetId,
+        },
       };
     } else {
       message.warning('暂不支持该类型组件');
@@ -982,7 +1017,11 @@ const Workflow: React.FC = () => {
     };
 
     // 判断是否需要显示特定类型的创建面板
-    const isSpecialType = ['Plugin', 'Workflow'].includes(childType);
+    const isSpecialType = [
+      NodeTypeEnum.Plugin,
+      NodeTypeEnum.Workflow,
+      NodeTypeEnum.MCP,
+    ].includes(childType);
     // 数据库新增
     const isTableNode = [
       'TableDataAdd',
@@ -992,11 +1031,7 @@ const Workflow: React.FC = () => {
       'TableSQL',
     ].includes(childType);
     if (isSpecialType) {
-      setCreatedItem(
-        childType === NodeTypeEnum.Workflow
-          ? AgentComponentTypeEnum.Workflow
-          : AgentComponentTypeEnum.Plugin,
-      );
+      setCreatedItem(childType as unknown as AgentComponentTypeEnum); // 注意这个类型转换的前提是两个枚举的值相同
       setOpen(true);
       setDragEvent(getCoordinates(position));
     } else if (isTableNode) {

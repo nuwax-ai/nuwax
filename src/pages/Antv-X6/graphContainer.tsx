@@ -93,7 +93,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       updateEdgeArrows(graphRef.current);
     };
 
-    const doAddNode = (e: GraphRect, child: ChildNode) => {
+    const _doAddNode = (e: GraphRect, child: ChildNode) => {
       const point = graphRef.current.clientToGraph(e.x, e.y);
 
       const { width, height } = getWidthAndHeight(child);
@@ -138,9 +138,12 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     };
 
     // 新增节点
-    const graphAddNode = (e: GraphRect, child: ChildNode) => {
+    const graphAddNode: GraphContainerRef['graphAddNode'] = (
+      e: GraphRect,
+      child: ChildNode,
+    ) => {
       if (!graphRef.current) return;
-      doAddNode(e, child);
+      _doAddNode(e, child);
       // 找出循环节点 子节点如果有就添加
       const LoopNodeList = addLoopChildNode((data) => {
         return data.id === child.id && data.type === 'Loop';
