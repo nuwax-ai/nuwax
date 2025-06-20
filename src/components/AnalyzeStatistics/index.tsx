@@ -28,7 +28,7 @@ const AnalyzeStatistics: React.FC<AnalyzeStatisticsProps> = ({
           >
             <span>{item.label}</span>
             <div className={cx('flex', 'items-center', 'content-center')}>
-              {item.value}
+              {item.value as string}
             </div>
           </div>
         ))}

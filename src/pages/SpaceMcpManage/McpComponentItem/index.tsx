@@ -1,7 +1,11 @@
 import avatar from '@/assets/images/avatar.png';
 import CustomPopover from '@/components/CustomPopover';
 import { MCP_MORE_ACTION } from '@/constants/mcp.constants';
-import { DeployStatusEnum } from '@/types/enums/mcp';
+import {
+  DeployStatusEnum,
+  McpMoreActionEnum,
+  McpPermissionsEnum,
+} from '@/types/enums/mcp';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { McpComponentItemProps } from '@/types/interfaces/mcp';
 import { CheckCircleTwoTone, MoreOutlined } from '@ant-design/icons';
@@ -23,8 +27,34 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
   const [actionList, setActionList] = useState<CustomPopoverItem[]>([]);
 
   useEffect(() => {
-    setActionList(MCP_MORE_ACTION);
-  }, []);
+    const list: CustomPopoverItem[] = [];
+    // 权限控制
+    MCP_MORE_ACTION.forEach((item) => {
+      // 删除按钮: 只有当前用户拥有删除权限，并且mcp已停止的服务才可删除
+      if (
+        item.type === McpMoreActionEnum.Del &&
+        info.deployStatus === DeployStatusEnum.Stopped &&
+        info.permissions?.includes(McpPermissionsEnum.Delete)
+      ) {
+        list.push(item);
+      }
+      // 停止服务按钮: 只有当前用户拥有停止权限，才可停止服务
+      if (
+        item.type === McpMoreActionEnum.Stop_Service &&
+        info.permissions?.includes(McpPermissionsEnum.Stop)
+      ) {
+        list.push(item);
+      }
+      // 导出服务按钮: 只有当前用户拥有导出权限，才可导出服务
+      if (
+        item.type === McpMoreActionEnum.Service_Export &&
+        info.permissions?.includes(McpPermissionsEnum.Export)
+      ) {
+        list.push(item);
+      }
+    });
+    setActionList(list);
+  }, [info]);
 
   const getStatus = (status: DeployStatusEnum) => {
     switch (status) {

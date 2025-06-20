@@ -20,6 +20,17 @@ export enum DeployStatusEnum {
   Stopped = 'Stopped',
 }
 
+// mcp权限列表枚举
+export enum McpPermissionsEnum {
+  EditOrDeploy = 'EditOrDeploy',
+  // 删除
+  Delete = 'Delete',
+  // 停止服务
+  Stop = 'Stop',
+  // 导出
+  Export = 'Export',
+}
+
 // 过滤部署状态
 export enum FilterDeployEnum {
   // 全部
@@ -28,7 +39,7 @@ export enum FilterDeployEnum {
   Deployed = 'Deployed',
 }
 
-// Mcp更多操作枚举
+// Mcp更多操作枚举(自定义)
 export enum McpMoreActionEnum {
   // 停止服务
   Stop_Service = 'Stop_Service',

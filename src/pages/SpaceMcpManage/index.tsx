@@ -3,18 +3,27 @@ import SelectList from '@/components/SelectList';
 import { FILTER_DEPLOY } from '@/constants/mcp.constants';
 import { CREATE_LIST } from '@/constants/space.constants';
 import { apiMcpList } from '@/services/mcp';
-import { DeployStatusEnum, FilterDeployEnum } from '@/types/enums/mcp';
+import {
+  DeployStatusEnum,
+  FilterDeployEnum,
+  McpMoreActionEnum,
+} from '@/types/enums/mcp';
 import { CreateListEnum } from '@/types/enums/space';
 import { CustomPopoverItem } from '@/types/interfaces/common';
 import { McpDetailInfo } from '@/types/interfaces/mcp';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Empty, Input } from 'antd';
+import {
+  ExclamationCircleFilled,
+  PlusOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
+import { Button, Empty, Input, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
 import styles from './index.less';
 import McpComponentItem from './McpComponentItem';
 const cx = classNames.bind(styles);
+const { confirm } = Modal;
 
 /**
  * 工作空间 - MCP管理
@@ -111,6 +120,23 @@ const SpaceLibrary: React.FC = () => {
   // 点击更多操作
   const handleClickMore = (item: CustomPopoverItem, info: McpDetailInfo) => {
     console.log(item, info);
+    const type = item.type as McpMoreActionEnum;
+    switch (type) {
+      case McpMoreActionEnum.Stop_Service:
+        // 删除
+        confirm({
+          title: '您确定要停止此服务吗?',
+          icon: <ExclamationCircleFilled />,
+          content: info.name,
+          okText: '确定',
+          maskClosable: true,
+          cancelText: '取消',
+          onOk() {
+            // runPluginDel(id);
+          },
+        });
+        break;
+    }
   };
 
   // 点击单个资源组件

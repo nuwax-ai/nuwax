@@ -1,6 +1,9 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { PermissionsEnum } from '@/types/enums/common';
-import { DeployStatusEnum, McpInstallTypeEnum } from '@/types/enums/mcp';
+import {
+  DeployStatusEnum,
+  McpInstallTypeEnum,
+  McpPermissionsEnum,
+} from '@/types/enums/mcp';
 import { BindConfigWithSub, CreatorInfo } from './agent';
 import { CustomPopoverItem } from './common';
 
@@ -110,7 +113,7 @@ export interface McpDetailInfo {
   // 创建者信息
   creator: CreatorInfo;
   // 权限列表
-  permissions: PermissionsEnum[];
+  permissions: McpPermissionsEnum[];
 }
 
 // MCP试运行请求参数

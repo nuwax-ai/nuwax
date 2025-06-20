@@ -28,6 +28,24 @@ export async function apiMcpTryRun(
   });
 }
 
+// MCP服务重新生成配置
+export async function apiMcpServerConfigRefresh(
+  id: number,
+): Promise<RequestResponse<string>> {
+  return request(`/api/mcp/server/config/refresh/${id}`, {
+    method: 'POST',
+  });
+}
+
+// MCP服务导出
+export async function apiMcpServerConfigExport(
+  id: number,
+): Promise<RequestResponse<string>> {
+  return request(`/api/mcp/server/config/export/${id}`, {
+    method: 'POST',
+  });
+}
+
 // MCP删除
 export async function apiMcpDelete(id: number): Promise<RequestResponse<null>> {
   return request(`/api/mcp/delete/${id}`, {
