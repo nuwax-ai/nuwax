@@ -84,11 +84,6 @@ const SpaceMcpCreate: React.FC = () => {
   // 保存MCP服务
   const handleSave = (withDeploy: boolean) => {
     withDeployRef.current = withDeploy;
-    if (withDeploy) {
-      setSaveDeployLoading(true);
-    } else {
-      setSaveLoading(true);
-    }
     form.submit();
   };
 
@@ -98,6 +93,11 @@ const SpaceMcpCreate: React.FC = () => {
     installType: McpInstallTypeEnum;
     serverConfig: string;
   }>['onFinish'] = (values) => {
+    if (withDeployRef.current) {
+      setSaveDeployLoading(true);
+    } else {
+      setSaveLoading(true);
+    }
     const { serverConfig, ...rest } = values;
     const mcpConfig =
       installType === McpInstallTypeEnum.COMPONENT

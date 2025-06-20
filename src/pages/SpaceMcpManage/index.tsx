@@ -173,7 +173,6 @@ const SpaceLibrary: React.FC = () => {
 
   // 点击更多操作
   const handleClickMore = (item: CustomPopoverItem, info: McpDetailInfo) => {
-    console.log(item, info);
     currentMcpInfoRef.current = info;
     const type = item.type as McpMoreActionEnum;
     switch (type) {
