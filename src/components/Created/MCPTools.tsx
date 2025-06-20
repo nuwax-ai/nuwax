@@ -13,13 +13,13 @@ interface MCPToolsProps {
 }
 const loadingStatus = AgentAddComponentStatusEnum.Loading;
 const addedStatus = AgentAddComponentStatusEnum.Added;
-export default function MCPTools({
+const MCPTools: React.FC<MCPToolsProps> = ({
   tools,
   item,
   onAddTool,
   fold,
   addedComponents,
-}: MCPToolsProps): React.ReactNode {
+}) => {
   const handleAddTool = useCallback(
     (toolName: string) => {
       onAddTool({
@@ -78,4 +78,6 @@ export default function MCPTools({
       ))}
     </div>
   );
-}
+};
+
+export default MCPTools;

@@ -18,13 +18,13 @@ const ClickableElement = ({
     onDoubleClick,
   );
   return (
-    <span
+    <div
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       className={cx(styles.clickableElement)}
     >
       {children}
-    </span>
+    </div>
   );
 };
 interface IEditableTitleProps {
@@ -88,7 +88,7 @@ const EditableTitle = memo(
       }
     };
     return (
-      <div>
+      <>
         {isEditing ? (
           <Input
             className={cx(styles.editableTitleInput)}
@@ -110,7 +110,7 @@ const EditableTitle = memo(
             {editValue}
           </ClickableElement>
         )}
-      </div>
+      </>
     );
   },
   (prevProps, nextProps) => {
