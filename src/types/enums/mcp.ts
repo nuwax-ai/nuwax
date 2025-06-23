@@ -48,3 +48,11 @@ export enum McpMoreActionEnum {
   // 删除
   Del = 'Del',
 }
+
+// Mcp编辑head菜单枚举(自定义)
+export enum McpEditHeadMenusEnum {
+  Overview, // 概览
+  Tool, // 工具
+  Resource, // 资源
+  Prompt, // 提示词
+}

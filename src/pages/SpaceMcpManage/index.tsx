@@ -267,7 +267,7 @@ const SpaceLibrary: React.FC = () => {
             {mcpList?.map((info) => (
               <McpComponentItem
                 key={info.id}
-                info={info}
+                mcpInfo={info}
                 onClick={() => handleClickComponent(info)}
                 onClickMore={(item) => handleClickMore(item, info)}
               />

@@ -7,11 +7,12 @@ import {
   McpPermissionsEnum,
 } from '@/types/enums/mcp';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
-import { McpComponentItemProps } from '@/types/interfaces/mcp';
+import { McpComponentItemProps, McpDetailInfo } from '@/types/interfaces/mcp';
+import { getMcpDeployStatus } from '@/utils/mcp';
 import { CheckCircleTwoTone, MoreOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import moment from 'moment';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import BoxInfo from './BoxInfo';
 import styles from './index.less';
 
@@ -19,14 +20,15 @@ const cx = classNames.bind(styles);
 
 // 单个资源组件
 const McpComponentItem: React.FC<McpComponentItemProps> = ({
-  info,
+  mcpInfo,
   onClick,
   onClickMore,
 }) => {
   // 更多操作列表
   const [actionList, setActionList] = useState<CustomPopoverItem[]>([]);
 
-  useEffect(() => {
+  // 获取更多操作列表
+  const getActionList = useCallback((info: McpDetailInfo) => {
     const list: CustomPopoverItem[] = [];
     // 权限控制
     MCP_MORE_ACTION.forEach((item) => {
@@ -54,25 +56,13 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
         list.push(item);
       }
     });
-    setActionList(list);
-  }, [info]);
+    return list;
+  }, []);
 
-  const getStatus = (status: DeployStatusEnum) => {
-    switch (status) {
-      case DeployStatusEnum.Initialization:
-        return '待部署';
-      case DeployStatusEnum.Deploying:
-        return '部署中';
-      case DeployStatusEnum.Deployed:
-        return '已部署';
-      case DeployStatusEnum.DeployFailed:
-        return '部署失败';
-      case DeployStatusEnum.Stopped:
-        return '已停止';
-      default:
-        return '';
-    }
-  };
+  useEffect(() => {
+    const list = getActionList(mcpInfo);
+    setActionList(list);
+  }, [mcpInfo]);
 
   return (
     <div
@@ -97,35 +87,37 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
             'overflow-hide',
           )}
         >
-          <h3 className={cx('text-ellipsis', styles.name)}>{info.name}</h3>
-          <p className={cx('text-ellipsis', styles.desc)}>{info.description}</p>
+          <h3 className={cx('text-ellipsis', styles.name)}>{mcpInfo.name}</h3>
+          <p className={cx('text-ellipsis', styles.desc)}>
+            {mcpInfo.description}
+          </p>
         </div>
-        <img className={cx(styles.img)} src={info.icon} alt="" />
+        <img className={cx(styles.img)} src={mcpInfo.icon} alt="" />
       </div>
       {/*插件类型*/}
       <div
         className={cx('flex', 'flex-wrap', 'items-center', styles['type-wrap'])}
       >
-        <BoxInfo text={info?.installType} />
-        <BoxInfo text={getStatus(info.deployStatus)} />
-        {info.deployStatus === DeployStatusEnum.Deployed && (
+        <BoxInfo text={mcpInfo?.installType} />
+        <BoxInfo text={getMcpDeployStatus(mcpInfo.deployStatus)} />
+        {mcpInfo.deployStatus === DeployStatusEnum.Deployed && (
           <CheckCircleTwoTone twoToneColor="#52c41a" />
         )}
       </div>
       <div className={cx(styles.footer, 'flex', 'items-center')}>
         <img
           className={cx(styles.img, 'radius-6')}
-          src={info?.creator?.avatar || avatar}
+          src={mcpInfo?.creator?.avatar || avatar}
           alt=""
         />
         <div className={cx('flex-1', 'flex', 'item-center', 'overflow-hide')}>
           <div className={cx('text-ellipsis', styles['user-name'])}>
-            {info.creator?.nickName || info.creator?.userName}
+            {mcpInfo.creator?.nickName || mcpInfo.creator?.userName}
           </div>
           <div className={cx(styles.time, 'text-ellipsis')}>
-            {info.deployStatus === DeployStatusEnum.Deployed
-              ? `发布于 ${moment(info.deployed).format('MM-DD HH:mm')}`
-              : `创建于 ${moment(info.created).format('MM-DD HH:mm')}`}
+            {mcpInfo.deployStatus === DeployStatusEnum.Deployed
+              ? `发布于 ${moment(mcpInfo.deployed).format('MM-DD HH:mm')}`
+              : `创建于 ${moment(mcpInfo.created).format('MM-DD HH:mm')}`}
           </div>
         </div>
         <CustomPopover list={actionList} onClick={onClickMore}>

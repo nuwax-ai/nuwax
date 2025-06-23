@@ -1,6 +1,7 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   FilterDeployEnum,
+  McpEditHeadMenusEnum,
   McpInstallTypeEnum,
   McpMoreActionEnum,
 } from '@/types/enums/mcp';
@@ -47,4 +48,12 @@ export const MCP_COLLAPSE_COMPONENT_LIST: {
     type: AgentComponentTypeEnum.Table,
     label: '数据表',
   },
+];
+
+// MCP编辑head菜单列表
+export const MCP_EDIT_HEAD_MENU_LIST = [
+  { value: McpEditHeadMenusEnum.Overview, label: '概览' },
+  { value: McpEditHeadMenusEnum.Tool, label: '工具' },
+  { value: McpEditHeadMenusEnum.Resource, label: '资源' },
+  { value: McpEditHeadMenusEnum.Prompt, label: '提示词' },
 ];

@@ -1,6 +1,7 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   DeployStatusEnum,
+  McpEditHeadMenusEnum,
   McpInstallTypeEnum,
   McpPermissionsEnum,
 } from '@/types/enums/mcp';
@@ -167,7 +168,7 @@ export interface McpCreateParams {
 
 // 组件库单个组件项
 export interface McpComponentItemProps {
-  info: McpDetailInfo;
+  mcpInfo: McpDetailInfo;
   onClick: () => void;
   onClickMore: (item: CustomPopoverItem) => void;
 }
@@ -181,14 +182,25 @@ export interface ServerExportModalProps {
   onCancel: () => void;
 }
 
-// 创建MCP服务header组件
-export interface McpHeaderProps {
+// 创建、编辑MCP服务header组件公共属性
+export interface McpHeaderCommonProps {
   spaceId: number;
   saveLoading?: boolean;
   saveDeployLoading?: boolean;
-  onCancel: () => void;
   onSave: () => void;
   onSaveAndDeploy: () => void;
+}
+
+// 创建MCP服务header组件
+export interface McpHeaderProps extends McpHeaderCommonProps {
+  onCancel: () => void;
+}
+
+// 编辑MCP服务header组件
+export interface McpEditHeaderProps extends McpHeaderCommonProps {
+  mcpInfo?: McpDetailInfo;
+  currentMode: McpEditHeadMenusEnum;
+  onChooseMode: (mode: McpEditHeadMenusEnum) => void;
 }
 
 // Mcp组件列表

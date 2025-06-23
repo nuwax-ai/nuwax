@@ -15,20 +15,19 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
-import { McpInstallTypeEnum } from '@/types/enums/mcp';
+import { McpEditHeadMenusEnum, McpInstallTypeEnum } from '@/types/enums/mcp';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import { AgentArrangeConfigEnum } from '@/types/enums/space';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { McpConfigComponentInfo, McpDetailInfo } from '@/types/interfaces/mcp';
 import { customizeRequiredMark } from '@/utils/form';
-import { jumpBack } from '@/utils/router';
 import { CollapseProps, Form, FormProps, Input, message, Radio } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useModel, useParams, useRequest } from 'umi';
 import styles from './index.less';
-import McpHeader from './McpHeader';
+import McpEditHeader from './McpEditHeader';
 
 const cx = classNames.bind(styles);
 
@@ -54,6 +53,10 @@ const SpaceMcpCreate: React.FC = () => {
   const [checkTag, setCheckTag] = useState<AgentComponentTypeEnum>(
     AgentComponentTypeEnum.Plugin,
   );
+  // 当前模式
+  const [currentMode, setCurrentMode] = useState<McpEditHeadMenusEnum>(
+    McpEditHeadMenusEnum.Overview,
+  );
   // 是否部署
   const withDeployRef = useRef<boolean>(false);
   // 打开、关闭弹窗
@@ -78,8 +81,6 @@ const SpaceMcpCreate: React.FC = () => {
       setInstallType(installType);
     },
   });
-
-  console.log('mcpDetailInfo', mcpDetailInfo);
 
   // MCP服务更新
   const { run: runUpdate } = useRequest(apiMcpUpdate, {
@@ -248,10 +249,12 @@ const SpaceMcpCreate: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
-      <McpHeader
+      <McpEditHeader
         spaceId={spaceId}
         saveLoading={loading}
-        onCancel={() => jumpBack(`/space/${spaceId}/mcp`)}
+        mcpInfo={mcpDetailInfo}
+        currentMode={currentMode}
+        onChooseMode={setCurrentMode}
         onSave={handleSave}
         onSaveAndDeploy={() => handleSave(true)}
       />
