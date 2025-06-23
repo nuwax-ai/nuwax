@@ -48,8 +48,8 @@ import KnowledgeTextList from './KnowledgeTextList';
 import LongMemoryContent from './LongMemoryContent';
 // import TriggerContent from './TriggerContent';
 import CollapseComponentList from '@/components/CollapseComponentList';
-import PluginModelSetting from '@/components/PluginModelSetting';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
+import ComponentSettingModal from './ComponentSettingModal';
 import OpenRemarksEdit from './OpenRemarksEdit';
 
 const cx = classNames.bind(styles);
@@ -641,8 +641,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         onCancel={() => setOpenVariableModel(false)}
         onConfirm={handleConfirmVariables}
       />
-      {/*插件设置弹窗*/}
-      <PluginModelSetting
+      {/*组件设置弹窗*/}
+      <ComponentSettingModal
         open={openPluginModel}
         variables={variablesInfo?.bindConfig?.variables || []}
         currentComponentInfo={currentComponentInfo}

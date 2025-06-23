@@ -19,6 +19,8 @@ interface Props {
   minimap?: boolean;
   // 是否显示代码优化按钮
   codeOptimizeVisible?: boolean;
+  // 设置编辑器为只读模式
+  isReadOnly?: boolean;
 }
 
 const CodeEditor: React.FC<Props> = ({
@@ -30,6 +32,7 @@ const CodeEditor: React.FC<Props> = ({
   minimap = false,
   form,
   codeOptimizeVisible = true,
+  isReadOnly = false,
 }) => {
   const [isMonacoReady, setIsMonacoReady] = useState(false);
   const [open, setOpen] = useState<boolean>(false);
@@ -95,6 +98,7 @@ const CodeEditor: React.FC<Props> = ({
       selectOnLineNumbers: true,
       folding: true,
       automaticLayout: true,
+      readOnly: isReadOnly, // 设置编辑器为只读模式
       minimap: {
         enabled: minimap,
       },

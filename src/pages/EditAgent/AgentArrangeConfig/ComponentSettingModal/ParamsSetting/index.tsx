@@ -121,40 +121,42 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       key: 'default',
       width: 232,
       render: (_, record) => (
-        <Space.Compact block>
-          <SelectList
-            className={cx(styles.select)}
-            disabled={!record.enable}
-            value={record.bindValueType}
-            onChange={(value) =>
-              handleInputValue(record.key, 'bindValueType', value)
-            }
-            options={ParamsSettingDefaultOptions}
-          />
-          {record.bindValueType === BindValueType.Input ? (
-            <Input
-              rootClassName={cx(styles.select)}
-              placeholder="请填写"
+        <div className={cx('h-full', 'flex', 'items-center')}>
+          <Space.Compact block>
+            <SelectList
+              className={cx(styles.select)}
               disabled={!record.enable}
-              value={record.bindValue}
-              onChange={(e) =>
-                handleInputValue(record.key, 'bindValue', e.target.value)
-              }
-            />
-          ) : (
-            <Select
-              placeholder="请选择"
-              disabled={!record.enable}
-              rootClassName={cx(styles.select)}
-              popupMatchSelectWidth={false}
-              value={record.bindValue || null}
+              value={record.bindValueType}
               onChange={(value) =>
-                handleInputValue(record.key, 'bindValue', value)
+                handleInputValue(record.key, 'bindValueType', value)
               }
-              options={variableList}
+              options={ParamsSettingDefaultOptions}
             />
-          )}
-        </Space.Compact>
+            {record.bindValueType === BindValueType.Input ? (
+              <Input
+                rootClassName={cx(styles.select)}
+                placeholder="请填写"
+                disabled={!record.enable}
+                value={record.bindValue}
+                onChange={(e) =>
+                  handleInputValue(record.key, 'bindValue', e.target.value)
+                }
+              />
+            ) : (
+              <Select
+                placeholder="请选择"
+                disabled={!record.enable}
+                rootClassName={cx(styles.select)}
+                popupMatchSelectWidth={false}
+                value={record.bindValue || null}
+                onChange={(value) =>
+                  handleInputValue(record.key, 'bindValue', value)
+                }
+                options={variableList}
+              />
+            )}
+          </Space.Compact>
+        </div>
       ),
     },
     {
@@ -178,21 +180,23 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       width: 100,
       align: 'center',
       render: (_, record) => (
-        <Tooltip
-          title={
-            record.require &&
-            !record.bindValue &&
-            '此参数是必填参数，填写默认值后，此开关可用'
-          }
-        >
-          <Switch
-            disabled={record.require && !record.bindValue}
-            checked={record.enable}
-            onChange={(checked) =>
-              handleInputValue(record.key, 'enable', checked)
+        <div className={cx('h-full', 'flex', 'items-center')}>
+          <Tooltip
+            title={
+              record.require &&
+              !record.bindValue &&
+              '此参数是必填参数，填写默认值后，此开关可用'
             }
-          />
-        </Tooltip>
+          >
+            <Switch
+              disabled={record.require && !record.bindValue}
+              checked={record.enable}
+              onChange={(checked) =>
+                handleInputValue(record.key, 'enable', checked)
+              }
+            />
+          </Tooltip>
+        </div>
       ),
     },
   ];

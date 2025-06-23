@@ -296,13 +296,7 @@ const SpaceMcpCreate: React.FC = () => {
               label="安装方式"
               rules={[{ required: true, message: '请选择安装方式' }]}
             >
-              <Radio.Group
-                onChange={(e) =>
-                  setInstallType(e.target.value as McpInstallTypeEnum)
-                }
-                value={installType}
-                options={MCP_INSTALL_TYPE_LIST}
-              />
+              <Radio.Group disabled options={MCP_INSTALL_TYPE_LIST} />
             </Form.Item>
             {/* 安装方式切换 */}
             {installType !== McpInstallTypeEnum.COMPONENT ? (
@@ -327,6 +321,7 @@ const SpaceMcpCreate: React.FC = () => {
                   codeLanguage={CodeLangEnum.JSON}
                   height="300px"
                   codeOptimizeVisible={false}
+                  isReadOnly={true}
                 />
               </Form.Item>
             ) : (

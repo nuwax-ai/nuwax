@@ -48,8 +48,8 @@ export interface AgentArrangeConfigProps {
   onChangeAgent: (value: string | string[], attr: string) => void;
 }
 
-// 插件模型设置
-export interface PluginModelSettingProps {
+// 组件设置弹窗
+export interface ComponentSettingModalProps {
   open: boolean;
   currentComponentInfo?: AgentComponentInfo;
   variables?: BindConfigWithSub[];

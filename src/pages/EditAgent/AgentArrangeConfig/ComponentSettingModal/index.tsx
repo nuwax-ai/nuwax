@@ -23,8 +23,8 @@ import {
 } from '@/types/interfaces/agent';
 import type {
   AsyncRunSaveParams,
+  ComponentSettingModalProps,
   InvokeTypeSaveParams,
-  PluginModelSettingProps,
 } from '@/types/interfaces/agentConfig';
 import {
   CardArgsBindConfigInfo,
@@ -46,9 +46,9 @@ import ParamsSetting from './ParamsSetting';
 const cx = classNames.bind(styles);
 
 /**
- * 插件模型设置
+ * 组件设置弹窗
  */
-const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
+const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
   open,
   currentComponentInfo,
   variables,
@@ -317,4 +317,4 @@ const PluginModelSetting: React.FC<PluginModelSettingProps> = ({
   );
 };
 
-export default PluginModelSetting;
+export default ComponentSettingModal;
