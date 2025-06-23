@@ -71,11 +71,13 @@ const SpaceMcpCreate: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: McpDetailInfo) => {
+      setSaveDeployLoading(false);
+      setSaveLoading(false);
       const text = withDeployRef.current ? '保存并部署' : '保存';
       message.success(`${text}MCP服务成功`);
       history.replace(`/space/${spaceId}/mcp/edit/${result.id}`);
     },
-    onFinally: () => {
+    onError: () => {
       setSaveDeployLoading(false);
       setSaveLoading(false);
     },

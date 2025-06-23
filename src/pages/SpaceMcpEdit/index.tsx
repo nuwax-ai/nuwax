@@ -37,6 +37,7 @@ const SpaceMcpCreate: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
   const mcpId = Number(params.mcpId);
+  // icon图片地址
   const [imageUrl, setImageUrl] = useState<string>('');
   // 安装方式
   const [installType, setInstallType] = useState<McpInstallTypeEnum>();
@@ -44,12 +45,15 @@ const SpaceMcpCreate: React.FC = () => {
   const [mcpConfigComponentList, setMcpConfigComponentList] = useState<
     McpConfigComponentInfo[]
   >([]);
-  // 处于loading状态的组件列表
+  // 处于loading或added状态的组件列表
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]
   >([]);
-  const [loading, setLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveDeployLoading, setSaveDeployLoading] = useState(false);
+  // MCP服务详情信息
   const [mcpDetailInfo, setMcpDetailInfo] = useState<McpDetailInfo>();
+  // 选中的头部的tag
   const [checkTag, setCheckTag] = useState<AgentComponentTypeEnum>(
     AgentComponentTypeEnum.Plugin,
   );
@@ -62,23 +66,42 @@ const SpaceMcpCreate: React.FC = () => {
   // 打开、关闭弹窗
   const { show, setShow } = useModel('model');
 
+  // 查询MCP服务详情成功后，处理数据
+  const handleQuerySuccess = (result: McpDetailInfo) => {
+    setMcpDetailInfo(result);
+    const { name, description, icon, installType, mcpConfig } = result;
+    form.setFieldsValue({
+      name,
+      description,
+      icon,
+      installType,
+      serverConfig: mcpConfig?.serverConfig,
+    });
+    // MCP服务配置组件列表
+    setMcpConfigComponentList(mcpConfig?.components || []);
+    setImageUrl(icon);
+    setInstallType(installType);
+    // 添加组件列表
+    mcpConfig?.components?.forEach((item) => {
+      setAddComponents((list) => {
+        return [
+          ...list,
+          {
+            type: item.type,
+            targetId: item.targetId,
+            status: AgentAddComponentStatusEnum.Added,
+          },
+        ];
+      });
+    });
+  };
+
   // MCP详情查询
   const { run: runDetail } = useRequest(apiMcpDetail, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: McpDetailInfo) => {
-      setMcpDetailInfo(result);
-      const { name, description, icon, installType, mcpConfig } = result;
-      form.setFieldsValue({
-        name,
-        description,
-        icon,
-        installType,
-        serverConfig: mcpConfig?.serverConfig,
-      });
-      setMcpConfigComponentList(mcpConfig?.components || []);
-      setImageUrl(icon);
-      setInstallType(installType);
+      handleQuerySuccess(result);
     },
   });
 
@@ -86,13 +109,14 @@ const SpaceMcpCreate: React.FC = () => {
   const { run: runUpdate } = useRequest(apiMcpUpdate, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: McpDetailInfo) => {
-      console.log('创建MCP服务成功', result);
+    onSuccess: () => {
       message.success('更新MCP服务成功');
-      setLoading(false);
+      setSaveDeployLoading(false);
+      setSaveLoading(false);
     },
     onError: () => {
-      setLoading(false);
+      setSaveDeployLoading(false);
+      setSaveLoading(false);
     },
   });
 
@@ -112,7 +136,12 @@ const SpaceMcpCreate: React.FC = () => {
     installType: McpInstallTypeEnum;
     serverConfig: string;
   }>['onFinish'] = (values) => {
-    const { serverConfig, ...rest } = values;
+    if (withDeployRef.current) {
+      setSaveDeployLoading(true);
+    } else {
+      setSaveLoading(true);
+    }
+    const { serverConfig, installType, ...rest } = values;
     const mcpConfig =
       installType === McpInstallTypeEnum.COMPONENT
         ? {
@@ -125,7 +154,7 @@ const SpaceMcpCreate: React.FC = () => {
           };
     const data = {
       ...rest,
-      spaceId,
+      id: mcpId,
       icon: imageUrl,
       mcpConfig,
       withDeploy: withDeployRef.current,
@@ -251,11 +280,12 @@ const SpaceMcpCreate: React.FC = () => {
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <McpEditHeader
         spaceId={spaceId}
-        saveLoading={loading}
+        saveLoading={saveLoading}
+        saveDeployLoading={saveDeployLoading}
         mcpInfo={mcpDetailInfo}
         currentMode={currentMode}
         onChooseMode={setCurrentMode}
-        onSave={handleSave}
+        onSave={() => handleSave(false)}
         onSaveAndDeploy={() => handleSave(true)}
       />
       <div className={cx('flex-1', 'overflow-y')}>

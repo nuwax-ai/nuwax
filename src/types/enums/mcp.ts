@@ -1,7 +1,7 @@
-// MCP安装方式,可用值:NPX,uvx,SSE,COMPONENT
+// MCP安装方式,可用值:NPX,UVX,SSE,COMPONENT
 export enum McpInstallTypeEnum {
   NPX = 'NPX',
-  UVX = 'uvx',
+  UVX = 'UVX',
   SSE = 'SSE',
   COMPONENT = 'COMPONENT',
 }

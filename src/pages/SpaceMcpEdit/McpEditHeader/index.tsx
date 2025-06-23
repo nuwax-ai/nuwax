@@ -16,6 +16,7 @@ const cx = classNames.bind(styles);
 const McpEditHeader: React.FC<McpEditHeaderProps> = ({
   spaceId,
   saveLoading,
+  saveDeployLoading,
   mcpInfo,
   currentMode,
   onChooseMode,
@@ -107,7 +108,11 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
         >
           保存
         </Button>
-        <Button type="primary" onClick={onSaveAndDeploy}>
+        <Button
+          type="primary"
+          onClick={onSaveAndDeploy}
+          loading={saveDeployLoading}
+        >
           保存并部署
         </Button>
       </div>
