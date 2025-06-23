@@ -18,8 +18,8 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
   saveLoading,
   saveDeployLoading,
   mcpInfo,
-  currentMode,
-  onChooseMode,
+  currentMenu,
+  onChooseMenu,
   onSave,
   onSaveAndDeploy,
 }) => {
@@ -50,7 +50,7 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
     if (getMenuDisabled(value)) {
       return;
     }
-    onChooseMode(value);
+    onChooseMenu(value);
   };
 
   return (
@@ -85,7 +85,7 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
             <div
               key={item.value}
               className={cx('cursor-pointer', styles['head-menu'], {
-                [styles['active']]: currentMode === item.value,
+                [styles['active']]: currentMenu === item.value,
                 'cursor-disabled': getMenuDisabled(item.value),
               })}
               onClick={() => handleClickMenu(item.value)}

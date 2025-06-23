@@ -2,6 +2,7 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   DeployStatusEnum,
   McpEditHeadMenusEnum,
+  McpExecuteTypeEnum,
   McpInstallTypeEnum,
   McpPermissionsEnum,
 } from '@/types/enums/mcp';
@@ -40,28 +41,32 @@ export interface McpConfigInfo {
     name: string;
     // 工具描述
     description: string;
-    // 输出参数
+    // 输入参数
     inputArgs: BindConfigWithSub[];
     // 输出参数
     outputArgs: BindConfigWithSub[];
   }[];
   // MCP资源列表，无需前端传递
   resources: {
+    uri: string;
     // 名称
     name: string;
     // 描述
     description: string;
-    // 输出参数
+    mimeType: string;
+    annotations: {
+      audience: string[];
+      priority: number;
+    }[];
+    // 输入参数
     inputArgs: BindConfigWithSub[];
-    // 输出参数
-    outputArgs: BindConfigWithSub[];
   }[];
   prompts: {
     // 	名称
     name: string;
     // 描述
     description: string;
-    // 输出参数
+    // 输入参数
     inputArgs: BindConfigWithSub[];
     // 输出参数
     outputArgs: BindConfigWithSub[];
@@ -128,7 +133,7 @@ export interface McpTestParams {
   // MCP ID
   id: number;
   // 执行类型,可用值:TOOL,RESOURCE,PROMPT
-  executeType: string;
+  executeType: McpExecuteTypeEnum;
   // MCP工具/资源/提示词名称
   name: string;
   // 参数
@@ -202,8 +207,8 @@ export interface McpHeaderProps extends McpHeaderCommonProps {
 // 编辑MCP服务header组件
 export interface McpEditHeaderProps extends McpHeaderCommonProps {
   mcpInfo?: McpDetailInfo;
-  currentMode: McpEditHeadMenusEnum;
-  onChooseMode: (mode: McpEditHeadMenusEnum) => void;
+  currentMenu: McpEditHeadMenusEnum;
+  onChooseMenu: (mode: McpEditHeadMenusEnum) => void;
 }
 
 // Mcp组件列表

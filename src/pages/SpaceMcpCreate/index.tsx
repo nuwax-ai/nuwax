@@ -3,30 +3,20 @@ import CodeEditor from '@/components/CodeEditor';
 import ConfigOptionCollapse from '@/components/ConfigOptionCollapse';
 import Created from '@/components/Created';
 import LabelStar from '@/components/LabelStar';
-import McpCollapseComponentList from '@/components/McpCollapseComponentList';
-import TooltipIcon from '@/components/TooltipIcon';
 import UploadAvatar from '@/components/UploadAvatar';
-import {
-  MCP_COLLAPSE_COMPONENT_LIST,
-  MCP_INSTALL_TYPE_LIST,
-} from '@/constants/mcp.constants';
+import { MCP_INSTALL_TYPE_LIST } from '@/constants/mcp.constants';
+import useMcp from '@/hooks/useMcp';
 import { apiMcpCreate } from '@/services/mcp';
-import {
-  AgentAddComponentStatusEnum,
-  AgentComponentTypeEnum,
-} from '@/types/enums/agent';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { McpInstallTypeEnum } from '@/types/enums/mcp';
 import { CodeLangEnum } from '@/types/enums/plugin';
-import { AgentArrangeConfigEnum } from '@/types/enums/space';
-import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
-import { CreatedNodeItem } from '@/types/interfaces/common';
-import { McpConfigComponentInfo, McpDetailInfo } from '@/types/interfaces/mcp';
+import { McpDetailInfo } from '@/types/interfaces/mcp';
 import { customizeRequiredMark } from '@/utils/form';
 import { jumpBack } from '@/utils/router';
-import { CollapseProps, Form, FormProps, Input, message, Radio } from 'antd';
+import { Form, FormProps, Input, message, Radio } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { history, useModel, useParams, useRequest } from 'umi';
+import React, { useEffect, useState } from 'react';
+import { history, useParams, useRequest } from 'umi';
 import styles from './index.less';
 import McpHeader from './McpHeader';
 
@@ -34,29 +24,30 @@ const cx = classNames.bind(styles);
 
 // 创建MCP服务
 const SpaceMcpCreate: React.FC = () => {
-  const [form] = Form.useForm();
   const params = useParams();
   const spaceId = Number(params.spaceId);
-  const [imageUrl, setImageUrl] = useState<string>('');
   // 安装方式
   const [installType, setInstallType] = useState<McpInstallTypeEnum>();
-  // MCP服务配置组件列表
-  const [mcpConfigComponentList, setMcpConfigComponentList] = useState<
-    McpConfigComponentInfo[]
-  >([]);
-  // 处于loading状态的组件列表
-  const [addComponents, setAddComponents] = useState<
-    AgentAddComponentStatusInfo[]
-  >([]);
-  const [saveLoading, setSaveLoading] = useState(false);
-  const [saveDeployLoading, setSaveDeployLoading] = useState(false);
-  const [checkTag, setCheckTag] = useState<AgentComponentTypeEnum>(
-    AgentComponentTypeEnum.Plugin,
-  );
-  // 是否部署
-  const withDeployRef = useRef<boolean>(false);
-  // 打开、关闭弹窗
-  const { show, setShow } = useModel('model');
+
+  const {
+    form,
+    imageUrl,
+    setImageUrl,
+    saveLoading,
+    setSaveLoading,
+    saveDeployLoading,
+    setSaveDeployLoading,
+    checkTag,
+    openAddComponent,
+    setOpenAddComponent,
+    mcpConfigComponentList,
+    addComponents,
+    collapseActiveKey,
+    handleAddComponent,
+    handleSave,
+    withDeployRef,
+    collapseList,
+  } = useMcp();
 
   useEffect(() => {
     setInstallType(McpInstallTypeEnum.NPX);
@@ -82,12 +73,6 @@ const SpaceMcpCreate: React.FC = () => {
       setSaveLoading(false);
     },
   });
-
-  // 保存MCP服务
-  const handleSave = (withDeploy: boolean) => {
-    withDeployRef.current = withDeploy;
-    form.submit();
-  };
 
   const onFinish: FormProps<{
     name: string;
@@ -120,119 +105,6 @@ const SpaceMcpCreate: React.FC = () => {
     };
 
     runCreate(data);
-  };
-
-  // 根据组件类型，过滤组件
-  const filterList = (type: AgentComponentTypeEnum) => {
-    return (
-      mcpConfigComponentList?.filter(
-        (item: McpConfigComponentInfo) => item.type === type,
-      ) || []
-    );
-  };
-
-  /**
-   * 删除组件
-   * @param targetId: 关联的组件ID
-   * @param type: 组件类型
-   */
-  const handleComponentDel = async (
-    targetId: number,
-    type: AgentComponentTypeEnum,
-  ) => {
-    // 从mcpConfigComponentList中删除组件
-    const list = mcpConfigComponentList?.filter(
-      (item: McpConfigComponentInfo) =>
-        !(item.targetId === targetId && item.type === type),
-    );
-    setMcpConfigComponentList(list);
-    const newList =
-      addComponents?.filter(
-        (item) => !(item.targetId === targetId && item.type === type),
-      ) || [];
-    setAddComponents(newList);
-  };
-
-  // 添加插件、工作流、知识库等
-  const handlerComponentPlus = (
-    e: React.MouseEvent<HTMLElement>,
-    type: AgentComponentTypeEnum,
-  ) => {
-    e.stopPropagation();
-    setCheckTag(type);
-    setShow(true);
-  };
-
-  // 是否存在组件
-  const isExistComponent = (type: AgentComponentTypeEnum) => {
-    return mcpConfigComponentList?.some(
-      (item: McpConfigComponentInfo) => item.type === type,
-    );
-  };
-
-  // 折叠面板 - 当前激活 tab 面板的 key
-  const collapseActiveKey = useMemo(() => {
-    const list: AgentArrangeConfigEnum[] = [];
-    if (isExistComponent(AgentComponentTypeEnum.Plugin)) {
-      list.push(AgentArrangeConfigEnum.Plugin);
-    }
-    if (isExistComponent(AgentComponentTypeEnum.Workflow)) {
-      list.push(AgentArrangeConfigEnum.Workflow);
-    }
-    if (isExistComponent(AgentComponentTypeEnum.Knowledge)) {
-      list.push(AgentArrangeConfigEnum.Knowledge);
-    }
-    if (isExistComponent(AgentComponentTypeEnum.Table)) {
-      list.push(AgentArrangeConfigEnum.Table);
-    }
-    return list;
-  }, [mcpConfigComponentList]);
-
-  // 折叠面板列表
-  const collapseList: CollapseProps['items'] = MCP_COLLAPSE_COMPONENT_LIST?.map(
-    (item) => ({
-      key: item.type,
-      label: item.label,
-      children: (
-        <McpCollapseComponentList
-          textClassName="px-16"
-          type={item.type}
-          list={filterList(item.type)}
-          onDel={handleComponentDel}
-        />
-      ),
-      extra: (
-        <TooltipIcon
-          title={`添加${item.label}`}
-          onClick={(e) => handlerComponentPlus(e, item.type)}
-        />
-      ),
-    }),
-  );
-
-  const handleAddComponent = (info: CreatedNodeItem) => {
-    setAddComponents((list) => {
-      return [
-        ...list,
-        {
-          type: info.targetType,
-          targetId: info.targetId,
-          status: AgentAddComponentStatusEnum.Added,
-        },
-      ];
-    });
-    // MCP服务配置组件列表
-    setMcpConfigComponentList((list) => {
-      const newItem = {
-        name: info.name,
-        icon: info.icon,
-        description: info.description,
-        type: info.targetType,
-        targetId: info.targetId,
-        targetConfig: '',
-      };
-      return [...list, newItem];
-    });
   };
 
   return (
@@ -336,8 +208,8 @@ const SpaceMcpCreate: React.FC = () => {
       </div>
       {/*添加插件、工作流、知识库、数据库弹窗*/}
       <Created
-        open={show}
-        onCancel={() => setShow(false)}
+        open={openAddComponent}
+        onCancel={() => setOpenAddComponent(false)}
         checkTag={checkTag}
         addComponents={addComponents}
         onAdded={handleAddComponent}
