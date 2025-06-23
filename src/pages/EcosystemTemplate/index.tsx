@@ -7,6 +7,7 @@ import EcosystemShareModal, {
   EcosystemShareModalData,
 } from '@/components/EcosystemShareModal';
 import SelectComponent from '@/components/SelectComponent';
+import { CREATED_TABS } from '@/constants/common.constants';
 import { TabItems, TabTypeEnum } from '@/constants/ecosystem.constants';
 import {
   createClientConfigDraft,
@@ -86,14 +87,12 @@ export default function EcosystemTemplate() {
   const selectTargetTypeRef = useRef<string>('');
   const [selectComponentProps, setSelectComponentProps] = useState<{
     checkTag: AgentComponentTypeEnum;
-    hideTop: AgentComponentTypeEnum[];
+    tabs: { label: string; key: AgentComponentTypeEnum }[];
   }>({
     checkTag: AgentComponentTypeEnum.Workflow,
-    hideTop: [
-      AgentComponentTypeEnum.Table,
-      AgentComponentTypeEnum.Knowledge,
-      AgentComponentTypeEnum.Plugin,
-    ],
+    tabs: CREATED_TABS.filter((item) =>
+      [AgentComponentTypeEnum.Workflow].includes(item.key),
+    ),
   });
   const [shareModalProps, setShareModalProps] = useState<{
     targetType: AgentComponentTypeEnum;
@@ -333,20 +332,7 @@ export default function EcosystemTemplate() {
   const handleCreateShare = (type: AgentComponentTypeEnum) => {
     setSelectComponentProps({
       checkTag: type,
-      hideTop:
-        type === AgentComponentTypeEnum.Workflow
-          ? [
-              AgentComponentTypeEnum.Table,
-              AgentComponentTypeEnum.Knowledge,
-              AgentComponentTypeEnum.Plugin,
-              AgentComponentTypeEnum.Agent,
-            ]
-          : [
-              AgentComponentTypeEnum.Workflow,
-              AgentComponentTypeEnum.Table,
-              AgentComponentTypeEnum.Knowledge,
-              AgentComponentTypeEnum.Plugin,
-            ],
+      tabs: CREATED_TABS.filter((item) => [type].includes(item.key)),
     });
     setShareModalProps({
       targetType: type,

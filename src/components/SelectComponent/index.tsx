@@ -20,25 +20,24 @@ import { Button, Divider, Input, Menu, Modal, Radio } from 'antd';
 import { RadioChangeEvent } from 'antd/lib/radio';
 import { useCallback, useEffect, useRef, useState } from 'react';
 // import { useModel } from 'umi';
-import { ButtonList, CreatedProp, MenuItem } from '@/components/Created/type';
+import { CreatedProp, MenuItem } from '@/components/Created/type';
+import { CREATED_TABS } from '@/constants/common.constants';
 import { COMPONENT_LIST } from '@/constants/ecosystem.constants';
 import { useParams } from 'umi';
 import './index.less';
-// 顶部的标签页名称
-const buttonList: ButtonList[] = [
-  { label: '插件', key: AgentComponentTypeEnum.Plugin },
-  { label: '工作流', key: AgentComponentTypeEnum.Workflow },
-  { label: '知识库', key: AgentComponentTypeEnum.Knowledge },
-  { label: '数据表', key: AgentComponentTypeEnum.Table },
-  { label: '智能体', key: AgentComponentTypeEnum.Agent },
+
+const defaultTabsTypes = [
+  AgentComponentTypeEnum.Workflow,
+  AgentComponentTypeEnum.Agent,
 ];
+
+// 顶部的标签页名称
+const buttonList = CREATED_TABS.filter((item) =>
+  defaultTabsTypes.includes(item.key),
+);
 const getAllowCopy = (key: AgentComponentTypeEnum) => {
   // 模板库 允许复制
-  if (
-    [AgentComponentTypeEnum.Workflow, AgentComponentTypeEnum.Agent].includes(
-      key,
-    )
-  ) {
+  if (defaultTabsTypes.includes(key)) {
     // 模板库 允许复制
     return 1;
   }
@@ -51,6 +50,7 @@ const SelectComponent: React.FC<CreatedProp> = ({
   onCancel,
   checkTag,
   onAdded,
+  tabs = buttonList,
   addComponents,
   hideTop,
 }) => {
@@ -64,7 +64,7 @@ const SelectComponent: React.FC<CreatedProp> = ({
     label: string;
     key: AgentComponentTypeEnum;
   }>({
-    label: buttonList.find((item) => item.key === checkTag)?.label || '',
+    label: tabs.find((item) => item.key === checkTag)?.label || '',
     key: checkTag,
   });
   // 分页
@@ -271,7 +271,7 @@ const SelectComponent: React.FC<CreatedProp> = ({
     if (!val) return;
 
     const _select = typeof val === 'string' ? val : val.target.value;
-    const _item = buttonList.find((item) => item.key === _select);
+    const _item = tabs.find((item) => item.key === _select);
     if (_item) {
       setSelectMenu('all');
       setSearch('');
@@ -340,7 +340,7 @@ const SelectComponent: React.FC<CreatedProp> = ({
         onChange={changeTitle}
         defaultValue="plugInNode"
       >
-        {buttonList
+        {tabs
           .filter((item) => !hideTop?.includes(item.key))
           .map((item, index) => (
             <span key={item.key} className="radio-title-style">

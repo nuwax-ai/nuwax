@@ -20,12 +20,12 @@ import {
   OpenCloseEnum,
   PluginSettingEnum,
 } from '@/types/enums/space';
-import type {
-  AgentComponentInfo,
-  BindConfigWithSub,
-} from '@/types/interfaces/agent';
+import type { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { AgentArrangeConfigProps } from '@/types/interfaces/agentConfig';
-import type { CreatedNodeItem } from '@/types/interfaces/common';
+import type {
+  BindConfigWithSub,
+  CreatedNodeItem,
+} from '@/types/interfaces/common';
 import VariableList from './VariableList';
 // import { CaretDownOutlined } from '@ant-design/icons';
 import ConfigOptionCollapse from '@/components/ConfigOptionCollapse';

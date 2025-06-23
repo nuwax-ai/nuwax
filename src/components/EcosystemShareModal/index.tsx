@@ -6,7 +6,7 @@ import {
   apiPublishedWorkflowInfo,
 } from '@/services/plugin';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { BindConfigWithSub } from '@/types/interfaces/agent';
+import { BindConfigWithSub } from '@/types/interfaces/common';
 import {
   EcosystemDataTypeEnum,
   EcosystemShareStatusEnum,

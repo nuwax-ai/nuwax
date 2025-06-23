@@ -1,7 +1,7 @@
 import LabelStar from '@/components/LabelStar';
 import { apiAgentComponentVariableUpdate } from '@/services/agentConfig';
-import { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { CreateVariablesProps } from '@/types/interfaces/agentConfig';
+import { BindConfigWithSub } from '@/types/interfaces/common';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Input, message, Modal, Space, Table } from 'antd';
 import classNames from 'classnames';
