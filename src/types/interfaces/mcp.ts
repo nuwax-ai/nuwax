@@ -29,6 +29,32 @@ export interface McpConfigComponentInfo {
   toolName?: string;
 }
 
+export interface McpToolInfo {
+  // 工具名称
+  name: string;
+  // 工具描述
+  description: string;
+  // 输入参数
+  inputArgs: BindConfigWithSub[];
+  // 输出参数
+  outputArgs: BindConfigWithSub[];
+}
+
+export interface McpResourceInfo {
+  uri: string;
+  // 名称
+  name: string;
+  // 描述
+  description: string;
+  mimeType: string;
+  annotations: {
+    audience: string[];
+    priority: number;
+  }[];
+  // 输入参数
+  inputArgs: BindConfigWithSub[];
+}
+
 // MCP配置信息
 export interface McpConfigInfo {
   // MCP服务配置，installType为npx、uvx、sse时有效
@@ -36,41 +62,11 @@ export interface McpConfigInfo {
   // MCP组件配置，installType为component时有效
   components: McpConfigComponentInfo[];
   // MCP工具列表，无需前端传递
-  tools: {
-    // 工具名称
-    name: string;
-    // 工具描述
-    description: string;
-    // 输入参数
-    inputArgs: BindConfigWithSub[];
-    // 输出参数
-    outputArgs: BindConfigWithSub[];
-  }[];
+  tools: McpToolInfo[];
   // MCP资源列表，无需前端传递
-  resources: {
-    uri: string;
-    // 名称
-    name: string;
-    // 描述
-    description: string;
-    mimeType: string;
-    annotations: {
-      audience: string[];
-      priority: number;
-    }[];
-    // 输入参数
-    inputArgs: BindConfigWithSub[];
-  }[];
-  prompts: {
-    // 	名称
-    name: string;
-    // 描述
-    description: string;
-    // 输入参数
-    inputArgs: BindConfigWithSub[];
-    // 输出参数
-    outputArgs: BindConfigWithSub[];
-  }[];
+  resources: McpResourceInfo[];
+  // MCP提示词列表，无需前端传递
+  prompts: McpToolInfo[];
 }
 
 // MCP服务更新请求参数
@@ -209,6 +205,14 @@ export interface McpEditHeaderProps extends McpHeaderCommonProps {
   mcpInfo?: McpDetailInfo;
   currentMenu: McpEditHeadMenusEnum;
   onChooseMenu: (mode: McpEditHeadMenusEnum) => void;
+}
+
+// MCP服务编辑试运行项
+export interface McpEditItemProps {
+  className?: string;
+  name: string; // MCP服务名称
+  description: string; // MCP服务描述
+  onClick: () => void;
 }
 
 // Mcp组件列表
