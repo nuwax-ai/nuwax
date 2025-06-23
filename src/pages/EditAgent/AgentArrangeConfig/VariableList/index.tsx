@@ -1,5 +1,5 @@
-import type { BindConfigWithSub } from '@/types/interfaces/agent';
 import type { VariableListProps } from '@/types/interfaces/agentConfig';
+import type { BindConfigWithSub } from '@/types/interfaces/common';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';

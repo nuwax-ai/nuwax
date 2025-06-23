@@ -222,3 +222,19 @@ export enum PermissionsEnum {
   Delete = 'Delete',
   Publish = 'Publish',
 }
+
+// 输入类型, Http插件有用,可用值:Query,Body,Header,Path
+export enum InputTypeEnum {
+  Query = 'Query',
+  Body = 'Body',
+  Header = 'Header',
+  Path = 'Path',
+}
+
+// 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
+export enum BindValueType {
+  // 输入
+  Input = 'Input',
+  // 引用
+  Reference = 'Reference',
+}

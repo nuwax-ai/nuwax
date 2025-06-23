@@ -21,7 +21,7 @@ import {
   HttpContentTypeEnum,
   HttpMethodEnum,
 } from '@/types/enums/common';
-import type { BindConfigWithSub } from '@/types/interfaces/agent';
+import type { BindConfigWithSub } from '@/types/interfaces/common';
 import type { PluginInfo } from '@/types/interfaces/plugin';
 import { CascaderChange, CascaderValue } from '@/utils';
 import { getActiveKeys, getNodeDepth } from '@/utils/deepNode';

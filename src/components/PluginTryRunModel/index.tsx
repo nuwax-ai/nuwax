@@ -4,7 +4,7 @@ import { ICON_ADD_TR } from '@/constants/images.constants';
 import useTryRun from '@/hooks/useTryRun';
 import { apiPluginTest } from '@/services/plugin';
 import { DataTypeEnum } from '@/types/enums/common';
-import type { BindConfigWithSub } from '@/types/interfaces/agent';
+import type { BindConfigWithSub } from '@/types/interfaces/common';
 import type { PluginTryRunModelProps } from '@/types/interfaces/library';
 import type { PluginTestResult } from '@/types/interfaces/plugin';
 import { getNumbersOnly } from '@/utils/common';

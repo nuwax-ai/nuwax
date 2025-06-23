@@ -1,4 +1,4 @@
-import { BindConfigWithSub } from '@/types/interfaces/agent';
+import { BindConfigWithSub } from '@/types/interfaces/common';
 import type {
   PluginAddParams,
   PluginCopyUpdateParams,

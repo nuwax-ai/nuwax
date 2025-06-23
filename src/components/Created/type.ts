@@ -17,6 +17,7 @@ export interface CreatedProp {
   // 点击添加后,通知父组件添加节点
   onAdded: (val: CreatedNodeItem) => void;
   addComponents?: AgentAddComponentStatusInfo[];
+  tabs?: { label: string; key: AgentComponentTypeEnum }[];
   // 隐藏顶部
   hideTop?: AgentComponentTypeEnum[];
 }

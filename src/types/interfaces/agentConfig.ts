@@ -11,12 +11,14 @@ import type {
   AgentComponentInfo,
   AgentConfigInfo,
   AgentStatisticsInfo,
-  BindConfigWithSub,
   ComponentModelBindConfig,
   CreatorInfo,
   TriggerTimeZone,
 } from '@/types/interfaces/agent';
-import type { UploadFileInfo } from '@/types/interfaces/common';
+import type {
+  BindConfigWithSub,
+  UploadFileInfo,
+} from '@/types/interfaces/common';
 import type {
   AttachmentFile,
   ExecuteResultInfo,
@@ -55,13 +57,6 @@ export interface ComponentSettingModalProps {
   variables?: BindConfigWithSub[];
   settingActionList?: { type: PluginSettingEnum; label: string }[];
   onCancel: () => void;
-}
-
-// 参数设置组件
-export interface ParamsSettingProps {
-  variables?: BindConfigWithSub[];
-  inputArgBindConfigs?: BindConfigWithSub[];
-  onSaveSet: (attr: string, value: BindConfigWithSub[]) => void;
 }
 
 // 卡片绑定组件

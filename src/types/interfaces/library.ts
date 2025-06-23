@@ -4,8 +4,11 @@ import type {
   PublishStatusEnum,
 } from '@/types/enums/common';
 import type { ComponentTypeEnum } from '@/types/enums/space';
-import type { BindConfigWithSub, CreatorInfo } from '@/types/interfaces/agent';
-import type { CustomPopoverItem } from '@/types/interfaces/common';
+import type { CreatorInfo } from '@/types/interfaces/agent';
+import type {
+  BindConfigWithSub,
+  CustomPopoverItem,
+} from '@/types/interfaces/common';
 import type { ModelSaveParams } from '@/types/interfaces/model';
 import type { PluginHttpUpdateParams } from '@/types/interfaces/plugin';
 import React from 'react';

@@ -1,3 +1,4 @@
+import ParamsSetting from '@/components/ParamsSetting';
 import { PLUGIN_SETTING_ACTIONS } from '@/constants/space.constants';
 import {
   apiAgentCardList,
@@ -19,7 +20,6 @@ import {
   AgentComponentPluginUpdateParams,
   AgentComponentTableUpdateParams,
   AgentComponentWorkflowUpdateParams,
-  BindConfigWithSub,
 } from '@/types/interfaces/agent';
 import type {
   AsyncRunSaveParams,
@@ -30,6 +30,7 @@ import {
   CardArgsBindConfigInfo,
   CardBindConfig,
 } from '@/types/interfaces/cardInfo';
+import { BindConfigWithSub } from '@/types/interfaces/common';
 import { RequestResponse } from '@/types/interfaces/request';
 import { CloseOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
@@ -41,7 +42,6 @@ import AsyncRun from './AsyncRun';
 import CardBind from './CardBind';
 import styles from './index.less';
 import InvokeType from './InvokeType';
-import ParamsSetting from './ParamsSetting';
 
 const cx = classNames.bind(styles);
 

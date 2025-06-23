@@ -1,4 +1,5 @@
 import Constant from '@/constants/codes.constants';
+import { CREATED_TABS } from '@/constants/common.constants';
 import { ICON_TABLE, ICON_WORD } from '@/constants/images.constants';
 import service, { IGetList } from '@/services/created';
 import {
@@ -30,15 +31,17 @@ import CreateNewPlugin from '../CreateNewPlugin';
 import CreateWorkflow from '../CreateWorkflow';
 import './index.less';
 import MCPItem from './MCPItem';
-import { ButtonList, CreatedProp, MenuItem } from './type';
-// 顶部的标签页名称
-const buttonList: ButtonList[] = [
-  { label: '插件', key: AgentComponentTypeEnum.Plugin },
-  { label: '工作流', key: AgentComponentTypeEnum.Workflow },
-  { label: '知识库', key: AgentComponentTypeEnum.Knowledge },
-  { label: '数据表', key: AgentComponentTypeEnum.Table },
-  { label: 'MCP服务', key: AgentComponentTypeEnum.MCP },
+import { CreatedProp, MenuItem } from './type';
+
+const defaultTabsTypes = [
+  AgentComponentTypeEnum.Plugin,
+  AgentComponentTypeEnum.Workflow,
+  AgentComponentTypeEnum.Knowledge,
+  AgentComponentTypeEnum.Table,
 ];
+const defaultTabs = CREATED_TABS.filter((item) =>
+  defaultTabsTypes.includes(item.key),
+);
 // 创建插件、工作流、知识库、数据库
 const Created: React.FC<CreatedProp> = ({
   open,
@@ -46,6 +49,7 @@ const Created: React.FC<CreatedProp> = ({
   checkTag,
   onAdded,
   addComponents,
+  tabs = defaultTabs,
   hideTop,
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
@@ -295,7 +299,7 @@ const Created: React.FC<CreatedProp> = ({
     if (!val) return;
 
     const _select = typeof val === 'string' ? val : val.target.value;
-    const _item = buttonList.find((item) => item.key === _select);
+    const _item = tabs.find((item) => item.key === _select);
     if (_item) {
       setSelectMenu('all');
       setSearch('');
@@ -364,7 +368,7 @@ const Created: React.FC<CreatedProp> = ({
         onChange={changeTitle}
         defaultValue={AgentComponentTypeEnum.Plugin}
       >
-        {buttonList
+        {tabs
           .filter((item) => !hideTop?.includes(item.key))
           .map((item, index) => (
             <span key={item.key} className="radio-title-style">

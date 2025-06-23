@@ -48,6 +48,10 @@ const { Search } = Input;
 const PAGE_SIZE = 24;
 
 import EcosystemCard from '@/components/EcosystemCard';
+import { CREATED_TABS } from '@/constants/common.constants';
+const defaultTabs = CREATED_TABS.filter((item) =>
+  [AgentComponentTypeEnum.Plugin].includes(item.key),
+);
 /**
  * 生态市场插件页面
  * 展示插件列表，包括全部、已启用和我的分享三个标签页
@@ -510,8 +514,6 @@ export default function EcosystemPlugin() {
   >([]);
   // 查询智能体配置组件列表
   const onSelectedComponent = (item: CreatedNodeItem) => {
-    item.type = item.targetType;
-    item.typeId = item.targetId;
     setShow(false);
     setShareModalData({
       icon: item.icon,
@@ -523,7 +525,7 @@ export default function EcosystemPlugin() {
     });
     setAddComponents([
       {
-        type: item.type,
+        type: item.targetType,
         targetId: item.targetId,
         status: AgentAddComponentStatusEnum.Added,
       },
@@ -711,13 +713,8 @@ export default function EcosystemPlugin() {
         onAdded={onSelectedComponent}
         open={show}
         onCancel={() => setShow(false)}
+        tabs={defaultTabs}
         addComponents={addComponents}
-        hideTop={[
-          AgentComponentTypeEnum.Table,
-          AgentComponentTypeEnum.Workflow,
-          AgentComponentTypeEnum.Knowledge,
-          AgentComponentTypeEnum.Agent,
-        ]}
       />
     </div>
   );

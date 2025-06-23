@@ -4,7 +4,7 @@ import { ICON_ADD_TR } from '@/constants/images.constants';
 import useTryRun from '@/hooks/useTryRun';
 import { apiPluginAnalysisOutput } from '@/services/plugin';
 import { DataTypeEnum } from '@/types/enums/common';
-import type { BindConfigWithSub } from '@/types/interfaces/agent';
+import type { BindConfigWithSub } from '@/types/interfaces/common';
 import type { PluginAutoAnalysisProps } from '@/types/interfaces/library';
 import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Button, Input, Modal, Space, Table } from 'antd';

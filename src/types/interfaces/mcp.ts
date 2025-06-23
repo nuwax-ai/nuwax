@@ -5,8 +5,11 @@ import {
   McpInstallTypeEnum,
   McpPermissionsEnum,
 } from '@/types/enums/mcp';
-import { BindConfigWithSub, CreatorInfo } from './agent';
-import { CustomPopoverItem } from './common';
+import type { CreatorInfo } from '@/types/interfaces/agent';
+import type {
+  BindConfigWithSub,
+  CustomPopoverItem,
+} from '@/types/interfaces/common';
 
 // MCP配置组件信息
 export interface McpConfigComponentInfo {

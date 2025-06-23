@@ -21,9 +21,11 @@ const MCPTools: React.FC<MCPToolsProps> = ({
   addedComponents,
 }) => {
   const handleAddTool = useCallback(
-    (toolName: string) => {
+    (toolName: string, toolDescription: string) => {
       onAddTool({
         ...item,
+        name: `${item.name}/${toolName}`,
+        description: toolDescription,
         toolName,
       });
     },
@@ -67,7 +69,7 @@ const MCPTools: React.FC<MCPToolsProps> = ({
             <Button
               color="primary"
               variant="outlined"
-              onClick={() => handleAddTool(tool.name)}
+              onClick={() => handleAddTool(tool.name, tool.description)}
               disabled={isAdded(item, addedStatus, tool.name)}
               loading={isAdded(item, loadingStatus, tool.name)}
             >
