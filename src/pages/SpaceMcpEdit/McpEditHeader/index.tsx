@@ -1,5 +1,5 @@
 import { MCP_EDIT_HEAD_MENU_LIST } from '@/constants/mcp.constants';
-import { DeployStatusEnum } from '@/types/enums/mcp';
+import { DeployStatusEnum, McpEditHeadMenusEnum } from '@/types/enums/mcp';
 import { McpEditHeaderProps } from '@/types/interfaces/mcp';
 import { getMcpDeployStatus } from '@/utils/mcp';
 import { jumpBack } from '@/utils/router';
@@ -22,6 +22,36 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
   onSave,
   onSaveAndDeploy,
 }) => {
+  // 获取菜单是否禁用
+  const getMenuDisabled = (value: McpEditHeadMenusEnum) => {
+    // 如果是 Overview 菜单，直接返回 false
+    if (value === McpEditHeadMenusEnum.Overview) {
+      return false;
+    }
+    let length = 0;
+    const mcpConfig = mcpInfo?.mcpConfig;
+    switch (value) {
+      case McpEditHeadMenusEnum.Tool:
+        length = mcpConfig?.tools?.length || 0;
+        break;
+      case McpEditHeadMenusEnum.Resource:
+        length = mcpConfig?.resources?.length || 0;
+        break;
+      case McpEditHeadMenusEnum.Prompt:
+        length = mcpConfig?.prompts?.length || 0;
+        break;
+    }
+    return length === 0;
+  };
+
+  // 点击菜单
+  const handleClickMenu = (value: McpEditHeadMenusEnum) => {
+    if (getMenuDisabled(value)) {
+      return;
+    }
+    onChooseMode(value);
+  };
+
   return (
     <header className={cx('flex', 'content-between', styles.header)}>
       <div className={cx('flex', 'items-center', 'gap-10')}>
@@ -55,8 +85,9 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
               key={item.value}
               className={cx('cursor-pointer', styles['head-menu'], {
                 [styles['active']]: currentMode === item.value,
+                'cursor-disabled': getMenuDisabled(item.value),
               })}
-              onClick={() => onChooseMode(item.value)}
+              onClick={() => handleClickMenu(item.value)}
             >
               {item.label}
             </div>
