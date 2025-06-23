@@ -3,7 +3,7 @@ import { DataTypeEnum } from '@/types/enums/common';
 import type {
   BindConfigWithSub,
   BindConfigWithSubDisabled,
-} from '@/types/interfaces/agent';
+} from '@/types/interfaces/common';
 import omit from 'lodash/omit';
 import React from 'react';
 import { v4 as uuidv4 } from 'uuid';

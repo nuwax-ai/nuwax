@@ -1,7 +1,7 @@
 import sendImage from '@/assets/images/send_image_gray.png';
 import PromptView from '@/components/ChatView/promptView';
-import { BindConfigWithSub } from '@/types/interfaces/agent';
 import { OptimizeTypeEnum } from '@/types/interfaces/assistant';
+import { BindConfigWithSub } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import type { ModalProps } from 'antd';
 import { Button, Input, Modal } from 'antd';

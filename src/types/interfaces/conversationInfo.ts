@@ -15,10 +15,10 @@ import type {
   AgentManualComponentInfo,
   AgentSelectedComponentInfo,
   AgentStatisticsInfo,
-  BindConfigWithSub,
   CreatorInfo,
 } from '@/types/interfaces/agent';
 import { CardBindConfig, CardDataInfo } from '@/types/interfaces/cardInfo';
+import type { BindConfigWithSub } from '@/types/interfaces/common';
 
 // 会话聊天消息
 export interface ConversationChatMessage {

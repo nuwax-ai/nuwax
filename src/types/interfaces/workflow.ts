@@ -206,10 +206,15 @@ export interface SkillProps {
   modifyItem: (id: CreatedNodeItem) => void;
 }
 
+export interface SkillItem extends Partial<CreatedNodeItem> {
+  icon: string;
+  typeId?: string | number;
+}
+
 export interface SkillDisposeProps {
   open: boolean;
   onCancel: () => void;
-  params: CreatedNodeItem;
+  params: SkillItem;
   onConfirm: (val: CreatedNodeItem) => void;
 }
 

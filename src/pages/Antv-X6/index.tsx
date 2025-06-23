@@ -6,6 +6,7 @@ import PublishComponentModal from '@/components/PublishComponentModal';
 import TestRun from '@/components/TestRun';
 import VersionHistory from '@/components/VersionHistory';
 import Constant from '@/constants/codes.constants';
+import { CREATED_TABS } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { DEFAULT_NODE_CONFIG, testRunList } from '@/constants/node.constants';
 import useAutoSave from '@/hooks/useAutoSave';
@@ -66,6 +67,16 @@ import GraphContainer from './graphContainer';
 import Header from './header';
 import './index.less';
 import RenderNodeDrawer from './RenderNodeDrawer';
+
+const workflowCreatedTabs = CREATED_TABS.filter((item) =>
+  [
+    AgentComponentTypeEnum.Plugin,
+    AgentComponentTypeEnum.Workflow,
+    AgentComponentTypeEnum.Table,
+    AgentComponentTypeEnum.MCP,
+  ].includes(item.key),
+);
+
 const Workflow: React.FC = () => {
   const { message } = App.useApp();
   const params = useParams();
@@ -1643,6 +1654,7 @@ const Workflow: React.FC = () => {
         checkTag={createdItem as AgentComponentTypeEnum}
         onAdded={onAdded}
         open={open}
+        tabs={workflowCreatedTabs}
         addComponents={[
           {
             type: AgentComponentTypeEnum.Workflow,

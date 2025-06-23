@@ -12,9 +12,9 @@ import type {
 } from '@/types/enums/plugin';
 import type {
   AgentStatisticsInfo,
-  BindConfigWithSub,
   CreatorInfo,
 } from '@/types/interfaces/agent';
+import type { BindConfigWithSub } from '@/types/interfaces/common';
 import { AllowCopyEnum } from '../enums/agent';
 
 // 插件试运行输入参数

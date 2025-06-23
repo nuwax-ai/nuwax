@@ -4,8 +4,7 @@ import {
   ExceptionHandleTypeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
-import { BindConfigWithSub } from '@/types/interfaces/agent';
-import { CreatedNodeItem } from '@/types/interfaces/common';
+import { BindConfigWithSub, CreatedNodeItem } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
 export interface InputAndOutConfig {
   // 参数名称

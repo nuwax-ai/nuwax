@@ -5,7 +5,7 @@ import { apiPublishTemplateCopy } from '@/services/publish';
 import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
-import { BindConfigWithSub } from '@/types/interfaces/agent';
+import { BindConfigWithSub } from '@/types/interfaces/common';
 import type { PublishWorkflowInfo } from '@/types/interfaces/plugin';
 import { jumpToWorkflow } from '@/utils/router';
 import type { TableColumnsType } from 'antd';

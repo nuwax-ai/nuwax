@@ -244,7 +244,7 @@ export const SkillList: React.FC<SkillProps> = ({
             onMouseLeave={() => setShowMask(false)}
           >
             <img
-              src={item.icon === '' ? getImg(item.type) : item.icon}
+              src={item.icon === '' ? getImg(item.targetType) : item.icon}
               alt=""
               className="skill-item-icon"
             />

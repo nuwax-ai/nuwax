@@ -1,6 +1,6 @@
 import { apiPublishedPluginInfo } from '@/services/plugin';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
-import { BindConfigWithSub } from '@/types/interfaces/agent';
+import { BindConfigWithSub } from '@/types/interfaces/common';
 import type { PublishPluginInfo } from '@/types/interfaces/plugin';
 import type { TableColumnsType } from 'antd';
 import { Divider, Empty, Table } from 'antd';

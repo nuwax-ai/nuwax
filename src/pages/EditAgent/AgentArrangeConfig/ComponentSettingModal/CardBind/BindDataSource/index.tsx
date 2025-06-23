@@ -3,12 +3,13 @@ import CustomInputNumber from '@/components/CustomInputNumber';
 import LabelStar from '@/components/LabelStar';
 import { BIND_CARD_STYLE_LIST } from '@/constants/agent.constants';
 import { BindCardStyleEnum } from '@/types/enums/plugin';
-import { ArgList, BindConfigWithSub } from '@/types/interfaces/agent';
+import { ArgList } from '@/types/interfaces/agent';
 import type { BindDataSourceProps } from '@/types/interfaces/agentConfig';
 import {
   CardArgsBindConfigInfo,
   CardBindConfig,
 } from '@/types/interfaces/cardInfo';
+import type { BindConfigWithSub } from '@/types/interfaces/common';
 import {
   findNode,
   loopFilterAndDisabledArray,

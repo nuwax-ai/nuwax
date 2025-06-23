@@ -1,8 +1,7 @@
 import SelectList from '@/components/SelectList';
 import { ParamsSettingDefaultOptions } from '@/constants/common.constants';
 import { BindValueType } from '@/types/enums/agent';
-import type { BindConfigWithSub } from '@/types/interfaces/agent';
-import type { ParamsSettingProps } from '@/types/interfaces/agentConfig';
+import type { BindConfigWithSub } from '@/types/interfaces/common';
 import { getActiveKeys, updateNodeField } from '@/utils/deepNode';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
@@ -23,6 +22,13 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+interface ParamsSettingProps {
+  inputArgBindConfigs: BindConfigWithSub[];
+  variables: BindConfigWithSub[];
+  onSaveSet: (attr: string, value: BindConfigWithSub[]) => void;
+  style?: React.CSSProperties;
+  scroll?: { y: number };
+}
 /**
  * 插件参数设置
  */
@@ -30,6 +36,8 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
   inputArgBindConfigs,
   variables,
   onSaveSet,
+  style = {},
+  scroll = { y: 480 },
 }) => {
   // 入参配置 - 展开的行，控制属性
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
@@ -79,7 +87,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       title: '参数名称',
       dataIndex: 'name',
       key: 'name',
-      className: 'flex items-center',
+      className: 'flex items-center table-params-name-td',
       render: (_, record) => (
         <div className={cx('flex', 'flex-col', styles['params-td'])}>
           <span className={cx(styles['params-name'], 'text-ellipsis-2')}>
@@ -202,14 +210,14 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
   ];
 
   return (
-    <div className={cx(styles.container, 'flex', 'flex-col')}>
+    <div className={cx(styles.container, 'flex', 'flex-col')} style={style}>
       <Table<BindConfigWithSub>
         className={cx('mb-16', 'flex-1')}
         columns={inputColumns}
         dataSource={configArgs}
         pagination={false}
         virtual
-        scroll={{ y: 480 }}
+        scroll={scroll}
         expandable={{
           childrenColumnName: 'subArgs',
           defaultExpandAllRows: true,

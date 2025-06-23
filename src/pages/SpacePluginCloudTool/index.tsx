@@ -13,7 +13,7 @@ import { apiPluginCodeUpdate, apiPluginInfo } from '@/services/plugin';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
 import { PluginCodeModeEnum } from '@/types/enums/plugin';
-import type { BindConfigWithSub } from '@/types/interfaces/agent';
+import type { BindConfigWithSub } from '@/types/interfaces/common';
 import type { PluginInfo } from '@/types/interfaces/plugin';
 import { CascaderChange, CascaderValue } from '@/utils';
 import { getActiveKeys } from '@/utils/deepNode';
