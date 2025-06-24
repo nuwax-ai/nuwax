@@ -80,12 +80,25 @@ const SpaceMcpCreate: React.FC = () => {
     installType: McpInstallTypeEnum;
     serverConfig: string;
   }>['onFinish'] = (values) => {
+    const { serverConfig, ...rest } = values;
+    // 组件库
+    if (installType === McpInstallTypeEnum.COMPONENT) {
+      if (!mcpConfigComponentList?.length) {
+        message.warning('请选择组件');
+        return;
+      }
+    } else if (!serverConfig) {
+      message.warning('请输入MCP服务配置');
+      return;
+    }
+
+    // loading状态
     if (withDeployRef.current) {
       setSaveDeployLoading(true);
     } else {
       setSaveLoading(true);
     }
-    const { serverConfig, ...rest } = values;
+
     const mcpConfig =
       installType === McpInstallTypeEnum.COMPONENT
         ? {
