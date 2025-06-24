@@ -132,7 +132,7 @@ const CodeEditor: React.FC<Props> = ({
         <Form.Item
           noStyle
           name={
-            form?.getFieldValue('codeLanguage') === 'JavaScript'
+            form?.getFieldValue('codeLanguage') === CodeLangEnum.JavaScript
               ? 'codeJavaScript'
               : 'codePython'
           }
