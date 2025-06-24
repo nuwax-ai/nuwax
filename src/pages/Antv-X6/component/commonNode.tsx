@@ -359,7 +359,19 @@ export const FormList: React.FC<FormListProps> = ({
   field,
   inputItemName = 'inputArgs',
   showIndex,
+  limitAddLength = -1, // 限制添加的个数，-1 不限制
 }) => {
+  const [disabledAdd, setDisabledAdd] = useState(false);
+  const currentFields = Form.useWatch(inputItemName, {
+    form,
+    preserve: true,
+  });
+  useEffect(() => {
+    if (limitAddLength > -1) {
+      setDisabledAdd((currentFields?.length || 0) >= limitAddLength);
+    }
+  }, [currentFields, form, limitAddLength]);
+
   return (
     <Form.List name={inputItemName}>
       {(fields, { add, remove }) => (
@@ -370,6 +382,7 @@ export const FormList: React.FC<FormListProps> = ({
               icon={<PlusOutlined />}
               size={'small'}
               type={'text'}
+              disabled={disabledAdd}
               onClick={() => {
                 const currentFields = form.getFieldValue(inputItemName) || [];
                 const insertIndex = Math.max(0, currentFields.length - 1);
