@@ -16,6 +16,7 @@ import {
   NodeTypeEnum,
   RunResultStatusEnum,
 } from '@/types/enums/common';
+import { ConditionBranchTypeEnum } from '@/types/enums/node';
 import { ChildNode, NodeProps, RunResultItem } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { returnBackgroundColor, returnImg } from '@/utils/workflow';
@@ -35,26 +36,37 @@ const ConditionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
   const compareType = conditionArgs?.[0]?.compareType as CompareTypeEnum;
   const firstArg = conditionArgs?.[0]?.firstArg;
   const secondArg = conditionArgs?.[0]?.secondArg;
+
+  const getConditionArgs = (branchType: string) => {
+    if (branchType === ConditionBranchTypeEnum.ELSE) {
+      return null;
+    }
+    if (conditionArgs && conditionArgs.length > 0) {
+      return (
+        <div className="dis-left">
+          <span style={{ width: '18px', textAlign: 'center' }}>
+            {compareType ? compareTypeMap[compareType] : ''}
+          </span>
+          <div className="condition-right-input border-box">
+            {secondArg ? secondArg.name || secondArg.bindValue : ''}
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="condition-node-content-style">
       {conditionBranchConfigs?.map((item) => (
         <div key={item.uuid} className="dis-left condition-item-style">
           <span className="condition-title-sytle">
-            {branchTypeMap[item.branchType || 'ELSE_IF']}
+            {branchTypeMap[item.branchType || ConditionBranchTypeEnum.ELSE_IF]}
           </span>
           <div className="flex-1 border-box">
             {firstArg ? firstArg.name : ''}
           </div>
-          {conditionArgs && conditionArgs.length > 0 && (
-            <div className="dis-left">
-              <span style={{ width: '18px', textAlign: 'center' }}>
-                {compareType ? compareTypeMap[compareType] : ''}
-              </span>
-              <div className="condition-right-input border-box">
-                {secondArg ? secondArg.name || secondArg.bindValue : ''}
-              </div>
-            </div>
-          )}
+          {getConditionArgs(item.branchType)}
         </div>
       ))}
     </div>
