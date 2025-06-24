@@ -346,28 +346,30 @@ const SpaceLog: React.FC = () => {
             </Button>
           </div>
         </Form>
-        {/* table列表区域 */}
-        <Table<logInfo>
-          columns={inputColumns}
-          dataSource={dataSource}
-          tableLayout="fixed"
-          virtual
-          sticky
-          loading={loadingLogList}
-          scroll={{ x: 'max-content' }}
-          onRow={(record) => {
-            return {
-              onClick: () => handleClick(record), // 点击行
-            };
-          }}
-          pagination={{
-            total: total,
-            current: pageIndex,
-            defaultPageSize: 10,
-            onChange: handlePaginationChange,
-            showTotal: (total) => `共 ${total} 条`,
-          }}
-        />
+        <div className={cx('flex-1', 'overflow-y')}>
+          {/* table列表区域 */}
+          <Table<logInfo>
+            className={cx(styles['table-area'])}
+            columns={inputColumns}
+            dataSource={dataSource}
+            tableLayout="fixed"
+            sticky
+            loading={loadingLogList}
+            scroll={{ x: 'max-content' }}
+            onRow={(record) => {
+              return {
+                onClick: () => handleClick(record), // 点击行
+              };
+            }}
+            pagination={{
+              total: total,
+              current: pageIndex,
+              defaultPageSize: 10,
+              onChange: handlePaginationChange,
+              showTotal: (total) => `共 ${total} 条`,
+            }}
+          />
+        </div>
       </div>
       <LogDetails
         loading={loading}
