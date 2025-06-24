@@ -1,5 +1,9 @@
 import { MCP_EDIT_HEAD_MENU_LIST } from '@/constants/mcp.constants';
-import { DeployStatusEnum, McpEditHeadMenusEnum } from '@/types/enums/mcp';
+import {
+  DeployStatusEnum,
+  McpEditHeadMenusEnum,
+  McpPermissionsEnum,
+} from '@/types/enums/mcp';
 import { McpEditHeaderProps } from '@/types/interfaces/mcp';
 import { getMcpDeployStatus } from '@/utils/mcp';
 import { jumpBack } from '@/utils/router';
@@ -102,9 +106,16 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
             <span className={cx(styles.text)}>有更新未部署</span>
           )}
         <Button
-          className={cx(styles['save-btn'])}
+          className={cx({
+            [styles['save-btn']]: mcpInfo?.permissions?.includes(
+              McpPermissionsEnum.EditOrDeploy,
+            ),
+          })}
           onClick={onSave}
           loading={saveLoading}
+          disabled={
+            !mcpInfo?.permissions?.includes(McpPermissionsEnum.EditOrDeploy)
+          }
         >
           保存
         </Button>
@@ -112,6 +123,9 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
           type="primary"
           onClick={onSaveAndDeploy}
           loading={saveDeployLoading}
+          disabled={
+            !mcpInfo?.permissions?.includes(McpPermissionsEnum.EditOrDeploy)
+          }
         >
           保存并部署
         </Button>
