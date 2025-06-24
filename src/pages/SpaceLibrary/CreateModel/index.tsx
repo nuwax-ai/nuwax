@@ -220,14 +220,25 @@ const CreateModel: React.FC<CreateModelProps> = ({
               name="dimension"
               label="向量维度"
               className={cx('flex-1')}
-              rules={[{ required: false, message: '填写向量维度' }]}
+              rules={[{ required: true, message: '填写向量维度' }]}
             >
-              <InputNumber />
+              <InputNumber
+                className={cx('w-full')}
+                defaultValue={1536}
+                min={0}
+              />
             </Form.Item>
           </ConditionRender>
         </div>
 
         <ConditionRender condition={modelType !== ModelTypeEnum.Embeddings}>
+          <Form.Item
+            name="maxTokens"
+            label="非向量模型"
+            rules={[{ required: true, message: '请输入非向量模型' }]}
+          >
+            <InputNumber className={cx('w-full')} defaultValue={4096} min={0} />
+          </Form.Item>
           <Form.Item
             name="functionCall"
             label="函数调用支持"
