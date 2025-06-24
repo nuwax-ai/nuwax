@@ -85,16 +85,13 @@ const SpacePluginCloudTool: React.FC = () => {
 
   const isClickSaveBtnRef = useRef<boolean>(false);
 
-  useEffect(() => {
-    setCode(pluginInfo?.config?.code as string);
-  }, [pluginInfo]);
-
   // 查询插件信息
   const { run: runPluginInfo } = useRequest(apiPluginInfo, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: PluginInfo) => {
       setPluginInfo(result);
+      setCode(result?.config?.code);
       if (result.config) {
         const { inputArgs, outputArgs } = result.config;
         // 默认展开的入参配置key
