@@ -76,7 +76,7 @@ const StopWaitNode: React.FC<{
     <div className="stop-wait-style dis-col flex-1 overflow-y">
       {/* 头部 */}
       <div className="stop-wait-header dis-center">
-        {returnImg('QA')}
+        {returnImg(NodeTypeEnum.QA)}
         <div></div>
         <span className="ml-10">问答</span>
         <span className="ml-10">回复以下问题后继续试运行</span>
@@ -90,7 +90,7 @@ const StopWaitNode: React.FC<{
             className="bubble-avatar"
           />
         }
-        variant={answerType === 'SELECT' ? 'borderless' : 'filled'}
+        variant={answerType === AnswerTypeEnum.SELECT ? 'borderless' : 'filled'}
         header={<span>机器人</span>}
         content={
           params?.options?.length ? (

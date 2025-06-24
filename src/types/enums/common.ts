@@ -238,3 +238,9 @@ export enum BindValueType {
   // 引用
   Reference = 'Reference',
 }
+
+export enum RunResultStatusEnum { // 工作流节点运行结果状态
+  FINISHED = 'FINISHED',
+  FAILED = 'FAILED',
+  EXECUTING = 'EXECUTING',
+}

@@ -14,6 +14,7 @@ import {
   CompareTypeEnum,
   NodeShapeEnum,
   NodeTypeEnum,
+  RunResultStatusEnum,
 } from '@/types/enums/common';
 import { ChildNode, NodeProps, RunResultItem } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
@@ -128,27 +129,29 @@ const DISABLE_EDIT_NODE_TYPES = [
   NodeTypeEnum.End,
 ];
 const NodeRunResult: React.FC<{
-  options?: RunResultItem['options'];
-  status?: RunResultItem['status'];
-}> = ({ options, status }) => {
-  const time =
-    options?.startTime && options?.endTime
-      ? `${(options.endTime - options.startTime) / 1000}s`
-      : '0.000s';
-  const total = (options?.input || []).length;
+  data: RunResultItem[];
+}> = ({ data }) => {
+  const time = (
+    (data?.reduce((acc, item) => {
+      return acc + (item.options?.endTime - item.options?.startTime);
+    }, 0) || 0) / 1000
+  ).toFixed(3);
+  const total = data?.length || 0;
+  const [pageTotal, setPageTotal] = useState(total);
   // 当前页码
-  const [current, setCurrent] = useState(total > 1 ? 1 : 0);
+  const [current, setCurrent] = useState(1);
   // 是否只看错误
   const [onlyError, setOnlyError] = useState(false);
   // 是否展开
   const [expanded, setExpanded] = useState(false);
+  const [innerData, setInnerData] = useState<RunResultItem[]>([]);
 
-  if (!options || !status) {
-    return null;
-  }
-
-  const success = status === 'FINISHED';
-  const isExecuting = status === 'EXECUTING';
+  const success = data.every(
+    (item) => item.status === RunResultStatusEnum.FINISHED,
+  );
+  const isExecuting = data.some(
+    (item) => item.status === RunResultStatusEnum.EXECUTING,
+  );
 
   // 处理页码变化
   const handlePageChange = (page: number) => {
@@ -168,22 +171,45 @@ const NodeRunResult: React.FC<{
     setExpanded(expanded);
   };
 
+  useEffect(() => {
+    setInnerData(data);
+  }, [data]);
+
+  useEffect(() => {
+    if (onlyError && !success) {
+      setInnerData(
+        data.filter((item) => item.status === RunResultStatusEnum.FAILED),
+      );
+    } else {
+      setInnerData(data);
+    }
+  }, [onlyError, success]);
+
+  useEffect(() => {
+    setPageTotal(innerData.length);
+    setCurrent(1);
+  }, [innerData]);
+
+  if (data?.length === 0) {
+    return null;
+  }
+
   return (
     <RunResult
       success={success}
       loading={isExecuting}
       collapsible={!isExecuting}
-      time={time}
-      total={total}
+      time={`${time}s`}
+      total={pageTotal}
       current={current}
       onlyError={onlyError}
       onPageChange={handlePageChange}
       onOnlyErrorChange={handleOnlyErrorChange}
       expanded={expanded}
       onExpandChange={handleExpandChange}
-      batchVariables={options.data || {}}
-      inputParams={options.input || {}}
-      outputResult={options.data || {}}
+      batchVariables={innerData[current - 1]?.options?.data || {}}
+      inputParams={innerData[current - 1]?.options?.input || {}}
+      outputResult={innerData[current - 1]?.options?.data || {}}
     />
   );
 };
@@ -248,10 +274,19 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
   };
 
   const canNotEditNode = DISABLE_EDIT_NODE_TYPES.includes(data.type);
-  const showRunResult = data.runResult;
+  const showRunResult = [NodeTypeEnum.LoopStart, NodeTypeEnum.LoopEnd].includes(
+    data.type,
+  )
+    ? false
+    : !!data.runResults?.length; //循环内的开始结果节点不展示
   const showExceptionHandle =
     data.nodeConfig.exceptionHandleConfig &&
     EXCEPTION_NODES_TYPE.includes(data.type);
+
+  if (!data) {
+    return null;
+  }
+
   return (
     <>
       <div
@@ -290,12 +325,7 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
         )}
       </div>
       {/* 运行结果 */}
-      {showRunResult && (
-        <NodeRunResult
-          options={data.runResult?.options}
-          status={data.runResult?.status}
-        />
-      )}
+      {showRunResult && <NodeRunResult data={data.runResults} />}
     </>
   );
 };
@@ -321,7 +351,7 @@ export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
     node.setData({ name: editValue });
     return true;
   };
-  const showRunResult = data.runResult;
+  const showRunResult = data.runResults?.length;
   return (
     <>
       <div
@@ -344,12 +374,7 @@ export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
         </div>
         <div className="loop-node-content" />
       </div>
-      {showRunResult && (
-        <NodeRunResult
-          options={data.runResult?.options}
-          status={data.runResult?.status}
-        />
-      )}
+      {showRunResult && <NodeRunResult data={data.runResults} />}
     </>
   );
 };

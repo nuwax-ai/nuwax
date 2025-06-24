@@ -1,4 +1,8 @@
-import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
+import {
+  NodeShapeEnum,
+  NodeTypeEnum,
+  RunResultStatusEnum,
+} from '@/types/enums/common';
 import { ExceptionHandleConfig, NodeConfig } from '@/types/interfaces/node';
 import { Graph, Node } from '@antv/x6';
 import type { MessageInstance } from 'antd/es/message/interface';
@@ -38,7 +42,8 @@ export interface RunResultItem {
     error: object | null;
     success: boolean;
   };
-  status: 'FINISHED' | 'FAILED' | 'EXECUTING';
+  requestId: string;
+  status: RunResultStatusEnum;
 }
 
 // 节点的数据
@@ -63,7 +68,7 @@ export interface ChildNode {
   loopNodeId?: number;
   isEditingName?: boolean; // 是否正在编辑名称
   isFocus?: boolean; // 是否聚焦
-  runResult?: RunResultItem | null; // 运行结果
+  runResults?: RunResultItem[] | []; // 运行结果
   typeId?: number;
 }
 

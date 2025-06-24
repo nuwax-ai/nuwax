@@ -70,6 +70,7 @@ interface RunResultProps {
    */
   loading?: boolean;
 }
+const DEFAULT_SHOW_MAX_PAGE = 5;
 
 /**
  * 运行结果组件
@@ -113,18 +114,15 @@ const RunResult: React.FC<RunResultProps> = ({
   // 渲染分页按钮
   const renderPagination = () => {
     const pages = [];
-    const maxVisible = 5;
-    const startPage = Math.max(
-      1,
-      Math.min(current - Math.floor(maxVisible / 2), total - maxVisible + 1),
-    );
-    const endPage = Math.min(startPage + maxVisible - 1, total);
+    const maxVisible = DEFAULT_SHOW_MAX_PAGE;
 
-    for (let i = startPage; i <= endPage; i++) {
+    for (let i = 1; i <= maxVisible; i++) {
       pages.push(
         <span
           key={i}
-          className={cx(styles.runResultPageItem, { active: current === i })}
+          className={cx(styles.runResultPageItem, {
+            [styles.active]: current === i,
+          })}
           onClick={() => handlePageChange(i)}
         >
           {i}
@@ -135,16 +133,20 @@ const RunResult: React.FC<RunResultProps> = ({
     return (
       <div className={cx(styles.runResultPagination)}>
         <div className={cx(styles.runResultPaginationPages)}>{pages}</div>
-        <Select
-          value={current}
-          onChange={handlePageChange}
-          options={Array.from({ length: total }, (_, i) => ({
-            value: i + 1,
-            label: i + 1,
-          }))}
-          size="small"
-          className={cx(styles.runResultPageSelect)}
-        />
+        <div className={cx(styles.runResultPageSelect)}>
+          {total > DEFAULT_SHOW_MAX_PAGE && (
+            <Select
+              onChange={handlePageChange}
+              options={Array.from({ length: total }, (_, i) => ({
+                value: i + 1,
+                label: i + 1,
+              }))}
+              size="small"
+              getPopupContainer={(triggerNode) => triggerNode.parentElement}
+              style={{ width: '60px' }}
+            />
+          )}
+        </div>
       </div>
     );
   };
@@ -236,7 +238,7 @@ const RunResult: React.FC<RunResultProps> = ({
         <div className={cx(styles.runResultBody)}>
           <div className={cx(styles.runResultInfo)}>
             <div className={cx(styles.totalCount)}>总数: {total}</div>
-            {total > 1 && (
+            {total > 1 && !success && (
               <div className={cx(styles.onlyErrorCheckbox)}>
                 <Checkbox checked={onlyError} onChange={handleOnlyErrorChange}>
                   只看错误

@@ -1,4 +1,8 @@
-import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
+import {
+  AnswerTypeEnum,
+  NodeTypeEnum,
+  RunResultStatusEnum,
+} from '@/types/enums/common';
 import type {
   ChildNode,
   Edge,
@@ -264,8 +268,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     const graphSelectNode = (id: string) => {
       const node = graphRef.current.getCellById(id);
       if (!node || !graphRef.current) return;
-      node.setData({
-        ...node.getData(),
+      node.updateData({
         isFocus: false,
       });
       // 清除其他的节点选中
@@ -280,10 +283,17 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     const graphActiveNodeRunResult = (id: string, runResult: RunResultItem) => {
       const node = graphRef.current.getCellById(id);
       if (!node || !graphRef.current) return;
-      node.setData({
-        ...node.getData(),
+      const beforeData = node.getData();
+      // 如果是循环执行目前只会有串行 后续如果有并行需要考虑
+      node.updateData({
         isFocus: true,
-        runResult,
+        runResults: [
+          ...(beforeData.runResults || []).filter(
+            (item: RunResultItem) =>
+              item.status !== RunResultStatusEnum.EXECUTING,
+          ),
+          runResult,
+        ],
       });
       graphRef.current.select(node);
     };
@@ -292,10 +302,9 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       if (!graphRef.current) return;
       const nodes = graphRef.current.getNodes();
       nodes.forEach((node: Node) => {
-        node.setData({
-          ...node.getData(),
+        node.updateData({
           isFocus: false,
-          runResult: null,
+          runResults: [],
         });
       });
     };

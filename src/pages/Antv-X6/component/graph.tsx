@@ -771,8 +771,7 @@ const initGraph = ({
     //如果之前已经聚焦了，需要重新打开右侧属性面板
     if (data.isFocus) {
       //清除并重置之前 runResult 时的 focus 数据
-      node.setData({
-        ...node.getData(),
+      node.updateData({
         isFocus: false,
       });
       changeDrawer({

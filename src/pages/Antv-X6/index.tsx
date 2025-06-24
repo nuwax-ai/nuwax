@@ -1144,6 +1144,10 @@ const Workflow: React.FC = () => {
       publishStatus: 'Published',
     });
   };
+  const handleClearRunResult = () => {
+    setTestRunResult('');
+    graphRef.current?.graphResetRunResult();
+  };
   // 节点试运行
   const nodeTestRun = async (params?: DefaultObjectType) => {
     const _params = {
@@ -1214,7 +1218,9 @@ const Workflow: React.FC = () => {
         if (data.data && data.data.nodeId) {
           // 1.运行到当前节点时 给聚焦样式 与 选择当前节点 两种逻辑 这里x6要支持聚焦focus
           // 2.并显示运行状态
+          // 3. 如果有循环则需要记录数据总条数
           const runResult: RunResultItem = {
+            requestId: data.requestId,
             options: {
               ...data.data.result,
               nodeId: data.data.nodeId,
@@ -1298,14 +1304,14 @@ const Workflow: React.FC = () => {
       setTestRun(true);
     }
   };
+
   // 节点试运行
   const runTest = async (type: string, params?: DefaultObjectType) => {
     setErrorParams({
       errorList: [],
       show: false,
     });
-    setTestRunResult('');
-
+    handleClearRunResult();
     if (type === 'Start') {
       let _params: ITestRun;
       let testRun = localStorage.getItem('testRun') || null;
@@ -1370,12 +1376,6 @@ const Workflow: React.FC = () => {
         break;
     }
   };
-
-  const handleClearRunResult = () => {
-    setTestRunResult('');
-    graphRef.current?.graphResetRunResult();
-  };
-
   // 关闭右侧抽屉
   const handleClose = () => {
     // 清除所有选中
