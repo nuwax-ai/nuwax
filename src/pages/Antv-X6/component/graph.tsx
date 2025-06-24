@@ -657,7 +657,7 @@ const initGraph = ({
       return;
     }
 
-    if (data.type === 'Loop') {
+    if (data.type === NodeTypeEnum.Loop) {
       const children = node.getChildren();
       const innerNodes = data.innerNodes || [];
 
@@ -947,8 +947,6 @@ const initGraph = ({
       adjustParentSize(parentNode);
     }
   });
-
-  //
 
   return graph; // 返回初始化好的图形实例
 };

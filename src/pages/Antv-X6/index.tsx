@@ -8,7 +8,11 @@ import VersionHistory from '@/components/VersionHistory';
 import Constant from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { DEFAULT_NODE_CONFIG, testRunList } from '@/constants/node.constants';
+import {
+  DEFAULT_NODE_CONFIG,
+  DEFAULT_NODE_CONFIG_MAP,
+  testRunList,
+} from '@/constants/node.constants';
 import useAutoSave from '@/hooks/useAutoSave';
 import useDisableSaveShortcut from '@/hooks/useDisableSaveShortcut';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
@@ -50,6 +54,7 @@ import { getPeerNodePosition } from '@/utils/graph';
 import { apiUpdateNode, changeNodeConfig } from '@/utils/updateNode';
 import {
   getEdges,
+  getNodeSize,
   getShape,
   handleSpecialNodesNextIndex,
   QuicklyCreateEdgeConditionConfig,
@@ -67,7 +72,6 @@ import GraphContainer from './graphContainer';
 import Header from './header';
 import './index.less';
 import RenderNodeDrawer from './RenderNodeDrawer';
-
 const workflowCreatedTabs = CREATED_TABS.filter((item) =>
   [
     AgentComponentTypeEnum.Plugin,
@@ -79,6 +83,7 @@ const workflowCreatedTabs = CREATED_TABS.filter((item) =>
 
 const Workflow: React.FC = () => {
   const { message } = App.useApp();
+  const { updateDrawerForm, drawerForm } = useModel('workflow');
   const params = useParams();
   // 当前工作流的id
   const workflowId = Number(params.workflowId);
@@ -96,7 +101,6 @@ const Workflow: React.FC = () => {
     workflowId: 0,
     icon: '',
   });
-  const foldWrapItemRef = useRef(foldWrapItem); // 使用 useRef 存储最新值
   // 显示隐藏右侧节点抽屉
   const [visible, setVisible] = useState(false);
   // 工作流左上角的详细信息
@@ -191,9 +195,14 @@ const Workflow: React.FC = () => {
   useDisableSaveShortcut();
 
   /** -----------------  需要调用接口的方法  --------------------- */
-  // 在每次 foldWrapItem 更新时同步到 ref
+  // 同步 foldWrapItem 到 model 中的 drawerForm
   useEffect(() => {
-    foldWrapItemRef.current = foldWrapItem;
+    // 直接使用 setDrawerForm 进行更新
+    updateDrawerForm(foldWrapItem);
+  }, [foldWrapItem]);
+
+  // 处理技能变化时的表单更新
+  useEffect(() => {
     if (skillChange) {
       form.setFieldsValue(foldWrapItem.nodeConfig);
       setSkillChange(false);
@@ -319,7 +328,7 @@ const Workflow: React.FC = () => {
     if (_res.code !== Constant.success) {
       graphRef.current?.graphDeleteEdge(String(id));
     } else {
-      getReference(foldWrapItemRef.current.id);
+      getReference(drawerForm.id);
       graphRef.current?.graphUpdateNode(String(sourceNode.id), _res.data);
       // getNodeConfig(sourceNode.id);
     }
@@ -334,11 +343,11 @@ const Workflow: React.FC = () => {
     const _res = await apiUpdateNode(params);
     if (_res.code === Constant.success) {
       // 如果是修改节点的参数，那么就要更新当前节点的参数
-      if (config.id === foldWrapItemRef.current.id) {
+      if (config.id === drawerForm.id) {
         setFoldWrapItem(params);
       }
       // 跟新当前节点的上级参数
-      await getReference(foldWrapItemRef.current.id);
+      await getReference(drawerForm.id);
       changeUpdateTime();
       result = true;
     }
@@ -349,7 +358,7 @@ const Workflow: React.FC = () => {
   const changeNode = async (config: ChildNode, update?: boolean | string) => {
     let params = cloneDeep(config);
     if (update && update === 'moved') {
-      if (config.id === foldWrapItemRef.current.id) {
+      if (config.id === drawerForm.id) {
         const values = nodeDrawerRef.current?.getFormValues();
         params = {
           ...config,
@@ -369,17 +378,17 @@ const Workflow: React.FC = () => {
     const _res = await apiUpdateNode(params);
     if (_res.code === Constant.success) {
       if (update) {
-        if (config.type === 'Loop') {
+        if (config.type === NodeTypeEnum.Loop) {
           // 如果传递的是boolean，那么证明要更新这个节点
           getNodeConfig(Number(config.id));
         }
       }
       // 如果是修改节点的参数，那么就要更新当前节点的参数
-      if (config.id === foldWrapItemRef.current.id) {
+      if (config.id === drawerForm.id) {
         setFoldWrapItem(params);
       }
       // 跟新当前节点的上级参数
-      getReference(foldWrapItemRef.current.id);
+      getReference(drawerForm.id);
       changeUpdateTime();
     }
     // setIsUpdate(false)
@@ -388,14 +397,14 @@ const Workflow: React.FC = () => {
   const onSaveWorkflow = async (): Promise<boolean> => {
     let result = false;
     try {
-      const currentFoldWrapItem = foldWrapItemRef.current; // 保存当前值
+      const currentFoldWrapItem = drawerForm; // 保存当前值
       const values = form.getFieldsValue(true);
       let newNodeConfig;
       if (
-        (['IntentRecognition', 'Condition'].includes(
+        ([NodeTypeEnum.IntentRecognition, NodeTypeEnum.Condition].includes(
           currentFoldWrapItem.type,
         ) ||
-          (currentFoldWrapItem.type === 'QA' &&
+          (currentFoldWrapItem.type === NodeTypeEnum.QA &&
             values.answerType === 'SELECT')) &&
         currentFoldWrapItem.id === foldWrapItem.id
       ) {
@@ -419,7 +428,7 @@ const Workflow: React.FC = () => {
             ...values,
           },
         };
-        if (currentFoldWrapItem.type === 'QA') {
+        if (currentFoldWrapItem.type === NodeTypeEnum.QA) {
           newNodeConfig.nextNodeIds = [];
         }
       }
@@ -447,7 +456,7 @@ const Workflow: React.FC = () => {
   // 点击组件，显示抽屉
   const changeDrawer = (child: ChildNode | null) => {
     setIsModified(async (modified: boolean) => {
-      if (modified === true && foldWrapItemRef.current.id !== 0) {
+      if (modified === true && drawerForm.id !== 0) {
         await onSaveWorkflow();
         if (timerRef.current) {
           clearTimeout(timerRef.current);
@@ -460,7 +469,7 @@ const Workflow: React.FC = () => {
       return false;
     });
 
-    if (child && child.type !== 'Start') {
+    if (child && child.type !== NodeTypeEnum.Start) {
       setTestRun(false);
       setTestRunResult('');
     }
@@ -498,7 +507,10 @@ const Workflow: React.FC = () => {
    * @returns 是否为特殊节点类型
    */
   const isConditionalNode = (nodeType: string): boolean => {
-    return nodeType === 'Condition' || nodeType === 'IntentRecognition';
+    return (
+      nodeType === NodeTypeEnum.Condition ||
+      nodeType === NodeTypeEnum.IntentRecognition
+    );
   };
 
   /**
@@ -778,38 +790,38 @@ const Workflow: React.FC = () => {
     let _params = JSON.parse(JSON.stringify(child));
     _params.workflowId = workflowId;
     _params.extension = dragEvent;
+    const { width, height } = getNodeSize({
+      data: _params,
+      ports: [],
+      type: 'create',
+    });
     // 如果是条件分支，需要增加高度
     if (child.type === NodeTypeEnum.Condition) {
-      const { defaultWidth, defaultHeight } = DEFAULT_NODE_CONFIG.conditionNode;
       _params.extension = {
         ...dragEvent,
-        height: defaultHeight,
-        width: defaultWidth,
+        height,
+        width,
       };
     }
     if (child.type === NodeTypeEnum.QA) {
-      const { defaultWidth, defaultHeight } = DEFAULT_NODE_CONFIG.qaNode;
       _params.extension = {
         ...dragEvent,
-        height: defaultHeight,
-        width: defaultWidth,
+        height,
+        width,
       };
     }
     if (child.type === NodeTypeEnum.IntentRecognition) {
-      const { defaultWidth, defaultHeight } =
-        DEFAULT_NODE_CONFIG.intentRecognitionNode;
       _params.extension = {
         ...dragEvent,
-        height: defaultHeight,
-        width: defaultWidth,
+        height,
+        width,
       };
     }
     if (child.type === NodeTypeEnum.Loop) {
-      const { defaultWidth, defaultHeight } = DEFAULT_NODE_CONFIG.loopNode;
       _params.extension = {
         ...dragEvent,
-        height: defaultHeight,
-        width: defaultWidth,
+        height,
+        width,
       };
     }
     // 查看当前是否有选中的节点以及被选中的节点的type是否是Loop
@@ -1346,7 +1358,7 @@ const Workflow: React.FC = () => {
           await onSaveWorkflow();
           setIsModified(false);
         }
-        if (foldWrapItemRef.current.type === NodeTypeEnum.Start) {
+        if (drawerForm.type === NodeTypeEnum.Start) {
           await testRunAll();
         } else {
           setTestRunResult('');
@@ -1395,7 +1407,7 @@ const Workflow: React.FC = () => {
   // 点击画布中的节点
   const handleNodeClick = (node: ChildNode | null) => {
     // 如果右侧抽屉是再展示的，且就是当前选中的节点，那么就不做任何操作
-    if (visible && node && node.id === foldWrapItemRef.current.id) return;
+    if (visible && node && node.id === drawerForm.id) return;
     changeDrawer(node);
   };
 
@@ -1409,7 +1421,7 @@ const Workflow: React.FC = () => {
 
   const handleErrorNodeClick = (node: ChildNode | null) => {
     // 如果右侧抽屉是再展示的，且就是当前选中的节点，那么就不做任何操作
-    if (visible && node && node.id === foldWrapItemRef.current.id) return;
+    if (visible && node && node.id === drawerForm.id) return;
     if (node) {
       //分成二个步骤：
       // 1. 先获取当前选中节点的位置，然后平移画布到当前选中节点在视口中间
@@ -1441,15 +1453,17 @@ const Workflow: React.FC = () => {
     };
 
     const calculateNodePosition = (_position: GraphRect) => {
-      let newNodeWidth = DEFAULT_NODE_CONFIG.generalNode.defaultWidth;
+      let newNodeWidth = DEFAULT_NODE_CONFIG_MAP.default.defaultWidth;
       if (child.type === 'Loop') {
-        newNodeWidth = DEFAULT_NODE_CONFIG.loopNode.defaultWidth + 200; // TODO 有疑问，为什么需要加200
+        newNodeWidth =
+          DEFAULT_NODE_CONFIG_MAP[NodeTypeEnum.Loop].defaultWidth + 200; // TODO 有疑问，为什么需要加200
       } else if (
         child.type === 'Condition' ||
         child.type === 'Interval' ||
         child.type === 'QA'
       ) {
-        newNodeWidth = DEFAULT_NODE_CONFIG.conditionNode.defaultWidth;
+        newNodeWidth =
+          DEFAULT_NODE_CONFIG_MAP[NodeTypeEnum.Condition].defaultWidth;
       }
 
       if (!targetNode) {

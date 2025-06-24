@@ -19,21 +19,25 @@ import SettingModal from './SettingModal';
 interface TreeOutput extends InputAndOutConfig {
   key: string;
 }
-
+const truncate = (str: string, maxLength: number) => {
+  return str.length > maxLength ? str.slice(0, maxLength) + '...' : str;
+};
 // 定义技能的参数展示
 const SkillParamsContent: React.FC<{ params: TreeOutput[] }> = ({ params }) => {
   return (
-    <>
+    <div style={{ maxWidth: '300px' }}>
       {(params || []).map((item) => (
-        <div key={item.name}>
+        <div key={item.name} style={{ padding: '3px 0' }}>
           <div className="dis-left">
-            <span className="mr-16">{item.name}</span>
+            <span className="mr-16">{truncate(item.name, 30)}</span>
             <Tag color="#C9CDD4">{item.dataType}</Tag>
           </div>
-          <p className="skill-params-description">{item.description}</p>
+          <p className="skill-params-description">
+            {truncate(item.description || '', 70)}
+          </p>
         </div>
       ))}
-    </>
+    </div>
   );
 };
 
@@ -56,18 +60,7 @@ export const SkillList: React.FC<SkillProps> = ({
 
   // 移除技能
   const handleDelete = (item: CreatedNodeItem) => {
-    // let newParams;
-    // if (item.knowledgeBaseId) {
-    //   newParams = params.filter(
-    //     (i) => i.knowledgeBaseId !== item.knowledgeBaseId,
-    //   );
-    // } else {
-    //   newParams = params.filter((i) => i.typeId !== item.typeId);
-    // }
     removeItem(item);
-    // form.setFieldValue(skillName, newParams);
-
-    // setIsModified(true);
   };
 
   const handleOnSave = (val: { [key: string]: BindConfigWithSub[] }) => {
@@ -87,11 +80,20 @@ export const SkillList: React.FC<SkillProps> = ({
   };
   const { referenceList } = useModel('workflow');
   const variables = Object.values(referenceList.argMap || {});
-  console.log(referenceList);
+  const isHoveredItem = (item: CreatedNodeItem) => {
+    return (
+      currentComponentInfo?.typeId === item.typeId &&
+      (currentComponentInfo?.toolName || '') === (item.toolName || '')
+    );
+  };
   return (
     <div className="skill-list">
       {params.map((item) => (
-        <div key={`skill-${item.type}-${item.targetId}-${item.toolName}`}>
+        <div
+          key={`skill-${item.type}-${item.targetId || item.typeId}-${
+            item.toolName || ''
+          }`}
+        >
           <div
             className="skill-item-style dis-left"
             style={{
@@ -115,20 +117,21 @@ export const SkillList: React.FC<SkillProps> = ({
               <div className="skill-item-title-style">{item.name}</div>
               <div className="skill-item-desc-style">{item.description}</div>
             </div>
-            {currentComponentInfo?.typeId === item.typeId && showMask && (
+            {isHoveredItem(item) && showMask && (
               <div className="mask-layer-style">
                 <div
                   className="skill-item-dispose-style"
                   style={{ color: '#fff', backgroundColor: 'transparent' }}
                 >
-                  {item.outputArgBindConfigs &&
-                    item.outputArgBindConfigs.length && (
+                  {item.inputArgBindConfigs &&
+                    item.inputArgBindConfigs.length && (
                       <Popover
                         content={
                           <SkillParamsContent
-                            params={item.outputArgBindConfigs as TreeOutput[]}
+                            params={item.inputArgBindConfigs as TreeOutput[]}
                           />
                         }
+                        placement="right"
                         trigger="hover"
                       >
                         <InfoCircleOutlined className="white" />

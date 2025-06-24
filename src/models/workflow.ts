@@ -1,6 +1,7 @@
 // import service from '@/services/workflow';
 // import { NodeTypeEnum } from '@/types/enums/common';
 // import { ChildNode } from '@/types/interfaces/graph';
+import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { NodePreviousAndArgMap } from '@/types/interfaces/node';
 // import { message } from 'antd';
 import { useState } from 'react';
@@ -24,6 +25,29 @@ const useWorkflow = () => {
   const [isModified, setIsModified] = useState<boolean>(false);
 
   const [skillChange, setSkillChange] = useState<boolean>(false);
+  const [drawerForm, setDrawerForm] = useState<any>({
+    type: NodeTypeEnum.Start,
+    shape: NodeShapeEnum.General,
+    nodeConfig: {
+      inputArgs: [],
+    },
+    id: 0,
+    name: '测试',
+    description: '测试',
+    workflowId: 0,
+    icon: '',
+  });
+
+  // 安全的更新 drawerForm 函数
+  const updateDrawerForm = (newForm: any) => {
+    setDrawerForm((prevForm: any) => {
+      // 避免不必要的更新
+      if (JSON.stringify(prevForm) === JSON.stringify(newForm)) {
+        return prevForm;
+      }
+      return newForm;
+    });
+  };
 
   // 获取父节点名称
   const getName = (value: string) => {
@@ -88,6 +112,8 @@ const useWorkflow = () => {
     setSpaceId,
     skillChange,
     setSkillChange,
+    drawerForm,
+    updateDrawerForm,
     // foldWrapItem,
     // setFoldWrapItem,
     // getCurrentNodeData,
