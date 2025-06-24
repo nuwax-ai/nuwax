@@ -10,10 +10,14 @@ const cx = classNames.bind(styles);
 // 发布记录组件属性
 export interface PublishRecordItemProps {
   info: HistoryData;
+  renderActions: (item: HistoryData) => React.ReactNode;
 }
 
 // 发布记录组件
-const PublishRecordItem: React.FC<PublishRecordItemProps> = ({ info }) => {
+const PublishRecordItem: React.FC<PublishRecordItemProps> = ({
+  info,
+  renderActions,
+}) => {
   return (
     <div
       key={info.id}
@@ -30,6 +34,7 @@ const PublishRecordItem: React.FC<PublishRecordItemProps> = ({ info }) => {
       <ConditionRender condition={info.description}>
         <p className={cx('text-ellipsis-2', styles.desc)}>{info.description}</p>
       </ConditionRender>
+      {renderActions(info)}
     </div>
   );
 };
