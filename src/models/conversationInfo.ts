@@ -17,6 +17,7 @@ import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import {
   AgentManualComponentInfo,
   AgentSelectedComponentInfo,
+  BindConfigWithSub,
 } from '@/types/interfaces/agent';
 import { CardDataInfo } from '@/types/interfaces/cardInfo';
 import type { UploadFileInfo } from '@/types/interfaces/common';
@@ -77,6 +78,15 @@ export default () => {
   const [manualComponents, setManualComponents] = useState<
     AgentManualComponentInfo[]
   >([]);
+  // 变量参数
+  const [variables, setVariables] = useState<BindConfigWithSub[]>([]);
+  // 用户填写的变量参数
+  const [userFillVariables, setUserFillVariables] = useState<Record<
+    string,
+    string | number
+  > | null>(null);
+  // 必填变量参数name列表
+  const [requiredNameList, setRequiredNameList] = useState<string[]>([]);
   // 历史记录
   const { runHistory } = useModel('conversationHistory');
 
@@ -125,6 +135,18 @@ export default () => {
       setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
       // 可手动选择的组件列表
       setManualComponents(data?.agent?.manualComponents || []);
+      // 变量参数
+      const _variables = data?.agent?.variables || [];
+      setVariables(_variables);
+      // 用户填写的变量参数
+      setUserFillVariables(data?.variables || null);
+      // 必填参数name列表
+      const _requiredNameList = _variables
+        ?.filter(
+          (item: BindConfigWithSub) => !item.systemVariable && item.require,
+        )
+        ?.map((item: BindConfigWithSub) => item.name);
+      setRequiredNameList(_requiredNameList || []);
       // 消息列表
       const _messageList = data?.messageList || [];
       if (_messageList?.length) {
@@ -422,6 +444,7 @@ export default () => {
     message: string,
     files: UploadFileInfo[] = [],
     infos: AgentSelectedComponentInfo[] = [],
+    variableParams?: Record<string, string | number>,
     debug: boolean = false,
     // 是否同步会话记录
     isSync: boolean = true,
@@ -482,6 +505,7 @@ export default () => {
     // 会话请求参数
     const params: ConversationChatParams = {
       conversationId: id,
+      variableParams,
       message,
       attachments,
       debug,
@@ -529,5 +553,10 @@ export default () => {
     showScrollBtn,
     setShowScrollBtn,
     resetInit,
+    variables,
+    setVariables,
+    userFillVariables,
+    requiredNameList,
+    setRequiredNameList,
   };
 };

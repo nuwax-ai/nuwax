@@ -1,0 +1,42 @@
+@import '@/styles/color';
+
+.variables-box {
+  max-height: 50%;
+  border-radius: 10px;
+  background-color: @WHITE;
+  border: 1px solid @GRAY30;
+  box-sizing: border-box;
+
+  .header {
+    font-weight: 600;
+    padding: 18px 20px;
+
+    .text {
+      color: @GRAY05;
+      user-select: none;
+    }
+  }
+
+  .form-box {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 0 20px;
+
+    .desc {
+      line-height: 40px;
+      margin-bottom: 20px;
+      color: @GRAY12;
+    }
+  }
+
+  .conversation-container {
+    padding-top: 20px;
+    border-top: 1px solid @GRAY30;
+  }
+
+  .close-form {
+    transition: height 0.3s ease-in-out;
+    height: 0;
+    overflow: hidden;
+  }
+}

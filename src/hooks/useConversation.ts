@@ -26,11 +26,15 @@ const useConversation = () => {
       infos?: AgentSelectedComponentInfo[];
       // 默认智能体详情
       defaultAgentDetail?: AgentDetailDto;
+      // 变量参数
+      variableParams?: Record<string, string | number> | null;
     },
   ) => {
+    const variableParams = attach?.variableParams;
     const { success, data } = await runAsyncConversationCreate({
       agentId,
       devMode: false,
+      variables: variableParams,
     });
 
     if (success) {

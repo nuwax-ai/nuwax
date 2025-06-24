@@ -1,13 +1,17 @@
 import LabelStar from '@/components/LabelStar';
+import { AGENT_VARIABLES_INPUT_OPTIONS } from '@/constants/agent.constants';
 import { apiAgentComponentVariableUpdate } from '@/services/agentConfig';
+import { InputTypeEnum } from '@/types/enums/agent';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { CreateVariablesProps } from '@/types/interfaces/agentConfig';
 import { BindConfigWithSub } from '@/types/interfaces/common';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Input, message, Modal, Space, Table } from 'antd';
+import { DeleteOutlined, FormOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, message, Modal, Space, Table } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
+import CreateVariableModal from './CreateVariableModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -19,7 +23,22 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
   onCancel,
   onConfirm,
 }) => {
+  // 变量列表数据
   const [inputData, setInputData] = useState<BindConfigWithSub[]>([]);
+  // 新增、编辑变量的模式，默认为新增
+  const [mode, setMode] = useState<CreateUpdateModeEnum>(
+    CreateUpdateModeEnum.Create,
+  );
+  // 当前编辑的变量
+  const [currentVariable, setCurrentVariable] =
+    useState<BindConfigWithSub | null>();
+  // 创建变量弹窗
+  const [variableModalOpen, setVariableModalOpen] = useState<boolean>(false);
+  // 是否新增、更新变量了， 如果是，关闭弹窗后，刷新变量列表，如果没有，仅关闭弹窗
+  const isAddedNewVariable = useRef<boolean>(false);
+  const tableRef = useRef<any>(null);
+  // 缓存输入数据，用于重置父级组件table表单
+  const inputDataRef = useRef<BindConfigWithSub[]>([]);
 
   useEffect(() => {
     const variables: BindConfigWithSub[] =
@@ -35,6 +54,20 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
     }
   }, [variablesInfo]);
 
+  // 编辑变量
+  const handleEditVariable = (record: BindConfigWithSub) => {
+    setVariableModalOpen(true);
+    setMode(CreateUpdateModeEnum.Update);
+    setCurrentVariable(record);
+  };
+
+  // 新增变量
+  const handleAddVariable = () => {
+    setVariableModalOpen(true);
+    setMode(CreateUpdateModeEnum.Create);
+    setCurrentVariable(null);
+  };
+
   // 更新变量配置
   const { run: runVariableUpdate } = useRequest(
     apiAgentComponentVariableUpdate,
@@ -42,51 +75,23 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       manual: true,
       debounceInterval: 300,
       onSuccess: () => {
-        message.success('变量更新成功');
-        onConfirm();
+        message.success('删除成功');
+        isAddedNewVariable.current = true;
+        setInputData(inputDataRef.current);
       },
     },
   );
 
-  // 确定按钮是否禁用
-  const okDisabled = useMemo(() => {
-    return inputData?.some((item) => !item.name);
-  }, [inputData]);
+  // 删除变量
+  const handleDel = (key: string) => {
+    const newInputData = inputData.filter((item) => item.key !== key);
+    inputDataRef.current = newInputData;
 
-  const handleInputValue = (
-    index: number,
-    attr: string,
-    value: React.Key | boolean,
-  ) => {
-    const _inputData = [...inputData];
-    _inputData[index][attr] = value;
-    setInputData(_inputData);
-  };
-
-  const handleAddChildren = () => {
     const data = {
-      key: uuidv4(),
-      name: '',
-      description: '',
-      systemVariable: false,
-      bindValue: '',
-    };
-    const _inputData = [...inputData];
-    _inputData.push(data);
-    setInputData(_inputData);
-  };
-  const handleDel = (index: number) => {
-    const _inputData = [...inputData];
-    _inputData.splice(index, 1);
-    setInputData(_inputData);
-  };
-
-  const handleOk = () => {
-    const data = {
-      id: variablesInfo.id,
-      targetId: variablesInfo.targetId,
+      id: variablesInfo?.id,
+      targetId: variablesInfo?.targetId,
       bindConfig: {
-        variables: inputData,
+        variables: newInputData,
       },
     };
     runVariableUpdate(data);
@@ -98,51 +103,23 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       title: <LabelStar label="名称" />,
       dataIndex: 'name',
       key: 'name',
-      width: 150,
-      render: (value: string, record: BindConfigWithSub, index: number) => (
-        <>
-          {record?.systemVariable ? (
-            <span>{value}</span>
-          ) : (
-            <Input
-              placeholder="输入变量名称"
-              value={value}
-              className={cx({ 'input-required': record?.nameRequired })}
-              onBlur={(e) =>
-                handleInputValue(index, 'nameRequired', !e.target.value)
-              }
-              onChange={(e) => handleInputValue(index, 'name', e.target.value)}
-            />
-          )}
-        </>
-      ),
+      width: 200,
+      ellipsis: true,
     },
     {
       title: '描述',
       dataIndex: 'description',
       key: 'description',
-      render: (value: string, record: BindConfigWithSub, index: number) => (
-        <>
-          {record?.systemVariable ? (
-            <span>{value}</span>
-          ) : (
-            <Input
-              placeholder="输入变量描述信息"
-              value={value}
-              onChange={(e) =>
-                handleInputValue(index, 'description', e.target.value)
-              }
-            />
-          )}
-        </>
-      ),
+      ellipsis: true,
+      width: 200,
     },
     {
       title: '类型',
       dataIndex: 'systemVariable',
       key: 'systemVariable',
-      width: 120,
       className: 'flex',
+      width: 100,
+      ellipsis: true,
       render: (value: boolean) => (
         <span className={cx('flex', 'items-center')}>
           {value ? '系统变量' : '自定义变量'}
@@ -150,29 +127,44 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       ),
     },
     {
-      title: '默认值',
-      dataIndex: 'bindValue',
-      key: 'bindValue',
-      width: 155,
-      render: (value: string, record: BindConfigWithSub, index: number) => (
+      title: '输入方式',
+      dataIndex: 'inputType',
+      key: 'inputType',
+      render: (value: InputTypeEnum) => (
+        <span className={cx('flex', 'items-center')}>
+          {AGENT_VARIABLES_INPUT_OPTIONS.find((item) => item.value === value)
+            ?.label || '--'}
+        </span>
+      ),
+    },
+    {
+      title: '是否必须',
+      dataIndex: 'require',
+      key: 'require',
+      render: (value: boolean) => (
+        <span className={cx('flex', 'items-center')}>
+          {value ? '是' : '否'}
+        </span>
+      ),
+    },
+    {
+      title: '',
+      dataIndex: 'action',
+      width: 70,
+      render: (_: string, record: BindConfigWithSub) => (
         <>
           {record?.systemVariable ? (
             <span>--</span>
           ) : (
             <Space className={cx('flex', 'content-between')}>
-              <Input
-                placeholder="输入默认值（选填）"
-                value={value}
-                onChange={(e) =>
-                  handleInputValue(index, 'bindValue', e.target.value)
-                }
+              <FormOutlined
+                className={cx('cursor-pointer')}
+                onClick={() => handleEditVariable(record)}
               />
-              <span
-                className={cx('hover-box', 'cursor-pointer')}
-                onClick={() => handleDel(index)}
-              >
-                <DeleteOutlined />
-              </span>
+              <DeleteOutlined
+                className={cx('cursor-pointer')}
+                onClick={() => handleDel(record.key as string)}
+              />
             </Space>
           )}
         </>
@@ -180,33 +172,78 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
     },
   ];
 
+  // 滚动到底部的函数
+  const scrollToBottom = () => {
+    // 滚动到底部
+    tableRef.current?.scrollTo({
+      top: tableRef.current?.scrollHeight,
+      behavior: 'smooth',
+    });
+  };
+
+  useEffect(() => {
+    if (open) {
+      // 滚动到底部的函数
+      scrollToBottom();
+    }
+  }, [open]);
+
+  // 更新变量配置数据
+  const handleConfirm = (newInputData: BindConfigWithSub[]) => {
+    setVariableModalOpen(false);
+    setInputData(newInputData);
+    isAddedNewVariable.current = true;
+    scrollToBottom();
+  };
+
+  // 取消操作
+  const handleCancel = () => {
+    setVariableModalOpen(false);
+    // 是否新增、编辑或删除变量了， 如果是，关闭弹窗后，刷新变量列表，如果没有，仅关闭弹窗
+    if (isAddedNewVariable.current) {
+      onConfirm();
+    } else {
+      onCancel();
+    }
+  };
+
   return (
-    <Modal
-      width={650}
-      title="变量"
-      open={open}
-      cancelText="取消"
-      okText="保存"
-      okButtonProps={{ disabled: okDisabled }}
-      onCancel={onCancel}
-      onOk={handleOk}
-    >
-      <Table<BindConfigWithSub>
-        className={cx(styles['table-container'], 'overflow-hide')}
-        columns={inputColumns}
-        dataSource={inputData}
-        pagination={false}
-        virtual
-        scroll={{
-          y: 560,
-        }}
-        footer={() => (
-          <Button icon={<PlusOutlined />} onClick={handleAddChildren}>
-            新增
-          </Button>
-        )}
-      />
-    </Modal>
+    <>
+      <Modal
+        width={800}
+        title="变量"
+        open={open}
+        footer={null}
+        onCancel={handleCancel}
+      >
+        <Table<BindConfigWithSub>
+          ref={tableRef}
+          className={cx(styles['table-container'], 'overflow-hide')}
+          columns={inputColumns}
+          dataSource={inputData}
+          pagination={false}
+          virtual
+          scroll={{
+            y: 560,
+          }}
+          footer={() => (
+            <Button icon={<PlusOutlined />} onClick={handleAddVariable}>
+              新增
+            </Button>
+          )}
+        />
+        <CreateVariableModal
+          id={variablesInfo?.id}
+          targetId={variablesInfo?.targetId}
+          mode={mode}
+          currentVariable={currentVariable}
+          inputData={inputData}
+          open={variableModalOpen}
+          onCancel={() => setVariableModalOpen(false)}
+          onConfirm={handleConfirm}
+        />
+      </Modal>
+    </>
   );
 };
 

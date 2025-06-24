@@ -10,6 +10,7 @@ const cx = classNames.bind(styles);
  * 智能体聊天记录为空组件 - 展示智能体信息
  */
 const AgentChatEmpty: React.FC<AgentChatEmptyProps> = ({
+  className,
   icon,
   name,
   extra,
@@ -19,9 +20,9 @@ const AgentChatEmpty: React.FC<AgentChatEmptyProps> = ({
       className={cx(
         'flex',
         'flex-col',
-        'h-full',
         'items-center',
         'content-center',
+        className,
       )}
     >
       <img

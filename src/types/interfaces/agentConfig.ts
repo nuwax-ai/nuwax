@@ -4,7 +4,7 @@ import {
   DefaultSelectedEnum,
   InvokeTypeEnum,
 } from '@/types/enums/agent';
-import type { DataTypeEnum } from '@/types/enums/common';
+import type { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
 import type { OpenCloseEnum, PluginSettingEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
@@ -17,6 +17,7 @@ import type {
 } from '@/types/interfaces/agent';
 import type {
   BindConfigWithSub,
+  CreatedNodeItem,
   UploadFileInfo,
 } from '@/types/interfaces/common';
 import type {
@@ -161,6 +162,7 @@ export interface PreviewAndDebugHeaderProps {
 
 // 智能体聊天记录为空组件 - 展示智能体信息
 export interface AgentChatEmptyProps {
+  className?: string;
   // 智能体图标
   icon?: string;
   // 智能体名称
@@ -293,4 +295,36 @@ export interface AgentItemProps {
   info: CategoryItemInfo;
   onItemClick: () => void;
   onToggleCollect: () => void;
+}
+
+// 创建变量弹窗组件
+export interface CreateVariableModalProps {
+  mode?: CreateUpdateModeEnum;
+  currentVariable?: BindConfigWithSub | null;
+  id: number;
+  targetId: number;
+  inputData: BindConfigWithSub[];
+  open: boolean; // 控制弹窗的显示隐藏
+  onCancel: () => void; // 取消按钮的回调函数
+  onConfirm: (data: BindConfigWithSub[]) => void; // 确定按钮的回调函数，传入变量名称
+}
+
+// 可拖拽手动创建项组件的props
+export interface DragManualCreateItemProps {
+  value?: string;
+  id: string; // 唯一标识符
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onDelete: () => void;
+}
+
+// 插件绑定组件props
+export interface PluginBindingProps {
+  // 数据源类型,可用值:Agent,Plugin,Workflow,Knowledge,Table
+  targetType?: AgentComponentTypeEnum;
+  // 插件或工作流名称
+  targetName?: string;
+  // 插件或工作流图标
+  targetIcon?: string;
+  targetComponentInfo?: CreatedNodeItem | null; // 目标组件信息
+  onClick: () => void; // 点击绑定事件
 }

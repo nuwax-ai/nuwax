@@ -20,7 +20,7 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({
 
   useEffect(() => {
     form
-      ?.validateFields({ validateOnly: true })
+      .validateFields({ validateOnly: true })
       .then(() => setSubmittable(true))
       .catch(() => setSubmittable(false));
   }, [form, values]);

@@ -121,6 +121,8 @@ export interface AttachmentFile {
 export interface ConversationChatParams {
   // 会话唯一标识
   conversationId: number;
+  // 变量参数，前端需要根据agent配置组装参数
+  variableParams?: Record<string, string | number>;
   // chat消息
   message: string;
   // 附件列表
@@ -136,7 +138,7 @@ export interface TempConversationChatParams {
   chatKey: string;
   // 会话唯一标识
   conversationUid: string;
-  variableParams?: any;
+  variableParams?: Record<string, string | number> | null;
   // chat消息
   message: string;
   // 附件列表
@@ -158,6 +160,7 @@ export interface ConversationCreateParams {
   agentId: number;
   // 开发模式
   devMode: boolean;
+  variables?: Record<string, string | number> | null;
 }
 
 // 消息查询过程信息
@@ -228,6 +231,7 @@ export interface ConversationInfo {
   summary: string;
   modified: string;
   created: string;
+  variables?: Record<string, string | number> | null;
   // Agent信息，已发布过的agent才有此信息
   agent: {
     spaceId: number;

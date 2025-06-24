@@ -2,6 +2,7 @@ import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar from '@/components/AgentSidebar';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
+import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
@@ -14,12 +15,13 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
-import { addBaseTarget } from '@/utils/common';
+import { addBaseTarget, arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { LoadingOutlined } from '@ant-design/icons';
+import { Form } from 'antd';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import styles from './index.less';
 import ShowArea from './ShowArea';
@@ -41,6 +43,15 @@ const Chat: React.FC = () => {
   const infos = location.state?.infos;
   // 默认的智能体详情信息
   const defaultAgentDetail = location.state?.defaultAgentDetail;
+
+  const [form] = Form.useForm();
+  // 变量参数
+  const [variableParams, setVariableParams] = useState<Record<
+    string,
+    string | number
+  > | null>(null);
+  // 是否发送过消息,如果是,则禁用变量参数
+  const isSendMessageRef = useRef<boolean>(false);
 
   // 智能体详情
   const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
@@ -72,7 +83,47 @@ const Chat: React.FC = () => {
     showScrollBtn,
     setShowScrollBtn,
     resetInit,
+    variables,
+    requiredNameList,
+    userFillVariables,
   } = useModel('conversationInfo');
+
+  const values = Form.useWatch([], { form, preserve: true });
+
+  React.useEffect(() => {
+    // 监听form表单值变化
+    if (values && Object.keys(values).length === 0) {
+      return;
+    }
+    form
+      .validateFields({ validateOnly: true })
+      .then(() => setVariableParams(values))
+      .catch(() => setVariableParams(null));
+  }, [form, values]);
+
+  useEffect(() => {
+    if (!!userFillVariables) {
+      form.setFieldsValue(userFillVariables);
+      setVariableParams(userFillVariables);
+    }
+  }, [userFillVariables]);
+
+  // 聊天会话框是否禁用，不能发送消息
+  const wholeDisabled = useMemo(() => {
+    // 变量参数为空，不发送消息
+    if (requiredNameList?.length > 0) {
+      // 未填写必填参数，禁用发送按钮
+      if (!variableParams) {
+        return true;
+      }
+      const isSameName = arraysContainSameItems(
+        requiredNameList,
+        Object.keys(variableParams),
+      );
+      return !isSameName;
+    }
+    return false;
+  }, [requiredNameList, variableParams]);
 
   // 角色信息（名称、头像）
   const roleInfo: RoleInfo = useMemo(() => {
@@ -151,7 +202,7 @@ const Chat: React.FC = () => {
           (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
         // 如果message或者附件不为空,可以发送消息，但刷新页面时，不重新发送消息
         if (isCanMessage && (message || files?.length > 0)) {
-          onMessageSend(id, message, files, infos);
+          onMessageSend(id, message, files, infos, variableParams);
         }
       };
       asyncFun();
@@ -210,8 +261,25 @@ const Chat: React.FC = () => {
   };
 
   // 消息发送
-  const handleMessageSend = (message: string, files: UploadFileInfo[] = []) => {
-    onMessageSend(id, message, files, selectedComponentList);
+  const handleMessageSend = (
+    messageInfo: string,
+    files: UploadFileInfo[] = [],
+  ) => {
+    // 变量参数为空，不发送消息
+    if (wholeDisabled) {
+      form.validateFields(); // 触发表单验证以显示error
+      message.warning('请填写必填参数');
+      return;
+    }
+
+    isSendMessageRef.current = true;
+    onMessageSend(
+      id,
+      messageInfo,
+      files,
+      selectedComponentList,
+      variableParams,
+    );
   };
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
@@ -248,42 +316,54 @@ const Chat: React.FC = () => {
             >
               <LoadingOutlined className={cx(styles.loading)} />
             </div>
-          ) : messageList?.length > 0 ? (
-            <>
-              {messageList?.map((item: MessageInfo, index: number) => (
-                <ChatView
-                  key={index}
-                  messageInfo={item}
-                  roleInfo={roleInfo}
-                  contentClassName={styles['chat-inner']}
-                  mode={'home'}
-                />
-              ))}
-              {/*会话建议*/}
-              <RecommendList
-                itemClassName={styles['suggest-item']}
-                loading={loadingSuggest}
-                chatSuggestList={chatSuggestList}
-                onClick={handleMessageSend}
-              />
-            </>
           ) : (
-            isLoadingConversation && (
-              // Chat记录为空
-              <AgentChatEmpty
-                icon={conversationInfo?.agent?.icon}
-                name={conversationInfo?.agent?.name}
-                // 会话建议
-                extra={
+            <>
+              {/* 新对话设置 */}
+              <NewConversationSet
+                className="mb-16"
+                form={form}
+                variables={variables}
+                disabled={!!userFillVariables || isSendMessageRef.current}
+              />
+              {messageList?.length > 0 ? (
+                <>
+                  {messageList?.map((item: MessageInfo, index: number) => (
+                    <ChatView
+                      key={index}
+                      messageInfo={item}
+                      roleInfo={roleInfo}
+                      contentClassName={styles['chat-inner']}
+                      mode={'home'}
+                    />
+                  ))}
+                  {/*会话建议*/}
                   <RecommendList
-                    className="mt-16"
-                    itemClassName={cx(styles['suggest-item'])}
+                    itemClassName={styles['suggest-item']}
+                    loading={loadingSuggest}
                     chatSuggestList={chatSuggestList}
                     onClick={handleMessageSend}
                   />
-                }
-              />
-            )
+                </>
+              ) : (
+                isLoadingConversation && (
+                  // Chat记录为空
+                  <AgentChatEmpty
+                    className={cx({ 'h-full': !variables?.length })}
+                    icon={conversationInfo?.agent?.icon}
+                    name={conversationInfo?.agent?.name}
+                    // 会话建议
+                    extra={
+                      <RecommendList
+                        className="mt-16"
+                        itemClassName={cx(styles['suggest-item'])}
+                        chatSuggestList={chatSuggestList}
+                        onClick={handleMessageSend}
+                      />
+                    }
+                  />
+                )
+              )}
+            </>
           )}
         </div>
         {/*会话输入框*/}
@@ -292,6 +372,7 @@ const Chat: React.FC = () => {
           className={cx(styles['chat-input-container'])}
           onEnter={handleMessageSend}
           visible={showScrollBtn}
+          wholeDisabled={wholeDisabled}
           onClear={handleClear}
           manualComponents={manualComponents}
           selectedComponentList={selectedComponentList}

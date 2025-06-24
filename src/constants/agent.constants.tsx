@@ -1,6 +1,7 @@
 import TooltipIcon from '@/components/TooltipIcon';
 import {
   DefaultSelectedEnum,
+  InputTypeEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
   SearchStrategyEnum,
@@ -170,3 +171,48 @@ export const PLUGIN_PUBLISH_OPTIONS = [
     label: '工作空间',
   },
 ];
+
+// 智能体变量输入方式选项
+export const AGENT_VARIABLES_INPUT_OPTIONS = [
+  {
+    value: InputTypeEnum.Text,
+    label: '单行文本',
+  },
+  {
+    value: InputTypeEnum.Paragraph,
+    label: '段落',
+  },
+  {
+    value: InputTypeEnum.Number,
+    label: '数字',
+  },
+  {
+    value: InputTypeEnum.Select,
+    label: '单选',
+  },
+  {
+    value: InputTypeEnum.MultipleSelect,
+    label: '多选',
+  },
+  {
+    value: InputTypeEnum.AutoRecognition,
+    label: '智能识别',
+  },
+];
+
+// 变量插件绑定配置默认值
+export const BINDING_DEFAULT_JSON_DATA = {
+  options: [
+    {
+      value: 'zhejiang',
+      label: 'Zhejiang',
+      children: [
+        {
+          value: 'hangzhou',
+          label: 'Hangzhou',
+          children: [],
+        },
+      ],
+    },
+  ],
+};

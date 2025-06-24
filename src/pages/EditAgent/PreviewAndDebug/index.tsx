@@ -1,6 +1,7 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
+import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
@@ -11,11 +12,19 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
+import { arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { LoadingOutlined } from '@ant-design/icons';
+import { Form, message } from 'antd';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 import PreviewAndDebugHeader from './PreviewAndDebugHeader';
@@ -30,8 +39,14 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
   agentConfigInfo,
   onPressDebug,
 }) => {
+  const [form] = Form.useForm();
   // 会话ID
   const devConversationIdRef = useRef<number>(0);
+  // 变量参数
+  const [variableParams, setVariableParams] = useState<Record<
+    string,
+    string | number
+  > | null>(null);
 
   const {
     messageList,
@@ -51,7 +66,48 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     setShowScrollBtn,
     resetInit,
     manualComponents,
+    variables,
+    userFillVariables,
+    requiredNameList,
   } = useModel('conversationInfo');
+
+  const values = Form.useWatch([], { form, preserve: true });
+
+  React.useEffect(() => {
+    // 监听form表单值变化
+    if (values && Object.keys(values).length === 0) {
+      return;
+    }
+    form
+      .validateFields({ validateOnly: true })
+      .then(() => setVariableParams(values))
+      .catch(() => setVariableParams(null));
+  }, [form, values]);
+
+  useEffect(() => {
+    if (!!userFillVariables) {
+      form.setFieldsValue(userFillVariables);
+      setVariableParams(userFillVariables);
+    }
+  }, [userFillVariables]);
+
+  // 聊天会话框是否禁用，不能发送消息
+  const wholeDisabled = useMemo(() => {
+    // 变量参数为空，不发送消息
+    if (requiredNameList?.length > 0) {
+      // 未填写必填参数，禁用发送按钮
+      if (!variableParams) {
+        return true;
+      }
+      const isSameName = arraysContainSameItems(
+        requiredNameList,
+        Object.keys(variableParams),
+      );
+      return !isSameName;
+    }
+    return false;
+  }, [requiredNameList, variableParams]);
+
   // 创建智能体会话
   const { runAsyncConversationCreate } = useConversation();
   // 会话输入框已选择组件
@@ -169,13 +225,20 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
   }, [agentId]);
 
   // 消息发送
-  const handleMessageSend = (message: string, files?: UploadFileInfo[]) => {
+  const handleMessageSend = (messageInfo: string, files?: UploadFileInfo[]) => {
     const id = devConversationIdRef.current;
     if (!id) {
       return;
     }
 
-    onMessageSend(id, message, files, [], true, false);
+    // 变量参数为空，不发送消息
+    if (wholeDisabled) {
+      form.validateFields(); // 触发表单验证以显示error
+      message.warning('请填写必填参数');
+      return;
+    }
+
+    onMessageSend(id, messageInfo, files, [], variableParams, true, false);
   };
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
@@ -199,9 +262,11 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
           'flex-1',
           'flex',
           'flex-col',
-          'overflow-y',
+          'overflow-hide',
         )}
       >
+        {/* 新对话设置 */}
+        <NewConversationSet form={form} variables={variables} />
         <div
           className={cx(styles['chat-wrapper'], 'flex-1')}
           ref={messageViewRef}
@@ -239,7 +304,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
                 extra={
                   <RecommendList
                     className="mt-16"
-                    // itemClassName={cx(styles['suggest-item'])}
                     loading={loadingSuggest}
                     chatSuggestList={chatSuggestList}
                     onClick={handleMessageSend}
@@ -251,9 +315,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
         </div>
         {/*会话输入框*/}
         <ChatInputHome
-          disabled={!messageList?.length}
+          clearDisabled={!messageList?.length}
           onEnter={handleMessageSend}
           onClear={handleClear}
+          wholeDisabled={wholeDisabled}
           visible={showScrollBtn}
           manualComponents={manualComponents}
           selectedComponentList={selectedComponentList}

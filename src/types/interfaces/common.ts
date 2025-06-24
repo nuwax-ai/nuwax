@@ -197,9 +197,11 @@ export interface OverrideTextAreaProps {
 
 // 级联选项类型
 export interface CascaderOption {
-  value: React.Key;
+  value?: string | number | null;
   label?: React.ReactNode;
   children?: CascaderOption[];
+  disabled?: boolean;
+  disableCheckbox?: boolean;
 }
 
 /**
@@ -242,11 +244,11 @@ export interface UseModelBoxProps {
 export interface PlugInItem {
   // 图标
   icon?: React.ReactNode;
-  //   名称
+  // 名称
   label: string;
   desc: string;
   id: string;
-  //   子选项
+  // 子选项
   children: PlugInItem[];
 }
 // 工作流的单个内容
@@ -418,7 +420,7 @@ export interface UploadAvatarProps {
 }
 
 export interface SubmitButtonProps {
-  form?: FormInstance;
+  form: FormInstance;
   loading?: boolean;
   // 确定按钮前缀icon
   okPrefixIcon?: React.ReactNode;
@@ -476,7 +478,10 @@ export interface ManualComponentItemProps {
 // 聊天输入框组件
 export interface ChatInputProps extends ManualComponentItemProps {
   className?: React.CSSProperties;
-  disabled?: boolean;
+  // 所有组件禁用
+  wholeDisabled?: boolean;
+  // 清空按钮禁用
+  clearDisabled?: boolean;
   visible?: boolean;
   // 发送消息后是否清空输入框, 默认true
   isClearInput?: boolean;
@@ -583,4 +588,15 @@ export interface BindConfigWithSub {
 // 自定义disabled类型，继承BindConfigWithSub，添加disabled属性，用于控制组件是否禁用
 export interface BindConfigWithSubDisabled extends BindConfigWithSub {
   disabled: boolean;
+}
+
+// 新对话设置组件属性
+export interface NewConversationSetProps {
+  className?: string;
+  form: FormInstance;
+  disabled?: boolean;
+  // 是否展示重置按钮
+  showSubmitButton?: boolean;
+  variables: BindConfigWithSub[];
+  onConfirm?: (variableParams: Record<string, string | number>) => void;
 }
