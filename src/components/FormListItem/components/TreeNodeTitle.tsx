@@ -7,6 +7,7 @@ import {
   Button,
   Cascader,
   Checkbox,
+  Form,
   FormInstance,
   Input,
   Popover,
@@ -69,6 +70,7 @@ const TreeNodeTitle: React.FC<TreeNodeTitleProps> = memo(
 
     // 获取数据类型的级联值
     const _dataType = CascaderValue(nodeData.dataType || undefined);
+    const outputType = Form.useWatch('outputType', { form, preserve: true });
 
     return (
       <div className="dis-left" style={{ width: '100%' }}>
@@ -102,8 +104,8 @@ const TreeNodeTitle: React.FC<TreeNodeTitleProps> = memo(
             changeOnSelect={true}
             disabled={
               nodeData.systemVariable ||
-              (!isNotAdd && form.getFieldValue('outputType') === 'Text') ||
-              form.getFieldValue('outputType') === 'Markdown' ||
+              (!isNotAdd && outputType === 'Text') ||
+              outputType === 'Markdown' ||
               (nodeData.subArgs && nodeData.subArgs.length > 0)
             }
             placement={'bottomRight'}
