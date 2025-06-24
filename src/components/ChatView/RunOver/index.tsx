@@ -65,7 +65,9 @@ const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
                   className={cx(styles.row, 'flex', 'items-center')}
                 >
                   <SolutionOutlined />
-                  <span className={cx('flex-1')}>{`已调用 ${info.name}`}</span>
+                  <span
+                    className={cx('flex-1', 'text-ellipsis')}
+                  >{`已调用 ${info.name}`}</span>
                   <span>
                     {getTime(info.result.endTime, info.result.startTime)}
                   </span>
