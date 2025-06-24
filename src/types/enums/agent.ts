@@ -147,6 +147,12 @@ export enum OnlyTemplateEnum {
   Yes = 1,
 }
 
+// 是否直接输出, 0 否，1 是
+export enum OutputDirectlyEnum {
+  No = 0,
+  Yes = 1,
+}
+
 // 选项来源类型,可用值:MANUAL,BINDING
 export enum OptionDataSourceEnum {
   MANUAL = 'MANUAL',
