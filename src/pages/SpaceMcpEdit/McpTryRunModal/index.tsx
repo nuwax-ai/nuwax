@@ -150,6 +150,7 @@ const McpTryRunModal: React.FC<McpTryRunModalProps> = ({
   // 取消试运行
   const handleCancel = () => {
     setResult('');
+    setLoading(false);
     onCancel();
   };
 

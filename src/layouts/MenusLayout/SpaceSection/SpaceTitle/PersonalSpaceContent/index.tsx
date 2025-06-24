@@ -50,11 +50,15 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
       localStorage.setItem('SPACE_URL', defaultUrl);
       history.push(`/space/${spaceId}/${defaultUrl}`);
     }
+    // mcp管理
+    else if (pathname.includes('mcp')) {
+      history.push(`/space/${spaceId}/mcp`);
+    }
     // 空间广场页
     else if (pathname.includes('space-square')) {
       history.push(`/space/${spaceId}/space-square`);
     }
-    // 团队设置
+    // 成员与设置
     else if (pathname.includes('team')) {
       // 如果团队空间切换到个人空间，需要隐藏团队设置，同样需要切换到默认页'智能体开发'
       if (info.type === SpaceTypeEnum.Personal) {

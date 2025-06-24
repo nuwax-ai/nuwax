@@ -21,11 +21,13 @@ import {
   McpDetailInfo,
   McpResourceInfo,
   McpToolInfo,
+  McpUpdateParams,
 } from '@/types/interfaces/mcp';
 import { getActiveKeys } from '@/utils/deepNode';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message, Radio } from 'antd';
 import classNames from 'classnames';
+import moment from 'moment';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import styles from './index.less';
@@ -124,10 +126,21 @@ const SpaceMcpCreate: React.FC = () => {
   const { run: runUpdate } = useRequest(apiMcpUpdate, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
+    onSuccess: (_: null, params: McpUpdateParams[]) => {
+      const { withDeploy } = params[0];
       message.success('更新MCP服务成功');
       setSaveDeployLoading(false);
       setSaveLoading(false);
+      // 保存并部署, 同步发布时间和修改时间
+      if (withDeploy) {
+        const time = moment().toISOString();
+        const _mcpDetailInfo = {
+          ...mcpDetailInfo,
+          deployed: time,
+          modified: time,
+        } as McpDetailInfo;
+        setMcpDetailInfo(_mcpDetailInfo);
+      }
     },
     onError: () => {
       setSaveDeployLoading(false);

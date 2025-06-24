@@ -155,6 +155,7 @@ const PluginTryRunModal: React.FC<PluginTryRunModalProps> = ({
   // 取消试运行
   const handleCancel = () => {
     setResult('');
+    setLoading(false);
     onCancel();
   };
 
