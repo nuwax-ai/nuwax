@@ -287,7 +287,6 @@ const SpaceMcpCreate: React.FC = () => {
                       codeLanguage={CodeLangEnum.JSON}
                       height="300px"
                       codeOptimizeVisible={false}
-                      isReadOnly={true}
                     />
                   </Form.Item>
                 ) : (
