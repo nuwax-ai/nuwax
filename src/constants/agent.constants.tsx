@@ -4,6 +4,7 @@ import {
   InputTypeEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
+  OutputDirectlyEnum,
   SearchStrategyEnum,
   TriggerTypeEnum,
 } from '@/types/enums/agent';
@@ -42,6 +43,18 @@ export const CALL_DEFAULT_SELECTED = [
   },
   {
     value: DefaultSelectedEnum.Yes,
+    label: '是',
+  },
+];
+
+// 输出方式
+export const OUTPUT_WAY_OPTIONS = [
+  {
+    value: OutputDirectlyEnum.No,
+    label: '否',
+  },
+  {
+    value: OutputDirectlyEnum.Yes,
     label: '是',
   },
 ];

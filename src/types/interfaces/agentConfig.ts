@@ -3,6 +3,7 @@ import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
   InvokeTypeEnum,
+  OutputDirectlyEnum,
 } from '@/types/enums/agent';
 import type { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
 import type { OpenCloseEnum, PluginSettingEnum } from '@/types/enums/space';
@@ -137,6 +138,17 @@ export interface InvokeTypeProps {
   invokeType: InvokeTypeEnum;
   defaultSelected?: DefaultSelectedEnum;
   onSaveSet: (data: InvokeTypeSaveParams) => void;
+}
+
+// 输出方式保存形参
+export interface OutputDirectlyParams {
+  directOutput: OutputDirectlyEnum;
+}
+
+// 输出方式组件属性
+export interface OutputWayProps {
+  directOutput: OutputDirectlyEnum;
+  onSaveSet: (data: OutputDirectlyParams) => void;
 }
 
 // 异步运行保存形参

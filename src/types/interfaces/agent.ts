@@ -4,6 +4,7 @@ import type {
   DefaultSelectedEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
+  OutputDirectlyEnum,
   SearchStrategyEnum,
   TriggerComponentType,
   TriggerTypeEnum,
@@ -19,6 +20,7 @@ import type { BindConfigWithSub } from '@/types/interfaces/common';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import React from 'react';
 import { CardArgsBindConfigInfo } from './cardInfo';
+
 // 知识库设置label
 export interface LabelIconProps {
   className?: string;
@@ -106,6 +108,8 @@ export interface AgentComponentWorkflowUpdateParams
     outputArgBindConfigs: BindConfigWithSub[];
     // 调用方式
     invokeType: InvokeTypeEnum;
+    // 是否直接输出, 0 否，1 是
+    directOutput?: OutputDirectlyEnum;
     // 是否默认选中，0-否，1-是
     defaultSelected: DefaultSelectedEnum;
     // 卡片参数绑定信息

@@ -11,6 +11,7 @@ import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
   InvokeTypeEnum,
+  OutputDirectlyEnum,
 } from '@/types/enums/agent';
 import { PluginSettingEnum } from '@/types/enums/space';
 import {
@@ -25,6 +26,7 @@ import type {
   AsyncRunSaveParams,
   ComponentSettingModalProps,
   InvokeTypeSaveParams,
+  OutputDirectlyParams,
 } from '@/types/interfaces/agentConfig';
 import {
   CardArgsBindConfigInfo,
@@ -42,6 +44,7 @@ import AsyncRun from './AsyncRun';
 import CardBind from './CardBind';
 import styles from './index.less';
 import InvokeType from './InvokeType';
+import OutputWay from './OutputWay';
 
 const cx = classNames.bind(styles);
 
@@ -154,7 +157,8 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
         | BindConfigWithSub[]
         | CardArgsBindConfigInfo[]
         | InvokeTypeEnum
-        | DefaultSelectedEnum;
+        | DefaultSelectedEnum
+        | OutputDirectlyEnum;
     };
   }) => {
     // 插件
@@ -194,9 +198,9 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
     message.success('保存成功');
   };
 
-  // 保存方法调用类型或异步运行配置
+  // 保存方法调用方式、输出方式或异步运行配置
   const onSaveInvokeType = async (
-    data: InvokeTypeSaveParams | AsyncRunSaveParams,
+    data: InvokeTypeSaveParams | AsyncRunSaveParams | OutputDirectlyParams,
   ) => {
     const id = componentInfo?.id || 0;
     const params = {
@@ -237,7 +241,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
       case PluginSettingEnum.Params:
         return (
           <ParamsSetting
-            variables={variables}
+            variables={variables || []}
             inputArgBindConfigs={componentInfo?.bindConfig?.inputArgBindConfigs}
             onSaveSet={onSaveSet}
           />
@@ -247,6 +251,14 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
           <InvokeType
             invokeType={componentInfo?.bindConfig?.invokeType}
             defaultSelected={componentInfo?.bindConfig?.defaultSelected}
+            onSaveSet={onSaveInvokeType}
+          />
+        );
+      // 输出方式
+      case PluginSettingEnum.Output_Way:
+        return (
+          <OutputWay
+            directOutput={componentInfo?.bindConfig?.directOutput}
             onSaveSet={onSaveInvokeType}
           />
         );
@@ -289,6 +301,13 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
                     PluginSettingEnum.Method_Call,
                     PluginSettingEnum.Async_Run,
                   ].includes(item.type)
+                ) {
+                  return null;
+                }
+                if (
+                  currentComponentInfo?.type !==
+                    AgentComponentTypeEnum.Workflow &&
+                  item.type === PluginSettingEnum.Output_Way
                 ) {
                   return null;
                 }

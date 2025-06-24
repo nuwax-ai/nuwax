@@ -117,6 +117,8 @@ export enum PluginSettingEnum {
   Params,
   // 调用方式
   Method_Call,
+  // 输出方式
+  Output_Way,
   // 异步运行
   Async_Run,
   // 卡片绑定

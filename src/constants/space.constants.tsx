@@ -159,6 +159,10 @@ export const PLUGIN_SETTING_ACTIONS = [
     label: '调用方式',
   },
   {
+    type: PluginSettingEnum.Output_Way,
+    label: '输出方式',
+  },
+  {
     type: PluginSettingEnum.Async_Run,
     label: '异步运行',
   },
