@@ -32,7 +32,7 @@ const useTryRun = () => {
                 name: ARRAY_ITEM,
                 dataType: DataTypeEnum.Object,
                 subArgs: deepArrayObject(subArgs as BindConfigWithSub[]),
-              },
+              } as BindConfigWithSub,
             ];
 
             return {
