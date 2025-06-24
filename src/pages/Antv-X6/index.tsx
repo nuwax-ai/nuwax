@@ -6,15 +6,17 @@ import PublishComponentModal from '@/components/PublishComponentModal';
 import TestRun from '@/components/TestRun';
 import VersionHistory from '@/components/VersionHistory';
 import Constant from '@/constants/codes.constants';
+import { CREATED_TABS } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
-  GENERAL_NODE,
-  LOOP_NODE,
+  DEFAULT_NODE_CONFIG,
+  DEFAULT_NODE_CONFIG_MAP,
   testRunList,
 } from '@/constants/node.constants';
 import useAutoSave from '@/hooks/useAutoSave';
 import useDisableSaveShortcut from '@/hooks/useDisableSaveShortcut';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
+import type { AddNodeResponse } from '@/services/workflow';
 import service, {
   IgetDetails,
   ITestRun,
@@ -28,10 +30,18 @@ import {
   CreateUpdateModeEnum,
   HttpContentTypeEnum,
   HttpMethodEnum,
+  NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
-import { ChildNode, Edge } from '@/types/interfaces/graph';
+import {
+  ChildNode,
+  Edge,
+  GraphContainerRef,
+  GraphRect,
+  RunResultItem,
+  StencilChildNode,
+} from '@/types/interfaces/graph';
 import {
   NodeConfig,
   NodeDrawerRef,
@@ -41,14 +51,17 @@ import { ErrorParams } from '@/types/interfaces/workflow';
 import { cloneDeep } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { getPeerNodePosition } from '@/utils/graph';
-import { changeNodeConfig, updateNode } from '@/utils/updateNode';
+import { apiUpdateNode, changeNodeConfig } from '@/utils/updateNode';
 import {
   getEdges,
+  getNodeSize,
+  getShape,
   handleSpecialNodesNextIndex,
   QuicklyCreateEdgeConditionConfig,
   returnBackgroundColor,
   returnImg,
 } from '@/utils/workflow';
+import { Graph } from '@antv/x6';
 import { App, Form } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
@@ -58,27 +71,19 @@ import ErrorList from './errorList';
 import GraphContainer from './graphContainer';
 import Header from './header';
 import './index.less';
-import { renderNodeContent } from './nodeDrawer';
-import { Child } from './type';
-
-const DEFAULT_NODE_CONFIG = {
-  generalNode: {
-    defaultWidth: 180, // 通用节点宽度
-  },
-  loopNode: {
-    defaultWidth: 800, // 循环节点宽度
-  },
-  conditionNode: {
-    defaultWidth: 300, // 条件节点宽度
-  },
-  newNodeOffsetX: 100, // 新增节点时，x轴的间距
-  newNodeOffsetY: 100, // 新增节点时，y轴的间距
-  offsetGapX: 15, // 新增节点时，x轴的偏移量
-  offsetGapY: 15, // 新增节点时，y轴的偏移量
-};
+import RenderNodeDrawer from './RenderNodeDrawer';
+const workflowCreatedTabs = CREATED_TABS.filter((item) =>
+  [
+    AgentComponentTypeEnum.Plugin,
+    AgentComponentTypeEnum.Workflow,
+    AgentComponentTypeEnum.Table,
+    AgentComponentTypeEnum.MCP,
+  ].includes(item.key),
+);
 
 const Workflow: React.FC = () => {
   const { message } = App.useApp();
+  const { updateDrawerForm, drawerForm } = useModel('workflow');
   const params = useParams();
   // 当前工作流的id
   const workflowId = Number(params.workflowId);
@@ -86,6 +91,7 @@ const Workflow: React.FC = () => {
   // 当前被选中的节点
   const [foldWrapItem, setFoldWrapItem] = useState<ChildNode>({
     type: NodeTypeEnum.Start,
+    shape: NodeShapeEnum.General,
     nodeConfig: {
       inputArgs: [], // 输入参数
     },
@@ -95,7 +101,6 @@ const Workflow: React.FC = () => {
     workflowId: 0,
     icon: '',
   });
-  const foldWrapItemRef = useRef(foldWrapItem); // 使用 useRef 存储最新值
   // 显示隐藏右侧节点抽屉
   const [visible, setVisible] = useState(false);
   // 工作流左上角的详细信息
@@ -150,7 +155,7 @@ const Workflow: React.FC = () => {
   // 发布前的校验
   const [isValidLoading, setIsValidLoading] = useState<boolean>(false);
   // 画布的ref
-  const graphRef = useRef<any>(null);
+  const graphRef = useRef<GraphContainerRef>(null);
   // 阻止获取当前节点的上级参数
   const preventGetReference = useRef<number>(0);
   // 新增定时器引用
@@ -190,9 +195,14 @@ const Workflow: React.FC = () => {
   useDisableSaveShortcut();
 
   /** -----------------  需要调用接口的方法  --------------------- */
-  // 在每次 foldWrapItem 更新时同步到 ref
+  // 同步 foldWrapItem 到 model 中的 drawerForm
   useEffect(() => {
-    foldWrapItemRef.current = foldWrapItem;
+    // 直接使用 setDrawerForm 进行更新
+    updateDrawerForm(foldWrapItem);
+  }, [foldWrapItem]);
+
+  // 处理技能变化时的表单更新
+  useEffect(() => {
     if (skillChange) {
       form.setFieldsValue(foldWrapItem.nodeConfig);
       setSkillChange(false);
@@ -231,9 +241,9 @@ const Workflow: React.FC = () => {
   // 调整画布的大小（左下角select）
   const changeGraph = (val: number | string) => {
     if (val === -1) {
-      graphRef.current.changeGraphZoomToFit();
+      graphRef.current?.graphChangeZoomToFit();
     } else {
-      graphRef.current.changeGraphZoom(val);
+      graphRef.current?.graphChangeZoom(val as number);
     }
   };
   // 调整画布的大小(滚轮)
@@ -274,7 +284,7 @@ const Workflow: React.FC = () => {
     const _res = await service.getNodeConfig(id);
     if (_res.code === Constant.success) {
       setFoldWrapItem(_res.data);
-      graphRef.current.updateNode(_res.data.id, _res.data);
+      graphRef.current?.graphUpdateNode(String(_res.data.id), _res.data);
     }
   };
 
@@ -308,18 +318,18 @@ const Workflow: React.FC = () => {
       _params.nodeId = _params.nodeId.filter(
         (item) => item !== Number(targetId),
       );
-      graphRef.current.updateNode(sourceNode.id, {
+      graphRef.current?.graphUpdateNode(String(sourceNode.id), {
         ...sourceNode,
         nextNodeIds: _params.nodeId,
       });
     }
-    const _res = await service.addEdge(_params);
+    const _res = await service.apiAddEdge(_params);
     // 如果接口不成功，就需要删除掉那一条添加的线
     if (_res.code !== Constant.success) {
-      graphRef.current.deleteEdge(id);
+      graphRef.current?.graphDeleteEdge(String(id));
     } else {
-      getReference(foldWrapItemRef.current.id);
-      graphRef.current.updateNode(sourceNode.id, _res.data);
+      getReference(drawerForm.id);
+      graphRef.current?.graphUpdateNode(String(sourceNode.id), _res.data);
       // getNodeConfig(sourceNode.id);
     }
   };
@@ -328,16 +338,16 @@ const Workflow: React.FC = () => {
     if (config.id === 0) return false;
 
     const params = cloneDeep(config);
-    graphRef.current.updateNode(params.id, params);
+    graphRef.current?.graphUpdateNode(String(params.id), params);
     let result = false;
-    const _res = await updateNode(params);
+    const _res = await apiUpdateNode(params);
     if (_res.code === Constant.success) {
       // 如果是修改节点的参数，那么就要更新当前节点的参数
-      if (config.id === foldWrapItemRef.current.id) {
+      if (config.id === drawerForm.id) {
         setFoldWrapItem(params);
       }
       // 跟新当前节点的上级参数
-      await getReference(foldWrapItemRef.current.id);
+      await getReference(drawerForm.id);
       changeUpdateTime();
       result = true;
     }
@@ -348,7 +358,7 @@ const Workflow: React.FC = () => {
   const changeNode = async (config: ChildNode, update?: boolean | string) => {
     let params = cloneDeep(config);
     if (update && update === 'moved') {
-      if (config.id === foldWrapItemRef.current.id) {
+      if (config.id === drawerForm.id) {
         const values = nodeDrawerRef.current?.getFormValues();
         params = {
           ...config,
@@ -363,22 +373,22 @@ const Workflow: React.FC = () => {
       }
     }
     if (params.id === 0) return;
-    graphRef.current.updateNode(params.id, params);
+    graphRef.current?.graphUpdateNode(String(params.id), params);
     // setIsUpdate(true)
-    const _res = await updateNode(params);
+    const _res = await apiUpdateNode(params);
     if (_res.code === Constant.success) {
       if (update) {
-        if (config.type === 'Loop') {
+        if (config.type === NodeTypeEnum.Loop) {
           // 如果传递的是boolean，那么证明要更新这个节点
           getNodeConfig(Number(config.id));
         }
       }
       // 如果是修改节点的参数，那么就要更新当前节点的参数
-      if (config.id === foldWrapItemRef.current.id) {
+      if (config.id === drawerForm.id) {
         setFoldWrapItem(params);
       }
       // 跟新当前节点的上级参数
-      getReference(foldWrapItemRef.current.id);
+      getReference(drawerForm.id);
       changeUpdateTime();
     }
     // setIsUpdate(false)
@@ -387,14 +397,14 @@ const Workflow: React.FC = () => {
   const onSaveWorkflow = async (): Promise<boolean> => {
     let result = false;
     try {
-      const currentFoldWrapItem = foldWrapItemRef.current; // 保存当前值
+      const currentFoldWrapItem = drawerForm; // 保存当前值
       const values = form.getFieldsValue(true);
       let newNodeConfig;
       if (
-        (['IntentRecognition', 'Condition'].includes(
+        ([NodeTypeEnum.IntentRecognition, NodeTypeEnum.Condition].includes(
           currentFoldWrapItem.type,
         ) ||
-          (currentFoldWrapItem.type === 'QA' &&
+          (currentFoldWrapItem.type === NodeTypeEnum.QA &&
             values.answerType === 'SELECT')) &&
         currentFoldWrapItem.id === foldWrapItem.id
       ) {
@@ -418,7 +428,7 @@ const Workflow: React.FC = () => {
             ...values,
           },
         };
-        if (currentFoldWrapItem.type === 'QA') {
+        if (currentFoldWrapItem.type === NodeTypeEnum.QA) {
           newNodeConfig.nextNodeIds = [];
         }
       }
@@ -446,7 +456,7 @@ const Workflow: React.FC = () => {
   // 点击组件，显示抽屉
   const changeDrawer = (child: ChildNode | null) => {
     setIsModified(async (modified: boolean) => {
-      if (modified === true && foldWrapItemRef.current.id !== 0) {
+      if (modified === true && drawerForm.id !== 0) {
         await onSaveWorkflow();
         if (timerRef.current) {
           clearTimeout(timerRef.current);
@@ -459,12 +469,12 @@ const Workflow: React.FC = () => {
       return false;
     });
 
-    if (child && child.type !== 'Start') {
+    if (child && child.type !== NodeTypeEnum.Start) {
       setTestRun(false);
       setTestRunResult('');
     }
 
-    setFoldWrapItem((prev) => {
+    setFoldWrapItem((prev: ChildNode) => {
       setTestRun(false);
       if (prev.id === 0 && child === null) {
         setVisible(false);
@@ -477,6 +487,7 @@ const Workflow: React.FC = () => {
         setVisible(false);
         return {
           id: 0,
+          shape: NodeShapeEnum.General,
           description: '',
           workflowId: workflowId,
           type: NodeTypeEnum.Start,
@@ -496,7 +507,10 @@ const Workflow: React.FC = () => {
    * @returns 是否为特殊节点类型
    */
   const isConditionalNode = (nodeType: string): boolean => {
-    return nodeType === 'Condition' || nodeType === 'IntentRecognition';
+    return (
+      nodeType === NodeTypeEnum.Condition ||
+      nodeType === NodeTypeEnum.IntentRecognition
+    );
   };
 
   /**
@@ -539,10 +553,14 @@ const Workflow: React.FC = () => {
       newNodeId,
       targetNode,
     );
-    await changeNode(params as ChildNode);
+    await changeNode(params);
 
     const sourcePortId = portId.split('-').slice(0, -1).join('-');
-    graphRef.current.createNewEdge(sourcePortId, newNodeId.toString(), isLoop);
+    graphRef.current?.graphCreateNewEdge(
+      sourcePortId,
+      String(newNodeId),
+      isLoop,
+    );
   };
 
   /**
@@ -557,9 +575,9 @@ const Workflow: React.FC = () => {
     isLoop: boolean,
   ) => {
     await nodeChangeEdge('created', newNodeId.toString(), sourceNode);
-    graphRef.current.createNewEdge(
-      sourceNode.id.toString(),
-      newNodeId.toString(),
+    graphRef.current?.graphCreateNewEdge(
+      String(sourceNode.id),
+      String(newNodeId),
       isLoop,
     );
   };
@@ -579,10 +597,10 @@ const Workflow: React.FC = () => {
       newNode,
       targetNode,
     );
-    await changeNode(nodeData as ChildNode);
-    graphRef.current.createNewEdge(
+    await changeNode(nodeData);
+    graphRef.current?.graphCreateNewEdge(
       sourcePortId,
-      targetNode.id.toString(),
+      String(targetNode.id),
       isLoop,
     );
   };
@@ -601,7 +619,11 @@ const Workflow: React.FC = () => {
     isLoop: boolean,
   ) => {
     await nodeChangeEdge('created', targetNodeId, newNode);
-    graphRef.current.createNewEdge(newNodeId.toString(), targetNodeId, isLoop);
+    graphRef.current?.graphCreateNewEdge(
+      String(newNodeId),
+      targetNodeId,
+      isLoop,
+    );
   };
 
   /**
@@ -625,14 +647,14 @@ const Workflow: React.FC = () => {
         sourceNode,
       );
       await changeNode(nodeData as ChildNode);
-      graphRef.current.createNewEdge(
+      graphRef.current?.graphCreateNewEdge(
         sourcePortId,
         sourceNode.id.toString(),
         isLoop,
       );
     } else {
       await nodeChangeEdge('created', id, newNode);
-      graphRef.current.createNewEdge(
+      graphRef.current?.graphCreateNewEdge(
         newNode.id.toString(),
         id.toString(),
         isLoop,
@@ -668,7 +690,7 @@ const Workflow: React.FC = () => {
 
     // 删除原有连接
     await nodeChangeEdge('deleted', targetNode.id.toString(), sourceNode);
-    graphRef.current.deleteEdge(edgeId);
+    graphRef.current?.graphDeleteEdge(edgeId);
   };
 
   /**
@@ -677,27 +699,39 @@ const Workflow: React.FC = () => {
    * @param child 原始子节点配置
    */
   const handleNodeCreationSuccess = async (
-    nodeData: ChildNode,
-    child: Child,
+    nodeData: AddNodeResponse,
+    child: Partial<ChildNode>,
   ) => {
     // 设置节点基本属性
-    nodeData.key =
-      nodeData.type === NodeTypeEnum.Loop ? LOOP_NODE : GENERAL_NODE;
-    const extension = nodeData.nodeConfig.extension;
+    const shape = getShape(nodeData.type);
+    const { nodeConfig, ...rest } = nodeData;
+    const { toolName, mcpId } = child.nodeConfig || {};
+    const newNodeData = {
+      ...rest,
+      shape,
+      nodeConfig: {
+        ...nodeConfig,
+        ...(toolName ? { toolName, mcpId } : {}),
+      },
+    };
+    const extension = nodeConfig?.extension || {};
 
     // 添加节点到图形中
-    graphRef.current.addNode(extension, nodeData);
+    graphRef.current?.graphAddNode(extension as GraphRect, newNodeData);
 
     // 处理知识库节点特殊配置
-    if (child.type === 'Knowledge' && child.nodeConfig?.knowledgeBaseConfigs) {
+    if (
+      child.type === NodeTypeEnum.Knowledge &&
+      child.nodeConfig?.knowledgeBaseConfigs
+    ) {
       await handleKnowledgeNodeConfig(
-        nodeData,
+        newNodeData,
         child.nodeConfig.knowledgeBaseConfigs,
       );
     }
     // 更新抽屉和选中状态
-    await changeDrawer(nodeData);
-    graphRef.current.selectNode(nodeData.id);
+    await changeDrawer(newNodeData);
+    graphRef.current?.graphSelectNode(String(nodeData.id));
     changeUpdateTime();
 
     // 处理节点连接逻辑
@@ -721,13 +755,18 @@ const Workflow: React.FC = () => {
           await handleOutputPortConnection(nodeData.id, sourceNode, isLoop);
         } else {
           // 处理输入端口连接
-          await handleInputPortConnection(nodeData, sourceNode, portId, isLoop);
+          await handleInputPortConnection(
+            newNodeData,
+            sourceNode,
+            portId,
+            isLoop,
+          );
         }
 
         // 处理目标节点连接
         if (targetNode) {
           await handleTargetNodeConnection(
-            nodeData,
+            newNodeData,
             targetNode,
             sourceNode,
             edgeId!,
@@ -747,30 +786,48 @@ const Workflow: React.FC = () => {
   // ==================== 节点创建相关辅助函数结束 ====================
 
   // 新增节点
-  const addNode = async (
-    child: Child,
-    dragEvent: { x: number; y: number; height?: number },
-  ) => {
+  const addNode = async (child: Partial<ChildNode>, dragEvent: GraphRect) => {
     let _params = JSON.parse(JSON.stringify(child));
     _params.workflowId = workflowId;
     _params.extension = dragEvent;
+    const { width, height } = getNodeSize({
+      data: _params,
+      ports: [],
+      type: 'create',
+    });
     // 如果是条件分支，需要增加高度
-    if (child.type === 'Condition') {
-      _params.extension = { ...dragEvent, height: 120, width: 300 };
+    if (child.type === NodeTypeEnum.Condition) {
+      _params.extension = {
+        ...dragEvent,
+        height,
+        width,
+      };
     }
-    if (child.type === 'QA') {
-      _params.extension = { ...dragEvent, height: 110, width: 300 };
+    if (child.type === NodeTypeEnum.QA) {
+      _params.extension = {
+        ...dragEvent,
+        height,
+        width,
+      };
     }
-    if (child.type === 'IntentRecognition') {
-      _params.extension = { ...dragEvent, height: 74, width: 300 };
+    if (child.type === NodeTypeEnum.IntentRecognition) {
+      _params.extension = {
+        ...dragEvent,
+        height,
+        width,
+      };
     }
-    if (child.type === 'Loop') {
-      _params.extension = { ...dragEvent, height: 240, width: 600 };
+    if (child.type === NodeTypeEnum.Loop) {
+      _params.extension = {
+        ...dragEvent,
+        height,
+        width,
+      };
     }
     // 查看当前是否有选中的节点以及被选中的节点的type是否是Loop
     // 如果当前选择的是循环节点或者循环内部的子节点，那么就要将他的位置放置于循环内部
-    if (foldWrapItem.type === 'Loop' || foldWrapItem.loopNodeId) {
-      if (_params.type === 'Loop') {
+    if (foldWrapItem.type === NodeTypeEnum.Loop || foldWrapItem.loopNodeId) {
+      if (_params.type === NodeTypeEnum.Loop) {
         message.warning('循环体里请不要再添加循环体');
         return;
       }
@@ -795,7 +852,11 @@ const Workflow: React.FC = () => {
         _params.loopNodeId = sourceNode.loopNodeId;
       }
     }
-    const _res = await service.addNode(_params);
+    const { nodeConfig, ...rest } = _params;
+    const _res = await service.apiAddNode({
+      nodeConfigDto: { ...nodeConfig },
+      ...rest,
+    });
 
     if (_res.code === Constant.success) {
       try {
@@ -808,20 +869,39 @@ const Workflow: React.FC = () => {
   };
   // 复制节点
   const copyNode = async (child: ChildNode) => {
-    const _res = await service.copyNode(child.id.toString());
+    const _res = await service.apiCopyNode(child.id.toString());
     if (_res.code === Constant.success) {
-      const _newNode = JSON.parse(JSON.stringify(_res.data));
-      const _dragEvent = {
-        x: _newNode.nodeConfig.extension.x + 20,
-        y: _newNode.nodeConfig.extension.y + 20,
+      const { nodeConfig, ...rest } = _res.data;
+      const resExtension = nodeConfig?.extension || {};
+      const { toolName, mcpId } = child.nodeConfig || {};
+      const _newNode = {
+        ...rest,
+        shape: getShape(_res.data.type),
+        nodeConfig: {
+          ...nodeConfig,
+          ...(toolName ? { toolName, mcpId } : {}),
+          extension: {
+            ...resExtension,
+            x: (resExtension.x || 0) + 32,
+            y: (resExtension.y || 0) + 32,
+          },
+        },
       };
-      _newNode.nodeConfig.extension.x = _newNode.nodeConfig.extension.x + 32;
-      _newNode.nodeConfig.extension.y = _newNode.nodeConfig.extension.y + +32;
-      _newNode.key = 'general-Node';
-      graphRef.current.addNode(_dragEvent, _newNode);
-      changeNode(_res.data);
+
+      const extension = {
+        x: (resExtension.x || 0) + 20,
+        y: (resExtension.y || 0) + 20,
+      };
+
+      graphRef.current?.graphAddNode(extension as GraphRect, _newNode);
+      const shape = getShape(_res.data.type);
+      const newNode = {
+        ..._res.data,
+        shape,
+      };
+      changeNode(newNode);
       // 选中新增的节点
-      graphRef.current.selectNode(_res.data.id);
+      graphRef.current?.graphSelectNode(String(_res.data.id));
       // changeUpdateTime();
     }
   };
@@ -832,15 +912,16 @@ const Workflow: React.FC = () => {
     setFoldWrapItem({
       id: 0,
       description: '',
+      shape: NodeShapeEnum.General,
       workflowId: workflowId,
       type: NodeTypeEnum.Start,
       nodeConfig: {},
       name: '',
       icon: '',
     });
-    const _res = await service.deleteNode(id);
+    const _res = await service.apiDeleteNode(id);
     if (_res.code === Constant.success) {
-      graphRef.current.deleteNode(id.toString(), node);
+      graphRef.current?.graphDeleteNode(String(id));
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
@@ -855,41 +936,64 @@ const Workflow: React.FC = () => {
     }
   };
 
-  // 添加工作流，插件，知识库，数据库
+  // 添加工作流，插件，知识库，数据库 mcp 节点
   const onAdded = (val: CreatedNodeItem, parentFC?: string) => {
     if (parentFC && parentFC !== 'workflow') return;
-    let _child: Child;
+    let _child: Partial<ChildNode>;
     if (
       val.targetType === AgentComponentTypeEnum.Knowledge ||
       val.targetType === AgentComponentTypeEnum.Table
     ) {
       const knowledgeBaseConfigs = [
-        { ...val, type: val.targetType, knowledgeBaseId: val.targetId },
+        { ...val, type: NodeTypeEnum.Knowledge, knowledgeBaseId: val.targetId },
       ];
       const tableType = sessionStorage.getItem('tableType');
       _child = {
         name: val.name,
-        key: GENERAL_NODE,
+        shape: NodeShapeEnum.General,
         description: val.description,
         type:
           val.targetType === AgentComponentTypeEnum.Knowledge
-            ? val.targetType
-            : tableType || 'TableDataQuery',
+            ? NodeTypeEnum.Knowledge
+            : ((tableType || NodeTypeEnum.TableDataQuery) as NodeTypeEnum),
         typeId: val.targetId,
         nodeConfig: {
           knowledgeBaseConfigs: knowledgeBaseConfigs,
           extension: {},
         },
       };
-    } else {
+    } else if (
+      val.targetType === AgentComponentTypeEnum.Workflow ||
+      val.targetType === AgentComponentTypeEnum.Plugin
+    ) {
+      const type =
+        val.targetType === AgentComponentTypeEnum.Workflow
+          ? NodeTypeEnum.Workflow
+          : NodeTypeEnum.Plugin;
       _child = {
         name: val.name,
-        key: GENERAL_NODE,
+        shape: NodeShapeEnum.General,
         description: val.description,
-        type: val.targetType,
+        type,
         typeId: val.targetId,
       };
+    } else if (val.targetType === AgentComponentTypeEnum.MCP) {
+      _child = {
+        name: val.name,
+        shape: NodeShapeEnum.General,
+        description: val.description,
+        type: NodeTypeEnum.MCP,
+        typeId: val.targetId,
+        nodeConfig: {
+          toolName: val.toolName,
+          mcpId: val.targetId,
+        },
+      };
+    } else {
+      message.warning('暂不支持该类型组件');
+      return;
     }
+
     addNode(_child, dragEvent);
     if (sessionStorage.getItem('tableType')) {
       sessionStorage.removeItem('tableType');
@@ -899,10 +1003,11 @@ const Workflow: React.FC = () => {
   };
   // 拖拽组件到画布中
   const dragChild = async (
-    child: Child,
-    position?: React.DragEvent<HTMLDivElement> | { x: number; y: number },
+    child: StencilChildNode,
+    position?: React.DragEvent<HTMLDivElement> | GraphRect,
     continueDragCount?: number,
   ) => {
+    const childType = child?.type || '';
     // 获取当前画布可视区域中心点
     const getViewportCenter = () => {
       if (graphRef.current) {
@@ -918,7 +1023,7 @@ const Workflow: React.FC = () => {
 
     // 获取坐标函数：优先使用拖拽事件坐标，否则生成随机坐标
     const getCoordinates = (
-      position?: React.DragEvent<HTMLDivElement> | { x: number; y: number },
+      position?: React.DragEvent<HTMLDivElement> | GraphRect,
     ): { x: number; y: number } => {
       if (!position) {
         return getViewportCenter();
@@ -935,7 +1040,11 @@ const Workflow: React.FC = () => {
     };
 
     // 判断是否需要显示特定类型的创建面板
-    const isSpecialType = ['Plugin', 'Workflow'].includes(child.type);
+    const isSpecialType = [
+      NodeTypeEnum.Plugin,
+      NodeTypeEnum.Workflow,
+      NodeTypeEnum.MCP,
+    ].includes(childType);
     // 数据库新增
     const isTableNode = [
       'TableDataAdd',
@@ -943,22 +1052,22 @@ const Workflow: React.FC = () => {
       'TableDataUpdate',
       'TableDataQuery',
       'TableSQL',
-    ].includes(child.type);
+    ].includes(childType);
     if (isSpecialType) {
-      setCreatedItem(child.type as AgentComponentTypeEnum);
+      setCreatedItem(childType as unknown as AgentComponentTypeEnum); // 注意这个类型转换的前提是两个枚举的值相同
       setOpen(true);
       setDragEvent(getCoordinates(position));
     } else if (isTableNode) {
       setCreatedItem(AgentComponentTypeEnum.Table);
       setOpen(true);
       setDragEvent(getCoordinates(position));
-      sessionStorage.setItem('tableType', child.type);
+      sessionStorage.setItem('tableType', childType);
     } else {
       const coordinates = getCoordinates(position);
       // if (e) {
       //   e.preventDefault();
       // }
-      await addNode(child, coordinates);
+      await addNode(child as ChildNode, coordinates);
     }
   };
   // 校验当前工作流
@@ -974,7 +1083,7 @@ const Workflow: React.FC = () => {
     const _nodeList = _detail.data.nodes;
     setGraphParams((prev) => ({ ...prev, nodeList: _nodeList }));
     changeDrawer(_detail.data.startNode);
-    graphRef.current.selectNode(_detail.data.startNode.id);
+    graphRef.current?.graphSelectNode(String(_detail.data.startNode.id));
 
     const _res = await service.validWorkflow(info?.id as number);
     if (_res.code === Constant.success) {
@@ -1034,6 +1143,10 @@ const Workflow: React.FC = () => {
       publishDate: _time.toString(),
       publishStatus: 'Published',
     });
+  };
+  const handleClearRunResult = () => {
+    setTestRunResult('');
+    graphRef.current?.graphResetRunResult();
   };
   // 节点试运行
   const nodeTestRun = async (params?: DefaultObjectType) => {
@@ -1103,8 +1216,22 @@ const Workflow: React.FC = () => {
       body: params,
       onMessage: (data) => {
         if (data.data && data.data.nodeId) {
-          const _nodeId = data.data.nodeId;
-          graphRef.current.selectNode(_nodeId);
+          // 1.运行到当前节点时 给聚焦样式 与 选择当前节点 两种逻辑 这里x6要支持聚焦focus
+          // 2.并显示运行状态
+          // 3. 如果有循环则需要记录数据总条数
+          const runResult: RunResultItem = {
+            requestId: data.requestId,
+            options: {
+              ...data.data.result,
+              nodeId: data.data.nodeId,
+              nodeName: data.data.nodeName,
+            },
+            status: data.data.status,
+          };
+          graphRef.current?.graphActiveNodeRunResult(
+            data.data.nodeId.toString(),
+            runResult,
+          );
         }
         if (!data.success) {
           setErrorParams((prev: ErrorParams) => {
@@ -1171,19 +1298,20 @@ const Workflow: React.FC = () => {
 
   // 试运行所有节点
   const testRunAll = async () => {
-    const volid = await validWorkflow();
-    if (volid) {
+    const result = await validWorkflow();
+    if (result) {
       setTestRunResult('');
       setTestRun(true);
     }
   };
+
   // 节点试运行
   const runTest = async (type: string, params?: DefaultObjectType) => {
     setErrorParams({
       errorList: [],
       show: false,
     });
-    setTestRunResult('');
+    handleClearRunResult();
     if (type === 'Start') {
       let _params: ITestRun;
       let testRun = localStorage.getItem('testRun') || null;
@@ -1236,8 +1364,8 @@ const Workflow: React.FC = () => {
           await onSaveWorkflow();
           setIsModified(false);
         }
-        if (foldWrapItemRef.current.type === 'Start') {
-          testRunAll();
+        if (drawerForm.type === NodeTypeEnum.Start) {
+          await testRunAll();
         } else {
           setTestRunResult('');
           setTestRun(true);
@@ -1254,7 +1382,7 @@ const Workflow: React.FC = () => {
     changeDrawer(null);
     setVisible(false);
     // TODO 排除 Loop 节点 触发空白区域点击事件 清空选择状态
-    graphRef.current?.clearSelection();
+    graphRef.current?.graphClearSelection();
   };
 
   // 更改节点的名称
@@ -1270,35 +1398,49 @@ const Workflow: React.FC = () => {
     setShowNameInput(false);
   };
 
+  const handleSaveNode = (data: ChildNode, payload: Partial<ChildNode>) => {
+    // 更新节点名称
+    const newValue = { ...data, ...payload };
+    changeNode(newValue);
+  };
+
   // 点击画布中的节点
   const handleNodeClick = (node: ChildNode | null) => {
     // 如果右侧抽屉是再展示的，且就是当前选中的节点，那么就不做任何操作
-    if (visible && node && node.id === foldWrapItemRef.current.id) return;
+    if (visible && node && node.id === drawerForm.id) return;
     changeDrawer(node);
   };
 
   const selectGraphNode = (nodeId: number) => {
-    const graph = graphRef.current.getGraphRef();
+    const graph = graphRef.current?.getGraphRef();
     const _node = graph?.getCellById(nodeId.toString());
     if (_node) {
-      graph.trigger('node:click', { node: _node });
+      graphRef.current?.graphSelectNode(nodeId.toString());
     }
   };
 
   const handleErrorNodeClick = (node: ChildNode | null) => {
     // 如果右侧抽屉是再展示的，且就是当前选中的节点，那么就不做任何操作
-    if (visible && node && node.id === foldWrapItemRef.current.id) return;
+    if (visible && node && node.id === drawerForm.id) return;
     if (node) {
+      //分成二个步骤：
+      // 1. 先获取当前选中节点的位置，然后平移画布到当前选中节点在视口中间
+      const graph = graphRef.current?.getGraphRef();
+      const cell = graph?.getCellById(node.id.toString());
+      if (cell) {
+        graph?.centerCell(cell);
+      }
+      // 2. 选中节点
       selectGraphNode(node.id);
     }
   };
 
   // 通过连接桩或者边创建节点
   const createNodeToPortOrEdge = async (
-    child: Child,
+    child: StencilChildNode,
     sourceNode: ChildNode,
     portId: string,
-    position: { x: number; y: number },
+    position: GraphRect,
     targetNode?: ChildNode,
     edgeId?: string,
   ) => {
@@ -1310,23 +1452,25 @@ const Workflow: React.FC = () => {
       edgeId: edgeId,
     };
 
-    const calculateNodePosition = (_position: { x: number; y: number }) => {
-      let newNodeWidth = DEFAULT_NODE_CONFIG.generalNode.defaultWidth;
+    const calculateNodePosition = (_position: GraphRect) => {
+      let newNodeWidth = DEFAULT_NODE_CONFIG_MAP.default.defaultWidth;
       if (child.type === 'Loop') {
-        newNodeWidth = DEFAULT_NODE_CONFIG.loopNode.defaultWidth;
+        newNodeWidth =
+          DEFAULT_NODE_CONFIG_MAP[NodeTypeEnum.Loop].defaultWidth + 200; // TODO 有疑问，为什么需要加200
       } else if (
         child.type === 'Condition' ||
         child.type === 'Interval' ||
         child.type === 'QA'
       ) {
-        newNodeWidth = DEFAULT_NODE_CONFIG.conditionNode.defaultWidth;
+        newNodeWidth =
+          DEFAULT_NODE_CONFIG_MAP[NodeTypeEnum.Condition].defaultWidth;
       }
 
       if (!targetNode) {
         const isOut = portId.endsWith('out');
         const peerPosition = getPeerNodePosition(
           sourceNode.id.toString(),
-          graphRef.current.getGraphRef(),
+          graphRef.current?.getGraphRef() as Graph,
           isOut ? 'next' : 'previous',
         );
 
@@ -1474,6 +1618,7 @@ const Workflow: React.FC = () => {
         copyNode={copyNode}
         changeZoom={changeZoom}
         createNodeToPortOrEdge={createNodeToPortOrEdge}
+        onSaveNode={handleSaveNode}
       />
       <ControlPanel
         dragChild={dragChild}
@@ -1499,7 +1644,8 @@ const Workflow: React.FC = () => {
             testRun={testRunList.includes(foldWrapItem.type)}
             nodeType={foldWrapItem.type}
             action={
-              foldWrapItem.type !== 'Start' && foldWrapItem.type !== 'End'
+              foldWrapItem.type !== NodeTypeEnum.Start &&
+              foldWrapItem.type !== NodeTypeEnum.End
             }
           />
         }
@@ -1514,7 +1660,7 @@ const Workflow: React.FC = () => {
               setIsModified(true);
             }}
           >
-            {renderNodeContent(foldWrapItem, form)}
+            <RenderNodeDrawer params={foldWrapItem} />
           </Form>
         </div>
       </FoldWrap>
@@ -1522,6 +1668,7 @@ const Workflow: React.FC = () => {
         checkTag={createdItem as AgentComponentTypeEnum}
         onAdded={onAdded}
         open={open}
+        tabs={workflowCreatedTabs}
         addComponents={[
           {
             type: AgentComponentTypeEnum.Workflow,
@@ -1536,7 +1683,7 @@ const Workflow: React.FC = () => {
         run={runTest}
         visible={visible}
         testRunResult={testRunResult}
-        clearRunResult={() => setTestRunResult('')}
+        clearRunResult={handleClearRunResult}
         loading={loading}
         stopWait={stopWait}
         formItemValue={formItemValue}

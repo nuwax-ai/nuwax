@@ -3,7 +3,7 @@ import {
   PLUGIN_OUTPUT_CONFIG,
 } from '@/constants/space.constants';
 import { DataTypeEnum, PublishStatusEnum } from '@/types/enums/common';
-import type { BindConfigWithSub } from '@/types/interfaces/agent';
+import { BindConfigWithSub } from '@/types/interfaces/common';
 import type {
   PluginHttpUpdateParams,
   PluginInfo,

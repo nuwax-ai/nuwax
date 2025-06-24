@@ -1,6 +1,10 @@
-import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
-import { BindConfigWithSub } from '@/types/interfaces/agent';
-import { CreatedNodeItem } from '@/types/interfaces/common';
+import {
+  AnswerTypeEnum,
+  DataTypeEnum,
+  ExceptionHandleTypeEnum,
+  NodeTypeEnum,
+} from '@/types/enums/common';
+import { BindConfigWithSub, CreatedNodeItem } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
 export interface InputAndOutConfig {
   // 参数名称
@@ -67,6 +71,13 @@ export interface QANodeOption {
 export interface TestRunParams {
   question: string;
   options: QANodeOption[];
+}
+export interface ExceptionHandleConfig {
+  exceptionHandleType: ExceptionHandleTypeEnum;
+  timeout: number;
+  retryCount: number;
+  specificContent?: string;
+  exceptionHandleNodeIds?: number[];
 }
 
 // 节点内部的config
@@ -145,7 +156,7 @@ export interface NodeConfig {
 
   // 问答节点
   question?: string;
-  answerType?: string;
+  answerType?: AnswerTypeEnum;
   extractField?: boolean;
   maxReplyCount?: number;
   options?: QANodeOption[];
@@ -171,6 +182,10 @@ export interface NodeConfig {
     id?: number;
     maxTokens?: number;
   };
+  // 异常处理配置
+  exceptionHandleConfig?: ExceptionHandleConfig;
+  toolName?: string;
+  mcpId?: number;
 }
 
 export interface HttpNodeConfig extends NodeConfig {

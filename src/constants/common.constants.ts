@@ -1,4 +1,4 @@
-import { BindValueType } from '@/types/enums/agent';
+import { AgentComponentTypeEnum, BindValueType } from '@/types/enums/agent';
 import { DataTypeEnum } from '@/types/enums/common';
 
 // 文件上传地址
@@ -90,4 +90,17 @@ export const ParamsSettingDefaultOptions = [
     value: BindValueType.Reference,
     label: '引用',
   },
+];
+
+// 创建工作流 插件 知识库 数据表 MCP 弹窗的标签页
+export const CREATED_TABS: {
+  label: string;
+  key: AgentComponentTypeEnum;
+}[] = [
+  { label: '插件', key: AgentComponentTypeEnum.Plugin },
+  { label: '工作流', key: AgentComponentTypeEnum.Workflow },
+  { label: '知识库', key: AgentComponentTypeEnum.Knowledge },
+  { label: '数据表', key: AgentComponentTypeEnum.Table },
+  { label: '智能体', key: AgentComponentTypeEnum.Agent },
+  { label: 'MCP服务', key: AgentComponentTypeEnum.MCP },
 ];

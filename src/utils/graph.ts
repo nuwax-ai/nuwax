@@ -1,3 +1,4 @@
+import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode } from '@/types/interfaces/graph';
 import { Edge, Graph, Node } from '@antv/x6';
 import { message } from 'antd';
@@ -99,6 +100,20 @@ export function updateNextNodeIds(item: any, targetNodeId: number) {
     item.nextNodeIds.push(targetNodeId);
   }
 }
+/**
+ * 获取端口组
+ * @param node 节点
+ * @param portId 端口id
+ * @returns 端口组
+ */
+export const getPortGroup = (
+  node: Node | null,
+  portId: string | undefined,
+): string => {
+  if (portId === undefined || node === null) return '';
+  const port = node?.getPort(portId);
+  return port?.group || '';
+};
 
 // 辅助函数：处理循环节点的逻辑
 export function handleLoopEdge(sourceNode: ChildNode, targetNode: ChildNode) {
@@ -129,21 +144,21 @@ export function handleSpecialNodeTypes(
   const newNodeParams = JSON.parse(JSON.stringify(sourceNode));
   const targetNodeId = targetNode.id;
 
-  if (sourceNode.type === 'Condition') {
+  if (sourceNode.type === NodeTypeEnum.Condition) {
     for (let item of newNodeParams.nodeConfig.conditionBranchConfigs) {
       if (sourcePort.includes(item.uuid)) {
         updateNextNodeIds(item, targetNodeId);
       }
     }
-  } else if (sourceNode.type === 'IntentRecognition') {
+  } else if (sourceNode.type === NodeTypeEnum.IntentRecognition) {
     for (let item of newNodeParams.nodeConfig.intentConfigs) {
       if (sourcePort.includes(item.uuid)) {
         updateNextNodeIds(item, targetNodeId);
       }
     }
   } else if (
-    sourceNode.type === 'QA' &&
-    sourceNode.nodeConfig.answerType === 'SELECT'
+    sourceNode.type === NodeTypeEnum.QA &&
+    sourceNode.nodeConfig.answerType === AnswerTypeEnum.SELECT
   ) {
     for (let item of newNodeParams.nodeConfig.options) {
       if (sourcePort.includes(item.uuid)) {
@@ -403,4 +418,88 @@ export const getPeerNodePosition = (
     position = peerNodePosition;
   }
   return position;
+};
+
+export const generatePortGroupConfig = (
+  basePortSize: number,
+  data: ChildNode,
+) => {
+  const fixedPortNode = [
+    NodeTypeEnum.Loop,
+    NodeTypeEnum.LoopStart,
+    NodeTypeEnum.LoopEnd,
+    NodeTypeEnum.Start,
+    NodeTypeEnum.End,
+  ].includes(data.type); //需要固定位置的节点
+
+  const isLoopNode = data.type === NodeTypeEnum.Loop;
+  return {
+    // 通用端口组配置
+    in: {
+      position: 'left',
+      attrs: {
+        circle: { r: basePortSize, magnet: true, magnetRadius: 50 },
+      },
+      connectable: {
+        source: isLoopNode, // Loop 节点的 in 端口允许作为 source
+        target: true, // 非 Loop 节点的 in 端口只能作为 target
+      },
+    },
+    out: {
+      position: {
+        name: fixedPortNode ? 'right' : 'absolute',
+      },
+      attrs: { circle: { r: basePortSize, magnet: true, magnetRadius: 50 } },
+      connectable: {
+        source: true, // 非 Loop 节点的 out 端口只能作为 source
+        target: isLoopNode, // Loop 节点的 out 端口允许作为 target
+      },
+    },
+    special: {
+      position: {
+        name: 'absolute',
+      },
+      attrs: { circle: { r: basePortSize, magnet: true, magnetRadius: 50 } },
+      connectable: {
+        source: true, // 非 Loop 节点的 out 端口只能作为 source
+        target: isLoopNode, // Loop 节点的 out 端口允许作为 target
+      },
+    },
+    exception: {
+      position: {
+        name: 'absolute',
+      },
+      attrs: { circle: { r: basePortSize, magnet: true, magnetRadius: 50 } },
+      connectable: {
+        source: true, // 非 Loop 节点的 out 端口只能作为 source
+        target: isLoopNode, // Loop 节点的 out 端口允许作为 target
+      },
+    },
+  };
+};
+
+/**
+ * 判断连线是否允许删除
+ * @param sourceNode - 源节点
+ * @param targetNode - 目标节点
+ * @returns boolean - 是否允许删除连线
+ */
+export const isEdgeDeletable = (sourceNode: any, targetNode: any): boolean => {
+  // 当 sourceNode.type 是 Loop 节点时，targetNode.type 为 LoopStart 不能删除连线
+  if (
+    sourceNode.type === NodeTypeEnum.Loop &&
+    targetNode.type === NodeTypeEnum.LoopStart
+  ) {
+    return false;
+  }
+
+  // 当 sourceNode.type 是 LoopEnd 节点时，targetNode.type 为 Loop 不能删除连线
+  if (
+    sourceNode.type === NodeTypeEnum.LoopEnd &&
+    targetNode.type === NodeTypeEnum.Loop
+  ) {
+    return false;
+  }
+
+  return true;
 };

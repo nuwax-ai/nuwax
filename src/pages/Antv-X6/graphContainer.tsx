@@ -1,8 +1,15 @@
+import {
+  AnswerTypeEnum,
+  NodeTypeEnum,
+  RunResultStatusEnum,
+} from '@/types/enums/common';
 import type {
   ChildNode,
   Edge,
   GraphContainerProps,
   GraphContainerRef,
+  GraphRect,
+  RunResultItem,
 } from '@/types/interfaces/graph';
 import { adjustParentSize, updateEdgeArrows } from '@/utils/graph';
 import {
@@ -11,8 +18,8 @@ import {
   createEdge,
   generatePorts,
   getEdges,
-  getHeight,
   getLength,
+  getNodeSize,
   getWidthAndHeight,
 } from '@/utils/workflow';
 import { Node } from '@antv/x6';
@@ -32,6 +39,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       removeNode,
       changeZoom,
       createNodeToPortOrEdge,
+      onSaveNode,
     },
     ref,
   ) => {
@@ -89,14 +97,14 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       updateEdgeArrows(graphRef.current);
     };
 
-    const doAddNode = (e: { x: number; y: number }, child: ChildNode) => {
+    const _doAddNode = (e: GraphRect, child: ChildNode) => {
       const point = graphRef.current.clientToGraph(e.x, e.y);
 
       const { width, height } = getWidthAndHeight(child);
 
       // 根据情况，动态给予右侧的out连接桩
       const newNode = graphRef.current.addNode({
-        shape: child.key,
+        shape: child.shape,
         id: child.id,
         x: point.x,
         y: point.y,
@@ -134,9 +142,12 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     };
 
     // 新增节点
-    const addNode = (e: { x: number; y: number }, child: ChildNode) => {
+    const graphAddNode: GraphContainerRef['graphAddNode'] = (
+      e: GraphRect,
+      child: ChildNode,
+    ) => {
       if (!graphRef.current) return;
-      doAddNode(e, child);
+      _doAddNode(e, child);
       // 找出循环节点 子节点如果有就添加
       const LoopNodeList = addLoopChildNode((data) => {
         return data.id === child.id && data.type === 'Loop';
@@ -156,8 +167,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     };
 
     // 修改节点信息
-    const updateNode = (nodeId: string, newData: ChildNode) => {
-      if (!graphRef.current) return;
+    const graphUpdateNode = (nodeId: string, newData: ChildNode | null) => {
+      if (!graphRef.current || !newData) return;
       const node = graphRef.current.getCellById(nodeId);
       if (node && node.isNode()) {
         const position = node.getPosition();
@@ -177,14 +188,14 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         }
         // 处理特殊情况,如果是条件节点，需要调整子节点的大小并且重新绘制连接桩
         if (
-          newData.type === 'Condition' ||
-          newData.type === 'IntentRecognition'
+          newData.type === NodeTypeEnum.Condition ||
+          newData.type === NodeTypeEnum.IntentRecognition
         ) {
           const oldData = node.getData() as ChildNode;
           const _length = getLength(
             oldData,
             newData,
-            newData.type === 'Condition'
+            newData.type === NodeTypeEnum.Condition
               ? 'conditionBranchConfigs'
               : 'intentConfigs',
           );
@@ -196,18 +207,21 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             // node.updatePorts();
           }
         }
-        if (newData.type === 'QA') {
-          if (newData.nodeConfig.answerType !== 'SELECT') {
-            node.setSize(304, 110);
-            node.prop('ports', generatePorts(newData));
+        if (newData.type === NodeTypeEnum.QA) {
+          // 问答节点
+          const newPorts = generatePorts(newData);
+          const { width, height } = getNodeSize({
+            data: newData,
+            ports: newPorts.items,
+            type: 'update',
+          });
+          if (newData.nodeConfig.answerType !== AnswerTypeEnum.SELECT) {
+            node.setSize(width, height);
+            node.prop('ports', newPorts);
           } else {
-            const optionsLength = newData.nodeConfig?.options
-              ? newData.nodeConfig.options.length
-              : 0;
-            const newHeight = getHeight('QA', optionsLength);
             // 确保在获取到新高度后设置节点大小和端口
-            node.setSize(304, newHeight);
-            node.prop('ports', generatePorts(newData));
+            node.setSize(width, height);
+            node.prop('ports', newPorts);
           }
         }
         // console.log('newData', newData);
@@ -216,7 +230,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     };
 
     // 删除节点
-    const deleteNode = (nodeId: string, node?: ChildNode) => {
+    const graphDeleteNode = (nodeId: string, node?: ChildNode) => {
       if (!graphRef.current) return;
 
       // 删除节点
@@ -232,13 +246,13 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     };
 
     // 删除边
-    const deleteEdge = (id: string) => {
+    const graphDeleteEdge = (id: string) => {
       if (!graphRef.current) return;
       graphRef.current.removeCell(id);
     };
 
     // 创建边
-    const createNewEdge = (
+    const graphCreateNewEdge = (
       source: string,
       target: string,
       isLoop?: boolean,
@@ -250,49 +264,81 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       graphRef.current.addEdge(edge);
     };
 
-    // 选中节点
-    const selectNode = (id: string) => {
+    // 选中节点 切换节点
+    const graphSelectNode = (id: string) => {
       const node = graphRef.current.getCellById(id);
       if (!node || !graphRef.current) return;
-
+      node.updateData({
+        isFocus: false,
+      });
       // 清除其他的节点选中
       graphRef.current.cleanSelection();
+      const cells = graphRef.current.getSelectedCells();
+      graphRef.current.unselect(cells);
       // 设置当前节点为选中状态
       graphRef.current.select(node);
-      // 更新节点的 data 属性，触发重新渲染
-      const data = node.getData();
-      node.setData({ ...data, selected: true });
     };
-    const clearSelection = () => {
+
+    // 激活节点
+    const graphActiveNodeRunResult = (id: string, runResult: RunResultItem) => {
+      const node = graphRef.current.getCellById(id);
+      if (!node || !graphRef.current) return;
+      const beforeData = node.getData();
+      // 如果是循环执行目前只会有串行 后续如果有并行需要考虑
+      node.updateData({
+        isFocus: true,
+        runResults: [
+          ...(beforeData.runResults || []).filter(
+            (item: RunResultItem) =>
+              item.status !== RunResultStatusEnum.EXECUTING,
+          ),
+          runResult,
+        ],
+      });
+      graphRef.current.select(node);
+    };
+
+    const graphResetRunResult = () => {
+      if (!graphRef.current) return;
+      const nodes = graphRef.current.getNodes();
+      nodes.forEach((node: Node) => {
+        node.updateData({
+          isFocus: false,
+          runResults: [],
+        });
+      });
+    };
+
+    const graphClearSelection = () => {
       if (!graphRef.current) return;
       graphRef.current.trigger('blank:click');
     };
 
     // 保存所有节点的位置
-    const saveAllNodes = () => {
-      const nodes = graphRef.current.getNodes().map((node: Node) => {
-        const data = node.getData() as ChildNode;
-        const position = node.getPosition();
-        if (position) {
-          data.nodeConfig.extension = {
-            ...data.nodeConfig.extension,
-            x: position.x,
-            y: position.y,
-          };
-        }
-        return data;
-      });
-      return nodes;
-    };
+    // const graphSaveAllNodes = () => {
+    //   const nodes = graphRef.current.getNodes().map((node: Node) => {
+    //     const data = node.getData() as ChildNode;
+    //     const position = node.getPosition();
+    //     if (position) {
+    //       data.nodeConfig.extension = {
+    //         ...data.nodeConfig.extension,
+    //         x: position.x,
+    //         y: position.y,
+    //       };
+    //     }
+    //     return data;
+    //   });
+    //   return nodes;
+    // };
 
     // 改变画布缩放比例
-    const changeGraphZoom = (val: number) => {
+    const graphChangeZoom = (val: number) => {
       if (!graphRef.current) return;
       graphRef.current.zoomTo(Number(val));
     };
 
     // 缩放适配
-    const changeGraphZoomToFit = () => {
+    const graphChangeZoomToFit = () => {
       if (!graphRef.current) return;
       graphRef.current.zoomToFit({
         padding: {
@@ -318,25 +364,15 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         );
 
         // 创建主节点
-        const mainNodes = notLoopChildrenNodes.map((node) => {
-          const baseNode = createBaseNode(node);
-
-          const { width, height } = getWidthAndHeight(node);
-          return {
-            ...baseNode,
-            width: width, // 显式设置宽度
-            height: height,
-            data: {
-              ...node,
-            },
-          };
-        });
+        const mainNodes = notLoopChildrenNodes.map((node) =>
+          createBaseNode(node),
+        );
         graphRef.current.fromJSON({
           nodes: mainNodes, // X6 会自动实例化节点
         });
         // 找出循环节点 子节点如果有就添加
         addLoopChildNode((node) => {
-          return node.type === 'Loop';
+          return node.type === NodeTypeEnum.Loop;
         });
 
         // 批量添加边
@@ -344,7 +380,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
         // 添加zoomToFit调用，确保在绘制完成后自动调整视图
         setTimeout(() => {
-          changeGraphZoomToFit();
+          graphChangeZoomToFit();
         }, 0);
       }
     };
@@ -366,18 +402,20 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     // 将子组件的方法暴露给父组件
     useImperativeHandle(ref, () => ({
       getCurrentViewPort,
-      addNode,
-      updateNode,
-      saveAllNodes,
-      deleteNode,
-      deleteEdge,
-      changeGraphZoom,
-      changeGraphZoomToFit,
+      graphAddNode,
+      graphUpdateNode,
+      // graphSaveAllNodes,
+      graphDeleteNode,
+      graphDeleteEdge,
+      graphChangeZoom,
+      graphChangeZoomToFit,
       drawGraph,
-      selectNode,
-      createNewEdge,
+      graphSelectNode,
+      graphCreateNewEdge,
       getGraphRef,
-      clearSelection,
+      graphClearSelection,
+      graphActiveNodeRunResult,
+      graphResetRunResult,
     }));
 
     useEffect(() => {
@@ -389,7 +427,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         changeEdge: changeEdge,
         changeCondition: changeCondition,
         changeZoom: changeZoom,
-        createNodeToPortOrEdge: createNodeToPortOrEdge,
+        createNodeToPortOrEdge,
+        onSaveNode: onSaveNode,
       });
 
       const cleanup = EventHandlers({

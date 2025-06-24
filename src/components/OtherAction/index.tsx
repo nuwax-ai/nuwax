@@ -1,3 +1,4 @@
+import { NodeTypeEnum } from '@/types/enums/common';
 import { CaretRightFilled, EllipsisOutlined } from '@ant-design/icons';
 import { App, Button, Popover } from 'antd';
 import React from 'react';
@@ -21,7 +22,7 @@ const OtherOperations: React.FC<OtherOperationsProps> = ({
 }) => {
   const { modal } = App.useApp();
   const [popoverVisible, setPopoverVisible] = React.useState(false);
-  const isLoopNode = nodeType === 'Loop'; // 循环节点不支持创建副本
+  const isLoopNode = nodeType === NodeTypeEnum.Loop; // 循环节点不支持创建副本
 
   const changeNode = (val: string) => {
     if (isLoopNode) {

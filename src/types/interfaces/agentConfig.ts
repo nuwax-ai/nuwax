@@ -5,18 +5,18 @@ import {
   InvokeTypeEnum,
 } from '@/types/enums/agent';
 import type { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
-import type { OpenCloseEnum } from '@/types/enums/space';
+import type { OpenCloseEnum, PluginSettingEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
   AgentComponentInfo,
   AgentConfigInfo,
   AgentStatisticsInfo,
-  BindConfigWithSub,
   ComponentModelBindConfig,
   CreatorInfo,
   TriggerTimeZone,
 } from '@/types/interfaces/agent';
 import type {
+  BindConfigWithSub,
   CreatedNodeItem,
   UploadFileInfo,
 } from '@/types/interfaces/common';
@@ -51,19 +51,13 @@ export interface AgentArrangeConfigProps {
   onChangeAgent: (value: string | string[], attr: string) => void;
 }
 
-// 插件模型设置
-export interface PluginModelSettingProps {
+// 组件设置弹窗
+export interface ComponentSettingModalProps {
   open: boolean;
   currentComponentInfo?: AgentComponentInfo;
   variables?: BindConfigWithSub[];
+  settingActionList?: { type: PluginSettingEnum; label: string }[];
   onCancel: () => void;
-}
-
-// 参数设置组件
-export interface ParamsSettingProps {
-  variables?: BindConfigWithSub[];
-  inputArgBindConfigs?: BindConfigWithSub[];
-  onSaveSet: (attr: string, value: BindConfigWithSub[]) => void;
 }
 
 // 卡片绑定组件
@@ -75,7 +69,7 @@ export interface CardBindProps {
 }
 
 // 智能体模型组件，插件、工作流、触发器等组件通用显示组件
-export interface AgentModelComponentProps {
+export interface CollapseComponentItemProps {
   agentComponentInfo: AgentComponentInfo;
   defaultImage?: string;
   extra?: React.ReactNode;
@@ -225,15 +219,22 @@ export interface NodeDetailsProps {
 }
 
 // 组件列表
-export interface ComponentListProps {
+export interface CollapseComponentListProps {
+  textClassName?: string;
   type: AgentComponentTypeEnum;
   list: AgentComponentInfo[];
   onSet: (id: number) => void;
-  onDel: (id: number, targetId: number, type: AgentComponentTypeEnum) => void;
+  onDel: (
+    id: number,
+    targetId: number,
+    type: AgentComponentTypeEnum,
+    toolName?: string,
+  ) => void;
 }
 
 // 知识库文本列表组件
 export interface KnowledgeTextListProps {
+  textClassName?: string;
   list: AgentComponentInfo[];
   onDel: (id: number, targetId: number, type: AgentComponentTypeEnum) => void;
 }
@@ -286,6 +287,7 @@ export interface AgentAddComponentStatusInfo {
   type: AgentComponentTypeEnum;
   targetId: number;
   status: AgentAddComponentStatusEnum;
+  toolName?: string;
 }
 
 // 首页智能体列表项组件

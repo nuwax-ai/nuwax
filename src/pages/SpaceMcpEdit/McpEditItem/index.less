@@ -1,0 +1,33 @@
+@import '@/styles/color.less';
+
+.container {
+  width: 100%;
+  padding: 15px 24px;
+  border-radius: 10px;
+  background: @WHITE;
+
+  .name {
+    font-size: 14px;
+    color: @BLANK17;
+  }
+
+  .desc {
+    font-size: 14px;
+    line-height: 22px;
+    color: @GRAY05;
+    word-break: break-all;
+  }
+
+  .btn {
+    background-color: @WHITE13;
+    color: @BLUE05;
+    border-color: @GRAY30;
+
+    &:hover {
+      background-color: @WHITE13 !important;
+      border-color: transparent !important;
+      color: @BLUE05;
+      opacity: 0.8;
+    }
+  }
+}

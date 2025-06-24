@@ -51,6 +51,14 @@ export enum NodeTypeEnum {
   LoopBreak = 'LoopBreak',
   // 继续循环
   LoopContinue = 'LoopContinue',
+  // 循环开始
+  LoopStart = 'LoopStart',
+  // 循环结束
+  LoopEnd = 'LoopEnd',
+  // 循环条件
+  LoopCondition = 'LoopCondition',
+  // 间隔
+  Interval = 'Interval',
   // 开始
   Start = 'Start',
   // 结束
@@ -75,6 +83,8 @@ export enum NodeTypeEnum {
   TableDataQuery = 'TableDataQuery',
   // sql自定义
   TableSQL = 'TableSQL',
+  // mcp
+  MCP = 'Mcp',
 }
 
 export enum DataTypeEnum {
@@ -174,6 +184,36 @@ export enum ProcessingEnum {
   FAILED = 'FAILED',
 }
 
+export enum NodeShapeEnum {
+  General = 'general-Node',
+  Loop = 'loop-node',
+}
+
+export enum CompareTypeEnum {
+  EQUAL = 'EQUAL',
+  NOT_EQUAL = 'NOT_EQUAL',
+  GREATER_THAN = 'GREATER_THAN',
+  GREATER_THAN_OR_EQUAL = 'GREATER_THAN_OR_EQUAL',
+  LESS_THAN = 'LESS_THAN',
+  LESS_THAN_OR_EQUAL = 'LESS_THAN_OR_EQUAL',
+  CONTAINS = 'CONTAINS',
+  NOT_CONTAINS = 'NOT_CONTAINS',
+  MATCH_REGEX = 'MATCH_REGEX',
+  IS_NULL = 'IS_NULL',
+  NOT_NULL = 'NOT_NULL',
+}
+
+export enum AnswerTypeEnum {
+  TEXT = 'TEXT',
+  SELECT = 'SELECT',
+}
+
+export enum ExceptionHandleTypeEnum {
+  INTERRUPT = 'INTERRUPT',
+  SPECIFIC_CONTENT = 'SPECIFIC_CONTENT',
+  EXECUTE_EXCEPTION_FLOW = 'EXECUTE_EXCEPTION_FLOW',
+}
+
 // 权限枚举
 export enum PermissionsEnum {
   Copy = 'Copy',
@@ -181,4 +221,26 @@ export enum PermissionsEnum {
   Transfer = 'Transfer',
   Delete = 'Delete',
   Publish = 'Publish',
+}
+
+// 输入类型, Http插件有用,可用值:Query,Body,Header,Path
+export enum InputTypeEnum {
+  Query = 'Query',
+  Body = 'Body',
+  Header = 'Header',
+  Path = 'Path',
+}
+
+// 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
+export enum BindValueType {
+  // 输入
+  Input = 'Input',
+  // 引用
+  Reference = 'Reference',
+}
+
+export enum RunResultStatusEnum { // 工作流节点运行结果状态
+  FINISHED = 'FINISHED',
+  FAILED = 'FAILED',
+  EXECUTING = 'EXECUTING',
 }

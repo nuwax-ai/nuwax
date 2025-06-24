@@ -1,3 +1,4 @@
+import { NodeTypeEnum } from '@/types/enums/common';
 import { NodeConfig } from '@/types/interfaces/node';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
@@ -11,7 +12,7 @@ interface IUpdateLLMNode {
 }
 
 // 各个节点不同的路径
-const urlList = {
+const UrlList = {
   // Database: '/api/workflow/node/update',
   Knowledge: '/api/workflow/node/knowledge/update',
   HTTPRequest: '/api/workflow/node/http/update',
@@ -39,13 +40,16 @@ const urlList = {
   TableDataDelete: '/api/workflow/node/tableDataDelete/update',
   TableDataQuery: '/api/workflow/node/tableDataQuery/update',
   TableSQL: '/api/workflow/node/tableCustomSql/update',
+  [NodeTypeEnum.MCP]: '/api/workflow/node/mcp/update',
 };
+export type UrlListType = keyof typeof UrlList;
+
 // 更新节点信息
 export async function modifyNode(
   params: IUpdateLLMNode,
-  type: keyof typeof urlList,
+  type: UrlListType,
 ): Promise<RequestResponse<any>> {
-  return request(`${urlList[type]}`, {
+  return request(`${UrlList[type]}`, {
     method: 'POST',
     data: params,
   });

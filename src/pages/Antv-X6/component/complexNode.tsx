@@ -3,12 +3,13 @@ import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import { ModelSelected } from '@/components/ModelSetting';
 import PromptOptimizeModal from '@/components/PromptOptimizeModal';
-import { SkillList } from '@/components/Skill';
+import { CREATED_TABS } from '@/constants/common.constants';
+import { SkillList } from '@/pages/Antv-X6/components/NewSkill';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
-import { HttpContentTypeEnum } from '@/types/enums/common';
+import { HttpContentTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum } from '@/types/enums/node';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { PromptOptimizeTypeEnum } from '@/types/interfaces/assistant';
@@ -32,7 +33,6 @@ import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
 import { outPutConfigs } from '../params';
 import { FormList, InputAndOut, TreeOutput } from './commonNode';
-
 // 请求方法的选项
 const REQUEST_METHOD_OPTIONS = [
   { label: 'GET', value: 'GET' },
@@ -52,7 +52,15 @@ const REQUEST_CONTENT_TYPE_OPTIONS = [
   },
   { label: '无', value: HttpContentTypeEnum.OTHER },
 ];
+const skillCreatedTabs = CREATED_TABS.filter((item) =>
+  [
+    AgentComponentTypeEnum.Plugin,
+    AgentComponentTypeEnum.Workflow,
+    AgentComponentTypeEnum.MCP,
+  ].includes(item.key),
+);
 
+const skillFormKey = 'skillComponentConfigs';
 // 定义大模型节点
 const ModelNode: React.FC<NodeDisposeProps> = ({
   form,
@@ -72,35 +80,27 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
   // 新增技能
   const onAddedSkill = (item: CreatedNodeItem) => {
     setIsModified(true);
-    const skillComponentConfigs =
-      form.getFieldValue('skillComponentConfigs') || [];
-    item.type = item.targetType;
+    const skillComponentConfigs = form.getFieldValue(skillFormKey) || [];
+    item.type = item.targetType as unknown as NodeTypeEnum; // TODO 这里需要优化
     item.typeId = item.targetId;
-    form.setFieldValue(
-      'skillComponentConfigs',
-      skillComponentConfigs.concat(item),
-    );
+    form.setFieldValue(skillFormKey, skillComponentConfigs.concat([item]));
     form.submit();
     setOpen(false);
     setSkillChange(true);
-    setAddComponents([
-      ...addComponents,
-      {
-        type: item.type,
-        targetId: item.targetId,
-        status: AgentAddComponentStatusEnum.Added,
-      },
-    ]);
   };
 
   // 移出技能
   const removeItem = (item: CreatedNodeItem) => {
-    const skillComponentConfigs = form.getFieldValue('skillComponentConfigs');
+    const skillComponentConfigs = form.getFieldValue(skillFormKey);
     if (skillComponentConfigs) {
       const newSkillComponentConfigs = skillComponentConfigs.filter(
-        (i: CreatedNodeItem) => i.typeId !== item.typeId,
+        (i: CreatedNodeItem) =>
+          !(
+            i.typeId === item.typeId &&
+            (i.toolName || '') === (item.toolName || '')
+          ),
       );
-      form.setFieldValue('skillComponentConfigs', newSkillComponentConfigs);
+      form.setFieldValue(skillFormKey, newSkillComponentConfigs);
       setIsModified(true);
     }
   };
@@ -108,12 +108,16 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
   // 修改技能参数
   const modifyItem = (item: CreatedNodeItem) => {
     setIsModified(true);
-    const skillComponentConfigs = form.getFieldValue('skillComponentConfigs');
+    const skillComponentConfigs = form.getFieldValue(skillFormKey);
     if (skillComponentConfigs) {
       const newSkillComponentConfigs = skillComponentConfigs.map(
-        (i: CreatedNodeItem) => (i.typeId === item.typeId ? item : i),
+        (i: CreatedNodeItem) =>
+          i.typeId === item.typeId &&
+          (i.toolName || '') === (item.toolName || '')
+            ? item
+            : i,
       );
-      form.setFieldValue('skillComponentConfigs', newSkillComponentConfigs);
+      form.setFieldValue(skillFormKey, newSkillComponentConfigs);
     }
   };
 
@@ -122,18 +126,23 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     setOpen(true);
   };
 
+  const skillComponentConfigs = Form.useWatch(skillFormKey, {
+    form,
+    preserve: true,
+  });
+
   useEffect(() => {
-    const _list = form.getFieldValue('skillComponentConfigs');
     const _arr =
-      _list?.map((item: CreatedNodeItem) => {
+      skillComponentConfigs?.map((item: CreatedNodeItem) => {
         return {
           type: item.type,
-          targetId: item.targetId,
+          targetId: item.typeId,
           status: AgentAddComponentStatusEnum.Added,
+          toolName: item.toolName || '',
         };
       }) || [];
     setAddComponents(_arr);
-  }, []);
+  }, [skillComponentConfigs]);
 
   return (
     <div className="model-node-style">
@@ -151,11 +160,11 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       </div>
       <Form.Item shouldUpdate noStyle>
         {() =>
-          form.getFieldValue('skillComponentConfigs') ? (
+          form.getFieldValue(skillFormKey) ? (
             <div className="node-item-style">
               <SkillList
-                params={form.getFieldValue('skillComponentConfigs')}
-                skillName={'skillComponentConfigs'}
+                params={form.getFieldValue(skillFormKey)}
+                skillName={skillFormKey}
                 form={form}
                 removeItem={removeItem}
                 modifyItem={modifyItem}
@@ -213,7 +222,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
         open={open}
         onCancel={() => setOpen(false)}
         addComponents={addComponents}
-        hideTop={[AgentComponentTypeEnum.Table]}
+        tabs={skillCreatedTabs}
       />
       <PromptOptimizeModal
         title="提示词优化"

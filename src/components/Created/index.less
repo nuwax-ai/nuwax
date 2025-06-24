@@ -103,7 +103,7 @@
       height: 120px;
       padding: 13px 23px;
       box-sizing: border-box;
-      border-bottom: 1px solid @GRAY06;
+      border-bottom: 1px solid #e5e5e5;
 
       .left-image-style {
         width: 40px;
@@ -119,7 +119,6 @@
       }
 
       .content-font {
-        font-family: 'Alimama Agile VF';
         font-size: 12px;
         font-weight: normal;
         // line-height: 22px;
@@ -141,6 +140,75 @@
         font-weight: bold;
         color: @BLANK04;
       }
+    }
+
+    .mcp-tools-style {
+      padding-left: 65px;
+      padding-right: 16px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    .fold-icon-style {
+      color: #999;
+      padding: 12px;
+      margin-right: -12px;
+      font-size: 12px;
+      transition: transform ease-in-out 0.3s, color ease-in-out 0.3s;
+
+      &:hover {
+        color: #666;
+      }
+    }
+
+    .mcp-tools-item-style {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      padding: 12px 0;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid #e5e5e5;
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+
+    .mcp-tools-item-content-style {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      min-width: 0; // 关键：允许 flex 子元素收缩，使文本截断生效
+    }
+
+    .mcp-tools-item-name-style {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+      line-height: 22px;
+      margin-bottom: 4px;
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      width: 100%; // 确保占满父容器宽度
+    }
+
+    .mcp-tools-item-description-style {
+      font-size: 12px;
+      color: #666;
+      line-height: 18px;
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      width: 100%; // 确保占满父容器宽度
+    }
+
+    .mcp-tools-item-button-style {
+      margin-left: 12px;
+      margin-top: 6px;
     }
   }
 }

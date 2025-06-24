@@ -4,6 +4,7 @@ import {
   ICON_DATABASE,
   ICON_GROUP_SET,
   ICON_KNOWLEDGE,
+  ICON_MCP_MANAGE,
   ICON_MODEL,
   ICON_PLUGIN,
   ICON_SPACE_SQUARE,
@@ -64,7 +65,6 @@ export const LIBRARY_ALL_TYPE = [
 export const FILTER_STATUS = [
   { value: FilterStatusEnum.All, label: '全部' },
   { value: FilterStatusEnum.Published, label: '已发布' },
-  // { value: FilterStatusEnum.Recently_Open, label: '最近打开' },
 ];
 
 // 过滤创建者
@@ -94,6 +94,11 @@ export const SPACE_APPLICATION_LIST = [
     type: SpaceApplicationListEnum.Component_Library,
     icon: <ICON_COMPONENT_LIBRARY />,
     text: '组件库',
+  },
+  {
+    type: SpaceApplicationListEnum.MCP_Manage,
+    icon: <ICON_MCP_MANAGE />,
+    text: 'MCP管理',
   },
   {
     type: SpaceApplicationListEnum.Space_Square,

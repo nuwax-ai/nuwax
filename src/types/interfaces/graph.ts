@@ -1,29 +1,12 @@
-import { NodeTypeEnum } from '@/types/enums/common';
-import { NodeConfig } from '@/types/interfaces/node';
+import {
+  NodeShapeEnum,
+  NodeTypeEnum,
+  RunResultStatusEnum,
+} from '@/types/enums/common';
+import { ExceptionHandleConfig, NodeConfig } from '@/types/interfaces/node';
 import { Graph, Node } from '@antv/x6';
 import type { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI as ModalHookAPI } from 'antd/es/modal/useModal';
-
-export type NodeKeyEnum = 'general-Node' | 'loop-node';
-
-export enum CompareTypeEnum {
-  EQUAL = 'EQUAL',
-  NOT_EQUAL = 'NOT_EQUAL',
-  GREATER_THAN = 'GREATER_THAN',
-  GREATER_THAN_OR_EQUAL = 'GREATER_THAN_OR_EQUAL',
-  LESS_THAN = 'LESS_THAN',
-  LESS_THAN_OR_EQUAL = 'LESS_THAN_OR_EQUAL',
-  CONTAINS = 'CONTAINS',
-  NOT_CONTAINS = 'NOT_CONTAINS',
-  MATCH_REGEX = 'MATCH_REGEX',
-  IS_NULL = 'IS_NULL',
-  NOT_NULL = 'NOT_NULL',
-}
-
-export enum AnswerTypeEnum {
-  TEXT = 'TEXT',
-  SELECT = 'SELECT',
-}
 
 /**
  * 定义 Child 接口，用于描述子节点的数据结构。
@@ -36,7 +19,8 @@ export interface Child {
   // 唯一标识符
   type: string;
   // 子节点的类型，可能用于区分不同种类的节点
-  key: NodeKeyEnum;
+  key: NodeTypeEnum;
+  // 子节点的形状
   // 描述
   description: string;
   // 节点的id
@@ -45,6 +29,21 @@ export interface Child {
   typeId?: number;
   // 如果涉及循环，需要提供循环的节点id
   loopNodeId?: number;
+}
+
+export interface RunResultItem {
+  options: {
+    data: object | null;
+    nodeName: string;
+    nodeId: number;
+    startTime: number;
+    input: any[];
+    endTime: number;
+    error: object | null;
+    success: boolean;
+  };
+  requestId: string;
+  status: RunResultStatusEnum;
 }
 
 // 节点的数据
@@ -64,10 +63,29 @@ export interface ChildNode {
   unreachableNextNodeIds?: number[] | null;
   modified?: string;
   created?: string;
-  key?: string;
-  icon: string;
-  selected?: boolean;
+  shape: NodeShapeEnum;
+  icon: string | React.ReactNode;
   loopNodeId?: number;
+  isEditingName?: boolean; // 是否正在编辑名称
+  isFocus?: boolean; // 是否聚焦
+  runResults?: RunResultItem[] | []; // 运行结果
+  typeId?: number;
+}
+
+export interface StencilChildNode extends Partial<ChildNode> {
+  bgIcon: string;
+  type: NodeTypeEnum;
+}
+/**
+ * 定义 StencilList 接口，用于描述模板列表的数据结构。
+ */
+export interface StencilList {
+  // 模板列表名称
+  name: string;
+  // 模板列表的唯一标识符
+  key: string;
+  // 模板列表中的子节点集合，遵循 Child 接口定义
+  children: StencilChildNode[];
 }
 
 export interface Edge {
@@ -89,6 +107,7 @@ export interface NodeProps {
 export interface GraphContainerProps {
   graphParams: { nodeList: ChildNode[]; edgeList: Edge[] };
   changeDrawer: (child: ChildNode | null) => void;
+  onSaveNode: (data: ChildNode, payload: Partial<ChildNode>) => void;
   changeEdge: (
     type: string,
     targetId: string,
@@ -103,13 +122,20 @@ export interface GraphContainerProps {
   changeZoom: (val: number) => void;
   // 通过连接桩或者边创建节点
   createNodeToPortOrEdge: (
-    child: Child,
+    child: StencilChildNode,
     sourceNode: ChildNode,
     portId: string,
     position: { x: number; y: number },
     targetNode?: ChildNode,
     edgeId?: string,
   ) => void;
+}
+
+export interface GraphRect {
+  x: number;
+  y: number;
+  height?: number;
+  width?: number;
 }
 
 export interface GraphContainerRef {
@@ -120,23 +146,32 @@ export interface GraphContainerRef {
     height: number;
   };
   // 新增节点
-  addNode: (e: { x: number; y: number }, child: ChildNode) => void;
+  graphAddNode: (e: GraphRect, child: ChildNode) => void;
   // 修改节点
-  updateNode: (nodeId: string, newData: ChildNode) => void;
+  graphUpdateNode: (nodeId: string, newData: ChildNode | null) => void;
   // 保存节点
-  saveAllNodes: () => void;
+  // graphSaveAllNodes: () => void;
   // 删除节点
-  deleteNode: (id: string) => void;
+  graphDeleteNode: (id: string) => void;
   // 选中节点
-  selectNode: (id: string) => void;
+  graphSelectNode: (id: string) => void;
   // 删除边
-  deleteEdge: (id: string) => void;
+  graphDeleteEdge: (id: string) => void;
   // 创建新的边
-  createNewEdge: (source: string, target: string, isLoop?: boolean) => void;
-  changeGraphZoom: (val: number) => void;
+  graphCreateNewEdge: (
+    source: string,
+    target: string,
+    isLoop?: boolean,
+  ) => void;
+  graphChangeZoom: (val: number) => void;
+  graphChangeZoomToFit: () => void;
   drawGraph: () => void;
   getGraphRef: () => Graph;
-  clearSelection: () => void;
+  graphClearSelection: () => void;
+  // 清空运行结果
+  graphResetRunResult: () => void;
+  // 激活节点运行结果
+  graphActiveNodeRunResult: (id: string, runResult: RunResultItem) => void;
 }
 
 export interface BindEventHandlers {
@@ -173,6 +208,7 @@ export interface GraphProp {
   containerId: string;
   // 改变抽屉内容的回调函数，接收一个 Child 类型的参数
   changeDrawer: (item: ChildNode | null) => void;
+  onSaveNode: (data: ChildNode, payload: Partial<ChildNode>) => void;
   changeEdge: (
     type: string,
     targetId: string,
@@ -183,11 +219,18 @@ export interface GraphProp {
   changeZoom: (val: number) => void;
   // 通过连接桩或者边创建节点
   createNodeToPortOrEdge: (
-    child: Child,
+    child: StencilChildNode,
     sourceNode: ChildNode,
     portId: string,
     position: { x: number; y: number },
     targetNode?: ChildNode,
     edgeId?: string,
   ) => void;
+}
+
+export interface ExceptionItemProps extends ExceptionHandleConfig {
+  /** 表单项名称 */
+  name: string;
+  /** 是否禁用 */
+  disabled?: boolean;
 }

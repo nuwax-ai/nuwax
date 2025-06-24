@@ -1,7 +1,7 @@
 import { ARRAY_ITEM } from '@/constants/common.constants';
 import { PLUGIN_INPUT_CONFIG } from '@/constants/space.constants';
 import { DataTypeEnum } from '@/types/enums/common';
-import type { BindConfigWithSub } from '@/types/interfaces/agent';
+import type { BindConfigWithSub } from '@/types/interfaces/common';
 import { addChildNode, deleteNode, updateNodeField } from '@/utils/deepNode';
 import React, { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';

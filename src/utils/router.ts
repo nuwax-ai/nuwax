@@ -21,3 +21,7 @@ export const jumpBack = (url?: string) => {
     history.push(url);
   }
 };
+
+export const jumpToMcpCreate = (spaceId: number) => {
+  history.push(`/space/${spaceId}/mcp/create`);
+};

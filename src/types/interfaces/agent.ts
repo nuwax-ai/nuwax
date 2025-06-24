@@ -1,29 +1,24 @@
 import type {
   AgentComponentTypeEnum,
   AllowCopyEnum,
-  BindValueType,
   DefaultSelectedEnum,
-  InputTypeEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
-  OptionDataSourceEnum,
   SearchStrategyEnum,
   TriggerComponentType,
   TriggerTypeEnum,
 } from '@/types/enums/agent';
 import type {
-  DataTypeEnum,
   PermissionsEnum,
   PublishStatusEnum,
   TooltipTitleTypeEnum,
 } from '@/types/enums/common';
 import type { UpdateModeComponentEnum } from '@/types/enums/library';
 import type { HistoryActionTypeEnum, OpenCloseEnum } from '@/types/enums/space';
+import type { BindConfigWithSub } from '@/types/interfaces/common';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import React from 'react';
 import { CardArgsBindConfigInfo } from './cardInfo';
-import { CascaderOption } from './common';
-
 // 知识库设置label
 export interface LabelIconProps {
   className?: string;
@@ -78,57 +73,6 @@ export interface AgentConfigUpdateParams extends AgentBaseInfo {
   openingGuidQuestions: string[];
   // 是否开启长期记忆,可用值:Open,Close
   openLongMemory: OpenCloseEnum;
-}
-
-// 出参、入参绑定配置，带下级, 绑定组件配置，不同组件配置不一样
-export interface BindConfigWithSub {
-  key: React.Key;
-  // 参数名称，符合函数命名规则
-  name: string;
-  // 参数展示名称，供前端展示使用
-  displayName?: string;
-  // 参数详细描述信息
-  description: string;
-  // 数据类型
-  dataType?: DataTypeEnum;
-  // 是否必须
-  require?: boolean;
-  // 是否为开启，如果不开启，插件使用者和大模型均看不见该参数；如果bindValueType为空且require为true时，该参数必须开启
-  enable?: boolean;
-  // 是否为系统内置变量参数，内置变量前端只可展示不可修改
-  systemVariable?: boolean;
-  // 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
-  bindValueType?: BindValueType;
-  // 参数值，当类型为引用时，示例 1.xxx 绑定节点ID为1的xxx字段；当类型为输入时，该字段为最终使用的值
-  bindValue?: string;
-  // 输入类型 可用值:Query,Body,Header,Path,Text,Paragraph,Select,MultipleSelect,Number,AutoRecognition
-  inputType?: InputTypeEnum;
-  subArgs?: BindConfigWithSub[];
-  // 下拉参数配置
-  selectConfig?: {
-    // 数据源类型,可用值:MANUAL,PLUGIN
-    dataSourceType: OptionDataSourceEnum;
-    // 数据源类型,可用值:Agent,Plugin,Workflow,Knowledge,Table
-    targetType: AgentComponentTypeEnum;
-    // 插件或工作流ID，dataSource选择PLUGIN时有用
-    targetId: number;
-    // 插件或工作流名称
-    targetName: string;
-    // 插件或工作流描述
-    targetDescription: string;
-    // 插件或工作流图标
-    targetIcon: string;
-    // 下拉选项配置
-    options: CascaderOption[];
-  };
-  loopId: number;
-  children?: BindConfigWithSub[];
-  [key: string]: any;
-}
-
-// 自定义disabled类型，继承BindConfigWithSub，添加disabled属性，用于控制组件是否禁用
-export interface BindConfigWithSubDisabled extends BindConfigWithSub {
-  disabled: boolean;
 }
 
 // 智能体组件模型基础信息
@@ -222,6 +166,12 @@ export interface AgentComponentTriggerAddParams {
 export type AgentComponentPluginUpdateParams =
   AgentComponentWorkflowUpdateParams;
 
+// 更新MCP组件配置输入参数
+export interface AgentComponentMcpUpdateParams
+  extends AgentComponentWorkflowUpdateParams {
+  toolName: string;
+}
+
 // 智能体组件模型设置
 export interface ComponentModelBindConfig {
   // 模式：Precision 精确模式；Balanced 平衡模式；Creative 创意模式；Customization 自定义,可用值:Precision,Balanced,Creative,Customization
@@ -272,6 +222,7 @@ export interface AgentComponentAddParams {
   agentId: number;
   type: AgentComponentTypeEnum;
   targetId: number;
+  toolName?: string;
 }
 
 // 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)

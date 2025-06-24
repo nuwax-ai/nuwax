@@ -1,0 +1,35 @@
+@import '@/styles/color.less';
+
+.header {
+  height: 60px;
+  border-bottom: 1px solid @WHITE15;
+
+  .icon {
+    color: @GRAY10;
+    font-size: 14px;
+    margin-right: 4px;
+  }
+
+  .name {
+    font-size: 16px;
+    font-weight: 350;
+    color: @BLANK04;
+  }
+
+  .extra-box {
+    gap: 20px;
+
+    .save-btn {
+      background-color: @WHITE13;
+      color: @BLUE05;
+      border-color: @GRAY30;
+
+      &:hover {
+        background-color: @WHITE13;
+        border-color: transparent;
+        color: @BLUE05;
+        opacity: 0.8;
+      }
+    }
+  }
+}

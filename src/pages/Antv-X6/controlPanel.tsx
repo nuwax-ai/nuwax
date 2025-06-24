@@ -1,4 +1,5 @@
-import { ChildNode } from '@/types/interfaces/graph';
+import { NodeTypeEnum } from '@/types/enums/common';
+import { ChildNode, StencilChildNode } from '@/types/interfaces/graph';
 import {
   CaretRightOutlined,
   CompressOutlined,
@@ -10,11 +11,10 @@ import { Button, Popover, Select } from 'antd';
 import React, { useState } from 'react';
 
 import StencilContent from './component/stencil';
-import { Child } from './type';
 interface ControlPanelProps {
   // 拖拽节点到画布
   dragChild: (
-    child: Child,
+    child: StencilChildNode,
     position?: React.DragEvent<HTMLDivElement>,
     continueDragCount?: number,
   ) => void;
@@ -136,9 +136,9 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           <Popover
             content={
               <StencilContent
-                isLoop={foldWrapItem.type === 'Loop'}
+                isLoop={foldWrapItem.type === NodeTypeEnum.Loop}
                 dragChild={(
-                  child: Child,
+                  child: StencilChildNode,
                   position?: React.DragEvent<HTMLDivElement>,
                 ) => {
                   setContinueDragCount(continueDragCount + 1);

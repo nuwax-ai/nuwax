@@ -1,5 +1,17 @@
-import { BindEventHandlers } from '@/types/interfaces/graph';
-
+import { EXCEPTION_NODES_TYPE } from '@/constants/node.constants';
+import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
+import { PortGroupEnum } from '@/types/enums/node';
+import { BindEventHandlers, ChildNode } from '@/types/interfaces/graph';
+import { ExceptionHandleConfig } from '@/types/interfaces/node';
+import { cloneDeep } from '@/utils/common';
+import { getPortGroup, isEdgeDeletable } from '@/utils/graph';
+import { Edge } from '@antv/x6';
+const isResistNodeType = [
+  NodeTypeEnum.Start,
+  NodeTypeEnum.End,
+  NodeTypeEnum.LoopStart,
+  NodeTypeEnum.LoopEnd,
+];
 /**
  * 绑定图形编辑器的事件处理器
  * @param graph - AntV X6 图形实例
@@ -56,7 +68,7 @@ const bindEventHandlers = ({
 
     // 修改当前的数据
     const newNodeParams = JSON.parse(JSON.stringify(sourceNode));
-    if (sourceNode.type === 'Condition') {
+    if (sourceNode.type === NodeTypeEnum.Condition) {
       for (let item of newNodeParams.nodeConfig.conditionBranchConfigs) {
         if (_index.includes(item.uuid)) {
           item.nextNodeIds = item.nextNodeIds.filter((item: number) => {
@@ -64,8 +76,8 @@ const bindEventHandlers = ({
           });
         }
       }
-    } else if (sourceNode.type === 'QA') {
-      if (newNodeParams.nodeConfig.answerType === 'SELECT') {
+    } else if (sourceNode.type === NodeTypeEnum.QA) {
+      if (newNodeParams.nodeConfig.answerType === AnswerTypeEnum.SELECT) {
         for (let item of newNodeParams.nodeConfig.options) {
           if (_index.includes(item.uuid)) {
             item.nextNodeIds = item.nextNodeIds.filter((item: number) => {
@@ -89,27 +101,40 @@ const bindEventHandlers = ({
     }
     changeCondition(newNodeParams, _targetNodeId);
   };
+  const _handleExceptionItemEdgeRemove = (
+    edge: Edge,
+    doSuccess: (newNodeParams: ChildNode) => void,
+  ): boolean => {
+    // 获取边的两个连接桩
+    const sourcePort = edge.getSourcePortId();
+    const sourceNode = edge.getSourceNode()?.getData();
+    const targetNode = edge.getTargetNode()?.getData();
 
-  /**
-   * 判断连线是否允许删除
-   * @param sourceNode - 源节点
-   * @param targetNode - 目标节点
-   * @returns boolean - 是否允许删除连线
-   */
-  const isEdgeDeletable = (sourceNode: any, targetNode: any): boolean => {
-    // 当 sourceNode.type 是 Loop 节点时，targetNode.type 为 LoopStart 不能删除连线
-    if (sourceNode.type === 'Loop' && targetNode.type === 'LoopStart') {
-      return false;
+    // 处理节点的异常处理 out port 连边的逻辑
+    const protGroup = getPortGroup(edge.getSourceNode(), sourcePort);
+    if (
+      EXCEPTION_NODES_TYPE.includes(sourceNode.type) &&
+      protGroup === PortGroupEnum.exception
+    ) {
+      const newNodeParams: ChildNode = cloneDeep(sourceNode);
+      const { exceptionHandleNodeIds = [] } =
+        newNodeParams.nodeConfig?.exceptionHandleConfig || {};
+      const newExceptionHandleNodeIds = exceptionHandleNodeIds.filter(
+        (item: number) => item !== Number(targetNode.id),
+      );
+      const exceptionHandleConfig = {
+        ...(newNodeParams.nodeConfig?.exceptionHandleConfig || {}),
+        exceptionHandleNodeIds: newExceptionHandleNodeIds,
+      };
+      newNodeParams.nodeConfig.exceptionHandleConfig =
+        exceptionHandleConfig as ExceptionHandleConfig;
+
+      doSuccess(newNodeParams);
+      return true;
     }
 
-    // 当 sourceNode.type 是 LoopEnd 节点时，targetNode.type 为 Loop 不能删除连线
-    if (sourceNode.type === 'LoopEnd' && targetNode.type === 'Loop') {
-      return false;
-    }
-
-    return true;
+    return false;
   };
-
   // 快捷键绑定：删除选中的单元格
   graph.bindKey(['delete', 'backspace'], () => {
     const cells = graph.getSelectedCells(); // 获取当前选中的单元格
@@ -127,11 +152,22 @@ const bindEventHandlers = ({
           message.warning('不能删除循环节点连线');
           return;
         }
+        const isException = _handleExceptionItemEdgeRemove(
+          _cell as Edge,
+          (updateNodeParams: ChildNode) => {
+            graph.removeCells([_cell]);
+            changeCondition(updateNodeParams, targetNode.id.toString());
+          },
+        );
+        if (isException) return;
 
         // 查看当前的边是否是loop或者他的子节点
-        if (sourceNode.type === 'Loop' || targetNode.type === 'Loop') {
+        if (
+          sourceNode.type === NodeTypeEnum.Loop ||
+          targetNode.type === NodeTypeEnum.Loop
+        ) {
           if (
-            sourceNode.type === 'Loop' &&
+            sourceNode.type === NodeTypeEnum.Loop &&
             targetNode.loopNodeId &&
             targetNode.loopNodeId === sourceNode.id
           ) {
@@ -142,7 +178,7 @@ const bindEventHandlers = ({
           }
 
           if (
-            targetNode.type === 'Loop' &&
+            targetNode.type === NodeTypeEnum.Loop &&
             sourceNode.loopNodeId &&
             sourceNode.loopNodeId === targetNode.id
           ) {
@@ -154,24 +190,26 @@ const bindEventHandlers = ({
         }
 
         if (
-          sourceNode.type === 'Condition' ||
-          sourceNode.type === 'IntentRecognition' ||
-          sourceNode.type === 'QA'
+          sourceNode.type === NodeTypeEnum.Condition ||
+          sourceNode.type === NodeTypeEnum.IntentRecognition ||
+          sourceNode.type === NodeTypeEnum.QA
         ) {
           handleSpecialNodeEdge(cells);
         } else {
           changeEdge('delete', _targetNodeId as string, sourceNode, '0');
         }
       } else {
-        const isResistNodeType = ['Start', 'End', 'LoopStart', 'LoopEnd'];
         if (isResistNodeType.includes(_cell.getData().type)) {
           message.warning('不能删除开始节点和结束节点');
           return;
         }
 
         // 如果是删除循环节点或删除循环的子节点
-        if (_cell.getData().loopNodeId || _cell.getData().type === 'Loop') {
-          if (_cell.getData().type === 'Loop') {
+        if (
+          _cell.getData().loopNodeId ||
+          _cell.getData().type === NodeTypeEnum.Loop
+        ) {
+          if (_cell.getData().type === NodeTypeEnum.Loop) {
             // 弹出确认框
             modal.confirm({
               title: '确定要删除循环节点吗？',

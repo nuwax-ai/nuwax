@@ -1,6 +1,15 @@
-import type { AgentComponentTypeEnum } from '@/types/enums/agent';
-import type { CreateUpdateModeEnum } from '@/types/enums/common';
-import { DataTypeEnum } from '@/types/enums/common';
+import type {
+  AgentComponentTypeEnum,
+  AllowCopyEnum,
+  OnlyTemplateEnum,
+} from '@/types/enums/agent';
+import type {
+  BindValueType,
+  CreateUpdateModeEnum,
+  InputTypeEnum,
+  NodeShapeEnum,
+} from '@/types/enums/common';
+import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type {
@@ -8,7 +17,6 @@ import type {
   AgentConfigInfo,
   AgentManualComponentInfo,
   AgentSelectedComponentInfo,
-  BindConfigWithSub,
   CreatorInfo,
 } from '@/types/interfaces/agent';
 import { CardDataInfo } from '@/types/interfaces/cardInfo';
@@ -274,8 +282,15 @@ export interface Statistics {
 }
 
 export interface CreatedNodeItem {
+  // 是否允许复制, 1 允许
+  allowCopy: AllowCopyEnum;
+  category: string;
   // 图片
   icon: string;
+  id: number;
+  // 仅展示模板, 0 否，1 是
+  onlyTemplate: OnlyTemplateEnum;
+  publishedSpaceIds: number[];
   // 名称
   name: string;
   // 简介
@@ -286,21 +301,49 @@ export interface CreatedNodeItem {
   modified?: string;
   // 备注
   remark?: string;
+  scope?: PluginPublishScopeEnum;
   // 统计信息
   statistics: Statistics | null;
   // 当前id
   spaceId?: number;
   // 正在使用的
   targetId: number;
+  targetSubType: string;
   targetType: AgentComponentTypeEnum;
   // 发布人员信息
   publishUser?: CreatorInfo;
   collect?: boolean;
-  type: AgentComponentTypeEnum;
+  type: NodeTypeEnum;
+  shape?: NodeShapeEnum;
   typeId?: string | number;
   inputArgBindConfigs?: InputAndOutConfig[];
   outputArgBindConfigs?: InputAndOutConfig[];
   knowledgeBaseId?: number;
+  config: any;
+  toolName?: string;
+}
+
+export interface MCPNodeItem {
+  icon: string;
+  targetId: number;
+  targetType: AgentComponentTypeEnum.MCP;
+  name: string;
+  description: string;
+  created: string;
+  modified: string;
+  status: string;
+  deployedConfig: {
+    prompts: any[];
+    resources: any[];
+    tools:
+      | {
+          name: string;
+          inputArgs: InputAndOutConfig[];
+          outputArgs: InputAndOutConfig[];
+        }[]
+      | null;
+  };
+  publishUser: CreatorInfo;
 }
 
 // 创建、编辑智能体
@@ -514,6 +557,37 @@ export interface MoveCopyComponentProps {
   title?: string;
   onCancel: () => void;
   onConfirm: (spaceId: number) => void;
+}
+
+export interface BindConfigWithSub {
+  key: React.Key;
+  // 参数名称，符合函数命名规则
+  name: string;
+  // 参数详细描述信息
+  description: string;
+  // 数据类型
+  dataType?: DataTypeEnum;
+  // 是否必须
+  require?: boolean;
+  // 是否为开启，如果不开启，插件使用者和大模型均看不见该参数；如果bindValueType为空且require为true时，该参数必须开启
+  enable?: boolean;
+  // 是否为系统内置变量参数，内置变量前端只可展示不可修改
+  systemVariable?: boolean;
+  // 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
+  bindValueType?: BindValueType;
+  // 参数值，当类型为引用时，示例 1.xxx 绑定节点ID为1的xxx字段；当类型为输入时，该字段为最终使用的值
+  bindValue?: string;
+  // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
+  inputType?: InputTypeEnum;
+  subArgs?: BindConfigWithSub[];
+  loopId?: number;
+  children?: BindConfigWithSub[];
+  [key: string]: any;
+}
+
+// 自定义disabled类型，继承BindConfigWithSub，添加disabled属性，用于控制组件是否禁用
+export interface BindConfigWithSubDisabled extends BindConfigWithSub {
+  disabled: boolean;
 }
 
 // 新对话设置组件属性

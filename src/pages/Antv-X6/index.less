@@ -119,98 +119,6 @@
   opacity: 0;
 }
 
-.general-node {
-  background: #fff;
-  // box-shadow: 0 1px 3px rgba(0, 0, 0, 10%),
-  //   /* 下方阴影 */ 0 -1px 3px rgba(0, 0, 0, 10%),
-  //   /* 上方阴影 */ -1px 0 3px rgba(0, 0, 0, 10%),
-  //   /* 左侧阴影 */ 1px 0 3px rgba(0, 0, 0, 10%);
-
-  box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 4%), 0 4px 12px 0 rgba(0, 0, 0, 2%);
-
-  /* 右侧阴影 */
-  overflow: hidden;
-  border: 1px solid rgba(6, 7, 9, 15%);
-
-  /* 确保子元素不会溢出父元素的边界 */
-  padding-bottom: 10px;
-  border-radius: 10px;
-
-  .general-node-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    line-height: 22px;
-    padding: 10px 16px 0;
-
-    .general-node-header-image {
-      font-family: 'Alimama Agile VF';
-      font-size: 14px;
-      font-weight: bold;
-
-      svg {
-        margin-right: 6px;
-        width: 20px;
-        height: 20px;
-        font-size: 20px;
-        margin-bottom: -2px;
-      }
-    }
-  }
-
-  .general-node-content {
-    font-family: 'Alimama Agile VF';
-    font-size: 12px;
-    font-weight: normal;
-    line-height: 22px;
-    padding: 0 16px;
-    color: @GRAY07;
-
-    .general-node-content-item {
-      display: flex;
-      font-size: 12px;
-      color: #4e5969;
-
-      .general-node-content-label {
-        font-size: 14px;
-        color: #3d3d3d;
-        margin-right: 10px;
-      }
-    }
-  }
-}
-
-.loop-node-style {
-  height: 100%;
-  background: #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 10%),
-    /* 下方阴影 */ 0 -4px 8px rgba(0, 0, 0, 10%),
-    /* 上方阴影 */ -4px 0 8px rgba(0, 0, 0, 10%),
-    /* 左侧阴影 */ 4px 0 8px rgba(0, 0, 0, 10%);
-
-  /* 右侧阴影 */
-  overflow: hidden;
-
-  /* 确保子元素不会溢出父元素的边界 */
-  padding-bottom: 10px;
-  border-radius: 10px;
-
-  .loop-node-title-style {
-    margin-bottom: 10px;
-    align-items: center;
-    line-height: 22px;
-    padding: 10px 16px 0;
-  }
-
-  .condition-node-content-style {
-    background-color: rgba(0, 0, 0, 10%);
-  }
-}
-
-.selected-general-node {
-  border: 1px solid @xagi-primary-color !important;
-}
-
 .fold-wrap-style {
   position: absolute;
   top: 74px;
@@ -424,7 +332,7 @@
   left: 10px;
   bottom: 10px;
   border-radius: 16px;
-  padding: 10px 0;
+  padding: 10px 0 0;
   background-color: @WHITE;
   z-index: 99;
   overflow: hidden;
@@ -432,25 +340,25 @@
 
   .error-list-header {
     height: 48px;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid @xagi-border-color-base;
     font-size: 16px;
+    font-weight: 500;
     padding: 0 20px;
   }
 
   .error-list-content {
-    padding: 10px 20px;
+    padding: 10px 20px 0;
     flex: 1;
+    overflow: auto;
+    //添加滚动加速，使用css变量
+    scroll-behavior: auto;
 
     .error-list-item {
       width: 100%;
       height: 48px;
       border-radius: 8px;
-      border: 1px solid #ccc;
+      border: 1px solid @xagi-border-color-base;
       padding: 4px 8px;
-      font-size: 16px;
-      font-weight: 550;
-      color: #383743;
-      line-height: 22px;
       cursor: pointer;
       margin-bottom: 6px;
 
@@ -469,10 +377,18 @@
       .content-error-item-width {
         width: 100%;
 
-        .error-text {
-          font-weight: 400;
-          color: #ff441e;
+        .error-node-name {
           font-size: 14px;
+          font-weight: 500;
+          line-height: 22px;
+          color: #383743;
+        }
+
+        .error-text {
+          color: #ff441e;
+          font-weight: normal;
+          line-height: 1.2;
+          font-size: 12px;
           white-space: nowrap; // 不换行
           overflow: hidden; // 超出隐藏
           text-overflow: ellipsis; // 显示省略号
@@ -494,7 +410,9 @@
   padding: 0 20px;
 
   div {
-    margin-bottom: 4px;
+    // padding-bottom: 4px;
+    padding-bottom: 2px;
+    line-height: 22px;
 
     .qa-title-style {
       width: 60px;

@@ -159,10 +159,6 @@ const SpaceLibrary: React.FC = () => {
     setOpenMove(false);
     // 目标空间ID
     const targetSpaceId = params[1];
-    // 如果目标空间ID和当前空间ID相同, 则重新查询当前空间智能体列表
-    // if (targetSpaceId === spaceId) {
-    //   runComponent(spaceId);
-    // }
     // 跳转
     if (type === ComponentTypeEnum.Plugin) {
       jumpToPlugin(targetSpaceId, data);

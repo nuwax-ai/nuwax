@@ -1,32 +1,19 @@
 // import squareImage from '@/assets/images/square_bg.png';
-import CodeEditor from '@/components/CodeEditor';
-import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { DataTypeEnum } from '@/types/enums/common';
-import { CodeLangEnum } from '@/types/enums/plugin';
+import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
-import { InputAndOutConfig, TestRunParams } from '@/types/interfaces/node';
-import { getAccept } from '@/utils';
+import {
+  NodeConfig,
+  NodePreviousAndArgMap,
+  TestRunParams,
+} from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
 import { CaretRightOutlined, CloseOutlined } from '@ant-design/icons';
-import { Bubble, Prompts, Sender } from '@ant-design/x';
-import {
-  Button,
-  Collapse,
-  Empty,
-  Form,
-  FormInstance,
-  Input,
-  InputNumber,
-  Radio,
-  Tag,
-  Upload,
-  UploadProps,
-  message,
-} from 'antd';
+import { Bubble, PromptProps, Prompts, Sender } from '@ant-design/x';
+import { Button, Collapse, Empty, Form, FormInstance, Input } from 'antd';
 import { useEffect, useState } from 'react';
 import { useModel } from 'umi';
+import FormItemsRender from './FormItemsRender';
 import './index.less';
 // import { stringify } from 'uuid';
 
@@ -66,7 +53,6 @@ interface QaItems {
   key: string;
   description: string;
 }
-
 // mock的option数据
 // const mockOptions = [
 //   { label: '角色陪伴-苏瑶', value: 'su-yao', img: squareImage },
@@ -74,7 +60,144 @@ interface QaItems {
 //   { label: 'coder', value: 'coder', img: squareImage },
 // ];
 
-// 试运行
+const StopWaitNode: React.FC<{
+  params?: TestRunParams;
+  items: QaItems[];
+  value?: string;
+  answerType?: AnswerTypeEnum;
+  onAnswer: (val: string) => void;
+  onChange: (v: string | number | bigint | undefined) => void;
+  onSubmit: () => void;
+}> = ({ params, items, value, answerType, onAnswer, onChange, onSubmit }) => {
+  const handleAnswer = (info: { data: PromptProps }) => {
+    onAnswer?.(info.data.description as string);
+  };
+  return (
+    <div className="stop-wait-style dis-col flex-1 overflow-y">
+      {/* 头部 */}
+      <div className="stop-wait-header dis-center">
+        {returnImg(NodeTypeEnum.QA)}
+        <div></div>
+        <span className="ml-10">问答</span>
+        <span className="ml-10">回复以下问题后继续试运行</span>
+      </div>
+      {/* 对话气泡 */}
+      <Bubble
+        className="flex-1"
+        avatar={
+          <img
+            src={require('@/assets/images/robot.png')}
+            className="bubble-avatar"
+          />
+        }
+        variant={answerType === AnswerTypeEnum.SELECT ? 'borderless' : 'filled'}
+        header={<span>机器人</span>}
+        content={
+          params?.options?.length ? (
+            <div className="qa-question-style">
+              <Prompts
+                title={params?.question}
+                items={items}
+                vertical
+                onItemClick={handleAnswer}
+              />
+            </div>
+          ) : (
+            <div className="qa-question-style">{params?.question}</div>
+          )
+        }
+      />
+
+      <Sender value={value} onChange={onChange} onSubmit={onSubmit} />
+    </div>
+  );
+};
+
+const HttpArgs: React.FC<{
+  config: NodeConfig;
+  loading: boolean;
+  options: NodePreviousAndArgMap;
+}> = ({ config, loading, options }) => {
+  const { body, headers, queries } = config;
+  return (
+    <>
+      {body && body.length > 0 && (
+        <FormItemsRender items={body} loading={loading} options={options} />
+      )}
+      {headers && headers.length > 0 && (
+        <FormItemsRender items={headers} loading={loading} options={options} />
+      )}
+      {queries && queries.length > 0 && (
+        <FormItemsRender items={queries} loading={loading} options={options} />
+      )}
+      {!body?.length && !headers?.length && !queries?.length && (
+        <Empty description="本次试运行无需输入" />
+      )}
+    </>
+  );
+};
+
+const renderInputArgs = ({
+  type,
+  config,
+  loading,
+  options,
+}: {
+  type: NodeTypeEnum;
+  config: NodeConfig;
+  loading: boolean;
+  options: NodePreviousAndArgMap;
+}) => {
+  const { inputArgs } = config;
+  return (
+    <>
+      {type !== NodeTypeEnum.HTTPRequest &&
+        (inputArgs && inputArgs.length ? (
+          <FormItemsRender
+            items={inputArgs}
+            loading={loading}
+            options={options}
+          />
+        ) : (
+          <Empty description="本次试运行无需输入" />
+        ))}
+      {type === NodeTypeEnum.HTTPRequest && (
+        <HttpArgs config={config} loading={loading} options={options} />
+      )}
+    </>
+  );
+};
+
+const renderOutputArgs = ({
+  form,
+  value,
+  config,
+}: {
+  form: FormInstance;
+  value: string;
+  config: NodeConfig;
+}) => {
+  const { inputArgs } = config;
+
+  return (
+    <>
+      <p className="collapse-title-style dis-left">输入</p>
+      {inputArgs?.map((item) => (
+        <Input
+          key={item.name}
+          prefix={middleEllipsis(item.name + ':', 20)}
+          value={form.getFieldValue(item.name)}
+          disabled
+          className="mb-12 override-input-style"
+        />
+      ))}
+      <p className="collapse-title-style dis-left">输出</p>
+      <pre className="result-style overflow-y">{value}</pre>
+    </>
+  );
+};
+
+// 试运行组件
 const TestRun: React.FC<TestRunProps> = ({
   node,
   visible,
@@ -116,7 +239,7 @@ const TestRun: React.FC<TestRunProps> = ({
             }
           }
         }
-      } else if (node.type === 'HTTPRequest') {
+      } else if (node.type === NodeTypeEnum.HTTPRequest) {
         // 将body，queries，headers合并到一个对象中
         const newList = [
           ...(node.nodeConfig.body || []),
@@ -147,168 +270,28 @@ const TestRun: React.FC<TestRunProps> = ({
     }
   };
 
-  // const handlerSubmit = () => {
-  //   let value = form.getFieldsValue();
-
-  // };
-
-  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-  // 根据type返回不同的输入项
-  const getInputBox = (item: InputAndOutConfig, form: FormInstance) => {
-    const handleChange: UploadProps['onChange'] = (info) => {
-      if (info.file.status === 'uploading') {
-        return;
-      }
-      if (info.file.status === 'done') {
-        try {
-          const data = info.file.response?.data;
-          form.setFieldValue(item.name, data?.url);
-        } catch (error) {
-          message.warning(info.file.response?.message);
-        }
-      }
-    };
-
-    switch (true) {
-      case item.dataType?.includes('File'):
-        return (
-          <Upload
-            action={UPLOAD_FILE_ACTION}
-            onChange={handleChange}
-            headers={{
-              Authorization: token ? `Bearer ${token}` : '',
-            }}
-            accept={getAccept(item.dataType as DataTypeEnum)}
-            disabled={loading}
-          >
-            <Button>上传文件</Button>
-          </Upload>
-        );
-      case item.dataType === 'Object' || item.dataType?.includes('Array'):
-        return (
-          <CodeEditor
-            value={form.getFieldValue(item.name) || ''}
-            codeLanguage={CodeLangEnum.JSON}
-            onChange={(code: string) => {
-              form.setFieldsValue({ [item.name]: code }); // 更新表单值
-            }}
-            height="180px"
-          />
-        );
-      case item.dataType === 'Number':
-        return <InputNumber disabled={loading} />;
-      case item.dataType === 'Integer':
-        return <InputNumber precision={0} disabled={loading} />;
-      case item.dataType === 'Boolean':
-        return (
-          <Radio.Group
-            disabled={loading}
-            options={[
-              { label: 'true', value: 'true' },
-              { label: 'false', value: 'false' },
-            ]}
-          />
-        );
-      case item.dataType === 'String':
-        return <Input />;
-      default: {
-        return <Input disabled={loading} />;
-      }
-    }
-  };
-
-  const renderFormItem = (
-    type: string,
-    items: InputAndOutConfig[],
-    form: FormInstance,
-  ) => {
-    return (
-      <>
-        {items.map((item, index) => {
-          // if (!referenceList) return [];
-          if (
-            referenceList !== undefined &&
-            JSON.stringify(referenceList.argMap) !== '{}'
-          ) {
-            const isReference = referenceList.argMap[item.bindValue];
-            if (isReference) {
-              item.dataType = isReference.dataType;
-            }
-          }
-          return (
-            <div key={item.key || index}>
-              <Form.Item
-                name={[item.name]} // 绑定到 bindValue
-                label={
-                  <>
-                    {item.name}
-                    <Tag color="#C9CDD4" className="ml-10">
-                      {item.dataType}
-                    </Tag>
-                  </>
-                }
-                rules={
-                  item.require
-                    ? [
-                        {
-                          required: true,
-                          message: `${item.name}是必填项`,
-                        },
-                      ]
-                    : []
-                }
-              >
-                {getInputBox(item, form)}
-              </Form.Item>
-            </div>
-          );
-        })}
-      </>
-    );
-  };
-
   const items = [
     {
       key: 'inputArgs',
       label: '试运行输入',
       children: (
-        <>
-          <Form
-            form={form}
-            layout={'vertical'}
-            onFinish={onFinish}
-            className="test-run-form"
-          >
-            <div className="dis-left">
-              {returnImg(node.type)}
-              <span style={{ marginLeft: '10px' }}>{node.name}</span>
-            </div>
-            {node.type !== 'HTTPRequest' &&
-              (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length ? (
-                renderFormItem('inputArgs', node.nodeConfig.inputArgs, form)
-              ) : (
-                <Empty description="本次试运行无需输入" />
-              ))}
-            {node.type === 'HTTPRequest' && (
-              <>
-                {node.nodeConfig.body &&
-                  node.nodeConfig.body.length > 0 &&
-                  renderFormItem('body', node.nodeConfig.body, form)}
-                {node.nodeConfig.headers &&
-                  node.nodeConfig.headers.length > 0 &&
-                  renderFormItem('headers', node.nodeConfig.headers, form)}
-                {node.nodeConfig.queries &&
-                  node.nodeConfig.queries.length > 0 &&
-                  renderFormItem('queries', node.nodeConfig.queries, form)}
-                {!node.nodeConfig.body?.length &&
-                  !node.nodeConfig.headers?.length &&
-                  !node.nodeConfig.queries?.length && (
-                    <Empty description="本次试运行无需输入" />
-                  )}
-              </>
-            )}
-          </Form>
-        </>
+        <Form
+          form={form}
+          layout={'vertical'}
+          onFinish={onFinish}
+          className="test-run-form"
+        >
+          <div className="dis-left">
+            {returnImg(node.type)}
+            <span style={{ marginLeft: '10px' }}>{node.name}</span>
+          </div>
+          {renderInputArgs({
+            loading,
+            type: node.type,
+            config: node.nodeConfig,
+            options: referenceList,
+          })}
+        </Form>
       ),
     },
     ...(testRunResult
@@ -316,22 +299,11 @@ const TestRun: React.FC<TestRunProps> = ({
           {
             key: 'outputArgs',
             label: '运行结果',
-            children: (
-              <>
-                <p className="collapse-title-style dis-left">输入</p>
-                {node.nodeConfig.inputArgs?.map((item) => (
-                  <Input
-                    key={item.name}
-                    prefix={middleEllipsis(item.name + ':', 20)}
-                    value={form.getFieldValue(item.name)}
-                    disabled
-                    className="mb-12 override-input-style"
-                  />
-                ))}
-                <p className="collapse-title-style dis-left">输出</p>
-                <pre className="result-style overflow-y">{testRunResult}</pre>
-              </>
-            ),
+            children: renderOutputArgs({
+              form,
+              config: node.nodeConfig,
+              value: testRunResult,
+            }),
           },
         ]
       : []),
@@ -345,7 +317,7 @@ const TestRun: React.FC<TestRunProps> = ({
 
   // 每次点开前应该要清除遗留数据
   useEffect(() => {
-    form.resetFields();
+    // form.resetFields();
     if (stopWait) {
       const newItem = (testRunParams?.options || []).map((item) => ({
         key: item.uuid,
@@ -363,6 +335,7 @@ const TestRun: React.FC<TestRunProps> = ({
           _obj[item] = JSON.stringify(_obj[item]);
         }
       }
+      console.log('formItemValue', _obj);
       form.setFieldsValue(_obj);
     }
   }, [formItemValue]);
@@ -413,60 +386,19 @@ const TestRun: React.FC<TestRunProps> = ({
           </>
         )}
         {stopWait && (
-          <div className="stop-wait-style dis-col flex-1 overflow-y">
-            {/* 头部 */}
-            <div className="stop-wait-header dis-center">
-              {returnImg('QA')}
-              <div></div>
-              <span className="ml-10">问答</span>
-              <span className="ml-10">回复以下问题后继续试运行</span>
-            </div>
-            {/* 对话气泡 */}
-            <Bubble
-              className="flex-1"
-              avatar={
-                <img
-                  src={require('@/assets/images/robot.png')}
-                  className="bubble-avatar"
-                />
-              }
-              variant={
-                node.nodeConfig.answerType === 'SELECT'
-                  ? 'borderless'
-                  : 'filled'
-              }
-              header={<span>机器人</span>}
-              content={
-                testRunParams?.options?.length ? (
-                  <div className="qa-question-style">
-                    <Prompts
-                      title={testRunParams?.question}
-                      items={qaItems}
-                      vertical
-                      onItemClick={(info) => {
-                        answer(info.data.description as string);
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <div className="qa-question-style">
-                    {testRunParams?.question}
-                  </div>
-                )
-              }
-            />
-
-            <Sender
-              value={value}
-              onChange={(v) => {
-                setValue(v);
-              }}
-              onSubmit={() => {
-                answer(value);
-                setValue('');
-              }}
-            />
-          </div>
+          <StopWaitNode
+            params={testRunParams}
+            items={qaItems}
+            answerType={node.nodeConfig.answerType}
+            onAnswer={answer}
+            onChange={(v) => {
+              setValue(v as string);
+            }}
+            onSubmit={() => {
+              answer(value);
+              setValue('');
+            }}
+          />
         )}
       </div>
     </div>

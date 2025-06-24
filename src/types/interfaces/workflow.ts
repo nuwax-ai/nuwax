@@ -51,18 +51,6 @@ export interface Child {
 }
 
 /**
- * 定义 StencilList 接口，用于描述模板列表的数据结构。
- */
-export interface StencilList {
-  // 模板列表名称
-  name: string;
-  // 模板列表的唯一标识符
-  key: string;
-  // 模板列表中的子节点集合，遵循 Child 接口定义
-  children: Child[];
-}
-
-/**
  * 定义 右侧节点数组设置。
  */
 // 使用 antd 内置的 FormListFieldData 类型
@@ -218,10 +206,15 @@ export interface SkillProps {
   modifyItem: (id: CreatedNodeItem) => void;
 }
 
+export interface SkillItem extends Partial<CreatedNodeItem> {
+  icon: string;
+  typeId?: string | number;
+}
+
 export interface SkillDisposeProps {
   open: boolean;
   onCancel: () => void;
-  params: CreatedNodeItem;
+  params: SkillItem;
   onConfirm: (val: CreatedNodeItem) => void;
 }
 

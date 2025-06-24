@@ -32,6 +32,15 @@ const routes = [
       { path: '/space/:spaceId/develop', component: '@/pages/SpaceDevelop' },
       { path: '/space/:spaceId/:agentId/log', component: '@/pages/SpaceLog' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
+      { path: '/space/:spaceId/mcp', component: '@/pages/SpaceMcpManage' },
+      {
+        path: '/space/:spaceId/mcp/create',
+        component: '@/pages/SpaceMcpCreate',
+      },
+      {
+        path: '/space/:spaceId/mcp/edit/:mcpId',
+        component: '@/pages/SpaceMcpEdit',
+      },
       {
         path: '/space/:spaceId/space-square',
         component: '@/pages/SpaceSquare',
@@ -121,6 +130,21 @@ const routes = [
   {
     path: '/*',
     component: '@/pages/404',
+    layout: false,
+  },
+  {
+    path: '/examples/run-result',
+    component: '@/examples/RunResultExample',
+    layout: false,
+  },
+  {
+    path: '/examples/workflow-node-edit',
+    component: '@/examples/WorkflowNodeEdit',
+    layout: false,
+  },
+  {
+    path: '/examples/exception-item',
+    component: '@/examples/ExceptionItemExample',
     layout: false,
   },
 ];

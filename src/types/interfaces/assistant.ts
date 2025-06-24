@@ -6,8 +6,8 @@
  * @returns
  */
 
+import { BindConfigWithSub } from '@/types/interfaces/common';
 import { CodeLangEnum } from '../enums/plugin';
-import { BindConfigWithSub } from './agent';
 
 // 类型,可用值:WORKFLOW_LLM_NODE,AGENT
 export enum PromptOptimizeTypeEnum {

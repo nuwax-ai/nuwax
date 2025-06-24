@@ -3,7 +3,7 @@ import CreateNewPlugin from '@/components/CreateNewPlugin';
 import LabelStar from '@/components/LabelStar';
 import PluginAutoAnalysis from '@/components/PluginAutoAnalysis';
 import PluginConfigTitle from '@/components/PluginConfigTitle';
-import PluginTryRunModel from '@/components/PluginTryRunModel';
+import PluginTryRunModal from '@/components/PluginTryRunModal';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import VersionHistory from '@/components/VersionHistory';
 import { ICON_ADD_TR } from '@/constants/images.constants';
@@ -13,7 +13,7 @@ import { apiPluginCodeUpdate, apiPluginInfo } from '@/services/plugin';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
 import { PluginCodeModeEnum } from '@/types/enums/plugin';
-import type { BindConfigWithSub } from '@/types/interfaces/agent';
+import type { BindConfigWithSub } from '@/types/interfaces/common';
 import type { PluginInfo } from '@/types/interfaces/plugin';
 import { CascaderChange, CascaderValue } from '@/utils';
 import { getActiveKeys } from '@/utils/deepNode';
@@ -455,7 +455,7 @@ const SpacePluginCloudTool: React.FC = () => {
         )}
       </div>
       {/*试运行弹窗*/}
-      <PluginTryRunModel
+      <PluginTryRunModal
         inputConfigArgs={inputConfigArgs}
         inputExpandedRowKeys={expandedRowKeys}
         pluginId={pluginId}

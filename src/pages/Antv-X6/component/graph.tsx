@@ -12,13 +12,19 @@ import { Selection } from '@antv/x6-plugin-selection';
 import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
 // import { Transform } from '@antv/x6-plugin-transform';
-import { Child, ChildNode } from '@/types/interfaces/graph';
+import { ChildNode, StencilChildNode } from '@/types/interfaces/graph';
 import { adjustParentSize, validateConnect } from '@/utils/graph';
 import { message, Modal } from 'antd';
 // 自定义类型定义
 import PlusIcon from '@/assets/svg/plus_icon.svg';
+import { EXCEPTION_NODES_TYPE } from '@/constants/node.constants';
+import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
+import { PortGroupEnum } from '@/types/enums/node';
 import { GraphProp } from '@/types/interfaces/graph';
+import { ExceptionHandleConfig } from '@/types/interfaces/node';
+import { cloneDeep } from '@/utils/common';
 import {
+  getPortGroup,
   handleLoopEdge,
   handleSpecialNodeTypes,
   setEdgeAttributes,
@@ -26,7 +32,6 @@ import {
 } from '@/utils/graph';
 import { createCurvePath } from './registerCustomNodes';
 import StencilContent from './stencil';
-// import { PlusOutlined,} from '@ant-design/icons';
 /**
  * 端口配置接口
  */
@@ -67,6 +72,7 @@ const initGraph = ({
   changeCondition,
   changeZoom,
   createNodeToPortOrEdge,
+  onSaveNode,
 }: GraphProp) => {
   const graphContainer = document.getElementById(containerId);
   // 如果找不到容器，则抛出错误
@@ -132,7 +138,7 @@ const initGraph = ({
       x: centerX,
       y: centerY,
     });
-    const dragChild = (child: Child) => {
+    const dragChild = (child: StencilChildNode) => {
       createNodeToPortOrEdge(
         child,
         sourceNode,
@@ -147,7 +153,7 @@ const initGraph = ({
     const popoverContent = (
       <div className="confirm-popover">
         <StencilContent
-          dragChild={(child: Child) => {
+          dragChild={(child: StencilChildNode) => {
             dragChild(child);
             Modal.destroyAll();
           }}
@@ -230,6 +236,8 @@ const initGraph = ({
         sourceCell,
         targetCell,
       }) {
+        //拉线连接校验，防止非法连接
+
         // 添加类型守卫，过滤 null/undefined
         if (!sourceMagnet || !targetMagnet || !sourceCell || !targetCell) {
           return false;
@@ -291,8 +299,10 @@ const initGraph = ({
         if (!isLoopNode(sourceCell) && !isLoopNode(targetCell)) {
           // 允许从 out 到 in 的正常连接
           if (
-            (sourcePortGroup === 'out' || sourcePortGroup === 'special') &&
-            targetPortGroup === 'in'
+            (sourcePortGroup === PortGroupEnum.out ||
+              sourcePortGroup === PortGroupEnum.special ||
+              sourcePortGroup === PortGroupEnum.exception) &&
+            targetPortGroup === PortGroupEnum.in
           ) {
             return true;
             // return validatePortConnection(sourcePortGroup, targetPortGroup);
@@ -323,6 +333,13 @@ const initGraph = ({
       // 这里设置为false，设置为true会导致重叠节点一起移动
       enabled: false,
     },
+    interacting: {
+      nodeMovable(view) {
+        const node = view.cell;
+        const { enableMove } = node.getData();
+        return enableMove;
+      },
+    },
   });
 
   const changePortSize = () => {
@@ -342,11 +359,11 @@ const initGraph = ({
     });
   };
 
-  const changeZindex = (node?: Node) => {
+  const changeZIndex = (node?: Node) => {
     const nodes = graph.getNodes();
     // 先将其他节点的zindex设置为4
     nodes.forEach((n) => {
-      n.setData({ selected: false });
+      // n.setData({ selected: false });
       n.prop('zIndex', 4); // 正确设置层级
     });
     // 将loop节点设置为5
@@ -409,6 +426,7 @@ const initGraph = ({
   const handlePortConfig = (
     port: PortConfig,
     portStatus: PortStatus = 'active',
+    color?: string,
   ): PortConfig => {
     // 基础配置
     const baseConfig = {
@@ -417,8 +435,8 @@ const initGraph = ({
         ...port.attrs,
         circle: {
           ...(port.attrs?.circle || {}),
-          stroke: '#5147FF',
-          fill: '#5147FF',
+          stroke: color || '#5147FF',
+          fill: color || '#5147FF',
         },
       },
     };
@@ -488,6 +506,7 @@ const initGraph = ({
       const portConfig = handlePortConfig(
         port as PortConfig,
         portStatusList[port.group || 'in'],
+        port.attrs?.circle?.fill as string,
       );
       return portConfig;
     });
@@ -497,7 +516,11 @@ const initGraph = ({
   graph.on('node:mouseleave', ({ node }) => {
     const ports = node.getPorts();
     const updatedPorts = ports.map((port) =>
-      handlePortConfig(port as PortConfig, 'normal'),
+      handlePortConfig(
+        port as PortConfig,
+        'normal',
+        port.attrs?.circle?.fill as string,
+      ),
     );
     node.prop('ports/items', updatedPorts);
   });
@@ -634,7 +657,7 @@ const initGraph = ({
       return;
     }
 
-    if (data.type === 'Loop') {
+    if (data.type === NodeTypeEnum.Loop) {
       const children = node.getChildren();
       const innerNodes = data.innerNodes || [];
 
@@ -677,7 +700,7 @@ const initGraph = ({
 
     // node.prop('zIndex', 99);
     changeCondition(data, 'moved');
-    changeZindex(node);
+    changeZIndex(node);
   });
 
   // 监听连接桩鼠标离开事件
@@ -693,10 +716,8 @@ const initGraph = ({
   });
   // 点击空白处，取消所有的选中
   graph.on('blank:click', () => {
-    const nodes = graph.getNodes();
-    nodes.forEach((node) => {
-      node.setData({ selected: false });
-    });
+    const cells = graph.getSelectedCells();
+    graph.unselect(cells);
     changeDrawer(null); // 调用回调函数以更新抽屉内容
     graph.cleanSelection();
   });
@@ -708,25 +729,94 @@ const initGraph = ({
   graph.on('edge:unselected', ({ edge }) => {
     edge.attr('line/stroke', '#5147FF'); // 恢复默认颜色
   });
-  // 监听节点点击事件，调用 changeDrawer 函数更新右侧抽屉的内容
-  graph.on('node:click', ({ node }) => {
-    // 先取消所有节点的选中状态
-    graph.cleanSelection();
+
+  graph.on('node:change:data', (...args) => {
+    console.log('node:change:data', args);
+  });
+  graph.on(
+    'node:custom:save',
+    ({ data, payload }: { data: ChildNode; payload: Partial<ChildNode> }) => {
+      console.log('node:custom:save', data, payload);
+      onSaveNode(data, payload);
+    },
+  );
+  graph.on('node:dblclick', (...args) => {
+    console.log('node:dblclick', args);
+  });
+  graph.on('node:selected', ({ node }) => {
+    //现在分为两处场景
+    // 1.用户点击节点 这个时间需要打开右侧属性面板
+    // 2.通过API选择节点，是通过聚焦的方式选中的，不需要打开右侧属性面板
     // 设置当前节点为选中状态
-    changeZindex(node);
-    // node.setData({ selected: true });
-    graph.select(node); // 使用 AntV X6 的选中 API
+
+    changeZIndex(node);
+    const data = node.getData();
+    if (data.isFocus) {
+      // 如果当前节点是聚焦状态，则不打开右侧属性面板
+      return;
+    }
     // 获取被点击节点的数据
-    const latestData = {
-      ...node.getData(),
+    const newData = {
+      ...data,
       id: node.id,
     };
-    changeDrawer(latestData);
+    changeDrawer(newData);
+  });
+  // graph.on('node:unselected', (...args) => {
+  //   console.log('node:unselected', args);
+  // });
+  // 监听节点点击事件，调用 changeDrawer 函数更新右侧抽屉的内容
+  graph.on('node:mousedown', ({ node }) => {
+    const data = node.getData();
+    //如果之前已经聚焦了，需要重新打开右侧属性面板
+    if (data.isFocus) {
+      //清除并重置之前 runResult 时的 focus 数据
+      node.updateData({
+        isFocus: false,
+      });
+      changeDrawer({
+        ...data,
+        id: node.id,
+      });
+      return;
+    }
   });
 
-  graph.on('node:unselected', ({ node }: { node: Node }) => {
-    node.setData({ selected: false });
-  });
+  // 处理异常处理节点连边的逻辑，返回是否是异常处理节点
+  const _handleExceptionItemEdgeAdd = (
+    edge: Edge,
+    doSuccess: (newNodeParams: ChildNode) => void,
+  ): boolean => {
+    // 获取边的两个连接桩
+    const sourcePort = edge.getSourcePortId();
+    const sourceNode = edge.getSourceNode()?.getData();
+    const targetNode = edge.getTargetNode()?.getData();
+
+    // 处理节点的异常处理 out port 连边的逻辑
+    const protGroup = getPortGroup(edge.getSourceNode(), sourcePort);
+    if (
+      EXCEPTION_NODES_TYPE.includes(sourceNode.type) &&
+      protGroup === PortGroupEnum.exception
+    ) {
+      const newNodeParams: ChildNode = cloneDeep(sourceNode);
+      const { exceptionHandleNodeIds = [] } =
+        newNodeParams.nodeConfig?.exceptionHandleConfig || {};
+      if (exceptionHandleNodeIds.includes(targetNode.id)) {
+        // 不重复添加异常处理节点
+        return true;
+      }
+      exceptionHandleNodeIds.push(targetNode.id);
+      const exceptionHandleConfig = {
+        ...(newNodeParams.nodeConfig?.exceptionHandleConfig || {}),
+        exceptionHandleNodeIds,
+      };
+      newNodeParams.nodeConfig.exceptionHandleConfig =
+        exceptionHandleConfig as ExceptionHandleConfig;
+      doSuccess(newNodeParams);
+      return true;
+    }
+    return false;
+  };
 
   // 新增连线
   graph.on('edge:connected', ({ isNew, edge }) => {
@@ -754,6 +844,18 @@ const initGraph = ({
       return;
     }
 
+    // 处理节点的异常处理 out port 连边的逻辑
+    const isException = _handleExceptionItemEdgeAdd(
+      edge,
+      (newNodeParams: ChildNode) => {
+        changeCondition(newNodeParams, targetNode.id.toString());
+        graph.addEdge(edge);
+        setEdgeAttributes(edge);
+        edge.toFront();
+      },
+    );
+    if (isException) return;
+
     // 处理循环节点的逻辑
     if (sourceNode.type === 'Loop' || targetNode.type === 'Loop') {
       console.log(sourcePort);
@@ -773,10 +875,10 @@ const initGraph = ({
 
     // 处理特殊的三个节点
     if (
-      sourceNode.type === 'Condition' ||
-      sourceNode.type === 'IntentRecognition' ||
-      (sourceNode.type === 'QA' &&
-        sourceNode.nodeConfig.answerType === 'SELECT')
+      sourceNode.type === NodeTypeEnum.Condition ||
+      sourceNode.type === NodeTypeEnum.IntentRecognition ||
+      (sourceNode.type === NodeTypeEnum.QA &&
+        sourceNode.nodeConfig.answerType === AnswerTypeEnum.SELECT)
     ) {
       //
       const _params = handleSpecialNodeTypes(
@@ -823,7 +925,6 @@ const initGraph = ({
     }
     // 优化点1：直接通过父子关系API获取父节点
     let parentNode = node.getParent();
-    //
     const data = node.getData();
     if (!parentNode && data.loopNodeId) {
       const cell = graph.getCellById(data.loopNodeId);
@@ -845,8 +946,6 @@ const initGraph = ({
       adjustParentSize(parentNode);
     }
   });
-
-  //
 
   return graph; // 返回初始化好的图形实例
 };

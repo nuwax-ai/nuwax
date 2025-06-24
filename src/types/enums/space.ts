@@ -15,8 +15,6 @@ export enum FilterStatusEnum {
   All,
   // 已发布
   Published,
-  // 最近打开
-  Recently_Open,
 }
 
 // 过滤创建者
@@ -55,6 +53,8 @@ export enum SpaceApplicationListEnum {
   Application_Develop,
   // 组件库
   Component_Library,
+  // MCP管理
+  MCP_Manage,
   // 空间广场
   Space_Square,
   // 成员与设置
@@ -73,6 +73,8 @@ export enum AgentArrangeConfigEnum {
   Text = 'Text',
   // 变量
   Variable = 'Variable',
+  // 知识库
+  Knowledge = 'Knowledge',
   // 数据表
   Table = 'Table',
   // 长期记忆
@@ -87,6 +89,8 @@ export enum AgentArrangeConfigEnum {
   Shortcut_Instruction = 'Shortcut_Instruction',
   // 定时任务
   Open_Scheduled_Task = 'Open_Scheduled_Task',
+  // MCP
+  MCP = 'Mcp',
 }
 
 // 是否开启问题建议,可用值:Open,Close

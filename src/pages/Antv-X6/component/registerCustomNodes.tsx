@@ -1,28 +1,31 @@
+import EditableTitle from '@/components/editableTitle';
 import { ICON_WORKFLOW_LOOP } from '@/constants/images.constants';
 import {
   answerTypeMap,
   branchTypeMap,
   compareTypeMap,
+  EXCEPTION_HANDLE_OPTIONS,
+  EXCEPTION_NODES_TYPE,
   optionsMap,
 } from '@/constants/node.constants';
-import { NodeTypeEnum } from '@/types/enums/common';
+import useNodeSelection from '@/hooks/useNodeSelection';
 import {
   AnswerTypeEnum,
-  ChildNode,
   CompareTypeEnum,
-  NodeProps,
-} from '@/types/interfaces/graph';
-import {
   NodeShapeEnum,
-  returnBackgroundColor,
-  returnImg,
-} from '@/utils/workflow';
+  NodeTypeEnum,
+  RunResultStatusEnum,
+} from '@/types/enums/common';
+import { ChildNode, NodeProps, RunResultItem } from '@/types/interfaces/graph';
+import { ExceptionHandleConfig } from '@/types/interfaces/node';
+import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
 import { Tag } from 'antd';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import '../index.less';
-
+import './registerCustomNodes.less';
+import RunResult from './runResult';
 // 定义那些节点有试运行
 
 // 条件节点
@@ -87,7 +90,7 @@ const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
       </div>
       {answerType === AnswerTypeEnum.SELECT &&
         data.nodeConfig.options?.map((item, index) => (
-          <div key={index} className="dis-left mb-16">
+          <div key={`${item.uuid}`} className="dis-left">
             <span className="text-right qa-title-style"></span>
             <Tag>{optionsMap[index]}</Tag>
             <span className="qa-content-style">
@@ -119,45 +122,175 @@ const IntentRecognitionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
 /**
  * 定义 GeneralNode 类组件，代表一个通用节点，该节点可以是流程图或其他图形编辑器中的元素。
  */
+const DISABLE_EDIT_NODE_TYPES = [
+  NodeTypeEnum.LoopStart,
+  NodeTypeEnum.LoopEnd,
+  NodeTypeEnum.Start,
+  NodeTypeEnum.End,
+];
+const NodeRunResult: React.FC<{
+  data: RunResultItem[];
+}> = ({ data }) => {
+  const time = (
+    (data?.reduce((acc, item) => {
+      return acc + (item.options?.endTime - item.options?.startTime);
+    }, 0) || 0) / 1000
+  ).toFixed(3);
+  const total = data?.length || 0;
+  const [pageTotal, setPageTotal] = useState(total);
+  // 当前页码
+  const [current, setCurrent] = useState(1);
+  // 是否只看错误
+  const [onlyError, setOnlyError] = useState(false);
+  // 是否展开
+  const [expanded, setExpanded] = useState(false);
+  const [innerData, setInnerData] = useState<RunResultItem[]>([]);
 
-export class GeneralNode extends React.Component<NodeProps> {
+  const success = data.every(
+    (item) => item.status === RunResultStatusEnum.FINISHED,
+  );
+  const isExecuting = data.some(
+    (item) => item.status === RunResultStatusEnum.EXECUTING,
+  );
+
+  // 处理页码变化
+  const handlePageChange = (page: number) => {
+    console.log('页码变化：', page);
+    setCurrent(page);
+  };
+
+  // 处理只看错误变化
+  const handleOnlyErrorChange = (checked: boolean) => {
+    console.log('只看错误变化：', checked);
+    setOnlyError(checked);
+  };
+
+  // 处理展开/收起变化
+  const handleExpandChange = (expanded: boolean) => {
+    console.log('展开/收起变化：', expanded);
+    setExpanded(expanded);
+  };
+
+  useEffect(() => {
+    setInnerData(data);
+  }, [data]);
+
+  useEffect(() => {
+    if (onlyError && !success) {
+      setInnerData(
+        data.filter((item) => item.status === RunResultStatusEnum.FAILED),
+      );
+    } else {
+      setInnerData(data);
+    }
+  }, [onlyError, success]);
+
+  useEffect(() => {
+    setPageTotal(innerData.length);
+    setCurrent(1);
+  }, [innerData]);
+
+  if (data?.length === 0) {
+    return null;
+  }
+
+  return (
+    <RunResult
+      success={success}
+      loading={isExecuting}
+      collapsible={!isExecuting}
+      time={`${time}s`}
+      total={pageTotal}
+      current={current}
+      onlyError={onlyError}
+      onPageChange={handlePageChange}
+      onOnlyErrorChange={handleOnlyErrorChange}
+      expanded={expanded}
+      onExpandChange={handleExpandChange}
+      batchVariables={innerData[current - 1]?.options?.data || {}}
+      inputParams={innerData[current - 1]?.options?.input || {}}
+      outputResult={innerData[current - 1]?.options?.data || {}}
+    />
+  );
+};
+
+const ExceptionHandle: React.FC<{
+  data: ExceptionHandleConfig | undefined;
+}> = ({ data }) => {
+  return (
+    <div className="exception-handle-style">
+      <span className="exception-handle-title">异常时</span>
+      <p className="exception-handle-content">
+        {
+          EXCEPTION_HANDLE_OPTIONS.find(
+            (item) => item.value === data?.exceptionHandleType,
+          )?.label
+        }
+      </p>
+    </div>
+  );
+};
+
+export const GeneralNode: React.FC<NodeProps> = (props) => {
   /**
    * 通过render返回节点的样式和内容
    */
-  render() {
-    const { node, graph } = this.props;
-    // 明确告诉 getData 返回的数据类型
-    const data = node.getData<ChildNode>();
-    // console.log(node.isSelected())
-    let isSelected = graph.isSelected(node); // 判断是否选中
+  const { node, graph } = props;
+  const data = node.getData<ChildNode>();
+  const selected = useNodeSelection({ graph, nodeId: data?.id });
+  const [editValue, setEditValue] = useState(data?.name || '');
+  useEffect(() => {
+    setEditValue(data?.name || '');
+  }, [data?.name]);
 
-    graph.on('blank:click', () => {
-      if (isSelected) {
-        // console.log(graph.cleanSelection())
-        this.forceUpdate();
-        // graph.cleanSelection()
-      }
+  if (!data) {
+    return null;
+  }
+
+  const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
+    data.type,
+  )} 0%, white 100%)`;
+  const isSpecialNode = [
+    NodeTypeEnum.QA,
+    NodeTypeEnum.Condition,
+    NodeTypeEnum.IntentRecognition,
+  ].includes(data.type);
+  const marginBottom = isSpecialNode ? '10px' : '0';
+
+  const handleEditingStatusChange = (val: boolean) => {
+    // 编辑中不能移动节点
+    node.setData({ enableMove: !val });
+  };
+
+  // 处理保存
+  const handleSave = (saveValue: string): boolean => {
+    // TODO 更新节点名称
+    setEditValue(saveValue);
+    graph.trigger('node:custom:save', {
+      data: node.getData<ChildNode>(),
+      payload: { name: saveValue },
     });
-    // 或者返回一个默认的内容，以防止渲染错误
-    if (!data) {
-      return null;
-    }
-    // 确保宽度和高度是有效的数字
-    // const width = data.nodeConfig?.extension?.width ?? 304;
-    // const height = data.nodeConfig?.extension?.height ?? 83;
-    // 构造渐变背景字符串
-    const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
-      data.type,
-    )} 0%, white 100%)`;
-    const isSpecialNode = [
-      NodeTypeEnum.QA,
-      NodeTypeEnum.Condition,
-      NodeTypeEnum.IntentRecognition,
-    ].includes(data.type);
-    const marginBottom = isSpecialNode ? '10px' : '0';
-    return (
+    return true;
+  };
+
+  const canNotEditNode = DISABLE_EDIT_NODE_TYPES.includes(data.type);
+  const showRunResult = [NodeTypeEnum.LoopStart, NodeTypeEnum.LoopEnd].includes(
+    data.type,
+  )
+    ? false
+    : !!data.runResults?.length; //循环内的开始结果节点不展示
+  const showExceptionHandle =
+    data.nodeConfig.exceptionHandleConfig &&
+    EXCEPTION_NODES_TYPE.includes(data.type);
+
+  if (!data) {
+    return null;
+  }
+
+  return (
+    <>
       <div
-        className={`general-node ${isSelected ? 'selected-general-node' : ''}`} // 根据选中状态应用类名
+        className={`general-node ${selected ? 'selected-general-node' : ''}`} // 根据选中状态应用类名
       >
         {/* 节点头部，包含标题、图像和操作菜单 */}
         <div
@@ -169,10 +302,14 @@ export class GeneralNode extends React.Component<NodeProps> {
         >
           <div className="dis-left general-node-header-image">
             {returnImg(data.type)}
-            <span className="general-node-header-title text-ellipsis">
-              {data.name}
-            </span>
           </div>
+          <EditableTitle
+            key={data.id.toString()}
+            value={editValue}
+            onSave={handleSave}
+            disabled={canNotEditNode}
+            onEditingStatusChange={handleEditingStatusChange}
+          />
         </div>
 
         {data.type === NodeTypeEnum.Condition && <ConditionNode data={data} />}
@@ -182,10 +319,16 @@ export class GeneralNode extends React.Component<NodeProps> {
         {data.type === NodeTypeEnum.IntentRecognition && (
           <IntentRecognitionNode data={data} />
         )}
+        {/* 异常处理 */}
+        {showExceptionHandle && (
+          <ExceptionHandle data={data.nodeConfig.exceptionHandleConfig} />
+        )}
       </div>
-    );
-  }
-}
+      {/* 运行结果 */}
+      {showRunResult && <NodeRunResult data={data.runResults} />}
+    </>
+  );
+};
 
 /**
  * 定义循环的节点
@@ -195,23 +338,44 @@ export class GeneralNode extends React.Component<NodeProps> {
 // 优化后的 LoopNode 组件
 export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
   const data = node.getData<ChildNode>();
-  let isSelected = graph.isSelected(node); // 判断是否选中
+  const [editValue, setEditValue] = useState(data?.name || '');
+  const selected = useNodeSelection({ graph, nodeId: data?.id });
   const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
     data.type,
   )} 0%, white 42px)`;
+  useEffect(() => {
+    setEditValue(data?.name || '');
+  }, [data?.name]);
+  const handleSave = () => {
+    setEditValue(editValue);
+    node.setData({ name: editValue });
+    return true;
+  };
+  const showRunResult = data.runResults?.length;
   return (
-    <div
-      className={`loop-node-style general-node ${
-        isSelected ? 'selected-general-node' : ''
-      }`}
-      style={{ background: gradientBackground }}
-    >
-      <div className="loop-node-title-style dis-left">
-        <ICON_WORKFLOW_LOOP style={{ marginRight: '6px' }} />
-        <span>{data.name}</span>
+    <>
+      <div
+        className={`loop-node-style general-node ${
+          selected ? 'selected-general-node' : ''
+        }`}
+        style={{ background: gradientBackground }}
+      >
+        <div className="loop-node-title-style dis-left">
+          <ICON_WORKFLOW_LOOP style={{ marginRight: '6px' }} />
+          <EditableTitle
+            key={data.id.toString()}
+            value={editValue}
+            onChange={(val) => {
+              console.log('onChange', val);
+              return true;
+            }}
+            onSave={handleSave}
+          />
+        </div>
+        <div className="loop-node-content" />
       </div>
-      <div className="loop-node-content" />
-    </div>
+      {showRunResult && <NodeRunResult data={data.runResults} />}
+    </>
   );
 };
 

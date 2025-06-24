@@ -4,8 +4,11 @@ import type {
   PublishStatusEnum,
 } from '@/types/enums/common';
 import type { ComponentTypeEnum } from '@/types/enums/space';
-import type { BindConfigWithSub, CreatorInfo } from '@/types/interfaces/agent';
-import type { CustomPopoverItem } from '@/types/interfaces/common';
+import type { CreatorInfo } from '@/types/interfaces/agent';
+import type {
+  BindConfigWithSub,
+  CustomPopoverItem,
+} from '@/types/interfaces/common';
 import type { ModelSaveParams } from '@/types/interfaces/model';
 import type { PluginHttpUpdateParams } from '@/types/interfaces/plugin';
 import React from 'react';
@@ -61,11 +64,11 @@ export interface CreateNewPluginProps {
 // table头部header带*号标题
 export interface LabelStarProps {
   className?: string;
-  label: string;
+  label: React.ReactNode;
 }
 
 // 试运行弹窗组件属性
-export interface PluginTryRunModelProps {
+export interface PluginTryRunModalProps {
   inputConfigArgs: BindConfigWithSub[];
   inputExpandedRowKeys: React.Key[];
   pluginId: number;
@@ -75,7 +78,7 @@ export interface PluginTryRunModelProps {
 }
 
 // 自动解析弹窗
-export interface PluginAutoAnalysisProps extends PluginTryRunModelProps {
+export interface PluginAutoAnalysisProps extends PluginTryRunModalProps {
   onConfirm: (list: BindConfigWithSub[]) => void;
 }
 
