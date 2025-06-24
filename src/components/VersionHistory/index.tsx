@@ -35,6 +35,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
   visible,
   isDrawer = false,
   onClose,
+  renderActions = () => null,
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
   // 已发布列表
@@ -161,7 +162,11 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
       </ConditionRender>
       <h5 className={cx(styles.title)}>编排与发布记录</h5>
       {versionHistoryList?.map((item) => (
-        <PublishRecordItem key={item.id} info={item} />
+        <PublishRecordItem
+          key={item.id}
+          info={item}
+          renderActions={renderActions}
+        />
       ))}
     </div>
   ) : (
