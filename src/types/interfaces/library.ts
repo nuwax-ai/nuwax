@@ -68,7 +68,7 @@ export interface LabelStarProps {
 }
 
 // 试运行弹窗组件属性
-export interface PluginTryRunModelProps {
+export interface PluginTryRunModalProps {
   inputConfigArgs: BindConfigWithSub[];
   inputExpandedRowKeys: React.Key[];
   pluginId: number;
@@ -78,7 +78,7 @@ export interface PluginTryRunModelProps {
 }
 
 // 自动解析弹窗
-export interface PluginAutoAnalysisProps extends PluginTryRunModelProps {
+export interface PluginAutoAnalysisProps extends PluginTryRunModalProps {
   onConfirm: (list: BindConfigWithSub[]) => void;
 }
 

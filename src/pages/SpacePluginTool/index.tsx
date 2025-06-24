@@ -2,7 +2,7 @@ import CreateNewPlugin from '@/components/CreateNewPlugin';
 import LabelStar from '@/components/LabelStar';
 import PluginAutoAnalysis from '@/components/PluginAutoAnalysis';
 import PluginConfigTitle from '@/components/PluginConfigTitle';
-import PluginTryRunModel from '@/components/PluginTryRunModel';
+import PluginTryRunModal from '@/components/PluginTryRunModal';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import VersionHistory from '@/components/VersionHistory';
 import { ICON_ADD_TR } from '@/constants/images.constants';
@@ -502,7 +502,7 @@ const SpacePluginTool: React.FC = () => {
             }}
           />
           {/*试运行弹窗*/}
-          <PluginTryRunModel
+          <PluginTryRunModal
             inputConfigArgs={inputConfigArgs}
             inputExpandedRowKeys={expandedRowKeys}
             pluginId={pluginId}

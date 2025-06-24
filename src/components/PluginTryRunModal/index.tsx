@@ -5,7 +5,7 @@ import useTryRun from '@/hooks/useTryRun';
 import { apiPluginTest } from '@/services/plugin';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
-import type { PluginTryRunModelProps } from '@/types/interfaces/library';
+import type { PluginTryRunModalProps } from '@/types/interfaces/library';
 import type { PluginTestResult } from '@/types/interfaces/plugin';
 import { getNumbersOnly } from '@/utils/common';
 import {
@@ -30,7 +30,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 // 试运行弹窗组件
-const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
+const PluginTryRunModal: React.FC<PluginTryRunModalProps> = ({
   inputConfigArgs,
   inputExpandedRowKeys,
   pluginId,
@@ -182,7 +182,7 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
               styles.header,
             )}
           >
-            <h3>试运行2</h3>
+            <h3>试运行</h3>
             <CloseOutlined
               className={cx('cursor-pointer')}
               onClick={handleCancel}
@@ -291,4 +291,4 @@ const PluginTryRunModel: React.FC<PluginTryRunModelProps> = ({
   );
 };
 
-export default PluginTryRunModel;
+export default PluginTryRunModal;
