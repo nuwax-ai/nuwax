@@ -23,7 +23,7 @@ const McpHeader: React.FC<McpHeaderProps> = ({
         className={cx('flex', 'items-center', 'cursor-pointer')}
         onClick={() => jumpBack(`/space/${spaceId}/mcp`)}
       >
-        <LeftOutlined className={cx('hover-box')} />
+        <LeftOutlined className={cx('hover-box', styles.icon)} />
         <span className={styles.name}>创建MCP服务</span>
       </div>
 

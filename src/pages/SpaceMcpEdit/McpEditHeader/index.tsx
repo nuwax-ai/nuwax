@@ -64,7 +64,7 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
           className={cx('flex', 'items-center', 'cursor-pointer')}
           onClick={() => jumpBack(`/space/${spaceId}/mcp`)}
         >
-          <LeftOutlined className={cx('hover-box')} />
+          <LeftOutlined className={cx('hover-box', styles.icon)} />
           <span className={styles.name}>编辑MCP服务</span>
         </div>
         <div className={cx('flex', 'items-center', 'gap-10')}>
