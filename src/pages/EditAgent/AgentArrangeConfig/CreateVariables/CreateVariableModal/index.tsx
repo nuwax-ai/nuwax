@@ -9,12 +9,15 @@ import {
   OptionDataSourceEnum,
 } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { BindConfigWithSub } from '@/types/interfaces/agent';
 import {
   AgentAddComponentStatusInfo,
   CreateVariableModalProps,
 } from '@/types/interfaces/agentConfig';
-import { CreatedNodeItem, option } from '@/types/interfaces/common';
+import {
+  BindConfigWithSub,
+  CreatedNodeItem,
+  option,
+} from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { PlusOutlined } from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -140,7 +143,7 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
           // 手动创建选项数据源
           setDataSource(
             selectConfig?.options?.map(
-              (item) =>
+              (item: option) =>
                 ({
                   ...item,
                   id: uuidv4(),

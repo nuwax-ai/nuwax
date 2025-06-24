@@ -184,7 +184,7 @@ export const updateNodeField = (
             const newNode = {
               key: uuidv4(),
               ...PLUGIN_INPUT_CONFIG,
-            };
+            } as BindConfigWithSub;
             node.subArgs = [newNode];
           } else {
             node.subArgs = undefined;

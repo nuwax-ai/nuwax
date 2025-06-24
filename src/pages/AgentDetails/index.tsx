@@ -13,8 +13,11 @@ import {
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
-import { AgentDetailDto, BindConfigWithSub } from '@/types/interfaces/agent';
-import type { UploadFileInfo } from '@/types/interfaces/common';
+import { AgentDetailDto } from '@/types/interfaces/agent';
+import type {
+  BindConfigWithSub,
+  UploadFileInfo,
+} from '@/types/interfaces/common';
 import type {
   MessageInfo,
   RoleInfo,

@@ -17,10 +17,12 @@ import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import {
   AgentManualComponentInfo,
   AgentSelectedComponentInfo,
-  BindConfigWithSub,
 } from '@/types/interfaces/agent';
 import { CardDataInfo } from '@/types/interfaces/cardInfo';
-import type { UploadFileInfo } from '@/types/interfaces/common';
+import type {
+  BindConfigWithSub,
+  UploadFileInfo,
+} from '@/types/interfaces/common';
 import type {
   ConversationChatParams,
   ConversationChatResponse,

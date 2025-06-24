@@ -1,6 +1,8 @@
 import { InputTypeEnum } from '@/types/enums/agent';
-import { BindConfigWithSub } from '@/types/interfaces/agent';
-import { NewConversationSetProps } from '@/types/interfaces/common';
+import {
+  BindConfigWithSub,
+  NewConversationSetProps,
+} from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { Button, Cascader, Form, FormProps, Input, InputNumber } from 'antd';
 import classNames from 'classnames';
@@ -47,12 +49,13 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
 
   // 根据输入方式获取内容
   const getContent = (item: BindConfigWithSub) => {
-    const { inputType, description } = item;
+    const inputType = item.inputType as InputTypeEnum;
+    const description = item.description;
     // 是否单选、多选
     const isSelect = [
       InputTypeEnum.Select,
       InputTypeEnum.MultipleSelect,
-    ].includes(inputType as InputTypeEnum);
+    ].includes(inputType);
     let content;
     // 输入方式
     switch (inputType) {

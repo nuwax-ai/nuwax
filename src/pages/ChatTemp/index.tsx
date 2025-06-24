@@ -25,9 +25,11 @@ import { MessageStatusEnum } from '@/types/enums/common';
 import {
   AgentManualComponentInfo,
   AgentSelectedComponentInfo,
-  BindConfigWithSub,
 } from '@/types/interfaces/agent';
-import type { UploadFileInfo } from '@/types/interfaces/common';
+import type {
+  BindConfigWithSub,
+  UploadFileInfo,
+} from '@/types/interfaces/common';
 import type {
   ConversationChatResponse,
   ConversationInfo,

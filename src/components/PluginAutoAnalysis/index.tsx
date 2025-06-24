@@ -103,7 +103,7 @@ const PluginAutoAnalysis: React.FC<PluginAutoAnalysisProps> = ({
       key: 'action',
       width: 60,
       align: 'center',
-      render: (_, record: BindConfigWithSub, index: number) => (
+      render: (_: null, record: BindConfigWithSub, index: number) => (
         <Space size="middle">
           {record.dataType?.includes('Array') ? (
             <ICON_ADD_TR
