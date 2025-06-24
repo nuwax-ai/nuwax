@@ -140,16 +140,14 @@ export interface McpTestParams {
 export interface McpTestResult {
   // 执行结果状态
   success: boolean;
+  // 执行结果message
+  message: string;
   // 执行结果
-  result: string;
-  // 执行日志
-  logs: string[];
-  // 执行错误信息
-  error: string;
-  // 请求ID
-  requestId: string;
-  // 请求耗时
-  costTime: number;
+  result: {
+    data: string;
+    // 可用值:TEXT,IMAGE,RESOURCE,PROMPT
+    type: string;
+  };
 }
 
 // MCP服务创建请求参数
@@ -213,6 +211,19 @@ export interface McpEditItemProps {
   name: string; // MCP服务名称
   description: string; // MCP服务描述
   onClick: () => void;
+}
+
+// 试运行弹窗组件属性
+export interface McpTryRunModalProps {
+  inputConfigArgs: BindConfigWithSub[];
+  inputExpandedRowKeys: React.Key[];
+  mcpId: number;
+  // MCP工具/资源/提示词名称
+  name?: string;
+  // 执行类型,可用值:TOOL,RESOURCE,PROMPT
+  executeType?: McpExecuteTypeEnum;
+  open: boolean;
+  onCancel: () => void;
 }
 
 // Mcp组件列表

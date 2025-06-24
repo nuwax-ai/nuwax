@@ -86,7 +86,7 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
               key={item.value}
               className={cx('cursor-pointer', styles['head-menu'], {
                 [styles['active']]: currentMenu === item.value,
-                'cursor-disabled': getMenuDisabled(item.value),
+                [styles.disabled]: getMenuDisabled(item.value),
               })}
               onClick={() => handleClickMenu(item.value)}
             >

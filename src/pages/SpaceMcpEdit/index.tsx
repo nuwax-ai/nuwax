@@ -11,22 +11,27 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
-import { McpEditHeadMenusEnum, McpInstallTypeEnum } from '@/types/enums/mcp';
+import {
+  McpEditHeadMenusEnum,
+  McpExecuteTypeEnum,
+  McpInstallTypeEnum,
+} from '@/types/enums/mcp';
 import { CodeLangEnum } from '@/types/enums/plugin';
-import { BindConfigWithSub } from '@/types/interfaces/common';
 import {
   McpDetailInfo,
   McpResourceInfo,
   McpToolInfo,
 } from '@/types/interfaces/mcp';
+import { getActiveKeys } from '@/utils/deepNode';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message, Radio } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import styles from './index.less';
 import McpEditHeader from './McpEditHeader';
 import McpEditItem from './McpEditItem';
+import McpTryRunModal from './McpTryRunModal';
 
 const cx = classNames.bind(styles);
 
@@ -45,6 +50,16 @@ const SpaceMcpCreate: React.FC = () => {
   const [mcpEditList, setMcpEditList] = useState<
     McpToolInfo[] | McpResourceInfo[]
   >([]);
+  // mcp测试信息
+  const [mcpTestInfo, setMcpTestInfo] = useState<
+    McpToolInfo | McpResourceInfo
+  >();
+  // 入参配置 - 展开的行，控制属性
+  const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
+  // 试运行弹窗
+  const [visible, setVisible] = useState<boolean>(false);
+  // 执行类型,可用值:TOOL,RESOURCE,PROMPT
+  const mcpExecuteTypeRef = useRef<McpExecuteTypeEnum>(McpExecuteTypeEnum.TOOL);
 
   const {
     form,
@@ -159,20 +174,37 @@ const SpaceMcpCreate: React.FC = () => {
   // 选择菜单
   const handleChooseMenu = (value: McpEditHeadMenusEnum) => {
     setCurrentMenu(value);
+    // 如果是 Overview 菜单，需要重置form数据
+    if (value === McpEditHeadMenusEnum.Overview && mcpDetailInfo) {
+      const { name, description, installType, mcpConfig } = mcpDetailInfo;
+      form.setFieldsValue({
+        name,
+        description,
+        installType,
+        serverConfig: mcpConfig?.serverConfig,
+      });
+    }
     if (value === McpEditHeadMenusEnum.Tool) {
+      mcpExecuteTypeRef.current = McpExecuteTypeEnum.TOOL;
       setMcpEditList(mcpDetailInfo?.mcpConfig?.tools || []);
     }
     if (value === McpEditHeadMenusEnum.Resource) {
+      mcpExecuteTypeRef.current = McpExecuteTypeEnum.RESOURCE;
       setMcpEditList(mcpDetailInfo?.mcpConfig?.resources || []);
     }
     if (value === McpEditHeadMenusEnum.Prompt) {
+      mcpExecuteTypeRef.current = McpExecuteTypeEnum.PROMPT;
       setMcpEditList(mcpDetailInfo?.mcpConfig?.prompts || []);
     }
   };
 
   // 点击测试按钮
-  const handleClickTryRun = (inputArgs: BindConfigWithSub[]) => {
-    console.log('inputArgs', inputArgs);
+  const handleClickTryRun = (info: McpToolInfo | McpResourceInfo) => {
+    // 默认展开的入参配置key
+    const _expandedRowKeys = getActiveKeys(info.inputArgs);
+    setExpandedRowKeys(_expandedRowKeys);
+    setMcpTestInfo(info);
+    setVisible(true);
   };
 
   return (
@@ -279,7 +311,7 @@ const SpaceMcpCreate: React.FC = () => {
                   key={index}
                   name={item.name}
                   description={item.description}
-                  onClick={() => handleClickTryRun(item.inputArgs)}
+                  onClick={() => handleClickTryRun(item)}
                 />
               ))}
             </div>
@@ -294,6 +326,16 @@ const SpaceMcpCreate: React.FC = () => {
         addComponents={addComponents}
         onAdded={handleAddComponent}
         hideTop={[AgentComponentTypeEnum.MCP]}
+      />
+      {/* 试运行弹窗组件 */}
+      <McpTryRunModal
+        inputConfigArgs={mcpTestInfo?.inputArgs || []}
+        inputExpandedRowKeys={expandedRowKeys}
+        executeType={mcpExecuteTypeRef.current}
+        mcpId={mcpId}
+        name={mcpTestInfo?.name}
+        open={visible}
+        onCancel={() => setVisible(false)}
       />
     </div>
   );

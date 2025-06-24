@@ -59,7 +59,10 @@ export enum McpEditHeadMenusEnum {
 
 // 执行类型,可用值:TOOL,RESOURCE,PROMPT
 export enum McpExecuteTypeEnum {
+  // 工具
   TOOL = 'TOOL',
+  // 资源
   RESOURCE = 'RESOURCE',
+  // 提示词
   PROMPT = 'PROMPT',
 }

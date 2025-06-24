@@ -575,7 +575,7 @@ export interface BindConfigWithSub {
   // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
   inputType?: InputTypeEnum;
   subArgs?: BindConfigWithSub[];
-  loopId: number;
+  loopId?: number;
   children?: BindConfigWithSub[];
   [key: string]: any;
 }
