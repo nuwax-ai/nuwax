@@ -89,7 +89,7 @@ const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
       </div>
       {answerType === AnswerTypeEnum.SELECT &&
         data.nodeConfig.options?.map((item, index) => (
-          <div key={index} className="dis-left mb-16">
+          <div key={`${item.uuid}`} className="dis-left">
             <span className="text-right qa-title-style"></span>
             <Tag>{optionsMap[index]}</Tag>
             <span className="qa-content-style">

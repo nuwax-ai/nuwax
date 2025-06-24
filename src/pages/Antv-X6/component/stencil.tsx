@@ -1,5 +1,6 @@
 // import { SearchOutlined } from '@ant-design/icons';
 // import { Input } from 'antd';
+import { NodeTypeEnum } from '@/types/enums/common';
 import { StencilChildNode } from '@/types/interfaces/graph';
 import '../index.less';
 import { asideList } from '../params';
@@ -63,12 +64,15 @@ const StencilContent = ({ dragChild, isLoop = false }: Prop) => {
             <div className="stencil-list-content">
               {/* 渲染该组内的所有子项  其中循环节点不添加 循环节点*/}
               {item.children
-                .filter((child) => (isLoop ? child.type !== 'Loop' : true))
+                .filter((child) =>
+                  isLoop ? child.type !== NodeTypeEnum.Loop : true,
+                )
                 .map((child) => {
                   // 特殊类型处理：LoopBreak/LoopContinue 只在 Loop 节点时显示
-                  const isLoopControl = ['LoopBreak', 'LoopContinue'].includes(
-                    child?.type || '',
-                  );
+                  const isLoopControl = [
+                    NodeTypeEnum.LoopBreak,
+                    NodeTypeEnum.LoopContinue,
+                  ].includes(child?.type || '');
                   const shouldShow = isLoopControl ? isLoop : true;
                   return (
                     shouldShow && (
