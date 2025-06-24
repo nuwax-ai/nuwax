@@ -14,8 +14,8 @@ import {
   createEdge,
   generatePorts,
   getEdges,
-  getHeight,
   getLength,
+  getNodeSize,
   getWidthAndHeight,
 } from '@/utils/workflow';
 import { Node } from '@antv/x6';
@@ -204,17 +204,20 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           }
         }
         if (newData.type === NodeTypeEnum.QA) {
+          // 问答节点
+          const newPorts = generatePorts(newData);
+          const { width, height } = getNodeSize({
+            data: newData,
+            ports: newPorts.items,
+            type: 'update',
+          });
           if (newData.nodeConfig.answerType !== AnswerTypeEnum.SELECT) {
-            node.setSize(304, 110);
-            node.prop('ports', generatePorts(newData));
+            node.setSize(width, height);
+            node.prop('ports', newPorts);
           } else {
-            const optionsLength = newData.nodeConfig?.options
-              ? newData.nodeConfig.options.length
-              : 0;
-            const newHeight = getHeight(NodeTypeEnum.QA, optionsLength);
             // 确保在获取到新高度后设置节点大小和端口
-            node.setSize(304, newHeight);
-            node.prop('ports', generatePorts(newData));
+            node.setSize(width, height);
+            node.prop('ports', newPorts);
           }
         }
         // console.log('newData', newData);
@@ -352,22 +355,15 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         );
 
         // 创建主节点
-        const mainNodes = notLoopChildrenNodes.map((node) => {
-          const baseNode = createBaseNode(node);
-
-          const { width, height } = getWidthAndHeight(node);
-          return {
-            ...baseNode,
-            width: width, // 显式设置宽度
-            height: height,
-          };
-        });
+        const mainNodes = notLoopChildrenNodes.map((node) =>
+          createBaseNode(node),
+        );
         graphRef.current.fromJSON({
           nodes: mainNodes, // X6 会自动实例化节点
         });
         // 找出循环节点 子节点如果有就添加
         addLoopChildNode((node) => {
-          return node.type === 'Loop';
+          return node.type === NodeTypeEnum.Loop;
         });
 
         // 批量添加边

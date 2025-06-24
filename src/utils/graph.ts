@@ -422,8 +422,17 @@ export const getPeerNodePosition = (
 
 export const generatePortGroupConfig = (
   basePortSize: number,
-  isLoopNode: boolean,
+  data: ChildNode,
 ) => {
+  const fixedPortNode = [
+    NodeTypeEnum.Loop,
+    NodeTypeEnum.LoopStart,
+    NodeTypeEnum.LoopEnd,
+    NodeTypeEnum.Start,
+    NodeTypeEnum.End,
+  ].includes(data.type); //需要固定位置的节点
+
+  const isLoopNode = data.type === NodeTypeEnum.Loop;
   return {
     // 通用端口组配置
     in: {
@@ -437,7 +446,9 @@ export const generatePortGroupConfig = (
       },
     },
     out: {
-      position: 'right',
+      position: {
+        name: fixedPortNode ? 'right' : 'absolute',
+      },
       attrs: { circle: { r: basePortSize, magnet: true, magnetRadius: 50 } },
       connectable: {
         source: true, // 非 Loop 节点的 out 端口只能作为 source

@@ -24,6 +24,7 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
+import { NodeTypeEnum } from '@/types/enums/common';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import type {
@@ -513,7 +514,7 @@ export default function EcosystemTemplate() {
   >([]);
   // 查询智能体配置组件列表
   const onSelectedComponent = (item: CreatedNodeItem) => {
-    item.type = item.targetType;
+    item.type = item.targetType as unknown as NodeTypeEnum;
     item.typeId = item.targetId;
     setShow(false);
     setShareModalData({
@@ -526,7 +527,7 @@ export default function EcosystemTemplate() {
     });
     setAddComponents([
       {
-        type: item.type,
+        type: item.targetType,
         targetId: item.targetId,
         status: AgentAddComponentStatusEnum.Added,
       },
