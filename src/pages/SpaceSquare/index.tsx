@@ -61,8 +61,8 @@ const SpaceSection: React.FC = () => {
     setLoading(false);
   };
 
-  // 广场-已发布智能体列表接口
-  const { run: runAgentList } = useRequest(apiPublishedAgentList, {
+  // 提取api公共配置
+  const commonConfig = {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: Page<SquarePublishedItemInfo>) => {
@@ -71,43 +71,28 @@ const SpaceSection: React.FC = () => {
     onError: () => {
       setLoading(false);
     },
-  });
+  };
+
+  // 广场-已发布智能体列表接口
+  const { run: runAgentList } = useRequest(apiPublishedAgentList, commonConfig);
 
   // 广场-已发布插件列表接口（广场以及弹框选择中全部插件）
-  const { run: runPluginList } = useRequest(apiPublishedPluginList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: Page<SquarePublishedItemInfo>) => {
-      handleSuccess(result);
-    },
-    onError: () => {
-      setLoading(false);
-    },
-  });
+  const { run: runPluginList } = useRequest(
+    apiPublishedPluginList,
+    commonConfig,
+  );
 
   // 广场-已发布工作流列表接口（广场以及弹框选择中全部插件）
-  const { run: runWorkflowList } = useRequest(apiPublishedWorkflowList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: Page<SquarePublishedItemInfo>) => {
-      handleSuccess(result);
-    },
-    onError: () => {
-      setLoading(false);
-    },
-  });
+  const { run: runWorkflowList } = useRequest(
+    apiPublishedWorkflowList,
+    commonConfig,
+  );
 
   // 广场-已发布模板列表接口
-  const { run: runTemplateList } = useRequest(apiPublishedTemplateList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: Page<SquarePublishedItemInfo>) => {
-      handleSuccess(result);
-    },
-    onError: () => {
-      setLoading(false);
-    },
-  });
+  const { run: runTemplateList } = useRequest(
+    apiPublishedTemplateList,
+    commonConfig,
+  );
 
   // 查询列表
   const handleQuery = (
