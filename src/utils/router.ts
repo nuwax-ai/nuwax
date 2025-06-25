@@ -15,10 +15,22 @@ export const jumpToAgent = (targetSpaceId: number, agentId: number) => {
 export const jumpBack = (url?: string) => {
   // document.referrer 属性返回一个字符串，该字符串包含了当前文档的来源文档的 URL。可能为空
   const referrer = document.referrer;
-  if (window.history.length > 1 || referrer || !url) {
-    history.back();
-  } else {
+  const historyLength = window.history.length;
+  // 检查是否是新标签页打开（没有 referrer 且 history 长度为 2）
+  const isNewTab = !referrer && historyLength <= 2;
+
+  if (isNewTab && url) {
+    // 新标签页打开，跳转到指定页面
     history.push(url);
+  } else if (historyLength > 1 && referrer) {
+    // 有正常的浏览历史，执行返回
+    history.back();
+  } else if (url) {
+    // 兜底方案，跳转到指定页面
+    history.push(url);
+  } else {
+    // 没有指定页面，跳转到首页
+    history.push('/');
   }
 };
 

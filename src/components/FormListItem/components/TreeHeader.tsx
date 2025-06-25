@@ -66,8 +66,8 @@ const TreeHeader: React.FC<TreeHeaderProps> = ({
               ]}
               style={{ width: `calc(100% - ${showAddButton ? 34 : 0}px)` }}
               onChange={(e) => {
+                form.setFieldValue('outputType', e);
                 if (e !== 'JSON') {
-                  form.setFieldValue('outputType', e);
                   form.setFieldValue('outputArgs', [
                     {
                       name: 'output',

@@ -4,6 +4,7 @@ import Monaco from '@/components/CodeEditor/monaco';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum } from '@/types/enums/node';
+import { CodeLangEnum } from '@/types/enums/plugin';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { ExpandAltOutlined, SettingOutlined } from '@ant-design/icons';
 import {
@@ -505,6 +506,13 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
 const CodeNode: React.FC<NodeDisposeProps> = ({ form }) => {
   const [show, setShow] = useState(false);
   const { setIsModified } = useModel('workflow');
+  const fieldName =
+    form.getFieldValue('codeLanguage') === CodeLangEnum.JavaScript
+      ? 'codeJavaScript'
+      : 'codePython';
+
+  const codeLanguage =
+    form.getFieldValue('codeLanguage') || CodeLangEnum.JavaScript;
   return (
     <>
       <div className="node-item-style">
@@ -528,21 +536,12 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ form }) => {
           </div>
           <CodeEditor
             form={form}
-            value={form.getFieldValue(
-              form.getFieldValue('codeLanguage') === 'JavaScript'
-                ? 'codeJavaScript'
-                : 'codePython',
-            )}
+            value={form.getFieldValue(fieldName)}
             onChange={(value) => {
-              form.setFieldValue(
-                form.getFieldValue('codeLanguage') === 'JavaScript'
-                  ? 'codeJavaScript'
-                  : 'codePython',
-                value,
-              );
+              form.setFieldValue(fieldName, value);
               setIsModified(true);
             }}
-            codeLanguage={form.getFieldValue('codeLanguage') || 'JavaScript'}
+            codeLanguage={codeLanguage}
             height="180px"
           />
         </div>
