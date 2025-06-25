@@ -277,6 +277,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
           field="intent"
           hasUuid
           showIndex
+          limitAddLength={26}
           inputItemName={InputItemNameEnum.intentConfigs}
         />
       </div>

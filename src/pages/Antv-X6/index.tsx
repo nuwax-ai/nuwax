@@ -66,12 +66,14 @@ import { App, Form } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
+import VersionAction from './components/VersionAction';
 import ControlPanel from './controlPanel';
 import ErrorList from './errorList';
 import GraphContainer from './graphContainer';
 import Header from './header';
 import './index.less';
 import RenderNodeDrawer from './RenderNodeDrawer';
+
 const workflowCreatedTabs = CREATED_TABS.filter((item) =>
   [
     AgentComponentTypeEnum.Plugin,
@@ -1598,6 +1600,14 @@ const Workflow: React.FC = () => {
     setIsModified(false);
   });
 
+  const handleRefreshGraph = async () => {
+    setGraphParams({
+      nodeList: [],
+      edgeList: [],
+    });
+    await getDetails();
+  };
+
   return (
     <div id="container">
       {/* 顶部的名称和发布等按钮 */}
@@ -1729,6 +1739,13 @@ const Workflow: React.FC = () => {
         visible={showVersionHistory}
         isDrawer={true}
         onClose={() => setShowVersionHistory(false)}
+        renderActions={(item) => (
+          <VersionAction
+            data={item}
+            onRefresh={handleRefreshGraph}
+            onClose={() => setShowVersionHistory(false)}
+          />
+        )}
       />
     </div>
   );

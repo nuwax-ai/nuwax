@@ -28,6 +28,9 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import EventHandlers from './component/eventHandlers';
 import InitGraph from './component/graph';
 import { registerCustomNodes } from './component/registerCustomNodes';
+
+const GRAPH_CONTAINER_ID = 'graph-container';
+
 const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
   (
     {
@@ -54,9 +57,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     function preWork() {
       const container = containerRef.current;
       if (!container) return;
-
       const graphContainer = document.createElement('div');
-      graphContainer.id = 'graph-container';
+      graphContainer.id = GRAPH_CONTAINER_ID;
       container?.appendChild(graphContainer);
     }
     // 绘制画布
@@ -422,7 +424,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       if (!containerRef.current) return;
       preWork();
       graphRef.current = InitGraph({
-        containerId: 'graph-container',
+        containerId: GRAPH_CONTAINER_ID,
         changeDrawer: changeDrawer,
         changeEdge: changeEdge,
         changeCondition: changeCondition,
@@ -452,13 +454,20 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     }, []);
 
     useEffect(() => {
+      if (graphParams.nodeList.length === 0) {
+        // 如果节点列表为空，则重置初始化状态
+        hasInitialized.current = false;
+      }
+    }, [graphParams.nodeList]);
+
+    useEffect(() => {
       if (graphParams.nodeList.length > 0 && !hasInitialized.current) {
         drawGraph();
         hasInitialized.current = true;
       }
     }, [graphParams.nodeList]);
 
-    return <div ref={containerRef} id="graph-container" />;
+    return <div ref={containerRef} id={GRAPH_CONTAINER_ID} />;
   },
 );
 

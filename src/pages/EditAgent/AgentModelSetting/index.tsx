@@ -177,9 +177,15 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
 
   // 更新模型组件配置
   const handleChange = (newValue: React.Key, attr: string) => {
+    let _value;
+    if (attr === 'reasoningModelId') {
+      _value = Number(newValue) || null;
+    } else {
+      _value = Number(newValue) || 0;
+    }
     const _componentBindConfig: ComponentModelBindConfig = {
       ...componentBindConfig,
-      [attr]: newValue ? Number(newValue) : null,
+      [attr]: _value,
       mode: UpdateModeComponentEnum.Customization,
     };
     setComponentBindConfig(_componentBindConfig);

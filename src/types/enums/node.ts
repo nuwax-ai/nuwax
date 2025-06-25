@@ -18,3 +18,9 @@ export enum PortGroupEnum {
   special = 'special',
   exception = 'exception',
 }
+
+export enum ConditionBranchTypeEnum {
+  IF = 'IF',
+  ELSE_IF = 'ELSE_IF',
+  ELSE = 'ELSE',
+}
