@@ -298,6 +298,14 @@ export async function apiWorkflowConfigHistoryList(
   });
 }
 
+// 还原工作流版本
+export async function apiRestoreWorkflowVersion(
+  historyRecordId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/workflow/restore/${historyRecordId}`, {
+    method: 'POST',
+  });
+}
 export default {
   apiDeleteNode,
   apiCopyNode,
@@ -313,4 +321,5 @@ export default {
   executeNode,
   publishWorkflow,
   validWorkflow,
+  apiRestoreWorkflowVersion,
 };

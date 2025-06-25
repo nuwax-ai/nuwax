@@ -54,6 +54,8 @@ export interface ModelFormData {
   strategy: ModelStrategyEnum;
   // 模型类型，可选值：Completions, Chat, Edits, Images, Embeddings, Audio, Other
   type?: ModelTypeEnum;
+  // 最大输出token数, token上限
+  maxTokens: number;
 }
 
 // 在空间中添加或更新模型配置输入参数

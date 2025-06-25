@@ -191,6 +191,7 @@ export interface FormListProps {
   // 是否要写入uuid
   hasUuid?: boolean;
   showIndex?: boolean;
+  limitAddLength?: number;
 }
 
 // 定义技能

@@ -4,6 +4,7 @@ import {
   ExceptionHandleTypeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
+import { ConditionBranchTypeEnum } from '@/types/enums/node';
 import { BindConfigWithSub, CreatedNodeItem } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
 export interface InputAndOutConfig {
@@ -39,7 +40,7 @@ interface ConditionArgs {
   firstArg: BindConfigWithSub | null;
 }
 export interface ConditionBranchConfigs {
-  branchType: 'IF' | 'ELSE_IF' | 'ELSE';
+  branchType: ConditionBranchTypeEnum;
   conditionType: string | null;
   nextNodeIds?: number[];
   conditionArgs: ConditionArgs[];
