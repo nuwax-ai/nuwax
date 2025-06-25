@@ -219,7 +219,6 @@ const NodeRunResult: React.FC<{
       onOnlyErrorChange={handleOnlyErrorChange}
       expanded={expanded}
       onExpandChange={handleExpandChange}
-      batchVariables={innerData[current - 1]?.options?.data || {}}
       inputParams={innerData[current - 1]?.options?.input || {}}
       outputResult={innerData[current - 1]?.options?.data || {}}
     />
