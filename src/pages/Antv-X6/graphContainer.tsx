@@ -43,6 +43,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       changeZoom,
       createNodeToPortOrEdge,
       onSaveNode,
+      onClickBlank,
     },
     ref,
   ) => {
@@ -311,7 +312,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       });
     };
 
-    const graphClearSelection = () => {
+    const graphTriggerBlankClick = () => {
       if (!graphRef.current) return;
       graphRef.current.trigger('blank:click');
     };
@@ -415,7 +416,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       graphSelectNode,
       graphCreateNewEdge,
       getGraphRef,
-      graphClearSelection,
+      graphTriggerBlankClick,
       graphActiveNodeRunResult,
       graphResetRunResult,
     }));
@@ -431,6 +432,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         changeZoom: changeZoom,
         createNodeToPortOrEdge,
         onSaveNode: onSaveNode,
+        onClickBlank: onClickBlank,
       });
 
       const cleanup = EventHandlers({
