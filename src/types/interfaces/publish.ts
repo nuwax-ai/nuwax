@@ -38,7 +38,7 @@ export interface VersionHistoryProps {
   // 是否是抽屉展示
   isDrawer?: boolean;
   onClose: () => void;
-  renderActions: (item: HistoryData) => React.ReactNode;
+  renderActions?: (item: HistoryData) => React.ReactNode;
 }
 
 // 当前发布组件属性
