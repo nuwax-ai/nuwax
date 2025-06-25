@@ -104,7 +104,7 @@ export interface McpDetailInfo {
   description: string;
   // MCP图标
   icon: string;
-  // MCP安装方式,可用值:NPX,uvx,SSE,COMPONENT
+  // MCP安装方式,可用值:NPX,UVX,SSE,COMPONENT
   installType: McpInstallTypeEnum;
   // MCP部署状态,可用值:Initialization,Deploying,Deployed,DeployFailed,Stopped
   deployStatus: DeployStatusEnum;

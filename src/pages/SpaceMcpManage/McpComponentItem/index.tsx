@@ -3,6 +3,7 @@ import CustomPopover from '@/components/CustomPopover';
 import { MCP_MORE_ACTION } from '@/constants/mcp.constants';
 import {
   DeployStatusEnum,
+  McpInstallTypeEnum,
   McpMoreActionEnum,
   McpPermissionsEnum,
 } from '@/types/enums/mcp';
@@ -98,7 +99,13 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
       <div
         className={cx('flex', 'flex-wrap', 'items-center', styles['type-wrap'])}
       >
-        <BoxInfo text={mcpInfo?.installType} />
+        <BoxInfo
+          text={
+            mcpInfo?.installType === McpInstallTypeEnum.COMPONENT
+              ? '组件库'
+              : mcpInfo?.installType
+          }
+        />
         <BoxInfo text={getMcpDeployStatus(mcpInfo.deployStatus)} />
         {mcpInfo.deployStatus === DeployStatusEnum.Deployed && (
           <CheckCircleTwoTone twoToneColor="#52c41a" />

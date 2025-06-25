@@ -3,6 +3,7 @@ import CodeEditor from '@/components/CodeEditor';
 import ConfigOptionCollapse from '@/components/ConfigOptionCollapse';
 import Created from '@/components/Created';
 import LabelStar from '@/components/LabelStar';
+import Loading from '@/components/Loading';
 import UploadAvatar from '@/components/UploadAvatar';
 import { MCP_INSTALL_TYPE_LIST } from '@/constants/mcp.constants';
 import useMcp from '@/hooks/useMcp';
@@ -42,6 +43,7 @@ const SpaceMcpCreate: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
   const mcpId = Number(params.mcpId);
+  const [loadingDetail, setLoadingDetail] = useState<boolean>(false);
   // MCP服务详情信息
   const [mcpDetailInfo, setMcpDetailInfo] = useState<McpDetailInfo>();
   // 当前菜单
@@ -87,6 +89,7 @@ const SpaceMcpCreate: React.FC = () => {
 
   // 查询MCP服务详情成功后，处理数据
   const handleQuerySuccess = (result: McpDetailInfo) => {
+    setLoadingDetail(false);
     setMcpDetailInfo(result);
     const { name, description, icon, installType, mcpConfig } = result;
     form.setFieldsValue({
@@ -149,6 +152,7 @@ const SpaceMcpCreate: React.FC = () => {
   });
 
   useEffect(() => {
+    setLoadingDetail(true);
     runDetail(mcpId);
   }, [mcpId]);
 
@@ -246,102 +250,109 @@ const SpaceMcpCreate: React.FC = () => {
         onSaveAndDeploy={() => handleSave(true)}
       />
       <div className={cx('flex-1', 'overflow-y')}>
-        <div className={cx(styles['main-container'])}>
-          {currentMenu === McpEditHeadMenusEnum.Overview ? (
-            <>
-              <UploadAvatar
-                className={styles['upload-box']}
-                onUploadSuccess={setImageUrl}
-                imageUrl={imageUrl}
-                defaultImage={mcpImage}
-              />
-              <Form
-                form={form}
-                preserve={false}
-                layout="vertical"
-                requiredMark={customizeRequiredMark}
-                onFinish={onFinish}
-                autoComplete="off"
-              >
-                <Form.Item
-                  name="name"
-                  label="服务名称"
-                  rules={[{ required: true, message: '请输入MCP服务名称' }]}
-                >
-                  <Input placeholder="MCP服务名称" showCount maxLength={30} />
-                </Form.Item>
-                <Form.Item
-                  name="description"
-                  label="描述"
-                  rules={[{ required: true, message: '请输入描述你的MCP服务' }]}
-                >
-                  <Input.TextArea
-                    className="dispose-textarea-count"
-                    placeholder="描述你的MCP服务"
-                    showCount
-                    maxLength={500}
-                    autoSize={{ minRows: 3, maxRows: 5 }}
-                  />
-                </Form.Item>
-                <Form.Item
-                  name="installType"
-                  label="安装方式"
-                  rules={[{ required: true, message: '请选择安装方式' }]}
-                >
-                  <Radio.Group disabled options={MCP_INSTALL_TYPE_LIST} />
-                </Form.Item>
-                {/* 安装方式切换 */}
-                {mcpDetailInfo?.installType !== McpInstallTypeEnum.COMPONENT ? (
-                  // MCP服务配置，installType为npx、uvx、sse时有效	类型：string
-                  <Form.Item
-                    name="serverConfig"
-                    label={
-                      <LabelStar
-                        label={
-                          <div className={cx('flex', 'items-center')}>
-                            <span>MCP服务配置</span>
-                            <span className={cx(styles['sub-title'])}>
-                              MCP服务使用json配置，提交前确保格式正确
-                            </span>
-                          </div>
-                        }
-                      />
-                    }
-                  >
-                    <CodeEditor
-                      className={cx('w-full', 'radius-10', 'overflow-hide')}
-                      codeLanguage={CodeLangEnum.JSON}
-                      height="300px"
-                      codeOptimizeVisible={false}
-                    />
-                  </Form.Item>
-                ) : (
-                  <Form.Item
-                    name="components"
-                    label={<LabelStar label="组件选择" />}
-                  >
-                    <ConfigOptionCollapse
-                      className={cx(styles['collapse-container'])}
-                      items={collapseList}
-                      defaultActiveKey={collapseActiveKey}
-                    />
-                  </Form.Item>
-                )}
-              </Form>
-            </>
-          ) : (
-            <div className={cx('flex', 'flex-col', 'gap-10')}>
-              {mcpEditList?.map((item, index) => (
-                <McpEditItem
-                  key={index}
-                  name={item.name}
-                  description={item.description}
-                  onClick={() => handleClickTryRun(item)}
+        {loadingDetail ? (
+          <Loading className="h-full" />
+        ) : (
+          <div className={cx(styles['main-container'])}>
+            {currentMenu === McpEditHeadMenusEnum.Overview ? (
+              <>
+                <UploadAvatar
+                  className={styles['upload-box']}
+                  onUploadSuccess={setImageUrl}
+                  imageUrl={imageUrl}
+                  defaultImage={mcpImage}
                 />
-              ))}
-            </div>
-          )}
-        </div>
+                <Form
+                  form={form}
+                  preserve={false}
+                  layout="vertical"
+                  requiredMark={customizeRequiredMark}
+                  onFinish={onFinish}
+                  autoComplete="off"
+                >
+                  <Form.Item
+                    name="name"
+                    label="服务名称"
+                    rules={[{ required: true, message: '请输入MCP服务名称' }]}
+                  >
+                    <Input placeholder="MCP服务名称" showCount maxLength={30} />
+                  </Form.Item>
+                  <Form.Item
+                    name="description"
+                    label="描述"
+                    rules={[
+                      { required: true, message: '请输入描述你的MCP服务' },
+                    ]}
+                  >
+                    <Input.TextArea
+                      className="dispose-textarea-count"
+                      placeholder="描述你的MCP服务"
+                      showCount
+                      maxLength={500}
+                      autoSize={{ minRows: 3, maxRows: 5 }}
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    name="installType"
+                    label="安装方式"
+                    rules={[{ required: true, message: '请选择安装方式' }]}
+                  >
+                    <Radio.Group disabled options={MCP_INSTALL_TYPE_LIST} />
+                  </Form.Item>
+                  {/* 安装方式切换 */}
+                  {mcpDetailInfo?.installType !==
+                  McpInstallTypeEnum.COMPONENT ? (
+                    // MCP服务配置，installType为npx、uvx、sse时有效	类型：string
+                    <Form.Item
+                      name="serverConfig"
+                      label={
+                        <LabelStar
+                          label={
+                            <div className={cx('flex', 'items-center')}>
+                              <span>MCP服务配置</span>
+                              <span className={cx(styles['sub-title'])}>
+                                MCP服务使用json配置，提交前确保格式正确
+                              </span>
+                            </div>
+                          }
+                        />
+                      }
+                    >
+                      <CodeEditor
+                        className={cx('w-full', 'radius-10', 'overflow-hide')}
+                        codeLanguage={CodeLangEnum.JSON}
+                        height="300px"
+                        codeOptimizeVisible={false}
+                      />
+                    </Form.Item>
+                  ) : (
+                    <Form.Item
+                      name="components"
+                      label={<LabelStar label="组件选择" />}
+                    >
+                      <ConfigOptionCollapse
+                        className={cx(styles['collapse-container'])}
+                        items={collapseList}
+                        defaultActiveKey={collapseActiveKey}
+                      />
+                    </Form.Item>
+                  )}
+                </Form>
+              </>
+            ) : (
+              <div className={cx('flex', 'flex-col', 'gap-10')}>
+                {mcpEditList?.map((item, index) => (
+                  <McpEditItem
+                    key={index}
+                    name={item.name}
+                    description={item.description}
+                    onClick={() => handleClickTryRun(item)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       {/*添加插件、工作流、知识库、数据库弹窗*/}
       <Created
