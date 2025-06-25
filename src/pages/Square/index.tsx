@@ -1,4 +1,5 @@
 import squareBannerImage from '@/assets/images/square_banner_image.png';
+import InfiniteScrollDiv from '@/components/InfiniteScrollDiv';
 import Loading from '@/components/Loading';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import useSpaceSquare from '@/hooks/useSpaceSquare';
@@ -35,12 +36,18 @@ const Square: React.FC = () => {
   // 配置信息
   const [configInfo, setConfigInfo] = useState<TenantConfigInfo>();
   const [loading, setLoading] = useState<boolean>(false);
+  // 标题
   const [title, setTitle] = useState<string>('智能体');
+  // 分类名称
   const categoryNameRef = useRef<string>('');
   // 分类类型，默认智能体
   const categoryTypeRef = useRef<SquareAgentTypeEnum>(
     SquareAgentTypeEnum.Agent,
   );
+  // 当前页码
+  const [page, setPage] = useState<number>(1);
+  // 是否有更多数据
+  const [hasMore, setHasMore] = useState<boolean>(true);
 
   // 接口地址， 默认智能体列表
   const apiUrlRef = useRef<(data: SquarePublishedListParams) => void>(
@@ -54,13 +61,25 @@ const Square: React.FC = () => {
     handleToggleCollectSuccess,
   } = useSpaceSquare();
 
+  // 查询列表成功后处理数据
+  const handleSuccess = (result: Page<SquarePublishedItemInfo>) => {
+    const { records, pages, current } = result;
+    setSquareComponentList((prev) => {
+      return current === 1 ? records || [] : [...prev, ...records];
+    });
+    // 如果当前页码大于等于总页数，则不再加载更多数据
+    setHasMore(current < pages);
+    // 更新页码
+    setPage(current + 1);
+    setLoading(false);
+  };
+
   // 广场-已发布列表接口
   const { run: runSquareList } = useRequest(apiUrlRef.current, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: Page<SquarePublishedItemInfo>) => {
-      setSquareComponentList(result?.records || []);
-      setLoading(false);
+      handleSuccess(result);
     },
     onError: () => {
       setLoading(false);
@@ -100,11 +119,10 @@ const Square: React.FC = () => {
   };
 
   // 查询列表
-  const handleQuery = (page: number = 1, keyword: string = '') => {
-    setLoading(true);
+  const handleQuery = (pageIndex: number = 1, keyword: string = '') => {
     const data = {
-      page,
-      pageSize: 100,
+      page: pageIndex,
+      pageSize: 20,
       // 分类名称
       category: categoryNameRef.current,
       kw: keyword,
@@ -113,27 +131,36 @@ const Square: React.FC = () => {
     runSquareList(data);
   };
 
+  // 滚动加载下一页
+  const handleScroll = () => {
+    handleQuery(page);
+  };
+
+  // 初始化加载
+  const effectLoadFn = () => {
+    initValues();
+    setSquareComponentList([]);
+    setLoading(true);
+    // 查询列表
+    handleQuery();
+  };
+
   useEffect(() => {
     // 配置信息
     const info = localStorage.getItem(TENANT_CONFIG_INFO);
     if (info) {
       setConfigInfo(JSON.parse(info));
     }
-    initValues();
-    setSquareComponentList([]);
-    // 查询列表
-    handleQuery();
+    effectLoadFn();
 
-    const unlisten = history.listen(({ location }: { location: Location }) => {
+    const unListen = history.listen(({ location }: { location: Location }) => {
       if (location.pathname === '/square') {
-        initValues();
-        setSquareComponentList([]);
-        handleQuery();
+        effectLoadFn();
       }
     });
 
     return () => {
-      unlisten();
+      unListen();
     };
   }, []);
 
@@ -151,6 +178,7 @@ const Square: React.FC = () => {
 
   return (
     <div
+      id="scrollableDiv"
       className={cx(
         styles.container,
         'h-full',
@@ -159,77 +187,96 @@ const Square: React.FC = () => {
         'overflow-y',
       )}
     >
-      <header className={cx(styles.header, 'relative')} onClick={handleLink}>
-        <img
-          className={cx('absolute', styles['banner-image'])}
-          src={configInfo?.squareBanner || (squareBannerImage as string)}
-          alt=""
-        />
-        <div className={cx(styles['cover-box'], 'h-full', 'relative')}>
-          <h3>{configInfo?.squareBannerText || '人人都是智能设计师'}</h3>
-          <p className={cx('text-ellipsis-2')}>
-            {configInfo?.squareBannerSubText ||
-              '新一代AI应用设计、开发、实践平台 \n 无需代码，轻松创建，适合各类人群，支持多种端发布及API'}
-          </p>
-        </div>
-      </header>
-      <div
-        className={cx(
-          'flex',
-          'items-center',
-          'content-between',
-          styles['title-box'],
-        )}
+      <InfiniteScrollDiv
+        scrollableTarget="scrollableDiv"
+        list={squareComponentList}
+        hasMore={hasMore}
+        onScroll={handleScroll}
       >
-        <h6 className={cx(styles['theme-title'])}>{title}</h6>
-        <Input.Search
-          placeholder="搜索"
-          allowClear
-          onSearch={onSearch}
-          style={{ width: 200 }}
-        />
-      </div>
-      {loading ? (
-        <Loading />
-      ) : squareComponentList?.length > 0 ? (
-        <div className={cx(styles['list-section'])}>
-          {squareComponentList.map((item, index) => {
-            if (categoryTypeRef.current === SquareAgentTypeEnum.Agent) {
-              return (
-                <SingleAgent
-                  key={index}
-                  publishedItemInfo={item}
-                  onToggleCollectSuccess={handleToggleCollectSuccess}
-                  onClick={() => handleClick(item.targetId, item.targetType)}
-                />
-              );
-            } else if (
-              categoryTypeRef.current === SquareAgentTypeEnum.Template
-            ) {
-              return (
-                <TemplateItem
-                  key={index}
-                  publishedItemInfo={item}
-                  onClick={() => handleClick(item.targetId, item.targetType)}
-                />
-              );
-            } else {
-              return (
-                <SquareComponentInfo
-                  key={index}
-                  publishedItemInfo={item}
-                  onToggleCollectSuccess={handleToggleCollectSuccess}
-                  onClick={() => handleClick(item.targetId, item.targetType)}
-                />
-              );
-            }
-          })}
+        <header className={cx(styles.header, 'relative')} onClick={handleLink}>
+          <img
+            className={cx('absolute', styles['banner-image'])}
+            src={configInfo?.squareBanner || (squareBannerImage as string)}
+            alt=""
+          />
+          <div className={cx(styles['cover-box'], 'h-full', 'relative')}>
+            <h3>{configInfo?.squareBannerText || '人人都是智能设计师'}</h3>
+            <p className={cx('text-ellipsis-2')}>
+              {configInfo?.squareBannerSubText ||
+                '新一代AI应用设计、开发、实践平台 \n 无需代码，轻松创建，适合各类人群，支持多种端发布及API'}
+            </p>
+          </div>
+        </header>
+        <div
+          className={cx(
+            'flex',
+            'items-center',
+            'content-between',
+            styles['title-box'],
+          )}
+        >
+          <h6 className={cx(styles['theme-title'])}>{title}</h6>
+          <Input.Search
+            className={cx(styles['search-input'])}
+            key={categoryNameRef.current}
+            placeholder="搜索"
+            allowClear
+            onSearch={onSearch}
+          />
         </div>
-      ) : (
-        <div className={cx('flex', 'flex-1', 'items-center', 'content-center')}>
-          <Empty description="暂无数据" />
-        </div>
-      )}
+        {loading ? (
+          <Loading className={cx(styles['min-height-300'])} />
+        ) : squareComponentList?.length > 0 ? (
+          <div className={cx(styles['list-section'])}>
+            {squareComponentList.map((item, index) => {
+              if (categoryTypeRef.current === SquareAgentTypeEnum.Agent) {
+                return (
+                  <SingleAgent
+                    key={index}
+                    publishedItemInfo={item}
+                    onToggleCollectSuccess={handleToggleCollectSuccess}
+                    onClick={() => handleClick(item.targetId, item.targetType)}
+                  />
+                );
+              } else if (
+                categoryTypeRef.current === SquareAgentTypeEnum.Template
+              ) {
+                return (
+                  <TemplateItem
+                    key={index}
+                    publishedItemInfo={item}
+                    onClick={() => handleClick(item.targetId, item.targetType)}
+                  />
+                );
+              } else {
+                return (
+                  <SquareComponentInfo
+                    key={index}
+                    publishedItemInfo={item}
+                    onToggleCollectSuccess={handleToggleCollectSuccess}
+                    onClick={() => handleClick(item.targetId, item.targetType)}
+                  />
+                );
+              }
+            })}
+          </div>
+        ) : (
+          <div
+            className={cx('flex', 'flex-1', 'items-center', 'content-center')}
+          >
+            <Empty
+              className={cx(
+                styles['min-height-300'],
+                'flex',
+                'flex-col',
+                'items-center',
+                'content-center',
+              )}
+              description="暂无数据"
+            />
+          </div>
+        )}
+      </InfiniteScrollDiv>
     </div>
   );
 };

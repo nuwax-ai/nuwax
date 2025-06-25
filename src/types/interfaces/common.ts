@@ -600,3 +600,12 @@ export interface NewConversationSetProps {
   variables: BindConfigWithSub[];
   onConfirm?: (variableParams: Record<string, string | number>) => void;
 }
+
+// 无限滚动组件属性
+export interface InfiniteScrollDivProps {
+  // 滚动的目标元素,默认为 window
+  scrollableTarget?: React.ReactNode;
+  list: any[];
+  hasMore: boolean;
+  onScroll: () => void;
+}
