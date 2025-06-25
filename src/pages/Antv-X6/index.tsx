@@ -66,13 +66,13 @@ import { App, Form } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
+import NodePanelDrawer from './components/NodePanelDrawer';
 import VersionAction from './components/VersionAction';
 import ControlPanel from './controlPanel';
 import ErrorList from './errorList';
 import GraphContainer from './graphContainer';
 import Header from './header';
 import './index.less';
-import RenderNodeDrawer from './RenderNodeDrawer';
 
 const workflowCreatedTabs = CREATED_TABS.filter((item) =>
   [
@@ -1670,7 +1670,7 @@ const Workflow: React.FC = () => {
               setIsModified(true);
             }}
           >
-            <RenderNodeDrawer params={foldWrapItem} />
+            <NodePanelDrawer params={foldWrapItem} />
           </Form>
         </div>
       </FoldWrap>
