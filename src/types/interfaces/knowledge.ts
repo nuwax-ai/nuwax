@@ -440,6 +440,8 @@ export interface DocWrapProps {
   onChange: (value: string) => void;
   onClick: (info: KnowledgeDocumentInfo) => void;
   onSetAnalyzed: (id: number, status: KnowledgeDocumentStatus) => void;
+  hasMore: boolean;
+  onScroll: () => void;
 }
 
 // 文档列表项
