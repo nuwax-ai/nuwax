@@ -141,11 +141,13 @@ const DISABLE_EDIT_NODE_TYPES = [
   NodeTypeEnum.End,
 ];
 const NodeRunResult: React.FC<{
-  data: RunResultItem[];
+  data: RunResultItem[] | [];
 }> = ({ data }) => {
   const time = (
     (data?.reduce((acc, item) => {
-      return acc + (item.options?.endTime - item.options?.startTime);
+      return (
+        acc + ((item?.options?.endTime || 0) - (item?.options?.startTime || 0))
+      );
     }, 0) || 0) / 1000
   ).toFixed(3);
   const total = data?.length || 0;
@@ -156,13 +158,13 @@ const NodeRunResult: React.FC<{
   const [onlyError, setOnlyError] = useState(false);
   // 是否展开
   const [expanded, setExpanded] = useState(false);
-  const [innerData, setInnerData] = useState<RunResultItem[]>([]);
+  const [innerData, setInnerData] = useState<RunResultItem[] | []>([]);
 
   const success = data.every(
-    (item) => item.status === RunResultStatusEnum.FINISHED,
+    (item) => item?.status === RunResultStatusEnum.FINISHED,
   );
   const isExecuting = data.some(
-    (item) => item.status === RunResultStatusEnum.EXECUTING,
+    (item) => item?.status === RunResultStatusEnum.EXECUTING,
   );
 
   // 处理页码变化
@@ -189,9 +191,10 @@ const NodeRunResult: React.FC<{
 
   useEffect(() => {
     if (onlyError && !success) {
-      setInnerData(
-        data.filter((item) => item.status === RunResultStatusEnum.FAILED),
+      const _data = data.filter(
+        (item) => item?.status === RunResultStatusEnum.FAILED,
       );
+      setInnerData(_data.length > 0 ? _data : []);
     } else {
       setInnerData(data);
     }
@@ -285,11 +288,12 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
   };
 
   const canNotEditNode = DISABLE_EDIT_NODE_TYPES.includes(data.type);
+  const runResults = data.runResults || [];
   const showRunResult = [NodeTypeEnum.LoopStart, NodeTypeEnum.LoopEnd].includes(
     data.type,
   )
     ? false
-    : !!data.runResults?.length; //循环内的开始结果节点不展示
+    : !!runResults.length; //循环内的开始结果节点不展示
   const showExceptionHandle =
     data.nodeConfig.exceptionHandleConfig &&
     EXCEPTION_NODES_TYPE.includes(data.type);
@@ -336,7 +340,7 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
         )}
       </div>
       {/* 运行结果 */}
-      {showRunResult && <NodeRunResult data={data.runResults} />}
+      {showRunResult && <NodeRunResult data={runResults} />}
     </>
   );
 };
@@ -362,7 +366,8 @@ export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
     node.setData({ name: editValue });
     return true;
   };
-  const showRunResult = data.runResults?.length;
+  const runResults = data.runResults || [];
+  const showRunResult = !!runResults.length;
   return (
     <>
       <div
@@ -385,7 +390,7 @@ export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
         </div>
         <div className="loop-node-content" />
       </div>
-      {showRunResult && <NodeRunResult data={data.runResults} />}
+      {showRunResult && <NodeRunResult data={runResults} />}
     </>
   );
 };
