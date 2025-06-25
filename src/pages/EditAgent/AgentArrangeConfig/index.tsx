@@ -48,6 +48,7 @@ import KnowledgeTextList from './KnowledgeTextList';
 import LongMemoryContent from './LongMemoryContent';
 // import TriggerContent from './TriggerContent';
 import CollapseComponentList from '@/components/CollapseComponentList';
+import { CREATED_TABS } from '@/constants/common.constants';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import ComponentSettingModal from './ComponentSettingModal';
 import OpenRemarksEdit from './OpenRemarksEdit';
@@ -647,6 +648,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         checkTag={checkTag}
         addComponents={addComponents}
         onAdded={handleAddComponent}
+        tabs={CREATED_TABS.filter(
+          (item) => item.key !== AgentComponentTypeEnum.Agent,
+        )}
       />
       {/*添加触发器弹窗*/}
       {/*<CreateTrigger*/}
