@@ -21,6 +21,8 @@ import {
   PluginSettingEnum,
   SpaceApplicationListEnum,
 } from '@/types/enums/space';
+import { SquareAgentTypeEnum } from '@/types/enums/square';
+import { TabsProps } from 'antd';
 
 // 组件库所有资源类型
 export const LIBRARY_ALL_RESOURCE = [
@@ -190,3 +192,23 @@ export const PLUGIN_OUTPUT_CONFIG = {
   dataType: DataTypeEnum.String,
   enable: true,
 };
+
+// 空间广场-分类列表
+export const SPACE_SQUARE_TABS: TabsProps['items'] = [
+  {
+    key: SquareAgentTypeEnum.Agent,
+    label: '智能体',
+  },
+  {
+    key: SquareAgentTypeEnum.Plugin,
+    label: '插件',
+  },
+  {
+    key: SquareAgentTypeEnum.Workflow,
+    label: '工作流',
+  },
+  {
+    key: SquareAgentTypeEnum.Template,
+    label: '模板',
+  },
+];
