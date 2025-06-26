@@ -205,6 +205,7 @@ export interface SkillProps {
   removeItem: (id: CreatedNodeItem) => void;
   // 修改技能参数
   modifyItem: (id: CreatedNodeItem) => void;
+  variables?: InputAndOutConfig[];
 }
 
 export interface SkillItem extends Partial<CreatedNodeItem> {

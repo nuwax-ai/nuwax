@@ -14,7 +14,7 @@ import { InputItemNameEnum } from '@/types/enums/node';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { PromptOptimizeTypeEnum } from '@/types/interfaces/assistant';
 import { CreatedNodeItem } from '@/types/interfaces/common';
-import { QANodeOption } from '@/types/interfaces/node';
+import { InputAndOutConfig, QANodeOption } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { PlusOutlined } from '@ant-design/icons';
 import {
@@ -143,7 +143,14 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       }) || [];
     setAddComponents(_arr);
   }, [skillComponentConfigs]);
-
+  const variables = (
+    Form.useWatch(InputItemNameEnum.inputArgs, {
+      form,
+      preserve: true,
+    }) || []
+  ).filter(
+    (item: InputAndOutConfig) => !['', null, undefined].includes(item.name),
+  );
   return (
     <div className="model-node-style">
       {/* 模型模块 */}
@@ -165,6 +172,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
               <SkillList
                 params={form.getFieldValue(skillFormKey)}
                 skillName={skillFormKey}
+                variables={variables}
                 form={form}
                 removeItem={removeItem}
                 modifyItem={modifyItem}

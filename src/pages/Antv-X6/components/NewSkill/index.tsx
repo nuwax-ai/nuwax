@@ -13,7 +13,6 @@ import {
 } from '@ant-design/icons';
 import { Popover, Tag } from 'antd';
 import React, { useCallback, useState } from 'react';
-import { useModel } from 'umi';
 import './index.less';
 import SettingModal from './SettingModal';
 interface TreeOutput extends InputAndOutConfig {
@@ -47,6 +46,7 @@ export const SkillList: React.FC<SkillProps> = ({
   disabled = false,
   removeItem,
   modifyItem,
+  variables = [],
 }) => {
   // const [skillParams,setSkillParams] = useState<NodeConfig>(params);
   // 使用useState钩子来管理每个项目的hover状态
@@ -80,8 +80,8 @@ export const SkillList: React.FC<SkillProps> = ({
     });
     setOpen(true);
   };
-  const { referenceList } = useModel('workflow');
-  const variables = Object.values(referenceList.argMap || {});
+  // const { referenceList } = Form.useWatch('referenceList');
+  // const variables = Object.values(referenceList.argMap || {});
   const isHoveredItem = (item: CreatedNodeItem) => {
     return (
       currentComponentInfo?.typeId === item.typeId &&
