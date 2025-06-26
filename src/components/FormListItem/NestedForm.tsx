@@ -91,10 +91,18 @@ const CustomTree: React.FC<TreeFormProps> = ({
   );
 
   // 使用独立的递归函数，避免在useCallback中递归调用
-  const renderNodes = (nodes: TreeNodeConfig[]): React.ReactNode[] => {
-    return nodes.map((node) => (
-      <TreeNode key={node.key} title={createNodeTitle(node)}>
-        {node.subArgs && node.subArgs.length > 0 && renderNodes(node.subArgs)}
+  const renderNodes = (
+    nodes: TreeNodeConfig[],
+    level: number,
+  ): React.ReactNode[] => {
+    return nodes.map((node, index) => (
+      <TreeNode
+        key={`${node.key ? node.key : `level-${level}`}-${index}`}
+        title={createNodeTitle(node)}
+      >
+        {node.subArgs &&
+          node.subArgs.length > 0 &&
+          renderNodes(node.subArgs, level + 1)}
       </TreeNode>
     ));
   };
@@ -134,7 +142,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
         }`}
       >
         {/* 渲染TreeNode节点 */}
-        {treeData && renderNodes(treeData)}
+        {treeData && renderNodes(treeData, 1)}
       </Tree>
     </div>
   );

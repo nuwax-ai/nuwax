@@ -56,6 +56,7 @@ import {
 import {
   adjustParentSize,
   generatePortGroupConfig,
+  showExceptionHandle,
   showExceptionPort,
 } from '@/utils/graph';
 import { Graph, Markup, Node } from '@antv/x6';
@@ -65,7 +66,6 @@ const NODE_BOTTOM_PADDING_AND_BORDER = NODE_BOTTOM_PADDING + 1;
 
 const EXCEPTION_PORT_COLOR = '#e67e22';
 const PORT_COLOR = '#5147FF';
-
 const imageList = {
   Table,
   Knowledge,
@@ -460,13 +460,12 @@ const _handleExceptionOutputPort = (
   outputPorts: outputOrInputPortConfig[],
   generatePortConfig: (config: PortConfig) => outputOrInputPortConfig,
 ): outputOrInputPortConfig[] => {
+  const xWidth = getWidthAndHeight(data).width;
+  const baseY = outputPorts[outputPorts.length - 1]?.args?.offsetY;
+
+  const itemHeight = 24;
   if (showExceptionPort(data, PortGroupEnum.exception)) {
     // 如果当前节点支持异常展示，则添加异常端口
-    const xWidth = getWidthAndHeight(data).width;
-    const baseY = outputPorts[outputPorts.length - 1]?.args?.offsetY;
-
-    const itemHeight = 24;
-
     return [
       ...outputPorts,
       generatePortConfig({
@@ -478,8 +477,18 @@ const _handleExceptionOutputPort = (
         color: EXCEPTION_PORT_COLOR,
       }),
     ];
+  } else if (showExceptionHandle(data) && outputPorts.length >= 1) {
+    if (outputPorts.length === 1) {
+      //如果包括异常项 而且只一个输出port，则需要调整port位置
+      outputPorts[outputPorts.length - 1].args.y =
+        (baseY + itemHeight + NODE_BOTTOM_PADDING_AND_BORDER + 1) / 2;
+    }
+    outputPorts[outputPorts.length - 1].args.offsetY =
+      baseY + itemHeight + NODE_BOTTOM_PADDING_AND_BORDER; //同步offsetY 方便在更新节点高度时使用
+    return outputPorts;
+  } else {
+    return outputPorts;
   }
-  return outputPorts;
 };
 // 获取节点端口
 export const generatePorts = (data: ChildNode): PortsConfig => {

@@ -514,10 +514,7 @@ export const isEdgeDeletable = (sourceNode: any, targetNode: any): boolean => {
 };
 
 export const showExceptionHandle = (node: ChildNode): boolean => {
-  return (
-    EXCEPTION_NODES_TYPE.includes(node.type) &&
-    !!node.nodeConfig?.exceptionHandleConfig?.exceptionHandleType
-  );
+  return EXCEPTION_NODES_TYPE.includes(node.type);
 };
 
 export const needUpdateNodes = (node: ChildNode): boolean => {
@@ -530,8 +527,8 @@ export const showExceptionPort = (
 ): boolean => {
   return (
     (showExceptionHandle(node) &&
-      node.nodeConfig?.exceptionHandleConfig?.exceptionHandleType !==
-        ExceptionHandleTypeEnum.INTERRUPT &&
+      node.nodeConfig?.exceptionHandleConfig?.exceptionHandleType ===
+        ExceptionHandleTypeEnum.EXECUTE_EXCEPTION_FLOW &&
       protGroup === PortGroupEnum.exception) ||
     false
   );
