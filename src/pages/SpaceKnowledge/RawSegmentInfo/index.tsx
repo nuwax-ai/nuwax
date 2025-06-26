@@ -104,7 +104,9 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
   };
 
   return (
-    <div className={cx('flex-1', 'flex', 'flex-col', 'overflow-hide')}>
+    <div
+      className={cx('flex-1', 'h-full', 'flex', 'flex-col', 'overflow-hide')}
+    >
       <header className={cx(styles.header, 'flex', 'items-center')}>
         <ConditionRender condition={!!documentInfo}>
           <FileSearchOutlined />
@@ -141,20 +143,23 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
       ) : loading ? (
         <Loading />
       ) : rawSegmentInfoList?.length > 0 ? (
-        <ul className={cx('px-16', 'py-16', 'flex-1', 'overflow-y')}>
+        <div
+          className={cx('px-16', 'py-16', 'flex-1', 'overflow-y')}
+          id="rawSegmentDiv"
+        >
           <InfiniteScrollDiv
-            scrollableTarget="scrollableDiv"
-            list={rawSegmentInfoList}
+            scrollableTarget="rawSegmentDiv"
+            list={rawSegmentInfoList || []}
             hasMore={hasMore}
             onScroll={onScroll}
           >
             {rawSegmentInfoList?.map((info) => (
-              <li key={info.id} className={cx(styles.line, 'radius-6')}>
+              <p key={info.id} className={cx(styles.line, 'radius-6')}>
                 {info.rawTxt}
-              </li>
+              </p>
             ))}
           </InfiniteScrollDiv>
-        </ul>
+        </div>
       ) : (
         <div className={cx('flex', 'flex-1', 'items-center', 'content-center')}>
           <Empty description="暂无分段" />

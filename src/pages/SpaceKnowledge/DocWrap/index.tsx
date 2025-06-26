@@ -36,9 +36,9 @@ const DocWrap: React.FC<DocWrapProps> = ({
       {loading ? (
         <Loading />
       ) : (
-        <ul className={cx('flex-1', 'overflow-y')} id="scrollableDiv">
+        <ul className={cx('flex-1', 'overflow-y')} id="docListDiv">
           <InfiniteScrollDiv
-            scrollableTarget="scrollableDiv"
+            scrollableTarget="docListDiv"
             list={documentList}
             hasMore={hasMore}
             onScroll={onScroll}
