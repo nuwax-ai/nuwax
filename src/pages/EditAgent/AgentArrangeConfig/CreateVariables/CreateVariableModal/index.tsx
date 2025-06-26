@@ -308,9 +308,14 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
       [InputTypeEnum.Select, InputTypeEnum.MultipleSelect].includes(inputType)
     ) {
       // tabs切换到"插件绑定"时，需要选择绑定组件才能提交
-      if (activeTabKey === OptionDataSourceEnum.MANUAL && !dataSource?.length) {
-        message.error('请添加选项');
-        return;
+      if (activeTabKey === OptionDataSourceEnum.MANUAL) {
+        if (!dataSource?.length) {
+          message.error('请添加选项');
+          return;
+        } else if (dataSource?.some((item) => !item.value)) {
+          message.error('请填写选项值');
+          return;
+        }
       }
 
       // tabs切换到"插件绑定"时，需要选择绑定组件才能提交
