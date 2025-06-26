@@ -105,7 +105,7 @@ const TreeInput: React.FC<TreeInputProps> = ({
           <Popover
             styles={{
               body: {
-                width: '300px',
+                maxWidth: '300px',
               },
             }}
             content={nodeData.description || '暂无描述'}

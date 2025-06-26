@@ -1,10 +1,12 @@
-import { EXCEPTION_NODES_TYPE } from '@/constants/node.constants';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
-import { PortGroupEnum } from '@/types/enums/node';
 import { BindEventHandlers, ChildNode } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { cloneDeep } from '@/utils/common';
-import { getPortGroup, isEdgeDeletable } from '@/utils/graph';
+import {
+  getPortGroup,
+  isEdgeDeletable,
+  showExceptionPort,
+} from '@/utils/graph';
 import { Edge } from '@antv/x6';
 const isResistNodeType = [
   NodeTypeEnum.Start,
@@ -112,10 +114,7 @@ const bindEventHandlers = ({
 
     // 处理节点的异常处理 out port 连边的逻辑
     const protGroup = getPortGroup(edge.getSourceNode(), sourcePort);
-    if (
-      EXCEPTION_NODES_TYPE.includes(sourceNode.type) &&
-      protGroup === PortGroupEnum.exception
-    ) {
+    if (showExceptionPort(sourceNode, protGroup)) {
       const newNodeParams: ChildNode = cloneDeep(sourceNode);
       const { exceptionHandleNodeIds = [] } =
         newNodeParams.nodeConfig?.exceptionHandleConfig || {};

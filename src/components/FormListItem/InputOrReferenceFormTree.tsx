@@ -37,16 +37,13 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
 }) => {
   const { getValue, setIsModified } = useModel('workflow');
   const [displayValue, setDisplayValue] = useState('');
-  const [inputValue, setInputValue] = useState(''); // 新增状态用于存储输入框的值
   const updateValues = (
     newValue: string,
     valueType: 'Input' | 'Reference',
     dataType: DataTypeEnum,
   ) => {
     onChange?.(newValue, valueType, dataType);
-    if (valueType === 'Reference') {
-      setDisplayValue(newValue);
-    }
+    setDisplayValue(newValue);
     setIsModified(true); // 标记为已修改
   };
 
@@ -56,16 +53,11 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
       const isReferenceKey = value && data.argMap[value];
       setDisplayValue(isReferenceKey ? getValue(value) : '');
     } else {
-      setDisplayValue('');
+      setDisplayValue(value || '');
     }
   }, [value, data.argMap, referenceType]);
 
   //初始化
-  useEffect(() => {
-    if (referenceType === 'Input') {
-      setInputValue(value || '');
-    }
-  }, [value, referenceType]);
 
   // 清除引用值
   const handleTagClose = () => {
@@ -184,7 +176,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           style={{ marginRight: 8 }}
           size="small"
           disabled={isDisabled}
-          value={inputValue}
+          value={displayValue}
           onChange={(e) => {
             updateValues(e.target.value, 'Input', DataTypeEnum.String);
           }}

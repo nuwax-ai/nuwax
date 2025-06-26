@@ -1,18 +1,16 @@
-import { EXCEPTION_NODES_TYPE } from '@/constants/node.constants';
-import { useSpecificContent } from '@/hooks/useSpecificContent';
 import { ExceptionHandleTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode, ExceptionItemProps } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
+import { showExceptionHandle } from '@/utils/graph';
 import { Form, FormInstance } from 'antd';
-import { useEffect, useState } from 'react';
-import ComplexNode from './component/complexNode';
-import ConditionNode from './component/condition';
-import Database from './component/database';
-import { ExceptionItem } from './component/ExceptionItem';
-import Library from './component/library';
-import NodeItem from './component/nodeItem';
-import ReferenceNode from './component/pluginNode';
-import './index.less';
+import ComplexNode from '../../component/complexNode';
+import ConditionNode from '../../component/condition';
+import Database from '../../component/database';
+import { ExceptionItem } from '../../component/ExceptionItem';
+import Library from '../../component/library';
+import NodeItem from '../../component/nodeItem';
+import ReferenceNode from '../../component/pluginNode';
+import '../../index.less';
 const {
   StartNode,
   EndNode,
@@ -96,41 +94,27 @@ const nodeTemplate = (params: ChildNode, form: FormInstance) => {
 const ExceptionHandle: React.FC<{
   data: ExceptionHandleConfig | undefined;
 }> = ({ data }) => {
-  const exceptionHandleConfig = data || {};
-  const [exceptionItemProps, setExceptionItemProps] =
-    useState<ExceptionItemProps>({
-      exceptionHandleType: ExceptionHandleTypeEnum.INTERRUPT,
-      timeout: 180,
-      retryCount: 0,
-      ...(exceptionHandleConfig || {}),
-      name: 'exceptionHandleConfig',
-    });
-  // 处理输入 编辑器 同步输出参数及同步之前录入内容
-  const { specificContent } = useSpecificContent({
-    exceptionItemProps,
-    watchField: 'outputArgs',
-  });
-
-  useEffect(() => {
-    setExceptionItemProps({
-      ...exceptionItemProps,
-      specificContent: JSON.stringify(specificContent, null, 2),
-    });
-  }, [specificContent]);
+  const exceptionItemProps: ExceptionItemProps = {
+    exceptionHandleType: ExceptionHandleTypeEnum.INTERRUPT,
+    timeout: 180,
+    retryCount: 0,
+    ...(data || {}),
+    name: 'exceptionHandleConfig',
+  };
 
   return <ExceptionItem {...exceptionItemProps} />;
 };
 
 // 由于 所有节点支持异常配置根据后端返回的 nodeConfig.exceptionHandleConfig 来决定是否显示异常配置
 // 通过HOC 方案把所有组件包裹一层，然后根据后端返回的 nodeConfig.exceptionHandleConfig 来决定是否显示异常配置
-export default function RenderNodeDrawer({ params }: { params: ChildNode }) {
+export default function NodePanelDrawer({ params }: { params: ChildNode }) {
   const form = Form.useFormInstance();
-  const showExceptionHandle = EXCEPTION_NODES_TYPE.includes(params.type); // 是否显示异常配置
+  const showException = showExceptionHandle(params); // 是否显示异常配置
   return (
     <>
       {nodeTemplate(params, form)}
       {/* 处理节点异常项展示*/}
-      {showExceptionHandle && (
+      {showException && (
         <ExceptionHandle data={params.nodeConfig?.exceptionHandleConfig} />
       )}
     </>

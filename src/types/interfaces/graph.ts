@@ -129,6 +129,7 @@ export interface GraphContainerProps {
     targetNode?: ChildNode,
     edgeId?: string,
   ) => void;
+  onClickBlank: () => void;
 }
 
 export interface GraphRect {
@@ -167,7 +168,7 @@ export interface GraphContainerRef {
   graphChangeZoomToFit: () => void;
   drawGraph: () => void;
   getGraphRef: () => Graph;
-  graphClearSelection: () => void;
+  graphTriggerBlankClick: () => void;
   // 清空运行结果
   graphResetRunResult: () => void;
   // 激活节点运行结果
@@ -226,6 +227,7 @@ export interface GraphProp {
     targetNode?: ChildNode,
     edgeId?: string,
   ) => void;
+  onClickBlank: () => void;
 }
 
 export interface ExceptionItemProps extends ExceptionHandleConfig {

@@ -1,4 +1,5 @@
 import service, { UrlListType } from '@/services/modifyNode';
+import { NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode } from '@/types/interfaces/graph';
 import { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
 import { isEqual } from 'lodash';
@@ -144,9 +145,9 @@ export const changeNodeConfig = (
 ): NodeConfig => {
   // 根据 type 来返回不同的字段
   const filed =
-    type === 'QA'
+    type === NodeTypeEnum.QA
       ? 'options'
-      : type === 'IntentRecognition'
+      : type === NodeTypeEnum.IntentRecognition
       ? 'intentConfigs'
       : 'conditionBranchConfigs';
 
