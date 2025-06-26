@@ -102,6 +102,11 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
                 key: `${node.id}-tree-select`,
                 label: (
                   <div
+                    style={{
+                      paddingTop: 12,
+                      paddingRight: 12,
+                      paddingBottom: 8,
+                    }}
                     onClick={(e) => {
                       // 阻止所有点击事件的冒泡，除了 onSelect
                       if (!isHitSelect) {
