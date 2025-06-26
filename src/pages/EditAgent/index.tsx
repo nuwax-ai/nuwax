@@ -44,8 +44,14 @@ const EditAgent: React.FC = () => {
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
   // 智能体配置信息
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>();
-  const { cardList, showType, setShowType, setIsSuggest } =
-    useModel('conversationInfo');
+  const {
+    cardList,
+    showType,
+    setShowType,
+    setIsSuggest,
+    messageList,
+    setChatSuggestList,
+  } = useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
 
   // 查询智能体配置信息
@@ -121,6 +127,13 @@ const EditAgent: React.FC = () => {
     // 用户问题建议
     if (attr === 'openSuggest') {
       setIsSuggest(value === OpenCloseEnum.Open);
+    }
+    // 预置问题, 并且没有消息时，更新建议预置问题列表
+    if (attr === 'openingGuidQuestions' && !messageList?.length) {
+      const _suggestList = value as string[];
+      // 过滤掉空值
+      const list = _suggestList?.filter((item) => !!item) || [];
+      setChatSuggestList(list);
     }
     const {
       id,
