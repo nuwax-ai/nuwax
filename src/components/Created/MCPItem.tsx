@@ -65,7 +65,7 @@ const MCPItem: React.FC<MCPItemProps> = ({
           onClick={() => setFold(!fold)}
           className="fold-icon-style"
           style={{
-            transform: fold ? 'rotate(180deg)' : 'rotate(0deg)',
+            transform: fold ? 'rotate(0deg)' : 'rotate(180deg)',
           }}
         />
       </div>

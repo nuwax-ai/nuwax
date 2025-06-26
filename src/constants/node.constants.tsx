@@ -5,6 +5,7 @@ import {
   NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
+import { ChildNode } from '@/types/interfaces/graph';
 
 // 有试运行的节点
 export const testRunList = [
@@ -163,3 +164,16 @@ export const optionsMap = [
 //   Published:"发布",
 //   Rejected:'拒绝'
 // }
+
+export const DEFAULT_DRAWER_FORM: ChildNode = {
+  type: NodeTypeEnum.Start,
+  shape: NodeShapeEnum.General,
+  nodeConfig: {
+    inputArgs: [],
+  },
+  id: 0,
+  name: '测试',
+  description: '测试',
+  workflowId: 0,
+  icon: '',
+};

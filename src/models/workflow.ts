@@ -1,10 +1,8 @@
-// import service from '@/services/workflow';
-// import { NodeTypeEnum } from '@/types/enums/common';
-// import { ChildNode } from '@/types/interfaces/graph';
+import { DEFAULT_DRAWER_FORM } from '@/constants/node.constants';
 import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { NodePreviousAndArgMap } from '@/types/interfaces/node';
-// import { message } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
+
 const useWorkflow = () => {
   // 是否要校验当前的数据
   const [volid, setVolid] = useState<boolean>(false);
@@ -13,7 +11,9 @@ const useWorkflow = () => {
 
   const [spaceId, setSpaceId] = useState<number>(0);
 
-  const storeWorkflowRef = useRef<any>({});
+  const storeWorkflowRef = useRef<any>({
+    drawerForm: DEFAULT_DRAWER_FORM,
+  });
 
   // 使用 useState 触发组件重新渲染
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -99,16 +99,19 @@ const useWorkflow = () => {
   useEffect(() => {
     // 存储工作流数据
     storeWorkflow('isModified', isModified);
-    storeWorkflow('drawerForm', drawerForm);
+  }, [isModified]);
+  useEffect(() => {
     storeWorkflow('visible', visible);
-  }, [isModified, drawerForm, visible]);
+  }, [visible]);
 
   const getWorkflow = useCallback((key: string) => {
     return storeWorkflowRef.current[key];
   }, []);
 
   const clearWorkflow = useCallback(() => {
-    storeWorkflowRef.current = {};
+    storeWorkflowRef.current = {
+      drawerForm: DEFAULT_DRAWER_FORM,
+    };
   }, []);
 
   return {
