@@ -1,8 +1,4 @@
-import {
-  AnswerTypeEnum,
-  NodeTypeEnum,
-  RunResultStatusEnum,
-} from '@/types/enums/common';
+import { NodeTypeEnum, RunResultStatusEnum } from '@/types/enums/common';
 import type {
   ChildNode,
   Edge,
@@ -11,14 +7,17 @@ import type {
   GraphRect,
   RunResultItem,
 } from '@/types/interfaces/graph';
-import { adjustParentSize, updateEdgeArrows } from '@/utils/graph';
+import {
+  adjustParentSize,
+  needUpdateNodes,
+  updateEdgeArrows,
+} from '@/utils/graph';
 import {
   createBaseNode,
   createChildNode,
   createEdge,
   generatePorts,
   getEdges,
-  getLength,
   getNodeSize,
   getWidthAndHeight,
 } from '@/utils/workflow';
@@ -28,7 +27,6 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import EventHandlers from './component/eventHandlers';
 import InitGraph from './component/graph';
 import { registerCustomNodes } from './component/registerCustomNodes';
-
 const GRAPH_CONTAINER_ID = 'graph-container';
 
 const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
@@ -189,45 +187,21 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             y: position.y,
           };
         }
-        // 处理特殊情况,如果是条件节点，需要调整子节点的大小并且重新绘制连接桩
-        if (
-          newData.type === NodeTypeEnum.Condition ||
-          newData.type === NodeTypeEnum.IntentRecognition
-        ) {
-          const oldData = node.getData() as ChildNode;
-          const _length = getLength(
-            oldData,
-            newData,
-            newData.type === NodeTypeEnum.Condition
-              ? 'conditionBranchConfigs'
-              : 'intentConfigs',
-          );
-
-          if (_length) {
-            // 使用prop方法更新端口配置
-            const ports = generatePorts(newData);
-            node.prop('ports', ports);
-            // node.updatePorts();
-          }
-        }
-        if (newData.type === NodeTypeEnum.QA) {
-          // 问答节点
+        if (needUpdateNodes(newData)) {
+          // 需要更新端口配置的节点
           const newPorts = generatePorts(newData);
-          const { width, height } = getNodeSize({
-            data: newData,
-            ports: newPorts.items,
-            type: 'update',
-          });
-          if (newData.nodeConfig.answerType !== AnswerTypeEnum.SELECT) {
+          if (newData.type === NodeTypeEnum.QA) {
+            // 问答节点
+            const { width, height } = getNodeSize({
+              data: newData,
+              ports: newPorts.items,
+              type: 'update',
+            });
             node.setSize(width, height);
-            node.prop('ports', newPorts);
-          } else {
-            // 确保在获取到新高度后设置节点大小和端口
-            node.setSize(width, height);
-            node.prop('ports', newPorts);
           }
+          node.prop('ports', newPorts);
         }
-        // console.log('newData', newData);
+
         node.updateData(newData);
       }
     };

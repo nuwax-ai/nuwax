@@ -53,7 +53,11 @@ import {
   NodeConfig,
   QANodeOption,
 } from '@/types/interfaces/node';
-import { adjustParentSize, generatePortGroupConfig } from '@/utils/graph';
+import {
+  adjustParentSize,
+  generatePortGroupConfig,
+  showExceptionPort,
+} from '@/utils/graph';
 import { Graph, Markup, Node } from '@antv/x6';
 
 const NODE_BOTTOM_PADDING = 10;
@@ -374,8 +378,8 @@ const handleAllNodesExceptionItem = (
     const { exceptionHandleNodeIds = [] } =
       node.nodeConfig?.exceptionHandleConfig || {};
     if (
-      EXCEPTION_NODES_TYPE.includes(node.type) &&
-      exceptionHandleNodeIds.length
+      showExceptionPort(node, PortGroupEnum.exception) &&
+      exceptionHandleNodeIds.length > 0
     ) {
       const isLoopNode = node.loopNodeId ? true : false;
       resultEdges = resultEdges.concat([
@@ -456,27 +460,24 @@ const _handleExceptionOutputPort = (
   outputPorts: outputOrInputPortConfig[],
   generatePortConfig: (config: PortConfig) => outputOrInputPortConfig,
 ): outputOrInputPortConfig[] => {
-  if (EXCEPTION_NODES_TYPE.includes(data.type)) {
+  if (showExceptionPort(data, PortGroupEnum.exception)) {
     // 如果当前节点支持异常展示，则添加异常端口
-    const exceptionHandleConfig = data.nodeConfig?.exceptionHandleConfig;
-    if (exceptionHandleConfig) {
-      const xWidth = getWidthAndHeight(data).width;
-      const baseY = outputPorts[outputPorts.length - 1]?.args?.offsetY;
+    const xWidth = getWidthAndHeight(data).width;
+    const baseY = outputPorts[outputPorts.length - 1]?.args?.offsetY;
 
-      const itemHeight = 24;
+    const itemHeight = 24;
 
-      return [
-        ...outputPorts,
-        generatePortConfig({
-          group: PortGroupEnum.exception,
-          idSuffix: `exception-out`,
-          yHeight: baseY + NODE_BOTTOM_PADDING + itemHeight / 2,
-          offsetY: baseY + itemHeight + NODE_BOTTOM_PADDING_AND_BORDER,
-          xWidth,
-          color: EXCEPTION_PORT_COLOR,
-        }),
-      ];
-    }
+    return [
+      ...outputPorts,
+      generatePortConfig({
+        group: PortGroupEnum.exception,
+        idSuffix: `exception-out`,
+        yHeight: baseY + NODE_BOTTOM_PADDING + itemHeight / 2,
+        offsetY: baseY + itemHeight + NODE_BOTTOM_PADDING_AND_BORDER,
+        xWidth,
+        color: EXCEPTION_PORT_COLOR,
+      }),
+    ];
   }
   return outputPorts;
 };

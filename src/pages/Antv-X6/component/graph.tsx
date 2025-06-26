@@ -13,11 +13,14 @@ import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
 // import { Transform } from '@antv/x6-plugin-transform';
 import { ChildNode, StencilChildNode } from '@/types/interfaces/graph';
-import { adjustParentSize, validateConnect } from '@/utils/graph';
+import {
+  adjustParentSize,
+  showExceptionPort,
+  validateConnect,
+} from '@/utils/graph';
 import { message, Modal } from 'antd';
 // 自定义类型定义
 import PlusIcon from '@/assets/svg/plus_icon.svg';
-import { EXCEPTION_NODES_TYPE } from '@/constants/node.constants';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { PortGroupEnum } from '@/types/enums/node';
 import { GraphProp } from '@/types/interfaces/graph';
@@ -802,10 +805,7 @@ const initGraph = ({
 
     // 处理节点的异常处理 out port 连边的逻辑
     const protGroup = getPortGroup(edge.getSourceNode(), sourcePort);
-    if (
-      EXCEPTION_NODES_TYPE.includes(sourceNode.type) &&
-      protGroup === PortGroupEnum.exception
-    ) {
+    if (showExceptionPort(sourceNode, protGroup)) {
       const newNodeParams: ChildNode = cloneDeep(sourceNode);
       const { exceptionHandleNodeIds = [] } =
         newNodeParams.nodeConfig?.exceptionHandleConfig || {};

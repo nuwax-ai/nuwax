@@ -5,7 +5,6 @@ import {
   branchTypeMap,
   compareTypeMap,
   EXCEPTION_HANDLE_OPTIONS,
-  EXCEPTION_NODES_TYPE,
   optionsMap,
 } from '@/constants/node.constants';
 import useNodeSelection from '@/hooks/useNodeSelection';
@@ -19,6 +18,7 @@ import {
 import { ConditionBranchTypeEnum } from '@/types/enums/node';
 import { ChildNode, NodeProps, RunResultItem } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
+import { showExceptionHandle } from '@/utils/graph';
 import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
@@ -294,9 +294,7 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
   )
     ? false
     : !!runResults.length; //循环内的开始结果节点不展示
-  const showExceptionHandle =
-    data.nodeConfig.exceptionHandleConfig &&
-    EXCEPTION_NODES_TYPE.includes(data.type);
+  const showException = showExceptionHandle(data);
 
   if (!data) {
     return null;
@@ -335,7 +333,7 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
           <IntentRecognitionNode data={data} />
         )}
         {/* 异常处理 */}
-        {showExceptionHandle && (
+        {showException && (
           <ExceptionHandle data={data.nodeConfig.exceptionHandleConfig} />
         )}
       </div>
