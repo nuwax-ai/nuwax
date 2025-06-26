@@ -138,7 +138,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           x: position.x,
           y: position.y,
         };
-        changeCondition(_params);
+        changeCondition({ nodeData: _params });
       }
     };
 

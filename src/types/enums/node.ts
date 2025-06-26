@@ -24,3 +24,11 @@ export enum ConditionBranchTypeEnum {
   ELSE_IF = 'ELSE_IF',
   ELSE = 'ELSE',
 }
+
+export enum NodeUpdateEnum {
+  moved = 'moved',
+}
+
+export enum FoldFormIdEnum {
+  empty = 0,
+}

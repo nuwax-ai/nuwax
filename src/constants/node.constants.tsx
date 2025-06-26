@@ -5,6 +5,7 @@ import {
   NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
+import { FoldFormIdEnum } from '@/types/enums/node';
 import { ChildNode } from '@/types/interfaces/graph';
 
 // 有试运行的节点
@@ -171,7 +172,7 @@ export const DEFAULT_DRAWER_FORM: ChildNode = {
   nodeConfig: {
     inputArgs: [],
   },
-  id: 0,
+  id: FoldFormIdEnum.empty,
   name: '测试',
   description: '测试',
   workflowId: 0,

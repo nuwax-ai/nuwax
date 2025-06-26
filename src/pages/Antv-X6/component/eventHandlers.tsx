@@ -101,7 +101,10 @@ const bindEventHandlers = ({
         }
       }
     }
-    changeCondition(newNodeParams, _targetNodeId);
+    changeCondition({
+      nodeData: newNodeParams,
+      targetNodeId: _targetNodeId?.toString(),
+    });
   };
   const _handleExceptionItemEdgeRemove = (
     edge: Edge,
@@ -155,7 +158,10 @@ const bindEventHandlers = ({
           _cell as Edge,
           (updateNodeParams: ChildNode) => {
             graph.removeCells([_cell]);
-            changeCondition(updateNodeParams, targetNode.id.toString());
+            changeCondition({
+              nodeData: updateNodeParams,
+              targetNodeId: targetNode.id.toString(),
+            });
           },
         );
         if (isException) return;
@@ -171,7 +177,10 @@ const bindEventHandlers = ({
             targetNode.loopNodeId === sourceNode.id
           ) {
             sourceNode.innerStartNodeId = -1;
-            changeCondition(sourceNode, _targetNodeId);
+            changeCondition({
+              nodeData: sourceNode,
+              targetNodeId: _targetNodeId?.toString(),
+            });
             graph.removeCells([_cell]); // 新增行：实际移除边元素
             return;
           }
@@ -182,7 +191,10 @@ const bindEventHandlers = ({
             sourceNode.loopNodeId === targetNode.id
           ) {
             targetNode.innerEndNodeId = -1;
-            changeCondition(targetNode, targetNode.id);
+            changeCondition({
+              nodeData: targetNode,
+              targetNodeId: targetNode.id.toString(),
+            });
             graph.removeCells([_cell]); // 新增行：实际移除边元素
             return;
           }

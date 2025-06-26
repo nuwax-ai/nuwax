@@ -84,9 +84,9 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     item.type = item.targetType as unknown as NodeTypeEnum; // TODO 这里需要优化
     item.typeId = item.targetId;
     form.setFieldValue(skillFormKey, skillComponentConfigs.concat([item]));
+    setSkillChange(true);
     form.submit();
     setOpen(false);
-    setSkillChange(true);
   };
 
   // 移出技能

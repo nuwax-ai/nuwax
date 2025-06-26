@@ -1,11 +1,12 @@
 import {
   CheckCircleFilled,
+  CloseCircleFilled,
   CopyOutlined,
   DownOutlined,
   LoadingOutlined,
   UpOutlined,
 } from '@ant-design/icons';
-import { App, Checkbox, Select, Tooltip } from 'antd';
+import { Checkbox, message, Select, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import CopyToClipboard from 'react-copy-to-clipboard';
@@ -91,7 +92,6 @@ const RunResult: React.FC<RunResultProps> = ({
   expanded = false,
   onExpandChange,
 }) => {
-  const { message } = App.useApp();
   const [collapsed, setCollapsed] = useState(!expanded);
 
   // 处理展开/收起
@@ -175,26 +175,8 @@ const RunResult: React.FC<RunResultProps> = ({
             </CopyToClipboard>
           </Tooltip>
         </div>
-        <div className={cx(styles.runResultSectionContent)}>
-          {Object.entries(obj).map(([key, value]) => (
-            <div key={key} className={cx(styles.keyValueItem)}>
-              <span className={cx(styles.key)}>{key} :</span>
-              <span
-                className={cx(styles.value)}
-                title={
-                  typeof value === 'string'
-                    ? value
-                    : JSON.stringify(value, null, 2)
-                }
-              >
-                &quot;
-                {typeof value === 'string'
-                  ? value
-                  : JSON.stringify(value, null, 2)}
-                &quot;
-              </span>
-            </div>
-          ))}
+        <div className={cx(styles.runResultSectionContent, 'overflow-y')}>
+          <pre>{JSON.stringify(obj, null, 2)}</pre>
         </div>
       </div>
     );
@@ -211,12 +193,13 @@ const RunResult: React.FC<RunResultProps> = ({
         <div className={cx(styles.runResultStatus)}>
           {loading ? (
             <LoadingOutlined className={cx(styles.statusIcon)} />
-          ) : (
+          ) : success ? (
             <CheckCircleFilled
-              className={cx(
-                styles.statusIcon,
-                success ? styles.success : styles.error,
-              )}
+              className={cx(styles.statusIcon, styles.success)}
+            />
+          ) : (
+            <CloseCircleFilled
+              className={cx(styles.statusIcon, styles.error)}
             />
           )}
           <span className={cx(styles.statusText)}>
@@ -263,15 +246,8 @@ const RunResult: React.FC<RunResultProps> = ({
                   />
                 </Tooltip>
               </div>
-              <div className={cx(styles.runResultBatchContent)}>
-                {Object.entries(batchVariables).map(([key, value]) => (
-                  <div key={key} className={cx(styles.keyValueItem)}>
-                    <span className={cx(styles.key)}>{key} :</span>
-                    <span className={cx(styles.value)}>
-                      &quot;{String(value)}&quot;
-                    </span>
-                  </div>
-                ))}
+              <div className={cx(styles.runResultSectionContent, 'overflow-y')}>
+                <pre>{JSON.stringify(batchVariables, null, 2)}</pre>
               </div>
             </div>
           )}

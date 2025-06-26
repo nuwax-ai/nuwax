@@ -7,9 +7,10 @@ import {
 import { PortGroupEnum } from '@/types/enums/node';
 import { ChildNode } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
+import { isEmptyObject } from '@/utils/index';
 import { Edge, Graph, Node } from '@antv/x6';
 import { message } from 'antd';
-import { isEqual } from 'lodash';
+import { isEqual, isPlainObject } from 'lodash';
 // 边界检查并调整子节点位置
 // 调整父节点尺寸以包含所有子节点
 
@@ -547,4 +548,24 @@ export const isEqualExceptionHandleConfig = (
     prev.retryCount === next.retryCount &&
     isEqual(prev.exceptionHandleNodeIds, next.exceptionHandleNodeIds)
   );
+};
+
+export const convertValueToEditorValue = (
+  value: string | undefined | object,
+): string => {
+  if (
+    value === '' ||
+    value === undefined ||
+    value === null ||
+    isEmptyObject(value)
+  ) {
+    return '';
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (isPlainObject(value)) {
+    return JSON.stringify(value, null, 2);
+  }
+  return '';
 };

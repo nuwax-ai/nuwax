@@ -35,8 +35,10 @@ import {
   NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
+import { FoldFormIdEnum, NodeUpdateEnum } from '@/types/enums/node';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import {
+  ChangeNodeProps,
   ChildNode,
   Edge,
   GraphContainerRef,
@@ -249,7 +251,8 @@ const Workflow: React.FC = () => {
   };
   // 获取当前节点的参数
   const getReference = async (id: number): Promise<boolean> => {
-    if (id === 0 || preventGetReference.current === id) return false;
+    if (id === FoldFormIdEnum.empty || preventGetReference.current === id)
+      return false;
     // 获取节点需要的引用参数
     const _res = await service.getOutputArgs(id);
     const isSuccess = _res.code === Constant.success;
@@ -328,7 +331,7 @@ const Workflow: React.FC = () => {
   const autoSaveNodeConfig = async (
     updateFormConfig: ChildNode,
   ): Promise<boolean> => {
-    if (updateFormConfig.id === 0) return false;
+    if (updateFormConfig.id === FoldFormIdEnum.empty) return false;
 
     const params = cloneDeep(updateFormConfig);
     graphRef.current?.graphUpdateNode(String(params.id), params);
@@ -349,41 +352,52 @@ const Workflow: React.FC = () => {
   };
 
   // 更新节点
-  const changeNode = async (config: ChildNode, update?: boolean | string) => {
-    let params = cloneDeep(config);
-    if (update && update === 'moved') {
-      if (config.id === getWorkflow('drawerForm').id) {
+  const changeNode = async ({
+    nodeData,
+    update,
+    targetNodeId,
+  }: ChangeNodeProps) => {
+    console.log('changeNode', nodeData, update, targetNodeId);
+
+    let params = cloneDeep(nodeData);
+    const isOnlyUpdate = update && update === NodeUpdateEnum.moved;
+    if (isOnlyUpdate) {
+      if (nodeData.id === getWorkflow('drawerForm').id) {
         const values = nodeDrawerRef.current?.getFormValues();
         params = {
-          ...config,
+          ...nodeData,
           nodeConfig: {
-            ...config.nodeConfig,
+            ...nodeData.nodeConfig,
             ...values,
             extension: {
-              ...config.nodeConfig.extension,
+              ...nodeData.nodeConfig.extension,
             },
           },
         };
       }
     }
-    if (params.id === 0) return;
+    if (params.id === FoldFormIdEnum.empty) return;
     graphRef.current?.graphUpdateNode(String(params.id), params);
     // setIsUpdate(true)
     const _res = await apiUpdateNode(params);
     if (_res.code === Constant.success) {
-      if (update) {
-        if (config.type === NodeTypeEnum.Loop) {
+      changeUpdateTime();
+      if (isOnlyUpdate) {
+        // 仅更新节点大小和位置 不需要更新form表单
+        return;
+      }
+      if (targetNodeId) {
+        if (params.type === NodeTypeEnum.Loop) {
           // 如果传递的是boolean，那么证明要更新这个节点
-          getNodeConfig(Number(config.id));
+          getNodeConfig(Number(nodeData.id));
         }
       }
       // 如果是修改节点的参数，那么就要更新当前节点的参数
-      if (config.id === getWorkflow('drawerForm').id) {
+      if (params.id === getWorkflow('drawerForm').id) {
         setFoldWrapItem(params);
       }
       // 跟新当前节点的上级参数
       getReference(getWorkflow('drawerForm').id);
-      changeUpdateTime();
     }
     // setIsUpdate(false)
   };
@@ -402,7 +416,7 @@ const Workflow: React.FC = () => {
               values.answerType === AnswerTypeEnum.SELECT)) &&
           currentFoldWrapItem.id === getWorkflow('drawerForm').id
         ) {
-          const changeNode = changeNodeConfig(
+          const nodeConfig = changeNodeConfig(
             currentFoldWrapItem.type,
             values,
             currentFoldWrapItem.nodeConfig,
@@ -411,7 +425,7 @@ const Workflow: React.FC = () => {
             ...currentFoldWrapItem,
             nodeConfig: {
               ...currentFoldWrapItem.nodeConfig,
-              ...changeNode,
+              ...nodeConfig,
             },
           };
         } else {
@@ -437,9 +451,14 @@ const Workflow: React.FC = () => {
   );
 
   const doSubmitFormData = useCallback(async (): Promise<boolean> => {
+    const hasSkillChange = getWorkflow('skillChange');
     if (getWorkflow('isModified') === false) return true;
     setIsModified(false);
     const result = await onSaveWorkflow(getWorkflow('drawerForm'));
+    if (hasSkillChange) {
+      //重新获取节点配置信息 并更新表单 与节点配置数据
+      await getNodeConfig(getWorkflow('drawerForm').id);
+    }
     return result;
   }, [setIsModified]);
 
@@ -475,7 +494,7 @@ const Workflow: React.FC = () => {
     const _visible = getWorkflow('visible');
     setFoldWrapItem((prev: ChildNode) => {
       setTestRun(false);
-      if (prev.id === 0 && child === null) {
+      if (prev.id === FoldFormIdEnum.empty && child === null) {
         setVisible(false);
         return prev;
       } else {
@@ -485,7 +504,7 @@ const Workflow: React.FC = () => {
         }
         setVisible(false);
         return {
-          id: 0,
+          id: FoldFormIdEnum.empty,
           shape: NodeShapeEnum.General,
           description: '',
           workflowId: workflowId,
@@ -523,10 +542,12 @@ const Workflow: React.FC = () => {
   ) => {
     setSkillChange(true);
     await changeNode({
-      ...nodeData,
-      nodeConfig: {
-        ...nodeData.nodeConfig,
-        knowledgeBaseConfigs,
+      nodeData: {
+        ...nodeData,
+        nodeConfig: {
+          ...nodeData.nodeConfig,
+          knowledgeBaseConfigs,
+        },
       },
     });
   };
@@ -552,7 +573,7 @@ const Workflow: React.FC = () => {
       newNodeId,
       targetNode,
     );
-    await changeNode(params);
+    await changeNode({ nodeData: params });
 
     const sourcePortId = portId.split('-').slice(0, -1).join('-');
     graphRef.current?.graphCreateNewEdge(
@@ -596,7 +617,7 @@ const Workflow: React.FC = () => {
       newNode,
       targetNode,
     );
-    await changeNode(nodeData);
+    await changeNode({ nodeData: nodeData });
     graphRef.current?.graphCreateNewEdge(
       sourcePortId,
       String(targetNode.id),
@@ -645,7 +666,7 @@ const Workflow: React.FC = () => {
         newNode,
         sourceNode,
       );
-      await changeNode(nodeData as ChildNode);
+      await changeNode({ nodeData: nodeData });
       graphRef.current?.graphCreateNewEdge(
         sourcePortId,
         sourceNode.id.toString(),
@@ -898,7 +919,7 @@ const Workflow: React.FC = () => {
         ..._res.data,
         shape,
       };
-      changeNode(newNode);
+      changeNode({ nodeData: newNode });
       // 选中新增的节点
       graphRef.current?.graphSelectNode(String(_res.data.id));
       // changeUpdateTime();
@@ -1347,7 +1368,7 @@ const Workflow: React.FC = () => {
     [isModified, foldWrapItem.id],
   );
   // 右上角的相关操作
-  const handleChangeNode = useCallback(
+  const handleOperationsChange = useCallback(
     async (val: string) => {
       switch (val) {
         case 'Rename': {
@@ -1402,20 +1423,25 @@ const Workflow: React.FC = () => {
     description: string;
   }) => {
     const newValue = { ...foldWrapItem, name, description };
-    changeNode(newValue);
+    changeNode({ nodeData: newValue });
     setShowNameInput(false);
   };
 
   const handleSaveNode = (data: ChildNode, payload: Partial<ChildNode>) => {
     // 更新节点名称
     const newValue = { ...data, ...payload };
-    changeNode(newValue);
+    changeNode({ nodeData: newValue });
   };
 
   // 点击画布中的节点
   const handleNodeClick = (node: ChildNode | null) => {
     // 如果右侧抽屉是再展示的，且就是当前选中的节点，那么就不做任何操作
-    if (visible && node && node.id === getWorkflow('drawerForm').id) return;
+    if (
+      getWorkflow('visible') &&
+      node &&
+      node.id === getWorkflow('drawerForm').id
+    )
+      return;
     changeDrawer(node);
   };
 
@@ -1665,7 +1691,7 @@ const Workflow: React.FC = () => {
         changeFoldWrap={changeFoldWrap}
         otherAction={
           <OtherOperations
-            onChange={handleChangeNode}
+            onChange={handleOperationsChange}
             testRun={testRunList.includes(foldWrapItem.type)}
             nodeType={foldWrapItem.type}
             action={

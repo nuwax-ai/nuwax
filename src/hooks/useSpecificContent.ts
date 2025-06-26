@@ -1,4 +1,5 @@
-import { DataTypeEnum, ExceptionHandleTypeEnum } from '@/types/enums/common';
+import { DataTypeEnum } from '@/types/enums/common';
+import { convertValueToEditorValue } from '@/utils/graph';
 import { Form } from 'antd';
 import _ from 'lodash';
 import { useMemo } from 'react';
@@ -78,13 +79,10 @@ export const useSpecificContent = ({
   // 使用 useMemo 计算 specificContent，当 outputArgs 或 exceptionItemProps.specificContent 变化时重新计算
   const specificContent = useMemo(() => {
     const originalSpecificContent =
-      exceptionHandleConfig.specificContent || initialSpecificContent || '{}';
-    if (
-      exceptionHandleConfig.exceptionHandleType !==
-      ExceptionHandleTypeEnum.SPECIFIC_CONTENT
-    ) {
-      return '';
-    }
+      convertValueToEditorValue(
+        exceptionHandleConfig.specificContent || initialSpecificContent,
+      ) || '{}';
+
     try {
       if (!outputArgs) {
         return '';
@@ -100,7 +98,12 @@ export const useSpecificContent = ({
     } catch (error) {
       return '';
     }
-  }, [outputArgs, exceptionHandleConfig.exceptionHandleType]);
+  }, [
+    outputArgs,
+    exceptionHandleConfig.specificContent,
+    exceptionHandleConfig.exceptionHandleType,
+    initialSpecificContent,
+  ]);
 
   return specificContent;
 };

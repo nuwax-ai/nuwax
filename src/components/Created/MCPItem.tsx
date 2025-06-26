@@ -71,7 +71,7 @@ const MCPItem: React.FC<MCPItemProps> = ({
       </div>
       <MCPTools
         fold={fold}
-        tools={item?.config?.tools}
+        tools={item?.config?.tools || []}
         item={item}
         onAddTool={onAddNode}
         addedComponents={addedComponents}
