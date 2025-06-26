@@ -205,14 +205,20 @@
 }
 
 .runResultSectionContent {
-  padding: 6px 8px;
-  width: 100%;
-  max-height: 200px;
-  overflow-y: auto;
-  background-color: @BLANK12;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+  pre {
+    font-size: 11px;
+    line-height: 1.5;
+    width: 100%;
+    max-height: 200px;
+    background-color: @BLANK12;
+    padding: 6px 8px;
+    margin: 0;
+    // 横向滚动条样式
+    &::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+  }
 }
 
 .keyValueItem {

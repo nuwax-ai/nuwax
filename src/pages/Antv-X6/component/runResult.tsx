@@ -177,7 +177,7 @@ const RunResult: React.FC<RunResultProps> = ({
           </Tooltip>
         </div>
         <div className={cx(styles.runResultSectionContent, 'overflow-y')}>
-          {JSON.stringify(obj, null, 2)}
+          <pre>{JSON.stringify(obj, null, 2)}</pre>
         </div>
       </div>
     );
@@ -247,15 +247,8 @@ const RunResult: React.FC<RunResultProps> = ({
                   />
                 </Tooltip>
               </div>
-              <div className={cx(styles.runResultBatchContent)}>
-                {Object.entries(batchVariables).map(([key, value]) => (
-                  <div key={key} className={cx(styles.keyValueItem)}>
-                    <span className={cx(styles.key)}>{key} :</span>
-                    <span className={cx(styles.value)}>
-                      &quot;{String(value)}&quot;
-                    </span>
-                  </div>
-                ))}
+              <div className={cx(styles.runResultSectionContent, 'overflow-y')}>
+                <pre>{JSON.stringify(batchVariables, null, 2)}</pre>
               </div>
             </div>
           )}
