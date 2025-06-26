@@ -2,7 +2,7 @@ import pluginImage from '@/assets/images/plugin_image.png'; // 插件图标
 import workflowImage from '@/assets/images/workflow_image.png'; // 插件图标
 import { BINDING_DEFAULT_JSON_DATA } from '@/constants/agent.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { PluginBindingProps } from '@/types/interfaces/agentConfig';
+import { VariableDataBindingProps } from '@/types/interfaces/agentConfig';
 import { UpOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
@@ -10,16 +10,15 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-// 插件绑定组件
-const PluginBinding: React.FC<PluginBindingProps> = ({
-  targetType,
-  targetName,
-  targetIcon,
+// 变量数据绑定组件
+const VariableDataBinding: React.FC<VariableDataBindingProps> = ({
+  selectConfig,
   targetComponentInfo,
   onClick,
 }) => {
   // 旋转图标
   const [isRotate, setIsRotate] = React.useState(true);
+  const { targetType, targetName, targetIcon } = selectConfig || {};
   // 默认图标
   const defaultIcon = [targetComponentInfo?.targetType, targetType].includes(
     AgentComponentTypeEnum.Plugin,
@@ -90,4 +89,4 @@ const PluginBinding: React.FC<PluginBindingProps> = ({
   );
 };
 
-export default PluginBinding;
+export default VariableDataBinding;

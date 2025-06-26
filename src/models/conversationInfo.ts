@@ -121,6 +121,18 @@ export default () => {
     },
   });
 
+  // 处理变量参数
+  const handleVariables = (_variables: BindConfigWithSub[]) => {
+    setVariables(_variables);
+    // 必填参数name列表
+    const _requiredNameList = _variables
+      ?.filter(
+        (item: BindConfigWithSub) => !item.systemVariable && item.require,
+      )
+      ?.map((item: BindConfigWithSub) => item.name);
+    setRequiredNameList(_requiredNameList || []);
+  };
+
   // 查询会话
   const {
     run: runQueryConversation,
@@ -139,16 +151,10 @@ export default () => {
       setManualComponents(data?.agent?.manualComponents || []);
       // 变量参数
       const _variables = data?.agent?.variables || [];
-      setVariables(_variables);
+      // 处理变量参数
+      handleVariables(_variables);
       // 用户填写的变量参数
       setUserFillVariables(data?.variables || null);
-      // 必填参数name列表
-      const _requiredNameList = _variables
-        ?.filter(
-          (item: BindConfigWithSub) => !item.systemVariable && item.require,
-        )
-        ?.map((item: BindConfigWithSub) => item.name);
-      setRequiredNameList(_requiredNameList || []);
       // 消息列表
       const _messageList = data?.messageList || [];
       if (_messageList?.length) {
@@ -559,6 +565,6 @@ export default () => {
     setVariables,
     userFillVariables,
     requiredNameList,
-    setRequiredNameList,
+    handleVariables,
   };
 };

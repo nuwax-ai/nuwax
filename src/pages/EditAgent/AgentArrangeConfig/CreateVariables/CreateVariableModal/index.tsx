@@ -15,6 +15,7 @@ import {
 } from '@/types/interfaces/agentConfig';
 import {
   BindConfigWithSub,
+  CascaderOption,
   CreatedNodeItem,
   option,
 } from '@/types/interfaces/common';
@@ -52,7 +53,7 @@ import { useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import DragManualCreateItem from './DragManualCreateItem';
 import styles from './index.less';
-import PluginBinding from './PluginBinding';
+import VariableDataBinding from './VariableDataBinding';
 
 const cx = classNames.bind(styles);
 
@@ -97,12 +98,13 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
 
   useEffect(() => {
     if (open) {
+      // 绑定组件重置
+      setTargetComponentInfo(null);
       // 新建模式
       if (mode === CreateUpdateModeEnum.Create) {
         setInputType(InputTypeEnum.Text);
         form.setFieldValue('inputType', InputTypeEnum.Text);
-        // 绑定组件重置
-        setTargetComponentInfo(null);
+        setAddComponents([]);
         setActiveTabKey(OptionDataSourceEnum.MANUAL);
         setDataSource([
           { id: uuidv4(), value: '', label: '' },
@@ -125,11 +127,8 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
         setInputType(inputType as InputTypeEnum);
         // 选项数据源
         setActiveTabKey(selectConfig?.dataSourceType as OptionDataSourceEnum);
-        // 如果绑定了组件（插件、工作流），回显绑定组件信息
-        if (
-          selectConfig?.dataSourceType === OptionDataSourceEnum.BINDING &&
-          selectConfig?.targetId
-        ) {
+        // 如果绑定了数据源（插件、工作流），回显绑定组件信息
+        if (selectConfig?.dataSourceType === OptionDataSourceEnum.BINDING) {
           setAddComponents([
             {
               type: selectConfig?.targetType as AgentComponentTypeEnum,
@@ -137,19 +136,27 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
               status: AgentAddComponentStatusEnum.Added,
             },
           ]);
-        }
-        // 下拉参数配置列表存在
-        else if (selectConfig && selectConfig?.options?.length > 0) {
           // 手动创建选项数据源
-          setDataSource(
-            selectConfig?.options?.map(
-              (item: option) =>
-                ({
-                  ...item,
-                  id: uuidv4(),
-                } as option),
-            ) || [],
-          );
+          setDataSource([
+            { id: uuidv4(), value: '', label: '' },
+            { id: uuidv4(), value: '', label: '' },
+          ]);
+        } else {
+          // 清空已选择数据组件信息
+          setAddComponents([]);
+          // 下拉参数配置列表存在
+          if (selectConfig && selectConfig?.options?.length > 0) {
+            // 手动创建选项数据源
+            setDataSource(
+              selectConfig?.options?.map(
+                (item: CascaderOption) =>
+                  ({
+                    ...item,
+                    id: uuidv4(),
+                  } as option),
+              ) || [],
+            );
+          }
         }
 
         // 默认值，默认为空字符串
@@ -268,12 +275,10 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
     },
     {
       key: OptionDataSourceEnum.BINDING,
-      label: '插件绑定',
+      label: '数据绑定',
       children: (
-        <PluginBinding
-          targetType={currentVariable?.selectConfig?.targetType}
-          targetIcon={currentVariable?.selectConfig?.targetIcon}
-          targetName={currentVariable?.selectConfig?.targetName}
+        <VariableDataBinding
+          selectConfig={currentVariable?.selectConfig}
           targetComponentInfo={targetComponentInfo}
           onClick={() => setShow(true)}
         />
@@ -316,23 +321,36 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
           message.error('请填写选项值');
           return;
         }
-      }
 
-      // tabs切换到"插件绑定"时，需要选择绑定组件才能提交
-      if (
-        activeTabKey === OptionDataSourceEnum.BINDING &&
-        !targetComponentInfo
-      ) {
-        message.error('请选择绑定组件');
-        return;
+        // 如果没有绑定组件，则使用默认值（currentVariable）
+        selectConfig = {
+          dataSourceType: activeTabKey,
+          targetType: null,
+          targetId: null,
+          targetName: null,
+          targetIcon: null,
+          targetDescription: null,
+          options: dataSource,
+        };
+      } else {
+        if (!targetComponentInfo && !currentVariable?.selectConfig?.targetId) {
+          message.error('请选择绑定组件');
+          return;
+        }
+        // tabs切换到"插件绑定"时，需要选择绑定组件才能提交
+        // 编辑时，如果没有重新绑定组件，则使用默认值（currentVariable）
+        selectConfig = targetComponentInfo
+          ? {
+              dataSourceType: activeTabKey,
+              targetType: targetComponentInfo?.targetType,
+              targetId: targetComponentInfo?.targetId,
+              targetName: targetComponentInfo?.name,
+              targetIcon: targetComponentInfo?.icon,
+              targetDescription: targetComponentInfo?.description,
+              options: [],
+            }
+          : currentVariable?.selectConfig;
       }
-
-      selectConfig = {
-        dataSourceType: activeTabKey,
-        targetType: targetComponentInfo?.targetType,
-        targetId: targetComponentInfo?.targetId,
-        options: activeTabKey === OptionDataSourceEnum.MANUAL ? dataSource : [],
-      };
 
       _bindValue = '';
     }
