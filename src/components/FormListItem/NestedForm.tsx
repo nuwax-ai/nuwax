@@ -9,8 +9,6 @@ import { useRequireStatus } from './hooks/useRequireStatus';
 import { TreeNodeConfig, useTreeData } from './hooks/useTreeData';
 import { TreeFormProps } from './type';
 
-const { TreeNode } = Tree;
-
 /**
  * 嵌套表单树组件
  * 用于渲染可嵌套的树形表单结构，支持动态添加、删除节点
@@ -51,7 +49,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
 
   // 创建一个独立的渲染函数，避免循环依赖
   const createNodeTitle = useCallback(
-    (nodeData: TreeNodeConfig) => {
+    (nodeData: TreeNodeConfig, key?: string) => {
       if (isBody) {
         return (
           <TreeNodeTitleBody
@@ -67,6 +65,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
 
       return (
         <TreeNodeTitle
+          key={`treeNodeTitle-${nodeData.key || key}`}
           nodeData={nodeData}
           form={form}
           showCheck={showCheck}
@@ -89,23 +88,6 @@ const CustomTree: React.FC<TreeFormProps> = ({
       updateRequireStatus,
     ],
   );
-
-  // 使用独立的递归函数，避免在useCallback中递归调用
-  const renderNodes = (
-    nodes: TreeNodeConfig[],
-    level: number,
-  ): React.ReactNode[] => {
-    return nodes.map((node, index) => (
-      <TreeNode
-        key={`${node.key ? node.key : `level-${level}`}-${index}`}
-        title={createNodeTitle(node)}
-      >
-        {node.subArgs &&
-          node.subArgs.length > 0 &&
-          renderNodes(node.subArgs, level + 1)}
-      </TreeNode>
-    ));
-  };
 
   // 判断是否显示添加按钮
   const showAddButton =
@@ -134,16 +116,22 @@ const CustomTree: React.FC<TreeFormProps> = ({
         defaultExpandParent
         blockNode
         expandedKeys={expandedKeys}
+        treeData={treeData}
+        fieldNames={{
+          title: 'name',
+          key: 'key',
+          children: 'subArgs',
+        }}
         onExpand={(keys) => setExpandedKeys(keys)}
+        titleRender={(nodeData) => {
+          return createNodeTitle(nodeData, nodeData.key);
+        }}
         className={`${
           treeData.find((item) => item.subArgs && item.subArgs.length > 0)
             ? 'tree-form-style'
             : 'tree-form-style-no-child'
         }`}
-      >
-        {/* 渲染TreeNode节点 */}
-        {treeData && renderNodes(treeData, 1)}
-      </Tree>
+      ></Tree>
     </div>
   );
 };

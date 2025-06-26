@@ -82,8 +82,8 @@ const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
     <div className="qa-node-content-style">
       <div className="dis-left">
         <span className="text-right qa-title-style">输入</span>
-        {inputArgs?.slice(0, 2).map((item) => (
-          <Tag key={item.name}>{item.name}</Tag>
+        {inputArgs?.slice(0, 2).map((item, index) => (
+          <Tag key={`inputArgs-${item.name}-${index}`}>{item.name}</Tag>
         ))}
         {inputArgs && inputArgs.length > 2 && (
           <Tag>+{inputArgs.length - 2}</Tag>
@@ -102,7 +102,10 @@ const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
       </div>
       {answerType === AnswerTypeEnum.SELECT &&
         data.nodeConfig.options?.map((item, index) => (
-          <div key={`${item.uuid}`} className="dis-left">
+          <div
+            key={`options-${item.uuid || optionsMap[index]}-${index}`}
+            className="dis-left"
+          >
             <span className="text-right qa-title-style"></span>
             <Tag>{optionsMap[index]}</Tag>
             <span className="qa-content-style">
