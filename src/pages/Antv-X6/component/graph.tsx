@@ -22,7 +22,7 @@ import { message, Modal } from 'antd';
 // 自定义类型定义
 import PlusIcon from '@/assets/svg/plus_icon.svg';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
-import { PortGroupEnum } from '@/types/enums/node';
+import { NodeUpdateEnum, PortGroupEnum } from '@/types/enums/node';
 import { GraphProp } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { cloneDeep } from '@/utils/common';
@@ -618,7 +618,7 @@ const initGraph = ({
     edge.removeTools();
   });
   // 监听节点的拖拽移动位置
-  graph.on('node:moved', ({ node, e }) => {
+  graph.on('node:moved', ({ node, e }: { node: Node; e: MouseEvent }) => {
     e.stopPropagation(); // 阻止事件冒泡
     // 获取节点被拖拽到的位置
     const { x, y } = node.getPosition();
@@ -647,7 +647,10 @@ const initGraph = ({
           if (childrenData.id === data.id) {
             childrenData.nodeConfig.extension.x = x;
             childrenData.nodeConfig.extension.y = y;
-            changeCondition(childrenData, 'moved');
+            changeCondition({
+              nodeData: childrenData,
+              update: NodeUpdateEnum.moved,
+            });
           }
         }
       }
@@ -661,7 +664,7 @@ const initGraph = ({
         parent.nodeConfig.extension.height = _size.height;
         parent.nodeConfig.extension.x = _position.x;
         parent.nodeConfig.extension.y = _position.y;
-        changeCondition(parent, 'moved');
+        changeCondition({ nodeData: parent, update: NodeUpdateEnum.moved });
       }
       return;
     }
@@ -703,12 +706,12 @@ const initGraph = ({
       data.nodeConfig.extension.width = _size.width;
       data.nodeConfig.extension.height = _size.height;
 
-      changeCondition(data, 'moved');
+      changeCondition({ nodeData: data, update: NodeUpdateEnum.moved });
       return;
     }
 
     // node.prop('zIndex', 99);
-    changeCondition(data, 'moved');
+    changeCondition({ nodeData: data, update: NodeUpdateEnum.moved });
     changeZIndex(node);
   });
 
@@ -860,7 +863,10 @@ const initGraph = ({
     const isException = _handleExceptionItemEdgeAdd(
       edge,
       (newNodeParams: ChildNode) => {
-        changeCondition(newNodeParams, targetNode.id.toString());
+        changeCondition({
+          nodeData: newNodeParams,
+          targetNodeId: targetNode.id.toString(),
+        });
         graph.addEdge(edge);
         setEdgeAttributes(edge);
         edge.toFront();
@@ -877,7 +883,10 @@ const initGraph = ({
         targetNode as ChildNode,
       );
       if (_params && typeof _params !== 'string') {
-        changeCondition(_params, targetNode.id);
+        changeCondition({
+          nodeData: _params,
+          targetNodeId: targetNode.id.toString(),
+        });
         graph.addEdge(edge);
         setEdgeAttributes(edge);
         edge.toFront();
@@ -898,7 +907,10 @@ const initGraph = ({
         targetNode,
         sourcePort,
       );
-      changeCondition(_params, targetNodeId);
+      changeCondition({
+        nodeData: _params,
+        targetNodeId: targetNode.id.toString(),
+      });
       // 通知父组件更新节点信息
     } else {
       // 通知父组件创建边
