@@ -12,7 +12,7 @@ import {
   SettingOutlined,
 } from '@ant-design/icons';
 import { Popover, Tag } from 'antd';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useModel } from 'umi';
 import './index.less';
 import SettingModal from './SettingModal';
@@ -86,14 +86,15 @@ export const SkillList: React.FC<SkillProps> = ({
       (currentComponentInfo?.toolName || '') === (item.toolName || '')
     );
   };
+  const genKey = useCallback((item: CreatedNodeItem, prefix: string) => {
+    return `${prefix}-${item?.type}-${item?.targetId || item?.typeId}-${
+      item?.toolName || ''
+    }`;
+  }, []);
   return (
     <div className="skill-list">
       {params.map((item) => (
-        <div
-          key={`skill-${item.type}-${item.targetId || item.typeId}-${
-            item.toolName || ''
-          }`}
-        >
+        <div key={genKey(item, 'skill')}>
           <div
             className="skill-item-style dis-left"
             style={{
@@ -163,6 +164,7 @@ export const SkillList: React.FC<SkillProps> = ({
 
       <SettingModal
         open={open}
+        key={genKey(currentComponentInfo as CreatedNodeItem, 'setting')}
         variables={variables}
         inputArgBindConfigs={
           currentComponentInfo?.inputArgBindConfigs as BindConfigWithSub[]
