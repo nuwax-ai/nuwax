@@ -170,6 +170,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     // 修改节点信息
     const graphUpdateNode = (nodeId: string, newData: ChildNode | null) => {
       if (!graphRef.current || !newData) return;
+      console.log('graphUpdateNode', nodeId, newData);
       const node = graphRef.current.getCellById(nodeId);
       if (node && node.isNode()) {
         const position = node.getPosition();
@@ -190,6 +191,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         if (needUpdateNodes(newData)) {
           // 需要更新端口配置的节点
           const newPorts = generatePorts(newData);
+          console.log('graphUpdateNode:newPorts', newPorts);
+
           if (newData.type === NodeTypeEnum.QA) {
             // 问答节点
             const { width, height } = getNodeSize({

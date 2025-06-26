@@ -69,6 +69,7 @@ import { Graph } from '@antv/x6';
 import { App, Form } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
+import { mergeObject } from 'ut2';
 import { v4 as uuidv4 } from 'uuid';
 import NodePanelDrawer from './components/NodePanelDrawer';
 import VersionAction from './components/VersionAction';
@@ -357,8 +358,6 @@ const Workflow: React.FC = () => {
     update,
     targetNodeId,
   }: ChangeNodeProps) => {
-    console.log('changeNode', nodeData, update, targetNodeId);
-
     let params = cloneDeep(nodeData);
     const isOnlyUpdate = update && update === NodeUpdateEnum.moved;
     if (isOnlyUpdate) {
@@ -1648,6 +1647,28 @@ const Workflow: React.FC = () => {
     await getDetails();
   };
 
+  // 更新画布中的节点
+  const handleGraphUpdateByForm = useCallback(
+    (values: any) => {
+      const nodeId = getWorkflow('drawerForm').id;
+      if (!graphRef.current || !nodeId || nodeId === FoldFormIdEnum.empty)
+        return;
+      const cell = graphRef.current
+        .getGraphRef()
+        .getCellById(nodeId.toString());
+      if (!cell || !cell.isNode()) return;
+      const oldNodeData = cell.getData() as ChildNode;
+      if (oldNodeData) {
+        const { nodeConfig, ...rest } = oldNodeData;
+        graphRef.current.graphUpdateNode(nodeId, {
+          ...rest,
+          nodeConfig: mergeObject(cloneDeep(nodeConfig), values) as NodeConfig,
+        });
+      }
+    },
+    [graphRef.current],
+  );
+
   return (
     <div id="container">
       {/* 顶部的名称和发布等按钮 */}
@@ -1707,8 +1728,9 @@ const Workflow: React.FC = () => {
             layout={'vertical'}
             onFinishFailed={doSubmitFormData}
             onFinish={doSubmitFormData}
-            onValuesChange={() => {
+            onValuesChange={(values) => {
               setIsModified(true);
+              handleGraphUpdateByForm(values);
             }}
           >
             <NodePanelDrawer params={foldWrapItem} />
