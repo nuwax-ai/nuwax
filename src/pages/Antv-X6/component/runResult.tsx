@@ -1,5 +1,6 @@
 import {
   CheckCircleFilled,
+  CloseCircleFilled,
   CopyOutlined,
   DownOutlined,
   LoadingOutlined,
@@ -175,26 +176,8 @@ const RunResult: React.FC<RunResultProps> = ({
             </CopyToClipboard>
           </Tooltip>
         </div>
-        <div className={cx(styles.runResultSectionContent)}>
-          {Object.entries(obj).map(([key, value]) => (
-            <div key={key} className={cx(styles.keyValueItem)}>
-              <span className={cx(styles.key)}>{key} :</span>
-              <span
-                className={cx(styles.value)}
-                title={
-                  typeof value === 'string'
-                    ? value
-                    : JSON.stringify(value, null, 2)
-                }
-              >
-                &quot;
-                {typeof value === 'string'
-                  ? value
-                  : JSON.stringify(value, null, 2)}
-                &quot;
-              </span>
-            </div>
-          ))}
+        <div className={cx(styles.runResultSectionContent, 'overflow-y')}>
+          {JSON.stringify(obj, null, 2)}
         </div>
       </div>
     );
@@ -211,12 +194,13 @@ const RunResult: React.FC<RunResultProps> = ({
         <div className={cx(styles.runResultStatus)}>
           {loading ? (
             <LoadingOutlined className={cx(styles.statusIcon)} />
-          ) : (
+          ) : success ? (
             <CheckCircleFilled
-              className={cx(
-                styles.statusIcon,
-                success ? styles.success : styles.error,
-              )}
+              className={cx(styles.statusIcon, styles.success)}
+            />
+          ) : (
+            <CloseCircleFilled
+              className={cx(styles.statusIcon, styles.error)}
             />
           )}
           <span className={cx(styles.statusText)}>

@@ -1,3 +1,5 @@
+@import '@/styles/color.less';
+
 // 运行结果组件样式
 .runResultContainer {
   width: 100%;
@@ -204,9 +206,13 @@
 
 .runResultSectionContent {
   padding: 6px 8px;
-  background-color: #fff;
-  max-height: 100px;
+  width: 100%;
+  max-height: 200px;
   overflow-y: auto;
+  background-color: @BLANK12;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .keyValueItem {
