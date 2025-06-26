@@ -55,6 +55,8 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       setExpandedRowKeys(_expandedRowKeys);
     } else {
       setDisabled(true);
+      setConfigArgs([]);
+      setExpandedRowKeys([]);
     }
   }, [inputArgBindConfigs]);
 
