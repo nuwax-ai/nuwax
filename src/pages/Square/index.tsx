@@ -48,7 +48,8 @@ const Square: React.FC = () => {
   const [page, setPage] = useState<number>(1);
   // 是否有更多数据
   const [hasMore, setHasMore] = useState<boolean>(true);
-
+  // 文档搜索关键词
+  const keywordRef = useRef<string>('');
   // 接口地址， 默认智能体列表
   const apiUrlRef = useRef<(data: SquarePublishedListParams) => void>(
     apiPublishedAgentList,
@@ -120,7 +121,10 @@ const Square: React.FC = () => {
   };
 
   // 查询列表
-  const handleQuery = (pageIndex: number = 1, keyword: string = '') => {
+  const handleQuery = (
+    pageIndex: number = 1,
+    keyword: string = keywordRef.current,
+  ) => {
     const data = {
       page: pageIndex,
       pageSize: 20,
@@ -174,6 +178,7 @@ const Square: React.FC = () => {
 
   // 搜索
   const onSearch: SearchProps['onSearch'] = (value) => {
+    keywordRef.current = value;
     handleQuery(1, value);
   };
 
