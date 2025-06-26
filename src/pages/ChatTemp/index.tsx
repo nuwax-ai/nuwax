@@ -204,11 +204,12 @@ const ChatTemp: React.FC = () => {
           )
           ?.map((item: BindConfigWithSub) => item.name);
         setRequiredNameList(_requiredNameList || []);
+        const len = _messageList?.length || 0;
         // 存在消息列表时，设置消息列表
-        if (_messageList?.length) {
-          setMessageList(_messageList || []);
+        if (len) {
+          setMessageList(_messageList);
           // 最后一条消息为"问答"时，获取问题建议
-          const lastMessage = _messageList?.[_messageList.length - 1];
+          const lastMessage = _messageList[len - 1];
           if (
             lastMessage.type === MessageModeEnum.QUESTION &&
             lastMessage.ext?.length
@@ -217,6 +218,11 @@ const ChatTemp: React.FC = () => {
             const suggestList =
               lastMessage.ext.map((item) => item.content) || [];
             setChatSuggestList(suggestList);
+          }
+          // 如果消息列表大于1时，说明已开始会话，就不显示预置问题，反之显示
+          else if (len === 1) {
+            // 如果存在预置问题，显示预置问题
+            setChatSuggestList(data?.agent?.openingGuidQuestions || []);
           }
         }
         // 不存在会话消息时，才显示开场白预置问题
