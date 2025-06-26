@@ -8,7 +8,10 @@ import { useSpecificContent } from '@/hooks/useSpecificContent';
 import { ExceptionHandleTypeEnum } from '@/types/enums/common';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import { ExceptionItemProps } from '@/types/interfaces/graph';
-import { isEqualExceptionHandleConfig } from '@/utils/graph';
+import {
+  convertValueToEditorValue,
+  isEqualExceptionHandleConfig,
+} from '@/utils/graph';
 import { ExpandAltOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Form, Input, Select, Tooltip } from 'antd';
 import cx from 'classnames';
@@ -19,7 +22,6 @@ import styles from './ExceptionItem.less';
 
 // 默认的JSON格式内容
 const DEFAULT_JSON_CONTENT = '';
-
 /**
  * 异常处理配置组件
  * 用于配置节点的异常处理策略，包括超时、重试、异常处理方式
@@ -47,7 +49,7 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
 
     // 用于存储编辑器的值，避免直接从表单读取导致的问题
     const [jsonContent, setJsonContent] = useState<string>(
-      specificContent || DEFAULT_JSON_CONTENT,
+      convertValueToEditorValue(specificContent) || DEFAULT_JSON_CONTENT,
     );
 
     const [show, setShow] = useState(false);
@@ -61,7 +63,7 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
         exceptionHandleType,
         ...(exceptionHandleType ===
           ExceptionHandleTypeEnum.SPECIFIC_CONTENT && {
-          specificContent,
+          specificContent: convertValueToEditorValue(specificContent),
         }),
         ...(exceptionHandleType ===
           ExceptionHandleTypeEnum.EXECUTE_EXCEPTION_FLOW && {
@@ -81,19 +83,15 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
       exceptionHandleNodeIds,
     ]);
 
-    const specificContentFromOutputArgs = useSpecificContent({
+    const calcSpecificContent = useSpecificContent({
       specificContent: outerForm.getFieldValue([name, 'specificContent']) || '',
       fieldName: name,
       watchField: 'outputArgs',
     });
 
     useEffect(() => {
-      setJsonContent(
-        specificContentFromOutputArgs
-          ? JSON.stringify(specificContentFromOutputArgs, null, 2)
-          : '',
-      );
-    }, [specificContentFromOutputArgs]);
+      setJsonContent(convertValueToEditorValue(calcSpecificContent));
+    }, [calcSpecificContent]);
 
     // 处理异常处理类型变化
     useEffect(() => {
