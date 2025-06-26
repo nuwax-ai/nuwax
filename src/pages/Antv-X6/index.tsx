@@ -357,6 +357,8 @@ const Workflow: React.FC = () => {
     update,
     targetNodeId,
   }: ChangeNodeProps) => {
+    console.log('changeNode', nodeData, update, targetNodeId);
+
     let params = cloneDeep(nodeData);
     const isOnlyUpdate = update && update === NodeUpdateEnum.moved;
     if (isOnlyUpdate) {
@@ -449,9 +451,14 @@ const Workflow: React.FC = () => {
   );
 
   const doSubmitFormData = useCallback(async (): Promise<boolean> => {
+    const hasSkillChange = getWorkflow('skillChange');
     if (getWorkflow('isModified') === false) return true;
     setIsModified(false);
     const result = await onSaveWorkflow(getWorkflow('drawerForm'));
+    if (hasSkillChange) {
+      //重新获取节点配置信息 并更新表单 与节点配置数据
+      await getNodeConfig(getWorkflow('drawerForm').id);
+    }
     return result;
   }, [setIsModified]);
 

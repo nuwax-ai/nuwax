@@ -104,6 +104,10 @@ const useWorkflow = () => {
     storeWorkflow('visible', visible);
   }, [visible]);
 
+  useEffect(() => {
+    storeWorkflow('skillChange', visible);
+  }, [skillChange]);
+
   const getWorkflow = useCallback((key: string) => {
     return storeWorkflowRef.current[key];
   }, []);

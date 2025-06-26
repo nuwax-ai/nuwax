@@ -72,6 +72,8 @@ export const SkillList: React.FC<SkillProps> = ({
     setCurrentComponentInfo(null);
   };
   const handleEdit = (item: CreatedNodeItem) => {
+    console.log('value:item', item);
+
     setCurrentComponentInfo({
       ...item,
       inputArgBindConfigs: item.inputArgBindConfigs as InputAndOutConfig[],
@@ -122,7 +124,15 @@ export const SkillList: React.FC<SkillProps> = ({
               <div className="mask-layer-style">
                 <div
                   className="skill-item-dispose-style"
-                  style={{ color: '#fff', backgroundColor: 'transparent' }}
+                  style={{
+                    color: '#fff',
+                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                    height: '100%',
+                    alignItems: 'center',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    padding: '0 10px',
+                  }}
                 >
                   {item.inputArgBindConfigs &&
                     item.inputArgBindConfigs.length && (
