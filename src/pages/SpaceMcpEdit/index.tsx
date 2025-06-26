@@ -131,7 +131,8 @@ const SpaceMcpCreate: React.FC = () => {
     debounceInterval: 300,
     onSuccess: (_: null, params: McpUpdateParams[]) => {
       const { withDeploy } = params[0];
-      message.success('更新MCP服务成功');
+      const text = withDeploy ? '已完成保存并提交部署' : '保存MCP服务成功';
+      message.success(text);
       setSaveDeployLoading(false);
       setSaveLoading(false);
       // 保存并部署, 同步发布时间和修改时间

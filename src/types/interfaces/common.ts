@@ -2,6 +2,7 @@ import type {
   AgentComponentTypeEnum,
   AllowCopyEnum,
   OnlyTemplateEnum,
+  OptionDataSourceEnum,
 } from '@/types/enums/agent';
 import type {
   BindValueType,
@@ -559,10 +560,30 @@ export interface MoveCopyComponentProps {
   onConfirm: (spaceId: number) => void;
 }
 
+// 变量下拉参数配置
+export interface VariableSelectConfig {
+  // 数据源类型,可用值:MANUAL,PLUGIN
+  dataSourceType: OptionDataSourceEnum;
+  // 数据源类型,可用值:Agent,Plugin,Workflow,Knowledge,Table
+  targetType: AgentComponentTypeEnum;
+  // 插件或工作流ID，dataSource选择PLUGIN时有用
+  targetId: number;
+  // 插件或工作流名称
+  targetName: string;
+  // 插件或工作流描述
+  targetDescription: string;
+  // 插件或工作流图标
+  targetIcon: string;
+  // 下拉选项配置
+  options: CascaderOption[];
+}
+
 export interface BindConfigWithSub {
   key: React.Key;
   // 参数名称，符合函数命名规则
   name: string;
+  // 参数展示名称，供前端展示使用
+  displayName: string;
   // 参数详细描述信息
   description: string;
   // 数据类型
@@ -580,6 +601,8 @@ export interface BindConfigWithSub {
   // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
   inputType?: InputTypeEnum;
   subArgs?: BindConfigWithSub[];
+  // 下拉参数配置
+  selectConfig?: VariableSelectConfig;
   loopId?: number;
   children?: BindConfigWithSub[];
   [key: string]: any;
@@ -599,4 +622,13 @@ export interface NewConversationSetProps {
   showSubmitButton?: boolean;
   variables: BindConfigWithSub[];
   onConfirm?: (variableParams: Record<string, string | number>) => void;
+}
+
+// 无限滚动组件属性
+export interface InfiniteScrollDivProps {
+  // 滚动的目标元素,默认为 window
+  scrollableTarget?: React.ReactNode;
+  list: any[];
+  hasMore: boolean;
+  onScroll: () => void;
 }

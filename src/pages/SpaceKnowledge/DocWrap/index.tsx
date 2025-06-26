@@ -1,3 +1,4 @@
+import InfiniteScrollDiv from '@/components/InfiniteScrollDiv';
 import Loading from '@/components/Loading';
 import type { DocWrapProps } from '@/types/interfaces/knowledge';
 import { SearchOutlined } from '@ant-design/icons';
@@ -19,6 +20,8 @@ const DocWrap: React.FC<DocWrapProps> = ({
   documentList,
   onClick,
   onSetAnalyzed,
+  hasMore,
+  onScroll,
 }) => {
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
@@ -26,22 +29,30 @@ const DocWrap: React.FC<DocWrapProps> = ({
         placeholder="搜索"
         size="large"
         onChange={(e) => onChange(e.target.value)}
+        allowClear
         prefix={<SearchOutlined className={cx(styles['search-icon'])} />}
       />
       <p className={cx(styles['document-title'])}>文档列表</p>
       {loading ? (
         <Loading />
       ) : (
-        <ul className={cx('flex-1', 'overflow-y')}>
-          {documentList?.map((item) => (
-            <DocItem
-              key={item.id}
-              currentDocId={currentDocId}
-              info={item}
-              onClick={onClick}
-              onSetAnalyzed={onSetAnalyzed}
-            />
-          ))}
+        <ul className={cx('flex-1', 'overflow-y')} id="docListDiv">
+          <InfiniteScrollDiv
+            scrollableTarget="docListDiv"
+            list={documentList}
+            hasMore={hasMore}
+            onScroll={onScroll}
+          >
+            {documentList?.map((item) => (
+              <DocItem
+                key={item.id}
+                currentDocId={currentDocId}
+                info={item}
+                onClick={onClick}
+                onSetAnalyzed={onSetAnalyzed}
+              />
+            ))}
+          </InfiniteScrollDiv>
         </ul>
       )}
     </div>

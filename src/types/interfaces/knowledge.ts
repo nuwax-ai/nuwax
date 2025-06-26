@@ -440,6 +440,8 @@ export interface DocWrapProps {
   onChange: (value: string) => void;
   onClick: (info: KnowledgeDocumentInfo) => void;
   onSetAnalyzed: (id: number, status: KnowledgeDocumentStatus) => void;
+  hasMore: boolean;
+  onScroll: () => void;
 }
 
 // 文档列表项
@@ -452,6 +454,7 @@ export interface DocItemProps {
 
 // 分段信息
 export interface RawSegmentInfoProps {
+  spaceId: number;
   onDel: () => void;
   onSuccessUpdateName: (id: number, name: string) => void;
   documentInfo?: KnowledgeDocumentInfo | null;

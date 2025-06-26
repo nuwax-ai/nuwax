@@ -9,6 +9,7 @@ import {
   apiAgentComponentAdd,
   apiAgentComponentDelete,
   apiAgentComponentList,
+  apiAgentVariables,
 } from '@/services/agentConfig';
 import {
   AgentAddComponentStatusEnum,
@@ -87,7 +88,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 打开、关闭弹窗
   const { show, setShow } = useModel('model');
   const { agentComponentList, setAgentComponentList } = useModel('spaceAgent');
-  const { setVariables, setRequiredNameList } = useModel('conversationInfo');
+  const { handleVariables } = useModel('conversationInfo');
 
   // 根据组件类型，过滤组件
   const filterList = (type: AgentComponentTypeEnum) => {
@@ -167,6 +168,12 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
   );
 
+  // 查询智能体变量列表
+  const { runAsync: runVariables } = useRequest(apiAgentVariables, {
+    manual: true,
+    debounceWait: 300,
+  });
+
   const handleAgentComponentDel = async (
     id: number,
     targetId: number,
@@ -197,55 +204,25 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     setAddComponents(newList);
   };
 
-  // 查询智能体配置组件列表,成功后设置state
-  const handleSuccess = (data: AgentComponentInfo[]) => {
+  // 异步查询智能体配置组件列表
+  const asyncFun = async () => {
+    const { data } = await runAsync(agentId);
+
     setAgentComponentList(data);
     const list =
       data?.map((item) => {
-        if (item.type === AgentComponentTypeEnum.MCP) {
-          const { toolName = '' } = item.bindConfig;
-          return {
-            type: item.type,
-            targetId: item.targetId,
-            status: AgentAddComponentStatusEnum.Added,
-            toolName: toolName,
-          };
-        }
-
+        const toolName =
+          item.type === AgentComponentTypeEnum.MCP
+            ? item.bindConfig?.toolName
+            : '';
         return {
           type: item.type,
           targetId: item.targetId,
           status: AgentAddComponentStatusEnum.Added,
-          toolName: '',
+          toolName,
         };
       }) || [];
     setAddComponents(list);
-  };
-
-  const asyncFun = async () => {
-    const { data } = await runAsync(agentId);
-    handleSuccess(data);
-
-    // 获取变量信息
-    const variablesInfo = data?.find(
-      (item: AgentComponentInfo) =>
-        item.type === AgentComponentTypeEnum.Variable,
-    );
-    // 绑定变量信息
-    if (variablesInfo) {
-      const _variables = variablesInfo.bindConfig?.variables || [];
-      setVariables(
-        _variables?.filter((item: BindConfigWithSub) => !item.systemVariable) ||
-          [],
-      );
-      // 必填参数name列表
-      const _requiredNameList = _variables
-        ?.filter(
-          (item: BindConfigWithSub) => !item.systemVariable && item.require,
-        )
-        ?.map((item: BindConfigWithSub) => item.name);
-      setRequiredNameList(_requiredNameList || []);
-    }
   };
 
   // 新增智能体插件、工作流、知识库组件配置
@@ -270,7 +247,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   useEffect(() => {
     asyncFun();
-  }, []);
+  }, [agentId]);
 
   // 添加插件、工作流、知识库、MCP等
   const handlerComponentPlus = (
@@ -304,7 +281,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const handleConfirmVariables = async () => {
     setOpenVariableModel(false);
     // 查询智能体配置组件列表
-    await asyncFun();
+    asyncFun();
+    // 查询智能体变量列表
+    const { data } = await runVariables(agentId);
+    // 处理变量参数
+    handleVariables(data);
   };
 
   // 添加数据库表

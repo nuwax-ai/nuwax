@@ -208,42 +208,40 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
   };
 
   return (
-    <>
-      <Modal
-        width={800}
-        title="变量"
-        open={open}
-        footer={null}
-        onCancel={handleCancel}
-      >
-        <Table<BindConfigWithSub>
-          ref={tableRef}
-          className={cx(styles['table-container'], 'overflow-hide')}
-          columns={inputColumns}
-          dataSource={inputData}
-          pagination={false}
-          virtual
-          scroll={{
-            y: 560,
-          }}
-          footer={() => (
-            <Button icon={<PlusOutlined />} onClick={handleAddVariable}>
-              新增
-            </Button>
-          )}
-        />
-        <CreateVariableModal
-          id={variablesInfo?.id}
-          targetId={variablesInfo?.targetId}
-          mode={mode}
-          currentVariable={currentVariable}
-          inputData={inputData}
-          open={variableModalOpen}
-          onCancel={() => setVariableModalOpen(false)}
-          onConfirm={handleConfirm}
-        />
-      </Modal>
-    </>
+    <Modal
+      width={800}
+      title="变量"
+      open={open}
+      footer={null}
+      onCancel={handleCancel}
+    >
+      <Table<BindConfigWithSub>
+        ref={tableRef}
+        className={cx(styles['table-container'], 'overflow-hide')}
+        columns={inputColumns}
+        dataSource={inputData}
+        pagination={false}
+        virtual
+        scroll={{
+          y: 560,
+        }}
+        footer={() => (
+          <Button icon={<PlusOutlined />} onClick={handleAddVariable}>
+            新增
+          </Button>
+        )}
+      />
+      <CreateVariableModal
+        id={variablesInfo?.id}
+        targetId={variablesInfo?.targetId}
+        mode={mode}
+        currentVariable={currentVariable}
+        inputData={inputData}
+        open={variableModalOpen}
+        onCancel={() => setVariableModalOpen(false)}
+        onConfirm={handleConfirm}
+      />
+    </Modal>
   );
 };
 
