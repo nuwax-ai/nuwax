@@ -25,7 +25,7 @@ const QaTableList = forwardRef(
       spaceId: number;
       kbId: number;
       onEdit: (record: KnowledgeQAInfo) => void;
-      onDelete: (record: KnowledgeQAInfo) => Promise<null>;
+      onDelete: (record: KnowledgeQAInfo) => void;
       question: string;
     },
     ref,

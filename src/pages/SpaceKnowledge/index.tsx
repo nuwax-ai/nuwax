@@ -19,8 +19,8 @@ import type {
 } from '@/types/interfaces/knowledge';
 import { KnowledgeDocumentStatus } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
-import { ExclamationCircleFilled } from '@ant-design/icons';
-import { Input, message, Modal } from 'antd';
+import { modalConfirm } from '@/utils/ant-custom';
+import { Input, message } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -35,7 +35,6 @@ import QaTableList, { QaTableListRef } from './QaTableList';
 import RawSegmentInfo from './RawSegmentInfo';
 
 const cx = classNames.bind(styles);
-const { confirm } = Modal;
 
 /**
  * 工作空间-知识库
@@ -54,7 +53,10 @@ const SpaceKnowledge: React.FC = () => {
   const [openKnowledge, setOpenKnowledge] = useState<boolean>(false);
   // 文档列表
   const [documentList, setDocumentList] = useState<KnowledgeDocumentInfo[]>([]);
+  // 文档列表加载中
   const [loadingDoc, setLoadingDoc] = useState<boolean>(false);
+  // 文档搜索关键词
+  const keywordRef = useRef<string>('');
   // 文档总数
   const [totalDocCount, setTotalDocCount] = useState<number>(0);
   // 当前文档信息
@@ -68,6 +70,14 @@ const SpaceKnowledge: React.FC = () => {
   // 是否有更多数据
   const [hasMore, setHasMore] = useState<boolean>(true);
 
+  const [docType, setDocType] = useState<number>(1);
+  const qaTableListRef = useRef<QaTableListRef>(null);
+  const [qaInfo, setQaInfo] = useState<KnowledgeQAInfo | null>(null);
+  // 根据docType 判断是否显示QA问答
+  const showDocContent = docType === 1;
+  const [qaOpen, setQaOpen] = useState<boolean>(false);
+  const [question, setQuestion] = useState<string>('');
+
   // 知识库基础配置接口 - 数据详情查询
   const { run } = useRequest(apiKnowledgeConfigDetail, {
     manual: true,
@@ -77,27 +87,37 @@ const SpaceKnowledge: React.FC = () => {
     },
   });
 
+  // 查询列表成功后处理数据 - 文档列表查询
+  const handleQuerySuccess = (result: Page<KnowledgeDocumentInfo>) => {
+    const { records, pages, current, total } = result;
+    setDocumentList((prev) => {
+      return current === 1 ? records || [] : [...prev, ...records];
+    });
+    // 如果当前页码大于等于总页数，则不再加载更多数据
+    setHasMore(current < pages);
+    // 更新页码
+    setPage(current + 1);
+    setTotalDocCount(total);
+    setLoadingDoc(false);
+    // 首次加载文档列表时，当前文档为空，需要查询分段信息，新增文档时，当前文档信息不为空，就不需要查询分段信息
+    // 搜索文档、删除文档后，如果文档列表为空, 文档信息重置为空
+    // 搜索文档后，如果文档列表不为空，但是当前文档信息不在文档列表中，就取文档列表第一项作为当前文档信息
+    if (
+      !currentDocumentInfo ||
+      !records?.some((item) => item.id === currentDocumentInfo?.id)
+    ) {
+      // 取文档列表第一项作为当前文档信息
+      const firstDocumentInfo = records?.[0] || null;
+      setCurrentDocumentInfo(firstDocumentInfo);
+    }
+  };
+
   // 知识库文档配置 - 数据列表查询
   const { run: runDocList } = useRequest(apiKnowledgeDocumentList, {
     manual: true,
     debounceInterval: 500,
     onSuccess: (result: Page<KnowledgeDocumentInfo>) => {
-      const { records, pages, current, total } = result;
-      setDocumentList((prev) => {
-        return current === 1 ? records || [] : [...prev, ...records];
-      });
-      // 如果当前页码大于等于总页数，则不再加载更多数据
-      setHasMore(current < pages);
-      // 更新页码
-      setPage(current + 1);
-      setTotalDocCount(total);
-      setLoadingDoc(false);
-      // 首次加载文档列表时，当前文档为空，需要查询分段信息，新增文档时，当前文档信息不为空，就不需要查询分段信息
-      if (!currentDocumentInfo) {
-        // 取文档列表第一项作为当前文档信息
-        const firstDocumentInfo = records[0];
-        setCurrentDocumentInfo(firstDocumentInfo);
-      }
+      handleQuerySuccess(result);
     },
     onError: () => {
       setLoadingDoc(false);
@@ -105,7 +125,10 @@ const SpaceKnowledge: React.FC = () => {
   });
 
   // 文档数据列表查询
-  const handleDocList = (current: number = 1, docName?: string) => {
+  const handleDocList = (
+    current: number = 1,
+    docName: string = keywordRef.current,
+  ) => {
     runDocList({
       queryFilter: {
         spaceId,
@@ -117,34 +140,15 @@ const SpaceKnowledge: React.FC = () => {
     });
   };
 
-  // 删除文档后，更新文档列表以及分段信息
-  const handleDocDelete = (delDocId: number) => {
-    // 删除文档列表
-    const _documentList = [...documentList];
-    const index = _documentList.findIndex((info) => info.id === delDocId);
-    _documentList.splice(index, 1);
-    // 重置文档列表
-    setDocumentList(_documentList);
-    // 删除文档后， 新的文档列表是否为空
-    if (_documentList?.length > 0) {
-      // 取文档列表第一项作为当前文档信息
-      const firstDocumentInfo = _documentList[0];
-      setCurrentDocumentInfo(firstDocumentInfo);
-    } else {
-      // 文档列表为空时, 文档信息重置为空
-      setCurrentDocumentInfo(null);
-    }
-  };
-
   // 知识库文档配置 - 数据删除接口
   const { run: runDocDelete } = useRequest(apiKnowledgeDocumentDelete, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_: null, params: number[]) => {
+    onSuccess: () => {
       message.success('删除文档成功');
-      const delDocId = params[0];
       // 删除文档后，更新文档列表以及分段信息
-      handleDocDelete(delDocId);
+      setLoadingDoc(true);
+      handleDocList();
     },
   });
 
@@ -159,22 +163,7 @@ const SpaceKnowledge: React.FC = () => {
   // 点击添加内容下拉
   const handleClickPopoverItem = (item: CustomPopoverItem) => {
     setType(item.value as KnowledgeTextImportEnum);
-    switch (item.value) {
-      case KnowledgeTextImportEnum.Local_Doc:
-        setOpen(true);
-        break;
-      case KnowledgeTextImportEnum.Online_Doc:
-        message.warning('在线文档本版本暂时未做');
-        break;
-      case KnowledgeTextImportEnum.Custom:
-        setOpen(true);
-        break;
-    }
-  };
-
-  // 添加内容-取消操作
-  const handleCancel = () => {
-    setOpen(false);
+    setOpen(true);
   };
 
   // 添加内容-确认
@@ -194,7 +183,8 @@ const SpaceKnowledge: React.FC = () => {
 
   // 搜索
   const handleQueryDoc = (value: string) => {
-    console.log('value', value);
+    keywordRef.current = value;
+    setLoadingDoc(true);
     handleDocList(1, value);
   };
 
@@ -217,10 +207,7 @@ const SpaceKnowledge: React.FC = () => {
       const _documentList = cloneDeep(documentList);
       const list = _documentList.map((item) => {
         if (item.id === id) {
-          item.docStatus = status.docStatus;
-          item.docStatusCode = status.docStatusCode;
-          item.docStatusDesc = status.docStatusDesc;
-          item.docStatusReason = status.docStatusReason;
+          return { ...item, ...status };
         }
         return item;
       });
@@ -232,17 +219,9 @@ const SpaceKnowledge: React.FC = () => {
   // 删除文档
   const handleDocDel = () => {
     const docId = currentDocumentInfo?.id;
-    confirm({
-      title: '您确定要删除此文档吗?',
-      icon: <ExclamationCircleFilled />,
-      content: currentDocumentInfo?.name,
-      okText: '确定',
-      maskClosable: true,
-      cancelText: '取消',
-      onOk() {
-        runDocDelete(docId);
-      },
-    });
+    modalConfirm('您确定要删除此文档吗?', currentDocumentInfo?.name || '', () =>
+      runDocDelete(docId),
+    );
   };
 
   // 修改文档名称成功后更新state
@@ -262,13 +241,6 @@ const SpaceKnowledge: React.FC = () => {
     });
     setDocumentList(_documentList);
   };
-  const [docType, setDocType] = useState<number>(1);
-  const qaTableListRef = useRef<QaTableListRef>(null);
-  const [qaInfo, setQaInfo] = useState<KnowledgeQAInfo | null>(null);
-  // 根据docType 判断是否显示QA问答
-  const showDocContent = docType === 1;
-  const [qaOpen, setQaOpen] = useState<boolean>(false);
-  const [question, setQuestion] = useState<string>('');
 
   // 知识库问答 - 数据列表查询
   const handleQaList = () => {
@@ -289,18 +261,13 @@ const SpaceKnowledge: React.FC = () => {
 
   // 点击QA问答下拉
   const handleClickQaPopoverItem = (item: CustomPopoverItem) => {
-    switch (item.value) {
-      case KnowledgeTextImportEnum.Custom:
-        setType(item.value as KnowledgeTextImportEnum);
-        setQaInfo(null);
-        setQaOpen(true);
-        break;
-      case KnowledgeTextImportEnum.Local_Doc:
-        //QA批量弹窗添加文件上传
-        setQaBatchOpen(true);
-        break;
-      default:
-        break;
+    if (item.value === KnowledgeTextImportEnum.Custom) {
+      setType(item.value as KnowledgeTextImportEnum);
+      setQaInfo(null);
+      setQaOpen(true);
+    } else {
+      //QA批量弹窗添加文件上传
+      setQaBatchOpen(true);
     }
   };
   // 文档内容
@@ -356,7 +323,6 @@ const SpaceKnowledge: React.FC = () => {
     } catch {
       message.error('删除QA问答失败');
     }
-    return null;
   };
 
   const renderQaContent = () => {
@@ -419,7 +385,7 @@ const SpaceKnowledge: React.FC = () => {
         kbId: knowledgeId,
         question: values.question,
         answer: values.answer,
-        spaceId: spaceId,
+        spaceId,
       });
     }
     try {
@@ -459,7 +425,7 @@ const SpaceKnowledge: React.FC = () => {
         id={knowledgeId}
         type={type}
         open={open}
-        onCancel={handleCancel}
+        onCancel={() => setOpen(false)}
         onConfirm={handleConfirm}
       />
       {/*创建、修改知识库弹窗*/}
