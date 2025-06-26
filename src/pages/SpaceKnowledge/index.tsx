@@ -90,8 +90,9 @@ const SpaceKnowledge: React.FC = () => {
   // 查询列表成功后处理数据 - 文档列表查询
   const handleQuerySuccess = (result: Page<KnowledgeDocumentInfo>) => {
     const { records, pages, current, total } = result;
+    const data = records || [];
     setDocumentList((prev) => {
-      return current === 1 ? records || [] : [...prev, ...records];
+      return current === 1 ? data : [...prev, ...data];
     });
     // 如果当前页码大于等于总页数，则不再加载更多数据
     setHasMore(current < pages);
@@ -104,10 +105,10 @@ const SpaceKnowledge: React.FC = () => {
     // 搜索文档后，如果文档列表不为空，但是当前文档信息不在文档列表中，就取文档列表第一项作为当前文档信息
     if (
       !currentDocumentInfo ||
-      !records?.some((item) => item.id === currentDocumentInfo?.id)
+      !data?.some((item) => item.id === currentDocumentInfo?.id)
     ) {
       // 取文档列表第一项作为当前文档信息
-      const firstDocumentInfo = records?.[0] || null;
+      const firstDocumentInfo = data[0] || null;
       setCurrentDocumentInfo(firstDocumentInfo);
     }
   };
@@ -295,6 +296,7 @@ const SpaceKnowledge: React.FC = () => {
         />
         {/*文件信息*/}
         <RawSegmentInfo
+          spaceId={spaceId}
           documentInfo={currentDocumentInfo}
           onDel={handleDocDel}
           onSuccessUpdateName={handleSuccessUpdateName}

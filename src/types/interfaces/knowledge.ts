@@ -454,6 +454,7 @@ export interface DocItemProps {
 
 // 分段信息
 export interface RawSegmentInfoProps {
+  spaceId: number;
   onDel: () => void;
   onSuccessUpdateName: (id: number, name: string) => void;
   documentInfo?: KnowledgeDocumentInfo | null;

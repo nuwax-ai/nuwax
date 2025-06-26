@@ -51,8 +51,9 @@ const SpaceSection: React.FC = () => {
   // 查询列表成功后处理数据
   const handleSuccess = (result: Page<SquarePublishedItemInfo>) => {
     const { records, pages, current } = result;
+    const data = records || [];
     setSquareComponentList((prev) => {
-      return current === 1 ? records || [] : [...prev, ...records];
+      return current === 1 ? data : [...prev, ...data];
     });
     // 如果当前页码大于等于总页数，则不再加载更多数据
     setHasMore(current < pages);

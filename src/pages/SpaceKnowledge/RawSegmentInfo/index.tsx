@@ -1,4 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
+import InfiniteScrollDiv from '@/components/InfiniteScrollDiv';
 import Loading from '@/components/Loading';
 import { apiKnowledgeRawSegmentList } from '@/services/knowledge';
 import { DocStatusCodeEnum } from '@/types/enums/library';
@@ -11,7 +12,7 @@ import { DeleteOutlined, FileSearchOutlined } from '@ant-design/icons';
 import { Empty } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useParams, useRequest } from 'umi';
+import { useRequest } from 'umi';
 import DocRename from './DocRename';
 import styles from './index.less';
 
@@ -21,16 +22,20 @@ const cx = classNames.bind(styles);
  * 文件 - 分段配置信息
  */
 const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
+  spaceId,
   onDel,
   onSuccessUpdateName,
   documentInfo,
 }) => {
-  const { spaceId } = useParams();
   // 知识库文档分段信息
   const [rawSegmentInfoList, setRawSegmentInfoList] = useState<
     KnowledgeRawSegmentInfo[]
   >([]);
   const [loading, setLoading] = useState<boolean>(false);
+  // 当前页码
+  const [page, setPage] = useState<number>(1);
+  // 是否有更多数据
+  const [hasMore, setHasMore] = useState<boolean>(true);
 
   // 知识库分段配置 - 数据列表查询
   const { run: runRawSegmentList } = useRequest(apiKnowledgeRawSegmentList, {
@@ -39,35 +44,48 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
     // 设置显示 loading 的延迟时间，避免闪烁
     loadingDelay: 300,
     onSuccess: (result: Page<KnowledgeRawSegmentInfo>) => {
-      setRawSegmentInfoList(result.records);
+      const { records, pages, current } = result;
+      const data = records || [];
+      setRawSegmentInfoList((prev) => {
+        return current === 1 ? data : [...prev, ...data];
+      });
+      // 如果当前页码大于等于总页数，则不再加载更多数据
+      setHasMore(current < pages);
+      // 更新页码
+      setPage(current + 1);
+      setLoading(false);
+    },
+    onError: () => {
       setLoading(false);
     },
   });
 
   // 知识库分段配置 - 数据列表查询
-  const handleRawSegmentList = (docId: number, current: number = 1) => {
+  const handleRawSegmentList = (current: number = 1) => {
     runRawSegmentList({
       queryFilter: {
         spaceId,
-        docId,
+        docId: documentInfo?.id,
       },
       current,
-      pageSize: 100,
+      pageSize: 20,
     });
   };
 
   useEffect(() => {
     if (!!documentInfo) {
-      const { id, docStatusCode } = documentInfo;
+      const { docStatusCode } = documentInfo;
       // 分析成功
       if (
-        docStatusCode === DocStatusCodeEnum.ANALYZED ||
-        docStatusCode === DocStatusCodeEnum.ANALYZED_QA ||
-        docStatusCode === DocStatusCodeEnum.ANALYZED_EMBEDDING
+        [
+          DocStatusCodeEnum.ANALYZED,
+          DocStatusCodeEnum.ANALYZED_QA,
+          DocStatusCodeEnum.ANALYZED_EMBEDDING,
+        ].includes(docStatusCode)
       ) {
         setLoading(true);
         // 知识库分段配置 - 数据列表查询
-        handleRawSegmentList(id);
+        handleRawSegmentList();
       }
       // 分析中状态为：1时,此状态可能是由于一些脏数据引起的，此时分段信息显示为空
       if (docStatusCode === DocStatusCodeEnum.ANALYZING) {
@@ -79,6 +97,11 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
       setRawSegmentInfoList([]);
     }
   }, [documentInfo]);
+
+  const onScroll = () => {
+    // 知识库分段配置 - 数据列表查询
+    handleRawSegmentList(page);
+  };
 
   return (
     <div className={cx('flex-1', 'flex', 'flex-col', 'overflow-hide')}>
@@ -119,11 +142,18 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
         <Loading />
       ) : rawSegmentInfoList?.length > 0 ? (
         <ul className={cx('px-16', 'py-16', 'flex-1', 'overflow-y')}>
-          {rawSegmentInfoList?.map((info) => (
-            <li key={info.id} className={cx(styles.line, 'radius-6')}>
-              {info.rawTxt}
-            </li>
-          ))}
+          <InfiniteScrollDiv
+            scrollableTarget="scrollableDiv"
+            list={rawSegmentInfoList}
+            hasMore={hasMore}
+            onScroll={onScroll}
+          >
+            {rawSegmentInfoList?.map((info) => (
+              <li key={info.id} className={cx(styles.line, 'radius-6')}>
+                {info.rawTxt}
+              </li>
+            ))}
+          </InfiniteScrollDiv>
         </ul>
       ) : (
         <div className={cx('flex', 'flex-1', 'items-center', 'content-center')}>
