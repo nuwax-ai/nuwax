@@ -6,7 +6,7 @@ import {
   LoadingOutlined,
   UpOutlined,
 } from '@ant-design/icons';
-import { App, Checkbox, Select, Tooltip } from 'antd';
+import { Checkbox, message, Select, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import CopyToClipboard from 'react-copy-to-clipboard';
@@ -92,7 +92,6 @@ const RunResult: React.FC<RunResultProps> = ({
   expanded = false,
   onExpandChange,
 }) => {
-  const { message } = App.useApp();
   const [collapsed, setCollapsed] = useState(!expanded);
 
   // 处理展开/收起
