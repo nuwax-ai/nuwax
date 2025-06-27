@@ -10,21 +10,22 @@ const cx = classNames.bind(styles);
 
 // 输出方式
 const OutputWay: React.FC<OutputWayProps> = ({ directOutput, onSaveSet }) => {
-  const [type, setType] = useState<OutputDirectlyEnum>();
+  const [outputDirectlyType, setOutputDirectlyType] =
+    useState<OutputDirectlyEnum>();
 
   useEffect(() => {
-    setType(directOutput || OutputDirectlyEnum.No);
+    setOutputDirectlyType(directOutput || OutputDirectlyEnum.No);
   }, [directOutput]);
 
   // 切换调用方式
   const handleChangeType = ({ target: { value } }: RadioChangeEvent) => {
-    setType(value);
+    setOutputDirectlyType(value);
   };
 
   // 保存
   const handleSave = () => {
-    const data: any = {
-      directOutput: type as OutputDirectlyEnum,
+    const data = {
+      directOutput: outputDirectlyType as OutputDirectlyEnum,
     };
     onSaveSet(data);
   };
@@ -36,7 +37,7 @@ const OutputWay: React.FC<OutputWayProps> = ({ directOutput, onSaveSet }) => {
         <Radio.Group
           options={OUTPUT_WAY_OPTIONS}
           onChange={handleChangeType}
-          value={type}
+          value={outputDirectlyType}
         />
       </div>
       <footer className={cx(styles.footer)}>

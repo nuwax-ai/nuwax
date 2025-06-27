@@ -111,8 +111,8 @@ export enum EditAgentShowType {
   Show_Stand = 'Show_Stand',
 }
 
-// 插件设置类型
-export enum PluginSettingEnum {
+// 组件设置类型
+export enum ComponentSettingEnum {
   // 参数
   Params,
   // 调用方式
