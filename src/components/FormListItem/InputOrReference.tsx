@@ -203,60 +203,67 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   const getMenu = (nodes: PreviousList[]) => {
     if (nodes && nodes.length) {
       let isHitSelect = false;
-      return nodes.map((node) => ({
-        key: node.id,
-        label:
-          getDisplayLength(node.name) > 16
-            ? truncateByDisplayLength(node.name, 16)
-            : node.name,
-        icon: returnImg(node.type),
-        popupClassName: 'inputOrReferencePopup',
-        children: node.outputArgs
-          ? [
-              {
-                key: `${node.id}-tree-select`,
-                label: (
-                  <div
-                    style={{
-                      paddingTop: 12,
-                      paddingRight: 12,
-                      paddingBottom: 8,
-                    }}
-                    onClick={(e) => {
-                      // 阻止所有点击事件的冒泡，除了 onSelect
-                      if (!isHitSelect) {
-                        e.stopPropagation();
-                        e.preventDefault();
-                      }
-                    }}
-                  >
-                    <Tree
-                      onSelect={(keys) => {
-                        handleTreeSelectChange(keys);
-                        isHitSelect = true;
-                      }}
-                      defaultExpandAll
-                      treeData={node.outputArgs}
-                      fieldNames={{
-                        title: 'name',
-                        key: 'key',
-                        children: 'children',
-                      }}
-                      titleRender={renderTitle}
-                      defaultSelectedKeys={selectKey}
-                      blockNode
-                      className="custom-tree-style"
+      return nodes.map((node) => {
+        const hasTreeChildren = node?.outputArgs.some(
+          (args) => args?.children?.length && args?.children?.length > 0,
+        );
+        return {
+          key: node.id,
+          label:
+            getDisplayLength(node.name) > 16
+              ? truncateByDisplayLength(node.name, 16)
+              : node.name,
+          icon: returnImg(node.type),
+          popupClassName: 'inputOrReferencePopup',
+          children: node.outputArgs
+            ? [
+                {
+                  key: `${node.id}-tree-select`,
+                  label: (
+                    <div
                       style={{
-                        maxHeight: `${treeMaxHeight}px`,
-                        overflow: 'auto',
+                        paddingTop: 12,
+                        paddingRight: 12,
+                        paddingBottom: 8,
                       }}
-                    />
-                  </div>
-                ),
-              },
-            ]
-          : undefined,
-      }));
+                      onClick={(e) => {
+                        // 阻止所有点击事件的冒泡，除了 onSelect
+                        if (!isHitSelect) {
+                          e.stopPropagation();
+                          e.preventDefault();
+                        }
+                      }}
+                    >
+                      <Tree
+                        onSelect={(keys) => {
+                          handleTreeSelectChange(keys);
+                          isHitSelect = true;
+                        }}
+                        defaultExpandAll
+                        treeData={node.outputArgs}
+                        fieldNames={{
+                          title: 'name',
+                          key: 'key',
+                          children: 'children',
+                        }}
+                        titleRender={renderTitle}
+                        defaultSelectedKeys={selectKey}
+                        blockNode
+                        className={`custom-tree-style ${
+                          hasTreeChildren ? '' : 'custom-tree-no-children-style'
+                        }`}
+                        style={{
+                          maxHeight: `${treeMaxHeight}px`,
+                          overflow: 'auto',
+                        }}
+                      />
+                    </div>
+                  ),
+                },
+              ]
+            : undefined,
+        };
+      });
     } else {
       return [
         {
