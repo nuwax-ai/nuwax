@@ -9,7 +9,7 @@ import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import type { ModalProps } from 'antd';
 import { Button, Input, Modal } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
@@ -44,12 +44,22 @@ const PromptOptimizeModal: React.FC<
   } = useModel('assistantOptimize');
   // 智能体会话问题建议
   const [id, setId] = useState<string>('');
+  const [isDisabled, setIsDisabled] = useState(false);
+
+  const clearMessageList = useCallback(() => {
+    setMessageList([]);
+  }, []);
+  const handleExit = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    clearMessageList();
+    onCancel?.(e as any);
+  }, []);
 
   useEffect(() => {
     setId(uuidv4());
 
     return () => {
       resetInit();
+      clearMessageList();
     };
   }, []);
 
@@ -118,7 +128,6 @@ const PromptOptimizeModal: React.FC<
       setMessage('');
     }
   };
-  const [isDisabled, setIsDisabled] = useState(false);
 
   useEffect(() => {
     if (!message || message.trim() === '') {
@@ -132,10 +141,7 @@ const PromptOptimizeModal: React.FC<
     <Modal
       title={title}
       open={open}
-      onCancel={(e) => {
-        setMessageList([]);
-        onCancel?.(e);
-      }}
+      onCancel={handleExit}
       mask={false}
       maskClosable={false}
       footer={null}
@@ -172,13 +178,7 @@ const PromptOptimizeModal: React.FC<
           >
             替换
           </Button>
-          <Button
-            onClick={(e) => {
-              setMessageList([]);
-              onCancel?.(e as any);
-            }}
-            className={cx(styles['btn'], 'ml-10 ')}
-          >
+          <Button onClick={handleExit} className={cx(styles['btn'], 'ml-10 ')}>
             退出
           </Button>
         </div>
