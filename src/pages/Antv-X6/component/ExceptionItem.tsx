@@ -163,6 +163,7 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
               tooltip={{
                 title: '设置节点执行的最大等待时间',
                 placement: 'top',
+                icon: <InfoCircleOutlined />,
               }}
               className={cx(styles.exceptionItemFormItem, styles.timeoutItem)}
               rules={[
