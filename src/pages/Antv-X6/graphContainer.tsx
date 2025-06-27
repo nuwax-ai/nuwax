@@ -283,7 +283,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       const nodes = graphRef.current.getNodes();
       nodes.forEach((node: Node) => {
         node.updateData({
-          isFocus: false,
           runResults: [],
         });
       });
