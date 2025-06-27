@@ -118,6 +118,15 @@ const PromptOptimizeModal: React.FC<
       setMessage('');
     }
   };
+  const [isDisabled, setIsDisabled] = useState(false);
+
+  useEffect(() => {
+    if (!message || message.trim() === '') {
+      setIsDisabled(true);
+    } else {
+      setIsDisabled(false);
+    }
+  }, [message]);
 
   return (
     <Modal
@@ -199,12 +208,19 @@ const PromptOptimizeModal: React.FC<
             placeholder="请描述你的提示词需求，比如角色定义、技能要求等"
             autoSize={{ minRows: 1, maxRows: 3 }}
           />
-
-          <img
+          <Button
+            type="text"
             onClick={() => handleSendMessage()}
-            className={cx(styles['send-image'], 'cursor-pointer')}
-            src={sendImage as string}
-            alt=""
+            disabled={isDisabled}
+            className={cx(styles['no-hover-bg'])}
+            icon={
+              <img
+                className={cx(styles['send-image'])}
+                src={sendImage as string}
+                alt=""
+              />
+            }
+            size="small"
           />
         </div>
       </div>
