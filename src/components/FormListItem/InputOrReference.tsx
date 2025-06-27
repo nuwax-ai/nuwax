@@ -7,6 +7,61 @@ import { useModel } from 'umi';
 import './index.less';
 import { InputOrReferenceProps } from './type';
 
+/**
+ * 计算字符串显示长度，中文字符计为2，英文和数字计为1
+ * @param str 要计算的字符串
+ * @returns 显示长度
+ */
+const getDisplayLength = (str: string): number => {
+  if (!str) return 0;
+  // 使用正则表达式匹配中文字符，计算长度
+  let length = 0;
+  for (let i = 0; i < str.length; i++) {
+    // 判断是否是中文字符（包括中文标点符号）
+    if (/[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]/.test(str[i])) {
+      length += 2; // 中文字符计为2
+    } else {
+      length += 1; // 英文、数字和其他字符计为1
+    }
+  }
+  return length;
+};
+
+/**
+ * 按照显示长度截取字符串
+ * @param str 要截取的字符串
+ * @param maxLength 最大显示长度
+ * @returns 截取后的字符串
+ */
+const truncateByDisplayLength = (str: string, maxLength: number): string => {
+  if (!str) return '';
+
+  let length = 0;
+  let result = '';
+
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+    const charLength = /[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]/.test(char)
+      ? 2
+      : 1;
+
+    // 如果添加当前字符会超出最大长度，就停止添加
+    if (length + charLength > maxLength) {
+      break;
+    }
+
+    result += char;
+    length += charLength;
+  }
+
+  // 如果截取了字符，添加省略号
+  if (result.length < str.length) {
+    result += '...';
+  }
+
+  return result;
+};
+
 const InputOrReference: React.FC<InputOrReferenceProps> = ({
   placeholder,
   form,
@@ -118,9 +173,19 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
       <div className="tree-custom-title-style">
         <span title="">{nodeData.name}</span>
         <Popover content={nodeData.description || '暂无描述'}>
-          <InfoCircleOutlined title="" style={{ marginLeft: '4px' }} />
+          <InfoCircleOutlined
+            title=""
+            style={{ marginLeft: '4px', fontSize: 12 }}
+          />
         </Popover>
-        <Tag className="ml-20" color="#C9CDD4">
+        <Tag
+          color="#C9CDD4"
+          style={{
+            marginLeft: '8px',
+            fontSize: 10,
+            lineHeight: '14px',
+          }}
+        >
           {nodeData.dataType}
         </Tag>
       </div>
@@ -140,7 +205,10 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
       let isHitSelect = false;
       return nodes.map((node) => ({
         key: node.id,
-        label: node.name.length > 8 ? node.name.slice(0, 8) + '...' : node.name,
+        label:
+          getDisplayLength(node.name) > 16
+            ? truncateByDisplayLength(node.name, 16)
+            : node.name,
         icon: returnImg(node.type),
         popupClassName: 'inputOrReferencePopup',
         children: node.outputArgs
@@ -260,6 +328,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
       <Dropdown
         menu={{
           items: getMenuItems(), // 强制子菜单向左对齐
+          style: { maxHeight: 328 },
         }}
         trigger={['click']}
         overlayStyle={{ minWidth: 200 }}
