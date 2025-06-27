@@ -34,7 +34,9 @@ const ModelListItem: React.FC<{ item: ModelListItemProps }> = ({ item }) => {
             ))}
         </div> */}
         {/* 描述 */}
-        <span className="model-list-item-desc">{description}</span>
+        <span className="model-list-item-desc text-ellipsis-2">
+          {description}
+        </span>
       </div>
     </div>
   );
