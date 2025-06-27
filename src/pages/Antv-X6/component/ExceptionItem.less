@@ -21,11 +21,7 @@
     .exceptionItemTip {
       font-size: 14px;
       color: #8c8c8c;
-      cursor: help;
-
-      &:hover {
-        color: #1890ff;
-      }
+      cursor: pointer;
     }
   }
 
@@ -191,5 +187,9 @@
       padding: 0;
       border-radius: 2px;
     }
+  }
+
+  :global(.anticon-info-circle.ant-form-item-tooltip) {
+    cursor: pointer !important;
   }
 }
