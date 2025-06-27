@@ -76,11 +76,9 @@ export const GroupedOptionSelect: React.FC<ModelSettingProp> = ({
         ? { id: modelConfig?.id, name: modelConfig?.name }
         : {},
     ].find((item) => item.id === Number(props.value));
-
-    if (_item === undefined) return;
     return (
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <span>{(_item as ModelListItemProps).name}</span>
+        <span>{(_item && (_item as ModelListItemProps).name) || ''}</span>
       </div>
     );
   };
