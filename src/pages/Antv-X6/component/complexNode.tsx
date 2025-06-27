@@ -155,7 +155,11 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
   return (
     <div className="model-node-style">
       {/* 模型模块 */}
-      <ModelSelected form={form} maxTokensLimit={maxTokensLimit} />
+      <ModelSelected
+        form={form}
+        maxTokensLimit={maxTokensLimit}
+        modelConfig={nodeConfig?.modelConfig}
+      />
       {/* 技能模块 */}
       <div className="dis-sb margin-bottom ">
         <span className="node-title-style">技能</span>
