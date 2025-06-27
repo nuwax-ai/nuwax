@@ -142,7 +142,6 @@ const PromptOptimizeModal: React.FC<
       title={title}
       open={open}
       onCancel={handleExit}
-      mask={false}
       maskClosable={false}
       footer={null}
     >
