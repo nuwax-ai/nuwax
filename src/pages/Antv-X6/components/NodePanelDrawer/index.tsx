@@ -42,7 +42,13 @@ const nodeTemplate = (params: ChildNode, form: FormInstance) => {
   switch (nodeType) {
     case NodeTypeEnum.Start:
       // 如果这和 'Start' 是同样的组件，请考虑重用组件或创建一个新的组件。
-      return <StartNode type={params.type} form={form} />;
+      return (
+        <StartNode
+          type={params.type}
+          form={form}
+          nodeConfig={params.nodeConfig}
+        />
+      );
     case NodeTypeEnum.DocumentExtraction:
       return <DocumentExtractionNode form={form} type={params.type} />;
     case NodeTypeEnum.End:
@@ -56,7 +62,12 @@ const nodeTemplate = (params: ChildNode, form: FormInstance) => {
       return <TextProcessingNode form={form} />;
     case NodeTypeEnum.LLM:
       return (
-        <ModelNode form={form} id={params.id} maxTokensLimit={maxTokensLimit} />
+        <ModelNode
+          form={form}
+          id={params.id}
+          maxTokensLimit={maxTokensLimit}
+          nodeConfig={params.nodeConfig}
+        />
       );
 
     case NodeTypeEnum.Plugin:
@@ -65,11 +76,17 @@ const nodeTemplate = (params: ChildNode, form: FormInstance) => {
     case NodeTypeEnum.MCP:
       return <PluginInNode type={params.type} form={form} />;
     case NodeTypeEnum.Code:
-      return <CodeNode form={form} />;
+      return <CodeNode form={form} nodeConfig={params.nodeConfig} />;
     case NodeTypeEnum.QA:
-      return <QuestionsNode form={form} maxTokensLimit={maxTokensLimit} />;
+      return (
+        <QuestionsNode
+          form={form}
+          maxTokensLimit={maxTokensLimit}
+          nodeConfig={params.nodeConfig}
+        />
+      );
     case NodeTypeEnum.HTTPRequest:
-      return <HttpToolNode form={form} />;
+      return <HttpToolNode form={form} nodeConfig={params.nodeConfig} />;
     case NodeTypeEnum.Knowledge:
       return <KnowledgeNode form={form} />;
     // 条件分支需要实时的调用接口
@@ -86,7 +103,13 @@ const nodeTemplate = (params: ChildNode, form: FormInstance) => {
     case NodeTypeEnum.TableDataUpdate:
     case NodeTypeEnum.TableDataQuery:
     case NodeTypeEnum.TableSQL:
-      return <Database form={form} type={params.type} />;
+      return (
+        <Database
+          form={form}
+          type={params.type}
+          nodeConfig={params.nodeConfig}
+        />
+      );
     default:
       return <></>;
   }

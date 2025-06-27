@@ -66,6 +66,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
   form,
   id,
   maxTokensLimit,
+  nodeConfig,
 }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
@@ -220,7 +221,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           title={'输出'}
           notShowTitle
           form={form}
-          params={form.getFieldValue('outputArgs') || []}
+          params={nodeConfig?.outputArgs || []}
           inputItemName={'outputArgs'}
         />
       </Form.Item>
@@ -317,6 +318,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
 const QuestionsNode: React.FC<NodeDisposeProps> = ({
   form,
   maxTokensLimit,
+  nodeConfig,
 }) => {
   // 更改问答方式
   const changeType = (val: string) => {
@@ -400,7 +402,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
             <CustomTree
               title={'输出'}
               form={form}
-              params={form.getFieldValue('outputArgs') || []}
+              params={nodeConfig?.outputArgs || []}
               inputItemName={'outputArgs'}
               showCheck
             />
@@ -428,9 +430,9 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
 
 // 定义http工具
 
-const HttpToolNode: React.FC<NodeDisposeProps> = ({ form }) => {
-  const bodyParams = form.getFieldValue('body') || [];
-  const outputParams = form.getFieldValue('outputArgs') || [];
+const HttpToolNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
+  const bodyParams = nodeConfig?.body || [];
+  const outputParams = nodeConfig?.outputArgs || [];
   return (
     <div>
       {/* 请求配置 */}
