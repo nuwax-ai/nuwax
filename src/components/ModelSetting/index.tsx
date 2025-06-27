@@ -216,10 +216,7 @@ const Content: React.FC<ContentProps> = ({
 };
 
 // 定义模型的设置弹窗
-export const ModelSetting: React.FC<ModelSettingProp> = ({
-  form,
-  maxTokensLimit = 4093,
-}) => {
+export const ModelSetting: React.FC<ModelSettingProp> = ({ form }) => {
   const [showMore, setShowMore] = useState(true);
 
   // 使用useWatch监听mode变化
@@ -243,6 +240,21 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({
       });
     }
   };
+  const [currentMaxTokens, setCurrentMaxTokens] = useState<number>(4093);
+  const { spaceId } = useParams();
+  useEffect(() => {
+    const getModelList = async () => {
+      const { modelId } = form.getFieldsValue(true);
+      const _res = await service.getModelListByWorkflowId({
+        modelType: 'Chat',
+        spaceId,
+      });
+      setCurrentMaxTokens(
+        _res.data.find((item) => item.id === modelId)?.maxTokens || 4093,
+      );
+    };
+    getModelList();
+  }, []);
 
   return (
     <>
@@ -295,7 +307,7 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({
         <Content
           form={form}
           min={5}
-          max={maxTokensLimit}
+          max={currentMaxTokens}
           step={1}
           title={'最大回复长度'}
           configKey="maxTokens"
@@ -309,7 +321,6 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({
 // 定义模型模块
 export const ModelSelected: React.FC<ModelSettingProp> = ({
   form,
-  maxTokensLimit,
   modelConfig,
 }) => {
   return (
@@ -317,7 +328,7 @@ export const ModelSelected: React.FC<ModelSettingProp> = ({
       <div className="dis-sb">
         <span className="node-title-style">模型</span>
         <Popover
-          content={<ModelSetting form={form} maxTokensLimit={maxTokensLimit} />}
+          content={<ModelSetting form={form} />}
           trigger="click"
           placement="left"
         >

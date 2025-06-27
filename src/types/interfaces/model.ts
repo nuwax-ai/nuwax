@@ -31,6 +31,8 @@ export interface ModelListItemProps {
   apiProtocol: 'OpenAI' | 'Ollama';
   // 模型的大小
   size?: string | number;
+  // 最大输出token数, token上限
+  maxTokens?: number;
 }
 
 export interface GroupModelItem {
