@@ -76,6 +76,7 @@ export interface NodeDisposeProps {
   groupedOptionsData?: GroupModelItem[];
   retrieveCurrentNodeConfig?: () => void;
   maxTokensLimit?: number | undefined;
+  nodeConfig?: NodeConfig;
 }
 
 /**

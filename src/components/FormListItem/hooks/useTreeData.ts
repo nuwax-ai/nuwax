@@ -113,7 +113,7 @@ export const useTreeData = (
   // 初始化和同步逻辑
   useEffect(() => {
     setTreeData(params ? cloneDeep(params) : []);
-  }, [params]);
+  }, []);
 
   /**
    * 通用更新树数据并同步到表单的函数
