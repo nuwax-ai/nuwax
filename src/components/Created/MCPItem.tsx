@@ -39,7 +39,10 @@ const MCPItem: React.FC<MCPItemProps> = ({
         />
         <div className="flex-1 content-font">
           <p className="label-font-style margin-bottom-6">{item.name}</p>
-          <p className="margin-bottom-6 created-description-style">
+          <p
+            className="margin-bottom-6 created-description-style text-ellipsis-2"
+            title={item.description}
+          >
             {item.description}
           </p>
           <div className="dis-sb count-div-style">
