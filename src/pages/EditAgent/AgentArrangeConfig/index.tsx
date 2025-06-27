@@ -2,8 +2,8 @@ import Created from '@/components/Created';
 import SelectList from '@/components/SelectList';
 import TooltipIcon from '@/components/TooltipIcon';
 import {
+  COMPONENT_SETTING_ACTIONS,
   ENABLE_LIST,
-  PLUGIN_SETTING_ACTIONS,
 } from '@/constants/space.constants';
 import {
   apiAgentComponentAdd,
@@ -18,8 +18,8 @@ import {
 } from '@/types/enums/agent';
 import {
   AgentArrangeConfigEnum,
+  ComponentSettingEnum,
   OpenCloseEnum,
-  PluginSettingEnum,
 } from '@/types/enums/space';
 import type { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { AgentArrangeConfigProps } from '@/types/interfaces/agentConfig';
@@ -590,11 +590,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     (type: AgentComponentTypeEnum | undefined) => {
       if (type === AgentComponentTypeEnum.MCP) {
         // MCP 不支持方法调用(调用方式)
-        return PLUGIN_SETTING_ACTIONS.filter(
-          (item) => item.type !== PluginSettingEnum.Method_Call,
+        return COMPONENT_SETTING_ACTIONS.filter(
+          (item) => item.type !== ComponentSettingEnum.Method_Call,
         );
       }
-      return PLUGIN_SETTING_ACTIONS;
+      return COMPONENT_SETTING_ACTIONS;
     },
     [],
   );

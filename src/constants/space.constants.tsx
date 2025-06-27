@@ -14,11 +14,11 @@ import { InputTypeEnum, TriggerComponentType } from '@/types/enums/agent';
 import { CreateAgentEnum, DataTypeEnum } from '@/types/enums/common';
 import {
   ApplicationMoreActionEnum,
+  ComponentSettingEnum,
   ComponentTypeEnum,
   CreateListEnum,
   FilterStatusEnum,
   OpenCloseEnum,
-  PluginSettingEnum,
   SpaceApplicationListEnum,
 } from '@/types/enums/space';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
@@ -150,26 +150,26 @@ export const TASK_EXECUTION = [
   },
 ];
 
-// 智能体编排-插件设置列表
-export const PLUGIN_SETTING_ACTIONS = [
+// 智能体编排-组件设置列表
+export const COMPONENT_SETTING_ACTIONS = [
   {
-    type: PluginSettingEnum.Params,
+    type: ComponentSettingEnum.Params,
     label: '参数',
   },
   {
-    type: PluginSettingEnum.Method_Call,
+    type: ComponentSettingEnum.Method_Call,
     label: '调用方式',
   },
   {
-    type: PluginSettingEnum.Output_Way,
+    type: ComponentSettingEnum.Output_Way,
     label: '输出方式',
   },
   {
-    type: PluginSettingEnum.Async_Run,
+    type: ComponentSettingEnum.Async_Run,
     label: '异步运行',
   },
   {
-    type: PluginSettingEnum.Card_Bind,
+    type: ComponentSettingEnum.Card_Bind,
     label: '卡片绑定',
   },
 ];

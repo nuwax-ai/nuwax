@@ -6,7 +6,7 @@ import {
   OutputDirectlyEnum,
 } from '@/types/enums/agent';
 import type { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
-import type { OpenCloseEnum, PluginSettingEnum } from '@/types/enums/space';
+import type { ComponentSettingEnum, OpenCloseEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
   AgentComponentInfo,
@@ -58,7 +58,7 @@ export interface ComponentSettingModalProps {
   open: boolean;
   currentComponentInfo?: AgentComponentInfo;
   variables?: BindConfigWithSub[];
-  settingActionList?: { type: PluginSettingEnum; label: string }[];
+  settingActionList?: { type: ComponentSettingEnum; label: string }[];
   onCancel: () => void;
 }
 

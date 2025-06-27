@@ -1,5 +1,5 @@
 import ParamsSetting from '@/components/ParamsSetting';
-import { PLUGIN_SETTING_ACTIONS } from '@/constants/space.constants';
+import { COMPONENT_SETTING_ACTIONS } from '@/constants/space.constants';
 import {
   apiAgentCardList,
   apiAgentComponentMcpUpdate,
@@ -13,7 +13,7 @@ import {
   InvokeTypeEnum,
   OutputDirectlyEnum,
 } from '@/types/enums/agent';
-import { PluginSettingEnum } from '@/types/enums/space';
+import { ComponentSettingEnum } from '@/types/enums/space';
 import {
   AgentCardInfo,
   AgentComponentInfo,
@@ -56,10 +56,10 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
   currentComponentInfo,
   variables,
   onCancel,
-  settingActionList = PLUGIN_SETTING_ACTIONS,
+  settingActionList = COMPONENT_SETTING_ACTIONS,
 }) => {
-  const [action, setAction] = useState<PluginSettingEnum>(
-    PluginSettingEnum.Params,
+  const [action, setAction] = useState<ComponentSettingEnum>(
+    ComponentSettingEnum.Params,
   );
   const [componentInfo, setComponentInfo] = useState<AgentComponentInfo>();
   const [loading, setLoading] = useState<boolean>(false);
@@ -68,47 +68,42 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
   const { setAgentComponentList } = useModel('spaceAgent');
 
   useEffect(() => {
-    setAction(PluginSettingEnum.Params);
+    setAction(ComponentSettingEnum.Params);
     setComponentInfo(currentComponentInfo);
   }, [currentComponentInfo]);
+
+  const apiConfig = {
+    manual: true,
+    debounceWait: 300,
+  };
 
   // 更新插件组件配置
   const { runAsync: runPluginUpdate } = useRequest(
     apiAgentComponentPluginUpdate,
-    {
-      manual: true,
-      debounceWait: 300,
-    },
+    apiConfig,
   );
 
   // 更新工作流组件配置
   const { runAsync: runWorkflowUpdate } = useRequest(
     apiAgentComponentWorkflowUpdate,
-    {
-      manual: true,
-      debounceWait: 300,
-    },
+    apiConfig,
   );
 
   // 更新数据表组件配置
   const { runAsync: runTableUpdate } = useRequest(
     apiAgentComponentTableUpdate,
-    {
-      manual: true,
-      debounceWait: 300,
-    },
+    apiConfig,
   );
 
   // 更新MCP组件配置
-  const { runAsync: runMcpUpdate } = useRequest(apiAgentComponentMcpUpdate, {
-    manual: true,
-    debounceWait: 300,
-  });
+  const { runAsync: runMcpUpdate } = useRequest(
+    apiAgentComponentMcpUpdate,
+    apiConfig,
+  );
 
   // 查询卡片列表
   const { run: runCard } = useRequest(apiAgentCardList, {
-    manual: true,
-    debounceWait: 300,
+    ...apiConfig,
     onSuccess: (result: RequestResponse<AgentCardInfo[]>) => {
       const { data } = result;
       if (data?.length) {
@@ -238,7 +233,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
 
   const getContent = () => {
     switch (action) {
-      case PluginSettingEnum.Params:
+      case ComponentSettingEnum.Params:
         return (
           <ParamsSetting
             variables={variables || []}
@@ -246,7 +241,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
             onSaveSet={onSaveSet}
           />
         );
-      case PluginSettingEnum.Method_Call:
+      case ComponentSettingEnum.Method_Call:
         return (
           <InvokeType
             invokeType={componentInfo?.bindConfig?.invokeType}
@@ -255,14 +250,14 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
           />
         );
       // 输出方式
-      case PluginSettingEnum.Output_Way:
+      case ComponentSettingEnum.Output_Way:
         return (
           <OutputWay
             directOutput={componentInfo?.bindConfig?.directOutput}
             onSaveSet={onSaveInvokeType}
           />
         );
-      case PluginSettingEnum.Async_Run:
+      case ComponentSettingEnum.Async_Run:
         return (
           <AsyncRun
             async={componentInfo?.bindConfig?.async}
@@ -270,7 +265,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
             onSaveSet={onSaveInvokeType}
           />
         );
-      case PluginSettingEnum.Card_Bind:
+      case ComponentSettingEnum.Card_Bind:
         return (
           <CardBind
             loading={loading}
@@ -287,6 +282,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
       centered
       open={open}
       onCancel={onCancel}
+      destroyOnClose
       className={cx(styles['modal-container'])}
       modalRender={() => (
         <div className={cx(styles.container, 'flex', 'overflow-hide')}>
@@ -298,8 +294,8 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
                 if (
                   currentComponentInfo?.type === AgentComponentTypeEnum.Table &&
                   [
-                    PluginSettingEnum.Method_Call,
-                    PluginSettingEnum.Async_Run,
+                    ComponentSettingEnum.Method_Call,
+                    ComponentSettingEnum.Async_Run,
                   ].includes(item.type)
                 ) {
                   return null;
@@ -307,7 +303,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
                 if (
                   currentComponentInfo?.type !==
                     AgentComponentTypeEnum.Workflow &&
-                  item.type === PluginSettingEnum.Output_Way
+                  item.type === ComponentSettingEnum.Output_Way
                 ) {
                   return null;
                 }
