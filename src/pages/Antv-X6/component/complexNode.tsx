@@ -82,7 +82,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
     form.setFieldValue(skillFormKey, skillComponentConfigs.concat([item]));
     setSkillChange(true);
     form.submit();
-    setOpen(false);
+    // setOpen(false);
   };
 
   // 移出技能
