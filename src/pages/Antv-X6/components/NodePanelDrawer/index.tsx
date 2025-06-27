@@ -37,7 +37,6 @@ const LoopBreak: React.FC = () => {
 };
 
 const nodeTemplate = (params: ChildNode, form: FormInstance) => {
-  const { maxTokens: maxTokensLimit } = params.nodeConfig?.modelConfig || {};
   const nodeType: NodeTypeEnum = params.type;
   switch (nodeType) {
     case NodeTypeEnum.Start:
@@ -62,12 +61,7 @@ const nodeTemplate = (params: ChildNode, form: FormInstance) => {
       return <TextProcessingNode form={form} />;
     case NodeTypeEnum.LLM:
       return (
-        <ModelNode
-          form={form}
-          id={params.id}
-          maxTokensLimit={maxTokensLimit}
-          nodeConfig={params.nodeConfig}
-        />
+        <ModelNode form={form} id={params.id} nodeConfig={params.nodeConfig} />
       );
 
     case NodeTypeEnum.Plugin:
@@ -78,13 +72,7 @@ const nodeTemplate = (params: ChildNode, form: FormInstance) => {
     case NodeTypeEnum.Code:
       return <CodeNode form={form} nodeConfig={params.nodeConfig} />;
     case NodeTypeEnum.QA:
-      return (
-        <QuestionsNode
-          form={form}
-          maxTokensLimit={maxTokensLimit}
-          nodeConfig={params.nodeConfig}
-        />
-      );
+      return <QuestionsNode form={form} nodeConfig={params.nodeConfig} />;
     case NodeTypeEnum.HTTPRequest:
       return <HttpToolNode form={form} nodeConfig={params.nodeConfig} />;
     case NodeTypeEnum.Knowledge:
@@ -93,7 +81,7 @@ const nodeTemplate = (params: ChildNode, form: FormInstance) => {
     case NodeTypeEnum.Condition:
       return <ConditionNode form={form} />;
     case NodeTypeEnum.IntentRecognition:
-      return <IntentionNode form={form} maxTokensLimit={maxTokensLimit} />;
+      return <IntentionNode form={form} />;
     case NodeTypeEnum.LoopBreak:
       return <LoopBreak />;
     case NodeTypeEnum.LoopContinue:

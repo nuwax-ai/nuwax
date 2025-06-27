@@ -62,12 +62,7 @@ const skillCreatedTabs = CREATED_TABS.filter((item) =>
 
 const skillFormKey = 'skillComponentConfigs';
 // 定义大模型节点
-const ModelNode: React.FC<NodeDisposeProps> = ({
-  form,
-  id,
-  maxTokensLimit,
-  nodeConfig,
-}) => {
+const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
   // 打开关闭优化
@@ -155,11 +150,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
   return (
     <div className="model-node-style">
       {/* 模型模块 */}
-      <ModelSelected
-        form={form}
-        maxTokensLimit={maxTokensLimit}
-        modelConfig={nodeConfig?.modelConfig}
-      />
+      <ModelSelected form={form} modelConfig={nodeConfig?.modelConfig} />
       {/* 技能模块 */}
       <div className="dis-sb margin-bottom ">
         <span className="node-title-style">技能</span>
@@ -263,15 +254,12 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
 };
 
 // 定义意图识别
-const IntentionNode: React.FC<NodeDisposeProps> = ({
-  form,
-  maxTokensLimit,
-}) => {
+const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
   return (
     <div className="model-node-style">
       {/* 模型模块 */}
       <Form.Item noStyle>
-        <ModelSelected form={form} maxTokensLimit={maxTokensLimit} />
+        <ModelSelected form={form} />
       </Form.Item>
       {/* 输入参数 */}
       <div className="node-item-style">
@@ -319,11 +307,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
 };
 
 // 定义问答
-const QuestionsNode: React.FC<NodeDisposeProps> = ({
-  form,
-  maxTokensLimit,
-  nodeConfig,
-}) => {
+const QuestionsNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
   // 更改问答方式
   const changeType = (val: string) => {
     // 首次选中
@@ -364,7 +348,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
   return (
     <div className="node-title-style">
       {/* 模型模块 */}
-      <ModelSelected form={form} maxTokensLimit={maxTokensLimit} />
+      <ModelSelected form={form} />
       {/* 输入参数 */}
       <div className="node-item-style">
         <InputAndOut
