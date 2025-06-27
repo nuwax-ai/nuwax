@@ -1,5 +1,9 @@
 // 可以编辑的表格
-import type { MyTableProp } from '@/types/interfaces/table';
+import type {
+  MyTableProp,
+  SelectOptions,
+  TableColumn,
+} from '@/types/interfaces/dataTable';
 import { DeleteOutlined } from '@ant-design/icons';
 import {
   Button,

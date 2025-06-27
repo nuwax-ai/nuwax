@@ -3,11 +3,21 @@ import AddAndModify, { AddAndModifyRef } from '@/components/AddAndModify';
 import type { FormItem } from '@/components/AddAndModify/type';
 import CreatedItem from '@/components/CreatedItem';
 import DeleteSure from '@/components/DeleteSure';
-import MyTable from '@/components/MyTable';
-import EditTable, { EditTableRef } from '@/components/MyTable/EditTable';
-import service, { IgetDetails } from '@/services/tableSql';
+import {
+  apiClearBusinessData,
+  apiExportExcel,
+  apiGetTableData,
+  apiImportExcel,
+  apiTableAddBusinessData,
+  apiTableDeleteBusinessData,
+  apiTableDetail,
+  apiUpdateBusinessData,
+  apiUpdateTableDefinition,
+  apiUpdateTableName,
+} from '@/services/dataTable';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { TableColumn, TableDefineDetails } from '@/types/interfaces/dataTable';
 import { jumpBack } from '@/utils/router';
 import {
   ClearOutlined,
@@ -25,13 +35,19 @@ import { Button, message, Modal, Space, Tabs, Tag, Upload } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'umi';
+import EditTable, { EditTableRef } from './EditTable';
 import './index.less';
+import MyTable from './MyTable';
 import { mockColumns, typeMap } from './params';
 
 const SpaceTable = () => {
-  const { spaceId, tableId } = useParams();
-  const [detail, setDetail] = useState<IgetDetails | null>(null);
-
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
+  const tableId = Number(params.tableId);
+  // 数据表详情
+  const [tableDetail, setTableDetail] = useState<TableDefineDetails | null>(
+    null,
+  );
   const [AddParams, setAddParams] = useState<FormItem[]>([]);
   // 当前显示的表结构还是表数据
   const [currentContent, setCurrentContent] = useState<string>('structure');
@@ -107,7 +123,7 @@ const SpaceTable = () => {
   // 获取当前的数据
   const getDetails = async () => {
     try {
-      const res = await service.getDetail(tableId);
+      const res = await apiTableDetail(tableId);
       const addParams = res.data.fieldList
         .filter((item) => !item.systemFieldFlag)
         .map((item) => {
@@ -135,7 +151,7 @@ const SpaceTable = () => {
           };
         });
       setAddParams(addParams);
-      setDetail(res.data);
+      setTableDetail(res.data);
       const arr = res.data.fieldList.map((item) => {
         return {
           title: item.fieldName,
@@ -184,7 +200,7 @@ const SpaceTable = () => {
         id: tableId,
         fieldList: arr,
       };
-      await service.modifyTableStructure(_params);
+      await apiUpdateTableDefinition(_params);
       setLoading(false);
       getDetails();
       message.success('修改成功');
@@ -201,7 +217,8 @@ const SpaceTable = () => {
       ...params,
     };
     try {
-      const res = await service.getTableData(_params);
+      // const res = await service.getTableData(_params);
+      const res = await apiGetTableData(_params);
       setTableData(res.data.records);
       setPagination({
         ...pagination,
@@ -220,9 +237,9 @@ const SpaceTable = () => {
         rowId: values.id,
       };
       if (_params && _params.rowId) {
-        await service.modifyTableData(_params);
+        await apiUpdateBusinessData(_params);
       } else {
-        await service.addTableData(_params);
+        await apiTableAddBusinessData(_params);
       }
       getTable({ pageNo: pagination.current, pageSize: pagination.pageSize });
       // getDetails();
@@ -240,12 +257,13 @@ const SpaceTable = () => {
         tableName: value.name,
         tableDescription: value.description,
         icon: value.icon,
-        spaceId: spaceId,
-        id: detail?.id,
+        // spaceId: spaceId,
+        id: tableDetail?.id,
       };
-      await service.modifyTask(_params);
-      setDetail({
-        ...(detail as IgetDetails),
+      // await service.modifyTask(_params);
+      await apiUpdateTableName(_params);
+      setTableDetail({
+        ...(tableDetail as TableDefineDetails),
         tableName: value.name,
         tableDescription: value.description,
         icon: value.icon,
@@ -264,11 +282,7 @@ const SpaceTable = () => {
         cancelText: '取消',
         icon: <ExclamationCircleFilled />,
         onOk: async () => {
-          const _params = {
-            rowId: id,
-            tableId: tableId,
-          };
-          await service.deleteTableData(_params);
+          await apiTableDeleteBusinessData(id, tableId);
           message.success('删除成功');
           if (tableData.length === 1) {
             getDetails();
@@ -296,7 +310,7 @@ const SpaceTable = () => {
 
   const onSureClear = async () => {
     try {
-      await service.clearTableData(tableId);
+      await apiClearBusinessData(tableId);
       message.success('清除成功');
       setTableData([]);
       setPagination({ total: 0, current: 1, pageSize: 10 });
@@ -309,7 +323,7 @@ const SpaceTable = () => {
   const handleChangeFile = async (info: any) => {
     setImportLoading(true);
     try {
-      await service.importTableData(tableId, info.file);
+      await apiImportExcel(tableId, info.file);
       message.success('导入成功');
       getTable({ pageNo: 1, pageSize: pagination.pageSize });
       setPagination({ ...pagination, current: 1 });
@@ -322,14 +336,14 @@ const SpaceTable = () => {
   const exportData = async () => {
     setLoading(true);
     try {
-      const _res = await service.exportTableData(tableId);
+      const _res = await apiExportExcel(tableId);
       const blob = new Blob([_res.data], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       }); // 将响应数据转换为 Blob 对象
       const objectURL = URL.createObjectURL(blob); // 创建一个 URL 对象
       const link = document.createElement('a'); // 创建一个 a 标签
       link.href = objectURL;
-      link.download = `${detail?.tableName}.xlsx`; // 设置下载文件的名称
+      link.download = `${tableDetail?.tableName}.xlsx`; // 设置下载文件的名称
       link.click(); // 模拟点击下载
       URL.revokeObjectURL(objectURL); // 释放 URL 对象
       setLoading(false);
@@ -371,12 +385,16 @@ const SpaceTable = () => {
         />
         <img
           className="logo"
-          src={detail && detail.icon ? detail.icon : (knowledgeImage as string)}
+          src={
+            tableDetail && tableDetail.icon
+              ? tableDetail.icon
+              : (knowledgeImage as string)
+          }
           alt=""
         />
         <div>
           <div className="dis-left database-header-title">
-            <h3 className="name ">{detail?.tableName}</h3>
+            <h3 className="name ">{tableDetail?.tableName}</h3>
             <EditOutlined
               className="cursor-pointer hover-box"
               onClick={() => setOpen(true)}
@@ -473,7 +491,9 @@ const SpaceTable = () => {
           )}
           {currentContent === 'structure' && (
             <EditTable
-              dataEmptyFlag={detail ? detail.existTableDataFlag : false}
+              dataEmptyFlag={
+                tableDetail ? tableDetail.existTableDataFlag : false
+              }
               columns={mockColumns}
               tableData={tableStructure || []}
               showIndex
@@ -498,11 +518,11 @@ const SpaceTable = () => {
         onCancel={() => setOpen(false)}
         Confirm={Confirm}
         info={
-          detail
+          tableDetail
             ? {
-                name: detail.tableName,
-                description: detail.tableDescription,
-                icon: detail.icon,
+                name: tableDetail.tableName,
+                description: tableDetail.tableDescription,
+                icon: tableDetail.icon,
               }
             : undefined
         }
@@ -512,7 +532,7 @@ const SpaceTable = () => {
         onCancel={() => setOpenDelete(false)}
         open={openDelete}
         title={'清除确认'}
-        sureText={detail?.tableName || '人之初性本善'}
+        sureText={tableDetail?.tableName || '人之初性本善'}
       />
     </div>
   );

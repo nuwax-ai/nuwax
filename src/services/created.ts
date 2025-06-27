@@ -101,20 +101,4 @@ export async function unCollect(
   });
 }
 
-// 参数接口
-export interface IAddTask {
-  /*表名称 */
-  tableName: string;
-  /*表描述 */
-  tableDescription?: string;
-  /*空间ID */
-  spaceId: number;
-}
-
-async function addTask(data: IAddTask): Promise<RequestResponse<number>> {
-  return request(`/api/compose/db/table/add`, {
-    method: 'POST',
-    data,
-  });
-}
-export default { getList, collectList, collect, unCollect, addTask };
+export default { getList, collectList, collect, unCollect };

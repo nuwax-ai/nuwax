@@ -1,9 +1,10 @@
 // 可以编辑的表格
-import type { MyTableProp } from '@/types/interfaces/table';
+import type { MyTableProp } from '@/types/interfaces/dataTable';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Checkbox, Popover, Space, Table } from 'antd';
 import React from 'react';
 import './index.less';
+
 const MyTable: React.FC<MyTableProp> = ({
   columns,
   tableData,
