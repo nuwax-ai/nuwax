@@ -18,7 +18,7 @@ import {
   StarFilled,
   StarOutlined,
 } from '@ant-design/icons';
-import { Button, Divider, Input, Menu, Modal, Radio } from 'antd';
+import { Button, Divider, Empty, Input, Menu, Modal, Radio, Spin } from 'antd';
 import { RadioChangeEvent } from 'antd/lib/radio';
 import { useCallback, useEffect, useRef, useState } from 'react';
 // import { useModel } from 'umi';
@@ -79,6 +79,34 @@ const Created: React.FC<CreatedProp> = ({
   const [selectMenu, setSelectMenu] = useState<string>('all');
   //   右侧的list
   const [list, setList] = useState<CreatedNodeItem[]>([]);
+  const [renderList, setRenderList] = useState<CreatedNodeItem[]>([]);
+  // 添加loading状态
+  const [loading, setLoading] = useState<boolean>(false);
+  // 是否进行搜索
+  const [doSearching, setDoSearching] = useState<{
+    list: CreatedNodeItem[];
+    searching: boolean;
+  }>({ list: [], searching: false });
+  const needFrontEndSearching = useCallback(
+    (type: AgentComponentTypeEnum, searchKeywords: string) => {
+      return (
+        type === AgentComponentTypeEnum.MCP &&
+        searchKeywords &&
+        searchKeywords.trim() !== ''
+      );
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (needFrontEndSearching(selected.key, search) && doSearching.searching) {
+      setRenderList(
+        doSearching.list.filter((item) => item.name.includes(search)),
+      );
+    } else {
+      setRenderList(list);
+    }
+  }, [list, search, selected.key, doSearching.list, doSearching.searching]);
 
   // 左侧菜单栏
   const items: MenuItem[] = [
@@ -156,13 +184,23 @@ const Created: React.FC<CreatedProp> = ({
 
   // 获取右侧的list（关键修改）
   const getList = async (type: AgentComponentTypeEnum, params: IGetList) => {
+    if (needFrontEndSearching(type, params?.kw || '')) {
+      //如果是MCP 并且是有搜索词 则不调用接口
+      return;
+    }
+    setDoSearching({ list: [], searching: false });
     try {
       if (spaceId === 0) return;
       if ((params.page > sizes && params.page !== 1) || isRequesting.current)
         return;
       isRequesting.current = true;
+      // 设置loading状态为true
+      setLoading(true);
       const _res = await service.getList(type, { ...params, spaceId });
       isRequesting.current = false;
+      // 请求完成，设置loading状态为false
+      setLoading(false);
+
       setSizes(_res.data.pages);
       setPagination((prev) => ({
         ...prev,
@@ -177,15 +215,22 @@ const Created: React.FC<CreatedProp> = ({
       );
     } catch (error) {
       isRequesting.current = false;
+      setLoading(false);
       setSizes(100);
     }
   };
 
   // 获取已经收藏的list
   const getCollectList = async (params: IGetList) => {
-    const _type = selected.key.toLowerCase();
-    const _res = await service.collectList(_type, params);
-    setList([..._res.data]);
+    try {
+      setLoading(true);
+      const _type = selected.key.toLowerCase();
+      const _res = await service.collectList(_type, params);
+      setList([..._res.data]);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+    }
   };
 
   // 收藏和取消收藏
@@ -530,6 +575,7 @@ const Created: React.FC<CreatedProp> = ({
             }}
             onPressEnter={(event) => {
               if (event.key === 'Enter') {
+                setDoSearching({ list: list, searching: true });
                 onSearch((event.currentTarget as HTMLInputElement).value);
               }
             }}
@@ -552,12 +598,29 @@ const Created: React.FC<CreatedProp> = ({
         </div>
         {/* 右侧部分应该是变动的 */}
         <div className="main-style flex-1 overflow-y" ref={scrollRef}>
-          {list.map((item: CreatedNodeItem, index: number) => {
-            if (selected.key === AgentComponentTypeEnum.MCP) {
-              return renderMCPItem(item, index, selected);
-            }
-            return renderNormalItem(item, index);
-          })}
+          <Spin
+            spinning={loading}
+            tip="加载中..."
+            delay={200}
+            wrapperClassName="created-list-spin-style"
+          >
+            {!loading && renderList.length === 0 ? (
+              <div className="created-list-empty-style">
+                <Empty
+                  description={
+                    doSearching.searching ? '暂无数据，请重新搜索' : '暂无数据'
+                  }
+                />
+              </div>
+            ) : (
+              renderList.map((item: CreatedNodeItem, index: number) => {
+                if (selected.key === AgentComponentTypeEnum.MCP) {
+                  return renderMCPItem(item, index, selected);
+                }
+                return renderNormalItem(item, index);
+              })
+            )}
+          </Spin>
         </div>
       </div>
       <CreateWorkflow
