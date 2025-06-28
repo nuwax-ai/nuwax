@@ -1,6 +1,5 @@
 import Loading from '@/components/Loading';
 import type { DocWrapProps } from '@/types/interfaces/knowledge';
-import { SearchOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -22,11 +21,11 @@ const DocWrap: React.FC<DocWrapProps> = ({
 }) => {
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <Input
+      <Input.Search
         placeholder="搜索"
-        size="large"
-        onChange={(e) => onChange(e.target.value)}
-        prefix={<SearchOutlined className={cx(styles['search-icon'])} />}
+        allowClear
+        onSearch={onChange}
+        onPressEnter={(e) => onChange(e.currentTarget.value)}
       />
       <p className={cx(styles['document-title'])}>文档列表</p>
       {loading ? (

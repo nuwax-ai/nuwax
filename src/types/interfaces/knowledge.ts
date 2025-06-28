@@ -430,6 +430,7 @@ export interface KnowledgeHeaderProps {
   onQaPopover: (item: CustomPopoverItem) => void;
   docType: number;
   onChangeDocType: (value: number) => void;
+  onSearch: (value: string) => void;
 }
 
 // 文档列表组件

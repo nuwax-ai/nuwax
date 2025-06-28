@@ -8,7 +8,10 @@ import {
   apiKnowledgeQaUpdate,
 } from '@/services/knowledge';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { KnowledgeTextImportEnum } from '@/types/enums/library';
+import {
+  KnowledgeDocTypeEnum,
+  KnowledgeTextImportEnum,
+} from '@/types/enums/library';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type {
   KnowledgeBaseInfo,
@@ -19,7 +22,7 @@ import type {
 import { KnowledgeDocumentStatus } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
 import { ExclamationCircleFilled } from '@ant-design/icons';
-import { Input, message, Modal } from 'antd';
+import { message, Modal } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -251,11 +254,9 @@ const SpaceKnowledge: React.FC = () => {
     });
     setDocumentList(_documentList);
   };
-  const [docType, setDocType] = useState<number>(1);
+  const [docType, setDocType] = useState<number>(KnowledgeDocTypeEnum.DOC);
   const qaTableListRef = useRef<QaTableListRef>(null);
   const [qaInfo, setQaInfo] = useState<KnowledgeQAInfo | null>(null);
-  // 根据docType 判断是否显示QA问答
-  const showDocContent = docType === 1;
   const [qaOpen, setQaOpen] = useState<boolean>(false);
   const [question, setQuestion] = useState<string>('');
 
@@ -265,6 +266,7 @@ const SpaceKnowledge: React.FC = () => {
   };
   // 切换类型
   const handleChangeDocType = (value: number) => {
+    setQuestion(''); // 切换类型后，清空搜索
     setDocType(value);
     // 切换类型后，查询文档列表
     if (value === 1) {
@@ -294,15 +296,7 @@ const SpaceKnowledge: React.FC = () => {
   // 文档内容
   const renderDocContent = () => {
     return (
-      <div
-        className={cx(
-          'flex',
-          'flex-1',
-          'radius-6',
-          'overflow-hide',
-          styles['inner-container'],
-        )}
-      >
+      <div className={cx('flex', 'flex-1')}>
         {/*文档列表*/}
         <DocWrap
           currentDocId={currentDocumentInfo?.id}
@@ -347,48 +341,30 @@ const SpaceKnowledge: React.FC = () => {
     }
     return null;
   };
+  // 添加问题搜索功能 点击按钮搜索
+  const handleSearch = (value: string) => {
+    if (docType === KnowledgeDocTypeEnum.QA) {
+      setQuestion(value);
+    }
+  };
 
   const renderQaContent = () => {
-    // 添加问题搜索功能 点击按钮搜索
-    const handleSearchQa = (value: string) => {
-      setQuestion(value);
-    };
     return (
-      <div className="flex flex-col h-full">
-        {/* QA问答 */}
-        <div className={cx('flex', 'flex-1', 'flex-col')}>
-          {/* 添加问题搜索功能 */}
-          <div
-            style={{
-              height: '50px',
-            }}
-          >
-            <div className={cx(styles.inputSearch)}>
-              <Input.Search
-                placeholder="请输入问题搜索"
-                allowClear
-                style={{
-                  width: 240,
-                }}
-                onSearch={handleSearchQa}
-                onPressEnter={(e) => handleSearchQa(e.currentTarget.value)}
-              />
-            </div>
-          </div>
-          <div
-            className={cx('flex', 'flex-1', 'items-center', 'justify-center')}
-          >
-            {/* 修改为表格 远程加载数据 */}
-            <QaTableList
-              ref={qaTableListRef}
-              spaceId={Number(spaceId)}
-              kbId={Number(knowledgeId)}
-              onEdit={handleEditQa}
-              onDelete={handleDeleteQa}
-              question={question}
-            />
-          </div>
-        </div>
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+        }}
+      >
+        {/* 修改为表格 远程加载数据 */}
+        <QaTableList
+          ref={qaTableListRef}
+          spaceId={Number(spaceId)}
+          kbId={Number(knowledgeId)}
+          onEdit={handleEditQa}
+          onDelete={handleDeleteQa}
+          question={question}
+        />
       </div>
     );
   };
@@ -439,9 +415,22 @@ const SpaceKnowledge: React.FC = () => {
         onEdit={() => setOpenKnowledge(true)}
         onPopover={handleClickPopoverItem}
         onQaPopover={handleClickQaPopoverItem}
+        onSearch={handleSearch}
       />
       {/* 根据docType 判断是否显示QA问答 */}
-      {showDocContent ? renderDocContent() : renderQaContent()}
+      <div
+        style={{
+          width: '100%',
+          flex: 1,
+          height: '100%',
+          padding: '0 20px',
+          margin: '0',
+        }}
+      >
+        {docType === KnowledgeDocTypeEnum.DOC
+          ? renderDocContent()
+          : renderQaContent()}
+      </div>
 
       {/*本地文档弹窗*/}
       <LocalDocModal
