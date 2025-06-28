@@ -439,6 +439,7 @@ export interface UploadFileInfo {
   size: number;
   width: number;
   height: number;
+  percent?: number;
 }
 
 // 分页输入参数

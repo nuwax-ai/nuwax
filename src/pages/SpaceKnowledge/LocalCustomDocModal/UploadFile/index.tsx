@@ -19,9 +19,13 @@ const { Dragger } = Upload;
 const UploadFile: React.FC<UploadFileProps> = ({
   onUploadSuccess,
   beforeUpload,
+  onChange,
+  multiple = false,
+  height = 386,
 }) => {
   const handleChange: UploadProps['onChange'] = (info) => {
     const { status } = info.file;
+    onChange?.(info);
     if (status === 'uploading') {
       return;
     }
@@ -57,10 +61,14 @@ const UploadFile: React.FC<UploadFileProps> = ({
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
   return (
-    <div className={cx('flex flex-col content-center', styles.container)}>
+    <div
+      className={cx('flex flex-col content-center')}
+      style={{ height: height }}
+    >
       <Dragger
         action={UPLOAD_FILE_ACTION}
         onChange={handleChange}
+        multiple={multiple}
         headers={{
           Authorization: token ? `Bearer ${token}` : '',
         }}

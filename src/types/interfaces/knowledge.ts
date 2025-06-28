@@ -12,7 +12,8 @@ import type {
   UploadFileInfo,
 } from '@/types/interfaces/common';
 import type { Sort } from '@/types/interfaces/request';
-import type { FormInstance } from 'antd';
+import type { FormInstance, UploadFile } from 'antd';
+import { UploadChangeParam } from 'antd/es/upload';
 // 数据新增输入参数
 export interface KnowledgeConfigAddParams {
   spaceId: number;
@@ -474,6 +475,9 @@ export interface UploadFileProps {
   onUploadSuccess?: (info: UploadFileInfo) => void;
   imageUrl?: string;
   beforeUpload?: (file: FileType) => void;
+  onChange?: (info: UploadChangeParam<UploadFile>) => void;
+  multiple?: boolean;
+  height?: number | string | undefined;
 }
 
 // 创建设置、分段设置组件
