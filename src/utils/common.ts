@@ -1,4 +1,5 @@
-import type { FileType } from '@/types/interfaces/common';
+import { UploadFileStatus } from '@/types/enums/common';
+import type { FileType, UploadFileInfo } from '@/types/interfaces/common';
 import cloneDeep from 'lodash/cloneDeep';
 // 过滤非数字
 const getNumbersOnly = (text: string) => {
@@ -135,6 +136,17 @@ const arraysContainSameItems = (arr1: string[], arr2: string[]) => {
   return true;
 };
 
+// 获取上传进度状态
+const getProgressStatus = (fileInfo: UploadFileInfo) => {
+  if (fileInfo?.status === UploadFileStatus.error) {
+    return 'exception';
+  }
+  if (fileInfo?.status === UploadFileStatus.done) {
+    return 'success';
+  }
+  return 'active';
+};
+
 export {
   addBaseTarget,
   arraysContainSameItems,
@@ -143,6 +155,7 @@ export {
   formatTimeAgo,
   getBase64,
   getNumbersOnly,
+  getProgressStatus,
   getURLParams,
   isNumber,
   isValidEmail,

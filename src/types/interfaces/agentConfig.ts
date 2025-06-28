@@ -212,7 +212,7 @@ export interface VariableListProps {
 // 聊天上传文件列表组件
 export interface ChatUploadFileProps {
   files: UploadFileInfo[];
-  onDel: (index: number) => void;
+  onDel: (uid: string) => void;
 }
 
 // 用户聊天上传文件列表组件

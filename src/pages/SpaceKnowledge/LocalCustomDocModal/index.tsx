@@ -7,6 +7,7 @@ import {
   apiKnowledgeDocumentAdd,
   apiKnowledgeDocumentCustomAdd,
 } from '@/services/knowledge';
+import { UploadFileStatus } from '@/types/enums/common';
 import {
   KnowledgeSegmentIdentifierEnum,
   KnowledgeSegmentTypeEnum,
@@ -18,11 +19,18 @@ import type {
   LocalCustomDocModalProps,
   SegmentConfigModel,
 } from '@/types/interfaces/knowledge';
+import { getProgressStatus } from '@/utils/common';
 import { DeleteOutlined } from '@ant-design/icons';
-import { Button, Form, message, Modal, Steps } from 'antd';
+import { Button, Form, message, Modal, Progress, Steps } from 'antd';
 import classNames from 'classnames';
 import omit from 'lodash/omit';
-import React, { useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useRequest } from 'umi';
 import CreateSet from './CreateSet';
 import DataProcess from './DataProcess';
@@ -50,6 +58,9 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     KnowledgeTextStepEnum.Upload_Or_Text_Fill,
   );
   // 上传文件信息
+  const [allUploadFileList, setAllUploadFileList] = useState<UploadFileInfo[]>(
+    [],
+  );
   const [uploadFileList, setUploadFileList] = useState<UploadFileInfo[]>([]);
   // 快速自动分段与清洗,true:无需分段设置,自动使用默认值
   const [autoSegmentConfigFlag, setAutoSegmentConfigFlag] =
@@ -58,13 +69,20 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     name: string;
     fileContent: string;
   }>();
+
+  useEffect(() => {
+    setUploadFileList(
+      allUploadFileList.filter((info) => info.status === UploadFileStatus.done),
+    );
+  }, [allUploadFileList]);
+
   // 分段配置信息
   const segmentConfigModelRef = useRef<SegmentConfigModel | null>(null);
 
   // 清除重置操作
   const handleClear = () => {
     setCurrent(KnowledgeTextStepEnum.Upload_Or_Text_Fill);
-    setUploadFileList([]);
+    setAllUploadFileList([]);
     setAutoSegmentConfigFlag(true);
     form.resetFields();
     formText.resetFields();
@@ -121,6 +139,10 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
       });
     }
   };
+  const getStatus = useCallback(
+    (fileInfo: UploadFileInfo) => getProgressStatus(fileInfo),
+    [],
+  );
 
   // 自定义文档 - 确认事件
   const handleCustomDocOk = async () => {
@@ -150,18 +172,14 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
       : KNOWLEDGE_CUSTOM_DOC_LIST;
   }, [type]);
 
-  // 上传的文件列表
-  const handleUploadSuccess = (data: UploadFileInfo) => {
-    const _uploadFileInfo = [...uploadFileList];
-    _uploadFileInfo.push(data);
-    setUploadFileList(_uploadFileInfo);
-  };
-
   // 删除上传的文件列表
-  const handleUploadFileDel = (index: number) => {
-    const _uploadFileInfo = [...uploadFileList];
-    _uploadFileInfo.splice(index, 1);
-    setUploadFileList(_uploadFileInfo);
+  const handleUploadFileDel = (uid: string) => {
+    const _uploadFileInfo = [...allUploadFileList];
+    _uploadFileInfo.splice(
+      _uploadFileInfo.findIndex((item) => item.uid === uid),
+      1,
+    );
+    setAllUploadFileList(_uploadFileInfo);
   };
 
   // 上传 - 下一步
@@ -177,13 +195,13 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     if (!autoSegmentConfigFlag) {
       const formValues = await form.validateFields();
       let data;
-      // 选择自定义‘分段标识符’
+      // 选择自定义'分段标识符'
       if (
         formValues?.selectDelimiter === KnowledgeSegmentIdentifierEnum.Custom
       ) {
         data = omit(formValues, ['selectDelimiter']);
       } else {
-        // 选择下拉‘分段标识符’
+        // 选择下拉'分段标识符'
         data = {
           delimiter: formValues?.selectDelimiter,
           overlaps: Number(formValues.overlaps),
@@ -261,6 +279,35 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     onCancel();
   };
 
+  // 进度回调
+  const handleUploadChange = (info: any) => {
+    setAllUploadFileList(
+      info.fileList
+        .filter((item: any) => item.status !== UploadFileStatus.removed)
+        .map((item: any) => {
+          const data = item.response?.data || {};
+          return {
+            fileName: data?.fileName || item.name,
+            status: item.status as UploadFileStatus,
+            size: item.size,
+            url: data?.url || '',
+            key: data?.key || '',
+            mimeType: data?.mimeType || '',
+            width: data?.width || 0,
+            height: data?.height || 0,
+            uid: item.uid,
+            percent: item.percent,
+          };
+        })
+        .reverse(),
+    );
+  };
+  const getDisplayFileName = useCallback((name: string) => {
+    if (!name) return '';
+    return name.length > 30
+      ? name.slice(0, 22) + '...' + name.slice(name.length - 8, name.length)
+      : name;
+  }, []);
   return (
     <Modal
       title="添加内容"
@@ -280,23 +327,46 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
       {current === KnowledgeTextStepEnum.Upload_Or_Text_Fill ? (
         type === KnowledgeTextImportEnum.Local_Doc ? (
           <>
-            <UploadFile onUploadSuccess={handleUploadSuccess} />
-            {uploadFileList?.map((info, index) => (
-              <div
-                key={info?.key}
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'content-between',
-                  styles['file-box'],
-                )}
-              >
-                <span>
-                  {info?.fileName} ({`${info?.size / 1000} kb`})
-                </span>
-                <DeleteOutlined onClick={() => handleUploadFileDel(index)} />
-              </div>
-            ))}
+            <UploadFile
+              onChange={handleUploadChange}
+              multiple={true}
+              height={200}
+            />
+            <div className={cx(styles.fileList)}>
+              {allUploadFileList?.map((info) => (
+                <div key={info.uid} className={cx(styles['file-box'])}>
+                  <div
+                    className={cx('flex', 'items-center', 'content-between')}
+                    style={{
+                      height: '100%',
+                    }}
+                  >
+                    <span>
+                      {getDisplayFileName(info?.fileName)} (
+                      {`${info?.size / 1000} kb`})
+                    </span>
+
+                    <DeleteOutlined
+                      onClick={() => handleUploadFileDel(info.uid)}
+                    />
+                  </div>
+                  {info?.percent !== undefined && info?.percent < 100 && (
+                    <Progress
+                      percent={Math.round(info.percent)}
+                      type="circle"
+                      status={getStatus(info)}
+                      size={20}
+                      style={{
+                        position: 'absolute',
+                        top: '50%',
+                        right: 50,
+                        transform: 'translateY(-50%)',
+                      }}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
           </>
         ) : (
           <TextFill form={formText} />

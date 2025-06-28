@@ -8,28 +8,26 @@ import {
   EditOutlined,
   ExclamationCircleFilled,
 } from '@ant-design/icons';
-import { Button, Popconfirm, Table, TableProps, Tag } from 'antd';
+import { Button, Empty, Popconfirm, Spin, Table, TableProps, Tag } from 'antd';
 import cx from 'classnames';
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 
 export interface QaTableListRef {
-  refresh: (value: string) => void;
+  refresh: () => void;
+}
+export interface QaTableListProps {
+  spaceId: number;
+  kbId: number;
+  onEdit: (record: KnowledgeQAInfo) => void;
+  onDelete: (record: KnowledgeQAInfo) => void;
+  question: string;
 }
 
 /**
  * 知识库QA问答列表组件
  */
-const QaTableList = forwardRef(
-  (
-    props: {
-      spaceId: number;
-      kbId: number;
-      onEdit: (record: KnowledgeQAInfo) => void;
-      onDelete: (record: KnowledgeQAInfo) => void;
-      question: string;
-    },
-    ref,
-  ) => {
+const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
+  (props, ref) => {
     // QA问答内容
     const columns = [
       {
@@ -102,7 +100,7 @@ const QaTableList = forwardRef(
       },
     ];
     const [data, setData] = useState<KnowledgeQAInfo[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [total, setTotal] = useState(0);
     const [tableParams, setTableParams] = useState<KnowledgeQaListParams>({
       current: 1,
@@ -183,35 +181,40 @@ const QaTableList = forwardRef(
 
     return (
       <div
-        className={cx(
-          'flex',
-          'flex-1',
-          'items-center',
-          'justify-center',
-          'h-full',
-        )}
         style={{
           width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <Table
-          className={cx('h-full')}
-          style={{
-            width: '100%',
-          }}
-          rowKey="id"
-          columns={columns}
-          rowHoverable={false}
-          dataSource={data}
-          loading={loading}
-          pagination={{
-            total,
-            current: tableParams.current,
-            pageSize: tableParams.pageSize,
-          }}
-          onChange={handleTableChange as any}
-          scroll={{ x: 'max-content', y: 'calc(100vh - 230px)' }}
-        />
+        {loading ? (
+          <Spin spinning={loading} delay={200} />
+        ) : data.length > 0 ? (
+          <Table
+            rowKey="id"
+            columns={columns}
+            rowHoverable={false}
+            dataSource={data}
+            loading={loading}
+            height={'auto'}
+            pagination={{
+              total,
+              current: tableParams.current,
+              pageSize: tableParams.pageSize,
+            }}
+            onChange={handleTableChange as any}
+            scroll={{
+              scrollToFirstRowOnChange: true,
+              x: 'max-content',
+              y: 'calc(100vh - 257px)',
+            }}
+          />
+        ) : (
+          <Empty description="暂无数据" />
+        )}
       </div>
     );
   },
