@@ -8,3 +8,11 @@ export enum TableFieldTypeEnum {
   PrimaryKey = 6,
   MEDIUMTEXT = 7,
 }
+
+// 数据表tabs枚举
+export enum TableTabsEnum {
+  // 表结构
+  Structure = 'Structure',
+  // 表数据
+  Data = 'Data',
+}

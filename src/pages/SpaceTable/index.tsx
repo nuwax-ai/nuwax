@@ -17,6 +17,7 @@ import {
 } from '@/services/dataTable';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { TableTabsEnum } from '@/types/enums/dataTable';
 import { TableColumn, TableDefineDetails } from '@/types/interfaces/dataTable';
 import { jumpBack } from '@/utils/router';
 import {
@@ -35,9 +36,9 @@ import { Button, message, Modal, Space, Tabs, Tag, Upload } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'umi';
-import EditTable, { EditTableRef } from './EditTable';
+import DataTable from './DataTable';
+import StructureTable, { EditTableRef } from './StructureTable';
 import './index.less';
-import MyTable from './MyTable';
 import { mockColumns, typeMap } from './params';
 
 const SpaceTable = () => {
@@ -50,7 +51,9 @@ const SpaceTable = () => {
   );
   const [AddParams, setAddParams] = useState<FormItem[]>([]);
   // 当前显示的表结构还是表数据
-  const [currentContent, setCurrentContent] = useState<string>('structure');
+  const [activeKey, setActiveKey] = useState<TableTabsEnum>(
+    TableTabsEnum.Structure,
+  );
   // 当前表的columns
   const [columns, setColumns] = useState<TableColumn[]>([]);
   // 当前表的数据
@@ -79,7 +82,7 @@ const SpaceTable = () => {
 
   // 切换表结构还是表数据
   const onChange = (key: string) => {
-    setCurrentContent(key);
+    setActiveKey(key as TableTabsEnum);
   };
   //   点击弹出编辑框
   const onShow = (record?: AnyObject) => {
@@ -407,10 +410,10 @@ const SpaceTable = () => {
         <div className="dis-sb">
           <Tabs
             items={[
-              { key: 'structure', label: '表结构' },
-              { key: 'data', label: '表数据' },
+              { key: TableTabsEnum.Structure, label: '表结构' },
+              { key: TableTabsEnum.Data, label: '表数据' },
             ]}
-            activeKey={currentContent}
+            activeKey={activeKey}
             onChange={onChange}
             className="tabs-style"
           />
@@ -421,14 +424,14 @@ const SpaceTable = () => {
                 getDetails();
                 getTable({ pageNo: 1, pageSize: pagination.pageSize });
                 setPagination({ ...pagination, current: 1 });
-                if (currentContent !== 'data') {
+                if (activeKey !== TableTabsEnum.Data) {
                   editTableRef.current?.resetFields();
                 }
               }}
             >
               刷新
             </Button>
-            {currentContent === 'structure' && (
+            {activeKey === TableTabsEnum.Structure && (
               <>
                 <Button icon={<PlusOutlined />} onClick={onAddRow}>
                   新增字段
@@ -442,7 +445,7 @@ const SpaceTable = () => {
                 </Button>
               </>
             )}
-            {currentContent === 'data' && (
+            {activeKey === TableTabsEnum.Data && (
               <>
                 <Button icon={<ClearOutlined />} onClick={clearData}>
                   清除所有数据
@@ -473,8 +476,8 @@ const SpaceTable = () => {
           </Space>
         </div>
         <div className="flex-1">
-          {currentContent === 'data' && (
-            <MyTable
+          {activeKey === TableTabsEnum.Data && (
+            <DataTable
               columns={columns}
               tableData={tableData}
               showEditRow
@@ -489,8 +492,8 @@ const SpaceTable = () => {
               actionColumnWidth={100}
             />
           )}
-          {currentContent === 'structure' && (
-            <EditTable
+          {activeKey === TableTabsEnum.Structure && (
+            <StructureTable
               dataEmptyFlag={
                 tableDetail ? tableDetail.existTableDataFlag : false
               }
@@ -503,7 +506,7 @@ const SpaceTable = () => {
               scrollHeight={getBrowserHeight()}
               onDataSourceChange={onDataSourceChange}
               formRef={editTableRef}
-              rowKey={'row_key_chao'}
+              // rowKey={'row_key_chao'}
               actionColumnWidth={60}
             />
           )}

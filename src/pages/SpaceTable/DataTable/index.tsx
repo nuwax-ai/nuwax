@@ -5,7 +5,7 @@ import { Button, Checkbox, Popover, Space, Table } from 'antd';
 import React from 'react';
 import './index.less';
 
-const MyTable: React.FC<MyTableProp> = ({
+const DataTable: React.FC<MyTableProp> = ({
   columns,
   tableData,
   actionColumn,
@@ -143,4 +143,4 @@ const MyTable: React.FC<MyTableProp> = ({
   );
 };
 
-export default MyTable;
+export default DataTable;

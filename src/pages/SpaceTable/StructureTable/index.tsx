@@ -26,7 +26,7 @@ export interface EditTableRef {
   resetFields: () => void;
 }
 
-const MyTable: React.FC<MyTableProp> = ({
+const StructureTable: React.FC<MyTableProp> = ({
   columns,
   tableData,
   showIndex,
@@ -358,4 +358,4 @@ const MyTable: React.FC<MyTableProp> = ({
   );
 };
 
-export default MyTable;
+export default StructureTable;
