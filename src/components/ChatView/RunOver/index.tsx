@@ -82,7 +82,9 @@ const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
       trigger="hover"
     >
       <span className={cx('cursor-pointer', styles['run-success'])}>
-        {messageInfo?.status === MessageStatusEnum.Loading ? (
+        {/* 显示loading状态 */}
+        {messageInfo?.status === MessageStatusEnum.Loading ||
+        messageInfo?.status === MessageStatusEnum.Incomplete ? (
           <>
             <LoadingOutlined />
             {lastProcessInfo && (
@@ -94,8 +96,6 @@ const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
               </span>
             )}
           </>
-        ) : messageInfo?.status === MessageStatusEnum.Incomplete ? (
-          <LoadingOutlined />
         ) : messageInfo?.status === MessageStatusEnum.Error ? (
           <span>运行错误</span>
         ) : (

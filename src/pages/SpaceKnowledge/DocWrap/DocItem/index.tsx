@@ -28,7 +28,7 @@ const DocItem: React.FC<DocItemProps> = ({
   const { run: runAutoRetry } = useRequest(apiDocAutoRetryTaskByDocId, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_, params) => {
+    onSuccess: (_: null, params: number[]) => {
       const id = params[0];
       const status: KnowledgeDocumentStatus = {
         docStatus: DocStatusEnum.ANALYZING_RAW,

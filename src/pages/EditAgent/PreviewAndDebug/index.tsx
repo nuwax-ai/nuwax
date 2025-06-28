@@ -298,6 +298,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
             isLoadingConversation && (
               // Chat记录为空
               <AgentChatEmpty
+                className="h-full"
                 icon={agentConfigInfo?.icon}
                 name={agentConfigInfo?.name as string}
                 // 会话建议

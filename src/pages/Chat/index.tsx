@@ -41,6 +41,8 @@ const Chat: React.FC = () => {
   const message = location.state?.message;
   const files = location.state?.files;
   const infos = location.state?.infos;
+  // 用户填写的变量参数，此处用于第一次发送消息时，传递变量参数
+  const firstVariableParams = location.state?.variableParams;
   // 默认的智能体详情信息
   const defaultAgentDetail = location.state?.defaultAgentDetail;
 
@@ -90,7 +92,7 @@ const Chat: React.FC = () => {
 
   const values = Form.useWatch([], { form, preserve: true });
 
-  React.useEffect(() => {
+  useEffect(() => {
     // 监听form表单值变化
     if (values && Object.keys(values).length === 0) {
       return;
@@ -202,7 +204,7 @@ const Chat: React.FC = () => {
           (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
         // 如果message或者附件不为空,可以发送消息，但刷新页面时，不重新发送消息
         if (isCanMessage && (message || files?.length > 0)) {
-          onMessageSend(id, message, files, infos, variableParams);
+          onMessageSend(id, message, files, infos, firstVariableParams);
         }
       };
       asyncFun();
@@ -211,7 +213,7 @@ const Chat: React.FC = () => {
     return () => {
       resetInit();
     };
-  }, [id, message, files, infos]);
+  }, [id, message, files, infos, firstVariableParams]);
 
   useEffect(() => {
     addBaseTarget();

@@ -2,9 +2,10 @@
 
 .container {
   height: 100%;
-  padding: 20px 30px;
+  padding: 20px 0;
 
   .title {
+    padding: 0 30px;
     line-height: 22px;
     margin-bottom: 10px;
     font-size: 18px;
@@ -13,6 +14,8 @@
   }
 
   .tab {
+    padding: 0 30px;
+
     :global {
       .ant-tabs-tab {
         font-size: 16px;
@@ -39,12 +42,14 @@
   }
 
   .list-section {
+    padding: 0 30px;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
 
     .icon {
       color: @BLANK04;
+      font-size: 20px;
     }
   }
 

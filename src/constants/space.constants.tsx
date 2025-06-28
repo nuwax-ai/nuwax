@@ -14,13 +14,15 @@ import { InputTypeEnum, TriggerComponentType } from '@/types/enums/agent';
 import { CreateAgentEnum, DataTypeEnum } from '@/types/enums/common';
 import {
   ApplicationMoreActionEnum,
+  ComponentSettingEnum,
   ComponentTypeEnum,
   CreateListEnum,
   FilterStatusEnum,
   OpenCloseEnum,
-  PluginSettingEnum,
   SpaceApplicationListEnum,
 } from '@/types/enums/space';
+import { SquareAgentTypeEnum } from '@/types/enums/square';
+import { TabsProps } from 'antd';
 
 // 组件库所有资源类型
 export const LIBRARY_ALL_RESOURCE = [
@@ -148,26 +150,26 @@ export const TASK_EXECUTION = [
   },
 ];
 
-// 智能体编排-插件设置列表
-export const PLUGIN_SETTING_ACTIONS = [
+// 智能体编排-组件设置列表
+export const COMPONENT_SETTING_ACTIONS = [
   {
-    type: PluginSettingEnum.Params,
+    type: ComponentSettingEnum.Params,
     label: '参数',
   },
   {
-    type: PluginSettingEnum.Method_Call,
+    type: ComponentSettingEnum.Method_Call,
     label: '调用方式',
   },
   {
-    type: PluginSettingEnum.Output_Way,
+    type: ComponentSettingEnum.Output_Way,
     label: '输出方式',
   },
   {
-    type: PluginSettingEnum.Async_Run,
+    type: ComponentSettingEnum.Async_Run,
     label: '异步运行',
   },
   {
-    type: PluginSettingEnum.Card_Bind,
+    type: ComponentSettingEnum.Card_Bind,
     label: '卡片绑定',
   },
 ];
@@ -190,3 +192,23 @@ export const PLUGIN_OUTPUT_CONFIG = {
   dataType: DataTypeEnum.String,
   enable: true,
 };
+
+// 空间广场-分类列表
+export const SPACE_SQUARE_TABS: TabsProps['items'] = [
+  {
+    key: SquareAgentTypeEnum.Agent,
+    label: '智能体',
+  },
+  {
+    key: SquareAgentTypeEnum.Plugin,
+    label: '插件',
+  },
+  {
+    key: SquareAgentTypeEnum.Workflow,
+    label: '工作流',
+  },
+  {
+    key: SquareAgentTypeEnum.Template,
+    label: '模板',
+  },
+];

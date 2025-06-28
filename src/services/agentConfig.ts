@@ -19,6 +19,7 @@ import type {
   AgentPublishApplyParams,
   TriggerTimeZone,
 } from '@/types/interfaces/agent';
+import { BindConfigWithSub } from '@/types/interfaces/common';
 import type {
   ConversationChatSuggestParams,
   ConversationCreateParams,
@@ -238,6 +239,15 @@ export async function apiAgentComponentList(
   agentId: number,
 ): Promise<RequestResponse<AgentComponentInfo[]>> {
   return request(`/api/agent/component/list/${agentId}`, {
+    method: 'GET',
+  });
+}
+
+// 查询智能体变量列表
+export async function apiAgentVariables(
+  agentId: number,
+): Promise<RequestResponse<BindConfigWithSub[]>> {
+  return request(`/api/agent/variable/list/${agentId}`, {
     method: 'GET',
   });
 }

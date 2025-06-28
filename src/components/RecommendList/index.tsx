@@ -20,21 +20,26 @@ const RecommendList: React.FC<RecommendListProps> = ({
           <LoadingOutlined />
         </div>
       ) : (
-        chatSuggestList?.map((item, index) => (
-          <div
-            key={index}
-            onClick={() => onClick(item)}
-            className={cx(
-              styles.box,
-              'px-16',
-              'cursor-pointer',
-              'hover-box',
-              itemClassName,
-            )}
-          >
-            {item}
-          </div>
-        ))
+        chatSuggestList?.map((item, index) => {
+          if (!item) {
+            return null;
+          }
+          return (
+            <div
+              key={index}
+              onClick={() => onClick(item)}
+              className={cx(
+                styles.box,
+                'px-16',
+                'cursor-pointer',
+                'hover-box',
+                itemClassName,
+              )}
+            >
+              {item}
+            </div>
+          );
+        })
       )}
     </div>
   );
