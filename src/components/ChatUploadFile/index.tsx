@@ -1,8 +1,8 @@
 import docImage from '@/assets/images/doc_image.jpg';
-import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatUploadFileProps } from '@/types/interfaces/agentConfig';
 import { UploadFileInfo } from '@/types/interfaces/common';
 import { formatBytes } from '@/utils/byteConverter';
+import { getProgressStatus } from '@/utils/common';
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { Progress } from 'antd';
 import classNames from 'classnames';
@@ -15,21 +15,16 @@ const cx = classNames.bind(styles);
  * 聊天上传文件列表组件
  */
 const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
-  const getStatus = useCallback((fileInfo: UploadFileInfo) => {
-    if (fileInfo?.status === UploadFileStatus.error) {
-      return 'exception';
-    }
-    if (fileInfo?.status === UploadFileStatus.done) {
-      return 'success';
-    }
-    return 'active';
-  }, []);
+  const getStatus = useCallback(
+    (fileInfo: UploadFileInfo) => getProgressStatus(fileInfo),
+    [],
+  );
 
   return (
     <div className={cx(styles['files-container'])}>
-      {files?.map((file, index) => (
+      {files?.map((file) => (
         <div
-          key={file?.key || index}
+          key={file.uid}
           className={cx(styles['file-box'], 'flex', 'items-center')}
           style={{ position: 'relative' }}
         >
@@ -51,7 +46,7 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
           </div>
           <CloseCircleOutlined
             className={cx(styles.del)}
-            onClick={() => onDel(index)}
+            onClick={() => onDel(file.uid)}
           />
           <Progress
             type="circle"

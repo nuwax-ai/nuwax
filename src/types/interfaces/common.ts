@@ -442,6 +442,7 @@ export interface UploadFileInfo {
   height: number;
   percent?: number;
   status?: UploadFileStatus;
+  uid: string;
 }
 
 // 分页输入参数

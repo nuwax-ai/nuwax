@@ -63,7 +63,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       onEnter(messageInfo, files);
       if (isClearInput) {
         // 置空
-        setFiles([]);
+        setUploadFiles([]);
         setMessageInfo('');
       }
     }
@@ -91,7 +91,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       onEnter(value, files);
       if (isClearInput) {
         // 置空
-        setFiles([]);
+        setUploadFiles([]);
         setMessageInfo('');
       }
     }
@@ -122,9 +122,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   };
 
   // 删除文档
-  const handleDelFile = (index: number) => {
+  const handleDelFile = (uid: string) => {
     const _files = [...uploadFiles];
-    _files.splice(index, 1);
+    _files.splice(
+      _files.findIndex((item) => item.uid === uid),
+      1,
+    );
     setUploadFiles(_files);
   };
 
