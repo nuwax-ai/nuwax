@@ -117,6 +117,7 @@ const useWorkflow = () => {
       drawerForm: DEFAULT_DRAWER_FORM,
     };
   }, []);
+  const [expanded, setExpanded] = useState<string>('');
 
   return {
     volid,
@@ -138,6 +139,8 @@ const useWorkflow = () => {
     clearWorkflow,
     visible,
     setVisible,
+    expanded,
+    setExpanded,
     // foldWrapItem,
     // setFoldWrapItem,
     // getCurrentNodeData,

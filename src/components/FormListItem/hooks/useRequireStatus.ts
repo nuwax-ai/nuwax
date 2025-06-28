@@ -162,6 +162,6 @@ export const useRequireStatus = (
     () => ({
       updateRequireStatus,
     }),
-    [updateRequireStatus],
+    [updateRequireStatus, treeData, updateTreeData, setIsModified],
   );
 };

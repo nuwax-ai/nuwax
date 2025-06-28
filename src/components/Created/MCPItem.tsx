@@ -59,7 +59,7 @@ const MCPItem: React.FC<MCPItemProps> = ({
               <Divider type="vertical" />
               <span className="margin-left-6">
                 {'部署于'}
-                {getTime(item.created!)}
+                {getTime(item.deployed!)}
               </span>
             </div>
           </div>
