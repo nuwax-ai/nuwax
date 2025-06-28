@@ -120,6 +120,7 @@ const Workflow: React.FC = () => {
     x: 0,
     y: 0,
   });
+  const [testRunLoading, setTestRunLoading] = useState<boolean>(false);
   // 当点击连接桩和边时，存储一些数据
   const currentNodeRef = useRef<{
     sourceNode: ChildNode;
@@ -1317,10 +1318,20 @@ const Workflow: React.FC = () => {
 
   // 试运行所有节点
   const testRunAll = async () => {
-    const result = await validWorkflow();
-    if (result) {
-      setTestRunResult('');
-      setTestRun(true);
+    const loadingTimer = setTimeout(() => {
+      setTestRunLoading(true);
+    }, 300);
+    try {
+      const result = await validWorkflow();
+      if (result) {
+        setTestRunResult('');
+        setTestRun(true);
+      }
+    } catch (error) {
+      console.error('试运行所有节点失败:', error);
+    } finally {
+      clearTimeout(loadingTimer);
+      setTestRunLoading(false);
     }
   };
 
@@ -1696,7 +1707,8 @@ const Workflow: React.FC = () => {
         dragChild={dragChild}
         foldWrapItem={foldWrapItem}
         changeGraph={changeGraph}
-        handleTestRun={() => testRunAll()}
+        handleTestRun={testRunAll}
+        testRunLoading={testRunLoading}
         zoomSize={(info?.extension?.size as number) ?? 1}
       />
       <FoldWrap
