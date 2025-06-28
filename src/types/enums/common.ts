@@ -244,3 +244,10 @@ export enum RunResultStatusEnum { // 工作流节点运行结果状态
   FAILED = 'FAILED',
   EXECUTING = 'EXECUTING',
 }
+
+export enum UploadFileStatus {
+  error = 'error',
+  done = 'done',
+  uploading = 'uploading',
+  removed = 'removed',
+}

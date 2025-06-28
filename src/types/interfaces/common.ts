@@ -8,6 +8,7 @@ import type {
   CreateUpdateModeEnum,
   InputTypeEnum,
   NodeShapeEnum,
+  UploadFileStatus,
 } from '@/types/enums/common';
 import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
@@ -440,6 +441,7 @@ export interface UploadFileInfo {
   width: number;
   height: number;
   percent?: number;
+  status?: UploadFileStatus;
 }
 
 // 分页输入参数
