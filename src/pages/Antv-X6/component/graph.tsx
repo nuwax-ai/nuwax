@@ -942,6 +942,9 @@ const initGraph = ({
       node.prop('originSize', node.getSize());
     }
   });
+  graph.on('node:click', ({ node }) => {
+    changeZIndex(node);
+  });
 
   graph.on('node:change:position', ({ node }) => {
     if (node.getData().type !== 'Loop') {
