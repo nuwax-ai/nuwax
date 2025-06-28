@@ -321,6 +321,7 @@ export interface CreatedNodeItem {
   knowledgeBaseId?: number;
   config: any;
   toolName?: string;
+  deployed?: string;
 }
 
 export interface MCPNodeItem {
