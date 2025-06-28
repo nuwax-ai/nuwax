@@ -1,23 +1,41 @@
-// 可以编辑的表格
-import type { MyTableProp } from '@/types/interfaces/dataTable';
-import { InfoCircleOutlined } from '@ant-design/icons';
+import { TableFieldTypeEnum } from '@/types/enums/dataTable';
+import { TableFieldInfo } from '@/types/interfaces/dataTable';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  InfoCircleOutlined,
+} from '@ant-design/icons';
 import { Button, Checkbox, Popover, Space, Table } from 'antd';
 import React from 'react';
 import './index.less';
 
-const DataTable: React.FC<MyTableProp> = ({
+export interface DataTableProp {
+  // 表头
+  columns: TableFieldInfo[];
+  // 表数据
+  tableData: any[];
+  // 表格的滚动高度
+  scrollHeight: number;
+  // 分页的数据
+  pagination?: {
+    current: number; // 当前页码
+    pageSize: number; // 每页显示条数
+    total: number; // 总条数
+  };
+  // 分页或者排序发生变更，重新获取数据
+  onPageChange?: (page: number, pageSize: number) => void;
+  onEdit: (data: any) => void;
+  onDel: (data: any) => void;
+}
+
+const DataTable: React.FC<DataTableProp> = ({
   columns,
   tableData,
-  actionColumn,
-  actionColumnFixed,
-  showDescription,
   scrollHeight,
-  showIndex,
-  rowKey = 'id',
-  actionColumnWidth = 160,
-  showPagination,
   pagination,
   onPageChange,
+  onEdit,
+  onDel,
 }) => {
   return (
     <div
@@ -27,7 +45,7 @@ const DataTable: React.FC<MyTableProp> = ({
       <Table
         className="my-table-style"
         dataSource={tableData}
-        rowKey={rowKey}
+        rowKey="id"
         scroll={{
           x: 'max-content',
           y:
@@ -35,44 +53,25 @@ const DataTable: React.FC<MyTableProp> = ({
               ? scrollHeight - 144
               : undefined,
         }}
-        pagination={
-          showPagination
-            ? {
-                ...pagination,
-                onChange: onPageChange,
-                showTotal: (total) => `共 ${total} 条`,
-                showSizeChanger: true,
-                locale: {
-                  items_per_page: '条 / 页',
-                },
-              }
-            : false
-        }
+        pagination={{
+          ...pagination,
+          onChange: onPageChange,
+          showTotal: (total) => `共 ${total} 条`,
+          showSizeChanger: true,
+          locale: {
+            items_per_page: '条 / 页',
+          },
+        }}
       >
-        {/* 序号列 */}
-        {showIndex && (
-          <Table.Column
-            title={'序号'}
-            dataIndex="serial"
-            width={70}
-            render={(_, __, index) => {
-              const current = pagination?.current || 1;
-              const pageSize = pagination?.pageSize || 10;
-              return (current - 1) * pageSize + index + 1;
-            }}
-          ></Table.Column>
-        )}
-        {/* 显示的列 */}
-
         {columns.map((item, index) => (
           <Table.Column
-            key={item.dataIndex}
+            key={item.fieldName}
             title={
               <div className="dis-left">
-                <span>{item.title}</span>
-                {showDescription && item.description && (
+                <span>{item.fieldName}</span>
+                {item.fieldDescription && (
                   <Popover
-                    content={<p>{item.description}</p>}
+                    content={<p>{item.fieldDescription}</p>}
                     trigger="hover"
                     mouseEnterDelay={0.5}
                     placement="top"
@@ -83,22 +82,22 @@ const DataTable: React.FC<MyTableProp> = ({
               </div>
             }
             ellipsis
-            fixed={actionColumnFixed && index === 0 ? 'left' : undefined} // 设置为固定列
-            width={item.width}
-            dataIndex={item.dataIndex}
-            onCell={() => ({
-              style: {
-                maxWidth: item.width,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              },
-            })}
+            fixed={index === 0 ? 'left' : undefined} // 设置为固定列
+            // width={item.width}
+            dataIndex={item.fieldName}
+            // onCell={() => ({
+            //   style: {
+            //     // maxWidth: item.width,
+            //     overflow: 'hidden',
+            //     textOverflow: 'ellipsis',
+            //     whiteSpace: 'nowrap',
+            //   },
+            // })}
             render={(value) => {
-              switch (item.type) {
-                case 'checkbox':
-                  return <Checkbox checked={value} />;
-                case 'time':
+              switch (item.fieldType) {
+                case TableFieldTypeEnum.Boolean:
+                  return <Checkbox checked={value} disabled />;
+                case TableFieldTypeEnum.Date:
                   return value
                     ? new Date(value).toLocaleString('zh-CN', {
                         hour12: false,
@@ -110,34 +109,31 @@ const DataTable: React.FC<MyTableProp> = ({
             }}
           />
         ))}
+
         {/* 操作列 */}
-        {actionColumn && (
-          <Table.Column
-            title={<span style={{ marginLeft: '10px' }}>操作</span>}
-            dataIndex="action"
-            width={actionColumnWidth}
-            className={'table-action-column-fiexd'}
-            fixed={actionColumnFixed ? 'right' : undefined} // 设置为固定列
-            render={(_, record) => {
-              return (
-                <Space>
-                  {actionColumn.map((item) => {
-                    const IconComponent = item.icon;
-                    return (
-                      <Button
-                        icon={<IconComponent />}
-                        key={item.name}
-                        onClick={() => item.func(record)}
-                        title={item.description}
-                        type={'text'}
-                      />
-                    );
-                  })}
-                </Space>
-              );
-            }}
-          ></Table.Column>
-        )}
+        <Table.Column
+          title={<span style={{ marginLeft: '10px' }}>操作</span>}
+          dataIndex="action"
+          width={160}
+          className={'table-action-column-fiexd'}
+          fixed="right"
+          render={(_, record) => (
+            <Space>
+              <Button
+                icon={<EditOutlined />}
+                onClick={() => onEdit(record)}
+                title="编辑"
+                type="text"
+              />
+              <Button
+                icon={<DeleteOutlined />}
+                onClick={() => onDel(record)}
+                title="删除"
+                type="text"
+              />
+            </Space>
+          )}
+        ></Table.Column>
       </Table>
     </div>
   );

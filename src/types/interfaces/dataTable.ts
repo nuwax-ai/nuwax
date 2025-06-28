@@ -1,82 +1,5 @@
-import React from 'react';
+import { TableFieldTypeEnum } from '../enums/dataTable';
 import { Page, TablePageRequest } from './request';
-
-export interface SelectOptions {
-  label: string;
-  value: string | number;
-}
-export interface TableColumn {
-  title: string;
-  dataIndex: string;
-  type: 'checkbox' | 'tag' | 'text' | 'date' | 'select' | 'time';
-  description?: string;
-  map?: any;
-  width?: number;
-  editable?: boolean;
-  edit?: boolean;
-  options?: SelectOptions[];
-  placeholder?: string;
-  defaultValue?: string;
-  // 当form时是否需要更新展示
-  shouldUpdate?: {
-    name: string; // 依赖的字段名
-    value?: string | number; // 当依赖字段的值为1时，才显示该menu
-  };
-  onCell?: (record: any) => {
-    record: any;
-    dataIndex: string;
-    title: string;
-    editing: boolean;
-  };
-}
-
-interface ActionColumn {
-  icon: React.ComponentType; // 图标
-  name: string; // 标题
-  func: (record: any) => void; // 操作
-  description: string;
-}
-
-export interface MyTableProp {
-  // 表头
-  columns: TableColumn[];
-  // 表数据
-  tableData: any[];
-  // 表格的滚动高度
-  scrollHeight: number;
-  // 表头是否有描述
-  showDescription?: boolean;
-  // 操作栏
-  actionColumn?: ActionColumn[];
-  // 操作栏是否固定在右侧
-  actionColumnFixed?: boolean;
-  // 是否显示分页
-  showPagination?: boolean;
-  // 是否显示序号
-  showIndex?: boolean;
-  // 是否显示新增行数据
-  showAddRow?: boolean;
-  // 是否要编辑行
-  showEditRow?: boolean;
-  // 当前数据用什么作为key
-  rowKey?: string;
-  // 操作栏的宽度
-  actionColumnWidth?: number;
-  // 分页的数据
-  pagination?: {
-    current: number; // 当前页码
-    pageSize: number; // 每页显示条数
-    total: number; // 总条数
-  };
-  // 分页或者排序发生变更，重新获取数据
-  onPageChange?: (page: number, pageSize: number) => void;
-  // 当前表格是否有数据
-  dataEmptyFlag?: boolean;
-  // 当数据发生变化，同步修改数据源
-  onDataSourceChange?: (dataSource: any[]) => void;
-  // 可编辑表格的formRef
-  formRef?: React.Ref<{ submit: () => void }>; // 简化类型，只暴露submit方法
-}
 
 // 数据表业务表结构的字段定义信息
 export interface TableFieldInfo {
@@ -87,9 +10,9 @@ export interface TableFieldInfo {
   // 字段描述
   fieldDescription: string;
   // 是否为系统字段,1:系统字段;-1:非系统字段
-  systemFieldFlag?: boolean;
+  systemFieldFlag: boolean;
   // 字段类型：1:String(VARCHAR(255));2:Integer(INT);3:Number(DECIMAL(20,6));4:Boolean(TINYINT(1));5:Date(DATETIME);6:PrimaryKey(BIGINT);7:MEDIUMTEXT(MEDIUMTEXT)
-  fieldType: number;
+  fieldType: TableFieldTypeEnum;
   // 是否可为空,true:可空;false:非空
   nullableFlag: boolean;
   // 默认值
@@ -100,6 +23,8 @@ export interface TableFieldInfo {
   enabledFlag: boolean;
   // 字段顺序
   sortIndex: number;
+  // 自定义字段，用于table操作
+  isNew?: boolean;
 }
 
 // 查询表定义详情

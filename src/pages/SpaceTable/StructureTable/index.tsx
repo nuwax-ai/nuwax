@@ -1,358 +1,222 @@
 // 可以编辑的表格
-import type {
-  MyTableProp,
-  SelectOptions,
-  TableColumn,
-} from '@/types/interfaces/dataTable';
+import LabelStar from '@/components/LabelStar';
+import {
+  MEDIUM_TEXT_STRING,
+  SHORT_TEXT_STRING,
+  TABLE_FIELD_STRING_LIST,
+  TABLE_FIELD_TYPE_LIST,
+} from '@/constants/dataTable.constants';
+import { TableFieldTypeEnum } from '@/types/enums/dataTable';
+import type { TableFieldInfo } from '@/types/interfaces/dataTable';
 import { DeleteOutlined } from '@ant-design/icons';
 import {
   Button,
   Checkbox,
   DatePicker,
-  Form,
   Input,
   InputNumber,
   Select,
   Table,
+  TableColumnsType,
 } from 'antd';
-import { AnyObject } from 'antd/es/_util/type';
-import dayjs from 'dayjs';
-import React, { useEffect, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import React from 'react';
 import './index.less';
-export interface EditTableRef {
-  submit: () => void;
-  handleAddRow: (obj?: AnyObject) => void;
-  resetFields: () => void;
+
+export interface StructureTableProps {
+  tableData: TableFieldInfo[]; // 表格数据
+  scrollHeight: number; // 表格高度
 }
 
-const StructureTable: React.FC<MyTableProp> = ({
-  columns,
+const StructureTable: React.FC<StructureTableProps> = ({
   tableData,
-  showIndex,
-  rowKey = 'id',
-  actionColumnWidth = 160,
-  pagination,
-  dataEmptyFlag,
-  onDataSourceChange,
-  formRef,
   scrollHeight,
 }) => {
-  // 使用外部传入的 tableData 作为表格的初始值
-  const [dataSource, setDataSource] = useState(tableData);
-  //
-  const [form] = Form.useForm();
-
-  //   新增行
-  const handleAddRow = (obj?: AnyObject) => {
-    let newRow: Record<string, any> = {
-      [rowKey]: `newRow${uuidv4()}`,
-      isNew: true, // 标记为新增行
-      systemFieldFlag: false,
-    };
-    columns.forEach((column) => {
-      switch (column.type) {
-        case 'checkbox':
-          newRow[column.dataIndex] = false;
-          break;
-        case 'tag':
-        case 'text':
-        case 'date':
-          newRow[column.dataIndex] = '';
-          break;
-        default:
-          newRow[column.dataIndex] = '';
-      }
-    });
-    newRow = { ...newRow, ...obj };
-    setDataSource([...dataSource, newRow]);
-
-    // 滚动到表格底部
-    setTimeout(() => {
-      const tableBody = document.querySelector('.ant-table-body');
-      if (tableBody) {
-        tableBody.scrollTop = tableBody.scrollHeight;
-      }
-    }, 0);
-  };
-  // 删除行
-  const handleDeleteRow = (key: string) => {
-    const newArr = dataSource.filter((record) => {
-      console.log(record[rowKey] === key);
-      return record[rowKey] !== key;
-    });
-    // console.log(key,newArr);
-    setDataSource(newArr);
-    form.setFieldsValue({ tableData: newArr });
-  };
-
-  // 提交表单数据
-  const onFinish = (values: AnyObject) => {
-    if (onDataSourceChange) {
-      // 合并表单数据和dataSource
-      const mergedData = dataSource.map((item, index) => ({
-        ...item,
-        ...values.tableData?.[index],
-      }));
-      mergedData.forEach((item, index) => {
-        item.sortIndex = index;
-      });
-      onDataSourceChange(mergedData);
-    }
-  };
-
-  const mergedColumns = columns.map((col) => {
-    if (!col.editable) {
-      return col;
-    }
-    return {
-      ...col,
-      onCell: (record: AnyObject) => ({
-        record: {
-          ...record,
-          type: col.type,
-          isNew: record.isNew || false,
-        },
-        dataIndex: col.dataIndex,
-        title: col.title,
-        editing: dataEmptyFlag ? record.isNew : true,
-      }),
-    };
-  });
-
-  const getValue = (
-    item: TableColumn,
-    record: AnyObject,
-    value: string | number | boolean,
-  ) => {
-    if (item.map && typeof value !== 'boolean') {
-      return item.map[value] || '--';
-    }
-    if (item.defaultValue && record?.systemFieldFlag) {
-      return item.defaultValue;
-    }
-    return value || '--';
-  };
-
-  const getItemType = (
-    type: string,
-    name: string,
-    options?: SelectOptions[],
-    // placeholder?: string,
-  ) => {
-    switch (type) {
-      case 'checkbox':
-        return <Checkbox />;
-      case 'select':
-        return <Select options={options} placeholder={'请选择'} />;
+  // 获取字段类型
+  const getFieldType = (fieldType: TableFieldTypeEnum) => {
+    switch (fieldType) {
+      case TableFieldTypeEnum.String:
+      case TableFieldTypeEnum.MEDIUMTEXT:
+        return 'String';
+      case TableFieldTypeEnum.Integer:
+      case TableFieldTypeEnum.PrimaryKey:
+        return 'Integer';
+      case TableFieldTypeEnum.Number:
+        return 'Number';
+      case TableFieldTypeEnum.Boolean:
+        return 'Boolean';
+      case TableFieldTypeEnum.Date:
+        return 'Date';
       default:
-        return <Input placeholder={`请输入${name}`} />;
+        return '--';
     }
   };
 
-  const getItem = (
-    index: number,
-    item: TableColumn,
-    record: AnyObject,
-    fieldValue: number,
-  ) => {
-    if (
-      item.shouldUpdate?.value !== undefined &&
-      fieldValue === item.shouldUpdate.value
-    ) {
-      return (
-        <Form.Item
-          name={[index, item.dataIndex]}
-          style={{ margin: 0 }}
-          valuePropName={item.type === 'checkbox' ? 'checked' : 'value'}
-          initialValue={record[item.dataIndex]}
-        >
-          {getItemType(item.type, item.title, item.options)}
-        </Form.Item>
-      );
+  // 获取数据长度
+  const getStringLength = (fieldType: TableFieldTypeEnum) => {
+    switch (fieldType) {
+      case TableFieldTypeEnum.String:
+        return SHORT_TEXT_STRING;
+      case TableFieldTypeEnum.MEDIUMTEXT:
+        return MEDIUM_TEXT_STRING;
+      default:
+        return '--';
     }
-    if (item.shouldUpdate?.value === undefined) {
-      const componentMap: Record<number, JSX.Element> = {
-        1: <Input placeholder="请输入" />,
-        2: <InputNumber placeholder="仅支持输入数字，否则不会保存" />,
-        3: <InputNumber placeholder="仅支持输入数字，否则不会保存" />,
-        4: <Checkbox />,
-        5: <DatePicker placeholder="请选择时间" />,
-        6: <Input placeholder="请输入" />,
-      };
-      return (
-        <Form.Item
-          name={[index, item.dataIndex]}
-          style={{ margin: 0 }}
-          valuePropName={item.type === 'checkbox' ? 'checked' : 'value'}
-          initialValue={
-            fieldValue === 5 &&
-            record[item.dataIndex] &&
-            record[item.dataIndex].length > 0
-              ? dayjs(record[item.dataIndex])
-              : record[item.dataIndex]
-          }
-        >
-          {componentMap[fieldValue] || (
-            <Input placeholder={`请输入${item.title}`} />
+  };
+
+  // 获取默认值
+  const getDefaultValue = (record: TableFieldInfo) => {
+    const { fieldType, systemFieldFlag, defaultValue } = record;
+    if (systemFieldFlag) {
+      return '系统变量';
+    } else {
+      switch (fieldType) {
+        case TableFieldTypeEnum.String:
+        case TableFieldTypeEnum.MEDIUMTEXT:
+          return <Input placeholder="请输入" defaultValue={defaultValue} />;
+        case TableFieldTypeEnum.Integer:
+        case TableFieldTypeEnum.Number:
+        case TableFieldTypeEnum.PrimaryKey:
+          return (
+            <InputNumber placeholder="请输入" defaultValue={defaultValue} />
+          );
+        case TableFieldTypeEnum.Boolean:
+          return <Checkbox />;
+        case TableFieldTypeEnum.Date:
+          return (
+            <DatePicker placeholder="请选择时间" defaultValue={defaultValue} />
+          );
+        default:
+          return defaultValue || '--';
+      }
+    }
+  };
+
+  // 入参配置columns
+  const inputColumns: TableColumnsType<TableFieldInfo> = [
+    {
+      title: '序号',
+      dataIndex: 'serial',
+      render: (_, __, index) => <span>{index + 1}</span>,
+    },
+    {
+      title: <LabelStar label="字段名" />,
+      dataIndex: 'fieldName',
+      render: (value, record) => (
+        <>
+          {!record.isNew ? (
+            <span>{value}</span>
+          ) : (
+            <Input
+              placeholder="请输入字段名"
+              // value={value}
+              // onChange={(e) =>
+              //   handleInputValue(record.key, 'description', e.target.value)
+              // }
+            />
           )}
-        </Form.Item>
-      );
-    }
-    return <span>--</span>;
-  };
+        </>
+      ),
+    },
+    {
+      title: '字段详细描述',
+      dataIndex: 'fieldDescription',
+      render: (value, record) =>
+        record.systemFieldFlag ? (
+          <span>{value}</span>
+        ) : (
+          <Input
+            placeholder="请输入字段详细描述"
+            // value={value}
+            // onChange={(e) =>
+            //   handleInputValue(record.key, 'description', e.target.value)
+            // }
+          />
+        ),
+    },
+    {
+      title: '参数类型',
+      dataIndex: 'fieldType',
+      render: (value, record) =>
+        !record.isNew ? (
+          <span>{getFieldType(value)}</span>
+        ) : (
+          <Select options={TABLE_FIELD_TYPE_LIST} />
+        ),
+    },
+    {
+      title: '数据长度',
+      dataIndex: 'dataLength',
+      key: 'dataLength',
+      render: (_, record) =>
+        !record.isNew ? (
+          <span>{getStringLength(record.fieldType)}</span>
+        ) : (
+          <Select options={TABLE_FIELD_STRING_LIST} />
+        ),
+    },
+    {
+      title: '是否必须',
+      dataIndex: 'nullableFlag',
+      key: 'nullableFlag',
+      align: 'center',
+      render: (_, record) => <Checkbox disabled={record.systemFieldFlag} />,
+    },
+    {
+      title: '是否唯一',
+      dataIndex: 'uniqueFlag',
+      key: 'uniqueFlag',
+      align: 'center',
+      render: (value, record) => <Checkbox disabled={record.systemFieldFlag} />,
+    },
+    {
+      title: '是否启用',
+      dataIndex: 'enabledFlag',
+      key: 'enabledFlag',
+      align: 'center',
+      render: (value, record) => <Checkbox disabled={record.systemFieldFlag} />,
+    },
+    {
+      title: '默认值',
+      dataIndex: 'defaultValue',
+      key: 'defaultValue',
+      render: (_, record) => getDefaultValue(record),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 80,
+      align: 'center',
+      render: (_, record) => (
+        // <DeleteOutlined />
+        <Button
+          type="text"
+          disabled={!record.isNew}
+          // onClick={() => handleDeleteRow(record[rowKey])}
+          icon={<DeleteOutlined />}
+        ></Button>
+      ),
+    },
+  ];
 
-  useEffect(() => {
-    // 处理传入的tableData，添加row_key_chao字段
-    const processedTableData = tableData.map((item) => ({
-      ...item,
-      [rowKey]: item.id,
-    }));
-    setDataSource(processedTableData);
-  }, [tableData]);
-
-  const resetFields = () => {
-    form.resetFields();
-  };
-
-  // 暴露form给父组件
-  React.useImperativeHandle(formRef, () => ({
-    submit: () => form.submit(),
-    handleAddRow,
-    resetFields,
-  }));
   return (
     <div className="dis-col edit-table">
       <div
         className="flex-1"
         style={{ maxHeight: scrollHeight, overflow: 'hidden' }}
       >
-        <Form form={form} onFinish={onFinish} component={false}>
-          <Form.List name="tableData">
-            {() => (
-              <Table
-                dataSource={dataSource}
-                rowKey={rowKey}
-                pagination={false}
-                scroll={{
-                  x: true,
-                  y:
-                    dataSource.length * 54 > scrollHeight - 124
-                      ? scrollHeight - 124
-                      : undefined,
-                }}
-              >
-                {/* 序号列 */}
-                {showIndex && (
-                  <Table.Column
-                    title={'序号'}
-                    width={70}
-                    dataIndex="serial"
-                    render={(_, __, index) => {
-                      const current = pagination?.current || 1;
-                      const pageSize = pagination?.pageSize || 10;
-                      return (current - 1) * pageSize + index + 1;
-                    }}
-                  />
-                )}
-                {/* 显示的列 */}
-                {mergedColumns.map((item) => (
-                  <Table.Column
-                    ellipsis
-                    width={item.width}
-                    key={item.dataIndex}
-                    title={item.title}
-                    dataIndex={item.dataIndex}
-                    render={(value, record, index) => {
-                      const shouldEdit =
-                        (item.edit || !dataEmptyFlag || record?.isNew) &&
-                        !record?.systemFieldFlag;
-                      if (shouldEdit) {
-                        return (
-                          <>
-                            {item.shouldUpdate ? (
-                              <Form.Item
-                                noStyle
-                                shouldUpdate={(prevValues, currentValues) => {
-                                  return (
-                                    prevValues.tableData[index]?.[
-                                      item.shouldUpdate!.name
-                                    ] !==
-                                    currentValues.tableData[index]?.[
-                                      item.shouldUpdate!.name
-                                    ]
-                                  );
-                                }}
-                              >
-                                {({ getFieldValue }) => {
-                                  const fieldValue = getFieldValue([
-                                    'tableData',
-                                    index,
-                                    'fieldType',
-                                  ]);
-
-                                  return getItem(
-                                    index,
-                                    item,
-                                    record,
-                                    fieldValue,
-                                  );
-                                }}
-                              </Form.Item>
-                            ) : (
-                              <Form.Item
-                                name={[index, item.dataIndex]}
-                                style={{ margin: 0 }}
-                                valuePropName={
-                                  item.type === 'checkbox' ? 'checked' : 'value'
-                                }
-                                initialValue={record[item.dataIndex]}
-                              >
-                                {getItemType(
-                                  item.type,
-                                  item.title,
-                                  item.options,
-                                )}
-                              </Form.Item>
-                            )}
-                          </>
-                        );
-                      } else {
-                        if (item.type === 'checkbox') {
-                          return (
-                            <Checkbox
-                              checked={value}
-                              disabled={!record.isNew}
-                            />
-                          );
-                        } else {
-                          return <span>{getValue(item, record, value)}</span>;
-                        }
-                      }
-                    }}
-                  />
-                ))}
-                {/* 操作列 */}
-                <Table.Column
-                  title={'操作'}
-                  dataIndex="action"
-                  width={actionColumnWidth}
-                  render={(_, record) => (
-                    <Button
-                      type="text"
-                      disabled={
-                        dataEmptyFlag ? !record.isNew : record?.systemFieldFlag
-                      }
-                      onClick={() => handleDeleteRow(record[rowKey])}
-                      title={'删除'}
-                      icon={<DeleteOutlined />}
-                    ></Button>
-                  )}
-                ></Table.Column>
-              </Table>
-            )}
-          </Form.List>
-        </Form>
+        <Table
+          dataSource={tableData}
+          columns={inputColumns}
+          rowKey={'id'}
+          pagination={false}
+          scroll={{
+            x: true,
+            y:
+              tableData.length * 54 > scrollHeight - 124
+                ? scrollHeight - 124
+                : undefined,
+          }}
+        />
       </div>
     </div>
   );
