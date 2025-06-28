@@ -422,9 +422,11 @@ const SpaceKnowledge: React.FC = () => {
         style={{
           width: '100%',
           flex: 1,
-          height: '100%',
+          height:
+            docType === KnowledgeDocTypeEnum.DOC ? 'calc(100% - 88px)' : '100%',
           padding: '0 20px',
           margin: '0',
+          display: 'flex',
         }}
       >
         {docType === KnowledgeDocTypeEnum.DOC
