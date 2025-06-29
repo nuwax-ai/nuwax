@@ -435,15 +435,16 @@ export interface SubmitButtonProps {
 // 上传文件信息
 export interface UploadFileInfo {
   url: string;
-  key: string;
-  fileName: string;
-  mimeType: string;
+  name: string;
+  type: string;
+  key?: string;
   size: number;
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
   percent?: number;
   status?: UploadFileStatus;
   uid: string;
+  response?: any;
 }
 
 // 分页输入参数

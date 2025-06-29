@@ -20,8 +20,16 @@ import type {
   SegmentConfigModel,
 } from '@/types/interfaces/knowledge';
 import { getProgressStatus } from '@/utils/common';
-import { DeleteOutlined } from '@ant-design/icons';
-import { Button, Form, message, Modal, Progress, Steps } from 'antd';
+import { CloseCircleFilled, DeleteOutlined } from '@ant-design/icons';
+import {
+  Button,
+  Form,
+  message,
+  Modal,
+  Progress,
+  Steps,
+  UploadProps,
+} from 'antd';
 import classNames from 'classnames';
 import omit from 'lodash/omit';
 import React, {
@@ -72,7 +80,9 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
 
   useEffect(() => {
     setUploadFileList(
-      allUploadFileList.filter((info) => info.status === UploadFileStatus.done),
+      allUploadFileList.filter(
+        (info) => info.status === UploadFileStatus.done && info.key && info.url,
+      ),
     );
   }, [allUploadFileList]);
 
@@ -115,7 +125,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
   const handleOk = async () => {
     const fileList =
       uploadFileList?.map((info) => ({
-        name: info.fileName,
+        name: info.name,
         docUrl: info.url,
         fileSize: info.size,
       })) || [];
@@ -280,26 +290,25 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
   };
 
   // 进度回调
-  const handleUploadChange = (info: any) => {
+  const handleUploadChange: UploadProps['onChange'] = (info) => {
+    const { fileList } = info;
     setAllUploadFileList(
-      info.fileList
-        .filter((item: any) => item.status !== UploadFileStatus.removed)
-        .map((item: any) => {
+      fileList
+        .filter((item) => item.status !== UploadFileStatus.removed)
+        .map((item) => {
           const data = item.response?.data || {};
           return {
-            fileName: data?.fileName || item.name,
-            status: item.status as UploadFileStatus,
-            size: item.size,
-            url: data?.url || '',
             key: data?.key || '',
-            mimeType: data?.mimeType || '',
-            width: data?.width || 0,
-            height: data?.height || 0,
+            name: data?.fileName || item.name || '',
+            size: data?.size || item.size || 0,
+            url: data?.url || item.url || '',
+            type: data?.mimeType || item.type || '',
             uid: item.uid,
+            status: (item.status as UploadFileStatus) || UploadFileStatus.done,
             percent: item.percent,
-          };
-        })
-        .reverse(),
+            response: item.response,
+          } as UploadFileInfo;
+        }),
     );
   };
   const getDisplayFileName = useCallback((name: string) => {
@@ -330,6 +339,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
             <UploadFile
               onChange={handleUploadChange}
               multiple={true}
+              fileList={allUploadFileList}
               height={200}
             />
             <div className={cx(styles.fileList)}>
@@ -341,8 +351,15 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
                       height: '100%',
                     }}
                   >
-                    <span>
-                      {getDisplayFileName(info?.fileName)} (
+                    <span
+                      style={{
+                        color:
+                          info?.status === UploadFileStatus.error
+                            ? '#e53241'
+                            : 'rgba(0, 0, 0, 0.88)',
+                      }}
+                    >
+                      {getDisplayFileName(info?.name)} (
                       {`${info?.size / 1000} kb`})
                     </span>
 
@@ -356,13 +373,13 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
                       type="circle"
                       status={getStatus(info)}
                       size={20}
-                      style={{
-                        position: 'absolute',
-                        top: '50%',
-                        right: 50,
-                        transform: 'translateY(-50%)',
-                      }}
+                      className={styles['progress-upload-file']}
                     />
+                  )}
+                  {info?.status === UploadFileStatus.error && (
+                    <div className={styles['progress-upload-file-error']}>
+                      <CloseCircleFilled />
+                    </div>
                   )}
                 </div>
               ))}
