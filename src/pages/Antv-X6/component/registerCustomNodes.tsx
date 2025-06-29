@@ -23,7 +23,7 @@ import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
 import { Tag } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import '../index.less';
 import './registerCustomNodes.less';
 import RunResult from './runResult';
@@ -167,7 +167,9 @@ const NodeRunResult: React.FC<{
     (item) => item?.status === RunResultStatusEnum.FINISHED,
   );
   const isExecuting = data.some(
-    (item) => item?.status === RunResultStatusEnum.EXECUTING,
+    (item) =>
+      item?.status === RunResultStatusEnum.EXECUTING ||
+      item?.status === RunResultStatusEnum.STOP_WAIT_ANSWER,
   );
 
   // 处理页码变化
@@ -207,14 +209,36 @@ const NodeRunResult: React.FC<{
     setPageTotal(innerData.length);
     setCurrent(1);
   }, [innerData]);
+  const genRunResultTitle = useCallback(() => {
+    const statusList = data.map((item) => item?.status);
+
+    switch (true) {
+      case statusList.some(
+        (status) => status === RunResultStatusEnum.STOP_WAIT_ANSWER,
+      ):
+        return '请答复问题';
+      case statusList.some(
+        (status) => status === RunResultStatusEnum.EXECUTING,
+      ):
+        return '运行中';
+      case statusList.some((status) => status === RunResultStatusEnum.FAILED):
+        return '运行失败';
+      case statusList.every(
+        (status) => status === RunResultStatusEnum.FINISHED,
+      ):
+        return '运行成功';
+      default:
+        return '运行失败';
+    }
+  }, [data]);
 
   if (data?.length === 0) {
     return null;
   }
-
   return (
     <RunResult
       success={success}
+      title={genRunResultTitle()}
       loading={isExecuting}
       collapsible={!isExecuting}
       time={`${time}s`}

@@ -70,6 +70,10 @@ interface RunResultProps {
    * 是否正在运行
    */
   loading?: boolean;
+  /**
+   * 标题
+   */
+  title?: string;
 }
 const DEFAULT_SHOW_MAX_PAGE = 5;
 
@@ -90,6 +94,7 @@ const RunResult: React.FC<RunResultProps> = ({
   outputResult = {},
   collapsible = true,
   expanded = false,
+  title = '',
   onExpandChange,
 }) => {
   const [collapsed, setCollapsed] = useState(!expanded);
@@ -203,7 +208,7 @@ const RunResult: React.FC<RunResultProps> = ({
             />
           )}
           <span className={cx(styles.statusText)}>
-            {loading ? '运行中' : success ? '运行成功' : '运行失败'}
+            {title || (loading ? '运行中' : success ? '运行成功' : '运行失败')}
           </span>
           {!loading && <span className={cx(styles.runTime)}>{time}</span>}
         </div>
