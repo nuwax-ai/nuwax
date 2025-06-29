@@ -19,10 +19,14 @@ export const ExpandableInputTextarea: React.FC<
   onOptimizeClick,
 }) => {
   const [uuid, setUuid] = useState('');
+  const { setExpanded, expanded } = useModel('workflow'); // 添加本地状态
   useEffect(() => {
     setUuid(uuidv4());
+    return () => {
+      setUuid('');
+      setExpanded('');
+    };
   }, []);
-  const { setExpanded, expanded } = useModel('workflow'); // 添加本地状态
 
   return (
     <div>
@@ -60,16 +64,17 @@ export const ExpandableInputTextarea: React.FC<
       </Form.Item>
 
       {/* 如果有展开，就要调用展开的组件 */}
-      {expanded === uuid && ( // 使用本地状态控制显示
-        <ExpandTextArea
-          title={title}
-          inputFieldName={inputFieldName}
-          marginRight={388}
-          placeholder={placeholder}
-          visible={expanded === uuid}
-          onClose={() => setExpanded('')}
-        />
-      )}
+      {expanded &&
+        expanded === uuid && ( // 使用本地状态控制显示
+          <ExpandTextArea
+            title={title}
+            inputFieldName={inputFieldName}
+            marginRight={388}
+            placeholder={placeholder}
+            visible={expanded === uuid}
+            onClose={() => setExpanded('')}
+          />
+        )}
     </div>
   );
 };
