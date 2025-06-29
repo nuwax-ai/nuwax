@@ -1660,7 +1660,7 @@ const Workflow: React.FC = () => {
 
   // 更新画布中的节点
   const handleGraphUpdateByForm = useCallback(
-    (values: any) => {
+    (changedValues: any, fullFormValues: any) => {
       const nodeId = getWorkflow('drawerForm').id;
       if (!graphRef.current || !nodeId || nodeId === FoldFormIdEnum.empty)
         return;
@@ -1671,9 +1671,21 @@ const Workflow: React.FC = () => {
       const oldNodeData = cell.getData() as ChildNode;
       if (oldNodeData) {
         const { nodeConfig, ...rest } = oldNodeData;
+        const fullChangedValues = Object.keys(changedValues).reduce(
+          (acc: Record<string, any>, key) => {
+            if (typeof key === 'string' && key) {
+              acc[key] = fullFormValues[key];
+            }
+            return acc;
+          },
+          {} as Record<string, any>,
+        );
         graphRef.current.graphUpdateNode(nodeId, {
           ...rest,
-          nodeConfig: mergeObject(cloneDeep(nodeConfig), values) as NodeConfig,
+          nodeConfig: mergeObject(
+            cloneDeep(nodeConfig),
+            fullChangedValues,
+          ) as NodeConfig,
         });
       }
     },
@@ -1742,7 +1754,7 @@ const Workflow: React.FC = () => {
             onFinish={doSubmitFormData}
             onValuesChange={(values) => {
               setIsModified(true);
-              handleGraphUpdateByForm(values);
+              handleGraphUpdateByForm(values, form.getFieldsValue(true));
             }}
           >
             <NodePanelDrawer params={foldWrapItem} />
