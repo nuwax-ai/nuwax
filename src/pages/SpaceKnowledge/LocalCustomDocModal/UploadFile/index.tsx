@@ -3,7 +3,7 @@ import {
   UPLOAD_FILE_SUFFIX,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import type { FileType, UploadFileInfo } from '@/types/interfaces/common';
+import type { FileType } from '@/types/interfaces/common';
 import type { UploadFileProps } from '@/types/interfaces/knowledge';
 import { UploadOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
@@ -20,6 +20,7 @@ const UploadFile: React.FC<UploadFileProps> = ({
   onUploadSuccess,
   beforeUpload,
   onChange,
+  fileList,
   multiple = false,
   height = 386,
 }) => {
@@ -31,7 +32,7 @@ const UploadFile: React.FC<UploadFileProps> = ({
     }
     if (status === 'done') {
       // Get this url from response in real world.
-      const data: UploadFileInfo = info.file.response?.data;
+      const data = info.file.response?.data;
       // Get this url from response in real world.
       onUploadSuccess?.(data);
     }
@@ -69,6 +70,7 @@ const UploadFile: React.FC<UploadFileProps> = ({
         action={UPLOAD_FILE_ACTION}
         onChange={handleChange}
         multiple={multiple}
+        fileList={fileList}
         headers={{
           Authorization: token ? `Bearer ${token}` : '',
         }}

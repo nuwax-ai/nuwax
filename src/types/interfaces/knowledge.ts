@@ -481,6 +481,7 @@ export interface UploadFileProps {
   onChange?: (info: UploadChangeParam<UploadFile>) => void;
   multiple?: boolean;
   height?: number | string | undefined;
+  fileList?: UploadFileInfo[];
 }
 
 // 创建设置、分段设置组件

@@ -26,22 +26,16 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
         <div
           key={file.uid}
           className={cx(styles['file-box'], 'flex', 'items-center')}
-          style={{ position: 'relative' }}
         >
           {/*如果文件是图片，则显示图片，否则显示文档默认图片*/}
           <img
             src={
-              file?.mimeType?.includes('image/')
-                ? file?.url
-                : (docImage as string)
+              file?.type?.includes('image/') ? file?.url : (docImage as string)
             }
             alt=""
           />
-          <div
-            className={cx('flex-1', 'overflow-hide')}
-            style={{ paddingRight: 20 }}
-          >
-            <h4 className={cx('text-ellipsis')}>{file?.fileName}</h4>
+          <div className={cx('flex-1', 'overflow-hide', styles.info)}>
+            <h4 className={cx('text-ellipsis')}>{file?.name}</h4>
             <span className={styles.size}>{formatBytes(file?.size)}</span>
           </div>
           <CloseCircleOutlined
@@ -53,12 +47,7 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
             percent={Math.round(file?.percent || 0)}
             status={getStatus(file)}
             size={30}
-            style={{
-              position: 'absolute',
-              right: 6,
-              top: '50%',
-              transform: 'translateY(-50%)',
-            }}
+            className={styles['progress-upload-file']}
           />
         </div>
       ))}

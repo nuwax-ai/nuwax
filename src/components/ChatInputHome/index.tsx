@@ -44,7 +44,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   useEffect(() => {
     setFiles(
-      uploadFiles.filter((item) => item.status === UploadFileStatus.done),
+      uploadFiles.filter(
+        (item) => item.status === UploadFileStatus.done && item.url && item.key,
+      ),
     );
   }, [uploadFiles]);
 
@@ -102,22 +104,21 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     const { fileList } = info;
     setUploadFiles(
       fileList
+        .filter((item) => item.status !== UploadFileStatus.removed)
         .map((item) => {
           const data = item.response?.data || {};
           return {
-            fileName: data?.fileName || item.name,
-            size: item.size || 0,
-            url: data?.url || '',
             key: data?.key || '',
-            mimeType: data?.mimeType || '',
-            width: data?.width || 0,
-            height: data?.height || 0,
+            name: data?.fileName || item.name || '',
+            size: data?.size || item.size || 0,
+            url: item.url || data?.url || '',
+            type: data?.mimeType || item.type || '',
             uid: item.uid,
-            status: item.status as UploadFileStatus,
+            status: (item.status as UploadFileStatus) || UploadFileStatus.done,
             percent: item.percent,
-          };
-        })
-        .reverse(),
+            response: item.response,
+          } as UploadFileInfo;
+        }),
     );
   };
 
@@ -181,6 +182,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             disabled={wholeDisabled}
             onChange={handleChange}
             multiple={true}
+            fileList={uploadFiles}
             headers={{
               Authorization: token ? `Bearer ${token}` : '',
             }}

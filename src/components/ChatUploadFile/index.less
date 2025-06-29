@@ -1,26 +1,20 @@
 @import '@/styles/color';
 
 .files-container {
-  display: grid;
-  // 不换行，超出滚动
-  display: flex;
-  flex-wrap: nowrap;
-  // grid-template-rows: repeat(3, minmax(0, 1fr));
-
+  width: 100%;
   gap: 16px;
   padding: 10px 0;
   border-bottom: 1px solid @GRAY01;
-  overflow-x: auto;
 
   .file-box {
     width: 200px;
-    position: relative;
     padding: 6px 34px 6px 6px;
     background-color: @WHITE04;
     height: 62px;
     border-radius: 10px;
     font-size: 14px;
     color: @BLANK24;
+    position: relative;
 
     &:hover {
       .del {
@@ -50,9 +44,42 @@
       border-radius: 10px;
     }
 
+    .info {
+      padding-right: 20px;
+      width: 105px;
+    }
+
     .size {
       color: @GRAY05;
-      font-size: 12px;
+      font-size: 10px;
     }
+
+    .progress-upload-file {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+
+      :global {
+        .ant-progress-text {
+          font-size: 9px;
+        }
+      }
+    }
+  }
+}
+@media screen and (max-width: 720px) {
+  .files-container {
+    // 不换行，超出滚动
+    display: grid;
+  }
+}
+
+@media screen and (min-width: 721px) {
+  .files-container {
+    // 不换行，超出滚动
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
   }
 }
