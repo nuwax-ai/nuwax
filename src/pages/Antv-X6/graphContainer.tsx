@@ -191,8 +191,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         if (needUpdateNodes(newData)) {
           // 需要更新端口配置的节点
           const newPorts = generatePorts(newData);
-          console.log('graphUpdateNode:newPorts', newPorts);
-
           if (newData.type === NodeTypeEnum.QA) {
             // 问答节点
             const { width, height } = getNodeSize({
