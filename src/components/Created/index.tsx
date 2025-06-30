@@ -106,7 +106,7 @@ const Created: React.FC<CreatedProp> = ({
     } else {
       setRenderList(list);
     }
-  }, [list, search, selected.key, doSearching.list, doSearching.searching]);
+  }, [list, selected.key, doSearching.list, doSearching.searching]);
 
   // 左侧菜单栏
   const items: MenuItem[] = [
@@ -207,12 +207,15 @@ const Created: React.FC<CreatedProp> = ({
         page: _res.data.current,
         total: _res.data.total,
       }));
+      setList((prev) => {
+        const newList =
+          params.page === 1
+            ? [..._res.data.records]
+            : [...prev, ..._res.data.records];
 
-      setList((prev) =>
-        params.page === 1
-          ? [..._res.data.records]
-          : [...prev, ..._res.data.records],
-      );
+        setDoSearching({ ...doSearching, list: newList }); //同步更新缓存列表
+        return newList;
+      });
     } catch (error) {
       isRequesting.current = false;
       setLoading(false);
@@ -575,7 +578,7 @@ const Created: React.FC<CreatedProp> = ({
             }}
             onPressEnter={(event) => {
               if (event.key === 'Enter') {
-                setDoSearching({ list: list, searching: true });
+                setDoSearching({ ...doSearching, searching: true });
                 onSearch((event.currentTarget as HTMLInputElement).value);
               }
             }}
