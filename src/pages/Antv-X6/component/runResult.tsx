@@ -119,9 +119,9 @@ const RunResult: React.FC<RunResultProps> = ({
   // 渲染分页按钮
   const renderPagination = () => {
     const pages = [];
-    const maxVisible = DEFAULT_SHOW_MAX_PAGE;
+    const theLength = Math.min(DEFAULT_SHOW_MAX_PAGE, total);
 
-    for (let i = 1; i <= maxVisible; i++) {
+    for (let i = 1; i <= theLength; i++) {
       pages.push(
         <span
           key={i}
