@@ -1,4 +1,6 @@
 import service, { UrlListType } from '@/services/modifyNode';
+import { NodeTypeEnum } from '@/types/enums/common';
+import { CreatedNodeItem } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
 import { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
 import { isEqual } from 'lodash';
@@ -144,9 +146,9 @@ export const changeNodeConfig = (
 ): NodeConfig => {
   // 根据 type 来返回不同的字段
   const filed =
-    type === 'QA'
+    type === NodeTypeEnum.QA
       ? 'options'
-      : type === 'IntentRecognition'
+      : type === NodeTypeEnum.IntentRecognition
       ? 'intentConfigs'
       : 'conditionBranchConfigs';
 
@@ -176,4 +178,24 @@ export const changeNodeConfig = (
     ...values,
     [filed]: updatedFiled,
   };
+};
+
+export const updateSkillComponentConfigs = (
+  values: CreatedNodeItem[],
+  data: CreatedNodeItem[],
+) => {
+  const updateValue = values.map((item: CreatedNodeItem) => {
+    const dataItem =
+      data?.find(
+        (i) =>
+          i.type === item.type &&
+          i.targetId === item.targetId &&
+          (i.toolName || '') === (item.toolName || ''),
+      ) || {};
+    return {
+      ...item,
+      ...dataItem,
+    };
+  });
+  return updateValue;
 };

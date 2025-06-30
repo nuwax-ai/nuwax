@@ -18,29 +18,45 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading, ...restProps }) => {
   const { message } = App.useApp();
   const form = Form.useFormInstance();
 
-  const handleChange: any = (info: any) => {
+  const handleChange: any = (info: any, isMultiple: boolean) => {
     if (info.file.status === 'uploading') return;
+    console.log('info', info);
     if (info.file.status === 'done') {
       try {
-        const data = info.file.response?.data;
-        form.setFieldValue(item.name, data?.url);
+        if (isMultiple) {
+          form.setFieldValue(
+            item.name,
+            info.fileList.map((file: any) => file.response?.data.url || ''),
+          );
+        } else {
+          const data = info.file.response?.data;
+          form.setFieldValue(item.name, data?.url);
+        }
       } catch (error) {
         message.warning(info.file.response?.message);
       }
     }
   };
 
+  const isMultiple = item.dataType?.startsWith('Array_') ?? false;
   switch (true) {
     case item.dataType?.includes('File'):
       return (
         <Upload
           {...restProps}
           action={UPLOAD_FILE_ACTION}
-          onChange={handleChange}
+          onChange={(info: any) => {
+            handleChange(info, isMultiple);
+          }}
+          multiple={isMultiple}
           headers={{
             Authorization: token ? `Bearer ${token}` : '',
           }}
-          accept={getAccept(item.dataType as DataTypeEnum)}
+          accept={getAccept(
+            isMultiple
+              ? (item.dataType?.replace('Array_', '') as DataTypeEnum)
+              : (item.dataType as DataTypeEnum),
+          )}
           disabled={loading}
         >
           <Button>上传文件</Button>

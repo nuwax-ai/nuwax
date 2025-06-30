@@ -61,3 +61,10 @@
     width: 14px;
   }
 }
+
+.no-hover-bg:global(.ant-btn) {
+  &:hover,
+  &:focus {
+    background-color: transparent !important;
+  }
+}

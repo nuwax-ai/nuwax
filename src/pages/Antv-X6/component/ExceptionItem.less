@@ -1,6 +1,10 @@
+@import '@/styles/color.less';
+@import '@/styles/themeVariables.less';
+
 .exceptionItem {
   width: 100%;
-  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px solid @GRAY08;
 
   &Header {
     display: flex;
@@ -17,11 +21,7 @@
     .exceptionItemTip {
       font-size: 14px;
       color: #8c8c8c;
-      cursor: help;
-
-      &:hover {
-        color: #1890ff;
-      }
+      cursor: pointer;
     }
   }
 
@@ -187,5 +187,9 @@
       padding: 0;
       border-radius: 2px;
     }
+  }
+
+  :global(.anticon-info-circle.ant-form-item-tooltip) {
+    cursor: pointer !important;
   }
 }

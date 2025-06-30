@@ -22,5 +22,5 @@ export interface GroupModelListItemProps {
 
 export interface ModelSettingProp {
   form: FormInstance;
-  maxTokensLimit?: number;
+  modelConfig?: any;
 }

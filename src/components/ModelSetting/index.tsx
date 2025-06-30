@@ -22,11 +22,12 @@ import {
   Select,
   Slider,
 } from 'antd';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'umi';
 import './index.less';
 import ModelListItem from './listItem/index';
 import { ModelSettingProp } from './type';
+
 // 类型定义需要移到组件外部或使用内联类型
 interface ContentProps {
   title: string;
@@ -39,16 +40,20 @@ interface ContentProps {
 }
 
 // 定义带图标的模型选择select
-export const GroupedOptionSelect: React.FC<ModelSettingProp> = ({ form }) => {
+export const GroupedOptionSelect: React.FC<ModelSettingProp> = ({
+  form,
+  modelConfig,
+}) => {
   const [modelList, setModelList] = useState<ModelListItemProps[]>([]);
   const [groupedOptionsData, setGroupedOptionsData] = useState<
     GroupModelItem[]
   >([]);
-
+  const [loading, setLoading] = useState(false);
   const { spaceId } = useParams();
   // 获取当前模型的列表数据
   const getModelList = async () => {
     try {
+      setLoading(true);
       const _res = await service.getModelListByWorkflowId({
         modelType: 'Chat',
         spaceId,
@@ -57,18 +62,23 @@ export const GroupedOptionSelect: React.FC<ModelSettingProp> = ({ form }) => {
       setGroupedOptionsData(groupModelsByApiProtocol(_res.data));
     } catch (error) {
       console.error('Failed to fetch graph data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   // 自定义渲染函数用于已选中的项
   const labelRender = (props: any) => {
     if (form.getFieldValue('modelId') === null) return null;
-    const _item = modelList.find((item) => item.id === Number(props.value));
-
-    if (_item === undefined) return;
+    const _item = [
+      ...modelList,
+      modelConfig?.id !== undefined
+        ? { id: modelConfig?.id, name: modelConfig?.name }
+        : {},
+    ].find((item) => item.id === Number(props.value));
     return (
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <span>{(_item as ModelListItemProps).name}</span>
+        <span>{(_item && (_item as ModelListItemProps).name) || ''}</span>
       </div>
     );
   };
@@ -86,10 +96,11 @@ export const GroupedOptionSelect: React.FC<ModelSettingProp> = ({ form }) => {
         labelRender={labelRender}
         placement={'bottomLeft'}
         popupMatchSelectWidth={false}
+        loading={loading}
       >
         {groupedOptionsData?.map((group, groupIndex: number) => {
           return (
-            <>
+            <React.Fragment key={`model-options-${groupIndex}`}>
               {group.options.map((opt, index) => (
                 <Select.Option
                   key={`${groupIndex}-${index}`}
@@ -114,7 +125,7 @@ export const GroupedOptionSelect: React.FC<ModelSettingProp> = ({ form }) => {
                   <ModelListItem item={opt} />
                 </Select.Option>
               ))}
-            </>
+            </React.Fragment>
           );
         })}
       </Select>
@@ -205,10 +216,7 @@ const Content: React.FC<ContentProps> = ({
 };
 
 // 定义模型的设置弹窗
-export const ModelSetting: React.FC<ModelSettingProp> = ({
-  form,
-  maxTokensLimit = 4093,
-}) => {
+export const ModelSetting: React.FC<ModelSettingProp> = ({ form }) => {
   const [showMore, setShowMore] = useState(true);
 
   // 使用useWatch监听mode变化
@@ -232,6 +240,21 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({
       });
     }
   };
+  const [currentMaxTokens, setCurrentMaxTokens] = useState<number>(4093);
+  const { spaceId } = useParams();
+  useEffect(() => {
+    const getModelList = async () => {
+      const { modelId } = form.getFieldsValue(true);
+      const _res = await service.getModelListByWorkflowId({
+        modelType: 'Chat',
+        spaceId,
+      });
+      setCurrentMaxTokens(
+        _res.data.find((item) => item.id === modelId)?.maxTokens || 4093,
+      );
+    };
+    getModelList();
+  }, []);
 
   return (
     <>
@@ -284,7 +307,7 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({
         <Content
           form={form}
           min={5}
-          max={maxTokensLimit}
+          max={currentMaxTokens}
           step={1}
           title={'最大回复长度'}
           configKey="maxTokens"
@@ -298,21 +321,21 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({
 // 定义模型模块
 export const ModelSelected: React.FC<ModelSettingProp> = ({
   form,
-  maxTokensLimit,
+  modelConfig,
 }) => {
   return (
     <div className="node-item-style">
       <div className="dis-sb">
         <span className="node-title-style">模型</span>
         <Popover
-          content={<ModelSetting form={form} maxTokensLimit={maxTokensLimit} />}
+          content={<ModelSetting form={form} />}
           trigger="click"
           placement="left"
         >
           <Button type="text" icon={<SettingOutlined />} size="small" />
         </Popover>
       </div>
-      <GroupedOptionSelect form={form} />
+      <GroupedOptionSelect form={form} modelConfig={modelConfig} />
     </div>
   );
 };

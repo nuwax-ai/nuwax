@@ -36,7 +36,7 @@ export function rootContainer(container: React.ReactElement) {
         algorithm: [],
       }}
     >
-      <App style={{ height: '100vh' }}>
+      <App style={{ height: '100%' }}>
         {/* 只有用户已登录时才启动事件轮询 */}
         <GlobalEventPolling />
         {container}

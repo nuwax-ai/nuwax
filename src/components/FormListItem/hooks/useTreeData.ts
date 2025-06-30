@@ -96,6 +96,24 @@ const addChildNodeToTree = (
 };
 
 /**
+ * 工具函数：确保树中每个节点都有有效的key
+ */
+const ensureValidKeys = (data: InputAndOutConfig[]): TreeNodeConfig[] => {
+  return data.map((node) => {
+    const nodeWithKey = {
+      ...node,
+      key: node.key || uuidv4(), // 如果没有key或key为null，生成新的uuid
+    } as TreeNodeConfig;
+
+    if (nodeWithKey.subArgs && nodeWithKey.subArgs.length > 0) {
+      nodeWithKey.subArgs = ensureValidKeys(nodeWithKey.subArgs);
+    }
+
+    return nodeWithKey;
+  });
+};
+
+/**
  * 树形数据管理Hook
  * @param params 初始参数数据
  * @param form 表单实例
@@ -112,8 +130,10 @@ export const useTreeData = (
 
   // 初始化和同步逻辑
   useEffect(() => {
-    setTreeData(params ? cloneDeep(params) : []);
-  }, [params]);
+    // 确保每个节点都有有效的key
+    const dataWithValidKeys = params ? ensureValidKeys(cloneDeep(params)) : [];
+    setTreeData(dataWithValidKeys);
+  }, []);
 
   /**
    * 通用更新树数据并同步到表单的函数
@@ -160,8 +180,10 @@ export const useTreeData = (
   // 更新树数据方法
   const updateTreeData = useCallback(
     (newData: TreeNodeConfig[]) => {
-      setTreeData(newData);
-      updateTreeDataAndForm(newData);
+      // 确保更新的数据中所有节点都有有效key
+      const validatedData = ensureValidKeys(newData);
+      setTreeData(validatedData);
+      updateTreeDataAndForm(validatedData);
     },
     [updateTreeDataAndForm],
   );

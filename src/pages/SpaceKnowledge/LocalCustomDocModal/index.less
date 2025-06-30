@@ -29,16 +29,24 @@
     }
   }
 
-  .file-box {
-    height: 40px;
-    padding: 0 10px;
-    margin-bottom: 10px;
-    color: @BLANK03;
-    border: 1px solid @GRAY01;
-    border-radius: 6px;
+  .fileList {
+    margin-top: 6px;
+    max-height: 160px;
+    padding: 0 12px;
+    overflow-y: auto;
 
-    &:last-child {
-      margin-bottom: 0;
+    .file-box {
+      position: relative;
+      height: 40px;
+      padding: 0 12px;
+      margin-top: 6px;
+      color: @BLANK03;
+      border: 1px solid @GRAY01;
+      border-radius: 6px;
+
+      &:first-child {
+        margin-top: 0;
+      }
     }
   }
 
@@ -61,5 +69,21 @@
       width: 120px;
       text-align: right;
     }
+  }
+
+  .progress-upload-file {
+    position: absolute;
+    right: 50px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .progress-upload-file-error {
+    position: absolute;
+    right: 52px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    color: @RED01;
   }
 }

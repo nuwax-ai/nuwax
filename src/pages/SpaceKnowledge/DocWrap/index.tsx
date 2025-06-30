@@ -25,7 +25,7 @@ const DocWrap: React.FC<DocWrapProps> = ({
 }) => {
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <Input
+      <Input.Search
         placeholder="搜索"
         size="large"
         onChange={(e) => onChange(e.target.value)}

@@ -115,7 +115,7 @@ const ChatTemp: React.FC = () => {
 
   const values = Form.useWatch([], { form, preserve: true });
 
-  React.useEffect(() => {
+  useEffect(() => {
     // 监听form表单值变化
     if (values && Object.keys(values).length === 0) {
       return;
@@ -457,8 +457,8 @@ const ChatTemp: React.FC = () => {
       files?.map((file) => ({
         fileKey: file.key,
         fileUrl: file.url,
-        fileName: file.fileName,
-        mimeType: file.mimeType,
+        fileName: file.name,
+        mimeType: file.type,
       })) || [];
 
     // 将文件和消息加入会话中

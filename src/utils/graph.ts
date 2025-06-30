@@ -1,7 +1,16 @@
-import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
+import { EXCEPTION_NODES_TYPE } from '@/constants/node.constants';
+import {
+  AnswerTypeEnum,
+  ExceptionHandleTypeEnum,
+  NodeTypeEnum,
+} from '@/types/enums/common';
+import { PortGroupEnum } from '@/types/enums/node';
 import { ChildNode } from '@/types/interfaces/graph';
+import { ExceptionHandleConfig } from '@/types/interfaces/node';
+import { isEmptyObject } from '@/utils/index';
 import { Edge, Graph, Node } from '@antv/x6';
 import { message } from 'antd';
+import { isEqual, isPlainObject } from 'lodash';
 // 边界检查并调整子节点位置
 // 调整父节点尺寸以包含所有子节点
 
@@ -109,7 +118,7 @@ export function updateNextNodeIds(item: any, targetNodeId: number) {
 export const getPortGroup = (
   node: Node | null,
   portId: string | undefined,
-): string => {
+): PortGroupEnum | string => {
   if (portId === undefined || node === null) return '';
   const port = node?.getPort(portId);
   return port?.group || '';
@@ -502,4 +511,58 @@ export const isEdgeDeletable = (sourceNode: any, targetNode: any): boolean => {
   }
 
   return true;
+};
+
+export const showExceptionHandle = (node: ChildNode): boolean => {
+  return EXCEPTION_NODES_TYPE.includes(node.type);
+};
+
+export const needUpdateNodes = (node: ChildNode): boolean => {
+  return EXCEPTION_NODES_TYPE.includes(node.type); // 需要更新端口配置的节点 异常节点包括之前的QA、Condition、IntentRecognition
+};
+
+export const showExceptionPort = (
+  node: ChildNode,
+  protGroup: PortGroupEnum | string,
+): boolean => {
+  return (
+    (showExceptionHandle(node) &&
+      node.nodeConfig?.exceptionHandleConfig?.exceptionHandleType ===
+        ExceptionHandleTypeEnum.EXECUTE_EXCEPTION_FLOW &&
+      protGroup === PortGroupEnum.exception) ||
+    false
+  );
+};
+
+export const isEqualExceptionHandleConfig = (
+  prev: ExceptionHandleConfig,
+  next: ExceptionHandleConfig,
+) => {
+  return (
+    prev.exceptionHandleType === next.exceptionHandleType &&
+    prev.specificContent === next.specificContent &&
+    prev.timeout === next.timeout &&
+    prev.retryCount === next.retryCount &&
+    isEqual(prev.exceptionHandleNodeIds, next.exceptionHandleNodeIds)
+  );
+};
+
+export const convertValueToEditorValue = (
+  value: string | undefined | object,
+): string => {
+  if (
+    value === '' ||
+    value === undefined ||
+    value === null ||
+    isEmptyObject(value)
+  ) {
+    return '';
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (isPlainObject(value)) {
+    return JSON.stringify(value, null, 2);
+  }
+  return '';
 };

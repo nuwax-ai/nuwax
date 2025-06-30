@@ -81,7 +81,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
                   key={item.nodeId}
                 >
                   <div className="image-div-style">{returnImg(node.type)}</div>
-                  <div className="ml-12 content-error-item-width">
+                  <div className="content-error-item-width">
                     <p className="error-node-name">{node.name || '暂无'}</p>
                     {item.error.length > 110 ? (
                       <Popover

@@ -12,8 +12,7 @@ import {
   SettingOutlined,
 } from '@ant-design/icons';
 import { Popover, Tag } from 'antd';
-import React, { useState } from 'react';
-import { useModel } from 'umi';
+import React, { useCallback, useState } from 'react';
 import './index.less';
 import SettingModal from './SettingModal';
 interface TreeOutput extends InputAndOutConfig {
@@ -47,6 +46,7 @@ export const SkillList: React.FC<SkillProps> = ({
   disabled = false,
   removeItem,
   modifyItem,
+  variables = [],
 }) => {
   // const [skillParams,setSkillParams] = useState<NodeConfig>(params);
   // 使用useState钩子来管理每个项目的hover状态
@@ -72,28 +72,31 @@ export const SkillList: React.FC<SkillProps> = ({
     setCurrentComponentInfo(null);
   };
   const handleEdit = (item: CreatedNodeItem) => {
+    console.log('value:item', item);
+
     setCurrentComponentInfo({
       ...item,
       inputArgBindConfigs: item.inputArgBindConfigs as InputAndOutConfig[],
     });
     setOpen(true);
   };
-  const { referenceList } = useModel('workflow');
-  const variables = Object.values(referenceList.argMap || {});
+  // const { referenceList } = Form.useWatch('referenceList');
+  // const variables = Object.values(referenceList.argMap || {});
   const isHoveredItem = (item: CreatedNodeItem) => {
     return (
       currentComponentInfo?.typeId === item.typeId &&
       (currentComponentInfo?.toolName || '') === (item.toolName || '')
     );
   };
+  const genKey = useCallback((item: CreatedNodeItem, prefix: string) => {
+    return `${prefix}-${item?.type}-${item?.targetId || item?.typeId}-${
+      item?.toolName || ''
+    }`;
+  }, []);
   return (
     <div className="skill-list">
       {params.map((item) => (
-        <div
-          key={`skill-${item.type}-${item.targetId || item.typeId}-${
-            item.toolName || ''
-          }`}
-        >
+        <div key={genKey(item, 'skill')}>
           <div
             className="skill-item-style dis-left"
             style={{
@@ -121,7 +124,15 @@ export const SkillList: React.FC<SkillProps> = ({
               <div className="mask-layer-style">
                 <div
                   className="skill-item-dispose-style"
-                  style={{ color: '#fff', backgroundColor: 'transparent' }}
+                  style={{
+                    color: '#fff',
+                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                    height: '100%',
+                    alignItems: 'center',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    padding: '0 10px',
+                  }}
                 >
                   {item.inputArgBindConfigs &&
                     item.inputArgBindConfigs.length && (
@@ -163,6 +174,7 @@ export const SkillList: React.FC<SkillProps> = ({
 
       <SettingModal
         open={open}
+        key={genKey(currentComponentInfo as CreatedNodeItem, 'setting')}
         variables={variables}
         inputArgBindConfigs={
           currentComponentInfo?.inputArgBindConfigs as BindConfigWithSub[]

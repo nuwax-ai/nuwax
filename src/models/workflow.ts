@@ -1,15 +1,19 @@
-// import service from '@/services/workflow';
-// import { NodeTypeEnum } from '@/types/enums/common';
-// import { ChildNode } from '@/types/interfaces/graph';
+import { DEFAULT_DRAWER_FORM } from '@/constants/node.constants';
 import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { NodePreviousAndArgMap } from '@/types/interfaces/node';
-// import { message } from 'antd';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
 const useWorkflow = () => {
   // 是否要校验当前的数据
   const [volid, setVolid] = useState<boolean>(false);
 
+  const [visible, setVisible] = useState<boolean>(false); // 显示隐藏右侧节点抽屉
+
   const [spaceId, setSpaceId] = useState<number>(0);
+
+  const storeWorkflowRef = useRef<any>({
+    drawerForm: DEFAULT_DRAWER_FORM,
+  });
 
   // 使用 useState 触发组件重新渲染
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -88,16 +92,32 @@ const useWorkflow = () => {
     return '';
   };
 
-  // // 重新获取当前节点的数据
-  // const getCurrentNodeData = async () => {
-  //   try {
-  //     const _res = await service.getNodeConfig(foldWrapItem?.id as number);
-  //     setFoldWrapItem(_res.data);
-  //     return _res.data; // 返回当前节点的配置数据，以便外部使用或更新状态
-  //   } catch (error) {
-  //     message.error('获取当前节点数据失败');
-  //   }
-  // };
+  const storeWorkflow = useCallback((key: string, value: any) => {
+    storeWorkflowRef.current[key] = value;
+  }, []);
+
+  useEffect(() => {
+    // 存储工作流数据
+    storeWorkflow('isModified', isModified);
+  }, [isModified]);
+  useEffect(() => {
+    storeWorkflow('visible', visible);
+  }, [visible]);
+
+  useEffect(() => {
+    storeWorkflow('skillChange', visible);
+  }, [skillChange]);
+
+  const getWorkflow = useCallback((key: string) => {
+    return storeWorkflowRef.current[key];
+  }, []);
+
+  const clearWorkflow = useCallback(() => {
+    storeWorkflowRef.current = {
+      drawerForm: DEFAULT_DRAWER_FORM,
+    };
+  }, []);
+  const [expanded, setExpanded] = useState<string>('');
 
   return {
     volid,
@@ -114,6 +134,13 @@ const useWorkflow = () => {
     setSkillChange,
     drawerForm,
     updateDrawerForm,
+    storeWorkflow,
+    getWorkflow,
+    clearWorkflow,
+    visible,
+    setVisible,
+    expanded,
+    setExpanded,
     // foldWrapItem,
     // setFoldWrapItem,
     // getCurrentNodeData,

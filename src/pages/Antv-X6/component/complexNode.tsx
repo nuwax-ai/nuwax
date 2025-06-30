@@ -4,6 +4,7 @@ import CustomTree from '@/components/FormListItem/NestedForm';
 import { ModelSelected } from '@/components/ModelSetting';
 import PromptOptimizeModal from '@/components/PromptOptimizeModal';
 import { CREATED_TABS } from '@/constants/common.constants';
+import { SKILL_FORM_KEY } from '@/constants/node.constants';
 import { SkillList } from '@/pages/Antv-X6/components/NewSkill';
 import {
   AgentAddComponentStatusEnum,
@@ -14,7 +15,7 @@ import { InputItemNameEnum } from '@/types/enums/node';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { PromptOptimizeTypeEnum } from '@/types/interfaces/assistant';
 import { CreatedNodeItem } from '@/types/interfaces/common';
-import { QANodeOption } from '@/types/interfaces/node';
+import { InputAndOutConfig, QANodeOption } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { PlusOutlined } from '@ant-design/icons';
 import {
@@ -60,13 +61,8 @@ const skillCreatedTabs = CREATED_TABS.filter((item) =>
   ].includes(item.key),
 );
 
-const skillFormKey = 'skillComponentConfigs';
 // 定义大模型节点
-const ModelNode: React.FC<NodeDisposeProps> = ({
-  form,
-  id,
-  maxTokensLimit,
-}) => {
+const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
   // 打开关闭优化
@@ -80,18 +76,18 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
   // 新增技能
   const onAddedSkill = (item: CreatedNodeItem) => {
     setIsModified(true);
-    const skillComponentConfigs = form.getFieldValue(skillFormKey) || [];
+    const skillComponentConfigs = form.getFieldValue(SKILL_FORM_KEY) || [];
     item.type = item.targetType as unknown as NodeTypeEnum; // TODO 这里需要优化
     item.typeId = item.targetId;
-    form.setFieldValue(skillFormKey, skillComponentConfigs.concat([item]));
-    form.submit();
-    setOpen(false);
+    form.setFieldValue(SKILL_FORM_KEY, skillComponentConfigs.concat([item]));
     setSkillChange(true);
+    form.submit();
+    // setOpen(false);
   };
 
   // 移出技能
   const removeItem = (item: CreatedNodeItem) => {
-    const skillComponentConfigs = form.getFieldValue(skillFormKey);
+    const skillComponentConfigs = form.getFieldValue(SKILL_FORM_KEY);
     if (skillComponentConfigs) {
       const newSkillComponentConfigs = skillComponentConfigs.filter(
         (i: CreatedNodeItem) =>
@@ -100,7 +96,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
             (i.toolName || '') === (item.toolName || '')
           ),
       );
-      form.setFieldValue(skillFormKey, newSkillComponentConfigs);
+      form.setFieldValue(SKILL_FORM_KEY, newSkillComponentConfigs);
       setIsModified(true);
     }
   };
@@ -108,7 +104,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
   // 修改技能参数
   const modifyItem = (item: CreatedNodeItem) => {
     setIsModified(true);
-    const skillComponentConfigs = form.getFieldValue(skillFormKey);
+    const skillComponentConfigs = form.getFieldValue(SKILL_FORM_KEY);
     if (skillComponentConfigs) {
       const newSkillComponentConfigs = skillComponentConfigs.map(
         (i: CreatedNodeItem) =>
@@ -117,7 +113,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
             ? item
             : i,
       );
-      form.setFieldValue(skillFormKey, newSkillComponentConfigs);
+      form.setFieldValue(SKILL_FORM_KEY, newSkillComponentConfigs);
     }
   };
 
@@ -126,10 +122,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     setOpen(true);
   };
 
-  const skillComponentConfigs = Form.useWatch(skillFormKey, {
-    form,
-    preserve: true,
-  });
+  const skillComponentConfigs = form.getFieldValue(SKILL_FORM_KEY);
 
   useEffect(() => {
     const _arr =
@@ -143,11 +136,18 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       }) || [];
     setAddComponents(_arr);
   }, [skillComponentConfigs]);
-
+  const variables = (
+    Form.useWatch(InputItemNameEnum.inputArgs, {
+      form,
+      preserve: true,
+    }) || []
+  ).filter(
+    (item: InputAndOutConfig) => !['', null, undefined].includes(item.name),
+  );
   return (
     <div className="model-node-style">
       {/* 模型模块 */}
-      <ModelSelected form={form} maxTokensLimit={maxTokensLimit} />
+      <ModelSelected form={form} modelConfig={nodeConfig?.modelConfig} />
       {/* 技能模块 */}
       <div className="dis-sb margin-bottom ">
         <span className="node-title-style">技能</span>
@@ -160,11 +160,12 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       </div>
       <Form.Item shouldUpdate noStyle>
         {() =>
-          form.getFieldValue(skillFormKey) ? (
+          form.getFieldValue(SKILL_FORM_KEY) ? (
             <div className="node-item-style">
               <SkillList
-                params={form.getFieldValue(skillFormKey)}
-                skillName={skillFormKey}
+                params={form.getFieldValue(SKILL_FORM_KEY)}
+                skillName={SKILL_FORM_KEY}
+                variables={variables}
                 form={form}
                 removeItem={removeItem}
                 modifyItem={modifyItem}
@@ -192,7 +193,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           onExpand
           onOptimize
           onOptimizeClick={() => setShow(true)}
-          placeholder="系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
+          placeholder="系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输入参数中的变量"
         />
       </div>
       {/* 用户提示词 */}
@@ -203,7 +204,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           onExpand
           // onOptimize
           // onOptimizeClick={() => setShow(true)}
-          placeholder="用户提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
+          placeholder="用户提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输入参数中的变量"
         />
       </div>
       {/* 输出参数 */}
@@ -212,7 +213,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           title={'输出'}
           notShowTitle
           form={form}
-          params={form.getFieldValue('outputArgs') || []}
+          params={nodeConfig?.outputArgs || []}
           inputItemName={'outputArgs'}
         />
       </Form.Item>
@@ -250,15 +251,12 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
 };
 
 // 定义意图识别
-const IntentionNode: React.FC<NodeDisposeProps> = ({
-  form,
-  maxTokensLimit,
-}) => {
+const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
   return (
     <div className="model-node-style">
       {/* 模型模块 */}
       <Form.Item noStyle>
-        <ModelSelected form={form} maxTokensLimit={maxTokensLimit} />
+        <ModelSelected form={form} />
       </Form.Item>
       {/* 输入参数 */}
       <div className="node-item-style">
@@ -306,10 +304,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({
 };
 
 // 定义问答
-const QuestionsNode: React.FC<NodeDisposeProps> = ({
-  form,
-  maxTokensLimit,
-}) => {
+const QuestionsNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
   // 更改问答方式
   const changeType = (val: string) => {
     // 首次选中
@@ -350,7 +345,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
   return (
     <div className="node-title-style">
       {/* 模型模块 */}
-      <ModelSelected form={form} maxTokensLimit={maxTokensLimit} />
+      <ModelSelected form={form} />
       {/* 输入参数 */}
       <div className="node-item-style">
         <InputAndOut
@@ -392,7 +387,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
             <CustomTree
               title={'输出'}
               form={form}
-              params={form.getFieldValue('outputArgs') || []}
+              params={nodeConfig?.outputArgs || []}
               inputItemName={'outputArgs'}
               showCheck
             />
@@ -420,9 +415,9 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
 
 // 定义http工具
 
-const HttpToolNode: React.FC<NodeDisposeProps> = ({ form }) => {
-  const bodyParams = form.getFieldValue('body') || [];
-  const outputParams = form.getFieldValue('outputArgs') || [];
+const HttpToolNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
+  const bodyParams = nodeConfig?.body || [];
+  const outputParams = nodeConfig?.outputArgs || [];
   return (
     <div>
       {/* 请求配置 */}

@@ -1,7 +1,9 @@
 import { ICON_OPTIMIZE } from '@/constants/images.constants';
 import { ExpandAltOutlined } from '@ant-design/icons';
 import { Button, Form, Input } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useModel } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
 import ExpandTextArea from './expandTextarea';
 import { ExpandableInputTextareaProps } from './type';
 
@@ -16,7 +18,15 @@ export const ExpandableInputTextarea: React.FC<
   onOptimize,
   onOptimizeClick,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false); // 添加本地状态
+  const [uuid, setUuid] = useState('');
+  const { setExpanded, expanded } = useModel('workflow'); // 添加本地状态
+  useEffect(() => {
+    setUuid(uuidv4());
+    return () => {
+      setUuid('');
+      setExpanded('');
+    };
+  }, []);
 
   return (
     <div>
@@ -40,7 +50,7 @@ export const ExpandableInputTextarea: React.FC<
               type="text"
               icon={<ExpandAltOutlined />}
               size="small"
-              onClick={() => setIsExpanded(true)}
+              onClick={() => setExpanded(uuid)}
             />
           )}
         </div>
@@ -54,16 +64,17 @@ export const ExpandableInputTextarea: React.FC<
       </Form.Item>
 
       {/* 如果有展开，就要调用展开的组件 */}
-      {isExpanded && ( // 使用本地状态控制显示
-        <ExpandTextArea
-          title={title}
-          inputFieldName={inputFieldName}
-          marginRight={388}
-          placeholder={placeholder}
-          visible={isExpanded}
-          onClose={() => setIsExpanded(false)}
-        />
-      )}
+      {expanded &&
+        expanded === uuid && ( // 使用本地状态控制显示
+          <ExpandTextArea
+            title={title}
+            inputFieldName={inputFieldName}
+            marginRight={370 + 12 * 2}
+            placeholder={placeholder}
+            visible={expanded === uuid}
+            onClose={() => setExpanded('')}
+          />
+        )}
     </div>
   );
 };

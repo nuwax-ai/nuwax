@@ -416,7 +416,7 @@ export const FormList: React.FC<FormListProps> = ({
             }
 
             return (
-              <Form.Item key={index}>
+              <Form.Item key={item.name + '_' + optionsMap[index]}>
                 <div className="dis-left">
                   {showIndex && (
                     <Form.Item noStyle name={[item.name, 'index']}>

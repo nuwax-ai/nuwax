@@ -1,3 +1,5 @@
+@import '@/styles/color.less';
+
 // 运行结果组件样式
 .runResultContainer {
   width: 100%;
@@ -203,10 +205,20 @@
 }
 
 .runResultSectionContent {
-  padding: 6px 8px;
-  background-color: #fff;
-  max-height: 100px;
-  overflow-y: auto;
+  pre {
+    font-size: 11px;
+    line-height: 1.5;
+    width: 100%;
+    max-height: 200px;
+    background-color: @BLANK12;
+    padding: 6px 8px;
+    margin: 0;
+    // 横向滚动条样式
+    &::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+  }
 }
 
 .keyValueItem {

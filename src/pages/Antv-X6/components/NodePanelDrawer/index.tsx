@@ -1,18 +1,16 @@
-import { EXCEPTION_NODES_TYPE } from '@/constants/node.constants';
-import { useSpecificContent } from '@/hooks/useSpecificContent';
 import { ExceptionHandleTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode, ExceptionItemProps } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
+import { showExceptionHandle } from '@/utils/graph';
 import { Form, FormInstance } from 'antd';
-import { useEffect, useState } from 'react';
-import ComplexNode from './component/complexNode';
-import ConditionNode from './component/condition';
-import Database from './component/database';
-import { ExceptionItem } from './component/ExceptionItem';
-import Library from './component/library';
-import NodeItem from './component/nodeItem';
-import ReferenceNode from './component/pluginNode';
-import './index.less';
+import ComplexNode from '../../component/complexNode';
+import ConditionNode from '../../component/condition';
+import Database from '../../component/database';
+import { ExceptionItem } from '../../component/ExceptionItem';
+import Library from '../../component/library';
+import NodeItem from '../../component/nodeItem';
+import ReferenceNode from '../../component/pluginNode';
+import '../../index.less';
 const {
   StartNode,
   EndNode,
@@ -39,12 +37,17 @@ const LoopBreak: React.FC = () => {
 };
 
 const nodeTemplate = (params: ChildNode, form: FormInstance) => {
-  const { maxTokens: maxTokensLimit } = params.nodeConfig?.modelConfig || {};
   const nodeType: NodeTypeEnum = params.type;
   switch (nodeType) {
     case NodeTypeEnum.Start:
       // 如果这和 'Start' 是同样的组件，请考虑重用组件或创建一个新的组件。
-      return <StartNode type={params.type} form={form} />;
+      return (
+        <StartNode
+          type={params.type}
+          form={form}
+          nodeConfig={params.nodeConfig}
+        />
+      );
     case NodeTypeEnum.DocumentExtraction:
       return <DocumentExtractionNode form={form} type={params.type} />;
     case NodeTypeEnum.End:
@@ -58,7 +61,7 @@ const nodeTemplate = (params: ChildNode, form: FormInstance) => {
       return <TextProcessingNode form={form} />;
     case NodeTypeEnum.LLM:
       return (
-        <ModelNode form={form} id={params.id} maxTokensLimit={maxTokensLimit} />
+        <ModelNode form={form} id={params.id} nodeConfig={params.nodeConfig} />
       );
 
     case NodeTypeEnum.Plugin:
@@ -67,18 +70,18 @@ const nodeTemplate = (params: ChildNode, form: FormInstance) => {
     case NodeTypeEnum.MCP:
       return <PluginInNode type={params.type} form={form} />;
     case NodeTypeEnum.Code:
-      return <CodeNode form={form} />;
+      return <CodeNode form={form} nodeConfig={params.nodeConfig} />;
     case NodeTypeEnum.QA:
-      return <QuestionsNode form={form} maxTokensLimit={maxTokensLimit} />;
+      return <QuestionsNode form={form} nodeConfig={params.nodeConfig} />;
     case NodeTypeEnum.HTTPRequest:
-      return <HttpToolNode form={form} />;
+      return <HttpToolNode form={form} nodeConfig={params.nodeConfig} />;
     case NodeTypeEnum.Knowledge:
       return <KnowledgeNode form={form} />;
     // 条件分支需要实时的调用接口
     case NodeTypeEnum.Condition:
       return <ConditionNode form={form} />;
     case NodeTypeEnum.IntentRecognition:
-      return <IntentionNode form={form} maxTokensLimit={maxTokensLimit} />;
+      return <IntentionNode form={form} />;
     case NodeTypeEnum.LoopBreak:
       return <LoopBreak />;
     case NodeTypeEnum.LoopContinue:
@@ -88,7 +91,13 @@ const nodeTemplate = (params: ChildNode, form: FormInstance) => {
     case NodeTypeEnum.TableDataUpdate:
     case NodeTypeEnum.TableDataQuery:
     case NodeTypeEnum.TableSQL:
-      return <Database form={form} type={params.type} />;
+      return (
+        <Database
+          form={form}
+          type={params.type}
+          nodeConfig={params.nodeConfig}
+        />
+      );
     default:
       return <></>;
   }
@@ -96,41 +105,27 @@ const nodeTemplate = (params: ChildNode, form: FormInstance) => {
 const ExceptionHandle: React.FC<{
   data: ExceptionHandleConfig | undefined;
 }> = ({ data }) => {
-  const exceptionHandleConfig = data || {};
-  const [exceptionItemProps, setExceptionItemProps] =
-    useState<ExceptionItemProps>({
-      exceptionHandleType: ExceptionHandleTypeEnum.INTERRUPT,
-      timeout: 180,
-      retryCount: 0,
-      ...(exceptionHandleConfig || {}),
-      name: 'exceptionHandleConfig',
-    });
-  // 处理输入 编辑器 同步输出参数及同步之前录入内容
-  const { specificContent } = useSpecificContent({
-    exceptionItemProps,
-    watchField: 'outputArgs',
-  });
-
-  useEffect(() => {
-    setExceptionItemProps({
-      ...exceptionItemProps,
-      specificContent: JSON.stringify(specificContent, null, 2),
-    });
-  }, [specificContent]);
+  const exceptionItemProps: ExceptionItemProps = {
+    exceptionHandleType: ExceptionHandleTypeEnum.INTERRUPT,
+    timeout: 180,
+    retryCount: 0,
+    ...(data || {}),
+    name: 'exceptionHandleConfig',
+  };
 
   return <ExceptionItem {...exceptionItemProps} />;
 };
 
 // 由于 所有节点支持异常配置根据后端返回的 nodeConfig.exceptionHandleConfig 来决定是否显示异常配置
 // 通过HOC 方案把所有组件包裹一层，然后根据后端返回的 nodeConfig.exceptionHandleConfig 来决定是否显示异常配置
-export default function RenderNodeDrawer({ params }: { params: ChildNode }) {
+export default function NodePanelDrawer({ params }: { params: ChildNode }) {
   const form = Form.useFormInstance();
-  const showExceptionHandle = EXCEPTION_NODES_TYPE.includes(params.type); // 是否显示异常配置
+  const showException = showExceptionHandle(params); // 是否显示异常配置
   return (
     <>
       {nodeTemplate(params, form)}
       {/* 处理节点异常项展示*/}
-      {showExceptionHandle && (
+      {showException && (
         <ExceptionHandle data={params.nodeConfig?.exceptionHandleConfig} />
       )}
     </>
