@@ -518,7 +518,7 @@ export const showExceptionHandle = (node: ChildNode): boolean => {
 };
 
 export const needUpdateNodes = (node: ChildNode): boolean => {
-  return EXCEPTION_NODES_TYPE.includes(node.type); // 需要更新端口配置的节点 异常节点包括之前的QA、Condition、IntentRecognition
+  return [...EXCEPTION_NODES_TYPE, NodeTypeEnum.Condition].includes(node.type); // 需要更新端口配置的节点 异常节点包括之前
 };
 
 export const showExceptionPort = (
