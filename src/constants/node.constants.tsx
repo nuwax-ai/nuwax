@@ -178,3 +178,5 @@ export const DEFAULT_DRAWER_FORM: ChildNode = {
   workflowId: 0,
   icon: '',
 };
+
+export const SKILL_FORM_KEY = 'skillComponentConfigs';
