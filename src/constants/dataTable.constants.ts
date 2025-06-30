@@ -1,4 +1,4 @@
-import { TableFieldTypeEnum } from '@/types/enums/dataTable';
+import { TableFieldTypeEnum, TableTabsEnum } from '@/types/enums/dataTable';
 
 // 短文本
 export const SHORT_TEXT_STRING = '短文本（0-255）';
@@ -18,4 +18,16 @@ export const TABLE_FIELD_TYPE_LIST = [
 export const TABLE_FIELD_STRING_LIST = [
   { label: SHORT_TEXT_STRING, value: TableFieldTypeEnum.String },
   { label: MEDIUM_TEXT_STRING, value: TableFieldTypeEnum.MEDIUMTEXT },
+];
+
+// 布尔值列表
+export const BOOLEAN_LIST = [
+  { label: 'true', value: true },
+  { label: 'false', value: false },
+];
+
+// 数据表tabs列表
+export const TABLE_TABS_LIST = [
+  { key: TableTabsEnum.Structure, label: '表结构' },
+  { key: TableTabsEnum.Data, label: '表数据' },
 ];

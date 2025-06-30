@@ -5,6 +5,7 @@ import {
   ITableData,
   tableAddParams,
   TableDefineDetails,
+  TableRowData,
   UpdateBusinessDataParams,
   UpdateTableDefinitionParams,
   UpdateTableNameParams,
@@ -140,7 +141,7 @@ export function apiTableAddBusinessData(
 // 查询表的业务数据
 export function apiGetTableData(
   params: GetTableDataParams,
-): Promise<RequestResponse<ITableData<unknown>>> {
+): Promise<RequestResponse<ITableData<TableRowData>>> {
   return request('/api/compose/db/table/getTableDataById', {
     method: 'GET',
     params,

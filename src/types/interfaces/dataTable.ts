@@ -1,5 +1,75 @@
+import { Dayjs } from 'dayjs';
 import { TableFieldTypeEnum } from '../enums/dataTable';
 import { Page, TablePageRequest } from './request';
+
+// 数据表数据
+export interface TableRowData {
+  [key: string]: string | number | boolean;
+}
+
+// 新增和修改的组件属性
+export interface AddAndModifyProps {
+  open: boolean;
+  title: string;
+  loading?: boolean;
+  onSubmit: (values: { [key: string]: string | number | boolean }) => void; // 提交表单的回调函数
+  // 初始化的值
+  initialValues?: {
+    [key: string]: string | number | boolean;
+  } | null;
+  formList: TableFieldInfo[];
+  onCancel: () => void;
+}
+
+export interface DataTableProp {
+  // 表头
+  columns: TableFieldInfo[];
+  // 表数据
+  tableData: TableRowData[];
+  // 表格的滚动高度
+  scrollHeight: number;
+  // 分页的数据
+  pagination?: {
+    current: number; // 当前页码
+    pageSize: number; // 每页显示条数
+    total: number; // 总条数
+  };
+  // 分页或者排序发生变更，重新获取数据
+  onPageChange?: (page: number, pageSize: number) => void;
+  onEdit: (data: TableRowData) => void;
+  onDel: (data: TableRowData) => void;
+}
+
+export interface DeleteSureProps {
+  title: string;
+  sureText: string;
+  open: boolean;
+  onCancel: () => void;
+  onSure: () => void;
+  width?: number;
+}
+
+export interface StructureTableProps {
+  existTableDataFlag?: boolean; // 是否存在业务数据
+  tableData: TableFieldInfo[]; // 表格数据
+  scrollHeight: number; // 表格高度
+  // 输入框值改变
+  onChangeValue: (
+    id: string | number,
+    attr: string,
+    value: React.Key | boolean | Dayjs | null,
+  ) => void;
+  // 删除字段
+  onDeleteField: (id: string | number) => void;
+}
+
+// 数据表头部组件的props
+export interface TableHeaderProps {
+  spaceId: number;
+  tableDetail: any;
+  total: number;
+  onClick: () => void;
+}
 
 // 数据表业务表结构的字段定义信息
 export interface TableFieldInfo {
@@ -25,6 +95,8 @@ export interface TableFieldInfo {
   sortIndex: number;
   // 自定义字段，用于table操作
   isNew?: boolean;
+  dataLength?: TableFieldTypeEnum;
+  children?: TableFieldInfo[];
 }
 
 // 查询表定义详情
@@ -128,12 +200,18 @@ export interface UpdateTableNameParams {
   icon?: string;
 }
 
+// 因为提交新数据时需要新增字段删除id字段，但是table操作中id是必须的（比如删除操作）
+export interface UpdateTableFieldInfo extends Omit<TableFieldInfo, 'id'> {
+  // 主键ID，新增时不传
+  id?: number;
+}
+
 // 更新表定义请求参数
 export interface UpdateTableDefinitionParams {
   // 表ID
   id: number;
   // 数据表业务表结构的字段定义
-  fieldList: TableFieldInfo[];
+  fieldList: UpdateTableFieldInfo[];
 }
 
 //  查询表定义列表请求参数
@@ -165,7 +243,7 @@ export interface UpdateBusinessDataParams {
   // 行ID
   rowId?: number;
   // 行数据
-  rowData: any;
+  rowData: TableRowData;
 }
 
 // 查询数据表业务数据请求参数

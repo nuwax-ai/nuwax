@@ -7,7 +7,10 @@ import {
   TABLE_FIELD_TYPE_LIST,
 } from '@/constants/dataTable.constants';
 import { TableFieldTypeEnum } from '@/types/enums/dataTable';
-import type { TableFieldInfo } from '@/types/interfaces/dataTable';
+import type {
+  StructureTableProps,
+  TableFieldInfo,
+} from '@/types/interfaces/dataTable';
 import { DeleteOutlined } from '@ant-design/icons';
 import {
   Button,
@@ -19,17 +22,18 @@ import {
   Table,
   TableColumnsType,
 } from 'antd';
+import dayjs, { Dayjs } from 'dayjs';
 import React from 'react';
+import ClearDataTooltip from './ClearDataTooltip';
 import './index.less';
 
-export interface StructureTableProps {
-  tableData: TableFieldInfo[]; // 表格数据
-  scrollHeight: number; // 表格高度
-}
-
+// 数据表字段结构
 const StructureTable: React.FC<StructureTableProps> = ({
+  existTableDataFlag,
   tableData,
   scrollHeight,
+  onChangeValue,
+  onDeleteField,
 }) => {
   // 获取字段类型
   const getFieldType = (fieldType: TableFieldTypeEnum) => {
@@ -65,29 +69,87 @@ const StructureTable: React.FC<StructureTableProps> = ({
 
   // 获取默认值
   const getDefaultValue = (record: TableFieldInfo) => {
-    const { fieldType, systemFieldFlag, defaultValue } = record;
+    const {
+      id,
+      fieldType,
+      fieldName,
+      systemFieldFlag,
+      defaultValue,
+      dataLength,
+      isNew,
+    } = record;
     if (systemFieldFlag) {
-      return '系统变量';
-    } else {
-      switch (fieldType) {
-        case TableFieldTypeEnum.String:
-        case TableFieldTypeEnum.MEDIUMTEXT:
-          return <Input placeholder="请输入" defaultValue={defaultValue} />;
-        case TableFieldTypeEnum.Integer:
-        case TableFieldTypeEnum.Number:
-        case TableFieldTypeEnum.PrimaryKey:
-          return (
-            <InputNumber placeholder="请输入" defaultValue={defaultValue} />
-          );
-        case TableFieldTypeEnum.Boolean:
-          return <Checkbox />;
-        case TableFieldTypeEnum.Date:
-          return (
-            <DatePicker placeholder="请选择时间" defaultValue={defaultValue} />
-          );
-        default:
-          return defaultValue || '--';
+      return <span className="flex items-center h-full">系统变量</span>;
+    }
+    // disabled: 新增成功的字段,不允许修改默认值; 除非用户清空所有的业务数据,然后再修改数据表的默认值
+    switch (fieldType) {
+      case TableFieldTypeEnum.String:
+      case TableFieldTypeEnum.MEDIUMTEXT: {
+        const maxLength =
+          fieldType === TableFieldTypeEnum.String ? 255 : undefined;
+        return (
+          <Input
+            placeholder={`请输入${fieldName}默认值`}
+            // 这里没有使用defaultValue,是因为需要做清空操作
+            value={defaultValue}
+            maxLength={maxLength}
+            showCount={dataLength === TableFieldTypeEnum.String}
+            // 长文本: 禁止添加默认值;
+            disabled={
+              (!isNew && existTableDataFlag) ||
+              dataLength === TableFieldTypeEnum.MEDIUMTEXT
+            }
+            onChange={(e) => onChangeValue(id, 'defaultValue', e.target.value)}
+          />
+        );
       }
+      case TableFieldTypeEnum.Integer:
+      case TableFieldTypeEnum.Number:
+      case TableFieldTypeEnum.PrimaryKey: {
+        // 默认值的范围,如果字段类型是 int,范围限制在: [-2147483648,2147483647] 区间
+        // NUMBER,对应类型是: DECIMAL(20,6) ,限制小数点最多 6位,整数最多:14 位,
+        const props =
+          fieldType === TableFieldTypeEnum.Integer
+            ? { min: -2147483648, max: 2147483647 }
+            : { precision: 20 };
+        const placeholder =
+          fieldType === TableFieldTypeEnum.Integer
+            ? `数值范围：[-2147483648, 2147483648]`
+            : `精度,最多 20 位,小数点最多 6 位`;
+        return (
+          <InputNumber
+            {...props}
+            placeholder={placeholder}
+            defaultValue={defaultValue ? Number(defaultValue) : undefined}
+            disabled={!isNew && existTableDataFlag}
+            onChange={(value) => onChangeValue(id, 'defaultValue', value)}
+          />
+        );
+      }
+      case TableFieldTypeEnum.Boolean:
+        return (
+          <Checkbox
+            checked={defaultValue ? Boolean(defaultValue) : false}
+            disabled={!isNew && existTableDataFlag}
+            onChange={(e) =>
+              onChangeValue(id, 'defaultValue', e.target.checked)
+            }
+          />
+        );
+      case TableFieldTypeEnum.Date:
+        return (
+          <DatePicker
+            placeholder="请选择时间"
+            showTime
+            defaultValue={defaultValue ? dayjs(defaultValue) : null}
+            disabled={!isNew && existTableDataFlag}
+            onChange={(date: Dayjs | (Dayjs | null)[] | null) =>
+              onChangeValue(id, 'defaultValue', date as Dayjs)
+            }
+          />
+        );
+      default:
+        return defaultValue || '--';
     }
   };
 
@@ -96,6 +158,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
     {
       title: '序号',
       dataIndex: 'serial',
+      width: 80,
       render: (_, __, index) => <span>{index + 1}</span>,
     },
     {
@@ -104,14 +167,13 @@ const StructureTable: React.FC<StructureTableProps> = ({
       render: (value, record) => (
         <>
           {!record.isNew ? (
-            <span>{value}</span>
+            <span className="flex items-center h-full">{value}</span>
           ) : (
             <Input
               placeholder="请输入字段名"
-              // value={value}
-              // onChange={(e) =>
-              //   handleInputValue(record.key, 'description', e.target.value)
-              // }
+              onChange={(e) =>
+                onChangeValue(record.id, 'fieldName', e.target.value)
+              }
             />
           )}
         </>
@@ -122,63 +184,130 @@ const StructureTable: React.FC<StructureTableProps> = ({
       dataIndex: 'fieldDescription',
       render: (value, record) =>
         record.systemFieldFlag ? (
-          <span>{value}</span>
+          <span className="flex items-center h-full">{value}</span>
         ) : (
-          <Input
-            placeholder="请输入字段详细描述"
-            // value={value}
-            // onChange={(e) =>
-            //   handleInputValue(record.key, 'description', e.target.value)
-            // }
-          />
+          <ClearDataTooltip
+            record={record}
+            existTableDataFlag={existTableDataFlag}
+          >
+            <Input
+              placeholder="请输入字段详细描述"
+              defaultValue={value}
+              disabled={
+                record?.systemFieldFlag ||
+                (!record?.isNew && existTableDataFlag)
+              }
+              onChange={(e) =>
+                onChangeValue(record.id, 'fieldDescription', e.target.value)
+              }
+            />
+          </ClearDataTooltip>
         ),
     },
     {
-      title: '参数类型',
+      title: '字段类型',
       dataIndex: 'fieldType',
+      width: 120,
       render: (value, record) =>
         !record.isNew ? (
-          <span>{getFieldType(value)}</span>
+          <span className="flex items-center h-full">
+            {getFieldType(value)}
+          </span>
         ) : (
-          <Select options={TABLE_FIELD_TYPE_LIST} />
+          <Select
+            options={TABLE_FIELD_TYPE_LIST}
+            style={{ width: '100%' }}
+            defaultValue={value}
+            onChange={(value) => onChangeValue(record.id, 'fieldType', value)}
+          />
         ),
     },
     {
       title: '数据长度',
       dataIndex: 'dataLength',
-      key: 'dataLength',
-      render: (_, record) =>
-        !record.isNew ? (
-          <span>{getStringLength(record.fieldType)}</span>
+      width: 200,
+      render: (value, record) =>
+        record.isNew && record.fieldType === TableFieldTypeEnum.String ? (
+          <Select
+            options={TABLE_FIELD_STRING_LIST}
+            style={{ width: '100%' }}
+            defaultValue={value}
+            onChange={(value) => onChangeValue(record.id, 'dataLength', value)}
+          />
         ) : (
-          <Select options={TABLE_FIELD_STRING_LIST} />
+          <span className="flex items-center h-full">
+            {getStringLength(record.fieldType)}
+          </span>
         ),
     },
+    // 字段nullableFlag	是否可为空,true:可空;false:非空,此处为'是否必须'，所以取反
     {
       title: '是否必须',
       dataIndex: 'nullableFlag',
-      key: 'nullableFlag',
       align: 'center',
-      render: (_, record) => <Checkbox disabled={record.systemFieldFlag} />,
+      render: (_, record) => (
+        <div className="flex items-center content-center h-full">
+          <ClearDataTooltip
+            record={record}
+            existTableDataFlag={existTableDataFlag}
+          >
+            <Checkbox
+              disabled={
+                record?.systemFieldFlag ||
+                (!record?.isNew && existTableDataFlag)
+              }
+              defaultChecked={!record.nullableFlag}
+              onChange={(e) =>
+                onChangeValue(record.id, 'nullableFlag', e.target.checked)
+              }
+            />
+          </ClearDataTooltip>
+        </div>
+      ),
     },
     {
       title: '是否唯一',
       dataIndex: 'uniqueFlag',
-      key: 'uniqueFlag',
       align: 'center',
-      render: (value, record) => <Checkbox disabled={record.systemFieldFlag} />,
+      render: (_, record) => (
+        <div className="flex items-center content-center h-full">
+          <ClearDataTooltip
+            record={record}
+            existTableDataFlag={existTableDataFlag}
+          >
+            <Checkbox
+              disabled={
+                record?.systemFieldFlag ||
+                (!record?.isNew && existTableDataFlag)
+              }
+              defaultChecked={record.uniqueFlag}
+              onChange={(e) =>
+                onChangeValue(record.id, 'uniqueFlag', e.target.checked)
+              }
+            />
+          </ClearDataTooltip>
+        </div>
+      ),
     },
     {
       title: '是否启用',
       dataIndex: 'enabledFlag',
-      key: 'enabledFlag',
       align: 'center',
-      render: (value, record) => <Checkbox disabled={record.systemFieldFlag} />,
+      render: (_, record) => (
+        <div className="flex items-center content-center h-full">
+          <Checkbox
+            disabled={record.systemFieldFlag}
+            defaultChecked={record.enabledFlag}
+            onChange={(e) =>
+              onChangeValue(record.id, 'enabledFlag', e.target.checked)
+            }
+          />
+        </div>
+      ),
     },
     {
       title: '默认值',
       dataIndex: 'defaultValue',
-      key: 'defaultValue',
       render: (_, record) => getDefaultValue(record),
     },
     {
@@ -187,11 +316,12 @@ const StructureTable: React.FC<StructureTableProps> = ({
       width: 80,
       align: 'center',
       render: (_, record) => (
-        // <DeleteOutlined />
         <Button
           type="text"
-          disabled={!record.isNew}
-          // onClick={() => handleDeleteRow(record[rowKey])}
+          disabled={
+            record?.systemFieldFlag || (!record?.isNew && existTableDataFlag)
+          }
+          onClick={() => onDeleteField(record.id)}
           icon={<DeleteOutlined />}
         ></Button>
       ),
@@ -204,17 +334,15 @@ const StructureTable: React.FC<StructureTableProps> = ({
         className="flex-1"
         style={{ maxHeight: scrollHeight, overflow: 'hidden' }}
       >
-        <Table
+        <Table<TableFieldInfo>
           dataSource={tableData}
           columns={inputColumns}
           rowKey={'id'}
           pagination={false}
+          virtual
           scroll={{
             x: true,
-            y:
-              tableData.length * 54 > scrollHeight - 124
-                ? scrollHeight - 124
-                : undefined,
+            y: scrollHeight - 124,
           }}
         />
       </div>

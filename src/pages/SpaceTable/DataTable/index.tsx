@@ -1,5 +1,5 @@
 import { TableFieldTypeEnum } from '@/types/enums/dataTable';
-import { TableFieldInfo } from '@/types/interfaces/dataTable';
+import { DataTableProp } from '@/types/interfaces/dataTable';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -8,25 +8,6 @@ import {
 import { Button, Checkbox, Popover, Space, Table } from 'antd';
 import React from 'react';
 import './index.less';
-
-export interface DataTableProp {
-  // 表头
-  columns: TableFieldInfo[];
-  // 表数据
-  tableData: any[];
-  // 表格的滚动高度
-  scrollHeight: number;
-  // 分页的数据
-  pagination?: {
-    current: number; // 当前页码
-    pageSize: number; // 每页显示条数
-    total: number; // 总条数
-  };
-  // 分页或者排序发生变更，重新获取数据
-  onPageChange?: (page: number, pageSize: number) => void;
-  onEdit: (data: any) => void;
-  onDel: (data: any) => void;
-}
 
 const DataTable: React.FC<DataTableProp> = ({
   columns,
@@ -71,7 +52,7 @@ const DataTable: React.FC<DataTableProp> = ({
                 <span>{item.fieldName}</span>
                 {item.fieldDescription && (
                   <Popover
-                    content={<p>{item.fieldDescription}</p>}
+                    content={item.fieldDescription}
                     trigger="hover"
                     mouseEnterDelay={0.5}
                     placement="top"
@@ -83,16 +64,7 @@ const DataTable: React.FC<DataTableProp> = ({
             }
             ellipsis
             fixed={index === 0 ? 'left' : undefined} // 设置为固定列
-            // width={item.width}
             dataIndex={item.fieldName}
-            // onCell={() => ({
-            //   style: {
-            //     // maxWidth: item.width,
-            //     overflow: 'hidden',
-            //     textOverflow: 'ellipsis',
-            //     whiteSpace: 'nowrap',
-            //   },
-            // })}
             render={(value) => {
               switch (item.fieldType) {
                 case TableFieldTypeEnum.Boolean:

@@ -1,14 +1,7 @@
+import { DeleteSureProps } from '@/types/interfaces/dataTable';
 import { WarningFilled } from '@ant-design/icons';
 import { Button, Form, Input, Modal, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
-interface DeleteSureProps {
-  title: string;
-  sureText: string;
-  open: boolean;
-  onCancel: () => void;
-  onSure: () => void;
-  width?: number;
-}
 
 const DeleteSure: React.FC<DeleteSureProps> = ({
   title,
