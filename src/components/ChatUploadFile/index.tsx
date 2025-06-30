@@ -44,7 +44,7 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
           />
           <Progress
             type="circle"
-            percent={Math.round(file?.percent || 0)}
+            percent={Math.floor(file?.percent || 0)}
             status={getStatus(file)}
             size={30}
             className={styles['progress-upload-file']}
