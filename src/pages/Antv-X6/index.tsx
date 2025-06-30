@@ -276,12 +276,14 @@ const Workflow: React.FC = () => {
     return isSuccess;
   };
   // 查询节点的指定信息
-  const getNodeConfig = async (id: number) => {
+  const getNodeConfig = async (id: number): Promise<ChildNode | false> => {
     const _res = await service.getNodeConfig(id);
     if (_res.code === Constant.success) {
       setFoldWrapItem(_res.data);
       graphRef.current?.graphUpdateNode(String(_res.data.id), _res.data);
+      return _res.data;
     }
+    return false;
   };
 
   // 节点添加或移除边
@@ -378,7 +380,6 @@ const Workflow: React.FC = () => {
     }
     if (params.id === FoldFormIdEnum.empty) return;
     graphRef.current?.graphUpdateNode(String(params.id), params);
-    // setIsUpdate(true)
     const _res = await apiUpdateNode(params);
     if (_res.code === Constant.success) {
       changeUpdateTime();
@@ -399,7 +400,6 @@ const Workflow: React.FC = () => {
       // 跟新当前节点的上级参数
       getReference(getWorkflow('drawerForm').id);
     }
-    // setIsUpdate(false)
   };
   // 优化后的onFinish方法
   const onSaveWorkflow = useCallback(
@@ -451,16 +451,25 @@ const Workflow: React.FC = () => {
   );
 
   const doSubmitFormData = useCallback(async (): Promise<boolean> => {
+    let result = false;
     const hasSkillChange = getWorkflow('skillChange');
-    if (getWorkflow('isModified') === false) return true;
-    setIsModified(false);
-    const result = await onSaveWorkflow(getWorkflow('drawerForm'));
-    if (hasSkillChange) {
-      //重新获取节点配置信息 并更新表单 与节点配置数据
-      await getNodeConfig(getWorkflow('drawerForm').id);
+    if (getWorkflow('isModified') === false) return result;
+    //重新获取节点配置信息 并更新表单 与节点配置数据
+    try {
+      setIsModified(false);
+      result = await onSaveWorkflow(getWorkflow('drawerForm'));
+      if (hasSkillChange) {
+        setSkillChange(false);
+        const data = await getNodeConfig(getWorkflow('drawerForm').id);
+        if (data) {
+          form.setFieldsValue(data.nodeConfig); //更新表单数据 包括技能数据
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch node config:', error);
     }
     return result;
-  }, [setIsModified]);
+  }, [setIsModified, form, setSkillChange]);
 
   // 点击组件，显示抽屉
   const changeDrawer = useCallback(async (child: ChildNode | null) => {
