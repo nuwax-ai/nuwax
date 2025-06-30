@@ -14,6 +14,7 @@ import {
   LIBRARY_ALL_RESOURCE,
   LIBRARY_ALL_TYPE,
 } from '@/constants/space.constants';
+import { apiTableAdd, apiTableDelete } from '@/services/dataTable';
 import { apiKnowledgeConfigDelete } from '@/services/knowledge';
 import {
   apiComponentList,
@@ -23,11 +24,6 @@ import {
 } from '@/services/library';
 import { apiModelDelete } from '@/services/modelConfig';
 import { apiPluginCopyToSpace, apiPluginDelete } from '@/services/plugin';
-import {
-  IAddTask,
-  default as service,
-  default as tableSql,
-} from '@/services/tableSql';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { PluginTypeEnum } from '@/types/enums/plugin';
@@ -257,7 +253,7 @@ const SpaceLibrary: React.FC = () => {
   });
 
   // Table - 数据删除接口
-  const { run: runTableDel } = useRequest(tableSql.deleteTask, {
+  const { run: runTableDel } = useRequest(apiTableDelete, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: number[]) => {
@@ -357,19 +353,18 @@ const SpaceLibrary: React.FC = () => {
     }
   };
 
-  const Confirm = async (value: AnyObject) => {
-    try {
-      const params: IAddTask = {
-        tableName: value.name,
-        tableDescription: value.description,
-        spaceId: spaceId,
-      };
+  // 确认创建数据表
+  const handleConfirmCreateTable = async (value: AnyObject) => {
+    const { name: tableName, description: tableDescription, icon } = value;
+    const params = {
+      tableName,
+      tableDescription,
+      spaceId,
+      icon,
+    };
 
-      const res = await service.addTask(params);
-      history.push(`/space/${spaceId}/table/${res.data}`);
-    } catch (error) {
-      console.log(error);
-    }
+    const { data } = await apiTableAdd(params);
+    history.push(`/space/${spaceId}/table/${data}`);
   };
 
   // 设置统计信息
@@ -615,7 +610,7 @@ const SpaceLibrary: React.FC = () => {
         open={openDatabase}
         type={AgentComponentTypeEnum.Table}
         onCancel={() => setOpenDatabase(false)}
-        Confirm={Confirm}
+        Confirm={handleConfirmCreateTable}
       />
       {/*复制到空间弹窗*/}
       <MoveCopyComponent

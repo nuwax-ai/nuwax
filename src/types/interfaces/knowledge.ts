@@ -11,7 +11,7 @@ import type {
   FileType,
   UploadFileInfo,
 } from '@/types/interfaces/common';
-import type { Sort } from '@/types/interfaces/request';
+import type { TablePageRequest } from '@/types/interfaces/request';
 import type { FormInstance, UploadFile } from 'antd';
 import { UploadChangeParam } from 'antd/es/upload';
 // 数据新增输入参数
@@ -36,69 +36,16 @@ export interface KnowledgeBaseInfo extends KnowledgeConfigAddParams {
 // 数据更新输入参数
 export type KnowledgeConfigUpdateParams = KnowledgeBaseInfo;
 
-// table ext信息
-export interface TableExtInfo {
-  fixed: string;
-  visible: boolean;
-  subLabel: string;
-  width: string;
-  minWidth: string;
-  settable: boolean;
-  align: string;
-  formatter: string;
-  tips: string;
-  ellipsis: boolean;
-}
-
-// Table Column
-export interface SuperTableColumn {
-  serialNumber: number;
-  label: string;
-  name: string;
-  sortable: boolean;
-  tips: string;
-  ext: TableExtInfo;
-}
-
-// 知识库数据列表请求基础信息
-export interface KnowledgeListBaseInfo {
-  // 当前页,示例值(1)
-  current: number;
-  // 分页pageSize,示例值(10)
-  pageSize: number;
-  // 排序字段信息,可空,一般没有默认为创建时间排序
-  orders: Sort[];
-  // 列的筛选条件,可空
-  filters: {
-    column: string;
-    operator: string;
-    value: object;
-  }[];
-  // 表格的列信息,可空
-  columns: {
-    serialNumber: number;
-    label: string;
-    name: string;
-    sortable: boolean;
-    tips: string;
-    ext: TableExtInfo;
-    children: SuperTableColumn[];
-  }[];
-}
-
 // 知识库数据列表查询
-export interface KnowledgeConfigListParams extends KnowledgeListBaseInfo {
-  // 知识库基础配置-列表查询
-  queryFilter: {
-    spaceId: number;
-    // 知识库名称
-    name: string;
-    // 数据类型,默认文本,1:文本;2:表格
-    dataType: KnowledgeDataTypeEnum;
-    // 问题
-    question: string;
-  };
-}
+export type KnowledgeConfigListParams = TablePageRequest<{
+  spaceId: number;
+  // 知识库名称
+  name: string;
+  // 数据类型,默认文本,1:文本;2:表格
+  dataType: KnowledgeDataTypeEnum;
+  // 问题
+  question: string;
+}>;
 
 // 知识库信息
 export interface KnowledgeInfo extends KnowledgeConfigAddParams {
@@ -164,16 +111,13 @@ export interface KnowledgeDocumentUpdateDocNameParams {
 }
 
 // 知识库文档配置 - 数据列表查询
-export interface KnowledgeDocumentListParams extends KnowledgeListBaseInfo {
-  // 知识库基础配置-列表查询
-  queryFilter: {
-    spaceId: number;
-    // 知识库名称
-    name: string;
-    // 知识库ID
-    kbId: number;
-  };
-}
+export type KnowledgeDocumentListParams = TablePageRequest<{
+  spaceId: number;
+  // 知识库名称
+  name: string;
+  // 知识库ID
+  kbId: number;
+}>;
 
 export interface KnowledgeDocumentStatus {
   // 知识库文档状态,ANALYZING(1, "分析中", "分析中"), ANALYZED(2, "分析成功", "分析成功"), ANALYZING_RAW(3, "分析中", "分段生成中"),ANALYZED_QA(4, "分析中", "问答生成中"),ANALYZED_EMBEDDING(5, "分析中", "向量化中"),ANALYZE_FAILED(10, "分析失败", "分析失败");
@@ -271,13 +215,10 @@ export interface KnowledgeRawSegmentUpdateParams {
 }
 
 // 知识库分段配置 - 数据列表查询
-export interface KnowledgeRawSegmentListParams extends KnowledgeListBaseInfo {
-  // 知识库分段-新增请求参数
-  queryFilter: {
-    spaceId: number;
-    docId: number;
-  };
-}
+export type KnowledgeRawSegmentListParams = TablePageRequest<{
+  spaceId: number;
+  docId: number;
+}>;
 
 // 知识库分段配置 - 数据列表查询 分段信息
 export interface KnowledgeRawSegmentInfo {
@@ -359,15 +300,12 @@ export interface KnowledgeQASearchParams {
 }
 
 // 知识库问答 - 数据列表查询输入参数
-export interface KnowledgeQAListParams extends KnowledgeListBaseInfo {
-  // 知识库问答-新增请求参数
-  queryFilter: {
-    // 当前页,示例值(1)
-    current: number;
-    // 分页pageSize,示例值(10)
-    pageSize: number;
-  };
-}
+export type KnowledgeQAListParams = TablePageRequest<{
+  // 当前页,示例值(1)
+  current: number;
+  // 分页pageSize,示例值(10)
+  pageSize: number;
+}>;
 
 // 知识库问答 - 详细信息
 export interface KnowledgeQAInfo {
@@ -515,17 +453,14 @@ export interface KnowledgeQaAddParams {
 }
 
 // 知识库问答 - 数据列表查询输入参数
-export interface KnowledgeQaListParams extends KnowledgeListBaseInfo {
-  // 知识库问答-新增请求参数
-  queryFilter: {
-    // 当前页,示例值(1)
-    spaceId: number;
-    // 分页pageSize,示例值(10)
-    question: string;
-    // 知识库ID
-    kbId: number;
-  };
-}
+export type KnowledgeQaListParams = TablePageRequest<{
+  // 当前页,示例值(1)
+  spaceId: number;
+  // 分页pageSize,示例值(10)
+  question: string;
+  // 知识库ID
+  kbId: number;
+}>;
 
 // 知识库问答 - 数据更新请求参数
 export interface KnowledgeQaUpdateParams {

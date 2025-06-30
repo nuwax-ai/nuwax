@@ -22,6 +22,7 @@ import { Button, Divider, Empty, Input, Menu, Modal, Radio, Spin } from 'antd';
 import { RadioChangeEvent } from 'antd/lib/radio';
 import { useCallback, useEffect, useRef, useState } from 'react';
 // import { useModel } from 'umi';
+import { apiTableAdd } from '@/services/dataTable';
 import { jumpToMcpCreate } from '@/utils/router';
 import { AnyObject } from 'antd/es/_util/type';
 import { history, useParams } from 'umi';
@@ -279,10 +280,10 @@ const Created: React.FC<CreatedProp> = ({
           tableName: value.name,
           tableDescription: value.description,
           spaceId: spaceId,
+          icon: value.icon,
         };
-        const res = await service.addTask(params);
+        const res = await apiTableAdd(params);
         history.push(`/space/${spaceId}/table/${res.data}`);
-        // setShowCreate(false);
       } catch (error) {}
     }
   };

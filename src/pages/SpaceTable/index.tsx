@@ -1,79 +1,93 @@
-import knowledgeImage from '@/assets/images/database_image.png';
-import AddAndModify, { AddAndModifyRef } from '@/components/AddAndModify';
-import type { FormItem } from '@/components/AddAndModify/type';
 import CreatedItem from '@/components/CreatedItem';
-import DeleteSure from '@/components/DeleteSure';
-import MyTable from '@/components/MyTable';
-import EditTable, { EditTableRef } from '@/components/MyTable/EditTable';
-import service, { IgetDetails } from '@/services/tableSql';
+import { TABLE_TABS_LIST } from '@/constants/dataTable.constants';
+import {
+  apiClearBusinessData,
+  apiExportExcel,
+  apiGetTableData,
+  apiImportExcel,
+  apiTableAddBusinessData,
+  apiTableDeleteBusinessData,
+  apiTableDetail,
+  apiUpdateBusinessData,
+  apiUpdateTableDefinition,
+  apiUpdateTableName,
+} from '@/services/dataTable';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { jumpBack } from '@/utils/router';
+import { TableFieldTypeEnum, TableTabsEnum } from '@/types/enums/dataTable';
+import {
+  TableDefineDetails,
+  TableFieldInfo,
+  TableRowData,
+  UpdateTableFieldInfo,
+} from '@/types/interfaces/dataTable';
+import { modalConfirm } from '@/utils/ant-custom';
 import {
   ClearOutlined,
-  DeleteOutlined,
   DownloadOutlined,
-  EditOutlined,
-  ExclamationCircleFilled,
-  LeftOutlined,
   PlusOutlined,
   ReloadOutlined,
   SaveOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
-import { Button, message, Modal, Space, Tabs, Tag, Upload } from 'antd';
-import { AnyObject } from 'antd/es/_util/type';
+import { Button, message, Space, Tabs, Upload } from 'antd';
+import { Dayjs } from 'dayjs';
+import { cloneDeep } from 'lodash';
+import omit from 'lodash/omit';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
+import AddAndModify from './AddAndModify';
+import DataTable from './DataTable';
+import DeleteSure from './DeleteSure';
 import './index.less';
-import { mockColumns, typeMap } from './params';
+import StructureTable from './StructureTable';
+import TableHeader from './TableHeader';
 
 const SpaceTable = () => {
-  const { spaceId, tableId } = useParams();
-  const [detail, setDetail] = useState<IgetDetails | null>(null);
-
-  const [AddParams, setAddParams] = useState<FormItem[]>([]);
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
+  const tableId = Number(params.tableId);
+  // 数据表详情
+  const [tableDetail, setTableDetail] = useState<TableDefineDetails | null>(
+    null,
+  );
   // 当前显示的表结构还是表数据
-  const [currentContent, setCurrentContent] = useState<string>('structure');
+  const [activeKey, setActiveKey] = useState<TableTabsEnum>(
+    TableTabsEnum.Structure,
+  );
   // 当前表的columns
-  const [columns, setColumns] = useState<TableColumn[]>([]);
-  // 当前表的数据
-  const [tableData, setTableData] = useState<AnyObject[]>([]);
-  // 表结构的数据
-  const [tableStructure, setTableStructure] = useState<AnyObject[]>([]);
-  // 当前可以编辑表格的ref
-  const editTableRef = useRef<EditTableRef>(null);
-  // 当前新增和删除的ref
-  const addedRef = useRef<AddAndModifyRef>(null);
+  const [columns, setColumns] = useState<TableFieldInfo[]>([]);
+  // 当前表的业务数据
+  const [tableData, setTableData] = useState<TableRowData[]>([]);
   // 当前分页的数据
   const [pagination, setPagination] = useState({
-    total: 13,
+    total: 0,
     pageSize: 10,
     current: 1,
   });
   // 导入的loading
   const [importLoading, setImportLoading] = useState(false);
-
   // 导出和保存的loading
   const [loading, setLoading] = useState(false);
   // 开启关闭编辑表的弹窗
   const [open, setOpen] = useState<boolean>(false);
   // 开启关闭清除的弹窗
   const [openDelete, setOpenDelete] = useState<boolean>(false);
+  // 编辑表的form表单字段列表
+  const [formList, setFormList] = useState<TableFieldInfo[]>([]);
+  // 开启关闭编辑表数据的弹窗
+  const [editTableDataVisible, setEditTableDataVisible] =
+    useState<boolean>(false);
+  // 编辑表数据的初始值
+  const [initialValues, setInitialValues] = useState<TableRowData | null>(null);
+  // 缓存系统字段, 用于保存时使用
+  const systemFieldListRef = useRef<TableFieldInfo[]>([]);
 
-  // 切换表结构还是表数据
-  const onChange = (key: string) => {
-    setCurrentContent(key);
-  };
-  //   点击弹出编辑框
-  const onShow = (record?: AnyObject) => {
-    if (addedRef.current) {
-      if (record && record.id) {
-        addedRef.current?.onShow('修改数据', AddParams, record);
-      } else {
-        addedRef.current?.onShow('新增数据', AddParams);
-      }
-    }
+  // 点击弹出编辑框
+  const handleCreateOrEditData = (data?: TableRowData) => {
+    setEditTableDataVisible(true);
+    setInitialValues(data || null);
   };
 
   // 获取当前浏览器的高度
@@ -84,252 +98,238 @@ const SpaceTable = () => {
         document.body.clientHeight) - 160
     );
   };
-  // 触发表格的提交数据
-  const onSave = () => {
-    setLoading(true);
-    if (editTableRef.current) {
-      editTableRef.current.submit();
-    }
+
+  // 数据表新增字段
+  const handleAddField = () => {
+    const _tableDetail = cloneDeep(tableDetail);
+    const fieldList = _tableDetail?.fieldList || [];
+    const sortIndex =
+      fieldList.length > 0 ? fieldList.slice(-1)[0].sortIndex + 1 : 0;
+    _tableDetail?.fieldList?.push({
+      id: uuidv4(),
+      fieldName: '',
+      fieldDescription: '',
+      systemFieldFlag: false,
+      // nullableFlag	是否可为空,true:可空;false:非空(页面显示是否必须，此字段取反)
+      nullableFlag: true,
+      // 是否唯一,true:唯一;false:非唯一
+      uniqueFlag: false,
+      // 是否启用：true:启用;false:禁用
+      enabledFlag: true,
+      sortIndex,
+      fieldType: TableFieldTypeEnum.String,
+      dataLength: TableFieldTypeEnum.String,
+      defaultValue: null,
+      isNew: true,
+    });
+    setTableDetail(_tableDetail);
+    // 滚动到表格底部
+    setTimeout(() => {
+      // const tableBody = document.querySelector('.ant-table-tbody');
+      const tableBody = document.querySelector(
+        '.ant-table-tbody-virtual-holder-inner',
+      );
+      if (tableBody) {
+        tableBody.scrollTop = tableBody.scrollHeight;
+      }
+    }, 0);
   };
 
-  // 触发表格新增行
-  const onAddRow = () => {
-    if (editTableRef.current) {
-      editTableRef.current.handleAddRow({
-        nullableFlag: false,
-        enabledFlag: true,
-        fieldType: 1,
-        dataLength: 1,
-      });
-    }
+  // 获取数据表结构详情
+  const getTableStructureDetails = async () => {
+    const { data } = await apiTableDetail(tableId);
+    const fieldList = data?.fieldList || [];
+    const [_systemFieldList, _customFieldList] = fieldList.reduce<
+      [TableFieldInfo[], TableFieldInfo[]]
+    >(
+      (acc, item) => {
+        acc[item.systemFieldFlag ? 0 : 1].push(item);
+        return acc;
+      },
+      [[], []],
+    );
+    systemFieldListRef.current = _systemFieldList;
+    const list: TableFieldInfo[] = _systemFieldList?.length
+      ? [
+          {
+            id: 0,
+            fieldName: '--',
+            fieldDescription: '--',
+            systemFieldFlag: true,
+            fieldType: TableFieldTypeEnum.String,
+            nullableFlag: false,
+            defaultValue: '',
+            uniqueFlag: false,
+            enabledFlag: true,
+            sortIndex: 0,
+            children: _systemFieldList,
+          },
+          ..._customFieldList,
+        ]
+      : _customFieldList;
+    setTableDetail({
+      ...(data as TableDefineDetails),
+      fieldList: list,
+    });
   };
 
-  // 获取当前的数据
-  const getDetails = async () => {
+  // 保存表结构
+  const handleSaveTableStructure = async () => {
     try {
-      const res = await service.getDetail(tableId);
-      const addParams = res.data.fieldList
-        .filter((item) => !item.systemFieldFlag)
-        .map((item) => {
-          return {
-            label: item.fieldDescription,
-            dataIndex: item.fieldName,
-            key: item.fieldName,
-            type: typeMap[item.fieldType],
-            rules: item.nullableFlag
-              ? undefined
-              : [{ required: true, message: '请输入' }],
-            options:
-              item.fieldType === 4
-                ? [
-                    { label: 'true', value: true },
-                    { label: 'false', value: false },
-                  ]
-                : undefined,
-            maxLength:
-              item.fieldType === 1
-                ? 255
-                : item.fieldType === 7
-                ? 4194304
-                : undefined,
-          };
-        });
-      setAddParams(addParams);
-      setDetail(res.data);
-      const arr = res.data.fieldList.map((item) => {
-        return {
-          title: item.fieldName,
-          description: item.fieldDescription,
-          dataIndex: item.fieldName,
-          key: item.fieldName,
-          type:
-            item.fieldType === 5
-              ? ('time' as const)
-              : item.fieldType === 4
-              ? ('checkbox' as const)
-              : ('text' as const),
-          width: 180,
-        };
-      });
-      const table = res.data.fieldList.map((item) => {
-        if (item.fieldType === 1 || item.fieldType === 7) {
-          return {
-            ...item,
-            dataLength: item.fieldType,
-            fieldType: 1,
-            nullableFlag: !item.nullableFlag,
-          };
-        }
-        return { ...item, nullableFlag: !item.nullableFlag };
-      });
-      setTableStructure(table);
-      setColumns(arr);
-    } catch (error) {}
-  };
+      setLoading(true);
+      // 自定义字段列表
+      const _customFieldList: UpdateTableFieldInfo[] =
+        tableDetail?.fieldList
+          ?.filter((item: TableFieldInfo) => !item.systemFieldFlag)
+          ?.map((item: UpdateTableFieldInfo) => {
+            // 删除自定义属性
+            let _item = item.isNew ? omit(item, ['id']) : item;
+            if (
+              _item.fieldType === TableFieldTypeEnum.String &&
+              _item.dataLength === TableFieldTypeEnum.MEDIUMTEXT
+            ) {
+              return {
+                ..._item,
+                fieldType: TableFieldTypeEnum.MEDIUMTEXT,
+              };
+            }
 
-  // 获取最新的表格数据，提交
-  const onDataSourceChange = async (data: any) => {
-    try {
-      const arr = data.map((item: AnyObject) => {
-        if (item.fieldType === 1 && item.dataLength === 7) {
-          return {
-            ...item,
-            fieldType: 7,
-            nullableFlag: !item.nullableFlag,
-          };
-        }
-        return { ...item, nullableFlag: !item.nullableFlag };
-      });
+            return _item;
+          }) || [];
       const _params = {
         id: tableId,
-        fieldList: arr,
+        fieldList: [...systemFieldListRef.current, ..._customFieldList],
       };
-      await service.modifyTableStructure(_params);
+      await apiUpdateTableDefinition(_params);
       setLoading(false);
-      getDetails();
       message.success('修改成功');
+      getTableStructureDetails();
     } finally {
       setLoading(false);
     }
-    // setTableData(data);
   };
 
-  // 获取表数据的数据
-  const getTable = async (params: Global.IGetList) => {
+  // 查询数据表的业务数据
+  const getTableBusinessData = async (
+    pageNo: number = 1,
+    pageSize: number = 10,
+  ) => {
     const _params = {
-      tableId: tableId,
-      ...params,
+      tableId,
+      pageNo,
+      pageSize,
     };
-    try {
-      const res = await service.getTableData(_params);
-      setTableData(res.data.records);
-      setPagination({
-        ...pagination,
-        total: res.data.total,
-        current: res.data.current,
-        pageSize: res.data.size,
-      });
-    } catch (error) {}
+    const { data } = await apiGetTableData(_params);
+    setColumns(data?.columnDefines || []);
+    // 过滤掉系统字段
+    const _fieldList = data?.columnDefines.filter(
+      (item) => !item.systemFieldFlag,
+    );
+    setFormList(_fieldList || []);
+    // 业务数据
+    setTableData(data.records);
+    setPagination({
+      ...pagination,
+      total: data.total,
+      current: data.current,
+      pageSize: data.size,
+    });
   };
+
   // 新增和修改数据
-  const onAdd = async (values: AnyObject) => {
-    try {
-      const _params = {
-        tableId: tableId,
-        rowData: values,
-        rowId: values.id,
-      };
-      if (_params && _params.rowId) {
-        await service.modifyTableData(_params);
-      } else {
-        await service.addTableData(_params);
-      }
-      getTable({ pageNo: pagination.current, pageSize: pagination.pageSize });
-      // getDetails();
-      addedRef.current?.onClose();
-    } finally {
-      addedRef.current?.stopLoading();
+  const handleCreateUpdateData = async (values: TableRowData) => {
+    const _params = {
+      tableId,
+      rowData: values,
+    };
+    if (initialValues?.id) {
+      await apiUpdateBusinessData({
+        ..._params,
+        rowId: Number(initialValues.id),
+      });
+    } else {
+      await apiTableAddBusinessData(_params);
     }
-    // setVisible(false);
+    setEditTableDataVisible(false);
+    getTableBusinessData(pagination.current, pagination.pageSize);
   };
 
-  // 修改当前数据表的数据
-  const Confirm = async (value: AnyObject) => {
-    try {
-      const _params = {
-        tableName: value.name,
-        tableDescription: value.description,
-        icon: value.icon,
-        spaceId: spaceId,
-        id: detail?.id,
-      };
-      await service.modifyTask(_params);
-      setDetail({
-        ...(detail as IgetDetails),
-        tableName: value.name,
-        tableDescription: value.description,
-        icon: value.icon,
-      });
-      setOpen(false);
-    } catch (error) {}
+  // 更新数据表名称和描述信息
+  const handleUpdateTableName = async (info: {
+    icon: string;
+    name: string;
+    description: string;
+  }) => {
+    if (!tableDetail) {
+      return;
+    }
+    const { icon, name, description } = info;
+    const _params = {
+      tableName: name,
+      tableDescription: description,
+      icon,
+      id: tableDetail.id,
+    };
+    await apiUpdateTableName(_params);
+    setTableDetail({
+      ...(tableDetail as TableDefineDetails),
+      tableName: name,
+      tableDescription: description,
+      icon,
+    });
+    setOpen(false);
   };
 
-  // 删除当前的数据
-  const onDelete = async (id: number) => {
-    try {
-      Modal.confirm({
-        title: '删除确认',
-        content: '确定要删除吗？',
-        okText: '确定',
-        cancelText: '取消',
-        icon: <ExclamationCircleFilled />,
-        onOk: async () => {
-          const _params = {
-            rowId: id,
-            tableId: tableId,
-          };
-          await service.deleteTableData(_params);
-          message.success('删除成功');
-          if (tableData.length === 1) {
-            getDetails();
-            setTableData([]);
-          } else {
-            getTable({
-              pageNo: pagination.current,
-              pageSize: pagination.pageSize,
-            });
-          }
-        },
-      });
-    } catch (error) {}
+  // 删除数据表业务数据
+  const handleDeleteTableBusinessData = async (id: number) => {
+    modalConfirm('删除确认', '确定要删除吗？', async () => {
+      await apiTableDeleteBusinessData(tableId, id);
+      message.success('删除成功');
+      getTableBusinessData(pagination.current, pagination.pageSize);
+    });
   };
 
   // 切换页码或者每页显示的条数
-  const changePagination = (page: number, pageSize: number) => {
-    // setPagination({ ...pagination, current: page, pageSize });
-    getTable({ pageNo: page, pageSize: pageSize });
-  };
-  // 清除所有数据
-  const clearData = async () => {
-    setOpenDelete(true);
+  const changePagination = (pageNo: number, pageSize: number) => {
+    getTableBusinessData(pageNo, pageSize);
   };
 
-  const onSureClear = async () => {
-    try {
-      await service.clearTableData(tableId);
-      message.success('清除成功');
-      setTableData([]);
-      setPagination({ total: 0, current: 1, pageSize: 10 });
-      setOpenDelete(false);
-      getDetails();
-    } catch (error) {}
+  // 确认清空数据表
+  const handleConfirmClear = async () => {
+    await apiClearBusinessData(tableId);
+    message.success('清除成功');
+    setTableData([]);
+    setPagination({ total: 0, current: 1, pageSize: 10 });
+    setOpenDelete(false);
   };
 
   // 导入数据
   const handleChangeFile = async (info: any) => {
     setImportLoading(true);
     try {
-      await service.importTableData(tableId, info.file);
+      await apiImportExcel(tableId, info.file);
       message.success('导入成功');
-      getTable({ pageNo: 1, pageSize: pagination.pageSize });
+      // 重新查询数据表的业务数据
+      getTableBusinessData();
       setPagination({ ...pagination, current: 1 });
       setImportLoading(false);
     } finally {
       setImportLoading(false);
     }
   };
+
   // 导出数据
-  const exportData = async () => {
+  const handleExportData = async () => {
     setLoading(true);
     try {
-      const _res = await service.exportTableData(tableId);
+      const _res = await apiExportExcel(tableId);
       const blob = new Blob([_res.data], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       }); // 将响应数据转换为 Blob 对象
       const objectURL = URL.createObjectURL(blob); // 创建一个 URL 对象
       const link = document.createElement('a'); // 创建一个 a 标签
       link.href = objectURL;
-      link.download = `${detail?.tableName}.xlsx`; // 设置下载文件的名称
+      link.download = `${tableDetail?.tableName}.xlsx`; // 设置下载文件的名称
       link.click(); // 模拟点击下载
       URL.revokeObjectURL(objectURL); // 释放 URL 对象
       setLoading(false);
@@ -339,103 +339,105 @@ const SpaceTable = () => {
   };
 
   useEffect(() => {
-    getDetails();
-    getTable({ pageNo: 1, pageSize: pagination.pageSize });
+    getTableStructureDetails();
   }, []);
 
-  // 表数据的操作列
-  const actionColumn = [
-    {
-      name: 'edit',
-      icon: EditOutlined,
-      description: '编辑',
-      func: (record: any) => onShow(record),
-    },
-    {
-      name: 'delete',
-      icon: DeleteOutlined,
-      description: '删除',
-      func: (record: any) => {
-        onDelete(record.id);
-      },
-    },
-  ];
+  // 切换表结构还是表数据
+  const handleChangeTabs = (key: string) => {
+    setActiveKey(key as TableTabsEnum);
+    if (key === TableTabsEnum.Structure) {
+      getTableStructureDetails();
+    } else {
+      getTableBusinessData();
+    }
+  };
 
+  // 刷新
+  const handleRefresh = () => {
+    if (activeKey === TableTabsEnum.Structure) {
+      getTableStructureDetails();
+    } else {
+      getTableBusinessData();
+    }
+  };
+
+  // 输入框值改变
+  const handleChangeValue = (
+    id: string | number,
+    attr: string,
+    value: React.Key | boolean | Dayjs | null,
+  ) => {
+    const _tableDetail = cloneDeep(tableDetail);
+    const _fieldList = _tableDetail?.fieldList?.map((item: TableFieldInfo) => {
+      if (item.id === id) {
+        // 长文本: 禁止添加默认值;
+        if (attr === 'fieldType' || attr === 'dataLength') {
+          item.defaultValue = '';
+        }
+        return {
+          ...item,
+          [attr]: value,
+        };
+      }
+      return item;
+    });
+    _tableDetail.fieldList = _fieldList;
+    setTableDetail(_tableDetail);
+  };
+
+  // 删除字段(id: 默认id是主键，number型，新增字段id是uuid自定义的)
+  const handleDelField = (id: string | number) => {
+    const _tableDetail = cloneDeep(tableDetail);
+    const _fieldList = _tableDetail?.fieldList?.filter(
+      (item: TableFieldInfo) => item.id !== id,
+    );
+    _tableDetail.fieldList = _fieldList;
+    setTableDetail(_tableDetail);
+  };
   return (
     <div className="database-container">
       {/* 头部内容 */}
-      <div className="database-header dis-left">
-        <LeftOutlined
-          className="icon-back"
-          onClick={() => jumpBack(`/space/${spaceId}/library`)}
-        />
-        <img
-          className="logo"
-          src={detail && detail.icon ? detail.icon : (knowledgeImage as string)}
-          alt=""
-        />
-        <div>
-          <div className="dis-left database-header-title">
-            <h3 className="name ">{detail?.tableName}</h3>
-            <EditOutlined
-              className="cursor-pointer hover-box"
-              onClick={() => setOpen(true)}
-            />
-          </div>
-          <Tag className="tag-style">{`${pagination.total}条记录`}</Tag>
-        </div>
-      </div>
+      <TableHeader
+        spaceId={spaceId}
+        tableDetail={tableDetail}
+        total={pagination.total}
+        onClick={() => setOpen(true)}
+      />
       <div className="inner-container">
         <div className="dis-sb">
           <Tabs
-            items={[
-              { key: 'structure', label: '表结构' },
-              { key: 'data', label: '表数据' },
-            ]}
-            activeKey={currentContent}
-            onChange={onChange}
+            items={TABLE_TABS_LIST}
+            activeKey={activeKey}
+            onChange={handleChangeTabs}
             className="tabs-style"
           />
           <Space>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                getDetails();
-                getTable({ pageNo: 1, pageSize: pagination.pageSize });
-                setPagination({ ...pagination, current: 1 });
-                if (currentContent !== 'data') {
-                  editTableRef.current?.resetFields();
-                }
-              }}
-            >
+            <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
               刷新
             </Button>
-            {currentContent === 'structure' && (
+            {activeKey === TableTabsEnum.Structure ? (
               <>
-                <Button icon={<PlusOutlined />} onClick={onAddRow}>
+                <Button icon={<PlusOutlined />} onClick={handleAddField}>
                   新增字段
                 </Button>
                 <Button
                   loading={loading}
                   icon={<SaveOutlined />}
-                  onClick={onSave}
+                  onClick={handleSaveTableStructure}
                 >
                   保存
                 </Button>
               </>
-            )}
-            {currentContent === 'data' && (
+            ) : (
               <>
-                <Button icon={<ClearOutlined />} onClick={clearData}>
+                <Button
+                  icon={<ClearOutlined />}
+                  onClick={() => setOpenDelete(true)}
+                  disabled={!tableData?.length} // 没有数据时禁用清空按钮
+                >
                   清除所有数据
                 </Button>
-                <Upload
-                  accept={'.xlsx'}
-                  // action={''}
-                  onChange={handleChangeFile}
-                  showUploadList={false}
-                  beforeUpload={() => false}
-                >
+                <Upload accept={'.xlsx'} onChange={handleChangeFile}>
                   <Button icon={<UploadOutlined />} loading={importLoading}>
                     导入
                   </Button>
@@ -443,11 +445,15 @@ const SpaceTable = () => {
                 <Button
                   icon={<DownloadOutlined />}
                   loading={loading}
-                  onClick={exportData}
+                  onClick={handleExportData}
                 >
                   导出
                 </Button>
-                <Button icon={<PlusOutlined />} onClick={onShow}>
+                <Button
+                  icon={<PlusOutlined />}
+                  onClick={() => handleCreateOrEditData()}
+                  disabled={!columns?.some((item) => !item.systemFieldFlag)} // 没有数据时禁用新增按钮
+                >
                   新增
                 </Button>
               </>
@@ -455,64 +461,60 @@ const SpaceTable = () => {
           </Space>
         </div>
         <div className="flex-1">
-          {currentContent === 'data' && (
-            <MyTable
+          {activeKey === TableTabsEnum.Structure ? (
+            <StructureTable
+              existTableDataFlag={tableDetail?.existTableDataFlag}
+              tableData={tableDetail?.fieldList || []}
+              scrollHeight={getBrowserHeight()}
+              onChangeValue={handleChangeValue}
+              onDeleteField={handleDelField}
+            />
+          ) : (
+            <DataTable
               columns={columns}
               tableData={tableData}
-              showEditRow
-              showDescription
-              // showIndex
               pagination={pagination}
-              showPagination
-              actionColumnFixed
               onPageChange={changePagination}
               scrollHeight={getBrowserHeight() + 40}
-              actionColumn={actionColumn}
-              actionColumnWidth={100}
-            />
-          )}
-          {currentContent === 'structure' && (
-            <EditTable
-              dataEmptyFlag={detail ? detail.existTableDataFlag : false}
-              columns={mockColumns}
-              tableData={tableStructure || []}
-              showIndex
-              showAddRow
-              pagination={pagination}
-              showPagination={false}
-              scrollHeight={getBrowserHeight()}
-              onDataSourceChange={onDataSourceChange}
-              formRef={editTableRef}
-              rowKey={'row_key_chao'}
-              actionColumnWidth={60}
+              onEdit={handleCreateOrEditData}
+              onDel={(record) =>
+                handleDeleteTableBusinessData(Number(record.id))
+              }
             />
           )}
         </div>
       </div>
-      <AddAndModify ref={addedRef} onSubmit={onAdd} />
+      <AddAndModify
+        open={editTableDataVisible}
+        title={initialValues ? '修改数据' : '新增数据'}
+        onSubmit={handleCreateUpdateData}
+        formList={formList}
+        initialValues={initialValues}
+        onCancel={() => setEditTableDataVisible(false)}
+      />
       <CreatedItem
         type={AgentComponentTypeEnum.Table}
         mode={CreateUpdateModeEnum.Update}
         spaceId={spaceId}
         open={open}
         onCancel={() => setOpen(false)}
-        Confirm={Confirm}
+        Confirm={handleUpdateTableName}
         info={
-          detail
+          tableDetail
             ? {
-                name: detail.tableName,
-                description: detail.tableDescription,
-                icon: detail.icon,
+                name: tableDetail.tableName,
+                description: tableDetail.tableDescription,
+                icon: tableDetail.icon,
               }
             : undefined
         }
       />
       <DeleteSure
-        onSure={onSureClear}
+        onSure={handleConfirmClear}
         onCancel={() => setOpenDelete(false)}
         open={openDelete}
         title={'清除确认'}
-        sureText={detail?.tableName || '人之初性本善'}
+        sureText={tableDetail?.tableName || ''}
       />
     </div>
   );

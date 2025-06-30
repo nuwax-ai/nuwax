@@ -11,16 +11,26 @@ const isNumber = (value: string) => {
   return !Number.isNaN(Number(value));
 };
 
+// 校验手机号是否合法
 function isValidPhone(phone: string) {
   const reg = /^1[3456789]\d{9}$/;
   return reg.test(phone);
 }
 
+// 校验邮箱地址是否合法
 function isValidEmail(email: string) {
   const reg = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,}$/;
   return reg.test(email);
 }
 
+// 校验数据库表名是否合法
+// 1. 表名必须以字母开头，后面可以跟字母、数字或下划线。
+function validateTableName(tableName: string) {
+  const reg = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+  return reg.test(tableName);
+}
+
+// 校验登录密码
 function validatePassword(password: string) {
   return password?.length >= 6;
   // const reg = /^(?=.*\d)(?=.*[a-zA-Z])[\da-zA-Z~!@#$%^&*]{8,16}$/;
@@ -161,4 +171,5 @@ export {
   isValidEmail,
   isValidPhone,
   validatePassword,
+  validateTableName,
 };
