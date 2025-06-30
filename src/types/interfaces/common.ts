@@ -9,6 +9,7 @@ import type {
   CreateUpdateModeEnum,
   InputTypeEnum,
   NodeShapeEnum,
+  UploadFileStatus,
 } from '@/types/enums/common';
 import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
@@ -322,6 +323,7 @@ export interface CreatedNodeItem {
   knowledgeBaseId?: number;
   config: any;
   toolName?: string;
+  deployed?: string;
 }
 
 export interface MCPNodeItem {
@@ -433,12 +435,16 @@ export interface SubmitButtonProps {
 // 上传文件信息
 export interface UploadFileInfo {
   url: string;
-  key: string;
-  fileName: string;
-  mimeType: string;
+  name: string;
+  type: string;
+  key?: string;
   size: number;
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
+  percent?: number;
+  status?: UploadFileStatus;
+  uid: string;
+  response?: any;
 }
 
 // 分页输入参数

@@ -1,14 +1,14 @@
 @import '@/styles/color';
 // 去除当前model的padding
 .created-modal-style {
-  div:first-child {
-    height: 100%;
-  }
+  // div:first-child {
+  //   height: 100%;
+  // }
 
   .ant-modal-header {
     margin-bottom: 0;
-    height: 75px;
-    padding: 20px 0;
+    height: 65px;
+    padding: 15px 0;
     background-color: @WHITE04;
   }
 
@@ -42,7 +42,7 @@
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
   background-color: @WHITE04;
-  padding-left: 24px;
+  padding-left: 12px;
 
   .radio-title-style {
     .ant-radio-button-wrapper {
@@ -50,13 +50,32 @@
       transition: none;
     }
 
+    &:last-child {
+      .radio-button-style {
+        &::after {
+          display: none;
+        }
+      }
+    }
+
     .radio-button-style {
       background-color: @WHITE04;
-      font-size: 18px;
+      font-size: 16px;
+      font-weight: 500;
       border-radius: 0;
-      box-shadow: 1px 0 0 0 @GRAY06 inset;
       padding: 0 20px;
       margin: 2px 0;
+      position: relative;
+
+      &::after {
+        content: '';
+        width: 1px;
+        height: 70%;
+        background-color: @GRAY06;
+        position: absolute;
+        top: 15%;
+        right: 0;
+      }
     }
 
     // 移除第一个单选按钮的box-shadow
@@ -66,9 +85,33 @@
   }
 }
 
+.created-list-spin-style {
+  min-height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .ant-spin-container {
+    display: flex;
+    width: 100%;
+    flex: 1;
+    min-height: 100%;
+    flex-direction: column;
+  }
+}
+
+.created-list-empty-style {
+  height: 100%;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 // 内容部分
 .created-container {
-  height: 100%;
+  height: 70vh;
+  max-height: 700px;
+  min-height: 400px;
   border-top: 1px solid @GRAY06;
   overflow: hidden;
   border-bottom-left-radius: 8px;
@@ -103,7 +146,7 @@
       height: 120px;
       padding: 13px 23px;
       box-sizing: border-box;
-      border-bottom: 1px solid #e5e5e5;
+      border-bottom: 1px solid @GRAY17;
 
       .left-image-style {
         width: 40px;
@@ -145,7 +188,7 @@
     .mcp-tools-style {
       padding-left: 65px;
       padding-right: 16px;
-      border-bottom: 1px solid #e5e5e5;
+      border-bottom: 1px solid @GRAY17;
     }
 
     .fold-icon-style {
@@ -167,7 +210,7 @@
       padding: 12px 0;
       justify-content: space-between;
       align-items: flex-start;
-      border-bottom: 1px solid #e5e5e5;
+      border-bottom: 1px solid @GRAY17;
 
       &:last-child {
         border-bottom: none;

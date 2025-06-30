@@ -243,4 +243,12 @@ export enum RunResultStatusEnum { // 工作流节点运行结果状态
   FINISHED = 'FINISHED',
   FAILED = 'FAILED',
   EXECUTING = 'EXECUTING',
+  STOP_WAIT_ANSWER = 'STOP_WAIT_ANSWER',
+}
+
+export enum UploadFileStatus {
+  error = 'error',
+  done = 'done',
+  uploading = 'uploading',
+  removed = 'removed',
 }

@@ -5,7 +5,6 @@ import {
   branchTypeMap,
   compareTypeMap,
   EXCEPTION_HANDLE_OPTIONS,
-  EXCEPTION_NODES_TYPE,
   optionsMap,
 } from '@/constants/node.constants';
 import useNodeSelection from '@/hooks/useNodeSelection';
@@ -19,11 +18,12 @@ import {
 import { ConditionBranchTypeEnum } from '@/types/enums/node';
 import { ChildNode, NodeProps, RunResultItem } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
+import { showExceptionHandle } from '@/utils/graph';
 import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
 import { Tag } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import '../index.less';
 import './registerCustomNodes.less';
 import RunResult from './runResult';
@@ -82,8 +82,8 @@ const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
     <div className="qa-node-content-style">
       <div className="dis-left">
         <span className="text-right qa-title-style">输入</span>
-        {inputArgs?.slice(0, 2).map((item) => (
-          <Tag key={item.name}>{item.name}</Tag>
+        {inputArgs?.slice(0, 2).map((item, index) => (
+          <Tag key={`inputArgs-${item.name}-${index}`}>{item.name}</Tag>
         ))}
         {inputArgs && inputArgs.length > 2 && (
           <Tag>+{inputArgs.length - 2}</Tag>
@@ -102,7 +102,10 @@ const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
       </div>
       {answerType === AnswerTypeEnum.SELECT &&
         data.nodeConfig.options?.map((item, index) => (
-          <div key={`${item.uuid}`} className="dis-left">
+          <div
+            key={`options-${item.uuid || optionsMap[index]}-${index}`}
+            className="dis-left"
+          >
             <span className="text-right qa-title-style"></span>
             <Tag>{optionsMap[index]}</Tag>
             <span className="qa-content-style">
@@ -141,11 +144,13 @@ const DISABLE_EDIT_NODE_TYPES = [
   NodeTypeEnum.End,
 ];
 const NodeRunResult: React.FC<{
-  data: RunResultItem[];
+  data: RunResultItem[] | [];
 }> = ({ data }) => {
   const time = (
     (data?.reduce((acc, item) => {
-      return acc + (item.options?.endTime - item.options?.startTime);
+      return (
+        acc + ((item?.options?.endTime || 0) - (item?.options?.startTime || 0))
+      );
     }, 0) || 0) / 1000
   ).toFixed(3);
   const total = data?.length || 0;
@@ -156,13 +161,15 @@ const NodeRunResult: React.FC<{
   const [onlyError, setOnlyError] = useState(false);
   // 是否展开
   const [expanded, setExpanded] = useState(false);
-  const [innerData, setInnerData] = useState<RunResultItem[]>([]);
+  const [innerData, setInnerData] = useState<RunResultItem[] | []>([]);
 
   const success = data.every(
-    (item) => item.status === RunResultStatusEnum.FINISHED,
+    (item) => item?.status === RunResultStatusEnum.FINISHED,
   );
   const isExecuting = data.some(
-    (item) => item.status === RunResultStatusEnum.EXECUTING,
+    (item) =>
+      item?.status === RunResultStatusEnum.EXECUTING ||
+      item?.status === RunResultStatusEnum.STOP_WAIT_ANSWER,
   );
 
   // 处理页码变化
@@ -189,9 +196,10 @@ const NodeRunResult: React.FC<{
 
   useEffect(() => {
     if (onlyError && !success) {
-      setInnerData(
-        data.filter((item) => item.status === RunResultStatusEnum.FAILED),
+      const _data = data.filter(
+        (item) => item?.status === RunResultStatusEnum.FAILED,
       );
+      setInnerData(_data.length > 0 ? _data : []);
     } else {
       setInnerData(data);
     }
@@ -201,14 +209,36 @@ const NodeRunResult: React.FC<{
     setPageTotal(innerData.length);
     setCurrent(1);
   }, [innerData]);
+  const genRunResultTitle = useCallback(() => {
+    const statusList = data.map((item) => item?.status);
+
+    switch (true) {
+      case statusList.some(
+        (status) => status === RunResultStatusEnum.STOP_WAIT_ANSWER,
+      ):
+        return '请答复问题';
+      case statusList.some(
+        (status) => status === RunResultStatusEnum.EXECUTING,
+      ):
+        return '运行中';
+      case statusList.some((status) => status === RunResultStatusEnum.FAILED):
+        return '运行失败';
+      case statusList.every(
+        (status) => status === RunResultStatusEnum.FINISHED,
+      ):
+        return '运行成功';
+      default:
+        return '运行失败';
+    }
+  }, [data]);
 
   if (data?.length === 0) {
     return null;
   }
-
   return (
     <RunResult
       success={success}
+      title={genRunResultTitle()}
       loading={isExecuting}
       collapsible={!isExecuting}
       time={`${time}s`}
@@ -219,7 +249,6 @@ const NodeRunResult: React.FC<{
       onOnlyErrorChange={handleOnlyErrorChange}
       expanded={expanded}
       onExpandChange={handleExpandChange}
-      batchVariables={innerData[current - 1]?.options?.data || {}}
       inputParams={innerData[current - 1]?.options?.input || {}}
       outputResult={innerData[current - 1]?.options?.data || {}}
     />
@@ -286,14 +315,13 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
   };
 
   const canNotEditNode = DISABLE_EDIT_NODE_TYPES.includes(data.type);
+  const runResults = data.runResults || [];
   const showRunResult = [NodeTypeEnum.LoopStart, NodeTypeEnum.LoopEnd].includes(
     data.type,
   )
     ? false
-    : !!data.runResults?.length; //循环内的开始结果节点不展示
-  const showExceptionHandle =
-    data.nodeConfig.exceptionHandleConfig &&
-    EXCEPTION_NODES_TYPE.includes(data.type);
+    : !!runResults.length; //循环内的开始结果节点不展示
+  const showException = showExceptionHandle(data);
 
   if (!data) {
     return null;
@@ -332,12 +360,12 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
           <IntentRecognitionNode data={data} />
         )}
         {/* 异常处理 */}
-        {showExceptionHandle && (
+        {showException && (
           <ExceptionHandle data={data.nodeConfig.exceptionHandleConfig} />
         )}
       </div>
       {/* 运行结果 */}
-      {showRunResult && <NodeRunResult data={data.runResults} />}
+      {showRunResult && <NodeRunResult data={runResults} />}
     </>
   );
 };
@@ -363,7 +391,8 @@ export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
     node.setData({ name: editValue });
     return true;
   };
-  const showRunResult = data.runResults?.length;
+  const runResults = data.runResults || [];
+  const showRunResult = !!runResults.length;
   return (
     <>
       <div
@@ -386,7 +415,7 @@ export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
         </div>
         <div className="loop-node-content" />
       </div>
-      {showRunResult && <NodeRunResult data={data.runResults} />}
+      {showRunResult && <NodeRunResult data={runResults} />}
     </>
   );
 };

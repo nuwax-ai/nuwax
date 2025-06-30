@@ -26,13 +26,13 @@ import './nodeItem.less';
 // 定义一些公共的数组
 
 // 定义开始节点
-const StartNode: React.FC<NodeDisposeProps> = ({ form }) => {
+const StartNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
   return (
     <Form.Item name={'inputArgs'}>
       <CustomTree
         title={'输入'}
         inputItemName={'inputArgs'}
-        params={form.getFieldValue('inputArgs') || []} // 改为直接读取表单最新值
+        params={nodeConfig?.inputArgs || []}
         form={form}
         showCheck
       />
@@ -503,7 +503,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
 };
 
 // 定义代码节点
-const CodeNode: React.FC<NodeDisposeProps> = ({ form }) => {
+const CodeNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
   const [show, setShow] = useState(false);
   const { setIsModified } = useModel('workflow');
   const fieldName =
@@ -548,7 +548,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ form }) => {
       </div>
       <CustomTree
         title={'输出'}
-        params={form.getFieldValue('outputArgs') || []} // 改为直接读取表单最新值
+        params={nodeConfig?.outputArgs || []}
         form={form}
         inputItemName={'outputArgs'}
       />

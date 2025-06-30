@@ -1,4 +1,5 @@
 import { DataTypeEnum } from '@/types/enums/common';
+import { convertValueToEditorValue } from '@/utils/graph';
 import { Form } from 'antd';
 import _ from 'lodash';
 import { useMemo } from 'react';
@@ -52,11 +53,8 @@ function _mergeByTemplate(template: any, source: any) {
 
 interface UseSpecificContentProps {
   watchField: string;
-  exceptionItemProps: any;
-}
-
-interface UseSpecificContentReturn {
-  specificContent: any;
+  specificContent: string;
+  fieldName: string;
 }
 
 /**
@@ -66,27 +64,46 @@ interface UseSpecificContentReturn {
  */
 export const useSpecificContent = ({
   watchField,
-  exceptionItemProps,
-}: UseSpecificContentProps): UseSpecificContentReturn => {
+  fieldName,
+  specificContent: initialSpecificContent,
+}: UseSpecificContentProps): string => {
   const form = Form.useFormInstance();
   // 监听表单中的 outputArgs 字段变化
   const outputArgs = Form.useWatch(watchField, { form, preserve: true });
+  const exceptionHandleConfig =
+    Form.useWatch(fieldName, {
+      form,
+      preserve: true,
+    }) || {};
 
   // 使用 useMemo 计算 specificContent，当 outputArgs 或 exceptionItemProps.specificContent 变化时重新计算
   const specificContent = useMemo(() => {
-    const { specificContent: originalSpecificContent } = exceptionItemProps;
-    const outputArgsJSON = _convertOutputArgsToJSON(outputArgs);
+    const originalSpecificContent =
+      convertValueToEditorValue(
+        exceptionHandleConfig.specificContent || initialSpecificContent,
+      ) || '{}';
 
-    // 以outputArgsJSON的字段为主不关心除了引用对象之前的值，把specificContent上value 赋值给 outputArgsJSON
-    const finalSpecificContent = _mergeByTemplate(
-      outputArgsJSON,
-      originalSpecificContent,
-    );
+    try {
+      if (!outputArgs) {
+        return '';
+      }
+      const outputArgsJSON = _convertOutputArgsToJSON(outputArgs);
 
-    return finalSpecificContent;
-  }, [outputArgs, exceptionItemProps.specificContent]);
+      // 以outputArgsJSON的字段为主不关心除了引用对象之前的值，把specificContent上value 赋值给 outputArgsJSON
+      const finalSpecificContent = _mergeByTemplate(
+        outputArgsJSON,
+        JSON.parse(originalSpecificContent),
+      );
+      return finalSpecificContent;
+    } catch (error) {
+      return '';
+    }
+  }, [
+    outputArgs,
+    exceptionHandleConfig.specificContent,
+    exceptionHandleConfig.exceptionHandleType,
+    initialSpecificContent,
+  ]);
 
-  return {
-    specificContent,
-  };
+  return specificContent;
 };

@@ -1,4 +1,5 @@
 import logo from '@/assets/images/logo.png';
+import AliyunCaptcha from '@/components/AliyunCaptcha';
 import SiteFooter from '@/components/SiteFooter';
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
@@ -26,6 +27,7 @@ const cx = classNames.bind(styles);
 
 const DefaultCode = Array(VERIFICATION_CODE_LEN).fill(null);
 const VerifyCode: React.FC = () => {
+  const elementId = 'aliyun-captcha-sms';
   const location = useLocation();
   const navigate = useNavigate();
   const { countDown, handleCount } = useCountDown();
@@ -33,8 +35,10 @@ const VerifyCode: React.FC = () => {
   const [codeString, setCodeString] = useState<string>('');
   const [errorString, setErrorString] = useState<string>('');
   const inputRef = useRef<InputRef | null>(null);
-  const { phoneOrEmail, areaCode, authType, captchaVerifyParam } =
-    location.state;
+  const { phoneOrEmail, areaCode, authType } = location.state;
+  const [captchaVerifyParam, setCaptchaVerifyParam] = useState<string>(
+    location.state.captchaVerifyParam,
+  );
   const { tenantConfigInfo, setTitle } = useModel('tenantConfigInfo');
 
   const handleClick = () => {
@@ -88,11 +92,11 @@ const VerifyCode: React.FC = () => {
         setErrorString('');
       }
     },
-    [codes, errorString],
+    [errorString],
   );
 
   // 发送验证码
-  const handleSendCode = () => {
+  const handleSendCode = useCallback(() => {
     handleCount();
     const isPhone = authType === 1;
     const _params = {
@@ -101,7 +105,7 @@ const VerifyCode: React.FC = () => {
       ...(captchaVerifyParam && { captchaVerifyParam }),
     };
     runSendCode(_params);
-  };
+  }, [captchaVerifyParam, authType, phoneOrEmail, runSendCode, handleCount]);
 
   useEffect(() => {
     handleClick();
@@ -118,6 +122,30 @@ const VerifyCode: React.FC = () => {
     };
     runLoginCode(data);
   };
+
+  const handlerSuccess = (value: string = '') => {
+    setCaptchaVerifyParam(value);
+    handleSendCode();
+  };
+
+  const handleClickReSendCode = useCallback(() => {
+    const { captchaSceneId, captchaPrefix, openCaptcha } =
+      tenantConfigInfo || {};
+    // 只有同时满足三个条件才启用验证码：场景ID存在、身份标存在、开启验证码
+    const needAliyunCaptcha = !!(
+      tenantConfigInfo &&
+      captchaSceneId !== '' &&
+      captchaPrefix !== '' &&
+      openCaptcha
+    );
+    // 如果需要阿里云验证码，则点击按钮触发验证码
+    if (needAliyunCaptcha) {
+      document.getElementById(elementId)?.click();
+    } else {
+      //不需要阿里云验证码，直接执行登录/验证码逻辑
+      handlerSuccess();
+    }
+  }, [tenantConfigInfo, handlerSuccess]);
 
   const handleEnter = useCallback(
     (e: KeyboardEvent): void => {
@@ -186,7 +214,7 @@ const VerifyCode: React.FC = () => {
           ) : (
             <span
               className={cx(styles['resend-btn'], 'cursor-pointer')}
-              onClick={handleSendCode}
+              onClick={handleClickReSendCode}
             >
               重新发送
             </span>
@@ -224,6 +252,12 @@ const VerifyCode: React.FC = () => {
         value={codes.join('')}
       />
       <SiteFooter />
+      <Button id="aliyun-captcha-sms" style={{ display: 'none' }} />
+      <AliyunCaptcha
+        config={tenantConfigInfo}
+        doAction={handlerSuccess}
+        elementId="aliyun-captcha-sms"
+      />
     </div>
   );
 };

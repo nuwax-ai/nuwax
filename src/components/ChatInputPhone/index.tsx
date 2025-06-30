@@ -3,6 +3,7 @@ import ConditionRender from '@/components/ConditionRender';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import {
   ArrowDownOutlined,
@@ -14,7 +15,6 @@ import { Input, message, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
 import styles from './index.less';
-
 const cx = classNames.bind(styles);
 
 /**
@@ -84,17 +84,30 @@ const ChatInputPhone: React.FC<ChatInputProps> = ({
         message.warning(info.file.response?.message);
         return;
       }
-      const data: UploadFileInfo = info.file.response?.data;
+      const data = info.file.response?.data;
       const _files = [...files];
-      _files.push(data);
+      _files.push({
+        key: data?.key || '',
+        name: data?.fileName || info.file.name || '',
+        type: data?.mimeType || info.file.type || '',
+        size: data?.size || info.file.size || 0,
+        url: data?.url || info.file.url || '',
+        uid: info.file.uid,
+        status: (info.file.status as UploadFileStatus) || UploadFileStatus.done,
+        percent: info.file.percent,
+        response: info.file.response,
+      });
       setFiles(_files);
     }
   };
 
   // 删除文档
-  const handleDelFile = (index: number) => {
+  const handleDelFile = (uid: string) => {
     const _files = [...files];
-    _files.splice(index, 1);
+    _files.splice(
+      _files.findIndex((item) => item.uid === uid),
+      1,
+    );
     setFiles(_files);
   };
 

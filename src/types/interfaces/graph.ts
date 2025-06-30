@@ -7,7 +7,7 @@ import { ExceptionHandleConfig, NodeConfig } from '@/types/interfaces/node';
 import { Graph, Node } from '@antv/x6';
 import type { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI as ModalHookAPI } from 'antd/es/modal/useModal';
-
+import { NodeUpdateEnum } from '../enums/node';
 /**
  * 定义 Child 接口，用于描述子节点的数据结构。
  */
@@ -104,6 +104,12 @@ export interface NodeProps {
   graph: Graph;
 }
 
+export interface ChangeNodeProps {
+  nodeData: ChildNode;
+  targetNodeId?: string;
+  update?: NodeUpdateEnum | undefined;
+}
+
 export interface GraphContainerProps {
   graphParams: { nodeList: ChildNode[]; edgeList: Edge[] };
   changeDrawer: (child: ChildNode | null) => void;
@@ -114,7 +120,7 @@ export interface GraphContainerProps {
     sourceNode: ChildNode,
     id: string,
   ) => void;
-  changeCondition: (config: ChildNode) => void;
+  changeCondition: (config: ChangeNodeProps) => void;
   copyNode: (child: ChildNode) => void;
   // 删除节点
   removeNode: (id: string) => void;
@@ -129,6 +135,7 @@ export interface GraphContainerProps {
     targetNode?: ChildNode,
     edgeId?: string,
   ) => void;
+  onClickBlank: () => void;
 }
 
 export interface GraphRect {
@@ -167,7 +174,7 @@ export interface GraphContainerRef {
   graphChangeZoomToFit: () => void;
   drawGraph: () => void;
   getGraphRef: () => Graph;
-  graphClearSelection: () => void;
+  graphTriggerBlankClick: () => void;
   // 清空运行结果
   graphResetRunResult: () => void;
   // 激活节点运行结果
@@ -183,7 +190,7 @@ export interface BindEventHandlers {
     sourceNode: ChildNode,
     id: string,
   ) => void;
-  changeCondition: (config: ChildNode, targetNodeId?: string) => void;
+  changeCondition: (config: ChangeNodeProps) => void;
   copyNode: (child: ChildNode) => void;
   // 删除节点
   removeNode: (id: string, node?: ChildNode) => void;
@@ -215,7 +222,7 @@ export interface GraphProp {
     sourceNode: ChildNode,
     id: string,
   ) => void;
-  changeCondition: (newData: ChildNode, targetNodeId?: string) => void;
+  changeCondition: (config: ChangeNodeProps) => void;
   changeZoom: (val: number) => void;
   // 通过连接桩或者边创建节点
   createNodeToPortOrEdge: (
@@ -226,6 +233,7 @@ export interface GraphProp {
     targetNode?: ChildNode,
     edgeId?: string,
   ) => void;
+  onClickBlank: () => void;
 }
 
 export interface ExceptionItemProps extends ExceptionHandleConfig {

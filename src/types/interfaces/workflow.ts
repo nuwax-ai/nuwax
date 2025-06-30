@@ -75,7 +75,7 @@ export interface NodeDisposeProps {
   // 分组的模型列表
   groupedOptionsData?: GroupModelItem[];
   retrieveCurrentNodeConfig?: () => void;
-  maxTokensLimit?: number | undefined;
+  nodeConfig?: NodeConfig;
 }
 
 /**
@@ -205,6 +205,7 @@ export interface SkillProps {
   removeItem: (id: CreatedNodeItem) => void;
   // 修改技能参数
   modifyItem: (id: CreatedNodeItem) => void;
+  variables?: InputAndOutConfig[];
 }
 
 export interface SkillItem extends Partial<CreatedNodeItem> {

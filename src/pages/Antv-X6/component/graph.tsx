@@ -13,13 +13,16 @@ import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
 // import { Transform } from '@antv/x6-plugin-transform';
 import { ChildNode, StencilChildNode } from '@/types/interfaces/graph';
-import { adjustParentSize, validateConnect } from '@/utils/graph';
+import {
+  adjustParentSize,
+  showExceptionPort,
+  validateConnect,
+} from '@/utils/graph';
 import { message, Modal } from 'antd';
 // 自定义类型定义
 import PlusIcon from '@/assets/svg/plus_icon.svg';
-import { EXCEPTION_NODES_TYPE } from '@/constants/node.constants';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
-import { PortGroupEnum } from '@/types/enums/node';
+import { NodeUpdateEnum, PortGroupEnum } from '@/types/enums/node';
 import { GraphProp } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { cloneDeep } from '@/utils/common';
@@ -73,6 +76,7 @@ const initGraph = ({
   changeZoom,
   createNodeToPortOrEdge,
   onSaveNode,
+  onClickBlank,
 }: GraphProp) => {
   const graphContainer = document.getElementById(containerId);
   // 如果找不到容器，则抛出错误
@@ -542,6 +546,8 @@ const initGraph = ({
       }
     }
     createNodeAndEdge(graph, e, node.getData(), port as string);
+    //选中节点
+    graph.select(node);
   });
 
   // // 在创建图形实例后添加事件监听
@@ -599,6 +605,9 @@ const initGraph = ({
               target,
               edge.id,
             );
+            // 清除所有选中 和关闭右侧节点抽屉
+            onClickBlank?.();
+            graph.cleanSelection();
           },
         },
       },
@@ -609,7 +618,7 @@ const initGraph = ({
     edge.removeTools();
   });
   // 监听节点的拖拽移动位置
-  graph.on('node:moved', ({ node, e }) => {
+  graph.on('node:moved', ({ node, e }: { node: Node; e: MouseEvent }) => {
     e.stopPropagation(); // 阻止事件冒泡
     // 获取节点被拖拽到的位置
     const { x, y } = node.getPosition();
@@ -638,7 +647,10 @@ const initGraph = ({
           if (childrenData.id === data.id) {
             childrenData.nodeConfig.extension.x = x;
             childrenData.nodeConfig.extension.y = y;
-            changeCondition(childrenData, 'moved');
+            changeCondition({
+              nodeData: childrenData,
+              update: NodeUpdateEnum.moved,
+            });
           }
         }
       }
@@ -652,7 +664,7 @@ const initGraph = ({
         parent.nodeConfig.extension.height = _size.height;
         parent.nodeConfig.extension.x = _position.x;
         parent.nodeConfig.extension.y = _position.y;
-        changeCondition(parent, 'moved');
+        changeCondition({ nodeData: parent, update: NodeUpdateEnum.moved });
       }
       return;
     }
@@ -694,12 +706,12 @@ const initGraph = ({
       data.nodeConfig.extension.width = _size.width;
       data.nodeConfig.extension.height = _size.height;
 
-      changeCondition(data, 'moved');
+      changeCondition({ nodeData: data, update: NodeUpdateEnum.moved });
       return;
     }
 
     // node.prop('zIndex', 99);
-    changeCondition(data, 'moved');
+    changeCondition({ nodeData: data, update: NodeUpdateEnum.moved });
     changeZIndex(node);
   });
 
@@ -718,12 +730,14 @@ const initGraph = ({
   graph.on('blank:click', () => {
     const cells = graph.getSelectedCells();
     graph.unselect(cells);
-    changeDrawer(null); // 调用回调函数以更新抽屉内容
+    // 传入对象而不是null，包含isModified状态
     graph.cleanSelection();
+    onClickBlank?.();
   });
   // 监听边选中
   graph.on('edge:click', ({ edge }) => {
     edge.attr('line/stroke', '#37D0FF'); // 悬停时改为蓝色
+    onClickBlank?.();
   });
   // 监听边取消选中事件
   graph.on('edge:unselected', ({ edge }) => {
@@ -794,10 +808,7 @@ const initGraph = ({
 
     // 处理节点的异常处理 out port 连边的逻辑
     const protGroup = getPortGroup(edge.getSourceNode(), sourcePort);
-    if (
-      EXCEPTION_NODES_TYPE.includes(sourceNode.type) &&
-      protGroup === PortGroupEnum.exception
-    ) {
+    if (showExceptionPort(sourceNode, protGroup)) {
       const newNodeParams: ChildNode = cloneDeep(sourceNode);
       const { exceptionHandleNodeIds = [] } =
         newNodeParams.nodeConfig?.exceptionHandleConfig || {};
@@ -817,6 +828,10 @@ const initGraph = ({
     }
     return false;
   };
+  graph.on('edge:mousedown', () => {
+    graph.cleanSelection();
+    onClickBlank?.();
+  });
 
   // 新增连线
   graph.on('edge:connected', ({ isNew, edge }) => {
@@ -848,7 +863,10 @@ const initGraph = ({
     const isException = _handleExceptionItemEdgeAdd(
       edge,
       (newNodeParams: ChildNode) => {
-        changeCondition(newNodeParams, targetNode.id.toString());
+        changeCondition({
+          nodeData: newNodeParams,
+          targetNodeId: targetNode.id.toString(),
+        });
         graph.addEdge(edge);
         setEdgeAttributes(edge);
         edge.toFront();
@@ -865,7 +883,10 @@ const initGraph = ({
         targetNode as ChildNode,
       );
       if (_params && typeof _params !== 'string') {
-        changeCondition(_params, targetNode.id);
+        changeCondition({
+          nodeData: _params,
+          targetNodeId: targetNode.id.toString(),
+        });
         graph.addEdge(edge);
         setEdgeAttributes(edge);
         edge.toFront();
@@ -886,7 +907,10 @@ const initGraph = ({
         targetNode,
         sourcePort,
       );
-      changeCondition(_params, targetNodeId);
+      changeCondition({
+        nodeData: _params,
+        targetNodeId: targetNode.id.toString(),
+      });
       // 通知父组件更新节点信息
     } else {
       // 通知父组件创建边
@@ -917,6 +941,9 @@ const initGraph = ({
     if (children && children.length) {
       node.prop('originSize', node.getSize());
     }
+  });
+  graph.on('node:click', ({ node }) => {
+    changeZIndex(node);
   });
 
   graph.on('node:change:position', ({ node }) => {

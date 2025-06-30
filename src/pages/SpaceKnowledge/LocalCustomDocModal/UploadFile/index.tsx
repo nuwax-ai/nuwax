@@ -3,7 +3,7 @@ import {
   UPLOAD_FILE_SUFFIX,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import type { FileType, UploadFileInfo } from '@/types/interfaces/common';
+import type { FileType } from '@/types/interfaces/common';
 import type { UploadFileProps } from '@/types/interfaces/knowledge';
 import { UploadOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
@@ -19,15 +19,20 @@ const { Dragger } = Upload;
 const UploadFile: React.FC<UploadFileProps> = ({
   onUploadSuccess,
   beforeUpload,
+  onChange,
+  fileList,
+  multiple = false,
+  height = 386,
 }) => {
   const handleChange: UploadProps['onChange'] = (info) => {
     const { status } = info.file;
+    onChange?.(info);
     if (status === 'uploading') {
       return;
     }
     if (status === 'done') {
       // Get this url from response in real world.
-      const data: UploadFileInfo = info.file.response?.data;
+      const data = info.file.response?.data;
       // Get this url from response in real world.
       onUploadSuccess?.(data);
     }
@@ -57,10 +62,15 @@ const UploadFile: React.FC<UploadFileProps> = ({
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
   return (
-    <div className={cx('flex flex-col content-center', styles.container)}>
+    <div
+      className={cx('flex flex-col content-center')}
+      style={{ height: height }}
+    >
       <Dragger
         action={UPLOAD_FILE_ACTION}
         onChange={handleChange}
+        multiple={multiple}
+        fileList={fileList}
         headers={{
           Authorization: token ? `Bearer ${token}` : '',
         }}

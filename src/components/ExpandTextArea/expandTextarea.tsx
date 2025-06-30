@@ -39,7 +39,10 @@ const ExpandTextArea: React.FC<
         </div>
       </div>
       <Form.Item name={inputFieldName} className="expand-textarea-pre-style">
-        <Input.TextArea placeholder={placeholder} />
+        <Input.TextArea
+          placeholder={placeholder}
+          className="no-resize-textarea"
+        />
       </Form.Item>
     </div>
   );

@@ -1,10 +1,12 @@
-import { EXCEPTION_NODES_TYPE } from '@/constants/node.constants';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
-import { PortGroupEnum } from '@/types/enums/node';
 import { BindEventHandlers, ChildNode } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { cloneDeep } from '@/utils/common';
-import { getPortGroup, isEdgeDeletable } from '@/utils/graph';
+import {
+  getPortGroup,
+  isEdgeDeletable,
+  showExceptionPort,
+} from '@/utils/graph';
 import { Edge } from '@antv/x6';
 const isResistNodeType = [
   NodeTypeEnum.Start,
@@ -99,7 +101,10 @@ const bindEventHandlers = ({
         }
       }
     }
-    changeCondition(newNodeParams, _targetNodeId);
+    changeCondition({
+      nodeData: newNodeParams,
+      targetNodeId: _targetNodeId?.toString(),
+    });
   };
   const _handleExceptionItemEdgeRemove = (
     edge: Edge,
@@ -112,10 +117,7 @@ const bindEventHandlers = ({
 
     // 处理节点的异常处理 out port 连边的逻辑
     const protGroup = getPortGroup(edge.getSourceNode(), sourcePort);
-    if (
-      EXCEPTION_NODES_TYPE.includes(sourceNode.type) &&
-      protGroup === PortGroupEnum.exception
-    ) {
+    if (showExceptionPort(sourceNode, protGroup)) {
       const newNodeParams: ChildNode = cloneDeep(sourceNode);
       const { exceptionHandleNodeIds = [] } =
         newNodeParams.nodeConfig?.exceptionHandleConfig || {};
@@ -156,7 +158,10 @@ const bindEventHandlers = ({
           _cell as Edge,
           (updateNodeParams: ChildNode) => {
             graph.removeCells([_cell]);
-            changeCondition(updateNodeParams, targetNode.id.toString());
+            changeCondition({
+              nodeData: updateNodeParams,
+              targetNodeId: targetNode.id.toString(),
+            });
           },
         );
         if (isException) return;
@@ -172,7 +177,10 @@ const bindEventHandlers = ({
             targetNode.loopNodeId === sourceNode.id
           ) {
             sourceNode.innerStartNodeId = -1;
-            changeCondition(sourceNode, _targetNodeId);
+            changeCondition({
+              nodeData: sourceNode,
+              targetNodeId: _targetNodeId?.toString(),
+            });
             graph.removeCells([_cell]); // 新增行：实际移除边元素
             return;
           }
@@ -183,7 +191,10 @@ const bindEventHandlers = ({
             sourceNode.loopNodeId === targetNode.id
           ) {
             targetNode.innerEndNodeId = -1;
-            changeCondition(targetNode, targetNode.id);
+            changeCondition({
+              nodeData: targetNode,
+              targetNodeId: targetNode.id.toString(),
+            });
             graph.removeCells([_cell]); // 新增行：实际移除边元素
             return;
           }

@@ -26,6 +26,8 @@ interface ControlPanelProps {
   zoomSize?: number;
   // 当前正在展示的节点
   foldWrapItem: ChildNode;
+  // 试运行loading
+  testRunLoading: boolean;
 }
 const options = [
   { label: '放大 10%', value: '+' },
@@ -60,6 +62,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   handleTestRun,
   changeGraph,
   foldWrapItem,
+  testRunLoading,
 }) => {
   const [open, setOpen] = useState(false);
   const [continueDragCount, setContinueDragCount] = useState(0);
@@ -167,6 +170,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             style={{ paddingRight: 12, paddingLeft: 12 }}
           />
           <Button
+            loading={testRunLoading}
             icon={<CaretRightOutlined />}
             variant="solid"
             color="green"

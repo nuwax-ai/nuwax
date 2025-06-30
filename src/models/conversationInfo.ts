@@ -471,8 +471,8 @@ export default () => {
       files?.map((file) => ({
         fileKey: file.key,
         fileUrl: file.url,
-        fileName: file.fileName,
-        mimeType: file.mimeType,
+        fileName: file.name,
+        mimeType: file.type,
       })) || [];
 
     // 将文件和消息加入会话中

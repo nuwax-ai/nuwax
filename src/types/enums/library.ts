@@ -106,3 +106,10 @@ export enum DocStatusCodeEnum {
   // 分析失败
   ANALYZE_FAILED = 10,
 }
+
+export enum KnowledgeDocTypeEnum {
+  // 文档
+  DOC = 1,
+  // QA问答
+  QA = 2,
+}

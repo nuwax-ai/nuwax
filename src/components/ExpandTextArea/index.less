@@ -1,12 +1,15 @@
+@import '@/styles/color.less';
+@import '@/styles/themeVariables.less';
+
 .expand-textarea {
   position: fixed;
   top: 76px;
   bottom: 12px;
-  left: 10px;
+  left: 12px;
   // right: 374px;
   background-color: #fff;
-  border: 1px solid #ccc;
-  padding: 20px;
+  border: 1px solid #e5e6eb;
+  padding: 12px;
   border-radius: 16px;
 
   .expand-textarea-header {
@@ -77,7 +80,7 @@
   background-color: transparent;
 
   /* 透明背景 */
-  padding: 10px;
+  // padding: 10px;
 
   /* 根据需要调整内边距 */
   resize: none;
@@ -130,4 +133,8 @@
 /* 当有值时隐藏占位符 */
 .expand-textarea-pre-style:not(:placeholder-shown)::before {
   display: none;
+}
+
+.no-resize-textarea {
+  resize: none !important;
 }

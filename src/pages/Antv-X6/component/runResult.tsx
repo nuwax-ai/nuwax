@@ -1,11 +1,12 @@
 import {
   CheckCircleFilled,
+  CloseCircleFilled,
   CopyOutlined,
   DownOutlined,
   LoadingOutlined,
   UpOutlined,
 } from '@ant-design/icons';
-import { App, Checkbox, Select, Tooltip } from 'antd';
+import { Checkbox, message, Select, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import CopyToClipboard from 'react-copy-to-clipboard';
@@ -69,6 +70,10 @@ interface RunResultProps {
    * 是否正在运行
    */
   loading?: boolean;
+  /**
+   * 标题
+   */
+  title?: string;
 }
 const DEFAULT_SHOW_MAX_PAGE = 5;
 
@@ -89,9 +94,9 @@ const RunResult: React.FC<RunResultProps> = ({
   outputResult = {},
   collapsible = true,
   expanded = false,
+  title = '',
   onExpandChange,
 }) => {
-  const { message } = App.useApp();
   const [collapsed, setCollapsed] = useState(!expanded);
 
   // 处理展开/收起
@@ -114,9 +119,9 @@ const RunResult: React.FC<RunResultProps> = ({
   // 渲染分页按钮
   const renderPagination = () => {
     const pages = [];
-    const maxVisible = DEFAULT_SHOW_MAX_PAGE;
+    const theLength = Math.min(DEFAULT_SHOW_MAX_PAGE, total);
 
-    for (let i = 1; i <= maxVisible; i++) {
+    for (let i = 1; i <= theLength; i++) {
       pages.push(
         <span
           key={i}
@@ -175,26 +180,8 @@ const RunResult: React.FC<RunResultProps> = ({
             </CopyToClipboard>
           </Tooltip>
         </div>
-        <div className={cx(styles.runResultSectionContent)}>
-          {Object.entries(obj).map(([key, value]) => (
-            <div key={key} className={cx(styles.keyValueItem)}>
-              <span className={cx(styles.key)}>{key} :</span>
-              <span
-                className={cx(styles.value)}
-                title={
-                  typeof value === 'string'
-                    ? value
-                    : JSON.stringify(value, null, 2)
-                }
-              >
-                &quot;
-                {typeof value === 'string'
-                  ? value
-                  : JSON.stringify(value, null, 2)}
-                &quot;
-              </span>
-            </div>
-          ))}
+        <div className={cx(styles.runResultSectionContent, 'overflow-y')}>
+          <pre>{JSON.stringify(obj, null, 2)}</pre>
         </div>
       </div>
     );
@@ -211,16 +198,17 @@ const RunResult: React.FC<RunResultProps> = ({
         <div className={cx(styles.runResultStatus)}>
           {loading ? (
             <LoadingOutlined className={cx(styles.statusIcon)} />
-          ) : (
+          ) : success ? (
             <CheckCircleFilled
-              className={cx(
-                styles.statusIcon,
-                success ? styles.success : styles.error,
-              )}
+              className={cx(styles.statusIcon, styles.success)}
+            />
+          ) : (
+            <CloseCircleFilled
+              className={cx(styles.statusIcon, styles.error)}
             />
           )}
           <span className={cx(styles.statusText)}>
-            {loading ? '运行中' : success ? '运行成功' : '运行失败'}
+            {title || (loading ? '运行中' : success ? '运行成功' : '运行失败')}
           </span>
           {!loading && <span className={cx(styles.runTime)}>{time}</span>}
         </div>
@@ -263,15 +251,8 @@ const RunResult: React.FC<RunResultProps> = ({
                   />
                 </Tooltip>
               </div>
-              <div className={cx(styles.runResultBatchContent)}>
-                {Object.entries(batchVariables).map(([key, value]) => (
-                  <div key={key} className={cx(styles.keyValueItem)}>
-                    <span className={cx(styles.key)}>{key} :</span>
-                    <span className={cx(styles.value)}>
-                      &quot;{String(value)}&quot;
-                    </span>
-                  </div>
-                ))}
+              <div className={cx(styles.runResultSectionContent, 'overflow-y')}>
+                <pre>{JSON.stringify(batchVariables, null, 2)}</pre>
               </div>
             </div>
           )}

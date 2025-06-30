@@ -39,7 +39,10 @@ const MCPItem: React.FC<MCPItemProps> = ({
         />
         <div className="flex-1 content-font">
           <p className="label-font-style margin-bottom-6">{item.name}</p>
-          <p className="margin-bottom-6 created-description-style">
+          <p
+            className="margin-bottom-6 created-description-style text-ellipsis-2"
+            title={item.description}
+          >
             {item.description}
           </p>
           <div className="dis-sb count-div-style">
@@ -56,7 +59,7 @@ const MCPItem: React.FC<MCPItemProps> = ({
               <Divider type="vertical" />
               <span className="margin-left-6">
                 {'部署于'}
-                {getTime(item.created!)}
+                {getTime(item.deployed!)}
               </span>
             </div>
           </div>
@@ -65,13 +68,13 @@ const MCPItem: React.FC<MCPItemProps> = ({
           onClick={() => setFold(!fold)}
           className="fold-icon-style"
           style={{
-            transform: fold ? 'rotate(180deg)' : 'rotate(0deg)',
+            transform: fold ? 'rotate(0deg)' : 'rotate(180deg)',
           }}
         />
       </div>
       <MCPTools
         fold={fold}
-        tools={item?.config?.tools}
+        tools={item?.config?.tools || []}
         item={item}
         onAddTool={onAddNode}
         addedComponents={addedComponents}

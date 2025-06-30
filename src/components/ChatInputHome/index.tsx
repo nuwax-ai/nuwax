@@ -1,8 +1,8 @@
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import {
   ArrowDownOutlined,
@@ -11,9 +11,9 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import type { InputRef, UploadProps } from 'antd';
-import { Input, Tooltip, Upload, message } from 'antd';
+import { Input, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './index.less';
 import ManualComponentItem from './ManualComponentItem';
 
@@ -36,10 +36,19 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   onScrollBottom,
 }) => {
   // 文档
+  const [uploadFiles, setUploadFiles] = useState<UploadFileInfo[]>([]);
   const [files, setFiles] = useState<UploadFileInfo[]>([]);
   const [messageInfo, setMessageInfo] = useState<string>('');
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
   const textareaRef = useRef<InputRef>(null);
+
+  useEffect(() => {
+    setFiles(
+      uploadFiles.filter(
+        (item) => item.status === UploadFileStatus.done && item.url && item.key,
+      ),
+    );
+  }, [uploadFiles]);
 
   // 发送按钮disabled
   const disabledSend = useMemo(() => {
@@ -56,7 +65,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       onEnter(messageInfo, files);
       if (isClearInput) {
         // 置空
-        setFiles([]);
+        setUploadFiles([]);
         setMessageInfo('');
       }
     }
@@ -84,7 +93,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       onEnter(value, files);
       if (isClearInput) {
         // 置空
-        setFiles([]);
+        setUploadFiles([]);
         setMessageInfo('');
       }
     }
@@ -92,27 +101,35 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   // 上传成功后，修改文档列表
   const handleChange: UploadProps['onChange'] = (info) => {
-    if (info.file.status === 'uploading') {
-      return;
-    }
-    if (info.file.status === 'done') {
-      // 接口上传失败
-      if (info.file.response?.code !== SUCCESS_CODE) {
-        message.warning(info.file.response?.message);
-        return;
-      }
-      const data: UploadFileInfo = info.file.response?.data;
-      const _files = [...files];
-      _files.push(data);
-      setFiles(_files);
-    }
+    const { fileList } = info;
+    setUploadFiles(
+      fileList
+        .filter((item) => item.status !== UploadFileStatus.removed)
+        .map((item) => {
+          const data = item.response?.data || {};
+          return {
+            key: data?.key || '',
+            name: data?.fileName || item.name || '',
+            size: data?.size || item.size || 0,
+            url: item.url || data?.url || '',
+            type: data?.mimeType || item.type || '',
+            uid: item.uid,
+            status: (item.status as UploadFileStatus) || UploadFileStatus.done,
+            percent: item.percent,
+            response: item.response,
+          } as UploadFileInfo;
+        }),
+    );
   };
 
   // 删除文档
-  const handleDelFile = (index: number) => {
-    const _files = [...files];
-    _files.splice(index, 1);
-    setFiles(_files);
+  const handleDelFile = (uid: string) => {
+    const _files = [...uploadFiles];
+    _files.splice(
+      _files.findIndex((item) => item.uid === uid),
+      1,
+    );
+    setUploadFiles(_files);
   };
 
   const handleClear = () => {
@@ -126,8 +143,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     <div className={cx('w-full', 'relative', className)}>
       <div className={cx(styles['chat-container'], 'flex', 'flex-col')}>
         {/*文件列表*/}
-        <ConditionRender condition={files?.length}>
-          <ChatUploadFile files={files} onDel={handleDelFile} />
+        <ConditionRender condition={uploadFiles?.length}>
+          <ChatUploadFile files={uploadFiles} onDel={handleDelFile} />
         </ConditionRender>
         {/*输入框*/}
         <Input.TextArea
@@ -164,6 +181,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             action={UPLOAD_FILE_ACTION}
             disabled={wholeDisabled}
             onChange={handleChange}
+            multiple={true}
+            fileList={uploadFiles}
             headers={{
               Authorization: token ? `Bearer ${token}` : '',
             }}
