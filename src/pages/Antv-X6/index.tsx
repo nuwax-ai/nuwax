@@ -469,19 +469,25 @@ const Workflow: React.FC = () => {
       setIsModified(false);
       result = await onSaveWorkflow(getWorkflow('drawerForm'));
       if (hasSkillChange) {
-        setSkillChange(false);
-        const data = await getNodeConfig(getWorkflow('drawerForm').id);
-        if (data && data.nodeConfig[SKILL_FORM_KEY]) {
+        const _res = await service.getNodeConfig(getWorkflow('drawerForm').id);
+        const isSuccess = _res.code === Constant.success;
+        const data = _res.data;
+        if (isSuccess && data && data.nodeConfig[SKILL_FORM_KEY]) {
           //更新表单数据 包括技能数据
           const updateValue = updateSkillComponentConfigs(
             form.getFieldsValue(true)[SKILL_FORM_KEY] || [],
             data.nodeConfig[SKILL_FORM_KEY],
           );
           form.setFieldValue(SKILL_FORM_KEY, updateValue);
+          setSkillChange(false);
+          graphRef.current?.graphUpdateNode(String(data.id), data);
+        } else {
+          setSkillChange(false);
         }
       }
     } catch (error) {
       console.error('Failed to fetch node config:', error);
+      setSkillChange(false);
     }
     return result;
   }, [setIsModified, form, setSkillChange]);
@@ -1776,6 +1782,7 @@ const Workflow: React.FC = () => {
             onFinishFailed={doSubmitFormData}
             onFinish={doSubmitFormData}
             onValuesChange={(values) => {
+              console.log('onValuesChange', values);
               setIsModified(true);
               handleGraphUpdateByForm(values, form.getFieldsValue(true));
             }}
