@@ -12,6 +12,7 @@ import {
   DEFAULT_DRAWER_FORM,
   DEFAULT_NODE_CONFIG,
   DEFAULT_NODE_CONFIG_MAP,
+  SKILL_FORM_KEY,
   testRunList,
 } from '@/constants/node.constants';
 import useAutoSave from '@/hooks/useAutoSave';
@@ -55,7 +56,11 @@ import { ErrorParams } from '@/types/interfaces/workflow';
 import { cloneDeep } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { getPeerNodePosition } from '@/utils/graph';
-import { apiUpdateNode, changeNodeConfig } from '@/utils/updateNode';
+import {
+  apiUpdateNode,
+  changeNodeConfig,
+  updateSkillComponentConfigs,
+} from '@/utils/updateNode';
 import {
   getEdges,
   getNodeSize,
@@ -461,8 +466,13 @@ const Workflow: React.FC = () => {
       if (hasSkillChange) {
         setSkillChange(false);
         const data = await getNodeConfig(getWorkflow('drawerForm').id);
-        if (data) {
-          form.setFieldsValue(data.nodeConfig); //更新表单数据 包括技能数据
+        if (data && data.nodeConfig[SKILL_FORM_KEY]) {
+          //更新表单数据 包括技能数据
+          const updateValue = updateSkillComponentConfigs(
+            form.getFieldsValue(true)[SKILL_FORM_KEY] || [],
+            data.nodeConfig[SKILL_FORM_KEY],
+          );
+          form.setFieldValue(SKILL_FORM_KEY, updateValue);
         }
       }
     } catch (error) {
@@ -475,12 +485,6 @@ const Workflow: React.FC = () => {
   const changeDrawer = useCallback(async (child: ChildNode | null) => {
     const _isModified = getWorkflow('isModified');
     const _drawerForm = getWorkflow('drawerForm');
-    console.log(
-      'changeDrawer',
-      `isModified: ${_isModified}`,
-      `child.id: ${child?.id}`,
-      `drawerForm.id: ${_drawerForm?.id}`,
-    );
 
     if (_isModified === true && _drawerForm?.id !== 0) {
       //如果有修改先保存

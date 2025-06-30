@@ -4,6 +4,7 @@ import CustomTree from '@/components/FormListItem/NestedForm';
 import { ModelSelected } from '@/components/ModelSetting';
 import PromptOptimizeModal from '@/components/PromptOptimizeModal';
 import { CREATED_TABS } from '@/constants/common.constants';
+import { SKILL_FORM_KEY } from '@/constants/node.constants';
 import { SkillList } from '@/pages/Antv-X6/components/NewSkill';
 import {
   AgentAddComponentStatusEnum,
@@ -60,7 +61,6 @@ const skillCreatedTabs = CREATED_TABS.filter((item) =>
   ].includes(item.key),
 );
 
-const skillFormKey = 'skillComponentConfigs';
 // 定义大模型节点
 const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
   // 打开、关闭弹窗
@@ -76,10 +76,10 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
   // 新增技能
   const onAddedSkill = (item: CreatedNodeItem) => {
     setIsModified(true);
-    const skillComponentConfigs = form.getFieldValue(skillFormKey) || [];
+    const skillComponentConfigs = form.getFieldValue(SKILL_FORM_KEY) || [];
     item.type = item.targetType as unknown as NodeTypeEnum; // TODO 这里需要优化
     item.typeId = item.targetId;
-    form.setFieldValue(skillFormKey, skillComponentConfigs.concat([item]));
+    form.setFieldValue(SKILL_FORM_KEY, skillComponentConfigs.concat([item]));
     setSkillChange(true);
     form.submit();
     // setOpen(false);
@@ -87,7 +87,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
 
   // 移出技能
   const removeItem = (item: CreatedNodeItem) => {
-    const skillComponentConfigs = form.getFieldValue(skillFormKey);
+    const skillComponentConfigs = form.getFieldValue(SKILL_FORM_KEY);
     if (skillComponentConfigs) {
       const newSkillComponentConfigs = skillComponentConfigs.filter(
         (i: CreatedNodeItem) =>
@@ -96,7 +96,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
             (i.toolName || '') === (item.toolName || '')
           ),
       );
-      form.setFieldValue(skillFormKey, newSkillComponentConfigs);
+      form.setFieldValue(SKILL_FORM_KEY, newSkillComponentConfigs);
       setIsModified(true);
     }
   };
@@ -104,7 +104,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
   // 修改技能参数
   const modifyItem = (item: CreatedNodeItem) => {
     setIsModified(true);
-    const skillComponentConfigs = form.getFieldValue(skillFormKey);
+    const skillComponentConfigs = form.getFieldValue(SKILL_FORM_KEY);
     if (skillComponentConfigs) {
       const newSkillComponentConfigs = skillComponentConfigs.map(
         (i: CreatedNodeItem) =>
@@ -113,7 +113,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
             ? item
             : i,
       );
-      form.setFieldValue(skillFormKey, newSkillComponentConfigs);
+      form.setFieldValue(SKILL_FORM_KEY, newSkillComponentConfigs);
     }
   };
 
@@ -122,10 +122,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
     setOpen(true);
   };
 
-  const skillComponentConfigs = Form.useWatch(skillFormKey, {
-    form,
-    preserve: true,
-  });
+  const skillComponentConfigs = form.getFieldValue(SKILL_FORM_KEY);
 
   useEffect(() => {
     const _arr =
@@ -163,11 +160,11 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
       </div>
       <Form.Item shouldUpdate noStyle>
         {() =>
-          form.getFieldValue(skillFormKey) ? (
+          form.getFieldValue(SKILL_FORM_KEY) ? (
             <div className="node-item-style">
               <SkillList
-                params={form.getFieldValue(skillFormKey)}
-                skillName={skillFormKey}
+                params={form.getFieldValue(SKILL_FORM_KEY)}
+                skillName={SKILL_FORM_KEY}
                 variables={variables}
                 form={form}
                 removeItem={removeItem}
