@@ -264,6 +264,7 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
                     codeLanguage={CodeLangEnum.JSON}
                     height="150px"
                     value={jsonContent}
+                    codeOptimizeVisible={false}
                     onChange={handleJsonContentChange}
                   />
                 </div>

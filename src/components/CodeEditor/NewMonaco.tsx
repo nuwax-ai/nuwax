@@ -109,6 +109,7 @@ const NewMonaco: React.FC<MonacoProps> = ({
               codeLanguage={codeLanguage}
               minimap={true}
               height="790px"
+              codeOptimizeVisible={false}
             />
           </div>
         </div>
