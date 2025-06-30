@@ -1,4 +1,3 @@
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { SkillDisposeProps, SkillProps } from '@/types/interfaces/workflow';
@@ -42,13 +41,13 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
 
   const [parameter, setParameter] = useState(params);
   const handleOk = () => {
-    onConfirm(parameter);
+    onConfirm(parameter as unknown as CreatedNodeItem);
     onCancel();
   };
 
   useEffect(() => {
     setParameter(params);
-  }, [params.inputArgBindConfigs]);
+  }, [params?.inputArgBindConfigs]);
   const handleChangeValue = (updatedParam: InputAndOutConfig, type: string) => {
     if (type === 'input') {
       setParameter((prev) => ({
@@ -122,7 +121,7 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
                   </Popover>
                 </p>
               </div>
-              {parameter.outputArgBindConfigs?.map((item) => (
+              {parameter?.outputArgBindConfigs?.map((item) => (
                 <div className="dis-sb content-item-style" key={item.name}>
                   <div className="flex-1">
                     <p className="flex">
@@ -178,15 +177,7 @@ export const SkillList: React.FC<SkillProps> = ({
 }) => {
   // const [skillParams,setSkillParams] = useState<NodeConfig>(params);
   // 使用useState钩子来管理每个项目的hover状态
-  const [hoveredItem, setHoveredItem] = useState<CreatedNodeItem>({
-    icon: '',
-    name: '',
-    description: '',
-    statistics: null,
-    targetId: 0,
-    targetType: AgentComponentTypeEnum.Plugin,
-    type: AgentComponentTypeEnum.Plugin,
-  });
+  const [hoveredItem, setHoveredItem] = useState<CreatedNodeItem | null>(null);
 
   // 打开技能配置的数据
   const [open, setOpen] = useState(false);
@@ -195,40 +186,20 @@ export const SkillList: React.FC<SkillProps> = ({
 
   // 移除技能
   const handleDelete = (item: CreatedNodeItem) => {
-    // let newParams;
-    // if (item.knowledgeBaseId) {
-    //   newParams = params.filter(
-    //     (i) => i.knowledgeBaseId !== item.knowledgeBaseId,
-    //   );
-    // } else {
-    //   newParams = params.filter((i) => i.typeId !== item.typeId);
-    // }
     removeItem(item);
-    // form.setFieldValue(skillName, newParams);
-
-    // setIsModified(true);
   };
 
   const handleConfirm = (val: CreatedNodeItem) => {
-    // let newParams;
-    // if (skillName === 'skillComponentConfigs') {
-    //   newParams = params?.map((item) =>
-    //     item.typeId === val.typeId ? val : item,
-    //   );
-    // } else {
-    //   newParams = params?.map((item) =>
-    //     item.knowledgeBaseId === val.knowledgeBaseId ? val : item,
-    //   );
-    // }
-    // // setSkillParams((prev) => ())
-    // form.setFieldValue(skillName, newParams);
-    // setIsModified(true);
     modifyItem(val);
   };
   return (
     <div className="skill-list">
       {params.map((item) => (
-        <div key={item.targetId || `skill-${item.name}-${Math.random()}`}>
+        <div
+          key={`skill-${item.type}-${item.typeId || item.knowledgeBaseId}-${
+            item.name
+          }`}
+        >
           <div
             className="skill-item-style dis-left"
             style={{
@@ -252,45 +223,39 @@ export const SkillList: React.FC<SkillProps> = ({
               <div className="skill-item-title-style">{item.name}</div>
               <div className="skill-item-desc-style">{item.description}</div>
             </div>
-            {hoveredItem?.typeId === item.typeId && showMask && (
-              <div className="mask-layer-style">
-                <div
-                  className="skill-item-dispose-style"
-                  style={{ color: '#fff', backgroundColor: 'transparent' }}
-                >
-                  {item.outputArgBindConfigs &&
-                    item.outputArgBindConfigs.length && (
-                      <Popover
-                        content={
-                          <SkillParamsContent
-                            params={item.outputArgBindConfigs as TreeOutput[]}
-                          />
-                        }
-                        trigger="hover"
-                      >
-                        <InfoCircleOutlined className="white" />
+            {((hoveredItem?.typeId && hoveredItem?.typeId === item?.typeId) ||
+              (hoveredItem?.knowledgeBaseId &&
+                hoveredItem?.knowledgeBaseId === item?.knowledgeBaseId)) &&
+              showMask && (
+                <div className="mask-layer-style">
+                  <div
+                    className="skill-item-dispose-style"
+                    style={{ color: '#fff', backgroundColor: 'transparent' }}
+                  >
+                    {item.outputArgBindConfigs &&
+                      item.outputArgBindConfigs.length && (
+                        <Popover
+                          content={
+                            <SkillParamsContent
+                              params={item.outputArgBindConfigs as TreeOutput[]}
+                            />
+                          }
+                          trigger="hover"
+                        >
+                          <InfoCircleOutlined className="white" />
+                        </Popover>
+                      )}
+                    {!disabled && (
+                      <Popover content={'移除'} trigger="hover">
+                        <DeleteOutlined
+                          className="ml-12  white"
+                          onClick={() => handleDelete(item)}
+                        />
                       </Popover>
                     )}
-                  {/* <Popover content={'编辑参数'} trigger="hover">
-                    <SettingOutlined
-                      className="ml-12 cursor-pointer white"
-                      onClick={() => {
-                        setHoveredItem(item);
-                        setOpen(true);
-                      }}
-                    />
-                  </Popover> */}
-                  {!disabled && (
-                    <Popover content={'移除'} trigger="hover">
-                      <DeleteOutlined
-                        className="ml-12  white"
-                        onClick={() => handleDelete(item)}
-                      />
-                    </Popover>
-                  )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
         </div>
       ))}
@@ -298,7 +263,7 @@ export const SkillList: React.FC<SkillProps> = ({
       <SkillDispose
         open={open}
         onCancel={() => setOpen(false)}
-        params={hoveredItem}
+        params={hoveredItem as CreatedNodeItem}
         onConfirm={handleConfirm}
       />
     </div>

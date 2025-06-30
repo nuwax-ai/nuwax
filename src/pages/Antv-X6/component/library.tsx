@@ -6,6 +6,7 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
+import { NodeTypeEnum } from '@/types/enums/common';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
@@ -38,7 +39,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   // 知识库
   const onAddedSkill = (item: CreatedNodeItem) => {
     const knowledgeBaseConfigs = form.getFieldValue(KBC_FORM_KEY) || [];
-    item.type = item.targetType;
+    item.type = item.targetType as unknown as NodeTypeEnum; //类型转换
     item.knowledgeBaseId = item.targetId;
 
     form.setFieldValue(KBC_FORM_KEY, knowledgeBaseConfigs.concat(item));
@@ -49,7 +50,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
     setAddComponents([
       ...addComponents,
       {
-        type: item.type,
+        type: item.targetType,
         targetId: item.targetId,
         status: AgentAddComponentStatusEnum.Added,
       },
