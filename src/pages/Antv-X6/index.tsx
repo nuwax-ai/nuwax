@@ -1641,11 +1641,16 @@ const Workflow: React.FC = () => {
   };
   // 发布
   const handleShowPublish = async () => {
-    setIsValidLoading(true);
+    const timer = setTimeout(() => {
+      setIsValidLoading(true);
+    }, 300);
     const valid = await validPublishWorkflow();
     if (valid) {
       setShowPublish(true);
       setErrorParams({ ...errorParams, errorList: [], show: false });
+    }
+    if (timer) {
+      clearTimeout(timer);
     }
     setIsValidLoading(false);
   };
