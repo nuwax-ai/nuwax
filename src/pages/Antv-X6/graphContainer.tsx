@@ -226,6 +226,21 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     // 删除边
     const graphDeleteEdge = (id: string) => {
       if (!graphRef.current) return;
+      // 先更新sourceNode的nextNodeIds
+      const edge = graphRef.current.getCellById(id);
+      if (edge && edge.isEdge()) {
+        const sourceNode = edge.getSourceNode();
+        if (sourceNode) {
+          const nextNodeIds = sourceNode.getData().nextNodeIds;
+          if (nextNodeIds) {
+            sourceNode.updateData({
+              nextNodeIds: nextNodeIds.filter(
+                (item: number) => item !== Number(edge.getTargetNode().id),
+              ),
+            });
+          }
+        }
+      }
       graphRef.current.removeCell(id);
     };
 

@@ -304,7 +304,7 @@ const Workflow: React.FC = () => {
         ? []
         : (sourceNode.nextNodeIds as number[]);
     let _params = {
-      nodeId: _nextNodeIds,
+      nodeId: [..._nextNodeIds],
       sourceId: Number(sourceNode.id),
     };
 
@@ -326,14 +326,19 @@ const Workflow: React.FC = () => {
         nextNodeIds: _params.nodeId,
       });
     }
-    const _res = await service.apiAddEdge(_params);
-    // 如果接口不成功，就需要删除掉那一条添加的线
-    if (_res.code !== Constant.success) {
+    try {
+      const _res = await service.apiAddEdge(_params);
+      // 如果接口不成功，就需要删除掉那一条添加的线
+      if (_res.code !== Constant.success) {
+        graphRef.current?.graphDeleteEdge(String(id));
+      } else {
+        getReference(getWorkflow('drawerForm').id);
+        graphRef.current?.graphUpdateNode(String(sourceNode.id), _res.data);
+        // getNodeConfig(sourceNode.id);
+      }
+    } catch (error) {
+      console.error('Failed to add edge:', error);
       graphRef.current?.graphDeleteEdge(String(id));
-    } else {
-      getReference(getWorkflow('drawerForm').id);
-      graphRef.current?.graphUpdateNode(String(sourceNode.id), _res.data);
-      // getNodeConfig(sourceNode.id);
     }
   };
   // 自动保存节点配置
