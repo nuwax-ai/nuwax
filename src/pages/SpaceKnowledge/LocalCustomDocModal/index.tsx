@@ -369,7 +369,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
                   </div>
                   {info?.percent !== undefined && info?.percent < 100 && (
                     <Progress
-                      percent={Math.round(info.percent)}
+                      percent={Math.floor(info.percent || 0)}
                       type="circle"
                       status={getStatus(info)}
                       size={20}
