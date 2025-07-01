@@ -32,8 +32,8 @@ interface CreatedItemProp extends CreateKnowledgeProps {
   info?: Info;
   Confirm: (
     info: Info,
-    type: AgentComponentTypeEnum,
-    mode: CreateUpdateModeEnum,
+    type?: AgentComponentTypeEnum,
+    mode?: CreateUpdateModeEnum,
   ) => void;
 }
 

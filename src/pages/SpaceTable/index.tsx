@@ -51,6 +51,8 @@ const SpaceTable = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
   const tableId = Number(params.tableId);
+  const [structureTableLoading, setStructureTableLoading] =
+    useState<boolean>(false);
   // 数据表详情
   const [tableDetail, setTableDetail] = useState<TableDefineDetails | null>(
     null,
@@ -61,6 +63,7 @@ const SpaceTable = () => {
   );
   // 当前表的columns
   const [columns, setColumns] = useState<TableFieldInfo[]>([]);
+  const [tableDataLoading, setTableDataLoading] = useState<boolean>(false);
   // 当前表的业务数据
   const [tableData, setTableData] = useState<TableRowData[]>([]);
   // 当前分页的数据
@@ -142,6 +145,7 @@ const SpaceTable = () => {
 
   // 获取数据表结构详情
   const getTableStructureDetails = async () => {
+    setStructureTableLoading(true);
     const { data } = await apiTableDetail(tableId);
     const fieldList = data?.fieldList || [];
     const [_systemFieldList, _customFieldList] = fieldList.reduce<
@@ -181,6 +185,7 @@ const SpaceTable = () => {
     // 缓存表结构数据
     tableDetailRef.current = _tableDetail;
     setTableDetail(_tableDetail);
+    setStructureTableLoading(false);
   };
 
   // 保存表结构
@@ -224,6 +229,7 @@ const SpaceTable = () => {
     pageNo: number = 1,
     pageSize: number = 10,
   ) => {
+    setTableDataLoading(true);
     const _params = {
       tableId,
       pageNo,
@@ -238,6 +244,7 @@ const SpaceTable = () => {
     setFormList(_fieldList || []);
     // 业务数据
     setTableData(data.records);
+    setTableDataLoading(false);
     setPagination({
       ...pagination,
       total: data.total,
@@ -372,7 +379,7 @@ const SpaceTable = () => {
           },
           () => {
             // 恢复表结构数据
-            setTableDetail(tableDetailRef.current);
+            // setTableDetail(tableDetailRef.current);
             setActiveKey(key as TableTabsEnum);
             getTableBusinessData();
           },
@@ -438,7 +445,7 @@ const SpaceTable = () => {
             items={TABLE_TABS_LIST}
             activeKey={activeKey}
             onChange={handleChangeTabs}
-            className={cx(styles['tabs-style'], styles['tab-container'])}
+            className={cx(styles['tab-container'])}
           />
           <Space>
             <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
@@ -494,6 +501,7 @@ const SpaceTable = () => {
             <StructureTable
               existTableDataFlag={tableDetail?.existTableDataFlag}
               tableData={tableDetail?.fieldList || []}
+              loading={structureTableLoading}
               scrollHeight={getBrowserHeight()}
               onChangeValue={handleChangeValue}
               onDeleteField={handleDelField}
@@ -502,6 +510,7 @@ const SpaceTable = () => {
             <DataTable
               columns={columns}
               tableData={tableData}
+              loading={tableDataLoading}
               pagination={pagination}
               onPageChange={changePagination}
               scrollHeight={getBrowserHeight() + 40}

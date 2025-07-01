@@ -1,4 +1,5 @@
 // 可以编辑的表格
+import { EllipsisTooltip } from '@/components/EllipsisTooltip';
 import LabelStar from '@/components/LabelStar';
 import {
   MEDIUM_TEXT_STRING,
@@ -11,7 +12,7 @@ import type {
   StructureTableProps,
   TableFieldInfo,
 } from '@/types/interfaces/dataTable';
-import { DeleteOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownOutlined } from '@ant-design/icons';
 import {
   Button,
   Checkbox,
@@ -34,6 +35,7 @@ const cx = classNames.bind(styles);
 const StructureTable: React.FC<StructureTableProps> = ({
   existTableDataFlag,
   tableData,
+  loading,
   scrollHeight,
   onChangeValue,
   onDeleteField,
@@ -167,10 +169,13 @@ const StructureTable: React.FC<StructureTableProps> = ({
     {
       title: <LabelStar label="字段名" />,
       dataIndex: 'fieldName',
+      width: 180,
       render: (value, record) => (
         <>
           {!record.isNew ? (
-            <span className="flex items-center h-full">{value}</span>
+            <div className="flex items-center h-full">
+              <EllipsisTooltip text={value} />
+            </div>
           ) : (
             <Input
               placeholder="请输入字段名"
@@ -185,6 +190,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
     {
       title: '字段详细描述',
       dataIndex: 'fieldDescription',
+      width: 180,
       render: (value, record) =>
         record.systemFieldFlag ? (
           <span className="flex items-center h-full">{value}</span>
@@ -337,22 +343,24 @@ const StructureTable: React.FC<StructureTableProps> = ({
       rowClassName={cx(styles['table-row'])}
       dataSource={tableData}
       columns={inputColumns}
+      loading={loading}
       rowKey={'id'}
       pagination={false}
       virtual
       scroll={{
-        x: true,
+        x: 'max-content',
         y: scrollHeight - 124,
       }}
       expandable={{
         expandIcon: ({ expanded, onExpand, record }) =>
           record.children ? (
-            expanded ? (
-              <UpOutlined onClick={(e) => onExpand(record, e)} />
-            ) : (
-              <DownOutlined onClick={(e) => onExpand(record, e)} />
-            )
-          ) : null,
+            <DownOutlined
+              className={cx(styles.icon, { [styles['rotate-180']]: expanded })}
+              onClick={(e) => onExpand(record, e)}
+            />
+          ) : (
+            <DownOutlined className={cx(styles.icon, styles['icon-hidden'])} />
+          ),
       }}
     />
   );

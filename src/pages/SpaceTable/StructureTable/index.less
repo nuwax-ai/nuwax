@@ -8,6 +8,21 @@
     background: @WHITE03;
   }
 
+  .icon {
+    color: @GRAY05;
+    font-size: 14px;
+    margin-right: 8px;
+    transition: transform 0.3s; // 添加过渡效果，使旋转更平滑;
+
+    &.rotate-180 {
+      transform: rotate(-180deg);
+    }
+
+    &.icon-hidden {
+      visibility: hidden;
+    }
+  }
+
   :global {
     .ant-table-cell-with-append {
       display: flex;

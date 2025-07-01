@@ -26,6 +26,7 @@ export interface DataTableProp {
   columns: TableFieldInfo[];
   // 表数据
   tableData: TableRowData[];
+  loading?: boolean;
   // 表格的滚动高度
   scrollHeight: number;
   // 分页的数据
@@ -52,6 +53,7 @@ export interface DeleteSureProps {
 export interface StructureTableProps {
   existTableDataFlag?: boolean; // 是否存在业务数据
   tableData: TableFieldInfo[]; // 表格数据
+  loading?: boolean; // 表格加载状态
   scrollHeight: number; // 表格高度
   // 输入框值改变
   onChangeValue: (

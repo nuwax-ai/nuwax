@@ -12,6 +12,7 @@ import './index.less';
 const DataTable: React.FC<DataTableProp> = ({
   columns,
   tableData,
+  loading,
   scrollHeight,
   pagination,
   onPageChange,
@@ -26,6 +27,7 @@ const DataTable: React.FC<DataTableProp> = ({
       <Table
         className="my-table-style"
         dataSource={tableData}
+        loading={loading}
         rowKey="id"
         scroll={{
           x: 'max-content',
@@ -87,7 +89,7 @@ const DataTable: React.FC<DataTableProp> = ({
           title={<span style={{ marginLeft: '10px' }}>操作</span>}
           dataIndex="action"
           width={160}
-          className={'table-action-column-fiexd'}
+          className={'table-action-column-fixed'}
           fixed="right"
           render={(_, record) => (
             <Space>
