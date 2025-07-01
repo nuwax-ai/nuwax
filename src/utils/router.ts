@@ -22,7 +22,7 @@ export const jumpBack = (url?: string) => {
   if (isNewTab && url) {
     // 新标签页打开，跳转到指定页面
     history.push(url);
-  } else if (historyLength > 1 && referrer) {
+  } else if (historyLength > 1) {
     // 有正常的浏览历史，执行返回
     history.back();
   } else if (url) {
