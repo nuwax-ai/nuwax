@@ -11,7 +11,7 @@ import type {
   StructureTableProps,
   TableFieldInfo,
 } from '@/types/interfaces/dataTable';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import {
   Button,
   Checkbox,
@@ -22,10 +22,13 @@ import {
   Table,
   TableColumnsType,
 } from 'antd';
+import classNames from 'classnames';
 import dayjs, { Dayjs } from 'dayjs';
 import React from 'react';
 import ClearDataTooltip from './ClearDataTooltip';
-import './index.less';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 // 数据表字段结构
 const StructureTable: React.FC<StructureTableProps> = ({
@@ -329,24 +332,29 @@ const StructureTable: React.FC<StructureTableProps> = ({
   ];
 
   return (
-    <div className="dis-col edit-table">
-      <div
-        className="flex-1"
-        style={{ maxHeight: scrollHeight, overflow: 'hidden' }}
-      >
-        <Table<TableFieldInfo>
-          dataSource={tableData}
-          columns={inputColumns}
-          rowKey={'id'}
-          pagination={false}
-          virtual
-          scroll={{
-            x: true,
-            y: scrollHeight - 124,
-          }}
-        />
-      </div>
-    </div>
+    <Table<TableFieldInfo>
+      rootClassName={cx(styles['table-container'])}
+      rowClassName={cx(styles['table-row'])}
+      dataSource={tableData}
+      columns={inputColumns}
+      rowKey={'id'}
+      pagination={false}
+      virtual
+      scroll={{
+        x: true,
+        y: scrollHeight - 124,
+      }}
+      expandable={{
+        expandIcon: ({ expanded, onExpand, record }) =>
+          record.children ? (
+            expanded ? (
+              <UpOutlined onClick={(e) => onExpand(record, e)} />
+            ) : (
+              <DownOutlined onClick={(e) => onExpand(record, e)} />
+            )
+          ) : null,
+      }}
+    />
   );
 };
 

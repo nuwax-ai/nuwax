@@ -3,6 +3,10 @@ import { TableHeaderProps } from '@/types/interfaces/dataTable';
 import { jumpBack } from '@/utils/router';
 import { EditOutlined, LeftOutlined } from '@ant-design/icons';
 import { Tag } from 'antd';
+import classNames from 'classnames';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 // 数据表头部组件
 const TableHeader: React.FC<TableHeaderProps> = ({
@@ -12,21 +16,25 @@ const TableHeader: React.FC<TableHeaderProps> = ({
   onClick,
 }) => {
   return (
-    <header className="database-header dis-left">
+    <header className={cx('dis-left', styles['database-header'])}>
       <LeftOutlined
-        className="icon-back"
+        className={cx(styles['icon-back'])}
         onClick={() => jumpBack(`/space/${spaceId}/library`)}
       />
-      <img className="logo" src={tableDetail?.icon || databaseImage} alt="" />
+      <img
+        className={cx(styles.logo)}
+        src={tableDetail?.icon || databaseImage}
+        alt=""
+      />
       <div>
-        <div className="dis-left database-header-title">
-          <h3 className="name ">{tableDetail?.tableName}</h3>
+        <div className={cx('dis-left', styles['database-header-title'])}>
+          <h3 className={cx(styles.name)}>{tableDetail?.tableName}</h3>
           <EditOutlined
             className="cursor-pointer hover-box"
             onClick={onClick}
           />
         </div>
-        <Tag className="tag-style">{`${total}条记录`}</Tag>
+        <Tag className={cx(styles['tag-style'])}>{`${total}条记录`}</Tag>
       </div>
     </header>
   );

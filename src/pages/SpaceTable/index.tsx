@@ -31,8 +31,9 @@ import {
   UploadOutlined,
 } from '@ant-design/icons';
 import { Button, message, Space, Tabs, Upload } from 'antd';
+import classNames from 'classnames';
 import { Dayjs } from 'dayjs';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, isEqual } from 'lodash';
 import omit from 'lodash/omit';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'umi';
@@ -40,9 +41,11 @@ import { v4 as uuidv4 } from 'uuid';
 import AddAndModify from './AddAndModify';
 import DataTable from './DataTable';
 import DeleteSure from './DeleteSure';
-import './index.less';
+import styles from './index.less';
 import StructureTable from './StructureTable';
 import TableHeader from './TableHeader';
+
+const cx = classNames.bind(styles);
 
 const SpaceTable = () => {
   const params = useParams();
@@ -83,6 +86,8 @@ const SpaceTable = () => {
   const [initialValues, setInitialValues] = useState<TableRowData | null>(null);
   // 缓存系统字段, 用于保存时使用
   const systemFieldListRef = useRef<TableFieldInfo[]>([]);
+  // 缓存自定义字段, 用于切换tabs时,对比是否用户修改过数据, 但是并未保存直接切换tab前二次提示使用
+  const tableDetailRef = useRef<TableDefineDetails | null>(null);
 
   // 点击弹出编辑框
   const handleCreateOrEditData = (data?: TableRowData) => {
@@ -148,7 +153,9 @@ const SpaceTable = () => {
       },
       [[], []],
     );
+    // 缓存系统字段和自定义字段
     systemFieldListRef.current = _systemFieldList;
+    // 将系统变量放在筛选出并折叠
     const list: TableFieldInfo[] = _systemFieldList?.length
       ? [
           {
@@ -167,10 +174,13 @@ const SpaceTable = () => {
           ..._customFieldList,
         ]
       : _customFieldList;
-    setTableDetail({
+    const _tableDetail = {
       ...(data as TableDefineDetails),
       fieldList: list,
-    });
+    };
+    // 缓存表结构数据
+    tableDetailRef.current = _tableDetail;
+    setTableDetail(_tableDetail);
   };
 
   // 保存表结构
@@ -344,11 +354,30 @@ const SpaceTable = () => {
 
   // 切换表结构还是表数据
   const handleChangeTabs = (key: string) => {
-    setActiveKey(key as TableTabsEnum);
     if (key === TableTabsEnum.Structure) {
+      setActiveKey(key as TableTabsEnum);
       getTableStructureDetails();
     } else {
-      getTableBusinessData();
+      if (isEqual(tableDetailRef.current, tableDetail)) {
+        setActiveKey(key as TableTabsEnum);
+        getTableBusinessData();
+      } else {
+        modalConfirm(
+          '提示',
+          '当前表结构已修改，是否保存？',
+          async () => {
+            await handleSaveTableStructure();
+            setActiveKey(key as TableTabsEnum);
+            getTableBusinessData();
+          },
+          () => {
+            // 恢复表结构数据
+            setTableDetail(tableDetailRef.current);
+            setActiveKey(key as TableTabsEnum);
+            getTableBusinessData();
+          },
+        );
+      }
     }
   };
 
@@ -395,7 +424,7 @@ const SpaceTable = () => {
     setTableDetail(_tableDetail);
   };
   return (
-    <div className="database-container">
+    <div className={cx(styles['database-container'])}>
       {/* 头部内容 */}
       <TableHeader
         spaceId={spaceId}
@@ -403,13 +432,13 @@ const SpaceTable = () => {
         total={pagination.total}
         onClick={() => setOpen(true)}
       />
-      <div className="inner-container">
+      <div className={cx(styles['inner-container'])}>
         <div className="dis-sb">
           <Tabs
             items={TABLE_TABS_LIST}
             activeKey={activeKey}
             onChange={handleChangeTabs}
-            className="tabs-style"
+            className={cx(styles['tabs-style'], styles['tab-container'])}
           />
           <Space>
             <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
