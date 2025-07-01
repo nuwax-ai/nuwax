@@ -30,9 +30,10 @@ const MCPItem: React.FC<MCPItemProps> = ({
   return (
     <>
       <div
-        className="dis-sb list-item-style"
+        className="dis-sb list-item-style cursor-pointer"
         style={{ height: 'unset' }}
         key={`${item.targetId}-${index}`}
+        onClick={() => setFold(!fold)}
       >
         <img
           src={item.icon || getImg(selected.key as AgentComponentTypeEnum)}

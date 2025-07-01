@@ -34,7 +34,11 @@ import {
   NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
-import { FoldFormIdEnum, NodeUpdateEnum } from '@/types/enums/node';
+import {
+  FoldFormIdEnum,
+  NodeUpdateEnum,
+  UpdateEdgeType,
+} from '@/types/enums/node';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import {
   ChangeNodeProps,
@@ -46,6 +50,8 @@ import {
   StencilChildNode,
 } from '@/types/interfaces/graph';
 import {
+  CurrentNodeRefKey,
+  CurrentNodeRefProps,
   NodeConfig,
   NodeDrawerRef,
   TestRunParams,
@@ -54,9 +60,11 @@ import { ErrorParams } from '@/types/interfaces/workflow';
 import { cloneDeep } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { getPeerNodePosition } from '@/utils/graph';
+import { updateNodeEdges } from '@/utils/updateEdge';
 import {
   apiUpdateNode,
   changeNodeConfig,
+  updateCurrentNode,
   updateSkillComponentConfigs,
 } from '@/utils/updateNode';
 import {
@@ -126,12 +134,7 @@ const Workflow: React.FC = () => {
   });
   const [testRunLoading, setTestRunLoading] = useState<boolean>(false);
   // 当点击连接桩和边时，存储一些数据
-  const currentNodeRef = useRef<{
-    sourceNode: ChildNode;
-    portId: string;
-    targetNode?: ChildNode;
-    edgeId?: string;
-  } | null>(null);
+  const currentNodeRef = useRef<CurrentNodeRefProps | null>(null);
   // 节点的form表单
   const [form] = Form.useForm<NodeConfig>();
   // 修改右侧抽屉的名称
@@ -163,6 +166,8 @@ const Workflow: React.FC = () => {
   const timerRef = useRef<NodeJS.Timeout>();
   const nodeDrawerRef = useRef<NodeDrawerRef>(null);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+  // 按钮是否处于loading
+  const [loading, setLoading] = useState(false);
   // 是否显示创建工作流，插件，知识库，数据库的弹窗和试运行的弹窗
   const { setTestRun } = useModel('model');
   // 从useModel中获取到数据
@@ -186,8 +191,6 @@ const Workflow: React.FC = () => {
       };
     });
   };
-  // 按钮是否处于loading
-  const [loading, setLoading] = useState(false);
 
   // 使用 Hook 控制抽屉打开时的滚动条
   useDrawerScroll(showVersionHistory);
@@ -195,6 +198,17 @@ const Workflow: React.FC = () => {
   // 全局禁用Ctrl+S/Cmd+S
   useDisableSaveShortcut();
 
+  const updateCurrentNodeRef = useCallback(
+    (key: CurrentNodeRefKey, updateNodeData: any) => {
+      const _currentNode = updateCurrentNode(
+        key,
+        updateNodeData,
+        currentNodeRef.current,
+      );
+      currentNodeRef.current = _currentNode;
+    },
+    [currentNodeRef],
+  );
   /** -----------------  需要调用接口的方法  --------------------- */
   // 同步 foldWrapItem 到 model 中的 drawerForm
   useEffect(() => {
@@ -292,54 +306,29 @@ const Workflow: React.FC = () => {
 
   // 节点添加或移除边
   const nodeChangeEdge = async (
-    type: string,
+    type: UpdateEdgeType,
     targetId: string,
     sourceNode: ChildNode,
     id?: string,
   ) => {
-    // 获取当前节点的nextNodeIds
-    const _nextNodeIds =
-      sourceNode.nextNodeIds === null
-        ? []
-        : (sourceNode.nextNodeIds as number[]);
-    let _params = {
-      nodeId: [..._nextNodeIds],
-      sourceId: Number(sourceNode.id),
-    };
-
-    // 根据类型判断，如果type是created，那么就添加边，如果type是deleted，那么就删除边
-    if (type === 'created') {
-      // 如果有这条边了
-      if (_nextNodeIds.includes(Number(targetId))) {
-        return;
-      } else {
-        // 组装参数
-        _params.nodeId.push(Number(targetId));
-      }
-    } else {
-      _params.nodeId = _params.nodeId.filter(
-        (item) => item !== Number(targetId),
-      );
-      graphRef.current?.graphUpdateNode(String(sourceNode.id), {
-        ...sourceNode,
-        nextNodeIds: _params.nodeId,
+    if (!graphRef.current) return;
+    const { graphUpdateNode, graphDeleteEdge } = graphRef.current;
+    const newNodeIds = await updateNodeEdges({
+      type,
+      targetId,
+      sourceNode,
+      id,
+      graphUpdateNode,
+      graphDeleteEdge,
+      getReference: () => getReference(getWorkflow('drawerForm').id),
+    });
+    if (newNodeIds) {
+      updateCurrentNodeRef('sourceNode', {
+        nextNodeIds: newNodeIds,
       });
     }
-    try {
-      const _res = await service.apiAddEdge(_params);
-      // 如果接口不成功，就需要删除掉那一条添加的线
-      if (_res.code !== Constant.success) {
-        graphRef.current?.graphDeleteEdge(String(id));
-      } else {
-        getReference(getWorkflow('drawerForm').id);
-        graphRef.current?.graphUpdateNode(String(sourceNode.id), _res.data);
-        // getNodeConfig(sourceNode.id);
-      }
-    } catch (error) {
-      console.error('Failed to add edge:', error);
-      graphRef.current?.graphDeleteEdge(String(id));
-    }
   };
+
   // 自动保存节点配置
   const autoSaveNodeConfig = async (
     updateFormConfig: ChildNode,
@@ -617,7 +606,11 @@ const Workflow: React.FC = () => {
     sourceNode: ChildNode,
     isLoop: boolean,
   ) => {
-    await nodeChangeEdge('created', newNodeId.toString(), sourceNode);
+    await nodeChangeEdge(
+      UpdateEdgeType.created,
+      newNodeId.toString(),
+      sourceNode,
+    );
     graphRef.current?.graphCreateNewEdge(
       String(sourceNode.id),
       String(newNodeId),
@@ -661,7 +654,7 @@ const Workflow: React.FC = () => {
     newNode: ChildNode,
     isLoop: boolean,
   ) => {
-    await nodeChangeEdge('created', targetNodeId, newNode);
+    await nodeChangeEdge(UpdateEdgeType.created, targetNodeId, newNode);
     graphRef.current?.graphCreateNewEdge(
       String(newNodeId),
       targetNodeId,
@@ -696,7 +689,7 @@ const Workflow: React.FC = () => {
         isLoop,
       );
     } else {
-      await nodeChangeEdge('created', id, newNode);
+      await nodeChangeEdge(UpdateEdgeType.created, id, newNode);
       graphRef.current?.graphCreateNewEdge(
         newNode.id.toString(),
         id.toString(),
@@ -732,7 +725,11 @@ const Workflow: React.FC = () => {
     }
 
     // 删除原有连接
-    await nodeChangeEdge('deleted', targetNode.id.toString(), sourceNode);
+    await nodeChangeEdge(
+      UpdateEdgeType.deleted,
+      targetNode.id.toString(),
+      sourceNode,
+    );
     graphRef.current?.graphDeleteEdge(edgeId);
   };
 
@@ -778,8 +775,9 @@ const Workflow: React.FC = () => {
     changeUpdateTime();
 
     // 处理节点连接逻辑
+
     if (currentNodeRef.current) {
-      const { sourceNode, portId, targetNode, edgeId } = currentNodeRef.current;
+      const { portId, edgeId } = currentNodeRef.current;
       const isLoop = Boolean(nodeData.loopNodeId);
       const isOut = portId.endsWith('out');
 
@@ -787,31 +785,35 @@ const Workflow: React.FC = () => {
         if (portId.length > 15) {
           // 处理特殊端口连接
           await handleSpecialPortConnection(
-            sourceNode,
+            currentNodeRef.current.sourceNode,
             portId,
             nodeData.id,
-            targetNode,
+            currentNodeRef.current.targetNode,
             isLoop,
           );
         } else if (isOut) {
           // 处理输出端口连接
-          await handleOutputPortConnection(nodeData.id, sourceNode, isLoop);
+          await handleOutputPortConnection(
+            nodeData.id,
+            currentNodeRef.current.sourceNode,
+            isLoop,
+          );
         } else {
           // 处理输入端口连接
           await handleInputPortConnection(
             newNodeData,
-            sourceNode,
+            currentNodeRef.current.sourceNode,
             portId,
             isLoop,
           );
         }
 
         // 处理目标节点连接
-        if (targetNode) {
+        if (currentNodeRef.current.targetNode) {
           await handleTargetNodeConnection(
             newNodeData,
-            targetNode,
-            sourceNode,
+            currentNodeRef.current.targetNode,
+            currentNodeRef.current.sourceNode,
             edgeId!,
             isLoop,
           );
