@@ -1461,11 +1461,29 @@ const Workflow: React.FC = () => {
     setShowNameInput(false);
   };
 
-  const handleSaveNode = (data: ChildNode, payload: Partial<ChildNode>) => {
-    // 更新节点名称
-    const newValue = { ...data, ...payload };
-    changeNode({ nodeData: newValue });
-  };
+  const handleSaveNode = useCallback(
+    (data: ChildNode, payload: Partial<ChildNode>) => {
+      // 更新节点名称
+      const newValue = { ...data, ...payload };
+      changeNode({ nodeData: newValue });
+      const graph = graphRef.current?.getGraphRef();
+      if (graph) {
+        const cell = graph.getCellById(data.id.toString());
+        if (cell) {
+          cell.updateData({
+            name: newValue.name,
+          });
+          setFoldWrapItem((prev) => ({
+            ...prev,
+            name: newValue.name,
+          }));
+        }
+      } else {
+        console.error('graph is null');
+      }
+    },
+    [changeNode, setFoldWrapItem],
+  );
 
   // 点击画布中的节点
   const handleNodeClick = (node: ChildNode | null) => {

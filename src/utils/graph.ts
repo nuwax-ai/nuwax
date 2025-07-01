@@ -566,3 +566,81 @@ export const convertValueToEditorValue = (
   }
   return '';
 };
+
+export const findElementClassName = (
+  target: HTMLElement | null,
+  className: string,
+): HTMLElement | null => {
+  if (!target) return null;
+  if (target?.classList.contains(className)) {
+    return target;
+  }
+  return findElementClassName(target?.parentElement || null, className);
+};
+
+export const isHighestNodeZIndex = (node: Node): boolean => {
+  const data = node.getData();
+  if (data.type === 'Loop') {
+    return node.prop('zIndex') === 10;
+  } else {
+    return node.prop('zIndex') === 99;
+  }
+};
+
+export const registerNodeClickAndDblclick = ({
+  graph,
+  changeZIndex,
+}: {
+  graph: Graph;
+  changeZIndex: (node: Node) => void;
+}) => {
+  graph.on('node:click', ({ node }) => {
+    setTimeout(() => {
+      if (node.prop('__click_type__') === 'dblclick') {
+        node.prop('__click_type__', null);
+        return;
+      }
+      const value = isHighestNodeZIndex(node);
+      if (value) {
+        return;
+      }
+      changeZIndex(node);
+    }, 0);
+  });
+
+  graph.on('node:dblclick', ({ node, e: { target } }) => {
+    const value = isHighestNodeZIndex(node);
+
+    const editableTitleEl = findElementClassName(
+      target,
+      'node-editable-title-text',
+    ); //向上查找父节点 如果 包括 类名 node-editable-title-text 则不进行操作
+
+    if (!editableTitleEl) {
+      return;
+    }
+
+    if (!value) {
+      node.prop('__click_type__', 'dblclick');
+      changeZIndex(node);
+      setTimeout(() => {
+        if (node.prop('__click_flag__')) {
+          return;
+        }
+        node.prop('__click_flag__', true);
+        graph.trigger('node:dblclick', {
+          node,
+          e: {
+            target: document.querySelector(
+              `[data-id="${node.getData().id.toString()}"]`,
+            ) as HTMLElement,
+          },
+        });
+      }, 0);
+    } else {
+      node.prop('__click_type__', null);
+      node.prop('__click_flag__', null);
+      editableTitleEl.dispatchEvent(new Event('onEditTitle'));
+    }
+  });
+};

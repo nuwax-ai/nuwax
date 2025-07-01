@@ -305,7 +305,6 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
 
   // 处理保存
   const handleSave = (saveValue: string): boolean => {
-    // TODO 更新节点名称
     setEditValue(saveValue);
     graph.trigger('node:custom:save', {
       data: node.getData<ChildNode>(),
@@ -345,6 +344,7 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
           </div>
           <EditableTitle
             key={data.id.toString()}
+            dataId={data.id.toString()}
             value={editValue}
             onSave={handleSave}
             disabled={canNotEditNode}
@@ -386,9 +386,18 @@ export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
   useEffect(() => {
     setEditValue(data?.name || '');
   }, [data?.name]);
-  const handleSave = () => {
-    setEditValue(editValue);
-    node.setData({ name: editValue });
+  const handleEditingStatusChange = (val: boolean) => {
+    // 编辑中不能移动节点
+    node.setData({ enableMove: !val });
+  };
+
+  // 处理保存
+  const handleSave = (saveValue: string): boolean => {
+    setEditValue(saveValue);
+    graph.trigger('node:custom:save', {
+      data: node.getData<ChildNode>(),
+      payload: { name: saveValue },
+    });
     return true;
   };
   const runResults = data.runResults || [];
@@ -406,10 +415,8 @@ export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
           <EditableTitle
             key={data.id.toString()}
             value={editValue}
-            onChange={(val) => {
-              console.log('onChange', val);
-              return true;
-            }}
+            dataId={data.id.toString()}
+            onEditingStatusChange={handleEditingStatusChange}
             onSave={handleSave}
           />
         </div>

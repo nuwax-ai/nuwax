@@ -1,34 +1,11 @@
-import useClickPreventionOnDoubleClick from '@/hooks/useClickPreventionOnDoubleClick';
 import { Input } from 'antd';
 import classnames from 'classnames';
-import { memo, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
 const cx = classnames.bind(styles);
-const ClickableElement = ({
-  children,
-  onClick,
-  onDoubleClick,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  onDoubleClick: () => void;
-}) => {
-  const [handleClick, handleDoubleClick] = useClickPreventionOnDoubleClick(
-    onClick,
-    onDoubleClick,
-  );
-  return (
-    <div
-      onClick={handleClick}
-      onDoubleClick={handleDoubleClick}
-      className={cx(styles.clickableElement)}
-    >
-      {children}
-    </div>
-  );
-};
 interface IEditableTitleProps {
   value: any;
+  dataId: string;
   disabled?: boolean;
   onChange?: (value: any) => void;
   onSave?: (value: any) => boolean | Promise<boolean>;
@@ -41,7 +18,9 @@ const EditableTitle = memo(
     onChange,
     onSave,
     onEditingStatusChange,
+    dataId,
   }: IEditableTitleProps) => {
+    const editableTitleRef = useRef<HTMLDivElement>(null);
     const [editValue, setEditValue] = useState(value);
     const [isEditing, setIsEditing] = useState(false);
 
@@ -87,10 +66,38 @@ const EditableTitle = memo(
         handleCancel();
       }
     };
+
+    const updateEditingStatus = useCallback(() => {
+      setIsEditing(true);
+    }, []);
+    useEffect(() => {
+      if (disabled) return;
+      // 监听节点双击事件
+      if (editableTitleRef.current) {
+        editableTitleRef.current.addEventListener(
+          'onEditTitle',
+          updateEditingStatus,
+        );
+      }
+      return () => {
+        if (editableTitleRef.current) {
+          editableTitleRef.current.removeEventListener(
+            'onEditTitle',
+            updateEditingStatus,
+          );
+        }
+      };
+    }, [editableTitleRef.current]);
+
     return (
-      <>
+      <div
+        className="node-editable-title-text"
+        data-id={dataId}
+        ref={editableTitleRef}
+      >
         {isEditing ? (
           <Input
+            size="small"
             className={cx(styles.editableTitleInput)}
             autoFocus={isEditing}
             value={editValue}
@@ -100,23 +107,16 @@ const EditableTitle = memo(
             onKeyDown={handleKeyDown}
           />
         ) : (
-          <ClickableElement
-            onClick={() => {}}
-            onDoubleClick={() => {
-              if (disabled) return; // 如果节点不可编辑，则不进行编辑
-              setIsEditing(true);
-            }}
-          >
-            {editValue}
-          </ClickableElement>
+          <div className={cx(styles.clickableElement)}>{editValue}</div>
         )}
-      </>
+      </div>
     );
   },
   (prevProps, nextProps) => {
     return (
       prevProps.value === nextProps.value &&
-      prevProps.disabled === nextProps.disabled
+      prevProps.disabled === nextProps.disabled &&
+      prevProps.dataId === nextProps.dataId
     );
   },
 );

@@ -15,6 +15,7 @@ import { Snapline } from '@antv/x6-plugin-snapline';
 import { ChildNode, StencilChildNode } from '@/types/interfaces/graph';
 import {
   adjustParentSize,
+  registerNodeClickAndDblclick,
   showExceptionPort,
   validateConnect,
 } from '@/utils/graph';
@@ -750,13 +751,9 @@ const initGraph = ({
   graph.on(
     'node:custom:save',
     ({ data, payload }: { data: ChildNode; payload: Partial<ChildNode> }) => {
-      console.log('node:custom:save', data, payload);
       onSaveNode(data, payload);
     },
   );
-  graph.on('node:dblclick', (...args) => {
-    console.log('node:dblclick', args);
-  });
   graph.on('node:selected', ({ node }) => {
     //现在分为两处场景
     // 1.用户点击节点 这个时间需要打开右侧属性面板
@@ -942,9 +939,6 @@ const initGraph = ({
       node.prop('originSize', node.getSize());
     }
   });
-  graph.on('node:click', ({ node }) => {
-    changeZIndex(node);
-  });
 
   graph.on('node:change:position', ({ node }) => {
     if (node.getData().type !== 'Loop') {
@@ -973,6 +967,7 @@ const initGraph = ({
       adjustParentSize(parentNode);
     }
   });
+  registerNodeClickAndDblclick({ graph, changeZIndex });
 
   return graph; // 返回初始化好的图形实例
 };

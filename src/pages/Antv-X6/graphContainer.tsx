@@ -170,7 +170,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     // 修改节点信息
     const graphUpdateNode = (nodeId: string, newData: ChildNode | null) => {
       if (!graphRef.current || !newData) return;
-      console.log('graphUpdateNode', nodeId, newData);
       const node = graphRef.current.getCellById(nodeId);
       if (node && node.isNode()) {
         const position = node.getPosition();
