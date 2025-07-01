@@ -14,12 +14,14 @@ interface MCPItemProps {
   selected: { key: string };
   onAddNode: (item: CreatedNodeItem) => void;
   addedComponents: AgentAddComponentStatusInfo[];
+  getToolLoading: (item: CreatedNodeItem, toolName: string) => boolean;
 }
 const MCPItem: React.FC<MCPItemProps> = ({
   item,
   index,
   selected,
   onAddNode,
+  getToolLoading,
   addedComponents,
 }) => {
   const isFirstItem = index === 0;
@@ -76,6 +78,7 @@ const MCPItem: React.FC<MCPItemProps> = ({
         fold={fold}
         tools={item?.config?.tools || []}
         item={item}
+        getToolLoading={getToolLoading}
         onAddTool={onAddNode}
         addedComponents={addedComponents}
       />

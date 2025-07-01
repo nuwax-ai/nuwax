@@ -50,6 +50,7 @@ const Created: React.FC<CreatedProp> = ({
   checkTag,
   onAdded,
   addComponents,
+  addSkillLoading = false,
   tabs = defaultTabs,
   hideTop,
 }) => {
@@ -78,6 +79,7 @@ const Created: React.FC<CreatedProp> = ({
   const [sizes, setSizes] = useState<number>(100);
   // 当前被选中的左侧菜单
   const [selectMenu, setSelectMenu] = useState<string>('all');
+  const [currentNode, setCurrentNode] = useState<CreatedNodeItem>();
   //   右侧的list
   const [list, setList] = useState<CreatedNodeItem[]>([]);
   const [renderList, setRenderList] = useState<CreatedNodeItem[]>([]);
@@ -292,6 +294,7 @@ const Created: React.FC<CreatedProp> = ({
   //   点击添加,通知父组件,并将参数传递给父组件
   const onAddNode = (item: CreatedNodeItem) => {
     onAdded(item);
+    setCurrentNode(item);
   };
   //   搜索
   const onSearch = (value: string) => {
@@ -444,6 +447,20 @@ const Created: React.FC<CreatedProp> = ({
     );
   };
 
+  const handleItemLoading = useCallback(
+    (item: CreatedNodeItem, toolName: string) => {
+      if (
+        addSkillLoading &&
+        currentNode?.targetId === item.targetId &&
+        (currentNode?.toolName || '') === (toolName || '')
+      ) {
+        return true;
+      }
+      return false;
+    },
+    [addSkillLoading, currentNode],
+  );
+
   const renderMCPItem = (
     item: CreatedNodeItem,
     index: number,
@@ -457,6 +474,7 @@ const Created: React.FC<CreatedProp> = ({
         key={`${item.targetId}-${index}`}
         item={item}
         index={index}
+        getToolLoading={handleItemLoading}
         selected={selected}
         onAddNode={onAddNode}
         addedComponents={addComponents || []}
@@ -465,6 +483,7 @@ const Created: React.FC<CreatedProp> = ({
   };
 
   const renderNormalItem = (item: CreatedNodeItem, index: number) => {
+    const isCurrentLoading = handleItemLoading(item, '');
     return (
       <div className="dis-sb list-item-style" key={`${item.targetId}-${index}`}>
         <img
@@ -524,13 +543,8 @@ const Created: React.FC<CreatedProp> = ({
           color="primary"
           variant="outlined"
           onClick={() => onAddNode(item)}
-          loading={addComponents?.some(
-            (info) =>
-              info.type === item.targetType &&
-              info.targetId === item.targetId &&
-              info.status === AgentAddComponentStatusEnum.Loading,
-          )}
-          disabled={isAdded(item)}
+          loading={isCurrentLoading}
+          disabled={isCurrentLoading ? false : isAdded(item)}
         >
           {isAdded(item) ? '已添加' : '添加'}
         </Button>

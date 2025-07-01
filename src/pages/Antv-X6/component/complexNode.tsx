@@ -28,7 +28,7 @@ import {
   Select,
   Space,
 } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
@@ -71,8 +71,26 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]
   >([]);
+  const skillLoadingRef = useRef<NodeJS.Timeout>();
 
-  const { setSkillChange, setIsModified } = useModel('workflow');
+  const { setSkillChange, setIsModified, skillChange } = useModel('workflow');
+  const [skillLoading, setSkillLoading] = useState(false);
+  const updateAddComponents = (
+    configs: CreatedNodeItem[],
+    customize: (item: CreatedNodeItem) => AgentAddComponentStatusEnum,
+  ) => {
+    const theList =
+      configs?.map((item: CreatedNodeItem) => {
+        return {
+          type: item.type as unknown as AgentComponentTypeEnum,
+          targetId: Number(item.typeId),
+          status: customize(item),
+          toolName: item.toolName || '',
+        };
+      }) || [];
+    setAddComponents(theList);
+  };
+
   // 新增技能
   const onAddedSkill = (item: CreatedNodeItem) => {
     setIsModified(true);
@@ -84,6 +102,21 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
     form.submit();
     // setOpen(false);
   };
+
+  useEffect(() => {
+    //如果300ms内的变化不做显示loading
+    if (skillChange) {
+      skillLoadingRef.current = setTimeout(() => {
+        setSkillLoading(true);
+      }, 500);
+    } else {
+      clearTimeout(skillLoadingRef.current);
+      setSkillLoading(false);
+    }
+    return () => {
+      clearTimeout(skillLoadingRef.current);
+    };
+  }, [skillChange]);
 
   // 移出技能
   const removeItem = (item: CreatedNodeItem) => {
@@ -125,16 +158,9 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
   const skillComponentConfigs = form.getFieldValue(SKILL_FORM_KEY);
 
   useEffect(() => {
-    const _arr =
-      skillComponentConfigs?.map((item: CreatedNodeItem) => {
-        return {
-          type: item.type,
-          targetId: item.typeId,
-          status: AgentAddComponentStatusEnum.Added,
-          toolName: item.toolName || '',
-        };
-      }) || [];
-    setAddComponents(_arr);
+    updateAddComponents(skillComponentConfigs, () => {
+      return AgentAddComponentStatusEnum.Added;
+    });
   }, [skillComponentConfigs]);
   const variables = (
     Form.useWatch(InputItemNameEnum.inputArgs, {
@@ -221,6 +247,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
         checkTag={AgentComponentTypeEnum.Plugin}
         onAdded={onAddedSkill}
         open={open}
+        addSkillLoading={skillLoading}
         onCancel={() => setOpen(false)}
         addComponents={addComponents}
         tabs={skillCreatedTabs}

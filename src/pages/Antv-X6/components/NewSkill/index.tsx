@@ -89,9 +89,7 @@ export const SkillList: React.FC<SkillProps> = ({
     );
   };
   const genKey = useCallback((item: CreatedNodeItem, prefix: string) => {
-    return `${prefix}-${item?.type}-${item?.targetId || item?.typeId}-${
-      item?.toolName || ''
-    }`;
+    return `${prefix}-${item?.type}-${item?.typeId}-${item?.toolName || ''}`;
   }, []);
   return (
     <div className="skill-list">

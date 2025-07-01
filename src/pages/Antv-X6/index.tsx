@@ -304,7 +304,7 @@ const Workflow: React.FC = () => {
         ? []
         : (sourceNode.nextNodeIds as number[]);
     let _params = {
-      nodeId: _nextNodeIds,
+      nodeId: [..._nextNodeIds],
       sourceId: Number(sourceNode.id),
     };
 
@@ -326,14 +326,19 @@ const Workflow: React.FC = () => {
         nextNodeIds: _params.nodeId,
       });
     }
-    const _res = await service.apiAddEdge(_params);
-    // 如果接口不成功，就需要删除掉那一条添加的线
-    if (_res.code !== Constant.success) {
+    try {
+      const _res = await service.apiAddEdge(_params);
+      // 如果接口不成功，就需要删除掉那一条添加的线
+      if (_res.code !== Constant.success) {
+        graphRef.current?.graphDeleteEdge(String(id));
+      } else {
+        getReference(getWorkflow('drawerForm').id);
+        graphRef.current?.graphUpdateNode(String(sourceNode.id), _res.data);
+        // getNodeConfig(sourceNode.id);
+      }
+    } catch (error) {
+      console.error('Failed to add edge:', error);
       graphRef.current?.graphDeleteEdge(String(id));
-    } else {
-      getReference(getWorkflow('drawerForm').id);
-      graphRef.current?.graphUpdateNode(String(sourceNode.id), _res.data);
-      // getNodeConfig(sourceNode.id);
     }
   };
   // 自动保存节点配置
@@ -464,19 +469,25 @@ const Workflow: React.FC = () => {
       setIsModified(false);
       result = await onSaveWorkflow(getWorkflow('drawerForm'));
       if (hasSkillChange) {
-        setSkillChange(false);
-        const data = await getNodeConfig(getWorkflow('drawerForm').id);
-        if (data && data.nodeConfig[SKILL_FORM_KEY]) {
+        const _res = await service.getNodeConfig(getWorkflow('drawerForm').id);
+        const isSuccess = _res.code === Constant.success;
+        const data = _res.data;
+        if (isSuccess && data && data.nodeConfig[SKILL_FORM_KEY]) {
           //更新表单数据 包括技能数据
           const updateValue = updateSkillComponentConfigs(
             form.getFieldsValue(true)[SKILL_FORM_KEY] || [],
             data.nodeConfig[SKILL_FORM_KEY],
           );
           form.setFieldValue(SKILL_FORM_KEY, updateValue);
+          setSkillChange(false);
+          graphRef.current?.graphUpdateNode(String(data.id), data);
+        } else {
+          setSkillChange(false);
         }
       }
     } catch (error) {
       console.error('Failed to fetch node config:', error);
+      setSkillChange(false);
     }
     return result;
   }, [setIsModified, form, setSkillChange]);
@@ -1450,11 +1461,29 @@ const Workflow: React.FC = () => {
     setShowNameInput(false);
   };
 
-  const handleSaveNode = (data: ChildNode, payload: Partial<ChildNode>) => {
-    // 更新节点名称
-    const newValue = { ...data, ...payload };
-    changeNode({ nodeData: newValue });
-  };
+  const handleSaveNode = useCallback(
+    (data: ChildNode, payload: Partial<ChildNode>) => {
+      // 更新节点名称
+      const newValue = { ...data, ...payload };
+      changeNode({ nodeData: newValue });
+      const graph = graphRef.current?.getGraphRef();
+      if (graph) {
+        const cell = graph.getCellById(data.id.toString());
+        if (cell) {
+          cell.updateData({
+            name: newValue.name,
+          });
+          setFoldWrapItem((prev) => ({
+            ...prev,
+            name: newValue.name,
+          }));
+        }
+      } else {
+        console.error('graph is null');
+      }
+    },
+    [changeNode, setFoldWrapItem],
+  );
 
   // 点击画布中的节点
   const handleNodeClick = (node: ChildNode | null) => {
@@ -1641,11 +1670,16 @@ const Workflow: React.FC = () => {
   };
   // 发布
   const handleShowPublish = async () => {
-    setIsValidLoading(true);
+    const timer = setTimeout(() => {
+      setIsValidLoading(true);
+    }, 300);
     const valid = await validPublishWorkflow();
     if (valid) {
       setShowPublish(true);
       setErrorParams({ ...errorParams, errorList: [], show: false });
+    }
+    if (timer) {
+      clearTimeout(timer);
     }
     setIsValidLoading(false);
   };
@@ -1766,6 +1800,7 @@ const Workflow: React.FC = () => {
             onFinishFailed={doSubmitFormData}
             onFinish={doSubmitFormData}
             onValuesChange={(values) => {
+              console.log('onValuesChange', values);
               setIsModified(true);
               handleGraphUpdateByForm(values, form.getFieldsValue(true));
             }}
