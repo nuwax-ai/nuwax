@@ -37,3 +37,8 @@ export enum VariableConfigTypeEnum {
   SET_VARIABLE = 'SET_VARIABLE',
   GET_VARIABLE = 'GET_VARIABLE',
 }
+
+export enum UpdateEdgeType {
+  created = 'created',
+  deleted = 'deleted',
+}

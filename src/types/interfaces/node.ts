@@ -249,3 +249,16 @@ export interface NodeDrawerRef {
   getFormValues: () => NodeConfig;
   onFinish: () => void;
 }
+
+export type CurrentNodeRefKey =
+  | 'sourceNode'
+  | 'portId'
+  | 'targetNode'
+  | 'edgeId';
+
+export interface CurrentNodeRefProps {
+  sourceNode: ChildNode;
+  portId: string;
+  targetNode?: ChildNode;
+  edgeId?: string;
+}
