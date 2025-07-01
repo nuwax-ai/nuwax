@@ -19,9 +19,12 @@ import { TreeOutput } from './commonNode';
 
 const DEFAULT_INPUT_ARGS_DESC = '检索关键词';
 const KBC_FORM_KEY = 'knowledgeBaseConfigs';
+const KBC_INPUT_ARGS_KEY = 'inputArgs';
 // 定义知识库
 const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   form, // updateNode,
+  type,
+  id,
 }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
@@ -95,7 +98,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
     setAddComponents(_arr);
   }, [knowledgeBaseConfigs]);
 
-  const inputArgs = (form?.getFieldValue('inputArgs') || []).map(
+  const inputArgs = (form?.getFieldValue(KBC_INPUT_ARGS_KEY) || []).map(
     (item: any) => {
       return {
         ...item,
@@ -108,7 +111,12 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
     <div className="knowledge-node">
       {/* 输入参数 */}
       <div className="node-item-style">
-        <TreeInput title={'输入'} form={form} params={inputArgs} />
+        <TreeInput
+          title={'输入'}
+          form={form}
+          params={inputArgs}
+          key={`${type}-${id}-${KBC_INPUT_ARGS_KEY}`}
+        />
       </div>
 
       {/* 知识库选择 */}

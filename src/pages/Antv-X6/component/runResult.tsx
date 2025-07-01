@@ -8,7 +8,7 @@ import {
 } from '@ant-design/icons';
 import { Checkbox, message, Select, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import styles from './runResult.less';
 const cx = classNames.bind(styles);
@@ -97,6 +97,7 @@ const RunResult: React.FC<RunResultProps> = ({
   title = '',
   onExpandChange,
 }) => {
+  const runResultRef = useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = useState(!expanded);
 
   // 处理展开/收起
@@ -141,14 +142,16 @@ const RunResult: React.FC<RunResultProps> = ({
         <div className={cx(styles.runResultPageSelect)}>
           {total > DEFAULT_SHOW_MAX_PAGE && (
             <Select
+              value={current}
               onChange={handlePageChange}
               options={Array.from({ length: total }, (_, i) => ({
                 value: i + 1,
                 label: i + 1,
               }))}
+              listHeight={100}
+              className={styles.runResultPageSelectRoot}
               size="small"
-              getPopupContainer={(triggerNode) => triggerNode.parentElement}
-              style={{ width: '60px' }}
+              getPopupContainer={() => runResultRef.current as HTMLElement}
             />
           )}
         </div>
@@ -189,6 +192,7 @@ const RunResult: React.FC<RunResultProps> = ({
 
   return (
     <div
+      ref={runResultRef}
       className={cx(styles.runResultContainer)}
       onClick={(e) => {
         e.stopPropagation();

@@ -135,5 +135,5 @@ const CustomTree: React.FC<TreeFormProps> = ({
     </div>
   );
 };
-
+CustomTree.displayName = 'CustomTree';
 export default CustomTree;
