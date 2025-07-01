@@ -43,10 +43,12 @@ import PlusIcon from '@/assets/svg/plus_icon.svg';
 import { EXCEPTION_NODES_TYPE } from '@/constants/node.constants';
 import {
   AnswerTypeEnum,
+  HttpContentTypeEnum,
+  HttpMethodEnum,
   NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
-import { PortGroupEnum } from '@/types/enums/node';
+import { PortGroupEnum, VariableConfigTypeEnum } from '@/types/enums/node';
 import {
   ConditionBranchConfigs,
   IntentConfigs,
@@ -60,6 +62,7 @@ import {
   showExceptionPort,
 } from '@/utils/graph';
 import { Graph, Markup, Node } from '@antv/x6';
+import { FormInstance } from 'antd';
 
 const NODE_BOTTOM_PADDING = 10;
 const NODE_BOTTOM_PADDING_AND_BORDER = NODE_BOTTOM_PADDING + 1;
@@ -908,4 +911,43 @@ export const QuicklyCreateEdgeConditionConfig = (
     nodeData.nodeConfig.intentConfigs = _arr;
   }
   return { nodeData, sourcePortId };
+};
+
+export const setFormDefaultValues = ({
+  type,
+  nodeConfig,
+  form,
+}: {
+  type: NodeTypeEnum;
+  nodeConfig: NodeConfig;
+  form: FormInstance;
+}) => {
+  switch (type) {
+    case NodeTypeEnum.HTTPRequest: {
+      if (!nodeConfig.method) {
+        form.setFieldValue('method', HttpMethodEnum.GET);
+      }
+      if (!nodeConfig.contentType) {
+        form.setFieldValue('contentType', HttpContentTypeEnum.OTHER);
+      }
+      if (!nodeConfig.timeout) {
+        form.setFieldValue('timeout', 30);
+      }
+      break;
+    }
+    case NodeTypeEnum.Variable: {
+      if (!nodeConfig.configType) {
+        form.setFieldValue('configType', VariableConfigTypeEnum.SET_VARIABLE);
+      }
+      break;
+    }
+    case NodeTypeEnum.QA: {
+      if (!nodeConfig.answerType) {
+        form.setFieldValue('answerType', AnswerTypeEnum.TEXT);
+      }
+      break;
+    }
+    default:
+      break;
+  }
 };

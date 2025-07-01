@@ -31,8 +31,6 @@ import {
 import {
   AnswerTypeEnum,
   CreateUpdateModeEnum,
-  HttpContentTypeEnum,
-  HttpMethodEnum,
   NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
@@ -69,6 +67,7 @@ import {
   QuicklyCreateEdgeConditionConfig,
   returnBackgroundColor,
   returnImg,
+  setFormDefaultValues,
 } from '@/utils/workflow';
 import { Graph } from '@antv/x6';
 import { App, Form } from 'antd';
@@ -1602,7 +1601,7 @@ const Workflow: React.FC = () => {
 
   useEffect(() => {
     if (foldWrapItem.id !== 0) {
-      const newFoldWrapItem = JSON.parse(JSON.stringify(foldWrapItem));
+      const newFoldWrapItem = cloneDeep(foldWrapItem);
 
       // 先重置表单，清除所有字段
       form.resetFields();
@@ -1611,31 +1610,11 @@ const Workflow: React.FC = () => {
       form.setFieldsValue(newFoldWrapItem.nodeConfig);
 
       // 设置默认值
-      switch (foldWrapItem.type) {
-        case 'HTTPRequest': {
-          if (!newFoldWrapItem.nodeConfig.method) {
-            form.setFieldValue('method', HttpMethodEnum.GET);
-          }
-          if (!newFoldWrapItem.nodeConfig.contentType) {
-            form.setFieldValue('contentType', HttpContentTypeEnum.JSON);
-          }
-          break;
-        }
-        case 'Variable': {
-          if (!newFoldWrapItem.nodeConfig.configType) {
-            form.setFieldValue('configType', 'SET_VARIABLE');
-          }
-          break;
-        }
-        case 'QA': {
-          if (!newFoldWrapItem.nodeConfig.answerType) {
-            form.setFieldValue('answerType', 'TEXT');
-          }
-          break;
-        }
-        default:
-          break;
-      }
+      setFormDefaultValues({
+        type: newFoldWrapItem.type,
+        nodeConfig: newFoldWrapItem.nodeConfig,
+        form,
+      });
     }
   }, [foldWrapItem.id, foldWrapItem.type]);
 
@@ -1775,6 +1754,7 @@ const Workflow: React.FC = () => {
         lineMargin
         title={foldWrapItem.name}
         visible={visible}
+        key={`${foldWrapItem.type}-${foldWrapItem.id}-foldWrap`}
         onClose={handleDrawerClose}
         description={foldWrapItem.description}
         backgroundColor={returnBackgroundColor(foldWrapItem.type)}
@@ -1799,13 +1779,18 @@ const Workflow: React.FC = () => {
             layout={'vertical'}
             onFinishFailed={doSubmitFormData}
             onFinish={doSubmitFormData}
+            key={`${foldWrapItem.type}-${foldWrapItem.id}-form`}
+            clearOnDestroy={true}
             onValuesChange={(values) => {
               console.log('onValuesChange', values);
               setIsModified(true);
               handleGraphUpdateByForm(values, form.getFieldsValue(true));
             }}
           >
-            <NodePanelDrawer params={foldWrapItem} />
+            <NodePanelDrawer
+              params={foldWrapItem}
+              key={`${foldWrapItem.type}-${foldWrapItem.id}-nodePanelDrawer`}
+            />
           </Form>
         </div>
       </FoldWrap>

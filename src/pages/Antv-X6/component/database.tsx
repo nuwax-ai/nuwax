@@ -15,7 +15,12 @@ import { outPutConfigs, tableOptions } from '../params';
 import { InputAndOut, TreeOutput } from './commonNode';
 
 // 定义数据增，删，改的节点
-const Database: React.FC<NodeDisposeProps> = ({ form, type, nodeConfig }) => {
+const Database: React.FC<NodeDisposeProps> = ({
+  form,
+  type,
+  nodeConfig,
+  id,
+}) => {
   const [open, setOpen] = useState(false); // 自动生成sql的弹窗
 
   const { setIsModified } = useModel('workflow');
@@ -294,7 +299,9 @@ const Database: React.FC<NodeDisposeProps> = ({ form, type, nodeConfig }) => {
       {/* 输出参数 */}
       {type === 'TableSQL' || type === 'TableDataQuery' ? (
         <Form.Item name={'inputArgs'}>
+          {/* TODO 这个输出参数的key可能需要修改 为什么是inputArgs */}
           <CustomTree
+            key={`${type}-${id}-outputArgs`}
             title={'输出'}
             inputItemName={'outputArgs'}
             params={nodeConfig?.outputArgs || []} // 改为直接读取表单最新值

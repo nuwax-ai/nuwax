@@ -5,7 +5,7 @@ import {
   NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
-import { FoldFormIdEnum } from '@/types/enums/node';
+import { FoldFormIdEnum, VariableConfigTypeEnum } from '@/types/enums/node';
 import { ChildNode } from '@/types/interfaces/graph';
 
 // 有试运行的节点
@@ -180,3 +180,8 @@ export const DEFAULT_DRAWER_FORM: ChildNode = {
 };
 
 export const SKILL_FORM_KEY = 'skillComponentConfigs';
+
+export const VARIABLE_CONFIG_TYPE_OPTIONS = [
+  { label: '设置变量值', value: VariableConfigTypeEnum.SET_VARIABLE },
+  { label: '获取变量值', value: VariableConfigTypeEnum.GET_VARIABLE },
+];

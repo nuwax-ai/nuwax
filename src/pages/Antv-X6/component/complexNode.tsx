@@ -75,7 +75,12 @@ const skillCreatedTabs = CREATED_TABS.filter((item) =>
 );
 
 // 定义大模型节点
-const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
+const ModelNode: React.FC<NodeDisposeProps> = ({
+  form,
+  id,
+  nodeConfig,
+  type,
+}) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
   // 打开关闭优化
@@ -249,6 +254,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
       {/* 输出参数 */}
       <Form.Item shouldUpdate name={'outputArgs'}>
         <CustomTree
+          key={`${type}-${id}-outputArgs`}
           title={'输出'}
           notShowTitle
           form={form}
@@ -344,7 +350,12 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
 };
 
 // 定义问答
-const QuestionsNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
+const QuestionsNode: React.FC<NodeDisposeProps> = ({
+  form,
+  nodeConfig,
+  type,
+  id,
+}) => {
   // 更改问答方式
   const changeType = (val: string) => {
     // 首次选中
@@ -425,6 +436,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
         {() =>
           form.getFieldValue('answerType') === 'TEXT' ? (
             <CustomTree
+              key={`${type}-${id}-outputArgs`}
               title={'输出'}
               form={form}
               params={nodeConfig?.outputArgs || []}
@@ -455,7 +467,12 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
 
 // 定义http工具
 
-const HttpToolNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
+const HttpToolNode: React.FC<NodeDisposeProps> = ({
+  form,
+  nodeConfig,
+  type,
+  id,
+}) => {
   const bodyParams = nodeConfig?.body || [];
   const outputParams = nodeConfig?.outputArgs || [];
   return (
@@ -511,6 +528,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
         </div>
         <div className="node-item-style">
           <CustomTree
+            key={`${type}-${id}-body`}
             title={'Body'}
             form={form}
             inputItemName="body"
@@ -522,6 +540,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
       {/* 出参 */}
       <Form.Item name={'outputArgs'}>
         <CustomTree
+          key={`${type}-${id}-outputArgs`}
           title={'出参'}
           form={form}
           inputItemName="outputArgs"
