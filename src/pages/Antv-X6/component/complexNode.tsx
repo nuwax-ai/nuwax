@@ -45,13 +45,26 @@ const REQUEST_METHOD_OPTIONS = [
 
 // 各种方法的options
 const REQUEST_CONTENT_TYPE_OPTIONS = [
-  { label: 'json', value: HttpContentTypeEnum.JSON },
-  { label: 'form-data', value: HttpContentTypeEnum.FORM_DATA },
+  {
+    label: '无',
+    value: HttpContentTypeEnum.OTHER,
+    style: { marginTop: 3, marginBottom: 3 },
+  },
+  {
+    label: 'form-data',
+    value: HttpContentTypeEnum.FORM_DATA,
+    style: { marginTop: 3, marginBottom: 3 },
+  },
+  {
+    label: 'json',
+    value: HttpContentTypeEnum.JSON,
+    style: { marginTop: 3, marginBottom: 3 },
+  },
   {
     label: 'x-www-form-urlencoded',
     value: HttpContentTypeEnum.X_WWW_FORM_URLENCODED,
+    style: { marginTop: 3, marginBottom: 3 },
   },
-  { label: '无', value: HttpContentTypeEnum.OTHER },
 ];
 const skillCreatedTabs = CREATED_TABS.filter((item) =>
   [
@@ -474,7 +487,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
       </div>
       <div className="node-item-style">
         <Form.Item label="请求超时配置" name="timeout">
-          <Input placeholder="请输入超时配置时长"></Input>
+          <Input placeholder="请输入超时配置时长" addonAfter="s"></Input>
         </Form.Item>
       </div>
       {/* 入参 */}
