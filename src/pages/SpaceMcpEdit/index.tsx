@@ -130,7 +130,8 @@ const SpaceMcpCreate: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: McpUpdateParams[]) => {
-      const { withDeploy } = params[0];
+      const currentMcpDetailInfo = params[0];
+      const { withDeploy } = currentMcpDetailInfo;
       const text = withDeploy ? '已完成保存并提交部署' : '保存MCP服务成功';
       message.success(text);
       setSaveDeployLoading(false);
@@ -140,10 +141,16 @@ const SpaceMcpCreate: React.FC = () => {
         const time = moment().toISOString();
         const _mcpDetailInfo = {
           ...mcpDetailInfo,
+          ...currentMcpDetailInfo,
           deployed: time,
           modified: time,
         } as McpDetailInfo;
         setMcpDetailInfo(_mcpDetailInfo);
+      } else {
+        setMcpDetailInfo({
+          ...mcpDetailInfo,
+          ...currentMcpDetailInfo,
+        } as McpDetailInfo);
       }
     },
     onError: () => {
