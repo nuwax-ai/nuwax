@@ -318,12 +318,14 @@ const StructureTable: React.FC<StructureTableProps> = ({
             record={record}
             existTableDataFlag={existTableDataFlag}
           >
+            {/* 长文本时,不允许设置唯一索引 */}
             <Checkbox
               disabled={
                 record?.systemFieldFlag ||
-                (!record?.isNew && existTableDataFlag)
+                (!record?.isNew && existTableDataFlag) ||
+                record?.dataLength === TableFieldTypeEnum.MEDIUMTEXT
               }
-              defaultChecked={record.uniqueFlag}
+              checked={record.uniqueFlag}
               onChange={(e) =>
                 onChangeValue(record.id, 'uniqueFlag', e.target.checked)
               }

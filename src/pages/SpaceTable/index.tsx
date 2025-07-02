@@ -410,10 +410,16 @@ const SpaceTable = () => {
     const _tableDetail = cloneDeep(tableDetail);
     const _fieldList = _tableDetail?.fieldList?.map((item: TableFieldInfo) => {
       if (item.id === id) {
-        // 长文本: 禁止添加默认值;
-        if (attr === 'fieldType' || attr === 'dataLength') {
+        if (attr === 'fieldType') {
           item.defaultValue = '';
         }
+        // 长文本: 禁止添加默认值, 禁止唯一;
+        if (attr === 'dataLength') {
+          item.defaultValue = '';
+          item.uniqueFlag = false;
+        }
+        // 恢复dataLength为String
+        item.dataLength = TableFieldTypeEnum.String;
         // 字段详情描述，最长100个字符, 数据库最长200个字符
         if (attr === 'fieldDescription') {
           if (value && value.toString().length > 100) {
