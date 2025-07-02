@@ -34,6 +34,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
   onConfirm,
 }) => {
   const [form] = Form.useForm();
+  const [loading, setLoading] = useState<boolean>(false);
   const [imageUrl, setImageUrl] = useState<string>('');
   const [resourceFormat, setResourceFormat] = useState<KnowledgeDataTypeEnum>(
     KnowledgeDataTypeEnum.Text,
@@ -45,8 +46,12 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
     debounceInterval: 300,
     onSuccess: (result: number) => {
       message.success('知识库已创建成功');
+      setLoading(false);
       onCancel();
       history.push(`/space/${spaceId}/knowledge/${result}`);
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
@@ -56,8 +61,12 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
     debounceInterval: 300,
     onSuccess: (_: null, params: KnowledgeConfigUpdateParams[]) => {
       message.success('知识库更新成功');
+      setLoading(false);
       const info = params[0];
       onConfirm?.(info);
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
@@ -76,6 +85,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
       icon: imageUrl,
       dataType: resourceFormat,
     };
+    setLoading(true);
     if (mode === CreateUpdateModeEnum.Create) {
       run({
         ...params,
@@ -97,6 +107,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
       form={form}
       title={mode === CreateUpdateModeEnum.Create ? '创建知识库' : '更新知识库'}
       open={open}
+      loading={loading}
       onCancel={onCancel}
       onConfirm={handlerSubmit}
     >
