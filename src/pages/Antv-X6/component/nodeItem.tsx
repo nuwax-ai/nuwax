@@ -2,8 +2,9 @@
 import CodeEditor from '@/components/CodeEditor';
 import Monaco from '@/components/CodeEditor/monaco';
 import CustomTree from '@/components/FormListItem/NestedForm';
+import { VARIABLE_CONFIG_TYPE_OPTIONS } from '@/constants/node.constants';
 import { DataTypeEnum } from '@/types/enums/common';
-import { InputItemNameEnum } from '@/types/enums/node';
+import { InputItemNameEnum, VariableConfigTypeEnum } from '@/types/enums/node';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { ExpandAltOutlined, SettingOutlined } from '@ant-design/icons';
@@ -26,10 +27,16 @@ import './nodeItem.less';
 // 定义一些公共的数组
 
 // 定义开始节点
-const StartNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
+const StartNode: React.FC<NodeDisposeProps> = ({
+  form,
+  nodeConfig,
+  id,
+  type,
+}) => {
   return (
     <Form.Item name={'inputArgs'}>
       <CustomTree
+        key={`${type}-${id}-inputArgs`}
         title={'输入'}
         inputItemName={'inputArgs'}
         params={nodeConfig?.inputArgs || []}
@@ -201,10 +208,9 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
 
 // 定义变量的节点渲染
 const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
-  const options = [
-    { label: '设置变量值', value: 'SET_VARIABLE' },
-    { label: '获取变量值', value: 'GET_VARIABLE' },
-  ];
+  const options = VARIABLE_CONFIG_TYPE_OPTIONS;
+  const configType = form.getFieldValue('configType');
+  const isSetVariable = configType === VariableConfigTypeEnum.SET_VARIABLE;
   return (
     <>
       <Form.Item
@@ -216,7 +222,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
 
       <Form.Item shouldUpdate noStyle>
         {() =>
-          form.getFieldValue('configType') === 'SET_VARIABLE' ? (
+          isSetVariable ? (
             <div className="node-item-style">
               <InputAndOut
                 title={'设置变量'}
@@ -230,7 +236,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
       </Form.Item>
       <Form.Item shouldUpdate noStyle>
         {() =>
-          form.getFieldValue('configType') !== 'SET_VARIABLE' ? (
+          !isSetVariable ? (
             <OtherFormList
               title={'输出变量'}
               fieldConfigs={outPutConfigs}
@@ -242,7 +248,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
       </Form.Item>
       <Form.Item shouldUpdate noStyle>
         {() =>
-          form.getFieldValue('configType') === 'SET_VARIABLE' ? (
+          isSetVariable ? (
             <>
               <div className="node-title-style margin-bottom">输出</div>
               <TreeOutput
@@ -503,7 +509,12 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
 };
 
 // 定义代码节点
-const CodeNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
+const CodeNode: React.FC<NodeDisposeProps> = ({
+  form,
+  nodeConfig,
+  type,
+  id,
+}) => {
   const [show, setShow] = useState(false);
   const { setIsModified } = useModel('workflow');
   const fieldName =
@@ -548,6 +559,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
       </div>
       <CustomTree
         title={'输出'}
+        key={`${type}-${id}-outputArgs`}
         params={nodeConfig?.outputArgs || []}
         form={form}
         inputItemName={'outputArgs'}

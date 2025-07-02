@@ -10,14 +10,15 @@ interface MCPToolsProps {
   onAddTool: (tool: any) => void;
   fold: boolean;
   addedComponents: AgentAddComponentStatusInfo[];
+  getToolLoading: (item: CreatedNodeItem, toolName: string) => boolean;
 }
-const loadingStatus = AgentAddComponentStatusEnum.Loading;
 const addedStatus = AgentAddComponentStatusEnum.Added;
 const MCPTools: React.FC<MCPToolsProps> = ({
   tools,
   item,
   onAddTool,
   fold,
+  getToolLoading,
   addedComponents,
 }) => {
   const handleAddTool = useCallback(
@@ -70,8 +71,12 @@ const MCPTools: React.FC<MCPToolsProps> = ({
               color="primary"
               variant="outlined"
               onClick={() => handleAddTool(tool.name, tool.description)}
-              disabled={isAdded(item, addedStatus, tool.name)}
-              loading={isAdded(item, loadingStatus, tool.name)}
+              disabled={
+                getToolLoading(item, tool.name)
+                  ? false
+                  : isAdded(item, addedStatus, tool.name)
+              }
+              loading={getToolLoading(item, tool.name)}
             >
               {isAdded(item, addedStatus, tool.name) ? '已添加' : '添加'}
             </Button>

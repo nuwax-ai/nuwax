@@ -28,7 +28,7 @@ import {
   Select,
   Space,
 } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
@@ -45,13 +45,26 @@ const REQUEST_METHOD_OPTIONS = [
 
 // 各种方法的options
 const REQUEST_CONTENT_TYPE_OPTIONS = [
-  { label: 'json', value: HttpContentTypeEnum.JSON },
-  { label: 'form-data', value: HttpContentTypeEnum.FORM_DATA },
+  {
+    label: '无',
+    value: HttpContentTypeEnum.OTHER,
+    style: { marginTop: 3, marginBottom: 3 },
+  },
+  {
+    label: 'form-data',
+    value: HttpContentTypeEnum.FORM_DATA,
+    style: { marginTop: 3, marginBottom: 3 },
+  },
+  {
+    label: 'json',
+    value: HttpContentTypeEnum.JSON,
+    style: { marginTop: 3, marginBottom: 3 },
+  },
   {
     label: 'x-www-form-urlencoded',
     value: HttpContentTypeEnum.X_WWW_FORM_URLENCODED,
+    style: { marginTop: 3, marginBottom: 3 },
   },
-  { label: '无', value: HttpContentTypeEnum.OTHER },
 ];
 const skillCreatedTabs = CREATED_TABS.filter((item) =>
   [
@@ -62,7 +75,12 @@ const skillCreatedTabs = CREATED_TABS.filter((item) =>
 );
 
 // 定义大模型节点
-const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
+const ModelNode: React.FC<NodeDisposeProps> = ({
+  form,
+  id,
+  nodeConfig,
+  type,
+}) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
   // 打开关闭优化
@@ -71,8 +89,26 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]
   >([]);
+  const skillLoadingRef = useRef<NodeJS.Timeout>();
 
-  const { setSkillChange, setIsModified } = useModel('workflow');
+  const { setSkillChange, setIsModified, skillChange } = useModel('workflow');
+  const [skillLoading, setSkillLoading] = useState(false);
+  const updateAddComponents = (
+    configs: CreatedNodeItem[],
+    customize: (item: CreatedNodeItem) => AgentAddComponentStatusEnum,
+  ) => {
+    const theList =
+      configs?.map((item: CreatedNodeItem) => {
+        return {
+          type: item.type as unknown as AgentComponentTypeEnum,
+          targetId: Number(item.typeId),
+          status: customize(item),
+          toolName: item.toolName || '',
+        };
+      }) || [];
+    setAddComponents(theList);
+  };
+
   // 新增技能
   const onAddedSkill = (item: CreatedNodeItem) => {
     setIsModified(true);
@@ -84,6 +120,21 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
     form.submit();
     // setOpen(false);
   };
+
+  useEffect(() => {
+    //如果300ms内的变化不做显示loading
+    if (skillChange) {
+      skillLoadingRef.current = setTimeout(() => {
+        setSkillLoading(true);
+      }, 500);
+    } else {
+      clearTimeout(skillLoadingRef.current);
+      setSkillLoading(false);
+    }
+    return () => {
+      clearTimeout(skillLoadingRef.current);
+    };
+  }, [skillChange]);
 
   // 移出技能
   const removeItem = (item: CreatedNodeItem) => {
@@ -125,16 +176,9 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
   const skillComponentConfigs = form.getFieldValue(SKILL_FORM_KEY);
 
   useEffect(() => {
-    const _arr =
-      skillComponentConfigs?.map((item: CreatedNodeItem) => {
-        return {
-          type: item.type,
-          targetId: item.typeId,
-          status: AgentAddComponentStatusEnum.Added,
-          toolName: item.toolName || '',
-        };
-      }) || [];
-    setAddComponents(_arr);
+    updateAddComponents(skillComponentConfigs, () => {
+      return AgentAddComponentStatusEnum.Added;
+    });
   }, [skillComponentConfigs]);
   const variables = (
     Form.useWatch(InputItemNameEnum.inputArgs, {
@@ -210,6 +254,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
       {/* 输出参数 */}
       <Form.Item shouldUpdate name={'outputArgs'}>
         <CustomTree
+          key={`${type}-${id}-outputArgs`}
           title={'输出'}
           notShowTitle
           form={form}
@@ -221,6 +266,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({ form, id, nodeConfig }) => {
         checkTag={AgentComponentTypeEnum.Plugin}
         onAdded={onAddedSkill}
         open={open}
+        addSkillLoading={skillLoading}
         onCancel={() => setOpen(false)}
         addComponents={addComponents}
         tabs={skillCreatedTabs}
@@ -304,7 +350,12 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
 };
 
 // 定义问答
-const QuestionsNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
+const QuestionsNode: React.FC<NodeDisposeProps> = ({
+  form,
+  nodeConfig,
+  type,
+  id,
+}) => {
   // 更改问答方式
   const changeType = (val: string) => {
     // 首次选中
@@ -385,6 +436,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
         {() =>
           form.getFieldValue('answerType') === 'TEXT' ? (
             <CustomTree
+              key={`${type}-${id}-outputArgs`}
               title={'输出'}
               form={form}
               params={nodeConfig?.outputArgs || []}
@@ -415,7 +467,12 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
 
 // 定义http工具
 
-const HttpToolNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
+const HttpToolNode: React.FC<NodeDisposeProps> = ({
+  form,
+  nodeConfig,
+  type,
+  id,
+}) => {
   const bodyParams = nodeConfig?.body || [];
   const outputParams = nodeConfig?.outputArgs || [];
   return (
@@ -447,7 +504,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
       </div>
       <div className="node-item-style">
         <Form.Item label="请求超时配置" name="timeout">
-          <Input placeholder="请输入超时配置时长"></Input>
+          <Input placeholder="请输入超时配置时长" addonAfter="s"></Input>
         </Form.Item>
       </div>
       {/* 入参 */}
@@ -471,6 +528,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
         </div>
         <div className="node-item-style">
           <CustomTree
+            key={`${type}-${id}-body`}
             title={'Body'}
             form={form}
             inputItemName="body"
@@ -482,6 +540,7 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
       {/* 出参 */}
       <Form.Item name={'outputArgs'}>
         <CustomTree
+          key={`${type}-${id}-outputArgs`}
           title={'出参'}
           form={form}
           inputItemName="outputArgs"

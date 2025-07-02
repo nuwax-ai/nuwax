@@ -19,6 +19,8 @@ interface MonacoProps {
   onChange: (code: Code) => void;
   // 关闭
   onClose: () => void;
+  // 是否禁用切换语言
+  disabledSwitchLanguage?: boolean;
 }
 const DEFAULT_LANGUAGE = CodeLangEnum.JavaScript;
 const LANGUAGE_OPTIONS = [
@@ -31,6 +33,7 @@ const NewMonaco: React.FC<MonacoProps> = ({
   value,
   language,
   onChange,
+  disabledSwitchLanguage = false,
 }) => {
   const [codeLanguage, setCodeLanguage] = useState(
     language || DEFAULT_LANGUAGE,
@@ -54,7 +57,6 @@ const NewMonaco: React.FC<MonacoProps> = ({
       language: language,
     });
   };
-  const showSelectLanguage = !!language;
   return (
     <>
       {visible && (
@@ -83,7 +85,7 @@ const NewMonaco: React.FC<MonacoProps> = ({
               >
                 代码
               </span>
-              {showSelectLanguage && (
+              {!disabledSwitchLanguage && (
                 <Select
                   style={{ width: 120 }}
                   value={codeLanguage}

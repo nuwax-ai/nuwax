@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useModel } from 'umi';
 import { TreeNodeConfig } from './useTreeData';
 
@@ -14,6 +14,7 @@ export const useRequireStatus = (
   updateTreeData: (data: TreeNodeConfig[]) => void,
 ) => {
   const { setIsModified } = useModel('workflow');
+  const treeDataRef = useRef(treeData);
 
   /**
    * 查找目标节点的所有父节点路径
@@ -131,15 +132,15 @@ export const useRequireStatus = (
 
       if (checked) {
         // 如果当前节点被选中，递归更新所有父节点的 require 状态
-        const path = findPathToNode(treeData, nodeData.key!);
+        const path = findPathToNode(treeDataRef.current, nodeData.key!);
         if (!path) {
           return; // 如果没有找到目标节点，直接返回
         }
-        newData = updatePathRequireStatus(treeData, path, 0);
+        newData = updatePathRequireStatus(treeDataRef.current, path, 0);
       } else {
         // 递归更改当前数据require和所有子节点的require状态
         const newNodeData = updateNodeAndChildren(nodeData);
-        newData = updateTreeNode(treeData, newNodeData);
+        newData = updateTreeNode(treeDataRef.current, newNodeData);
       }
 
       // 更新树数据并标记为已修改
@@ -147,7 +148,7 @@ export const useRequireStatus = (
       setIsModified(true);
     },
     [
-      treeData,
+      treeDataRef.current,
       findPathToNode,
       updatePathRequireStatus,
       updateNodeAndChildren,
@@ -156,6 +157,13 @@ export const useRequireStatus = (
       setIsModified,
     ],
   );
+
+  useEffect(() => {
+    treeDataRef.current = treeData;
+    return () => {
+      treeDataRef.current = [];
+    };
+  }, [treeData]);
 
   // 优化返回对象，避免每次渲染都创建新对象
   return useMemo(

@@ -15,6 +15,7 @@ import { Snapline } from '@antv/x6-plugin-snapline';
 import { ChildNode, StencilChildNode } from '@/types/interfaces/graph';
 import {
   adjustParentSize,
+  registerNodeClickAndDblclick,
   showExceptionPort,
   validateConnect,
 } from '@/utils/graph';
@@ -22,7 +23,11 @@ import { message, Modal } from 'antd';
 // 自定义类型定义
 import PlusIcon from '@/assets/svg/plus_icon.svg';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
-import { NodeUpdateEnum, PortGroupEnum } from '@/types/enums/node';
+import {
+  NodeUpdateEnum,
+  PortGroupEnum,
+  UpdateEdgeType,
+} from '@/types/enums/node';
 import { GraphProp } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { cloneDeep } from '@/utils/common';
@@ -143,14 +148,14 @@ const initGraph = ({
       y: centerY,
     });
     const dragChild = (child: StencilChildNode) => {
-      createNodeToPortOrEdge(
+      createNodeToPortOrEdge({
         child,
         sourceNode,
         portId,
         position,
         targetNode,
         edgeId,
-      );
+      });
     };
     // 如果当前节点在循环内，则不展示循环节点
     const isInLoop = !!(sourceNode?.loopNodeId || false);
@@ -750,13 +755,9 @@ const initGraph = ({
   graph.on(
     'node:custom:save',
     ({ data, payload }: { data: ChildNode; payload: Partial<ChildNode> }) => {
-      console.log('node:custom:save', data, payload);
       onSaveNode(data, payload);
     },
   );
-  graph.on('node:dblclick', (...args) => {
-    console.log('node:dblclick', args);
-  });
   graph.on('node:selected', ({ node }) => {
     //现在分为两处场景
     // 1.用户点击节点 这个时间需要打开右侧属性面板
@@ -914,7 +915,12 @@ const initGraph = ({
       // 通知父组件更新节点信息
     } else {
       // 通知父组件创建边
-      changeEdge('created', targetNodeId, sourceNode, edge.id);
+      changeEdge({
+        type: UpdateEdgeType.created,
+        targetId: targetNodeId,
+        sourceNode,
+        id: edge.id,
+      });
     }
 
     graph.addEdge(edge);
@@ -941,9 +947,6 @@ const initGraph = ({
     if (children && children.length) {
       node.prop('originSize', node.getSize());
     }
-  });
-  graph.on('node:click', ({ node }) => {
-    changeZIndex(node);
   });
 
   graph.on('node:change:position', ({ node }) => {
@@ -973,6 +976,7 @@ const initGraph = ({
       adjustParentSize(parentNode);
     }
   });
+  registerNodeClickAndDblclick({ graph, changeZIndex });
 
   return graph; // 返回初始化好的图形实例
 };

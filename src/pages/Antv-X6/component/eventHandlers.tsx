@@ -1,4 +1,5 @@
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
+import { UpdateEdgeType } from '@/types/enums/node';
 import { BindEventHandlers, ChildNode } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { cloneDeep } from '@/utils/common';
@@ -88,7 +89,12 @@ const bindEventHandlers = ({
           }
         }
       } else {
-        changeEdge('delete', _targetNodeId as string, sourceNode, '0');
+        changeEdge({
+          type: UpdateEdgeType.deleted,
+          targetId: _targetNodeId as string,
+          sourceNode,
+          id: '0',
+        });
         graph.removeCells(cells); // 删除选中的单元格
         return;
       }
@@ -207,7 +213,12 @@ const bindEventHandlers = ({
         ) {
           handleSpecialNodeEdge(cells);
         } else {
-          changeEdge('delete', _targetNodeId as string, sourceNode, '0');
+          changeEdge({
+            type: UpdateEdgeType.deleted,
+            targetId: _targetNodeId as string,
+            sourceNode,
+            id: '0',
+          });
         }
       } else {
         if (isResistNodeType.includes(_cell.getData().type)) {

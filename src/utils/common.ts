@@ -151,6 +151,9 @@ const getProgressStatus = (fileInfo: UploadFileInfo) => {
   if (fileInfo?.status === UploadFileStatus.error) {
     return 'exception';
   }
+  if (Math.floor(fileInfo?.percent || 0) === 100) {
+    return 'success';
+  }
   if (fileInfo?.status === UploadFileStatus.done) {
     return 'success';
   }

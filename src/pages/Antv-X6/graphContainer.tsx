@@ -1,4 +1,5 @@
 import { NodeTypeEnum, RunResultStatusEnum } from '@/types/enums/common';
+import { NodeSizeGetTypeEnum } from '@/types/enums/node';
 import type {
   ChildNode,
   Edge,
@@ -170,7 +171,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     // 修改节点信息
     const graphUpdateNode = (nodeId: string, newData: ChildNode | null) => {
       if (!graphRef.current || !newData) return;
-      console.log('graphUpdateNode', nodeId, newData);
       const node = graphRef.current.getCellById(nodeId);
       if (node && node.isNode()) {
         const position = node.getPosition();
@@ -196,7 +196,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             const { width, height } = getNodeSize({
               data: newData,
               ports: newPorts.items,
-              type: 'update',
+              type: NodeSizeGetTypeEnum.update,
             });
             node.setSize(width, height);
           }
@@ -226,6 +226,21 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     // 删除边
     const graphDeleteEdge = (id: string) => {
       if (!graphRef.current) return;
+      // 先更新sourceNode的nextNodeIds
+      const edge = graphRef.current.getCellById(id);
+      if (edge && edge.isEdge()) {
+        const sourceNode = edge.getSourceNode();
+        if (sourceNode) {
+          const nextNodeIds = sourceNode.getData().nextNodeIds;
+          if (nextNodeIds) {
+            sourceNode.updateData({
+              nextNodeIds: nextNodeIds.filter(
+                (item: number) => item !== Number(edge.getTargetNode().id),
+              ),
+            });
+          }
+        }
+      }
       graphRef.current.removeCell(id);
     };
 
@@ -401,7 +416,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       graphRef.current = InitGraph({
         containerId: GRAPH_CONTAINER_ID,
         changeDrawer: changeDrawer,
-        changeEdge: changeEdge,
+        changeEdge,
         changeCondition: changeCondition,
         changeZoom: changeZoom,
         createNodeToPortOrEdge,

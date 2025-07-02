@@ -14,12 +14,14 @@ interface MCPItemProps {
   selected: { key: string };
   onAddNode: (item: CreatedNodeItem) => void;
   addedComponents: AgentAddComponentStatusInfo[];
+  getToolLoading: (item: CreatedNodeItem, toolName: string) => boolean;
 }
 const MCPItem: React.FC<MCPItemProps> = ({
   item,
   index,
   selected,
   onAddNode,
+  getToolLoading,
   addedComponents,
 }) => {
   const isFirstItem = index === 0;
@@ -28,9 +30,10 @@ const MCPItem: React.FC<MCPItemProps> = ({
   return (
     <>
       <div
-        className="dis-sb list-item-style"
+        className="dis-sb list-item-style cursor-pointer"
         style={{ height: 'unset' }}
         key={`${item.targetId}-${index}`}
+        onClick={() => setFold(!fold)}
       >
         <img
           src={item.icon || getImg(selected.key as AgentComponentTypeEnum)}
@@ -76,6 +79,7 @@ const MCPItem: React.FC<MCPItemProps> = ({
         fold={fold}
         tools={item?.config?.tools || []}
         item={item}
+        getToolLoading={getToolLoading}
         onAddTool={onAddNode}
         addedComponents={addedComponents}
       />

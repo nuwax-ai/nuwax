@@ -272,6 +272,7 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
             </div>
           )}
           <NewMonaco
+            disabledSwitchLanguage={true}
             value={jsonContent}
             language={CodeLangEnum.JSON}
             visible={show}

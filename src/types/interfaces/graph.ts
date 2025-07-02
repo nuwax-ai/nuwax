@@ -3,11 +3,21 @@ import {
   NodeTypeEnum,
   RunResultStatusEnum,
 } from '@/types/enums/common';
-import { ExceptionHandleConfig, NodeConfig } from '@/types/interfaces/node';
+import {
+  ExceptionHandleConfig,
+  NodeConfig,
+  outputOrInputPortConfig,
+  PortsConfig,
+} from '@/types/interfaces/node';
 import { Graph, Node } from '@antv/x6';
 import type { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI as ModalHookAPI } from 'antd/es/modal/useModal';
-import { NodeUpdateEnum } from '../enums/node';
+import {
+  NodeSizeGetTypeEnum,
+  NodeUpdateEnum,
+  UpdateEdgeType,
+} from '../enums/node';
+
 /**
  * 定义 Child 接口，用于描述子节点的数据结构。
  */
@@ -110,16 +120,26 @@ export interface ChangeNodeProps {
   update?: NodeUpdateEnum | undefined;
 }
 
+export interface ChangeEdgeProps {
+  type: UpdateEdgeType;
+  targetId: string;
+  sourceNode: ChildNode;
+  id?: string;
+}
+export interface CreateNodeToPortOrEdgeProps {
+  child: StencilChildNode;
+  sourceNode: ChildNode;
+  portId: string;
+  position: { x: number; y: number };
+  targetNode?: ChildNode;
+  edgeId?: string;
+}
+
 export interface GraphContainerProps {
   graphParams: { nodeList: ChildNode[]; edgeList: Edge[] };
   changeDrawer: (child: ChildNode | null) => void;
   onSaveNode: (data: ChildNode, payload: Partial<ChildNode>) => void;
-  changeEdge: (
-    type: string,
-    targetId: string,
-    sourceNode: ChildNode,
-    id: string,
-  ) => void;
+  changeEdge: (config: ChangeEdgeProps) => void;
   changeCondition: (config: ChangeNodeProps) => void;
   copyNode: (child: ChildNode) => void;
   // 删除节点
@@ -127,14 +147,7 @@ export interface GraphContainerProps {
   // 改变画布大小
   changeZoom: (val: number) => void;
   // 通过连接桩或者边创建节点
-  createNodeToPortOrEdge: (
-    child: StencilChildNode,
-    sourceNode: ChildNode,
-    portId: string,
-    position: { x: number; y: number },
-    targetNode?: ChildNode,
-    edgeId?: string,
-  ) => void;
+  createNodeToPortOrEdge: (config: CreateNodeToPortOrEdgeProps) => void;
   onClickBlank: () => void;
 }
 
@@ -144,14 +157,15 @@ export interface GraphRect {
   height?: number;
   width?: number;
 }
+export interface ViewGraphProps {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 export interface GraphContainerRef {
-  getCurrentViewPort: () => {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
+  getCurrentViewPort: () => ViewGraphProps;
   // 新增节点
   graphAddNode: (e: GraphRect, child: ChildNode) => void;
   // 修改节点
@@ -184,12 +198,7 @@ export interface GraphContainerRef {
 export interface BindEventHandlers {
   graph: Graph;
   // 新增或删除边
-  changeEdge: (
-    type: string,
-    targetId: string,
-    sourceNode: ChildNode,
-    id: string,
-  ) => void;
+  changeEdge: (config: ChangeEdgeProps) => void;
   changeCondition: (config: ChangeNodeProps) => void;
   copyNode: (child: ChildNode) => void;
   // 删除节点
@@ -216,23 +225,11 @@ export interface GraphProp {
   // 改变抽屉内容的回调函数，接收一个 Child 类型的参数
   changeDrawer: (item: ChildNode | null) => void;
   onSaveNode: (data: ChildNode, payload: Partial<ChildNode>) => void;
-  changeEdge: (
-    type: string,
-    targetId: string,
-    sourceNode: ChildNode,
-    id: string,
-  ) => void;
+  changeEdge: (config: ChangeEdgeProps) => void;
   changeCondition: (config: ChangeNodeProps) => void;
   changeZoom: (val: number) => void;
   // 通过连接桩或者边创建节点
-  createNodeToPortOrEdge: (
-    child: StencilChildNode,
-    sourceNode: ChildNode,
-    portId: string,
-    position: { x: number; y: number },
-    targetNode?: ChildNode,
-    edgeId?: string,
-  ) => void;
+  createNodeToPortOrEdge: (config: CreateNodeToPortOrEdgeProps) => void;
   onClickBlank: () => void;
 }
 
@@ -241,4 +238,31 @@ export interface ExceptionItemProps extends ExceptionHandleConfig {
   name: string;
   /** 是否禁用 */
   disabled?: boolean;
+}
+
+export interface NodeMetadata extends Node.Metadata {
+  shape: NodeShapeEnum;
+  data: ChildNode & {
+    nodeConfig: NodeConfig;
+    parentId: string | null;
+  };
+  ports: PortsConfig;
+}
+
+export interface GraphNodeSizeGetParams {
+  data: ChildNode;
+  ports: outputOrInputPortConfig[];
+  type: NodeSizeGetTypeEnum;
+}
+export interface CurrentNodeRefProps {
+  sourceNode: ChildNode;
+  portId: string;
+  targetNode?: ChildNode;
+  edgeId?: string;
+}
+
+export interface GraphNodeSize {
+  type: NodeSizeGetTypeEnum; // 创建或更新
+  width: number;
+  height: number;
 }

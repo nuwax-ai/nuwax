@@ -38,50 +38,48 @@ const LoopBreak: React.FC = () => {
 
 const nodeTemplate = (params: ChildNode, form: FormInstance) => {
   const nodeType: NodeTypeEnum = params.type;
+  const commonProps = {
+    type: params.type,
+    id: params.id,
+    form,
+    nodeConfig: params.nodeConfig,
+  };
   switch (nodeType) {
     case NodeTypeEnum.Start:
       // 如果这和 'Start' 是同样的组件，请考虑重用组件或创建一个新的组件。
-      return (
-        <StartNode
-          type={params.type}
-          form={form}
-          nodeConfig={params.nodeConfig}
-        />
-      );
+      return <StartNode {...commonProps} />;
     case NodeTypeEnum.DocumentExtraction:
-      return <DocumentExtractionNode form={form} type={params.type} />;
+      return <DocumentExtractionNode {...commonProps} />;
     case NodeTypeEnum.End:
     case NodeTypeEnum.Output:
-      return <EndNode form={form} type={params.type} />;
+      return <EndNode {...commonProps} />;
     case NodeTypeEnum.Loop:
-      return <CycleNode form={form} />;
+      return <CycleNode {...commonProps} />;
     case NodeTypeEnum.Variable:
-      return <VariableNode form={form} />;
+      return <VariableNode {...commonProps} />;
     case NodeTypeEnum.TextProcessing:
-      return <TextProcessingNode form={form} />;
+      return <TextProcessingNode {...commonProps} />;
     case NodeTypeEnum.LLM:
-      return (
-        <ModelNode form={form} id={params.id} nodeConfig={params.nodeConfig} />
-      );
+      return <ModelNode {...commonProps} />;
 
     case NodeTypeEnum.Plugin:
     case NodeTypeEnum.Workflow:
     case NodeTypeEnum.LongTermMemory:
     case NodeTypeEnum.MCP:
-      return <PluginInNode type={params.type} form={form} />;
+      return <PluginInNode {...commonProps} />;
     case NodeTypeEnum.Code:
-      return <CodeNode form={form} nodeConfig={params.nodeConfig} />;
+      return <CodeNode {...commonProps} />;
     case NodeTypeEnum.QA:
-      return <QuestionsNode form={form} nodeConfig={params.nodeConfig} />;
+      return <QuestionsNode {...commonProps} />;
     case NodeTypeEnum.HTTPRequest:
-      return <HttpToolNode form={form} nodeConfig={params.nodeConfig} />;
+      return <HttpToolNode {...commonProps} />;
     case NodeTypeEnum.Knowledge:
-      return <KnowledgeNode form={form} />;
+      return <KnowledgeNode {...commonProps} />;
     // 条件分支需要实时的调用接口
     case NodeTypeEnum.Condition:
-      return <ConditionNode form={form} />;
+      return <ConditionNode {...commonProps} />;
     case NodeTypeEnum.IntentRecognition:
-      return <IntentionNode form={form} />;
+      return <IntentionNode {...commonProps} />;
     case NodeTypeEnum.LoopBreak:
       return <LoopBreak />;
     case NodeTypeEnum.LoopContinue:
@@ -91,13 +89,7 @@ const nodeTemplate = (params: ChildNode, form: FormInstance) => {
     case NodeTypeEnum.TableDataUpdate:
     case NodeTypeEnum.TableDataQuery:
     case NodeTypeEnum.TableSQL:
-      return (
-        <Database
-          form={form}
-          type={params.type}
-          nodeConfig={params.nodeConfig}
-        />
-      );
+      return <Database {...commonProps} />;
     default:
       return <></>;
   }

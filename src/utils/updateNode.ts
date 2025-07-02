@@ -1,8 +1,13 @@
 import service, { UrlListType } from '@/services/modifyNode';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { CreatedNodeItem } from '@/types/interfaces/common';
-import { ChildNode } from '@/types/interfaces/graph';
-import { InputAndOutConfig, NodeConfig } from '@/types/interfaces/node';
+import { ChildNode, CurrentNodeRefProps } from '@/types/interfaces/graph';
+import {
+  CurrentNodeRefKey,
+  InputAndOutConfig,
+  NodeConfig,
+} from '@/types/interfaces/node';
+import { cloneDeep } from '@/utils/common';
 import { isEqual } from 'lodash';
 export const apiUpdateNode = async (params: ChildNode) => {
   const _params = {
@@ -198,4 +203,25 @@ export const updateSkillComponentConfigs = (
     };
   });
   return updateValue;
+};
+
+export const updateCurrentNode = (
+  key: CurrentNodeRefKey,
+  updateNodeData: any,
+  currentNode: CurrentNodeRefProps | null,
+): CurrentNodeRefProps | null => {
+  if (!currentNode) return null;
+
+  const _currentNode = cloneDeep(currentNode);
+  if (key && currentNode && key in _currentNode) {
+    if (typeof _currentNode[key] === 'object') {
+      _currentNode[key] = {
+        ..._currentNode[key],
+        ...updateNodeData,
+      };
+    } else {
+      _currentNode[key] = updateNodeData;
+    }
+  }
+  return _currentNode;
 };
