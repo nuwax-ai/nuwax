@@ -30,6 +30,39 @@ function validateTableName(tableName: string) {
   return reg.test(tableName);
 }
 
+// 检测字符串是否为有效的JSON格式
+function isValidJSON(str: string): boolean {
+  if (!str || typeof str !== 'string') {
+    return false;
+  }
+
+  try {
+    JSON.parse(str);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+// 检测字符串是否为有效的JSON格式，并返回解析结果
+function parseJSON<T = any>(
+  str: string,
+): { isValid: boolean; data?: T; error?: string } {
+  if (!str || typeof str !== 'string') {
+    return { isValid: false, error: '输入为空或不是字符串' };
+  }
+
+  try {
+    const data = JSON.parse(str) as T;
+    return { isValid: true, data };
+  } catch (error) {
+    return {
+      isValid: false,
+      error: error instanceof Error ? error.message : 'JSON格式错误',
+    };
+  }
+}
+
 // 校验登录密码
 function validatePassword(password: string) {
   return password?.length >= 6;
@@ -172,7 +205,9 @@ export {
   getURLParams,
   isNumber,
   isValidEmail,
+  isValidJSON,
   isValidPhone,
+  parseJSON,
   validatePassword,
   validateTableName,
 };

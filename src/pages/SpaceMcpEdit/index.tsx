@@ -24,6 +24,7 @@ import {
   McpToolInfo,
   McpUpdateParams,
 } from '@/types/interfaces/mcp';
+import { isValidJSON } from '@/utils/common';
 import { getActiveKeys } from '@/utils/deepNode';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message, Radio } from 'antd';
@@ -325,6 +326,25 @@ const SpaceMcpCreate: React.FC = () => {
                           }
                         />
                       }
+                      rules={[
+                        {
+                          required: true,
+                          message: '请输入MCP服务配置',
+                        },
+                        {
+                          validator: (_, value) => {
+                            if (!value) {
+                              return Promise.resolve();
+                            }
+                            if (!isValidJSON(value)) {
+                              return Promise.reject(
+                                new Error('请输入有效的JSON格式'),
+                              );
+                            }
+                            return Promise.resolve();
+                          },
+                        },
+                      ]}
                     >
                       <CodeEditor
                         className={cx('w-full', 'radius-10', 'overflow-hide')}
