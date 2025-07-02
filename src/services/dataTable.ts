@@ -149,7 +149,7 @@ export function apiGetTableData(
 }
 
 // 导出业务表数据为Excel
-export function apiExportExcel(tableId: number): Promise<Blob> {
+export function apiExportExcel(tableId: number): Promise<{ data: Blob }> {
   return request(`/api/compose/db/table/exportExcel/${tableId}`, {
     method: 'GET',
     responseType: 'blob', // 指定响应类型为blob

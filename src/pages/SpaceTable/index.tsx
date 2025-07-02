@@ -275,26 +275,33 @@ const SpaceTable = () => {
 
   // 更新数据表名称和描述信息
   const handleUpdateTableName = async (info: {
-    icon: string;
-    name: string;
-    description: string;
+    icon?: string;
+    name?: string;
+    description?: string;
   }) => {
     if (!tableDetail) {
       return;
     }
     const { icon, name, description } = info;
+
+    // 确保必需字段不为空
+    if (!name) {
+      message.error('名称不能为空');
+      return;
+    }
+
     const _params = {
       tableName: name,
-      tableDescription: description,
-      icon,
+      tableDescription: description || '',
+      icon: icon || '',
       id: tableDetail.id,
     };
     await apiUpdateTableName(_params);
     setTableDetail({
       ...(tableDetail as TableDefineDetails),
       tableName: name,
-      tableDescription: description,
-      icon,
+      tableDescription: description || '',
+      icon: icon || '',
     });
     setOpen(false);
   };
@@ -342,6 +349,7 @@ const SpaceTable = () => {
     setLoading(true);
     try {
       const _res = await apiExportExcel(tableId);
+      // 当使用 getResponse: true 时，_res 是一个包含 data 属性的响应对象
       const blob = new Blob([_res.data], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       }); // 将响应数据转换为 Blob 对象
