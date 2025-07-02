@@ -1,5 +1,5 @@
 import { Dayjs } from 'dayjs';
-import { TableFieldTypeEnum } from '../enums/dataTable';
+import { TableFieldTypeEnum, TableTabsEnum } from '../enums/dataTable';
 import { Page, TablePageRequest } from './request';
 
 // 数据表数据
@@ -71,6 +71,25 @@ export interface TableHeaderProps {
   tableDetail: any;
   total: number;
   onClick: () => void;
+}
+
+// 表格操作栏组件的Props
+export interface TableOperationBarProps {
+  // 表格当前激活的标签页
+  activeKey: TableTabsEnum;
+  loading: boolean;
+  importLoading: boolean;
+  tableData: TableRowData[]; // 表格数据
+  disabledCreateBtn: boolean;
+  // 切换标签页的回调函数
+  onChangeTabs: (key: string) => void;
+  onRefresh: () => void;
+  onAddField: () => void;
+  onSaveTableStructure: () => void;
+  onChangeFile: (info: any) => void;
+  onExportData: () => void;
+  onCreateOrEditData: () => void;
+  onClear: () => void;
 }
 
 // 数据表业务表结构的字段定义信息

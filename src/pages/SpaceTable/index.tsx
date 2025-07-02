@@ -1,5 +1,4 @@
 import CreatedItem from '@/components/CreatedItem';
-import { TABLE_TABS_LIST } from '@/constants/dataTable.constants';
 import {
   apiClearBusinessData,
   apiExportExcel,
@@ -22,15 +21,7 @@ import {
   UpdateTableFieldInfo,
 } from '@/types/interfaces/dataTable';
 import { modalConfirm } from '@/utils/ant-custom';
-import {
-  ClearOutlined,
-  DownloadOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-  SaveOutlined,
-  UploadOutlined,
-} from '@ant-design/icons';
-import { Button, message, Space, Tabs, Upload } from 'antd';
+import { message } from 'antd';
 import classNames from 'classnames';
 import { Dayjs } from 'dayjs';
 import { cloneDeep, isEqual } from 'lodash';
@@ -44,6 +35,7 @@ import DeleteSure from './DeleteSure';
 import styles from './index.less';
 import StructureTable from './StructureTable';
 import TableHeader from './TableHeader';
+import TableOperationBar from './TableOperationBar';
 
 const cx = classNames.bind(styles);
 
@@ -410,6 +402,12 @@ const SpaceTable = () => {
         if (attr === 'fieldType' || attr === 'dataLength') {
           item.defaultValue = '';
         }
+        // 字段详情描述，最长100个字符, 数据库最长200个字符
+        if (attr === 'fieldDescription') {
+          if (value && value.toString().length > 100) {
+            return item;
+          }
+        }
         return {
           ...item,
           [attr]: value,
@@ -440,62 +438,22 @@ const SpaceTable = () => {
         onClick={() => setOpen(true)}
       />
       <div className={cx(styles['inner-container'])}>
-        <div className="dis-sb">
-          <Tabs
-            items={TABLE_TABS_LIST}
-            activeKey={activeKey}
-            onChange={handleChangeTabs}
-            className={cx(styles['tab-container'])}
-          />
-          <Space>
-            <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
-              刷新
-            </Button>
-            {activeKey === TableTabsEnum.Structure ? (
-              <>
-                <Button icon={<PlusOutlined />} onClick={handleAddField}>
-                  新增字段
-                </Button>
-                <Button
-                  loading={loading}
-                  icon={<SaveOutlined />}
-                  onClick={handleSaveTableStructure}
-                >
-                  保存
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  icon={<ClearOutlined />}
-                  onClick={() => setOpenDelete(true)}
-                  disabled={!tableData?.length} // 没有数据时禁用清空按钮
-                >
-                  清除所有数据
-                </Button>
-                <Upload accept={'.xlsx'} onChange={handleChangeFile}>
-                  <Button icon={<UploadOutlined />} loading={importLoading}>
-                    导入
-                  </Button>
-                </Upload>
-                <Button
-                  icon={<DownloadOutlined />}
-                  loading={loading}
-                  onClick={handleExportData}
-                >
-                  导出
-                </Button>
-                <Button
-                  icon={<PlusOutlined />}
-                  onClick={() => handleCreateOrEditData()}
-                  disabled={!columns?.some((item) => !item.systemFieldFlag)} // 没有数据时禁用新增按钮
-                >
-                  新增
-                </Button>
-              </>
-            )}
-          </Space>
-        </div>
+        {/* 表格操作栏 */}
+        <TableOperationBar
+          activeKey={activeKey}
+          loading={loading}
+          importLoading={importLoading}
+          tableData={tableData}
+          disabledCreateBtn={!columns?.some((item) => !item.systemFieldFlag)}
+          onChangeTabs={handleChangeTabs}
+          onRefresh={handleRefresh}
+          onAddField={handleAddField}
+          onSaveTableStructure={handleSaveTableStructure}
+          onChangeFile={handleChangeFile}
+          onExportData={handleExportData}
+          onCreateOrEditData={handleCreateOrEditData}
+          onClear={() => setOpenDelete(true)}
+        />
         <div className="flex-1">
           {activeKey === TableTabsEnum.Structure ? (
             <StructureTable

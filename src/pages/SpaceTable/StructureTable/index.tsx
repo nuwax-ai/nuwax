@@ -72,6 +72,22 @@ const StructureTable: React.FC<StructureTableProps> = ({
     }
   };
 
+  // 格式化数字
+  const formatterNumber = (value: number) => {
+    if (!value) return '';
+    const [integerPart, decimalPart] = value.toString().split('.');
+    if (decimalPart && decimalPart.length > 6) {
+      return `${integerPart}.${decimalPart.slice(0, 6)}`;
+    }
+    return value.toString();
+  };
+
+  // 指定从 formatter 里转换回数字的方式，和 formatter 搭配使用
+  const parserNumber = (value: string) => {
+    if (!value) return null;
+    return Number(value);
+  };
+
   // 获取默认值
   const getDefaultValue = (record: TableFieldInfo) => {
     const {
@@ -116,7 +132,14 @@ const StructureTable: React.FC<StructureTableProps> = ({
         const props =
           fieldType === TableFieldTypeEnum.Integer
             ? { min: -2147483648, max: 2147483647 }
-            : { precision: 20 };
+            : {
+                precision: 6,
+                min: -99999999999999.999999,
+                max: 99999999999999.999999,
+                stringMode: true,
+                formatter: formatterNumber,
+                parser: parserNumber,
+              };
         const placeholder =
           fieldType === TableFieldTypeEnum.Integer
             ? `数值范围：[-2147483648, 2147483648]`
@@ -125,27 +148,35 @@ const StructureTable: React.FC<StructureTableProps> = ({
           <InputNumber
             {...props}
             placeholder={placeholder}
-            defaultValue={defaultValue ? Number(defaultValue) : undefined}
+            className={cx('w-full')}
+            value={defaultValue ? Number(defaultValue) : undefined}
             disabled={!isNew && existTableDataFlag}
             onChange={(value) => onChangeValue(id, 'defaultValue', value)}
           />
         );
       }
-      case TableFieldTypeEnum.Boolean:
+      case TableFieldTypeEnum.Boolean: {
+        // 字符串时根据字符串的值,判断是否选中; boolean 时,直接使用值;
+        const checked =
+          typeof defaultValue === 'string'
+            ? defaultValue === 'true'
+            : defaultValue;
         return (
           <Checkbox
-            checked={defaultValue ? Boolean(defaultValue) : false}
+            checked={checked}
             disabled={!isNew && existTableDataFlag}
             onChange={(e) =>
               onChangeValue(id, 'defaultValue', e.target.checked)
             }
           />
         );
+      }
       case TableFieldTypeEnum.Date:
         return (
           <DatePicker
             placeholder="请选择时间"
             showTime
+            className={cx('w-full')}
             defaultValue={defaultValue ? dayjs(defaultValue) : null}
             disabled={!isNew && existTableDataFlag}
             onChange={(date: Dayjs | (Dayjs | null)[] | null) =>
@@ -201,7 +232,8 @@ const StructureTable: React.FC<StructureTableProps> = ({
           >
             <Input
               placeholder="请输入字段详细描述"
-              defaultValue={value}
+              value={value}
+              allowClear
               disabled={
                 record?.systemFieldFlag ||
                 (!record?.isNew && existTableDataFlag)
@@ -216,7 +248,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
     {
       title: '字段类型',
       dataIndex: 'fieldType',
-      width: 120,
+      width: 140,
       render: (value, record) =>
         !record.isNew ? (
           <span className="flex items-center h-full">
@@ -254,6 +286,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
       title: '是否必须',
       dataIndex: 'nullableFlag',
       align: 'center',
+      width: 90,
       render: (_, record) => (
         <div className="flex items-center content-center h-full">
           <ClearDataTooltip
@@ -278,6 +311,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
       title: '是否唯一',
       dataIndex: 'uniqueFlag',
       align: 'center',
+      width: 90,
       render: (_, record) => (
         <div className="flex items-center content-center h-full">
           <ClearDataTooltip
@@ -302,6 +336,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
       title: '是否启用',
       dataIndex: 'enabledFlag',
       align: 'center',
+      width: 90,
       render: (_, record) => (
         <div className="flex items-center content-center h-full">
           <Checkbox
@@ -317,7 +352,11 @@ const StructureTable: React.FC<StructureTableProps> = ({
     {
       title: '默认值',
       dataIndex: 'defaultValue',
-      render: (_, record) => getDefaultValue(record),
+      render: (_, record) => (
+        <div className="flex items-center h-full">
+          {getDefaultValue(record)}
+        </div>
+      ),
     },
     {
       title: '操作',
