@@ -23,7 +23,11 @@ import { message, Modal } from 'antd';
 // 自定义类型定义
 import PlusIcon from '@/assets/svg/plus_icon.svg';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
-import { NodeUpdateEnum, PortGroupEnum } from '@/types/enums/node';
+import {
+  NodeUpdateEnum,
+  PortGroupEnum,
+  UpdateEdgeType,
+} from '@/types/enums/node';
 import { GraphProp } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { cloneDeep } from '@/utils/common';
@@ -144,14 +148,14 @@ const initGraph = ({
       y: centerY,
     });
     const dragChild = (child: StencilChildNode) => {
-      createNodeToPortOrEdge(
+      createNodeToPortOrEdge({
         child,
         sourceNode,
         portId,
         position,
         targetNode,
         edgeId,
-      );
+      });
     };
     // 如果当前节点在循环内，则不展示循环节点
     const isInLoop = !!(sourceNode?.loopNodeId || false);
@@ -911,7 +915,12 @@ const initGraph = ({
       // 通知父组件更新节点信息
     } else {
       // 通知父组件创建边
-      changeEdge('created', targetNodeId, sourceNode, edge.id);
+      changeEdge({
+        type: UpdateEdgeType.created,
+        targetId: targetNodeId,
+        sourceNode,
+        id: edge.id,
+      });
     }
 
     graph.addEdge(edge);

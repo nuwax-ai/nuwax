@@ -40,7 +40,8 @@ export const updateNodeEdges = async ({
       // 组装参数
       _params.nodeId.push(Number(targetId));
     }
-  } else {
+  } else if (type === UpdateEdgeType.deleted) {
+    // 删除边
     _params.nodeId = _params.nodeId.filter(
       (item) => Number(item) !== Number(targetId),
     );

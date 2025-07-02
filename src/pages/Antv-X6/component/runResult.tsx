@@ -184,7 +184,7 @@ const RunResult: React.FC<RunResultProps> = ({
           </Tooltip>
         </div>
         <div className={cx(styles.runResultSectionContent, 'overflow-y')}>
-          <pre>{JSON.stringify(obj, null, 2)}</pre>
+          <code>{JSON.stringify(obj, null, 2)}</code>
         </div>
       </div>
     );

@@ -1,10 +1,9 @@
 import service, { UrlListType } from '@/services/modifyNode';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { CreatedNodeItem } from '@/types/interfaces/common';
-import { ChildNode } from '@/types/interfaces/graph';
+import { ChildNode, CurrentNodeRefProps } from '@/types/interfaces/graph';
 import {
   CurrentNodeRefKey,
-  CurrentNodeRefProps,
   InputAndOutConfig,
   NodeConfig,
 } from '@/types/interfaces/node';

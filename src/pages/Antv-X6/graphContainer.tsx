@@ -1,4 +1,5 @@
 import { NodeTypeEnum, RunResultStatusEnum } from '@/types/enums/common';
+import { NodeSizeGetTypeEnum } from '@/types/enums/node';
 import type {
   ChildNode,
   Edge,
@@ -195,7 +196,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
             const { width, height } = getNodeSize({
               data: newData,
               ports: newPorts.items,
-              type: 'update',
+              type: NodeSizeGetTypeEnum.update,
             });
             node.setSize(width, height);
           }
@@ -415,7 +416,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       graphRef.current = InitGraph({
         containerId: GRAPH_CONTAINER_ID,
         changeDrawer: changeDrawer,
-        changeEdge: changeEdge,
+        changeEdge,
         changeCondition: changeCondition,
         changeZoom: changeZoom,
         createNodeToPortOrEdge,

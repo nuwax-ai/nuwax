@@ -28,7 +28,19 @@ import {
 } from '@/constants/images.constants';
 import { DEFAULT_NODE_CONFIG_MAP } from '@/constants/node.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { ChildNode, Edge } from '@/types/interfaces/graph';
+import {
+  ChildNode,
+  Edge,
+  GraphNodeSize,
+  GraphNodeSizeGetParams,
+  NodeMetadata,
+} from '@/types/interfaces/graph';
+
+import {
+  outputOrInputPortConfig,
+  PortConfig,
+  PortsConfig,
+} from '@/types/interfaces/node';
 // 引用默认图标
 import Table from '@/assets/images/database_image.png';
 import Knowledge from '@/assets/images/knowledge_image.png';
@@ -48,7 +60,11 @@ import {
   NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
-import { PortGroupEnum, VariableConfigTypeEnum } from '@/types/enums/node';
+import {
+  NodeSizeGetTypeEnum,
+  PortGroupEnum,
+  VariableConfigTypeEnum,
+} from '@/types/enums/node';
 import {
   ConditionBranchConfigs,
   IntentConfigs,
@@ -61,7 +77,7 @@ import {
   showExceptionHandle,
   showExceptionPort,
 } from '@/utils/graph';
-import { Graph, Markup, Node } from '@antv/x6';
+import { Graph, Node } from '@antv/x6';
 import { FormInstance } from 'antd';
 
 const NODE_BOTTOM_PADDING = 10;
@@ -80,60 +96,6 @@ const imageList = {
 } as {
   [key in AgentComponentTypeEnum]: string;
 };
-
-interface PortMetadata {
-  markup?: Markup; // 连接桩 DOM 结构定义。
-  attrs?: any; // 属性和样式。
-  zIndex?: number | 'auto'; // 连接桩的 DOM 层级，值越大层级越高。
-  // 群组中连接桩的布局。
-  position?: [number, number] | string | { name: string; args?: object };
-  label?: {
-    // 连接桩标签
-    markup?: Markup;
-    position?: {
-      // 连接桩标签布局
-      name: string; // 布局名称
-      args?: object; // 布局参数
-    };
-  };
-}
-interface outputOrInputPortConfig extends Partial<PortMetadata> {
-  id: string;
-  zIndex: number;
-  magnet: boolean;
-  group: PortGroupEnum;
-  args: {
-    x: number;
-    y: number;
-    offsetY: number;
-    offsetX: number;
-  };
-}
-
-// X6 端口配置格式
-interface PortsConfig {
-  groups: any; // 端口组配置
-  items: outputOrInputPortConfig[]; // 端口项数组
-}
-
-interface PortConfig {
-  group: PortGroupEnum;
-  idSuffix: string;
-  yHeight?: number;
-  xWidth?: number;
-  offsetY?: number;
-  offsetX?: number;
-  color?: string;
-}
-
-interface NodeMetadata extends Node.Metadata {
-  shape: NodeShapeEnum;
-  data: ChildNode & {
-    nodeConfig: NodeConfig;
-    parentId: string | null;
-  };
-  ports: PortsConfig;
-}
 
 export const getShape = (type: NodeTypeEnum) => {
   if (type === NodeTypeEnum.Loop) {
@@ -280,21 +242,11 @@ export const getWidthAndHeight = (node: ChildNode) => {
   }; // 通用节点的默认大小
 };
 
-type NodeSizeType = 'create' | 'update';
-interface NodeSize {
-  type: NodeSizeType; // 创建或更新
-  width: number;
-  height: number;
-}
 export const getNodeSize = ({
   data,
   ports,
   type,
-}: {
-  data: ChildNode;
-  ports: outputOrInputPortConfig[];
-  type: NodeSizeType;
-}): NodeSize => {
+}: GraphNodeSizeGetParams): GraphNodeSize => {
   const isLoopNode = data.type === NodeTypeEnum.Loop;
   const { width: defaultWidth, height: defaultHeight } =
     getWidthAndHeight(data);
@@ -738,7 +690,7 @@ export const createBaseNode = (node: ChildNode): NodeMetadata => {
   const { width, height } = getNodeSize({
     data: node,
     ports: ports.items,
-    type: 'create',
+    type: NodeSizeGetTypeEnum.create,
   });
   return {
     id: node.id.toString(),
@@ -763,7 +715,7 @@ export const createChildNode = (
   const { width, height } = getNodeSize({
     data: child,
     ports: ports.items,
-    type: 'create',
+    type: NodeSizeGetTypeEnum.create,
   });
   return {
     id: child.id.toString(),
@@ -885,9 +837,53 @@ export const handleSpecialNodesNextIndex = (
     nodeConfig: {
       ...node.nodeConfig,
       // 根据节点类型更新对应的配置数组
-      ...(node.type === 'Condition' && { conditionBranchConfigs: configs }),
-      ...(node.type === 'IntentRecognition' && { intentConfigs: configs }),
-      ...(node.type === 'QA' && { options: configs }),
+      ...(node.type === NodeTypeEnum.Condition && {
+        conditionBranchConfigs: configs,
+      }),
+      ...(node.type === NodeTypeEnum.IntentRecognition && {
+        intentConfigs: configs,
+      }),
+      ...(node.type === NodeTypeEnum.QA && { options: configs }),
+    } as NodeConfig,
+  };
+  return newNode;
+};
+
+// 三个特殊节点处理nextIndex
+export const handleExceptionNodesNextIndex = ({
+  sourceNode,
+  id,
+  targetNodeId,
+}: {
+  sourceNode: ChildNode;
+  id: number;
+  targetNodeId?: number;
+}): ChildNode => {
+  let exceptionHandleNodeIds: number[] = [
+    ...(sourceNode.nodeConfig?.exceptionHandleConfig?.exceptionHandleNodeIds ||
+      []),
+  ];
+  if (targetNodeId) {
+    // 这里需要将原来的nextNodeIds中和targetId相同的元素替换成id
+    exceptionHandleNodeIds = exceptionHandleNodeIds.map((item: number) => {
+      if (item === targetNodeId) {
+        return id; // 替换为新的id
+      } else {
+        return item; // 保持不变
+      }
+    });
+  } else {
+    exceptionHandleNodeIds = [...exceptionHandleNodeIds, id];
+  }
+
+  const newNode = {
+    ...sourceNode,
+    nodeConfig: {
+      ...sourceNode.nodeConfig,
+      exceptionHandleConfig: {
+        ...sourceNode.nodeConfig.exceptionHandleConfig,
+        exceptionHandleNodeIds,
+      },
     } as NodeConfig,
   };
   return newNode;
