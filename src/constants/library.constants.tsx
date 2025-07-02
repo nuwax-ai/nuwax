@@ -317,7 +317,7 @@ export const MODEL_TYPE_LIST = [
   },
   {
     value: ModelTypeEnum.Chat,
-    label: '聊天对话',
+    label: '聊天对话-纯文本',
   },
   {
     value: ModelTypeEnum.Edits,
@@ -328,12 +328,12 @@ export const MODEL_TYPE_LIST = [
     label: '图像处理',
   },
   {
-    value: ModelTypeEnum.Embeddings,
-    label: '向量嵌入',
+    value: ModelTypeEnum.Multi,
+    label: '聊天对话-多模态',
   },
   {
-    value: ModelTypeEnum.Multi,
-    label: '多模态',
+    value: ModelTypeEnum.Embeddings,
+    label: '向量嵌入',
   },
   {
     value: ModelTypeEnum.Audio,
