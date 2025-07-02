@@ -415,7 +415,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       graphRef.current = InitGraph({
         containerId: GRAPH_CONTAINER_ID,
         changeDrawer: changeDrawer,
-        changeEdge: changeEdge,
+        changeEdge,
         changeCondition: changeCondition,
         changeZoom: changeZoom,
         createNodeToPortOrEdge,

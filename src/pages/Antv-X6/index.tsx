@@ -41,6 +41,7 @@ import {
 } from '@/types/enums/node';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import {
+  ChangeEdgeProps,
   ChangeNodeProps,
   ChildNode,
   Edge,
@@ -305,13 +306,10 @@ const Workflow: React.FC = () => {
   };
 
   // 节点添加或移除边
-  const nodeChangeEdge = async (
-    type: UpdateEdgeType,
-    targetId: string,
-    sourceNode: ChildNode,
-    id?: string,
-  ) => {
+  const nodeChangeEdge = async (config: ChangeEdgeProps) => {
+    const { type, targetId, sourceNode, id } = config;
     if (!graphRef.current) return;
+
     const { graphUpdateNode, graphDeleteEdge } = graphRef.current;
     const newNodeIds = await updateNodeEdges({
       type,
@@ -322,6 +320,7 @@ const Workflow: React.FC = () => {
       graphDeleteEdge,
       getReference: () => getReference(getWorkflow('drawerForm').id),
     });
+
     if (newNodeIds) {
       updateCurrentNodeRef('sourceNode', {
         nextNodeIds: newNodeIds,
@@ -606,11 +605,11 @@ const Workflow: React.FC = () => {
     sourceNode: ChildNode,
     isLoop: boolean,
   ) => {
-    await nodeChangeEdge(
-      UpdateEdgeType.created,
-      newNodeId.toString(),
+    await nodeChangeEdge({
+      type: UpdateEdgeType.created,
+      targetId: newNodeId.toString(),
       sourceNode,
-    );
+    });
     graphRef.current?.graphCreateNewEdge(
       String(sourceNode.id),
       String(newNodeId),
@@ -654,7 +653,11 @@ const Workflow: React.FC = () => {
     newNode: ChildNode,
     isLoop: boolean,
   ) => {
-    await nodeChangeEdge(UpdateEdgeType.created, targetNodeId, newNode);
+    await nodeChangeEdge({
+      type: UpdateEdgeType.created,
+      targetId: targetNodeId,
+      sourceNode: newNode,
+    });
     graphRef.current?.graphCreateNewEdge(
       String(newNodeId),
       targetNodeId,
@@ -689,7 +692,11 @@ const Workflow: React.FC = () => {
         isLoop,
       );
     } else {
-      await nodeChangeEdge(UpdateEdgeType.created, id, newNode);
+      await nodeChangeEdge({
+        type: UpdateEdgeType.created,
+        targetId: id,
+        sourceNode: newNode,
+      });
       graphRef.current?.graphCreateNewEdge(
         newNode.id.toString(),
         id.toString(),
@@ -725,11 +732,11 @@ const Workflow: React.FC = () => {
     }
 
     // 删除原有连接
-    await nodeChangeEdge(
-      UpdateEdgeType.deleted,
-      targetNode.id.toString(),
+    await nodeChangeEdge({
+      type: UpdateEdgeType.deleted,
+      targetId: targetNode.id.toString(),
       sourceNode,
-    );
+    });
     graphRef.current?.graphDeleteEdge(edgeId);
   };
 
