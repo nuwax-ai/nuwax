@@ -1788,7 +1788,6 @@ const Workflow: React.FC = () => {
       <TestRun
         node={foldWrapItem}
         run={runTest}
-        visible={visible}
         testRunResult={testRunResult}
         clearRunResult={handleClearRunResult}
         loading={loading}

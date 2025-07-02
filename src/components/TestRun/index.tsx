@@ -7,7 +7,12 @@ import {
   NodePreviousAndArgMap,
   TestRunParams,
 } from '@/types/interfaces/node';
-import { returnImg } from '@/utils/workflow';
+import { cloneDeep } from '@/utils/common';
+import {
+  handleDisplayValue,
+  handleFileDataConvert,
+  returnImg,
+} from '@/utils/workflow';
 import { CaretRightOutlined, CloseOutlined } from '@ant-design/icons';
 import { Bubble, PromptProps, Prompts, Sender } from '@ant-design/x';
 import { Button, Collapse, Empty, Form, FormInstance, Input } from 'antd';
@@ -28,8 +33,6 @@ function middleEllipsis(str: string, maxLength: number): string {
 interface TestRunProps {
   // 当前节点的类型
   node: ChildNode;
-  // 是否开启弹窗
-  visible: boolean;
   // 运行
   run: (type: string, params?: DefaultObjectType) => void;
   // 按钮是否处于加载
@@ -178,7 +181,6 @@ const renderOutputArgs = ({
   config: NodeConfig;
 }) => {
   const { inputArgs } = config;
-
   return (
     <>
       <p className="collapse-title-style dis-left">输入</p>
@@ -186,7 +188,10 @@ const renderOutputArgs = ({
         <Input
           key={item.name}
           prefix={middleEllipsis(item.name + ':', 20)}
-          value={form.getFieldValue(item.name)}
+          value={handleDisplayValue(
+            form.getFieldValue(item.name),
+            item?.dataType || '',
+          )}
           disabled
           className="mb-12 override-input-style"
         />
@@ -200,7 +205,6 @@ const renderOutputArgs = ({
 // 试运行组件
 const TestRun: React.FC<TestRunProps> = ({
   node,
-  visible,
   run,
   loading,
   testRunResult,
@@ -210,15 +214,15 @@ const TestRun: React.FC<TestRunProps> = ({
   testRunParams,
 }) => {
   const { testRun, setTestRun } = useModel('model');
-  const { referenceList } = useModel('workflow');
+  const { referenceList, storeWorkflow } = useModel('workflow');
   const [form] = Form.useForm();
 
   // 问答的选项
   const [qaItems, setQaItem] = useState<QaItems[]>([]);
   const onFinish = (values: DefaultObjectType) => {
-    console.log('values', values);
+    storeWorkflow('testRunValues', cloneDeep(values));
+    const results: DefaultObjectType = cloneDeep(values);
     if (values && JSON.stringify(values) !== '{}') {
-      // const value = form.getFieldsValue();
       if (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length) {
         for (let item in values) {
           if (Object.prototype.hasOwnProperty.call(values, item)) {
@@ -226,13 +230,19 @@ const TestRun: React.FC<TestRunProps> = ({
             const inputArg = node.nodeConfig.inputArgs.find(
               (arg) => arg.name === item,
             );
-            if (
+
+            if (inputArg && inputArg.dataType?.includes('File')) {
+              results[item] = handleFileDataConvert(
+                values[item],
+                inputArg.dataType,
+              );
+            } else if (
               inputArg &&
               (inputArg.dataType === 'Object' ||
                 inputArg.dataType?.includes('Array'))
             ) {
               try {
-                values[item] = JSON.parse(values[item]);
+                results[item] = JSON.parse(values[item]);
               } catch (error) {
                 console.error('JSON 解析失败:', error);
               }
@@ -256,7 +266,7 @@ const TestRun: React.FC<TestRunProps> = ({
                 inputArg.dataType?.includes('Array'))
             ) {
               try {
-                values[item] = JSON.parse(values[item]);
+                results[item] = JSON.parse(values[item]);
               } catch (error) {
                 console.error('JSON 解析失败:', error);
               }
@@ -264,7 +274,7 @@ const TestRun: React.FC<TestRunProps> = ({
           }
         }
       }
-      run(node.type, values);
+      run(node.type, results);
     } else {
       run(node.type);
     }
@@ -328,24 +338,26 @@ const TestRun: React.FC<TestRunProps> = ({
   }, [testRun, stopWait]);
 
   useEffect(() => {
-    let _obj = JSON.parse(JSON.stringify(formItemValue || {})); // TOD
-    if (JSON.stringify(_obj) !== '{}') {
+    let _obj = JSON.parse(JSON.stringify(formItemValue || {}));
+    if (
+      node.type === NodeTypeEnum.HTTPRequest &&
+      JSON.stringify(_obj) !== '{}'
+    ) {
       for (let item in _obj) {
         if (typeof _obj[item] !== 'string' && _obj[item] !== null) {
           _obj[item] = JSON.stringify(_obj[item]);
         }
       }
-      console.log('formItemValue', _obj);
       form.setFieldsValue(_obj);
     }
   }, [formItemValue]);
-
+  if (!testRun) return null;
   return (
     <div
       className="test-run-style"
       style={{
-        display: testRun ? 'flex' : 'none',
-        paddingTop: visible ? '100px' : '0',
+        display: 'flex',
+        paddingTop: '100px',
       }}
     >
       {/* 根据testRun来控制当前组件的状态 */}
