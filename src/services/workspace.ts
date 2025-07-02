@@ -9,7 +9,7 @@ import type {
 } from '@/types/interfaces/workspace';
 import { request } from 'umi';
 
-// 创建新工作空间
+// 创建团队空间
 export async function apiCreateSpaceTeam(
   data: CreateSpaceTeamParams,
 ): Promise<RequestResponse<null>> {
