@@ -42,3 +42,8 @@ export enum UpdateEdgeType {
   created = 'created',
   deleted = 'deleted',
 }
+
+export enum NodeSizeGetTypeEnum {
+  create = 'create',
+  update = 'update',
+}

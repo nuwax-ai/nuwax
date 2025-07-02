@@ -1,11 +1,19 @@
-import { EXCEPTION_NODES_TYPE } from '@/constants/node.constants';
+import {
+  DEFAULT_NODE_CONFIG,
+  DEFAULT_NODE_CONFIG_MAP,
+  EXCEPTION_NODES_TYPE,
+} from '@/constants/node.constants';
 import {
   AnswerTypeEnum,
   ExceptionHandleTypeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
 import { PortGroupEnum } from '@/types/enums/node';
-import { ChildNode } from '@/types/interfaces/graph';
+import {
+  ChildNode,
+  GraphContainerRef,
+  GraphRect,
+} from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { isEmptyObject } from '@/utils/index';
 import { Edge, Graph, Node } from '@antv/x6';
@@ -643,4 +651,95 @@ export const registerNodeClickAndDblclick = ({
       editableTitleEl.dispatchEvent(new Event('onEditTitle'));
     }
   });
+};
+
+export const calculateNodePosition = ({
+  type,
+  position,
+  hasTargetNode,
+  portId,
+  sourceNodeId,
+  graph,
+}: {
+  type: NodeTypeEnum;
+  position: GraphRect;
+  hasTargetNode: boolean;
+  portId: string;
+  sourceNodeId: string;
+  graph: Graph;
+}) => {
+  let newNodeWidth = DEFAULT_NODE_CONFIG_MAP.default.defaultWidth;
+  if (type === NodeTypeEnum.Loop) {
+    newNodeWidth =
+      DEFAULT_NODE_CONFIG_MAP[NodeTypeEnum.Loop].defaultWidth + 200; // TODO 有疑问，为什么需要加200
+  } else if (
+    type === NodeTypeEnum.Condition ||
+    type === NodeTypeEnum.Interval ||
+    type === NodeTypeEnum.QA
+  ) {
+    newNodeWidth = DEFAULT_NODE_CONFIG_MAP[NodeTypeEnum.Condition].defaultWidth;
+  }
+
+  if (!hasTargetNode) {
+    const isOut = portId.endsWith('out');
+    const peerPosition = getPeerNodePosition(
+      sourceNodeId,
+      graph,
+      isOut ? 'next' : 'previous',
+    );
+
+    if (isOut) {
+      // port 为 out 出边，需要向右偏移
+      position.x = position.x + DEFAULT_NODE_CONFIG.newNodeOffsetX;
+      if (peerPosition !== null && peerPosition.x >= position.x) {
+        position.x = peerPosition.x + DEFAULT_NODE_CONFIG.offsetGapX;
+        position.y = peerPosition.y + DEFAULT_NODE_CONFIG.offsetGapX;
+      }
+    } else {
+      // port 为 in 入边，需要向左偏移
+      position.x =
+        position.x - newNodeWidth - DEFAULT_NODE_CONFIG.newNodeOffsetX;
+      if (peerPosition !== null && peerPosition.x <= position.x) {
+        position.x = peerPosition.x - DEFAULT_NODE_CONFIG.offsetGapX;
+        position.y = peerPosition.y + DEFAULT_NODE_CONFIG.offsetGapX;
+      }
+    }
+  }
+  return position;
+};
+
+// 获取当前画布可视区域中心点
+const getViewportCenter = (
+  getCurrentViewPort?: GraphContainerRef['getCurrentViewPort'],
+  continueDragCount?: number,
+) => {
+  const viewGraph = getCurrentViewPort?.() || false;
+  if (viewGraph) {
+    const _continueDragCount = continueDragCount || 0;
+    return {
+      x: viewGraph.x + viewGraph.width / 2 + _continueDragCount * 16,
+      y: viewGraph.y + viewGraph.height / 2 + _continueDragCount * 16,
+    };
+  }
+  return { x: 0, y: 0 };
+};
+
+// 获取坐标函数：优先使用拖拽事件坐标，否则生成随机坐标
+export const getCoordinates = (
+  position?: React.DragEvent<HTMLDivElement> | GraphRect,
+  getCurrentViewPort?: GraphContainerRef['getCurrentViewPort'],
+  continueDragCount?: number,
+): { x: number; y: number } => {
+  if (!position) {
+    return getViewportCenter(getCurrentViewPort, continueDragCount);
+  }
+  // 检查是否是{x,y}对象
+  if ('x' in position && 'y' in position) {
+    return { x: position.x, y: position.y };
+  }
+  // 处理React拖拽事件
+  if (position.clientX && position.clientY) {
+    return { x: position.clientX, y: position.clientY };
+  }
+  return getViewportCenter(getCurrentViewPort, continueDragCount);
 };

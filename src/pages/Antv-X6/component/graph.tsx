@@ -148,14 +148,14 @@ const initGraph = ({
       y: centerY,
     });
     const dragChild = (child: StencilChildNode) => {
-      createNodeToPortOrEdge(
+      createNodeToPortOrEdge({
         child,
         sourceNode,
         portId,
         position,
         targetNode,
         edgeId,
-      );
+      });
     };
     // 如果当前节点在循环内，则不展示循环节点
     const isInLoop = !!(sourceNode?.loopNodeId || false);

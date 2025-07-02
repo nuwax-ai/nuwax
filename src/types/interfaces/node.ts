@@ -4,9 +4,54 @@ import {
   ExceptionHandleTypeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
-import { ConditionBranchTypeEnum } from '@/types/enums/node';
+import { ConditionBranchTypeEnum, PortGroupEnum } from '@/types/enums/node';
 import { BindConfigWithSub, CreatedNodeItem } from '@/types/interfaces/common';
-import { ChildNode } from '@/types/interfaces/graph';
+import { Markup } from '@antv/x6';
+
+export interface PortMetadata {
+  markup?: Markup; // 连接桩 DOM 结构定义。
+  attrs?: any; // 属性和样式。
+  zIndex?: number | 'auto'; // 连接桩的 DOM 层级，值越大层级越高。
+  // 群组中连接桩的布局。
+  position?: [number, number] | string | { name: string; args?: object };
+  label?: {
+    // 连接桩标签
+    markup?: Markup;
+    position?: {
+      // 连接桩标签布局
+      name: string; // 布局名称
+      args?: object; // 布局参数
+    };
+  };
+}
+export interface outputOrInputPortConfig extends Partial<PortMetadata> {
+  id: string;
+  zIndex: number;
+  magnet: boolean;
+  group: PortGroupEnum;
+  args: {
+    x: number;
+    y: number;
+    offsetY: number;
+    offsetX: number;
+  };
+}
+// X6 端口配置格式
+export interface PortsConfig {
+  groups: any; // 端口组配置
+  items: outputOrInputPortConfig[]; // 端口项数组
+}
+
+export interface PortConfig {
+  group: PortGroupEnum;
+  idSuffix: string;
+  yHeight?: number;
+  xWidth?: number;
+  offsetY?: number;
+  offsetX?: number;
+  color?: string;
+}
+
 export interface InputAndOutConfig {
   // 参数名称
   name: string;
@@ -225,19 +270,6 @@ export interface ArgMap {
   [key: string]: InputAndOutConfig;
 }
 
-export interface NodeDrawerProps {
-  // 是否显示,关闭右侧弹窗
-  visible: boolean;
-  // 关闭
-  onClose: () => void;
-  foldWrapItem: ChildNode;
-  // 将节点信息返回给父组件
-  onGetNodeConfig: (config: ChildNode, update?: boolean) => void;
-
-  handleNodeChange: (action: string, data: ChildNode) => void;
-  getReference: (id: number) => Promise<boolean>;
-}
-
 export interface NodePreviousAndArgMap {
   previousNodes: PreviousList[];
   innerPreviousNodes: PreviousList[];
@@ -255,10 +287,3 @@ export type CurrentNodeRefKey =
   | 'portId'
   | 'targetNode'
   | 'edgeId';
-
-export interface CurrentNodeRefProps {
-  sourceNode: ChildNode;
-  portId: string;
-  targetNode?: ChildNode;
-  edgeId?: string;
-}
