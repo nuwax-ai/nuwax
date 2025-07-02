@@ -9,11 +9,7 @@ import {
   NodeTypeEnum,
 } from '@/types/enums/common';
 import { PortGroupEnum } from '@/types/enums/node';
-import {
-  ChildNode,
-  GraphContainerRef,
-  GraphRect,
-} from '@/types/interfaces/graph';
+import { ChildNode, GraphRect, ViewGraphProps } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { isEmptyObject } from '@/utils/index';
 import { Edge, Graph, Node } from '@antv/x6';
@@ -707,13 +703,11 @@ export const calculateNodePosition = ({
   }
   return position;
 };
-
 // 获取当前画布可视区域中心点
 const getViewportCenter = (
-  getCurrentViewPort?: GraphContainerRef['getCurrentViewPort'],
+  viewGraph?: ViewGraphProps | undefined,
   continueDragCount?: number,
 ) => {
-  const viewGraph = getCurrentViewPort?.() || false;
   if (viewGraph) {
     const _continueDragCount = continueDragCount || 0;
     return {
@@ -727,11 +721,11 @@ const getViewportCenter = (
 // 获取坐标函数：优先使用拖拽事件坐标，否则生成随机坐标
 export const getCoordinates = (
   position?: React.DragEvent<HTMLDivElement> | GraphRect,
-  getCurrentViewPort?: GraphContainerRef['getCurrentViewPort'],
+  viewGraph?: ViewGraphProps | undefined,
   continueDragCount?: number,
 ): { x: number; y: number } => {
   if (!position) {
-    return getViewportCenter(getCurrentViewPort, continueDragCount);
+    return getViewportCenter(viewGraph, continueDragCount);
   }
   // 检查是否是{x,y}对象
   if ('x' in position && 'y' in position) {
@@ -741,5 +735,5 @@ export const getCoordinates = (
   if (position.clientX && position.clientY) {
     return { x: position.clientX, y: position.clientY };
   }
-  return getViewportCenter(getCurrentViewPort, continueDragCount);
+  return getViewportCenter(viewGraph, continueDragCount);
 };

@@ -36,6 +36,7 @@ import {
   FoldFormIdEnum,
   NodeSizeGetTypeEnum,
   NodeUpdateEnum,
+  PortGroupEnum,
   UpdateEdgeType,
 } from '@/types/enums/node';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
@@ -72,6 +73,7 @@ import {
   getEdges,
   getNodeSize,
   getShape,
+  handleExceptionNodesNextIndex,
   handleSpecialNodesNextIndex,
   QuicklyCreateEdgeConditionConfig,
   returnBackgroundColor,
@@ -593,6 +595,35 @@ const Workflow: React.FC = () => {
       isLoop,
     );
   };
+  /**
+   * 处理异常端口连接
+   * @param sourceNode 源节点
+   * @param portId 端口ID
+   * @param newNodeId 新节点ID
+   * @param targetNode 目标节点
+   * @param isLoop 是否为循环节点
+   */
+  const handleExceptionPortConnection = async (
+    sourceNode: ChildNode,
+    portId: string,
+    newNodeId: number,
+    targetNode: ChildNode | undefined,
+    isLoop: boolean,
+  ) => {
+    const params = handleExceptionNodesNextIndex({
+      sourceNode,
+      id: newNodeId,
+      targetNodeId: targetNode?.id,
+    });
+    await changeNode({ nodeData: params });
+
+    const sourcePortId = portId.split('-').slice(0, -1).join('-');
+    graphRef.current?.graphCreateNewEdge(
+      sourcePortId,
+      String(newNodeId),
+      isLoop,
+    );
+  };
 
   /**
    * 处理输出端口连接
@@ -789,9 +820,18 @@ const Workflow: React.FC = () => {
       const isOut = portId.endsWith('out');
 
       try {
-        if (portId.length > 15) {
+        if (portId.includes(PortGroupEnum.special)) {
           // 处理特殊端口连接
           await handleSpecialPortConnection(
+            currentNodeRef.current.sourceNode,
+            portId,
+            nodeData.id,
+            currentNodeRef.current.targetNode,
+            isLoop,
+          );
+        } else if (portId.includes(PortGroupEnum.exception)) {
+          // 处理异常端口连接
+          await handleExceptionPortConnection(
             currentNodeRef.current.sourceNode,
             portId,
             nodeData.id,
@@ -1066,25 +1106,21 @@ const Workflow: React.FC = () => {
       'TableSQL',
     ].includes(childType);
 
-    const getCurrentViewPort = graphRef.current?.getCurrentViewPort;
+    const viewGraph = graphRef.current?.getCurrentViewPort();
 
     if (isSpecialType) {
       setCreatedItem(childType as unknown as AgentComponentTypeEnum); // 注意这个类型转换的前提是两个枚举的值相同
       setOpen(true);
-      setDragEvent(
-        getCoordinates(position, getCurrentViewPort, continueDragCount),
-      );
+      setDragEvent(getCoordinates(position, viewGraph, continueDragCount));
     } else if (isTableNode) {
       setCreatedItem(AgentComponentTypeEnum.Table);
       setOpen(true);
-      setDragEvent(
-        getCoordinates(position, getCurrentViewPort, continueDragCount),
-      );
+      setDragEvent(getCoordinates(position, viewGraph, continueDragCount));
       sessionStorage.setItem('tableType', childType);
     } else {
       const coordinates = getCoordinates(
         position,
-        getCurrentViewPort,
+        viewGraph,
         continueDragCount,
       );
       // if (e) {

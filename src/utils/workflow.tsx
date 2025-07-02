@@ -837,9 +837,53 @@ export const handleSpecialNodesNextIndex = (
     nodeConfig: {
       ...node.nodeConfig,
       // 根据节点类型更新对应的配置数组
-      ...(node.type === 'Condition' && { conditionBranchConfigs: configs }),
-      ...(node.type === 'IntentRecognition' && { intentConfigs: configs }),
-      ...(node.type === 'QA' && { options: configs }),
+      ...(node.type === NodeTypeEnum.Condition && {
+        conditionBranchConfigs: configs,
+      }),
+      ...(node.type === NodeTypeEnum.IntentRecognition && {
+        intentConfigs: configs,
+      }),
+      ...(node.type === NodeTypeEnum.QA && { options: configs }),
+    } as NodeConfig,
+  };
+  return newNode;
+};
+
+// 三个特殊节点处理nextIndex
+export const handleExceptionNodesNextIndex = ({
+  sourceNode,
+  id,
+  targetNodeId,
+}: {
+  sourceNode: ChildNode;
+  id: number;
+  targetNodeId?: number;
+}): ChildNode => {
+  let exceptionHandleNodeIds: number[] = [
+    ...(sourceNode.nodeConfig?.exceptionHandleConfig?.exceptionHandleNodeIds ||
+      []),
+  ];
+  if (targetNodeId) {
+    // 这里需要将原来的nextNodeIds中和targetId相同的元素替换成id
+    exceptionHandleNodeIds = exceptionHandleNodeIds.map((item: number) => {
+      if (item === targetNodeId) {
+        return id; // 替换为新的id
+      } else {
+        return item; // 保持不变
+      }
+    });
+  } else {
+    exceptionHandleNodeIds = [...exceptionHandleNodeIds, id];
+  }
+
+  const newNode = {
+    ...sourceNode,
+    nodeConfig: {
+      ...sourceNode.nodeConfig,
+      exceptionHandleConfig: {
+        ...sourceNode.nodeConfig.exceptionHandleConfig,
+        exceptionHandleNodeIds,
+      },
     } as NodeConfig,
   };
   return newNode;

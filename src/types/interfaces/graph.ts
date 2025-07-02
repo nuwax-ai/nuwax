@@ -157,14 +157,15 @@ export interface GraphRect {
   height?: number;
   width?: number;
 }
+export interface ViewGraphProps {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 export interface GraphContainerRef {
-  getCurrentViewPort: () => {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
+  getCurrentViewPort: () => ViewGraphProps;
   // 新增节点
   graphAddNode: (e: GraphRect, child: ChildNode) => void;
   // 修改节点
