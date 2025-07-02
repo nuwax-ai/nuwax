@@ -71,6 +71,7 @@ import {
   NodeConfig,
   QANodeOption,
 } from '@/types/interfaces/node';
+import { FileListItem } from '@/types/interfaces/workflow';
 import {
   adjustParentSize,
   generatePortGroupConfig,
@@ -946,4 +947,44 @@ export const setFormDefaultValues = ({
     default:
       break;
   }
+};
+
+export const handleDisplayValue = (value: any, dataType: string) => {
+  if (dataType && dataType?.includes('File')) {
+    // 文件类型
+    const isMultiple = dataType?.startsWith('Array_') ?? false; // 是否是数组类型
+    if (isMultiple) {
+      return JSON.stringify(value?.map((item: any) => item?.url) || []); // 数组类型返回url数组
+    } else {
+      return value?.url; // 单个文件返回url
+    }
+  }
+  if (typeof value !== 'string' && value !== null) {
+    return JSON.stringify(value);
+  }
+  return value;
+};
+
+export const handleFileDataConvert = (
+  sourceFileInfo: FileListItem | FileListItem[] | null = null,
+  dataType: string,
+): string | string[] => {
+  let results;
+  const isMultiple = dataType?.startsWith('Array_') ?? false;
+  if (isMultiple) {
+    results =
+      Array.isArray(sourceFileInfo) && sourceFileInfo?.length > 0
+        ? sourceFileInfo?.map((item: FileListItem) => item?.url)
+        : [];
+  } else {
+    // 单个文件类型，需要检查 sourceFileInfo 是否为数组
+    if (Array.isArray(sourceFileInfo)) {
+      // 如果是数组但期望单个文件，取第一个元素
+      results = sourceFileInfo?.[0]?.url || '';
+    } else {
+      // 单个文件对象
+      results = sourceFileInfo?.url || '';
+    }
+  }
+  return results;
 };
