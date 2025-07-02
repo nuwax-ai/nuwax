@@ -349,6 +349,8 @@ const SpaceTable = () => {
 
   useEffect(() => {
     getTableStructureDetails();
+    // 获取表的业务数据，此处调用是因为头部组件中需要展示表的有多少条数据
+    getTableBusinessData();
   }, []);
 
   // 切换表结构还是表数据
