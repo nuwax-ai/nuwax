@@ -187,7 +187,7 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: data.length > 0 ? 'flex-start' : 'center',
         }}
       >
         {loading ? (
