@@ -1,4 +1,5 @@
 // 可以编辑的表格
+import { EllipsisTooltip } from '@/components/EllipsisTooltip';
 import LabelStar from '@/components/LabelStar';
 import {
   MEDIUM_TEXT_STRING,
@@ -11,7 +12,7 @@ import type {
   StructureTableProps,
   TableFieldInfo,
 } from '@/types/interfaces/dataTable';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownOutlined } from '@ant-design/icons';
 import {
   Button,
   Checkbox,
@@ -22,15 +23,19 @@ import {
   Table,
   TableColumnsType,
 } from 'antd';
+import classNames from 'classnames';
 import dayjs, { Dayjs } from 'dayjs';
 import React from 'react';
 import ClearDataTooltip from './ClearDataTooltip';
-import './index.less';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 // 数据表字段结构
 const StructureTable: React.FC<StructureTableProps> = ({
   existTableDataFlag,
   tableData,
+  loading,
   scrollHeight,
   onChangeValue,
   onDeleteField,
@@ -65,6 +70,22 @@ const StructureTable: React.FC<StructureTableProps> = ({
       default:
         return '--';
     }
+  };
+
+  // 格式化数字
+  const formatterNumber = (value: number) => {
+    if (!value) return '';
+    const [integerPart, decimalPart] = value.toString().split('.');
+    if (decimalPart && decimalPart.length > 6) {
+      return `${integerPart}.${decimalPart.slice(0, 6)}`;
+    }
+    return value.toString();
+  };
+
+  // 指定从 formatter 里转换回数字的方式，和 formatter 搭配使用
+  const parserNumber = (value: string) => {
+    if (!value) return null;
+    return Number(value);
   };
 
   // 获取默认值
@@ -111,7 +132,14 @@ const StructureTable: React.FC<StructureTableProps> = ({
         const props =
           fieldType === TableFieldTypeEnum.Integer
             ? { min: -2147483648, max: 2147483647 }
-            : { precision: 20 };
+            : {
+                precision: 6,
+                min: -99999999999999.999999,
+                max: 99999999999999.999999,
+                stringMode: true,
+                formatter: formatterNumber,
+                parser: parserNumber,
+              };
         const placeholder =
           fieldType === TableFieldTypeEnum.Integer
             ? `数值范围：[-2147483648, 2147483648]`
@@ -120,27 +148,35 @@ const StructureTable: React.FC<StructureTableProps> = ({
           <InputNumber
             {...props}
             placeholder={placeholder}
-            defaultValue={defaultValue ? Number(defaultValue) : undefined}
+            className={cx('w-full')}
+            value={defaultValue ? Number(defaultValue) : undefined}
             disabled={!isNew && existTableDataFlag}
             onChange={(value) => onChangeValue(id, 'defaultValue', value)}
           />
         );
       }
-      case TableFieldTypeEnum.Boolean:
+      case TableFieldTypeEnum.Boolean: {
+        // 字符串时根据字符串的值,判断是否选中; boolean 时,直接使用值;
+        const checked =
+          typeof defaultValue === 'string'
+            ? defaultValue === 'true'
+            : defaultValue;
         return (
           <Checkbox
-            checked={defaultValue ? Boolean(defaultValue) : false}
+            checked={checked}
             disabled={!isNew && existTableDataFlag}
             onChange={(e) =>
               onChangeValue(id, 'defaultValue', e.target.checked)
             }
           />
         );
+      }
       case TableFieldTypeEnum.Date:
         return (
           <DatePicker
             placeholder="请选择时间"
             showTime
+            className={cx('w-full')}
             defaultValue={defaultValue ? dayjs(defaultValue) : null}
             disabled={!isNew && existTableDataFlag}
             onChange={(date: Dayjs | (Dayjs | null)[] | null) =>
@@ -164,10 +200,13 @@ const StructureTable: React.FC<StructureTableProps> = ({
     {
       title: <LabelStar label="字段名" />,
       dataIndex: 'fieldName',
+      width: 180,
       render: (value, record) => (
         <>
           {!record.isNew ? (
-            <span className="flex items-center h-full">{value}</span>
+            <div className="flex items-center h-full">
+              <EllipsisTooltip text={value} />
+            </div>
           ) : (
             <Input
               placeholder="请输入字段名"
@@ -182,6 +221,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
     {
       title: '字段详细描述',
       dataIndex: 'fieldDescription',
+      width: 180,
       render: (value, record) =>
         record.systemFieldFlag ? (
           <span className="flex items-center h-full">{value}</span>
@@ -192,7 +232,8 @@ const StructureTable: React.FC<StructureTableProps> = ({
           >
             <Input
               placeholder="请输入字段详细描述"
-              defaultValue={value}
+              value={value}
+              allowClear
               disabled={
                 record?.systemFieldFlag ||
                 (!record?.isNew && existTableDataFlag)
@@ -207,7 +248,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
     {
       title: '字段类型',
       dataIndex: 'fieldType',
-      width: 120,
+      width: 140,
       render: (value, record) =>
         !record.isNew ? (
           <span className="flex items-center h-full">
@@ -245,6 +286,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
       title: '是否必须',
       dataIndex: 'nullableFlag',
       align: 'center',
+      width: 90,
       render: (_, record) => (
         <div className="flex items-center content-center h-full">
           <ClearDataTooltip
@@ -269,6 +311,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
       title: '是否唯一',
       dataIndex: 'uniqueFlag',
       align: 'center',
+      width: 90,
       render: (_, record) => (
         <div className="flex items-center content-center h-full">
           <ClearDataTooltip
@@ -293,6 +336,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
       title: '是否启用',
       dataIndex: 'enabledFlag',
       align: 'center',
+      width: 90,
       render: (_, record) => (
         <div className="flex items-center content-center h-full">
           <Checkbox
@@ -308,7 +352,11 @@ const StructureTable: React.FC<StructureTableProps> = ({
     {
       title: '默认值',
       dataIndex: 'defaultValue',
-      render: (_, record) => getDefaultValue(record),
+      render: (_, record) => (
+        <div className="flex items-center h-full">
+          {getDefaultValue(record)}
+        </div>
+      ),
     },
     {
       title: '操作',
@@ -329,24 +377,31 @@ const StructureTable: React.FC<StructureTableProps> = ({
   ];
 
   return (
-    <div className="dis-col edit-table">
-      <div
-        className="flex-1"
-        style={{ maxHeight: scrollHeight, overflow: 'hidden' }}
-      >
-        <Table<TableFieldInfo>
-          dataSource={tableData}
-          columns={inputColumns}
-          rowKey={'id'}
-          pagination={false}
-          virtual
-          scroll={{
-            x: true,
-            y: scrollHeight - 124,
-          }}
-        />
-      </div>
-    </div>
+    <Table<TableFieldInfo>
+      rootClassName={cx(styles['table-container'])}
+      rowClassName={cx(styles['table-row'])}
+      dataSource={tableData}
+      columns={inputColumns}
+      loading={loading}
+      rowKey={'id'}
+      pagination={false}
+      virtual
+      scroll={{
+        x: 'max-content',
+        y: scrollHeight - 124,
+      }}
+      expandable={{
+        expandIcon: ({ expanded, onExpand, record }) =>
+          record.children ? (
+            <DownOutlined
+              className={cx(styles.icon, { [styles['rotate-180']]: expanded })}
+              onClick={(e) => onExpand(record, e)}
+            />
+          ) : (
+            <DownOutlined className={cx(styles.icon, styles['icon-hidden'])} />
+          ),
+      }}
+    />
   );
 };
 

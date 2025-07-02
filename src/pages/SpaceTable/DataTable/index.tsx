@@ -1,23 +1,45 @@
 import { TableFieldTypeEnum } from '@/types/enums/dataTable';
-import { DataTableProp } from '@/types/interfaces/dataTable';
+import { DataTableProp, TableFieldInfo } from '@/types/interfaces/dataTable';
 import {
   DeleteOutlined,
   EditOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import { Button, Checkbox, Popover, Space, Table } from 'antd';
-import React from 'react';
+import React, { useMemo } from 'react';
 import './index.less';
 
 const DataTable: React.FC<DataTableProp> = ({
   columns,
   tableData,
+  loading,
   scrollHeight,
   pagination,
   onPageChange,
   onEdit,
   onDel,
 }) => {
+  // 排序列表，将非系统字段列放在前面，系统字段列放在后面
+  const customColumns = useMemo(() => {
+    // 过滤出非系统字段列和系统字段列
+    const [_systemFieldList, _customFieldList] = columns.reduce<
+      [TableFieldInfo[], TableFieldInfo[]]
+    >(
+      (acc, item) => {
+        acc[item.systemFieldFlag ? 0 : 1].push(item);
+        return acc;
+      },
+      [[], []],
+    );
+    // 将id列放在前面，其他列保持不变
+    const id = _systemFieldList.find((column) => column.fieldName === 'id');
+    const idColumn = id ? [id] : [];
+    // 将非id列放在后面，其他列保持不变
+    const exceptIdColumn = _systemFieldList.filter(
+      (column) => column.fieldName !== 'id',
+    );
+    return [...idColumn, ..._customFieldList, ...exceptIdColumn];
+  }, [columns]);
   return (
     <div
       className="dis-col height-100"
@@ -26,6 +48,7 @@ const DataTable: React.FC<DataTableProp> = ({
       <Table
         className="my-table-style"
         dataSource={tableData}
+        loading={loading}
         rowKey="id"
         scroll={{
           x: 'max-content',
@@ -44,7 +67,7 @@ const DataTable: React.FC<DataTableProp> = ({
           },
         }}
       >
-        {columns.map((item, index) => (
+        {customColumns.map((item, index) => (
           <Table.Column
             key={item.fieldName}
             title={
@@ -87,7 +110,7 @@ const DataTable: React.FC<DataTableProp> = ({
           title={<span style={{ marginLeft: '10px' }}>操作</span>}
           dataIndex="action"
           width={160}
-          className={'table-action-column-fiexd'}
+          className={'table-action-column-fixed'}
           fixed="right"
           render={(_, record) => (
             <Space>

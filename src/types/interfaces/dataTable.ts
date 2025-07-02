@@ -1,5 +1,5 @@
 import { Dayjs } from 'dayjs';
-import { TableFieldTypeEnum } from '../enums/dataTable';
+import { TableFieldTypeEnum, TableTabsEnum } from '../enums/dataTable';
 import { Page, TablePageRequest } from './request';
 
 // 数据表数据
@@ -26,6 +26,7 @@ export interface DataTableProp {
   columns: TableFieldInfo[];
   // 表数据
   tableData: TableRowData[];
+  loading?: boolean;
   // 表格的滚动高度
   scrollHeight: number;
   // 分页的数据
@@ -52,6 +53,7 @@ export interface DeleteSureProps {
 export interface StructureTableProps {
   existTableDataFlag?: boolean; // 是否存在业务数据
   tableData: TableFieldInfo[]; // 表格数据
+  loading?: boolean; // 表格加载状态
   scrollHeight: number; // 表格高度
   // 输入框值改变
   onChangeValue: (
@@ -69,6 +71,25 @@ export interface TableHeaderProps {
   tableDetail: any;
   total: number;
   onClick: () => void;
+}
+
+// 表格操作栏组件的Props
+export interface TableOperationBarProps {
+  // 表格当前激活的标签页
+  activeKey: TableTabsEnum;
+  loading: boolean;
+  importLoading: boolean;
+  tableData: TableRowData[]; // 表格数据
+  disabledCreateBtn: boolean;
+  // 切换标签页的回调函数
+  onChangeTabs: (key: string) => void;
+  onRefresh: () => void;
+  onAddField: () => void;
+  onSaveTableStructure: () => void;
+  onChangeFile: (info: any) => void;
+  onExportData: () => void;
+  onCreateOrEditData: () => void;
+  onClear: () => void;
 }
 
 // 数据表业务表结构的字段定义信息

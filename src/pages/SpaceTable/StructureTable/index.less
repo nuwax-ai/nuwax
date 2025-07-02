@@ -1,34 +1,37 @@
-.add-button-style {
-  margin-bottom: -10px;
-}
+@import '@/styles/color';
 
-.edit-table {
+.table-container {
   min-width: 1220px;
+  background: @WHITE03;
 
-  .ant-table-cell-with-append {
-    display: flex;
-    align-items: center;
+  .table-row {
+    background: @WHITE03;
+  }
 
-    .ant-table-row-expand-icon {
-      margin-top: 0;
+  .icon {
+    color: @GRAY05;
+    font-size: 14px;
+    margin-right: 8px;
+    transition: transform 0.3s; // 添加过渡效果，使旋转更平滑;
+
+    &.rotate-180 {
+      transform: rotate(-180deg);
+    }
+
+    &.icon-hidden {
+      visibility: hidden;
     }
   }
 
-  .ant-table-wrapper .ant-table {
-    background: none !important;
-  }
-
-  .ant-table-row {
-    td {
-      padding: 11px 16px !important;
+  :global {
+    .ant-table-cell-with-append {
+      display: flex;
+      align-items: center;
     }
-  }
 
-  .ant-input-number {
-    width: 100%;
-  }
-
-  .ant-picker {
-    width: 100%;
+    // 覆盖header的背景色
+    .ant-table-thead > tr > th {
+      background: @WHITE03 !important;
+    }
   }
 }

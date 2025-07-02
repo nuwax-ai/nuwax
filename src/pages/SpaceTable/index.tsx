@@ -1,5 +1,4 @@
 import CreatedItem from '@/components/CreatedItem';
-import { TABLE_TABS_LIST } from '@/constants/dataTable.constants';
 import {
   apiClearBusinessData,
   apiExportExcel,
@@ -22,17 +21,10 @@ import {
   UpdateTableFieldInfo,
 } from '@/types/interfaces/dataTable';
 import { modalConfirm } from '@/utils/ant-custom';
-import {
-  ClearOutlined,
-  DownloadOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-  SaveOutlined,
-  UploadOutlined,
-} from '@ant-design/icons';
-import { Button, message, Space, Tabs, Upload } from 'antd';
+import { message } from 'antd';
+import classNames from 'classnames';
 import { Dayjs } from 'dayjs';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, isEqual } from 'lodash';
 import omit from 'lodash/omit';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'umi';
@@ -40,14 +32,19 @@ import { v4 as uuidv4 } from 'uuid';
 import AddAndModify from './AddAndModify';
 import DataTable from './DataTable';
 import DeleteSure from './DeleteSure';
-import './index.less';
+import styles from './index.less';
 import StructureTable from './StructureTable';
 import TableHeader from './TableHeader';
+import TableOperationBar from './TableOperationBar';
+
+const cx = classNames.bind(styles);
 
 const SpaceTable = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
   const tableId = Number(params.tableId);
+  const [structureTableLoading, setStructureTableLoading] =
+    useState<boolean>(false);
   // 数据表详情
   const [tableDetail, setTableDetail] = useState<TableDefineDetails | null>(
     null,
@@ -58,6 +55,7 @@ const SpaceTable = () => {
   );
   // 当前表的columns
   const [columns, setColumns] = useState<TableFieldInfo[]>([]);
+  const [tableDataLoading, setTableDataLoading] = useState<boolean>(false);
   // 当前表的业务数据
   const [tableData, setTableData] = useState<TableRowData[]>([]);
   // 当前分页的数据
@@ -83,6 +81,8 @@ const SpaceTable = () => {
   const [initialValues, setInitialValues] = useState<TableRowData | null>(null);
   // 缓存系统字段, 用于保存时使用
   const systemFieldListRef = useRef<TableFieldInfo[]>([]);
+  // 缓存自定义字段, 用于切换tabs时,对比是否用户修改过数据, 但是并未保存直接切换tab前二次提示使用
+  const tableDetailRef = useRef<TableDefineDetails | null>(null);
 
   // 点击弹出编辑框
   const handleCreateOrEditData = (data?: TableRowData) => {
@@ -137,6 +137,7 @@ const SpaceTable = () => {
 
   // 获取数据表结构详情
   const getTableStructureDetails = async () => {
+    setStructureTableLoading(true);
     const { data } = await apiTableDetail(tableId);
     const fieldList = data?.fieldList || [];
     const [_systemFieldList, _customFieldList] = fieldList.reduce<
@@ -148,7 +149,9 @@ const SpaceTable = () => {
       },
       [[], []],
     );
+    // 缓存系统字段和自定义字段
     systemFieldListRef.current = _systemFieldList;
+    // 将系统变量放在筛选出并折叠
     const list: TableFieldInfo[] = _systemFieldList?.length
       ? [
           {
@@ -167,10 +170,14 @@ const SpaceTable = () => {
           ..._customFieldList,
         ]
       : _customFieldList;
-    setTableDetail({
+    const _tableDetail = {
       ...(data as TableDefineDetails),
       fieldList: list,
-    });
+    };
+    // 缓存表结构数据
+    tableDetailRef.current = _tableDetail;
+    setTableDetail(_tableDetail);
+    setStructureTableLoading(false);
   };
 
   // 保存表结构
@@ -214,6 +221,7 @@ const SpaceTable = () => {
     pageNo: number = 1,
     pageSize: number = 10,
   ) => {
+    setTableDataLoading(true);
     const _params = {
       tableId,
       pageNo,
@@ -228,6 +236,7 @@ const SpaceTable = () => {
     setFormList(_fieldList || []);
     // 业务数据
     setTableData(data.records);
+    setTableDataLoading(false);
     setPagination({
       ...pagination,
       total: data.total,
@@ -344,11 +353,30 @@ const SpaceTable = () => {
 
   // 切换表结构还是表数据
   const handleChangeTabs = (key: string) => {
-    setActiveKey(key as TableTabsEnum);
     if (key === TableTabsEnum.Structure) {
+      setActiveKey(key as TableTabsEnum);
       getTableStructureDetails();
     } else {
-      getTableBusinessData();
+      if (isEqual(tableDetailRef.current, tableDetail)) {
+        setActiveKey(key as TableTabsEnum);
+        getTableBusinessData();
+      } else {
+        modalConfirm(
+          '提示',
+          '当前表结构已修改，是否保存？',
+          async () => {
+            await handleSaveTableStructure();
+            setActiveKey(key as TableTabsEnum);
+            getTableBusinessData();
+          },
+          () => {
+            // 恢复表结构数据
+            // setTableDetail(tableDetailRef.current);
+            setActiveKey(key as TableTabsEnum);
+            getTableBusinessData();
+          },
+        );
+      }
     }
   };
 
@@ -374,6 +402,12 @@ const SpaceTable = () => {
         if (attr === 'fieldType' || attr === 'dataLength') {
           item.defaultValue = '';
         }
+        // 字段详情描述，最长100个字符, 数据库最长200个字符
+        if (attr === 'fieldDescription') {
+          if (value && value.toString().length > 100) {
+            return item;
+          }
+        }
         return {
           ...item,
           [attr]: value,
@@ -395,7 +429,7 @@ const SpaceTable = () => {
     setTableDetail(_tableDetail);
   };
   return (
-    <div className="database-container">
+    <div className={cx(styles['database-container'])}>
       {/* 头部内容 */}
       <TableHeader
         spaceId={spaceId}
@@ -403,68 +437,29 @@ const SpaceTable = () => {
         total={pagination.total}
         onClick={() => setOpen(true)}
       />
-      <div className="inner-container">
-        <div className="dis-sb">
-          <Tabs
-            items={TABLE_TABS_LIST}
-            activeKey={activeKey}
-            onChange={handleChangeTabs}
-            className="tabs-style"
-          />
-          <Space>
-            <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
-              刷新
-            </Button>
-            {activeKey === TableTabsEnum.Structure ? (
-              <>
-                <Button icon={<PlusOutlined />} onClick={handleAddField}>
-                  新增字段
-                </Button>
-                <Button
-                  loading={loading}
-                  icon={<SaveOutlined />}
-                  onClick={handleSaveTableStructure}
-                >
-                  保存
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  icon={<ClearOutlined />}
-                  onClick={() => setOpenDelete(true)}
-                  disabled={!tableData?.length} // 没有数据时禁用清空按钮
-                >
-                  清除所有数据
-                </Button>
-                <Upload accept={'.xlsx'} onChange={handleChangeFile}>
-                  <Button icon={<UploadOutlined />} loading={importLoading}>
-                    导入
-                  </Button>
-                </Upload>
-                <Button
-                  icon={<DownloadOutlined />}
-                  loading={loading}
-                  onClick={handleExportData}
-                >
-                  导出
-                </Button>
-                <Button
-                  icon={<PlusOutlined />}
-                  onClick={() => handleCreateOrEditData()}
-                  disabled={!columns?.some((item) => !item.systemFieldFlag)} // 没有数据时禁用新增按钮
-                >
-                  新增
-                </Button>
-              </>
-            )}
-          </Space>
-        </div>
+      <div className={cx(styles['inner-container'])}>
+        {/* 表格操作栏 */}
+        <TableOperationBar
+          activeKey={activeKey}
+          loading={loading}
+          importLoading={importLoading}
+          tableData={tableData}
+          disabledCreateBtn={!columns?.some((item) => !item.systemFieldFlag)}
+          onChangeTabs={handleChangeTabs}
+          onRefresh={handleRefresh}
+          onAddField={handleAddField}
+          onSaveTableStructure={handleSaveTableStructure}
+          onChangeFile={handleChangeFile}
+          onExportData={handleExportData}
+          onCreateOrEditData={handleCreateOrEditData}
+          onClear={() => setOpenDelete(true)}
+        />
         <div className="flex-1">
           {activeKey === TableTabsEnum.Structure ? (
             <StructureTable
               existTableDataFlag={tableDetail?.existTableDataFlag}
               tableData={tableDetail?.fieldList || []}
+              loading={structureTableLoading}
               scrollHeight={getBrowserHeight()}
               onChangeValue={handleChangeValue}
               onDeleteField={handleDelField}
@@ -473,6 +468,7 @@ const SpaceTable = () => {
             <DataTable
               columns={columns}
               tableData={tableData}
+              loading={tableDataLoading}
               pagination={pagination}
               onPageChange={changePagination}
               scrollHeight={getBrowserHeight() + 40}
