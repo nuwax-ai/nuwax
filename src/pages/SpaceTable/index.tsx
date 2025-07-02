@@ -21,6 +21,7 @@ import {
   UpdateTableFieldInfo,
 } from '@/types/interfaces/dataTable';
 import { modalConfirm } from '@/utils/ant-custom';
+import { validateTableName } from '@/utils/common';
 import { message } from 'antd';
 import classNames from 'classnames';
 import { Dayjs } from 'dayjs';
@@ -183,7 +184,6 @@ const SpaceTable = () => {
   // 保存表结构
   const handleSaveTableStructure = async () => {
     try {
-      setLoading(true);
       // 自定义字段列表
       const _customFieldList: UpdateTableFieldInfo[] =
         tableDetail?.fieldList
@@ -203,6 +203,16 @@ const SpaceTable = () => {
 
             return _item;
           }) || [];
+
+      // 校验字段名是否合法
+      const isFieldNameValidate = _customFieldList?.every((item) =>
+        validateTableName(item.fieldName),
+      );
+      if (!isFieldNameValidate) {
+        message.error('字段名只能包含字母、数字、下划线，且必须以字母开头');
+        return;
+      }
+      setLoading(true);
       const _params = {
         id: tableId,
         fieldList: [...systemFieldListRef.current, ..._customFieldList],
@@ -349,6 +359,8 @@ const SpaceTable = () => {
 
   useEffect(() => {
     getTableStructureDetails();
+    // 获取表的业务数据，此处调用是因为头部组件中需要展示表的有多少条数据
+    getTableBusinessData();
   }, []);
 
   // 切换表结构还是表数据
