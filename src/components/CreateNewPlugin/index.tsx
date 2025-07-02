@@ -17,13 +17,13 @@ import type {
 } from '@/types/interfaces/plugin';
 import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps, RadioChangeEvent } from 'antd';
-import { Button, Form, Input, message, Modal, Radio } from 'antd';
+import { Form, Input, message, Radio } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
-import styles from './index.less';
+import CustomFormModal from '../CustomFormModal';
 
-const cx = classNames.bind(styles);
+const cx = classNames;
 
 /**
  * 新建、修改插件组件
@@ -42,6 +42,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>('');
   const [pluginType, setPluginType] = useState<PluginTypeEnum>();
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (open) {
@@ -63,7 +64,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   };
 
   // 新增插件接口
-  const { run: runCreate, loading: loadingCreate } = useRequest(apiPluginAdd, {
+  const { run: runCreate } = useRequest(apiPluginAdd, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: number, params: PluginAddParams[]) => {
@@ -74,25 +75,31 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
       const { type } = params[0];
       handlePluginUrl(result, type);
       message.success('插件已创建');
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
   // 更新HTTP插件配置接口
-  const { run: runUpdate, loading: loadingUpdate } = useRequest(
-    apiPluginHttpUpdate,
-    {
-      manual: true,
-      debounceInterval: 300,
-      onSuccess: (_: null, params: PluginHttpUpdateParams[]) => {
-        setImageUrl('');
-        const info = params[0];
-        onConfirm?.(info);
-        message.success('插件更新成功');
-      },
+  const { run: runUpdate } = useRequest(apiPluginHttpUpdate, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (_: null, params: PluginHttpUpdateParams[]) => {
+      setImageUrl('');
+      const info = params[0];
+      onConfirm?.(info);
+      message.success('插件更新成功');
+      setLoading(false);
     },
-  );
+    onError: () => {
+      setLoading(false);
+    },
+  });
 
   const onFinish: FormProps<PluginAddParams>['onFinish'] = (values) => {
+    setLoading(true);
     if (mode === CreateUpdateModeEnum.Create) {
       runCreate({
         ...values,
@@ -121,31 +128,18 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   };
 
   return (
-    <Modal
+    <CustomFormModal
+      form={form}
       title={mode === CreateUpdateModeEnum.Create ? '新建插件' : '更新插件'}
       open={open}
       classNames={classNames}
-      destroyOnClose
-      footer={
-        <>
-          <Button className={cx(styles.btn)} onClick={onCancel}>
-            取消
-          </Button>
-          <Button
-            type="primary"
-            className={cx(styles.btn)}
-            loading={loadingCreate || loadingUpdate}
-            onClick={handlerSubmit}
-          >
-            确定
-          </Button>
-        </>
-      }
+      loading={loading}
       onCancel={onCancel}
+      onConfirm={handlerSubmit}
     >
       <div className={cx('flex', 'flex-col', 'items-center', 'py-16')}>
         <UploadAvatar
-          className={styles['upload-box']}
+          className={cx('mt-16', 'mb-16')}
           onUploadSuccess={setImageUrl}
           imageUrl={imageUrl}
           defaultImage={pluginIcon as string}
@@ -155,7 +149,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
           requiredMark={customizeRequiredMark}
           layout="vertical"
           onFinish={onFinish}
-          rootClassName={cx(styles['create-team-form'])}
+          rootClassName={cx('w-full')}
           autoComplete="off"
         >
           <Form.Item
@@ -216,7 +210,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
           </ConditionRender>
         </Form>
       </div>
-    </Modal>
+    </CustomFormModal>
   );
 };
 
