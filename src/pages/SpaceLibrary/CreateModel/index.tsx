@@ -57,6 +57,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
   const [form] = Form.useForm();
   const [visible, setVisible] = useState<boolean>(false);
   const [modelType, setModelType] = useState<ModelTypeEnum>();
+  const [loading, setLoading] = useState<boolean>(false);
   // const [shouldRenderDimension, setShouldRenderDimension] = useState(false);
   // const [networkType, setNetworkType] = useState<ModelNetworkTypeEnum>(
   //   ModelNetworkTypeEnum.Internet,
@@ -88,12 +89,17 @@ const CreateModel: React.FC<CreateModelProps> = ({
           ? '模型已创建成功'
           : '模型已更新成功',
       );
+      setLoading(false);
       const info = params[0];
       onConfirm(info);
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
   const onFinish: FormProps<ModelFormData>['onFinish'] = (values) => {
+    setLoading(true);
     if (mode === CreateUpdateModeEnum.Create) {
       run({
         ...values,
@@ -130,6 +136,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
         header: cx(styles.header),
       }}
       open={open}
+      loading={loading}
       onCancel={onCancel}
       onConfirm={handlerSubmit}
     >
