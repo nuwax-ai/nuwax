@@ -101,7 +101,8 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
       </div>
       <div className={cx('flex', 'items-center', styles['extra-box'])}>
         {/* 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布 */}
-        {mcpInfo?.deployed !== null &&
+        {mcpInfo?.deployStatus !== DeployStatusEnum.Stopped &&
+          mcpInfo?.deployed !== null &&
           moment(mcpInfo?.deployed).isBefore(mcpInfo?.modified) && (
             <span className={cx(styles.text)}>有更新未部署</span>
           )}
