@@ -35,17 +35,22 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   // const [createAgentType, setCreateAgentType] = useState<CreateAgentEnum>(
   //   CreateAgentEnum.Standard,
   // );
-  const [imageUrl, setImageUrl] = useState<string>('');
   const [form] = Form.useForm();
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
   // 新增智能体接口
-  const { run: runEdit } = useRequest(apiAgentAdd, {
+  const { run: runAdd } = useRequest(apiAgentAdd, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: number) => {
       setImageUrl('');
       onConfirmCreate?.(result);
       message.success('智能体已创建');
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
@@ -55,8 +60,12 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     debounceInterval: 300,
     onSuccess: (_: null, params: AgentConfigUpdateParams[]) => {
       message.success('智能体编辑成功');
+      setLoading(false);
       const info: AgentConfigUpdateParams = params[0];
       onConfirmUpdate?.(info);
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
@@ -75,8 +84,9 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   }, [open, agentConfigInfo]);
 
   const onFinish: FormProps<AgentAddParams>['onFinish'] = (values) => {
+    setLoading(true);
     if (mode === CreateUpdateModeEnum.Create) {
-      runEdit({
+      runAdd({
         ...values,
         icon: imageUrl,
         spaceId,
@@ -106,6 +116,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       form={form}
       title={mode === CreateUpdateModeEnum.Create ? '创建智能体' : '更新智能体'}
       open={open}
+      loading={loading}
       // okText={createAgentType === CreateAgentEnum.Standard ? '' : '生成'}
       // okPrefixIcon={
       //   createAgentType === CreateAgentEnum.Standard ? (

@@ -33,6 +33,7 @@ const ModifyTeam: React.FC<EditSpaceProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (open && spaceData) {
@@ -40,7 +41,7 @@ const ModifyTeam: React.FC<EditSpaceProps> = ({
         name: spaceData.name,
         description: spaceData.description,
       });
-      setImageUrl(spaceData.icon || (teamImage as string));
+      setImageUrl(spaceData.icon);
     } else {
       form.resetFields();
     }
@@ -59,10 +60,15 @@ const ModifyTeam: React.FC<EditSpaceProps> = ({
     onSuccess: () => {
       message.success('修改成功');
       onConfirmEdit?.();
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
   const onFinish: FormProps<UpdateSpaceTeamParams>['onFinish'] = (values) => {
+    setLoading(true);
     runEdit({
       ...values,
       id: spaceId,
@@ -75,6 +81,7 @@ const ModifyTeam: React.FC<EditSpaceProps> = ({
       form={form}
       title="编辑团队简介"
       open={open}
+      loading={loading}
       onCancel={cancelModal}
       onConfirm={handlerSubmit}
     >
@@ -93,7 +100,7 @@ const ModifyTeam: React.FC<EditSpaceProps> = ({
             <UploadAvatar
               onUploadSuccess={setImageUrl}
               imageUrl={imageUrl}
-              defaultImage={teamImage as string}
+              defaultImage={teamImage}
             />
           </Form.Item>
           <Form.Item
@@ -106,6 +113,7 @@ const ModifyTeam: React.FC<EditSpaceProps> = ({
           <OverrideTextArea
             name="description"
             label="描述"
+            initialValue={spaceData?.description}
             placeholder="描述团队"
             maxLength={2000}
           />

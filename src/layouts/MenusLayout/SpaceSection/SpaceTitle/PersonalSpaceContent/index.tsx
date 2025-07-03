@@ -102,7 +102,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
           src={getAvatar(currentSpaceInfo)}
           alt=""
         />
-        <span className={cx('flex-1', styles.title)}>
+        <span className={cx('flex-1', styles.title, 'text-ellipsis')}>
           {currentSpaceInfo?.name || '个人空间'}
         </span>
       </div>

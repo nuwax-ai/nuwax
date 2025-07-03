@@ -297,6 +297,7 @@ const SpaceTable = () => {
       id: tableDetail.id,
     };
     await apiUpdateTableName(_params);
+    message.success('修改成功');
     setTableDetail({
       ...(tableDetail as TableDefineDetails),
       tableName: name,

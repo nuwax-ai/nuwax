@@ -55,7 +55,9 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
           className={cx('flex', 'flex-col', 'content-between', styles.section)}
         >
           <div className={cx('flex', styles['top-box'])}>
-            <h3 className={cx(styles.name)}>{knowledgeInfo?.name}</h3>
+            <h3 className={cx(styles.name, 'text-ellipsis')}>
+              {knowledgeInfo?.name}
+            </h3>
             <EditOutlined
               className={cx('cursor-pointer', 'hover-box')}
               onClick={onEdit}
