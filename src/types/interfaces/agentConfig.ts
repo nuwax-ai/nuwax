@@ -194,6 +194,7 @@ export interface RecommendListProps {
 
 // 长期记忆内容组件
 export interface LongMemoryContentProps {
+  textClassName?: string;
   openLongMemory?: OpenCloseEnum;
 }
 
@@ -205,6 +206,7 @@ export interface OpenRemarksEditProps {
 
 // 变量列表组件
 export interface VariableListProps {
+  textClassName?: string;
   onClick: (e: MouseEvent) => void;
   list: BindConfigWithSub[];
 }
@@ -231,11 +233,19 @@ export interface NodeDetailsProps {
   node?: ExecuteResultInfo | null;
 }
 
+// 正在删除组件信息
+export interface DeleteComponentInfo {
+  targetId: number;
+  type: AgentComponentTypeEnum;
+}
+
 // 组件列表
 export interface CollapseComponentListProps {
   textClassName?: string;
   type: AgentComponentTypeEnum;
   list: AgentComponentInfo[];
+  // 正在删除组件列表
+  deleteList?: DeleteComponentInfo[];
   onSet: (id: number) => void;
   onDel: (
     id: number,
@@ -249,6 +259,8 @@ export interface CollapseComponentListProps {
 export interface KnowledgeTextListProps {
   textClassName?: string;
   list: AgentComponentInfo[];
+  // 正在删除组件列表
+  deleteList?: DeleteComponentInfo[];
   onDel: (id: number, targetId: number, type: AgentComponentTypeEnum) => void;
 }
 

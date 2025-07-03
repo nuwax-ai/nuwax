@@ -73,12 +73,26 @@ const CollapseComponentItem: React.FC<CollapseComponentItemProps> = ({
         <Link
           to={link}
           target="_blank"
-          className={cx('flex-1', 'flex', 'overflow-hide', styles['gap-6'])}
+          className={cx(
+            'flex-1',
+            'flex',
+            'items-center',
+            'overflow-hide',
+            styles['gap-6'],
+          )}
         >
           {innerContent}
         </Link>
       ) : (
-        <div className={cx('flex-1', 'flex', 'overflow-hide', styles['gap-6'])}>
+        <div
+          className={cx(
+            'flex-1',
+            'flex',
+            'items-center',
+            'overflow-hide',
+            styles['gap-6'],
+          )}
+        >
           {innerContent}
         </div>
       )}

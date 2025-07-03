@@ -10,12 +10,15 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 const LongMemoryContent: React.FC<LongMemoryContentProps> = ({
+  textClassName,
   openLongMemory = OpenCloseEnum.Close,
 }) => {
   console.log(openLongMemory);
   return (
     <div className={cx(styles.container)}>
-      <p>总结聊天对话的内容，并用于更好的响应用户的消息。</p>
+      <p className={cx(textClassName)}>
+        总结聊天对话的内容，并用于更好的响应用户的消息。
+      </p>
       {/*<div className={cx('flex')}>*/}
       {/*  <Checkbox disabled={openLongMemory === OpenCloseEnum.Close}>*/}
       {/*    支持在Prompt中调用*/}

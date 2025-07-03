@@ -39,6 +39,8 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
         return '数据表';
       case AgentComponentTypeEnum.Model:
         return '模型';
+      case AgentComponentTypeEnum.MCP:
+        return 'MCP';
       default:
         return '--';
     }

@@ -6,7 +6,7 @@ import {
 import { customizeRequiredMark } from '@/utils/form';
 import { Button, Cascader, Form, FormProps, Input, InputNumber } from 'antd';
 import classNames from 'classnames';
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import ConditionRender from '../ConditionRender';
 import styles from './index.less';
 
@@ -18,6 +18,7 @@ const { SHOW_CHILD } = Cascader;
 const NewConversationSet: React.FC<NewConversationSetProps> = ({
   className,
   form,
+  isFilled = false,
   disabled = false,
   showSubmitButton = false,
   variables,
@@ -25,8 +26,6 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
 }) => {
   // 是否打开表单
   const [isOpen, setIsOpen] = useState<boolean>(true);
-  // 是否已填写表单
-  const isFilled = useRef<boolean>(false);
 
   if (!variables?.length) {
     return null;
@@ -36,14 +35,13 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
     values,
   ) => {
     setIsOpen(false);
-    isFilled.current = true;
     onConfirm?.(values);
   };
 
   // 对话容器样式
   const _className = isOpen
     ? styles['conversation-container']
-    : isFilled.current
+    : isFilled
     ? styles['close-form']
     : null;
 
@@ -118,7 +116,7 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
         className={cx(styles.header, 'flex', 'items-center', 'content-between')}
       >
         <span>新对话设置</span>
-        <ConditionRender condition={isFilled.current}>
+        <ConditionRender condition={isFilled}>
           <span
             className={cx(styles.text, 'cursor-pointer')}
             onClick={() => setIsOpen(!isOpen)}
@@ -127,7 +125,7 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
           </span>
         </ConditionRender>
       </header>
-      <div className={cx(_className, styles['form-box'], 'flex-1')}>
+      <div className={cx(_className, styles['form-box'])}>
         <Form
           form={form}
           disabled={disabled}

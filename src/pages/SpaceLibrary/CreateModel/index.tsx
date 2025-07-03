@@ -231,8 +231,8 @@ const CreateModel: React.FC<CreateModelProps> = ({
         <ConditionRender condition={modelType !== ModelTypeEnum.Embeddings}>
           <Form.Item
             name="maxTokens"
-            label="非向量模型"
-            rules={[{ required: true, message: '请输入非向量模型' }]}
+            label="最大输出token数"
+            rules={[{ required: true, message: '请输入最大输出token数' }]}
           >
             <InputNumber className={cx('w-full')} min={0} />
           </Form.Item>

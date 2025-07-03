@@ -1,7 +1,6 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import LabelIcon from '@/components/LabelIcon';
 import SelectList from '@/components/SelectList';
-import TooltipIcon from '@/components/TooltipIcon';
 import useCategory from '@/hooks/useCategory';
 import { apiPublishApply, apiPublishItemList } from '@/services/publish';
 import { apiSpaceList } from '@/services/workspace';
@@ -18,7 +17,7 @@ import { PublishItem, PublishItemInfo } from '@/types/interfaces/publish';
 import { PublishComponentModalProps } from '@/types/interfaces/space';
 import { SquareAgentInfo } from '@/types/interfaces/square';
 import { SpaceInfo } from '@/types/interfaces/workspace';
-import { DownOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { DownOutlined } from '@ant-design/icons';
 import {
   Checkbox,
   Form,
@@ -536,29 +535,12 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
             autoSize={{ minRows: 5, maxRows: 8 }}
             maxLength={200}
             showCount
-          ></Input.TextArea>
+          />
         </Form.Item>
         <Form.Item name="category" label="分类选择">
           <SelectList className={styles.select} options={classifyList} />
         </Form.Item>
-        <Form.Item
-          label={
-            <h4 className={cx(styles.scope, 'flex', 'items-center')}>
-              选择发布范围
-              <TooltipIcon
-                title={
-                  <>
-                    <p>1. 系统广场：智能体将出现在系统广场中。</p>
-                    <p>2. 空间广场：智能体将出现在选择的空间广场中。</p>
-                  </>
-                }
-                icon={<InfoCircleOutlined />}
-                type={TooltipTitleTypeEnum.White}
-              />
-            </h4>
-          }
-          noStyle
-        >
+        <Form.Item label="选择发布范围">
           <Table<PublishScope>
             className={cx(styles['table-wrap'])}
             columns={inputColumns}

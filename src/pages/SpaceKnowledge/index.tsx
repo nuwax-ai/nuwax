@@ -186,9 +186,11 @@ const SpaceKnowledge: React.FC = () => {
 
   // 搜索
   const handleQueryDoc = (value: string) => {
-    keywordRef.current = value;
+    // 去除空格
+    const _value = value.trim();
+    keywordRef.current = _value;
     setLoadingDoc(true);
-    handleDocList(1, value);
+    handleDocList(1, _value);
   };
 
   // 设置分析成功（自动重试,如果有分段,问答,向量化有失败的话, status为空）

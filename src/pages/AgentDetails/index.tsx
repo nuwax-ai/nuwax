@@ -219,6 +219,7 @@ const AgentDetails: React.FC = () => {
               <NewConversationSet
                 className="mb-16"
                 form={form}
+                isFilled
                 variables={variables}
               />
               {messageList?.length > 0 ? (

@@ -22,7 +22,10 @@ import {
   OpenCloseEnum,
 } from '@/types/enums/space';
 import type { AgentComponentInfo } from '@/types/interfaces/agent';
-import type { AgentArrangeConfigProps } from '@/types/interfaces/agentConfig';
+import type {
+  AgentArrangeConfigProps,
+  DeleteComponentInfo,
+} from '@/types/interfaces/agentConfig';
 import type {
   BindConfigWithSub,
   CreatedNodeItem,
@@ -84,6 +87,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 当前组件信息
   const [currentComponentInfo, setCurrentComponentInfo] =
     useState<AgentComponentInfo>();
+  // 正在删除组件列表
+  const [deleteList, setDeleteList] = useState<DeleteComponentInfo[]>([]);
 
   // 打开、关闭弹窗
   const { show, setShow } = useModel('model');
@@ -174,12 +179,16 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     debounceWait: 300,
   });
 
+  // 删除智能体组件配置
   const handleAgentComponentDel = async (
     id: number,
     targetId: number,
     type: AgentComponentTypeEnum,
     toolName?: string,
   ) => {
+    // 添加到正在删除列表
+    const newDeleteList = [...deleteList, { targetId, type }];
+    setDeleteList(newDeleteList);
     await runAgentComponentDel(id);
     message.success('已成功删除');
     const list =
@@ -202,6 +211,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           ),
       ) || [];
     setAddComponents(newList);
+    // 从正在删除列表中删除
+    const _newDeleteList = deleteList.filter(
+      (item) => item.targetId !== targetId && item.type !== type,
+    );
+    setDeleteList(_newDeleteList);
   };
 
   // 异步查询智能体配置组件列表
@@ -337,8 +351,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       label: '插件',
       children: (
         <CollapseComponentList
+          textClassName={cx(styles.text)}
           type={AgentComponentTypeEnum.Plugin}
           list={filterList(AgentComponentTypeEnum.Plugin)}
+          deleteList={deleteList}
           onSet={handlePluginSet}
           onDel={handleAgentComponentDel}
         />
@@ -357,8 +373,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       label: '工作流',
       children: (
         <CollapseComponentList
+          textClassName={cx(styles.text)}
           type={AgentComponentTypeEnum.Workflow}
           list={filterList(AgentComponentTypeEnum.Workflow)}
+          deleteList={deleteList}
           onSet={handlePluginSet}
           onDel={handleAgentComponentDel}
         />
@@ -377,8 +395,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       label: 'MCP',
       children: (
         <CollapseComponentList
+          textClassName={cx(styles.text)}
           type={AgentComponentTypeEnum.MCP}
           list={filterList(AgentComponentTypeEnum.MCP)}
+          deleteList={deleteList}
           onSet={handlePluginSet}
           onDel={handleAgentComponentDel}
         />
@@ -411,7 +431,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       label: '文本',
       children: (
         <KnowledgeTextList
+          textClassName={cx(styles.text)}
           list={filterList(AgentComponentTypeEnum.Knowledge)}
+          deleteList={deleteList}
           onDel={handleAgentComponentDel}
         />
       ),
@@ -442,6 +464,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       label: '变量',
       children: (
         <VariableList
+          textClassName={cx(styles.text)}
           list={variablesInfo?.bindConfig?.variables || []}
           onClick={handlerVariablePlus}
         />
@@ -453,6 +476,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       label: '数据表',
       children: (
         <CollapseComponentList
+          textClassName={cx(styles.text)}
           type={AgentComponentTypeEnum.Table}
           list={filterList(AgentComponentTypeEnum.Table)}
           onSet={handlePluginSet}
@@ -476,7 +500,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       key: AgentArrangeConfigEnum.Long_Memory,
       label: '长期记忆',
       children: (
-        <LongMemoryContent openLongMemory={agentConfigInfo?.openLongMemory} />
+        <LongMemoryContent
+          textClassName={cx(styles.text)}
+          openLongMemory={agentConfigInfo?.openLongMemory}
+        />
       ),
       extra: (
         <SelectList
@@ -524,7 +551,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     {
       key: AgentArrangeConfigEnum.User_Problem_Suggestion,
       label: '用户问题建议',
-      children: <p>在每次智能体回复后，不会提供任何用户问题建议</p>,
+      children: (
+        <p className={cx(styles.text)}>
+          在每次智能体回复后，不会提供任何用户问题建议
+        </p>
+      ),
       extra: (
         <SelectList
           className={cx(styles.select)}
@@ -540,7 +571,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     {
       key: AgentArrangeConfigEnum.Open_Scheduled_Task,
       label: '定时任务',
-      children: <p>开启后，用户可以通过设置定时任务的方式让智能体执行任务</p>,
+      children: (
+        <p className={cx(styles.text)}>
+          开启后，用户可以通过设置定时任务的方式让智能体执行任务
+        </p>
+      ),
       extra: (
         <SelectList
           className={cx(styles.select)}
