@@ -4,6 +4,7 @@ import {
 } from '@/types/interfaces/node';
 // 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
 import type { FieldConfig } from '@/components/FormListItem/type';
+import { UploadFileStatus } from '@/types/enums/common';
 import { InputItemNameEnum } from '@/types/enums/node';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import type {
@@ -324,4 +325,13 @@ export interface TreeFormProps {
     | 'conditionBranchConfigs'
     | 'skillComponentConfigs'
     | 'body';
+}
+
+export interface FileListItem {
+  key: string;
+  id: string;
+  uid: string;
+  name: string;
+  url: string;
+  status: UploadFileStatus;
 }
