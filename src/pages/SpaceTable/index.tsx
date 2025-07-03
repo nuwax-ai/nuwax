@@ -275,26 +275,33 @@ const SpaceTable = () => {
 
   // 更新数据表名称和描述信息
   const handleUpdateTableName = async (info: {
-    icon: string;
-    name: string;
-    description: string;
+    icon?: string;
+    name?: string;
+    description?: string;
   }) => {
     if (!tableDetail) {
       return;
     }
     const { icon, name, description } = info;
+
+    // 确保必需字段不为空
+    if (!name) {
+      message.error('名称不能为空');
+      return;
+    }
+
     const _params = {
       tableName: name,
-      tableDescription: description,
-      icon,
+      tableDescription: description || '',
+      icon: icon || '',
       id: tableDetail.id,
     };
     await apiUpdateTableName(_params);
     setTableDetail({
       ...(tableDetail as TableDefineDetails),
       tableName: name,
-      tableDescription: description,
-      icon,
+      tableDescription: description || '',
+      icon: icon || '',
     });
     setOpen(false);
   };
@@ -342,6 +349,7 @@ const SpaceTable = () => {
     setLoading(true);
     try {
       const _res = await apiExportExcel(tableId);
+      // 当使用 getResponse: true 时，_res 是一个包含 data 属性的响应对象
       const blob = new Blob([_res.data], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       }); // 将响应数据转换为 Blob 对象
@@ -410,10 +418,16 @@ const SpaceTable = () => {
     const _tableDetail = cloneDeep(tableDetail);
     const _fieldList = _tableDetail?.fieldList?.map((item: TableFieldInfo) => {
       if (item.id === id) {
-        // 长文本: 禁止添加默认值;
-        if (attr === 'fieldType' || attr === 'dataLength') {
+        if (attr === 'fieldType') {
           item.defaultValue = '';
         }
+        // 长文本: 禁止添加默认值, 禁止唯一;
+        if (attr === 'dataLength') {
+          item.defaultValue = '';
+          item.uniqueFlag = false;
+        }
+        // 恢复dataLength为String
+        item.dataLength = TableFieldTypeEnum.String;
         // 字段详情描述，最长100个字符, 数据库最长200个字符
         if (attr === 'fieldDescription') {
           if (value && value.toString().length > 100) {

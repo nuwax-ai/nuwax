@@ -16,7 +16,7 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({
   const [submittable, setSubmittable] = useState<boolean>(false);
 
   // Watch all values
-  const values = Form.useWatch([], form);
+  const values = Form.useWatch([], { form, preserve: true });
 
   useEffect(() => {
     form

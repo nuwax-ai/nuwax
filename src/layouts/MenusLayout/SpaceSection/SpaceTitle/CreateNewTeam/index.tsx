@@ -81,7 +81,7 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
   return (
     <CustomFormModal
       form={form}
-      title="创建新工作空间"
+      title="创建团队空间"
       open={open}
       onCancel={onCancel}
       loading={loading}
@@ -89,7 +89,7 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
     >
       <div className={cx('flex', 'flex-col', 'items-center', 'py-16')}>
         <p className={cx(styles['create-team-tips'])}>
-          通过创建团队，将支持项目、智能体、插件、工作流和知识库在团队内进行协作和共享。
+          通过创建团队空间，将支持项目、智能体、插件、工作流和知识库在团队内进行协作和共享。
         </p>
         <UploadAvatar
           className={styles['upload-box']}

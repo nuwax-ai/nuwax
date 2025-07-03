@@ -32,7 +32,7 @@ const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
         };
       case AgentComponentTypeEnum.MCP:
         return {
-          text: 'MCP是基于Agent的微服务框架，可以为Agent提供丰富的功能，例如搜索信息、浏览网页、生成图片等。', // TODO 这里需要确认 mcp默认文本
+          text: '智能体可以通过标准化协议（MCP）连接各类服务API并发起调用。', // TODO 这里需要确认 mcp默认文本
           image: mcpImage, // TODO 这里需要确认 mcp默认图片
         };
       case AgentComponentTypeEnum.Table:

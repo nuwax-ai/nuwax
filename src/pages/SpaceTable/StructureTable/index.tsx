@@ -73,19 +73,22 @@ const StructureTable: React.FC<StructureTableProps> = ({
   };
 
   // 格式化数字
-  const formatterNumber = (value: number) => {
+  const formatterNumber = (value: number | string | undefined) => {
     if (!value) return '';
-    const [integerPart, decimalPart] = value.toString().split('.');
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(numValue)) return '';
+    const [integerPart, decimalPart] = numValue.toString().split('.');
     if (decimalPart && decimalPart.length > 6) {
       return `${integerPart}.${decimalPart.slice(0, 6)}`;
     }
-    return value.toString();
+    return numValue.toString();
   };
 
   // 指定从 formatter 里转换回数字的方式，和 formatter 搭配使用
-  const parserNumber = (value: string) => {
-    if (!value) return null;
-    return Number(value);
+  const parserNumber = (displayValue: string | undefined) => {
+    if (!displayValue) return '';
+    const numValue = parseFloat(displayValue);
+    return isNaN(numValue) ? '' : numValue;
   };
 
   // 获取默认值
@@ -318,12 +321,14 @@ const StructureTable: React.FC<StructureTableProps> = ({
             record={record}
             existTableDataFlag={existTableDataFlag}
           >
+            {/* 长文本时,不允许设置唯一索引 */}
             <Checkbox
               disabled={
                 record?.systemFieldFlag ||
-                (!record?.isNew && existTableDataFlag)
+                (!record?.isNew && existTableDataFlag) ||
+                record?.dataLength === TableFieldTypeEnum.MEDIUMTEXT
               }
-              defaultChecked={record.uniqueFlag}
+              checked={record.uniqueFlag}
               onChange={(e) =>
                 onChangeValue(record.id, 'uniqueFlag', e.target.checked)
               }

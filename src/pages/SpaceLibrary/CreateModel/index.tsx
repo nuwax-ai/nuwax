@@ -146,6 +146,9 @@ const CreateModel: React.FC<CreateModelProps> = ({
           functionCall: ModelFunctionCallEnum.CallSupported,
           apiProtocol: ModelApiProtocolEnum.OpenAI,
           strategy: ModelStrategyEnum.RoundRobin,
+          type: ModelTypeEnum.Chat,
+          maxTokens: 4096,
+          dimension: 1536,
         }}
         autoComplete="off"
       >
@@ -181,7 +184,6 @@ const CreateModel: React.FC<CreateModelProps> = ({
           />
         </Form.Item>
         <div className={cx('flex', styles['gap-16'])}>
-          {/* <ConditionRender condition={action !== apiModelSave}> */}
           <Form.Item
             name="type"
             label="模型类型"
@@ -200,7 +202,6 @@ const CreateModel: React.FC<CreateModelProps> = ({
               placeholder="请选择模型类型"
             />
           </Form.Item>
-          {/* </ConditionRender> */}
           {modelType !== ModelTypeEnum.Embeddings && (
             <Form.Item
               name="isReasonModel"
@@ -222,11 +223,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
               className={cx('flex-1')}
               rules={[{ required: true, message: '填写向量维度' }]}
             >
-              <InputNumber
-                className={cx('w-full')}
-                defaultValue={1536}
-                min={0}
-              />
+              <InputNumber className={cx('w-full')} min={0} />
             </Form.Item>
           </ConditionRender>
         </div>
@@ -237,7 +234,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
             label="非向量模型"
             rules={[{ required: true, message: '请输入非向量模型' }]}
           >
-            <InputNumber className={cx('w-full')} defaultValue={4096} min={0} />
+            <InputNumber className={cx('w-full')} min={0} />
           </Form.Item>
           <Form.Item
             name="functionCall"
@@ -261,30 +258,6 @@ const CreateModel: React.FC<CreateModelProps> = ({
             placeholder="请选择模型接口协议"
           />
         </Form.Item>
-        {/* <ConditionRender condition={shouldRenderDimension}>
-          <Form.Item
-            name="dimension"
-            label="向量维度"
-            rules={[{ required: true, message: '输入向量维度' }]}
-          >
-            <Input placeholder="输入向量维度" />
-          </Form.Item>
-        </ConditionRender> */}
-        {/* <ConditionRender condition={action === apiModelSave}>
-          <Form.Item name="networkType" label="联网类型">
-            <Radio.Group options={MODEL_NETWORK_TYPE_LIST} />
-          </Form.Item>
-        </ConditionRender>
-        <ConditionRender
-          condition={
-            action === apiModelSave &&
-            networkType === ModelNetworkTypeEnum.Intranet
-          }
-        >
-          <Form.Item>
-            <IntranetModel onOpen={() => setVisible(true)} />
-          </Form.Item>
-        </ConditionRender> */}
         <Form.Item label={<LabelStar label="接口配置" />}>
           <Form.Item className={cx('mb-0')}>
             <p>调用策略</p>

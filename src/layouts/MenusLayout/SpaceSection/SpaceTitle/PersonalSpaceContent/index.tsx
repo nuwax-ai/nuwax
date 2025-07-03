@@ -128,7 +128,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
         onClick={onCreateTeam}
       >
         <PlusCircleOutlined />
-        <span className={cx('flex-1', 'text-ellipsis')}>创建新工作空间</span>
+        <span className={cx('flex-1', 'text-ellipsis')}>创建团队空间</span>
       </div>
     </div>
   );

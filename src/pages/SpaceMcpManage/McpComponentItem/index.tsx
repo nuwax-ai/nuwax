@@ -36,7 +36,6 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
       // 删除按钮: 只有当前用户拥有删除权限，并且mcp已停止的服务才可删除
       if (
         item.type === McpMoreActionEnum.Del &&
-        info.deployStatus === DeployStatusEnum.Stopped &&
         info.permissions?.includes(McpPermissionsEnum.Delete)
       ) {
         list.push(item);
@@ -49,9 +48,10 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
       ) {
         list.push(item);
       }
-      // 导出服务按钮: 只有当前用户拥有导出权限，才可导出服务
+      // 导出服务按钮: 只有当前用户拥有导出权限，才可导出服务(mcp操作服务停止后，不应该展示“服务导出”)
       if (
         item.type === McpMoreActionEnum.Service_Export &&
+        info.deployStatus !== DeployStatusEnum.Stopped &&
         info.permissions?.includes(McpPermissionsEnum.Export)
       ) {
         list.push(item);

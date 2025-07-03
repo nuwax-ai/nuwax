@@ -24,6 +24,7 @@ import {
   McpToolInfo,
   McpUpdateParams,
 } from '@/types/interfaces/mcp';
+import { isValidJSON } from '@/utils/common';
 import { getActiveKeys } from '@/utils/deepNode';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message, Radio } from 'antd';
@@ -130,7 +131,8 @@ const SpaceMcpCreate: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: McpUpdateParams[]) => {
-      const { withDeploy } = params[0];
+      const currentMcpDetailInfo = params[0];
+      const { withDeploy } = currentMcpDetailInfo;
       const text = withDeploy ? '已完成保存并提交部署' : '保存MCP服务成功';
       message.success(text);
       setSaveDeployLoading(false);
@@ -140,10 +142,16 @@ const SpaceMcpCreate: React.FC = () => {
         const time = moment().toISOString();
         const _mcpDetailInfo = {
           ...mcpDetailInfo,
+          ...currentMcpDetailInfo,
           deployed: time,
           modified: time,
         } as McpDetailInfo;
         setMcpDetailInfo(_mcpDetailInfo);
+      } else {
+        setMcpDetailInfo({
+          ...mcpDetailInfo,
+          ...currentMcpDetailInfo,
+        } as McpDetailInfo);
       }
     },
     onError: () => {
@@ -318,6 +326,25 @@ const SpaceMcpCreate: React.FC = () => {
                           }
                         />
                       }
+                      rules={[
+                        {
+                          required: true,
+                          message: '请输入MCP服务配置',
+                        },
+                        {
+                          validator: (_, value) => {
+                            if (!value) {
+                              return Promise.resolve();
+                            }
+                            if (!isValidJSON(value)) {
+                              return Promise.reject(
+                                new Error('请输入有效的JSON格式'),
+                              );
+                            }
+                            return Promise.resolve();
+                          },
+                        },
+                      ]}
                     >
                       <CodeEditor
                         className={cx('w-full', 'radius-10', 'overflow-hide')}

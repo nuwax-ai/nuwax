@@ -11,6 +11,7 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { McpInstallTypeEnum } from '@/types/enums/mcp';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import { McpDetailInfo } from '@/types/interfaces/mcp';
+import { isValidJSON } from '@/utils/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { jumpBack } from '@/utils/router';
 import { Form, FormProps, Input, message, Radio } from 'antd';
@@ -198,6 +199,25 @@ const SpaceMcpCreate: React.FC = () => {
                     }
                   />
                 }
+                rules={[
+                  {
+                    required: true,
+                    message: '请输入MCP服务配置',
+                  },
+                  {
+                    validator: (_, value) => {
+                      if (!value) {
+                        return Promise.resolve();
+                      }
+                      if (!isValidJSON(value)) {
+                        return Promise.reject(
+                          new Error('请输入有效的JSON格式'),
+                        );
+                      }
+                      return Promise.resolve();
+                    },
+                  },
+                ]}
               >
                 <CodeEditor
                   className={cx('w-full', 'radius-10', 'overflow-hide')}
