@@ -67,6 +67,12 @@ const SpaceMcpCreate: React.FC = () => {
   // 执行类型,可用值:TOOL,RESOURCE,PROMPT
   const mcpExecuteTypeRef = useRef<McpExecuteTypeEnum>(McpExecuteTypeEnum.TOOL);
   const intervalIdRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // 缓存MCP服务详情，用于切换菜单时，用于保存或保存并部署的数据
+  const mcpDetailInfoRef = useRef<McpDetailInfo>();
+  // 缓存当前菜单状态，解决onFinish闭包问题
+  const currentMenuRef = useRef<McpEditHeadMenusEnum>(
+    McpEditHeadMenusEnum.Overview,
+  );
 
   const {
     form,
@@ -94,6 +100,7 @@ const SpaceMcpCreate: React.FC = () => {
   const handleQuerySuccess = (result: McpDetailInfo) => {
     setLoadingDetail(false);
     setMcpDetailInfo(result);
+    mcpDetailInfoRef.current = result;
     const { name, description, icon, installType, mcpConfig } = result;
     form.setFieldsValue({
       name,
@@ -139,6 +146,10 @@ const SpaceMcpCreate: React.FC = () => {
       message.success(text);
       setSaveDeployLoading(false);
       setSaveLoading(false);
+      // 保存或者保存并部署后，恢复到Overview菜单（因为保存后工具、资源、提示词列表会清空）
+      setCurrentMenu(McpEditHeadMenusEnum.Overview);
+      // 设置初始菜单状态
+      currentMenuRef.current = McpEditHeadMenusEnum.Overview;
       // 重新查询MCP服务详情
       runDetail(mcpId);
     },
@@ -151,6 +162,8 @@ const SpaceMcpCreate: React.FC = () => {
   useEffect(() => {
     setLoadingDetail(true);
     runDetail(mcpId);
+    // 设置初始菜单状态
+    currentMenuRef.current = McpEditHeadMenusEnum.Overview;
   }, [mcpId]);
 
   // 清理定时器
@@ -190,7 +203,7 @@ const SpaceMcpCreate: React.FC = () => {
     if (mcpDetailInfo?.deployStatus === DeployStatusEnum.Deploying) {
       intervalIdRef.current = setInterval(() => {
         loadMcpDetail();
-      }, 1000);
+      }, 2000);
     } else {
       handleClearInterval();
     }
@@ -207,7 +220,20 @@ const SpaceMcpCreate: React.FC = () => {
     installType: McpInstallTypeEnum;
     serverConfig: string;
   }>['onFinish'] = (values) => {
-    const { serverConfig, installType, ...rest } = values;
+    let name, description, installType, serverConfig;
+    // 如果是 Overview 菜单，使用表单数据
+    if (currentMenuRef.current === McpEditHeadMenusEnum.Overview) {
+      name = values.name;
+      description = values.description;
+      installType = values.installType;
+      serverConfig = values.serverConfig;
+    } else {
+      name = mcpDetailInfoRef.current?.name;
+      description = mcpDetailInfoRef.current?.description;
+      installType = mcpDetailInfoRef.current?.installType;
+      serverConfig = mcpDetailInfoRef.current?.mcpConfig?.serverConfig;
+    }
+
     // 组件库
     if (installType === McpInstallTypeEnum.COMPONENT) {
       if (!mcpConfigComponentList?.length) {
@@ -237,7 +263,9 @@ const SpaceMcpCreate: React.FC = () => {
             components: [],
           };
     const data = {
-      ...rest,
+      name,
+      description,
+      installType,
       id: mcpId,
       icon: imageUrl,
       mcpConfig,
@@ -249,15 +277,28 @@ const SpaceMcpCreate: React.FC = () => {
   // 选择菜单
   const handleChooseMenu = (value: McpEditHeadMenusEnum) => {
     setCurrentMenu(value);
+    currentMenuRef.current = value;
     // 如果是 Overview 菜单，需要重置form数据
-    if (value === McpEditHeadMenusEnum.Overview && mcpDetailInfo) {
-      const { name, description, installType, mcpConfig } = mcpDetailInfo;
+    if (value === McpEditHeadMenusEnum.Overview && mcpDetailInfoRef.current) {
+      const { name, description, installType, mcpConfig } =
+        mcpDetailInfoRef.current;
       form.setFieldsValue({
         name,
         description,
         installType,
         serverConfig: mcpConfig?.serverConfig,
       });
+    } else if (!!mcpDetailInfo) {
+      const values = form.getFieldsValue();
+      const { serverConfig, ...rest } = values;
+      mcpDetailInfoRef.current = {
+        ...mcpDetailInfo,
+        ...rest,
+        mcpConfig: {
+          ...(mcpDetailInfo?.mcpConfig || {}),
+          serverConfig,
+        },
+      };
     }
     if (value === McpEditHeadMenusEnum.Tool) {
       mcpExecuteTypeRef.current = McpExecuteTypeEnum.TOOL;
