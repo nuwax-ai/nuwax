@@ -9,7 +9,11 @@ const cx = classNames.bind(styles);
 /**
  * 变量列表
  */
-const VariableList: React.FC<VariableListProps> = ({ list, onClick }) => {
+const VariableList: React.FC<VariableListProps> = ({
+  textClassName,
+  list,
+  onClick,
+}) => {
   const [variableList, setVariableList] = useState<BindConfigWithSub[]>([]);
 
   useEffect(() => {
@@ -38,7 +42,9 @@ const VariableList: React.FC<VariableListProps> = ({ list, onClick }) => {
           ))}
         </div>
       ) : (
-        <p>用于保存用户个人信息，让智能体记住用户的特征，使回复更加个性化。</p>
+        <p className={cx(textClassName)}>
+          用于保存用户个人信息，让智能体记住用户的特征，使回复更加个性化。
+        </p>
       )}
     </>
   );

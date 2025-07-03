@@ -194,6 +194,7 @@ export interface RecommendListProps {
 
 // 长期记忆内容组件
 export interface LongMemoryContentProps {
+  textClassName?: string;
   openLongMemory?: OpenCloseEnum;
 }
 
@@ -205,6 +206,7 @@ export interface OpenRemarksEditProps {
 
 // 变量列表组件
 export interface VariableListProps {
+  textClassName?: string;
   onClick: (e: MouseEvent) => void;
   list: BindConfigWithSub[];
 }
