@@ -129,6 +129,7 @@ const ChatTemp: React.FC = () => {
   useEffect(() => {
     if (!!userFillVariables) {
       form.setFieldsValue(userFillVariables);
+      isSendMessageRef.current = true;
       setVariableParams(userFillVariables);
     }
   }, [userFillVariables]);
@@ -725,6 +726,7 @@ const ChatTemp: React.FC = () => {
                 className="mb-16"
                 form={form}
                 variables={variables}
+                isFilled={isSendMessageRef.current}
                 disabled={!!userFillVariables || isSendMessageRef.current}
               />
               {messageList?.length > 0 ? (
