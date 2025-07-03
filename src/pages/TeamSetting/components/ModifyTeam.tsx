@@ -2,6 +2,7 @@ import teamImage from '@/assets/images/team_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiUpdateSpaceTeam } from '@/services/teamSetting';
 import styles from '@/styles/teamSetting.less';
 import type {
@@ -13,6 +14,7 @@ import { useRequest } from 'ahooks';
 import { Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { useModel } from 'umi';
 
 const cx = classNames.bind(styles);
 
@@ -34,6 +36,7 @@ const ModifyTeam: React.FC<EditSpaceProps> = ({
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const { runSpace, setSpaceList } = useModel('spaceModel');
 
   useEffect(() => {
     if (open && spaceData) {
@@ -57,10 +60,15 @@ const ModifyTeam: React.FC<EditSpaceProps> = ({
 
   const { run: runEdit } = useRequest(apiUpdateSpaceTeam, {
     manual: true,
-    onSuccess: () => {
+    onSuccess: async () => {
       message.success('修改成功');
       onConfirmEdit?.();
       setLoading(false);
+      // 更新空间列表
+      const { code, data } = await runSpace();
+      if (code === SUCCESS_CODE) {
+        setSpaceList(data || []);
+      }
     },
     onError: () => {
       setLoading(false);
