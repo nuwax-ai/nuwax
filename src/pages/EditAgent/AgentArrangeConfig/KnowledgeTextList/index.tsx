@@ -1,7 +1,7 @@
 import knowledgeImage from '@/assets/images/knowledge_image.png';
 import CollapseComponentItem from '@/components/CollapseComponentItem';
 import TooltipIcon from '@/components/TooltipIcon';
-import { InvokeTypeEnum } from '@/types/enums/agent';
+import { AgentComponentTypeEnum, InvokeTypeEnum } from '@/types/enums/agent';
 import { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { KnowledgeTextListProps } from '@/types/interfaces/agentConfig';
 import { CaretDownOutlined, DeleteOutlined } from '@ant-design/icons';
@@ -18,6 +18,7 @@ const cx = classNames.bind(styles);
 const KnowledgeTextList: React.FC<KnowledgeTextListProps> = ({
   textClassName,
   list,
+  deleteList,
   onDel,
 }) => {
   const [openKnowledgeModel, setOpenKnowledgeModel] = useState<boolean>(false);
@@ -27,6 +28,22 @@ const KnowledgeTextList: React.FC<KnowledgeTextListProps> = ({
   const handleClick = (item: AgentComponentInfo) => {
     setOpenKnowledgeModel(true);
     setAgentComponentInfo(item);
+  };
+
+  // 是否正在删除
+  const isDeling = (targetId: number, type: AgentComponentTypeEnum) => {
+    return deleteList?.some(
+      (item) => item.targetId === targetId && item.type === type,
+    );
+  };
+
+  // 删除组件
+  const handleDelete = (item: AgentComponentInfo) => {
+    const { targetId, type } = item;
+    if (isDeling(targetId, type)) {
+      return;
+    }
+    onDel(item.id, item.targetId, item.type);
   };
 
   return !list?.length ? (
@@ -57,8 +74,14 @@ const KnowledgeTextList: React.FC<KnowledgeTextListProps> = ({
               </span>
               <TooltipIcon
                 title="取消知识库"
-                icon={<DeleteOutlined className={'cursor-pointer'} />}
-                onClick={() => onDel(item.id, item.targetId, item.type)}
+                icon={
+                  <DeleteOutlined
+                    className={cx('cursor-pointer', {
+                      [styles['icon-del']]: isDeling(item.targetId, item.type),
+                    })}
+                  />
+                }
+                onClick={() => handleDelete(item)}
               />
             </>
           }

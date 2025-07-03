@@ -22,7 +22,10 @@ import {
   OpenCloseEnum,
 } from '@/types/enums/space';
 import type { AgentComponentInfo } from '@/types/interfaces/agent';
-import type { AgentArrangeConfigProps } from '@/types/interfaces/agentConfig';
+import type {
+  AgentArrangeConfigProps,
+  DeleteComponentInfo,
+} from '@/types/interfaces/agentConfig';
 import type {
   BindConfigWithSub,
   CreatedNodeItem,
@@ -84,6 +87,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 当前组件信息
   const [currentComponentInfo, setCurrentComponentInfo] =
     useState<AgentComponentInfo>();
+  // 正在删除组件列表
+  const [deleteList, setDeleteList] = useState<DeleteComponentInfo[]>([]);
 
   // 打开、关闭弹窗
   const { show, setShow } = useModel('model');
@@ -174,12 +179,16 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     debounceWait: 300,
   });
 
+  // 删除智能体组件配置
   const handleAgentComponentDel = async (
     id: number,
     targetId: number,
     type: AgentComponentTypeEnum,
     toolName?: string,
   ) => {
+    // 添加到正在删除列表
+    const newDeleteList = [...deleteList, { targetId, type }];
+    setDeleteList(newDeleteList);
     await runAgentComponentDel(id);
     message.success('已成功删除');
     const list =
@@ -202,6 +211,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           ),
       ) || [];
     setAddComponents(newList);
+    // 从正在删除列表中删除
+    const _newDeleteList = deleteList.filter(
+      (item) => item.targetId !== targetId && item.type !== type,
+    );
+    setDeleteList(_newDeleteList);
   };
 
   // 异步查询智能体配置组件列表
@@ -339,6 +353,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         <CollapseComponentList
           type={AgentComponentTypeEnum.Plugin}
           list={filterList(AgentComponentTypeEnum.Plugin)}
+          deleteList={deleteList}
           onSet={handlePluginSet}
           onDel={handleAgentComponentDel}
         />
@@ -359,6 +374,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         <CollapseComponentList
           type={AgentComponentTypeEnum.Workflow}
           list={filterList(AgentComponentTypeEnum.Workflow)}
+          deleteList={deleteList}
           onSet={handlePluginSet}
           onDel={handleAgentComponentDel}
         />
@@ -379,6 +395,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         <CollapseComponentList
           type={AgentComponentTypeEnum.MCP}
           list={filterList(AgentComponentTypeEnum.MCP)}
+          deleteList={deleteList}
           onSet={handlePluginSet}
           onDel={handleAgentComponentDel}
         />
@@ -412,6 +429,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       children: (
         <KnowledgeTextList
           list={filterList(AgentComponentTypeEnum.Knowledge)}
+          deleteList={deleteList}
           onDel={handleAgentComponentDel}
         />
       ),
