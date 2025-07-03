@@ -8,12 +8,8 @@ import { ICON_SETTING } from '@/constants/images.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { CollapseComponentListProps } from '@/types/interfaces/agentConfig';
-import { DeleteOutlined } from '@ant-design/icons';
-import classNames from 'classnames';
+import { DeleteOutlined, LoadingOutlined } from '@ant-design/icons';
 import React from 'react';
-import styles from './index.less';
-
-const cx = classNames.bind(styles);
 
 // 手风琴组件列表
 const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
@@ -83,11 +79,11 @@ const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
             <TooltipIcon
               title="删除"
               icon={
-                <DeleteOutlined
-                  className={cx('cursor-pointer', {
-                    [styles['icon-del']]: isDeling(item.targetId, item.type),
-                  })}
-                />
+                isDeling(item.targetId, item.type) ? (
+                  <LoadingOutlined />
+                ) : (
+                  <DeleteOutlined className="cursor-pointer" />
+                )
               }
               onClick={() => handleDelete(item)}
             />

@@ -4,7 +4,11 @@ import TooltipIcon from '@/components/TooltipIcon';
 import { AgentComponentTypeEnum, InvokeTypeEnum } from '@/types/enums/agent';
 import { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { KnowledgeTextListProps } from '@/types/interfaces/agentConfig';
-import { CaretDownOutlined, DeleteOutlined } from '@ant-design/icons';
+import {
+  CaretDownOutlined,
+  DeleteOutlined,
+  LoadingOutlined,
+} from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './index.less';
@@ -75,11 +79,11 @@ const KnowledgeTextList: React.FC<KnowledgeTextListProps> = ({
               <TooltipIcon
                 title="取消知识库"
                 icon={
-                  <DeleteOutlined
-                    className={cx('cursor-pointer', {
-                      [styles['icon-del']]: isDeling(item.targetId, item.type),
-                    })}
-                  />
+                  isDeling(item.targetId, item.type) ? (
+                    <LoadingOutlined />
+                  ) : (
+                    <DeleteOutlined className={cx('cursor-pointer')} />
+                  )
                 }
                 onClick={() => handleDelete(item)}
               />
