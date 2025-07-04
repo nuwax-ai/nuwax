@@ -640,3 +640,8 @@ export interface InfiniteScrollDivProps {
   hasMore: boolean;
   onScroll: () => void;
 }
+
+// 页脚props
+export interface SiteFooterProps {
+  text?: string;
+}
