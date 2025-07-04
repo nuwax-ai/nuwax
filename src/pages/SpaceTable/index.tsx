@@ -3,7 +3,6 @@ import {
   apiClearBusinessData,
   apiExportExcel,
   apiGetTableData,
-  apiImportExcel,
   apiTableAddBusinessData,
   apiTableDeleteBusinessData,
   apiTableDetail,
@@ -23,7 +22,7 @@ import {
 import { modalConfirm } from '@/utils/ant-custom';
 import { validateTableName } from '@/utils/common';
 import { ExclamationCircleFilled } from '@ant-design/icons';
-import { Button, message, Modal } from 'antd';
+import { Button, message, Modal, UploadProps } from 'antd';
 import classNames from 'classnames';
 import { Dayjs } from 'dayjs';
 import { cloneDeep, isEqual } from 'lodash';
@@ -85,6 +84,8 @@ const SpaceTable = () => {
   const systemFieldListRef = useRef<TableFieldInfo[]>([]);
   // 缓存自定义字段, 用于切换tabs时,对比是否用户修改过数据, 但是并未保存直接切换tab前二次提示使用
   const tableDetailRef = useRef<TableDefineDetails | null>(null);
+  // 防止文件上传重复处理
+  const processingFileRef = useRef<string | null>(null);
 
   // 点击弹出编辑框
   const handleCreateOrEditData = (data?: TableRowData) => {
@@ -342,18 +343,41 @@ const SpaceTable = () => {
   };
 
   // 导入数据
-  const handleChangeFile = async (info: any) => {
-    setImportLoading(true);
-    try {
-      await apiImportExcel(tableId, info.file);
-      message.success('导入成功');
-      // 重新查询数据表的业务数据
-      getTableBusinessData();
-      setPagination({ ...pagination, current: 1 });
-      setImportLoading(false);
-    } finally {
-      setImportLoading(false);
+  const handleChangeFile: UploadProps['onChange'] = (info) => {
+    // 只在文件状态为 'done' 时处理上传完成逻辑
+    if (info.file.status === 'done') {
+      // 防止重复处理同一个文件
+      if (processingFileRef.current === info.file.uid) {
+        console.log('文件正在处理中，跳过重复请求:', info.file.name);
+        return;
+      }
+
+      processingFileRef.current = info.file.uid;
+      setImportLoading(true);
+
+      try {
+        message.success('导入成功');
+        // 重新查询数据表的业务数据
+        getTableBusinessData();
+        setPagination({ ...pagination, current: 1 });
+      } catch (error) {
+        message.error('导入失败，请重试');
+      } finally {
+        setImportLoading(false);
+        processingFileRef.current = null; // 重置处理状态
+      }
     }
+
+    // 处理上传错误
+    if (info.file.status === 'error') {
+      message.error('文件上传失败，请重试');
+      processingFileRef.current = null; // 重置处理状态
+    }
+
+    // 处理上传中状态（可选，用于显示进度）
+    // if (info.file.status === 'uploading') {
+    //   console.log('文件上传中，进度:', info.file.percent);
+    // }
   };
 
   // 导出数据
@@ -509,6 +533,7 @@ const SpaceTable = () => {
       <div className={cx(styles['inner-container'])}>
         {/* 表格操作栏 */}
         <TableOperationBar
+          tableId={tableId}
           activeKey={activeKey}
           loading={loading}
           importLoading={importLoading}

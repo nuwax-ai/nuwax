@@ -75,6 +75,7 @@ export interface TableHeaderProps {
 
 // 表格操作栏组件的Props
 export interface TableOperationBarProps {
+  tableId: number;
   // 表格当前激活的标签页
   activeKey: TableTabsEnum;
   loading: boolean;
