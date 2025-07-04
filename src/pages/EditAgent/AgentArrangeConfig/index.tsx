@@ -14,7 +14,6 @@ import {
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
-  BindValueType,
 } from '@/types/enums/agent';
 import {
   AgentArrangeConfigEnum,
@@ -26,10 +25,7 @@ import type {
   AgentArrangeConfigProps,
   DeleteComponentInfo,
 } from '@/types/interfaces/agentConfig';
-import type {
-  BindConfigWithSub,
-  CreatedNodeItem,
-} from '@/types/interfaces/common';
+import type { CreatedNodeItem } from '@/types/interfaces/common';
 import VariableList from './VariableList';
 // import { CaretDownOutlined } from '@ant-design/icons';
 import ConfigOptionCollapse from '@/components/ConfigOptionCollapse';
@@ -54,6 +50,7 @@ import LongMemoryContent from './LongMemoryContent';
 import CollapseComponentList from '@/components/CollapseComponentList';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
+import { loopSetBindValueType } from '@/utils/deepNode';
 import ComponentSettingModal from './ComponentSettingModal';
 import OpenRemarksEdit from './OpenRemarksEdit';
 
@@ -326,13 +323,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     );
 
     const inputConfigArgs = componentInfo?.bindConfig?.inputArgBindConfigs;
-    // 默认值：输入
-    const _inputConfigArgs = inputConfigArgs?.map((info: BindConfigWithSub) => {
-      if (!info.bindValueType) {
-        info.bindValueType = BindValueType.Input;
-      }
-      return info;
-    });
+    // 使用递归函数设置默认值：输入，并处理嵌套的子配置
+    const _inputConfigArgs = loopSetBindValueType(inputConfigArgs || []);
     if (componentInfo && componentInfo.bindConfig) {
       componentInfo.bindConfig.inputArgBindConfigs = _inputConfigArgs;
     }

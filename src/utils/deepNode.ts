@@ -1,5 +1,5 @@
 import { PLUGIN_INPUT_CONFIG } from '@/constants/space.constants';
-import { DataTypeEnum } from '@/types/enums/common';
+import { BindValueType, DataTypeEnum } from '@/types/enums/common';
 import type {
   BindConfigWithSub,
   BindConfigWithSubDisabled,
@@ -348,4 +348,26 @@ export const loopInputRequired = (data: BindConfigWithSub[]) => {
 
   const list = updateRequiredRecursive(data);
   return { list, isAllRequired };
+};
+
+// 递归函数，如果bindValueType为空，则设置为Input， 如果存在下级，则递归
+export const loopSetBindValueType = (bindConfig: BindConfigWithSub[]) => {
+  return bindConfig?.map((info: BindConfigWithSub) => {
+    // 如果bindValueType为空，则设置为Input
+    if (!info.bindValueType) {
+      info.bindValueType = BindValueType.Input;
+    }
+
+    // 如果存在下级配置（subArgs），则递归处理
+    if (info.subArgs && info.subArgs.length > 0) {
+      info.subArgs = loopSetBindValueType(info.subArgs);
+    }
+
+    // 如果存在子配置（children），则递归处理
+    if (info.children && info.children.length > 0) {
+      info.children = loopSetBindValueType(info.children);
+    }
+
+    return info;
+  });
 };
