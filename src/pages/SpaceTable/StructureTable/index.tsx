@@ -146,7 +146,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
         const placeholder =
           fieldType === TableFieldTypeEnum.Integer
             ? `数值范围：[-2147483648, 2147483648]`
-            : `精度,最多 20 位,小数点最多 6 位`;
+            : `精度20位,整数部分最多14位,小数部分最多6位`;
         return (
           <InputNumber
             {...props}
@@ -269,7 +269,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
     {
       title: '数据长度',
       dataIndex: 'dataLength',
-      width: 200,
+      width: 140,
       render: (value, record) =>
         record.isNew && record.fieldType === TableFieldTypeEnum.String ? (
           <Select
