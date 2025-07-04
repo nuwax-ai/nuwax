@@ -181,7 +181,8 @@ const StructureTable: React.FC<StructureTableProps> = ({
             showTime
             className={cx('w-full')}
             defaultValue={defaultValue ? dayjs(defaultValue) : null}
-            disabled={!isNew && existTableDataFlag}
+            // disabled={!isNew && existTableDataFlag}
+            disabled
             onChange={(date: Dayjs | (Dayjs | null)[] | null) =>
               onChangeValue(id, 'defaultValue', date as Dayjs)
             }
