@@ -36,7 +36,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
   const [variableModalOpen, setVariableModalOpen] = useState<boolean>(false);
   // 是否新增、更新变量了， 如果是，关闭弹窗后，刷新变量列表，如果没有，仅关闭弹窗
   const isAddedNewVariable = useRef<boolean>(false);
-  const tableRef = useRef<any>(null);
+  // const tableRef = useRef<any>(null);
   // 缓存输入数据，用于重置父级组件table表单
   const inputDataRef = useRef<BindConfigWithSub[]>([]);
 
@@ -172,28 +172,28 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
     },
   ];
 
-  // 滚动到底部的函数
-  const scrollToBottom = () => {
-    // 滚动到底部
-    tableRef.current?.scrollTo({
-      top: tableRef.current?.scrollHeight,
-      behavior: 'smooth',
-    });
-  };
+  // // 滚动到底部的函数
+  // const scrollToBottom = () => {
+  //   // 滚动到底部
+  //   tableRef.current?.scrollTo({
+  //     top: tableRef.current?.scrollHeight,
+  //     behavior: 'smooth',
+  //   });
+  // };
 
-  useEffect(() => {
-    if (open) {
-      // 滚动到底部的函数
-      scrollToBottom();
-    }
-  }, [open]);
+  // useEffect(() => {
+  //   if (open) {
+  //     // 滚动到底部的函数
+  //     scrollToBottom();
+  //   }
+  // }, [open]);
 
   // 更新变量配置数据
   const handleConfirm = (newInputData: BindConfigWithSub[]) => {
     setVariableModalOpen(false);
     setInputData(newInputData);
     isAddedNewVariable.current = true;
-    scrollToBottom();
+    // scrollToBottom();
   };
 
   // 取消操作
@@ -216,7 +216,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       onCancel={handleCancel}
     >
       <Table<BindConfigWithSub>
-        ref={tableRef}
+        // ref={tableRef}
         className={cx(styles['table-container'], 'overflow-hide')}
         columns={inputColumns}
         dataSource={inputData}
