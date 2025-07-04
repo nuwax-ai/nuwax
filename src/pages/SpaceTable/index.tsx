@@ -22,7 +22,8 @@ import {
 } from '@/types/interfaces/dataTable';
 import { modalConfirm } from '@/utils/ant-custom';
 import { validateTableName } from '@/utils/common';
-import { message } from 'antd';
+import { ExclamationCircleFilled } from '@ant-design/icons';
+import { Button, message, Modal } from 'antd';
 import classNames from 'classnames';
 import { Dayjs } from 'dayjs';
 import { cloneDeep, isEqual } from 'lodash';
@@ -182,7 +183,10 @@ const SpaceTable = () => {
   };
 
   // 保存表结构
-  const handleSaveTableStructure = async () => {
+  const handleSaveTableStructure = async (
+    successCallback?: () => void,
+    cancelCallback?: () => void,
+  ) => {
     try {
       // 自定义字段列表
       const _customFieldList: UpdateTableFieldInfo[] =
@@ -210,6 +214,7 @@ const SpaceTable = () => {
       );
       if (!isFieldNameValidate) {
         message.error('字段名只能包含字母、数字、下划线，且必须以字母开头');
+        cancelCallback?.();
         return;
       }
       setLoading(true);
@@ -219,8 +224,14 @@ const SpaceTable = () => {
       };
       await apiUpdateTableDefinition(_params);
       setLoading(false);
-      message.success('修改成功');
-      getTableStructureDetails();
+      message.success('保存成功');
+      // 保存成功后，调用成功回调
+      if (successCallback) {
+        successCallback();
+      } else {
+        // 表结构table保存时，成功回调不存在，则调用获取表结构详情，刷新表结构
+        getTableStructureDetails();
+      }
     } finally {
       setLoading(false);
     }
@@ -372,31 +383,62 @@ const SpaceTable = () => {
     getTableBusinessData();
   }, []);
 
+  // 放弃变更
+  const onModalCancel = (key: string) => {
+    setActiveKey(key as TableTabsEnum);
+    getTableBusinessData();
+    Modal.destroyAll();
+  };
+
+  // 弹出确认框，确认保存或者放弃变更
+  const onModalConfirm = (key: string) => {
+    Modal.confirm({
+      title: '提示',
+      icon: <ExclamationCircleFilled />,
+      content: '当前表结构已修改，是否保存？',
+      maskClosable: true,
+      footer: (
+        <div className="flex content-end gap-10 mt-16">
+          <Button
+            onClick={() => {
+              Modal.destroyAll();
+            }}
+          >
+            取消
+          </Button>
+          <Button onClick={() => onModalCancel(key)}>放弃变更</Button>
+          <Button
+            type="primary"
+            onClick={() => {
+              // 保存表结构
+              handleSaveTableStructure(
+                () => onModalCancel(key),
+                () => {
+                  Modal.destroyAll();
+                },
+              );
+            }}
+          >
+            确定保存
+          </Button>
+        </div>
+      ),
+    });
+  };
+
   // 切换表结构还是表数据
   const handleChangeTabs = (key: string) => {
     if (key === TableTabsEnum.Structure) {
       setActiveKey(key as TableTabsEnum);
       getTableStructureDetails();
     } else {
+      // 如果表结构没有修改，则直接切换
       if (isEqual(tableDetailRef.current, tableDetail)) {
         setActiveKey(key as TableTabsEnum);
         getTableBusinessData();
       } else {
-        modalConfirm(
-          '提示',
-          '当前表结构已修改，是否保存？',
-          async () => {
-            await handleSaveTableStructure();
-            setActiveKey(key as TableTabsEnum);
-            getTableBusinessData();
-          },
-          () => {
-            // 恢复表结构数据
-            // setTableDetail(tableDetailRef.current);
-            setActiveKey(key as TableTabsEnum);
-            getTableBusinessData();
-          },
-        );
+        // 如果表结构有修改，则弹出确认框
+        onModalConfirm(key);
       }
     }
   };
@@ -475,7 +517,7 @@ const SpaceTable = () => {
           onChangeTabs={handleChangeTabs}
           onRefresh={handleRefresh}
           onAddField={handleAddField}
-          onSaveTableStructure={handleSaveTableStructure}
+          onSaveTableStructure={() => handleSaveTableStructure()}
           onChangeFile={handleChangeFile}
           onExportData={handleExportData}
           onCreateOrEditData={handleCreateOrEditData}
