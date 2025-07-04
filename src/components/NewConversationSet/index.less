@@ -14,6 +14,15 @@
     .text {
       color: @GRAY05;
       user-select: none;
+
+      .down-icon {
+        font-size: 12px;
+        transition: transform 0.3s ease-in-out;
+
+        &.rotate-180 {
+          transform: rotate(-180deg);
+        }
+      }
     }
   }
 

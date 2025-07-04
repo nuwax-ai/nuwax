@@ -4,6 +4,7 @@ import {
   NewConversationSetProps,
 } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
+import { DownOutlined } from '@ant-design/icons';
 import { Button, Cascader, Form, FormProps, Input, InputNumber } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
@@ -121,7 +122,12 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
             className={cx(styles.text, 'cursor-pointer')}
             onClick={() => setIsOpen(!isOpen)}
           >
-            {!isOpen ? '编辑' : '关闭'}
+            <DownOutlined
+              className={cx(
+                !isOpen ? styles['rotate-180'] : '',
+                styles['down-icon'],
+              )}
+            />
           </span>
         </ConditionRender>
       </header>
