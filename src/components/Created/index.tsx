@@ -1,6 +1,6 @@
 import Constant from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
-import { ICON_TABLE, ICON_WORD } from '@/constants/images.constants';
+import { ICON_WORD } from '@/constants/images.constants';
 import service, { IGetList } from '@/services/created';
 import {
   AgentAddComponentStatusEnum,
@@ -152,11 +152,11 @@ const Created: React.FC<CreatedProp> = ({
       icon: <ICON_WORD />,
       label: '文档',
     },
-    {
-      key: '2',
-      icon: <ICON_TABLE />,
-      label: '表格',
-    },
+    // {
+    //   key: '2',
+    //   icon: <ICON_TABLE />,
+    //   label: '表格',
+    // },
   ];
 
   const databaseItem = [
