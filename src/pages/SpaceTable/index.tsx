@@ -80,6 +80,8 @@ const SpaceTable = () => {
     useState<boolean>(false);
   // 编辑表数据的初始值
   const [initialValues, setInitialValues] = useState<TableRowData | null>(null);
+  // 表格高度
+  const [tableBoxHeight, setTableBoxHeight] = useState<number>(0);
   // 缓存系统字段, 用于保存时使用
   const systemFieldListRef = useRef<TableFieldInfo[]>([]);
   // 缓存自定义字段, 用于切换tabs时,对比是否用户修改过数据, 但是并未保存直接切换tab前二次提示使用
@@ -91,15 +93,6 @@ const SpaceTable = () => {
   const handleCreateOrEditData = (data?: TableRowData) => {
     setEditTableDataVisible(true);
     setInitialValues(data || null);
-  };
-
-  // 获取当前浏览器的高度
-  const getBrowserHeight = () => {
-    return (
-      (window.innerHeight ||
-        document.documentElement.clientHeight ||
-        document.body.clientHeight) - 160
-    );
   };
 
   // 数据表新增字段
@@ -267,6 +260,42 @@ const SpaceTable = () => {
     });
   };
 
+  useEffect(() => {
+    getTableStructureDetails();
+    // 获取表的业务数据，此处调用是因为头部组件中需要展示表的有多少条数据
+    getTableBusinessData();
+  }, []);
+
+  // 监听窗口大小变化，动态更新表格高度
+  useEffect(() => {
+    const updateTableHeight = () => {
+      const _tableBoxHeight =
+        (window.innerHeight ||
+          document.documentElement.clientHeight ||
+          document.body.clientHeight) - 130;
+      setTableBoxHeight(_tableBoxHeight);
+    };
+
+    // 初始化时获取一次高度
+    updateTableHeight();
+
+    // 监听窗口大小变化
+    window.addEventListener('resize', updateTableHeight);
+
+    // 监听浏览器开发者工具打开/关闭（可能影响视口高度）
+    const handleOrientationChange = () => {
+      // 延迟执行，确保布局完成
+      setTimeout(updateTableHeight, 100);
+    };
+    window.addEventListener('orientationchange', handleOrientationChange);
+
+    // 清理事件监听器
+    return () => {
+      window.removeEventListener('resize', updateTableHeight);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+    };
+  }, []);
+
   // 新增和修改数据
   const handleCreateUpdateData = async (values: TableRowData) => {
     const _params = {
@@ -400,12 +429,6 @@ const SpaceTable = () => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    getTableStructureDetails();
-    // 获取表的业务数据，此处调用是因为头部组件中需要展示表的有多少条数据
-    getTableBusinessData();
-  }, []);
 
   // 放弃变更
   const onModalCancel = (key: string) => {
@@ -554,7 +577,7 @@ const SpaceTable = () => {
               existTableDataFlag={tableDetail?.existTableDataFlag}
               tableData={tableDetail?.fieldList || []}
               loading={structureTableLoading}
-              scrollHeight={getBrowserHeight()}
+              scrollHeight={tableBoxHeight}
               onChangeValue={handleChangeValue}
               onDeleteField={handleDelField}
             />
@@ -565,7 +588,7 @@ const SpaceTable = () => {
               loading={tableDataLoading}
               pagination={pagination}
               onPageChange={changePagination}
-              scrollHeight={getBrowserHeight() + 40}
+              scrollHeight={tableBoxHeight}
               onEdit={handleCreateOrEditData}
               onDel={(record) =>
                 handleDeleteTableBusinessData(Number(record.id))

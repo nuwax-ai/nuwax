@@ -251,7 +251,7 @@ const Login: React.FC = () => {
           </Form>
         )}
       </div>
-      <SiteFooter />
+      <SiteFooter text={tenantConfigInfo?.pageFooterText} />
       <Button id="aliyun-captcha-login" style={{ display: 'none' }} />
       <AliyunCaptcha
         config={tenantConfigInfo}

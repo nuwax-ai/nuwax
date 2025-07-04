@@ -131,7 +131,7 @@ const SetPassword: React.FC = () => {
           </Form.Item>
         </Form>
       </div>
-      <SiteFooter />
+      <SiteFooter text={tenantConfigInfo?.pageFooterText} />
     </div>
   );
 };

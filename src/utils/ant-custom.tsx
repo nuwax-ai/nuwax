@@ -25,3 +25,24 @@ export const modalConfirm = (
     onCancel,
   });
 };
+
+// 默认值的范围,如果字段类型是 int,范围限制在: [-2147483648,2147483647] 区间
+// NUMBER,对应类型是: DECIMAL(20,6) ,限制小数点最多 6位,整数最多:14 位,
+// 格式化数字
+export const formatterNumber = (value: number | string | undefined) => {
+  if (!value) return '';
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(numValue)) return '';
+  const [integerPart, decimalPart] = numValue.toString().split('.');
+  if (decimalPart && decimalPart.length > 6) {
+    return `${integerPart}.${decimalPart.slice(0, 6)}`;
+  }
+  return numValue.toString();
+};
+
+// 指定从 formatter 里转换回数字的方式，和 formatter 搭配使用
+export const parserNumber = (displayValue: string | undefined) => {
+  if (!displayValue) return '';
+  const numValue = parseFloat(displayValue);
+  return isNaN(numValue) ? '' : numValue;
+};

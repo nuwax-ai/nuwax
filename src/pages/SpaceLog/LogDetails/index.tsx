@@ -1,5 +1,6 @@
 import databaseImage from '@/assets/images/database_image.png';
 import knowledgeImage from '@/assets/images/knowledge_image.png';
+import mcpImage from '@/assets/images/mcp_image.png';
 import modelImage from '@/assets/images/model_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import variableImage from '@/assets/images/variable_image.png';
@@ -15,11 +16,11 @@ import { LogDetailsProps } from '@/types/interfaces/space';
 import { CopyOutlined } from '@ant-design/icons';
 import { Empty, message } from 'antd';
 import classNames from 'classnames';
-import markdownIt from 'markdown-it';
+// import markdownIt from 'markdown-it';
 // 方程式支持
-import { encodeHTML } from '@/utils/common';
-import markdownItKatexGpt from 'markdown-it-katex-gpt';
-import markdownItMultimdTable from 'markdown-it-multimd-table';
+// import { encodeHTML } from '@/utils/common';
+// import markdownItKatexGpt from 'markdown-it-katex-gpt';
+// import markdownItMultimdTable from 'markdown-it-multimd-table';
 import React, { memo, useEffect, useState } from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import styles from './index.less';
@@ -27,37 +28,37 @@ import { NodeDetails } from './NodeDetails';
 
 const cx = classNames.bind(styles);
 
-const md = markdownIt({
-  html: true, // 启用原始HTML解析
-  xhtmlOut: true, // 使用 XHTML 兼容语法
-  breaks: true, // 换行转换为 <br>
-  linkify: true, // 自动识别链接
-  typographer: true, // 优化排版
-  quotes: '""\'\'', // 双引号和单引号都不替换
-});
+// const md = markdownIt({
+//   html: true, // 启用原始HTML解析
+//   xhtmlOut: true, // 使用 XHTML 兼容语法
+//   breaks: true, // 换行转换为 <br>
+//   linkify: true, // 自动识别链接
+//   typographer: true, // 优化排版
+//   quotes: '""\'\'', // 双引号和单引号都不替换
+// });
 
-// 添加 KaTeX 支持
-md.use(markdownItKatexGpt, {
-  delimiters: [
-    { left: '\\[', right: '\\]', display: true },
-    { left: '\\(', right: '\\)', display: false },
-    { left: '$$', right: '$$', display: false },
-  ],
-});
+// // 添加 KaTeX 支持
+// md.use(markdownItKatexGpt, {
+//   delimiters: [
+//     { left: '\\[', right: '\\]', display: true },
+//     { left: '\\(', right: '\\)', display: false },
+//     { left: '$$', right: '$$', display: false },
+//   ],
+// });
 
-// 添加表格支持
-md.use(markdownItMultimdTable, {
-  multiline: true,
-  rowspan: true,
-  headerless: false,
-  multibody: true,
-  aotolabel: true,
-});
+// // 添加表格支持
+// md.use(markdownItMultimdTable, {
+//   multiline: true,
+//   rowspan: true,
+//   headerless: false,
+//   multibody: true,
+//   aotolabel: true,
+// });
 
-// html自定义转义
-md.renderer.rules.html_block = (tokens, idx) => {
-  return encodeHTML(tokens[idx].content);
-};
+// // html自定义转义
+// md.renderer.rules.html_block = (tokens, idx) => {
+//   return encodeHTML(tokens[idx].content);
+// };
 
 /**
  * 日志详情组件
@@ -141,6 +142,8 @@ const LogDetails: React.FC<LogDetailsProps> = ({
         return databaseImage;
       case AgentComponentTypeEnum.Model:
         return modelImage;
+      case AgentComponentTypeEnum.MCP:
+        return mcpImage;
       default:
         return pluginImage;
     }
@@ -208,11 +211,12 @@ const LogDetails: React.FC<LogDetailsProps> = ({
           </div>
           <div className={cx(styles.wrap, styles['render-container'])}>
             <h5 className={cx(styles.title)}>输出</h5>
-            <pre
+            <pre>{outputData}</pre>
+            {/* <pre
               dangerouslySetInnerHTML={{
                 __html: md.render(outputData),
               }}
-            />
+            /> */}
           </div>
         </>
       ) : (

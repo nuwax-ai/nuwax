@@ -251,7 +251,7 @@ const VerifyCode: React.FC = () => {
         autoComplete="off"
         value={codes.join('')}
       />
-      <SiteFooter />
+      <SiteFooter text={tenantConfigInfo?.pageFooterText} />
       <Button id="aliyun-captcha-sms" style={{ display: 'none' }} />
       <AliyunCaptcha
         config={tenantConfigInfo}
