@@ -1,5 +1,6 @@
 import databaseImage from '@/assets/images/database_image.png';
 import knowledgeImage from '@/assets/images/knowledge_image.png';
+import mcpImage from '@/assets/images/mcp_image.png';
 import modelImage from '@/assets/images/model_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import variableImage from '@/assets/images/variable_image.png';
@@ -131,6 +132,8 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
         return databaseImage;
       case AgentComponentTypeEnum.Model:
         return modelImage;
+      case AgentComponentTypeEnum.MCP:
+        return mcpImage;
       default:
         return pluginImage;
     }
