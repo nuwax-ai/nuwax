@@ -3,7 +3,10 @@ import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 
-// 'Tooltip省略号'组件
+/**
+ * 溢出检测 Tooltip 组件
+ * 只有当文本实际溢出时才显示 tooltip
+ */
 export const EllipsisTooltip: React.FC<EllipsisTooltipProps> = ({
   className,
   text,
@@ -34,17 +37,13 @@ export const EllipsisTooltip: React.FC<EllipsisTooltipProps> = ({
 
   return (
     <div
-      className={classNames('text-ellipsis', className)}
+      className={classNames(className || 'text-ellipsis')}
       ref={textRef}
       onClick={onClick}
     >
-      {isOverflowed ? (
-        <Tooltip title={text} placement={placement}>
-          {text}
-        </Tooltip>
-      ) : (
-        text
-      )}
+      <Tooltip title={isOverflowed ? text : ''} placement={placement}>
+        {text}
+      </Tooltip>
     </div>
   );
 };

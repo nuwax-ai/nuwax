@@ -5,7 +5,7 @@ import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { PublishApplyListInfo } from '@/types/interfaces/publishManage';
 import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Button, Input, Select, Table, message } from 'antd';
+import { Button, Input, Select, Table, Tooltip, message } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment';
 import React, { useState } from 'react';
@@ -156,49 +156,98 @@ const PublishAudit: React.FC = () => {
     }
   };
 
+  // 获取类型名称
+  const getTargetTypeName = (targetType: SquareAgentTypeEnum) => {
+    switch (targetType) {
+      case SquareAgentTypeEnum.Agent:
+        return '智能体';
+      case SquareAgentTypeEnum.Plugin:
+        return '插件';
+      case SquareAgentTypeEnum.Workflow:
+        return '工作流';
+    }
+  };
+
   const columns = [
     {
       title: '发布名称',
       dataIndex: 'name',
       key: 'name',
+      width: 200,
+      fixed: 'left',
+      className: styles['table-column-fixed'],
+      render: (value: string) => {
+        return (
+          <div className={cx('flex', 'items-center', 'h-full')}>
+            <span className={cx('text-ellipsis-2')}>{value}</span>
+          </div>
+        );
+      },
     },
     {
       title: '类型',
       dataIndex: 'targetType',
       key: 'targetType',
-      render: (targetType: SquareAgentTypeEnum) => {
-        switch (targetType) {
-          case SquareAgentTypeEnum.Agent:
-            return '智能体';
-          case SquareAgentTypeEnum.Plugin:
-            return '插件';
-          case SquareAgentTypeEnum.Workflow:
-            return '工作流';
-        }
+      width: 100,
+      render: (value: SquareAgentTypeEnum) => {
+        return (
+          <div className={cx('flex', 'items-center', 'h-full')}>
+            {getTargetTypeName(value)}
+          </div>
+        );
       },
     },
     {
       title: '描述信息',
       dataIndex: 'description',
       key: 'description',
+      width: 200,
+      render: (value: string) => {
+        return (
+          <div className={cx('flex', 'items-center', 'h-full')}>
+            <Tooltip title={value} placement="topLeft">
+              <div className={cx('text-ellipsis-2')}>{value}</div>
+            </Tooltip>
+          </div>
+        );
+      },
     },
     {
       title: '版本信息',
       dataIndex: 'remark',
       key: 'remark',
+      width: 200,
+      render: (value: string) => {
+        return (
+          <div className={cx('flex', 'items-center', 'h-full')}>
+            <Tooltip title={value} placement="topLeft">
+              <div className={cx('text-ellipsis-2')}>{value}</div>
+            </Tooltip>
+          </div>
+        );
+      },
     },
     {
       title: '发布者',
       dataIndex: 'applyUser',
       key: 'applyUser',
-      render: (applyUser: any) => {
-        return applyUser ? applyUser.userName ?? '--' : '--';
+      // render: (applyUser: any) => {
+      //   return applyUser ? applyUser.userName ?? '--' : '--';
+      // },
+      width: 200,
+      render: (value: any) => {
+        return (
+          <div className={cx('flex', 'items-center', 'h-full')}>
+            {value?.userName ?? '--'}
+          </div>
+        );
       },
     },
     {
       title: '状态',
       dataIndex: 'publishStatus',
       key: 'publishStatus',
+      width: 130,
       render: (publishStatus: PublishStatusEnum) => {
         let statusText = '';
         let dotStyle = '';
@@ -228,8 +277,13 @@ const PublishAudit: React.FC = () => {
       title: '发布时间',
       dataIndex: 'created',
       key: 'created',
-      render: (created: string) => {
-        return moment(created).format('YYYY-MM-DD HH:mm:ss');
+      width: 220,
+      render: (value: string) => {
+        return (
+          <div className={cx('flex', 'items-center', 'h-full')}>
+            {moment(value).format('YYYY-MM-DD HH:mm:ss')}
+          </div>
+        );
       },
     },
     {
@@ -237,7 +291,7 @@ const PublishAudit: React.FC = () => {
       key: 'action',
       width: 150,
       align: 'center',
-      render: (_, record: PublishApplyListInfo) => (
+      render: (_: null, record: PublishApplyListInfo) => (
         <>
           {record.publishStatus === PublishStatusEnum.Applying ? (
             <>
@@ -311,6 +365,8 @@ const PublishAudit: React.FC = () => {
         loading={loading}
         columns={columns}
         dataSource={data?.data.records}
+        scroll={{ x: 'max-content' }}
+        virtual
         pagination={{
           total: data?.data.total,
           onChange: handleTableChange,

@@ -104,3 +104,15 @@ export const CREATED_TABS: {
   { label: '智能体', key: AgentComponentTypeEnum.Agent },
   { label: 'MCP服务', key: AgentComponentTypeEnum.MCP },
 ];
+
+// 组件类型名称
+export const COMPONENT_TYPE_NAME_MAP = {
+  [AgentComponentTypeEnum.Agent]: '智能体',
+  [AgentComponentTypeEnum.Plugin]: '插件',
+  [AgentComponentTypeEnum.Workflow]: '工作流',
+  [AgentComponentTypeEnum.Knowledge]: '知识库',
+  [AgentComponentTypeEnum.Variable]: '变量',
+  [AgentComponentTypeEnum.Table]: '数据表',
+  [AgentComponentTypeEnum.Model]: '模型',
+  [AgentComponentTypeEnum.MCP]: 'MCP服务',
+};
