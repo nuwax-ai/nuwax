@@ -12,6 +12,7 @@ import type {
   StructureTableProps,
   TableFieldInfo,
 } from '@/types/interfaces/dataTable';
+import { formatterNumber, parserNumber } from '@/utils/ant-custom';
 import { DeleteOutlined, DownOutlined } from '@ant-design/icons';
 import {
   Button,
@@ -72,25 +73,6 @@ const StructureTable: React.FC<StructureTableProps> = ({
     }
   };
 
-  // 格式化数字
-  const formatterNumber = (value: number | string | undefined) => {
-    if (!value) return '';
-    const numValue = typeof value === 'string' ? parseFloat(value) : value;
-    if (isNaN(numValue)) return '';
-    const [integerPart, decimalPart] = numValue.toString().split('.');
-    if (decimalPart && decimalPart.length > 6) {
-      return `${integerPart}.${decimalPart.slice(0, 6)}`;
-    }
-    return numValue.toString();
-  };
-
-  // 指定从 formatter 里转换回数字的方式，和 formatter 搭配使用
-  const parserNumber = (displayValue: string | undefined) => {
-    if (!displayValue) return '';
-    const numValue = parseFloat(displayValue);
-    return isNaN(numValue) ? '' : numValue;
-  };
-
   // 获取默认值
   const getDefaultValue = (record: TableFieldInfo) => {
     const {
@@ -134,7 +116,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
         // NUMBER,对应类型是: DECIMAL(20,6) ,限制小数点最多 6位,整数最多:14 位,
         const props =
           fieldType === TableFieldTypeEnum.Integer
-            ? { min: -2147483648, max: 2147483647 }
+            ? { min: -2147483648, max: 2147483647, precision: 0 }
             : {
                 precision: 6,
                 min: -99999999999999.999999,
