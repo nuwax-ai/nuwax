@@ -3,7 +3,6 @@ import {
   apiClearBusinessData,
   apiExportExcel,
   apiGetTableData,
-  apiImportExcel,
   apiTableAddBusinessData,
   apiTableDeleteBusinessData,
   apiTableDetail,
@@ -22,7 +21,8 @@ import {
 } from '@/types/interfaces/dataTable';
 import { modalConfirm } from '@/utils/ant-custom';
 import { validateTableName } from '@/utils/common';
-import { message } from 'antd';
+import { ExclamationCircleFilled } from '@ant-design/icons';
+import { Button, message, Modal, UploadProps } from 'antd';
 import classNames from 'classnames';
 import { Dayjs } from 'dayjs';
 import { cloneDeep, isEqual } from 'lodash';
@@ -84,6 +84,8 @@ const SpaceTable = () => {
   const systemFieldListRef = useRef<TableFieldInfo[]>([]);
   // 缓存自定义字段, 用于切换tabs时,对比是否用户修改过数据, 但是并未保存直接切换tab前二次提示使用
   const tableDetailRef = useRef<TableDefineDetails | null>(null);
+  // 防止文件上传重复处理
+  const processingFileRef = useRef<string | null>(null);
 
   // 点击弹出编辑框
   const handleCreateOrEditData = (data?: TableRowData) => {
@@ -182,7 +184,10 @@ const SpaceTable = () => {
   };
 
   // 保存表结构
-  const handleSaveTableStructure = async () => {
+  const handleSaveTableStructure = async (
+    successCallback?: () => void,
+    cancelCallback?: () => void,
+  ) => {
     try {
       // 自定义字段列表
       const _customFieldList: UpdateTableFieldInfo[] =
@@ -210,6 +215,7 @@ const SpaceTable = () => {
       );
       if (!isFieldNameValidate) {
         message.error('字段名只能包含字母、数字、下划线，且必须以字母开头');
+        cancelCallback?.();
         return;
       }
       setLoading(true);
@@ -219,8 +225,14 @@ const SpaceTable = () => {
       };
       await apiUpdateTableDefinition(_params);
       setLoading(false);
-      message.success('修改成功');
-      getTableStructureDetails();
+      message.success('保存成功');
+      // 保存成功后，调用成功回调
+      if (successCallback) {
+        successCallback();
+      } else {
+        // 表结构table保存时，成功回调不存在，则调用获取表结构详情，刷新表结构
+        getTableStructureDetails();
+      }
     } finally {
       setLoading(false);
     }
@@ -331,18 +343,41 @@ const SpaceTable = () => {
   };
 
   // 导入数据
-  const handleChangeFile = async (info: any) => {
-    setImportLoading(true);
-    try {
-      await apiImportExcel(tableId, info.file);
-      message.success('导入成功');
-      // 重新查询数据表的业务数据
-      getTableBusinessData();
-      setPagination({ ...pagination, current: 1 });
-      setImportLoading(false);
-    } finally {
-      setImportLoading(false);
+  const handleChangeFile: UploadProps['onChange'] = (info) => {
+    // 只在文件状态为 'done' 时处理上传完成逻辑
+    if (info.file.status === 'done') {
+      // 防止重复处理同一个文件
+      if (processingFileRef.current === info.file.uid) {
+        console.log('文件正在处理中，跳过重复请求:', info.file.name);
+        return;
+      }
+
+      processingFileRef.current = info.file.uid;
+      setImportLoading(true);
+
+      try {
+        message.success('导入成功');
+        // 重新查询数据表的业务数据
+        getTableBusinessData();
+        setPagination({ ...pagination, current: 1 });
+      } catch (error) {
+        message.error('导入失败，请重试');
+      } finally {
+        setImportLoading(false);
+        processingFileRef.current = null; // 重置处理状态
+      }
     }
+
+    // 处理上传错误
+    if (info.file.status === 'error') {
+      message.error('文件上传失败，请重试');
+      processingFileRef.current = null; // 重置处理状态
+    }
+
+    // 处理上传中状态（可选，用于显示进度）
+    // if (info.file.status === 'uploading') {
+    //   console.log('文件上传中，进度:', info.file.percent);
+    // }
   };
 
   // 导出数据
@@ -372,31 +407,62 @@ const SpaceTable = () => {
     getTableBusinessData();
   }, []);
 
+  // 放弃变更
+  const onModalCancel = (key: string) => {
+    setActiveKey(key as TableTabsEnum);
+    getTableBusinessData();
+    Modal.destroyAll();
+  };
+
+  // 弹出确认框，确认保存或者放弃变更
+  const onModalConfirm = (key: string) => {
+    Modal.confirm({
+      title: '提示',
+      icon: <ExclamationCircleFilled />,
+      content: '当前表结构已修改，是否保存？',
+      maskClosable: true,
+      footer: (
+        <div className="flex content-end gap-10 mt-16">
+          <Button
+            onClick={() => {
+              Modal.destroyAll();
+            }}
+          >
+            取消
+          </Button>
+          <Button onClick={() => onModalCancel(key)}>放弃变更</Button>
+          <Button
+            type="primary"
+            onClick={() => {
+              // 保存表结构
+              handleSaveTableStructure(
+                () => onModalCancel(key),
+                () => {
+                  Modal.destroyAll();
+                },
+              );
+            }}
+          >
+            确定保存
+          </Button>
+        </div>
+      ),
+    });
+  };
+
   // 切换表结构还是表数据
   const handleChangeTabs = (key: string) => {
     if (key === TableTabsEnum.Structure) {
       setActiveKey(key as TableTabsEnum);
       getTableStructureDetails();
     } else {
+      // 如果表结构没有修改，则直接切换
       if (isEqual(tableDetailRef.current, tableDetail)) {
         setActiveKey(key as TableTabsEnum);
         getTableBusinessData();
       } else {
-        modalConfirm(
-          '提示',
-          '当前表结构已修改，是否保存？',
-          async () => {
-            await handleSaveTableStructure();
-            setActiveKey(key as TableTabsEnum);
-            getTableBusinessData();
-          },
-          () => {
-            // 恢复表结构数据
-            // setTableDetail(tableDetailRef.current);
-            setActiveKey(key as TableTabsEnum);
-            getTableBusinessData();
-          },
-        );
+        // 如果表结构有修改，则弹出确认框
+        onModalConfirm(key);
       }
     }
   };
@@ -467,6 +533,7 @@ const SpaceTable = () => {
       <div className={cx(styles['inner-container'])}>
         {/* 表格操作栏 */}
         <TableOperationBar
+          tableId={tableId}
           activeKey={activeKey}
           loading={loading}
           importLoading={importLoading}
@@ -475,7 +542,7 @@ const SpaceTable = () => {
           onChangeTabs={handleChangeTabs}
           onRefresh={handleRefresh}
           onAddField={handleAddField}
-          onSaveTableStructure={handleSaveTableStructure}
+          onSaveTableStructure={() => handleSaveTableStructure()}
           onChangeFile={handleChangeFile}
           onExportData={handleExportData}
           onCreateOrEditData={handleCreateOrEditData}

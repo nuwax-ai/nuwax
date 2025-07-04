@@ -1,6 +1,7 @@
 import SelectList from '@/components/SelectList';
 import { ParamsSettingDefaultOptions } from '@/constants/common.constants';
 import { BindValueType } from '@/types/enums/agent';
+import { DataTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
 import { getActiveKeys, updateNodeField } from '@/utils/deepNode';
 import { InfoCircleOutlined } from '@ant-design/icons';
@@ -83,6 +84,16 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
     setConfigArgs(_configArgs);
   };
 
+  // 是否禁用默认值
+  const isDefaultValueDisabled = (record: BindConfigWithSub) => {
+    return (
+      DataTypeEnum.Object === record.dataType ||
+      DataTypeEnum.Array_Object === record.dataType ||
+      record.dataType?.includes('Array') ||
+      !record.enable
+    );
+  };
+
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [
     {
@@ -135,7 +146,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
           <Space.Compact block>
             <SelectList
               className={cx(styles.select)}
-              disabled={!record.enable}
+              disabled={isDefaultValueDisabled(record)}
               value={record.bindValueType}
               onChange={(value) =>
                 handleInputValue(record.key, 'bindValueType', value)
@@ -146,7 +157,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
               <Input
                 rootClassName={cx(styles.select)}
                 placeholder="请填写"
-                disabled={!record.enable}
+                disabled={isDefaultValueDisabled(record)}
                 value={record.bindValue}
                 onChange={(e) =>
                   handleInputValue(record.key, 'bindValue', e.target.value)
@@ -155,7 +166,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
             ) : (
               <Select
                 placeholder="请选择"
-                disabled={!record.enable}
+                disabled={isDefaultValueDisabled(record)}
                 rootClassName={cx(styles.select)}
                 popupMatchSelectWidth={false}
                 value={record.bindValue || null}

@@ -203,7 +203,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
     {
       title: <LabelStar label="字段名" />,
       dataIndex: 'fieldName',
-      width: 180,
+      width: 220,
       render: (value, record) => (
         <>
           {!record.isNew ? (
@@ -224,7 +224,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
     {
       title: '字段详细描述',
       dataIndex: 'fieldDescription',
-      width: 180,
+      width: 220,
       render: (value, record) =>
         record.systemFieldFlag ? (
           <span className="flex items-center h-full">{value}</span>
@@ -357,6 +357,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
     {
       title: '默认值',
       dataIndex: 'defaultValue',
+      width: 220,
       render: (_, record) => (
         <div className="flex items-center h-full">
           {getDefaultValue(record)}
@@ -393,7 +394,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
       virtual
       scroll={{
         x: 'max-content',
-        y: scrollHeight - 124,
+        y: scrollHeight - 100,
       }}
       expandable={{
         expandIcon: ({ expanded, onExpand, record }) =>

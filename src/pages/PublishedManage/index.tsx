@@ -1,15 +1,15 @@
 import { apiPublishList } from '@/services/publishManage';
-import styles from '@/styles/systemManage.less';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { PublishListInfo } from '@/types/interfaces/publishManage';
 import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Button, Input, Select, Table } from 'antd';
+import { Button, Input, Pagination, Select, Table, Tooltip } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { history } from 'umi';
 import OffshelfModal from './components/OffshelfModal';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
@@ -26,6 +26,7 @@ const PublishManage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [openOffshelfModal, setOpenOffshelfModal] = useState(false);
   const [offshelfId, setOffshelfId] = useState<number>();
+  const [tableBoxHeight, setTableBoxHeight] = useState<number>(0);
 
   const { data, run, refresh, loading } = useRequest(apiPublishList, {
     debounceWait: 300,
@@ -108,65 +109,112 @@ const PublishManage: React.FC = () => {
     }
   };
 
+  // 获取类型名称
+  const getTargetTypeName = (targetType: SquareAgentTypeEnum) => {
+    switch (targetType) {
+      case SquareAgentTypeEnum.Agent:
+        return '智能体';
+      case SquareAgentTypeEnum.Plugin:
+        return '插件';
+      case SquareAgentTypeEnum.Workflow:
+        return '工作流';
+    }
+  };
+
   const columns = [
     {
       title: '发布名称',
       dataIndex: 'name',
       key: 'name',
-      minWidth: '200px',
+      width: 200,
+      fixed: 'left',
+      className: styles['table-column-fixed'],
+      render: (value: string) => {
+        return (
+          <div className={cx('flex', 'items-center', 'h-full')}>
+            <span className={cx('text-ellipsis-2')}>{value}</span>
+          </div>
+        );
+      },
     },
     {
       title: '类型',
       dataIndex: 'targetType',
       key: 'targetType',
-      width: '100px',
-      render: (targetType: SquareAgentTypeEnum) => {
-        switch (targetType) {
-          case SquareAgentTypeEnum.Agent:
-            return '智能体';
-          case SquareAgentTypeEnum.Plugin:
-            return '插件';
-          case SquareAgentTypeEnum.Workflow:
-            return '工作流';
-        }
+      width: 100,
+      render: (value: SquareAgentTypeEnum) => {
+        return (
+          <div className={cx('flex', 'items-center', 'h-full')}>
+            {getTargetTypeName(value)}
+          </div>
+        );
       },
     },
     {
       title: '描述信息',
       dataIndex: 'description',
       key: 'description',
+      width: 200,
+      render: (value: string) => {
+        return (
+          <div className={cx('flex', 'items-center', 'h-full')}>
+            <Tooltip title={value} placement="topLeft">
+              <div className={cx('text-ellipsis-2')}>{value}</div>
+            </Tooltip>
+          </div>
+        );
+      },
     },
     {
       title: '版本信息',
       dataIndex: 'remark',
       key: 'remark',
-      width: '150px',
+      width: 200,
+      render: (value: string) => {
+        return (
+          <div className={cx('flex', 'items-center', 'h-full')}>
+            <Tooltip title={value} placement="topLeft">
+              <div className={cx('text-ellipsis-2')}>{value}</div>
+            </Tooltip>
+          </div>
+        );
+      },
     },
     {
       title: '发布者',
       dataIndex: 'publishUser',
       key: 'publishUser',
-      width: '200px',
-      render: (publishUser: any) => {
-        return publishUser ? publishUser.userName ?? '--' : '--';
+      width: 200,
+      render: (value: any) => {
+        return (
+          <div className={cx('flex', 'items-center', 'h-full')}>
+            {value?.userName ?? '--'}
+          </div>
+        );
       },
     },
     {
       title: '发布时间',
       dataIndex: 'created',
       key: 'created',
-      width: '180px',
-      render: (created: string) => {
-        return moment(created).format('YYYY-MM-DD HH:mm:ss');
+      width: 170,
+      render: (value: string) => {
+        return (
+          <div className={cx('flex', 'items-center', 'h-full')}>
+            {moment(value).format('YYYY-MM-DD HH:mm:ss')}
+          </div>
+        );
       },
     },
     {
       title: '操作',
       key: 'action',
       align: 'center',
-      width: '160px',
+      width: 120,
+      fixed: 'right',
+      className: styles['table-column-fixed'],
       render: (_: null, record: PublishListInfo) => (
-        <>
+        <div className={cx('flex', 'items-center', 'h-full', 'content-center')}>
           <Button
             type="link"
             className={cx(styles['table-action-ant-btn-link'])}
@@ -181,19 +229,60 @@ const PublishManage: React.FC = () => {
           >
             下架
           </Button>
-        </>
+        </div>
       ),
     },
   ];
 
+  // 监听窗口大小变化，动态更新表格高度
+  useEffect(() => {
+    const updateTableHeight = () => {
+      const _tableBoxHeight =
+        (window.innerHeight ||
+          document.documentElement.clientHeight ||
+          document.body.clientHeight) - 250;
+      console.log('窗口大小变化，新的表格高度:', _tableBoxHeight);
+      setTableBoxHeight(_tableBoxHeight);
+    };
+
+    // 初始化时获取一次高度
+    updateTableHeight();
+
+    // 监听窗口大小变化
+    window.addEventListener('resize', updateTableHeight);
+
+    // 监听浏览器开发者工具打开/关闭（可能影响视口高度）
+    const handleOrientationChange = () => {
+      // 延迟执行，确保布局完成
+      setTimeout(updateTableHeight, 100);
+    };
+    window.addEventListener('orientationchange', handleOrientationChange);
+
+    // 清理事件监听器
+    return () => {
+      window.removeEventListener('resize', updateTableHeight);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+    };
+  }, []);
+
   return (
-    <div className={cx(styles['system-manage-container'], 'overflow-y')}>
+    <div
+      className={cx(
+        styles['system-manage-container'],
+        'flex',
+        'flex-col',
+        'h-full',
+        'overflow-hide',
+      )}
+    >
       <h3 className={cx(styles['system-manage-title'])}>已发布管理</h3>
-      <section className={cx('flex', 'content-between')}>
+      <section
+        className={cx('flex', 'content-between', styles['search-section'])}
+      >
         <Select
           className={cx(styles['select-132'])}
           options={selectOptions}
-          defaultValue=""
+          defaultValue={''}
           onChange={handleSelectChange}
           optionLabelProp="label"
           dropdownRender={(menu) => <>{menu}</>}
@@ -212,20 +301,27 @@ const PublishManage: React.FC = () => {
           }}
         />
       </section>
-
-      <Table
-        rowClassName={cx(styles['table-row-divider'])}
-        className={cx('mt-30')}
-        rowKey="id"
-        loading={loading}
-        columns={columns}
-        dataSource={data?.data.records}
-        pagination={{
-          total: data?.data.total,
-          onChange: handleTableChange,
-          showTotal: (total) => `共 ${total} 条`,
-        }}
-      />
+      <div className={cx('flex-1')}>
+        <Table
+          rowClassName={cx(styles['table-row-divider'], 'h-full')}
+          rowKey="id"
+          loading={loading}
+          columns={columns}
+          dataSource={data?.data.records}
+          scroll={{ x: 'max-content', y: tableBoxHeight }}
+          virtual
+          pagination={false}
+        />
+      </div>
+      <footer
+        className={cx('flex', 'content-end', 'items-center', styles.footer)}
+      >
+        <Pagination
+          total={data?.data.total}
+          showTotal={(total) => `共 ${total} 条`}
+          onChange={handleTableChange}
+        />
+      </footer>
       <OffshelfModal
         open={openOffshelfModal}
         id={offshelfId}
