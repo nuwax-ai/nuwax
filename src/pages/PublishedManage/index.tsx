@@ -26,6 +26,7 @@ const PublishManage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [openOffshelfModal, setOpenOffshelfModal] = useState(false);
   const [offshelfId, setOffshelfId] = useState<number>();
+  // 表格高度
   const [tableBoxHeight, setTableBoxHeight] = useState<number>(0);
 
   const { data, run, refresh, loading } = useRequest(apiPublishList, {
@@ -41,6 +42,36 @@ const PublishManage: React.FC = () => {
       },
     ],
   });
+
+  // 监听窗口大小变化，动态更新表格高度
+  useEffect(() => {
+    const updateTableHeight = () => {
+      const _tableBoxHeight =
+        (window.innerHeight ||
+          document.documentElement.clientHeight ||
+          document.body.clientHeight) - 250;
+      setTableBoxHeight(_tableBoxHeight);
+    };
+
+    // 初始化时获取一次高度
+    updateTableHeight();
+
+    // 监听窗口大小变化
+    window.addEventListener('resize', updateTableHeight);
+
+    // 监听浏览器开发者工具打开/关闭（可能影响视口高度）
+    const handleOrientationChange = () => {
+      // 延迟执行，确保布局完成
+      setTimeout(updateTableHeight, 100);
+    };
+    window.addEventListener('orientationchange', handleOrientationChange);
+
+    // 清理事件监听器
+    return () => {
+      window.removeEventListener('resize', updateTableHeight);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+    };
+  }, []);
 
   const getParams = (
     page: number,
@@ -233,37 +264,6 @@ const PublishManage: React.FC = () => {
       ),
     },
   ];
-
-  // 监听窗口大小变化，动态更新表格高度
-  useEffect(() => {
-    const updateTableHeight = () => {
-      const _tableBoxHeight =
-        (window.innerHeight ||
-          document.documentElement.clientHeight ||
-          document.body.clientHeight) - 250;
-      console.log('窗口大小变化，新的表格高度:', _tableBoxHeight);
-      setTableBoxHeight(_tableBoxHeight);
-    };
-
-    // 初始化时获取一次高度
-    updateTableHeight();
-
-    // 监听窗口大小变化
-    window.addEventListener('resize', updateTableHeight);
-
-    // 监听浏览器开发者工具打开/关闭（可能影响视口高度）
-    const handleOrientationChange = () => {
-      // 延迟执行，确保布局完成
-      setTimeout(updateTableHeight, 100);
-    };
-    window.addEventListener('orientationchange', handleOrientationChange);
-
-    // 清理事件监听器
-    return () => {
-      window.removeEventListener('resize', updateTableHeight);
-      window.removeEventListener('orientationchange', handleOrientationChange);
-    };
-  }, []);
 
   return (
     <div
