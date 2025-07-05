@@ -265,23 +265,30 @@ const CreateModel: React.FC<CreateModelProps> = ({
             placeholder="请选择模型接口协议"
           />
         </Form.Item>
-        <Form.Item label={<LabelStar label="接口配置" />}>
-          <Form.Item className={cx('mb-0')}>
-            <p>调用策略</p>
-          </Form.Item>
-          <Form.Item
-            className={cx('mb-0')}
-            name="strategy"
-            rules={[{ required: true, message: '接口配置' }]}
-          >
-            <Select
-              options={MODEL_STRATEGY_LIST}
-              rootClassName={styles.select}
-              placeholder="请选择调用策略"
-            />
-          </Form.Item>
+        {/* 隐藏调用策略, 但不去掉，默认选择轮询 -- start */}
+        <Form.Item label={<LabelStar label="接口配置" />} noStyle>
+          <div className={cx(styles.hide)}>
+            <Form.Item noStyle>
+              <p>调用策略</p>
+            </Form.Item>
+            <Form.Item
+              className={cx('mb-0')}
+              noStyle
+              name="strategy"
+              rules={[{ required: true, message: '接口配置' }]}
+            >
+              <Select
+                options={MODEL_STRATEGY_LIST}
+                rootClassName={styles.select}
+                placeholder="请选择调用策略"
+              />
+            </Form.Item>
+          </div>
         </Form.Item>
-
+        {/* 隐藏调用策略 -- end */}
+        <Form.Item noStyle>
+          <LabelStar label="接口配置" className={cx(styles['weight-600'])} />
+        </Form.Item>
         <Form.List name="apiInfoList">
           {(fields, { add, remove }) => (
             <>
