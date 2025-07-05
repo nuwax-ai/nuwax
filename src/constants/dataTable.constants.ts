@@ -11,7 +11,7 @@ export const TABLE_FIELD_TYPE_LIST = [
   { label: 'Integer', value: TableFieldTypeEnum.Integer },
   { label: 'Number', value: TableFieldTypeEnum.Number },
   { label: 'Boolean', value: TableFieldTypeEnum.Boolean },
-  { label: 'Date', value: TableFieldTypeEnum.Date },
+  // { label: 'Date', value: TableFieldTypeEnum.Date },
 ];
 
 // 数据表字段类型是字符串时的选项列表
