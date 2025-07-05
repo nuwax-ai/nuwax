@@ -26,26 +26,30 @@
     }
   }
 
-  .form-box {
-    max-height: 400px;
-    overflow-y: auto;
-    padding: 0 20px;
-
-    .desc {
-      line-height: 40px;
-      margin-bottom: 20px;
-      color: @GRAY12;
-    }
-  }
-
   .conversation-container {
+    display: flex;
+    flex-direction: column;
     padding-top: 20px;
     border-top: 1px solid @GRAY31;
+    overflow: hidden;
   }
 
   .close-form {
     transition: height 0.3s ease-in-out;
     height: 0;
     overflow: hidden;
+  }
+
+  .form-box {
+    height: 100%;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 0 20px;
+  }
+
+  .desc {
+    line-height: 60px;
+    padding: 0 20px;
+    color: @GRAY12;
   }
 }

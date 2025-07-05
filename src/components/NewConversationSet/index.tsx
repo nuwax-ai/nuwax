@@ -131,9 +131,10 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
           </span>
         </ConditionRender>
       </header>
-      <div className={cx(_className, styles['form-box'])}>
+      <div className={cx(_className)}>
         <Form
           form={form}
+          rootClassName={styles['form-box']}
           disabled={disabled}
           preserve={false}
           layout="vertical"
