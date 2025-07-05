@@ -86,6 +86,7 @@ const DataTable: React.FC<DataTableProp> = ({
               </div>
             }
             ellipsis
+            className={'table-data-column'}
             fixed={index === 0 ? 'left' : undefined} // 设置为固定列
             dataIndex={item.fieldName}
             render={(value) => {
@@ -107,11 +108,12 @@ const DataTable: React.FC<DataTableProp> = ({
 
         {/* 操作列 */}
         <Table.Column
-          title={<span style={{ marginLeft: '10px' }}>操作</span>}
+          title="操作"
           dataIndex="action"
-          width={160}
+          width={100}
           className={'table-action-column-fixed'}
           fixed="right"
+          align="center"
           render={(_, record) => (
             <Space>
               <Button

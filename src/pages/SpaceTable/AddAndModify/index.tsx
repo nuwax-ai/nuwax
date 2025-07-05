@@ -1,3 +1,4 @@
+import { EllipsisTooltip } from '@/components/EllipsisTooltip';
 import { BOOLEAN_LIST } from '@/constants/dataTable.constants';
 import { TableFieldTypeEnum } from '@/types/enums/dataTable';
 import {
@@ -135,7 +136,12 @@ const AddAndModify: React.FC<AddAndModifyProps> = ({
             <Form.Item
               key={index}
               name={item.fieldName}
-              label={item.fieldDescription}
+              label={
+                <EllipsisTooltip
+                  text={item.fieldDescription}
+                  className="text-ellipsis"
+                />
+              }
               rules={rules}
             >
               {inputNode(item)}
