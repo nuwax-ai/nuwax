@@ -189,6 +189,8 @@ const StructureTable: React.FC<StructureTableProps> = ({
           ) : (
             <Input
               placeholder="请输入字段名"
+              value={value}
+              allowClear
               onChange={(e) =>
                 onChangeValue(record.id, 'fieldName', e.target.value)
               }
