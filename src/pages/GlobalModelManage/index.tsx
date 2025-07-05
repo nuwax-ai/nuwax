@@ -25,9 +25,9 @@ const cx = classNames.bind(styles);
 const GlobalModelManage: React.FC = () => {
   const selectOptions = [
     { label: '全部', value: '' },
-    { label: '会话', value: ModelTypeEnum.Chat },
-    { label: '嵌入(向量化)', value: ModelTypeEnum.Embeddings },
-    { label: '多模态', value: ModelTypeEnum.Multi },
+    { label: '聊天对话-纯文本', value: ModelTypeEnum.Chat },
+    { label: '向量嵌入', value: ModelTypeEnum.Embeddings },
+    { label: '聊天对话-多模态', value: ModelTypeEnum.Multi },
   ];
   const [visible, setVisible] = useState<boolean>(false);
   const [modelId, setModelId] = useState<number>();
@@ -57,35 +57,45 @@ const GlobalModelManage: React.FC = () => {
     {
       title: '模型名称',
       dataIndex: 'name',
+      width: 200,
+      fixed: 'left',
+      className: styles['table-column-fixed'],
     },
     {
       title: '类型',
       dataIndex: 'type',
+      width: 160,
       render: (type) => selectOptions.find((v) => v.value === type)?.label,
     },
     {
       title: '模型标识',
       dataIndex: 'model',
+      width: 200,
     },
     {
       title: '模型介绍',
       dataIndex: 'description',
+      width: 260,
     },
     {
       title: '创建者',
       dataIndex: 'creator',
+      width: 160,
       render: (creator) => <>{creator.nickName}</>,
     },
     {
       title: '更新时间',
       dataIndex: 'created',
+      width: 200,
       render: (created) => <>{moment(created).format('YYYY-MM-DD HH:mm:ss')}</>,
     },
     {
       title: '操作',
       key: 'action',
+      width: 150,
       align: 'center',
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      fixed: 'right',
+      className: styles['table-column-fixed'],
       render: (_, record) => (
         <>
           <Button
@@ -129,7 +139,7 @@ const GlobalModelManage: React.FC = () => {
       <h3 className={cx(styles['system-manage-title'])}>全局模型管理</h3>
       <section className={cx('flex', 'content-between')}>
         <Select
-          className={cx(styles['select-132'])}
+          className={cx(styles['search-input-225'])}
           options={selectOptions}
           defaultValue=""
           value={currentType}
@@ -153,6 +163,10 @@ const GlobalModelManage: React.FC = () => {
         rowKey="id"
         loading={loading}
         columns={columns}
+        virtual
+        scroll={{
+          x: 'max-content',
+        }}
         dataSource={data}
       />
       <ConditionRender condition={visible}>

@@ -274,6 +274,7 @@ const UserManage: React.FC = () => {
         dataSource={data?.data.records}
         pagination={{
           total: data?.data.total,
+          showSizeChanger: true,
           onChange: handleTableChange,
           showTotal: (total) => `共 ${total} 条`,
         }}
