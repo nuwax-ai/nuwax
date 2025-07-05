@@ -82,7 +82,6 @@ const StructureTable: React.FC<StructureTableProps> = ({
       systemFieldFlag,
       defaultValue,
       dataLength,
-      isNew,
     } = record;
     if (systemFieldFlag) {
       return <span className="flex items-center h-full">系统变量</span>;
@@ -101,10 +100,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
             maxLength={maxLength}
             showCount={dataLength === TableFieldTypeEnum.String}
             // 长文本: 禁止添加默认值;
-            disabled={
-              (!isNew && existTableDataFlag) ||
-              dataLength === TableFieldTypeEnum.MEDIUMTEXT
-            }
+            disabled={dataLength === TableFieldTypeEnum.MEDIUMTEXT}
             onChange={(e) => onChangeValue(id, 'defaultValue', e.target.value)}
           />
         );
@@ -135,7 +131,6 @@ const StructureTable: React.FC<StructureTableProps> = ({
             placeholder={placeholder}
             className={cx('w-full')}
             value={defaultValue}
-            disabled={!isNew && existTableDataFlag}
             onChange={(value) => onChangeValue(id, 'defaultValue', value)}
           />
         );
@@ -149,7 +144,6 @@ const StructureTable: React.FC<StructureTableProps> = ({
         return (
           <Checkbox
             checked={checked}
-            disabled={!isNew && existTableDataFlag}
             onChange={(e) =>
               onChangeValue(id, 'defaultValue', e.target.checked)
             }
@@ -163,7 +157,6 @@ const StructureTable: React.FC<StructureTableProps> = ({
             showTime
             className={cx('w-full')}
             defaultValue={defaultValue ? dayjs(defaultValue) : null}
-            // disabled={!isNew && existTableDataFlag}
             disabled
             onChange={(date: Dayjs | (Dayjs | null)[] | null) =>
               onChangeValue(id, 'defaultValue', date as Dayjs)
@@ -212,23 +205,15 @@ const StructureTable: React.FC<StructureTableProps> = ({
         record.systemFieldFlag ? (
           <span className="flex items-center h-full">{value}</span>
         ) : (
-          <ClearDataTooltip
-            record={record}
-            existTableDataFlag={existTableDataFlag}
-          >
-            <Input
-              placeholder="请输入字段详细描述"
-              value={value}
-              allowClear
-              disabled={
-                record?.systemFieldFlag ||
-                (!record?.isNew && existTableDataFlag)
-              }
-              onChange={(e) =>
-                onChangeValue(record.id, 'fieldDescription', e.target.value)
-              }
-            />
-          </ClearDataTooltip>
+          <Input
+            placeholder="请输入字段详细描述"
+            value={value}
+            allowClear
+            disabled={record?.systemFieldFlag}
+            onChange={(e) =>
+              onChangeValue(record.id, 'fieldDescription', e.target.value)
+            }
+          />
         ),
     },
     {
@@ -275,21 +260,13 @@ const StructureTable: React.FC<StructureTableProps> = ({
       width: 90,
       render: (_, record) => (
         <div className="flex items-center content-center h-full">
-          <ClearDataTooltip
-            record={record}
-            existTableDataFlag={existTableDataFlag}
-          >
-            <Checkbox
-              disabled={
-                record?.systemFieldFlag ||
-                (!record?.isNew && existTableDataFlag)
-              }
-              defaultChecked={!record.nullableFlag}
-              onChange={(e) =>
-                onChangeValue(record.id, 'nullableFlag', e.target.checked)
-              }
-            />
-          </ClearDataTooltip>
+          <Checkbox
+            disabled={record?.systemFieldFlag}
+            defaultChecked={!record.nullableFlag}
+            onChange={(e) =>
+              onChangeValue(record.id, 'nullableFlag', e.target.checked)
+            }
+          />
         </div>
       ),
     },
