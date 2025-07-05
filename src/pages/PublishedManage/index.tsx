@@ -7,7 +7,6 @@ import { Button, Input, Pagination, Select, Table, Tooltip } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment';
 import React, { useEffect, useState } from 'react';
-import { history } from 'umi';
 import OffshelfModal from './components/OffshelfModal';
 import styles from './index.less';
 
@@ -118,29 +117,23 @@ const PublishManage: React.FC = () => {
   };
 
   const handleView = (record: PublishListInfo) => {
+    let url = '';
+
     if (record.targetType === SquareAgentTypeEnum.Agent) {
-      history.push(
-        `/space/${record.spaceId}/agent/${record.targetId}?publishId=${record.id}`,
-      );
-      return;
-    }
-    if (record.targetType === SquareAgentTypeEnum.Plugin) {
+      url = `/space/${record.spaceId}/agent/${record.targetId}?publishId=${record.id}`;
+    } else if (record.targetType === SquareAgentTypeEnum.Plugin) {
       if (record.pluginType === 'CODE') {
-        history.push(
-          `/space/${record.spaceId}/plugin/${record.targetId}/cloud-tool?applyId=${record.id}`,
-        );
-        return;
+        url = `/space/${record.spaceId}/plugin/${record.targetId}/cloud-tool?applyId=${record.id}`;
+      } else {
+        url = `/space/${record.spaceId}/plugin/${record.targetId}?publishId=${record.id}`;
       }
-      history.push(
-        `/space/${record.spaceId}/plugin/${record.targetId}?publishId=${record.id}`,
-      );
-      return;
+    } else if (record.targetType === SquareAgentTypeEnum.Workflow) {
+      url = `/space/${record.spaceId}/workflow/${record.targetId}?publishId=${record.id}`;
     }
-    if (record.targetType === SquareAgentTypeEnum.Workflow) {
-      history.push(
-        `/space/${record.spaceId}/workflow/${record.targetId}?publishId=${record.id}`,
-      );
-      return;
+
+    if (url) {
+      // 在新窗口中打开页面
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
 
