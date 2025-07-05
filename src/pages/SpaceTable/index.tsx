@@ -1,4 +1,5 @@
 import CreatedItem from '@/components/CreatedItem';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiClearBusinessData,
   apiExportExcel,
@@ -385,6 +386,11 @@ const SpaceTable = () => {
       setImportLoading(true);
 
       try {
+        // 接口上传失败
+        if (info.file.response?.code !== SUCCESS_CODE) {
+          message.warning(info.file.response?.message);
+          return;
+        }
         message.success('导入成功');
         // 重新查询数据表的业务数据
         getTableBusinessData();
