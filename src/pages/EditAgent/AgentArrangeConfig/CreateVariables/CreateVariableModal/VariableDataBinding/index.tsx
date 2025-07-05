@@ -3,7 +3,7 @@ import workflowImage from '@/assets/images/workflow_image.png'; // 插件图标
 import { BINDING_DEFAULT_JSON_DATA } from '@/constants/agent.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { VariableDataBindingProps } from '@/types/interfaces/agentConfig';
-import { UpOutlined } from '@ant-design/icons';
+import { DownOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -75,7 +75,9 @@ const VariableDataBinding: React.FC<VariableDataBindingProps> = ({
           onClick={() => setIsRotate(!isRotate)}
         >
           <span>插件或工作流返回数据结构以及示例</span>
-          <UpOutlined className={cx({ [styles['icon-rotate']]: isRotate })} />
+          <DownOutlined
+            className={cx(styles.icon, { [styles['icon-rotate']]: !isRotate })}
+          />
         </div>
         <div className={cx({ [styles['rotate-box']]: isRotate })}>
           <p>&#x2F;&#x2F;options 选项列表；</p>

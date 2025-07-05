@@ -1,3 +1,4 @@
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   UPLOAD_FILE_ACTION,
   UPLOAD_FILE_SUFFIX,
@@ -31,6 +32,11 @@ const UploadFile: React.FC<UploadFileProps> = ({
       return;
     }
     if (status === 'done') {
+      // 接口上传失败
+      if (info.file.response?.code !== SUCCESS_CODE) {
+        message.warning(info.file.response?.message);
+        return;
+      }
       // Get this url from response in real world.
       const data = info.file.response?.data;
       // Get this url from response in real world.

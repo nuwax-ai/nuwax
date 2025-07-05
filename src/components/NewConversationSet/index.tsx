@@ -15,7 +15,7 @@ const cx = classNames.bind(styles);
 
 const { SHOW_CHILD } = Cascader;
 
-// 新对话设置组件
+// 对话设置组件
 const NewConversationSet: React.FC<NewConversationSetProps> = ({
   className,
   form,
@@ -116,7 +116,7 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
       <header
         className={cx(styles.header, 'flex', 'items-center', 'content-between')}
       >
-        <span>新对话设置</span>
+        <span>对话设置</span>
         <ConditionRender condition={isFilled}>
           <span
             className={cx(styles.text, 'cursor-pointer')}
@@ -124,16 +124,17 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
           >
             <DownOutlined
               className={cx(
-                !isOpen ? styles['rotate-180'] : '',
+                !isOpen ? styles['rotate-90'] : '',
                 styles['down-icon'],
               )}
             />
           </span>
         </ConditionRender>
       </header>
-      <div className={cx(_className, styles['form-box'])}>
+      <div className={cx(_className)}>
         <Form
           form={form}
+          rootClassName={styles['form-box']}
           disabled={disabled}
           preserve={false}
           layout="vertical"

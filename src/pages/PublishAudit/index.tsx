@@ -9,7 +9,6 @@ import { Button, Input, Select, Table, Tooltip, message } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment';
 import React, { useState } from 'react';
-import { history } from 'umi';
 import RejectAuditModal from './components/RejectAuditModal';
 const cx = classNames.bind(styles);
 
@@ -130,29 +129,24 @@ const PublishAudit: React.FC = () => {
     setOpenRejectAuditModal(true);
   };
   const handleView = (record: PublishApplyListInfo) => {
+    let url = '';
+
     if (record.targetType === SquareAgentTypeEnum.Agent) {
-      history.push(
-        `/space/${record.spaceId}/agent/${record.targetId}?applyId=${record.id}`,
-      );
-      return;
+      url = `/space/${record.spaceId}/agent/${record.targetId}?applyId=${record.id}`;
     }
     if (record.targetType === SquareAgentTypeEnum.Plugin) {
       if (record.pluginType === 'CODE') {
-        history.push(
-          `/space/${record.spaceId}/plugin/${record.targetId}/cloud-tool?applyId=${record.id}`,
-        );
-        return;
+        url = `/space/${record.spaceId}/plugin/${record.targetId}/cloud-tool?applyId=${record.id}`;
+      } else {
+        url = `/space/${record.spaceId}/plugin/${record.targetId}?applyId=${record.id}`;
       }
-      history.push(
-        `/space/${record.spaceId}/plugin/${record.targetId}?applyId=${record.id}`,
-      );
-      return;
     }
     if (record.targetType === SquareAgentTypeEnum.Workflow) {
-      history.push(
-        `/space/${record.spaceId}/workflow/${record.targetId}?applyId=${record.id}`,
-      );
-      return;
+      url = `/space/${record.spaceId}/workflow/${record.targetId}?applyId=${record.id}`;
+    }
+    if (url) {
+      // 在新窗口中打开页面
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -289,8 +283,10 @@ const PublishAudit: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 150,
+      width: 200,
       align: 'center',
+      fixed: 'right',
+      className: styles['table-column-fixed'],
       render: (_: null, record: PublishApplyListInfo) => (
         <>
           {record.publishStatus === PublishStatusEnum.Applying ? (

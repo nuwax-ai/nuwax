@@ -2,6 +2,7 @@ import { apiAddSystemUser, apiUpdateSystemUser } from '@/services/systemManage';
 import styles from '@/styles/systemManage.less';
 import { UserRoleEnum } from '@/types/enums/systemManage';
 import type { SystemUserListInfo } from '@/types/interfaces/systemManage';
+import { customizeRequiredMark } from '@/utils/form';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Form, Input, Modal, Radio } from 'antd';
 import classNames from 'classnames';
@@ -107,34 +108,23 @@ const CreateModifyUser: React.FC<CreateModifyUserProps> = ({
           </Button>,
         ]}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            label="用户昵称"
-            name="nickName"
-            rules={[{ required: true, message: '请输入用户昵称' }]}
-          >
-            <Input placeholder="请输入用户昵称（姓名）" />
-          </Form.Item>
-
-          <Form.Item
-            label="用户名"
-            name="userName"
-            rules={[{ required: true, message: '请输入用户名' }]}
-          >
+        <Form
+          form={form}
+          layout="vertical"
+          requiredMark={customizeRequiredMark}
+        >
+          <Form.Item label="用户名" name="userName">
             <Input placeholder="请输入用户名" />
           </Form.Item>
-
-          <Form.Item
-            label="手机号码"
-            name="phone"
-            rules={[{ required: true, message: '请输入手机号码' }]}
-          >
+          <Form.Item label="用户昵称" name="nickName">
+            <Input placeholder="请输入用户昵称（姓名）" />
+          </Form.Item>
+          <Form.Item label="手机号码" name="phone">
             <Input placeholder="请输入手机号码" />
           </Form.Item>
           <Form.Item label="邮箱地址" name="email">
             <Input placeholder="请输入邮箱地址" />
           </Form.Item>
-
           {!isEdit && (
             <Form.Item
               label="登录密码"
@@ -144,7 +134,6 @@ const CreateModifyUser: React.FC<CreateModifyUserProps> = ({
               <Input.Password placeholder="请输入登录密码" />
             </Form.Item>
           )}
-
           <Form.Item
             label="用户类型"
             name="role"
