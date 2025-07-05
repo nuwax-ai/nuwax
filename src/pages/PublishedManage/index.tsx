@@ -24,6 +24,7 @@ const PublishManage: React.FC = () => {
   const [selectedValue, setSelectedValue] = useState('');
   const [inputValue, setInputValue] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentPageSize, setCurrentPageSize] = useState<number>(10);
   const [openOffshelfModal, setOpenOffshelfModal] = useState(false);
   const [offshelfId, setOffshelfId] = useState<number>();
   // 表格高度
@@ -77,10 +78,11 @@ const PublishManage: React.FC = () => {
     page: number,
     targetType: string | undefined,
     kw: string,
+    pageSize: number = currentPageSize,
   ) => {
     return {
       pageNo: page,
-      pageSize: 10,
+      pageSize,
       queryFilter: {
         targetType: targetType || undefined,
         kw,
@@ -88,6 +90,7 @@ const PublishManage: React.FC = () => {
     };
   };
 
+  // 选择类型
   const handleSelectChange = (value: string) => {
     setSelectedValue(value);
     setCurrentPage(1);
@@ -102,9 +105,10 @@ const PublishManage: React.FC = () => {
     run(params);
   };
 
-  const handleTableChange = (page: number) => {
+  const handleTableChange = (page: number, pageSize: number) => {
     setCurrentPage(page);
-    const params = getParams(page, selectedValue, inputValue);
+    setCurrentPageSize(pageSize);
+    const params = getParams(page, selectedValue, inputValue, pageSize);
     run(params);
   };
 
@@ -317,6 +321,9 @@ const PublishManage: React.FC = () => {
         className={cx('flex', 'content-end', 'items-center', styles.footer)}
       >
         <Pagination
+          current={currentPage}
+          pageSize={currentPageSize}
+          showSizeChanger
           total={data?.data.total}
           showTotal={(total) => `共 ${total} 条`}
           onChange={handleTableChange}
