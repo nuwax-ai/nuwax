@@ -136,12 +136,7 @@ const AddAndModify: React.FC<AddAndModifyProps> = ({
             <Form.Item
               key={index}
               name={item.fieldName}
-              label={
-                <EllipsisTooltip
-                  text={item.fieldDescription}
-                  className="text-ellipsis"
-                />
-              }
+              label={<EllipsisTooltip text={item.fieldDescription} />}
               rules={rules}
             >
               {inputNode(item)}

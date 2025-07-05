@@ -37,7 +37,7 @@ export const EllipsisTooltip: React.FC<EllipsisTooltipProps> = ({
 
   return (
     <div
-      className={classNames(className || 'text-ellipsis')}
+      className={classNames('text-ellipsis', className)}
       ref={textRef}
       onClick={onClick}
     >

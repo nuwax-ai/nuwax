@@ -56,6 +56,7 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
           ? moment(node?.startTime).format('YYYY-MM-DD HH:mm')
           : '',
       )}
+      <div />
       {renderDetailItem(
         '结束时间',
         node?.endTime ? moment(node?.endTime).format('YYYY-MM-DD HH:mm') : '',
