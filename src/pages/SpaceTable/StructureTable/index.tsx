@@ -360,7 +360,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
         expandIcon: ({ expanded, onExpand, record }) =>
           record.children ? (
             <DownOutlined
-              className={cx(styles.icon, { [styles['rotate-180']]: expanded })}
+              className={cx(styles.icon, { [styles['rotate-0']]: expanded })}
               onClick={(e) => onExpand(record, e)}
             />
           ) : (

@@ -124,7 +124,7 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
           >
             <DownOutlined
               className={cx(
-                !isOpen ? styles['rotate-180'] : '',
+                !isOpen ? styles['rotate-90'] : '',
                 styles['down-icon'],
               )}
             />
