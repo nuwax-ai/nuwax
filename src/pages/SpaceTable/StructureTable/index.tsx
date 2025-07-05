@@ -119,8 +119,8 @@ const StructureTable: React.FC<StructureTableProps> = ({
             ? { min: -2147483648, max: 2147483647, precision: 0 }
             : {
                 precision: 6,
-                min: -99999999999999.999999,
-                max: 99999999999999.999999,
+                min: '-99999999999999.999999',
+                max: '99999999999999.999999',
                 stringMode: true,
                 formatter: formatterNumber,
                 parser: parserNumber,
@@ -134,7 +134,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
             {...props}
             placeholder={placeholder}
             className={cx('w-full')}
-            value={defaultValue ? Number(defaultValue) : undefined}
+            value={defaultValue}
             disabled={!isNew && existTableDataFlag}
             onChange={(value) => onChangeValue(id, 'defaultValue', value)}
           />

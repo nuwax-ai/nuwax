@@ -31,18 +31,35 @@ export const modalConfirm = (
 // 格式化数字
 export const formatterNumber = (value: number | string | undefined) => {
   if (!value) return '';
-  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+
+  // 如果是字符串，直接处理
+  if (typeof value === 'string') {
+    const [integerPart, decimalPart] = value.split('.');
+    if (decimalPart && decimalPart.length > 6) {
+      return `${integerPart}.${decimalPart.slice(0, 6)}`;
+    }
+    return value;
+  }
+
+  // 如果是数字，转换为字符串处理
+  const numValue = value;
   if (isNaN(numValue)) return '';
   const [integerPart, decimalPart] = numValue.toString().split('.');
   if (decimalPart && decimalPart.length > 6) {
     return `${integerPart}.${decimalPart.slice(0, 6)}`;
   }
-  return numValue.toString();
+  return numValue;
 };
 
 // 指定从 formatter 里转换回数字的方式，和 formatter 搭配使用
 export const parserNumber = (displayValue: string | undefined) => {
   if (!displayValue) return '';
-  const numValue = parseFloat(displayValue);
-  return isNaN(numValue) ? '' : numValue;
+
+  const str = displayValue.toString();
+  const dotIndex = str.indexOf('.');
+  if (dotIndex === -1) {
+    return str;
+  }
+
+  return str.substring(0, dotIndex + 7);
 };

@@ -76,8 +76,8 @@ const AddAndModify: React.FC<AddAndModifyProps> = ({
             ? { min: -2147483648, max: 2147483647, precision: 0 }
             : {
                 precision: 6,
-                min: -99999999999999.999999,
-                max: 99999999999999.999999,
+                min: '-99999999999999.999999',
+                max: '99999999999999.999999',
                 stringMode: true,
                 formatter: formatterNumber,
                 parser: parserNumber,
