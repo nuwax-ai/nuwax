@@ -22,7 +22,7 @@ const DataTable: React.FC<DataTableProp> = ({
   // 排序列表，将非系统字段列放在前面，系统字段列放在后面
   const customColumns = useMemo(() => {
     // 过滤出非系统字段列和系统字段列
-    const [_systemFieldList, _customFieldList] = columns.reduce<
+    const [systemFieldList, customFieldList] = columns.reduce<
       [TableFieldInfo[], TableFieldInfo[]]
     >(
       (acc, item) => {
@@ -32,11 +32,15 @@ const DataTable: React.FC<DataTableProp> = ({
       [[], []],
     );
     // 将id列放在前面，其他列保持不变
-    const id = _systemFieldList.find((column) => column.fieldName === 'id');
+    const id = systemFieldList.find((column) => column.fieldName === 'id');
     const idColumn = id ? [id] : [];
     // 将非id列放在后面，其他列保持不变
-    const exceptIdColumn = _systemFieldList.filter(
+    const exceptIdColumn = systemFieldList.filter(
       (column) => column.fieldName !== 'id',
+    );
+    // 自定义字段列，过滤出已启用(enabledFlag为true)的列
+    const _customFieldList = customFieldList.filter(
+      (column) => column.enabledFlag,
     );
     return [...idColumn, ..._customFieldList, ...exceptIdColumn];
   }, [columns]);

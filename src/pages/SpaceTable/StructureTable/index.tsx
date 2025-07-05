@@ -262,7 +262,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
         <div className="flex items-center content-center h-full">
           <Checkbox
             disabled={record?.systemFieldFlag}
-            defaultChecked={!record.nullableFlag}
+            checked={!record.nullableFlag}
             onChange={(e) =>
               onChangeValue(record.id, 'nullableFlag', e.target.checked)
             }

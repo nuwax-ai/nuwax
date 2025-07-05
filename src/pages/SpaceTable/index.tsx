@@ -245,9 +245,9 @@ const SpaceTable = () => {
     };
     const { data } = await apiGetTableData(_params);
     setColumns(data?.columnDefines || []);
-    // 过滤掉系统字段
+    // 过滤掉系统字段, 过滤掉未启用的字段
     const _fieldList = data?.columnDefines.filter(
-      (item) => !item.systemFieldFlag,
+      (item) => !item.systemFieldFlag && item.enabledFlag,
     );
     setFormList(_fieldList || []);
     // 业务数据
@@ -525,14 +525,17 @@ const SpaceTable = () => {
         // 恢复dataLength为String
         item.dataLength = TableFieldTypeEnum.String;
         // 字段详情描述，最长100个字符, 数据库最长200个字符
-        if (attr === 'fieldDescription') {
-          if (value && value.toString().length > 100) {
-            return item;
-          }
+        if (
+          attr === 'fieldDescription' &&
+          value &&
+          value.toString().length > 100
+        ) {
+          return item;
         }
         return {
           ...item,
-          [attr]: value,
+          // 是否必须，取反
+          [attr]: attr === 'nullableFlag' ? !value : value,
         };
       }
       return item;
