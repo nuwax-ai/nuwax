@@ -29,7 +29,7 @@ export const modalConfirm = (
 // 默认值的范围,如果字段类型是 int,范围限制在: [-2147483648,2147483647] 区间
 // NUMBER,对应类型是: DECIMAL(20,6) ,限制小数点最多 6位,整数最多:14 位,
 // 格式化数字
-export const formatterNumber = (value: number | string | undefined) => {
+export const formatterNumber = (value: number | string | undefined): string => {
   if (!value) return '';
 
   // 如果是字符串，直接处理
@@ -48,11 +48,11 @@ export const formatterNumber = (value: number | string | undefined) => {
   if (decimalPart && decimalPart.length > 6) {
     return `${integerPart}.${decimalPart.slice(0, 6)}`;
   }
-  return numValue;
+  return numValue.toString();
 };
 
 // 指定从 formatter 里转换回数字的方式，和 formatter 搭配使用
-export const parserNumber = (displayValue: string | undefined) => {
+export const parserNumber = (displayValue: string | undefined): string => {
   if (!displayValue) return '';
 
   const str = displayValue.toString();
