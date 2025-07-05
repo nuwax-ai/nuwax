@@ -188,16 +188,12 @@ const SpaceMcpCreate: React.FC = () => {
               <Form.Item
                 name="serverConfig"
                 label={
-                  <LabelStar
-                    label={
-                      <div className={cx('flex', 'items-center')}>
-                        <span>MCP服务配置</span>
-                        <span className={cx(styles['sub-title'])}>
-                          MCP服务使用json配置，提交前确保格式正确
-                        </span>
-                      </div>
-                    }
-                  />
+                  <div className={cx('flex', 'items-center')}>
+                    <span>MCP服务配置</span>
+                    <span className={cx(styles['sub-title'])}>
+                      MCP服务使用json配置，提交前确保格式正确
+                    </span>
+                  </div>
                 }
                 rules={[
                   {
