@@ -5,7 +5,10 @@ import {
   ICON_PUBLISHED,
   ICON_SETTING_SMALL,
 } from '@/constants/images.constants';
-import { SystemManageListEnum } from '@/types/enums/systemManage';
+import {
+  MessageScopeEnum,
+  SystemManageListEnum,
+} from '@/types/enums/systemManage';
 
 // 系统管理应用列表（layout二级菜单）
 export const SYSTEM_MANAGE_LIST = [
@@ -33,5 +36,17 @@ export const SYSTEM_MANAGE_LIST = [
     type: SystemManageListEnum.System_Config,
     icon: <ICON_SETTING_SMALL />,
     text: '系统配置',
+  },
+];
+
+// 消息类型, Broadcast时可以不传userIds,可用值:Broadcast,Private,System
+export const MESSAGE_SCOPE_OPTIONS = [
+  {
+    label: '指定用户发送',
+    value: MessageScopeEnum.Broadcast,
+  },
+  {
+    label: '系统消息（全部用户）',
+    value: MessageScopeEnum.System,
   },
 ];

@@ -13,6 +13,7 @@ import classNames from 'classnames';
 import moment from 'moment';
 import React, { useState } from 'react';
 import CreateModifyUser from './components/createModifyUser';
+import MessageSendModal from './MessageSendModal';
 
 const cx = classNames.bind(styles);
 
@@ -32,6 +33,8 @@ const UserManage: React.FC = () => {
   const [disableLoadingMap, setDisableLoadingMap] = useState<
     Record<number, boolean>
   >({});
+  // 消息发送弹窗是否打开
+  const [messageSendOpen, setMessageSendOpen] = useState<boolean>(false);
 
   const { data, run, refresh, loading } = useRequest(apiSystemUserList, {
     debounceWait: 300,
@@ -248,9 +251,9 @@ const UserManage: React.FC = () => {
           dropdownRender={(menu) => <>{menu}</>}
           menuItemSelectedIcon={<CheckOutlined style={{ marginRight: 8 }} />}
         />
-        <div className={cx('flex')}>
+        <div className={cx('flex', 'gap-10')}>
           <Input
-            className={cx(styles['search-input-225'], 'mr-38')}
+            className={cx(styles['search-input-225'])}
             placeholder="请输入手机号码邮箱或昵称"
             prefix={<SearchOutlined />}
             onPressEnter={(event) => {
@@ -262,6 +265,9 @@ const UserManage: React.FC = () => {
             }}
           />
           <CreateModifyUser isEdit={false} onSuccess={handleSuccess} />
+          <Button type="primary" onClick={() => setMessageSendOpen(true)}>
+            消息发送
+          </Button>
         </div>
       </section>
 
@@ -278,6 +284,10 @@ const UserManage: React.FC = () => {
           onChange: handleTableChange,
           showTotal: (total) => `共 ${total} 条`,
         }}
+      />
+      <MessageSendModal
+        open={messageSendOpen}
+        onCancel={() => setMessageSendOpen(false)}
       />
     </div>
   );
