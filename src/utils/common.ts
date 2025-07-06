@@ -36,8 +36,16 @@ function isValidJSON(str: string): boolean {
     return false;
   }
 
+  // 去除首尾空白字符
+  const trimmedStr = str.trim();
+
+  // 检查基本结构：对象必须以 { 开头， 以} 结尾；
+  if (!/^{/.test(trimmedStr) || !/}$/.test(trimmedStr)) {
+    return false;
+  }
+
   try {
-    JSON.parse(str);
+    JSON.parse(trimmedStr);
     return true;
   } catch (error) {
     return false;
