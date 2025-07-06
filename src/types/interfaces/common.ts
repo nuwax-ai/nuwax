@@ -28,7 +28,7 @@ import type {
   KnowledgeInfo,
 } from '@/types/interfaces/knowledge';
 import type { InputAndOutConfig } from '@/types/interfaces/node';
-import type { FormInstance, GetProp, UploadProps } from 'antd';
+import type { FormInstance, GetProp, UploadFile, UploadProps } from 'antd';
 import React from 'react';
 
 export type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
@@ -645,3 +645,6 @@ export interface InfiniteScrollDivProps {
 export interface SiteFooterProps {
   text?: string;
 }
+
+// 直接继承antd的UploadFile，避免重复定义
+export type NativeUploadFile = UploadFile;
