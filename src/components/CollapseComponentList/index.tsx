@@ -14,6 +14,7 @@ import React from 'react';
 // 手风琴组件列表
 const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
   textClassName,
+  itemClassName,
   type,
   list,
   deleteList,
@@ -46,16 +47,21 @@ const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
   };
 
   // 是否正在删除
-  const isDeling = (targetId: number, type: AgentComponentTypeEnum) => {
+  const isDeling = (
+    id: number,
+    targetId: number,
+    type: AgentComponentTypeEnum,
+  ) => {
     return deleteList?.some(
-      (item) => item.targetId === targetId && item.type === type,
+      (item) =>
+        item.id === id && item.targetId === targetId && item.type === type,
     );
   };
 
   // 删除组件
   const handleDelete = (item: AgentComponentInfo) => {
-    const { targetId, type } = item;
-    if (isDeling(targetId, type)) {
+    const { id, targetId, type } = item;
+    if (isDeling(id, targetId, type)) {
       return;
     }
     onDel(item.id, item.targetId, item.type, item.bindConfig?.toolName || '');
@@ -67,6 +73,8 @@ const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
     list.map((item) => (
       <CollapseComponentItem
         key={item.id}
+        className={itemClassName}
+        showImage={type !== AgentComponentTypeEnum.MCP}
         agentComponentInfo={item}
         defaultImage={getInfo(type)?.image}
         extra={
@@ -79,7 +87,7 @@ const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
             <TooltipIcon
               title="删除"
               icon={
-                isDeling(item.targetId, item.type) ? (
+                isDeling(item.id, item.targetId, item.type) ? (
                   <LoadingOutlined />
                 ) : (
                   <DeleteOutlined className="cursor-pointer" />

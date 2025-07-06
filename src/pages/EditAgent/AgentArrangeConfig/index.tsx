@@ -24,6 +24,7 @@ import type { AgentComponentInfo } from '@/types/interfaces/agent';
 import type {
   AgentArrangeConfigProps,
   DeleteComponentInfo,
+  GroupMcpInfo,
 } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
 import VariableList from './VariableList';
@@ -52,6 +53,7 @@ import { CREATED_TABS } from '@/constants/common.constants';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { loopSetBindValueType } from '@/utils/deepNode';
 import ComponentSettingModal from './ComponentSettingModal';
+import McpGroupComponentItem from './McpGroupComponentItem';
 import OpenRemarksEdit from './OpenRemarksEdit';
 
 const cx = classNames.bind(styles);
@@ -100,6 +102,42 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       ) || []
     );
   };
+
+  // 分组 MCP 列表
+  const groupMcpList: GroupMcpInfo[] = useMemo(() => {
+    const mcpList = filterList(AgentComponentTypeEnum.MCP);
+    // 分组
+    const _groupMcpList = mcpList
+      .map((item: AgentComponentInfo) => {
+        const { targetId, icon, groupName, groupDescription } = item;
+        return {
+          targetId,
+          icon,
+          groupName,
+          groupDescription,
+          children: [],
+        };
+      })
+      .reduce((acc: GroupMcpInfo[], current: GroupMcpInfo) => {
+        if (
+          !acc.find((item: GroupMcpInfo) => item.targetId === current.targetId)
+        ) {
+          acc.push(current);
+        }
+        return acc;
+      }, []);
+
+    mcpList.forEach((item: AgentComponentInfo) => {
+      const { targetId } = item;
+      const index = _groupMcpList.findIndex(
+        (group: GroupMcpInfo) => group.targetId === targetId,
+      );
+      if (index !== -1) {
+        _groupMcpList[index].children.push(item);
+      }
+    });
+    return _groupMcpList;
+  }, [agentComponentList]);
 
   // 绑定的变量信息
   const variablesInfo = useMemo(() => {
@@ -184,7 +222,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     toolName?: string,
   ) => {
     // 添加到正在删除列表
-    const newDeleteList = [...deleteList, { targetId, type }];
+    const newDeleteList = [...deleteList, { id, targetId, type }];
     setDeleteList(newDeleteList);
     await runAgentComponentDel(id);
     message.success('已成功删除');
@@ -210,7 +248,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     setAddComponents(newList);
     // 从正在删除列表中删除
     const _newDeleteList = deleteList.filter(
-      (item) => item.targetId !== targetId && item.type !== type,
+      (item) =>
+        item.id !== id && item.targetId !== targetId && item.type !== type,
     );
     setDeleteList(_newDeleteList);
   };
@@ -385,15 +424,20 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     {
       key: AgentArrangeConfigEnum.MCP,
       label: 'MCP',
-      children: (
-        <CollapseComponentList
-          textClassName={cx(styles.text)}
-          type={AgentComponentTypeEnum.MCP}
-          list={filterList(AgentComponentTypeEnum.MCP)}
-          deleteList={deleteList}
-          onSet={handlePluginSet}
-          onDel={handleAgentComponentDel}
-        />
+      children: !groupMcpList?.length ? (
+        <p className={cx(styles.text)}>
+          智能体可以通过标准化协议（MCP）连接各类服务API并发起调用。
+        </p>
+      ) : (
+        groupMcpList.map((item: GroupMcpInfo) => (
+          <McpGroupComponentItem
+            item={item}
+            key={item.targetId}
+            deleteList={deleteList}
+            onSet={handlePluginSet}
+            onDel={handleAgentComponentDel}
+          />
+        ))
       ),
       extra: (
         <TooltipIcon
@@ -615,9 +659,14 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   const getSettingActionList = useCallback((type?: AgentComponentTypeEnum) => {
     if (type === AgentComponentTypeEnum.MCP) {
-      // MCP 不支持方法调用(调用方式)
+      // MCP 不支持方法调用(调用方式)、异步运行、卡片绑定
       return COMPONENT_SETTING_ACTIONS.filter(
-        (item) => item.type !== ComponentSettingEnum.Method_Call,
+        (item) =>
+          ![
+            ComponentSettingEnum.Method_Call,
+            ComponentSettingEnum.Async_Run,
+            ComponentSettingEnum.Card_Bind,
+          ].includes(item.type),
       );
     }
     return COMPONENT_SETTING_ACTIONS;

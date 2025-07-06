@@ -1,4 +1,8 @@
-import { UserRoleEnum, UserStatusEnum } from '@/types/enums/systemManage';
+import {
+  MessageScopeEnum,
+  UserRoleEnum,
+  UserStatusEnum,
+} from '@/types/enums/systemManage';
 
 // 查询用户列表输入参数
 export interface SystemUserListParams {
@@ -281,4 +285,14 @@ export interface TenantConfigDto {
   homeRecommendQuestions?: string[];
   /** 站点域名列表 */
   domainNames?: string[];
+}
+
+// 发送通知消息输入参数
+export interface NotifyMessageSendParams {
+  /** 消息类型 */
+  scope: MessageScopeEnum;
+  /** 消息内容 */
+  content: string;
+  /** 消息接收者 */
+  userIds: number[];
 }

@@ -23,3 +23,10 @@ export enum UserStatusEnum {
   Enabled = 'Enabled',
   Disabled = 'Disabled',
 }
+
+// 消息类型, Broadcast时可以不传userIds,可用值:Broadcast,Private,System
+export enum MessageScopeEnum {
+  Broadcast = 'Broadcast', // 广播
+  Private = 'Private', // 私信
+  System = 'System', // 系统消息
+}

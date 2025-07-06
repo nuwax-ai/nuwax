@@ -3,6 +3,7 @@ import type { Page, RequestResponse } from '@/types/interfaces/request';
 import type {
   AddSystemUserParams,
   ModelConfigDto,
+  NotifyMessageSendParams,
   PublishedDto,
   SystemUserConfig,
   SystemUserListInfo,
@@ -131,6 +132,16 @@ export async function apiSystemConfigUpdate(
   data: TenantConfigDto,
 ): Promise<RequestResponse<any>> {
   return request('/api/system/config/add', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 发送通知消息
+export async function apiSystemNotifyMessageSend(
+  data: NotifyMessageSendParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/user/notify/message/send', {
     method: 'POST',
     data,
   });
