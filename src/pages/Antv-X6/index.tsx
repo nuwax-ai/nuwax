@@ -81,7 +81,7 @@ import {
   setFormDefaultValues,
 } from '@/utils/workflow';
 import { Graph } from '@antv/x6';
-import { App, Form } from 'antd';
+import { Form, message } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 import { mergeObject } from 'ut2';
@@ -103,7 +103,6 @@ const workflowCreatedTabs = CREATED_TABS.filter((item) =>
 );
 
 const Workflow: React.FC = () => {
-  const { message } = App.useApp();
   const { getWorkflow, storeWorkflow, clearWorkflow, visible, setVisible } =
     useModel('workflow');
   const params = useParams();
@@ -820,18 +819,18 @@ const Workflow: React.FC = () => {
       const isOut = portId.endsWith('out');
 
       try {
-        if (portId.includes(PortGroupEnum.special)) {
-          // 处理特殊端口连接
-          await handleSpecialPortConnection(
+        if (portId.includes(PortGroupEnum.exception)) {
+          // 处理异常端口连接
+          await handleExceptionPortConnection(
             currentNodeRef.current.sourceNode,
             portId,
             nodeData.id,
             currentNodeRef.current.targetNode,
             isLoop,
           );
-        } else if (portId.includes(PortGroupEnum.exception)) {
-          // 处理异常端口连接
-          await handleExceptionPortConnection(
+        } else if (portId.length > 15) {
+          // 处理特殊端口连接
+          await handleSpecialPortConnection(
             currentNodeRef.current.sourceNode,
             portId,
             nodeData.id,
