@@ -683,11 +683,11 @@ export const calculateNodePosition = ({
       graph,
       isOut ? 'next' : 'previous',
     );
-
+    const theRange = 200;
     if (isOut) {
       // port 为 out 出边，需要向右偏移
       position.x = position.x + DEFAULT_NODE_CONFIG.newNodeOffsetX;
-      if (peerPosition !== null && peerPosition.x >= position.x) {
+      if (peerPosition !== null && peerPosition.x <= position.x + theRange) {
         position.x = peerPosition.x + DEFAULT_NODE_CONFIG.offsetGapX;
         position.y = peerPosition.y + DEFAULT_NODE_CONFIG.offsetGapX;
       }
@@ -695,7 +695,7 @@ export const calculateNodePosition = ({
       // port 为 in 入边，需要向左偏移
       position.x =
         position.x - newNodeWidth - DEFAULT_NODE_CONFIG.newNodeOffsetX;
-      if (peerPosition !== null && peerPosition.x <= position.x) {
+      if (peerPosition !== null && peerPosition.x >= position.x - theRange) {
         position.x = peerPosition.x - DEFAULT_NODE_CONFIG.offsetGapX;
         position.y = peerPosition.y + DEFAULT_NODE_CONFIG.offsetGapX;
       }
