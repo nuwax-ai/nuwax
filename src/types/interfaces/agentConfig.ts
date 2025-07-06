@@ -19,7 +19,6 @@ import type {
 import type {
   BindConfigWithSub,
   CreatedNodeItem,
-  NativeUploadFile,
   VariableSelectConfig,
 } from '@/types/interfaces/common';
 import type {
@@ -62,12 +61,17 @@ export interface ComponentSettingModalProps {
   onCancel: () => void;
 }
 
+// 卡片绑定保存形参
+export interface CardBindSaveParams {
+  cardBindConfig: CardBindConfig;
+}
+
 // 卡片绑定组件
 export interface CardBindProps {
   loading?: boolean;
   agentCardList: AgentCardInfo[];
   componentInfo?: AgentComponentInfo;
-  onSaveSet: (attr: string, value: CardBindConfig) => void;
+  onSaveSet: (data: CardBindSaveParams) => void;
 }
 
 // 智能体模型组件，插件、工作流、触发器等组件通用显示组件
@@ -125,7 +129,21 @@ export interface CardModeSettingProps {
 export interface BindDataSourceProps {
   cardInfo?: AgentCardInfo;
   componentInfo?: AgentComponentInfo;
-  onSaveSet: (attr: string, value: CardBindConfig) => void;
+  onSaveSet: (data: CardBindSaveParams) => void;
+}
+
+// 参数保存形参
+export interface ParamsSaveParams {
+  inputArgBindConfigs: BindConfigWithSub[];
+}
+
+// 参数设置组件属性
+export interface ParamsSettingProps {
+  inputArgBindConfigs: BindConfigWithSub[];
+  variables: BindConfigWithSub[];
+  onSaveSet: (data: ParamsSaveParams) => void;
+  style?: React.CSSProperties;
+  scroll?: { y: number };
 }
 
 // 调用方式保存形参
@@ -163,6 +181,19 @@ export interface AsyncRunProps {
   async: DefaultSelectedEnum;
   asyncReplyContent: string;
   onSaveSet: (data: AsyncRunSaveParams) => void;
+}
+
+// 异常处理保存形参
+export interface ExceptionHandingSaveParams {
+  exceptionOut: DefaultSelectedEnum;
+  fallbackMsg: string;
+}
+
+// 异常处理组件属性
+export interface ExceptionHandingProps {
+  exceptionOut: DefaultSelectedEnum;
+  fallbackMsg: string;
+  onSaveSet: (data: ExceptionHandingSaveParams) => void;
 }
 
 // 预览与调试组件

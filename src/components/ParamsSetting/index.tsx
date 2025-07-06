@@ -2,6 +2,10 @@ import SelectList from '@/components/SelectList';
 import { ParamsSettingDefaultOptions } from '@/constants/common.constants';
 import { BindValueType } from '@/types/enums/agent';
 import { DataTypeEnum } from '@/types/enums/common';
+import {
+  ParamsSaveParams,
+  ParamsSettingProps,
+} from '@/types/interfaces/agentConfig';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
 import { getActiveKeys, updateNodeField } from '@/utils/deepNode';
 import { InfoCircleOutlined } from '@ant-design/icons';
@@ -23,13 +27,6 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface ParamsSettingProps {
-  inputArgBindConfigs: BindConfigWithSub[];
-  variables: BindConfigWithSub[];
-  onSaveSet: (attr: string, value: BindConfigWithSub[]) => void;
-  style?: React.CSSProperties;
-  scroll?: { y: number };
-}
 /**
  * 插件参数设置
  */
@@ -222,6 +219,14 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
     },
   ];
 
+  // 保存
+  const handleSave = () => {
+    const data: ParamsSaveParams = {
+      inputArgBindConfigs: configArgs,
+    };
+    onSaveSet(data);
+  };
+
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')} style={style}>
       <Table<BindConfigWithSub>
@@ -241,7 +246,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       <footer className={cx(styles.footer)}>
         <Button
           type="primary"
-          onClick={() => onSaveSet('inputArgBindConfigs', configArgs)}
+          onClick={handleSave}
           className={cx({ [styles['btn-disabled']]: disabled })}
           disabled={disabled}
         >

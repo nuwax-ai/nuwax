@@ -89,7 +89,9 @@ export interface AgentComponentBaseInfo {
   description?: string;
   // 目标组件ID
   targetId: number;
-  exceptionOut?: string;
+  // 异常时中断流程
+  exceptionOut?: DefaultSelectedEnum;
+  // 异常时输出给大模型的默认信息
   fallbackMsg?: string;
 }
 
@@ -390,7 +392,9 @@ export interface AgentComponentInfo {
   spaceId: number;
   // 组件原始配置
   targetConfig: any;
-  exceptionOut: string;
+  // 异常时中断流程
+  exceptionOut: DefaultSelectedEnum;
+  // 异常时输出给大模型的默认信息
   fallbackMsg: string;
   modified: string;
   created: string;

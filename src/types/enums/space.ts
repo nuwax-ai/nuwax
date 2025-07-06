@@ -121,6 +121,8 @@ export enum ComponentSettingEnum {
   Output_Way,
   // 异步运行
   Async_Run,
+  // 异常处理
+  Exception_Handling,
   // 卡片绑定
   Card_Bind,
 }

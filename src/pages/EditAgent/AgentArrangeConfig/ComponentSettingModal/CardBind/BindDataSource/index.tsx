@@ -4,7 +4,10 @@ import LabelStar from '@/components/LabelStar';
 import { BIND_CARD_STYLE_LIST } from '@/constants/agent.constants';
 import { BindCardStyleEnum } from '@/types/enums/plugin';
 import { ArgList } from '@/types/interfaces/agent';
-import type { BindDataSourceProps } from '@/types/interfaces/agentConfig';
+import type {
+  BindDataSourceProps,
+  CardBindSaveParams,
+} from '@/types/interfaces/agentConfig';
 import {
   CardArgsBindConfigInfo,
   CardBindConfig,
@@ -189,7 +192,11 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
             maxCardCount: cardListLen,
             bindArray: cardKey,
           };
-    onSaveSet('cardBindConfig', config as CardBindConfig);
+
+    const data: CardBindSaveParams = {
+      cardBindConfig: config as CardBindConfig,
+    };
+    onSaveSet(data);
   };
 
   return (
