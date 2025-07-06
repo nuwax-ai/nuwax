@@ -11,9 +11,13 @@ const cx = classNames.bind(styles);
 
 // 节点详情
 export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
-  const renderDetailItem = (label: string, value: string | number) => {
+  const renderDetailItem = (
+    label: string,
+    value: string | number,
+    className?: string,
+  ) => {
     return (
-      <div className={cx('flex', styles.box)}>
+      <div className={cx('flex', styles.box, className)}>
         <span className={cx(styles.label)}>{label}：</span>
         <EllipsisTooltip
           text={value || '--'}
@@ -47,22 +51,25 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
   }, [node?.type]);
 
   return (
-    <div className={cx(styles.container)}>
-      {renderDetailItem('类型', nodeTypeName)}
-      {renderDetailItem('状态', '成功')}
-      {renderDetailItem('名称', node?.name as string)}
-      {renderDetailItem('耗时', time)}
+    <>
+      <div className={cx(styles.container)}>
+        {renderDetailItem('类型', nodeTypeName)}
+        {renderDetailItem('状态', '成功')}
+        {renderDetailItem('名称', node?.name as string)}
+        {renderDetailItem('耗时', time)}
+      </div>
       {renderDetailItem(
         '发起时间',
         node?.startTime
           ? moment(node?.startTime).format('YYYY-MM-DD HH:mm')
           : '',
+        styles['mt-10'],
       )}
-      <div />
       {renderDetailItem(
         '结束时间',
         node?.endTime ? moment(node?.endTime).format('YYYY-MM-DD HH:mm') : '',
+        styles['mt-10'],
       )}
-    </div>
+    </>
   );
 };

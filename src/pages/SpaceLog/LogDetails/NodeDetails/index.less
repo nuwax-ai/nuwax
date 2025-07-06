@@ -4,18 +4,22 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
 
-  .box {
-    height: 16px;
-    color: @GRAY05;
-    font-size: 12px;
+.box {
+  height: 16px;
+  color: @GRAY05;
+  font-size: 12px;
 
-    .label {
-      display: inline-block;
-    }
+  &.mt-10 {
+    margin-top: 10px;
+  }
 
-    .value {
-      color: @BLANK03;
-    }
+  .label {
+    display: inline-block;
+  }
+
+  .value {
+    color: @BLANK03;
   }
 }
