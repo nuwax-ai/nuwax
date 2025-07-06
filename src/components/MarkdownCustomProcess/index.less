@@ -1,0 +1,117 @@
+.markdown-custom-process {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  margin: 16px 0;
+  background: #fff;
+  overflow: hidden;
+
+  .process-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background: #fafafa;
+    border-bottom: 1px solid #f0f0f0;
+
+    .process-title {
+      font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+      font-size: 14px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    .process-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .status-completed {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: #52c41a;
+        font-size: 12px;
+
+        .anticon {
+          font-size: 12px;
+        }
+      }
+
+      .status-running {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: #1890ff;
+        font-size: 12px;
+
+        .loading-spinner {
+          width: 12px;
+          height: 12px;
+          border: 2px solid #f3f3f3;
+          border-top: 2px solid #1890ff;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+      }
+
+      .status-error {
+        color: #ff4d4f;
+        font-size: 12px;
+      }
+
+      .control-btn {
+        background: none;
+        border: none;
+        padding: 4px;
+        cursor: pointer;
+        color: #666;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: all 0.2s;
+
+        &:hover {
+          background: #f0f0f0;
+          color: #333;
+        }
+
+        .anticon {
+          font-size: 14px;
+          transition: transform 0.2s;
+        }
+      }
+    }
+  }
+
+  .process-content {
+    padding: 16px;
+
+    .default-content {
+      p {
+        margin: 8px 0;
+        font-size: 14px;
+        color: #666;
+      }
+
+      pre {
+        background: #f6f8fa;
+        padding: 12px;
+        border-radius: 6px;
+        overflow-x: auto;
+        font-size: 12px;
+        color: #333;
+        margin: 8px 0;
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

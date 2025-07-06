@@ -193,11 +193,32 @@ const getProgressStatus = (fileInfo: UploadFileInfo) => {
   return 'active';
 };
 
+// 向上查找元素
+const findParentElement = (element: HTMLElement, className: string) => {
+  let currentElement = element;
+  while (currentElement.parentElement) {
+    if (currentElement.parentElement.classList.contains(className)) {
+      return currentElement.parentElement;
+    }
+    currentElement = currentElement.parentElement;
+  }
+  return null;
+};
+
+const findClassElement = (currentElement: HTMLElement, className: string) => {
+  if (currentElement.classList.contains(className)) {
+    return currentElement;
+  }
+  return findParentElement(currentElement, className);
+};
+
 export {
   addBaseTarget,
   arraysContainSameItems,
   cloneDeep,
   encodeHTML,
+  findClassElement,
+  findParentElement,
   formatTimeAgo,
   getBase64,
   getNumbersOnly,

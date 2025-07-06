@@ -1,0 +1,205 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f6f8fa;
+  border: 1px solid #d1d9e0;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  font-size: 12px;
+  color: #656d76;
+
+  .info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .language {
+      font-weight: 600;
+      color: #24292f;
+      font-size: 13px;
+    }
+
+    .lineCount {
+      padding: 2px 6px;
+      background: #e5e5e5;
+      border-radius: 3px;
+      font-size: 11px;
+      color: #656d76;
+    }
+
+    .zoomLevel {
+      padding: 2px 6px;
+      background: #e3f2fd;
+      border-radius: 3px;
+      font-size: 11px;
+      color: #1976d2;
+      font-weight: 500;
+    }
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    // 重置 antd Button 在工具栏中的样式
+    .ant-btn {
+      height: 24px;
+      padding: 0 6px;
+      font-size: 12px;
+      border: none;
+      box-shadow: none;
+
+      &:hover {
+        background: #e5e5e5;
+        color: #24292f;
+      }
+
+      &:focus {
+        background: #e5e5e5;
+        color: #24292f;
+      }
+
+      // 图标样式
+      .anticon {
+        font-size: 12px;
+      }
+
+      // 按钮文字样式
+      span:not(.anticon) {
+        font-size: 11px;
+      }
+    }
+
+    // Mermaid 特有按钮样式
+    .viewToggleBtn {
+      &.ant-btn-primary {
+        background: #1890ff;
+        border-color: #1890ff;
+
+        &:hover {
+          background: #40a9ff;
+          border-color: #40a9ff;
+        }
+      }
+    }
+
+    .zoomBtn {
+      min-width: 24px;
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+    }
+
+    .downloadBtn {
+      // 下载按钮包含下拉箭头
+      .anticon + .anticon {
+        margin-left: 2px;
+        font-size: 10px;
+      }
+    }
+
+    .collapseBtn {
+      // 折叠按钮特定样式
+      min-width: 24px;
+
+      .anticon {
+        transition: transform 0.2s ease;
+      }
+    }
+
+    .copyBtn {
+      // 复制按钮特定样式
+      .ant-btn-loading-icon {
+        font-size: 12px;
+      }
+    }
+  }
+}
+
+// 下拉菜单样式
+:global(.ant-dropdown) {
+  .ant-dropdown-menu {
+    min-width: 120px;
+
+    .ant-dropdown-menu-item {
+      font-size: 12px;
+      padding: 6px 12px;
+
+      .anticon {
+        font-size: 12px;
+        margin-right: 6px;
+      }
+    }
+  }
+}
+
+// 暗色主题支持
+@media (prefers-color-scheme: dark) {
+  .toolbar {
+    background: #2d333b;
+    border-color: #444c56;
+    color: #adbac7;
+
+    .info {
+      .language {
+        color: #cdd9e5;
+      }
+
+      .lineCount {
+        background: #444c56;
+        color: #adbac7;
+      }
+
+      .zoomLevel {
+        background: #1f2937;
+        color: #60a5fa;
+      }
+    }
+
+    .actions {
+      .ant-btn {
+        color: #adbac7;
+        background: transparent;
+
+        &:hover {
+          background: #444c56;
+          color: #cdd9e5;
+        }
+
+        &:focus {
+          background: #444c56;
+          color: #cdd9e5;
+        }
+      }
+
+      .viewToggleBtn {
+        &.ant-btn-primary {
+          background: #0969da;
+          border-color: #0969da;
+
+          &:hover {
+            background: #1f6feb;
+            border-color: #1f6feb;
+          }
+        }
+      }
+    }
+  }
+}
+
+// 确保按钮在小尺寸下的样式
+.ant-btn-sm {
+  height: 24px;
+  padding: 0 6px;
+  font-size: 12px;
+
+  &.ant-btn-icon-only {
+    width: 24px;
+    padding: 0;
+  }
+}

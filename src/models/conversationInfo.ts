@@ -1,5 +1,6 @@
 import { CONVERSATION_CONNECTION_URL } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { getCustomBlock } from '@/plugins/markdown-it-custom';
 import {
   apiAgentConversation,
   apiAgentConversationChatSuggest,
@@ -43,7 +44,6 @@ import moment from 'moment/moment';
 import { useCallback, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-
 export default () => {
   // 会话信息
   const [conversationInfo, setConversationInfo] =
@@ -91,6 +91,7 @@ export default () => {
   const [requiredNameList, setRequiredNameList] = useState<string[]>([]);
   // 历史记录
   const { runHistory } = useModel('conversationHistory');
+  const { handleChatProcessingList } = useModel('chat');
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const handleScrollBottom = () => {
@@ -239,8 +240,11 @@ export default () => {
 
         // 更新UI状态...
         if (eventType === ConversationEventTypeEnum.PROCESSING) {
+          const processingResult = data.result || {};
+          data.executeId = processingResult.executeId;
           newMessage = {
             ...currentMessage,
+            text: getCustomBlock(currentMessage.text || '', data),
             status: MessageStatusEnum.Loading,
             processingList: [
               ...(currentMessage?.processingList || []),
@@ -285,6 +289,11 @@ export default () => {
               ) as CardInfo[];
             });
           }
+
+          handleChatProcessingList([
+            ...(currentMessage?.processingList || []),
+            { ...data },
+          ] as ProcessingInfo[]);
         }
         // MESSAGE事件
         if (eventType === ConversationEventTypeEnum.MESSAGE) {
@@ -320,7 +329,7 @@ export default () => {
               newMessage = {
                 ...currentMessage,
                 id,
-                text: `${currentMessage.text}${text}`,
+                text: `${currentMessage.text}${text}`, // 这里需要添加 展示MCP 或者其他工具调用
                 status: null, // 隐藏运行状态
               };
               // 插入新的消息
@@ -500,6 +509,7 @@ export default () => {
     } as MessageInfo;
 
     setMessageList((list) => {
+      console.log('onMessageSend:messageList', list);
       const _list =
         list?.map((item) => {
           if (item.status === MessageStatusEnum.Incomplete) {

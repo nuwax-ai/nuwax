@@ -327,6 +327,7 @@ const Chat: React.FC = () => {
                 variables={variables}
                 disabled={!!userFillVariables || isSendMessageRef.current}
               />
+              {/* {JSON.stringify(messageList)} */}
               {messageList?.length > 0 ? (
                 <>
                   {messageList?.map((item: MessageInfo, index: number) => (
