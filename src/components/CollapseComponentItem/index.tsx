@@ -11,6 +11,8 @@ const cx = classNames.bind(styles);
 
 // 智能体模型组件，插件、工作流、触发器等组件通用显示组件
 const CollapseComponentItem: React.FC<CollapseComponentItemProps> = ({
+  className,
+  showImage = true,
   agentComponentInfo,
   defaultImage,
   extra,
@@ -44,7 +46,9 @@ const CollapseComponentItem: React.FC<CollapseComponentItemProps> = ({
   const innerContent = (
     <>
       <span className={cx('radius-6', styles['img-box'])}>
-        <img src={agentComponentInfo.icon || defaultImage} alt="" />
+        {showImage && (
+          <img src={agentComponentInfo.icon || defaultImage} alt="" />
+        )}
       </span>
       <div
         className={cx(
@@ -68,7 +72,7 @@ const CollapseComponentItem: React.FC<CollapseComponentItemProps> = ({
   );
 
   return (
-    <div className={cx('flex', 'items-center', styles.container)}>
+    <div className={cx('flex', 'items-center', styles.container, className)}>
       {link ? (
         <Link
           to={link}

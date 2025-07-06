@@ -76,6 +76,8 @@ export interface CardBindProps {
 
 // 智能体模型组件，插件、工作流、触发器等组件通用显示组件
 export interface CollapseComponentItemProps {
+  className?: string;
+  showImage?: boolean;
   agentComponentInfo: AgentComponentInfo;
   defaultImage?: string;
   extra?: React.ReactNode;
@@ -266,6 +268,7 @@ export interface NodeDetailsProps {
 
 // 正在删除组件信息
 export interface DeleteComponentInfo {
+  id: number;
   targetId: number;
   type: AgentComponentTypeEnum;
 }
@@ -273,8 +276,32 @@ export interface DeleteComponentInfo {
 // 组件列表
 export interface CollapseComponentListProps {
   textClassName?: string;
+  itemClassName?: string;
   type: AgentComponentTypeEnum;
   list: AgentComponentInfo[];
+  // 正在删除组件列表
+  deleteList?: DeleteComponentInfo[];
+  onSet: (id: number) => void;
+  onDel: (
+    id: number,
+    targetId: number,
+    type: AgentComponentTypeEnum,
+    toolName?: string,
+  ) => void;
+}
+
+// 分组MCP组件信息
+export interface GroupMcpInfo {
+  targetId: number;
+  icon: string;
+  groupName: string;
+  groupDescription: string;
+  children: AgentComponentInfo[];
+}
+
+// 分组MCP组件props
+export interface McpGroupComponentItemProps {
+  item: GroupMcpInfo;
   // 正在删除组件列表
   deleteList?: DeleteComponentInfo[];
   onSet: (id: number) => void;

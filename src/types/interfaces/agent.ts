@@ -398,6 +398,8 @@ export interface AgentComponentInfo {
   fallbackMsg: string;
   modified: string;
   created: string;
+  groupDescription: string;
+  groupName: string;
 }
 
 // 根据用户消息更新会话主题输入参数

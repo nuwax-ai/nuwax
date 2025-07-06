@@ -1,0 +1,75 @@
+@import '@/styles/color';
+
+.group-mcp-item-box {
+  margin-bottom: 6px;
+
+  .group-mcp-item {
+    gap: 6px;
+    height: 48px;
+    padding: 6px 16px;
+    border-radius: 4px;
+    background-color: @WHITE;
+    cursor: default;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &:hover {
+      background-color: @BLANK18;
+    }
+
+    .gap-6 {
+      gap: 6px;
+    }
+
+    .img-box {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      overflow: hidden;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    .name {
+      display: inline-block;
+      color: @BLANK11;
+      font-size: 12px;
+    }
+
+    .desc {
+      color: @BLANK13;
+      font-size: 12px;
+    }
+
+    .extra-box {
+      gap: 6px;
+      color: @GRAY05;
+      font-size: 12px;
+
+      .down-icon {
+        transform: rotate(-90deg);
+        transition: transform 0.3s;
+
+        &.down-icon-rotate {
+          transform: rotate(0);
+        }
+      }
+    }
+  }
+
+  .group-mcp-item-children {
+    border-radius: 0 !important;
+    border-bottom: 1px solid @GRAY01;
+    margin-bottom: 0 !important;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
