@@ -223,7 +223,9 @@ const StructureTable: React.FC<StructureTableProps> = ({
       dataIndex: 'fieldType',
       width: 140,
       render: (value, record) =>
-        !record.isNew ? (
+        record.id === 0 ? (
+          '--'
+        ) : !record.isNew ? (
           <span className="flex items-center h-full">
             {getFieldType(value)}
           </span>
@@ -241,7 +243,9 @@ const StructureTable: React.FC<StructureTableProps> = ({
       dataIndex: 'dataLength',
       width: 140,
       render: (value, record) =>
-        record.isNew && record.fieldType === TableFieldTypeEnum.String ? (
+        record.id === 0 ? (
+          '--'
+        ) : record.isNew && record.fieldType === TableFieldTypeEnum.String ? (
           <Select
             options={TABLE_FIELD_STRING_LIST}
             style={{ width: '100%' }}
@@ -260,87 +264,102 @@ const StructureTable: React.FC<StructureTableProps> = ({
       dataIndex: 'nullableFlag',
       align: 'center',
       width: 90,
-      render: (_, record) => (
-        <div className="flex items-center content-center h-full">
-          <Checkbox
-            disabled={record?.systemFieldFlag}
-            checked={!record.nullableFlag}
-            onChange={(e) =>
-              onChangeValue(record.id, 'nullableFlag', e.target.checked)
-            }
-          />
-        </div>
-      ),
+      render: (_, record) =>
+        record.id === 0 ? (
+          '--'
+        ) : (
+          <div className="flex items-center content-center h-full">
+            <Checkbox
+              disabled={record?.systemFieldFlag}
+              checked={!record.nullableFlag}
+              onChange={(e) =>
+                onChangeValue(record.id, 'nullableFlag', e.target.checked)
+              }
+            />
+          </div>
+        ),
     },
     {
       title: '是否唯一',
       dataIndex: 'uniqueFlag',
       align: 'center',
       width: 90,
-      render: (_, record) => (
-        <div className="flex items-center content-center h-full">
-          <ClearDataTooltip
-            record={record}
-            existTableDataFlag={existTableDataFlag}
-          >
-            {/* 长文本时,不允许设置唯一索引 */}
-            <Checkbox
-              disabled={
-                record?.systemFieldFlag ||
-                (!record?.isNew && existTableDataFlag) ||
-                record?.dataLength === TableFieldTypeEnum.MEDIUMTEXT
-              }
-              checked={record.uniqueFlag}
-              onChange={(e) =>
-                onChangeValue(record.id, 'uniqueFlag', e.target.checked)
-              }
-            />
-          </ClearDataTooltip>
-        </div>
-      ),
+      render: (_, record) =>
+        record.id === 0 ? (
+          '--'
+        ) : (
+          <div className="flex items-center content-center h-full">
+            <ClearDataTooltip
+              record={record}
+              existTableDataFlag={existTableDataFlag}
+            >
+              {/* 长文本时,不允许设置唯一索引 */}
+              <Checkbox
+                disabled={
+                  record?.systemFieldFlag ||
+                  (!record?.isNew && existTableDataFlag) ||
+                  record?.dataLength === TableFieldTypeEnum.MEDIUMTEXT
+                }
+                checked={record.uniqueFlag}
+                onChange={(e) =>
+                  onChangeValue(record.id, 'uniqueFlag', e.target.checked)
+                }
+              />
+            </ClearDataTooltip>
+          </div>
+        ),
     },
     {
       title: '是否启用',
       dataIndex: 'enabledFlag',
       align: 'center',
       width: 90,
-      render: (_, record) => (
-        <div className="flex items-center content-center h-full">
-          <Checkbox
-            disabled={record.systemFieldFlag}
-            defaultChecked={record.enabledFlag}
-            onChange={(e) =>
-              onChangeValue(record.id, 'enabledFlag', e.target.checked)
-            }
-          />
-        </div>
-      ),
+      render: (_, record) =>
+        record.id === 0 ? (
+          '--'
+        ) : (
+          <div className="flex items-center content-center h-full">
+            <Checkbox
+              disabled={record.systemFieldFlag}
+              defaultChecked={record.enabledFlag}
+              onChange={(e) =>
+                onChangeValue(record.id, 'enabledFlag', e.target.checked)
+              }
+            />
+          </div>
+        ),
     },
     {
       title: '默认值',
       dataIndex: 'defaultValue',
       width: 220,
-      render: (_, record) => (
-        <div className="flex items-center h-full">
-          {getDefaultValue(record)}
-        </div>
-      ),
+      render: (_, record) =>
+        record.id === 0 ? (
+          '--'
+        ) : (
+          <div className="flex items-center h-full">
+            {getDefaultValue(record)}
+          </div>
+        ),
     },
     {
       title: '操作',
       key: 'action',
       width: 80,
       align: 'center',
-      render: (_, record) => (
-        <Button
-          type="text"
-          disabled={
-            record?.systemFieldFlag || (!record?.isNew && existTableDataFlag)
-          }
-          onClick={() => onDeleteField(record.id)}
-          icon={<DeleteOutlined />}
-        ></Button>
-      ),
+      render: (_, record) =>
+        record.id === 0 ? (
+          '--'
+        ) : (
+          <Button
+            type="text"
+            disabled={
+              record?.systemFieldFlag || (!record?.isNew && existTableDataFlag)
+            }
+            onClick={() => onDeleteField(record.id)}
+            icon={<DeleteOutlined />}
+          ></Button>
+        ),
     },
   ];
 

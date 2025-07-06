@@ -169,6 +169,10 @@ export const COMPONENT_SETTING_ACTIONS = [
     label: '异步运行',
   },
   {
+    type: ComponentSettingEnum.Exception_Handling,
+    label: '异常处理',
+  },
+  {
     type: ComponentSettingEnum.Card_Bind,
     label: '卡片绑定',
   },

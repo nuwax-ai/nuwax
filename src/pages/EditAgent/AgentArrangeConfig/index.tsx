@@ -613,18 +613,15 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     });
   };
 
-  const getSettingActionList = useCallback(
-    (type: AgentComponentTypeEnum | undefined) => {
-      if (type === AgentComponentTypeEnum.MCP) {
-        // MCP 不支持方法调用(调用方式)
-        return COMPONENT_SETTING_ACTIONS.filter(
-          (item) => item.type !== ComponentSettingEnum.Method_Call,
-        );
-      }
-      return COMPONENT_SETTING_ACTIONS;
-    },
-    [],
-  );
+  const getSettingActionList = useCallback((type?: AgentComponentTypeEnum) => {
+    if (type === AgentComponentTypeEnum.MCP) {
+      // MCP 不支持方法调用(调用方式)
+      return COMPONENT_SETTING_ACTIONS.filter(
+        (item) => item.type !== ComponentSettingEnum.Method_Call,
+      );
+    }
+    return COMPONENT_SETTING_ACTIONS;
+  }, []);
 
   return (
     <div className={classNames('overflow-y', 'flex-1', 'px-16', 'py-12')}>

@@ -24,14 +24,14 @@ import {
 } from '@/types/interfaces/agent';
 import type {
   AsyncRunSaveParams,
+  CardBindSaveParams,
   ComponentSettingModalProps,
+  ExceptionHandingSaveParams,
   InvokeTypeSaveParams,
   OutputDirectlyParams,
+  ParamsSaveParams,
 } from '@/types/interfaces/agentConfig';
-import {
-  CardArgsBindConfigInfo,
-  CardBindConfig,
-} from '@/types/interfaces/cardInfo';
+import { CardArgsBindConfigInfo } from '@/types/interfaces/cardInfo';
 import { BindConfigWithSub } from '@/types/interfaces/common';
 import { RequestResponse } from '@/types/interfaces/request';
 import { CloseOutlined } from '@ant-design/icons';
@@ -42,6 +42,7 @@ import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import AsyncRun from './AsyncRun';
 import CardBind from './CardBind';
+import ExceptionHanding from './ExceptionHanding';
 import styles from './index.less';
 import InvokeType from './InvokeType';
 import OutputWay from './OutputWay';
@@ -121,29 +122,6 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
     runCard();
   }, []);
 
-  const onSetSuccess = (
-    id: number,
-    attr: string,
-    value: BindConfigWithSub[] | InvokeTypeEnum | CardBindConfig,
-  ) => {
-    // 更新当前组件信息
-    setComponentInfo((info) => {
-      if (info && 'bindConfig' in info) {
-        info.bindConfig[attr] = value;
-      }
-      return info;
-    });
-    // 更新智能体模型组件列表
-    setAgentComponentList((list: AgentComponentInfo[]) => {
-      return list.map((item) => {
-        if (item.id === id) {
-          item.bindConfig[attr] = value;
-        }
-        return item;
-      });
-    });
-  };
-
   // 保存动作
   const handleSaveAction = async (params: {
     id: number;
@@ -155,6 +133,8 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
         | DefaultSelectedEnum
         | OutputDirectlyEnum;
     };
+    exceptionOut?: DefaultSelectedEnum;
+    fallbackMsg?: string;
   }) => {
     // 插件
     if (componentInfo?.type === AgentComponentTypeEnum.Plugin) {
@@ -174,45 +154,42 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
     }
   };
 
-  // 保存设置
-  const onSaveSet = async (
-    attr: string,
-    value: BindConfigWithSub[] | CardBindConfig,
-  ) => {
-    const id = componentInfo?.id || 0;
-
-    const params = {
-      id,
-      bindConfig: {
-        ...componentInfo?.bindConfig,
-        [attr]: value,
-      },
-    };
-    await handleSaveAction(params);
-    onSetSuccess(id, attr, value);
-    message.success('保存成功');
-  };
-
   // 保存方法调用方式、输出方式或异步运行配置
-  const onSaveInvokeType = async (
-    data: InvokeTypeSaveParams | AsyncRunSaveParams | OutputDirectlyParams,
+  const handleSaveSetting = async (
+    data:
+      | InvokeTypeSaveParams
+      | AsyncRunSaveParams
+      | OutputDirectlyParams
+      | ParamsSaveParams
+      | CardBindSaveParams
+      | null,
+    exceptionHandingData?: ExceptionHandingSaveParams,
   ) => {
     const id = componentInfo?.id || 0;
+    // 如果data为null，则不更新bindConfig
+    const bindConfig = data ?? {};
     const params = {
       id,
       bindConfig: {
         ...componentInfo?.bindConfig,
-        ...data,
+        ...bindConfig,
       },
+      ...(exceptionHandingData || {}),
     };
     await handleSaveAction(params);
     // 更新当前组件信息
     setComponentInfo((info) => {
-      if (info && 'bindConfig' in info) {
-        info.bindConfig = {
-          ...info.bindConfig,
-          ...data,
-        };
+      if (info) {
+        if ('bindConfig' in info) {
+          info.bindConfig = {
+            ...info.bindConfig,
+            ...bindConfig,
+          };
+        }
+        if (exceptionHandingData) {
+          info.exceptionOut = exceptionHandingData.exceptionOut;
+          info.fallbackMsg = exceptionHandingData.fallbackMsg;
+        }
       }
       return info;
     });
@@ -222,8 +199,12 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
         if (item.id === id) {
           item.bindConfig = {
             ...item.bindConfig,
-            ...data,
+            ...bindConfig,
           };
+          if (exceptionHandingData) {
+            item.exceptionOut = exceptionHandingData.exceptionOut;
+            item.fallbackMsg = exceptionHandingData.fallbackMsg;
+          }
         }
         return item;
       });
@@ -238,7 +219,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
           <ParamsSetting
             variables={variables || []}
             inputArgBindConfigs={componentInfo?.bindConfig?.inputArgBindConfigs}
-            onSaveSet={onSaveSet}
+            onSaveSet={handleSaveSetting}
           />
         );
       case ComponentSettingEnum.Method_Call:
@@ -246,7 +227,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
           <InvokeType
             invokeType={componentInfo?.bindConfig?.invokeType}
             defaultSelected={componentInfo?.bindConfig?.defaultSelected}
-            onSaveSet={onSaveInvokeType}
+            onSaveSet={handleSaveSetting}
           />
         );
       // 输出方式
@@ -254,15 +235,25 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
         return (
           <OutputWay
             directOutput={componentInfo?.bindConfig?.directOutput}
-            onSaveSet={onSaveInvokeType}
+            onSaveSet={handleSaveSetting}
           />
         );
+      // 异步运行
       case ComponentSettingEnum.Async_Run:
         return (
           <AsyncRun
             async={componentInfo?.bindConfig?.async}
             asyncReplyContent={componentInfo?.bindConfig?.asyncReplyContent}
-            onSaveSet={onSaveInvokeType}
+            onSaveSet={handleSaveSetting}
+          />
+        );
+      // 异常处理
+      case ComponentSettingEnum.Exception_Handling:
+        return (
+          <ExceptionHanding
+            exceptionOut={componentInfo?.exceptionOut || DefaultSelectedEnum.No}
+            fallbackMsg={componentInfo?.fallbackMsg || ''}
+            onSaveSet={(data) => handleSaveSetting(null, data)}
           />
         );
       case ComponentSettingEnum.Card_Bind:
@@ -271,7 +262,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
             loading={loading}
             agentCardList={agentCardList}
             componentInfo={componentInfo}
-            onSaveSet={onSaveSet}
+            onSaveSet={handleSaveSetting}
           />
         );
     }
@@ -292,14 +283,17 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
               {settingActionList.map((item) => {
                 // 数据表组件不展示方法调用
                 if (
+                  // 数据表组件不展示方法调用、异步运行、异常处理
                   currentComponentInfo?.type === AgentComponentTypeEnum.Table &&
                   [
                     ComponentSettingEnum.Method_Call,
                     ComponentSettingEnum.Async_Run,
+                    ComponentSettingEnum.Exception_Handling,
                   ].includes(item.type)
                 ) {
                   return null;
                 }
+                // 非工作流组件不展示输出方式
                 if (
                   currentComponentInfo?.type !==
                     AgentComponentTypeEnum.Workflow &&
