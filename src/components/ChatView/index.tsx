@@ -17,6 +17,7 @@ import { isEqual } from 'lodash';
 import React, { memo } from 'react';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { useModel } from 'umi';
+import ChatBottomDebug from './ChatBottomDebug';
 import ChatBottomMore from './ChatBottomMore';
 import ChatSampleBottom from './ChatSampleBottom';
 import RunOver from './RunOver';
@@ -144,7 +145,12 @@ const ChatView: React.FC<ChatViewProps> = memo(
             condition={messageInfo?.role !== AssistantRoleEnum.USER}
           >
             <ConditionRender condition={!!messageInfo?.status}>
-              <RunOver messageInfo={messageInfo} />
+              <div style={{ display: 'flex', flexDirection: 'row', gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <RunOver messageInfo={messageInfo} />
+                </div>
+                <ChatBottomDebug messageInfo={messageInfo} />
+              </div>
             </ConditionRender>
             {(!!messageInfo?.think || !!messageInfo?.text) && (
               <div className={cx(styles['inner-container'], contentClassName)}>
