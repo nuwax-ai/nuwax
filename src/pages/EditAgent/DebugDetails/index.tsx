@@ -199,11 +199,12 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
           </div>
           <div className={cx(styles.wrap, styles['render-container'])}>
             <h5 className={cx(styles.title)}>输出</h5>
-            <pre
+            <pre>{outputData}</pre>
+            {/* <pre
               dangerouslySetInnerHTML={{
                 __html: md.render(outputData),
               }}
-            />
+            /> */}
           </div>
         </>
       ) : (
