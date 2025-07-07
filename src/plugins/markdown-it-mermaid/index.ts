@@ -166,19 +166,6 @@ export default function mermaid(
         )}>
       </div>
     </div>`;
-    // 返回包含工具栏的HTML结构
-    return `
-      <div class="mermaid-wrapper" id="${chartId}" data-content="${encodedSourceCode}">
-      <div class="mermaid-toolbar-container" data-chart-id="${chartId}"></div>
-        <div class="mermaid-container">
-          <img class="mermaid-container-img markdown-it__image_clickable" ${slf.renderAttrs(
-            {
-              attrs: imageAttrs,
-            },
-          )}>
-        </div>
-      </div>
-    `;
   }
 
   // 替换默认的fence渲染器

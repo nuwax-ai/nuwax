@@ -7,6 +7,7 @@
   word-wrap: break-word;
   word-break: break-word;
   color: #191919;
+  position: relative;
 
   // 代码块样式
   :global(.code-block-wrapper) {
@@ -387,6 +388,11 @@
   }
 }
 
+:global(.markdown-code-toolbar-container) {
+  height: 45px;
+  width: 100%;
+  display: block;
+}
 // 代码块
 .code-block-wrapper {
   color: @CODE_TEXT;

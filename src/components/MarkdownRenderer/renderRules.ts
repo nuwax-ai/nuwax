@@ -1,6 +1,5 @@
 import { encodeHTML } from '@/utils/common';
 import renderCodePrism, { safeEscapeHtml } from '@/utils/renderCodePrism';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * 提取内联内容的文本
@@ -166,7 +165,8 @@ export const createDefaultRenderRules = (cssClasses: any = {}) => {
       const lang = token.info?.trim().split(/\s+/g)[0] || 'text';
       const content = token.content;
       const lineCount = content.split('\n').length - 1;
-      const codeId = `code-block-${uuidv4()}`;
+      const meta = token.meta || {};
+      const codeId = `${meta.requestId}-${meta.id}`;
       let result = renderCodePrism(token);
 
       return `<div class="${codeBlockWrapper}" id="${codeId}">
@@ -174,7 +174,8 @@ export const createDefaultRenderRules = (cssClasses: any = {}) => {
         data-language="${lang}" 
         data-content="${encodeURIComponent(content)}"
         data-line-count="${lineCount}"
-        data-container-id="${codeId}">
+        data-container-id="${meta.requestId}"
+        data-id="${codeId}">
       </div>
       ${result}
     </div>`;
@@ -194,13 +195,13 @@ export const createDefaultRenderRules = (cssClasses: any = {}) => {
     // 表格开始标签渲染
     table_open: (tokens: any[], idx: number) => {
       const token = tokens[idx + 1];
-      const content = token.content;
-      console.log('table_open', content);
-
-      return `<div class="${customTable}">
+      const codeId = `${token.meta.requestId}-${token.meta.id}`;
+      return `<div class="${customTable}" id="${codeId}">
       <div class="markdown-code-toolbar-container" 
         data-title="表格" 
         data-language="text"
+        data-container-id="${token.meta.requestId}"
+        data-id="${codeId}"
         data-content="${encodeURIComponent(_extractTableMarkdown(tokens, idx))}"
         ></div>
       <table>`;
