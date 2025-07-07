@@ -165,6 +165,7 @@ export interface ConversationCreateParams {
 
 // 消息查询过程信息
 export interface ProcessingInfo {
+  executeId?: string;
   cardBindConfig: AgentCardInfo;
   name: string;
   result: ExecuteResultInfo;

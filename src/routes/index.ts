@@ -147,6 +147,11 @@ const routes = [
     component: '@/examples/ExceptionItemExample',
     layout: false,
   },
+  {
+    path: '/examples/markdown-renderer',
+    component: '@/components/MarkdownRenderer/examples',
+    layout: false,
+  },
 ];
 
 export default routes;

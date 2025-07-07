@@ -330,6 +330,7 @@ const Chat: React.FC = () => {
                 isFilled={isSendMessageRef.current}
                 disabled={!!userFillVariables || isSendMessageRef.current}
               />
+              {/* {JSON.stringify(messageList)} */}
               {messageList?.length > 0 ? (
                 <>
                   {messageList?.map((item: MessageInfo, index: number) => (
