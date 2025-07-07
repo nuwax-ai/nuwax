@@ -84,7 +84,7 @@ const AddAndModify: React.FC<AddAndModifyProps> = ({
               };
         const placeholder =
           fieldType === TableFieldTypeEnum.Integer
-            ? `数值范围：[-2147483648, 2147483648]`
+            ? `数值范围：[-2147483648, 2147483647]`
             : `精度20位,整数部分最多14位,小数部分最多6位`;
         return <InputNumber {...props} placeholder={placeholder} />;
       }

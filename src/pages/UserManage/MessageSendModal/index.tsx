@@ -8,7 +8,6 @@ import { MessageScopeEnum } from '@/types/enums/systemManage';
 import { TeamStatusEnum } from '@/types/enums/teamSetting';
 import type { SearchUserInfo } from '@/types/interfaces/teamSetting';
 import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
-import { useRequest } from 'ahooks';
 import {
   Avatar,
   Button,
@@ -21,6 +20,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { useRequest } from 'umi';
 
 const cx = classNames.bind(styles);
 
@@ -70,17 +70,23 @@ const MessageSendModal: React.FC<MessageSendModalProps> = ({
   const { run: runSearch } = useRequest(apiSearchUser, {
     manual: true,
     debounceWait: 300,
-    onSuccess: (data) => {
-      // role不存在时设置role默认为成员
-      data.data.forEach((m: SearchUserInfo) => {
-        if (!m.role) {
-          m.role = TeamStatusEnum.User;
-        }
+    onSuccess: (data: SearchUserInfo[]) => {
+      if (!data?.length) {
+        message.warning('未搜索到相关用户');
+        setLeftColumnMembers([]);
+        return;
+      }
+
+      // 遍历 data 数组，为 role 不存在的用户设置默认值
+      const updatedData = data.map((m: SearchUserInfo) => {
+        // 如果 role 不存在，则设置为默认值 TeamStatusEnum.User
+        return { ...m, role: m.role ?? TeamStatusEnum.User };
       });
+
       // 保留一份搜索结果全数据
-      setSearchedAllMembers(JSON.parse(JSON.stringify(data.data)));
+      setSearchedAllMembers(updatedData);
       // 排除 rightColumnMembers 中的数据
-      const newLeftColumnMembers = data.data.filter((m: SearchUserInfo) => {
+      const newLeftColumnMembers = updatedData.filter((m: SearchUserInfo) => {
         return !rightColumnMembers.some((r) => r.id === m.id);
       });
       setLeftColumnMembers(newLeftColumnMembers);

@@ -105,38 +105,35 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 分组 MCP 列表
   const groupMcpList: GroupMcpInfo[] = useMemo(() => {
+    // 过滤出 MCP 类型的组件列表
     const mcpList = filterList(AgentComponentTypeEnum.MCP);
-    // 分组
-    const _groupMcpList = mcpList
-      .map((item: AgentComponentInfo) => {
-        const { targetId, icon, groupName, groupDescription } = item;
-        return {
+
+    // 使用 Map 来快速定位分组，减少查找时间复杂度
+    const groupMap = new Map<string, GroupMcpInfo>();
+
+    // 遍历列表，构建分组
+    mcpList.forEach((item: AgentComponentInfo) => {
+      const { targetId, icon, groupName, groupDescription } = item;
+      const _targetId = targetId.toString();
+
+      // 如果当前 targetId 对应的分组不存在，则创建新分组
+      if (!groupMap.has(_targetId)) {
+        groupMap.set(_targetId, {
           targetId,
           icon,
           groupName,
           groupDescription,
           children: [],
-        };
-      })
-      .reduce((acc: GroupMcpInfo[], current: GroupMcpInfo) => {
-        if (
-          !acc.find((item: GroupMcpInfo) => item.targetId === current.targetId)
-        ) {
-          acc.push(current);
-        }
-        return acc;
-      }, []);
-
-    mcpList.forEach((item: AgentComponentInfo) => {
-      const { targetId } = item;
-      const index = _groupMcpList.findIndex(
-        (group: GroupMcpInfo) => group.targetId === targetId,
-      );
-      if (index !== -1) {
-        _groupMcpList[index].children.push(item);
+        });
       }
+
+      // 获取对应的分组，并将当前项添加到分组的 children 中
+      const group = groupMap.get(_targetId)!;
+      group.children.push(item);
     });
-    return _groupMcpList;
+
+    // 将 Map 中的分组转换为数组并返回
+    return Array.from(groupMap.values());
   }, [agentComponentList]);
 
   // 绑定的变量信息
