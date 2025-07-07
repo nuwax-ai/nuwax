@@ -1,6 +1,5 @@
 // 引入插件
-// import markdownItMermaid from '@agoose77/markdown-it-mermaid';
-import markdownItMermaidNew from '@/plugins/markdown-it-mermaid-new';
+import markdownItMermaid from '@/plugins/markdown-it-mermaid';
 import markdownItKatexGpt from 'markdown-it-katex-gpt';
 import markdownItMultimdTable from 'markdown-it-multimd-table';
 
@@ -35,7 +34,7 @@ export const multimdTablePlugin: PluginConfig = {
 // Mermaid 图表插件配置
 export const mermaidPlugin: PluginConfig = {
   name: 'mermaid',
-  plugin: markdownItMermaidNew,
+  plugin: markdownItMermaid,
   options: {
     delay: 100, // 渲染延迟
     throttleDelay: 200, // 节流延迟

@@ -2,22 +2,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  background: #f6f8fa;
-  border: 1px solid #d1d9e0;
-  border-bottom: none;
+  padding: 10px 12px;
+  background: #f5f5f5;
   border-radius: 6px 6px 0 0;
-  font-size: 12px;
-  color: #656d76;
+  border-bottom: 1px solid #e5e5e5;
 
   .info {
+    flex: 1;
     display: flex;
     align-items: center;
     gap: 8px;
+    padding-left: 4px;
 
-    .language {
+    .title {
       font-weight: 600;
-      color: #24292f;
       font-size: 13px;
     }
 
@@ -26,7 +24,6 @@
       background: #e5e5e5;
       border-radius: 3px;
       font-size: 11px;
-      color: #656d76;
     }
 
     .zoomLevel {
@@ -51,15 +48,16 @@
       font-size: 12px;
       border: none;
       box-shadow: none;
+      color: rgba(0, 0, 0, 60%);
 
       &:hover {
         background: #e5e5e5;
-        color: #24292f;
+        color: rgba(0, 0, 0, 60%);
       }
 
       &:focus {
         background: #e5e5e5;
-        color: #24292f;
+        color: rgba(0, 0, 0, 60%);
       }
 
       // 图标样式
@@ -113,6 +111,11 @@
     }
 
     .copyBtn {
+      color: rgba(0, 0, 0, 60%);
+
+      &:hover {
+        color: rgba(0, 0, 0, 60%);
+      }
       // 复制按钮特定样式
       .ant-btn-loading-icon {
         font-size: 12px;
@@ -133,60 +136,6 @@
       .anticon {
         font-size: 12px;
         margin-right: 6px;
-      }
-    }
-  }
-}
-
-// 暗色主题支持
-@media (prefers-color-scheme: dark) {
-  .toolbar {
-    background: #2d333b;
-    border-color: #444c56;
-    color: #adbac7;
-
-    .info {
-      .language {
-        color: #cdd9e5;
-      }
-
-      .lineCount {
-        background: #444c56;
-        color: #adbac7;
-      }
-
-      .zoomLevel {
-        background: #1f2937;
-        color: #60a5fa;
-      }
-    }
-
-    .actions {
-      .ant-btn {
-        color: #adbac7;
-        background: transparent;
-
-        &:hover {
-          background: #444c56;
-          color: #cdd9e5;
-        }
-
-        &:focus {
-          background: #444c56;
-          color: #cdd9e5;
-        }
-      }
-
-      .viewToggleBtn {
-        &.ant-btn-primary {
-          background: #0969da;
-          border-color: #0969da;
-
-          &:hover {
-            background: #1f6feb;
-            border-color: #1f6feb;
-          }
-        }
       }
     }
   }

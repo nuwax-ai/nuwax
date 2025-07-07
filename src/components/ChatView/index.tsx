@@ -68,7 +68,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
         codeHeader: 'code-header',
         extBox: 'ext-box',
         copyImg: 'copy-img',
-        customTable: 'custom-table',
+        customTable: 'markdown-it-custom-table',
         imageOverlay: 'image-overlay',
       },
       // 确保全局函数正确启用，包括代码折叠功能

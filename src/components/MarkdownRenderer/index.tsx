@@ -16,9 +16,10 @@ import GenCustomPlugin, { getBlockName } from '@/plugins/markdown-it-custom';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { findClassElement } from '@/utils/common';
 import MarkdownCustomProcess from '../MarkdownCustomProcess';
-import MermaidToolbar from '../MermaidToolbar';
 
+import MarkdownCodeToolbar from '../MarkdownCodeToolbar';
 import styles from './index.less';
+import { applyListParagraphRenderer } from './listParagraphRenderer';
 
 const cx = classNames.bind(styles);
 const registerPluginList = {
@@ -125,7 +126,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
       });
       Object.entries({ ...mdInstance.renderer.rules }).forEach(
         ([ruleName, ruleFunction]) => {
-          console.log('renderTokens:ruleName', ruleName);
+          console.log('md:ruleName', ruleName);
           // console.log('renderTokens:ruleFunction', ruleFunction);
           mdInstance.renderer.rules[ruleName] = (
             tokens: Token[],
@@ -142,6 +143,9 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
       Object.entries(registerPluginList).forEach(([, value]) => {
         new GenCustomPlugin(mdInstance, getBlockName(value));
       });
+
+      // 应用列表段落渲染规则
+      applyListParagraphRenderer(mdInstance);
 
       // 应用插件
       plugins.forEach(({ plugin, options = {}, async = false }) => {
@@ -177,14 +181,16 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
       (e: MouseEvent) => {
         console.log('handleClick:e', e);
         const target = e.target as HTMLElement;
-        const clickableImageSrc =
-          findClassElement(target, 'markdown-it__image_clickable')?.dataset
-            ?.src || '';
+        const theImage = findClassElement(
+          target,
+          'markdown-it__image_clickable',
+        );
+        const clickableImageSrc = theImage?.dataset?.src || theImage?.src || '';
         if (clickableImageSrc) {
           window.showImageInModal(clickableImageSrc);
           return;
         }
-        const copyElement = findClassElement(target, 'markdown-copy-btn');
+        const copyElement = findClassElement(target, 'markdown-it__copy-btn');
         if (copyElement) {
           window.handleClipboard(copyElement, onCopy);
         }
@@ -211,14 +217,10 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
         const result: React.ReactNode[] = [];
         let i = 0;
         md.renderer.render(tokens, md.options, {}); //先调用一次，让token的meta.component生效
-        // const allTokens = md.renderer.renderToken(tokens, 0, md.options); //先调用一次，让token的meta.component生效
-        // console.log('renderTokens:tokens', tokens);
-        // console.log('renderTokens:allNodes', allNodes);
-        // console.log('renderTokens:allTokens', allTokens);
         const newTokens = [];
+        //TODO 后续 要考虑渲染顺序以及嵌套的问题
         while (i < tokens.length) {
           const token = tokens[i];
-          // console.log('renderTokens:token', token);
           // 处理有 meta.component 的自定义容器
           const component = handleCustomTokenRender(token, i);
           if (component) {
@@ -251,43 +253,88 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     const renderResult = renderTokens(newTokens);
 
     // 初始化Mermaid工具栏
-    const initializeMermaidToolbars = useCallback(() => {
-      const mermaidWrappers =
-        containerRef.current?.querySelectorAll('.mermaid-wrapper');
+    // const initializeMermaidToolbars = useCallback(() => {
+    //   const mermaidWrappers =
+    //     containerRef.current?.querySelectorAll('.mermaid-wrapper');
 
-      if (!mermaidWrappers?.length) return;
+    //   if (!mermaidWrappers?.length) return;
 
-      mermaidWrappers.forEach((wrapper) => {
-        const chartId = wrapper.getAttribute('id');
-        const encodedSourceCode = wrapper.getAttribute('data-source-code');
-        const toolbarContainer = wrapper.querySelector(
-          '.mermaid-toolbar-container',
+    //   mermaidWrappers.forEach((wrapper) => {
+    //     const chartId = wrapper.getAttribute('id');
+    //     const encodedSourceCode = wrapper.getAttribute('data-content');
+    //     const toolbarContainer = wrapper.querySelector(
+    //       '.mermaid-toolbar-container',
+    //     );
+
+    //     if (!chartId || !encodedSourceCode || !toolbarContainer) return;
+
+    //     // 检查是否已经初始化过
+    //     if (toolbarContainer.getAttribute('data-initialized') === 'true')
+    //       return;
+
+    //     try {
+    //       const sourceCode = decodeURIComponent(encodedSourceCode);
+
+    //       // 使用createRoot渲染React组件
+    //       const root = createRoot(toolbarContainer);
+    //       root.render(
+    //         <MermaidToolbar
+    //           chartId={chartId}
+    //           sourceCode={sourceCode}
+    //           visible={true}
+    //           useOptimizedExport={true}
+    //         />,
+    //       );
+
+    //       // 标记为已初始化
+    //       toolbarContainer.setAttribute('data-initialized', 'true');
+    //     } catch (error) {
+    //       console.error('初始化Mermaid工具栏失败:', error);
+    //     }
+    //   });
+    // }, []);
+
+    const initializeCodeToolbar = useCallback(() => {
+      const codeToolbarContainers = containerRef.current?.querySelectorAll(
+        '.markdown-code-toolbar-container',
+      );
+      if (!codeToolbarContainers?.length) return;
+      codeToolbarContainers.forEach((container) => {
+        const encodedCode = container.getAttribute('data-content');
+        const title = container.getAttribute('data-title') || '';
+        const language = container.getAttribute('data-language');
+        const containerId = container.getAttribute('data-container-id') || '';
+        const lineCount = parseInt(
+          container.getAttribute('data-line-count') || '0',
         );
-
-        if (!chartId || !encodedSourceCode || !toolbarContainer) return;
+        if (!encodedCode || !language) return;
 
         // 检查是否已经初始化过
-        if (toolbarContainer.getAttribute('data-initialized') === 'true')
-          return;
+        if (container.getAttribute('data-initialized') === 'true') return;
 
         try {
-          const sourceCode = decodeURIComponent(encodedSourceCode);
+          const sourceCode = decodeURIComponent(encodedCode);
 
           // 使用createRoot渲染React组件
-          const root = createRoot(toolbarContainer);
+          const root = createRoot(container);
           root.render(
-            <MermaidToolbar
-              chartId={chartId}
-              sourceCode={sourceCode}
-              visible={true}
-              useOptimizedExport={true}
+            <MarkdownCodeToolbar
+              title={title}
+              language={language}
+              content={sourceCode}
+              lineCount={lineCount}
+              containerId={containerId}
+              collapsible={true}
+              defaultCollapsed={false}
+              onCollapseChange={() => {}}
+              onCopy={onCopy}
             />,
           );
 
           // 标记为已初始化
-          toolbarContainer.setAttribute('data-initialized', 'true');
+          container.setAttribute('data-initialized', 'true');
         } catch (error) {
-          console.error('初始化Mermaid工具栏失败:', error);
+          console.error('初始化工具栏失败:', error);
         }
       });
     }, []);
@@ -296,14 +343,17 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     useEffect(() => {
       // 延迟初始化，确保DOM已完全渲染
       const timer = setTimeout(() => {
-        initializeMermaidToolbars();
+        initializeCodeToolbar();
       }, 100);
 
       return () => clearTimeout(timer);
-    }, [content, initializeMermaidToolbars]);
+    }, [content, initializeCodeToolbar]);
 
     return (
-      <div ref={containerRef} className={cx(styles.container, className)}>
+      <div
+        ref={containerRef}
+        className={cx(styles['markdown-container'], className)}
+      >
         {renderResult}
       </div>
     );

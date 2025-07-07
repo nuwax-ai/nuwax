@@ -152,15 +152,30 @@ export default function mermaid(
 
     // 编码源代码用于工具栏
     const encodedSourceCode = encodeURIComponent(token.content);
-
+    return `<div class="mermaid-wrapper ode-block-wrapper" id="${chartId}">
+      <div class="markdown-code-toolbar-container" 
+        data-language="mermaid" 
+        data-content="${encodedSourceCode}"
+        data-container-id="${chartId}">
+      </div>
+      <div class="mermaid-container">
+        <img class="mermaid-container-img markdown-it__image_clickable" ${slf.renderAttrs(
+          {
+            attrs: imageAttrs,
+          },
+        )}>
+      </div>
+    </div>`;
     // 返回包含工具栏的HTML结构
     return `
-      <div class="mermaid-wrapper" id="${chartId}" data-source-code="${encodedSourceCode}">
+      <div class="mermaid-wrapper" id="${chartId}" data-content="${encodedSourceCode}">
       <div class="mermaid-toolbar-container" data-chart-id="${chartId}"></div>
         <div class="mermaid-container">
-          <img class="mermaid-container-img" ${slf.renderAttrs({
-            attrs: imageAttrs,
-          })}>
+          <img class="mermaid-container-img markdown-it__image_clickable" ${slf.renderAttrs(
+            {
+              attrs: imageAttrs,
+            },
+          )}>
         </div>
       </div>
     `;

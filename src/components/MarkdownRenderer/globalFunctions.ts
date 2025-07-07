@@ -235,11 +235,11 @@ export class GlobalFunctionManager {
     } = options;
 
     if (handleClipboard) {
-      this.registerClipboardHandler(cssClasses);
+      this.registerClipboardHandler();
     }
 
     if (showImageInModal) {
-      this.registerImageModal(cssClasses);
+      this.registerImageModal();
     }
 
     if (toggleCodeCollapse) {
