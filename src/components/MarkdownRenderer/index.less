@@ -6,7 +6,7 @@
   width: 100%;
   word-wrap: break-word;
   word-break: break-word;
-  color: #191919;
+  color: rgba(0, 0, 0, 90%);
   position: relative;
 
   // 代码块样式
@@ -251,7 +251,7 @@
     margin: 24px 0 16px;
     font-weight: 600;
     line-height: 1.25;
-    color: #191919;
+    color: rgba(0, 0, 0, 90%);
     letter-spacing: 0;
   }
 
@@ -292,6 +292,12 @@
     line-height: 26px;
     font-size: 16px;
     letter-spacing: 0;
+    font-weight: 400;
+  }
+
+  p:last-child,
+  :global(.paragraph):last-child {
+    margin-bottom: 0;
   }
 
   blockquote,
@@ -342,11 +348,8 @@
   }
 
   hr {
-    height: 0.25em;
-    padding: 0;
-    margin: 24px 0;
-    background-color: #e1e4e8;
-    border: 0;
+    border: none;
+    border-top: 1px solid rgba(0, 0, 0, 13%);
   }
 
   a {
@@ -547,56 +550,6 @@
 
 /* 基础表格样式 */
 :global(.markdown-it-custom-table) {
-  // margin: 1em 0;
-  // border: 1px solid @TABLE_BORDER;
-  // border-radius: @BORDER_RADIUS_XL;
-  // max-width: 100%;
-  // overflow: auto;
-  // scrollbar-color: @BORDER_COLOR transparent;
-  // width: fit-content;
-
-  // table {
-  //   max-width: max-content;
-  //   text-align: left;
-  //   width: max-content;
-  //   border-collapse: collapse;
-  //   border-spacing: 0;
-  //   display: block;
-  //   overflow: auto;
-
-  //   thead tr:first-child {
-  //     background-color: @TABLE_HEADER_BG;
-  //   }
-  // }
-
-  // /* 表头样式 */
-  // th {
-  //   background-color: @TABLE_HEADER_BG;
-  //   text-align: left;
-  //   border: 1px solid @TABLE_BORDER;
-  //   max-width: 400px;
-  //   padding: @SPACE_BASE 18px;
-  //   font-weight: 600;
-  //   color: @TEXT_PRIMARY;
-  // }
-
-  // /* 单元格样式 */
-  // td {
-  //   max-width: 400px;
-  //   padding: @SPACE_BASE 18px;
-  //   border: 1px solid @TABLE_BORDER;
-  //   color: @TEXT_PRIMARY;
-  // }
-
-  // /* 斑马纹效果 */
-  // tr:nth-child(even) {
-  //   background-color: @TABLE_STRIPE;
-  // }
-
-  // /* 悬停效果 */
-  // tr:hover {
-  //   background-color: @TABLE_ROW_HOVER;
-  // }
   width: fit-content;
   max-width: 100%;
   overflow: auto;
@@ -652,6 +605,8 @@
       font-weight: 600;
     }
   }
+
+  margin-bottom: 16px;
 }
 
 :global(.mermaid-container) {

@@ -28,7 +28,7 @@ interface TokenRenderGroup {
   startIndex: number;
 }
 
-const NEED_TOOLBAR_TOKEN_TYPE_MAP = ['face', 'thead_open'];
+const NEED_TOOLBAR_TOKEN_TYPE_MAP = ['fence', 'thead_open'];
 
 import GenCustomPlugin, { getBlockName } from '@/plugins/markdown-it-custom';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -312,6 +312,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     useEffect(() => {
       // 解析 markdown 内容
       const tokens = content ? md.parse(content, {}) : [];
+
       const newTokens = rewriteTokens(tokens, requestId);
       setMdTokens(newTokens);
     }, [content, md, requestId]);
@@ -328,7 +329,9 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     const renderCodeToolbar = useCallback(() => {
       if (!toolbarTokens.length) return null;
       return toolbarTokens.map((token) => {
-        const uuid = `${token.meta.requestId}-${token.meta.id}`;
+        const meta = token.meta || {};
+        if (!meta?.requestId || !meta?.id) return null;
+        const uuid = `${meta.requestId}-${meta.id}`;
         const content = token.content;
         const language = token.info?.trim().split(/\s+/g)[0] || 'text';
 
@@ -338,7 +341,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
             <MarkdownCodeToolbar
               title={language}
               language={language}
-              containerId={token.meta.requestId}
+              containerId={meta.requestId}
               content={content}
               id={uuid}
               collapsible={true}
@@ -350,6 +353,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
         );
       });
     }, [toolbarTokens, requestId, onCopy]);
+
     return (
       <div
         ref={containerRef}
