@@ -5,16 +5,104 @@ import { InputTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { CreateVariablesProps } from '@/types/interfaces/agentConfig';
 import { BindConfigWithSub } from '@/types/interfaces/common';
-import { DeleteOutlined, FormOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, message, Modal, Space, Table } from 'antd';
+import {
+  DeleteOutlined,
+  FormOutlined,
+  HolderOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { Button, message, Modal, Space, Table, TableColumnsType } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import CreateVariableModal from './CreateVariableModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+// 更新变量类型
+enum UpdateVariablesTypeEnum {
+  Delete = 'delete',
+  Drag = 'drag',
+}
+
+interface RowContextProps {
+  setActivatorNodeRef?: (element: HTMLElement | null) => void;
+  listeners?: SyntheticListenerMap;
+}
+
+const RowContext = React.createContext<RowContextProps>({});
+
+const DragHandle: React.FC = () => {
+  const { setActivatorNodeRef, listeners } = useContext(RowContext);
+  return (
+    <Button
+      type="text"
+      size="small"
+      icon={<HolderOutlined />}
+      style={{ cursor: 'move' }}
+      ref={setActivatorNodeRef}
+      {...listeners}
+    />
+  );
+};
+
+interface RowProps extends React.HTMLAttributes<HTMLTableRowElement> {
+  'data-row-key': string;
+}
+
+const Row: React.FC<RowProps> = (props) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: props['data-row-key'] });
+
+  const style: React.CSSProperties = {
+    ...props.style,
+    ...(isDragging ? { position: 'relative' } : {}),
+    transform: CSS.Translate.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    opacity: isDragging ? 0.8 : 1,
+    paddingRight: '10px',
+  };
+
+  const contextValue = useMemo<RowContextProps>(
+    () => ({ setActivatorNodeRef, listeners }),
+    [setActivatorNodeRef, listeners],
+  );
+
+  return (
+    <RowContext.Provider value={contextValue}>
+      <tr {...props} ref={setNodeRef} style={style} {...attributes} />
+    </RowContext.Provider>
+  );
+};
 
 // 创建、更新变量弹窗
 const CreateVariables: React.FC<CreateVariablesProps> = ({
@@ -39,6 +127,10 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
   // const tableRef = useRef<any>(null);
   // 缓存输入数据，用于重置父级组件table表单
   const inputDataRef = useRef<BindConfigWithSub[]>([]);
+  // 更新变量操作类型
+  const updateVariablesTypeRef = useRef<UpdateVariablesTypeEnum>(
+    UpdateVariablesTypeEnum.Delete,
+  );
 
   useEffect(() => {
     const variables: BindConfigWithSub[] =
@@ -75,35 +167,51 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       manual: true,
       debounceInterval: 300,
       onSuccess: () => {
-        message.success('删除成功');
+        if (updateVariablesTypeRef.current === UpdateVariablesTypeEnum.Delete) {
+          message.success('删除成功');
+        } else {
+          message.success('更新成功');
+        }
         isAddedNewVariable.current = true;
         setInputData(inputDataRef.current);
       },
     },
   );
 
+  // 更新变量
+  const handleUpdateVariables = (newInputData: BindConfigWithSub[]) => {
+    const data = {
+      id: variablesInfo?.id,
+      targetId: variablesInfo?.targetId,
+      bindConfig: { variables: newInputData },
+    };
+
+    runVariableUpdate(data);
+  };
+
   // 删除变量
   const handleDel = (key: string) => {
     const newInputData = inputData.filter((item) => item.key !== key);
     inputDataRef.current = newInputData;
-
-    const data = {
-      id: variablesInfo?.id,
-      targetId: variablesInfo?.targetId,
-      bindConfig: {
-        variables: newInputData,
-      },
-    };
-    runVariableUpdate(data);
+    updateVariablesTypeRef.current = UpdateVariablesTypeEnum.Delete;
+    // 更新变量
+    handleUpdateVariables(newInputData);
   };
 
   // 入参配置columns
-  const inputColumns = [
+  const inputColumns: TableColumnsType<BindConfigWithSub> = [
+    {
+      dataIndex: 'sort',
+      key: 'sort',
+      align: 'center',
+      width: 40,
+      render: (_, record) => !record.systemVariable && <DragHandle />,
+    },
     {
       title: <LabelStar label="名称" />,
       dataIndex: 'name',
       key: 'name',
-      width: 200,
+      width: 180,
       ellipsis: true,
     },
     {
@@ -111,7 +219,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
-      width: 200,
+      width: 180,
     },
     {
       title: '类型',
@@ -207,6 +315,36 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
     }
   };
 
+  // 拖拽结束
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      // 更新变量操作类型: 拖拽
+      updateVariablesTypeRef.current = UpdateVariablesTypeEnum.Drag;
+      // 更新变量
+      const _activeIndex = inputData.findIndex(
+        (record) => record.key === active?.id,
+      );
+      const _overIndex = inputData.findIndex(
+        (record) => record.key === over?.id,
+      );
+      const newInputData = arrayMove(inputData, _activeIndex, _overIndex);
+
+      inputDataRef.current = newInputData;
+      setInputData(newInputData);
+      // 更新变量
+      handleUpdateVariables(newInputData);
+    }
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
   return (
     <Modal
       width={800}
@@ -215,22 +353,36 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       footer={null}
       onCancel={handleCancel}
     >
-      <Table<BindConfigWithSub>
-        // ref={tableRef}
-        className={cx(styles['table-container'], 'overflow-hide')}
-        columns={inputColumns}
-        dataSource={inputData}
-        pagination={false}
-        virtual
-        scroll={{
-          y: 560,
-        }}
-        footer={() => (
-          <Button icon={<PlusOutlined />} onClick={handleAddVariable}>
-            新增
-          </Button>
-        )}
-      />
+      <DndContext
+        modifiers={[restrictToVerticalAxis]}
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={inputData.map((item) => item.key as string)}
+          strategy={verticalListSortingStrategy}
+        >
+          <Table<BindConfigWithSub>
+            // ref={tableRef}
+            rowKey="key"
+            components={{ body: { row: Row } }}
+            className={cx(styles['table-container'], 'overflow-hide')}
+            columns={inputColumns}
+            dataSource={inputData}
+            pagination={false}
+            virtual
+            scroll={{
+              y: 560,
+            }}
+            footer={() => (
+              <Button icon={<PlusOutlined />} onClick={handleAddVariable}>
+                新增
+              </Button>
+            )}
+          />
+        </SortableContext>
+      </DndContext>
       <CreateVariableModal
         id={variablesInfo?.id}
         targetId={variablesInfo?.targetId}
