@@ -76,7 +76,7 @@ export const MarkdownCodeToolbar: React.FC<MarkdownCodeToolbarProps> = (
   // ==================== 渲染 ====================
   return (
     <div
-      className={`${styles.toolbar} ${innerProps.className || ''}`}
+      className={`${styles.toolbar}`}
       style={{
         top: containerPosition.top,
         left: containerPosition.left,

@@ -10,14 +10,25 @@ import React, {
   useState,
 } from 'react';
 import { Root } from 'react-dom/client';
-
-// 使用 any 类型来避免类型冲突
-type Token = any;
-
 import { globalFunctionManager } from './globalFunctions';
 import { presetConfigs } from './presets';
 import { createDefaultRenderRules } from './renderRules';
 import type { MarkdownRendererConfig, MarkdownRendererProps } from './types';
+
+// 使用 any 类型来避免类型冲突
+type Token = any;
+enum TokenRenderType {
+  Custom = 'custom',
+  Standard = 'standard',
+}
+// 记录每个token的类型和位置信息
+interface TokenRenderGroup {
+  type: TokenRenderType;
+  tokens: Token[];
+  startIndex: number;
+}
+
+const NEED_TOOLBAR_TOKEN_TYPE_MAP = ['face', 'thead_open'];
 
 import GenCustomPlugin, { getBlockName } from '@/plugins/markdown-it-custom';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -80,7 +91,7 @@ const rewriteTokens = (tokens: Token[], requestId: string) => {
         id: `${token?.type}${token?.info ? '-' + token?.info : ''}-${index}`,
         isFirst: index === 0,
         isLast: index === tokens.length - 1,
-        toolbar: ['fence', 'thead_open'].includes(token.type),
+        toolbar: NEED_TOOLBAR_TOKEN_TYPE_MAP.includes(token.type),
       },
     };
   });
@@ -200,7 +211,6 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
 
     const handleClick = useCallback(
       (e: MouseEvent) => {
-        console.log('handleClick:e', e);
         const target = e.target as HTMLElement;
         const theImage = findClassElement(
           target,
@@ -211,10 +221,6 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
         if (clickableImageSrc) {
           window.showImageInModal(clickableImageSrc);
           return;
-        }
-        const copyElement = findClassElement(target, 'markdown-it__copy-btn');
-        if (copyElement) {
-          window.handleClipboard(copyElement, onCopy);
         }
       },
       [onCopy],
@@ -237,33 +243,67 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     const renderTokens = useCallback(
       (tokens: Token[]): React.ReactNode[] => {
         const result: React.ReactNode[] = [];
-        let i = 0;
-        md.renderer.render(tokens, md.options, {}); //先调用一次，让token的meta.component生效
-        const newTokens = [];
-        //TODO 后续 要考虑渲染顺序以及嵌套的问题
-        while (i < tokens.length) {
-          const token = tokens[i];
-          // 处理有 meta.component 的自定义容器
-          const component = handleCustomTokenRender(token, i);
-          if (component) {
-            result.push(component);
-            i++;
-            continue;
-          }
-          newTokens.push(token);
-          i++;
-        }
 
-        // 处理其他标准 token
-        const singleResult = md.renderer.render(newTokens, md.options, {});
-        if (singleResult) {
-          result.push(
-            <div
-              dangerouslySetInnerHTML={{ __html: singleResult }}
-              key={`process-${newTokens.length}-${i}`}
-            />,
-          );
-        }
+        // 先调用一次render，让token的meta.component生效
+        md.renderer.render(tokens, md.options, {});
+
+        const tokenGroups: TokenRenderGroup[] = [];
+        let currentGroup: TokenRenderGroup | null = null;
+
+        // 遍历所有tokens，按类型分组
+        tokens.forEach((token, index) => {
+          const isCustomToken = !!token.meta?.component;
+          const tokenType = isCustomToken
+            ? TokenRenderType.Custom
+            : TokenRenderType.Standard;
+
+          // 如果当前组为空或类型不同，创建新组
+          if (!currentGroup || currentGroup.type !== tokenType) {
+            currentGroup = {
+              type: tokenType,
+              tokens: [token],
+              startIndex: index,
+            };
+            tokenGroups.push(currentGroup);
+          } else {
+            // 类型相同，添加到当前组
+            currentGroup.tokens.push(token);
+          }
+        });
+
+        // 按组渲染，保持原始顺序
+        tokenGroups.forEach((group, groupIndex) => {
+          if (group.type === TokenRenderType.Custom) {
+            // 自定义组件：逐个渲染
+            group.tokens.forEach((token, tokenIndex) => {
+              const component = handleCustomTokenRender(
+                token,
+                group.startIndex + tokenIndex,
+              );
+              if (component) {
+                result.push(component);
+              }
+            });
+          } else {
+            // 标准token：合并渲染
+            if (group.tokens.length > 0) {
+              const mergedHtml = md.renderer.render(
+                group.tokens,
+                md.options,
+                {},
+              );
+              if (mergedHtml) {
+                result.push(
+                  <div
+                    dangerouslySetInnerHTML={{ __html: mergedHtml }}
+                    key={`standard-group-${group.startIndex}-${groupIndex}`}
+                  />,
+                );
+              }
+            }
+          }
+        });
+
         return result;
       },
       [md],
@@ -273,7 +313,6 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
       // 解析 markdown 内容
       const tokens = content ? md.parse(content, {}) : [];
       const newTokens = rewriteTokens(tokens, requestId);
-      console.log('newTokens', newTokens);
       setMdTokens(newTokens);
     }, [content, md, requestId]);
 
@@ -301,9 +340,6 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
               language={language}
               containerId={token.meta.requestId}
               content={content}
-              className={
-                token.type === 'thead_open' ? 'table-toolbar' : 'code-toolbar'
-              }
               id={uuid}
               collapsible={true}
               defaultCollapsed={false}
