@@ -12,7 +12,6 @@ import type {
   SpaceUserInfo,
 } from '@/types/interfaces/teamSetting';
 import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
-import { useRequest } from 'ahooks';
 import {
   Avatar,
   Button,
@@ -25,6 +24,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { useRequest } from 'umi';
 
 const cx = classNames.bind(styles);
 
@@ -47,9 +47,6 @@ const AddMember: React.FC<AddMemberProps> = ({
   onConfirmAdd,
 }) => {
   const [form] = Form.useForm();
-  const [spaceExistMembers, setSpaceExistMembers] = useState<SpaceUserInfo[]>(
-    [],
-  );
   const [leftColumnMembers, setLeftColumnMembers] = useState<SearchUserInfo[]>(
     [],
   );
@@ -65,14 +62,12 @@ const AddMember: React.FC<AddMemberProps> = ({
     onCancel();
   };
 
-  const { run } = useRequest(apiGetSpaceUserList, {
+  // 查询成员列表信息
+  const { run, data: spaceExistMembers } = useRequest(apiGetSpaceUserList, {
     manual: true,
-    onSuccess(data) {
-      // 空间所有成员
-      setSpaceExistMembers(JSON.parse(JSON.stringify(data.data)));
-    },
   });
 
+  // 增加团队成员
   const { run: runAdd } = useRequest(apiAddSpaceMember, {
     manual: true,
     debounceWait: 300,
@@ -82,23 +77,30 @@ const AddMember: React.FC<AddMemberProps> = ({
     },
   });
 
+  // 根据关键字搜索用户信息
   const { run: runSearch } = useRequest(apiSearchUser, {
     manual: true,
     debounceWait: 300,
-    onSuccess: (data) => {
-      // role不存在时设置role默认为成员
-      data.data.forEach((m: SearchUserInfo) => {
-        if (!m.role) {
-          m.role = TeamStatusEnum.User;
-        }
+    onSuccess: (data: SearchUserInfo[]) => {
+      if (!data?.length) {
+        message.warning('未搜索到相关用户');
+        setLeftColumnMembers([]);
+        return;
+      }
+
+      // 遍历 data 数组，为 role 不存在的用户设置默认值
+      const updatedData = data.map((m: SearchUserInfo) => {
+        // 如果 role 不存在，则设置为默认值 TeamStatusEnum.User
+        return { ...m, role: m.role ?? TeamStatusEnum.User };
       });
+
       // 保留一份搜索结果全数据
-      setSearchedAllMembers(JSON.parse(JSON.stringify(data.data)));
+      setSearchedAllMembers(updatedData);
       // 排除 rightColumnMembers 和 spaceExistMembers 中的数据
-      const newLeftColumnMembers = data.data.filter((m: SearchUserInfo) => {
+      const newLeftColumnMembers = updatedData.filter((m: SearchUserInfo) => {
         return (
           !rightColumnMembers.some((r) => r.id === m.id) &&
-          !spaceExistMembers.some((f) => f.userId === m.id)
+          !spaceExistMembers?.some((f: SpaceUserInfo) => f.userId === m.id)
         );
       });
       setLeftColumnMembers(newLeftColumnMembers);
@@ -179,7 +181,7 @@ const AddMember: React.FC<AddMemberProps> = ({
     setRightColumnMembers([]);
     setLeftColumnMembers([]);
     setSearchedAllMembers([]);
-    run({ spaceId, role: undefined, kw: '' });
+    run({ spaceId });
   }, [spaceId, open]);
 
   return (
