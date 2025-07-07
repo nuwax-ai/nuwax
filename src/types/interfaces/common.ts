@@ -502,6 +502,11 @@ export interface ChatBottomMoreProps {
   messageInfo: MessageInfo;
 }
 
+// 聊天框底部更多操作组件
+export interface ChatBottomDebugProps {
+  messageInfo: MessageInfo;
+}
+
 // 运行状态组件：进行中、运行完毕
 export type RunOverProps = ChatBottomMoreProps;
 

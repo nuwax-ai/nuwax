@@ -22,3 +22,5 @@ package-lock.json
 /devspace.yaml
 /devspace_start.sh
 /Dockerfile
+
+/.husky
