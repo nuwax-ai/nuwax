@@ -28,11 +28,8 @@ const SettingModal: React.FC<SettingModalProps> = ({
   onSave,
 }) => {
   // 保存设置
-  const handleOnSave = (attr: string, value: BindConfigWithSub[]) => {
-    const params = {
-      [attr]: value,
-    };
-    onSave(params);
+  const handleOnSave = (value: any) => {
+    onSave(value);
   };
 
   return (

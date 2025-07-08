@@ -468,6 +468,7 @@ const Workflow: React.FC = () => {
           );
           form.setFieldValue(SKILL_FORM_KEY, updateValue);
           setSkillChange(false);
+          setFoldWrapItem(_res.data);
           graphRef.current?.graphUpdateNode(String(data.id), data);
         } else {
           setSkillChange(false);

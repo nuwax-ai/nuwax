@@ -207,6 +207,7 @@ export interface SkillProps {
   // 修改技能参数
   modifyItem: (id: CreatedNodeItem) => void;
   variables?: InputAndOutConfig[];
+  style?: React.CSSProperties;
 }
 
 export interface SkillItem extends Partial<CreatedNodeItem> {
