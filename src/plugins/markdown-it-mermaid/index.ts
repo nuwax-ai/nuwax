@@ -91,10 +91,10 @@ export default function mermaid(
       return '';
     }
 
-    console.log('customFenceRenderer:token.meta', token.meta);
     const meta = token.meta || {};
     // 如果没有nextId，说明正在渲染中
     if (!meta.nextId) {
+      // TODO 这里有一定概率渲染失败，需要优化
       return renderingHtml;
     }
 
