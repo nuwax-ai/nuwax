@@ -19,6 +19,8 @@ interface Props {
   minimap?: boolean;
   // 是否显示代码优化按钮
   codeOptimizeVisible?: boolean;
+  // 是否只读
+  readOnly?: boolean;
 }
 
 const CodeEditor: React.FC<Props> = ({
@@ -30,6 +32,7 @@ const CodeEditor: React.FC<Props> = ({
   minimap = false,
   form,
   codeOptimizeVisible = true,
+  readOnly = false,
 }) => {
   const [isMonacoReady, setIsMonacoReady] = useState(false);
   const [open, setOpen] = useState<boolean>(false);
@@ -98,6 +101,7 @@ const CodeEditor: React.FC<Props> = ({
       minimap: {
         enabled: minimap,
       },
+      readOnly: readOnly, // 添加只读模式配置
     };
 
     // 如果是JSON语言，关闭代码输入提示相关功能
@@ -158,7 +162,7 @@ const CodeEditor: React.FC<Props> = ({
           options={getEditorOptions()}
         />
       )}
-      <ConditionRender condition={codeOptimizeVisible}>
+      <ConditionRender condition={codeOptimizeVisible && !readOnly}>
         {/* 代码辅助生成，增加复用写在这个文件里面 */}
         <FloatButton
           shape="circle"

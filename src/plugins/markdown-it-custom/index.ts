@@ -64,11 +64,9 @@ class GenCustomPlugin {
           const args: Record<string, any> = {};
           const parsedArgs = parseAttributesString(params);
           Object.assign(args, parsedArgs);
-          console.log('args', args);
 
           // 移除 component 参数，避免传递给组件
           delete args.component;
-          delete args.name; // 如果使用 name 作为组件名，也要删除
 
           // 设置 meta 信息供 React 渲染器使用
           token.meta = {

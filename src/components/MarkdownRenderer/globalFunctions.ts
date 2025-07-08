@@ -1,3 +1,4 @@
+import { fallbackCopyTextToClipboard } from '@/utils';
 import { message } from 'antd';
 
 /**
@@ -29,42 +30,6 @@ export class GlobalFunctionManager {
     const globalManager = this;
 
     // 传统复制方法（降级方案）
-    function fallbackCopyTextToClipboard(
-      text: string,
-      callback?: (context: string) => void,
-    ) {
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-
-      // 避免在iOS上出现缩放
-      textArea.style.fontSize = '16px';
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      textArea.style.top = '-999999px';
-
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-
-      try {
-        const successful = document.execCommand('copy');
-        if (successful) {
-          // 优先调用传入的回调，如果没有则调用默认提示
-          if (callback) {
-            callback(text);
-          } else {
-            globalManager.triggerCopyCallbacks();
-          }
-        } else {
-          message.error('复制失败');
-        }
-      } catch (err) {
-        console.error('复制失败:', err);
-        message.error('复制失败');
-      }
-
-      document.body.removeChild(textArea);
-    }
 
     window.handleClipboard = function (
       element: HTMLElement,

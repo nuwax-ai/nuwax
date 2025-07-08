@@ -59,7 +59,7 @@ const handleCustomTokenRender = (
 ): React.ReactNode => {
   if (token.meta?.component) {
     const { props, component } = token.meta;
-    if (component in componentMap) {
+    if (component && component in componentMap) {
       const Component = componentMap[component as keyof typeof componentMap];
       return (
         <Component

@@ -1,3 +1,4 @@
+import { debounce } from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
 import { DELAYS, SUPPORTED_LANGUAGES } from './constants';
 import type { ContainerPosition, MarkdownCodeToolbarProps } from './types';
@@ -69,13 +70,6 @@ export const useContainerPosition = (
       const relativeTop = targetRect.top - containerRect.top;
       const relativeLeft = targetRect.left - containerRect.left;
 
-      console.log('位置计算:', {
-        id: _id,
-        targetRect: { top: targetRect.top, left: targetRect.left },
-        containerRect: { top: containerRect.top, left: containerRect.left },
-        relative: { top: relativeTop, left: relativeLeft },
-      });
-
       setContainerPosition({
         width: targetRect.width,
         top: relativeTop,
@@ -85,23 +79,23 @@ export const useContainerPosition = (
     [innerProps.content, innerProps.title, innerProps.language, setInnerProps],
   );
 
+  // 使用lodash的debounce处理resize事件
+  const handleResize = debounce(() => {
+    calculatePosition(containerId, id);
+  }, 200); // 200ms的防抖时间
+
   useEffect(() => {
     if (!id || !containerId) return;
 
     // 监听窗口大小变化，重新计算位置
-    const handleResize = () => {
-      calculatePosition(containerId, id);
-    };
-
-    // 设置异步获取位置信息，使用延迟确保DOM完全渲染
     const timer = setTimeout(() => {
       calculatePosition(containerId, id);
-      window.addEventListener('resize', handleResize);
+      document.getElementById(id)?.addEventListener('resize', handleResize);
     }, DELAYS.POSITION_CALCULATION);
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener('resize', handleResize);
+      document.getElementById(id)?.removeEventListener('resize', handleResize);
     };
   }, [id, containerId, calculatePosition]);
 

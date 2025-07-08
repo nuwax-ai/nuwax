@@ -80,7 +80,7 @@ export const DOWNLOAD_CONFIG = {
  * 延迟时间常量（毫秒）
  */
 export const DELAYS = {
-  POSITION_CALCULATION: 150,
+  POSITION_CALCULATION: 300,
 } as const;
 
 /**
