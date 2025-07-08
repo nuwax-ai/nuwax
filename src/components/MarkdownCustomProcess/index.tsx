@@ -1,8 +1,13 @@
 import { ProcessingEnum } from '@/types/enums/common';
 import { ProcessingInfo } from '@/types/interfaces/conversationInfo';
+import { copyJSONToClipboard } from '@/utils';
 import { cloneDeep } from '@/utils/common';
-import { CheckOutlined, CopyOutlined, ReadOutlined } from '@ant-design/icons';
-import { Button, Tooltip } from 'antd';
+import {
+  CheckOutlined,
+  CopyOutlined,
+  ProfileOutlined,
+} from '@ant-design/icons';
+import { Button, message, Tooltip } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
 import { memo, useCallback, useEffect, useState } from 'react';
@@ -58,17 +63,16 @@ function MarkdownCustomProcess(props: ProcessingInfo) {
     }
   }, [innerProcessing.status]);
 
-  const handleCopy = () => {
+  const handleCopy = useCallback(() => {
+    if (!detailData) {
+      message.error('暂无数据');
+      return;
+    }
     // 复制功能 - 可以复制组件的配置或内容
-    const copyText = JSON.stringify(
-      { result: innerProcessing?.result },
-      null,
-      2,
-    );
-    navigator.clipboard.writeText(copyText).then(() => {
-      console.log('已复制到剪贴板');
+    copyJSONToClipboard(detailData, 2, () => {
+      message.success('复制成功');
     });
-  };
+  }, [detailData]);
 
   // 准备 详情弹窗 所需的数据
   const getDetailData = useCallback((result: any) => {
@@ -114,7 +118,7 @@ function MarkdownCustomProcess(props: ProcessingInfo) {
             <Tooltip title={'查看详情'}>
               <Button
                 type="text"
-                icon={<ReadOutlined />}
+                icon={<ProfileOutlined />}
                 onClick={() => setOpenModal(true)}
               />
             </Tooltip>
