@@ -199,14 +199,25 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       key: 'sort',
       align: 'center',
       width: 40,
-      render: (_, record) => !record.systemVariable && <DragHandle />,
+      fixed: 'left',
+      render: (_, record) =>
+        !record.systemVariable && (
+          <span className={cx('flex', 'items-center', 'h-full')}>
+            <DragHandle />
+          </span>
+        ),
     },
     {
       title: <LabelStar label="名称" />,
       dataIndex: 'name',
       key: 'name',
       width: 180,
-      ellipsis: true,
+      fixed: 'left',
+      render: (value: string) => (
+        <div className={cx('flex', 'items-center', 'h-full')}>
+          <span className={cx('text-ellipsis')}>{value || '--'}</span>
+        </div>
+      ),
     },
     {
       title: '描述',
@@ -214,16 +225,20 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       key: 'description',
       ellipsis: true,
       width: 180,
+      render: (value: string) => (
+        <span className={cx('flex', 'items-center', 'h-full')}>
+          {value || '--'}
+        </span>
+      ),
     },
     {
       title: '类型',
       dataIndex: 'systemVariable',
       key: 'systemVariable',
-      className: 'flex',
       width: 100,
       ellipsis: true,
       render: (value: boolean) => (
-        <span className={cx('flex', 'items-center')}>
+        <span className={cx('flex', 'items-center', 'h-full')}>
           {value ? '系统变量' : '自定义变量'}
         </span>
       ),
@@ -232,8 +247,9 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       title: '输入方式',
       dataIndex: 'inputType',
       key: 'inputType',
+      width: 100,
       render: (value: InputTypeEnum) => (
-        <span className={cx('flex', 'items-center')}>
+        <span className={cx('flex', 'items-center', 'h-full')}>
           {AGENT_VARIABLES_INPUT_OPTIONS.find((item) => item.value === value)
             ?.label || '--'}
         </span>
@@ -243,8 +259,12 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       title: '是否必须',
       dataIndex: 'require',
       key: 'require',
+      width: 100,
+      align: 'center',
       render: (value: boolean) => (
-        <span className={cx('flex', 'items-center')}>
+        <span
+          className={cx('flex', 'items-center', 'content-center', 'h-full')}
+        >
           {value ? '是' : '否'}
         </span>
       ),
@@ -252,20 +272,32 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
     {
       title: '',
       dataIndex: 'action',
-      width: 70,
+      width: 100,
+      fixed: 'right',
       render: (_: string, record: BindConfigWithSub) => (
         <>
           {record?.systemVariable ? (
             <span>--</span>
           ) : (
-            <Space className={cx('flex', 'content-between')}>
-              <FormOutlined
-                className={cx('cursor-pointer')}
-                onClick={() => handleEditVariable(record)}
+            <Space className={cx('flex', 'content-between', 'items-center')}>
+              <Button
+                type="text"
+                icon={
+                  <FormOutlined
+                    className={cx('cursor-pointer')}
+                    onClick={() => handleEditVariable(record)}
+                  />
+                }
               />
-              <DeleteOutlined
-                className={cx('cursor-pointer')}
-                onClick={() => handleDel(record.key as string)}
+
+              <Button
+                type="text"
+                icon={
+                  <DeleteOutlined
+                    className={cx('cursor-pointer')}
+                    onClick={() => handleDel(record.key as string)}
+                  />
+                }
               />
             </Space>
           )}
@@ -341,7 +373,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
 
   return (
     <Modal
-      width={800}
+      width={852}
       title="变量"
       open={open}
       footer={null}
