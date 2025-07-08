@@ -25,7 +25,7 @@ export enum CreateListEnum {
   Me,
 }
 
-// 应用开发、组件库等更多操作枚举
+// 应用开发、组件库等更多操作枚举(自定义枚举)
 export enum ApplicationMoreActionEnum {
   // 分析
   Analyze = 'Analyze',
@@ -39,6 +39,8 @@ export enum ApplicationMoreActionEnum {
   Move = 'Move',
   // 临时会话
   Temporary_Session = 'Temporary_Session',
+  // API Key
+  API_Key = 'API_Key',
   // 日志
   Log = 'Log',
   // 下架

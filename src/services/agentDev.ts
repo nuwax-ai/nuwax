@@ -1,9 +1,12 @@
 import type {
+  AgentAkDeleteParams,
+  AgentAkUpdateParams,
   AgentDetailDto,
   AgentInfo,
   AgentLogDetailParams,
   apiAgentLogListParams,
   logInfo,
+  UserApiKeyInfo,
 } from '@/types/interfaces/agent';
 import type { HomeAgentCategoryInfo } from '@/types/interfaces/agentConfig';
 import type { ListParams, PageParams } from '@/types/interfaces/common';
@@ -153,5 +156,43 @@ export async function apiAgentLogDetail(
   return request('/api/logPlatform/agent/detail', {
     method: 'POST',
     data,
+  });
+}
+
+// 更新智能体APIKEY是否为开发模式
+export async function apiAgentAkUpdate(
+  data: AgentAkUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/ak/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 删除智能体APIKEY
+export async function apiAgentAkDelete(
+  data: AgentAkDeleteParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/ak/delete', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 新增智能体APIKEY
+export async function apiAgentAkCreate(
+  agentId: number,
+): Promise<RequestResponse<UserApiKeyInfo>> {
+  return request(`/api/agent/ak/create/${agentId}`, {
+    method: 'POST',
+  });
+}
+
+// 查询智能体APIKEY列表
+export async function apiAgentAkList(
+  agentId: number,
+): Promise<RequestResponse<UserApiKeyInfo>> {
+  return request(`/api/agent/ak/list/${agentId}`, {
+    method: 'GET',
   });
 }

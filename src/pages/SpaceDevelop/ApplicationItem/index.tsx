@@ -1,7 +1,7 @@
 import CustomPopover from '@/components/CustomPopover';
 import { APPLICATION_MORE_ACTION } from '@/constants/space.constants';
 import { apiDevCollectAgent } from '@/services/agentDev';
-import { PermissionsEnum, RoleEnum } from '@/types/enums/common';
+import { PermissionsEnum } from '@/types/enums/common';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ApplicationItemProps } from '@/types/interfaces/space';
@@ -9,7 +9,7 @@ import { MoreOutlined, UserOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useModel, useRequest } from 'umi';
 import ApplicationHeader from './ApplicationHeader';
 import CollectStar from './CollectStar';
@@ -22,7 +22,6 @@ const cx = classNames.bind(styles);
  */
 const ApplicationItem: React.FC<ApplicationItemProps> = ({
   agentConfigInfo,
-  userInfo,
   onClick,
   onCollect,
   onClickMore,
@@ -42,6 +41,40 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
       });
     },
   });
+
+  // 提取权限检查逻辑
+  const hasPermission = (permission: PermissionsEnum) => {
+    return agentConfigInfo?.permissions?.includes(permission);
+  };
+
+  // 更多操作列表
+  const actionList = useMemo(() => {
+    return APPLICATION_MORE_ACTION.filter((item) => {
+      const type = item.type as ApplicationMoreActionEnum;
+
+      switch (type) {
+        // 复制到空间
+        case ApplicationMoreActionEnum.Copy_To_Space:
+          return hasPermission(PermissionsEnum.Copy);
+        // 临时会话
+        case ApplicationMoreActionEnum.Temporary_Session:
+          return hasPermission(PermissionsEnum.TempChat);
+        // 迁移
+        case ApplicationMoreActionEnum.Move:
+          // 迁移操作：仅创建者和管理员展示
+          return hasPermission(PermissionsEnum.Transfer);
+        case ApplicationMoreActionEnum.Del:
+          // 删除操作：只有空间创建者、空间管理员和智能体本身的创建者可删除
+          return hasPermission(PermissionsEnum.Delete);
+        case ApplicationMoreActionEnum.API_Key:
+          // API Key操作：只有空间创建者、空间管理员和智能体本身的创建者可查看
+          return hasPermission(PermissionsEnum.AgentApi);
+        default:
+          // 其他操作默认展示
+          return true;
+      }
+    });
+  }, [agentConfigInfo]);
 
   // 收藏、取消收藏事件
   const handlerCollect = async () => {
@@ -97,28 +130,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
           onClick={handlerCollect}
         />
         {/*更多操作*/}
-        <CustomPopover
-          onClick={handlerClickMore}
-          list={APPLICATION_MORE_ACTION.filter((item) => {
-            const type = item.type as ApplicationMoreActionEnum;
-            // 过滤迁移（仅创建者和管理员展示迁移）
-            if (
-              type === ApplicationMoreActionEnum.Move &&
-              (userInfo?.role === RoleEnum.User ||
-                (userInfo?.role === RoleEnum.Owner &&
-                  agentConfigInfo?.creatorId !== userInfo?.id))
-            ) {
-              return false;
-            }
-            // 过滤删除（只有空间创建者、空间管理员和智能体本身的创建者可删除）
-            if (type === ApplicationMoreActionEnum.Del) {
-              return agentConfigInfo?.permissions?.includes(
-                PermissionsEnum.Delete,
-              );
-            }
-            return true;
-          })}
-        >
+        <CustomPopover onClick={handlerClickMore} list={actionList}>
           <span
             className={cx(
               styles['icon-box'],

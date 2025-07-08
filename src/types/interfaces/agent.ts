@@ -1,7 +1,9 @@
 import type {
+  AgentApiKeyTargetEnum,
   AgentComponentTypeEnum,
   AllowCopyEnum,
   DefaultSelectedEnum,
+  DevModeEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
   OutputDirectlyEnum,
@@ -605,4 +607,37 @@ export interface logInfo {
 
   // 用户名称
   userName: string;
+}
+
+// 删除智能体APIKEY输入参数
+export interface AgentAkDeleteParams {
+  // 智能体ID
+  agentId: number;
+  // APIKEY
+  accessKey: string;
+}
+
+// 更新智能体APIKEY是否为开发模式输入参数
+export interface AgentAkUpdateParams extends AgentAkDeleteParams {
+  // 开发模式，1 是，0 否
+  devMode: DevModeEnum;
+}
+
+// 用户APIKEY信息
+export interface UserApiKeyInfo {
+  id: number;
+  userId: number;
+  // 可用值:Mcp,Agent,TempChat
+  targetType: AgentApiKeyTargetEnum;
+  targetId: number;
+  accessKey: string;
+  config: {
+    // 是否开发模式,1 是；0 否
+    isDevMode: DevModeEnum;
+  };
+  creator: {
+    userId: number;
+    userName: string;
+  };
+  created: string;
 }

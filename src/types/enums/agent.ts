@@ -11,6 +11,13 @@ export enum AgentComponentTypeEnum {
   MCP = 'Mcp',
 }
 
+// 用户APIKEY目标类型,可用值:Agent,Mcp,TempChat
+export enum AgentApiKeyTargetEnum {
+  Agent = 'Agent',
+  MCP = 'Mcp',
+  TempChat = 'TempChat',
+}
+
 // 值引用类型，Input 输入；Reference 变量引用,可用值:Input,Reference
 export enum BindValueType {
   // 输入
@@ -149,6 +156,12 @@ export enum OnlyTemplateEnum {
 
 // 是否直接输出, 0 否，1 是
 export enum OutputDirectlyEnum {
+  No = 0,
+  Yes = 1,
+}
+
+// 是否开发模式, 1 是；0 否
+export enum DevModeEnum {
   No = 0,
   Yes = 1,
 }
