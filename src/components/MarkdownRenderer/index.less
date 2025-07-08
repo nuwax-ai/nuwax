@@ -364,23 +364,23 @@
 
 :global {
   .mermaid-wrapper {
-    border-radius: @BORDER_RADIUS_BASE;
-    border: 0.5px solid @CODE_BORDER;
-    background: #fff;
-    margin: 16px 0;
-  }
+    .mermaid-container {
+      min-height: 100px;
+      display: flex;
+      padding: 16px;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
 
-  .mermaid-container {
-    min-height: 100px;
-    display: flex;
-    padding: 16px;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
+      img {
+        max-height: 600px;
+      }
+    }
   }
 }
 // 代码块样式
 :global(.code-block-wrapper) {
+  width: 100%;
   margin: 16px 0;
   border-radius: @BORDER_RADIUS_BASE;
   background: #fff;

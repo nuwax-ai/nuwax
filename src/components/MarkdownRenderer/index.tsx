@@ -326,7 +326,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
       setToolbarTokens(mdTokens.filter((token) => token.meta?.toolbar));
     }, [mdTokens]);
 
-    const renderCodeToolbar = useCallback(() => {
+    const CodeToolbar = useMemo(() => {
       if (!toolbarTokens.length) return null;
       return toolbarTokens.map((token) => {
         const meta = token.meta || {};
@@ -361,7 +361,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
         className={cx(styles['markdown-container'], className)}
       >
         {renderResult}
-        {renderCodeToolbar()}
+        {CodeToolbar}
       </div>
     );
   },

@@ -4,7 +4,7 @@ import {
   DownloadOutlined,
 } from '@ant-design/icons';
 import { Button, Dropdown, Tooltip } from 'antd';
-import React, { useState } from 'react';
+import React, { memo, useState } from 'react';
 import styles from './index.less';
 
 // 导入类型定义
@@ -140,4 +140,6 @@ export const MarkdownCodeToolbar: React.FC<MarkdownCodeToolbarProps> = (
   );
 };
 
-export default MarkdownCodeToolbar;
+export default memo(MarkdownCodeToolbar, (prev, next) => {
+  return prev.id === next.id;
+});
