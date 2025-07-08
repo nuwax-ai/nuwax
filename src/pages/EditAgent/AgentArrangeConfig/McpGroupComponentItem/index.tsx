@@ -18,53 +18,36 @@ const McpGroupComponentItem: React.FC<McpGroupComponentItemProps> = ({
   const [showChildren, setShowChildren] = useState<boolean>(false);
 
   return (
-    <div className={cx(styles['group-mcp-item-box'])}>
+    <div className={cx(styles.container)}>
       <div
-        className={cx(
-          'flex',
-          'items-center',
-          'overflow-hide',
-          styles['group-mcp-item'],
-        )}
+        className={cx('flex', 'items-center', styles['group-mcp-item'], {
+          [styles.border]: showChildren,
+        })}
       >
         <span className={cx('radius-6', styles['img-box'])}>
           <img src={item.icon} alt="" />
         </span>
-        <div
-          className={cx(
-            'flex-1',
-            'flex',
-            'flex-col',
-            'content-center',
-            'overflow-hide',
-          )}
-        >
-          <div
-            className={cx('flex', 'items-center', 'content-between', 'gap-10')}
-          >
-            <h3 className={cx('flex-1', 'text-ellipsis', styles.name)}>
-              {item.groupName}
-            </h3>
-            <div
-              className={cx(
-                styles['extra-box'],
-                'flex',
-                'items-center',
-                'cursor-pointer',
-              )}
-              onClick={() => setShowChildren(!showChildren)}
-            >
-              <span>{`工具（${item.children.length}）`}</span>
-              <DownOutlined
-                className={cx(styles['down-icon'], {
-                  [styles['down-icon-rotate']]: showChildren,
-                })}
-              />
-            </div>
-          </div>
+        <div className={cx('flex', 'flex-col', 'flex-1', 'overflow-hide')}>
+          <h3 className={cx('text-ellipsis', styles.name)}>{item.groupName}</h3>
           <p className={cx('text-ellipsis', styles.desc)}>
             {item.groupDescription}
           </p>
+        </div>
+        <div
+          className={cx(
+            styles['extra-box'],
+            'flex',
+            'items-center',
+            'cursor-pointer',
+          )}
+          onClick={() => setShowChildren(!showChildren)}
+        >
+          <span>{`工具（${item.children.length}）`}</span>
+          <DownOutlined
+            className={cx(styles['down-icon'], {
+              [styles['down-icon-rotate']]: showChildren,
+            })}
+          />
         </div>
       </div>
       {showChildren && (
