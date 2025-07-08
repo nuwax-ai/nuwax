@@ -12,6 +12,7 @@ import 'prismjs/components/prism-jsx.min.js';
 import 'prismjs/components/prism-kotlin.min.js';
 import 'prismjs/components/prism-log.min.js';
 import 'prismjs/components/prism-markdown.min.js';
+import 'prismjs/components/prism-mermaid.min.js';
 import 'prismjs/components/prism-perl.min.js';
 import 'prismjs/components/prism-powershell.min.js';
 import 'prismjs/components/prism-python.min.js';

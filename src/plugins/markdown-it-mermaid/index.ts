@@ -34,7 +34,15 @@ interface MermaidOptions {
 }
 
 // 渲染中的默认HTML
-const renderingHtml = `<div class="mermaid-container"><div class="alert alert-danger">渲染中...</div></div>`;
+const renderingHtml = (chartId: string) => {
+  return `<div class="mermaid-wrapper code-block-wrapper" id="${chartId}">
+      <div class="markdown-code-toolbar-container" 
+        data-language="mermaid" 
+        data-content=""
+        data-container-id="${chartId}">
+      </div>
+    <div class="mermaid-container"><div class="alert alert-danger">渲染中...</div></div></div>`;
+};
 
 /**
  * Mermaid markdown-it插件
@@ -90,16 +98,15 @@ export default function mermaid(
       }
       return '';
     }
-
-    console.log('customFenceRenderer:token.meta', token.meta);
     const meta = token.meta || {};
-    // 如果没有nextId，说明正在渲染中
-    if (!meta.nextId) {
-      return renderingHtml;
-    }
-
     // 生成唯一的图表ID
     const chartId = `${meta.requestId}-${meta.id}`;
+
+    // 如果没有nextId，说明正在渲染中
+    if (!meta.nextId) {
+      // TODO 这里有一定概率渲染失败，因为有可能没有下一行token, 需要优化
+      return renderingHtml(chartId);
+    }
 
     let imageHTML = '';
     const imageAttrs: [string, string][] = [];
@@ -119,10 +126,17 @@ export default function mermaid(
           // 提取max-width/height属性设置到img标签
           const svg = document.getElementById(containerId);
           if (svg !== null) {
-            imageAttrs.push([
-              'style',
-              `max-width:${svg.style.maxWidth};max-height:${svg.style.maxHeight}`,
-            ]);
+            const { maxWidth, maxHeight } = svg.style;
+            let styleStr = '';
+            Object.entries({
+              'max-width': maxWidth,
+              'max-height': maxHeight,
+            }).forEach(([key, value]) => {
+              if (value) {
+                styleStr += `${key}:${value};`;
+              }
+            });
+            imageAttrs.push(['style', styleStr]);
           }
 
           // 存储HTML
@@ -137,7 +151,7 @@ export default function mermaid(
       console.warn('Mermaid渲染错误:', e);
 
       // 渲染中，不返回错误信息
-      return renderingHtml;
+      return renderingHtml(chartId);
     } finally {
       // 清理临时元素
       element.remove();
@@ -152,7 +166,7 @@ export default function mermaid(
 
     // 编码源代码用于工具栏
     const encodedSourceCode = encodeURIComponent(token.content);
-    return `<div class="mermaid-wrapper ode-block-wrapper" id="${chartId}">
+    return `<div class="mermaid-wrapper code-block-wrapper" id="${chartId}">
       <div class="markdown-code-toolbar-container" 
         data-language="mermaid" 
         data-content="${encodedSourceCode}"
@@ -163,7 +177,7 @@ export default function mermaid(
           {
             attrs: imageAttrs,
           },
-        )}>
+        )} />
       </div>
     </div>`;
   }

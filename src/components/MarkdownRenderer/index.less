@@ -9,102 +9,6 @@
   color: rgba(0, 0, 0, 90%);
   position: relative;
 
-  // 代码块样式
-  :global(.code-block-wrapper) {
-    margin: 16px 0;
-    border-radius: 8px;
-    background: #fff;
-    border: 1px solid #e1e4e8;
-    overflow: hidden;
-
-    // 可折叠状态的代码块
-    :global(.collapsible) {
-      :global(.code-body) {
-        max-height: none;
-        overflow: hidden;
-        transition: max-height 0.3s ease;
-      }
-    }
-
-    // 折叠状态的代码块
-    :global(.collapsed) {
-      :global(.code-body) {
-        max-height: 200px;
-        position: relative;
-
-        :global(.code-body::after) {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 40px;
-          background: linear-gradient(transparent, #f6f8fa);
-          pointer-events: none;
-        }
-      }
-    }
-  }
-
-  :global(.code-header) {
-    padding: 8px 12px;
-    background: #fff;
-    border-bottom: 1px solid #e1e4e8;
-    font-size: 12px;
-    color: #586069;
-
-    .code-lang {
-      font-weight: 600;
-      color: #0366d6;
-    }
-
-    .line-count {
-      color: #6a737d;
-    }
-  }
-
-  :global(.code-body) {
-    padding: 16px;
-    background: #f6f8fa;
-
-    pre {
-      margin: 0;
-      background: transparent;
-      border: none;
-      padding: 0;
-      overflow-x: auto;
-    }
-
-    code {
-      background: transparent;
-      padding: 0;
-      font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
-      font-size: 13px;
-      line-height: 1.45;
-    }
-
-    // 行号样式
-    &.line-numbers {
-      .line-number {
-        display: block;
-        position: relative;
-        padding-left: 3.5em;
-
-        &::before {
-          content: attr(data-line);
-          position: absolute;
-          left: 0;
-          width: 3em;
-          text-align: right;
-          color: #6a737d;
-          border-right: 1px solid #e1e4e8;
-          padding-right: 0.5em;
-          margin-right: 0.5em;
-        }
-      }
-    }
-  }
-
   // 扩展盒子样式
   :global(.ext-box) {
     padding: 4px 8px;
@@ -349,7 +253,7 @@
 
   hr {
     border: none;
-    border-top: 1px solid rgba(0, 0, 0, 13%);
+    border-top: 0.5px solid rgba(0, 0, 0, 13%);
   }
 
   a {
@@ -396,157 +300,6 @@
   width: 100%;
   display: block;
 }
-// 代码块
-.code-block-wrapper {
-  color: @CODE_TEXT;
-  background: @WHITE;
-  border-radius: @BORDER_RADIUS_XL;
-  margin-top: @SPACE_SM;
-  margin-bottom: @SPACE_SM;
-  transition: all @ANIMATION_DURATION_SLOW ease;
-  border: 1px solid @CODE_BORDER;
-
-  .code-header {
-    background-color: @CODE_BG;
-    z-index: 6;
-    position: sticky;
-    top: 0;
-    border-top-left-radius: @BORDER_RADIUS_XL;
-    border-top-right-radius: @BORDER_RADIUS_XL;
-    padding: @SPACE_XS @SPACE_BASE;
-    color: @TEXT_SECONDARY;
-    font-size: @FONT_SIZE_SM;
-    border-bottom: 1px solid @CODE_BORDER;
-
-    .code-lang {
-      font-weight: 600;
-      color: @PRIMARY;
-    }
-
-    .line-count {
-      color: @TEXT_SECONDARY;
-      font-size: 11px;
-      background: @SHADOW_2;
-      padding: 2px @SPACE_XS;
-      border-radius: @BORDER_RADIUS_SM;
-    }
-
-    .ext-box {
-      gap: @SPACE_XS;
-      height: 28px;
-      padding: 0 @SPACE_SM;
-      transition: all @ANIMATION_DURATION_SLOW;
-      user-select: none;
-      border-radius: @BORDER_RADIUS_BASE;
-      font-size: @FONT_SIZE_SM;
-
-      &:hover {
-        background-color: @SHADOW_3;
-      }
-
-      .copy-img {
-        width: 14px;
-        height: 14px;
-      }
-    }
-  }
-
-  .code-body {
-    transition: max-height 0.3s ease;
-    overflow: hidden;
-
-    pre {
-      background-color: @WHITE;
-      border: none;
-      margin: 0;
-      padding: 16px;
-    }
-  }
-
-  // 可折叠的代码块
-  &.collapsible {
-    .collapse-btn {
-      display: flex;
-    }
-  }
-
-  // 折叠状态
-  &.collapsed {
-    .code-body {
-      max-height: 200px;
-      position: relative;
-
-      &::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 40px;
-        background: linear-gradient(transparent, @WHITE);
-        pointer-events: none;
-      }
-    }
-  }
-
-  // 默认隐藏折叠按钮
-  .collapse-btn {
-    display: none;
-  }
-
-  // 行号样式
-  .line-numbers {
-    counter-reset: line-number;
-
-    .line-number {
-      display: block;
-      counter-increment: line-number;
-      position: relative;
-      padding-left: 3.5em;
-
-      &::before {
-        content: counter(line-number);
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 3em;
-        text-align: right;
-        color: @TEXT_DISABLED;
-        font-size: 12px;
-        line-height: inherit;
-        padding-right: 1em;
-        border-right: 1px solid @BORDER_COLOR_LIGHT;
-        background: @CODE_BG;
-      }
-    }
-  }
-}
-
-// 图片放大效果
-.image-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 60%);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  overflow: hidden;
-
-  img {
-    max-width: 90%;
-    max-height: 90%;
-    object-fit: contain;
-    transform: scale(0.9);
-    transition: transform 0.3s ease;
-    background-color: #fff;
-  }
-}
 
 /* 基础表格样式 */
 :global(.markdown-it-custom-table) {
@@ -554,7 +307,7 @@
   max-width: 100%;
   overflow: auto;
   box-sizing: border-box;
-  border: 1px solid rgba(0, 0, 0, 13%);
+  border: 0.5px solid rgba(0, 0, 0, 13%);
   border-radius: 8px;
 
   table {
@@ -591,8 +344,8 @@
       font-size: 14px;
       line-height: 20px;
       padding: 8px 12px;
-      border-top: 1px solid rgba(0, 0, 0, 13%);
-      border-left: 1px solid rgba(0, 0, 0, 13%);
+      border-top: 0.5px solid rgba(0, 0, 0, 13%);
+      border-left: 0.5px solid rgba(0, 0, 0, 13%);
       max-width: 480px;
     }
 
@@ -609,75 +362,57 @@
   margin-bottom: 16px;
 }
 
-:global(.mermaid-container) {
-  min-height: 100px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-}
+:global {
+  .mermaid-wrapper {
+    .mermaid-container {
+      min-height: 100px;
+      display: flex;
+      padding: 16px;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
 
-// Mermaid图表容器样式
-:global(.mermaid-wrapper) {
-  border-radius: @BORDER_RADIUS_XL;
-  border: 1px solid @CODE_BORDER;
-
-  .mermaid-container {
-    position: relative;
-    text-align: center;
-
-    img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 6px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 10%);
+      img {
+        max-height: 600px;
+      }
     }
-  }
-
-  .mermaid-toolbar-container {
-    position: absolute;
-    top: 0;
-    right: 0;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    pointer-events: none;
-
-    > div {
-      pointer-events: all;
-    }
-  }
-
-  // 悬停时显示工具栏
-  &:hover .mermaid-toolbar-container {
-    opacity: 1;
   }
 }
+// 代码块样式
+:global(.code-block-wrapper) {
+  width: 100%;
+  margin: 16px 0;
+  border-radius: @BORDER_RADIUS_BASE;
+  background: #fff;
+  border: 0.5px solid @CODE_BORDER;
+  overflow: hidden;
+}
 
-// 全屏模式样式
-.mermaid-wrapper[data-fullscreen='true'] {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  z-index: 9999 !important;
-  background: #fff !important;
-  padding: 20px !important;
-  box-sizing: border-box !important;
+:global(.code-header) {
+  padding: 8px 12px;
+  background: #fff;
+  border-bottom: 0.5px solid @CODE_BORDER;
+  font-size: 12px;
+  color: #586069;
+}
 
-  .mermaid-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
+:global(.code-body) {
+  padding: 16px;
+  background: #f6f8fa;
 
-    img {
-      max-width: 90vw;
-      max-height: 90vh;
-    }
+  pre {
+    margin: 0;
+    background: transparent;
+    border: none;
+    padding: 0;
+    overflow-x: auto;
   }
 
-  .mermaid-toolbar-container {
-    opacity: 1;
+  code {
+    background: transparent;
+    padding: 0;
+    font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.45;
   }
 }

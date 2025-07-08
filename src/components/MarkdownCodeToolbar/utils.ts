@@ -3,24 +3,18 @@ import { message } from 'antd';
 import {
   CANVAS_CONFIG,
   DOWNLOAD_CONFIG,
-  HTML_ENTITIES,
   MESSAGES,
   SELECTORS,
   STYLES,
 } from './constants';
-import type { CopyCallback, ToolbarData } from './types';
+import type { ToolbarData } from './types';
 
 /**
  * HTML 解码函数
  * @param text 需要解码的文本
  * @returns 解码后的文本
  */
-export const decodeHTMLEntities = (text: string): string => {
-  return Object.entries(HTML_ENTITIES).reduce(
-    (result, [entity, char]) => result.replace(new RegExp(entity, 'g'), char),
-    text,
-  );
-};
+export { copyTextToClipboard, fallbackCopyTextToClipboard } from '@/utils';
 
 /**
  * 获取工具栏数据
@@ -43,73 +37,6 @@ export const getToolbarData = (
     title: title || fallbackData.title,
     language: language || fallbackData.language,
   };
-};
-
-/**
- * 传统复制方法（降级方案）
- * @param text 要复制的文本
- * @param callback 成功回调
- */
-export const fallbackCopyTextToClipboard = (
-  text: string,
-  callback?: CopyCallback,
-): void => {
-  const textArea = document.createElement('textarea');
-  textArea.value = text;
-
-  // 避免在iOS上出现缩放
-  Object.assign(textArea.style, STYLES.TEXTAREA);
-
-  document.body.appendChild(textArea);
-  textArea.focus();
-  textArea.select();
-
-  try {
-    const successful = document.execCommand('copy');
-    if (successful && callback) {
-      callback(text);
-    } else if (!successful) {
-      message.error(MESSAGES.COPY_FAILED);
-    }
-  } catch (err) {
-    console.error(MESSAGES.COPY_FAILED, err);
-    message.error(MESSAGES.COPY_FAILED);
-  }
-
-  document.body.removeChild(textArea);
-};
-
-/**
- * 复制文本到剪贴板
- * @param text 要复制的文本
- * @param callback 成功回调
- */
-export const copyTextToClipboard = async (
-  text: string,
-  callback?: CopyCallback,
-): Promise<void> => {
-  if (!text) {
-    message.error(MESSAGES.COPY_FAILED_NO_CONTENT);
-    return;
-  }
-
-  const decodedText = decodeHTMLEntities(text);
-
-  // 使用现代剪贴板API或降级到传统方法
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    try {
-      await navigator.clipboard.writeText(decodedText);
-      if (callback) {
-        callback(decodedText);
-      }
-    } catch (err) {
-      console.error(MESSAGES.COPY_FAILED, err);
-      message.error(MESSAGES.COPY_FAILED);
-      fallbackCopyTextToClipboard(decodedText, callback);
-    }
-  } else {
-    fallbackCopyTextToClipboard(decodedText, callback);
-  }
 };
 
 /**

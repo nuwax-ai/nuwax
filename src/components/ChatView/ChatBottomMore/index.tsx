@@ -28,7 +28,6 @@ const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({ messageInfo }) => {
         'items-center',
       )}
     >
-      <div className={cx('flex', 'items-center', styles['elapsed-time'])}></div>
       <div className={cx('flex', styles['more-action'])}>
         <CopyToClipboard text={text || ''} onCopy={handleCopy}>
           <TooltipIcon

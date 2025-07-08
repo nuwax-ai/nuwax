@@ -14,9 +14,10 @@ import type {
 import { message } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
-import React, { memo } from 'react';
+import React, { memo, useEffect, useState } from 'react';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { useModel } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
 import ChatBottomDebug from './ChatBottomDebug';
 import ChatBottomMore from './ChatBottomMore';
 import ChatSampleBottom from './ChatSampleBottom';
@@ -29,6 +30,7 @@ const cx = classNames.bind(styles);
 const ChatView: React.FC<ChatViewProps> = memo(
   ({ className, contentClassName, roleInfo, messageInfo, mode = 'chat' }) => {
     const { userInfo } = useModel('userInfo');
+    const [initUuid, setInitUuid] = useState('');
     const _userInfo =
       userInfo || JSON.parse(localStorage.getItem(USER_INFO) as string);
 
@@ -80,6 +82,10 @@ const ChatView: React.FC<ChatViewProps> = memo(
       },
     };
 
+    useEffect(() => {
+      setInitUuid(uuidv4());
+    }, []);
+
     return (
       <div className={cx(styles.container, 'flex', className)}>
         <img
@@ -104,7 +110,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
                   )}
                 >
                   <ChatMarkdownRenderer
-                    id={`text-${messageInfo?.id}`}
+                    id={`text-${messageInfo?.id || initUuid}`}
                     content={messageInfo.text}
                     config={markdownConfig}
                     onCopy={handleCodeCopy}
@@ -165,7 +171,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     )}
                   >
                     <ChatMarkdownRenderer
-                      id={`think-${messageInfo?.id}`}
+                      id={`think-${messageInfo?.id || initUuid}`}
                       content={messageInfo.think}
                       config={markdownConfig}
                       onCopy={handleCodeCopy}
@@ -177,7 +183,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     className={cx(styles['chat-content'], 'radius-6', 'w-full')}
                   >
                     <ChatMarkdownRenderer
-                      id={`text-${messageInfo?.id}`}
+                      id={`text-${messageInfo?.id || initUuid}`}
                       content={messageInfo.text}
                       config={markdownConfig}
                       onCopy={handleCodeCopy}

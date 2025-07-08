@@ -2,17 +2,15 @@ import {
   CodeOutlined,
   CopyOutlined,
   DownloadOutlined,
-  DownOutlined,
 } from '@ant-design/icons';
 import { Button, Dropdown, Tooltip } from 'antd';
-import React, { useState } from 'react';
+import React, { memo, useState } from 'react';
 import styles from './index.less';
 
 // 导入类型定义
 import type { MarkdownCodeToolbarProps } from './types';
 
 // 导入常量
-import { MESSAGES } from './constants';
 
 // 导入工具函数
 import { downloadPNG, downloadSVG } from './utils';
@@ -97,7 +95,6 @@ export const MarkdownCodeToolbar: React.FC<MarkdownCodeToolbarProps> = (
               <Tooltip title="查看源代码">
                 <Button
                   type={isCodeView ? 'primary' : 'text'}
-                  size="small"
                   icon={<CodeOutlined />}
                   onClick={handleToggleCodeView}
                 />
@@ -108,43 +105,41 @@ export const MarkdownCodeToolbar: React.FC<MarkdownCodeToolbarProps> = (
                   items: [
                     {
                       key: 'svg',
-                      label: 'SVG',
-                      icon: <DownloadOutlined />,
+                      label: '下载SVG图片',
                       onClick: handleDownloadSVG,
                     },
                     {
                       key: 'png',
-                      label: 'PNG',
-                      icon: <DownloadOutlined />,
+                      label: '下载PNG图片',
                       onClick: handleDownloadPNG,
                     },
                   ],
                 }}
                 trigger={['click']}
               >
-                <Button type="text" size="small" icon={<DownloadOutlined />}>
-                  下载 <DownOutlined />
-                </Button>
+                <Tooltip title="下载">
+                  <Button type="text" icon={<DownloadOutlined />}></Button>
+                </Tooltip>
               </Dropdown>
             </>
           )}
 
           {/* 通用复制功能 */}
-          <Button
-            type="text"
-            size="small"
-            icon={<CopyOutlined />}
-            loading={isCopying}
-            className={styles.copyBtn}
-            onClick={handleCopy}
-            title="复制代码"
-          >
-            {isCopying ? MESSAGES.COPYING : '复制'}
-          </Button>
+          <Tooltip title="复制">
+            <Button
+              type="text"
+              icon={<CopyOutlined />}
+              loading={isCopying}
+              className={styles.copyBtn}
+              onClick={handleCopy}
+            ></Button>
+          </Tooltip>
         </div>
       </div>
     </div>
   );
 };
 
-export default MarkdownCodeToolbar;
+export default memo(MarkdownCodeToolbar, (prev, next) => {
+  return prev.id === next.id;
+});
