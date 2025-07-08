@@ -158,3 +158,9 @@ export enum OptionDataSourceEnum {
   MANUAL = 'MANUAL',
   BINDING = 'BINDING',
 }
+
+// 更新变量类型
+export enum UpdateVariablesTypeEnum {
+  Delete = 'Delete',
+  Drag = 'Drag',
+}

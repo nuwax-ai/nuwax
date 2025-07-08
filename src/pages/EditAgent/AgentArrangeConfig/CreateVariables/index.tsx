@@ -1,7 +1,7 @@
 import LabelStar from '@/components/LabelStar';
 import { AGENT_VARIABLES_INPUT_OPTIONS } from '@/constants/agent.constants';
 import { apiAgentComponentVariableUpdate } from '@/services/agentConfig';
-import { InputTypeEnum } from '@/types/enums/agent';
+import { InputTypeEnum, UpdateVariablesTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { CreateVariablesProps } from '@/types/interfaces/agentConfig';
 import { BindConfigWithSub } from '@/types/interfaces/common';
@@ -39,12 +39,6 @@ import CreateVariableModal from './CreateVariableModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-// 更新变量类型
-enum UpdateVariablesTypeEnum {
-  Delete = 'delete',
-  Drag = 'drag',
-}
 
 interface RowContextProps {
   setActivatorNodeRef?: (element: HTMLElement | null) => void;
