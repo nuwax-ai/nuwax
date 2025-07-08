@@ -1,6 +1,6 @@
 @import '@/styles/color';
 
-.group-mcp-item-box {
+.container {
   margin-bottom: 6px;
 
   .group-mcp-item {
@@ -9,18 +9,15 @@
     padding: 6px 16px;
     border-radius: 4px;
     background-color: @WHITE;
+    border: 1px solid transparent;
     cursor: default;
 
-    &:last-child {
-      margin-bottom: 0;
+    &.border {
+      border-color: @BLANK18;
     }
 
     &:hover {
       background-color: @BLANK18;
-    }
-
-    .gap-6 {
-      gap: 6px;
     }
 
     .img-box {
@@ -48,7 +45,6 @@
     }
 
     .extra-box {
-      gap: 6px;
       color: @GRAY05;
       font-size: 12px;
 
