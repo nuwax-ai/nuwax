@@ -67,14 +67,14 @@ const VerifyCode: React.FC = () => {
   });
 
   const codes = useMemo(() => {
-    if (!codeString) {
-      return DefaultCode.slice(0);
-    }
-    let i = 0;
     const newCodes = DefaultCode.slice(0);
-    while (i < codeString.length) {
-      newCodes[i] = codeString.charAt(i);
-      i++;
+    // 如果codeString存在，则将codeString的值赋值给newCodes
+    if (!!codeString) {
+      let i = 0;
+      while (i < codeString.length) {
+        newCodes[i] = codeString.charAt(i);
+        i++;
+      }
     }
     return newCodes;
   }, [codeString]);
