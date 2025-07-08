@@ -126,7 +126,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     if (skillChange) {
       skillLoadingRef.current = setTimeout(() => {
         setSkillLoading(true);
-      }, 500);
+      }, 300);
     } else {
       clearTimeout(skillLoadingRef.current);
       setSkillLoading(false);
