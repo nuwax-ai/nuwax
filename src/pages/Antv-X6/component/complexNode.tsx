@@ -188,12 +188,14 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
   ).filter(
     (item: InputAndOutConfig) => !['', null, undefined].includes(item.name),
   );
+
+  const formSkillList = form.getFieldValue(SKILL_FORM_KEY);
   return (
     <div className="model-node-style">
       {/* 模型模块 */}
       <ModelSelected form={form} modelConfig={nodeConfig?.modelConfig} />
       {/* 技能模块 */}
-      <div className="dis-sb margin-bottom ">
+      <div className="dis-sb">
         <span className="node-title-style">技能</span>
         <Button
           icon={<PlusOutlined />}
@@ -204,15 +206,18 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       </div>
       <Form.Item shouldUpdate noStyle>
         {() =>
-          form.getFieldValue(SKILL_FORM_KEY) ? (
+          formSkillList ? (
             <div className="node-item-style">
               <SkillList
-                params={form.getFieldValue(SKILL_FORM_KEY)}
+                params={formSkillList}
                 skillName={SKILL_FORM_KEY}
                 variables={variables}
                 form={form}
                 removeItem={removeItem}
                 modifyItem={modifyItem}
+                style={{
+                  marginTop: 10,
+                }}
               />
             </div>
           ) : (

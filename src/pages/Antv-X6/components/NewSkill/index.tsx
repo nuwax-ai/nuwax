@@ -47,6 +47,7 @@ export const SkillList: React.FC<SkillProps> = ({
   removeItem,
   modifyItem,
   variables = [],
+  style,
 }) => {
   // const [skillParams,setSkillParams] = useState<NodeConfig>(params);
   // 使用useState钩子来管理每个项目的hover状态
@@ -92,7 +93,7 @@ export const SkillList: React.FC<SkillProps> = ({
     return `${prefix}-${item?.type}-${item?.typeId}-${item?.toolName || ''}`;
   }, []);
   return (
-    <div className="skill-list">
+    <div className="skill-list" {...(style ? { style } : {})}>
       {params.map((item) => (
         <div key={genKey(item, 'skill')}>
           <div
