@@ -28,7 +28,7 @@ import {
   Select,
   Space,
 } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
@@ -89,6 +89,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]
   >([]);
+  const [needSubmit, setNeedSubmit] = useState(false);
   const skillLoadingRef = useRef<NodeJS.Timeout>();
 
   const { setSkillChange, setIsModified, skillChange } = useModel('workflow');
@@ -111,13 +112,12 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
 
   // 新增技能
   const onAddedSkill = (item: CreatedNodeItem) => {
-    setIsModified(true);
     const skillComponentConfigs = form.getFieldValue(SKILL_FORM_KEY) || [];
     item.type = item.targetType as unknown as NodeTypeEnum; // TODO 这里需要优化
     item.typeId = item.targetId;
     form.setFieldValue(SKILL_FORM_KEY, skillComponentConfigs.concat([item]));
-    setSkillChange(true);
-    form.submit();
+    setNeedSubmit(true);
+    // form.submit();
     // setOpen(false);
   };
 
@@ -149,12 +149,12 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       );
       form.setFieldValue(SKILL_FORM_KEY, newSkillComponentConfigs);
       setIsModified(true);
+      setSkillChange(true);
     }
   };
 
   // 修改技能参数
   const modifyItem = (item: CreatedNodeItem) => {
-    setIsModified(true);
     const skillComponentConfigs = form.getFieldValue(SKILL_FORM_KEY);
     if (skillComponentConfigs) {
       const newSkillComponentConfigs = skillComponentConfigs.map(
@@ -165,6 +165,8 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
             : i,
       );
       form.setFieldValue(SKILL_FORM_KEY, newSkillComponentConfigs);
+      setIsModified(true);
+      setSkillChange(true);
     }
   };
 
@@ -188,6 +190,17 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
   ).filter(
     (item: InputAndOutConfig) => !['', null, undefined].includes(item.name),
   );
+
+  const handleCreatedCancel = useCallback(() => {
+    setOpen(false);
+    if (needSubmit) {
+      setNeedSubmit(false);
+      setSkillChange(true);
+      setIsModified(true);
+      // 一起提交表单
+      form.submit();
+    }
+  }, [needSubmit, form, setSkillChange, setNeedSubmit, setOpen]);
 
   const formSkillList = form.getFieldValue(SKILL_FORM_KEY);
   return (
@@ -215,9 +228,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
                 form={form}
                 removeItem={removeItem}
                 modifyItem={modifyItem}
-                style={{
-                  marginTop: 10,
-                }}
+                loading={skillLoading}
               />
             </div>
           ) : (
@@ -272,7 +283,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
         onAdded={onAddedSkill}
         open={open}
         addSkillLoading={skillLoading}
-        onCancel={() => setOpen(false)}
+        onCancel={handleCreatedCancel}
         addComponents={addComponents}
         tabs={skillCreatedTabs}
       />

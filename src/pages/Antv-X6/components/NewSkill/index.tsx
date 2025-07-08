@@ -11,10 +11,13 @@ import {
   InfoCircleOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
-import { Popover, Tag } from 'antd';
+import { Popover, Spin, Tag } from 'antd';
+import classNames from 'classnames';
 import React, { useCallback, useState } from 'react';
-import './index.less';
+import styles from './index.less';
 import SettingModal from './SettingModal';
+
+const cx = classNames.bind(styles);
 interface TreeOutput extends InputAndOutConfig {
   key: string;
 }
@@ -27,11 +30,11 @@ const SkillParamsContent: React.FC<{ params: TreeOutput[] }> = ({ params }) => {
     <div style={{ maxWidth: '300px' }}>
       {(params || []).map((item) => (
         <div key={item.name} style={{ padding: '3px 0' }}>
-          <div className="dis-left">
-            <span className="mr-16">{truncate(item.name, 30)}</span>
+          <div className={cx('dis-left')}>
+            <span className={cx('mr-16')}>{truncate(item.name, 30)}</span>
             <Tag color="#C9CDD4">{item.dataType}</Tag>
           </div>
-          <p className="skill-params-description">
+          <p className={cx(styles['skill-params-description'])}>
             {truncate(item.description || '', 70)}
           </p>
         </div>
@@ -47,7 +50,7 @@ export const SkillList: React.FC<SkillProps> = ({
   removeItem,
   modifyItem,
   variables = [],
-  style,
+  loading = false,
 }) => {
   // const [skillParams,setSkillParams] = useState<NodeConfig>(params);
   // 使用useState钩子来管理每个项目的hover状态
@@ -93,11 +96,32 @@ export const SkillList: React.FC<SkillProps> = ({
     return `${prefix}-${item?.type}-${item?.typeId}-${item?.toolName || ''}`;
   }, []);
   return (
-    <div className="skill-list" {...(style ? { style } : {})}>
-      {params.map((item) => (
-        <div key={genKey(item, 'skill')}>
+    <div className={cx(styles['skill-list'], 'relative')}>
+      {(params.length && (
+        <Spin
+          spinning={loading}
+          delay={200}
+          style={{
+            display: loading ? 'block' : 'none',
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 1000,
+          }}
+        />
+      )) ||
+        null}
+      {params.map((item, index) => (
+        <div
+          key={genKey(item, 'skill')}
+          className={cx(
+            styles['skill-item-container'],
+            index === 0 && 'margin-top-10',
+          )}
+        >
           <div
-            className="skill-item-style dis-left"
+            className={cx(styles['skill-item-style'], 'dis-left')}
             style={{
               //设置为整体为灰色
               opacity: disabled ? 0.5 : 1,
@@ -113,25 +137,23 @@ export const SkillList: React.FC<SkillProps> = ({
             <img
               src={item.icon || getImg(item.targetType)}
               alt=""
-              className="skill-item-icon"
+              className={cx(styles['skill-item-icon'])}
             />
-            <div className="skill-item-content-style">
-              <div className="skill-item-title-style">{item.name}</div>
-              <div className="skill-item-desc-style">{item.description}</div>
+            <div className={cx(styles['skill-item-content-style'])}>
+              <div className={cx(styles['skill-item-title-style'])}>
+                {item.name}
+              </div>
+              <div className={cx(styles['skill-item-desc-style'])}>
+                {item.description}
+              </div>
             </div>
             {isHoveredItem(item) && showMask && (
-              <div className="mask-layer-style">
+              <div className={cx(styles['mask-layer-style'])}>
                 <div
-                  className="skill-item-dispose-style"
-                  style={{
-                    color: '#fff',
-                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                    height: '100%',
-                    alignItems: 'center',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    padding: '0 10px',
-                  }}
+                  className={cx(
+                    styles['skill-item-dispose-style'],
+                    styles['skill-item-dispose-mask'],
+                  )}
                 >
                   {item.inputArgBindConfigs &&
                     item.inputArgBindConfigs.length && (
@@ -144,12 +166,12 @@ export const SkillList: React.FC<SkillProps> = ({
                         placement="right"
                         trigger="hover"
                       >
-                        <InfoCircleOutlined className="white" />
+                        <InfoCircleOutlined className={cx('white')} />
                       </Popover>
                     )}
                   <Popover content={'编辑参数'} trigger="hover">
                     <SettingOutlined
-                      className="ml-12 cursor-pointer white"
+                      className={cx('ml-12 cursor-pointer white')}
                       onClick={() => {
                         handleEdit(item);
                         setOpen(true);
@@ -159,7 +181,7 @@ export const SkillList: React.FC<SkillProps> = ({
                   {!disabled && (
                     <Popover content={'移除'} trigger="hover">
                       <DeleteOutlined
-                        className="ml-12  white"
+                        className={cx('ml-12  white')}
                         onClick={() => handleDelete(item)}
                       />
                     </Popover>
@@ -170,7 +192,6 @@ export const SkillList: React.FC<SkillProps> = ({
           </div>
         </div>
       ))}
-
       <SettingModal
         open={open}
         key={genKey(currentComponentInfo as CreatedNodeItem, 'setting')}

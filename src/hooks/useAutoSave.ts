@@ -13,7 +13,7 @@ export default function useAutoSave({
   doBefore?: () => Promise<boolean>;
   doNext?: () => void;
 }) {
-  const { isModified } = useModel('workflow');
+  const { isModified, setUpdateLoading } = useModel('workflow');
 
   useEffect(() => {
     let saveTimer = null;
@@ -25,7 +25,14 @@ export default function useAutoSave({
           return;
         }
         console.log('useAutoSave:run');
-        await run();
+        setUpdateLoading(true);
+        try {
+          await run();
+        } catch (error) {
+          console.error('useAutoSave:run error', error);
+        } finally {
+          setUpdateLoading(false);
+        }
         doNext?.();
       }, interval);
     }
