@@ -29,7 +29,8 @@ import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
 import ApplicationItem from './ApplicationItem';
-import CreateTempChatModel from './CreateTempChatModel';
+import CreateApiKeyModal from './CreateApiKeyModal';
+import CreateTempChatModal from './CreateTempChatModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -47,6 +48,8 @@ const SpaceDevelop: React.FC = () => {
   const [openMove, setOpenMove] = useState<boolean>(false);
   // 打开创建临时会话弹窗
   const [openTempChat, setOpenTempChat] = useState<boolean>(false);
+  // 打开API Key弹窗
+  const [openApiKey, setOpenApiKey] = useState<boolean>(false);
   const [currentAgentInfo, setCurrentAgentInfo] =
     useState<AgentConfigInfo | null>(null);
   const [openCreateAgent, setOpenCreateAgent] = useState<boolean>(false);
@@ -279,6 +282,11 @@ const SpaceDevelop: React.FC = () => {
         setOpenTempChat(true);
         setCurrentAgentInfo(agentInfo);
         break;
+      // API Key
+      case ApplicationMoreActionEnum.API_Key:
+        setOpenApiKey(true);
+        setCurrentAgentInfo(agentInfo);
+        break;
       // 日志
       case ApplicationMoreActionEnum.Log:
         history.push(`/space/${spaceId}/${id}/log`);
@@ -349,7 +357,6 @@ const SpaceDevelop: React.FC = () => {
               <ApplicationItem
                 key={item.id}
                 agentConfigInfo={item}
-                userInfo={userInfo}
                 onClickMore={(type) => handlerClickMore(type, index)}
                 onCollect={(isCollect: boolean) =>
                   handlerCollect(index, isCollect)
@@ -391,11 +398,19 @@ const SpaceDevelop: React.FC = () => {
         onCancel={() => setOpenCreateAgent(false)}
         onConfirmCreate={handlerConfirmCreateAgent}
       />
-      <CreateTempChatModel
+      {/* 临时会话弹窗 */}
+      <CreateTempChatModal
         agentId={currentAgentInfo?.id}
         open={openTempChat}
         name={currentAgentInfo?.name}
         onCancel={() => setOpenTempChat(false)}
+      />
+      {/* API Key弹窗 */}
+      <CreateApiKeyModal
+        agentId={currentAgentInfo?.id}
+        open={openApiKey}
+        name={currentAgentInfo?.name}
+        onCancel={() => setOpenApiKey(false)}
       />
     </div>
   );

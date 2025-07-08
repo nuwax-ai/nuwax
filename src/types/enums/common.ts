@@ -216,11 +216,18 @@ export enum ExceptionHandleTypeEnum {
 
 // 权限枚举
 export enum PermissionsEnum {
+  // 复制
   Copy = 'Copy',
   // 迁移
   Transfer = 'Transfer',
+  // 删除
   Delete = 'Delete',
+  // 发布
   Publish = 'Publish',
+  // 临时会话
+  TempChat = 'TempChat',
+  // API Key
+  AgentApi = 'AgentApi',
 }
 
 // 输入类型, Http插件有用,可用值:Query,Body,Header,Path

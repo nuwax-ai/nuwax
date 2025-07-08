@@ -6,7 +6,7 @@ import {
   apiTempChatList,
   apiTempChatUpdate,
 } from '@/services/tempChat';
-import type { CreateTempChatModelProps } from '@/types/interfaces/space';
+import type { CreateTempChatModalProps } from '@/types/interfaces/space';
 import { AgentTempChatDto } from '@/types/interfaces/tempChat';
 import {
   DeleteOutlined,
@@ -43,7 +43,7 @@ dayjs.locale('zh-cn');
 const cx = classNames.bind(styles);
 
 // 创建临时会话弹窗
-const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
+const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
   agentId,
   name,
   open,
@@ -322,4 +322,4 @@ const CreateTempChatModel: React.FC<CreateTempChatModelProps> = ({
   );
 };
 
-export default CreateTempChatModel;
+export default CreateTempChatModal;
