@@ -10,7 +10,7 @@ const useWorkflow = () => {
   const [visible, setVisible] = useState<boolean>(false); // 显示隐藏右侧节点抽屉
 
   const [spaceId, setSpaceId] = useState<number>(0);
-
+  const [updateLoading, setUpdateLoading] = useState<boolean>(false);
   const storeWorkflowRef = useRef<any>({
     drawerForm: DEFAULT_DRAWER_FORM,
   });
@@ -141,6 +141,8 @@ const useWorkflow = () => {
     setVisible,
     expanded,
     setExpanded,
+    updateLoading,
+    setUpdateLoading,
     // foldWrapItem,
     // setFoldWrapItem,
     // getCurrentNodeData,

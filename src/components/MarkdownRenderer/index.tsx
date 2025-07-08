@@ -31,7 +31,6 @@ interface TokenRenderGroup {
 const NEED_TOOLBAR_TOKEN_TYPE_MAP = ['fence', 'thead_open'];
 
 import GenCustomPlugin, { getBlockName } from '@/plugins/markdown-it-custom';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { findClassElement } from '@/utils/common';
 import MarkdownCustomProcess from '../MarkdownCustomProcess';
 
@@ -40,16 +39,6 @@ import styles from './index.less';
 import { applyListParagraphRenderer } from './listParagraphRenderer';
 
 const cx = classNames.bind(styles);
-const registerPluginList = {
-  plugin: AgentComponentTypeEnum.Plugin,
-  mcp: AgentComponentTypeEnum.MCP,
-};
-
-const componentMap: Record<string, React.FC<any>> = {
-  [getBlockName(registerPluginList.plugin)]: MarkdownCustomProcess,
-  [getBlockName(registerPluginList.mcp)]: MarkdownCustomProcess,
-  // ...其他组件
-};
 
 // 防抖函数 - 已移除未使用的函数
 
@@ -59,8 +48,8 @@ const handleCustomTokenRender = (
 ): React.ReactNode => {
   if (token.meta?.component) {
     const { props, component } = token.meta;
-    if (component && component in componentMap) {
-      const Component = componentMap[component as keyof typeof componentMap];
+    if (component) {
+      const Component = MarkdownCustomProcess;
       return (
         <Component
           {...props}
@@ -157,9 +146,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
         mdInstance.renderer.rules[ruleName] = ruleFunction;
       });
 
-      Object.entries(registerPluginList).forEach(([, value]) => {
-        new GenCustomPlugin(mdInstance, getBlockName(value));
-      });
+      new GenCustomPlugin(mdInstance, getBlockName());
 
       // 应用列表段落渲染规则
       applyListParagraphRenderer(mdInstance);

@@ -10,7 +10,10 @@ interface MCPToolsProps {
   onAddTool: (tool: any) => void;
   fold: boolean;
   addedComponents: AgentAddComponentStatusInfo[];
-  getToolLoading: (item: CreatedNodeItem, toolName: string) => boolean;
+  getToolLoading: (
+    item: CreatedNodeItem,
+    toolName: string,
+  ) => boolean | undefined;
 }
 const addedStatus = AgentAddComponentStatusEnum.Added;
 const MCPTools: React.FC<MCPToolsProps> = ({

@@ -50,7 +50,7 @@ const Created: React.FC<CreatedProp> = ({
   checkTag,
   onAdded,
   addComponents,
-  addSkillLoading = false,
+  addSkillLoading = undefined,
   tabs = defaultTabs,
   hideTop,
 }) => {
@@ -438,17 +438,35 @@ const Created: React.FC<CreatedProp> = ({
     </div>
   );
 
-  const isAdded = (item: CreatedNodeItem) => {
-    return addComponents?.some(
-      (info) =>
-        info.type === item.targetType &&
-        info.targetId === item.targetId &&
-        info.status === AgentAddComponentStatusEnum.Added,
-    );
-  };
+  const getItemStatusResult = useCallback(
+    (
+      item: CreatedNodeItem,
+      targetStatus: AgentAddComponentStatusEnum,
+    ): boolean | undefined => {
+      return addComponents?.some(
+        (info) =>
+          info.type === item.targetType &&
+          info.targetId === item.targetId &&
+          info.status === targetStatus,
+      );
+    },
+    [addComponents],
+  );
+
+  const isAdded = useCallback(
+    (item: CreatedNodeItem) => {
+      return getItemStatusResult(item, AgentAddComponentStatusEnum.Added);
+    },
+    [getItemStatusResult],
+  );
 
   const handleItemLoading = useCallback(
     (item: CreatedNodeItem, toolName: string) => {
+      if (addSkillLoading === undefined) {
+        // 兼容以前的写法 没有拓展外层通过 addSkillLoading 控制 loading 实现
+        return getItemStatusResult(item, AgentAddComponentStatusEnum.Loading);
+      }
+
       if (
         addSkillLoading &&
         currentNode?.targetId === item.targetId &&
@@ -458,7 +476,7 @@ const Created: React.FC<CreatedProp> = ({
       }
       return false;
     },
-    [addSkillLoading, currentNode],
+    [addSkillLoading, currentNode, getItemStatusResult],
   );
 
   const renderMCPItem = (

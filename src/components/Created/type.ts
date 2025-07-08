@@ -20,7 +20,7 @@ export interface CreatedProp {
   tabs?: { label: string; key: AgentComponentTypeEnum }[];
   // 隐藏顶部
   hideTop?: AgentComponentTypeEnum[];
-  addSkillLoading?: boolean;
+  addSkillLoading?: boolean | undefined;
 }
 
 export type MenuItem = Required<MenuProps>['items'][number];

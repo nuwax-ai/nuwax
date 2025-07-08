@@ -1,4 +1,3 @@
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ProcessingInfo } from '@/types/interfaces/conversationInfo';
 import MarkdownIt from 'markdown-it';
 import container from 'markdown-it-container';
@@ -94,8 +93,8 @@ const getBlockWrapper = (
   return `::: ${blockName} ${attrs} \n\n:::\n`;
 };
 
-const getBlockName = (type: AgentComponentTypeEnum): string => {
-  return `markdown-${type.toLowerCase()}`;
+const getBlockName = (): string => {
+  return `markdown-custom-process`;
 };
 
 const getCustomBlock = (
@@ -111,7 +110,7 @@ const getCustomBlock = (
     // 如果存在，则不追加
     return beforeText;
   } else {
-    const blockName = getBlockName(type);
+    const blockName = getBlockName();
 
     const blockContent = getBlockWrapper(blockName, {
       type,
