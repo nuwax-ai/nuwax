@@ -84,7 +84,7 @@ function MarkdownCustomProcess(props: ProcessingInfo) {
       // 从结果中提取输入参数，如果没有则提供空对象
       params: _result.input || {},
       // 使用结果的 data 作为响应数据，如果没有则提供空对象
-      response: _result.data.result || null,
+      response: _result.data || null,
     };
   }, []);
 
