@@ -23,8 +23,11 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading, ...restProps }) => {
   const { message } = App.useApp();
   const form = Form.useFormInstance();
   const { getWorkflow } = useModel('workflow');
+  const [isMultiple, setIsMultiple] = useState(false);
   const [fileList, setFileList] = useState<FileListItem[] | []>([]);
-
+  useEffect(() => {
+    setIsMultiple(item.dataType?.startsWith('Array_') ?? false);
+  }, [item.dataType]);
   const handleUploadData = useCallback((info: any): FileListItem[] | [] => {
     const updateFileInfo = info.fileList
       .filter((file: any) => file.status !== UploadFileStatus.removed)
@@ -45,25 +48,29 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading, ...restProps }) => {
 
   const handleChange: any = useCallback(
     (info: any) => {
-      const updateFileInfo = handleUploadData(info);
-      setFileList(updateFileInfo);
+      const updateFileInfo = handleUploadData(info); //区分 单选 多选
+      setFileList(isMultiple ? updateFileInfo : [updateFileInfo[0]]);
       if (info.file.status === UploadFileStatus.error) {
         message.warning(info.file.response?.message);
       }
     },
-    [setFileList],
+    [setFileList, isMultiple],
   );
 
   const handleFormInitFileList = useCallback(
-    (list: any, isMultiple: boolean, formName: string): FileListItem[] | [] => {
-      const theList = isMultiple ? list : [list];
+    (
+      list: any,
+      _isMultiple: boolean,
+      formName: string,
+    ): FileListItem[] | [] => {
+      const theList = _isMultiple ? list : [list];
       return Array.isArray(theList) && theList[0]?.url
         ? theList.map((item: any) => {
             if (isString(item)) {
               const testRunValues = getWorkflow('testRunValues');
               const cachedValue = testRunValues[formName];
               const results =
-                isMultiple && isString(cachedValue)
+                _isMultiple && isString(cachedValue)
                   ? JSON.parse(cachedValue)
                   : cachedValue;
               return Array.isArray(results)
@@ -88,7 +95,6 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading, ...restProps }) => {
   useEffect(() => {
     if (item.dataType?.includes('File')) {
       const value = form.getFieldsValue(true)[item.name];
-      const isMultiple = item.dataType?.startsWith('Array_') ?? false;
       const formValue =
         isMultiple && isString(value) ? JSON.parse(value) : value;
       const newFileList = handleFormInitFileList(
@@ -98,11 +104,10 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading, ...restProps }) => {
       );
       setFileList(newFileList);
     }
-  }, [item.name, item.dataType]);
+  }, [item.name, item.dataType, isMultiple]);
 
   useEffect(() => {
     if (item.dataType?.includes('File')) {
-      const isMultiple = item.dataType?.startsWith('Array_') ?? false;
       let uploadedFileInfo: FileListItem | FileListItem[];
       uploadedFileInfo =
         fileList.filter((item: any) => item.status === UploadFileStatus.done) ||
@@ -112,13 +117,12 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading, ...restProps }) => {
       }
       form.setFieldValue(item.name, uploadedFileInfo);
     }
-  }, [fileList, form, item.dataType, item.name]);
+  }, [fileList, form, item.dataType, item.name, isMultiple]);
 
   switch (true) {
     case item.dataType?.includes('File'): {
-      const uploadRestProps = { ...restProps };
+      const uploadRestProps = { ...restProps, maxCount: isMultiple ? 10 : 1 };
       delete uploadRestProps.value;
-      const isMultiple = item.dataType?.startsWith('Array_') ?? false;
       return (
         <Upload
           {...uploadRestProps}
