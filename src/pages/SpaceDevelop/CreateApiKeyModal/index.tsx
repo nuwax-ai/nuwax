@@ -54,7 +54,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: UserApiKeyInfo[]) => {
-      setDataSource(result);
+      setDataSource(result || []);
     },
   });
 

@@ -8,11 +8,7 @@ import {
 } from '@/services/tempChat';
 import type { CreateTempChatModalProps } from '@/types/interfaces/space';
 import { AgentTempChatDto } from '@/types/interfaces/tempChat';
-import {
-  DeleteOutlined,
-  ExclamationCircleFilled,
-  PlusOutlined,
-} from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   Button,
   Checkbox,
@@ -33,9 +29,9 @@ import moment, { Moment } from 'moment';
 import React, { useEffect, useState } from 'react';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { useRequest } from 'umi';
-import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
+import { modalConfirm } from '@/utils/ant-custom';
 import 'dayjs/locale/zh-cn';
 
 dayjs.locale('zh-cn');
@@ -61,7 +57,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: AgentTempChatDto) => {
-      setDataSource([...dataSource, { ...result, key: uuidv4() }]);
+      setDataSource([...dataSource, result]);
     },
   });
 
@@ -70,7 +66,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: AgentTempChatDto[]) => {
-      setDataSource(result?.map((item) => ({ ...item, key: uuidv4() })) || []);
+      setDataSource(result || []);
     },
   });
 
@@ -141,15 +137,9 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
 
   // 删除确认
   const handleDelConfirm = (id: number, agentId: number, chatUrl: string) => {
-    Modal.confirm({
-      title: '您确定要删除该链接吗?',
-      icon: <ExclamationCircleFilled />,
-      content: chatUrl,
-      okText: '确定',
-      maskClosable: true,
-      cancelText: '取消',
-      onOk: () => handleDel(id, agentId),
-    });
+    modalConfirm('您确定要删除该链接吗?', chatUrl, () =>
+      handleDel(id, agentId),
+    );
   };
 
   // 显示二维码弹窗
@@ -251,7 +241,9 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
       align: 'center',
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center', 'content-center')}>
-          <DeleteOutlined
+          <Button
+            type="text"
+            icon={<DeleteOutlined />}
             onClick={() =>
               handleDelConfirm(record.id, record.agentId, record.chatUrl)
             }
@@ -288,6 +280,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
       >
         <Table<AgentTempChatDto>
           className={cx(styles['table-wrap'])}
+          rowKey="id"
           columns={inputColumns}
           dataSource={dataSource}
           pagination={false}
