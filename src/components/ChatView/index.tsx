@@ -155,9 +155,6 @@ const ChatView: React.FC<ChatViewProps> = memo(
                 <div style={{ flex: 1 }}>
                   <RunOver messageInfo={messageInfo} />
                 </div>
-                {mode === 'chat' ? (
-                  <ChatBottomDebug messageInfo={messageInfo} />
-                ) : null}
               </div>
             </ConditionRender>
             {(!!messageInfo?.think || !!messageInfo?.text) && (
@@ -210,7 +207,12 @@ const ChatView: React.FC<ChatViewProps> = memo(
               }
             >
               {mode === 'chat' ? (
-                <ChatBottomMore messageInfo={messageInfo} />
+                <div style={{ display: 'flex', flexDirection: 'row', gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <ChatBottomMore messageInfo={messageInfo} />
+                  </div>
+                  <ChatBottomDebug messageInfo={messageInfo} />
+                </div>
               ) : mode === 'home' ? (
                 <ChatSampleBottom messageInfo={messageInfo} />
               ) : null}
