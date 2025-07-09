@@ -93,7 +93,7 @@ const AuthWithLoading: React.FC = () => {
         // 如果有缓存的登录状态，直接使用
         if (cachedLoginStatus !== null) {
           setIsLoggedIn(cachedLoginStatus);
-          executeWithMinTime(() => setLoading(false), startTime);
+          setLoading(false); //直接展示内容
         } else {
           // 如果没有缓存，调用用户信息接口验证登录状态
           const data = await UserService.fetchUserInfoFromServer(false);
