@@ -1,12 +1,11 @@
 @import '@/styles/color';
 
-.header-container {
-  padding: 8px 26px;
-}
-
 .header {
   height: 72px;
   gap: 12px;
+  padding: 8px 26px;
+  overflow-x: auto;
+  overflow-y: hidden;
 
   .icon-back {
     color: @BLANK17;
@@ -54,9 +53,31 @@
   }
 }
 
-.inputSearch {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  height: 42px;
+@media (max-width: 768px) {
+  .header {
+    margin-bottom: 10px;
+  }
+
+  .radio-group-box {
+    flex-wrap: nowrap;
+
+    :global {
+      .ant-radio-button-label {
+        white-space: nowrap;
+      }
+
+      .ant-radio-group {
+        display: flex;
+        flex-wrap: nowrap; /* 禁止换行 */
+      }
+
+      .ant-radio-button {
+        flex: 0 0 auto; /* 防止按钮被压缩 */
+      }
+    }
+  }
+
+  .box {
+    white-space: nowrap;
+  }
 }
