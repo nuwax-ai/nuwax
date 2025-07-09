@@ -204,6 +204,8 @@ export interface ChatMessageDto {
   metadata?: unknown;
   // 可用值:USER,ASSISTANT,SYSTEM,TOOL
   messageType: MessageTypeEnum;
+  // 请求ID
+  requestId?: string;
 }
 
 // 会话消息信息

@@ -330,12 +330,11 @@ const Chat: React.FC = () => {
                 isFilled={isSendMessageRef.current}
                 disabled={!!userFillVariables || isSendMessageRef.current}
               />
-              {/* {JSON.stringify(messageList)} */}
               {messageList?.length > 0 ? (
                 <>
                   {messageList?.map((item: MessageInfo, index: number) => (
                     <ChatView
-                      key={index}
+                      key={item.id || index}
                       messageInfo={item}
                       roleInfo={roleInfo}
                       contentClassName={styles['chat-inner']}
