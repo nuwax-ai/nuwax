@@ -10,7 +10,6 @@ import {
 import useNodeSelection from '@/hooks/useNodeSelection';
 import {
   AnswerTypeEnum,
-  CompareTypeEnum,
   NodeShapeEnum,
   NodeTypeEnum,
   RunResultStatusEnum,
@@ -32,43 +31,48 @@ import RunResult from './runResult';
 // 条件节点
 const ConditionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
   const conditionBranchConfigs = data.nodeConfig.conditionBranchConfigs;
-  const conditionArgs = conditionBranchConfigs?.[0]?.conditionArgs;
-  const compareType = conditionArgs?.[0]?.compareType as CompareTypeEnum;
-  const firstArg = conditionArgs?.[0]?.firstArg;
-  const secondArg = conditionArgs?.[0]?.secondArg;
-
-  const getConditionArgs = (branchType: string) => {
-    if (branchType === ConditionBranchTypeEnum.ELSE) {
-      return null;
-    }
-    if (conditionArgs && conditionArgs.length > 0) {
-      return (
-        <div className="dis-left">
-          <span style={{ width: '18px', textAlign: 'center' }}>
-            {compareType ? compareTypeMap[compareType] : ''}
-          </span>
-          <div className="condition-right-input border-box">
-            {secondArg ? secondArg.name || secondArg.bindValue : ''}
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div className="condition-node-content-style">
-      {conditionBranchConfigs?.map((item) => (
-        <div key={item.uuid} className="dis-left condition-item-style">
-          <span className="condition-title-sytle">
-            {branchTypeMap[item.branchType || ConditionBranchTypeEnum.ELSE_IF]}
-          </span>
-          <div className="flex-1 border-box">
-            {firstArg ? firstArg.name : ''}
+      {conditionBranchConfigs?.map((item) => {
+        const firstArgName = item.conditionArgs
+          ? item.conditionArgs[0]?.firstArg?.name
+          : '';
+        const secondArgName =
+          item.conditionArgs[0]?.secondArg?.name ||
+          item.conditionArgs[0]?.secondArg?.bindValue ||
+          '';
+        return (
+          <div key={item.uuid} className="dis-left condition-item-style">
+            <span className="condition-title-sytle">
+              {
+                branchTypeMap[
+                  item.branchType || ConditionBranchTypeEnum.ELSE_IF
+                ]
+              }
+            </span>
+            <div className="flex-1 condition-node-left-input">
+              {firstArgName}
+            </div>
+            {item.conditionArgs && item.conditionArgs.length > 0 && (
+              <div className="dis-left">
+                {/* 添加空值检查，确保 compareType 不是 null 或 undefined */}
+                <span className="condition-node-compare-type">
+                  {item.conditionArgs[0]?.compareType
+                    ? compareTypeMap[
+                        item.conditionArgs[0]
+                          .compareType as keyof typeof compareTypeMap
+                      ]
+                    : ''}
+                </span>
+                <div className="condition-node-right-input">
+                  {secondArgName}
+                </div>
+              </div>
+            )}
           </div>
-          {getConditionArgs(item.branchType)}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
