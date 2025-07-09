@@ -25,6 +25,8 @@ export interface KnowledgeConfigAddParams {
   dataType: KnowledgeDataTypeEnum;
   // 图标的url地址
   icon: string;
+  // 知识库的嵌入模型ID
+  embeddingModelId: number;
 }
 
 // 知识库基础信息
@@ -369,7 +371,6 @@ export interface KnowledgeHeaderProps {
   onQaPopover: (item: CustomPopoverItem) => void;
   docType: number;
   onChangeDocType: (value: number) => void;
-  onSearch: (value: string) => void;
 }
 
 // 文档列表组件

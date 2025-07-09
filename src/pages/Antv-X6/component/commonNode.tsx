@@ -70,7 +70,9 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
         {(fields, { add, remove }) => (
           <>
             <div className="dis-sb ">
-              <span className="node-title-style">{title}</span>
+              <span className="node-title-style gap-6 flex items-center">
+                {title}
+              </span>
               {!disabledAdd && (
                 <Button
                   icon={<PlusOutlined />}

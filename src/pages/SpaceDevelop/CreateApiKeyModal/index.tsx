@@ -10,7 +10,11 @@ import { DevModeEnum } from '@/types/enums/agent';
 import { UserApiKeyInfo } from '@/types/interfaces/agent';
 import type { CreateTempChatModalProps } from '@/types/interfaces/space';
 import { modalConfirm } from '@/utils/ant-custom';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  ExclamationCircleOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import {
   Button,
   Checkbox,
@@ -169,7 +173,14 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
       ),
     },
     {
-      title: '开发模式',
+      title: (
+        <div className={cx('h-full', 'flex', 'items-center', 'gap-6')}>
+          <span>开发模式</span>
+          <Tooltip title="开启开发模式后，未发布的变更也将实时体现。">
+            <ExclamationCircleOutlined />
+          </Tooltip>
+        </div>
+      ),
       dataIndex: 'mode',
       key: 'mode',
       width: 100,

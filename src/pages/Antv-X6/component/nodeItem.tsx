@@ -7,7 +7,11 @@ import { DataTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum, VariableConfigTypeEnum } from '@/types/enums/node';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
-import { ExpandAltOutlined, SettingOutlined } from '@ant-design/icons';
+import {
+  ExclamationCircleOutlined,
+  ExpandAltOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
 import {
   Button,
   Divider,
@@ -18,6 +22,7 @@ import {
   Segmented,
   Select,
   Space,
+  Tooltip,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
@@ -115,7 +120,12 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
           form.getFieldValue('returnType') !== 'VARIABLE' && (
             <>
               <div className="dis-sb margin-bottom">
-                <span className="node-title-style">输出内容</span>
+                <span className="node-title-style gap-6 flex items-center">
+                  输出内容
+                  <Tooltip title="可以在以下输入框中重新组织输出内容，大模型将优先使用输入框中的内容。">
+                    <ExclamationCircleOutlined />
+                  </Tooltip>
+                </span>
               </div>
               <Form.Item name="content">
                 <Input.TextArea
@@ -137,7 +147,12 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
   return (
     <div>
       <div className="node-item-style">
-        <span className="node-title-style margin-bottom">循环设置</span>
+        <span className="node-title-style margin-bottom gap-6 flex items-center">
+          循环设置
+          <Tooltip title="如果引用数组，循环次数为数组的长度；如果指定次数，循环次数为指定的次数；如果选择无限循环，需配合“终止循环”节点完成循环流程。">
+            <ExclamationCircleOutlined />
+          </Tooltip>
+        </span>
         <Form.Item name={'loopType'}>
           <Select
             options={cycleOption}
@@ -187,7 +202,14 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
       </Form.Item>
       <div className="node-item-style">
         <InputAndOut
-          title="中间变量"
+          title={
+            <>
+              中间变量
+              <Tooltip title="变量可在多次循环中实现共享，可用于在多次循环中传递变量。">
+                <ExclamationCircleOutlined />
+              </Tooltip>
+            </>
+          }
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.variableArgs}
           form={form}

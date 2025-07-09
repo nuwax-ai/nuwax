@@ -61,7 +61,9 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
       />
       <div className={cx('flex', 'flex-col', styles['header-info'])}>
         <div className={cx('flex', 'items-center')}>
-          <h3 className={cx(styles['h-title'])}>{agentConfigInfo?.name}</h3>
+          <h3 className={cx(styles['h-title'], 'text-ellipsis')}>
+            {agentConfigInfo?.name}
+          </h3>
           <FormOutlined
             className={cx(styles['edit-ico'])}
             onClick={onEditAgent}

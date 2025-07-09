@@ -24,8 +24,8 @@ const MCPItem: React.FC<MCPItemProps> = ({
   getToolLoading,
   addedComponents,
 }) => {
-  const isFirstItem = index === 0;
-  const [fold, setFold] = useState(isFirstItem ? false : true);
+  // 默认折叠
+  const [fold, setFold] = useState(true);
 
   return (
     <>

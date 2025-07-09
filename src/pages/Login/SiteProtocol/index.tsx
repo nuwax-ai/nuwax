@@ -9,18 +9,14 @@ const SiteProtocol: React.FC = () => {
     <>
       <span className={cx(styles.span)}>已阅读并同意协议：</span>
       <a
-        href="https://ucn1y31fvbx4.feishu.cn/wiki/WyjEwj1Y6iegFVkvZnycg1PknNt"
+        href="https://nuwax.com/user-agreement.html"
         target="_blank"
         rel="noreferrer"
       >
-        女娲使用协议、
+        服务使用协议、
       </a>
-      <a
-        href="https://ucn1y31fvbx4.feishu.cn/wiki/XEMjwrUdmiPcgkkK9FjcewBCnFe"
-        target="_blank"
-        rel="noreferrer"
-      >
-        女娲隐私协议
+      <a href="https://nuwax.com/privacy.html" target="_blank" rel="noreferrer">
+        隐私协议
       </a>
     </>
   );

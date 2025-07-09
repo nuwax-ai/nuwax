@@ -23,7 +23,7 @@ import type {
 import { KnowledgeDocumentStatus } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
 import { modalConfirm } from '@/utils/ant-custom';
-import { message } from 'antd';
+import { Input, message } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -330,14 +330,21 @@ const SpaceKnowledge: React.FC = () => {
     }
   };
 
+  // 渲染QA问答内容
   const renderQaContent = () => {
     return (
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-        }}
-      >
+      <div className={cx('flex', 'flex-col', 'w-full')}>
+        <div className={cx(styles.inputSearch)}>
+          <Input.Search
+            placeholder="请输入问题搜索"
+            allowClear
+            style={{
+              width: 240,
+            }}
+            onSearch={handleSearch}
+            onPressEnter={(e) => handleSearch(e.currentTarget.value)}
+          />
+        </div>
         {/* 修改为表格 远程加载数据 */}
         <QaTableList
           ref={qaTableListRef}
@@ -397,18 +404,17 @@ const SpaceKnowledge: React.FC = () => {
         onEdit={() => setOpenKnowledge(true)}
         onPopover={handleClickPopoverItem}
         onQaPopover={handleClickQaPopoverItem}
-        onSearch={handleSearch}
       />
       {/* 根据docType 判断是否显示QA问答 */}
       <div
         style={{
-          width: '100%',
           flex: 1,
           height:
             docType === KnowledgeDocTypeEnum.DOC ? 'calc(100% - 88px)' : '100%',
           padding: '0 20px',
           margin: '0',
           display: 'flex',
+          overflowX: 'auto',
         }}
       >
         {docType === KnowledgeDocTypeEnum.DOC

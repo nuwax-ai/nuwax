@@ -3,6 +3,7 @@
 .header {
   gap: 10px;
   border-bottom: 1px solid @BLANK01;
+  overflow-x: auto;
 
   .avatar {
     width: 40px;
@@ -14,10 +15,12 @@
     gap: 6px;
 
     .h-title {
+      max-width: 300px;
       margin-right: 20px;
       font-size: 14px;
       font-weight: bold;
       color: @BLANK04;
+      white-space: nowrap;
     }
 
     .edit-ico {
@@ -71,5 +74,23 @@
     .publish-btn {
       margin-left: 20px;
     }
+  }
+}
+
+@media (max-width: 768px) {
+  .agent-rel-info {
+    display: none;
+  }
+
+  .header-title {
+    display: none;
+  }
+
+  .fold {
+    display: none;
+  }
+
+  .ico {
+    display: none;
   }
 }
