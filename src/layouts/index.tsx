@@ -1,12 +1,6 @@
 import classNames from 'classnames';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import { Outlet } from 'umi';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Outlet, useModel } from 'umi';
 import HistoryConversation from './HistoryConversation';
 import styles from './index.less';
 import MenusLayout from './MenusLayout';
@@ -28,13 +22,17 @@ const MOBILE_MENU_TOP_PADDING = 32; // 移动端菜单顶部间距
  * 负责响应式菜单、历史会话、消息、设置弹窗的布局与展示
  */
 const Layout: React.FC = () => {
-  // 状态管理
-  const [isMobile, setIsMobile] = useState<boolean>(false);
-  const [fullMobileMenu, setFullMobileMenu] = useState<boolean>(false);
-  const [realHidden, setRealHidden] = useState<boolean>(false);
-
   // 使用 useRef 避免重复获取 DOM 元素
   const mobileMenuContainerRef = useRef<HTMLDivElement>(null);
+  // 状态管理
+  const {
+    isMobile,
+    setIsMobile,
+    realHidden,
+    setRealHidden,
+    fullMobileMenu,
+    setFullMobileMenu,
+  } = useModel('layout');
 
   /**
    * 检查是否为移动端设备
@@ -49,7 +47,7 @@ const Layout: React.FC = () => {
    * 使用 useCallback 优化，避免不必要的重渲染
    */
   const toggleFullMobileMenu = useCallback(() => {
-    setFullMobileMenu((prev) => {
+    setFullMobileMenu((prev: boolean) => {
       const newState = !prev;
       // 展开时立即设置为非隐藏状态
       if (newState) {

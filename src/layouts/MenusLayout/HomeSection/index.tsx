@@ -20,14 +20,18 @@ const HomeSection: React.FC<{
   const { conversationList, usedAgentList, runUsed, runHistory } = useModel(
     'conversationHistory',
   );
+  // 关闭移动端菜单
+  const { handleCloseMobileMenu } = useModel('layout');
 
   // 智能体主页
   const handleAgentHome = (id: number) => {
+    handleCloseMobileMenu();
     history.push(`/agent/${id}`);
   };
 
   // 会话跳转
   const handleLink = (id: number, agentId: number) => {
+    handleCloseMobileMenu();
     history.push(`/home/chat/${id}/${agentId}`);
   };
 

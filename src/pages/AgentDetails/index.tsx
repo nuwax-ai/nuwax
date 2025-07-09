@@ -217,6 +217,7 @@ const AgentDetails: React.FC = () => {
             <>
               {/* 新对话设置 */}
               <NewConversationSet
+                key={agentId}
                 className="mb-16"
                 form={form}
                 isFilled
