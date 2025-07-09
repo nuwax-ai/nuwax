@@ -3,7 +3,32 @@ import { USER_INFO } from '@/constants/home.constants';
 import { apiUserInfo } from '@/services/account';
 import { redirectToLogin } from '@/utils/router';
 import { message } from 'antd';
+const LOGIN_STATUS_KEY = 'userLoginStatus';
+// ===== 缓存管理方法 =====
+/**
+ * 从缓存中获取登录状态
+ * @returns {boolean|null} 缓存的登录状态，如果不存在则返回null
+ */
+export const getLoginStatusFromCache = (): boolean | null => {
+  const cachedStatus = sessionStorage.getItem(LOGIN_STATUS_KEY);
+  if (cachedStatus === null) return null;
+  return cachedStatus === 'true';
+};
 
+/**
+ * 将登录状态保存到缓存
+ * @param status 登录状态
+ */
+export const setLoginStatusToCache = (status: boolean): void => {
+  sessionStorage.setItem(LOGIN_STATUS_KEY, status ? 'true' : 'false');
+};
+
+/**
+ * 清除登录状态缓存
+ */
+export const clearLoginStatusCache = (): void => {
+  sessionStorage.removeItem(LOGIN_STATUS_KEY);
+};
 /**
  * 用户信息服务
  * 统一管理用户信息的获取、存储和清除
@@ -61,6 +86,7 @@ export class UserService {
           // 用户未登录，跳转到登录页
           case USER_NO_LOGIN:
             if (autoJump) {
+              clearLoginStatusCache();
               redirectToLogin(location.pathname);
             }
             break;
