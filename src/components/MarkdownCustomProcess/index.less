@@ -1,22 +1,26 @@
 .markdown-custom-process {
-  border: 0.5px solid #f0f0f0;
-  border-radius: 8px;
+  border: 0.5px solid #e5e5e5;
+  border-radius: 6px;
   margin: 16px 0;
-  background: #fff;
   overflow: hidden;
+  background: #f5f5f5;
 
   .process-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 16px;
-    background: #fafafa;
+    padding: 6px 16px;
 
     .process-title {
       font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
       font-size: 14px;
       color: #333;
       font-weight: 500;
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      width: calc(100% - 146px);
     }
 
     .process-controls {
@@ -95,6 +99,21 @@
 
         .ant-btn:hover .ant-btn-icon {
           color: rgba(0, 0, 0, 88%);
+        }
+      }
+    }
+    @media screen and (max-width: 720px) {
+      .process-title {
+        width: calc(100% - 132px);
+      }
+
+      .process-controls {
+        width: 128px;
+        gap: 4px;
+
+        .process-controls-actions {
+          padding-left: 4px;
+          gap: 4px;
         }
       }
     }
