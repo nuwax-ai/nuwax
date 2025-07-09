@@ -37,3 +37,8 @@ export const jumpBack = (url?: string) => {
 export const jumpToMcpCreate = (spaceId: number) => {
   history.push(`/space/${spaceId}/mcp/create`);
 };
+
+export const redirectToLogin = (pathname: string = '/') => {
+  //TODO 注意 redirect 的用法 还未实现
+  history.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+};

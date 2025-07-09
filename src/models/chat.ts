@@ -1,7 +1,10 @@
 import { ProcessingEnum } from '@/types/enums/common';
 import { ProcessingInfo } from '@/types/interfaces/conversationInfo';
 import { useCallback, useState } from 'react';
-
+/**
+ *
+ * 使用 会在 chatTemp 中使用
+ */
 export default () => {
   const [processingList, setProcessingList] = useState<ProcessingInfo[]>([]);
 
@@ -39,6 +42,9 @@ export default () => {
   };
 
   const handleChatProcessingList = (processingList: ProcessingInfo[]) => {
+    //先清空
+    setProcessingList([]);
+
     // 去重逻辑：保留一条，如果status状态不是 EXECUTING，如果成功或者失败都有就仅保留成功
     const processedMap = new Map<string, ProcessingInfo>();
 

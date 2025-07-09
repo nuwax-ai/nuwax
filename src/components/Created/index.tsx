@@ -447,7 +447,8 @@ const Created: React.FC<CreatedProp> = ({
         (info) =>
           info.type === item.targetType &&
           info.targetId === item.targetId &&
-          info.status === targetStatus,
+          info.status === targetStatus &&
+          (info?.toolName || '') === (item.toolName || ''),
       );
     },
     [addComponents],
@@ -461,9 +462,8 @@ const Created: React.FC<CreatedProp> = ({
   );
 
   const handleItemLoading = useCallback(
-    (item: CreatedNodeItem, toolName: string) => {
+    (item: CreatedNodeItem, toolName?: string) => {
       if (addSkillLoading === undefined) {
-        // 兼容以前的写法 没有拓展外层通过 addSkillLoading 控制 loading 实现
         return getItemStatusResult(item, AgentAddComponentStatusEnum.Loading);
       }
 
@@ -476,7 +476,7 @@ const Created: React.FC<CreatedProp> = ({
       }
       return false;
     },
-    [addSkillLoading, currentNode, getItemStatusResult],
+    [getItemStatusResult, currentNode, addSkillLoading],
   );
 
   const renderMCPItem = (
@@ -501,7 +501,7 @@ const Created: React.FC<CreatedProp> = ({
   };
 
   const renderNormalItem = (item: CreatedNodeItem, index: number) => {
-    const isCurrentLoading = handleItemLoading(item, '');
+    const isCurrentLoading = handleItemLoading(item);
     return (
       <div className="dis-sb list-item-style" key={`${item.targetId}-${index}`}>
         <img

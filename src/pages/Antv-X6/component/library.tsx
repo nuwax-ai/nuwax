@@ -251,6 +251,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
           AgentComponentTypeEnum.Table,
           AgentComponentTypeEnum.Plugin,
           AgentComponentTypeEnum.Workflow,
+          AgentComponentTypeEnum.MCP,
         ]}
       />
     </div>

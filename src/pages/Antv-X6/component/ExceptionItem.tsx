@@ -97,11 +97,26 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
     useEffect(() => {
       if (!outerForm) return;
       setCurrentExceptionHandleType(exceptionHandleType);
+      if (
+        exceptionHandleType !== ExceptionHandleTypeEnum.EXECUTE_EXCEPTION_FLOW
+      ) {
+        outerForm.setFieldValue([name, 'exceptionHandleNodeIds'], []);
+      }
     }, [outerForm, name, exceptionHandleType]);
+    useEffect(() => {
+      if (!outerForm) return;
+      if (
+        currentExceptionHandleType !==
+        ExceptionHandleTypeEnum.EXECUTE_EXCEPTION_FLOW
+      ) {
+        outerForm.setFieldValue([name, 'exceptionHandleNodeIds'], []);
+      }
+    }, [outerForm, name, currentExceptionHandleType]);
+
     const debounceSetIsModified = useCallback(
       debounce(() => {
         setIsModified(true);
-      }, 200),
+      }, 100),
       [],
     );
     const handleChange = (value: string) => {

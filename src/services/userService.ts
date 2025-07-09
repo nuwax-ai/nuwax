@@ -1,5 +1,8 @@
+import { USER_NO_LOGIN } from '@/constants/codes.constants';
 import { USER_INFO } from '@/constants/home.constants';
 import { apiUserInfo } from '@/services/account';
+import { redirectToLogin } from '@/utils/router';
+import { message } from 'antd';
 
 /**
  * 用户信息服务
@@ -41,7 +44,7 @@ export class UserService {
   /**
    * 从服务器获取用户信息
    */
-  static async fetchUserInfoFromServer(): Promise<any> {
+  static async fetchUserInfoFromServer(autoJump: boolean = true): Promise<any> {
     try {
       const result = await apiUserInfo();
 
@@ -52,6 +55,20 @@ export class UserService {
       } else {
         // 服务器返回错误，清除本地存储
         this.clearUserInfo();
+        const { code, message: errorMessage } = result;
+        // 根据错误码处理不同情况
+        switch (code) {
+          // 用户未登录，跳转到登录页
+          case USER_NO_LOGIN:
+            if (autoJump) {
+              redirectToLogin(location.pathname);
+            }
+            break;
+          // 默认错误处理
+          default:
+            // 只有当请求不在过滤列表中才显示错误消息
+            message.warning(errorMessage);
+        }
         return null;
       }
     } catch (error) {
