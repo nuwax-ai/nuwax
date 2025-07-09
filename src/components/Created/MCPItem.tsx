@@ -14,10 +14,7 @@ interface MCPItemProps {
   selected: { key: string };
   onAddNode: (item: CreatedNodeItem) => void;
   addedComponents: AgentAddComponentStatusInfo[];
-  getToolLoading: (
-    item: CreatedNodeItem,
-    toolName: string,
-  ) => boolean | undefined;
+  getToolLoading: (item: CreatedNodeItem) => boolean | undefined;
 }
 const MCPItem: React.FC<MCPItemProps> = ({
   item,

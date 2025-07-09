@@ -491,6 +491,7 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
         hideTop={[
           AgentComponentTypeEnum.Knowledge,
           AgentComponentTypeEnum.Table,
+          AgentComponentTypeEnum.MCP,
         ]}
       />
     </CustomFormModal>
