@@ -50,8 +50,8 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       <div className={cx('flex-1')}>
-        <h3>
-          <span>调用方式 </span>
+        <h3 className={cx('gap-6', 'flex', 'items-center')}>
+          <span>调用方式</span>
           <Tooltip
             title={
               <div>
@@ -66,7 +66,7 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
               </div>
             }
           >
-            <ExclamationCircleOutlined />
+            <ExclamationCircleOutlined className={cx(styles.icon)} />
           </Tooltip>
         </h3>
         <Radio.Group
