@@ -104,8 +104,28 @@
     border-radius: 4px;
     transition: transform 0.2s ease;
 
-    &:hover {
-      transform: scale(1.02);
+    // &:hover {
+    //   transform: scale(1.02);
+    // }
+  }
+
+  // 图片容器和延迟加载样式
+  :global {
+    .markdownItImageContainer {
+      display: inline-block;
+      min-height: 24px;
+      min-width: 24px;
+      position: relative;
+      line-height: 0;
+    }
+
+    .markdownItLazyImage {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+
+      &.loaded {
+        opacity: 1;
+      }
     }
   }
 

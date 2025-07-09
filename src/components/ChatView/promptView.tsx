@@ -1,7 +1,7 @@
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
 import { AssistantRoleEnum } from '@/types/enums/agent';
-// import { MessageStatusEnum } from '@/types/enums/common';
+import { MessageStatusEnum } from '@/types/enums/common';
 import type {
   AttachmentFile,
   MessageInfo,
@@ -48,7 +48,7 @@ const PromptView: React.FC<PromptViewProps> = ({
           condition={messageInfo?.role !== AssistantRoleEnum.USER}
         >
           {/*运行状态*/}
-          {messageInfo.status !== 'complete' && (
+          {messageInfo.status !== MessageStatusEnum.Complete && (
             <ConditionRender condition={!!messageInfo?.status}>
               <RunOver messageInfo={messageInfo} />
             </ConditionRender>
@@ -67,7 +67,11 @@ const PromptView: React.FC<PromptViewProps> = ({
               {/*文本内容*/}
               {!!messageInfo?.text && (
                 <div
-                  className={cx(styles['chat-content'], 'radius-6', 'w-full')}
+                  className={cx(styles['chat-content'], 'radius-6', 'w-full', {
+                    [styles.typing]:
+                      messageInfo.status === MessageStatusEnum.Incomplete ||
+                      messageInfo.status === MessageStatusEnum.Loading,
+                  })}
                   dangerouslySetInnerHTML={{
                     __html: md.render(messageInfo.text),
                   }}

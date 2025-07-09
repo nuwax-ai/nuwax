@@ -15,21 +15,6 @@ import { presetConfigs } from './presets';
 import { createDefaultRenderRules } from './renderRules';
 import type { MarkdownRendererConfig, MarkdownRendererProps } from './types';
 
-// 使用 any 类型来避免类型冲突
-type Token = any;
-enum TokenRenderType {
-  Custom = 'custom',
-  Standard = 'standard',
-}
-// 记录每个token的类型和位置信息
-interface TokenRenderGroup {
-  type: TokenRenderType;
-  tokens: Token[];
-  startIndex: number;
-}
-
-const NEED_TOOLBAR_TOKEN_TYPE_MAP = ['fence', 'thead_open'];
-
 import GenCustomPlugin, { getBlockName } from '@/plugins/markdown-it-custom';
 import { findClassElement } from '@/utils/common';
 import MarkdownCustomProcess from '../MarkdownCustomProcess';
@@ -37,6 +22,13 @@ import MarkdownCustomProcess from '../MarkdownCustomProcess';
 import MarkdownCodeToolbar from '../MarkdownCodeToolbar';
 import styles from './index.less';
 import { applyListParagraphRenderer } from './listParagraphRenderer';
+import rewriteToken, {
+  TokenRenderGroup,
+  TokenRenderType,
+} from './rewriteToken';
+
+// 使用 any 类型来避免类型冲突
+type Token = any;
 
 const cx = classNames.bind(styles);
 
@@ -70,25 +62,89 @@ const handleCustomTokenRender = (
   return null;
 };
 
-const rewriteTokens = (tokens: Token[], requestId: string) => {
-  const newTokens = tokens.map((token, index) => {
-    return {
-      ...token,
-      meta: {
-        ...token.meta,
-        requestId,
-        id: `${token?.type}${token?.info ? '-' + token?.info : ''}-${index}`,
-        isFirst: index === 0,
-        isLast: index === tokens.length - 1,
-        toolbar: NEED_TOOLBAR_TOKEN_TYPE_MAP.includes(token.type),
-      },
-    };
+/**
+ * 将tokens渲染为React节点
+ * @param tokens markdown tokens
+ * @param md markdown-it实例
+ * @returns React节点数组
+ */
+export const renderTokens = (
+  tokens: Token[],
+  md: markdownIt,
+): React.ReactNode[] => {
+  const result: React.ReactNode[] = [];
+
+  // 先调用一次render，让token的meta.component生效
+  md.renderer.render(tokens, md.options, {});
+
+  const tokenGroups: TokenRenderGroup[] = [];
+  let currentGroup: TokenRenderGroup | null = null;
+
+  // 遍历所有tokens，按类型分组
+  tokens.forEach((token, index) => {
+    const isCustomToken = token.meta?.component;
+    const tokenType =
+      isCustomToken === TokenRenderType.Image
+        ? TokenRenderType.Image
+        : isCustomToken
+        ? TokenRenderType.Custom
+        : TokenRenderType.Standard;
+
+    // 如果当前组为空或类型不同，创建新组
+    if (!currentGroup || currentGroup.type !== tokenType) {
+      currentGroup = {
+        type: tokenType,
+        tokens: [token],
+        startIndex: index,
+      };
+      tokenGroups.push(currentGroup);
+    } else {
+      // 类型相同，添加到当前组
+      currentGroup.tokens.push(token);
+    }
   });
-  newTokens.forEach((token, index) => {
-    token.meta.prevId = newTokens[index - 1]?.meta?.id || '';
-    token.meta.nextId = newTokens[index + 1]?.meta?.id || '';
+
+  // 按组渲染，保持原始顺序
+  tokenGroups.forEach((group, groupIndex) => {
+    if (group.type === TokenRenderType.Custom) {
+      // 自定义组件：逐个渲染
+      group.tokens.forEach((token, tokenIndex) => {
+        const component = handleCustomTokenRender(
+          token,
+          group.startIndex + tokenIndex,
+        );
+        if (component) {
+          result.push(component);
+        }
+      });
+    } else if (group.type === TokenRenderType.Image) {
+      // 图片：合并渲染
+      const mergedHtml = md.renderer.render(group.tokens, md.options, {});
+      if (mergedHtml) {
+        result.push(
+          <div
+            dangerouslySetInnerHTML={{ __html: mergedHtml }}
+            key={`image-group-${group.startIndex}-${groupIndex}`}
+          />,
+        );
+      }
+    } else {
+      // 标准token：合并渲染
+      if (group.tokens.length > 0) {
+        const mergedHtml = md.renderer.render(group.tokens, md.options, {});
+        if (mergedHtml) {
+          result.push(
+            <div
+              dangerouslySetInnerHTML={{ __html: mergedHtml }}
+              key={`standard-group-${group.startIndex}-${groupIndex}`}
+            />,
+          );
+        }
+      }
+    }
   });
-  return newTokens;
+
+  return result;
 };
 
 /**
@@ -199,10 +255,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     const handleClick = useCallback(
       (e: MouseEvent) => {
         const target = e.target as HTMLElement;
-        const theImage = findClassElement(
-          target,
-          'markdown-it__image_clickable',
-        );
+        const theImage = findClassElement(target, 'markdownItImageClickable');
         const clickableImageSrc =
           theImage?.dataset?.src || (theImage as HTMLImageElement)?.src || '';
         if (clickableImageSrc) {
@@ -226,87 +279,17 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
       };
     }, [handleClick]);
 
-    // 渲染 tokens 为 React 元素
-    const renderTokens = useCallback(
-      (tokens: Token[]): React.ReactNode[] => {
-        const result: React.ReactNode[] = [];
-
-        // 先调用一次render，让token的meta.component生效
-        md.renderer.render(tokens, md.options, {});
-
-        const tokenGroups: TokenRenderGroup[] = [];
-        let currentGroup: TokenRenderGroup | null = null;
-
-        // 遍历所有tokens，按类型分组
-        tokens.forEach((token, index) => {
-          const isCustomToken = !!token.meta?.component;
-          const tokenType = isCustomToken
-            ? TokenRenderType.Custom
-            : TokenRenderType.Standard;
-
-          // 如果当前组为空或类型不同，创建新组
-          if (!currentGroup || currentGroup.type !== tokenType) {
-            currentGroup = {
-              type: tokenType,
-              tokens: [token],
-              startIndex: index,
-            };
-            tokenGroups.push(currentGroup);
-          } else {
-            // 类型相同，添加到当前组
-            currentGroup.tokens.push(token);
-          }
-        });
-
-        // 按组渲染，保持原始顺序
-        tokenGroups.forEach((group, groupIndex) => {
-          if (group.type === TokenRenderType.Custom) {
-            // 自定义组件：逐个渲染
-            group.tokens.forEach((token, tokenIndex) => {
-              const component = handleCustomTokenRender(
-                token,
-                group.startIndex + tokenIndex,
-              );
-              if (component) {
-                result.push(component);
-              }
-            });
-          } else {
-            // 标准token：合并渲染
-            if (group.tokens.length > 0) {
-              const mergedHtml = md.renderer.render(
-                group.tokens,
-                md.options,
-                {},
-              );
-              if (mergedHtml) {
-                result.push(
-                  <div
-                    dangerouslySetInnerHTML={{ __html: mergedHtml }}
-                    key={`standard-group-${group.startIndex}-${groupIndex}`}
-                  />,
-                );
-              }
-            }
-          }
-        });
-
-        return result;
-      },
-      [md],
-    );
-
     useEffect(() => {
       // 解析 markdown 内容
       const tokens = content ? md.parse(content, {}) : [];
 
-      const newTokens = rewriteTokens(tokens, requestId);
+      const newTokens = rewriteToken(tokens, requestId);
       setMdTokens(newTokens);
     }, [content, md, requestId]);
 
     useEffect(() => {
-      const renderResult = renderTokens(mdTokens);
-      setRenderResult(renderResult);
+      const result = renderTokens(mdTokens, md);
+      setRenderResult(result);
     }, [md, mdTokens]);
 
     useEffect(() => {
