@@ -24,6 +24,8 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
   const location = useLocation();
   const { pathname } = location;
   const { spaceList, currentSpaceInfo } = useModel('spaceModel');
+  // 关闭移动端菜单
+  const { handleCloseMobileMenu } = useModel('layout');
 
   // 过滤当前工作空间
   const filterSpaceList = useMemo(() => {
@@ -39,6 +41,8 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
     const spaceId = info.id;
     localStorage.setItem(SPACE_ID, spaceId.toString());
     onClosePopover(false);
+    // 关闭移动端菜单
+    handleCloseMobileMenu();
 
     // 普通用户开发者功能如果关闭，首次进入空间菜单选中“空间广场”；
     const isUser_NotAllowDevelop =

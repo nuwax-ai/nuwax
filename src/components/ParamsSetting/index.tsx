@@ -8,7 +8,7 @@ import {
 } from '@/types/interfaces/agentConfig';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
 import { getActiveKeys, updateNodeField } from '@/utils/deepNode';
-import { InfoCircleOutlined } from '@ant-design/icons';
+import { ExclamationCircleOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import {
   Button,
@@ -189,7 +189,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
               body: { width: '300px' },
             }}
           >
-            <InfoCircleOutlined className="ml-12" />
+            <ExclamationCircleOutlined className="ml-12" />
           </Popover>
         </>
       ),

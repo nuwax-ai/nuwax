@@ -155,7 +155,6 @@ const PublishManage: React.FC = () => {
       dataIndex: 'name',
       key: 'name',
       width: 200,
-      fixed: 'left',
       className: styles['table-column-fixed'],
       render: (value: string) => {
         return (

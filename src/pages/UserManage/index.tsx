@@ -132,11 +132,13 @@ const UserManage: React.FC = () => {
       title: '昵称',
       dataIndex: 'nickName',
       key: 'nickName',
+      width: 100,
     },
     {
       title: '用户名',
       dataIndex: 'userName',
       key: 'userName',
+      width: 160,
       render: (text: string) => {
         return text ? text : '--';
       },
@@ -145,11 +147,13 @@ const UserManage: React.FC = () => {
       title: '手机号码',
       dataIndex: 'phone',
       key: 'phone',
+      width: 140,
     },
     {
       title: '邮箱',
       dataIndex: 'email',
       key: 'email',
+      width: 200,
       render: (text: string) => {
         return text ? text : '--';
       },
@@ -158,6 +162,7 @@ const UserManage: React.FC = () => {
       title: '角色',
       dataIndex: 'role',
       key: 'role',
+      width: 100,
       render: (role: UserRoleEnum) => {
         switch (role) {
           case UserRoleEnum.Admin:
@@ -173,6 +178,7 @@ const UserManage: React.FC = () => {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
+      width: 90,
       render: (status: UserStatusEnum) => {
         let statusText = '';
         let dotStyle = '';
@@ -198,6 +204,7 @@ const UserManage: React.FC = () => {
       title: '加入时间',
       dataIndex: 'created',
       key: 'created',
+      width: 180,
       render: (created: string) => {
         return moment(created).format('YYYY-MM-DD HH:mm:ss');
       },
@@ -241,7 +248,7 @@ const UserManage: React.FC = () => {
   return (
     <div className={cx(styles['system-manage-container'], 'overflow-y')}>
       <h3 className={cx(styles['system-manage-title'])}>用户管理</h3>
-      <section className={cx('flex', 'content-between')}>
+      <section className={cx('flex', 'content-between', 'flex-wrap', 'gap-10')}>
         <Select
           className={cx(styles['select-132'])}
           options={selectOptions}
@@ -251,7 +258,7 @@ const UserManage: React.FC = () => {
           dropdownRender={(menu) => <>{menu}</>}
           menuItemSelectedIcon={<CheckOutlined style={{ marginRight: 8 }} />}
         />
-        <div className={cx('flex', 'gap-10')}>
+        <div className={cx('flex', 'gap-10', 'flex-wrap')}>
           <Input
             className={cx(styles['search-input-225'])}
             placeholder="请输入手机号码邮箱或昵称"
@@ -278,6 +285,7 @@ const UserManage: React.FC = () => {
         loading={loading}
         columns={columns}
         dataSource={data?.data.records}
+        scroll={{ x: 'max-content' }}
         pagination={{
           total: data?.data.total,
           showSizeChanger: true,

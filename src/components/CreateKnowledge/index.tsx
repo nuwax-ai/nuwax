@@ -6,18 +6,22 @@ import {
   apiKnowledgeConfigAdd,
   apiKnowledgeConfigUpdate,
 } from '@/services/knowledge';
+import { apiModelList } from '@/services/modelConfig';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { KnowledgeDataTypeEnum } from '@/types/enums/library';
-import type { CreateKnowledgeProps } from '@/types/interfaces/common';
+import { ModelTypeEnum } from '@/types/enums/modelConfig';
+import type { CreateKnowledgeProps, option } from '@/types/interfaces/common';
 import type {
   KnowledgeBaseInfo,
   KnowledgeConfigUpdateParams,
 } from '@/types/interfaces/knowledge';
+import { ModelConfigInfo } from '@/types/interfaces/model';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
+import SelectList from '../SelectList';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -39,6 +43,8 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
   const [resourceFormat, setResourceFormat] = useState<KnowledgeDataTypeEnum>(
     KnowledgeDataTypeEnum.Text,
   );
+  // 模型列表
+  const [modelConfigList, setModelConfigList] = useState<option[]>([]);
 
   // 数据新增接口
   const { run } = useRequest(apiKnowledgeConfigAdd, {
@@ -70,26 +76,51 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
     },
   });
 
+  // 查询可使用模型列表接口
+  const { run: runMode } = useRequest(apiModelList, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: ModelConfigInfo[]) => {
+      const list: option[] =
+        result?.map((item) => ({
+          label: item.name,
+          value: item.id,
+        })) || [];
+      setModelConfigList(list);
+    },
+  });
+
   useEffect(() => {
-    if (knowledgeInfo) {
-      setImageUrl(knowledgeInfo.icon);
-      setResourceFormat(knowledgeInfo.dataType);
+    if (open) {
+      // 查询可使用模型列表接口
+      runMode({
+        spaceId,
+        modelType: ModelTypeEnum.Embeddings,
+      });
+      if (knowledgeInfo) {
+        setImageUrl(knowledgeInfo.icon);
+        setResourceFormat(knowledgeInfo.dataType);
+        form.setFieldsValue({
+          name: knowledgeInfo.name,
+          description: knowledgeInfo.description,
+          embeddingModelId: knowledgeInfo.embeddingModelId,
+        });
+      }
     }
-  }, [knowledgeInfo]);
+  }, [spaceId, open, knowledgeInfo]);
 
   const onFinish: FormProps<KnowledgeBaseInfo>['onFinish'] = (values) => {
     const params = {
       spaceId,
       name: values.name,
       description: values.description,
+      embeddingModelId: values.embeddingModelId,
       icon: imageUrl,
       dataType: resourceFormat,
     };
     setLoading(true);
     if (mode === CreateUpdateModeEnum.Create) {
-      run({
-        ...params,
-      });
+      run(params);
     } else {
       runUpdate({
         id: knowledgeInfo?.id,
@@ -98,8 +129,8 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
     }
   };
 
-  const handlerSubmit = async () => {
-    await form.submit();
+  const handlerSubmit = () => {
+    form.submit();
   };
 
   return (
@@ -117,10 +148,6 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
         requiredMark={customizeRequiredMark}
         layout="vertical"
         onFinish={onFinish}
-        initialValues={{
-          name: knowledgeInfo?.name,
-          description: knowledgeInfo?.description,
-        }}
         autoComplete="off"
       >
         <Form.Item
@@ -137,6 +164,14 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
           placeholder="输入知识库内容的描述"
           maxLength={100}
         />
+        <Form.Item name="embeddingModelId" label="向量模型">
+          <SelectList
+            placeholder="请选择向量模型"
+            disabled={mode === CreateUpdateModeEnum.Update}
+            options={modelConfigList}
+            allowClear
+          />
+        </Form.Item>
         <Form.Item name="icon" label="图标">
           <UploadAvatar
             className={cx(styles['upload-box'])}

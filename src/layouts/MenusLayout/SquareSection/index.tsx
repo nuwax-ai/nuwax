@@ -31,6 +31,9 @@ const SquareSection: React.FC<{
   const [activeKey, setActiveKey] = useState<string>('');
   // menu显隐
   const [visibleMenu, setVisibleMenu] = useState<string>('');
+  // 关闭移动端菜单
+  const { handleCloseMobileMenu } = useModel('layout');
+
   // url search参数
   const params = getURLParams() as {
     cate_type: string;
@@ -47,6 +50,8 @@ const SquareSection: React.FC<{
   const handleClick = (cateType: string, cateName?: string) => {
     setActiveKey(cateName ?? cateType);
     setVisibleMenu(cateType);
+    // 关闭移动端菜单
+    handleCloseMobileMenu();
 
     const url = cateName
       ? `/square?cate_type=${cateType}&cate_name=${cateName}`

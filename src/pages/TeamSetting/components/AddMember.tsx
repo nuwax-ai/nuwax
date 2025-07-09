@@ -238,12 +238,16 @@ const AddMember: React.FC<AddMemberProps> = ({
           <List
             dataSource={rightColumnMembers}
             renderItem={(m) => (
-              <List.Item style={{ borderBlockEnd: 0 }}>
-                <Avatar src={m.avatar || personalImage} /> {m.userName}
+              <List.Item
+                style={{ borderBlockEnd: 0 }}
+                className="flex items-center gap-10"
+              >
+                <Avatar src={m.avatar || personalImage} />
+                <div className="flex-1 text-ellipsis">{m.userName}</div>
                 <Select
                   value={m.role}
                   onChange={(value) => handleRoleChange(m.id, value)}
-                  style={{ width: 100, marginLeft: 10 }}
+                  style={{ width: 100 }}
                   options={selectOptions}
                 />
                 <Button

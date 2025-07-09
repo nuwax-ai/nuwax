@@ -32,7 +32,9 @@ export const ExpandableInputTextarea: React.FC<
     <div>
       <div className="dis-sb margin-bottom">
         {/* 名称 */}
-        <span className="node-title-style">{title}</span>
+        <span className="node-title-style gap-6 flex items-center">
+          {title}
+        </span>
         <div>
           {/* 是否有优化 */}
           {onOptimize && onOptimizeClick && (

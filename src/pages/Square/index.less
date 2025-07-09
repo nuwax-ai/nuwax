@@ -4,34 +4,22 @@
   padding: 20px 26px 16px;
 
   .header {
-    height: 220px;
     margin-bottom: 30px;
+    padding: 30px 60px;
+    z-index: 990;
+    border-radius: 20px;
 
-    .banner-image {
-      width: 100%;
-      height: 220px;
-      object-fit: cover;
-      border-radius: 20px;
+    h3 {
+      margin-bottom: 30px;
+      font-size: 32px;
+      font-weight: bold;
+      color: @WHITE;
     }
 
-    .cover-box {
-      height: 220px;
-      padding: 40px 60px 0;
-      z-index: 990;
-
-      h3 {
-        margin-bottom: 30px;
-        font-size: 32px;
-        font-weight: bold;
-        color: @WHITE;
-      }
-
-      p {
-        line-height: 36px;
-        margin-bottom: 20px;
-        font-size: 24px;
-        color: @GRAY05;
-      }
+    p {
+      line-height: 36px;
+      font-size: 24px;
+      color: @GRAY05;
     }
   }
 
@@ -70,9 +58,25 @@
     }
   }
 }
+
 @media (max-width: 768px) {
   .container {
     padding: 36px 12px 24px;
+
+    .header {
+      padding: 20px;
+      border-radius: 12px;
+
+      h3 {
+        margin-bottom: 20px;
+        font-size: 22px;
+      }
+
+      p {
+        line-height: 22px;
+        font-size: 16px;
+      }
+    }
 
     .list-section {
       grid-template-columns: repeat(1, minmax(0, 1fr));

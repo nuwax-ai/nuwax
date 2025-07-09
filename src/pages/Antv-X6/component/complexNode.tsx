@@ -17,7 +17,7 @@ import { PromptOptimizeTypeEnum } from '@/types/interfaces/assistant';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { InputAndOutConfig, QANodeOption } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
-import { PlusOutlined } from '@ant-design/icons';
+import { ExclamationCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   Button,
   Empty,
@@ -27,6 +27,7 @@ import {
   RadioChangeEvent,
   Select,
   Space,
+  Tooltip,
 } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
@@ -249,7 +250,14 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       {/* 系统提示词 */}
       <div className="node-item-style">
         <ExpandableInputTextarea
-          title="系统提示词"
+          title={
+            <>
+              系统提示词
+              <Tooltip title="为对话提供系统级指导，如设定人设和回复逻辑。">
+                <ExclamationCircleOutlined />
+              </Tooltip>
+            </>
+          }
           inputFieldName="systemPrompt"
           onExpand
           onOptimize
@@ -260,7 +268,14 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       {/* 用户提示词 */}
       <div className="node-item-style">
         <ExpandableInputTextarea
-          title="用户提示词"
+          title={
+            <>
+              用户提示词
+              <Tooltip title="向模型提供用户指令，如查询或任何基于文本输入的提问。">
+                <ExclamationCircleOutlined />
+              </Tooltip>
+            </>
+          }
           inputFieldName="userPrompt"
           onExpand
           // onOptimize

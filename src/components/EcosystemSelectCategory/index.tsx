@@ -49,7 +49,7 @@ export default function SelectCategory({
   return (
     <Select
       key={targetType}
-      style={{ width: 120, marginLeft: 12 }}
+      style={{ width: 120 }}
       loading={loading}
       options={categoryList}
       onChange={handleChange}

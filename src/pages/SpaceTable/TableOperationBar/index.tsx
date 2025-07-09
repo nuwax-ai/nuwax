@@ -59,7 +59,7 @@ const TableOperationBar: React.FC<TableOperationBarProps> = ({
     return true;
   };
   return (
-    <div className="dis-sb">
+    <div className="dis-sb flex-wrap">
       <Tabs
         items={TABLE_TABS_LIST}
         activeKey={activeKey}

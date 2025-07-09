@@ -31,6 +31,8 @@ const MenusLayout: React.FC<{
   const { runTenantConfig } = useModel('tenantConfigInfo');
   const { runEdit, runDevCollect } = useModel('devCollectAgent');
   const { runHistory, runUsed } = useModel('conversationHistory');
+  // 关闭移动端菜单
+  const { handleCloseMobileMenu } = useModel('layout');
   const { runQueryCategory } = useCategory();
 
   // 点击主页
@@ -62,6 +64,9 @@ const MenusLayout: React.FC<{
 
   // 切换tab
   const handleTabsClick = useCallback(async (type: TabsEnum) => {
+    // 关闭移动端菜单
+    handleCloseMobileMenu();
+
     switch (type) {
       case TabsEnum.Home:
         handleClickHome();

@@ -3,6 +3,7 @@
 .header {
   height: 60px;
   border-bottom: 1px solid @WHITE15;
+  overflow-x: auto;
 
   .icon {
     color: @GRAY10;
@@ -30,6 +31,16 @@
         color: @BLUE05;
         opacity: 0.8;
       }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    width: 100%;
+
+    .extra-box {
+      gap: 8px;
     }
   }
 }

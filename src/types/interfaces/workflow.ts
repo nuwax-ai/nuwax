@@ -159,7 +159,7 @@ export interface InitialValues {
 // 定义通用节点渲染逻辑的props类型
 export interface NodeRenderProps {
   // 标题
-  title: string;
+  title: React.ReactNode;
   // 遍历渲染的字段配置
   fieldConfigs: FieldConfig[];
   form: FormInstance;

@@ -22,7 +22,6 @@ const cx = classNames.bind(styles);
  * 文件 - 分段配置信息
  */
 const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
-  spaceId,
   onDel,
   onSuccessUpdateName,
   documentInfo,
@@ -64,7 +63,6 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
   const handleRawSegmentList = (current: number = 1) => {
     runRawSegmentList({
       queryFilter: {
-        spaceId,
         docId: documentInfo?.id,
       },
       current,

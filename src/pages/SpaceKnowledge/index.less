@@ -1,13 +1,16 @@
 @import '@/styles/color';
 
 .container {
+  overflow: hidden;
+
   .inner-container {
-    // margin-top: 30px;
     border: 1px solid @GRAY01;
   }
-  // :global {
-  //   .ant-table-wrapper .ant-table-pagination.ant-pagination {
-  //     margin: 12px 0 0 0 !important;
-  //   }
-  // }
+
+  .inputSearch {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    height: 50px;
+  }
 }
