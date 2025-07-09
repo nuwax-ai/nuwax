@@ -19,8 +19,12 @@ import type {
   LocalCustomDocModalProps,
   SegmentConfigModel,
 } from '@/types/interfaces/knowledge';
-import { getProgressStatus } from '@/utils/common';
-import { CloseCircleFilled, DeleteOutlined } from '@ant-design/icons';
+import { getProgressStatus, handleUploadFileList } from '@/utils/upload';
+import {
+  CheckCircleFilled,
+  CloseCircleFilled,
+  DeleteOutlined,
+} from '@ant-design/icons';
 import {
   Button,
   Form,
@@ -292,24 +296,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
   // 进度回调
   const handleUploadChange: UploadProps['onChange'] = (info) => {
     const { fileList } = info;
-    setAllUploadFileList(
-      fileList
-        .filter((item) => item.status !== UploadFileStatus.removed)
-        .map((item) => {
-          const data = item.response?.data || {};
-          return {
-            key: data?.key || '',
-            name: data?.fileName || item.name || '',
-            size: data?.size || item.size || 0,
-            url: data?.url || item.url || '',
-            type: data?.mimeType || item.type || '',
-            uid: item.uid,
-            status: (item.status as UploadFileStatus) || UploadFileStatus.done,
-            percent: item.percent,
-            response: item.response,
-          } as UploadFileInfo;
-        }),
-    );
+    setAllUploadFileList(handleUploadFileList(fileList, 90));
   };
   const getDisplayFileName = useCallback((name: string) => {
     if (!name) return '';
@@ -367,15 +354,20 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
                       onClick={() => handleUploadFileDel(info.uid)}
                     />
                   </div>
-                  {info?.percent !== undefined && info?.percent < 100 && (
-                    <Progress
-                      percent={Math.floor(info.percent || 0)}
-                      type="circle"
-                      status={getStatus(info)}
-                      size={20}
-                      className={styles['progress-upload-file']}
-                    />
-                  )}
+                  {info?.percent !== undefined &&
+                    (getStatus(info) === 'success' ? (
+                      <div className={styles['progress-upload-file-success']}>
+                        <CheckCircleFilled />
+                      </div>
+                    ) : (
+                      <Progress
+                        percent={Math.floor(info.percent || 0)}
+                        type="circle"
+                        status={getStatus(info)}
+                        size={20}
+                        className={styles['progress-upload-file']}
+                      />
+                    ))}
                   {info?.status === UploadFileStatus.error && (
                     <div className={styles['progress-upload-file-error']}>
                       <CloseCircleFilled />

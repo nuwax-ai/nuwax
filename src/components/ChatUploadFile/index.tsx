@@ -3,7 +3,7 @@ import { IMAGE_FALLBACK } from '@/constants/images.constants';
 import type { ChatUploadFileProps } from '@/types/interfaces/agentConfig';
 import { UploadFileInfo } from '@/types/interfaces/common';
 import { formatBytes } from '@/utils/byteConverter';
-import { getProgressStatus } from '@/utils/common';
+import { getProgressStatus } from '@/utils/upload';
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { Image, Progress } from 'antd';
 import classNames from 'classnames';

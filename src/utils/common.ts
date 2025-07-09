@@ -1,5 +1,4 @@
-import { UploadFileStatus } from '@/types/enums/common';
-import type { FileType, UploadFileInfo } from '@/types/interfaces/common';
+import type { FileType } from '@/types/interfaces/common';
 import cloneDeep from 'lodash/cloneDeep';
 // 过滤非数字
 const getNumbersOnly = (text: string) => {
@@ -187,23 +186,6 @@ const arraysContainSameItems = (arr1: string[], arr2: string[]) => {
   return true;
 };
 
-// 获取上传进度状态
-const getProgressStatus = (fileInfo: UploadFileInfo) => {
-  if (fileInfo?.status === UploadFileStatus.error) {
-    return 'exception';
-  }
-
-  if (fileInfo?.status === UploadFileStatus.done) {
-    return 'success';
-  }
-
-  if (Math.floor(fileInfo?.percent || 0) === 100) {
-    return 'success';
-  }
-
-  return 'active';
-};
-
 // 向上查找元素
 const findParentElement = (element: HTMLElement, className: string) => {
   let currentElement = element;
@@ -233,7 +215,6 @@ export {
   formatTimeAgo,
   getBase64,
   getNumbersOnly,
-  getProgressStatus,
   getURLParams,
   isNumber,
   isValidEmail,

@@ -4,6 +4,7 @@ import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
+import { handleUploadFileList } from '@/utils/upload';
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
@@ -102,26 +103,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   // 上传成功后，修改文档列表
   const handleChange: UploadProps['onChange'] = (info) => {
     const { fileList } = info;
-    setUploadFiles(
-      fileList
-        .filter((item) => item.status !== UploadFileStatus.removed)
-        .map((item) => {
-          const data = item.response?.data || {};
-          return {
-            key: data?.key || '',
-            name: data?.fileName || item.name || '',
-            size: data?.size || item.size || 0,
-            url: item.url || data?.url || '',
-            type: data?.mimeType || item.type || '',
-            uid: item.uid,
-            status:
-              (item.status as UploadFileStatus) ||
-              (data.url ? UploadFileStatus.done : UploadFileStatus.error),
-            percent: item.percent,
-            response: item.response,
-          } as UploadFileInfo;
-        }),
-    );
+    setUploadFiles(handleUploadFileList(fileList));
   };
 
   // 删除文档
