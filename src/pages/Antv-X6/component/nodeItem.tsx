@@ -7,7 +7,11 @@ import { DataTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum, VariableConfigTypeEnum } from '@/types/enums/node';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
-import { ExpandAltOutlined, SettingOutlined } from '@ant-design/icons';
+import {
+  ExclamationCircleOutlined,
+  ExpandAltOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
 import {
   Button,
   Divider,
@@ -18,6 +22,7 @@ import {
   Segmented,
   Select,
   Space,
+  Tooltip,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
@@ -115,7 +120,12 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
           form.getFieldValue('returnType') !== 'VARIABLE' && (
             <>
               <div className="dis-sb margin-bottom">
-                <span className="node-title-style">输出内容</span>
+                <span className="node-title-style gap-6 flex items-center">
+                  输出内容
+                  <Tooltip title="可以在以下输入框中重新组织输出内容，大模型将优先使用输入框中的内容。">
+                    <ExclamationCircleOutlined />
+                  </Tooltip>
+                </span>
               </div>
               <Form.Item name="content">
                 <Input.TextArea
