@@ -2,6 +2,8 @@ import { DataTypeEnum } from '@/types/enums/common';
 import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Form, FormInstance, Popover, Select } from 'antd';
 import React from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { TreeNodeConfig } from '../hooks/useTreeData';
 
 /**
  * 树头部组件的Props接口
@@ -17,6 +19,8 @@ interface TreeHeaderProps {
   showAddButton: boolean;
   /** 添加根节点的回调 */
   onAddRoot: () => void;
+  /** 更新节点字段的回调 */
+  onChange: (value: TreeNodeConfig[]) => void;
 }
 
 /**
@@ -29,6 +33,7 @@ const TreeHeader: React.FC<TreeHeaderProps> = ({
   notShowTitle,
   showAddButton,
   onAddRoot,
+  onChange,
 }) => {
   return (
     <div className="dis-sb margin-bottom">
@@ -68,8 +73,9 @@ const TreeHeader: React.FC<TreeHeaderProps> = ({
               onChange={(e) => {
                 form.setFieldValue('outputType', e);
                 if (e !== 'JSON') {
-                  form.setFieldValue('outputArgs', [
+                  onChange([
                     {
+                      key: uuidv4(),
                       name: 'output',
                       description: '输出结果',
                       dataType: DataTypeEnum.String,

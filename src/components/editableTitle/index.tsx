@@ -94,6 +94,10 @@ const EditableTitle = memo(
         className="node-editable-title-text"
         data-id={dataId}
         ref={editableTitleRef}
+        style={{
+          width: 'calc(100% - 26px)',
+          maxWidth: 300,
+        }}
       >
         {isEditing ? (
           <Input

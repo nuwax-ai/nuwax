@@ -101,6 +101,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
         form={form}
         notShowTitle={notShowTitle}
         showAddButton={showAddButton}
+        onChange={(newData) => updateTreeData(newData)}
         onAddRoot={handleAddRoot}
       />
 

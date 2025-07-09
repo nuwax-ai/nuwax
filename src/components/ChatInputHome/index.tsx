@@ -114,7 +114,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             url: item.url || data?.url || '',
             type: data?.mimeType || item.type || '',
             uid: item.uid,
-            status: (item.status as UploadFileStatus) || UploadFileStatus.done,
+            status:
+              (item.status as UploadFileStatus) ||
+              (data.url ? UploadFileStatus.done : UploadFileStatus.error),
             percent: item.percent,
             response: item.response,
           } as UploadFileInfo;
