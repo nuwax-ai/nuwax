@@ -152,8 +152,6 @@ export default function EcosystemTemplate() {
             subTabType = EcosystemSubTabTypeEnum.ALL;
         }
 
-        console.log('selectTargetTypeRef', selectTargetTypeRef.current);
-
         const params = {
           queryFilter: {
             dataType: EcosystemDataTypeEnum.TEMPLATE, // 只查询模板类型

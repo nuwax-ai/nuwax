@@ -658,11 +658,10 @@ export default function EcosystemPlugin() {
             </div>
           ) : (
             <div
-              className={cx('flex', 'flex-1', 'items-center', 'content-center')}
+              className={cx('flex', 'h-full', 'items-center', 'content-center')}
             >
               <Empty
                 className={cx(
-                  styles['min-height-300'],
                   'flex',
                   'flex-col',
                   'items-center',
