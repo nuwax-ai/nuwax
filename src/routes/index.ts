@@ -22,7 +22,7 @@ const routes = [
   {
     path: '/',
     component: '@/layouts',
-    // wrappers: ['@/wrappers/auth'],
+    wrappers: ['@/wrappers/authWithLoading'],
     layout: false,
     routes: [
       { path: '', component: '@/pages/Home' },
@@ -118,33 +118,18 @@ const routes = [
   {
     path: '/space/:spaceId/workflow/:workflowId',
     component: '@/pages/Antv-X6',
-    // wrappers: ['@/wrappers/auth'],
+    wrappers: ['@/wrappers/authWithLoading'],
     layout: false,
   },
   {
     path: '/space/:spaceId/agent/:agentId',
     component: '@/pages/EditAgent',
-    // wrappers: ['@/wrappers/auth'],
+    wrappers: ['@/wrappers/authWithLoading'],
     layout: false,
   },
   {
     path: '/*',
     component: '@/pages/404',
-    layout: false,
-  },
-  {
-    path: '/examples/run-result',
-    component: '@/examples/RunResultExample',
-    layout: false,
-  },
-  {
-    path: '/examples/workflow-node-edit',
-    component: '@/examples/WorkflowNodeEdit',
-    layout: false,
-  },
-  {
-    path: '/examples/exception-item',
-    component: '@/examples/ExceptionItemExample',
     layout: false,
   },
 ];
