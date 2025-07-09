@@ -46,13 +46,22 @@ const bindEventHandlers = ({
       if (cells && cells.length > 0) {
         const node = cells[0].getData();
         if (
-          node.type === 'Start' ||
-          node.type === 'End' ||
-          node.type === 'Loop'
+          node.type === NodeTypeEnum.LoopStart ||
+          node.type === NodeTypeEnum.LoopEnd ||
+          node.type === NodeTypeEnum.Loop
         ) {
-          message.error('不能粘贴开始、结束和循环节点');
+          message.error('不能粘贴循环节点');
           return;
         }
+        if (node.type === NodeTypeEnum.Start) {
+          message.error('不能粘贴开始节点');
+          return;
+        }
+        if (node.type === NodeTypeEnum.End) {
+          message.error('不能粘贴结束节点');
+          return;
+        }
+
         copyNode(node);
       }
       graph.cleanSelection(); // 清除当前选择
