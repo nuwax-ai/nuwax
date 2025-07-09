@@ -10,6 +10,7 @@ import {
   TEMP_CONVERSATION_CONNECTION_URL,
   TEMP_CONVERSATION_UID,
 } from '@/constants/common.constants';
+import { getCustomBlock } from '@/plugins/markdown-it-custom';
 import {
   apiTempChatConversationCreate,
   apiTempChatConversationQuery,
@@ -59,6 +60,7 @@ const cx = classNames.bind(styles);
  * 主页咨询聊天页面
  */
 const ChatTemp: React.FC = () => {
+  const { handleChatProcessingList } = useModel('chat');
   // 链接Key
   const { chatKey } = useParams();
   // 会话信息
@@ -297,14 +299,22 @@ const ChatTemp: React.FC = () => {
         let newMessage = null;
         // 更新UI状态...
         if (eventType === ConversationEventTypeEnum.PROCESSING) {
+          const processingResult = data.result || {};
+          data.executeId = processingResult.executeId;
           newMessage = {
             ...currentMessage,
+            text: getCustomBlock(currentMessage.text || '', data),
             status: MessageStatusEnum.Loading,
             processingList: [
               ...(currentMessage?.processingList || []),
               data,
             ] as ProcessingInfo[],
           };
+
+          handleChatProcessingList([
+            ...(currentMessage?.processingList || []),
+            { ...data },
+          ] as ProcessingInfo[]);
         }
         // MESSAGE事件
         if (eventType === ConversationEventTypeEnum.MESSAGE) {
