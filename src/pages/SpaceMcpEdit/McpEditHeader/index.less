@@ -4,6 +4,7 @@
   position: relative;
   height: 60px;
   border-bottom: 1px solid @WHITE15;
+  overflow-x: auto;
 
   .icon {
     color: @GRAY10;
@@ -15,6 +16,7 @@
     font-size: 16px;
     font-weight: 350;
     color: @BLANK04;
+    white-space: nowrap;
   }
 
   .deploy-status {
@@ -23,6 +25,7 @@
     background: @GRAY06;
     font-size: 12px;
     color: @BLANK04;
+    white-space: nowrap;
   }
 
   .menus-box {
@@ -43,6 +46,7 @@
       font-size: 14px;
       color: @BLANK04;
       user-select: none;
+      white-space: nowrap;
 
       &.active {
         border-radius: 5px;
@@ -81,6 +85,25 @@
         color: @BLUE05;
         opacity: 0.8;
       }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    width: 100%;
+    flex-wrap: nowrap;
+
+    .extra-box {
+      gap: 8px;
+    }
+
+    .menus-box {
+      position: relative;
+      left: 0;
+      top: 5px;
+      transform: none;
+      margin-right: 10px;
     }
   }
 }
