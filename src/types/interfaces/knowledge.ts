@@ -25,6 +25,8 @@ export interface KnowledgeConfigAddParams {
   dataType: KnowledgeDataTypeEnum;
   // 图标的url地址
   icon: string;
+  // 知识库的嵌入模型ID
+  embeddingModelId: number;
 }
 
 // 知识库基础信息
