@@ -90,7 +90,7 @@ const getBlockWrapper = (
     .map(([key, value]) => `${key}="${value}"`)
     .join(' ');
 
-  return `::: ${blockName} ${attrs} \n\n:::\n`;
+  return `\n\n::: ${blockName} ${attrs} \n\n:::\n`;
 };
 
 const getBlockName = (): string => {
