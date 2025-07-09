@@ -6,8 +6,8 @@ import squareImage from '@/assets/images/square_image.png';
 import squareImageActive from '@/assets/images/square_image_active.png';
 import systemImage from '@/assets/images/system_image.png';
 import systemImageActive from '@/assets/images/system_image_active.png';
-import teachMaterialImage from '@/assets/images/teach_material.png';
-import teachMaterialImageActive from '@/assets/images/teach_material_active.png';
+// import teachMaterialImage from '@/assets/images/teach_material.png';
+// import teachMaterialImageActive from '@/assets/images/teach_material_active.png';
 import workflowImage from '@/assets/images/workspace_image.png';
 import workflowImageActive from '@/assets/images/workspace_image_active.png';
 import { ICON_FILE, ICON_NOTIFICATION } from '@/constants/images.constants';
@@ -57,12 +57,12 @@ export const TABS = [
     text: '系统管理',
     type: TabsEnum.System_Manage,
   },
-  {
-    icon: teachMaterialImage,
-    iconActive: teachMaterialImageActive,
-    text: '教材体系',
-    type: TabsEnum.Course_System,
-  },
+  // {
+  //   icon: teachMaterialImage,
+  //   iconActive: teachMaterialImageActive,
+  //   text: '教材体系',
+  //   type: TabsEnum.Course_System,
+  // },
 ];
 
 // 用户操作区域
