@@ -2,7 +2,7 @@ import { SYSTEM_MANAGE_LIST } from '@/constants/system.constants';
 import { SystemManageListEnum } from '@/types/enums/systemManage';
 import classNames from 'classnames';
 import React from 'react';
-import { history, useLocation } from 'umi';
+import { history, useLocation, useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -15,8 +15,13 @@ const SystemSection: React.FC<{
 }> = ({ style }) => {
   const location = useLocation();
   const { pathname } = location;
+  // 关闭移动端菜单
+  const { handleCloseMobileMenu } = useModel('layout');
 
   const handlerApplication = (type: SystemManageListEnum) => {
+    // 关闭移动端菜单
+    handleCloseMobileMenu();
+
     switch (type) {
       // 用户管理
       case SystemManageListEnum.User_Manage:

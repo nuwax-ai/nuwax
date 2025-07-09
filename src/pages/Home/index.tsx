@@ -2,7 +2,6 @@ import ChatInputHome from '@/components/ChatInputHome';
 import Loading from '@/components/Loading';
 import useConversation from '@/hooks/useConversation';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
-import DraggableHomeContent from '@/pages/Home/DraggableHomeContent';
 import {
   apiCollectAgent,
   apiHomeCategoryList,
@@ -19,6 +18,7 @@ import { App } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useRequest } from 'umi';
+import DraggableHomeContent from './DraggableHomeContent';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
