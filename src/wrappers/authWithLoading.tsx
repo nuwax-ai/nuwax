@@ -1,5 +1,10 @@
 import Loading from '@/components/Loading';
-import { UserService } from '@/services/userService';
+import {
+  clearLoginStatusCache,
+  getLoginStatusFromCache,
+  setLoginStatusToCache,
+  UserService,
+} from '@/services/userService';
 import { redirectToLogin } from '@/utils/router';
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'umi';
@@ -17,7 +22,6 @@ const AuthWithLoading: React.FC = () => {
 
   // ===== 常量定义 =====
   const MIN_LOADING_TIME = 500; // 最小加载时间，毫秒
-  const LOGIN_STATUS_KEY = 'userLoginStatus';
 
   // 排除不需要验证的页面路径
   const excludedPaths = [
@@ -30,32 +34,6 @@ const AuthWithLoading: React.FC = () => {
   const isExcludedPath = excludedPaths.some((path) =>
     location.pathname.includes(path),
   );
-
-  // ===== 缓存管理方法 =====
-  /**
-   * 从缓存中获取登录状态
-   * @returns {boolean|null} 缓存的登录状态，如果不存在则返回null
-   */
-  const getLoginStatusFromCache = (): boolean | null => {
-    const cachedStatus = sessionStorage.getItem(LOGIN_STATUS_KEY);
-    if (cachedStatus === null) return null;
-    return cachedStatus === 'true';
-  };
-
-  /**
-   * 将登录状态保存到缓存
-   * @param status 登录状态
-   */
-  const setLoginStatusToCache = (status: boolean): void => {
-    sessionStorage.setItem(LOGIN_STATUS_KEY, status ? 'true' : 'false');
-  };
-
-  /**
-   * 清除登录状态缓存
-   */
-  const clearLoginStatusCache = (): void => {
-    sessionStorage.removeItem(LOGIN_STATUS_KEY);
-  };
 
   // ===== 辅助方法 =====
   /**

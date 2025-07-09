@@ -9,6 +9,7 @@ import type { RequestResponse } from '@/types/interfaces/request';
 import { RequestConfig } from '@@/plugin-request/request';
 import { message } from 'antd';
 import { history } from 'umi';
+import { clearLoginStatusCache } from './userService';
 
 /**
  * 判断请求是否为不需要显示错误消息的API
@@ -84,11 +85,13 @@ const errorHandler = (error: any, opts: any) => {
         // 用户未登录，跳转到登录页
         case USER_NO_LOGIN:
           localStorage.clear();
+          clearLoginStatusCache();
           history.push('/login');
           break;
 
         // 重定向到登录页
         case REDIRECT_LOGIN:
+          clearLoginStatusCache();
           window.location.href = errorMessage;
           break;
 

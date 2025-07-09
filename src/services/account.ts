@@ -12,6 +12,7 @@ import type {
 } from '@/types/interfaces/login';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
+import { clearLoginStatusCache } from './userService';
 
 // 账号密码登录
 export async function apiLogin(
@@ -55,6 +56,7 @@ export async function apiSetPassword(
 
 // 退出登录接口
 export async function apiLogout(): Promise<RequestResponse<null>> {
+  clearLoginStatusCache();
   return request('/api/user/logout', {
     method: 'GET',
   });
