@@ -28,7 +28,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onToggle }) => (
         aria-label={isOpen ? '关闭菜单/Close menu' : '展开菜单/Open menu'}
         onClick={onToggle}
         icon={
-          <img src={menuIcon} style={{ width: 24, height: 24 }} alt="menu" />
+          <img src={menuIcon} style={{ width: 20, height: 20 }} alt="menu" />
         }
       />
     </div>
