@@ -3,7 +3,7 @@ import { FormInstance } from 'antd';
 // 定义可以展开的inputTextarea
 export interface ExpandableInputTextareaProps {
   // 标题
-  title: string;
+  title: React.ReactNode;
   // 输入框的文字
   inputFieldName: string;
   // 输入框的提示文字
