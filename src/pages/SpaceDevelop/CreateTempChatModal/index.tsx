@@ -33,6 +33,7 @@ import styles from './index.less';
 
 import { modalConfirm } from '@/utils/ant-custom';
 import 'dayjs/locale/zh-cn';
+import CopyChatWidgetCode from './CopyChatWidgetCode';
 
 dayjs.locale('zh-cn');
 
@@ -170,11 +171,22 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
           />
           <CopyToClipboard text={value || ''} onCopy={handleCopy}>
             <Tooltip title="复制">
-              <img
-                className={cx('cursor-pointer', styles.img)}
-                src={copyImage}
-                alt=""
-              />
+              <span
+                className={cx(
+                  styles['img-box'],
+                  styles['copy-img-box'],
+                  'flex',
+                  'content-center',
+                  'items-center',
+                  'cursor-pointer',
+                )}
+              >
+                <img
+                  className={cx('cursor-pointer', styles.img)}
+                  src={copyImage}
+                  alt=""
+                />
+              </span>
             </Tooltip>
           </CopyToClipboard>
           <Tooltip title="二维码">
@@ -191,10 +203,11 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
               <img
                 className={cx('cursor-pointer', styles.img)}
                 src={record.qrCodeUrl}
-                alt="qrCode"
+                alt=""
               />
             </span>
           </Tooltip>
+          <CopyChatWidgetCode chatUrl={record.chatUrl} size={24} />
         </div>
       ),
     },
