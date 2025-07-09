@@ -10,8 +10,9 @@ import {
 } from '@/types/enums/common';
 import { PortGroupEnum } from '@/types/enums/node';
 import { ChildNode, GraphRect, ViewGraphProps } from '@/types/interfaces/graph';
-import { ExceptionHandleConfig } from '@/types/interfaces/node';
+import { ExceptionHandleConfig, NodeConfig } from '@/types/interfaces/node';
 import { isEmptyObject } from '@/utils/index';
+import { getWidthAndHeight } from '@/utils/updateNode';
 import { Edge, Graph, Node } from '@antv/x6';
 import { message } from 'antd';
 import { isEqual, isPlainObject } from 'lodash';
@@ -664,6 +665,17 @@ export const calculateNodePosition = ({
   sourceNodeId: string;
   graph: Graph;
 }) => {
+  if (hasTargetNode) {
+    const { width, height } = getWidthAndHeight({
+      type,
+      nodeConfig: {} as NodeConfig,
+    } as ChildNode);
+    // 以节点的 中心来计算
+    position.x = position.x - width / 2;
+    position.y = position.y - height / 2;
+    return position;
+  }
+
   let newNodeWidth = DEFAULT_NODE_CONFIG_MAP.default.defaultWidth;
   if (type === NodeTypeEnum.Loop) {
     newNodeWidth =
@@ -676,31 +688,29 @@ export const calculateNodePosition = ({
     newNodeWidth = DEFAULT_NODE_CONFIG_MAP[NodeTypeEnum.Condition].defaultWidth;
   }
 
-  if (!hasTargetNode) {
-    const isOut = portId.endsWith('out');
-    const peerPosition = getPeerNodePosition(
-      sourceNodeId,
-      graph,
-      isOut ? 'next' : 'previous',
-    );
-    const theRange = 200;
-    if (isOut) {
-      // port 为 out 出边，需要向右偏移
-      position.x = position.x + DEFAULT_NODE_CONFIG.newNodeOffsetX;
-      if (peerPosition !== null && peerPosition.x <= position.x + theRange) {
-        position.x = peerPosition.x + DEFAULT_NODE_CONFIG.offsetGapX;
-        position.y = peerPosition.y + DEFAULT_NODE_CONFIG.offsetGapX;
-      }
-    } else {
-      // port 为 in 入边，需要向左偏移
-      position.x =
-        position.x - newNodeWidth - DEFAULT_NODE_CONFIG.newNodeOffsetX;
-      if (peerPosition !== null && peerPosition.x >= position.x - theRange) {
-        position.x = peerPosition.x - DEFAULT_NODE_CONFIG.offsetGapX;
-        position.y = peerPosition.y + DEFAULT_NODE_CONFIG.offsetGapX;
-      }
+  const isOut = portId.endsWith('out');
+  const peerPosition = getPeerNodePosition(
+    sourceNodeId,
+    graph,
+    isOut ? 'next' : 'previous',
+  );
+  const theRange = 200;
+  if (isOut) {
+    // port 为 out 出边，需要向右偏移
+    position.x = position.x + DEFAULT_NODE_CONFIG.newNodeOffsetX;
+    if (peerPosition !== null && peerPosition.x <= position.x + theRange) {
+      position.x = peerPosition.x + DEFAULT_NODE_CONFIG.offsetGapX;
+      position.y = peerPosition.y + DEFAULT_NODE_CONFIG.offsetGapX;
+    }
+  } else {
+    // port 为 in 入边，需要向左偏移
+    position.x = position.x - newNodeWidth - DEFAULT_NODE_CONFIG.newNodeOffsetX;
+    if (peerPosition !== null && peerPosition.x >= position.x - theRange) {
+      position.x = peerPosition.x - DEFAULT_NODE_CONFIG.offsetGapX;
+      position.y = peerPosition.y + DEFAULT_NODE_CONFIG.offsetGapX;
     }
   }
+
   return position;
 };
 // 获取当前画布可视区域中心点

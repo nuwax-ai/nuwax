@@ -13,6 +13,7 @@ import {
   needUpdateNodes,
   updateEdgeArrows,
 } from '@/utils/graph';
+import { getWidthAndHeight } from '@/utils/updateNode';
 import {
   createBaseNode,
   createChildNode,
@@ -20,7 +21,6 @@ import {
   generatePorts,
   getEdges,
   getNodeSize,
-  getWidthAndHeight,
 } from '@/utils/workflow';
 import { Node } from '@antv/x6';
 import { App } from 'antd';
