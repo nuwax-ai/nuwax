@@ -10,9 +10,14 @@ import { Navigate, Outlet, useLocation } from 'umi';
  * 使用sessionStorage缓存登录状态，避免重复验证
  */
 const AuthWithLoading: React.FC = () => {
+  // ===== 状态定义 =====
   const [loading, setLoading] = useState(true); // 默认显示加载状态
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const location = useLocation();
+
+  // ===== 常量定义 =====
+  const MIN_LOADING_TIME = 500; // 最小加载时间，毫秒
+  const LOGIN_STATUS_KEY = 'userLoginStatus';
 
   // 排除不需要验证的页面路径
   const excludedPaths = [
@@ -22,15 +27,17 @@ const AuthWithLoading: React.FC = () => {
     '/chat-temp',
   ];
 
-  // sessionStorage管理方法
-  const loginStatusKey = 'userLoginStatus';
+  const isExcludedPath = excludedPaths.some((path) =>
+    location.pathname.includes(path),
+  );
 
+  // ===== 缓存管理方法 =====
   /**
    * 从缓存中获取登录状态
    * @returns {boolean|null} 缓存的登录状态，如果不存在则返回null
    */
   const getLoginStatusFromCache = (): boolean | null => {
-    const cachedStatus = sessionStorage.getItem(loginStatusKey);
+    const cachedStatus = sessionStorage.getItem(LOGIN_STATUS_KEY);
     if (cachedStatus === null) return null;
     return cachedStatus === 'true';
   };
@@ -40,25 +47,43 @@ const AuthWithLoading: React.FC = () => {
    * @param status 登录状态
    */
   const setLoginStatusToCache = (status: boolean): void => {
-    sessionStorage.setItem(loginStatusKey, status ? 'true' : 'false');
+    sessionStorage.setItem(LOGIN_STATUS_KEY, status ? 'true' : 'false');
   };
 
   /**
    * 清除登录状态缓存
    */
   const clearLoginStatusCache = (): void => {
-    sessionStorage.removeItem(loginStatusKey);
+    sessionStorage.removeItem(LOGIN_STATUS_KEY);
   };
 
-  const isExcludedPath = excludedPaths.some((path) =>
-    location.pathname.includes(path),
-  );
+  // ===== 辅助方法 =====
+  /**
+   * 执行带有最小时间保证的操作
+   * @param callback 要执行的回调函数
+   * @param startTime 开始时间戳
+   */
+  const executeWithMinTime = (
+    callback: () => void,
+    startTime: number,
+  ): void => {
+    const elapsedTime = Date.now() - startTime;
+    if (elapsedTime >= MIN_LOADING_TIME) {
+      callback();
+    } else {
+      setTimeout(
+        callback,
+        MIN_LOADING_TIME - elapsedTime <= 0
+          ? 0
+          : MIN_LOADING_TIME - elapsedTime,
+      );
+    }
+  };
 
+  // ===== 副作用 =====
   useEffect(() => {
     // 验证登录状态
     const checkLoginStatus = async () => {
-      // 设置一个定时器，确保loading至少显示500ms
-      const minLoadingTime = 500;
       const startTime = Date.now();
 
       try {
@@ -68,63 +93,44 @@ const AuthWithLoading: React.FC = () => {
         // 如果有缓存的登录状态，直接使用
         if (cachedLoginStatus !== null) {
           setIsLoggedIn(cachedLoginStatus);
+          executeWithMinTime(() => setLoading(false), startTime);
         } else {
           // 如果没有缓存，调用用户信息接口验证登录状态
           const data = await UserService.fetchUserInfoFromServer(false);
           if (data) {
             // 更新本地用户信息并缓存登录状态
-            const elapsedTime = Date.now() - startTime;
-            if (elapsedTime >= minLoadingTime) {
-              setIsLoggedIn(true);
-            } else {
-              setTimeout(() => {
-                setIsLoggedIn(true);
-              }, minLoadingTime - elapsedTime);
-            }
+            executeWithMinTime(() => setIsLoggedIn(true), startTime);
             setLoginStatusToCache(true);
           } else {
             setIsLoggedIn(false);
-            setLoginStatusToCache(false);
+            clearLoginStatusCache();
+            executeWithMinTime(() => setLoading(false), startTime);
           }
         }
       } catch (error) {
         console.error('验证登录状态失败:', error);
         setIsLoggedIn(false);
         setLoading(false);
+
         // 清除可能存在的无效缓存
         clearLoginStatusCache();
 
-        const elapsedTime = Date.now() - startTime;
-        if (elapsedTime >= minLoadingTime) {
-          redirectToLogin(location.pathname);
-        } else {
-          setTimeout(() => {
-            redirectToLogin(location.pathname);
-          }, minLoadingTime - elapsedTime);
-        }
+        // 确保重定向也遵循最小加载时间
+        executeWithMinTime(() => redirectToLogin(location.pathname), startTime);
       } finally {
-        // 计算已经过去的时间
-        const elapsedTime = Date.now() - startTime;
-
-        // 如果已经过了300ms，直接关闭loading
-        // 否则，等待剩余时间后再关闭loading
-        if (elapsedTime >= minLoadingTime) {
-          setLoading(false);
-        } else {
-          setTimeout(() => {
-            setLoading(false);
-          }, minLoadingTime - elapsedTime);
-        }
+        executeWithMinTime(() => setLoading(false), startTime);
       }
     };
 
     checkLoginStatus();
-  }, []);
+  }, [location.pathname]);
 
+  // ===== 渲染逻辑 =====
   // 如果是排除的页面，直接渲染内容
   if (isExcludedPath) {
     return <Outlet />;
   }
+
   // 如果还在加载中，显示loading
   if (loading) {
     return (
