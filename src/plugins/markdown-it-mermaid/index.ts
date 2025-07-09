@@ -173,7 +173,7 @@ export default function mermaid(
         data-container-id="${chartId}">
       </div>
       <div class="mermaid-container">
-        <img class="mermaid-container-img markdown-it__image_clickable" ${slf.renderAttrs(
+        <img class="mermaid-container-img markdownItImageClickable" ${slf.renderAttrs(
           {
             attrs: imageAttrs,
           },

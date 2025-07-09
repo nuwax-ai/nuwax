@@ -158,6 +158,33 @@ export const createDefaultRenderRules = (cssClasses: any = {}) => {
     html_block: (tokens: any[], idx: number) => {
       return encodeHTML(tokens[idx].content);
     },
+    //把图片提取出来 然后渲染
+    image: (tokens: any[], idx: number) => {
+      const token = tokens[idx];
+      const src = token.attrGet ? token.attrGet('src') : '';
+      const alt = token.attrGet ? token.attrGet('alt') || '' : '';
+      if (!token.meta?.nextId) {
+        //加载中
+        return `<span class="markdownItImageContainer">
+        <img 
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" 
+          class="markdownItLazyImage"
+        />
+      </span>`;
+      }
+
+      return `<span class="markdownItImageContainer">
+        <img 
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" 
+          data-src="${src}" 
+          alt="${safeEscapeHtml(alt)}" 
+          class="markdownItImageClickable markdownItLazyImage"
+          loading="lazy"
+          onload="this.classList.add('loaded'); if(this.dataset.src && this.src !== this.dataset.src) {this.src = this.dataset.src;}"
+          onerror="this.classList.add('error'); this.style.display = 'none';"
+        />
+      </span>`;
+    },
 
     // 代码块渲染规则 - 支持行号和折叠功能
     fence: (tokens: any[], idx: number) => {
@@ -179,17 +206,6 @@ export const createDefaultRenderRules = (cssClasses: any = {}) => {
       </div>
       ${result}
     </div>`;
-    },
-
-    // 图片渲染规则 - 支持点击放大
-    image: (tokens: any[], idx: number) => {
-      const token = tokens[idx];
-      const src = token.attrGet ? token.attrGet('src') : '';
-      const alt = token.attrGet ? token.attrGet('alt') || '' : '';
-
-      return `<img src="${src}" data-src="${src}" alt="${safeEscapeHtml(
-        alt,
-      )}" class="markdown-it__image_clickable"/>`;
     },
 
     // 表格开始标签渲染

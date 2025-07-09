@@ -180,7 +180,16 @@ const ChatView: React.FC<ChatViewProps> = memo(
                 )}
                 {!!messageInfo?.text && (
                   <div
-                    className={cx(styles['chat-content'], 'radius-6', 'w-full')}
+                    className={cx(
+                      styles['chat-content'],
+                      'radius-6',
+                      'w-full',
+                      {
+                        [styles.typing]:
+                          messageInfo.status === MessageStatusEnum.Incomplete ||
+                          messageInfo.status === MessageStatusEnum.Loading,
+                      },
+                    )}
                   >
                     <ChatMarkdownRenderer
                       id={`text-${messageInfo?.id || initUuid}`}

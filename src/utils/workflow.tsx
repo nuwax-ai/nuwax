@@ -52,7 +52,6 @@ import {
   default as Workflow,
 } from '@/assets/images/workflow_image.png';
 import PlusIcon from '@/assets/svg/plus_icon.svg';
-import { EXCEPTION_NODES_TYPE } from '@/constants/node.constants';
 import {
   AnswerTypeEnum,
   HttpContentTypeEnum,
@@ -78,6 +77,7 @@ import {
   showExceptionHandle,
   showExceptionPort,
 } from '@/utils/graph';
+import { getWidthAndHeight } from '@/utils/updateNode';
 import { Graph, Node } from '@antv/x6';
 import { FormInstance } from 'antd';
 
@@ -206,41 +206,6 @@ export const returnBackgroundColor = (type: NodeTypeEnum) => {
     default:
       return '#EEEEFF';
   }
-};
-
-// 根据节点动态给予宽高
-// TODO 处理新场景 需要处理有异常节点的高度
-export const getWidthAndHeight = (node: ChildNode) => {
-  const { type, nodeConfig } = node;
-  const extension = nodeConfig?.extension || {};
-  const { defaultWidth, defaultHeight } =
-    DEFAULT_NODE_CONFIG_MAP[type as keyof typeof DEFAULT_NODE_CONFIG_MAP] ||
-    DEFAULT_NODE_CONFIG_MAP.default;
-  const hasExceptionHandleItem = EXCEPTION_NODES_TYPE.includes(type);
-  const exceptionHandleItemHeight = 32;
-  const extraHeight = hasExceptionHandleItem ? exceptionHandleItemHeight : 0;
-  if (
-    type === NodeTypeEnum.QA ||
-    type === NodeTypeEnum.Condition ||
-    type === NodeTypeEnum.IntentRecognition
-  ) {
-    return {
-      width: defaultWidth,
-      height: (extension.height || defaultHeight) + extraHeight,
-    };
-  }
-  if (type === NodeTypeEnum.Loop) {
-    return {
-      width: extension.width || defaultWidth,
-      height: (extension.height || defaultHeight) + extraHeight,
-    };
-  }
-
-  // 通用节点
-  return {
-    width: defaultWidth,
-    height: defaultHeight + extraHeight,
-  }; // 通用节点的默认大小
 };
 
 export const getNodeSize = ({

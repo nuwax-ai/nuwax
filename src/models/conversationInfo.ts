@@ -1,5 +1,6 @@
 import { CONVERSATION_CONNECTION_URL } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+// import mockChatData from '@/mock/chat-mock.js';
 import { getCustomBlock } from '@/plugins/markdown-it-custom';
 import {
   apiAgentConversation,
@@ -390,6 +391,27 @@ export default () => {
   ) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
     // 启动连接
+    // //TODO 模拟数据 一定删除
+    // let index = 130;
+    // const mockData = mockChatData;
+    // const len = mockData.length;
+    // console.log('mockChatData', mockData);
+
+    // console.time('mockData');
+
+    // const interval = setInterval(() => {
+    //   if (index < len) {
+    //     console.timeLog('mockData', index);
+
+    //     handleChangeMessageList(params, mockData[index], currentMessageId);
+    //   } else {
+    //     clearInterval(interval);
+    //     console.timeEnd('mockData');
+    //   }
+    //   index++;
+    // }, 300);
+
+    // return;
     abortConnectionRef.current = await createSSEConnection({
       url: CONVERSATION_CONNECTION_URL,
       method: 'POST',
