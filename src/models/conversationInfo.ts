@@ -1,6 +1,5 @@
 import { CONVERSATION_CONNECTION_URL } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-// import mockChatData from '@/mock/chat-mock.js';
 import { getCustomBlock } from '@/plugins/markdown-it-custom';
 import {
   apiAgentConversation,
@@ -351,8 +350,9 @@ export default () => {
             ...currentMessage,
             status: MessageStatusEnum.Complete,
             finalResult: data,
-            id: res.requestId,
+            requestId: res.requestId,
           };
+
           // 调试结果
           setRequestId(res.requestId);
           setFinalResult(data as ConversationFinalResult);
@@ -392,7 +392,7 @@ export default () => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
     // 启动连接
     // //TODO 模拟数据 一定删除
-    // let index = 130;
+    // let index = 0;
     // const mockData = mockChatData;
     // const len = mockData.length;
     // console.log('mockChatData', mockData);
@@ -404,12 +404,14 @@ export default () => {
     //     console.timeLog('mockData', index);
 
     //     handleChangeMessageList(params, mockData[index], currentMessageId);
+    //     // 滚动到底部
+    //     handleScrollBottom();
     //   } else {
     //     clearInterval(interval);
     //     console.timeEnd('mockData');
     //   }
     //   index++;
-    // }, 300);
+    // }, 100);
 
     // return;
     abortConnectionRef.current = await createSSEConnection({
@@ -564,7 +566,7 @@ export default () => {
   const handleDebug = useCallback((info: MessageInfo) => {
     const result = info?.finalResult;
     if (result) {
-      setRequestId(info.id as string);
+      setRequestId(info.requestId as string);
       setFinalResult(result);
     }
     setShowType(EditAgentShowType.Debug_Details);

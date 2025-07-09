@@ -83,8 +83,13 @@ const ChatView: React.FC<ChatViewProps> = memo(
     };
 
     useEffect(() => {
-      setInitUuid(uuidv4());
-    }, []);
+      if (!messageInfo?.id && !initUuid) {
+        setInitUuid(uuidv4());
+      }
+      return () => {
+        setInitUuid('');
+      };
+    }, [messageInfo?.id]);
 
     return (
       <div className={cx(styles.container, 'flex', className)}>
