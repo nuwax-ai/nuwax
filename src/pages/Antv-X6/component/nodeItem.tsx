@@ -147,7 +147,12 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
   return (
     <div>
       <div className="node-item-style">
-        <span className="node-title-style margin-bottom">循环设置</span>
+        <span className="node-title-style margin-bottom gap-6 flex items-center">
+          循环设置
+          <Tooltip title="如果引用数组，循环次数为数组的长度；如果指定次数，循环次数为指定的次数；如果选择无限循环，需配合“终止循环”节点完成循环流程。">
+            <ExclamationCircleOutlined />
+          </Tooltip>
+        </span>
         <Form.Item name={'loopType'}>
           <Select
             options={cycleOption}
@@ -197,7 +202,14 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
       </Form.Item>
       <div className="node-item-style">
         <InputAndOut
-          title="中间变量"
+          title={
+            <>
+              中间变量
+              <Tooltip title="变量可在多次循环中实现共享，可用于在多次循环中传递变量。">
+                <ExclamationCircleOutlined />
+              </Tooltip>
+            </>
+          }
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.variableArgs}
           form={form}
