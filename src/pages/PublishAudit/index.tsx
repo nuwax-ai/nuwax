@@ -168,7 +168,6 @@ const PublishAudit: React.FC = () => {
       dataIndex: 'name',
       key: 'name',
       width: 200,
-      fixed: 'left',
       className: styles['table-column-fixed'],
       render: (value: string) => {
         return (
@@ -225,9 +224,6 @@ const PublishAudit: React.FC = () => {
       title: '发布者',
       dataIndex: 'applyUser',
       key: 'applyUser',
-      // render: (applyUser: any) => {
-      //   return applyUser ? applyUser.userName ?? '--' : '--';
-      // },
       width: 200,
       render: (value: any) => {
         return (
@@ -241,7 +237,7 @@ const PublishAudit: React.FC = () => {
       title: '状态',
       dataIndex: 'publishStatus',
       key: 'publishStatus',
-      width: 130,
+      width: 100,
       render: (publishStatus: PublishStatusEnum) => {
         let statusText = '';
         let dotStyle = '';
@@ -271,7 +267,7 @@ const PublishAudit: React.FC = () => {
       title: '发布时间',
       dataIndex: 'created',
       key: 'created',
-      width: 220,
+      width: 180,
       render: (value: string) => {
         return (
           <div className={cx('flex', 'items-center', 'h-full')}>

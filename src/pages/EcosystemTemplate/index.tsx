@@ -6,6 +6,7 @@ import SelectCategory from '@/components/EcosystemSelectCategory';
 import EcosystemShareModal, {
   EcosystemShareModalData,
 } from '@/components/EcosystemShareModal';
+import Loading from '@/components/Loading';
 import SelectComponent from '@/components/SelectComponent';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { TabItems, TabTypeEnum } from '@/constants/ecosystem.constants';
@@ -42,17 +43,7 @@ import {
   EcosystemUseStatusEnum,
 } from '@/types/interfaces/ecosystem';
 import { DownOutlined } from '@ant-design/icons';
-import {
-  App,
-  Button,
-  Dropdown,
-  Input,
-  List,
-  Select,
-  Space,
-  Spin,
-  Tabs,
-} from 'antd';
+import { App, Button, Dropdown, Empty, Input, Select, Tabs } from 'antd';
 import classNames from 'classnames';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
@@ -151,8 +142,6 @@ export default function EcosystemTemplate() {
           default:
             subTabType = EcosystemSubTabTypeEnum.ALL;
         }
-
-        console.log('selectTargetTypeRef', selectTargetTypeRef.current);
 
         const params = {
           queryFilter: {
@@ -671,12 +660,9 @@ export default function EcosystemTemplate() {
             onClear={() => handleSearch('')}
             allowClear
           />
-          <Dropdown menu={menuProps} className={cx(styles.createShareButton)}>
-            <Button type="primary">
-              <Space>
-                创建分享
-                <DownOutlined />
-              </Space>
+          <Dropdown menu={menuProps}>
+            <Button type="primary" icon={<DownOutlined />} iconPosition="end">
+              创建分享
             </Button>
           </Dropdown>
         </div>
@@ -723,8 +709,16 @@ export default function EcosystemTemplate() {
   };
 
   return (
-    <div className={cx(styles.container)}>
-      <div className={cx(styles.contentCard)}>
+    <>
+      <div
+        className={cx(
+          styles.container,
+          'flex',
+          'flex-col',
+          'h-full',
+          'overflow-hide',
+        )}
+      >
         <h3 className={cx(styles.title)}>模板</h3>
         <div className={cx(styles.header)}>
           <Tabs
@@ -737,13 +731,8 @@ export default function EcosystemTemplate() {
           />
           {renderExtraContent()}
         </div>
-
         <div
-          className={cx(styles.pluginList)}
-          style={{
-            height: 'calc(100vh - 100px)',
-            overflowY: 'auto',
-          }}
+          className={cx(styles.pluginList, 'flex-1', 'overflow-y')}
           onScroll={(e) => {
             // 当滚动到距离底部100px时加载更多
             const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -756,7 +745,34 @@ export default function EcosystemTemplate() {
             }
           }}
         >
-          <List
+          {loading && pluginData?.records?.length === 0 ? (
+            <Loading className={cx('h-full')} />
+          ) : pluginData?.records?.length ? (
+            <div className={cx(styles['list-section'])}>
+              {pluginData.records?.map((config) => (
+                <EcosystemCard
+                  key={config?.uid}
+                  {...convertToTemplateCard(config)}
+                  onClick={() => handleCardClick(config)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div
+              className={cx('flex', 'h-full', 'items-center', 'content-center')}
+            >
+              <Empty
+                className={cx(
+                  'flex',
+                  'flex-col',
+                  'items-center',
+                  'content-center',
+                )}
+                description="暂无数据"
+              />
+            </div>
+          )}
+          {/* <List
             grid={{ gutter: 16, column: 4 }}
             dataSource={pluginData.records || []}
             renderItem={(config) => (
@@ -786,7 +802,7 @@ export default function EcosystemTemplate() {
                 </div>
               ) : null
             }
-          />
+          /> */}
         </div>
       </div>
 
@@ -826,6 +842,6 @@ export default function EcosystemTemplate() {
         addComponents={addComponents}
         {...selectComponentProps}
       />
-    </div>
+    </>
   );
 }

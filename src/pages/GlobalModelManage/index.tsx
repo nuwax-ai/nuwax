@@ -58,7 +58,6 @@ const GlobalModelManage: React.FC = () => {
       title: '模型名称',
       dataIndex: 'name',
       width: 200,
-      fixed: 'left',
       className: styles['table-column-fixed'],
     },
     {

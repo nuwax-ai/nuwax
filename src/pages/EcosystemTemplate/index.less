@@ -1,16 +1,7 @@
 @import '@/styles/color';
 
 .container {
-  padding: 0;
   background-color: #f3f5fa;
-  min-height: calc(100vh - 56px); // 减去顶部导航高度
-}
-
-.contentCard {
-  border-radius: 0;
-  box-shadow: none;
-  margin: 0;
-  background-color: transparent;
 
   :global {
     .ant-card-head {
@@ -26,7 +17,9 @@
 .header {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
   align-items: center;
+  gap: 16px;
   border-bottom: none;
   padding-left: 24px;
   padding-right: 24px;
@@ -58,7 +51,6 @@
 
 .searchInput {
   width: 240px;
-  margin-left: 16px;
 
   :global {
     .ant-input-search-button {
@@ -68,9 +60,13 @@
 }
 
 .pluginList {
-  padding-top: 16px;
-  padding-left: 24px;
-  padding-right: 24px;
+  padding: 16px 24px;
+}
+
+.list-section {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .title {
@@ -82,15 +78,36 @@
   color: #333;
 }
 
-.headerRight {
-  display: flex;
-  align-items: center;
-}
-
 .createShareButton {
   margin-left: 12px;
 }
 
-.select {
-  width: 120px;
+.headerRight {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  .select {
+    width: 120px;
+    margin-left: 0 !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  .list-section {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1440px) {
+  .list-section {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .list-section {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
 }

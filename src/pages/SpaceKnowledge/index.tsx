@@ -134,7 +134,6 @@ const SpaceKnowledge: React.FC = () => {
   ) => {
     runDocList({
       queryFilter: {
-        spaceId,
         kbId: knowledgeId,
         name: docName,
       },
@@ -293,7 +292,6 @@ const SpaceKnowledge: React.FC = () => {
         />
         {/*文件信息*/}
         <RawSegmentInfo
-          spaceId={spaceId}
           documentInfo={currentDocumentInfo}
           onDel={handleDocDel}
           onSuccessUpdateName={handleSuccessUpdateName}

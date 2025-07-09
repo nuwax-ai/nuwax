@@ -39,7 +39,7 @@ import {
   EcosystemSubTabTypeEnum,
   EcosystemUseStatusEnum,
 } from '@/types/interfaces/ecosystem';
-import { App, Button, Input, List, Select, Spin, Tabs } from 'antd';
+import { App, Button, Empty, Input, Select, Tabs } from 'antd';
 import classNames from 'classnames';
 import { useCallback, useEffect, useState } from 'react';
 import styles from './index.less';
@@ -48,6 +48,7 @@ const { Search } = Input;
 const PAGE_SIZE = 24;
 
 import EcosystemCard from '@/components/EcosystemCard';
+import Loading from '@/components/Loading';
 import { CREATED_TABS } from '@/constants/common.constants';
 const defaultTabs = CREATED_TABS.filter((item) =>
   [AgentComponentTypeEnum.Plugin].includes(item.key),
@@ -478,11 +479,7 @@ export default function EcosystemPlugin() {
             onClear={() => handleSearch('')}
             allowClear
           />
-          <Button
-            type="primary"
-            onClick={handleCreateShare}
-            className={cx(styles.createShareButton)}
-          >
+          <Button type="primary" onClick={handleCreateShare}>
             创建分享
           </Button>
         </div>
@@ -611,8 +608,16 @@ export default function EcosystemPlugin() {
   };
 
   return (
-    <div className={cx(styles.container)}>
-      <div className={cx(styles.contentCard)}>
+    <>
+      <div
+        className={cx(
+          styles.container,
+          'flex',
+          'flex-col',
+          'h-full',
+          'overflow-hide',
+        )}
+      >
         <h3 className={cx(styles.title)}>插件</h3>
         <div className={cx(styles.header)}>
           <Tabs
@@ -625,13 +630,8 @@ export default function EcosystemPlugin() {
           />
           {renderExtraContent()}
         </div>
-
         <div
-          className={cx(styles.pluginList)}
-          style={{
-            height: 'calc(100vh - 100px)',
-            overflowY: 'auto',
-          }}
+          className={cx(styles.pluginList, 'flex-1', 'overflow-y')}
           onScroll={(e) => {
             // 当滚动到距离底部100px时加载更多
             const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -644,37 +644,33 @@ export default function EcosystemPlugin() {
             }
           }}
         >
-          <List
-            grid={{ gutter: 16, column: 4 }}
-            dataSource={pluginData.records || []}
-            renderItem={(config) => (
-              <List.Item>
+          {loading && pluginData?.records?.length === 0 ? (
+            <Loading className={cx('h-full')} />
+          ) : pluginData?.records?.length ? (
+            <div className={cx(styles['list-section'])}>
+              {pluginData.records?.map((config) => (
                 <EcosystemCard
+                  key={config?.uid}
                   {...convertToPluginCard(config)}
                   onClick={() => handleCardClick(config)}
                 />
-              </List.Item>
-            )}
-            loadMore={
-              loading ? (
-                <div style={{ textAlign: 'center', margin: '12px 0' }}>
-                  <Spin />
-                </div>
-              ) : pluginData.total &&
-                pluginData.total > 0 &&
-                pagination.current >= (pluginData.pages || 0) ? (
-                <div
-                  style={{
-                    textAlign: 'center',
-                    padding: '12px 0',
-                    color: '#ccc',
-                  }}
-                >
-                  没有更多数据了
-                </div>
-              ) : null
-            }
-          />
+              ))}
+            </div>
+          ) : (
+            <div
+              className={cx('flex', 'h-full', 'items-center', 'content-center')}
+            >
+              <Empty
+                className={cx(
+                  'flex',
+                  'flex-col',
+                  'items-center',
+                  'content-center',
+                )}
+                description="暂无数据"
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -716,6 +712,6 @@ export default function EcosystemPlugin() {
         tabs={defaultTabs}
         addComponents={addComponents}
       />
-    </div>
+    </>
   );
 }
