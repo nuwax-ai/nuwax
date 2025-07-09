@@ -4,6 +4,7 @@ import type {
 } from '@/types/interfaces/common';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { SkillProps } from '@/types/interfaces/workflow';
+import { loopSetBindValueType } from '@/utils/deepNode';
 import { getImg } from '@/utils/workflow';
 import {
   DeleteOutlined,
@@ -76,11 +77,13 @@ export const SkillList: React.FC<SkillProps> = ({
     setCurrentComponentInfo(null);
   };
   const handleEdit = (item: CreatedNodeItem) => {
-    console.log('value:item', item);
+    const inputConfigArgs = item.inputArgBindConfigs as BindConfigWithSub[];
+    // 使用递归函数设置默认值：输入，并处理嵌套的子配置
+    const _inputConfigArgs = loopSetBindValueType(inputConfigArgs || []);
 
     setCurrentComponentInfo({
       ...item,
-      inputArgBindConfigs: item.inputArgBindConfigs as InputAndOutConfig[],
+      inputArgBindConfigs: _inputConfigArgs as InputAndOutConfig[],
     });
     setOpen(true);
   };
