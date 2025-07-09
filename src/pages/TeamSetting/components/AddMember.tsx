@@ -198,7 +198,7 @@ const AddMember: React.FC<AddMemberProps> = ({
       <div style={{ display: 'flex', gap: 20 }}>
         <div className={cx(styles['add-member-left-column'])}>
           <Input
-            placeholder="搜索成员"
+            placeholder="输入用户名、邮箱或手机号码，回车搜索"
             prefix={<SearchOutlined />}
             onPressEnter={(event) => {
               if (event.key === 'Enter') {
