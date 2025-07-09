@@ -9,4 +9,4 @@ Nuwax AI - Easily build and deploy your private Agentic AI solutions.
 - 直接提issues https://github.com/nuwax-ai/nuwax/issues
 - 关注公众号，发送你的问题
 
-![](https://www.nuwax.com/wechat.png)
+![](wechat.png)
