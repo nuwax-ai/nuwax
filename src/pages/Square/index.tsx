@@ -199,19 +199,24 @@ const Square: React.FC = () => {
         hasMore={hasMore}
         onScroll={handleScroll}
       >
-        <header className={cx(styles.header, 'relative')} onClick={handleLink}>
-          <img
-            className={cx('absolute', styles['banner-image'])}
-            src={configInfo?.squareBanner || (squareBannerImage as string)}
-            alt=""
-          />
-          <div className={cx(styles['cover-box'], 'h-full', 'relative')}>
-            <h3>{configInfo?.squareBannerText || '人人都是智能设计师'}</h3>
-            <p className={cx('text-ellipsis-2')}>
-              {configInfo?.squareBannerSubText ||
-                '新一代AI应用设计、开发、实践平台 \n 无需代码，轻松创建，适合各类人群，支持多种端发布及API'}
-            </p>
-          </div>
+        <header
+          className={cx(styles.header)}
+          onClick={handleLink}
+          style={{
+            background: `url(${
+              configInfo?.squareBanner || (squareBannerImage as string)
+            }) no-repeat center center`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center center',
+          }}
+        >
+          <h3 className={cx('text-ellipsis-2')}>
+            {configInfo?.squareBannerText || '人人都是智能设计师'}
+          </h3>
+          <p className={cx('text-ellipsis-2')}>
+            {configInfo?.squareBannerSubText ||
+              '新一代AI应用设计、开发、实践平台 \n 无需代码，轻松创建，适合各类人群，支持多种端发布及API'}
+          </p>
         </header>
         <div
           className={cx(
