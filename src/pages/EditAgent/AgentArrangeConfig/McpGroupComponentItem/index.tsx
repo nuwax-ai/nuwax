@@ -23,6 +23,7 @@ const McpGroupComponentItem: React.FC<McpGroupComponentItemProps> = ({
         className={cx('flex', 'items-center', styles['group-mcp-item'], {
           [styles.border]: showChildren,
         })}
+        onClick={() => setShowChildren(!showChildren)}
       >
         <span className={cx('radius-6', styles['img-box'])}>
           <img src={item.icon} alt="" />
@@ -40,7 +41,6 @@ const McpGroupComponentItem: React.FC<McpGroupComponentItemProps> = ({
             'items-center',
             'cursor-pointer',
           )}
-          onClick={() => setShowChildren(!showChildren)}
         >
           <span>{`工具（${item.children.length}）`}</span>
           <DownOutlined
