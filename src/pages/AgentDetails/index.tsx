@@ -144,6 +144,7 @@ const AgentDetails: React.FC = () => {
       setChatSuggestList([]);
       setAgentDetail(null);
       setSelectedComponentList([]);
+      setVariables([]);
     };
   }, [agentId]);
 
