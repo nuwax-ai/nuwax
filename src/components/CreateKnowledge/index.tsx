@@ -164,7 +164,11 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
           placeholder="输入知识库内容的描述"
           maxLength={100}
         />
-        <Form.Item name="embeddingModelId" label="向量模型">
+        <Form.Item
+          name="embeddingModelId"
+          label="向量模型"
+          rules={[{ required: true, message: '请选择向量模型' }]}
+        >
           <SelectList
             placeholder="请选择向量模型"
             disabled={mode === CreateUpdateModeEnum.Update}
