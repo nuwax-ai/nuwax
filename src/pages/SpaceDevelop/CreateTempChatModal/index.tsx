@@ -33,7 +33,7 @@ import styles from './index.less';
 
 import { modalConfirm } from '@/utils/ant-custom';
 import 'dayjs/locale/zh-cn';
-import CopyChatWidgetCode from './CopyChatWidgetCode';
+// import CopyChatWidgetCode from './CopyChatWidgetCode';
 
 dayjs.locale('zh-cn');
 
@@ -207,7 +207,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
               />
             </span>
           </Tooltip>
-          <CopyChatWidgetCode chatUrl={record.chatUrl} size={24} />
+          {/* <CopyChatWidgetCode chatUrl={record.chatUrl} size={24} /> */}
         </div>
       ),
     },
