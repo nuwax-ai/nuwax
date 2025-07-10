@@ -32,6 +32,7 @@ import type {
   UploadFileInfo,
 } from '@/types/interfaces/common';
 import type {
+  AttachmentFile,
   ConversationChatResponse,
   ConversationInfo,
   MessageInfo,
@@ -49,7 +50,13 @@ import { Form, message } from 'antd';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
 import moment from 'moment';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
@@ -101,6 +108,7 @@ const ChatTemp: React.FC = () => {
   const [requiredNameList, setRequiredNameList] = useState<string[]>([]);
   // 是否发送过消息,如果是,则禁用变量参数
   const isSendMessageRef = useRef<boolean>(false);
+  const captchaVerifyParamRef = useRef<string>('');
 
   const buttonId = 'aliyun-captcha-id';
   const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
@@ -464,12 +472,12 @@ const ChatTemp: React.FC = () => {
     handleClearSideEffect();
 
     // 附件文件
-    const attachments =
+    const attachments: AttachmentFile[] =
       files?.map((file) => ({
-        fileKey: file.key,
-        fileUrl: file.url,
-        fileName: file.name,
-        mimeType: file.type,
+        fileKey: file.key || '',
+        fileUrl: file.url || '',
+        fileName: file.name || '',
+        mimeType: file.type || '',
       })) || [];
 
     // 将文件和消息加入会话中
@@ -541,8 +549,38 @@ const ChatTemp: React.FC = () => {
     };
   }, [conversationInfo]);
 
+  const handleCreateTempChat = async (captchaVerifyParam: string) => {
+    // 创建临时会话
+    const {
+      data,
+      success,
+      message: _message,
+    } = await runTempChatCreate({ chatKey, captchaVerifyParam });
+    if (success) {
+      conversationUid.current = data.uid;
+      sessionStorage.setItem(TEMP_CONVERSATION_UID, data.uid);
+      // 查询临时会话详细
+      runQueryConversation({ chatKey, conversationUid: data.uid });
+    } else {
+      setIsLoadingConversation(false);
+      message.warning(_message);
+    }
+  };
+
+  console.log('captchaVerifyParamRef.current', isLoadingConversation);
+
+  // 清空会话记录，实际上是创建新的会话
+  const handleClear = useCallback(async () => {
+    handleClearSideEffect();
+    setMessageList([]);
+    setIsLoadingConversation(true);
+    // 创建临时会话
+    handleCreateTempChat(captchaVerifyParamRef.current);
+  }, [chatKey]);
+
   const asyncFun = async (captchaVerifyParam: string = '') => {
     if (chatKey) {
+      captchaVerifyParamRef.current = captchaVerifyParam;
       setIsLoadingConversation(true);
       const uid = sessionStorage.getItem(TEMP_CONVERSATION_UID);
       if (uid) {
@@ -552,20 +590,7 @@ const ChatTemp: React.FC = () => {
         return;
       }
       // 创建临时会话
-      const {
-        data,
-        success,
-        message: _message,
-      } = await runTempChatCreate({ chatKey, captchaVerifyParam });
-      if (success) {
-        conversationUid.current = data.uid;
-        sessionStorage.setItem(TEMP_CONVERSATION_UID, data.uid);
-        // 查询临时会话详细
-        runQueryConversation({ chatKey, conversationUid: data.uid });
-      } else {
-        setIsLoadingConversation(false);
-        message.warning(_message);
-      }
+      handleCreateTempChat(captchaVerifyParam);
     }
   };
 
@@ -782,7 +807,9 @@ const ChatTemp: React.FC = () => {
           {/*会话输入框*/}
           <ChatInputHome
             className={cx(styles['input-container'])}
+            clearDisabled={!messageList?.length}
             onEnter={handleMessageSend}
+            onClear={handleClear}
             visible={showScrollBtn}
             wholeDisabled={wholeDisabled}
             manualComponents={manualComponents}
