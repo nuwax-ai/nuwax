@@ -25,6 +25,7 @@ import type {
   UploadFileInfo,
 } from '@/types/interfaces/common';
 import type {
+  AttachmentFile,
   ConversationChatParams,
   ConversationChatResponse,
   ConversationChatSuggestParams,
@@ -442,6 +443,16 @@ export default () => {
           }
         }
       },
+      // onError: () => {
+      //   console.log('onError222222', currentMessageId, messageList);
+      //   // 当前消息
+      //   setMessageList((messageInfo) => {
+      //     if (messageInfo?.id === currentMessageId) {
+      //       return { ...messageInfo, status: MessageStatusEnum.Error };
+      //     }
+      //     return messageInfo;
+      //   });
+      // },
     });
     // 主动关闭连接
     // 确保 abortConnectionRef.current 是一个可调用的函数
@@ -500,12 +511,12 @@ export default () => {
     handleClearSideEffect();
 
     // 附件文件
-    const attachments =
+    const attachments: AttachmentFile[] =
       files?.map((file) => ({
-        fileKey: file.key,
-        fileUrl: file.url,
-        fileName: file.name,
-        mimeType: file.type,
+        fileKey: file.key || '',
+        fileUrl: file.url || '',
+        fileName: file.name || '',
+        mimeType: file.type || '',
       })) || [];
 
     // 将文件和消息加入会话中
@@ -533,7 +544,6 @@ export default () => {
     } as MessageInfo;
 
     setMessageList((list) => {
-      console.log('onMessageSend:messageList', list);
       const _list =
         list?.map((item) => {
           if (item.status === MessageStatusEnum.Incomplete) {

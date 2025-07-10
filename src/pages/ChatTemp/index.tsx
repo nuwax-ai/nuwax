@@ -567,8 +567,6 @@ const ChatTemp: React.FC = () => {
     }
   };
 
-  console.log('captchaVerifyParamRef.current', isLoadingConversation);
-
   // 清空会话记录，实际上是创建新的会话
   const handleClear = useCallback(async () => {
     handleClearSideEffect();
