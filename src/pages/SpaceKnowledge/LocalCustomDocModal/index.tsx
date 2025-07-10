@@ -21,7 +21,7 @@ import type {
 } from '@/types/interfaces/knowledge';
 import { getProgressStatus, handleUploadFileList } from '@/utils/upload';
 import {
-  CheckCircleFilled,
+  CheckCircleOutlined,
   CloseCircleFilled,
   DeleteOutlined,
 } from '@ant-design/icons';
@@ -300,9 +300,21 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
   };
   const getDisplayFileName = useCallback((name: string) => {
     if (!name) return '';
-    return name.length > 30
-      ? name.slice(0, 22) + '...' + name.slice(name.length - 8, name.length)
+    return name.length > 24
+      ? name.slice(0, 16) + '...' + name.slice(name.length - 8, name.length)
       : name;
+  }, []);
+  const getDisplayFileSize = useCallback((size: number) => {
+    if (!size) return '';
+    if (size < 1024) {
+      return `${size} B`;
+    } else if (size < 1024 * 1024) {
+      return `${(size / 1024).toFixed(2)} KB`;
+    } else if (size < 1024 * 1024 * 1024) {
+      return `${(size / 1024 / 1024).toFixed(2)} MB`;
+    } else {
+      return `${(size / 1024 / 1024 / 1024).toFixed(2)} GB`;
+    }
   }, []);
   return (
     <Modal
@@ -347,7 +359,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
                       }}
                     >
                       {getDisplayFileName(info?.name)} (
-                      {`${info?.size / 1000} kb`})
+                      {getDisplayFileSize(info?.size)})
                     </span>
 
                     <DeleteOutlined
@@ -357,7 +369,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
                   {info?.percent !== undefined &&
                     (getStatus(info) === 'success' ? (
                       <div className={styles['progress-upload-file-success']}>
-                        <CheckCircleFilled />
+                        <CheckCircleOutlined />
                       </div>
                     ) : (
                       <Progress
