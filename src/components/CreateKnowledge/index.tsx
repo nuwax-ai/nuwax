@@ -148,6 +148,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
         requiredMark={customizeRequiredMark}
         layout="vertical"
         onFinish={onFinish}
+        preserve={false}
         autoComplete="off"
       >
         <Form.Item
