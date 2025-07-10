@@ -350,7 +350,8 @@ const Chat: React.FC = () => {
                   />
                 </>
               ) : (
-                isLoadingConversation && (
+                isLoadingConversation &&
+                !message && (
                   // Chat记录为空
                   <AgentChatEmpty
                     className={cx({ 'h-full': !variables?.length })}

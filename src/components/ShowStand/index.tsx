@@ -25,10 +25,12 @@ const ShowStand: React.FC<ShowStandProps> = ({
       onClose={onClose}
     >
       {cardList?.length > 0 ? (
-        <div className={cx(styles['inner-container'], 'overflow-y')}>
-          {cardList?.map((item, index) => (
-            <Card key={`${item.cardKey}${index}`} {...item} />
-          ))}
+        <div className={cx(styles['inner-container'], 'scrollbar')}>
+          <div className={cx(styles['card-item-container'])}>
+            {cardList?.map((item, index) => (
+              <Card key={`${item.cardKey}${index}`} {...item} />
+            ))}
+          </div>
         </div>
       ) : (
         <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>

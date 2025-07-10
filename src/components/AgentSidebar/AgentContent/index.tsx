@@ -88,14 +88,13 @@ const AgentContent: React.FC<AgentContentProps> = ({
       targetSpaceId,
     });
   };
+  if (!agentDetail) {
+    return null;
+  }
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'items-center')}>
-      <img
-        className={styles.avatar}
-        src={agentDetail?.icon || agentImage}
-        alt=""
-      />
+      <img className={styles.avatar} src={agentDetail?.icon || agentImage} />
       <span className={styles.title}>{agentDetail?.name}</span>
       <ConditionRender condition={agentDetail?.description}>
         <p className={cx(styles.content)}>{agentDetail?.description}</p>

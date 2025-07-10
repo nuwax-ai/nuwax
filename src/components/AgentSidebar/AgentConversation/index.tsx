@@ -52,15 +52,17 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
 
   return (
     <div className={cx(styles.container)}>
-      <div className={cx('flex', 'items-center', 'content-between')}>
-        <h3 className={cx(styles.title)}>相关会话</h3>
-        <span
-          className={cx(styles.more, 'cursor-pointer')}
-          onClick={() => setOpen(true)}
-        >
-          查看更多
-        </span>
-      </div>
+      {!loadingHistory && (
+        <div className={cx('flex', 'items-center', 'content-between')}>
+          <h3 className={cx(styles.title)}>相关会话</h3>
+          <span
+            className={cx(styles.more, 'cursor-pointer')}
+            onClick={() => setOpen(true)}
+          >
+            查看更多
+          </span>
+        </div>
+      )}
       <div className={cx(styles['chat-wrapper'])}>
         {loadingHistory ? (
           <Loading className={cx(styles['loading-box'])} />
