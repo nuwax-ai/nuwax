@@ -67,3 +67,34 @@ body {
     min-width: unset;
   }
 }
+
+.scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar::-webkit-scrollbar-track-piece {
+  background-color: #fff;
+}
+
+/* 滚动条的内层滑轨背景颜色 */
+
+.scrollbar::-webkit-scrollbar-track {
+  background: @GRAY01;
+}
+
+/* 滚动条的外层滑轨背景颜色 */
+
+.scrollbar::-webkit-scrollbar-thumb {
+  background: @GRAY05;
+  border-radius: 6px;
+
+  /* 滚动条滑块圆角 */
+}
+
+/* 滚动条的内层滑块颜色 */
+
+.scrollbar::-webkit-scrollbar-button {
+  background-color: #fff;
+  display: none;
+}
