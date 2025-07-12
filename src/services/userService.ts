@@ -1,4 +1,4 @@
-import { USER_NO_LOGIN } from '@/constants/codes.constants';
+import { REDIRECT_LOGIN, USER_NO_LOGIN } from '@/constants/codes.constants';
 import { USER_INFO } from '@/constants/home.constants';
 import { apiUserInfo } from '@/services/account';
 import { redirectToLogin } from '@/utils/router';
@@ -89,6 +89,11 @@ export class UserService {
               clearLoginStatusCache();
               redirectToLogin(location.pathname);
             }
+            break;
+          // 重定向到登录页
+          case REDIRECT_LOGIN:
+            clearLoginStatusCache();
+            window.location.href = errorMessage;
             break;
           // 默认错误处理
           default:
