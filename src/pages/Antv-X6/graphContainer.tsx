@@ -348,6 +348,12 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
     const drawGraph = () => {
       if (graphRef.current && graphParams.nodeList.length > 0) {
+        // 添加zoomToFit调用，确保在绘制完成后自动调整视图
+        graphRef.current.once('render:done', () => {
+          setTimeout(() => {
+            graphChangeZoomToFit();
+          }, 20);
+        });
         // 清除现有元素，防止重复渲染
         graphRef.current.clearCells();
 
@@ -369,11 +375,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
         // 批量添加边
         batchAddEdges(graphParams.edgeList);
-
-        // 添加zoomToFit调用，确保在绘制完成后自动调整视图
-        setTimeout(() => {
-          graphChangeZoomToFit();
-        }, 0);
       }
     };
 
