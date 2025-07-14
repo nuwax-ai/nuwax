@@ -510,8 +510,10 @@ const Created: React.FC<CreatedProp> = ({
           className="left-image-style"
         />
         <div className="flex-1 content-font">
-          <p className="label-font-style margin-bottom-6">{item.name}</p>
-          <p className="margin-bottom-6 created-description-style">
+          <p className="label-font-style margin-bottom-6 text-ellipsis-2">
+            {item.name}
+          </p>
+          <p className="margin-bottom-6 created-description-style text-ellipsis">
             {item.description}
           </p>
           {/* <Tag>{item.tag}</Tag> */}

@@ -41,6 +41,7 @@ import {
 import { RequestResponse } from '@/types/interfaces/request';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { useRequest } from 'ahooks';
+import { message } from 'antd';
 import moment from 'moment/moment';
 import { useCallback, useRef, useState } from 'react';
 import { useModel } from 'umi';
@@ -443,16 +444,20 @@ export default () => {
           }
         }
       },
-      // onError: () => {
-      //   console.log('onError222222', currentMessageId, messageList);
-      //   // 当前消息
-      //   setMessageList((messageInfo) => {
-      //     if (messageInfo?.id === currentMessageId) {
-      //       return { ...messageInfo, status: MessageStatusEnum.Error };
-      //     }
-      //     return messageInfo;
-      //   });
-      // },
+      onError: () => {
+        message.error('网络超时或服务不可用，请稍后再试');
+        setTimeout(() => {
+          // 当前消息
+          setMessageList((infoList: MessageInfo[]) => {
+            return infoList.map((info) => {
+              if (info?.id === currentMessageId) {
+                return { ...info, status: MessageStatusEnum.Error };
+              }
+              return info;
+            });
+          });
+        }, 2000);
+      },
     });
     // 主动关闭连接
     // 确保 abortConnectionRef.current 是一个可调用的函数
@@ -499,7 +504,7 @@ export default () => {
   // 发送消息
   const onMessageSend = async (
     id: number,
-    message: string,
+    messageInfo: string,
     files: UploadFileInfo[] = [],
     infos: AgentSelectedComponentInfo[] = [],
     variableParams?: Record<string, string | number>,
@@ -523,7 +528,7 @@ export default () => {
     const chatMessage = {
       role: AssistantRoleEnum.USER,
       type: MessageModeEnum.CHAT,
-      text: message,
+      text: messageInfo,
       time: moment().toString(),
       attachments,
       id: uuidv4(),
@@ -564,7 +569,7 @@ export default () => {
     const params: ConversationChatParams = {
       conversationId: id,
       variableParams,
-      message,
+      message: messageInfo,
       attachments,
       debug,
       selectedComponents: infos,
