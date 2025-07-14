@@ -109,7 +109,7 @@ export const DEFAULT_NODE_CONFIG_MAP: Record<
   { defaultWidth: number; defaultHeight: number }
 > = {
   [NodeTypeEnum.Loop]: {
-    defaultWidth: 600, // 循环节点宽度
+    defaultWidth: 660, // TODO 初始 循环节点宽度 实际是860 但是需要减去200 后端会加200 原因是为什么目前还不清楚
     defaultHeight: 240, // 循环节点高度
   },
   [NodeTypeEnum.Condition]: {
