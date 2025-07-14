@@ -80,8 +80,9 @@ import {
   returnImg,
   setFormDefaultValues,
 } from '@/utils/workflow';
+import { LoadingOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
-import { Form, message } from 'antd';
+import { Form, message, Spin } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 import { mergeObject } from 'ut2';
@@ -103,8 +104,16 @@ const workflowCreatedTabs = CREATED_TABS.filter((item) =>
 );
 
 const Workflow: React.FC = () => {
-  const { getWorkflow, storeWorkflow, clearWorkflow, visible, setVisible } =
-    useModel('workflow');
+  const {
+    getWorkflow,
+    storeWorkflow,
+    clearWorkflow,
+    visible,
+    setVisible,
+    handleInitLoading,
+    globalLoadingTime,
+  } = useModel('workflow');
+
   const params = useParams();
   // 当前工作流的id
   const workflowId = Number(params.workflowId);
@@ -1705,19 +1714,26 @@ const Workflow: React.FC = () => {
         setShowCreateWorkflow={() => setShowCreateWorkflow(true)}
         showPublish={handleShowPublish}
       />
-      <GraphContainer
-        graphParams={graphParams}
-        ref={graphRef}
-        changeDrawer={handleNodeClick}
-        changeEdge={nodeChangeEdge}
-        changeCondition={changeNode}
-        removeNode={deleteNode}
-        copyNode={copyNode}
-        changeZoom={changeZoom}
-        createNodeToPortOrEdge={createNodeToPortOrEdge}
-        onSaveNode={handleSaveNode}
-        onClickBlank={handleClickBlank}
-      />
+      <Spin
+        spinning={globalLoadingTime > 0}
+        indicator={<LoadingOutlined spin />}
+        wrapperClassName="spin-workflow-global-style"
+      >
+        <GraphContainer
+          graphParams={graphParams}
+          ref={graphRef}
+          changeDrawer={handleNodeClick}
+          changeEdge={nodeChangeEdge}
+          changeCondition={changeNode}
+          removeNode={deleteNode}
+          copyNode={copyNode}
+          changeZoom={changeZoom}
+          createNodeToPortOrEdge={createNodeToPortOrEdge}
+          onSaveNode={handleSaveNode}
+          onClickBlank={handleClickBlank}
+          onInit={handleInitLoading}
+        />
+      </Spin>
       <ControlPanel
         dragChild={dragChild}
         foldWrapItem={foldWrapItem}

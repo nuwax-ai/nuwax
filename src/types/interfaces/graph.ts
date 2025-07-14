@@ -149,6 +149,7 @@ export interface GraphContainerProps {
   // 通过连接桩或者边创建节点
   createNodeToPortOrEdge: (config: CreateNodeToPortOrEdgeProps) => void;
   onClickBlank: () => void;
+  onInit: () => void;
 }
 
 export interface GraphRect {

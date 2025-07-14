@@ -253,7 +253,10 @@ export const getWidthAndHeight = (node: ChildNode) => {
   }
   if (type === NodeTypeEnum.Loop) {
     return {
-      width: extension.width || defaultWidth,
+      width:
+        extension.width && extension.width > defaultWidth
+          ? extension.width
+          : defaultWidth,
       height: (extension.height || defaultHeight) + extraHeight,
     };
   }

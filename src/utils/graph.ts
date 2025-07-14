@@ -679,7 +679,7 @@ export const calculateNodePosition = ({
   let newNodeWidth = DEFAULT_NODE_CONFIG_MAP.default.defaultWidth;
   if (type === NodeTypeEnum.Loop) {
     newNodeWidth =
-      DEFAULT_NODE_CONFIG_MAP[NodeTypeEnum.Loop].defaultWidth + 200; // TODO 有疑问，为什么需要加200
+      DEFAULT_NODE_CONFIG_MAP[NodeTypeEnum.Loop].defaultWidth + 260;
   } else if (
     type === NodeTypeEnum.Condition ||
     type === NodeTypeEnum.Interval ||
