@@ -1,5 +1,6 @@
 import CodeEditor from '@/components/CodeEditor';
 import NewMonaco from '@/components/CodeEditor/NewMonaco';
+import TooltipIcon from '@/components/TooltipIcon';
 import {
   EXCEPTION_HANDLE_OPTIONS,
   RETRY_COUNT_OPTIONS,
@@ -13,7 +14,7 @@ import {
   isEqualExceptionHandleConfig,
 } from '@/utils/graph';
 import { ExpandAltOutlined, InfoCircleOutlined } from '@ant-design/icons';
-import { Button, Form, Input, Select, Tooltip } from 'antd';
+import { Button, Form, Input, Select } from 'antd';
 import cx from 'classnames';
 import { debounce } from 'lodash';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -159,12 +160,10 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
         {/* 标题 */}
         <div className={cx(styles.exceptionItemHeader)}>
           <span className={cx(styles.exceptionItemTitle)}>异常处理</span>
-          <Tooltip
+          <TooltipIcon
             title="可设置异常处理，包括超时、重试、异常处理方式。开启流式输出后，一旦开始输出数据，即使出现异常也无法重试或者跳转异常分支。"
-            placement="top"
-          >
-            <InfoCircleOutlined className={cx(styles.exceptionItemTip)} />
-          </Tooltip>
+            icon={<InfoCircleOutlined />}
+          />
         </div>
 
         {/* 表单配置项 */}
@@ -173,13 +172,16 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
             {/* 超时时间 - 30% 宽度 */}
             <Form.Item
               name={[name, 'timeout']}
-              label="超时时间"
+              label={
+                <span className="flex items-center">
+                  超时时间
+                  <TooltipIcon
+                    title="设置节点执行的最大等待时间"
+                    icon={<InfoCircleOutlined />}
+                  />
+                </span>
+              }
               initialValue={timeout}
-              tooltip={{
-                title: '设置节点执行的最大等待时间',
-                placement: 'top',
-                icon: <InfoCircleOutlined />,
-              }}
               className={cx(styles.exceptionItemFormItem, styles.timeoutItem)}
               rules={[
                 {
