@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 const useWorkflow = () => {
   // 是否要校验当前的数据
   const [volid, setVolid] = useState<boolean>(false);
+  const [globalLoadingTime, setGlobalLoadingTime] = useState<number>(0);
 
   const [visible, setVisible] = useState<boolean>(false); // 显示隐藏右侧节点抽屉
 
@@ -119,6 +120,26 @@ const useWorkflow = () => {
   }, []);
   const [expanded, setExpanded] = useState<string>('');
 
+  useEffect(() => {
+    setGlobalLoadingTime(new Date().getTime()); //初始化
+
+    return () => {
+      setGlobalLoadingTime(0); //清除
+    };
+  }, []);
+
+  const handleInitLoading = useCallback(() => {
+    const loadingTime = new Date().getTime() - globalLoadingTime;
+    const duration = 800; //保证loading时间大于800ms
+    if (loadingTime > duration) {
+      setGlobalLoadingTime(0);
+    } else {
+      setTimeout(() => {
+        setGlobalLoadingTime(0);
+      }, duration - loadingTime);
+    }
+  }, [globalLoadingTime]);
+
   return {
     volid,
     setVolid,
@@ -143,6 +164,8 @@ const useWorkflow = () => {
     setExpanded,
     updateLoading,
     setUpdateLoading,
+    globalLoadingTime,
+    handleInitLoading,
     // foldWrapItem,
     // setFoldWrapItem,
     // getCurrentNodeData,
