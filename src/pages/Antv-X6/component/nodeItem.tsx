@@ -2,6 +2,7 @@
 import CodeEditor from '@/components/CodeEditor';
 import Monaco from '@/components/CodeEditor/monaco';
 import CustomTree from '@/components/FormListItem/NestedForm';
+import TooltipIcon from '@/components/TooltipIcon';
 import { VARIABLE_CONFIG_TYPE_OPTIONS } from '@/constants/node.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum, VariableConfigTypeEnum } from '@/types/enums/node';
@@ -22,7 +23,6 @@ import {
   Segmented,
   Select,
   Space,
-  Tooltip,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
@@ -122,9 +122,10 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
               <div className="dis-sb margin-bottom">
                 <span className="node-title-style gap-6 flex items-center">
                   输出内容
-                  <Tooltip title="可以在以下输入框中重新组织输出内容，大模型将优先使用输入框中的内容。">
-                    <ExclamationCircleOutlined />
-                  </Tooltip>
+                  <TooltipIcon
+                    title="可以在以下输入框中重新组织输出内容，大模型将优先使用输入框中的内容。"
+                    icon={<ExclamationCircleOutlined />}
+                  />
                 </span>
               </div>
               <Form.Item name="content">
@@ -149,9 +150,10 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
       <div className="node-item-style">
         <span className="node-title-style margin-bottom gap-6 flex items-center">
           循环设置
-          <Tooltip title="如果引用数组，循环次数为数组的长度；如果指定次数，循环次数为指定的次数；如果选择无限循环，需配合“终止循环”节点完成循环流程。">
-            <ExclamationCircleOutlined />
-          </Tooltip>
+          <TooltipIcon
+            title="如果引用数组，循环次数为数组的长度；如果指定次数，循环次数为指定的次数；如果选择无限循环，需配合“终止循环”节点完成循环流程。"
+            icon={<ExclamationCircleOutlined />}
+          />
         </span>
         <Form.Item name={'loopType'}>
           <Select
@@ -205,9 +207,10 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
           title={
             <>
               中间变量
-              <Tooltip title="变量可在多次循环中实现共享，可用于在多次循环中传递变量。">
-                <ExclamationCircleOutlined />
-              </Tooltip>
+              <TooltipIcon
+                title="变量可在多次循环中实现共享，可用于在多次循环中传递变量。"
+                icon={<ExclamationCircleOutlined />}
+              />
             </>
           }
           fieldConfigs={outPutConfigs}
