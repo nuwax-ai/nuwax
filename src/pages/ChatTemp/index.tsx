@@ -75,6 +75,8 @@ const ChatTemp: React.FC = () => {
     useState<ConversationInfo | null>();
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
+  // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
+  const messageListRef = useRef<MessageInfo[]>([]);
   // 会话问题建议
   const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
   const messageViewRef = useRef<HTMLDivElement | null>(null);
@@ -422,6 +424,18 @@ const ChatTemp: React.FC = () => {
         // 滚动到底部
         handleScrollBottom();
       },
+      onError: () => {
+        message.error('网络超时或服务不可用，请稍后再试');
+        // 将当前会话的loading状态的消息改为Error状态
+        const list =
+          messageListRef.current?.map((info: MessageInfo) => {
+            if (info?.id === currentMessageId) {
+              return { ...info, status: MessageStatusEnum.Error };
+            }
+            return info;
+          }) || [];
+        setMessageList(list);
+      },
     });
     // 主动关闭连接
     // 确保 abortConnectionRef.current 是一个可调用的函数
@@ -504,17 +518,23 @@ const ChatTemp: React.FC = () => {
       status: MessageStatusEnum.Loading,
     } as MessageInfo;
 
-    setMessageList((list) => {
-      const _list =
-        list?.map((item) => {
-          if (item.status === MessageStatusEnum.Incomplete) {
-            item.status = MessageStatusEnum.Complete;
-          }
-          return item;
-        }) || [];
+    // 将Incomplete状态的消息改为Complete状态
+    const completeMessageList =
+      messageList?.map((item: MessageInfo) => {
+        if (item.status === MessageStatusEnum.Incomplete) {
+          item.status = MessageStatusEnum.Complete;
+        }
+        return item;
+      }) || [];
+    const newMessageList = [
+      ...completeMessageList,
+      chatMessage,
+      currentMessage,
+    ];
+    setMessageList(newMessageList);
+    // 缓存消息列表
+    messageListRef.current = newMessageList;
 
-      return [..._list, chatMessage, currentMessage] as MessageInfo[];
-    });
     // 允许滚动
     allowAutoScrollRef.current = true;
     // 隐藏点击下滚按钮

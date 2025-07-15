@@ -54,6 +54,8 @@ export default () => {
   const [isSuggest, setIsSuggest] = useState<boolean>(true);
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
+  // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
+  const messageListRef = useRef<MessageInfo[]>([]);
   // 会话问题建议
   const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
   const messageViewRef = useRef<HTMLDivElement | null>(null);
@@ -69,9 +71,11 @@ export default () => {
   const messageIdRef = useRef<string>('');
   // 调试结果
   const [finalResult, setFinalResult] = useState<ConversationFinalResult>();
+  // 是否需要更新主题
   const needUpdateTopicRef = useRef<boolean>(true);
   // 展示台卡片列表
   const [cardList, setCardList] = useState<CardInfo[]>([]);
+  // 是否正在加载会话
   const [isLoadingConversation, setIsLoadingConversation] =
     useState<boolean>(false);
   // 添加一个 ref 来控制是否允许自动滚动
@@ -446,17 +450,15 @@ export default () => {
       },
       onError: () => {
         message.error('网络超时或服务不可用，请稍后再试');
-        setTimeout(() => {
-          // 当前消息
-          setMessageList((infoList: MessageInfo[]) => {
-            return infoList.map((info) => {
-              if (info?.id === currentMessageId) {
-                return { ...info, status: MessageStatusEnum.Error };
-              }
-              return info;
-            });
-          });
-        }, 2000);
+        // 将当前会话的loading状态的消息改为Error状态
+        const list =
+          messageListRef.current?.map((info: MessageInfo) => {
+            if (info?.id === currentMessageId) {
+              return { ...info, status: MessageStatusEnum.Error };
+            }
+            return info;
+          }) || [];
+        setMessageList(list);
       },
     });
     // 主动关闭连接
@@ -548,17 +550,23 @@ export default () => {
       status: MessageStatusEnum.Loading,
     } as MessageInfo;
 
-    setMessageList((list) => {
-      const _list =
-        list?.map((item) => {
-          if (item.status === MessageStatusEnum.Incomplete) {
-            item.status = MessageStatusEnum.Complete;
-          }
-          return item;
-        }) || [];
+    // 将Incomplete状态的消息改为Complete状态
+    const completeMessageList =
+      messageList?.map((item: MessageInfo) => {
+        if (item.status === MessageStatusEnum.Incomplete) {
+          item.status = MessageStatusEnum.Complete;
+        }
+        return item;
+      }) || [];
+    const newMessageList = [
+      ...completeMessageList,
+      chatMessage,
+      currentMessage,
+    ];
+    setMessageList(newMessageList);
+    // 缓存消息列表
+    messageListRef.current = newMessageList;
 
-      return [..._list, chatMessage, currentMessage] as MessageInfo[];
-    });
     // 允许滚动
     allowAutoScrollRef.current = true;
     // 隐藏点击下滚按钮
