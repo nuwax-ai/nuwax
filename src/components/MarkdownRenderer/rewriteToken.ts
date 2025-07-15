@@ -48,10 +48,10 @@ const _paragraphImage = (newTokens: any[]) => {
         prevId: newTokens[hitIndex]?.meta.id,
       };
 
-      newTokens[hitIndex].meta = {
-        ...newTokens[hitIndex].meta,
+      newTokens[hitIndex - 1].meta = {
+        ...newTokens[hitIndex - 1].meta,
         component: TokenRenderType.Image,
-        nextId: newTokens[hitIndex + 1]?.meta.id,
+        nextId: newTokens[hitIndex]?.meta.id,
       };
     }
   });
