@@ -99,15 +99,21 @@ export default () => {
   const { runHistory } = useModel('conversationHistory');
   const { handleChatProcessingList } = useModel('chat');
 
+  // 滚动到底部
+  const messageViewScrollToBottom = () => {
+    // 滚动到底部
+    messageViewRef.current?.scrollTo({
+      top: messageViewRef.current?.scrollHeight,
+      behavior: 'smooth',
+    });
+  };
+
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const handleScrollBottom = () => {
     if (allowAutoScrollRef.current) {
       scrollTimeoutRef.current = setTimeout(() => {
         // 滚动到底部
-        messageViewRef.current?.scrollTo({
-          top: messageViewRef.current?.scrollHeight,
-          behavior: 'smooth',
-        });
+        messageViewScrollToBottom();
       }, 400);
     }
   };
@@ -615,6 +621,7 @@ export default () => {
     onMessageSend,
     handleDebug,
     messageViewRef,
+    messageViewScrollToBottom,
     allowAutoScrollRef,
     scrollTimeoutRef,
     showType,

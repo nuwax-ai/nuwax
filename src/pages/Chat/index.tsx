@@ -80,6 +80,7 @@ const Chat: React.FC = () => {
     loadingSuggest,
     onMessageSend,
     messageViewRef,
+    messageViewScrollToBottom,
     allowAutoScrollRef,
     scrollTimeoutRef,
     showScrollBtn,
@@ -241,10 +242,7 @@ const Chat: React.FC = () => {
       // 当用户手动滚动时，暂停自动滚动
       if (allowAutoScrollRef.current) {
         // 滚动到底部
-        messageViewRef.current?.scrollTo({
-          top: messageViewRef.current?.scrollHeight,
-          behavior: 'smooth',
-        });
+        messageViewScrollToBottom();
       }
     }
   };
@@ -289,10 +287,7 @@ const Chat: React.FC = () => {
   const onScrollBottom = () => {
     allowAutoScrollRef.current = true;
     // 滚动到底部
-    messageViewRef.current?.scrollTo({
-      top: messageViewRef.current?.scrollHeight,
-      behavior: 'smooth',
-    });
+    messageViewScrollToBottom();
     setShowScrollBtn(false);
   };
 

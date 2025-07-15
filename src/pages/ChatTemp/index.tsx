@@ -67,7 +67,6 @@ const cx = classNames.bind(styles);
  * 主页咨询聊天页面
  */
 const ChatTemp: React.FC = () => {
-  const { handleChatProcessingList } = useModel('chat');
   // 链接Key
   const { chatKey } = useParams();
   // 会话信息
@@ -114,6 +113,7 @@ const ChatTemp: React.FC = () => {
 
   const buttonId = 'aliyun-captcha-id';
   const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
+  const { handleChatProcessingList } = useModel('chat');
 
   // 会话UID
   const conversationUid = useRef<string>();
