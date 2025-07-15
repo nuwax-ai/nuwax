@@ -14,40 +14,47 @@ export interface TokenRenderGroup {
 const NEED_TOOLBAR_TOKEN_TYPE_MAP = ['fence', 'thead_open'];
 
 const _paragraphImage = (newTokens: any[]) => {
-  //通过这个方法 找到图片的token 然后给图片的token 添加一个meta.nextId 在图片的close
-  const hitIndex = newTokens.findIndex((token) =>
-    token.children?.some((child: any) => child?.type === TokenRenderType.Image),
-  );
-  if (
-    hitIndex !== -1 &&
-    newTokens[hitIndex + 1]?.meta?.id &&
-    newTokens[hitIndex - 1]?.meta?.id
-  ) {
-    newTokens[hitIndex].children.forEach((child: any) => {
-      child.meta = {
-        ...child.meta,
-        nextId: newTokens[hitIndex + 1]?.meta.id,
-        prevId: newTokens[hitIndex - 1]?.meta.id,
+  // 获取所有包含图片的 token 索引
+  const hitIndexes = newTokens.reduce((acc: number[], token, index) => {
+    if (
+      token.children?.some(
+        (child: any) => child?.type === TokenRenderType.Image,
+      )
+    ) {
+      acc.push(index);
+    }
+    return acc;
+  }, []);
+
+  // 后续处理逻辑相同...
+  // 处理每个包含图片的 token
+  hitIndexes.forEach((hitIndex) => {
+    if (
+      hitIndex !== -1 &&
+      newTokens[hitIndex + 1]?.meta?.id &&
+      newTokens[hitIndex - 1]?.meta?.id
+    ) {
+      newTokens[hitIndex].children.forEach((child: any) => {
+        child.meta = {
+          ...child.meta,
+          nextId: newTokens[hitIndex + 1]?.meta.id,
+          prevId: newTokens[hitIndex - 1]?.meta.id,
+        };
+      });
+
+      newTokens[hitIndex + 1].meta = {
+        ...newTokens[hitIndex + 1].meta,
+        component: TokenRenderType.Image,
+        prevId: newTokens[hitIndex]?.meta.id,
       };
-    });
 
-    newTokens[hitIndex + 1].meta = {
-      ...newTokens[hitIndex + 1].meta,
-      component: TokenRenderType.Image,
-      prevId: newTokens[hitIndex]?.meta.id,
-    };
-    newTokens[hitIndex].meta = {
-      ...newTokens[hitIndex].meta,
-      component: TokenRenderType.Image,
-      nextId: newTokens[hitIndex + 1]?.meta.id,
-    };
-
-    newTokens[hitIndex - 1].meta = {
-      ...newTokens[hitIndex - 1].meta,
-      component: TokenRenderType.Image,
-      prevId: newTokens[hitIndex]?.meta.id,
-    };
-  }
+      newTokens[hitIndex].meta = {
+        ...newTokens[hitIndex].meta,
+        component: TokenRenderType.Image,
+        nextId: newTokens[hitIndex + 1]?.meta.id,
+      };
+    }
+  });
   return newTokens;
 };
 
