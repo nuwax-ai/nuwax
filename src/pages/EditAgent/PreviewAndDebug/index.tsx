@@ -59,6 +59,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     loadingSuggest,
     onMessageSend,
     messageViewRef,
+    messageViewScrollToBottom,
     allowAutoScrollRef,
     scrollTimeoutRef,
     handleClearSideEffect,
@@ -153,10 +154,12 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
         }
       };
 
-      messageView.addEventListener('wheel', throttle(handleScroll, 300));
+      const handleScrollImmediate = throttle(handleScroll, 300);
+
+      messageView.addEventListener('wheel', handleScrollImmediate);
       // 组件卸载时移除滚动事件监听器
       return () => {
-        messageView.removeEventListener('wheel', throttle(handleScroll, 300));
+        messageView.removeEventListener('wheel', handleScrollImmediate);
         resetInit();
       };
     }
@@ -188,10 +191,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       // 当用户手动滚动时，暂停自动滚动
       if (allowAutoScrollRef.current) {
         // 滚动到底部
-        messageViewRef.current?.scrollTo({
-          top: messageViewRef.current?.scrollHeight,
-          behavior: 'smooth',
-        });
+        messageViewScrollToBottom();
       }
     }
   };
@@ -245,10 +245,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
   const onScrollBottom = () => {
     allowAutoScrollRef.current = true;
     // 滚动到底部
-    messageViewRef.current?.scrollTo({
-      top: messageViewRef.current?.scrollHeight,
-      behavior: 'smooth',
-    });
+    messageViewScrollToBottom();
     setShowScrollBtn(false);
   };
 
