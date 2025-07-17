@@ -11,7 +11,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
 import { useParams } from 'umi';
 import styles from './index.less';
@@ -70,7 +70,7 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
           />
           {/* 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布 */}
           {agentConfigInfo?.publishDate !== null &&
-            moment(agentConfigInfo?.publishDate).isBefore(
+            dayjs(agentConfigInfo?.publishDate).isBefore(
               agentConfigInfo?.modified,
             ) && (
               <Tag
@@ -90,7 +90,7 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
             {agentConfigInfo?.space?.name}
           </span>
           <span className={cx(styles['save-time'])}>
-            草稿自动保存于{moment(agentConfigInfo?.modified).format('HH:mm')}
+            草稿自动保存于{dayjs(agentConfigInfo?.modified).format('HH:mm')}
           </span>
         </div>
       </div>

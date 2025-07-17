@@ -10,7 +10,7 @@ import { jumpBack } from '@/utils/router';
 import { CheckCircleTwoTone, LeftOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React from 'react';
 import styles from './index.less';
 
@@ -106,7 +106,7 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
             mcpInfo.deployStatus,
           ) &&
           mcpInfo.deployed !== null &&
-          moment(mcpInfo.deployed).isBefore(mcpInfo.modified) && (
+          dayjs(mcpInfo.deployed).isBefore(mcpInfo.modified) && (
             <span className={cx(styles.text)}>有更新未部署</span>
           )}
         <Button
