@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { renderCodePrismInline } from '@/utils/renderCodePrism';
 import MarkdownCodeToolbar from '../MarkdownCodeToolbar';
@@ -25,7 +25,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   onCopy,
   codeKey,
   mermaid: MermaidCode,
-  ...rest
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const classNames = Array.isArray(className) ? className : [className];
@@ -38,7 +37,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     : String(children || '');
   const codeContent = String(theCodeString).replace(/\n$/, '');
 
-  console.log('CodeBlock', language, codeKey, className, children, rest);
+  // console.log('CodeBlock', language, codeKey, className, children, rest);
 
   // 使用稳定的blockId，避免每次渲染都生成新的ID
   const blockId = useMemo(() => {
@@ -93,9 +92,15 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     },
     [isMermaid, MermaidCode], // 依赖 MermaidCode 组件
   );
+  useEffect(() => {
+    console.log('CodeBlock mount', blockId, theCodeString);
+    return () => {
+      console.log('CodeBlock unmount', blockId, theCodeString);
+    };
+  }, []);
 
   return (
-    <div className={styles['code-block-wrapper']}>
+    <div key={blockId} className={styles['code-block-wrapper']}>
       <MarkdownCodeToolbar
         title={language}
         language={language}
@@ -109,6 +114,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
       />
       <pre className={className}>
         <CodeElement
+          key={`${blockId}-code-element`}
           value={theCodeString}
           requestId={requestId || ''}
           className={className || ''}

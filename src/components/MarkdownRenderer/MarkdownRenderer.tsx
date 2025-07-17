@@ -1,7 +1,14 @@
 import classNames from 'classnames';
 // import 'highlight.js/styles/github.css';
 import { isEqual } from 'lodash';
-import React, { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
@@ -17,6 +24,7 @@ import mermaid from './mermaid';
 import { presetConfigs } from './presets';
 import type { MarkdownRendererConfig, MarkdownRendererProps } from './types';
 
+import { throttle } from 'lodash';
 import MarkdownCustomProcess from '../MarkdownCustomProcess';
 import CodeBlock from './CodeBlock';
 import { LinkComponent, ParagraphComponent } from './MarkdownComponents';
@@ -27,7 +35,17 @@ import { OptimizedList, OptimizedListItem } from './OptimizedList';
 // type Token = any;
 
 const cx = classNames.bind(styles);
+// function splitMarkdown(markdownContent: string, chunkCount: number) {
+//   const lines = markdownContent.split('\n');
+//   const chunkSize = Math.ceil(lines.length / chunkCount);
+//   const chunks = [];
 
+//   for (let i = 0; i < lines.length; i += chunkSize) {
+//     chunks.push(lines.slice(i, i + chunkSize).join('\n'));
+//   }
+
+//   return chunks;
+// }
 /**
  * Markdown 渲染器组件
  * 使用 react-markdown 替代 markdown-it，提供更好的流式渲染支持
@@ -35,6 +53,7 @@ const cx = classNames.bind(styles);
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
   ({ id: requestId, content, className, mermaid, onCopy }) => {
     const containerRef = useRef<HTMLDivElement>(null);
+    // const [markdownContent, setMarkdownContent] = useState(content);
 
     // 用于生成稳定的图片key
     const imageKeyCounter = useRef(0);
@@ -124,7 +143,6 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
           const { children, ...rest } = props;
           const hasCode = children && children?.props?.node?.tagName === 'code';
 
-          console.log('pre', props, hasCode);
           if (!hasCode) {
             return <pre {...props}>{children}</pre>;
           }
@@ -136,7 +154,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
             '',
           );
           const codeKey = getCodeKey(codeContent, language);
-          console.log('codeKey', codeKey);
+          // console.log('codeKey', codeKey, codeContent, language);
           return (
             <CodeBlock
               key={codeKey}
@@ -173,13 +191,13 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
         ),
         // 优化的列表组件 - 使用计数器避免循环引用
         ul: ({ children }: any) => {
-          const listKey = getListKey(children, listKeyCounter.current++);
-          console.log('ul', listKey);
+          // const listKey = getListKey(children, listKeyCounter.current++);
+          // console.log('ul', listKey);
           return <OptimizedList ordered={false}>{children}</OptimizedList>;
         },
         ol: ({ children }: any) => {
-          const listKey = getListKey(children, listKeyCounter.current++);
-          console.log('ol', listKey);
+          // const listKey = getListKey(children, listKeyCounter.current++);
+          // console.log('ol', listKey);
           return <OptimizedList ordered={true}>{children}</OptimizedList>;
         },
         'markdown-custom-process': ({ children, ...rest }: any) => {
@@ -197,9 +215,9 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
         },
         li: ({ children }: any) => {
           // 为列表项生成稳定的key
-          const content = String(children).slice(0, 100);
-          const itemKey = getListItemKey(content, listItemKeyCounter.current++);
-          console.log('li', itemKey);
+          // const content = String(children).slice(0, 100);
+          // const itemKey = getListItemKey(content, listItemKeyCounter.current++);
+          // console.log('li', itemKey);
           return <OptimizedListItem>{children}</OptimizedListItem>;
         },
         // 支持表格样式
@@ -244,15 +262,29 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
       ],
       [],
     );
-
-    // 处理自定义内容（如果有的话）
-    const processedContent = useMemo(() => {
-      if (!content) return '';
-
-      // 这里可以添加自定义内容处理逻辑
-      // 比如处理特殊的自定义组件标记
-      return content;
-    }, [content]);
+    // // 使用节流减少更新频率
+    // const throttledUpdate = useMemo(
+    //   () =>
+    //     throttle(
+    //       (_content: string) => {
+    //         setMarkdownContent(_content);
+    //       },
+    //       2000,
+    //       {
+    //         leading: true,
+    //         trailing: true,
+    //       },
+    //     ),
+    //   [],
+    // );
+    // useEffect(() => {
+    //   // 模拟流式数据
+    //   throttledUpdate(content || '');
+    //   return () => {
+    //     // clearInterval(timer);
+    //     throttledUpdate.cancel();
+    //   };
+    // }, [throttledUpdate, content]);
 
     // 清理key映射
     useEffect(() => {
@@ -281,7 +313,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
           rehypePlugins={rehypePlugins}
           className={styles['react-markdown']}
         >
-          {processedContent}
+          {content}
         </ReactMarkdown>
       </div>
     );
@@ -308,7 +340,7 @@ export const createMarkdownRenderer = (
     Omit<MarkdownRendererProps, 'config'> & {
       config?: Partial<MarkdownRendererConfig>;
     }
-  >(({ config = {}, ...props }) => {
+  >(({ config = {}, content, ...props }) => {
     const mergedConfig = useMemo(
       () => ({
         ...defaultConfig,
@@ -323,10 +355,35 @@ export const createMarkdownRenderer = (
       }),
       [config],
     );
+    const [markdownContent, setMarkdownContent] = useState('');
+    // 使用节流减少更新频率
+    const throttledUpdate = useMemo(
+      () =>
+        throttle(
+          (_content: string) => {
+            setMarkdownContent(_content);
+          },
+          2000,
+          {
+            leading: true,
+            trailing: true,
+          },
+        ),
+      [],
+    );
+    useEffect(() => {
+      // 模拟流式数据
+      throttledUpdate(content || '');
+      return () => {
+        // clearInterval(timer);
+        throttledUpdate.cancel();
+      };
+    }, [throttledUpdate, content]);
 
     return (
       <MarkdownRenderer
         {...props}
+        content={markdownContent}
         config={mergedConfig}
         mermaid={MermaidCode} // 直接传递组件
       />

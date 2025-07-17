@@ -30,7 +30,7 @@ export default function mermaid(
   const MermaidRenderer: React.FC<MermaidProps> = memo(
     ({ value, requestId, id }) => {
       const [isComplete, setIsComplete] = useState(false);
-      const [renderValue, setRenderValue] = useState('');
+      const [renderValue, setRenderValue] = useState(value);
       // 生成唯一的图表ID
       const chartId: string = `${requestId}-${id}`;
       const validMermaidChart = useCallback(async (_value: string) => {
@@ -53,9 +53,9 @@ export default function mermaid(
       }, [value, validMermaidChart]);
 
       useEffect(() => {
-        console.log('useEffect mount', id, value);
+        console.log('mermaid mount', id, requestId, value);
         return () => {
-          console.log('useEffect unmount', id, value);
+          console.log('mermaid unmount', id, requestId, value);
           setIsComplete(false);
           setRenderValue('');
         };
@@ -120,8 +120,8 @@ export default function mermaid(
 
       // 设置图片数据源
       const imgSrc = `data:image/svg+xml,${encodeURIComponent(imageHTML)}`;
-      console.log('imgSrc', imgSrc);
-      console.log('styles', styles);
+      // console.log('imgSrc', imgSrc);
+      // console.log('styles', styles);
 
       // 编码源代码用于工具栏
       // 编码Mermaid源代码，便于后续功能（如工具栏、复制等）
@@ -148,7 +148,10 @@ export default function mermaid(
       );
     },
     (prevProps, nextProps) => {
-      return prevProps.value === nextProps.value;
+      return (
+        prevProps.id === nextProps.id &&
+        prevProps.requestId === nextProps.requestId
+      );
     },
   );
   /**

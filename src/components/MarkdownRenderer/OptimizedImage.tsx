@@ -3,6 +3,7 @@ import React, {
   CSSProperties,
   memo,
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -39,6 +40,13 @@ const OptimizedImage: React.FC<OptimizedImageProps> = memo(
           : containerClassNames;
       }
     }, [containerClassNames]);
+
+    useEffect(() => {
+      console.log('OptimizedImage mount', src, containerClassName);
+      return () => {
+        console.log('OptimizedImage unmount', src, containerClassName);
+      };
+    }, []);
 
     return (
       <div
