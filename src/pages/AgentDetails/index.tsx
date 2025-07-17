@@ -26,7 +26,7 @@ import { arraysContainSameItems } from '@/utils/common';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, message } from 'antd';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
@@ -125,7 +125,7 @@ const AgentDetails: React.FC = () => {
           role: AssistantRoleEnum.ASSISTANT,
           type: MessageModeEnum.CHAT,
           text: result?.openingChatMsg,
-          time: moment().toString(), // 将 moment 对象转换为字符串以匹配 MessageInfo 类型
+          time: dayjs().toString(),
           id: uuidv4(),
           messageType: MessageTypeEnum.ASSISTANT,
         } as MessageInfo;

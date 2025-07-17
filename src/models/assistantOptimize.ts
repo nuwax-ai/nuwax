@@ -19,7 +19,7 @@ import {
 } from '@/types/interfaces/assistant';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { createSSEConnection } from '@/utils/fetchEventSource';
-import moment from 'moment/moment';
+import dayjs from 'dayjs';
 import { useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -191,7 +191,7 @@ export default () => {
       type: MessageModeEnum.CHAT,
       text: '',
       think: '',
-      time: moment().toString(), // 将 moment 对象转换为字符串以匹配 MessageInfo 类型
+      time: dayjs().toString(),
       id: currentMessageId,
       messageType: MessageTypeEnum.ASSISTANT,
       status: MessageStatusEnum.Loading,

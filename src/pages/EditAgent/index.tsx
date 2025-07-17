@@ -17,8 +17,8 @@ import {
 } from '@/types/interfaces/agent';
 import { addBaseTarget } from '@/utils/common';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import cloneDeep from 'lodash/cloneDeep';
-import moment from 'moment';
 import React, { useEffect, useState } from 'react';
 import { useModel, useParams, useRequest } from 'umi';
 import AgentArrangeConfig from './AgentArrangeConfig';
@@ -120,7 +120,7 @@ const EditAgent: React.FC = () => {
 
     // 已发布的智能体，修改时需要更新修改时间
     if (_agentConfigInfo.publishStatus === PublishStatusEnum.Published) {
-      _agentConfigInfo.modified = moment().toISOString();
+      _agentConfigInfo.modified = dayjs().toString();
     }
 
     setAgentConfigInfo(_agentConfigInfo);
@@ -180,7 +180,7 @@ const EditAgent: React.FC = () => {
   const handleConfirmPublish = () => {
     setOpen(false);
     // 同步发布时间和修改时间
-    const time = moment().toISOString();
+    const time = dayjs().toString();
     // 更新智能体配置信息
     const _agentConfigInfo = {
       ...agentConfigInfo,

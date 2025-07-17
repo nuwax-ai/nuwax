@@ -14,8 +14,8 @@ import {
   getActiveKeys,
   updateNodeField,
 } from '@/utils/deepNode';
+import dayjs from 'dayjs';
 import cloneDeep from 'lodash/cloneDeep';
-import moment from 'moment';
 import React, { useState } from 'react';
 import { useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
@@ -194,7 +194,7 @@ const usePluginConfig = () => {
   const handleConfirmPublishPlugin = () => {
     setOpenModal(false);
     // 同步发布时间和修改时间
-    const time = moment().toISOString();
+    const time = dayjs().toString();
     // 更新插件配置信息
     const _pluginInfo = {
       ...pluginInfo,
