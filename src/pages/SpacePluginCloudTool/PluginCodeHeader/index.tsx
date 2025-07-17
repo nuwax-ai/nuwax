@@ -13,7 +13,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Segmented, Tag } from 'antd';
 import classNames from 'classnames';
-import moment from 'moment/moment';
+import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
 import { useParams } from 'umi';
 import styles from './index.less';
@@ -71,10 +71,12 @@ const PluginCodeHeader: React.FC<PluginCodeHeaderProps> = ({
             className={cx('cursor-pointer', 'hover-box')}
             onClick={onEdit}
           />
-          <CheckCircleOutlined className={cx(styles.circle)} />
+          {pluginInfo?.publishStatus === PublishStatusEnum.Published && (
+            <CheckCircleOutlined className={cx(styles.circle)} />
+          )}
           {/* 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布 */}
           {pluginInfo?.publishDate !== null &&
-            moment(pluginInfo?.publishDate).isBefore(pluginInfo?.modified) && (
+            dayjs(pluginInfo?.publishDate).isBefore(pluginInfo?.modified) && (
               <Tag
                 bordered={false}
                 color="volcano"
@@ -94,7 +96,7 @@ const PluginCodeHeader: React.FC<PluginCodeHeaderProps> = ({
               : '未发布'}
           </span>
           <span className={cx(styles['update-time'])}>
-            配置自动保存于{moment(pluginInfo?.created).format('HH:mm')}
+            配置保存于{dayjs(pluginInfo?.modified).format('HH:mm')}
           </span>
         </div>
       </section>

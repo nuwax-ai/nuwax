@@ -7,7 +7,7 @@ import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { Button, Input, Select, Table, Tooltip, message } from 'antd';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React, { useState } from 'react';
 import RejectAuditModal from './components/RejectAuditModal';
 const cx = classNames.bind(styles);
@@ -271,7 +271,7 @@ const PublishAudit: React.FC = () => {
       render: (value: string) => {
         return (
           <div className={cx('flex', 'items-center', 'h-full')}>
-            {moment(value).format('YYYY-MM-DD HH:mm:ss')}
+            {dayjs(value).format('YYYY-MM-DD HH:mm:ss')}
           </div>
         );
       },

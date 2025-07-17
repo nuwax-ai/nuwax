@@ -48,8 +48,8 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { Form, message } from 'antd';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import { throttle } from 'lodash';
-import moment from 'moment';
 import React, {
   useCallback,
   useEffect,
@@ -248,7 +248,7 @@ const ChatTemp: React.FC = () => {
             role: AssistantRoleEnum.ASSISTANT,
             type: MessageModeEnum.CHAT,
             text: data?.agent?.openingChatMsg,
-            time: moment().toString(), // 将 moment 对象转换为字符串以匹配 MessageInfo 类型
+            time: dayjs().toString(),
             id: uuidv4(),
             messageType: MessageTypeEnum.ASSISTANT,
           } as MessageInfo;
@@ -499,7 +499,7 @@ const ChatTemp: React.FC = () => {
       role: AssistantRoleEnum.USER,
       type: MessageModeEnum.CHAT,
       text: message,
-      time: moment().toString(),
+      time: dayjs().toString(),
       attachments,
       id: uuidv4(),
       messageType: MessageTypeEnum.USER,
@@ -512,7 +512,7 @@ const ChatTemp: React.FC = () => {
       type: MessageModeEnum.CHAT,
       text: '',
       think: '',
-      time: moment().toString(), // 将 moment 对象转换为字符串以匹配 MessageInfo 类型
+      time: dayjs().toString(),
       id: currentMessageId,
       messageType: MessageTypeEnum.ASSISTANT,
       status: MessageStatusEnum.Loading,

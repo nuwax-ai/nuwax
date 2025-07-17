@@ -42,7 +42,7 @@ import { RequestResponse } from '@/types/interfaces/request';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
-import moment from 'moment/moment';
+import dayjs from 'dayjs';
 import { useCallback, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
@@ -542,7 +542,7 @@ export default () => {
       role: AssistantRoleEnum.USER,
       type: MessageModeEnum.CHAT,
       text: messageInfo,
-      time: moment().toString(),
+      time: dayjs().toString(),
       attachments,
       id: uuidv4(),
       messageType: MessageTypeEnum.USER,
@@ -555,7 +555,7 @@ export default () => {
       type: MessageModeEnum.CHAT,
       text: '',
       think: '',
-      time: moment().toString(), // 将 moment 对象转换为字符串以匹配 MessageInfo 类型
+      time: dayjs().toString(),
       id: currentMessageId,
       messageType: MessageTypeEnum.ASSISTANT,
       status: MessageStatusEnum.Loading,

@@ -4,7 +4,7 @@ import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Empty, message, Modal } from 'antd';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React, { useEffect } from 'react';
 import { history, useModel, useRequest } from 'umi';
 import styles from './index.less';
@@ -88,7 +88,7 @@ const HistoryConversation: React.FC = () => {
                   onClick={() => handleLink(item.id, item.agentId)}
                 >
                   <p className={cx('flex-1', 'text-ellipsis')}>{item.topic}</p>
-                  <span>{moment(item.created).format('MM-DD HH:mm')}</span>
+                  <span>{dayjs(item.created).format('MM-DD HH:mm')}</span>
                 </div>
               </CustomPopover>
             ))}

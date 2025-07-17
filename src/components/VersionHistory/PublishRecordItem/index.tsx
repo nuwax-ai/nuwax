@@ -1,7 +1,7 @@
 import ConditionRender from '@/components/ConditionRender';
 import { HistoryData } from '@/types/interfaces/publish';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React from 'react';
 import styles from './index.less';
 
@@ -28,7 +28,7 @@ const PublishRecordItem: React.FC<PublishRecordItemProps> = ({
           {info.opUser?.nickName || info.opUser?.userName}
         </span>
         <span className={cx(styles['author-update-time'])}>
-          {moment(info.created).format('YYYY-MM-DD HH:mm')}
+          {dayjs(info.created).format('YYYY-MM-DD HH:mm')}
         </span>
       </div>
       <ConditionRender condition={info.description}>

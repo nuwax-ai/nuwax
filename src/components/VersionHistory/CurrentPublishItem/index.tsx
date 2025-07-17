@@ -1,7 +1,7 @@
 import { PublishStatusEnum } from '@/types/enums/common';
 import { CurrentPublishItemProps } from '@/types/interfaces/publish';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React from 'react';
 import styles from './index.less';
 
@@ -29,7 +29,7 @@ const CurrentPublishItem: React.FC<CurrentPublishItemProps> = ({
         <span className={cx(styles['p-time'], 'text-ellipsis')}>
           {`${
             info?.publishUser?.nickName || info?.publishUser?.userName
-          }发布于${moment(info?.publishDate).format('YYYY-MM-DD HH:mm')}`}
+          }发布于${dayjs(info?.publishDate).format('YYYY-MM-DD HH:mm')}`}
         </span>
       </div>
       <div

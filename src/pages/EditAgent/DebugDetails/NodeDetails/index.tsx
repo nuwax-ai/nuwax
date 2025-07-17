@@ -2,7 +2,7 @@ import { EllipsisTooltip } from '@/components/EllipsisTooltip';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { NodeDetailsProps } from '@/types/interfaces/agentConfig';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import type React from 'react';
 import { useMemo } from 'react';
 import styles from './index.less';
@@ -61,13 +61,13 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
       {renderDetailItem(
         '发起时间',
         node?.startTime
-          ? moment(node?.startTime).format('YYYY-MM-DD HH:mm')
+          ? dayjs(node?.startTime).format('YYYY-MM-DD HH:mm')
           : '',
         styles['mt-10'],
       )}
       {renderDetailItem(
         '结束时间',
-        node?.endTime ? moment(node?.endTime).format('YYYY-MM-DD HH:mm') : '',
+        node?.endTime ? dayjs(node?.endTime).format('YYYY-MM-DD HH:mm') : '',
         styles['mt-10'],
       )}
     </>

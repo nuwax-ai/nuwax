@@ -1,12 +1,12 @@
 import { ACCESS_TOKEN, EXPIRE_DATE } from '@/constants/home.constants';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { Navigate, Outlet } from 'umi';
 
 const Auth = () => {
   const token = localStorage.getItem(ACCESS_TOKEN);
   if (token) {
     const expireTime = localStorage.getItem(EXPIRE_DATE);
-    const currentTime = moment().millisecond();
+    const currentTime = dayjs().millisecond();
     console.log(expireTime, 'expireTime');
     console.log(currentTime, 'currentTime');
 

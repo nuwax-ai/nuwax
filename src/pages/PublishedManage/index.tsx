@@ -5,7 +5,7 @@ import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { Button, Input, Pagination, Select, Table, Tooltip } from 'antd';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import OffshelfModal from './components/OffshelfModal';
 import styles from './index.less';
@@ -228,7 +228,7 @@ const PublishManage: React.FC = () => {
       render: (value: string) => {
         return (
           <div className={cx('flex', 'items-center', 'h-full')}>
-            {moment(value).format('YYYY-MM-DD HH:mm:ss')}
+            {dayjs(value).format('YYYY-MM-DD HH:mm:ss')}
           </div>
         );
       },

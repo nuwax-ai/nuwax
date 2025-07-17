@@ -14,9 +14,10 @@ import {
   getActiveKeys,
   updateNodeField,
 } from '@/utils/deepNode';
+import { message } from 'antd';
+import dayjs from 'dayjs';
 import cloneDeep from 'lodash/cloneDeep';
-import moment from 'moment';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -48,6 +49,7 @@ const usePluginConfig = () => {
   const [outputConfigArgs, setOutputConfigArgs] = useState<BindConfigWithSub[]>(
     [],
   );
+  const isClickSaveBtnRef = useRef<boolean>(false);
 
   // 入参配置 - changeValue
   const handleInputValue = (
@@ -194,13 +196,29 @@ const usePluginConfig = () => {
   const handleConfirmPublishPlugin = () => {
     setOpenModal(false);
     // 同步发布时间和修改时间
-    const time = moment().toISOString();
+    const time = dayjs().toString();
     // 更新插件配置信息
     const _pluginInfo = {
       ...pluginInfo,
       publishDate: time,
       modified: time,
       publishStatus: PublishStatusEnum.Published,
+    } as PluginInfo;
+    setPluginInfo(_pluginInfo);
+  };
+
+  // 更新成功
+  const handleUpdateSuccess = () => {
+    if (isClickSaveBtnRef.current) {
+      message.success('插件保存成功');
+      isClickSaveBtnRef.current = false;
+    }
+    // 更新修改时间
+    const time = dayjs().toString();
+    // 更新插件配置信息
+    const _pluginInfo = {
+      ...pluginInfo,
+      modified: time,
     } as PluginInfo;
     setPluginInfo(_pluginInfo);
   };
@@ -237,6 +255,8 @@ const usePluginConfig = () => {
     handleOutputConfigAdd,
     handleOutputConfigArgs,
     handleConfirmPublishPlugin,
+    handleUpdateSuccess,
+    isClickSaveBtnRef,
   };
 };
 

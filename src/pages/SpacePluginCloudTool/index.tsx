@@ -19,18 +19,9 @@ import { CascaderChange, CascaderValue } from '@/utils';
 import { getActiveKeys } from '@/utils/deepNode';
 import { DeleteOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import {
-  Button,
-  Cascader,
-  Checkbox,
-  Input,
-  message,
-  Space,
-  Table,
-  Tooltip,
-} from 'antd';
+import { Button, Cascader, Checkbox, Input, Space, Table, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import styles from './index.less';
 import PluginCodeHeader from './PluginCodeHeader';
@@ -81,9 +72,9 @@ const SpacePluginCloudTool: React.FC = () => {
     handleOutputConfigAdd,
     handleOutputConfigArgs,
     handleConfirmPublishPlugin,
+    handleUpdateSuccess,
+    isClickSaveBtnRef,
   } = usePluginConfig();
-
-  const isClickSaveBtnRef = useRef<boolean>(false);
 
   // 查询插件信息
   const { run: runPluginInfo } = useRequest(apiPluginInfo, {
@@ -109,10 +100,7 @@ const SpacePluginCloudTool: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      if (isClickSaveBtnRef.current) {
-        message.success('插件保存成功');
-        isClickSaveBtnRef.current = false;
-      }
+      handleUpdateSuccess();
     },
   });
 
