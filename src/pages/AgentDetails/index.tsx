@@ -57,6 +57,7 @@ const AgentDetails: React.FC = () => {
     string,
     string | number
   > | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
   // 会话输入框已选择组件
   const {
@@ -102,10 +103,11 @@ const AgentDetails: React.FC = () => {
   }, [requiredNameList, variableParams]);
 
   // 已发布的智能体详情接口
-  const { run: runDetail, loading } = useRequest(apiPublishedAgentInfo, {
+  const { run: runDetail } = useRequest(apiPublishedAgentInfo, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: AgentDetailDto) => {
+      setLoading(false);
       setAgentDetail(result);
       // 会话问题建议
       setChatSuggestList(result?.openingGuidQuestions || []);
@@ -133,9 +135,13 @@ const AgentDetails: React.FC = () => {
       }
       setIsLoaded(true);
     },
+    onError: () => {
+      setLoading(false);
+    },
   });
 
   useEffect(() => {
+    setLoading(true);
     runDetail(agentId);
 
     return () => {
@@ -238,7 +244,6 @@ const AgentDetails: React.FC = () => {
                   {/*会话建议*/}
                   <RecommendList
                     itemClassName={styles['suggest-item']}
-                    loading={loading}
                     chatSuggestList={chatSuggestList}
                     onClick={handleMessageSend}
                   />
@@ -255,7 +260,6 @@ const AgentDetails: React.FC = () => {
                       <RecommendList
                         className="mt-16"
                         itemClassName={cx(styles['suggest-item'])}
-                        loading={loading}
                         chatSuggestList={chatSuggestList}
                         onClick={handleMessageSend}
                       />
@@ -279,6 +283,7 @@ const AgentDetails: React.FC = () => {
       </div>
       <AgentSidebar
         agentId={agentId}
+        loading={loading}
         agentDetail={agentDetail}
         onToggleCollectSuccess={handleToggleCollectSuccess}
       />
