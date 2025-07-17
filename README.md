@@ -69,11 +69,11 @@ chmod +x nuwax-cli
 - 管理员密码
 - 站点信息配置
 
-  ![alt text](/images/image-101.png)
+  ![alt text](https://nuwax.com/images/image-101.png)
 
 - 邮件服务配置，用于你的用户登录注册收取验证码。
 
-  ![alt text](/images/image-91.png)
+  ![alt text](https://nuwax.com/images/image-91.png)
 
 ### 部署故障排查
 
@@ -150,7 +150,7 @@ chmod +x nuwax-cli
 - **macOS**: 允许未知开发者运行，确保OrbStack或Docker Desktop已启动
 
 典型错误如下: 出现关键字"Permission denied"
-![img.png](images/deploy/img-permission.png)
+![img.png](https://nuwax.com/images/deploy/img-permission.png)
 
 
 使用 `sudo` 来执行命令，重新执行一键部署命令 `sudo ./nuwax-cli auto-upgrade-deploy run`
@@ -169,12 +169,12 @@ chmod +x nuwax-cli
 
 然后在浏览器打开 "http://localhost" 查看是否正常访问。
 
-![ducker命令界面](images/deploy/CleanShot%202025-07-09%20at%2011.05.55@2x.png)
+![ducker命令界面](https://nuwax.com/images/deploy/CleanShot%202025-07-09%20at%2011.05.55@2x.png)
 
 
 ### 6. 解压失败,错误:Directory not empty(os error 39)
 
-![img.png](images/deploy/img.png)
+![img.png](https://nuwax.com/images/deploy/img.png)
 
 先完全停止掉docker服务(如果有部分之前的docker应用，已经启动的话，执行命令 `./nuwax-cli docker-service stop`停止), 然后手动删掉工作目录下的 docker 目录。然后重新执行 `./nuwax-cli auto-upgrade-deploy run` 命令自动部署。
 
@@ -189,7 +189,7 @@ chmod +x nuwax-cli
 ```
 ### 7. 进入界面，但界面提示系统异常
 
-![img.png](images/deploy/img-login-system-error.png)
+![img.png](https://nuwax.com/images/deploy/img-login-system-error.png)
 
 启动成功，但界面提示系统异常，可以看后台系统日志，工作目录下的： ./docker/logs/agent/app.log ，可以查看具体错误信息。
 有时某个容器成功启动了，但可能会意外出现错误，比如redis容器出现无法写数据到磁盘的错误信息： "MISCONF Redis is configured to save RDB snapshots, but it's currently unable to persist to disk."
@@ -209,7 +209,7 @@ chmod +x nuwax-cli
 ```
 
 ### 8. 下载失败:error decoding response body
-![img.png](images/deploy/img-download-error.png)
+![img.png](https://nuwax.com/images/deploy/img-download-error.png)
 下载失败，这种一般是网络原因，直接重试下载就行了，会断点续传文件继续下载。
 ```shell
 # 重新执行一键部署命令,如果是在部署的时候失败的话,会自动重新下载
