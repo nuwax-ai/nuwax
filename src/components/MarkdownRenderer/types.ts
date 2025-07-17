@@ -53,12 +53,25 @@ export interface MarkdownRendererConfig {
   };
 }
 
+export interface MermaidOptions {
+  securityLevel?: 'loose' | 'strict' | 'antiscript' | 'sandbox';
+  [key: string]: any;
+}
+
+export interface MermaidProps {
+  value: string;
+  requestId: string;
+  id: string;
+  className?: string;
+  language?: string;
+}
 // 组件 Props 类型
 export interface MarkdownRendererProps {
   id: string;
   content: string;
   config?: MarkdownRendererConfig;
   className?: string;
+  mermaid: (props: MermaidProps) => React.ReactNode;
   onCopy?: () => void;
 }
 

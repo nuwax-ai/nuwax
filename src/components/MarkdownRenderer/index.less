@@ -1,319 +1,468 @@
 @import '@/styles/color';
 @import '@/styles/theme';
 
+// .markdown-container {
+//   // 基础容器样式
+//   width: 100%;
+//   word-wrap: break-word;
+//   word-break: break-word;
+//   color: rgba(0, 0, 0, 90%);
+//   position: relative;
+
+//   // 扩展盒子样式
+//   :global(.ext-box) {
+//     padding: 4px 8px;
+//     border-radius: 4px;
+//     background: #f1f3f4;
+//     border: 1px solid #dadce0;
+//     font-size: 12px;
+//     color: #5f6368;
+//     transition: all 0.2s ease;
+
+//     &:hover {
+//       background: #e8eaed;
+//       border-color: #dadce0;
+//     }
+
+//     img {
+//       width: 14px;
+//       height: 14px;
+//       margin-right: 4px;
+//     }
+//   }
+
+//   // 折叠按钮样式
+//   :global(.collapse-btn) {
+//     display: flex;
+//     align-items: center;
+//     cursor: pointer;
+
+//     .collapse-text {
+//       font-size: 12px;
+//     }
+//   }
+
+//   // 复制按钮样式
+//   :global(.copy-btn) {
+//     display: flex;
+//     align-items: center;
+//     cursor: pointer;
+//   }
+
+//   :global(.copy-img) {
+//     width: 14px;
+//     height: 14px;
+//     margin-right: 4px;
+//   }
+
+//   // 表格样式
+//   // :global(.markdown-it-custom-table) {
+//   //   margin: 16px 0;
+//   //   overflow-x: auto;
+
+//   //   table {
+//   //     width: 100%;
+//   //     border-collapse: collapse;
+//   //     border-spacing: 0;
+//   //     background: #fff;
+//   //     border: 1px solid #e1e4e8;
+//   //     border-radius: 6px;
+//   //     overflow: hidden;
+
+//   //     th,
+//   //     td {
+//   //       padding: 12px 16px;
+//   //       text-align: left;
+//   //       border-bottom: 1px solid #e1e4e8;
+//   //       vertical-align: top;
+//   //     }
+
+//   //     th {
+//   //       background: #f6f8fa;
+//   //       font-weight: 600;
+//   //       color: #24292e;
+//   //     }
+
+//   //     tr:last-child {
+//   //       th,
+//   //       td {
+//   //         border-bottom: none;
+//   //       }
+//   //     }
+
+//   //     tr:nth-child(even) {
+//   //       background: #f6f8fa;
+//   //     }
+//   //   }
+//   // }
+
+//   // 图片样式
+//   img {
+//     max-width: 100%;
+//     height: auto;
+//     cursor: pointer;
+//     border-radius: 4px;
+//     transition: transform 0.2s ease;
+
+//     // &:hover {
+//     //   transform: scale(1.02);
+//     // }
+//   }
+
+//   // 图片容器和延迟加载样式
+//   :global {
+//     .markdownItImageContainer {
+//       margin-top: 16px;
+//       margin-bottom: 16px;
+//       display: inline-block;
+//       min-height: 24px;
+//       min-width: 24px;
+//       position: relative;
+//       line-height: 0;
+//     }
+
+//     .markdownItLazyImage {
+//       opacity: 0;
+//       transition: opacity 0.3s ease;
+
+//       &.loaded {
+//         opacity: 1;
+//       }
+//     }
+//   }
+
+//   // 图片浮层样式
+//   // :global(.image-overlay) {
+//   //   position: fixed;
+//   //   top: 0;
+//   //   left: 0;
+//   //   width: 100%;
+//   //   height: 100%;
+//   //   background: rgba(0, 0, 0, 80%);
+//   //   display: flex;
+//   //   justify-content: center;
+//   //   align-items: center;
+//   //   z-index: 9999;
+//   //   opacity: 0;
+//   //   transition: opacity 0.3s ease;
+//   //   cursor: pointer;
+
+//   //   img {
+//   //     max-width: 90%;
+//   //     max-height: 90%;
+//   //     object-fit: contain;
+//   //     transform: scale(0.9);
+//   //     transition: transform 0.3s ease;
+//   //     cursor: zoom-in;
+//   //   }
+//   // }
+
+//   // KaTeX 数学公式样式
+//   .katex {
+//     font-size: 1.1em;
+//   }
+
+//   .katex-display {
+//     margin: 16px 0;
+//     text-align: center;
+//   }
+
+// }
+
 .markdown-container {
-  // 基础容器样式
-  width: 100%;
-  word-wrap: break-word;
-  word-break: break-word;
-  color: rgba(0, 0, 0, 90%);
-  position: relative;
-
-  // 扩展盒子样式
-  :global(.ext-box) {
-    padding: 4px 8px;
-    border-radius: 4px;
-    background: #f1f3f4;
-    border: 1px solid #dadce0;
-    font-size: 12px;
-    color: #5f6368;
-    transition: all 0.2s ease;
-
-    &:hover {
-      background: #e8eaed;
-      border-color: #dadce0;
-    }
-
-    img {
-      width: 14px;
-      height: 14px;
-      margin-right: 4px;
-    }
-  }
-
-  // 折叠按钮样式
-  :global(.collapse-btn) {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-
-    .collapse-text {
-      font-size: 12px;
-    }
-  }
-
-  // 复制按钮样式
-  :global(.copy-btn) {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-  }
-
-  :global(.copy-img) {
-    width: 14px;
-    height: 14px;
-    margin-right: 4px;
-  }
-
-  // 表格样式
-  // :global(.markdown-it-custom-table) {
-  //   margin: 16px 0;
-  //   overflow-x: auto;
-
-  //   table {
-  //     width: 100%;
-  //     border-collapse: collapse;
-  //     border-spacing: 0;
-  //     background: #fff;
-  //     border: 1px solid #e1e4e8;
-  //     border-radius: 6px;
-  //     overflow: hidden;
-
-  //     th,
-  //     td {
-  //       padding: 12px 16px;
-  //       text-align: left;
-  //       border-bottom: 1px solid #e1e4e8;
-  //       vertical-align: top;
-  //     }
-
-  //     th {
-  //       background: #f6f8fa;
-  //       font-weight: 600;
-  //       color: #24292e;
-  //     }
-
-  //     tr:last-child {
-  //       th,
-  //       td {
-  //         border-bottom: none;
-  //       }
-  //     }
-
-  //     tr:nth-child(even) {
-  //       background: #f6f8fa;
-  //     }
-  //   }
-  // }
-
-  // 图片样式
-  img {
-    max-width: 100%;
-    height: auto;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: transform 0.2s ease;
-
-    // &:hover {
-    //   transform: scale(1.02);
-    // }
-  }
-
-  // 图片容器和延迟加载样式
-  :global {
-    .markdownItImageContainer {
-      margin-top: 16px;
+  .react-markdown {
+    line-height: 1.6;
+    color: inherit;
+    // 基础 Markdown 元素样式
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      margin-top: 24px;
       margin-bottom: 16px;
-      display: inline-block;
-      min-height: 24px;
-      min-width: 24px;
-      position: relative;
-      line-height: 0;
+      font-weight: 600;
+      line-height: 1.25;
+      color: rgba(0, 0, 0, 90%);
+      letter-spacing: 0;
     }
 
-    .markdownItLazyImage {
-      opacity: 0;
-      transition: opacity 0.3s ease;
-
-      &.loaded {
-        opacity: 1;
-      }
+    h1 {
+      font-size: 2em;
+      border-bottom: 1px solid #eaecef;
+      line-height: 32px;
+      padding-bottom: 0.3em;
     }
-  }
 
-  // 图片浮层样式
-  :global(.image-overlay) {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 80%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    cursor: pointer;
-
-    img {
-      max-width: 90%;
-      max-height: 90%;
-      object-fit: contain;
-      transform: scale(0.9);
-      transition: transform 0.3s ease;
-      cursor: zoom-in;
+    h2 {
+      font-size: 1.5em;
+      line-height: 28px;
     }
-  }
 
-  // KaTeX 数学公式样式
-  .katex {
-    font-size: 1.1em;
-  }
+    h3 {
+      font-size: 1.25em;
+      line-height: 26px;
+    }
 
-  .katex-display {
-    margin: 16px 0;
-    text-align: center;
-  }
+    h4 {
+      font-size: 1em;
+    }
 
-  // 基础 Markdown 元素样式
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    margin: 24px 0 16px;
-    font-weight: 600;
-    line-height: 1.25;
-    color: rgba(0, 0, 0, 90%);
-    letter-spacing: 0;
-  }
+    h5 {
+      font-size: 0.875em;
+    }
 
-  h1 {
-    font-size: 20px;
-    border-bottom: 1px solid #eaecef;
-    line-height: 32px;
-    padding-bottom: 0.3em;
-  }
+    h6 {
+      font-size: 0.85em;
+    }
 
-  h2 {
-    font-size: 18px;
-    line-height: 28px;
-    // border-bottom: 1px solid #eaecef;
-    // padding-bottom: 0.3em;
-  }
+    p,
+    :global(.paragraph) {
+      margin-bottom: 16px;
+      line-height: 26px;
+      font-size: 16px;
+      letter-spacing: 0;
+      font-weight: 400;
+    }
 
-  h3 {
-    font-size: 16px;
-    line-height: 26px;
-  }
+    p:last-child,
+    :global(.paragraph):last-child {
+      margin-bottom: 0;
+    }
 
-  h4 {
-    font-size: 16px;
-  }
+    blockquote,
+    q {
+      quotes: none;
+    }
 
-  h5 {
-    font-size: 16px;
-  }
-
-  h6 {
-    font-size: 16px;
-  }
-
-  p,
-  :global(.paragraph) {
-    margin-bottom: 16px;
-    line-height: 26px;
-    font-size: 16px;
-    letter-spacing: 0;
-    font-weight: 400;
-  }
-
-  p:last-child,
-  :global(.paragraph):last-child {
-    margin-bottom: 0;
-  }
-
-  blockquote,
-  q {
-    quotes: none;
-  }
-
-  blockquote {
-    margin-bottom: 16px;
-    padding: 0 1em;
-    border-left: 0.25em solid rgba(0, 0, 0, 15%);
-  }
-
-  ul {
-    list-style: disc;
+    blockquote {
+      margin-bottom: 16px;
+      padding: 0 1em;
+      border-left: 0.25em solid rgba(0, 0, 0, 15%);
+    }
 
     ul {
-      list-style: circle;
+      list-style: disc;
 
       ul {
-        list-style: square;
+        list-style: circle;
+
+        ul {
+          list-style: square;
+        }
       }
     }
-  }
 
-  ol {
-    list-style: decimal;
-  }
+    ol {
+      list-style: decimal;
+    }
 
-  ul,
-  ol {
-    padding-left: 24px;
-    margin-bottom: 16px;
+    ul,
+    ol {
+      padding-left: 24px;
+      margin-bottom: 16px;
 
-    li {
-      list-style: unset;
+      li {
+        list-style: unset;
+        margin-bottom: 12px;
+      }
+    }
+    // 兼容自定义类
+    .markdown-ul {
+      margin-bottom: 16px;
+    }
+
+    .markdown-li {
       margin-bottom: 12px;
     }
-  }
 
-  :global(.paragraph) {
-    font-size: 16px;
-    margin-bottom: 16px;
-  }
+    hr {
+      border: none;
+      border-top: 1px solid #d9d9d9;
+      margin: 24px 0;
+    }
 
-  :global(li .paragraph) {
-    margin-bottom: 12px;
-  }
+    a {
+      color: #1783ff;
+      text-decoration: underline;
+    }
 
-  hr {
-    border: none;
-    border-top: 0.5px solid rgba(0, 0, 0, 13%);
-  }
+    // pre code {
+    //   background: transparent;
+    //   padding: 0;
+    // }
 
-  a {
-    color: #1783ff;
-    text-decoration: underline;
-  }
+    strong {
+      font-weight: 600;
+    }
 
-  code {
-    padding: 0.2em 0.4em;
-    margin: 0;
-    font-size: 85%;
-    background-color: rgba(27, 31, 35, 5%);
-    border-radius: 3px;
-    font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
-  }
+    em {
+      font-style: italic;
+    }
+    // 基础样式
+    // 删除重复的h1-h6、ul、ol、hr等选择器定义，保留一组即可
 
-  :not(pre) > code[class*='language-'],
-  pre[class*='language-'] {
-    background-color: transparent;
-    padding: 10px;
-    margin: 0;
-    box-sizing: border-box;
-    white-space: pre-wrap;
-    word-break: break-word;
-    overflow-x: auto;
-  }
+    // 段落样式
+    .markdown-paragraph {
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
 
-  pre code {
-    background: transparent;
-    padding: 0;
-  }
+    // 图片容器样式 - 防止闪动
+    .image-container {
+      margin: 16px 0;
+      border-radius: 6px;
+      overflow: hidden;
+      // background-color: #f5f5f5;
+      position: relative;
+    }
 
-  strong {
-    font-weight: 600;
-  }
+    // 图片样式
+    .markdown-image {
+      border-radius: 6px;
+      transition: transform 0.2s ease;
 
-  em {
-    font-style: italic;
+      &:hover {
+        transform: scale(1.02);
+      }
+    }
+
+    .image-loaded {
+      opacity: 1;
+    }
+
+    // 图片加载状态
+    .image-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .loading-spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #1890ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 8px;
+    }
+
+    // 图片错误状态
+    .image-error-container {
+      margin: 16px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100px;
+    }
+
+    .image-error {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 16px;
+      background-color: #fff2f0;
+      border: 1px solid #ffccc7;
+      border-radius: 6px;
+      color: #ff4d4f;
+      font-size: 14px;
+    }
+
+    // 链接样式
+    .markdown-link {
+      color: #1890ff;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    // 表格样式
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 16px 0;
+    }
+
+    .markdown-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #d9d9d9;
+
+      th,
+      td {
+        padding: 8px 12px;
+        border: 1px solid #d9d9d9;
+        text-align: left;
+      }
+
+      th {
+        background-color: #fafafa;
+        font-weight: 600;
+      }
+    }
+
+    // 引用样式
+    .markdown-blockquote {
+      margin: 16px 0;
+      padding: 0 16px;
+      color: #666;
+      border-left: 4px solid #d9d9d9;
+      background-color: #fafafa;
+    }
+
+    // 代码块样式
+    // .code-block-wrapper {
+    //   margin: 16px 0;
+    // }
+    // 代码块样式
+    .code-block-wrapper {
+      margin: 16px 0;
+      border-radius: 6px;
+      background: #f6f8fa;
+      overflow: hidden;
+      border: 0.5px solid @CODE_BORDER;
+    }
+
+    pre[class*='language-'] {
+      border-radius: 6px;
+      overflow-x: auto;
+      position: relative;
+      text-shadow: none;
+      background-color: #f6f8fa;
+      padding: 16px;
+
+      code[class*='language-'] {
+        background: none;
+        padding: 0;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+    }
+
+    // code[class*="language-"] {
+    //   background-color: #f6f8fa;
+    //   padding: 2px 4px;
+    //   border-radius: 3px;
+    //   font-size: 85%;
+    // }
+
+    // 列表样式
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
   }
 }
 
@@ -385,6 +534,15 @@
 }
 
 :global {
+  .mermaid-container-img {
+    // margin: 0 auto;
+    // border-radius: 6px;
+    // overflow: hidden;
+    // background-color: #f5f5f5;
+    // position: relative;
+    text-align: center;
+  }
+
   .mermaid-wrapper {
     .mermaid-container {
       min-height: 100px;
@@ -400,41 +558,32 @@
     }
   }
 }
-// 代码块样式
-:global(.code-block-wrapper) {
-  width: 100%;
-  margin: 16px 0;
-  border-radius: @BORDER_RADIUS_BASE;
-  background: #fff;
-  border: 0.5px solid @CODE_BORDER;
-  overflow: hidden;
-}
 
-:global(.code-header) {
-  padding: 8px 12px;
-  background: #fff;
-  border-bottom: 0.5px solid @CODE_BORDER;
-  font-size: 12px;
-  color: #586069;
-}
+// :global(.code-header) {
+//   padding: 8px 12px;
+//   background: #fff;
+//   border-bottom: 0.5px solid @CODE_BORDER;
+//   font-size: 12px;
+//   color: #586069;
+// }
 
-:global(.code-body) {
-  padding: 16px;
-  background: #f6f8fa;
+// :global(.code-body) {
+//   padding: 16px;
+//   background: #f6f8fa;
 
-  pre {
-    margin: 0;
-    background: transparent;
-    border: none;
-    padding: 0;
-    overflow-x: auto;
-  }
+//   pre {
+//     margin: 0;
+//     background: transparent;
+//     border: none;
+//     padding: 0;
+//     overflow-x: auto;
+//   }
 
-  code {
-    background: transparent;
-    padding: 0;
-    font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
-    font-size: 13px;
-    line-height: 1.45;
-  }
-}
+//   code {
+//     background: transparent;
+//     padding: 0;
+//     font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+//     font-size: 13px;
+//     line-height: 1.45;
+//   }
+// }

@@ -85,12 +85,13 @@ class GenCustomPlugin {
 const getBlockWrapper = (
   blockName: string,
   data: Record<string, any>,
+  children: string,
 ): string => {
   const attrs = Object.entries(data)
     .map(([key, value]) => `${key}="${value}"`)
     .join(' ');
 
-  return `\n\n::: ${blockName} ${attrs} \n\n:::\n`;
+  return `\n\n<${blockName} ${attrs} />${children}</${blockName}>\n\n`;
 };
 
 const getBlockName = (): string => {
@@ -99,25 +100,41 @@ const getBlockName = (): string => {
 
 const getCustomBlock = (
   beforeText: string,
-  { type, name, executeId, status }: ProcessingInfo,
+  { type, name, executeId, status, result }: ProcessingInfo,
 ): string => {
+  console.log(
+    'getCustomBlock',
+    beforeText,
+    type,
+    name,
+    executeId,
+    status,
+    result,
+  );
   // 如果 type 或 id 不存在，则返回空字符串
   if (!type || !executeId) {
     return '';
   }
+  const blockName = getBlockName();
   const hasBlock = beforeText.includes(`executeId="${executeId}"`);
-  if (hasBlock) {
-    // 如果存在，则不追加
-    return beforeText;
-  } else {
-    const blockName = getBlockName();
-
-    const blockContent = getBlockWrapper(blockName, {
+  const blockContent = getBlockWrapper(
+    blockName,
+    {
+      executeId,
       type,
       status,
-      executeId,
       name: encodeURIComponent(name || ''),
-    });
+    },
+    encodeURIComponent(JSON.stringify(result, null, 2)) || '',
+  );
+  if (hasBlock) {
+    // 修正：使用更健壮的正则表达式来匹配和替换整个块
+    const blockRegex = new RegExp(
+      `\\n\\n<${blockName}[^>]*?\\bexecuteId="${executeId}"[^>]*>.*?<\\/${blockName}>\\n\\n`,
+      'gis',
+    );
+    return beforeText.replace(blockRegex, blockContent);
+  } else {
     return `${beforeText}${blockContent}`;
   }
 };
