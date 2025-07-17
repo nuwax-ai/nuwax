@@ -14,9 +14,9 @@ Nuwax AI - Easily build and deploy your private Agentic AI solutions.
 ### 环境准备
 
 #### 系统要求
-* 需要有 docker，docker-compose 环境 [docker安装指南](deploy#docker环境安装)
-* 系统内存: 推荐 16G 或以上
-* 系统: **Linux推荐使用Ubuntu 22.04 LTS**，macOS 10.15+，Windows 10/11（后续支持）
+- **系统要求：** Ubuntu22.04LTS或以上版本（其他linux版本未充分测试），macOS 10.15+，Windows 10/11（后续支持）
+- **配置要求：** 4核8G或以上
+- **环境要求：** docker、docker-compose 环境 [docker安装指南](deploy#docker环境安装)
 
 #### 支持的平台
 - **Linux**: x86_64, ARM64
@@ -30,12 +30,9 @@ Nuwax AI - Easily build and deploy your private Agentic AI solutions.
 
 ### 客户端下载
 > 客户端仅作为运维工具，不包含平台软件包
-
-- [nuwax-cli-linux-amd64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.22/nuwax-cli-linux-amd64.tar.gz)
-
-- [nuwax-cli-linux-arm64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.22/nuwax-cli-linux-arm64.tar.gz)
-- [nuwax-cli-macos-universal.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.22/nuwax-cli-macos-universal.tar.gz)（amd64&arm64）
-
+- [nuwax-cli-linux-amd64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.38/nuwax-cli-linux-amd64.tar.gz)
+- [nuwax-cli-linux-arm64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.38/nuwax-cli-linux-arm64.tar.gz)
+- [nuwax-cli-macos-universal.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.38/nuwax-cli-macos-universal.tar.gz)（amd64&arm64）
 
 ### 执行命令完成部署
 
@@ -65,13 +62,18 @@ chmod +x nuwax-cli
 
 使用默认管理员账号登录：`admin@nuwax.com/123456`
 
-> 注: 如果80端口被占用，可以成功部署，但访问页面会有问题，可以部署指定端口，比如： ./nuwax-cli auto-upgrade-deploy run --port 8099
+> 注：如果80端口被占用，可以成功部署，但访问页面会有问题，可以部署指定端口，比如： ./nuwax-cli auto-upgrade-deploy run --port 8099
 
 ### 重要配置
 登录后请及时修改：
 - 管理员密码
-- 站点访问地址（菜单：系统管理 → 系统配置 → 站点访问地址）
-设置成电脑的ip和端口，或者绑定的域名。
+- 站点信息配置
+
+  ![alt text](/images/image-101.png)
+
+- 邮件服务配置，用于你的用户登录注册收取验证码。
+
+  ![alt text](/images/image-91.png)
 
 ### 部署故障排查
 
@@ -112,37 +114,107 @@ chmod +x nuwax-cli
   - 从备份恢复：`./nuwax-cli rollback [BACKUP_ID]`
 
 ### 升级管理
-检查或者提前下载最新的应用服务。
 
-- 检查更新：`./nuwax-cli upgrade --check`
-- 全量下载：`./nuwax-cli upgrade --full`
-- 强制重新下载：`./nuwax-cli upgrade --force`
-
-**应用服务升级，需要使用命令`./nuwax-cli auto-upgrade-deploy run` 部署才能生效。**
+**应用服务升级，使用命令`./nuwax-cli auto-upgrade-deploy run` 会自动检测下载新版本，自动部署。**
 
 如果之前下载过应用服务，但认为下载的文件有损坏，可以强制使用重新下载。
-> upgrade 命令不会自动安装，只是用于想提前下载，或者检查有无最新版本应用文件使用，因为文件比较大，可以考虑提前下载应用文件。
+> upgrade 命令不会自动安装,用于检查有无最新版本应用文件使用，和下载应用服务文件。
+- 强制重新下载：`./nuwax-cli upgrade --force`
+
+注：如果之前的数据不想要了，全新部署，可以删除工作目录下的: `docker` 文件夹，然后执行 `./nuwax-cli auto-upgrade-deploy run` 命令自动部署。
+
+一次升级完整命令如下:
+
+```shell
+# 检查运维客户端是否有新版本并更新
+./nuwax-cli check-update install
+# 更新应用服务
+./nuwax-cli auto-upgrade-deploy run
+```
 
 ## 常见问题
 
-#### 1. 服务启动失败
+### 1. 服务启动失败
 - 检查 Docker 是否正常运行
 - 使用 `./nuwax-cli status` 查看详细状态
 - 检查端口是否被占用
 
-#### 2. 无法访问服务
+### 2. 无法访问服务
 - 确认服务已正常启动
 可以输入 docker ps命令查看，或者 ./nuwax-cli ducker 查看，或者带界面的桌面应用来查看容器启动情况。
 - 检查防火墙设置
 - 确认端口配置正确
 
-#### 3. 权限问题
+### 3. 权限问题 - Permission denied
 - **Linux（Ubuntu 22.04 LTS）**: 确保用户在 docker 组中
 - **macOS**: 允许未知开发者运行，确保OrbStack或Docker Desktop已启动
 
-#### 4. 配置文件问题
+典型错误如下: 出现关键字"Permission denied"
+![img.png](images/deploy/img-permission.png)
+
+
+使用 `sudo` 来执行命令，重新执行一键部署命令 `sudo ./nuwax-cli auto-upgrade-deploy run`
+
+
+
+### 4. 配置文件问题
+如果手动修改过配置文件，可以尝试重新初始化配置
 - 使用 `./nuwax-cli init --force` 重新初始化
 - 检查 config.toml 文件是否存在
+
+### 5. 如果发现启动后，页面无法正常打开，查看docker容器  frontend, backend 有无启动，没有可以手动启动下试试
+
+执行命令: `./nuwax-cli ducker` ，启动容器管理界面，通过界面来查看容器启动状态
+1. 如果：frontend, backend 容器，没启动，通过 `ducker` 界面提示，选中容器，然后按`r`(run) 启动容器
+
+然后在浏览器打开 "http://localhost" 查看是否正常访问。
+
+![ducker命令界面](images/deploy/CleanShot%202025-07-09%20at%2011.05.55@2x.png)
+
+
+### 6. 解压失败,错误:Directory not empty(os error 39)
+
+![img.png](images/deploy/img.png)
+
+先完全停止掉docker服务(如果有部分之前的docker应用，已经启动的话，执行命令 `./nuwax-cli docker-service stop`停止), 然后手动删掉工作目录下的 docker 目录。然后重新执行 `./nuwax-cli auto-upgrade-deploy run` 命令自动部署。
+
+
+操作步骤：
+```shell
+# 先完全停止掉docker服务，如果确认本地没有残余启动的docker应用，可忽略不执行。
+./nuwax-cli docker-service stop
+
+# 重新执行一键部署命令
+./nuwax-cli auto-upgrade-deploy run
+```
+### 7. 进入界面，但界面提示系统异常
+
+![img.png](images/deploy/img-login-system-error.png)
+
+启动成功，但界面提示系统异常，可以看后台系统日志，工作目录下的： ./docker/logs/agent/app.log ，可以查看具体错误信息。
+有时某个容器成功启动了，但可能会意外出现错误，比如redis容器出现无法写数据到磁盘的错误信息： "MISCONF Redis is configured to save RDB snapshots, but it's currently unable to persist to disk."
+
+直接重新启动下服务，这种错误就解决了，可以正常使用服务了。
+```shell
+# 重启服务（推荐）
+./nuwax-cli docker-service restart
+```
+或者
+```shell
+# 停止服务
+./nuwax-cli docker-service stop 
+# 启动服务
+./nuwax-cli docker-service start
+
+```
+
+### 8. 下载失败:error decoding response body
+![img.png](images/deploy/img-download-error.png)
+下载失败，这种一般是网络原因，直接重试下载就行了，会断点续传文件继续下载。
+```shell
+# 重新执行一键部署命令,如果是在部署的时候失败的话,会自动重新下载
+./nuwax-cli auto-upgrade-deploy run
+```
 
 ## 参考命令
 
@@ -251,6 +323,8 @@ nuwax-cli支持以下全局选项：
 - `list-images`: 列出Docker镜像（使用ducker）
 
 **`ducker`** - 一个用于管理Docker容器的终端应用
+
+![ducker命令界面](images/deploy/CleanShot%202025-07-09%20at%2011.05.55@2x.png)
 
 ```bash
 ./nuwax-cli ducker
@@ -412,6 +486,13 @@ Docker和Docker Compose是运行本服务的核心依赖，必须正确安装。
 - **Linux推荐使用Ubuntu 22.04 LTS**
 - 安装过程中可能需要重启系统
 - 中国大陆用户建议配置镜像加速器
+
+
+### Alibaba Cloud Linux 3
+参考社区安装文档： 
+
+查看安装社区版Docker（docker-ce）章节来安装。
+https://developer.aliyun.com/article/1328603
 
 ### Ubuntu 22.04 LTS（推荐）
 
@@ -612,8 +693,6 @@ A: 检查容器日志：
    - 查看容器日志：docker logs <container_name>
    - 检查端口占用：netstat -tlnp | grep :80
 ```
-
-
 
 
 # 问题反馈方式
