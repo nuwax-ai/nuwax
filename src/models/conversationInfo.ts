@@ -193,7 +193,12 @@ export default () => {
       else {
         setChatSuggestList(data?.agent?.openingGuidQuestions || []);
       }
-      handleScrollBottom();
+
+      // 使用 setTimeout 确保在 DOM 完全渲染后再滚动
+      setTimeout(() => {
+        // 滚动到底部
+        messageViewScrollToBottom();
+      }, 800);
     },
     onError: () => {
       setIsLoadingConversation(true);
