@@ -38,12 +38,15 @@ const SpacePluginDetail: React.FC = ({}) => {
       title: '参数名称',
       dataIndex: 'name',
       key: 'name',
-      // className: 'flex items-center',
+      width: 200,
+      ellipsis: true,
     },
     {
       title: '参数描述',
       dataIndex: 'description',
       key: 'description',
+      width: 260,
+      ellipsis: true,
     },
     {
       title: '参数类型',
@@ -88,12 +91,14 @@ const SpacePluginDetail: React.FC = ({}) => {
       dataIndex: 'name',
       key: 'name',
       width: 430,
-      // className: 'flex items-center',
+      ellipsis: true,
     },
     {
       title: '参数描述',
       dataIndex: 'description',
       key: 'description',
+      width: 300,
+      ellipsis: true,
     },
     {
       title: '参数类型',
@@ -104,59 +109,56 @@ const SpacePluginDetail: React.FC = ({}) => {
   ];
 
   return (
-    <div className={cx('flex', 'h-full')}>
-      <div
-        className={cx(styles.container, 'flex', 'flex-col', 'flex-1', 'h-full')}
-      >
-        {pluginInfo?.id && (
-          <PluginHeader
-            targetInfo={pluginInfo as PublishPluginInfo}
-            targetType={SquareAgentTypeEnum.Plugin}
-          />
-        )}
-        <div className={cx(styles['main-container'], 'overflow-y')}>
-          <span className={cx(styles.title)}>插件描述</span>
-          <p className={cx(styles.desc, 'text-ellipsis-2')}>
-            {pluginInfo?.description}
-          </p>
-          <Divider style={{ margin: '20px 0' }} />
-          <span className={cx(styles.title)}>入参配置</span>
-          <Table
+    <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
+      {pluginInfo?.id && (
+        <PluginHeader
+          targetInfo={pluginInfo as PublishPluginInfo}
+          targetType={SquareAgentTypeEnum.Plugin}
+        />
+      )}
+      <div className={cx(styles['main-container'], 'overflow-y')}>
+        <span className={cx(styles.title)}>插件描述</span>
+        <p className={cx(styles.desc, 'text-ellipsis-2')}>
+          {pluginInfo?.description}
+        </p>
+        <Divider style={{ margin: '20px 0' }} />
+        <span className={cx(styles.title)}>入参配置</span>
+        <Table
+          className={cx(styles['table-wrap'], 'overflow-hide')}
+          columns={inputColumns}
+          dataSource={pluginInfo?.inputArgs || []}
+          virtual
+          pagination={false}
+          expandable={{
+            // 初始时，是否展开所有行
+            defaultExpandAllRows: true,
+          }}
+        />
+        <span className={cx(styles.title)}>出参配置</span>
+        {pluginInfo?.outputArgs?.length > 0 ? (
+          <Table<BindConfigWithSub>
             className={cx(styles['table-wrap'], 'overflow-hide')}
-            columns={inputColumns}
-            // bordered={false}
-            dataSource={pluginInfo?.inputArgs || []}
+            columns={outputColumns}
+            dataSource={pluginInfo?.outputArgs || []}
             pagination={false}
+            expandable={{
+              // 初始时，是否展开所有行
+              defaultExpandAllRows: true,
+            }}
           />
-          <span className={cx(styles.title)}>出参配置</span>
-          {pluginInfo?.outputArgs?.length > 0 ? (
-            <Table<BindConfigWithSub>
-              className={cx(styles['table-wrap'], 'overflow-hide')}
-              columns={outputColumns}
-              dataSource={pluginInfo?.outputArgs || []}
-              pagination={false}
-              expandable={{
-                // childrenColumnName: 'subArgs',
-                // 初始时，是否展开所有行
-                defaultExpandAllRows: true,
-                // expandedRowKeys: outputExpandedRowKeys,
-                // expandIcon: () => null,
-              }}
-            />
-          ) : (
-            <div
-              className={cx(
-                styles['empty-container'],
-                'flex',
-                'flex-1',
-                'items-center',
-                'content-center',
-              )}
-            >
-              <Empty description="暂无数据" />
-            </div>
-          )}
-        </div>
+        ) : (
+          <div
+            className={cx(
+              styles['empty-container'],
+              'flex',
+              'flex-1',
+              'items-center',
+              'content-center',
+            )}
+          >
+            <Empty description="暂无数据" />
+          </div>
+        )}
       </div>
     </div>
   );
