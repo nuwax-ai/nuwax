@@ -12,7 +12,7 @@ import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { SquareComponentInfoProps } from '@/types/interfaces/square';
 import { StarFilled, StarOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
@@ -144,7 +144,7 @@ const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
         </header>
         <div className={cx(styles.nickname, 'text-ellipsis')}>
           {publishUser?.nickName || publishUser?.userName}发布于
-          {moment(created).format('YYYY-MM-DD')}
+          {dayjs(created).format('YYYY-MM-DD')}
         </div>
         <p className={cx(styles.desc, 'text-ellipsis-3')}>{description}</p>
       </div>

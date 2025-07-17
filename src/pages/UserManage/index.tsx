@@ -10,7 +10,7 @@ import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { Button, Input, Select, Table, message } from 'antd';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React, { useState } from 'react';
 import CreateModifyUser from './components/createModifyUser';
 import MessageSendModal from './MessageSendModal';
@@ -206,7 +206,7 @@ const UserManage: React.FC = () => {
       key: 'created',
       width: 180,
       render: (created: string) => {
-        return moment(created).format('YYYY-MM-DD HH:mm:ss');
+        return dayjs(created).format('YYYY-MM-DD HH:mm:ss');
       },
     },
     {

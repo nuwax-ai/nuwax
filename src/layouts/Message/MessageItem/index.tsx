@@ -1,8 +1,8 @@
 import avatar from '@/assets/images/avatar.png';
 import type { MessageItemProps } from '@/types/interfaces/layouts';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import markdown from 'markdown-it';
-import moment from 'moment/moment';
 import React from 'react';
 import styles from './index.less';
 
@@ -36,7 +36,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ info }) => {
           />
         )}
         <span className={cx(styles.time)}>
-          {moment(info?.created).format('YYYY-MM-DD HH:mm')}
+          {dayjs(info?.created).format('YYYY-MM-DD HH:mm')}
         </span>
       </div>
     </div>

@@ -4,7 +4,7 @@ import workflowImage from '@/assets/images/workflow_image.png';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { TemplateItemProps } from '@/types/interfaces/square';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';
 
@@ -67,7 +67,7 @@ const TemplateItem: React.FC<TemplateItemProps> = ({
         </header>
         <div className={cx(styles.nickname, 'text-ellipsis')}>
           {publishUser?.nickName || publishUser?.userName}发布于
-          {moment(created).format('YYYY-MM-DD')}
+          {dayjs(created).format('YYYY-MM-DD')}
         </div>
         <p className={cx(styles.desc, 'text-ellipsis-3')}>{description}</p>
       </div>

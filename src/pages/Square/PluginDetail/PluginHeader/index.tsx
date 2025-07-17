@@ -17,7 +17,7 @@ import type {
 import { LeftOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React, { useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
@@ -130,7 +130,7 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
             </ConditionRender>
           </div>
           <span className={cx(styles['update-time'])}>
-            发布于{moment(targetInfo?.created).format('YYYY-MM-DD HH:mm')}
+            发布于{dayjs(targetInfo?.created).format('YYYY-MM-DD HH:mm')}
           </span>
         </div>
       </section>
