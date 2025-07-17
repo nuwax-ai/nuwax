@@ -324,7 +324,7 @@ nuwax-cli支持以下全局选项：
 
 **`ducker`** - 一个用于管理Docker容器的终端应用
 
-![ducker命令界面](images/deploy/CleanShot%202025-07-09%20at%2011.05.55@2x.png)
+![ducker命令界面](https://nuwax.com/images/deploy/CleanShot%202025-07-09%20at%2011.05.55@2x.png)
 
 ```bash
 ./nuwax-cli ducker
