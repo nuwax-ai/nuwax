@@ -69,7 +69,9 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
             className={cx('cursor-pointer', 'hover-box')}
             onClick={onEdit}
           />
-          <CheckCircleOutlined className={cx(styles.circle)} />
+          {pluginInfo?.publishStatus === PublishStatusEnum.Published && (
+            <CheckCircleOutlined className={cx(styles.circle)} />
+          )}
           {/* 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布 */}
           {pluginInfo?.publishDate !== null &&
             dayjs(pluginInfo?.publishDate).isBefore(pluginInfo?.modified) && (
@@ -92,7 +94,7 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
               : '未发布'}
           </span>
           <span className={cx(styles['update-time'])}>
-            配置自动保存于{dayjs(pluginInfo?.created).format('HH:mm')}
+            配置保存于{dayjs(pluginInfo?.modified).format('HH:mm')}
           </span>
         </div>
       </section>
