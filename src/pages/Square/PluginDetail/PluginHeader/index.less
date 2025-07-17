@@ -23,10 +23,7 @@
     }
 
     .author {
-      color: @BLANK04;
-    }
-
-    .nickname {
+      max-width: 260px;
       color: @GRAY07;
     }
   }
@@ -40,7 +37,7 @@
     font-variation-settings: 'opsz' auto;
     font-feature-settings: 'kern' on;
     color: #828694;
-    cursor: pointer;
+    cursor: default;
   }
 
   .logo {
@@ -58,6 +55,7 @@
       color: @BLANK04;
 
       .name {
+        max-width: 150px;
         font-size: 14px;
         font-weight: bold;
       }
@@ -99,5 +97,19 @@
       color: @BLUE05 !important;
       opacity: 0.8;
     }
+  }
+}
+
+@media (max-width: 768px) {
+  .author {
+    max-width: 160px;
+  }
+
+  .update-time {
+    display: none;
+  }
+
+  .collect {
+    display: none;
   }
 }
