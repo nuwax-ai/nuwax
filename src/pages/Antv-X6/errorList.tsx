@@ -48,7 +48,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
       <div
         className="dis-sb error-list-header"
         style={{
-          height: '40px',
+          height: '48px',
         }}
       >
         <span>错误列表</span>
@@ -73,7 +73,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
               }
               return (
                 <div
-                  className="dis-left error-list-item"
+                  className="dis-left error-list-item hover-box"
                   onClick={() => {
                     onClickItem(node);
                     setVolid(true);

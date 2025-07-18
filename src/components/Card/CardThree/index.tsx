@@ -1,4 +1,3 @@
-import ConditionRender from '@/components/ConditionRender';
 import { CardChildProps } from '@/types/interfaces/cardInfo';
 import classNames from 'classnames';
 import React from 'react';
@@ -13,7 +12,6 @@ const CardThree: React.FC<CardChildProps> = ({
   className,
   title,
   content,
-  image,
   onClick,
 }) => {
   return (
@@ -21,10 +19,7 @@ const CardThree: React.FC<CardChildProps> = ({
       className={cx(styles.container, 'cursor-pointer', className)}
       onClick={onClick}
     >
-      <h3>{title}</h3>
-      <ConditionRender condition={image}>
-        <img className={'radius-6'} src={image} alt="" />
-      </ConditionRender>
+      <h3 className={'text-ellipsis-2'}>{title}</h3>
       <p className={'text-ellipsis-2'}>{content}</p>
     </div>
   );

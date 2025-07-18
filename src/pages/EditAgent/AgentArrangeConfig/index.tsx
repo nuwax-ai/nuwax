@@ -88,9 +88,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     useState<AgentComponentInfo>();
   // 正在删除组件列表
   const [deleteList, setDeleteList] = useState<DeleteComponentInfo[]>([]);
-
-  // 打开、关闭弹窗
-  const { show, setShow } = useModel('model');
+  // 打开、关闭组件选择弹窗
+  const [show, setShow] = useState<boolean>(false);
   const { agentComponentList, setAgentComponentList } = useModel('spaceAgent');
   const { handleVariables } = useModel('conversationInfo');
 

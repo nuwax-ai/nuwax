@@ -22,6 +22,7 @@ export interface CardBindConfig {
 
 // 单张卡片数据
 export interface CardDataInfo {
+  className?: string;
   image: string;
   title: string;
   content: string;

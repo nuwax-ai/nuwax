@@ -342,7 +342,8 @@ const ChatTemp: React.FC = () => {
             newMessage = {
               ...currentMessage,
               text: `${currentMessage.text}${text}`,
-              status: MessageStatusEnum.Incomplete,
+              // 如果finished为true，则状态为null，此时不会显示运行状态组件，否则为Incomplete
+              status: finished ? null : MessageStatusEnum.Incomplete,
             };
             if (ext?.length) {
               // 问题建议
