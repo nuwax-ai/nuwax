@@ -7,11 +7,11 @@ import {
   ModelConfigDto,
   PublishedDto,
   SystemUserConfig,
+  TabKey,
 } from '@/types/interfaces/systemManage';
 import { Button, Form, message } from 'antd';
 import classNames from 'classnames';
 import { useEffect, useState } from 'react';
-import { TabKey } from '..';
 import BaseFormItem from '../BaseFormItem';
 import styles from './index.less';
 
@@ -28,15 +28,18 @@ export default function BaseTab({
 }) {
   const [form] = Form.useForm();
   const [modelList, setModelList] = useState<ModelConfigDto[]>([]);
+  const [agentList, setAgentList] = useState<PublishedDto[]>([]);
+  // 查询可选模型列表
   const fetchModelList = async () => {
     const res = await apiUseableModelList();
     setModelList(res.data);
   };
-  const [agentList, setAgentList] = useState<PublishedDto[]>([]);
+  // 查询可选择的智能体列表
   const fetchAgentList = async (kw = '') => {
     const res = await apiSystemAgentList(kw);
     setAgentList(res.data);
   };
+
   useEffect(() => {
     if (currentTab === 'ModelSetting') {
       fetchModelList();
@@ -44,7 +47,8 @@ export default function BaseTab({
     if (currentTab === 'AgentSetting') {
       fetchAgentList();
     }
-  }, []);
+  }, [currentTab]);
+
   const onFinish = async (values: any) => {
     const params: any = {};
     Object.keys(values).forEach((key) => {
@@ -60,12 +64,13 @@ export default function BaseTab({
     refresh();
   };
 
+  // 保存配置
   const handleSave = () => {
     form.submit();
   };
 
   return (
-    <div className={cx(styles.container)}>
+    <div className={cx(styles.container, 'overflow-y', 'flex-1')}>
       <Form
         layout="vertical"
         style={{ width: '520px' }}
@@ -85,7 +90,7 @@ export default function BaseTab({
         })}
       </Form>
       <footer className={cx(styles.footer)}>
-        <Button type="primary" onClick={handleSave} block>
+        <Button type="primary" onClick={handleSave}>
           保存
         </Button>
       </footer>

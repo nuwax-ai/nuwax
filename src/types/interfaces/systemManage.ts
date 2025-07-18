@@ -85,6 +85,23 @@ export interface SystemUserConfig {
   sort: number;
 }
 
+export type ConfigObj = {
+  [K in SystemUserConfig['category']]?: SystemUserConfig[];
+};
+
+export type TabKey =
+  | 'BaseConfig'
+  | 'ModelSetting'
+  | 'AgentSetting'
+  | 'DomainBind';
+
+export type BaseFormItemProps = {
+  props: SystemUserConfig;
+  currentTab: TabKey;
+  modelList: ModelConfigDto[];
+  agentList: PublishedDto[];
+};
+
 /**
  * 模型配置数据
  */

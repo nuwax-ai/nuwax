@@ -1,27 +1,29 @@
+import Loading from '@/components/Loading';
+import { SYSTEM_SETTING_TABS } from '@/constants/system.constants';
 import { apiSystemConfigList } from '@/services/systemManage';
-import { SystemUserConfig } from '@/types/interfaces/systemManage';
-import { ConfigProvider, Tabs, TabsProps } from 'antd';
+import { ConfigObj, TabKey } from '@/types/interfaces/systemManage';
+import { ConfigProvider, Tabs } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useModel } from 'umi';
 import BaseTab from './BaseTab';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-type ConfigObj = {
-  [K in SystemUserConfig['category']]?: SystemUserConfig[];
-};
 /**
  * 系统配置页面
  */
 const SystemConfig: React.FC = () => {
+  const [loading, setLoading] = useState(false);
   const [config, setConfig] = useState<ConfigObj>();
-
+  const [tab, setTab] = useState<TabKey>('BaseConfig');
+  // 租户配置信息查询接口
   const { runTenantConfig } = useModel('tenantConfigInfo');
 
   const fetchConfig = async () => {
     const res = await apiSystemConfigList();
+    setLoading(false);
     const _config: ConfigObj = {};
     res.data.forEach((item) => {
       if (!_config[item.category]) {
@@ -35,61 +37,17 @@ const SystemConfig: React.FC = () => {
     });
     setConfig(_config);
   };
-  const [tab, setTab] = useState<TabKey>('BaseConfig');
-  const tabs: TabsProps['items'] = [
-    {
-      key: 'BaseConfig',
-      label: '基础配置',
-      children: config?.BaseConfig && (
-        <BaseTab
-          currentTab={tab}
-          config={config.BaseConfig}
-          refresh={runTenantConfig}
-        />
-      ),
-    },
-    {
-      key: 'ModelSetting',
-      label: '默认模型设置',
-      children: config?.ModelSetting && (
-        <BaseTab
-          currentTab={tab}
-          config={config.ModelSetting}
-          refresh={runTenantConfig}
-        />
-      ),
-    },
-    {
-      key: 'AgentSetting',
-      label: '站点智能体设置',
-      children: config?.AgentSetting && (
-        <BaseTab
-          currentTab={tab}
-          config={config.AgentSetting}
-          refresh={runTenantConfig}
-        />
-      ),
-    },
-    {
-      key: 'DomainBind',
-      label: '域名绑定',
-      children: config?.DomainBind && (
-        <BaseTab
-          currentTab={tab}
-          config={config.DomainBind}
-          refresh={runTenantConfig}
-        />
-      ),
-    },
-  ];
-  const onChange = (key: TabKey) => {
-    setTab(key);
-  };
+
   useEffect(() => {
+    setLoading(true);
     fetchConfig();
   }, []);
+
+  const tabConfig = useMemo(() => {
+    return config?.[tab] || [];
+  }, [config, tab]);
   return (
-    <div className={cx(styles.container, 'overflow-y')}>
+    <div className={cx(styles.container, 'flex', 'flex-col')}>
       <div className={cx(styles.title)}>系统配置页面</div>
       <ConfigProvider
         theme={{
@@ -105,16 +63,21 @@ const SystemConfig: React.FC = () => {
       >
         <Tabs
           defaultActiveKey="BaseConfig"
-          items={tabs}
-          onChange={(key) => onChange(key as TabKey)}
+          items={SYSTEM_SETTING_TABS}
+          onChange={(key) => setTab(key as TabKey)}
         />
+        {loading ? (
+          <Loading />
+        ) : (
+          <BaseTab
+            currentTab={tab}
+            config={tabConfig}
+            refresh={runTenantConfig}
+          />
+        )}
       </ConfigProvider>
     </div>
   );
 };
-export type TabKey =
-  | 'BaseConfig'
-  | 'ModelSetting'
-  | 'AgentSetting'
-  | 'DomainBind';
+
 export default SystemConfig;
