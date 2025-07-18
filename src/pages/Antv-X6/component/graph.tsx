@@ -232,6 +232,7 @@ const initGraph = ({
               strokeDasharray: '5 5', // 示例：添加虚线效果
               strokeWidth: 1,
               targetMarker: null, // 初始不显示箭头
+              zIndex: 1,
               style: {
                 animation: 'ant-line 30s infinite linear',
               },
@@ -298,6 +299,16 @@ const initGraph = ({
 
         if (isDuplicateEdge) {
           // 如果存在重复的边，返回 false 以阻止新边创建
+          return false;
+        }
+
+        // 终止循环节点的的下一个节点 只能是为 LoopEnd节点
+        const targetNode = targetCell.getData();
+        const sourceNode = sourceCell.getData();
+        if (
+          sourceNode.type === NodeTypeEnum.LoopBreak &&
+          targetNode.type !== NodeTypeEnum.LoopEnd
+        ) {
           return false;
         }
 

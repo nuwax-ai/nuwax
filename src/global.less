@@ -58,8 +58,13 @@ body {
 }
 // 滚动条滑块
 ::-webkit-scrollbar-thumb {
-  background: @GRAY;
+  background: @GRAY19;
   border-radius: 6px; /* 滚动条滑块圆角 */
+  transition: background-color 0.3s ease-in-out; /* 添加过渡动画 */
+}
+// 滚动条滑块悬停效果
+::-webkit-scrollbar-thumb:hover {
+  background: @GRAY; /* 鼠标悬停时颜色加深 */
 }
 
 @media (max-width: 768px) {
@@ -86,10 +91,16 @@ body {
 /* 滚动条的外层滑轨背景颜色 */
 
 .scrollbar::-webkit-scrollbar-thumb {
-  background: @GRAY05;
+  background: @GRAY19;
   border-radius: 6px;
+  transition: background-color 0.3s ease-in-out; /* 添加过渡动画 */
 
   /* 滚动条滑块圆角 */
+}
+
+/* 滚动条的内层滑块悬停效果 */
+.scrollbar::-webkit-scrollbar-thumb:hover {
+  background: @GRAY; /* 鼠标悬停时颜色进一步加深 */
 }
 
 /* 滚动条的内层滑块颜色 */
