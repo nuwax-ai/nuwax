@@ -232,6 +232,7 @@ const initGraph = ({
               strokeDasharray: '5 5', // 示例：添加虚线效果
               strokeWidth: 1,
               targetMarker: null, // 初始不显示箭头
+              zIndex: 1,
               style: {
                 animation: 'ant-line 30s infinite linear',
               },

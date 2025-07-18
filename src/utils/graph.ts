@@ -239,6 +239,16 @@ export const updateEdgeArrows = (graph: Graph) => {
     const sortedEdges = edges.sort((a, b) => a.id.localeCompare(b.id));
     sortedEdges.forEach((edge, index) => {
       const isLast = index === sortedEdges.length - 1;
+      // 这里处理一个场景 如果连线上一个节点是 LoopEnd节点 则不展示箭头 如果连线的下一个节点是 LoopStart节点 则不展示箭头
+      const sourceNode = edge.getSourceNode();
+      const targetNode = edge.getTargetNode();
+      if (
+        sourceNode?.getData?.()?.type === 'LoopEnd' ||
+        targetNode?.getData?.()?.type === 'LoopStart'
+      ) {
+        return edge.attr('line/targetMarker', null);
+      }
+
       edge.attr('line/targetMarker', isLast ? ARROW_CONFIG : null);
       // edge.setZIndex(isLast ? 3 : 1);
     });
@@ -445,14 +455,14 @@ export const generatePortGroupConfig = (
     NodeTypeEnum.Start,
     NodeTypeEnum.End,
   ].includes(data.type); //需要固定位置的节点
-
+  const magnetRadius = 50;
   const isLoopNode = data.type === NodeTypeEnum.Loop;
   return {
     // 通用端口组配置
     in: {
       position: 'left',
       attrs: {
-        circle: { r: basePortSize, magnet: true, magnetRadius: 50 },
+        circle: { r: basePortSize, magnet: true, magnetRadius },
       },
       connectable: {
         source: isLoopNode, // Loop 节点的 in 端口允许作为 source
@@ -463,7 +473,7 @@ export const generatePortGroupConfig = (
       position: {
         name: fixedPortNode ? 'right' : 'absolute',
       },
-      attrs: { circle: { r: basePortSize, magnet: true, magnetRadius: 50 } },
+      attrs: { circle: { r: basePortSize, magnet: true, magnetRadius } },
       connectable: {
         source: true, // 非 Loop 节点的 out 端口只能作为 source
         target: isLoopNode, // Loop 节点的 out 端口允许作为 target
@@ -473,7 +483,7 @@ export const generatePortGroupConfig = (
       position: {
         name: 'absolute',
       },
-      attrs: { circle: { r: basePortSize, magnet: true, magnetRadius: 50 } },
+      attrs: { circle: { r: basePortSize, magnet: true, magnetRadius } },
       connectable: {
         source: true, // 非 Loop 节点的 out 端口只能作为 source
         target: isLoopNode, // Loop 节点的 out 端口允许作为 target
@@ -483,7 +493,7 @@ export const generatePortGroupConfig = (
       position: {
         name: 'absolute',
       },
-      attrs: { circle: { r: basePortSize, magnet: true, magnetRadius: 50 } },
+      attrs: { circle: { r: basePortSize, magnet: true, magnetRadius } },
       connectable: {
         source: true, // 非 Loop 节点的 out 端口只能作为 source
         target: isLoopNode, // Loop 节点的 out 端口允许作为 target
