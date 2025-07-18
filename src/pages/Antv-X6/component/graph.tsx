@@ -871,6 +871,7 @@ const initGraph = ({
         graph.addEdge(edge);
         setEdgeAttributes(edge);
         edge.toFront();
+        updateEdgeArrows(graph);
       },
     );
     if (isException) return;
