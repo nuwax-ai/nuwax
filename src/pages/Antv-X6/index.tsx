@@ -85,7 +85,6 @@ import { Graph } from '@antv/x6';
 import { Form, message, Spin } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
-import { mergeObject } from 'ut2';
 import { v4 as uuidv4 } from 'uuid';
 import NodePanelDrawer from './components/NodePanelDrawer';
 import VersionAction from './components/VersionAction';
@@ -1671,35 +1670,17 @@ const Workflow: React.FC = () => {
   };
 
   // 更新画布中的节点
-  const handleGraphUpdateByForm = useCallback(
+  const handleGraphUpdateByFormData = useCallback(
     (changedValues: any, fullFormValues: any) => {
       const nodeId = getWorkflow('drawerForm').id;
       if (!graphRef.current || !nodeId || nodeId === FoldFormIdEnum.empty)
         return;
-      const cell = graphRef.current
-        .getGraphRef()
-        .getCellById(nodeId.toString());
-      if (!cell || !cell.isNode()) return;
-      const oldNodeData = cell.getData() as ChildNode;
-      if (oldNodeData) {
-        const { nodeConfig, ...rest } = oldNodeData;
-        const fullChangedValues = Object.keys(changedValues).reduce(
-          (acc: Record<string, any>, key) => {
-            if (typeof key === 'string' && key) {
-              acc[key] = fullFormValues[key];
-            }
-            return acc;
-          },
-          {} as Record<string, any>,
-        );
-        graphRef.current.graphUpdateNode(nodeId, {
-          ...rest,
-          nodeConfig: mergeObject(
-            cloneDeep(nodeConfig),
-            fullChangedValues,
-          ) as NodeConfig,
-        });
-      }
+
+      graphRef.current.graphUpdateByFormData(
+        changedValues,
+        fullFormValues,
+        nodeId.toString(),
+      );
     },
     [graphRef.current],
   );
@@ -1775,9 +1756,8 @@ const Workflow: React.FC = () => {
             key={`${foldWrapItem.type}-${foldWrapItem.id}-form`}
             clearOnDestroy={true}
             onValuesChange={(values) => {
-              console.log('onValuesChange', values);
               setIsModified(true);
-              handleGraphUpdateByForm(values, form.getFieldsValue(true));
+              handleGraphUpdateByFormData(values, form.getFieldsValue(true));
             }}
           >
             <NodePanelDrawer

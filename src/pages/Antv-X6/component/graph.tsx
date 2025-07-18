@@ -82,7 +82,7 @@ const initGraph = ({
   createNodeToPortOrEdge,
   onSaveNode,
   onClickBlank,
-}: GraphProp) => {
+}: GraphProp): Graph => {
   const graphContainer = document.getElementById(containerId);
   // 如果找不到容器，则抛出错误
   if (!graphContainer) throw new Error('Container not found');

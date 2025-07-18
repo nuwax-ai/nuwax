@@ -8,6 +8,8 @@ import type {
   GraphRect,
   RunResultItem,
 } from '@/types/interfaces/graph';
+import { NodeConfig } from '@/types/interfaces/node';
+import { cloneDeep, mergeObject } from '@/utils/common';
 import {
   adjustParentSize,
   needUpdateNodes,
@@ -22,7 +24,7 @@ import {
   getEdges,
   getNodeSize,
 } from '@/utils/workflow';
-import { Node } from '@antv/x6';
+import { Graph, Node } from '@antv/x6';
 import { App } from 'antd';
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import EventHandlers from './component/eventHandlers';
@@ -192,7 +194,10 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         if (needUpdateNodes(newData)) {
           // 需要更新端口配置的节点
           const newPorts = generatePorts(newData);
-          if (newData.type === NodeTypeEnum.QA) {
+          if (
+            newData.type === NodeTypeEnum.QA ||
+            newData.type === NodeTypeEnum.Condition
+          ) {
             // 问答节点
             const { width, height } = getNodeSize({
               data: newData,
@@ -205,6 +210,48 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         }
 
         node.updateData(newData);
+      }
+    };
+    // 修改节点通过表单数据
+    const graphUpdateByFormData = (
+      changedValues: any,
+      fullFormValues: any,
+      nodeId: string,
+    ) => {
+      if (!graphRef.current) return;
+      const cell = graphRef.current.getCellById(nodeId);
+      if (!cell || !cell.isNode()) return;
+      const oldNodeData = cell.getData() as ChildNode;
+      if (!oldNodeData) {
+        return;
+      }
+
+      const { nodeConfig, ...rest } = oldNodeData;
+      const fullChangedValues = Object.keys(changedValues).reduce(
+        (acc: Record<string, any>, key) => {
+          if (typeof key === 'string' && key) {
+            acc[key] = fullFormValues[key];
+          }
+          return acc;
+        },
+        {} as Record<string, any>,
+      );
+
+      graphUpdateNode(nodeId, {
+        ...rest,
+        nodeConfig: mergeObject(
+          cloneDeep(nodeConfig),
+          fullChangedValues,
+        ) as NodeConfig,
+      });
+
+      //如果节点是循环节点，则需要调整父节点大小
+      const loopNodeId = rest.loopNodeId;
+      if (loopNodeId) {
+        const parentNode = graphRef.current.getCellById(loopNodeId.toString());
+        if (parentNode) {
+          adjustParentSize(parentNode); // 初始调整父节点大小
+        }
       }
     };
 
@@ -392,7 +439,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         height: viewport.height as number,
       };
     };
-    const getGraphRef = () => {
+    const getGraphRef = (): Graph => {
       return graphRef.current;
     };
     // 将子组件的方法暴露给父组件
@@ -400,6 +447,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       getCurrentViewPort,
       graphAddNode,
       graphUpdateNode,
+      graphUpdateByFormData,
       // graphSaveAllNodes,
       graphDeleteNode,
       graphDeleteEdge,
