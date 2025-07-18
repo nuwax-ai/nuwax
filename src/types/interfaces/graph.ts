@@ -171,6 +171,12 @@ export interface GraphContainerRef {
   graphAddNode: (e: GraphRect, child: ChildNode) => void;
   // 修改节点
   graphUpdateNode: (nodeId: string, newData: ChildNode | null) => void;
+  // 修改节点通过表单数据
+  graphUpdateByFormData: (
+    changedValues: any,
+    fullFormValues: any,
+    nodeId: string,
+  ) => void;
   // 保存节点
   // graphSaveAllNodes: () => void;
   // 删除节点

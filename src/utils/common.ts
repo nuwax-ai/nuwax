@@ -1,5 +1,7 @@
 import type { FileType } from '@/types/interfaces/common';
 import cloneDeep from 'lodash/cloneDeep';
+import { mergeObject } from 'ut2';
+
 // 过滤非数字
 const getNumbersOnly = (text: string) => {
   return text?.replace(/[^0-9]/g, '');
@@ -220,6 +222,7 @@ export {
   isValidEmail,
   isValidJSON,
   isValidPhone,
+  mergeObject,
   parseJSON,
   validatePassword,
   validateTableName,

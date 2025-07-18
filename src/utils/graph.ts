@@ -13,13 +13,13 @@ import { ChildNode, GraphRect, ViewGraphProps } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig, NodeConfig } from '@/types/interfaces/node';
 import { isEmptyObject } from '@/utils/index';
 import { getWidthAndHeight } from '@/utils/updateNode';
-import { Edge, Graph, Node } from '@antv/x6';
+import { Cell, Edge, Graph, Node } from '@antv/x6';
 import { message } from 'antd';
 import { isEqual, isPlainObject } from 'lodash';
 // 边界检查并调整子节点位置
 // 调整父节点尺寸以包含所有子节点
 
-export const adjustParentSize = (parentNode: Node) => {
+export const adjustParentSize = (parentNode: Node | Cell) => {
   const childrenNodes = parentNode.getChildren
     ? Array.from(parentNode.getChildren() || [])
     : [];
@@ -73,7 +73,7 @@ export const adjustParentSize = (parentNode: Node) => {
   const centerY = (globalMinY + globalMaxY) / 2;
   const newX = centerX - Math.max(newWidth, MIN_WIDTH) / 2; // [!code ++]
   const newY = centerY - Math.max(newHeight, MIN_HEIGHT) / 2; // [!code ++]
-
+  console.log('loop:adjustParentSize', newX, newY, newWidth, newHeight);
   parentNode.prop(
     {
       position: { x: newX, y: newY },
