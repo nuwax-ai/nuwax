@@ -3,6 +3,7 @@ import { SystemUserConfig } from '@/types/interfaces/systemManage';
 import { ConfigProvider, Tabs, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { useModel } from 'umi';
 import BaseTab from './BaseTab';
 import styles from './index.less';
 
@@ -16,6 +17,9 @@ type ConfigObj = {
  */
 const SystemConfig: React.FC = () => {
   const [config, setConfig] = useState<ConfigObj>();
+
+  const { runTenantConfig } = useModel('tenantConfigInfo');
+
   const fetchConfig = async () => {
     const res = await apiSystemConfigList();
     const _config: ConfigObj = {};
@@ -40,7 +44,7 @@ const SystemConfig: React.FC = () => {
         <BaseTab
           currentTab={tab}
           config={config.BaseConfig}
-          refresh={fetchConfig}
+          refresh={runTenantConfig}
         />
       ),
     },
@@ -51,7 +55,7 @@ const SystemConfig: React.FC = () => {
         <BaseTab
           currentTab={tab}
           config={config.ModelSetting}
-          refresh={fetchConfig}
+          refresh={runTenantConfig}
         />
       ),
     },
@@ -62,7 +66,7 @@ const SystemConfig: React.FC = () => {
         <BaseTab
           currentTab={tab}
           config={config.AgentSetting}
-          refresh={fetchConfig}
+          refresh={runTenantConfig}
         />
       ),
     },
@@ -73,7 +77,7 @@ const SystemConfig: React.FC = () => {
         <BaseTab
           currentTab={tab}
           config={config.DomainBind}
-          refresh={fetchConfig}
+          refresh={runTenantConfig}
         />
       ),
     },
