@@ -302,6 +302,16 @@ const initGraph = ({
           return false;
         }
 
+        // 终止循环节点的的下一个节点 只能是为 LoopEnd节点
+        const targetNode = targetCell.getData();
+        const sourceNode = sourceCell.getData();
+        if (
+          sourceNode.type === NodeTypeEnum.LoopBreak &&
+          targetNode.type !== NodeTypeEnum.LoopEnd
+        ) {
+          return false;
+        }
+
         // 定义类型断言函数
         const isLoopNode = (cell: Cell) => cell.getData()?.type === 'Loop';
 

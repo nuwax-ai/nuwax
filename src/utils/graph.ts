@@ -73,7 +73,6 @@ export const adjustParentSize = (parentNode: Node | Cell) => {
   const centerY = (globalMinY + globalMaxY) / 2;
   const newX = centerX - Math.max(newWidth, MIN_WIDTH) / 2; // [!code ++]
   const newY = centerY - Math.max(newHeight, MIN_HEIGHT) / 2; // [!code ++]
-  console.log('loop:adjustParentSize', newX, newY, newWidth, newHeight);
   parentNode.prop(
     {
       position: { x: newX, y: newY },
