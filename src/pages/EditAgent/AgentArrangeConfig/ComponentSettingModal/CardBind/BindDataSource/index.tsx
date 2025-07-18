@@ -94,14 +94,21 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
       if (cardBindConfig?.cardArgsBindConfigs?.length) {
         const list = cardBindConfig?.cardArgsBindConfigs?.map(
           (item: CardArgsBindConfigInfo) => {
+            // 获取卡片参数的placeholder
+            const placeholder =
+              cardInfo?.argList?.find((info) => info.key === item.key)
+                ?.placeholder || '';
             return {
               // 字段名
               key: item.key,
               // 卡片key值
               cardKey: item.bindValue,
+              // 卡片参数的placeholder
+              placeholder,
             };
           },
         );
+
         setArgList(list);
       }
     } else {
@@ -272,7 +279,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
                   popupMatchSelectWidth={false}
                   disabled={cardStyle === BindCardStyleEnum.LIST && !cardKey}
                   open={Boolean(info?.open)}
-                  value={info?.cardKey}
+                  value={info?.cardKey || null}
                   onDropdownVisibleChange={(open) => handleArgList(index, open)}
                   onClick={() => handleArgList(index, true)}
                   dropdownRender={() =>
