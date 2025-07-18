@@ -1,3 +1,4 @@
+import ConditionRender from '@/components/ConditionRender';
 import { CardChildProps } from '@/types/interfaces/cardInfo';
 import classNames from 'classnames';
 import React from 'react';
@@ -12,6 +13,7 @@ const CardFour: React.FC<CardChildProps> = ({
   className,
   title,
   content,
+  image,
   onClick,
 }) => {
   return (
@@ -25,7 +27,10 @@ const CardFour: React.FC<CardChildProps> = ({
       )}
       onClick={onClick}
     >
-      <h3>{title}</h3>
+      <h3 className={'text-ellipsis-2'}>{title}</h3>
+      <ConditionRender condition={image}>
+        <img className={'radius-6'} src={image} alt="" />
+      </ConditionRender>
       <p className={'text-ellipsis-2'}>{content}</p>
     </div>
   );
