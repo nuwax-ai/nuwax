@@ -8,6 +8,21 @@
   box-sizing: border-box;
   box-shadow: 0 1px 5px 0 @BLANK29;
 
+  .clear {
+    width: 32px;
+    height: 32px;
+    margin-right: 8px;
+    border-radius: 50%;
+    color: @GRAY05;
+    border: 1px solid @GRAY01;
+
+    &.disabled {
+      cursor: not-allowed;
+      color: @BLANK25;
+      background-color: @BLANK12;
+    }
+  }
+
   .input {
     width: 100%;
     border: none;
