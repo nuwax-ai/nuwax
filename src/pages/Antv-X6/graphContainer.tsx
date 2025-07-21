@@ -8,6 +8,7 @@ import type {
   GraphRect,
   RunResultItem,
 } from '@/types/interfaces/graph';
+import { ChangeEdgeProps, ChangeNodeProps } from '@/types/interfaces/graph';
 import { NodeConfig } from '@/types/interfaces/node';
 import { cloneDeep, mergeObject } from '@/utils/common';
 import {
@@ -26,12 +27,17 @@ import {
 } from '@/utils/workflow';
 import { Graph, Node } from '@antv/x6';
 import { App } from 'antd';
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from 'react';
 import EventHandlers from './component/eventHandlers';
 import InitGraph from './component/graph';
 import { registerCustomNodes } from './component/registerCustomNodes';
 const GRAPH_CONTAINER_ID = 'graph-container';
-
 const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
   (
     {
@@ -42,10 +48,11 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       copyNode,
       removeNode,
       changeZoom,
-      createNodeToPortOrEdge,
+      createNodeByPortOrEdge,
       onSaveNode,
       onClickBlank,
       onInit,
+      onRefresh,
     },
     ref,
   ) => {
@@ -462,25 +469,46 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       graphResetRunResult,
     }));
 
+    const changeNodeConfigWithRefresh = useCallback(
+      async (config: ChangeNodeProps) => {
+        const result = await changeCondition(config);
+        if (!result) {
+          onRefresh();
+        }
+        return result;
+      },
+      [changeCondition, onRefresh],
+    );
+    const changeEdgeConfigWithRefresh = useCallback(
+      async (config: ChangeEdgeProps) => {
+        const result = await changeEdge(config);
+        if (!result) {
+          onRefresh();
+        }
+        return result;
+      },
+      [changeEdge, onRefresh],
+    );
+
     useEffect(() => {
       if (!containerRef.current) return;
       preWork();
       graphRef.current = InitGraph({
         containerId: GRAPH_CONTAINER_ID,
         changeDrawer: changeDrawer,
-        changeEdge,
-        changeCondition: changeCondition,
+        changeCondition,
+        changeNodeConfigWithRefresh,
         changeZoom: changeZoom,
-        createNodeToPortOrEdge,
+        createNodeByPortOrEdge,
         onSaveNode: onSaveNode,
         onClickBlank: onClickBlank,
       });
 
       const cleanup = EventHandlers({
         graph: graphRef.current,
-        changeEdge,
+        changeEdgeConfigWithRefresh,
         copyNode,
-        changeCondition,
+        changeNodeConfigWithRefresh,
         removeNode,
         modal,
         message,
