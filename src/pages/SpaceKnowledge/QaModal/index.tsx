@@ -34,7 +34,7 @@ const QaModal: React.FC<QaModalProps> = ({
     try {
       setLoading(true);
       const values = await form.validateFields();
-      onConfirm({ ...values, id: data?.id });
+      await onConfirm({ ...values, id: data?.id });
     } catch (error) {
       console.error('表单验证失败:', error);
     } finally {
@@ -51,7 +51,6 @@ const QaModal: React.FC<QaModalProps> = ({
 
   // 关闭对话框时的处理
   const handleCancel = () => {
-    form.resetFields();
     onCancel();
   };
 

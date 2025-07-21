@@ -839,6 +839,9 @@ const ChatTemp: React.FC = () => {
           {/*手机会话输入框*/}
           <ChatInputPhone
             className={cx(styles['phone-container'])}
+            clearDisabled={!messageList?.length}
+            onClear={handleClear}
+            wholeDisabled={wholeDisabled}
             onEnter={handleMessageSend}
             visible={showScrollBtn}
             onScrollBottom={onScrollBottom}

@@ -8,6 +8,7 @@ import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
+  ClearOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
@@ -22,7 +23,10 @@ const cx = classNames.bind(styles);
  */
 const ChatInputPhone: React.FC<ChatInputProps> = ({
   className,
+  wholeDisabled = false,
+  clearDisabled = false,
   onEnter,
+  onClear,
   visible,
   onScrollBottom,
 }) => {
@@ -111,6 +115,13 @@ const ChatInputPhone: React.FC<ChatInputProps> = ({
     setFiles(_files);
   };
 
+  const handleClear = () => {
+    if (clearDisabled || wholeDisabled) {
+      return;
+    }
+    onClear?.();
+  };
+
   return (
     <div className={cx('relative', 'w-full', className)}>
       <div className={cx(styles['chat-container'], 'flex', 'flex-col')}>
@@ -119,6 +130,20 @@ const ChatInputPhone: React.FC<ChatInputProps> = ({
           <ChatUploadFile files={files} onDel={handleDelFile} />
         </ConditionRender>
         <div className={cx('flex', 'items-center')}>
+          <span
+            className={cx(
+              styles.clear,
+              'flex',
+              'items-center',
+              'content-center',
+              'hover-box',
+              'cursor-pointer',
+              { [styles.disabled]: clearDisabled || wholeDisabled },
+            )}
+            onClick={handleClear}
+          >
+            <ClearOutlined />
+          </span>
           {/*上传按钮*/}
           <Upload
             action={UPLOAD_FILE_ACTION}
