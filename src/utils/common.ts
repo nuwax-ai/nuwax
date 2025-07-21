@@ -107,6 +107,11 @@ const addBaseTarget = () => {
   }
 };
 
+// 判断对象是否为空
+const isEmptyObject = (obj: Record<string, any>) => {
+  return obj && typeof obj === 'object' && Object.keys(obj).length === 0;
+};
+
 // 格式化时间
 function formatTimeAgo(targetTime: string) {
   if (!targetTime) {
@@ -218,6 +223,7 @@ export {
   getBase64,
   getNumbersOnly,
   getURLParams,
+  isEmptyObject,
   isNumber,
   isValidEmail,
   isValidJSON,
