@@ -39,6 +39,7 @@ import {
   ConversationFinalResult,
 } from '@/types/interfaces/conversationInfo';
 import { RequestResponse } from '@/types/interfaces/request';
+import { isEmptyObject } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
@@ -277,16 +278,24 @@ export default () => {
             data?.cardBindConfig &&
             data?.cardData
           ) {
-            // 自动展开展示台
-            setShowType(EditAgentShowType.Show_Stand);
             // 卡片列表
             setCardList((cardList) => {
               // 竖向列表
               if (
                 data.cardBindConfig?.bindCardStyle === BindCardStyleEnum.LIST
               ) {
+                // 过滤掉空对象, 因为cardData中可能存在空对象
+                const _cardData =
+                  data?.cardData?.filter(
+                    (item: CardDataInfo) => !isEmptyObject(item),
+                  ) || [];
+                // 如果卡片列表不为空，则自动展开展示台
+                if (_cardData?.length) {
+                  // 自动展开展示台
+                  setShowType(EditAgentShowType.Show_Stand);
+                }
                 const cardDataList =
-                  data?.cardData?.map((item: CardDataInfo) => ({
+                  _cardData?.map((item: CardDataInfo) => ({
                     ...item,
                     cardKey: data.cardBindConfig.cardKey,
                   })) || [];
@@ -295,6 +304,8 @@ export default () => {
                   ? [...cardList, ...cardDataList]
                   : [...cardDataList];
               }
+              // 自动展开展示台
+              setShowType(EditAgentShowType.Show_Stand);
               // 单张卡片
               const cardInfo = {
                 ...data?.cardData,
