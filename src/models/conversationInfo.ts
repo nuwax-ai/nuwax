@@ -46,12 +46,13 @@ import dayjs from 'dayjs';
 import { useCallback, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
+
 export default () => {
   // 会话信息
   const [conversationInfo, setConversationInfo] =
     useState<ConversationInfo | null>();
   // 是否用户问题建议
-  const [isSuggest, setIsSuggest] = useState<boolean>(true);
+  const [isSuggest, setIsSuggest] = useState<boolean>(false);
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
@@ -70,7 +71,8 @@ export default () => {
   // 会话消息ID
   const messageIdRef = useRef<string>('');
   // 调试结果
-  const [finalResult, setFinalResult] = useState<ConversationFinalResult>();
+  const [finalResult, setFinalResult] =
+    useState<ConversationFinalResult | null>(null);
   // 是否需要更新主题
   const needUpdateTopicRef = useRef<boolean>(true);
   // 展示台卡片列表
@@ -506,13 +508,22 @@ export default () => {
   const resetInit = () => {
     handleClearSideEffect();
     setShowType(EditAgentShowType.Hide);
-    setCardList([]);
-    setMessageList([]);
-    setConversationInfo(null);
     setManualComponents([]);
     needUpdateTopicRef.current = true;
     allowAutoScrollRef.current = true;
     setShowScrollBtn(false);
+    // 重置卡片列表
+    setCardList([]);
+    // 重置消息列表
+    setMessageList([]);
+    // 重置会话信息
+    setConversationInfo(null);
+    // 重置问题建议
+    setIsSuggest(false);
+    // 重置请求ID
+    setRequestId('');
+    // 重置调试结果
+    setFinalResult(null);
   };
 
   // 发送消息
