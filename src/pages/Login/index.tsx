@@ -33,11 +33,15 @@ const Login: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: ILoginResult, params: LoginFieldType[]) => {
-      const { expireDate, token } = result;
+      const { expireDate, token, redirect } = result;
       localStorage.setItem(ACCESS_TOKEN, token);
       localStorage.setItem(EXPIRE_DATE, expireDate);
       localStorage.setItem(PHONE, params[0].phoneOrEmail);
-      navigate('/', { replace: true });
+      if (redirect) {
+        navigate(redirect, { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     },
   });
 
