@@ -37,13 +37,17 @@ const SpaceLog: React.FC = () => {
   const agentId = Number(params.agentId);
   const [form] = Form.useForm();
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>();
-  const [total, setTotal] = useState<number>(0);
   const [dataSource, setDataSource] = useState<logInfo[]>([]);
   const [visible, setVisible] = useState<boolean>(false);
   const [currentLog, setCurrentLog] = useState<logInfo | null>(null);
   const [loadingLogList, setLoadingLogList] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
-  const [pageIndex, setPageIndex] = useState<number>(1);
+  // 当前分页的数据
+  const [pagination, setPagination] = useState({
+    total: 0,
+    pageSize: 10,
+    current: 1,
+  });
 
   // 日志查询
   const { run: runLogList } = useRequest(apiAgentLogList, {
@@ -52,8 +56,12 @@ const SpaceLog: React.FC = () => {
     // 设置显示 loading 的延迟时间，避免闪烁
     loadingDelay: 300,
     onSuccess: (result: Page<logInfo>) => {
-      const { total, records } = result;
-      setTotal(total);
+      const { total, current, size, records } = result;
+      setPagination({
+        total: total,
+        current: current,
+        pageSize: size,
+      });
       const list = records?.map((item) => ({
         ...item,
         key: uuidv4(),
@@ -85,12 +93,16 @@ const SpaceLog: React.FC = () => {
   });
 
   // 查询日志
-  const handleQuery = (queryFilter: LogQueryFilter, current: number = 1) => {
+  const handleQuery = (
+    queryFilter: LogQueryFilter,
+    current: number = 1,
+    pageSize: number = pagination.pageSize,
+  ) => {
     setLoadingLogList(true);
     runLogList({
       queryFilter,
       current,
-      pageSize: 10,
+      pageSize,
     });
   };
 
@@ -103,7 +115,11 @@ const SpaceLog: React.FC = () => {
     run(agentId);
   }, [agentId]);
 
-  const handleDataSearch = (values: AgentLogFormProps, current: number = 1) => {
+  const handleDataSearch = (
+    values: AgentLogFormProps,
+    current: number = 1,
+    pageSize: number = pagination.pageSize,
+  ) => {
     const { timeRange, userInputString, outputString, ...info } = values;
     let startTime, endTime;
     if (timeRange?.length) {
@@ -125,7 +141,7 @@ const SpaceLog: React.FC = () => {
       output,
       ...info,
     };
-    handleQuery(queryFilter, current);
+    handleQuery(queryFilter, current, pageSize);
   };
 
   // 关闭详情
@@ -134,17 +150,15 @@ const SpaceLog: React.FC = () => {
     setCurrentLog(null);
   };
 
-  // 分页
-  const handlePaginationChange = (page: number) => {
-    setPageIndex(page);
+  // 切换页码或者每页显示的条数
+  const handlePaginationChange = (page: number, pageSize: number) => {
     const values = form.getFieldsValue();
-    handleDataSearch(values, page);
+    handleDataSearch(values, page, pageSize);
   };
 
   const onFinish: FormProps<AgentLogFormProps>['onFinish'] = (values) => {
     // 关闭详情
     handleClose();
-    setPageIndex(1);
     handleDataSearch(values);
   };
 
@@ -152,7 +166,6 @@ const SpaceLog: React.FC = () => {
   const handleReset = () => {
     // 关闭详情
     handleClose();
-    setPageIndex(1);
     // 查询日志
     handleQuery({ agentId });
   };
@@ -362,11 +375,13 @@ const SpaceLog: React.FC = () => {
               };
             }}
             pagination={{
-              total: total,
-              current: pageIndex,
-              defaultPageSize: 10,
+              ...pagination,
+              showSizeChanger: true,
               onChange: handlePaginationChange,
               showTotal: (total) => `共 ${total} 条`,
+              locale: {
+                items_per_page: '条 / 页',
+              },
             }}
           />
         </div>
