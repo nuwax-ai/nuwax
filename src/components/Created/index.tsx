@@ -2,6 +2,7 @@ import Constant from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { ICON_WORD } from '@/constants/images.constants';
 import service, { IGetList } from '@/services/created';
+import { apiTableAdd } from '@/services/dataTable';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
@@ -9,30 +10,30 @@ import {
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { getTime } from '@/utils';
+import { jumpToMcpCreate } from '@/utils/router';
 import { getImg } from '@/utils/workflow';
 import {
-  // ClockCircleOutlined,
-  // MessageOutlined,
   ProductFilled,
   SearchOutlined,
   StarFilled,
   StarOutlined,
 } from '@ant-design/icons';
-import { Button, Divider, Empty, Input, Menu, Modal, Radio, Spin } from 'antd';
-import { RadioChangeEvent } from 'antd/lib/radio';
-import { useCallback, useEffect, useRef, useState } from 'react';
-// import { useModel } from 'umi';
-import { apiTableAdd } from '@/services/dataTable';
-import { jumpToMcpCreate } from '@/utils/router';
+import { Button, Divider, Empty, Input, Menu, Modal, Radio } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
+import { RadioChangeEvent } from 'antd/lib/radio';
+import classNames from 'classnames';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useParams } from 'umi';
 import CreatedItem from '../CreatedItem';
 import CreateKnowledge from '../CreateKnowledge';
 import CreateNewPlugin from '../CreateNewPlugin';
 import CreateWorkflow from '../CreateWorkflow';
-import './index.less';
+import Loading from '../Loading';
+import styles from './index.less';
 import MCPItem from './MCPItem';
 import { CreatedProp, MenuItem } from './type';
+
+const cx = classNames.bind(styles);
 
 const defaultTabsTypes = [
   AgentComponentTypeEnum.Plugin,
@@ -197,8 +198,11 @@ const Created: React.FC<CreatedProp> = ({
       if ((params.page > sizes && params.page !== 1) || isRequesting.current)
         return;
       isRequesting.current = true;
-      // 设置loading状态为true
-      setLoading(true);
+      if (params.page === 1) {
+        // 设置loading状态为true
+        setLoading(true);
+      }
+
       const _res = await service.getList(type, { ...params, spaceId });
       isRequesting.current = false;
       // 请求完成，设置loading状态为false
@@ -358,7 +362,7 @@ const Created: React.FC<CreatedProp> = ({
       SetSelected(_item);
       setPagination({ page: 1, pageSize: 10 }); // 重置分页状态
       setSizes(100); // 重置数据大小
-      setList([]); // 清空列表
+      // setList([]); // 清空列表
 
       // 只触发一次请求
       getList(_item.key, {
@@ -412,9 +416,10 @@ const Created: React.FC<CreatedProp> = ({
       }, 100);
     }
   }, [checkTag, open]); // 添加 open 依赖
-  //   顶部的标题
+
+  // 顶部的标题
   const title = (
-    <div className="dis-left created-title">
+    <div className={cx('dis-left', styles['created-title'])}>
       <Radio.Group
         value={selected.key}
         onChange={changeTitle}
@@ -423,12 +428,13 @@ const Created: React.FC<CreatedProp> = ({
         {tabs
           .filter((item) => !hideTop?.includes(item.key))
           .map((item, index) => (
-            <span key={item.key} className="radio-title-style">
+            <span key={item.key} className={cx(styles['radio-title-style'])}>
               <Radio.Button
                 value={item.key}
-                className={`radio-button-style ${
-                  index === 0 ? 'first-radio-style' : ''
-                }`}
+                className={cx(
+                  styles['radio-button-style'],
+                  `${index === 0 ? styles['first-radio-style'] : ''}`,
+                )}
               >
                 {item.label}
               </Radio.Button>
@@ -503,21 +509,35 @@ const Created: React.FC<CreatedProp> = ({
   const renderNormalItem = (item: CreatedNodeItem, index: number) => {
     const isCurrentLoading = handleItemLoading(item);
     return (
-      <div className="dis-sb list-item-style" key={`${item.targetId}-${index}`}>
+      <div
+        className={cx('dis-sb', styles['list-item-style'])}
+        key={`${item.targetId}-${index}`}
+      >
         <img
           src={item.icon || getImg(selected.key)}
           alt=""
-          className="left-image-style"
+          className={cx(styles['left-image-style'])}
         />
-        <div className="flex-1 content-font">
-          <p className="label-font-style margin-bottom-6 text-ellipsis-2">
+        <div className={cx('flex-1', styles['content-font'])}>
+          <p
+            className={cx(
+              styles['label-font-style'],
+              'mb-6',
+              'text-ellipsis-2',
+            )}
+          >
             {item.name}
           </p>
-          <p className="margin-bottom-6 created-description-style text-ellipsis">
+          <p
+            className={cx(
+              styles['created-description-style'],
+              'mb-6',
+              'text-ellipsis',
+            )}
+          >
             {item.description}
           </p>
-          {/* <Tag>{item.tag}</Tag> */}
-          <div className="dis-sb count-div-style">
+          <div className={cx('dis-sb', styles['count-div-style'])}>
             <div className={'dis-left'}>
               <img
                 src={
@@ -529,10 +549,7 @@ const Created: React.FC<CreatedProp> = ({
               />
               <span>{item.publishUser?.nickName}</span>
               <Divider type="vertical" />
-              <span className="margin-left-6">
-                {'发布于'}
-                {getTime(item.created!)}
-              </span>
+              <span>{`发布于${getTime(item.created!)}`}</span>
               {![
                 AgentComponentTypeEnum.Knowledge,
                 AgentComponentTypeEnum.MCP,
@@ -541,17 +558,20 @@ const Created: React.FC<CreatedProp> = ({
                   <Divider type="vertical" />
                   {item.collect && (
                     <StarFilled
-                      className="collect-star icon-margin"
+                      className={cx(
+                        styles['collect-star'],
+                        styles['icon-margin'],
+                      )}
                       onClick={() => collectAndUnCollect(item)}
                     />
                   )}
                   {!item.collect && (
                     <StarOutlined
-                      className="icon-margin"
+                      className={cx(styles['icon-margin'])}
                       onClick={() => collectAndUnCollect(item)}
                     />
                   )}
-                  <span className="margin-left-6">
+                  <span>
                     {item.statistics ? item.statistics.collectCount : 0}
                   </span>
                 </>
@@ -590,16 +610,16 @@ const Created: React.FC<CreatedProp> = ({
       footer={null}
       centered
       title={title}
-      onCancel={() => onCancel()}
-      className="created-modal-style"
+      onCancel={onCancel}
+      className={cx(styles['created-modal-style'])}
       width={1096}
     >
-      <div className="created-container dis-sb-start">
+      <div className={cx(styles['created-container'], 'dis-sb-start')}>
         {/* 左侧部分 */}
-        <div className="aside-style">
+        <div className={cx(styles['aside-style'])}>
           {/* 搜索框 */}
           <Input
-            className="margin-bottom"
+            className={cx('mb-16')}
             allowClear
             value={search}
             placeholder="搜索"
@@ -621,8 +641,8 @@ const Created: React.FC<CreatedProp> = ({
           {/* 创建按钮 */}
           <Button
             type="primary"
-            className="margin-bottom"
-            style={{ width: '100%' }}
+            className={cx('mb-16')}
+            block
             onClick={() => handleClickCreate(selected.key, spaceId)}
           >{`创建${selected.label}`}</Button>
 
@@ -635,15 +655,36 @@ const Created: React.FC<CreatedProp> = ({
           ></Menu>
         </div>
         {/* 右侧部分应该是变动的 */}
-        <div className="main-style flex-1 overflow-y" ref={scrollRef}>
-          <Spin
+        <div
+          className={cx(styles['main-style'], 'flex-1', 'overflow-y')}
+          ref={scrollRef}
+        >
+          {loading ? (
+            <Loading className={cx('h-full')} />
+          ) : renderList?.length ? (
+            renderList.map((item: CreatedNodeItem, index: number) => {
+              if (selected.key === AgentComponentTypeEnum.MCP) {
+                return renderMCPItem(item, index, selected);
+              }
+              return renderNormalItem(item, index);
+            })
+          ) : (
+            <div className={cx(styles['created-list-empty-style'])}>
+              <Empty
+                description={
+                  doSearching.searching ? '暂无数据，请重新搜索' : '暂无数据'
+                }
+              />
+            </div>
+          )}
+          {/* <Spin
             spinning={loading}
             tip="加载中..."
             delay={200}
-            wrapperClassName="created-list-spin-style"
+            wrapperClassName={cx(styles['created-list-spin-style'])}
           >
             {!loading && renderList.length === 0 ? (
-              <div className="created-list-empty-style">
+              <div className={cx(styles['created-list-empty-style'])}>
                 <Empty
                   description={
                     doSearching.searching ? '暂无数据，请重新搜索' : '暂无数据'
@@ -658,7 +699,7 @@ const Created: React.FC<CreatedProp> = ({
                 return renderNormalItem(item, index);
               })
             )}
-          </Spin>
+          </Spin> */}
         </div>
       </div>
       <CreateWorkflow

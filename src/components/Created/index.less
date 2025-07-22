@@ -1,32 +1,22 @@
 @import '@/styles/color';
+
 // 去除当前model的padding
 .created-modal-style {
-  .ant-modal-header {
-    margin-bottom: 0;
-    height: 65px;
-    padding: 15px 0;
-    background-color: @WHITE04;
-  }
+  :global {
+    .ant-modal-header {
+      margin-bottom: 0;
+      height: 65px;
+      padding: 15px 0;
+      background-color: @WHITE04;
+    }
 
-  .ant-modal-body {
-    height: calc(100% - 75px);
-  }
+    .ant-modal-body {
+      height: calc(100% - 75px);
+    }
 
-  .ant-modal-content {
-    padding: 0;
-  }
-
-  .margin-bottom {
-    margin-bottom: 16px;
-  }
-
-  .margin-bottom-6 {
-    margin-bottom: 6px;
-  }
-
-  .margin-right-6 {
-    margin-right: 6px;
-    margin-left: 6px;
+    .ant-modal-content {
+      padding: 0;
+    }
   }
 }
 
@@ -39,9 +29,11 @@
   padding-left: 12px;
 
   .radio-title-style {
-    .ant-radio-button-wrapper {
-      border: none;
-      transition: none;
+    :global {
+      .ant-radio-button-wrapper {
+        border: none;
+        transition: none;
+      }
     }
 
     &:last-child {
@@ -85,12 +77,14 @@
   display: flex;
   flex-direction: column;
 
-  .ant-spin-container {
-    display: flex;
-    width: 100%;
-    flex: 1;
-    min-height: 100%;
-    flex-direction: column;
+  :global {
+    .ant-spin-container {
+      display: flex;
+      width: 100%;
+      flex: 1;
+      min-height: 100%;
+      flex-direction: column;
+    }
   }
 }
 
@@ -101,6 +95,7 @@
   justify-content: center;
   align-items: center;
 }
+
 // 内容部分
 .created-container {
   height: 70vh;
@@ -118,17 +113,23 @@
     height: 100%;
     padding-top: 20px;
     width: 270px;
-    // 替换menu的默认选中样式
-    .ant-menu-item-selected {
-      color: @BLANK04;
-      background-color: @BLANK06;
+
+    :global {
+      .ant-menu-item-selected {
+        color: @BLANK04;
+        background-color: @BLANK06;
+      }
     }
   }
-  // 消除右侧的边框
-  .ant-menu-light.ant-menu-root.ant-menu-inline {
-    border-inline-end: none;
-    background-color: @GRAY06;
+
+  :global {
+    // 消除右侧的边框
+    .ant-menu-light.ant-menu-root.ant-menu-inline {
+      border-inline-end: none;
+      background-color: @GRAY06;
+    }
   }
+
   // 右侧主题内容
   .main-style {
     background-color: @WHITE04;
@@ -160,7 +161,6 @@
       .content-font {
         font-size: 12px;
         font-weight: normal;
-        // line-height: 22px;
         letter-spacing: 0;
         color: @GRAY05;
         margin-right: 10px;
@@ -180,75 +180,6 @@
         color: @BLANK04;
       }
     }
-
-    .mcp-tools-style {
-      padding-left: 65px;
-      padding-right: 16px;
-      border-bottom: 1px solid @GRAY17;
-    }
-
-    .fold-icon-style {
-      color: #999;
-      padding: 12px;
-      margin-right: -12px;
-      font-size: 12px;
-      transition: transform ease-in-out 0.3s, color ease-in-out 0.3s;
-
-      &:hover {
-        color: #666;
-      }
-    }
-
-    .mcp-tools-item-style {
-      width: 100%;
-      display: flex;
-      flex-direction: row;
-      padding: 12px 0;
-      justify-content: space-between;
-      align-items: flex-start;
-      border-bottom: 1px solid @GRAY17;
-
-      &:last-child {
-        border-bottom: none;
-      }
-    }
-
-    .mcp-tools-item-content-style {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      min-width: 0; // 关键：允许 flex 子元素收缩，使文本截断生效
-    }
-
-    .mcp-tools-item-name-style {
-      font-size: 14px;
-      font-weight: 500;
-      color: #333;
-      line-height: 22px;
-      margin-bottom: 4px;
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      width: 100%; // 确保占满父容器宽度
-    }
-
-    .mcp-tools-item-description-style {
-      font-size: 12px;
-      color: #666;
-      line-height: 18px;
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      width: 100%; // 确保占满父容器宽度
-    }
-
-    .mcp-tools-item-button-style {
-      margin-left: 12px;
-      margin-top: 6px;
-    }
   }
 }
 
@@ -263,8 +194,5 @@
 .created-description-style {
   max-height: 35px;
   max-width: 580px;
-  // overflow: hidden;
-  // text-overflow: ellipsis;
-  // white-space: normal;
   word-break: break-word;
 }
