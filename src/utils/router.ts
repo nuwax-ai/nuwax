@@ -42,3 +42,7 @@ export const redirectToLogin = (pathname: string = '/') => {
   //TODO 注意 redirect 的用法 还未实现
   history.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
 };
+
+export const redirectTo = (url: string) => {
+  window.location.replace(url);
+};
