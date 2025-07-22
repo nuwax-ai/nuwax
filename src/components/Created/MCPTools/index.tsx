@@ -2,7 +2,11 @@ import { AgentAddComponentStatusEnum } from '@/types/enums/agent';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
 import { Button } from 'antd';
+import classNames from 'classnames';
 import { useCallback } from 'react';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 interface MCPToolsProps {
   tools: any[];
@@ -50,19 +54,24 @@ const MCPTools: React.FC<MCPToolsProps> = ({
     return null;
   }
   return (
-    <div key={`${item.targetId}-tools`} className="mcp-tools-style">
+    <div
+      key={`${item.targetId}-tools`}
+      className={cx(styles['mcp-tools-style'])}
+    >
       {tools.map((tool: any, index: number) => (
         <div
           key={`${item.targetId}-${index}-tools-${tool.name}`}
-          className="mcp-tools-item-style"
+          className={cx(styles['mcp-tools-item-style'])}
         >
-          <div className="dis-sb mcp-tools-item-content-style">
-            <div className="mcp-tools-item-name-style">{tool.name}</div>
-            <div className="mcp-tools-item-description-style">
+          <div className={cx('dis-sb', styles['mcp-tools-item-content-style'])}>
+            <div className={cx(styles['mcp-tools-item-name-style'])}>
+              {tool.name}
+            </div>
+            <div className={cx(styles['mcp-tools-item-description-style'])}>
               {tool.description || '暂无描述'}
             </div>
           </div>
-          <div className="dis-sb mcp-tools-item-button-style">
+          <div className={cx(styles['mcp-tools-item-button-style'], 'dis-sb')}>
             <Button
               color="primary"
               variant="outlined"

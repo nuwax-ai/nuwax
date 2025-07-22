@@ -1,0 +1,56 @@
+@import '@/styles/color';
+
+// 每一个样式
+.container {
+  height: 120px;
+  padding: 13px 23px;
+  box-sizing: border-box;
+  border-bottom: 1px solid @GRAY17;
+
+  .left-image-style {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-right: 13px;
+
+    svg {
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  .content-font {
+    font-size: 12px;
+    font-weight: normal;
+    letter-spacing: 0;
+    color: @GRAY05;
+    margin-right: 10px;
+
+    .count-div-style {
+      img {
+        width: 12px;
+        height: 12px;
+        margin-right: 6px;
+      }
+    }
+  }
+
+  .fold-icon-style {
+    color: #999;
+    padding: 12px;
+    margin-right: -12px;
+    font-size: 12px;
+    transition: transform ease-in-out 0.3s, color ease-in-out 0.3s;
+
+    &:hover {
+      color: #666;
+    }
+  }
+
+  .label-font-style {
+    font-size: 14px;
+    font-weight: bold;
+    color: @BLANK04;
+  }
+}
