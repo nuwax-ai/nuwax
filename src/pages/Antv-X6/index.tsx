@@ -73,12 +73,15 @@ import {
   getEdges,
   getNodeSize,
   getShape,
+  getWorkflowTestRun,
   handleExceptionNodesNextIndex,
   handleSpecialNodesNextIndex,
   QuicklyCreateEdgeConditionConfig,
+  removeWorkflowTestRun,
   returnBackgroundColor,
   returnImg,
   setFormDefaultValues,
+  setWorkflowTestRun,
 } from '@/utils/workflow';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
@@ -1323,12 +1326,19 @@ const Workflow: React.FC = () => {
               setTestRunResult(data.data.output);
             }
             setTestRunResult(JSON.stringify(data.data, null, 2));
-            localStorage.removeItem('testRun');
+            removeWorkflowTestRun({
+              spaceId,
+              workflowId,
+            });
           }
           if (data.data.status === 'STOP_WAIT_ANSWER') {
             setLoading(false);
             setStopWait(true);
-            localStorage.setItem('testRun', JSON.stringify(params));
+            setWorkflowTestRun({
+              spaceId,
+              workflowId,
+              value: JSON.stringify(params),
+            });
           }
         }
         // 更新UI状态...
@@ -1400,7 +1410,10 @@ const Workflow: React.FC = () => {
           if (data.complete) {
             if (data.data && data.data.output) {
               setTestRunResult(data.data.output);
-              localStorage.removeItem('testRun');
+              removeWorkflowTestRun({
+                spaceId,
+                workflowId,
+              });
             }
 
             setFormItemValue(
@@ -1414,7 +1427,11 @@ const Workflow: React.FC = () => {
           if (data.data.status === 'STOP_WAIT_ANSWER') {
             setLoading(false);
             setStopWait(true);
-            localStorage.setItem('testRun', JSON.stringify(params));
+            setWorkflowTestRun({
+              spaceId,
+              workflowId,
+              value: JSON.stringify(params),
+            });
             if (data.data.result) {
               setTestRunParams(data.data.result.data);
             }
@@ -1471,14 +1488,17 @@ const Workflow: React.FC = () => {
       handleClearRunResult();
       if (type === 'Start') {
         let _params: ITestRun;
-        let testRun = localStorage.getItem('testRun') || null;
+        const testRun = getWorkflowTestRun({
+          spaceId,
+          workflowId,
+        });
         if (testRun) {
           _params = {
             ...JSON.parse(testRun),
             ...(params as DefaultObjectType),
           };
           setStopWait(false);
-          localStorage.removeItem('testRun');
+          removeWorkflowTestRun({ spaceId, workflowId });
         } else {
           _params = {
             workflowId: info?.id as number,
