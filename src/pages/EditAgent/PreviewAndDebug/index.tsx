@@ -72,6 +72,15 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     requiredNameList,
   } = useModel('conversationInfo');
 
+  // 创建智能体会话
+  const { runAsyncConversationCreate } = useConversation();
+  // 会话输入框已选择组件
+  const {
+    selectedComponentList,
+    handleSelectComponent,
+    initSelectedComponentList,
+  } = useSelectedComponent();
+
   const values = Form.useWatch([], { form, preserve: true });
 
   useEffect(() => {
@@ -108,15 +117,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     }
     return false;
   }, [requiredNameList, variableParams]);
-
-  // 创建智能体会话
-  const { runAsyncConversationCreate } = useConversation();
-  // 会话输入框已选择组件
-  const {
-    selectedComponentList,
-    handleSelectComponent,
-    initSelectedComponentList,
-  } = useSelectedComponent();
 
   // 角色信息（名称、头像）
   const roleInfo: RoleInfo = useMemo(() => {
@@ -238,7 +238,15 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       return;
     }
 
-    onMessageSend(id, messageInfo, files, [], variableParams, true, false);
+    onMessageSend(
+      id,
+      messageInfo,
+      files,
+      selectedComponentList,
+      variableParams,
+      true,
+      false,
+    );
   };
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
