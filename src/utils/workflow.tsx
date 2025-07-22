@@ -953,3 +953,39 @@ export const handleFileDataConvert = (
   }
   return results;
 };
+
+export const getWorkflowTestRun = ({
+  spaceId,
+  workflowId,
+}: {
+  spaceId: number;
+  workflowId: number;
+}): string => {
+  return localStorage.getItem(`testRun_${spaceId}_${workflowId}`) || '';
+};
+
+export const setWorkflowTestRun = ({
+  spaceId,
+  workflowId,
+  value,
+}: {
+  spaceId: number;
+  workflowId: number;
+  value: string;
+}) => {
+  localStorage.setItem(`testRun_${spaceId}_${workflowId}`, value);
+};
+
+export const removeWorkflowTestRun = ({
+  spaceId,
+  workflowId,
+}: {
+  spaceId: number;
+  workflowId: number;
+}) => {
+  if (localStorage.getItem('testRun')) {
+    //清除历史数据
+    localStorage.removeItem('testRun');
+  }
+  localStorage.removeItem(`testRun_${spaceId}_${workflowId}`);
+};

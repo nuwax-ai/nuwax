@@ -76,10 +76,11 @@ type PortStatus = 'normal' | 'active';
 const initGraph = ({
   containerId,
   changeDrawer,
-  changeEdge,
   changeCondition,
+  changeEdgeConfigWithRefresh,
+  changeNodeConfigWithRefresh,
   changeZoom,
-  createNodeToPortOrEdge,
+  createNodeByPortOrEdge,
   onSaveNode,
   onClickBlank,
 }: GraphProp): Graph => {
@@ -148,7 +149,7 @@ const initGraph = ({
       y: centerY,
     });
     const dragChild = (child: StencilChildNode) => {
-      createNodeToPortOrEdge({
+      createNodeByPortOrEdge({
         child,
         sourceNode,
         portId,
@@ -680,6 +681,12 @@ const initGraph = ({
         parent.nodeConfig.extension.height = _size.height;
         parent.nodeConfig.extension.x = _position.x;
         parent.nodeConfig.extension.y = _position.y;
+        // 同步更新 innerNodes
+        if (children && children.length) {
+          parent.innerNodes = children
+            .filter((item) => item?.isNode())
+            .map((item) => item.getData());
+        }
         changeCondition({ nodeData: parent, update: NodeUpdateEnum.moved });
       }
       return;
@@ -875,7 +882,7 @@ const initGraph = ({
     const isException = _handleExceptionItemEdgeAdd(
       edge,
       (newNodeParams: ChildNode) => {
-        changeCondition({
+        changeNodeConfigWithRefresh({
           nodeData: newNodeParams,
           targetNodeId: targetNode.id.toString(),
         });
@@ -896,7 +903,7 @@ const initGraph = ({
         targetNode as ChildNode,
       );
       if (_params && typeof _params !== 'string') {
-        changeCondition({
+        changeNodeConfigWithRefresh({
           nodeData: _params,
           targetNodeId: targetNode.id.toString(),
         });
@@ -920,14 +927,14 @@ const initGraph = ({
         targetNode,
         sourcePort,
       );
-      changeCondition({
+      changeNodeConfigWithRefresh({
         nodeData: _params,
         targetNodeId: targetNode.id.toString(),
       });
       // 通知父组件更新节点信息
     } else {
       // 通知父组件创建边
-      changeEdge({
+      changeEdgeConfigWithRefresh({
         type: UpdateEdgeType.created,
         targetId: targetNodeId,
         sourceNode,
@@ -988,6 +995,7 @@ const initGraph = ({
       adjustParentSize(parentNode);
     }
   });
+
   registerNodeClickAndDblclick({ graph, changeZIndex });
 
   return graph; // 返回初始化好的图形实例

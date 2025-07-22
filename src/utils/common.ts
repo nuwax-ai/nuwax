@@ -211,7 +211,7 @@ const findClassElement = (currentElement: HTMLElement, className: string) => {
   }
   return findParentElement(currentElement, className);
 };
-
+const noop = () => {};
 export {
   addBaseTarget,
   arraysContainSameItems,
@@ -229,6 +229,7 @@ export {
   isValidJSON,
   isValidPhone,
   mergeObject,
+  noop,
   parseJSON,
   validatePassword,
   validateTableName,
