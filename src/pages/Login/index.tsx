@@ -6,6 +6,7 @@ import { apiLogin } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
 import { isValidEmail, isValidPhone, validatePassword } from '@/utils/common';
+import { redirectTo } from '@/utils/router';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { Button, Checkbox, Form, FormProps, Input, Modal, Select } from 'antd';
 import classNames from 'classnames';
@@ -38,7 +39,7 @@ const Login: React.FC = () => {
       localStorage.setItem(EXPIRE_DATE, expireDate);
       localStorage.setItem(PHONE, params[0].phoneOrEmail);
       if (redirect) {
-        history.replace(redirect);
+        redirectTo(redirect);
       } else {
         navigate('/', { replace: true });
       }
