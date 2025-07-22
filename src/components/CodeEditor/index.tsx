@@ -21,6 +21,7 @@ interface Props {
   codeOptimizeVisible?: boolean;
   // 是否只读
   readOnly?: boolean;
+  editorOptions?: any;
 }
 
 const CodeEditor: React.FC<Props> = ({
@@ -33,6 +34,7 @@ const CodeEditor: React.FC<Props> = ({
   form,
   codeOptimizeVisible = true,
   readOnly = false,
+  editorOptions,
 }) => {
   const [isMonacoReady, setIsMonacoReady] = useState(false);
   const [open, setOpen] = useState<boolean>(false);
@@ -93,7 +95,8 @@ const CodeEditor: React.FC<Props> = ({
   };
 
   // 根据语言类型动态配置编辑器选项
-  const getEditorOptions = () => {
+  const getEditorOptions = (_editorOptions?: any) => {
+    const rewriteEditorOptions = _editorOptions || {};
     const baseOptions = {
       selectOnLineNumbers: true,
       folding: true,
@@ -102,6 +105,7 @@ const CodeEditor: React.FC<Props> = ({
         enabled: minimap,
       },
       readOnly: readOnly, // 添加只读模式配置
+      ...rewriteEditorOptions,
     };
 
     // 如果是JSON语言，关闭代码输入提示相关功能
@@ -148,7 +152,7 @@ const CodeEditor: React.FC<Props> = ({
             theme="vs-dark"
             value={value}
             onChange={handleCodeChange}
-            options={getEditorOptions()}
+            options={getEditorOptions(editorOptions)}
           />
         </Form.Item>
       ) : (
@@ -159,7 +163,7 @@ const CodeEditor: React.FC<Props> = ({
           theme="vs-dark"
           value={value}
           onChange={handleCodeChange}
-          options={getEditorOptions()}
+          options={getEditorOptions(editorOptions)}
         />
       )}
       <ConditionRender condition={codeOptimizeVisible && !readOnly}>

@@ -71,6 +71,13 @@ const SeeDetailModal: React.FC<SeeDetailModalProps> = ({
           codeOptimizeVisible={false}
           minimap={false}
           readOnly={true}
+          editorOptions={{
+            wordWrap: 'bounded',
+            wrappingStrategy: 'advanced', // 更智能的换行算法
+            wrappingIndent: 'indent', // 换行后保持缩进
+            scrollBeyondLastLine: false, // 禁止滚动到空白区域
+            minimap: { enabled: false },
+          }}
         />
       </div>
     </Modal>

@@ -176,6 +176,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
           return (
             <OptimizedImage
               // key={imageKey}
+              containerClassNames={styles['markdown-image-container']}
               src={src}
               alt={alt}
               title={title}
