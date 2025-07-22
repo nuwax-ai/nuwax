@@ -807,10 +807,8 @@ const initGraph = ({
       node.updateData({
         isFocus: false,
       });
-      changeDrawer({
-        ...data,
-        id: node.id,
-      });
+      graph.cleanSelection();
+      graph.select(node);
       return;
     }
   });
