@@ -38,7 +38,7 @@ const Login: React.FC = () => {
       localStorage.setItem(EXPIRE_DATE, expireDate);
       localStorage.setItem(PHONE, params[0].phoneOrEmail);
       if (redirect) {
-        navigate(redirect, { replace: true });
+        history.replace(redirect);
       } else {
         navigate('/', { replace: true });
       }
