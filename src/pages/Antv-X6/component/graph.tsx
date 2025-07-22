@@ -77,6 +77,7 @@ const initGraph = ({
   containerId,
   changeDrawer,
   changeCondition,
+  changeEdgeConfigWithRefresh,
   changeNodeConfigWithRefresh,
   changeZoom,
   createNodeByPortOrEdge,
@@ -933,7 +934,7 @@ const initGraph = ({
       // 通知父组件更新节点信息
     } else {
       // 通知父组件创建边
-      changeNodeConfigWithRefresh({
+      changeEdgeConfigWithRefresh({
         type: UpdateEdgeType.created,
         targetId: targetNodeId,
         sourceNode,

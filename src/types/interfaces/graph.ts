@@ -242,7 +242,10 @@ export interface GraphProp {
   changeDrawer: (item: ChildNode | null) => void;
   onSaveNode: (data: ChildNode, payload: Partial<ChildNode>) => void;
   changeCondition: (config: ChangeNodeProps) => Promise<boolean>;
-  changeNodeConfigWithRefresh: (...args: any[]) => Promise<boolean>;
+  changeEdgeConfigWithRefresh: (
+    config: ChangeEdgeProps,
+  ) => Promise<number[] | boolean>;
+  changeNodeConfigWithRefresh: (config: ChangeNodeProps) => Promise<boolean>;
   changeZoom: (val: number) => void;
   // 通过连接桩或者边创建节点
   createNodeByPortOrEdge: (config: CreateNodeByPortOrEdgeProps) => void;

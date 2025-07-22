@@ -498,6 +498,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         changeDrawer: changeDrawer,
         changeCondition,
         changeNodeConfigWithRefresh,
+        changeEdgeConfigWithRefresh,
         changeZoom: changeZoom,
         createNodeByPortOrEdge,
         onSaveNode: onSaveNode,
