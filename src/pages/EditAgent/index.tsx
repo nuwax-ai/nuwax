@@ -287,6 +287,7 @@ const EditAgent: React.FC = () => {
           agentConfigInfo?.modelComponentConfig as AgentComponentInfo
         }
         open={openAgentModel}
+        devConversationId={agentConfigInfo?.devConversationId}
         onCancel={handleSetModel}
       />
     </div>

@@ -114,6 +114,7 @@ export interface AgentModelSettingProps {
   spaceId: number;
   modelComponentConfig: AgentComponentInfo;
   open: boolean;
+  devConversationId?: number;
   onCancel: (
     targetId: number,
     name: string,
