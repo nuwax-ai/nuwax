@@ -12,6 +12,16 @@ const isNumber = (value: string) => {
   return !Number.isNaN(Number(value));
 };
 
+const isWeakNumber = (value: any) => {
+  if (typeof value === 'number') {
+    return true;
+  }
+  if (value && typeof value === 'string') {
+    return isNumber(value);
+  }
+  return false;
+};
+
 // 校验手机号是否合法
 function isValidPhone(phone: string) {
   const reg = /^1[3456789]\d{9}$/;
@@ -222,6 +232,7 @@ export {
   isValidEmail,
   isValidJSON,
   isValidPhone,
+  isWeakNumber,
   mergeObject,
   noop,
   parseJSON,
