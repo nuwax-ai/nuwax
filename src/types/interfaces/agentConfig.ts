@@ -56,6 +56,7 @@ export interface AgentArrangeConfigProps {
 export interface ComponentSettingModalProps {
   open: boolean;
   currentComponentInfo?: AgentComponentInfo;
+  devConversationId?: number;
   variables?: BindConfigWithSub[];
   settingActionList?: { type: ComponentSettingEnum; label: string }[];
   onCancel: () => void;

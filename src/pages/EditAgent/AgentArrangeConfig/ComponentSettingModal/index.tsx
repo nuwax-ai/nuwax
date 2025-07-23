@@ -55,6 +55,7 @@ const cx = classNames.bind(styles);
 const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
   open,
   currentComponentInfo,
+  devConversationId,
   variables,
   onCancel,
   settingActionList = COMPONENT_SETTING_ACTIONS,
@@ -67,6 +68,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
   // 卡片列表
   const [agentCardList, setAgentCardList] = useState<AgentCardInfo[]>([]);
   const { setAgentComponentList } = useModel('spaceAgent');
+  const { runQueryConversation } = useModel('conversationInfo');
 
   useEffect(() => {
     setAction(ComponentSettingEnum.Params);
@@ -163,7 +165,8 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
       | ParamsSaveParams
       | CardBindSaveParams
       | null,
-    exceptionHandingData?: ExceptionHandingSaveParams,
+    exceptionHandingData?: ExceptionHandingSaveParams | null,
+    action?: ComponentSettingEnum,
   ) => {
     const id = componentInfo?.id || 0;
     // 如果data为null，则不更新bindConfig
@@ -177,6 +180,12 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
       ...(exceptionHandingData || {}),
     };
     await handleSaveAction(params);
+
+    // 更新会话输入框可选择组件信息
+    if (action === ComponentSettingEnum.Method_Call && devConversationId) {
+      runQueryConversation(devConversationId);
+    }
+
     // 更新当前组件信息
     setComponentInfo((info) => {
       if (info) {
@@ -214,6 +223,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
 
   const getContent = () => {
     switch (action) {
+      // 参数
       case ComponentSettingEnum.Params:
         return (
           <ParamsSetting
@@ -222,12 +232,13 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
             onSaveSet={handleSaveSetting}
           />
         );
+      // 调用方式
       case ComponentSettingEnum.Method_Call:
         return (
           <InvokeType
             invokeType={componentInfo?.bindConfig?.invokeType}
             defaultSelected={componentInfo?.bindConfig?.defaultSelected}
-            onSaveSet={handleSaveSetting}
+            onSaveSet={(data) => handleSaveSetting(data, null, action)}
           />
         );
       // 输出方式
@@ -256,6 +267,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
             onSaveSet={(data) => handleSaveSetting(null, data)}
           />
         );
+      // 卡片绑定
       case ComponentSettingEnum.Card_Bind:
         return (
           <CardBind
