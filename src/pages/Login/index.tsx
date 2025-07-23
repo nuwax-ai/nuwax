@@ -44,10 +44,7 @@ const Login: React.FC = () => {
       localStorage.setItem(PHONE, params[0].phoneOrEmail);
       const redirect = decodeURIComponent(searchParams.get('redirect') || '');
       console.info('login:redirect', redirect, responseRedirectUrl);
-      if (
-        redirect &&
-        (typeof redirect === 'number' || !isWeakNumber(redirect))
-      ) {
+      if (isWeakNumber(redirect)) {
         history.go(Number(redirect));
       } else if (responseRedirectUrl && responseRedirectUrl.includes('://')) {
         // 注意没有考虑 "//" url 的情况
