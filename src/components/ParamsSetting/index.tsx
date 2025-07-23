@@ -43,6 +43,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
   const [configArgs, setConfigArgs] = useState<BindConfigWithSub[]>([]);
   // 是否禁用button
   const [disabled, setDisabled] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (!!inputArgBindConfigs?.length) {
@@ -220,11 +221,13 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
   ];
 
   // 保存
-  const handleSave = () => {
+  const handleSave = async () => {
     const data: ParamsSaveParams = {
       inputArgBindConfigs: configArgs,
     };
-    onSaveSet(data);
+    setLoading(true);
+    await onSaveSet(data);
+    setLoading(false);
   };
 
   return (
@@ -247,6 +250,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
         <Button
           type="primary"
           onClick={handleSave}
+          loading={loading}
           className={cx({ [styles['btn-disabled']]: disabled })}
           disabled={disabled}
         >

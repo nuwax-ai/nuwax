@@ -21,6 +21,7 @@ const AsyncRun: React.FC<AsyncRunProps> = ({
   // 是否默认选中
   const [selected, setSelected] = useState<DefaultSelectedEnum>();
   const [content, setContent] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     setContent(asyncReplyContent || '已经开始为您处理，请耐心等待运行结果');
@@ -36,12 +37,14 @@ const AsyncRun: React.FC<AsyncRunProps> = ({
   }, [selected, content]);
 
   // 保存
-  const handleSave = () => {
+  const handleSave = async () => {
     const data: AsyncRunSaveParams = {
       async: selected as DefaultSelectedEnum,
       asyncReplyContent: content,
     };
-    onSaveSet(data);
+    setLoading(true);
+    await onSaveSet(data);
+    setLoading(false);
   };
 
   // 切换异步运行状态
@@ -88,6 +91,7 @@ const AsyncRun: React.FC<AsyncRunProps> = ({
         <Button
           type="primary"
           onClick={handleSave}
+          loading={loading}
           className={cx({ [styles['btn-disabled']]: disabled })}
           disabled={disabled}
         >

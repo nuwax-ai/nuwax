@@ -13,6 +13,7 @@ const cx = classNames.bind(styles);
 const OutputWay: React.FC<OutputWayProps> = ({ directOutput, onSaveSet }) => {
   const [outputDirectlyType, setOutputDirectlyType] =
     useState<OutputDirectlyEnum>();
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     setOutputDirectlyType(directOutput || OutputDirectlyEnum.No);
@@ -24,11 +25,13 @@ const OutputWay: React.FC<OutputWayProps> = ({ directOutput, onSaveSet }) => {
   };
 
   // 保存
-  const handleSave = () => {
+  const handleSave = async () => {
     const data = {
       directOutput: outputDirectlyType as OutputDirectlyEnum,
     };
-    onSaveSet(data);
+    setLoading(true);
+    await onSaveSet(data);
+    setLoading(false);
   };
 
   return (
@@ -51,7 +54,7 @@ const OutputWay: React.FC<OutputWayProps> = ({ directOutput, onSaveSet }) => {
         />
       </div>
       <footer className={cx(styles.footer)}>
-        <Button type="primary" onClick={handleSave}>
+        <Button type="primary" onClick={handleSave} loading={loading}>
           保存
         </Button>
       </footer>
