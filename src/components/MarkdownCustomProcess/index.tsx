@@ -21,6 +21,7 @@ interface MarkdownCustomProcessProps {
   status: ProcessingEnum;
   type: AgentComponentTypeEnum;
   children: React.ReactNode;
+  dataKey: string;
 }
 function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   const { getProcessingById, processingList } = useModel('chat');
@@ -140,7 +141,11 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   }
 
   return (
-    <div className={cx(styles['markdown-custom-process'])}>
+    <div
+      className={cx(styles['markdown-custom-process'])}
+      key={props.dataKey}
+      data-key={props.dataKey}
+    >
       <div className={cx(styles['process-header'])}>
         <div className={cx(styles['process-title'])}>
           {innerProcessing.name || '暂无名称'}

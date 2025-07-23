@@ -8,9 +8,15 @@ import styles from './index.less';
  */
 export const ParagraphComponent: React.FC<{
   children: React.ReactNode;
-}> = ({ children }) => {
+  dataKey: string;
+}> = ({ children, dataKey }) => {
   return (
-    <p className={styles['markdown-paragraph']} style={{ userSelect: 'text' }}>
+    <p
+      key={dataKey}
+      data-key={dataKey}
+      className={styles['markdown-paragraph']}
+      style={{ userSelect: 'text' }}
+    >
       {children}
     </p>
   );
@@ -23,11 +29,14 @@ export const ParagraphComponent: React.FC<{
 export const LinkComponent: React.FC<{
   href?: string;
   children: React.ReactNode;
-}> = ({ href, children }) => {
+  dataKey: string;
+}> = ({ href, children, dataKey }) => {
   const isExternal = href?.startsWith('http');
 
   return (
     <a
+      key={dataKey}
+      data-key={dataKey}
       href={href}
       target={isExternal ? '_blank' : undefined}
       rel={isExternal ? 'noopener noreferrer' : undefined}

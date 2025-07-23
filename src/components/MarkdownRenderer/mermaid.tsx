@@ -90,8 +90,8 @@ export default function mermaid(
             if (svg !== null) {
               const { maxWidth, maxHeight } = svg.style;
               Object.entries({
-                'max-width': maxWidth,
-                'max-height': maxHeight,
+                maxWidth,
+                maxHeight,
               }).forEach(([key, _value]) => {
                 if (_value) {
                   styles[key] = _value;
@@ -139,6 +139,8 @@ export default function mermaid(
        */
       return (
         <OptimizedImage
+          key={chartId}
+          data-key={chartId}
           src={imgSrc}
           containerClassNames="mermaid-container-img"
           // 如需动态样式，可将styleStr解析为对象后传入style属性

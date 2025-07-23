@@ -3,7 +3,6 @@ import React, {
   CSSProperties,
   memo,
   useCallback,
-  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -23,10 +22,18 @@ export interface OptimizedImageProps {
   containerClassNames?: string | string[];
   containerStyles?: CSSProperties;
   styles?: CSSProperties;
+  dataKey?: string;
 }
 
 const OptimizedImage: React.FC<OptimizedImageProps> = memo(
-  ({ src, containerClassNames, containerStyles, styles }) => {
+  ({
+    src,
+    containerClassNames,
+    containerStyles,
+    styles,
+    alt = '',
+    dataKey,
+  }) => {
     const [showPreview, setShowPreview] = useState(false);
 
     const handleError = useCallback(() => {
@@ -41,15 +48,17 @@ const OptimizedImage: React.FC<OptimizedImageProps> = memo(
       }
     }, [containerClassNames]);
 
-    useEffect(() => {
-      console.log('OptimizedImage mount', src, containerClassName);
-      return () => {
-        console.log('OptimizedImage unmount', src, containerClassName);
-      };
-    }, []);
+    // useEffect(() => {
+    //   console.log('OptimizedImage mount', src, containerClassName);
+    //   return () => {
+    //     console.log('OptimizedImage unmount', src, containerClassName);
+    //   };
+    // }, []);
 
     return (
       <div
+        key={dataKey}
+        data-key={dataKey}
         className={containerClassName || stylesInner['image-container']}
         style={containerStyles}
         onClick={() => {
@@ -62,6 +71,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = memo(
           onError={handleError}
           width="100%"
           style={styles}
+          alt={alt}
           preview={
             showPreview
               ? {

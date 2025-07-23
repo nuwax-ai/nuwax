@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import { renderCodePrismInline } from '@/utils/renderCodePrism';
 import MarkdownCodeToolbar from '../MarkdownCodeToolbar';
@@ -16,6 +16,7 @@ export interface CodeBlockProps {
   onCopy?: (content: string) => void;
   codeKey?: string; // 添加稳定的key
   mermaid: React.FC<MermaidProps>; // 修改类型为 React 组件
+  dataKey: string;
 }
 
 const CodeBlock: React.FC<CodeBlockProps> = ({
@@ -25,6 +26,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   onCopy,
   codeKey,
   mermaid: MermaidCode,
+  dataKey,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const classNames = Array.isArray(className) ? className : [className];
@@ -66,7 +68,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         // Mermaid 代码块渲染
         console.log('MermaidCode', codeContent);
         return (
-          <code className={className}>
+          <code key={dataKey} data-key={dataKey} className={className}>
             <MermaidCode
               key={id}
               value={codeContent}
@@ -80,6 +82,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
       // 普通代码块渲染，使用 Prism 高亮
       return (
         <code
+          key={dataKey}
+          data-key={dataKey}
           className={className}
           dangerouslySetInnerHTML={{
             __html: renderCodePrismInline({
@@ -92,15 +96,19 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     },
     [isMermaid, MermaidCode], // 依赖 MermaidCode 组件
   );
-  useEffect(() => {
-    console.log('CodeBlock mount', blockId, theCodeString);
-    return () => {
-      console.log('CodeBlock unmount', blockId, theCodeString);
-    };
-  }, []);
+  // useEffect(() => {
+  //   console.log('CodeBlock mount', blockId, theCodeString);
+  //   return () => {
+  //     console.log('CodeBlock unmount', blockId, theCodeString);
+  //   };
+  // }, []);
 
   return (
-    <div key={blockId} className={styles['code-block-wrapper']}>
+    <div
+      key={dataKey}
+      data-key={dataKey}
+      className={styles['code-block-wrapper']}
+    >
       <MarkdownCodeToolbar
         title={language}
         language={language}
@@ -114,7 +122,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
       />
       <pre className={className}>
         <CodeElement
-          key={`${blockId}-code-element`}
+          key={`${dataKey}-code-element`}
+          data-key={`${dataKey}-code-element`}
           value={theCodeString}
           requestId={requestId || ''}
           className={className || ''}

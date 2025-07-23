@@ -1,14 +1,7 @@
 import classNames from 'classnames';
 // import 'highlight.js/styles/github.css';
 import { isEqual } from 'lodash';
-import React, {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
@@ -53,98 +46,37 @@ const cx = classNames.bind(styles);
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
   ({ id: requestId, content, className, mermaid, onCopy }) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    // const [markdownContent, setMarkdownContent] = useState(content);
-
-    // 用于生成稳定的图片key
-    const imageKeyCounter = useRef(0);
-    const imageKeyMap = useRef<Map<string, string>>(new Map());
-
-    // 用于生成稳定的代码块key
-    const codeKeyCounter = useRef(0);
-    const codeKeyMap = useRef<Map<string, string>>(new Map());
-
-    // 用于生成稳定的列表key
-    const listKeyCounter = useRef(0);
-    const listKeyMap = useRef<Map<string, string>>(new Map());
-
-    // 用于生成稳定的列表项key
-    const listItemKeyCounter = useRef(0);
-    const listItemKeyMap = useRef<Map<string, string>>(new Map());
-
-    // 生成稳定的图片key
-    const getImageKey = useCallback(
-      (src: string) => {
-        if (!imageKeyMap.current.has(src)) {
-          imageKeyMap.current.set(
-            src,
-            `image-${requestId}-${imageKeyCounter.current++}`,
-          );
-        }
-        return imageKeyMap.current.get(src)!;
-      },
-      [requestId],
-    );
-
-    // 生成稳定的代码块key
-    const getCodeKey = useCallback(
-      (content: string, language: string) => {
-        const key = `${content.slice(0, 100)}-${language}`;
-        if (!codeKeyMap.current.has(key)) {
-          codeKeyMap.current.set(
-            key,
-            `code-${requestId}-${codeKeyCounter.current++}`,
-          );
-        }
-        return codeKeyMap.current.get(key)!;
-      },
-      [requestId],
-    );
-
-    // 生成稳定的列表key - 修复循环引用问题
-    const getListKey = useCallback(
-      (children: any, index: number) => {
-        // 使用计数器而不是序列化children
-        const key = `list-${requestId}-${index}`;
-
-        if (!listKeyMap.current.has(key)) {
-          listKeyMap.current.set(key, key);
-        }
-        return listKeyMap.current.get(key)!;
-      },
-      [requestId],
-    );
-
-    // 生成稳定的列表项key
-    const getListItemKey = useCallback(
-      (content: string, index: number) => {
-        const key = `li-${requestId}-${content
-          .slice(0, 50)
-          .replace(/[^a-zA-Z0-9]/g, '')}-${index}`;
-
-        if (!listItemKeyMap.current.has(key)) {
-          listItemKeyMap.current.set(key, key);
-        }
-        return listItemKeyMap.current.get(key)!;
-      },
-      [requestId],
-    );
 
     // 自定义组件配置
-    const components: Components = useMemo(
-      () => ({
-        code: ({ className, children, ...rest }: any) => {
+    const components: Components = useMemo(() => {
+      return {
+        code: ({ className, children, node, ...rest }: any) => {
+          const { offset } = node?.position?.start;
+          const codeKey = `${offset}-code`;
           return (
-            <code className={className} {...rest}>
+            <code
+              key={codeKey}
+              data-key={codeKey}
+              className={className}
+              {...rest}
+            >
               {children}
             </code>
           );
         },
         pre: (props: any) => {
-          const { children, ...rest } = props;
+          // console.log('pre', props, args);
+          const { children, node, ...rest } = props;
+          // console.log('pre', children.props.children);
           const hasCode = children && children?.props?.node?.tagName === 'code';
-
+          const { offset } = node?.position?.start;
+          const preKey = `${offset}-pre`;
           if (!hasCode) {
-            return <pre {...props}>{children}</pre>;
+            return (
+              <pre key={preKey} data-key={preKey} {...props}>
+                {children}
+              </pre>
+            );
           }
 
           const language =
@@ -153,15 +85,16 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
             /\n$/,
             '',
           );
-          const codeKey = getCodeKey(codeContent, language);
+          console.log('codeContent', codeContent, language);
+          // const codeKey = getCodeKey(codeContent, language);
           // console.log('codeKey', codeKey, codeContent, language);
           return (
             <CodeBlock
-              key={codeKey}
+              key={preKey}
+              dataKey={preKey}
               className={children?.props?.className}
               requestId={requestId}
               onCopy={onCopy}
-              codeKey={codeKey}
               mermaid={mermaid}
               {...rest}
             >
@@ -169,13 +102,15 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
             </CodeBlock>
           );
         },
-        img: ({ src, alt, title }: any) => {
+        img: ({ src, alt, title, node }: any) => {
           if (!src) return null;
-
+          const { offset } = node?.position?.start;
           // const imageKey = getImageKey(src);
+          const imageKey = `${offset}-img`;
           return (
             <OptimizedImage
-              // key={imageKey}
+              key={imageKey}
+              dataKey={imageKey}
               containerClassNames={styles['markdown-image-container']}
               src={src}
               alt={alt}
@@ -184,66 +119,112 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
             />
           );
         },
-        p: ({ children }: any) => (
-          <ParagraphComponent>{children}</ParagraphComponent>
-        ),
-        a: ({ href, children }: any) => (
-          <LinkComponent href={href}>{children}</LinkComponent>
-        ),
+        p: ({ children, node }: any) => {
+          const { offset } = node?.position?.start;
+          const paragraphKey = `${offset}-p`;
+          return (
+            <ParagraphComponent key={paragraphKey} dataKey={paragraphKey}>
+              {children}
+            </ParagraphComponent>
+          );
+        },
+        a: ({ href, children, node }: any) => {
+          const { offset } = node?.position?.start;
+          const linkKey = `${offset}-a`;
+          return (
+            <LinkComponent key={linkKey} dataKey={linkKey} href={href}>
+              {children}
+            </LinkComponent>
+          );
+        },
         // 优化的列表组件 - 使用计数器避免循环引用
-        ul: ({ children }: any) => {
+        ul: ({ children, node }: any) => {
           // const listKey = getListKey(children, listKeyCounter.current++);
           // console.log('ul', listKey);
-          return <OptimizedList ordered={false}>{children}</OptimizedList>;
+          const { offset } = node?.position?.start;
+          const listKey = `${offset}-ul`;
+          return (
+            <OptimizedList key={listKey} dataKey={listKey} ordered={false}>
+              {children}
+            </OptimizedList>
+          );
         },
-        ol: ({ children }: any) => {
+        ol: ({ children, node }: any) => {
           // const listKey = getListKey(children, listKeyCounter.current++);
           // console.log('ol', listKey);
-          return <OptimizedList ordered={true}>{children}</OptimizedList>;
+          const { offset } = node?.position?.start;
+          const listKey = `${offset}-ol`;
+          return (
+            <OptimizedList key={listKey} dataKey={listKey} ordered={true}>
+              {children}
+            </OptimizedList>
+          );
         },
-        'markdown-custom-process': ({ children, ...rest }: any) => {
+        'markdown-custom-process': ({
+          children,
+          node,
+          type,
+          status,
+          executeid,
+          name,
+        }: any) => {
+          const { offset } = node?.position?.start;
+          const processKey = `${offset}-process`;
           return (
             <MarkdownCustomProcess
-              key={rest.executeid}
-              type={rest.type}
-              status={rest.status}
-              executeId={rest.executeid}
-              name={decodeURIComponent(rest.name || '')}
+              key={processKey}
+              dataKey={processKey}
+              type={type}
+              status={status}
+              executeId={executeid}
+              name={decodeURIComponent(name || '')}
             >
               {children}
             </MarkdownCustomProcess>
           );
         },
-        li: ({ children }: any) => {
+        li: ({ children, node }: any) => {
           // 为列表项生成稳定的key
           // const content = String(children).slice(0, 100);
           // const itemKey = getListItemKey(content, listItemKeyCounter.current++);
-          // console.log('li', itemKey);
-          return <OptimizedListItem>{children}</OptimizedListItem>;
+          const { offset } = node?.position?.start;
+          const itemKey = `${offset}-li`;
+          return (
+            <OptimizedListItem key={itemKey} dataKey={itemKey}>
+              {children}
+            </OptimizedListItem>
+          );
         },
         // 支持表格样式
-        table: ({ children }: any) => (
-          <div className={styles['table-wrapper']}>
-            <table className={styles['markdown-table']}>{children}</table>
-          </div>
-        ),
+        table: ({ children, node }: any) => {
+          const { offset } = node?.position?.start;
+          const listKey = `${offset}-list`;
+          return (
+            <div
+              key={listKey}
+              data-key={listKey}
+              className={styles['table-wrapper']}
+            >
+              <table className={styles['markdown-table']}>{children}</table>
+            </div>
+          );
+        },
         // 支持引用样式
-        blockquote: ({ children }: any) => (
-          <blockquote className={styles['markdown-blockquote']}>
-            {children}
-          </blockquote>
-        ),
-      }),
-      [
-        requestId,
-        onCopy,
-        getImageKey,
-        getCodeKey,
-        getListKey,
-        getListItemKey,
-        mermaid,
-      ],
-    );
+        blockquote: ({ children, node }: any) => {
+          const { offset } = node?.position?.start;
+          const blockquoteKey = `${offset}-blockquote`;
+          return (
+            <blockquote
+              key={blockquoteKey}
+              data-key={blockquoteKey}
+              className={styles['markdown-blockquote']}
+            >
+              {children}
+            </blockquote>
+          );
+        },
+      };
+    }, [requestId, onCopy, mermaid]);
 
     // 插件配置
     const remarkPlugins = useMemo(
@@ -286,29 +267,17 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     //     throttledUpdate.cancel();
     //   };
     // }, [throttledUpdate, content]);
-
-    // 清理key映射
-    useEffect(() => {
-      return () => {
-        imageKeyMap.current.clear();
-        imageKeyCounter.current = 0;
-        codeKeyMap.current.clear();
-        codeKeyCounter.current = 0;
-        listKeyMap.current.clear();
-        listItemKeyMap.current.clear();
-        listItemKeyCounter.current = 0;
-        listKeyCounter.current = 0;
-      };
-    }, []);
-
+    // console.log('MarkdownRenderer', content);
     return (
       <div
         ref={containerRef}
+        key={`${requestId}`}
         id={`${requestId}`}
+        data-key={`${requestId}`}
         className={cx(styles['markdown-container'], className)}
       >
         <ReactMarkdown
-          key={requestId}
+          key={`${requestId}-markdown`}
           components={components}
           remarkPlugins={remarkPlugins}
           rehypePlugins={rehypePlugins}
