@@ -14,7 +14,7 @@ import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
 // 更新表名称和描述信息
-export function apiUpdateTableName(
+export async function apiUpdateTableName(
   data: UpdateTableNameParams,
 ): Promise<RequestResponse<number>> {
   return request(`/api/compose/db/table/updateTableName`, {
@@ -24,7 +24,7 @@ export function apiUpdateTableName(
 }
 
 // 更新表定义
-export function apiUpdateTableDefinition(
+export async function apiUpdateTableDefinition(
   data: UpdateTableDefinitionParams,
 ): Promise<RequestResponse<number>> {
   return request(`/api/compose/db/table/updateTableDefinition`, {
@@ -34,7 +34,7 @@ export function apiUpdateTableDefinition(
 }
 
 // 查询表定义列表
-export function apiComposeTableList(
+export async function apiComposeTableList(
   data: ComposeTableListParams,
 ): Promise<RequestResponse<CustomTableDefinitionInfo[]>> {
   return request(`/api/compose/db/table/list`, {
@@ -44,21 +44,25 @@ export function apiComposeTableList(
 }
 
 // 删除表定义
-export function apiTableDelete(id: number): Promise<RequestResponse<null>> {
+export async function apiTableDelete(
+  id: number,
+): Promise<RequestResponse<null>> {
   return request(`/api/compose/db/table/delete/${id}`, {
     method: 'POST',
   });
 }
 
 // 复制表结构定义
-export function apiTableCopyDefinition(): Promise<RequestResponse<number>> {
+export async function apiTableCopyDefinition(): Promise<
+  RequestResponse<number>
+> {
   return request('/api/compose/db/table/copyTableDefinition', {
     method: 'POST',
   });
 }
 
 // 新增表定义
-export function apiTableAdd(
+export async function apiTableAdd(
   data: tableAddParams,
 ): Promise<RequestResponse<number>> {
   return request('/api/compose/db/table/add', {
@@ -68,7 +72,7 @@ export function apiTableAdd(
 }
 
 // 查询表是否存在业务数据
-export function apiTableExistData(
+export async function apiTableExistData(
   tableId: number,
 ): Promise<RequestResponse<boolean>> {
   return request('/api/compose/db/table/existTableData', {
@@ -80,7 +84,7 @@ export function apiTableExistData(
 }
 
 // 查询表定义详情
-export function apiTableDetail(
+export async function apiTableDetail(
   id: number,
 ): Promise<RequestResponse<TableDefineDetails>> {
   return request(`/api/compose/db/table/detailById`, {
@@ -92,7 +96,7 @@ export function apiTableDetail(
 }
 
 // 修改业务数据
-export function apiUpdateBusinessData(
+export async function apiUpdateBusinessData(
   data: UpdateBusinessDataParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/compose/db/table/updateBusinessData', {
@@ -102,7 +106,7 @@ export function apiUpdateBusinessData(
 }
 
 // 导入业务表数据Excel
-export function apiImportExcel(
+export async function apiImportExcel(
   tableId: number,
   file: File,
 ): Promise<RequestResponse<null>> {
@@ -115,7 +119,7 @@ export function apiImportExcel(
 }
 
 // 删除表数据
-export function apiTableDeleteBusinessData(
+export async function apiTableDeleteBusinessData(
   tableId: number,
   rowId: number,
 ): Promise<RequestResponse<null>> {
@@ -129,7 +133,7 @@ export function apiTableDeleteBusinessData(
 }
 
 // 新增业务数据
-export function apiTableAddBusinessData(
+export async function apiTableAddBusinessData(
   data: UpdateBusinessDataParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/compose/db/table/addBusinessData', {
@@ -139,7 +143,7 @@ export function apiTableAddBusinessData(
 }
 
 // 查询表的业务数据
-export function apiGetTableData(
+export async function apiGetTableData(
   params: GetTableDataParams,
 ): Promise<RequestResponse<ITableData<TableRowData>>> {
   return request('/api/compose/db/table/getTableDataById', {
@@ -149,7 +153,7 @@ export function apiGetTableData(
 }
 
 // 导出业务表数据为Excel
-export function apiExportExcel(tableId: number): Promise<{ data: Blob }> {
+export async function apiExportExcel(tableId: number): Promise<{ data: Blob }> {
   return request(`/api/compose/db/table/exportExcel/${tableId}`, {
     method: 'GET',
     responseType: 'blob', // 指定响应类型为blob
@@ -158,7 +162,7 @@ export function apiExportExcel(tableId: number): Promise<{ data: Blob }> {
 }
 
 // 清空业务数据
-export function apiClearBusinessData(
+export async function apiClearBusinessData(
   tableId: number,
 ): Promise<RequestResponse<null>> {
   return request(`/api/compose/db/table/clearBusinessData/${tableId}`, {

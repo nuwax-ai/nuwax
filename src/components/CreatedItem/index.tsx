@@ -12,8 +12,9 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { CreateKnowledgeProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, Input, Modal, Radio } from 'antd';
+import { Form, Input, Radio } from 'antd';
 import React, { useEffect, useState } from 'react';
+import CustomFormModal from '../CustomFormModal';
 
 interface Info {
   name?: string;
@@ -24,6 +25,7 @@ interface Info {
 }
 
 interface CreatedItemProp extends CreateKnowledgeProps {
+  loading?: boolean;
   type:
     | AgentComponentTypeEnum.Plugin
     | AgentComponentTypeEnum.Workflow
@@ -38,10 +40,10 @@ interface CreatedItemProp extends CreateKnowledgeProps {
 }
 
 const CreatedItem: React.FC<CreatedItemProp> = ({
+  loading,
   mode = CreateUpdateModeEnum.Create,
   type,
   info,
-  // spaceId,
   open,
   onCancel,
   Confirm,
@@ -49,9 +51,12 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>('');
 
-  const handlerSubmit = async () => {
-    await form.submit();
-  };
+  useEffect(() => {
+    if (open && info) {
+      form.setFieldsValue(info);
+      setImageUrl(info.icon || '');
+    }
+  }, [open, info]);
 
   //   title
   const getTitle = () => {
@@ -77,28 +82,24 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
     };
     return _type[type];
   };
+
   // 提交数据
   const onFinish = (values: any) => {
     Confirm(values, type, mode);
   };
 
-  useEffect(() => {
-    if (info) {
-      form.setFieldsValue(info);
-    }
-  }, [info]);
+  const handlerSubmit = () => {
+    form.submit();
+  };
 
   return (
-    <Modal
-      keyboard={false} //是否能使用sec关闭
-      maskClosable={false} //点击蒙版层是否可以关闭
-      open={open}
-      onCancel={() => onCancel()}
-      centered
-      okText="确定"
-      cancelText="取消"
-      onOk={() => handlerSubmit()}
+    <CustomFormModal
+      form={form}
       title={getTitle()}
+      open={open}
+      loading={loading}
+      onCancel={onCancel}
+      onConfirm={handlerSubmit}
     >
       <Form
         form={form}
@@ -188,7 +189,7 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
           </>
         )}
       </Form>
-    </Modal>
+    </CustomFormModal>
   );
 };
 
