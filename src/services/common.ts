@@ -6,10 +6,9 @@ import {
 } from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { RequestResponse } from '@/types/interfaces/request';
-import { redirectTo, redirectToLogin } from '@/utils/router';
+import { redirectToLogin } from '@/utils/router';
 import { RequestConfig } from '@@/plugin-request/request';
 import { message } from 'antd';
-import { history } from 'umi';
 import { clearLoginStatusCache } from './userService';
 
 /**
@@ -87,13 +86,13 @@ const errorHandler = (error: any, opts: any) => {
         case USER_NO_LOGIN:
           localStorage.clear();
           clearLoginStatusCache();
-          redirectToLogin(history.pathname);
+          redirectToLogin(-1);
           break;
 
         // 重定向到登录页
         case REDIRECT_LOGIN:
           clearLoginStatusCache();
-          redirectTo(errorMessage);
+          window.location.href = errorMessage;
           break;
 
         // 智能体不存在或已下架

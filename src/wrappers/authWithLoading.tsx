@@ -119,7 +119,7 @@ const AuthWithLoading: React.FC = () => {
             'redirectToLogin',
             location.pathname,
           );
-          redirectToLogin(location.pathname);
+          redirectToLogin('-1');
         }, startTime);
       } finally {
         console.timeLog('authWithLoading', 'finally');

@@ -5,13 +5,17 @@ import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import { apiLogin } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
-import { isValidEmail, isValidPhone, validatePassword } from '@/utils/common';
-import { redirectTo } from '@/utils/router';
+import {
+  isValidEmail,
+  isValidPhone,
+  isWeakNumber,
+  validatePassword,
+} from '@/utils/common';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { Button, Checkbox, Form, FormProps, Input, Modal, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useModel, useNavigate, useRequest } from 'umi';
+import { history, useModel, useRequest, useSearchParams } from 'umi';
 import styles from './index.less';
 import SiteProtocol from './SiteProtocol';
 
@@ -20,7 +24,7 @@ const cx = classNames.bind(styles);
 const { confirm } = Modal;
 
 const Login: React.FC = () => {
-  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loginType, setLoginType] = useState<LoginTypeEnum>(
     LoginTypeEnum.Password,
   );
@@ -34,14 +38,24 @@ const Login: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: ILoginResult, params: LoginFieldType[]) => {
-      const { expireDate, token, redirect } = result;
+      const { expireDate, token, redirect: responseRedirectUrl } = result;
       localStorage.setItem(ACCESS_TOKEN, token);
       localStorage.setItem(EXPIRE_DATE, expireDate);
       localStorage.setItem(PHONE, params[0].phoneOrEmail);
-      if (redirect) {
-        redirectTo(redirect);
+      const redirect = decodeURIComponent(searchParams.get('redirect') || '');
+      console.info('login:redirect', redirect, responseRedirectUrl);
+      if (
+        redirect &&
+        (typeof redirect === 'number' || !isWeakNumber(redirect))
+      ) {
+        history.go(Number(redirect));
+      } else if (responseRedirectUrl && responseRedirectUrl.includes('://')) {
+        // 注意没有考虑 "//" url 的情况
+        window.location.href = responseRedirectUrl;
+      } else if (redirect) {
+        history.replace(redirect);
       } else {
-        navigate('/', { replace: true });
+        history.replace('/');
       }
     },
   });

@@ -1,7 +1,7 @@
 import { REDIRECT_LOGIN, USER_NO_LOGIN } from '@/constants/codes.constants';
 import { USER_INFO } from '@/constants/home.constants';
 import { apiUserInfo } from '@/services/account';
-import { redirectTo, redirectToLogin } from '@/utils/router';
+import { redirectToLogin } from '@/utils/router';
 import { message } from 'antd';
 const LOGIN_STATUS_KEY = 'userLoginStatus';
 // ===== 缓存管理方法 =====
@@ -87,13 +87,13 @@ export class UserService {
           case USER_NO_LOGIN:
             if (autoJump) {
               clearLoginStatusCache();
-              redirectToLogin(location.pathname);
+              redirectToLogin(-1);
             }
             break;
           // 重定向到登录页
           case REDIRECT_LOGIN:
             clearLoginStatusCache();
-            redirectTo(errorMessage);
+            window.location.href = errorMessage;
             break;
           // 默认错误处理
           default:
