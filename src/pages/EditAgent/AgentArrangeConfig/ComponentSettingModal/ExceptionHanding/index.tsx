@@ -21,6 +21,7 @@ const ExceptionHanding: React.FC<ExceptionHandingProps> = ({
   // 是否默认选中
   const [selected, setSelected] = useState<DefaultSelectedEnum>();
   const [content, setContent] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     setContent(fallbackMsg || '');
@@ -36,12 +37,14 @@ const ExceptionHanding: React.FC<ExceptionHandingProps> = ({
   }, [selected, content]);
 
   // 保存
-  const handleSave = () => {
+  const handleSave = async () => {
     const data: ExceptionHandingSaveParams = {
       exceptionOut: selected as DefaultSelectedEnum,
       fallbackMsg: content,
     };
-    onSaveSet(data);
+    setLoading(true);
+    await onSaveSet(data);
+    setLoading(false);
   };
 
   // 切换异步运行状态
@@ -83,6 +86,7 @@ const ExceptionHanding: React.FC<ExceptionHandingProps> = ({
         <Button
           type="primary"
           onClick={handleSave}
+          loading={loading}
           className={cx({ [styles['btn-disabled']]: disabled })}
           disabled={disabled}
         >

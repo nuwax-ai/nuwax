@@ -19,7 +19,7 @@ import { InfoCircleOutlined } from '@ant-design/icons';
 import { Flex, Modal, Segmented } from 'antd';
 import classnames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useRequest } from 'umi';
+import { useModel, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classnames.bind(styles);
@@ -30,6 +30,7 @@ const cx = classnames.bind(styles);
 const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   spaceId,
   modelComponentConfig,
+  devConversationId,
   open,
   onCancel,
 }) => {
@@ -54,6 +55,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
       reasoningModelId: null,
     });
   const componentIdRef = useRef<number>(0);
+  const { runQueryConversation } = useModel('conversationInfo');
 
   // 查询可使用模型列表接口
   const { run: runMode } = useRequest(apiModelList, {
@@ -68,12 +70,6 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
         })) || [];
       setModelConfigList(list);
     },
-  });
-
-  // 更新模型组件配置
-  const { run: runUpdate } = useRequest(apiAgentComponentModelUpdate, {
-    manual: true,
-    debounceInterval: 1000,
   });
 
   useEffect(() => {
@@ -112,11 +108,11 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   }, [modelConfigListRef.current, targetId]);
 
   // 更新模型配置
-  const handleChangeModel = (
+  const handleChangeModel = async (
     bindConfig: ComponentModelBindConfig,
     _targetId = targetId,
   ) => {
-    runUpdate({
+    await apiAgentComponentModelUpdate({
       id: componentIdRef.current,
       targetId: _targetId,
       bindConfig,
@@ -176,8 +172,9 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   };
 
   // 更新模型组件配置
-  const handleChange = (newValue: React.Key, attr: string) => {
+  const handleChange = async (newValue: React.Key, attr: string) => {
     let _value;
+    // 切换推理模型
     if (attr === 'reasoningModelId') {
       _value = Number(newValue) || null;
     } else {
@@ -189,7 +186,11 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
       mode: UpdateModeComponentEnum.Customization,
     };
     setComponentBindConfig(_componentBindConfig);
-    handleChangeModel(_componentBindConfig);
+    await handleChangeModel(_componentBindConfig);
+    // 更新已选择的推理模型信息，用于在关闭弹窗时，同步更新会话输入框中的推理模型 - 绑定的模型名称
+    if (attr === 'reasoningModelId' && devConversationId) {
+      runQueryConversation(devConversationId);
+    }
   };
 
   // 关闭按钮

@@ -62,6 +62,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
   const [urlChecked, setUrlChecked] = useState<boolean>(false);
   // 绑定跳转链接地址
   const [bindLinkUrl, setBindLinkUrl] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
   // 出参配置
   const outputArgBindConfigs = componentInfo?.bindConfig?.outputArgBindConfigs;
@@ -176,7 +177,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
   };
 
   // 保存卡片绑定
-  const handleSave = () => {
+  const handleSave = async () => {
     const configs = argList?.map((item) => {
       return {
         key: item.key,
@@ -203,7 +204,9 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
     const data: CardBindSaveParams = {
       cardBindConfig: config as CardBindConfig,
     };
-    onSaveSet(data);
+    setLoading(true);
+    await onSaveSet(data);
+    setLoading(false);
   };
 
   return (
@@ -372,7 +375,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
         </Form.Item>
       </Form>
       <footer className={cx(styles.footer)}>
-        <Button type="primary" onClick={handleSave}>
+        <Button type="primary" onClick={handleSave} loading={loading}>
           保存
         </Button>
       </footer>
