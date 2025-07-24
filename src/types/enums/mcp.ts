@@ -66,3 +66,11 @@ export enum McpExecuteTypeEnum {
   // 提示词
   PROMPT = 'PROMPT',
 }
+
+// MCP管理分段器枚举(自定义)
+export enum McpManageSegmentedEnum {
+  // 自定义服务
+  Custom = 'Custom',
+  // 官方服务
+  Official = 'Official',
+}

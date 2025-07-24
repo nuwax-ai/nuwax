@@ -3,6 +3,7 @@ import {
   FilterDeployEnum,
   McpEditHeadMenusEnum,
   McpInstallTypeEnum,
+  McpManageSegmentedEnum,
   McpMoreActionEnum,
 } from '@/types/enums/mcp';
 
@@ -56,4 +57,10 @@ export const MCP_EDIT_HEAD_MENU_LIST = [
   { value: McpEditHeadMenusEnum.Tool, label: '工具' },
   { value: McpEditHeadMenusEnum.Resource, label: '资源' },
   { value: McpEditHeadMenusEnum.Prompt, label: '提示词' },
+];
+
+// MCP管理分段器列表
+export const MCP_MANAGE_SEGMENTED_LIST = [
+  { value: McpManageSegmentedEnum.Custom, label: '自定义服务' },
+  { value: McpManageSegmentedEnum.Official, label: '官方服务' },
 ];

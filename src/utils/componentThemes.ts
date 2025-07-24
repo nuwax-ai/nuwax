@@ -16,6 +16,7 @@ type NotificationToken = Partial<
 type ModalToken = Partial<ComponentTokenMap['Modal'] | AliasToken>;
 type CardToken = Partial<ComponentTokenMap['Card'] | AliasToken>;
 type TableToken = Partial<ComponentTokenMap['Table'] | AliasToken>;
+type SegmentedToken = Partial<ComponentTokenMap['Segmented'] | AliasToken>;
 
 // 2. 定义组件级别的主题配置
 const componentThemes: ThemeConfig['components'] = {
@@ -179,6 +180,16 @@ const componentThemes: ThemeConfig['components'] = {
     iconSize: 14,
     iconMarginInlineEnd: 10,
   } as MenuToken,
+
+  // Segmented 组件
+  Segmented: {
+    borderRadius: themeTokens.borderRadius,
+    controlHeight: themeTokens.controlHeight,
+    fontSize: themeTokens.fontSize,
+    itemSelectedBg: '#fff',
+    itemSelectedColor: themeTokens.colorPrimary,
+    trackBg: '#f9f9f9',
+  } as SegmentedToken,
 };
 
 export default componentThemes;

@@ -1,11 +1,15 @@
 import Loading from '@/components/Loading';
 import SelectList from '@/components/SelectList';
-import { FILTER_DEPLOY } from '@/constants/mcp.constants';
+import {
+  FILTER_DEPLOY,
+  MCP_MANAGE_SEGMENTED_LIST,
+} from '@/constants/mcp.constants';
 import { CREATE_LIST } from '@/constants/space.constants';
 import { apiMcpDelete, apiMcpList, apiMcpStop } from '@/services/mcp';
 import {
   DeployStatusEnum,
   FilterDeployEnum,
+  McpManageSegmentedEnum,
   McpMoreActionEnum,
 } from '@/types/enums/mcp';
 import { CreateListEnum } from '@/types/enums/space';
@@ -16,7 +20,7 @@ import {
   PlusOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
-import { Button, Empty, Input, message, Modal } from 'antd';
+import { Button, Empty, Input, message, Modal, Segmented } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
@@ -50,6 +54,10 @@ const SpaceLibrary: React.FC = () => {
   // 服务导出弹窗
   const [serverExportModalVisible, setServerExportModalVisible] =
     useState<boolean>(false);
+  // 分段器
+  const [segmentedValue, setSegmentedValue] = useState<McpManageSegmentedEnum>(
+    McpManageSegmentedEnum.Custom,
+  );
   // 当前Mcp信息
   const currentMcpInfoRef = useRef<McpDetailInfo | null>(null);
   // 获取用户信息
@@ -162,7 +170,11 @@ const SpaceLibrary: React.FC = () => {
   const handleQueryAgent = (e: React.ChangeEvent<HTMLInputElement>) => {
     const _keyword = e.target.value;
     setKeyword(_keyword);
-    handleFilterList(create, deployStatus, _keyword);
+    if (segmentedValue === McpManageSegmentedEnum.Custom) {
+      handleFilterList(create, deployStatus, _keyword);
+    } else {
+      // todo: 官方服务, 搜索全局部署的MCP
+    }
   };
 
   // 清除关键词
@@ -222,6 +234,18 @@ const SpaceLibrary: React.FC = () => {
     history.push(`/space/${spaceId}/mcp/create`);
   };
 
+  // 切换分段器
+  const handleChangeSegmentedValue = (value: McpManageSegmentedEnum) => {
+    setSegmentedValue(value);
+    setKeyword('');
+    if (value === McpManageSegmentedEnum.Custom) {
+      handleFilterList(create, deployStatus, '');
+    } else {
+      // todo: 官方服务, 点击官方服务时直接展示全局部署的MCP
+      setMcpList([]);
+    }
+  };
+
   return (
     <div
       className={cx(
@@ -234,21 +258,30 @@ const SpaceLibrary: React.FC = () => {
     >
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>MCP管理</h3>
+        <Segmented
+          options={MCP_MANAGE_SEGMENTED_LIST}
+          value={segmentedValue}
+          onChange={handleChangeSegmentedValue}
+        />
         <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
           创建MCP服务
         </Button>
       </div>
       <div className={cx('flex', styles['select-search-area'])}>
-        <SelectList
-          value={create}
-          options={CREATE_LIST}
-          onChange={handlerChangeCreate}
-        />
-        <SelectList
-          value={deployStatus}
-          options={FILTER_DEPLOY}
-          onChange={handlerChangeDeployStatus}
-        />
+        {segmentedValue === McpManageSegmentedEnum.Custom && (
+          <>
+            <SelectList
+              value={create}
+              options={CREATE_LIST}
+              onChange={handlerChangeCreate}
+            />
+            <SelectList
+              value={deployStatus}
+              options={FILTER_DEPLOY}
+              onChange={handlerChangeDeployStatus}
+            />
+          </>
+        )}
         <Input
           rootClassName={cx(styles.input)}
           placeholder="搜索MCP服务"
