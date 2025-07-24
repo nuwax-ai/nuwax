@@ -18,6 +18,7 @@ import {
 } from '@/types/enums/space';
 import { AgentConfigInfo, AgentInfo } from '@/types/interfaces/agent';
 import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
+import { modalConfirm } from '@/utils/ant-custom';
 import { jumpToAgent } from '@/utils/router';
 import {
   ExclamationCircleFilled,
@@ -295,6 +296,17 @@ const SpaceDevelop: React.FC = () => {
         setOpenApiKey(true);
         setCurrentAgentInfo(agentInfo);
         break;
+      // 导出配置
+      case ApplicationMoreActionEnum.Export_Config:
+        // todo: 导出配置
+        modalConfirm(
+          `导出配置 - ${agentInfo?.name}`,
+          '如果内部包含数据表或知识库，数据本身不会导出',
+          () => {
+            console.log('导出配置');
+          },
+        );
+        break;
       // 日志
       case ApplicationMoreActionEnum.Log:
         history.push(`/space/${spaceId}/${id}/log`);
@@ -321,17 +333,26 @@ const SpaceDevelop: React.FC = () => {
     history.push(`/space/${spaceId}/agent/${agentId}`);
   };
 
+  // 导入配置
+  const handleImportConfig = () => {
+    // todo: 导入配置
+    console.log('导入配置');
+  };
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>智能体开发</h3>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setOpenCreateAgent(true)}
-        >
-          创建智能体
-        </Button>
+        <div className={cx('flex', 'gap-10')}>
+          <Button onClick={handleImportConfig}>导入配置</Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setOpenCreateAgent(true)}
+          >
+            创建智能体
+          </Button>
+        </div>
       </div>
       <div className={cx('flex', styles['select-search-area'])}>
         <SelectList

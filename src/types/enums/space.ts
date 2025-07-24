@@ -41,6 +41,8 @@ export enum ApplicationMoreActionEnum {
   Temporary_Session = 'Temporary_Session',
   // API Key
   API_Key = 'API_Key',
+  // 导出配置
+  Export_Config = 'Export_Config',
   // 日志
   Log = 'Log',
   // 下架
