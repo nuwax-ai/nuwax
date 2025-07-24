@@ -115,10 +115,7 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
   };
 
   // 获取图标，如果不存在则使用默认图
-  const getIcon = (info: ExecuteResultInfo) => {
-    if (info?.icon) {
-      return info.icon;
-    }
+  const getDefaultIcon = (info: ExecuteResultInfo) => {
     switch (info.type) {
       case AgentComponentTypeEnum.Plugin:
         return pluginImage;
@@ -174,7 +171,11 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
                 >
                   <img
                     className={cx(styles['component-img'])}
-                    src={getIcon(info)}
+                    src={info?.icon || getDefaultIcon(info)}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = getDefaultIcon(info);
+                    }}
                     alt=""
                   />
                   <span
