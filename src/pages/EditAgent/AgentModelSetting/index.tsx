@@ -151,21 +151,13 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
 
   // 生成多样性
   const handleChangeGenerateDiversity = (newValue: UpdateModeComponentEnum) => {
-    let _componentBindConfig: ComponentModelBindConfig;
-    // 自定义
-    if (newValue === UpdateModeComponentEnum.Customization) {
-      _componentBindConfig = {
-        ...componentBindConfig,
-        mode: newValue,
-      };
-    } else {
-      // 默认值
-      _componentBindConfig = {
-        ...GENERATE_DIVERSITY_OPTION_VALUE[newValue],
-        mode: newValue,
-        reasoningModelId: componentBindConfig.reasoningModelId,
-      };
-    }
+    const _componentBindConfig: ComponentModelBindConfig = {
+      ...componentBindConfig,
+      ...(newValue !== UpdateModeComponentEnum.Customization // 非自定义，使用默认值
+        ? GENERATE_DIVERSITY_OPTION_VALUE[newValue]
+        : {}),
+      mode: newValue,
+    };
 
     setComponentBindConfig(_componentBindConfig);
     handleChangeModel(_componentBindConfig);
@@ -274,7 +266,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           min={0}
           max={1}
           step={0.1}
-          value={String(componentBindConfig?.temperature)}
+          value={String(componentBindConfig?.temperature) || '0'}
           onChange={(value) => handleChange(value, 'temperature')}
         />
       </div>
@@ -288,7 +280,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           min={0}
           max={1}
           step={0.1}
-          value={String(componentBindConfig?.topP)}
+          value={String(componentBindConfig?.topP) || '0'}
           onChange={(value) => handleChange(value, 'topP')}
         />
       </div>
@@ -303,7 +295,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           min={0}
           max={100}
           step={1}
-          value={String(componentBindConfig?.contextRounds)}
+          value={String(componentBindConfig?.contextRounds) || '0'}
           onChange={(value) => handleChange(value, 'contextRounds')}
         />
       </div>
@@ -317,7 +309,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           min={1}
           max={currentModelInfo?.maxTokens || 4096}
           step={1}
-          value={String(componentBindConfig?.maxTokens)}
+          value={String(componentBindConfig?.maxTokens) || '0'}
           onChange={(value) => handleChange(value, 'maxTokens')}
         />
       </div>
