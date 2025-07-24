@@ -1,15 +1,81 @@
+@import '@/styles/color';
+
 .container {
-  padding: 24px;
-  background: #f5f5f5;
-  min-height: 100vh;
-}
+  background-color: #f3f5fa;
 
-.contentCard {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 10%);
+  .title {
+    padding-left: 24px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+  }
 
-  .ant-result {
-    padding: 80px 32px;
+  .header {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    border-bottom: none;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .tabs {
+    flex: 1;
+
+    :global {
+      .ant-tabs-nav {
+        margin-bottom: 0;
+
+        &::before {
+          content: none;
+          display: none;
+        }
+      }
+
+      .ant-tabs-tab {
+        font-size: 14px;
+        line-height: 1.2;
+      }
+
+      .ant-tabs-ink-bar {
+        background-color: @BLUE08;
+      }
+    }
+  }
+
+  .searchInput {
+    width: 240px;
+  }
+
+  .list-section {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .select {
+    width: 120px;
+  }
+
+  @media (min-width: 1200px) {
+    .list-section {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .list-section {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 768px) {
+    .list-section {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
   }
 }
