@@ -93,7 +93,7 @@ const QaModal: React.FC<QaModalProps> = ({
             autoSize={{ minRows: 5, maxRows: 8 }}
             placeholder="请输入答案内容"
             showCount
-            maxLength={2000}
+            maxLength={5000}
           />
         </Form.Item>
       </Form>
