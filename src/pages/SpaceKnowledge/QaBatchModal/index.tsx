@@ -14,7 +14,11 @@ import {
   Upload,
   message,
 } from 'antd';
+import classNames from 'classnames';
 import { useEffect, useState } from 'react';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 /**
  * QA批量导入对话框组件属性
@@ -190,15 +194,17 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
       destroyOnClose
       width={500}
     >
-      <Dragger {...uploadProps}>
-        <p className="ant-upload-drag-icon">
-          <InboxOutlined />
-        </p>
-        <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
-        <p className="ant-upload-hint">
-          仅支持Excel文件(.xlsx/.xls)，大小不超过10MB
-        </p>
-      </Dragger>
+      <div className={cx(styles.dragger)}>
+        <Dragger {...uploadProps} className={cx('h-full')}>
+          <p className="ant-upload-drag-icon">
+            <InboxOutlined />
+          </p>
+          <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
+          <p className="ant-upload-hint">
+            仅支持Excel文件(.xlsx/.xls)，大小不超过10MB
+          </p>
+        </Dragger>
+      </div>
 
       {fileList.length === 0 && (
         <div style={{ marginTop: 16, textAlign: 'center' }}>
