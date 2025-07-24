@@ -15,6 +15,7 @@ import {
   message,
 } from 'antd';
 import classNames from 'classnames';
+import { debounce } from 'lodash';
 import { useEffect, useState } from 'react';
 import styles from './index.less';
 
@@ -74,7 +75,7 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
       }
     } catch (error) {
       console.error('上传文件出错:', error);
-      onError('上传过程中发生错误，请重试');
+      setUploading(false);
     }
   };
 
@@ -119,7 +120,7 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
   /**
    * 确认上传
    */
-  const handleConfirm = () => {
+  const handleConfirm = debounce(() => {
     if (fileList.length === 0) {
       message.error('请上传文件');
       return;
@@ -139,7 +140,7 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
         message.error(errorMsg);
       },
     );
-  };
+  }, 500);
 
   /**
    * 取消操作
