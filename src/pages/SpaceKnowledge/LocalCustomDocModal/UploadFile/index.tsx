@@ -69,10 +69,11 @@ const UploadFile: React.FC<UploadFileProps> = ({
 
   return (
     <div
-      className={cx('flex flex-col content-center')}
+      className={cx('flex flex-col content-center', styles.container)}
       style={{ height: height }}
     >
       <Dragger
+        className={cx('h-full')}
         action={UPLOAD_FILE_ACTION}
         onChange={handleChange}
         multiple={multiple}

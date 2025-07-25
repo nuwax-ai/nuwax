@@ -153,23 +153,16 @@ export const GENERATE_DIVERSITY_OPTION_VALUE = {
     temperature: 0.1,
     // 累计概率: 模型在生成输出时会从概率最高的词汇开始选择;0-1
     topP: 0.7,
-    contextRounds: 100,
-    // 最大生成长度
-    maxTokens: 1024,
   },
   // 平衡模式
   [UpdateModeComponentEnum.Balanced]: {
     temperature: 1.0,
     topP: 0.7,
-    contextRounds: 100,
-    maxTokens: 1024,
   },
   // 创意模式
   [UpdateModeComponentEnum.Creative]: {
     temperature: 1.0,
     topP: 0.8,
-    contextRounds: 100,
-    maxTokens: 1024,
   },
 };
 
