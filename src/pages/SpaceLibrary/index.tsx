@@ -35,6 +35,7 @@ import {
 } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentInfo } from '@/types/interfaces/library';
+import { modalConfirm } from '@/utils/ant-custom';
 import { jumpTo, jumpToPlugin, jumpToWorkflow } from '@/utils/router';
 import {
   ExclamationCircleFilled,
@@ -90,6 +91,8 @@ const SpaceLibrary: React.FC = () => {
   // 搜索关键词
   const [keyword, setKeyword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [loadingWorkflow, setLoadingWorkflow] = useState<boolean>(false);
+  const [loadingPlugin, setLoadingPlugin] = useState<boolean>(false);
   // const [componentStatistics, setComponentStatistics] = useState<
   //   AnalyzeStatisticsItem[]
   // >([]);
@@ -164,22 +167,23 @@ const SpaceLibrary: React.FC = () => {
   };
 
   // 插件 - 复制到空间接口
-  const { run: runPluginCopyToSpace, loading: loadingPlugin } = useRequest(
-    apiPluginCopyToSpace,
-    {
-      manual: true,
-      debounceInterval: 300,
-      onSuccess: (data: number, params: number[]) => {
-        message.success('插件复制成功');
-        // 复制到空间成功后处理数据
-        handleCopyToSpaceSuccess({
-          params,
-          data,
-          type: ComponentTypeEnum.Plugin,
-        });
-      },
+  const { run: runPluginCopyToSpace } = useRequest(apiPluginCopyToSpace, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (data: number, params: number[]) => {
+      message.success('插件复制成功');
+      setLoadingPlugin(false);
+      // 复制到空间成功后处理数据
+      handleCopyToSpaceSuccess({
+        params,
+        data,
+        type: ComponentTypeEnum.Plugin,
+      });
     },
-  );
+    onError: () => {
+      setLoadingPlugin(false);
+    },
+  });
 
   // 删除成功后处理数据
   const handleDel = (id: number) => {
@@ -213,22 +217,23 @@ const SpaceLibrary: React.FC = () => {
   });
 
   // 工作流 - 复制工作流到空间
-  const { run: runWorkflowCopyToSpace, loading: loadingWorkflow } = useRequest(
-    apiWorkflowCopyToSpace,
-    {
-      manual: true,
-      debounceInterval: 300,
-      onSuccess: (data: number, params: number[]) => {
-        message.success('工作流复制成功');
-        // 复制到空间成功后处理数据
-        handleCopyToSpaceSuccess({
-          params,
-          data,
-          type: ComponentTypeEnum.Workflow,
-        });
-      },
+  const { run: runWorkflowCopyToSpace } = useRequest(apiWorkflowCopyToSpace, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (data: number, params: number[]) => {
+      message.success('工作流复制成功');
+      setLoadingWorkflow(false);
+      // 复制到空间成功后处理数据
+      handleCopyToSpaceSuccess({
+        params,
+        data,
+        type: ComponentTypeEnum.Workflow,
+      });
     },
-  );
+    onError: () => {
+      setLoadingWorkflow(false);
+    },
+  });
 
   // 工作流 - 删除工作流接口
   const { run: runWorkflowDel } = useRequest(apiWorkflowDelete, {
@@ -426,69 +431,113 @@ const SpaceLibrary: React.FC = () => {
   // 确认复制到空间
   const handlerConfirmCopyToSpace = (targetSpaceId: number) => {
     if (currentComponentInfo?.type === ComponentTypeEnum.Plugin) {
+      setLoadingPlugin(true);
       runPluginCopyToSpace(currentComponentInfo.id, targetSpaceId);
     } else if (currentComponentInfo?.type === ComponentTypeEnum.Workflow) {
+      setLoadingWorkflow(true);
       runWorkflowCopyToSpace(currentComponentInfo.id, targetSpaceId);
     }
   };
 
-  // 点击更多操作 插件： 创建副本、删除 模型：删除 工作流：创建副本、删除 知识库： 删除
+  // 点击更多操作 插件：复制到空间、导出配置、删除
+  const handlePluginClickMore = (
+    action: ApplicationMoreActionEnum,
+    info: ComponentInfo,
+  ) => {
+    switch (action) {
+      case ApplicationMoreActionEnum.Copy_To_Space:
+        setOpenMove(true);
+        setCurrentComponentInfo(info);
+        break;
+      case ApplicationMoreActionEnum.Export_Config:
+        console.log('导出配置');
+        break;
+    }
+  };
+
+  // 点击更多操作 模型：导出配置、删除
+  const handleModelClickMore = (
+    action: ApplicationMoreActionEnum,
+    info: ComponentInfo,
+  ) => {
+    switch (action) {
+      case ApplicationMoreActionEnum.Export_Config:
+        console.log('导出配置', info);
+        break;
+    }
+  };
+
+  // 点击更多操作 工作流：复制到空间、导出配置、删除
+  const handleWorkflowClickMore = (
+    action: ApplicationMoreActionEnum,
+    info: ComponentInfo,
+  ) => {
+    switch (action) {
+      case ApplicationMoreActionEnum.Copy_To_Space:
+        setOpenMove(true);
+        setCurrentComponentInfo(info);
+        break;
+      case ApplicationMoreActionEnum.Export_Config:
+        // todo: 导出配置
+        modalConfirm(
+          `导出配置 - ${info?.name}`,
+          '如果内部包含数据表或知识库，数据本身不会导出',
+          () => {
+            console.log('导出配置');
+          },
+        );
+        break;
+    }
+  };
+
+  // 点击更多操作 数据表：复制、导出配置、删除
+  const handleTableClickMore = (
+    action: ApplicationMoreActionEnum,
+    info: ComponentInfo,
+  ) => {
+    switch (action) {
+      case ApplicationMoreActionEnum.Export_Config:
+        // todo: 导出配置
+        modalConfirm(
+          `导出配置 - ${info?.name}`,
+          '仅导出数据表结构，数据本身不会导出',
+          () => {
+            console.log('导出配置');
+          },
+        );
+        break;
+      case ApplicationMoreActionEnum.Copy:
+        runCopyTable({ tableId: info.id });
+        break;
+    }
+  };
+
+  // 点击更多操作
   const handleClickMore = (item: CustomPopoverItem, info: ComponentInfo) => {
     const { action, type } = item as unknown as {
       action: ApplicationMoreActionEnum;
       type: ComponentTypeEnum;
     };
-    const { id } = info;
-    // 插件
-    if (type === ComponentTypeEnum.Plugin) {
-      switch (action) {
-        case ApplicationMoreActionEnum.Copy_To_Space:
-          setOpenMove(true);
-          setCurrentComponentInfo(info);
-          break;
-        case ApplicationMoreActionEnum.Del:
-          showDeleteConfirm(type, info);
-          break;
-      }
-    }
-
-    // 模型
-    if (
-      type === ComponentTypeEnum.Model &&
-      action === ApplicationMoreActionEnum.Del
-    ) {
+    // 删除操作，所有类型的组件都有删除操作，所以单独处理, 知识库只有删除操作
+    if (action === ApplicationMoreActionEnum.Del) {
       showDeleteConfirm(type, info);
-    }
-
-    // 工作流
-    if (type === ComponentTypeEnum.Workflow) {
-      switch (action) {
-        case ApplicationMoreActionEnum.Copy_To_Space:
-          setOpenMove(true);
-          setCurrentComponentInfo(info);
+    } else {
+      switch (type) {
+        // 插件
+        case ComponentTypeEnum.Plugin:
+          handlePluginClickMore(action, info);
           break;
-        case ApplicationMoreActionEnum.Del:
-          showDeleteConfirm(type, info);
+        // 模型
+        case ComponentTypeEnum.Model:
+          handleModelClickMore(action, info);
           break;
-      }
-    }
-
-    // 知识库
-    if (
-      type === ComponentTypeEnum.Knowledge &&
-      action === ApplicationMoreActionEnum.Del
-    ) {
-      showDeleteConfirm(type, info);
-    }
-
-    // 数据表
-    if (type === ComponentTypeEnum.Table) {
-      switch (action) {
-        case ApplicationMoreActionEnum.Del:
-          showDeleteConfirm(type, info);
+        // 工作流
+        case ComponentTypeEnum.Workflow:
+          handleWorkflowClickMore(action, info);
           break;
-        case ApplicationMoreActionEnum.Copy:
-          runCopyTable({ tableId: id });
+        // 数据表
+        case ComponentTypeEnum.Table:
+          handleTableClickMore(action, info);
           break;
       }
     }
@@ -523,6 +572,12 @@ const SpaceLibrary: React.FC = () => {
     }
   };
 
+  // 导入配置
+  const handleImportConfig = () => {
+    // todo: 导入配置
+    console.log('导入配置');
+  };
+
   return (
     <div
       className={cx(
@@ -535,15 +590,18 @@ const SpaceLibrary: React.FC = () => {
     >
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>组件库</h3>
-        {/*添加资源*/}
-        <CustomPopover
-          list={LIBRARY_ALL_RESOURCE}
-          onClick={handleClickPopoverItem}
-        >
-          <Button type="primary" icon={<PlusOutlined />}>
-            组件
-          </Button>
-        </CustomPopover>
+        <div className={cx('flex', 'gap-10')}>
+          <Button onClick={handleImportConfig}>导入配置</Button>
+          {/*添加资源*/}
+          <CustomPopover
+            list={LIBRARY_ALL_RESOURCE}
+            onClick={handleClickPopoverItem}
+          >
+            <Button type="primary" icon={<PlusOutlined />}>
+              组件
+            </Button>
+          </CustomPopover>
+        </div>
       </div>
       <div className={cx('flex', styles['select-search-area'])}>
         <SelectList

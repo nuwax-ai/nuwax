@@ -47,12 +47,22 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
     type: ComponentTypeEnum.Plugin,
   },
   {
+    action: ApplicationMoreActionEnum.Export_Config,
+    label: '导出配置',
+    type: ComponentTypeEnum.Plugin,
+  },
+  {
     action: ApplicationMoreActionEnum.Del,
     label: '删除',
     isDel: true,
     type: ComponentTypeEnum.Plugin,
   },
   // 模型
+  {
+    action: ApplicationMoreActionEnum.Export_Config,
+    label: '导出配置',
+    type: ComponentTypeEnum.Model,
+  },
   {
     action: ApplicationMoreActionEnum.Del,
     label: '删除',
@@ -63,6 +73,11 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
   {
     action: ApplicationMoreActionEnum.Copy_To_Space,
     label: '复制到空间',
+    type: ComponentTypeEnum.Workflow,
+  },
+  {
+    action: ApplicationMoreActionEnum.Export_Config,
+    label: '导出配置',
     type: ComponentTypeEnum.Workflow,
   },
   {
@@ -83,6 +98,11 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
   {
     action: ApplicationMoreActionEnum.Copy,
     label: '复制',
+    type: ComponentTypeEnum.Table,
+  },
+  {
+    action: ApplicationMoreActionEnum.Export_Config,
+    label: '导出配置',
     type: ComponentTypeEnum.Table,
   },
   {
