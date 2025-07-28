@@ -591,4 +591,49 @@
 // }
 .markdown-image-container {
   cursor: pointer;
+
+  :global {
+    .ant-image-error .ant-image-img {
+      width: unset;
+      height: unset;
+    }
+  }
+}
+
+// 增量渲染相关样式
+.markdown-chunk {
+  position: relative;
+  margin-bottom: 8px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.chunk-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.loading-dots {
+  animation: loading-dots 1.5s infinite;
+}
+
+@keyframes loading-dots {
+  0%,
+  20% {
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }

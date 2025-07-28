@@ -1,13 +1,15 @@
 export { default as CodeBlock } from './CodeBlock';
+export { default as IncrementalMarkdownRenderer } from './IncrementalMarkdownRenderer';
 export { LinkComponent, ParagraphComponent } from './MarkdownComponents';
 export {
-  BasicMarkdownRenderer,
-  ChatMarkdownRenderer,
-  FullMarkdownRenderer,
-  StandardMarkdownRenderer,
-  createMarkdownRenderer,
+  // BasicMarkdownRenderer,
+  // ChatMarkdownRenderer,
+  // FullMarkdownRenderer,
+  // StandardMarkdownRenderer,
+  // createMarkdownRenderer,
   default,
 } from './MarkdownRenderer';
+export { default as mermaid } from './mermaid';
 export { default as OptimizedImage } from './OptimizedImage';
 export { OptimizedList, OptimizedListItem } from './OptimizedList';
 // 修复类型导出错误：只导出实际存在的类型，避免编译报错

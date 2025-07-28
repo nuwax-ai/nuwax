@@ -3,7 +3,7 @@ import avatar from '@/assets/images/avatar.png';
 import copyImage from '@/assets/images/copy.png';
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
-import { ChatMarkdownRenderer } from '@/components/MarkdownRenderer';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 import { USER_INFO } from '@/constants/home.constants';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
@@ -13,8 +13,9 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { message } from 'antd';
 import classNames from 'classnames';
+import { MarkdownCMDRef } from 'ds-markdown';
 import { isEqual } from 'lodash';
-import React, { memo, useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
@@ -29,8 +30,10 @@ const cx = classNames.bind(styles);
 // 聊天视图组件
 const ChatView: React.FC<ChatViewProps> = memo(
   ({ className, contentClassName, roleInfo, messageInfo, mode = 'chat' }) => {
+    const markdownRef = useRef<MarkdownCMDRef>(null);
+    const lastTextPos = useRef(0);
     const { userInfo } = useModel('userInfo');
-    const [initUuid, setInitUuid] = useState('');
+    const messageId = useRef(messageInfo?.id || uuidv4());
     const _userInfo =
       userInfo || JSON.parse(localStorage.getItem(USER_INFO) as string);
 
@@ -64,32 +67,46 @@ const ChatView: React.FC<ChatViewProps> = memo(
       message.success('代码复制成功');
     };
 
-    // 自定义 CSS 类名配置，复用 ChatView 的样式
-    const markdownConfig = {
-      cssClasses: {
-        codeBlockWrapper: 'code-block-wrapper',
-        codeHeader: 'code-header',
-        extBox: 'ext-box',
-        copyImg: 'copy-img',
-        customTable: 'markdown-it-custom-table',
-        imageOverlay: 'image-overlay',
-      },
-      // 确保全局函数正确启用，包括代码折叠功能
-      globalFunctions: {
-        handleClipboard: true,
-        showImageInModal: true,
-        toggleCodeCollapse: true,
-      },
-    };
+    const disableTyping = useMemo(() => {
+      return true;
+    }, []);
 
     useEffect(() => {
-      if (!messageInfo?.id && !initUuid) {
-        setInitUuid(uuidv4());
+      console.log(
+        'messageInfo',
+        messageInfo?.text,
+        lastTextPos.current,
+        messageId.current,
+        messageInfo?.processingList,
+      );
+      console.log('disableTyping', disableTyping);
+      if (messageInfo?.text) {
+        //取出差量部分
+        const diffText = messageInfo?.text.slice(lastTextPos.current);
+        lastTextPos.current = messageInfo?.text.length;
+        // 由于text 是全量的，所以需要处理增量部分
+        // 处理增量渲染
+        markdownRef.current?.push(diffText, 'answer');
+      } else if (messageInfo?.think) {
+        const diffText = messageInfo?.think.slice(lastTextPos.current);
+        lastTextPos.current = messageInfo?.think.length;
+        markdownRef.current?.push(diffText, 'thinking');
+      } else {
+        markdownRef.current?.clear();
       }
+    }, [messageInfo?.text]);
+    useEffect(() => {
+      // console.log('messageInfo:mount', messageInfo.id, messageInfo);
       return () => {
-        setInitUuid('');
+        // console.log('messageInfo:unmount', messageInfo.id, messageInfo);
+        markdownRef.current?.clear();
+        lastTextPos.current = 0;
+        messageId.current = '';
       };
-    }, [messageInfo?.id]);
+    }, []);
+    const trim = useCallback((text: string) => {
+      return text.replace(/^\s+|\s+$/g, '');
+    }, []);
 
     return (
       <div className={cx(styles.container, 'flex', className)}>
@@ -112,14 +129,17 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     styles.user,
                     'radius-6',
                     contentClassName,
+                    'ds-markdown',
                   )}
                 >
-                  <ChatMarkdownRenderer
-                    id={`text-${messageInfo?.id || initUuid}`}
-                    content={messageInfo.text}
-                    config={markdownConfig}
-                    onCopy={handleCodeCopy}
-                  />
+                  <div className="ds-markdown-answer">
+                    <div
+                      style={{ whiteSpace: 'pre-wrap' }}
+                      className="ds-markdown-paragraph ds-typed-answer"
+                    >
+                      {trim(messageInfo?.text)}
+                    </div>
+                  </div>
                 </div>
                 <div
                   className={cx(
@@ -172,10 +192,12 @@ const ChatView: React.FC<ChatViewProps> = memo(
                       'w-full',
                     )}
                   >
-                    <ChatMarkdownRenderer
-                      id={`think-${messageInfo?.id || initUuid}`}
-                      content={messageInfo.think}
-                      config={markdownConfig}
+                    <MarkdownRenderer
+                      key={`think-${messageId.current}`}
+                      id={`think-${messageId.current}`}
+                      markdownRef={markdownRef}
+                      answerType="thinking"
+                      disableTyping={disableTyping}
                       onCopy={handleCodeCopy}
                     />
                   </div>
@@ -193,10 +215,12 @@ const ChatView: React.FC<ChatViewProps> = memo(
                       },
                     )}
                   >
-                    <ChatMarkdownRenderer
-                      id={`text-${messageInfo?.id || initUuid}`}
-                      content={messageInfo.text}
-                      config={markdownConfig}
+                    <MarkdownRenderer
+                      key={`text-${messageId.current}`}
+                      id={`text-${messageId.current}`}
+                      markdownRef={markdownRef}
+                      answerType="answer"
+                      disableTyping={disableTyping}
                       onCopy={handleCodeCopy}
                     />
                   </div>

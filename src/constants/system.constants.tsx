@@ -9,6 +9,7 @@ import {
   MessageScopeEnum,
   SystemManageListEnum,
 } from '@/types/enums/systemManage';
+import { CodeOutlined } from '@ant-design/icons';
 
 // 系统管理应用列表（layout二级菜单）
 export const SYSTEM_MANAGE_LIST = [
@@ -36,6 +37,11 @@ export const SYSTEM_MANAGE_LIST = [
     type: SystemManageListEnum.System_Config,
     icon: <ICON_SETTING_SMALL />,
     text: '系统配置',
+  },
+  {
+    type: 'markdown-test',
+    icon: <CodeOutlined />,
+    text: 'Markdown 测试',
   },
 ];
 

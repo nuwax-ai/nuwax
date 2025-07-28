@@ -1,3 +1,5 @@
+import { MarkdownCMDRef } from 'ds-markdown';
+
 // 插件配置类型
 export interface PluginConfig {
   name: string;
@@ -64,14 +66,18 @@ export interface MermaidProps {
   id: string;
   className?: string;
   language?: string;
+  dataKey?: string;
 }
 // 组件 Props 类型
 export interface MarkdownRendererProps {
   id: string;
-  content: string;
-  config?: MarkdownRendererConfig;
+  content?: string;
+  // config?: MarkdownRendererConfig;
   className?: string;
-  mermaid: (props: MermaidProps) => React.ReactNode;
+  mermaid?: (props: MermaidProps) => React.ReactNode;
+  disableTyping?: boolean;
+  answerType?: 'answer' | 'thinking';
+  markdownRef?: React.RefObject<MarkdownCMDRef>;
   onCopy?: () => void;
 }
 
