@@ -129,12 +129,6 @@ const UserManage: React.FC = () => {
 
   const columns = [
     {
-      title: '昵称',
-      dataIndex: 'nickName',
-      key: 'nickName',
-      width: 100,
-    },
-    {
       title: '用户名',
       dataIndex: 'userName',
       key: 'userName',
@@ -142,6 +136,12 @@ const UserManage: React.FC = () => {
       render: (text: string) => {
         return text ? text : '--';
       },
+    },
+    {
+      title: '昵称',
+      dataIndex: 'nickName',
+      key: 'nickName',
+      width: 100,
     },
     {
       title: '手机号码',
