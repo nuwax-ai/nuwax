@@ -1,4 +1,4 @@
-import Constant from '@/constants/codes.constants';
+import Constant, { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { ICON_WORD } from '@/constants/images.constants';
 import service, { IGetList } from '@/services/created';
@@ -18,7 +18,16 @@ import {
   StarFilled,
   StarOutlined,
 } from '@ant-design/icons';
-import { Button, Divider, Empty, Input, Menu, Modal, Radio } from 'antd';
+import {
+  Button,
+  Divider,
+  Empty,
+  Input,
+  Menu,
+  message,
+  Modal,
+  Radio,
+} from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import { RadioChangeEvent } from 'antd/lib/radio';
 import classNames from 'classnames';
@@ -57,7 +66,8 @@ const Created: React.FC<CreatedProp> = ({
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
   // const { spaceId } = useModel('workflow');
-  const { spaceId } = useParams();
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
 
   // 打开、关闭创建弹窗
   const [showCreate, setShowCreate] = useState(false);
@@ -203,22 +213,29 @@ const Created: React.FC<CreatedProp> = ({
         setLoading(true);
       }
 
-      const _res = await service.getList(type, { ...params, spaceId });
+      const {
+        code,
+        data,
+        message: messageText,
+      } = await service.getList(type, { ...params, spaceId });
       isRequesting.current = false;
       // 请求完成，设置loading状态为false
       setLoading(false);
 
-      setSizes(_res.data.pages);
+      if (code !== SUCCESS_CODE) {
+        message.error(messageText);
+        return;
+      }
+
+      setSizes(data.pages);
       setPagination((prev) => ({
         ...prev,
-        page: _res.data.current,
-        total: _res.data.total,
+        page: data.current,
+        total: data.total,
       }));
       setList((prev) => {
         const newList =
-          params.page === 1
-            ? [..._res.data.records]
-            : [...prev, ..._res.data.records];
+          params.page === 1 ? [...data.records] : [...prev, ...data.records];
 
         setDoSearching({ ...doSearching, list: newList }); //同步更新缓存列表
         return newList;
