@@ -14,7 +14,12 @@ import {
   Upload,
   message,
 } from 'antd';
+import classNames from 'classnames';
+import { debounce } from 'lodash';
 import { useEffect, useState } from 'react';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 /**
  * QA批量导入对话框组件属性
@@ -70,7 +75,7 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
       }
     } catch (error) {
       console.error('上传文件出错:', error);
-      onError('上传过程中发生错误，请重试');
+      setUploading(false);
     }
   };
 
@@ -115,7 +120,7 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
   /**
    * 确认上传
    */
-  const handleConfirm = () => {
+  const handleConfirm = debounce(() => {
     if (fileList.length === 0) {
       message.error('请上传文件');
       return;
@@ -135,7 +140,7 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
         message.error(errorMsg);
       },
     );
-  };
+  }, 500);
 
   /**
    * 取消操作
@@ -190,15 +195,17 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
       destroyOnClose
       width={500}
     >
-      <Dragger {...uploadProps}>
-        <p className="ant-upload-drag-icon">
-          <InboxOutlined />
-        </p>
-        <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
-        <p className="ant-upload-hint">
-          仅支持Excel文件(.xlsx/.xls)，大小不超过10MB
-        </p>
-      </Dragger>
+      <div className={cx(styles.dragger)}>
+        <Dragger {...uploadProps} className={cx('h-full')}>
+          <p className="ant-upload-drag-icon">
+            <InboxOutlined />
+          </p>
+          <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
+          <p className="ant-upload-hint">
+            仅支持Excel文件(.xlsx/.xls)，大小不超过10MB
+          </p>
+        </Dragger>
+      </div>
 
       {fileList.length === 0 && (
         <div style={{ marginTop: 16, textAlign: 'center' }}>

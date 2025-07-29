@@ -13,36 +13,34 @@ const RecommendList: React.FC<RecommendListProps> = ({
   chatSuggestList,
   onClick,
 }) => {
-  return (
-    <div className={cx(styles.container, 'flex', 'flex-col', className)}>
-      {loading ? (
-        <div className={cx('flex')}>
-          <LoadingOutlined />
-        </div>
-      ) : (
-        chatSuggestList?.map((item, index) => {
-          if (!item) {
-            return null;
-          }
-          return (
-            <div
-              key={index}
-              onClick={() => onClick(item)}
-              className={cx(
-                styles.box,
-                'px-16',
-                'cursor-pointer',
-                'hover-box',
-                itemClassName,
-              )}
-            >
-              {item}
-            </div>
-          );
-        })
-      )}
+  return loading ? (
+    <div className={cx('flex', styles['loading-box'])}>
+      <LoadingOutlined />
     </div>
-  );
+  ) : chatSuggestList?.length > 0 ? (
+    <div className={cx(styles.container, 'flex', 'flex-col', className)}>
+      {chatSuggestList?.map((item, index) => {
+        if (!item) {
+          return null;
+        }
+        return (
+          <div
+            key={index}
+            onClick={() => onClick(item)}
+            className={cx(
+              styles.box,
+              'px-16',
+              'cursor-pointer',
+              'hover-box',
+              itemClassName,
+            )}
+          >
+            {item}
+          </div>
+        );
+      })}
+    </div>
+  ) : null;
 };
 
 export default RecommendList;

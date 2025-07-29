@@ -34,7 +34,6 @@ import {
   Checkbox,
   Form,
   Input,
-  message,
   Radio,
   Select,
   Space,
@@ -42,7 +41,7 @@ import {
   Tooltip,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useRequest } from 'umi';
 import styles from './index.less';
 import PluginHeader from './PluginHeader';
@@ -88,9 +87,9 @@ const SpacePluginTool: React.FC = () => {
     handleOutputConfigAdd,
     handleOutputConfigArgs,
     handleConfirmPublishPlugin,
+    handleUpdateSuccess,
+    isClickSaveBtnRef,
   } = usePluginConfig();
-
-  const isClickSaveBtnRef = useRef<boolean>(false);
 
   // 查询插件信息
   const { run: runPluginInfo } = useRequest(apiPluginInfo, {
@@ -123,10 +122,7 @@ const SpacePluginTool: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      if (isClickSaveBtnRef.current) {
-        message.success('插件保存成功');
-        isClickSaveBtnRef.current = false;
-      }
+      handleUpdateSuccess();
     },
   });
 

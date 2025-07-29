@@ -7,7 +7,7 @@ import {
 } from '@/services/userService';
 import { redirectToLogin } from '@/utils/router';
 import React, { useEffect, useState } from 'react';
-import { Navigate, Outlet, useLocation } from 'umi';
+import { Outlet, useLocation } from 'umi';
 
 /**
  * 带加载状态的鉴权组件
@@ -17,7 +17,6 @@ import { Navigate, Outlet, useLocation } from 'umi';
 const AuthWithLoading: React.FC = () => {
   // ===== 状态定义 =====
   const [loading, setLoading] = useState(true); // 默认显示加载状态
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const location = useLocation();
 
   // ===== 常量定义 =====
@@ -61,46 +60,80 @@ const AuthWithLoading: React.FC = () => {
   // ===== 副作用 =====
   useEffect(() => {
     // 验证登录状态
+    console.time('authWithLoading');
     const checkLoginStatus = async () => {
       const startTime = Date.now();
-
+      console.timeLog('authWithLoading', 'start');
       try {
         // 先检查sessionStorage中是否有登录状态记录
         const cachedLoginStatus = getLoginStatusFromCache();
 
         // 如果有缓存的登录状态，直接使用
         if (cachedLoginStatus !== null) {
-          setIsLoggedIn(cachedLoginStatus);
           setLoading(false); //直接展示内容
+          console.timeLog(
+            'authWithLoading',
+            'cachedLoginStatus',
+            cachedLoginStatus,
+          );
         } else {
+          console.timeLog('authWithLoading', 'fetchUserInfoFromServer:start');
           // 如果没有缓存，调用用户信息接口验证登录状态
           const data = await UserService.fetchUserInfoFromServer(false);
+          console.timeLog(
+            'authWithLoading',
+            'fetchUserInfoFromServer:data',
+            data,
+          );
           if (data) {
             // 更新本地用户信息并缓存登录状态
-            executeWithMinTime(() => setIsLoggedIn(true), startTime);
+            console.timeLog(
+              'authWithLoading',
+              'fetchUserInfoFromServer:success',
+            );
             setLoginStatusToCache(true);
           } else {
-            setIsLoggedIn(false);
             clearLoginStatusCache();
-            executeWithMinTime(() => setLoading(false), startTime);
+            executeWithMinTime(() => {
+              console.timeLog(
+                'authWithLoading',
+                'fetchUserInfoFromServer:error',
+                'setLoading(false)',
+              );
+              setLoading(false);
+            }, startTime);
           }
         }
       } catch (error) {
+        console.timeLog('authWithLoading', 'catch', error);
         console.error('验证登录状态失败:', error);
-        setIsLoggedIn(false);
-        setLoading(false);
 
         // 清除可能存在的无效缓存
         clearLoginStatusCache();
 
         // 确保重定向也遵循最小加载时间
-        executeWithMinTime(() => redirectToLogin(location.pathname), startTime);
+        executeWithMinTime(() => {
+          console.timeLog(
+            'authWithLoading',
+            'catch',
+            'redirectToLogin',
+            location.pathname,
+          );
+          redirectToLogin('-1');
+        }, startTime);
       } finally {
-        executeWithMinTime(() => setLoading(false), startTime);
+        console.timeLog('authWithLoading', 'finally');
+        executeWithMinTime(() => {
+          console.timeLog('authWithLoading', 'finally', 'setLoading(false)');
+          setLoading(false);
+        }, startTime);
       }
     };
 
     checkLoginStatus();
+    return () => {
+      console.timeEnd('authWithLoading');
+    };
   }, [location.pathname]);
 
   // ===== 渲染逻辑 =====
@@ -126,7 +159,7 @@ const AuthWithLoading: React.FC = () => {
   }
 
   // 根据登录状态决定渲染内容或重定向
-  return isLoggedIn ? <Outlet /> : <Navigate to="/login" />;
+  return <Outlet />;
 };
 
 export default AuthWithLoading;

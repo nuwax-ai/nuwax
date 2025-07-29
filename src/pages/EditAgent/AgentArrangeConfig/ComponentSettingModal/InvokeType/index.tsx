@@ -27,6 +27,7 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
   const [selected, setSelected] = useState<DefaultSelectedEnum>(
     DefaultSelectedEnum.No,
   );
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     setType(invokeType || InvokeTypeEnum.AUTO);
@@ -39,12 +40,14 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
   };
 
   // 保存
-  const handleSave = () => {
+  const handleSave = async () => {
     const data: InvokeTypeSaveParams = {
       invokeType: type as InvokeTypeEnum,
       defaultSelected: selected,
     };
-    onSaveSet(data);
+    setLoading(true);
+    await onSaveSet(data);
+    setLoading(false);
   };
 
   return (
@@ -90,7 +93,7 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
         </ConditionRender>
       </div>
       <footer className={cx(styles.footer)}>
-        <Button type="primary" onClick={handleSave}>
+        <Button type="primary" onClick={handleSave} loading={loading}>
           保存
         </Button>
       </footer>

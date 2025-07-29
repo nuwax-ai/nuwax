@@ -62,6 +62,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
   const [urlChecked, setUrlChecked] = useState<boolean>(false);
   // 绑定跳转链接地址
   const [bindLinkUrl, setBindLinkUrl] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
   // 出参配置
   const outputArgBindConfigs = componentInfo?.bindConfig?.outputArgBindConfigs;
@@ -94,14 +95,21 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
       if (cardBindConfig?.cardArgsBindConfigs?.length) {
         const list = cardBindConfig?.cardArgsBindConfigs?.map(
           (item: CardArgsBindConfigInfo) => {
+            // 获取卡片参数的placeholder
+            const placeholder =
+              cardInfo?.argList?.find((info) => info.key === item.key)
+                ?.placeholder || '';
             return {
               // 字段名
               key: item.key,
               // 卡片key值
               cardKey: item.bindValue,
+              // 卡片参数的placeholder
+              placeholder,
             };
           },
         );
+
         setArgList(list);
       }
     } else {
@@ -153,10 +161,10 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
   };
 
   // 为卡片内的列表项绑定数据(选择下拉选择项)
-  const handleSelectDataSource = (node: BindConfigWithSub, index: number) => {
+  const handleSelectDataSource = (index: number, node?: BindConfigWithSub) => {
     const _argList = cloneDeep(argList);
     _argList[index].open = false;
-    _argList[index].cardKey = node.key;
+    _argList[index].cardKey = node?.key || '';
     setArgList(_argList);
   };
 
@@ -169,7 +177,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
   };
 
   // 保存卡片绑定
-  const handleSave = () => {
+  const handleSave = async () => {
     const configs = argList?.map((item) => {
       return {
         key: item.key,
@@ -196,7 +204,9 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
     const data: CardBindSaveParams = {
       cardBindConfig: config as CardBindConfig,
     };
-    onSaveSet(data);
+    setLoading(true);
+    await onSaveSet(data);
+    setLoading(false);
   };
 
   return (
@@ -230,6 +240,11 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
             </Form.Item>
             <Form.Item label="为卡片整体绑定一个数组">
               <Select
+                allowClear
+                onClear={() => {
+                  setCardKey('');
+                  setOpenBindArray(false);
+                }}
                 popupMatchSelectWidth={false}
                 open={openBindArray}
                 value={cardKey || null}
@@ -244,6 +259,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
                       treeData={bindArray}
                       height={300}
                       blockNode
+                      defaultExpandAll
                       onClick={(e) => {
                         e.stopPropagation();
                       }}
@@ -268,11 +284,13 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
               <div className={cx('flex', 'items-center', styles['space-box'])}>
                 <span className={cx(styles['radius-number'])}>{index + 1}</span>
                 <Select
+                  allowClear
+                  onClear={() => handleSelectDataSource(index)}
                   rootClassName={cx('flex-1')}
                   popupMatchSelectWidth={false}
                   disabled={cardStyle === BindCardStyleEnum.LIST && !cardKey}
                   open={Boolean(info?.open)}
-                  value={info?.cardKey}
+                  value={info?.cardKey || null}
                   onDropdownVisibleChange={(open) => handleArgList(index, open)}
                   onClick={() => handleArgList(index, true)}
                   dropdownRender={() =>
@@ -281,11 +299,12 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
                         treeData={dataSource}
                         height={300}
                         blockNode
+                        defaultExpandAll
                         onClick={(e) => {
                           e.stopPropagation();
                         }}
                         onSelect={(_, { node }) =>
-                          handleSelectDataSource(node, index)
+                          handleSelectDataSource(index, node)
                         }
                         fieldNames={{
                           title: 'name',
@@ -320,6 +339,10 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
           <ConditionRender condition={urlChecked}>
             <Select
               allowClear
+              onClear={() => {
+                setBindLinkUrl('');
+                setUrlVisible(false);
+              }}
               rootClassName={cx('flex-1')}
               popupMatchSelectWidth={false}
               open={urlVisible}
@@ -331,6 +354,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
                   treeData={dataSource}
                   height={300}
                   blockNode
+                  defaultExpandAll
                   onClick={(e) => {
                     e.stopPropagation();
                   }}
@@ -351,7 +375,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
         </Form.Item>
       </Form>
       <footer className={cx(styles.footer)}>
-        <Button type="primary" onClick={handleSave}>
+        <Button type="primary" onClick={handleSave} loading={loading}>
           保存
         </Button>
       </footer>

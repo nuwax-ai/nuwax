@@ -13,7 +13,7 @@ import { useRequest } from 'ahooks';
 import { Button, message, Popconfirm, Select, Table } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import CreateModel from '../SpaceLibrary/CreateModel';
 
@@ -86,7 +86,7 @@ const GlobalModelManage: React.FC = () => {
       title: '更新时间',
       dataIndex: 'created',
       width: 200,
-      render: (created) => <>{moment(created).format('YYYY-MM-DD HH:mm:ss')}</>,
+      render: (created) => <>{dayjs(created).format('YYYY-MM-DD HH:mm:ss')}</>,
     },
     {
       title: '操作',

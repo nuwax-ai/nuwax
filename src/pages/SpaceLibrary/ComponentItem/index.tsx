@@ -11,7 +11,7 @@ import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentItemProps } from '@/types/interfaces/library';
 import { CheckCircleTwoTone, MoreOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React, { memo, useEffect, useMemo, useState } from 'react';
 import BoxInfo from './BoxInfo';
 import styles from './index.less';
@@ -110,7 +110,7 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
             {componentInfo.creator?.nickName || componentInfo.creator?.userName}
           </div>
           <div className={cx(styles['edit-time'], 'text-ellipsis')}>
-            最近编辑 {moment(componentInfo.modified).format('MM-DD HH:mm')}
+            最近编辑 {dayjs(componentInfo.modified).format('MM-DD HH:mm')}
           </div>
         </div>
         <ConditionRender condition={actionList?.length}>

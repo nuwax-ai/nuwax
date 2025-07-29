@@ -14,6 +14,7 @@ export interface ILoginResult {
   token: string;
   expireDate: string;
   resetPass: number;
+  redirect: string | null;
 }
 
 // 发送验证码

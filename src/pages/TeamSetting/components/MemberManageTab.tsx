@@ -10,7 +10,7 @@ import { CheckOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { Button, Input, message, Modal, Select, Table } from 'antd';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import AddMember from './AddMember';
 
@@ -128,7 +128,7 @@ const MemberManageTab: React.FC<MemberManageTabProps> = ({ spaceId, role }) => {
       key: 'created',
       width: '180px',
       render: (created: string) => {
-        return moment(created).format('YYYY-MM-DD HH:mm:ss');
+        return dayjs(created).format('YYYY-MM-DD HH:mm:ss');
       },
     },
     ...(role !== TeamStatusEnum.User

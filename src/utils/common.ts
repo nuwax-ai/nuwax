@@ -1,5 +1,7 @@
 import type { FileType } from '@/types/interfaces/common';
 import cloneDeep from 'lodash/cloneDeep';
+import { mergeObject } from 'ut2';
+
 // 过滤非数字
 const getNumbersOnly = (text: string) => {
   return text?.replace(/[^0-9]/g, '');
@@ -8,6 +10,16 @@ const getNumbersOnly = (text: string) => {
 // 判断字符串是否全是数字
 const isNumber = (value: string) => {
   return !Number.isNaN(Number(value));
+};
+
+const isWeakNumber = (value: any) => {
+  if (typeof value === 'number') {
+    return true;
+  }
+  if (value && typeof value === 'string') {
+    return isNumber(value);
+  }
+  return false;
 };
 
 // 校验手机号是否合法
@@ -103,6 +115,11 @@ const addBaseTarget = () => {
     base.target = '_blank';
     document.head.append(base);
   }
+};
+
+// 判断对象是否为空
+const isEmptyObject = (obj: Record<string, any>) => {
+  return obj && typeof obj === 'object' && Object.keys(obj).length === 0;
 };
 
 // 格式化时间
@@ -204,7 +221,7 @@ const findClassElement = (currentElement: HTMLElement, className: string) => {
   }
   return findParentElement(currentElement, className);
 };
-
+const noop = () => {};
 export {
   addBaseTarget,
   arraysContainSameItems,
@@ -216,10 +233,14 @@ export {
   getBase64,
   getNumbersOnly,
   getURLParams,
+  isEmptyObject,
   isNumber,
   isValidEmail,
   isValidJSON,
   isValidPhone,
+  isWeakNumber,
+  mergeObject,
+  noop,
   parseJSON,
   validatePassword,
   validateTableName,

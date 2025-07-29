@@ -24,6 +24,7 @@ import {
 } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'umi';
+import TooltipIcon from '../TooltipIcon';
 import './index.less';
 import ModelListItem from './listItem/index';
 import { ModelSettingProp } from './type';
@@ -180,9 +181,7 @@ const Content: React.FC<ContentProps> = ({
     <div className="dis-sb">
       <div className="dis-left label-style">
         <span className="mr-16">{title}</span>
-        <Popover content={content}>
-          <InfoCircleOutlined />
-        </Popover>
+        <TooltipIcon title={content} icon={<InfoCircleOutlined />} />
       </div>
       <Form.Item style={{ marginBottom: '0', flex: 1 }} noStyle>
         <Flex gap="middle">

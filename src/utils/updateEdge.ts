@@ -11,7 +11,7 @@ interface UpdateNodeEdgesParams {
   id?: string;
   graphUpdateNode: (nodeId: string, newData: ChildNode | null) => void;
   graphDeleteEdge: (id: string) => void;
-  getReference: () => void;
+  callback: () => Promise<boolean> | void;
 }
 export const updateNodeEdges = async ({
   type,
@@ -20,7 +20,7 @@ export const updateNodeEdges = async ({
   id,
   graphUpdateNode,
   graphDeleteEdge,
-  getReference,
+  callback,
 }: UpdateNodeEdgesParams): Promise<number[] | false> => {
   const _nextNodeIds =
     sourceNode.nextNodeIds === null ? [] : (sourceNode.nextNodeIds as number[]);
@@ -63,12 +63,16 @@ export const updateNodeEdges = async ({
         nextNodeIds: beforeNextNodeIds,
       });
       if (isCreated) {
+        // 如果是通过边创建的节点，那么就需要删除边
+        // 接口返回失败就是把之前添加的边删除
         graphDeleteEdge(String(id));
       }
+      return false;
     } else {
-      getReference();
+      callback?.();
       // graphUpdateNode(updateNodeId, _res.data);
       // getNodeConfig(sourceNode.id);
+      return _params.nodeId;
     }
   } catch (error) {
     console.error('Failed to add edge:', error);
@@ -77,6 +81,6 @@ export const updateNodeEdges = async ({
       ...sourceNode,
       nextNodeIds: beforeNextNodeIds,
     });
+    return false;
   }
-  return _params.nodeId;
 };

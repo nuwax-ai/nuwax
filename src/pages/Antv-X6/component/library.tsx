@@ -2,6 +2,7 @@
 import Created from '@/components/Created';
 import TreeInput from '@/components/FormListItem/TreeInput';
 import { SkillList } from '@/components/Skill';
+import TooltipIcon from '@/components/TooltipIcon';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
@@ -11,7 +12,7 @@ import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Empty, Form, Popover, Select, Slider } from 'antd';
+import { Button, Empty, Form, Select, Slider } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import '../index.less';
@@ -147,21 +148,12 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
       </div>
       <div className="knowledge-node-box node-item-style">
         <div className="dis-sb mb-16">
-          <div className="knowlegenow-left-title">
+          <div className="knowlegenow-left-title flex items-center">
             <span>搜索策略</span>
-            <Popover
-              styles={{
-                body: {
-                  width: '300px',
-                },
-              }}
-              placement="right"
-              content={
-                '从知识库中获取知识的检索方式，不同的检索策略可以更有效地找到正确的信息，提高其生成的答案的准确性和可用性'
-              }
-            >
-              <InfoCircleOutlined className="margin-right-6" />
-            </Popover>
+            <TooltipIcon
+              title="从知识库中获取知识的检索方式，不同的检索策略可以更有效地找到正确的信息，提高其生成的答案的准确性和可用性"
+              icon={<InfoCircleOutlined />}
+            />
           </div>
           <Form.Item name={['searchStrategy']} noStyle>
             <Select
@@ -175,21 +167,12 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
           </Form.Item>
         </div>
         <div className="dis-sb mb-16">
-          <div className="knowlegenow-left-title">
+          <div className="knowlegenow-left-title flex items-center">
             <span>最大召回数量</span>
-            <Popover
-              styles={{
-                body: {
-                  width: '300px',
-                },
-              }}
-              placement="right"
-              content={
-                '从知识库中返回给大模型的最大段落数，数值越大返回的内容越多'
-              }
-            >
-              <InfoCircleOutlined className="margin-right-6" />
-            </Popover>
+            <TooltipIcon
+              title="从知识库中返回给大模型的最大段落数，数值越大返回的内容越多"
+              icon={<InfoCircleOutlined />}
+            />
           </div>
           <Form.Item name={['maxRecallCount']} noStyle>
             <Slider
@@ -202,21 +185,12 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
           </Form.Item>
         </div>
         <div className="dis-sb ">
-          <div className="knowlegenow-left-title">
+          <div className="knowlegenow-left-title flex items-center">
             <span>最小匹配度</span>
-            <Popover
-              styles={{
-                body: {
-                  width: '300px',
-                },
-              }}
-              placement="right"
-              content={
-                '根据设置的匹配度选取段落返回给大模型，低于设定匹配度的内容不会被召回'
-              }
-            >
-              <InfoCircleOutlined className="margin-right-6" />
-            </Popover>
+            <TooltipIcon
+              title="根据设置的匹配度选取段落返回给大模型，低于设定匹配度的内容不会被召回"
+              icon={<InfoCircleOutlined />}
+            />
           </div>
           <Form.Item name={'matchingDegree'} noStyle>
             <Slider

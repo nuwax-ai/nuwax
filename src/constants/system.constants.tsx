@@ -9,7 +9,7 @@ import {
   MessageScopeEnum,
   SystemManageListEnum,
 } from '@/types/enums/systemManage';
-import { CodeOutlined } from '@ant-design/icons';
+import { TabsProps } from 'antd';
 
 // 系统管理应用列表（layout二级菜单）
 export const SYSTEM_MANAGE_LIST = [
@@ -38,11 +38,6 @@ export const SYSTEM_MANAGE_LIST = [
     icon: <ICON_SETTING_SMALL />,
     text: '系统配置',
   },
-  {
-    type: 'markdown-test',
-    icon: <CodeOutlined />,
-    text: 'Markdown 测试',
-  },
 ];
 
 // 消息类型, Broadcast时可以不传userIds,可用值:Broadcast,Private,System
@@ -54,5 +49,25 @@ export const MESSAGE_SCOPE_OPTIONS = [
   {
     label: '系统消息（全部用户）',
     value: MessageScopeEnum.System,
+  },
+];
+
+// 系统配置页面tab
+export const SYSTEM_SETTING_TABS: TabsProps['items'] = [
+  {
+    key: 'BaseConfig',
+    label: '基础配置',
+  },
+  {
+    key: 'ModelSetting',
+    label: '默认模型设置',
+  },
+  {
+    key: 'AgentSetting',
+    label: '站点智能体设置',
+  },
+  {
+    key: 'DomainBind',
+    label: '域名绑定',
   },
 ];

@@ -12,7 +12,7 @@ import { McpComponentItemProps, McpDetailInfo } from '@/types/interfaces/mcp';
 import { getMcpDeployStatus } from '@/utils/mcp';
 import { CheckCircleTwoTone, MoreOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useState } from 'react';
 import BoxInfo from './BoxInfo';
 import styles from './index.less';
@@ -123,8 +123,8 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
           </div>
           <div className={cx(styles.time, 'text-ellipsis')}>
             {mcpInfo.deployStatus === DeployStatusEnum.Deployed
-              ? `发布于 ${moment(mcpInfo.deployed).format('MM-DD HH:mm')}`
-              : `创建于 ${moment(mcpInfo.created).format('MM-DD HH:mm')}`}
+              ? `发布于 ${dayjs(mcpInfo.deployed).format('MM-DD HH:mm')}`
+              : `创建于 ${dayjs(mcpInfo.created).format('MM-DD HH:mm')}`}
           </div>
         </div>
         <CustomPopover list={actionList} onClick={onClickMore}>

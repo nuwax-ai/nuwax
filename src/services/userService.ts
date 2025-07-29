@@ -87,7 +87,7 @@ export class UserService {
           case USER_NO_LOGIN:
             if (autoJump) {
               clearLoginStatusCache();
-              redirectToLogin(location.pathname);
+              redirectToLogin(-1);
             }
             break;
           // 重定向到登录页

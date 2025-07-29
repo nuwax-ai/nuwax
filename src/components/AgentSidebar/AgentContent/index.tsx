@@ -25,6 +25,8 @@ const AgentContent: React.FC<AgentContentProps> = ({
 }) => {
   // 复制弹窗
   const [openMove, setOpenMove] = useState<boolean>(false);
+  const [copyTemplateLoading, setCopyTemplateLoading] =
+    useState<boolean>(false);
 
   const handleCopy = () => {
     message.success('复制成功');
@@ -49,7 +51,7 @@ const AgentContent: React.FC<AgentContentProps> = ({
   });
 
   // 智能体、工作流模板复制
-  const { run: runCopyTemplate, loading } = useRequest(apiPublishTemplateCopy, {
+  const { run: runCopyTemplate } = useRequest(apiPublishTemplateCopy, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (
@@ -61,12 +63,16 @@ const AgentContent: React.FC<AgentContentProps> = ({
       }[],
     ) => {
       message.success('模板复制成功');
+      setCopyTemplateLoading(false);
       // 关闭弹窗
       setOpenMove(false);
       // 目标空间ID
       const { targetSpaceId } = params[0];
       // 跳转
       jumpToAgent(targetSpaceId, data);
+    },
+    onError: () => {
+      setCopyTemplateLoading(false);
     },
   });
 
@@ -82,12 +88,14 @@ const AgentContent: React.FC<AgentContentProps> = ({
 
   // 智能体、工作流模板复制
   const handlerConfirmCopyTemplate = (targetSpaceId: number) => {
+    setCopyTemplateLoading(true);
     runCopyTemplate({
       targetType: AgentComponentTypeEnum.Agent,
       targetId: agentDetail?.agentId,
       targetSpaceId,
     });
   };
+
   if (!agentDetail) {
     return null;
   }
@@ -152,7 +160,7 @@ const AgentContent: React.FC<AgentContentProps> = ({
         {/*智能体迁移弹窗*/}
         <MoveCopyComponent
           spaceId={agentDetail?.spaceId || 0}
-          loading={loading}
+          loading={copyTemplateLoading}
           type={ApplicationMoreActionEnum.Copy_To_Space}
           open={openMove}
           isTemplate={true}

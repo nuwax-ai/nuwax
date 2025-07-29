@@ -89,6 +89,7 @@ const SpaceTable = () => {
   const tableDetailRef = useRef<TableDefineDetails | null>(null);
   // 防止文件上传重复处理
   const processingFileRef = useRef<string | null>(null);
+  const [editTableLoading, setEditTableLoading] = useState<boolean>(false);
 
   // 点击弹出编辑框
   const handleCreateOrEditData = (data?: TableRowData) => {
@@ -325,6 +326,7 @@ const SpaceTable = () => {
       return;
     }
     const { icon, name, description } = info;
+    setEditTableLoading(true);
 
     // 确保必需字段不为空
     if (!name) {
@@ -340,6 +342,7 @@ const SpaceTable = () => {
     };
     await apiUpdateTableName(_params);
     message.success('修改成功');
+    setEditTableLoading(false);
     setTableDetail({
       ...(tableDetail as TableDefineDetails),
       tableName: name,
@@ -615,6 +618,7 @@ const SpaceTable = () => {
         onCancel={() => setEditTableDataVisible(false)}
       />
       <CreatedItem
+        loading={editTableLoading}
         type={AgentComponentTypeEnum.Table}
         mode={CreateUpdateModeEnum.Update}
         spaceId={spaceId}

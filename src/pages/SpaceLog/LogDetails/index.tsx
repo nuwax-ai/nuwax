@@ -125,10 +125,7 @@ const LogDetails: React.FC<LogDetailsProps> = ({
   };
 
   // 获取图标，如果不存在则使用默认图
-  const getIcon = (info: ExecuteResultInfo) => {
-    if (info?.icon) {
-      return info.icon;
-    }
+  const getDefaultIcon = (info: ExecuteResultInfo) => {
     switch (info.type) {
       case AgentComponentTypeEnum.Plugin:
         return pluginImage;
@@ -186,7 +183,11 @@ const LogDetails: React.FC<LogDetailsProps> = ({
                 >
                   <img
                     className={cx(styles['component-img'])}
-                    src={getIcon(info)}
+                    src={info?.icon || getDefaultIcon(info)}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = getDefaultIcon(info);
+                    }}
                     alt=""
                   />
                   <span

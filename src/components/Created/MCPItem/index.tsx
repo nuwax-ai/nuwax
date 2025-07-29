@@ -6,7 +6,12 @@ import { getImg } from '@/utils/workflow';
 import { DownOutlined } from '@ant-design/icons';
 import { Divider } from 'antd';
 import React, { useState } from 'react';
-import MCPTools from './MCPTools';
+import MCPTools from '../MCPTools';
+
+import classNames from 'classnames';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 interface MCPItemProps {
   item: CreatedNodeItem;
@@ -30,7 +35,7 @@ const MCPItem: React.FC<MCPItemProps> = ({
   return (
     <>
       <div
-        className="dis-sb list-item-style cursor-pointer"
+        className={cx('dis-sb', styles.container, 'cursor-pointer')}
         style={{ height: 'unset' }}
         key={`${item.targetId}-${index}`}
         onClick={() => setFold(!fold)}
@@ -38,17 +43,21 @@ const MCPItem: React.FC<MCPItemProps> = ({
         <img
           src={item.icon || getImg(selected.key as AgentComponentTypeEnum)}
           alt=""
-          className="left-image-style"
+          className={cx(styles['left-image-style'])}
         />
-        <div className="flex-1 content-font">
-          <p className="label-font-style margin-bottom-6">{item.name}</p>
+        <div className={cx('flex-1', styles['content-font'])}>
+          <p className={cx(styles['label-font-style'], 'mb-6')}>{item.name}</p>
           <p
-            className="margin-bottom-6 created-description-style text-ellipsis-2"
+            className={cx(
+              'mb-6',
+              styles['created-description-style'],
+              'text-ellipsis-2',
+            )}
             title={item.description}
           >
             {item.description}
           </p>
-          <div className="dis-sb count-div-style">
+          <div className={cx('dis-sb', styles['count-div-style'])}>
             <div className={'dis-left'}>
               <img
                 src={
@@ -60,7 +69,7 @@ const MCPItem: React.FC<MCPItemProps> = ({
               />
               <span>{item.publishUser?.nickName}</span>
               <Divider type="vertical" />
-              <span className="margin-left-6">
+              <span>
                 {'部署于'}
                 {getTime(item.deployed!)}
               </span>
@@ -69,9 +78,9 @@ const MCPItem: React.FC<MCPItemProps> = ({
         </div>
         <DownOutlined
           onClick={() => setFold(!fold)}
-          className="fold-icon-style"
+          className={cx(styles['fold-icon-style'])}
           style={{
-            transform: fold ? 'rotate(0deg)' : 'rotate(180deg)',
+            transform: fold ? 'rotate(-90deg)' : 'rotate(0)',
           }}
         />
       </div>

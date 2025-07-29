@@ -6,9 +6,9 @@ import {
 } from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { redirectToLogin } from '@/utils/router';
 import { RequestConfig } from '@@/plugin-request/request';
 import { message } from 'antd';
-import { history } from 'umi';
 import { clearLoginStatusCache } from './userService';
 
 /**
@@ -86,7 +86,7 @@ const errorHandler = (error: any, opts: any) => {
         case USER_NO_LOGIN:
           localStorage.clear();
           clearLoginStatusCache();
-          history.push('/login');
+          redirectToLogin(-1);
           break;
 
         // 重定向到登录页

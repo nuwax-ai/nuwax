@@ -39,20 +39,25 @@ import {
   ConversationFinalResult,
 } from '@/types/interfaces/conversationInfo';
 import { RequestResponse } from '@/types/interfaces/request';
+import { isEmptyObject } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { useRequest } from 'ahooks';
-import moment from 'moment/moment';
+import { message } from 'antd';
+import dayjs from 'dayjs';
 import { useCallback, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
+
 export default () => {
   // 会话信息
   const [conversationInfo, setConversationInfo] =
     useState<ConversationInfo | null>();
   // 是否用户问题建议
-  const [isSuggest, setIsSuggest] = useState<boolean>(true);
+  const [isSuggest, setIsSuggest] = useState<boolean>(false);
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
+  // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
+  const messageListRef = useRef<MessageInfo[]>([]);
   // 会话问题建议
   const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
   const messageViewRef = useRef<HTMLDivElement | null>(null);
@@ -67,10 +72,13 @@ export default () => {
   // 会话消息ID
   const messageIdRef = useRef<string>('');
   // 调试结果
-  const [finalResult, setFinalResult] = useState<ConversationFinalResult>();
+  const [finalResult, setFinalResult] =
+    useState<ConversationFinalResult | null>(null);
+  // 是否需要更新主题
   const needUpdateTopicRef = useRef<boolean>(true);
   // 展示台卡片列表
   const [cardList, setCardList] = useState<CardInfo[]>([]);
+  // 是否正在加载会话
   const [isLoadingConversation, setIsLoadingConversation] =
     useState<boolean>(false);
   // 添加一个 ref 来控制是否允许自动滚动
@@ -94,15 +102,21 @@ export default () => {
   const { runHistory } = useModel('conversationHistory');
   const { handleChatProcessingList } = useModel('chat');
 
+  // 滚动到底部
+  const messageViewScrollToBottom = () => {
+    // 滚动到底部
+    messageViewRef.current?.scrollTo({
+      top: messageViewRef.current?.scrollHeight,
+      behavior: 'smooth',
+    });
+  };
+
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const handleScrollBottom = () => {
     if (allowAutoScrollRef.current) {
       scrollTimeoutRef.current = setTimeout(() => {
         // 滚动到底部
-        messageViewRef.current?.scrollTo({
-          top: messageViewRef.current?.scrollHeight,
-          behavior: 'smooth',
-        });
+        messageViewScrollToBottom();
       }, 400);
     }
   };
@@ -182,7 +196,12 @@ export default () => {
       else {
         setChatSuggestList(data?.agent?.openingGuidQuestions || []);
       }
-      handleScrollBottom();
+
+      // 使用 setTimeout 确保在 DOM 完全渲染后再滚动
+      setTimeout(() => {
+        // 滚动到底部
+        messageViewScrollToBottom();
+      }, 800);
     },
     onError: () => {
       setIsLoadingConversation(true);
@@ -259,16 +278,24 @@ export default () => {
             data?.cardBindConfig &&
             data?.cardData
           ) {
-            // 自动展开展示台
-            setShowType(EditAgentShowType.Show_Stand);
             // 卡片列表
             setCardList((cardList) => {
               // 竖向列表
               if (
                 data.cardBindConfig?.bindCardStyle === BindCardStyleEnum.LIST
               ) {
+                // 过滤掉空对象, 因为cardData中可能存在空对象
+                const _cardData =
+                  data?.cardData?.filter(
+                    (item: CardDataInfo) => !isEmptyObject(item),
+                  ) || [];
+                // 如果卡片列表不为空，则自动展开展示台
+                if (_cardData?.length) {
+                  // 自动展开展示台
+                  setShowType(EditAgentShowType.Show_Stand);
+                }
                 const cardDataList =
-                  data?.cardData?.map((item: CardDataInfo) => ({
+                  _cardData?.map((item: CardDataInfo) => ({
                     ...item,
                     cardKey: data.cardBindConfig.cardKey,
                   })) || [];
@@ -277,6 +304,8 @@ export default () => {
                   ? [...cardList, ...cardDataList]
                   : [...cardDataList];
               }
+              // 自动展开展示台
+              setShowType(EditAgentShowType.Show_Stand);
               // 单张卡片
               const cardInfo = {
                 ...data?.cardData,
@@ -312,7 +341,8 @@ export default () => {
             newMessage = {
               ...currentMessage,
               text: `${currentMessage.text}${text}`,
-              status: MessageStatusEnum.Incomplete,
+              // 如果finished为true，则状态为null，此时不会显示运行状态组件，否则为Incomplete
+              status: finished ? null : MessageStatusEnum.Incomplete,
             };
             if (ext?.length) {
               // 问题建议
@@ -443,16 +473,18 @@ export default () => {
           }
         }
       },
-      // onError: () => {
-      //   console.log('onError222222', currentMessageId, messageList);
-      //   // 当前消息
-      //   setMessageList((messageInfo) => {
-      //     if (messageInfo?.id === currentMessageId) {
-      //       return { ...messageInfo, status: MessageStatusEnum.Error };
-      //     }
-      //     return messageInfo;
-      //   });
-      // },
+      onError: () => {
+        message.error('网络超时或服务不可用，请稍后再试');
+        // 将当前会话的loading状态的消息改为Error状态
+        const list =
+          messageListRef.current?.map((info: MessageInfo) => {
+            if (info?.id === currentMessageId) {
+              return { ...info, status: MessageStatusEnum.Error };
+            }
+            return info;
+          }) || [];
+        setMessageList(list);
+      },
     });
     // 主动关闭连接
     // 确保 abortConnectionRef.current 是一个可调用的函数
@@ -487,19 +519,28 @@ export default () => {
   const resetInit = () => {
     handleClearSideEffect();
     setShowType(EditAgentShowType.Hide);
-    setCardList([]);
-    setMessageList([]);
-    setConversationInfo(null);
     setManualComponents([]);
     needUpdateTopicRef.current = true;
     allowAutoScrollRef.current = true;
     setShowScrollBtn(false);
+    // 重置卡片列表
+    setCardList([]);
+    // 重置消息列表
+    setMessageList([]);
+    // 重置会话信息
+    setConversationInfo(null);
+    // 重置问题建议
+    setIsSuggest(false);
+    // 重置请求ID
+    setRequestId('');
+    // 重置调试结果
+    setFinalResult(null);
   };
 
   // 发送消息
   const onMessageSend = async (
     id: number,
-    message: string,
+    messageInfo: string,
     files: UploadFileInfo[] = [],
     infos: AgentSelectedComponentInfo[] = [],
     variableParams?: Record<string, string | number>,
@@ -523,8 +564,8 @@ export default () => {
     const chatMessage = {
       role: AssistantRoleEnum.USER,
       type: MessageModeEnum.CHAT,
-      text: message,
-      time: moment().toString(),
+      text: messageInfo,
+      time: dayjs().toString(),
       attachments,
       id: uuidv4(),
       messageType: MessageTypeEnum.USER,
@@ -537,23 +578,29 @@ export default () => {
       type: MessageModeEnum.CHAT,
       text: '',
       think: '',
-      time: moment().toString(), // 将 moment 对象转换为字符串以匹配 MessageInfo 类型
+      time: dayjs().toString(),
       id: currentMessageId,
       messageType: MessageTypeEnum.ASSISTANT,
       status: MessageStatusEnum.Loading,
     } as MessageInfo;
 
-    setMessageList((list) => {
-      const _list =
-        list?.map((item) => {
-          if (item.status === MessageStatusEnum.Incomplete) {
-            item.status = MessageStatusEnum.Complete;
-          }
-          return item;
-        }) || [];
+    // 将Incomplete状态的消息改为Complete状态
+    const completeMessageList =
+      messageList?.map((item: MessageInfo) => {
+        if (item.status === MessageStatusEnum.Incomplete) {
+          item.status = MessageStatusEnum.Complete;
+        }
+        return item;
+      }) || [];
+    const newMessageList = [
+      ...completeMessageList,
+      chatMessage,
+      currentMessage,
+    ];
+    setMessageList(newMessageList);
+    // 缓存消息列表
+    messageListRef.current = newMessageList;
 
-      return [..._list, chatMessage, currentMessage] as MessageInfo[];
-    });
     // 允许滚动
     allowAutoScrollRef.current = true;
     // 隐藏点击下滚按钮
@@ -564,7 +611,7 @@ export default () => {
     const params: ConversationChatParams = {
       conversationId: id,
       variableParams,
-      message,
+      message: messageInfo,
       attachments,
       debug,
       selectedComponents: infos,
@@ -602,6 +649,7 @@ export default () => {
     onMessageSend,
     handleDebug,
     messageViewRef,
+    messageViewScrollToBottom,
     allowAutoScrollRef,
     scrollTimeoutRef,
     showType,

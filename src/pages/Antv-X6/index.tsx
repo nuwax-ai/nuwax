@@ -44,7 +44,7 @@ import {
   ChangeEdgeProps,
   ChangeNodeProps,
   ChildNode,
-  CreateNodeToPortOrEdgeProps,
+  CreateNodeByPortOrEdgeProps,
   CurrentNodeRefProps,
   Edge,
   GraphContainerRef,
@@ -59,7 +59,7 @@ import {
   TestRunParams,
 } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
-import { cloneDeep } from '@/utils/common';
+import { cloneDeep, noop } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { calculateNodePosition, getCoordinates } from '@/utils/graph';
 import { updateNodeEdges } from '@/utils/updateEdge';
@@ -73,19 +73,21 @@ import {
   getEdges,
   getNodeSize,
   getShape,
+  getWorkflowTestRun,
   handleExceptionNodesNextIndex,
   handleSpecialNodesNextIndex,
   QuicklyCreateEdgeConditionConfig,
+  removeWorkflowTestRun,
   returnBackgroundColor,
   returnImg,
   setFormDefaultValues,
+  setWorkflowTestRun,
 } from '@/utils/workflow';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
 import { Form, message, Spin } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
-import { mergeObject } from 'ut2';
 import { v4 as uuidv4 } from 'uuid';
 import NodePanelDrawer from './components/NodePanelDrawer';
 import VersionAction from './components/VersionAction';
@@ -316,10 +318,13 @@ const Workflow: React.FC = () => {
   };
 
   // 节点添加或移除边
-  const nodeChangeEdge = async (config: ChangeEdgeProps) => {
+  const nodeChangeEdge = async (
+    config: ChangeEdgeProps,
+    callback: () => Promise<boolean> | void = () =>
+      getReference(getWorkflow('drawerForm').id),
+  ) => {
     const { type, targetId, sourceNode, id } = config;
-    if (!graphRef.current) return;
-
+    if (!graphRef.current) return false;
     const { graphUpdateNode, graphDeleteEdge } = graphRef.current;
     const newNodeIds = await updateNodeEdges({
       type,
@@ -328,7 +333,7 @@ const Workflow: React.FC = () => {
       id,
       graphUpdateNode,
       graphDeleteEdge,
-      getReference: () => getReference(getWorkflow('drawerForm').id),
+      callback,
     });
 
     if (newNodeIds) {
@@ -336,6 +341,7 @@ const Workflow: React.FC = () => {
         nextNodeIds: newNodeIds,
       });
     }
+    return newNodeIds;
   };
 
   // 自动保存节点配置
@@ -363,11 +369,11 @@ const Workflow: React.FC = () => {
   };
 
   // 更新节点
-  const changeNode = async ({
-    nodeData,
-    update,
-    targetNodeId,
-  }: ChangeNodeProps) => {
+  const changeNode = async (
+    { nodeData, update, targetNodeId }: ChangeNodeProps,
+    callback: () => Promise<boolean> | void = () =>
+      getReference(getWorkflow('drawerForm').id),
+  ): Promise<boolean> => {
     let params = cloneDeep(nodeData);
     const isOnlyUpdate = update && update === NodeUpdateEnum.moved;
     if (isOnlyUpdate) {
@@ -385,14 +391,15 @@ const Workflow: React.FC = () => {
         };
       }
     }
-    if (params.id === FoldFormIdEnum.empty) return;
+    if (params.id === FoldFormIdEnum.empty) return false;
     graphRef.current?.graphUpdateNode(String(params.id), params);
     const _res = await apiUpdateNode(params);
-    if (_res.code === Constant.success) {
+    const isSuccess = _res && _res.code === Constant.success;
+    if (isSuccess) {
       changeUpdateTime();
       if (isOnlyUpdate) {
         // 仅更新节点大小和位置 不需要更新form表单
-        return;
+        return true;
       }
       if (targetNodeId) {
         if (params.type === NodeTypeEnum.Loop) {
@@ -404,9 +411,11 @@ const Workflow: React.FC = () => {
       if (params.id === getWorkflow('drawerForm').id) {
         setFoldWrapItem(params);
       }
-      // 跟新当前节点的上级参数
-      getReference(getWorkflow('drawerForm').id);
+      // 更新当前节点的上级引用参数
+      callback();
+      return true;
     }
+    return false;
   };
   // 优化后的onFinish方法
   const onSaveWorkflow = useCallback(
@@ -582,27 +591,34 @@ const Workflow: React.FC = () => {
    * @param targetNode 目标节点
    * @param isLoop 是否为循环节点
    */
-  const handleSpecialPortConnection = async (
-    sourceNode: ChildNode,
-    portId: string,
-    newNodeId: number,
-    targetNode: ChildNode | undefined,
-    isLoop: boolean,
-  ) => {
+  const handleSpecialPortConnection = async ({
+    sourceNode,
+    portId,
+    newNodeId,
+    targetNode,
+    isLoop,
+  }: {
+    sourceNode: ChildNode;
+    portId: string;
+    newNodeId: number;
+    targetNode: ChildNode | undefined;
+    isLoop: boolean;
+  }) => {
     const params = handleSpecialNodesNextIndex(
       sourceNode,
       portId,
       newNodeId,
       targetNode,
     );
-    await changeNode({ nodeData: params });
-
-    const sourcePortId = portId.split('-').slice(0, -1).join('-');
-    graphRef.current?.graphCreateNewEdge(
-      sourcePortId,
-      String(newNodeId),
-      isLoop,
-    );
+    const isSuccess = await changeNode({ nodeData: params }, noop);
+    if (isSuccess) {
+      const sourcePortId = portId.split('-').slice(0, -1).join('-');
+      graphRef.current?.graphCreateNewEdge(
+        sourcePortId,
+        String(newNodeId),
+        isLoop,
+      );
+    }
   };
   /**
    * 处理异常端口连接
@@ -612,26 +628,33 @@ const Workflow: React.FC = () => {
    * @param targetNode 目标节点
    * @param isLoop 是否为循环节点
    */
-  const handleExceptionPortConnection = async (
-    sourceNode: ChildNode,
-    portId: string,
-    newNodeId: number,
-    targetNode: ChildNode | undefined,
-    isLoop: boolean,
-  ) => {
+  const handleExceptionPortConnection = async ({
+    sourceNode,
+    portId,
+    newNodeId,
+    targetNode,
+    isLoop,
+  }: {
+    sourceNode: ChildNode;
+    portId: string;
+    newNodeId: number;
+    targetNode: ChildNode | undefined;
+    isLoop: boolean;
+  }) => {
     const params = handleExceptionNodesNextIndex({
       sourceNode,
       id: newNodeId,
       targetNodeId: targetNode?.id,
     });
-    await changeNode({ nodeData: params });
-
-    const sourcePortId = portId.split('-').slice(0, -1).join('-');
-    graphRef.current?.graphCreateNewEdge(
-      sourcePortId,
-      String(newNodeId),
-      isLoop,
-    );
+    const isSuccess = await changeNode({ nodeData: params }, noop);
+    if (isSuccess) {
+      const sourcePortId = portId.split('-').slice(0, -1).join('-');
+      graphRef.current?.graphCreateNewEdge(
+        sourcePortId,
+        String(newNodeId),
+        isLoop,
+      );
+    }
   };
 
   /**
@@ -640,21 +663,30 @@ const Workflow: React.FC = () => {
    * @param sourceNode 源节点
    * @param isLoop 是否为循环节点
    */
-  const handleOutputPortConnection = async (
-    newNodeId: number,
-    sourceNode: ChildNode,
-    isLoop: boolean,
-  ) => {
-    await nodeChangeEdge({
-      type: UpdateEdgeType.created,
-      targetId: newNodeId.toString(),
-      sourceNode,
-    });
-    graphRef.current?.graphCreateNewEdge(
-      String(sourceNode.id),
-      String(newNodeId),
-      isLoop,
+  const handleOutputPortConnection = async ({
+    newNodeId,
+    sourceNode,
+    isLoop,
+  }: {
+    newNodeId: number;
+    sourceNode: ChildNode;
+    isLoop: boolean;
+  }) => {
+    const newNodeIds = await nodeChangeEdge(
+      {
+        type: UpdateEdgeType.created,
+        targetId: newNodeId.toString(),
+        sourceNode,
+      },
+      noop,
     );
+    if (newNodeIds) {
+      graphRef.current?.graphCreateNewEdge(
+        String(sourceNode.id),
+        String(newNodeId),
+        isLoop,
+      );
+    }
   };
 
   /**
@@ -663,21 +695,27 @@ const Workflow: React.FC = () => {
    * @param targetNode 目标节点
    * @param isLoop 是否为循环节点
    */
-  const handleConditionalNodeConnection = async (
-    newNode: ChildNode,
-    targetNode: ChildNode,
-    isLoop: boolean,
-  ) => {
+  const handleConditionalNodeConnection = async ({
+    newNode,
+    targetNode,
+    isLoop,
+  }: {
+    newNode: ChildNode;
+    targetNode: ChildNode;
+    isLoop: boolean;
+  }) => {
     const { nodeData, sourcePortId } = QuicklyCreateEdgeConditionConfig(
       newNode,
       targetNode,
     );
-    await changeNode({ nodeData: nodeData });
-    graphRef.current?.graphCreateNewEdge(
-      sourcePortId,
-      String(targetNode.id),
-      isLoop,
-    );
+    const isSuccess = await changeNode({ nodeData: nodeData }, noop);
+    if (isSuccess) {
+      graphRef.current?.graphCreateNewEdge(
+        sourcePortId,
+        String(targetNode.id),
+        isLoop,
+      );
+    }
   };
 
   /**
@@ -687,22 +725,32 @@ const Workflow: React.FC = () => {
    * @param newNode 新节点数据
    * @param isLoop 是否为循环节点
    */
-  const handleNormalNodeConnection = async (
-    newNodeId: number,
-    targetNodeId: string,
-    newNode: ChildNode,
-    isLoop: boolean,
-  ) => {
-    await nodeChangeEdge({
-      type: UpdateEdgeType.created,
-      targetId: targetNodeId,
-      sourceNode: newNode,
-    });
-    graphRef.current?.graphCreateNewEdge(
-      String(newNodeId),
-      targetNodeId,
-      isLoop,
+  const handleNormalNodeConnection = async ({
+    newNodeId,
+    targetNodeId,
+    newNode,
+    isLoop,
+  }: {
+    newNodeId: number;
+    targetNodeId: string;
+    newNode: ChildNode;
+    isLoop: boolean;
+  }) => {
+    const newNodeIds = await nodeChangeEdge(
+      {
+        type: UpdateEdgeType.created,
+        targetId: targetNodeId,
+        sourceNode: newNode,
+      },
+      noop,
     );
+    if (newNodeIds) {
+      graphRef.current?.graphCreateNewEdge(
+        String(newNodeId),
+        targetNodeId,
+        isLoop,
+      );
+    }
   };
 
   /**
@@ -712,12 +760,17 @@ const Workflow: React.FC = () => {
    * @param portId 端口ID
    * @param isLoop 是否为循环节点
    */
-  const handleInputPortConnection = async (
-    newNode: ChildNode,
-    sourceNode: ChildNode,
-    portId: string,
-    isLoop: boolean,
-  ) => {
+  const handleInputPortConnection = async ({
+    newNode,
+    sourceNode,
+    portId,
+    isLoop,
+  }: {
+    newNode: ChildNode;
+    sourceNode: ChildNode;
+    portId: string;
+    isLoop: boolean;
+  }) => {
     const id = portId.split('-')[0];
 
     if (isConditionalNode(newNode.type)) {
@@ -725,23 +778,30 @@ const Workflow: React.FC = () => {
         newNode,
         sourceNode,
       );
-      await changeNode({ nodeData: nodeData });
-      graphRef.current?.graphCreateNewEdge(
-        sourcePortId,
-        sourceNode.id.toString(),
-        isLoop,
-      );
+      const isSuccess = await changeNode({ nodeData: nodeData }, noop);
+      if (isSuccess) {
+        graphRef.current?.graphCreateNewEdge(
+          sourcePortId,
+          sourceNode.id.toString(),
+          isLoop,
+        );
+      }
     } else {
-      await nodeChangeEdge({
-        type: UpdateEdgeType.created,
-        targetId: id,
-        sourceNode: newNode,
-      });
-      graphRef.current?.graphCreateNewEdge(
-        newNode.id.toString(),
-        id.toString(),
-        isLoop,
+      const newNodeIds = await nodeChangeEdge(
+        {
+          type: UpdateEdgeType.created,
+          targetId: id,
+          sourceNode: newNode,
+        },
+        noop,
       );
+      if (newNodeIds) {
+        graphRef.current?.graphCreateNewEdge(
+          newNode.id.toString(),
+          id.toString(),
+          isLoop,
+        );
+      }
     }
   };
 
@@ -753,31 +813,52 @@ const Workflow: React.FC = () => {
    * @param edgeId 边ID
    * @param isLoop 是否为循环节点
    */
-  const handleTargetNodeConnection = async (
-    newNode: ChildNode,
-    targetNode: ChildNode,
-    sourceNode: ChildNode,
-    edgeId: string,
-    isLoop: boolean,
-  ) => {
+  const handleTargetNodeConnection = async ({
+    newNode,
+    targetNode,
+    sourceNode,
+    edgeId,
+    isLoop,
+  }: {
+    newNode: ChildNode;
+    targetNode: ChildNode;
+    sourceNode: ChildNode;
+    edgeId: string;
+    isLoop: boolean;
+  }) => {
     if (isConditionalNode(newNode.type)) {
-      await handleConditionalNodeConnection(newNode, targetNode, isLoop);
+      await handleConditionalNodeConnection({
+        newNode,
+        targetNode,
+        isLoop,
+      });
     } else {
-      await handleNormalNodeConnection(
-        newNode.id,
-        targetNode.id.toString(),
+      await handleNormalNodeConnection({
+        newNodeId: newNode.id,
+        targetNodeId: targetNode.id.toString(),
         newNode,
         isLoop,
-      );
+      });
     }
 
+    console.timeLog(
+      'createNoeByPortOrEdge',
+      'addNode:handleTargetNodeConnection:deleteEdge',
+      edgeId,
+    );
+
     // 删除原有连接
-    await nodeChangeEdge({
-      type: UpdateEdgeType.deleted,
-      targetId: targetNode.id.toString(),
-      sourceNode,
-    });
-    graphRef.current?.graphDeleteEdge(edgeId);
+    const newNodeIds = await nodeChangeEdge(
+      {
+        type: UpdateEdgeType.deleted,
+        targetId: targetNode.id.toString(),
+        sourceNode,
+      },
+      noop,
+    );
+    if (newNodeIds) {
+      graphRef.current?.graphDeleteEdge(edgeId);
+    }
   };
 
   /**
@@ -821,59 +902,59 @@ const Workflow: React.FC = () => {
     graphRef.current?.graphSelectNode(String(nodeData.id));
     changeUpdateTime();
 
-    // 处理节点连接逻辑
-
+    // 处理节点连接逻辑(通过节点或者边创建的节点)
     if (currentNodeRef.current) {
       const { portId, edgeId } = currentNodeRef.current;
       const isLoop = Boolean(nodeData.loopNodeId);
       const isOut = portId.endsWith('out');
-
       try {
         if (portId.includes(PortGroupEnum.exception)) {
           // 处理异常端口连接
-          await handleExceptionPortConnection(
-            currentNodeRef.current.sourceNode,
+          await handleExceptionPortConnection({
+            sourceNode: currentNodeRef.current.sourceNode,
             portId,
-            nodeData.id,
-            currentNodeRef.current.targetNode,
+            newNodeId: nodeData.id,
+            targetNode: currentNodeRef.current.targetNode,
             isLoop,
-          );
+          });
         } else if (portId.length > 15) {
           // 处理特殊端口连接
-          await handleSpecialPortConnection(
-            currentNodeRef.current.sourceNode,
+          await handleSpecialPortConnection({
+            sourceNode: currentNodeRef.current.sourceNode,
             portId,
-            nodeData.id,
-            currentNodeRef.current.targetNode,
+            newNodeId: nodeData.id,
+            targetNode: currentNodeRef.current.targetNode,
             isLoop,
-          );
+          });
         } else if (isOut) {
           // 处理输出端口连接
-          await handleOutputPortConnection(
-            nodeData.id,
-            currentNodeRef.current.sourceNode,
+          await handleOutputPortConnection({
+            newNodeId: nodeData.id,
+            sourceNode: currentNodeRef.current.sourceNode,
             isLoop,
-          );
+          });
         } else {
           // 处理输入端口连接
-          await handleInputPortConnection(
-            newNodeData,
-            currentNodeRef.current.sourceNode,
+          await handleInputPortConnection({
+            newNode: newNodeData,
+            sourceNode: currentNodeRef.current.sourceNode,
             portId,
             isLoop,
-          );
+          });
         }
 
         // 处理目标节点连接
         if (currentNodeRef.current.targetNode) {
-          await handleTargetNodeConnection(
-            newNodeData,
-            currentNodeRef.current.targetNode,
-            currentNodeRef.current.sourceNode,
-            edgeId!,
+          await handleTargetNodeConnection({
+            newNode: newNodeData,
+            targetNode: currentNodeRef.current.targetNode,
+            sourceNode: currentNodeRef.current.sourceNode,
+            edgeId: edgeId!,
             isLoop,
-          );
+          });
         }
+
+        await getReference(getWorkflow('drawerForm').id);
       } catch (error) {
         console.error('处理节点连接时发生错误:', error);
         throw error;
@@ -918,7 +999,7 @@ const Workflow: React.FC = () => {
     if (foldWrapItem.type === NodeTypeEnum.Loop || foldWrapItem.loopNodeId) {
       if (_params.type === NodeTypeEnum.Loop) {
         message.warning('循环体里请不要再添加循环体');
-        return;
+        return false;
       }
       _params.loopNodeId =
         Number(foldWrapItem.loopNodeId) || Number(foldWrapItem.id);
@@ -941,6 +1022,7 @@ const Workflow: React.FC = () => {
         _params.loopNodeId = sourceNode.loopNodeId;
       }
     }
+
     const { nodeConfig, ...rest } = _params;
     const _res = await service.apiAddNode({
       nodeConfigDto: { ...nodeConfig },
@@ -1116,7 +1198,6 @@ const Workflow: React.FC = () => {
     ].includes(childType);
 
     const viewGraph = graphRef.current?.getCurrentViewPort();
-
     if (isSpecialType) {
       setCreatedItem(childType as unknown as AgentComponentTypeEnum); // 注意这个类型转换的前提是两个枚举的值相同
       setOpen(true);
@@ -1245,12 +1326,19 @@ const Workflow: React.FC = () => {
               setTestRunResult(data.data.output);
             }
             setTestRunResult(JSON.stringify(data.data, null, 2));
-            localStorage.removeItem('testRun');
+            removeWorkflowTestRun({
+              spaceId,
+              workflowId,
+            });
           }
           if (data.data.status === 'STOP_WAIT_ANSWER') {
             setLoading(false);
             setStopWait(true);
-            localStorage.setItem('testRun', JSON.stringify(params));
+            setWorkflowTestRun({
+              spaceId,
+              workflowId,
+              value: JSON.stringify(params),
+            });
           }
         }
         // 更新UI状态...
@@ -1322,7 +1410,10 @@ const Workflow: React.FC = () => {
           if (data.complete) {
             if (data.data && data.data.output) {
               setTestRunResult(data.data.output);
-              localStorage.removeItem('testRun');
+              removeWorkflowTestRun({
+                spaceId,
+                workflowId,
+              });
             }
 
             setFormItemValue(
@@ -1336,7 +1427,11 @@ const Workflow: React.FC = () => {
           if (data.data.status === 'STOP_WAIT_ANSWER') {
             setLoading(false);
             setStopWait(true);
-            localStorage.setItem('testRun', JSON.stringify(params));
+            setWorkflowTestRun({
+              spaceId,
+              workflowId,
+              value: JSON.stringify(params),
+            });
             if (data.data.result) {
               setTestRunParams(data.data.result.data);
             }
@@ -1393,14 +1488,17 @@ const Workflow: React.FC = () => {
       handleClearRunResult();
       if (type === 'Start') {
         let _params: ITestRun;
-        let testRun = localStorage.getItem('testRun') || null;
+        const testRun = getWorkflowTestRun({
+          spaceId,
+          workflowId,
+        });
         if (testRun) {
           _params = {
             ...JSON.parse(testRun),
             ...(params as DefaultObjectType),
           };
           setStopWait(false);
-          localStorage.removeItem('testRun');
+          removeWorkflowTestRun({ spaceId, workflowId });
         } else {
           _params = {
             workflowId: info?.id as number,
@@ -1546,8 +1644,8 @@ const Workflow: React.FC = () => {
   };
 
   // 通过连接桩或者边创建节点
-  const createNodeToPortOrEdge = async (
-    config: CreateNodeToPortOrEdgeProps,
+  const createNodeByPortOrEdge = async (
+    config: CreateNodeByPortOrEdgeProps,
   ) => {
     const { child, sourceNode, portId, position, targetNode, edgeId } = config;
     // 首先创建节点
@@ -1671,35 +1769,17 @@ const Workflow: React.FC = () => {
   };
 
   // 更新画布中的节点
-  const handleGraphUpdateByForm = useCallback(
+  const handleGraphUpdateByFormData = useCallback(
     (changedValues: any, fullFormValues: any) => {
       const nodeId = getWorkflow('drawerForm').id;
       if (!graphRef.current || !nodeId || nodeId === FoldFormIdEnum.empty)
         return;
-      const cell = graphRef.current
-        .getGraphRef()
-        .getCellById(nodeId.toString());
-      if (!cell || !cell.isNode()) return;
-      const oldNodeData = cell.getData() as ChildNode;
-      if (oldNodeData) {
-        const { nodeConfig, ...rest } = oldNodeData;
-        const fullChangedValues = Object.keys(changedValues).reduce(
-          (acc: Record<string, any>, key) => {
-            if (typeof key === 'string' && key) {
-              acc[key] = fullFormValues[key];
-            }
-            return acc;
-          },
-          {} as Record<string, any>,
-        );
-        graphRef.current.graphUpdateNode(nodeId, {
-          ...rest,
-          nodeConfig: mergeObject(
-            cloneDeep(nodeConfig),
-            fullChangedValues,
-          ) as NodeConfig,
-        });
-      }
+
+      graphRef.current.graphUpdateByFormData(
+        changedValues,
+        fullFormValues,
+        nodeId.toString(),
+      );
     },
     [graphRef.current],
   );
@@ -1728,10 +1808,11 @@ const Workflow: React.FC = () => {
           removeNode={deleteNode}
           copyNode={copyNode}
           changeZoom={changeZoom}
-          createNodeToPortOrEdge={createNodeToPortOrEdge}
+          createNodeByPortOrEdge={createNodeByPortOrEdge}
           onSaveNode={handleSaveNode}
           onClickBlank={handleClickBlank}
           onInit={handleInitLoading}
+          onRefresh={handleRefreshGraph}
         />
       </Spin>
       <ControlPanel
@@ -1775,9 +1856,8 @@ const Workflow: React.FC = () => {
             key={`${foldWrapItem.type}-${foldWrapItem.id}-form`}
             clearOnDestroy={true}
             onValuesChange={(values) => {
-              console.log('onValuesChange', values);
               setIsModified(true);
-              handleGraphUpdateByForm(values, form.getFieldsValue(true));
+              handleGraphUpdateByFormData(values, form.getFieldsValue(true));
             }}
           >
             <NodePanelDrawer

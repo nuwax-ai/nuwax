@@ -8,6 +8,7 @@ import { Button, Popover, Tag, Tree } from 'antd';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
+import TooltipIcon from '../TooltipIcon';
 import InputOrReferenceFormTree from './InputOrReferenceFormTree';
 import { TreeInputProps } from './type';
 
@@ -100,18 +101,12 @@ const TreeInput: React.FC<TreeInputProps> = ({
   const renderTitle = (nodeData: InputAndOutConfig) => {
     return (
       <div className="dis-sb" style={{ width: '100%' }}>
-        <div className="flex-1">
+        <div className="flex-1 flex items-center">
           <span className="margin-right-6 font-12 ">{nodeData.name}</span>
-          <Popover
-            styles={{
-              body: {
-                maxWidth: '300px',
-              },
-            }}
-            content={nodeData.description || '暂无描述'}
-          >
-            <InfoCircleOutlined className="margin-right-6 font-12" />
-          </Popover>
+          <TooltipIcon
+            title={nodeData.description || '暂无描述'}
+            icon={<InfoCircleOutlined />}
+          />
         </div>
 
         <div style={{ width: '175px' }}>

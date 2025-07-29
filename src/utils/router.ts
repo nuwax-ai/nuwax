@@ -1,14 +1,45 @@
+import { isWeakNumber } from '@/utils/common';
 import { history } from 'umi';
+
+type JumpToProps =
+  | {
+      url: string | number;
+      method?: 'push' | 'replace' | 'go' | 'back';
+      state?: Record<string, any>;
+    }
+  | string
+  | number;
+/**
+ * 跳转页面
+ * @param params 跳转参数
+ * @returns 无返回值
+ */
+export const jumpTo = (params: JumpToProps) => {
+  if (isWeakNumber(params)) {
+    history.go(Number(params));
+    return;
+  } else if (typeof params === 'string') {
+    history.push(params);
+    return;
+  }
+  if (typeof params === 'object' && 'url' in params) {
+    const { url, method = 'push', state } = params;
+    if (state) return history[method](url, state);
+    return history[method](url);
+  }
+  throw new Error('Invalid jumpTo params');
+};
+
 export const jumpToPlugin = (targetSpaceId: number, pluginId: number) => {
-  history.push(`/space/${targetSpaceId}/plugin/${pluginId}`);
+  jumpTo(`/space/${targetSpaceId}/plugin/${pluginId}`);
 };
 
 export const jumpToWorkflow = (targetSpaceId: number, workflowId: number) => {
-  history.push(`/space/${targetSpaceId}/workflow/${workflowId}`);
+  jumpTo(`/space/${targetSpaceId}/workflow/${workflowId}`);
 };
 
 export const jumpToAgent = (targetSpaceId: number, agentId: number) => {
-  history.push(`/space/${targetSpaceId}/agent/${agentId}`);
+  jumpTo(`/space/${targetSpaceId}/agent/${agentId}`);
 };
 
 // 返回上一页，如果没有referrer，则跳转到工作空间（智能体开发）页面
@@ -18,27 +49,42 @@ export const jumpBack = (url?: string) => {
   const historyLength = window.history.length;
   // 检查是否是新标签页打开（没有 referrer 且 history 长度为 2）
   const isNewTab = !referrer && historyLength <= 2;
+  const location = history.location;
+
+  console.info('jumpBack', history, location, url);
+  if (location.key === 'default' && location.state === null) {
+    //说明直接进入的是二级页面
+    if (url) {
+      jumpTo({ url, method: 'replace' }); // 直接跳转到指定页面
+    } else {
+      jumpTo({ url: '/', method: 'replace' }); // 兜底方案，跳转到首页
+    }
+    return;
+  }
 
   if (isNewTab && url) {
     // 新标签页打开，跳转到指定页面
-    history.push(url);
+    jumpTo(url);
   } else if (historyLength > 1) {
     // 有正常的浏览历史，执行返回
-    history.back();
+    jumpTo(-1);
   } else if (url) {
     // 兜底方案，跳转到指定页面
-    history.push(url);
+    jumpTo(url);
   } else {
     // 没有指定页面，跳转到首页
-    history.push('/');
+    jumpTo('/');
   }
 };
 
 export const jumpToMcpCreate = (spaceId: number) => {
-  history.push(`/space/${spaceId}/mcp/create`);
+  jumpTo(`/space/${spaceId}/mcp/create`);
 };
 
-export const redirectToLogin = (pathname: string = '/') => {
-  //TODO 注意 redirect 的用法 还未实现
-  history.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+export const redirectToLogin = (redirect: string | number = '/') => {
+  jumpTo(`/login?redirect=${encodeURIComponent(redirect)}`);
+};
+
+export const redirectTo = (url: string) => {
+  window.location.replace(url);
 };

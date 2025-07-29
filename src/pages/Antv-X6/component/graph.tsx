@@ -76,13 +76,14 @@ type PortStatus = 'normal' | 'active';
 const initGraph = ({
   containerId,
   changeDrawer,
-  changeEdge,
   changeCondition,
+  changeEdgeConfigWithRefresh,
+  changeNodeConfigWithRefresh,
   changeZoom,
-  createNodeToPortOrEdge,
+  createNodeByPortOrEdge,
   onSaveNode,
   onClickBlank,
-}: GraphProp) => {
+}: GraphProp): Graph => {
   const graphContainer = document.getElementById(containerId);
   // 如果找不到容器，则抛出错误
   if (!graphContainer) throw new Error('Container not found');
@@ -148,7 +149,7 @@ const initGraph = ({
       y: centerY,
     });
     const dragChild = (child: StencilChildNode) => {
-      createNodeToPortOrEdge({
+      createNodeByPortOrEdge({
         child,
         sourceNode,
         portId,
@@ -232,6 +233,7 @@ const initGraph = ({
               strokeDasharray: '5 5', // 示例：添加虚线效果
               strokeWidth: 1,
               targetMarker: null, // 初始不显示箭头
+              zIndex: 1,
               style: {
                 animation: 'ant-line 30s infinite linear',
               },
@@ -298,6 +300,16 @@ const initGraph = ({
 
         if (isDuplicateEdge) {
           // 如果存在重复的边，返回 false 以阻止新边创建
+          return false;
+        }
+
+        // 终止循环节点的的下一个节点 只能是为 LoopEnd节点
+        const targetNode = targetCell.getData();
+        const sourceNode = sourceCell.getData();
+        if (
+          sourceNode.type === NodeTypeEnum.LoopBreak &&
+          targetNode.type !== NodeTypeEnum.LoopEnd
+        ) {
           return false;
         }
 
@@ -669,6 +681,12 @@ const initGraph = ({
         parent.nodeConfig.extension.height = _size.height;
         parent.nodeConfig.extension.x = _position.x;
         parent.nodeConfig.extension.y = _position.y;
+        // 同步更新 innerNodes
+        if (children && children.length) {
+          parent.innerNodes = children
+            .filter((item) => item?.isNode())
+            .map((item) => item.getData());
+        }
         changeCondition({ nodeData: parent, update: NodeUpdateEnum.moved });
       }
       return;
@@ -789,10 +807,8 @@ const initGraph = ({
       node.updateData({
         isFocus: false,
       });
-      changeDrawer({
-        ...data,
-        id: node.id,
-      });
+      graph.cleanSelection();
+      graph.select(node);
       return;
     }
   });
@@ -864,13 +880,14 @@ const initGraph = ({
     const isException = _handleExceptionItemEdgeAdd(
       edge,
       (newNodeParams: ChildNode) => {
-        changeCondition({
+        changeNodeConfigWithRefresh({
           nodeData: newNodeParams,
           targetNodeId: targetNode.id.toString(),
         });
         graph.addEdge(edge);
         setEdgeAttributes(edge);
         edge.toFront();
+        updateEdgeArrows(graph);
       },
     );
     if (isException) return;
@@ -884,7 +901,7 @@ const initGraph = ({
         targetNode as ChildNode,
       );
       if (_params && typeof _params !== 'string') {
-        changeCondition({
+        changeNodeConfigWithRefresh({
           nodeData: _params,
           targetNodeId: targetNode.id.toString(),
         });
@@ -908,14 +925,14 @@ const initGraph = ({
         targetNode,
         sourcePort,
       );
-      changeCondition({
+      changeNodeConfigWithRefresh({
         nodeData: _params,
         targetNodeId: targetNode.id.toString(),
       });
       // 通知父组件更新节点信息
     } else {
       // 通知父组件创建边
-      changeEdge({
+      changeEdgeConfigWithRefresh({
         type: UpdateEdgeType.created,
         targetId: targetNodeId,
         sourceNode,
@@ -976,6 +993,7 @@ const initGraph = ({
       adjustParentSize(parentNode);
     }
   });
+
   registerNodeClickAndDblclick({ graph, changeZIndex });
 
   return graph; // 返回初始化好的图形实例

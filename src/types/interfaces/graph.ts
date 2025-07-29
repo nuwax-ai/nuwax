@@ -126,7 +126,7 @@ export interface ChangeEdgeProps {
   sourceNode: ChildNode;
   id?: string;
 }
-export interface CreateNodeToPortOrEdgeProps {
+export interface CreateNodeByPortOrEdgeProps {
   child: StencilChildNode;
   sourceNode: ChildNode;
   portId: string;
@@ -139,16 +139,23 @@ export interface GraphContainerProps {
   graphParams: { nodeList: ChildNode[]; edgeList: Edge[] };
   changeDrawer: (child: ChildNode | null) => void;
   onSaveNode: (data: ChildNode, payload: Partial<ChildNode>) => void;
-  changeEdge: (config: ChangeEdgeProps) => void;
-  changeCondition: (config: ChangeNodeProps) => void;
+  changeEdge: (
+    config: ChangeEdgeProps,
+    callback?: () => Promise<boolean> | void,
+  ) => Promise<number[] | false>;
+  changeCondition: (
+    config: ChangeNodeProps,
+    callback?: () => Promise<boolean> | void,
+  ) => Promise<boolean>;
   copyNode: (child: ChildNode) => void;
   // 删除节点
   removeNode: (id: string) => void;
   // 改变画布大小
   changeZoom: (val: number) => void;
   // 通过连接桩或者边创建节点
-  createNodeToPortOrEdge: (config: CreateNodeToPortOrEdgeProps) => void;
+  createNodeByPortOrEdge: (config: CreateNodeByPortOrEdgeProps) => void;
   onClickBlank: () => void;
+  onRefresh: () => void;
   onInit: () => void;
 }
 
@@ -171,6 +178,12 @@ export interface GraphContainerRef {
   graphAddNode: (e: GraphRect, child: ChildNode) => void;
   // 修改节点
   graphUpdateNode: (nodeId: string, newData: ChildNode | null) => void;
+  // 修改节点通过表单数据
+  graphUpdateByFormData: (
+    changedValues: any,
+    fullFormValues: any,
+    nodeId: string,
+  ) => void;
   // 保存节点
   // graphSaveAllNodes: () => void;
   // 删除节点
@@ -199,8 +212,10 @@ export interface GraphContainerRef {
 export interface BindEventHandlers {
   graph: Graph;
   // 新增或删除边
-  changeEdge: (config: ChangeEdgeProps) => void;
-  changeCondition: (config: ChangeNodeProps) => void;
+  changeEdgeConfigWithRefresh: (
+    config: ChangeEdgeProps,
+  ) => Promise<number[] | boolean>;
+  changeNodeConfigWithRefresh: (config: ChangeNodeProps) => Promise<boolean>;
   copyNode: (child: ChildNode) => void;
   // 删除节点
   removeNode: (id: string, node?: ChildNode) => void;
@@ -226,11 +241,14 @@ export interface GraphProp {
   // 改变抽屉内容的回调函数，接收一个 Child 类型的参数
   changeDrawer: (item: ChildNode | null) => void;
   onSaveNode: (data: ChildNode, payload: Partial<ChildNode>) => void;
-  changeEdge: (config: ChangeEdgeProps) => void;
-  changeCondition: (config: ChangeNodeProps) => void;
+  changeCondition: (config: ChangeNodeProps) => Promise<boolean>;
+  changeEdgeConfigWithRefresh: (
+    config: ChangeEdgeProps,
+  ) => Promise<number[] | boolean>;
+  changeNodeConfigWithRefresh: (config: ChangeNodeProps) => Promise<boolean>;
   changeZoom: (val: number) => void;
   // 通过连接桩或者边创建节点
-  createNodeToPortOrEdge: (config: CreateNodeToPortOrEdgeProps) => void;
+  createNodeByPortOrEdge: (config: CreateNodeByPortOrEdgeProps) => void;
   onClickBlank: () => void;
 }
 

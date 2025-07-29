@@ -24,8 +24,7 @@ import {
 } from 'antd';
 import locale from 'antd/locale/zh_CN';
 import classNames from 'classnames';
-import dayjs from 'dayjs';
-import moment, { Moment } from 'moment';
+import dayjs, { Dayjs } from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { useRequest } from 'umi';
@@ -113,10 +112,10 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
     });
 
     setDataSource(_dataSource || []);
-    let _value: string | boolean | number | Moment = value;
+    let _value: string | boolean | number | Dayjs = value;
     // 链接过期时间
     if (attr === 'expire') {
-      _value = value ? moment(value.toString()) : '';
+      _value = value ? dayjs(value.toString()) : '';
     }
     // 是否需要登录
     if (attr === 'requireLogin') {

@@ -59,6 +59,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     loadingSuggest,
     onMessageSend,
     messageViewRef,
+    messageViewScrollToBottom,
     allowAutoScrollRef,
     scrollTimeoutRef,
     handleClearSideEffect,
@@ -71,9 +72,18 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     requiredNameList,
   } = useModel('conversationInfo');
 
+  // 创建智能体会话
+  const { runAsyncConversationCreate } = useConversation();
+  // 会话输入框已选择组件
+  const {
+    selectedComponentList,
+    handleSelectComponent,
+    initSelectedComponentList,
+  } = useSelectedComponent();
+
   const values = Form.useWatch([], { form, preserve: true });
 
-  React.useEffect(() => {
+  useEffect(() => {
     // 监听form表单值变化
     if (values && Object.keys(values).length === 0) {
       return;
@@ -107,15 +117,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     }
     return false;
   }, [requiredNameList, variableParams]);
-
-  // 创建智能体会话
-  const { runAsyncConversationCreate } = useConversation();
-  // 会话输入框已选择组件
-  const {
-    selectedComponentList,
-    handleSelectComponent,
-    initSelectedComponentList,
-  } = useSelectedComponent();
 
   // 角色信息（名称、头像）
   const roleInfo: RoleInfo = useMemo(() => {
@@ -153,10 +154,12 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
         }
       };
 
-      messageView.addEventListener('wheel', throttle(handleScroll, 300));
+      const handleScrollImmediate = throttle(handleScroll, 300);
+
+      messageView.addEventListener('wheel', handleScrollImmediate);
       // 组件卸载时移除滚动事件监听器
       return () => {
-        messageView.removeEventListener('wheel', throttle(handleScroll, 300));
+        messageView.removeEventListener('wheel', handleScrollImmediate);
         resetInit();
       };
     }
@@ -188,10 +191,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       // 当用户手动滚动时，暂停自动滚动
       if (allowAutoScrollRef.current) {
         // 滚动到底部
-        messageViewRef.current?.scrollTo({
-          top: messageViewRef.current?.scrollHeight,
-          behavior: 'smooth',
-        });
+        messageViewScrollToBottom();
       }
     }
   };
@@ -238,17 +238,22 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
       return;
     }
 
-    onMessageSend(id, messageInfo, files, [], variableParams, true, false);
+    onMessageSend(
+      id,
+      messageInfo,
+      files,
+      selectedComponentList,
+      variableParams,
+      true,
+      false,
+    );
   };
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const onScrollBottom = () => {
     allowAutoScrollRef.current = true;
     // 滚动到底部
-    messageViewRef.current?.scrollTo({
-      top: messageViewRef.current?.scrollHeight,
-      behavior: 'smooth',
-    });
+    messageViewScrollToBottom();
     setShowScrollBtn(false);
   };
 

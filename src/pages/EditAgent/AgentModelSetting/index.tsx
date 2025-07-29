@@ -19,7 +19,7 @@ import { InfoCircleOutlined } from '@ant-design/icons';
 import { Flex, Modal, Segmented } from 'antd';
 import classnames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useRequest } from 'umi';
+import { useModel, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classnames.bind(styles);
@@ -30,6 +30,7 @@ const cx = classnames.bind(styles);
 const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   spaceId,
   modelComponentConfig,
+  devConversationId,
   open,
   onCancel,
 }) => {
@@ -54,6 +55,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
       reasoningModelId: null,
     });
   const componentIdRef = useRef<number>(0);
+  const { runQueryConversation } = useModel('conversationInfo');
 
   // 查询可使用模型列表接口
   const { run: runMode } = useRequest(apiModelList, {
@@ -68,12 +70,6 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
         })) || [];
       setModelConfigList(list);
     },
-  });
-
-  // 更新模型组件配置
-  const { run: runUpdate } = useRequest(apiAgentComponentModelUpdate, {
-    manual: true,
-    debounceInterval: 1000,
   });
 
   useEffect(() => {
@@ -112,11 +108,11 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   }, [modelConfigListRef.current, targetId]);
 
   // 更新模型配置
-  const handleChangeModel = (
+  const handleChangeModel = async (
     bindConfig: ComponentModelBindConfig,
     _targetId = targetId,
   ) => {
-    runUpdate({
+    await apiAgentComponentModelUpdate({
       id: componentIdRef.current,
       targetId: _targetId,
       bindConfig,
@@ -155,29 +151,22 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
 
   // 生成多样性
   const handleChangeGenerateDiversity = (newValue: UpdateModeComponentEnum) => {
-    let _componentBindConfig: ComponentModelBindConfig;
-    // 自定义
-    if (newValue === UpdateModeComponentEnum.Customization) {
-      _componentBindConfig = {
-        ...componentBindConfig,
-        mode: newValue,
-      };
-    } else {
-      // 默认值
-      _componentBindConfig = {
-        ...GENERATE_DIVERSITY_OPTION_VALUE[newValue],
-        mode: newValue,
-        reasoningModelId: componentBindConfig.reasoningModelId,
-      };
-    }
+    const _componentBindConfig: ComponentModelBindConfig = {
+      ...componentBindConfig,
+      ...(newValue !== UpdateModeComponentEnum.Customization // 非自定义，使用默认值
+        ? GENERATE_DIVERSITY_OPTION_VALUE[newValue]
+        : {}),
+      mode: newValue,
+    };
 
     setComponentBindConfig(_componentBindConfig);
     handleChangeModel(_componentBindConfig);
   };
 
   // 更新模型组件配置
-  const handleChange = (newValue: React.Key, attr: string) => {
+  const handleChange = async (newValue: React.Key, attr: string) => {
     let _value;
+    // 切换推理模型
     if (attr === 'reasoningModelId') {
       _value = Number(newValue) || null;
     } else {
@@ -189,7 +178,11 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
       mode: UpdateModeComponentEnum.Customization,
     };
     setComponentBindConfig(_componentBindConfig);
-    handleChangeModel(_componentBindConfig);
+    await handleChangeModel(_componentBindConfig);
+    // 更新已选择的推理模型信息，用于在关闭弹窗时，同步更新会话输入框中的推理模型 - 绑定的模型名称
+    if (attr === 'reasoningModelId' && devConversationId) {
+      runQueryConversation(devConversationId);
+    }
   };
 
   // 关闭按钮
@@ -273,7 +266,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           min={0}
           max={1}
           step={0.1}
-          value={String(componentBindConfig?.temperature)}
+          value={String(componentBindConfig?.temperature) || '0'}
           onChange={(value) => handleChange(value, 'temperature')}
         />
       </div>
@@ -287,7 +280,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           min={0}
           max={1}
           step={0.1}
-          value={String(componentBindConfig?.topP)}
+          value={String(componentBindConfig?.topP) || '0'}
           onChange={(value) => handleChange(value, 'topP')}
         />
       </div>
@@ -302,7 +295,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           min={0}
           max={100}
           step={1}
-          value={String(componentBindConfig?.contextRounds)}
+          value={String(componentBindConfig?.contextRounds) || '0'}
           onChange={(value) => handleChange(value, 'contextRounds')}
         />
       </div>
@@ -316,7 +309,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
           min={1}
           max={currentModelInfo?.maxTokens || 4096}
           step={1}
-          value={String(componentBindConfig?.maxTokens)}
+          value={String(componentBindConfig?.maxTokens) || '0'}
           onChange={(value) => handleChange(value, 'maxTokens')}
         />
       </div>

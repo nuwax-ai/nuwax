@@ -8,7 +8,7 @@ import type { ApplicationItemProps } from '@/types/interfaces/space';
 import { MoreOutlined, UserOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
 import { useModel, useRequest } from 'umi';
 import ApplicationHeader from './ApplicationHeader';
@@ -113,7 +113,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
       {/*相关信息*/}
       <div className={cx('flex', styles['rel-info'])}>
         <span>最近编辑</span>
-        <span>{moment(agentConfigInfo.modified).format('MM-DD HH:mm')}</span>
+        <span>{dayjs(agentConfigInfo.modified).format('MM-DD HH:mm')}</span>
       </div>
       {/*底部*/}
       <footer className={cx(styles.footer, 'flex', 'items-center')}>

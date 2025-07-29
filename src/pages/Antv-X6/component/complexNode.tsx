@@ -3,6 +3,7 @@ import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import { ModelSelected } from '@/components/ModelSetting';
 import PromptOptimizeModal from '@/components/PromptOptimizeModal';
+import TooltipIcon from '@/components/TooltipIcon';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { SKILL_FORM_KEY } from '@/constants/node.constants';
 import { SkillList } from '@/pages/Antv-X6/components/NewSkill';
@@ -27,7 +28,6 @@ import {
   RadioChangeEvent,
   Select,
   Space,
-  Tooltip,
 } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
@@ -253,9 +253,10 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           title={
             <>
               系统提示词
-              <Tooltip title="为对话提供系统级指导，如设定人设和回复逻辑。">
-                <ExclamationCircleOutlined />
-              </Tooltip>
+              <TooltipIcon
+                title="为对话提供系统级指导，如设定人设和回复逻辑。"
+                icon={<ExclamationCircleOutlined />}
+              ></TooltipIcon>
             </>
           }
           inputFieldName="systemPrompt"
@@ -271,9 +272,10 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           title={
             <>
               用户提示词
-              <Tooltip title="向模型提供用户指令，如查询或任何基于文本输入的提问。">
-                <ExclamationCircleOutlined />
-              </Tooltip>
+              <TooltipIcon
+                title="向模型提供用户指令，如查询或任何基于文本输入的提问。"
+                icon={<ExclamationCircleOutlined />}
+              ></TooltipIcon>
             </>
           }
           inputFieldName="userPrompt"

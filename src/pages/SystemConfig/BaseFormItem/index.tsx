@@ -1,8 +1,4 @@
-import {
-  ModelConfigDto,
-  PublishedDto,
-  SystemUserConfig,
-} from '@/types/interfaces/systemManage';
+import { BaseFormItemProps, TabKey } from '@/types/interfaces/systemManage';
 import {
   DeleteOutlined,
   PlusOutlined,
@@ -11,7 +7,6 @@ import {
 import { Form, Input, Select, Tooltip, Upload } from 'antd';
 import { Rule } from 'antd/es/form';
 import { useEffect, useState } from 'react';
-import { TabKey } from '..';
 
 function MultiInput({
   value,
@@ -53,12 +48,6 @@ function MultiInput({
   ));
 }
 
-type BaseFormItemProps = {
-  props: SystemUserConfig;
-  currentTab: TabKey;
-  modelList: ModelConfigDto[];
-  agentList: PublishedDto[];
-};
 export default function BaseFormItem({
   props,
   modelList,

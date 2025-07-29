@@ -52,6 +52,7 @@ const Chat: React.FC = () => {
     string,
     string | number
   > | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
   // 是否发送过消息,如果是,则禁用变量参数
   const isSendMessageRef = useRef<boolean>(false);
 
@@ -80,6 +81,7 @@ const Chat: React.FC = () => {
     loadingSuggest,
     onMessageSend,
     messageViewRef,
+    messageViewScrollToBottom,
     allowAutoScrollRef,
     scrollTimeoutRef,
     showScrollBtn,
@@ -143,17 +145,22 @@ const Chat: React.FC = () => {
     };
   }, [conversationInfo]);
 
-  const { run: runDetail, loading } = useRequest(apiPublishedAgentInfo, {
+  const { run: runDetail } = useRequest(apiPublishedAgentInfo, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: AgentDetailDto) => {
       setAgentDetail(result);
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
   useEffect(() => {
     // 查询智能体详情信息
     if (agentId !== defaultAgentDetail?.agentId) {
+      setLoading(true);
       runDetail(agentId);
     } else {
       setAgentDetail(defaultAgentDetail);
@@ -241,10 +248,7 @@ const Chat: React.FC = () => {
       // 当用户手动滚动时，暂停自动滚动
       if (allowAutoScrollRef.current) {
         // 滚动到底部
-        messageViewRef.current?.scrollTo({
-          top: messageViewRef.current?.scrollHeight,
-          behavior: 'smooth',
-        });
+        messageViewScrollToBottom();
       }
     }
   };
@@ -289,10 +293,7 @@ const Chat: React.FC = () => {
   const onScrollBottom = () => {
     allowAutoScrollRef.current = true;
     // 滚动到底部
-    messageViewRef.current?.scrollTo({
-      top: messageViewRef.current?.scrollHeight,
-      behavior: 'smooth',
-    });
+    messageViewScrollToBottom();
     setShowScrollBtn(false);
   };
 

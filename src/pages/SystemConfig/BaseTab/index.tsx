@@ -7,11 +7,15 @@ import {
   ModelConfigDto,
   PublishedDto,
   SystemUserConfig,
+  TabKey,
 } from '@/types/interfaces/systemManage';
 import { Button, Form, message } from 'antd';
+import classNames from 'classnames';
 import { useEffect, useState } from 'react';
-import { TabKey } from '..';
 import BaseFormItem from '../BaseFormItem';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 export default function BaseTab({
   config,
@@ -22,16 +26,20 @@ export default function BaseTab({
   currentTab: TabKey;
   refresh: () => Promise<void>;
 }) {
+  const [form] = Form.useForm();
   const [modelList, setModelList] = useState<ModelConfigDto[]>([]);
+  const [agentList, setAgentList] = useState<PublishedDto[]>([]);
+  // 查询可选模型列表
   const fetchModelList = async () => {
     const res = await apiUseableModelList();
     setModelList(res.data);
   };
-  const [agentList, setAgentList] = useState<PublishedDto[]>([]);
+  // 查询可选择的智能体列表
   const fetchAgentList = async (kw = '') => {
     const res = await apiSystemAgentList(kw);
     setAgentList(res.data);
   };
+
   useEffect(() => {
     if (currentTab === 'ModelSetting') {
       fetchModelList();
@@ -39,7 +47,8 @@ export default function BaseTab({
     if (currentTab === 'AgentSetting') {
       fetchAgentList();
     }
-  }, []);
+  }, [currentTab]);
+
   const onFinish = async (values: any) => {
     const params: any = {};
     Object.keys(values).forEach((key) => {
@@ -54,9 +63,20 @@ export default function BaseTab({
     message.success('保存成功');
     refresh();
   };
+
+  // 保存配置
+  const handleSave = () => {
+    form.submit();
+  };
+
   return (
-    <div style={{ backgroundColor: '#f3f5fa', padding: '26px 26px 21px 22px' }}>
-      <Form layout="vertical" style={{ width: '520px' }} onFinish={onFinish}>
+    <div className={cx(styles.container, 'overflow-y', 'flex-1')}>
+      <Form
+        layout="vertical"
+        style={{ width: '520px' }}
+        form={form}
+        onFinish={onFinish}
+      >
         {config.map((v) => {
           return (
             <BaseFormItem
@@ -68,12 +88,12 @@ export default function BaseTab({
             />
           );
         })}
-        <Form.Item>
-          <Button type="primary" htmlType="submit">
-            提交
-          </Button>
-        </Form.Item>
       </Form>
+      <footer className={cx(styles.footer)}>
+        <Button type="primary" onClick={handleSave}>
+          保存
+        </Button>
+      </footer>
     </div>
   );
 }

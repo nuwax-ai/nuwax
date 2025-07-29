@@ -57,7 +57,9 @@ export function render(oldRender: () => void) {
  * 路由变化监听
  * 可以在这里处理页面切换逻辑
  */
-export function onRouteChange({ location }: any) {
+export function onRouteChange({ location, ...rest }: any) {
+  console.info('onRouteChange', location, rest);
+
   // 如果是登录成功后的路由变化，确保轮询启动
   if (localStorage.getItem(ACCESS_TOKEN) && location.pathname !== '/login') {
     // 这里不需要特别处理，因为GlobalEventPolling组件会确保轮询只启动一次

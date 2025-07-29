@@ -17,7 +17,7 @@ import type {
 import { LeftOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 import classNames from 'classnames';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import React, { useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
@@ -109,7 +109,9 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
         )}
       >
         <div className={cx('flex', styles['top-box'])}>
-          <h3 className={cx(styles.name)}>{targetInfo?.name}</h3>
+          <h3 className={cx(styles.name, 'text-ellipsis')}>
+            {targetInfo?.name}
+          </h3>
         </div>
         <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
           <div className={cx('flex', 'items-center', styles['info-author'])}>
@@ -118,19 +120,16 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
               src={publishUser?.avatar || avatarImage}
               alt=""
             />
-            <ConditionRender condition={publishUser?.userName}>
-              <span className={cx(styles.author, 'text-ellipsis')}>
-                {publishUser?.userName}
-              </span>
-            </ConditionRender>
-            <ConditionRender condition={publishUser?.nickName}>
-              <span className={cx(styles.nickname, 'text-ellipsis', 'flex-1')}>
-                {publishUser?.nickName}
+            <ConditionRender
+              condition={publishUser?.nickName || publishUser?.userName}
+            >
+              <span className={cx(styles.author, 'text-ellipsis', 'flex-1')}>
+                {publishUser?.nickName || publishUser?.userName}
               </span>
             </ConditionRender>
           </div>
           <span className={cx(styles['update-time'])}>
-            发布于{moment(targetInfo?.created).format('YYYY-MM-DD HH:mm')}
+            发布于{dayjs(targetInfo?.created).format('YYYY-MM-DD HH:mm')}
           </span>
         </div>
       </section>
@@ -138,10 +137,7 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
       <div className={cx('flex')}>
         {/*收藏与取消收藏*/}
         <CollectStar devCollected={collect} onClick={handlerCollect} />
-        <span
-          className={cx('ml-10', styles['collect'])}
-          // onClick={handlerCollect}
-        >
+        <span className={cx('ml-10', styles['collect'])}>
           收藏 {`(${count})`}
         </span>
       </div>

@@ -48,8 +48,8 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { Form, message } from 'antd';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import { throttle } from 'lodash';
-import moment from 'moment';
 import React, {
   useCallback,
   useEffect,
@@ -67,7 +67,6 @@ const cx = classNames.bind(styles);
  * 主页咨询聊天页面
  */
 const ChatTemp: React.FC = () => {
-  const { handleChatProcessingList } = useModel('chat');
   // 链接Key
   const { chatKey } = useParams();
   // 会话信息
@@ -75,6 +74,8 @@ const ChatTemp: React.FC = () => {
     useState<ConversationInfo | null>();
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
+  // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
+  const messageListRef = useRef<MessageInfo[]>([]);
   // 会话问题建议
   const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
   const messageViewRef = useRef<HTMLDivElement | null>(null);
@@ -112,6 +113,7 @@ const ChatTemp: React.FC = () => {
 
   const buttonId = 'aliyun-captcha-id';
   const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
+  const { handleChatProcessingList } = useModel('chat');
 
   // 会话UID
   const conversationUid = useRef<string>();
@@ -246,7 +248,7 @@ const ChatTemp: React.FC = () => {
             role: AssistantRoleEnum.ASSISTANT,
             type: MessageModeEnum.CHAT,
             text: data?.agent?.openingChatMsg,
-            time: moment().toString(), // 将 moment 对象转换为字符串以匹配 MessageInfo 类型
+            time: dayjs().toString(),
             id: uuidv4(),
             messageType: MessageTypeEnum.ASSISTANT,
           } as MessageInfo;
@@ -340,7 +342,8 @@ const ChatTemp: React.FC = () => {
             newMessage = {
               ...currentMessage,
               text: `${currentMessage.text}${text}`,
-              status: MessageStatusEnum.Incomplete,
+              // 如果finished为true，则状态为null，此时不会显示运行状态组件，否则为Incomplete
+              status: finished ? null : MessageStatusEnum.Incomplete,
             };
             if (ext?.length) {
               // 问题建议
@@ -422,6 +425,18 @@ const ChatTemp: React.FC = () => {
         // 滚动到底部
         handleScrollBottom();
       },
+      onError: () => {
+        message.error('网络超时或服务不可用，请稍后再试');
+        // 将当前会话的loading状态的消息改为Error状态
+        const list =
+          messageListRef.current?.map((info: MessageInfo) => {
+            if (info?.id === currentMessageId) {
+              return { ...info, status: MessageStatusEnum.Error };
+            }
+            return info;
+          }) || [];
+        setMessageList(list);
+      },
     });
     // 主动关闭连接
     // 确保 abortConnectionRef.current 是一个可调用的函数
@@ -485,7 +500,7 @@ const ChatTemp: React.FC = () => {
       role: AssistantRoleEnum.USER,
       type: MessageModeEnum.CHAT,
       text: message,
-      time: moment().toString(),
+      time: dayjs().toString(),
       attachments,
       id: uuidv4(),
       messageType: MessageTypeEnum.USER,
@@ -498,23 +513,29 @@ const ChatTemp: React.FC = () => {
       type: MessageModeEnum.CHAT,
       text: '',
       think: '',
-      time: moment().toString(), // 将 moment 对象转换为字符串以匹配 MessageInfo 类型
+      time: dayjs().toString(),
       id: currentMessageId,
       messageType: MessageTypeEnum.ASSISTANT,
       status: MessageStatusEnum.Loading,
     } as MessageInfo;
 
-    setMessageList((list) => {
-      const _list =
-        list?.map((item) => {
-          if (item.status === MessageStatusEnum.Incomplete) {
-            item.status = MessageStatusEnum.Complete;
-          }
-          return item;
-        }) || [];
+    // 将Incomplete状态的消息改为Complete状态
+    const completeMessageList =
+      messageList?.map((item: MessageInfo) => {
+        if (item.status === MessageStatusEnum.Incomplete) {
+          item.status = MessageStatusEnum.Complete;
+        }
+        return item;
+      }) || [];
+    const newMessageList = [
+      ...completeMessageList,
+      chatMessage,
+      currentMessage,
+    ];
+    setMessageList(newMessageList);
+    // 缓存消息列表
+    messageListRef.current = newMessageList;
 
-      return [..._list, chatMessage, currentMessage] as MessageInfo[];
-    });
     // 允许滚动
     allowAutoScrollRef.current = true;
     // 隐藏点击下滚按钮
@@ -818,6 +839,9 @@ const ChatTemp: React.FC = () => {
           {/*手机会话输入框*/}
           <ChatInputPhone
             className={cx(styles['phone-container'])}
+            clearDisabled={!messageList?.length}
+            onClear={handleClear}
+            wholeDisabled={wholeDisabled}
             onEnter={handleMessageSend}
             visible={showScrollBtn}
             onScrollBottom={onScrollBottom}

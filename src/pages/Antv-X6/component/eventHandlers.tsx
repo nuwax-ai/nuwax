@@ -22,9 +22,9 @@ const isResistNodeType = [
  */
 const bindEventHandlers = ({
   graph,
-  changeEdge,
+  changeEdgeConfigWithRefresh,
   copyNode,
-  changeCondition,
+  changeNodeConfigWithRefresh,
   removeNode,
   modal,
   message,
@@ -98,7 +98,7 @@ const bindEventHandlers = ({
           }
         }
       } else {
-        changeEdge({
+        changeEdgeConfigWithRefresh({
           type: UpdateEdgeType.deleted,
           targetId: _targetNodeId as string,
           sourceNode,
@@ -116,7 +116,7 @@ const bindEventHandlers = ({
         }
       }
     }
-    changeCondition({
+    changeNodeConfigWithRefresh({
       nodeData: newNodeParams,
       targetNodeId: _targetNodeId?.toString(),
     });
@@ -173,7 +173,7 @@ const bindEventHandlers = ({
           _cell as Edge,
           (updateNodeParams: ChildNode) => {
             graph.removeCells([_cell]);
-            changeCondition({
+            changeNodeConfigWithRefresh({
               nodeData: updateNodeParams,
               targetNodeId: targetNode.id.toString(),
             });
@@ -192,7 +192,7 @@ const bindEventHandlers = ({
             targetNode.loopNodeId === sourceNode.id
           ) {
             sourceNode.innerStartNodeId = -1;
-            changeCondition({
+            changeNodeConfigWithRefresh({
               nodeData: sourceNode,
               targetNodeId: _targetNodeId?.toString(),
             });
@@ -206,7 +206,7 @@ const bindEventHandlers = ({
             sourceNode.loopNodeId === targetNode.id
           ) {
             targetNode.innerEndNodeId = -1;
-            changeCondition({
+            changeNodeConfigWithRefresh({
               nodeData: targetNode,
               targetNodeId: targetNode.id.toString(),
             });
@@ -222,7 +222,7 @@ const bindEventHandlers = ({
         ) {
           handleSpecialNodeEdge(cells);
         } else {
-          changeEdge({
+          changeEdgeConfigWithRefresh({
             type: UpdateEdgeType.deleted,
             targetId: _targetNodeId as string,
             sourceNode,

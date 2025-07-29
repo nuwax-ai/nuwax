@@ -27,7 +27,7 @@ const CardTwo: React.FC<CardChildProps> = ({
       )}
       onClick={onClick}
     >
-      <h3>{title}</h3>
+      <h3 className={'text-ellipsis-2'}>{title}</h3>
       <div className={'flex'}>
         <p className={'flex-1 text-ellipsis-2'}>{content}</p>
         <ConditionRender condition={image}>

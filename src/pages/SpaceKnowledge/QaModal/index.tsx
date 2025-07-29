@@ -1,5 +1,6 @@
 import { KnowledgeTextImportEnum } from '@/types/enums/library';
 import { KnowledgeQAInfo } from '@/types/interfaces/knowledge';
+import { customizeRequiredMark } from '@/utils/form';
 import { Form, Input, Modal } from 'antd';
 import { useEffect, useState } from 'react';
 
@@ -34,8 +35,6 @@ const QaModal: React.FC<QaModalProps> = ({
       setLoading(true);
       const values = await form.validateFields();
       await onConfirm({ ...values, id: data?.id });
-      // message.success(data?.id ? '编辑成功' : '添加成功');
-      form.resetFields();
     } catch (error) {
       console.error('表单验证失败:', error);
     } finally {
@@ -45,19 +44,13 @@ const QaModal: React.FC<QaModalProps> = ({
 
   // 当编辑模式且有数据时，设置表单初始值
   useEffect(() => {
-    if (open) {
-      if (data?.id) {
-        form.setFieldsValue(data);
-      } else {
-        // 新增模式下重置表单
-        form.resetFields();
-      }
+    if (open && data?.id) {
+      form.setFieldsValue(data);
     }
-  }, [data, open, form]);
+  }, [data, open]);
 
   // 关闭对话框时的处理
   const handleCancel = () => {
-    form.resetFields();
     onCancel();
   };
 
@@ -68,20 +61,23 @@ const QaModal: React.FC<QaModalProps> = ({
       confirmLoading={loading}
       onCancel={handleCancel}
       onOk={handleConfirm}
-      maskClosable={false}
+      maskClosable
       destroyOnClose
     >
-      <Form form={form} layout="vertical" requiredMark={true}>
+      <Form
+        form={form}
+        layout="vertical"
+        preserve={false}
+        requiredMark={customizeRequiredMark}
+      >
         <Form.Item
           name="question"
           label="问题"
-          rules={[
-            { required: true, message: '请输入问题' },
-            { max: 500, message: '问题最多500个字符' },
-          ]}
+          rules={[{ required: true, message: '请输入问题' }]}
         >
           <Input.TextArea
-            rows={4}
+            className="dispose-textarea-count"
+            autoSize={{ minRows: 5, maxRows: 8 }}
             placeholder="请输入问题内容"
             showCount
             maxLength={500}
@@ -90,16 +86,14 @@ const QaModal: React.FC<QaModalProps> = ({
         <Form.Item
           name="answer"
           label="答案"
-          rules={[
-            { required: true, message: '请输入答案' },
-            { max: 2000, message: '答案最多2000个字符' },
-          ]}
+          rules={[{ required: true, message: '请输入答案' }]}
         >
           <Input.TextArea
-            rows={6}
+            className="dispose-textarea-count"
+            autoSize={{ minRows: 5, maxRows: 8 }}
             placeholder="请输入答案内容"
             showCount
-            maxLength={2000}
+            maxLength={5000}
           />
         </Form.Item>
       </Form>

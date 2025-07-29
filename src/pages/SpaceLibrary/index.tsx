@@ -35,7 +35,7 @@ import {
 } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentInfo } from '@/types/interfaces/library';
-import { jumpToPlugin, jumpToWorkflow } from '@/utils/router';
+import { jumpTo, jumpToPlugin, jumpToWorkflow } from '@/utils/router';
 import {
   ExclamationCircleFilled,
   PlusOutlined,
@@ -317,12 +317,13 @@ const SpaceLibrary: React.FC = () => {
     id: number,
     spaceId: number,
     type: PluginTypeEnum,
-  ) => {
+  ): string => {
     if (type === PluginTypeEnum.CODE) {
-      history.push(`/space/${spaceId}/plugin/${id}/cloud-tool`);
+      return `/space/${spaceId}/plugin/${id}/cloud-tool`;
     } else if (type === PluginTypeEnum.HTTP) {
-      history.push(`/space/${spaceId}/plugin/${id}`);
+      return `/space/${spaceId}/plugin/${id}`;
     }
+    return '';
   };
 
   const handleConfirmModel = () => {
@@ -496,23 +497,29 @@ const SpaceLibrary: React.FC = () => {
   // 点击单个资源组件
   const handleClickComponent = (item: ComponentInfo) => {
     const { type, id, spaceId, ext } = item;
+
+    let url = '';
     switch (type) {
       case ComponentTypeEnum.Workflow:
-        history.push(`/space/${spaceId}/workflow/${id}`);
+        url = `/space/${spaceId}/workflow/${id}`;
         break;
       case ComponentTypeEnum.Plugin:
-        handlePluginUrl(id, spaceId, ext as PluginTypeEnum);
+        url = handlePluginUrl(id, spaceId, ext as PluginTypeEnum);
         break;
       case ComponentTypeEnum.Knowledge:
-        history.push(`/space/${spaceId}/knowledge/${id}`);
+        url = `/space/${spaceId}/knowledge/${id}`;
         break;
       case ComponentTypeEnum.Table:
-        history.push(`/space/${spaceId}/table/${id}`);
+        url = `/space/${spaceId}/table/${id}`;
         break;
       case ComponentTypeEnum.Model:
         setModelComponentInfo(item);
         setOpenModel(true);
         break;
+    }
+
+    if (url) {
+      jumpTo(url);
     }
   };
 
