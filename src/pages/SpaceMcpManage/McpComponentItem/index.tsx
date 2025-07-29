@@ -21,6 +21,7 @@ const cx = classNames.bind(styles);
 
 // 单个资源组件
 const McpComponentItem: React.FC<McpComponentItemProps> = ({
+  className,
   mcpInfo,
   onClick,
   onClickMore,
@@ -75,6 +76,7 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
         'flex-col',
         'content-between',
         'cursor-pointer',
+        className,
       )}
       onClick={onClick}
     >

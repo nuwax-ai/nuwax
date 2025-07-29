@@ -132,7 +132,7 @@ const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
               src={item.icon || (teamImage as string)}
               alt=""
             />
-            <span className={cx('flex-1')}>{item.name}</span>
+            <span className={cx('flex-1', 'text-ellipsis')}>{item.name}</span>
             {targetSpaceId === item.id && (
               <CheckOutlined className={cx(styles['selected-ico'])} />
             )}

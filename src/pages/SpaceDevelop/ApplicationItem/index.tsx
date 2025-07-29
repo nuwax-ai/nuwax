@@ -69,6 +69,9 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
         case ApplicationMoreActionEnum.API_Key:
           // API Key操作：只有空间创建者、空间管理员和智能体本身的创建者可查看
           return hasPermission(PermissionsEnum.AgentApi);
+        case ApplicationMoreActionEnum.Export_Config:
+          // 导出配置操作：只有空间创建者、空间管理员和智能体本身的创建者可导出
+          return hasPermission(PermissionsEnum.Export);
         default:
           // 其他操作默认展示
           return true;

@@ -38,7 +38,15 @@ import {
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { BarsOutlined } from '@ant-design/icons';
 
-// 组件库更多操作 插件： 创建副本、删除 模型：删除 工作流：创建副本、删除 知识库： 删除
+/**
+ * 组件库更多操作
+ * 插件： 创建副本、导出配置、删除
+ * 模型：删除
+ * 工作流：创建副本、导出配置、删除
+ * 知识库： 删除
+ * 数据表： 复制、导出配置、删除
+ * 导出配置接口，支持Agent、Workflow、Plugin、Table
+ */
 export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
   // 插件
   {
@@ -47,12 +55,16 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
     type: ComponentTypeEnum.Plugin,
   },
   {
+    action: ApplicationMoreActionEnum.Export_Config,
+    label: '导出配置',
+    type: ComponentTypeEnum.Plugin,
+  },
+  {
     action: ApplicationMoreActionEnum.Del,
     label: '删除',
     isDel: true,
     type: ComponentTypeEnum.Plugin,
   },
-  // 模型
   {
     action: ApplicationMoreActionEnum.Del,
     label: '删除',
@@ -63,6 +75,11 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
   {
     action: ApplicationMoreActionEnum.Copy_To_Space,
     label: '复制到空间',
+    type: ComponentTypeEnum.Workflow,
+  },
+  {
+    action: ApplicationMoreActionEnum.Export_Config,
+    label: '导出配置',
     type: ComponentTypeEnum.Workflow,
   },
   {
@@ -83,6 +100,11 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
   {
     action: ApplicationMoreActionEnum.Copy,
     label: '复制',
+    type: ComponentTypeEnum.Table,
+  },
+  {
+    action: ApplicationMoreActionEnum.Export_Config,
+    label: '导出配置',
     type: ComponentTypeEnum.Table,
   },
   {

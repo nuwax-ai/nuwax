@@ -1,11 +1,20 @@
 import Loading from '@/components/Loading';
 import SelectList from '@/components/SelectList';
-import { FILTER_DEPLOY } from '@/constants/mcp.constants';
+import {
+  FILTER_DEPLOY,
+  MCP_MANAGE_SEGMENTED_LIST,
+} from '@/constants/mcp.constants';
 import { CREATE_LIST } from '@/constants/space.constants';
-import { apiMcpDelete, apiMcpList, apiMcpStop } from '@/services/mcp';
+import {
+  apiMcpDelete,
+  apiMcpList,
+  apiMcpOfficialList,
+  apiMcpStop,
+} from '@/services/mcp';
 import {
   DeployStatusEnum,
   FilterDeployEnum,
+  McpManageSegmentedEnum,
   McpMoreActionEnum,
 } from '@/types/enums/mcp';
 import { CreateListEnum } from '@/types/enums/space';
@@ -16,7 +25,7 @@ import {
   PlusOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
-import { Button, Empty, Input, message, Modal } from 'antd';
+import { Button, Empty, Input, message, Modal, Segmented } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
@@ -50,6 +59,10 @@ const SpaceLibrary: React.FC = () => {
   // 服务导出弹窗
   const [serverExportModalVisible, setServerExportModalVisible] =
     useState<boolean>(false);
+  // 分段器
+  const [segmentedValue, setSegmentedValue] = useState<McpManageSegmentedEnum>(
+    McpManageSegmentedEnum.Custom,
+  );
   // 当前Mcp信息
   const currentMcpInfoRef = useRef<McpDetailInfo | null>(null);
   // 获取用户信息
@@ -57,9 +70,9 @@ const SpaceLibrary: React.FC = () => {
 
   // 过滤Mcp管理列表数据
   const handleFilterList = (
-    filterCreate: CreateListEnum,
-    filterDeploy: FilterDeployEnum,
-    filterKeyword: string,
+    filterCreate?: CreateListEnum,
+    filterDeploy?: FilterDeployEnum,
+    filterKeyword?: string,
     list = mcpListAllRef.current,
   ) => {
     let _list = list;
@@ -77,14 +90,44 @@ const SpaceLibrary: React.FC = () => {
     setMcpList(_list);
   };
 
+  // 过滤官方服务列表数据
+  const handleFilterOfficialList = (
+    filterKeyword?: string,
+    list = mcpListAllRef.current,
+  ) => {
+    let _list = filterKeyword
+      ? list.filter((item) => item.name.includes(filterKeyword))
+      : list;
+    setMcpList(_list);
+  };
+
+  // 列表请求成功后处理数据
+  const handleListSuccess = (result: McpDetailInfo[]) => {
+    setLoading(false);
+    mcpListAllRef.current = result;
+    handleFilterList(create, deployStatus, keyword, result);
+  };
+
   // MCP管理列表
   const { run: runMcpList } = useRequest(apiMcpList, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: McpDetailInfo[]) => {
-      handleFilterList(create, deployStatus, keyword, result);
-      mcpListAllRef.current = result;
+      handleListSuccess(result);
+    },
+    onError: () => {
       setLoading(false);
+    },
+  });
+
+  // MCP列表（官方服务）
+  const { run: runMcpOfficialList } = useRequest(apiMcpOfficialList, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: McpDetailInfo[]) => {
+      setLoading(false);
+      mcpListAllRef.current = result;
+      handleFilterOfficialList('', result);
     },
     onError: () => {
       setLoading(false);
@@ -140,6 +183,7 @@ const SpaceLibrary: React.FC = () => {
   });
 
   useEffect(() => {
+    setSegmentedValue(McpManageSegmentedEnum.Custom);
     setLoading(true);
     runMcpList(spaceId);
   }, [spaceId]);
@@ -162,13 +206,21 @@ const SpaceLibrary: React.FC = () => {
   const handleQueryAgent = (e: React.ChangeEvent<HTMLInputElement>) => {
     const _keyword = e.target.value;
     setKeyword(_keyword);
-    handleFilterList(create, deployStatus, _keyword);
+    if (segmentedValue === McpManageSegmentedEnum.Custom) {
+      handleFilterList(create, deployStatus, _keyword);
+    } else {
+      handleFilterOfficialList(_keyword);
+    }
   };
 
   // 清除关键词
   const handleClearKeyword = () => {
     setKeyword('');
-    handleFilterList(create, deployStatus, '');
+    if (segmentedValue === McpManageSegmentedEnum.Custom) {
+      handleFilterList(create, deployStatus);
+    } else {
+      handleFilterOfficialList();
+    }
   };
 
   // 点击更多操作
@@ -214,12 +266,30 @@ const SpaceLibrary: React.FC = () => {
   // 点击单个资源组件
   const handleClickComponent = (info: McpDetailInfo) => {
     const { id, spaceId } = info;
+    // 官方服务不能编辑, spaceId 为 -1时代表官方服务，后台写死的spaceId
+    if (spaceId === -1) {
+      return;
+    }
+    // 自定义服务，跳转到编辑页面
     history.push(`/space/${spaceId}/mcp/edit/${id}`);
   };
 
   // 创建MCP服务
   const handleCreate = () => {
     history.push(`/space/${spaceId}/mcp/create`);
+  };
+
+  // 切换分段器
+  const handleChangeSegmentedValue = (value: McpManageSegmentedEnum) => {
+    console.log('value', value);
+    setSegmentedValue(value);
+    setKeyword('');
+    setLoading(true);
+    if (value === McpManageSegmentedEnum.Custom) {
+      runMcpList(spaceId);
+    } else {
+      runMcpOfficialList();
+    }
   };
 
   return (
@@ -234,21 +304,30 @@ const SpaceLibrary: React.FC = () => {
     >
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>MCP管理</h3>
+        <Segmented
+          options={MCP_MANAGE_SEGMENTED_LIST}
+          value={segmentedValue}
+          onChange={handleChangeSegmentedValue}
+        />
         <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
           创建MCP服务
         </Button>
       </div>
       <div className={cx('flex', styles['select-search-area'])}>
-        <SelectList
-          value={create}
-          options={CREATE_LIST}
-          onChange={handlerChangeCreate}
-        />
-        <SelectList
-          value={deployStatus}
-          options={FILTER_DEPLOY}
-          onChange={handlerChangeDeployStatus}
-        />
+        {segmentedValue === McpManageSegmentedEnum.Custom && (
+          <>
+            <SelectList
+              value={create}
+              options={CREATE_LIST}
+              onChange={handlerChangeCreate}
+            />
+            <SelectList
+              value={deployStatus}
+              options={FILTER_DEPLOY}
+              onChange={handlerChangeDeployStatus}
+            />
+          </>
+        )}
         <Input
           rootClassName={cx(styles.input)}
           placeholder="搜索MCP服务"
@@ -267,6 +346,9 @@ const SpaceLibrary: React.FC = () => {
             {mcpList?.map((info) => (
               <McpComponentItem
                 key={info.id}
+                className={cx(
+                  info?.spaceId === -1 && styles['office-mcp-item'],
+                )}
                 mcpInfo={info}
                 onClick={() => handleClickComponent(info)}
                 onClickMore={(item) => handleClickMore(item, info)}

@@ -197,14 +197,6 @@ export default function EcosystemTemplate() {
   };
 
   /**
-   * 初始化数据
-   */
-  useEffect(() => {
-    selectTargetTypeRef.current = '';
-    refreshPluginList();
-  }, []);
-
-  /**
    * 标签页切换时重新获取数据
    */
   useEffect(() => {

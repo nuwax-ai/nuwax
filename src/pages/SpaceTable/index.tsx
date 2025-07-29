@@ -2,7 +2,6 @@ import CreatedItem from '@/components/CreatedItem';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiClearBusinessData,
-  apiExportExcel,
   apiGetTableData,
   apiTableAddBusinessData,
   apiTableDeleteBusinessData,
@@ -22,6 +21,7 @@ import {
 } from '@/types/interfaces/dataTable';
 import { modalConfirm } from '@/utils/ant-custom';
 import { validateTableName } from '@/utils/common';
+import { exportTableExcel } from '@/utils/exportImportFile';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { Button, message, Modal, UploadProps } from 'antd';
 import classNames from 'classnames';
@@ -421,22 +421,10 @@ const SpaceTable = () => {
   // 导出数据
   const handleExportData = async () => {
     setLoading(true);
-    try {
-      const _res = await apiExportExcel(tableId);
-      // 当使用 getResponse: true 时，_res 是一个包含 data 属性的响应对象
-      const blob = new Blob([_res.data], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      }); // 将响应数据转换为 Blob 对象
-      const objectURL = URL.createObjectURL(blob); // 创建一个 URL 对象
-      const link = document.createElement('a'); // 创建一个 a 标签
-      link.href = objectURL;
-      link.download = `${tableDetail?.tableName}.xlsx`; // 设置下载文件的名称
-      link.click(); // 模拟点击下载
-      URL.revokeObjectURL(objectURL); // 释放 URL 对象
+    await exportTableExcel(tableId, tableDetail?.tableName || '');
+    setTimeout(() => {
       setLoading(false);
-    } finally {
-      setLoading(false);
-    }
+    }, 500);
   };
 
   // 放弃变更

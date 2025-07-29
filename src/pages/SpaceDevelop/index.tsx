@@ -3,6 +3,7 @@ import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/Loading';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import SelectList from '@/components/SelectList';
+import UploadImportConfig from '@/components/UploadImportConfig';
 import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.constants';
 import {
   apiAgentConfigList,
@@ -10,6 +11,7 @@ import {
   apiAgentDelete,
   apiAgentTransfer,
 } from '@/services/agentConfig';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
 import {
   ApplicationMoreActionEnum,
@@ -18,6 +20,8 @@ import {
 } from '@/types/enums/space';
 import { AgentConfigInfo, AgentInfo } from '@/types/interfaces/agent';
 import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
+import { modalConfirm } from '@/utils/ant-custom';
+import { exportConfigFile } from '@/utils/exportImportFile';
 import { jumpToAgent } from '@/utils/router';
 import {
   ExclamationCircleFilled,
@@ -295,6 +299,19 @@ const SpaceDevelop: React.FC = () => {
         setOpenApiKey(true);
         setCurrentAgentInfo(agentInfo);
         break;
+      // 导出配置
+      case ApplicationMoreActionEnum.Export_Config:
+        modalConfirm(
+          `导出配置 - ${agentInfo?.name}`,
+          '如果内部包含数据表或知识库，数据本身不会导出',
+          () => {
+            exportConfigFile(id, agentInfo?.name, AgentComponentTypeEnum.Agent);
+            return new Promise((resolve) => {
+              setTimeout(resolve, 1000);
+            });
+          },
+        );
+        break;
       // 日志
       case ApplicationMoreActionEnum.Log:
         history.push(`/space/${spaceId}/${id}/log`);
@@ -321,17 +338,28 @@ const SpaceDevelop: React.FC = () => {
     history.push(`/space/${spaceId}/agent/${agentId}`);
   };
 
+  // 导入配置成功后，刷新智能体列表
+  const handleImportConfig = () => {
+    run(spaceId);
+  };
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>智能体开发</h3>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setOpenCreateAgent(true)}
-        >
-          创建智能体
-        </Button>
+        <div className={cx('flex', 'gap-10')}>
+          <UploadImportConfig
+            spaceId={spaceId}
+            onUploadSuccess={handleImportConfig}
+          />
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setOpenCreateAgent(true)}
+          >
+            创建智能体
+          </Button>
+        </div>
       </div>
       <div className={cx('flex', styles['select-search-area'])}>
         <SelectList

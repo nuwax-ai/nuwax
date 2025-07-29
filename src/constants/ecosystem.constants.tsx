@@ -8,6 +8,7 @@ import workflowImage from '@/assets/images/workflow_image.png';
 import {
   ICON_AGENT,
   ICON_PLUGIN_BOLD,
+  ICON_PUBLISHED,
   ICON_TEMPLATE,
   ICON_WORKFLOW_SQUARE,
 } from '@/constants/images.constants';
@@ -28,11 +29,11 @@ export const ECOSYSTEM_MARKET_LIST = [
     icon: <ICON_TEMPLATE />,
     text: '模板',
   },
-  // {
-  //   type: EcosystemMarketEnum.MCP,
-  //   icon: <ICON_PUBLISHED />,
-  //   text: 'MCP',
-  // },
+  {
+    type: EcosystemMarketEnum.MCP,
+    icon: <ICON_PUBLISHED />,
+    text: 'MCP',
+  },
 ];
 
 // 组件列表常量数据
@@ -127,5 +128,17 @@ export const TabItems: TabsProps['items'] = [
   {
     key: TabTypeEnum.SHARED,
     label: `我的分享`,
+  },
+];
+
+// 生态市场MCP标签列表
+export const ECO_MCP_TAB_ITEMS: TabsProps['items'] = [
+  {
+    key: EcosystemTabTypeEnum.ALL,
+    label: '全部',
+  },
+  {
+    key: EcosystemTabTypeEnum.ENABLED,
+    label: '已启用',
   },
 ];

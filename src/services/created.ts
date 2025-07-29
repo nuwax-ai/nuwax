@@ -25,18 +25,22 @@ export interface IGetList {
   allowCopy?: number; // 模板库 是否允许复制
 }
 function _getMcpList(data?: IGetList): Promise<RequestResponse<any>> {
-  return request(`/api/mcp/deployed/list/${data?.spaceId}`, {
-    method: 'GET',
+  return request('/api/mcp/deployed/list', {
+    method: 'POST',
+    data,
   }).then((res: any) => {
     const { data, ...rest } = res;
     // MCP 适配智能体组件列表数据结构 注意 mcp 没有分页 为适配之前
+    const { records, ...dataRest } = data || {};
     return {
       ...rest,
       data: {
-        records: data.map((item: any) => {
-          const { deployedConfig, deployStatus, id, creator, ...rest } = item;
+        ...dataRest,
+        records: records?.map((item: any) => {
+          const { deployedConfig, deployStatus, id, creator, ...itemRest } =
+            item;
           return {
-            ...rest,
+            ...itemRest,
             status: deployStatus,
             targetId: id,
             targetType: AgentComponentTypeEnum.MCP,
@@ -44,10 +48,6 @@ function _getMcpList(data?: IGetList): Promise<RequestResponse<any>> {
             config: deployedConfig,
           };
         }),
-        pages: 1,
-        size: data.length,
-        total: data.length,
-        current: 1,
       },
     };
   });
