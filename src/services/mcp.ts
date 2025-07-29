@@ -79,6 +79,15 @@ export function apiMcpDetail(
   });
 }
 
+// MCP列表（官方服务）
+export function apiMcpOfficialList(): Promise<
+  RequestResponse<McpDetailInfo[]>
+> {
+  return request('/api/mcp/official/list', {
+    method: 'GET',
+  });
+}
+
 // MCP管理列表
 export function apiMcpList(
   spaceId: number,

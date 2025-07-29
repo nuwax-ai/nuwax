@@ -5,7 +5,12 @@ import {
   MCP_MANAGE_SEGMENTED_LIST,
 } from '@/constants/mcp.constants';
 import { CREATE_LIST } from '@/constants/space.constants';
-import { apiMcpDelete, apiMcpList, apiMcpStop } from '@/services/mcp';
+import {
+  apiMcpDelete,
+  apiMcpList,
+  apiMcpOfficialList,
+  apiMcpStop,
+} from '@/services/mcp';
 import {
   DeployStatusEnum,
   FilterDeployEnum,
@@ -65,9 +70,9 @@ const SpaceLibrary: React.FC = () => {
 
   // 过滤Mcp管理列表数据
   const handleFilterList = (
-    filterCreate: CreateListEnum,
-    filterDeploy: FilterDeployEnum,
-    filterKeyword: string,
+    filterCreate?: CreateListEnum,
+    filterDeploy?: FilterDeployEnum,
+    filterKeyword?: string,
     list = mcpListAllRef.current,
   ) => {
     let _list = list;
@@ -85,14 +90,44 @@ const SpaceLibrary: React.FC = () => {
     setMcpList(_list);
   };
 
+  // 过滤官方服务列表数据
+  const handleFilterOfficialList = (
+    filterKeyword?: string,
+    list = mcpListAllRef.current,
+  ) => {
+    let _list = filterKeyword
+      ? list.filter((item) => item.name.includes(filterKeyword))
+      : list;
+    setMcpList(_list);
+  };
+
+  // 列表请求成功后处理数据
+  const handleListSuccess = (result: McpDetailInfo[]) => {
+    setLoading(false);
+    mcpListAllRef.current = result;
+    handleFilterList(create, deployStatus, keyword, result);
+  };
+
   // MCP管理列表
   const { run: runMcpList } = useRequest(apiMcpList, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: McpDetailInfo[]) => {
-      handleFilterList(create, deployStatus, keyword, result);
-      mcpListAllRef.current = result;
+      handleListSuccess(result);
+    },
+    onError: () => {
       setLoading(false);
+    },
+  });
+
+  // MCP列表（官方服务）
+  const { run: runMcpOfficialList } = useRequest(apiMcpOfficialList, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: McpDetailInfo[]) => {
+      setLoading(false);
+      mcpListAllRef.current = result;
+      handleFilterOfficialList('', result);
     },
     onError: () => {
       setLoading(false);
@@ -148,6 +183,7 @@ const SpaceLibrary: React.FC = () => {
   });
 
   useEffect(() => {
+    setSegmentedValue(McpManageSegmentedEnum.Custom);
     setLoading(true);
     runMcpList(spaceId);
   }, [spaceId]);
@@ -173,14 +209,18 @@ const SpaceLibrary: React.FC = () => {
     if (segmentedValue === McpManageSegmentedEnum.Custom) {
       handleFilterList(create, deployStatus, _keyword);
     } else {
-      // todo: 官方服务, 搜索全局部署的MCP
+      handleFilterOfficialList(_keyword);
     }
   };
 
   // 清除关键词
   const handleClearKeyword = () => {
     setKeyword('');
-    handleFilterList(create, deployStatus, '');
+    if (segmentedValue === McpManageSegmentedEnum.Custom) {
+      handleFilterList(create, deployStatus);
+    } else {
+      handleFilterOfficialList();
+    }
   };
 
   // 点击更多操作
@@ -226,6 +266,11 @@ const SpaceLibrary: React.FC = () => {
   // 点击单个资源组件
   const handleClickComponent = (info: McpDetailInfo) => {
     const { id, spaceId } = info;
+    // 官方服务不能编辑, spaceId 为 -1时代表官方服务，后台写死的spaceId
+    if (spaceId === -1) {
+      return;
+    }
+    // 自定义服务，跳转到编辑页面
     history.push(`/space/${spaceId}/mcp/edit/${id}`);
   };
 
@@ -236,13 +281,14 @@ const SpaceLibrary: React.FC = () => {
 
   // 切换分段器
   const handleChangeSegmentedValue = (value: McpManageSegmentedEnum) => {
+    console.log('value', value);
     setSegmentedValue(value);
     setKeyword('');
+    setLoading(true);
     if (value === McpManageSegmentedEnum.Custom) {
-      handleFilterList(create, deployStatus, '');
+      runMcpList(spaceId);
     } else {
-      // todo: 官方服务, 点击官方服务时直接展示全局部署的MCP
-      setMcpList([]);
+      runMcpOfficialList();
     }
   };
 
@@ -300,6 +346,9 @@ const SpaceLibrary: React.FC = () => {
             {mcpList?.map((info) => (
               <McpComponentItem
                 key={info.id}
+                className={cx(
+                  info?.spaceId === -1 && styles['office-mcp-item'],
+                )}
                 mcpInfo={info}
                 onClick={() => handleClickComponent(info)}
                 onClickMore={(item) => handleClickMore(item, info)}

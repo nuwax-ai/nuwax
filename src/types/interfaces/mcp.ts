@@ -170,6 +170,7 @@ export interface McpCreateParams {
 
 // 组件库单个组件项
 export interface McpComponentItemProps {
+  className?: string;
   mcpInfo: McpDetailInfo;
   onClick: () => void;
   onClickMore: (item: CustomPopoverItem) => void;
