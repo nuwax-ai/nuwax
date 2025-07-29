@@ -72,14 +72,14 @@ const ChatView: React.FC<ChatViewProps> = memo(
     }, []);
 
     useEffect(() => {
-      console.log(
-        'messageInfo',
-        messageInfo?.text,
-        lastTextPos.current,
-        messageId.current,
-        messageInfo?.processingList,
-      );
-      console.log('disableTyping', disableTyping);
+      // console.log(
+      //   'messageInfo',
+      //   messageInfo?.text,
+      //   lastTextPos.current,
+      //   messageId.current,
+      //   messageInfo?.processingList,
+      // );
+      // console.log('disableTyping', disableTyping);
       if (messageInfo?.text) {
         //取出差量部分
         const diffText = messageInfo?.text.slice(lastTextPos.current);
