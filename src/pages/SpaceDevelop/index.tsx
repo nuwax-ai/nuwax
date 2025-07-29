@@ -3,6 +3,7 @@ import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/Loading';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import SelectList from '@/components/SelectList';
+import UploadImportConfig from '@/components/UploadImportConfig';
 import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.constants';
 import {
   apiAgentConfigList,
@@ -334,9 +335,9 @@ const SpaceDevelop: React.FC = () => {
   };
 
   // 导入配置
-  const handleImportConfig = () => {
+  const handleImportConfig = (url: string) => {
     // todo: 导入配置
-    console.log('导入配置');
+    console.log('导入配置', url);
   };
 
   return (
@@ -344,7 +345,10 @@ const SpaceDevelop: React.FC = () => {
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>智能体开发</h3>
         <div className={cx('flex', 'gap-10')}>
-          <Button onClick={handleImportConfig}>导入配置</Button>
+          <UploadImportConfig
+            spaceId={spaceId}
+            onUploadSuccess={handleImportConfig}
+          />
           <Button
             type="primary"
             icon={<PlusOutlined />}

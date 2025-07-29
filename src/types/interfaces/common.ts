@@ -422,6 +422,14 @@ export interface UploadAvatarProps {
   beforeUpload?: (file: FileType) => void;
 }
 
+// 上传导入配置
+export interface UploadImportConfigProps {
+  className?: string;
+  spaceId: number;
+  onUploadSuccess?: (url: string) => void;
+  beforeUpload?: (file: FileType) => void;
+}
+
 export interface SubmitButtonProps {
   form: FormInstance;
   loading?: boolean;

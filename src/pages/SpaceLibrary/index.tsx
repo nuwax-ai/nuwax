@@ -8,6 +8,7 @@ import CustomPopover from '@/components/CustomPopover';
 import Loading from '@/components/Loading';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import SelectList from '@/components/SelectList';
+import UploadImportConfig from '@/components/UploadImportConfig';
 import {
   CREATE_LIST,
   FILTER_STATUS,
@@ -591,7 +592,10 @@ const SpaceLibrary: React.FC = () => {
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>组件库</h3>
         <div className={cx('flex', 'gap-10')}>
-          <Button onClick={handleImportConfig}>导入配置</Button>
+          <UploadImportConfig
+            spaceId={spaceId}
+            onUploadSuccess={handleImportConfig}
+          />
           {/*添加资源*/}
           <CustomPopover
             list={LIBRARY_ALL_RESOURCE}
