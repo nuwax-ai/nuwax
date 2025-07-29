@@ -1,3 +1,4 @@
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type {
   AgentAkDeleteParams,
   AgentAkUpdateParams,
@@ -194,5 +195,17 @@ export async function apiAgentAkList(
 ): Promise<RequestResponse<UserApiKeyInfo>> {
   return request(`/api/agent/ak/list/${agentId}`, {
     method: 'GET',
+  });
+}
+
+// 导出配置接口，支持Agent、Workflow、Plugin、Table
+export async function apiTemplateExport(
+  targetId: number,
+  targetType: AgentComponentTypeEnum,
+): Promise<{ data: Blob }> {
+  return request(`/api/template/export/${targetType}/${targetId}`, {
+    method: 'GET',
+    responseType: 'blob', // 指定响应类型为blob
+    getResponse: true, // 获取完整响应对象
   });
 }

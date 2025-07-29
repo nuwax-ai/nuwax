@@ -11,6 +11,7 @@ import {
   apiAgentDelete,
   apiAgentTransfer,
 } from '@/services/agentConfig';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
 import {
   ApplicationMoreActionEnum,
@@ -20,6 +21,7 @@ import {
 import { AgentConfigInfo, AgentInfo } from '@/types/interfaces/agent';
 import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
+import { exportConfigFile } from '@/utils/exportImportFile';
 import { jumpToAgent } from '@/utils/router';
 import {
   ExclamationCircleFilled,
@@ -299,12 +301,14 @@ const SpaceDevelop: React.FC = () => {
         break;
       // 导出配置
       case ApplicationMoreActionEnum.Export_Config:
-        // todo: 导出配置
         modalConfirm(
           `导出配置 - ${agentInfo?.name}`,
           '如果内部包含数据表或知识库，数据本身不会导出',
           () => {
-            console.log('导出配置');
+            exportConfigFile(id, agentInfo?.name, AgentComponentTypeEnum.Agent);
+            return new Promise((resolve) => {
+              setTimeout(resolve, 1000);
+            });
           },
         );
         break;

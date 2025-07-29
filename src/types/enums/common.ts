@@ -228,6 +228,8 @@ export enum PermissionsEnum {
   TempChat = 'TempChat',
   // API Key
   AgentApi = 'AgentApi',
+  // 导出配置
+  Export = 'Export',
 }
 
 // 输入类型, Http插件有用,可用值:Query,Body,Header,Path
