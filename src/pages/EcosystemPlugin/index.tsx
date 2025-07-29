@@ -179,13 +179,6 @@ export default function EcosystemPlugin() {
   };
 
   /**
-   * 初始化数据
-   */
-  useEffect(() => {
-    refreshPluginList();
-  }, []);
-
-  /**
    * 标签页切换时重新获取数据
    */
   useEffect(() => {
