@@ -338,10 +338,9 @@ const SpaceDevelop: React.FC = () => {
     history.push(`/space/${spaceId}/agent/${agentId}`);
   };
 
-  // 导入配置
-  const handleImportConfig = (url: string) => {
-    // todo: 导入配置
-    console.log('导入配置', url);
+  // 导入配置成功后，刷新智能体列表
+  const handleImportConfig = () => {
+    run(spaceId);
   };
 
   return (

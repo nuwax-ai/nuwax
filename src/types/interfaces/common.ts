@@ -426,7 +426,7 @@ export interface UploadAvatarProps {
 export interface UploadImportConfigProps {
   className?: string;
   spaceId: number;
-  onUploadSuccess?: (url: string) => void;
+  onUploadSuccess?: () => void;
   beforeUpload?: (file: FileType) => void;
 }
 

@@ -37,13 +37,10 @@ import {
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentInfo } from '@/types/interfaces/library';
 import { modalConfirm } from '@/utils/ant-custom';
+import { exportConfigFile } from '@/utils/exportImportFile';
 import { jumpTo, jumpToPlugin, jumpToWorkflow } from '@/utils/router';
-import {
-  ExclamationCircleFilled,
-  PlusOutlined,
-  SearchOutlined,
-} from '@ant-design/icons';
-import { Button, Empty, Input, message, Modal } from 'antd';
+import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { Button, Empty, Input, message } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
@@ -52,7 +49,6 @@ import ComponentItem from './ComponentItem';
 import CreateModel from './CreateModel';
 import styles from './index.less';
 const cx = classNames.bind(styles);
-const { confirm } = Modal;
 
 /**
  * 工作空间 - 组件库
@@ -400,32 +396,24 @@ const SpaceLibrary: React.FC = () => {
   // 删除组件确认弹窗
   const showDeleteConfirm = (type: ComponentTypeEnum, info: ComponentInfo) => {
     const { id, name } = info;
-    confirm({
-      title: '您确定要删除此组件吗?',
-      icon: <ExclamationCircleFilled />,
-      content: name,
-      okText: '确定',
-      maskClosable: true,
-      cancelText: '取消',
-      onOk() {
-        switch (type) {
-          case ComponentTypeEnum.Plugin:
-            runPluginDel(id);
-            break;
-          case ComponentTypeEnum.Model:
-            runModelDel(id);
-            break;
-          case ComponentTypeEnum.Workflow:
-            runWorkflowDel(id);
-            break;
-          case ComponentTypeEnum.Knowledge:
-            runKnowledgeDel(id);
-            break;
-          case ComponentTypeEnum.Table:
-            runTableDel(id);
-            break;
-        }
-      },
+    modalConfirm('您确定要删除此组件吗?', name, () => {
+      switch (type) {
+        case ComponentTypeEnum.Plugin:
+          runPluginDel(id);
+          break;
+        case ComponentTypeEnum.Model:
+          runModelDel(id);
+          break;
+        case ComponentTypeEnum.Workflow:
+          runWorkflowDel(id);
+          break;
+        case ComponentTypeEnum.Knowledge:
+          runKnowledgeDel(id);
+          break;
+        case ComponentTypeEnum.Table:
+          runTableDel(id);
+          break;
+      }
     });
   };
 
@@ -446,12 +434,14 @@ const SpaceLibrary: React.FC = () => {
     info: ComponentInfo,
   ) => {
     switch (action) {
+      // 复制到空间
       case ApplicationMoreActionEnum.Copy_To_Space:
         setOpenMove(true);
         setCurrentComponentInfo(info);
         break;
+      // 导出配置
       case ApplicationMoreActionEnum.Export_Config:
-        console.log('导出配置');
+        exportConfigFile(info.id, info?.name, AgentComponentTypeEnum.Plugin);
         break;
     }
   };
@@ -463,7 +453,7 @@ const SpaceLibrary: React.FC = () => {
   ) => {
     switch (action) {
       case ApplicationMoreActionEnum.Export_Config:
-        console.log('导出配置', info);
+        exportConfigFile(info.id, info?.name, AgentComponentTypeEnum.Model);
         break;
     }
   };
@@ -479,12 +469,18 @@ const SpaceLibrary: React.FC = () => {
         setCurrentComponentInfo(info);
         break;
       case ApplicationMoreActionEnum.Export_Config:
-        // todo: 导出配置
         modalConfirm(
           `导出配置 - ${info?.name}`,
           '如果内部包含数据表或知识库，数据本身不会导出',
           () => {
-            console.log('导出配置');
+            exportConfigFile(
+              info.id,
+              info?.name,
+              AgentComponentTypeEnum.Workflow,
+            );
+            return new Promise((resolve) => {
+              setTimeout(resolve, 1000);
+            });
           },
         );
         break;
@@ -498,12 +494,14 @@ const SpaceLibrary: React.FC = () => {
   ) => {
     switch (action) {
       case ApplicationMoreActionEnum.Export_Config:
-        // todo: 导出配置
         modalConfirm(
           `导出配置 - ${info?.name}`,
           '仅导出数据表结构，数据本身不会导出',
           () => {
-            console.log('导出配置');
+            exportConfigFile(info.id, info?.name, AgentComponentTypeEnum.Table);
+            return new Promise((resolve) => {
+              setTimeout(resolve, 1000);
+            });
           },
         );
         break;
@@ -573,10 +571,9 @@ const SpaceLibrary: React.FC = () => {
     }
   };
 
-  // 导入配置
+  // 导入配置成功后，刷新组件列表
   const handleImportConfig = () => {
-    // todo: 导入配置
-    console.log('导入配置');
+    runComponent(spaceId);
   };
 
   return (

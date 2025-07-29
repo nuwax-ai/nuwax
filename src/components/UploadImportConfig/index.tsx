@@ -22,10 +22,10 @@ const UploadImportConfig: React.FC<UploadImportConfigProps> = ({
     }
     if (info.file.status === 'done') {
       const code = info.file.response?.code;
-      const data = info.file.response?.data;
       if (code === SUCCESS_CODE) {
         // Get this url from response in real world.
-        onUploadSuccess?.(data?.url);
+        onUploadSuccess?.();
+        message.success('已成功导入配置');
       } else {
         message.warning(info.file.response?.message);
       }
