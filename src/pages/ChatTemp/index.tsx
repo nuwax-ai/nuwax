@@ -67,6 +67,8 @@ const cx = classNames.bind(styles);
  * 主页咨询聊天页面
  */
 const ChatTemp: React.FC = () => {
+  const { checkConversationActive, setCurrentConversationRequestId } =
+    useModel('conversationInfo');
   // 链接Key
   const { chatKey } = useParams();
   // 会话信息
@@ -85,9 +87,6 @@ const ChatTemp: React.FC = () => {
   // 会话消息ID
   const messageIdRef = useRef<string>('');
   const [isLoadingConversation, setIsLoadingConversation] =
-    useState<boolean>(false);
-  // 会话是否正在进行中（有消息正在处理）
-  const [isConversationActive, setIsConversationActive] =
     useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   // 添加一个 ref 来控制是否允许自动滚动
@@ -179,16 +178,6 @@ const ChatTemp: React.FC = () => {
     }
   };
 
-  // 检查会话是否正在进行中（有消息正在处理）
-  const checkConversationActive = (messages: MessageInfo[]) => {
-    const hasActiveMessage = messages.some(
-      (message) =>
-        message.status === MessageStatusEnum.Loading ||
-        message.status === MessageStatusEnum.Incomplete,
-    );
-    setIsConversationActive(hasActiveMessage);
-  };
-
   // 查询临时会话详细
   const { run: runQueryConversation } = useRequest(
     apiTempChatConversationQuery,
@@ -234,6 +223,10 @@ const ChatTemp: React.FC = () => {
         // 存在消息列表时，设置消息列表
         if (len) {
           setMessageList(_messageList);
+
+          // 检查会话状态
+          checkConversationActive(_messageList);
+
           // 最后一条消息为"问答"时，获取问题建议
           const lastMessage = _messageList[len - 1];
           if (
@@ -292,6 +285,7 @@ const ChatTemp: React.FC = () => {
     currentMessageId: string,
   ) => {
     const { data, eventType } = res;
+    setCurrentConversationRequestId(res.requestId);
     timeoutRef.current = setTimeout(() => {
       setMessageList((messageList) => {
         if (!messageList?.length) {
@@ -851,7 +845,6 @@ const ChatTemp: React.FC = () => {
             selectedComponentList={selectedComponentList}
             onSelectComponent={handleSelectComponent}
             onScrollBottom={onScrollBottom}
-            isConversationActive={isConversationActive}
           />
           {/*手机会话输入框*/}
           <ChatInputPhone

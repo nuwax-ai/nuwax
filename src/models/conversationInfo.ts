@@ -719,6 +719,8 @@ export default () => {
     runStopConversation,
     loadingStopConversation,
     isConversationActive,
+    checkConversationActive,
+    setCurrentConversationRequestId,
     getCurrentConversationRequestId,
   };
 };
