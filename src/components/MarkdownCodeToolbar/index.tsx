@@ -4,7 +4,7 @@ import {
   DownloadOutlined,
 } from '@ant-design/icons';
 import { Button, Dropdown, Tooltip } from 'antd';
-import React, { memo, useState } from 'react';
+import React, { memo } from 'react';
 import styles from './index.less';
 
 // 导入类型定义
@@ -16,11 +16,7 @@ import type { MarkdownCodeToolbarProps } from './types';
 import { downloadPNG, downloadSVG } from './utils';
 
 // 导入自定义hooks
-import {
-  useContainerPosition,
-  useCopyFeature,
-  useMermaidFeature,
-} from './hooks';
+import { useCopyFeature, useMermaidFeature } from './hooks';
 
 /**
  * Markdown 代码块工具栏组件
@@ -31,16 +27,16 @@ export const MarkdownCodeToolbar: React.FC<MarkdownCodeToolbarProps> = (
   props,
 ) => {
   // ==================== State ====================
-  const [innerProps, setInnerProps] = useState<MarkdownCodeToolbarProps>(props);
+  const innerProps = props;
 
   // ==================== 自定义 Hooks ====================
   // 容器位置计算
-  const containerPosition = useContainerPosition(
-    innerProps.containerId,
-    innerProps.id,
-    innerProps,
-    setInnerProps,
-  );
+  // const containerPosition = useContainerPosition(
+  //   innerProps.containerId,
+  //   innerProps.id,
+  //   innerProps,
+  //   setInnerProps,
+  // );
 
   // 复制功能
   const { isCopying, handleCopy } = useCopyFeature(innerProps);
@@ -73,14 +69,7 @@ export const MarkdownCodeToolbar: React.FC<MarkdownCodeToolbarProps> = (
 
   // ==================== 渲染 ====================
   return (
-    <div
-      className={`${styles.toolbar}`}
-      style={{
-        top: containerPosition.top,
-        left: containerPosition.left,
-        width: containerPosition.width,
-      }}
-    >
+    <div className={`${styles.toolbar}`}>
       <div className={styles.toolbarContainer}>
         {/* 左侧信息 */}
         <div className={styles.info}>

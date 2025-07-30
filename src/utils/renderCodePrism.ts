@@ -50,23 +50,37 @@ export const safeEscapeHtml = (text: string): string => {
   return escapeHtml(text);
 };
 
-const renderCodePrism = (token: any) => {
+export const renderCodePrismInline = (token: any) => {
   const lang = token.info?.trim().split(/\s+/g)[0] || 'text';
   const content = token.content;
   let result = '';
   if (lang && Prism.languages[lang]) {
     try {
-      const highlightedCode = Prism.highlight(
-        content,
-        Prism.languages[lang],
-        lang,
-      );
-      result = `<pre class="language-${lang}"><code class="language-${lang}">${highlightedCode}</code></pre>`;
+      result = Prism.highlight(content, Prism.languages[lang], lang);
     } catch (__) {
-      result = `<pre><code>${safeEscapeHtml(content)}</code></pre>`;
+      result = safeEscapeHtml(content);
     }
   } else {
-    result = `<pre><code>${safeEscapeHtml(content)}</code></pre>`;
+    result = safeEscapeHtml(content);
+  }
+
+  return result;
+};
+
+const renderCodePrism = (token: any) => {
+  const lang = token.info?.trim().split(/\s+/g)[0] || 'text';
+  const content = token.content;
+  let result = '';
+  let inlineString = safeEscapeHtml(content);
+  if (lang && Prism.languages[lang]) {
+    try {
+      inlineString = renderCodePrismInline(token);
+      result = `<pre class="language-${lang}"><code class="language-${lang}">${inlineString}</code></pre>`;
+    } catch (__) {
+      result = `<pre><code>${inlineString}</code></pre>`;
+    }
+  } else {
+    result = `<pre><code>${inlineString}</code></pre>`;
   }
 
   return result;

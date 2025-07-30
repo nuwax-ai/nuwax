@@ -21,7 +21,13 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { Form } from 'antd';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import styles from './index.less';
 import ShowArea from './ShowArea';
@@ -90,6 +96,10 @@ const Chat: React.FC = () => {
     variables,
     requiredNameList,
     userFillVariables,
+    runStopConversation,
+    loadingStopConversation,
+    isConversationActive,
+    getCurrentConversationRequestId,
   } = useModel('conversationInfo');
 
   const values = Form.useWatch([], { form, preserve: true });
@@ -297,6 +307,21 @@ const Chat: React.FC = () => {
     setShowScrollBtn(false);
   };
 
+  // 停止会话
+  const handleStopConversation = useCallback(() => {
+    const requestId = getCurrentConversationRequestId();
+    console.log('requestId', requestId);
+    if (loadingStopConversation || !requestId) {
+      return;
+    } else {
+      runStopConversation(requestId);
+    }
+  }, [
+    getCurrentConversationRequestId,
+    loadingStopConversation,
+    runStopConversation,
+  ]);
+
   return (
     <div
       className={cx('flex', 'h-full')}
@@ -385,6 +410,8 @@ const Chat: React.FC = () => {
           selectedComponentList={selectedComponentList}
           onSelectComponent={handleSelectComponent}
           onScrollBottom={onScrollBottom}
+          onStopConversation={handleStopConversation}
+          isConversationActive={isConversationActive}
         />
       </div>
       <AgentSidebar

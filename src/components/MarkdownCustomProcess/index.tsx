@@ -1,5 +1,5 @@
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
-import { ProcessingInfo } from '@/types/interfaces/conversationInfo';
 import { copyJSONToClipboard } from '@/utils';
 import { cloneDeep } from '@/utils/common';
 import {
@@ -10,21 +10,51 @@ import {
 import { Button, message, Tooltip } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 import SeeDetailModal from './SeeDetailModal';
 const cx = classNames.bind(styles);
-
-function MarkdownCustomProcess(props: ProcessingInfo) {
+interface MarkdownCustomProcessProps {
+  executeId: string;
+  name: string;
+  status: ProcessingEnum;
+  type: AgentComponentTypeEnum;
+  children: React.ReactNode;
+  dataKey: string;
+}
+function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   const { getProcessingById, processingList } = useModel('chat');
+
   const [detailData, setDetailData] = useState<{
     params: Record<string, any>;
     response: Record<string, any>;
   } | null>(null);
+
   const [innerProcessing, setInnerProcessing] = useState({
     ...props,
+    result: '',
   });
+
+  // 处理 children 的 解析出来做为 result
+  const result = useMemo(() => {
+    if (!props.children) {
+      return '';
+    }
+    try {
+      return JSON.parse(decodeURIComponent(props.children as string));
+    } catch (error) {
+      return '';
+    }
+  }, [props.children]);
+
+  useEffect(() => {
+    setInnerProcessing((prev) => ({
+      ...prev,
+      result,
+    }));
+  }, [result]);
+
   // 添加 WebSearchProModal 的状态管理
   const [openModal, setOpenModal] = useState(false);
 
@@ -100,14 +130,22 @@ function MarkdownCustomProcess(props: ProcessingInfo) {
       }
       setDetailData(theDetailData);
     }
-  }, [innerProcessing.executeId, innerProcessing.status]);
+  }, [
+    innerProcessing.executeId,
+    innerProcessing.status,
+    innerProcessing.result,
+  ]);
 
   if (!innerProcessing.executeId) {
     return null;
   }
 
   return (
-    <div className={cx(styles['markdown-custom-process'])}>
+    <div
+      className={cx(styles['markdown-custom-process'])}
+      key={props.dataKey}
+      data-key={props.dataKey}
+    >
       <div className={cx(styles['process-header'])}>
         <div className={cx(styles['process-title'])}>
           {innerProcessing.name || '暂无名称'}
