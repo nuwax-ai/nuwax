@@ -8,6 +8,16 @@ import type {
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
+// 生态市场 - 客户端配置列表查询
+export function apiEcoMarketClientConfigList(
+  data: PageQueryVoClientConfigQueryRequest,
+): Promise<RequestResponse<ClientConfigVo>> {
+  return request('/api/system/eco/market/client/config/list', {
+    method: 'POST',
+    data,
+  });
+}
+
 /**
  * 生态系统相关API服务
  * 提供客户端配置查询、管理等功能
