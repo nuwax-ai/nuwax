@@ -3,7 +3,7 @@ import avatar from '@/assets/images/avatar.png';
 import copyImage from '@/assets/images/copy.png';
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
-import { ChatMarkdownRenderer } from '@/components/MarkdownRenderer';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 import { USER_INFO } from '@/constants/home.constants';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
@@ -13,8 +13,9 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { message } from 'antd';
 import classNames from 'classnames';
+import { MarkdownCMDRef } from 'ds-markdown';
 import { isEqual } from 'lodash';
-import React, { memo, useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef } from 'react';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
@@ -29,8 +30,13 @@ const cx = classNames.bind(styles);
 // 聊天视图组件
 const ChatView: React.FC<ChatViewProps> = memo(
   ({ className, contentClassName, roleInfo, messageInfo, mode = 'chat' }) => {
+    const markdownRef = useRef<MarkdownCMDRef>(null);
+    const lastTextPos = useRef({
+      text: 0,
+      think: 0,
+    });
     const { userInfo } = useModel('userInfo');
-    const [initUuid, setInitUuid] = useState('');
+    const messageIdRef = useRef(uuidv4());
     const _userInfo =
       userInfo || JSON.parse(localStorage.getItem(USER_INFO) as string);
 
@@ -64,32 +70,45 @@ const ChatView: React.FC<ChatViewProps> = memo(
       message.success('代码复制成功');
     };
 
-    // 自定义 CSS 类名配置，复用 ChatView 的样式
-    const markdownConfig = {
-      cssClasses: {
-        codeBlockWrapper: 'code-block-wrapper',
-        codeHeader: 'code-header',
-        extBox: 'ext-box',
-        copyImg: 'copy-img',
-        customTable: 'markdown-it-custom-table',
-        imageOverlay: 'image-overlay',
-      },
-      // 确保全局函数正确启用，包括代码折叠功能
-      globalFunctions: {
-        handleClipboard: true,
-        showImageInModal: true,
-        toggleCodeCollapse: true,
-      },
-    };
+    useEffect(() => {
+      if (messageInfo?.text) {
+        //取出差量部分
+        const diffText = messageInfo?.text.slice(lastTextPos.current['text']);
+        lastTextPos.current['text'] = messageInfo?.text.length;
+        // 处理增量渲染
+        markdownRef.current?.push(diffText, 'answer');
+      }
+    }, [messageInfo?.text]);
+    useEffect(() => {
+      if (messageInfo?.think) {
+        //取出差量部分
+        const diffText = messageInfo?.think.slice(lastTextPos.current['think']);
+        lastTextPos.current['think'] = messageInfo?.think.length;
+        // 处理增量渲染
+        markdownRef.current?.push(diffText, 'thinking');
+      }
+    }, [messageInfo?.think]);
 
     useEffect(() => {
-      if (!messageInfo?.id && !initUuid) {
-        setInitUuid(uuidv4());
+      if (messageInfo?.id) {
+        messageIdRef.current = messageInfo?.id as string;
       }
-      return () => {
-        setInitUuid('');
-      };
     }, [messageInfo?.id]);
+
+    useEffect(() => {
+      return () => {
+        markdownRef.current?.clear();
+        lastTextPos.current = {
+          text: 0,
+          think: 0,
+        };
+        messageIdRef.current = '';
+      };
+    }, []);
+
+    const trim = useCallback((text: string) => {
+      return text.replace(/^\s+|\s+$/g, '');
+    }, []);
 
     return (
       <div className={cx(styles.container, 'flex', className)}>
@@ -112,14 +131,17 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     styles.user,
                     'radius-6',
                     contentClassName,
+                    'ds-markdown',
                   )}
                 >
-                  <ChatMarkdownRenderer
-                    id={`text-${messageInfo?.id || initUuid}`}
-                    content={messageInfo.text}
-                    config={markdownConfig}
-                    onCopy={handleCodeCopy}
-                  />
+                  <div className="ds-markdown-answer">
+                    <div
+                      style={{ whiteSpace: 'pre-wrap' }}
+                      className="ds-markdown-paragraph ds-typed-answer"
+                    >
+                      {trim(messageInfo?.text)}
+                    </div>
+                  </div>
                 </div>
                 <div
                   className={cx(
@@ -164,43 +186,20 @@ const ChatView: React.FC<ChatViewProps> = memo(
             </ConditionRender>
             {(!!messageInfo?.think || !!messageInfo?.text) && (
               <div className={cx(styles['inner-container'], contentClassName)}>
-                {!!messageInfo?.think && (
-                  <div
-                    className={cx(
-                      styles['think-content'],
-                      'radius-6',
-                      'w-full',
-                    )}
-                  >
-                    <ChatMarkdownRenderer
-                      id={`think-${messageInfo?.id || initUuid}`}
-                      content={messageInfo.think}
-                      config={markdownConfig}
-                      onCopy={handleCodeCopy}
-                    />
-                  </div>
-                )}
-                {!!messageInfo?.text && (
-                  <div
-                    className={cx(
-                      styles['chat-content'],
-                      'radius-6',
-                      'w-full',
-                      {
-                        [styles.typing]:
-                          messageInfo.status === MessageStatusEnum.Incomplete ||
-                          messageInfo.status === MessageStatusEnum.Loading,
-                      },
-                    )}
-                  >
-                    <ChatMarkdownRenderer
-                      id={`text-${messageInfo?.id || initUuid}`}
-                      content={messageInfo.text}
-                      config={markdownConfig}
-                      onCopy={handleCodeCopy}
-                    />
-                  </div>
-                )}
+                <div
+                  className={cx(styles['chat-content'], 'radius-6', 'w-full', {
+                    [styles.typing]:
+                      messageInfo.status === MessageStatusEnum.Incomplete ||
+                      messageInfo.status === MessageStatusEnum.Loading,
+                  })}
+                >
+                  <MarkdownRenderer
+                    key={`text-${messageIdRef.current}`}
+                    id={`text-${messageIdRef.current}`}
+                    markdownRef={markdownRef}
+                    onCopy={handleCodeCopy}
+                  />
+                </div>
               </div>
             )}
 

@@ -9,7 +9,9 @@ import {
   ArrowDownOutlined,
   ArrowUpOutlined,
   ClearOutlined,
+  LoadingOutlined,
   PlusOutlined,
+  XFilled,
 } from '@ant-design/icons';
 import type { InputRef, UploadProps } from 'antd';
 import { Input, Tooltip, Upload } from 'antd';
@@ -35,11 +37,16 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   isClearInput = true,
   manualComponents,
   onScrollBottom,
+  onStopConversation,
+  isConversationActive = false,
 }) => {
   // 文档
   const [uploadFiles, setUploadFiles] = useState<UploadFileInfo[]>([]);
   const [files, setFiles] = useState<UploadFileInfo[]>([]);
   const [messageInfo, setMessageInfo] = useState<string>('');
+  // 停止操作是否正在进行中
+  const [isStoppingConversation, setIsStoppingConversation] =
+    useState<boolean>(false);
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
   const textareaRef = useRef<InputRef>(null);
 
@@ -51,10 +58,22 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     );
   }, [uploadFiles]);
 
+  // 监听会话状态变化，当会话结束时重置停止状态
+  useEffect(() => {
+    if (!isConversationActive) {
+      setIsStoppingConversation(false);
+    }
+  }, [isConversationActive]);
+
   // 发送按钮disabled
   const disabledSend = useMemo(() => {
     return !messageInfo && !files?.length;
   }, [messageInfo, files]);
+
+  // 停止按钮disabled - 只有在会话进行中时才可停止，与输入框内容无关
+  const disabledStop = useMemo(() => {
+    return !isConversationActive || isStoppingConversation;
+  }, [isConversationActive, isStoppingConversation]);
 
   // 点击发送事件
   const handleSendMessage = () => {
@@ -121,6 +140,44 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       return;
     }
     onClear?.();
+  };
+
+  const handleStopConversation = () => {
+    if (disabledStop || wholeDisabled) {
+      return;
+    }
+    // 设置停止操作状态
+    setIsStoppingConversation(true);
+    // 调用停止会话回调
+    onStopConversation?.();
+  };
+
+  // 获取按钮提示文本
+  const getButtonTooltip = () => {
+    if (wholeDisabled) {
+      return '会话已禁用';
+    }
+    if (disabledSend) {
+      return '请输入你的问题';
+    }
+    if (isConversationActive) {
+      return '点击停止当前会话';
+    }
+    return '点击发送消息';
+  };
+
+  // 获取停止按钮提示文本
+  const getStopButtonTooltip = () => {
+    if (wholeDisabled) {
+      return '会话已禁用';
+    }
+    if (!isConversationActive) {
+      return '当前无进行中的会话';
+    }
+    if (isStoppingConversation) {
+      return '正在停止会话...';
+    }
+    return '点击停止当前会话';
   };
 
   return (
@@ -195,22 +252,56 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             selectedComponentList={selectedComponentList}
             onSelectComponent={onSelectComponent}
           />
-          <Tooltip title={disabledSend ? '请输入你的问题' : ''}>
-            <span
-              onClick={handleSendMessage}
-              className={cx(
-                'flex',
-                'items-center',
-                'content-center',
-                'cursor-pointer',
-                styles.box,
-                styles['send-box'],
-                { [styles.disabled]: disabledSend || wholeDisabled },
-              )}
-            >
-              <ArrowUpOutlined />
-            </span>
-          </Tooltip>
+          {/* 根据会话状态显示发送或停止按钮 */}
+          {isConversationActive ? (
+            // 会话进行中，显示停止按钮
+            <Tooltip title={getStopButtonTooltip()}>
+              <span
+                onClick={handleStopConversation}
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'content-center',
+                  'cursor-pointer',
+                  styles.box,
+                  styles['send-box'],
+                  styles['stop-box'],
+                  // 当会话进行中且按钮可点击时，使用高亮样式
+                  {
+                    [styles['stop-box-active']]:
+                      !disabledStop &&
+                      !wholeDisabled &&
+                      !isStoppingConversation,
+                  },
+                  { [styles.disabled]: disabledStop || wholeDisabled },
+                )}
+              >
+                {isStoppingConversation ? (
+                  <LoadingOutlined className={cx(styles['loading-icon'])} />
+                ) : (
+                  <XFilled />
+                )}
+              </span>
+            </Tooltip>
+          ) : (
+            // 会话未进行中，显示发送按钮
+            <Tooltip title={getButtonTooltip()}>
+              <span
+                onClick={handleSendMessage}
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'content-center',
+                  'cursor-pointer',
+                  styles.box,
+                  styles['send-box'],
+                  { [styles.disabled]: disabledSend || wholeDisabled },
+                )}
+              >
+                <ArrowUpOutlined />
+              </span>
+            </Tooltip>
+          )}
         </footer>
       </div>
       {/* 滚动到底部按钮 */}

@@ -500,9 +500,12 @@ export interface ChatInputProps extends ManualComponentItemProps {
   visible?: boolean;
   // 发送消息后是否清空输入框, 默认true
   isClearInput?: boolean;
+  // 会话是否正在进行中，用于控制发送/停止按钮的切换
+  isConversationActive?: boolean;
   onScrollBottom?: () => void;
   onClear?: () => void;
   onEnter: (message: string, files: UploadFileInfo[]) => void;
+  onStopConversation?: () => void;
 }
 
 // 聊天框底部更多操作组件

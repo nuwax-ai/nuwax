@@ -1,1 +1,3 @@
+# 使用完整路径执行 npx 命令
+export PATH="$(npm bin):$PATH"
 npx --no-install lint-staged --quiet

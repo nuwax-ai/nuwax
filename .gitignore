@@ -23,5 +23,5 @@ package-lock.json
 /devspace_start.sh
 /Dockerfile
 
-/.husky
+# /.husky
 /src/mock

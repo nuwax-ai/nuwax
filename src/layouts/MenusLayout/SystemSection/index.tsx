@@ -18,7 +18,7 @@ const SystemSection: React.FC<{
   // 关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
 
-  const handlerApplication = (type: SystemManageListEnum) => {
+  const handlerApplication = (type: SystemManageListEnum | string) => {
     // 关闭移动端菜单
     handleCloseMobileMenu();
 
@@ -43,11 +43,15 @@ const SystemSection: React.FC<{
       case SystemManageListEnum.System_Config:
         history.push('/system/config');
         break;
+      // Markdown 测试
+      case 'markdown-test':
+        history.push('/markdown-test');
+        break;
     }
   };
 
   // 判断是否active
-  const handleActive = (type: SystemManageListEnum) => {
+  const handleActive = (type: SystemManageListEnum | string) => {
     return (
       (type === SystemManageListEnum.Publish_Audit &&
         pathname.includes('audit')) ||
@@ -58,7 +62,8 @@ const SystemSection: React.FC<{
       (type === SystemManageListEnum.Global_Model_Manage &&
         pathname.includes('model')) ||
       (type === SystemManageListEnum.System_Config &&
-        pathname.includes('config'))
+        pathname.includes('config')) ||
+      (type === 'markdown-test' && pathname.includes('markdown-test'))
     );
   };
 
