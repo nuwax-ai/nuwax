@@ -3,6 +3,7 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { getCustomBlock } from '@/plugins/markdown-it-custom';
 import {
   apiAgentConversation,
+  apiAgentConversationChatStop,
   apiAgentConversationChatSuggest,
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
@@ -52,6 +53,9 @@ export default () => {
   // 会话信息
   const [conversationInfo, setConversationInfo] =
     useState<ConversationInfo | null>();
+  // 会话消息ID
+  const [currentConversationRequestId, setCurrentConversationRequestId] =
+    useState<string>('');
   // 是否用户问题建议
   const [isSuggest, setIsSuggest] = useState<boolean>(false);
   // 会话信息
@@ -80,6 +84,9 @@ export default () => {
   const [cardList, setCardList] = useState<CardInfo[]>([]);
   // 是否正在加载会话
   const [isLoadingConversation, setIsLoadingConversation] =
+    useState<boolean>(false);
+  // 会话是否正在进行中（有消息正在处理）
+  const [isConversationActive, setIsConversationActive] =
     useState<boolean>(false);
   // 添加一个 ref 来控制是否允许自动滚动
   const allowAutoScrollRef = useRef<boolean>(true);
@@ -149,6 +156,16 @@ export default () => {
     setRequiredNameList(_requiredNameList || []);
   };
 
+  // 检查会话是否正在进行中（有消息正在处理）
+  const checkConversationActive = (messages: MessageInfo[]) => {
+    const hasActiveMessage = messages.some(
+      (message) =>
+        message.status === MessageStatusEnum.Loading ||
+        message.status === MessageStatusEnum.Incomplete,
+    );
+    setIsConversationActive(hasActiveMessage);
+  };
+
   // 查询会话
   const {
     run: runQueryConversation,
@@ -176,6 +193,8 @@ export default () => {
       const len = _messageList?.length || 0;
       if (len) {
         setMessageList(_messageList);
+        // 检查会话状态
+        checkConversationActive(_messageList);
         // 最后一条消息为"问答"时，获取问题建议
         const lastMessage = _messageList[len - 1];
         if (
@@ -221,6 +240,25 @@ export default () => {
     },
   );
 
+  // 停止会话
+  const { run: runStopConversation, loading: loadingStopConversation } =
+    useRequest(apiAgentConversationChatStop, {
+      manual: true,
+      onSuccess: (res: RequestResponse<null>) => {
+        console.log('停止会话', res, messageList);
+
+        // TODO添加停止会话状态
+        // setMessageList((messageList) => {
+        //   return messageList.map((item) => {
+        //     return {
+        //       ...item,
+        //       status: MessageStatusEnum.Error,
+        //     };
+        //   });
+        // });
+      },
+    });
+
   // 修改消息列表
   const handleChangeMessageList = (
     params: ConversationChatParams,
@@ -229,6 +267,7 @@ export default () => {
     currentMessageId: string,
   ) => {
     const { data, eventType } = res;
+    setCurrentConversationRequestId(res.requestId);
     timeoutRef.current = setTimeout(() => {
       setMessageList((messageList) => {
         if (!messageList?.length) {
@@ -408,6 +447,10 @@ export default () => {
         if (newMessage) {
           list.splice(index, arraySpliceAction, newMessage as MessageInfo);
         }
+
+        // 检查会话状态
+        checkConversationActive(list);
+
         return list;
       });
     }, 200);
@@ -421,8 +464,8 @@ export default () => {
     isSync: boolean = true,
   ) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-    // 启动连接
-    // //TODO 模拟数据 一定删除
+
+    // //模拟数据 一定删除 ====
     // let index = 0;
     // const mockData = mockChatData;
     // const len = mockData.length;
@@ -445,6 +488,9 @@ export default () => {
     // }, 100);
 
     // return;
+    // //===== 模拟数据 一定删除 ====
+
+    // 启动连接
     abortConnectionRef.current = await createSSEConnection({
       url: CONVERSATION_CONNECTION_URL,
       method: 'POST',
@@ -535,6 +581,8 @@ export default () => {
     setRequestId('');
     // 重置调试结果
     setFinalResult(null);
+    // 重置会话消息ID
+    setCurrentConversationRequestId('');
   };
 
   // 发送消息
@@ -629,6 +677,10 @@ export default () => {
     setShowType(EditAgentShowType.Debug_Details);
   }, []);
 
+  const getCurrentConversationRequestId = useCallback(() => {
+    return currentConversationRequestId;
+  }, [currentConversationRequestId]);
+
   return {
     setIsSuggest,
     conversationInfo,
@@ -664,5 +716,9 @@ export default () => {
     userFillVariables,
     requiredNameList,
     handleVariables,
+    runStopConversation,
+    loadingStopConversation,
+    isConversationActive,
+    getCurrentConversationRequestId,
   };
 };

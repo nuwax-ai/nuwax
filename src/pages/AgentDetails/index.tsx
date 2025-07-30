@@ -58,6 +58,9 @@ const AgentDetails: React.FC = () => {
     string | number
   > | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  // 会话是否正在进行中
+  const [isConversationActive, setIsConversationActive] =
+    useState<boolean>(false);
 
   // 会话输入框已选择组件
   const {
@@ -185,6 +188,8 @@ const AgentDetails: React.FC = () => {
       message.warning('请填写必填参数');
       return;
     }
+    // 设置会话为进行中状态
+    setIsConversationActive(true);
     // 创建智能体会话
     handleCreateConversation(agentDetail.agentId, {
       message: messageInfo,
@@ -193,6 +198,13 @@ const AgentDetails: React.FC = () => {
       defaultAgentDetail: agentDetail,
       variableParams,
     });
+  };
+
+  // 停止会话
+  const handleStopConversation = () => {
+    setIsConversationActive(false);
+    // TODO: 这里可以添加停止会话的API调用
+    message.info('会话已停止');
   };
 
   return (
@@ -279,6 +291,8 @@ const AgentDetails: React.FC = () => {
           manualComponents={agentDetail?.manualComponents || []}
           selectedComponentList={selectedComponentList}
           onSelectComponent={handleSelectComponent}
+          isConversationActive={isConversationActive}
+          onStopConversation={handleStopConversation}
         />
       </div>
       <AgentSidebar

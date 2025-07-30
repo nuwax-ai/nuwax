@@ -15,7 +15,7 @@ import { message } from 'antd';
 import classNames from 'classnames';
 import { MarkdownCMDRef } from 'ds-markdown';
 import { isEqual } from 'lodash';
-import React, { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { memo, useCallback, useEffect, useRef } from 'react';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
@@ -31,9 +31,12 @@ const cx = classNames.bind(styles);
 const ChatView: React.FC<ChatViewProps> = memo(
   ({ className, contentClassName, roleInfo, messageInfo, mode = 'chat' }) => {
     const markdownRef = useRef<MarkdownCMDRef>(null);
-    const lastTextPos = useRef(0);
+    const lastTextPos = useRef({
+      text: 0,
+      think: 0,
+    });
     const { userInfo } = useModel('userInfo');
-    const messageId = useRef(messageInfo?.id || uuidv4());
+    const messageIdRef = useRef(uuidv4());
     const _userInfo =
       userInfo || JSON.parse(localStorage.getItem(USER_INFO) as string);
 
@@ -67,43 +70,42 @@ const ChatView: React.FC<ChatViewProps> = memo(
       message.success('代码复制成功');
     };
 
-    const disableTyping = useMemo(() => {
-      return true;
-    }, []);
-
     useEffect(() => {
-      // console.log(
-      //   'messageInfo',
-      //   messageInfo?.text,
-      //   lastTextPos.current,
-      //   messageId.current,
-      //   messageInfo?.processingList,
-      // );
-      // console.log('disableTyping', disableTyping);
       if (messageInfo?.text) {
         //取出差量部分
-        const diffText = messageInfo?.text.slice(lastTextPos.current);
-        lastTextPos.current = messageInfo?.text.length;
-        // 由于text 是全量的，所以需要处理增量部分
+        const diffText = messageInfo?.text.slice(lastTextPos.current['text']);
+        lastTextPos.current['text'] = messageInfo?.text.length;
         // 处理增量渲染
         markdownRef.current?.push(diffText, 'answer');
-      } else if (messageInfo?.think) {
-        const diffText = messageInfo?.think.slice(lastTextPos.current);
-        lastTextPos.current = messageInfo?.think.length;
-        markdownRef.current?.push(diffText, 'thinking');
-      } else {
-        markdownRef.current?.clear();
       }
     }, [messageInfo?.text]);
     useEffect(() => {
-      // console.log('messageInfo:mount', messageInfo.id, messageInfo);
+      if (messageInfo?.think) {
+        //取出差量部分
+        const diffText = messageInfo?.think.slice(lastTextPos.current['think']);
+        lastTextPos.current['think'] = messageInfo?.think.length;
+        // 处理增量渲染
+        markdownRef.current?.push(diffText, 'thinking');
+      }
+    }, [messageInfo?.think]);
+
+    useEffect(() => {
+      if (messageInfo?.id) {
+        messageIdRef.current = messageInfo?.id as string;
+      }
+    }, [messageInfo?.id]);
+
+    useEffect(() => {
       return () => {
-        // console.log('messageInfo:unmount', messageInfo.id, messageInfo);
         markdownRef.current?.clear();
-        lastTextPos.current = 0;
-        messageId.current = '';
+        lastTextPos.current = {
+          text: 0,
+          think: 0,
+        };
+        messageIdRef.current = '';
       };
     }, []);
+
     const trim = useCallback((text: string) => {
       return text.replace(/^\s+|\s+$/g, '');
     }, []);
@@ -184,47 +186,20 @@ const ChatView: React.FC<ChatViewProps> = memo(
             </ConditionRender>
             {(!!messageInfo?.think || !!messageInfo?.text) && (
               <div className={cx(styles['inner-container'], contentClassName)}>
-                {!!messageInfo?.think && (
-                  <div
-                    className={cx(
-                      styles['think-content'],
-                      'radius-6',
-                      'w-full',
-                    )}
-                  >
-                    <MarkdownRenderer
-                      key={`think-${messageId.current}`}
-                      id={`think-${messageId.current}`}
-                      markdownRef={markdownRef}
-                      answerType="thinking"
-                      disableTyping={disableTyping}
-                      onCopy={handleCodeCopy}
-                    />
-                  </div>
-                )}
-                {!!messageInfo?.text && (
-                  <div
-                    className={cx(
-                      styles['chat-content'],
-                      'radius-6',
-                      'w-full',
-                      {
-                        [styles.typing]:
-                          messageInfo.status === MessageStatusEnum.Incomplete ||
-                          messageInfo.status === MessageStatusEnum.Loading,
-                      },
-                    )}
-                  >
-                    <MarkdownRenderer
-                      key={`text-${messageId.current}`}
-                      id={`text-${messageId.current}`}
-                      markdownRef={markdownRef}
-                      answerType="answer"
-                      disableTyping={disableTyping}
-                      onCopy={handleCodeCopy}
-                    />
-                  </div>
-                )}
+                <div
+                  className={cx(styles['chat-content'], 'radius-6', 'w-full', {
+                    [styles.typing]:
+                      messageInfo.status === MessageStatusEnum.Incomplete ||
+                      messageInfo.status === MessageStatusEnum.Loading,
+                  })}
+                >
+                  <MarkdownRenderer
+                    key={`text-${messageIdRef.current}`}
+                    id={`text-${messageIdRef.current}`}
+                    markdownRef={markdownRef}
+                    onCopy={handleCodeCopy}
+                  />
+                </div>
               </div>
             )}
 

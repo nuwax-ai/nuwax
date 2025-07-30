@@ -86,6 +86,9 @@ const ChatTemp: React.FC = () => {
   const messageIdRef = useRef<string>('');
   const [isLoadingConversation, setIsLoadingConversation] =
     useState<boolean>(false);
+  // 会话是否正在进行中（有消息正在处理）
+  const [isConversationActive, setIsConversationActive] =
+    useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   // 添加一个 ref 来控制是否允许自动滚动
   const allowAutoScrollRef = useRef<boolean>(true);
@@ -174,6 +177,16 @@ const ChatTemp: React.FC = () => {
         });
       }, 400);
     }
+  };
+
+  // 检查会话是否正在进行中（有消息正在处理）
+  const checkConversationActive = (messages: MessageInfo[]) => {
+    const hasActiveMessage = messages.some(
+      (message) =>
+        message.status === MessageStatusEnum.Loading ||
+        message.status === MessageStatusEnum.Incomplete,
+    );
+    setIsConversationActive(hasActiveMessage);
   };
 
   // 查询临时会话详细
@@ -401,6 +414,9 @@ const ChatTemp: React.FC = () => {
         if (newMessage) {
           list.splice(index, arraySpliceAction, newMessage as MessageInfo);
         }
+
+        // 检查会话状态
+        checkConversationActive(list);
 
         return list;
       });
@@ -835,6 +851,7 @@ const ChatTemp: React.FC = () => {
             selectedComponentList={selectedComponentList}
             onSelectComponent={handleSelectComponent}
             onScrollBottom={onScrollBottom}
+            isConversationActive={isConversationActive}
           />
           {/*手机会话输入框*/}
           <ChatInputPhone

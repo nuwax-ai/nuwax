@@ -78,8 +78,52 @@
           cursor: not-allowed;
           background-color: @GRAY06;
         }
+
+        // 停止按钮样式
+        &.stop-box {
+          background-color: @RED01;
+          color: @WHITE;
+          font-size: 16px;
+          transition: background-color ease-in-out 0.2s;
+
+          &:hover:not(.disabled) {
+            background-color: @RED;
+          }
+
+          &.disabled {
+            cursor: not-allowed;
+            background-color: @GRAY06;
+          }
+
+          // 停止按钮高亮样式 - 当会话进行中且可点击时
+          &.stop-box-active {
+            background-color: @BLANK;
+            color: @WHITE;
+            font-size: 16px;
+            transition: background-color ease-in-out 0.2s;
+
+            &:hover:not(.disabled) {
+              background-color: @BLANK04;
+            }
+          }
+        }
       }
     }
+  }
+}
+
+// 加载图标样式
+.loading-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
   }
 }
 

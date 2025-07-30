@@ -11,7 +11,7 @@ import 'ds-markdown/style.css';
 import MarkdownCustomProcess from '../MarkdownCustomProcess';
 // 移除未使用的Token类型
 // type Token = any;
-import katexPlugin from '@/plugins/ds-markdown-katex-plugin';
+// import katexPlugin from '@/plugins/ds-markdown-katex-plugin';
 import mermaidPlugin, {
   mermaidConfig,
 } from '@/plugins/ds-markdown-mermaid-plugin';
@@ -22,12 +22,15 @@ import {
   useThemeState,
 } from 'ds-markdown'; // 新增：引入ds-markdown
 import 'ds-markdown/katex.css';
-import { createBuildInPlugin } from 'ds-markdown/plugins'; // 新增：引入插件创建方法
+import { createBuildInPlugin, katexPlugin } from 'ds-markdown/plugins'; // 新增：引入插件创建方法
 import 'ds-markdown/style.css';
 import rehypeRaw from 'rehype-raw';
 import rehypeStringify from 'rehype-stringify';
 import OptimizedImage from './OptimizedImage';
-import { extractTableToMarkdown } from './utils';
+import {
+  extractTableToMarkdown,
+  replaceMathFormulasWithDollarSigns,
+} from './utils';
 
 const cx = classNames.bind(styles);
 /**
@@ -42,7 +45,7 @@ const MarkdownRendererImpl: React.FC<MarkdownRendererProps> = ({
   // content = '',
   className,
   // mermaid,
-  answerType = 'answer',
+  // answerType = 'answer', // 暂时未使用，注释掉避免 ESLint 警告
   // disableTyping = true, // 暂时未使用，注释掉避免 ESLint 警告
   // onCopy, // 暂时未使用，注释掉避免 ESLint 警告
   markdownRef, // 确保这个 ref 的类型是 MarkdownCMDRef
@@ -104,7 +107,7 @@ const MarkdownRendererImpl: React.FC<MarkdownRendererProps> = ({
                   <div className="md-code-block-banner-wrap">
                     <div className="md-code-block-banner md-code-block-banner-lite">
                       <>
-                        <div className="md-code-block-language">table</div>
+                        <div className="md-code-block-language">表格</div>
                         <CodeBlockActions
                           language="markdown"
                           codeContent={tableMDContent}
@@ -112,13 +115,8 @@ const MarkdownRendererImpl: React.FC<MarkdownRendererProps> = ({
                       </>
                     </div>
                   </div>
-                  <div
-                    className="md-code-block-content"
-                    style={{
-                      padding: 12,
-                    }}
-                  >
-                    <table className={styles['markdown-table']}>
+                  <div className="md-code-block-content scrollbar">
+                    <table className={cx(styles['markdown-table'])}>
                       {children}
                     </table>
                   </div>
@@ -164,24 +162,24 @@ const MarkdownRendererImpl: React.FC<MarkdownRendererProps> = ({
       data-key={`${requestId}`}
       className={cx(styles['markdown-container'], className)}
     >
-      <div className={cx(styles['react-markdown'])}>
-        <ConfigProvider mermaidConfig={mermaidProvider}>
-          {/* 用ds-markdown替换react-markdown，传递自定义components插件 */}
+      <ConfigProvider mermaidConfig={mermaidProvider}>
+        {/* 用ds-markdown替换react-markdown，传递自定义components插件 */}
 
-          <MarkdownCMD
-            ref={markdownRef}
-            timerType="requestAnimationFrame"
-            answerType={answerType}
-            interval={30}
-            plugins={plugins}
-            math={{ splitSymbol: 'bracket' }}
-            disableTyping={true}
-            codeBlock={{
-              headerActions: true, // 启用代码块头部操作按钮
-            }}
-          />
-        </ConfigProvider>
-      </div>
+        <MarkdownCMD
+          ref={markdownRef}
+          timerType="requestAnimationFrame"
+          interval={30}
+          plugins={plugins}
+          disableTyping={true}
+          math={{
+            splitSymbol: 'bracket',
+            replaceMathBracket: replaceMathFormulasWithDollarSigns,
+          }}
+          codeBlock={{
+            headerActions: true, // 启用代码块头部操作按钮
+          }}
+        />
+      </ConfigProvider>
     </div>
   );
 };

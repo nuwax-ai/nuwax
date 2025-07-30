@@ -13,6 +13,14 @@
     "setup": "max setup",
     "start": "npm run dev"
   },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "prettier --write"
+    ],
+    "*.{json,md,less,css}": [
+      "prettier --write"
+    ]
+  },
   "dependencies": {
     "@ant-design/icons": "^5.0.1",
     "@ant-design/pro-components": "^2.4.4",
@@ -46,7 +54,7 @@
     "copy-webpack-plugin": "11.0.0",
     "create-puzzle": "^3.0.2",
     "dayjs": "^1.11.13",
-    "ds-markdown": "0.1.10-beta.0",
+    "ds-markdown": "git+https://git.yichamao.com/agent-platform/ds-markdown.git#39478cf7cd2214c2d6327ee39f3930f04e64041d",
     "ds-markdown-mermaid-plugin": "^0.0.3",
     "insert-css": "^2.0.0",
     "lodash": "^4.17.21",

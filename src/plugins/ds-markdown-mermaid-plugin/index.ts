@@ -15,6 +15,7 @@ const mermaidConfig = {
     diagramMarginX: 50,
     diagramMarginY: 10,
   },
+  suppressErrorRendering: false,
 };
 
 const mermaidPlugin = createBuildInPlugin({
