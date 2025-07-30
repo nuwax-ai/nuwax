@@ -252,7 +252,7 @@ function escapedBracketRule(delimiters: any) {
   };
 }
 // 新的数学公式替换函数 - 直接替换为 $$ 分隔符
-function replaceMathFormulasWithDollarSigns(text: string): string {
+function replaceMathBracket(text: string): string {
   // 创建只包含非美元符号分隔符的选项
   const nonDollarDelimiters = defaultDelimiters.filter(
     (delimiter) =>
@@ -282,4 +282,4 @@ function replaceMathFormulasWithDollarSigns(text: string): string {
   return result;
 }
 
-export { extractTableToMarkdown, replaceMathFormulasWithDollarSigns };
+export { extractTableToMarkdown, replaceMathBracket };

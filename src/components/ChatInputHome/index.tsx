@@ -16,7 +16,14 @@ import {
 import type { InputRef, UploadProps } from 'antd';
 import { Input, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useModel } from 'umi';
 import styles from './index.less';
 import ManualComponentItem from './ManualComponentItem';
 
@@ -37,9 +44,15 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   isClearInput = true,
   manualComponents,
   onScrollBottom,
-  onStopConversation,
-  isConversationActive = false,
 }) => {
+  // 获取停止会话相关的方法和状态
+  const {
+    runStopConversation,
+    loadingStopConversation,
+    getCurrentConversationRequestId,
+    isConversationActive,
+  } = useModel('conversationInfo');
+
   // 文档
   const [uploadFiles, setUploadFiles] = useState<UploadFileInfo[]>([]);
   const [files, setFiles] = useState<UploadFileInfo[]>([]);
@@ -72,8 +85,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   // 停止按钮disabled - 只有在会话进行中时才可停止，与输入框内容无关
   const disabledStop = useMemo(() => {
-    return !isConversationActive || isStoppingConversation;
-  }, [isConversationActive, isStoppingConversation]);
+    return (
+      !isConversationActive || isStoppingConversation || loadingStopConversation
+    );
+  }, [isConversationActive, isStoppingConversation, loadingStopConversation]);
 
   // 点击发送事件
   const handleSendMessage = () => {
@@ -98,41 +113,41 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       e.target as HTMLTextAreaElement;
     // shift+enter或者ctrl+enter时换行
     if (
-      e.nativeEvent.keyCode === 13 &&
-      (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)
+      e.shiftKey ||
+      (e.ctrlKey && e.key === 'Enter') ||
+      (e.metaKey && e.key === 'Enter')
     ) {
       // 在光标位置插入换行符
       const newValue =
-        value.slice(0, selectionStart) + '\n' + value.slice(selectionEnd);
+        value.substring(0, selectionStart) +
+        '\n' +
+        value.substring(selectionEnd);
       setMessageInfo(newValue);
-    } else if (
-      e.nativeEvent.keyCode === 13 &&
-      (!!value.trim() || !!files?.length)
-    ) {
-      // enter事件
-      onEnter(value, files);
-      if (isClearInput) {
-        // 置空
-        setUploadFiles([]);
-        setMessageInfo('');
-      }
+      // 设置光标位置
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(
+            selectionStart + 1,
+            selectionStart + 1,
+          );
+        }
+      }, 0);
+      return;
     }
+    // 普通enter发送消息
+    handleSendMessage();
   };
 
-  // 上传成功后，修改文档列表
   const handleChange: UploadProps['onChange'] = (info) => {
     const { fileList } = info;
     setUploadFiles(handleUploadFileList(fileList));
   };
 
-  // 删除文档
   const handleDelFile = (uid: string) => {
-    const _files = [...uploadFiles];
-    _files.splice(
-      _files.findIndex((item) => item.uid === uid),
-      1,
+    setUploadFiles((uploadFiles) =>
+      uploadFiles.filter((item) => item.uid !== uid),
     );
-    setUploadFiles(_files);
   };
 
   const handleClear = () => {
@@ -142,15 +157,28 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     onClear?.();
   };
 
-  const handleStopConversation = () => {
+  // 停止会话功能 - 直接集成到组件内部
+  const handleStopConversation = useCallback(() => {
     if (disabledStop || wholeDisabled) {
       return;
     }
     // 设置停止操作状态
     setIsStoppingConversation(true);
-    // 调用停止会话回调
-    onStopConversation?.();
-  };
+
+    // 获取当前会话请求ID
+    const requestId = getCurrentConversationRequestId();
+    console.log('requestId', requestId);
+
+    if (requestId) {
+      // 调用停止会话方法
+      runStopConversation(requestId);
+    }
+  }, [
+    disabledStop,
+    wholeDisabled,
+    getCurrentConversationRequestId,
+    runStopConversation,
+  ]);
 
   // 获取按钮提示文本
   const getButtonTooltip = () => {
@@ -174,7 +202,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     if (!isConversationActive) {
       return '当前无进行中的会话';
     }
-    if (isStoppingConversation) {
+    if (isStoppingConversation || loadingStopConversation) {
       return '正在停止会话...';
     }
     return '点击停止当前会话';
