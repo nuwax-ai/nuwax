@@ -7,11 +7,6 @@ import styles from './index.less';
 // 导入类型定义
 import type { MarkdownRendererProps } from './types';
 
-import 'ds-markdown/style.css';
-import MarkdownCustomProcess from '../MarkdownCustomProcess';
-// 移除未使用的Token类型
-// type Token = any;
-// import katexPlugin from '@/plugins/ds-markdown-katex-plugin';
 import mermaidPlugin, {
   mermaidConfig,
 } from '@/plugins/ds-markdown-mermaid-plugin';
@@ -26,11 +21,9 @@ import { createBuildInPlugin, katexPlugin } from 'ds-markdown/plugins'; // 新�
 import 'ds-markdown/style.css';
 import rehypeRaw from 'rehype-raw';
 import rehypeStringify from 'rehype-stringify';
+import MarkdownCustomProcess from '../MarkdownCustomProcess';
 import OptimizedImage from './OptimizedImage';
-import {
-  extractTableToMarkdown,
-  replaceMathFormulasWithDollarSigns,
-} from './utils';
+import { extractTableToMarkdown, replaceMathBracket } from './utils';
 
 const cx = classNames.bind(styles);
 /**
@@ -173,7 +166,7 @@ const MarkdownRendererImpl: React.FC<MarkdownRendererProps> = ({
           disableTyping={true}
           math={{
             splitSymbol: 'bracket',
-            replaceMathBracket: replaceMathFormulasWithDollarSigns,
+            replaceMathBracket,
           }}
           codeBlock={{
             headerActions: true, // 启用代码块头部操作按钮
