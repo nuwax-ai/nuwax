@@ -2,15 +2,23 @@ import EcosystemCard from '@/components/EcosystemCard';
 import InfiniteScrollDiv from '@/components/InfiniteScrollDiv';
 import Loading from '@/components/Loading';
 import { ECO_MCP_TAB_ITEMS } from '@/constants/ecosystem.constants';
-import { EcosystemTabTypeEnum } from '@/types/interfaces/ecosystem';
+import { getClientConfigList } from '@/services/ecosystem';
+import {
+  ClientConfigVo,
+  EcosystemDataTypeEnum,
+  EcosystemSubTabTypeEnum,
+  EcosystemTabTypeEnum,
+} from '@/types/interfaces/ecosystem';
 import { Page } from '@/types/interfaces/request';
-import { Empty, Tabs } from 'antd';
-import Search from 'antd/es/input/Search';
+import { Empty, Input, Tabs } from 'antd';
 import classNames from 'classnames';
 import { useEffect, useState } from 'react';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+const { Search } = Input;
 
 /**
  * 生态市场 MCP 页面
@@ -30,7 +38,7 @@ export default function EcosystemMcp() {
   const [hasMore, setHasMore] = useState<boolean>(true);
 
   // 查询列表成功后处理数据
-  const handleSuccess = (result: Page<any>) => {
+  const handleSuccess = (result: Page<ClientConfigVo>) => {
     const { records, pages, current } = result;
     const data = records || [];
     setMcpList((prev) => {
@@ -43,29 +51,53 @@ export default function EcosystemMcp() {
     setLoading(false);
   };
 
-  /**
-   * 页面初始化时模拟加载数据
-   * 这里用 setTimeout 模拟异步请求，实际开发中应调用后端接口
-   */
+  // 客户端配置列表查询
+  const { run: runMcpList } = useRequest(getClientConfigList, {
+    manual: true,
+    debounceInterval: 300,
+    // 设置显示 loading 的延迟时间，避免闪烁
+    loadingDelay: 300,
+    onSuccess: (result: Page<ClientConfigVo>) => {
+      handleSuccess(result);
+    },
+    onError: () => {
+      setLoading(false);
+    },
+  });
+
+  // 客户端配置列表查询 - 数据列表查询
+  const handleMcptList = (
+    current: number = 1,
+    type: EcosystemTabTypeEnum = activeTab,
+    keyword: string = searchKeyword,
+  ) => {
+    // 根据标签页类型确定查询参数
+    let subTabType: number;
+    switch (type) {
+      case EcosystemTabTypeEnum.ALL:
+        subTabType = EcosystemSubTabTypeEnum.ALL;
+        break;
+      case EcosystemTabTypeEnum.ENABLED:
+        subTabType = EcosystemSubTabTypeEnum.ENABLED;
+        break;
+      default:
+        subTabType = EcosystemSubTabTypeEnum.ALL;
+    }
+    const params = {
+      queryFilter: {
+        dataType: EcosystemDataTypeEnum.MCP,
+        subTabType,
+        keyword,
+      },
+      current,
+      pageSize: 20,
+    };
+    runMcpList(params);
+  };
+
   useEffect(() => {
     setLoading(true);
-    setTimeout(() => {
-      // 使用模拟数据结构，避免类型错误
-      handleSuccess({
-        records: [],
-        pages: 1,
-        current: 1,
-        total: 0,
-        size: 0,
-        orders: [],
-        optimizeCountSql: false,
-        searchCount: false,
-        optimizeJoinOfCountSql: false,
-        maxLimit: 0,
-        countId: '',
-      });
-      setLoading(false);
-    }, 1000);
+    handleMcptList();
   }, []);
 
   /**
@@ -73,21 +105,19 @@ export default function EcosystemMcp() {
    */
   const handleSearch = (value: string) => {
     setSearchKeyword(value);
-  };
-
-  // 查询列表
-  const handleQuery = (pageIndex: number = 1) => {
-    const params = {
-      page: pageIndex,
-      pageSize: 20,
-    };
-    // todo: 查询列表
-    console.log(params);
+    handleMcptList(1, activeTab, value);
   };
 
   // 滚动加载更多
   const handleScroll = () => {
-    handleQuery(page);
+    handleMcptList(page);
+  };
+
+  // 标签页切换
+  const handleTabChange = (value: string) => {
+    const _value = value as EcosystemTabTypeEnum;
+    setActiveTab(_value);
+    handleMcptList(1, _value);
   };
 
   return (
@@ -104,20 +134,18 @@ export default function EcosystemMcp() {
         <h3 className={cx(styles.title)}>MCP</h3>
         <header className={cx(styles.header)}>
           <Tabs
-            activeKey={activeTab}
-            onChange={(value: string) =>
-              setActiveTab(value as EcosystemTabTypeEnum)
-            }
             className={cx(styles.tabs)}
+            activeKey={activeTab}
             items={ECO_MCP_TAB_ITEMS}
+            onChange={handleTabChange}
           />
           <Search
             className={cx(styles.searchInput)}
             placeholder="搜索MCP"
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
+            // 点击搜索图标、清除图标，或按下回车键时的回调
             onSearch={handleSearch}
-            onClear={() => handleSearch('')}
             allowClear
           />
         </header>
