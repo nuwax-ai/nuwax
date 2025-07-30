@@ -1,6 +1,6 @@
 import { CONVERSATION_CONNECTION_URL } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { getCustomBlock } from '@/plugins/markdown-it-custom';
+import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   apiAgentConversation,
   apiAgentConversationChatStop,

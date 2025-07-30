@@ -10,7 +10,7 @@ import {
   TEMP_CONVERSATION_CONNECTION_URL,
   TEMP_CONVERSATION_UID,
 } from '@/constants/common.constants';
-import { getCustomBlock } from '@/plugins/markdown-it-custom';
+import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   apiTempChatConversationCreate,
   apiTempChatConversationQuery,
