@@ -1,16 +1,29 @@
-import EcosystemCard from '@/components/EcosystemCard';
+import EcosystemCard, { EcosystemCardProps } from '@/components/EcosystemCard';
+import EcosystemDetailDrawer, {
+  EcosystemDetailDrawerData,
+} from '@/components/EcosystemDetailDrawer';
 import InfiniteScrollDiv from '@/components/InfiniteScrollDiv';
 import Loading from '@/components/Loading';
-import { ECO_MCP_TAB_ITEMS } from '@/constants/ecosystem.constants';
-import { getClientConfigList } from '@/services/ecosystem';
+import {
+  ECO_MCP_TAB_ITEMS,
+  TabTypeEnum,
+} from '@/constants/ecosystem.constants';
+import {
+  apiEcoMarketClientConfigList,
+  disableClientConfig,
+  getClientConfigDetail,
+  updateAndEnableClientConfig,
+} from '@/services/ecosystem';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   ClientConfigVo,
   EcosystemDataTypeEnum,
   EcosystemSubTabTypeEnum,
   EcosystemTabTypeEnum,
+  EcosystemUseStatusEnum,
 } from '@/types/interfaces/ecosystem';
 import { Page } from '@/types/interfaces/request';
-import { Empty, Input, Tabs } from 'antd';
+import { Empty, Input, message, Tabs } from 'antd';
 import classNames from 'classnames';
 import { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -31,11 +44,17 @@ export default function EcosystemMcp() {
     EcosystemTabTypeEnum.ALL,
   );
   const [loading, setLoading] = useState(false);
-  const [mcpList, setMcpList] = useState<any[]>([]);
+  const [mcpList, setMcpList] = useState<ClientConfigVo[]>([]);
   // 当前页码
   const [page, setPage] = useState<number>(1);
   // 是否有更多数据
   const [hasMore, setHasMore] = useState<boolean>(true);
+  // 当前选中的MCP
+  const [selectedPlugin, setSelectedPlugin] = useState<ClientConfigVo | null>(
+    null,
+  );
+  // 详情抽屉是否可见
+  const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
 
   // 查询列表成功后处理数据
   const handleSuccess = (result: Page<ClientConfigVo>) => {
@@ -52,7 +71,7 @@ export default function EcosystemMcp() {
   };
 
   // 客户端配置列表查询
-  const { run: runMcpList } = useRequest(getClientConfigList, {
+  const { run: runMcpList } = useRequest(apiEcoMarketClientConfigList, {
     manual: true,
     debounceInterval: 300,
     // 设置显示 loading 的延迟时间，避免闪烁
@@ -66,7 +85,7 @@ export default function EcosystemMcp() {
   });
 
   // 客户端配置列表查询 - 数据列表查询
-  const handleMcptList = (
+  const handleMcpList = (
     current: number = 1,
     type: EcosystemTabTypeEnum = activeTab,
     keyword: string = searchKeyword,
@@ -97,7 +116,7 @@ export default function EcosystemMcp() {
 
   useEffect(() => {
     setLoading(true);
-    handleMcptList();
+    handleMcpList();
   }, []);
 
   /**
@@ -105,19 +124,141 @@ export default function EcosystemMcp() {
    */
   const handleSearch = (value: string) => {
     setSearchKeyword(value);
-    handleMcptList(1, activeTab, value);
+    handleMcpList(1, activeTab, value);
   };
 
   // 滚动加载更多
   const handleScroll = () => {
-    handleMcptList(page);
+    handleMcpList(page);
   };
 
   // 标签页切换
   const handleTabChange = (value: string) => {
     const _value = value as EcosystemTabTypeEnum;
     setActiveTab(_value);
-    handleMcptList(1, _value);
+    handleMcpList(1, _value);
+  };
+
+  /**
+   * 将后端数据转换为卡片数据
+   */
+  const convertToCard = (config: ClientConfigVo): EcosystemCardProps => {
+    // 根据分享状态确定标签
+    const isMyShare = activeTab === TabTypeEnum.SHARED;
+    const isAll = activeTab === TabTypeEnum.ALL;
+    return {
+      icon: config.icon || '',
+      title: config.name || '未命名插件',
+      description: config.description || '暂无描述',
+      isNewVersion: config.isNewVersion,
+      author: config.author || '',
+      targetType: config.targetType as AgentComponentTypeEnum,
+      configParamJson: config.serverConfigParamJson,
+      localConfigParamJson: config.localConfigParamJson,
+      isEnabled: isAll
+        ? config.useStatus === EcosystemUseStatusEnum.ENABLED
+        : undefined,
+      shareStatus: isMyShare ? config.shareStatus : undefined, // 仅在我的分享中使用
+      publishDoc: config.publishDoc,
+    };
+  };
+
+  /**
+   * 处理插件卡片点击事件
+   */
+  const handleCardClick = async (config: ClientConfigVo) => {
+    // 获取详细信息
+    if (config.uid) {
+      try {
+        const detail = await getClientConfigDetail(config.uid);
+        if (detail) {
+          setSelectedPlugin(detail);
+          setDrawerVisible(true);
+          return true;
+        }
+      } catch (error) {
+        message.error('获取插件详情失败');
+      }
+    }
+  };
+
+  const convertToDetailDrawer = (
+    config: ClientConfigVo,
+  ): EcosystemDetailDrawerData => {
+    return {
+      icon: config.icon || '',
+      title: config.name || '未命名插件',
+      description: config.description || '暂无描述',
+      // isNewVersion: true,
+      isNewVersion: config.isNewVersion || false,
+      author: config.author || '',
+      ownedFlag: config.ownedFlag,
+      targetType: config.targetType as AgentComponentTypeEnum,
+      configParamJson: config.serverConfigParamJson,
+      localConfigParamJson: config.localConfigParamJson,
+      isEnabled: config.useStatus === EcosystemUseStatusEnum.ENABLED,
+      publishDoc: config.publishDoc,
+    };
+  };
+
+  /**
+   * 处理详情抽屉关闭
+   */
+  const handleDetailClose = () => {
+    setSelectedPlugin(null);
+    setDrawerVisible(false);
+  };
+
+  /**
+   * 更新配置处理函数
+   */
+  const handleUpdateAndEnable = async (values: any[]): Promise<boolean> => {
+    if (!selectedPlugin) return false;
+    let result = null;
+    try {
+      result = await updateAndEnableClientConfig({
+        uid: selectedPlugin.uid as string,
+        configParamJson: JSON.stringify(values),
+      });
+    } catch (error) {
+      message.error('操作失败');
+      return false;
+    }
+
+    console.log('result', result);
+    if (result) {
+      setDrawerVisible(false);
+      message.success('更新成功');
+      handleMcpList();
+      return true;
+    }
+    message.error('更新失败');
+    return false;
+  };
+
+  /**
+   * 停用插件处理函数
+   */
+  const handleDisable = async (): Promise<boolean> => {
+    if (!selectedPlugin?.uid) return false;
+
+    let result = null;
+
+    try {
+      // 如果是已发布状态，调用下线接口
+      result = await disableClientConfig(selectedPlugin.uid);
+    } catch (error) {
+      message.error('下线失败');
+      return false;
+    }
+    if (result) {
+      message.success('已下线');
+      setDrawerVisible(false);
+      handleMcpList();
+      return true;
+    }
+    message.error('下线失败');
+    return false;
   };
 
   return (
@@ -152,7 +293,10 @@ export default function EcosystemMcp() {
         {loading ? (
           <Loading />
         ) : mcpList.length ? (
-          <div className={cx('flex-1', 'overflow-y')} id="scrollableDiv">
+          <div
+            className={cx('flex-1', 'overflow-y', styles['main-container'])}
+            id="scrollableDiv"
+          >
             <InfiniteScrollDiv
               scrollableTarget="scrollableDiv"
               list={mcpList}
@@ -163,8 +307,8 @@ export default function EcosystemMcp() {
                 {mcpList?.map((config) => (
                   <EcosystemCard
                     key={config?.uid}
-                    {...config}
-                    // onClick={() => handleCardClick(config)}
+                    {...convertToCard(config)}
+                    onClick={() => handleCardClick(config)}
                   />
                 ))}
               </div>
@@ -178,6 +322,16 @@ export default function EcosystemMcp() {
           </div>
         )}
       </div>
+      {/* 插件详情抽屉 */}
+      <EcosystemDetailDrawer
+        visible={drawerVisible}
+        data={
+          selectedPlugin ? convertToDetailDrawer(selectedPlugin) : undefined
+        }
+        onClose={handleDetailClose}
+        onUpdateAndEnable={handleUpdateAndEnable}
+        onDisable={handleDisable}
+      />
     </>
   );
 }

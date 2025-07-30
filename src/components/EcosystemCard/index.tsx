@@ -23,7 +23,7 @@ export interface EcosystemCardProps {
   /** 插件描述 */
   description: string;
   /** 点击卡片事件 */
-  onClick?: () => Promise<boolean>;
+  onClick?: () => void;
   /** 自定义类名 */
   className?: string;
   /** 是否启用 */
