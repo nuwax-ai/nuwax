@@ -5,16 +5,12 @@ import React, { memo, useMemo, useRef } from 'react';
 import styles from './index.less';
 
 // 导入类型定义
-import type { MarkdownRendererProps } from './types';
+import type { MarkdownRendererProps } from '@/types/interfaces/markdownRender';
 
 import mermaidPlugin, {
   mermaidConfig,
 } from '@/plugins/ds-markdown-mermaid-plugin';
-import DsMarkdown, {
-  ConfigProvider,
-  MarkdownCMD,
-  MarkdownCMDRef,
-} from 'ds-markdown'; // 新增：引入ds-markdown
+import DsMarkdown, { ConfigProvider, MarkdownCMD } from 'ds-markdown'; // 新增：引入ds-markdown
 import 'ds-markdown/katex.css';
 import { katexPlugin } from 'ds-markdown/plugins'; // 新增：引入插件创建方法
 import 'ds-markdown/style.css';
@@ -118,12 +114,5 @@ const PureMarkdownRenderer = memo(
   },
 );
 
-// 导出相关类型和工具
-export type {
-  MarkdownRendererConfig,
-  MarkdownRendererProps,
-  PluginConfig,
-} from './types';
-
-export { MarkdownCMDRef, MarkdownRenderer, PureMarkdownRenderer };
+export { MarkdownRenderer, PureMarkdownRenderer };
 export default MarkdownRenderer;

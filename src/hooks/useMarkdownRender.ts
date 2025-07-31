@@ -1,4 +1,4 @@
-import { MarkdownCMDRef } from 'ds-markdown';
+import type { MarkdownCMDRef } from '@/types/interfaces/markdownRender';
 import { useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
