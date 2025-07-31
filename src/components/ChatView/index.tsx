@@ -64,10 +64,6 @@ const ChatView: React.FC<ChatViewProps> = memo(
       message.success('复制成功');
     };
 
-    const handleCodeCopy = () => {
-      message.success('代码复制成功');
-    };
-
     const trim = useCallback((text: string) => {
       return text.replace(/^\s+|\s+$/g, '');
     }, []);
@@ -159,7 +155,6 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     key={`${messageIdRef.current}`}
                     id={`${messageIdRef.current}`}
                     markdownRef={markdownRef}
-                    onCopy={handleCodeCopy}
                   />
                 </div>
               </div>
