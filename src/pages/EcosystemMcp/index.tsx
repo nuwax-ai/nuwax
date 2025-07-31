@@ -105,7 +105,8 @@ export default function EcosystemMcp() {
       queryFilter: {
         dataType: EcosystemDataTypeEnum.MCP,
         subTabType,
-        keyword,
+        // 名称，模糊查询
+        name: keyword,
       },
       current,
       pageSize: 20,
@@ -135,6 +136,7 @@ export default function EcosystemMcp() {
   const handleTabChange = (value: string) => {
     const _value = value as EcosystemTabTypeEnum;
     setActiveTab(_value);
+    setLoading(true);
     handleMcpList(1, _value);
   };
 
