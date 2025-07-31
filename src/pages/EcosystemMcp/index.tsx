@@ -50,9 +50,8 @@ export default function EcosystemMcp() {
   // 是否有更多数据
   const [hasMore, setHasMore] = useState<boolean>(true);
   // 当前选中的MCP
-  const [selectedPlugin, setSelectedPlugin] = useState<ClientConfigVo | null>(
-    null,
-  );
+  const [selectedDetailInfo, setSelectedDetailInfo] =
+    useState<ClientConfigVo | null>(null);
   // 详情抽屉是否可见
   const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
 
@@ -172,7 +171,7 @@ export default function EcosystemMcp() {
       try {
         const detail = await getClientConfigDetail(config.uid);
         if (detail) {
-          setSelectedPlugin(detail);
+          setSelectedDetailInfo(detail);
           setDrawerVisible(true);
           return true;
         }
@@ -205,7 +204,7 @@ export default function EcosystemMcp() {
    * 处理详情抽屉关闭
    */
   const handleDetailClose = () => {
-    setSelectedPlugin(null);
+    setSelectedDetailInfo(null);
     setDrawerVisible(false);
   };
 
@@ -213,11 +212,11 @@ export default function EcosystemMcp() {
    * 更新配置处理函数
    */
   const handleUpdateAndEnable = async (values: any[]): Promise<boolean> => {
-    if (!selectedPlugin) return false;
+    if (!selectedDetailInfo) return false;
     let result = null;
     try {
       result = await updateAndEnableClientConfig({
-        uid: selectedPlugin.uid as string,
+        uid: selectedDetailInfo.uid as string,
         configParamJson: JSON.stringify(values),
       });
     } catch (error) {
@@ -238,13 +237,13 @@ export default function EcosystemMcp() {
    * 停用插件处理函数
    */
   const handleDisable = async (): Promise<boolean> => {
-    if (!selectedPlugin?.uid) return false;
+    if (!selectedDetailInfo?.uid) return false;
 
     let result = null;
 
     try {
       // 如果是已发布状态，调用下线接口
-      result = await disableClientConfig(selectedPlugin.uid);
+      result = await disableClientConfig(selectedDetailInfo.uid);
     } catch (error) {
       message.error('停用失败');
       return false;
@@ -323,7 +322,9 @@ export default function EcosystemMcp() {
       <EcosystemDetailDrawer
         visible={drawerVisible}
         data={
-          selectedPlugin ? convertToDetailDrawer(selectedPlugin) : undefined
+          selectedDetailInfo
+            ? convertToDetailDrawer(selectedDetailInfo)
+            : undefined
         }
         onClose={handleDetailClose}
         onUpdateAndEnable={handleUpdateAndEnable}
