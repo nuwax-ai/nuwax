@@ -195,6 +195,9 @@ export default function EcosystemMcp() {
       author: config.author || '',
       ownedFlag: config.ownedFlag,
       targetType: config.targetType as AgentComponentTypeEnum,
+      dataType: config.dataType as EcosystemDataTypeEnum,
+      // 配置信息
+      configJson: config.configJson,
       configParamJson: config.serverConfigParamJson,
       localConfigParamJson: config.localConfigParamJson,
       isEnabled: config.useStatus === EcosystemUseStatusEnum.ENABLED,
