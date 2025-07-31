@@ -108,11 +108,11 @@ importers:
         specifier: ^1.11.13
         version: 1.11.13
       ds-markdown:
-        specifier: git+https://git.yichamao.com/agent-platform/ds-markdown.git#39478cf7cd2214c2d6327ee39f3930f04e64041d
-        version: git+https://git.yichamao.com/agent-platform/ds-markdown.git#39478cf7cd2214c2d6327ee39f3930f04e64041d(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ' 0.1.10-beta.1'
+        version: 0.1.10-beta.1(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       ds-markdown-mermaid-plugin:
         specifier: ^0.0.3
-        version: 0.0.3(ds-markdown@git+https://git.yichamao.com/agent-platform/ds-markdown.git#39478cf7cd2214c2d6327ee39f3930f04e64041d(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 0.0.3(ds-markdown@0.1.10-beta.1(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       globby:
         specifier: ^14.1.0
         version: 14.1.0
@@ -3489,15 +3489,13 @@ packages:
 
   ds-markdown-mermaid-plugin@0.0.3:
     resolution: {integrity: sha512-q1H/ZUhL3d5uhDcnvTvhSyYUtMpQnWdx0AkcE9qX8AAJjraZMXOzwRPK3aK80KdzAFampVWbezEo0hagrTi0kA==}
-    version: 0.0.3
     peerDependencies:
       ds-markdown: '*'
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
 
-  ds-markdown@git+https://git.yichamao.com/agent-platform/ds-markdown.git#39478cf7cd2214c2d6327ee39f3930f04e64041d:
-    resolution: {commit: 39478cf7cd2214c2d6327ee39f3930f04e64041d, repo: https://git.yichamao.com/agent-platform/ds-markdown.git, type: git}
-    version: 0.1.9
+  ds-markdown@0.1.10-beta.1:
+    resolution: {integrity: sha512-XmJg+HmJU++tF7veEh1ByXV8wwbxg3hba8ZoB9plklCFSa7qYzyqKLTPXKCo7+DPVg6JluTUYC2kZLJoWXposQ==}
     peerDependencies:
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
@@ -9235,7 +9233,7 @@ snapshots:
 
   '@loadable/component@5.15.2(react@18.3.1)':
     dependencies:
-      '@babel/runtime': 7.23.6
+      '@babel/runtime': 7.28.2
       hoist-non-react-statics: 3.3.2
       react: 18.3.1
       react-is: 16.13.1
@@ -10369,7 +10367,7 @@ snapshots:
 
   '@umijs/history@5.3.1':
     dependencies:
-      '@babel/runtime': 7.23.6
+      '@babel/runtime': 7.28.2
       query-string: 6.14.1
 
   '@umijs/lint@4.4.11(eslint@8.35.0)(stylelint@14.8.2)(typescript@5.8.3)':
@@ -12191,9 +12189,9 @@ snapshots:
       no-case: 3.0.4
       tslib: 2.8.1
 
-  ds-markdown-mermaid-plugin@0.0.3(ds-markdown@git+https://git.yichamao.com/agent-platform/ds-markdown.git#39478cf7cd2214c2d6327ee39f3930f04e64041d(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  ds-markdown-mermaid-plugin@0.0.3(ds-markdown@0.1.10-beta.1(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
-      ds-markdown: git+https://git.yichamao.com/agent-platform/ds-markdown.git#39478cf7cd2214c2d6327ee39f3930f04e64041d(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      ds-markdown: 0.1.10-beta.1(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       hast-util-to-jsx-runtime: 2.3.6
       lodash-es: 4.17.21
       mermaid: 11.9.0
@@ -12206,7 +12204,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  ds-markdown@git+https://git.yichamao.com/agent-platform/ds-markdown.git#39478cf7cd2214c2d6327ee39f3930f04e64041d(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  ds-markdown@0.1.10-beta.1(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       classnames: 2.5.1
       katex: 0.16.22
@@ -13287,7 +13285,7 @@ snapshots:
 
   history@5.3.0:
     dependencies:
-      '@babel/runtime': 7.23.6
+      '@babel/runtime': 7.28.2
 
   hmac-drbg@1.0.1:
     dependencies:
@@ -16206,7 +16204,7 @@ snapshots:
 
   react-helmet-async@1.3.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
-      '@babel/runtime': 7.23.6
+      '@babel/runtime': 7.28.2
       invariant: 2.2.4
       prop-types: 15.8.1
       react: 18.3.1
