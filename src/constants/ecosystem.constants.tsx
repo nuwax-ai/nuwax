@@ -1,6 +1,7 @@
 import agentImage from '@/assets/images/agent_image.png';
 import databaseImage from '@/assets/images/database_image.png';
 import knowledgeImage from '@/assets/images/knowledge_image.png';
+import mcpImage from '@/assets/images/mcp_image.png';
 import modelImage from '@/assets/images/model_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import variableImage from '@/assets/images/variable_image.png';
@@ -76,6 +77,11 @@ export const COMPONENT_LIST: {
     type: AgentComponentTypeEnum.Variable,
     defaultImage: variableImage,
     text: '变量',
+  },
+  {
+    type: AgentComponentTypeEnum.MCP,
+    defaultImage: mcpImage,
+    text: 'MCP',
   },
 ];
 

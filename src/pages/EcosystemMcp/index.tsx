@@ -50,9 +50,8 @@ export default function EcosystemMcp() {
   // 是否有更多数据
   const [hasMore, setHasMore] = useState<boolean>(true);
   // 当前选中的MCP
-  const [selectedPlugin, setSelectedPlugin] = useState<ClientConfigVo | null>(
-    null,
-  );
+  const [selectedDetailInfo, setSelectedDetailInfo] =
+    useState<ClientConfigVo | null>(null);
   // 详情抽屉是否可见
   const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
 
@@ -106,7 +105,8 @@ export default function EcosystemMcp() {
       queryFilter: {
         dataType: EcosystemDataTypeEnum.MCP,
         subTabType,
-        keyword,
+        // 名称，模糊查询
+        name: keyword,
       },
       current,
       pageSize: 20,
@@ -136,6 +136,7 @@ export default function EcosystemMcp() {
   const handleTabChange = (value: string) => {
     const _value = value as EcosystemTabTypeEnum;
     setActiveTab(_value);
+    setLoading(true);
     handleMcpList(1, _value);
   };
 
@@ -172,7 +173,7 @@ export default function EcosystemMcp() {
       try {
         const detail = await getClientConfigDetail(config.uid);
         if (detail) {
-          setSelectedPlugin(detail);
+          setSelectedDetailInfo(detail);
           setDrawerVisible(true);
           return true;
         }
@@ -194,6 +195,9 @@ export default function EcosystemMcp() {
       author: config.author || '',
       ownedFlag: config.ownedFlag,
       targetType: config.targetType as AgentComponentTypeEnum,
+      dataType: config.dataType as EcosystemDataTypeEnum,
+      // 配置信息
+      configJson: config.configJson,
       configParamJson: config.serverConfigParamJson,
       localConfigParamJson: config.localConfigParamJson,
       isEnabled: config.useStatus === EcosystemUseStatusEnum.ENABLED,
@@ -205,7 +209,7 @@ export default function EcosystemMcp() {
    * 处理详情抽屉关闭
    */
   const handleDetailClose = () => {
-    setSelectedPlugin(null);
+    setSelectedDetailInfo(null);
     setDrawerVisible(false);
   };
 
@@ -213,11 +217,11 @@ export default function EcosystemMcp() {
    * 更新配置处理函数
    */
   const handleUpdateAndEnable = async (values: any[]): Promise<boolean> => {
-    if (!selectedPlugin) return false;
+    if (!selectedDetailInfo) return false;
     let result = null;
     try {
       result = await updateAndEnableClientConfig({
-        uid: selectedPlugin.uid as string,
+        uid: selectedDetailInfo.uid as string,
         configParamJson: JSON.stringify(values),
       });
     } catch (error) {
@@ -225,14 +229,12 @@ export default function EcosystemMcp() {
       return false;
     }
 
-    console.log('result', result);
     if (result) {
       setDrawerVisible(false);
-      message.success('更新成功');
+      message.success('启用成功');
       handleMcpList();
       return true;
     }
-    message.error('更新失败');
     return false;
   };
 
@@ -240,24 +242,23 @@ export default function EcosystemMcp() {
    * 停用插件处理函数
    */
   const handleDisable = async (): Promise<boolean> => {
-    if (!selectedPlugin?.uid) return false;
+    if (!selectedDetailInfo?.uid) return false;
 
     let result = null;
 
     try {
       // 如果是已发布状态，调用下线接口
-      result = await disableClientConfig(selectedPlugin.uid);
+      result = await disableClientConfig(selectedDetailInfo.uid);
     } catch (error) {
-      message.error('下线失败');
+      message.error('停用失败');
       return false;
     }
     if (result) {
-      message.success('已下线');
+      message.success('已成功停用');
       setDrawerVisible(false);
       handleMcpList();
       return true;
     }
-    message.error('下线失败');
     return false;
   };
 
@@ -326,7 +327,9 @@ export default function EcosystemMcp() {
       <EcosystemDetailDrawer
         visible={drawerVisible}
         data={
-          selectedPlugin ? convertToDetailDrawer(selectedPlugin) : undefined
+          selectedDetailInfo
+            ? convertToDetailDrawer(selectedDetailInfo)
+            : undefined
         }
         onClose={handleDetailClose}
         onUpdateAndEnable={handleUpdateAndEnable}

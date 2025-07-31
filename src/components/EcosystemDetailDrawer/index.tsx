@@ -16,6 +16,7 @@ import React, { useEffect, useState } from 'react';
 import ActivatedIcon from '../EcosystemCard/ActivatedIcon';
 import styles from './index.less';
 // 方程式支持
+import { EcosystemDataTypeEnum } from '@/types/interfaces/ecosystem';
 import { encodeHTML } from '@/utils/common';
 import { PureMarkdownRenderer } from '../MarkdownRenderer';
 
@@ -58,7 +59,11 @@ export interface EcosystemDetailDrawerData {
   publishDoc?: string;
   /** 是否是新版本 */
   isNewVersion?: boolean;
+  /** 数据类型 */
+  dataType?: EcosystemDataTypeEnum;
   /** 配置信息 */
+  configJson?: string;
+  /** 配置参数信息 */
   configParamJson: string;
   /** 本地配置信息(之前 版本) */
   localConfigParamJson?: string;
@@ -121,6 +126,8 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     description,
     isEnabled,
     publishDoc,
+    dataType,
+    configJson,
     configParamJson,
     localConfigParamJson,
     isNewVersion,
@@ -135,6 +142,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     icon: DEFAULT_ICON,
     text: DEFAULT_TEXT,
   });
+  const [serverConfig, setServerConfig] = useState<string>('');
   const [form] = Form.useForm();
 
   // 监听抽屉关闭，重置表单
@@ -159,22 +167,38 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   }, [visible, data, form]);
 
   useEffect(() => {
-    if (targetType) {
-      const hitInfo = COMPONENT_LIST.find(
-        (item: any) => item.type === targetType,
-      );
-      setTargetInfo({
-        icon: icon || hitInfo?.defaultImage,
-        text: hitInfo?.text || DEFAULT_TEXT,
-      });
+    const hitInfo = COMPONENT_LIST.find(
+      (item: any) => item.type === targetType,
+    );
+    let text = '';
+    // 如果数据类型是MCP，则显示MCP
+    if (!hitInfo && dataType === EcosystemDataTypeEnum.MCP) {
+      text = 'MCP';
+    } else {
+      text = hitInfo?.text || DEFAULT_TEXT;
     }
+    setTargetInfo({
+      icon: icon || hitInfo?.defaultImage,
+      text,
+    });
     return () => {
       setTargetInfo({
         icon: DEFAULT_ICON,
         text: DEFAULT_TEXT,
       });
     };
-  }, [icon, targetType]);
+  }, [icon, targetType, dataType]);
+
+  useEffect(() => {
+    if (configJson) {
+      try {
+        const _configJson = JSON.parse(configJson);
+        setServerConfig(_configJson?.mcpConfig?.serverConfig || '');
+      } catch (error) {
+        console.error('解析配置失败:', error);
+      }
+    }
+  }, [configJson]);
 
   // 使用自定义 Hook 处理抽屉打开时的滚动条
   useDrawerScroll(visible);
@@ -392,6 +416,11 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
           </Form>
         )}
       </div>
+      {serverConfig && (
+        <div className={cx(styles['server-config-wrapper'])}>
+          <pre className={cx(styles['server-config'])}>{serverConfig}</pre>
+        </div>
+      )}
       <div className={cx(styles.actions)}>{renderButton()}</div>
     </Drawer>
   );
