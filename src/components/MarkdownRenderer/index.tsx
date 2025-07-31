@@ -24,7 +24,7 @@ import { replaceMathBracket } from './utils';
 const cx = classNames.bind(styles);
 /**
  * Markdown 渲染器组件
- * 使用 react-markdown 替代 markdown-it，提供更好的流式渲染支持
+ * 使用 ds-markdown 提供流式渲染支持
  *
  * 注意：此组件每次内容更新都会重新渲染整个 DOM 树
  * 如需增量渲染，请使用 IncrementalMarkdownRenderer 组件
@@ -73,11 +73,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     );
   },
   (prevProps, nextProps) => {
-    return (
-      prevProps.id === nextProps.id &&
-      prevProps.answer === nextProps.answer &&
-      prevProps.thinking === nextProps.thinking
-    );
+    return prevProps.id === nextProps.id;
   },
 );
 
