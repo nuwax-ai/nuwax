@@ -71,14 +71,14 @@ export interface MermaidProps {
 // 组件 Props 类型
 export interface MarkdownRendererProps {
   id: string;
-  content?: string;
   // config?: MarkdownRendererConfig;
   className?: string;
   mermaid?: (props: MermaidProps) => React.ReactNode;
   disableTyping?: boolean;
   answerType?: 'answer' | 'thinking';
-  markdownRef?: React.RefObject<MarkdownCMDRef>;
+  markdownRef: React.RefObject<MarkdownCMDRef>;
   onCopy?: () => void;
+  headerActions?: boolean;
 }
 
 // 预设插件类型

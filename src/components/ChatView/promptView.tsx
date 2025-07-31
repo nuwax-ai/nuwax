@@ -1,5 +1,6 @@
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
+import useMarkdownRender from '@/hooks/useMarkdownRender';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type {
@@ -7,18 +8,12 @@ import type {
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
-import markdown from 'markdown-it';
 import React from 'react';
+import MarkdownRenderer from '../MarkdownRenderer';
 import styles from './promptView.less';
 import RunOver from './RunOver';
 
 const cx = classNames.bind(styles);
-
-const md = markdown({
-  html: true,
-  breaks: true,
-  linkify: true,
-});
 
 // 聊天框组件
 type PromptViewProps = {
@@ -36,6 +31,11 @@ const PromptView: React.FC<PromptViewProps> = ({
   contentClassName,
   messageInfo,
 }) => {
+  const { markdownRef, messageIdRef } = useMarkdownRender({
+    answer: messageInfo?.text || '',
+    thinking: messageInfo?.think || '',
+    id: messageInfo?.id || '',
+  });
   return (
     <div className={cx(styles.container, 'flex', className)}>
       <div className={cx('flex-1')}>
@@ -55,28 +55,20 @@ const PromptView: React.FC<PromptViewProps> = ({
           )}
           {(!!messageInfo?.think || !!messageInfo?.text) && (
             <div className={cx(styles['inner-container'], contentClassName)}>
-              {/*think*/}
-              {!!messageInfo?.think && !!md.render(messageInfo.think) && (
-                <div
-                  className={cx(styles['think-content'], 'radius-6', 'w-full')}
-                  dangerouslySetInnerHTML={{
-                    __html: md.render(messageInfo.think),
-                  }}
+              <div
+                className={cx(styles['chat-content'], 'radius-6', 'w-full', {
+                  [styles.typing]:
+                    messageInfo.status === MessageStatusEnum.Incomplete ||
+                    messageInfo.status === MessageStatusEnum.Loading,
+                })}
+              >
+                <MarkdownRenderer
+                  key={`${messageIdRef.current}`}
+                  id={`${messageIdRef.current}`}
+                  headerActions={false}
+                  markdownRef={markdownRef}
                 />
-              )}
-              {/*文本内容*/}
-              {!!messageInfo?.text && (
-                <div
-                  className={cx(styles['chat-content'], 'radius-6', 'w-full', {
-                    [styles.typing]:
-                      messageInfo.status === MessageStatusEnum.Incomplete ||
-                      messageInfo.status === MessageStatusEnum.Loading,
-                  })}
-                  dangerouslySetInnerHTML={{
-                    __html: md.render(messageInfo.text),
-                  }}
-                />
-              )}
+              </div>
             </div>
           )}
           {/*底部区域*/}
