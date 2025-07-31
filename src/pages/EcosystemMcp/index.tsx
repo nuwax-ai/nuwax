@@ -225,14 +225,12 @@ export default function EcosystemMcp() {
       return false;
     }
 
-    console.log('result', result);
     if (result) {
       setDrawerVisible(false);
-      message.success('更新成功');
+      message.success('启用成功');
       handleMcpList();
       return true;
     }
-    message.error('更新失败');
     return false;
   };
 
@@ -248,16 +246,15 @@ export default function EcosystemMcp() {
       // 如果是已发布状态，调用下线接口
       result = await disableClientConfig(selectedPlugin.uid);
     } catch (error) {
-      message.error('下线失败');
+      message.error('停用失败');
       return false;
     }
     if (result) {
-      message.success('已下线');
+      message.success('已成功停用');
       setDrawerVisible(false);
       handleMcpList();
       return true;
     }
-    message.error('下线失败');
     return false;
   };
 

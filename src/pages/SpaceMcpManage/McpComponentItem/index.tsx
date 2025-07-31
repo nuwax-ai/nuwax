@@ -1,4 +1,5 @@
 import avatar from '@/assets/images/avatar.png';
+import ConditionRender from '@/components/ConditionRender';
 import CustomPopover from '@/components/CustomPopover';
 import { MCP_MORE_ACTION } from '@/constants/mcp.constants';
 import {
@@ -129,19 +130,21 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
               : `创建于 ${dayjs(mcpInfo.created).format('MM-DD HH:mm')}`}
           </div>
         </div>
-        <CustomPopover list={actionList} onClick={onClickMore}>
-          <span
-            className={cx(
-              styles['icon-box'],
-              'flex',
-              'content-center',
-              'items-center',
-              'hover-box',
-            )}
-          >
-            <MoreOutlined />
-          </span>
-        </CustomPopover>
+        <ConditionRender condition={actionList?.length}>
+          <CustomPopover list={actionList} onClick={onClickMore}>
+            <span
+              className={cx(
+                styles['icon-box'],
+                'flex',
+                'content-center',
+                'items-center',
+                'hover-box',
+              )}
+            >
+              <MoreOutlined />
+            </span>
+          </CustomPopover>
+        </ConditionRender>
       </div>
     </div>
   );
