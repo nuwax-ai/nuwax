@@ -1,6 +1,6 @@
+import copyImage from '@/assets/images/copy.png';
 import { COMPONENT_LIST } from '@/constants/ecosystem.constants';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CloseOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import {
   Button,
@@ -8,6 +8,7 @@ import {
   Drawer,
   Form,
   Input,
+  message,
   Tooltip,
   Typography,
 } from 'antd';
@@ -17,62 +18,23 @@ import React, { useEffect, useState } from 'react';
 import ActivatedIcon from '../EcosystemCard/ActivatedIcon';
 import styles from './index.less';
 // 方程式支持
-import { EcosystemDataTypeEnum } from '@/types/interfaces/ecosystem';
+import {
+  EcosystemDataTypeEnum,
+  EcosystemDetailDrawerProps,
+} from '@/types/interfaces/ecosystem';
 import { encodeHTML } from '@/utils/common';
 import markdownItKatexGpt from 'markdown-it-katex-gpt';
 import markdownItMultimdTable from 'markdown-it-multimd-table';
+import CopyToClipboard from 'react-copy-to-clipboard';
+import TooltipIcon from '../TooltipIcon';
 
 const cx = classNames.bind(styles);
 
 const { Title, Paragraph } = Typography;
 
-export interface EcosystemDetailDrawerProps {
-  /** 是否显示抽屉 */
-  visible: boolean;
-  /** 插件详情数据 */
-  data?: EcosystemDetailDrawerData;
-  /** 关闭抽屉回调 */
-  onClose: () => void;
-  /** 更新配置并启用回调 */
-  onUpdateAndEnable?: (values: any[]) => Promise<boolean>;
-  /** 停用回调 */
-  onDisable?: () => Promise<boolean>;
-}
-
 enum OwnedFlagEnum {
   NO = 0,
   YES = 1,
-}
-
-export interface EcosystemDetailDrawerData {
-  /** 插件图标URL */
-  icon: string;
-  /** 插件作者 */
-  author: string;
-  /** 插件标题 */
-  title: string;
-  /** 插件描述 */
-  description: string;
-  /** 自定义类名 */
-  className?: string;
-  /** 是否启用 */
-  isEnabled?: boolean;
-  /** 使用文档 */
-  publishDoc?: string;
-  /** 是否是新版本 */
-  isNewVersion?: boolean;
-  /** 数据类型 */
-  dataType?: EcosystemDataTypeEnum;
-  /** 配置信息 */
-  configJson?: string;
-  /** 配置参数信息 */
-  configParamJson: string;
-  /** 本地配置信息(之前 版本) */
-  localConfigParamJson?: string;
-  /** 是否我的分享,0:否(生态市场获取的);1:是(我的分享)*/
-  ownedFlag?: OwnedFlagEnum;
-  /** 组件类型 */
-  targetType: AgentComponentTypeEnum;
 }
 
 const DEFAULT_ICON =
@@ -144,7 +106,10 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     icon: DEFAULT_ICON,
     text: DEFAULT_TEXT,
   });
+  // MCP服务配置
   const [serverConfig, setServerConfig] = useState<string>('');
+  const [disableLoading, setDisableLoading] = useState(false);
+  const [enableLoading, setEnableLoading] = useState(false);
   const [form] = Form.useForm();
 
   // 监听抽屉关闭，重置表单
@@ -277,9 +242,6 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     };
   }, [isNewVersion, isEnabled, configParam]);
 
-  const [disableLoading, setDisableLoading] = useState(false);
-  const [enableLoading, setEnableLoading] = useState(false);
-
   if (!data) return null;
   const renderButton = () => {
     if (ownedFlag === OwnedFlagEnum.YES) {
@@ -302,7 +264,13 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
             iconPosition="end"
             icon={
               !isEnabled && !showToolSection ? (
-                <Tooltip title="启用后将发布到系统广场">
+                <Tooltip
+                  title={
+                    dataType === EcosystemDataTypeEnum.MCP
+                      ? `启用后将发布到官方服务列表`
+                      : `启用后将发布到系统广场`
+                  }
+                >
                   <InfoCircleOutlined />
                 </Tooltip>
               ) : null
@@ -317,6 +285,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
               : '启用'}
           </Button>
         )}
+        {/* 如果当前状态是启用，则显示停用按钮 */}
         {isEnabled && (
           <Button
             className={cx(styles.actionButton)}
@@ -330,7 +299,13 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
             }}
             iconPosition="end"
             icon={
-              <Tooltip title={`停用后，广场${targetInfo.text}中将不可见`}>
+              <Tooltip
+                title={
+                  dataType === EcosystemDataTypeEnum.MCP
+                    ? `停用后，官方服务列表中将不可见`
+                    : `停用后，广场${targetInfo.text}中将不可见`
+                }
+              >
                 <InfoCircleOutlined />
               </Tooltip>
             }
@@ -353,6 +328,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
       maskClassName={cx(styles.resetMask)}
       rootClassName={cx(styles.resetRoot)}
     >
+      {/* 抽屉头部 */}
       <div className={cx(styles.drawerHeader)}>
         <div className={cx(styles.titleArea)}>
           <div className={cx(styles.iconWrapper)}>
@@ -361,7 +337,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
               alt={title}
               className={cx(styles.icon)}
             />
-            {isEnabled && <ActivatedIcon size={30} enabled={isEnabled} />}
+            {isEnabled && <ActivatedIcon size={30} />}
           </div>
           <div className={cx(styles.titleContent)}>
             <Title level={5} className={cx(styles.title)}>
@@ -380,7 +356,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
           className={cx(styles.closeButton)}
         />
       </div>
-
+      {/* 抽屉内容 */}
       <div className={cx(styles.content)}>
         <Paragraph className={cx(styles.description)}>{description}</Paragraph>
 
@@ -398,6 +374,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
           />
         </div>
       </div>
+      {/* 工具列表 */}
       <div
         className={cx(
           styles.toolSection,
@@ -421,11 +398,27 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
           </Form>
         )}
       </div>
+      {/* 如果是MCP，则显示服务配置 */}
       {serverConfig && (
         <div className={cx(styles['server-config-wrapper'])}>
+          <CopyToClipboard
+            text={serverConfig}
+            onCopy={() => {
+              message.success('复制成功');
+            }}
+          >
+            <TooltipIcon
+              title="复制"
+              icon={
+                <img className={styles['copy-img']} src={copyImage} alt="" />
+              }
+              className={styles['copy-box']}
+            />
+          </CopyToClipboard>
           <pre className={cx(styles['server-config'])}>{serverConfig}</pre>
         </div>
       )}
+      {/* 操作按钮 */}
       <div className={cx(styles.actions)}>{renderButton()}</div>
     </Drawer>
   );

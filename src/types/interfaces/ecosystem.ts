@@ -382,3 +382,49 @@ export interface ClientConfigUpdateDraftReqDTO {
   /** 图标图片地址 */
   icon?: string;
 }
+
+// 生态市场详情抽屉组件props
+export interface EcosystemDetailDrawerProps {
+  /** 是否显示抽屉 */
+  visible: boolean;
+  /** 插件详情数据 */
+  data?: EcosystemDetailDrawerData;
+  /** 关闭抽屉回调 */
+  onClose: () => void;
+  /** 更新配置并启用回调 */
+  onUpdateAndEnable?: (values: any[]) => Promise<boolean>;
+  /** 停用回调 */
+  onDisable?: () => Promise<boolean>;
+}
+
+// 生态市场详情信息
+export interface EcosystemDetailDrawerData {
+  /** 插件图标URL */
+  icon: string;
+  /** 插件作者 */
+  author: string;
+  /** 插件标题 */
+  title: string;
+  /** 插件描述 */
+  description: string;
+  /** 自定义类名 */
+  className?: string;
+  /** 是否启用 */
+  isEnabled?: boolean;
+  /** 使用文档 */
+  publishDoc?: string;
+  /** 是否是新版本 */
+  isNewVersion?: boolean;
+  /** 数据类型 */
+  dataType?: EcosystemDataTypeEnum;
+  /** 配置信息 */
+  configJson?: string;
+  /** 配置参数信息 */
+  configParamJson: string;
+  /** 本地配置信息(之前 版本) */
+  localConfigParamJson?: string;
+  /** 是否我的分享,0:否(生态市场获取的);1:是(我的分享)*/
+  ownedFlag?: OwnedFlagEnum;
+  /** 组件类型 */
+  targetType: AgentComponentTypeEnum;
+}

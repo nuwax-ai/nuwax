@@ -107,7 +107,7 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
       <div className={cx(styles.cardContent)}>
         <div className={cx(styles.iconWrapper)}>
           <img src={targetInfo.icon} alt={title} className={styles.icon} />
-          {isEnabled && <ActivatedIcon enabled={isEnabled} />}
+          {isEnabled && <ActivatedIcon />}
         </div>
         <div className={cx(styles.infoWrapper)}>
           <h3 className={cx(styles.title)}>
