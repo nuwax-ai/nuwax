@@ -202,7 +202,14 @@ export async function apiAgentAkList(
 export async function apiTemplateExport(
   targetId: number,
   targetType: AgentComponentTypeEnum,
-): Promise<{ data: Blob }> {
+): Promise<{
+  data: Blob;
+  headers: {
+    'content-disposition': string;
+    'content-length': string;
+    'content-type': string;
+  };
+}> {
   return request(`/api/template/export/${targetType}/${targetId}`, {
     method: 'GET',
     responseType: 'blob', // 指定响应类型为blob

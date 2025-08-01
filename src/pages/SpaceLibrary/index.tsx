@@ -441,7 +441,7 @@ const SpaceLibrary: React.FC = () => {
         break;
       // 导出配置
       case ApplicationMoreActionEnum.Export_Config:
-        exportConfigFile(info.id, info?.name, AgentComponentTypeEnum.Plugin);
+        exportConfigFile(info.id, AgentComponentTypeEnum.Plugin);
         break;
     }
   };
@@ -453,7 +453,7 @@ const SpaceLibrary: React.FC = () => {
   ) => {
     switch (action) {
       case ApplicationMoreActionEnum.Export_Config:
-        exportConfigFile(info.id, info?.name, AgentComponentTypeEnum.Model);
+        exportConfigFile(info.id, AgentComponentTypeEnum.Model);
         break;
     }
   };
@@ -473,11 +473,7 @@ const SpaceLibrary: React.FC = () => {
           `导出配置 - ${info?.name}`,
           '如果内部包含数据表或知识库，数据本身不会导出',
           () => {
-            exportConfigFile(
-              info.id,
-              info?.name,
-              AgentComponentTypeEnum.Workflow,
-            );
+            exportConfigFile(info.id, AgentComponentTypeEnum.Workflow);
             return new Promise((resolve) => {
               setTimeout(resolve, 1000);
             });
@@ -498,7 +494,7 @@ const SpaceLibrary: React.FC = () => {
           `导出配置 - ${info?.name}`,
           '仅导出数据表结构，数据本身不会导出',
           () => {
-            exportConfigFile(info.id, info?.name, AgentComponentTypeEnum.Table);
+            exportConfigFile(info.id, AgentComponentTypeEnum.Table);
             return new Promise((resolve) => {
               setTimeout(resolve, 1000);
             });

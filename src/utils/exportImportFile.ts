@@ -10,17 +10,23 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
  */
 export const exportConfigFile = async (
   id: number,
-  fileName: string,
   type: AgentComponentTypeEnum = AgentComponentTypeEnum.Agent,
 ) => {
   try {
     const res = await apiTemplateExport(id, type);
+    // 从响应头中获取文件名
+    const contentDisposition = res.headers['content-disposition'];
+    // 解码文件名
+    const fileName = decodeURIComponent(
+      contentDisposition.split('filename=')[1].replace(/"/g, ''),
+    );
+
     // 当使用 getResponse: true 时，_res 是一个包含 data 属性的响应对象
     const blob = new Blob([res.data]); // 将响应数据转换为 Blob 对象
     const objectURL = URL.createObjectURL(blob); // 创建一个 URL 对象
     const link = document.createElement('a'); // 创建一个 a 标签
     link.href = objectURL;
-    link.download = `${fileName}.txt`; // 设置下载文件的名称
+    link.download = fileName; // 设置下载文件的名称
     link.click(); // 模拟点击下载
     URL.revokeObjectURL(objectURL); // 释放 URL 对象
   } finally {

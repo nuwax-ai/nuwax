@@ -305,7 +305,7 @@ const SpaceDevelop: React.FC = () => {
           `导出配置 - ${agentInfo?.name}`,
           '如果内部包含数据表或知识库，数据本身不会导出',
           () => {
-            exportConfigFile(id, agentInfo?.name, AgentComponentTypeEnum.Agent);
+            exportConfigFile(id, AgentComponentTypeEnum.Agent);
             return new Promise((resolve) => {
               setTimeout(resolve, 1000);
             });
