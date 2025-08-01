@@ -88,28 +88,8 @@ export const COMPONENT_LIST: {
 export const TAG_ICON_LIST: Partial<
   Record<AgentComponentTypeEnum, React.ReactNode>
 > = {
-  [AgentComponentTypeEnum.Workflow]: (
-    <ICON_WORKFLOW_SQUARE
-      style={{
-        width: 14,
-        height: 14,
-        display: 'inline-block',
-        verticalAlign: '-0.3em',
-        marginRight: 4,
-      }}
-    />
-  ),
-  [AgentComponentTypeEnum.Agent]: (
-    <ICON_AGENT
-      style={{
-        width: 14,
-        height: 14,
-        display: 'inline-block',
-        verticalAlign: '-0.3em',
-        marginRight: 4,
-      }}
-    />
-  ),
+  [AgentComponentTypeEnum.Workflow]: <ICON_WORKFLOW_SQUARE />,
+  [AgentComponentTypeEnum.Agent]: <ICON_AGENT />,
 };
 
 export const TabTypeEnum: {

@@ -3,6 +3,8 @@
  * 包含客户端配置查询、分页查询等相关类型定义
  */
 
+import { AgentComponentTypeEnum } from '../enums/agent';
+
 /**
  * 排序字段信息
  */
@@ -135,9 +137,9 @@ export interface ClientConfigVo {
   /** 描述 */
   description?: string;
   /** 市场类型，默认插件，1:插件;2:模板;3:MCP */
-  dataType?: number;
+  dataType?: EcosystemDataTypeEnum;
   /** 细分类型，比如: 插件,智能体,工作流 */
-  targetType?: string;
+  targetType?: AgentComponentTypeEnum;
   /** 具体目标的id，可以智能体,工作流,插件,还有mcp等 */
   targetId?: number;
   /** 分类编码，商业服务等，通过接口获取 */
@@ -147,7 +149,7 @@ export interface ClientConfigVo {
   /** 是否我的分享，0:否(生态市场获取的);1:是(我的分享) */
   ownedFlag?: number;
   /** 分享状态，1:草稿;2:审核中;3:已发布;4:已下线;5:驳回 */
-  shareStatus?: number;
+  shareStatus?: EcosystemShareStatusEnum;
   /** 使用状态，1:启用;2:禁用 */
   useStatus?: number;
   /** 发布时间 */

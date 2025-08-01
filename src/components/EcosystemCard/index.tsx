@@ -1,6 +1,9 @@
 import { COMPONENT_LIST, TAG_ICON_LIST } from '@/constants/ecosystem.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { EcosystemShareStatusEnum } from '@/types/interfaces/ecosystem';
+import {
+  EcosystemDataTypeEnum,
+  EcosystemShareStatusEnum,
+} from '@/types/interfaces/ecosystem';
 import { Card, Tag } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -30,6 +33,8 @@ export interface EcosystemCardProps {
   isEnabled?: boolean;
   /** 分享状态 */
   shareStatus?: EcosystemShareStatusEnum | undefined;
+  /** 数据类型 */
+  dataType?: EcosystemDataTypeEnum;
   /** 使用文档 */
   publishDoc?: string;
   /** 是否是新版本 */
@@ -59,71 +64,91 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
   shareStatus,
   isNewVersion,
   targetType,
+  dataType,
 }) => {
-  const [targetInfo, setTargetInfo] = useState<any>({
-    icon: icon,
+  // 默认信息(组件类型、默认图标、标签图标)
+  const [defaultInfo, setDefaultInfo] = useState<{
+    name: string;
+    defaultImage: string;
+    tagIcon: React.ReactNode;
+  }>({
     name: '',
+    defaultImage: '',
     tagIcon: null,
   });
+  // 卡片加载状态
   const [cardLoading, setCardLoading] = useState(false);
+
+  // 获取默认信息
   useEffect(() => {
-    if (!targetType) {
+    // 如果targetType为空，则根据dataType判断，因为dataType为MCP时，targetType可能为空
+    const type =
+      targetType ||
+      (dataType === EcosystemDataTypeEnum.MCP
+        ? AgentComponentTypeEnum.MCP
+        : null);
+    if (!type) {
       return;
     }
-    const hitInfo = COMPONENT_LIST.find((item) => item.type === targetType);
-    const iconUrl =
-      icon ||
-      hitInfo?.defaultImage ||
-      'https://agent-1251073634.cos.ap-chengdu.myqcloud.com/store/b5fdb62e8b994a418d0fdfae723ee827.png';
-    const tagIcon = TAG_ICON_LIST[targetType];
+    const hitInfo = COMPONENT_LIST.find((item) => item.type === type);
+    const defaultImage = hitInfo?.defaultImage || '';
+    const tagIcon = TAG_ICON_LIST[type] || null;
     const name = hitInfo?.text || '';
-    setTargetInfo({
-      icon: iconUrl,
+    setDefaultInfo({
       name,
+      defaultImage,
       tagIcon,
     });
-    return () => {
-      setTargetInfo({
-        icon: '',
-        name: '',
-        tagIcon: null,
-      });
-    };
-  }, [targetType, icon]);
+  }, [targetType, dataType]);
+
+  // 点击卡片
+  const handleClickCard = () => {
+    setCardLoading(true);
+    onClick();
+    setTimeout(() => {
+      setCardLoading(false);
+    }, 500);
+  };
+
   return (
     <Card
       className={cx(styles.ecosystemCard, className)}
       hoverable
       style={{
-        opacity: cardLoading ? 0.5 : 1,
+        opacity: cardLoading ? 0.7 : 1,
       }}
-      onClick={() => {
-        setCardLoading(true);
-        onClick?.().finally(() => {
-          setCardLoading(false);
-        });
-      }}
+      onClick={handleClickCard}
     >
       <div className={cx(styles.cardContent)}>
         <div className={cx(styles.iconWrapper)}>
-          <img src={targetInfo.icon} alt={title} className={styles.icon} />
+          <img
+            src={icon || defaultInfo.defaultImage}
+            alt={title}
+            className={styles.icon}
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = defaultInfo.defaultImage;
+            }}
+          />
           {isEnabled && <ActivatedIcon />}
         </div>
         <div className={cx(styles.infoWrapper)}>
-          <h3 className={cx(styles.title)}>
-            {title}{' '}
-            {targetInfo.tagIcon && (
-              <Tag icon={targetInfo.tagIcon} bordered={false}>
-                {targetInfo.name}
+          <div className={cx('flex', 'items-center')}>
+            <h3 className={cx(styles.title, 'text-ellipsis-1')}>{title}</h3>
+            {defaultInfo.tagIcon && (
+              <Tag
+                icon={defaultInfo.tagIcon}
+                bordered={false}
+                className={styles['tag-icon']}
+              >
+                {defaultInfo.name}
               </Tag>
             )}
-          </h3>
-          <p className={cx(styles.author)}>来自{author}</p>
-          <div className={cx(styles.descriptionWrapper)}>
-            <p className={cx(styles.description, 'text-ellipsis-3')}>
-              {description}
-            </p>
           </div>
+          <p className={cx(styles.author)}>来自{author}</p>
+          <p className={cx(styles.description, 'text-ellipsis-3')}>
+            {description}
+          </p>
         </div>
         {shareStatus && <SharedIcon shareStatus={shareStatus} />}
         {isNewVersion && <NewVersionIcon />}

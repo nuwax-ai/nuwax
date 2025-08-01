@@ -518,7 +518,7 @@ export default function EcosystemTemplate() {
   /**
    * 处理模板卡片点击事件
    */
-  const handleCardClick = async (config: ClientConfigVo): Promise<boolean> => {
+  const handleCardClick = async (config: ClientConfigVo) => {
     // 如果是我的分享标签页，则进入编辑模式
     if (activeTab === TabTypeEnum.SHARED) {
       setEditingPlugin(config);
@@ -550,7 +550,6 @@ export default function EcosystemTemplate() {
           status: AgentAddComponentStatusEnum.Added,
         },
       ]);
-      return true;
     } else {
       // 获取详细信息
       if (config.uid) {
@@ -559,14 +558,12 @@ export default function EcosystemTemplate() {
           if (detail) {
             setSelectedPlugin(detail);
             setDrawerVisible(true);
-            return true;
           }
         } catch (error) {
-          message.error('获取插件详情失败');
+          message.error('获取详情失败');
         }
       }
     }
-    return false;
   };
 
   const handleOffline = async (uid: string): Promise<boolean> => {

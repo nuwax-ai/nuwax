@@ -18,6 +18,7 @@ import React, { useEffect, useState } from 'react';
 import ActivatedIcon from '../EcosystemCard/ActivatedIcon';
 import styles from './index.less';
 // 方程式支持
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   EcosystemDataTypeEnum,
   EcosystemDetailDrawerProps,
@@ -102,8 +103,11 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   const [configParam, setConfigParam] = useState<any>([]);
   const [showToolSection, setShowToolSection] = useState(false);
   const [needUpdateButton, setNeedUpdateButton] = useState(false);
-  const [targetInfo, setTargetInfo] = useState<any>({
-    icon: DEFAULT_ICON,
+  const [targetInfo, setTargetInfo] = useState<{
+    defaultImage: string;
+    text: string;
+  }>({
+    defaultImage: DEFAULT_ICON,
     text: DEFAULT_TEXT,
   });
   // MCP服务配置
@@ -134,27 +138,21 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   }, [visible, data, form]);
 
   useEffect(() => {
-    const hitInfo = COMPONENT_LIST.find(
-      (item: any) => item.type === targetType,
-    );
-    let text = '';
-    // 如果数据类型是MCP，则显示MCP
-    if (!hitInfo && dataType === EcosystemDataTypeEnum.MCP) {
-      text = 'MCP';
-    } else {
-      text = hitInfo?.text || DEFAULT_TEXT;
+    // 如果targetType为空，则根据dataType判断，因为dataType为MCP时，targetType可能为空
+    const type =
+      targetType ||
+      (dataType === EcosystemDataTypeEnum.MCP
+        ? AgentComponentTypeEnum.MCP
+        : null);
+    if (!type) {
+      return;
     }
+    const hitInfo = COMPONENT_LIST.find((item: any) => item.type === type);
     setTargetInfo({
-      icon: icon || hitInfo?.defaultImage,
-      text,
+      defaultImage: hitInfo?.defaultImage || DEFAULT_ICON,
+      text: hitInfo?.text || DEFAULT_TEXT,
     });
-    return () => {
-      setTargetInfo({
-        icon: DEFAULT_ICON,
-        text: DEFAULT_TEXT,
-      });
-    };
-  }, [icon, targetType, dataType]);
+  }, [targetType, dataType]);
 
   useEffect(() => {
     if (configJson) {
@@ -333,9 +331,13 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
         <div className={cx(styles.titleArea)}>
           <div className={cx(styles.iconWrapper)}>
             <img
-              src={targetInfo.icon}
+              src={icon || targetInfo.defaultImage}
               alt={title}
               className={cx(styles.icon)}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = targetInfo.defaultImage;
+              }}
             />
             {isEnabled && <ActivatedIcon size={30} />}
           </div>

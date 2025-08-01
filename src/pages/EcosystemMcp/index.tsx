@@ -1,7 +1,5 @@
 import EcosystemCard, { EcosystemCardProps } from '@/components/EcosystemCard';
-import EcosystemDetailDrawer, {
-  EcosystemDetailDrawerData,
-} from '@/components/EcosystemDetailDrawer';
+import EcosystemDetailDrawer from '@/components/EcosystemDetailDrawer';
 import InfiniteScrollDiv from '@/components/InfiniteScrollDiv';
 import Loading from '@/components/Loading';
 import {
@@ -18,6 +16,7 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   ClientConfigVo,
   EcosystemDataTypeEnum,
+  EcosystemDetailDrawerData,
   EcosystemSubTabTypeEnum,
   EcosystemTabTypeEnum,
   EcosystemUseStatusEnum,
@@ -154,6 +153,7 @@ export default function EcosystemMcp() {
       isNewVersion: config.isNewVersion,
       author: config.author || '',
       targetType: config.targetType as AgentComponentTypeEnum,
+      dataType: config.dataType,
       configParamJson: config.serverConfigParamJson,
       localConfigParamJson: config.localConfigParamJson,
       isEnabled: isAll
@@ -175,7 +175,6 @@ export default function EcosystemMcp() {
         if (detail) {
           setSelectedDetailInfo(detail);
           setDrawerVisible(true);
-          return true;
         }
       } catch (error) {
         message.error('获取插件详情失败');
