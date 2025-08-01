@@ -19,7 +19,7 @@ import {
   FilterStatusEnum,
 } from '@/types/enums/space';
 import { AgentConfigInfo, AgentInfo } from '@/types/interfaces/agent';
-import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
+import { AnalyzeStatisticsItem, FileType } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import { jumpToAgent } from '@/utils/router';
@@ -28,7 +28,7 @@ import {
   PlusOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
-import { Button, Empty, Input, message, Modal } from 'antd';
+import { Button, Empty, Input, message, Modal, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
@@ -305,7 +305,7 @@ const SpaceDevelop: React.FC = () => {
           `导出配置 - ${agentInfo?.name}`,
           '如果内部包含数据表或知识库，数据本身不会导出',
           () => {
-            exportConfigFile(id, agentInfo?.name, AgentComponentTypeEnum.Agent);
+            exportConfigFile(id, AgentComponentTypeEnum.Agent);
             return new Promise((resolve) => {
               setTimeout(resolve, 1000);
             });
@@ -343,6 +343,16 @@ const SpaceDevelop: React.FC = () => {
     run(spaceId);
   };
 
+  // beforeUpload 返回 false 或 Promise.reject 时，只用于拦截上传行为，不会阻止文件进入上传列表（原因）。如果需要阻止列表展现，可以通过返回 Upload.LIST_IGNORE 实现。
+  const beforeUploadDefault = (file: FileType) => {
+    const fileName = file.name.toLocaleLowerCase();
+    const isValidFile = fileName.endsWith('.agent');
+    if (!isValidFile) {
+      message.error('请上传.agent类型的文件!');
+    }
+    return isValidFile || Upload.LIST_IGNORE;
+  };
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <div className={cx('flex', 'content-between')}>
@@ -351,6 +361,7 @@ const SpaceDevelop: React.FC = () => {
           <UploadImportConfig
             spaceId={spaceId}
             onUploadSuccess={handleImportConfig}
+            beforeUpload={beforeUploadDefault}
           />
           <Button
             type="primary"

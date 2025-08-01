@@ -1,6 +1,9 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import type { UploadImportConfigProps } from '@/types/interfaces/common';
+import type {
+  FileType,
+  UploadImportConfigProps,
+} from '@/types/interfaces/common';
 import { Button, message, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -32,6 +35,24 @@ const UploadImportConfig: React.FC<UploadImportConfigProps> = ({
     }
   };
 
+  /**
+   * 上传文件校验（.table, .workflow, .plugin用于组件库页面校验，.agent用于智能体开发页面需要单独传入校验）
+   * @param file 文件
+   * @returns 是否允许上传
+   * beforeUpload 返回 false 或 Promise.reject 时，只用于拦截上传行为，不会阻止文件进入上传列表（原因）。如果需要阻止列表展现，可以通过返回 Upload.LIST_IGNORE 实现。
+   */
+  const beforeUploadDefault = (file: FileType) => {
+    const fileName = file.name.toLocaleLowerCase();
+    const isValidFile =
+      fileName.endsWith('.table') ||
+      fileName.endsWith('.workflow') ||
+      fileName.endsWith('.plugin');
+    if (!isValidFile) {
+      message.error('请上传 .table, .workflow 或 .plugin 类型的文件!');
+    }
+    return isValidFile || Upload.LIST_IGNORE;
+  };
+
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
   return (
@@ -43,7 +64,7 @@ const UploadImportConfig: React.FC<UploadImportConfigProps> = ({
         Authorization: token ? `Bearer ${token}` : '',
       }}
       showUploadList={false}
-      beforeUpload={beforeUpload}
+      beforeUpload={beforeUpload || beforeUploadDefault}
     >
       <Button>导入配置</Button>
     </Upload>
