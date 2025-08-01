@@ -3,25 +3,21 @@ import { Image } from 'antd';
 import classNames from 'classnames';
 import styles from './index.less';
 const cx = classNames.bind(styles);
-export default function ActivatedIcon({
-  enabled = false,
-  size = 40,
-}: {
-  enabled?: boolean;
+
+interface ActivatedIconProps {
   size?: number;
-}) {
-  const renderIcon = (enabled: boolean) => {
-    if (enabled) {
-      return <Image preview={false} src={ActivatedImage} alt="已启用" />;
-    }
-    return null;
-  };
+}
+
+// 已启用图标
+const ActivatedIcon: React.FC<ActivatedIconProps> = ({ size = 40 }) => {
   return (
     <div
       className={cx(styles.activatedIcon)}
       style={{ width: size, height: size }}
     >
-      {renderIcon(enabled)}
+      <Image preview={false} src={ActivatedImage} alt="已启用" />
     </div>
   );
-}
+};
+
+export default ActivatedIcon;

@@ -221,11 +221,30 @@
 }
 
 .server-config-wrapper {
-  padding: 16px 24px;
+  position: relative;
+  padding: 0 24px;
+
+  .copy-box {
+    position: absolute;
+    right: 30px;
+    top: 6px;
+    cursor: pointer;
+
+    &:hover {
+      opacity: 0.6;
+    }
+
+    .copy-img {
+      width: 14px;
+      height: 14px;
+    }
+  }
 
   .server-config {
     max-height: 400px;
+    line-height: 20px;
     color: @GRAY01;
+    font-size: 14px;
     padding: 10px;
     background-color: @BLANK04;
     border-radius: 10px;
