@@ -113,30 +113,25 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       e.target as HTMLTextAreaElement;
     // shift+enter或者ctrl+enter时换行
     if (
-      e.shiftKey ||
-      (e.ctrlKey && e.key === 'Enter') ||
-      (e.metaKey && e.key === 'Enter')
+      e.nativeEvent.keyCode === 13 &&
+      (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)
     ) {
       // 在光标位置插入换行符
       const newValue =
-        value.substring(0, selectionStart) +
-        '\n' +
-        value.substring(selectionEnd);
+        value.slice(0, selectionStart) + '\n' + value.slice(selectionEnd);
       setMessageInfo(newValue);
-      // 设置光标位置
-      setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.focus();
-          textareaRef.current.setSelectionRange(
-            selectionStart + 1,
-            selectionStart + 1,
-          );
-        }
-      }, 0);
-      return;
+    } else if (
+      e.nativeEvent.keyCode === 13 &&
+      (!!value.trim() || !!files?.length)
+    ) {
+      // enter事件
+      onEnter(value, files);
+      if (isClearInput) {
+        // 置空
+        setUploadFiles([]);
+        setMessageInfo('');
+      }
     }
-    // 普通enter发送消息
-    handleSendMessage();
   };
 
   const handleChange: UploadProps['onChange'] = (info) => {
