@@ -70,7 +70,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     variables,
     userFillVariables,
     requiredNameList,
-    isConversationActive,
   } = useModel('conversationInfo');
 
   // 创建智能体会话
@@ -331,7 +330,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
           selectedComponentList={selectedComponentList}
           onSelectComponent={handleSelectComponent}
           onScrollBottom={onScrollBottom}
-          isConversationActive={isConversationActive}
         />
       </div>
     </div>

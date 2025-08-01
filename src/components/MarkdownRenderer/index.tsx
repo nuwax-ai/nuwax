@@ -1,43 +1,118 @@
-import 'katex/dist/katex.min.css';
-import ReactMarkdown from 'react-markdown';
-import rehypeKatex from 'rehype-katex';
-import remarkMath from 'remark-math';
+import classNames from 'classnames';
+// import 'highlight.js/styles/github.css';
+import React, { memo, useMemo, useRef } from 'react';
 
-// ... existing code ...
+import styles from './index.less';
 
-const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
-  children,
-  // ... other props
-}) => {
-  return (
-    <ReactMarkdown
-      remarkPlugins={[
-        [
-          remarkMath,
-          {
-            // 只保留安全的数学公式分隔符
-            delimiters: [
-              { left: '\\[', right: '\\]', display: true },
-              { left: '$$', right: '$$', display: false },
-            ],
-          },
-        ],
-      ]}
-      rehypePlugins={[
-        [
-          rehypeKatex,
-          {
-            throwOnError: false,
-            errorColor: '#cc0000',
-            strict: false,
-            trust: true,
-          },
-        ],
-      ]}
-    >
-      {children}
-    </ReactMarkdown>
-  );
-};
+// 导入类型定义
+import type { MarkdownRendererProps } from '@/types/interfaces/markdownRender';
 
+import mermaidPlugin, {
+  mermaidConfig,
+} from '@/plugins/ds-markdown-mermaid-plugin';
+import DsMarkdown, { ConfigProvider, MarkdownCMD } from 'ds-markdown'; // 新增：引入ds-markdown
+import 'ds-markdown/katex.css';
+import { katexPlugin } from 'ds-markdown/plugins'; // 新增：引入插件创建方法
+import 'ds-markdown/style.css';
+import genCustomPlugin from './genCustomPlugin';
+import { replaceMathBracket } from './utils';
+
+const cx = classNames.bind(styles);
+/**
+ * Markdown 渲染器组件
+ * 使用 ds-markdown 提供流式渲染支持
+ *
+ * 注意：此组件每次内容更新都会重新渲染整个 DOM 树
+ * 如需增量渲染，请使用 IncrementalMarkdownRenderer 组件
+ */
+const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
+  ({
+    id: requestId = '',
+    className,
+    markdownRef,
+    headerActions = true,
+    disableTyping = true,
+  }: MarkdownRendererProps) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const plugins = useMemo(
+      () => [mermaidPlugin, katexPlugin, genCustomPlugin()],
+      [],
+    );
+    // 使用导入的 mermaidConfig，而不是重新创建
+    const mermaidProvider = useMemo(() => mermaidConfig, []);
+
+    return (
+      <div
+        ref={containerRef}
+        key={`${requestId}`}
+        id={`${requestId}`}
+        data-key={`${requestId}`}
+        className={cx(styles['markdown-container'], className)}
+      >
+        <ConfigProvider mermaidConfig={mermaidProvider}>
+          {/* 用ds-markdown替换react-markdown，传递自定义components插件 */}
+
+          <MarkdownCMD
+            ref={markdownRef}
+            timerType="requestAnimationFrame"
+            interval={30}
+            plugins={plugins}
+            codeBlock={{ headerActions }}
+            math={{
+              splitSymbol: 'bracket',
+              replaceMathBracket,
+            }}
+            disableTyping={disableTyping}
+          />
+        </ConfigProvider>
+      </div>
+    );
+  },
+  (prevProps, nextProps) => {
+    return prevProps.id === nextProps.id;
+  },
+);
+
+const PureMarkdownRenderer = memo(
+  ({
+    id: requestId = '',
+    className = '',
+    children,
+  }: {
+    id: string;
+    className?: string;
+    children: string;
+  }) => {
+    const plugins = useMemo(() => [katexPlugin, genCustomPlugin()], []);
+    return (
+      <div
+        key={`${requestId}`}
+        id={`${requestId}`}
+        data-key={`${requestId}`}
+        className={cx(styles['markdown-container'], className)}
+      >
+        <ConfigProvider>
+          <DsMarkdown
+            interval={30}
+            timerType="requestAnimationFrame"
+            disableTyping={true}
+            plugins={plugins}
+            codeBlock={{ headerActions: false }}
+            math={{
+              splitSymbol: 'bracket',
+              replaceMathBracket,
+            }}
+          >
+            {children}
+          </DsMarkdown>
+        </ConfigProvider>
+      </div>
+    );
+  },
+  (prevProps, nextProps) => {
+    return prevProps.id === nextProps.id;
+  },
+);
+
+export { MarkdownRenderer, PureMarkdownRenderer };
 export default MarkdownRenderer;

@@ -5,6 +5,7 @@ import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import { USER_INFO } from '@/constants/home.constants';
+import useMarkdownRender from '@/hooks/useMarkdownRender';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type {
@@ -13,12 +14,10 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { message } from 'antd';
 import classNames from 'classnames';
-import { MarkdownCMDRef } from 'ds-markdown';
 import { isEqual } from 'lodash';
-import React, { memo, useCallback, useEffect, useRef } from 'react';
+import React, { memo, useCallback } from 'react';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { useModel } from 'umi';
-import { v4 as uuidv4 } from 'uuid';
 import ChatBottomDebug from './ChatBottomDebug';
 import ChatBottomMore from './ChatBottomMore';
 import ChatSampleBottom from './ChatSampleBottom';
@@ -30,13 +29,12 @@ const cx = classNames.bind(styles);
 // 聊天视图组件
 const ChatView: React.FC<ChatViewProps> = memo(
   ({ className, contentClassName, roleInfo, messageInfo, mode = 'chat' }) => {
-    const markdownRef = useRef<MarkdownCMDRef>(null);
-    const lastTextPos = useRef({
-      text: 0,
-      think: 0,
-    });
     const { userInfo } = useModel('userInfo');
-    const messageIdRef = useRef(uuidv4());
+    const { markdownRef, messageIdRef } = useMarkdownRender({
+      answer: messageInfo?.text || '',
+      thinking: messageInfo?.think || '',
+      id: messageInfo?.id || '',
+    });
     const _userInfo =
       userInfo || JSON.parse(localStorage.getItem(USER_INFO) as string);
 
@@ -65,46 +63,6 @@ const ChatView: React.FC<ChatViewProps> = memo(
     const handleTextCopy = () => {
       message.success('复制成功');
     };
-
-    const handleCodeCopy = () => {
-      message.success('代码复制成功');
-    };
-
-    useEffect(() => {
-      if (messageInfo?.text) {
-        //取出差量部分
-        const diffText = messageInfo?.text.slice(lastTextPos.current['text']);
-        lastTextPos.current['text'] = messageInfo?.text.length;
-        // 处理增量渲染
-        markdownRef.current?.push(diffText, 'answer');
-      }
-    }, [messageInfo?.text]);
-    useEffect(() => {
-      if (messageInfo?.think) {
-        //取出差量部分
-        const diffText = messageInfo?.think.slice(lastTextPos.current['think']);
-        lastTextPos.current['think'] = messageInfo?.think.length;
-        // 处理增量渲染
-        markdownRef.current?.push(diffText, 'thinking');
-      }
-    }, [messageInfo?.think]);
-
-    useEffect(() => {
-      if (messageInfo?.id) {
-        messageIdRef.current = messageInfo?.id as string;
-      }
-    }, [messageInfo?.id]);
-
-    useEffect(() => {
-      return () => {
-        markdownRef.current?.clear();
-        lastTextPos.current = {
-          text: 0,
-          think: 0,
-        };
-        messageIdRef.current = '';
-      };
-    }, []);
 
     const trim = useCallback((text: string) => {
       return text.replace(/^\s+|\s+$/g, '');
@@ -194,10 +152,9 @@ const ChatView: React.FC<ChatViewProps> = memo(
                   })}
                 >
                   <MarkdownRenderer
-                    key={`text-${messageIdRef.current}`}
-                    id={`text-${messageIdRef.current}`}
+                    key={`${messageIdRef.current}`}
+                    id={`${messageIdRef.current}`}
                     markdownRef={markdownRef}
-                    onCopy={handleCodeCopy}
                   />
                 </div>
               </div>

@@ -1,8 +1,5 @@
 import { MermaidBlock, rehypeMermaid } from 'ds-markdown-mermaid-plugin';
-import { createBuildInPlugin } from 'ds-markdown/plugins';
-
-const ID_PREFIX__ = '__ds-markdown__';
-const mermaidId = `${ID_PREFIX__}mermaid`;
+import { createBuildInPlugin, mermaidId } from 'ds-markdown/plugins';
 
 // 移除 useMemo，直接定义配置对象
 const mermaidConfig = {

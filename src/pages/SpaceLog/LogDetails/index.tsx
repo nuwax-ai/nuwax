@@ -16,49 +16,12 @@ import { LogDetailsProps } from '@/types/interfaces/space';
 import { CopyOutlined } from '@ant-design/icons';
 import { Empty, message } from 'antd';
 import classNames from 'classnames';
-// import markdownIt from 'markdown-it';
-// 方程式支持
-// import { encodeHTML } from '@/utils/common';
-// import markdownItKatexGpt from 'markdown-it-katex-gpt';
-// import markdownItMultimdTable from 'markdown-it-multimd-table';
 import React, { memo, useEffect, useState } from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import styles from './index.less';
 import { NodeDetails } from './NodeDetails';
 
 const cx = classNames.bind(styles);
-
-// const md = markdownIt({
-//   html: true, // 启用原始HTML解析
-//   xhtmlOut: true, // 使用 XHTML 兼容语法
-//   breaks: true, // 换行转换为 <br>
-//   linkify: true, // 自动识别链接
-//   typographer: true, // 优化排版
-//   quotes: '""\'\'', // 双引号和单引号都不替换
-// });
-
-// // 添加 KaTeX 支持
-// md.use(markdownItKatexGpt, {
-//   delimiters: [
-//     { left: '\\[', right: '\\]', display: true },
-//     { left: '\\(', right: '\\)', display: false },
-//     { left: '$$', right: '$$', display: false },
-//   ],
-// });
-
-// // 添加表格支持
-// md.use(markdownItMultimdTable, {
-//   multiline: true,
-//   rowspan: true,
-//   headerless: false,
-//   multibody: true,
-//   aotolabel: true,
-// });
-
-// // html自定义转义
-// md.renderer.rules.html_block = (tokens, idx) => {
-//   return encodeHTML(tokens[idx].content);
-// };
 
 /**
  * 日志详情组件
