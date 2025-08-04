@@ -354,12 +354,14 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
 
       const isPublished =
         data.shareStatus === EcosystemShareStatusEnum.PUBLISHED;
+      const isReviewing =
+        data.shareStatus === EcosystemShareStatusEnum.REVIEWING;
       const isDraft = data.shareStatus === EcosystemShareStatusEnum.DRAFT;
 
       return (
         <Space>
           <Button onClick={handleClose}>取消</Button>
-          {isEdit && isPublished && (
+          {isEdit && (isPublished || isReviewing) && (
             <Button
               onClick={() => {
                 if (data.uid) {
