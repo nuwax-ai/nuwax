@@ -758,7 +758,7 @@ export default function EcosystemTemplate() {
                 <EcosystemCard
                   key={config?.uid}
                   {...convertToTemplateCard(config)}
-                  onClick={() => handleCardClick(config)}
+                  onClick={async () => await handleCardClick(config)}
                 />
               ))}
             </div>

@@ -4,7 +4,7 @@ import {
   EcosystemDataTypeEnum,
   EcosystemShareStatusEnum,
 } from '@/types/interfaces/ecosystem';
-import { Card, Tag } from 'antd';
+import { Card, Spin, Tag } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import ActivatedIcon from './ActivatedIcon';
@@ -26,7 +26,7 @@ export interface EcosystemCardProps {
   /** 插件描述 */
   description: string;
   /** 点击卡片事件 */
-  onClick?: () => void;
+  onClick: () => Promise<void>;
   /** 自定义类名 */
   className?: string;
   /** 是否启用 */
@@ -102,12 +102,13 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
   }, [targetType, dataType]);
 
   // 点击卡片
-  const handleClickCard = () => {
+  const handleClickCard = async () => {
     setCardLoading(true);
-    onClick();
-    setTimeout(() => {
+    try {
+      await onClick?.();
+    } finally {
       setCardLoading(false);
-    }, 500);
+    }
   };
 
   return (
@@ -119,40 +120,42 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
       }}
       onClick={handleClickCard}
     >
-      <div className={cx(styles.cardContent)}>
-        <div className={cx(styles.iconWrapper)}>
-          <img
-            src={icon || defaultInfo.defaultImage}
-            alt={title}
-            className={styles.icon}
-            onError={(e) => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src = defaultInfo.defaultImage;
-            }}
-          />
-          {isEnabled && <ActivatedIcon />}
-        </div>
-        <div className={cx(styles.infoWrapper)}>
-          <div className={cx('flex', 'items-center')}>
-            <h3 className={cx(styles.title, 'text-ellipsis-1')}>{title}</h3>
-            {defaultInfo.tagIcon && (
-              <Tag
-                icon={defaultInfo.tagIcon}
-                bordered={false}
-                className={styles['tag-icon']}
-              >
-                {defaultInfo.name}
-              </Tag>
-            )}
+      <Spin spinning={cardLoading} delay={300}>
+        <div className={cx(styles.cardContent)}>
+          <div className={cx(styles.iconWrapper)}>
+            <img
+              src={icon || defaultInfo.defaultImage}
+              alt={title}
+              className={styles.icon}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = defaultInfo.defaultImage;
+              }}
+            />
+            {isEnabled && <ActivatedIcon />}
           </div>
-          <p className={cx(styles.author)}>来自{author}</p>
-          <p className={cx(styles.description, 'text-ellipsis-3')}>
-            {description}
-          </p>
+          <div className={cx(styles.infoWrapper)}>
+            <div className={cx('flex', 'items-center')}>
+              <h3 className={cx(styles.title, 'text-ellipsis-1')}>{title}</h3>
+              {defaultInfo.tagIcon && (
+                <Tag
+                  icon={defaultInfo.tagIcon}
+                  bordered={false}
+                  className={styles['tag-icon']}
+                >
+                  {defaultInfo.name}
+                </Tag>
+              )}
+            </div>
+            <p className={cx(styles.author)}>来自{author}</p>
+            <p className={cx(styles.description, 'text-ellipsis-3')}>
+              {description}
+            </p>
+          </div>
+          {shareStatus && <SharedIcon shareStatus={shareStatus} />}
+          {isNewVersion && <NewVersionIcon />}
         </div>
-        {shareStatus && <SharedIcon shareStatus={shareStatus} />}
-        {isNewVersion && <NewVersionIcon />}
-      </div>
+      </Spin>
     </Card>
   );
 };
