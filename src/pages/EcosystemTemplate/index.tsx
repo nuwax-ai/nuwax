@@ -586,7 +586,6 @@ export default function EcosystemTemplate() {
     try {
       result = await offlineClientConfig(uid);
     } catch (error) {
-      message.error('下线失败');
       return false;
     }
 
@@ -595,7 +594,6 @@ export default function EcosystemTemplate() {
       refreshPluginList();
       return true;
     }
-    message.error('下线失败');
     return false;
   };
   /**

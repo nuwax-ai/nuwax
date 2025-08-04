@@ -575,7 +575,6 @@ export default function EcosystemPlugin() {
       // 下线插件
       result = await offlineClientConfig(uid);
     } catch (error) {
-      message.error('下线失败');
       return false;
     }
     if (result) {
@@ -583,7 +582,6 @@ export default function EcosystemPlugin() {
       refreshPluginList();
       return true;
     }
-    message.error('下线失败');
     return false;
   };
 
