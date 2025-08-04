@@ -108,7 +108,7 @@ export default function EcosystemMcp() {
         name: keyword,
       },
       current,
-      pageSize: 20,
+      pageSize: 24,
     };
     runMcpList(params);
   };
@@ -215,13 +215,17 @@ export default function EcosystemMcp() {
   /**
    * 更新配置处理函数
    */
-  const handleUpdateAndEnable = async (values: any[]): Promise<boolean> => {
+  const handleUpdateAndEnable = async (
+    values: any[],
+    configJson?: string,
+  ): Promise<boolean> => {
     if (!selectedDetailInfo) return false;
     let result = null;
     try {
       result = await updateAndEnableClientConfig({
         uid: selectedDetailInfo.uid as string,
         configParamJson: JSON.stringify(values),
+        configJson,
       });
     } catch (error) {
       message.error('操作失败');

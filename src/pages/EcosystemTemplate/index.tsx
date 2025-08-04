@@ -1,7 +1,5 @@
 import EcosystemCard, { EcosystemCardProps } from '@/components/EcosystemCard';
-import PluginDetailDrawer, {
-  EcosystemDetailDrawerData,
-} from '@/components/EcosystemDetailDrawer';
+import PluginDetailDrawer from '@/components/EcosystemDetailDrawer';
 import SelectCategory from '@/components/EcosystemSelectCategory';
 import EcosystemShareModal, {
   EcosystemShareModalData,
@@ -32,6 +30,7 @@ import type {
   ClientConfigSaveReqDTO,
   ClientConfigUpdateDraftReqDTO,
   ClientConfigVo,
+  EcosystemDetailDrawerData,
   EcosystemTabTypeEnum,
   FetchPluginListParams,
   IPageClientConfigVo,

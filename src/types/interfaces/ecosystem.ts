@@ -394,7 +394,7 @@ export interface EcosystemDetailDrawerProps {
   /** 关闭抽屉回调 */
   onClose: () => void;
   /** 更新配置并启用回调 */
-  onUpdateAndEnable?: (values: any[]) => Promise<boolean>;
+  onUpdateAndEnable?: (values: any[], configJson?: string) => Promise<boolean>;
   /** 停用回调 */
   onDisable?: () => Promise<boolean>;
 }
@@ -426,7 +426,7 @@ export interface EcosystemDetailDrawerData {
   /** 本地配置信息(之前 版本) */
   localConfigParamJson?: string;
   /** 是否我的分享,0:否(生态市场获取的);1:是(我的分享)*/
-  ownedFlag?: OwnedFlagEnum;
+  ownedFlag?: EcosystemOwnedFlagEnum;
   /** 组件类型 */
   targetType: AgentComponentTypeEnum;
 }

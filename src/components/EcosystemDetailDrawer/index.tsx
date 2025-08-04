@@ -1,4 +1,3 @@
-import copyImage from '@/assets/images/copy.png';
 import { COMPONENT_LIST } from '@/constants/ecosystem.constants';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { CloseOutlined, InfoCircleOutlined } from '@ant-design/icons';
@@ -8,7 +7,6 @@ import {
   Drawer,
   Form,
   Input,
-  message,
   Tooltip,
   Typography,
 } from 'antd';
@@ -18,23 +16,19 @@ import ActivatedIcon from '../EcosystemCard/ActivatedIcon';
 import styles from './index.less';
 // 方程式支持
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { CodeLangEnum } from '@/types/enums/plugin';
 import {
   EcosystemDataTypeEnum,
   EcosystemDetailDrawerProps,
+  EcosystemOwnedFlagEnum,
 } from '@/types/interfaces/ecosystem';
 import { encodeHTML } from '@/utils/common';
-import CopyToClipboard from 'react-copy-to-clipboard';
+import CodeEditor from '../CodeEditor';
 import { PureMarkdownRenderer } from '../MarkdownRenderer';
-import TooltipIcon from '../TooltipIcon';
 
 const cx = classNames.bind(styles);
 
 const { Title, Paragraph } = Typography;
-
-enum OwnedFlagEnum {
-  NO = 0,
-  YES = 1,
-}
 
 const DEFAULT_ICON =
   'https://agent-1251073634.cos.ap-chengdu.myqcloud.com/store/b5fdb62e8b994a418d0fdfae723ee827.png';
@@ -98,9 +92,15 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     ownedFlag,
     targetType,
   } = data || {};
+  // 配置参数
   const [configParam, setConfigParam] = useState<any>([]);
+  // 是否显示工具列表
   const [showToolSection, setShowToolSection] = useState(false);
+  // 是否显示MCP服务配置
+  const [showMcpConfig, setShowMcpConfig] = useState(false);
+  // 是否需要更新按钮
   const [needUpdateButton, setNeedUpdateButton] = useState(false);
+  // 目标类型信息
   const [targetInfo, setTargetInfo] = useState<{
     defaultImage: string;
     text: string;
@@ -110,8 +110,11 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   });
   // MCP服务配置
   const [serverConfig, setServerConfig] = useState<string>('');
+  // 停用按钮loading
   const [disableLoading, setDisableLoading] = useState(false);
+  // 启用按钮loading
   const [enableLoading, setEnableLoading] = useState(false);
+  // 表单
   const [form] = Form.useForm();
 
   // 监听抽屉关闭，重置表单
@@ -119,6 +122,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     if (!visible) {
       form.resetFields();
       setShowToolSection(false);
+      setShowMcpConfig(false);
       setNeedUpdateButton(false);
     }
   }, [visible, form]);
@@ -153,6 +157,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   }, [targetType, dataType]);
 
   useEffect(() => {
+    // 如果configJson存在，则解析configJson
     if (configJson) {
       try {
         const _configJson = JSON.parse(configJson);
@@ -173,6 +178,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   };
 
   useEffect(() => {
+    // 如果configParamJson存在，则解析configParamJson
     if (configParamJson) {
       const configParam = JSON.parse(configParamJson);
       if (configParam.length > 0) {
@@ -188,7 +194,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
           };
         });
         setConfigParam(mergedConfigParam);
-        form.resetFields();
+        // form.resetFields();
         form.setFieldsValue(
           mergedConfigParam.reduce((acc: any, item: any) => {
             acc[item.name] = item.value;
@@ -202,8 +208,31 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
       setConfigParam([]);
     };
   }, [configParamJson]);
+
+  // 启用
   const handleEnable = async () => {
-    if (configParam && configParam.length > 0) {
+    // 如果dataType为MCP，且configJson存在，则更新MCP服务配置
+    if (dataType === EcosystemDataTypeEnum.MCP && configJson) {
+      if (!showMcpConfig) {
+        setShowMcpConfig(true);
+        return false;
+      }
+      // 更新MCP服务配置
+      const _configJson = JSON.parse(configJson);
+      _configJson.mcpConfig.serverConfig = serverConfig;
+      try {
+        const result = await onUpdateAndEnable?.(
+          [],
+          JSON.stringify(_configJson),
+        );
+        return result;
+      } catch (error) {
+        console.error('更新配置失败:', error);
+      }
+      return false;
+    }
+    // 如果配置参数存在，则显示工具列表
+    else if (configParam && configParam.length > 0) {
       if (!showToolSection) {
         setShowToolSection(true);
         return false;
@@ -239,12 +268,15 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   }, [isNewVersion, isEnabled, configParam]);
 
   if (!data) return null;
+
+  // 渲染操作按钮
   const renderButton = () => {
-    if (ownedFlag === OwnedFlagEnum.YES) {
+    if (ownedFlag === EcosystemOwnedFlagEnum.YES) {
       return <></>;
     }
     return (
       <>
+        {/* 如果需要更新，则显示更新按钮 */}
         {needUpdateButton && (
           <Button
             type="primary"
@@ -276,7 +308,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
               ? showToolSection
                 ? '更新配置'
                 : '更新'
-              : showToolSection
+              : showToolSection || showMcpConfig
               ? '保存配置并启用'
               : '启用'}
           </Button>
@@ -349,6 +381,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
             <div className={cx(styles.subtitle)}>来自{author}</div>
           </div>
         </div>
+        {/* 关闭按钮 */}
         <Button
           type="text"
           icon={<CloseOutlined />}
@@ -396,23 +429,22 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
         )}
       </div>
       {/* 如果是MCP，则显示服务配置 */}
-      {serverConfig && (
-        <div className={cx(styles['server-config-wrapper'])}>
-          <CopyToClipboard
-            text={serverConfig}
-            onCopy={() => {
-              message.success('复制成功');
+      {dataType === EcosystemDataTypeEnum.MCP && serverConfig && (
+        <div
+          className={cx(
+            styles.toolSection,
+            showMcpConfig && styles.enabledToolSection,
+          )}
+        >
+          <CodeEditor
+            codeLanguage={CodeLangEnum.JSON}
+            value={serverConfig}
+            onChange={(value) => {
+              setServerConfig(value);
             }}
-          >
-            <TooltipIcon
-              title="复制"
-              icon={
-                <img className={styles['copy-img']} src={copyImage} alt="" />
-              }
-              className={styles['copy-box']}
-            />
-          </CopyToClipboard>
-          <pre className={cx(styles['server-config'])}>{serverConfig}</pre>
+            codeOptimizeVisible={false}
+            height="200px"
+          />
         </div>
       )}
       {/* 操作按钮 */}

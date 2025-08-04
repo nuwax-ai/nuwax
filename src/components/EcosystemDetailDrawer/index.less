@@ -194,10 +194,10 @@
   left: 0;
   bottom: -999px;
   transition: bottom 0.3s ease-in-out;
-}
 
-.enabledToolSection {
-  bottom: 0;
+  &.enabledToolSection {
+    bottom: 0;
+  }
 }
 
 .newVersion {
@@ -218,37 +218,4 @@
   height: 42px;
   border-radius: 8px;
   object-fit: cover;
-}
-
-.server-config-wrapper {
-  position: relative;
-  padding: 0 24px;
-
-  .copy-box {
-    position: absolute;
-    right: 30px;
-    top: 6px;
-    cursor: pointer;
-
-    &:hover {
-      opacity: 0.6;
-    }
-
-    .copy-img {
-      width: 14px;
-      height: 14px;
-    }
-  }
-
-  .server-config {
-    max-height: 400px;
-    line-height: 20px;
-    color: @GRAY01;
-    font-size: 14px;
-    padding: 10px;
-    background-color: @BLANK04;
-    border-radius: 10px;
-    margin: 0;
-    overflow: auto;
-  }
 }
