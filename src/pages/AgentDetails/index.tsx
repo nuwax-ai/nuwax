@@ -274,6 +274,7 @@ const AgentDetails: React.FC = () => {
         {/*会话输入框*/}
         <ChatInputHome
           className={cx(styles['chat-input-container'])}
+          key={`agent-details-${agentId}`}
           onEnter={handleMessageSend}
           isClearInput={false}
           wholeDisabled={wholeDisabled}

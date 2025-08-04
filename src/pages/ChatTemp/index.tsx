@@ -835,6 +835,7 @@ const ChatTemp: React.FC = () => {
         <div className={cx(styles['chat-input-container'])}>
           {/*会话输入框*/}
           <ChatInputHome
+            key={`chat-temp-${chatKey}`}
             className={cx(styles['input-container'])}
             clearDisabled={!messageList?.length}
             onEnter={handleMessageSend}

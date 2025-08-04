@@ -51,6 +51,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     loadingStopConversation,
     getCurrentConversationRequestId,
     isConversationActive,
+    checkConversationActive,
   } = useModel('conversationInfo');
 
   // 文档
@@ -202,6 +203,13 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     }
     return '点击停止当前会话';
   };
+
+  useEffect(() => {
+    return () => {
+      checkConversationActive([]);
+      setUploadFiles([]);
+    };
+  }, []);
 
   return (
     <div className={cx('w-full', 'relative', className)}>

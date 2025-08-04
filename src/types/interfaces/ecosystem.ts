@@ -422,6 +422,8 @@ export interface EcosystemDetailDrawerData {
   dataType?: EcosystemDataTypeEnum;
   /** 服务端MCP配置信息 */
   serverConfigJson?: string;
+  /** 配置信息 */
+  configJson?: string;
   /** 配置参数信息 */
   configParamJson: string;
   /** 本地配置信息(之前 版本) */

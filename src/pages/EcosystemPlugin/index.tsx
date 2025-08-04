@@ -217,6 +217,7 @@ export default function EcosystemPlugin() {
       // isNewVersion: true,
       isNewVersion: config.isNewVersion || false,
       author: config.author || '',
+      dataType: config.dataType as EcosystemDataTypeEnum,
       ownedFlag: config.ownedFlag,
       targetType: config.targetType as AgentComponentTypeEnum,
       configParamJson: config.serverConfigParamJson,
@@ -641,7 +642,7 @@ export default function EcosystemPlugin() {
                 <EcosystemCard
                   key={config?.uid}
                   {...convertToPluginCard(config)}
-                  onClick={() => handleCardClick(config)}
+                  onClick={async () => await handleCardClick(config)}
                 />
               ))}
             </div>

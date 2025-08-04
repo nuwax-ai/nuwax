@@ -53,6 +53,7 @@ const SelectComponent: React.FC<CreatedProp> = ({
   tabs = buttonList,
   addComponents,
   hideTop,
+  disableCollect = false,
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
   const { spaceId } = useParams();
@@ -456,26 +457,27 @@ const SelectComponent: React.FC<CreatedProp> = ({
                     <span className="margin-left-6">
                       发布于{getTime(item.created!)}
                     </span>
-                    {selected.key !== AgentComponentTypeEnum.Knowledge && (
-                      <>
-                        <Divider type="vertical" />
-                        {item.collect && (
-                          <StarFilled
-                            className="collect-star icon-margin"
-                            onClick={() => collectAndUnCollect(item)}
-                          />
-                        )}
-                        {!item.collect && (
-                          <StarOutlined
-                            className="icon-margin"
-                            onClick={() => collectAndUnCollect(item)}
-                          />
-                        )}
-                        <span className="margin-left-6">
-                          {item.statistics ? item.statistics.collectCount : 0}
-                        </span>
-                      </>
-                    )}
+                    {selected.key !== AgentComponentTypeEnum.Knowledge &&
+                      !disableCollect && (
+                        <>
+                          <Divider type="vertical" />
+                          {item.collect && (
+                            <StarFilled
+                              className="collect-star icon-margin"
+                              onClick={() => collectAndUnCollect(item)}
+                            />
+                          )}
+                          {!item.collect && (
+                            <StarOutlined
+                              className="icon-margin"
+                              onClick={() => collectAndUnCollect(item)}
+                            />
+                          )}
+                          <span className="margin-left-6">
+                            {item.statistics ? item.statistics.collectCount : 0}
+                          </span>
+                        </>
+                      )}
                   </div>
                 </div>
               </div>

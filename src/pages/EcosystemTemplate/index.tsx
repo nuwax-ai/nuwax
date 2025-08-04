@@ -75,7 +75,16 @@ export default function EcosystemTemplate() {
   const [editingPlugin, setEditingPlugin] = useState<ClientConfigVo | null>(
     null,
   );
-  const selectTargetTypeRef = useRef<string>('');
+  const selectTargetTypeRef = useRef<{
+    targetType: string;
+    categoryCode: string;
+    shareStatus: number;
+  }>({
+    targetType: '',
+    categoryCode: '',
+    shareStatus: -1,
+  });
+
   const [selectComponentProps, setSelectComponentProps] = useState<{
     checkTag: AgentComponentTypeEnum;
     tabs: { label: string; key: AgentComponentTypeEnum }[];
@@ -119,8 +128,6 @@ export default function EcosystemTemplate() {
         keyword = '',
         page = 1,
         pageSize = PAGE_SIZE,
-        shareStatus = -1,
-        categoryCode = '',
       }: FetchPluginListParams = {} as FetchPluginListParams,
     ) => {
       setLoading(true);
@@ -141,15 +148,13 @@ export default function EcosystemTemplate() {
           default:
             subTabType = EcosystemSubTabTypeEnum.ALL;
         }
-
+        const { targetType, categoryCode, shareStatus } =
+          selectTargetTypeRef.current;
         const params = {
           queryFilter: {
             dataType: EcosystemDataTypeEnum.TEMPLATE, // 只查询模板类型
             subTabType,
-            targetType:
-              selectTargetTypeRef.current === ''
-                ? undefined
-                : selectTargetTypeRef.current,
+            targetType: targetType === '' ? undefined : targetType,
             name: keyword || undefined,
             shareStatus: shareStatus === -1 ? undefined : shareStatus,
             categoryCode: categoryCode || undefined,
@@ -195,10 +200,18 @@ export default function EcosystemTemplate() {
     });
   };
 
+  const handleResetQueryFilter = useCallback(() => {
+    selectTargetTypeRef.current['categoryCode'] = '';
+    selectTargetTypeRef.current['targetType'] = '';
+    selectTargetTypeRef.current['shareStatus'] = -1;
+    setSearchKeyword('');
+  }, []);
+
   /**
    * 标签页切换时重新获取数据
    */
   useEffect(() => {
+    handleResetQueryFilter();
     refreshPluginList();
   }, [activeTab]);
 
@@ -235,6 +248,7 @@ export default function EcosystemTemplate() {
       description: config.description || '暂无描述',
       isNewVersion: config.isNewVersion || false,
       author: config.author || '',
+      dataType: config.dataType as EcosystemDataTypeEnum,
       targetType: config.targetType as AgentComponentTypeEnum,
       configParamJson: config.serverConfigParamJson,
       localConfigParamJson: config.localConfigParamJson,
@@ -325,6 +339,7 @@ export default function EcosystemTemplate() {
   };
 
   const refreshPluginListAndReset = () => {
+    handleResetQueryFilter();
     refreshPluginList();
     setShareModalVisible(false);
     setEditingPlugin(null);
@@ -416,17 +431,17 @@ export default function EcosystemTemplate() {
         default:
           subTabType = EcosystemSubTabTypeEnum.ALL;
       }
-
+      const { targetType, categoryCode, shareStatus } =
+        selectTargetTypeRef.current;
       // 获取数据的API调用
       const response = await getClientConfigList({
         queryFilter: {
           dataType: EcosystemDataTypeEnum.TEMPLATE,
           subTabType,
-          targetType:
-            selectTargetTypeRef.current === ''
-              ? undefined
-              : selectTargetTypeRef.current,
+          targetType: targetType === '' ? undefined : targetType,
           name: searchKeyword || undefined,
+          categoryCode: categoryCode === '' ? undefined : categoryCode,
+          shareStatus: shareStatus === -1 ? undefined : shareStatus,
         },
         current: page,
         pageSize,
@@ -592,20 +607,20 @@ export default function EcosystemTemplate() {
     setShareModalData(null);
     setAddComponents([]);
   };
+
   const handleShareStatusChange = (value: number) => {
-    refreshPluginList({
-      shareStatus: value,
-    });
+    selectTargetTypeRef.current['shareStatus'] = value;
+    refreshPluginList();
   };
 
   const handleCategoryChange = (value: string) => {
-    refreshPluginList({
-      categoryCode: value === '' ? undefined : value,
-    });
+    selectTargetTypeRef.current['categoryCode'] = value;
+    refreshPluginList();
   };
 
   const handleTargetTypeChange = (value: string) => {
-    selectTargetTypeRef.current = value;
+    selectTargetTypeRef.current['targetType'] = value;
+    selectTargetTypeRef.current['categoryCode'] = '';
     refreshPluginList();
   };
 
@@ -635,7 +650,7 @@ export default function EcosystemTemplate() {
                 value: 4,
               },
             ]}
-            defaultValue={-1}
+            value={selectTargetTypeRef.current.shareStatus}
             onChange={(value) => handleShareStatusChange(value)}
             className={cx(styles.select)}
           />
@@ -674,12 +689,12 @@ export default function EcosystemTemplate() {
             },
           ]}
           style={{ width: 100 }}
-          defaultValue={''}
+          value={selectTargetTypeRef.current.targetType}
           onChange={(value: string) => handleTargetTypeChange(value)}
         />
-        {selectTargetTypeRef.current && (
+        {selectTargetTypeRef.current.targetType && (
           <SelectCategory
-            targetType={selectTargetTypeRef.current}
+            targetType={selectTargetTypeRef.current.targetType}
             onChange={(value) => handleCategoryChange(value)}
           />
         )}
@@ -741,7 +756,7 @@ export default function EcosystemTemplate() {
                 <EcosystemCard
                   key={config?.uid}
                   {...convertToTemplateCard(config)}
-                  onClick={() => handleCardClick(config)}
+                  onClick={async () => await handleCardClick(config)}
                 />
               ))}
             </div>
@@ -826,6 +841,7 @@ export default function EcosystemTemplate() {
       <SelectComponent
         onAdded={onSelectedComponent}
         open={show}
+        disableCollect={true}
         onCancel={() => setShow(false)}
         addComponents={addComponents}
         {...selectComponentProps}

@@ -1,4 +1,7 @@
-import { COMPONENT_LIST } from '@/constants/ecosystem.constants';
+import {
+  COMPONENT_LIST,
+  ECO_TYPE_TITLE_MAP,
+} from '@/constants/ecosystem.constants';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { CloseOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -21,6 +24,7 @@ import {
   EcosystemDataTypeEnum,
   EcosystemDetailDrawerProps,
   EcosystemOwnedFlagEnum,
+  type EcosystemDetailDrawerData,
 } from '@/types/interfaces/ecosystem';
 import { encodeHTML } from '@/utils/common';
 import CodeEditor from '../CodeEditor';
@@ -331,7 +335,9 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
                 title={
                   dataType === EcosystemDataTypeEnum.MCP
                     ? `停用后，官方服务列表中将不可见`
-                    : `停用后，广场${targetInfo.text}中将不可见`
+                    : `停用后，广场${
+                        dataType ? ECO_TYPE_TITLE_MAP[dataType] : ''
+                      }中将不可见`
                 }
               >
                 <InfoCircleOutlined />
@@ -355,6 +361,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
       className={cx(styles.pluginDetailDrawer)}
       maskClassName={cx(styles.resetMask)}
       rootClassName={cx(styles.resetRoot)}
+      destroyOnHidden={true}
     >
       {/* 抽屉头部 */}
       <div className={cx(styles.drawerHeader)}>
@@ -454,3 +461,4 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
 };
 
 export default EcosystemDetailDrawer;
+export type { EcosystemDetailDrawerData };

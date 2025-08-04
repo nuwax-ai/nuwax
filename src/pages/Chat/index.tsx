@@ -375,7 +375,7 @@ const Chat: React.FC = () => {
         </div>
         {/*会话输入框*/}
         <ChatInputHome
-          key={id}
+          key={`chat-${id}-${agentId}`}
           className={cx(styles['chat-input-container'])}
           onEnter={handleMessageSend}
           visible={showScrollBtn}

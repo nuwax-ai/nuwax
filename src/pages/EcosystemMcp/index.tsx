@@ -338,7 +338,7 @@ export default function EcosystemMcp() {
                   <EcosystemCard
                     key={config?.uid}
                     {...convertToCard(config)}
-                    onClick={() => handleCardClick(config)}
+                    onClick={async () => await handleCardClick(config)}
                   />
                 ))}
               </div>
