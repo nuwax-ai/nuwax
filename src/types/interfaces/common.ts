@@ -424,7 +424,6 @@ export interface UploadAvatarProps {
 
 // 上传导入配置
 export interface UploadImportConfigProps {
-  className?: string;
   spaceId: number;
   onUploadSuccess?: () => void;
   beforeUpload?: (file: FileType) => void;
