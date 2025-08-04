@@ -6,7 +6,7 @@ import {
   apiPublishedWorkflowInfo,
 } from '@/services/plugin';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { BindConfigWithSub } from '@/types/interfaces/common';
+import { BindConfigWithSub, CreatedNodeItem } from '@/types/interfaces/common';
 import {
   EcosystemDataTypeEnum,
   EcosystemShareStatusEnum,
@@ -111,6 +111,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
     name: '插件',
     targetType: AgentComponentTypeEnum.Plugin,
   });
+  const [pluginError, setPluginError] = useState(false);
   const [disabledSkill, setDisabledSkill] = useState(false);
 
   // 使用 useRef 保存当前的 configParam，避免依赖循环
@@ -218,8 +219,11 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
       if (result) {
         handleClose();
       }
-    } catch (error) {
-      console.log('保存失败', error);
+    } catch (error: any) {
+      const hasPluginError =
+        error?.errorFields?.some((item: any) => item.name.includes('plugin')) ||
+        false;
+      setPluginError(hasPluginError);
     }
   };
 
@@ -449,15 +453,25 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                 const pluginValue = getFieldValue('plugin');
                 if (!pluginValue) {
                   return (
-                    <div
-                      className={cx(styles.pluginItemStyle)}
-                      style={{ marginBottom: 24 }}
-                      onClick={() => {
-                        onAddComponent();
-                      }}
-                    >
-                      {`请先选择${suffixInfo.name}`}
-                    </div>
+                    <>
+                      <div
+                        className={cx(styles.pluginItemStyle)}
+                        style={{ marginBottom: pluginError ? 0 : 24 }}
+                        onClick={() => {
+                          onAddComponent();
+                        }}
+                      >
+                        {`请先选择${suffixInfo.name}`}
+                      </div>
+                      {pluginError && (
+                        <div
+                          className={cx(styles.pluginError)}
+                          style={{ marginBottom: 24 }}
+                        >
+                          请先选择{suffixInfo.name}
+                        </div>
+                      )}
+                    </>
                   );
                 }
                 return (
@@ -480,7 +494,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                           targetType: pluginValue.targetType || '',
                           type: pluginValue.targetType,
                           statistics: null,
-                        },
+                        } as CreatedNodeItem,
                       ]}
                       disabled={disabledSkill}
                       skillName={'skillComponentConfigs'}
