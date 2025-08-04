@@ -1,9 +1,5 @@
-import SharedRelease from '@/assets/ecosystem/shared-release.png';
 import { EcosystemShareStatusEnum } from '@/types/interfaces/ecosystem';
 // import SharedDraft from '@/assets/ecosystem/shared-draft.png';
-import SharedOffline from '@/assets/ecosystem/shared-offline.png';
-import SharedReviewing from '@/assets/ecosystem/shared-reviewing.png';
-import { Image } from 'antd';
 import classNames from 'classnames';
 import styles from './index.less';
 const cx = classNames.bind(styles);
@@ -15,17 +11,17 @@ export default function SharedIcon({
   const renderIcon = (shareStatus: EcosystemShareStatusEnum) => {
     switch (shareStatus) {
       case EcosystemShareStatusEnum.PUBLISHED:
-        return <Image preview={false} src={SharedRelease} alt="已发布" />;
+        return <span style={{ color: 'green' }}>已发布</span>;
       case EcosystemShareStatusEnum.REVIEWING:
-        return <Image preview={false} src={SharedReviewing} alt="审核中" />;
+        return <span style={{ color: 'red' }}>审核中</span>;
       case EcosystemShareStatusEnum.OFFLINE:
-        return <Image preview={false} src={SharedOffline} alt="已下线" />;
+        return <span>已下线</span>;
       case EcosystemShareStatusEnum.DRAFT:
-        return null;
+        return <span>草稿</span>;
       case EcosystemShareStatusEnum.REJECTED:
-        return null;
+        return <span style={{ color: 'red' }}>已驳回</span>;
       default:
-        return null;
+        return <span>未知</span>;
     }
   };
   return <div className={cx(styles.sharedIcon)}>{renderIcon(shareStatus)}</div>;
