@@ -643,7 +643,7 @@ export default function EcosystemPlugin() {
                 <EcosystemCard
                   key={config?.uid}
                   {...convertToPluginCard(config)}
-                  onClick={() => handleCardClick(config)}
+                  onClick={async () => await handleCardClick(config)}
                 />
               ))}
             </div>
