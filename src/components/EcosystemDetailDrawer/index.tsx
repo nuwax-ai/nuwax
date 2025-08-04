@@ -84,7 +84,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     isEnabled,
     publishDoc,
     dataType,
-    configJson,
+    serverConfigJson,
     configParamJson,
     localConfigParamJson,
     isNewVersion,
@@ -157,16 +157,16 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   }, [targetType, dataType]);
 
   useEffect(() => {
-    // 如果configJson存在，则解析configJson
-    if (configJson) {
+    // 如果服务端mcp配置serverConfigJson存在，则解析serverConfigJson
+    if (serverConfigJson) {
       try {
-        const _configJson = JSON.parse(configJson);
+        const _configJson = JSON.parse(serverConfigJson);
         setServerConfig(_configJson?.mcpConfig?.serverConfig || '');
       } catch (error) {
         console.error('解析配置失败:', error);
       }
     }
-  }, [configJson]);
+  }, [serverConfigJson]);
 
   // 使用自定义 Hook 处理抽屉打开时的滚动条
   useDrawerScroll(visible);
@@ -212,13 +212,13 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   // 启用
   const handleEnable = async () => {
     // 如果dataType为MCP，且configJson存在，则更新MCP服务配置
-    if (dataType === EcosystemDataTypeEnum.MCP && configJson) {
+    if (dataType === EcosystemDataTypeEnum.MCP && serverConfigJson) {
       if (!showMcpConfig) {
         setShowMcpConfig(true);
         return false;
       }
       // 更新MCP服务配置
-      const _configJson = JSON.parse(configJson);
+      const _configJson = JSON.parse(serverConfigJson);
       _configJson.mcpConfig.serverConfig = serverConfig;
       try {
         const result = await onUpdateAndEnable?.(

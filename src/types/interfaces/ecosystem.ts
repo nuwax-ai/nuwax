@@ -168,6 +168,7 @@ export interface ClientConfigVo {
   configParamJson?: any;
   /** 本地配置参数json */
   localConfigParamJson?: any;
+  serverConfigJson?: any;
   /** 配置json，存储插件的配置信息如果有其他额外的信息保存放这里 */
   configJson?: any;
   /** 图标图片地址 */
@@ -419,8 +420,8 @@ export interface EcosystemDetailDrawerData {
   isNewVersion?: boolean;
   /** 数据类型 */
   dataType?: EcosystemDataTypeEnum;
-  /** 配置信息 */
-  configJson?: string;
+  /** 服务端MCP配置信息 */
+  serverConfigJson?: string;
   /** 配置参数信息 */
   configParamJson: string;
   /** 本地配置信息(之前 版本) */
