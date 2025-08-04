@@ -146,6 +146,7 @@ const Home: React.FC = () => {
     >
       <h2 className={cx(styles.title)}>嗨，有什么我可以帮忙的吗？</h2>
       <ChatInputHome
+        key={`home-${tenantConfigInfo?.defaultAgentId}`}
         className={cx(styles.textarea)}
         onEnter={handleEnter}
         isClearInput={false}

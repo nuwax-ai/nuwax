@@ -321,6 +321,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
         </div>
         {/*会话输入框*/}
         <ChatInputHome
+          key={`edit-agent-${agentId}`}
           clearDisabled={!messageList?.length}
           onEnter={handleMessageSend}
           onClear={handleClear}
