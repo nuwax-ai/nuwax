@@ -6,7 +6,7 @@ import type {
 } from '@/types/interfaces/common';
 import { Button, message, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useState } from 'react';
 
 const cx = classNames;
 
@@ -19,11 +19,15 @@ const UploadImportConfig: React.FC<UploadImportConfigProps> = ({
   onUploadSuccess,
   beforeUpload,
 }) => {
+  const [loading, setLoading] = useState(false);
+
   const handleChange: UploadProps['onChange'] = (info) => {
     if (info.file.status === 'uploading') {
+      setLoading(true);
       return;
     }
     if (info.file.status === 'done') {
+      setLoading(false);
       const code = info.file.response?.code;
       if (code === SUCCESS_CODE) {
         // Get this url from response in real world.
@@ -32,6 +36,9 @@ const UploadImportConfig: React.FC<UploadImportConfigProps> = ({
       } else {
         message.warning(info.file.response?.message);
       }
+    } else if (info.file.status === 'error') {
+      setLoading(false);
+      message.error(`${info.file.name} 上传失败`);
     }
   };
 
@@ -66,7 +73,7 @@ const UploadImportConfig: React.FC<UploadImportConfigProps> = ({
       showUploadList={false}
       beforeUpload={beforeUpload || beforeUploadDefault}
     >
-      <Button>导入配置</Button>
+      <Button loading={loading}>导入配置</Button>
     </Upload>
   );
 };
