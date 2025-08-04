@@ -158,11 +158,14 @@ export default () => {
 
   // 检查会话是否正在进行中（有消息正在处理）
   const checkConversationActive = (messages: MessageInfo[]) => {
-    const hasActiveMessage = messages.some(
-      (message) =>
-        message.status === MessageStatusEnum.Loading ||
-        message.status === MessageStatusEnum.Incomplete,
-    );
+    const hasActiveMessage =
+      (messages?.length &&
+        messages.some(
+          (message) =>
+            message.status === MessageStatusEnum.Loading ||
+            message.status === MessageStatusEnum.Incomplete,
+        )) ||
+      false;
     setIsConversationActive(hasActiveMessage);
   };
 
