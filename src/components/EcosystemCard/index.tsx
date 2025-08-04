@@ -104,7 +104,7 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
   // 点击卡片
   const handleClickCard = () => {
     setCardLoading(true);
-    onClick();
+    onClick?.();
     setTimeout(() => {
       setCardLoading(false);
     }, 500);

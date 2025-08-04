@@ -3,6 +3,7 @@ import EcosystemDetailDrawer from '@/components/EcosystemDetailDrawer';
 import InfiniteScrollDiv from '@/components/InfiniteScrollDiv';
 import Loading from '@/components/Loading';
 import {
+  ECO_MCP_CATEGORY_OPTIONS,
   ECO_MCP_TAB_ITEMS,
   TabTypeEnum,
 } from '@/constants/ecosystem.constants';
@@ -14,6 +15,7 @@ import {
 } from '@/services/ecosystem';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
+  ClientConfigQueryRequest,
   ClientConfigVo,
   EcosystemDataTypeEnum,
   EcosystemDetailDrawerData,
@@ -22,7 +24,7 @@ import {
   EcosystemUseStatusEnum,
 } from '@/types/interfaces/ecosystem';
 import { Page } from '@/types/interfaces/request';
-import { Empty, Input, message, Tabs } from 'antd';
+import { Empty, Input, message, Select, Tabs } from 'antd';
 import classNames from 'classnames';
 import { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -39,6 +41,9 @@ const { Search } = Input;
 export default function EcosystemMcp() {
   // 搜索关键词
   const [searchKeyword, setSearchKeyword] = useState<string>('');
+  const [categoryCode, setCategoryCode] = useState<string>(
+    ECO_MCP_CATEGORY_OPTIONS[0].value,
+  );
   const [activeTab, setActiveTab] = useState<EcosystemTabTypeEnum>(
     EcosystemTabTypeEnum.ALL,
   );
@@ -87,6 +92,7 @@ export default function EcosystemMcp() {
     current: number = 1,
     type: EcosystemTabTypeEnum = activeTab,
     keyword: string = searchKeyword,
+    category: string = categoryCode,
   ) => {
     // 根据标签页类型确定查询参数
     let subTabType: number;
@@ -100,13 +106,20 @@ export default function EcosystemMcp() {
       default:
         subTabType = EcosystemSubTabTypeEnum.ALL;
     }
+
+    const queryFilter: ClientConfigQueryRequest = {
+      dataType: EcosystemDataTypeEnum.MCP,
+      subTabType,
+      // 名称，模糊查询
+      name: keyword,
+    };
+
     const params = {
-      queryFilter: {
-        dataType: EcosystemDataTypeEnum.MCP,
-        subTabType,
-        // 名称，模糊查询
-        name: keyword,
-      },
+      // 如果分类为全部，则不传分类编码
+      queryFilter:
+        category === 'All'
+          ? queryFilter
+          : { ...queryFilter, categoryCode: category },
       current,
       pageSize: 24,
     };
@@ -137,6 +150,13 @@ export default function EcosystemMcp() {
     setActiveTab(_value);
     setLoading(true);
     handleMcpList(1, _value);
+  };
+
+  // 分类切换
+  const handleChangeCategory = (value: string) => {
+    setCategoryCode(value);
+    setLoading(true);
+    handleMcpList(1, activeTab, searchKeyword, value);
   };
 
   /**
@@ -283,6 +303,12 @@ export default function EcosystemMcp() {
             activeKey={activeTab}
             items={ECO_MCP_TAB_ITEMS}
             onChange={handleTabChange}
+          />
+          <Select
+            options={ECO_MCP_CATEGORY_OPTIONS}
+            value={categoryCode}
+            onChange={(value) => handleChangeCategory(value)}
+            className={cx(styles['select-category'])}
           />
           <Search
             className={cx(styles.searchInput)}
