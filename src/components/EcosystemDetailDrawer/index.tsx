@@ -131,18 +131,6 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     }
   }, [visible, form]);
 
-  // 监听插件数据变化，设置表单初始值
-  useEffect(() => {
-    if (visible && data?.configParamJson) {
-      try {
-        const configParams = JSON.parse(data.configParamJson);
-        form.setFieldsValue(configParams);
-      } catch (error) {
-        console.error('解析配置参数失败:', error);
-      }
-    }
-  }, [visible, data, form]);
-
   useEffect(() => {
     // 如果targetType为空，则根据dataType判断，因为dataType为MCP时，targetType可能为空
     const type =
@@ -198,20 +186,22 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
           };
         });
         setConfigParam(mergedConfigParam);
-        // form.resetFields();
-        form.setFieldsValue(
-          mergedConfigParam.reduce((acc: any, item: any) => {
-            acc[item.name] = item.value;
-            return acc;
-          }, {}),
-        );
+        setTimeout(() => {
+          form?.resetFields();
+          form.setFieldsValue(
+            mergedConfigParam.reduce((acc: any, item: any) => {
+              acc[item.name] = item.value;
+              return acc;
+            }, {}),
+          );
+        }, 0);
       }
     }
     return () => {
       form?.resetFields();
       setConfigParam([]);
     };
-  }, [configParamJson]);
+  }, [configParamJson, localConfigParamJson]);
 
   // 启用
   const handleEnable = async () => {
