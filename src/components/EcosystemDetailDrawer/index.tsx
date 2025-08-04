@@ -330,6 +330,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
       className={cx(styles.pluginDetailDrawer)}
       maskClassName={cx(styles.resetMask)}
       rootClassName={cx(styles.resetRoot)}
+      destroyOnHidden={true}
     >
       {/* 抽屉头部 */}
       <div className={cx(styles.drawerHeader)}>
