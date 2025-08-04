@@ -15,7 +15,10 @@ import {
 } from '@/constants/images.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { EcosystemMarketEnum } from '@/types/enums/ecosystemMarket';
-import { EcosystemTabTypeEnum } from '@/types/interfaces/ecosystem';
+import {
+  EcosystemDataTypeEnum,
+  EcosystemTabTypeEnum,
+} from '@/types/interfaces/ecosystem';
 import { TabsProps } from 'antd';
 
 // 生态市场应用列表（layout二级菜单）
@@ -128,3 +131,9 @@ export const ECO_MCP_TAB_ITEMS: TabsProps['items'] = [
     label: '已启用',
   },
 ];
+
+export const ECO_TYPE_TITLE_MAP = {
+  [EcosystemDataTypeEnum.PLUGIN]: '插件',
+  [EcosystemDataTypeEnum.TEMPLATE]: '模板',
+  [EcosystemDataTypeEnum.MCP]: 'MCP',
+};

@@ -418,7 +418,7 @@ export interface EcosystemDetailDrawerData {
   /** 是否是新版本 */
   isNewVersion?: boolean;
   /** 数据类型 */
-  dataType?: EcosystemDataTypeEnum;
+  dataType: EcosystemDataTypeEnum;
   /** 配置信息 */
   configJson?: string;
   /** 配置参数信息 */

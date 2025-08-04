@@ -1,5 +1,8 @@
 import copyImage from '@/assets/images/copy.png';
-import { COMPONENT_LIST } from '@/constants/ecosystem.constants';
+import {
+  COMPONENT_LIST,
+  ECO_TYPE_TITLE_MAP,
+} from '@/constants/ecosystem.constants';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { CloseOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -21,6 +24,7 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   EcosystemDataTypeEnum,
   EcosystemDetailDrawerProps,
+  type EcosystemDetailDrawerData,
 } from '@/types/interfaces/ecosystem';
 import { encodeHTML } from '@/utils/common';
 import CopyToClipboard from 'react-copy-to-clipboard';
@@ -239,6 +243,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   }, [isNewVersion, isEnabled, configParam]);
 
   if (!data) return null;
+  console.log('data', data);
   const renderButton = () => {
     if (ownedFlag === OwnedFlagEnum.YES) {
       return <></>;
@@ -299,7 +304,9 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
                 title={
                   dataType === EcosystemDataTypeEnum.MCP
                     ? `停用后，官方服务列表中将不可见`
-                    : `停用后，广场${targetInfo.text}中将不可见`
+                    : `停用后，广场${
+                        dataType ? ECO_TYPE_TITLE_MAP[dataType] : ''
+                      }中将不可见`
                 }
               >
                 <InfoCircleOutlined />
@@ -422,3 +429,4 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
 };
 
 export default EcosystemDetailDrawer;
+export type { EcosystemDetailDrawerData };

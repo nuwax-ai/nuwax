@@ -1,7 +1,8 @@
 import EcosystemCard, { EcosystemCardProps } from '@/components/EcosystemCard';
 import PluginDetailDrawer, {
-  EcosystemDetailDrawerData,
+  type EcosystemDetailDrawerData,
 } from '@/components/EcosystemDetailDrawer';
+
 import SelectCategory from '@/components/EcosystemSelectCategory';
 import EcosystemShareModal, {
   EcosystemShareModalData,
@@ -236,6 +237,7 @@ export default function EcosystemTemplate() {
       description: config.description || '暂无描述',
       isNewVersion: config.isNewVersion || false,
       author: config.author || '',
+      dataType: config.dataType as EcosystemDataTypeEnum,
       targetType: config.targetType as AgentComponentTypeEnum,
       configParamJson: config.serverConfigParamJson,
       localConfigParamJson: config.localConfigParamJson,
