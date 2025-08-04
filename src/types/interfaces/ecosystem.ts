@@ -168,6 +168,7 @@ export interface ClientConfigVo {
   configParamJson?: any;
   /** 本地配置参数json */
   localConfigParamJson?: any;
+  serverConfigJson?: any;
   /** 配置json，存储插件的配置信息如果有其他额外的信息保存放这里 */
   configJson?: any;
   /** 图标图片地址 */
@@ -394,7 +395,7 @@ export interface EcosystemDetailDrawerProps {
   /** 关闭抽屉回调 */
   onClose: () => void;
   /** 更新配置并启用回调 */
-  onUpdateAndEnable?: (values: any[]) => Promise<boolean>;
+  onUpdateAndEnable?: (values: any[], configJson?: string) => Promise<boolean>;
   /** 停用回调 */
   onDisable?: () => Promise<boolean>;
 }
@@ -418,7 +419,9 @@ export interface EcosystemDetailDrawerData {
   /** 是否是新版本 */
   isNewVersion?: boolean;
   /** 数据类型 */
-  dataType: EcosystemDataTypeEnum;
+  dataType?: EcosystemDataTypeEnum;
+  /** 服务端MCP配置信息 */
+  serverConfigJson?: string;
   /** 配置信息 */
   configJson?: string;
   /** 配置参数信息 */
@@ -426,7 +429,7 @@ export interface EcosystemDetailDrawerData {
   /** 本地配置信息(之前 版本) */
   localConfigParamJson?: string;
   /** 是否我的分享,0:否(生态市场获取的);1:是(我的分享)*/
-  ownedFlag?: OwnedFlagEnum;
+  ownedFlag?: EcosystemOwnedFlagEnum;
   /** 组件类型 */
   targetType: AgentComponentTypeEnum;
 }
