@@ -29,7 +29,7 @@ const AgentContent: React.FC<AgentContentProps> = ({
     useState<boolean>(false);
 
   const handleCopy = () => {
-    message.success('复制成功');
+    message.success('复制链接成功');
   };
 
   // 智能体收藏

@@ -570,6 +570,8 @@ export async function enableClientConfig(
 export async function updateAndEnableClientConfig(params: {
   uid: string;
   configParamJson: string;
+  // MCP配置json，可选
+  configJson?: string;
 }): Promise<ClientConfigVo | null> {
   if (!params.uid || params.uid.trim() === '') {
     console.warn('配置UID不能为空');
