@@ -843,6 +843,7 @@ export default function EcosystemTemplate() {
       <SelectComponent
         onAdded={onSelectedComponent}
         open={show}
+        disableCollect={true}
         onCancel={() => setShow(false)}
         addComponents={addComponents}
         {...selectComponentProps}
