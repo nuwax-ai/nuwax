@@ -20,7 +20,7 @@ export interface IGetList {
   category?: string;
   kw?: string;
   spaceId?: number;
-  dataType?: string;
+  dataType?: string | number;
   justReturnSpaceData?: boolean;
   allowCopy?: number; // 模板库 是否允许复制
 }

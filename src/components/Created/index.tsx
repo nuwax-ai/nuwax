@@ -91,7 +91,7 @@ const Created: React.FC<CreatedProp> = ({
   // 当前被选中的左侧菜单
   const [selectMenu, setSelectMenu] = useState<string>('all');
   const [currentNode, setCurrentNode] = useState<CreatedNodeItem>();
-  //   右侧的list
+  // 右侧的list
   const [list, setList] = useState<CreatedNodeItem[]>([]);
   const [renderList, setRenderList] = useState<CreatedNodeItem[]>([]);
   // 添加loading状态
@@ -101,6 +101,11 @@ const Created: React.FC<CreatedProp> = ({
     list: CreatedNodeItem[];
     searching: boolean;
   }>({ list: [], searching: false });
+  // 是否只返回空间数据，暂时用于滚动加载事件
+  const justReturnSpaceDataRef = useRef<boolean>(false);
+  // 知识库数据类型, 暂时用于滚动加载事件保存dataType，如果是全部，则不传dataType
+  const dataTypeRef = useRef<number | null>(null);
+
   const needFrontEndSearching = useCallback(
     (type: AgentComponentTypeEnum, searchKeywords: string) => {
       return (
@@ -159,12 +164,12 @@ const Created: React.FC<CreatedProp> = ({
       icon: <ProductFilled />,
     },
     {
-      key: '1',
+      key: 1,
       icon: <ICON_WORD />,
       label: '文档',
     },
     // {
-    //   key: '2',
+    //   key: 2,
     //   icon: <ICON_TABLE />,
     //   label: '表格',
     // },
@@ -178,6 +183,19 @@ const Created: React.FC<CreatedProp> = ({
     },
   ];
 
+  const mcpItem = [
+    {
+      key: 'all', // 子项也需要唯一的 key
+      label: '全部',
+      icon: <ProductFilled />,
+    },
+    {
+      key: 'custom',
+      icon: <ICON_WORD />,
+      label: '自定义服务',
+    },
+  ];
+
   const getItems = () => {
     switch (selected.key) {
       case AgentComponentTypeEnum.Knowledge:
@@ -185,7 +203,7 @@ const Created: React.FC<CreatedProp> = ({
       case AgentComponentTypeEnum.Table:
         return databaseItem;
       case AgentComponentTypeEnum.MCP:
-        return [];
+        return mcpItem;
       default:
         return items;
     }
@@ -198,19 +216,37 @@ const Created: React.FC<CreatedProp> = ({
 
   // 获取右侧的list（关键修改）
   const getList = async (type: AgentComponentTypeEnum, params: IGetList) => {
-    if (needFrontEndSearching(type, params?.kw || '')) {
-      //如果是MCP 并且是有搜索词 则不调用接口
-      return;
-    }
+    // if (needFrontEndSearching(type, params?.kw || '')) {
+    //   //如果是MCP 并且是有搜索词 则不调用接口
+    //   return;
+    // }
     setDoSearching({ list: [], searching: false });
     try {
       if (spaceId === 0) return;
+
+      console.log(
+        'params',
+        params,
+        isRequesting.current,
+        (params.page > sizes && params.page !== 1) || isRequesting.current,
+      );
+
       if ((params.page > sizes && params.page !== 1) || isRequesting.current)
         return;
       isRequesting.current = true;
       if (params.page === 1) {
         // 设置loading状态为true
         setLoading(true);
+      }
+
+      // 如果需要只返回空间数据，则设置justReturnSpaceData为true
+      if (justReturnSpaceDataRef.current) {
+        params.justReturnSpaceData = true;
+      }
+
+      // 知识库：如果需要传dataType，则设置dataType
+      if (dataTypeRef.current) {
+        params.dataType = dataTypeRef.current;
       }
 
       const {
@@ -340,6 +376,7 @@ const Created: React.FC<CreatedProp> = ({
         getCollectList(params);
         break;
       case 'library':
+        justReturnSpaceDataRef.current = true;
         getList(selected.key, { ...params, justReturnSpaceData: true });
         break;
       default:
@@ -354,14 +391,23 @@ const Created: React.FC<CreatedProp> = ({
     setSelectMenu(val);
     setPagination({ page: 1, pageSize: 10 }); // 确保重置分页
     setList([]);
+    justReturnSpaceDataRef.current = false;
+    dataTypeRef.current = null;
 
     const params: IGetList = {
       page: 1,
       pageSize: 10,
     };
-
+    // 知识库
     if (selected.key === AgentComponentTypeEnum.Knowledge && val !== 'all') {
-      params.dataType = val;
+      params.dataType = Number(val);
+      dataTypeRef.current = Number(val);
+    }
+
+    // MCP(自定义服务)
+    if (selected.key === AgentComponentTypeEnum.MCP && val === 'custom') {
+      // params.justReturnSpaceData = true;
+      justReturnSpaceDataRef.current = true;
     }
 
     callInterface(val, params);
@@ -370,6 +416,10 @@ const Created: React.FC<CreatedProp> = ({
   // 修改 changeTitle 方法，确保切换顶部选项时重置分页
   const changeTitle = (val: RadioChangeEvent | string) => {
     if (!val) return;
+
+    // 重置知识库数据类型和是否只返回空间数据
+    dataTypeRef.current = null;
+    justReturnSpaceDataRef.current = false;
 
     const _select = typeof val === 'string' ? val : val.target.value;
     const _item = tabs.find((item) => item.key === _select);
