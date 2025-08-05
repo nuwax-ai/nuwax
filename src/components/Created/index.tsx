@@ -93,7 +93,6 @@ const Created: React.FC<CreatedProp> = ({
   const [currentNode, setCurrentNode] = useState<CreatedNodeItem>();
   // 右侧的list
   const [list, setList] = useState<CreatedNodeItem[]>([]);
-  const [renderList, setRenderList] = useState<CreatedNodeItem[]>([]);
   // 添加loading状态
   const [loading, setLoading] = useState<boolean>(false);
   // 是否进行搜索
@@ -105,27 +104,6 @@ const Created: React.FC<CreatedProp> = ({
   const justReturnSpaceDataRef = useRef<boolean>(false);
   // 知识库数据类型, 暂时用于滚动加载事件保存dataType，如果是全部，则不传dataType
   const dataTypeRef = useRef<number | null>(null);
-
-  const needFrontEndSearching = useCallback(
-    (type: AgentComponentTypeEnum, searchKeywords: string) => {
-      return (
-        type === AgentComponentTypeEnum.MCP &&
-        searchKeywords &&
-        searchKeywords.trim() !== ''
-      );
-    },
-    [],
-  );
-
-  useEffect(() => {
-    if (needFrontEndSearching(selected.key, search) && doSearching.searching) {
-      setRenderList(
-        doSearching.list.filter((item) => item.name.includes(search)),
-      );
-    } else {
-      setRenderList(list);
-    }
-  }, [list, selected.key, doSearching.list, doSearching.searching]);
 
   // 左侧菜单栏
   const items: MenuItem[] = [
@@ -728,8 +706,8 @@ const Created: React.FC<CreatedProp> = ({
         >
           {loading ? (
             <Loading className={cx('h-full')} />
-          ) : renderList?.length ? (
-            renderList.map((item: CreatedNodeItem, index: number) => {
+          ) : list?.length ? (
+            list.map((item: CreatedNodeItem, index: number) => {
               if (selected.key === AgentComponentTypeEnum.MCP) {
                 return renderMCPItem(item, index, selected);
               }
@@ -744,29 +722,6 @@ const Created: React.FC<CreatedProp> = ({
               />
             </div>
           )}
-          {/* <Spin
-            spinning={loading}
-            tip="加载中..."
-            delay={200}
-            wrapperClassName={cx(styles['created-list-spin-style'])}
-          >
-            {!loading && renderList.length === 0 ? (
-              <div className={cx(styles['created-list-empty-style'])}>
-                <Empty
-                  description={
-                    doSearching.searching ? '暂无数据，请重新搜索' : '暂无数据'
-                  }
-                />
-              </div>
-            ) : (
-              renderList.map((item: CreatedNodeItem, index: number) => {
-                if (selected.key === AgentComponentTypeEnum.MCP) {
-                  return renderMCPItem(item, index, selected);
-                }
-                return renderNormalItem(item, index);
-              })
-            )}
-          </Spin> */}
         </div>
       </div>
       <CreateWorkflow
