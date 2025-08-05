@@ -309,7 +309,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
             }
           >
             {isEnabled
-              ? showToolSection
+              ? showToolSection || showMcpConfig
                 ? '更新配置'
                 : '更新'
               : showToolSection || showMcpConfig
