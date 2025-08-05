@@ -368,7 +368,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
       return (
         <Space>
           <Button onClick={handleClose}>取消</Button>
-          {isEdit && isPublished && (
+          {isEdit && (isPublished || isReviewing) && (
             <Button
               onClick={() => {
                 if (data.uid) {
