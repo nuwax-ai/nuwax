@@ -2,47 +2,83 @@
 import type { AliasToken } from 'antd/es/theme/interface';
 
 const themeTokens: Partial<AliasToken> = {
-  // 主色调配置
-  colorPrimary: '#5147ff', // 主色
-  colorSuccess: '#00b23c', // 成功色
-  colorWarning: '#ff8c00', // 警告色
-  colorError: '#ff4d4f', // 错误色
-  colorInfo: '#1890ff', // 信息色
+  // 品牌主色 - 项目主色调
+  colorPrimary: '#5147ff',
 
-  colorPrimaryHover: '#4538ff',
-  colorPrimaryActive: '#412bff',
-  colorSuccessHover: '#00a838',
+  // 功能色
+  colorSuccess: '#3bb346',
+  colorWarning: '#fc8800',
+  colorError: '#f93920',
+  colorInfo: '#0077fa',
 
-  // 边框和圆角
-  borderRadius: 8, // 全局圆角
-  borderRadiusLG: 12, // 大圆角
-  borderRadiusSM: 4, // 小圆角
+  // 基础色 - 用于派生文本和背景色
+  colorTextBase: '#15171f',
+  colorBgBase: '#ffffff',
+
+  // 超链接颜色
+  colorLink: '#5147ff',
 
   // 字体配置
-  fontSize: 14, // 基础字体大小
-  fontSizeLG: 16, // 大字体
-  fontSizeSM: 12, // 小字体
   fontFamily:
-    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial',
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
+  fontFamilyCode:
+    'Monaco, "Menlo", "Ubuntu Mono", "Consolas", "Liberation Mono", "Courier New", monospace',
 
-  // 间距配置
-  padding: 16, // 基础内边距
-  paddingLG: 24, // 大内边距
-  paddingSM: 12, // 小内边距
-  margin: 16, // 基础外边距
-
-  // 阴影配置
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 15%)',
-  boxShadowSecondary: '0 4px 12px rgba(0, 0, 0, 15%)',
+  // 字号配置
+  fontSize: 14,
 
   // 线条配置
-  lineWidth: 1, // 边框宽度
-  lineType: 'solid', // 边框类型
+  lineWidth: 1,
+  lineType: 'solid',
 
-  // 控制组件配置
-  controlHeight: 32, // 控件高度
-  controlHeightLG: 40, // 大控件高度
-  controlHeightSM: 24, // 小控件高度
+  // 圆角配置
+  borderRadius: 8,
+
+  // 尺寸配置
+  sizeUnit: 4,
+  sizeStep: 4,
+  sizePopupArrow: 8,
+
+  // 控制组件高度
+  controlHeight: 32,
+
+  // Z轴配置
+  zIndexBase: 0,
+  zIndexPopupBase: 1000,
+
+  // // 图片透明度
+  opacityImage: 1,
+
+  // 动画配置
+  motionUnit: 0.1,
+  motionBase: 0,
+  // motionEaseOutCirc: 'cubic-bezier(0.08, 0.82, 0.17, 1)',
+  // motionEaseInOutCirc: 'cubic-bezier(0.78, 0.14, 0.15, 0.86)',
+  // motionEaseInOut: 'cubic-bezier(0.645, 0.045, 0.355, 1)',
+  // motionEaseOutBack: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  // motionEaseInBack: 'cubic-bezier(0.6, -0.28, 0.735, 0.045)',
+  // motionEaseInQuint: 'cubic-bezier(0.755, 0.05, 0.855, 0.06)',
+  // motionEaseOutQuint: 'cubic-bezier(0.23, 1, 0.32, 1)',
+  // motionEaseOut: 'cubic-bezier(0.215, 0.61, 0.355, 1)',
+
+  // 风格配置
+  wireframe: false,
+  motion: true,
+
+  // 预设颜色
+  blue: '#1890ff',
+  purple: '#722ed1',
+  cyan: '#13c2c2',
+  green: '#52c41a',
+  magenta: '#eb2f96',
+  pink: '#eb2f96',
+  red: '#f5222d',
+  orange: '#fa8c16',
+  yellow: '#fadb14',
+  volcano: '#fa541c',
+  geekblue: '#2f54eb',
+  lime: '#a0d911',
+  gold: '#faad14',
 };
 
 export default themeTokens;
