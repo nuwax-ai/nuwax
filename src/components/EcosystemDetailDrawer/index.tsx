@@ -14,7 +14,7 @@ import {
   Typography,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ActivatedIcon from '../EcosystemCard/ActivatedIcon';
 import styles from './index.less';
 // 方程式支持
@@ -38,37 +38,60 @@ const DEFAULT_ICON =
   'https://agent-1251073634.cos.ap-chengdu.myqcloud.com/store/b5fdb62e8b994a418d0fdfae723ee827.png';
 const DEFAULT_TEXT = '插件';
 
-// const md = markdownIt({
-//   html: true, // 启用原始HTML解析
-//   xhtmlOut: true, // 使用 XHTML 兼容语法
-//   breaks: true, // 换行转换为 <br>
-//   linkify: true, // 自动识别链接
-//   typographer: true, // 优化排版
-//   quotes: '""\'\'', // 双引号和单引号都不替换
-// });
+// 类型定义
+interface ConfigParam {
+  name: string;
+  value: any;
+  description?: string;
+}
 
-// // html自定义转义
-// md.renderer.rules.html_block = (tokens, idx) => {
-//   return encodeHTML(tokens[idx].content);
-// };
+interface TargetInfo {
+  defaultImage: string;
+  text: string;
+}
 
-// // 添加 KaTeX 支持
-// md.use(markdownItKatexGpt, {
-//   delimiters: [
-//     { left: '\\[', right: '\\]', display: true },
-//     { left: '\\(', right: '\\)', display: false },
-//     { left: '$$', right: '$$', display: false },
-//   ],
-// });
+// 工具函数：安全解析JSON
+const safeParseJSON = <T,>(jsonString: string, defaultValue: T): T => {
+  try {
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error('JSON解析失败:', error);
+    return defaultValue;
+  }
+};
 
-// // 添加表格支持
-// md.use(markdownItMultimdTable, {
-//   multiline: true,
-//   rowspan: true,
-//   headerless: false,
-//   multibody: true,
-//   aotolabel: true,
-// });
+// 类型定义：MCP配置
+interface McpConfig {
+  mcpConfig?: {
+    serverConfig?: string;
+  };
+}
+
+// 工具函数：合并配置参数
+const mergeConfigParams = (
+  configParam: ConfigParam[],
+  localConfigParam: ConfigParam[],
+): ConfigParam[] => {
+  return configParam.map((item) => {
+    const localItem = localConfigParam.find(
+      (localItem) => localItem.name === item.name,
+    );
+    return {
+      ...item,
+      value: localItem?.value ?? item.value,
+    };
+  });
+};
+
+// 工具函数：将配置参数转换为表单值
+const configParamToFormValues = (
+  configParam: ConfigParam[],
+): Record<string, any> => {
+  return configParam.reduce((acc, item) => {
+    acc[item.name] = item.value;
+    return acc;
+  }, {} as Record<string, any>);
+};
 
 /**
  * 插件详情抽屉组件
@@ -95,179 +118,243 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     author,
     ownedFlag,
     targetType,
-  } = data || {};
-  // 配置参数
-  const [configParam, setConfigParam] = useState<any>([]);
-  // 是否显示工具列表
+  } = data ?? {};
+
+  // 状态管理
+  const [configParam, setConfigParam] = useState<ConfigParam[]>([]);
   const [showToolSection, setShowToolSection] = useState(false);
-  // 是否显示MCP服务配置
   const [showMcpConfig, setShowMcpConfig] = useState(false);
-  // 是否需要更新按钮
   const [needUpdateButton, setNeedUpdateButton] = useState(false);
+  const [serverConfig, setServerConfig] = useState<string>('');
+  const [disableLoading, setDisableLoading] = useState(false);
+  const [enableLoading, setEnableLoading] = useState(false);
+  const [renderKey, setRenderKey] = useState(0);
+
+  // 表单实例
+  const [form] = Form.useForm();
+
   // 目标类型信息
-  const [targetInfo, setTargetInfo] = useState<{
-    defaultImage: string;
-    text: string;
-  }>({
+  const [targetInfo, setTargetInfo] = useState<TargetInfo>({
     defaultImage: DEFAULT_ICON,
     text: DEFAULT_TEXT,
   });
-  // MCP服务配置
-  const [serverConfig, setServerConfig] = useState<string>('');
-  // 停用按钮loading
-  const [disableLoading, setDisableLoading] = useState(false);
-  // 启用按钮loading
-  const [enableLoading, setEnableLoading] = useState(false);
-  // 表单
-  const [form] = Form.useForm();
-
-  // 监听抽屉关闭，重置表单
-  useEffect(() => {
-    if (!visible) {
-      form.resetFields();
-      setShowToolSection(false);
-      setShowMcpConfig(false);
-      setNeedUpdateButton(false);
-    }
-  }, [visible, form]);
-
-  useEffect(() => {
-    // 如果targetType为空，则根据dataType判断，因为dataType为MCP时，targetType可能为空
-    const type =
-      targetType ||
-      (dataType === EcosystemDataTypeEnum.MCP
-        ? AgentComponentTypeEnum.MCP
-        : null);
-    if (!type) {
-      return;
-    }
-    const hitInfo = COMPONENT_LIST.find((item: any) => item.type === type);
-    setTargetInfo({
-      defaultImage: hitInfo?.defaultImage || DEFAULT_ICON,
-      text: hitInfo?.text || DEFAULT_TEXT,
-    });
-  }, [targetType, dataType]);
-
-  useEffect(() => {
-    // 如果服务端mcp配置serverConfigJson存在，则解析serverConfigJson
-    if (serverConfigJson) {
-      try {
-        const _configJson = JSON.parse(serverConfigJson);
-        setServerConfig(_configJson?.mcpConfig?.serverConfig || '');
-      } catch (error) {
-        console.error('解析配置失败:', error);
-      }
-    }
-  }, [serverConfigJson]);
 
   // 使用自定义 Hook 处理抽屉打开时的滚动条
   useDrawerScroll(visible);
 
-  const handleClose = () => {
-    form.resetFields(); // 关闭时重置表单
+  // 重置所有状态的函数
+  const resetAllStates = useCallback(() => {
+    form?.resetFields();
+    setShowToolSection(false);
+    setShowMcpConfig(false);
+    setNeedUpdateButton(false);
     setConfigParam([]);
-    onClose();
-  };
+    setServerConfig('');
+    setDisableLoading(false);
+    setEnableLoading(false);
+  }, [form]);
 
+  // 监听抽屉关闭，重置表单和状态
   useEffect(() => {
-    // 如果configParamJson存在，则解析configParamJson
+    if (!visible) {
+      resetAllStates();
+    } else {
+      // 抽屉打开时，增加渲染key强制重新渲染
+      setRenderKey((prev) => prev + 1);
+    }
+  }, [visible, resetAllStates]);
+
+  // 处理目标类型信息
+  useEffect(() => {
+    if (!visible) return;
+
+    const type =
+      targetType ??
+      (dataType === EcosystemDataTypeEnum.MCP
+        ? AgentComponentTypeEnum.MCP
+        : null);
+
+    if (!type) return;
+
+    const hitInfo = COMPONENT_LIST.find((item: any) => item.type === type);
+    setTargetInfo({
+      defaultImage: hitInfo?.defaultImage ?? DEFAULT_ICON,
+      text: hitInfo?.text ?? DEFAULT_TEXT,
+    });
+  }, [targetType, dataType, visible]);
+
+  // 处理服务配置
+  useEffect(() => {
+    if (!visible) return;
+
+    if (serverConfigJson) {
+      const configJson = safeParseJSON<McpConfig>(serverConfigJson, {});
+      setServerConfig(configJson?.mcpConfig?.serverConfig ?? '');
+    }
+  }, [serverConfigJson, visible]);
+
+  // 处理配置参数
+  useEffect(() => {
+    if (!visible) return;
+
     if (configParamJson) {
-      const configParam = JSON.parse(configParamJson);
-      if (configParam.length > 0) {
-        // 如果localConfigParamJson 内的value merge configParam 内的value
-        const localConfigParam = JSON.parse(localConfigParamJson || '[]');
-        const mergedConfigParam = configParam.map((item: any) => {
-          const localItem = localConfigParam.find(
-            (localItem: any) => localItem.name === item.name,
-          );
-          return {
-            ...item,
-            value: localItem?.value || item.value,
-          };
-        });
+      const _configParam = safeParseJSON<ConfigParam[]>(configParamJson, []);
+
+      if (_configParam.length > 0) {
+        const localConfigParam = safeParseJSON<ConfigParam[]>(
+          localConfigParamJson ?? '[]',
+          [],
+        );
+
+        const mergedConfigParam = mergeConfigParams(
+          _configParam,
+          localConfigParam,
+        );
         setConfigParam(mergedConfigParam);
+
+        // 使用 setTimeout 确保表单已经渲染完成
         setTimeout(() => {
           form?.resetFields();
-          form.setFieldsValue(
-            mergedConfigParam.reduce((acc: any, item: any) => {
-              acc[item.name] = item.value;
-              return acc;
-            }, {}),
-          );
-        }, 0);
+          form.setFieldsValue(configParamToFormValues(mergedConfigParam));
+        }, 100);
       }
     }
+
     return () => {
       form?.resetFields();
       setConfigParam([]);
     };
-  }, [configParamJson, localConfigParamJson]);
+  }, [configParamJson, localConfigParamJson, form, visible]);
 
-  // 启用
-  const handleEnable = async () => {
-    // 如果dataType为MCP，且configJson存在，则更新MCP服务配置
+  // 处理更新按钮状态
+  useEffect(() => {
+    if (!visible) return;
+
+    const shouldShowUpdateButton = !(
+      !isNewVersion &&
+      isEnabled &&
+      !configParam?.length
+    );
+    setNeedUpdateButton(shouldShowUpdateButton);
+  }, [isNewVersion, isEnabled, configParam, visible]);
+
+  // 关闭处理函数
+  const handleClose = useCallback(() => {
+    resetAllStates();
+    onClose();
+  }, [resetAllStates, onClose]);
+
+  // 启用处理函数
+  const handleEnable = useCallback(async () => {
+    // MCP类型处理
     if (dataType === EcosystemDataTypeEnum.MCP && serverConfigJson) {
       if (!showMcpConfig) {
         setShowMcpConfig(true);
         return false;
       }
-      // 更新MCP服务配置
-      const _configJson = JSON.parse(serverConfigJson);
-      _configJson.mcpConfig.serverConfig = serverConfig;
-      try {
-        const result = await onUpdateAndEnable?.(
-          [],
-          JSON.stringify(_configJson),
-        );
-        return result;
-      } catch (error) {
-        console.error('更新配置失败:', error);
+
+      const configJson = safeParseJSON<McpConfig>(serverConfigJson, {});
+      if (configJson.mcpConfig) {
+        configJson.mcpConfig.serverConfig = serverConfig;
       }
-      return false;
+
+      try {
+        return await onUpdateAndEnable?.([], JSON.stringify(configJson));
+      } catch (error) {
+        console.error('更新MCP配置失败:', error);
+        return false;
+      }
     }
-    // 如果配置参数存在，则显示工具列表
-    else if (configParam && configParam.length > 0) {
+
+    // 配置参数处理
+    if (configParam && configParam.length > 0) {
       if (!showToolSection) {
         setShowToolSection(true);
         return false;
       }
+
       try {
         const values = await form.validateFields();
-        const result = await onUpdateAndEnable?.(
-          configParam.map((item: any) => ({
-            ...item,
-            value: values[item.name],
-          })),
-        );
-        return result;
+        const updatedConfigParam = configParam.map((item) => ({
+          ...item,
+          value: values[item.name],
+        }));
+        return await onUpdateAndEnable?.(updatedConfigParam);
       } catch (error) {
-        console.error('更新配置失败:', error);
+        console.error('更新配置参数失败:', error);
+        return false;
       }
-      return false;
-    } else {
-      const result = await onUpdateAndEnable?.([]);
-      return result;
     }
-  };
-  useEffect(() => {
-    if (!isNewVersion && isEnabled && !configParam?.length) {
-      //没有新版本，且已启用，且没有配置参数
-      setNeedUpdateButton(false);
-    } else {
-      setNeedUpdateButton(true);
-    }
-    return () => {
-      setNeedUpdateButton(false);
-    };
-  }, [isNewVersion, isEnabled, configParam]);
 
-  if (!data) return null;
+    // 默认启用
+    return await onUpdateAndEnable?.([]);
+  }, [
+    dataType,
+    serverConfigJson,
+    showMcpConfig,
+    serverConfig,
+    configParam,
+    showToolSection,
+    form,
+    onUpdateAndEnable,
+  ]);
+
+  // 停用处理函数
+  const handleDisable = useCallback(async () => {
+    setDisableLoading(true);
+    try {
+      await onDisable?.();
+    } finally {
+      setDisableLoading(false);
+    }
+  }, [onDisable]);
+
+  // 启用按钮点击处理
+  const handleEnableClick = useCallback(async () => {
+    setEnableLoading(true);
+    try {
+      await handleEnable();
+    } finally {
+      setEnableLoading(false);
+    }
+  }, [handleEnable]);
+
+  // 计算按钮文本
+  const buttonText = useMemo(() => {
+    if (isEnabled) {
+      return showToolSection || showMcpConfig ? '更新配置' : '更新';
+    }
+    return showToolSection || showMcpConfig ? '保存配置并启用' : '启用';
+  }, [isEnabled, showToolSection, showMcpConfig]);
+
+  // 计算是否显示启用按钮图标
+  const shouldShowEnableIcon = useMemo(() => {
+    return !isEnabled && !showToolSection;
+  }, [isEnabled, showToolSection]);
+
+  // 计算启用按钮提示文本
+  const enableButtonTooltip = useMemo(() => {
+    return dataType === EcosystemDataTypeEnum.MCP
+      ? '启用后将发布到官方服务列表'
+      : '启用后将发布到系统广场';
+  }, [dataType]);
+
+  // 计算停用按钮提示文本
+  const disableButtonTooltip = useMemo(() => {
+    if (dataType === EcosystemDataTypeEnum.MCP) {
+      return '停用后，官方服务列表中将不可见';
+    }
+    return `停用后，广场${
+      dataType ? ECO_TYPE_TITLE_MAP[dataType] : ''
+    }中将不可见`;
+  }, [dataType]);
 
   // 渲染操作按钮
-  const renderButton = () => {
+  const renderButton = useCallback(() => {
     if (ownedFlag === EcosystemOwnedFlagEnum.YES) {
-      return <></>;
+      return null;
     }
+
     return (
       <>
         {/* 如果需要更新，则显示更新按钮 */}
@@ -276,35 +363,18 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
             type="primary"
             className={cx(styles.actionButton)}
             size="large"
-            onClick={() => {
-              setEnableLoading(true);
-              handleEnable().finally(() => {
-                setEnableLoading(false);
-              });
-            }}
+            onClick={handleEnableClick}
             loading={enableLoading}
             iconPosition="end"
             icon={
-              !isEnabled && !showToolSection ? (
-                <Tooltip
-                  title={
-                    dataType === EcosystemDataTypeEnum.MCP
-                      ? `启用后将发布到官方服务列表`
-                      : `启用后将发布到系统广场`
-                  }
-                >
+              shouldShowEnableIcon ? (
+                <Tooltip title={enableButtonTooltip}>
                   <InfoCircleOutlined />
                 </Tooltip>
               ) : null
             }
           >
-            {isEnabled
-              ? showToolSection || showMcpConfig
-                ? '更新配置'
-                : '更新'
-              : showToolSection || showMcpConfig
-              ? '保存配置并启用'
-              : '启用'}
+            {buttonText}
           </Button>
         )}
         {/* 如果当前状态是启用，则显示停用按钮 */}
@@ -313,23 +383,10 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
             className={cx(styles.actionButton)}
             size="large"
             loading={disableLoading}
-            onClick={() => {
-              setDisableLoading(true);
-              onDisable?.().finally(() => {
-                setDisableLoading(false);
-              });
-            }}
+            onClick={handleDisable}
             iconPosition="end"
             icon={
-              <Tooltip
-                title={
-                  dataType === EcosystemDataTypeEnum.MCP
-                    ? `停用后，官方服务列表中将不可见`
-                    : `停用后，广场${
-                        dataType ? ECO_TYPE_TITLE_MAP[dataType] : ''
-                      }中将不可见`
-                }
-              >
+              <Tooltip title={disableButtonTooltip}>
                 <InfoCircleOutlined />
               </Tooltip>
             }
@@ -339,26 +396,88 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
         )}
       </>
     );
-  };
+  }, [
+    ownedFlag,
+    needUpdateButton,
+    handleEnableClick,
+    enableLoading,
+    shouldShowEnableIcon,
+    enableButtonTooltip,
+    buttonText,
+    isEnabled,
+    disableLoading,
+    handleDisable,
+    disableButtonTooltip,
+  ]);
 
-  return (
-    <Drawer
-      placement="right"
-      open={visible}
-      width={400}
-      closeIcon={false}
-      onClose={handleClose}
-      className={cx(styles.pluginDetailDrawer)}
-      maskClassName={cx(styles.resetMask)}
-      rootClassName={cx(styles.resetRoot)}
-      destroyOnHidden={true}
-    >
-      {/* 抽屉头部 */}
+  // 渲染表单字段
+  const renderFormFields = useCallback(() => {
+    if (!configParam || configParam.length === 0) return null;
+
+    return (
+      <Form key={`form-${renderKey}`} form={form} layout="vertical">
+        {configParam.map((item) => (
+          <Form.Item
+            key={`${item.name}-${renderKey}`}
+            label={item.name}
+            name={item.name}
+            tooltip={item.description}
+            rules={[{ required: true, message: `请输入${item.name}` }]}
+          >
+            <Input placeholder={`请输入${item.name}`} />
+          </Form.Item>
+        ))}
+      </Form>
+    );
+  }, [configParam, renderKey, form]);
+
+  // 渲染MCP配置
+  const renderMcpConfig = useCallback(() => {
+    if (dataType !== EcosystemDataTypeEnum.MCP || !serverConfig) return null;
+
+    return (
+      <div
+        className={cx(
+          styles.toolSection,
+          showMcpConfig && styles.enabledToolSection,
+        )}
+      >
+        <CodeEditor
+          key={`code-editor-${renderKey}`}
+          codeLanguage={CodeLangEnum.JSON}
+          value={serverConfig}
+          onChange={setServerConfig}
+          codeOptimizeVisible={false}
+          height="200px"
+        />
+      </div>
+    );
+  }, [dataType, serverConfig, showMcpConfig, renderKey]);
+
+  // 渲染工具列表
+  const renderToolSection = useCallback(() => {
+    if (!configParam || configParam.length === 0) return null;
+
+    return (
+      <div
+        className={cx(
+          styles.toolSection,
+          showToolSection && styles.enabledToolSection,
+        )}
+      >
+        {renderFormFields()}
+      </div>
+    );
+  }, [configParam, showToolSection, renderFormFields]);
+
+  // 渲染抽屉头部
+  const renderDrawerHeader = useCallback(
+    () => (
       <div className={cx(styles.drawerHeader)}>
         <div className={cx(styles.titleArea)}>
           <div className={cx(styles.iconWrapper)}>
             <img
-              src={icon || targetInfo.defaultImage}
+              src={icon ?? targetInfo.defaultImage}
               alt={title}
               className={cx(styles.icon)}
               onError={(e) => {
@@ -386,7 +505,13 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
           className={cx(styles.closeButton)}
         />
       </div>
-      {/* 抽屉内容 */}
+    ),
+    [icon, targetInfo, title, isEnabled, isNewVersion, author, handleClose],
+  );
+
+  // 渲染抽屉内容
+  const renderDrawerContent = useCallback(
+    () => (
       <div className={cx(styles.content)}>
         <Paragraph className={cx(styles.description)}>{description}</Paragraph>
 
@@ -401,49 +526,37 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
           </PureMarkdownRenderer>
         </div>
       </div>
+    ),
+    [description, title, publishDoc],
+  );
+
+  if (!data) return null;
+
+  return (
+    <Drawer
+      key={renderKey}
+      placement="right"
+      open={visible}
+      width={400}
+      closeIcon={false}
+      onClose={handleClose}
+      className={cx(styles.pluginDetailDrawer)}
+      maskClassName={cx(styles.resetMask)}
+      rootClassName={cx(styles.resetRoot)}
+      destroyOnHidden={true}
+    >
+      {/* 抽屉头部 */}
+      {renderDrawerHeader()}
+
+      {/* 抽屉内容 */}
+      {renderDrawerContent()}
+
       {/* 工具列表 */}
-      <div
-        className={cx(
-          styles.toolSection,
-          showToolSection && styles.enabledToolSection,
-        )}
-      >
-        {/* 这部分可以根据实际需求自定义，截图中显示的是一个工具列表 */}
-        {configParam && configParam.length > 0 && (
-          <Form form={form} layout="vertical">
-            {configParam.map((item: any) => (
-              <Form.Item
-                key={item.name}
-                label={item.name}
-                name={item.name}
-                tooltip={item.description}
-                rules={[{ required: true, message: '请输入' + item.name }]}
-              >
-                <Input placeholder={'请输入' + item.name} />
-              </Form.Item>
-            ))}
-          </Form>
-        )}
-      </div>
-      {/* 如果是MCP，则显示服务配置 */}
-      {dataType === EcosystemDataTypeEnum.MCP && serverConfig && (
-        <div
-          className={cx(
-            styles.toolSection,
-            showMcpConfig && styles.enabledToolSection,
-          )}
-        >
-          <CodeEditor
-            codeLanguage={CodeLangEnum.JSON}
-            value={serverConfig}
-            onChange={(value) => {
-              setServerConfig(value);
-            }}
-            codeOptimizeVisible={false}
-            height="200px"
-          />
-        </div>
-      )}
+      {renderToolSection()}
+
+      {/* MCP配置 */}
+      {renderMcpConfig()}
+
       {/* 操作按钮 */}
       <div className={cx(styles.actions)}>{renderButton()}</div>
     </Drawer>
