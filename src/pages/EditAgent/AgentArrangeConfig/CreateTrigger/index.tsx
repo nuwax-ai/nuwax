@@ -1,5 +1,5 @@
 import CustomFormModal from '@/components/CustomFormModal';
-import SelectList from '@/components/SelectList';
+import SelectList from '@/components/custom/SelectList';
 import { TRIGGER_TYPE_LIST } from '@/constants/agent.constants';
 import { TASK_EXECUTION } from '@/constants/space.constants';
 import {

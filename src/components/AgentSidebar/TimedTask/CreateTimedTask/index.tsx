@@ -1,7 +1,7 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import LabelStar from '@/components/LabelStar';
 import OverrideTextArea from '@/components/OverrideTextArea';
-import SelectList from '@/components/SelectList';
+import SelectList from '@/components/custom/SelectList';
 import {
   apiAgentTaskCreate,
   apiAgentTaskCronList,

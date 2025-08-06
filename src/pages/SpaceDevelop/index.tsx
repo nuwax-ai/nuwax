@@ -1,8 +1,8 @@
 import AnalyzeStatistics from '@/components/AnalyzeStatistics';
 import CreateAgent from '@/components/CreateAgent';
-import Loading from '@/components/Loading';
+import Loading from '@/components/custom/Loading';
+import SelectList from '@/components/custom/SelectList';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
-import SelectList from '@/components/SelectList';
 import UploadImportConfig from '@/components/UploadImportConfig';
 import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.constants';
 import {

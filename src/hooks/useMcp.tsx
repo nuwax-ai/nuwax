@@ -1,5 +1,5 @@
 import McpCollapseComponentList from '@/components/McpCollapseComponentList';
-import TooltipIcon from '@/components/TooltipIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { MCP_COLLAPSE_COMPONENT_LIST } from '@/constants/mcp.constants';
 import {
   AgentAddComponentStatusEnum,

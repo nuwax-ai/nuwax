@@ -1,5 +1,5 @@
 import ChatInputHome from '@/components/ChatInputHome';
-import Loading from '@/components/Loading';
+import Loading from '@/components/custom/Loading';
 import useConversation from '@/hooks/useConversation';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import {

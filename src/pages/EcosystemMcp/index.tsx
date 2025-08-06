@@ -1,7 +1,7 @@
 import EcosystemCard, { EcosystemCardProps } from '@/components/EcosystemCard';
 import EcosystemDetailDrawer from '@/components/EcosystemDetailDrawer';
-import InfiniteScrollDiv from '@/components/InfiniteScrollDiv';
-import Loading from '@/components/Loading';
+import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
+import Loading from '@/components/custom/Loading';
 import {
   ECO_MCP_CATEGORY_OPTIONS,
   ECO_MCP_TAB_ITEMS,

@@ -37,7 +37,7 @@ import CreatedItem from '../CreatedItem';
 import CreateKnowledge from '../CreateKnowledge';
 import CreateNewPlugin from '../CreateNewPlugin';
 import CreateWorkflow from '../CreateWorkflow';
-import Loading from '../Loading';
+import Loading from '../custom/Loading';
 import styles from './index.less';
 import MCPItem from './MCPItem';
 import { CreatedProp, MenuItem } from './type';

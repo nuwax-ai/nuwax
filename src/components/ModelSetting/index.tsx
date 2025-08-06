@@ -24,7 +24,7 @@ import {
 } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'umi';
-import TooltipIcon from '../TooltipIcon';
+import TooltipIcon from '../custom/TooltipIcon';
 import './index.less';
 import ModelListItem from './listItem/index';
 import { ModelSettingProp } from './type';

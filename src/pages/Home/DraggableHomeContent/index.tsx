@@ -1,4 +1,4 @@
-import Loading from '@/components/Loading';
+import Loading from '@/components/custom/Loading';
 import { apiUpdateAgentSort } from '@/services/agentDev';
 import type {
   CategoryInfo,

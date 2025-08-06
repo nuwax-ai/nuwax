@@ -1,5 +1,5 @@
-import InfiniteScrollDiv from '@/components/InfiniteScrollDiv';
-import Loading from '@/components/Loading';
+import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
+import Loading from '@/components/custom/Loading';
 import type { DocWrapProps } from '@/types/interfaces/knowledge';
 import { SearchOutlined } from '@ant-design/icons';
 import { Input } from 'antd';

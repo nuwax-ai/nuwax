@@ -2,7 +2,7 @@ import Database from '@/assets/images/database_image.png';
 import { default as Knowledge } from '@/assets/images/knowledge_image.png';
 import Plugin from '@/assets/images/plugin_image.png';
 import Workflow from '@/assets/images/workflow_image.png';
-import SelectList from '@/components/SelectList';
+import SelectList from '@/components/custom/SelectList';
 import UploadAvatar from '@/components/UploadAvatar';
 import {
   CLOUD_BASE_CODE_OPTIONS,

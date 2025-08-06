@@ -1,5 +1,5 @@
 import copyImage from '@/assets/images/copy.png';
-import { EllipsisTooltip } from '@/components/EllipsisTooltip';
+import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import {
   apiAgentAkCreate,
   apiAgentAkDelete,

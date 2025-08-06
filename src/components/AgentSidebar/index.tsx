@@ -1,5 +1,5 @@
 import foldImage from '@/assets/images/fold_image.png';
-import Loading from '@/components/Loading';
+import Loading from '@/components/custom/Loading';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { OpenCloseEnum } from '@/types/enums/space';
 import { AgentSidebarProps } from '@/types/interfaces/agentTask';

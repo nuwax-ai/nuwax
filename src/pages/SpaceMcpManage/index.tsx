@@ -1,5 +1,5 @@
-import Loading from '@/components/Loading';
-import SelectList from '@/components/SelectList';
+import Loading from '@/components/custom/Loading';
+import SelectList from '@/components/custom/SelectList';
 import {
   FILTER_DEPLOY,
   MCP_MANAGE_SEGMENTED_LIST,

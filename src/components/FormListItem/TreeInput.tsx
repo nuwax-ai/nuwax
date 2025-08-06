@@ -8,7 +8,7 @@ import { Button, Popover, Tag, Tree } from 'antd';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
-import TooltipIcon from '../TooltipIcon';
+import TooltipIcon from '../custom/TooltipIcon';
 import InputOrReferenceFormTree from './InputOrReferenceFormTree';
 import { TreeInputProps } from './type';
 

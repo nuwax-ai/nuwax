@@ -1,5 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
-import CustomInputNumber from '@/components/CustomInputNumber';
+import CustomInputNumber from '@/components/custom/CustomInputNumber';
 import LabelStar from '@/components/LabelStar';
 import { BIND_CARD_STYLE_LIST } from '@/constants/agent.constants';
 import { BindCardStyleEnum } from '@/types/enums/plugin';

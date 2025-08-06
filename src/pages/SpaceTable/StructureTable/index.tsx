@@ -1,5 +1,5 @@
 // 可以编辑的表格
-import { EllipsisTooltip } from '@/components/EllipsisTooltip';
+import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import LabelStar from '@/components/LabelStar';
 import {
   MEDIUM_TEXT_STRING,

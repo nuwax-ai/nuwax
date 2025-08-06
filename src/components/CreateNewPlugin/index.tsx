@@ -1,7 +1,7 @@
 import pluginIcon from '@/assets/images/plugin_image.png';
 import ConditionRender from '@/components/ConditionRender';
+import SelectList from '@/components/custom/SelectList';
 import OverrideTextArea from '@/components/OverrideTextArea';
-import SelectList from '@/components/SelectList';
 import UploadAvatar from '@/components/UploadAvatar';
 import {
   CLOUD_BASE_CODE_OPTIONS,

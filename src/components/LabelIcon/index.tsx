@@ -1,4 +1,4 @@
-import TooltipIcon from '@/components/TooltipIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { LabelIconProps } from '@/types/interfaces/agent';
 import { InfoCircleOutlined } from '@ant-design/icons';

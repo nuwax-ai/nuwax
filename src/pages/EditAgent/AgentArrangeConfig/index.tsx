@@ -1,6 +1,6 @@
 import Created from '@/components/Created';
-import SelectList from '@/components/SelectList';
-import TooltipIcon from '@/components/TooltipIcon';
+import SelectList from '@/components/custom/SelectList';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import {
   COMPONENT_SETTING_ACTIONS,
   ENABLE_LIST,

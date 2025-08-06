@@ -5,10 +5,10 @@ import CreateNewPlugin from '@/components/CreateNewPlugin';
 import CreateWorkflow from '@/components/CreateWorkflow';
 import CreatedItem from '@/components/CreatedItem';
 import CustomPopover from '@/components/CustomPopover';
-import Loading from '@/components/Loading';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
-import SelectList from '@/components/SelectList';
 import UploadImportConfig from '@/components/UploadImportConfig';
+import Loading from '@/components/custom/Loading';
+import SelectList from '@/components/custom/SelectList';
 import {
   CREATE_LIST,
   FILTER_STATUS,

@@ -1,10 +1,10 @@
+import Loading from '@/components/custom/Loading';
 import EcosystemCard, { EcosystemCardProps } from '@/components/EcosystemCard';
 import PluginDetailDrawer from '@/components/EcosystemDetailDrawer';
 import SelectCategory from '@/components/EcosystemSelectCategory';
 import EcosystemShareModal, {
   EcosystemShareModalData,
 } from '@/components/EcosystemShareModal';
-import Loading from '@/components/Loading';
 import SelectComponent from '@/components/SelectComponent';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { TabItems, TabTypeEnum } from '@/constants/ecosystem.constants';

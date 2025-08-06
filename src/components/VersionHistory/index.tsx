@@ -17,7 +17,7 @@ import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import ConditionRender from '../ConditionRender';
-import Loading from '../Loading';
+import Loading from '../custom/Loading';
 import CurrentPublishItem from './CurrentPublishItem';
 import styles from './index.less';
 import PublishRecordItem from './PublishRecordItem';

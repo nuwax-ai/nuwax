@@ -2,7 +2,7 @@ import databaseImage from '@/assets/images/database_image.png';
 import knowledgeImage from '@/assets/images/knowledge_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
-import TooltipIcon from '@/components/TooltipIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { McpCollapseComponentListProps } from '@/types/interfaces/mcp';
 import { DeleteOutlined } from '@ant-design/icons';

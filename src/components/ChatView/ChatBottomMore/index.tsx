@@ -1,5 +1,5 @@
 import copyImage from '@/assets/images/copy.png';
-import TooltipIcon from '@/components/TooltipIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { ChatBottomMoreProps } from '@/types/interfaces/common';
 import { message } from 'antd';

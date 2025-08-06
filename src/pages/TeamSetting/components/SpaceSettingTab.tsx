@@ -1,4 +1,4 @@
-import TooltipIcon from '@/components/TooltipIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import styles from '@/styles/teamSetting.less';
 import { AllowDevelopEnum, ReceivePublishEnum } from '@/types/enums/space';
 import { TeamDetailInfo } from '@/types/interfaces/teamSetting';

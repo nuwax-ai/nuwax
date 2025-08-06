@@ -2,7 +2,7 @@
 import Created from '@/components/Created';
 import TreeInput from '@/components/FormListItem/TreeInput';
 import { SkillList } from '@/components/Skill';
-import TooltipIcon from '@/components/TooltipIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,

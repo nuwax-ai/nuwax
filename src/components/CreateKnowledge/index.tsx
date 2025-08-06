@@ -21,7 +21,7 @@ import { Form, FormProps, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
-import SelectList from '../SelectList';
+import SelectList from '../custom/SelectList';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

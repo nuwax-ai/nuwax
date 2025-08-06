@@ -1,4 +1,4 @@
-import TooltipIcon from '@/components/TooltipIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { apiKnowledgeDocumentUpdateDocName } from '@/services/knowledge';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { KnowledgeDocumentUpdateDocNameParams } from '@/types/interfaces/knowledge';

@@ -1,6 +1,6 @@
 import debugImage from '@/assets/images/debug_image.png';
 import ConditionRender from '@/components/ConditionRender';
-import TooltipIcon from '@/components/TooltipIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import { ChatBottomDebugProps } from '@/types/interfaces/common';
 import classNames from 'classnames';

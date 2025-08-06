@@ -1,4 +1,4 @@
-import { EllipsisTooltip } from '@/components/EllipsisTooltip';
+import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import { TaskStatus } from '@/types/enums/agent';
 import {
   TaskListProps,

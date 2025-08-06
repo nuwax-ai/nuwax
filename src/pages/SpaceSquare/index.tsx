@@ -1,6 +1,6 @@
 import CustomPopover from '@/components/CustomPopover';
-import InfiniteScrollDiv from '@/components/InfiniteScrollDiv';
-import Loading from '@/components/Loading';
+import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
+import Loading from '@/components/custom/Loading';
 import useSpaceSquare from '@/hooks/useSpaceSquare';
 import { apiPublishOffShelf } from '@/services/publish';
 import {

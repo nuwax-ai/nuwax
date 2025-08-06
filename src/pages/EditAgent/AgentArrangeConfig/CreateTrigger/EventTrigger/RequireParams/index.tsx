@@ -1,4 +1,4 @@
-import TooltipIcon from '@/components/TooltipIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dataTypes } from '@/pages/Antv-X6/params';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { TriggerRequireInputType } from '@/types/interfaces/agentConfig';

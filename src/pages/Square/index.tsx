@@ -1,6 +1,6 @@
 import squareBannerImage from '@/assets/images/square_banner_image.png';
-import InfiniteScrollDiv from '@/components/InfiniteScrollDiv';
-import Loading from '@/components/Loading';
+import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
+import Loading from '@/components/custom/Loading';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import useSpaceSquare from '@/hooks/useSpaceSquare';
 import {

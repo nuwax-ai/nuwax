@@ -1,4 +1,4 @@
-import Loading from '@/components/Loading';
+import Loading from '@/components/custom/Loading';
 import { SYSTEM_SETTING_TABS } from '@/constants/system.constants';
 import { apiSystemConfigList } from '@/services/systemManage';
 import { ConfigObj, TabKey } from '@/types/interfaces/systemManage';
