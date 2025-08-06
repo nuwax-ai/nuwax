@@ -77,7 +77,9 @@ export const useGlobalSettings = () => {
 
   // 获取当前主题算法
   const getThemeAlgorithm = () => {
-    return settings.theme === 'dark' ? [antdTheme.darkAlgorithm] : [];
+    return settings.theme === 'dark'
+      ? antdTheme.darkAlgorithm
+      : antdTheme.defaultAlgorithm;
   };
 
   // 判断是否为暗色主题
