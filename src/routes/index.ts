@@ -109,7 +109,7 @@ const routes = [
           },
           {
             path: '/ecosystem',
-            redirect: '/ecosystem/plugin',
+            redirect: '/ecosystem/mcp',
           },
         ],
       },
