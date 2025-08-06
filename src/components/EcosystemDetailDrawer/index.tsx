@@ -120,18 +120,31 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   const [enableLoading, setEnableLoading] = useState(false);
   // 表单
   const [form] = Form.useForm();
+  // 强制重新渲染的key
+  const [renderKey, setRenderKey] = useState(0);
 
-  // 监听抽屉关闭，重置表单
+  // 监听抽屉关闭，重置表单和状态
   useEffect(() => {
     if (!visible) {
-      form.resetFields();
+      // 重置所有状态
+      form?.resetFields();
       setShowToolSection(false);
       setShowMcpConfig(false);
       setNeedUpdateButton(false);
+      setConfigParam([]);
+      setServerConfig('');
+      setDisableLoading(false);
+      setEnableLoading(false);
+    } else {
+      // 抽屉打开时，增加渲染key强制重新渲染
+      setRenderKey((prev) => prev + 1);
     }
   }, [visible, form]);
 
   useEffect(() => {
+    // 只有在抽屉可见时才处理目标类型信息
+    if (!visible) return;
+
     // 如果targetType为空，则根据dataType判断，因为dataType为MCP时，targetType可能为空
     const type =
       targetType ||
@@ -146,9 +159,12 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
       defaultImage: hitInfo?.defaultImage || DEFAULT_ICON,
       text: hitInfo?.text || DEFAULT_TEXT,
     });
-  }, [targetType, dataType]);
+  }, [targetType, dataType, visible]);
 
   useEffect(() => {
+    // 只有在抽屉可见时才处理服务配置
+    if (!visible) return;
+
     // 如果服务端mcp配置serverConfigJson存在，则解析serverConfigJson
     if (serverConfigJson) {
       try {
@@ -156,52 +172,71 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
         setServerConfig(_configJson?.mcpConfig?.serverConfig || '');
       } catch (error) {
         console.error('解析配置失败:', error);
+        setServerConfig('');
       }
     }
-  }, [serverConfigJson]);
+  }, [serverConfigJson, visible]);
 
   // 使用自定义 Hook 处理抽屉打开时的滚动条
   useDrawerScroll(visible);
 
   const handleClose = () => {
-    form.resetFields(); // 关闭时重置表单
+    // 关闭时重置所有状态
+    form.resetFields();
     setConfigParam([]);
+    setShowToolSection(false);
+    setShowMcpConfig(false);
+    setNeedUpdateButton(false);
+    setServerConfig('');
+    setDisableLoading(false);
+    setEnableLoading(false);
     onClose();
   };
 
   useEffect(() => {
+    // 只有在抽屉可见时才处理配置参数
+    if (!visible) return;
+
     // 如果configParamJson存在，则解析configParamJson
     if (configParamJson) {
-      const configParam = JSON.parse(configParamJson);
-      if (configParam.length > 0) {
-        // 如果localConfigParamJson 内的value merge configParam 内的value
-        const localConfigParam = JSON.parse(localConfigParamJson || '[]');
-        const mergedConfigParam = configParam.map((item: any) => {
-          const localItem = localConfigParam.find(
-            (localItem: any) => localItem.name === item.name,
-          );
-          return {
-            ...item,
-            value: localItem?.value || item.value,
-          };
-        });
-        setConfigParam(mergedConfigParam);
-        setTimeout(() => {
-          form?.resetFields();
-          form.setFieldsValue(
-            mergedConfigParam.reduce((acc: any, item: any) => {
-              acc[item.name] = item.value;
-              return acc;
-            }, {}),
-          );
-        }, 0);
+      try {
+        const _configParam = JSON.parse(configParamJson);
+        if (_configParam.length > 0) {
+          // 如果localConfigParamJson 内的value merge configParam 内的value
+          const localConfigParam = JSON.parse(localConfigParamJson || '[]');
+          const mergedConfigParam = _configParam.map((item: any) => {
+            const localItem = localConfigParam.find(
+              (localItem: any) => localItem.name === item.name,
+            );
+            return {
+              ...item,
+              value: localItem?.value || item.value,
+            };
+          });
+          setConfigParam(mergedConfigParam);
+
+          // 使用 setTimeout 确保表单已经渲染完成
+          setTimeout(() => {
+            form?.resetFields();
+            form.setFieldsValue(
+              mergedConfigParam.reduce((acc: any, item: any) => {
+                acc[item.name] = item.value;
+                return acc;
+              }, {}),
+            );
+          }, 100);
+        }
+      } catch (error) {
+        console.error('解析配置参数失败:', error);
+        setConfigParam([]);
       }
     }
+
     return () => {
       form?.resetFields();
       setConfigParam([]);
     };
-  }, [configParamJson, localConfigParamJson]);
+  }, [configParamJson, localConfigParamJson, form, visible]);
 
   // 启用
   const handleEnable = async () => {
@@ -250,6 +285,9 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     }
   };
   useEffect(() => {
+    // 只有在抽屉可见时才处理更新按钮状态
+    if (!visible) return;
+
     if (!isNewVersion && isEnabled && !configParam?.length) {
       //没有新版本，且已启用，且没有配置参数
       setNeedUpdateButton(false);
@@ -259,7 +297,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     return () => {
       setNeedUpdateButton(false);
     };
-  }, [isNewVersion, isEnabled, configParam]);
+  }, [isNewVersion, isEnabled, configParam, visible]);
 
   if (!data) return null;
 
@@ -268,6 +306,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     if (ownedFlag === EcosystemOwnedFlagEnum.YES) {
       return <></>;
     }
+
     return (
       <>
         {/* 如果需要更新，则显示更新按钮 */}
@@ -343,6 +382,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
 
   return (
     <Drawer
+      key={renderKey} // 使用key强制重新渲染
       placement="right"
       open={visible}
       width={400}
@@ -410,10 +450,10 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
       >
         {/* 这部分可以根据实际需求自定义，截图中显示的是一个工具列表 */}
         {configParam && configParam.length > 0 && (
-          <Form form={form} layout="vertical">
+          <Form key={`form-${renderKey}`} form={form} layout="vertical">
             {configParam.map((item: any) => (
               <Form.Item
-                key={item.name}
+                key={`${item.name}-${renderKey}`}
                 label={item.name}
                 name={item.name}
                 tooltip={item.description}
@@ -434,6 +474,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
           )}
         >
           <CodeEditor
+            key={`code-editor-${renderKey}`}
             codeLanguage={CodeLangEnum.JSON}
             value={serverConfig}
             onChange={(value) => {
