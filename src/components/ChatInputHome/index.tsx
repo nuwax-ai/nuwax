@@ -109,6 +109,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   // enter事件
   const handlePressEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    //如果是输出过程中 或者 中止会话过程中 不能触发enter事件
+    if (isConversationActive || isStoppingConversation) {
+      return;
+    }
     e.preventDefault();
     const { value, selectionStart, selectionEnd } =
       e.target as HTMLTextAreaElement;
