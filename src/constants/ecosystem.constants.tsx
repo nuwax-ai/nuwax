@@ -24,6 +24,11 @@ import { TabsProps } from 'antd';
 // 生态市场应用列表（layout二级菜单）
 export const ECOSYSTEM_MARKET_LIST = [
   {
+    type: EcosystemMarketEnum.MCP,
+    icon: <ICON_PUBLISHED />,
+    text: 'MCP',
+  },
+  {
     type: EcosystemMarketEnum.Plugin,
     icon: <ICON_PLUGIN_BOLD />,
     text: '插件',
@@ -32,11 +37,6 @@ export const ECOSYSTEM_MARKET_LIST = [
     type: EcosystemMarketEnum.Template,
     icon: <ICON_TEMPLATE />,
     text: '模板',
-  },
-  {
-    type: EcosystemMarketEnum.MCP,
-    icon: <ICON_PUBLISHED />,
-    text: 'MCP',
   },
 ];
 
