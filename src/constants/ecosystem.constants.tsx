@@ -8,8 +8,8 @@ import variableImage from '@/assets/images/variable_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
 import {
   ICON_AGENT,
+  ICON_MCP_MANAGE,
   ICON_PLUGIN_BOLD,
-  ICON_PUBLISHED,
   ICON_TEMPLATE,
   ICON_WORKFLOW_SQUARE,
 } from '@/constants/images.constants';
@@ -25,7 +25,7 @@ import { TabsProps } from 'antd';
 export const ECOSYSTEM_MARKET_LIST = [
   {
     type: EcosystemMarketEnum.MCP,
-    icon: <ICON_PUBLISHED />,
+    icon: <ICON_MCP_MANAGE />,
     text: 'MCP',
   },
   {
