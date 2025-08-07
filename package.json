@@ -2,9 +2,9 @@
   "private": true,
   "author": "pujing <398996745@qq.com>",
   "scripts": {
-    "build:dev": "npm run cross-env UMI_ENV=development max build",
-    "build:prod": "npm run cross-env UMI_ENV=production max build",
-    "dev": "npm run cross-env UMI_ENV=development max dev",
+    "build:dev": "cross-env UMI_ENV=development max build",
+    "build:prod": "cross-env UMI_ENV=production max build",
+    "dev": "cross-env UMI_ENV=development max dev",
     "format": "prettier --cache --write .",
     "generate-theme": "node scripts/generateThemeCssVariables.js",
     "postinstall": "max setup",

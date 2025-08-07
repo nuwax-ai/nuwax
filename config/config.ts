@@ -8,7 +8,9 @@ import routes from '../src/routes';
 export default defineConfig({
   // 优先从环境变量读取（需要创建 .env 文件）
   // publicPath: process.env.UMI_PUBLIC_PATH || '/',
-  antd: {},
+  antd: {
+    configProvider: {},
+  },
   access: {},
   model: {},
   initialState: {},
