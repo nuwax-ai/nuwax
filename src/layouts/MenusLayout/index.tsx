@@ -81,7 +81,7 @@ const MenusLayout: React.FC<{
         history.push('/system/user/manage');
         break;
       case TabsEnum.Ecosystem_Market:
-        history.push('/ecosystem/plugin');
+        history.push('/ecosystem');
         break;
       case TabsEnum.Course_System:
         window.open(DOCUMENT_URL);
