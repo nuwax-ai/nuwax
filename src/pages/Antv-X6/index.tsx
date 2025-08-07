@@ -13,9 +13,9 @@ import {
   SKILL_FORM_KEY,
   testRunList,
 } from '@/constants/node.constants';
-import useAutoSave from '@/hooks/useAutoSave';
 import useDisableSaveShortcut from '@/hooks/useDisableSaveShortcut';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
+import useModifiedSaveUpdate from '@/hooks/useModifiedSaveUpdate';
 import type { AddNodeResponse } from '@/services/workflow';
 import service, {
   IgetDetails,
@@ -1747,10 +1747,8 @@ const Workflow: React.FC = () => {
     setIsValidLoading(false);
   };
 
-  // 自动保存
-  // 新增定时器逻辑
-  useAutoSave({
-    interval: 3000,
+  // 监听保存更新修改
+  useModifiedSaveUpdate({
     run: useCallback(async () => {
       const _drawerForm = getWorkflow('drawerForm');
       return await onSaveWorkflow(_drawerForm);

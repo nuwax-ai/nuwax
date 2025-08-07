@@ -8,8 +8,8 @@ import variableImage from '@/assets/images/variable_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
 import {
   ICON_AGENT,
+  ICON_MCP_MANAGE,
   ICON_PLUGIN_BOLD,
-  ICON_PUBLISHED,
   ICON_TEMPLATE,
   ICON_WORKFLOW_SQUARE,
 } from '@/constants/images.constants';
@@ -24,6 +24,11 @@ import { TabsProps } from 'antd';
 // 生态市场应用列表（layout二级菜单）
 export const ECOSYSTEM_MARKET_LIST = [
   {
+    type: EcosystemMarketEnum.MCP,
+    icon: <ICON_MCP_MANAGE />,
+    text: 'MCP',
+  },
+  {
     type: EcosystemMarketEnum.Plugin,
     icon: <ICON_PLUGIN_BOLD />,
     text: '插件',
@@ -32,11 +37,6 @@ export const ECOSYSTEM_MARKET_LIST = [
     type: EcosystemMarketEnum.Template,
     icon: <ICON_TEMPLATE />,
     text: '模板',
-  },
-  {
-    type: EcosystemMarketEnum.MCP,
-    icon: <ICON_PUBLISHED />,
-    text: 'MCP',
   },
 ];
 
