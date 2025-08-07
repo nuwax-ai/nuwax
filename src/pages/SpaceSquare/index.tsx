@@ -102,7 +102,7 @@ const SpaceSection: React.FC = () => {
   ) => {
     const params = {
       page: pageIndex,
-      pageSize: 20,
+      pageSize: 30,
       category: targetType,
       // 空间ID（可选）需要通过空间过滤时有用
       spaceId,
