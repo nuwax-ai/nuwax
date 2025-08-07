@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 
-# 使用 pnpm 执行 lint-staged
-pnpm lint-staged --quiet
+# 使用 package.json 中定义的 lint-staged 脚本
+pnpm run lint-staged

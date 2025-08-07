@@ -1,2 +1,2 @@
-# 使用 pnpm 执行 max verify-commit
-pnpm max verify-commit $1
+# 使用 package.json 中定义的 verify-commit 脚本
+pnpm run verify-commit $1
