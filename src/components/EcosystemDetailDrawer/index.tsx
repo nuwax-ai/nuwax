@@ -260,16 +260,21 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
     }
   };
   useEffect(() => {
-    if (!isNewVersion && isEnabled && !configParam?.length) {
-      //没有新版本，且已启用，且没有配置参数
-      setNeedUpdateButton(false);
-    } else {
+    // 如果是MCP，且已启用，则需要更新按钮
+    if (dataType === EcosystemDataTypeEnum.MCP && isEnabled) {
       setNeedUpdateButton(true);
+    } else {
+      if (!isNewVersion && isEnabled && !configParam?.length) {
+        //没有新版本，且已启用，且没有配置参数
+        setNeedUpdateButton(false);
+      } else {
+        setNeedUpdateButton(true);
+      }
     }
     return () => {
       setNeedUpdateButton(false);
     };
-  }, [isNewVersion, isEnabled, configParam]);
+  }, [isNewVersion, isEnabled, configParam, dataType]);
 
   if (!data) return null;
 
