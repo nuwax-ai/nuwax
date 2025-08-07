@@ -24,7 +24,7 @@ const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
 const AuthorInfo: React.FC<AuthorInfoProps> = ({ avatar, name }) => {
   return (
     <div
-      className={cx('flex', 'items-center', 'text-ellipsis', styles.container)}
+      className={cx('flex', 'items-center', 'overflow-hide', styles.container)}
     >
       <img
         className={cx(styles.avatar)}
@@ -32,7 +32,7 @@ const AuthorInfo: React.FC<AuthorInfoProps> = ({ avatar, name }) => {
         alt=""
         onError={handleError}
       />
-      <span>{name}</span>
+      <span className={cx('text-ellipsis', styles.name)}>{name}</span>
     </div>
   );
 };

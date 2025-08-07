@@ -89,6 +89,10 @@ import BG_ICON_WORKFLOW_VARIABLE from '@/assets/workflow/workflow-Variable.svg';
 import BG_ICON_WORKFLOW_WORKFLOW from '@/assets/workflow/workflow-Workflow.svg';
 // 修改导入语句以正确导入图片
 
+import { ReactComponent as ICON_MORE } from '@/assets/svg/icon_more.svg';
+import { ReactComponent as ICON_STAR } from '@/assets/svg/icon_star.svg';
+import { ReactComponent as ICON_STAR_FILL } from '@/assets/svg/icon_star_fill.svg';
+
 export {
   BG_ICON_WORKFLOW_CODE,
   BG_ICON_WORKFLOW_CONDITION,
@@ -133,6 +137,7 @@ export {
   ICON_MCP_MANAGE,
   ICON_MODEL,
   ICON_MODEL_WHITE,
+  ICON_MORE,
   ICON_NEW_AGENT,
   ICON_NOTIFICATION,
   ICON_ONLINE_DOC,
@@ -144,6 +149,8 @@ export {
   ICON_SETTING_SMALL,
   ICON_SHARE,
   ICON_SPACE_SQUARE,
+  ICON_STAR,
+  ICON_STAR_FILL,
   ICON_START,
   ICON_SUCCESS,
   ICON_TABLE,

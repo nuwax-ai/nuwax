@@ -1,20 +1,22 @@
+import agentImage from '@/assets/images/agent_image.png';
+import CardWrapper from '@/components/business-component/CardWrapper';
 import CustomPopover from '@/components/CustomPopover';
+import {
+  ICON_MORE,
+  ICON_STAR,
+  ICON_STAR_FILL,
+} from '@/constants/images.constants';
 import { APPLICATION_MORE_ACTION } from '@/constants/space.constants';
 import { apiDevCollectAgent } from '@/services/agentDev';
-import { PermissionsEnum } from '@/types/enums/common';
+import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ApplicationItemProps } from '@/types/interfaces/space';
-import { MoreOutlined, UserOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
 import { useModel, useRequest } from 'umi';
-// import ApplicationHeader from './ApplicationHeader';
-import agentImage from '@/assets/images/agent_image.png';
-import CardWrapper from '@/components/business-component/CardWrapper';
-import CollectStar from './CollectStar';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -82,7 +84,9 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
   }, [agentConfigInfo]);
 
   // 收藏、取消收藏事件
-  const handlerCollect = async () => {
+  const handlerCollect = async (e: React.MouseEvent<HTMLSpanElement>) => {
+    e.stopPropagation();
+
     const { id, devCollected } = agentConfigInfo;
     if (devCollected) {
       await runCancelCollect(id);
@@ -111,59 +115,37 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
       defaultIcon={agentImage}
       onClick={() => onClick(agentConfigInfo.id)}
       extra={
-        <div className={cx('flex', styles['rel-info'])}>
-          <span>最近编辑</span>
-          <span>{dayjs(agentConfigInfo.modified).format('MM-DD HH:mm')}</span>
-        </div>
+        <>
+          <span>
+            最近编辑 {dayjs(agentConfigInfo.modified).format('MM-DD HH:mm')}
+          </span>
+          {agentConfigInfo?.publishStatus === PublishStatusEnum.Published && (
+            <span>已发布</span>
+          )}
+        </>
       }
       footer={
-        <footer className={cx(styles.footer, 'flex', 'items-center')}>
-          <div className={cx('flex-1', 'flex', 'overflow-hide')}>
-            <UserOutlined />
-            <span className={cx('flex-1', 'text-ellipsis', styles.author)}>
-              {agentConfigInfo.creator?.nickName ||
-                agentConfigInfo.creator?.userName}
-            </span>
-          </div>
-          {/*收藏与取消收藏*/}
-          <CollectStar
-            devCollected={agentConfigInfo.devCollected}
+        <footer
+          className={cx(
+            styles.footer,
+            'flex',
+            'items-center',
+            'content-between',
+          )}
+        >
+          <span
             onClick={handlerCollect}
-          />
+            className={cx('flex', 'items-center', 'cursor-pointer')}
+          >
+            {agentConfigInfo.devCollected ? <ICON_STAR_FILL /> : <ICON_STAR />}
+          </span>
           {/*更多操作*/}
           <CustomPopover onClick={handlerClickMore} list={actionList}>
-            <span
-              className={cx(
-                styles['icon-box'],
-                'flex',
-                'content-center',
-                'items-center',
-                'hover-box',
-              )}
-            >
-              <MoreOutlined />
-            </span>
+            <ICON_MORE />
           </CustomPopover>
         </footer>
       }
     />
-    // <div
-    //   className={cx(
-    //     styles.container,
-    //     'w-full',
-    //     'px-16',
-    //     'py-16',
-    //     'radius-6',
-    //     'flex',
-    //     'flex-col',
-    //     'content-between',
-    //     'cursor-pointer',
-    //   )}
-    //   onClick={() => onClick(agentConfigInfo.id)}
-    // >
-    //   {/*头部信息*/}
-    //   <ApplicationHeader agentConfigInfo={agentConfigInfo} />
-    // </div>
   );
 };
 

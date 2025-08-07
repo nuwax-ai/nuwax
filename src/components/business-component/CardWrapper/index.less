@@ -2,9 +2,23 @@
 
 .container {
   gap: 16px;
-  background-color: #fff;
-  border-radius: 8px;
   padding: 16px;
+  border-radius: var(--border-radius-border-radius-3, 12px);
+  border: 0.5px solid var(--color-border-02, #e4e6eb);
+  background-color: var(--color-background-default, #fff);
+
+  /* cardShadow1 */
+  box-shadow: var(--sds-size-depth-0) 1px 2px 0 rgba(12, 12, 13, 4%),
+    0 1px 3px 0 rgba(0, 0, 0, 4%);
+  transition: all 0.3s ease-in-out;
+  cursor: pointer;
+
+  &:hover {
+    border: 1px solid var(--color-border-primary, #5147ff);
+    box-shadow: 0 0 8px -2px rgba(0, 0, 0, 4%),
+      var(--sds-size-depth-0) 4px 16px -2px rgba(12, 12, 13, 4%),
+      0 8px 24px -2px rgba(0, 0, 0, 4%);
+  }
 
   .header {
     gap: 12px;
@@ -13,16 +27,37 @@
       width: 48px;
       height: 48px;
       border-radius: 8px;
-      background: #eaf5ff;
       object-fit: cover;
       flex-shrink: 0; // 不压缩图片
     }
 
     .title {
-      // color: var(@colorText, #15171F);
-      // font-size: var(@fontSize, 16px);
-      font-weight: 400;
-      // line-height: var(@lineHeightMd, 20px);
+      color: var(--color-font-primary, #15171f);
+      font-size: 16px;
+      font-weight: 510;
+      line-height: 20px;
     }
+
+    .author-rel-info {
+      gap: 12px;
+      height: 16px;
+
+      .extra-box {
+        /* 关键：禁止收缩、禁止放大，宽度由内容撑开 */
+        flex: 0 0 auto; /* 等价于 flex-grow:0; flex-shrink:0; flex-basis:auto; */
+        height: 16px;
+        gap: 12px;
+        color: #828894;
+        font-size: 12px;
+      }
+    }
+  }
+
+  .content {
+    line-height: 16px;
+    height: 32px;
+    color: var(--color-font-tertiary, #5e6470);
+    font-size: 12px;
+    font-weight: 400;
   }
 }

@@ -54,13 +54,23 @@ const CardWrapper: React.FC<PropsWithChildren<CardWrapperProps>> = ({
             e.currentTarget.src = defaultIcon;
           }}
         />
-        <div className={cx('flex-1', 'overflow-hide')}>
+        <div
+          className={cx(
+            'flex-1',
+            'flex',
+            'flex-col',
+            'content-between',
+            'overflow-hide',
+          )}
+        >
           <h3 className={cx('text-ellipsis', styles.title)}>{title}</h3>
           <div
-            className={cx('flex', 'items-center', 'gap-12', 'overflow-hide')}
+            className={cx('flex', 'items-center', styles['author-rel-info'])}
           >
             <AuthorInfo avatar={avatar} name={name} />
-            {extra}
+            <div className={cx('flex', 'content-between', styles['extra-box'])}>
+              {extra}
+            </div>
           </div>
         </div>
       </header>
