@@ -1,3 +1,7 @@
-# 使用完整路径执行 npx 命令
-export PATH="$(npm bin):$PATH"
+#!/usr/bin/env sh
+
+# 添加 Node.js 和 npm 的路径到 PATH
+export PATH="$HOME/.nvm/versions/node/v22.14.0/bin:$PATH"
+
+# 执行 lint-staged
 npx --no-install lint-staged --quiet
