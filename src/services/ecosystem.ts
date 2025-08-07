@@ -1,3 +1,4 @@
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import type {
   ClientConfigSaveReqDTO,
   ClientConfigUpdateDraftReqDTO,
@@ -207,6 +208,49 @@ export async function offlineClientConfig(
   } catch (error) {
     console.error('下线客户端配置失败:', error);
     return null;
+  }
+}
+
+/**
+ * 撤销发布
+ * 撤销已发布的客户端配置
+ *
+ * @param uid 配置的唯一标识
+ * @returns Promise<ClientConfigVo | null> 撤销后的配置详情
+ *
+ * @example
+ * ```typescript
+ * // 撤回指定配置
+ * const result = await withdrawClientConfig('config-uuid-123');
+ * if (result) {
+ *   console.log('配置撤销成功:', result.name);
+ *   console.log('撤销时间:', result.modified);
+ * } else {
+ *   console.log('配置撤销失败');
+ * }
+ * ```
+ */
+export async function withdrawClientConfig(uid: string): Promise<boolean> {
+  if (!uid || uid.trim() === '') {
+    console.warn('UID不能为空');
+    return false;
+  }
+
+  try {
+    const response = (await request(
+      `/api/system/eco/market/client/config/unpublish/${encodeURIComponent(
+        uid.trim(),
+      )}`,
+      {
+        method: 'POST',
+      },
+    )) as RequestResponse<ClientConfigVo>;
+
+    // 返回撤回后的配置详情
+    return response.code === SUCCESS_CODE;
+  } catch (error) {
+    console.error('撤销发布失败:', error);
+    return false;
   }
 }
 

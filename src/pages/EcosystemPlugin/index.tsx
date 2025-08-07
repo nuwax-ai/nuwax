@@ -16,6 +16,7 @@ import {
   updateAndEnableClientConfig,
   updateAndPublishClientConfig,
   updateClientConfigDraft,
+  withdrawClientConfig,
 } from '@/services/ecosystem';
 import {
   AgentAddComponentStatusEnum,
@@ -575,7 +576,6 @@ export default function EcosystemPlugin() {
       // 下线插件
       result = await offlineClientConfig(uid);
     } catch (error) {
-      message.error('下线失败');
       return false;
     }
     if (result) {
@@ -583,7 +583,22 @@ export default function EcosystemPlugin() {
       refreshPluginList();
       return true;
     }
-    message.error('下线失败');
+    return false;
+  };
+
+  const handleWithdraw = async (uid: string): Promise<boolean> => {
+    let result = null;
+    try {
+      result = await withdrawClientConfig(uid);
+    } catch (error) {
+      return false;
+    }
+    console.log('result', result);
+    if (result) {
+      message.success('插件已撤销发布');
+      refreshPluginList();
+      return true;
+    }
     return false;
   };
 
@@ -683,6 +698,7 @@ export default function EcosystemPlugin() {
         isEdit={isEditMode}
         onClose={handleCloseShareModal}
         onOffline={handleOffline}
+        onWithdraw={handleWithdraw}
         onSave={handleSaveShare}
         data={shareModalData}
         onAddComponent={() => {

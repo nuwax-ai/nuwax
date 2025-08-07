@@ -44,6 +44,7 @@ export interface EcosystemShareModalProps {
   onAddComponent: () => void;
   onRemoveComponent: () => void;
   onOffline: (uid: string) => Promise<boolean>;
+  onWithdraw: (uid: string) => Promise<boolean>;
   data?: EcosystemShareModalData | null;
 }
 
@@ -101,6 +102,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
   onSave,
   onAddComponent,
   onOffline,
+  onWithdraw,
   onRemoveComponent,
   data,
 }) => {
@@ -228,14 +230,19 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
   };
 
   const handleOffline = async (uid: string) => {
-    if (uid) {
-      const result = await onOffline(uid);
-      if (result) {
-        handleClose();
-      }
-      return result;
+    const result = await onOffline(uid);
+    if (result) {
+      handleClose();
     }
-    return false;
+    return result;
+  };
+
+  const handleWithdraw = async (uid: string) => {
+    const result = await onWithdraw(uid);
+    if (result) {
+      handleClose();
+    }
+    return result;
   };
 
   // 入参配置columns
@@ -371,6 +378,18 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
               }}
             >
               下线
+            </Button>
+          )}
+          {isEdit && isReviewing && (
+            <Button
+              onClick={() => {
+                if (data.uid) {
+                  // 修复类型错误
+                  handleWithdraw(data.uid);
+                }
+              }}
+            >
+              撤销发布
             </Button>
           )}
           {isDraft && (
