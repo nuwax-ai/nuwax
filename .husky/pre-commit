@@ -1,7 +1,4 @@
 #!/usr/bin/env sh
 
-# 确保 Node.js 路径在 PATH 中
-export PATH="$HOME/.nvm/versions/node/v22.14.0/bin:$PATH"
-
 # 使用 pnpm 执行 lint-staged
 pnpm lint-staged --quiet
