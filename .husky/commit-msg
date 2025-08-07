@@ -1,2 +1,5 @@
+# 确保能找到 Node.js 相关命令
+export PATH="$HOME/.nvm/versions/node/v22.14.0/bin:$PATH"
+
 # 使用 package.json 中定义的 verify-commit 脚本
 pnpm run verify-commit $1
