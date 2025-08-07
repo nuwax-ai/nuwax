@@ -11,7 +11,9 @@ import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
 import { useModel, useRequest } from 'umi';
-import ApplicationHeader from './ApplicationHeader';
+// import ApplicationHeader from './ApplicationHeader';
+import agentImage from '@/assets/images/agent_image.png';
+import CardWrapper from '@/components/business-component/CardWrapper';
 import CollectStar from './CollectStar';
 import styles from './index.less';
 
@@ -97,57 +99,71 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
   };
 
   return (
-    <div
-      className={cx(
-        styles.container,
-        'w-full',
-        'px-16',
-        'py-16',
-        'radius-6',
-        'flex',
-        'flex-col',
-        'content-between',
-        'cursor-pointer',
-      )}
+    <CardWrapper
+      key={agentConfigInfo.id}
+      title={agentConfigInfo.name}
+      avatar={agentConfigInfo.creator?.avatar || ''}
+      name={
+        agentConfigInfo.creator?.nickName || agentConfigInfo.creator?.userName
+      }
+      content={agentConfigInfo.description}
+      icon={agentConfigInfo.icon}
+      defaultIcon={agentImage}
       onClick={() => onClick(agentConfigInfo.id)}
-    >
-      {/*头部信息*/}
-      <ApplicationHeader agentConfigInfo={agentConfigInfo} />
-      {/*相关信息*/}
-      <div className={cx('flex', styles['rel-info'])}>
-        <span>最近编辑</span>
-        <span>{dayjs(agentConfigInfo.modified).format('MM-DD HH:mm')}</span>
-      </div>
-      {/*底部*/}
-      <footer className={cx(styles.footer, 'flex', 'items-center')}>
-        <div className={cx('flex-1', 'flex', 'overflow-hide')}>
-          <UserOutlined />
-          <span className={cx('flex-1', 'text-ellipsis', styles.author)}>
-            {agentConfigInfo.creator?.nickName ||
-              agentConfigInfo.creator?.userName}
-          </span>
+      extra={
+        <div className={cx('flex', styles['rel-info'])}>
+          <span>最近编辑</span>
+          <span>{dayjs(agentConfigInfo.modified).format('MM-DD HH:mm')}</span>
         </div>
-        {/*收藏与取消收藏*/}
-        <CollectStar
-          devCollected={agentConfigInfo.devCollected}
-          onClick={handlerCollect}
-        />
-        {/*更多操作*/}
-        <CustomPopover onClick={handlerClickMore} list={actionList}>
-          <span
-            className={cx(
-              styles['icon-box'],
-              'flex',
-              'content-center',
-              'items-center',
-              'hover-box',
-            )}
-          >
-            <MoreOutlined />
-          </span>
-        </CustomPopover>
-      </footer>
-    </div>
+      }
+      footer={
+        <footer className={cx(styles.footer, 'flex', 'items-center')}>
+          <div className={cx('flex-1', 'flex', 'overflow-hide')}>
+            <UserOutlined />
+            <span className={cx('flex-1', 'text-ellipsis', styles.author)}>
+              {agentConfigInfo.creator?.nickName ||
+                agentConfigInfo.creator?.userName}
+            </span>
+          </div>
+          {/*收藏与取消收藏*/}
+          <CollectStar
+            devCollected={agentConfigInfo.devCollected}
+            onClick={handlerCollect}
+          />
+          {/*更多操作*/}
+          <CustomPopover onClick={handlerClickMore} list={actionList}>
+            <span
+              className={cx(
+                styles['icon-box'],
+                'flex',
+                'content-center',
+                'items-center',
+                'hover-box',
+              )}
+            >
+              <MoreOutlined />
+            </span>
+          </CustomPopover>
+        </footer>
+      }
+    />
+    // <div
+    //   className={cx(
+    //     styles.container,
+    //     'w-full',
+    //     'px-16',
+    //     'py-16',
+    //     'radius-6',
+    //     'flex',
+    //     'flex-col',
+    //     'content-between',
+    //     'cursor-pointer',
+    //   )}
+    //   onClick={() => onClick(agentConfigInfo.id)}
+    // >
+    //   {/*头部信息*/}
+    //   <ApplicationHeader agentConfigInfo={agentConfigInfo} />
+    // </div>
   );
 };
 

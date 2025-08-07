@@ -1,4 +1,4 @@
-@import '@/styles/token';
+@import '@/styles/token.less';
 
 .container {
   gap: 16px;
@@ -15,6 +15,14 @@
       border-radius: 8px;
       background: #eaf5ff;
       object-fit: cover;
+      flex-shrink: 0; // 不压缩图片
+    }
+
+    .title {
+      // color: var(@colorText, #15171F);
+      // font-size: var(@fontSize, 16px);
+      font-weight: 400;
+      // line-height: var(@lineHeightMd, 20px);
     }
   }
 }
