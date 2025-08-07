@@ -3,6 +3,7 @@ import { ChildNode, ExceptionItemProps } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { showExceptionHandle } from '@/utils/graph';
 import { Form, FormInstance } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
 import ComplexNode from '../../component/complexNode';
 import ConditionNode from '../../component/condition';
 import Database from '../../component/database';
@@ -97,13 +98,26 @@ const nodeTemplate = (params: ChildNode, form: FormInstance) => {
 const ExceptionHandle: React.FC<{
   data: ExceptionHandleConfig | undefined;
 }> = ({ data }) => {
-  const exceptionItemProps: ExceptionItemProps = {
-    exceptionHandleType: ExceptionHandleTypeEnum.INTERRUPT,
-    timeout: 180,
-    retryCount: 0,
-    ...(data || {}),
-    name: 'exceptionHandleConfig',
-  };
+  const defaultExceptionItemProps: ExceptionItemProps = useMemo(
+    () => ({
+      exceptionHandleType: ExceptionHandleTypeEnum.INTERRUPT,
+      timeout: 180,
+      retryCount: 0,
+      name: 'exceptionHandleConfig',
+    }),
+    [],
+  );
+  const [exceptionItemProps, setExceptionItemProps] =
+    useState<ExceptionItemProps>(defaultExceptionItemProps);
+  useEffect(() => {
+    setExceptionItemProps((prev) => ({
+      ...prev,
+      ...(data || {}),
+    }));
+    return () => {
+      setExceptionItemProps(defaultExceptionItemProps);
+    };
+  }, []);
 
   return <ExceptionItem {...exceptionItemProps} />;
 };
