@@ -93,6 +93,9 @@ import { ReactComponent as ICON_STAR } from '@/assets/svg/icon_star.svg';
 import { ReactComponent as ICON_STAR_FILL } from '@/assets/svg/icon_star_fill.svg';
 import { ReactComponent as ICON_SUCCESS } from '@/assets/svg/icon_success.svg';
 
+import { ReactComponent as ICON_MESSAGE } from '@/assets/svg/icon_message.svg';
+import { ReactComponent as ICON_USER } from '@/assets/svg/icon_user.svg';
+
 export {
   BG_ICON_WORKFLOW_CODE,
   BG_ICON_WORKFLOW_CONDITION,
@@ -135,6 +138,7 @@ export {
   ICON_KNOWLEDGE,
   ICON_LOCAL_DOC,
   ICON_MCP_MANAGE,
+  ICON_MESSAGE,
   ICON_MODEL,
   ICON_MODEL_WHITE,
   ICON_MORE,
@@ -157,6 +161,7 @@ export {
   ICON_TABLE_FORMAT,
   ICON_TEMPLATE,
   ICON_TEXT_FORMAT,
+  ICON_USER,
   ICON_WORD,
   ICON_WORKFLOW,
   ICON_WORKFLOW_CODE,
