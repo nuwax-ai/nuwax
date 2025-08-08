@@ -68,7 +68,14 @@ const CardWrapper: React.FC<PropsWithChildren<CardWrapperProps>> = ({
             className={cx('flex', 'items-center', styles['author-rel-info'])}
           >
             <AuthorInfo avatar={avatar} name={name} />
-            <div className={cx('flex', 'content-between', styles['extra-box'])}>
+            <div
+              className={cx(
+                'flex',
+                'content-between',
+                'items-center',
+                styles['extra-box'],
+              )}
+            >
               {extra}
             </div>
           </div>

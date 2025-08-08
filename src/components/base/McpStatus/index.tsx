@@ -50,7 +50,7 @@ const McpStatus: React.FC<McpStatusProps> = ({ status }) => {
   return (
     <div className={cx('flex items-center', styles.container)}>
       {icon}
-      <span>{title}</span>
+      <span className={cx(styles.title)}>{title}</span>
     </div>
   );
 };

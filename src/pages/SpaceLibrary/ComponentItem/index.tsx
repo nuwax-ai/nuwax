@@ -13,7 +13,7 @@ import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentItemProps } from '@/types/interfaces/library';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import React, { memo, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 const cx = classNames;
 
@@ -57,7 +57,7 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
       name={componentInfo.creator?.nickName || componentInfo.creator?.userName}
       content={componentInfo.description}
       icon={componentInfo.icon}
-      defaultIcon={info?.defaultImage as string}
+      defaultIcon={info?.defaultImage || ''}
       onClick={onClick}
       extra={
         <>
@@ -87,4 +87,4 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
   );
 };
 
-export default memo(ComponentItem);
+export default ComponentItem;
