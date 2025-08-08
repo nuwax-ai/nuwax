@@ -106,7 +106,6 @@ const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
 
   return (
     <CardWrapper
-      className={cx(styles['card-wrapper'])}
       title={name}
       avatar={publishUser?.avatar || ''}
       name={publishUser?.nickName || publishUser?.userName}
