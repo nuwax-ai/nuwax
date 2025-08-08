@@ -1,22 +1,21 @@
-import avatar from '@/assets/images/avatar.png';
-import ConditionRender from '@/components/ConditionRender';
+import AgentType from '@/components/base/AgentType';
+import CardWrapper from '@/components/business-component/CardWrapper';
 import CustomPopover from '@/components/CustomPopover';
+import { ICON_MORE, ICON_SUCCESS } from '@/constants/images.constants';
 import {
   COMPONENT_LIST,
   COMPONENT_MORE_ACTION,
 } from '@/constants/library.constants';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentItemProps } from '@/types/interfaces/library';
-import { CheckCircleTwoTone, MoreOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { memo, useEffect, useMemo, useState } from 'react';
-import BoxInfo from './BoxInfo';
-import styles from './index.less';
 
-const cx = classNames.bind(styles);
+const cx = classNames;
 
 // 单个资源组件
 const ComponentItem: React.FC<ComponentItemProps> = ({
@@ -52,84 +51,39 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
   }, [componentInfo]);
 
   return (
-    <div
-      className={cx(
-        styles.container,
-        'py-12',
-        'radius-6',
-        'flex',
-        'flex-col',
-        'content-between',
-        'cursor-pointer',
-      )}
+    <CardWrapper
+      title={componentInfo.name}
+      avatar={componentInfo.creator?.avatar || ''}
+      name={componentInfo.creator?.nickName || componentInfo.creator?.userName}
+      content={componentInfo.description}
+      icon={componentInfo.icon}
+      defaultIcon={info?.defaultImage as string}
       onClick={onClick}
-    >
-      <div className={cx('flex', 'content-between', styles.header)}>
-        <div
-          className={cx(
-            'flex-1',
-            'flex',
-            'flex-col',
-            'content-around',
-            'overflow-hide',
-          )}
-        >
-          <h3 className={cx('text-ellipsis', styles['plugin-name'])}>
-            {componentInfo.name}
-          </h3>
-          <p className={cx('text-ellipsis', styles.desc)}>
-            {componentInfo.description}
-          </p>
-        </div>
-        <img
-          className={cx(styles.img)}
-          src={componentInfo.icon || (info?.defaultImage as string)}
-          alt=""
-        />
-      </div>
-      {/*插件类型*/}
-      <div
-        className={cx('flex', 'flex-wrap', 'items-center', styles['type-wrap'])}
-      >
-        <BoxInfo icon={info?.icon} text={info?.text as string} />
-        {componentInfo.publishStatus === PublishStatusEnum.Published && (
-          <>
-            <BoxInfo text="已发布" />
-            <CheckCircleTwoTone twoToneColor="#52c41a" />
-          </>
-        )}
-      </div>
-      <div className={cx(styles.footer, 'flex', 'items-center')}>
-        <img
-          className={cx(styles.img, 'radius-6')}
-          src={componentInfo?.creator?.avatar || avatar}
-          alt=""
-        />
-        <div className={cx('flex-1', 'flex', 'item-center', 'overflow-hide')}>
-          <div className={cx('flex-1', 'text-ellipsis')}>
-            {componentInfo.creator?.nickName || componentInfo.creator?.userName}
-          </div>
-          <div className={cx(styles['edit-time'], 'text-ellipsis')}>
+      extra={
+        <>
+          <span className={cx('text-ellipsis', 'flex-1')}>
             最近编辑 {dayjs(componentInfo.modified).format('MM-DD HH:mm')}
-          </div>
-        </div>
-        <ConditionRender condition={actionList?.length}>
-          <CustomPopover list={actionList} onClick={onClickMore}>
-            <span
-              className={cx(
-                styles['icon-box'],
-                'flex',
-                'content-center',
-                'items-center',
-                'hover-box',
-              )}
-            >
-              <MoreOutlined />
+          </span>
+          {componentInfo?.publishStatus === PublishStatusEnum.Published && (
+            <span className={cx('flex', 'items-center', 'gap-4')}>
+              <ICON_SUCCESS />
+              已发布
             </span>
+          )}
+        </>
+      }
+      footer={
+        <footer className={cx('flex', 'items-center', 'content-between')}>
+          <AgentType
+            type={componentInfo.type as unknown as AgentComponentTypeEnum}
+          />
+          {/*更多操作*/}
+          <CustomPopover list={actionList} onClick={onClickMore}>
+            <ICON_MORE />
           </CustomPopover>
-        </ConditionRender>
-      </div>
-    </div>
+        </footer>
+      }
+    />
   );
 };
 

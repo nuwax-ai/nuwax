@@ -105,7 +105,6 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
 
   return (
     <CardWrapper
-      key={agentConfigInfo.id}
       title={agentConfigInfo.name}
       avatar={agentConfigInfo.creator?.avatar || ''}
       name={
@@ -117,7 +116,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
       onClick={() => onClick(agentConfigInfo.id)}
       extra={
         <>
-          <span>
+          <span className={cx('text-ellipsis', 'flex-1')}>
             最近编辑 {dayjs(agentConfigInfo.modified).format('MM-DD HH:mm')}
           </span>
           {agentConfigInfo?.publishStatus === PublishStatusEnum.Published && (

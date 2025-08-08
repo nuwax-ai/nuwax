@@ -43,12 +43,16 @@
       height: 16px;
 
       .extra-box {
+        // 最小宽度，确保能显示时间以及状态
+        min-width: 120px;
+
         /* 关键：禁止收缩、禁止放大，宽度由内容撑开 */
-        flex: 1 0 auto; /* 等价于 flex-grow:1; flex-shrink:0; flex-basis:auto; */
+        flex: 1 1 auto; /* 等价于 flex-grow:1; flex-shrink:0; flex-basis:auto; */
         height: 16px;
         gap: 12px;
         color: #828894;
         font-size: 12px;
+        overflow: hidden;
       }
     }
   }

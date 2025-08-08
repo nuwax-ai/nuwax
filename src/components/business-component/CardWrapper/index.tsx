@@ -47,7 +47,7 @@ const CardWrapper: React.FC<PropsWithChildren<CardWrapperProps>> = ({
       <header className={cx('flex', styles.header)}>
         <img
           className={cx(styles.image)}
-          src={icon}
+          src={icon || defaultIcon}
           alt=""
           onError={(e) => {
             e.currentTarget.onerror = null;
