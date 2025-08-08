@@ -32,7 +32,6 @@ import { ReactComponent as ICON_OPTIMIZE } from '@/assets/svg/optimize.svg';
 import { ReactComponent as ICON_SETTING } from '@/assets/svg/setting.svg';
 import { ReactComponent as ICON_WORKFLOW_SQUARE } from '@/assets/svg/square_icon_workflow.svg';
 import { ReactComponent as ICON_START } from '@/assets/svg/start.svg';
-import { ReactComponent as ICON_SUCCESS } from '@/assets/svg/success_rate.svg';
 import { ReactComponent as ICON_TABLE } from '@/assets/svg/table.svg';
 import { ReactComponent as ICON_TABLE_FORMAT } from '@/assets/svg/table_format.svg';
 import { ReactComponent as ICON_TEXT_FORMAT } from '@/assets/svg/text_format.svg';
@@ -92,6 +91,7 @@ import BG_ICON_WORKFLOW_WORKFLOW from '@/assets/workflow/workflow-Workflow.svg';
 import { ReactComponent as ICON_MORE } from '@/assets/svg/icon_more.svg';
 import { ReactComponent as ICON_STAR } from '@/assets/svg/icon_star.svg';
 import { ReactComponent as ICON_STAR_FILL } from '@/assets/svg/icon_star_fill.svg';
+import { ReactComponent as ICON_SUCCESS } from '@/assets/svg/icon_success.svg';
 
 export {
   BG_ICON_WORKFLOW_CODE,

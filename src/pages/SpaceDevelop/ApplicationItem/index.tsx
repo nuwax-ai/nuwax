@@ -5,6 +5,7 @@ import {
   ICON_MORE,
   ICON_STAR,
   ICON_STAR_FILL,
+  ICON_SUCCESS,
 } from '@/constants/images.constants';
 import { APPLICATION_MORE_ACTION } from '@/constants/space.constants';
 import { apiDevCollectAgent } from '@/services/agentDev';
@@ -120,7 +121,10 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
             最近编辑 {dayjs(agentConfigInfo.modified).format('MM-DD HH:mm')}
           </span>
           {agentConfigInfo?.publishStatus === PublishStatusEnum.Published && (
-            <span>已发布</span>
+            <span className={cx('flex', 'items-center', 'gap-4')}>
+              <ICON_SUCCESS />
+              已发布
+            </span>
           )}
         </>
       }
