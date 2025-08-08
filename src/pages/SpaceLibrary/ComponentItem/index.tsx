@@ -14,8 +14,9 @@ import type { ComponentItemProps } from '@/types/interfaces/library';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
+import styles from './index.less';
 
-const cx = classNames;
+const cx = classNames.bind(styles);
 
 // 单个资源组件
 const ComponentItem: React.FC<ComponentItemProps> = ({
@@ -61,11 +62,13 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
       onClick={onClick}
       extra={
         <>
-          <span className={cx('text-ellipsis', 'flex-1')}>
+          <span className={cx('text-ellipsis', 'flex-1', styles.time)}>
             最近编辑 {dayjs(componentInfo.modified).format('MM-DD HH:mm')}
           </span>
           {componentInfo?.publishStatus === PublishStatusEnum.Published && (
-            <span className={cx('flex', 'items-center', 'gap-4')}>
+            <span
+              className={cx('flex', 'items-center', 'gap-4', styles.status)}
+            >
               <ICON_SUCCESS />
               已发布
             </span>

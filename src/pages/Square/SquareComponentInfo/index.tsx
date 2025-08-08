@@ -1,5 +1,7 @@
 import pluginImage from '@/assets/images/plugin_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
+import CardWrapper from '@/components/business-component/CardWrapper';
+import { ICON_STAR, ICON_STAR_FILL } from '@/constants/images.constants';
 import {
   apiPublishedPluginCollect,
   apiPublishedPluginUnCollect,
@@ -10,7 +12,6 @@ import {
 } from '@/services/square';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { SquareComponentInfoProps } from '@/types/interfaces/square';
-import { StarFilled, StarOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -24,7 +25,6 @@ const cx = classNames.bind(styles);
  */
 const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
   onClick,
-  extra,
   publishedItemInfo,
   onToggleCollectSuccess,
 }) => {
@@ -105,50 +105,32 @@ const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
   };
 
   return (
-    <div
-      className={cx(styles.container, 'cursor-pointer', 'flex')}
+    <CardWrapper
+      className={cx(styles['card-wrapper'])}
+      title={name}
+      avatar={publishUser?.avatar || ''}
+      name={publishUser?.nickName || publishUser?.userName}
+      content={description}
+      icon={icon}
+      defaultIcon={defaultImage}
       onClick={onClick}
-    >
-      <img
-        className={cx(styles['a-logo'])}
-        src={icon || (defaultImage as string)}
-        alt=""
-      />
-      <div
-        className={cx(styles['info-container'], 'flex-1', 'flex', 'flex-col')}
-      >
-        <header className={cx('flex', styles.header)}>
-          <div className={cx('flex-1', 'flex', 'overflow-hide')}>
-            <span className={cx('flex-1', styles['a-name'], 'text-ellipsis')}>
-              {name}
-            </span>
-            {/*收藏次数*/}
-            <span
-              className={cx(
-                styles.collect,
-                'flex',
-                'items-center',
-                'cursor-pointer',
-              )}
-              onClick={handleToggleCollect}
-            >
-              {collect ? (
-                <StarFilled className={cx(styles['collected-star'])} />
-              ) : (
-                <StarOutlined />
-              )}
-              <span>{statistics?.collectCount || 0}</span>
-            </span>
-          </div>
-          {extra}
-        </header>
-        <div className={cx(styles.nickname, 'text-ellipsis')}>
-          {publishUser?.nickName || publishUser?.userName}发布于
-          {dayjs(created).format('YYYY-MM-DD')}
-        </div>
-        <p className={cx(styles.desc, 'text-ellipsis-3')}>{description}</p>
-      </div>
-    </div>
+      extra={
+        <span className={cx('text-ellipsis', 'flex-1', styles.time)}>
+          发布于 {dayjs(created).format('YYYY-MM-DD')}
+        </span>
+      }
+      footer={
+        <footer className={cx('flex', 'items-center', styles.footer)}>
+          {/*收藏次数*/}
+          <span className={cx(styles.text)} onClick={handleToggleCollect}>
+            {collect ? <ICON_STAR_FILL /> : <ICON_STAR />}
+            {!!statistics?.collectCount && (
+              <span>{statistics?.collectCount}</span>
+            )}
+          </span>
+        </footer>
+      }
+    />
   );
 };
 
