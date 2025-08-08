@@ -6,6 +6,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 interface CardWrapperProps {
+  className?: string;
   onClick?: () => void;
   // 底部
   footer?: React.ReactNode;
@@ -29,6 +30,7 @@ interface CardWrapperProps {
  * 卡片组件
  */
 const CardWrapper: React.FC<PropsWithChildren<CardWrapperProps>> = ({
+  className,
   onClick,
   footer,
   extra,
@@ -41,7 +43,7 @@ const CardWrapper: React.FC<PropsWithChildren<CardWrapperProps>> = ({
 }) => {
   return (
     <div
-      className={cx('flex', 'flex-col', 'gap-4', styles.container)}
+      className={cx('flex', 'flex-col', 'gap-4', styles.container, className)}
       onClick={onClick}
     >
       <header className={cx('flex', styles.header)}>
@@ -68,16 +70,18 @@ const CardWrapper: React.FC<PropsWithChildren<CardWrapperProps>> = ({
             className={cx('flex', 'items-center', styles['author-rel-info'])}
           >
             <AuthorInfo avatar={avatar} name={name} />
-            <div
-              className={cx(
-                'flex',
-                'content-between',
-                'items-center',
-                styles['extra-box'],
-              )}
-            >
-              {extra}
-            </div>
+            {extra && (
+              <div
+                className={cx(
+                  'flex',
+                  'content-between',
+                  'items-center',
+                  styles['extra-box'],
+                )}
+              >
+                {extra}
+              </div>
+            )}
           </div>
         </div>
       </header>

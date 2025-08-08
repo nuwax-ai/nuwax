@@ -20,7 +20,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 /**
- * 单个智能体组件
+ * 单个广场插件、工作量组件
  */
 const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
   onClick,
