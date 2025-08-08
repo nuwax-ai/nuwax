@@ -1,7 +1,7 @@
 // 为主题配置添加类型
 import type { AliasToken } from 'antd/es/theme/interface';
 
-const themeTokens: Partial<AliasToken> = {
+export const themeTokens: Partial<AliasToken> = {
   // 品牌主色 - 项目主色调
   colorPrimary: '#5147ff',
 
@@ -79,6 +79,11 @@ const themeTokens: Partial<AliasToken> = {
   geekblue: '#2f54eb',
   lime: '#a0d911',
   gold: '#faad14',
+};
+export const darkThemeTokens = {
+  ...themeTokens,
+  colorBgBase: '#000',
+  colorTextBase: '#fff',
 };
 
 export default themeTokens;

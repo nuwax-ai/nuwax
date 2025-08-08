@@ -1,16 +1,17 @@
-import GlobalSettings from '@/components/GlobalSettings';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import useEventPolling from '@/hooks/useEventPolling';
-import useGlobalSettings from '@/hooks/useGlobalSettings';
 import { request as requestCommon } from '@/services/common';
-import { getAntdLocale } from '@/utils/locales';
 import { RequestConfig } from '@@/plugin-request/request';
-import { App, ConfigProvider } from 'antd';
-import dayjs from 'dayjs';
+import { theme as antdTheme } from 'antd';
 import 'dayjs/locale/en';
 import 'dayjs/locale/zh-cn';
-import React, { useEffect } from 'react';
-import themeTokens from './utils/themeTokens';
+import React, { useEffect, useRef } from 'react';
+import { useAntdConfigSetter } from 'umi';
+import {
+  defaultSettings,
+  SETTINGS_STORAGE_KEY,
+} from './hooks/useGlobalSettings';
+import { darkThemeTokens, themeTokens } from './utils/themeTokens';
 
 /**
  * 全局轮询组件
@@ -26,46 +27,68 @@ const GlobalEventPolling: React.FC = () => {
  * 应用容器组件
  * 包含全局设置状态管理和主题配置
  */
+
 const AppContainer: React.FC<{ children: React.ReactElement }> = ({
   children,
 }) => {
-  const { language, getThemeAlgorithm, isDarkMode } = useGlobalSettings();
+  const setAntdConfig = useAntdConfigSetter();
+  const lastAppliedRef = useRef<string>('');
 
-  // 根据语言设置切换 dayjs 语言包
+  // 初始化一次，并监听设置变更事件，动态更新 antd ConfigProvider
   useEffect(() => {
-    if (language === 'zh-CN') {
-      dayjs.locale('zh-cn');
-    } else {
-      dayjs.locale('en');
-    }
-  }, [language]);
+    const applyFromStorage = () => {
+      try {
+        const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
+        const base = defaultSettings;
+        const stored = saved ? { ...base, ...JSON.parse(saved) } : base;
 
-  // 根据主题设置 body 的主题属性
-  useEffect(() => {
-    document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
-  }, [isDarkMode]);
+        const isDarkMode = stored.theme === 'dark';
+        const algorithm = isDarkMode
+          ? antdTheme.darkAlgorithm
+          : antdTheme.defaultAlgorithm;
+        const baseTokens = isDarkMode ? darkThemeTokens : themeTokens;
+        const colorPrimary = (stored as any)?.primaryColor;
+        const tokens = colorPrimary
+          ? { ...baseTokens, colorPrimary }
+          : baseTokens;
+
+        const signature = JSON.stringify({
+          mode: isDarkMode ? 'dark' : 'light',
+          tokens,
+        });
+        if (signature === lastAppliedRef.current) return;
+        lastAppliedRef.current = signature;
+
+        setAntdConfig({
+          theme: {
+            algorithm,
+            token: tokens as any,
+            cssVar: { prefix: 'xagi' },
+          },
+          appConfig: {},
+        });
+      } catch {
+        // ignore
+      }
+    };
+
+    applyFromStorage();
+
+    const handler = () => applyFromStorage();
+    window.addEventListener('xagi-global-settings-changed', handler as any);
+    return () =>
+      window.removeEventListener(
+        'xagi-global-settings-changed',
+        handler as any,
+      );
+  }, []);
 
   return (
-    <ConfigProvider
-      locale={getAntdLocale(language)}
-      theme={{
-        cssVar: {
-          prefix: 'xagi',
-        },
-        hashed: false,
-        token: themeTokens,
-        // components: componentThemes,
-        algorithm: getThemeAlgorithm(),
-      }}
-    >
-      <App style={{ height: '100%' }}>
-        {/* 只有用户已登录时才启动事件轮询 */}
-        <GlobalEventPolling />
-        {children}
-        {/* 全局设置组件 */}
-        <GlobalSettings />
-      </App>
-    </ConfigProvider>
+    <>
+      {/* 只有用户已登录时才启动事件轮询 */}
+      <GlobalEventPolling />
+      {children}
+    </>
   );
 };
 
@@ -99,3 +122,22 @@ export function onRouteChange({ location, ...rest }: any) {
 }
 
 export const request: RequestConfig = requestCommon;
+
+/**
+ * 运行时 antd 配置
+ * 使用 Umi 的 RuntimeAntdConfig 动态设置主题、语言、App 包裹组件等
+ * 以替换手写的 <ConfigProvider /> 包裹
+ */
+export const antd = (memo: any) => {
+  try {
+    memo.theme ??= {} as any;
+    memo.theme.cssVar = { prefix: 'xagi' } as any;
+    memo.appConfig ??= {} as any;
+  } catch {
+    // 回退到基础配置
+    memo.theme ??= {} as any;
+    memo.theme.cssVar = { prefix: 'xagi' } as any;
+    memo.appConfig ??= {} as any;
+  }
+  return memo;
+};

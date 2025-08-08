@@ -1,5 +1,6 @@
 import { theme as antdTheme } from 'antd';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { setLocale } from 'umi';
 
 // 主题类型定义
 export type ThemeMode = 'light' | 'dark';
@@ -11,15 +12,20 @@ export type Language = 'zh-CN' | 'en-US';
 export interface GlobalSettings {
   theme: ThemeMode;
   language: Language;
+  /**
+   * 应用主色，影响 Ant Design `colorPrimary`
+   */
+  primaryColor?: string;
 }
 
 // 本地存储的键名
-const SETTINGS_STORAGE_KEY = 'xagi-global-settings';
+export const SETTINGS_STORAGE_KEY = 'xagi-global-settings';
 
-// 默认设置
-const defaultSettings: GlobalSettings = {
+// 默认设置（导出供初始化使用）
+export const defaultSettings: GlobalSettings = {
   theme: 'light',
   language: 'zh-CN',
+  primaryColor: '#5147ff',
 };
 
 /**
@@ -27,28 +33,43 @@ const defaultSettings: GlobalSettings = {
  * 提供主题切换和语言切换功能
  */
 export const useGlobalSettings = () => {
-  const [settings, setSettings] = useState<GlobalSettings>(defaultSettings);
-
-  // 从本地存储加载设置
-  useEffect(() => {
+  // 读取并持有全局设置（不使用 setInitialState，避免耦合）
+  const [settings, setSettings] = useState<GlobalSettings>(() => {
     try {
-      const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-      if (savedSettings) {
-        const parsed = JSON.parse(savedSettings);
-        setSettings({ ...defaultSettings, ...parsed });
-      }
-    } catch (error) {
-      console.warn('加载全局设置失败:', error);
-    }
-  }, []);
+      const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (saved) return { ...defaultSettings, ...JSON.parse(saved) };
+    } catch {}
+    return defaultSettings;
+  });
 
-  // 保存设置到本地存储
+  // antd ConfigProvider 的动态更新交由 app.tsx 的运行时 antd 配置处理，避免在多个组件中重复设置导致循环更新
+
+  // 保存设置到本地，并触发全局事件供其他订阅者使用
   const saveSettings = (newSettings: GlobalSettings) => {
+    setSettings(newSettings);
     try {
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(newSettings));
-      setSettings(newSettings);
     } catch (error) {
       console.error('保存全局设置失败:', error);
+    }
+    try {
+      window.dispatchEvent(
+        new CustomEvent('xagi-global-settings-changed', {
+          detail: newSettings,
+        }),
+      );
+    } catch (err) {
+      try {
+        const evt = document.createEvent('CustomEvent');
+        // @ts-ignore
+        evt.initCustomEvent(
+          'xagi-global-settings-changed',
+          false,
+          false,
+          newSettings,
+        );
+        window.dispatchEvent(evt);
+      } catch {}
     }
   };
 
@@ -68,37 +89,50 @@ export const useGlobalSettings = () => {
     const newLanguage: Language =
       settings.language === 'zh-CN' ? 'en-US' : 'zh-CN';
     saveSettings({ ...settings, language: newLanguage });
+    // 同步 Umi 多语言上下文
+    setLocale(newLanguage, false);
   };
 
   // 设置语言
   const setLanguage = (language: Language) => {
     saveSettings({ ...settings, language });
+    // 同步 Umi 多语言上下文
+    setLocale(language, false);
   };
 
-  // 获取当前主题算法
-  const getThemeAlgorithm = () => {
-    return settings.theme === 'dark'
-      ? antdTheme.darkAlgorithm
-      : antdTheme.defaultAlgorithm;
+  // 设置主色
+  const setPrimaryColor = (color: string) => {
+    const next = color || defaultSettings.primaryColor!;
+    saveSettings({ ...settings, primaryColor: next });
   };
 
   // 判断是否为暗色主题
-  const isDarkMode = settings.theme === 'dark';
+  const isDarkMode = useMemo(() => settings.theme === 'dark', [settings.theme]);
 
   // 判断是否为中文
-  const isChineseLanguage = settings.language === 'zh-CN';
+  const isChineseLanguage = useMemo(
+    () => settings.language === 'zh-CN',
+    [settings.language],
+  );
+  const themeAlgorithm = useMemo(() => {
+    return settings.theme === 'dark'
+      ? antdTheme.darkAlgorithm
+      : antdTheme.defaultAlgorithm;
+  }, [settings.theme]);
 
   return {
     settings,
     theme: settings.theme,
     language: settings.language,
+    primaryColor: settings.primaryColor ?? defaultSettings.primaryColor!,
     isDarkMode,
     isChineseLanguage,
     toggleTheme,
     setTheme,
     toggleLanguage,
     setLanguage,
-    getThemeAlgorithm,
+    themeAlgorithm,
+    setPrimaryColor,
   };
 };
 

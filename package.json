@@ -8,10 +8,12 @@
     "format": "prettier --cache --write .",
     "generate-theme": "node scripts/generateThemeCssVariables.js",
     "postinstall": "max setup",
+    "lint-staged": "lint-staged",
     "prepare": "husky",
     "serve": "http-server ./dist",
     "setup": "max setup",
-    "start": "npm run dev"
+    "start": "npm run dev",
+    "verify-commit": "max verify-commit"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
