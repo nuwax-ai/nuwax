@@ -1,6 +1,8 @@
+import { useGlobalSettings } from '@/hooks/useGlobalSettings';
+import { ColorPicker, theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Outlet, useModel } from 'umi';
+import { Outlet, useIntl, useModel } from 'umi';
 import HistoryConversation from './HistoryConversation';
 import styles from './index.less';
 import MenusLayout from './MenusLayout';
@@ -17,13 +19,28 @@ const MENU_WIDTH = 274; // 菜单宽度
 const ANIMATION_DURATION = 300; // 动画持续时间
 const MOBILE_MENU_TOP_PADDING = 32; // 移动端菜单顶部间距
 
+// 开发环境判断
+const isDev = process.env.NODE_ENV === 'development';
+const isDevOrTest = isDev || process.env.CI;
+
 /**
  * Layout 主布局组件
  * 负责响应式菜单、历史会话、消息、设置弹窗的布局与展示
  */
 const Layout: React.FC = () => {
+  const intl = useIntl();
   // 使用 useRef 避免重复获取 DOM 元素
   const mobileMenuContainerRef = useRef<HTMLDivElement>(null);
+  // 全局主题与语言（已在 app.tsx 统一注入，这里仅保留使用场景需要时可读取）
+  const {
+    language,
+    toggleTheme,
+    toggleLanguage,
+    primaryColor,
+    setPrimaryColor,
+    isDarkMode,
+  } = useGlobalSettings();
+
   // 状态管理
   const {
     isMobile,
@@ -33,6 +50,8 @@ const Layout: React.FC = () => {
     fullMobileMenu,
     setFullMobileMenu,
   } = useModel('layout');
+
+  // 移除对 @@initialState 的依赖，统一由 useGlobalSettings 管理全局配置
 
   /**
    * 检查是否为移动端设备
@@ -170,9 +189,55 @@ const Layout: React.FC = () => {
     () => (isMobile ? { paddingTop: MOBILE_MENU_TOP_PADDING } : {}),
     [isMobile],
   );
+  const token = theme.useToken();
+  console.log('token', token);
 
   return (
     <div className={cx('flex', 'h-full', styles.container)}>
+      {/* 顶部右侧全局操作：主题、语言、主色 */}
+      {isDevOrTest && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 8,
+            right: 12,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            zIndex: 1100,
+            background: 'rgba(255,255,255,0.6)',
+            backdropFilter: 'saturate(180%) blur(8px)',
+            borderRadius: 8,
+            padding: '6px 10px',
+          }}
+        >
+          <a onClick={toggleTheme}>
+            {isDarkMode
+              ? intl.formatMessage({
+                  id: 'theme.light',
+                  defaultMessage: 'Light',
+                })
+              : intl.formatMessage({
+                  id: 'theme.dark',
+                  defaultMessage: 'Dark',
+                })}
+          </a>
+          <span style={{ color: '#d9d9d9' }}>|</span>
+          <a onClick={toggleLanguage}>
+            {language === 'zh-CN'
+              ? intl.formatMessage({ id: 'lang.en', defaultMessage: 'English' })
+              : intl.formatMessage({
+                  id: 'lang.zh',
+                  defaultMessage: 'Chinese',
+                })}
+          </a>
+          <span style={{ color: '#d9d9d9' }}>|</span>
+          <ColorPicker
+            value={primaryColor}
+            onChangeComplete={(c) => setPrimaryColor(c.toHexString())}
+          />
+        </div>
+      )}
       {/* 侧边菜单栏及弹窗区域 */}
       <div
         ref={mobileMenuContainerRef}
