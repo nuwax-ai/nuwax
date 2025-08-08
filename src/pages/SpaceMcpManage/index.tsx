@@ -293,15 +293,7 @@ const SpaceLibrary: React.FC = () => {
   };
 
   return (
-    <div
-      className={cx(
-        styles.container,
-        'flex',
-        'flex-col',
-        'h-full',
-        'overflow-y',
-      )}
-    >
+    <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>MCP管理</h3>
         <Segmented
@@ -338,31 +330,25 @@ const SpaceLibrary: React.FC = () => {
           onClear={handleClearKeyword}
         />
       </div>
-      <div className={cx('flex-1', 'overflow-y')}>
-        {loading ? (
-          <Loading className="h-full" />
-        ) : mcpList?.length > 0 ? (
-          <div className={cx(styles['main-container'])}>
-            {mcpList?.map((info) => (
-              <McpComponentItem
-                key={info.id}
-                className={cx(
-                  info?.spaceId === -1 && styles['office-mcp-item'],
-                )}
-                mcpInfo={info}
-                onClick={() => handleClickComponent(info)}
-                onClickMore={(item) => handleClickMore(item, info)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div
-            className={cx('flex', 'h-full', 'items-center', 'content-center')}
-          >
-            <Empty description="未能找到相关结果" />
-          </div>
-        )}
-      </div>
+      {loading ? (
+        <Loading />
+      ) : mcpList?.length > 0 ? (
+        <div className={cx(styles['main-container'], 'flex-1', 'overflow-y')}>
+          {mcpList?.map((info) => (
+            <McpComponentItem
+              key={info.id}
+              className={cx(info?.spaceId === -1 && styles['office-mcp-item'])}
+              mcpInfo={info}
+              onClick={() => handleClickComponent(info)}
+              onClickMore={(item) => handleClickMore(item, info)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
+          <Empty description="未能找到相关结果" />
+        </div>
+      )}
       <ServerExportModal
         open={serverExportModalVisible}
         mcpId={currentMcpInfoRef.current?.id}

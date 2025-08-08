@@ -551,15 +551,7 @@ const SpaceLibrary: React.FC = () => {
   };
 
   return (
-    <div
-      className={cx(
-        styles.container,
-        'flex',
-        'flex-col',
-        'h-full',
-        'overflow-y',
-      )}
-    >
+    <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>组件库</h3>
         <div className={cx('flex', 'gap-10')}>
@@ -604,28 +596,24 @@ const SpaceLibrary: React.FC = () => {
           onClear={handleClearKeyword}
         />
       </div>
-      <div className={cx('flex-1', 'overflow-y')}>
-        {loading ? (
-          <Loading className="h-full" />
-        ) : componentList?.length > 0 ? (
-          <div className={cx(styles['main-container'])}>
-            {componentList?.map((info) => (
-              <ComponentItem
-                key={`${info.id}${info.type}`}
-                componentInfo={info}
-                onClick={() => handleClickComponent(info)}
-                onClickMore={(item) => handleClickMore(item, info)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div
-            className={cx('flex', 'h-full', 'items-center', 'content-center')}
-          >
-            <Empty description="未能找到相关结果" />
-          </div>
-        )}
-      </div>
+      {loading ? (
+        <Loading />
+      ) : componentList?.length > 0 ? (
+        <div className={cx(styles['main-container'], 'flex-1', 'overflow-y')}>
+          {componentList?.map((info) => (
+            <ComponentItem
+              key={`${info.id}${info.type}`}
+              componentInfo={info}
+              onClick={() => handleClickComponent(info)}
+              onClickMore={(item) => handleClickMore(item, info)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
+          <Empty description="未能找到相关结果" />
+        </div>
+      )}
       {/*新建插件弹窗*/}
       <CreateNewPlugin
         spaceId={spaceId}

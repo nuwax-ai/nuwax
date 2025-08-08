@@ -385,31 +385,27 @@ const SpaceDevelop: React.FC = () => {
           onClear={handleClearKeyword}
         />
       </div>
-      <div className={cx('flex-1', 'overflow-y')}>
-        {loading ? (
-          <Loading className="h-full" />
-        ) : agentList?.length > 0 ? (
-          <div className={cx(styles['main-container'])}>
-            {agentList?.map((item: AgentConfigInfo, index: number) => (
-              <ApplicationItem
-                key={item.id}
-                agentConfigInfo={item}
-                onClickMore={(type) => handlerClickMore(type, index)}
-                onCollect={(isCollect: boolean) =>
-                  handlerCollect(index, isCollect)
-                }
-                onClick={handleClick}
-              />
-            ))}
-          </div>
-        ) : (
-          <div
-            className={cx('flex', 'items-center', 'content-center', 'h-full')}
-          >
-            <Empty description="未能找到相关结果" />
-          </div>
-        )}
-      </div>
+      {loading ? (
+        <Loading />
+      ) : agentList?.length > 0 ? (
+        <div className={cx(styles['main-container'], 'flex-1', 'overflow-y')}>
+          {agentList?.map((item: AgentConfigInfo, index: number) => (
+            <ApplicationItem
+              key={item.id}
+              agentConfigInfo={item}
+              onClickMore={(type) => handlerClickMore(type, index)}
+              onCollect={(isCollect: boolean) =>
+                handlerCollect(index, isCollect)
+              }
+              onClick={handleClick}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className={cx('flex', 'items-center', 'content-center', 'h-full')}>
+          <Empty description="未能找到相关结果" />
+        </div>
+      )}
 
       {/*分析统计弹窗*/}
       <AnalyzeStatistics
