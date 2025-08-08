@@ -223,8 +223,15 @@ const SpaceKnowledge: React.FC = () => {
   // 删除文档
   const handleDocDel = () => {
     const docId = currentDocumentInfo?.id;
-    modalConfirm('您确定要删除此文档吗?', currentDocumentInfo?.name || '', () =>
-      runDocDelete(docId),
+    modalConfirm(
+      '您确定要删除此文档吗?',
+      currentDocumentInfo?.name || '',
+      () => {
+        runDocDelete(docId);
+        return new Promise((resolve) => {
+          setTimeout(resolve, 1000);
+        });
+      },
     );
   };
 

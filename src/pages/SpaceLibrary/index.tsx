@@ -69,8 +69,6 @@ const SpaceLibrary: React.FC = () => {
   const [openPlugin, setOpenPlugin] = useState<boolean>(false);
   // 新建数据库弹窗
   const [openDatabase, setOpenDatabase] = useState<boolean>(false);
-  // 打开分析弹窗
-  // const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
   // 迁移、复制弹窗
   const [openMove, setOpenMove] = useState<boolean>(false);
   // 打开创建知识库弹窗
@@ -370,29 +368,6 @@ const SpaceLibrary: React.FC = () => {
     history.push(`/space/${spaceId}/table/${data}`);
   };
 
-  // 设置统计信息
-  // const handleSetStatistics = () => {
-  //   const analyzeList = [
-  //     {
-  //       label: '智能体引用数',
-  //       value: '2324',
-  //     },
-  //     {
-  //       label: '调用次数',
-  //       value: '12334',
-  //     },
-  //     {
-  //       label: '平均响应时长（毫秒）',
-  //       value: '1322',
-  //     },
-  //     {
-  //       label: '调用成功率',
-  //       value: '99.8%',
-  //     },
-  //   ];
-  //   setComponentStatistics(analyzeList);
-  // };
-
   // 删除组件确认弹窗
   const showDeleteConfirm = (type: ComponentTypeEnum, info: ComponentInfo) => {
     const { id, name } = info;
@@ -414,6 +389,9 @@ const SpaceLibrary: React.FC = () => {
           runTableDel(id);
           break;
       }
+      return new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+      });
     });
   };
 
@@ -648,13 +626,6 @@ const SpaceLibrary: React.FC = () => {
           </div>
         )}
       </div>
-      {/*统计概览*/}
-      {/*<AnalyzeStatistics*/}
-      {/*  open={openAnalyze}*/}
-      {/*  onCancel={() => setOpenAnalyze(false)}*/}
-      {/*  title="统计概览"*/}
-      {/*  list={componentStatistics}*/}
-      {/*/>*/}
       {/*新建插件弹窗*/}
       <CreateNewPlugin
         spaceId={spaceId}
