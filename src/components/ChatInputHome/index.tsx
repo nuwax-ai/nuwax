@@ -154,6 +154,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     if (clearDisabled || wholeDisabled) {
       return;
     }
+    checkConversationActive([]);
     onClear?.();
   };
 
