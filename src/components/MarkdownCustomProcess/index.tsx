@@ -20,7 +20,6 @@ interface MarkdownCustomProcessProps {
   name: string;
   status: ProcessingEnum;
   type: AgentComponentTypeEnum;
-  children: React.ReactNode;
   dataKey: string;
 }
 function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
@@ -36,35 +35,20 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     result: '',
   });
 
-  // 处理 children 的 解析出来做为 result
-  const result = useMemo(() => {
-    if (!props.children) {
-      return '';
-    }
-    try {
-      return JSON.parse(decodeURIComponent(props.children as string));
-    } catch (error) {
-      return '';
-    }
-  }, [props.children]);
-
-  useEffect(() => {
-    setInnerProcessing((prev) => ({
-      ...prev,
-      result,
-    }));
-  }, [result]);
-
   // 添加 WebSearchProModal 的状态管理
   const [openModal, setOpenModal] = useState(false);
 
   useEffect(() => {
-    if (innerProcessing.status !== ProcessingEnum.EXECUTING) {
-      // 如果状态不是执行中，则不更新
-      return;
-    }
+    // if (innerProcessing.status !== ProcessingEnum.EXECUTING) {
+    //   // 如果状态不是执行中，则不更新
+    //   return;
+    // }
     const processing = getProcessingById(innerProcessing.executeId);
-    if (processing && processing.status !== innerProcessing.status) {
+    if (
+      processing &&
+      (processing?.status !== innerProcessing.status ||
+        !isEqual(processing.result, innerProcessing.result))
+    ) {
       setInnerProcessing(processing);
     }
   }, [processingList, innerProcessing.executeId]);
@@ -121,10 +105,11 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   useEffect(() => {
     if (
       innerProcessing.executeId &&
-      innerProcessing.status === ProcessingEnum.FINISHED
+      (innerProcessing.status === ProcessingEnum.FINISHED ||
+        innerProcessing.status === ProcessingEnum.FAILED)
     ) {
       const theDetailData = getDetailData(innerProcessing.result);
-      if (isEqual(theDetailData, detailData)) {
+      if (detailData && isEqual(theDetailData, detailData)) {
         // loose equal
         return;
       }
@@ -135,6 +120,24 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     innerProcessing.status,
     innerProcessing.result,
   ]);
+
+  const disabled = useMemo(() => {
+    return (
+      !(
+        detailData &&
+        (innerProcessing.status === ProcessingEnum.FINISHED ||
+          innerProcessing.status === ProcessingEnum.FAILED)
+      ) || false
+    );
+  }, [innerProcessing.status, detailData]);
+
+  const handleSeeDetail = useCallback(() => {
+    if (!detailData) {
+      message.error('暂无数据');
+      return;
+    }
+    setOpenModal(true);
+  }, [detailData]);
 
   if (!innerProcessing.executeId) {
     return null;
@@ -156,14 +159,16 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
             <Tooltip title={'查看详情'}>
               <Button
                 type="text"
+                disabled={disabled}
                 icon={<ProfileOutlined />}
-                onClick={() => setOpenModal(true)}
+                onClick={handleSeeDetail}
               />
             </Tooltip>
             <Tooltip title="复制">
               <Button
                 type="text"
                 icon={<CopyOutlined />}
+                disabled={disabled}
                 onClick={handleCopy}
               />
             </Tooltip>
