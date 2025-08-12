@@ -16,6 +16,7 @@ export enum CodeLangEnum {
   Python = 'Python',
   JavaScript = 'JavaScript',
   JSON = 'JSON',
+  Text = 'Text',
 }
 
 // 插件Code模式
