@@ -271,6 +271,7 @@ export default () => {
             clearTimeout(timeoutRef.current);
             timeoutRef.current = null;
           }
+          disabledConversationActive();
           return [];
         }
         // 深拷贝消息列表
