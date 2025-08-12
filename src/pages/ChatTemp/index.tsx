@@ -300,6 +300,7 @@ const ChatTemp: React.FC = () => {
             clearTimeout(timeoutRef.current);
             timeoutRef.current = null;
           }
+          disabledConversationActive();
           return [];
         }
         // 深拷贝消息列表
@@ -684,6 +685,9 @@ const ChatTemp: React.FC = () => {
     // 租户配置信息查询接口
     runTenantConfig();
     addBaseTarget();
+    return () => {
+      disabledConversationActive();
+    };
   }, []);
 
   useEffect(() => {
