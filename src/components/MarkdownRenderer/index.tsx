@@ -32,6 +32,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     markdownRef,
     headerActions = true,
     disableTyping = true,
+    theme = 'light',
   }: MarkdownRendererProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const plugins = useMemo(
@@ -58,6 +59,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
             interval={30}
             plugins={plugins}
             codeBlock={{ headerActions }}
+            theme={theme}
             math={{
               splitSymbol: 'bracket',
               replaceMathBracket,

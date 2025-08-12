@@ -67,8 +67,11 @@ const cx = classNames.bind(styles);
  * 主页咨询聊天页面
  */
 const ChatTemp: React.FC = () => {
-  const { checkConversationActive, setCurrentConversationRequestId } =
-    useModel('conversationInfo');
+  const {
+    checkConversationActive,
+    disabledConversationActive,
+    setCurrentConversationRequestId,
+  } = useModel('conversationInfo');
   // 链接Key
   const { chatKey } = useParams();
   // 会话信息
@@ -222,10 +225,10 @@ const ChatTemp: React.FC = () => {
         const len = _messageList?.length || 0;
         // 存在消息列表时，设置消息列表
         if (len) {
-          setMessageList(_messageList);
-
-          // 检查会话状态
-          checkConversationActive(_messageList);
+          setMessageList(() => {
+            checkConversationActive(_messageList);
+            return _messageList;
+          });
 
           // 最后一条消息为"问答"时，获取问题建议
           const lastMessage = _messageList[len - 1];
@@ -258,13 +261,17 @@ const ChatTemp: React.FC = () => {
             id: uuidv4(),
             messageType: MessageTypeEnum.ASSISTANT,
           } as MessageInfo;
-          setMessageList([currentMessage]);
+          setMessageList(() => {
+            checkConversationActive([currentMessage]);
+            return [currentMessage];
+          });
         }
 
         handleScrollBottom();
       },
       onError: () => {
         setIsLoadingConversation(false);
+        disabledConversationActive();
       },
     },
   );
@@ -306,10 +313,6 @@ const ChatTemp: React.FC = () => {
         ) as MessageInfo;
         // 消息不存在时
         if (!currentMessage) {
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-            timeoutRef.current = null;
-          }
           return messageList;
         }
 
@@ -391,10 +394,6 @@ const ChatTemp: React.FC = () => {
             finalResult: data,
             id: res.requestId,
           };
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-            timeoutRef.current = null;
-          }
         }
         // ERROR事件
         if (eventType === ConversationEventTypeEnum.ERROR) {
@@ -445,7 +444,13 @@ const ChatTemp: React.FC = () => {
             }
             return info;
           }) || [];
-        setMessageList(list);
+        setMessageList(() => {
+          disabledConversationActive();
+          return list;
+        });
+      },
+      onClose: () => {
+        disabledConversationActive();
       },
     });
     // 主动关闭连接
@@ -484,6 +489,11 @@ const ChatTemp: React.FC = () => {
     setConversationInfo(null);
     allowAutoScrollRef.current = true;
     setShowScrollBtn(false);
+    if (timeoutRef.current) {
+      //清除会话定时器
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
   };
 
   // 发送消息
@@ -542,7 +552,10 @@ const ChatTemp: React.FC = () => {
       chatMessage,
       currentMessage,
     ];
-    setMessageList(newMessageList);
+    setMessageList(() => {
+      checkConversationActive(newMessageList);
+      return newMessageList;
+    });
     // 缓存消息列表
     messageListRef.current = newMessageList;
 
