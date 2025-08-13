@@ -1,0 +1,23 @@
+.container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* 外层滚动容器：启用原生稳定滚动条槽位，避免内容宽度变化 */
+.content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: hidden;
+
+  &:hover {
+    overflow-y: auto;
+  }
+}
+
+/* 内部内容：绝对定位 */
+.body {
+  position: absolute;
+}

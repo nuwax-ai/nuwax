@@ -53,7 +53,7 @@ const Header: React.FC = () => {
           </span>
         </Tooltip>
       </span>
-      <div className={cx(styles['divider-horizontal'])} />
+      {/* <div className={cx(styles['divider-horizontal'])} /> */}
     </>
   );
 };

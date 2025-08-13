@@ -110,6 +110,8 @@ export interface SquareMenuComponentInfo {
 // 广场菜单项组件
 export interface SquareMenuItemProps {
   icon?: React.ReactNode;
+  isFirst?: boolean;
+  isOpen?: boolean;
   name: string;
   isActive: boolean;
   isDown?: boolean;

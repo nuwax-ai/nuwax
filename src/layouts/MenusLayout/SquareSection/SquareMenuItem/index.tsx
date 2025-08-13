@@ -1,6 +1,7 @@
 import ConditionRender from '@/components/ConditionRender';
 import type { SquareMenuItemProps } from '@/types/interfaces/square';
 import { DownOutlined } from '@ant-design/icons';
+import { Typography } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -12,14 +13,24 @@ const SquareMenuItem: React.FC<SquareMenuItemProps> = ({
   icon,
   name,
   isActive,
+  isFirst = false,
   isDown,
+  isOpen = false,
   onClick,
 }) => {
   return (
     <div
-      className={cx('flex', 'items-center', styles.row, 'hover-deep', {
-        [styles.active]: isActive,
-      })}
+      className={cx(
+        'flex',
+        'items-center',
+        styles.row,
+        isDown ? styles.headItem : styles.normalItem,
+        {
+          [styles.active]: isActive,
+          [styles.first]: isFirst,
+          [styles.open]: isOpen,
+        },
+      )}
       onClick={onClick}
     >
       <span
@@ -32,7 +43,7 @@ const SquareMenuItem: React.FC<SquareMenuItemProps> = ({
       >
         {icon}
       </span>
-      <h4 className={cx('flex-1', styles.title)}>{name}</h4>
+      <Typography.Text className={cx('flex-1')}>{name}</Typography.Text>
       <ConditionRender condition={isDown}>
         <DownOutlined className={cx(styles['icon-dropdown'])} />
       </ConditionRender>

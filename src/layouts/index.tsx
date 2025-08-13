@@ -5,6 +5,12 @@ import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Outlet, useIntl, useModel } from 'umi';
 import HistoryConversation from './HistoryConversation';
 import styles from './index.less';
+import {
+  ANIMATION_DURATION,
+  MENU_WIDTH,
+  MOBILE_BREAKPOINT,
+  MOBILE_MENU_TOP_PADDING,
+} from './layout.constants';
 import MenusLayout from './MenusLayout';
 import Message from './Message';
 import MobileMenu from './MobileMenu';
@@ -12,12 +18,6 @@ import Setting from './Setting';
 
 // 绑定 classNames，便于动态样式组合
 const cx = classNames.bind(styles);
-
-// 常量定义
-const MOBILE_BREAKPOINT = 768; // 移动端断点
-const MENU_WIDTH = 274; // 菜单宽度
-const ANIMATION_DURATION = 300; // 动画持续时间
-const MOBILE_MENU_TOP_PADDING = 32; // 移动端菜单顶部间距
 
 // 开发环境判断
 const isDev = process.env.NODE_ENV === 'development';
@@ -264,7 +264,7 @@ const Layout: React.FC = () => {
       </div>
 
       {/* 主内容区 */}
-      <div className={cx('flex-1', 'overflow-y')}>
+      <div className={cx('flex-1', 'overflow-y', styles['page-container'])}>
         <Outlet />
       </div>
     </div>

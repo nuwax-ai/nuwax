@@ -15,6 +15,7 @@ export default defineConfig({
       },
     },
     configProvider: {
+      direction: 'ltr',
       theme: {
         cssVar: {
           prefix: 'xagi',

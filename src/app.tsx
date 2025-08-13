@@ -132,12 +132,14 @@ export const antd = (memo: any) => {
   try {
     memo.theme ??= {} as any;
     memo.theme.cssVar = { prefix: 'xagi' } as any;
+    memo.direction = 'ltr' as any;
     memo.appConfig ??= {} as any;
   } catch {
     // 回退到基础配置
     memo.theme ??= {} as any;
     memo.theme.cssVar = { prefix: 'xagi' } as any;
     memo.appConfig ??= {} as any;
+    memo.direction = 'ltr' as any;
   }
   return memo;
 };

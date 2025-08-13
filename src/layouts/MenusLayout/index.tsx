@@ -1,11 +1,14 @@
+import HoverScrollbar from '@/components/base/HoverScrollbar';
 import { DOCUMENT_URL, SITE_DOCUMENT_URL } from '@/constants/common.constants';
 import useCategory from '@/hooks/useCategory';
 import SystemSection from '@/layouts/MenusLayout/SystemSection';
 import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
+import { Typography } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
+import { FIRST_MENU_WIDTH, SECOND_MENU_WIDTH } from '../layout.constants';
 import EcosystemMarketSection from './EcosystemMarketSection';
 import Header from './Header';
 import HomeSection from './HomeSection';
@@ -139,7 +142,20 @@ const MenusLayout: React.FC<{
         return <EcosystemMarketSection style={overrideContainerStyle} />;
     }
   }, [tabType]);
-
+  const title = useMemo(() => {
+    switch (tabType) {
+      case TabsEnum.Home:
+        return '主页';
+      case TabsEnum.Square:
+        return '广场';
+      case TabsEnum.Space:
+        return '工作空间';
+      case TabsEnum.System_Manage:
+        return '系统管理';
+      case TabsEnum.Ecosystem_Market:
+        return '生态市场';
+    }
+  }, [tabType]);
   return (
     <div className={cx(styles.container, 'flex')}>
       {/*一级导航菜单栏*/}
@@ -151,6 +167,9 @@ const MenusLayout: React.FC<{
           'items-center',
           'py-16',
         )}
+        style={{
+          width: FIRST_MENU_WIDTH,
+        }}
       >
         <Header />
         {/*中间内容区域：主页、工作空间、广场等*/}
@@ -161,9 +180,33 @@ const MenusLayout: React.FC<{
         <User />
       </div>
       {/*二级导航菜单栏*/}
-      <div className={cx(styles['nav-menus'], 'overflow-y')}>
-        <Content />
-      </div>
+      <HoverScrollbar
+        className={cx(styles['nav-menus'])}
+        bodyWidth={SECOND_MENU_WIDTH - 16 * 2}
+        style={{
+          width: SECOND_MENU_WIDTH,
+          marginLeft: 16,
+          padding: '12px 0',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            minHeight: 0,
+          }}
+        >
+          <div style={{ padding: '22px 12px' }}>
+            <Typography.Title level={4} style={{ marginBottom: 0 }}>
+              {title}
+            </Typography.Title>
+          </div>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <Content />
+          </div>
+        </div>
+      </HoverScrollbar>
     </div>
   );
 };

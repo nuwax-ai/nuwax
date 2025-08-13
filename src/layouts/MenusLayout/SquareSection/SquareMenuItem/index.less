@@ -1,28 +1,79 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .row {
-  gap: 6px;
-  height: 32px;
-  padding: 0 5px;
-  margin-bottom: 5px;
-  font-size: 14px;
+  // gap: 6px;
+  // height: 32px;
+  padding: 8px;
+  margin-top: 4px;
+  // font-size: 14px;
   cursor: default;
 
-  &.active {
-    background-color: #f2f3f5;
+  &.first {
+    margin-top: 0;
   }
 
-  .icon-box {
-    width: 16px;
-    height: 16px;
+  &.normalItem {
+    cursor: pointer;
+
+    :global {
+      .ant-typography {
+        margin-left: 32px;
+        font-size: 14px;
+        line-height: 24px;
+      }
+    }
   }
+
+  &.headItem {
+    cursor: pointer;
+
+    :global {
+      .ant-typography {
+        margin-left: 8px;
+        font-size: 16px;
+        line-height: 24px;
+      }
+    }
+  }
+
+  &.active {
+    background-color: @colorBgContainer;
+    color: @colorPrimary;
+    border-radius: @borderRadius;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 8%);
+
+    :global {
+      .ant-typography {
+        color: @colorPrimary;
+      }
+    }
+  }
+
+  &:hover {
+    background-color: @colorBgContainer;
+    border-radius: @borderRadius;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 8%);
+  }
+  // .icon-box {
+  //   width: 16px;
+  //   height: 16px;
+  // }
 
   .title {
-    font-weight: normal;
-    color: #3d3d3d;
+    // font-weight: normal;
+    // color: @colorTextSecondary;
+    font-size: @fontSize;
   }
 
   .icon-dropdown {
     font-size: 12px;
+    color: @colorTextSecondary;
+  }
+
+  &.open {
+    .icon-dropdown {
+      transform: rotate(180deg);
+    }
   }
 }

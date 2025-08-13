@@ -1,10 +1,5 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import ConditionRender from '@/components/ConditionRender';
-import {
-  ICON_AGENT,
-  ICON_PLUGIN_BOLD,
-  ICON_TEMPLATE,
-  ICON_WORKFLOW_SQUARE,
-} from '@/constants/images.constants';
 import SquareMenuItem from '@/layouts/MenusLayout/SquareSection/SquareMenuItem';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import {
@@ -63,56 +58,56 @@ const SquareSection: React.FC<{
   const dataSource = [
     {
       name: '智能体',
-      icon: <ICON_AGENT />,
+      icon: <SvgIcon name="icons-nav-stars" />,
       list: agentInfoList,
       type: SquareAgentTypeEnum.Agent,
     },
     {
       name: '插件',
-      icon: <ICON_PLUGIN_BOLD />,
+      icon: <SvgIcon name="icons-nav-plugins" />,
       list: pluginInfoList,
       type: SquareAgentTypeEnum.Plugin,
     },
     {
       name: '工作流',
-      icon: <ICON_WORKFLOW_SQUARE />,
+      icon: <SvgIcon name="icons-nav-workflow" />,
       list: workflowInfoList,
       type: SquareAgentTypeEnum.Workflow,
     },
     {
       name: '模板',
-      icon: <ICON_TEMPLATE />,
+      icon: <SvgIcon name="icons-nav-template" />,
       list: templateList,
       type: SquareAgentTypeEnum.Template,
     },
   ];
 
   return (
-    <div className={cx('h-full', 'py-16', 'overflow-y')} style={style}>
+    <div className={cx('h-full', 'overflow-y')} style={style}>
       {dataSource.map((info: SquareMenuComponentInfo, index) => (
         <ConditionRender key={index} condition={info.list?.length}>
-          <div className={cx('py-6 px-6')}>
-            <SquareMenuItem
-              name={info.name}
-              isDown
-              icon={info.icon}
-              isActive={activeKey === info.type}
-              onClick={() => handleClick(info.type)}
-            />
-            <div
-              className={cx(styles['box-hidden'], {
-                [styles.visible]: visibleMenu === info.type,
-              })}
-            >
-              {info.list?.map((item: SquareAgentInfo) => (
-                <SquareMenuItem
-                  key={item.name}
-                  name={item.description}
-                  isActive={activeKey === item.name}
-                  onClick={() => handleClick(info.type, item.name)}
-                />
-              ))}
-            </div>
+          <SquareMenuItem
+            name={info.name}
+            isDown
+            isFirst={index === 0}
+            icon={info.icon}
+            isActive={activeKey === info.type}
+            isOpen={visibleMenu === info.type}
+            onClick={() => handleClick(info.type)}
+          />
+          <div
+            className={cx(styles['box-hidden'], {
+              [styles.visible]: visibleMenu === info.type,
+            })}
+          >
+            {info.list?.map((item: SquareAgentInfo) => (
+              <SquareMenuItem
+                key={item.name}
+                name={item.description}
+                isActive={activeKey === item.name}
+                onClick={() => handleClick(info.type, item.name)}
+              />
+            ))}
           </div>
         </ConditionRender>
       ))}

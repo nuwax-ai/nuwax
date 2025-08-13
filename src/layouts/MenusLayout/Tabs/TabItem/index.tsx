@@ -5,14 +5,7 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const TabItem: React.FC<TabItemProps> = ({
-  active,
-  type,
-  icon,
-  iconActive,
-  text,
-  onClick,
-}) => {
+const TabItem: React.FC<TabItemProps> = ({ active, type, icon, onClick }) => {
   return (
     <div
       onClick={() => onClick(type)}
@@ -26,8 +19,8 @@ const TabItem: React.FC<TabItemProps> = ({
         { [styles.active]: active },
       )}
     >
-      <img src={active ? iconActive : icon} alt="" />
-      <span className={cx(styles.text)}>{text}</span>
+      <div className={cx(styles['active-icon-container'])}>{icon}</div>
+      {/* <span className={cx(styles.text)}>{text}</span> */}
     </div>
   );
 };
