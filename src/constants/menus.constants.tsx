@@ -1,7 +1,6 @@
 // import teachMaterialImage from '@/assets/images/teach_material.png';
 // import teachMaterialImageActive from '@/assets/images/teach_material_active.png';
 import SvgIcon from '@/components/base/SvgIcon';
-import { ICON_FILE, ICON_NOTIFICATION } from '@/constants/images.constants';
 import {
   MessageReadStatusEnum,
   SettingActionEnum,
@@ -18,6 +17,11 @@ import {
 
 // tabs
 export const TABS = [
+  {
+    icon: <SvgIcon name="icons-nav-new_chat" />,
+    text: '新建会话',
+    type: TabsEnum.NewChat,
+  },
   {
     icon: <SvgIcon name="icons-nav-home" />,
     text: '主页',
@@ -54,12 +58,12 @@ export const TABS = [
 export const USER_OPERATE_AREA: UserOperateAreaItemType[] = [
   {
     title: '文档',
-    icon: <ICON_FILE />,
+    icon: <SvgIcon name="icons-nav-doc" />,
     type: UserOperatorAreaEnum.Document,
   },
   {
     title: '暂无未读消息',
-    icon: <ICON_NOTIFICATION />,
+    icon: <SvgIcon name="icons-nav-notification" />,
     type: UserOperatorAreaEnum.Message,
   },
 ];

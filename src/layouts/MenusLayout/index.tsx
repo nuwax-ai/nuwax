@@ -1,6 +1,7 @@
 import HoverScrollbar from '@/components/base/HoverScrollbar';
 import { DOCUMENT_URL, SITE_DOCUMENT_URL } from '@/constants/common.constants';
 import useCategory from '@/hooks/useCategory';
+import useConversation from '@/hooks/useConversation';
 import SystemSection from '@/layouts/MenusLayout/SystemSection';
 import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
@@ -37,7 +38,16 @@ const MenusLayout: React.FC<{
   // 关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
   const { runQueryCategory } = useCategory();
+  // 创建智能体会话
+  const { handleCreateConversation } = useConversation();
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
+  const handleCreateChat = async () => {
+    if (tenantConfigInfo) {
+      // 创建智能体会话
+      await handleCreateConversation(tenantConfigInfo.defaultAgentId);
+    }
+  };
   // 点击主页
   const handleClickHome = () => {
     // 最近使用
@@ -71,6 +81,9 @@ const MenusLayout: React.FC<{
     handleCloseMobileMenu();
 
     switch (type) {
+      case TabsEnum.NewChat:
+        handleCreateChat();
+        break;
       case TabsEnum.Home:
         handleClickHome();
         break;
@@ -165,7 +178,6 @@ const MenusLayout: React.FC<{
           'flex',
           'flex-col',
           'items-center',
-          'py-16',
         )}
         style={{
           width: FIRST_MENU_WIDTH,

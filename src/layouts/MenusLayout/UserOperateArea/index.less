@@ -1,6 +1,22 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
 .user-icon {
-  width: 40px;
-  height: 40px;
-  margin-bottom: 6px;
-  font-size: 18px;
+  margin-bottom: 8px;
+  display: flex;
+  width: 48px;
+  height: 48px;
+  padding: 8px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+
+  &:hover {
+    background: @colorBgContainer;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 8%);
+  }
+
+  &.last {
+    margin-bottom: 0;
+  }
 }

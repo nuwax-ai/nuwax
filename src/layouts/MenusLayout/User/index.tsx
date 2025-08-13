@@ -80,7 +80,7 @@ const User: React.FC = () => {
       onOpenChange={setOpenAdmin}
     >
       {/*这里需要包裹一层div，否则控制台会出现Warning警告，可能跟Popover组件有关*/}
-      <div>
+      <div className={styles['user-avatar-container']}>
         <UserAvatar
           avatar={userInfo?.avatar}
           onClick={() => setOpenAdmin(true)}

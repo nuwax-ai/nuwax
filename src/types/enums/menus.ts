@@ -1,5 +1,6 @@
 // 菜单栏~tabs切换事件枚举
 export enum TabsEnum {
+  NewChat = 'new_chat',
   Home = 'home',
   // 工作空间
   Space = 'space',
