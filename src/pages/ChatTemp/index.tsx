@@ -146,7 +146,6 @@ const ChatTemp: React.FC = () => {
   useEffect(() => {
     if (!!userFillVariables) {
       form.setFieldsValue(userFillVariables);
-      isSendMessageRef.current = true;
       setVariableParams(userFillVariables);
     }
   }, [userFillVariables]);
@@ -617,6 +616,12 @@ const ChatTemp: React.FC = () => {
     handleClearSideEffect();
     setMessageList([]);
     setIsLoadingConversation(true);
+    // 清空发送消息状态
+    isSendMessageRef.current = false;
+    // 清空变量参数
+    setVariableParams(null);
+    // 清空表单
+    form.resetFields();
     // 创建临时会话
     handleCreateTempChat(captchaVerifyParamRef.current);
   }, [chatKey]);
@@ -807,7 +812,7 @@ const ChatTemp: React.FC = () => {
                 className="mb-16"
                 form={form}
                 variables={variables}
-                isFilled={isSendMessageRef.current}
+                isFilled={!!userFillVariables}
                 disabled={!!userFillVariables || isSendMessageRef.current}
               />
               {messageList?.length > 0 ? (
