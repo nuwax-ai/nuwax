@@ -1,5 +1,3 @@
-import ConditionRender from '@/components/ConditionRender';
-import type { SquareMenuItemProps } from '@/types/interfaces/square';
 import { DownOutlined } from '@ant-design/icons';
 import { Typography } from 'antd';
 import classNames from 'classnames';
@@ -8,8 +6,19 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-// 广场菜单项组件
-const SquareMenuItem: React.FC<SquareMenuItemProps> = ({
+// 二级菜单项组件
+export interface SecondMenuItemProps {
+  icon?: React.ReactNode;
+  isFirst?: boolean;
+  isOpen?: boolean;
+  name: string;
+  isActive: boolean;
+  isDown?: boolean;
+  onClick: () => void;
+}
+
+// 二级菜单项组件
+const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
   icon,
   name,
   isActive,
@@ -44,11 +53,9 @@ const SquareMenuItem: React.FC<SquareMenuItemProps> = ({
         {icon}
       </span>
       <Typography.Text className={cx('flex-1')}>{name}</Typography.Text>
-      <ConditionRender condition={isDown}>
-        <DownOutlined className={cx(styles['icon-dropdown'])} />
-      </ConditionRender>
+      {isDown ? <DownOutlined className={cx(styles['icon-dropdown'])} /> : null}
     </div>
   );
 };
 
-export default SquareMenuItem;
+export default SecondMenuItem;

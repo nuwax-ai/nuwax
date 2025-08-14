@@ -1,6 +1,6 @@
+import SecondMenuItem from '@/components/base/SecondMenuItem';
 import SvgIcon from '@/components/base/SvgIcon';
 import ConditionRender from '@/components/ConditionRender';
-import SquareMenuItem from '@/layouts/MenusLayout/SquareSection/SquareMenuItem';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import {
   SquareAgentInfo,
@@ -86,7 +86,7 @@ const SquareSection: React.FC<{
     <div className={cx('h-full', 'overflow-y')} style={style}>
       {dataSource.map((info: SquareMenuComponentInfo, index) => (
         <ConditionRender key={index} condition={info.list?.length}>
-          <SquareMenuItem
+          <SecondMenuItem
             name={info.name}
             isDown
             isFirst={index === 0}
@@ -101,7 +101,7 @@ const SquareSection: React.FC<{
             })}
           >
             {info.list?.map((item: SquareAgentInfo) => (
-              <SquareMenuItem
+              <SecondMenuItem
                 key={item.name}
                 name={item.description}
                 isActive={activeKey === item.name}

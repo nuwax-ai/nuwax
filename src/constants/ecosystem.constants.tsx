@@ -6,13 +6,8 @@ import modelImage from '@/assets/images/model_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import variableImage from '@/assets/images/variable_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
-import {
-  ICON_AGENT,
-  ICON_MCP_MANAGE,
-  ICON_PLUGIN_BOLD,
-  ICON_TEMPLATE,
-  ICON_WORKFLOW_SQUARE,
-} from '@/constants/images.constants';
+import SvgIcon from '@/components/base/SvgIcon';
+import { ICON_AGENT, ICON_WORKFLOW_SQUARE } from '@/constants/images.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { EcosystemMarketEnum } from '@/types/enums/ecosystemMarket';
 import {
@@ -25,17 +20,17 @@ import { TabsProps } from 'antd';
 export const ECOSYSTEM_MARKET_LIST = [
   {
     type: EcosystemMarketEnum.MCP,
-    icon: <ICON_MCP_MANAGE />,
+    icon: <SvgIcon name="icons-nav-mcp" />,
     text: 'MCP',
   },
   {
     type: EcosystemMarketEnum.Plugin,
-    icon: <ICON_PLUGIN_BOLD />,
+    icon: <SvgIcon name="icons-nav-plugins" />,
     text: '插件',
   },
   {
     type: EcosystemMarketEnum.Template,
-    icon: <ICON_TEMPLATE />,
+    icon: <SvgIcon name="icons-nav-template" />,
     text: '模板',
   },
 ];

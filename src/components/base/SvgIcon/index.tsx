@@ -1,6 +1,7 @@
 import { ReactComponent as DocSvgFile } from '@/assets/icons/nav/doc.svg';
 import { ReactComponent as EcosystemSvgFile } from '@/assets/icons/nav/ecosystem.svg';
 import { ReactComponent as HomeSvgFile } from '@/assets/icons/nav/home.svg';
+import { ReactComponent as McpSvgFile } from '@/assets/icons/nav/mcp.svg';
 import { ReactComponent as NewChatSvgFile } from '@/assets/icons/nav/new_chat.svg';
 import { ReactComponent as NotificationSvgFile } from '@/assets/icons/nav/notification.svg';
 import { ReactComponent as PluginsSvgFile } from '@/assets/icons/nav/plugins.svg';
@@ -49,6 +50,7 @@ const TemplateSvg = wrapSvg(TemplateSvgFile);
 const WorkflowSvg = wrapSvg(WorkflowSvgFile);
 const NewChatSvg = wrapSvg(NewChatSvgFile);
 const NotificationSvg = wrapSvg(NotificationSvgFile);
+const McpSvg = wrapSvg(McpSvgFile);
 
 const nameToComponent: Record<string, React.FC> = {
   'icons-nav-home': HomeSvg,
@@ -63,6 +65,7 @@ const nameToComponent: Record<string, React.FC> = {
   'icons-nav-workflow': WorkflowSvg,
   'icons-nav-new_chat': NewChatSvg,
   'icons-nav-notification': NotificationSvg,
+  'icons-nav-mcp': McpSvg,
 };
 
 export interface SvgIconProps
