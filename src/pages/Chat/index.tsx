@@ -108,7 +108,6 @@ const Chat: React.FC = () => {
   useEffect(() => {
     if (!!userFillVariables) {
       form.setFieldsValue(userFillVariables);
-      isSendMessageRef.current = true;
       setVariableParams(userFillVariables);
     }
   }, [userFillVariables]);
@@ -328,7 +327,7 @@ const Chat: React.FC = () => {
                 form={form}
                 variables={variables}
                 // 是否已填写表单
-                isFilled={isSendMessageRef.current}
+                isFilled={!!userFillVariables}
                 disabled={!!userFillVariables || isSendMessageRef.current}
               />
               {messageList?.length > 0 ? (
