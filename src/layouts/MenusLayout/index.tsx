@@ -1,3 +1,4 @@
+import ConditionRender from '@/components/ConditionRender';
 import HoverScrollbar from '@/components/base/HoverScrollbar';
 import { DOCUMENT_URL, SITE_DOCUMENT_URL } from '@/constants/common.constants';
 import useCategory from '@/hooks/useCategory';
@@ -169,6 +170,12 @@ const MenusLayout: React.FC<{
         return '生态市场';
     }
   }, [tabType]);
+  const isShowTitle = useMemo(() => {
+    if (tabType === TabsEnum.Space) {
+      return false;
+    }
+    return true;
+  }, [tabType]);
   return (
     <div className={cx(styles.container, 'flex')}>
       {/*一级导航菜单栏*/}
@@ -209,11 +216,13 @@ const MenusLayout: React.FC<{
             minHeight: 0,
           }}
         >
-          <div style={{ padding: '22px 12px' }}>
-            <Typography.Title level={4} style={{ marginBottom: 0 }}>
-              {title}
-            </Typography.Title>
-          </div>
+          <ConditionRender condition={isShowTitle}>
+            <div style={{ padding: '22px 12px' }}>
+              <Typography.Title level={4} style={{ marginBottom: 0 }}>
+                {title}
+              </Typography.Title>
+            </div>
+          </ConditionRender>
           <div style={{ flex: 1, minHeight: 0 }}>
             <Content />
           </div>

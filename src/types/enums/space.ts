@@ -169,3 +169,9 @@ export enum AllowDevelopEnum {
   // 开启
   Allow = 1,
 }
+
+export interface SpaceApplicationList {
+  type: SpaceApplicationListEnum;
+  icon: React.ReactNode;
+  text: string;
+}

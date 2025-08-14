@@ -1,13 +1,9 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import {
-  ICON_APPLICATION_DEV,
-  ICON_COMPONENT_LIBRARY,
   ICON_DATABASE,
-  ICON_GROUP_SET,
   ICON_KNOWLEDGE,
-  ICON_MCP_MANAGE,
   ICON_MODEL,
   ICON_PLUGIN,
-  ICON_SPACE_SQUARE,
   ICON_WORKFLOW,
 } from '@/constants/images.constants';
 import { InputTypeEnum, TriggerComponentType } from '@/types/enums/agent';
@@ -19,6 +15,7 @@ import {
   CreateListEnum,
   FilterStatusEnum,
   OpenCloseEnum,
+  SpaceApplicationList,
   SpaceApplicationListEnum,
 } from '@/types/enums/space';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
@@ -88,30 +85,30 @@ export const APPLICATION_MORE_ACTION = [
 ];
 
 // 工作空间应用列表（layout二级菜单）
-export const SPACE_APPLICATION_LIST = [
+export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
   {
     type: SpaceApplicationListEnum.Application_Develop,
-    icon: <ICON_APPLICATION_DEV />,
+    icon: <SvgIcon name="icons-nav-stars" />,
     text: '智能体开发',
   },
   {
     type: SpaceApplicationListEnum.Component_Library,
-    icon: <ICON_COMPONENT_LIBRARY />,
+    icon: <SvgIcon name="icons-nav-components" />,
     text: '组件库',
   },
   {
     type: SpaceApplicationListEnum.MCP_Manage,
-    icon: <ICON_MCP_MANAGE />,
+    icon: <SvgIcon name="icons-nav-mcp" />,
     text: 'MCP管理',
   },
   {
     type: SpaceApplicationListEnum.Space_Square,
-    icon: <ICON_SPACE_SQUARE />,
+    icon: <SvgIcon name="icons-nav-space_square" />,
     text: '空间广场',
   },
   {
     type: SpaceApplicationListEnum.Team_Setting,
-    icon: <ICON_GROUP_SET />,
+    icon: <SvgIcon name="icons-nav-settings" />,
     text: '成员与设置',
   },
 ];

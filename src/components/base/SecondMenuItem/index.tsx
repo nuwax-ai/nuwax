@@ -1,4 +1,5 @@
-import { DownOutlined } from '@ant-design/icons';
+import CustomPopover from '@/components/CustomPopover';
+import { DownOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { Typography } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -8,24 +9,28 @@ const cx = classNames.bind(styles);
 
 // 二级菜单项组件
 export interface SecondMenuItemProps {
-  icon?: React.ReactNode;
+  icon?: React.ReactNode | string;
   isFirst?: boolean;
   isOpen?: boolean;
   name: string;
-  isActive: boolean;
+  isActive?: boolean;
+  isHead?: boolean;
   isDown?: boolean;
   onClick: () => void;
+  onCancelCollect?: () => void;
 }
 
 // 二级菜单项组件
 const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
   icon,
   name,
-  isActive,
+  isActive = false,
   isFirst = false,
+  isHead = false,
   isDown,
   isOpen = false,
   onClick,
+  onCancelCollect,
 }) => {
   return (
     <div
@@ -33,7 +38,7 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
         'flex',
         'items-center',
         styles.row,
-        isDown ? styles.headItem : styles.normalItem,
+        icon || isHead ? styles.headItem : styles.normalItem,
         {
           [styles.active]: isActive,
           [styles.first]: isFirst,
@@ -50,10 +55,19 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
           'content-center',
         )}
       >
-        {icon}
+        {typeof icon === 'string' ? (
+          <img className={cx(styles['icon-image'])} src={icon} alt={name} />
+        ) : (
+          icon
+        )}
       </span>
       <Typography.Text className={cx('flex-1')}>{name}</Typography.Text>
       {isDown ? <DownOutlined className={cx(styles['icon-dropdown'])} /> : null}
+      {onCancelCollect && (
+        <CustomPopover list={[{ label: '取消收藏' }]} onClick={onCancelCollect}>
+          <EllipsisOutlined className={cx(styles.collectIcon)} />
+        </CustomPopover>
+      )}
     </div>
   );
 };

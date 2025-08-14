@@ -1,3 +1,4 @@
+import { ReactComponent as ComponentsSvgFile } from '@/assets/icons/nav/components.svg';
 import { ReactComponent as DocSvgFile } from '@/assets/icons/nav/doc.svg';
 import { ReactComponent as EcosystemSvgFile } from '@/assets/icons/nav/ecosystem.svg';
 import { ReactComponent as HomeSvgFile } from '@/assets/icons/nav/home.svg';
@@ -6,6 +7,7 @@ import { ReactComponent as NewChatSvgFile } from '@/assets/icons/nav/new_chat.sv
 import { ReactComponent as NotificationSvgFile } from '@/assets/icons/nav/notification.svg';
 import { ReactComponent as PluginsSvgFile } from '@/assets/icons/nav/plugins.svg';
 import { ReactComponent as SettingsSvgFile } from '@/assets/icons/nav/settings.svg';
+import { ReactComponent as SpaceSquareSvgFile } from '@/assets/icons/nav/space_square.svg';
 import { ReactComponent as SquareSvgFile } from '@/assets/icons/nav/square.svg';
 import { ReactComponent as StarsSvgFile } from '@/assets/icons/nav/stars.svg';
 import { ReactComponent as TemplateSvgFile } from '@/assets/icons/nav/template.svg';
@@ -51,6 +53,8 @@ const WorkflowSvg = wrapSvg(WorkflowSvgFile);
 const NewChatSvg = wrapSvg(NewChatSvgFile);
 const NotificationSvg = wrapSvg(NotificationSvgFile);
 const McpSvg = wrapSvg(McpSvgFile);
+const ComponentsSvg = wrapSvg(ComponentsSvgFile);
+const SpaceSquareSvg = wrapSvg(SpaceSquareSvgFile);
 
 const nameToComponent: Record<string, React.FC> = {
   'icons-nav-home': HomeSvg,
@@ -66,6 +70,8 @@ const nameToComponent: Record<string, React.FC> = {
   'icons-nav-new_chat': NewChatSvg,
   'icons-nav-notification': NotificationSvg,
   'icons-nav-mcp': McpSvg,
+  'icons-nav-components': ComponentsSvg,
+  'icons-nav-space_square': SpaceSquareSvg,
 };
 
 export interface SvgIconProps

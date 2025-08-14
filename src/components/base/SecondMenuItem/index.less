@@ -2,11 +2,8 @@
 @import '@/styles/token';
 
 .row {
-  // gap: 6px;
-  // height: 32px;
-  padding: 8px;
-  margin-top: 4px;
-  // font-size: 14px;
+  padding: @paddingXs;
+  margin-top: @marginXxs;
   cursor: default;
 
   &.first {
@@ -18,9 +15,9 @@
 
     :global {
       .ant-typography {
-        margin-left: 32px;
-        font-size: 14px;
-        line-height: 24px;
+        margin-left: @marginXl;
+        font-size: @fontSize;
+        line-height: @fontHeightLg;
       }
     }
   }
@@ -30,9 +27,9 @@
 
     :global {
       .ant-typography {
-        margin-left: 8px;
-        font-size: 16px;
-        line-height: 24px;
+        margin-left: @marginXs;
+        font-size: @fontSizeLg;
+        line-height: @fontHeightLg;
       }
     }
   }
@@ -41,7 +38,7 @@
     background-color: @colorBgContainer;
     color: @colorPrimary;
     border-radius: @borderRadius;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 8%);
+    box-shadow: @boxShadowTertiary;
 
     :global {
       .ant-typography {
@@ -53,27 +50,42 @@
   &:hover {
     background-color: @colorBgContainer;
     border-radius: @borderRadius;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 8%);
+    box-shadow: @boxShadowTertiary;
+
+    .collectIcon {
+      visibility: visible;
+    }
   }
-  // .icon-box {
-  //   width: 16px;
-  //   height: 16px;
-  // }
 
   .title {
-    // font-weight: normal;
-    // color: @colorTextSecondary;
     font-size: @fontSize;
   }
 
+  .icon-image {
+    width: 24px;
+    height: 24px;
+    border-radius: @borderRadius;
+  }
+
   .icon-dropdown {
-    font-size: 12px;
+    font-size: @fontSizeSm;
     color: @colorTextSecondary;
   }
 
   &.open {
     .icon-dropdown {
       transform: rotate(180deg);
+    }
+  }
+
+  .collectIcon {
+    color: @colorTextSecondary;
+    visibility: hidden;
+    // border-radius: @borderRadiusXs;
+    transition: background-color ease-in-out 0.2s;
+
+    &:hover {
+      background-color: @colorBgContainer;
     }
   }
 }

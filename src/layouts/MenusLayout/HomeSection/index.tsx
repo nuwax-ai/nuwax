@@ -1,10 +1,10 @@
+import SecondMenuItem from '@/components/base/SecondMenuItem';
 import ConditionRender from '@/components/ConditionRender';
 import { AgentInfo } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
 import { history, useModel, useParams } from 'umi';
-import UserRelAgent from '../UserRelAgent';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -45,12 +45,14 @@ const HomeSection: React.FC<{
   }, []);
 
   return (
-    <div className={cx('px-6', 'py-16')} style={style}>
+    <div style={style}>
       <ConditionRender condition={usedAgentList !== undefined}>
-        <h3 className={cx(styles.title)}>最近使用</h3>
+        <h3 className={cx(styles.title)} style={{ marginTop: 0 }}>
+          最近使用
+        </h3>
         {usedAgentList?.length ? (
           usedAgentList?.map((info: AgentInfo) => (
-            <UserRelAgent
+            <SecondMenuItem
               key={info.id}
               onClick={() => handleAgentHome(info.agentId)}
               icon={info.icon}
@@ -67,24 +69,21 @@ const HomeSection: React.FC<{
         )}
       </ConditionRender>
       <ConditionRender condition={conversationList !== undefined}>
-        <h3 className={cx(styles.title, 'mt-16')}>会话记录</h3>
-        <ul>
+        <h3 className={cx(styles.title)}>会话记录</h3>
+        <div>
           {conversationList?.length ? (
-            conversationList?.slice(0, 5)?.map((item: ConversationInfo) => (
-              <li
-                key={item.id}
-                className={cx(
-                  'cursor-pointer',
-                  'hover-deep',
-                  'text-ellipsis',
-                  styles.row,
-                  { [styles.active]: chatId === item.id?.toString() },
-                )}
-                onClick={() => handleLink(item.id, item.agentId)}
-              >
-                {item.topic}
-              </li>
-            ))
+            conversationList
+              ?.slice(0, 5)
+              ?.map((item: ConversationInfo, index: number) => (
+                <SecondMenuItem
+                  key={item.id}
+                  isActive={chatId === item.id?.toString()}
+                  isFirst={index === 0}
+                  onClick={() => handleLink(item.id, item.agentId)}
+                  name={item.topic}
+                  isHead={true}
+                />
+              ))
           ) : (
             <>
               <div className={cx(styles['no-used'])}>右边看👉</div>
@@ -93,7 +92,7 @@ const HomeSection: React.FC<{
               </div>
             </>
           )}
-        </ul>
+        </div>
       </ConditionRender>
       <ConditionRender condition={conversationList?.length}>
         <span
