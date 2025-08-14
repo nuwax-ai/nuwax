@@ -11,7 +11,7 @@ const getBlockWrapper = (
     .map(([key, value]) => `${key}="${value}"`)
     .join(' ');
 
-  return `\n\n<${blockName} ${attrs}></${blockName}>\n\n`;
+  return ` \n\n<${blockName} ${attrs}></${blockName}>\n\n `; // fix: 添加空格，防止markdown解析时，出现文字丢失，例如：邮箱丢失了"邮"字
 };
 
 const getBlockName = (): string => {
