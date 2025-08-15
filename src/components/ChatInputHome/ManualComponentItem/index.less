@@ -1,29 +1,28 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .manual-container {
-  gap: 10px;
+  gap: @marginXs;
   overflow-x: auto;
 
   .manual-box {
-    height: 32px;
-    padding: 0 10px;
-    border-radius: 10px;
+    padding: @paddingXs;
+    border-radius: @borderRadius;
     box-sizing: border-box;
-    border: 0.5px solid @WHITE15;
     color: @GRAY15;
-    font-size: 12px;
+    font-size: @fontSize;
     transition: background-color ease-in-out 0.3s;
     word-wrap: normal;
     white-space: nowrap;
 
     &:hover {
-      background-color: @WHITE10;
+      background-color: @colorInfoBg;
     }
 
     &.active {
-      color: @BLUE10;
-      background-color: @BLUE11;
-      border-color: @GRAY25;
+      color: @colorPrimary;
+      font-weight: @fontWeightStrong;
+      background-color: @colorInfoBg;
     }
   }
 }
