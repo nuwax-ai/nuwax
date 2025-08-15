@@ -1,10 +1,4 @@
-import {
-  ICON_AUDIT,
-  ICON_GROUP_SET,
-  ICON_MODEL_WHITE,
-  ICON_PUBLISHED,
-  ICON_SETTING_SMALL,
-} from '@/constants/images.constants';
+import SvgIcon from '@/components/base/SvgIcon';
 import {
   MessageScopeEnum,
   SystemManageListEnum,
@@ -15,27 +9,27 @@ import { TabsProps } from 'antd';
 export const SYSTEM_MANAGE_LIST = [
   {
     type: SystemManageListEnum.User_Manage,
-    icon: <ICON_GROUP_SET />,
+    icon: <SvgIcon name="icons-nav-user" />,
     text: '用户管理',
   },
   {
     type: SystemManageListEnum.Publish_Audit,
-    icon: <ICON_AUDIT />,
+    icon: <SvgIcon name="icons-nav-publish_audit" />,
     text: '发布审核',
   },
   {
     type: SystemManageListEnum.Published_Manage,
-    icon: <ICON_PUBLISHED />,
+    icon: <SvgIcon name="icons-nav-template" />,
     text: '已发布管理',
   },
   {
     type: SystemManageListEnum.Global_Model_Manage,
-    icon: <ICON_MODEL_WHITE />,
+    icon: <SvgIcon name="icons-nav-template" />,
     text: '公共模型管理',
   },
   {
     type: SystemManageListEnum.System_Config,
-    icon: <ICON_SETTING_SMALL />,
+    icon: <SvgIcon name="icons-nav-settings" />,
     text: '系统配置',
   },
 ];

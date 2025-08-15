@@ -1,11 +1,8 @@
+import SecondMenuItem from '@/components/base/SecondMenuItem';
 import { SYSTEM_MANAGE_LIST } from '@/constants/system.constants';
 import { SystemManageListEnum } from '@/types/enums/systemManage';
-import classNames from 'classnames';
 import React from 'react';
 import { history, useLocation, useModel } from 'umi';
-import styles from './index.less';
-
-const cx = classNames.bind(styles);
 
 /**
  * 主页二级菜单栏
@@ -68,27 +65,19 @@ const SystemSection: React.FC<{
   };
 
   return (
-    <div className={cx('px-6', 'py-16')} style={style}>
-      <h3 className={cx(styles.title)}>系统管理</h3>
-      <ul>
-        {SYSTEM_MANAGE_LIST.map((item) => (
-          <li
+    <div style={style}>
+      <div>
+        {SYSTEM_MANAGE_LIST.map((item, index) => (
+          <SecondMenuItem
             key={item.type}
             onClick={() => handlerApplication(item.type)}
-            className={cx(
-              styles.row,
-              'hover-deep',
-              'flex',
-              'items-center',
-              'cursor-pointer',
-              { [styles.active]: handleActive(item.type) },
-            )}
-          >
-            {item.icon}
-            <span className={cx(styles.text)}>{item.text}</span>
-          </li>
+            name={item.text}
+            isActive={handleActive(item.type)}
+            isFirst={index === 0}
+            icon={item.icon}
+          />
         ))}
-      </ul>
+      </div>
     </div>
   );
 };
