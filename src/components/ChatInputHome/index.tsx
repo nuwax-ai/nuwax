@@ -51,7 +51,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     loadingStopConversation,
     getCurrentConversationRequestId,
     isConversationActive,
-    checkConversationActive,
+    disabledConversationActive,
   } = useModel('conversationInfo');
 
   // 文档
@@ -154,6 +154,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     if (clearDisabled || wholeDisabled) {
       return;
     }
+    disabledConversationActive();
     onClear?.();
   };
 
@@ -210,7 +211,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   useEffect(() => {
     return () => {
-      checkConversationActive([]);
+      disabledConversationActive();
       setUploadFiles([]);
     };
   }, []);

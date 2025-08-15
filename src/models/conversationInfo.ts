@@ -169,6 +169,10 @@ export default () => {
     setIsConversationActive(hasActiveMessage);
   };
 
+  const disabledConversationActive = () => {
+    setIsConversationActive(false);
+  };
+
   // 查询会话
   const {
     run: runQueryConversation,
@@ -195,9 +199,10 @@ export default () => {
       const _messageList = data?.messageList || [];
       const len = _messageList?.length || 0;
       if (len) {
-        setMessageList(_messageList);
-        // 检查会话状态
-        checkConversationActive(_messageList);
+        setMessageList(() => {
+          checkConversationActive(_messageList);
+          return _messageList;
+        });
         // 最后一条消息为"问答"时，获取问题建议
         const lastMessage = _messageList[len - 1];
         if (
@@ -227,6 +232,7 @@ export default () => {
     },
     onError: () => {
       setIsLoadingConversation(true);
+      disabledConversationActive();
     },
   });
 
@@ -247,19 +253,6 @@ export default () => {
   const { run: runStopConversation, loading: loadingStopConversation } =
     useRequest(apiAgentConversationChatStop, {
       manual: true,
-      onSuccess: (res: RequestResponse<null>) => {
-        console.log('停止会话', res, messageList);
-
-        // TODO添加停止会话状态
-        // setMessageList((messageList) => {
-        //   return messageList.map((item) => {
-        //     return {
-        //       ...item,
-        //       status: MessageStatusEnum.Error,
-        //     };
-        //   });
-        // });
-      },
     });
 
   // 修改消息列表
@@ -278,6 +271,7 @@ export default () => {
             clearTimeout(timeoutRef.current);
             timeoutRef.current = null;
           }
+          disabledConversationActive();
           return [];
         }
         // 深拷贝消息列表
@@ -291,10 +285,6 @@ export default () => {
         ) as MessageInfo;
         // 消息不存在时
         if (!currentMessage) {
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-            timeoutRef.current = null;
-          }
           return messageList;
         }
 
@@ -429,10 +419,6 @@ export default () => {
           // 调试结果
           setRequestId(res.requestId);
           setFinalResult(data as ConversationFinalResult);
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-            timeoutRef.current = null;
-          }
           // 是否开启问题建议,可用值:Open,Close
           if (isSuggest) {
             runChatSuggest(params as ConversationChatSuggestParams);
@@ -521,6 +507,7 @@ export default () => {
             });
           }
         }
+        disabledConversationActive();
       },
       onError: () => {
         message.error('网络超时或服务不可用，请稍后再试');
@@ -532,7 +519,10 @@ export default () => {
             }
             return info;
           }) || [];
-        setMessageList(list);
+        setMessageList(() => {
+          disabledConversationActive();
+          return list;
+        });
       },
     });
     // 主动关闭连接
@@ -586,6 +576,12 @@ export default () => {
     setFinalResult(null);
     // 重置会话消息ID
     setCurrentConversationRequestId('');
+
+    if (timeoutRef.current) {
+      //清除会话定时器
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
   };
 
   // 发送消息
@@ -648,7 +644,10 @@ export default () => {
       chatMessage,
       currentMessage,
     ];
-    setMessageList(newMessageList);
+    setMessageList(() => {
+      checkConversationActive(newMessageList);
+      return newMessageList;
+    });
     // 缓存消息列表
     messageListRef.current = newMessageList;
 
@@ -723,6 +722,7 @@ export default () => {
     loadingStopConversation,
     isConversationActive,
     checkConversationActive,
+    disabledConversationActive,
     setCurrentConversationRequestId,
     getCurrentConversationRequestId,
   };

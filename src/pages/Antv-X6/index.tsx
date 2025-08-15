@@ -16,6 +16,7 @@ import {
 import useDisableSaveShortcut from '@/hooks/useDisableSaveShortcut';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
 import useModifiedSaveUpdate from '@/hooks/useModifiedSaveUpdate';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import type { AddNodeResponse } from '@/services/workflow';
 import service, {
   IgetDetails,
@@ -1751,6 +1752,11 @@ const Workflow: React.FC = () => {
   useModifiedSaveUpdate({
     run: useCallback(async () => {
       const _drawerForm = getWorkflow('drawerForm');
+      console.log(
+        'useModifiedSaveUpdate: run: onSaveWorkflow',
+        _drawerForm.id,
+        JSON.stringify(_drawerForm.nodeConfig),
+      );
       return await onSaveWorkflow(_drawerForm);
     }, []),
     doNext: useCallback(() => {
@@ -1780,6 +1786,22 @@ const Workflow: React.FC = () => {
       );
     },
     [graphRef.current],
+  );
+
+  // 使用节流处理表单值变化，确保最后一次调用必须触发更新
+  const throttledHandleGraphUpdate = useThrottledCallback(
+    (changedValues: any, fullFormValues: any) => {
+      // 先关闭之前修改的标记
+      setIsModified(false);
+      handleGraphUpdateByFormData(changedValues, fullFormValues);
+      // 再打开新的修改标记
+      setIsModified(true);
+    },
+    500, // 500ms 的节流延迟
+    {
+      leading: true, // 立即执行第一次调用
+      trailing: true, // 确保最后一次调用被执行
+    },
   );
 
   return (
@@ -1854,8 +1876,8 @@ const Workflow: React.FC = () => {
             key={`${foldWrapItem.type}-${foldWrapItem.id}-form`}
             clearOnDestroy={true}
             onValuesChange={(values) => {
-              setIsModified(true);
-              handleGraphUpdateByFormData(values, form.getFieldsValue(true));
+              // 使用节流处理，确保最后一次调用必须触发更新
+              throttledHandleGraphUpdate(values, form.getFieldsValue(true));
             }}
           >
             <NodePanelDrawer

@@ -67,8 +67,11 @@ const cx = classNames.bind(styles);
  * 主页咨询聊天页面
  */
 const ChatTemp: React.FC = () => {
-  const { checkConversationActive, setCurrentConversationRequestId } =
-    useModel('conversationInfo');
+  const {
+    checkConversationActive,
+    disabledConversationActive,
+    setCurrentConversationRequestId,
+  } = useModel('conversationInfo');
   // 链接Key
   const { chatKey } = useParams();
   // 会话信息
@@ -143,7 +146,6 @@ const ChatTemp: React.FC = () => {
   useEffect(() => {
     if (!!userFillVariables) {
       form.setFieldsValue(userFillVariables);
-      isSendMessageRef.current = true;
       setVariableParams(userFillVariables);
     }
   }, [userFillVariables]);
@@ -222,10 +224,10 @@ const ChatTemp: React.FC = () => {
         const len = _messageList?.length || 0;
         // 存在消息列表时，设置消息列表
         if (len) {
-          setMessageList(_messageList);
-
-          // 检查会话状态
-          checkConversationActive(_messageList);
+          setMessageList(() => {
+            checkConversationActive(_messageList);
+            return _messageList;
+          });
 
           // 最后一条消息为"问答"时，获取问题建议
           const lastMessage = _messageList[len - 1];
@@ -258,13 +260,17 @@ const ChatTemp: React.FC = () => {
             id: uuidv4(),
             messageType: MessageTypeEnum.ASSISTANT,
           } as MessageInfo;
-          setMessageList([currentMessage]);
+          setMessageList(() => {
+            checkConversationActive([currentMessage]);
+            return [currentMessage];
+          });
         }
 
         handleScrollBottom();
       },
       onError: () => {
         setIsLoadingConversation(false);
+        disabledConversationActive();
       },
     },
   );
@@ -293,6 +299,7 @@ const ChatTemp: React.FC = () => {
             clearTimeout(timeoutRef.current);
             timeoutRef.current = null;
           }
+          disabledConversationActive();
           return [];
         }
         // 深拷贝消息列表
@@ -306,10 +313,6 @@ const ChatTemp: React.FC = () => {
         ) as MessageInfo;
         // 消息不存在时
         if (!currentMessage) {
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-            timeoutRef.current = null;
-          }
           return messageList;
         }
 
@@ -391,10 +394,6 @@ const ChatTemp: React.FC = () => {
             finalResult: data,
             id: res.requestId,
           };
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-            timeoutRef.current = null;
-          }
         }
         // ERROR事件
         if (eventType === ConversationEventTypeEnum.ERROR) {
@@ -422,6 +421,33 @@ const ChatTemp: React.FC = () => {
     params: TempConversationChatParams,
     currentMessageId: string,
   ) => {
+    // //模拟数据 一定删除 ====
+    // let index = 0;
+    // import('@/mock/create_talent2.js').then((res) => {
+    //   console.log('res', res);
+    //   const mockData = res.default;
+    //   const len = mockData.length;
+    //   console.log('mockChatData', mockData);
+
+    //   console.time('mockData');
+
+    //   const interval = setInterval(() => {
+    //     if (index < len) {
+    //       console.timeLog('mockData', index);
+
+    //       handleChangeMessageList(mockData[index], currentMessageId);
+    //       // 滚动到底部
+    //       handleScrollBottom();
+    //     } else {
+    //       clearInterval(interval);
+    //       console.timeEnd('mockData');
+    //     }
+    //     index++;
+    //   }, 500);
+    // });
+
+    // return;
+    // //===== 模拟数据 一定删除 ====
     // 启动连接
     abortConnectionRef.current = await createSSEConnection({
       url: TEMP_CONVERSATION_CONNECTION_URL,
@@ -445,7 +471,13 @@ const ChatTemp: React.FC = () => {
             }
             return info;
           }) || [];
-        setMessageList(list);
+        setMessageList(() => {
+          disabledConversationActive();
+          return list;
+        });
+      },
+      onClose: () => {
+        disabledConversationActive();
       },
     });
     // 主动关闭连接
@@ -484,6 +516,11 @@ const ChatTemp: React.FC = () => {
     setConversationInfo(null);
     allowAutoScrollRef.current = true;
     setShowScrollBtn(false);
+    if (timeoutRef.current) {
+      //清除会话定时器
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
   };
 
   // 发送消息
@@ -542,7 +579,10 @@ const ChatTemp: React.FC = () => {
       chatMessage,
       currentMessage,
     ];
-    setMessageList(newMessageList);
+    setMessageList(() => {
+      checkConversationActive(newMessageList);
+      return newMessageList;
+    });
     // 缓存消息列表
     messageListRef.current = newMessageList;
 
@@ -603,6 +643,12 @@ const ChatTemp: React.FC = () => {
     handleClearSideEffect();
     setMessageList([]);
     setIsLoadingConversation(true);
+    // 清空发送消息状态
+    isSendMessageRef.current = false;
+    // 清空变量参数
+    setVariableParams(null);
+    // 清空表单
+    form.resetFields();
     // 创建临时会话
     handleCreateTempChat(captchaVerifyParamRef.current);
   }, [chatKey]);
@@ -671,6 +717,9 @@ const ChatTemp: React.FC = () => {
     // 租户配置信息查询接口
     runTenantConfig();
     addBaseTarget();
+    return () => {
+      disabledConversationActive();
+    };
   }, []);
 
   useEffect(() => {
@@ -790,7 +839,7 @@ const ChatTemp: React.FC = () => {
                 className="mb-16"
                 form={form}
                 variables={variables}
-                isFilled={isSendMessageRef.current}
+                isFilled={!!userFillVariables}
                 disabled={!!userFillVariables || isSendMessageRef.current}
               />
               {messageList?.length > 0 ? (

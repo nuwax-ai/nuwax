@@ -17,7 +17,6 @@ export default () => {
     components: {
       // 确保使用一致的组件名称格式
       'markdown-custom-process': ({
-        result,
         node,
         type,
         status,
@@ -29,6 +28,7 @@ export default () => {
           start: { offset: startOffset },
         } = node?.position || {};
         const processKey = `${startOffset}-${endOffset}-process`;
+
         return (
           <MarkdownCustomProcess
             key={processKey}
@@ -37,9 +37,7 @@ export default () => {
             status={status}
             executeId={executeid}
             name={decodeURIComponent(name || '')}
-          >
-            {decodeURIComponent(result || '')}
-          </MarkdownCustomProcess>
+          />
         );
       },
       table: ({ children, node }: any) => {

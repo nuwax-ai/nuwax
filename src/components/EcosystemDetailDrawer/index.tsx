@@ -214,7 +214,6 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
 
         // 使用 setTimeout 确保表单已经渲染完成
         setTimeout(() => {
-          form?.resetFields();
           form.setFieldsValue(configParamToFormValues(mergedConfigParam));
         }, 100);
       }
@@ -230,13 +229,17 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   useEffect(() => {
     if (!visible) return;
 
-    const shouldShowUpdateButton = !(
-      !isNewVersion &&
-      isEnabled &&
-      !configParam?.length
-    );
-    setNeedUpdateButton(shouldShowUpdateButton);
-  }, [isNewVersion, isEnabled, configParam, visible]);
+    if (dataType === EcosystemDataTypeEnum.MCP && isEnabled) {
+      setNeedUpdateButton(true);
+    } else {
+      const shouldShowUpdateButton = !(
+        !isNewVersion &&
+        isEnabled &&
+        !configParam?.length
+      );
+      setNeedUpdateButton(shouldShowUpdateButton);
+    }
+  }, [isNewVersion, isEnabled, configParam, visible, dataType]);
 
   // 关闭处理函数
   const handleClose = useCallback(() => {

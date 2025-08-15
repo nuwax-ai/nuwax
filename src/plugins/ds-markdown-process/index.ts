@@ -11,7 +11,8 @@ const getBlockWrapper = (
     .map(([key, value]) => `${key}="${value}"`)
     .join(' ');
 
-  return `\n\n<${blockName} ${attrs}></${blockName}>\n\n`;
+  // 修复DOM嵌套验证错误：使用div代替p标签，因为自定义组件包含块级元素
+  return `<div><${blockName} ${attrs}></${blockName}></div>`;
 };
 
 const getBlockName = (): string => {
@@ -22,29 +23,23 @@ const getCustomBlock = (
   beforeText: string,
   { type, name, executeId, status }: ProcessingInfo,
 ): string => {
-  console.log('getCustomBlock', beforeText, type, name, executeId, status);
   // 如果 type 或 id 不存在，则返回空字符串
   if (!type || !executeId) {
     return '';
   }
   const blockName = getBlockName();
   const hasBlock = beforeText.includes(`executeId="${executeId}"`);
+  if (hasBlock) {
+    // 如果已经存在，则不重复添加
+    return beforeText;
+  }
   const blockContent = getBlockWrapper(blockName, {
     executeId,
     type,
     status,
     name: name || '',
   });
-  if (hasBlock) {
-    // 修正：使用更健壮的正则表达式来匹配和替换整个块
-    const blockRegex = new RegExp(
-      `\\n\\n<${blockName}[^>]*?\\bexecuteId="${executeId}"[^>]*><\\/${blockName}>\\n\\n`,
-      'gis',
-    );
-    return beforeText.replace(blockRegex, blockContent);
-  } else {
-    return `${beforeText}${blockContent}`;
-  }
+  return `${beforeText}${blockContent}`;
 };
 
 export { getBlockName, getBlockWrapper, getCustomBlock };

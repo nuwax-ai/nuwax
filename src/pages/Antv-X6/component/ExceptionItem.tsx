@@ -181,7 +181,6 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
                   />
                 </span>
               }
-              initialValue={timeout}
               className={cx(styles.exceptionItemFormItem, styles.timeoutItem)}
               rules={[
                 {

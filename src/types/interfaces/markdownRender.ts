@@ -7,6 +7,7 @@ export interface MarkdownRendererProps {
   id: string;
   className?: string;
   disableTyping?: boolean;
+  theme?: 'light' | 'dark';
   answerType?: 'answer' | 'thinking';
   markdownRef: React.RefObject<MarkdownCMDRef>;
   headerActions?: boolean;

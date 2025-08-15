@@ -117,7 +117,6 @@ const CodeOptimizeModal: React.FC<
         setMessageList([]);
         onCancel?.(e);
       }}
-      mask={false}
       maskClosable={false}
       footer={null}
     >
@@ -132,7 +131,10 @@ const CodeOptimizeModal: React.FC<
                 ifShowReplace={true}
                 onReplace={onReplace}
                 key={index}
+                theme="dark"
+                codeLanguage={codeLanguage}
                 messageInfo={item}
+                contentClassName={cx(styles['code-optimize-view'])}
               />
             ))}
           </>

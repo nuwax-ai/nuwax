@@ -1,111 +1,99 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useModel } from 'umi';
+import { useThrottledCallback } from './useThrottledCallback';
 
 /**
  * 自定义Hook：处理修改后的自动保存更新
+ * 使用节流确保最后一次保存必须执行
+ *
  * @param run 执行保存的函数
- * @param doBefore 保存前的预处理函数，返回true时跳过保存
  * @param doNext 保存成功后的回调函数
+ * @param delay 节流延迟时间（毫秒），默认 300ms
  */
 export default function useModifiedSaveUpdate({
   run,
   doNext,
+  delay = 500,
 }: {
   run: () => Promise<boolean>;
   doNext?: () => void;
+  delay?: number;
 }) {
   const { isModified, setUpdateLoading } = useModel('workflow');
 
-  // 使用 useRef 管理 timer 和保存状态，避免模块级变量冲突
-  const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // 使用 useRef 管理保存状态，避免模块级变量冲突
   const isSavingRef = useRef<boolean>(false);
-  const pendingSaveRef = useRef<boolean>(false); // 标记是否有待保存的更新
   const isMountedRef = useRef<boolean>(true); // 追踪组件挂载状态
+  const saveCountRef = useRef<number>(0); // 记录保存次数，用于调试
 
-  // 清理 timer 的函数
-  const clearSaveTimer = useCallback(() => {
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = null;
-    }
-  }, []);
-
-  // 标记待保存更新的函数
-  const markPendingSave = useCallback(() => {
-    console.log('useModifiedSaveUpdate: 保存进行中，标记待保存更新');
-    pendingSaveRef.current = true;
-  }, []);
-
-  // 执行保存的函数
+  // 执行保存的核心函数
   const executeSave = useCallback(async () => {
+    const currentSaveCount = ++saveCountRef.current;
+    console.log(
+      `🔄 useModifiedSaveUpdate: 节流执行保存 [第${currentSaveCount}次]`,
+    );
+
     // 检查组件是否还挂载
     if (!isMountedRef.current) {
-      console.log('useModifiedSaveUpdate: 组件已卸载，取消保存');
       return;
     }
 
-    // 如果正在保存中，标记有待保存的更新
+    // 如果正在保存中，跳过本次保存（节流会确保最后一次调用被执行）
     if (isSavingRef.current) {
-      console.log('useModifiedSaveUpdate: 保存正在进行中，标记待保存');
-      markPendingSave();
+      console.log('⏸️ useModifiedSaveUpdate: 保存正在进行中，跳过本次调用');
       return;
     }
 
     try {
       isSavingRef.current = true;
-      pendingSaveRef.current = false; // 开始保存时清除待保存标记
-
-      console.log('useModifiedSaveUpdate:开始保存');
+      console.log('✅ useModifiedSaveUpdate: 开始执行保存操作');
       setUpdateLoading(true);
 
       await run();
       doNext?.();
 
-      console.log('useModifiedSaveUpdate: 保存成功');
+      console.log('🎉 useModifiedSaveUpdate: 保存成功完成');
     } catch (error) {
-      console.error('useModifiedSaveUpdate:保存失败', error);
+      console.error('❌ useModifiedSaveUpdate: 保存失败', error);
     } finally {
       setUpdateLoading(false);
       isSavingRef.current = false;
-      // 清理当前 timer 引用
-      saveTimerRef.current = null;
-
-      // 检查组件是否还挂载以及是否有待保存的更新
-      if (isMountedRef.current && pendingSaveRef.current) {
-        console.log('useModifiedSaveUpdate: 检测到待保存更新，立即触发新保存');
-        pendingSaveRef.current = false;
-        saveTimerRef.current = setTimeout(executeSave, 300);
-      }
     }
-  }, [run, doNext, setUpdateLoading, markPendingSave]);
+  }, [run, doNext, setUpdateLoading]);
 
-  // 监听修改状态变化
+  // 使用节流包装保存函数，确保最后一次调用必须执行
+  const throttledSave = useThrottledCallback(
+    () => {
+      console.log('🚀 useModifiedSaveUpdate: 节流函数被调用');
+      return executeSave();
+    },
+    delay,
+    {
+      leading: true, // 立即执行第一次调用
+      trailing: true, // 确保最后一次调用被执行
+    },
+  );
+
+  // 监听修改状态变化，触发节流保存
   useEffect(() => {
-    console.log('useModifiedSaveUpdate:isModified', isModified);
+    console.log('📝 useModifiedSaveUpdate: isModified 状态变化 =', isModified);
+
     if (isModified && isMountedRef.current) {
-      // 如果正在保存中，标记有待保存的更新
-      if (isSavingRef.current) {
-        markPendingSave();
-        return;
-      }
-
-      // 如果已经有 timer 在运行，先清除它（防抖效果）
-      clearSaveTimer();
-
-      // 设置新的 timer
-      saveTimerRef.current = setTimeout(executeSave, 300);
+      console.log('⚡ useModifiedSaveUpdate: 触发节流保存函数');
+      // 使用节流函数触发保存
+      throttledSave();
     }
-  }, [isModified, executeSave, clearSaveTimer, markPendingSave]);
+  }, [isModified, throttledSave]);
 
   // 组件卸载时的清理
   useEffect(() => {
     isMountedRef.current = true;
+    console.log('🔗 useModifiedSaveUpdate: Hook 初始化完成');
 
     return () => {
+      console.log('🧹 useModifiedSaveUpdate: 清理 Hook 状态');
       isMountedRef.current = false;
-      clearSaveTimer();
       isSavingRef.current = false;
-      pendingSaveRef.current = false;
     };
-  }, [clearSaveTimer]);
+  }, []);
 }
