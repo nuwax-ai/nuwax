@@ -1,17 +1,12 @@
-import { ACCESS_TOKEN } from '@/constants/home.constants';
-import useEventPolling from '@/hooks/useEventPolling';
-import { request as requestCommon } from '@/services/common';
 import { RequestConfig } from '@@/plugin-request/request';
 import { theme as antdTheme } from 'antd';
-import 'dayjs/locale/en';
-import 'dayjs/locale/zh-cn';
 import React, { useEffect, useRef } from 'react';
 import { useAntdConfigSetter } from 'umi';
-import {
-  defaultSettings,
-  SETTINGS_STORAGE_KEY,
-} from './hooks/useGlobalSettings';
-import { darkThemeTokens, themeTokens } from './utils/themeTokens';
+import { ACCESS_TOKEN } from './constants/home.constants';
+import { darkThemeTokens, themeTokens } from './constants/theme.constants';
+import useEventPolling from './hooks/useEventPolling';
+import { request as requestCommon } from './services/common';
+import { getCurrentTheme, isCurrentDarkMode } from './utils/theme';
 
 /**
  * 全局轮询组件
@@ -38,22 +33,20 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
   useEffect(() => {
     const applyFromStorage = () => {
       try {
-        const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
-        const base = defaultSettings;
-        const stored = saved ? { ...base, ...JSON.parse(saved) } : base;
+        const stored = getCurrentTheme();
+        const darkMode = isCurrentDarkMode();
 
-        const isDarkMode = stored.theme === 'dark';
-        const algorithm = isDarkMode
+        const algorithm = darkMode
           ? antdTheme.darkAlgorithm
           : antdTheme.defaultAlgorithm;
-        const baseTokens = isDarkMode ? darkThemeTokens : themeTokens;
+        const baseTokens = darkMode ? darkThemeTokens : themeTokens;
         const colorPrimary = (stored as any)?.primaryColor;
         const tokens = colorPrimary
           ? { ...baseTokens, colorPrimary }
           : baseTokens;
 
         const signature = JSON.stringify({
-          mode: isDarkMode ? 'dark' : 'light',
+          mode: darkMode ? 'dark' : 'light',
           tokens,
         });
         if (signature === lastAppliedRef.current) return;

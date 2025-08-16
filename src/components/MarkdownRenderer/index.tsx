@@ -80,8 +80,10 @@ const PureMarkdownRenderer = memo(
     id: requestId = '',
     className = '',
     children,
+    theme = 'light',
   }: {
     id: string;
+    theme?: 'light' | 'dark';
     className?: string;
     children: string;
   }) => {
@@ -100,6 +102,7 @@ const PureMarkdownRenderer = memo(
             disableTyping={true}
             plugins={plugins}
             codeBlock={{ headerActions: false }}
+            theme={theme}
             math={{
               splitSymbol: 'bracket',
               replaceMathBracket,
@@ -112,7 +115,7 @@ const PureMarkdownRenderer = memo(
     );
   },
   (prevProps, nextProps) => {
-    return prevProps.id === nextProps.id;
+    return prevProps.id === nextProps.id && prevProps.theme === nextProps.theme;
   },
 );
 

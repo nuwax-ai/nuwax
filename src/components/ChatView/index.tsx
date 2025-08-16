@@ -12,10 +12,11 @@ import type {
   AttachmentFile,
   ChatViewProps,
 } from '@/types/interfaces/conversationInfo';
-import { message } from 'antd';
+import { isCurrentDarkMode } from '@/utils/theme';
+import { message, theme } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
-import React, { memo, useCallback, useMemo } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { useModel } from 'umi';
 import ChatBottomDebug from './ChatBottomDebug';
@@ -30,6 +31,16 @@ const cx = classNames.bind(styles);
 const ChatView: React.FC<ChatViewProps> = memo(
   ({ className, contentClassName, roleInfo, messageInfo, mode = 'chat' }) => {
     const { userInfo } = useModel('userInfo');
+    const { token } = theme.useToken();
+    const [isDarkMode, setIsDarkMode] = useState(isCurrentDarkMode());
+
+    useEffect(() => {
+      setIsDarkMode(isCurrentDarkMode());
+    }, [token.colorBgContainer]);
+    useEffect(() => {
+      console.log(isDarkMode);
+    }, [isDarkMode]);
+
     const { markdownRef, messageIdRef } = useMarkdownRender({
       answer: messageInfo?.text || '',
       thinking: messageInfo?.think || '',
@@ -108,6 +119,9 @@ const ChatView: React.FC<ChatViewProps> = memo(
                   'radius-6',
                   contentClassName,
                   'ds-markdown',
+                  {
+                    'ds-markdown-dark': isDarkMode,
+                  },
                 )}
               >
                 <div className="ds-markdown-answer">

@@ -105,9 +105,13 @@ export const useGlobalSettings = () => {
     const next = color || defaultSettings.primaryColor!;
     saveSettings({ ...settings, primaryColor: next });
   };
+  const { token } = antdTheme.useToken();
 
   // 判断是否为暗色主题
-  const isDarkMode = useMemo(() => settings.theme === 'dark', [settings.theme]);
+  const isDarkMode = useMemo(
+    () => settings.theme === 'dark',
+    [token.colorBgContainer],
+  );
 
   // 判断是否为中文
   const isChineseLanguage = useMemo(
