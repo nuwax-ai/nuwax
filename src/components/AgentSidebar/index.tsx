@@ -1,7 +1,7 @@
 import foldImage from '@/assets/images/fold_image.png';
 import Loading from '@/components/custom/Loading';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
-import { OpenCloseEnum } from '@/types/enums/space';
+import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import { AgentSidebarProps } from '@/types/interfaces/agentTask';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -34,10 +34,10 @@ const AgentSidebar: React.FC<AgentSidebarProps> = ({
   };
 
   useEffect(() => {
-    // if (showType === EditAgentShowType.Show_Stand) {
-    //   setVisible(false);
-    //   setFoldVisible(true);
-    // }
+    if (showType === EditAgentShowType.Show_Stand) {
+      setVisible(false);
+      setFoldVisible(true);
+    }
   }, [showType]);
 
   useDrawerScroll(visible);

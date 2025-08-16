@@ -87,6 +87,13 @@ const ChatView: React.FC<ChatViewProps> = memo(
                 alt=""
               />
               <div className={cx(styles.author)}>{info?.name}</div>
+              <ConditionRender condition={!!messageInfo?.status}>
+                <div style={{ display: 'flex', flexDirection: 'row', gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <RunOver messageInfo={messageInfo} />
+                  </div>
+                </div>
+              </ConditionRender>
             </div>
           )}
           {!!messageInfo?.attachments?.length && (
@@ -146,13 +153,6 @@ const ChatView: React.FC<ChatViewProps> = memo(
           <ConditionRender
             condition={messageInfo?.role !== AssistantRoleEnum.USER}
           >
-            <ConditionRender condition={!!messageInfo?.status}>
-              <div style={{ display: 'flex', flexDirection: 'row', gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <RunOver messageInfo={messageInfo} />
-                </div>
-              </div>
-            </ConditionRender>
             {(!!messageInfo?.think || !!messageInfo?.text) && (
               <div className={cx(styles['inner-container'], contentClassName)}>
                 <div

@@ -25,6 +25,8 @@
   height: 100%;
   overflow-y: auto;
   position: relative;
+  min-width: 800px;
+  width: 100%;
   //隐藏滚动条
   &::-webkit-scrollbar {
     display: none;
@@ -35,6 +37,7 @@
     display: flex;
     flex-direction: column;
     max-width: 800px;
+    width: 100%;
     margin: 0 auto;
   }
 
@@ -82,6 +85,10 @@
 /* 当屏幕宽度小于等于 720px 时应用的样式 */
 @media screen and (max-width: 720px) {
   .main-content {
-    width: 100%;
+    min-width: 100%;
+
+    .main-content-box {
+      max-width: 100%;
+    }
   }
 }

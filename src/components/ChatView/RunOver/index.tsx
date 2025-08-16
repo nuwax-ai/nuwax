@@ -86,7 +86,7 @@ const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
         {messageInfo?.status === MessageStatusEnum.Loading ||
         messageInfo?.status === MessageStatusEnum.Incomplete ? (
           <>
-            <LoadingOutlined />
+            <LoadingOutlined className={cx(styles.successColor)} />
             {lastProcessInfo && (
               <span className={cx(styles['status-name'])}>
                 {lastProcessInfo.status === ProcessingEnum.EXECUTING

@@ -297,8 +297,11 @@ const Chat: React.FC = () => {
   };
 
   return (
-    <div className={cx('flex', 'h-full')} ref={messageViewRef}>
-      <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
+    <div className={cx('flex', 'h-full')}>
+      <div
+        className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}
+        ref={messageViewRef}
+      >
         <div className={cx(styles['main-content-box'])}>
           <div className={cx(styles['title-box'])}>
             <h3
