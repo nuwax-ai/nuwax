@@ -28,7 +28,7 @@ export const themeTokens: Partial<AliasToken> = {
   fontSize: 14,
 
   // 线条配置
-  lineWidth: 1,
+  lineWidth: 0.5,
   lineType: 'solid',
 
   // 圆角配置

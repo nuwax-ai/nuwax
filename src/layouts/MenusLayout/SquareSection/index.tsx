@@ -101,7 +101,7 @@ const SquareSection: React.FC<{
             })}
           >
             {info.list?.map((item: SquareAgentInfo) => (
-              <SecondMenuItem
+              <SecondMenuItem.SubItem
                 key={item.name}
                 name={item.description}
                 isActive={activeKey === item.name}

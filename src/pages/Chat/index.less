@@ -5,7 +5,7 @@
   position: sticky;
   top: 0;
   z-index: 99;
-  background-color: @WHITE03;
+  background-color: @colorBgContainer;
 
   .title {
     position: sticky;
@@ -21,12 +21,26 @@
 }
 
 .main-content {
-  max-width: 800px;
-  margin: 0 auto;
   padding: 0 10px;
+  height: 100%;
+  overflow-y: auto;
+  position: relative;
+  //隐藏滚动条
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .main-content-box {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    max-width: 800px;
+    margin: 0 auto;
+  }
 
   .chat-wrapper {
     padding-bottom: 40px - 16px;
+    width: 100%;
 
     .loading {
       color: @BLUE08;
@@ -52,13 +66,7 @@
   z-index: 10;
   padding-bottom: 40px;
   background-color: @colorBgContainer;
-}
-
-.agent-sidebar {
-  position: sticky;
-  top: 20px;
-  right: 20px;
-  margin: 0;
+  border-radius: 24px 24px 0 0;
 }
 
 @media (max-width: 768px) {

@@ -1,4 +1,4 @@
-import SecondMenuItem from '@/components/base/SecondMenuItem';
+import MenuListItem from '@/components/base/MenuListItem';
 import ConditionRender from '@/components/ConditionRender';
 import { AgentInfo } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
@@ -51,12 +51,13 @@ const HomeSection: React.FC<{
           最近使用
         </h3>
         {usedAgentList?.length ? (
-          usedAgentList?.map((info: AgentInfo) => (
-            <SecondMenuItem
+          usedAgentList?.map((info: AgentInfo, index: number) => (
+            <MenuListItem
               key={info.id}
               onClick={() => handleAgentHome(info.agentId)}
               icon={info.icon}
               name={info.name}
+              isFirst={index === 0}
             />
           ))
         ) : (
@@ -75,13 +76,12 @@ const HomeSection: React.FC<{
             conversationList
               ?.slice(0, 5)
               ?.map((item: ConversationInfo, index: number) => (
-                <SecondMenuItem
+                <MenuListItem
                   key={item.id}
                   isActive={chatId === item.id?.toString()}
                   isFirst={index === 0}
                   onClick={() => handleLink(item.id, item.agentId)}
                   name={item.topic}
-                  isHead={true}
                 />
               ))
           ) : (

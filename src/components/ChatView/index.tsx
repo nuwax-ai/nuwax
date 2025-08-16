@@ -15,7 +15,7 @@ import type {
 import { message } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { useModel } from 'umi';
 import ChatBottomDebug from './ChatBottomDebug';
@@ -68,69 +68,80 @@ const ChatView: React.FC<ChatViewProps> = memo(
       return text.replace(/^\s+|\s+$/g, '');
     }, []);
 
+    const isUser = useMemo(() => {
+      return messageInfo?.role === AssistantRoleEnum.USER;
+    }, [messageInfo?.role]);
+
     return (
       <div className={cx(styles.container, 'flex', className)}>
-        <img
-          className={cx(styles.avatar)}
-          src={info?.avatar as string}
-          alt=""
-        />
-        <div className={cx('flex-1', 'overflow-hide')}>
-          <div className={cx(styles.author)}>{info?.name}</div>
+        <div
+          className={cx('flex-1', 'overflow-hide', {
+            [styles.userContainer]: isUser,
+          })}
+        >
+          {!isUser && (
+            <div className={cx(styles['agent-title-bar'])}>
+              <img
+                className={cx(styles.avatar)}
+                src={info?.avatar as string}
+                alt=""
+              />
+              <div className={cx(styles.author)}>{info?.name}</div>
+            </div>
+          )}
           {!!messageInfo?.attachments?.length && (
             <AttachFile files={messageInfo?.attachments as AttachmentFile[]} />
           )}
-          {messageInfo?.role === AssistantRoleEnum.USER &&
-            !!messageInfo?.text && (
-              <>
-                <div
-                  className={cx(
-                    styles['chat-content'],
-                    styles.user,
-                    'radius-6',
-                    contentClassName,
-                    'ds-markdown',
-                  )}
-                >
-                  <div className="ds-markdown-answer">
-                    <div
-                      style={{ whiteSpace: 'pre-wrap' }}
-                      className="ds-markdown-paragraph ds-typed-answer"
-                    >
-                      {trim(messageInfo?.text)}
-                    </div>
+          {isUser && !!messageInfo?.text && (
+            <div className={cx(styles['user-content'])}>
+              <div
+                className={cx(
+                  styles['chat-content'],
+                  styles.user,
+                  'radius-6',
+                  contentClassName,
+                  'ds-markdown',
+                )}
+              >
+                <div className="ds-markdown-answer">
+                  <div
+                    style={{ whiteSpace: 'pre-wrap' }}
+                    className="ds-markdown-paragraph ds-typed-answer"
+                  >
+                    {trim(messageInfo?.text)}
                   </div>
                 </div>
-                <div
-                  className={cx(
-                    styles['user-action-box'],
-                    'flex',
-                    'items-center',
-                  )}
+              </div>
+              <div
+                className={cx(
+                  styles['user-action-box'],
+                  'flex',
+                  'items-center',
+                )}
+              >
+                <CopyToClipboard
+                  text={messageInfo.text || ''}
+                  onCopy={handleTextCopy}
                 >
-                  <CopyToClipboard
-                    text={messageInfo.text || ''}
-                    onCopy={handleTextCopy}
+                  <span
+                    className={cx(
+                      'flex',
+                      'items-center',
+                      'cursor-pointer',
+                      styles['copy-btn'],
+                    )}
                   >
-                    <span
-                      className={cx(
-                        'flex',
-                        'items-center',
-                        'cursor-pointer',
-                        styles['copy-btn'],
-                      )}
-                    >
-                      <img
-                        className={cx(styles['copy-image'])}
-                        src={copyImage}
-                        alt=""
-                      />
-                      <span>复制</span>
-                    </span>
-                  </CopyToClipboard>
-                </div>
-              </>
-            )}
+                    <img
+                      className={cx(styles['copy-image'])}
+                      src={copyImage}
+                      alt=""
+                    />
+                    <span>复制</span>
+                  </span>
+                </CopyToClipboard>
+              </div>
+            </div>
+          )}
 
           <ConditionRender
             condition={messageInfo?.role !== AssistantRoleEnum.USER}

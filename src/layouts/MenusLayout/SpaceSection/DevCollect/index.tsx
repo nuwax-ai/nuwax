@@ -1,5 +1,5 @@
 import agentImage from '@/assets/images/agent_image.png';
-import SecondMenuItem from '@/components/base/SecondMenuItem';
+import MenuListItem from '@/components/base/MenuListItem';
 import type { AgentConfigInfo, AgentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
 import React from 'react';
@@ -31,7 +31,7 @@ const DevCollect: React.FC = () => {
 
   return devCollectAgentList?.length > 0 ? (
     devCollectAgentList?.map((item: AgentInfo, index: number) => (
-      <SecondMenuItem
+      <MenuListItem
         key={item.id}
         isFirst={index === 0}
         onClick={() => handleDevCollect(item.agentId, item.spaceId)}

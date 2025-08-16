@@ -8,7 +8,7 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const ShowArea: React.FC = () => {
+const ShowArea: React.FC<{ className?: string }> = ({ className }) => {
   const { cardList, showType, setShowType } = useModel('conversationInfo');
 
   // const handlerVisible = () => {
@@ -21,7 +21,14 @@ const ShowArea: React.FC = () => {
 
   return (
     <div
-      className={cx('flex', 'flex-col', 'items-end', styles.container)}
+      className={cx(
+        'flex',
+        'flex-col',
+        'items-end',
+        styles.container,
+        styles.rightSidebar,
+        className,
+      )}
       style={{
         display: showType === EditAgentShowType.Show_Stand ? 'flex' : 'none',
       }}

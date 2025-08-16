@@ -1,15 +1,17 @@
 @import '@/styles/color';
+@import '@/styles/token';
+
+.rightSidebar {
+  width: 434px;
+  padding: 0 @padding;
+  border-left: @lineWidth @lineType @colorBorder;
+}
 
 .container {
   position: sticky;
-  top: 20px;
-  right: 20px;
   box-sizing: border-box;
   transition: opacity 0.3s ease-in-out, width 0.2s ease-in-out;
-  width: 357px;
-  height: calc(100vh - 40px);
-  background-color: @WHITE;
-  border-radius: 10px;
+  height: 100%;
   z-index: 99;
   visibility: visible;
   opacity: 1;
@@ -33,7 +35,7 @@
     .container-body {
       position: absolute;
       left: 10px;
-      width: 336px;
+      width: calc(100% - 20px);
     }
   }
 

@@ -45,9 +45,16 @@ const AgentSidebar: React.FC<AgentSidebarProps> = ({
   return (
     <>
       <div
-        className={cx(styles.container, 'flex', 'flex-col', className, {
-          [styles.hide]: !visible,
-        })}
+        className={cx(
+          styles.container,
+          styles.rightSidebar,
+          'flex',
+          'flex-col',
+          className,
+          {
+            [styles.hide]: !visible,
+          },
+        )}
       >
         {loading ? (
           <Loading />

@@ -162,7 +162,7 @@ const SpaceSection: React.FC<{
       <ConditionRender condition={editAgentList?.length}>
         <h3 className={cx(styles['collection-title'])}>最近编辑</h3>
         {editAgentList?.map((item: AgentInfo, index: number) => (
-          <SecondMenuItem
+          <SecondMenuItem.SubItem
             key={item.id}
             isFirst={index === 0}
             onClick={() => handleClick(item)}

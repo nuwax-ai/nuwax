@@ -10,13 +10,21 @@
     margin-top: 0;
   }
 
-  &.mainItem {
+  &.menuItem {
     cursor: pointer;
+
+    &.has-icon {
+      :global {
+        .ant-typography {
+          margin-left: @marginXs;
+          // line-height: @fontHeightSm;
+        }
+      }
+    }
 
     :global {
       .ant-typography {
-        margin-left: @marginXs;
-        font-size: @fontSizeLg;
+        font-size: @fontSize;
         line-height: @fontHeightLg;
       }
     }
@@ -55,17 +63,6 @@
     border-radius: @borderRadius;
   }
 
-  .icon-dropdown {
-    font-size: @fontSizeSm;
-    color: @colorTextSecondary;
-  }
-
-  &.open {
-    .icon-dropdown {
-      transform: rotate(180deg);
-    }
-  }
-
   .collectIcon {
     color: @colorTextSecondary;
     visibility: hidden;
@@ -74,14 +71,6 @@
 
     &:hover {
       background-color: @colorBgContainer;
-    }
-  }
-}
-
-.secondMenuSubItem {
-  :global {
-    .ant-typography {
-      margin-left: @marginXl !important;
     }
   }
 }
