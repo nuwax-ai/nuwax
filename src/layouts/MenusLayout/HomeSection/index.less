@@ -23,13 +23,31 @@
   }
 }
 
+// 标题行容器 - 使标题和"查看全部"在同一行显示
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: @margin;
+  padding: @paddingXs;
+  line-height: @fontHeightSm;
+  box-sizing: border-box;
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
 .more-conversation {
-  line-height: 34px;
-  padding: 0 8px;
-  color: @BLANK04;
-  font-size: 14px;
+  line-height: 20px;
+  padding: 0;
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
   cursor: pointer;
   transition: color 0.3s;
+  white-space: nowrap;
+  user-select: none;
 
   &:hover {
     color: @BLANK03;
@@ -44,10 +62,12 @@
 }
 
 .title {
-  margin-top: @margin;
-  padding: @paddingXs;
+  margin: 0;
+  padding: 0;
   line-height: 20px;
   font-size: 14px;
   font-weight: 400;
   color: @colorTextSecondary;
+  flex: 1;
+  user-select: none;
 }

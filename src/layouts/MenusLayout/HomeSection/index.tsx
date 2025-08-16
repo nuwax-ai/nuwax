@@ -2,6 +2,7 @@ import MenuListItem from '@/components/base/MenuListItem';
 import ConditionRender from '@/components/ConditionRender';
 import { AgentInfo } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import { RightOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
 import { history, useModel, useParams } from 'umi';
@@ -47,9 +48,11 @@ const HomeSection: React.FC<{
   return (
     <div style={style}>
       <ConditionRender condition={usedAgentList !== undefined}>
-        <h3 className={cx(styles.title)} style={{ marginTop: 0 }}>
-          最近使用
-        </h3>
+        <div className={cx(styles['title-row'])}>
+          <h3 className={cx(styles.title)} style={{ marginTop: 0 }}>
+            最近使用
+          </h3>
+        </div>
         {usedAgentList?.length ? (
           usedAgentList?.map((info: AgentInfo, index: number) => (
             <MenuListItem
@@ -70,7 +73,17 @@ const HomeSection: React.FC<{
         )}
       </ConditionRender>
       <ConditionRender condition={conversationList !== undefined}>
-        <h3 className={cx(styles.title)}>会话记录</h3>
+        <div className={cx(styles['title-row'])}>
+          <h3 className={cx(styles.title)}>会话记录</h3>
+          <ConditionRender condition={conversationList?.length}>
+            <span
+              className={cx(styles['more-conversation'])}
+              onClick={() => setOpenHistoryModal(true)}
+            >
+              查看全部 <RightOutlined />
+            </span>
+          </ConditionRender>
+        </div>
         <div>
           {conversationList?.length ? (
             conversationList
@@ -93,14 +106,6 @@ const HomeSection: React.FC<{
             </>
           )}
         </div>
-      </ConditionRender>
-      <ConditionRender condition={conversationList?.length}>
-        <span
-          className={cx(styles['more-conversation'])}
-          onClick={() => setOpenHistoryModal(true)}
-        >
-          查看全部
-        </span>
       </ConditionRender>
     </div>
   );
