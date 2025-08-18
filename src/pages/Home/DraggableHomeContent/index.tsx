@@ -6,7 +6,7 @@ import type {
   HomeAgentCategoryInfo,
 } from '@/types/interfaces/agentConfig';
 import type { DragEndEvent } from '@dnd-kit/core';
-import { App } from 'antd';
+import { App, Space, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { history, useRequest } from 'umi';
@@ -173,6 +173,12 @@ const DraggableHomeContent: React.FC<DraggableHomeContentProps> = ({
 
   return (
     <div className={styles.draggableContainer}>
+      <Space className={styles.recommendContainer}>
+        <Typography.Title level={5} className={styles.recommendTitle}>
+          智能体推荐
+        </Typography.Title>
+        <span className={styles.recommendDesc}>拖拽智能体卡片可交换位置</span>
+      </Space>
       {/* 分类标签容器 */}
       <CategoryContainer
         categories={homeCategoryInfo?.categories || []}

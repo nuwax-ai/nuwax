@@ -1,5 +1,6 @@
 @import '@/styles/color';
 @import '@/styles/themeVariables';
+@import '@/styles/token';
 
 .tabs {
   position: sticky;
@@ -68,6 +69,19 @@
   margin: 30px 0 16px;
   color: @BLANK31;
   font-size: 16px;
+}
+
+.recommendContainer {
+  padding: @paddingSm 0;
+
+  .recommendTitle {
+    margin: 0;
+  }
+
+  .recommendDesc {
+    color: @colorTextTertiary;
+    font-size: @fontSizeSm;
+  }
 }
 
 .category-list {

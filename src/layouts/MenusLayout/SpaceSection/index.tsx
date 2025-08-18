@@ -1,5 +1,6 @@
 import personal from '@/assets/images/personal.png';
 import teamImage from '@/assets/images/team_image.png';
+import MenuListItem from '@/components/base/MenuListItem';
 import SecondMenuItem from '@/components/base/SecondMenuItem';
 import ConditionRender from '@/components/ConditionRender';
 import { SPACE_URL } from '@/constants/home.constants';
@@ -162,7 +163,7 @@ const SpaceSection: React.FC<{
       <ConditionRender condition={editAgentList?.length}>
         <h3 className={cx(styles['collection-title'])}>最近编辑</h3>
         {editAgentList?.map((item: AgentInfo, index: number) => (
-          <SecondMenuItem.SubItem
+          <MenuListItem
             key={item.id}
             isFirst={index === 0}
             onClick={() => handleClick(item)}

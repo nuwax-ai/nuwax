@@ -1,4 +1,5 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .container {
   height: 100%;
@@ -18,17 +19,15 @@
   .recommend {
     width: 780px;
     padding: 30px 0;
-    gap: 20px;
+    gap: @margin;
 
     .recommend-item {
-      line-height: 36px;
-      padding: 0 20px;
-      border-radius: 10px;
-      box-sizing: border-box;
-      border: 1px solid @GRAY17;
-      font-size: 14px;
-      color: @BLANK04;
-      background-color: @WHITE;
+      line-height: 20px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 16px;
+      color: @colorTextSecondary;
+      background-color: @colorBgLayout;
     }
   }
 
