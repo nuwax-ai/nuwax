@@ -63,6 +63,7 @@
     "react-copy-to-clipboard": "^5.1.0",
     "react-infinite-scroll-component": "^6.1.0",
     "react-markdown": "^10.1.0",
+    "react-sticky-box": "^2.0.5",
     "rehype-katex": "^7.0.1",
     "rehype-prism": "^2.3.3",
     "rehype-raw": "^7.0.0",

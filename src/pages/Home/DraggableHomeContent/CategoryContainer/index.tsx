@@ -16,7 +16,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type { TabsProps } from 'antd';
 import { Tabs } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -71,7 +71,7 @@ interface CategoryContainerProps {
 
 /**
  * 分类容器组件
- * 使用 Ant Design Tabs 组件实现分类标签的拖拽排序和横向滚动功能
+ * 使用 Ant Design Tabs 组件实现分类标签的拖拽排序功能
  */
 const CategoryContainer: React.FC<CategoryContainerProps> = ({
   categories,
@@ -88,7 +88,7 @@ const CategoryContainer: React.FC<CategoryContainerProps> = ({
     useState<CategoryInfo[]>(categories);
 
   // 当父组件传入的 categories 变化时，更新本地状态
-  useEffect(() => {
+  React.useEffect(() => {
     setLocalCategories(categories);
   }, [categories]);
 
@@ -129,9 +129,13 @@ const CategoryContainer: React.FC<CategoryContainerProps> = ({
   };
 
   // 处理标签点击
-  const handleTabChange = (activeKey: string) => {
-    onTabClick(activeKey);
-  };
+  const handleTabChange = useCallback(
+    (activeKey: string) => {
+      console.log(`🎯 Tab点击事件: ${activeKey}`);
+      onTabClick(activeKey);
+    },
+    [onTabClick],
+  );
 
   if (!localCategories || localCategories.length === 0) {
     return null;
@@ -147,6 +151,11 @@ const CategoryContainer: React.FC<CategoryContainerProps> = ({
           marginBottom: 0,
           borderBottom: 'none',
         }}
+        // 添加更多样式控制
+        tabBarGutter={8}
+        size="middle"
+        // 去除指示条 - 通过设置size为0来隐藏
+        indicator={{ size: 0 }}
         renderTabBar={(tabBarProps, DefaultTabBar) => (
           <DndContext
             sensors={[sensor]}

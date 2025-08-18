@@ -116,6 +116,7 @@ const AgentSection: React.FC<AgentSectionProps> = ({
   return (
     <div
       ref={sectionRef}
+      data-category={category.type}
       className={cx(styles.section, {
         // [styles.dragging]: isDragging,
       })}

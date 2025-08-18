@@ -9,6 +9,7 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { App, Space, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import StickyBox from 'react-sticky-box';
 import { history, useRequest } from 'umi';
 import AgentSection from './AgentSection';
 import CategoryContainer from './CategoryContainer';
@@ -79,13 +80,8 @@ const DraggableHomeContent: React.FC<DraggableHomeContentProps> = ({
   // 事件处理函数
   const handleTabClick = useCallback(
     (type: string) => {
+      console.log(`📝 DraggableHomeContent Tab点击事件: ${type}`);
       onTabClick(type);
-
-      // 滚动到对应区域
-      const section = sectionRefs.current[type];
-      if (section) {
-        section.scrollIntoView({ behavior: 'smooth' });
-      }
     },
     [onTabClick],
   );
@@ -173,23 +169,30 @@ const DraggableHomeContent: React.FC<DraggableHomeContentProps> = ({
 
   return (
     <div className={styles.draggableContainer}>
-      <Space className={styles.recommendContainer}>
-        <Typography.Title level={5} className={styles.recommendTitle}>
-          智能体推荐
-        </Typography.Title>
-        <span className={styles.recommendDesc}>拖拽智能体卡片可交换位置</span>
-      </Space>
-      {/* 分类标签容器 */}
-      <CategoryContainer
-        categories={homeCategoryInfo?.categories || []}
-        activeCategory={activeTab}
-        dragHoverText={dragHoverText}
-        onCategoryDragEnd={handleCategoryDragEnd}
-        onTabClick={handleTabClick}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        onDragStart={handleDragStart}
-      />
+      <StickyBox
+        offsetTop={0}
+        offsetBottom={20}
+        style={{ zIndex: 10 }}
+        className={styles.stickyContainer + ' sticky-container-selector'}
+      >
+        <Space className={styles.recommendContainer}>
+          <Typography.Title level={5} className={styles.recommendTitle}>
+            智能体推荐
+          </Typography.Title>
+          <span className={styles.recommendDesc}>拖拽智能体卡片可交换位置</span>
+        </Space>
+        {/* 分类标签容器 */}
+        <CategoryContainer
+          categories={homeCategoryInfo?.categories || []}
+          activeCategory={activeTab}
+          dragHoverText={dragHoverText}
+          onCategoryDragEnd={handleCategoryDragEnd}
+          onTabClick={handleTabClick}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          onDragStart={handleDragStart}
+        />
+      </StickyBox>
 
       {/* 内容区域 */}
       {isEmpty ? (

@@ -2,57 +2,82 @@
 @import '@/styles/token';
 
 .container {
-  height: 100%;
-  padding: 40px 0 20px;
+  // 整体滚动容器
+  // min-height: 100vh;
 
-  .title {
-    font-size: 24px;
-    font-weight: bold;
-    color: @BLANK04;
-  }
+  // 输入框区域样式
+  .inputSection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 40px 0 20px;
+    overflow-y: auto; // 允许输入框区域内部滚动
 
-  .textarea {
-    width: 780px;
-    margin-top: 45px;
-  }
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+      color: @BLANK04;
+      margin-bottom: 45px;
+    }
 
-  .recommend {
-    width: 780px;
-    padding: 30px 0;
-    gap: @margin;
+    .textarea {
+      width: 780px;
+      margin-bottom: 30px;
+    }
 
-    .recommend-item {
-      line-height: 20px;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 16px;
-      color: @colorTextSecondary;
-      background-color: @colorBgLayout;
+    .recommend {
+      width: 780px;
+      gap: @margin;
+
+      .recommend-item {
+        line-height: 20px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 16px;
+        color: @colorTextSecondary;
+        background-color: @colorBgLayout;
+      }
     }
   }
 
-  .wrapper {
-    width: 780px;
-    border-radius: 10px;
-    padding: 20px;
-    background: @WHITE;
+  // 推荐区域样式
+  .recommendSection {
+    // width: 100%;
+    // flex: 1; // 占用剩余空间，自然形成约360px高度
+    // overflow-y: auto; // 允许推荐区域内部滚动
+
+    .wrapper {
+      width: 780px;
+      margin: 0 auto;
+      border-radius: 10px;
+      padding: 20px;
+      // background: @WHITE;
+      height: 100%;
+    }
   }
 }
 
 @media (max-width: 768px) {
   .container {
-    padding: 48px 12px 16px;
+    .inputSection {
+      padding: 48px 12px 16px;
 
-    .textarea {
-      width: 100%;
+      .textarea {
+        width: 100%;
+      }
+
+      .recommend {
+        width: 100%;
+      }
     }
 
-    .recommend {
-      width: 100%;
-    }
-
-    .wrapper {
-      width: 100%;
+    .recommendSection {
+      .wrapper {
+        width: 100%;
+        margin: 0 12px;
+      }
     }
   }
 }
