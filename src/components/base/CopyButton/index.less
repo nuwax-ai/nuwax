@@ -1,0 +1,30 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.copy-btn {
+  color: @colorTextDescription;
+  font-size: @fontSizeSm;
+  transition: color 0.2s ease-in-out;
+  user-select: none;
+
+  &:hover:not(.disabled) {
+    color: @colorPrimary;
+  }
+
+  &.disabled {
+    color: @colorTextDisabled;
+    cursor: not-allowed;
+  }
+
+  // 图标样式
+  img {
+    width: 16px;
+    height: 16px;
+    margin-right: @marginXxs;
+  }
+
+  // 文本样式
+  span {
+    line-height: 1;
+  }
+}

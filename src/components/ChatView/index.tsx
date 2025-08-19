@@ -4,6 +4,7 @@ import copyImage from '@/assets/images/copy.png';
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
+import CopyButton from '@/components/base/CopyButton';
 import { USER_INFO } from '@/constants/home.constants';
 import useMarkdownRender from '@/hooks/useMarkdownRender';
 import { AssistantRoleEnum } from '@/types/enums/agent';
@@ -17,7 +18,6 @@ import { message, theme } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import CopyToClipboard from 'react-copy-to-clipboard';
 import { useModel } from 'umi';
 import ChatBottomDebug from './ChatBottomDebug';
 import ChatBottomMore from './ChatBottomMore';
@@ -140,26 +140,19 @@ const ChatView: React.FC<ChatViewProps> = memo(
                   'items-center',
                 )}
               >
-                <CopyToClipboard
+                <CopyButton
                   text={messageInfo.text || ''}
                   onCopy={handleTextCopy}
-                >
-                  <span
-                    className={cx(
-                      'flex',
-                      'items-center',
-                      'cursor-pointer',
-                      styles['copy-btn'],
-                    )}
-                  >
+                  icon={
                     <img
                       className={cx(styles['copy-image'])}
                       src={copyImage}
                       alt=""
                     />
-                    <span>复制</span>
-                  </span>
-                </CopyToClipboard>
+                  }
+                >
+                  复制
+                </CopyButton>
               </div>
             </div>
           )}
