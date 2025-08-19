@@ -37,6 +37,8 @@ export interface TabItemProps {
   icon: React.ReactNode;
   text: string;
   onClick: (type: TabsEnum) => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
 // 用户操作项类型

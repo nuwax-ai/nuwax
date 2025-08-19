@@ -9,6 +9,7 @@ import { useLocation, useModel } from 'umi';
 const Tabs: React.FC<TabsType> = ({ onClick }) => {
   const location = useLocation();
   const { userInfo, refreshUserInfo } = useModel('userInfo');
+  const { handleShowHoverMenu, handleHideHoverMenu } = useModel('layout');
 
   useEffect(() => {
     // 获取用户信息
@@ -49,6 +50,8 @@ const Tabs: React.FC<TabsType> = ({ onClick }) => {
             {...item}
             onClick={() => onClick(item.type)}
             active={handleActive(item.type)}
+            onMouseEnter={() => handleShowHoverMenu(item.type)}
+            onMouseLeave={handleHideHoverMenu}
           />
         );
       })}

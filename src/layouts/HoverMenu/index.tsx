@@ -1,0 +1,124 @@
+import ConditionRender from '@/components/ConditionRender';
+import HoverScrollbar from '@/components/base/HoverScrollbar';
+import { TabsEnum } from '@/types/enums/menus';
+import { Typography } from 'antd';
+import classNames from 'classnames';
+import React, { useMemo } from 'react';
+import { useModel } from 'umi';
+import EcosystemMarketSection from '../MenusLayout/EcosystemMarketSection';
+import HomeSection from '../MenusLayout/HomeSection';
+import SpaceSection from '../MenusLayout/SpaceSection';
+import SquareSection from '../MenusLayout/SquareSection';
+import SystemSection from '../MenusLayout/SystemSection';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
+
+/**
+ * 悬浮菜单组件
+ * 当二级菜单收起时，鼠标悬浮在一级菜单图标上显示对应的二级菜单内容
+ */
+const HoverMenu: React.FC = () => {
+  const {
+    showHoverMenu,
+    hoverMenuType,
+    isSecondMenuCollapsed,
+    handleHideHoverMenu,
+  } = useModel('layout');
+
+  // 根据菜单类型渲染对应的内容
+  const MenuContent: React.FC = useMemo(() => {
+    const menuStyle = { paddingTop: 0 }; // 去除移动端的 paddingTop
+
+    switch (hoverMenuType) {
+      case TabsEnum.Home:
+        return () => <HomeSection style={menuStyle} />;
+      case TabsEnum.Space:
+        return () => <SpaceSection style={menuStyle} />;
+      case TabsEnum.Square:
+        return () => <SquareSection style={menuStyle} />;
+      case TabsEnum.System_Manage:
+        return () => <SystemSection style={menuStyle} />;
+      case TabsEnum.Ecosystem_Market:
+        return () => <EcosystemMarketSection style={menuStyle} />;
+      default:
+        return () => null;
+    }
+  }, [hoverMenuType]);
+
+  // 获取菜单标题
+  const menuTitle = useMemo(() => {
+    switch (hoverMenuType) {
+      case TabsEnum.Home:
+        return '主页';
+      case TabsEnum.Square:
+        return '广场';
+      case TabsEnum.Space:
+        return '工作空间';
+      case TabsEnum.System_Manage:
+        return '系统管理';
+      case TabsEnum.Ecosystem_Market:
+        return '生态市场';
+      default:
+        return '';
+    }
+  }, [hoverMenuType]);
+
+  // 是否显示标题
+  const isShowTitle = useMemo(() => {
+    return hoverMenuType !== TabsEnum.Space;
+  }, [hoverMenuType]);
+
+  // 只在二级菜单收起且有悬浮菜单类型时显示
+  if (!isSecondMenuCollapsed || !hoverMenuType) {
+    return null;
+  }
+
+  return (
+    <div
+      className={cx(
+        styles['hover-menu'],
+        showHoverMenu ? styles.visible : styles.hidden,
+      )}
+      onMouseEnter={() => {
+        // 鼠标进入悬浮菜单区域时保持显示
+      }}
+      onMouseLeave={handleHideHoverMenu}
+    >
+      <HoverScrollbar
+        className={cx('h-full')}
+        bodyWidth={264 - 16 * 2}
+        style={{
+          width: '100%',
+          padding: '12px 0',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            minHeight: 0,
+          }}
+        >
+          <ConditionRender condition={isShowTitle}>
+            <div style={{ padding: '22px 12px' }}>
+              <Typography.Title
+                level={4}
+                className={cx(styles['menu-title'])}
+                style={{ marginBottom: 0 }}
+              >
+                {menuTitle}
+              </Typography.Title>
+            </div>
+          </ConditionRender>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <MenuContent />
+          </div>
+        </div>
+      </HoverScrollbar>
+    </div>
+  );
+};
+
+export default HoverMenu;

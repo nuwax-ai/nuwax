@@ -1,0 +1,62 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.collapse-button {
+  position: absolute;
+  bottom: 42px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: @colorBgElevated;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  z-index: 10;
+
+  &:hover {
+    background-color: @colorBgTextHover;
+    border-color: @colorPrimary;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 10%);
+  }
+
+  .icon {
+    font-size: 12px;
+    color: @colorTextSecondary;
+    transition: color 0.2s ease-in-out;
+  }
+
+  &:hover .icon {
+    color: @colorPrimary;
+  }
+
+  // 收起状态时的样式调整
+  &.collapsed {
+    right: -12px; // 移出二级菜单区域
+    background-color: @colorPrimary;
+    border-color: @colorPrimary;
+
+    .icon {
+      color: @colorWhite;
+    }
+
+    &:hover {
+      background-color: @colorPrimaryHover;
+      border-color: @colorPrimaryHover;
+
+      .icon {
+        color: @colorWhite;
+      }
+    }
+  }
+}
+
+// 移动端隐藏收起按钮
+@media (max-width: 768px) {
+  .collapse-button {
+    display: none !important;
+  }
+}

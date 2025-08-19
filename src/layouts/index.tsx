@@ -5,10 +5,10 @@ import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Outlet, useModel } from 'umi';
 import HistoryConversation from './HistoryConversation';
+import HoverMenu from './HoverMenu';
 import styles from './index.less';
 import {
   ANIMATION_DURATION,
-  MENU_WIDTH,
   MOBILE_BREAKPOINT,
   MOBILE_MENU_TOP_PADDING,
 } from './layout.constants';
@@ -49,6 +49,8 @@ const Layout: React.FC = () => {
     setRealHidden,
     fullMobileMenu,
     setFullMobileMenu,
+    getCurrentMenuWidth,
+    isSecondMenuCollapsed,
   } = useModel('layout');
 
   // 移除对 @@initialState 的依赖，统一由 useGlobalSettings 管理全局配置
@@ -128,7 +130,7 @@ const Layout: React.FC = () => {
       // 设置动画样式
       container.style.transform = fullMobileMenu
         ? 'translateX(0)'
-        : `translateX(-${MENU_WIDTH}px)`;
+        : `translateX(-${getCurrentMenuWidth()}px)`;
 
       // 清理函数
       return () => {
@@ -140,7 +142,7 @@ const Layout: React.FC = () => {
       setRealHidden(false);
       setFullMobileMenu(false); // 重置菜单状态
     }
-  }, [fullMobileMenu, isMobile, handleTransitionEnd]);
+  }, [fullMobileMenu, isMobile, handleTransitionEnd, getCurrentMenuWidth]);
 
   /**
    * 侧边栏样式配置
@@ -162,10 +164,10 @@ const Layout: React.FC = () => {
 
     return {
       position: 'relative',
-      width: MENU_WIDTH,
+      width: getCurrentMenuWidth(),
       height: '100%',
     };
-  }, [isMobile]);
+  }, [isMobile, isSecondMenuCollapsed, getCurrentMenuWidth]);
 
   /**
    * 菜单栏容器样式类名
@@ -215,6 +217,9 @@ const Layout: React.FC = () => {
         {/* 菜单栏 */}
         <MenusLayout overrideContainerStyle={menuOverrideStyle} />
 
+        {/* 悬浮菜单 */}
+        <HoverMenu />
+
         {/* 历史会话记录弹窗 */}
         <HistoryConversation />
 
@@ -226,7 +231,11 @@ const Layout: React.FC = () => {
 
         {/* 移动端菜单按钮和遮罩层 */}
         {isMobile && (
-          <MobileMenu isOpen={fullMobileMenu} onToggle={toggleFullMobileMenu} />
+          <MobileMenu
+            isOpen={fullMobileMenu}
+            onToggle={toggleFullMobileMenu}
+            menuWidth={getCurrentMenuWidth()}
+          />
         )}
       </div>
 

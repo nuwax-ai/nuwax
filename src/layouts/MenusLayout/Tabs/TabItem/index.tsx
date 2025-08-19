@@ -12,6 +12,8 @@ const TabItem: React.FC<TabItemProps> = ({
   icon,
   onClick,
   text,
+  onMouseEnter,
+  onMouseLeave,
 }) => {
   return (
     <Tooltip
@@ -24,6 +26,8 @@ const TabItem: React.FC<TabItemProps> = ({
     >
       <div
         onClick={() => onClick(type)}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
         className={cx(
           'flex',
           'flex-col',

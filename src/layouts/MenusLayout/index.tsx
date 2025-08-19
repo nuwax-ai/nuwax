@@ -6,11 +6,12 @@ import useConversation from '@/hooks/useConversation';
 import SystemSection from '@/layouts/MenusLayout/SystemSection';
 import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
-import { Typography } from 'antd';
+import { theme, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
 import { FIRST_MENU_WIDTH, SECOND_MENU_WIDTH } from '../layout.constants';
+import CollapseButton from './CollapseButton';
 import EcosystemMarketSection from './EcosystemMarketSection';
 import Header from './Header';
 import HomeSection from './HomeSection';
@@ -30,7 +31,7 @@ const MenusLayout: React.FC<{
   overrideContainerStyle?: React.CSSProperties;
 }> = ({ overrideContainerStyle }) => {
   const location = useLocation();
-  const { setOpenMessage } = useModel('layout');
+  const { setOpenMessage, isSecondMenuCollapsed } = useModel('layout');
   const [tabType, setTabType] = useState<TabsEnum>();
   const { asyncSpaceListFun } = useModel('spaceModel');
   const { runTenantConfig } = useModel('tenantConfigInfo');
@@ -39,6 +40,7 @@ const MenusLayout: React.FC<{
   // 关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
   const { runQueryCategory } = useCategory();
+  const { token } = theme.useToken();
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
@@ -199,35 +201,49 @@ const MenusLayout: React.FC<{
         <User />
       </div>
       {/*二级导航菜单栏*/}
-      <HoverScrollbar
+      <div
         className={cx(styles['nav-menus'])}
-        bodyWidth={SECOND_MENU_WIDTH - 16 * 2}
         style={{
-          width: SECOND_MENU_WIDTH,
-          marginLeft: 16,
-          padding: '12px 0',
+          width: isSecondMenuCollapsed ? 0 : SECOND_MENU_WIDTH - token.padding,
+          paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
+          overflow: 'hidden',
+          transition: 'width 0.3s ease-in-out, margin-left 0.3s ease-in-out',
+          position: 'relative',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            minHeight: 0,
-          }}
-        >
-          <ConditionRender condition={isShowTitle}>
-            <div style={{ padding: '22px 12px' }}>
-              <Typography.Title level={4} style={{ marginBottom: 0 }}>
-                {title}
-              </Typography.Title>
+        {!isSecondMenuCollapsed && (
+          <HoverScrollbar
+            className={cx('h-full')}
+            bodyWidth={SECOND_MENU_WIDTH - token.padding * 2}
+            style={{
+              width: '100%',
+              padding: '12px 0',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                minHeight: 0,
+              }}
+            >
+              <ConditionRender condition={isShowTitle}>
+                <div style={{ padding: '22px 12px' }}>
+                  <Typography.Title level={4} style={{ marginBottom: 0 }}>
+                    {title}
+                  </Typography.Title>
+                </div>
+              </ConditionRender>
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <Content />
+              </div>
             </div>
-          </ConditionRender>
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <Content />
-          </div>
-        </div>
-      </HoverScrollbar>
+          </HoverScrollbar>
+        )}
+      </div>
+      {/* 收起/展开按钮 */}
+      <CollapseButton />
     </div>
   );
 };
