@@ -1,8 +1,9 @@
+import ThemeControlPanel from '@/components/ThemeControlPanel';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
-import { ColorPicker, theme } from 'antd';
+import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Outlet, useIntl, useModel } from 'umi';
+import { Outlet, useModel } from 'umi';
 import HistoryConversation from './HistoryConversation';
 import styles from './index.less';
 import {
@@ -28,7 +29,6 @@ const isDevOrTest = isDev || process.env.CI;
  * 负责响应式菜单、历史会话、消息、设置弹窗的布局与展示
  */
 const Layout: React.FC = () => {
-  const intl = useIntl();
   // 使用 useRef 避免重复获取 DOM 元素
   const mobileMenuContainerRef = useRef<HTMLDivElement>(null);
   // 全局主题与语言（已在 app.tsx 统一注入，这里仅保留使用场景需要时可读取）
@@ -196,47 +196,14 @@ const Layout: React.FC = () => {
     <div className={cx('flex', 'h-full', styles.container)}>
       {/* 顶部右侧全局操作：主题、语言、主色 */}
       {isDevOrTest && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: 8,
-            right: 12,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            zIndex: 1100,
-            background: 'rgba(255,255,255,0.6)',
-            backdropFilter: 'saturate(180%) blur(8px)',
-            borderRadius: 8,
-            padding: '6px 10px',
-          }}
-        >
-          <a onClick={toggleTheme}>
-            {isDarkMode
-              ? intl.formatMessage({
-                  id: 'theme.light',
-                  defaultMessage: 'Light',
-                })
-              : intl.formatMessage({
-                  id: 'theme.dark',
-                  defaultMessage: 'Dark',
-                })}
-          </a>
-          <span style={{ color: '#d9d9d9' }}>|</span>
-          <a onClick={toggleLanguage}>
-            {language === 'zh-CN'
-              ? intl.formatMessage({ id: 'lang.en', defaultMessage: 'English' })
-              : intl.formatMessage({
-                  id: 'lang.zh',
-                  defaultMessage: 'Chinese',
-                })}
-          </a>
-          <span style={{ color: '#d9d9d9' }}>|</span>
-          <ColorPicker
-            value={primaryColor}
-            onChangeComplete={(c) => setPrimaryColor(c.toHexString())}
-          />
-        </div>
+        <ThemeControlPanel
+          isDarkMode={isDarkMode}
+          toggleTheme={toggleTheme}
+          language={language}
+          toggleLanguage={toggleLanguage}
+          primaryColor={primaryColor}
+          setPrimaryColor={setPrimaryColor}
+        />
       )}
       {/* 侧边菜单栏及弹窗区域 */}
       <div
