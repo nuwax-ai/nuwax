@@ -15,6 +15,7 @@ export interface SvgIconProps
   style?: React.CSSProperties;
 }
 
+const DEFAULT_FONT_SIZE = 20;
 const SvgIcon: React.FC<SvgIconProps> = ({ name, style, ...rest }) => {
   const Comp = nameToComponent[name];
   if (!Comp) {
@@ -26,7 +27,7 @@ const SvgIcon: React.FC<SvgIconProps> = ({ name, style, ...rest }) => {
   }
   const mergedStyle = {
     ...style,
-    ...(!style?.fontSize && { fontSize: 24 }),
+    ...(!style?.fontSize && { fontSize: DEFAULT_FONT_SIZE }),
   };
 
   return <Icon component={Comp as React.FC} style={mergedStyle} {...rest} />;

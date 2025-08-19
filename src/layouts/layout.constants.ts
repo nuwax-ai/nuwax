@@ -1,5 +1,5 @@
-export const FIRST_MENU_WIDTH = 80;
-export const SECOND_MENU_WIDTH = 264;
+export const FIRST_MENU_WIDTH = 60;
+export const SECOND_MENU_WIDTH = 240;
 export const MENU_WIDTH = FIRST_MENU_WIDTH + SECOND_MENU_WIDTH; // 菜单宽度
 
 // 常量定义

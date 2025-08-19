@@ -1,7 +1,7 @@
 import ConditionRender from '@/components/ConditionRender';
 import HoverScrollbar from '@/components/base/HoverScrollbar';
 import { TabsEnum } from '@/types/enums/menus';
-import { Typography } from 'antd';
+import { theme, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { useModel } from 'umi';
@@ -10,8 +10,8 @@ import HomeSection from '../MenusLayout/HomeSection';
 import SpaceSection from '../MenusLayout/SpaceSection';
 import SquareSection from '../MenusLayout/SquareSection';
 import SystemSection from '../MenusLayout/SystemSection';
+import { FIRST_MENU_WIDTH, SECOND_MENU_WIDTH } from '../layout.constants';
 import styles from './index.less';
-
 const cx = classNames.bind(styles);
 
 /**
@@ -27,7 +27,7 @@ const HoverMenu: React.FC = () => {
     handleCancelHideHoverMenu,
     setMouseInHoverMenu,
   } = useModel('layout');
-
+  const { token } = theme.useToken();
   // 根据菜单类型渲染对应的内容
   const MenuContent: React.FC = useMemo(() => {
     const menuStyle = { paddingTop: 0 }; // 去除移动端的 paddingTop
@@ -92,10 +92,15 @@ const HoverMenu: React.FC = () => {
         setMouseInHoverMenu(false);
         handleImmediateHideHoverMenu();
       }}
+      style={{
+        width: SECOND_MENU_WIDTH,
+        left: FIRST_MENU_WIDTH,
+        paddingLeft: token.padding,
+      }}
     >
       <HoverScrollbar
         className={cx('h-full')}
-        bodyWidth={264 - 16 * 2}
+        bodyWidth={SECOND_MENU_WIDTH - token.padding * 2}
         style={{
           width: '100%',
           padding: '12px 0',

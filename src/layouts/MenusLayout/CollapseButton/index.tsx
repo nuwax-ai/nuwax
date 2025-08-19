@@ -3,6 +3,7 @@ import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { useModel } from 'umi';
+import { FIRST_MENU_WIDTH } from '../../layout.constants';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -25,6 +26,9 @@ const CollapseButton: React.FC = () => {
           [styles.collapsed]: isSecondMenuCollapsed,
         })}
         onClick={toggleSecondMenuCollapse}
+        style={{
+          left: FIRST_MENU_WIDTH,
+        }}
       >
         {isSecondMenuCollapsed ? (
           <RightOutlined className={cx(styles.icon)} />
