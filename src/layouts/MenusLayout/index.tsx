@@ -206,9 +206,7 @@ const MenusLayout: React.FC<{
         style={{
           width: isSecondMenuCollapsed ? 0 : SECOND_MENU_WIDTH - token.padding,
           paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
-          overflow: 'hidden',
-          transition: 'width 0.3s ease-in-out, margin-left 0.3s ease-in-out',
-          position: 'relative',
+          opacity: isSecondMenuCollapsed ? 0 : 1,
         }}
       >
         {!isSecondMenuCollapsed && (

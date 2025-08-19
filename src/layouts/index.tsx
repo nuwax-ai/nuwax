@@ -50,7 +50,6 @@ const Layout: React.FC = () => {
     fullMobileMenu,
     setFullMobileMenu,
     getCurrentMenuWidth,
-    isSecondMenuCollapsed,
   } = useModel('layout');
 
   // 移除对 @@initialState 的依赖，统一由 useGlobalSettings 管理全局配置
@@ -164,10 +163,9 @@ const Layout: React.FC = () => {
 
     return {
       position: 'relative',
-      width: getCurrentMenuWidth(),
       height: '100%',
     };
-  }, [isMobile, isSecondMenuCollapsed, getCurrentMenuWidth]);
+  }, [isMobile]);
 
   /**
    * 菜单栏容器样式类名
