@@ -238,6 +238,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   'items-center',
                   'content-center',
                   'cursor-pointer',
+                  styles.box,
                   { [styles.disabled]: clearDisabled || wholeDisabled },
                 )}
                 onClick={handleClear}
@@ -261,19 +262,21 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             }}
             showUploadList={false}
           >
-            <span
-              className={cx(
-                'flex',
-                'items-center',
-                'content-center',
-                'cursor-pointer',
-                styles.box,
-                styles['plus-box'],
-                { [styles['upload-box-disabled']]: wholeDisabled },
-              )}
-            >
-              <SvgIcon name="icons-chat-add" />
-            </span>
+            <Tooltip title="上传附件">
+              <span
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'content-center',
+                  'cursor-pointer',
+                  styles.box,
+                  styles['plus-box'],
+                  { [styles['upload-box-disabled']]: wholeDisabled },
+                )}
+              >
+                <SvgIcon name="icons-chat-add" />
+              </span>
+            </Tooltip>
           </Upload>
           {/*手动选择组件*/}
           <ManualComponentItem

@@ -34,17 +34,18 @@
     gap: @marginXs;
 
     .clear {
-      color: @colorIcon;
+      color: @colorTextSecondary;
       font-size: @fontSize;
       transition: color ease-in-out 0.2s;
 
       &.disabled {
         cursor: not-allowed;
-        color: @colorIcon;
+        color: @colorTextSecondary;
+        background-color: @colorBgContainerDisabled;
       }
 
       &:hover {
-        color: @colorIconHover;
+        background-color: @colorPrimaryBg;
       }
     }
 
@@ -53,12 +54,12 @@
       border-radius: @borderRadius;
 
       &.plus-box {
-        color: @colorIcon;
+        color: @colorTextSecondary;
         font-size: @fontSize;
         transition: color ease-in-out 0.2s;
 
         &:hover {
-          color: @colorIconHover;
+          background-color: @colorPrimaryBg;
         }
       }
 
