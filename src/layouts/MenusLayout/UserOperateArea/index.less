@@ -2,18 +2,26 @@
 @import '@/styles/token';
 
 .user-icon {
-  margin-bottom: 8px;
-  display: flex;
-  width: 48px;
-  height: 48px;
-  padding: 8px;
-  justify-content: center;
-  align-items: center;
-  border-radius: 8px;
+  margin-bottom: @marginXs;
+  color: @colorTextSecondary;
+  transition: background-color 0.3s;
+  user-select: none;
+
+  .active-icon-container {
+    display: flex;
+    width: 48px;
+    height: 48px;
+    padding: @paddingXs;
+    justify-content: center;
+    align-items: center;
+    border-radius: @borderRadius;
+  }
 
   &:hover {
-    background: @colorBgContainer;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 8%);
+    .active-icon-container {
+      background: @colorBgElevated;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 8%);
+    }
   }
 
   &.last {

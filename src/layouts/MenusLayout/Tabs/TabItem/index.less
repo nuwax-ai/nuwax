@@ -2,46 +2,35 @@
 @import '@/styles/token';
 
 .box {
-  // height: 65px;
-  margin-bottom: 8px;
-  color: @BLANK17;
-  // border-right: 1px solid transparent;
+  margin-bottom: @marginXs;
+  color: @colorTextSecondary;
   transition: background-color 0.3s;
   user-select: none; /* 禁止选中 */
   .active-icon-container {
     display: flex;
     width: 48px;
     height: 48px;
-    padding: 8px;
+    padding: @paddingXs;
     justify-content: center;
     align-items: center;
-    border-radius: 8px;
+    border-radius: @borderRadius;
   }
 
   &:hover {
-    // background-color: @WHITE18;
     .active-icon-container {
-      background: #fff;
+      background: @colorBgElevated;
       box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 8%);
     }
   }
 
   &.active {
-    // background-color: @WHITE18;
-    // border-color: @BLUE10;
     color: @colorPrimary;
 
     .active-icon-container {
-      background: #fff;
+      background: @colorBgElevated;
       box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 8%);
     }
   }
-
-  // img {
-  //   width: 20px;
-  //   height: 20px;
-  //   object-fit: cover;
-  // }
 
   // .text {
   //   margin-top: 4px;
