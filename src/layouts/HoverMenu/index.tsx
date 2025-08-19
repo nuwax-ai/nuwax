@@ -23,7 +23,9 @@ const HoverMenu: React.FC = () => {
     showHoverMenu,
     hoverMenuType,
     isSecondMenuCollapsed,
-    handleHideHoverMenu,
+    handleImmediateHideHoverMenu,
+    handleCancelHideHoverMenu,
+    setMouseInHoverMenu,
   } = useModel('layout');
 
   // 根据菜单类型渲染对应的内容
@@ -81,9 +83,15 @@ const HoverMenu: React.FC = () => {
         showHoverMenu ? styles.visible : styles.hidden,
       )}
       onMouseEnter={() => {
-        // 鼠标进入悬浮菜单区域时保持显示
+        // 鼠标进入悬浮菜单区域时，设置状态并取消隐藏定时器
+        setMouseInHoverMenu(true);
+        handleCancelHideHoverMenu();
       }}
-      onMouseLeave={handleHideHoverMenu}
+      onMouseLeave={() => {
+        // 鼠标离开悬浮菜单区域时，设置状态并立即隐藏
+        setMouseInHoverMenu(false);
+        handleImmediateHideHoverMenu();
+      }}
     >
       <HoverScrollbar
         className={cx('h-full')}

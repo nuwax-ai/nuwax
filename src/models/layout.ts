@@ -2,7 +2,7 @@ import {
   FIRST_MENU_WIDTH,
   SECOND_MENU_WIDTH,
 } from '@/layouts/layout.constants';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 const useLayout = () => {
   const [isMobile, setIsMobile] = useState<boolean>(false);
@@ -22,6 +22,11 @@ const useLayout = () => {
   const [showHoverMenu, setShowHoverMenu] = useState<boolean>(false);
   // 当前悬浮菜单类型
   const [hoverMenuType, setHoverMenuType] = useState<string>('');
+  // 鼠标是否在悬浮菜单内
+  const [isMouseInHoverMenu, setIsMouseInHoverMenu] = useState<boolean>(false);
+
+  // 悬浮菜单隐藏定时器引用
+  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleCloseMobileMenu = () => {
     if (isMobile) {
@@ -37,21 +42,70 @@ const useLayout = () => {
     if (!isSecondMenuCollapsed) {
       setShowHoverMenu(false);
       setHoverMenuType('');
+      setIsMouseInHoverMenu(false);
+      // 清除定时器
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
     }
   };
 
   // 显示悬浮菜单
   const handleShowHoverMenu = (menuType: string) => {
     if (isSecondMenuCollapsed) {
+      // 清除之前的隐藏定时器
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
       setShowHoverMenu(true);
       setHoverMenuType(menuType);
+      setIsMouseInHoverMenu(false);
     }
   };
 
-  // 隐藏悬浮菜单
+  // 隐藏悬浮菜单（带延迟）
   const handleHideHoverMenu = () => {
+    // 如果鼠标在悬浮菜单内，不隐藏
+    if (isMouseInHoverMenu) {
+      return;
+    }
+
+    // 设置延迟隐藏，给用户时间移动到悬浮菜单
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+    }
+    hideTimerRef.current = setTimeout(() => {
+      setShowHoverMenu(false);
+      setHoverMenuType('');
+      setIsMouseInHoverMenu(false);
+      hideTimerRef.current = null;
+    }, 200); // 200ms延迟，足够用户移动到悬浮菜单
+  };
+
+  // 立即隐藏悬浮菜单（用于清理）
+  const handleImmediateHideHoverMenu = () => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
     setShowHoverMenu(false);
     setHoverMenuType('');
+    setIsMouseInHoverMenu(false);
+  };
+
+  // 取消隐藏定时器（用于鼠标进入悬浮菜单时保持显示）
+  const handleCancelHideHoverMenu = () => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+  };
+
+  // 设置鼠标在悬浮菜单内的状态
+  const setMouseInHoverMenu = (isIn: boolean) => {
+    setIsMouseInHoverMenu(isIn);
   };
 
   // 动态计算菜单宽度
@@ -89,7 +143,10 @@ const useLayout = () => {
     setHoverMenuType,
     handleShowHoverMenu,
     handleHideHoverMenu,
+    handleImmediateHideHoverMenu,
+    handleCancelHideHoverMenu,
     getCurrentMenuWidth,
+    setMouseInHoverMenu,
   };
 };
 
