@@ -1,6 +1,8 @@
 import { ReactComponent as AddSvgFile } from '@/assets/icons/chat/add.svg';
 import { ReactComponent as ClearSvgFile } from '@/assets/icons/chat/clear.svg';
 import { ReactComponent as ClockSvgFile } from '@/assets/icons/chat/clock.svg';
+import { ReactComponent as CloseSvgFile } from '@/assets/icons/chat/close.svg';
+import { ReactComponent as CloseFillSvgFile } from '@/assets/icons/chat/close_fill.svg';
 import { ReactComponent as CollectSvgFile } from '@/assets/icons/chat/collect.svg';
 import { ReactComponent as CollectedSvgFile } from '@/assets/icons/chat/collected.svg';
 import { ReactComponent as CopySvgFile } from '@/assets/icons/chat/copy.svg';
@@ -11,8 +13,6 @@ import { ReactComponent as NetworkSvgFile } from '@/assets/icons/chat/network.sv
 import { ReactComponent as SendSvgFile } from '@/assets/icons/chat/send.svg';
 import { ReactComponent as ShareSvgFile } from '@/assets/icons/chat/share.svg';
 import { ReactComponent as StopSvgFile } from '@/assets/icons/chat/stop.svg';
-import { ReactComponent as XCircleFillSvgFile } from '@/assets/icons/chat/X circle-fill.svg';
-import { ReactComponent as XCircleSvgFile } from '@/assets/icons/chat/X circle.svg';
 import React from 'react';
 import { wrapSvg } from './common';
 
@@ -29,8 +29,8 @@ const CollectedSvg = wrapSvg(CollectedSvgFile);
 const HistorySvg = wrapSvg(HistorySvgFile);
 const InfoSvg = wrapSvg(InfoSvgFile);
 const ShareSvg = wrapSvg(ShareSvgFile);
-const XCircleFillSvg = wrapSvg(XCircleFillSvgFile);
-const XCircleSvg = wrapSvg(XCircleSvgFile);
+const CloseFillSvg = wrapSvg(CloseFillSvgFile);
+const CloseSvg = wrapSvg(CloseSvgFile);
 
 export default {
   'icons-chat-send': SendSvg,
@@ -46,6 +46,6 @@ export default {
   'icons-chat-history': HistorySvg,
   'icons-chat-info': InfoSvg,
   'icons-chat-share': ShareSvg,
-  'icons-chat-x-circle-fill': XCircleFillSvg,
-  'icons-chat-x-circle': XCircleSvg,
+  'icons-chat-close-fill': CloseFillSvg,
+  'icons-chat-close': CloseSvg,
 } as Record<string, React.FC>;
