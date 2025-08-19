@@ -7,15 +7,20 @@
   z-index: 99;
   background-color: @colorBgContainer;
 
-  .title {
-    position: sticky;
-    top: 0;
+  .title-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     height: 60px;
-    line-height: 60px;
     padding: 0 30px;
+  }
+
+  .title {
+    flex: 1;
+    margin: 0;
     color: @BLANK17;
     font-size: 16px;
-    text-align: center;
+    text-align: left;
     mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
   }
 }
@@ -89,6 +94,31 @@
 
     .main-content-box {
       max-width: 100%;
+    }
+  }
+
+  .title-box {
+    .title-container {
+      padding: 0 16px;
+      flex-direction: column;
+      height: auto;
+      gap: 12px;
+      padding-top: 12px;
+      padding-bottom: 12px;
+    }
+
+    .title {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+  }
+}
+
+/* 当屏幕宽度小于等于 480px 时应用的样式 */
+@media screen and (max-width: 480px) {
+  .title-box {
+    .title-container {
+      padding: 0 12px;
     }
   }
 }

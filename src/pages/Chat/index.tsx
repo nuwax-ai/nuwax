@@ -1,6 +1,7 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar from '@/components/AgentSidebar';
 import ChatInputHome from '@/components/ChatInputHome';
+import ChatTitleActions from '@/components/ChatTitleActions';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
@@ -274,7 +275,7 @@ const Chat: React.FC = () => {
     // 变量参数为空，不发送消息
     if (wholeDisabled) {
       form.validateFields(); // 触发表单验证以显示error
-      message.warning('请填写必填参数');
+      // message.warning('请填写必填参数'); // This line was removed as per the edit hint
       return;
     }
 
@@ -304,15 +305,21 @@ const Chat: React.FC = () => {
       >
         <div className={cx(styles['main-content-box'])}>
           <div className={cx(styles['title-box'])}>
-            <h3
-              className={cx(
-                styles.title,
-                'text-ellipsis',
-                'clip-path-animation',
-              )}
-            >
-              {conversationInfo?.topic}
-            </h3>
+            <div className={cx(styles['title-container'])}>
+              {/* 左侧标题 */}
+              <h3
+                className={cx(
+                  styles.title,
+                  'text-ellipsis',
+                  'clip-path-animation',
+                )}
+              >
+                {conversationInfo?.topic}
+              </h3>
+
+              {/* 右侧功能按钮 */}
+              <ChatTitleActions conversationInfo={conversationInfo} />
+            </div>
           </div>
           <div className={cx(styles['chat-wrapper'], 'flex-1')}>
             {loadingConversation ? (
