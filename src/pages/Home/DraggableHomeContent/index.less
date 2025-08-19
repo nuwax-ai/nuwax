@@ -108,31 +108,20 @@
 }
 
 .section {
-  margin-bottom: 24px;
+  // margin-bottom: 24px;
 
   .sectionTitle {
-    display: flex;
-    align-items: center;
-    margin-bottom: 16px;
-
-    h3 {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 600;
-      color: #262626;
-    }
-
-    .count {
-      margin-left: 8px;
-      color: #8c8c8c;
-      font-size: 14px;
-    }
+    padding-top: @padding;
+    color: @colorTextTertiary;
+    font-size: @fontSize;
+    line-height: 20px;
   }
 
   .agentGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(246px, 1fr));
+    gap: @margin;
+    padding: @padding 0;
 
     @media (max-width: 768px) {
       grid-template-columns: 1fr;
@@ -141,14 +130,14 @@
   }
 }
 
+.contentContainer {
+  padding: 0 @padding;
+}
+
 .stickyContainer {
   background-color: @colorBgContainer;
-
-  // 确保在统一滚动布局中吸附效果正常工作
-  // StickyBox已经处理了position: sticky，这里主要确保背景和层级
+  padding: 0 @padding;
   z-index: 10;
-  // 添加边框以区分吸附区域
-  // border-bottom: 1px solid @colorBorder;
 }
 
 .agentCard {

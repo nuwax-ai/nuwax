@@ -1,18 +1,20 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .container {
-  gap: 10px;
-  width: 100%;
-  height: 104px;
-  padding: 12px;
-  background-color: @BLANK12;
-  border-radius: 12px;
-  transition: background-color 0.3s, transform 0.2s ease, box-shadow 0.2s ease;
+  height: 108px;
+  padding: @padding;
+  box-sizing: content-box;
+  border: 0.5px solid @colorBorder;
+  border-radius: @borderRadiusLg;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 6%), 0 1px 3px rgba(0, 0, 0, 10%);
 
   &:hover {
-    background-color: @BLANK30;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 12%), 0 4px 10px rgba(0, 0, 0, 8%);
 
     .icon-box {
       opacity: 1;
@@ -21,50 +23,179 @@
   }
 
   &.dragging {
-    transform: rotate(2deg);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 15%);
+    transform: rotate(3deg) scale(1.02);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 20%);
     z-index: 1000;
-    opacity: 0.9;
+    opacity: 0.95;
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.98);
+    transition: all 0.1s ease;
   }
 }
 
+.img-wrapper {
+  position: absolute;
+  left: @padding;
+  top: @padding;
+  width: 48px;
+  height: 48px;
+}
+
 .img {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: @borderRadius;
   object-fit: cover;
 }
 
 .info-box {
-  gap: 6px;
+  position: absolute;
+  left: 16px + 48px + 12px;
+  top: @padding;
+  right: 16px + 28px + 12px;
+  display: flex;
+  flex-direction: column;
+  gap: @paddingXxs;
 
-  h3 {
-    font-size: 16px;
+  .title-section {
+    margin-bottom: 0;
   }
 
-  .desc {
-    color: @BLANK31;
-    font-size: 14px;
-  }
+  .source-section {
+    .source {
+      color: @GRAY05;
+      font-size: @fontSizeSm;
+      margin: 0;
+      line-height: 19px;
+      display: flex;
+      align-items: center;
+      gap: @marginXxs;
 
-  .source {
-    color: @GRAY05;
-    font-size: 12px;
+      .user-icon {
+        font-size: @fontSizeIcon;
+        color: @GRAY05;
+      }
+    }
   }
 }
 
+.desc-section {
+  position: absolute;
+  left: @padding;
+  right: @padding;
+  top: 16px + 48px + 16px;
+  color: @colorTextSecondary;
+}
+
 .icon-box {
-  width: 22px;
-  height: 22px;
-  margin-inline-start: 6px;
-  border-radius: 6px;
-  background-color: @BLANK18;
-  color: @BLANK05;
+  position: absolute;
+  top: @padding;
+  right: @padding;
+  width: 28px;
+  height: 28px;
+  border-radius: @borderRadius;
+  color: @colorTextTertiary;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid @colorBorderSecondary;
+  cursor: pointer;
+
+  &:hover {
+    border-color: @colorBorder;
+  }
 
   &.collected {
     color: @YELLOW01;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 193, 7, 10%) 0%,
+      rgba(255, 193, 7, 5%) 100%
+    );
+    border-color: @orange1;
+    opacity: 1;
+    visibility: visible;
+
+    &:hover {
+      background: linear-gradient(
+        135deg,
+        rgba(255, 193, 7, 15%) 0%,
+        rgba(255, 193, 7, 8%) 100%
+      );
+      border-color: @orange3;
+    }
+  }
+
+  &.collecting {
+    opacity: 1;
+    visibility: visible;
+    border-color: @colorBorder;
+  }
+
+  .star-icon {
+    font-size: @fontSizeIcon;
+    transition: transform 0.2s ease;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    height: 88px;
+    padding: 12px;
+  }
+
+  .img-wrapper {
+    left: 12px;
+    top: 12px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .img {
+    border-radius: 6px;
+  }
+
+  .info-box {
+    left: 64px;
+    top: 12px;
+    right: 40px;
+    gap: 6px;
+
+    .title-section {
+      margin-bottom: 0;
+    }
+  }
+
+  .desc-section {
+    left: 12px;
+    right: 12px;
+    top: 64px;
+  }
+
+  .icon-box {
+    top: 12px;
+    right: 12px;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+
+    .star-icon {
+      font-size: 12px;
+    }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .container {
+    border-color: rgba(255, 255, 255, 10%);
+
+    &:hover {
+      border-color: rgba(255, 255, 255, 15%);
+    }
   }
 }
