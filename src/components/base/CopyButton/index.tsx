@@ -1,7 +1,7 @@
-import copyImage from '@/assets/images/copy.png';
 import classNames from 'classnames';
 import React from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
+import SvgIcon from '../SvgIcon';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -49,7 +49,11 @@ const CopyButton: React.FC<CopyButtonProps> = ({
 
   // 默认图标
   const defaultIcon = (
-    <img className={cx(styles['copy-image'])} src={copyImage} alt="复制" />
+    <SvgIcon
+      name="icons-chat-copy"
+      className={cx(styles['copy-image'])}
+      style={{ fontSize: 12 }}
+    />
   );
 
   // 如果禁用，返回禁用状态的按钮
