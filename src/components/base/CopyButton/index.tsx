@@ -1,3 +1,4 @@
+import copyImage from '@/assets/images/copy.png';
 import classNames from 'classnames';
 import React from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
@@ -16,7 +17,7 @@ export interface CopyButtonProps {
   style?: React.CSSProperties;
   /** 是否禁用 */
   disabled?: boolean;
-  /** 自定义图标 */
+  /** 自定义图标，如果不传则使用默认的复制图标 */
   icon?: React.ReactNode;
   /** 按钮文本，默认为"复制" */
   children?: React.ReactNode;
@@ -27,6 +28,7 @@ export interface CopyButtonProps {
 /**
  * 复制按钮组件
  * 支持自定义文本、图标、样式和回调函数
+ * 默认使用复制图标，支持自定义图标覆盖
  */
 const CopyButton: React.FC<CopyButtonProps> = ({
   text,
@@ -45,6 +47,11 @@ const CopyButton: React.FC<CopyButtonProps> = ({
     }
   };
 
+  // 默认图标
+  const defaultIcon = (
+    <img className={cx(styles['copy-image'])} src={copyImage} alt="复制" />
+  );
+
   // 如果禁用，返回禁用状态的按钮
   if (disabled) {
     return (
@@ -60,7 +67,7 @@ const CopyButton: React.FC<CopyButtonProps> = ({
         style={style}
         title={tooltipText}
       >
-        {icon}
+        {icon || defaultIcon}
         <span>{children}</span>
       </span>
     );
@@ -79,7 +86,7 @@ const CopyButton: React.FC<CopyButtonProps> = ({
         style={style}
         title={tooltipText}
       >
-        {icon}
+        {icon || defaultIcon}
         <span>{children}</span>
       </span>
     </CopyToClipboard>

@@ -1,6 +1,5 @@
 import agentImage from '@/assets/images/agent_image.png';
 import avatar from '@/assets/images/avatar.png';
-import copyImage from '@/assets/images/copy.png';
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
@@ -143,13 +142,6 @@ const ChatView: React.FC<ChatViewProps> = memo(
                 <CopyButton
                   text={messageInfo.text || ''}
                   onCopy={handleTextCopy}
-                  icon={
-                    <img
-                      className={cx(styles['copy-image'])}
-                      src={copyImage}
-                      alt=""
-                    />
-                  }
                 >
                   复制
                 </CopyButton>
