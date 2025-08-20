@@ -1,9 +1,9 @@
-import SvgIcon from '@/components/base/SvgIcon';
+import ActionMenu, { ActionItem } from '@/components/base/ActionMenu';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { message } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useMemo } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -21,7 +21,7 @@ interface ChatTitleActionsProps {
 
 /**
  * Chat页面标题右侧功能按钮组件
- * 包含分享、收藏、定时任务、历史会话四个功能
+ * 使用通用的ActionMenu组件，支持配置显示数量和更多菜单
  */
 const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
   agentInfo,
@@ -89,69 +89,52 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
     message.info('历史会话功能开发中...');
   };
 
+  // 定义所有操作项
+  const actions: ActionItem[] = useMemo(
+    () => [
+      {
+        key: 'share',
+        icon: 'icons-chat-share',
+        title: '分享',
+        onClick: handleShare,
+      },
+      {
+        key: agentInfo?.collect ? 'collected' : 'collect',
+        icon: agentInfo?.collect
+          ? 'icons-chat-collected'
+          : 'icons-chat-collect',
+        title: '收藏',
+        onClick: handleToggleCollect,
+        className: agentInfo?.collect ? styles.collected : '',
+      },
+      {
+        key: 'timed-task',
+        icon: 'icons-chat-clock',
+        title: '定时任务',
+        onClick: handleTimedTask,
+        className: styles['timed-task'],
+      },
+      {
+        key: 'history-conversation',
+        icon: 'icons-chat-history',
+        title: '历史会话',
+        onClick: handleHistoryConversation,
+        className: styles['history-conversation'],
+      },
+    ],
+    [agentInfo],
+  );
+
   return (
     <div className={cx(styles['title-actions'], className)}>
-      {/* 分享按钮 */}
-      <div
-        className={cx(styles['action-item'])}
-        onClick={handleShare}
-        onKeyDown={(e) => e.key === 'Enter' && handleShare()}
-        tabIndex={0}
-        role="button"
-        aria-label="分享会话链接"
-      >
-        <SvgIcon name="icons-chat-share" className={styles['action-icon']} />
-        <span className={styles['action-text']}>分享</span>
-      </div>
-
-      {/* 收藏按钮 */}
-      <div
-        className={cx(styles['action-item'])}
-        onClick={handleToggleCollect}
-        onKeyDown={(e) => e.key === 'Enter' && handleToggleCollect()}
-        tabIndex={0}
-        role="button"
-        aria-label={agentInfo?.collect ? '取消收藏' : '添加到收藏'}
-      >
-        {agentInfo?.collect ? (
-          <SvgIcon
-            name="icons-chat-collected"
-            className={cx(styles['action-icon'], styles['collected'])}
-          />
-        ) : (
-          <SvgIcon
-            name="icons-chat-collect"
-            className={styles['action-icon']}
-          />
-        )}
-        <span className={styles['action-text']}>收藏</span>
-      </div>
-
-      {/* 定时任务按钮 */}
-      <div
-        className={cx(styles['action-item'], styles['timed-task'])}
-        onClick={handleTimedTask}
-        onKeyDown={(e) => e.key === 'Enter' && handleTimedTask()}
-        tabIndex={0}
-        role="button"
-        aria-label="设置定时任务"
-      >
-        <SvgIcon name="icons-chat-clock" className={styles['action-icon']} />
-        <span className={styles['action-text']}>定时任务</span>
-      </div>
-
-      {/* 历史会话按钮 */}
-      <div
-        className={cx(styles['action-item'], styles['history-conversation'])}
-        onClick={handleHistoryConversation}
-        onKeyDown={(e) => e.key === 'Enter' && handleHistoryConversation()}
-        tabIndex={0}
-        role="button"
-        aria-label="查看历史会话"
-      >
-        <SvgIcon name="icons-chat-history" className={styles['action-icon']} />
-        <span className={styles['action-text']}>历史会话</span>
-      </div>
+      <ActionMenu
+        actions={actions}
+        visibleCount={2} // 只显示前2项：分享和收藏
+        moreText="更多"
+        moreIcon="icons-chat-info"
+        showArrow={false}
+        className={styles['action-menu']}
+      />
     </div>
   );
 };

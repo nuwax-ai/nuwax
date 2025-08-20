@@ -19,7 +19,7 @@ import type {
 import { addBaseTarget, arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Form } from 'antd';
+import { Form, Typography } from 'antd';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -308,15 +308,14 @@ const Chat: React.FC = () => {
           <div className={cx(styles['title-box'])}>
             <div className={cx(styles['title-container'])}>
               {/* 左侧标题 */}
-              <h3
-                className={cx(
-                  styles.title,
-                  'text-ellipsis',
-                  'clip-path-animation',
-                )}
+              <Typography.Title
+                level={4}
+                className={cx(styles.title, 'clip-path-animation')}
+                ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
               >
                 {conversationInfo?.topic}
-              </h3>
+              </Typography.Title>
+
               {/* 右侧功能按钮 */}
               <ChatTitleActions agentInfo={conversationInfo?.agent} />
             </div>

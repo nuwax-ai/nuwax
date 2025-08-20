@@ -4,92 +4,47 @@
 .title-actions {
   display: flex;
   align-items: center;
-  gap: 16px;
   margin-left: 20px;
 }
 
-.action-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  user-select: none;
-  outline: none;
+// 操作菜单容器样式
+.action-menu {
+  // 继承ActionMenu组件的样式
+}
+
+// 收藏状态样式
+.collected {
+  color: #faad14;
+}
+
+// 定时任务特殊样式（紫色虚线边框）
+.timed-task {
+  border: 2px dashed #722ed1;
+  padding: 6px 10px;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 4%);
-  }
-
-  &:active {
-    transform: translateY(0);
-    background-color: rgba(0, 0, 0, 8%);
+    border-color: #531dab;
+    background-color: rgba(114, 46, 209, 4%);
   }
 
   &:focus {
+    border-color: #1890ff;
     box-shadow: 0 0 0 2px rgba(24, 144, 255, 20%);
-    background-color: rgba(0, 0, 0, 4%);
+  }
+}
+
+// 历史会话特殊样式（浅紫色背景）
+.history-conversation {
+  background-color: #f0f0ff;
+  border-radius: 8px;
+
+  &:hover {
+    background-color: #e6e6ff;
   }
 
-  &:focus-visible {
-    outline: 2px solid #1890ff;
-    outline-offset: 2px;
-  }
-
-  .action-icon {
-    font-size: 16px;
-    color: @BLANK17;
-    transition: all 0.2s ease;
-    width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .action-text {
-    font-size: 14px;
-    color: @BLANK17;
-    white-space: nowrap;
-    transition: all 0.2s ease;
-  }
-
-  // 收藏状态样式
-  .collected {
-    color: #faad14;
-  }
-
-  // 定时任务特殊样式（紫色虚线边框）
-  &.timed-task {
-    border: 2px dashed #722ed1;
-    padding: 6px 10px;
-
-    &:hover {
-      border-color: #531dab;
-      background-color: rgba(114, 46, 209, 4%);
-    }
-
-    &:focus {
-      border-color: #1890ff;
-      box-shadow: 0 0 0 2px rgba(24, 144, 255, 20%);
-    }
-  }
-
-  // 历史会话特殊样式（浅紫色背景）
-  &.history-conversation {
-    background-color: #f0f0ff;
-    border-radius: 8px;
-
-    &:hover {
-      background-color: #e6e6ff;
-    }
-
-    &:focus {
-      background-color: #e6e6ff;
-      box-shadow: 0 0 0 2px rgba(24, 144, 255, 20%);
-    }
+  &:focus {
+    background-color: #e6e6ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 20%);
   }
 }
 
@@ -97,34 +52,12 @@
 @media screen and (max-width: 720px) {
   .title-actions {
     margin-left: 0;
-    gap: 12px;
-    flex-wrap: wrap;
     justify-content: center;
-  }
-
-  .action-item {
-    padding: 6px 10px;
-
-    .action-text {
-      font-size: 12px;
-    }
   }
 }
 
 @media screen and (max-width: 480px) {
   .title-actions {
-    gap: 8px;
-  }
-
-  .action-item {
-    padding: 4px 8px;
-
-    .action-icon {
-      font-size: 14px;
-    }
-
-    .action-text {
-      font-size: 11px;
-    }
+    margin-left: 0;
   }
 }

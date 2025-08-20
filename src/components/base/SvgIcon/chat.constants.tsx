@@ -1,4 +1,5 @@
 import { ReactComponent as AddSvgFile } from '@/assets/icons/chat/add.svg';
+import { ReactComponent as ChatSvgFile } from '@/assets/icons/chat/chat.svg';
 import { ReactComponent as ClearSvgFile } from '@/assets/icons/chat/clear.svg';
 import { ReactComponent as ClockSvgFile } from '@/assets/icons/chat/clock.svg';
 import { ReactComponent as CloseSvgFile } from '@/assets/icons/chat/close.svg';
@@ -13,6 +14,7 @@ import { ReactComponent as NetworkSvgFile } from '@/assets/icons/chat/network.sv
 import { ReactComponent as SendSvgFile } from '@/assets/icons/chat/send.svg';
 import { ReactComponent as ShareSvgFile } from '@/assets/icons/chat/share.svg';
 import { ReactComponent as StopSvgFile } from '@/assets/icons/chat/stop.svg';
+import { ReactComponent as UserSvgFile } from '@/assets/icons/chat/user.svg';
 import React from 'react';
 import { wrapSvg } from './common';
 
@@ -31,6 +33,8 @@ const InfoSvg = wrapSvg(InfoSvgFile);
 const ShareSvg = wrapSvg(ShareSvgFile);
 const CloseFillSvg = wrapSvg(CloseFillSvgFile);
 const CloseSvg = wrapSvg(CloseSvgFile);
+const UserSvg = wrapSvg(UserSvgFile);
+const ChatSvg = wrapSvg(ChatSvgFile);
 
 export default {
   'icons-chat-send': SendSvg,
@@ -48,4 +52,6 @@ export default {
   'icons-chat-share': ShareSvg,
   'icons-chat-close-fill': CloseFillSvg,
   'icons-chat-close': CloseSvg,
+  'icons-chat-user': UserSvg,
+  'icons-chat-chat': ChatSvg,
 } as Record<string, React.FC>;
