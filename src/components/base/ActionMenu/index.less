@@ -1,0 +1,154 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.action-menu {
+  display: flex;
+  align-items: center;
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  gap: @paddingXs;
+  padding: @paddingXs @paddingSm;
+  border-radius: @borderRadiusSm;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  outline: none;
+
+  &:hover {
+    background-color: @controlItemBgHover;
+  }
+
+  &:active {
+    background-color: @controlItemBgActive;
+  }
+
+  &:focus {
+    background-color: @controlItemBgActive;
+  }
+
+  .action-icon {
+    color: inherit;
+    transition: all 0.2s ease;
+    // width: 16px;
+    // height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .action-text {
+    font-size: 14px;
+    color: @colorText;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+
+  // 更多按钮样式
+  &.more-button {
+    .more-arrow {
+      font-size: 12px;
+      color: @colorText;
+      margin-left: 4px;
+      transition: all 0.2s ease;
+    }
+
+    &:hover .more-arrow {
+      color: @colorText;
+    }
+  }
+
+  // 禁用状态
+  &.disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+
+    &:hover,
+    &:active,
+    &:focus {
+      background-color: transparent;
+      box-shadow: none;
+    }
+
+    .action-icon,
+    .action-text {
+      color: @BLANK20;
+    }
+  }
+}
+
+.more-menu {
+  :global {
+    .ant-dropdown-menu {
+      display: flex;
+      flex-direction: column;
+      gap: @paddingXxs;
+    }
+  }
+}
+
+// 更多菜单项样式
+.more-menu-item {
+  display: flex;
+  align-items: center;
+  gap: @paddingXs;
+  padding: @paddingXxs 0;
+
+  .more-menu-icon {
+    font-size: @fontSize;
+    color: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  span {
+    font-size: @fontSize;
+    color: @colorText;
+  }
+}
+
+/* 响应式样式 */
+@media screen and (max-width: 720px) {
+  .action-menu {
+    gap: @paddingSm;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .action-item {
+    padding: 6px 10px;
+
+    .action-text {
+      font-size: 12px;
+    }
+
+    .action-icon {
+      font-size: 14px;
+    }
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .action-menu {
+    gap: 8px;
+  }
+
+  .action-item {
+    padding: 4px 8px;
+
+    .action-icon {
+      font-size: 14px;
+    }
+
+    .action-text {
+      font-size: 11px;
+    }
+
+    .more-arrow {
+      font-size: 10px;
+    }
+  }
+}

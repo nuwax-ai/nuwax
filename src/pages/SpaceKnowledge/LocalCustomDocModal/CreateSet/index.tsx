@@ -1,6 +1,6 @@
 import ConditionRender from '@/components/ConditionRender';
 import LabelStar from '@/components/LabelStar';
-import SelectList from '@/components/SelectList';
+import SelectList from '@/components/custom/SelectList';
 import { KNOWLEDGE_SEGMENT_IDENTIFIER_LIST } from '@/constants/library.constants';
 import { KnowledgeSegmentIdentifierEnum } from '@/types/enums/library';
 import type { CreateSetProps } from '@/types/interfaces/knowledge';

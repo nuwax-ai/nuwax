@@ -7,6 +7,10 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 自定义表单弹窗组件
+ * 监控表单必填项状态，并根据状态显示不同状态的按钮
+ */
 const CustomFormModal: React.FC<PropsWithChildren<CustomFormModalProps>> = ({
   form,
   classNames,

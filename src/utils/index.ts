@@ -93,3 +93,7 @@ export const isEmptyObject = (obj: any) => {
 };
 
 export * from './clipboard';
+
+// 导出拷贝相关组件
+export { default as CopyButton } from '@/components/base/CopyButton';
+export { default as CopyIconButton } from '@/components/base/CopyIconButton';

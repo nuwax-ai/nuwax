@@ -6,19 +6,26 @@ import styles from './MobileMenu.less';
 type MobileMenuProps = {
   isOpen: boolean; // 菜单是否展开
   onToggle: () => void; // 切换菜单展开/收起
+  menuWidth: number; // 动态菜单宽度
 };
 
 /**
  * 移动端菜单按钮和遮罩层组件
  * @param isOpen 菜单是否展开
  * @param onToggle 切换菜单展开/收起
+ * @param menuWidth 动态菜单宽度
  */
-const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onToggle }) => (
+const MobileMenu: React.FC<MobileMenuProps> = ({
+  isOpen,
+  onToggle,
+  menuWidth,
+}) => (
   <>
     {/* 菜单按钮始终显示 */}
     <div
       className={styles.mobileMenuBtn}
       style={{
+        left: menuWidth,
         marginLeft: isOpen ? '-36px' : '6px', // 建议迁移到less
         transition: 'margin-left 0.3s',
       }}

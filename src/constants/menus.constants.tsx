@@ -1,16 +1,6 @@
-import ecosystemMarketImage from '@/assets/images/ecosystem_market.png';
-import ecosystemMarketImageActive from '@/assets/images/ecosystem_market_active.png';
-import homeImage from '@/assets/images/home_image.png';
-import homeImageActive from '@/assets/images/home_image_active.png';
-import squareImage from '@/assets/images/square_image.png';
-import squareImageActive from '@/assets/images/square_image_active.png';
-import systemImage from '@/assets/images/system_image.png';
-import systemImageActive from '@/assets/images/system_image_active.png';
 // import teachMaterialImage from '@/assets/images/teach_material.png';
 // import teachMaterialImageActive from '@/assets/images/teach_material_active.png';
-import workflowImage from '@/assets/images/workspace_image.png';
-import workflowImageActive from '@/assets/images/workspace_image_active.png';
-import { ICON_FILE, ICON_NOTIFICATION } from '@/constants/images.constants';
+import SvgIcon from '@/components/base/SvgIcon';
 import {
   MessageReadStatusEnum,
   SettingActionEnum,
@@ -28,38 +18,37 @@ import {
 // tabs
 export const TABS = [
   {
-    icon: homeImage,
-    iconActive: homeImageActive,
+    icon: <SvgIcon name="icons-nav-new_chat" />,
+    text: '新建会话',
+    type: TabsEnum.NewChat,
+  },
+  {
+    icon: <SvgIcon name="icons-nav-home" />,
     text: '主页',
     type: TabsEnum.Home,
   },
   {
-    icon: workflowImage,
-    iconActive: workflowImageActive,
+    icon: <SvgIcon name="icons-nav-workspace" />,
     text: '工作空间',
     type: TabsEnum.Space,
   },
   {
-    icon: squareImage,
-    iconActive: squareImageActive,
+    icon: <SvgIcon name="icons-nav-square" />,
     text: '广场',
     type: TabsEnum.Square,
   },
   {
-    icon: ecosystemMarketImage,
-    iconActive: ecosystemMarketImageActive,
+    icon: <SvgIcon name="icons-nav-ecosystem" />,
     text: '生态市场',
     type: TabsEnum.Ecosystem_Market,
   },
   {
-    icon: systemImage,
-    iconActive: systemImageActive,
+    icon: <SvgIcon name="icons-nav-settings" />,
     text: '系统管理',
     type: TabsEnum.System_Manage,
   },
   // {
   //   icon: teachMaterialImage,
-  //   iconActive: teachMaterialImageActive,
   //   text: '教材体系',
   //   type: TabsEnum.Course_System,
   // },
@@ -69,12 +58,12 @@ export const TABS = [
 export const USER_OPERATE_AREA: UserOperateAreaItemType[] = [
   {
     title: '文档',
-    icon: <ICON_FILE />,
+    icon: <SvgIcon name="icons-nav-doc" />,
     type: UserOperatorAreaEnum.Document,
   },
   {
     title: '暂无未读消息',
-    icon: <ICON_NOTIFICATION />,
+    icon: <SvgIcon name="icons-nav-notification" />,
     type: UserOperatorAreaEnum.Message,
   },
 ];

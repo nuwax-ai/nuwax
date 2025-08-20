@@ -1,4 +1,4 @@
-import Loading from '@/components/Loading';
+import Loading from '@/components/custom/Loading';
 import type { AgentCardInfo } from '@/types/interfaces/agent';
 import type { CardBindProps } from '@/types/interfaces/agentConfig';
 import classNames from 'classnames';

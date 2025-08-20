@@ -1,11 +1,10 @@
+import CopyButton from '@/components/base/CopyButton';
 import { ChatSampleBottomProps } from '@/types/interfaces/conversationInfo';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { CopyToClipboard } from 'react-copy-to-clipboard';
 import styles from './index.less';
 // import shareImage from '@/assets/images/share.png';
-import copyImage from '@/assets/images/copy.png';
 import { formatTimeAgo } from '@/utils/common';
 
 const cx = classNames.bind(styles);
@@ -26,19 +25,9 @@ const ChatSampleBottom: React.FC<ChatSampleBottomProps> = ({ messageInfo }) => {
       )}
     >
       <div className={cx('flex', styles['more-action'])}>
-        <CopyToClipboard text={messageInfo?.text || ''} onCopy={handleCopy}>
-          <span
-            className={cx(
-              'flex',
-              'content-center',
-              'items-center',
-              'cursor-pointer',
-            )}
-          >
-            <img src={copyImage} alt="" />
-            <span>复制</span>
-          </span>
-        </CopyToClipboard>
+        <CopyButton text={messageInfo?.text || ''} onCopy={handleCopy}>
+          复制
+        </CopyButton>
         {/* <span
           className={cx(
             'flex',

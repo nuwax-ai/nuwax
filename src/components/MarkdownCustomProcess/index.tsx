@@ -1,6 +1,6 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
-import { copyJSONToClipboard } from '@/utils';
+import { copyTextToClipboard } from '@/utils/clipboard';
 import { cloneDeep } from '@/utils/common';
 import {
   CheckOutlined,
@@ -77,15 +77,14 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     }
   }, [innerProcessing.status]);
 
-  const handleCopy = useCallback(() => {
+  const handleCopy = useCallback(async () => {
     if (!detailData) {
       message.error('暂无数据');
       return;
     }
     // 复制功能 - 可以复制组件的配置或内容
-    copyJSONToClipboard(detailData, 2, () => {
-      message.success('复制成功');
-    });
+    const jsonText = JSON.stringify(detailData, null, 2);
+    await copyTextToClipboard(jsonText, undefined, true);
   }, [detailData]);
 
   // 准备 详情弹窗 所需的数据

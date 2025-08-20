@@ -1,10 +1,10 @@
-import AnalyzeStatistics from '@/components/AnalyzeStatistics';
 import CreateAgent from '@/components/CreateAgent';
-import Loading from '@/components/Loading';
+import Loading from '@/components/custom/Loading';
+import SelectList from '@/components/custom/SelectList';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
-import SelectList from '@/components/SelectList';
 import UploadImportConfig from '@/components/UploadImportConfig';
 import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.constants';
+import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
 import {
   apiAgentConfigList,
   apiAgentCopyToSpace,
@@ -23,12 +23,8 @@ import { AnalyzeStatisticsItem, FileType } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import { jumpToAgent } from '@/utils/router';
-import {
-  ExclamationCircleFilled,
-  PlusOutlined,
-  SearchOutlined,
-} from '@ant-design/icons';
-import { Button, Empty, Input, message, Modal, Upload } from 'antd';
+import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { Button, Empty, Input, message, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
@@ -38,7 +34,6 @@ import CreateTempChatModal from './CreateTempChatModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-const { confirm } = Modal;
 
 /**
  * 工作空间 - 应用开发
@@ -317,16 +312,11 @@ const SpaceDevelop: React.FC = () => {
         history.push(`/space/${spaceId}/${id}/log`);
         break;
       case ApplicationMoreActionEnum.Del:
-        confirm({
-          title: '您确定要删除此智能体吗?',
-          icon: <ExclamationCircleFilled />,
-          content: agentInfo?.name,
-          okText: '确定',
-          maskClosable: true,
-          cancelText: '取消',
-          onOk() {
-            runDel(id);
-          },
+        modalConfirm('您确定要删除此智能体吗?', agentInfo?.name, () => {
+          runDel(id);
+          return new Promise((resolve) => {
+            setTimeout(resolve, 1000);
+          });
         });
         break;
     }
@@ -395,31 +385,27 @@ const SpaceDevelop: React.FC = () => {
           onClear={handleClearKeyword}
         />
       </div>
-      <div className={cx('flex-1', 'overflow-y')}>
-        {loading ? (
-          <Loading className="h-full" />
-        ) : agentList?.length > 0 ? (
-          <div className={cx(styles['main-container'])}>
-            {agentList?.map((item: AgentConfigInfo, index: number) => (
-              <ApplicationItem
-                key={item.id}
-                agentConfigInfo={item}
-                onClickMore={(type) => handlerClickMore(type, index)}
-                onCollect={(isCollect: boolean) =>
-                  handlerCollect(index, isCollect)
-                }
-                onClick={handleClick}
-              />
-            ))}
-          </div>
-        ) : (
-          <div
-            className={cx('flex', 'items-center', 'content-center', 'h-full')}
-          >
-            <Empty description="未能找到相关结果" />
-          </div>
-        )}
-      </div>
+      {loading ? (
+        <Loading />
+      ) : agentList?.length > 0 ? (
+        <div className={cx(styles['main-container'], 'flex-1', 'overflow-y')}>
+          {agentList?.map((item: AgentConfigInfo, index: number) => (
+            <ApplicationItem
+              key={item.id}
+              agentConfigInfo={item}
+              onClickMore={(type) => handlerClickMore(type, index)}
+              onCollect={(isCollect: boolean) =>
+                handlerCollect(index, isCollect)
+              }
+              onClick={handleClick}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className={cx('flex', 'items-center', 'content-center', 'h-full')}>
+          <Empty description="未能找到相关结果" />
+        </div>
+      )}
 
       {/*分析统计弹窗*/}
       <AnalyzeStatistics

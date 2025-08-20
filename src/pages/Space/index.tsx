@@ -1,4 +1,4 @@
-import Loading from '@/components/Loading';
+import Loading from '@/components/custom/Loading';
 import { SPACE_ID, SPACE_URL } from '@/constants/home.constants';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum } from '@/types/enums/space';

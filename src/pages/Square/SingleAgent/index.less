@@ -1,101 +1,44 @@
-@import '@/styles/color';
+.card-wrapper {
+  position: relative;
 
-.container {
-  width: 100%;
-  background-color: @WHITE;
-  border-radius: 8px;
-  padding: 20px 20px 16px;
-  border: 1px solid @BLANK01;
-
-  .header {
-    gap: 16px;
-
-    .a-logo {
-      border-radius: 8px;
-      width: 64px;
-      height: 64px;
-      border: 1px solid @WHITE08;
-      background: @WHITE08;
-    }
-
-    .info-container {
-      overflow: hidden;
-
-      .a-name {
-        height: 24px;
-        line-height: 24px;
-        font-size: 18px;
-        font-weight: 600;
-        color: @BLANK08;
-      }
-
-      .info-author {
-        height: 26px;
-        font-size: 12px;
-        gap: 6px;
-
-        .avatar {
-          width: 14px;
-          height: 14px;
-          border-radius: 50%;
-        }
-
-        .author {
-          color: @BLANK04;
-        }
-      }
-    }
-
-    .desc {
-      height: 60px;
-      margin-top: 4px;
-      font-size: 14px;
-      font-weight: 400;
-      line-height: 20px;
-      color: @BLANK07;
-      white-space: pre-wrap;
-      word-break: break-word;
+  &:hover {
+    .action-box {
+      opacity: 1;
+      z-index: 1;
     }
   }
 
-  .divider-horizontal {
-    margin-top: 20px;
-    margin-bottom: 16px;
-    border-bottom: 0.5px solid @WHITE08;
+  .action-box {
+    gap: 12px;
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 12px;
+    height: 32px;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    z-index: -1;
+    background-color: #fff;
+
+    .star-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+    }
   }
+}
 
-  .footer {
-    gap: 16px;
+.footer {
+  height: 24px;
+  gap: 16px;
 
-    .left {
-      gap: 8px;
-
-      .text {
-        max-width: 60px;
-        font-size: 12px;
-        line-height: 16px;
-        color: @BLANK06;
-        gap: 4px;
-      }
-
-      .collect {
-        transition: color 0.3s;
-
-        &:hover {
-          color: @BLANK03;
-        }
-
-        .collected-star {
-          color: @YELLOW01;
-        }
-      }
-    }
-
-    .right {
-      margin-left: auto;
-      font-size: 12px;
-      font-weight: 400;
-      color: @BLANK06;
-    }
+  .text {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: #828894;
+    gap: 4px;
   }
 }

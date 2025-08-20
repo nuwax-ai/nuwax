@@ -1,5 +1,14 @@
-# 确保能找到 Node.js 相关命令
-export PATH="$HOME/.nvm/versions/node/v22.14.0/bin:$PATH"
+#!/usr/bin/env sh
 
-# 使用 package.json 中定义的 verify-commit 脚本
-pnpm run verify-commit $1
+. "$(dirname -- "$0")/_/husky.sh"
+
+# 优先使用 pnpm；若未安装则回退到 npx/yarn/bun
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm run verify-commit "$1"
+elif command -v bun >/dev/null 2>&1; then
+  bun x max verify-commit "$1"
+elif command -v yarn >/dev/null 2>&1; then
+  yarn verify-commit "$1"
+else
+  npx --yes max verify-commit "$1"
+fi

@@ -1,18 +1,23 @@
+import agentImage from '@/assets/images/agent_image.png';
+import CardWrapper from '@/components/business-component/CardWrapper';
 import CustomPopover from '@/components/CustomPopover';
+import {
+  ICON_MORE,
+  ICON_STAR,
+  ICON_STAR_FILL,
+  ICON_SUCCESS,
+} from '@/constants/images.constants';
 import { APPLICATION_MORE_ACTION } from '@/constants/space.constants';
 import { apiDevCollectAgent } from '@/services/agentDev';
-import { PermissionsEnum } from '@/types/enums/common';
+import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ApplicationItemProps } from '@/types/interfaces/space';
-import { MoreOutlined, UserOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
 import { useModel, useRequest } from 'umi';
-import ApplicationHeader from './ApplicationHeader';
-import CollectStar from './CollectStar';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -80,7 +85,9 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
   }, [agentConfigInfo]);
 
   // 收藏、取消收藏事件
-  const handlerCollect = async () => {
+  const handlerCollect = async (e: React.MouseEvent<HTMLSpanElement>) => {
+    e.stopPropagation();
+
     const { id, devCollected } = agentConfigInfo;
     if (devCollected) {
       await runCancelCollect(id);
@@ -97,57 +104,51 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
   };
 
   return (
-    <div
-      className={cx(
-        styles.container,
-        'w-full',
-        'px-16',
-        'py-16',
-        'radius-6',
-        'flex',
-        'flex-col',
-        'content-between',
-        'cursor-pointer',
-      )}
+    <CardWrapper
+      title={agentConfigInfo.name}
+      avatar={agentConfigInfo.creator?.avatar || ''}
+      name={
+        agentConfigInfo.creator?.nickName || agentConfigInfo.creator?.userName
+      }
+      content={agentConfigInfo.description}
+      icon={agentConfigInfo.icon}
+      defaultIcon={agentImage}
       onClick={() => onClick(agentConfigInfo.id)}
-    >
-      {/*头部信息*/}
-      <ApplicationHeader agentConfigInfo={agentConfigInfo} />
-      {/*相关信息*/}
-      <div className={cx('flex', styles['rel-info'])}>
-        <span>最近编辑</span>
-        <span>{dayjs(agentConfigInfo.modified).format('MM-DD HH:mm')}</span>
-      </div>
-      {/*底部*/}
-      <footer className={cx(styles.footer, 'flex', 'items-center')}>
-        <div className={cx('flex-1', 'flex', 'overflow-hide')}>
-          <UserOutlined />
-          <span className={cx('flex-1', 'text-ellipsis', styles.author)}>
-            {agentConfigInfo.creator?.nickName ||
-              agentConfigInfo.creator?.userName}
+      extra={
+        <>
+          <span className={cx('text-ellipsis', 'flex-1')}>
+            最近编辑 {dayjs(agentConfigInfo.modified).format('MM-DD HH:mm')}
           </span>
-        </div>
-        {/*收藏与取消收藏*/}
-        <CollectStar
-          devCollected={agentConfigInfo.devCollected}
-          onClick={handlerCollect}
-        />
-        {/*更多操作*/}
-        <CustomPopover onClick={handlerClickMore} list={actionList}>
+          {agentConfigInfo?.publishStatus === PublishStatusEnum.Published && (
+            <span className={cx('flex', 'items-center', 'gap-4')}>
+              <ICON_SUCCESS />
+              已发布
+            </span>
+          )}
+        </>
+      }
+      footer={
+        <footer
+          className={cx(
+            styles.footer,
+            'flex',
+            'items-center',
+            'content-between',
+          )}
+        >
           <span
-            className={cx(
-              styles['icon-box'],
-              'flex',
-              'content-center',
-              'items-center',
-              'hover-box',
-            )}
+            onClick={handlerCollect}
+            className={cx('flex', 'items-center', 'cursor-pointer')}
           >
-            <MoreOutlined />
+            {agentConfigInfo.devCollected ? <ICON_STAR_FILL /> : <ICON_STAR />}
           </span>
-        </CustomPopover>
-      </footer>
-    </div>
+          {/*更多操作*/}
+          <CustomPopover onClick={handlerClickMore} list={actionList}>
+            <ICON_MORE />
+          </CustomPopover>
+        </footer>
+      }
+    />
   );
 };
 

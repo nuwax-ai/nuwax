@@ -1,20 +1,11 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .header {
-  padding: 12px 0;
-  gap: 8px;
-  font-size: 14px;
-  color: @GRAY18;
-
-  .text {
-    max-width: 60px;
-    line-height: 16px;
-    color: @BLANK06;
-    gap: 4px;
-  }
+  color: @colorText;
+  justify-content: flex-end;
 
   .close {
-    display: inline-block;
-    margin-left: auto;
+    padding: @paddingXs @paddingSm;
   }
 }

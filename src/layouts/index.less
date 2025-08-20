@@ -1,10 +1,19 @@
-@import '@/styles/color';
+@import '@/styles/token';
 
 .container {
-  background-color: @WHITE03;
+  background-color: @colorBgLayout;
 }
 
 // 移动端菜单容器隐藏时的样式
 .mobile-menu-container-hidden {
   width: 0 !important;
+}
+
+.page-container {
+  background-color: @colorBgContainer;
+  border: @lineWidth solid @colorBorderSecondary;
+  margin: @marginSm @marginSm @marginSm 0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 8%);
+  z-index: 1;
 }

@@ -1,23 +1,29 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .chat-container {
   width: 100%;
-  gap: 4px;
-  padding: 10px 16px;
+  margin: 0 auto;
+  max-width: 800px;
+  gap: @margin;
+  padding: @padding;
   border-radius: 20px;
-  background: @WHITE;
+  background: @colorBgContainer;
   box-sizing: border-box;
-  box-shadow: 0 1px 5px 0 @BLANK29;
   transition: box-shadow 0.3s;
+  border: @lineWidth solid @colorBorderSecondary;
+  box-shadow: 0 9px 45px 0 rgba(0, 0, 0, 5%), 0 2px 10px 0 rgba(0, 0, 0, 3%),
+    0 1px 3px 0 rgba(0, 0, 0, 2%);
 
   .input {
-    line-height: 24px;
-    caret-color: @BLUE10;
+    font-size: @fontSizeLg;
+    line-height: @fontHeightSm;
+    caret-color: @colorPrimary;
     width: 100%;
     border: none;
     background-color: transparent;
     resize: none;
-    color: @BLANK08;
+    color: @colorText;
   }
 
   :global {
@@ -29,81 +35,80 @@
   }
 
   .footer {
-    gap: 10px;
+    gap: @marginXs;
 
     .clear {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      color: @GRAY05;
-      border: 1px solid @GRAY01;
+      color: @colorTextSecondary;
+      font-size: @fontSize;
+      transition: color ease-in-out 0.2s;
 
       &.disabled {
         cursor: not-allowed;
-        color: @BLANK25;
-        background-color: @BLANK12;
+        color: @colorTextSecondary;
+        background-color: @colorBgContainerDisabled;
+      }
+
+      &:hover {
+        background-color: @colorPrimaryBg;
       }
     }
 
     .box {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
+      padding: @paddingXs;
+      border-radius: @borderRadius;
 
       &.plus-box {
-        background-color: @WHITE;
-        border: 1px solid @WHITE15;
-        color: @GRAY16;
-        font-size: 12px;
-        transition: background-color ease-in-out 0.2s;
+        color: @colorTextSecondary;
+        font-size: @fontSize;
+        transition: color ease-in-out 0.2s;
 
         &:hover {
-          background-color: @WHITE01;
+          background-color: @colorPrimaryBg;
         }
       }
 
       &.upload-box-disabled {
         cursor: not-allowed;
-        color: @BLANK25 !important;
-        background-color: @BLANK12 !important;
+        color: @colorIcon !important;
+        background-color: @colorBgContainerDisabled !important;
+      }
+
+      .loading-box {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       &.send-box {
-        background-color: @BLANK;
-        color: @WHITE;
-        font-size: 16px;
-        transition: background-color ease-in-out 0.2s;
+        font-size: @fontSize;
+        transition: color ease-in-out 0.2s;
+        color: @colorWhite;
+        background-color: @colorPrimary;
 
         &.disabled {
+          color: @colorIcon;
           cursor: not-allowed;
-          background-color: @GRAY06;
+          background-color: @colorBgContainerDisabled;
         }
 
         // 停止按钮样式
         &.stop-box {
-          background-color: @RED01;
-          color: @WHITE;
-          font-size: 16px;
-          transition: background-color ease-in-out 0.2s;
-
-          &:hover:not(.disabled) {
-            background-color: @RED;
-          }
-
           &.disabled {
             cursor: not-allowed;
-            background-color: @GRAY06;
+            color: @colorIcon;
+            background-color: @colorBgContainerDisabled;
           }
 
           // 停止按钮高亮样式 - 当会话进行中且可点击时
           &.stop-box-active {
-            background-color: @BLANK;
-            color: @WHITE;
-            font-size: 16px;
+            background-color: @colorInfoBg;
+            color: @colorPrimary;
             transition: background-color ease-in-out 0.2s;
 
             &:hover:not(.disabled) {
-              background-color: @BLANK04;
+              background-color: @colorInfoBgHover;
             }
           }
         }
@@ -158,5 +163,11 @@
       opacity: 1;
       visibility: visible;
     }
+  }
+}
+
+@media screen and (max-width: 720px) {
+  .chat-container {
+    max-width: 100%;
   }
 }

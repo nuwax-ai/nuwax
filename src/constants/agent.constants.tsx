@@ -1,4 +1,4 @@
-import TooltipIcon from '@/components/TooltipIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import {
   DefaultSelectedEnum,
   InputTypeEnum,

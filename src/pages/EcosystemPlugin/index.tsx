@@ -48,7 +48,7 @@ const { Search } = Input;
 const PAGE_SIZE = 24;
 
 import EcosystemCard from '@/components/EcosystemCard';
-import Loading from '@/components/Loading';
+import Loading from '@/components/custom/Loading';
 import { CREATED_TABS } from '@/constants/common.constants';
 const defaultTabs = CREATED_TABS.filter((item) =>
   [AgentComponentTypeEnum.Plugin].includes(item.key),

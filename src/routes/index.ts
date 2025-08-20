@@ -132,6 +132,16 @@ const routes = [
     component: '@/pages/404',
     layout: false,
   },
+  {
+    path: '/examples',
+    component: '@/examples/index',
+    layout: false,
+  },
+  {
+    path: '/examples/antd-showcase',
+    component: '@/examples/AntdComponentsShowcase',
+    layout: false,
+  },
 ];
 
 export default routes;

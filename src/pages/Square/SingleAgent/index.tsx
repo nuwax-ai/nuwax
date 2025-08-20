@@ -1,12 +1,14 @@
 import agentImage from '@/assets/images/agent_image.png';
-import avatar from '@/assets/images/avatar.png';
+import CardWrapper from '@/components/business-component/CardWrapper';
+import {
+  ICON_MESSAGE,
+  ICON_STAR,
+  ICON_STAR_FILL,
+  ICON_USER,
+} from '@/constants/images.constants';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
 import type { SingleAgentProps } from '@/types/interfaces/square';
-import {
-  PlayCircleOutlined,
-  StarFilled,
-  UserOutlined,
-} from '@ant-design/icons';
+import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { useRequest } from 'umi';
@@ -19,7 +21,6 @@ const cx = classNames.bind(styles);
  */
 const SingleAgent: React.FC<SingleAgentProps> = ({
   onClick,
-  extra,
   publishedItemInfo,
   onToggleCollectSuccess,
 }) => {
@@ -62,58 +63,48 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   };
 
   return (
-    <div className={cx(styles.container, 'cursor-pointer')} onClick={onClick}>
-      <div className={cx(styles.header, 'flex')}>
-        <img className={cx(styles['a-logo'])} src={icon || agentImage} alt="" />
-        <div className={cx(styles['info-container'], 'flex-1')}>
-          <div className={cx('flex', 'gap-10')}>
-            <span className={cx('flex-1', styles['a-name'], 'text-ellipsis')}>
-              {name}
+    <CardWrapper
+      className={cx(styles['card-wrapper'])}
+      title={name}
+      avatar={publishUser?.avatar || ''}
+      name={publishUser?.nickName || publishUser?.userName}
+      content={description}
+      icon={icon}
+      defaultIcon={agentImage}
+      onClick={onClick}
+      footer={
+        <>
+          <footer className={cx('flex', 'items-center', styles.footer)}>
+            {/*用户人数*/}
+            <span className={cx(styles.text)}>
+              <ICON_USER />
+              <span>{statistics?.userCount || 0}</span>
             </span>
-            {extra}
-          </div>
-          <div className={cx('flex', 'items-center', styles['info-author'])}>
-            <img
-              className={cx(styles.avatar)}
-              src={publishUser?.avatar || (avatar as string)}
-              alt=""
-            />
-            <span className={cx(styles.author, 'text-ellipsis', 'flex-1')}>
-              {publishUser?.nickName || publishUser?.userName}
+            {/*会话次数*/}
+            <span className={cx(styles.text)}>
+              <ICON_MESSAGE />
+              <span>{statistics?.convCount || 0}</span>
+            </span>
+            {/*收藏次数*/}
+            <span className={cx(styles.text)}>
+              {collect ? <ICON_STAR_FILL /> : <ICON_STAR />}
+              <span>{statistics?.collectCount || 0}</span>
+            </span>
+          </footer>
+          <div className={cx(styles['action-box'], 'flex', 'items-center')}>
+            <Button type="primary" block icon={<ICON_MESSAGE />}>
+              开始使用
+            </Button>
+            <span
+              className={cx(styles['star-box'])}
+              onClick={handleToggleCollect}
+            >
+              {collect ? <ICON_STAR_FILL /> : <ICON_STAR />}
             </span>
           </div>
-          <p className={cx(styles.desc, 'text-ellipsis-3')}>{description}</p>
-        </div>
-      </div>
-      <div className={cx(styles['divider-horizontal'])} />
-      <div className={cx(styles.footer, 'flex', 'items-center')}>
-        <div className={cx('flex', styles.left)}>
-          {/*用户人数*/}
-          <span className={cx(styles.text, 'flex')}>
-            <UserOutlined />
-            <span>{statistics?.userCount || 0}</span>
-          </span>
-          {/*会话次数*/}
-          <span className={cx(styles.text, 'flex')}>
-            <PlayCircleOutlined />
-            <span>{statistics?.convCount || 0}</span>
-          </span>
-          {/*收藏次数*/}
-          <span
-            className={cx(styles.text, styles.collect, 'flex')}
-            onClick={handleToggleCollect}
-          >
-            <StarFilled
-              className={cx({ [styles['collected-star']]: collect })}
-            />
-            <span>{statistics?.collectCount || 0}</span>
-          </span>
-        </div>
-        <div className={cx(styles.right)}>
-          <span className={cx('cursor-pointer')}>立即使用</span>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    />
   );
 };
 

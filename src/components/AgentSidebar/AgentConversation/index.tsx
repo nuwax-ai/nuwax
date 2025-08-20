@@ -1,4 +1,4 @@
-import Loading from '@/components/Loading';
+import Loading from '@/components/custom/Loading';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { AgentConversationProps } from '@/types/interfaces/agentTask';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';

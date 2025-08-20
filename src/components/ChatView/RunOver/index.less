@@ -1,44 +1,50 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .run-success {
   display: inline-block;
-  line-height: 36px;
-  margin-bottom: 10px;
-  gap: 10px;
-  padding: 0 20px;
-  border-radius: 6px;
-  color: @GREEN02;
-  font-size: 14px;
-  background-color: @GRAY01;
+  line-height: 16px;
+  gap: @marginXxs;
+  padding: @paddingXxs @paddingXs;
+  border-radius: @borderRadiusSm;
+  font-size: @fontSizeSm;
+  background-color: @colorBgContainerDisabled;
+  color: @colorTextDescription;
 
   .status-name {
-    margin-left: 12px;
+    margin-left: @marginXxs;
   }
 
   .icon {
-    margin-left: 10px;
-    font-size: 12px;
+    color: @colorSuccessText;
+    margin-left: @marginXxs;
+    font-size: @fontSizeSm;
   }
+}
+
+.successColor {
+  color: @colorSuccessText;
 }
 
 .pop-content {
   max-width: 500px;
-  padding: 10px 15px;
-  color: @GRAY05;
-  font-size: 12px;
-  background-color: @GRAY01;
+  padding: @padding;
+  color: @colorTextDescription;
+  font-size: @fontSizeSm;
+  background-color: @colorBgContainerDisabled;
   box-sizing: border-box;
+  border-radius: @borderRadius;
 
   .row {
     height: 26px;
-    margin-bottom: 4px;
-    gap: 10px;
+    margin-bottom: @marginXxs;
+    gap: @marginXs;
   }
 
   .summary {
-    padding: 2px 5px;
-    border-radius: 4px;
-    color: @GREEN02;
-    background-color: @GREEN01;
+    padding: @paddingXxs @paddingXs;
+    border-radius: @borderRadiusSm;
+    color: @colorSuccessText;
+    background-color: @colorSuccessBg;
   }
 }

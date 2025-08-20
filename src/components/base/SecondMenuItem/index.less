@@ -1,0 +1,87 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.row {
+  padding: @paddingXs;
+  margin-top: @marginXxs;
+  cursor: default;
+
+  &.first {
+    margin-top: 0;
+  }
+
+  &.mainItem {
+    cursor: pointer;
+
+    :global {
+      .ant-typography {
+        margin-left: @marginXs;
+        font-size: @fontSizeLg;
+        line-height: @fontHeightLg;
+      }
+    }
+  }
+
+  &.active {
+    background-color: @colorBgContainer;
+    color: @colorPrimary;
+    border-radius: @borderRadius;
+    box-shadow: @boxShadowTertiary;
+
+    :global {
+      .ant-typography {
+        color: @colorPrimary;
+      }
+    }
+  }
+
+  &:hover {
+    background-color: @colorBgContainer;
+    border-radius: @borderRadius;
+    box-shadow: @boxShadowTertiary;
+
+    .collectIcon {
+      visibility: visible;
+    }
+  }
+
+  .title {
+    font-size: @fontSize;
+  }
+
+  .icon-image {
+    width: 20px;
+    height: 20px;
+    border-radius: @borderRadiusSm;
+  }
+
+  .icon-dropdown {
+    font-size: @fontSizeSm;
+    color: @colorTextSecondary;
+  }
+
+  &.open {
+    .icon-dropdown {
+      transform: rotate(180deg);
+    }
+  }
+
+  .collectIcon {
+    color: @colorTextSecondary;
+    visibility: hidden;
+    // border-radius: @borderRadiusXs;
+    transition: background-color ease-in-out 0.2s;
+
+    &:hover {
+      background-color: @colorBgContainer;
+    }
+  }
+}
+
+.secondMenuSubItem {
+  :global {
+    .ant-typography {
+      margin-left: @marginXl !important;
+    }
+  }
+}

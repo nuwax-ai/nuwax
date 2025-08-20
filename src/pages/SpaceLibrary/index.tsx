@@ -5,10 +5,10 @@ import CreateNewPlugin from '@/components/CreateNewPlugin';
 import CreateWorkflow from '@/components/CreateWorkflow';
 import CreatedItem from '@/components/CreatedItem';
 import CustomPopover from '@/components/CustomPopover';
-import Loading from '@/components/Loading';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
-import SelectList from '@/components/SelectList';
 import UploadImportConfig from '@/components/UploadImportConfig';
+import Loading from '@/components/custom/Loading';
+import SelectList from '@/components/custom/SelectList';
 import {
   CREATE_LIST,
   FILTER_STATUS,
@@ -69,8 +69,6 @@ const SpaceLibrary: React.FC = () => {
   const [openPlugin, setOpenPlugin] = useState<boolean>(false);
   // 新建数据库弹窗
   const [openDatabase, setOpenDatabase] = useState<boolean>(false);
-  // 打开分析弹窗
-  // const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
   // 迁移、复制弹窗
   const [openMove, setOpenMove] = useState<boolean>(false);
   // 打开创建知识库弹窗
@@ -370,29 +368,6 @@ const SpaceLibrary: React.FC = () => {
     history.push(`/space/${spaceId}/table/${data}`);
   };
 
-  // 设置统计信息
-  // const handleSetStatistics = () => {
-  //   const analyzeList = [
-  //     {
-  //       label: '智能体引用数',
-  //       value: '2324',
-  //     },
-  //     {
-  //       label: '调用次数',
-  //       value: '12334',
-  //     },
-  //     {
-  //       label: '平均响应时长（毫秒）',
-  //       value: '1322',
-  //     },
-  //     {
-  //       label: '调用成功率',
-  //       value: '99.8%',
-  //     },
-  //   ];
-  //   setComponentStatistics(analyzeList);
-  // };
-
   // 删除组件确认弹窗
   const showDeleteConfirm = (type: ComponentTypeEnum, info: ComponentInfo) => {
     const { id, name } = info;
@@ -414,6 +389,9 @@ const SpaceLibrary: React.FC = () => {
           runTableDel(id);
           break;
       }
+      return new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+      });
     });
   };
 
@@ -573,15 +551,7 @@ const SpaceLibrary: React.FC = () => {
   };
 
   return (
-    <div
-      className={cx(
-        styles.container,
-        'flex',
-        'flex-col',
-        'h-full',
-        'overflow-y',
-      )}
-    >
+    <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>组件库</h3>
         <div className={cx('flex', 'gap-10')}>
@@ -626,35 +596,24 @@ const SpaceLibrary: React.FC = () => {
           onClear={handleClearKeyword}
         />
       </div>
-      <div className={cx('flex-1', 'overflow-y')}>
-        {loading ? (
-          <Loading className="h-full" />
-        ) : componentList?.length > 0 ? (
-          <div className={cx(styles['main-container'])}>
-            {componentList?.map((info) => (
-              <ComponentItem
-                key={`${info.id}${info.type}`}
-                componentInfo={info}
-                onClick={() => handleClickComponent(info)}
-                onClickMore={(item) => handleClickMore(item, info)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div
-            className={cx('flex', 'h-full', 'items-center', 'content-center')}
-          >
-            <Empty description="未能找到相关结果" />
-          </div>
-        )}
-      </div>
-      {/*统计概览*/}
-      {/*<AnalyzeStatistics*/}
-      {/*  open={openAnalyze}*/}
-      {/*  onCancel={() => setOpenAnalyze(false)}*/}
-      {/*  title="统计概览"*/}
-      {/*  list={componentStatistics}*/}
-      {/*/>*/}
+      {loading ? (
+        <Loading />
+      ) : componentList?.length > 0 ? (
+        <div className={cx(styles['main-container'], 'flex-1', 'overflow-y')}>
+          {componentList?.map((info) => (
+            <ComponentItem
+              key={`${info.id}${info.type}`}
+              componentInfo={info}
+              onClick={() => handleClickComponent(info)}
+              onClickMore={(item) => handleClickMore(item, info)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
+          <Empty description="未能找到相关结果" />
+        </div>
+      )}
       {/*新建插件弹窗*/}
       <CreateNewPlugin
         spaceId={spaceId}

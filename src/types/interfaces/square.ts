@@ -106,12 +106,3 @@ export interface SquareMenuComponentInfo {
   list: SquareAgentInfo[];
   type: SquareAgentTypeEnum;
 }
-
-// 广场菜单项组件
-export interface SquareMenuItemProps {
-  icon?: React.ReactNode;
-  name: string;
-  isActive: boolean;
-  isDown?: boolean;
-  onClick: () => void;
-}

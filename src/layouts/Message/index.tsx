@@ -154,7 +154,7 @@ const Message: React.FC = () => {
         </>
       }
       arrow={false}
-      destroyTooltipOnHide
+      destroyOnHidden
       placement="rightBottom"
       trigger="click"
       open={openMessage}

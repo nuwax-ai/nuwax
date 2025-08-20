@@ -1,0 +1,282 @@
+// 主题令牌常量配置
+// 为主题配置添加类型
+import type { ThemeConfig } from 'antd/es/config-provider';
+import type { AliasToken, ComponentTokenMap } from 'antd/es/theme/interface';
+
+export const themeTokens: Partial<AliasToken> = {
+  // 品牌主色 - 项目主色调
+  colorPrimary: '#5147ff',
+
+  // 功能色
+  colorSuccess: '#3bb346',
+  colorWarning: '#fc8800',
+  colorError: '#f93920',
+  colorInfo: '#0077fa',
+
+  // 基础色 - 用于派生文本和背景色
+  colorTextBase: '#15171f',
+  colorBgBase: '#ffffff',
+
+  // 超链接颜色
+  colorLink: '#5147ff',
+
+  // 字体配置
+  fontFamily:
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
+  fontFamilyCode:
+    'Monaco, "Menlo", "Ubuntu Mono", "Consolas", "Liberation Mono", "Courier New", monospace',
+
+  // 字号配置
+  fontSize: 14,
+
+  // 线条配置
+  lineWidth: 0.5,
+  lineType: 'solid',
+
+  // 圆角配置
+  borderRadius: 8,
+
+  // 尺寸配置
+  sizeUnit: 4,
+  sizeStep: 4,
+  sizePopupArrow: 8,
+
+  // 控制组件高度
+  controlHeight: 32,
+
+  // Z轴配置
+  zIndexBase: 0,
+  zIndexPopupBase: 1000,
+
+  // // 图片透明度
+  opacityImage: 1,
+
+  // 动画配置
+  motionUnit: 0.1,
+  motionBase: 0,
+  // motionEaseOutCirc: 'cubic-bezier(0.08, 0.82, 0.17, 1)',
+  // motionEaseInOutCirc: 'cubic-bezier(0.78, 0.14, 0.15, 0.86)',
+  // motionEaseInOut: 'cubic-bezier(0.645, 0.045, 0.355, 1)',
+  // motionEaseOutBack: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  // motionEaseInBack: 'cubic-bezier(0.6, -0.28, 0.735, 0.045)',
+  // motionEaseInQuint: 'cubic-bezier(0.755, 0.05, 0.855, 0.06)',
+  // motionEaseOutQuint: 'cubic-bezier(0.23, 1, 0.32, 1)',
+  // motionEaseOut: 'cubic-bezier(0.215, 0.61, 0.355, 1)',
+
+  // 风格配置
+  wireframe: false,
+  motion: true,
+
+  // 预设颜色
+  blue: '#1890ff',
+  purple: '#722ed1',
+  cyan: '#13c2c2',
+  green: '#52c41a',
+  magenta: '#eb2f96',
+  pink: '#eb2f96',
+  red: '#f5222d',
+  orange: '#fa8c16',
+  yellow: '#fadb14',
+  volcano: '#fa541c',
+  geekblue: '#2f54eb',
+  lime: '#a0d911',
+  gold: '#faad14',
+};
+
+export const darkThemeTokens = {
+  ...themeTokens,
+  colorBgBase: '#000',
+  colorTextBase: '#fff',
+};
+
+// 组件主题类型定义
+type ButtonToken = Partial<ComponentTokenMap['Button'] | AliasToken>;
+type SelectToken = Partial<ComponentTokenMap['Select'] | AliasToken>;
+type InputToken = Partial<ComponentTokenMap['Input'] | AliasToken>;
+type MenuToken = Partial<ComponentTokenMap['Menu'] | AliasToken>;
+type DatePickerToken = Partial<ComponentTokenMap['DatePicker'] | AliasToken>;
+type FormToken = Partial<ComponentTokenMap['Form'] | AliasToken>;
+type MessageToken = Partial<ComponentTokenMap['Message'] | AliasToken>;
+type NotificationToken = Partial<
+  ComponentTokenMap['Notification'] | AliasToken
+>;
+type ModalToken = Partial<ComponentTokenMap['Modal'] | AliasToken>;
+type CardToken = Partial<ComponentTokenMap['Card'] | AliasToken>;
+type TableToken = Partial<ComponentTokenMap['Table'] | AliasToken>;
+type SegmentedToken = Partial<ComponentTokenMap['Segmented'] | AliasToken>;
+
+// 组件级别的主题配置
+export const componentThemes: ThemeConfig['components'] = {
+  // Button 组件
+  Button: {
+    colorPrimary: themeTokens.colorPrimary,
+    borderRadius: themeTokens.borderRadius,
+    controlHeight: themeTokens.controlHeight,
+    fontSize: themeTokens.fontSize,
+    fontWeight: 400,
+    primaryShadow: 'none',
+    defaultShadow: 'none',
+    dangerShadow: 'none',
+    // 按钮特定配置
+    paddingInline: 15,
+    paddingBlock: 4,
+    onlyIconSize: 16,
+    groupBorderColor: 'transparent',
+  } as ButtonToken,
+
+  // Input 组件
+  Input: {
+    colorPrimary: themeTokens.colorPrimary,
+    borderRadius: themeTokens.borderRadius,
+    controlHeight: themeTokens.controlHeight,
+    fontSize: themeTokens.fontSize,
+    paddingInline: 11,
+    paddingBlock: 4,
+    activeBorderColor: themeTokens.colorPrimary,
+    hoverBorderColor: '#7B6EFF',
+    activeShadow: '0 0 0 2px rgba(81, 71, 255, 0.2)',
+    errorActiveShadow: '0 0 0 2px rgba(255, 77, 79, 0.2)',
+    warningActiveShadow: '0 0 0 2px rgba(255, 140, 0, 0.2)',
+  } as InputToken,
+
+  // Select 组件
+  Select: {
+    colorPrimary: themeTokens.colorPrimary,
+    borderRadius: themeTokens.borderRadius,
+    controlHeight: themeTokens.controlHeight,
+    fontSize: themeTokens.fontSize,
+    optionSelectedBg: 'rgba(81, 71, 255, 0.1)',
+    optionActiveBg: 'rgba(81, 71, 255, 0.05)',
+    optionSelectedColor: themeTokens.colorPrimary,
+    optionPadding: '5px 12px',
+    showArrowPaddingInlineEnd: 18,
+  } as SelectToken,
+
+  // Table 组件
+  Table: {
+    borderRadius: themeTokens.borderRadius,
+    fontSize: themeTokens.fontSize,
+    headerBg: '#fafafa',
+    headerColor: '#666666',
+    headerSortActiveBg: '#f0f0f0',
+    headerSortHoverBg: '#f5f5f5',
+    bodySortBg: '#fafafa',
+    rowHoverBg: 'rgba(81, 71, 255, 0.03)',
+    rowSelectedBg: 'rgba(81, 71, 255, 0.05)',
+    rowSelectedHoverBg: 'rgba(81, 71, 255, 0.08)',
+    rowExpandedBg: '#fbfbfb',
+    cellPaddingBlock: 16,
+    cellPaddingInline: 16,
+    cellPaddingBlockMD: 12,
+    cellPaddingInlineMD: 12,
+    cellPaddingBlockSM: 8,
+    cellPaddingInlineSM: 8,
+  } as TableToken,
+
+  // Card 组件
+  Card: {
+    borderRadius: themeTokens.borderRadiusLG,
+    paddingLG: themeTokens.paddingLG,
+    padding: themeTokens.padding,
+    paddingSM: themeTokens.paddingSM,
+    headerBg: 'transparent',
+    headerFontSize: themeTokens.fontSizeLG,
+    headerFontSizeSM: themeTokens.fontSize,
+    headerHeight: 56,
+    headerHeightSM: 36,
+    actionsBg: '#fafafa',
+    actionsLiMargin: '12px 0',
+    tabsMarginBottom: -17,
+  } as CardToken,
+
+  // Modal 组件
+  Modal: {
+    borderRadius: themeTokens.borderRadiusLG,
+    padding: themeTokens.paddingLG,
+    paddingLG: themeTokens.paddingLG,
+    titleFontSize: themeTokens.fontSizeLG,
+    titleLineHeight: 1.6,
+    contentBg: '#ffffff',
+    headerBg: '#ffffff',
+    footerBg: 'transparent',
+    maskBg: 'rgba(0, 0, 0, 0.45)',
+  } as ModalToken,
+
+  // Message 组件
+  Message: {
+    contentBg: '#ffffff',
+    contentPadding: '12px 16px',
+    borderRadius: themeTokens.borderRadius,
+    fontSize: themeTokens.fontSize,
+    zIndexPopup: 1010,
+  } as MessageToken,
+
+  // Notification 组件
+  Notification: {
+    borderRadius: themeTokens.borderRadius,
+    padding: themeTokens.padding,
+    paddingLG: themeTokens.paddingLG,
+    width: 384,
+    zIndexPopup: 1010,
+  } as NotificationToken,
+
+  // DatePicker 组件
+  DatePicker: {
+    colorPrimary: themeTokens.colorPrimary,
+    borderRadius: themeTokens.borderRadius,
+    controlHeight: themeTokens.controlHeight,
+    fontSize: themeTokens.fontSize,
+    cellActiveWithRangeBg: 'rgba(81, 71, 255, 0.1)',
+    cellHoverWithRangeBg: 'rgba(81, 71, 255, 0.05)',
+    cellRangeBorderColor: 'transparent',
+    cellBgDisabled: '#f5f5f5',
+    timeColumnWidth: 56,
+    timeColumnHeight: 224,
+    timeCellHeight: 28,
+  } as DatePickerToken,
+
+  // Form 组件
+  Form: {
+    labelFontSize: themeTokens.fontSize,
+    labelColor: '#000000d9',
+    labelRequiredMarkColor: themeTokens.colorError,
+    labelColonMarginInlineStart: 2,
+    labelColonMarginInlineEnd: 8,
+    itemMarginBottom: 24,
+    verticalLabelPadding: '0 0 8px',
+    verticalLabelMargin: 0,
+  } as FormToken,
+
+  // Menu 组件
+  Menu: {
+    borderRadius: themeTokens.borderRadius,
+    fontSize: themeTokens.fontSize,
+    itemBg: 'transparent',
+    itemColor: '#000000d9',
+    itemHoverBg: 'rgba(0, 0, 0, 0.06)',
+    itemHoverColor: '#000000d9',
+    itemSelectedBg: 'rgba(81, 71, 255, 0.1)',
+    itemSelectedColor: themeTokens.colorPrimary,
+    itemActiveBg: 'rgba(81, 71, 255, 0.15)',
+    subMenuItemBg: 'transparent',
+    itemMarginBlock: 4,
+    itemMarginInline: 4,
+    itemPaddingInline: 12,
+    itemHeight: 40,
+    collapsedWidth: 80,
+    iconSize: 14,
+    iconMarginInlineEnd: 10,
+  } as MenuToken,
+
+  // Segmented 组件
+  Segmented: {
+    borderRadius: themeTokens.borderRadius,
+    controlHeight: themeTokens.controlHeight,
+    fontSize: themeTokens.fontSize,
+    itemSelectedBg: '#fff',
+    itemSelectedColor: themeTokens.colorPrimary,
+    trackBg: '#f9f9f9',
+  } as SegmentedToken,
+};
+
+export default themeTokens;

@@ -1,4 +1,5 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .user {
   width: 40px;
@@ -6,6 +7,8 @@
   margin-top: 6px;
   border-radius: 50%;
   overflow: hidden;
+  box-sizing: content-box;
+  border: @lineWidth solid @colorBorder;
 
   img {
     width: 100%;

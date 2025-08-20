@@ -1,4 +1,4 @@
-import SelectList from '@/components/SelectList';
+import SelectList from '@/components/custom/SelectList';
 import { ParamsSettingDefaultOptions } from '@/constants/common.constants';
 import { BindValueType } from '@/types/enums/agent';
 import { DataTypeEnum } from '@/types/enums/common';

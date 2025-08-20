@@ -75,17 +75,19 @@ const UserOperateArea: React.FC<UserOperateAreaType> = ({ onClick }) => {
           'flex',
           'content-center',
           'items-center',
-          'hover-deep',
           'cursor-pointer',
+          { [styles.last]: index === dataSource.length - 1 },
         )}
         onClick={() => onClick(item.type)}
       >
         {item.type === UserOperatorAreaEnum.Message && unreadCount > 0 ? (
           <Badge count={unreadCount} size="small">
-            {item.icon}
+            <div className={cx(styles['active-icon-container'])}>
+              {item.icon}
+            </div>
           </Badge>
         ) : (
-          item.icon
+          <div className={cx(styles['active-icon-container'])}>{item.icon}</div>
         )}
       </div>
     </Tooltip>

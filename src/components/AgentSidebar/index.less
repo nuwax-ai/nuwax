@@ -1,22 +1,33 @@
 @import '@/styles/color';
+@import '@/styles/token';
+@sidebarWidth: 434px;
 
-.container {
-  position: sticky;
-  top: 20px;
-  right: 20px;
-  box-sizing: border-box;
-  transition: opacity 0.3s ease-in-out, width 0.2s ease-in-out;
-  width: 357px;
-  height: calc(100vh - 40px);
-  background-color: @WHITE;
-  border-radius: 10px;
-  z-index: 99;
+.rightSidebar {
+  width: @sidebarWidth;
+  border-left: @lineWidth @lineType @colorBorderSecondary;
   visibility: visible;
   opacity: 1;
+  transition: opacity 0.3s ease-in-out, width 0.2s ease-in-out;
+  position: relative;
 
-  .statistics-content {
-    padding: 0 10px;
+  &.hide {
+    width: 0;
+    padding: 0;
+    visibility: hidden;
+    opacity: 0;
   }
+}
+// .container-scroll{
+//   padding: 0 @padding;
+// }
+.statistics-content {
+  padding: @padding @paddingLg;
+}
+
+.container {
+  box-sizing: border-box;
+  height: 100%;
+  z-index: 99;
 
   .container-content {
     width: 100%;
@@ -32,16 +43,9 @@
 
     .container-body {
       position: absolute;
-      left: 10px;
-      width: 336px;
+      left: 16px;
+      width: calc(@sidebarWidth - 32px);
     }
-  }
-
-  &.hide {
-    width: 0;
-    padding: 0;
-    visibility: hidden;
-    opacity: 0;
   }
 }
 

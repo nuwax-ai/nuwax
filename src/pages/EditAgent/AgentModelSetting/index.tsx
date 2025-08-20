@@ -1,7 +1,7 @@
 import LabelIcon from '@/components/LabelIcon';
-import SelectList from '@/components/SelectList';
 import SliderNumber from '@/components/SliderNumber';
-import TooltipIcon from '@/components/TooltipIcon';
+import SelectList from '@/components/custom/SelectList';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import {
   GENERATE_DIVERSITY_OPTION_VALUE,
   GENERATE_DIVERSITY_OPTIONS,

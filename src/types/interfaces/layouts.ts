@@ -34,10 +34,11 @@ export interface TabsType {
 export interface TabItemProps {
   active: boolean;
   type: TabsEnum;
-  icon: string;
-  iconActive: string;
+  icon: React.ReactNode;
   text: string;
   onClick: (type: TabsEnum) => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
 // 用户操作项类型

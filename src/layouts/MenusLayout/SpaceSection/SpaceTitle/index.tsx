@@ -1,5 +1,5 @@
 import { DownOutlined } from '@ant-design/icons';
-import { Popover } from 'antd';
+import { Popover, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import CreateNewTeam from './CreateNewTeam';
@@ -11,13 +11,12 @@ const cx = classNames.bind(styles);
 interface SpaceTitleProps {
   className?: string;
   name: string;
-  avatar: string;
 }
 
 /**
  * Popover弹窗-空间主题
  */
-const SpaceTitle: React.FC<SpaceTitleProps> = ({ name, avatar }) => {
+const SpaceTitle: React.FC<SpaceTitleProps> = ({ name }) => {
   const [open, setOpen] = useState<boolean>(false);
   const [openModal, setOpenModal] = useState<boolean>(false);
 
@@ -46,17 +45,18 @@ const SpaceTitle: React.FC<SpaceTitleProps> = ({ name, avatar }) => {
             'flex',
             'items-center',
             'cursor-pointer',
-            'hover-box',
-            'px-6',
             styles.header,
           )}
         >
-          <span className={cx(styles['img-box'])}>
-            <img src={avatar} alt="" />
-          </span>
-          <span className={cx('flex-1', styles.title, 'text-ellipsis')}>
-            {name || '个人空间'}
-          </span>
+          <div className={cx('flex-1')}>
+            <Typography.Title
+              level={4}
+              style={{ marginBottom: 0 }}
+              ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
+            >
+              {name || '个人空间'}
+            </Typography.Title>
+          </div>
           <DownOutlined className={cx(styles['icon-down'])} />
         </div>
       </Popover>

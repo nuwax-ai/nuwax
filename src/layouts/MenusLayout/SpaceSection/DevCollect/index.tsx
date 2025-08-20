@@ -1,8 +1,9 @@
+import agentImage from '@/assets/images/agent_image.png';
+import MenuListItem from '@/components/base/MenuListItem';
 import type { AgentConfigInfo, AgentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
 import React from 'react';
 import { history, useModel } from 'umi';
-import UserRelAgent from '../../UserRelAgent';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -29,11 +30,12 @@ const DevCollect: React.FC = () => {
   };
 
   return devCollectAgentList?.length > 0 ? (
-    devCollectAgentList?.map((item: AgentInfo) => (
-      <UserRelAgent
+    devCollectAgentList?.map((item: AgentInfo, index: number) => (
+      <MenuListItem
         key={item.id}
+        isFirst={index === 0}
         onClick={() => handleDevCollect(item.agentId, item.spaceId)}
-        icon={item.icon}
+        icon={item.icon || (agentImage as string)}
         name={item.name}
         onCancelCollect={() => handleCancelCollect(item.agentId)}
       />

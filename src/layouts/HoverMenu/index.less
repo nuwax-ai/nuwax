@@ -1,0 +1,44 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.hover-menu {
+  position: fixed;
+  top: 0;
+  height: 100%;
+  background-color: @colorBgLayout;
+  border-right: 1px solid @GRAY02;
+  z-index: 998; // 比一级菜单层级低一点
+  transition: opacity 0.2s ease-in-out;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 10%);
+
+  &.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .menu-content {
+    height: 100%;
+    padding: 12px 0;
+    overflow-y: auto;
+  }
+
+  .menu-title {
+    padding: 22px 12px;
+    margin-bottom: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: @colorText;
+  }
+}
+
+// 移动端隐藏悬浮菜单
+@media (max-width: 768px) {
+  .hover-menu {
+    display: none !important;
+  }
+}

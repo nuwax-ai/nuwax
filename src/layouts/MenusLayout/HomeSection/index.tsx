@@ -1,10 +1,11 @@
+import MenuListItem from '@/components/base/MenuListItem';
 import ConditionRender from '@/components/ConditionRender';
 import { AgentInfo } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import { RightOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
 import { history, useModel, useParams } from 'umi';
-import UserRelAgent from '../UserRelAgent';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -45,16 +46,21 @@ const HomeSection: React.FC<{
   }, []);
 
   return (
-    <div className={cx('px-6', 'py-16')} style={style}>
+    <div style={style}>
       <ConditionRender condition={usedAgentList !== undefined}>
-        <h3 className={cx(styles.title)}>最近使用</h3>
+        <div className={cx(styles['title-row'])}>
+          <h3 className={cx(styles.title)} style={{ marginTop: 0 }}>
+            最近使用
+          </h3>
+        </div>
         {usedAgentList?.length ? (
-          usedAgentList?.map((info: AgentInfo) => (
-            <UserRelAgent
+          usedAgentList?.map((info: AgentInfo, index: number) => (
+            <MenuListItem
               key={info.id}
               onClick={() => handleAgentHome(info.agentId)}
               icon={info.icon}
               name={info.name}
+              isFirst={index === 0}
             />
           ))
         ) : (
@@ -67,24 +73,30 @@ const HomeSection: React.FC<{
         )}
       </ConditionRender>
       <ConditionRender condition={conversationList !== undefined}>
-        <h3 className={cx(styles.title, 'mt-16')}>会话记录</h3>
-        <ul>
+        <div className={cx(styles['title-row'])}>
+          <h3 className={cx(styles.title)}>会话记录</h3>
+          <ConditionRender condition={conversationList?.length}>
+            <span
+              className={cx(styles['more-conversation'])}
+              onClick={() => setOpenHistoryModal(true)}
+            >
+              查看全部 <RightOutlined />
+            </span>
+          </ConditionRender>
+        </div>
+        <div>
           {conversationList?.length ? (
-            conversationList?.slice(0, 5)?.map((item: ConversationInfo) => (
-              <li
-                key={item.id}
-                className={cx(
-                  'cursor-pointer',
-                  'hover-deep',
-                  'text-ellipsis',
-                  styles.row,
-                  { [styles.active]: chatId === item.id?.toString() },
-                )}
-                onClick={() => handleLink(item.id, item.agentId)}
-              >
-                {item.topic}
-              </li>
-            ))
+            conversationList
+              ?.slice(0, 5)
+              ?.map((item: ConversationInfo, index: number) => (
+                <MenuListItem
+                  key={item.id}
+                  isActive={chatId === item.id?.toString()}
+                  isFirst={index === 0}
+                  onClick={() => handleLink(item.id, item.agentId)}
+                  name={item.topic}
+                />
+              ))
           ) : (
             <>
               <div className={cx(styles['no-used'])}>右边看👉</div>
@@ -93,15 +105,7 @@ const HomeSection: React.FC<{
               </div>
             </>
           )}
-        </ul>
-      </ConditionRender>
-      <ConditionRender condition={conversationList?.length}>
-        <span
-          className={cx(styles['more-conversation'])}
-          onClick={() => setOpenHistoryModal(true)}
-        >
-          查看全部
-        </span>
+        </div>
       </ConditionRender>
     </div>
   );

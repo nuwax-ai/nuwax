@@ -1,5 +1,5 @@
 import copyImage from '@/assets/images/copy.png';
-import { EllipsisTooltip } from '@/components/EllipsisTooltip';
+import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import {
   apiTempChatCreate,
   apiTempChatDel,
@@ -137,9 +137,12 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
 
   // 删除确认
   const handleDelConfirm = (id: number, agentId: number, chatUrl: string) => {
-    modalConfirm('您确定要删除该链接吗?', chatUrl, () =>
-      handleDel(id, agentId),
-    );
+    modalConfirm('您确定要删除该链接吗?', chatUrl, () => {
+      handleDel(id, agentId);
+      return new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+      });
+    });
   };
 
   // 显示二维码弹窗

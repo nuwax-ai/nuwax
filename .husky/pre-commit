@@ -1,7 +1,14 @@
 #!/usr/bin/env sh
 
-# 确保能找到 Node.js 相关命令
-export PATH="$HOME/.nvm/versions/node/v22.14.0/bin:$PATH"
+. "$(dirname -- "$0")/_/husky.sh"
 
-# 使用 package.json 中定义的 lint-staged 脚本
-pnpm run lint-staged
+# 优先使用 pnpm；若未安装则回退到 npx/yarn/bun
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm run lint-staged
+elif command -v bun >/dev/null 2>&1; then
+  bun x lint-staged
+elif command -v yarn >/dev/null 2>&1; then
+  yarn lint-staged
+else
+  npx --yes lint-staged
+fi

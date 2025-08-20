@@ -1,3 +1,4 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
@@ -5,14 +6,7 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import { handleUploadFileList } from '@/utils/upload';
-import {
-  ArrowDownOutlined,
-  ArrowUpOutlined,
-  ClearOutlined,
-  LoadingOutlined,
-  PlusOutlined,
-  XFilled,
-} from '@ant-design/icons';
+import { ArrowDownOutlined, LoadingOutlined } from '@ant-design/icons';
 import type { InputRef, UploadProps } from 'antd';
 import { Input, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
@@ -243,13 +237,13 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   'flex',
                   'items-center',
                   'content-center',
-                  'hover-box',
                   'cursor-pointer',
+                  styles.box,
                   { [styles.disabled]: clearDisabled || wholeDisabled },
                 )}
                 onClick={handleClear}
               >
-                <ClearOutlined />
+                <SvgIcon name="icons-chat-clear" />
               </span>
             </Tooltip>
           </ConditionRender>
@@ -268,19 +262,21 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             }}
             showUploadList={false}
           >
-            <span
-              className={cx(
-                'flex',
-                'items-center',
-                'content-center',
-                'cursor-pointer',
-                styles.box,
-                styles['plus-box'],
-                { [styles['upload-box-disabled']]: wholeDisabled },
-              )}
-            >
-              <PlusOutlined />
-            </span>
+            <Tooltip title="上传附件">
+              <span
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'content-center',
+                  'cursor-pointer',
+                  styles.box,
+                  styles['plus-box'],
+                  { [styles['upload-box-disabled']]: wholeDisabled },
+                )}
+              >
+                <SvgIcon name="icons-chat-add" />
+              </span>
+            </Tooltip>
           </Upload>
           {/*手动选择组件*/}
           <ManualComponentItem
@@ -313,9 +309,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                 )}
               >
                 {isStoppingConversation ? (
-                  <LoadingOutlined className={cx(styles['loading-icon'])} />
+                  <div className={cx(styles['loading-box'])}>
+                    <LoadingOutlined className={cx(styles['loading-icon'])} />
+                  </div>
                 ) : (
-                  <XFilled />
+                  <SvgIcon name="icons-chat-stop" />
                 )}
               </span>
             </Tooltip>
@@ -334,7 +332,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   { [styles.disabled]: disabledSend || wholeDisabled },
                 )}
               >
-                <ArrowUpOutlined />
+                <SvgIcon name="icons-chat-send" />
               </span>
             </Tooltip>
           )}

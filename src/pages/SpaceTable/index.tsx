@@ -358,6 +358,9 @@ const SpaceTable = () => {
       await apiTableDeleteBusinessData(tableId, id);
       message.success('删除成功');
       getTableBusinessData(pagination.current, pagination.pageSize);
+      return new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+      });
     });
   };
 

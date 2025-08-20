@@ -1,11 +1,8 @@
+import SecondMenuItem from '@/components/base/SecondMenuItem';
 import { ECOSYSTEM_MARKET_LIST } from '@/constants/ecosystem.constants';
 import { EcosystemMarketEnum } from '@/types/enums/ecosystemMarket';
-import classNames from 'classnames';
 import React from 'react';
 import { history, useLocation, useModel } from 'umi';
-import styles from './index.less';
-
-const cx = classNames.bind(styles);
 
 /**
  * 主页二级菜单栏
@@ -49,27 +46,16 @@ const SystemSection: React.FC<{
   };
 
   return (
-    <div className={cx('px-6', 'py-16')} style={style}>
-      <h3 className={cx(styles.title)}>生态市场</h3>
-      <ul>
-        {ECOSYSTEM_MARKET_LIST.map((item) => (
-          <li
-            key={item.type}
-            onClick={() => handlerApplication(item.type)}
-            className={cx(
-              styles.row,
-              'hover-deep',
-              'flex',
-              'items-center',
-              'cursor-pointer',
-              { [styles.active]: handleActive(item.type) },
-            )}
-          >
-            {item.icon}
-            <span className={cx(styles.text)}>{item.text}</span>
-          </li>
-        ))}
-      </ul>
+    <div style={style}>
+      {ECOSYSTEM_MARKET_LIST.map((item) => (
+        <SecondMenuItem
+          key={item.type}
+          name={item.text}
+          isActive={handleActive(item.type)}
+          icon={item.icon}
+          onClick={() => handlerApplication(item.type)}
+        />
+      ))}
     </div>
   );
 };

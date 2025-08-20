@@ -1,19 +1,23 @@
+@import '@/styles/token';
+
+.rightSidebar {
+  width: 434px;
+  padding: 0 @padding;
+  border-left: @lineWidth @lineType @colorBorderSecondary;
+}
+
 .container {
-  gap: 16px;
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  height: calc(100vh - 40px);
-  margin-left: 20px;
+  position: sticky;
+  height: 100%;
   box-sizing: border-box;
   z-index: 999;
 
   .box {
-    margin-top: 30px;
+    // margin-top: 30px;
   }
 
   .main-wrap {
-    padding: 30px 12px;
+    // padding: 30px 12px;
   }
 }
 

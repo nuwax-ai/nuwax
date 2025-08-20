@@ -1,9 +1,20 @@
+import SvgIcon from '@/components/base/SvgIcon';
+import { AgentManualComponentInfo } from '@/types/interfaces/agent';
 import { ManualComponentItemProps } from '@/types/interfaces/common';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useMemo } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+const getIcon = (_item: AgentManualComponentInfo) => {
+  if (_item.type === 'Plugin' && _item.name === '联网搜索') {
+    return 'icons-chat-network';
+  }
+  if (!_item.icon && _item.type === 'Model') {
+    return 'icons-chat-deep_thinking';
+  }
+  return _item.icon;
+};
 
 /**
  * 手动选择组件
@@ -13,6 +24,15 @@ const ManualComponentItem: React.FC<ManualComponentItemProps> = ({
   selectedComponentList,
   onSelectComponent,
 }) => {
+  const normalizeManualComponents = useMemo(() => {
+    return manualComponents?.reduce((acc, item) => {
+      acc.push({
+        ...item,
+        icon: getIcon(item),
+      });
+      return acc;
+    }, [] as AgentManualComponentInfo[]);
+  }, [manualComponents]);
   return (
     <div
       className={cx(
@@ -22,7 +42,7 @@ const ManualComponentItem: React.FC<ManualComponentItemProps> = ({
         styles['manual-container'],
       )}
     >
-      {manualComponents?.map((item, index) => {
+      {normalizeManualComponents?.map((item, index) => {
         return (
           <span
             key={index}
@@ -39,6 +59,10 @@ const ManualComponentItem: React.FC<ManualComponentItemProps> = ({
             )}
             onClick={() => onSelectComponent?.(item)}
           >
+            <SvgIcon
+              name={item.icon}
+              style={{ marginRight: 8, width: 20, height: 20, borderRadius: 4 }}
+            />
             {item.name}
           </span>
         );

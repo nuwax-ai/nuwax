@@ -1,6 +1,6 @@
 import copyImage from '@/assets/images/copy.png';
-import Loading from '@/components/Loading';
-import TooltipIcon from '@/components/TooltipIcon';
+import Loading from '@/components/custom/Loading';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import {
   apiMcpServerConfigExport,
   apiMcpServerConfigRefresh,

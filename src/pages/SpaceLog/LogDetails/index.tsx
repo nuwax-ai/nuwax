@@ -5,7 +5,7 @@ import modelImage from '@/assets/images/model_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import variableImage from '@/assets/images/variable_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
-import Loading from '@/components/Loading';
+import Loading from '@/components/custom/Loading';
 import ToggleWrap from '@/components/ToggleWrap';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type {

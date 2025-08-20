@@ -1,28 +1,52 @@
 @import '@/styles/color';
 @import '@/styles/theme';
+@import '@/styles/token';
 
 .container {
   // padding: 0 30px;
-  margin-bottom: @SPACE_LG;
-  gap: @SPACE_BASE;
-  font-size: @FONT_SIZE_BASE;
+  margin-bottom: @marginSm;
+  gap: @marginSm;
+  font-size: @fontSizeSm;
 
   .avatar {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    border-radius: @borderRadiusSm;
   }
 
   .author {
-    margin-bottom: @SPACE_SM;
-    line-height: 22px;
-    color: @GRAY05;
+    line-height: 20px;
+    font-size: @fontSize;
+    color: @colorTextDescription;
+  }
+
+  .agent-title-bar {
+    display: flex;
+    align-items: center;
+    gap: @marginSm;
+  }
+
+  .userContainer {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .user-content {
+    display: inline-block;
+
+    .chat-content {
+      min-width: 80px;
+      padding: calc(@padding - 4px) @padding !important;
+      background-color: @colorBgLayout !important;
+      border-radius: 16px 0 16px 16px;
+    }
   }
 
   .inner-container {
-    background-color: @WHITE04;
-    padding: @SPACE_LG;
-    border-radius: @BORDER_RADIUS_LG;
+    // background-color: @WHITE04;
+    // padding: @SPACE_LG;
+    // border-radius: @BORDER_RADIUS_LG;
 
     .think-content {
       position: relative;
@@ -53,76 +77,25 @@
   // 聊天内容
   .chat-content {
     display: inline-block;
-    line-height: 28px;
-    color: @GRAY13;
+    // color: @GRAY13;
     word-wrap: break-word;
     word-break: break-all;
-
-    &.user {
-      padding: @SPACE_SM @SPACE_LG;
-      background-color: @WHITE04;
-    }
-
-    // h1,
-    // h2,
-    // h3,
-    // h4,
-    // h5,
-    // h6 {
-    //   font-weight: bold;
-    //   font-size: 14px;
-    //   line-height: 1.5;
-    // }
-
-    // h1 {
-    //   font-size: calc(1.143 * 24px);
-    // }
-
-    // h2 {
-    //   font-size: calc(1.143 * 20px);
-    // }
-
-    // h3 {
-    //   font-size: calc(1.143 * 16px);
-    // }
-
-    // img {
-    //   display: inline-block;
-    //   margin: 0 auto;
-    //   max-width: 100%;
-    //   height: 100%;
-    //   object-fit: cover;
-    // }
-
-    // ol {
-    //   padding-inline-start: 10px;
-    // }
-
-    // hr {
-    //   visibility: hidden;
-    // }
-
-    // pre {
-    //   box-sizing: border-box;
-    //   white-space: pre-wrap;
-    //   word-break: break-word;
-    //   background-color: #fafafa;
-    //   padding: 10px;
-    //   margin: 0;
-    //   overflow-x: auto;
-    // }
+    padding: @padding 0;
   }
 
   .user-action-box {
-    height: 32px;
+    // height: 32px;
+    padding: @paddingXs 0;
+    justify-content: flex-end;
 
     .copy-btn {
-      color: @GRAY05;
-      font-size: @FONT_SIZE_SM;
+      color: @colorTextDescription;
+      font-size: @fontSizeSm;
 
       .copy-image {
         width: 16px;
         height: 16px;
+        margin-right: @marginXxs;
       }
     }
   }

@@ -1,59 +1,86 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .container {
-  height: 100%;
-  padding: 40px 0 20px;
+  // 整体滚动容器
+  // min-height: 100vh;
 
-  .title {
-    font-size: 24px;
-    font-weight: bold;
-    color: @BLANK04;
-  }
+  // 输入框区域样式
+  .inputSection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 40px 0 20px;
+    overflow-y: auto; // 允许输入框区域内部滚动
 
-  .textarea {
-    width: 780px;
-    margin-top: 45px;
-  }
-
-  .recommend {
-    width: 780px;
-    padding: 30px 0;
-    gap: 20px;
-
-    .recommend-item {
-      line-height: 36px;
-      padding: 0 20px;
-      border-radius: 10px;
-      box-sizing: border-box;
-      border: 1px solid @GRAY17;
-      font-size: 14px;
+    .title {
+      font-size: 24px;
+      font-weight: bold;
       color: @BLANK04;
-      background-color: @WHITE;
+      margin-bottom: 45px;
+    }
+
+    .textarea {
+      width: 780px;
+      margin-bottom: 30px;
+    }
+
+    .recommend {
+      width: 780px;
+      gap: @margin;
+
+      .recommend-item {
+        line-height: 20px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 16px;
+        max-width: 100%;
+        color: @colorTextSecondary;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        background-color: @colorBgLayout;
+      }
     }
   }
 
-  .wrapper {
-    width: 780px;
-    border-radius: 10px;
-    padding: 20px;
-    background: @WHITE;
+  // 推荐区域样式
+  .recommendSection {
+    // width: 100%;
+    // flex: 1; // 占用剩余空间，自然形成约360px高度
+    // overflow-y: auto; // 允许推荐区域内部滚动
+
+    .wrapper {
+      width: 1080px;
+      margin: 0 auto;
+      padding: 0 @paddingXs;
+      // background: @WHITE;
+      height: 100%;
+    }
   }
 }
 
 @media (max-width: 768px) {
   .container {
-    padding: 48px 12px 16px;
+    .inputSection {
+      padding: 48px 12px 16px;
 
-    .textarea {
-      width: 100%;
+      .textarea {
+        width: 100%;
+      }
+
+      .recommend {
+        width: 100%;
+      }
     }
 
-    .recommend {
-      width: 100%;
-    }
-
-    .wrapper {
-      width: 100%;
+    .recommendSection {
+      .wrapper {
+        width: 100%;
+        padding: 0 12px;
+      }
     }
   }
 }

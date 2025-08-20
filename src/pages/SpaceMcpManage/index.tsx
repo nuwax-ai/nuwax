@@ -1,5 +1,5 @@
-import Loading from '@/components/Loading';
-import SelectList from '@/components/SelectList';
+import Loading from '@/components/custom/Loading';
+import SelectList from '@/components/custom/SelectList';
 import {
   FILTER_DEPLOY,
   MCP_MANAGE_SEGMENTED_LIST,
@@ -27,7 +27,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Empty, Input, message, Modal, Segmented } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
 import styles from './index.less';
 import McpComponentItem from './McpComponentItem';
@@ -291,17 +291,13 @@ const SpaceLibrary: React.FC = () => {
       runMcpOfficialList();
     }
   };
+  const listLength = useMemo(() => {
+    return mcpList.length;
+  }, [mcpList]);
+  // 由于屏
 
   return (
-    <div
-      className={cx(
-        styles.container,
-        'flex',
-        'flex-col',
-        'h-full',
-        'overflow-y',
-      )}
-    >
+    <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <div className={cx('flex', 'content-between')}>
         <h3 className={cx(styles.title)}>MCP管理</h3>
         <Segmented
@@ -338,31 +334,25 @@ const SpaceLibrary: React.FC = () => {
           onClear={handleClearKeyword}
         />
       </div>
-      <div className={cx('flex-1', 'overflow-y')}>
-        {loading ? (
-          <Loading className="h-full" />
-        ) : mcpList?.length > 0 ? (
-          <div className={cx(styles['main-container'])}>
-            {mcpList?.map((info) => (
-              <McpComponentItem
-                key={info.id}
-                className={cx(
-                  info?.spaceId === -1 && styles['office-mcp-item'],
-                )}
-                mcpInfo={info}
-                onClick={() => handleClickComponent(info)}
-                onClickMore={(item) => handleClickMore(item, info)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div
-            className={cx('flex', 'h-full', 'items-center', 'content-center')}
-          >
-            <Empty description="未能找到相关结果" />
-          </div>
-        )}
-      </div>
+      {loading ? (
+        <Loading />
+      ) : listLength > 0 ? (
+        <div className={cx(styles['main-container'], 'flex-1', 'overflow-y')}>
+          {mcpList?.map((info) => (
+            <McpComponentItem
+              key={info.id}
+              className={cx(info?.spaceId === -1 && styles['office-mcp-item'])}
+              mcpInfo={info}
+              onClick={() => handleClickComponent(info)}
+              onClickMore={(item) => handleClickMore(item, info)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
+          <Empty description="未能找到相关结果" />
+        </div>
+      )}
       <ServerExportModal
         open={serverExportModalVisible}
         mcpId={currentMcpInfoRef.current?.id}

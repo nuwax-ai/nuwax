@@ -1,45 +1,64 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .title-box {
   position: sticky;
   top: 0;
   z-index: 99;
-  background-color: @WHITE03;
+  background-color: @colorBgContainer;
+  border-radius: 12px;
+
+  .title-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 40px;
+    padding: 16px 24px;
+    box-sizing: content-box;
+  }
 
   .title {
-    position: sticky;
-    top: 0;
-    height: 60px;
-    line-height: 60px;
-    padding: 0 30px;
-    color: @BLANK17;
-    font-size: 16px;
-    text-align: center;
-    mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
+    margin-bottom: 0;
   }
 }
 
 .main-content {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 0 10px;
+  // padding: 0 10px;
+  height: 100%;
+  overflow-y: auto;
+  position: relative;
+  min-width: 800px;
+  width: 100%;
+  //隐藏滚动条
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .main-content-box {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
 
   .chat-wrapper {
-    padding-bottom: 30px;
+    padding-bottom: 40px - 16px;
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
 
     .loading {
-      color: @BLUE08;
+      color: @colorPrimary;
     }
 
     .chat-inner {
-      background-color: @WHITE;
+      background-color: @colorBgContainer;
     }
 
     .suggest-item {
-      background-color: @WHITE;
+      background-color: @colorBgContainer;
 
       &:hover {
-        background-color: @WHITE01;
+        background-color: @colorBgContainer;
       }
     }
   }
@@ -49,17 +68,16 @@
   position: sticky;
   bottom: 0;
   z-index: 10;
-  padding-bottom: 20px;
-  background-color: @WHITE03;
+  padding-bottom: 40px;
+  background-color: @colorBgContainer;
+  border-radius: 24px 24px 0 0;
+  width: 100%;
 }
 
 .agent-sidebar {
   position: sticky;
-  top: 20px;
-  right: 20px;
   margin: 0;
 }
-
 @media (max-width: 768px) {
   .agent-sidebar {
     display: none;
@@ -69,6 +87,39 @@
 /* 当屏幕宽度小于等于 720px 时应用的样式 */
 @media screen and (max-width: 720px) {
   .main-content {
-    width: 100%;
+    min-width: 100%;
+
+    .main-content-box {
+      max-width: 100%;
+    }
+
+    .chat-wrapper {
+      max-width: 100%;
+    }
+  }
+
+  .title-box {
+    .title-container {
+      padding: 0 16px;
+      flex-direction: column;
+      height: auto;
+      gap: 12px;
+      padding-top: 12px;
+      padding-bottom: 12px;
+    }
+
+    .title {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+  }
+}
+
+/* 当屏幕宽度小于等于 480px 时应用的样式 */
+@media screen and (max-width: 480px) {
+  .title-box {
+    .title-container {
+      padding: 0 12px;
+    }
   }
 }

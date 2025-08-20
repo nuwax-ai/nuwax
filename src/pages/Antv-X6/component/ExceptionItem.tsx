@@ -1,6 +1,6 @@
 import CodeEditor from '@/components/CodeEditor';
 import NewMonaco from '@/components/CodeEditor/NewMonaco';
-import TooltipIcon from '@/components/TooltipIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import {
   EXCEPTION_HANDLE_OPTIONS,
   RETRY_COUNT_OPTIONS,

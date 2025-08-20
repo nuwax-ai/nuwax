@@ -32,7 +32,6 @@ import { ReactComponent as ICON_OPTIMIZE } from '@/assets/svg/optimize.svg';
 import { ReactComponent as ICON_SETTING } from '@/assets/svg/setting.svg';
 import { ReactComponent as ICON_WORKFLOW_SQUARE } from '@/assets/svg/square_icon_workflow.svg';
 import { ReactComponent as ICON_START } from '@/assets/svg/start.svg';
-import { ReactComponent as ICON_SUCCESS } from '@/assets/svg/success_rate.svg';
 import { ReactComponent as ICON_TABLE } from '@/assets/svg/table.svg';
 import { ReactComponent as ICON_TABLE_FORMAT } from '@/assets/svg/table_format.svg';
 import { ReactComponent as ICON_TEXT_FORMAT } from '@/assets/svg/text_format.svg';
@@ -89,6 +88,14 @@ import BG_ICON_WORKFLOW_VARIABLE from '@/assets/workflow/workflow-Variable.svg';
 import BG_ICON_WORKFLOW_WORKFLOW from '@/assets/workflow/workflow-Workflow.svg';
 // 修改导入语句以正确导入图片
 
+import { ReactComponent as ICON_MORE } from '@/assets/svg/icon_more.svg';
+import { ReactComponent as ICON_STAR } from '@/assets/svg/icon_star.svg';
+import { ReactComponent as ICON_STAR_FILL } from '@/assets/svg/icon_star_fill.svg';
+import { ReactComponent as ICON_SUCCESS } from '@/assets/svg/icon_success.svg';
+
+import { ReactComponent as ICON_MESSAGE } from '@/assets/svg/icon_message.svg';
+import { ReactComponent as ICON_USER } from '@/assets/svg/icon_user.svg';
+
 export {
   BG_ICON_WORKFLOW_CODE,
   BG_ICON_WORKFLOW_CONDITION,
@@ -131,8 +138,10 @@ export {
   ICON_KNOWLEDGE,
   ICON_LOCAL_DOC,
   ICON_MCP_MANAGE,
+  ICON_MESSAGE,
   ICON_MODEL,
   ICON_MODEL_WHITE,
+  ICON_MORE,
   ICON_NEW_AGENT,
   ICON_NOTIFICATION,
   ICON_ONLINE_DOC,
@@ -144,12 +153,15 @@ export {
   ICON_SETTING_SMALL,
   ICON_SHARE,
   ICON_SPACE_SQUARE,
+  ICON_STAR,
+  ICON_STAR_FILL,
   ICON_START,
   ICON_SUCCESS,
   ICON_TABLE,
   ICON_TABLE_FORMAT,
   ICON_TEMPLATE,
   ICON_TEXT_FORMAT,
+  ICON_USER,
   ICON_WORD,
   ICON_WORKFLOW,
   ICON_WORKFLOW_CODE,

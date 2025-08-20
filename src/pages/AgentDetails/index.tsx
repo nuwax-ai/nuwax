@@ -1,6 +1,7 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar from '@/components/AgentSidebar';
 import ChatInputHome from '@/components/ChatInputHome';
+import ChatTitleActions from '@/components/ChatTitleActions';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
@@ -24,7 +25,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { arraysContainSameItems } from '@/utils/common';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Form, message } from 'antd';
+import { Form, message, Typography } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -197,22 +198,25 @@ const AgentDetails: React.FC = () => {
   };
 
   return (
-    <div
-      className={cx('flex', 'h-full')}
-      style={{
-        overflowY: 'scroll',
-      }}
-    >
+    <div className={cx('flex', 'h-full')}>
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
         <div className={cx(styles['title-box'])}>
-          <h3
-            className={cx(styles.title, 'text-ellipsis', 'clip-path-animation')}
-          >
-            {isLoaded &&
-              (agentDetail?.name
-                ? `和${agentDetail?.name}开始会话`
-                : '开始会话')}
-          </h3>
+          <div className={cx(styles['title-container'])}>
+            {/* 左侧标题 */}
+            <Typography.Title
+              level={4}
+              className={cx(styles.title, 'clip-path-animation')}
+              ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
+            >
+              {isLoaded &&
+                (agentDetail?.name
+                  ? `和${agentDetail?.name}开始会话`
+                  : '开始会话')}
+            </Typography.Title>
+
+            {/* 右侧功能按钮 */}
+            <ChatTitleActions agentInfo={agentDetail} />
+          </div>
         </div>
         <div className={cx(styles['chat-wrapper'], 'flex-1')}>
           {loading ? (

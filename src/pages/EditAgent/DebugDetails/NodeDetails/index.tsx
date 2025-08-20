@@ -1,4 +1,4 @@
-import { EllipsisTooltip } from '@/components/EllipsisTooltip';
+import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { NodeDetailsProps } from '@/types/interfaces/agentConfig';
 import classNames from 'classnames';

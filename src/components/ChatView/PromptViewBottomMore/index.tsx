@@ -1,10 +1,10 @@
+import CopyButton from '@/components/base/CopyButton';
 import ConditionRender from '@/components/ConditionRender';
 import { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { CopyOutlined } from '@ant-design/icons';
-import { message, Tooltip } from 'antd';
+import { message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { CopyToClipboard } from 'react-copy-to-clipboard';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -46,21 +46,13 @@ const PromptViewBottomMore: React.FC<PromptViewBottomMoreProps> = ({
         </ConditionRender>
       </div>
       <div className={cx('flex', styles['more-action'])}>
-        <CopyToClipboard text={text || ''} onCopy={handleCopy}>
-          <Tooltip title="复制">
-            <span
-              className={cx(
-                'hover-box',
-                'flex',
-                'content-center',
-                'items-center',
-                'cursor-pointer',
-              )}
-            >
-              <CopyOutlined />
-            </span>
-          </Tooltip>
-        </CopyToClipboard>
+        <CopyButton
+          text={text || ''}
+          onCopy={handleCopy}
+          icon={<CopyOutlined />}
+        >
+          复制
+        </CopyButton>
       </div>
     </div>
   );

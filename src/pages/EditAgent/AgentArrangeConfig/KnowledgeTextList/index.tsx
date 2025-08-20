@@ -1,6 +1,6 @@
 import knowledgeImage from '@/assets/images/knowledge_image.png';
 import CollapseComponentItem from '@/components/CollapseComponentItem';
-import TooltipIcon from '@/components/TooltipIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { AgentComponentTypeEnum, InvokeTypeEnum } from '@/types/enums/agent';
 import { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { KnowledgeTextListProps } from '@/types/interfaces/agentConfig';

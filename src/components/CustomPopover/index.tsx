@@ -61,7 +61,9 @@ const CustomPopover: React.FC<PropsWithChildren<CustomPopoverProps>> = ({
       placement="bottomRight"
       arrow={false}
     >
-      <div onClick={(e) => e.stopPropagation()}>{children}</div>
+      <div onClick={(e) => e.stopPropagation()} className="flex">
+        {children}
+      </div>
     </Popover>
   );
 };

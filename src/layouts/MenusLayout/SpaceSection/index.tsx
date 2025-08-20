@@ -1,11 +1,14 @@
 import personal from '@/assets/images/personal.png';
 import teamImage from '@/assets/images/team_image.png';
+import MenuListItem from '@/components/base/MenuListItem';
+import SecondMenuItem from '@/components/base/SecondMenuItem';
 import ConditionRender from '@/components/ConditionRender';
 import { SPACE_URL } from '@/constants/home.constants';
 import { SPACE_APPLICATION_LIST } from '@/constants/space.constants';
 import { RoleEnum } from '@/types/enums/common';
 import {
   AllowDevelopEnum,
+  SpaceApplicationList,
   SpaceApplicationListEnum,
   SpaceTypeEnum,
 } from '@/types/enums/space';
@@ -13,7 +16,6 @@ import type { AgentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
 import React, { useEffect, useMemo } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
-import UserRelAgent from '../UserRelAgent';
 import DevCollect from './DevCollect';
 import styles from './index.less';
 import SpaceTitle from './SpaceTitle';
@@ -118,56 +120,51 @@ const SpaceSection: React.FC<{
   }, [currentSpaceInfo]);
 
   return (
-    <div
-      className={cx('h-full', 'px-6', 'py-16', 'overflow-y', styles.container)}
-      style={style}
-    >
-      <SpaceTitle avatar={avatar} name={currentSpaceInfo?.name} />
-      <ul className={cx('mt-6')}>
-        {SPACE_APPLICATION_LIST.map((item) => {
-          // 个人空间时，不显示"成员与设置", 普通用户也不显示"成员与设置"
-          if (
-            (currentSpaceInfo?.type === SpaceTypeEnum.Personal ||
-              currentSpaceInfo?.currentUserRole === RoleEnum.User) &&
-            item.type === SpaceApplicationListEnum.Team_Setting
-          ) {
-            return null;
-          }
-          // “开发者功能”【tips：关闭后，用户将无法看见“智能体开发”和“组件库”，创建者和管理员不受影响】
-          if (
-            currentSpaceInfo?.currentUserRole === RoleEnum.User &&
-            currentSpaceInfo?.allowDevelop === AllowDevelopEnum.Not_Allow &&
-            [
-              SpaceApplicationListEnum.Application_Develop,
-              SpaceApplicationListEnum.Component_Library,
-            ].includes(item.type)
-          ) {
-            return null;
-          }
-          return (
-            <li
-              key={item.type}
-              onClick={() => handlerApplication(item.type)}
-              className={cx(
-                styles['space-item'],
-                'hover-deep',
-                'flex',
-                'items-center',
-                'cursor-pointer',
-                { [styles.active]: handleActive(item.type) },
-              )}
-            >
-              {item.icon}
-              <span className={cx(styles.text)}>{item.text}</span>
-            </li>
-          );
-        })}
-      </ul>
+    <div className={cx('h-full', 'overflow-y', styles.container)} style={style}>
+      <div style={{ padding: '22px 12px' }}>
+        <SpaceTitle avatar={avatar} name={currentSpaceInfo?.name} />
+      </div>
+      <div>
+        {SPACE_APPLICATION_LIST.map(
+          (item: SpaceApplicationList, index: number) => {
+            // 个人空间时，不显示"成员与设置", 普通用户也不显示"成员与设置"
+            if (
+              (currentSpaceInfo?.type === SpaceTypeEnum.Personal ||
+                currentSpaceInfo?.currentUserRole === RoleEnum.User) &&
+              item.type === SpaceApplicationListEnum.Team_Setting
+            ) {
+              return null;
+            }
+            // “开发者功能”【tips：关闭后，用户将无法看见“智能体开发”和“组件库”，创建者和管理员不受影响】
+            if (
+              currentSpaceInfo?.currentUserRole === RoleEnum.User &&
+              currentSpaceInfo?.allowDevelop === AllowDevelopEnum.Not_Allow &&
+              [
+                SpaceApplicationListEnum.Application_Develop,
+                SpaceApplicationListEnum.Component_Library,
+              ].includes(item.type)
+            ) {
+              return null;
+            }
+            return (
+              <SecondMenuItem
+                key={item.type}
+                isFirst={index === 0}
+                name={item.text}
+                isActive={handleActive(item.type)}
+                icon={item.icon}
+                onClick={() => handlerApplication(item.type)}
+              />
+            );
+          },
+        )}
+      </div>
       <ConditionRender condition={editAgentList?.length}>
         <h3 className={cx(styles['collection-title'])}>最近编辑</h3>
-        {editAgentList?.map((item: AgentInfo) => (
-          <UserRelAgent
+        {editAgentList?.map((item: AgentInfo, index: number) => (
+          <MenuListItem
             key={item.id}
+            isFirst={index === 0}
             onClick={() => handleClick(item)}
             icon={item.icon}
             name={item.name}

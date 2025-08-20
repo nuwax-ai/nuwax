@@ -1,0 +1,111 @@
+.theme-demo {
+  padding: 24px;
+  height: 100vh;
+  background-color: var(--xagi-color-bg-layout);
+  overflow: auto;
+
+  .ant-card {
+    border-radius: var(--xagi-border-radius-lg);
+    box-shadow: var(--xagi-box-shadow-card);
+    border: 1px solid var(--xagi-color-border);
+
+    .ant-card-head-title {
+      font-weight: 600;
+      color: var(--xagi-color-text-heading);
+    }
+
+    .ant-card-body {
+      color: var(--xagi-color-text);
+    }
+  }
+
+  .ant-typography {
+    color: var(--xagi-color-text);
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      color: var(--xagi-color-text-heading) !important;
+    }
+
+    &.ant-typography-secondary {
+      color: var(--xagi-color-text-secondary) !important;
+    }
+  }
+
+  .ant-btn {
+    border-radius: var(--xagi-border-radius);
+    font-weight: 500;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 10%);
+    }
+
+    &.ant-btn-primary {
+      background-color: var(--xagi-color-primary);
+      border-color: var(--xagi-color-primary);
+
+      &:hover {
+        background-color: var(--xagi-color-primary-hover);
+        border-color: var(--xagi-color-primary-hover);
+      }
+    }
+  }
+
+  .ant-switch {
+    &.ant-switch-checked {
+      background-color: var(--xagi-color-primary);
+    }
+  }
+
+  .ant-tag {
+    border-radius: var(--xagi-border-radius);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+  }
+
+  .ant-alert {
+    border-radius: var(--xagi-border-radius);
+    border: 1px solid var(--xagi-color-border);
+  }
+
+  // 代码展示样式
+  .ant-typography code {
+    background-color: var(--xagi-color-fill-secondary);
+    border: 1px solid var(--xagi-color-border);
+    color: var(--xagi-color-text);
+    border-radius: var(--xagi-border-radius-xs);
+    padding: 2px 6px;
+    font-family: var(--xagi-font-family-code);
+  }
+
+  // 响应式布局
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .ant-col {
+      margin-bottom: 16px;
+    }
+  }
+}
+
+// 暗色主题下的特殊样式
+[data-theme='dark'] {
+  .theme-demo {
+    .ant-card {
+      background-color: var(--xagi-color-bg-container);
+      border-color: var(--xagi-color-border);
+    }
+
+    .ant-btn:hover {
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 10%);
+    }
+  }
+}

@@ -46,6 +46,8 @@ const UploadImportConfig: React.FC<UploadImportConfigProps> = ({
       title: '提示',
       content:
         '配置中若包含插件、MCP，导入成功后请检查相关配置，以确保能正确运行',
+      okText: '确定',
+      cancelText: '取消',
       onOk: () => {
         // 手动触发文件选择
         if (buttonRef.current) {

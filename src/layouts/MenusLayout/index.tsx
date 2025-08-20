@@ -1,11 +1,17 @@
+import ConditionRender from '@/components/ConditionRender';
+import HoverScrollbar from '@/components/base/HoverScrollbar';
 import { DOCUMENT_URL, SITE_DOCUMENT_URL } from '@/constants/common.constants';
 import useCategory from '@/hooks/useCategory';
+import useConversation from '@/hooks/useConversation';
 import SystemSection from '@/layouts/MenusLayout/SystemSection';
 import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
+import { theme, Typography } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
+import { FIRST_MENU_WIDTH, SECOND_MENU_WIDTH } from '../layout.constants';
+import CollapseButton from './CollapseButton';
 import EcosystemMarketSection from './EcosystemMarketSection';
 import Header from './Header';
 import HomeSection from './HomeSection';
@@ -25,7 +31,7 @@ const MenusLayout: React.FC<{
   overrideContainerStyle?: React.CSSProperties;
 }> = ({ overrideContainerStyle }) => {
   const location = useLocation();
-  const { setOpenMessage } = useModel('layout');
+  const { setOpenMessage, isSecondMenuCollapsed } = useModel('layout');
   const [tabType, setTabType] = useState<TabsEnum>();
   const { asyncSpaceListFun } = useModel('spaceModel');
   const { runTenantConfig } = useModel('tenantConfigInfo');
@@ -34,7 +40,17 @@ const MenusLayout: React.FC<{
   // 关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
   const { runQueryCategory } = useCategory();
+  const { token } = theme.useToken();
+  // 创建智能体会话
+  const { handleCreateConversation } = useConversation();
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
+  const handleCreateChat = async () => {
+    if (tenantConfigInfo) {
+      // 创建智能体会话
+      await handleCreateConversation(tenantConfigInfo.defaultAgentId);
+    }
+  };
   // 点击主页
   const handleClickHome = () => {
     // 最近使用
@@ -68,6 +84,9 @@ const MenusLayout: React.FC<{
     handleCloseMobileMenu();
 
     switch (type) {
+      case TabsEnum.NewChat:
+        handleCreateChat();
+        break;
       case TabsEnum.Home:
         handleClickHome();
         break;
@@ -139,7 +158,26 @@ const MenusLayout: React.FC<{
         return <EcosystemMarketSection style={overrideContainerStyle} />;
     }
   }, [tabType]);
-
+  const title = useMemo(() => {
+    switch (tabType) {
+      case TabsEnum.Home:
+        return '主页';
+      case TabsEnum.Square:
+        return '广场';
+      case TabsEnum.Space:
+        return '工作空间';
+      case TabsEnum.System_Manage:
+        return '系统管理';
+      case TabsEnum.Ecosystem_Market:
+        return '生态市场';
+    }
+  }, [tabType]);
+  const isShowTitle = useMemo(() => {
+    if (tabType === TabsEnum.Space) {
+      return false;
+    }
+    return true;
+  }, [tabType]);
   return (
     <div className={cx(styles.container, 'flex')}>
       {/*一级导航菜单栏*/}
@@ -149,8 +187,10 @@ const MenusLayout: React.FC<{
           'flex',
           'flex-col',
           'items-center',
-          'py-16',
         )}
+        style={{
+          width: FIRST_MENU_WIDTH,
+        }}
       >
         <Header />
         {/*中间内容区域：主页、工作空间、广场等*/}
@@ -161,9 +201,47 @@ const MenusLayout: React.FC<{
         <User />
       </div>
       {/*二级导航菜单栏*/}
-      <div className={cx(styles['nav-menus'], 'overflow-y')}>
-        <Content />
+      <div
+        className={cx(styles['nav-menus'])}
+        style={{
+          width: isSecondMenuCollapsed ? 0 : SECOND_MENU_WIDTH,
+          paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
+          opacity: isSecondMenuCollapsed ? 0 : 1,
+        }}
+      >
+        {!isSecondMenuCollapsed && (
+          <HoverScrollbar
+            className={cx('h-full')}
+            bodyWidth={SECOND_MENU_WIDTH - token.padding * 2}
+            style={{
+              width: '100%',
+              padding: '12px 0',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                minHeight: 0,
+              }}
+            >
+              <ConditionRender condition={isShowTitle}>
+                <div style={{ padding: '22px 12px' }}>
+                  <Typography.Title level={4} style={{ marginBottom: 0 }}>
+                    {title}
+                  </Typography.Title>
+                </div>
+              </ConditionRender>
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <Content />
+              </div>
+            </div>
+          </HoverScrollbar>
+        )}
       </div>
+      {/* 收起/展开按钮 */}
+      <CollapseButton />
     </div>
   );
 };

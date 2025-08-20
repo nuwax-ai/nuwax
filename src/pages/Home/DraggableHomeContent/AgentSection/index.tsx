@@ -116,14 +116,14 @@ const AgentSection: React.FC<AgentSectionProps> = ({
   return (
     <div
       ref={sectionRef}
+      data-category={category.type}
       className={cx(styles.section, {
         // [styles.dragging]: isDragging,
       })}
     >
       {/* 分类标题 */}
       <div className={cx(styles.sectionTitle)}>
-        <h3>{category.name}</h3>
-        <span className={cx(styles.count)}>({localAgents.length})</span>
+        {category.name}({localAgents.length})
       </div>
 
       {/* 智能体列表 */}

@@ -1,4 +1,4 @@
-import { EllipsisTooltip } from '@/components/EllipsisTooltip';
+import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import { BOOLEAN_LIST } from '@/constants/dataTable.constants';
 import { TableFieldTypeEnum } from '@/types/enums/dataTable';
 import {

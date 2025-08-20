@@ -1,10 +1,10 @@
-import foldImage from '@/assets/images/fold_image.png';
-import Loading from '@/components/Loading';
+import Loading from '@/components/custom/Loading';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
-import { OpenCloseEnum } from '@/types/enums/space';
+import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import { AgentSidebarProps } from '@/types/interfaces/agentTask';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import StickyBox from 'react-sticky-box';
 import { useModel } from 'umi';
 import AgentContent from './AgentContent';
 import AgentConversation from './AgentConversation';
@@ -34,10 +34,10 @@ const AgentSidebar: React.FC<AgentSidebarProps> = ({
   };
 
   useEffect(() => {
-    // if (showType === EditAgentShowType.Show_Stand) {
-    //   setVisible(false);
-    //   setFoldVisible(true);
-    // }
+    if (showType === EditAgentShowType.Show_Stand) {
+      setVisible(false);
+      setFoldVisible(true);
+    }
   }, [showType]);
 
   useDrawerScroll(visible);
@@ -45,7 +45,7 @@ const AgentSidebar: React.FC<AgentSidebarProps> = ({
   return (
     <>
       <div
-        className={cx(styles.container, 'flex', 'flex-col', className, {
+        className={cx(styles.rightSidebar, 'flex', 'flex-col', className, {
           [styles.hide]: !visible,
         })}
       >
@@ -54,43 +54,44 @@ const AgentSidebar: React.FC<AgentSidebarProps> = ({
         ) : (
           <>
             {/* 统计信息 */}
-            <div
+            <StickyBox
+              offsetTop={0}
+              style={{ zIndex: 10 }}
               className={cx(styles['statistics-content'])}
-              style={{
-                height: 40,
-              }}
             >
               <StatisticsInfo
                 statistics={agentDetail?.statistics}
                 visible={visible}
                 onClose={handleClose}
               />
-            </div>
-            <div className={cx(styles['container-content'], 'scrollbar')}>
-              <div className={cx(styles['container-body'])}>
-                {/* 智能体内容 */}
-                <AgentContent
-                  agentDetail={agentDetail}
-                  onToggleCollectSuccess={onToggleCollectSuccess}
-                />
-                {/* 智能体相关会话 */}
-                <AgentConversation agentId={agentId} />
-                {/* 定时任务 */}
-                {agentDetail?.openScheduledTask === OpenCloseEnum.Open && (
-                  <TimedTask agentId={agentId} />
-                )}
+            </StickyBox>
+            <div className={cx(styles['container-scroll'], styles.container)}>
+              <div className={cx(styles['container-content'], 'scrollbar')}>
+                <div className={cx(styles['container-body'])}>
+                  {/* 智能体内容 */}
+                  <AgentContent
+                    agentDetail={agentDetail}
+                    onToggleCollectSuccess={onToggleCollectSuccess}
+                  />
+                  {/* 智能体相关会话 */}
+                  <AgentConversation agentId={agentId} />
+                  {/* 定时任务 */}
+                  {agentDetail?.openScheduledTask === OpenCloseEnum.Open && (
+                    <TimedTask agentId={agentId} />
+                  )}
+                </div>
               </div>
             </div>
           </>
         )}
       </div>
-      <img
+      {/* <img
         className={cx(styles.fold, 'cursor-pointer', {
           [styles.show]: !visible,
         })}
         src={foldImage}
         onClick={handleClose}
-      />
+      /> */}
     </>
   );
 };

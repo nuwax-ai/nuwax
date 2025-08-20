@@ -1,6 +1,6 @@
 import workflowImage from '@/assets/images/workflow_image.png';
 import AgentModelComponent from '@/components/CollapseComponentItem';
-import TooltipIcon from '@/components/TooltipIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { ICON_SETTING } from '@/constants/images.constants';
 import { AgentComponentInfo } from '@/types/interfaces/agent';
 import { DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';

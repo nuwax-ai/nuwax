@@ -1,8 +1,17 @@
+import ThemeControlPanel from '@/components/ThemeControlPanel';
+import { useGlobalSettings } from '@/hooks/useGlobalSettings';
+import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Outlet, useModel } from 'umi';
 import HistoryConversation from './HistoryConversation';
+import HoverMenu from './HoverMenu';
 import styles from './index.less';
+import {
+  ANIMATION_DURATION,
+  MOBILE_BREAKPOINT,
+  MOBILE_MENU_TOP_PADDING,
+} from './layout.constants';
 import MenusLayout from './MenusLayout';
 import Message from './Message';
 import MobileMenu from './MobileMenu';
@@ -11,11 +20,9 @@ import Setting from './Setting';
 // 绑定 classNames，便于动态样式组合
 const cx = classNames.bind(styles);
 
-// 常量定义
-const MOBILE_BREAKPOINT = 768; // 移动端断点
-const MENU_WIDTH = 274; // 菜单宽度
-const ANIMATION_DURATION = 300; // 动画持续时间
-const MOBILE_MENU_TOP_PADDING = 32; // 移动端菜单顶部间距
+// 开发环境判断
+const isDev = process.env.NODE_ENV === 'development';
+const isDevOrTest = isDev || process.env.CI;
 
 /**
  * Layout 主布局组件
@@ -24,6 +31,16 @@ const MOBILE_MENU_TOP_PADDING = 32; // 移动端菜单顶部间距
 const Layout: React.FC = () => {
   // 使用 useRef 避免重复获取 DOM 元素
   const mobileMenuContainerRef = useRef<HTMLDivElement>(null);
+  // 全局主题与语言（已在 app.tsx 统一注入，这里仅保留使用场景需要时可读取）
+  const {
+    language,
+    toggleTheme,
+    toggleLanguage,
+    primaryColor,
+    setPrimaryColor,
+    isDarkMode,
+  } = useGlobalSettings();
+
   // 状态管理
   const {
     isMobile,
@@ -32,7 +49,10 @@ const Layout: React.FC = () => {
     setRealHidden,
     fullMobileMenu,
     setFullMobileMenu,
+    getCurrentMenuWidth,
   } = useModel('layout');
+
+  // 移除对 @@initialState 的依赖，统一由 useGlobalSettings 管理全局配置
 
   /**
    * 检查是否为移动端设备
@@ -109,7 +129,7 @@ const Layout: React.FC = () => {
       // 设置动画样式
       container.style.transform = fullMobileMenu
         ? 'translateX(0)'
-        : `translateX(-${MENU_WIDTH}px)`;
+        : `translateX(-${getCurrentMenuWidth()}px)`;
 
       // 清理函数
       return () => {
@@ -121,7 +141,7 @@ const Layout: React.FC = () => {
       setRealHidden(false);
       setFullMobileMenu(false); // 重置菜单状态
     }
-  }, [fullMobileMenu, isMobile, handleTransitionEnd]);
+  }, [fullMobileMenu, isMobile, handleTransitionEnd, getCurrentMenuWidth]);
 
   /**
    * 侧边栏样式配置
@@ -143,7 +163,6 @@ const Layout: React.FC = () => {
 
     return {
       position: 'relative',
-      width: MENU_WIDTH,
       height: '100%',
     };
   }, [isMobile]);
@@ -170,9 +189,22 @@ const Layout: React.FC = () => {
     () => (isMobile ? { paddingTop: MOBILE_MENU_TOP_PADDING } : {}),
     [isMobile],
   );
+  const token = theme.useToken();
+  console.log('token', token);
 
   return (
     <div className={cx('flex', 'h-full', styles.container)}>
+      {/* 顶部右侧全局操作：主题、语言、主色 */}
+      {isDevOrTest && (
+        <ThemeControlPanel
+          isDarkMode={isDarkMode}
+          toggleTheme={toggleTheme}
+          language={language}
+          toggleLanguage={toggleLanguage}
+          primaryColor={primaryColor}
+          setPrimaryColor={setPrimaryColor}
+        />
+      )}
       {/* 侧边菜单栏及弹窗区域 */}
       <div
         ref={mobileMenuContainerRef}
@@ -182,6 +214,9 @@ const Layout: React.FC = () => {
       >
         {/* 菜单栏 */}
         <MenusLayout overrideContainerStyle={menuOverrideStyle} />
+
+        {/* 悬浮菜单 */}
+        <HoverMenu />
 
         {/* 历史会话记录弹窗 */}
         <HistoryConversation />
@@ -194,12 +229,16 @@ const Layout: React.FC = () => {
 
         {/* 移动端菜单按钮和遮罩层 */}
         {isMobile && (
-          <MobileMenu isOpen={fullMobileMenu} onToggle={toggleFullMobileMenu} />
+          <MobileMenu
+            isOpen={fullMobileMenu}
+            onToggle={toggleFullMobileMenu}
+            menuWidth={getCurrentMenuWidth()}
+          />
         )}
       </div>
 
       {/* 主内容区 */}
-      <div className={cx('flex-1', 'overflow-y')}>
+      <div className={cx('flex-1', 'overflow-y', styles['page-container'])}>
         <Outlet />
       </div>
     </div>

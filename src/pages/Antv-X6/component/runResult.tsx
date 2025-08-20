@@ -1,15 +1,14 @@
+import CopyIconButton from '@/components/base/CopyIconButton';
 import {
   CheckCircleFilled,
   CloseCircleFilled,
-  CopyOutlined,
   DownOutlined,
   LoadingOutlined,
   UpOutlined,
 } from '@ant-design/icons';
-import { Checkbox, message, Select, Tooltip } from 'antd';
+import { Checkbox, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useRef, useState } from 'react';
-import CopyToClipboard from 'react-copy-to-clipboard';
 import styles from './runResult.less';
 const cx = classNames.bind(styles);
 
@@ -159,29 +158,13 @@ const RunResult: React.FC<RunResultProps> = ({
     );
   };
 
-  const handleCopy = () => {
-    message.success('复制成功');
-  };
-
   // 渲染键值对
   const renderKeyValue = (obj: Record<string, any>, title: string) => {
     return (
       <div className={cx(styles.runResultSection)}>
         <div className={cx(styles.runResultSectionHeader)}>
           <span>{title}</span>
-          <Tooltip title="复制">
-            <CopyToClipboard
-              text={JSON.stringify(obj, null, 2)}
-              onCopy={handleCopy}
-            >
-              <CopyOutlined
-                className={cx(styles.copyIcon)}
-                onClick={() => {
-                  navigator.clipboard.writeText(JSON.stringify(obj, null, 2));
-                }}
-              />
-            </CopyToClipboard>
-          </Tooltip>
+          <CopyIconButton data={obj} jsonSpace={2} tooltipTitle="复制" />
         </div>
         <div className={cx(styles.runResultSectionContent, 'overflow-y')}>
           <code>{JSON.stringify(obj, null, 2)}</code>
@@ -244,16 +227,11 @@ const RunResult: React.FC<RunResultProps> = ({
             <div className={cx(styles.runResultBatch)}>
               <div className={cx(styles.runResultBatchHeader)}>
                 <span>本次批处理变量</span>
-                <Tooltip title="复制">
-                  <CopyOutlined
-                    className={cx(styles.copyIcon)}
-                    onClick={() => {
-                      navigator.clipboard.writeText(
-                        JSON.stringify(batchVariables, null, 2),
-                      );
-                    }}
-                  />
-                </Tooltip>
+                <CopyIconButton
+                  data={batchVariables}
+                  jsonSpace={2}
+                  tooltipTitle="复制"
+                />
               </div>
               <div className={cx(styles.runResultSectionContent, 'overflow-y')}>
                 <pre>{JSON.stringify(batchVariables, null, 2)}</pre>

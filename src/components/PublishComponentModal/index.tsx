@@ -1,6 +1,6 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import LabelIcon from '@/components/LabelIcon';
-import SelectList from '@/components/SelectList';
+import SelectList from '@/components/custom/SelectList';
 import useCategory from '@/hooks/useCategory';
 import { apiPublishApply, apiPublishItemList } from '@/services/publish';
 import { apiSpaceList } from '@/services/workspace';
