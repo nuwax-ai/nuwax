@@ -26,6 +26,9 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
+
+    /* 关键修复：确保内容从顶部开始排列，避免不均匀的间距分布 */
+    align-content: start;
   }
 
   @media (min-width: 1200px) {

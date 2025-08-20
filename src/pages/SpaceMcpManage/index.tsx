@@ -27,7 +27,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Empty, Input, message, Modal, Segmented } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
 import styles from './index.less';
 import McpComponentItem from './McpComponentItem';
@@ -291,6 +291,10 @@ const SpaceLibrary: React.FC = () => {
       runMcpOfficialList();
     }
   };
+  const listLength = useMemo(() => {
+    return mcpList.length;
+  }, [mcpList]);
+  // 由于屏
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
@@ -332,7 +336,7 @@ const SpaceLibrary: React.FC = () => {
       </div>
       {loading ? (
         <Loading />
-      ) : mcpList?.length > 0 ? (
+      ) : listLength > 0 ? (
         <div className={cx(styles['main-container'], 'flex-1', 'overflow-y')}>
           {mcpList?.map((info) => (
             <McpComponentItem

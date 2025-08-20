@@ -88,6 +88,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+  align-content: start;
 }
 
 .dragging {
@@ -122,6 +123,7 @@
     grid-template-columns: repeat(auto-fill, minmax(246px, 1fr));
     gap: @margin;
     padding: @padding 0;
+    align-content: start;
 
     @media (max-width: 768px) {
       grid-template-columns: 1fr;

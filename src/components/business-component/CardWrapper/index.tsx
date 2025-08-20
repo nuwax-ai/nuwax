@@ -7,6 +7,7 @@ const cx = classNames.bind(styles);
 
 interface CardWrapperProps {
   className?: string;
+  style?: React.CSSProperties;
   onClick?: () => void;
   // 底部
   footer?: React.ReactNode;
@@ -40,11 +41,13 @@ const CardWrapper: React.FC<PropsWithChildren<CardWrapperProps>> = ({
   name,
   icon,
   defaultIcon,
+  style,
 }) => {
   return (
     <div
       className={cx('flex', 'flex-col', 'gap-4', styles.container, className)}
       onClick={onClick}
+      style={style}
     >
       <header className={cx('flex', styles.header)}>
         <img
