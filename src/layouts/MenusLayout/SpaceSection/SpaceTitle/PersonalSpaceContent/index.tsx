@@ -1,5 +1,3 @@
-import personal from '@/assets/images/personal.png';
-import teamImage from '@/assets/images/team_image.png';
 import { SPACE_ID } from '@/constants/home.constants';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
@@ -8,7 +6,7 @@ import type { SpaceInfo } from '@/types/interfaces/workspace';
 import { CheckOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import { Divider } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { history, useLocation, useModel } from 'umi';
 import styles from './index.less';
 
@@ -90,22 +88,10 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
     }
   };
 
-  // 个人空间时，头像是默认的
-  const getAvatar = useCallback((info: SpaceInfo) => {
-    return info?.type === SpaceTypeEnum.Personal
-      ? (personal as string)
-      : ((info?.icon || teamImage) as string);
-  }, []);
-
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'overflow-hide')}>
       <div className={cx(styles['p-header'], 'flex')}>
         <CheckOutlined className={styles.icon} />
-        <img
-          className={cx(styles.img, 'radius-6')}
-          src={getAvatar(currentSpaceInfo)}
-          alt=""
-        />
         <span className={cx('flex-1', styles.title, 'text-ellipsis')}>
           {currentSpaceInfo?.name || '个人空间'}
         </span>
@@ -118,11 +104,6 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
             className={cx(styles['team-info'], 'flex', 'items-center')}
             onClick={() => handleClick(item)}
           >
-            <img
-              className={cx(styles['team-logo'])}
-              src={getAvatar(item)}
-              alt=""
-            />
             <span className={cx('text-ellipsis')}>{item.name}</span>
           </li>
         ))}

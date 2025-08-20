@@ -1,7 +1,7 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
-import { copyJSONToClipboard } from '@/utils';
 import { cloneDeep } from '@/utils/common';
+import { copyJSON } from '@/utils/copy';
 import {
   CheckOutlined,
   CopyOutlined,
@@ -83,9 +83,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
       return;
     }
     // 复制功能 - 可以复制组件的配置或内容
-    copyJSONToClipboard(detailData, 2, () => {
-      message.success('复制成功');
-    });
+    copyJSON(detailData, 2);
   }, [detailData]);
 
   // 准备 详情弹窗 所需的数据

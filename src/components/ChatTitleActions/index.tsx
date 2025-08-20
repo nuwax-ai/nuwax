@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
+import { copy } from '@/utils/copy';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -67,26 +68,13 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
   // 分享功能
   const handleShare = () => {
     if (conversationInfo?.shareLink) {
-      // 复制分享链接
-      navigator.clipboard
-        .writeText(conversationInfo.shareLink)
-        .then(() => {
-          message.success('分享链接已复制到剪贴板');
-        })
-        .catch(() => {
-          // 如果剪贴板API不可用，尝试使用传统方法
-          try {
-            const textArea = document.createElement('textarea');
-            textArea.value = conversationInfo.shareLink;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            message.success('分享链接已复制到剪贴板');
-          } catch (error) {
-            message.error('复制失败，请手动复制');
-          }
-        });
+      // 使用统一的拷贝工具
+      copy(
+        conversationInfo.shareLink,
+        true,
+        '分享链接已复制到剪贴板',
+        '复制失败，请手动复制',
+      );
     } else {
       message.info('暂无分享链接');
     }

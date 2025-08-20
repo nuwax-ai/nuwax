@@ -1,29 +1,11 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .header {
-  height: 48px;
   gap: 8px;
-  font-size: 14px;
-
-  .img-box {
-    width: 24px;
-    height: 24px;
-    border-radius: 10px;
-    overflow: hidden;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      vertical-align: baseline;
-    }
-  }
-
-  .title {
-    color: @BLANK04;
-  }
 
   .icon-down {
-    color: @GRAY05;
+    color: @colorTextSecondary;
+    font-size: @fontSize;
   }
 }

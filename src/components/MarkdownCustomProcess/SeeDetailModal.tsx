@@ -1,11 +1,10 @@
 import CodeEditor from '@/components/CodeEditor';
+import CopyIconButton from '@/components/base/CopyIconButton';
 
 import { CodeLangEnum } from '@/types/enums/plugin';
-import { copyJSONToClipboard } from '@/utils/clipboard';
-import { CopyOutlined } from '@ant-design/icons';
-import { Button, message, Modal, Tooltip } from 'antd';
+import { Modal } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback } from 'react';
+import React from 'react';
 import styles from './SeeDetailModal.less';
 // 在SeeDetailModal.tsx中
 const cx = classNames.bind(styles);
@@ -27,14 +26,6 @@ const SeeDetailModal: React.FC<SeeDetailModalProps> = ({
   data,
   title,
 }) => {
-  // 复制内容到剪贴板
-  const copyToClipboard = useCallback(() => {
-    if (!data) return;
-    copyJSONToClipboard(data, 2, () => {
-      message.success('复制成功');
-    });
-  }, [data]);
-
   if (!data || !visible) {
     return null;
   }
@@ -46,19 +37,19 @@ const SeeDetailModal: React.FC<SeeDetailModalProps> = ({
       footer={null}
       width={800}
       className={cx(styles['see-detail-modal'])}
-      destroyOnClose={true}
+      destroyOnHidden={true}
       // 自定义 header 渲染内容
       title={
         <div className={cx(styles['see-detail-header'])}>
           <div className={cx(styles['see-detail-header-title'])}>{title}</div>
           <div className={cx(styles['see-detail-header-actions'])}>
-            <Tooltip title="复制">
-              <Button
-                type="text"
-                icon={<CopyOutlined />}
-                onClick={copyToClipboard}
-              />
-            </Tooltip>
+            <CopyIconButton
+              data={data}
+              jsonSpace={2}
+              tooltipTitle="复制详情数据"
+              successMessage="详情数据已复制"
+              errorMessage="详情数据复制失败，请重试"
+            />
           </div>
         </div>
       }

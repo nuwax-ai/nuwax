@@ -1,4 +1,5 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .container {
   max-width: 300px;
@@ -8,18 +9,12 @@
     gap: 8px;
 
     .icon {
-      color: @BLUE03;
-    }
-
-    .img {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
+      color: @colorPrimary;
     }
 
     .title {
-      font-size: 14px;
-      color: @BLANK04;
+      font-size: @fontSize;
+      color: @colorText;
     }
   }
 
@@ -31,18 +26,12 @@
     height: 32px;
     padding: 0 22px;
     gap: 6px;
-    color: @BLANK07;
+    color: @colorText;
     cursor: pointer;
 
     &:hover {
-      background-color: @GRAY01;
+      background-color: @colorBgTextHover;
       border-radius: 6px;
-    }
-
-    .team-logo {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
     }
   }
 
