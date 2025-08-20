@@ -1,7 +1,7 @@
-import { copyJSON, copyText } from '@/utils/copy';
+import { copyTextToClipboard } from '@/utils/clipboard';
+import { message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { CopyToClipboard } from 'react-copy-to-clipboard';
 import SvgIcon from '../SvgIcon';
 import styles from './index.less';
 
@@ -28,8 +28,6 @@ export interface CopyButtonProps {
   tooltipText?: string;
   /** 是否显示成功消息 */
   showSuccessMsg?: boolean;
-  /** 拷贝方式：'component' | 'function' */
-  copyMode?: 'component' | 'function';
   /** JSON 缩进空格数 */
   jsonSpace?: number;
   /** 自定义成功消息 */
@@ -40,10 +38,7 @@ export interface CopyButtonProps {
 
 /**
  * 复制按钮组件
- * 支持两种拷贝方式：
- * 1. 使用 react-copy-to-clipboard 组件（默认）
- * 2. 使用统一的拷贝工具函数
- *
+ * 使用统一的 clipboard 工具函数，支持文本和 JSON 数据的复制
  * 支持自定义文本、图标、样式和回调函数
  * 默认使用复制图标，支持自定义图标覆盖
  */
@@ -58,47 +53,46 @@ const CopyButton: React.FC<CopyButtonProps> = ({
   children = '复制',
   tooltipText,
   showSuccessMsg = true,
-  copyMode = 'component',
   jsonSpace = 2,
   successMessage,
   errorMessage,
 }) => {
-  // 处理复制成功
-  const handleCopy = (text: string, result: boolean) => {
-    if (onCopy) {
-      onCopy(text, result);
-    }
-  };
-
-  // 使用函数方式拷贝
-  const handleFunctionCopy = async () => {
+  // 处理复制
+  const handleCopy = async () => {
     try {
-      let success = false;
+      let copyText = '';
 
       if (data) {
-        // 拷贝 JSON 数据
-        success = await copyJSON(
-          data,
-          jsonSpace,
-          showSuccessMsg,
-          successMessage,
-          errorMessage,
-        );
+        // 复制 JSON 数据
+        copyText = JSON.stringify(data, null, jsonSpace);
       } else if (text) {
-        // 拷贝文本
-        success = await copyText(
-          text,
-          showSuccessMsg,
-          successMessage,
-          errorMessage,
-        );
+        // 复制文本
+        copyText = text;
+      } else {
+        // 没有可复制的内容
+        if (onCopy) {
+          onCopy('', false);
+        }
+        return;
       }
 
-      if (success && onCopy) {
-        onCopy(data ? JSON.stringify(data, null, jsonSpace) : text || '', true);
-      }
+      // 使用统一的复制方法
+      await copyTextToClipboard(
+        copyText,
+        (copiedText, result) => {
+          if (onCopy) {
+            onCopy(copiedText, result || false);
+          }
+          if (result && showSuccessMsg && successMessage) {
+            message.success(successMessage);
+          } else if (!result && errorMessage) {
+            message.error(errorMessage);
+          }
+        },
+        false,
+      );
     } catch (error) {
-      console.error('拷贝失败:', error);
+      console.error('复制失败:', error);
       if (onCopy) {
         onCopy('', false);
       }
@@ -135,49 +129,23 @@ const CopyButton: React.FC<CopyButtonProps> = ({
     );
   }
 
-  // 使用函数方式拷贝
-  if (copyMode === 'function') {
-    return (
-      <span
-        className={cx(
-          styles['copy-btn'],
-          'flex',
-          'items-center',
-          'cursor-pointer',
-          className,
-        )}
-        style={style}
-        title={tooltipText}
-        onClick={handleFunctionCopy}
-      >
-        {icon || defaultIcon}
-        <span>{children}</span>
-      </span>
-    );
-  }
-
-  // 使用组件方式拷贝（默认）
-  const copyTextValue = data
-    ? JSON.stringify(data, null, jsonSpace)
-    : text || '';
-
+  // 可点击的复制按钮
   return (
-    <CopyToClipboard text={copyTextValue} onCopy={handleCopy}>
-      <span
-        className={cx(
-          styles['copy-btn'],
-          'flex',
-          'items-center',
-          'cursor-pointer',
-          className,
-        )}
-        style={style}
-        title={tooltipText}
-      >
-        {icon || defaultIcon}
-        <span>{children}</span>
-      </span>
-    </CopyToClipboard>
+    <span
+      className={cx(
+        styles['copy-btn'],
+        'flex',
+        'items-center',
+        'cursor-pointer',
+        className,
+      )}
+      style={style}
+      title={tooltipText}
+      onClick={handleCopy}
+    >
+      {icon || defaultIcon}
+      <span>{children}</span>
+    </span>
   );
 };
 

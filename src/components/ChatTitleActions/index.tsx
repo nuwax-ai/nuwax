@@ -1,6 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
-import { copy } from '@/utils/copy';
+import { copyTextToClipboard } from '@/utils/clipboard';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -10,12 +10,10 @@ const cx = classNames.bind(styles);
 
 interface ChatTitleActionsProps {
   /** 会话信息 */
-  conversationInfo?: {
+  agentInfo?: {
     shareLink?: string;
-    agent?: {
-      agentId?: number;
-      collect?: boolean;
-    };
+    agentId?: number;
+    collect?: boolean;
   };
   /** 自定义样式类名 */
   className?: string;
@@ -26,24 +24,24 @@ interface ChatTitleActionsProps {
  * 包含分享、收藏、定时任务、历史会话四个功能
  */
 const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
-  conversationInfo,
+  agentInfo,
   className,
 }) => {
   // 切换收藏与取消收藏
   const handleToggleCollect = () => {
-    if (!conversationInfo?.agent?.agentId) {
+    if (!agentInfo?.agentId) {
       message.error('智能体信息不完整');
       return;
     }
 
-    if (conversationInfo.agent.collect) {
+    if (agentInfo.collect) {
       // 取消收藏
-      apiUnCollectAgent(conversationInfo.agent.agentId)
+      apiUnCollectAgent(agentInfo.agentId)
         .then(() => {
           message.success('已取消收藏');
           // 更新本地状态
-          if (conversationInfo.agent) {
-            conversationInfo.agent.collect = false;
+          if (agentInfo) {
+            agentInfo.collect = false;
           }
         })
         .catch(() => {
@@ -51,12 +49,12 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
         });
     } else {
       // 添加收藏
-      apiCollectAgent(conversationInfo.agent.agentId)
+      apiCollectAgent(agentInfo.agentId)
         .then(() => {
           message.success('已添加到收藏');
           // 更新本地状态
-          if (conversationInfo.agent) {
-            conversationInfo.agent.collect = true;
+          if (agentInfo) {
+            agentInfo.collect = true;
           }
         })
         .catch(() => {
@@ -66,14 +64,15 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
   };
 
   // 分享功能
-  const handleShare = () => {
-    if (conversationInfo?.shareLink) {
-      // 使用统一的拷贝工具
-      copy(
-        conversationInfo.shareLink,
-        true,
-        '分享链接已复制到剪贴板',
-        '复制失败，请手动复制',
+  const handleShare = async () => {
+    if (agentInfo?.shareLink) {
+      // 使用统一的复制工具
+      await copyTextToClipboard(
+        agentInfo.shareLink,
+        () => {
+          message.success('分享链接已复制到剪贴板');
+        },
+        false, // 不显示默认成功消息，使用自定义消息
       );
     } else {
       message.info('暂无分享链接');
@@ -112,11 +111,9 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
         onKeyDown={(e) => e.key === 'Enter' && handleToggleCollect()}
         tabIndex={0}
         role="button"
-        aria-label={
-          conversationInfo?.agent?.collect ? '取消收藏' : '添加到收藏'
-        }
+        aria-label={agentInfo?.collect ? '取消收藏' : '添加到收藏'}
       >
-        {conversationInfo?.agent?.collect ? (
+        {agentInfo?.collect ? (
           <SvgIcon
             name="icons-chat-collected"
             className={cx(styles['action-icon'], styles['collected'])}

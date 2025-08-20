@@ -296,6 +296,7 @@ const Chat: React.FC = () => {
     messageViewScrollToBottom();
     setShowScrollBtn(false);
   };
+  console.log('conversationInfo', conversationInfo);
 
   return (
     <div className={cx('flex', 'h-full')}>
@@ -316,9 +317,8 @@ const Chat: React.FC = () => {
               >
                 {conversationInfo?.topic}
               </h3>
-
               {/* 右侧功能按钮 */}
-              <ChatTitleActions conversationInfo={conversationInfo} />
+              <ChatTitleActions agentInfo={conversationInfo?.agent} />
             </div>
           </div>
           <div className={cx(styles['chat-wrapper'], 'flex-1')}>

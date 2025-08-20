@@ -1,6 +1,6 @@
-import { copyJSON, copyText } from '@/utils/copy';
+import { copyTextToClipboard } from '@/utils/clipboard';
 import { CopyOutlined } from '@ant-design/icons';
-import { Button, message, Tooltip } from 'antd';
+import { Button, Tooltip } from 'antd';
 import React from 'react';
 
 export interface CopyIconButtonProps {
@@ -20,10 +20,6 @@ export interface CopyIconButtonProps {
   jsonSpace?: number;
   /** 提示文本 */
   tooltipTitle?: string;
-  /** 自定义成功消息 */
-  successMessage?: string;
-  /** 自定义失败消息 */
-  errorMessage?: string;
   /** 自定义样式 */
   style?: React.CSSProperties;
   /** 自定义类名 */
@@ -31,9 +27,9 @@ export interface CopyIconButtonProps {
 }
 
 /**
- * 拷贝图标按钮组件
- * 支持文本和 JSON 数据的拷贝
- * 使用统一的拷贝工具函数，提供一致的用户体验
+ * 复制图标按钮组件
+ * 使用统一的 clipboard 工具函数，支持文本和 JSON 数据的复制
+ * 提供一致的用户体验和错误处理
  */
 const CopyIconButton: React.FC<CopyIconButtonProps> = ({
   text,
@@ -44,48 +40,40 @@ const CopyIconButton: React.FC<CopyIconButtonProps> = ({
   showMessage = true,
   jsonSpace = 2,
   tooltipTitle = '复制',
-  successMessage,
-  errorMessage,
   style,
   className,
 }) => {
-  // 处理拷贝
+  // 处理复制
   const handleCopy = async () => {
     try {
-      let success = false;
-      let copiedText = '';
+      let copyText = '';
 
       if (data) {
-        // 拷贝 JSON 数据
-        success = await copyJSON(
-          data,
-          jsonSpace,
-          showMessage,
-          successMessage,
-          errorMessage,
-        );
-        copiedText = JSON.stringify(data, null, jsonSpace);
+        // 复制 JSON 数据
+        copyText = JSON.stringify(data, null, jsonSpace);
       } else if (text) {
-        // 拷贝文本
-        success = await copyText(
-          text,
-          showMessage,
-          successMessage,
-          errorMessage,
-        );
-        copiedText = text;
+        // 复制文本
+        copyText = text;
       } else {
-        if (showMessage) {
-          message.error(errorMessage || '没有可复制的内容');
+        // 没有可复制的内容
+        if (onCopy) {
+          onCopy('', false);
         }
         return;
       }
 
-      if (success && onCopy) {
-        onCopy(copiedText, true);
-      }
+      // 使用统一的复制方法
+      await copyTextToClipboard(
+        copyText,
+        (copiedText, result) => {
+          if (onCopy) {
+            onCopy(copiedText, result || false);
+          }
+        },
+        showMessage,
+      );
     } catch (error) {
-      console.error('拷贝失败:', error);
+      console.error('复制失败:', error);
       if (onCopy) {
         onCopy('', false);
       }
