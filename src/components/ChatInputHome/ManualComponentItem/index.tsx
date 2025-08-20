@@ -7,7 +7,7 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 const getIcon = (_item: AgentManualComponentInfo) => {
-  if (!_item.icon && _item.type === 'Plugin' && _item.name === '联网搜索') {
+  if (_item.type === 'Plugin' && _item.name === '联网搜索') {
     return 'icons-chat-network';
   }
   if (!_item.icon && _item.type === 'Model') {
@@ -59,7 +59,10 @@ const ManualComponentItem: React.FC<ManualComponentItemProps> = ({
             )}
             onClick={() => onSelectComponent?.(item)}
           >
-            <SvgIcon name={item.icon} style={{ marginRight: 8 }} />
+            <SvgIcon
+              name={item.icon}
+              style={{ marginRight: 8, width: 20, height: 20, borderRadius: 4 }}
+            />
             {item.name}
           </span>
         );
