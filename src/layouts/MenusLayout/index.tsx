@@ -204,7 +204,7 @@ const MenusLayout: React.FC<{
       <div
         className={cx(styles['nav-menus'])}
         style={{
-          width: isSecondMenuCollapsed ? 0 : SECOND_MENU_WIDTH - token.padding,
+          width: isSecondMenuCollapsed ? 0 : SECOND_MENU_WIDTH,
           paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
           opacity: isSecondMenuCollapsed ? 0 : 1,
         }}

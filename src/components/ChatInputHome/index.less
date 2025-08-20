@@ -3,6 +3,8 @@
 
 .chat-container {
   width: 100%;
+  margin: 0 auto;
+  max-width: 800px;
   gap: @margin;
   padding: @padding;
   border-radius: 20px;
@@ -161,5 +163,11 @@
       opacity: 1;
       visibility: visible;
     }
+  }
+}
+
+@media screen and (max-width: 720px) {
+  .chat-container {
+    max-width: 100%;
   }
 }
