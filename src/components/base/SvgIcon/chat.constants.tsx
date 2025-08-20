@@ -4,6 +4,7 @@ import { ReactComponent as ClearSvgFile } from '@/assets/icons/chat/clear.svg';
 import { ReactComponent as ClockSvgFile } from '@/assets/icons/chat/clock.svg';
 import { ReactComponent as CloseSvgFile } from '@/assets/icons/chat/close.svg';
 import { ReactComponent as CloseFillSvgFile } from '@/assets/icons/chat/close_fill.svg';
+import { ReactComponent as CloseRegularSvgFile } from '@/assets/icons/chat/close_regular.svg';
 import { ReactComponent as CollectSvgFile } from '@/assets/icons/chat/collect.svg';
 import { ReactComponent as CollectedSvgFile } from '@/assets/icons/chat/collected.svg';
 import { ReactComponent as CopySvgFile } from '@/assets/icons/chat/copy.svg';
@@ -35,6 +36,7 @@ const CloseFillSvg = wrapSvg(CloseFillSvgFile);
 const CloseSvg = wrapSvg(CloseSvgFile);
 const UserSvg = wrapSvg(UserSvgFile);
 const ChatSvg = wrapSvg(ChatSvgFile);
+const CloseRegularSvg = wrapSvg(CloseRegularSvgFile);
 
 export default {
   'icons-chat-send': SendSvg,
@@ -54,4 +56,5 @@ export default {
   'icons-chat-close': CloseSvg,
   'icons-chat-user': UserSvg,
   'icons-chat-chat': ChatSvg,
+  'icons-chat-close_regular': CloseRegularSvg,
 } as Record<string, React.FC>;

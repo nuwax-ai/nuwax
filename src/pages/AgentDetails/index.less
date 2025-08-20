@@ -1,35 +1,53 @@
 @import '@/styles/color';
 @import '@/styles/token';
 
+.title-box {
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  background-color: @colorBgContainer;
+  border-radius: 12px;
+
+  .title-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 40px;
+    padding: 16px 24px;
+    box-sizing: content-box;
+  }
+
+  .title {
+    margin-bottom: 0;
+  }
+}
+
 .main-content {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 0 10px;
+  height: 100%;
+  overflow-y: auto;
+  position: relative;
+  min-width: 800px;
+  width: 100%;
 
-  .title-box {
-    position: sticky;
-    top: 0;
-    z-index: 99;
-    background-color: @WHITE03;
+  //隐藏滚动条
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
-    .title {
-      position: sticky;
-      top: 0;
-      height: 60px;
-      line-height: 60px;
-      padding: 0 30px;
-      color: @BLANK17;
-      font-size: 16px;
-      text-align: center;
-      mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
-    }
+  .main-content-box {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
   .chat-wrapper {
     padding-bottom: 40px - 16px;
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
 
     .loading {
-      color: @BLUE08;
+      color: @colorPrimary;
     }
 
     .chat-inner {

@@ -18,15 +18,15 @@
   outline: none;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 4%);
+    background-color: @controlItemBgHover;
   }
 
   &:active {
-    background-color: rgba(0, 0, 0, 8%);
+    background-color: @controlItemBgActive;
   }
 
   &:focus {
-    background-color: rgba(0, 0, 0, 4%);
+    background-color: @controlItemBgActive;
   }
 
   .action-icon {
@@ -75,6 +75,16 @@
     .action-icon,
     .action-text {
       color: @BLANK20;
+    }
+  }
+}
+
+.more-menu {
+  :global {
+    .ant-dropdown-menu {
+      display: flex;
+      flex-direction: column;
+      gap: @paddingXxs;
     }
   }
 }

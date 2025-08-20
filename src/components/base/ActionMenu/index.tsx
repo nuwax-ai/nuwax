@@ -163,6 +163,7 @@ const ActionMenu: React.FC<ActionMenuProps> = ({
       {/* 更多下拉菜单 */}
       {moreActions.length > 0 && (
         <Dropdown
+          overlayClassName={styles['more-menu']}
           menu={{
             items:
               menuItemsWithDividers.length > 0

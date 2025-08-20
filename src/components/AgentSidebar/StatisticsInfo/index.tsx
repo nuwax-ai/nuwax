@@ -1,5 +1,5 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import { StatisticsInfoProps } from '@/types/interfaces/agentTask';
-import { CloseOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -13,11 +13,13 @@ const StatisticsInfo: React.FC<StatisticsInfoProps> = ({
 }) => {
   return (
     <header className={cx(styles.header, 'flex', 'items-center')}>
-      <CloseOutlined
-        className={cx('cursor-pointer', styles.close)}
+      <SvgIcon
+        name="icons-chat-close_regular"
+        className={styles.close}
         onClick={onClose}
         style={{
           display: visible ? 'block' : 'none',
+          fontSize: 24,
         }}
       />
     </header>

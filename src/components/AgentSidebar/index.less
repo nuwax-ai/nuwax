@@ -1,24 +1,33 @@
 @import '@/styles/color';
 @import '@/styles/token';
+@sidebarWidth: 434px;
 
 .rightSidebar {
-  width: 434px;
-  padding: 0 @padding;
+  width: @sidebarWidth;
   border-left: @lineWidth @lineType @colorBorderSecondary;
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out, width 0.2s ease-in-out;
+  position: relative;
+
+  &.hide {
+    width: 0;
+    padding: 0;
+    visibility: hidden;
+    opacity: 0;
+  }
+}
+// .container-scroll{
+//   padding: 0 @padding;
+// }
+.statistics-content {
+  padding: @padding @paddingLg;
 }
 
 .container {
-  position: sticky;
   box-sizing: border-box;
-  transition: opacity 0.3s ease-in-out, width 0.2s ease-in-out;
   height: 100%;
   z-index: 99;
-  visibility: visible;
-  opacity: 1;
-
-  .statistics-content {
-    padding: 0 10px;
-  }
 
   .container-content {
     width: 100%;
@@ -34,16 +43,9 @@
 
     .container-body {
       position: absolute;
-      left: 10px;
-      width: calc(100% - 20px);
+      left: 16px;
+      width: calc(@sidebarWidth - 32px);
     }
-  }
-
-  &.hide {
-    width: 0;
-    padding: 0;
-    visibility: hidden;
-    opacity: 0;
   }
 }
 

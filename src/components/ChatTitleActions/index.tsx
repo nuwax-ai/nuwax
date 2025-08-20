@@ -1,5 +1,6 @@
 import ActionMenu, { ActionItem } from '@/components/base/ActionMenu';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
+import { AgentDetailDto } from '@/types/interfaces/agent';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { message } from 'antd';
 import classNames from 'classnames';
@@ -10,11 +11,7 @@ const cx = classNames.bind(styles);
 
 interface ChatTitleActionsProps {
   /** 会话信息 */
-  agentInfo?: {
-    shareLink?: string;
-    agentId?: number;
-    collect?: boolean;
-  };
+  agentInfo?: AgentDetailDto | null | undefined;
   /** 自定义样式类名 */
   className?: string;
 }
@@ -29,14 +26,14 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
 }) => {
   // 切换收藏与取消收藏
   const handleToggleCollect = () => {
-    if (!agentInfo?.agentId) {
+    if (!agentInfo?.statistics?.targetId) {
       message.error('智能体信息不完整');
       return;
     }
 
     if (agentInfo.collect) {
       // 取消收藏
-      apiUnCollectAgent(agentInfo.agentId)
+      apiUnCollectAgent(agentInfo.statistics.targetId)
         .then(() => {
           message.success('已取消收藏');
           // 更新本地状态
@@ -49,7 +46,7 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
         });
     } else {
       // 添加收藏
-      apiCollectAgent(agentInfo.agentId)
+      apiCollectAgent(agentInfo.statistics.targetId)
         .then(() => {
           message.success('已添加到收藏');
           // 更新本地状态

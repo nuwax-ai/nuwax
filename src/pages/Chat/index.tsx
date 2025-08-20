@@ -317,7 +317,7 @@ const Chat: React.FC = () => {
               </Typography.Title>
 
               {/* 右侧功能按钮 */}
-              <ChatTitleActions agentInfo={conversationInfo?.agent} />
+              <ChatTitleActions agentInfo={agentDetail} />
             </div>
           </div>
           <div className={cx(styles['chat-wrapper'], 'flex-1')}>
