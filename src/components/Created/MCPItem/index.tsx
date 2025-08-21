@@ -46,10 +46,9 @@ const MCPItem: React.FC<MCPItemProps> = ({
           className={cx(styles['left-image-style'])}
         />
         <div className={cx('flex-1', styles['content-font'])}>
-          <p className={cx(styles['label-font-style'], 'mb-6')}>{item.name}</p>
+          <p className={cx(styles['label-font-style'])}>{item.name}</p>
           <p
             className={cx(
-              'mb-6',
               styles['created-description-style'],
               'text-ellipsis-2',
             )}

@@ -1,18 +1,19 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 // 每一个样式
 .container {
   height: 120px;
-  padding: 13px 23px;
+  padding: @paddingSm @paddingLg;
   box-sizing: border-box;
-  border-bottom: 1px solid @GRAY17;
+  border-bottom: @lineWidth solid @colorSplit;
 
   .left-image-style {
     width: 40px;
     height: 40px;
-    border-radius: 6px;
+    border-radius: @borderRadius;
     overflow: hidden;
-    margin-right: 13px;
+    margin-right: @margin;
 
     svg {
       width: 40px;
@@ -21,36 +22,52 @@
   }
 
   .content-font {
-    font-size: 12px;
-    font-weight: normal;
-    letter-spacing: 0;
-    color: @GRAY05;
-    margin-right: 10px;
+    // font-size: 12px;
+    // font-weight: normal;
+    // letter-spacing: 0;
+    // color: @GRAY05;
+    display: flex;
+    flex-direction: column;
+    gap: @marginXxs;
+    margin-right: @margin;
 
     .count-div-style {
+      font-size: @fontSizeSm;
+      color: @colorTextTertiary;
+      line-height: 19px;
+
       img {
         width: 12px;
         height: 12px;
-        margin-right: 6px;
+        margin-right: @marginXxs;
       }
     }
   }
 
   .fold-icon-style {
-    color: #999;
+    color: @colorTextTertiary;
     padding: 12px;
     margin-right: -12px;
-    font-size: 12px;
+    font-size: @fontSizeSm;
     transition: transform ease-in-out 0.3s, color ease-in-out 0.3s;
 
     &:hover {
-      color: #666;
+      color: @colorTextSecondary;
     }
   }
 
   .label-font-style {
-    font-size: 14px;
-    font-weight: bold;
-    color: @BLANK04;
+    font-size: @fontSizeLg;
+    font-weight: @fontWeightStrong;
+    color: @colorText;
+    line-height: 24px;
+  }
+
+  .created-description-style {
+    max-width: 580px;
+    word-break: break-word;
+    line-height: 22px;
+    font-size: @fontSize;
+    color: @colorTextSecondary;
   }
 }

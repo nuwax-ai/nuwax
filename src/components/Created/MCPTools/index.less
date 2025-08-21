@@ -1,9 +1,10 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .mcp-tools-style {
-  padding-left: 65px;
-  padding-right: 16px;
-  border-bottom: 1px solid @GRAY17;
+  padding-left: 65px + 16px;
+  padding-right: @padding;
+  border-bottom: @lineWidth solid @colorSplit;
 }
 
 .mcp-tools-item-style {
@@ -13,10 +14,20 @@
   padding: 12px 0;
   justify-content: space-between;
   align-items: flex-start;
-  border-bottom: 1px solid @GRAY17;
+  border-bottom: @lineWidth solid @colorSplit;
 
   &:last-child {
     border-bottom: none;
+  }
+}
+
+.add-button {
+  background: @colorPrimaryBg !important;
+
+  &.add-button-added {
+    background: transparent !important;
+    color: @colorText !important;
+    border-color: transparent !important;
   }
 }
 
@@ -29,11 +40,11 @@
 }
 
 .mcp-tools-item-name-style {
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-  line-height: 22px;
-  margin-bottom: 4px;
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+  color: @colorText;
+  line-height: @lineHeight;
+  margin-bottom: @marginXxs;
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -42,9 +53,9 @@
 }
 
 .mcp-tools-item-description-style {
-  font-size: 12px;
-  color: #666;
-  line-height: 18px;
+  font-size: @fontSizeSm;
+  color: @colorText;
+  line-height: @lineHeight;
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;

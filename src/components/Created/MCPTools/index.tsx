@@ -58,38 +58,50 @@ const MCPTools: React.FC<MCPToolsProps> = ({
       key={`${item.targetId}-tools`}
       className={cx(styles['mcp-tools-style'])}
     >
-      {tools.map((tool: any, index: number) => (
-        <div
-          key={`${item.targetId}-${index}-tools-${tool.name}`}
-          className={cx(styles['mcp-tools-item-style'])}
-        >
-          <div className={cx('dis-sb', styles['mcp-tools-item-content-style'])}>
-            <div className={cx(styles['mcp-tools-item-name-style'])}>
-              {tool.name}
-            </div>
-            <div className={cx(styles['mcp-tools-item-description-style'])}>
-              {tool.description || '暂无描述'}
-            </div>
-          </div>
-          <div className={cx(styles['mcp-tools-item-button-style'], 'dis-sb')}>
-            <Button
-              color="primary"
-              variant="outlined"
-              onClick={() => handleAddTool(tool.name, tool.description)}
-              disabled={
-                getToolLoading({ ...item, toolName: tool.name })
-                  ? false
-                  : isAdded({ ...item, toolName: tool.name }, addedStatus)
-              }
-              loading={getToolLoading({ ...item, toolName: tool.name })}
+      {tools.map((tool: any, index: number) => {
+        const isAddedState = isAdded(
+          { ...item, toolName: tool.name },
+          addedStatus,
+        );
+        const isCurrentLoading = getToolLoading({
+          ...item,
+          toolName: tool.name,
+        });
+        return (
+          <div
+            key={`${item.targetId}-${index}-tools-${tool.name}`}
+            className={cx(styles['mcp-tools-item-style'])}
+          >
+            <div
+              className={cx('dis-sb', styles['mcp-tools-item-content-style'])}
             >
-              {isAdded({ ...item, toolName: tool.name }, addedStatus)
-                ? '已添加'
-                : '添加'}
-            </Button>
+              <div className={cx(styles['mcp-tools-item-name-style'])}>
+                {tool.name}
+              </div>
+              <div className={cx(styles['mcp-tools-item-description-style'])}>
+                {tool.description || '暂无描述'}
+              </div>
+            </div>
+            <div
+              className={cx(styles['mcp-tools-item-button-style'], 'dis-sb')}
+            >
+              <Button
+                color="default"
+                variant="filled"
+                className={cx(
+                  styles['add-button'],
+                  isAddedState && styles['add-button-added'],
+                )}
+                onClick={() => handleAddTool(tool.name, tool.description)}
+                disabled={isCurrentLoading ? false : isAddedState}
+                loading={isCurrentLoading}
+              >
+                {isAddedState ? '已添加' : '添加'}
+              </Button>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
