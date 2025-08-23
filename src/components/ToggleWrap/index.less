@@ -1,11 +1,11 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .container {
   display: flex;
   width: 100%;
-  border-radius: 15px;
-  background: @WHITE;
   transition: all 0.3s ease;
+  border-left: @lineWidth solid @colorSplit;
 
   &.hidden {
     display: none;
@@ -14,29 +14,26 @@
   }
 
   .header {
-    height: 60px;
-    padding: 0 12px;
+    height: 40px;
+    padding: @padding @paddingLg;
+    box-sizing: content-box;
+    border-bottom: @lineWidth solid @colorSplit;
 
     h3 {
-      font-size: 18px;
-      font-weight: bold;
-      color: @BLANK04;
+      font-size: 20px;
+      line-height: 40px;
+      color: @colorText;
       white-space: nowrap;
     }
 
     .close {
-      margin-left: 8px;
-      font-size: 14px;
+      margin-left: @paddingXs;
+      font-size: @fontSizeLg;
       transition: opacity ease-in-out 0.2s;
 
       &:hover {
         opacity: 0.8;
       }
     }
-  }
-
-  .divider-horizontal {
-    border-bottom: 1px solid @GRAY06;
-    margin: 0 12px;
   }
 }

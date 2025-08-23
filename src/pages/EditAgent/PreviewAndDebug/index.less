@@ -1,19 +1,13 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .container {
   flex: 4;
   min-width: 340px;
-  border-radius: 10px;
-  background-color: @WHITE;
+  border-left: @lineWidth solid @colorSplit;
 
   .loading {
     color: @BLUE08;
-  }
-
-  .divider-horizontal {
-    height: 1px;
-    margin: 0 5px;
-    background-color: @GRAY06;
   }
 
   .main-content {

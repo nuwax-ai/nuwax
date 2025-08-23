@@ -1,24 +1,37 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .container {
-  height: 60px;
-  padding: 0 20px;
+  height: 40px;
+  padding: @padding @paddingLg;
+  box-sizing: content-box;
+  border-bottom: @lineWidth solid @colorSplit;
 
   h3 {
-    font-size: 18px;
-    font-weight: bold;
-    color: @BLANK04;
+    font-size: 20px;
+    font-weight: @fontWeightStrong;
+    color: @colorText;
   }
 
   .extra-box {
-    gap: 8px;
-    color: @BLANK04;
+    gap: @marginXs;
+    color: @colorText;
 
     .debug {
-      width: 60px;
-      height: 30px;
-      gap: 6px;
-      font-size: 12px;
+      border: none;
+      padding: @paddingXs @paddingSm;
+      font-size: @fontSizeLg;
+      line-height: 24px;
+      height: 24px;
+      color: @colorText;
+      gap: @paddingXs;
+      box-sizing: content-box;
+
+      :global {
+        .ant-btn-icon {
+          height: 20px;
+        }
+      }
     }
   }
 }

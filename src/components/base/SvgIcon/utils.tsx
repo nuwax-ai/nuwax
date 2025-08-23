@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import React from 'react';
-import styles from './common.less';
+import styles from './styles.less';
 const cx = classNames.bind(styles);
 /**
  * SvgIcon（基于 antd Icon 的自定义实现）

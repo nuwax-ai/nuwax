@@ -204,9 +204,7 @@ const EditAgent: React.FC = () => {
         // 点击发布按钮，打开发布智能体弹窗
         onPublish={() => setOpen(true)}
       />
-      <section
-        className={cx('flex', 'flex-1', 'px-16', 'py-16', styles.section)}
-      >
+      <section className={cx('flex', 'flex-1', styles.section)}>
         {/*编排*/}
         <div
           className={cx('radius-6', 'flex', 'flex-col', styles['edit-info'])}
@@ -217,7 +215,14 @@ const EditAgent: React.FC = () => {
             modelName={agentConfigInfo?.modelComponentConfig?.name}
             onClick={() => setOpenAgentModel(true)}
           />
-          <div className={cx('flex-1', 'flex', 'overflow-y')}>
+          <div
+            className={cx(
+              'flex-1',
+              'flex',
+              'overflow-y',
+              styles['edit-content'],
+            )}
+          >
             {/*系统提示词*/}
             <SystemTipsWord
               agentConfigInfo={agentConfigInfo}
@@ -225,7 +230,6 @@ const EditAgent: React.FC = () => {
               onChange={(value) => handleChangeAgent(value, 'systemPrompt')}
               onReplace={(value) => handleChangeAgent(value!, 'systemPrompt')}
             />
-            <div className={cx(styles['h-line'])} />
             {/*配置区域*/}
             <AgentArrangeConfig
               agentId={agentId}

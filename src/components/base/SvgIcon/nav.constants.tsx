@@ -1,3 +1,4 @@
+import { ReactComponent as BackwardSvgFile } from '@/assets/icons/nav/backward.svg';
 import { ReactComponent as ComponentsSvgFile } from '@/assets/icons/nav/components.svg';
 import { ReactComponent as DocSvgFile } from '@/assets/icons/nav/doc.svg';
 import { ReactComponent as EcosystemSvgFile } from '@/assets/icons/nav/ecosystem.svg';
@@ -16,7 +17,7 @@ import { ReactComponent as UserSvgFile } from '@/assets/icons/nav/user.svg';
 import { ReactComponent as WorkflowSvgFile } from '@/assets/icons/nav/workflow.svg';
 import { ReactComponent as WorkspaceSvgFile } from '@/assets/icons/nav/workspace.svg';
 import React from 'react';
-import { wrapSvg } from './common';
+import { wrapSvg } from './utils';
 
 const HomeSvg = wrapSvg(HomeSvgFile);
 const WorkspaceSvg = wrapSvg(WorkspaceSvgFile);
@@ -35,6 +36,7 @@ const ComponentsSvg = wrapSvg(ComponentsSvgFile);
 const SpaceSquareSvg = wrapSvg(SpaceSquareSvgFile);
 const UserSvg = wrapSvg(UserSvgFile);
 const PublishAuditSvg = wrapSvg(PublishAuditSvgFile);
+const BackwardSvg = wrapSvg(BackwardSvgFile);
 export default {
   'icons-nav-home': HomeSvg,
   'icons-nav-workspace': WorkspaceSvg,
@@ -53,4 +55,5 @@ export default {
   'icons-nav-space_square': SpaceSquareSvg,
   'icons-nav-user': UserSvg,
   'icons-nav-publish_audit': PublishAuditSvg,
+  'icons-nav-backward': BackwardSvg,
 } as Record<string, React.FC>;

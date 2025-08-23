@@ -1,25 +1,33 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .header {
-  gap: 10px;
-  border-bottom: 1px solid @BLANK01;
+  // gap: 10px;
+  padding: @padding @paddingLg;
+  // border-bottom: 1px solid @BLANK01;
   overflow-x: auto;
 
+  .icon-backward {
+    padding: @paddingXs;
+    margin-right: @marginLg;
+  }
+
   .avatar {
-    width: 40px;
-    height: 40px;
-    object-fit: cover;
+    width: 56px;
+    height: 56px;
+    border-radius: @borderRadius;
   }
 
   .header-info {
-    gap: 6px;
+    padding-left: @paddingSm;
+    // gap: 6px;
 
     .h-title {
-      max-width: 300px;
-      margin-right: 20px;
-      font-size: 14px;
-      font-weight: bold;
-      color: @BLANK04;
+      max-width: 360px;
+      margin-right: @marginSm;
+      font-size: 20px;
+      font-weight: @fontWeightStrong;
+      color: @colorText;
       white-space: nowrap;
     }
 
@@ -28,9 +36,9 @@
     }
 
     .agent-rel-info {
-      gap: 6px;
-      color: @BLANK04;
-      font-size: 12px;
+      gap: @marginXs;
+      color: @colorTextTertiary;
+      font-size: @fontSize;
 
       img {
         width: 12px;
@@ -42,10 +50,31 @@
       .space-name {
         max-width: 200px;
       }
+    }
+  }
 
-      .save-time {
-        color: @GRAY05;
+  .save-time-box {
+    gap: @paddingXs;
+
+    .save-time {
+      color: @colorTextTertiary;
+    }
+
+    :global {
+      .ant-tag {
+        margin-inline-end: 0;
       }
+    }
+  }
+
+  .fold-box {
+    margin-left: @marginLg;
+    padding: @paddingXs @paddingSm;
+
+    .fold-btn {
+      gap: @paddingXs;
+      color: @colorText;
+      font-size: @fontSize;
     }
   }
 
@@ -60,19 +89,9 @@
 
   .right-box {
     margin-left: auto;
-    gap: 10px;
-
-    .fold {
-      width: 16px;
-    }
-
-    .ico {
-      color: @BLANK09;
-      font-size: 16px;
-    }
 
     .publish-btn {
-      margin-left: 20px;
+      margin-left: @marginXs;
     }
   }
 }

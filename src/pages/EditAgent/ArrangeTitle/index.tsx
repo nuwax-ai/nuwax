@@ -21,7 +21,6 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
         'flex',
         'content-between',
         'items-center',
-        'px-16',
         styles['edit-header'],
       )}
     >

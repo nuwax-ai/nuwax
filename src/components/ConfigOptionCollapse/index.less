@@ -1,3 +1,11 @@
+@import '@/styles/token';
+
 .header {
   background-color: transparent;
+
+  :global {
+    .ant-collapse-header {
+      padding: @paddingXs !important;
+    }
+  }
 }

@@ -1,11 +1,13 @@
 import Icon from '@ant-design/icons';
 import React from 'react';
 import CHAT_ICON_MAP from './chat.constants';
+import COMMON_ICON_MAP from './common.constants';
 import NAV_ICON_MAP from './nav.constants';
 
 const nameToComponent: Record<string, React.FC> = {
   ...NAV_ICON_MAP,
   ...CHAT_ICON_MAP,
+  ...COMMON_ICON_MAP,
 };
 
 export interface SvgIconProps
