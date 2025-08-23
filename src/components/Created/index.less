@@ -29,7 +29,7 @@
     }
 
     .ant-modal-body {
-      height: calc(100% - 75px);
+      height: calc(100% - 40px - @padding);
     }
 
     .ant-modal-content {
@@ -39,29 +39,27 @@
 }
 
 // 头部样式
-.created-title {
-  .segmented-style {
-    --xagi-segmented-track-padding: 2px;
+.segmented-style {
+  --xagi-segmented-track-padding: 2px;
 
-    border-radius: @borderRadius;
+  border-radius: @borderRadius;
 
-    :global {
-      .ant-segmented-group {
-        gap: @paddingXxs;
+  :global {
+    .ant-segmented-group {
+      gap: @paddingXxs;
 
-        .ant-segmented-item-label {
-          font-size: @fontSize;
-        }
+      .ant-segmented-item-label {
+        font-size: @fontSize;
+      }
 
-        .ant-segmented-item {
-          border-radius: calc(
-            @borderRadius - var(--xagi-segmented-track-padding)
-          );
+      .ant-segmented-item {
+        border-radius: calc(
+          @borderRadius - var(--xagi-segmented-track-padding)
+        );
 
-          &.ant-segmented-item-selected {
-            color: @colorPrimaryText;
-            font-weight: @fontWeightStrong;
-          }
+        &.ant-segmented-item-selected {
+          color: @colorPrimaryText;
+          font-weight: @fontWeightStrong;
         }
       }
     }

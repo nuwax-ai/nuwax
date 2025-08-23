@@ -1,114 +1,141 @@
 @import '@/styles/color';
+@import '@/styles/token';
 // 去除当前model的padding
 .created-modal-style {
-  div:first-child {
-    height: 100%;
-  }
+  :global {
+    .ant-modal-header {
+      margin-bottom: 0;
+      height: 40px;
+      padding: @padding @paddingLg;
+      box-sizing: content-box;
+      // background-color: @WHITE04;
+    }
 
-  .ant-modal-header {
-    margin-bottom: 0;
-    height: 75px;
-    padding: 20px 0;
-    background-color: @WHITE04;
-  }
+    .ant-modal-title {
+      font-weight: unset;
+    }
 
-  .ant-modal-body {
-    height: calc(100% - 75px);
-  }
+    .ant-modal-close {
+      height: 40px;
+      width: 44px;
+      top: @padding;
+      right: @paddingLg;
 
-  .ant-modal-content {
-    padding: 0;
-  }
+      .ant-modal-close-x {
+        font-size: 20px;
+        color: @colorTextSecondary;
+      }
+    }
 
-  .margin-bottom {
-    margin-bottom: 16px;
-  }
+    // .ant-modal-body {
+    //   height: calc(100% - 40px - @padding);
+    // }
 
-  .margin-bottom-6 {
-    margin-bottom: 6px;
+    .ant-modal-content {
+      padding: 0;
+    }
   }
-
-  .margin-right-6 {
-    margin-right: 6px;
-    margin-left: 6px;
-  }
-
-  height: 80%;
 }
 
+.add-button {
+  background: @colorPrimaryBg !important;
+
+  &.add-button-added {
+    background: transparent !important;
+    color: @colorText !important;
+    border-color: transparent !important;
+  }
+}
+
+.filter-bar {
+  justify-content: flex-end;
+  padding: @padding @paddingLg;
+  border-bottom: @lineWidth solid @colorSplit;
+}
 // 头部样式
-.created-title {
-  height: 100%;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-  background-color: @WHITE04;
-  padding-left: 24px;
+.segmented-style {
+  --xagi-segmented-track-padding: 2px;
 
-  .radio-title-style {
-    .ant-radio-button-wrapper {
-      border: none;
-      transition: none;
-    }
+  border-radius: @borderRadius;
 
-    .radio-button-style {
-      background-color: @WHITE04;
-      font-size: 18px;
-      border-radius: 0;
-      box-shadow: 1px 0 0 0 @GRAY06 inset;
-      padding: 0 20px;
-      margin: 2px 0;
-    }
+  :global {
+    .ant-segmented-group {
+      gap: @paddingXxs;
 
-    // 移除第一个单选按钮的box-shadow
-    .first-radio-style {
-      box-shadow: none;
+      .ant-segmented-item-label {
+        font-size: @fontSize;
+      }
+
+      .ant-segmented-item {
+        border-radius: calc(
+          @borderRadius - var(--xagi-segmented-track-padding)
+        );
+
+        &.ant-segmented-item-selected {
+          color: @colorPrimaryText;
+          font-weight: @fontWeightStrong;
+        }
+      }
     }
   }
+}
+
+.created-title-text {
+  margin-right: @paddingLg;
+  font-size: @fontSizeLg;
+  color: @colorText;
+  line-height: 40px;
 }
 
 // 内容部分
 .created-container {
-  height: 100%;
-  border-top: 1px solid @GRAY06;
+  height: 70vh;
+  max-height: 700px;
+  min-height: 400px;
+  border-top: @lineWidth solid @colorSplit;
   overflow: hidden;
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
   // 侧边栏样式
-  .aside-style {
-    box-sizing: border-box;
-    padding: 0 20px;
-    background-color: @GRAY06;
-    height: 100%;
-    padding-top: 20px;
-    width: 270px;
-    // 替换menu的默认选中样式
-    .ant-menu-item-selected {
-      color: @BLANK04;
-      background-color: @BLANK06;
-    }
-  }
-  // 消除右侧的边框
-  .ant-menu-light.ant-menu-root.ant-menu-inline {
-    border-inline-end: none;
-    background-color: @GRAY06;
-  }
+  // .aside-style {
+  //   box-sizing: border-box;
+  //   padding: 0 20px;
+  //   background-color: @GRAY06;
+  //   height: 100%;
+  //   padding-top: 20px;
+  //   width: 270px;
+  //   // 替换menu的默认选中样式
+  //   .ant-menu-item-selected {
+  //     color: @BLANK04;
+  //     background-color: @BLANK06;
+  //   }
+  // }
+  // // 消除右侧的边框
+  // .ant-menu-light.ant-menu-root.ant-menu-inline {
+  //   border-inline-end: none;
+  //   background-color: @GRAY06;
+  // }
   // 右侧主题内容
   .main-style {
-    background-color: @WHITE04;
+    // background-color: @WHITE04;
     height: 100%;
     overflow-y: auto;
+    // 添加 鼠标不可选择
+    user-select: none;
+    padding: 0 @paddingLg;
 
     // 每一个样式
     .list-item-style {
-      height: 120px;
-      padding: 13px 23px;
-      box-sizing: border-box;
-      border-bottom: 1px solid @GRAY06;
+      padding: @padding 0;
+      box-sizing: content-box;
+      border-bottom: @lineWidth solid @colorSplit;
 
       .left-image-style {
         width: 40px;
         height: 40px;
-        margin-right: 13px;
+        border-radius: @borderRadius;
+        overflow: hidden;
+        margin-right: @margin;
 
         svg {
           width: 40px;
@@ -117,27 +144,29 @@
       }
 
       .content-font {
-        font-family: 'Alimama Agile VF';
-        font-size: 12px;
-        font-weight: normal;
-        // line-height: 22px;
-        letter-spacing: 0;
-        color: @GRAY05;
-        margin-right: 10px;
+        margin-right: @margin;
+        display: flex;
+        flex-direction: column;
+        gap: @marginXxs;
 
         .count-div-style {
+          font-size: @fontSizeSm;
+          color: @colorTextTertiary;
+          line-height: 19px;
+
           img {
             width: 12px;
             height: 12px;
-            margin-right: 6px;
+            margin-right: @marginXxs;
           }
         }
       }
 
       .label-font-style {
-        font-size: 14px;
-        font-weight: bold;
-        color: @BLANK04;
+        font-size: @fontSizeLg;
+        font-weight: @fontWeightStrong;
+        color: @colorText;
+        line-height: 24px;
       }
     }
   }
@@ -152,10 +181,10 @@
 }
 
 .created-description-style {
-  max-height: 35px;
+  max-height: 22px;
   max-width: 580px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
   word-break: break-word;
+  line-height: 22px;
+  font-size: @fontSize;
+  color: @colorTextSecondary;
 }
