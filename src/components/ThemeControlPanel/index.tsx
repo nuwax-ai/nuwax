@@ -1,7 +1,7 @@
-import React from 'react';
-import { Popover, Radio, Space } from 'antd';
-import { useIntl } from 'umi';
 import useGlobalSettings from '@/hooks/useGlobalSettings';
+import { ColorPicker, Popover, Radio, Space } from 'antd';
+import React from 'react';
+import { useIntl } from 'umi';
 import './index.less';
 
 /**
@@ -28,6 +28,10 @@ interface ThemeControlPanelProps {
   language: string;
   /** 切换语言的回调函数 */
   toggleLanguage: () => void;
+  /** 当前主题色 */
+  primaryColor: string;
+  /** 设置主题色的回调函数 */
+  setPrimaryColor: (color: string) => void;
   /** 当前背景图片ID */
   backgroundImageId: string;
   /** 设置背景图片的回调函数 */
@@ -58,8 +62,8 @@ const BackgroundImageSelector: React.FC<{
             <Radio key={bg.id} value={bg.id}>
               <div className="bg-option">
                 <div className="bg-preview">
-                  <img 
-                    src={bg.preview} 
+                  <img
+                    src={bg.preview}
                     alt={bg.name}
                     className="bg-preview-img"
                   />
@@ -79,6 +83,8 @@ const ThemeControlPanel: React.FC<ThemeControlPanelProps> = ({
   toggleTheme,
   language,
   toggleLanguage,
+  primaryColor,
+  setPrimaryColor,
   backgroundImageId,
   setBackgroundImage,
 }) => {
@@ -117,7 +123,10 @@ const ThemeControlPanel: React.FC<ThemeControlPanelProps> = ({
 
       {/* 主题色选择器 */}
       <div className="color-picker">
-        {/* 主题色选择器暂时隐藏，避免导入问题 */}
+        <ColorPicker
+          value={primaryColor}
+          onChangeComplete={(c) => setPrimaryColor(c.toHexString())}
+        />
       </div>
 
       {/* 分隔符 */}
