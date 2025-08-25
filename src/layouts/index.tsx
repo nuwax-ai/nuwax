@@ -221,7 +221,10 @@ const Layout: React.FC = () => {
         style={sidebarStyle}
       >
         {/* 菜单栏 */}
-        <MenusLayout overrideContainerStyle={menuOverrideStyle} />
+        <MenusLayout
+          overrideContainerStyle={menuOverrideStyle}
+          isMobile={isMobile}
+        />
 
         {/* 悬浮菜单 */}
         <HoverMenu />

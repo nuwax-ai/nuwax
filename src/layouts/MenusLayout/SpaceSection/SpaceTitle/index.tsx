@@ -1,4 +1,4 @@
-import { DownOutlined } from '@ant-design/icons';
+import { SvgIcon } from '@/components/base';
 import { Popover, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
@@ -57,7 +57,7 @@ const SpaceTitle: React.FC<SpaceTitleProps> = ({ name }) => {
               {name || '个人空间'}
             </Typography.Title>
           </div>
-          <DownOutlined className={cx(styles['icon-down'])} />
+          <SvgIcon name="icons-common-caret_down" rotate={open ? 180 : 0} />
         </div>
       </Popover>
       {/*创建团队空间*/}

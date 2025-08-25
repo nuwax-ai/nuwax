@@ -6,7 +6,7 @@
   max-height: 500px;
 
   .p-header {
-    gap: 8px;
+    gap: @marginXs;
 
     .icon {
       color: @colorPrimary;
@@ -19,25 +19,31 @@
   }
 
   .divider {
-    margin: 12px auto;
+    margin: @marginSm auto;
   }
 
   .team-info {
     height: 32px;
     padding: 0 22px;
-    gap: 6px;
+    gap: @marginXxs;
     color: @colorText;
     cursor: pointer;
 
     &:hover {
       background-color: @colorBgTextHover;
-      border-radius: 6px;
+      border-radius: @borderRadiusSm;
     }
   }
 
   .create-team {
     padding: 0 22px;
-    margin-top: 6px;
-    gap: 6px;
+    height: 32px;
+    line-height: 32px;
+    gap: @marginXxs;
+
+    &:hover {
+      background-color: @colorBgTextHover;
+      border-radius: @borderRadiusSm;
+    }
   }
 }

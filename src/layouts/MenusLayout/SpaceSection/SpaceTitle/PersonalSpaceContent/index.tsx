@@ -1,9 +1,10 @@
+import { SvgIcon } from '@/components/base';
 import { SPACE_ID } from '@/constants/home.constants';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
 import type { PersonalSpaceContentType } from '@/types/interfaces/layouts';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
-import { CheckOutlined, PlusCircleOutlined } from '@ant-design/icons';
+import { CheckOutlined } from '@ant-design/icons';
 import { Divider } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -112,7 +113,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
         className={cx(styles['create-team'], 'flex', 'cursor-pointer')}
         onClick={onCreateTeam}
       >
-        <PlusCircleOutlined />
+        <SvgIcon name="icons-common-plus" style={{ fontSize: 16 }} />
         <span className={cx('flex-1', 'text-ellipsis')}>创建团队空间</span>
       </div>
     </div>

@@ -1,5 +1,4 @@
-import menuIcon from '@/assets/images/menu.png';
-import { Button } from 'antd';
+import { SvgIcon } from '@/components/base';
 import React from 'react';
 import styles from './MobileMenu.less';
 
@@ -26,17 +25,14 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
       className={styles.mobileMenuBtn}
       style={{
         left: menuWidth,
-        marginLeft: isOpen ? '-36px' : '6px', // 建议迁移到less
+        marginLeft: isOpen ? '-14px' : '14px', // 建议迁移到less
         transition: 'margin-left 0.3s',
       }}
     >
-      <Button
-        type="text"
-        aria-label={isOpen ? '关闭菜单/Close menu' : '展开菜单/Open menu'}
+      <SvgIcon
+        name="icons-common-caret_left"
         onClick={onToggle}
-        icon={
-          <img src={menuIcon} style={{ width: 20, height: 20 }} alt="menu" />
-        }
+        rotate={isOpen ? 0 : 180}
       />
     </div>
     {/* 遮罩层，仅在菜单展开时显示 */}

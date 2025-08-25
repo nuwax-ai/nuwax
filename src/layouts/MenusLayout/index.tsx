@@ -29,7 +29,8 @@ const cx = classNames.bind(styles);
  */
 const MenusLayout: React.FC<{
   overrideContainerStyle?: React.CSSProperties;
-}> = ({ overrideContainerStyle }) => {
+  isMobile?: boolean;
+}> = ({ overrideContainerStyle, isMobile = false }) => {
   const location = useLocation();
   const { setOpenMessage, isSecondMenuCollapsed } = useModel('layout');
   const [tabType, setTabType] = useState<TabsEnum>();
@@ -178,6 +179,12 @@ const MenusLayout: React.FC<{
     }
     return true;
   }, [tabType]);
+  const backgroundColor = useMemo(() => {
+    if (isMobile) {
+      return token.colorBgContainer;
+    }
+    return 'transparent';
+  }, [isMobile]);
   return (
     <div className={cx(styles.container, 'flex')}>
       {/*一级导航菜单栏*/}
@@ -190,6 +197,7 @@ const MenusLayout: React.FC<{
         )}
         style={{
           width: FIRST_MENU_WIDTH,
+          backgroundColor,
         }}
       >
         <Header />
@@ -207,6 +215,7 @@ const MenusLayout: React.FC<{
           width: isSecondMenuCollapsed ? 0 : SECOND_MENU_WIDTH,
           paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
           opacity: isSecondMenuCollapsed ? 0 : 1,
+          backgroundColor,
         }}
       >
         {!isSecondMenuCollapsed && (
