@@ -6,6 +6,20 @@
   :global {
     .ant-collapse-header {
       padding: @paddingXs !important;
+
+      &:hover {
+        background-color: @colorFillTertiary;
+        // border-radius: @borderRadius;
+        background-color: transparent;
+
+        .ant-collapse-header-text {
+          color: @colorTextSecondary;
+        }
+      }
+    }
+
+    .ant-collapse-header-text {
+      font-weight: @fontWeightStrong;
     }
   }
 }
