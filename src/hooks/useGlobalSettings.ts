@@ -121,6 +121,9 @@ export const useGlobalSettings = () => {
   const setBackgroundImage = (backgroundImageId: string) => {
     backgroundService.setBackground(backgroundImageId);
     saveSettings({ ...settings, backgroundImageId });
+    setTimeout(() => {
+      window.location.reload();
+    }, 300);
   };
 
   // 获取当前背景图片（从全局服务）
