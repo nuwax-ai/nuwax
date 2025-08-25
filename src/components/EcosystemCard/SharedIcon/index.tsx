@@ -4,6 +4,7 @@ import {
   ICON_EDIT,
   ICON_OFFLINED,
   ICON_PUBLISHED,
+  ICON_RECOMMEND,
   ICON_SEAL,
 } from './images.constants';
 import styles from './index.less';
@@ -52,7 +53,7 @@ export default function SharedIcon({
       case EcosystemShareStatusEnum.REJECTED:
         return (
           <div className={cx(styles.container)}>
-            <ICON_SEAL />
+            <ICON_RECOMMEND />
             <span className={styles.text}>已驳回</span>
           </div>
         );
