@@ -21,6 +21,7 @@ const cx = classNames.bind(styles);
  */
 const SingleAgent: React.FC<SingleAgentProps> = ({
   onClick,
+  extra,
   publishedItemInfo,
   onToggleCollectSuccess,
 }) => {
@@ -75,21 +76,24 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
       footer={
         <>
           <footer className={cx('flex', 'items-center', styles.footer)}>
-            {/*用户人数*/}
-            <span className={cx(styles.text)}>
-              <ICON_USER />
-              <span>{statistics?.userCount || 0}</span>
-            </span>
-            {/*会话次数*/}
-            <span className={cx(styles.text)}>
-              <ICON_MESSAGE />
-              <span>{statistics?.convCount || 0}</span>
-            </span>
-            {/*收藏次数*/}
-            <span className={cx(styles.text)}>
-              {collect ? <ICON_STAR_FILL /> : <ICON_STAR />}
-              <span>{statistics?.collectCount || 0}</span>
-            </span>
+            <div className={cx('flex', 'items-center', styles['count-box'])}>
+              {/*用户人数*/}
+              <span className={cx(styles.text)}>
+                <ICON_USER />
+                <span>{statistics?.userCount || 0}</span>
+              </span>
+              {/*会话次数*/}
+              <span className={cx(styles.text)}>
+                <ICON_MESSAGE />
+                <span>{statistics?.convCount || 0}</span>
+              </span>
+              {/*收藏次数*/}
+              <span className={cx(styles.text)}>
+                {collect ? <ICON_STAR_FILL /> : <ICON_STAR />}
+                <span>{statistics?.collectCount || 0}</span>
+              </span>
+            </div>
+            {extra}
           </footer>
           <div className={cx(styles['action-box'], 'flex', 'items-center')}>
             <Button type="primary" block icon={<ICON_MESSAGE />}>
@@ -101,6 +105,7 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
             >
               {collect ? <ICON_STAR_FILL /> : <ICON_STAR />}
             </span>
+            {extra}
           </div>
         </>
       }

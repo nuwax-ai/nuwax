@@ -9,14 +9,14 @@ import { TemplateItemProps } from '@/types/interfaces/square';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
-import styles from './index.less';
 
-const cx = classNames.bind(styles);
+const cx = classNames;
 
 // 模板组件
 const TemplateItem: React.FC<TemplateItemProps> = ({
   publishedItemInfo,
   onClick,
+  extra,
 }) => {
   const { targetType, icon, name, publishUser, description, created } =
     publishedItemInfo;
@@ -50,13 +50,17 @@ const TemplateItem: React.FC<TemplateItemProps> = ({
       defaultIcon={componentIcon}
       onClick={onClick}
       extra={
-        <span className={cx('text-ellipsis', 'flex-1', styles.time)}>
+        <span className={cx('text-ellipsis', 'flex-1')}>
           发布于 {dayjs(created).format('YYYY-MM-DD')}
         </span>
       }
       footer={
-        <footer className={cx('flex', 'items-center', styles.footer)}>
-          <AgentType type={targetType as unknown as AgentComponentTypeEnum} />
+        <footer className={cx('flex', 'items-center')}>
+          <AgentType
+            type={targetType as unknown as AgentComponentTypeEnum}
+            className="mr-auto"
+          />
+          {extra}
         </footer>
       }
     />

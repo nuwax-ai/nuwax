@@ -14,6 +14,7 @@ const cx = classNames.bind(styles);
 
 interface AgentTypeProps {
   type: AgentComponentTypeEnum;
+  className?: string;
 }
 
 // 智能体类型组件映射
@@ -58,11 +59,18 @@ const AgentTypeMap: Record<
  * @param type - 智能体类型
  * @returns
  */
-const AgentType: React.FC<AgentTypeProps> = ({ type }) => {
+const AgentType: React.FC<AgentTypeProps> = ({ type, className }) => {
   const { icon, title, styleClassName } = AgentTypeMap[type];
 
   return (
-    <div className={cx('flex items-center', styles.container, styleClassName)}>
+    <div
+      className={cx(
+        'flex items-center',
+        styles.container,
+        styleClassName,
+        className,
+      )}
+    >
       {icon}
       <span>{title}</span>
     </div>
