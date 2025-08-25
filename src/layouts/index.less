@@ -2,6 +2,24 @@
 
 .container {
   background-color: @colorBgLayout;
+  position: relative;
+  
+  // 背景图片样式
+  &::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    background-image: var(--xagi-background-image, none);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    transition: background-image 0.3s ease;
+  }
 }
 
 // 移动端菜单容器隐藏时的样式
@@ -16,4 +34,14 @@
   border-radius: 12px;
   box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 8%);
   z-index: 1;
+  // 确保内容区域有半透明背景，提高可读性
+  backdrop-filter: blur(2px);
+}
+
+// 暗色主题下的背景适配
+[data-theme='dark'] {
+  .page-container {
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+  }
 }

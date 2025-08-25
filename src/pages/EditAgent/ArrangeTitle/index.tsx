@@ -1,6 +1,6 @@
+import { SvgIcon } from '@/components/base';
 import ConditionRender from '@/components/ConditionRender';
 import type { ArrangeTitleProps } from '@/types/interfaces/agentConfig';
-import { CaretDownOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -38,7 +38,7 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
           <img src={icon} alt="" />
         </ConditionRender>
         <span>{modelName}</span>
-        <CaretDownOutlined />
+        <SvgIcon name="icons-common-caret_down" />
       </div>
     </div>
   );

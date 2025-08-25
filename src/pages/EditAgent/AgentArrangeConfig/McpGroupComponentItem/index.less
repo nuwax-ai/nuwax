@@ -1,29 +1,25 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .container {
-  margin-bottom: 6px;
+  margin-bottom: @marginXxs;
+  background-color: @colorFillTertiary;
+  border-radius: @borderRadius;
 
   .group-mcp-item {
-    gap: 6px;
-    height: 48px;
-    padding: 6px 16px;
-    border-radius: 4px;
-    background-color: @WHITE;
-    border: 1px solid transparent;
+    gap: @marginSm;
+    padding: @paddingXs;
+    // border: 1px solid transparent;
     cursor: default;
 
-    &.border {
-      border-color: @BLANK18;
-    }
-
-    &:hover {
-      background-color: @BLANK18;
-    }
+    // &.border {
+    //   border-color: @colorFillTertiary;
+    // }
 
     .img-box {
       display: inline-block;
-      width: 24px;
-      height: 24px;
+      width: 48px;
+      height: 48px;
       overflow: hidden;
 
       img {
@@ -35,18 +31,20 @@
 
     .name {
       display: inline-block;
-      color: @BLANK11;
-      font-size: 12px;
+      color: @colorText;
+      font-size: @fontSize;
+      line-height: @lineHeight;
     }
 
     .desc {
-      color: @BLANK13;
-      font-size: 12px;
+      color: @colorTextTertiary;
+      font-size: @fontSize;
+      line-height: @lineHeight;
     }
 
     .extra-box {
-      color: @GRAY05;
-      font-size: 12px;
+      color: @colorTextTertiary;
+      font-size: @fontSizeSm;
 
       .down-icon {
         transform: rotate(-90deg);
@@ -61,11 +59,8 @@
 
   .group-mcp-item-children {
     border-radius: 0 !important;
-    border-bottom: 1px solid @GRAY01;
+    border-top: @lineWidth solid @colorSplit;
     margin-bottom: 0 !important;
-
-    &:last-child {
-      border-bottom: none;
-    }
+    background-color: transparent;
   }
 }

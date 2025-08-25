@@ -1,0 +1,131 @@
+.background-quick-switch {
+  display: inline-block;
+
+  .ant-space {
+    gap: 8px;
+  }
+
+  .ant-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .anticon {
+      font-size: 14px;
+    }
+  }
+}
+
+// 弹出层样式
+.background-quick-switch-popover {
+  min-width: 280px;
+  max-height: 400px;
+  overflow-y: auto;
+
+  .popover-title {
+    font-weight: 500;
+    margin-bottom: 12px;
+    color: #333;
+    font-size: 14px;
+    text-align: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .bg-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+
+    .bg-preview {
+      width: 40px;
+      height: 24px;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid #d9d9d9;
+      flex-shrink: 0;
+
+      .bg-preview-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    .bg-name {
+      font-size: 13px;
+      color: #333;
+    }
+  }
+
+  // 自定义Radio样式
+  .ant-radio-wrapper {
+    margin-right: 0;
+    margin-bottom: 8px;
+    width: 100%;
+
+    .ant-radio {
+      margin-right: 8px;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+// 暗色主题适配
+[data-theme='dark'] {
+  .background-quick-switch-popover {
+    .popover-title {
+      color: #fff;
+      border-bottom-color: #303030;
+    }
+
+    .bg-option {
+      .bg-name {
+        color: #fff;
+      }
+    }
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .background-quick-switch {
+    .ant-space {
+      gap: 4px;
+    }
+
+    .ant-btn {
+      padding: 4px 8px;
+      font-size: 12px;
+
+      .anticon {
+        font-size: 12px;
+      }
+    }
+  }
+
+  .background-quick-switch-popover {
+    min-width: 240px;
+
+    .bg-option {
+      .bg-preview {
+        width: 32px;
+        height: 20px;
+      }
+
+      .bg-name {
+        font-size: 12px;
+      }
+    }
+  }
+}

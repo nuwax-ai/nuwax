@@ -215,7 +215,7 @@ const MenusLayout: React.FC<{
             bodyWidth={SECOND_MENU_WIDTH - token.padding * 2}
             style={{
               width: '100%',
-              padding: '12px 0',
+              padding: `${token.paddingSM} 0`,
             }}
           >
             <div

@@ -64,7 +64,7 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
           icon
         )}
       </span>
-      <Typography.Text className={cx('flex-1')} ellipsis={true}>
+      <Typography.Text className={cx('flex-1', styles.name)} ellipsis={true}>
         {name}
       </Typography.Text>
       {onCancelCollect && (

@@ -39,6 +39,9 @@ const Layout: React.FC = () => {
     primaryColor,
     setPrimaryColor,
     isDarkMode,
+    backgroundImageId,
+    setBackgroundImage,
+    getBackgroundImageStyle,
   } = useGlobalSettings();
 
   // 状态管理
@@ -193,7 +196,10 @@ const Layout: React.FC = () => {
   console.log('token', token);
 
   return (
-    <div className={cx('flex', 'h-full', styles.container)}>
+    <div
+      className={cx('flex', 'h-full', styles.container)}
+      style={getBackgroundImageStyle}
+    >
       {/* 顶部右侧全局操作：主题、语言、主色 */}
       {isDevOrTest && (
         <ThemeControlPanel
@@ -203,6 +209,8 @@ const Layout: React.FC = () => {
           toggleLanguage={toggleLanguage}
           primaryColor={primaryColor}
           setPrimaryColor={setPrimaryColor}
+          backgroundImageId={backgroundImageId}
+          setBackgroundImage={setBackgroundImage}
         />
       )}
       {/* 侧边菜单栏及弹窗区域 */}

@@ -1,0 +1,212 @@
+.global-background-manager {
+  padding: 24px;
+  background: #f5f5f5;
+  min-height: 100vh;
+
+  .control-panel {
+    margin-bottom: 24px;
+    
+    .ant-card-head {
+      background: #fff;
+      border-bottom: 1px solid #f0f0f0;
+    }
+  }
+
+  .background-list {
+    .ant-card-head {
+      background: #fff;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .background-item {
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      &.active {
+        border-color: #1890ff;
+        box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+      }
+
+      .background-preview {
+        position: relative;
+        height: 120px;
+        overflow: hidden;
+        border-radius: 6px;
+        margin-bottom: 12px;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          cursor: pointer;
+          transition: transform 0.3s ease;
+
+          &:hover {
+            transform: scale(1.05);
+          }
+        }
+
+        .current-badge {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          background: #52c41a;
+          color: white;
+          padding: 2px 8px;
+          border-radius: 10px;
+          font-size: 12px;
+          font-weight: 500;
+        }
+      }
+
+      .background-info {
+        text-align: center;
+
+        .background-name {
+          font-weight: 500;
+          color: #262626;
+          margin-bottom: 4px;
+          font-size: 14px;
+        }
+
+        .background-id {
+          color: #8c8c8c;
+          font-size: 12px;
+          font-family: monospace;
+        }
+      }
+
+      .ant-card-actions {
+        background: #fafafa;
+        border-top: 1px solid #f0f0f0;
+
+        li {
+          margin: 0;
+          
+          .anticon {
+            font-size: 16px;
+            color: #595959;
+            transition: color 0.3s ease;
+
+            &:hover {
+              color: #1890ff;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 模态框样式
+  .ant-modal {
+    .ant-form-item {
+      margin-bottom: 16px;
+    }
+
+    .ant-input,
+    .ant-input-textarea {
+      border-radius: 6px;
+    }
+  }
+
+  // 预览容器样式
+  .preview-container {
+    text-align: center;
+    
+    img {
+      max-width: 100%;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  // 响应式设计
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .background-list {
+      .background-item {
+        .background-preview {
+          height: 100px;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 576px) {
+    padding: 12px;
+
+    .control-panel {
+      .ant-space {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    .background-list {
+      .background-item {
+        .background-preview {
+          height: 80px;
+        }
+      }
+    }
+  }
+}
+
+// 暗色主题适配
+[data-theme='dark'] {
+  .global-background-manager {
+    background: #141414;
+
+    .control-panel,
+    .background-list {
+      .ant-card-head {
+        background: #1f1f1f;
+        border-bottom-color: #303030;
+      }
+    }
+
+    .background-item {
+      background: #1f1f1f;
+      border-color: #303030;
+
+      &:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      }
+
+      &.active {
+        border-color: #177ddc;
+        box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.2);
+      }
+
+      .background-info {
+        .background-name {
+          color: #ffffff;
+        }
+
+        .background-id {
+          color: #a6a6a6;
+        }
+      }
+
+      .ant-card-actions {
+        background: #262626;
+        border-top-color: #434343;
+
+        .anticon {
+          color: #a6a6a6;
+
+          &:hover {
+            color: #177ddc;
+          }
+        }
+      }
+    }
+  }
+}
