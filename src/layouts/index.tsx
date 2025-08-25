@@ -21,8 +21,8 @@ import Setting from './Setting';
 const cx = classNames.bind(styles);
 
 // 开发环境判断
-const isDev = process.env.NODE_ENV === 'development';
-const isDevOrTest = isDev || process.env.CI;
+// const isDev = process.env.NODE_ENV === 'development';
+// const isDevOrTest = isDev || process.env.CI;
 
 /**
  * Layout 主布局组件
@@ -201,18 +201,18 @@ const Layout: React.FC = () => {
       style={getBackgroundImageStyle}
     >
       {/* 顶部右侧全局操作：主题、语言、主色 */}
-      {isDevOrTest && (
-        <ThemeControlPanel
-          isDarkMode={isDarkMode}
-          toggleTheme={toggleTheme}
-          language={language}
-          toggleLanguage={toggleLanguage}
-          primaryColor={primaryColor}
-          setPrimaryColor={setPrimaryColor}
-          backgroundImageId={backgroundImageId}
-          setBackgroundImage={setBackgroundImage}
-        />
-      )}
+
+      <ThemeControlPanel
+        isDarkMode={isDarkMode}
+        toggleTheme={toggleTheme}
+        language={language}
+        toggleLanguage={toggleLanguage}
+        primaryColor={primaryColor}
+        setPrimaryColor={setPrimaryColor}
+        backgroundImageId={backgroundImageId}
+        setBackgroundImage={setBackgroundImage}
+      />
+
       {/* 侧边菜单栏及弹窗区域 */}
       <div
         ref={mobileMenuContainerRef}
