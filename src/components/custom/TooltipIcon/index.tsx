@@ -1,6 +1,6 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { TooltipIconProps } from '@/types/interfaces/space';
-import { PlusOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -35,7 +35,7 @@ const TooltipIcon: React.FC<TooltipIconProps> = ({
         onClick={onClick}
       >
         {/*默认加号（+）*/}
-        {icon || <PlusOutlined />}
+        {icon || <SvgIcon name="icons-common-plus" />}
       </span>
     </Tooltip>
   );
