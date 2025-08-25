@@ -9,8 +9,8 @@
 
   .active-icon-container {
     display: flex;
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     padding: @paddingXs;
     justify-content: center;
     align-items: center;
@@ -26,5 +26,12 @@
 
   &.last {
     margin-bottom: 0;
+  }
+
+  :global {
+    .ant-badge-count {
+      top: 10px;
+      right: 10px;
+    }
   }
 }

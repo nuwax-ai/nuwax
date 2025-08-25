@@ -1,5 +1,3 @@
-import personal from '@/assets/images/personal.png';
-import teamImage from '@/assets/images/team_image.png';
 import MenuListItem from '@/components/base/MenuListItem';
 import SecondMenuItem from '@/components/base/SecondMenuItem';
 import ConditionRender from '@/components/ConditionRender';
@@ -14,7 +12,7 @@ import {
 } from '@/types/enums/space';
 import type { AgentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 import DevCollect from './DevCollect';
 import styles from './index.less';

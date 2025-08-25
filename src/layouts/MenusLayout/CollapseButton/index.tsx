@@ -1,9 +1,9 @@
-import { LeftOutlined, RightOutlined } from '@ant-design/icons';
+import SvgIcon from '@/components/base/SvgIcon';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { useModel } from 'umi';
-import { FIRST_MENU_WIDTH } from '../../layout.constants';
+import { FIRST_MENU_WIDTH, MENU_WIDTH } from '../../layout.constants';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -18,7 +18,7 @@ const CollapseButton: React.FC = () => {
   return (
     <Tooltip
       title={isSecondMenuCollapsed ? '展开菜单' : '收起菜单'}
-      placement="left"
+      placement="right"
       arrow={false}
     >
       <div
@@ -27,14 +27,14 @@ const CollapseButton: React.FC = () => {
         })}
         onClick={toggleSecondMenuCollapse}
         style={{
-          left: FIRST_MENU_WIDTH,
+          left: isSecondMenuCollapsed ? FIRST_MENU_WIDTH : MENU_WIDTH,
         }}
       >
-        {isSecondMenuCollapsed ? (
-          <RightOutlined className={cx(styles.icon)} />
-        ) : (
-          <LeftOutlined className={cx(styles.icon)} />
-        )}
+        <SvgIcon
+          name="icons-common-caret_left"
+          rotate={isSecondMenuCollapsed ? 180 : 0}
+          className={cx(styles.icon)}
+        />
       </div>
     </Tooltip>
   );
