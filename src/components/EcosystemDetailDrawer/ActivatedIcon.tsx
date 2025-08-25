@@ -12,7 +12,7 @@ interface ActivatedIconProps {
 const ActivatedIcon: React.FC<ActivatedIconProps> = ({ size = 40 }) => {
   return (
     <div
-      className={cx(styles.activatedIcon)}
+      className={cx(styles['activated-icon'])}
       style={{ width: size, height: size }}
     >
       <Image preview={false} src={ActivatedImage} alt="已启用" />
