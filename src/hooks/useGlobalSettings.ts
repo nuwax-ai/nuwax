@@ -1,3 +1,5 @@
+import backgroundService from '@/services/backgroundService';
+import { BackgroundImage } from '@/types/background';
 import { theme as antdTheme } from 'antd';
 import { useMemo, useState } from 'react';
 import { setLocale } from 'umi';
@@ -16,16 +18,25 @@ export interface GlobalSettings {
    * 应用主色，影响 Ant Design `colorPrimary`
    */
   primaryColor?: string;
+  /**
+   * 当前背景图片ID
+   */
+  backgroundImageId?: string;
 }
 
 // 本地存储的键名
 export const SETTINGS_STORAGE_KEY = 'xagi-global-settings';
+
+// 背景图片列表（从全局服务获取）
+export const backgroundImages: BackgroundImage[] =
+  backgroundService.getBackgroundImages();
 
 // 默认设置（导出供初始化使用）
 export const defaultSettings: GlobalSettings = {
   theme: 'light',
   language: 'zh-CN',
   primaryColor: '#5147ff',
+  backgroundImageId: backgroundService.getCurrentBackgroundId(),
 };
 
 /**
@@ -105,6 +116,23 @@ export const useGlobalSettings = () => {
     const next = color || defaultSettings.primaryColor!;
     saveSettings({ ...settings, primaryColor: next });
   };
+
+  // 设置背景图片
+  const setBackgroundImage = (backgroundImageId: string) => {
+    backgroundService.setBackground(backgroundImageId);
+    saveSettings({ ...settings, backgroundImageId });
+  };
+
+  // 获取当前背景图片（从全局服务）
+  const getCurrentBackgroundImage = useMemo(() => {
+    return backgroundService.getCurrentBackground();
+  }, []);
+
+  // 获取背景图片的CSS样式（从全局服务）
+  const getBackgroundImageStyle = useMemo(() => {
+    return backgroundService.getBackgroundStyle();
+  }, []);
+
   const { token } = antdTheme.useToken();
 
   // 判断是否为暗色主题
@@ -129,6 +157,7 @@ export const useGlobalSettings = () => {
     theme: settings.theme,
     language: settings.language,
     primaryColor: settings.primaryColor ?? defaultSettings.primaryColor!,
+    backgroundImageId: backgroundService.getCurrentBackgroundId(),
     isDarkMode,
     isChineseLanguage,
     toggleTheme,
@@ -137,6 +166,10 @@ export const useGlobalSettings = () => {
     setLanguage,
     themeAlgorithm,
     setPrimaryColor,
+    setBackgroundImage,
+    getCurrentBackgroundImage,
+    getBackgroundImageStyle,
+    backgroundImages,
   };
 };
 
