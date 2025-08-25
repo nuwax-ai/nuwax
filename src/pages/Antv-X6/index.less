@@ -1,5 +1,5 @@
 @import '@/styles/color.less';
-@import '@/styles/themeVariables.less';
+@import '@/styles/token.less';
 
 .absolute-box {
   position: absolute;
@@ -12,8 +12,8 @@
   .action-section {
     padding: 0 6px;
     background: #fff;
-    border: 1px solid @xagi-border-color-base;
-    border-radius: @xagi-border-radius;
+    border: 1px solid @colorBorder;
+    border-radius: @borderRadius;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -57,7 +57,6 @@
 
       .stencil-list-title {
         margin-bottom: 6px;
-        font-family: 'Alimama Agile VF';
         font-size: 14px;
         font-weight: normal;
         line-height: 22px;
@@ -361,7 +360,7 @@
 
   .error-list-header {
     height: 48px;
-    border-bottom: 1px solid @xagi-border-color-base;
+    border-bottom: 1px solid @colorBorder;
     font-size: 16px;
     font-weight: 500;
     padding: 0 20px;

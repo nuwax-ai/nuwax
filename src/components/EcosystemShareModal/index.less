@@ -1,6 +1,6 @@
 // src/components/PluginShareModal/index.less
 @import '@/styles/color';
-@import '@/styles/themeVariables';
+@import '@/styles/token';
 
 .sectionTitle {
   font-size: 16px;
@@ -21,14 +21,14 @@
 
 .pluginError {
   margin-top: 4px;
-  color: var(--xagi-color-error);
-  font-size: var(--xagi-font-size);
-  line-height: var(--xagi-line-height);
+  color: @colorError;
+  font-size: @fontSize;
+  line-height: @lineHeight;
 }
 
 .tableWrap {
   border-radius: 5px;
-  border: 1px solid @BLANK19;
+  border: 1px solid @colorBorder;
   // margin-top: 12px;
   margin-bottom: 24px;
   min-height: 120px;

@@ -3,7 +3,7 @@
 .container {
   background-color: @colorBgLayout;
   position: relative;
-  
+
   // 背景图片样式
   &::before {
     content: '';
@@ -13,7 +13,7 @@
     width: 100%;
     height: 100%;
     z-index: 0;
-    background-image: var(--xagi-background-image, none);
+    background-image: @backgroundImage;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -41,7 +41,7 @@
 // 暗色主题下的背景适配
 [data-theme='dark'] {
   .page-container {
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 70%);
     backdrop-filter: blur(4px);
   }
 }
