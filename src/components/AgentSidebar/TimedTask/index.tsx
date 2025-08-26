@@ -20,10 +20,9 @@ const cx = classNames.bind(styles);
 // 定时任务
 const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
   // 使用 model 中的定时任务弹窗状态，而不是本地状态
-  const { isTimedTaskOpen, closeTimedTask } = useModel('conversationInfo');
+  const { isTimedTaskOpen, closeTimedTask, timedTaskMode, openTimedTask } =
+    useModel('conversationInfo');
 
-  // 任务模式：创建、更新
-  const [mode, setMode] = useState<CreateUpdateModeEnum>();
   // 更新时,当前任务信息
   const [currentTask, setCurrentTask] = useState<TimedConversationTaskInfo>();
   // 当前激活active: 任务状态
@@ -111,8 +110,7 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
   // 编辑任务
   const handleEditTask = (info: TimedConversationTaskInfo) => {
     setCurrentTask(info);
-    setMode(CreateUpdateModeEnum.Update);
-    // 这里不再需要设置本地状态，因为使用 model 中的状态
+    openTimedTask(CreateUpdateModeEnum.Update);
   };
 
   const items: TabsProps['items'] = [
@@ -144,8 +142,7 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
 
   // 创建定时任务 - 现在通过 model 状态管理
   const handleTaskCreate = () => {
-    setMode(CreateUpdateModeEnum.Create);
-    // 这里不再需要设置本地状态，因为使用 model 中的状态
+    openTimedTask(CreateUpdateModeEnum.Create);
   };
 
   // 确认创建、更新定时任务
@@ -180,7 +177,7 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
       <CreateTimedTask
         agentId={agentId}
         open={isTimedTaskOpen}
-        mode={mode}
+        mode={timedTaskMode}
         currentTask={currentTask}
         onCancel={closeTimedTask}
         onConfirm={handleConfirmCreateTask}

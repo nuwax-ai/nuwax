@@ -13,7 +13,11 @@ import {
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
-import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
+import {
+  CreateUpdateModeEnum,
+  MessageStatusEnum,
+  ProcessingEnum,
+} from '@/types/enums/common';
 import { BindCardStyleEnum } from '@/types/enums/plugin';
 import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import {
@@ -115,10 +119,12 @@ export default () => {
 
   // 定时任务弹窗状态管理
   const [isTimedTaskOpen, setIsTimedTaskOpen] = useState<boolean>(false);
+  const [timedTaskMode, setTimedTaskMode] = useState<CreateUpdateModeEnum>();
 
   // 打开定时任务弹窗
-  const openTimedTask = useCallback(() => {
+  const openTimedTask = useCallback((taskMode: CreateUpdateModeEnum) => {
     setIsTimedTaskOpen(true);
+    setTimedTaskMode(taskMode);
   }, []);
 
   // 关闭定时任务弹窗
@@ -755,6 +761,7 @@ export default () => {
     isHistoryConversationOpen,
     openHistoryConversation,
     closeHistoryConversation,
+    timedTaskMode,
     isTimedTaskOpen,
     openTimedTask,
     closeTimedTask,

@@ -1,5 +1,6 @@
 import ActionMenu, { ActionItem } from '@/components/base/ActionMenu';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { OpenCloseEnum } from '@/types/enums/space';
 import { AgentDetailDto } from '@/types/interfaces/agent';
 import { copyTextToClipboard } from '@/utils/clipboard';
@@ -84,7 +85,7 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
 
   // 定时任务功能 - 直接调用 model 中的方法
   const handleAddTimedTask = () => {
-    openTimedTask();
+    openTimedTask(CreateUpdateModeEnum.Create);
   };
 
   // 历史会话功能 - 直接调用 model 中的方法
@@ -118,7 +119,7 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
                 key: 'timed-task',
                 icon: 'icons-chat-clock',
                 title: '添加定时任务',
-                onClick: () => openTimedTask(),
+                onClick: handleAddTimedTask,
                 className: styles['timed-task'],
               },
             ]
