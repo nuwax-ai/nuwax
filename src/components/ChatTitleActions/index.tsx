@@ -5,6 +5,7 @@ import { copyTextToClipboard } from '@/utils/clipboard';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -24,6 +25,9 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
   agentInfo,
   className,
 }) => {
+  // 使用 UmiJS model 中的历史会话状态管理
+  const { openHistoryConversation } = useModel('conversationInfo');
+
   // 切换收藏与取消收藏
   const handleToggleCollect = () => {
     if (!agentInfo?.statistics?.targetId) {
@@ -81,9 +85,9 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
     message.info('定时任务功能开发中...');
   };
 
-  // 历史会话功能
+  // 历史会话功能 - 直接调用 model 中的方法
   const handleHistoryConversation = () => {
-    message.info('历史会话功能开发中...');
+    openHistoryConversation();
   };
 
   // 定义所有操作项
@@ -119,7 +123,7 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
         className: styles['history-conversation'],
       },
     ],
-    [agentInfo],
+    [agentInfo, openHistoryConversation],
   );
 
   return (

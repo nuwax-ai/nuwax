@@ -98,6 +98,20 @@ export default () => {
   >([]);
   // 变量参数
   const [variables, setVariables] = useState<BindConfigWithSub[]>([]);
+
+  // 历史会话弹窗状态管理
+  const [isHistoryConversationOpen, setIsHistoryConversationOpen] =
+    useState<boolean>(false);
+
+  // 打开历史会话弹窗
+  const openHistoryConversation = useCallback(() => {
+    setIsHistoryConversationOpen(true);
+  }, []);
+
+  // 关闭历史会话弹窗
+  const closeHistoryConversation = useCallback(() => {
+    setIsHistoryConversationOpen(false);
+  }, []);
   // 用户填写的变量参数
   const [userFillVariables, setUserFillVariables] = useState<Record<
     string,
@@ -725,5 +739,8 @@ export default () => {
     disabledConversationActive,
     setCurrentConversationRequestId,
     getCurrentConversationRequestId,
+    isHistoryConversationOpen,
+    openHistoryConversation,
+    closeHistoryConversation,
   };
 };

@@ -5,8 +5,8 @@ import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { formatTimeAgo } from '@/utils/common';
 import { Empty } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
-import { history, useRequest } from 'umi';
+import React, { useCallback, useEffect, useState } from 'react';
+import { history, useModel, useRequest } from 'umi';
 import HistoryConversation from './HistoryConversation';
 import styles from './index.less';
 
@@ -14,7 +14,13 @@ const cx = classNames.bind(styles);
 
 // 智能体相关会话
 const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
-  const [open, setOpen] = useState<boolean>(false);
+  // 使用 model 中的历史会话弹窗状态，而不是本地状态
+  const {
+    isHistoryConversationOpen,
+    closeHistoryConversation,
+    openHistoryConversation,
+  } = useModel('conversationInfo');
+
   const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
   // 历史会话列表
   const [conversationList, setConversationList] =
@@ -50,6 +56,12 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
     });
   };
 
+  // 查看更多 打开历史会话弹窗 - 现在通过 model 状态管理
+  const handleMore = useCallback(() => {
+    // 这里不再需要设置本地状态，因为使用 model 中的状态
+    openHistoryConversation();
+  }, []);
+
   return (
     <div className={cx(styles.container)}>
       {!loadingHistory && (
@@ -57,7 +69,7 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
           <h3 className={cx(styles.title)}>相关会话</h3>
           <span
             className={cx(styles.more, 'cursor-pointer')}
-            onClick={() => setOpen(true)}
+            onClick={handleMore}
           >
             查看更多
           </span>
@@ -85,8 +97,8 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
       </div>
       <HistoryConversation
         conversationList={conversationList}
-        isOpen={open}
-        onCancel={() => setOpen(false)}
+        isOpen={isHistoryConversationOpen}
+        onCancel={closeHistoryConversation}
         onDel={handleDel}
       />
     </div>
