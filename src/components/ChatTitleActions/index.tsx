@@ -1,5 +1,6 @@
 import ActionMenu, { ActionItem } from '@/components/base/ActionMenu';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
+import { OpenCloseEnum } from '@/types/enums/space';
 import { AgentDetailDto } from '@/types/interfaces/agent';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { message } from 'antd';
@@ -25,8 +26,9 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
   agentInfo,
   className,
 }) => {
-  // 使用 UmiJS model 中的历史会话状态管理
-  const { openHistoryConversation } = useModel('conversationInfo');
+  // 使用 UmiJS model 中的历史会话和定时任务状态管理
+  const { openHistoryConversation, openTimedTask } =
+    useModel('conversationInfo');
 
   // 切换收藏与取消收藏
   const handleToggleCollect = () => {
@@ -80,9 +82,9 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
     }
   };
 
-  // 定时任务功能
-  const handleTimedTask = () => {
-    message.info('定时任务功能开发中...');
+  // 定时任务功能 - 直接调用 model 中的方法
+  const handleAddTimedTask = () => {
+    openTimedTask();
   };
 
   // 历史会话功能 - 直接调用 model 中的方法
@@ -92,38 +94,44 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
 
   // 定义所有操作项
   const actions: ActionItem[] = useMemo(
-    () => [
-      {
-        key: 'share',
-        icon: 'icons-chat-share',
-        title: '分享',
-        onClick: handleShare,
-      },
-      {
-        key: agentInfo?.collect ? 'collected' : 'collect',
-        icon: agentInfo?.collect
-          ? 'icons-chat-collected'
-          : 'icons-chat-collect',
-        title: '收藏',
-        onClick: handleToggleCollect,
-        className: agentInfo?.collect ? styles.collected : '',
-      },
-      {
-        key: 'timed-task',
-        icon: 'icons-chat-clock',
-        title: '定时任务',
-        onClick: handleTimedTask,
-        className: styles['timed-task'],
-      },
-      {
-        key: 'history-conversation',
-        icon: 'icons-chat-history',
-        title: '历史会话',
-        onClick: handleHistoryConversation,
-        className: styles['history-conversation'],
-      },
-    ],
-    [agentInfo, openHistoryConversation],
+    () =>
+      [
+        {
+          key: 'share',
+          icon: 'icons-chat-share',
+          title: '分享',
+          onClick: handleShare,
+        },
+        {
+          key: agentInfo?.collect ? 'collected' : 'collect',
+          icon: agentInfo?.collect
+            ? 'icons-chat-collected'
+            : 'icons-chat-collect',
+          title: '收藏',
+          onClick: handleToggleCollect,
+          className: agentInfo?.collect ? styles.collected : '',
+        },
+        // 定时任务功能 - 根据配置决定是否显示
+        ...(agentInfo?.openScheduledTask === OpenCloseEnum.Open
+          ? [
+              {
+                key: 'timed-task',
+                icon: 'icons-chat-clock',
+                title: '添加定时任务',
+                onClick: () => openTimedTask(),
+                className: styles['timed-task'],
+              },
+            ]
+          : []),
+        {
+          key: 'history-conversation',
+          icon: 'icons-chat-history',
+          title: '历史会话',
+          onClick: handleHistoryConversation,
+          className: styles['history-conversation'],
+        },
+      ].filter(Boolean) as ActionItem[],
+    [agentInfo, openHistoryConversation, openTimedTask],
   );
 
   return (

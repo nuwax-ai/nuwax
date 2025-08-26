@@ -112,6 +112,19 @@ export default () => {
   const closeHistoryConversation = useCallback(() => {
     setIsHistoryConversationOpen(false);
   }, []);
+
+  // 定时任务弹窗状态管理
+  const [isTimedTaskOpen, setIsTimedTaskOpen] = useState<boolean>(false);
+
+  // 打开定时任务弹窗
+  const openTimedTask = useCallback(() => {
+    setIsTimedTaskOpen(true);
+  }, []);
+
+  // 关闭定时任务弹窗
+  const closeTimedTask = useCallback(() => {
+    setIsTimedTaskOpen(false);
+  }, []);
   // 用户填写的变量参数
   const [userFillVariables, setUserFillVariables] = useState<Record<
     string,
@@ -742,5 +755,8 @@ export default () => {
     isHistoryConversationOpen,
     openHistoryConversation,
     closeHistoryConversation,
+    isTimedTaskOpen,
+    openTimedTask,
+    closeTimedTask,
   };
 };
