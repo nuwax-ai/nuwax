@@ -1,20 +1,27 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .files-container {
   width: 100%;
-  gap: 16px;
-  padding: 10px 0;
-  border-bottom: 1px solid @GRAY01;
+  gap: @marginLg;
+  padding: @paddingXs 0;
+  border-bottom: @lineWidth solid @colorBorder;
 
   .file-box {
     width: 200px;
-    padding: 6px 34px 6px 6px;
-    background-color: @WHITE04;
+    padding: @paddingXs;
+    background-color: @colorFillTertiary;
     height: 62px;
-    border-radius: 10px;
-    font-size: 14px;
-    color: @BLANK24;
+    border-radius: @borderRadius;
+    font-size: @fontSize;
+    color: @colorText;
     position: relative;
+
+    &.image-box {
+      height: unset;
+      width: unset;
+      padding: 0;
+    }
 
     &:hover {
       .del {
@@ -26,94 +33,90 @@
       position: absolute;
       top: -6px;
       right: -6px;
-      font-size: 16px;
-      color: @GRAY05;
+      font-size: @fontSize;
+      color: @colorTextSecondary;
       visibility: hidden;
       transition: visibility 0.3s, background-color 0.3s;
       cursor: pointer;
       border-radius: 50%;
 
       &:hover {
-        background-color: @GRAY01;
+        color: @colorText;
       }
     }
 
     img {
       width: 50px;
-      margin-right: 5px;
-      border-radius: 10px;
+      margin-right: @marginXxs;
+      border-radius: @borderRadiusSm;
     }
 
     .info {
-      margin-left: 6px;
-      padding-right: 12px;
-      width: 105px;
+      margin-left: @marginXs;
+      padding-right: @paddingSm;
+      width: 100%;
     }
 
     .size {
-      color: @GRAY05;
-      font-size: 10px;
+      color: @colorTextSecondary;
+      font-size: @fontSizeSm;
     }
 
-    .progress-upload-file {
-      position: absolute;
-      right: 6px;
-      top: 50%;
-      transform: translateY(-50%);
+    // .progress-upload-file {
+    //   position: absolute;
+    //   right: 6px;
+    //   top: 50%;
+    //   transform: translateY(-50%);
 
-      :global {
-        .ant-progress-text {
-          font-size: 9px;
-        }
-      }
-    }
+    //   :global {
+    //     .ant-progress-text {
+    //       font-size: 9px;
+    //     }
+    //   }
+    // }
 
     // 图片容器和图标容器
-    .image-container,
     .icon-container {
       position: relative;
-      margin-right: 5px;
+      margin-right: @marginXs;
     }
 
     // 状态指示器
     .status-icon {
       position: absolute;
-      top: -4px;
-      right: -4px;
-      font-size: 16px;
+      top: 50%;
+      right: 50%;
+      transform: translate(50%, -50%);
+      font-size: @fontSize;
       border-radius: 50%;
-      background-color: @WHITE04;
+      background-color: @colorWhite;
+      width: 16px;
+      height: 16px;
+      padding: @paddingXxs;
+      box-sizing: content-box;
       z-index: 1;
     }
 
     .status-success {
-      color: #52c41a;
+      color: @colorSuccess;
     }
 
     .status-error {
-      color: #ff4d4f;
+      color: @colorError;
     }
 
     .status-loading {
-      width: 16px;
-      height: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      .loading-spinner {
-        width: 12px;
-        height: 12px;
-        border: 2px solid #e8e8e8;
-        border-top: 2px solid #1890ff;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
+      color: @colorPrimary;
+      padding: 0 @paddingXxs @paddingXs @paddingXxs;
     }
 
     // 图片文件特殊样式
     .file-image {
-      border-radius: 10px;
+      width: 62px;
+      height: 62px;
+      border-radius: @borderRadiusSm;
+      margin: 0;
+      object-fit: cover;
     }
   }
 }
@@ -123,6 +126,7 @@
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }

@@ -5,9 +5,9 @@ import { UploadFileInfo } from '@/types/interfaces/common';
 import { formatBytes } from '@/utils/byteConverter';
 import { getProgressStatus } from '@/utils/upload';
 import {
-  CheckCircleOutlined,
-  CloseCircleFilled,
   CloseCircleOutlined,
+  CloseOutlined,
+  LoadingOutlined,
 } from '@ant-design/icons';
 import { Image } from 'antd';
 import classNames from 'classnames';
@@ -34,26 +34,29 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
     return (
       <div
         key={file.uid}
-        className={cx(styles['file-box'], 'flex', 'items-center')}
+        className={cx(
+          styles['file-box'],
+          styles['image-box'],
+          'flex',
+          'items-center',
+        )}
       >
         {/* 图片文件使用原来的逻辑 */}
         <div className={cx(styles['image-container'], 'relative')}>
           <Image
-            width={50}
-            height={50}
             src={file?.url}
             fallback={IMAGE_FALLBACK}
             preview={false}
             className={styles['file-image']}
           />
           {/* 状态指示器 */}
-          {status === 'success' && (
+          {/* {status === 'success' && (
             <CheckCircleOutlined
               className={cx(styles['status-icon'], styles['status-success'])}
             />
-          )}
+          )} */}
           {status === 'exception' && (
-            <CloseCircleFilled
+            <CloseOutlined
               className={cx(styles['status-icon'], styles['status-error'])}
             />
           )}
@@ -61,7 +64,7 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
             <div
               className={cx(styles['status-icon'], styles['status-loading'])}
             >
-              <div className={styles['loading-spinner']}></div>
+              <LoadingOutlined spin />
             </div>
           )}
         </div>
@@ -96,13 +99,13 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
             preview={false}
           />
           {/* 状态指示器 */}
-          {status === 'success' && (
+          {/* {status === 'success' && (
             <CheckCircleOutlined
               className={cx(styles['status-icon'], styles['status-success'])}
             />
-          )}
+          )} */}
           {status === 'exception' && (
-            <CloseCircleFilled
+            <CloseOutlined
               className={cx(styles['status-icon'], styles['status-error'])}
             />
           )}
@@ -110,7 +113,7 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
             <div
               className={cx(styles['status-icon'], styles['status-loading'])}
             >
-              <div className={styles['loading-spinner']}></div>
+              <LoadingOutlined spin />
             </div>
           )}
         </div>
