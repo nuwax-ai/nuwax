@@ -1,10 +1,13 @@
 import ActionMenu, { ActionItem } from '@/components/base/ActionMenu';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { OpenCloseEnum } from '@/types/enums/space';
 import { AgentDetailDto } from '@/types/interfaces/agent';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { message } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -24,21 +27,29 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
   agentInfo,
   className,
 }) => {
+  // 使用 UmiJS model 中的历史会话和定时任务状态管理
+  const { openHistoryConversation, openTimedTask } =
+    useModel('conversationInfo');
+  const [isCollected, setIsCollected] = useState<boolean>(
+    agentInfo?.collect || false,
+  );
+
   // 切换收藏与取消收藏
-  const handleToggleCollect = () => {
-    if (!agentInfo?.statistics?.targetId) {
+  const handleToggleCollect = useCallback(() => {
+    const targetId = agentInfo?.statistics?.targetId;
+    if (!targetId) {
       message.error('智能体信息不完整');
       return;
     }
 
-    if (agentInfo.collect) {
+    if (isCollected) {
       // 取消收藏
-      apiUnCollectAgent(agentInfo.statistics.targetId)
+      apiUnCollectAgent(targetId)
         .then(() => {
           message.success('已取消收藏');
           // 更新本地状态
           if (agentInfo) {
-            agentInfo.collect = false;
+            setIsCollected(false);
           }
         })
         .catch(() => {
@@ -46,19 +57,19 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
         });
     } else {
       // 添加收藏
-      apiCollectAgent(agentInfo.statistics.targetId)
+      apiCollectAgent(targetId)
         .then(() => {
           message.success('已添加到收藏');
           // 更新本地状态
           if (agentInfo) {
-            agentInfo.collect = true;
+            setIsCollected(true);
           }
         })
         .catch(() => {
           message.error('添加收藏失败');
         });
     }
-  };
+  }, [agentInfo?.statistics?.targetId, isCollected]);
 
   // 分享功能
   const handleShare = async () => {
@@ -76,50 +87,54 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
     }
   };
 
-  // 定时任务功能
-  const handleTimedTask = () => {
-    message.info('定时任务功能开发中...');
+  // 定时任务功能 - 直接调用 model 中的方法
+  const handleAddTimedTask = () => {
+    openTimedTask(CreateUpdateModeEnum.Create);
   };
 
-  // 历史会话功能
+  // 历史会话功能 - 直接调用 model 中的方法
   const handleHistoryConversation = () => {
-    message.info('历史会话功能开发中...');
+    openHistoryConversation();
   };
 
   // 定义所有操作项
   const actions: ActionItem[] = useMemo(
-    () => [
-      {
-        key: 'share',
-        icon: 'icons-chat-share',
-        title: '分享',
-        onClick: handleShare,
-      },
-      {
-        key: agentInfo?.collect ? 'collected' : 'collect',
-        icon: agentInfo?.collect
-          ? 'icons-chat-collected'
-          : 'icons-chat-collect',
-        title: '收藏',
-        onClick: handleToggleCollect,
-        className: agentInfo?.collect ? styles.collected : '',
-      },
-      {
-        key: 'timed-task',
-        icon: 'icons-chat-clock',
-        title: '定时任务',
-        onClick: handleTimedTask,
-        className: styles['timed-task'],
-      },
-      {
-        key: 'history-conversation',
-        icon: 'icons-chat-history',
-        title: '历史会话',
-        onClick: handleHistoryConversation,
-        className: styles['history-conversation'],
-      },
-    ],
-    [agentInfo],
+    () =>
+      [
+        {
+          key: 'share',
+          icon: 'icons-chat-share',
+          title: '分享',
+          onClick: handleShare,
+        },
+        {
+          key: isCollected ? 'collected' : 'collect',
+          icon: isCollected ? 'icons-chat-collected' : 'icons-chat-collect',
+          title: '收藏',
+          onClick: handleToggleCollect,
+          className: isCollected ? styles.collected : '',
+        },
+        // 定时任务功能 - 根据配置决定是否显示
+        ...(agentInfo?.openScheduledTask === OpenCloseEnum.Open
+          ? [
+              {
+                key: 'timed-task',
+                icon: 'icons-chat-clock',
+                title: '添加定时任务',
+                onClick: handleAddTimedTask,
+                className: styles['timed-task'],
+              },
+            ]
+          : []),
+        {
+          key: 'history-conversation',
+          icon: 'icons-chat-history',
+          title: '历史会话',
+          onClick: handleHistoryConversation,
+          className: styles['history-conversation'],
+        },
+      ].filter(Boolean) as ActionItem[],
+    [isCollected, agentInfo, openHistoryConversation, openTimedTask],
   );
 
   return (

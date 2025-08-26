@@ -13,7 +13,11 @@ import {
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
-import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
+import {
+  CreateUpdateModeEnum,
+  MessageStatusEnum,
+  ProcessingEnum,
+} from '@/types/enums/common';
 import { BindCardStyleEnum } from '@/types/enums/plugin';
 import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import {
@@ -98,6 +102,35 @@ export default () => {
   >([]);
   // 变量参数
   const [variables, setVariables] = useState<BindConfigWithSub[]>([]);
+
+  // 历史会话弹窗状态管理
+  const [isHistoryConversationOpen, setIsHistoryConversationOpen] =
+    useState<boolean>(false);
+
+  // 打开历史会话弹窗
+  const openHistoryConversation = useCallback(() => {
+    setIsHistoryConversationOpen(true);
+  }, []);
+
+  // 关闭历史会话弹窗
+  const closeHistoryConversation = useCallback(() => {
+    setIsHistoryConversationOpen(false);
+  }, []);
+
+  // 定时任务弹窗状态管理
+  const [isTimedTaskOpen, setIsTimedTaskOpen] = useState<boolean>(false);
+  const [timedTaskMode, setTimedTaskMode] = useState<CreateUpdateModeEnum>();
+
+  // 打开定时任务弹窗
+  const openTimedTask = useCallback((taskMode: CreateUpdateModeEnum) => {
+    setIsTimedTaskOpen(true);
+    setTimedTaskMode(taskMode);
+  }, []);
+
+  // 关闭定时任务弹窗
+  const closeTimedTask = useCallback(() => {
+    setIsTimedTaskOpen(false);
+  }, []);
   // 用户填写的变量参数
   const [userFillVariables, setUserFillVariables] = useState<Record<
     string,
@@ -725,5 +758,12 @@ export default () => {
     disabledConversationActive,
     setCurrentConversationRequestId,
     getCurrentConversationRequestId,
+    isHistoryConversationOpen,
+    openHistoryConversation,
+    closeHistoryConversation,
+    timedTaskMode,
+    isTimedTaskOpen,
+    openTimedTask,
+    closeTimedTask,
   };
 };

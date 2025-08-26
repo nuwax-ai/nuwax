@@ -10,7 +10,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { message, Tabs, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { useModel, useRequest } from 'umi';
 import CreateTimedTask from './CreateTimedTask';
 import styles from './index.less';
 import TaskList from './TaskList';
@@ -19,10 +19,10 @@ const cx = classNames.bind(styles);
 
 // 定时任务
 const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
-  // 新建任务弹窗
-  const [openTask, setOpenTask] = useState<boolean>(false);
-  // 任务模式：创建、更新
-  const [mode, setMode] = useState<CreateUpdateModeEnum>();
+  // 使用 model 中的定时任务弹窗状态，而不是本地状态
+  const { isTimedTaskOpen, closeTimedTask, timedTaskMode, openTimedTask } =
+    useModel('conversationInfo');
+
   // 更新时,当前任务信息
   const [currentTask, setCurrentTask] = useState<TimedConversationTaskInfo>();
   // 当前激活active: 任务状态
@@ -110,8 +110,7 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
   // 编辑任务
   const handleEditTask = (info: TimedConversationTaskInfo) => {
     setCurrentTask(info);
-    setMode(CreateUpdateModeEnum.Update);
-    setOpenTask(true);
+    openTimedTask(CreateUpdateModeEnum.Update);
   };
 
   const items: TabsProps['items'] = [
@@ -141,15 +140,14 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
     },
   ];
 
-  // 创建定时任务
+  // 创建定时任务 - 现在通过 model 状态管理
   const handleTaskCreate = () => {
-    setMode(CreateUpdateModeEnum.Create);
-    setOpenTask(true);
+    openTimedTask(CreateUpdateModeEnum.Create);
   };
 
   // 确认创建、更新定时任务
   const handleConfirmCreateTask = () => {
-    setOpenTask(false);
+    // 关闭弹窗通过 model 状态管理
     if (currentTaskStatus === TaskStatus.EXECUTING) {
       // 重新查询"进行中"定时任务列表
       handleQueryTaskList(TaskStatus.EXECUTING);
@@ -178,10 +176,10 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
       {/* 创建定时任务弹窗组件 */}
       <CreateTimedTask
         agentId={agentId}
-        open={openTask}
-        mode={mode}
+        open={isTimedTaskOpen}
+        mode={timedTaskMode}
         currentTask={currentTask}
-        onCancel={() => setOpenTask(false)}
+        onCancel={closeTimedTask}
         onConfirm={handleConfirmCreateTask}
       />
     </div>
