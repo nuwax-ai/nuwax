@@ -375,8 +375,8 @@
 // 主题色相关
 @colorPrimaryBg: var(--xagi-color-primary-bg);
 @colorPrimaryBgHover: var(--xagi-color-primary-bg-hover);
-@colorPrimaryBorder: var(--xagi-color-primary-border);
-@colorPrimaryBorderHover: var(--xagi-color-primary-border-hover);
+@colorPrimaryBorder: var(--xagi-color-primary); // TODO: 修改过
+@colorPrimaryBorderHover: @colorPrimaryActive; // TODO: 修改过
 @colorPrimaryHover: var(--xagi-color-primary-hover);
 @colorPrimaryActive: var(--xagi-color-primary-active);
 @colorPrimaryTextHover: var(--xagi-color-primary-text-hover);
@@ -386,8 +386,8 @@
 // 成功色相关
 @colorSuccessBg: var(--xagi-color-success-bg);
 @colorSuccessBgHover: var(--xagi-color-success-bg-hover);
-@colorSuccessBorder: var(--xagi-color-success-border);
-@colorSuccessBorderHover: var(--xagi-color-success-border-hover);
+@colorSuccessBorder: var(--xagi-color-success); // TODO: 修改过
+@colorSuccessBorderHover: @colorSuccessActive; // TODO: 修改过
 @colorSuccessHover: var(--xagi-color-success-hover);
 @colorSuccessActive: var(--xagi-color-success-active);
 @colorSuccessTextHover: var(--xagi-color-success-text-hover);
@@ -399,8 +399,8 @@
 @colorErrorBgHover: var(--xagi-color-error-bg-hover);
 @colorErrorBgFilledHover: var(--xagi-color-error-bg-filled-hover);
 @colorErrorBgActive: var(--xagi-color-error-bg-active);
-@colorErrorBorder: var(--xagi-color-error-border);
-@colorErrorBorderHover: var(--xagi-color-error-border-hover);
+@colorErrorBorder: var(--xagi-color-error); // TODO: 修改过
+@colorErrorBorderHover: @colorErrorActive; // TODO: 修改过
 @colorErrorHover: var(--xagi-color-error-hover);
 @colorErrorActive: var(--xagi-color-error-active);
 @colorErrorTextHover: var(--xagi-color-error-text-hover);
@@ -411,8 +411,8 @@
 // 警告色相关
 @colorWarningBg: var(--xagi-color-warning-bg);
 @colorWarningBgHover: var(--xagi-color-warning-bg-hover);
-@colorWarningBorder: var(--xagi-color-warning-border);
-@colorWarningBorderHover: var(--xagi-color-warning-border-hover);
+@colorWarningBorder: var(--xagi-color-warning); // TODO: 修改过
+@colorWarningBorderHover: @colorWarningActive; // TODO: 修改过
 @colorWarningHover: var(--xagi-color-warning-hover);
 @colorWarningActive: var(--xagi-color-warning-active);
 @colorWarningTextHover: var(--xagi-color-warning-text-hover);
@@ -423,8 +423,8 @@
 // 信息色相关
 @colorInfoBg: var(--xagi-color-info-bg);
 @colorInfoBgHover: var(--xagi-color-info-bg-hover);
-@colorInfoBorder: var(--xagi-color-info-border);
-@colorInfoBorderHover: var(--xagi-color-info-border-hover);
+@colorInfoBorder: var(--xagi-color-info); // TODO: 修改过
+@colorInfoBorderHover: @colorInfoActive; // TODO: 修改过
 @colorInfoHover: var(--xagi-color-info-hover);
 @colorInfoActive: var(--xagi-color-info-active);
 @colorInfoTextHover: var(--xagi-color-info-text-hover);
@@ -477,4 +477,5 @@
 @linkDecoration: var(--xagi-link-decoration);
 @linkHoverDecoration: var(--xagi-link-hover-decoration);
 @linkFocusDecoration: var(--xagi-link-focus-decoration);
-@backgroundImage: var(--xagi-background-image, none);
+
+@backgroundImage: var(--xagi-background-image, none); // TODO 新增全局背景

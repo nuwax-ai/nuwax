@@ -14,7 +14,7 @@ export const themeTokens: Partial<AliasToken> = {
   colorInfo: '#0077fa',
 
   // 基础色 - 用于派生文本和背景色
-  colorTextBase: '#15171f',
+  colorTextBase: '#000000',
   colorBgBase: '#ffffff',
 
   // 超链接颜色
@@ -81,12 +81,21 @@ export const themeTokens: Partial<AliasToken> = {
   geekblue: '#2f54eb',
   lime: '#a0d911',
   gold: '#faad14',
+  // 填充颜色 浅色
+  colorFill: 'rgba(12,20,40,0.1)',
+  colorFillSecondary: 'rgba(12,20,40,0.06)',
+  colorFillTertiary: 'rgba(12,20,40,0.04)',
+  colorFillQuaternary: 'rgba(12,20,40,0.02)',
+  // border radius
+  borderRadiusSM: 4,
+  borderRadiusLG: 12,
 };
 
 export const darkThemeTokens = {
   ...themeTokens,
   colorBgBase: '#000',
   colorTextBase: '#fff',
+  // TODO 填充颜色 深色 缺少
 };
 
 // 组件主题类型定义
