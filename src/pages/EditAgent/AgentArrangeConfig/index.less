@@ -1,13 +1,21 @@
 @import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  border-left: @lineWidth solid @colorSplit;
+  padding: @paddingXs @padding;
+  //隐藏滚动条
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
 
 .select {
   width: 90px;
 }
 
 .text {
-  color: @BLANK35;
-  font-size: 14px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: 22px;
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+  line-height: @lineHeight;
 }

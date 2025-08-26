@@ -80,8 +80,13 @@ const DraggableHomeContent: React.FC<DraggableHomeContentProps> = ({
   // 事件处理函数
   const handleTabClick = useCallback(
     (type: string) => {
-      console.log(`📝 DraggableHomeContent Tab点击事件: ${type}`);
+      // console.log(`📝 DraggableHomeContent Tab点击事件: ${type}`);
       onTabClick(type);
+      //滚动到对应的section
+      const section = sectionRefs.current[type];
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     },
     [onTabClick],
   );

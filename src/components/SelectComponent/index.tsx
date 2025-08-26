@@ -1,5 +1,4 @@
 import Constant from '@/constants/codes.constants';
-import { ICON_TABLE, ICON_WORD } from '@/constants/images.constants';
 import service, { IGetList } from '@/services/created';
 import {
   AgentAddComponentStatusEnum,
@@ -8,24 +7,17 @@ import {
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { getTime } from '@/utils';
 import { getImg } from '@/utils/workflow';
-import {
-  // ClockCircleOutlined,
-  // MessageOutlined,
-  ProductFilled,
-  SearchOutlined,
-  StarFilled,
-  StarOutlined,
-} from '@ant-design/icons';
-import { Button, Divider, Input, Menu, Modal, Radio } from 'antd';
+import { SearchOutlined, StarFilled, StarOutlined } from '@ant-design/icons';
+import { Button, Divider, Input, Modal } from 'antd';
 import { RadioChangeEvent } from 'antd/lib/radio';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 // import { useModel } from 'umi';
-import { CreatedProp, MenuItem } from '@/components/Created/type';
+import { CreatedProp } from '@/components/Created/type';
 import { CREATED_TABS } from '@/constants/common.constants';
-import { COMPONENT_LIST } from '@/constants/ecosystem.constants';
+import classNames from 'classnames';
 import { useParams } from 'umi';
-import './index.less';
-
+import styles from './index.less';
+const cx = classNames.bind(styles);
 const defaultTabsTypes = [
   AgentComponentTypeEnum.Workflow,
   AgentComponentTypeEnum.Agent,
@@ -53,7 +45,6 @@ const SelectComponent: React.FC<CreatedProp> = ({
   tabs = buttonList,
   addComponents,
   hideTop,
-  disableCollect = false,
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
   const { spaceId } = useParams();
@@ -80,58 +71,47 @@ const SelectComponent: React.FC<CreatedProp> = ({
   //   右侧的list
   const [list, setList] = useState<CreatedNodeItem[]>([]);
 
-  // 左侧菜单栏
-  const items: MenuItem[] = [
-    {
-      key: 'group',
-      label: `搜索${selected.label}`, // 如果需要动态内容，可以像这样使用模板字符串
-      type: 'group', // 使用 Ant Design 支持的类型
-      children: [
-        {
-          key: 'all', // 子项也需要唯一的 key
-          label: '全部',
-          icon: <ProductFilled />,
-        },
-      ],
-    },
-  ];
+  // 左侧菜单栏配置（暂时未使用，保留以备后续功能扩展）
+  // const items: MenuItem[] = [
+  //   {
+  //     key: 'all', // 子项也需要唯一的 key
+  //     label: '全部',
+  //   },
+  // ];
 
-  const knowledgeItem = [
-    {
-      key: 'all', // 子项也需要唯一的 key
-      label: '全部',
-      icon: <ProductFilled />,
-    },
-    {
-      key: '1',
-      icon: <ICON_WORD />,
-      label: '文档',
-    },
-    {
-      key: '2',
-      icon: <ICON_TABLE />,
-      label: '表格',
-    },
-  ];
+  // const knowledgeItem = [
+  //   {
+  //     key: 'all', // 子项也需要唯一的 key
+  //     label: '全部',
+  //   },
+  //   {
+  //     key: '1',
+  //     label: '文档',
+  //   },
+  //   {
+  //     key: '2',
+  //     label: '表格',
+  //   },
+  // ];
 
-  const databaseItem = [
-    {
-      key: 'all', // 子项也需要唯一的 key
-      label: '组件库数据表',
-      icon: <ProductFilled />,
-    },
-  ];
+  // const databaseItem = [
+  //   {
+  //     key: 'all', // 子项也需要唯一的 key
+  //     label: '组件库数据表',
+  //   },
+  // ];
 
-  const getItems = () => {
-    switch (selected.key) {
-      case AgentComponentTypeEnum.Knowledge:
-        return knowledgeItem;
-      case AgentComponentTypeEnum.Table:
-        return databaseItem;
-      default:
-        return items;
-    }
-  };
+  // 左侧菜单栏配置（暂时未使用，保留以备后续功能扩展）
+  // const menusItems = useMemo(() => {
+  //   switch (selected.key) {
+  //     case AgentComponentTypeEnum.Knowledge:
+  //       return knowledgeItem;
+  //     case AgentComponentTypeEnum.Table:
+  //       return databaseItem;
+  //     default:
+  //       return items;
+  //     }
+  //   }, [selected.key]);
 
   // 添加ref引用
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -170,12 +150,12 @@ const SelectComponent: React.FC<CreatedProp> = ({
     }
   };
 
-  // 获取已经收藏的list
-  const getCollectList = async (params: IGetList) => {
-    const _type = selected.key.toLowerCase();
-    const _res = await service.collectList(_type, params);
-    setList([..._res.data]);
-  };
+  // 获取已经收藏的list（暂时未使用，保留以备后续功能扩展）
+  // const getCollectList = async (params: IGetList) => {
+  //   const _type = selected.key.toLowerCase();
+  //   const _res = await service.collectList(_type, params);
+  //   setList([..._res.data]);
+  // };
 
   // 收藏和取消收藏
   const collectAndUnCollect = async (item: CreatedNodeItem) => {
@@ -232,40 +212,41 @@ const SelectComponent: React.FC<CreatedProp> = ({
     getList(selected.key, _params);
   };
 
-  const callInterface = (val: string, params: IGetList) => {
-    setSizes(100);
-    // 通过左侧菜单决定调用哪个接口
-    switch (val) {
-      case 'collect':
-        getCollectList(params);
-        break;
-      case 'library':
-        getList(selected.key, { ...params, justReturnSpaceData: true });
-        break;
-      default:
-        getList(selected.key, params);
-        break;
-    }
-  };
+  // 接口调用函数（暂时未使用，保留以备后续功能扩展）
+  // const callInterface = (val: string, params: IGetList) => {
+  //   setSizes(100);
+  //   // 通过左侧菜单决定调用哪个接口
+  //   switch (val) {
+  //     case 'collect':
+  //       getCollectList(params);
+  //       break;
+  //     case 'library':
+  //       getList(selected.key, { ...params, justReturnSpaceData: true });
+  //       break;
+  //     default:
+  //       getList(selected.key, params);
+  //       break;
+  //   }
+  // };
 
-  // 修改 onMenuClick 方法，确保切换左侧菜单时重置分页
-  const onMenuClick = (val: string) => {
-    setSearch('');
-    setSelectMenu(val);
-    setPagination({ page: 1, pageSize: 10 }); // 确保重置分页
-    setList([]);
+  // 修改 onMenuClick 方法，确保切换左侧菜单时重置分页（暂时未使用，保留以备后续功能扩展）
+  // const onMenuClick = (val: string) => {
+  //   setSearch('');
+  //   setSelectMenu(val);
+  //   setPagination({ page: 1, pageSize: 10 }); // 确保重置分页
+  //   setList([]);
 
-    const params: IGetList = {
-      page: 1,
-      pageSize: 10,
-    };
+  //   const params: IGetList = {
+  //     page: 1,
+  //     pageSize: 10,
+  //     };
 
-    if (selected.key === AgentComponentTypeEnum.Knowledge && val !== 'all') {
-      params.dataType = val;
-    }
+  //   if (selected.key === AgentComponentTypeEnum.Knowledge && val !== 'all') {
+  //     params.dataType = val;
+  //     }
 
-    callInterface(val, params);
-  };
+  //   callInterface(val, params);
+  // };
 
   // 修改 changeTitle 方法，确保切换顶部选项时重置分页
   const changeTitle = (val: RadioChangeEvent | string) => {
@@ -333,29 +314,15 @@ const SelectComponent: React.FC<CreatedProp> = ({
       }, 100);
     }
   }, [checkTag, open]); // 添加 open 依赖
+  const label = useMemo(() => {
+    return tabs
+      .filter((item) => !hideTop?.includes(item.key))
+      .map((item) => item.label);
+  }, [tabs, hideTop]);
   //   顶部的标题
   const title = (
-    <div className="dis-left created-title">
-      <Radio.Group
-        value={selected.key}
-        onChange={changeTitle}
-        defaultValue="plugInNode"
-      >
-        {tabs
-          .filter((item) => !hideTop?.includes(item.key))
-          .map((item, index) => (
-            <span key={item.key} className="radio-title-style">
-              <Radio.Button
-                value={item.key}
-                className={`radio-button-style ${
-                  index === 0 ? 'first-radio-style' : ''
-                }`}
-              >
-                {item.label}
-              </Radio.Button>
-            </span>
-          ))}
-      </Radio.Group>
+    <div className={cx('dis-left', styles['created-title'])}>
+      <h3 className={styles['created-title-text']}>添加{label}</h3>
     </div>
   );
 
@@ -365,6 +332,94 @@ const SelectComponent: React.FC<CreatedProp> = ({
         info.type === item.targetType &&
         info.targetId === item.targetId &&
         info.status === AgentAddComponentStatusEnum.Added,
+    );
+  };
+  const isLoading = (item: CreatedNodeItem) => {
+    return addComponents?.some(
+      (info) =>
+        info.type === item.targetType &&
+        info.targetId === item.targetId &&
+        info.status === AgentAddComponentStatusEnum.Loading,
+    );
+  };
+  const renderNormalItem = (item: CreatedNodeItem, index: number) => {
+    const isLoadingState = isLoading(item);
+    const isAddedState = isAdded(item);
+    return (
+      <div
+        className={cx('dis-sb', styles['list-item-style'])}
+        key={`${item.targetId}-${index}`}
+      >
+        <img
+          src={item.icon || getImg(selected.key)}
+          alt=""
+          className={cx(styles['left-image-style'])}
+        />
+        <div className={cx('flex-1', styles['content-font'])}>
+          <p className={cx(styles['label-font-style'], 'text-ellipsis-2')}>
+            {item.name}
+          </p>
+          <p
+            className={cx(styles['created-description-style'], 'text-ellipsis')}
+          >
+            {item.description}
+          </p>
+          <div className={cx('dis-sb', styles['count-div-style'])}>
+            <div className={'dis-left'}>
+              <img
+                src={
+                  item.publishUser?.avatar ||
+                  require('@/assets/images/avatar.png')
+                }
+                style={{ borderRadius: '50%' }}
+                alt="用户头像"
+              />
+              <span>{item.publishUser?.nickName}</span>
+              <Divider type="vertical" />
+              <span>{`发布于${getTime(item.created!)}`}</span>
+              {![
+                AgentComponentTypeEnum.Knowledge,
+                AgentComponentTypeEnum.MCP,
+              ].includes(selected.key) && (
+                <>
+                  <Divider type="vertical" />
+                  {item.collect && (
+                    <StarFilled
+                      className={cx(
+                        styles['collect-star'],
+                        styles['icon-margin'],
+                      )}
+                      onClick={() => collectAndUnCollect(item)}
+                    />
+                  )}
+                  {!item.collect && (
+                    <StarOutlined
+                      className={cx(styles['icon-margin'])}
+                      onClick={() => collectAndUnCollect(item)}
+                    />
+                  )}
+                  <span>
+                    {item.statistics ? item.statistics.collectCount : 0}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        <Button
+          color="default"
+          variant="filled"
+          onClick={() => onAddNode(item)}
+          loading={isLoadingState}
+          className={cx(
+            styles['add-button'],
+            isAddedState && styles['add-button-added'],
+          )}
+          disabled={isAddedState ? false : isLoadingState}
+        >
+          {isAddedState ? '已添加' : '添加'}
+        </Button>
+      </div>
     );
   };
 
@@ -377,126 +432,51 @@ const SelectComponent: React.FC<CreatedProp> = ({
       centered
       title={title}
       onCancel={() => onCancel()}
-      className="created-modal-style"
+      className={cx(styles['created-modal-style'])}
       width={1096}
     >
-      <div className="created-container dis-sb-start">
-        {/* 左侧部分 */}
-        <div className="aside-style">
-          {/* 搜索框 */}
-          <Input
-            className="margin-bottom"
-            allowClear
-            value={search}
-            placeholder="搜索"
-            prefix={<SearchOutlined />}
-            onChange={(e) => {
-              setSearch(e.target.value);
-            }}
-            onClear={() => {
-              setSearch('');
-              getList(selected.key, { page: 1, pageSize: 10 });
-            }}
-            onPressEnter={(event) => {
-              if (event.key === 'Enter') {
-                onSearch((event.currentTarget as HTMLInputElement).value);
-              }
-            }}
-          />
-          {/* 创建按钮 */}
-          {/* <Button
-            type="primary"
-            className="margin-bottom"
-            style={{ width: '100%' }}
-            onClick={() => setShowCreate(true)}
-          >{`创建${selected.label}`}</Button> */}
-
-          {/* 下方的菜单 */}
-          <Menu
-            onClick={(val) => onMenuClick(val.key)}
-            selectedKeys={[selectMenu]}
-            mode="inline"
-            items={getItems()}
-          ></Menu>
-        </div>
-        {/* 右侧部分应该是变动的 */}
-        <div className="main-style flex-1 overflow-y" ref={scrollRef}>
-          {list.map((item, index) => (
-            <div
-              className="dis-sb list-item-style"
-              key={`${item.targetId}-${index}`}
-            >
-              <img
-                src={
-                  item.icon ||
-                  getImg(selected.key) ||
-                  COMPONENT_LIST.find((item) => item.type === selected.key)
-                    ?.defaultImage
+      <div className={cx(styles['created-container'])}>
+        <div className={cx('dis-left', styles['filter-bar'])}>
+          {/* <Segmented
+            value={selectMenu}
+            size="large"
+            onChange={(value) => onMenuClick(value?.key || '')}
+            options={menusItems}
+            className={styles['segmented-style']}
+          /> */}
+          {/* 左侧部分 */}
+          <div className={cx(styles['right-aside-style'])}>
+            {/* 搜索框 */}
+            <Input
+              allowClear
+              variant="filled"
+              value={search}
+              placeholder="搜索"
+              prefix={<SearchOutlined />}
+              onChange={(e) => {
+                setSearch(e.target.value);
+              }}
+              onClear={() => {
+                setSearch('');
+                getList(selected.key, { page: 1, pageSize: 10 });
+              }}
+              onPressEnter={(event) => {
+                if (event.key === 'Enter') {
+                  onSearch((event.currentTarget as HTMLInputElement).value);
                 }
-                alt=""
-                className="left-image-style"
-              />
-              <div className="flex-1 content-font">
-                <p className="label-font-style margin-bottom-6">{item.name}</p>
-                <p className="margin-bottom-6 created-description-style">
-                  {item.description}
-                </p>
-                {/* <Tag>{item.tag}</Tag> */}
-                <div className="dis-sb count-div-style">
-                  <div className={'dis-left'}>
-                    <img
-                      src={
-                        item.publishUser?.avatar ||
-                        require('@/assets/images/avatar.png')
-                      }
-                      style={{ borderRadius: '50%' }}
-                      alt="用户头像"
-                    />
-                    <span>{item.publishUser?.nickName}</span>
-                    <Divider type="vertical" />
-                    <span className="margin-left-6">
-                      发布于{getTime(item.created!)}
-                    </span>
-                    {selected.key !== AgentComponentTypeEnum.Knowledge &&
-                      !disableCollect && (
-                        <>
-                          <Divider type="vertical" />
-                          {item.collect && (
-                            <StarFilled
-                              className="collect-star icon-margin"
-                              onClick={() => collectAndUnCollect(item)}
-                            />
-                          )}
-                          {!item.collect && (
-                            <StarOutlined
-                              className="icon-margin"
-                              onClick={() => collectAndUnCollect(item)}
-                            />
-                          )}
-                          <span className="margin-left-6">
-                            {item.statistics ? item.statistics.collectCount : 0}
-                          </span>
-                        </>
-                      )}
-                  </div>
-                </div>
-              </div>
-              <Button
-                color="primary"
-                variant="outlined"
-                onClick={() => onAddNode(item)}
-                loading={addComponents?.some(
-                  (info) =>
-                    info.type === item.targetType &&
-                    info.targetId === item.targetId &&
-                    info.status === AgentAddComponentStatusEnum.Loading,
-                )}
-                disabled={isAdded(item)}
-              >
-                {isAdded(item) ? '已添加' : '添加'}
-              </Button>
-            </div>
-          ))}
+              }}
+            />
+          </div>
+        </div>
+
+        {/* 右侧部分应该是变动的 */}
+        <div
+          className={cx(styles['main-style'], 'flex-1', 'overflow-y')}
+          ref={scrollRef}
+        >
+          {list.map((item: CreatedNodeItem, index: number) =>
+            renderNormalItem(item, index),
+          )}
         </div>
       </div>
     </Modal>

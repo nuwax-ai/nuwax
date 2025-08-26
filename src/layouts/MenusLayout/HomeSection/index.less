@@ -10,16 +10,16 @@
 // }
 
 .row {
-  height: 34px;
-  line-height: 34px;
-  padding: 0 8px;
+  // height: @lineHeight;
+  line-height: @lineHeight;
+  padding: 0 @paddingXs;
   box-sizing: border-box;
-  color: @BLANK32;
-  font-size: 14px;
+  color: @colorTextTertiary;
+  font-size: @fontSize;
 
   &.active {
-    background-color: @BLANK01;
-    color: @BLANK03;
+    // background-color: @BLANK01;
+    color: @colorText;
   }
 }
 
@@ -40,9 +40,9 @@
 }
 
 .more-conversation {
-  line-height: 20px;
+  line-height: @lineHeight;
   padding: 0;
-  color: @colorTextSecondary;
+  color: @colorTextTertiary;
   font-size: @fontSizeSm;
   cursor: pointer;
   transition: color 0.3s;
@@ -50,15 +50,15 @@
   user-select: none;
 
   &:hover {
-    color: @BLANK03;
+    color: @colorText;
   }
 }
 
 .no-used {
-  line-height: 22px;
-  padding: 0 8px;
-  font-size: 14px;
-  color: @BLANK21;
+  line-height: @lineHeight;
+  padding: 0 @paddingXs;
+  font-size: @fontSize;
+  color: @colorTextTertiary;
 }
 
 .title {

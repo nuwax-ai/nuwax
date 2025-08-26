@@ -38,7 +38,6 @@ const ToggleWrap: React.FC<PropsWithChildren<ToggleWrapProps>> = ({
           onClick={onClose}
         />
       </div>
-      <div className={cx(styles['divider-horizontal'])} />
       <div className={'flex-1 overflow-y'}>{children}</div>
     </div>
   );

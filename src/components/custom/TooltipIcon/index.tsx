@@ -1,7 +1,7 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { TooltipIconProps } from '@/types/interfaces/space';
-import { PlusOutlined } from '@ant-design/icons';
-import { Tooltip } from 'antd';
+import { theme, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -20,6 +20,7 @@ const TooltipIcon: React.FC<TooltipIconProps> = ({
 }) => {
   const bg =
     type === TooltipTitleTypeEnum.Blank ? 'tooltip-blank' : 'tooltip-white';
+  const { token } = theme.useToken();
   return (
     <Tooltip title={title} classNames={{ root: bg }}>
       <span
@@ -35,7 +36,12 @@ const TooltipIcon: React.FC<TooltipIconProps> = ({
         onClick={onClick}
       >
         {/*默认加号（+）*/}
-        {icon || <PlusOutlined />}
+        {icon || (
+          <SvgIcon
+            name="icons-common-plus"
+            style={{ color: token.colorTextTertiary }}
+          />
+        )}
       </span>
     </Tooltip>
   );

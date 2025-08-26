@@ -1,5 +1,5 @@
+import { SvgIcon } from '@/components/base';
 import PromptOptimizeModal from '@/components/PromptOptimizeModal';
-import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
 import type { SystemTipsWordProps } from '@/types/interfaces/space';
 import { Button, Input, Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -28,21 +28,25 @@ const SystemTipsWord: React.FC<SystemTipsWordProps> = ({
   };
 
   return (
-    <div className={cx('flex', 'flex-col', 'flex-1', 'px-16', 'py-16')}>
+    <div className={cx('flex', 'flex-col', 'flex-1', styles.container)}>
       <div
         className={cx(
           'flex',
           'items-center',
           'content-between',
-          'mb-16',
-          'py-6',
+          styles['system-tips-wrapper'],
         )}
       >
         <span className={cx(styles['system-tips'])}>系统提示词</span>
         <Tooltip title="自动优化提示词" placement="top">
           <Button
+            color="primary"
+            variant="filled"
+            size="small"
             className={cx(styles['optimize-btn'])}
-            icon={<ICON_CONFIRM_STAR />}
+            icon={
+              <SvgIcon name="icons-common-stars" style={{ fontSize: 16 }} />
+            }
             onClick={() => setOpen(true)}
           >
             优化

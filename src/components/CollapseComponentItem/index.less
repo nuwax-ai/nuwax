@@ -1,21 +1,20 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .container {
-  gap: 6px;
-  height: 48px;
-  margin-bottom: 6px;
-  padding: 6px 16px;
-  border-radius: 4px;
-  background-color: @WHITE;
+  gap: @marginSm;
+  // height: 48px;
+  margin-bottom: @marginXxs;
+  padding: @paddingXs;
+  border-radius: @borderRadius;
   cursor: default;
+  background-color: @colorFillTertiary;
 
   &:last-child {
     margin-bottom: 0;
   }
 
   &:hover {
-    background-color: @BLANK18;
-
     .extra-box {
       display: flex;
     }
@@ -27,8 +26,8 @@
 
   .img-box {
     display: inline-block;
-    width: 24px;
-    height: 24px;
+    width: 48px;
+    height: 48px;
     overflow: hidden;
 
     img {
@@ -38,21 +37,28 @@
     }
   }
 
+  .content-box {
+    gap: 2px;
+  }
+
   .name {
     display: inline-block;
-    color: @BLANK11;
-    font-size: 12px;
+    color: @colorText;
+    font-size: @fontSize;
+    line-height: @lineHeight;
+    font-weight: @fontWeightStrong;
   }
 
   .desc {
-    color: @BLANK13;
-    font-size: 12px;
+    color: @colorTextSecondary;
+    font-size: @fontSize;
+    line-height: @lineHeight;
   }
 
   .extra-box {
-    gap: 6px;
+    gap: @marginXxs;
     display: none;
-    font-size: 16px;
+    font-size: @fontSize;
     transition: all 0.3s;
   }
 }

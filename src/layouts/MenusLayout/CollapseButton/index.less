@@ -10,44 +10,33 @@
   align-items: center;
   justify-content: center;
   background-color: @colorBgElevated;
-  border: 1px solid @colorBorderSecondary;
-  border-radius: 4px;
+  border: @lineWidth solid @colorSplit;
+  border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   z-index: 10;
+  transform: translateX(-50%);
 
   &:hover {
-    background-color: @colorBgTextHover;
-    border-color: @colorPrimary;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 10%);
   }
 
   .icon {
-    font-size: 12px;
     color: @colorTextSecondary;
     transition: color 0.2s ease-in-out;
   }
 
   &:hover .icon {
-    color: @colorPrimary;
+    color: @colorText;
   }
 
   // 收起状态时的样式调整
   &.collapsed {
-    right: -12px; // 移出二级菜单区域
-    background-color: @colorPrimary;
-    border-color: @colorPrimary;
-
-    .icon {
-      color: @colorWhite;
-    }
+    // right: -12px; // 移出二级菜单区域
 
     &:hover {
-      background-color: @colorPrimaryHover;
-      border-color: @colorPrimaryHover;
-
       .icon {
-        color: @colorWhite;
+        color: @colorText;
       }
     }
   }

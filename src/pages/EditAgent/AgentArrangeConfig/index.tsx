@@ -669,7 +669,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   }, []);
 
   return (
-    <div className={classNames('overflow-y', 'flex-1', 'px-16', 'py-12')}>
+    <div className={classNames('overflow-y', 'flex-1', styles.container)}>
       <ConfigOptionsHeader title="技能" />
       <ConfigOptionCollapse
         items={SkillList}

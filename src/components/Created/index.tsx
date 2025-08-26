@@ -1,6 +1,5 @@
 import Constant, { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
-import { ICON_WORD } from '@/constants/images.constants';
 import service, { IGetList } from '@/services/created';
 import { apiTableAdd } from '@/services/dataTable';
 import {
@@ -13,7 +12,7 @@ import { getTime } from '@/utils';
 import { jumpToMcpCreate } from '@/utils/router';
 import { getImg } from '@/utils/workflow';
 import {
-  ProductFilled,
+  PlusOutlined,
   SearchOutlined,
   StarFilled,
   StarOutlined,
@@ -26,10 +25,9 @@ import {
   Menu,
   message,
   Modal,
-  Radio,
+  Segmented,
 } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
-import { RadioChangeEvent } from 'antd/lib/radio';
 import classNames from 'classnames';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useParams } from 'umi';
@@ -108,42 +106,43 @@ const Created: React.FC<CreatedProp> = ({
   // 左侧菜单栏
   const items: MenuItem[] = [
     {
+      key: 'all', // 子项也需要唯一的 key
+      label: '全部',
+      // icon: <ProductFilled />,
+    },
+    {
       key: 'library',
-      icon: <SearchOutlined />,
+      // icon: <SearchOutlined />,
       label: `组件库${selected.label}`,
     },
     {
       key: 'collect',
-      icon: <StarFilled />,
+      // icon: <StarFilled />,
       label: '收藏',
     },
-    {
-      key: 'divider',
-      type: 'divider', // 确保分隔线项有 key 和 type 属性
-    },
-    {
-      key: 'group',
-      label: `搜索${selected.label}`, // 如果需要动态内容，可以像这样使用模板字符串
-      type: 'group', // 使用 Ant Design 支持的类型
-      children: [
-        {
-          key: 'all', // 子项也需要唯一的 key
-          label: '全部',
-          icon: <ProductFilled />,
-        },
-      ],
-    },
+    // {
+    //   key: 'group',
+    //   label: `搜索${selected.label}`, // 如果需要动态内容，可以像这样使用模板字符串
+    //   type: 'group', // 使用 Ant Design 支持的类型
+    //   children: [
+    //     {
+    //       key: 'all', // 子项也需要唯一的 key
+    //       label: '全部',
+    //       icon: <ProductFilled />,
+    //     },
+    //   ],
+    // },
   ];
 
   const knowledgeItem = [
     {
       key: 'all', // 子项也需要唯一的 key
       label: '全部',
-      icon: <ProductFilled />,
+      // icon: <ProductFilled />,
     },
     {
       key: 1,
-      icon: <ICON_WORD />,
+      // icon: <ICON_WORD />,
       label: '文档',
     },
     // {
@@ -157,7 +156,7 @@ const Created: React.FC<CreatedProp> = ({
     {
       key: 'all', // 子项也需要唯一的 key
       label: '组件库数据表',
-      icon: <ProductFilled />,
+      // icon: <ProductFilled />,
     },
   ];
 
@@ -165,11 +164,11 @@ const Created: React.FC<CreatedProp> = ({
     {
       key: 'all', // 子项也需要唯一的 key
       label: '全部',
-      icon: <ProductFilled />,
+      // icon: <ProductFilled />,
     },
     {
       key: 'custom',
-      icon: <ICON_WORD />,
+      // icon: <ICON_WORD />,
       label: '自定义服务',
     },
   ];
@@ -392,14 +391,14 @@ const Created: React.FC<CreatedProp> = ({
   };
 
   // 修改 changeTitle 方法，确保切换顶部选项时重置分页
-  const changeTitle = (val: RadioChangeEvent | string) => {
+  const changeTitle = (val: string | number) => {
     if (!val) return;
 
     // 重置知识库数据类型和是否只返回空间数据
     dataTypeRef.current = null;
     justReturnSpaceDataRef.current = false;
 
-    const _select = typeof val === 'string' ? val : val.target.value;
+    const _select = val as string;
     const _item = tabs.find((item) => item.key === _select);
     if (_item) {
       setSelectMenu('all');
@@ -465,27 +464,19 @@ const Created: React.FC<CreatedProp> = ({
   // 顶部的标题
   const title = (
     <div className={cx('dis-left', styles['created-title'])}>
-      <Radio.Group
+      <h3 className={styles['created-title-text']}>添加</h3>
+      <Segmented
         value={selected.key}
+        size="large"
         onChange={changeTitle}
-        defaultValue={AgentComponentTypeEnum.Plugin}
-      >
-        {tabs
+        options={tabs
           .filter((item) => !hideTop?.includes(item.key))
-          .map((item, index) => (
-            <span key={item.key} className={cx(styles['radio-title-style'])}>
-              <Radio.Button
-                value={item.key}
-                className={cx(
-                  styles['radio-button-style'],
-                  `${index === 0 ? styles['first-radio-style'] : ''}`,
-                )}
-              >
-                {item.label}
-              </Radio.Button>
-            </span>
-          ))}
-      </Radio.Group>
+          .map((item) => ({
+            label: item.label,
+            value: item.key,
+          }))}
+        className={styles['segmented-style']}
+      />
     </div>
   );
 
@@ -553,6 +544,7 @@ const Created: React.FC<CreatedProp> = ({
 
   const renderNormalItem = (item: CreatedNodeItem, index: number) => {
     const isCurrentLoading = handleItemLoading(item);
+    const isAddedState = isAdded(item);
     return (
       <div
         className={cx('dis-sb', styles['list-item-style'])}
@@ -564,21 +556,11 @@ const Created: React.FC<CreatedProp> = ({
           className={cx(styles['left-image-style'])}
         />
         <div className={cx('flex-1', styles['content-font'])}>
-          <p
-            className={cx(
-              styles['label-font-style'],
-              'mb-6',
-              'text-ellipsis-2',
-            )}
-          >
+          <p className={cx(styles['label-font-style'], 'text-ellipsis-2')}>
             {item.name}
           </p>
           <p
-            className={cx(
-              styles['created-description-style'],
-              'mb-6',
-              'text-ellipsis',
-            )}
+            className={cx(styles['created-description-style'], 'text-ellipsis')}
           >
             {item.description}
           </p>
@@ -625,13 +607,17 @@ const Created: React.FC<CreatedProp> = ({
           </div>
         </div>
         <Button
-          color="primary"
-          variant="outlined"
+          color="default"
+          variant="filled"
           onClick={() => onAddNode(item)}
           loading={isCurrentLoading}
-          disabled={isCurrentLoading ? false : isAdded(item)}
+          className={cx(
+            styles['add-button'],
+            isAddedState && styles['add-button-added'],
+          )}
+          disabled={isCurrentLoading ? false : isAddedState}
         >
-          {isAdded(item) ? '已添加' : '添加'}
+          {isAddedState ? '已添加' : '添加'}
         </Button>
       </div>
     );
@@ -662,40 +648,43 @@ const Created: React.FC<CreatedProp> = ({
       <div className={cx(styles['created-container'], 'dis-sb-start')}>
         {/* 左侧部分 */}
         <div className={cx(styles['aside-style'])}>
-          {/* 搜索框 */}
-          <Input
-            className={cx('mb-16')}
-            allowClear
-            value={search}
-            placeholder="搜索"
-            prefix={<SearchOutlined />}
-            onChange={(e) => {
-              setSearch(e.target.value);
-            }}
-            onClear={() => {
-              setSearch('');
-              getList(selected.key, { page: 1, pageSize: 10 });
-            }}
-            onPressEnter={(event) => {
-              if (event.key === 'Enter') {
-                setDoSearching({ ...doSearching, searching: true });
-                onSearch((event.currentTarget as HTMLInputElement).value);
-              }
-            }}
-          />
-          {/* 创建按钮 */}
-          <Button
-            type="primary"
-            className={cx('mb-16')}
-            block
-            onClick={() => handleClickCreate(selected.key, spaceId)}
-          >{`创建${selected.label}`}</Button>
-
+          <div className={cx(styles['aside-header'])}>
+            {/* 搜索框 */}
+            <Input
+              allowClear
+              value={search}
+              variant="filled"
+              placeholder="搜索"
+              prefix={<SearchOutlined />}
+              onChange={(e) => {
+                setSearch(e.target.value);
+              }}
+              onClear={() => {
+                setSearch('');
+                getList(selected.key, { page: 1, pageSize: 10 });
+              }}
+              onPressEnter={(event) => {
+                if (event.key === 'Enter') {
+                  setDoSearching({ ...doSearching, searching: true });
+                  onSearch((event.currentTarget as HTMLInputElement).value);
+                }
+              }}
+            />
+            {/* 创建按钮 */}
+            <Button
+              type="primary"
+              className={cx(styles['create-button'])}
+              icon={<PlusOutlined />}
+              block
+              onClick={() => handleClickCreate(selected.key, spaceId)}
+            >{`创建${selected.label}`}</Button>
+          </div>
           {/* 下方的菜单 */}
           <Menu
+            className={cx(styles['aside-menu'])}
             onClick={(val) => onMenuClick(val.key)}
             selectedKeys={[selectMenu]}
-            mode="inline"
+            mode="vertical"
             items={getItems()}
           ></Menu>
         </div>

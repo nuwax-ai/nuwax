@@ -18,10 +18,9 @@ const ConfigOptionsHeader: React.FC<
         'flex',
         'content-between',
         'items-center',
-        'px-6',
       )}
     >
-      <span>{title}</span>
+      <p className={cx(styles['title'])}>{title}</p>
       {children}
     </div>
   );

@@ -15,7 +15,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import ActivatedIcon from '../EcosystemCard/ActivatedIcon';
+import ActivatedIcon from './ActivatedIcon';
 import styles from './index.less';
 // 方程式支持
 import { AgentComponentTypeEnum } from '@/types/enums/agent';

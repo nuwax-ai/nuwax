@@ -1,7 +1,12 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .container {
-  height: 36px;
-  font-size: 14px;
-  color: @GRAY05;
+  padding: @paddingXs;
+
+  .title {
+    font-size: @fontSize;
+    line-height: @lineHeight;
+    color: @colorTextSecondary;
+  }
 }

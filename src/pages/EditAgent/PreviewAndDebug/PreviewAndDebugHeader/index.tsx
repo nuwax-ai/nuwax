@@ -1,4 +1,5 @@
-import debugImage from '@/assets/images/debug_image.png';
+import { SvgIcon } from '@/components/base';
+import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -24,20 +25,14 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
       <h3>预览与调试</h3>
       <div className={cx(styles['extra-box'], 'flex')}>
         {/*<MessageOutlined className={cx('cursor-pointer')} />*/}
-        <span
-          className={cx(
-            'hover-box',
-            'cursor-pointer',
-            'flex',
-            'items-center',
-            'content-center',
-            styles.debug,
-          )}
+        <Button
+          type="text"
+          className={cx(styles.debug)}
+          icon={<SvgIcon name="icons-common-debug" />}
           onClick={onPressDebug}
         >
-          <img src={debugImage as string} alt="" />
           调试
-        </span>
+        </Button>
       </div>
     </header>
   );

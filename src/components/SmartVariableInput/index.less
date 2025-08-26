@@ -1,4 +1,4 @@
-@import '@/styles/themeVariables.less';
+@import '@/styles/token.less';
 
 // 组件特有的变量定义（如果全局没有对应变量）
 @smart-variable-popover-width: 200px;
@@ -28,23 +28,23 @@
   position: relative;
 
   .editor {
-    border: 1px solid @xagi-border-color-base;
-    border-radius: @xagi-border-radius;
+    border: 1px solid @colorBorder;
+    border-radius: @borderRadius;
     min-height: @smart-variable-editor-min-height;
-    padding: @xagi-padding-sm;
+    padding: @paddingSm;
     outline: none;
-    font-size: @xagi-font-size;
+    font-size: @fontSize;
     line-height: 1.5;
     color: @smart-variable-text-color;
     background-color: @smart-variable-component-bg;
     transition: @smart-variable-transition;
 
     &:hover {
-      border-color: @xagi-primary-color-hover;
+      border-color: @colorPrimaryHover;
     }
 
     &:focus {
-      border-color: @xagi-primary-color-hover;
+      border-color: @colorPrimaryHover;
       box-shadow: 0 0 0 2px rgba(24, 144, 255, 20%);
     }
 
@@ -57,12 +57,12 @@
 
   .placeholder {
     position: absolute;
-    top: @xagi-padding-sm;
-    left: @xagi-padding-sm;
+    top: @paddingSm;
+    left: @paddingSm;
     color: @smart-variable-text-placeholder;
     pointer-events: none;
     user-select: none;
-    font-size: @xagi-font-size;
+    font-size: @fontSize;
     padding-top: 1px;
     padding-left: 1px;
     line-height: 1.5;
@@ -72,10 +72,10 @@
     position: fixed;
     z-index: 1000;
     background: @smart-variable-component-bg;
-    border: 1px solid @xagi-border-color-base;
-    border-radius: @xagi-border-radius;
-    box-shadow: @xagi-box-shadow;
-    padding: @xagi-padding-sm;
+    border: 1px solid @colorBorder;
+    border-radius: @borderRadius;
+    box-shadow: @boxShadow;
+    padding: @paddingSm;
     width: @smart-variable-popover-width;
     height: @smart-variable-popover-height;
     overflow: hidden;
@@ -98,18 +98,18 @@
       }
 
       .ant-tree-title {
-        font-size: @xagi-font-size-sm;
+        font-size: @fontSizeSm;
         color: @smart-variable-text-color;
       }
 
       .ant-tree-switcher {
-        width: @xagi-padding-lg;
-        height: @xagi-padding-lg;
-        line-height: @xagi-padding-lg;
+        width: @paddingLg;
+        height: @paddingLg;
+        line-height: @paddingLg;
       }
 
       .ant-tree-indent-unit {
-        width: @xagi-padding-lg;
+        width: @paddingLg;
       }
     }
   }
@@ -120,7 +120,7 @@
     border: 1px solid @smart-variable-highlight-border;
     border-radius: 3px;
     padding: 1px 3px;
-    color: @xagi-primary-color;
+    color: @colorPrimary;
     font-weight: 500;
   }
 }

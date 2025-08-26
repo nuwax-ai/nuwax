@@ -1,19 +1,40 @@
 @import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  padding: @paddingXs @padding;
+  border-left: @lineWidth solid @colorSplit;
+  //隐藏滚动条
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.system-tips-wrapper {
+  padding: @paddingXs;
+}
 
 .system-tips {
-  font-size: 14px;
-  font-weight: bold;
-  color: @BLANK04;
+  font-size: @fontSize;
+  line-height: @lineHeight;
+  color: @colorTextSecondary;
 }
 
 .optimize-btn {
-  height: 30px;
-  // background-color: @GRAY03; /* 修改背景颜色 */
-  color: @BLUE01; /* 修改文本颜色 */
-  border: none;
+  color: @colorText; /* 修改文本颜色 */
+  padding: @paddingXs @paddingSm;
+  line-height: 16px;
+  height: 16px;
+  box-sizing: content-box;
+  font-size: @fontSize;
+  gap: @paddingXxs;
 }
 
 .text-area {
   padding-left: 0;
   padding-right: 0;
+  //隐藏滚动条
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

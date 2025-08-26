@@ -1,19 +1,22 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .edit-header {
-  height: 60px;
-  border-bottom: 1px solid @GRAY06;
+  height: 40px;
+  padding: @padding @paddingLg;
+  border-bottom: @lineWidth solid @colorSplit;
+  box-sizing: content-box;
 
   h3 {
-    font-size: 18px;
-    font-weight: bold;
-    color: @BLANK04;
+    font-size: 20px;
+    font-weight: @fontWeightStrong;
+    color: @colorText;
   }
 
   .drop-box {
-    gap: 8px;
-    color: @GRAY07;
-    font-size: 14px;
+    gap: @marginXs;
+    color: @colorText;
+    font-size: @fontSizeLg;
 
     img {
       width: 22px;

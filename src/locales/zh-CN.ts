@@ -5,11 +5,14 @@
  * 包含：
  * - 主题切换文案
  * - 语言切换文案
+ * - 背景选择文案
  */
 export default {
   // 主题相关
   'theme.light': '浅色',
   'theme.dark': '深色',
+  'theme.background': '背景',
+  'theme.background.select': '选择背景',
 
   // 语言切换相关
   'lang.en': '英文',

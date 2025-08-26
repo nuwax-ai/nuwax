@@ -1,7 +1,7 @@
-import { DownOutlined } from '@ant-design/icons';
 import { Typography } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
+import SvgIcon from '../SvgIcon';
 import styles from './index.less';
 import SubItem from './SubItem';
 
@@ -51,8 +51,15 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
           icon
         )}
       </span>
-      <Typography.Text className={cx('flex-1')}>{name}</Typography.Text>
-      {isDown ? <DownOutlined className={cx(styles['icon-dropdown'])} /> : null}
+      <Typography.Text className={cx('flex-1', styles.name)}>
+        {name}
+      </Typography.Text>
+      {isDown ? (
+        <SvgIcon
+          name="icons-common-caret_down"
+          className={cx(styles['icon-dropdown'])}
+        />
+      ) : null}
     </div>
   );
 };

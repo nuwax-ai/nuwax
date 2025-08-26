@@ -57,6 +57,7 @@ const CollapseComponentItem: React.FC<CollapseComponentItemProps> = ({
           'flex-col',
           'content-center',
           'overflow-hide',
+          styles['content-box'],
         )}
       >
         <h3 className={cx('text-ellipsis', styles.name)}>

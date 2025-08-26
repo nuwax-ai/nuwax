@@ -17,7 +17,7 @@ import { ReactComponent as ShareSvgFile } from '@/assets/icons/chat/share.svg';
 import { ReactComponent as StopSvgFile } from '@/assets/icons/chat/stop.svg';
 import { ReactComponent as UserSvgFile } from '@/assets/icons/chat/user.svg';
 import React from 'react';
-import { wrapSvg } from './common';
+import { wrapSvg } from './utils';
 
 const SendSvg = wrapSvg(SendSvgFile);
 const NetworkSvg = wrapSvg(NetworkSvgFile);

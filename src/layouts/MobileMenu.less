@@ -1,9 +1,20 @@
+@import '@/styles/token';
+
 .mobileMenuBtn {
   position: fixed;
-  top: 6px;
+  top: 18px;
   // left 位置现在通过内联样式动态设置
   z-index: 1000;
   transition: margin-left 0.3s;
+  border-radius: 50%;
+  border: @lineWidth solid @colorBorder;
+  width: 20px;
+  height: 20px;
+  padding: 4px;
+  box-sizing: content-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mobileMenuMask {

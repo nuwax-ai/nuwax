@@ -1,9 +1,9 @@
 import type { AgentArrangeConfigEnum } from '@/types/enums/space';
 import type { ConfigOptionCollapseProps } from '@/types/interfaces/space';
-import { RightOutlined } from '@ant-design/icons';
-import { Collapse } from 'antd';
+import { Collapse, theme } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import SvgIcon from '../base/SvgIcon';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -31,12 +31,17 @@ const ConfigOptionCollapse: React.FC<ConfigOptionCollapseProps> = ({
     setActiveKey(key as AgentArrangeConfigEnum[]);
     onChangeCollapse?.(key as AgentArrangeConfigEnum[]);
   };
+  const { token } = theme.useToken();
 
   return (
     <Collapse
       bordered={false}
       expandIcon={({ isActive }) => (
-        <RightOutlined rotate={isActive ? 90 : 0} />
+        <SvgIcon
+          name="icons-common-caret_right"
+          rotate={isActive ? 90 : 0}
+          style={{ color: token.colorTextTertiary }}
+        />
       )}
       className={cx(styles.header, className)}
       activeKey={activeKey}

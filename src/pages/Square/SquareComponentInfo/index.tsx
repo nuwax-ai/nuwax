@@ -27,6 +27,7 @@ const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
   onClick,
   publishedItemInfo,
   onToggleCollectSuccess,
+  extra,
 }) => {
   const {
     targetType,
@@ -127,6 +128,7 @@ const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
               <span>{statistics?.collectCount}</span>
             )}
           </span>
+          {extra}
         </footer>
       }
     />
