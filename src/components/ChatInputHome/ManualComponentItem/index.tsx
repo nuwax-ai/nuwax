@@ -6,11 +6,18 @@ import React, { useMemo } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+const isInfoContains = (item: AgentManualComponentInfo, keywords: string[]) => {
+  return keywords.some(
+    (keyword) =>
+      item.name.includes(keyword) || item.description.includes(keyword),
+  );
+};
+
 const getIcon = (_item: AgentManualComponentInfo) => {
-  if (_item.type === 'Plugin' && _item.name === '联网搜索') {
+  if (_item.type === 'Plugin' && isInfoContains(_item, ['联网', '搜索'])) {
     return 'icons-chat-network';
   }
-  if (!_item.icon && _item.type === 'Model') {
+  if (_item.type === 'Model' || isInfoContains(_item, ['推理', '思考'])) {
     return 'icons-chat-deep_thinking';
   }
   return _item.icon;
