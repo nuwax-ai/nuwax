@@ -6,7 +6,7 @@ import { AgentDetailDto } from '@/types/interfaces/agent';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { message } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 
@@ -30,22 +30,26 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
   // 使用 UmiJS model 中的历史会话和定时任务状态管理
   const { openHistoryConversation, openTimedTask } =
     useModel('conversationInfo');
+  const [isCollected, setIsCollected] = useState<boolean>(
+    agentInfo?.collect || false,
+  );
 
   // 切换收藏与取消收藏
-  const handleToggleCollect = () => {
-    if (!agentInfo?.statistics?.targetId) {
+  const handleToggleCollect = useCallback(() => {
+    const targetId = agentInfo?.statistics?.targetId;
+    if (!targetId) {
       message.error('智能体信息不完整');
       return;
     }
 
-    if (agentInfo.collect) {
+    if (isCollected) {
       // 取消收藏
-      apiUnCollectAgent(agentInfo.statistics.targetId)
+      apiUnCollectAgent(targetId)
         .then(() => {
           message.success('已取消收藏');
           // 更新本地状态
           if (agentInfo) {
-            agentInfo.collect = false;
+            setIsCollected(false);
           }
         })
         .catch(() => {
@@ -53,19 +57,19 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
         });
     } else {
       // 添加收藏
-      apiCollectAgent(agentInfo.statistics.targetId)
+      apiCollectAgent(targetId)
         .then(() => {
           message.success('已添加到收藏');
           // 更新本地状态
           if (agentInfo) {
-            agentInfo.collect = true;
+            setIsCollected(true);
           }
         })
         .catch(() => {
           message.error('添加收藏失败');
         });
     }
-  };
+  }, [agentInfo?.statistics?.targetId, isCollected]);
 
   // 分享功能
   const handleShare = async () => {
@@ -104,13 +108,11 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
           onClick: handleShare,
         },
         {
-          key: agentInfo?.collect ? 'collected' : 'collect',
-          icon: agentInfo?.collect
-            ? 'icons-chat-collected'
-            : 'icons-chat-collect',
+          key: isCollected ? 'collected' : 'collect',
+          icon: isCollected ? 'icons-chat-collected' : 'icons-chat-collect',
           title: '收藏',
           onClick: handleToggleCollect,
-          className: agentInfo?.collect ? styles.collected : '',
+          className: isCollected ? styles.collected : '',
         },
         // 定时任务功能 - 根据配置决定是否显示
         ...(agentInfo?.openScheduledTask === OpenCloseEnum.Open
@@ -132,7 +134,7 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
           className: styles['history-conversation'],
         },
       ].filter(Boolean) as ActionItem[],
-    [agentInfo, openHistoryConversation, openTimedTask],
+    [isCollected, agentInfo, openHistoryConversation, openTimedTask],
   );
 
   return (
