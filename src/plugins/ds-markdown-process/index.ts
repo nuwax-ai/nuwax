@@ -12,7 +12,7 @@ const getBlockWrapper = (
     .join(' ');
 
   // 修复DOM嵌套验证错误：使用div代替p标签，因为自定义组件包含块级元素
-  return `<div><${blockName} ${attrs}></${blockName}></div>`;
+  return `\n\n<div><${blockName} ${attrs}></${blockName}></div>\n\n`;
 };
 
 const getBlockName = (): string => {
