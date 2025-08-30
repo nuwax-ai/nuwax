@@ -154,11 +154,11 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             { required: true, message: '请输入智能体名称' },
             {
               validator(_, value) {
-                if (!value || value?.length <= 20) {
+                if (!value || value?.length <= 50) {
                   return Promise.resolve();
                 }
-                if (value?.length > 20) {
-                  return Promise.reject(new Error('名称不能超过20个字符!'));
+                if (value?.length > 50) {
+                  return Promise.reject(new Error('名称不能超过50个字符!'));
                 }
                 return Promise.reject(new Error('请输入智能体名称!'));
               },
@@ -168,7 +168,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           <Input
             placeholder="给智能体起一个独一无二的名字"
             showCount
-            maxLength={20}
+            maxLength={50}
           />
         </Form.Item>
         <OverrideTextArea
