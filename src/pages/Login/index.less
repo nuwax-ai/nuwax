@@ -1,84 +1,76 @@
-@import '@/styles/color';
+@import '@/styles/token';
 
 .container {
-  background-color: @WHITE06;
+  //background-color: @WHITE06;
+  background-color: #b386e3;
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
 
-  .logo {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-  }
-
-  .form {
+  // 左侧盒子
+  .left-box {
     position: relative;
-    width: 479px;
-    height: 488px;
-    padding: 50px 65px 36px;
-    box-sizing: border-box;
-    border-radius: 20px;
-    background-color: @WHITE;
 
-    .title {
-      font-size: 24px;
-      font-weight: 900;
-      color: @BLANK04;
-      text-align: center;
-    }
-
-    .select-box {
-      z-index: 999;
+    .logo {
       position: absolute;
-      left: 65px;
-      top: 115px;
+      left: 40px;
+      top: 40px;
+      width: 64px;
+      height: 64px;
+      border-radius: 10px;
     }
 
-    .select {
-      width: 80px !important;
-    }
+    flex: 1;
+    display: flex;
+    justify-content: center; /* 水平居中 */
+    align-items: center; /* 垂直居中 */
 
-    .input {
-      height: 40px;
-    }
+    .left-title-box {
+      width: 100%; /* 宽度自适应 */
+      max-width: 540px; /* 最大宽度 */
+      padding: 20px;
+      box-sizing: border-box;
+      color: #fff;
+      font-size: 40px;
+      font-style: normal;
+      font-weight: 300;
+      line-height: 56px; /* 140% */
 
-    .login {
-      margin-bottom: 5px;
+      .title {
+        font-weight: 700;
+      }
 
-      .btn {
-        height: 40px;
-        line-height: 40px;
-        padding: 0;
-        border: none;
+      .sub-title {
+        margin-top: 28px;
+        font-size: 18px;
+        font-style: normal;
+        font-weight: 500;
+        line-height: 24px;
+        opacity: 0.6;
       }
     }
-
-    .code-login {
-      font-size: 14px;
-      color: @BLUE02;
-    }
-
-    .ant-input-wrapper {
-      height: 100%;
-    }
   }
-}
 
-.other-lotin {
-  width: 100%;
-  text-align: center;
-  color: #6b7280;
-  font-size: 14px;
-  cursor: pointer;
-}
+  // 右侧盒子
+  .right-box {
+    flex: 1;
+    display: flex;
+    justify-content: center; /* 水平居中 */
+    align-items: center; /* 垂直居中 */
+    padding: 48px 64px;
 
-@media (max-width: 768px) {
-  .container {
-    .form {
-      padding: 32px 24px 0;
-      width: calc(100% - 24px);
-      height: unset;
+    .right-form-box {
+      width: 100%; /* 宽度自适应 */
+      max-width: 520px;
+      max-height: 680px;
+      height: auto;
+      padding: 48px 64px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 60%);
+      background: rgba(255, 255, 255, 85%);
+      box-shadow: 0 8px 48px 0 rgba(0, 0, 0, 16%);
+      backdrop-filter: blur(12px);
     }
   }
 }
