@@ -1,6 +1,3 @@
-import AliyunCaptcha from '@/components/AliyunCaptcha';
-import ConditionRender from '@/components/ConditionRender';
-import SiteFooter from '@/components/SiteFooter';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import { apiLogin } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
@@ -12,12 +9,29 @@ import {
   validatePassword,
 } from '@/utils/common';
 import { ExclamationCircleFilled } from '@ant-design/icons';
-import { Button, Checkbox, Form, FormProps, Input, Modal, Select } from 'antd';
+import {
+  Button,
+  Checkbox,
+  ConfigProvider,
+  Form,
+  FormProps,
+  Input,
+  Modal,
+  Segmented,
+  Select,
+  theme,
+  Typography,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useRequest, useSearchParams } from 'umi';
+import BasicLayout from './BasicLayout';
 import styles from './index.less';
 import SiteProtocol from './SiteProtocol';
+
+const { Title } = Typography;
+
+type SegmentedItemType = { label: string; value: string };
 
 const cx = classNames.bind(styles);
 
@@ -34,7 +48,7 @@ const Login: React.FC = () => {
   const { loadEnd, tenantConfigInfo, runTenantConfig } =
     useModel('tenantConfigInfo');
 
-  const { run } = useRequest(apiLogin, {
+  const { run, loading } = useRequest(apiLogin, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: ILoginResult, params: LoginFieldType[]) => {
@@ -164,16 +178,11 @@ const Login: React.FC = () => {
     doLogin();
   };
 
-  const handlerLink = () => {
-    // 切换登录类型
-    const type =
-      loginType === LoginTypeEnum.Password
-        ? LoginTypeEnum.Code
-        : LoginTypeEnum.Password;
-    setLoginType(type);
-    loginTypeRef.current = type;
+  const handleChangeType = (value: string) => {
+    setLoginType(Number(value));
+    loginTypeRef.current = Number(value);
   };
-
+  const { token } = theme.useToken();
   const selectBefore = (
     <Form.Item name="areaCode" noStyle>
       <Select style={{ width: 80 }}>
@@ -181,100 +190,109 @@ const Login: React.FC = () => {
       </Select>
     </Form.Item>
   );
+  // 分段器切换登录方式
+  const options: SegmentedItemType[] = [
+    { label: '密码登录', value: LoginTypeEnum.Password + '' },
+    { label: '手机号登录', value: LoginTypeEnum.Code + '' },
+  ];
 
   return (
-    <div
-      className={cx(
-        styles.container,
-        'h-full',
-        'flex',
-        'flex-col',
-        'overflow-y',
-      )}
+    <ConfigProvider
+      theme={{
+        token: {},
+        components: {
+          Segmented: {
+            itemSelectedColor: token.colorPrimary,
+            itemHoverBg: 'transparent',
+            itemActiveBg: 'transparent',
+            trackBg: token.colorFillTertiary,
+            itemColor: token.colorTextTertiary,
+            itemHoverColor: token.colorPrimary,
+          },
+        },
+      }}
     >
-      <ConditionRender condition={!!tenantConfigInfo?.siteLogo}>
-        <img
-          src={tenantConfigInfo?.siteLogo}
-          className={cx(styles.logo)}
-          alt=""
-        />
-      </ConditionRender>
-      <div className={cx('flex-1', 'flex', 'content-center', 'items-center')}>
-        {loadEnd && (
-          <Form
-            form={form}
-            validateTrigger="onBlur"
-            initialValues={{
-              areaCode: '86',
-            }}
-            rootClassName={cx(styles.form, 'flex', 'flex-col')}
-            name="login"
-            onFinish={onFinish}
-          >
-            <Form.Item>
-              <h3
-                className={cx(styles.title, 'clip-path-animation')}
-              >{`欢迎使用${tenantConfigInfo?.siteName || ''}`}</h3>
-            </Form.Item>
-            <Form.Item name="phoneOrEmail" rules={getPhoneOrEmailRules()}>
-              {tenantConfigInfo?.authType === 3 ? (
-                <Input placeholder="请输入邮箱地址" size={'large'} />
-              ) : (
-                <Input
-                  placeholder="请输入手机号"
-                  addonBefore={selectBefore}
-                  size={'large'}
+      <BasicLayout>
+        <div>
+          {loadEnd && (
+            <div className={cx(styles['form-box'])}>
+              {tenantConfigInfo?.authType !== 3 && (
+                <Segmented
+                  options={options}
+                  value={loginType + ''}
+                  onChange={handleChangeType}
+                  size="large"
+                  block
                 />
               )}
-            </Form.Item>
-            <Form.Item className={'flex-1'}>
-              {loginType === LoginTypeEnum.Password && (
-                <Form.Item name="password" rules={passwordRules}>
-                  <Input
-                    size={'large'}
-                    type="password"
-                    autoComplete="off"
-                    placeholder="请输入6位以上密码"
-                  />
+              <Form
+                form={form}
+                validateTrigger="onBlur"
+                initialValues={{
+                  areaCode: '86',
+                }}
+                rootClassName={cx(styles.form, 'flex', 'flex-col')}
+                name="login"
+                onFinish={onFinish}
+              >
+                <Form.Item>
+                  <Title level={2} style={{ marginTop: 72 }}>{`欢迎使用${
+                    tenantConfigInfo?.siteName || ''
+                  }`}</Title>
                 </Form.Item>
-              )}
-              <Form.Item className={cx('mb-16')}>
-                <Checkbox
-                  checked={checked}
-                  onChange={(e) => setChecked(e.target.checked)}
-                >
-                  <SiteProtocol />
-                </Checkbox>
-              </Form.Item>
-              <Form.Item className={cx(styles.login)}>
-                <Button
-                  className={cx(styles.btn)}
-                  block
-                  type="primary"
-                  htmlType="submit"
-                >
-                  {loginType === LoginTypeEnum.Password ? '登录' : '下一步'}
-                </Button>
-              </Form.Item>
-              <Form.Item className={cx(styles['code-login'])}>
-                <a className={'cursor-pointer'} onClick={handlerLink}>
-                  {loginType === LoginTypeEnum.Password
-                    ? '验证码登录/注册'
-                    : '密码登录'}
-                </a>
-              </Form.Item>
-            </Form.Item>
-          </Form>
-        )}
-      </div>
-      <SiteFooter text={tenantConfigInfo?.pageFooterText} />
-      <Button id="aliyun-captcha-login" style={{ display: 'none' }} />
-      <AliyunCaptcha
-        config={tenantConfigInfo}
-        doAction={handlerSuccess}
-        elementId="aliyun-captcha-login"
-      />
-    </div>
+                <Form.Item name="phoneOrEmail" rules={getPhoneOrEmailRules()}>
+                  {tenantConfigInfo?.authType === 3 ? (
+                    <Input placeholder="请输入邮箱地址" size={'large'} />
+                  ) : (
+                    <Input
+                      placeholder="请输入手机号"
+                      addonBefore={selectBefore}
+                      size={'large'}
+                    />
+                  )}
+                </Form.Item>
+                <Form.Item className={'flex-1'}>
+                  {loginType === LoginTypeEnum.Password && (
+                    <Form.Item name="password" rules={passwordRules}>
+                      <Input
+                        size={'large'}
+                        type="password"
+                        autoComplete="off"
+                        placeholder="请输入6位以上密码"
+                      />
+                    </Form.Item>
+                  )}
+
+                  <Form.Item className={cx(styles.login)}>
+                    <Button
+                      className={cx(styles.btn)}
+                      block
+                      type="primary"
+                      htmlType="submit"
+                      size="large"
+                      loading={loading}
+                    >
+                      {loginType === LoginTypeEnum.Password ? '登录' : '下一步'}
+                    </Button>
+                  </Form.Item>
+                  <Form.Item
+                    className={cx('mb-16')}
+                    style={{ marginTop: '-10px' }}
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onChange={(e) => setChecked(e.target.checked)}
+                    >
+                      <SiteProtocol />
+                    </Checkbox>
+                  </Form.Item>
+                </Form.Item>
+              </Form>
+            </div>
+          )}
+        </div>
+      </BasicLayout>
+    </ConfigProvider>
   );
 };
 

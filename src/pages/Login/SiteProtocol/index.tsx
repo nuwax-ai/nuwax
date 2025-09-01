@@ -12,10 +12,17 @@ const SiteProtocol: React.FC = () => {
         href="https://nuwax.com/user-agreement.html"
         target="_blank"
         rel="noreferrer"
+        className={cx(styles.a)}
       >
-        服务使用协议、
+        服务使用协议
       </a>
-      <a href="https://nuwax.com/privacy.html" target="_blank" rel="noreferrer">
+      <span className={cx(styles.span)}>、</span>
+      <a
+        href="https://nuwax.com/privacy.html"
+        target="_blank"
+        rel="noreferrer"
+        className={cx(styles.a)}
+      >
         隐私协议
       </a>
     </>
