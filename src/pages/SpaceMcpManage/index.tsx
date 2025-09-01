@@ -1,3 +1,4 @@
+import ButtonToggle from '@/components/ButtonToggle';
 import Loading from '@/components/custom/Loading';
 import SelectList from '@/components/custom/SelectList';
 import {
@@ -25,7 +26,7 @@ import {
   PlusOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
-import { Button, Empty, Input, message, Modal, Segmented } from 'antd';
+import { Button, Empty, Input, message, Modal, Segmented, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
@@ -299,41 +300,51 @@ const SpaceLibrary: React.FC = () => {
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <div className={cx('flex', 'content-between')}>
-        <h3 className={cx(styles.title)}>MCP管理</h3>
-        <Segmented
-          options={MCP_MANAGE_SEGMENTED_LIST}
-          value={segmentedValue}
-          onChange={handleChangeSegmentedValue}
-        />
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-          创建MCP服务
-        </Button>
+        <div style={{ flex: 1 }}>
+          <Space>
+            <h3 className={cx(styles.title)}>MCP管理</h3>
+            {segmentedValue === McpManageSegmentedEnum.Custom && (
+              <>
+                <SelectList
+                  value={create}
+                  options={CREATE_LIST}
+                  onChange={handlerChangeCreate}
+                />
+                {/* 单选模式 */}
+                <ButtonToggle
+                  options={FILTER_DEPLOY}
+                  value={deployStatus}
+                  onChange={(value) =>
+                    handlerChangeDeployStatus(value as React.Key)
+                  }
+                />
+              </>
+            )}
+          </Space>
+        </div>
+        <div>
+          <Segmented
+            options={MCP_MANAGE_SEGMENTED_LIST}
+            value={segmentedValue}
+            onChange={handleChangeSegmentedValue}
+          />
+        </div>
+        <div style={{ flex: 1, display: 'flex' }}>
+          <Input
+            rootClassName={cx(styles.input)}
+            placeholder="搜索MCP服务"
+            value={keyword}
+            onChange={handleQueryAgent}
+            prefix={<SearchOutlined />}
+            allowClear
+            onClear={handleClearKeyword}
+          />
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+            创建MCP服务
+          </Button>
+        </div>
       </div>
-      <div className={cx('flex', styles['select-search-area'])}>
-        {segmentedValue === McpManageSegmentedEnum.Custom && (
-          <>
-            <SelectList
-              value={create}
-              options={CREATE_LIST}
-              onChange={handlerChangeCreate}
-            />
-            <SelectList
-              value={deployStatus}
-              options={FILTER_DEPLOY}
-              onChange={handlerChangeDeployStatus}
-            />
-          </>
-        )}
-        <Input
-          rootClassName={cx(styles.input)}
-          placeholder="搜索MCP服务"
-          value={keyword}
-          onChange={handleQueryAgent}
-          prefix={<SearchOutlined />}
-          allowClear
-          onClear={handleClearKeyword}
-        />
-      </div>
+      <div className={cx('flex', styles['select-search-area'])}></div>
       {loading ? (
         <Loading />
       ) : listLength > 0 ? (
