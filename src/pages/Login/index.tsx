@@ -28,6 +28,7 @@ import { history, useModel, useRequest, useSearchParams } from 'umi';
 import BasicLayout from './BasicLayout';
 import styles from './index.less';
 import SiteProtocol from './SiteProtocol';
+
 const { Title } = Typography;
 
 type SegmentedItemType = { label: string; value: string };
@@ -47,7 +48,7 @@ const Login: React.FC = () => {
   const { loadEnd, tenantConfigInfo, runTenantConfig } =
     useModel('tenantConfigInfo');
 
-  const { run } = useRequest(apiLogin, {
+  const { run, loading } = useRequest(apiLogin, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: ILoginResult, params: LoginFieldType[]) => {
@@ -269,6 +270,7 @@ const Login: React.FC = () => {
                       type="primary"
                       htmlType="submit"
                       size="large"
+                      loading={loading}
                     >
                       {loginType === LoginTypeEnum.Password ? '登录' : '下一步'}
                     </Button>
