@@ -1,76 +1,104 @@
 @import '@/styles/token';
 
-.container {
-  //background-color: @WHITE06;
-  background-color: #b386e3;
-  display: flex;
-  flex-direction: row;
-  width: 100%;
+.form-box {
+  width: 100%; /* 宽度自适应 */
+  width: 520px;
+  max-height: 680px;
+  min-height: 680px;
   height: 100%;
+  padding: 48px 64px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 60%);
+  background: rgba(255, 255, 255, 85%);
+  box-shadow: 0 8px 48px 0 rgba(0, 0, 0, 16%);
+  backdrop-filter: blur(12px);
+  overflow: auto;
+}
 
-  // 左侧盒子
-  .left-box {
-    position: relative;
-
-    .logo {
-      position: absolute;
-      left: 40px;
-      top: 40px;
-      width: 64px;
-      height: 64px;
-      border-radius: 10px;
-    }
-
-    flex: 1;
-    display: flex;
-    justify-content: center; /* 水平居中 */
-    align-items: center; /* 垂直居中 */
-
-    .left-title-box {
-      width: 100%; /* 宽度自适应 */
-      max-width: 540px; /* 最大宽度 */
-      padding: 20px;
-      box-sizing: border-box;
-      color: #fff;
-      font-size: 40px;
-      font-style: normal;
-      font-weight: 300;
-      line-height: 56px; /* 140% */
-
-      .title {
-        font-weight: 700;
-      }
-
-      .sub-title {
-        margin-top: 28px;
-        font-size: 18px;
-        font-style: normal;
-        font-weight: 500;
-        line-height: 24px;
-        opacity: 0.6;
-      }
-    }
+// Input 输入框样式定制
+.form {
+  .login {
+    padding-top: 20px;
   }
 
-  // 右侧盒子
-  .right-box {
-    flex: 1;
-    display: flex;
-    justify-content: center; /* 水平居中 */
-    align-items: center; /* 垂直居中 */
-    padding: 48px 64px;
+  :global {
+    .ant-input-group-addon,
+    .ant-input-lg,
+    .ant-btn-lg {
+      border: 0 !important;
+      border-radius: 8px;
 
-    .right-form-box {
-      width: 100%; /* 宽度自适应 */
-      max-width: 520px;
-      max-height: 680px;
-      height: auto;
-      padding: 48px 64px;
-      border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 60%);
-      background: rgba(255, 255, 255, 85%);
-      box-shadow: 0 8px 48px 0 rgba(0, 0, 0, 16%);
-      backdrop-filter: blur(12px);
+      &:focus {
+        border: 0 !important;
+        box-shadow: none !important;
+      }
+    }
+
+    .ant-btn-lg {
+      padding: 25px;
+    }
+
+    .ant-input-wrapper {
+      background-color: @colorBgBase;
+      border-radius: 8px;
+    }
+
+    .ant-input-group-addon {
+      background: @colorFillTertiary !important;
+    }
+
+    .ant-input {
+      backdrop-filter: blur(8px);
+      padding: 12px 16px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      background-color: @colorFillTertiary !important;
+    }
+
+    .ant-input-affix-wrapper {
+      border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 10%);
+      background: rgba(255, 255, 255, 90%);
+      backdrop-filter: blur(8px);
+      padding: 12px 16px;
+      transition: all 0.3s ease;
+
+      &:hover {
+        border-color: rgba(122, 51, 254, 40%);
+        background: rgba(255, 255, 255, 95%);
+      }
+
+      &:focus-within {
+        border: 0 !important;
+        box-shadow: none !important;
+        background: rgba(255, 255, 255, 100%);
+      }
+
+      .ant-input {
+        border: none;
+        background: transparent;
+        padding: 0;
+
+        &:focus {
+          border: 0 !important;
+          outline: none !important;
+          box-shadow: none !important;
+        }
+      }
+    }
+
+    // 区号选择器样式
+    .ant-select {
+      .ant-select-selector {
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+
+        .ant-select-selection-item {
+          color: rgba(0, 0, 0, 70%);
+          font-weight: 500;
+        }
+      }
     }
   }
 }
