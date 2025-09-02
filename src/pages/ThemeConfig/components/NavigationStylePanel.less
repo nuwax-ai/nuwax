@@ -6,7 +6,7 @@
   .panelTitle {
     margin: 0 0 @paddingSm 0;
     font-size: @fontSizeLg;
-    font-weight: 600;
+    font-weight: @fontWeightStrong;
     color: @colorText;
   }
 }
@@ -21,8 +21,8 @@
   h4 {
     margin: 0 0 @paddingSm 0;
     font-size: @fontSize;
-    color: @colorText;
-    font-weight: 600;
+    color: @colorTextSecondary;
+    font-weight: normal;
   }
 }
 
@@ -30,8 +30,8 @@
   h4 {
     margin: 0 0 @paddingSm 0;
     font-size: @fontSize;
-    color: @colorText;
-    font-weight: 600;
+    color: @colorTextSecondary;
+    font-weight: normal;
   }
 }
 
@@ -40,6 +40,7 @@
   gap: @paddingSm;
   justify-content: flex-start;
 }
+
 .stylePreview {
   padding: @paddingXs;
   cursor: pointer;
@@ -103,13 +104,13 @@
 }
 
 .lightNavbar {
-  .navbarContent{
+  .navbarContent {
     background-image: url('@/assets/images/theme/light-navbar-bg.png');
   }
 }
 
 .darkNavbar {
-  .navbarContent{
+  .navbarContent {
     background-image: url('@/assets/images/theme/dark-navbar-bg.png');
   }
 }
@@ -125,7 +126,7 @@
   .navbarContent {
     gap: 6px; // 更紧凑的间距
   }
-  
+
   .navbarItem {
     width: 12px; // 较小的宽度
     height: 2px;
@@ -139,7 +140,7 @@
     flex-direction: column; // 垂直布局模拟带文字的导航
     align-items: center;
   }
-  
+
   .navbarItem {
     width: 16px;
     height: 2px;
@@ -149,12 +150,12 @@
 // 风格提示文字
 .styleText {
   font-size: 8px;
-  color: rgba(0, 0, 0, 0.5);
+  color: rgba(0, 0, 0, 50%);
   margin-top: 2px;
   white-space: nowrap;
-  
+
   .darkNavbar & {
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 50%);
   }
 }
 

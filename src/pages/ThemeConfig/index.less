@@ -2,22 +2,17 @@
 
 .container {
   width: 100%;
-  height: 100vh;
+  height: 100%;
   display: flex;
+  flex: 1;
   flex-direction: column;
   background-color: @colorBgContainer;
-  overflow: hidden; // 防止整体滚动
 }
 
 .title {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
   font-weight: @fontWeightStrong;
   font-size: 18px;
-  padding: @paddingLg;
+  padding: @padding @paddingLg;
   background-color: @colorBgContainer;
   border-bottom: @lineWidth solid @colorSplit;
   color: @colorText;
@@ -29,8 +24,6 @@
   flex: 1;
   overflow-y: auto;
   padding: @paddingLg;
-  padding-top: 80px; // 为固定标题留出空间
-  padding-bottom: 80px; // 为固定底部按钮留出空间
 
   .configContainer {
     margin-bottom: @paddingXl;
@@ -44,94 +37,55 @@
       margin-bottom: 0;
     }
   }
+}
 
-  .footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    padding: @paddingLg;
-    background-color: @colorBgContainer;
-    border-top: @lineWidth solid @colorSplit;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 10%);
-    z-index: 1000;
-    box-sizing: border-box;
-
-    // :global(.ant-btn) {
-    //   border-radius: @borderRadius;
-    //   font-weight: 500;
-    //   height: 36px;
-    //   padding: 0 20px;
-    //   font-size: @fontSize;
-
-    //   &:global(.ant-btn-primary) {
-    //     background-color: @colorPrimary;
-    //     border-color: @colorPrimary;
-    //     box-shadow: 0 2px 8px rgba(81, 71, 255, 0.3);
-
-    //     &:hover {
-    //       background-color: @colorPrimaryHover;
-    //       border-color: @colorPrimaryHover;
-    //       box-shadow: 0 4px 12px rgba(81, 71, 255, 0.4);
-    //       transform: translateY(-1px);
-    //     }
-
-    //     &:active {
-    //       transform: translateY(0);
-    //     }
-    //   }
-
-    //   &:not(:global(.ant-btn-primary)) {
-    //     background-color: @colorBgContainer;
-    //     border-color: @colorBorder;
-
-    //     &:hover {
-    //       border-color: @colorPrimary;
-    //       color: @colorPrimary;
-    //       transform: translateY(-1px);
-    //     }
-    //   }
-    // }
-  }
+.footer {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: @padding @paddingLg;
+  background-color: @colorBgContainer;
+  border-top: @lineWidth solid @colorSplit;
+  z-index: 1000;
+  box-sizing: border-box;
 }
 
 // 响应式设计
-@media (max-width: @screenLg) {
-  .content {
-    .configItem {
-      margin-bottom: @paddingMd;
-    }
-  }
-}
+// @media (max-width: @screenLg) {
+//   .content {
+//     .configItem {
+//       margin-bottom: @paddingMd;
+//     }
+//   }
+// }
 
-@media (max-width: @screenMd) {
-  .title {
-    padding: 16px;
-  }
+// @media (max-width: @screenMd) {
+//   .title {
+//     padding: 16px;
+//   }
 
-  .content {
-    padding: 16px;
-    padding-top: 70px; // 调整移动端标题高度
-    padding-bottom: 70px; // 调整移动端底部高度
+//   .content {
+//     padding: 16px;
+//     padding-top: 70px; // 调整移动端标题高度
+//     padding-bottom: 70px; // 调整移动端底部高度
 
-    .configItem {
-      margin-bottom: @paddingSm;
-      padding: 0;
-    }
-  }
+//     .configItem {
+//       margin-bottom: @paddingSm;
+//       padding: 0;
+//     }
+//   }
 
-  .footer {
-    flex-direction: column;
-    gap: @paddingMd;
-    padding: 16px;
+//   .footer {
+//     display: flex;
+//     justify-content: flex-start;
+//     align-items: center;
+//     flex-direction: column;
+//     gap: @paddingMd;
+//     padding: 16px;
 
-    :global(.ant-btn) {
-      width: 100%;
-      max-width: 200px;
-    }
-  }
-}
+//     :global(.ant-btn) {
+//       width: 100%;
+//       max-width: 200px;
+//     }
+//   }
+// }

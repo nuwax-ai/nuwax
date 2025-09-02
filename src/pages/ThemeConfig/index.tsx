@@ -25,11 +25,13 @@ const ThemeConfig: React.FC = () => {
   } = useGlobalSettings();
 
   // 集成导航风格管理
-  const { navigationStyle, setNavigationStyle, layoutStyle, setLayoutStyle } = useBackgroundStyle();
+  const { navigationStyle, setNavigationStyle, layoutStyle, setLayoutStyle } =
+    useBackgroundStyle();
 
   // 导航栏深浅色状态管理（独立于Ant Design主题）
-  const [isNavigationDarkMode, setIsNavigationDarkMode] =
-    useState<boolean>(layoutStyle === 'dark');
+  const [isNavigationDarkMode, setIsNavigationDarkMode] = useState<boolean>(
+    layoutStyle === 'dark',
+  );
 
   // 同步布局风格状态到导航深浅色状态
   useEffect(() => {
@@ -42,17 +44,22 @@ const ThemeConfig: React.FC = () => {
       const savedConfig = localStorage.getItem('user-theme-config');
       if (savedConfig) {
         const config = JSON.parse(savedConfig);
-        
+
         // 恢复导航风格
-        if (config.navigationStyleId && (config.navigationStyleId === 'style1' || config.navigationStyleId === 'style2')) {
+        if (
+          config.navigationStyleId &&
+          (config.navigationStyleId === 'style1' ||
+            config.navigationStyleId === 'style2')
+        ) {
           if (config.navigationStyleId !== navigationStyle) {
             setNavigationStyle(config.navigationStyleId);
           }
         }
-        
+
         // 恢复导航深浅色
         if (config.navigationStyle) {
-          const navLayoutStyle = config.navigationStyle === 'dark' ? 'dark' : 'light';
+          const navLayoutStyle =
+            config.navigationStyle === 'dark' ? 'dark' : 'light';
           if (navLayoutStyle !== layoutStyle) {
             setLayoutStyle(navLayoutStyle);
           }
@@ -89,7 +96,7 @@ const ThemeConfig: React.FC = () => {
 
       localStorage.setItem('user-theme-config', JSON.stringify(themeConfig));
       message.success('主题配置保存成功');
-      
+
       console.log('保存的配置:', themeConfig);
     } catch (error) {
       console.error('Save theme config error:', error);
@@ -108,7 +115,6 @@ const ThemeConfig: React.FC = () => {
   return (
     <div className={cx(styles.container)}>
       <div className={cx(styles.title)}>主题配置</div>
-
       <div className={cx(styles.content)}>
         {/* 垂直布局的主题配置区域 */}
         <div className={cx(styles.configContainer)}>
@@ -133,16 +139,15 @@ const ThemeConfig: React.FC = () => {
             />
           </div>
         </div>
-
-        {/* 底部操作区域 */}
-        <div className={cx(styles.footer)}>
-          <Button type="primary" size="large" onClick={handleSave}>
-            保存配置
-          </Button>
-          {/* <Button size="large" style={{ marginLeft: 12 }} onClick={handleReset}>
+      </div>
+      {/* 底部操作区域 */}
+      <div className={cx(styles.footer)}>
+        <Button type="primary" size="large" onClick={handleSave}>
+          保存配置
+        </Button>
+        {/* <Button size="large" style={{ marginLeft: 12 }} onClick={handleReset}>
             重置默认
           </Button> */}
-        </div>
       </div>
     </div>
   );
