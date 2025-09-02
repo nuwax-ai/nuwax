@@ -6,6 +6,7 @@ import { ReactComponent as DebugSvgFile } from '@/assets/icons/common/debug.svg'
 import { ReactComponent as MoreSvgFile } from '@/assets/icons/common/more.svg';
 import { ReactComponent as PlusSvgFile } from '@/assets/icons/common/plus.svg';
 import { ReactComponent as StarsSvgFile } from '@/assets/icons/common/stars.svg';
+import { ReactComponent as StrawSvgFile } from '@/assets/icons/common/straw.svg';
 import React from 'react';
 import { wrapSvg } from './utils';
 
@@ -17,6 +18,7 @@ const MoreSvg = wrapSvg(MoreSvgFile);
 const StarsSvg = wrapSvg(StarsSvgFile);
 const DebugSvg = wrapSvg(DebugSvgFile);
 const PlusSvg = wrapSvg(PlusSvgFile);
+const StrawSvg = wrapSvg(StrawSvgFile);
 export default {
   'icons-common-caret_down': CaretDownSvg,
   'icons-common-caret_up': CaretUpSvg,
@@ -26,4 +28,5 @@ export default {
   'icons-common-stars': StarsSvg,
   'icons-common-debug': DebugSvg,
   'icons-common-plus': PlusSvg,
+  'icons-common-straw': StrawSvg,
 } as Record<string, React.FC>;

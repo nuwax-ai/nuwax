@@ -78,6 +78,7 @@ const routes = [
         component: '@/pages/PublishedManage',
       },
       { path: '/system/config', component: '@/pages/SystemConfig' },
+      { path: '/system/theme/config', component: '@/pages/ThemeConfig' },
       { path: '/system/user/manage', component: '@/pages/UserManage' },
       {
         path: '/system/model/manage',
