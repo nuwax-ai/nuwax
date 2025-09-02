@@ -3,9 +3,10 @@
 
 .box {
   margin-bottom: @marginXs;
-  color: @colorTextSecondary;
-  transition: background-color 0.3s;
+  color: @navFirstMenuTextSecondary;
+  transition: background-color 0.3s, color 0.3s;
   user-select: none; /* 禁止选中 */
+  
   .active-icon-container {
     display: flex;
     width: 40px;
@@ -14,12 +15,15 @@
     justify-content: center;
     align-items: center;
     border-radius: @borderRadius;
+    transition: all 0.3s ease;
   }
 
   &:hover {
+    color: @navFirstMenuText;
+    
     .active-icon-container {
-      background: @colorBgContainer;
-      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 8%);
+      background: @navItemHoverBg;
+      box-shadow: @navShadow;
     }
   }
 
@@ -27,13 +31,21 @@
     color: @colorPrimary;
 
     .active-icon-container {
-      background: @colorBgContainer;
-      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 8%);
+      background: @navItemActiveBg;
+      box-shadow: @navShadow;
     }
   }
 
-  // .text {
-  //   margin-top: 4px;
-  //   font-size: 12px;
-  // }
+  // 支持导航风格2的文字显示
+  .text {
+    margin-top: 4px;
+    font-size: @navFirstMenuFontSize;
+    opacity: 0;
+    transform: translateY(-5px);
+    transition: all 0.3s ease;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }

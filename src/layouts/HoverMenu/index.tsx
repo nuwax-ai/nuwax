@@ -1,6 +1,7 @@
 import ConditionRender from '@/components/ConditionRender';
 import HoverScrollbar from '@/components/base/HoverScrollbar';
 import { TabsEnum } from '@/types/enums/menus';
+import { useBackgroundStyle } from '@/utils/backgroundStyle';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -28,6 +29,10 @@ const HoverMenu: React.FC = () => {
     setMouseInHoverMenu,
   } = useModel('layout');
   const { token } = theme.useToken();
+  const { navigationStyle } = useBackgroundStyle();
+  
+  // 计算动态导航宽度
+  const firstMenuWidth = navigationStyle === 'style2' ? 88 : 60;
   // 根据菜单类型渲染对应的内容
   const MenuContent: React.FC = useMemo(() => {
     const menuStyle = { paddingTop: 0 }; // 去除移动端的 paddingTop
@@ -94,7 +99,7 @@ const HoverMenu: React.FC = () => {
       }}
       style={{
         width: SECOND_MENU_WIDTH,
-        left: FIRST_MENU_WIDTH,
+        left: firstMenuWidth,
         paddingLeft: token.padding,
       }}
     >

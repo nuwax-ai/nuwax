@@ -482,7 +482,7 @@
 
 // ================================
 // 导航相关的专用变量 (Navigation Tokens)
-// 基于Ant Design的CSS变量系统
+// 基于Ant Design的CSS变量系统和独立的布局风格系统
 // ================================
 
 // 导航背景图
@@ -502,20 +502,20 @@
 @pageContainerBorderRadius: var(--xagi-page-container-border-radius, 12px);
 @pageContainerBg: var(--xagi-color-bg-layout, rgba(255, 255, 255, 0.9));
 
-// 导航文字颜色（使用Ant Design的动态颜色）
-@navFirstMenuText: var(--xagi-color-text, rgba(0, 0, 0, 0.88));
+// 导航文字颜色（使用独立的布局风格变量）
+@navFirstMenuText: var(--xagi-layout-text-primary, rgba(0, 0, 0, 0.88));
 @navFirstMenuTextSecondary: var(
-  --xagi-color-text-secondary,
+  --xagi-layout-text-secondary,
   rgba(0, 0, 0, 0.65)
 );
-@navFirstMenuTextTertiary: var(--xagi-color-text-tertiary, rgba(0, 0, 0, 0.45));
-@navSecondMenuText: var(--xagi-color-text, rgba(0, 0, 0, 0.88));
+@navFirstMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(0, 0, 0, 0.45));
+@navSecondMenuText: var(--xagi-layout-text-primary, rgba(0, 0, 0, 0.88));
 @navSecondMenuTextSecondary: var(
-  --xagi-color-text-secondary,
+  --xagi-layout-text-secondary,
   rgba(0, 0, 0, 0.65)
 );
 @navSecondMenuTextTertiary: var(
-  --xagi-color-text-tertiary,
+  --xagi-layout-text-tertiary,
   rgba(0, 0, 0, 0.45)
 );
 
@@ -524,14 +524,78 @@
 @navItemActiveBg: var(--xagi-color-primary-bg-active, rgba(81, 71, 255, 0.15));
 @navItemSelectedBg: var(--xagi-color-primary-bg, rgba(81, 71, 255, 0.1));
 
-// 导航边框和分割线
-@navBorderColor: var(--xagi-color-border, rgba(0, 0, 0, 0.15));
-@navDividerColor: var(--xagi-color-split, rgba(0, 0, 0, 0.06));
+// 导航边框和分割线（使用独立的布局风格变量）
+@navBorderColor: var(--xagi-layout-border-primary, rgba(0, 0, 0, 0.15));
+@navDividerColor: var(--xagi-layout-border-secondary, rgba(0, 0, 0, 0.06));
 
-// 导航阴影
-@navShadow: var(--xagi-box-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));
+// 导航阴影（使用独立的布局风格变量）
+@navShadow: var(--xagi-layout-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));
 @navFirstMenuShadow: var(
   --xagi-box-shadow-secondary,
   0 4px 12px rgba(0, 0, 0, 0.15)
 );
-@navSecondMenuShadow: var(--xagi-box-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));
+@navSecondMenuShadow: var(--xagi-layout-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));
+
+// 移动端响应式适配
+// 在移动端强制使用紧凑模式，忽略导航风格设置
+@media (max-width: 768px) {
+  :root {
+    --xagi-nav-first-menu-width: 60px !important;
+  }
+  
+  // 隐藏移动端的文字显示
+  .xagi-nav-style2 {
+    .text {
+      opacity: 0 !important;
+      transform: translateY(-5px) !important;
+    }
+  }
+  
+  // 移动端页面容器适配
+  .page-container {
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+}
+
+// ================================
+// 布局风格适配类（独立于Ant Design主题）
+// ================================
+
+// 深色布局风格适配
+.xagi-layout-dark {
+  // 导航文字颜色覆盖
+  @navFirstMenuText: var(--xagi-layout-text-primary, #ffffff);
+  @navFirstMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(255, 255, 255, 0.85));
+  @navFirstMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(255, 255, 255, 0.65));
+  @navSecondMenuText: var(--xagi-layout-text-primary, #ffffff);
+  @navSecondMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(255, 255, 255, 0.85));
+  @navSecondMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(255, 255, 255, 0.65));
+  
+  // 导航背景色覆盖
+  @navFirstMenuBg: var(--xagi-layout-bg-card, rgba(0, 0, 0, 0.45));
+  @navSecondMenuBg: var(--xagi-layout-bg-secondary, rgba(0, 0, 0, 0.65));
+  
+  // 边框和分割线覆盖
+  @navBorderColor: var(--xagi-layout-border-primary, rgba(255, 255, 255, 0.15));
+  @navDividerColor: var(--xagi-layout-border-secondary, rgba(255, 255, 255, 0.1));
+}
+
+// 浅色布局风格适配
+.xagi-layout-light {
+  // 使用默认的浅色变量
+  @navFirstMenuText: var(--xagi-layout-text-primary, #000000);
+  @navFirstMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(0, 0, 0, 0.85));
+  @navFirstMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(0, 0, 0, 0.65));
+  @navSecondMenuText: var(--xagi-layout-text-primary, #000000);
+  @navSecondMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(0, 0, 0, 0.85));
+  @navSecondMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(0, 0, 0, 0.65));
+  
+  // 导航背景色覆盖
+  @navFirstMenuBg: var(--xagi-layout-bg-card, rgba(255, 255, 255, 0.65));
+  @navSecondMenuBg: var(--xagi-layout-bg-secondary, rgba(255, 255, 255, 0.85));
+  
+  // 边框和分割线覆盖
+  @navBorderColor: var(--xagi-layout-border-primary, rgba(0, 0, 0, 0.15));
+  @navDividerColor: var(--xagi-layout-border-secondary, rgba(0, 0, 0, 0.1));
+}

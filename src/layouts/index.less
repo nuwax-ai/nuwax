@@ -28,20 +28,45 @@
 }
 
 .page-container {
-  background-color: @colorBgContainer;
+  background: @pageContainerBg;
   border: @lineWidth solid @colorBorderSecondary;
-  margin: @marginSm @marginSm @marginSm 0;
-  border-radius: 12px;
+  margin: @pageContainerMargin;
+  border-radius: @pageContainerBorderRadius;
   box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 8%);
   z-index: 1;
   // 确保内容区域有半透明背景，提高可读性
   backdrop-filter: blur(2px);
+  transition: all 0.3s ease;
+  
+  // 风格2的适配
+  .xagi-nav-style2 & {
+    margin: 0;
+    border-radius: 0;
+    background: var(--xagi-color-bg-container);
+  }
 }
 
-// 暗色主题下的背景适配
-[data-theme='dark'] {
+// 深色布局风格适配（独立于Ant Design主题）
+.xagi-layout-dark {
   .page-container {
-    background-color: rgba(0, 0, 0, 70%);
+    background: rgba(0, 0, 0, 70%);
     backdrop-filter: blur(4px);
+    border-color: var(--xagi-layout-border-primary);
+    
+    &.xagi-nav-style2 {
+      background: var(--xagi-layout-bg-card);
+    }
+  }
+}
+
+// 浅色布局风格适配（独立于Ant Design主题）
+.xagi-layout-light {
+  .page-container {
+    background: @pageContainerBg;
+    border-color: var(--xagi-layout-border-primary);
+    
+    &.xagi-nav-style2 {
+      background: var(--xagi-layout-bg-card);
+    }
   }
 }

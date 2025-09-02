@@ -9,34 +9,35 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: @colorBgElevated;
-  border: @lineWidth solid @colorSplit;
+  background-color: @navFirstMenuBg;
+  border: @lineWidth solid @navBorderColor;
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   z-index: 10;
   transform: translateX(-50%);
+  box-shadow: @navShadow;
 
   &:hover {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 10%);
+    background-color: @navItemHoverBg;
+    box-shadow: @navFirstMenuShadow;
+    transform: translateX(-50%) scale(1.1);
   }
 
   .icon {
-    color: @colorTextSecondary;
+    color: @navFirstMenuTextSecondary;
     transition: color 0.2s ease-in-out;
   }
 
   &:hover .icon {
-    color: @colorText;
+    color: @navFirstMenuText;
   }
 
   // 收起状态时的样式调整
   &.collapsed {
-    // right: -12px; // 移出二级菜单区域
-
     &:hover {
       .icon {
-        color: @colorText;
+        color: @navFirstMenuText;
       }
     }
   }

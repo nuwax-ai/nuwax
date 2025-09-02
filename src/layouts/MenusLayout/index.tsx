@@ -6,6 +6,7 @@ import useConversation from '@/hooks/useConversation';
 import SystemSection from '@/layouts/MenusLayout/SystemSection';
 import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
+import { useBackgroundStyle } from '@/utils/backgroundStyle';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -45,6 +46,8 @@ const MenusLayout: React.FC<{
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  // 导航风格管理（使用独立的布局风格系统）
+  const { navigationStyle, layoutStyle } = useBackgroundStyle();
 
   const handleCreateChat = async () => {
     if (tenantConfigInfo) {
@@ -179,14 +182,39 @@ const MenusLayout: React.FC<{
     }
     return true;
   }, [tabType]);
+  // 计算导航宽度（基于导航风格）
+  const firstMenuWidth = useMemo(() => {
+    if (isMobile) {
+      return FIRST_MENU_WIDTH; // 移动端保持固定宽度
+    }
+    const width = navigationStyle === 'style2' ? 88 : 60; // 风格2展开模式88px，风格1紧凑模式60px
+    
+    // 开发环境下添加日志
+    if (process.env.NODE_ENV === 'development') {
+      console.log('MenusLayout - 导航风格:', navigationStyle, '-> 宽度:', width);
+    }
+    
+    return width;
+  }, [navigationStyle, isMobile]);
+
   const backgroundColor = useMemo(() => {
     if (isMobile) {
       return token.colorBgContainer;
     }
     return 'transparent';
   }, [isMobile]);
+
+  // 导航容器样式类名（使用独立的布局风格类）
+  const navigationClassName = useMemo(() => {
+    return cx(
+      styles.container,
+      'flex',
+      `xagi-layout-${layoutStyle}`, // 布局风格类（独立于Ant Design）
+      `xagi-nav-${navigationStyle}` // 导航风格类
+    );
+  }, [layoutStyle, navigationStyle]);
   return (
-    <div className={cx(styles.container, 'flex')}>
+    <div className={navigationClassName}>
       {/*一级导航菜单栏*/}
       <div
         className={cx(
@@ -196,7 +224,7 @@ const MenusLayout: React.FC<{
           'items-center',
         )}
         style={{
-          width: FIRST_MENU_WIDTH,
+          width: firstMenuWidth,
           backgroundColor,
         }}
       >

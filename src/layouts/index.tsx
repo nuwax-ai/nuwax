@@ -1,5 +1,6 @@
 import ThemeControlPanel from '@/components/ThemeControlPanel';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
+import { useBackgroundStyle } from '@/utils/backgroundStyle';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -42,6 +43,9 @@ const Layout: React.FC = () => {
     backgroundImageId,
     setBackgroundImage,
   } = useGlobalSettings();
+  
+  // 导航风格管理（使用独立的布局风格系统）
+  const { navigationStyle, layoutStyle } = useBackgroundStyle();
 
   // 状态管理
   const {
@@ -191,11 +195,40 @@ const Layout: React.FC = () => {
     () => (isMobile ? { paddingTop: MOBILE_MENU_TOP_PADDING } : {}),
     [isMobile],
   );
-  const token = theme.useToken();
-  console.log('token', token);
+  /**
+   * 主容器样式类名（使用独立的布局风格类）
+   * 包含导航风格和布局风格类
+   */
+  const mainContainerClassName = useMemo(
+    () =>
+      cx(
+        'flex',
+        'h-full',
+        styles.container,
+        `xagi-layout-${layoutStyle}`, // 布局风格类（独立于Ant Design）
+        `xagi-nav-${navigationStyle}` // 导航风格类
+      ),
+    [layoutStyle, navigationStyle],
+  );
+
+  /**
+   * 页面容器样式类名（使用独立的布局风格类）
+   * 根据导航风格动态调整
+   */
+  const pageContainerClassName = useMemo(
+    () =>
+      cx(
+        'flex-1',
+        'overflow-y',
+        styles['page-container'],
+        `xagi-layout-${layoutStyle}`,
+        `xagi-nav-${navigationStyle}`
+      ),
+    [layoutStyle, navigationStyle],
+  );
 
   return (
-    <div className={cx('flex', 'h-full', styles.container)}>
+    <div className={mainContainerClassName}>
       {/* 顶部右侧全局操作：主题、语言、主色 */}
 
       <ThemeControlPanel
@@ -245,7 +278,7 @@ const Layout: React.FC = () => {
       </div>
 
       {/* 主内容区 */}
-      <div className={cx('flex-1', 'overflow-y', styles['page-container'])}>
+      <div className={pageContainerClassName}>
         <Outlet />
       </div>
     </div>

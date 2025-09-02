@@ -3,6 +3,7 @@ import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { useModel } from 'umi';
+import { useBackgroundStyle } from '@/utils/backgroundStyle';
 import { FIRST_MENU_WIDTH, MENU_WIDTH } from '../../layout.constants';
 import styles from './index.less';
 
@@ -14,6 +15,11 @@ const cx = classNames.bind(styles);
 const CollapseButton: React.FC = () => {
   const { isSecondMenuCollapsed, toggleSecondMenuCollapse } =
     useModel('layout');
+  const { navigationStyle } = useBackgroundStyle();
+  
+  // 计算动态导航宽度
+  const firstMenuWidth = navigationStyle === 'style2' ? 88 : 60;
+  const menuTotalWidth = firstMenuWidth + 240; // 240是二级菜单宽度
 
   return (
     <Tooltip
@@ -27,7 +33,7 @@ const CollapseButton: React.FC = () => {
         })}
         onClick={toggleSecondMenuCollapse}
         style={{
-          left: isSecondMenuCollapsed ? FIRST_MENU_WIDTH : MENU_WIDTH,
+          left: isSecondMenuCollapsed ? firstMenuWidth : menuTotalWidth,
         }}
       >
         <SvgIcon

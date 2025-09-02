@@ -30,8 +30,8 @@ const NavigationStyleToggle: React.FC = () => {
     navigationStyle,
     setNavigationStyle,
     toggleNavigationStyle,
-    style: colorStyle,
-    toggleStyle,
+    layoutStyle,
+    toggleLayoutStyle,
   } = useBackgroundStyle();
 
   const handleNavigationModeChange = (checked: boolean) => {
@@ -40,7 +40,7 @@ const NavigationStyleToggle: React.FC = () => {
   };
 
   const handleColorStyleToggle = () => {
-    toggleStyle();
+    toggleLayoutStyle();
   };
 
   return (
@@ -70,13 +70,13 @@ const NavigationStyleToggle: React.FC = () => {
 
           <Divider />
 
-          {/* 颜色风格控制 */}
+          {/* 布局颜色风格控制（独立于Ant Design主题） */}
           <div className="control-section">
-            <Title level={5}>颜色风格</Title>
+            <Title level={5}>布局颜色风格</Title>
             <Space>
               <Text>浅色风格</Text>
               <Switch
-                checked={colorStyle === 'dark'}
+                checked={layoutStyle === 'dark'}
                 onChange={handleColorStyleToggle}
                 size="small"
               />
@@ -84,9 +84,9 @@ const NavigationStyleToggle: React.FC = () => {
             </Space>
             <div className="style-description">
               <Text type="secondary">
-                {colorStyle === 'light'
-                  ? '浅色模式：黑色文字，白色背景'
-                  : '深色模式：白色文字，深色背景'}
+                {layoutStyle === 'light'
+                  ? '浅色模式：黑色文字，白色背景（独立于Ant Design主题）'
+                  : '深色模式：白色文字，深色背景（独立于Ant Design主题）'}
               </Text>
             </div>
           </div>
@@ -104,7 +104,7 @@ const NavigationStyleToggle: React.FC = () => {
                 onClick={handleColorStyleToggle}
                 icon={<SettingOutlined />}
               >
-                切换颜色风格
+                切换布局风格
               </Button>
             </Space>
           </div>
@@ -235,7 +235,7 @@ const NavigationStyleToggle: React.FC = () => {
           </div>
 
           <div>
-            <Title level={5}>React Hook使用</Title>
+            <Title level={5}>React Hook使用（独立的布局风格系统）</Title>
             <pre className="code-block">
               {`import { useBackgroundStyle } from '@/utils/backgroundStyle';
 
@@ -243,11 +243,13 @@ const MyComponent = () => {
   const { 
     navigationStyle, 
     setNavigationStyle,
-    toggleNavigationStyle 
+    toggleNavigationStyle,
+    layoutStyle, // 布局风格（非Ant Design主题）
+    toggleLayoutStyle
   } = useBackgroundStyle();
   
   return (
-    <div className={\`nav-container nav-\${navigationStyle}\`}>
+    <div className={\`nav-container nav-\${navigationStyle} xagi-layout-\${layoutStyle}\`}>
       {/* 组件内容 */}
     </div>
   );

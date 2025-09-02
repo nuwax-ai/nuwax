@@ -3,8 +3,8 @@
 
 .user-icon {
   margin-bottom: @marginXs;
-  color: @colorTextSecondary;
-  transition: background-color 0.3s;
+  color: @navFirstMenuTextSecondary;
+  transition: background-color 0.3s, color 0.3s;
   user-select: none;
 
   .active-icon-container {
@@ -15,12 +15,15 @@
     justify-content: center;
     align-items: center;
     border-radius: @borderRadius;
+    transition: all 0.3s ease;
   }
 
   &:hover {
+    color: @navFirstMenuText;
+    
     .active-icon-container {
-      background: @colorBgElevated;
-      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 8%);
+      background: @navItemHoverBg;
+      box-shadow: @navShadow;
     }
   }
 
@@ -30,12 +33,21 @@
 
   :global {
     .ant-badge {
-      color: @colorTextSecondary;
+      color: @navFirstMenuTextSecondary;
+      transition: color 0.3s ease;
     }
 
     .ant-badge-count {
       top: 10px;
       right: 10px;
+      background: @colorError;
+      color: @colorWhite;
+      border: 1px solid @navBorderColor;
     }
+  }
+
+  // 消息通知圈点特殊样式
+  &:hover :global .ant-badge {
+    color: @navFirstMenuText;
   }
 }

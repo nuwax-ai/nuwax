@@ -1,4 +1,5 @@
 import type { TabItemProps } from '@/types/interfaces/layouts';
+import { useBackgroundStyle } from '@/utils/backgroundStyle';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -16,6 +17,13 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
   onMouseLeave,
   isSecondMenuCollapsed = false,
 }) => {
+  // 获取当前导航风格
+  const { navigationStyle } = useBackgroundStyle();
+  
+  // 在开发环境下输出调试信息
+  if (process.env.NODE_ENV === 'development') {
+    console.log('TabItem - 当前导航风格:', navigationStyle);
+  }
   // 当二级菜单收起时，不显示Tooltip，避免与悬浮菜单冲突
   if (isSecondMenuCollapsed) {
     return (
@@ -34,7 +42,15 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
         )}
       >
         <div className={cx(styles['active-icon-container'])}>{icon}</div>
-        {/* <span className={cx(styles.text)}>{text}</span> */}
+        <span 
+          className={cx(styles.text)} 
+          style={{
+            opacity: navigationStyle === 'style2' ? 1 : 0,
+            transform: navigationStyle === 'style2' ? 'translateY(0)' : 'translateY(-5px)'
+          }}
+        >
+          {text}
+        </span>
       </div>
     );
   }
@@ -64,7 +80,15 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
         )}
       >
         <div className={cx(styles['active-icon-container'])}>{icon}</div>
-        {/* <span className={cx(styles.text)}>{text}</span> */}
+        <span 
+          className={cx(styles.text)} 
+          style={{
+            opacity: navigationStyle === 'style2' ? 1 : 0,
+            transform: navigationStyle === 'style2' ? 'translateY(0)' : 'translateY(-5px)'
+          }}
+        >
+          {text}
+        </span>
       </div>
     </Tooltip>
   );

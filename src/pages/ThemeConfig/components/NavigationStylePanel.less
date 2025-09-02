@@ -118,6 +118,44 @@
   background: linear-gradient(135deg, #343a40 0%, #212529 100%);
 }
 
+// 紧凑导航样式（风格1）
+.compactNavbar {
+  .navbarContent {
+    gap: 6px; // 更紧凑的间距
+  }
+  
+  .navbarItem {
+    width: 12px; // 较小的宽度
+    height: 2px;
+  }
+}
+
+// 展开导航样式（风格2）
+.expandedNavbar {
+  .navbarContent {
+    gap: 8px;
+    flex-direction: column; // 垂直布局模拟带文字的导航
+    align-items: center;
+  }
+  
+  .navbarItem {
+    width: 16px;
+    height: 2px;
+  }
+}
+
+// 风格提示文字
+.styleText {
+  font-size: 8px;
+  color: rgba(0, 0, 0, 0.5);
+  margin-top: 2px;
+  white-space: nowrap;
+  
+  .darkNavbar & {
+    color: rgba(255, 255, 255, 0.5);
+  }
+}
+
 .navbarContent {
   position: absolute;
   top: 50%;
@@ -148,7 +186,7 @@
   padding: @paddingXs @paddingSm;
   background-color: @colorBgContainer;
   border-radius: 0 0 @borderRadius @borderRadius;
-  font-size: @fontSize;
+  font-size: @fontSizeSm; // 使用更小的字号
   color: @colorText;
   text-align: center;
   white-space: nowrap;
@@ -156,4 +194,11 @@
   text-overflow: ellipsis;
   font-weight: 500;
   border-top: @lineWidth solid @colorBorderSecondary;
+  
+  // 根据选中状态调整样式
+  .active & {
+    background-color: @colorPrimaryBg;
+    color: @colorPrimary;
+    font-weight: 600;
+  }
 }

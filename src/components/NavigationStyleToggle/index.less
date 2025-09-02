@@ -15,18 +15,18 @@
       .style-description {
         margin-top: 8px;
         padding: 8px 12px;
-        background: var(--xagi-current-bg-secondary);
+        background: var(--xagi-layout-bg-secondary);
         border-radius: 6px;
         border-left: 3px solid var(--xagi-color-primary);
       }
     }
 
     .ant-card-head-title {
-      color: var(--xagi-color-text);
+      color: var(--xagi-layout-text-primary);
     }
 
     .ant-card-body {
-      background: var(--xagi-color-bg-container);
+      background: var(--xagi-layout-bg-card);
     }
   }
 
@@ -151,45 +151,45 @@
 
   .usage-panel {
     .code-block {
-      background: var(--xagi-current-bg-input);
+      background: var(--xagi-layout-bg-input);
       border: 1px solid @navBorderColor;
       border-radius: 6px;
       padding: 16px;
       font-size: 12px;
       line-height: 1.5;
-      color: var(--xagi-current-text-primary);
+      color: var(--xagi-layout-text-primary);
       overflow-x: auto;
       white-space: pre;
     }
 
     .ant-typography h5 {
-      color: var(--xagi-current-text-primary);
+      color: var(--xagi-layout-text-primary);
       margin-bottom: 12px;
     }
   }
 
   // 全局文字颜色适配
   .ant-typography {
-    color: var(--xagi-current-text-primary);
+    color: var(--xagi-layout-text-primary);
   }
 
-  .ant-card {
-    background: var(--xagi-current-bg-card);
-    border: 1px solid @navBorderColor;
+    .ant-card {
+      background: var(--xagi-layout-bg-card);
+      border: 1px solid @navBorderColor;
 
-    .ant-card-head {
-      background: var(--xagi-current-bg-secondary);
-      border-bottom: 1px solid @navBorderColor;
-    }
+      .ant-card-head {
+        background: var(--xagi-layout-bg-secondary);
+        border-bottom: 1px solid @navBorderColor;
+      }
 
-    .ant-card-head-title {
-      color: var(--xagi-current-text-primary);
-    }
+      .ant-card-head-title {
+        color: var(--xagi-layout-text-primary);
+      }
 
-    .ant-card-body {
-      background: var(--xagi-current-bg-card);
+      .ant-card-body {
+        background: var(--xagi-layout-bg-card);
+      }
     }
-  }
 
   .ant-switch {
     &.ant-switch-checked {
@@ -207,47 +207,47 @@
   }
 }
 
-// 深色风格适配
-.xagi-dark-style {
+// 深色布局风格适配（独立于Ant Design主题）
+.xagi-layout-dark {
   .navigation-style-toggle {
     .ant-typography {
-      color: var(--xagi-current-text-primary) !important;
+      color: var(--xagi-layout-text-primary) !important;
     }
 
     .ant-card {
-      background: var(--xagi-current-bg-card) !important;
-      border-color: var(--xagi-current-border-primary) !important;
+      background: var(--xagi-layout-bg-card) !important;
+      border-color: var(--xagi-layout-border-primary) !important;
 
       .ant-card-head {
-        background: var(--xagi-current-bg-secondary) !important;
-        border-bottom-color: var(--xagi-current-border-primary) !important;
+        background: var(--xagi-layout-bg-secondary) !important;
+        border-bottom-color: var(--xagi-layout-border-primary) !important;
       }
     }
 
     .code-block {
-      background: var(--xagi-current-bg-input) !important;
-      border-color: var(--xagi-current-border-primary) !important;
-      color: var(--xagi-current-text-primary) !important;
+      background: var(--xagi-layout-bg-input) !important;
+      border-color: var(--xagi-layout-border-primary) !important;
+      color: var(--xagi-layout-text-primary) !important;
     }
 
     .ant-btn {
-      background: var(--xagi-current-bg-secondary) !important;
-      border-color: var(--xagi-current-border-primary) !important;
-      color: var(--xagi-current-text-primary) !important;
+      background: var(--xagi-layout-bg-secondary) !important;
+      border-color: var(--xagi-layout-border-primary) !important;
+      color: var(--xagi-layout-text-primary) !important;
 
       &:hover {
-        background: var(--xagi-current-bg-primary) !important;
+        background: var(--xagi-layout-bg-primary) !important;
         border-color: @colorPrimary !important;
       }
     }
   }
 }
 
-// 浅色风格适配
-.xagi-light-style {
+// 浅色布局风格适配（独立于Ant Design主题）
+.xagi-layout-light {
   .navigation-style-toggle {
     .ant-typography {
-      color: var(--xagi-current-text-primary) !important;
+      color: var(--xagi-layout-text-primary) !important;
     }
   }
 }

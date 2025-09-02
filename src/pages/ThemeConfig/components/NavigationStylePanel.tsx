@@ -1,5 +1,6 @@
+import { useBackgroundStyle } from '@/utils/backgroundStyle';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from './NavigationStylePanel.less';
 
 const cx = classNames.bind(styles);
@@ -14,36 +15,68 @@ interface NavigationStyle {
 interface NavigationStylePanelProps {
   isNavigationDarkMode: boolean;
   onNavigationThemeToggle: () => void;
+  // 可选：如果需要外部获取当前选中的导航风格
+  onNavigationStyleChange?: (styleId: string) => void;
 }
 
 const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
   isNavigationDarkMode,
   onNavigationThemeToggle,
+  onNavigationStyleChange,
 }) => {
+  // 使用全局导航风格管理
+  const { navigationStyle, setNavigationStyle, layoutStyle, setLayoutStyle } =
+    useBackgroundStyle();
+
   // 导航栏风格配置
   const navigationStyles: NavigationStyle[] = [
     {
-      id: 'nav-style-1',
+      id: 'style1',
       name: '风格1',
-      description: '当前默认风格',
+      description: '紧凑模式：60px宽度，无文字显示，页面容器有外边距和圆角',
       isDefault: true,
     },
     {
-      id: 'nav-style-2',
+      id: 'style2',
       name: '风格2',
-      description: '简洁风格',
+      description: '展开模式：88px宽度，显示文字，页面容器无外边距和圆角',
     },
   ];
 
-  // 导航栏风格状态管理
+  // 导航栏风格状态管理（使用全局状态）
   const [currentNavigationStyle, setCurrentNavigationStyle] =
-    useState<string>('nav-style-1');
+    useState<string>(navigationStyle);
+
+  // 同步全局导航风格状态
+  useEffect(() => {
+    setCurrentNavigationStyle(navigationStyle);
+  }, [navigationStyle]);
 
   // 处理导航栏风格切换
   const handleNavigationStyleChange = (styleId: string) => {
+    const newStyleId = styleId as 'style1' | 'style2';
     setCurrentNavigationStyle(styleId);
-    // 这里可以添加导航栏风格切换的逻辑
-    console.log('切换导航栏风格:', styleId);
+
+    // 更新全局导航风格状态
+    setNavigationStyle(newStyleId);
+
+    // 通知外部组件（如果需要）
+    onNavigationStyleChange?.(styleId);
+
+    console.log(
+      'NavigationStylePanel - 切换导航栏风格:',
+      styleId,
+      '-> 实际应用:',
+      newStyleId,
+    );
+    console.log('NavigationStylePanel - 当前布局风格:', layoutStyle);
+  };
+
+  // 处理深浅色风格切换（集成到导航深浅色管理中）
+  const handleColorStyleToggle = () => {
+    // 同时管理导航深浅色和全局布局深浅色
+    onNavigationThemeToggle();
+    console.log('NavigationStylePanel - 切换深浅色风格');
   };
 
   return (
@@ -64,11 +97,25 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
               title={style.description}
             >
               <div className={cx(styles.stylePreview)}>
-                <div className={cx(styles.navbarPreview, styles.lightNavbar)}>
+                <div
+                  className={cx(
+                    styles.navbarPreview,
+                    // 根据风格动态调整预览样式
+                    style.id === 'style1'
+                      ? styles.compactNavbar
+                      : styles.expandedNavbar,
+                    // 根据当前布局风格调整预览颜色
+                    // layoutStyle === 'dark' ? styles.darkNavbar : styles.lightNavbar
+                  )}
+                >
                   <div className={cx(styles.navbarContent)}>
                     <div className={cx(styles.navbarItem)}></div>
                     <div className={cx(styles.navbarItem)}></div>
                     <div className={cx(styles.navbarItem)}></div>
+                    {/* 风格2显示文字提示 */}
+                    {style.id === 'style2' && (
+                      <div className={cx(styles.styleText)}>有文字</div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -87,7 +134,7 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
             className={cx(styles.styleOption, {
               [styles.active]: !isNavigationDarkMode,
             })}
-            onClick={() => !isNavigationDarkMode || onNavigationThemeToggle()}
+            onClick={() => !isNavigationDarkMode || handleColorStyleToggle()}
           >
             <div className={cx(styles.stylePreview)}>
               <div className={cx(styles.navbarPreview, styles.lightNavbar)}>
@@ -106,7 +153,7 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
             className={cx(styles.styleOption, {
               [styles.active]: isNavigationDarkMode,
             })}
-            onClick={() => isNavigationDarkMode || onNavigationThemeToggle()}
+            onClick={() => isNavigationDarkMode || handleColorStyleToggle()}
           >
             <div className={cx(styles.stylePreview)}>
               <div className={cx(styles.navbarPreview, styles.darkNavbar)}>

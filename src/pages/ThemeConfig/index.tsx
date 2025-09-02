@@ -1,7 +1,8 @@
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
+import { useBackgroundStyle } from '@/utils/backgroundStyle';
 import { Button, message } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import BackgroundImagePanel from './components/BackgroundImagePanel';
 import NavigationStylePanel from './components/NavigationStylePanel';
 import ThemeColorPanel from './components/ThemeColorPanel';
@@ -23,13 +24,55 @@ const ThemeConfig: React.FC = () => {
     isDarkMode,
   } = useGlobalSettings();
 
+  // 集成导航风格管理
+  const { navigationStyle, setNavigationStyle, layoutStyle, setLayoutStyle } = useBackgroundStyle();
+
   // 导航栏深浅色状态管理（独立于Ant Design主题）
   const [isNavigationDarkMode, setIsNavigationDarkMode] =
-    useState<boolean>(false);
+    useState<boolean>(layoutStyle === 'dark');
 
-  // 切换导航栏深浅色
+  // 同步布局风格状态到导航深浅色状态
+  useEffect(() => {
+    setIsNavigationDarkMode(layoutStyle === 'dark');
+  }, [layoutStyle]);
+
+  // 从本地存储恢复配置
+  useEffect(() => {
+    try {
+      const savedConfig = localStorage.getItem('user-theme-config');
+      if (savedConfig) {
+        const config = JSON.parse(savedConfig);
+        
+        // 恢复导航风格
+        if (config.navigationStyleId && (config.navigationStyleId === 'style1' || config.navigationStyleId === 'style2')) {
+          if (config.navigationStyleId !== navigationStyle) {
+            setNavigationStyle(config.navigationStyleId);
+          }
+        }
+        
+        // 恢复导航深浅色
+        if (config.navigationStyle) {
+          const navLayoutStyle = config.navigationStyle === 'dark' ? 'dark' : 'light';
+          if (navLayoutStyle !== layoutStyle) {
+            setLayoutStyle(navLayoutStyle);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to restore theme config from storage:', error);
+    }
+  }, []);
+
+  // 处理导航风格变更
+  const handleNavigationStyleChange = (styleId: string) => {
+    console.log('主题配置页面收到导航风格变更:', styleId);
+  };
+
+  // 切换导航栏深浅色（集成到布局风格管理）
   const handleNavigationThemeToggle = () => {
-    setIsNavigationDarkMode(!isNavigationDarkMode);
+    const newLayoutStyle = layoutStyle === 'light' ? 'dark' : 'light';
+    setLayoutStyle(newLayoutStyle);
+    setIsNavigationDarkMode(newLayoutStyle === 'dark');
   };
 
   // 保存配置到本地存储
@@ -39,14 +82,17 @@ const ThemeConfig: React.FC = () => {
         selectedThemeColor: primaryColor,
         selectedBackgroundId: backgroundImageId,
         antdTheme: isDarkMode ? 'dark' : 'light', // Ant Design主题
-        navigationStyle: isNavigationDarkMode ? 'dark' : 'light', // 导航栏深浅色（独立）
-        navigationStyleId: 'nav-style-1', // 默认风格，实际应该从组件状态获取
+        navigationStyle: layoutStyle, // 导航栏深浅色（使用布局风格）
+        navigationStyleId: navigationStyle, // 导航风格 ID（style1 或 style2）
         timestamp: Date.now(),
       };
 
       localStorage.setItem('user-theme-config', JSON.stringify(themeConfig));
       message.success('主题配置保存成功');
+      
+      console.log('保存的配置:', themeConfig);
     } catch (error) {
+      console.error('Save theme config error:', error);
       message.error('保存失败，请重试');
     }
   };
@@ -76,6 +122,7 @@ const ThemeConfig: React.FC = () => {
             <NavigationStylePanel
               isNavigationDarkMode={isNavigationDarkMode}
               onNavigationThemeToggle={handleNavigationThemeToggle}
+              onNavigationStyleChange={handleNavigationStyleChange}
             />
           </div>
           <div className={cx(styles.configItem)}>
