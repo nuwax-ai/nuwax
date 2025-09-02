@@ -1,7 +1,5 @@
-import ThemeControlPanel from '@/components/ThemeControlPanel';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { useBackgroundStyle } from '@/utils/backgroundStyle';
-import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Outlet, useModel } from 'umi';
@@ -33,17 +31,17 @@ const Layout: React.FC = () => {
   // 使用 useRef 避免重复获取 DOM 元素
   const mobileMenuContainerRef = useRef<HTMLDivElement>(null);
   // 全局主题与语言（已在 app.tsx 统一注入，这里仅保留使用场景需要时可读取）
-  const {
-    language,
-    toggleTheme,
-    toggleLanguage,
-    primaryColor,
-    setPrimaryColor,
-    isDarkMode,
-    backgroundImageId,
-    setBackgroundImage,
-  } = useGlobalSettings();
-  
+  // const {
+  //   language,
+  //   toggleTheme,
+  //   toggleLanguage,
+  //   primaryColor,
+  //   setPrimaryColor,
+  //   isDarkMode,
+  //   backgroundImageId,
+  //   setBackgroundImage,
+  // } = useGlobalSettings();
+
   // 导航风格管理（使用独立的布局风格系统）
   const { navigationStyle, layoutStyle } = useBackgroundStyle();
 
@@ -206,7 +204,7 @@ const Layout: React.FC = () => {
         'h-full',
         styles.container,
         `xagi-layout-${layoutStyle}`, // 布局风格类（独立于Ant Design）
-        `xagi-nav-${navigationStyle}` // 导航风格类
+        `xagi-nav-${navigationStyle}`, // 导航风格类
       ),
     [layoutStyle, navigationStyle],
   );
@@ -222,7 +220,7 @@ const Layout: React.FC = () => {
         'overflow-y',
         styles['page-container'],
         `xagi-layout-${layoutStyle}`,
-        `xagi-nav-${navigationStyle}`
+        `xagi-nav-${navigationStyle}`,
       ),
     [layoutStyle, navigationStyle],
   );
@@ -231,7 +229,7 @@ const Layout: React.FC = () => {
     <div className={mainContainerClassName}>
       {/* 顶部右侧全局操作：主题、语言、主色 */}
 
-      <ThemeControlPanel
+      {/* <ThemeControlPanel
         isDarkMode={isDarkMode}
         toggleTheme={toggleTheme}
         language={language}
@@ -240,7 +238,7 @@ const Layout: React.FC = () => {
         setPrimaryColor={setPrimaryColor}
         backgroundImageId={backgroundImageId}
         setBackgroundImage={setBackgroundImage}
-      />
+      /> */}
 
       {/* 侧边菜单栏及弹窗区域 */}
       <div

@@ -19,7 +19,7 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
 }) => {
   // 获取当前导航风格
   const { navigationStyle } = useBackgroundStyle();
-  
+
   // 在开发环境下输出调试信息
   if (process.env.NODE_ENV === 'development') {
     console.log('TabItem - 当前导航风格:', navigationStyle);
@@ -42,11 +42,11 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
         )}
       >
         <div className={cx(styles['active-icon-container'])}>{icon}</div>
-        <span 
-          className={cx(styles.text)} 
+        <span
+          className={cx(styles.text)}
           style={{
-            opacity: navigationStyle === 'style2' ? 1 : 0,
-            transform: navigationStyle === 'style2' ? 'translateY(0)' : 'translateY(-5px)'
+            display: navigationStyle === 'style2' ? 'block' : 'none',
+            // transform: navigationStyle === 'style2' ? 'translateY(0)' : 'translateY(-5px)'
           }}
         >
           {text}
@@ -76,19 +76,25 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
           'content-center',
           'cursor-pointer',
           styles.box,
+          navigationStyle === 'style2' ? styles.style2 : styles.style1,
           { [styles.active]: active },
         )}
       >
-        <div className={cx(styles['active-icon-container'])}>{icon}</div>
-        <span 
-          className={cx(styles.text)} 
-          style={{
-            opacity: navigationStyle === 'style2' ? 1 : 0,
-            transform: navigationStyle === 'style2' ? 'translateY(0)' : 'translateY(-5px)'
-          }}
-        >
-          {text}
-        </span>
+        <div className={cx(styles['active-box'])}>
+          <div className={cx(styles['active-icon-container'])}>{icon}</div>
+          <span
+            className={cx(styles.text)}
+            style={{
+              display: navigationStyle === 'style2' ? 'block' : 'none',
+              // transform:
+              //   navigationStyle === 'style2'
+              //     ? 'translateY(0)'
+              //     : 'translateY(-5px)',
+            }}
+          >
+            {text}
+          </span>
+        </div>
       </div>
     </Tooltip>
   );

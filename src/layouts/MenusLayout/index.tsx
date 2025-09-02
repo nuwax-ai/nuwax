@@ -188,12 +188,17 @@ const MenusLayout: React.FC<{
       return FIRST_MENU_WIDTH; // 移动端保持固定宽度
     }
     const width = navigationStyle === 'style2' ? 88 : 60; // 风格2展开模式88px，风格1紧凑模式60px
-    
+
     // 开发环境下添加日志
     if (process.env.NODE_ENV === 'development') {
-      console.log('MenusLayout - 导航风格:', navigationStyle, '-> 宽度:', width);
+      console.log(
+        'MenusLayout - 导航风格:',
+        navigationStyle,
+        '-> 宽度:',
+        width,
+      );
     }
-    
+
     return width;
   }, [navigationStyle, isMobile]);
 
@@ -210,7 +215,7 @@ const MenusLayout: React.FC<{
       styles.container,
       'flex',
       `xagi-layout-${layoutStyle}`, // 布局风格类（独立于Ant Design）
-      `xagi-nav-${navigationStyle}` // 导航风格类
+      `xagi-nav-${navigationStyle}`, // 导航风格类
     );
   }, [layoutStyle, navigationStyle]);
   return (
@@ -265,7 +270,11 @@ const MenusLayout: React.FC<{
             >
               <ConditionRender condition={isShowTitle}>
                 <div style={{ padding: '22px 12px' }}>
-                  <Typography.Title level={4} style={{ marginBottom: 0 }}>
+                  <Typography.Title
+                    level={4}
+                    style={{ marginBottom: 0 }}
+                    className={cx(styles['menu-title'])}
+                  >
                     {title}
                   </Typography.Title>
                 </div>
