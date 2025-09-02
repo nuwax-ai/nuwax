@@ -192,7 +192,7 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
           </Button>
         </Space>
       }
-      destroyOnClose
+      destroyOnHidden
       width={500}
     >
       <div className={cx(styles.dragger)}>

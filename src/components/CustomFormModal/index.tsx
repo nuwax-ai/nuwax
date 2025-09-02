@@ -30,7 +30,7 @@ const CustomFormModal: React.FC<PropsWithChildren<CustomFormModalProps>> = ({
       open={open}
       centered={centered}
       classNames={classNames}
-      destroyOnClose
+      destroyOnHidden
       footer={
         <>
           <Button className={cx(styles.btn)} type="default" onClick={onCancel}>

@@ -57,7 +57,7 @@ const HistoryConversation: React.FC = () => {
       width={600}
       footer={null}
       maskClosable
-      destroyOnClose
+      destroyOnHidden
       open={openHistoryModal}
       onCancel={() => setOpenHistoryModal(false)}
     >

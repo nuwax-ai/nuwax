@@ -86,7 +86,7 @@ const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
   return (
     <Modal
       open={open}
-      destroyOnClose
+      destroyOnHidden
       onCancel={onCancel}
       classNames={{
         content: cx(styles['modal-container']),

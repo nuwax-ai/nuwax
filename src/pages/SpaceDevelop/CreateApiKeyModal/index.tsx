@@ -251,7 +251,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
       }
       open={open}
       width={710}
-      destroyOnClose
+      destroyOnHidden
       footer={null}
       onCancel={handleCancel}
     >

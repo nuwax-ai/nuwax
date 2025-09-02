@@ -134,7 +134,7 @@ const PluginAutoAnalysis: React.FC<PluginAutoAnalysisProps> = ({
       open={open}
       onCancel={onCancel}
       className={cx(styles['modal-container'])}
-      destroyOnClose
+      destroyOnHidden
       modalRender={() => (
         <div
           className={cx(

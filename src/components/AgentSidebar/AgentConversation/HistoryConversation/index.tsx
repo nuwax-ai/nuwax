@@ -49,7 +49,7 @@ const HistoryConversation: React.FC<HistoryConversationProps> = ({
       width={600}
       footer={null}
       maskClosable
-      destroyOnClose
+      destroyOnHidden
       open={isOpen}
       onCancel={onCancel}
     >

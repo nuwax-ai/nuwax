@@ -104,7 +104,7 @@ const AddAndModify: React.FC<AddAndModifyProps> = ({
     <Modal
       title={title}
       open={open}
-      destroyOnClose
+      destroyOnHidden
       onOk={() => {
         form.submit();
       }}
