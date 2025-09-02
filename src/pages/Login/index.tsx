@@ -182,13 +182,6 @@ const Login: React.FC = () => {
     loginTypeRef.current = Number(value);
   };
   const { token } = theme.useToken();
-  // const selectBefore = (
-  //   <Form.Item name="areaCode" noStyle>
-  //     <Select style={{ width: 80 }}>
-  //       <Select.Option value="86">+86</Select.Option>
-  //     </Select>
-  //   </Form.Item>
-  // );
   // 分段器切换登录方式
   const options: SegmentedItemType[] = [
     { label: '密码登录', value: LoginTypeEnum.Password + '' },
@@ -239,10 +232,15 @@ const Login: React.FC = () => {
                 </Form.Item>
                 <Form.Item name="phoneOrEmail" rules={getPhoneOrEmailRules()}>
                   {tenantConfigInfo?.authType === 3 ? (
-                    <Input placeholder="请输入邮箱地址" size={'large'} />
+                    <Input
+                      rootClassName={cx(styles.input)}
+                      placeholder="请输入邮箱地址"
+                      size={'large'}
+                    />
                   ) : (
                     <Input
                       placeholder="请输入手机号"
+                      rootClassName={cx(styles.input, styles['current-input'])}
                       addonBefore={
                         <div className={cx(styles.icon, 'flex', 'flex-col')}>
                           +86
@@ -257,9 +255,9 @@ const Login: React.FC = () => {
                 </Form.Item>
                 {loginType === LoginTypeEnum.Password && (
                   <Form.Item name="password" rules={passwordRules}>
-                    <Input
+                    <Input.Password
+                      rootClassName={cx(styles.input)}
                       size={'large'}
-                      type="password"
                       autoComplete="off"
                       placeholder="请输入6位以上密码"
                     />
