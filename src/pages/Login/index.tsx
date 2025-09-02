@@ -8,7 +8,7 @@ import {
   isWeakNumber,
   validatePassword,
 } from '@/utils/common';
-import { ExclamationCircleFilled } from '@ant-design/icons';
+import { DownOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import {
   Button,
   Checkbox,
@@ -18,7 +18,6 @@ import {
   Input,
   Modal,
   Segmented,
-  Select,
   theme,
   Typography,
 } from 'antd';
@@ -183,13 +182,13 @@ const Login: React.FC = () => {
     loginTypeRef.current = Number(value);
   };
   const { token } = theme.useToken();
-  const selectBefore = (
-    <Form.Item name="areaCode" noStyle>
-      <Select style={{ width: 80 }}>
-        <Select.Option value="86">+86</Select.Option>
-      </Select>
-    </Form.Item>
-  );
+  // const selectBefore = (
+  //   <Form.Item name="areaCode" noStyle>
+  //     <Select style={{ width: 80 }}>
+  //       <Select.Option value="86">+86</Select.Option>
+  //     </Select>
+  //   </Form.Item>
+  // );
   // 分段器切换登录方式
   const options: SegmentedItemType[] = [
     { label: '密码登录', value: LoginTypeEnum.Password + '' },
@@ -215,7 +214,7 @@ const Login: React.FC = () => {
       <BasicLayout>
         <div>
           {loadEnd && (
-            <div className={cx(styles['form-box'])}>
+            <div className={cx(styles['login-form-box'])}>
               {tenantConfigInfo?.authType !== 3 && (
                 <Segmented
                   options={options}
@@ -228,17 +227,15 @@ const Login: React.FC = () => {
               <Form
                 form={form}
                 validateTrigger="onBlur"
-                initialValues={{
-                  areaCode: '86',
-                }}
+                initialValues={{ areaCode: '86' }}
                 rootClassName={cx(styles.form, 'flex', 'flex-col')}
                 name="login"
                 onFinish={onFinish}
               >
                 <Form.Item>
-                  <Title level={2} style={{ marginTop: 72 }}>{`欢迎使用${
-                    tenantConfigInfo?.siteName || ''
-                  }`}</Title>
+                  <Title level={2} style={{ marginTop: 72 }}>
+                    {`欢迎使用${tenantConfigInfo?.siteName || ''}`}
+                  </Title>
                 </Form.Item>
                 <Form.Item name="phoneOrEmail" rules={getPhoneOrEmailRules()}>
                   {tenantConfigInfo?.authType === 3 ? (
@@ -246,46 +243,51 @@ const Login: React.FC = () => {
                   ) : (
                     <Input
                       placeholder="请输入手机号"
-                      addonBefore={selectBefore}
+                      addonBefore={
+                        <div className={cx(styles.icon, 'flex', 'flex-col')}>
+                          +86
+                          <DownOutlined
+                            style={{ marginLeft: 10, fontSize: '14px' }}
+                          />
+                        </div>
+                      }
                       size={'large'}
                     />
                   )}
                 </Form.Item>
-                <Form.Item className={'flex-1'}>
-                  {loginType === LoginTypeEnum.Password && (
-                    <Form.Item name="password" rules={passwordRules}>
-                      <Input
-                        size={'large'}
-                        type="password"
-                        autoComplete="off"
-                        placeholder="请输入6位以上密码"
-                      />
-                    </Form.Item>
-                  )}
+                {loginType === LoginTypeEnum.Password && (
+                  <Form.Item name="password" rules={passwordRules}>
+                    <Input
+                      size={'large'}
+                      type="password"
+                      autoComplete="off"
+                      placeholder="请输入6位以上密码"
+                    />
+                  </Form.Item>
+                )}
 
-                  <Form.Item className={cx(styles.login)}>
-                    <Button
-                      className={cx(styles.btn)}
-                      block
-                      type="primary"
-                      htmlType="submit"
-                      size="large"
-                      loading={loading}
-                    >
-                      {loginType === LoginTypeEnum.Password ? '登录' : '下一步'}
-                    </Button>
-                  </Form.Item>
-                  <Form.Item
-                    className={cx('mb-16')}
-                    style={{ marginTop: '-10px' }}
+                <Form.Item className={cx(styles.login)}>
+                  <Button
+                    className={cx(styles.btn)}
+                    block
+                    type="primary"
+                    htmlType="submit"
+                    size="large"
+                    loading={loading}
                   >
-                    <Checkbox
-                      checked={checked}
-                      onChange={(e) => setChecked(e.target.checked)}
-                    >
-                      <SiteProtocol />
-                    </Checkbox>
-                  </Form.Item>
+                    {loginType === LoginTypeEnum.Password ? '登录' : '下一步'}
+                  </Button>
+                </Form.Item>
+                <Form.Item
+                  className={cx('mb-16')}
+                  style={{ marginTop: '-10px' }}
+                >
+                  <Checkbox
+                    checked={checked}
+                    onChange={(e) => setChecked(e.target.checked)}
+                  >
+                    <SiteProtocol />
+                  </Checkbox>
                 </Form.Item>
               </Form>
             </div>

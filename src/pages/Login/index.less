@@ -1,6 +1,6 @@
 @import '@/styles/token';
 
-.form-box {
+.login-form-box {
   width: 100%; /* 宽度自适应 */
   width: 520px;
   max-height: 680px;
@@ -13,12 +13,19 @@
   box-shadow: 0 8px 48px 0 rgba(0, 0, 0, 16%);
   backdrop-filter: blur(12px);
   overflow: auto;
-}
 
-// Input 输入框样式定制
-.form {
-  .login {
-    padding-top: 20px;
+  // Input 输入框样式定制
+  .form {
+    .login {
+      padding-top: 20px;
+    }
+
+    .icon {
+      display: inline-block;
+      padding: 5px 10px 5px 0;
+      border-right: 1px solid rgba(12, 20, 102, 12%);
+      color: rgba(0, 0, 0, 70%);
+    }
   }
 
   :global {
@@ -44,6 +51,11 @@
     }
 
     .ant-input-group-addon {
+      padding-right: 0;
+      background: @colorFillTertiary !important;
+    }
+
+    input {
       background: @colorFillTertiary !important;
     }
 
@@ -52,26 +64,22 @@
       padding: 12px 16px;
       font-size: 16px;
       transition: all 0.3s ease;
-      background-color: @colorFillTertiary !important;
     }
 
     .ant-input-affix-wrapper {
       border-radius: 8px;
       border: 1px solid rgba(0, 0, 0, 10%);
-      background: rgba(255, 255, 255, 90%);
       backdrop-filter: blur(8px);
       padding: 12px 16px;
       transition: all 0.3s ease;
 
       &:hover {
         border-color: rgba(122, 51, 254, 40%);
-        background: rgba(255, 255, 255, 95%);
       }
 
       &:focus-within {
         border: 0 !important;
         box-shadow: none !important;
-        background: rgba(255, 255, 255, 100%);
       }
 
       .ant-input {
