@@ -32,6 +32,11 @@ export const SYSTEM_MANAGE_LIST = [
     icon: <SvgIcon name="icons-nav-settings" />,
     text: '系统配置',
   },
+  {
+    type: SystemManageListEnum.Theme_Config,
+    icon: <SvgIcon name="icons-nav-palette" />,
+    text: '主题配置',
+  },
 ];
 
 // 消息类型, Broadcast时可以不传userIds,可用值:Broadcast,Private,System

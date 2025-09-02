@@ -1,0 +1,133 @@
+@import '@/styles/token';
+
+.themeColorPanel {
+  padding: 0;
+
+  .panelTitle {
+    margin: 0 0 @paddingSm 0;
+    font-size: @fontSizeLg;
+    font-weight: 600;
+    color: @colorText;
+  }
+}
+
+.presetColorsSection {
+  margin-bottom: @paddingMd;
+}
+
+.presetColorsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: @paddingSm;
+  margin-top: @paddingSm;
+  justify-content: flex-start;
+}
+
+.colorPreviewItem {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  box-sizing: content-box;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.3s @motionEaseOut;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .colorPreviewItemSolid {
+    display: block;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+  }
+
+  &:hover {
+    border-color: var(--hover-border-color, @colorPrimary);
+  }
+
+  &.active {
+    border-color: @colorPrimary;
+
+    // &::after {
+    //   content: '✓';
+    //   position: absolute;
+    //   top: 50%;
+    //   left: 50%;
+    //   transform: translate(-50%, -50%);
+    //   color: white;
+    //   font-weight: bold;
+    //   font-size: 14px;
+    //   z-index: 2;
+    // }
+  }
+}
+
+.colorPreviewItemContainer {
+  position: relative;
+  cursor: pointer;
+
+  &:hover {
+    .colorPreviewItemText {
+      opacity: 1 !important;
+    }
+  }
+}
+
+.customColorPickerIcon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+}
+
+.colorPreviewItemText {
+  display: block;
+  text-align: center;
+  margin-top: @marginXxs;
+  font-size: @fontSizeSm;
+  color: @colorTextSecondary;
+  opacity: 0;
+}
+
+.customColorSection {
+  display: flex;
+  justify-content: center;
+  // margin-top: @paddingSm;
+
+  .customColorPicker {
+    margin-top: 0;
+    // border: 2px solid @colorBorder;
+    border: none;
+    transition: all 0.3s @motionEaseOut;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      // border-color: @colorPrimary;
+      box-shadow: none;
+    }
+
+    :global {
+      .ant-color-picker-color-block {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: none;
+      }
+
+      .ant-color-picker-trigger-text {
+        margin: 0;
+        margin-inline-start: 0;
+        margin-inline-end: 0;
+        // display: none;
+      }
+    }
+  }
+}

@@ -39,4 +39,5 @@ export enum SettingActionEnum {
   Account,
   Email_Bind,
   Reset_Password,
+  Theme_Switch,
 }
