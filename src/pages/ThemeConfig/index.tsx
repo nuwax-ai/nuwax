@@ -1,7 +1,7 @@
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { Button, message } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useState } from 'react';
 import BackgroundImagePanel from './components/BackgroundImagePanel';
 import NavigationStylePanel from './components/NavigationStylePanel';
 import ThemeColorPanel from './components/ThemeColorPanel';
@@ -21,8 +21,16 @@ const ThemeConfig: React.FC = () => {
     backgroundImageId,
     setBackgroundImage,
     isDarkMode,
-    toggleTheme,
   } = useGlobalSettings();
+
+  // 导航栏深浅色状态管理（独立于Ant Design主题）
+  const [isNavigationDarkMode, setIsNavigationDarkMode] =
+    useState<boolean>(false);
+
+  // 切换导航栏深浅色
+  const handleNavigationThemeToggle = () => {
+    setIsNavigationDarkMode(!isNavigationDarkMode);
+  };
 
   // 保存配置到本地存储
   const handleSave = async () => {
@@ -30,7 +38,9 @@ const ThemeConfig: React.FC = () => {
       const themeConfig = {
         selectedThemeColor: primaryColor,
         selectedBackgroundId: backgroundImageId,
-        navigationStyle: isDarkMode ? 'dark' : 'light',
+        antdTheme: isDarkMode ? 'dark' : 'light', // Ant Design主题
+        navigationStyle: isNavigationDarkMode ? 'dark' : 'light', // 导航栏深浅色（独立）
+        navigationStyleId: 'nav-style-1', // 默认风格，实际应该从组件状态获取
         timestamp: Date.now(),
       };
 
@@ -64,8 +74,8 @@ const ThemeConfig: React.FC = () => {
           </div>
           <div className={cx(styles.configItem)}>
             <NavigationStylePanel
-              isDarkMode={isDarkMode}
-              onThemeToggle={toggleTheme}
+              isNavigationDarkMode={isNavigationDarkMode}
+              onNavigationThemeToggle={handleNavigationThemeToggle}
             />
           </div>
           <div className={cx(styles.configItem)}>

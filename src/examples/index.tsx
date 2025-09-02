@@ -59,6 +59,25 @@ const ExamplesIndex: React.FC = () => {
       featured: true,
     },
     {
+      id: 'navigation-token',
+      title: isChineseLanguage ? '导航Token使用指南' : 'Navigation Token Guide',
+      description: isChineseLanguage
+        ? '详细介绍新增的导航相关CSS变量token，展示两种导航风格的切换效果和使用方法。'
+        : 'Detailed introduction to the new navigation-related CSS variable tokens, showcasing two navigation styles switching effects and usage methods.',
+      tags: [
+        { text: isChineseLanguage ? '导航' : 'Navigation', color: 'blue' },
+        { text: isChineseLanguage ? 'Token' : 'Token', color: 'purple' },
+        {
+          text: isChineseLanguage ? 'CSS变量' : 'CSS Variables',
+          color: 'orange',
+        },
+        { text: isChineseLanguage ? '使用指南' : 'Guide', color: 'green' },
+      ],
+      icon: <CodeOutlined />,
+      path: '/examples/navigation-token',
+      featured: true,
+    },
+    {
       id: 'theme-demo',
       title: isChineseLanguage ? '主题功能演示' : 'Theme Demo',
       description: isChineseLanguage

@@ -96,6 +96,12 @@ export const darkThemeTokens = {
   colorBgBase: '#000',
   colorTextBase: '#fff',
   // TODO 填充颜色 深色 缺少
+
+  // 导航深色主题适配
+  colorFill: 'rgba(255, 255, 255, 0.08)',
+  colorFillSecondary: 'rgba(255, 255, 255, 0.04)',
+  colorFillTertiary: 'rgba(255, 255, 255, 0.02)',
+  colorFillQuaternary: 'rgba(255, 255, 255, 0.01)',
 };
 
 // 组件主题类型定义

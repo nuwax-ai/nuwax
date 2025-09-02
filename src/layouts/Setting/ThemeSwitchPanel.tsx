@@ -24,13 +24,16 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
     setPrimaryColor,
     backgroundImageId,
     setBackgroundImage,
-    isDarkMode,
-    toggleTheme,
   } = useGlobalSettings();
 
   // 导航栏风格状态管理
   const [currentNavigationStyle, setCurrentNavigationStyle] = useState<string>(
     tenantThemeConfig.defaultNavigationStyleId,
+  );
+
+  // 导航栏深浅色状态管理（独立于Ant Design主题）
+  const [isNavigationDarkMode, setIsNavigationDarkMode] = useState<boolean>(
+    tenantThemeConfig.defaultIsDarkMode,
   );
 
   // 处理主题色切换
@@ -48,6 +51,11 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
     setCurrentNavigationStyle(styleId);
     // 这里可以添加导航栏风格切换的逻辑
     console.log('切换导航栏风格:', styleId);
+  };
+
+  // 处理导航栏深浅色切换
+  const handleNavigationThemeToggle = () => {
+    setIsNavigationDarkMode(!isNavigationDarkMode);
   };
 
   return (
@@ -133,9 +141,11 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
               {/* 浅色模式 */}
               <div
                 className={cx(styles.styleOption, {
-                  [styles.active]: !isDarkMode,
+                  [styles.active]: !isNavigationDarkMode,
                 })}
-                onClick={() => !isDarkMode || toggleTheme()}
+                onClick={() =>
+                  !isNavigationDarkMode || handleNavigationThemeToggle()
+                }
               >
                 <div className={cx(styles.stylePreview)}>
                   <div className={cx(styles.navbarPreview, styles.lightNavbar)}>
@@ -152,9 +162,11 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
               {/* 深色模式 */}
               <div
                 className={cx(styles.styleOption, {
-                  [styles.active]: isDarkMode,
+                  [styles.active]: isNavigationDarkMode,
                 })}
-                onClick={() => isDarkMode || toggleTheme()}
+                onClick={() =>
+                  isNavigationDarkMode || handleNavigationThemeToggle()
+                }
               >
                 <div className={cx(styles.stylePreview)}>
                   <div className={cx(styles.navbarPreview, styles.darkNavbar)}>

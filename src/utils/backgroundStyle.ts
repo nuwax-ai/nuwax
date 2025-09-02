@@ -7,6 +7,13 @@ import React from 'react';
 
 export type BackgroundStyleType = 'light' | 'dark';
 
+/**
+ * 导航风格类型
+ * style1: 紧凑模式（无文字导航，有外边距和圆角）
+ * style2: 展开模式（有文字导航，无外边距和圆角）
+ */
+export type NavigationStyleType = 'style1' | 'style2';
+
 export interface BackgroundConfig {
   id: string;
   name: string;
@@ -97,13 +104,6 @@ const darkStyleVariables = {
 
   '--xagi-current-shadow': 'rgba(0, 0, 0, 0.6)',
   '--xagi-current-overlay': 'rgba(0, 0, 0, 0.7)',
-
-  // 导航相关 - 深色风格
-  '--xagi-nav-first-menu-color-text': 'rgba(255, 255, 255, 1)',
-  '--xagi-nav-first-menu-color-text-secondary': 'rgba(255, 255, 255, 0.8)',
-  '--xagi-nav-second-menu-color-text': 'rgba(255, 255, 255, 1)',
-  '--xagi-nav-second-menu-color-text-secondary': 'rgba(255, 255, 255, 0.8)',
-  '--xagi-nav-second-menu-color-text-tertiary': 'rgba(255, 255, 255, 0.55)',
 };
 
 /**
@@ -125,13 +125,6 @@ const lightStyleVariables = {
 
   '--xagi-current-shadow': 'rgba(0, 0, 0, 0.1)',
   '--xagi-current-overlay': 'rgba(255, 255, 255, 0.7)',
-
-  // 导航相关 - 浅色风格
-  '--xagi-nav-first-menu-color-text': 'rgba(0, 0, 0, 1)',
-  '--xagi-nav-first-menu-color-text-secondary': 'rgba(0, 0, 0, 0.8)',
-  '--xagi-nav-second-menu-color-text': 'rgba(0, 0, 0, 1)',
-  '--xagi-nav-second-menu-color-text-secondary': 'rgba(0, 0, 0, 0.8)',
-  '--xagi-nav-second-menu-color-text-tertiary': 'rgba(0, 0, 0, 0.55)',
 };
 
 /**
@@ -141,6 +134,7 @@ export class BackgroundStyleManager {
   private static instance: BackgroundStyleManager;
   private currentBackground: BackgroundConfig | null = null;
   private currentStyle: BackgroundStyleType = 'light';
+  private currentNavStyle: NavigationStyleType = 'style1';
 
   private constructor() {
     this.loadFromStorage();
@@ -230,6 +224,32 @@ export class BackgroundStyleManager {
   }
 
   /**
+   * 设置导航风格
+   */
+  setNavigationStyle(navStyle: NavigationStyleType): void {
+    this.currentNavStyle = navStyle;
+    this.applyNavigationStyle(navStyle);
+    this.saveToStorage();
+    this.dispatchNavigationStyleChangeEvent();
+  }
+
+  /**
+   * 获取当前导航风格
+   */
+  getCurrentNavigationStyle(): NavigationStyleType {
+    return this.currentNavStyle;
+  }
+
+  /**
+   * 切换导航风格
+   */
+  toggleNavigationStyle(): void {
+    const newNavStyle: NavigationStyleType =
+      this.currentNavStyle === 'style1' ? 'style2' : 'style1';
+    this.setNavigationStyle(newNavStyle);
+  }
+
+  /**
    * 应用CSS变量风格
    */
   private applyStyle(style: BackgroundStyleType): void {
@@ -243,6 +263,36 @@ export class BackgroundStyleManager {
     // 添加风格类名到body
     document.body.classList.remove('xagi-light-style', 'xagi-dark-style');
     document.body.classList.add(`xagi-${style}-style`);
+  }
+
+  /**
+   * 应用导航风格
+   */
+  private applyNavigationStyle(navStyle: NavigationStyleType): void {
+    // 直接通过 Ant Design 的 CSS 变量系统设置导航样式
+    const rootElement = document.documentElement;
+
+    if (navStyle === 'style1') {
+      // 风格1：紧凑模式（60px，无文字）
+      rootElement.style.setProperty('--xagi-nav-first-menu-width', '60px');
+      rootElement.style.setProperty('--xagi-page-container-margin', '16px');
+      rootElement.style.setProperty(
+        '--xagi-page-container-border-radius',
+        '12px',
+      );
+    } else {
+      // 风格2：展开模式（88px，有文字）
+      rootElement.style.setProperty('--xagi-nav-first-menu-width', '88px');
+      rootElement.style.setProperty('--xagi-page-container-margin', '0px');
+      rootElement.style.setProperty(
+        '--xagi-page-container-border-radius',
+        '0px',
+      );
+    }
+
+    // 添加导航风格类名到body
+    document.body.classList.remove('xagi-nav-style1', 'xagi-nav-style2');
+    document.body.classList.add(`xagi-nav-${navStyle}`);
   }
 
   /**
@@ -263,9 +313,26 @@ export class BackgroundStyleManager {
       detail: {
         style: this.currentStyle,
         background: this.currentBackground,
+        navigationStyle: this.currentNavStyle,
       },
     });
     window.dispatchEvent(event);
+  }
+
+  /**
+   * 触发导航风格变更事件
+   */
+  private dispatchNavigationStyleChangeEvent(): void {
+    const event = new CustomEvent('xagi-navigation-style-changed', {
+      detail: {
+        navigationStyle: this.currentNavStyle,
+        style: this.currentStyle,
+        background: this.currentBackground,
+      },
+    });
+    window.dispatchEvent(event);
+    // 同时触发背景风格变更事件以保持兼容性
+    this.dispatchStyleChangeEvent();
   }
 
   /**
@@ -275,6 +342,7 @@ export class BackgroundStyleManager {
     const data = {
       backgroundId: this.currentBackground?.id,
       style: this.currentStyle,
+      navigationStyle: this.currentNavStyle,
     };
     localStorage.setItem('xagi-background-style', JSON.stringify(data));
   }
@@ -300,6 +368,10 @@ export class BackgroundStyleManager {
           this.currentStyle = data.style;
           this.applyStyle(data.style);
         }
+        if (data.navigationStyle) {
+          this.currentNavStyle = data.navigationStyle;
+          this.applyNavigationStyle(data.navigationStyle);
+        }
       }
     } catch (error) {
       console.warn('Failed to load background style from storage:', error);
@@ -312,6 +384,7 @@ export class BackgroundStyleManager {
   reset(): void {
     const defaultBackground = backgroundConfigs[0];
     this.setBackground(defaultBackground.id);
+    this.setNavigationStyle('style1');
   }
 }
 
@@ -330,16 +403,31 @@ export const useBackgroundStyle = () => {
   const [background, setBackground] = React.useState<BackgroundConfig | null>(
     backgroundStyleManager.getCurrentBackground(),
   );
+  const [navigationStyle, setNavigationStyle] =
+    React.useState<NavigationStyleType>(
+      backgroundStyleManager.getCurrentNavigationStyle(),
+    );
 
   React.useEffect(() => {
     const handleStyleChange = (event: CustomEvent) => {
       setStyle(event.detail.style);
       setBackground(event.detail.background);
+      if (event.detail.navigationStyle) {
+        setNavigationStyle(event.detail.navigationStyle);
+      }
+    };
+
+    const handleNavigationStyleChange = (event: CustomEvent) => {
+      setNavigationStyle(event.detail.navigationStyle);
     };
 
     window.addEventListener(
       'xagi-background-style-changed',
       handleStyleChange as EventListener,
+    );
+    window.addEventListener(
+      'xagi-navigation-style-changed',
+      handleNavigationStyleChange as EventListener,
     );
 
     return () => {
@@ -347,16 +435,24 @@ export const useBackgroundStyle = () => {
         'xagi-background-style-changed',
         handleStyleChange as EventListener,
       );
+      window.removeEventListener(
+        'xagi-navigation-style-changed',
+        handleNavigationStyleChange as EventListener,
+      );
     };
   }, []);
 
   return {
     style,
     background,
+    navigationStyle,
     setBackground: (id: string) => backgroundStyleManager.setBackground(id),
     toggleStyle: () => backgroundStyleManager.toggleStyle(),
     setStyle: (newStyle: BackgroundStyleType) =>
       backgroundStyleManager.setStyle(newStyle),
+    setNavigationStyle: (navStyle: NavigationStyleType) =>
+      backgroundStyleManager.setNavigationStyle(navStyle),
+    toggleNavigationStyle: () => backgroundStyleManager.toggleNavigationStyle(),
     getAllBackgrounds: () => backgroundStyleManager.getAllBackgrounds(),
     getBackgroundsByStyle: (filterStyle: BackgroundStyleType) =>
       backgroundStyleManager.getBackgroundsByStyle(filterStyle),

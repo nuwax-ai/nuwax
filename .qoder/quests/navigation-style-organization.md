@@ -50,9 +50,9 @@ graph LR
 
 | Token 名称 | 作用 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `--xagi-nav-first-menu-width` | 一级导航宽度（收起） | `60px` | 无文字状态的导航宽度 |
-| `--xagi-nav-first-menu-width-expanded` | 一级导航宽度（展开） | `88px` | 有文字状态的导航宽度 |
-| `--xagi-nav-first-menu-font-size` | 一级导航字体大小 | `14px` | 一级导航文字的字体大小 |
+| `--xagi-nav-first-menu-width` | 一级导航宽度（风格 1） | `60px` | 风格 1 无文字导航的宽度 |
+| `--xagi-nav-first-menu-width-style2` | 一级导航宽度（风格 2） | `88px` | 风格 2 有文字导航的宽度 |
+| `--xagi-nav-first-menu-font-size` | 一级导航字体大小 | `14px` | 风格 2 中一级导航文字的字体大小（风格 1 无文字显示） |
 
 #### 颜色 Token - 深色风格
 
@@ -103,7 +103,7 @@ graph LR
 **风格 1：无文字导航模式（当前默认状态）**
 
 - 一级导航宽度：60px
-- 导航栏不显示文字，仅显示图标
+- 导航栏不显示文字，仅显示图标（字体大小 Token 不生效）
 - 页面容器：有外边距和圆角
 - 二级导航背景：透明
 - 页面容器背景：有颜色
@@ -111,7 +111,7 @@ graph LR
 **风格 2：有文字导航模式**
 
 - 一级导航宽度：88px
-- 导航栏显示图标和文字
+- 导航栏显示图标和文字（字体大小 Token 生效）
 - 页面容器：无外边距和圆角，充满整个可用区域
 - 二级导航背景：与页面容器背景颜色一致
 - 页面容器背景：与二级导航背景保持一致
@@ -171,7 +171,11 @@ graph LR
   width: @navFirstMenuWidth;
   background-color: @navFirstMenuBg;
   color: @navFirstMenuText;
-  font-size: @navFirstMenuFontSize;
+
+  // 文字样式（仅在风格2中显示文字时使用）
+  .nav-text {
+    font-size: @navFirstMenuFontSize;
+  }
 
   // 悬停效果
   &:hover {
@@ -213,8 +217,12 @@ graph LR
   width: var(--xagi-nav-first-menu-width);
   background-color: var(--xagi-nav-first-menu-color-bg);
   color: var(--xagi-nav-first-menu-color-text);
-  font-size: var(--xagi-nav-first-menu-font-size);
   box-shadow: var(--xagi-nav-first-menu-shadow);
+
+  /* 文字样式（仅在风格2中显示文字时使用） */
+  .nav-text {
+    font-size: var(--xagi-nav-first-menu-font-size);
+  }
 }
 
 .second-navigation {
@@ -246,6 +254,159 @@ const NavigationComponent: React.FC = () => {
 };
 ```
 
+### 风格切换集成示例
+
+#### 导航风格切换组件
+
+```tsx
+import React, { useState } from 'react';
+import { Switch, Space, Typography } from 'antd';
+import { useGlobalSettings } from '@/hooks/useGlobalSettings';
+import './NavigationStyleToggle.less';
+
+const { Text } = Typography;
+
+interface NavigationStyleToggleProps {
+  onChange?: (mode: 'style1' | 'style2') => void;
+}
+
+const NavigationStyleToggle: React.FC<NavigationStyleToggleProps> = ({
+  onChange,
+}) => {
+  const [navMode, setNavMode] = useState<'style1' | 'style2'>('style1');
+  const { isDarkMode } = useGlobalSettings();
+
+  const handleModeChange = (checked: boolean) => {
+    const newMode = checked ? 'style2' : 'style1';
+    setNavMode(newMode);
+
+    // 更新CSS变量
+    document.documentElement.style.setProperty(
+      '--xagi-nav-style-mode',
+      newMode,
+    );
+
+    // 应用对应的样式类
+    document.body.className =
+      document.body.className.replace(/xagi-nav-(style1|style2)/g, '').trim() +
+      ` xagi-nav-${newMode}`;
+
+    onChange?.(newMode);
+  };
+
+  return (
+    <div className={`nav-style-toggle ${isDarkMode ? 'dark' : 'light'}`}>
+      <Space>
+        <Text>风格1（紧凑）</Text>
+        <Switch
+          checked={navMode === 'style2'}
+          onChange={handleModeChange}
+          size="small"
+        />
+        <Text>风格2（展开）</Text>
+      </Space>
+    </div>
+  );
+};
+
+export default NavigationStyleToggle;
+```
+
+#### 页面容器样式适配
+
+```less
+// NavigationStyleToggle.less
+.page-container {
+  // 默认风格1：紧凑模式
+  margin: var(--xagi-page-container-margin);
+  border-radius: var(--xagi-page-container-border-radius);
+  background-color: var(--xagi-page-container-color-bg);
+  transition: all 0.3s ease;
+
+  // 风格2：展开模式适配
+  .xagi-nav-style2 & {
+    margin: var(--xagi-page-container-margin-style2);
+    border-radius: var(--xagi-page-container-border-radius-style2);
+    background-color: var(--xagi-page-container-color-bg-style2);
+  }
+}
+
+.second-navigation {
+  // 默认风格1：透明背景
+  background-color: var(--xagi-nav-second-menu-color-bg-transparent);
+  transition: all 0.3s ease;
+
+  // 风格2：实体背景
+  .xagi-nav-style2 & {
+    background-color: var(--xagi-nav-second-menu-color-bg-solid);
+  }
+}
+
+.first-navigation {
+  // 默认风格1宽度
+  width: var(--xagi-nav-first-menu-width);
+  transition: width 0.3s ease;
+
+  // 风格2宽度
+  .xagi-nav-style2 & {
+    width: var(--xagi-nav-first-menu-width-style2);
+  }
+
+  // 文字显示隐藏控制
+  .nav-text {
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s ease;
+    font-size: var(--xagi-nav-first-menu-font-size); // 只在风格2中显示时生效
+
+    .xagi-nav-style2 & {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
+```
+
+### 页面容器统一管理组件
+
+```tsx
+import React from 'react';
+import { useGlobalSettings } from '@/hooks/useGlobalSettings';
+import './PageContainer.less';
+
+interface PageContainerProps {
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+  navMode?: 'style1' | 'style2';
+}
+
+const PageContainer: React.FC<PageContainerProps> = ({
+  children,
+  className = '',
+  style = {},
+  navMode = 'style1',
+}) => {
+  const { isDarkMode } = useGlobalSettings();
+
+  return (
+    <div
+      className={`
+        page-container 
+        ${isDarkMode ? 'xagi-dark-style' : 'xagi-light-style'}
+        xagi-nav-${navMode}
+        ${className}
+      `.trim()}
+      style={style}
+    >
+      {children}
+    </div>
+  );
+};
+
+export default PageContainer;
+```
+
 ### 响应式适配示例
 
 ```less
@@ -254,7 +415,7 @@ const NavigationComponent: React.FC = () => {
 
   // 平板适配
   @media (max-width: 768px) {
-    width: @navFirstMenuWidthExpanded; // 展开状态适应更小屏幕
+    width: @navFirstMenuWidthStyle2; // 风格2适应更小屏幕
   }
 
   // 手机适配

@@ -143,6 +143,11 @@ const routes = [
     component: '@/examples/AntdComponentsShowcase',
     layout: false,
   },
+  {
+    path: '/examples/navigation-token',
+    component: '@/examples/NavigationTokenExample',
+    layout: false,
+  },
 ];
 
 export default routes;
