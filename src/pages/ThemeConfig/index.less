@@ -15,6 +15,8 @@
 }
 
 .content {
+  padding-bottom: 80px; // 为固定底部按钮留出空间
+
   .configContainer {
     margin-bottom: @paddingXl;
   }
@@ -29,12 +31,18 @@
   }
 
   .footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    padding: @paddingLg 0;
-    margin-top: @paddingLg;
+    padding: @paddingLg;
+    background-color: @colorBgContainer;
     border-top: @lineWidth solid @colorSplit;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 10%);
+    z-index: 1000;
 
     // :global(.ant-btn) {
     //   border-radius: @borderRadius;
