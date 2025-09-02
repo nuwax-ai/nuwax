@@ -1,0 +1,316 @@
+@import '@/styles/token';
+
+.themeSwitchPanel {
+  padding: @paddingLg;
+
+  .panelTitle {
+    margin: 0 0 @paddingSm 0;
+    font-size: @fontSizeLg;
+    font-weight: 600;
+    color: @colorText;
+  }
+
+  h4 {
+    margin: 0 0 @paddingSm 0;
+    font-size: @fontSize;
+    color: @colorText;
+    font-weight: 600;
+
+    &:not(:first-of-type) {
+      margin-top: @paddingMd;
+    }
+  }
+}
+
+// 主题色选择样式
+.themeColorSection {
+  margin-bottom: @paddingMd;
+
+  h4 {
+    margin-bottom: @paddingSm;
+  }
+}
+
+.themeColorGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: @paddingSm;
+  margin-top: @paddingSm;
+  justify-content: flex-start;
+}
+
+.colorPreviewItemContainer {
+  position: relative;
+
+  &:hover {
+    .colorPreviewItemText {
+      opacity: 1 !important;
+    }
+  }
+}
+
+.colorPreviewItem {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  box-sizing: content-box;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.3s @motionEaseOut;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .colorPreviewItemSolid {
+    display: block;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+  }
+
+  &:hover {
+    border-color: var(--hover-border-color, @colorPrimary);
+  }
+
+  &.active {
+    border-color: @colorPrimary;
+  }
+}
+
+.colorPreviewItemText {
+  display: block;
+  text-align: center;
+  margin-top: @marginXxs;
+  font-size: @fontSizeSm;
+  color: @colorTextSecondary;
+  opacity: 0;
+}
+
+// 导航栏风格选择样式
+.navigationStyleSection {
+  margin-bottom: @paddingMd;
+
+  h4 {
+    margin-bottom: @paddingMd;
+  }
+
+  h5 {
+    margin: 0 0 @paddingSm 0;
+    font-size: @fontSizeSm;
+    color: @colorTextSecondary;
+    font-weight: 500;
+  }
+}
+
+.navigationStyleOptions {
+  margin-bottom: @paddingMd;
+}
+
+.navigationColorOptions {
+  // 深浅色选择样式
+}
+
+.styleOptions {
+  display: flex;
+  gap: @paddingSm;
+  justify-content: flex-start;
+}
+
+.styleOption {
+  cursor: pointer;
+  border: 2px solid @colorBorder;
+  border-radius: @borderRadius;
+  transition: all 0.3s @motionEaseOut;
+  overflow: hidden;
+  background-color: @colorBgContainer;
+
+  &:hover {
+    border-color: @colorPrimary;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 12%);
+  }
+
+  &.active {
+    border-color: @colorPrimary;
+    box-shadow: 0 0 0 2px @colorPrimaryBg;
+    transform: translateY(-1px);
+
+    &::after {
+      content: '✓';
+      position: absolute;
+      top: @paddingXs;
+      right: @paddingXs;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background-color: @colorPrimary;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      z-index: 2;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 15%);
+    }
+  }
+}
+
+.stylePreview {
+  width: 100px;
+  height: 60px;
+  position: relative;
+  overflow: hidden;
+}
+
+.navbarPreview {
+  width: 100%;
+  height: 100%;
+  border-radius: @borderRadius @borderRadius 0 0;
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 10%) 0%,
+      rgba(0, 0, 0, 10%) 100%
+    );
+  }
+}
+
+.lightNavbar {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.darkNavbar {
+  background: linear-gradient(135deg, #343a40 0%, #212529 100%);
+}
+
+.navbarContent {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 8px;
+  z-index: 1;
+}
+
+.navbarItem {
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+  background-color: rgba(0, 0, 0, 30%);
+
+  .lightNavbar & {
+    background-color: rgba(0, 0, 0, 30%);
+  }
+
+  .darkNavbar & {
+    background-color: rgba(255, 255, 255, 30%);
+  }
+}
+
+.styleLabel {
+  display: block;
+  padding: @paddingXs @paddingSm;
+  background-color: @colorBgContainer;
+  border-radius: 0 0 @borderRadius @borderRadius;
+  font-size: @fontSize;
+  color: @colorText;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  border-top: @lineWidth solid @colorBorderSecondary;
+}
+
+// 背景图片选择样式
+.backgroundImageSection {
+  h4 {
+    margin-bottom: @paddingSm;
+  }
+}
+
+.backgroundGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: @paddingXs;
+  justify-content: flex-start;
+}
+
+.backgroundOption {
+  cursor: pointer;
+  border: 2px solid @colorBorder;
+  border-radius: @borderRadius;
+  transition: all 0.3s @motionEaseOut;
+  overflow: hidden;
+  position: relative;
+  background-color: @colorBgContainer;
+
+  &:hover {
+    border-color: @colorPrimary;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 12%);
+  }
+
+  &.active {
+    border-color: @colorPrimary;
+    box-shadow: 0 0 0 2px @colorPrimaryBg;
+    transform: translateY(-1px);
+
+    &::after {
+      content: '✓';
+      position: absolute;
+      top: @paddingXs;
+      right: @paddingXs;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background-color: @colorPrimary;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      z-index: 2;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 15%);
+    }
+  }
+}
+
+.backgroundPreview {
+  width: 96px;
+  height: 60px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: @borderRadius;
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 10%) 0%,
+      rgba(0, 0, 0, 10%) 100%
+    );
+  }
+}

@@ -1,14 +1,17 @@
 import { SETTING_ACTIONS } from '@/constants/menus.constants';
+import { getTenantThemeConfig } from '@/services/tenant';
 import { SettingActionEnum } from '@/types/enums/menus';
+import { TenantThemeConfig } from '@/types/tenant';
 import { CloseOutlined } from '@ant-design/icons';
 import { Modal } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 import ResetPassword from './ResetPassword';
 import SettingAccount from './SettingAccount';
 import SettingEmail from './SettingEmail';
+import ThemeSwitchPanel from './ThemeSwitchPanel';
 
 const cx = classNames.bind(styles);
 
@@ -17,6 +20,28 @@ const Setting: React.FC = () => {
   const [action, setAction] = useState<SettingActionEnum>(
     SettingActionEnum.Account,
   );
+  const [tenantThemeConfig, setTenantThemeConfig] =
+    useState<TenantThemeConfig | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // 获取租户主题配置
+  useEffect(() => {
+    const fetchTenantThemeConfig = async () => {
+      if (action === SettingActionEnum.Theme_Switch && !tenantThemeConfig) {
+        setLoading(true);
+        try {
+          const config = await getTenantThemeConfig();
+          setTenantThemeConfig(config);
+        } catch (error) {
+          console.error('获取租户主题配置失败:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchTenantThemeConfig();
+  }, [action, tenantThemeConfig]);
 
   const handlerClick = (type: SettingActionEnum) => {
     setAction(type);
@@ -30,6 +55,16 @@ const Setting: React.FC = () => {
         return <SettingEmail />;
       case SettingActionEnum.Reset_Password:
         return <ResetPassword />;
+      case SettingActionEnum.Theme_Switch:
+        if (loading) {
+          return <div className={cx(styles.loading)}>加载中...</div>;
+        }
+        if (!tenantThemeConfig) {
+          return <div className={cx(styles.error)}>获取主题配置失败</div>;
+        }
+        return <ThemeSwitchPanel tenantThemeConfig={tenantThemeConfig} />;
+      default:
+        return <SettingAccount />;
     }
   };
 

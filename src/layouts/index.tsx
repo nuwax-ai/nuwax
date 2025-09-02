@@ -41,7 +41,6 @@ const Layout: React.FC = () => {
     isDarkMode,
     backgroundImageId,
     setBackgroundImage,
-    getBackgroundImageStyle,
   } = useGlobalSettings();
 
   // 状态管理
@@ -196,10 +195,7 @@ const Layout: React.FC = () => {
   console.log('token', token);
 
   return (
-    <div
-      className={cx('flex', 'h-full', styles.container)}
-      style={getBackgroundImageStyle}
-    >
+    <div className={cx('flex', 'h-full', styles.container)}>
       {/* 顶部右侧全局操作：主题、语言、主色 */}
 
       <ThemeControlPanel

@@ -63,6 +63,12 @@ class BackgroundService {
   constructor() {
     // 从本地存储恢复背景设置
     this.restoreFromStorage();
+
+    // 初始化时设置CSS变量
+    const currentBg = this.getCurrentBackground();
+    if (currentBg) {
+      this.updateCSSVariable(currentBg);
+    }
   }
 
   /**
@@ -107,6 +113,10 @@ class BackgroundService {
 
     this.currentBackgroundId = backgroundId;
     this.saveToStorage();
+
+    // 立即更新CSS变量，无需页面重新加载
+    this.updateCSSVariable(background);
+
     this.notifyListeners('backgroundChanged', background);
   }
 
@@ -133,6 +143,33 @@ class BackgroundService {
       return 'none';
     }
     return `url(${currentBg.path})`;
+  }
+
+  /**
+   * 更新CSS变量
+   * @param background 背景图片对象
+   */
+  private updateCSSVariable(background: BackgroundImage): void {
+    try {
+      // 更新CSS变量
+      document.documentElement.style.setProperty(
+        '--xagi-background-image',
+        `url(${background.path})`,
+      );
+
+      // 触发自定义事件，通知其他组件背景已更新
+      window.dispatchEvent(
+        new CustomEvent('xagi-background-updated', {
+          detail: {
+            backgroundId: background.id,
+            backgroundPath: background.path,
+            backgroundName: background.name,
+          },
+        }),
+      );
+    } catch (error) {
+      console.error('Failed to update CSS variable:', error);
+    }
   }
 
   /**
@@ -186,7 +223,9 @@ class BackgroundService {
     backgroundId: string,
     updates: Partial<BackgroundImage>,
   ): void {
-    const index = this.backgroundImages.findIndex((bg) => bg.id === backgroundId);
+    const index = this.backgroundImages.findIndex(
+      (bg) => bg.id === backgroundId,
+    );
     if (index >= 0) {
       this.backgroundImages[index] = {
         ...this.backgroundImages[index],

@@ -1,7 +1,7 @@
 import backgroundService from '@/services/backgroundService';
 import { BackgroundImage } from '@/types/background';
 import { theme as antdTheme } from 'antd';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { setLocale } from 'umi';
 
 // 主题类型定义
@@ -28,7 +28,7 @@ export interface GlobalSettings {
 export const SETTINGS_STORAGE_KEY = 'xagi-global-settings';
 
 // 背景图片列表（从全局服务获取）
-export const backgroundImages: BackgroundImage[] =
+export const getBackgroundImages = () =>
   backgroundService.getBackgroundImages();
 
 // 默认设置（导出供初始化使用）
@@ -36,7 +36,7 @@ export const defaultSettings: GlobalSettings = {
   theme: 'light',
   language: 'zh-CN',
   primaryColor: '#5147ff',
-  backgroundImageId: backgroundService.getCurrentBackgroundId(),
+  backgroundImageId: 'bg-variant-1', // 使用固定默认值，避免循环依赖
 };
 
 /**
@@ -48,10 +48,48 @@ export const useGlobalSettings = () => {
   const [settings, setSettings] = useState<GlobalSettings>(() => {
     try {
       const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
-      if (saved) return { ...defaultSettings, ...JSON.parse(saved) };
+      if (saved) {
+        const parsedSettings = JSON.parse(saved);
+        // 确保背景图片ID从backgroundService获取最新值
+        const currentBackgroundId = backgroundService.getCurrentBackgroundId();
+        return {
+          ...defaultSettings,
+          ...parsedSettings,
+          backgroundImageId: currentBackgroundId,
+        };
+      }
     } catch {}
-    return defaultSettings;
+    // 如果没有保存的设置，使用backgroundService的当前值
+    const currentBackgroundId = backgroundService.getCurrentBackgroundId();
+    return {
+      ...defaultSettings,
+      backgroundImageId: currentBackgroundId,
+    };
   });
+
+  // 监听背景服务的变化，同步更新状态
+  useEffect(() => {
+    const handleBackgroundChanged = (background: BackgroundImage) => {
+      setSettings((prev) => ({
+        ...prev,
+        backgroundImageId: background.id,
+      }));
+    };
+
+    // 添加事件监听器
+    backgroundService.addEventListener(
+      'backgroundChanged',
+      handleBackgroundChanged,
+    );
+
+    // 清理函数
+    return () => {
+      backgroundService.removeEventListener(
+        'backgroundChanged',
+        handleBackgroundChanged,
+      );
+    };
+  }, []);
 
   // antd ConfigProvider 的动态更新交由 app.tsx 的运行时 antd 配置处理，避免在多个组件中重复设置导致循环更新
 
@@ -120,29 +158,23 @@ export const useGlobalSettings = () => {
   // 设置背景图片
   const setBackgroundImage = (backgroundImageId: string) => {
     backgroundService.setBackground(backgroundImageId);
-    saveSettings({ ...settings, backgroundImageId });
-    setTimeout(() => {
-      window.location.reload();
-    }, 300);
+    // 背景服务会通过事件系统自动更新状态，无需手动调用saveSettings
   };
 
   // 获取当前背景图片（从全局服务）
-  const getCurrentBackgroundImage = useMemo(() => {
+  const getCurrentBackgroundImage = () => {
     return backgroundService.getCurrentBackground();
-  }, []);
+  };
 
   // 获取背景图片的CSS样式（从全局服务）
-  const getBackgroundImageStyle = useMemo(() => {
+  const getBackgroundImageStyle = () => {
     return backgroundService.getBackgroundStyle();
-  }, []);
+  };
 
-  const { token } = antdTheme.useToken();
+  // const { token } = antdTheme.useToken(); // 暂时注释掉，避免未使用变量错误
 
   // 判断是否为暗色主题
-  const isDarkMode = useMemo(
-    () => settings.theme === 'dark',
-    [token.colorBgContainer],
-  );
+  const isDarkMode = useMemo(() => settings.theme === 'dark', [settings.theme]);
 
   // 判断是否为中文
   const isChineseLanguage = useMemo(
@@ -160,7 +192,8 @@ export const useGlobalSettings = () => {
     theme: settings.theme,
     language: settings.language,
     primaryColor: settings.primaryColor ?? defaultSettings.primaryColor!,
-    backgroundImageId: backgroundService.getCurrentBackgroundId(),
+    backgroundImageId:
+      settings.backgroundImageId ?? defaultSettings.backgroundImageId!,
     isDarkMode,
     isChineseLanguage,
     toggleTheme,
@@ -172,7 +205,7 @@ export const useGlobalSettings = () => {
     setBackgroundImage,
     getCurrentBackgroundImage,
     getBackgroundImageStyle,
-    backgroundImages,
+    backgroundImages: getBackgroundImages(),
   };
 };
 
