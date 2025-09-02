@@ -40,84 +40,86 @@
   gap: @paddingSm;
   justify-content: flex-start;
 }
-
-.styleOption {
+.stylePreview {
+  padding: @paddingXs;
   cursor: pointer;
-  border: 2px solid @colorBorder;
-  border-radius: @borderRadius;
+  border: 2px solid transparent;
+  border-radius: @borderRadiusLg;
   transition: all 0.3s @motionEaseOut;
   overflow: hidden;
-  background-color: @colorBgContainer;
+  // background-color: @colorBgContainer;
 
   &:hover {
     border-color: @colorPrimary;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 12%);
   }
 
   &.active {
     border-color: @colorPrimary;
-    box-shadow: 0 0 0 2px @colorPrimaryBg;
-    transform: translateY(-1px);
 
-    &::after {
-      content: '✓';
-      position: absolute;
-      top: @paddingXs;
-      right: @paddingXs;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background-color: @colorPrimary;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: bold;
-      z-index: 2;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 15%);
-    }
+    // &::after {
+    //   content: '✓';
+    //   position: absolute;
+    //   top: @paddingXs;
+    //   right: @paddingXs;
+    //   width: 20px;
+    //   height: 20px;
+    //   border-radius: 50%;
+    //   background-color: @colorPrimary;
+    //   color: white;
+    //   display: flex;
+    //   align-items: center;
+    //   justify-content: center;
+    //   font-size: 12px;
+    //   font-weight: bold;
+    //   z-index: 2;
+    //   box-shadow: 0 2px 8px rgba(0, 0, 0, 15%);
+    // }
   }
 }
 
-.stylePreview {
-  width: 100px;
-  height: 60px;
-  position: relative;
-  overflow: hidden;
-}
+// .stylePreview {
+//   position: relative;
+//   width: 96px;
+//   height: 60px;
+// }
 
 .navbarPreview {
   width: 100%;
   height: 100%;
-  border-radius: @borderRadius @borderRadius 0 0;
-  position: relative;
-  overflow: hidden;
 
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 10%) 0%,
-      rgba(0, 0, 0, 10%) 100%
-    );
-  }
+  // &::after {
+  //   content: '';
+  //   position: absolute;
+  //   top: 0;
+  //   left: 0;
+  //   right: 0;
+  //   bottom: 0;
+  //   background: linear-gradient(
+  //     135deg,
+  //     rgba(255, 255, 255, 10%) 0%,
+  //     rgba(0, 0, 0, 10%) 100%
+  //   );
+  // }
 }
 
 .lightNavbar {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  .navbarContent{
+    background-image: url('@/assets/images/theme/light-navbar-bg.png');
+  }
 }
 
 .darkNavbar {
-  background: linear-gradient(135deg, #343a40 0%, #212529 100%);
+  .navbarContent{
+    background-image: url('@/assets/images/theme/dark-navbar-bg.png');
+  }
 }
 
+.navbarContent {
+  width: 96px;
+  height: 60px;
+  background-color: @colorBgLayout;
+  border-radius: @borderRadiusSm;
+}
 // 紧凑导航样式（风格1）
 .compactNavbar {
   .navbarContent {
@@ -156,20 +158,19 @@
   }
 }
 
-.navbarContent {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  gap: 8px;
-  z-index: 1;
-}
+// .navbarContent {
+//   position: absolute;
+//   top: 50%;
+//   left: 50%;
+//   transform: translate(-50%, -50%);
+//   display: flex;
+//   gap: 8px;
+//   z-index: 1;
+// }
 
 .navbarItem {
   width: 16px;
   height: 2px;
-  border-radius: 1px;
   background-color: rgba(0, 0, 0, 30%);
 
   .lightNavbar & {
@@ -184,21 +185,11 @@
 .styleLabel {
   display: block;
   padding: @paddingXs @paddingSm;
-  background-color: @colorBgContainer;
-  border-radius: 0 0 @borderRadius @borderRadius;
   font-size: @fontSizeSm; // 使用更小的字号
-  color: @colorText;
+  color: @colorTextSecondary;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 500;
-  border-top: @lineWidth solid @colorBorderSecondary;
-  
-  // 根据选中状态调整样式
-  .active & {
-    background-color: @colorPrimaryBg;
-    color: @colorPrimary;
-    font-weight: 600;
-  }
 }

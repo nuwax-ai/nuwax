@@ -39,7 +39,8 @@
 
 .backgroundOption {
   cursor: pointer;
-  border: 2px solid @colorBorder;
+  padding: @paddingXs;
+  border: 2px solid transparent;
   border-radius: @borderRadius;
   transition: all 0.3s @motionEaseOut;
   overflow: hidden;
@@ -48,59 +49,28 @@
 
   &:hover {
     border-color: @colorPrimary;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 12%);
   }
 
   &.active {
     border-color: @colorPrimary;
-    box-shadow: 0 0 0 2px @colorPrimaryBg;
-    transform: translateY(-1px);
-
-    &::after {
-      content: '✓';
-      position: absolute;
-      top: @paddingXs;
-      right: @paddingXs;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background-color: @colorPrimary;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: bold;
-      z-index: 2;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 15%);
-    }
   }
 }
 
-.backgroundPreview {
+.backgroundPreview, .uploadContainer {
   width: 96px;
   height: 60px;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  border-radius: @borderRadius;
+  border-radius: @borderRadiusSm;
   position: relative;
   overflow: hidden;
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 10%) 0%,
-      rgba(0, 0, 0, 10%) 100%
-    );
-  }
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: @colorTextSecondary;
+  background-color: @colorFillQuaternary;
 }
 
 .customBackgroundsSection {
@@ -117,23 +87,23 @@
 }
 
 .uploadOption {
-  cursor: pointer;
-  border: 2px dashed @colorBorder;
-  border-radius: @borderRadius;
-  transition: all 0.3s @motionEaseOut;
-  background-color: @colorFillQuaternary;
-  width: 96px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  // cursor: pointer;
+  // border: 2px dashed @colorBorder;
+  // border-radius: @borderRadius;
+  // transition: all 0.3s @motionEaseOut;
+  // background-color: @colorFillQuaternary;
+  // width: 96px;
+  // height: 60px;
+  // display: flex;
+  // align-items: center;
+  // justify-content: center;
 
-  &:hover {
-    border-color: @colorPrimary;
-    background-color: @colorPrimaryBg;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 12%);
-  }
+  // &:hover {
+  //   border-color: @colorPrimary;
+  //   background-color: @colorPrimaryBg;
+  //   transform: translateY(-1px);
+  //   box-shadow: 0 4px 12px rgba(0, 0, 0, 12%);
+  // }
 }
 
 .uploadButton {
@@ -141,20 +111,24 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: @colorTextSecondary;
-  transition: all 0.3s @motionEaseOut;
+  padding: @paddingXs;
+  border: 2px solid transparent;
+  border-radius: @borderRadiusSm;
 
   .uploadOption:hover & {
     color: @colorPrimary;
+    border-color: @colorPrimary;
+    border-style: solid;
+    transform: none;
+    box-shadow: none;
   }
 }
 
 .uploadIcon {
-  font-size: 18px;
-  margin-bottom: 2px;
+  font-size: @fontSizeLg;
+  margin-bottom: @marginXxs;
 }
 
 .uploadText {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: @fontSizeSm;
 }

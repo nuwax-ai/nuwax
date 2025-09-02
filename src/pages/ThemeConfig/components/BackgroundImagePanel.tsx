@@ -70,8 +70,10 @@ const BackgroundImagePanel: React.FC<BackgroundImagePanelProps> = ({
               accept="image/*"
             >
               <div className={cx(styles.uploadButton)}>
-                <PlusOutlined className={cx(styles.uploadIcon)} />
-                <span className={cx(styles.uploadText)}>上传图片</span>
+                <div className={cx(styles.uploadContainer)}>
+                  <PlusOutlined className={cx(styles.uploadIcon)} />
+                  <span className={cx(styles.uploadText)}>上传图片</span>
+                </div>
               </div>
             </Upload>
           </div>
