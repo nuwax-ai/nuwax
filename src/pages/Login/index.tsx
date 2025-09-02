@@ -245,7 +245,7 @@ const Login: React.FC = () => {
                         <div className={cx(styles.icon, 'flex', 'flex-col')}>
                           +86
                           <DownOutlined
-                            style={{ marginLeft: 10, fontSize: '14px' }}
+                            style={{ marginLeft: 15, fontSize: '14px' }}
                           />
                         </div>
                       }
