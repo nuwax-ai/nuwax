@@ -28,7 +28,6 @@ interface BackgroundStyleSwitcherProps {
    */
   showStyleToggle?: boolean;
 }
-
 const BackgroundStyleSwitcher: React.FC<BackgroundStyleSwitcherProps> = ({
   size = 'default',
   showTitle = true,
