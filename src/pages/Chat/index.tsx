@@ -1,7 +1,6 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
-import AgentSidebar from '@/components/AgentSidebar';
+import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import ChatInputHome from '@/components/ChatInputHome';
-import ChatTitleActions from '@/components/ChatTitleActions';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
@@ -18,8 +17,8 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { addBaseTarget, arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
-import { LoadingOutlined } from '@ant-design/icons';
-import { Form, Typography } from 'antd';
+import { ArrowRightOutlined, LoadingOutlined } from '@ant-design/icons';
+import { Button, Form, Typography } from 'antd';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -298,6 +297,9 @@ const Chat: React.FC = () => {
   };
   console.log('conversationInfo', conversationInfo);
 
+  const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
+  const sidebarRef = useRef<AgentSidebarRef>(null);
+
   return (
     <div className={cx('flex', 'h-full')}>
       <div
@@ -315,9 +317,14 @@ const Chat: React.FC = () => {
               >
                 {conversationInfo?.topic}
               </Typography.Title>
-
-              {/* 右侧功能按钮 */}
-              <ChatTitleActions agentInfo={agentDetail} />
+              {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
+              {!isSidebarVisible && (
+                <Button
+                  type="primary"
+                  icon={<ArrowRightOutlined />}
+                  onClick={() => sidebarRef.current?.open()}
+                />
+              )}
             </div>
           </div>
           <div className={cx(styles['chat-wrapper'], 'flex-1')}>
@@ -401,11 +408,13 @@ const Chat: React.FC = () => {
         </div>
       </div>
       <AgentSidebar
+        ref={sidebarRef}
         className={cx(styles['agent-sidebar'])}
         agentId={agentId}
         loading={loading}
         agentDetail={agentDetail}
         onToggleCollectSuccess={handleToggleCollectSuccess}
+        onVisibleChange={setIsSidebarVisible}
       />
       {/*展示台区域*/}
       <ShowArea />

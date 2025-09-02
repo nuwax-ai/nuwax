@@ -1,63 +1,17 @@
 import agentImage from '@/assets/images/agent_image.png'; // 智能体默认图标
 import { SvgIcon } from '@/components/base';
+import ChatTitleActions from '@/components/ChatTitleActions';
 import ConditionRender from '@/components/ConditionRender';
-import MoveCopyComponent from '@/components/MoveCopyComponent';
-import { apiPublishTemplateCopy } from '@/services/publish';
-import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
-import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { AgentContentProps } from '@/types/interfaces/agentTask';
-import { jumpToAgent } from '@/utils/router';
-import { Button, message, Typography } from 'antd';
+import { Typography } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
-import { useRequest } from 'umi';
+import React from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 // 智能体内容
 const AgentContent: React.FC<AgentContentProps> = ({ agentDetail }) => {
-  // 复制弹窗
-  const [openMove, setOpenMove] = useState<boolean>(false);
-  const [copyTemplateLoading, setCopyTemplateLoading] =
-    useState<boolean>(false);
-
-  // 智能体、工作流模板复制
-  const { run: runCopyTemplate } = useRequest(apiPublishTemplateCopy, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (
-      data: number,
-      params: {
-        targetSpaceId: number;
-        targetType: AgentComponentTypeEnum;
-        targetId: number;
-      }[],
-    ) => {
-      message.success('模板复制成功');
-      setCopyTemplateLoading(false);
-      // 关闭弹窗
-      setOpenMove(false);
-      // 目标空间ID
-      const { targetSpaceId } = params[0];
-      // 跳转
-      jumpToAgent(targetSpaceId, data);
-    },
-    onError: () => {
-      setCopyTemplateLoading(false);
-    },
-  });
-
-  // 智能体、工作流模板复制
-  const handlerConfirmCopyTemplate = (targetSpaceId: number) => {
-    setCopyTemplateLoading(true);
-    runCopyTemplate({
-      targetType: AgentComponentTypeEnum.Agent,
-      targetId: agentDetail?.agentId,
-      targetSpaceId,
-    });
-  };
-
   if (!agentDetail) {
     return null;
   }
@@ -117,31 +71,8 @@ const AgentContent: React.FC<AgentContentProps> = ({ agentDetail }) => {
             {agentDetail?.description}
           </Typography.Paragraph>
         </ConditionRender>
-        <ConditionRender
-          condition={agentDetail?.allowCopy === AllowCopyEnum.Yes}
-        >
-          <Button
-            color="primary"
-            size="large"
-            variant="filled"
-            icon={<SvgIcon name="icons-chat-copy" />}
-            className={cx(styles.copyBtn)}
-            onClick={() => setOpenMove(true)}
-          >
-            复制模板
-          </Button>
-          {/*智能体迁移弹窗*/}
-          <MoveCopyComponent
-            spaceId={agentDetail?.spaceId || 0}
-            loading={copyTemplateLoading}
-            type={ApplicationMoreActionEnum.Copy_To_Space}
-            open={openMove}
-            isTemplate={true}
-            title={agentDetail?.name}
-            onCancel={() => setOpenMove(false)}
-            onConfirm={handlerConfirmCopyTemplate}
-          />
-        </ConditionRender>
+        {/* 分享 复制 迁移 功能 */}
+        <ChatTitleActions agentInfo={agentDetail} />
       </div>
     </div>
   );

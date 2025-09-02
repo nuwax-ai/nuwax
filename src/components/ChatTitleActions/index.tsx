@@ -1,13 +1,16 @@
 import ActionMenu, { ActionItem } from '@/components/base/ActionMenu';
+import MoveCopyComponent from '@/components/MoveCopyComponent';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
-import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { OpenCloseEnum } from '@/types/enums/space';
+import { apiPublishTemplateCopy } from '@/services/publish';
+import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
+import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { AgentDetailDto } from '@/types/interfaces/agent';
 import { copyTextToClipboard } from '@/utils/clipboard';
+import { jumpToAgent } from '@/utils/router';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useState } from 'react';
-import { useModel } from 'umi';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -17,6 +20,8 @@ interface ChatTitleActionsProps {
   agentInfo?: AgentDetailDto | null | undefined;
   /** 自定义样式类名 */
   className?: string;
+  /** 是否显示复制模板功能，默认为 true */
+  showCopyTemplate?: boolean;
 }
 
 /**
@@ -26,13 +31,17 @@ interface ChatTitleActionsProps {
 const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
   agentInfo,
   className,
+  showCopyTemplate = true,
 }) => {
-  // 使用 UmiJS model 中的历史会话和定时任务状态管理
-  const { openHistoryConversation, openTimedTask } =
-    useModel('conversationInfo');
+  // 使用 UmiJS model 中的状态管理
   const [isCollected, setIsCollected] = useState<boolean>(
     agentInfo?.collect || false,
   );
+
+  // 复制模板相关状态
+  const [openMove, setOpenMove] = useState<boolean>(false);
+  const [copyTemplateLoading, setCopyTemplateLoading] =
+    useState<boolean>(false);
 
   // 切换收藏与取消收藏
   const handleToggleCollect = useCallback(() => {
@@ -87,14 +96,45 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
     }
   };
 
-  // 定时任务功能 - 直接调用 model 中的方法
-  const handleAddTimedTask = () => {
-    openTimedTask(CreateUpdateModeEnum.Create);
+  // 智能体、工作流模板复制
+  const { run: runCopyTemplate } = useRequest(apiPublishTemplateCopy, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (
+      data: number,
+      params: {
+        targetSpaceId: number;
+        targetType: AgentComponentTypeEnum;
+        targetId: number;
+      }[],
+    ) => {
+      message.success('模板复制成功');
+      setCopyTemplateLoading(false);
+      // 关闭弹窗
+      setOpenMove(false);
+      // 目标空间ID
+      const { targetSpaceId } = params[0];
+      // 跳转
+      jumpToAgent(targetSpaceId, data);
+    },
+    onError: () => {
+      setCopyTemplateLoading(false);
+    },
+  });
+
+  // 智能体、工作流模板复制
+  const handlerConfirmCopyTemplate = (targetSpaceId: number) => {
+    setCopyTemplateLoading(true);
+    runCopyTemplate({
+      targetType: AgentComponentTypeEnum.Agent,
+      targetId: agentInfo?.agentId,
+      targetSpaceId,
+    });
   };
 
-  // 历史会话功能 - 直接调用 model 中的方法
-  const handleHistoryConversation = () => {
-    openHistoryConversation();
+  // 复制模板功能
+  const handleCopyTemplate = () => {
+    setOpenMove(true);
   };
 
   // 定义所有操作项
@@ -114,38 +154,40 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
           onClick: handleToggleCollect,
           className: isCollected ? styles.collected : '',
         },
-        // 定时任务功能 - 根据配置决定是否显示
-        ...(agentInfo?.openScheduledTask === OpenCloseEnum.Open
+        // 复制模板功能 - 根据配置和权限决定是否显示
+        ...(showCopyTemplate && agentInfo?.allowCopy === AllowCopyEnum.Yes
           ? [
               {
-                key: 'timed-task',
-                icon: 'icons-chat-clock',
-                title: '添加定时任务',
-                onClick: handleAddTimedTask,
-                className: styles['timed-task'],
+                key: 'copy-template',
+                icon: 'icons-chat-copy',
+                title: '复制模板',
+                onClick: handleCopyTemplate,
+                className: styles['copy-template'],
               },
             ]
           : []),
-        {
-          key: 'history-conversation',
-          icon: 'icons-chat-history',
-          title: '历史会话',
-          onClick: handleHistoryConversation,
-          className: styles['history-conversation'],
-        },
       ].filter(Boolean) as ActionItem[],
-    [isCollected, agentInfo, openHistoryConversation, openTimedTask],
+    [isCollected, agentInfo, showCopyTemplate],
   );
 
   return (
     <div className={cx(styles['title-actions'], className)}>
       <ActionMenu
         actions={actions}
-        visibleCount={2} // 只显示前2项：分享和收藏
-        moreText="更多"
-        moreIcon="icons-chat-info"
+        visibleCount={actions.length} // 显示所有操作项
         showArrow={false}
         className={styles['action-menu']}
+      />
+      {/* 复制模板弹窗 */}
+      <MoveCopyComponent
+        spaceId={agentInfo?.spaceId || 0}
+        loading={copyTemplateLoading}
+        type={ApplicationMoreActionEnum.Copy_To_Space}
+        open={openMove}
+        isTemplate={true}
+        title={agentInfo?.name}
+        onCancel={() => setOpenMove(false)}
+        onConfirm={handlerConfirmCopyTemplate}
       />
     </div>
   );
