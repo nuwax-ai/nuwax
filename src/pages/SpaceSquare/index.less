@@ -12,30 +12,10 @@
     color: @BLANK04;
   }
 
-  .tab {
-    padding: 0 30px;
-
+  .segmented {
     :global {
-      .ant-tabs-tab {
-        font-size: 16px;
-        color: @GRAY05;
-        font-weight: bold;
-        user-select: none; // 禁止选中文字
-      }
-
-      .ant-tabs-tab.ant-tabs-tab-focus .ant-tabs-tab-btn {
-        outline: none;
-      }
-
-      .ant-tabs-tab-active .ant-tabs-tab-btn {
-        font-size: 16px;
-        font-weight: bold;
-        color: @BLUE13;
-        text-shadow: none;
-      }
-
-      .ant-tabs-ink-bar {
-        background: @BLUE13;
+      .ant-segmented-item-selected {
+        font-weight: bold !important;
       }
     }
   }

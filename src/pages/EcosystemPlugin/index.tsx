@@ -39,7 +39,7 @@ import {
   EcosystemSubTabTypeEnum,
   EcosystemUseStatusEnum,
 } from '@/types/interfaces/ecosystem';
-import { App, Button, Empty, Input, Select, Tabs } from 'antd';
+import { App, Button, Empty, Input, Segmented, Select, Space } from 'antd';
 import classNames from 'classnames';
 import { useCallback, useEffect, useState } from 'react';
 import styles from './index.less';
@@ -53,6 +53,12 @@ import { CREATED_TABS } from '@/constants/common.constants';
 const defaultTabs = CREATED_TABS.filter((item) =>
   [AgentComponentTypeEnum.Plugin].includes(item.key),
 );
+
+const SPACE_SQUARE_SEGMENTED_LIST =
+  TabItems?.map((item) => ({
+    label: item.label,
+    value: item.key,
+  })) || [];
 /**
  * 生态市场插件页面
  * 展示插件列表，包括全部、已启用和我的分享三个标签页
@@ -434,69 +440,6 @@ export default function EcosystemPlugin() {
       categoryCode: value === '' ? undefined : value,
     });
   };
-  /**
-   * 渲染右侧操作区域
-   */
-  const renderExtraContent = () => {
-    if (activeTab === TabTypeEnum.SHARED) {
-      return (
-        <div className={cx(styles.headerRight)}>
-          <Select
-            options={[
-              {
-                label: '全部',
-                value: -1,
-              },
-              {
-                label: '已发布',
-                value: 3,
-              },
-              {
-                label: '审核中',
-                value: 2,
-              },
-              {
-                label: '已下线',
-                value: 4,
-              },
-            ]}
-            defaultValue={-1}
-            onChange={(value) => handleShareStatusChange(value)}
-            className={cx(styles.select)}
-          />
-          <Search
-            className={cx(styles.searchInput)}
-            placeholder="搜索插件"
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
-            onSearch={handleSearch}
-            onClear={() => handleSearch('')}
-            allowClear
-          />
-          <Button type="primary" onClick={handleCreateShare}>
-            创建分享
-          </Button>
-        </div>
-      );
-    }
-    return (
-      <div className={cx(styles.headerRight)}>
-        <SelectCategory
-          targetType={AgentComponentTypeEnum.Plugin}
-          onChange={(value) => handleCategoryChange(value)}
-        />
-        <Search
-          className={cx(styles.searchInput)}
-          placeholder="搜索插件"
-          value={searchKeyword}
-          onChange={(e) => setSearchKeyword(e.target.value)}
-          onSearch={handleSearch}
-          onClear={() => handleSearch('')}
-          allowClear
-        />
-      </div>
-    );
-  };
   const [show, setShow] = useState(false);
   const [shareModalData, setShareModalData] =
     useState<EcosystemShareModalData | null>(null);
@@ -623,17 +566,65 @@ export default function EcosystemPlugin() {
           'overflow-hide',
         )}
       >
-        <h3 className={cx(styles.title)}>插件</h3>
         <div className={cx(styles.header)}>
-          <Tabs
-            activeKey={activeTab}
-            onChange={(value: string) =>
-              setActiveTab(value as EcosystemTabTypeEnum)
-            }
-            className={cx(styles.tabs)}
-            items={TabItems}
-          />
-          {renderExtraContent()}
+          <Space>
+            <h3 className={cx(styles.title)}>插件</h3>
+            <Segmented
+              className={cx(styles.segmented)}
+              options={SPACE_SQUARE_SEGMENTED_LIST}
+              value={activeTab}
+              onChange={(value: string) =>
+                setActiveTab(value as EcosystemTabTypeEnum)
+              }
+            />
+            {activeTab === TabTypeEnum.SHARED ? (
+              <Select
+                options={[
+                  {
+                    label: '全部分类',
+                    value: -1,
+                  },
+                  {
+                    label: '已发布',
+                    value: 3,
+                  },
+                  {
+                    label: '审核中',
+                    value: 2,
+                  },
+                  {
+                    label: '已下线',
+                    value: 4,
+                  },
+                ]}
+                defaultValue={-1}
+                onChange={(value) => handleShareStatusChange(value)}
+                className={cx(styles.select)}
+              />
+            ) : (
+              <SelectCategory
+                targetType={AgentComponentTypeEnum.Plugin}
+                onChange={(value) => handleCategoryChange(value)}
+              />
+            )}
+          </Space>
+          <div className={cx(styles.headerRight)}>
+            <Search
+              className={cx(styles.searchInput)}
+              placeholder="搜索插件"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              onSearch={handleSearch}
+              onClear={() => handleSearch('')}
+              allowClear
+            />
+
+            {activeTab === TabTypeEnum.SHARED && (
+              <Button type="primary" onClick={handleCreateShare}>
+                创建分享
+              </Button>
+            )}
+          </div>
         </div>
         <div
           className={cx(styles.pluginList, 'flex-1', 'overflow-y')}

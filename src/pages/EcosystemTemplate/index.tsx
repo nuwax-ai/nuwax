@@ -43,13 +43,29 @@ import {
   EcosystemUseStatusEnum,
 } from '@/types/interfaces/ecosystem';
 import { DownOutlined } from '@ant-design/icons';
-import { App, Button, Dropdown, Empty, Input, Select, Tabs } from 'antd';
+import {
+  App,
+  Button,
+  Dropdown,
+  Empty,
+  Input,
+  Segmented,
+  Select,
+  Space,
+} from 'antd';
 import classNames from 'classnames';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
 const cx = classNames.bind(styles);
 const { Search } = Input;
 const PAGE_SIZE = 24;
+
+const SPACE_SQUARE_SEGMENTED_LIST =
+  TabItems?.map((item) => ({
+    label: item.label,
+    value: item.key,
+  })) || [];
+
 /**
  * 生态市场模板页面
  * 展示模板列表，包括全部、已启用和我的分享三个标签页
@@ -648,29 +664,6 @@ export default function EcosystemTemplate() {
     if (activeTab === TabTypeEnum.SHARED) {
       return (
         <div className={cx(styles.headerRight)}>
-          <Select
-            options={[
-              {
-                label: '全部',
-                value: -1,
-              },
-              {
-                label: '已发布',
-                value: 3,
-              },
-              {
-                label: '审核中',
-                value: 2,
-              },
-              {
-                label: '已下线',
-                value: 4,
-              },
-            ]}
-            value={selectTargetTypeRef.current.shareStatus}
-            onChange={(value) => handleShareStatusChange(value)}
-            className={cx(styles.select)}
-          />
           <Search
             className={cx(styles.searchInput)}
             placeholder="搜索模板"
@@ -690,25 +683,6 @@ export default function EcosystemTemplate() {
     }
     return (
       <div className={cx(styles.headerRight)}>
-        <Select
-          options={[
-            {
-              label: '全部',
-              value: '',
-            },
-            {
-              label: '智能体',
-              value: AgentComponentTypeEnum.Agent,
-            },
-            {
-              label: '工作流',
-              value: AgentComponentTypeEnum.Workflow,
-            },
-          ]}
-          style={{ width: 100 }}
-          value={selectTargetTypeRef.current.targetType}
-          onChange={(value: string) => handleTargetTypeChange(value)}
-        />
         {selectTargetTypeRef.current.targetType && (
           <SelectCategory
             targetType={selectTargetTypeRef.current.targetType}
@@ -739,16 +713,63 @@ export default function EcosystemTemplate() {
           'overflow-hide',
         )}
       >
-        <h3 className={cx(styles.title)}>模板</h3>
         <div className={cx(styles.header)}>
-          <Tabs
-            activeKey={activeTab}
-            onChange={(value: string) =>
-              setActiveTab(value as EcosystemTabTypeEnum)
-            }
-            className={cx(styles.tabs)}
-            items={TabItems}
-          />
+          <Space>
+            <h3 className={cx(styles.title)}>模板</h3>
+            <Segmented
+              className={cx(styles.segmented)}
+              options={SPACE_SQUARE_SEGMENTED_LIST}
+              value={activeTab}
+              onChange={(value: string) =>
+                setActiveTab(value as EcosystemTabTypeEnum)
+              }
+            />
+            {activeTab === TabTypeEnum.SHARED ? (
+              <Select
+                options={[
+                  {
+                    label: '全部',
+                    value: -1,
+                  },
+                  {
+                    label: '已发布',
+                    value: 3,
+                  },
+                  {
+                    label: '审核中',
+                    value: 2,
+                  },
+                  {
+                    label: '已下线',
+                    value: 4,
+                  },
+                ]}
+                style={{ width: 100 }}
+                value={selectTargetTypeRef.current.shareStatus}
+                onChange={(value) => handleShareStatusChange(value)}
+              />
+            ) : (
+              <Select
+                options={[
+                  {
+                    label: '全部',
+                    value: '',
+                  },
+                  {
+                    label: '智能体',
+                    value: AgentComponentTypeEnum.Agent,
+                  },
+                  {
+                    label: '工作流',
+                    value: AgentComponentTypeEnum.Workflow,
+                  },
+                ]}
+                style={{ width: 100 }}
+                value={selectTargetTypeRef.current.targetType}
+                onChange={(value: string) => handleTargetTypeChange(value)}
+              />
+            )}
+          </Space>
           {renderExtraContent()}
         </div>
         <div
