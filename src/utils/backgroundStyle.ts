@@ -110,6 +110,8 @@ const darkLayoutStyleVariables = {
 
   '--xagi-layout-shadow': 'rgba(0, 0, 0, 0.6)',
   '--xagi-layout-overlay': 'rgba(0, 0, 0, 0.7)',
+
+  '--xagi-layout-bg-container': '#ffffff',
 };
 
 /**
@@ -132,6 +134,8 @@ const lightLayoutStyleVariables = {
 
   '--xagi-layout-shadow': 'rgba(0, 0, 0, 0.1)',
   '--xagi-layout-overlay': 'rgba(255, 255, 255, 0.7)',
+
+  '--xagi-layout-bg-container': 'rgba(255, 255, 255, 0.95)',
 };
 
 /**
@@ -265,6 +269,12 @@ export class LayoutStyleManager {
     const variables =
       style === 'dark' ? darkLayoutStyleVariables : lightLayoutStyleVariables;
 
+    // 如果 当前的 nav style 是 style2，则--xagi-layout-bg-secondary 应该是黑色
+    if (this.getCurrentNavigationStyle() === 'style2') {
+      //这里需要取当前真实的导航风格 navstyle
+      variables['--xagi-layout-bg-secondary'] = 'rgba(0, 0, 0, 0.85)';
+    }
+
     Object.entries(variables).forEach(([key, value]) => {
       document.documentElement.style.setProperty(key, value);
     });
@@ -295,6 +305,25 @@ export class LayoutStyleManager {
       rootElement.style.setProperty(
         '--xagi-page-container-border-radius',
         '0px',
+      );
+    }
+
+    // 如果导航风格是 style2，则设置 --xagi-layout-bg-secondary 为黑色
+    if (navStyle === 'style2') {
+      rootElement.style.setProperty(
+        '--xagi-layout-bg-secondary',
+        'rgba(0, 0, 0, 0.85)',
+      );
+    } else {
+      // 风格1时恢复默认值（从布局风格变量中获取）
+      const currentLayoutStyle = this.getCurrentLayoutStyle();
+      const variables =
+        currentLayoutStyle === 'dark'
+          ? darkLayoutStyleVariables
+          : lightLayoutStyleVariables;
+      rootElement.style.setProperty(
+        '--xagi-layout-bg-secondary',
+        variables['--xagi-layout-bg-secondary'],
       );
     }
 
@@ -372,13 +401,14 @@ export class LayoutStyleManager {
             this.setBackgroundImage(config.url);
           }
         }
-        if (data.layoutStyle) {
-          this.currentLayoutStyle = data.layoutStyle;
-          this.applyLayoutStyle(data.layoutStyle);
-        }
+
         if (data.navigationStyle) {
           this.currentNavStyle = data.navigationStyle;
           this.applyNavigationStyle(data.navigationStyle);
+        }
+        if (data.layoutStyle) {
+          this.currentLayoutStyle = data.layoutStyle;
+          this.applyLayoutStyle(data.layoutStyle);
         }
       }
     } catch (error) {
