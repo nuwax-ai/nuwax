@@ -1,6 +1,8 @@
 import ChatInputHome from '@/components/ChatInputHome';
 import Loading from '@/components/custom/Loading';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 import useConversation from '@/hooks/useConversation';
+import useMarkdownRender from '@/hooks/useMarkdownRender';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import {
   apiCollectAgent,
@@ -29,7 +31,7 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const Home: React.FC = () => {
+const Home: React.FC<{ theme?: 'light' | 'dark' }> = ({ theme = 'light' }) => {
   const { message } = App.useApp();
   // 配置信息
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
@@ -129,6 +131,12 @@ const Home: React.FC = () => {
     },
   });
 
+  const { markdownRef, messageIdRef } = useMarkdownRender({
+    answer: agentDetail?.openingChatMsg as string,
+    thinking: '',
+    id: agentDetail?.agentId || '',
+  });
+
   useEffect(() => {
     setLoading(true);
     // 主页智能体分类列表
@@ -203,7 +211,16 @@ const Home: React.FC = () => {
           minHeight: `${MIN_INPUT_HEIGHT}px`,
         }}
       >
-        <h2 className={cx(styles.title)}>嗨，有什么我可以帮忙的吗？</h2>
+        <div className={cx(styles.title)}>
+          <MarkdownRenderer
+            key={`${messageIdRef.current}`}
+            id={`${messageIdRef.current}`}
+            headerActions={false}
+            markdownRef={markdownRef}
+            theme={theme}
+          />
+        </div>
+
         <ChatInputHome
           key={`home-${tenantConfigInfo?.defaultAgentId}`}
           className={cx(styles.textarea)}
@@ -221,7 +238,7 @@ const Home: React.FC = () => {
             'flex-wrap',
           )}
         >
-          {tenantConfigInfo?.homeRecommendQuestions?.map(
+          {agentDetail?.openingGuidQuestions?.map(
             (item: string, index: number) => {
               return (
                 <div
