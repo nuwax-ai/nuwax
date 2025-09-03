@@ -1,287 +1,38 @@
 @import '@/styles/token';
 
-.themeSwitchPanel {
-  padding: @paddingLg;
-
-  .panelTitle {
-    margin: 0 0 @paddingSm 0;
-    font-size: @fontSizeLg;
-    font-weight: 600;
-    color: @colorText;
-  }
-
-  h4 {
-    margin: 0 0 @paddingSm 0;
-    font-size: @fontSize;
-    color: @colorText;
-    font-weight: 600;
-
-    &:not(:first-of-type) {
-      margin-top: @paddingMd;
-    }
-  }
-}
-
-// 主题色选择样式
-.themeColorSection {
-  margin-bottom: @paddingMd;
-
-  h4 {
-    margin-bottom: @paddingSm;
-  }
-}
-
-.themeColorGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: @paddingSm;
-  margin-top: @paddingSm;
-  justify-content: flex-start;
-}
-
-.colorPreviewItemContainer {
-  position: relative;
-
-  &:hover {
-    .colorPreviewItemText {
-      opacity: 1 !important;
-    }
-  }
-}
-
-.colorPreviewItem {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  box-sizing: content-box;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: all 0.3s @motionEaseOut;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  .colorPreviewItemSolid {
-    display: block;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-  }
-
-  &:hover {
-    border-color: var(--hover-border-color, @colorPrimary);
-  }
-
-  &.active {
-    border-color: @colorPrimary;
-  }
-}
-
-.colorPreviewItemText {
-  display: block;
-  text-align: center;
-  margin-top: @marginXxs;
-  font-size: @fontSizeSm;
-  color: @colorTextSecondary;
-  opacity: 0;
-}
-
-// 导航栏风格选择样式
-.navigationStyleSection {
-  margin-top: @paddingSm;
-}
-
-.navigationStyleOptions {
-  margin-bottom: @paddingMd;
-
-  h4 {
-    margin: 0 0 @paddingSm 0;
-    font-size: @fontSize;
-    color: @colorTextSecondary;
-    font-weight: normal;
-  }
-}
-
-.navigationColorOptions {
-  h4 {
-    margin: 0 0 @paddingSm 0;
-    font-size: @fontSize;
-    color: @colorTextSecondary;
-    font-weight: normal;
-  }
-}
-
-.styleOptions {
-  display: flex;
-  gap: @paddingSm;
-  justify-content: flex-start;
-}
-
-.styleOption {
-  cursor: pointer;
-  border: 2px solid transparent;
-  border-radius: @borderRadiusLg;
-  transition: all 0.3s @motionEaseOut;
-  overflow: hidden;
-
-  &:hover {
-    border-color: @colorPrimary;
-  }
-
-  &.active {
-    border-color: @colorPrimary;
-  }
-}
-
-.stylePreview {
-  padding: @paddingXs;
-  cursor: pointer;
-  border: 2px solid transparent;
-  border-radius: @borderRadiusLg;
-  transition: all 0.3s @motionEaseOut;
-  overflow: hidden;
-}
-
-.navbarPreview {
+.container {
   width: 100%;
   height: 100%;
-}
-
-.lightNavbar {
-  .navbarContent {
-    background-image: url('@/assets/images/theme/light-navbar-bg.png');
-  }
-}
-
-.darkNavbar {
-  .navbarContent {
-    background-image: url('@/assets/images/theme/dark-navbar-bg.png');
-  }
-}
-
-.navbarContent {
-  width: 96px;
-  height: 60px;
-  background-color: @colorBgLayout;
-  border-radius: @borderRadiusSm;
   display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: center;
-}
-
-// 紧凑导航样式（风格1）
-.compactNavbar {
-  .navbarContent {
-    gap: 6px; // 更紧凑的间距
-  }
-
-  .navbarItem {
-    width: 12px; // 较小的宽度
-    height: 2px;
-  }
-}
-
-// 展开导航样式（风格2）
-.expandedNavbar {
-  .navbarContent {
-    gap: 8px;
-    flex-direction: column; // 垂直布局模拟带文字的导航
-    align-items: center;
-  }
-
-  .navbarItem {
-    width: 16px;
-    height: 2px;
-  }
-}
-
-// 风格提示文字
-.styleText {
-  font-size: 8px;
-  color: rgba(0, 0, 0, 50%);
-  margin-top: 2px;
-  white-space: nowrap;
-
-  .darkNavbar & {
-    color: rgba(255, 255, 255, 50%);
-  }
-}
-
-.navbarItem {
-  width: 16px;
-  height: 2px;
-  background-color: rgba(0, 0, 0, 30%);
-
-  .lightNavbar & {
-    background-color: rgba(0, 0, 0, 30%);
-  }
-
-  .darkNavbar & {
-    background-color: rgba(255, 255, 255, 30%);
-  }
-}
-
-.styleLabel {
-  display: block;
-  padding: @paddingXs @paddingSm;
-  font-size: @fontSizeSm;
-  color: @colorTextSecondary;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-weight: 500;
-}
-
-// 背景图片选择样式
-.backgroundImageSection {
-  h4 {
-    margin-bottom: @paddingSm;
-  }
-}
-
-.backgroundGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: @paddingXs;
-  justify-content: flex-start;
-}
-
-.backgroundOption {
-  cursor: pointer;
-  padding: @paddingXs;
-  border: 2px solid transparent;
-  border-radius: @borderRadius;
-  transition: all 0.3s @motionEaseOut;
-  overflow: hidden;
-  position: relative;
-
-  &:hover {
-    border-color: @colorPrimary;
-  }
-
-  &.active {
-    border-color: @colorPrimary;
-  }
-}
-
-.backgroundPreview,
-.uploadContainer {
-  width: 96px;
-  height: 60px;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  border-radius: @borderRadiusSm;
-  position: relative;
-  overflow: hidden;
-  display: flex;
+  flex: 1;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: @colorTextSecondary;
-  background-color: @colorFillQuaternary;
+}
+
+.title {
+  font-weight: @fontWeightStrong;
+  font-size: 18px;
+  padding: @padding @paddingLg;
+  border-bottom: @lineWidth solid @colorSplit;
+  color: @colorText;
+  z-index: 1001;
+  box-sizing: border-box;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: @paddingLg;
+
+  .configContainer {
+    margin-bottom: @paddingXl;
+  }
+
+  .configItem {
+    margin-bottom: @paddingMd;
+    padding: 0;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
 }

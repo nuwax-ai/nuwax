@@ -1,0 +1,151 @@
+@import '@/styles/token';
+
+.navigationStylePanel {
+  padding: 0;
+
+  .panelTitle {
+    margin: 0 0 @paddingSm 0;
+    font-size: @fontSizeLg;
+    font-weight: @fontWeightStrong;
+    color: @colorText;
+  }
+}
+
+.navigationStyleSection {
+  margin-top: @paddingSm;
+}
+
+.navigationStyleOptions {
+  margin-bottom: @paddingMd;
+
+  h4 {
+    margin: 0 0 @paddingSm 0;
+    font-size: @fontSize;
+    color: @colorTextSecondary;
+    font-weight: normal;
+  }
+}
+
+.navigationColorOptions {
+  h4 {
+    margin: 0 0 @paddingSm 0;
+    font-size: @fontSize;
+    color: @colorTextSecondary;
+    font-weight: normal;
+  }
+}
+
+.styleOptions {
+  display: flex;
+  gap: @paddingSm;
+  justify-content: flex-start;
+}
+
+.styleOption {
+  cursor: pointer;
+}
+
+.stylePreview {
+  padding: @paddingXs;
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: @borderRadiusLg;
+  transition: all 0.3s @motionEaseOut;
+  overflow: hidden;
+
+  &:hover {
+    border-color: @colorPrimary;
+  }
+
+  &.active {
+    border-color: @colorPrimary;
+  }
+}
+
+.navbarPreview {
+  width: 100%;
+  height: 100%;
+}
+
+.lightNavbar {
+  .navbarContent {
+    background-image: url('@/assets/images/theme/light-navbar-bg.png');
+  }
+}
+
+.darkNavbar {
+  .navbarContent {
+    background-image: url('@/assets/images/theme/dark-navbar-bg.png');
+  }
+}
+
+.navbarContent {
+  width: 96px;
+  height: 60px;
+  background-color: @colorBgLayout;
+  border-radius: @borderRadiusSm;
+}
+
+// 紧凑导航样式（风格1）
+.compactNavbar {
+  .navbarContent {
+    gap: 6px; // 更紧凑的间距
+  }
+
+  .navbarItem {
+    width: 12px; // 较小的宽度
+    height: 2px;
+  }
+}
+
+// 展开导航样式（风格2）
+.expandedNavbar {
+  .navbarContent {
+    gap: 8px;
+    flex-direction: column; // 垂直布局模拟带文字的导航
+    align-items: center;
+  }
+
+  .navbarItem {
+    width: 16px;
+    height: 2px;
+  }
+}
+
+// 风格提示文字
+.styleText {
+  font-size: 8px;
+  color: rgba(0, 0, 0, 50%);
+  margin-top: 2px;
+  white-space: nowrap;
+
+  .darkNavbar & {
+    color: rgba(255, 255, 255, 50%);
+  }
+}
+
+.navbarItem {
+  width: 16px;
+  height: 2px;
+  background-color: rgba(0, 0, 0, 30%);
+
+  .lightNavbar & {
+    background-color: rgba(0, 0, 0, 30%);
+  }
+
+  .darkNavbar & {
+    background-color: rgba(255, 255, 255, 30%);
+  }
+}
+
+.styleLabel {
+  display: block;
+  padding: @paddingXs @paddingSm;
+  font-size: @fontSizeSm; // 使用更小的字号
+  color: @colorTextSecondary;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}

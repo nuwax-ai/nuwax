@@ -1,14 +1,14 @@
 import { backgroundConfigs } from '@/constants/theme.constants';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { useLayoutStyle } from '@/hooks/useLayoutStyle';
-import {
-  ThemeLayoutColorStyle,
-  ThemeNavigationStyleType,
-} from '@/types/enums/theme';
+import { ThemeLayoutColorStyle } from '@/types/enums/theme';
 import { TenantThemeConfig } from '@/types/tenant';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import BackgroundImagePanel from './components/BackgroundImagePanel';
+import NavigationStylePanel from './components/NavigationStylePanel';
+import ThemeColorPanel from './components/ThemeColorPanel';
 import styles from './ThemeSwitchPanel.less';
 
 const cx = classNames.bind(styles);
@@ -23,24 +23,17 @@ interface ThemeSwitchPanelProps {
  * 提供主题色、导航栏风格和背景图片的切换功能
  * 与ThemeConfig页面UI一致，但不支持自定义功能
  */
-const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
-  tenantThemeConfig,
-}) => {
+const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = () => {
   const {
     primaryColor,
     setPrimaryColor,
+    backgroundImages,
     backgroundImageId,
     setBackgroundImage,
   } = useGlobalSettings();
 
-  // 集成布局风格管理
-  const { layoutStyle, setLayoutStyle, navigationStyle, setNavigationStyle } =
-    useLayoutStyle();
-
-  // 导航栏风格状态管理
-  const [currentNavigationStyle, setCurrentNavigationStyle] = useState<string>(
-    navigationStyle || tenantThemeConfig.defaultNavigationStyleId,
-  );
+  // 集成导航风格管理
+  const { layoutStyle, setLayoutStyle } = useLayoutStyle();
 
   // 导航栏深浅色状态管理（独立于Ant Design主题）
   const [isNavigationDarkMode, setIsNavigationDarkMode] = useState<boolean>(
@@ -51,16 +44,6 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
   useEffect(() => {
     setIsNavigationDarkMode(layoutStyle === ThemeLayoutColorStyle.DARK);
   }, [layoutStyle]);
-
-  // 同步全局导航风格状态
-  useEffect(() => {
-    setCurrentNavigationStyle(navigationStyle);
-  }, [navigationStyle]);
-
-  // 处理主题色切换
-  const handleThemeColorChange = (color: string) => {
-    setPrimaryColor(color);
-  };
 
   // 根据背景图片ID获取对应的布局风格
   const getLayoutStyleByBackgroundId = (
@@ -74,7 +57,12 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
     return backgroundConfig?.layoutStyle || ThemeLayoutColorStyle.LIGHT;
   };
 
-  // 处理背景图片切换（带联动逻辑）
+  // 处理导航风格变更
+  const handleNavigationStyleChange = (styleId: string) => {
+    console.log('主题切换面板收到导航风格变更:', styleId);
+  };
+
+  // 背景图片切换处理（带联动逻辑）
   const handleBackgroundChange = (backgroundId: string) => {
     // 设置背景图片
     setBackgroundImage(backgroundId);
@@ -85,9 +73,8 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
     setIsNavigationDarkMode(newLayoutStyle === ThemeLayoutColorStyle.DARK);
 
     // 显示联动提示
-    const layoutBackgroundId = backgroundId.replace('bg-', '');
     const backgroundConfig = backgroundConfigs.find(
-      (config) => config.id === layoutBackgroundId,
+      (config) => config.id === backgroundId,
     );
     if (backgroundConfig) {
       message.info(
@@ -98,28 +85,12 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
     }
   };
 
-  // 处理导航栏风格切换
-  const handleNavigationStyleChange = (styleId: string) => {
-    const newStyleId = styleId as ThemeNavigationStyleType;
-    setCurrentNavigationStyle(styleId);
-
-    // 更新全局导航风格状态
-    setNavigationStyle(newStyleId);
-
-    console.log(
-      'ThemeSwitchPanel - 切换导航栏风格:',
-      styleId,
-      '-> 实际应用:',
-      newStyleId,
-    );
-  };
-
-  // 处理导航栏深浅色切换（集成到布局风格管理，带背景自动匹配）
+  // 切换导航栏深浅色（集成到布局风格管理，带背景自动匹配）
   const handleNavigationThemeToggle = () => {
     const newLayoutStyle =
-      layoutStyle === ThemeLayoutColorStyle.LIGHT
-        ? ThemeLayoutColorStyle.DARK
-        : ThemeLayoutColorStyle.LIGHT;
+      layoutStyle === ThemeLayoutColorStyle.DARK
+        ? ThemeLayoutColorStyle.LIGHT
+        : ThemeLayoutColorStyle.DARK;
     setLayoutStyle(newLayoutStyle);
     setIsNavigationDarkMode(newLayoutStyle === ThemeLayoutColorStyle.DARK);
 
@@ -148,158 +119,31 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
   };
 
   return (
-    <div className={cx(styles.themeSwitchPanel)}>
-      <h3 className={cx(styles.panelTitle)}>主题切换</h3>
-
-      {/* 主题色选择 */}
-      <div className={cx(styles.themeColorSection)}>
-        <h4>主题色</h4>
-        <div className={cx(styles.themeColorGrid)}>
-          {tenantThemeConfig.themeColors.map((themeColor) => (
-            <div
-              key={themeColor.color}
-              className={cx(styles.colorPreviewItemContainer)}
-            >
-              <div
-                className={cx(styles.colorPreviewItem, {
-                  [styles.active]: primaryColor === themeColor.color,
-                })}
-                onClick={() => handleThemeColorChange(themeColor.color)}
-                title={themeColor.name}
-                style={
-                  {
-                    '--hover-border-color': themeColor.color,
-                  } as React.CSSProperties
-                }
-              >
-                <span
-                  className={cx(styles.colorPreviewItemSolid)}
-                  style={{ backgroundColor: themeColor.color }}
-                ></span>
-              </div>
-              <span
-                className={cx(styles.colorPreviewItemText)}
-                style={{
-                  opacity: primaryColor === themeColor.color ? 1 : 0,
-                }}
-              >
-                {themeColor.name}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 导航栏风格选择 */}
-      <div className={cx(styles.navigationStyleSection)}>
-        <h4>导航栏</h4>
-
-        {/* 导航栏风格样式选择 */}
-        <div className={cx(styles.navigationStyleOptions)}>
-          <h4>风格样式</h4>
-          <div className={cx(styles.styleOptions)}>
-            {tenantThemeConfig.navigationStyles.map((style) => (
-              <div
-                key={style.id}
-                className={cx(styles.styleOption, {
-                  [styles.active]: currentNavigationStyle === style.id,
-                })}
-                onClick={() => handleNavigationStyleChange(style.id)}
-                title={style.description}
-              >
-                <div
-                  className={cx(styles.stylePreview, {
-                    [styles.active]: currentNavigationStyle === style.id,
-                  })}
-                >
-                  <div
-                    className={cx(
-                      styles.navbarPreview,
-                      // 根据风格动态调整预览样式
-                      style.id === 'style1'
-                        ? styles.compactNavbar
-                        : styles.expandedNavbar,
-                    )}
-                  >
-                    <div className={cx(styles.navbarContent)}>
-                      <div className={cx(styles.navbarItem)}></div>
-                      <div className={cx(styles.navbarItem)}></div>
-                      <div className={cx(styles.navbarItem)}></div>
-                      {/* 风格2显示文字提示 */}
-                      {style.id === 'style2' && (
-                        <div className={cx(styles.styleText)}>有文字</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className={cx(styles.styleLabel)}>{style.name}</div>
-              </div>
-            ))}
+    <div className={cx(styles.container)}>
+      <div className={cx(styles.title)}>主题切换</div>
+      <div className={cx(styles.content)}>
+        {/* 垂直布局的主题配置区域 */}
+        <div className={cx(styles.configContainer)}>
+          <div className={cx(styles.configItem)}>
+            <ThemeColorPanel
+              currentColor={primaryColor}
+              onColorChange={setPrimaryColor}
+            />
           </div>
-        </div>
-
-        {/* 导航栏深浅色选择 */}
-        {tenantThemeConfig.supportDarkMode && (
-          <div className={cx(styles.navigationColorOptions)}>
-            <h4>深浅色</h4>
-            <div className={cx(styles.styleOptions)}>
-              {/* 浅色模式 */}
-              <div className={cx(styles.styleOption)}>
-                <div
-                  className={cx(styles.stylePreview, {
-                    [styles.active]: !isNavigationDarkMode,
-                  })}
-                  onClick={() =>
-                    isNavigationDarkMode && handleNavigationThemeToggle()
-                  }
-                >
-                  <div className={cx(styles.navbarPreview, styles.lightNavbar)}>
-                    <div className={cx(styles.navbarContent)}></div>
-                  </div>
-                </div>
-                <div className={cx(styles.styleLabel)}>浅色</div>
-              </div>
-
-              {/* 深色模式 */}
-              <div className={cx(styles.styleOption)}>
-                <div
-                  className={cx(styles.stylePreview, {
-                    [styles.active]: isNavigationDarkMode,
-                  })}
-                  onClick={() =>
-                    !isNavigationDarkMode && handleNavigationThemeToggle()
-                  }
-                >
-                  <div className={cx(styles.navbarPreview, styles.darkNavbar)}>
-                    <div className={cx(styles.navbarContent)}></div>
-                  </div>
-                </div>
-                <div className={cx(styles.styleLabel)}>深色</div>
-              </div>
-            </div>
+          <div className={cx(styles.configItem)}>
+            <NavigationStylePanel
+              isNavigationDarkMode={isNavigationDarkMode}
+              onNavigationThemeToggle={handleNavigationThemeToggle}
+              onNavigationStyleChange={handleNavigationStyleChange}
+            />
           </div>
-        )}
-      </div>
-
-      {/* 背景图片选择 */}
-      <div className={cx(styles.backgroundImageSection)}>
-        <h4>背景图片</h4>
-        <div className={cx(styles.backgroundGrid)}>
-          {tenantThemeConfig.backgroundImages.map((bg) => (
-            <div
-              key={bg.id}
-              className={cx(styles.backgroundOption, {
-                [styles.active]: (backgroundImageId || '') === bg.id,
-              })}
-              onClick={() => handleBackgroundChange(bg.id)}
-              title={bg.name}
-            >
-              <div
-                className={cx(styles.backgroundPreview)}
-                style={{ backgroundImage: `url(${bg.preview})` }}
-              />
-            </div>
-          ))}
+          <div className={cx(styles.configItem)}>
+            <BackgroundImagePanel
+              backgroundImages={backgroundImages}
+              currentBackground={backgroundImageId}
+              onBackgroundChange={handleBackgroundChange}
+            />
+          </div>
         </div>
       </div>
     </div>
